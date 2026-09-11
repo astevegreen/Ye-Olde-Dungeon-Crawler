@@ -1,0 +1,23 @@
+{
+  "name": "castle-of-the-winds",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "build:cotw": "tsc && vite build --mode cotw",
+    "build:warcraft": "tsc && vite build --mode warcraft",
+    "build:all": "npm run build:cotw && npm run build:warcraft",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "check:engine-purity": "tsx scripts/check-engine-purity.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.13",
+    "typescript": "^5.7.3",
+    "vite": "^6.2.0",
+    "vite-plugin-singlefile": "^2.1.0",
+    "vitest": "^3.0.7"
+  }
+}

@@ -1,0 +1,58 @@
+import type { VaultBlueprint } from '../../engine/dungeon/vaultStamp';
+
+export const WARCRAFT_VAULTS: VaultBlueprint[] = [
+  {
+    id: 'horde_armory',
+    name: 'Horde Armory',
+    description: 'An underground munitions bunker packed with crude iron weaponry and secured supplies.',
+    minFloor: 2,
+    layout: [
+      '###########',
+      '#BBB###BBB#',
+      '#B.......B#',
+      '#B..M.C..B#',
+      '#B.......B#',
+      '###++#++###',
+      '#.........#',
+      '@....M....@',
+      '###########',
+    ],
+    preferredMonsters: ['grunt', 'peon'],
+  },
+  {
+    id: 'shadow_council_sanctum',
+    name: 'Shadow Council Sanctum',
+    description: 'A desecrated ritual chamber where warlocks commune with dark powers amidst corrupting energies.',
+    minFloor: 3,
+    layout: [
+      '#############',
+      '#...P.P.P...#',
+      '@...P.P.P...@',
+      '#.....C.....#',
+      '#...M...M...#',
+      '#.....C.....#',
+      '@...P.P.P...@',
+      '#...P.P.P...#',
+      '#############',
+    ],
+    preferredMonsters: ['ogre_mage', 'raider'],
+  },
+  {
+    id: 'bladespire_stronghold',
+    name: 'Bladespire Stronghold',
+    description: 'A precipitous redoubt perched atop jagged chasms, fortified against siege assaults.',
+    minFloor: 4,
+    layout: [
+      '###############',
+      '#XXXXX...XXXXX#',
+      '#X###BB+BB###X#',
+      '@...#..C..#...@',
+      '#X#.#.M.M.#.#X#',
+      '@...#..C..#...@',
+      '#X###BB+BB###X#',
+      '#XXXXX...XXXXX#',
+      '###############',
+    ],
+    preferredMonsters: ['ogre_mage', 'grunt'],
+  },
+];

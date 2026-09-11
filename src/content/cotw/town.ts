@@ -1,0 +1,187 @@
+import type { TownLayoutDefinition } from '../../engine/types/manifest';
+import { ItemFactory } from '../../engine/items/factory';
+import { Merchant } from '../../engine/economy/merchant';
+
+export const COTW_TOWN: TownLayoutDefinition = {
+  name: 'Bjarnarhaven',
+  width: 50,
+  height: 30,
+  playerSpawn: { x: 10, y: 14 },
+  stairsDown: { x: 25, y: 8 },
+  buildings: [
+    // Olaf's General Store (North-West)
+    {
+      name: "Olaf's General Store",
+      bounds: { x1: 3, y1: 2, x2: 16, y2: 9 },
+      door: { x: 10, y: 9, isOpen: false },
+    },
+    // Gunther's Armory (North-East)
+    {
+      name: "Gunther's Armory",
+      bounds: { x1: 33, y1: 2, x2: 46, y2: 9 },
+      door: { x: 40, y: 9, isOpen: false },
+    },
+    // Astrid's Alchemical Herbs (South-West)
+    {
+      name: "Astrid's Alchemy",
+      bounds: { x1: 3, y1: 19, x2: 16, y2: 27 },
+      door: { x: 10, y: 19, isOpen: false },
+    },
+    // Father Torvald's Temple of Thor (South-Center)
+    {
+      name: 'Temple of Thor',
+      bounds: { x1: 20, y1: 19, x2: 30, y2: 28 },
+      door: { x: 25, y: 19, isOpen: true },
+    },
+    // Sage's Study & Bank of Bjarnarhaven (South-East)
+    {
+      name: "Sage Study & Vault",
+      bounds: { x1: 33, y1: 19, x2: 46, y2: 27 },
+      door: { x: 40, y: 19, isOpen: false },
+    },
+  ],
+  npcs: [
+    {
+      id: 'npc-olaf',
+      name: 'Olaf the Chandler',
+      role: 'merchant',
+      shopId: 'merchant-olaf',
+      position: { x: 10, y: 5 },
+      greeting: 'Welcome to Olaf’s General Goods! Torches, packs, and bread for hearty souls!',
+      dialogText: 'Stock up on torches and rations, traveler. The depths do not forgive an empty pack.',
+      merchantConfig: {
+        id: 'merchant-olaf',
+        name: "Olaf's General Store",
+        greeting: 'Welcome to Olaf’s General Goods! Torches, packs, and bread for hearty souls!',
+        markupRatio: 1.25,
+        markdownRatio: 0.5,
+        initialInventory: [
+          ItemFactory.createTorch('olaf-torch-1'),
+          ItemFactory.createTorch('olaf-torch-2'),
+          ItemFactory.createRations('olaf-rations-1'),
+          ItemFactory.createRations('olaf-rations-2'),
+          ItemFactory.createLockpicks('olaf-picks-1'),
+          ItemFactory.createDagger('olaf-dagger-1'),
+          ItemFactory.createUtilityBelt('olaf-belt-1'),
+          ItemFactory.createCoinPurse('olaf-purse-1'),
+        ],
+      },
+    },
+    {
+      id: 'npc-gunther',
+      name: 'Gunther the Smith',
+      role: 'merchant',
+      shopId: 'merchant-gunther',
+      position: { x: 40, y: 5 },
+      greeting: 'Need cold steel or sturdy plate? Gunther’s forge provides!',
+      dialogText: 'Mind your guard down there. Those hill giants strike hard enough to splinter oak.',
+      merchantConfig: {
+        id: 'merchant-gunther',
+        name: "Gunther's Armory",
+        greeting: 'Need cold steel or sturdy plate? Gunther’s forge provides!',
+        markupRatio: 1.3,
+        markdownRatio: 0.5,
+        initialInventory: [
+          ItemFactory.createBroadsword('gunther-sword-1'),
+          ItemFactory.createBattleaxe('gunther-axe-1'),
+          ItemFactory.createWoodenShield('gunther-shield-wood'),
+          ItemFactory.createIronShield('gunther-shield-iron'),
+          ItemFactory.createLeatherArmor('gunther-leather-1'),
+          ItemFactory.createChainmail('gunther-chain-1'),
+          ItemFactory.createPlateArmor('gunther-plate-1'),
+          ItemFactory.createIronHelmet('gunther-helm-1'),
+          ItemFactory.createBoots('gunther-boots-1'),
+        ],
+      },
+    },
+    {
+      id: 'npc-astrid',
+      name: 'Astrid the Alchemist',
+      role: 'merchant',
+      shopId: 'merchant-astrid',
+      position: { x: 10, y: 23 },
+      greeting: 'Potions and enchanted scrolls to ward off the dark...',
+      dialogText: 'Brewing against frost and venom is an art. Drink deeply before battle.',
+      merchantConfig: {
+        id: 'merchant-astrid',
+        name: "Astrid's Alchemy",
+        greeting: 'Potions and enchanted scrolls to ward off the dark...',
+        markupRatio: 1.35,
+        markdownRatio: 0.45,
+        initialInventory: [
+          ItemFactory.createHealthPotion('astrid-hp-1'),
+          ItemFactory.createHealthPotion('astrid-hp-2'),
+          ItemFactory.createManaPotion('astrid-mana-1'),
+          ItemFactory.createManaPotion('astrid-mana-2'),
+          ItemFactory.createScrollOfTeleport('astrid-tele-1'),
+          ItemFactory.createScrollOfIdentify('astrid-id-1'),
+          ItemFactory.createWandOfLightning('astrid-wand-1'),
+        ],
+      },
+    },
+    {
+      id: 'npc-priest',
+      name: 'Father Torvald',
+      role: 'priest',
+      position: { x: 25, y: 23 },
+      greeting: 'Welcome to the sacred Hall of Thor, the Thunderer.',
+      dialogText: "For a humble donation of gold, Thor's lightning will shatter any curse binding your equipment, or heal all your afflictions.",
+    },
+    {
+      id: 'npc-sage',
+      name: 'Sage Mimir',
+      role: 'sage',
+      position: { x: 36, y: 23 },
+      greeting: 'Greetings, young hero. The ancient runes hold no secrets from me.',
+      dialogText: 'Bring me mysterious items from the dungeon. For a small fee, I shall unveil their true power and runic enchantments.',
+    },
+    {
+      id: 'npc-banker',
+      name: 'Banker Haakon',
+      role: 'banker',
+      position: { x: 43, y: 23 },
+      greeting: 'Welcome to the First Bank of Bjarnarhaven.',
+      dialogText: 'Carrying thousands of copper coins will crush your back! Let me exchange your heavy copper and silver into lightweight gold and platinum.',
+    },
+    {
+      id: 'npc-guard',
+      name: 'Bjorn the Town Guard',
+      role: 'guard',
+      position: { x: 25, y: 15 },
+      greeting: 'Halt! Keep your weapons sheathed in Bjarnarhaven, adventurer.',
+      dialogText: 'The dungeon cellar to the north-east leads into the depths. Many go down; few return.',
+    },
+  ],
+  services: {
+    templeName: 'Temple of Thor',
+    priestTitle: 'The High Priest of Thor',
+    cleanseMessageTemplate: "Thor's divine lightning shatters the foul bindings on: {items}! The items are now safely stored in your pack.",
+    noCursesMessage: 'The High Priest of Thor senses no foul curses binding your body.',
+    donationRequiredTemplate: 'A donation of {cost} is required to call upon Thor\'s cleansing thunder. You have {funds}.',
+    healMessageTemplate: 'The Priest of Thor bathes you in golden light! All afflictions are cured, and your HP and Mana are fully restored!',
+    sageName: 'Sage Mimir',
+    sageTitle: 'Sage Mimir',
+    bankName: 'First Bank of Bjarnarhaven',
+    bankerTitle: 'Banker Haakon',
+    compactionMessageTemplate: 'Banker Haakon exchanged your currency into {coins}! Carry weight reduced by {savedWeight}g (from {oldWeight}g to {newWeight}g).',
+  },
+};
+
+export function createOlafGeneralStore(): Merchant {
+  const npc = COTW_TOWN.npcs.find((n) => n.id === 'npc-olaf')!;
+  const cfg = npc.merchantConfig!;
+  return new Merchant(cfg.id, cfg.name, cfg.name, 'general', cfg.greeting, [...cfg.initialInventory]);
+}
+
+export function createGuntherArmory(): Merchant {
+  const npc = COTW_TOWN.npcs.find((n) => n.id === 'npc-gunther')!;
+  const cfg = npc.merchantConfig!;
+  return new Merchant(cfg.id, cfg.name, cfg.name, 'armory', cfg.greeting, [...cfg.initialInventory]);
+}
+
+export function createAstridAlchemist(): Merchant {
+  const npc = COTW_TOWN.npcs.find((n) => n.id === 'npc-astrid')!;
+  const cfg = npc.merchantConfig!;
+  return new Merchant(cfg.id, cfg.name, cfg.name, 'alchemist', cfg.greeting, [...cfg.initialInventory]);
+}
+

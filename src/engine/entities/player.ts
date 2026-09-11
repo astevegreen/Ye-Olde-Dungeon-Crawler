@@ -1,0 +1,241 @@
+import type { CombatStats, Position, GameDifficulty } from '../types';
+import { DIFFICULTY_MAX_FLOORS, DEFAULT_DIFFICULTY } from '../types';
+import { Actor } from './actor';
+import { InventoryManager } from '../inventory/inventory-manager';
+import { EncumbranceLevel } from '../inventory/encumbrance';
+import type { CharacterAttributes, Gender } from '../character/types';
+import type { ProgressionConfig, LevelUpBonus } from '../types/manifest';
+import type { TutorialFlags } from '../storage/types';
+import { calculateAttribute } from '../stats/attributeCalculator';
+
+export interface PlayerConfig {
+  id?: string;
+  name?: string;
+  gender?: Gender;
+  difficulty?: GameDifficulty;
+  maxFloor?: number;
+  position: Position;
+  stats?: CombatStats;
+  speed?: number;
+  strength?: number;
+  intelligence?: number;
+  constitution?: number;
+  dexterity?: number;
+  inventory?: InventoryManager;
+  mana?: number;
+  maxMana?: number;
+  spellsKnown?: string[];
+  level?: number;
+  xp?: number;
+  progressionConfig?: ProgressionConfig;
+  tutorialFlags?: TutorialFlags;
+  deepestRecallFloor?: number;
+  recallPosition?: Position;
+  quickSpells?: (string | null)[];
+}
+
+const DEFAULT_PLAYER_STATS: CombatStats = {
+  hp: 30,
+  maxHp: 30,
+  attack: 6,
+  defense: 2,
+};
+
+export const DEFAULT_STARTER_SPELLS: string[] = [];
+
+export class Player extends Actor {
+  declare public inventory: InventoryManager;
+  public mana: number;
+  public maxMana: number;
+  public spellsKnown: string[];
+  public level: number;
+  public xp: number;
+  public intelligence: number;
+  public constitution: number;
+  public dexterity: number;
+  public gender: Gender;
+  public difficulty: GameDifficulty;
+  public maxFloor: number;
+  public progressionConfig?: ProgressionConfig;
+  public tutorialFlags: TutorialFlags;
+  public deepestRecallFloor?: number;
+  public recallPosition?: Position;
+  public quickSpells: (string | null)[];
+  public pactMutatorsSupplier?: () => import('../pacts/pactManager').RunPactMutatorRules;
+
+  constructor(config: PlayerConfig) {
+    super({
+      id: config.id ?? 'player',
+      name: config.name ?? 'Adventurer',
+      type: 'player',
+      faction: 'player',
+      position: config.position,
+      stats: config.stats ?? { ...DEFAULT_PLAYER_STATS },
+      speed: config.speed ?? 100,
+      strength: config.strength ?? 15,
+      inventory: config.inventory,
+    });
+    this.gender = config.gender ?? 'male';
+    this.difficulty = config.difficulty ?? DEFAULT_DIFFICULTY;
+    this.maxFloor = config.maxFloor ?? DIFFICULTY_MAX_FLOORS[this.difficulty];
+    this.intelligence = config.intelligence ?? 15;
+    this.constitution = config.constitution ?? 15;
+    this.dexterity = config.dexterity ?? 15;
+    this.maxMana = config.maxMana ?? Math.floor(this.intelligence * 2 + 5);
+    this.mana = config.mana ?? this.maxMana;
+    this.spellsKnown = config.spellsKnown ? [...config.spellsKnown] : [...DEFAULT_STARTER_SPELLS];
+    if (config.quickSpells) {
+      this.quickSpells = [...config.quickSpells];
+      while (this.quickSpells.length < 10) this.quickSpells.push(null);
+    } else {
+      this.quickSpells = Array(10).fill(null);
+      for (let i = 0; i < Math.min(10, this.spellsKnown.length); i++) {
+        this.quickSpells[i] = this.spellsKnown[i];
+      }
+    }
+    this.level = config.level ?? 1;
+    this.xp = config.xp ?? 0;
+    this.progressionConfig = config.progressionConfig;
+    this.tutorialFlags = config.tutorialFlags ? { ...config.tutorialFlags } : {};
+    this.deepestRecallFloor = config.deepestRecallFloor;
+    this.recallPosition = config.recallPosition ? { ...config.recallPosition } : undefined;
+  }
+
+  public get attributes(): CharacterAttributes {
+    return {
+      strength: this.strength,
+      intelligence: this.intelligence,
+      constitution: this.constitution,
+      dexterity: this.dexterity,
+    };
+  }
+
+  public getXpRequirement(level: number, config?: ProgressionConfig): number {
+    const cfg = config ?? this.progressionConfig;
+    if (cfg?.getXpForNextLevel) {
+      return cfg.getXpForNextLevel(level);
+    }
+    if (cfg?.baseXp) {
+      const exponent = cfg.xpExponent ?? 1.2;
+      return Math.floor(cfg.baseXp * Math.pow(exponent, level - 1));
+    }
+    return level * 50 + (level - 1) * 25;
+  }
+
+  public get xpToNextLevel(): number {
+    return this.getXpRequirement(this.level);
+  }
+
+  public gainXp(
+    amount: number,
+    config?: ProgressionConfig
+  ): { leveledUp: boolean; newLevel: number; statGains?: LevelUpBonus } {
+    const progression = config ?? this.progressionConfig;
+    this.xp += amount;
+    let leveledUp = false;
+    let accumulatedGains: LevelUpBonus = {};
+
+    while (true) {
+      if (progression?.maxLevel && this.level >= progression.maxLevel) {
+        break;
+      }
+      const needed = this.getXpRequirement(this.level, progression);
+      if (this.xp < needed) {
+        break;
+      }
+      this.xp -= needed;
+      this.level += 1;
+
+      const gains: LevelUpBonus = typeof progression?.statGains === 'function'
+        ? progression.statGains(this.level)
+        : (progression?.statGains ?? {
+            maxHp: 5,
+            maxMana: 4,
+            strength: 1,
+            intelligence: 1,
+            constitution: 1,
+            dexterity: 1,
+            baseAttack: 1,
+            baseDefense: 1,
+          });
+
+      this.maxHp += gains.maxHp ?? 5;
+      this.hp = this.maxHp;
+      this.maxMana += gains.maxMana ?? 4;
+      this.mana = this.maxMana;
+      this.strength += gains.strength ?? 1;
+      this.intelligence += gains.intelligence ?? 1;
+      this.constitution += gains.constitution ?? 1;
+      this.dexterity += gains.dexterity ?? 1;
+      this.baseAttack += gains.baseAttack ?? 1;
+      this.baseDefense += gains.baseDefense ?? 1;
+
+      accumulatedGains = {
+        maxHp: (accumulatedGains.maxHp ?? 0) + (gains.maxHp ?? 5),
+        maxMana: (accumulatedGains.maxMana ?? 0) + (gains.maxMana ?? 4),
+        strength: (accumulatedGains.strength ?? 0) + (gains.strength ?? 1),
+        intelligence: (accumulatedGains.intelligence ?? 0) + (gains.intelligence ?? 1),
+        constitution: (accumulatedGains.constitution ?? 0) + (gains.constitution ?? 1),
+        dexterity: (accumulatedGains.dexterity ?? 0) + (gains.dexterity ?? 1),
+        baseAttack: (accumulatedGains.baseAttack ?? 0) + (gains.baseAttack ?? 1),
+        baseDefense: (accumulatedGains.baseDefense ?? 0) + (gains.baseDefense ?? 1),
+      };
+
+      leveledUp = true;
+    }
+
+    return {
+      leveledUp,
+      newLevel: this.level,
+      statGains: leveledUp ? accumulatedGains : undefined,
+    };
+  }
+
+  public consumeMana(amount: number): boolean {
+    if (this.mana < amount) {
+      return false;
+    }
+    this.mana -= amount;
+    return true;
+  }
+
+  public restoreMana(amount: number): number {
+    const prev = this.mana;
+    this.mana = Math.min(this.maxMana, this.mana + Math.max(0, amount));
+    return this.mana - prev;
+  }
+
+  public learnSpell(spellId: string): boolean {
+    if (this.spellsKnown.includes(spellId)) {
+      return false;
+    }
+    this.spellsKnown.push(spellId);
+    return true;
+  }
+
+  public override get maxHp(): number {
+    return calculateAttribute(this, 'maxHp');
+  }
+
+  public override set maxHp(value: number) {
+    this._maxHp = value;
+  }
+
+  public override get attack(): number {
+    return calculateAttribute(this, 'attack');
+  }
+
+  public override get defense(): number {
+    return calculateAttribute(this, 'defense');
+  }
+
+  public override canMove(): boolean {
+    if (!super.canMove()) return false;
+    return this.inventory.getEncumbrance(this.strength) !== EncumbranceLevel.Immobilized;
+  }
+
+  public override getActionCost(baseCost: number): number {
+    return calculateAttribute(this, 'actionCost', { baseCost });
+  }
+}
+

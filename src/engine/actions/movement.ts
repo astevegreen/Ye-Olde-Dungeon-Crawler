@@ -1,0 +1,317 @@
+import type { ActionResult } from '../types';
+import { BASE_ACTION_COST } from '../types';
+import type { Entity } from '../entities/entity';
+import type { GameEngine } from '../engine';
+import type { Action } from './action';
+import { MeleeAttackAction } from './combat';
+import { NPC } from '../entities/npc';
+import { ExecuteChoiceAction } from './choiceAction';
+import type { Player } from '../entities/player';
+import { HookDispatcher } from '../hooks/hookDispatcher';
+import { TILES } from '../grid/tile';
+
+/** Tile type identifier for shallow water terrain that imposes a movement energy penalty. */
+const SHALLOW_WATER_TILE = 'shallow_water';
+
+export class MovementAction implements Action {
+  public readonly entity: Entity;
+  public readonly dx: number;
+  public readonly dy: number;
+
+  constructor(entity: Entity, dx: number, dy: number) {
+    this.entity = entity;
+    this.dx = dx;
+    this.dy = dy;
+  }
+
+  public perform(engine: GameEngine): ActionResult {
+    if (!this.entity.isAlive()) {
+      return {
+        success: false,
+        cost: 0,
+        message: `${this.entity.name} cannot move while defeated.`,
+      };
+    }
+
+    if (!this.entity.canMove()) {
+      const message = `${this.entity.name} is overburdened and cannot move!`;
+      engine.log(message);
+      return {
+        success: false,
+        cost: 0,
+        message,
+      };
+    }
+
+    if (this.dx === 0 && this.dy === 0) {
+      return {
+        success: false,
+        cost: 0,
+        message: `${this.entity.name} stays in place.`,
+      };
+    }
+
+    const targetX = this.entity.x + this.dx;
+    const targetY = this.entity.y + this.dy;
+
+    // 1. Map Boundary Collision Check
+    if (!engine.map.inBounds(targetX, targetY)) {
+      const message = `${this.entity.name} cannot move beyond the edge of the world.`;
+      engine.log(message);
+      return {
+        success: false,
+        cost: 0,
+        message,
+      };
+    }
+
+    // 2. Entity Collision Check (Bump-Attack vs Hostile, or Talk to NPC)
+    const targetEntity = engine.map.getEntityAt(targetX, targetY);
+    if (targetEntity) {
+      if (this.entity.isHostileTo(targetEntity)) {
+        // Automatically trigger bump-attack
+        const attackAction = new MeleeAttackAction(this.entity, targetEntity);
+        return attackAction.perform(engine);
+      } else {
+        if (this.entity.type === 'player' && targetEntity instanceof NPC) {
+          engine.interactWithNpc(targetEntity);
+          return {
+            success: true,
+            cost: 0,
+            message: `Spoke with ${targetEntity.name}.`,
+          };
+        }
+        const message = `${this.entity.name} cannot move onto friendly ${targetEntity.name}.`;
+        engine.log(message);
+        return {
+          success: false,
+          cost: 0,
+          message,
+        };
+      }
+    }
+
+    // 3. Tile Passability Collision Check
+    const tile = engine.map.getTile(targetX, targetY);
+    const isWalkable = tile ? (tile.walkable ?? tile.passable) : false;
+    if (!tile || !isWalkable) {
+      let desc = 'obstacle';
+      if (tile) {
+        if (tile.isClosedDoor) {
+          desc = 'closed door';
+        } else if (tile.type === 'wall' || tile.name.toLowerCase().includes('wall')) {
+          desc = 'wall';
+        } else {
+          desc = tile.name.toLowerCase();
+        }
+      }
+      const message = `${this.entity.name} bumps into a ${desc}.`;
+      engine.log(message);
+      return {
+        success: false,
+        cost: 0,
+        message,
+      };
+    }
+
+    // 4. Valid Movement
+    const moved = engine.map.moveEntity(this.entity, targetX, targetY);
+    if (!moved) {
+      return {
+        success: false,
+        cost: 0,
+        message: `Failed to move ${this.entity.name}.`,
+      };
+    }
+
+    const destTile = engine.map.getTile(targetX, targetY);
+    const baseCost = destTile?.type === SHALLOW_WATER_TILE ? BASE_ACTION_COST + 50 : BASE_ACTION_COST;
+    const cost = this.entity.getActionCost(baseCost);
+    this.entity.consumeEnergy(cost);
+    const message = `${this.entity.name} moved to (${targetX}, ${targetY}).`;
+    engine.log(message);
+    if (destTile?.type === SHALLOW_WATER_TILE && this.entity.type === 'player') {
+      engine.log('You wade through the cold shallow water (+50 move energy cost).');
+    }
+
+    // 5. Active Trap Check
+    const trap = engine.map.getTrapAt(targetX, targetY);
+    if (trap && !trap.disarmed) {
+      trap.trigger(this.entity, engine);
+    }
+
+    // 5b. Surface Grid Step Effects (Ice Slide, Acid Burn, etc.)
+    if (engine.surfaces) {
+      const { energyPenalty } = engine.surfaces.handleEntityStep(
+        this.entity,
+        targetX,
+        targetY,
+        this.dx,
+        this.dy,
+        engine
+      );
+      if (energyPenalty > 0) {
+        this.entity.consumeEnergy(energyPenalty);
+      }
+    }
+
+    // 5c. Dispatch onMove Hook Event
+    HookDispatcher.dispatch('onMove', {
+      engine,
+      attacker: this.entity,
+      position: { x: targetX, y: targetY },
+      dx: this.dx,
+      dy: this.dy,
+    });
+
+    // 5d. Passive Perception Check for Player
+    if (this.entity.type === 'player') {
+      const player = this.entity as Player;
+      const passivePerception = 10 + Math.floor((player.intelligence + player.dexterity + player.level) / 4);
+      for (let pdy = -1; pdy <= 1; pdy++) {
+        for (let pdx = -1; pdx <= 1; pdx++) {
+          if (pdx === 0 && pdy === 0) continue;
+          const nx = targetX + pdx;
+          const ny = targetY + pdy;
+          if (!engine.map.inBounds(nx, ny)) continue;
+
+          // Check secret door
+          const t = engine.map.getTile(nx, ny);
+          if (t && (t.type === 'secret_door' || t.hidden)) {
+            if (passivePerception >= 15) {
+              engine.map.setTile(nx, ny, { ...TILES.DOOR_CLOSED, hidden: false });
+              engine.log('Your keen senses detect a secret door hidden in the wall!');
+            }
+          }
+
+          // Check hidden trap
+          const tr = engine.map.getTrapAt(nx, ny);
+          if (tr && !tr.revealed) {
+            if (passivePerception >= tr.concealment + 2) {
+              tr.revealed = true;
+              engine.map.setTile(nx, ny, TILES.TRAP);
+              engine.log(`Your sharp eyes notice a hidden ${tr.type} trap!`);
+            }
+          }
+        }
+      }
+    }
+
+    // 6. Stairs, Portals, and Town-Return Fixtures Check for Player
+    // 6. Stairs, Portals, and Town-Return Fixtures Check for Player
+    if (this.entity.type === 'player') {
+      const destTile = engine.map.getTile(targetX, targetY);
+      const handlerId = destTile?.interactionHandlerId ?? destTile?.type;
+      if (handlerId === 'stairs_down' || destTile?.isStairsDown) {
+        engine.log("You stand upon stairs leading down. Press '>' or [Enter] to descend.");
+      } else if (handlerId === 'stairs_up' || destTile?.isStairsUp) {
+        engine.log("You stand upon stairs leading up. Press '<' or [Enter] to ascend.");
+      } else if (handlerId === 'gateway_valhalla') {
+        engine.log('*** You step into the shimmering Gateway to Valhalla! ***');
+        engine.gameState?.triggerVictory(engine, (engine as any).profileManager);
+        engine.changeFloor(0, { x: 25, y: 23 });
+      } else if (handlerId === 'runic_conduit') {
+        const conduit = engine.townReturnManager?.getOrCreateConduit(engine.currentFloor, { x: targetX, y: targetY });
+        if (conduit && !conduit.ritualActive) {
+          if (engine.onTownReturnInteract) {
+            engine.onTownReturnInteract(
+              { type: 'runic_conduit', position: { x: targetX, y: targetY }, fixtureData: conduit },
+              () => conduit.startRitual(engine),
+              () => {
+                this.entity.energy += cost;
+              }
+            );
+          } else {
+            conduit.startRitual(engine);
+          }
+        }
+      } else if (handlerId === 'conduit_node') {
+        const conduit = engine.townReturnManager?.getOrCreateConduit(engine.currentFloor, { x: targetX, y: targetY });
+        if (conduit) {
+          conduit.checkNodeStep(engine, targetX, targetY);
+        }
+      } else if (handlerId === 'valkyrie_sprint') {
+        if (engine.townReturnManager && !engine.townReturnManager.valkyrieGauntlet.active) {
+          if (engine.onTownReturnInteract) {
+            engine.onTownReturnInteract(
+              { type: 'valkyrie_sprint', position: { x: targetX, y: targetY }, fixtureData: engine.townReturnManager.valkyrieGauntlet },
+              () => engine.townReturnManager.valkyrieGauntlet.startGauntlet(engine),
+              () => {
+                this.entity.energy += cost;
+              }
+            );
+          } else {
+            engine.townReturnManager.valkyrieGauntlet.startGauntlet(engine);
+          }
+        }
+      } else if (handlerId === 'dwarven_winch') {
+        const winch = engine.townReturnManager?.getOrCreateWinch(engine.currentFloor, { x: targetX, y: targetY });
+        if (winch) {
+          if (engine.onTownReturnInteract) {
+            engine.onTownReturnInteract(
+              { type: 'dwarven_winch', position: { x: targetX, y: targetY }, fixtureData: winch },
+              () => {
+                if (engine.onWinchInteract) {
+                  engine.onWinchInteract(winch);
+                }
+              },
+              () => {
+                this.entity.energy += cost;
+              }
+            );
+          } else if (engine.onWinchInteract) {
+            engine.onWinchInteract(winch);
+          } else {
+            engine.log('You stand before the Dwarven Counterweight Winch. Access the hopper to balance weight.');
+          }
+        }
+      } else if (handlerId === 'town_portal') {
+        const portal = engine.townReturnManager?.townPortal;
+        if (portal && portal.active) {
+          if (engine.onTownReturnInteract) {
+            engine.onTownReturnInteract(
+              { type: 'town_portal', position: { x: targetX, y: targetY }, fixtureData: portal },
+              () => portal.teleportToDepths(engine),
+              () => {
+                this.entity.energy += cost;
+              }
+            );
+          } else {
+            portal.teleportToDepths(engine);
+          }
+        }
+      } else if (handlerId === 'altar_tyr') {
+        const isPurified = engine.getWorldFlag('tyr_purified');
+        const isDesecrated = engine.getWorldFlag('tyr_desecrated');
+        if (isPurified) {
+          engine.log('The purified Altar of Tyr radiates peace. The runes remain holy and silent.');
+        } else if (isDesecrated) {
+          engine.log('The shattered Altar of Tyr lies cold and ruined. Its power is spent.');
+        } else {
+          const choiceDef = engine.manifest?.choices?.['altar_tyr'];
+          if (choiceDef) {
+            if (engine.onChoiceInteract) {
+              engine.onChoiceInteract(
+                choiceDef,
+                (optionId: string) => {
+                  engine.handlePlayerAction(new ExecuteChoiceAction(this.entity as Player, choiceDef, optionId));
+                },
+                () => {
+                  this.entity.energy += cost;
+                }
+              );
+            } else {
+              engine.log('You stand before the Ancient Altar of Tyr. Its divine power awaits your decision.');
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      success: true,
+      cost,
+      message,
+    };
+  }
+}

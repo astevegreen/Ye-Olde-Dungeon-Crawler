@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Castle of the Winds</title>
+    <style>
+      :root {
+        --ui-bg: #0a0b10;
+        --ui-panel: #c0c0c0;
+        --ui-border-light: #ffffff;
+        --ui-border-dark: #404040;
+        --ui-text: #000000;
+        --ui-titlebar-start: #000080;
+        --ui-titlebar-end: #1084d0;
+        --ui-titlebar-text: #ffffff;
+        --ui-accent: #3b82f6;
+        --ui-font-family: "Courier New", Courier, "MS Sans Serif", monospace;
+      }
+
+      *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html, body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: var(--ui-bg, #0a0b10);
+        color: #d1d5db;
+        font-family: var(--ui-font-family, "Courier New", Courier, "MS Sans Serif", monospace);
+        user-select: none;
+        -webkit-user-select: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #app {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+      #game-canvas {
+        display: block;
+        background-color: #0d0e15;
+        box-shadow: 0 0 32px rgba(0, 0, 0, 0.9), inset 0 0 2px rgba(255, 255, 255, 0.05);
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+      }
+
+      /* In-game Floating HUD Bar Controls */
+      #game-overlay-controls {
+        position: absolute;
+        top: 8px;
+        right: 14px;
+        z-index: 40;
+        display: flex;
+        gap: 8px;
+      }
+
+      /* Windows 3.1 / DOS Retro UI Dialog */
+      .retro-window-overlay {
+        position: absolute;
+        inset: 0;
+        background-color: rgba(10, 11, 16, 0.82);
+        backdrop-filter: blur(2px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+      }
+
+      .retro-window {
+        width: 620px;
+        max-width: 95vw;
+        background-color: var(--ui-panel, #c0c0c0);
+        color: var(--ui-text, #000000);
+        border: 2px solid var(--ui-border-light, #ffffff);
+        border-right-color: var(--ui-border-dark, #404040);
+        border-bottom-color: var(--ui-border-dark, #404040);
+        box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.85);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .retro-titlebar {
+        background: linear-gradient(90deg, var(--ui-titlebar-start, #000080), var(--ui-titlebar-end, #1084d0));
+        color: var(--ui-titlebar-text, #ffffff);
+        font-size: 13px;
+        font-weight: bold;
+        padding: 4px 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--ui-border-dark, #404040);
+      }
+
+      .retro-titlebar-title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        letter-spacing: 0.5px;
+      }
+
+      .retro-window-body {
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .retro-banner {
+        text-align: center;
+        border: 2px groove #ffffff;
+        background: #000080;
+        color: #fef08a;
+        padding: 8px 12px;
+        box-shadow: inset 1px 1px 0 #000;
+      }
+
+      .retro-banner-title {
+        font-size: 18px;
+        font-weight: bold;
+        letter-spacing: 2px;
+        text-shadow: 2px 2px 0 #000000;
+      }
+
+      .retro-banner-sub {
+        font-size: 11px;
+        color: #93c5fd;
+        margin-top: 2px;
+      }
+
+      .retro-columns {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 12px;
+      }
+
+      .retro-col {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .retro-label {
+        font-size: 12px;
+        font-weight: bold;
+        color: #1f2937;
+      }
+
+      .retro-inset-list {
+        background-color: #ffffff;
+        border: 2px solid #808080;
+        border-right-color: #ffffff;
+        border-bottom-color: #ffffff;
+        height: 200px;
+        overflow-y: auto;
+        font-size: 12px;
+        color: #000000;
+      }
+
+      .roster-empty-notice {
+        padding: 24px 12px;
+        text-align: center;
+        color: #6b7280;
+        font-style: italic;
+      }
+
+      .roster-item {
+        padding: 6px 8px;
+        border-bottom: 1px dotted #d1d5db;
+        cursor: pointer;
+        transition: background 0.1s;
+      }
+
+      .roster-item:hover:not(.selected) {
+        background-color: #eff6ff;
+      }
+
+      .roster-item.selected {
+        background-color: #000080;
+        color: #ffffff;
+      }
+
+      .roster-item-header {
+        display: flex;
+        justify-content: space-between;
+        font-weight: bold;
+      }
+
+      .roster-name {
+        font-size: 13px;
+      }
+
+      .roster-date {
+        font-size: 10px;
+        opacity: 0.85;
+      }
+
+      .roster-item-details {
+        font-size: 11px;
+        margin-top: 3px;
+        display: flex;
+        gap: 5px;
+        opacity: 0.9;
+      }
+
+      .retro-btn-row {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      /* Beveled Classic Windows 3.1 Buttons */
+      .win-btn {
+        background-color: #c0c0c0;
+        color: #000000;
+        border-top: 2px solid #ffffff;
+        border-left: 2px solid #ffffff;
+        border-right: 2px solid #404040;
+        border-bottom: 2px solid #404040;
+        padding: 4px 10px;
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: bold;
+        cursor: pointer;
+        text-align: center;
+      }
+
+      .win-btn:active:not(:disabled) {
+        border-top: 2px solid #404040;
+        border-left: 2px solid #404040;
+        border-right: 2px solid #ffffff;
+        border-bottom: 2px solid #ffffff;
+        padding: 5px 9px 3px 11px;
+      }
+
+      .win-btn:disabled {
+        color: #808080;
+        text-shadow: 1px 1px 0 #ffffff;
+        cursor: not-allowed;
+      }
+
+      .win-btn-sm {
+        padding: 2px 8px;
+        font-size: 11px;
+      }
+
+      .primary-btn {
+        border-color: #ffffff #000000 #000000 #ffffff;
+        outline: 1px solid #000000;
+      }
+
+      .danger-btn {
+        color: #7f1d1d;
+      }
+
+      .create-btn {
+        width: 100%;
+        margin-top: 6px;
+        padding: 6px;
+      }
+
+      /* Fieldset Groups */
+      .retro-group {
+        border: 2px groove #ffffff;
+        padding: 8px 10px;
+        background: #c8c8c8;
+      }
+
+      .retro-group legend {
+        padding: 0 4px;
+        font-size: 11px;
+        font-weight: bold;
+        color: #1e3a8a;
+      }
+
+      .retro-input {
+        width: 100%;
+        padding: 4px 6px;
+        background-color: #ffffff;
+        border: 2px solid #808080;
+        border-right-color: #ffffff;
+        border-bottom-color: #ffffff;
+        color: #000000;
+        font-family: inherit;
+        font-size: 13px;
+        margin-top: 4px;
+      }
+
+      .retro-hero-preset {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 4px;
+        flex-wrap: wrap;
+      }
+
+      .preset-label {
+        font-size: 10px;
+        color: #4b5563;
+      }
+
+      .preset-tag {
+        font-size: 10px;
+        padding: 1px 6px;
+        background: #e5e7eb;
+        border: 1px solid #9ca3af;
+        cursor: pointer;
+        color: #111827;
+      }
+
+      .preset-tag:hover {
+        background: #bfdbfe;
+        border-color: #3b82f6;
+      }
+
+      .retro-note {
+        font-size: 11px;
+        color: #374151;
+        margin-bottom: 6px;
+      }
+
+      .retro-statusbar {
+        border-top: 2px solid #808080;
+        border-left: 2px solid #808080;
+        border-right: 2px solid #ffffff;
+        border-bottom: 2px solid #ffffff;
+        background: #d8d8d8;
+        padding: 3px 8px;
+        font-size: 11px;
+        display: flex;
+        justify-content: space-between;
+        color: #111827;
+      }
+
+      .version-tag {
+        font-weight: bold;
+        color: #4b5563;
+      }
+
+      /* Stat Roller & Valhalla styling */
+      .stat-roller-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        margin-bottom: 6px;
+      }
+      .stat-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #dfdfdf;
+        padding: 2px 4px;
+        border: 1px solid #a0a0a0;
+      }
+      .stat-name {
+        font-size: 11px;
+        font-weight: bold;
+        color: #1f2937;
+        width: 30px;
+      }
+      .stat-value {
+        font-size: 12px;
+        font-weight: bold;
+        color: #000080;
+        min-width: 20px;
+        text-align: center;
+      }
+      .stat-adj-btn {
+        width: 20px;
+        padding: 1px 0;
+        text-align: center;
+        font-weight: bold;
+      }
+      .derived-preview-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        background: #e2e8f0;
+        border: 1px inset #808080;
+        padding: 4px;
+        font-size: 10px;
+        text-align: center;
+        color: #1e293b;
+      }
+      .gender-btn-group button.active,
+      .difficulty-btn-group button.active {
+        background: #000080 !important;
+        color: #ffffff !important;
+      }
+      .valhalla-item {
+        padding: 4px 6px;
+        border-bottom: 1px dotted #ccc;
+        cursor: pointer;
+        font-size: 11px;
+      }
+      .valhalla-item:hover:not(.selected) {
+        background: #eff6ff;
+      }
+      .valhalla-item.selected {
+        background: #000080;
+        color: #ffffff;
+      }
+      .valhalla-badge-win {
+        color: #16a34a;
+        font-weight: bold;
+      }
+      .valhalla-badge-loss {
+        color: #dc2626;
+        font-weight: bold;
+      }
+      .valhalla-item.selected .valhalla-badge-win {
+        color: #86efac;
+      }
+      .valhalla-item.selected .valhalla-badge-loss {
+        color: #fca5a5;
+      }
+      .save-drop-overlay {
+        position: absolute;
+        inset: 0;
+        background-color: rgba(10, 15, 30, 0.88);
+        backdrop-filter: blur(4px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 250;
+        pointer-events: none;
+      }
+      .save-drop-box {
+        border: 3px dashed #38bdf8;
+        background: rgba(15, 23, 42, 0.95);
+        color: #f8fafc;
+        padding: 30px 50px;
+        text-align: center;
+        box-shadow: 0 0 24px rgba(56, 189, 248, 0.4);
+      }
+      .storage-badge-pill {
+        font-size: 10px;
+        font-weight: bold;
+        padding: 2px 6px;
+        border: 1px solid #64748b;
+        background: #e2e8f0;
+        border-radius: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <!-- Widescreen Flank Containers Layout -->
+      <div id="widescreen-layout" style="display: none;">
+        <aside id="left-flank" class="flank-column flank-left" aria-label="World Ledger and Reputation"></aside>
+        <main id="center-viewport">
+          <!-- Main Game Letterboxed Container -->
+          <div id="game-container" style="display: flex; position: relative; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 0 32px rgba(0, 0, 0, 0.9);">
+            <!-- Top Header Bar -->
+            <div id="game-header-bar" class="retro-window" style="width: 100%; border-bottom: none; border-radius: 0; box-shadow: none;">
+              <div class="retro-titlebar" style="display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; flex-wrap: wrap; gap: 6px;">
+                <!-- Left: Hero info -->
+                <div id="header-info-col" style="display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: bold; color: #f8fafc; text-shadow: 1px 1px 0 #000; flex-shrink: 0;">
+                  <span id="header-name">🛡️ Adventurer</span>
+                  <span style="color: #64748b;">|</span>
+                  <span id="header-floor" style="color: #fde047;">Floor 1</span>
+                </div>
+                <!-- Middle: Position & Turn telemetry readout -->
+                <div id="header-telemetry-col" style="display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: bold; font-family: monospace;">
+                  <span id="header-pos" style="color: #67e8f9;">POS: (0, 0)</span>
+                  <span style="color: #64748b;">|</span>
+                  <span id="header-turns" style="color: #93c5fd;">Turn: 0</span>
+                </div>
+                <!-- Right: Action / Modal buttons -->
+                <div id="header-actions-col" style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                  <button id="btn-map" class="win-btn win-btn-sm" title="Explored Dungeon Map Viewer (M)">🗺️ [M] Map</button>
+                  <button id="btn-help-card" class="win-btn win-btn-sm" title="Open Context Help (F1 / ?)">💡 [?] Help</button>
+                  <button id="btn-compendium" class="win-btn win-btn-sm" title="Open Slayer's Compendium & Codex (B)">📖 [B] Codex</button>
+                  <button id="btn-cmd-palette" class="win-btn win-btn-sm" title="Open Quick Command Palette (Shift+? / Ctrl+K)">⌨️ Cmds</button>
+                  <button id="btn-dev-diagnostics" class="win-btn win-btn-sm" title="Open Developer Diagnostics (F2 or `)">🛠️ [F2] Dev</button>
+                  <button id="btn-save-title" class="win-btn win-btn-sm" title="Save character and return to Title screen">💾 [Q] Save &amp; Quit</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Canvas -->
+            <canvas id="game-canvas"></canvas>
+
+            <!-- Ground Status & Tile Inspection Bar -->
+            <div id="ground-status-bar"></div>
+
+            <!-- Bottom Controls Bar -->
+            <div id="game-bottom-bar" style="width: 100%; display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 6px; background: var(--ui-panel, #0f172a); border: 1px solid var(--ui-border-dark, #334155); border-top: none; justify-content: center; align-items: center;">
+              <button id="btn-hud-inv" class="win-btn win-btn-sm" title="Inventory & Equipment (I)">🎒 [I] Inv</button>
+              <button id="btn-hud-cast" class="win-btn win-btn-sm" title="Spellbook & Cast (Z/C)">⚡ [Z] Cast</button>
+              <button id="btn-hud-look" class="win-btn win-btn-sm" title="Inspect / Look (L/X)">👁️ [L] Look</button>
+              <button id="btn-hud-rest" class="win-btn win-btn-sm" title="Rest until full HP/MP (R)">💤 [R] Rest</button>
+              <button id="btn-hud-search" class="win-btn win-btn-sm" title="Search secret doors / traps (S)">🔍 [S] Search</button>
+              <button id="btn-hud-wait" class="win-btn win-btn-sm" title="Pass Turn (Space / .)">⏳ [.] Wait</button>
+              <button id="btn-hud-stairs" class="win-btn win-btn-sm" title="Stairs Up / Down (&lt; / &gt;)">🪜 [&lt;/&gt;] Stairs</button>
+            </div>
+          </div>
+        </main>
+        <aside id="right-flank" class="flank-column flank-right" aria-label="Auto-Inking Journal and Cartographer"></aside>
+      </div>
+
+      <!-- Windows 3.1 / DOS Character Roster Dialog -->
+      <div id="title-screen" class="retro-window-overlay">
+        <div class="retro-window" style="width: 700px;">
+          <div class="retro-titlebar">
+            <div class="retro-titlebar-title">
+              <span>🛡️</span>
+              <span>Castle of the Winds - Character Roster</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button id="btn-title-back-menu" class="win-btn win-btn-sm" style="padding: 1px 6px; font-size: 11px;">⮌ Main Menu</button>
+              <div style="font-size: 10px; opacity: 0.9;">DOS / Win 3.1</div>
+            </div>
+          </div>
+
+          <div class="retro-window-body">
+            <div class="retro-banner">
+              <div class="retro-banner-title">CASTLE OF THE WINDS</div>
+              <div class="retro-banner-sub">A Fantasy Role-Playing Adventure (1989-1993)</div>
+            </div>
+
+            <div class="retro-columns">
+              <!-- Left: Saved Profiles -->
+              <div class="retro-col roster-col">
+                <label class="retro-label">Saved Adventurers:</label>
+                <div id="roster-list" class="retro-inset-list" tabindex="0">
+                  <!-- Dynamic roster items inserted here -->
+                </div>
+                <div class="retro-btn-row">
+                  <button id="btn-resume" class="win-btn primary-btn" disabled>Resume Quest</button>
+                  <button id="btn-export" class="win-btn" disabled>💾 Export (.cotw)</button>
+                  <button id="btn-delete" class="win-btn danger-btn" disabled>Delete</button>
+                </div>
+                <div style="margin-top: 4px; display: flex; gap: 4px;">
+                  <button id="btn-title-savecode" class="win-btn" style="flex: 1;" disabled>📋 Save Code</button>
+                  <button id="btn-valhalla" class="win-btn" style="flex: 1;">🏆 Valhalla</button>
+                </div>
+                <button id="btn-title-load-autosave" class="win-btn" style="width: 100%; margin-top: 4px; display: none; background: #064e3b; color: #a7f3d0; border-color: #34d399;">⚡ Load Autosave</button>
+              </div>
+
+              <!-- Right: Roll New Hero & Import -->
+              <div class="retro-col new-char-col">
+                <fieldset class="retro-group">
+                  <legend>Roll New Adventurer</legend>
+                  <div style="display: flex; gap: 6px; align-items: center;">
+                    <label class="retro-label" for="new-hero-name" style="white-space: nowrap;">Name:</label>
+                    <input type="text" id="new-hero-name" class="retro-input" placeholder="e.g. Sven, Astrid" maxlength="24" value="Sven" style="margin-top: 0;" />
+                  </div>
+                  <div class="retro-hero-preset">
+                    <span class="preset-label">Preset:</span>
+                    <button type="button" class="preset-tag" data-name="Sven">Sven</button>
+                    <button type="button" class="preset-tag" data-name="Astrid">Astrid</button>
+                    <button type="button" class="preset-tag" data-name="Bjorn">Bjorn</button>
+                    <button type="button" class="preset-tag" data-name="Freya">Freya</button>
+                  </div>
+
+                  <!-- Gender Toggle -->
+                  <div style="margin-top: 6px; display: flex; align-items: center; justify-content: space-between;">
+                    <span class="retro-label">Hero Gender:</span>
+                    <div class="gender-btn-group" style="display: flex; gap: 4px;">
+                      <button type="button" id="btn-gender-male" class="win-btn win-btn-sm active">⚔️ Male</button>
+                      <button type="button" id="btn-gender-female" class="win-btn win-btn-sm">🛡️ Female</button>
+                    </div>
+                  </div>
+
+                  <!-- Difficulty Selection -->
+                  <div style="margin-top: 6px; display: flex; align-items: center; justify-content: space-between;">
+                    <span class="retro-label">Difficulty:</span>
+                    <div class="difficulty-btn-group" style="display: flex; gap: 4px;">
+                      <button type="button" id="btn-diff-easy" class="win-btn win-btn-sm" data-diff="easy" title="Max Floor: 25">Easy (25F)</button>
+                      <button type="button" id="btn-diff-medium" class="win-btn win-btn-sm active" data-diff="medium" title="Max Floor: 37">Med (37F)</button>
+                      <button type="button" id="btn-diff-hard" class="win-btn win-btn-sm" data-diff="hard" title="Max Floor: 50">Hard (50F)</button>
+                    </div>
+                  </div>
+
+                  <!-- Stat Rolling & Adjustment -->
+                  <div style="margin-top: 8px; border-top: 1px dashed #9ca3af; padding-top: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                      <button type="button" id="btn-roll-dice" class="win-btn win-btn-sm" title="Re-roll 3d6 heroic attributes">🎲 Roll 3d6</button>
+                      <span style="font-size: 11px; font-weight: bold; color: #1e3a8a;">Pool: <span id="roller-pool-points">5</span> pts</span>
+                    </div>
+
+                    <div class="stat-roller-grid">
+                      <div class="stat-row">
+                        <span class="stat-name">STR:</span>
+                        <button type="button" class="win-btn win-btn-sm stat-adj-btn" id="btn-dec-str">-</button>
+                        <span class="stat-value" id="val-str">12</span>
+                        <button type="button" class="win-btn win-btn-sm stat-adj-btn" id="btn-inc-str">+</button>
+                      </div>
+                      <div class="stat-row">
+                        <span class="stat-name">INT:</span>
+                        <button type="button" class="win-btn win-btn-sm stat-adj-btn" id="btn-dec-int">-</button>
+                        <span class="stat-value" id="val-int">12</span>
+                        <button type="button" class="win-btn win-btn-sm stat-adj-btn" id="btn-inc-int">+</button>
+                      </div>
+                      <div class="stat-row">
+                        <span class="stat-name">CON:</span>
+                        <button type="button" class="win-btn win-btn-sm stat-adj-btn" id="btn-dec-con">-</button>
+                        <span class="stat-value" id="val-con">12</span>
+                        <button type="button" class="win-btn win-btn-sm stat-adj-btn" id="btn-inc-con">+</button>
+                      </div>
+                      <div class="stat-row">
+                        <span class="stat-name">DEX:</span>
+                        <button type="button" class="win-btn win-btn-sm stat-adj-btn" id="btn-dec-dex">-</button>
+                        <span class="stat-value" id="val-dex">12</span>
+                        <button type="button" class="win-btn win-btn-sm stat-adj-btn" id="btn-inc-dex">+</button>
+                      </div>
+                    </div>
+
+                    <!-- Derived Stats Live Preview -->
+                    <div class="derived-preview-grid">
+                      <div>HP: <b id="preview-hp">34</b></div>
+                      <div>Mana: <b id="preview-mana">29</b></div>
+                      <div>Carry: <b id="preview-weight">27 kg</b></div>
+                    </div>
+                  </div>
+
+                  <button type="button" id="btn-create-embark" class="win-btn create-btn primary-btn" style="margin-top: 8px;">Create &amp; Embark</button>
+                </fieldset>
+
+                <fieldset class="retro-group" style="margin-top: 8px;">
+                  <legend>Import External Hero / Saga</legend>
+                  <p class="retro-note">Restore a .cotw backup file or import a shared saga:</p>
+                  <input type="file" id="import-file-input" accept=".cotw,.sav,.json" style="display: none;" />
+                  <div style="display: flex; gap: 4px;">
+                    <button type="button" id="btn-import-browse" class="win-btn" style="flex: 1;">Browse File...</button>
+                    <button type="button" id="btn-title-paste-code" class="win-btn" style="flex: 1;">📋 Paste Save</button>
+                    <button type="button" id="btn-title-import-saga" class="win-btn" style="flex: 1;">📜 Import Saga</button>
+                  </div>
+                </fieldset>
+              </div>
+            </div>
+
+            <div class="retro-statusbar" style="display: flex; justify-content: space-between; align-items: center;">
+              <span id="title-status" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Select a character or roll a new hero to embark.</span>
+              <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                <span id="title-storage-status" class="storage-badge-pill">Storage: Checking...</span>
+                <span class="version-tag">v1.0.0-final</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Windows 3.1 / Hall of Valhalla Leaderboard Modal -->
+      <div id="valhalla-modal" class="retro-window-overlay" style="display: none;">
+        <div class="retro-window" style="width: 720px;">
+          <div class="retro-titlebar">
+            <div class="retro-titlebar-title">
+              <span>🏆</span>
+              <span>Hall of Valhalla - Legends of Midgard</span>
+            </div>
+            <button id="btn-valhalla-close-x" class="win-btn win-btn-sm" style="padding: 0 5px; font-weight: bold;">✕</button>
+          </div>
+
+          <div class="retro-window-body">
+            <div class="retro-banner" style="background: #1e1b4b;">
+              <div class="retro-banner-title" style="color: #fde047;">HALL OF VALHALLA</div>
+              <div class="retro-banner-sub">Eternal Honors of Midgard Champions</div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px;">
+              <div>
+                <label class="retro-label">Honored Champions:</label>
+                <div id="valhalla-list" class="retro-inset-list" style="height: 220px;">
+                  <!-- dynamic valhalla entries -->
+                </div>
+              </div>
+
+              <div>
+                <label class="retro-label">Run Epitaph:</label>
+                <div id="valhalla-epitaph-card" class="retro-inset-list" style="height: 220px; padding: 6px; font-family: monospace; font-size: 11px; white-space: pre-wrap; overflow-y: auto; background: #0f172a; color: #f8fafc;">
+                  Select a champion to inspect their saga.
+                </div>
+              </div>
+            </div>
+
+            <div class="retro-statusbar">
+              <div class="retro-btn-row">
+                <button id="btn-valhalla-export" class="win-btn" disabled>📋 Export Epitaph</button>
+                <button id="btn-valhalla-share" class="win-btn" disabled>🔗 Share Saga</button>
+                <button id="btn-valhalla-import" class="win-btn">📥 Import Saga</button>
+                <button id="btn-valhalla-close" class="win-btn primary-btn">Close</button>
+              </div>
+              <span id="valhalla-status" style="font-size: 11px; color: #374151; align-self: center;">Valhalla Leaderboard</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Windows 3.1 / Game Over & Victory Modal Overlay -->
+      <div id="game-over-modal" class="retro-window-overlay" style="display: none; z-index: 120;">
+        <div class="retro-window" style="width: 580px;">
+          <div class="retro-titlebar">
+            <div class="retro-titlebar-title">
+              <span id="game-over-icon">⚔️</span>
+              <span id="game-over-title">Fallen in Battle</span>
+            </div>
+          </div>
+
+          <div class="retro-window-body">
+            <div id="game-over-banner" class="retro-banner" style="background: #7f1d1d;">
+              <div id="game-over-banner-title" class="retro-banner-title">FALLEN IN BATTLE</div>
+              <div id="game-over-banner-sub" class="retro-banner-sub">Your mortal journey has ended.</div>
+            </div>
+
+            <div>
+              <pre id="game-over-summary" class="retro-inset-list" style="height: 200px; padding: 8px; font-family: monospace; font-size: 11px; white-space: pre-wrap; background: #0f172a; color: #f8fafc; overflow-y: auto;"></pre>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 4px; gap: 8px;">
+              <span id="game-over-score-badge" style="font-weight: bold; font-size: 13px; color: #1e3a8a;">Valhalla Score: 0</span>
+              <div style="display: flex; gap: 6px;">
+                <button id="btn-game-over-autosave" class="win-btn" style="padding: 6px 12px; display: none; background: #064e3b; color: #a7f3d0; border-color: #34d399;">⚡ Load Autosave</button>
+                <button id="btn-game-over-share" class="win-btn" style="padding: 6px 12px;">🔗 Share Saga</button>
+                <button id="btn-game-over-export" class="win-btn" style="padding: 6px 12px;">💾 Export Run (.cotw)</button>
+                <button id="btn-game-over-return" class="win-btn primary-btn" style="padding: 6px 14px;">Return to Title Screen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Windows 3.1 / Developer Diagnostic Flight Recorder Modal -->
+      <div id="diagnostic-modal" class="retro-window-overlay" style="display: none; z-index: 150;">
+        <div class="retro-window" style="width: 820px; max-height: 90vh;">
+          <div class="retro-titlebar">
+            <div class="retro-titlebar-title">
+              <span>🛠️</span>
+              <span>Developer Diagnostic Flight Recorder</span>
+            </div>
+            <button id="btn-diag-close-title" class="win-btn win-btn-sm" style="padding: 0 5px; font-weight: bold;">✕</button>
+          </div>
+
+          <div class="retro-window-body">
+            <div class="retro-banner" style="background: #1e293b;">
+              <div class="retro-banner-title">ENGINE TELEMETRY &amp; FLIGHT RECORDER</div>
+              <div class="retro-banner-sub">Rolling telemetry buffer (150 events) with Markdown report generation for Antigravity debugging.</div>
+            </div>
+
+            <div style="flex: 1; min-height: 280px; max-height: 55vh; display: flex; flex-direction: column;">
+              <pre id="diagnostic-report-text" class="retro-inset-list" style="flex: 1; padding: 10px; font-family: 'Consolas', 'Courier New', monospace; font-size: 11px; white-space: pre-wrap; background: #090d16; color: #38bdf8; overflow-y: auto; user-select: text; border: 2px inset #ffffff;"></pre>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; gap: 6px;">
+                <button id="btn-diag-copy" class="win-btn primary-btn" style="font-weight: bold;">📋 Copy Diagnostics</button>
+                <button id="btn-diag-download" class="win-btn">💾 Download .md</button>
+                <button id="btn-diag-clear" class="win-btn danger-btn">Clear Log</button>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span id="diagnostic-toast" style="font-size: 11px; color: #15803d; font-weight: bold; display: none;">Diagnostic report copied to clipboard for Antigravity debugging</span>
+                <button id="btn-diag-close" class="win-btn">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Windows 3.1 / Crash Fallback Modal -->
+      <div id="crash-modal" class="retro-window-overlay" style="display: none; z-index: 200;">
+        <div class="retro-window" style="width: 640px;">
+          <div class="retro-titlebar" style="background: linear-gradient(90deg, #991b1b, #ef4444);">
+            <div class="retro-titlebar-title">
+              <span>⚠️</span>
+              <span>Castle of the Winds - Application Error</span>
+            </div>
+          </div>
+
+          <div class="retro-window-body">
+            <div class="retro-banner" style="background: #7f1d1d;">
+              <div class="retro-banner-title">UNHANDLED RUNTIME ERROR</div>
+              <div class="retro-banner-sub">An unexpected error occurred. A diagnostic telemetry report has been prepared.</div>
+            </div>
+
+            <pre id="crash-error-text" class="retro-inset-list" style="height: 160px; padding: 8px; font-family: monospace; font-size: 11px; white-space: pre-wrap; background: #1e1b26; color: #f87171; overflow-y: auto;"></pre>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 6px;">
+              <button id="btn-crash-copy" class="win-btn primary-btn">📋 Copy Crash Report</button>
+              <button id="btn-crash-reload" class="win-btn">Reload Game</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

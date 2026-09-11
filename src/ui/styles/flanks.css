@@ -1,0 +1,581 @@
+/* ==========================================================================
+   Widescreen Flank Containers & Thematic Gutter Framework
+   ========================================================================== */
+
+#widescreen-layout {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--ui-bg, #0a0b10);
+}
+
+#center-viewport {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  z-index: 10;
+}
+
+/* Base Flank Columns */
+.flank-column {
+  flex: 0 0 280px;
+  width: 280px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 20;
+  padding: 12px 10px;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+}
+
+.flank-left {
+  border-right: 2px solid #332415;
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.65);
+}
+
+.flank-right {
+  flex: 0 0 310px;
+  width: 310px;
+  border-left: 2px solid #332415;
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.65);
+}
+
+/* ==========================================================================
+   Responsive Collapse: Viewport < 1280px or Aspect Ratio < 16:10
+   Collapses side flanks to ensure layout immunity and preserve center canvas.
+   ========================================================================== */
+@media (max-width: 1280px), (max-aspect-ratio: 16/10) {
+  #left-flank,
+  #right-flank,
+  .flank-column {
+    display: none !important;
+  }
+
+  #center-viewport {
+    width: 100vw;
+    height: 100vh;
+  }
+}
+
+/* ==========================================================================
+   Thematic Styling: Parchment Theme (Default CotW Norse Fantasy)
+   ========================================================================== */
+.flank-theme-parchment {
+  background: radial-gradient(circle at 50% 10%, #2a1f15 0%, #17110c 100%);
+  color: #e6d3b3;
+  border-color: #5c442a;
+  scrollbar-color: #5c442a #17110c;
+  font-family: "Georgia", "Times New Roman", "MS Sans Serif", serif;
+}
+
+.flank-theme-parchment::-webkit-scrollbar {
+  width: 6px;
+}
+.flank-theme-parchment::-webkit-scrollbar-track {
+  background: #17110c;
+}
+.flank-theme-parchment::-webkit-scrollbar-thumb {
+  background: #5c442a;
+  border-radius: 3px;
+}
+
+/* Flank Module Structure */
+.flank-module {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+/* ==========================================================================
+   World Ledger Module (Left Flank)
+   ========================================================================== */
+.ledger-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+.ledger-header,
+.journal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.35);
+  color: #f7e7b4;
+}
+
+.ledger-header-icon,
+.feather-quill-svg {
+  color: #d4af37;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+  flex-shrink: 0;
+}
+
+.ledger-title,
+.journal-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin: 0;
+  text-shadow: 1px 1px 2px #000000;
+}
+
+.ledger-section,
+.journal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(26, 19, 13, 0.7);
+  border: 1px solid rgba(139, 109, 67, 0.3);
+  border-radius: 4px;
+  padding: 10px;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.ledger-section-title,
+.journal-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #d1b88a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dotted rgba(139, 109, 67, 0.4);
+  padding-bottom: 4px;
+  margin: 0;
+}
+
+.ledger-empty-note {
+  font-size: 11px;
+  font-style: italic;
+  color: #8c7659;
+  text-align: center;
+  padding: 6px;
+}
+
+/* Reputation Entries */
+.ledger-reputation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reputation-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rep-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.rep-name {
+  font-weight: 600;
+  color: #edd8b4;
+}
+
+.rep-score-tag {
+  font-size: 10px;
+  font-weight: bold;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid currentColor;
+}
+
+.rep-bar-track {
+  position: relative;
+  height: 6px;
+  background: #110d09;
+  border: 1px solid #4a3723;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.rep-bar-center-mark {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.3);
+  z-index: 2;
+}
+
+.rep-bar-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+  border-radius: 2px;
+}
+
+/* Pacts & Boons */
+.pact-rewards-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.reward-pill {
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: #1f1710;
+  border: 1px solid #d4af37;
+  color: #fce77d;
+}
+
+.pact-chips-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pact-badge-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: rgba(43, 30, 20, 0.85);
+  border: 1px solid #845a2c;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #edd8b4;
+  cursor: help;
+  transition: border-color 0.15s;
+}
+
+.pact-badge-chip:hover {
+  border-color: #d4af37;
+  background: rgba(60, 42, 28, 0.95);
+}
+
+/* Chronicle Milestones / Wax Seals */
+.ledger-milestones-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.milestone-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: rgba(20, 15, 10, 0.6);
+  border: 1px solid #3d2a1a;
+  transition: all 0.2s ease;
+}
+
+.milestone-badge.completed {
+  border-color: #a67c38;
+  background: rgba(48, 33, 19, 0.85);
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.15);
+}
+
+.milestone-badge.uncompleted {
+  opacity: 0.55;
+  filter: grayscale(0.7);
+}
+
+.milestone-seal {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wax-seal-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.completed .seal-outer-rim {
+  fill: #8b1e1e;
+  stroke: #d4af37;
+  stroke-width: 1.5;
+}
+.completed .seal-inner-circle {
+  fill: #aa2727;
+  stroke: #751717;
+  stroke-width: 1;
+}
+
+.uncompleted .seal-outer-rim {
+  fill: #2c221a;
+  stroke: #4d3a2b;
+  stroke-width: 1;
+}
+.uncompleted .seal-inner-circle {
+  fill: #1d1610;
+}
+
+.seal-glyph {
+  position: relative;
+  z-index: 2;
+  font-size: 13px;
+}
+
+.seal-check {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  z-index: 3;
+  font-size: 10px;
+  font-weight: bold;
+  color: #38ef7d;
+  background: #0d1e13;
+  border: 1px solid #38ef7d;
+  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.milestone-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.milestone-name {
+  font-size: 11px;
+  font-weight: bold;
+  color: #f2e3c6;
+}
+
+.milestone-status {
+  font-size: 9px;
+  color: #bfa382;
+  text-transform: uppercase;
+}
+
+/* ==========================================================================
+   Auto-Inking Journal Module (Right Flank)
+   ========================================================================== */
+.journal-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  height: 100%;
+}
+
+.floor-pill {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: #2b1f15;
+  border: 1px solid #7c5c37;
+  color: #f7e7b4;
+}
+
+.cartographer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cartographer-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.cartographer-stats .stat-label {
+  color: #bfa382;
+}
+
+.cartographer-stats .stat-value {
+  font-weight: bold;
+  color: #ffd875;
+}
+
+.exploration-progress-track {
+  height: 6px;
+  background: #120e0a;
+  border: 1px solid #4a3723;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.exploration-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #785223, #d4af37);
+  transition: width 0.3s ease;
+}
+
+.cartographer-landmarks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.landmark-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(36, 26, 17, 0.9);
+  border: 1px solid #5a4128;
+  color: #edd8b4;
+}
+
+.landmark-tag.surveyed {
+  border-color: #8c6a38;
+  color: #ffefcf;
+}
+
+.landmark-tag.muted {
+  color: #7a6650;
+  font-style: italic;
+  border-color: #332415;
+}
+
+/* Chronicle Section */
+.chronicle-section {
+  flex: 1 1 auto;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chronicle-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chronicle-badge {
+  font-size: 9px;
+  color: #8c7659;
+}
+
+.chronicle-feed {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 4px;
+  margin-top: 6px;
+  max-height: 520px;
+  scrollbar-width: thin;
+}
+
+.chronicle-empty-prompt {
+  font-size: 11px;
+  font-style: italic;
+  color: #7d6852;
+  text-align: center;
+  padding: 16px 8px;
+  line-height: 1.4;
+}
+
+.chronicle-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px 8px;
+  background: rgba(22, 16, 11, 0.7);
+  border-left: 2px solid #5c442a;
+  border-radius: 0 3px 3px 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #edd8b4;
+}
+
+.chronicle-entry.entry-fresh {
+  animation: chronicle-fade-in 0.35s ease-out;
+}
+
+@keyframes chronicle-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chronicle-type-boss_slain {
+  border-left-color: #e53935;
+  background: rgba(54, 18, 18, 0.75);
+}
+
+.chronicle-type-pact_sealed {
+  border-left-color: #d4af37;
+  background: rgba(46, 36, 17, 0.75);
+}
+
+.chronicle-type-secret_door {
+  border-left-color: #00acc1;
+  background: rgba(14, 39, 43, 0.75);
+}
+
+.chronicle-type-trap_disarmed {
+  border-left-color: #43a047;
+  background: rgba(18, 43, 21, 0.75);
+}
+
+.chronicle-type-close_call {
+  border-left-color: #fb8c00;
+  background: rgba(48, 28, 12, 0.75);
+}
+
+.entry-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  color: #a68b68;
+}
+
+.entry-floor,
+.entry-turn {
+  font-family: monospace;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 0 3px;
+  border-radius: 2px;
+}
+
+.entry-icon {
+  font-size: 11px;
+}
+
+.entry-text {
+  word-break: break-word;
+}

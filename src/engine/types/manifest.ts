@@ -1,0 +1,340 @@
+import type { Position } from '../types';
+import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
+import type { SpellDefinition } from '../magic/types';
+import type { ItemCategory, ItemQuality, EquipmentSlot, ItemStatModifiers, Item, RangedWeaponConfig } from '../items/item';
+import type { ContainerType } from '../items/container';
+import type { PotionType } from '../items/consumables';
+import type { CoinDenomination } from '../economy/types';
+import type { NpcRole } from '../entities/npc';
+import type { AffinityMatrixConfig } from '../magic/elements';
+import type { EquipmentSlotDefinition, EquipmentSlotLayout } from '../inventory/paperdoll';
+import type { ThemeTokens } from './theme';
+import type { VaultBlueprint } from '../dungeon/vaultStamp';
+import type { StatusHandler } from '../status/statusHandlers';
+import type { ActionHook } from '../actions/actionPipeline';
+import type { AiBehaviorStrategy } from '../ai/aiBehaviorRegistry';
+import type { CombatConfig, ProgressionConfig, LevelUpBonus } from './config';
+import type { WorldState } from '../state/worldState';
+import type { Predicate } from '../predicates/types';
+import type { ChoiceDefinition, ChoiceOption, ChoiceConsequence } from './choice';
+import type { HookDescriptor } from '../hooks/hookDispatcher';
+import type { RunPactDefinition } from '../pacts/pactManager';
+
+export interface MerchantConfig {
+  id: string;
+  name: string;
+  greeting: string;
+  markupRatio?: number;
+  markdownRatio?: number;
+  initialInventory: Item[];
+  predicate?: Predicate;
+}
+
+export type ConsumableEffectDescriptor =
+  | { type: 'restore_hp'; amount: number | string }
+  | { type: 'restore_mana'; amount: number | string }
+  | { type: 'cure_status'; status: string }
+  | { type: 'apply_status'; status: string; duration: number; potency?: number }
+  | { type: 'gain_xp'; amount: number }
+  | { type: 'gain_stat'; stat: string; amount: number }
+  | { type: 'teleport'; range?: number; random?: boolean };
+
+export interface ItemDefinition {
+  id: string;
+  name: string;
+  unidentifiedName?: string;
+  category: ItemCategory;
+  slot?: EquipmentSlot;
+  minFloor?: number;
+  tier?: number;
+  weight: number;
+  bulk: number;
+  quality?: ItemQuality;
+  stats?: Partial<ItemStatModifiers>;
+  identified?: boolean;
+  description?: string;
+  value?: number;
+  itemType?: string;
+  containerConfig?: {
+    containerType: ContainerType;
+    maxWeightCapacity: number;
+    maxBulkCapacity: number;
+    maxSlots?: number;
+    acceptedCategories?: readonly string[];
+  };
+  wandConfig?: {
+    spellId: string;
+    charges: number;
+    maxCharges: number;
+  };
+  scrollConfig?: {
+    spellId: string;
+  };
+  potionConfig?: {
+    effects?: ConsumableEffectDescriptor[];
+    potionType?: PotionType;
+    potency?: number;
+  };
+  coinConfig?: {
+    denomination: CoinDenomination;
+    count: number;
+  };
+  twoHanded?: boolean;
+  blocksSlot?: string;
+  rangedConfig?: RangedWeaponConfig;
+  predicate?: Predicate;
+  hooks?: HookDescriptor[];
+}
+
+export const BUILTIN_ITEM_TYPES = ['standard', 'container', 'wand', 'scroll', 'potion', 'coin'] as const;
+
+export interface ItemAliasPools {
+  potions?: string[];
+  scrolls?: string[];
+  wands?: string[];
+  rings?: string[];
+  amulets?: string[];
+  [category: string]: string[] | undefined;
+}
+
+export type TrapType = string;
+export const BUILTIN_TRAP_TYPES = ['pit', 'arrow', 'teleport', 'alarm'] as const;
+
+export interface TrapDefinition {
+  type: TrapType;
+  name: string;
+  damage?: number;
+  message?: string;
+  disarmDifficulty?: number;
+}
+
+export interface SurfaceTypeDefinition {
+  id: string;
+  name: string;
+  moveCostBonus?: number;
+  damagePerTurn?: number;
+  gasType?: string;
+}
+
+export interface StatusEffectDefinition {
+  id: string;
+  name: string;
+  applyMessage?: string;
+  tickMessage?: string;
+  expireMessage?: string;
+  damagePerTick?: number;
+  potency?: number;
+}
+
+export interface TrackedMilestoneDefinition {
+  flag: string;
+  label: string;
+  description?: string;
+  icon?: string;
+}
+
+export interface FlankLayoutConfig {
+  left?: string[];
+  right?: string[];
+  theme?: 'parchment' | 'slate' | 'retro-win31' | 'cyber' | string;
+}
+
+export interface TownBuildingDefinition {
+  name: string;
+  bounds: { x1: number; y1: number; x2: number; y2: number };
+  door: { x: number; y: number; isOpen?: boolean };
+}
+
+export interface TownServicesDefinition {
+  templeName?: string;
+  priestTitle?: string;
+  cleanseMessageTemplate?: string;
+  noCursesMessage?: string;
+  donationRequiredTemplate?: string;
+  healMessageTemplate?: string;
+  sageName?: string;
+  sageTitle?: string;
+  bankName?: string;
+  bankerTitle?: string;
+  compactionMessageTemplate?: string;
+}
+
+export interface TownNpcDefinition {
+  id: string;
+  name: string;
+  role: NpcRole;
+  position: Position;
+  greeting: string;
+  dialogText?: string;
+  shopId?: string;
+  merchantConfig?: MerchantConfig;
+  isStationary?: boolean;
+  predicate?: Predicate;
+}
+
+export interface TownLayoutDefinition {
+  name: string;
+  width: number;
+  height: number;
+  playerSpawn: Position;
+  stairsDown: Position;
+  buildings: TownBuildingDefinition[];
+  npcs: TownNpcDefinition[];
+  services?: TownServicesDefinition;
+}
+
+export interface FloorEncounterConfig {
+  monsterIds: string[];
+  minMonsters: number;
+  maxMonsters: number;
+}
+
+export interface BossFloorLayoutDefinition {
+  width: number;
+  height: number;
+  playerSpawn: Position;
+  stairsUp: Position;
+  bossSpawn: Position;
+  pillars?: Position[];
+  guards?: Array<{ definitionId: string; position: Position }>;
+}
+
+export interface QuestArcDefinition {
+  id: string;
+  name: string;
+  maxFloor: number;
+  bossFloor: number;
+  bossMonsterId: string;
+  relicItemId: string;
+  victoryNpcId: string;
+  victoryFloor: number;
+  victoryDialogue: string;
+  victoryScoreBonus: number;
+  relicDropMessage?: string;
+  victoryEpitaph?: string;
+  championProclamation?: string;
+  bossLairTitle?: string;
+  bossEntryMessage?: string;
+  bossFloorLayout: BossFloorLayoutDefinition;
+  floorEncounters: Record<number, FloorEncounterConfig>;
+  floorGenerators?: Record<number, string>;
+  defaultGenerator?: string;
+}
+
+export interface AtlasProceduralTheme {
+  themeId: string;
+  renderTile?: (
+    ctx: CanvasRenderingContext2D,
+    key: string,
+    ox: number,
+    oy: number,
+    size: number
+  ) => boolean | void;
+  renderers?: Record<
+    string,
+    (ctx: CanvasRenderingContext2D, ox: number, oy: number, size: number) => void
+  >;
+  palette?: Record<string, string>;
+}
+
+export interface StarterKitDefinition {
+  weaponItemId: string;
+  purseItemId?: string;
+  coins?: Array<{ denomination: CoinDenomination; count: number }>;
+  beltItemId?: string;
+  beltSlotItemIds?: string[];
+  packItemIds?: string[];
+  spellsKnown?: string[];
+}
+
+export type SpriteRecipe = (
+  ctx: CanvasRenderingContext2D,
+  ox: number,
+  oy: number,
+  size: number
+) => void;
+
+export interface GameContentManifest {
+  id: string;
+  name: string;
+  description?: string;
+  monsters: MonsterDefinition[];
+  items: ItemDefinition[];
+  spells: SpellDefinition[];
+  town: TownLayoutDefinition;
+  quest: QuestArcDefinition;
+  atlas: AtlasProceduralTheme;
+  starterKit: StarterKitDefinition;
+  affinityMatrix?: AffinityMatrixConfig;
+  equipmentSlots?: EquipmentSlotDefinition[];
+  theme?: Partial<ThemeTokens>;
+  floorGenerators?: Record<number, string>;
+  vaults?: VaultBlueprint[];
+  advisorQuotes?: string[];
+  spriteRecipes?: Record<string, SpriteRecipe>;
+  presetNames?: string[];
+  statusHandlers?: Record<string, StatusHandler>;
+  actionHooks?: ActionHook[];
+  aiBehaviors?: Record<string, AiBehaviorStrategy>;
+  actionCommands?: Record<string, import('../actions/actionRegistry').GameAction<any>>;
+  aiStrategies?: Record<string, import('../ai/aiRegistry').AIStrategy>;
+  modalLayouts?: Record<string, any>;
+  keybindings?: Record<string, any>;
+  featureFlags?: Record<string, boolean>;
+  combatConfig?: CombatConfig;
+  progressionConfig?: ProgressionConfig;
+  initialWorldState?: WorldState;
+  choices?: Record<string, ChoiceDefinition>;
+  pacts?: RunPactDefinition[];
+  traps?: TrapDefinition[];
+  itemAliasPools?: ItemAliasPools;
+  surfaceTypes?: SurfaceTypeDefinition[];
+  statusEffects?: StatusEffectDefinition[];
+  /** When true, the storage layer will also check legacy un-namespaced save keys for backward compatibility. Set to true for the COTW manifest only. */
+  supportsLegacyKeys?: boolean;
+  trackedMilestones?: TrackedMilestoneDefinition[];
+  flankLayout?: FlankLayoutConfig;
+}
+
+export type {
+  CombatConfig,
+  ProgressionConfig,
+  LevelUpBonus,
+  EquipmentSlotDefinition,
+  EquipmentSlotLayout,
+  WorldState,
+  Predicate,
+  ChoiceDefinition,
+  ChoiceOption,
+  ChoiceConsequence,
+  RunPactDefinition,
+};
+
+/**
+ * Validates that a GameContentManifest contains all required fields.
+ * Throws a descriptive error if any required field is missing.
+ * Call this at GameEngine construction time to catch misconfigured manifests early.
+ */
+export function validateManifest(manifest: GameContentManifest): void {
+  if (!manifest || typeof manifest !== 'object') return;
+  if (!manifest.id || typeof manifest.id !== 'string') {
+    throw new Error(
+      `[GameContentManifest] Manifest must have a non-empty string 'id' field.`
+    );
+  }
+  if (!manifest.name || typeof manifest.name !== 'string') {
+    throw new Error(
+      `[GameContentManifest] Manifest '${manifest.id}' must have a non-empty string 'name' field.`
+    );
+  }
+  // Only validate array fields if explicitly provided but wrong type
+  const arrayFields: Array<keyof GameContentManifest> = ['monsters', 'items', 'spells'];
+  for (const key of arrayFields) {
+    const val = (manifest as any)[key];
+    if (val !== undefined && val !== null && !Array.isArray(val)) {
+      throw new Error(
+        `[GameContentManifest] Manifest '${manifest.id}' field '${key}' must be an array when provided.`
+      );
+    }
+  }
+}

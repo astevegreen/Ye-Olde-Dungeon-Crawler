@@ -11,7 +11,9 @@
     "build:all": "npm run build:cotw && npm run build:warcraft",
     "preview": "vite preview",
     "test": "vitest run",
-    "check:engine-purity": "tsx scripts/check-engine-purity.ts"
+    "check:engine-purity": "tsx scripts/check-engine-purity.ts",
+    "sim": "npx tsx scripts/headless-sim.ts",
+    "validate:schema": "npx tsx scripts/validate-schema.ts"
   },
   "devDependencies": {
     "tsx": "^4.23.13",

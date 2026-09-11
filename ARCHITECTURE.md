@@ -1,5 +1,9 @@
 # Architectural Specification & Engine Invariants
 
+> **AI Context Instruction:** This document defines the hard architectural invariants for the repository. When executing implementation tasks, prioritize these rules over general software patterns. Do not violate system boundaries or introduce platform leaks.
+
+---
+
 ## 1. System Boundaries & Core Invariants
 - **Headless Simulation Purity:** All game state, spatial resolution, combat logic, and action pipelines reside strictly inside `src/engine/`. No references to `window`, `document`, DOM nodes, or Canvas contexts may exist in engine code.
 - **Public API Surface:** External layers (`src/ui/`, `src/rendering/`) interact with the engine exclusively through `src/engine/index.ts` and `src/engine/engine.ts`. No deep internal imports across architectural layers.
@@ -10,6 +14,8 @@
 ---
 
 ## 2. Directory Layout & Module Topology
+
+```
 src/
 ├── content/                     # Data manifests, item definitions, and encounter tables
 │   ├── cotw/index.ts           # Primary Castle of the Winds content pack
@@ -31,14 +37,16 @@ src/
 │   │   └── flightRecorder.ts   # In-memory deterministic action log and replay recorder
 │   └── storage/                # State serialization, schema migrations, and save hygiene
 │       ├── compaction.ts       # Payload compression and sparse state serialization
-│       └── migrator.ts         # Forward-only schema migrations and save hydration
+│       └── migrator.ts         # Forward-only schema migrations (Schema v3 baseline)
 ├── rendering/                   # Visual presentation layer (Canvas, sprites, atlas)
 │   └── atlas/index.ts          # Texture atlas management and tile blitting
 └── ui/                         # User input lifecycle, modal dialogs, and HUD
-├── input/
-│   └── chordBuffer.ts      # Diagonal arrow-key chording with debounce buffer
-└── settings/
-└── settingsManager.ts  # Local preferences, movement modes, and hotkey bindings
+    ├── input/
+    │   └── chordBuffer.ts      # Diagonal arrow-key chording with debounce buffer
+    └── settings/
+        └── settingsManager.ts  # Local preferences, movement modes, and hotkey bindings
+```
+
 ---
 
 ## 3. Storage & Schema Evolution (`src/engine/storage/migrator.ts`)
@@ -56,4 +64,4 @@ src/
 
 ## 5. Development Invariants & "One Task, One Thread" Protocol
 - **No Engine Creep:** Do not alter `src/engine/actions/actionPipeline.ts`, `engine.ts`, or `migrator.ts` unless implementing a confirmed bug fix. New game mechanics, monsters, items, and quests must be implemented via content manifests in `src/content/`.
-- **Test Invariant:** Any PR or feature branch must pass the full test suite (`npm test`) and compile cleanly (`npm run build`) before merging.
+- **Quality Gates:** Any pull request or feature addition must pass unit verification (`npm test`) and produce a valid offline bundle (`npm run build`) before merging.

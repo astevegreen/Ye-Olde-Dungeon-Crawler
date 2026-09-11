@@ -22,42 +22,29 @@
 
 ## 3. Directory Layout & Module Topology
 
+| Layer / Directory | Primary Responsibility | Dependency & Import Rules |
+| :--- | :--- | :--- |
+| `src/content/` | Content packs, item/monster catalogs, encounter tables, stairs. | Imports engine type interfaces only. NEVER imports UI or rendering. |
+| `src/engine/` | Headless state coordinator, action pipeline, grid/FOV, scheduling, save/load. | Zero browser/DOM imports. Exposes public API via `src/engine/index.ts` and `src/engine/engine.ts`. |
+| `src/rendering/` | Canvas texture atlas management, tile blitting, visual effects. | Consumes engine public API. No direct deep imports into engine internals. |
+| `src/ui/` | DOM HUD, modals, sliding-window chord input, settings. | Consumes engine public API. No direct deep imports into engine internals. |
+| `scripts/` | Headless verification tooling, chaos runners, schema validators. | Developer automation only. Not bundled into client build. |
+| `tests/` | Vitest suites, deterministic regressions, invariant audits. | Testing harness only. Not bundled into client build. |
+
+### Module Import Hierarchy
 ```
-src/
-├── content/                     # Data manifests, item definitions, and encounter tables
-│   ├── cotw/index.ts           # Primary Castle of the Winds content pack
-│   └── warcraft/index.ts       # Secondary/thematic alternate content pack
-├── engine/                      # Headless, platform-agnostic simulation engine
-│   ├── index.ts                # Public engine barrel export
-│   ├── engine.ts               # Simulation loop coordinator and state holder
-│   ├── actions/                # Action definitions, registry, and execution pipeline
-│   │   ├── action.ts           # Base action interfaces and capability contracts
-│   │   ├── actionPipeline.ts   # Sequential action execution, validation, and hook dispatch
-│   │   ├── actionRegistry.ts   # Dynamic registry mapping action IDs to handler functions
-│   │   ├── choiceAction.ts     # Branching dialog, interactive choices, and narrative forks
-│   │   ├── identificationActions.ts # Item identification and appraisal logic
-│   │   ├── inventory-actions.ts # Pickup, drop, equip, unequip, and container interaction
-│   │   ├── planeActions.ts     # Multi-plane transitions and spatial threshold actions
-│   │   ├── spell-actions.ts    # Spell casting, targeting vectors, and mana consumption
-│   │   └── vaultActions.ts     # Modular room stamping and conditional prefab mechanics
-│   ├── debug/                  # Simulation telemetry and diagnostic tooling
-│   │   └── flightRecorder.ts   # In-memory deterministic action log and replay recorder
-│   └── storage/                # State serialization, schema migrations, and save hygiene
-│       ├── compaction.ts       # Payload compression and sparse state serialization
-│       └── migrator.ts         # Forward-only schema migrations (Schema v3 baseline)
-├── rendering/                   # Visual presentation layer (Canvas, sprites, atlas)
-│   └── atlas/index.ts          # Texture atlas management and tile blitting
-└── ui/                         # User input lifecycle, modal dialogs, and HUD
-    ├── input/
-    │   └── chordBuffer.ts      # Diagonal arrow-key chording with debounce buffer
-    └── settings/
-        └── settingsManager.ts  # Local preferences, movement modes, and hotkey bindings
+[ src/ui/ ]       [ src/rendering/ ]
+     │                    │
+     └──► [ src/engine/ ] ◄──┘  (Via src/engine/index.ts or engine.ts ONLY)
+                 │
+                 ▼
+         [ src/content/ ]       (Manifests & Definitions)
 ```
 
 ---
 
 ## 4. Storage & Schema Evolution (`src/engine/storage/migrator.ts`)
-- **Forward-Only Migrations:** Saves carry an integer schema version (`version: number`). Every breaking schema change increments this version and registers a step in `migrator.ts`.
+- **Forward-Only Migrations:** Saves carry an integer schema version (`schemaVersion: number`). Every breaking schema change increments this version and registers a sequential step in `migrator.ts`.
 - **Reference Reconstruction:** Deserialized actors, inventories, and active floor grids must reconstruct reference integrity upon hydration.
 - **Save Hygiene & Portability:** Browser `localStorage` sandbox with state compaction (`compaction.ts`) and native `Blob`/`File` API save export/import.
 - **Graceful Failure:** Corrupted save payloads fail cleanly to an initialization baseline without throwing unhandled exceptions or poisoning browser storage.

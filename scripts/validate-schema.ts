@@ -1,16 +1,21 @@
-import { migrateSavePayload } from '../src/engine/storage/migrator';
+import { defaultMigrator, CURRENT_SCHEMA_VERSION } from '../src/engine/storage/migrator';
 
 const mockLegacySave = {
-  version: 1,
-  data: { player: { hp: 20, maxHp: 20, position: { x: 5, y: 5 } } }
+  schemaVersion: 1,
+  contentManifestId: 'cotw',
+  timestamp: Date.now(),
+  data: {
+    player: { hp: 20, maxHp: 20, position: { x: 5, y: 5 } },
+    map: { width: 20, height: 20, tiles: [] }
+  }
 };
 
 try {
-  const result = migrateSavePayload(mockLegacySave);
-  if (result.version !== 3) {
-    throw new Error(`Expected schema version 3, got ${result.version}`);
+  const result = defaultMigrator.migrate(mockLegacySave);
+  if (result.envelope.schemaVersion !== CURRENT_SCHEMA_VERSION) {
+    throw new Error(`Expected schema version ${CURRENT_SCHEMA_VERSION}, got ${result.envelope.schemaVersion}`);
   }
-  console.log('✅ Schema migration validation passed: v1 -> v3 verified.');
+  console.log(`✅ Schema migration validation passed: v1 -> v${CURRENT_SCHEMA_VERSION} verified.`);
   process.exit(0);
 } catch (err) {
   console.error('❌ Schema migration failed:', err);

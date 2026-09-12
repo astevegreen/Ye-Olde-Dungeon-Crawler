@@ -25,6 +25,8 @@ import { DwarvenWinchModal } from './ui/dwarvenWinchModal';
 import { TownReturnModal } from './ui/townReturnModal';
 import { ChoiceModal } from './ui/choiceModal';
 import { PactModal } from './ui/pactModal';
+import { LevelUpModal } from './ui/levelUpModal';
+import type { GameEvent } from './engine';
 import { AutoRestRunner } from './ui/autoRestRunner';
 import { NavigationController } from './ui/navigation';
 import { cotwManifest } from './content/cotw';
@@ -33,6 +35,8 @@ import { WARCRAFT_THEME_TOKENS } from './content/warcraft/theme';
 import { initStoragePersistence } from './ui/persistenceInit';
 import { SaveCodeModal } from './ui/saveCodeModal';
 import { SaveQuitModal } from './ui/saveQuitModal';
+import { SaveSlotModal } from './ui/saveSlotModal';
+import { showToast } from './ui/toast';
 import { setupSaveDragAndDrop, importSaveWithValidation } from './ui/saveImporter';
 import { defaultPlatformAdapter, getBrowserStorage } from './ui/platform';
 import { serializeGame } from './engine/storage/serializer';
@@ -114,6 +118,10 @@ window.addEventListener('DOMContentLoaded', () => {
     renderer?.render();
   });
   const pactModal = new PactModal();
+  const levelUpModal = new LevelUpModal(() => {
+    if (inputHandler) inputHandler.enabled = true;
+    renderer?.render();
+  });
   const autosaveManager = new AutosaveManager(undefined, activeManifest);
 
   let spellbookModal: SpellbookModal;
@@ -664,6 +672,22 @@ window.addEventListener('DOMContentLoaded', () => {
       showGameOverModal(status, summary);
     };
 
+    // Wire Player Level Up and Game Events
+    levelUpModal.setOnAllocate(() => {
+      if (activeEngine) bottomStatusBar.update(activeEngine);
+      renderer?.render();
+    });
+
+    engine.onGameEvent = (event: GameEvent) => {
+      if (event.type === 'player_leveled_up') {
+        levelUpModal.open(engine);
+        if (inputHandler) {
+          inputHandler.modalStack.push(levelUpModal);
+        }
+        renderer?.render();
+      }
+    };
+
     // Wire Dwarven Winch interaction
     engine.onWinchInteract = (winch) => {
       if (inputHandler) inputHandler.enabled = false;
@@ -777,6 +801,19 @@ window.addEventListener('DOMContentLoaded', () => {
         description: 'Review monster vulnerabilities, stats, and mastery combat perks',
         execute: (eng) => {
           compendiumModal.open(eng);
+        },
+      },
+      {
+        id: 'allocate-stats',
+        title: 'Allocate Stat Points',
+        category: 'Action',
+        shortcut: 'U',
+        description: 'Spend unspent attribute points on Strength, Dexterity, Constitution, or Intelligence',
+        execute: (eng) => {
+          levelUpModal.open(eng);
+          if (inputHandler) {
+            inputHandler.modalStack.push(levelUpModal);
+          }
         },
       },
       {
@@ -1017,6 +1054,7 @@ window.addEventListener('DOMContentLoaded', () => {
         settingsManager
       );
       inputHandler.pactModal = pactModal;
+      inputHandler.levelUpModal = levelUpModal;
     } else {
       renderer.setEngine(engine);
       renderer.shopOverlay.onOpenCompendium = () => {
@@ -1037,6 +1075,7 @@ window.addEventListener('DOMContentLoaded', () => {
         inputHandler.compendiumModal = compendiumModal;
         inputHandler.commandPalette = commandPalette;
         inputHandler.pactModal = pactModal;
+        inputHandler.levelUpModal = levelUpModal;
         inputHandler.onSaveAndExit = promptSaveAndQuit;
       }
     }
@@ -1137,6 +1176,40 @@ window.addEventListener('DOMContentLoaded', () => {
     },
   });
 
+  const saveSlotModal = new SaveSlotModal({
+    profileManager,
+    autosaveManager,
+    onLoadProfile: (profileId: string) => {
+      try {
+        const loaded = profileManager.loadCharacter(profileId);
+        if (loaded) {
+          launchGame(loaded.engine, loaded.profile);
+          return true;
+        }
+        return false;
+      } catch (err) {
+        showToast(`Corrupted save file: ${(err as Error).message}`, 'error');
+        return false;
+      }
+    },
+    onLoadAutosave: () => {
+      try {
+        const autosave = autosaveManager.loadAutosave(activeManifest);
+        if (autosave) {
+          launchGame(autosave.engine, autosave.profile);
+          return true;
+        }
+        return false;
+      } catch (err) {
+        showToast(`Corrupted autosave file: ${(err as Error).message}`, 'error');
+        return false;
+      }
+    },
+    onClose: () => {
+      mainMenu.show();
+    },
+  });
+
   // Initialize Main Menu
   mainMenu = new MainMenu({
     profileManager,
@@ -1145,30 +1218,37 @@ window.addEventListener('DOMContentLoaded', () => {
       mainMenu.hide();
       titleScreen.show();
     },
-    onContinue: (profileId?: string) => {
+    onLoadGame: () => {
       mainMenu.hide();
-      if (profileId) {
-        const loaded = profileManager.loadCharacter(profileId);
-        if (loaded) {
-          launchGame(loaded.engine, loaded.profile);
+      saveSlotModal.open();
+    },
+    onContinue: (profileId?: string) => {
+      try {
+        if (profileId) {
+          const loaded = profileManager.loadCharacter(profileId);
+          if (loaded) {
+            launchGame(loaded.engine, loaded.profile);
+            return;
+          }
+        }
+        const autosave = autosaveManager.loadAutosave(activeManifest);
+        if (autosave) {
+          launchGame(autosave.engine, autosave.profile);
           return;
         }
-      }
-      const autosave = autosaveManager.loadAutosave(activeManifest);
-      if (autosave) {
-        launchGame(autosave.engine, autosave.profile);
-        return;
-      }
-      const profiles = profileManager.listProfiles();
-      if (profiles.length > 0) {
-        const latestProfile = [...profiles].sort((a, b) => b.lastSaved - a.lastSaved)[0];
-        const loaded = profileManager.loadCharacter(latestProfile.id);
-        if (loaded) {
-          launchGame(loaded.engine, loaded.profile);
-          return;
+        const profiles = profileManager.listProfiles();
+        if (profiles.length > 0) {
+          const latestProfile = [...profiles].sort((a, b) => b.lastSaved - a.lastSaved)[0];
+          const loaded = profileManager.loadCharacter(latestProfile.id);
+          if (loaded) {
+            launchGame(loaded.engine, loaded.profile);
+            return;
+          }
         }
+      } catch (err) {
+        showToast(`Error resuming save: ${(err as Error).message}`, 'error');
       }
-      titleScreen.show();
+      mainMenu.show();
     },
     onOpenSettings: () => {
       keybindModal.open();

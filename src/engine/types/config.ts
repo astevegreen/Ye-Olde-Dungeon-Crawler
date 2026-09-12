@@ -37,6 +37,8 @@ export interface ProgressionConfig {
   getXpForNextLevel?: (level: number) => number;
   /** Flat stat bonuses per level up, or dynamic function */
   statGains?: LevelUpBonus | ((newLevel: number) => LevelUpBonus);
+  /** Unspent attribute/stat points awarded per level up. Default: 3 */
+  statPointsPerLevel?: number;
   /** Max attainable level */
   maxLevel?: number;
 }

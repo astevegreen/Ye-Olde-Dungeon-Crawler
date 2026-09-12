@@ -49,6 +49,9 @@ export class RestAction implements Action {
       // Simulate turn passage for monsters
       this.player.consumeEnergy(100);
       engine.turnCount += 1;
+      if (engine.currentFloor >= 1) {
+        engine.map.floorTurnCount = (engine.map.floorTurnCount ?? 0) + 1;
+      }
 
       // Status effects tick on player
       const tickRes = this.player.statusManager.tick(this.player, engine);

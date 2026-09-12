@@ -319,12 +319,14 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     quickSpells: [...p.quickSpells],
     planeId: p.planeId ?? 'physical',
     corruptionScore: p.corruptionScore ?? 0,
+    unspentStatPoints: p.unspentStatPoints ?? 0,
   };
 
   if (profile) {
     profile.tutorialFlags = p.tutorialFlags ? { ...p.tutorialFlags } : undefined;
     profile.deepestRecallFloor = p.deepestRecallFloor;
     profile.recallPosition = p.recallPosition ? { ...p.recallPosition } : undefined;
+    profile.unspentStatPoints = p.unspentStatPoints ?? 0;
   }
 
   // 4. Map serialization helper
@@ -382,6 +384,7 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     tutorialFlags: p.tutorialFlags ? { ...p.tutorialFlags } : undefined,
     deepestRecallFloor: p.deepestRecallFloor,
     recallPosition: p.recallPosition ? { ...p.recallPosition } : undefined,
+    unspentStatPoints: p.unspentStatPoints ?? 0,
   };
 
   return {
@@ -512,12 +515,16 @@ export function serializeMapObject(map: GameMap): SerializedMap {
     surfaces: map.surfaces ? map.surfaces.serialize() : undefined,
     substances: map.substances ? map.substances.serialize() : undefined,
     lastVisitedTick: map.lastVisitedTick ?? 0,
+    floorTurnCount: map.floorTurnCount ?? 0,
+    isCleared: map.isCleared ?? false,
   };
 }
 
 export function deserializeMapObject(mapData: SerializedMap): GameMap {
   const map = new GameMap(mapData.width, mapData.height, TILES.WALL);
   map.lastVisitedTick = mapData.lastVisitedTick ?? 0;
+  map.floorTurnCount = mapData.floorTurnCount ?? 0;
+  map.isCleared = mapData.isCleared ?? false;
 
   const tileGrid = mapData.tilesRle
     ? decompactTiles(mapData.tilesRle, mapData.width, mapData.height)
@@ -685,6 +692,7 @@ export function deserializeGame(
     recallPosition: pData.recallPosition ?? saveData.profile?.recallPosition,
     quickSpells: pData.quickSpells ? [...pData.quickSpells] : undefined,
     tutorialFlags: pData.tutorialFlags ? { ...pData.tutorialFlags } : (saveData.profile?.tutorialFlags ? { ...saveData.profile.tutorialFlags } : undefined),
+    unspentStatPoints: Number(pData.unspentStatPoints) || Number(saveData.profile?.unspentStatPoints) || 0,
   });
   player.energy = Number(pData.energy) || 0;
   player.hp = Math.min(Number(pData.hp) || 1, player.maxHp);

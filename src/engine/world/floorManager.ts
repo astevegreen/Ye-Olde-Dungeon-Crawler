@@ -3,6 +3,7 @@ import type { FovManager } from '../fov/fov-manager';
 import type { GameEngine } from '../engine';
 import { Monster } from '../entities/monster';
 import type { Position } from '../types';
+import { selectDungeonMonsterDefinition, createScaledMonster } from '../dungeon/spawner';
 
 export interface DungeonFloorRecord {
   floorNumber: number;
@@ -16,6 +17,7 @@ export interface FloorManagerConfig {
   maxBatchSpawns?: number; // default: 5 monsters
   statScaleFactor?: number; // default: 0.05 (5% per interval, max 1.5x)
   densityLimit?: number; // default: 12 max monsters per floor
+  clearedRespawnInterval?: number; // default: 60 turns
 }
 
 export interface CatchUpSimulationResult {
@@ -34,12 +36,14 @@ export class FloorManager {
   public readonly maxBatchSpawns: number;
   public readonly statScaleFactor: number;
   public readonly densityLimit: number;
+  public readonly clearedRespawnInterval: number;
 
   constructor(config?: FloorManagerConfig) {
     this.respawnInterval = config?.respawnInterval ?? 50;
     this.maxBatchSpawns = config?.maxBatchSpawns ?? 5;
     this.statScaleFactor = config?.statScaleFactor ?? 0.05;
     this.densityLimit = config?.densityLimit ?? 12;
+    this.clearedRespawnInterval = config?.clearedRespawnInterval ?? 60;
   }
 
   public hasFloor(floorNumber: number): boolean {
@@ -183,6 +187,7 @@ export class FloorManager {
           },
           speed: def?.speed ?? 100,
           aiType: def?.aiType ?? 'melee',
+          aiState: 'sleeping',
           xpValue: Math.round((def?.xpValue ?? 15) * multiplier),
           lootTable: def?.lootTable,
         });
@@ -197,5 +202,103 @@ export class FloorManager {
       spawnedCount,
       scaledMonsters,
     };
+  }
+
+  /**
+   * Periodically checks if an active cleared floor (currentFloor >= 1) should respawn
+   * a batch of dormant sleeping monsters outside the player's FOV.
+   */
+  public checkClearedFloorRespawn(engine: GameEngine): Monster[] {
+    if (engine.currentFloor < 1) {
+      return [];
+    }
+
+    const map = engine.map;
+    const livingMonsters = map.getAllEntities().filter(
+      (e) => e instanceof Monster && e.isAlive()
+    ) as Monster[];
+
+    // If floor has no living monsters, mark it as cleared and record turn
+    if (livingMonsters.length === 0) {
+      if (!map.isCleared) {
+        map.isCleared = true;
+        map.lastRespawnTurn = map.floorTurnCount;
+      }
+    }
+
+    // Only cleared floors trigger batch respawn
+    if (!map.isCleared) {
+      return [];
+    }
+
+    const turnsSinceRespawn = map.floorTurnCount - (map.lastRespawnTurn ?? 0);
+    if (turnsSinceRespawn < this.clearedRespawnInterval) {
+      return [];
+    }
+
+    // Density check
+    const currentDensity = livingMonsters.length;
+    const availableSlots = Math.max(0, this.densityLimit - currentDensity);
+    if (availableSlots <= 0) {
+      return [];
+    }
+
+    const spawnsToPerform = Math.min(this.maxBatchSpawns, availableSlots);
+    const px = engine.player ? engine.player.x : 0;
+    const py = engine.player ? engine.player.y : 0;
+    const candidateTiles: Position[] = [];
+
+    for (let y = 1; y < map.height - 1; y++) {
+      for (let x = 1; x < map.width - 1; x++) {
+        if (!map.isPassable(x, y)) continue;
+        if (map.getEntityAt(x, y)) continue;
+        if (engine.fov && engine.fov.isVisible(x, y)) continue;
+
+        const dist = Math.hypot(x - px, y - py);
+        if (dist >= 8) {
+          candidateTiles.push({ x, y });
+        }
+      }
+    }
+
+    if (candidateTiles.length === 0) {
+      return [];
+    }
+
+    const rng = engine.rng ? () => engine.rng() : Math.random;
+    const spawned: Monster[] = [];
+    const monsterCatalog = engine.manifest?.monsters ?? [];
+
+    for (let i = 0; i < spawnsToPerform && candidateTiles.length > 0; i++) {
+      const tileIdx = Math.floor(rng() * candidateTiles.length);
+      const tile = candidateTiles.splice(tileIdx, 1)[0];
+
+      const def = selectDungeonMonsterDefinition(monsterCatalog, engine.currentFloor, rng);
+      if (!def) continue;
+
+      const mId = `respawn-${engine.currentFloor}-${map.floorTurnCount}-${i}-${Math.floor(rng() * 10000)}`;
+      const monster = createScaledMonster(
+        def,
+        mId,
+        tile,
+        engine.currentFloor,
+        engine.gameState?.deepestFloor,
+        engine.player?.level
+      );
+      monster.aiState = 'sleeping';
+
+      const added = engine.addEntity(monster);
+      if (added) {
+        spawned.push(monster);
+      }
+    }
+
+    if (spawned.length > 0) {
+      map.lastRespawnTurn = map.floorTurnCount;
+      map.isCleared = false;
+      engine.log('You sense hostile presence returning to the shadowy halls...');
+    }
+
+    return spawned;
   }
 }

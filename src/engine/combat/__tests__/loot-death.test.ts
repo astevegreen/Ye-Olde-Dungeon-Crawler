@@ -52,7 +52,11 @@ describe('Death Resolution, XP & Loot Drops', () => {
     expect(player.xp).toBe(70);
     expect(player.maxHp).toBe(35); // +5
     expect(player.maxMana).toBe(34); // +4
-    expect(player.strength).toBe(16); // +1
+    expect(player.unspentStatPoints).toBe(3); // 3 unspent stat points per level
+    expect(player.strength).toBe(15); // base untouched until allocated
+    player.allocateAttribute('strength', 1);
+    expect(player.strength).toBe(16);
+    expect(player.unspentStatPoints).toBe(2);
     expect(ogre.isAlive()).toBe(false);
     expect(engine.map.getEntityById('ogre-1')).toBeNull();
   });

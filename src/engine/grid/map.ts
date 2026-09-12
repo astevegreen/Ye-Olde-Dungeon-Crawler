@@ -18,6 +18,9 @@ export class GameMap {
   public surfaces: SurfaceGrid;
   public substances: SubstanceGrid;
   public lastVisitedTick: number = 0;
+  public floorTurnCount: number = 0;
+  public isCleared: boolean = false;
+  public lastRespawnTurn: number = 0;
 
   constructor(width: number, height: number, defaultTile: TileDefinition = TILES.WALL) {
     if (width <= 0 || height <= 0) {

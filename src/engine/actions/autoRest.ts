@@ -86,6 +86,9 @@ export class AutoRestManager {
     // Consume player turn energy
     player.consumeEnergy(BASE_ACTION_COST);
     engine.turnCount += 1;
+    if (engine.currentFloor >= 1) {
+      engine.map.floorTurnCount = (engine.map.floorTurnCount ?? 0) + 1;
+    }
 
     // Status effect tick on player
     const tickRes = player.statusManager.tick(player, engine);

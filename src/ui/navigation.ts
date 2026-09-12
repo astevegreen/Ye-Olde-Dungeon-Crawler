@@ -91,7 +91,7 @@ export class NavigationController {
 
       // Check if next tile is closed door
       const tile = this.engine.map.getTile(next.x, next.y);
-      if (tile && tile.type === 'door_closed') {
+      if (tile && (tile.type === 'door_closed' || tile.isClosedDoor)) {
         const openResult = this.engine.handlePlayerAction(new OpenDoorAction(this.engine.player, next.x, next.y));
         if (!openResult.success) {
           this.cancel(`Path blocked: ${openResult.message}`);

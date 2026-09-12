@@ -261,20 +261,24 @@ describe('Schema Migrator & Save State Versioning', () => {
     const result = defaultMigrator.migrate(v4Envelope);
     expect(result.migrated).toBe(true);
     expect(result.fromVersion).toBe(4);
-    expect(result.envelope.schemaVersion).toBe(5);
+    expect(result.envelope.schemaVersion).toBe(6);
     expect(result.envelope.data.map.surfaces).toEqual([]);
     expect(result.envelope.data.map.substances).toEqual([]);
     expect(result.envelope.data.storedMaps![2].surfaces).toEqual([]);
     expect(result.envelope.data.storedMaps![2].substances).toEqual([]);
+    expect(result.envelope.data.player.unspentStatPoints).toBe(0);
+    expect(result.envelope.data.map.floorTurnCount).toBe(0);
+    expect(result.envelope.data.map.isCleared).toBe(false);
   });
 
-  it('leaves already up-to-date v5 save untouched', () => {
+  it('migrates v5 envelope to v6 adding unspentStatPoints and floor metadata', () => {
     const v5Envelope: VersionedSaveEnvelope<any> = {
       schemaVersion: 5,
       contentManifestId: 'cotw',
       timestamp: 100000,
       data: {
         player: { id: 'hero', name: 'Sven', x: 2, y: 3, planeId: 'physical', corruptionScore: 5 },
+        profile: { id: 'sven-prof', name: 'Sven', level: 3 },
         map: { width: 4, height: 4, tilesRle: '16W', groundItems: [], monsters: [], lastVisitedTick: 120, surfaces: [], substances: [] },
         fovRle: '16U',
         worldState: { flags: {}, counters: {}, factions: {}, remoteVaults: {} },
@@ -286,12 +290,43 @@ describe('Schema Migrator & Save State Versioning', () => {
     };
 
     const result = defaultMigrator.migrate(v5Envelope);
-    expect(result.migrated).toBe(false);
+    expect(result.migrated).toBe(true);
     expect(result.fromVersion).toBe(5);
-    expect(result.envelope.schemaVersion).toBe(5);
+    expect(result.envelope.schemaVersion).toBe(6);
+    expect(result.envelope.data.player.unspentStatPoints).toBe(0);
+    expect(result.envelope.data.profile.unspentStatPoints).toBe(0);
+    expect(result.envelope.data.map.floorTurnCount).toBe(0);
+    expect(result.envelope.data.map.isCleared).toBe(false);
+  });
+
+  it('leaves already up-to-date v6 save untouched', () => {
+    const v6Envelope: VersionedSaveEnvelope<any> = {
+      schemaVersion: 6,
+      contentManifestId: 'cotw',
+      timestamp: 100000,
+      data: {
+        player: { id: 'hero', name: 'Sven', x: 2, y: 3, planeId: 'physical', corruptionScore: 5, unspentStatPoints: 4 },
+        profile: { id: 'sven-prof', name: 'Sven', level: 3, unspentStatPoints: 4 },
+        map: { width: 4, height: 4, tilesRle: '16W', groundItems: [], monsters: [], lastVisitedTick: 120, surfaces: [], substances: [], floorTurnCount: 15, isCleared: true },
+        fovRle: '16U',
+        worldState: { flags: {}, counters: {}, factions: {}, remoteVaults: {} },
+        planes: {
+          physical: { id: 'physical', name: 'Material Plane' },
+          liminal: { id: 'liminal', name: 'Liminal Expanse', isLiminal: true },
+        },
+      },
+    };
+
+    const result = defaultMigrator.migrate(v6Envelope);
+    expect(result.migrated).toBe(false);
+    expect(result.fromVersion).toBe(6);
+    expect(result.envelope.schemaVersion).toBe(6);
     expect(result.envelope.data.map.tilesRle).toBe('16W');
     expect(result.envelope.data.map.lastVisitedTick).toBe(120);
     expect(result.envelope.data.player.corruptionScore).toBe(5);
+    expect(result.envelope.data.player.unspentStatPoints).toBe(4);
+    expect(result.envelope.data.map.floorTurnCount).toBe(15);
+    expect(result.envelope.data.map.isCleared).toBe(true);
   });
 
   it('parses raw JSON string input transparently', () => {

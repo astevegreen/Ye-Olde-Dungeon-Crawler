@@ -69,19 +69,19 @@ describe('Movement System - 8-Directional & Collision Rules', () => {
     expect(result.message).toContain('bumps into a wall');
   });
 
-  it('prevents movement into closed doors and does not consume energy', () => {
+  it('auto-opens closed doors on movement bump and consumes energy', () => {
     map.setTile(5, 4, TILES.DOOR_CLOSED); // North
     player.energy = 100;
 
     const action = new MovementAction(player, 0, -1);
     const result = action.perform(engine);
 
-    expect(result.success).toBe(false);
-    expect(result.cost).toBe(0);
+    expect(result.success).toBe(true);
+    expect(result.cost).toBe(100);
     expect(player.x).toBe(5);
     expect(player.y).toBe(5);
-    expect(player.energy).toBe(100);
-    expect(result.message).toContain('closed door');
+    expect(map.getTile(5, 4)?.type).toBe('door_open');
+    expect(result.message).toContain('opens the door');
   });
 
   it('allows movement through open doors', () => {

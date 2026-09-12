@@ -55,7 +55,10 @@ export class WanderingMonsterSpawner {
   /**
    * Evaluates conditions and spawns a wandering monster if eligible.
    */
-  public checkAndSpawn(engine: GameEngine, rng: () => number = Math.random): Monster | null {
+  public checkAndSpawn(
+    engine: GameEngine,
+    rng: () => number = () => (engine?.rng ? engine.rng() : Math.random())
+  ): Monster | null {
     // 1. Dungeon floor check: strictly floors >= 1 (no wandering monsters in town)
     if (engine.currentFloor < 1) {
       return null;
@@ -104,8 +107,16 @@ export class WanderingMonsterSpawner {
 
     // 6. Pick random candidate tile
     const spawnPos = candidateTiles[Math.floor(rng() * candidateTiles.length)];
-    const uniqueId = `wandering_${eligibleDef.id}_${Date.now()}_${Math.floor(rng() * 10000)}`;
-    const monster = createScaledMonster(eligibleDef, uniqueId, spawnPos, engine.currentFloor);
+    const uniqueId = `wandering_${eligibleDef.id}_${engine.turnCount}_${Math.floor(rng() * 10000)}`;
+    const monster = createScaledMonster(
+      eligibleDef,
+      uniqueId,
+      spawnPos,
+      engine.currentFloor,
+      engine.gameState?.deepestFloor,
+      engine.player?.level
+    );
+    monster.aiState = 'sleeping';
 
     // 7. Enqueue into engine map & scheduler
     const added = engine.addEntity(monster);

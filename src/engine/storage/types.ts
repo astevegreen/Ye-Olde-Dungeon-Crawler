@@ -45,6 +45,7 @@ export interface CharacterProfile {
   tutorialFlags?: TutorialFlags;
   deepestRecallFloor?: number;
   recallPosition?: Position;
+  unspentStatPoints?: number;
 }
 
 export interface RosterManifest {
@@ -167,6 +168,7 @@ export interface SerializedPlayer {
   morphEnvelope?: SerializedMorphEnvelope;
   planeId?: string;
   corruptionScore?: number;
+  unspentStatPoints?: number;
 }
 
 export interface SerializedMonster {
@@ -241,6 +243,8 @@ export interface SerializedMap {
   surfaces?: SerializedSurfaceCell[];
   substances?: SerializedSubstanceCell[];
   lastVisitedTick?: number;
+  floorTurnCount?: number;
+  isCleared?: boolean;
 }
 
 export interface SaveData {

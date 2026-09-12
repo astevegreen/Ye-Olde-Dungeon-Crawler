@@ -1,5 +1,6 @@
 import type { ActionResult, Position, VisualEffectDescriptor } from './types';
 import { BASE_ACTION_COST } from './types';
+import type { GameEvent } from './events';
 import { GameMap } from './grid/map';
 import type { Entity } from './entities/entity';
 import { Player } from './entities/player';
@@ -197,6 +198,14 @@ export class GameEngine {
     }
     if (this.onDiscoveryEvent) {
       this.onDiscoveryEvent(fullEvent);
+    }
+  }
+
+  public onGameEvent?: (event: GameEvent) => void;
+
+  public emitGameEvent(event: GameEvent): void {
+    if (this.onGameEvent) {
+      this.onGameEvent(event);
     }
   }
 
@@ -652,6 +661,9 @@ export class GameEngine {
       this.log(`You are ${effectName} and unable to act!`);
       new WaitAction(this.player).perform(this);
       this.turnCount += 1;
+      if (this.currentFloor >= 1) {
+        this.map.floorTurnCount = (this.map.floorTurnCount ?? 0) + 1;
+      }
       this.player.statusManager.tick(this.player, this);
       this.updateFov();
       this.advanceWorldUntilPlayerTurn();
@@ -681,6 +693,9 @@ export class GameEngine {
 
     if (result.success && result.cost > 0) {
       this.turnCount += 1;
+      if (this.currentFloor >= 1) {
+        this.map.floorTurnCount = (this.map.floorTurnCount ?? 0) + 1;
+      }
       const tickRes = this.player.statusManager.tick(this.player, this);
       if (tickRes.killed) {
         DeathResolver.resolveDeath(this, undefined, this.player);
@@ -690,6 +705,7 @@ export class GameEngine {
       this.substances.tickSubstances(this.map, this);
       this.planeManager.tickDrift(this.map, this.scheduler.ticks, this);
       this.wanderingSpawner.checkAndSpawn(this, this.rng);
+      this.floorManager.checkClearedFloorRespawn(this);
       this.townReturnManager.onPlayerTurn(this);
 
       if (this.detectMonstersTurns > 0) this.detectMonstersTurns -= 1;

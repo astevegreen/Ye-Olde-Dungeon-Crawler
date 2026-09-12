@@ -1,7 +1,7 @@
 import type { SaveData } from './types';
 import { compactTiles, compactFov } from './compaction';
 
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 6;
 
 export interface VersionedSaveEnvelope<T = SaveData> {
   schemaVersion: number;
@@ -237,6 +237,44 @@ export class SchemaMigrator {
 
       return {
         schemaVersion: 5,
+        contentManifestId: envelope.contentManifestId ?? 'cotw',
+        timestamp: envelope.timestamp ?? Date.now(),
+        data,
+      };
+    });
+
+    // Migration v5 -> v6: Level-up attribute allocation and floor clear/turn metadata
+    this.registerMigration(5, 6, (envelope: VersionedSaveEnvelope<any>): VersionedSaveEnvelope => {
+      const data = { ...envelope.data };
+
+      // 1. Ensure unspentStatPoints on player
+      if (data.player) {
+        data.player.unspentStatPoints = data.player.unspentStatPoints ?? 0;
+      }
+
+      // 2. Ensure unspentStatPoints on profile
+      if (data.profile) {
+        data.profile.unspentStatPoints = data.profile.unspentStatPoints ?? 0;
+      }
+
+      // 3. Ensure floorTurnCount and isCleared on active map
+      if (data.map) {
+        data.map.floorTurnCount = data.map.floorTurnCount ?? 0;
+        data.map.isCleared = data.map.isCleared ?? false;
+      }
+
+      // 4. Ensure floorTurnCount and isCleared on stored maps
+      if (data.storedMaps) {
+        for (const fMap of Object.values(data.storedMaps) as any[]) {
+          if (fMap) {
+            fMap.floorTurnCount = fMap.floorTurnCount ?? 0;
+            fMap.isCleared = fMap.isCleared ?? false;
+          }
+        }
+      }
+
+      return {
+        schemaVersion: 6,
         contentManifestId: envelope.contentManifestId ?? 'cotw',
         timestamp: envelope.timestamp ?? Date.now(),
         data,

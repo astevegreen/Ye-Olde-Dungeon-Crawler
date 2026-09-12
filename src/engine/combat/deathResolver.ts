@@ -44,11 +44,23 @@ export class DeathResolver {
           const g = levelUpRes.statGains;
           if (g) {
             engine.log(
-              `Vitality surge: +${g.maxHp ?? 5} Max HP, +${g.maxMana ?? 4} Max Mana, +${g.strength ?? 1} Strength, +${g.baseAttack ?? 1} Attack, +${g.baseDefense ?? 1} Defense!`
+              `Vitality surge: +${g.maxHp ?? 5} Max HP, +${g.maxMana ?? 4} Max Mana${g.strength ? `, +${g.strength} Strength` : ''}, +${g.baseAttack ?? 1} Attack, +${g.baseDefense ?? 1} Defense!`
             );
           } else {
-            engine.log('Vitality surge: +5 Max HP, +4 Max Mana, +1 Strength, +1 Attack, +1 Defense!');
+            engine.log('Vitality surge: +5 Max HP, +4 Max Mana, +1 Attack, +1 Defense!');
           }
+          if (levelUpRes.statPointsAwarded && levelUpRes.statPointsAwarded > 0) {
+            engine.log(`You have gained ${levelUpRes.statPointsAwarded} attribute point${levelUpRes.statPointsAwarded > 1 ? 's' : ''}! (${engine.player.unspentStatPoints} total unspent)`);
+          }
+          engine.emitGameEvent({
+            type: 'player_leveled_up',
+            player: engine.player,
+            level: levelUpRes.newLevel,
+            newLevel: levelUpRes.newLevel,
+            statPointsAwarded: levelUpRes.statPointsAwarded ?? 3,
+            unspentStatPoints: engine.player.unspentStatPoints,
+            statGains: levelUpRes.statGains,
+          });
         }
       } else {
         engine.log(`${victim.name} is slain!`);
@@ -138,5 +150,16 @@ export class DeathResolver {
 
     // Remove entity from map and scheduler
     engine.removeEntity(victim);
+
+    if (victim instanceof Monster && engine.currentFloor >= 1) {
+      const remainingLiving = engine.map.getAllEntities().filter(
+        (e) => e instanceof Monster && e.isAlive()
+      );
+      if (remainingLiving.length === 0 && !engine.map.isCleared) {
+        engine.map.isCleared = true;
+        engine.map.lastRespawnTurn = engine.map.floorTurnCount;
+        engine.log('The floor is clear of monsters... for now.');
+      }
+    }
   }
 }

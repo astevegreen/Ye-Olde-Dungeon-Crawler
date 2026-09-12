@@ -7,6 +7,7 @@ export interface MainMenuOptions {
   autosaveManager?: AutosaveManager;
   onNewGame: () => void;
   onContinue: (profileId?: string) => void;
+  onLoadGame: () => void;
   onOpenSettings: () => void;
   onOpenHelp: () => void;
   onOpenValhalla: () => void;
@@ -16,6 +17,7 @@ export class MainMenu {
   private options: MainMenuOptions;
   private container: HTMLElement | null = null;
   private continueBtn: HTMLButtonElement | null = null;
+  private loadBtn: HTMLButtonElement | null = null;
   private saveSummaryEl: HTMLElement | null = null;
   private storageStatusEl: HTMLElement | null = null;
   public isOpen = false;
@@ -66,7 +68,7 @@ export class MainMenu {
       }
     } else {
       this.continueBtn.disabled = true;
-      this.continueBtn.textContent = '⚡ Continue / Load Game';
+      this.continueBtn.textContent = '⚡ Continue';
       if (this.saveSummaryEl) {
         this.saveSummaryEl.textContent = 'No saved adventurers found. Roll a new hero to begin!';
       }
@@ -123,10 +125,13 @@ export class MainMenu {
           <!-- Main Options List -->
           <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
             <button type="button" id="btn-menu-continue" class="win-btn primary-btn" style="padding: 10px; font-size: 14px; font-weight: bold;">
-              ⚡ Continue / Load Game
+              ⚡ Continue
+            </button>
+            <button type="button" id="btn-menu-load" class="win-btn" style="padding: 10px; font-size: 14px; font-weight: bold;">
+              📂 Load Saved Game
             </button>
             <button type="button" id="btn-menu-new-game" class="win-btn" style="padding: 10px; font-size: 14px; font-weight: bold;">
-              ⚔️ New Game / Character Roster
+              ⚔️ New Game
             </button>
             <button type="button" id="btn-menu-settings" class="win-btn" style="padding: 9px; font-size: 13px;">
               ⚙️ Settings &amp; Keybindings
@@ -157,6 +162,7 @@ export class MainMenu {
     this.container = overlay;
 
     this.continueBtn = overlay.querySelector('#btn-menu-continue') as HTMLButtonElement | null;
+    this.loadBtn = overlay.querySelector('#btn-menu-load') as HTMLButtonElement | null;
     this.saveSummaryEl = overlay.querySelector('#main-menu-save-summary');
     this.storageStatusEl = overlay.querySelector('#main-menu-storage-status');
 
@@ -164,6 +170,10 @@ export class MainMenu {
     this.continueBtn?.addEventListener('click', () => {
       this.hide();
       this.options.onContinue();
+    });
+
+    this.loadBtn?.addEventListener('click', () => {
+      this.options.onLoadGame();
     });
 
     overlay.querySelector('#btn-menu-new-game')?.addEventListener('click', () => {

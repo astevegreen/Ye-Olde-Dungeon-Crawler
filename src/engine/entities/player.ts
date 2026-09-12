@@ -32,6 +32,7 @@ export interface PlayerConfig {
   deepestRecallFloor?: number;
   recallPosition?: Position;
   quickSpells?: (string | null)[];
+  unspentStatPoints?: number;
 }
 
 const DEFAULT_PLAYER_STATS: CombatStats = {
@@ -61,6 +62,7 @@ export class Player extends Actor {
   public deepestRecallFloor?: number;
   public recallPosition?: Position;
   public quickSpells: (string | null)[];
+  public unspentStatPoints: number;
   public pactMutatorsSupplier?: () => import('../pacts/pactManager').RunPactMutatorRules;
 
   constructor(config: PlayerConfig) {
@@ -95,6 +97,7 @@ export class Player extends Actor {
     }
     this.level = config.level ?? 1;
     this.xp = config.xp ?? 0;
+    this.unspentStatPoints = config.unspentStatPoints ?? 0;
     this.progressionConfig = config.progressionConfig;
     this.tutorialFlags = config.tutorialFlags ? { ...config.tutorialFlags } : {};
     this.deepestRecallFloor = config.deepestRecallFloor;
@@ -129,10 +132,17 @@ export class Player extends Actor {
   public gainXp(
     amount: number,
     config?: ProgressionConfig
-  ): { leveledUp: boolean; newLevel: number; statGains?: LevelUpBonus } {
+  ): {
+    leveledUp: boolean;
+    newLevel: number;
+    statPointsAwarded?: number;
+    unspentStatPoints?: number;
+    statGains?: LevelUpBonus;
+  } {
     const progression = config ?? this.progressionConfig;
     this.xp += amount;
     let leveledUp = false;
+    let totalPointsAwarded = 0;
     let accumulatedGains: LevelUpBonus = {};
 
     while (true) {
@@ -146,15 +156,17 @@ export class Player extends Actor {
       this.xp -= needed;
       this.level += 1;
 
+      // Unspent stat point allocation decoupling
+      const points = progression?.statPointsPerLevel ?? 3;
+      this.unspentStatPoints += points;
+      totalPointsAwarded += points;
+
+      const hasCustomGains = Boolean(progression?.statGains);
       const gains: LevelUpBonus = typeof progression?.statGains === 'function'
         ? progression.statGains(this.level)
         : (progression?.statGains ?? {
             maxHp: 5,
             maxMana: 4,
-            strength: 1,
-            intelligence: 1,
-            constitution: 1,
-            dexterity: 1,
             baseAttack: 1,
             baseDefense: 1,
           });
@@ -163,20 +175,23 @@ export class Player extends Actor {
       this.hp = this.maxHp;
       this.maxMana += gains.maxMana ?? 4;
       this.mana = this.maxMana;
-      this.strength += gains.strength ?? 1;
-      this.intelligence += gains.intelligence ?? 1;
-      this.constitution += gains.constitution ?? 1;
-      this.dexterity += gains.dexterity ?? 1;
+
+      if (hasCustomGains) {
+        if (gains.strength) this.strength += gains.strength;
+        if (gains.intelligence) this.intelligence += gains.intelligence;
+        if (gains.constitution) this.constitution += gains.constitution;
+        if (gains.dexterity) this.dexterity += gains.dexterity;
+      }
       this.baseAttack += gains.baseAttack ?? 1;
       this.baseDefense += gains.baseDefense ?? 1;
 
       accumulatedGains = {
         maxHp: (accumulatedGains.maxHp ?? 0) + (gains.maxHp ?? 5),
         maxMana: (accumulatedGains.maxMana ?? 0) + (gains.maxMana ?? 4),
-        strength: (accumulatedGains.strength ?? 0) + (gains.strength ?? 1),
-        intelligence: (accumulatedGains.intelligence ?? 0) + (gains.intelligence ?? 1),
-        constitution: (accumulatedGains.constitution ?? 0) + (gains.constitution ?? 1),
-        dexterity: (accumulatedGains.dexterity ?? 0) + (gains.dexterity ?? 1),
+        strength: (accumulatedGains.strength ?? 0) + (gains.strength ?? 0),
+        intelligence: (accumulatedGains.intelligence ?? 0) + (gains.intelligence ?? 0),
+        constitution: (accumulatedGains.constitution ?? 0) + (gains.constitution ?? 0),
+        dexterity: (accumulatedGains.dexterity ?? 0) + (gains.dexterity ?? 0),
         baseAttack: (accumulatedGains.baseAttack ?? 0) + (gains.baseAttack ?? 1),
         baseDefense: (accumulatedGains.baseDefense ?? 0) + (gains.baseDefense ?? 1),
       };
@@ -187,8 +202,42 @@ export class Player extends Actor {
     return {
       leveledUp,
       newLevel: this.level,
+      statPointsAwarded: leveledUp ? totalPointsAwarded : 0,
+      unspentStatPoints: this.unspentStatPoints,
       statGains: leveledUp ? accumulatedGains : undefined,
     };
+  }
+
+  public allocateAttribute(
+    attribute: 'strength' | 'dexterity' | 'constitution' | 'intelligence',
+    amount: number = 1
+  ): boolean {
+    if (amount <= 0 || this.unspentStatPoints < amount) {
+      return false;
+    }
+    this.unspentStatPoints -= amount;
+    switch (attribute) {
+      case 'strength':
+        this.strength += amount;
+        break;
+      case 'dexterity':
+        this.dexterity += amount;
+        break;
+      case 'constitution':
+        this.constitution += amount;
+        this._maxHp += amount * 2;
+        this.hp = Math.min(this.maxHp, this.hp + amount * 2);
+        break;
+      case 'intelligence':
+        this.intelligence += amount;
+        this.maxMana += amount * 2;
+        this.mana = Math.min(this.maxMana, this.mana + amount * 2);
+        break;
+      default:
+        this.unspentStatPoints += amount;
+        return false;
+    }
+    return true;
   }
 
   public consumeMana(amount: number): boolean {

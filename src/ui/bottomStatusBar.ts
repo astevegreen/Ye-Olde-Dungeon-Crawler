@@ -146,14 +146,24 @@ export class BottomStatusBar {
     const { x, y } = engine.player;
     const status = formatGroundStatus(engine, x, y);
 
+    let promptText = status.promptText;
+    const unspent = engine.player.unspentStatPoints ?? 0;
+    if (unspent > 0) {
+      const allocBadge = `⭐ [U] Allocate Stats (${unspent})`;
+      promptText = promptText ? `${allocBadge} | ${promptText}` : allocBadge;
+    }
+
     this.standingEl.textContent = status.standingText;
     this.detailsEl.textContent = status.detailText ? ` | ${status.detailText}` : '';
-    this.promptEl.textContent = status.promptText;
+    this.promptEl.textContent = promptText;
 
-    if (status.promptText.includes('🪜') || status.promptText.includes('🌀')) {
+    if (unspent > 0) {
+      this.promptEl.style.color = '#facc15';
+      this.promptEl.style.fontWeight = 'bold';
+    } else if (promptText.includes('🪜') || promptText.includes('🌀')) {
       this.promptEl.style.color = '#fde047';
       this.promptEl.style.fontWeight = 'bold';
-    } else if (status.promptText.includes('⚠️')) {
+    } else if (promptText.includes('⚠️')) {
       this.promptEl.style.color = '#f87171';
       this.promptEl.style.fontWeight = 'bold';
     } else {

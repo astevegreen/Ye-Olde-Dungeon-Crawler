@@ -4,6 +4,7 @@ import type { Entity } from '../entities/entity';
 import type { GameEngine } from '../engine';
 import type { Action } from './action';
 import { MeleeAttackAction } from './combat';
+import { OpenDoorAction } from './door';
 import { NPC } from '../entities/npc';
 import { ExecuteChoiceAction } from './choiceAction';
 import type { Player } from '../entities/player';
@@ -66,7 +67,7 @@ export class MovementAction implements Action {
     }
 
     // 2. Entity Collision Check (Bump-Attack vs Hostile, or Talk to NPC)
-    const targetEntity = engine.map.getEntityAt(targetX, targetY);
+    const targetEntity = engine.map.getEntityAt(targetX, targetY, this.entity.planeId);
     if (targetEntity) {
       if (this.entity.isHostileTo(targetEntity)) {
         // Automatically trigger bump-attack
@@ -95,11 +96,15 @@ export class MovementAction implements Action {
     const tile = engine.map.getTile(targetX, targetY);
     const isWalkable = tile ? (tile.walkable ?? tile.passable) : false;
     if (!tile || !isWalkable) {
+      // Auto-resolve OpenDoorAction on bump into closed doors (orthogonal & diagonal)
+      if (tile && (tile.isClosedDoor || tile.type === 'door_closed')) {
+        const openAction = new OpenDoorAction(this.entity, targetX, targetY);
+        return openAction.perform(engine);
+      }
+
       let desc = 'obstacle';
       if (tile) {
-        if (tile.isClosedDoor) {
-          desc = 'closed door';
-        } else if (tile.type === 'wall' || tile.name.toLowerCase().includes('wall')) {
+        if (tile.type === 'wall' || tile.name.toLowerCase().includes('wall')) {
           desc = 'wall';
         } else {
           desc = tile.name.toLowerCase();

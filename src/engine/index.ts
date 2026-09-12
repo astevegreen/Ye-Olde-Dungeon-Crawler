@@ -54,6 +54,7 @@ export * from './inventory/inventory-manager';
 // Scheduler & Engine Core
 export * from './scheduler';
 export * from './engine';
+export * from './events';
 export * from './state/worldState';
 export * from './commands/commandBus';
 

@@ -106,6 +106,8 @@ for (const filePath of [...uiFiles, ...renderingFiles]) {
   const content = fs.readFileSync(filePath, 'utf-8');
   const lines = content.split('\n');
 
+  const isTestOrFixture = relativePath.includes('__tests__') || relativePath.includes('__fixtures__');
+
   for (let i = 0; i < lines.length; i++) {
     const lineNum = i + 1;
     const line = lines[i];
@@ -116,6 +118,15 @@ for (const filePath of [...uiFiles, ...renderingFiles]) {
         line: lineNum,
         category: 'DEEP_ENGINE_IMPORT',
         detail: `Deep import bypassing engine public API barrel: ${line.trim()}`,
+      });
+    }
+
+    if (!isTestOrFixture && ENGINE_SOURCE_CONTENT_IMPORT_REGEX.test(line)) {
+      violations.push({
+        file: relativePath,
+        line: lineNum,
+        category: 'FORBIDDEN_CONTENT_IMPORT',
+        detail: `Content pack imported outside Composition Root (src/main.ts): ${line.trim()}`,
       });
     }
   }

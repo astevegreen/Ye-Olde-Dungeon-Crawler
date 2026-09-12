@@ -131,7 +131,8 @@ export class DungeonGenerator {
               vy,
               this.floorNumber,
               this.monsterCandidates,
-              this.itemCandidates
+              this.itemCandidates,
+              () => this.prng.next()
             );
             vaultRoomIndices.add(rooms.length);
             rooms.push(vRoom);

@@ -6,7 +6,8 @@ Invoke this skill whenever the user asks for a comprehensive codebase audit, arc
 ## Analysis Protocol (Phase 1: Read-Only Audit)
 1. **Architectural Boundary Inspection:**
    - Scan `src/engine/` for DOM, `window`, `document`, or Canvas imports (Headless Purity violation).
-   - Scan `src/ui/` and `src/rendering/` for deep imports into engine internals beyond `src/engine/index.ts` and `src/engine/engine.ts`.
+   - Scan `src/ui/` and `src/rendering/` for deep imports into engine internals beyond `src/engine/index.ts`.
+   - Verify `src/engine/`, `src/ui/`, and `src/rendering/` contain zero imports from `src/content/` (confirming `src/main.ts` as the sole Composition Root).
    - Verify all random number generation in simulation code routes through seeded PRNG.
 
 2. **Game Systems & Codebase Health:**
@@ -29,7 +30,8 @@ Invoke this skill whenever the user asks for a comprehensive codebase audit, arc
 Only proceed after the user explicitly approves the remediation plan:
 1. Implement fixes incrementally according to the approved plan.
 2. Run validation gates after changes:
-   - `npm test` (Unit regression pass)
+   - `npm run lint` (Typechecking & static boundary verification)
+   - `npm test` (Unit, integration, and chaos regression pass)
    - `npm run sim` (Headless turn loop pass)
    - `npm run validate:schema` (Forward schema migration pass)
    - `npm run build` (Single-file offline bundle verification)

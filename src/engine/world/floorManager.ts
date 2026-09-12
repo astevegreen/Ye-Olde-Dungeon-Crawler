@@ -149,14 +149,15 @@ export class FloorManager {
 
       // Pick monster definitions appropriate for manifest or floor
       const monsterCatalog = engine.manifest?.monsters ?? [];
+      const rng = engine.rng ? () => engine.rng() : Math.random;
 
       for (let i = 0; i < spawnsToPerform && candidateTiles.length > 0; i++) {
-        const tileIdx = Math.floor(Math.random() * candidateTiles.length);
+        const tileIdx = Math.floor(rng() * candidateTiles.length);
         const tile = candidateTiles.splice(tileIdx, 1)[0];
 
         // Choose monster definition
         const def = monsterCatalog.length > 0
-          ? monsterCatalog[Math.floor(Math.random() * monsterCatalog.length)]
+          ? monsterCatalog[Math.floor(rng() * monsterCatalog.length)]
           : undefined;
 
         const mId = `catchup-m-${floorNumber}-${currentTick}-${i}`;

@@ -274,8 +274,16 @@ export class Player extends Actor {
     return calculateAttribute(this, 'attack');
   }
 
+  public override set attack(value: number) {
+    this.baseAttack = value;
+  }
+
   public override get defense(): number {
     return calculateAttribute(this, 'defense');
+  }
+
+  public override set defense(value: number) {
+    this.baseDefense = value;
   }
 
   public override canMove(): boolean {

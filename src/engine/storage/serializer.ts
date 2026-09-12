@@ -60,6 +60,7 @@ export function serializeItem(item: Item): SerializedItemNode {
     elementalAffix: item.elementalAffix ? { ...item.elementalAffix } : undefined,
     durability: item.durability ? { ...item.durability } : undefined,
     aspectState: item.aspectState,
+    modifiers: item.modifiers.length > 0 ? item.modifiers.map((m) => ({ ...m })) : undefined,
   };
 
   if (item instanceof Container) {
@@ -130,6 +131,7 @@ export function deserializeItem(node: SerializedItemNode): Item {
       acceptedCategories: node.acceptedCategories,
       durability: node.durability,
       aspectState: node.aspectState,
+      modifiers: node.modifiers ? [...node.modifiers] : undefined,
     });
 
     for (const childNode of node.items) {
@@ -170,6 +172,7 @@ export function deserializeItem(node: SerializedItemNode): Item {
       maxCharges: node.wandData.maxCharges,
       durability: node.durability,
       aspectState: node.aspectState,
+      modifiers: node.modifiers ? [...node.modifiers] : undefined,
     });
   }
 
@@ -194,6 +197,7 @@ export function deserializeItem(node: SerializedItemNode): Item {
       spellId: node.scrollSpellId,
       durability: node.durability,
       aspectState: node.aspectState,
+      modifiers: node.modifiers ? [...node.modifiers] : undefined,
     });
   }
 
@@ -219,6 +223,7 @@ export function deserializeItem(node: SerializedItemNode): Item {
       potency: node.potionPotency ?? 20,
       durability: node.durability,
       aspectState: node.aspectState,
+      modifiers: node.modifiers ? [...node.modifiers] : undefined,
     });
   }
 
@@ -253,6 +258,7 @@ export function deserializeItem(node: SerializedItemNode): Item {
     elementalAffix: node.elementalAffix,
     durability: node.durability,
     aspectState: node.aspectState,
+    modifiers: node.modifiers ? [...node.modifiers] : undefined,
   });
 }
 

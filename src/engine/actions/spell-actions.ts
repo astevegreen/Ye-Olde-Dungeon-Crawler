@@ -42,16 +42,30 @@ export class CastSpellAction implements Action {
     const isPlayer = this.caster instanceof Player;
     const player = isPlayer ? (this.caster as Player) : null;
 
+    let manaDiscount = 0;
+    if (player?.inventory?.paperdoll) {
+      for (const item of player.inventory.paperdoll.getEquippedItems()) {
+        if (!item.isBroken() && item.modifiers) {
+          for (const mod of item.modifiers) {
+            if (mod.manaCostDiscount) {
+              manaDiscount += mod.manaCostDiscount;
+            }
+          }
+        }
+      }
+    }
+    const effectiveManaCost = Math.max(0, spell.manaCost - manaDiscount);
+
     // Check mana cost for player (unless free cast via wand or scroll)
-    if (player && !this.freeCast && spell.manaCost > 0) {
-      if (player.mana < spell.manaCost) {
+    if (player && !this.freeCast && effectiveManaCost > 0) {
+      if (player.mana < effectiveManaCost) {
         return {
           success: false,
           cost: 0,
-          message: `Not enough mana to cast ${spell.name}! (Requires ${spell.manaCost} MP, have ${player.mana})`,
+          message: `Not enough mana to cast ${spell.name}! (Requires ${effectiveManaCost} MP, have ${player.mana})`,
         };
       }
-      player.consumeMana(spell.manaCost);
+      player.consumeMana(effectiveManaCost);
     }
 
     const actionCost = this.caster.getActionCost(100);

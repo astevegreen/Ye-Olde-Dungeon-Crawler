@@ -1,7 +1,7 @@
 import type { SaveData } from './types';
 import { compactTiles, compactFov } from './compaction';
 
-export const CURRENT_SCHEMA_VERSION = 6;
+export const CURRENT_SCHEMA_VERSION = 7;
 
 export interface VersionedSaveEnvelope<T = SaveData> {
   schemaVersion: number;
@@ -275,6 +275,68 @@ export class SchemaMigrator {
 
       return {
         schemaVersion: 6,
+        contentManifestId: envelope.contentManifestId ?? 'cotw',
+        timestamp: envelope.timestamp ?? Date.now(),
+        data,
+      };
+    });
+
+    // Migration v6 -> v7: Declarative item modifier architecture
+    this.registerMigration(6, 7, (envelope: VersionedSaveEnvelope<any>): VersionedSaveEnvelope => {
+      const data = { ...envelope.data };
+
+      const normalizeItem = (it: any) => {
+        if (!it) return;
+        if (!Array.isArray(it.modifiers)) {
+          it.modifiers = [];
+        }
+        if (Array.isArray(it.items)) {
+          for (const child of it.items) {
+            normalizeItem(child);
+          }
+        }
+      };
+
+      // 1. Normalize items in player inventory
+      if (data.player?.inventory) {
+        if (data.player.inventory.paperdoll) {
+          for (const item of Object.values(data.player.inventory.paperdoll) as any[]) {
+            normalizeItem(item);
+          }
+        }
+        if (data.player.inventory.primaryPack) {
+          normalizeItem(data.player.inventory.primaryPack);
+        }
+      }
+
+      // 2. Normalize ground items on active map
+      if (data.map?.groundItems) {
+        for (const tile of data.map.groundItems) {
+          if (Array.isArray(tile.items)) {
+            for (const item of tile.items) {
+              normalizeItem(item);
+            }
+          }
+        }
+      }
+
+      // 3. Normalize ground items on stored maps
+      if (data.storedMaps) {
+        for (const fMap of Object.values(data.storedMaps) as any[]) {
+          if (fMap?.groundItems) {
+            for (const tile of fMap.groundItems) {
+              if (Array.isArray(tile.items)) {
+                for (const item of tile.items) {
+                  normalizeItem(item);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      return {
+        schemaVersion: 7,
         contentManifestId: envelope.contentManifestId ?? 'cotw',
         timestamp: envelope.timestamp ?? Date.now(),
         data,

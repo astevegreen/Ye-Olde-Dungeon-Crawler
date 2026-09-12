@@ -449,8 +449,26 @@ export class SpellPipeline {
     effect: DamageEffect
   ): void {
     if (!target.isAlive()) return;
-    const rawDamage = parseAndRollDice(effect.amount, engine ? engine.rng : undefined);
+    let rawDamage = parseAndRollDice(effect.amount, engine ? engine.rng : undefined);
     if (rawDamage <= 0) return;
+
+    // Apply Enchanted spellDamageMultiplier from caster's equipped items
+    const casterAny = caster as any;
+    let spellMultiplier = 1.0;
+    if (casterAny.inventory?.paperdoll) {
+      for (const item of casterAny.inventory.paperdoll.getEquippedItems()) {
+        if (!item.isBroken() && item.modifiers) {
+          for (const mod of item.modifiers) {
+            if (mod.spellDamageMultiplier) {
+              spellMultiplier *= mod.spellDamageMultiplier;
+            }
+          }
+        }
+      }
+    }
+    if (spellMultiplier !== 1.0) {
+      rawDamage = Math.max(1, Math.round(rawDamage * spellMultiplier));
+    }
 
     const terrain = engine.map.getTile(target.x, target.y)?.type;
     const result = target.takeElementalDamage(rawDamage, effect.element, engine.affinityMatrix, terrain);

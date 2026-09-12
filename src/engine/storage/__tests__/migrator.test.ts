@@ -261,7 +261,7 @@ describe('Schema Migrator & Save State Versioning', () => {
     const result = defaultMigrator.migrate(v4Envelope);
     expect(result.migrated).toBe(true);
     expect(result.fromVersion).toBe(4);
-    expect(result.envelope.schemaVersion).toBe(6);
+    expect(result.envelope.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(result.envelope.data.map.surfaces).toEqual([]);
     expect(result.envelope.data.map.substances).toEqual([]);
     expect(result.envelope.data.storedMaps![2].surfaces).toEqual([]);
@@ -292,16 +292,58 @@ describe('Schema Migrator & Save State Versioning', () => {
     const result = defaultMigrator.migrate(v5Envelope);
     expect(result.migrated).toBe(true);
     expect(result.fromVersion).toBe(5);
-    expect(result.envelope.schemaVersion).toBe(6);
+    expect(result.envelope.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(result.envelope.data.player.unspentStatPoints).toBe(0);
     expect(result.envelope.data.profile.unspentStatPoints).toBe(0);
     expect(result.envelope.data.map.floorTurnCount).toBe(0);
     expect(result.envelope.data.map.isCleared).toBe(false);
   });
 
-  it('leaves already up-to-date v6 save untouched', () => {
+  it('migrates v6 envelope to v7 normalizing item modifiers', () => {
     const v6Envelope: VersionedSaveEnvelope<any> = {
       schemaVersion: 6,
+      contentManifestId: 'cotw',
+      timestamp: 100000,
+      data: {
+        player: {
+          id: 'hero',
+          name: 'Sven',
+          x: 2,
+          y: 3,
+          inventory: {
+            paperdoll: {
+              mainHand: { id: 'w1', name: 'Broadsword', category: 'weapon' },
+            },
+            primaryPack: {
+              id: 'p1',
+              name: 'Pack',
+              category: 'container',
+              items: [{ id: 'a1', name: 'Shield', category: 'shield' }],
+            },
+          },
+        },
+        map: {
+          width: 4,
+          height: 4,
+          tilesRle: '16W',
+          groundItems: [{ x: 1, y: 1, items: [{ id: 'g1', name: 'Helm', category: 'helmet' }] }],
+          monsters: [],
+        },
+      },
+    };
+
+    const result = defaultMigrator.migrate(v6Envelope);
+    expect(result.migrated).toBe(true);
+    expect(result.fromVersion).toBe(6);
+    expect(result.envelope.schemaVersion).toBe(7);
+    expect(result.envelope.data.player.inventory.paperdoll.mainHand!.modifiers).toEqual([]);
+    expect(result.envelope.data.player.inventory.primaryPack.items[0].modifiers).toEqual([]);
+    expect(result.envelope.data.map.groundItems[0].items[0].modifiers).toEqual([]);
+  });
+
+  it('leaves already up-to-date v7 save untouched', () => {
+    const v7Envelope: VersionedSaveEnvelope<any> = {
+      schemaVersion: 7,
       contentManifestId: 'cotw',
       timestamp: 100000,
       data: {
@@ -317,10 +359,10 @@ describe('Schema Migrator & Save State Versioning', () => {
       },
     };
 
-    const result = defaultMigrator.migrate(v6Envelope);
+    const result = defaultMigrator.migrate(v7Envelope);
     expect(result.migrated).toBe(false);
-    expect(result.fromVersion).toBe(6);
-    expect(result.envelope.schemaVersion).toBe(6);
+    expect(result.fromVersion).toBe(7);
+    expect(result.envelope.schemaVersion).toBe(7);
     expect(result.envelope.data.map.tilesRle).toBe('16W');
     expect(result.envelope.data.map.lastVisitedTick).toBe(120);
     expect(result.envelope.data.player.corruptionScore).toBe(5);

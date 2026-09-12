@@ -38,9 +38,12 @@ export * from './actions/disarm';
 export * from './actions/autoRest';
 export * from './actions/choiceAction';
 export * from './actions/identificationActions';
+export * from './actions/uncurseAction';
 
 // Items & Containers
 export * from './items/item';
+export * from './items/modifiers';
+export * from './items/modifierRoller';
 export * from './items/container';
 export * from './items/factory';
 export * from './items/consumables';

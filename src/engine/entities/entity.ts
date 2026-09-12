@@ -19,6 +19,7 @@ export interface EntityConfig {
   planeId?: string;
   isAnchored?: boolean;
   vulnerabilityTags?: string[];
+  tags?: string[];
 }
 
 export class Entity {
@@ -41,6 +42,7 @@ export class Entity {
   public planeId: string;
   public isAnchored: boolean;
   public vulnerabilityTags: string[];
+  public tags: string[];
 
   constructor(config: EntityConfig) {
     this.id = config.id;
@@ -61,6 +63,7 @@ export class Entity {
     this.planeId = config.planeId ?? 'physical';
     this.isAnchored = config.isAnchored ?? false;
     this.vulnerabilityTags = config.vulnerabilityTags ? [...config.vulnerabilityTags] : [];
+    this.tags = config.tags ? [...config.tags] : [];
   }
 
   public get maxHp(): number {
@@ -186,6 +189,62 @@ export class Entity {
     if (this.faction === 'hostile') {
       return other.faction === 'player';
     }
+    return false;
+  }
+
+  public hasTag(tag: string): boolean {
+    const lower = tag.toLowerCase();
+    if (this.tags.some((t) => t.toLowerCase() === lower)) return true;
+    if (this.vulnerabilityTags.some((t) => t.toLowerCase() === lower)) return true;
+    if (this.faction && this.faction.toLowerCase() === lower) return true;
+    if (this.type && this.type.toLowerCase() === lower) return true;
+
+    const anyEnt = this as any;
+    if (anyEnt.definitionId && typeof anyEnt.definitionId === 'string') {
+      if (anyEnt.definitionId.toLowerCase().includes(lower)) return true;
+    }
+    if (anyEnt.role && typeof anyEnt.role === 'string') {
+      if (anyEnt.role.toLowerCase().includes(lower)) return true;
+    }
+
+    // Semantic aliases for game archetypes
+    if (lower === 'clergy') {
+      return (
+        anyEnt.role === 'priest' ||
+        anyEnt.role === 'cleric' ||
+        Boolean(anyEnt.definitionId?.includes('priest')) ||
+        Boolean(anyEnt.definitionId?.includes('cleric'))
+      );
+    }
+    if (lower === 'innocent') {
+      return anyEnt.role === 'villager' || anyEnt.role === 'merchant' || this.type === 'npc';
+    }
+    if (lower === 'undead') {
+      return (
+        this.vulnerabilityTags.includes('radiant') ||
+        Boolean(anyEnt.definitionId?.includes('skeleton')) ||
+        Boolean(anyEnt.definitionId?.includes('zombie')) ||
+        Boolean(anyEnt.definitionId?.includes('ghost')) ||
+        Boolean(anyEnt.definitionId?.includes('vampire')) ||
+        Boolean(anyEnt.definitionId?.includes('ghoul')) ||
+        Boolean(anyEnt.definitionId?.includes('lich'))
+      );
+    }
+    if (lower === 'demon') {
+      return (
+        this.vulnerabilityTags.includes('holy') ||
+        Boolean(anyEnt.definitionId?.includes('demon')) ||
+        Boolean(anyEnt.definitionId?.includes('imp')) ||
+        Boolean(anyEnt.definitionId?.includes('fiend'))
+      );
+    }
+    if (lower === 'holy') {
+      return (
+        this.vulnerabilityTags.includes('unholy') ||
+        anyEnt.aspectState === 'aspect_radiant'
+      );
+    }
+
     return false;
   }
 }

@@ -59,6 +59,7 @@ export interface MonsterConfig {
   hooks?: HookDescriptor[];
   inventory?: import('../inventory/inventory-manager').InventoryManager;
   items?: import('../items/item').Item[];
+  tags?: string[];
 }
 
 export class Monster extends Actor {
@@ -92,6 +93,7 @@ export class Monster extends Actor {
       statusImmunities: config.statusImmunities,
       aiRoutineId: config.aiRoutineId ?? config.aiType,
       inventory: config.inventory,
+      tags: config.tags,
       capabilities: {
         canMove: true,
         canAct: true,

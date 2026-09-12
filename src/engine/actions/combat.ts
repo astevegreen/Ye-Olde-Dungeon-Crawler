@@ -11,6 +11,23 @@ import { flightRecorder } from '../debug/flightRecorder';
 import { HookDispatcher } from '../hooks/hookDispatcher';
 import { applyImpulse } from '../combat/impulse';
 import { resolveCombatMitigation } from '../combat/mitigationPipeline';
+import type { Item } from '../items/item';
+import type { ItemModifier } from '../items/modifiers';
+
+function getActorEquippedItems(actor: Entity): Item[] {
+  const actorAny = actor as any;
+  if (actorAny.inventory?.paperdoll) {
+    return actorAny.inventory.paperdoll.getEquippedItems();
+  }
+  if (typeof actorAny.getEquippedItems === 'function') {
+    return actorAny.getEquippedItems();
+  }
+  if (typeof actorAny.getEquippedItem === 'function') {
+    const item = actorAny.getEquippedItem('mainHand');
+    return item ? [item] : [];
+  }
+  return [];
+}
 
 export class MeleeAttackAction implements Action {
   public readonly attacker: Entity;
@@ -88,6 +105,198 @@ export class MeleeAttackAction implements Action {
       }
 
       rawDamage = base;
+    }
+
+    // Evaluate attacker equipped item modifiers
+    const attackerItems = getActorEquippedItems(this.attacker);
+    const attackerModifiers: ItemModifier[] = [];
+    for (const it of attackerItems) {
+      if (!it.isBroken() && it.modifiers) {
+        attackerModifiers.push(...it.modifiers);
+      }
+    }
+
+    // 1. Blessed modifiers (physical/melee scaling)
+    for (const mod of attackerModifiers) {
+      if (mod.category === 'blessed' || mod.alignment === 'positive') {
+        if (mod.meleeDamageMultiplier) {
+          rawDamage = Math.round(rawDamage * mod.meleeDamageMultiplier);
+        }
+        if (mod.meleeDamageFlatBonus) {
+          rawDamage += mod.meleeDamageFlatBonus;
+        }
+      }
+    }
+
+    // 2. Tag-based bonuses: Holy (vs undead/demon) and Unholy (vs clergy/innocents)
+    for (const mod of attackerModifiers) {
+      if (mod.tagBonuses && mod.tagBonuses.length > 0) {
+        for (const bonus of mod.tagBonuses) {
+          if (this.defender.hasTag(bonus.tag)) {
+            rawDamage = Math.round(rawDamage * bonus.multiplier) + bonus.flatBonus;
+            if (bonus.message) {
+              engine.log(bonus.message);
+            } else if (mod.category === 'holy') {
+              engine.log(`Holy radiance blazes against ${this.defender.name}! (+${Math.round((bonus.multiplier - 1) * 100)}% / +${bonus.flatBonus} Holy damage)`);
+            } else if (mod.category === 'unholy') {
+              engine.log(`Unholy malice tears into ${this.defender.name}! (+${Math.round((bonus.multiplier - 1) * 100)}% / +${bonus.flatBonus} Unholy damage)`);
+            }
+
+            if (bonus.renownCategory) {
+              const renownCategory = bonus.renownCategory;
+              const amount = bonus.renownAmount ?? 1;
+              const totalRenown = engine.modifyWorldCounter(renownCategory, amount);
+              engine.emitGameEvent({
+                type: 'alignment_renown',
+                actor: this.attacker,
+                target: this.defender,
+                renownCategory,
+                amount,
+                totalRenown,
+                sourceModifierId: mod.id,
+              });
+              engine.log(`Your unholy deed echoes in the dark (+${amount} ${renownCategory})!`);
+            }
+            break;
+          }
+        }
+      }
+
+      // 3. Unholy consecrated ground penalty
+      if (mod.consecratedGroundPenalty) {
+        const surface = engine.surfaces?.getSurface(this.attacker.x, this.attacker.y);
+        const tile = engine.map?.getTile(this.attacker.x, this.attacker.y);
+        const isConsecrated =
+          surface === 'consecrated_ground' ||
+          surface === 'blessed_ground' ||
+          tile?.type === 'consecrated_ground' ||
+          (tile as any)?.type === 'blessed_ground' ||
+          (tile as any)?.isConsecrated === true ||
+          tile?.name?.toLowerCase().includes('consecrated') ||
+          tile?.name?.toLowerCase().includes('altar');
+
+        if (isConsecrated) {
+          rawDamage = Math.max(1, Math.round(rawDamage * (1 - mod.consecratedGroundPenalty.damagePenalty)));
+          const selfDmg = mod.consecratedGroundPenalty.selfDamagePerAttack;
+          if (selfDmg > 0) {
+            this.attacker.takeDamage(selfDmg);
+            engine.log(`*** Consecrated ground rejects the unholy presence! ${this.attacker.name} suffers ${selfDmg} radiant retribution damage! ***`);
+            engine.recordVisualEffects([
+              {
+                type: 'burst',
+                epicenter: { x: this.attacker.x, y: this.attacker.y },
+                radius: 1,
+                color: '#facc15',
+                durationMs: 200,
+              },
+            ]);
+            if (!this.attacker.isAlive()) {
+              DeathResolver.resolveDeath(engine, undefined, this.attacker);
+              return {
+                success: true,
+                cost: this.attacker.getActionCost(BASE_ACTION_COST),
+                message: `${this.attacker.name} was incinerated by consecrated ground!`,
+              };
+            }
+          }
+        }
+      }
+    }
+
+    // 4. Defender Hexed damage amplification
+    const defenderItems = getActorEquippedItems(this.defender);
+    for (const it of defenderItems) {
+      if (!it.isBroken() && it.modifiers) {
+        for (const mod of it.modifiers) {
+          if (mod.damageTakenMultiplier || mod.damageTakenFlatBonus || mod.category === 'hexed') {
+            if (mod.damageTakenMultiplier) {
+              rawDamage = Math.round(rawDamage * mod.damageTakenMultiplier);
+            }
+            if (mod.damageTakenFlatBonus) {
+              rawDamage += mod.damageTakenFlatBonus;
+            }
+            engine.log(`Hexed affliction amplifies the blow against ${this.defender.name}!`);
+          }
+        }
+      }
+    }
+
+    // 5. Chaotic modifiers (proc checks: backlash & teleport)
+    for (const mod of attackerModifiers) {
+      if (mod.category === 'chaotic' || mod.alignment === 'chaotic') {
+        if (mod.meleeDamageMultiplier) {
+          rawDamage = Math.round(rawDamage * mod.meleeDamageMultiplier);
+        }
+        if (mod.meleeDamageFlatBonus) {
+          rawDamage += mod.meleeDamageFlatBonus;
+        }
+
+        if (mod.chaoticProc && engine.rng() < mod.chaoticProc.procChance) {
+          const proc = mod.chaoticProc;
+          if (proc.type === 'backlash') {
+            const backlashDmg = proc.param;
+            this.attacker.takeDamage(backlashDmg);
+            engine.log(`*** CHAOTIC BACKLASH! Volatile recoil sears ${this.attacker.name} for ${backlashDmg} damage! ***`);
+            engine.emitGameEvent({
+              type: 'chaotic_proc',
+              actor: this.attacker,
+              target: this.defender,
+              procType: 'backlash',
+              description: proc.description,
+              damageDealt: backlashDmg,
+            });
+            engine.recordVisualEffects([
+              {
+                type: 'burst',
+                epicenter: { x: this.attacker.x, y: this.attacker.y },
+                radius: 1,
+                color: '#c084fc',
+                durationMs: 200,
+              },
+            ]);
+            if (!this.attacker.isAlive()) {
+              DeathResolver.resolveDeath(engine, undefined, this.attacker);
+            }
+          } else if (proc.type === 'teleport') {
+            const range = proc.param;
+            const candidates: Position[] = [];
+            for (let dy = -range; dy <= range; dy++) {
+              for (let dx = -range; dx <= range; dx++) {
+                if (dx === 0 && dy === 0) continue;
+                const tx = this.attacker.x + dx;
+                const ty = this.attacker.y + dy;
+                if (
+                  engine.map.inBounds(tx, ty) &&
+                  engine.map.isPassable(tx, ty) &&
+                  !engine.map.getEntityAt(tx, ty)
+                ) {
+                  candidates.push({ x: tx, y: ty });
+                }
+              }
+            }
+            if (candidates.length > 0) {
+              const dest = candidates[Math.floor(engine.rng() * candidates.length)];
+              this.attacker.setPosition(dest.x, dest.y);
+              engine.log(`*** CHAOTIC WARP! Spatial instability scatters ${this.attacker.name} across the chamber! ***`);
+              engine.emitGameEvent({
+                type: 'chaotic_proc',
+                actor: this.attacker,
+                target: this.defender,
+                procType: 'teleport',
+                description: proc.description,
+                teleportDestination: dest,
+              });
+              engine.recordVisualEffects([
+                {
+                  type: 'screen_flash',
+                  color: '#c084fc',
+                  durationMs: 150,
+                },
+              ]);
+            }
+          }
+        }
+      }
     }
 
     // Resolve combat mitigation pipeline (aspect alignment & item durability wear)

@@ -1,6 +1,7 @@
 import type { ElementType } from '../magic/elements';
 import type { Predicate } from '../predicates/types';
 import type { HookDescriptor } from '../hooks/hookDispatcher';
+import type { ItemModifier } from './modifiers';
 
 export type ItemQuality = 'broken' | 'normal' | 'enchanted' | 'cursed' | 'artifact';
 
@@ -86,6 +87,7 @@ export interface ItemConfig {
   durability?: { current: number; max: number };
   aspectState?: string;
   unitWeight?: number;
+  modifiers?: ItemModifier[];
 }
 
 export class Item {
@@ -116,6 +118,7 @@ export class Item {
   public parent: Item | null = null;
   public durability?: { current: number; max: number };
   public aspectState?: string;
+  public modifiers: ItemModifier[] = [];
 
   constructor(config: ItemConfig) {
     this.id = config.id;
@@ -144,24 +147,36 @@ export class Item {
     this.hooks = config.hooks ? [...config.hooks] : undefined;
     this.durability = config.durability ? { ...config.durability } : undefined;
     this.aspectState = config.aspectState;
+    this.modifiers = config.modifiers ? [...config.modifiers] : [];
   }
 
   public get effectiveStats(): ItemStatModifiers {
     if (this.isBroken()) {
       return { attackBonus: 0, defenseBonus: 0, speedBonus: 0, strengthBonus: 0 };
     }
-    return this.stats;
+    const combined: ItemStatModifiers = { ...this.stats };
+    for (const mod of this.modifiers) {
+      if (mod.statDeltas) {
+        if (mod.statDeltas.attackBonus) combined.attackBonus = (combined.attackBonus ?? 0) + mod.statDeltas.attackBonus;
+        if (mod.statDeltas.defenseBonus) combined.defenseBonus = (combined.defenseBonus ?? 0) + mod.statDeltas.defenseBonus;
+        if (mod.statDeltas.speedBonus) combined.speedBonus = (combined.speedBonus ?? 0) + mod.statDeltas.speedBonus;
+        if (mod.statDeltas.strengthBonus) combined.strengthBonus = (combined.strengthBonus ?? 0) + mod.statDeltas.strengthBonus;
+      }
+    }
+    return combined;
   }
 
   public get displayName(): string {
-    let base = this.name;
+    if (!this.identified) {
+      return this.quantity > 1 ? `${this.unidentifiedName} (x${this.quantity})` : this.unidentifiedName;
+    }
     if (this.isBroken()) {
-      base = `Broken ${this.name}`;
-    } else if (!this.identified) {
-      base = this.unidentifiedName;
-    } else if (this.quality === 'cursed' || this.aspectState === 'aspect_corrupt') {
-      base = `Cursed ${this.name}`;
-    } else if (this.enchantmentLevel > 0 || this.elementalAffix) {
+      const brokenName = `Broken ${this.name}`;
+      return this.quantity > 1 ? `${brokenName} (x${this.quantity})` : brokenName;
+    }
+
+    let base = this.name;
+    if (this.enchantmentLevel > 0 || this.elementalAffix) {
       const enchStr = this.enchantmentLevel > 0 ? ` +${this.enchantmentLevel}` : '';
       const affixStr = this.elementalAffix ? ` ${this.elementalAffix.name}` : '';
       base = `${this.name}${enchStr}${affixStr}`;
@@ -169,11 +184,74 @@ export class Item {
       const bonus = (this.stats.attackBonus ?? 0) + (this.stats.defenseBonus ?? 0);
       base = bonus > 0 ? `+${bonus} ${this.name}` : `${bonus} ${this.name}`;
     }
+
+    // Affixes from declarative modifiers (prefixes and suffixes)
+    const prefixes = this.modifiers.map((m) => m.prefix).filter(Boolean) as string[];
+    const suffixes = this.modifiers.map((m) => m.suffix).filter(Boolean) as string[];
+
+    if (prefixes.length > 0) {
+      base = `${prefixes.join(' ')} ${base}`;
+    } else if (this.isCursed() && !base.startsWith('Cursed')) {
+      base = `Cursed ${base}`;
+    }
+
+    if (suffixes.length > 0) {
+      base = `${base} ${suffixes.join(' ')}`;
+    }
+
     return this.quantity > 1 ? `${base} (x${this.quantity})` : base;
   }
 
   public isCursed(): boolean {
-    return this.quality === 'cursed' || this.aspectState === 'aspect_corrupt';
+    return (
+      this.quality === 'cursed' ||
+      this.aspectState === 'aspect_corrupt' ||
+      this.modifiers.some((m) => m.cursed === true || m.category === 'cursed')
+    );
+  }
+
+  public uncurse(): { uncursed: boolean; removedModifiers: string[] } {
+    const removed: string[] = [];
+    const kept: ItemModifier[] = [];
+
+    for (const mod of this.modifiers) {
+      if (mod.cursed === true || mod.category === 'cursed') {
+        removed.push(mod.name);
+      } else {
+        kept.push(mod);
+      }
+    }
+
+    const hadCurse =
+      removed.length > 0 ||
+      this.quality === 'cursed' ||
+      this.aspectState === 'aspect_corrupt';
+
+    this.modifiers = kept;
+    if (this.quality === 'cursed') {
+      this.quality = 'normal';
+    }
+    if (this.aspectState === 'aspect_corrupt') {
+      this.aspectState = undefined;
+    }
+
+    return {
+      uncursed: hadCurse,
+      removedModifiers: removed,
+    };
+  }
+
+  public addModifier(modifier: ItemModifier): void {
+    this.modifiers.push(modifier);
+  }
+
+  public removeModifier(modifierId: string): boolean {
+    const idx = this.modifiers.findIndex((m) => m.id === modifierId);
+    if (idx >= 0) {
+      this.modifiers.splice(idx, 1);
+      return true;
+    }
+    return false;
   }
 
   public isBroken(): boolean {

@@ -48,3 +48,6 @@ export class PRNG {
     this.s = state | 0;
   }
 }
+
+export { PRNG as Mulberry32 };
+

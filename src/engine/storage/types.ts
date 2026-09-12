@@ -59,6 +59,48 @@ export interface SerializedWandData {
   maxCharges: number;
 }
 
+export interface SerializedChaoticProcConfig {
+  procChance: number;
+  type: 'backlash' | 'teleport' | 'confuse' | 'wild_magic';
+  param: number;
+  description: string;
+}
+
+export interface SerializedTagCombatBonus {
+  tag: string;
+  multiplier: number;
+  flatBonus: number;
+  renownCategory?: string;
+  renownAmount?: number;
+  message?: string;
+}
+
+export interface SerializedConsecratedGroundPenalty {
+  damagePenalty: number;
+  selfDamagePerAttack: number;
+}
+
+export interface SerializedItemModifier {
+  id: string;
+  name: string;
+  alignment: 'positive' | 'negative' | 'chaotic';
+  category: 'blessed' | 'enchanted' | 'holy' | 'cursed' | 'hexed' | 'unholy' | 'chaotic';
+  prefix?: string;
+  suffix?: string;
+  cursed?: boolean;
+  statDeltas?: ItemStatModifiers;
+  meleeDamageMultiplier?: number;
+  meleeDamageFlatBonus?: number;
+  spellDamageMultiplier?: number;
+  manaCostDiscount?: number;
+  damageTakenMultiplier?: number;
+  damageTakenFlatBonus?: number;
+  tagBonuses?: SerializedTagCombatBonus[];
+  consecratedGroundPenalty?: SerializedConsecratedGroundPenalty;
+  chaoticProc?: SerializedChaoticProcConfig;
+  description?: string;
+}
+
 export interface SerializedItemBase {
   id: string;
   name: string;
@@ -90,6 +132,7 @@ export interface SerializedItemBase {
   };
   aspectState?: string;
   unitWeight?: number;
+  modifiers?: SerializedItemModifier[];
   corpseData?: {
     archetypeId: string;
     decayTicksRemaining: number;

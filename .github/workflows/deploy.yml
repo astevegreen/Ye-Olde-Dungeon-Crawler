@@ -33,8 +33,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build static bundle
-        run: npm run build
+      - name: Run Quality Gates
+        run: |
+          npm run lint
+          npm test
+          npm run sim
+          npm run validate:schema
+
+      - name: Build static bundles
+        run: npm run build:all
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5

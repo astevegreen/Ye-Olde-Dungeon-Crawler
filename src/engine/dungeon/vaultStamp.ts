@@ -79,7 +79,8 @@ export class VaultStamper {
     originY: number,
     currentFloor: number,
     monsterCandidates: MonsterDefinition[] = [],
-    itemCandidates: ItemDefinition[] = []
+    itemCandidates: ItemDefinition[] = [],
+    rng: () => number = Math.random
   ): StampedVaultResult {
     const layout = blueprint.layout;
     const height = layout.length;
@@ -113,14 +114,14 @@ export class VaultStamper {
           // Select preferred monster or suitable scaled monster for this floor
           let def: MonsterDefinition | null = null;
           if (blueprint.preferredMonsters && blueprint.preferredMonsters.length > 0) {
-            const chosenId = blueprint.preferredMonsters[Math.floor(Math.random() * blueprint.preferredMonsters.length)];
+            const chosenId = blueprint.preferredMonsters[Math.floor(rng() * blueprint.preferredMonsters.length)];
             def = monsterCandidates.find((m) => m.id === chosenId) ?? null;
           }
           if (!def) {
             def = selectDungeonMonsterDefinition(monsterCandidates, currentFloor);
           }
           if (def) {
-            const mId = `vault-mon-${blueprint.id}-${worldX}-${worldY}-${Math.floor(Math.random() * 1000)}`;
+            const mId = `vault-mon-${blueprint.id}-${worldX}-${worldY}-${Math.floor(rng() * 1000)}`;
             const monster = createScaledMonster(def, mId, { x: worldX, y: worldY }, currentFloor);
             map.addEntity(monster);
           }

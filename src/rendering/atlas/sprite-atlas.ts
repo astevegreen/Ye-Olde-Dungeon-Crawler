@@ -1,7 +1,6 @@
 import { Visibility } from '../../engine';
 import type { SpriteKey, AtlasCoords } from './types';
 import type { SpriteRecipe } from '../../engine';
-import { COTW_SPRITE_RECIPES } from '../../content/cotw/sprites';
 
 export const SPRITE_SIZE = 32;
 
@@ -83,7 +82,7 @@ export class SpriteAtlas {
     for (const [key, coords] of Object.entries(ATLAS_MAP) as [SpriteKey, AtlasCoords][]) {
       const ox = coords.col * SPRITE_SIZE;
       const oy = coords.row * SPRITE_SIZE;
-      const recipe = this.recipes?.[key] ?? COTW_SPRITE_RECIPES[key];
+      const recipe = this.recipes?.[key];
       if (recipe) {
         recipe(ctx, ox, oy, SPRITE_SIZE);
       } else {

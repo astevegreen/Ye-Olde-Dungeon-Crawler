@@ -123,8 +123,9 @@ export class ValkyrieSprintGauntlet {
     }
 
     const p = engine.player;
+    const rollStr = engine ? engine.rng() : Math.random();
     // Strength check: STR >= 12 or roll
-    const strCheck = p.strength >= 12 || Math.random() + (p.strength / 20) >= 0.7;
+    const strCheck = p.strength >= 12 || rollStr + (p.strength / 20) >= 0.7;
     if (strCheck) {
       this.clearBarricade(engine);
       const msg = `You shoulder-slam the portcullis with mighty strength! The timber splinters open!`;
@@ -148,7 +149,8 @@ export class ValkyrieSprintGauntlet {
 
     const p = engine.player;
     const hasLockpicks = p.inventory.primaryPack.hasItem('lockpicks');
-    const dexCheck = hasLockpicks || p.dexterity >= 12 || Math.random() + (p.dexterity / 20) >= 0.7;
+    const rollDex = engine ? engine.rng() : Math.random();
+    const dexCheck = hasLockpicks || p.dexterity >= 12 || rollDex + (p.dexterity / 20) >= 0.7;
 
     if (dexCheck) {
       this.clearBarricade(engine);

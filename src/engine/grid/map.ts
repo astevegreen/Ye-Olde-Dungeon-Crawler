@@ -12,6 +12,7 @@ export class GameMap {
   public readonly tiles: TileDefinition[][];
   private entities: Map<string, Entity>;
   private spatialIndex: Map<string, Entity>;
+  private entityBuckets: Map<string, Entity[]>;
   private groundItems: Map<string, Item[]>;
   private traps: Map<string, TrapInstance>;
   public surfaces: SurfaceGrid;
@@ -26,6 +27,7 @@ export class GameMap {
     this.height = height;
     this.entities = new Map();
     this.spatialIndex = new Map();
+    this.entityBuckets = new Map();
     this.groundItems = new Map();
     this.traps = new Map();
     this.surfaces = new SurfaceGrid(width, height);
@@ -38,6 +40,10 @@ export class GameMap {
 
   private posKey(x: number, y: number, planeId = 'physical'): string {
     return `${planeId}:${x},${y}`;
+  }
+
+  private coordKey(x: number, y: number): string {
+    return `${x},${y}`;
   }
 
   public inBounds(x: number, y: number): boolean {
@@ -86,13 +92,7 @@ export class GameMap {
   }
 
   public getEntitiesAt(x: number, y: number): Entity[] {
-    const results: Entity[] = [];
-    for (const ent of this.entities.values()) {
-      if (ent.x === x && ent.y === y) {
-        results.push(ent);
-      }
-    }
-    return results;
+    return this.entityBuckets.get(this.coordKey(x, y)) ?? [];
   }
 
   public getEntityById(id: string): Entity | null {
@@ -117,6 +117,14 @@ export class GameMap {
     }
     this.entities.set(entity.id, entity);
     this.spatialIndex.set(key, entity);
+
+    const cKey = this.coordKey(entity.x, entity.y);
+    let bucket = this.entityBuckets.get(cKey);
+    if (!bucket) {
+      bucket = [];
+      this.entityBuckets.set(cKey, bucket);
+    }
+    bucket.push(entity);
     return true;
   }
 
@@ -129,6 +137,14 @@ export class GameMap {
     const current = this.spatialIndex.get(key);
     if (current && current.id === entity.id) {
       this.spatialIndex.delete(key);
+    }
+
+    const cKey = this.coordKey(entity.x, entity.y);
+    const bucket = this.entityBuckets.get(cKey);
+    if (bucket) {
+      const idx = bucket.findIndex((e) => e.id === entity.id);
+      if (idx !== -1) bucket.splice(idx, 1);
+      if (bucket.length === 0) this.entityBuckets.delete(cKey);
     }
     return true;
   }
@@ -147,8 +163,25 @@ export class GameMap {
 
     const currentKey = this.posKey(entity.x, entity.y, entity.planeId);
     this.spatialIndex.delete(currentKey);
+
+    const oldCKey = this.coordKey(entity.x, entity.y);
+    const oldBucket = this.entityBuckets.get(oldCKey);
+    if (oldBucket) {
+      const idx = oldBucket.findIndex((e) => e.id === entity.id);
+      if (idx !== -1) oldBucket.splice(idx, 1);
+      if (oldBucket.length === 0) this.entityBuckets.delete(oldCKey);
+    }
+
     entity.setPosition(targetX, targetY);
     this.spatialIndex.set(targetKey, entity);
+
+    const newCKey = this.coordKey(targetX, targetY);
+    let newBucket = this.entityBuckets.get(newCKey);
+    if (!newBucket) {
+      newBucket = [];
+      this.entityBuckets.set(newCKey, newBucket);
+    }
+    newBucket.push(entity);
     return true;
   }
 
@@ -173,6 +206,25 @@ export class GameMap {
 
     const oldKey = this.posKey(entity.x, entity.y, entity.planeId);
     this.spatialIndex.delete(oldKey);
+
+    if (destX !== entity.x || destY !== entity.y) {
+      const oldCKey = this.coordKey(entity.x, entity.y);
+      const oldBucket = this.entityBuckets.get(oldCKey);
+      if (oldBucket) {
+        const idx = oldBucket.findIndex((e) => e.id === entity.id);
+        if (idx !== -1) oldBucket.splice(idx, 1);
+        if (oldBucket.length === 0) this.entityBuckets.delete(oldCKey);
+      }
+
+      const newCKey = this.coordKey(destX, destY);
+      let newBucket = this.entityBuckets.get(newCKey);
+      if (!newBucket) {
+        newBucket = [];
+        this.entityBuckets.set(newCKey, newBucket);
+      }
+      newBucket.push(entity);
+    }
+
     entity.planeId = newPlaneId;
     entity.setPosition(destX, destY);
     this.spatialIndex.set(targetKey, entity);

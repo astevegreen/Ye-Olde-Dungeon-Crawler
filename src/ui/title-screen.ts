@@ -1,15 +1,15 @@
-import { ProfileManager } from '../engine/storage/profile-manager';
-import type { CharacterProfile } from '../engine/storage/types';
-import { CharacterRoller } from '../engine/character/characterRoller';
-import type { CharacterAttributes, Gender } from '../engine/character/types';
-import type { GameDifficulty } from '../engine/types';
-import { Leaderboard, type ValhallaEntry } from '../engine/hallOfFame/leaderboard';
+import { ProfileManager } from '../engine';
+import type { CharacterProfile } from '../engine';
+import { CharacterRoller } from '../engine';
+import type { CharacterAttributes, Gender } from '../engine';
+import type { GameDifficulty } from '../engine';
+import { Leaderboard, type ValhallaEntry } from '../engine';
 import { getStoragePersistenceInfo, formatStorageStatus } from './persistenceInit';
 import { setupSaveDragAndDrop, importSaveWithValidation } from './saveImporter';
 import type { SaveCodeModal } from './saveCodeModal';
 import type { SagaShareModal } from './sagaShareModal';
 import { defaultPlatformAdapter, copyTextToClipboard, getBrowserStorage } from './platform';
-import type { AutosaveManager } from '../engine/storage/autosaveManager';
+import type { AutosaveManager } from '../engine';
 import type { GameEngine } from '../engine';
 
 export interface TitleScreenOptions {

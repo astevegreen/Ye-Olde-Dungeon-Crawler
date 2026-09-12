@@ -80,7 +80,8 @@ export function registerReciprocalPrimitives(): void {
       const target = targets[0] ?? caster;
       const failChance = effect.failureChance ?? 0.25;
 
-      const isFailure = Math.random() < failChance;
+      const roll = engine ? engine.rng() : Math.random();
+      const isFailure = roll < failChance;
       if (isFailure) {
         // Vector reverses onto the caster
         engine.log(`Kinetic backfire! ${caster.name}'s locomotion command reflects onto themselves!`);

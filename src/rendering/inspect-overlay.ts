@@ -1,9 +1,9 @@
-import type { GameEngine } from '../engine/engine';
+import type { GameEngine } from '../engine';
 import type { Camera } from './camera';
-import { TileInspector } from '../engine/inspect/inspector';
-import type { TileInspection } from '../engine/inspect/types';
+import { TileInspector } from '../engine';
+import type { TileInspection } from '../engine';
 import { resolveThemeTokens } from './theme';
-import type { ThemeTokens } from '../engine/types/theme';
+import type { ThemeTokens } from '../engine';
 
 export class InspectOverlay {
   public mode: 'closed' | 'inspect' = 'closed';

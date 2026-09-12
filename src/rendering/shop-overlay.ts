@@ -1,14 +1,14 @@
-import type { GameEngine } from '../engine/engine';
-import type { NPC } from '../engine/entities/npc';
-import type { Merchant } from '../engine/economy/merchant';
-import type { Item } from '../engine/items/item';
-import { getItemBuyPrice, getItemSellPrice } from '../engine/economy/merchant';
+import type { GameEngine } from '../engine';
+import type { NPC } from '../engine';
+import type { Merchant } from '../engine';
+import type { Item } from '../engine';
+import { getItemBuyPrice, getItemSellPrice } from '../engine';
 import {
   formatCurrency,
   getPlayerCurrencyBreakdown,
   getPlayerTotalCp,
   getPlayerCoinItems,
-} from '../engine/economy/currency';
+} from '../engine';
 import type { SpriteAtlas } from './atlas/sprite-atlas';
 import { getItemSpriteKey, getEntitySpriteKey } from './atlas/sprite-mapper';
 import { resolveThemeTokens, type ThemeTokens } from './theme';

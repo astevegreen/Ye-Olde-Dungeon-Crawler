@@ -1,4 +1,4 @@
-import { flightRecorder } from '../engine/debug/flightRecorder';
+import { flightRecorder } from '../engine';
 
 export interface StoragePersistenceInfo {
   persisted: boolean;

@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ActionRegistry, type GameAction } from '../actions/actionRegistry';
-import { KeybindingManager } from '../actions/keybindings';
 import { GameEngine } from '../engine';
 import { GameMap } from '../grid/map';
 import { Player } from '../entities/player';
@@ -93,17 +92,5 @@ describe('Pluggable Action Command Registry', () => {
     const res = ActionRegistry.execute('teleport_out', player, {}, engine);
     expect(res.success).toBe(false);
     expect(res.message).toBe('Dimensional anchor prevents teleportation!');
-  });
-
-  it('decouples keyboard input mappings via KeybindingManager', () => {
-    const keybindings = new KeybindingManager();
-    expect(keybindings.get('ArrowUp')).toEqual({ actionId: 'move', args: { dx: 0, dy: -1 }, description: 'Move North' });
-
-    // Custom remapping: Remap 'KeyF' to 'custom_whirlwind'
-    keybindings.bind('KeyF', { actionId: 'custom_whirlwind', args: { radius: 3 } });
-    const binding = keybindings.get('KeyF');
-    expect(binding).toBeDefined();
-    expect(binding?.actionId).toBe('custom_whirlwind');
-    expect(binding?.args).toEqual({ radius: 3 });
   });
 });

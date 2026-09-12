@@ -6,8 +6,6 @@ import { Player } from '../entities/player';
 import { Item } from '../items/item';
 import { Container } from '../items/container';
 import { PickUpAction, QuickLootAction } from '../actions/inventory-actions';
-import { InputHandler } from '../../rendering/input-handler';
-import { InventoryOverlay } from '../../rendering/inventory-overlay';
 
 describe('Ground Container Nested Looting & Modal Pause', () => {
   function setup() {
@@ -177,40 +175,5 @@ describe('Ground Container Nested Looting & Modal Pause', () => {
     expect(player.inventory.primaryPack.hasItem('ring-1')).toBe(true);
     // heavyPlate could not fit, so it was safely placed back into chest
     expect(chest.hasItem('plate-1')).toBe(true);
-  });
-
-  it('InputHandler modalStack synchronizes engine.isPaused with inventory overlay lifecycle', () => {
-    const { engine } = setup();
-    const inventoryOverlay = new InventoryOverlay();
-    let actionProcessed = false;
-    const inputHandler = new InputHandler(
-      engine,
-      () => { actionProcessed = true; },
-      inventoryOverlay
-    );
-
-    expect(engine.isPaused).toBe(false);
-
-    // Toggle inventory open via inputHandler
-    inputHandler.toggleInventory();
-    expect(inventoryOverlay.isOpen).toBe(true);
-    expect(engine.isPaused).toBe(true);
-
-    // Toggle inventory closed via inputHandler
-    inputHandler.toggleInventory();
-    expect(inventoryOverlay.isOpen).toBe(false);
-    expect(engine.isPaused).toBe(false);
-
-    // Open again, then close via inventoryOverlay.close() directly (simulating canvas close button [X])
-    inputHandler.toggleInventory();
-    expect(inventoryOverlay.isOpen).toBe(true);
-    expect(engine.isPaused).toBe(true);
-
-    inventoryOverlay.close();
-    expect(inventoryOverlay.isOpen).toBe(false);
-    expect(engine.isPaused).toBe(false);
-    expect(actionProcessed).toBe(true);
-
-    inputHandler.destroy();
   });
 });

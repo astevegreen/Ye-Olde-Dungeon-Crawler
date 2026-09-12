@@ -1,9 +1,9 @@
-import type { Position } from '../engine/types';
-import type { GameEngine } from '../engine/engine';
-import { findAStarPath } from '../engine/pathfinding/astar';
-import { MovementAction } from '../engine/actions/movement';
-import { OpenDoorAction } from '../engine/actions/door';
-import { AutoRestManager } from '../engine/actions/autoRest';
+import type { Position } from '../engine';
+import type { GameEngine } from '../engine';
+import { findAStarPath } from '../engine';
+import { MovementAction } from '../engine';
+import { OpenDoorAction } from '../engine';
+import { AutoRestManager } from '../engine';
 
 export interface NavigationOptions {
   stepDelayMs?: number;

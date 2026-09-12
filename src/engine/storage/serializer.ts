@@ -5,6 +5,7 @@ import { Item } from '../items/item';
 import { Container } from '../items/container';
 import { WandItem, ScrollItem, PotionItem, type PotionType } from '../items/consumables';
 import { CoinItem } from '../economy/currency';
+import { CorpseItemInstance } from '../items/corpse';
 import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
 import { NPC, type NpcRole } from '../entities/npc';
@@ -30,7 +31,7 @@ import type {
   SerializedMap,
 } from './types';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 export function getTileDefinitionByType(type: TileType): TileDefinition {
   return getTileDefinition(type);
@@ -90,6 +91,12 @@ export function serializeItem(item: Item): SerializedItemNode {
     base.coinData = {
       denomination: item.denomination,
       count: item.count,
+    };
+  } else if (item instanceof CorpseItemInstance) {
+    base.corpseData = {
+      archetypeId: item.archetypeId,
+      decayTicksRemaining: item.decayTicksRemaining,
+      isBurned: item.isBurned,
     };
   }
 
@@ -213,6 +220,17 @@ export function deserializeItem(node: SerializedItemNode): Item {
       durability: node.durability,
       aspectState: node.aspectState,
     });
+  }
+
+  if (node.corpseData) {
+    const corpse = new CorpseItemInstance({
+      id: node.id,
+      archetypeId: node.corpseData.archetypeId,
+      weight: node.weight,
+      decayTicksRemaining: node.corpseData.decayTicksRemaining,
+    });
+    corpse.isBurned = node.corpseData.isBurned;
+    return corpse;
   }
 
   return new Item({
@@ -398,6 +416,7 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
       };
     })() : undefined,
     planes: engine.planeManager ? engine.planeManager.serialize() : undefined,
+    prngState: engine.prng ? engine.prng.getState() : undefined,
   };
 }
 
@@ -490,6 +509,8 @@ export function serializeMapObject(map: GameMap): SerializedMap {
     monsters,
     npcs,
     traps: traps.length > 0 ? traps : undefined,
+    surfaces: map.surfaces ? map.surfaces.serialize() : undefined,
+    substances: map.substances ? map.substances.serialize() : undefined,
     lastVisitedTick: map.lastVisitedTick ?? 0,
   };
 }
@@ -581,6 +602,14 @@ export function deserializeMapObject(mapData: SerializedMap): GameMap {
       });
       map.addEntity(npc);
     }
+  }
+
+  if (mapData.surfaces && map.surfaces) {
+    map.surfaces.deserialize(mapData.surfaces);
+  }
+
+  if (mapData.substances && map.substances) {
+    map.substances.deserialize(mapData.substances);
   }
 
   return map;
@@ -680,6 +709,10 @@ export function deserializeGame(
     compendium,
     worldState: saveData.worldState,
   });
+
+  if (saveData.prngState !== undefined && engine.prng) {
+    engine.prng.setState(saveData.prngState);
+  }
 
   if (saveData.planes && engine.planeManager) {
     engine.planeManager.deserialize(saveData.planes);

@@ -1,5 +1,5 @@
-import type { GameEngine } from '../engine/engine';
-import type { TutorialFlags } from '../engine/storage/types';
+import type { GameEngine } from '../engine';
+import type { TutorialFlags } from '../engine';
 
 export type TownReturnFixtureType = 'runic_conduit' | 'valkyrie_sprint' | 'dwarven_winch' | 'town_portal';
 

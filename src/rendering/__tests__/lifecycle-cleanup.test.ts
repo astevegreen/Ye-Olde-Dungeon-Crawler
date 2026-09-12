@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { InputHandler } from '../input-handler';
+import { InventoryOverlay } from '../inventory-overlay';
 import { CanvasRenderer } from '../canvas-renderer';
-import { GameEngine } from '../../engine/engine';
-import { GameMap } from '../../engine/grid/map';
-import { TILES } from '../../engine/grid/tile';
-import { Player } from '../../engine/entities/player';
+import { GameEngine } from '../../engine';
+import { GameMap } from '../../engine';
+import { TILES } from '../../engine';
+import { Player } from '../../engine';
 
 class MockEventTarget {
   public listeners: Map<string, Set<(e: any) => void>> = new Map();
@@ -165,5 +166,42 @@ describe('Scene & Listener Lifecycle Cleanup', () => {
     expect(canvasTarget.getListenerCount('click')).toBe(0);
     expect(engine.onNpcInteract).toBeUndefined();
     expect(engine.onFloorChanged).toBeUndefined();
+  });
+
+  it('InputHandler modalStack synchronizes engine.isPaused with inventory overlay lifecycle', () => {
+    const map = new GameMap(10, 10, TILES.FLOOR);
+    const player = new Player({ id: 'p1', name: 'Freya', position: { x: 3, y: 3 }, stats: { hp: 50, maxHp: 50, attack: 10, defense: 5 } });
+    const engine = new GameEngine({ map, player });
+    const inventoryOverlay = new InventoryOverlay();
+    let actionProcessed = false;
+    const inputHandler = new InputHandler(
+      engine,
+      () => { actionProcessed = true; },
+      inventoryOverlay
+    );
+
+    expect(engine.isPaused).toBe(false);
+
+    // Toggle inventory open via inputHandler
+    inputHandler.toggleInventory();
+    expect(inventoryOverlay.isOpen).toBe(true);
+    expect(engine.isPaused).toBe(true);
+
+    // Toggle inventory closed via inputHandler
+    inputHandler.toggleInventory();
+    expect(inventoryOverlay.isOpen).toBe(false);
+    expect(engine.isPaused).toBe(false);
+
+    // Open again, then close via inventoryOverlay.close() directly (simulating canvas close button [X])
+    inputHandler.toggleInventory();
+    expect(inventoryOverlay.isOpen).toBe(true);
+    expect(engine.isPaused).toBe(true);
+
+    inventoryOverlay.close();
+    expect(inventoryOverlay.isOpen).toBe(false);
+    expect(engine.isPaused).toBe(false);
+    expect(actionProcessed).toBe(true);
+
+    inputHandler.destroy();
   });
 });

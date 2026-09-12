@@ -1,6 +1,6 @@
-import type { GameEngine } from '../engine/engine';
-import type { SpellDefinition } from '../engine/magic/types';
-import { getSpell } from '../engine/magic/spellRegistry';
+import type { GameEngine } from '../engine';
+import type { SpellDefinition } from '../engine';
+import { getSpell } from '../engine';
 import type { UIModal } from './modalStack';
 
 export interface SpellbookModalOptions {

@@ -1,7 +1,7 @@
 import type { SaveData } from './types';
 import { compactTiles, compactFov } from './compaction';
 
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 5;
 
 export interface VersionedSaveEnvelope<T = SaveData> {
   schemaVersion: number;
@@ -209,6 +209,34 @@ export class SchemaMigrator {
 
       return {
         schemaVersion: 4,
+        contentManifestId: envelope.contentManifestId ?? 'cotw',
+        timestamp: envelope.timestamp ?? Date.now(),
+        data,
+      };
+    });
+
+    // Migration v4 -> v5: Schema v5 evolution (surfaces, substances, and PRNG persistence)
+    this.registerMigration(4, 5, (envelope: VersionedSaveEnvelope<any>): VersionedSaveEnvelope => {
+      const data = { ...envelope.data };
+
+      // 1. Ensure surfaces and substances arrays on active map
+      if (data.map) {
+        data.map.surfaces = data.map.surfaces ?? [];
+        data.map.substances = data.map.substances ?? [];
+      }
+
+      // 2. Ensure surfaces and substances arrays on stored maps
+      if (data.storedMaps) {
+        for (const fMap of Object.values(data.storedMaps) as any[]) {
+          if (fMap) {
+            fMap.surfaces = fMap.surfaces ?? [];
+            fMap.substances = fMap.substances ?? [];
+          }
+        }
+      }
+
+      return {
+        schemaVersion: 5,
         contentManifestId: envelope.contentManifestId ?? 'cotw',
         timestamp: envelope.timestamp ?? Date.now(),
         data,

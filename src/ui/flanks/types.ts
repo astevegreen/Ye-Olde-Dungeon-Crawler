@@ -1,9 +1,9 @@
-import type { GameEngine } from '../../engine/engine';
-import type { WorldState } from '../../engine/state/worldState';
-import type { Player } from '../../engine/entities/player';
-import type { GameMap } from '../../engine/grid/map';
-import type { GameContentManifest } from '../../engine/types/manifest';
-import type { PactManager } from '../../engine/pacts/pactManager';
+import type { GameEngine } from '../../engine';
+import type { WorldState } from '../../engine';
+import type { Player } from '../../engine';
+import type { GameMap } from '../../engine';
+import type { GameContentManifest } from '../../engine';
+import type { PactManager } from '../../engine';
 
 export interface GameState {
   engine: GameEngine;

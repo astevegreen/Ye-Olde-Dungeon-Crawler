@@ -11,6 +11,8 @@ import type { SerializedTownReturnData } from '../townReturn/types';
 import type { Position } from '../types';
 import type { WorldState } from '../state/worldState';
 import type { PlaneState } from '../spatial/planeTypes';
+import type { SerializedSurfaceCell } from '../surfaces/surfaceGrid';
+import type { SerializedSubstanceCell } from '../environment/substanceGrid';
 
 export interface TutorialFlags {
   conduitSeen?: boolean;
@@ -87,6 +89,11 @@ export interface SerializedItemBase {
   };
   aspectState?: string;
   unitWeight?: number;
+  corpseData?: {
+    archetypeId: string;
+    decayTicksRemaining: number;
+    isBurned: boolean;
+  };
 }
 
 export interface SerializedMorphEnvelope {
@@ -231,6 +238,8 @@ export interface SerializedMap {
   monsters: SerializedMonster[];
   npcs?: SerializedNpc[];
   traps?: SerializedTrap[];
+  surfaces?: SerializedSurfaceCell[];
+  substances?: SerializedSubstanceCell[];
   lastVisitedTick?: number;
 }
 
@@ -254,6 +263,7 @@ export interface SaveData {
   townReturn?: SerializedTownReturnData;
   worldState?: WorldState;
   planes?: Record<string, PlaneState>;
+  prngState?: number;
 }
 
 export interface StorageAdapter {

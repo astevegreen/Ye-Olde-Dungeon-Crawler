@@ -137,7 +137,7 @@ export class AggressiveMeleeStrategy implements AIStrategy {
 
     // 1. Adjacent -> Attack or Wind-up
     if (chebyshevDist <= 1) {
-      if (monster.aiType === 'brute' && Math.random() < 0.35) {
+      if (monster.aiType === 'brute' && (engine ? engine.rng() : Math.random()) < 0.35) {
         const dangerTiles = computeDangerTiles(actor.position, player.position, 'cross', engine.map, 1, 2);
         return new WindUpDeclareAction(
           monster,
@@ -165,7 +165,7 @@ export class AggressiveMeleeStrategy implements AIStrategy {
       chebyshevDist >= 2 &&
       chebyshevDist <= 4 &&
       hasLineOfSight(engine, actor.x, actor.y, player.x, player.y) &&
-      Math.random() < 0.4
+      (engine ? engine.rng() : Math.random()) < 0.4
     ) {
       const dangerTiles = computeDangerTiles(actor.position, player.position, 'line', engine.map, 4);
       return new WindUpDeclareAction(
@@ -231,7 +231,7 @@ export class KitingRangedStrategy implements AIStrategy {
         monster.aiType === 'caster' &&
         monster.spells?.includes('firebolt') &&
         monster.spellCooldown <= 0 &&
-        Math.random() < 0.35
+        (engine ? engine.rng() : Math.random()) < 0.35
       ) {
         monster.spellCooldown = 2;
         const dangerTiles = computeDangerTiles(actor.position, player.position, 'blast', engine.map, 5, 1);

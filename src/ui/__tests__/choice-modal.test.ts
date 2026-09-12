@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ChoiceModal } from '../choiceModal';
-import { GameEngine } from '../../engine/engine';
-import { Player } from '../../engine/entities/player';
-import { GameMap } from '../../engine/grid/map';
-import { TILES } from '../../engine/grid/tile';
-import type { ChoiceDefinition } from '../../engine/types/choice';
+import { GameEngine } from '../../engine';
+import { Player } from '../../engine';
+import { GameMap } from '../../engine';
+import { TILES } from '../../engine';
+import type { ChoiceDefinition } from '../../engine';
 
 class MockElement {
   public id: string = '';

@@ -1,5 +1,5 @@
-import type { GameEngine } from '../engine/engine';
-import { getSpell } from '../engine/magic/spellRegistry';
+import type { GameEngine } from '../engine';
+import { getSpell } from '../engine';
 
 export interface QuickSpellsBarOptions {
   onTriggerSlot: (slotIndex: number) => void;

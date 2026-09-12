@@ -5,13 +5,13 @@ import {
 import {
   generateSaveFilename,
   createSavePackage,
-} from '../engine/storage/saveTransfer';
+} from '../engine';
 import { triggerSaveDownload } from './saveImporter';
-import { serializeGame } from '../engine/storage/serializer';
-import { CURRENT_SCHEMA_VERSION, type VersionedSaveEnvelope } from '../engine/storage/migrator';
-import type { GameEngine } from '../engine/engine';
-import type { CharacterProfile, SaveData } from '../engine/storage/types';
-import type { ProfileManager } from '../engine/storage/profile-manager';
+import { serializeGame } from '../engine';
+import { CURRENT_SCHEMA_VERSION, type VersionedSaveEnvelope } from '../engine';
+import type { GameEngine } from '../engine';
+import type { CharacterProfile, SaveData } from '../engine';
+import type { ProfileManager } from '../engine';
 import type { SaveCodeModal } from './saveCodeModal';
 
 export interface SaveQuitModalOptions {

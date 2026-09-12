@@ -14,8 +14,8 @@ import { TownMapGenerator } from './town/townMap';
 import type { Merchant } from './economy/merchant';
 import { DungeonArc } from './quest/dungeonArc';
 import { GameStateManager } from './quest/gameStateManager';
-import type { GameContentManifest } from './types/manifest';
 import { flightRecorder } from './debug/flightRecorder';
+import { PRNG } from './dungeon/prng';
 import { WanderingMonsterSpawner } from './dungeon/wandering-spawner';
 import { CompendiumManager } from './compendium/compendiumManager';
 import { AffinityMatrix, DEFAULT_AFFINITY_MATRIX } from './magic/elements';
@@ -48,7 +48,7 @@ import {
 } from './state/worldState';
 import type { ChoiceDefinition } from './types/choice';
 import { PactManager } from './pacts/pactManager';
-import { validateManifest } from './types/manifest';
+import { validateManifest, type GameContentManifest } from './types/manifest';
 import { EngineCommandBus, type GameCommandBus } from './commands/commandBus';
 import { IdentificationManager } from './items/identification';
 
@@ -94,6 +94,8 @@ const DEFAULT_EMPTY_MANIFEST: GameContentManifest = {
 export interface EngineConfig {
   map: GameMap;
   player: Player;
+  seed?: number;
+  prng?: PRNG;
   fovRadius?: number;
   floor?: number;
   merchants?: Map<string, Merchant>;
@@ -109,6 +111,8 @@ export interface EngineConfig {
 }
 
 export class GameEngine {
+  public readonly prng: PRNG;
+  public rng: () => number;
   public map: GameMap;
   public readonly player: Player;
   public readonly scheduler: EnergyScheduler;
@@ -218,6 +222,8 @@ export class GameEngine {
   public isPaused: boolean = false;
 
   constructor(config: EngineConfig) {
+    this.prng = config.prng ?? new PRNG(config.seed ?? 1337);
+    this.rng = () => this.prng.next();
     this.manifest = config.manifest ?? DEFAULT_EMPTY_MANIFEST;
     validateManifest(this.manifest);
     this.map = config.map;
@@ -348,20 +354,28 @@ export class GameEngine {
     const effectiveRadius = this.player.statusManager.hasStatus('blindness') ? 1 : baseRadius;
     this.fov.update(this.map, this.player.x, this.player.y, effectiveRadius);
 
-    // AI State Awakening & Compendium Discovery:
-    for (const entity of this.map.getAllEntities()) {
-      if (entity instanceof Monster && entity.isAlive()) {
-        const dist = Math.hypot(entity.x - this.player.x, entity.y - this.player.y);
-        if (dist <= effectiveRadius && this.fov.isVisible(entity.x, entity.y)) {
-          // Record encounter in slayer's compendium
-          const disc = this.compendium.recordEncounter(entity.definitionId, entity.name, this.currentFloor);
-          if (disc.advanced) {
-            this.log(`*** Bestiary Updated: You encountered ${entity.name}! ***`);
-          }
+    // AI State Awakening & Compendium Discovery bounded to visible FOV radius:
+    const minX = Math.max(0, this.player.x - effectiveRadius);
+    const maxX = Math.min(this.map.width - 1, this.player.x + effectiveRadius);
+    const minY = Math.max(0, this.player.y - effectiveRadius);
+    const maxY = Math.min(this.map.height - 1, this.player.y + effectiveRadius);
 
-          if (entity.aiState === 'sleeping') {
-            entity.aiState = 'hunting';
-            this.log(`${entity.name} stirs awake and begins hunting you!`);
+    for (let y = minY; y <= maxY; y++) {
+      for (let x = minX; x <= maxX; x++) {
+        if (this.fov.isVisible(x, y)) {
+          const entities = this.map.getEntitiesAt(x, y);
+          for (const entity of entities) {
+            if (entity instanceof Monster && entity.isAlive()) {
+              const disc = this.compendium.recordEncounter(entity.definitionId, entity.name, this.currentFloor);
+              if (disc.advanced) {
+                this.log(`*** Bestiary Updated: You encountered ${entity.name}! ***`);
+              }
+
+              if (entity.aiState === 'sleeping') {
+                entity.aiState = 'hunting';
+                this.log(`${entity.name} stirs awake and begins hunting you!`);
+              }
+            }
           }
         }
       }
@@ -426,8 +440,8 @@ export class GameEngine {
   }
 
   public interactWithNpc(npc: NPC): void {
-    const victoryNpcId = this.manifest.quest?.victoryNpcId ?? 'npc-olaf';
-    if (npc.id === victoryNpcId && this.gameState.checkVictoryEligible(this)) {
+    const victoryNpcId = this.manifest.quest?.victoryNpcId;
+    if (victoryNpcId && npc.id === victoryNpcId && this.gameState.checkVictoryEligible(this)) {
       this.gameState.triggerVictory(this);
       return;
     }
@@ -466,9 +480,9 @@ export class GameEngine {
         }
       } else {
         const effectiveMaxFloor =
-          this.manifest.id !== 'cotw' && this.manifest.quest?.maxFloor
-            ? this.manifest.quest.maxFloor
-            : (this.player.maxFloor ?? this.manifest.quest?.maxFloor ?? DungeonArc.MAX_FLOOR);
+          (this.manifest.quest?.allowsDifficultyScaling
+            ? (this.player.maxFloor ?? this.manifest.quest.maxFloor)
+            : (this.manifest.quest?.maxFloor ?? this.player.maxFloor)) ?? DungeonArc.MAX_FLOOR;
         const dynamicQuest = this.manifest.quest
           ? {
               ...this.manifest.quest,
@@ -553,9 +567,9 @@ export class GameEngine {
     this.updateFov();
 
     const effectiveMaxFloor =
-      this.manifest.id !== 'cotw' && this.manifest.quest?.maxFloor
-        ? this.manifest.quest.maxFloor
-        : (this.player.maxFloor ?? this.manifest.quest?.maxFloor ?? DungeonArc.MAX_FLOOR);
+      (this.manifest.quest?.allowsDifficultyScaling
+        ? (this.player.maxFloor ?? this.manifest.quest.maxFloor)
+        : (this.manifest.quest?.maxFloor ?? this.player.maxFloor)) ?? DungeonArc.MAX_FLOOR;
     if (targetFloor === 0) {
       if (this.townReturnManager?.townPortal?.active) {
         this.townReturnManager.townPortal.ensureSpawnedInTown(this.map);
@@ -575,7 +589,7 @@ export class GameEngine {
     }
 
     const floorDesc = targetFloor === 0
-      ? `Returned to ${this.manifest.town?.name ?? 'Bjarnarhaven'}.`
+      ? `Returned to ${this.manifest.town?.name ?? 'the town'}.`
       : targetFloor >= effectiveMaxFloor
       ? `Breached the final lair on Dungeon Level ${targetFloor}!`
       : targetFloor > prevFloor
@@ -675,7 +689,7 @@ export class GameEngine {
       this.surfaces.tick(this);
       this.substances.tickSubstances(this.map, this);
       this.planeManager.tickDrift(this.map, this.scheduler.ticks, this);
-      this.wanderingSpawner.checkAndSpawn(this);
+      this.wanderingSpawner.checkAndSpawn(this, this.rng);
       this.townReturnManager.onPlayerTurn(this);
 
       if (this.detectMonstersTurns > 0) this.detectMonstersTurns -= 1;
@@ -722,14 +736,27 @@ export class GameEngine {
         return;
       }
 
-      // 1. Process all monsters that have accumulated sufficient energy to act
-      const readyMonsters = this.scheduler
-        .getEntities()
-        .filter((e) => e.isAlive() && e.canAct() && e.type !== 'player');
+      // 1. Process monster that has accumulated sufficient energy to act (zero-allocation pass)
+      let bestMonster: Entity | null = null;
+      const entities = this.scheduler.getEntities();
+      for (let i = 0; i < entities.length; i++) {
+        const e = entities[i];
+        if (e.isAlive() && e.canAct() && e.type !== 'player') {
+          if (!bestMonster) {
+            bestMonster = e;
+          } else {
+            const energyDiff = e.energy - bestMonster.energy;
+            if (energyDiff > 0) {
+              bestMonster = e;
+            } else if (energyDiff === 0 && e.id < bestMonster.id) {
+              bestMonster = e;
+            }
+          }
+        }
+      }
 
-      if (readyMonsters.length > 0) {
-        const sorted = [...readyMonsters].sort((a, b) => b.energy - a.energy || a.id.localeCompare(b.id));
-        this.processMonsterAction(sorted[0]);
+      if (bestMonster) {
+        this.processMonsterAction(bestMonster);
         continue;
       }
 

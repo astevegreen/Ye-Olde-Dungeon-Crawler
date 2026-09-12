@@ -1,5 +1,5 @@
 import type { FlankModule, GameState } from './types';
-import type { GameContentManifest } from '../../engine/types/manifest';
+import type { GameContentManifest } from '../../engine';
 
 /**
  * FlankManager coordinates the lifecycle of side flank modules mounted into

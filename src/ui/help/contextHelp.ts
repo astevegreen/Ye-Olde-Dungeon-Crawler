@@ -1,4 +1,4 @@
-import type { GameEngine } from '../../engine/engine';
+import type { GameEngine } from '../../engine';
 import type { InventoryOverlay } from '../../rendering/inventory-overlay';
 import type { TargetingOverlay } from '../../rendering/targeting-overlay';
 import type { ShopOverlay } from '../../rendering/shop-overlay';

@@ -17,6 +17,12 @@ export interface SubstanceTickSummary {
   crematedCount: number;
 }
 
+export interface SerializedSubstanceCell {
+  x: number;
+  y: number;
+  mask: number;
+}
+
 export class SubstanceGrid {
   public readonly width: number;
   public readonly height: number;
@@ -166,5 +172,38 @@ export class SubstanceGrid {
     }
 
     return { cellsProcessed, damageDealt, crematedCount };
+  }
+
+  /**
+   * Serializes all active substance cells with non-zero bitmasks.
+   */
+  public serialize(): SerializedSubstanceCell[] {
+    const list: SerializedSubstanceCell[] = [];
+    for (const [key, mask] of this.cells.entries()) {
+      if (mask !== 0) {
+        const [xStr, yStr] = key.split(',');
+        list.push({
+          x: parseInt(xStr, 10),
+          y: parseInt(yStr, 10),
+          mask,
+        });
+      }
+    }
+    return list;
+  }
+
+  /**
+   * Deserializes substance cells from serialized data.
+   */
+  public deserialize(data: SerializedSubstanceCell[]): void {
+    this.clear();
+    if (!Array.isArray(data)) return;
+    for (const item of data) {
+      if (this.inBounds(item.x, item.y) && item.mask !== 0) {
+        const k = this.key(item.x, item.y);
+        this.cells.set(k, item.mask);
+        this.activeCells.add(k);
+      }
+    }
   }
 }

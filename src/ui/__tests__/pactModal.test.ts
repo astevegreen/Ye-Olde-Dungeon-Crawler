@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { PactModal } from '../pactModal';
-import { GameEngine } from '../../engine/engine';
-import { GameMap } from '../../engine/grid/map';
-import { Player } from '../../engine/entities/player';
+import { GameEngine } from '../../engine';
+import { GameMap } from '../../engine';
+import { Player } from '../../engine';
 import { COTW_PACTS } from '../../content/cotw/pacts';
 import { ModalStackManager } from '../modalStack';
 

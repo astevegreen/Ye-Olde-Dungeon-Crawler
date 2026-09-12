@@ -122,7 +122,8 @@ describe('Slayer Compendium & Progressive Monster Mastery', () => {
     const engine = new GameEngine({ map, player, compendium });
     engine.addEntity(monster);
 
-    // Mock Math.random to return 0.02 (< 0.05 evasion threshold)
+    // Mock engine.rng and Math.random to return 0.02 (< 0.05 evasion threshold)
+    engine.rng = () => 0.02;
     const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.02);
 
     const action = new MeleeAttackAction(monster, player);

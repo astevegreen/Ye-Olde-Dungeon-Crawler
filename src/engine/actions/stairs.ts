@@ -19,9 +19,9 @@ export class ClimbStairsAction implements Action {
 
     if (tile.isStairsDown || tile.type === 'stairs_down') {
       const maxFloor =
-        engine.manifest.id !== 'cotw' && engine.manifest.quest?.maxFloor
-          ? engine.manifest.quest.maxFloor
-          : (engine.player.maxFloor ?? engine.manifest.quest?.maxFloor ?? 25);
+        (engine.manifest.quest?.allowsDifficultyScaling
+          ? (engine.player.maxFloor ?? engine.manifest.quest.maxFloor)
+          : (engine.manifest.quest?.maxFloor ?? engine.player.maxFloor)) ?? 25;
       if (engine.currentFloor >= maxFloor) {
         return {
           success: false,

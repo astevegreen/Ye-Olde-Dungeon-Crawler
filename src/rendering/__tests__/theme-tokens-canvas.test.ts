@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { resolveThemeTokens, COTW_THEME_TOKENS } from '../theme';
 import { WARCRAFT_THEME_TOKENS } from '../../content/warcraft/theme';
-import { GameEngine } from '../../engine/engine';
-import { GameMap } from '../../engine/grid/map';
-import { Player } from '../../engine/entities/player';
-import { NPC } from '../../engine/entities/npc';
+import { GameEngine } from '../../engine';
+import { GameMap } from '../../engine';
+import { Player } from '../../engine';
+import { NPC } from '../../engine';
 import { CanvasRenderer } from '../canvas-renderer';
 import { InspectOverlay } from '../inspect-overlay';
 import { MapOverlay } from '../map-overlay';

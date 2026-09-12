@@ -1,9 +1,9 @@
-import { GameEngine } from '../engine/engine';
-import { Visibility } from '../engine/fov/types';
+import { GameEngine } from '../engine';
+import { Visibility } from '../engine';
 import { Camera } from './camera';
-import type { Entity } from '../engine/entities/entity';
-import type { TileDefinition } from '../engine/types';
-import type { Item } from '../engine/items/item';
+import type { Entity } from '../engine';
+import type { TileDefinition } from '../engine';
+import type { Item } from '../engine';
 import { InventoryOverlay } from './inventory-overlay';
 import { TargetingOverlay } from './targeting-overlay';
 import { ShopOverlay } from './shop-overlay';
@@ -11,14 +11,14 @@ import { InspectOverlay } from './inspect-overlay';
 import { MapOverlay } from './map-overlay';
 import { HUDMessageLogRenderer } from './hud';
 import { IntentOverlay } from './intentOverlay';
-import { Monster } from '../engine/entities/monster';
+import { Monster } from '../engine';
 import { SpriteAtlas } from './atlas/sprite-atlas';
 import { getTerrainSpriteKey, getEntitySpriteKey, getItemSpriteKey } from './atlas/sprite-mapper';
 import { ViewportManager } from './viewport';
 import { resolveThemeTokens, type ThemeTokens } from './theme';
 import { CanvasFXRunner } from './fxRunner';
 import type { NavigationController } from '../ui/navigation';
-import { CloseDoorAction } from '../engine/actions/door';
+import { CloseDoorAction } from '../engine';
 import { MouseVectorOverlay } from './mouseVectorOverlay';
 
 export class CanvasRenderer {

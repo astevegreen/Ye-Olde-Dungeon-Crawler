@@ -1,5 +1,5 @@
 import type { GameEngine } from '../engine';
-import { AutoRestManager, type AutoRestStepResult } from '../engine/actions/autoRest';
+import { AutoRestManager, type AutoRestStepResult } from '../engine';
 
 export interface AutoRestRunnerOptions {
   stepDelayMs?: number;

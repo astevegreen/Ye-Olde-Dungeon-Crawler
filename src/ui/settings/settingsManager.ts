@@ -1,5 +1,5 @@
-import type { StorageAdapter } from '../../engine/storage/types';
-import { MemoryStorage } from '../../engine/storage/profile-manager';
+import type { StorageAdapter } from '../../engine';
+import { MemoryStorage } from '../../engine';
 import { getBrowserStorage } from '../platform';
 
 export interface ActionMetadata {

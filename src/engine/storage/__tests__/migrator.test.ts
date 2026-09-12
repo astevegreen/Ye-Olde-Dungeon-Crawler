@@ -222,7 +222,7 @@ describe('Schema Migrator & Save State Versioning', () => {
       },
     };
 
-    const result = defaultMigrator.migrate(v3Envelope);
+    const result = defaultMigrator.migrate(v3Envelope, 4);
     expect(result.migrated).toBe(true);
     expect(result.fromVersion).toBe(3);
     expect(result.envelope.schemaVersion).toBe(4);
@@ -244,7 +244,7 @@ describe('Schema Migrator & Save State Versioning', () => {
     expect(data.storedMaps[2].monsters[0].planeId).toBe('physical');
   });
 
-  it('leaves already up-to-date v4 save untouched', () => {
+  it('migrates v4 envelope to v5 ensuring surface and substance arrays', () => {
     const v4Envelope: VersionedSaveEnvelope<any> = {
       schemaVersion: 4,
       contentManifestId: 'cotw',
@@ -252,6 +252,30 @@ describe('Schema Migrator & Save State Versioning', () => {
       data: {
         player: { id: 'hero', name: 'Sven', x: 2, y: 3, planeId: 'physical', corruptionScore: 5 },
         map: { width: 4, height: 4, tilesRle: '16W', groundItems: [], monsters: [], lastVisitedTick: 120 },
+        storedMaps: {
+          2: { width: 4, height: 4, tilesRle: '16W', groundItems: [], monsters: [], lastVisitedTick: 50 },
+        },
+      },
+    };
+
+    const result = defaultMigrator.migrate(v4Envelope);
+    expect(result.migrated).toBe(true);
+    expect(result.fromVersion).toBe(4);
+    expect(result.envelope.schemaVersion).toBe(5);
+    expect(result.envelope.data.map.surfaces).toEqual([]);
+    expect(result.envelope.data.map.substances).toEqual([]);
+    expect(result.envelope.data.storedMaps![2].surfaces).toEqual([]);
+    expect(result.envelope.data.storedMaps![2].substances).toEqual([]);
+  });
+
+  it('leaves already up-to-date v5 save untouched', () => {
+    const v5Envelope: VersionedSaveEnvelope<any> = {
+      schemaVersion: 5,
+      contentManifestId: 'cotw',
+      timestamp: 100000,
+      data: {
+        player: { id: 'hero', name: 'Sven', x: 2, y: 3, planeId: 'physical', corruptionScore: 5 },
+        map: { width: 4, height: 4, tilesRle: '16W', groundItems: [], monsters: [], lastVisitedTick: 120, surfaces: [], substances: [] },
         fovRle: '16U',
         worldState: { flags: {}, counters: {}, factions: {}, remoteVaults: {} },
         planes: {
@@ -261,10 +285,10 @@ describe('Schema Migrator & Save State Versioning', () => {
       },
     };
 
-    const result = defaultMigrator.migrate(v4Envelope);
+    const result = defaultMigrator.migrate(v5Envelope);
     expect(result.migrated).toBe(false);
-    expect(result.fromVersion).toBe(4);
-    expect(result.envelope.schemaVersion).toBe(4);
+    expect(result.fromVersion).toBe(5);
+    expect(result.envelope.schemaVersion).toBe(5);
     expect(result.envelope.data.map.tilesRle).toBe('16W');
     expect(result.envelope.data.map.lastVisitedTick).toBe(120);
     expect(result.envelope.data.player.corruptionScore).toBe(5);

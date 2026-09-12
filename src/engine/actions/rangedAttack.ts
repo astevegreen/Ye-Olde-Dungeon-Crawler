@@ -125,7 +125,7 @@ export class RangedAttackAction implements Action {
 
         // Hit roll: 75% base + DEX modifier - target defense
         const hitChance = Math.max(20, Math.min(95, 75 + (attackerDex - 10) * 2 - targetDefense * 2));
-        const roll = Math.random() * 100;
+        const roll = (engine ? engine.rng() : Math.random()) * 100;
 
         if (roll <= hitChance) {
           const baseDmg = rangedConfig.baseDamage ?? (weapon.stats?.attackBonus ?? 4);

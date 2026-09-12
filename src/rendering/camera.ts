@@ -1,4 +1,4 @@
-import type { Position } from '../engine/types';
+import type { Position } from '../engine';
 
 export class Camera {
   public viewWidthTiles: number;

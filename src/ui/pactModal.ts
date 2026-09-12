@@ -1,4 +1,4 @@
-import type { GameEngine } from '../engine/engine';
+import type { GameEngine } from '../engine';
 import type { UIModal } from './modalStack';
 
 export class PactModal implements UIModal {

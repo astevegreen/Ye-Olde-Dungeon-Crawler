@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { GameEngine } from '../../engine/engine';
-import { GameMap } from '../../engine/grid/map';
-import { Player } from '../../engine/entities/player';
-import { TILES, registerTileDefinition } from '../../engine/grid/tile';
-import { Item } from '../../engine/items/item';
+import { GameEngine } from '../../engine';
+import { GameMap } from '../../engine';
+import { Player } from '../../engine';
+import { TILES, registerTileDefinition } from '../../engine';
+import { Item } from '../../engine';
 import { formatGroundStatus } from '../bottomStatusBar';
 import { SpellbookModal } from '../spellbookModal';
 import { TargetingOverlay } from '../../rendering/targeting-overlay';
 import { ModalStackManager } from '../modalStack';
-import { registerSpells } from '../../engine/magic/spellRegistry';
-import type { GameContentManifest } from '../../engine/types/manifest';
+import { registerSpells } from '../../engine';
+import type { GameContentManifest } from '../../engine';
 
 class MockElement {
   public id: string = '';

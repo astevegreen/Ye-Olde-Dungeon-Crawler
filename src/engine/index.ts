@@ -35,7 +35,6 @@ export * from './actions/vaultActions';
 export * from './actions/stairs';
 export * from './actions/search';
 export * from './actions/disarm';
-export * from './actions/keybindings';
 export * from './actions/autoRest';
 export * from './actions/choiceAction';
 export * from './actions/identificationActions';
@@ -96,9 +95,18 @@ export * from './hooks/hookDispatcher';
 // AI, Intent, & Pathfinding
 export * from './ai/intent';
 export * from './ai/pathfinding';
+export * from './pathfinding/astar';
 export * from './ai/behaviorTree';
 export * from './ai/aiRegistry';
 export * from './ai/aiBehaviorRegistry';
+
+// Character & Rolling
+export * from './character/types';
+export * from './character/characterRoller';
+
+// Inspection
+export * from './inspect/types';
+export * from './inspect/inspector';
 
 // Status Afflictions
 export * from './status/types';
@@ -169,6 +177,7 @@ export * from './actors/energyModel';
 
 // Reactive Substances & Corpse Lifecycles
 export * from './environment/substanceGrid';
+export * from './surfaces/surfaceGrid';
 export * from './items/corpse';
 
 // Run Telemetry & Death Analytics

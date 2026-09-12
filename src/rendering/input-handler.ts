@@ -13,8 +13,8 @@ import {
   ClimbStairsAction,
   type Action,
   flightRecorder,
-  KeybindingManager,
 } from '../engine';
+import { KeybindingManager } from '../ui/settings/keybindingManager';
 import type { AutoRestRunner } from '../ui/autoRestRunner';
 import type { NavigationController } from '../ui/navigation';
 import type { InventoryOverlay } from './inventory-overlay';

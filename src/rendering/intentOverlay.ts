@@ -1,8 +1,8 @@
-import type { GameEngine } from '../engine/engine';
+import type { GameEngine } from '../engine';
 import type { Camera } from './camera';
-import type { Monster } from '../engine/entities/monster';
-import { Visibility } from '../engine/fov/types';
-import type { Position } from '../engine/types';
+import type { Monster } from '../engine';
+import { Visibility } from '../engine';
+import type { Position } from '../engine';
 
 export class IntentOverlay {
   /**

@@ -1,9 +1,9 @@
-import type { Paperdoll } from '../engine/inventory/paperdoll';
-import type { Item } from '../engine/items/item';
+import type { Paperdoll } from '../engine';
+import type { Item } from '../engine';
 import type { SpriteAtlas } from './atlas/sprite-atlas';
 import { getItemSpriteKey } from './atlas/sprite-mapper';
 import type { ItemSpriteKey } from './atlas/types';
-import type { ThemeTokens } from '../engine/types/theme';
+import type { ThemeTokens } from '../engine';
 
 export interface PaperdollRenderOptions {
   selectedSlot?: string | null;

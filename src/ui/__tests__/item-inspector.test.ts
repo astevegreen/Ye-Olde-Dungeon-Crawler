@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ItemInspector } from '../inventory/itemInspector';
-import { GameEngine } from '../../engine/engine';
-import { GameMap } from '../../engine/grid/map';
-import { Player } from '../../engine/entities/player';
-import { Item } from '../../engine/items/item';
-import { Container } from '../../engine/items/container';
-import { PotionItem, ScrollItem, WandItem } from '../../engine/items/consumables';
-import { EncumbranceLevel } from '../../engine/inventory/encumbrance';
+import { GameEngine } from '../../engine';
+import { GameMap } from '../../engine';
+import { Player } from '../../engine';
+import { Item } from '../../engine';
+import { Container } from '../../engine';
+import { PotionItem, ScrollItem, WandItem } from '../../engine';
+import { EncumbranceLevel } from '../../engine';
 
 describe('ItemInspector Stationary Pane & State Presenter', () => {
   let engine: GameEngine;

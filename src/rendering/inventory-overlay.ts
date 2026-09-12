@@ -1,15 +1,15 @@
-import { GameEngine } from '../engine/engine';
-import { Item, type EquipmentSlot } from '../engine/items/item';
-import { Container } from '../engine/items/container';
-import { EncumbranceLevel } from '../engine/inventory/encumbrance';
+import { GameEngine } from '../engine';
+import { Item, type EquipmentSlot } from '../engine';
+import { Container } from '../engine';
+import { EncumbranceLevel } from '../engine';
 import { SpriteAtlas } from './atlas/sprite-atlas';
 import { getItemSpriteKey } from './atlas/sprite-mapper';
-import { PotionItem, ScrollItem, WandItem } from '../engine/items/consumables';
+import { PotionItem, ScrollItem, WandItem } from '../engine';
 import { resolveThemeTokens } from './theme';
-import type { ThemeTokens } from '../engine/types/theme';
+import type { ThemeTokens } from '../engine';
 import { PaperdollView } from './paperdoll-view';
 import { ItemInspector } from '../ui/inventory/itemInspector';
-import { type GameCommand, type GameCommandBus } from '../engine/commands/commandBus';
+import { type GameCommand, type GameCommandBus } from '../engine';
 
 export interface ClickZone {
   x: number;

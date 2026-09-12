@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { KeybindModal } from '../settings/keybindModal';
 import { SettingsManager } from '../settings/settingsManager';
-import { MemoryStorage } from '../../engine/storage/profile-manager';
+import { MemoryStorage } from '../../engine';
 
 class MockElement {
   public id = '';

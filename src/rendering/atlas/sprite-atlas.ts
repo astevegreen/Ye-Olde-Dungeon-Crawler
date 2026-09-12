@@ -1,6 +1,6 @@
-import { Visibility } from '../../engine/fov/types';
+import { Visibility } from '../../engine';
 import type { SpriteKey, AtlasCoords } from './types';
-import type { SpriteRecipe } from '../../engine/types/manifest';
+import type { SpriteRecipe } from '../../engine';
 import { COTW_SPRITE_RECIPES } from '../../content/cotw/sprites';
 
 export const SPRITE_SIZE = 32;

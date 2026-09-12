@@ -1,4 +1,4 @@
-import type { ThemeTokens } from '../engine/types/theme';
+import type { ThemeTokens } from '../engine';
 export type { ThemeTokens };
 
 export const COTW_THEME_TOKENS: Required<ThemeTokens> = {

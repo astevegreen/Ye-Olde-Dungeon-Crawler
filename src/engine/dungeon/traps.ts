@@ -131,7 +131,7 @@ export class TrapInstance {
         }
 
         if (validCoords.length > 0) {
-          const dest = validCoords[Math.floor(Math.random() * validCoords.length)];
+          const dest = engine.prng ? engine.prng.choice(validCoords) : validCoords[Math.floor(Math.random() * validCoords.length)];
           engine.map.moveEntity(entity, dest.x, dest.y);
           if (entity instanceof Player) {
             engine.updateFov();
@@ -174,7 +174,8 @@ export class TrapInstance {
     }
 
     // Perception & Agility roll: DEX + INT check
-    const roll = Math.floor(Math.random() * 20) + 1 + Math.floor((player.dexterity + player.intelligence) / 6);
+    const d20 = engine.prng ? engine.prng.nextInt(1, 20) : Math.floor(Math.random() * 20) + 1;
+    const roll = d20 + Math.floor((player.dexterity + player.intelligence) / 6);
     if (roll >= this.disarmDifficulty) {
       this.disarmed = true;
       this.revealed = true;

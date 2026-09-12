@@ -1,4 +1,4 @@
-import { Leaderboard, type ValhallaEntry } from '../engine/hallOfFame/leaderboard';
+import { Leaderboard, type ValhallaEntry } from '../engine';
 import { copyTextToClipboard } from './platform';
 import type { UIModal } from './modalStack';
 

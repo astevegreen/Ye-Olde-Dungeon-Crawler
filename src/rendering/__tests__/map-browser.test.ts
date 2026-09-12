@@ -1,10 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { GameEngine } from '../engine';
-import { GameMap } from '../grid/map';
-import { TILES } from '../grid/tile';
-import { Player } from '../entities/player';
-import { Monster } from '../entities/monster';
-import { MapOverlay } from '../../rendering/map-overlay';
+import { GameEngine, GameMap, TILES, Player, Monster } from '../../engine';
+import { MapOverlay } from '../map-overlay';
 
 describe('Explored Dungeon Map & Multi-Floor Historical Browser', () => {
   function setupMultiFloorEngine() {

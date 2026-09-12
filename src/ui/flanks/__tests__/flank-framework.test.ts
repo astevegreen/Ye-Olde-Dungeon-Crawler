@@ -3,13 +3,13 @@ import { FlankManager } from '../flankManager';
 import { WorldLedgerModule, getReputationTier } from '../worldLedgerModule';
 import { JournalModule } from '../journalModule';
 import type { FlankModule, GameState } from '../types';
-import { GameEngine } from '../../../engine/engine';
-import { GameMap } from '../../../engine/grid/map';
-import { TILES } from '../../../engine/grid/tile';
-import { Player } from '../../../engine/entities/player';
-import { createWorldState } from '../../../engine/state/worldState';
-import { PactManager } from '../../../engine/pacts/pactManager';
-import type { GameContentManifest } from '../../../engine/types/manifest';
+import { GameEngine } from '../../../engine';
+import { GameMap } from '../../../engine';
+import { TILES } from '../../../engine';
+import { Player } from '../../../engine';
+import { createWorldState } from '../../../engine';
+import { PactManager } from '../../../engine';
+import type { GameContentManifest } from '../../../engine';
 
 class MockElement {
   public id: string = '';

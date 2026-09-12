@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SagaShareModal } from '../sagaShareModal';
-import { Leaderboard, type ValhallaEntry } from '../../engine/hallOfFame/leaderboard';
-import { MemoryStorage } from '../../engine/storage/profile-manager';
+import { Leaderboard, type ValhallaEntry } from '../../engine';
+import { MemoryStorage } from '../../engine';
 
 class MockElement {
   public id: string = '';

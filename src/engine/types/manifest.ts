@@ -204,6 +204,7 @@ export interface QuestArcDefinition {
   name: string;
   maxFloor: number;
   bossFloor: number;
+  allowsDifficultyScaling?: boolean;
   bossMonsterId: string;
   relicItemId: string;
   victoryNpcId: string;
@@ -221,10 +222,10 @@ export interface QuestArcDefinition {
   defaultGenerator?: string;
 }
 
-export interface AtlasProceduralTheme {
+export interface AtlasProceduralTheme<TContext = any> {
   themeId: string;
   renderTile?: (
-    ctx: CanvasRenderingContext2D,
+    ctx: TContext,
     key: string,
     ox: number,
     oy: number,
@@ -232,7 +233,7 @@ export interface AtlasProceduralTheme {
   ) => boolean | void;
   renderers?: Record<
     string,
-    (ctx: CanvasRenderingContext2D, ox: number, oy: number, size: number) => void
+    (ctx: TContext, ox: number, oy: number, size: number) => void
   >;
   palette?: Record<string, string>;
 }
@@ -247,8 +248,8 @@ export interface StarterKitDefinition {
   spellsKnown?: string[];
 }
 
-export type SpriteRecipe = (
-  ctx: CanvasRenderingContext2D,
+export type SpriteRecipe<TContext = any> = (
+  ctx: TContext,
   ox: number,
   oy: number,
   size: number

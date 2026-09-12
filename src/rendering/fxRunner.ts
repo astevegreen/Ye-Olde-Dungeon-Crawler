@@ -1,4 +1,4 @@
-import type { VisualEffectDescriptor, ProjectileEffectDescriptor, BurstEffectDescriptor, ScreenFlashEffectDescriptor, ChainLinkEffectDescriptor } from '../engine/types';
+import type { VisualEffectDescriptor, ProjectileEffectDescriptor, BurstEffectDescriptor, ScreenFlashEffectDescriptor, ChainLinkEffectDescriptor } from '../engine';
 import type { Camera } from './camera';
 import type { SpriteAtlas } from './atlas/sprite-atlas';
 

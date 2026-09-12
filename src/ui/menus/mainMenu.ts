@@ -1,5 +1,5 @@
-import type { ProfileManager } from '../../engine/storage/profile-manager';
-import type { AutosaveManager } from '../../engine/storage/autosaveManager';
+import type { ProfileManager } from '../../engine';
+import type { AutosaveManager } from '../../engine';
 import { formatStorageStatus, getStoragePersistenceInfo } from '../persistenceInit';
 
 export interface MainMenuOptions {

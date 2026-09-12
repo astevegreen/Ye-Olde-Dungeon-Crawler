@@ -1,9 +1,9 @@
-import type { TileType } from '../../engine/types';
-import type { Entity } from '../../engine/entities/entity';
-import { Player } from '../../engine/entities/player';
-import { NPC } from '../../engine/entities/npc';
-import { Monster } from '../../engine/entities/monster';
-import type { Item } from '../../engine/items/item';
+import type { TileType } from '../../engine';
+import type { Entity } from '../../engine';
+import { Player } from '../../engine';
+import { NPC } from '../../engine';
+import { Monster } from '../../engine';
+import type { Item } from '../../engine';
 import type { SpriteKey } from './types';
 
 export function getTerrainSpriteKey(tileType: TileType): SpriteKey {

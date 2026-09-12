@@ -1,4 +1,4 @@
-import type { GameEngine } from '../engine/engine';
+import type { GameEngine } from '../engine';
 import { resolveThemeTokens } from './theme';
 
 export interface HUDConfig {

@@ -3,15 +3,15 @@ import { IntentOverlay } from '../intentOverlay';
 import { Camera } from '../camera';
 import { CanvasFXRunner } from '../fxRunner';
 import { CanvasRenderer } from '../canvas-renderer';
-import { FovManager } from '../../engine/fov/fov-manager';
-import { Visibility } from '../../engine/fov/types';
-import { GameEngine } from '../../engine/engine';
-import { GameMap } from '../../engine/grid/map';
-import { TILES } from '../../engine/grid/tile';
-import { Player } from '../../engine/entities/player';
-import { Monster } from '../../engine/entities/monster';
-import { WindUpDeclareAction, WindUpExecuteAction } from '../../engine/actions/combat';
-import { computeDangerTiles } from '../../engine/ai/intent';
+import { FovManager } from '../../engine';
+import { Visibility } from '../../engine';
+import { GameEngine } from '../../engine';
+import { GameMap } from '../../engine';
+import { TILES } from '../../engine';
+import { Player } from '../../engine';
+import { Monster } from '../../engine';
+import { WindUpDeclareAction, WindUpExecuteAction } from '../../engine';
+import { computeDangerTiles } from '../../engine';
 
 function createMockContext(): CanvasRenderingContext2D {
   return new Proxy(

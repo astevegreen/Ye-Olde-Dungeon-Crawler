@@ -3,7 +3,7 @@ import {
   SettingsManager,
   SETTINGS_STORAGE_KEY,
 } from '../settings/settingsManager';
-import { MemoryStorage } from '../../engine/storage/profile-manager';
+import { MemoryStorage } from '../../engine';
 
 describe('SettingsManager', () => {
   let storage: MemoryStorage;

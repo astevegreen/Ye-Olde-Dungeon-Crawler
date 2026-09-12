@@ -1,6 +1,6 @@
-import { validateSavePayload, type SaveValidationResult } from '../engine/storage/saveTransfer';
-import type { ProfileManager } from '../engine/storage/profile-manager';
-import type { CharacterProfile } from '../engine/storage/types';
+import { validateSavePayload, type SaveValidationResult } from '../engine';
+import type { ProfileManager } from '../engine';
+import type { CharacterProfile } from '../engine';
 
 /**
  * Triggers a browser file download of text content (e.g. .cotw save files).

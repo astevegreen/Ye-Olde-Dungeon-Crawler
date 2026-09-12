@@ -1,5 +1,5 @@
 import type { FlankModule, GameState } from './types';
-import type { TrackedMilestoneDefinition } from '../../engine/types/manifest';
+import type { TrackedMilestoneDefinition } from '../../engine';
 
 export interface ReputationTier {
   label: string;

@@ -1,6 +1,6 @@
-import type { GameEngine } from '../engine/engine';
-import type { ChoiceDefinition, ChoiceOption } from '../engine/types/choice';
-import { evaluatePredicate } from '../engine/predicates/predicateEvaluator';
+import type { GameEngine } from '../engine';
+import type { ChoiceDefinition, ChoiceOption } from '../engine';
+import { evaluatePredicate } from '../engine';
 
 export class ChoiceModal {
   private overlayEl: HTMLElement | null = null;

@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PaperdollView } from '../paperdoll-view';
 import { InventoryOverlay } from '../inventory-overlay';
-import { GameEngine } from '../../engine/engine';
-import { GameMap } from '../../engine/grid/map';
-import { Player } from '../../engine/entities/player';
-import { Item } from '../../engine/items/item';
+import { GameEngine } from '../../engine';
+import { GameMap } from '../../engine';
+import { Player } from '../../engine';
+import { Item } from '../../engine';
 import { resolveThemeTokens } from '../theme';
 
 function createMockContext(): CanvasRenderingContext2D {

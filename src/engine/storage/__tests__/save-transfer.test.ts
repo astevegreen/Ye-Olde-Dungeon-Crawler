@@ -8,7 +8,6 @@ import {
   utf8ToBase64,
   base64ToUtf8,
 } from '../saveTransfer';
-import { initStoragePersistence, formatStorageStatus } from '../../../ui/persistenceInit';
 import type { VersionedSaveEnvelope } from '../migrator';
 import type { SaveData } from '../types';
 
@@ -215,31 +214,6 @@ describe('Save Transfer & Export (.cotw & Base64)', () => {
       expect(result.valid).toBe(false);
       expect(result.errorCode).toBe('INCOMPATIBLE_MANIFEST');
       expect(result.manifestMismatch).toBe(true);
-    });
-  });
-
-  describe('Storage Persistence Negotiation (Headless)', () => {
-    it('executes safely in headless environment with unsupported mode', async () => {
-      const info = await initStoragePersistence();
-      expect(info.persisted).toBe(false);
-      expect(info.mode).toBe('unsupported');
-
-      const formatted = formatStorageStatus(info);
-      expect(formatted.isPersistent).toBe(false);
-      expect(formatted.badge).toContain('Standard');
-    });
-
-    it('formats persistent storage badges correctly', () => {
-      const formatted = formatStorageStatus({
-        persisted: true,
-        mode: 'persistent',
-        quotaMB: 500,
-        usageMB: 12.5,
-        timestamp: Date.now(),
-      });
-      expect(formatted.isPersistent).toBe(true);
-      expect(formatted.badge).toContain('Persistent 🛡️');
-      expect(formatted.badge).toContain('12.5MB / 500MB');
     });
   });
 });

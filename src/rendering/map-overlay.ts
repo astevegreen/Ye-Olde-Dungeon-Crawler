@@ -1,7 +1,7 @@
-import type { GameEngine } from '../engine/engine';
-import type { GameMap } from '../engine/grid/map';
+import type { GameEngine } from '../engine';
+import type { GameMap } from '../engine';
 import { resolveThemeTokens } from './theme';
-import type { ThemeTokens } from '../engine/types/theme';
+import type { ThemeTokens } from '../engine';
 
 export interface ClickZone {
   x: number;

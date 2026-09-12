@@ -1,11 +1,11 @@
-import type { GameEngine } from '../../engine/engine';
-import { Player } from '../../engine/entities/player';
-import { Item, type EquipmentSlot } from '../../engine/items/item';
-import { Container } from '../../engine/items/container';
-import { PotionItem, ScrollItem, WandItem } from '../../engine/items/consumables';
-import { EncumbranceLevel } from '../../engine/inventory/encumbrance';
-import type { Paperdoll } from '../../engine/inventory/paperdoll';
-import type { ThemeTokens } from '../../engine/types/theme';
+import type { GameEngine } from '../../engine';
+import { Player } from '../../engine';
+import { Item, type EquipmentSlot } from '../../engine';
+import { Container } from '../../engine';
+import { PotionItem, ScrollItem, WandItem } from '../../engine';
+import { EncumbranceLevel } from '../../engine';
+import type { Paperdoll } from '../../engine';
+import type { ThemeTokens } from '../../engine';
 
 export type InspectorSource = 'paperdoll' | 'backpack' | 'ground' | 'container' | 'none';
 export type FocusedPanel = 'paperdoll' | 'backpack' | 'ground' | 'inspector';

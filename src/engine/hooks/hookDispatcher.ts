@@ -168,7 +168,8 @@ export class HookDispatcher {
 
         // Chance roll
         const chance = hook.chance ?? 1.0;
-        if (chance < 1.0 && Math.random() > chance) {
+        const roll = context.engine ? context.engine.rng() : Math.random();
+        if (chance < 1.0 && roll > chance) {
           continue;
         }
 

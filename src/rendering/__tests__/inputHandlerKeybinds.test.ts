@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { InputHandler } from '../input-handler';
-import { GameEngine } from '../../engine/engine';
-import { GameMap } from '../../engine/grid/map';
-import { Player } from '../../engine/entities/player';
+import { GameEngine } from '../../engine';
+import { GameMap } from '../../engine';
+import { Player } from '../../engine';
 import { SettingsManager } from '../../ui/settings/settingsManager';
-import { MemoryStorage } from '../../engine/storage/profile-manager';
-import { MovementAction } from '../../engine/actions/movement';
+import { MemoryStorage } from '../../engine';
+import { MovementAction } from '../../engine';
 
 function makeKeyEvent(code: string, repeat = false): KeyboardEvent {
   return {

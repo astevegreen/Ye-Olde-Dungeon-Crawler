@@ -33,4 +33,18 @@ export class PRNG {
     const index = this.nextInt(0, array.length - 1);
     return array[index];
   }
+
+  /**
+   * Returns current internal state for serialization.
+   */
+  public getState(): number {
+    return this.s;
+  }
+
+  /**
+   * Restores internal state from a serialized state number.
+   */
+  public setState(state: number): void {
+    this.s = state | 0;
+  }
 }

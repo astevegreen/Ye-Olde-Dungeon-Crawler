@@ -1,8 +1,8 @@
-import { encodeSaveCode, decodeSaveCode } from '../engine/storage/saveTransfer';
+import { encodeSaveCode, decodeSaveCode } from '../engine';
 import { copyTextToClipboard } from './platform';
-import type { VersionedSaveEnvelope } from '../engine/storage/migrator';
-import type { SaveData, CharacterProfile } from '../engine/storage/types';
-import type { ProfileManager } from '../engine/storage/profile-manager';
+import type { VersionedSaveEnvelope } from '../engine';
+import type { SaveData, CharacterProfile } from '../engine';
+import type { ProfileManager } from '../engine';
 import { showManifestMismatchDialog } from './saveImporter';
 
 export interface SaveCodeModalOptions {

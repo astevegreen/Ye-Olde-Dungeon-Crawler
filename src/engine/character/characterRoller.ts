@@ -14,31 +14,32 @@ export class CharacterRoller {
   /**
    * Simulates rolling 3 standard six-sided dice (3d6), resulting in 3 to 18.
    */
-  public static roll3d6(): number {
-    const d1 = Math.floor(Math.random() * 6) + 1;
-    const d2 = Math.floor(Math.random() * 6) + 1;
-    const d3 = Math.floor(Math.random() * 6) + 1;
+  public static roll3d6(rng?: () => number): number {
+    const roll = rng || Math.random;
+    const d1 = Math.floor(roll() * 6) + 1;
+    const d2 = Math.floor(roll() * 6) + 1;
+    const d3 = Math.floor(roll() * 6) + 1;
     return d1 + d2 + d3;
   }
 
   /**
    * Rolls an attribute guaranteed to be within playable heroic bounds (min 8, max 18).
    */
-  public static rollHeroAttribute(): number {
-    const raw = this.roll3d6();
+  public static rollHeroAttribute(rng?: () => number): number {
+    const raw = this.roll3d6(rng);
     return Math.max(MIN_ATTRIBUTE, Math.min(MAX_ATTRIBUTE, raw));
   }
 
   /**
    * Generates a fresh roll for all 4 primary attributes with a customizable point pool.
    */
-  public static generateRoll(): AttributeRoll {
+  public static generateRoll(rng?: () => number): AttributeRoll {
     return {
       attributes: {
-        strength: this.rollHeroAttribute(),
-        intelligence: this.rollHeroAttribute(),
-        constitution: this.rollHeroAttribute(),
-        dexterity: this.rollHeroAttribute(),
+        strength: this.rollHeroAttribute(rng),
+        intelligence: this.rollHeroAttribute(rng),
+        constitution: this.rollHeroAttribute(rng),
+        dexterity: this.rollHeroAttribute(rng),
       },
       availablePoints: DEFAULT_POOL_POINTS,
     };

@@ -5,6 +5,7 @@ export const COTW_QUEST: QuestArcDefinition = {
   name: 'The Sun-Stone of Freyr',
   maxFloor: 5,
   bossFloor: 5,
+  allowsDifficultyScaling: true,
   bossMonsterId: 'boss_hrungnir',
   relicItemId: 'sun_stone_freyr',
   victoryNpcId: 'npc-olaf',

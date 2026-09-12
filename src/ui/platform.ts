@@ -1,4 +1,4 @@
-import type { StorageAdapter } from '../engine/storage/types';
+import type { StorageAdapter } from '../engine';
 
 /**
  * PlatformAdapter — isolates browser-specific DOM operations from the engine layer.

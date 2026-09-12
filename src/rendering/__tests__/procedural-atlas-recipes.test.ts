@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SpriteAtlas, ATLAS_MAP, SPRITE_SIZE } from '../atlas/sprite-atlas';
-import type { SpriteRecipe } from '../../engine/types/manifest';
+import type { SpriteRecipe } from '../../engine';
 
 function createMockCanvas(): HTMLCanvasElement {
   const dummyCtx: any = new Proxy(

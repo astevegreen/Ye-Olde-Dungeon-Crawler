@@ -41,7 +41,7 @@ export class MeleeAttackAction implements Action {
     // Slayer's Compendium Defensive Mastery Evasion Check (+5% evasion if mastered)
     if (this.attacker instanceof Monster && this.defender instanceof Player && engine.compendium) {
       const evasionBonus = engine.compendium.getMasteryEvasionBonus(this.attacker.definitionId);
-      if (evasionBonus > 0 && Math.random() < evasionBonus) {
+      if (evasionBonus > 0 && engine.rng() < evasionBonus) {
         const cost = this.attacker.getActionCost(BASE_ACTION_COST);
         this.attacker.consumeEnergy(cost);
         const evadeMsg = `${this.defender.name} anticipates ${this.attacker.name}'s attack and evades cleanly! (Mastery Perk)`;
@@ -74,7 +74,7 @@ export class MeleeAttackAction implements Action {
       let base = Math.max(minDmg, this.attacker.attack + masteryBonus - this.defender.defense);
 
       // Critical strike calculation
-      if (combatConfig?.critChance && Math.random() < combatConfig.critChance) {
+      if (combatConfig?.critChance && engine.rng() < combatConfig.critChance) {
         isCrit = true;
         const mult = combatConfig.critMultiplier ?? 1.5;
         base = Math.max(minDmg, Math.round(base * mult));
@@ -83,7 +83,7 @@ export class MeleeAttackAction implements Action {
       // Damage variance calculation
       if (combatConfig?.damageVariance && combatConfig.damageVariance > 0) {
         const v = combatConfig.damageVariance;
-        const factor = 1 + (Math.random() * 2 * v - v);
+        const factor = 1 + (engine.rng() * 2 * v - v);
         base = Math.max(minDmg, Math.round(base * factor));
       }
 
@@ -138,7 +138,7 @@ export class MeleeAttackAction implements Action {
     // On-hit status affliction (e.g. Giant Rat venomous bite)
     if (this.attacker instanceof Monster && this.attacker.onHitAffliction && !killed) {
       const aff = this.attacker.onHitAffliction;
-      if (Math.random() < aff.chance) {
+      if (engine.rng() < aff.chance) {
         const applied = this.defender.statusManager.applyStatus(
           {
             type: aff.type,

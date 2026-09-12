@@ -42,13 +42,18 @@ export async function copyTextToClipboard(text: string): Promise<boolean> {
   let copied = false;
 
   // Modern asynchronous Clipboard API (requires secure context)
-  if (typeof window !== 'undefined' && window.isSecureContext && navigator?.clipboard?.writeText) {
-    try {
+  try {
+    if (
+      typeof window !== 'undefined' &&
+      window.isSecureContext &&
+      typeof navigator !== 'undefined' &&
+      navigator.clipboard?.writeText
+    ) {
       await navigator.clipboard.writeText(text);
       copied = true;
-    } catch {
-      copied = false;
     }
+  } catch {
+    copied = false;
   }
 
   // Cross-browser synchronous fallback for file:/// URLs or restricted clipboard contexts

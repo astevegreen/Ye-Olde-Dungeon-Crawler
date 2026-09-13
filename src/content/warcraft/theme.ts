@@ -1,4 +1,4 @@
-import type { ThemeTokens } from '../../rendering/theme';
+import type { ThemeTokens } from '../../engine/types/theme';
 
 export const WARCRAFT_THEME_TOKENS: ThemeTokens = {
   bg: '#0c0a09',

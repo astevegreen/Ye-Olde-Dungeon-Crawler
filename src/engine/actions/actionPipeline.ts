@@ -1,6 +1,7 @@
 import type { ActionResult } from '../types';
 import type { GameEngine } from '../engine';
 import type { Action } from './action';
+import { flightRecorder } from '../debug/flightRecorder';
 
 export interface ActionHookContext {
   action: Action;
@@ -47,6 +48,19 @@ export class ActionPipeline {
   private postHooks: ActionHook[] = [];
   private hookCounter = 0;
 
+  /** Total exceptions caught and isolated within this ActionPipeline instance */
+  public caughtExceptionCount = 0;
+  /** Global counter of isolated action pipeline exceptions for telemetry & CI asserting */
+  public static totalCaughtExceptions = 0;
+
+  public resetCaughtExceptionCount(): void {
+    this.caughtExceptionCount = 0;
+  }
+
+  public static resetTotalCaughtExceptions(): void {
+    ActionPipeline.totalCaughtExceptions = 0;
+  }
+
   public registerHook(hook: ActionHook): void {
     const hookWithId: ActionHook = hook.id ? hook : { ...hook, id: `hook_${++this.hookCounter}` };
     const list = hookWithId.phase === 'pre' ? this.preHooks : this.postHooks;
@@ -80,34 +94,95 @@ export class ActionPipeline {
   }
 
   /**
-   * Execute an action through the hook pipeline.
+   * Execute an action through the hook pipeline with full failure isolation.
    * Pre-hooks can short-circuit. Post-hooks observe results.
+   * If any pre-hook, action logic, or post-hook throws, the exception is caught,
+   * recorded to telemetry/logging, and rejected cleanly with { success: false, cost: 0 }.
    */
   public executeWithHooks(action: Action, engine: GameEngine): ActionResult {
-    const actionType = (action as any).actionType ?? action.constructor.name;
+    try {
+      const actionType = (action as any)?.actionType ?? action?.constructor?.name ?? 'Action';
 
-    // Pre-hooks
-    for (const hook of this.preHooks) {
-      if (!matchesActionType(hook.actionType, actionType, action)) continue;
-      const hookResult = hook.execute({ action, engine, actionType });
-      if (hookResult && !hookResult.proceed) {
-        return hookResult.result;
+      // 1. Pre-hooks execution boundary
+      for (const hook of this.preHooks) {
+        if (!matchesActionType(hook.actionType, actionType, action)) continue;
+        try {
+          const hookResult = hook.execute({ action, engine, actionType });
+          if (hookResult && !hookResult.proceed) {
+            return hookResult.result;
+          }
+        } catch (err) {
+          return this.handlePipelineError(err, action, engine, actionType, 'pre-hook', hook.id);
+        }
       }
+
+      // 2. Core action execution boundary
+      let result: ActionResult;
+      try {
+        result = action.perform(engine);
+      } catch (err) {
+        return this.handlePipelineError(err, action, engine, actionType, 'action-perform');
+      }
+
+      // 3. Post-hooks execution boundary
+      for (const hook of this.postHooks) {
+        if (!matchesActionType(hook.actionType, actionType, action)) continue;
+        try {
+          const hookResult = hook.execute({ action, engine, actionType, result });
+          if (hookResult && !hookResult.proceed) {
+            result = hookResult.result;
+          }
+        } catch (err) {
+          return this.handlePipelineError(err, action, engine, actionType, 'post-hook', hook.id);
+        }
+      }
+
+      return result;
+    } catch (topLevelErr) {
+      return this.handlePipelineError(topLevelErr, action, engine, 'UnknownAction', 'pipeline-top-level');
+    }
+  }
+
+  private handlePipelineError(
+    err: unknown,
+    action: Action,
+    engine: GameEngine,
+    actionType: string,
+    phase: string,
+    hookId?: string
+  ): ActionResult {
+    this.caughtExceptionCount += 1;
+    ActionPipeline.totalCaughtExceptions += 1;
+
+    const error = err instanceof Error ? err : new Error(String(err));
+    const entityId =
+      (action as any)?.entity?.id ??
+      (action as any)?.attacker?.id ??
+      (action as any)?.actor?.id ??
+      (action as any)?.player?.id ??
+      engine?.player?.id ??
+      'unknown';
+
+    // Telemetry & diagnostics recording
+    flightRecorder.recordError(error, {
+      entityId,
+      actionType,
+      phase,
+      hookId,
+      source: 'ActionPipeline.executeWithHooks',
+    });
+
+    // Narrative player log
+    if (typeof engine?.log === 'function') {
+      engine.log('An unexpected error occurred; the action could not be completed.');
     }
 
-    // Core action execution
-    let result = action.perform(engine);
-
-    // Post-hooks
-    for (const hook of this.postHooks) {
-      if (!matchesActionType(hook.actionType, actionType, action)) continue;
-      const hookResult = hook.execute({ action, engine, actionType, result });
-      if (hookResult && !hookResult.proceed) {
-        result = hookResult.result;
-      }
-    }
-
-    return result;
+    return {
+      success: false,
+      cost: 0,
+      message: 'An unexpected error occurred; the action could not be completed.',
+      pipelineError: true,
+    };
   }
 
   /**

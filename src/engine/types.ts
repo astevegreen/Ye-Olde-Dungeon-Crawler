@@ -94,6 +94,7 @@ export interface ActionResult {
   cost: number;
   message?: string;
   effects?: VisualEffectDescriptor[];
+  pipelineError?: boolean;
 }
 
 export const BASE_ACTION_COST = 100;

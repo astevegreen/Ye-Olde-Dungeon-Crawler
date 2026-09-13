@@ -157,10 +157,11 @@ export class Monster extends Actor {
     return calculateAttribute(this, 'actionCost', { baseCost });
   }
 
-  public override takeDamage(rawAmount: number): { damageDealt: number; killed: boolean } {
+  public override takeDamage(rawAmount: number, options?: { wakeUp?: boolean }): { damageDealt: number; killed: boolean } {
     const res = super.takeDamage(rawAmount);
-    // Any damage wakes up sleeping monster immediately into hunting state
-    if (this.aiState === 'sleeping') {
+    const shouldWake = options?.wakeUp ?? true;
+    // Any direct damage wakes up sleeping monster immediately into hunting state
+    if (this.aiState === 'sleeping' && shouldWake) {
       this.aiState = 'hunting';
     }
     // If monster is killed or took significant damage (> 25% maxHp), interrupt active wind-up

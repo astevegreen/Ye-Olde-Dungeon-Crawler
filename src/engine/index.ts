@@ -41,6 +41,7 @@ export * from './actions/identificationActions';
 export * from './actions/uncurseAction';
 
 // Items & Containers
+export { MonsterRegistry, type MonsterDefinition } from './bestiary/monsterDefinitions';
 export * from './items/item';
 export * from './items/modifiers';
 export * from './items/modifierRoller';

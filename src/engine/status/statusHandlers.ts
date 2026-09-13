@@ -68,7 +68,7 @@ export const BUILTIN_STATUS_HANDLERS: Record<string, StatusHandler> = {
   poison: {
     onTick(entity, effect, _engine) {
       const dmg = effect.potency ?? 2;
-      const res = entity.takeDamage(dmg);
+      const res = (entity as any).takeDamage(dmg, { wakeUp: false });
       return {
         damageTaken: res.damageDealt,
         killed: res.killed,

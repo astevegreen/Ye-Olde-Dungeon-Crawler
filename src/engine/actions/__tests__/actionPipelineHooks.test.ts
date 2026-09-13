@@ -12,6 +12,7 @@ import { MeleeAttackAction } from '../combat';
 import { WaitAction } from '../wait';
 import { warcraftManifest, WARCRAFT_ACTION_HOOKS } from '../../../content/warcraft';
 import type { GameContentManifest } from '../../types/manifest';
+import { flightRecorder } from '../../debug/flightRecorder';
 
 describe('Action Pipeline Hooks & Manifest Integration (Phase 3)', () => {
   let pipeline: ActionPipeline;
@@ -318,6 +319,126 @@ describe('Action Pipeline Hooks & Manifest Integration (Phase 3)', () => {
       const actionRes = engine.handlePlayerAction(melee);
       expect(actionRes.success).toBe(true);
       expect(orc.hp).toBeLessThan(orc.maxHp);
+    });
+  });
+
+  describe('Failure Isolation Contract (Gap 2)', () => {
+    it('isolates content-style pre-hook exception: returns success: false, logs error, and trips CI counter', () => {
+      const explodingHook: ActionHook = {
+        id: 'exploding-content-hook',
+        phase: 'pre',
+        actionType: '*',
+        execute: () => {
+          throw new Error('CONTENT_HANDLER_CRASH_SIMULATION');
+        },
+      };
+
+      const { engine, player } = createTestEngine({
+        id: 'chaos-content-pack',
+        name: 'Chaos Content Pack',
+        actionHooks: [explodingHook],
+      });
+
+      const initialCounter = engine.actionPipeline.caughtExceptionCount;
+      const initialPlayerHp = player.hp;
+      const waitAction = new WaitAction(player);
+
+      // (a) executeWithHooks returns success: false and cost: 0 rather than throwing out of the test
+      let result: ActionResult | undefined;
+      expect(() => {
+        result = engine.handlePlayerAction(waitAction);
+      }).not.toThrow();
+
+      expect(result).toBeDefined();
+      expect(result!.success).toBe(false);
+      expect(result!.cost).toBe(0);
+      expect(result!.pipelineError).toBe(true);
+      expect(result!.message).toContain('unexpected error');
+      expect(player.hp).toBe(initialPlayerHp);
+
+      // (b) Error was recorded to flight recorder telemetry with debug context
+      const recentErrors = flightRecorder
+        .getEvents()
+        .filter((e) => e.type === 'error' && (e.details as any)?.source === 'ActionPipeline.executeWithHooks');
+      expect(recentErrors.length).toBeGreaterThan(0);
+      const lastErr = recentErrors[recentErrors.length - 1];
+      expect(lastErr.summary).toContain('CONTENT_HANDLER_CRASH_SIMULATION');
+      expect((lastErr.details as any)?.actionType).toBe('WaitAction');
+      expect((lastErr.details as any)?.hookId).toBe('exploding-content-hook');
+
+      // (c) An equivalent scenario run through the chaos runner's Step 4 counter actually fails the run
+      expect(engine.actionPipeline.caughtExceptionCount).toBe(initialCounter + 1);
+
+      // Emulate chaos runner's Step 4 assertion to prove it fails loud rather than passing silently
+      const assertChaosRunnerZeroExceptions = (eng: GameEngine) => {
+        const count = eng.actionPipeline.caughtExceptionCount;
+        if (count > 0) {
+          throw new Error(
+            `Chaos runner failure: ${count} action pipeline exception(s) caught and suppressed during simulation!`
+          );
+        }
+      };
+
+      expect(() => assertChaosRunnerZeroExceptions(engine)).toThrow(
+        'Chaos runner failure: 1 action pipeline exception(s) caught and suppressed during simulation!'
+      );
+    });
+
+    it('isolates action.perform() engine exception: returns success: false, cost: 0, and increments counter', () => {
+      const { engine } = createTestEngine();
+      const faultyAction: Action = {
+        perform: () => {
+          throw new Error('ENGINE_ACTION_INTERNAL_FAULT');
+        },
+      };
+
+      let result: ActionResult | undefined;
+      expect(() => {
+        result = engine.actionPipeline.executeWithHooks(faultyAction, engine);
+      }).not.toThrow();
+
+      expect(result).toBeDefined();
+      expect(result!.success).toBe(false);
+      expect(result!.cost).toBe(0);
+      expect(result!.pipelineError).toBe(true);
+
+      const recentErrors = flightRecorder
+        .getEvents()
+        .filter((e) => e.type === 'error' && (e.details as any)?.source === 'ActionPipeline.executeWithHooks');
+      const lastErr = recentErrors[recentErrors.length - 1];
+      expect(lastErr.summary).toContain('ENGINE_ACTION_INTERNAL_FAULT');
+    });
+
+    it('isolates post-hook exception: returns success: false, cost: 0, and logs error', () => {
+      const faultyPostHook: ActionHook = {
+        id: 'faulty-post-hook',
+        phase: 'post',
+        actionType: '*',
+        execute: () => {
+          throw new Error('POST_HOOK_METRICS_CRASH');
+        },
+      };
+
+      const { engine, player } = createTestEngine({
+        id: 'faulty-post-pack',
+        name: 'Faulty Post Pack',
+        actionHooks: [faultyPostHook],
+      });
+
+      const waitAction = new WaitAction(player);
+      let result: ActionResult | undefined;
+      expect(() => {
+        result = engine.handlePlayerAction(waitAction);
+      }).not.toThrow();
+
+      expect(result!.success).toBe(false);
+      expect(result!.cost).toBe(0);
+      expect(result!.pipelineError).toBe(true);
+
+      const recentErrors = flightRecorder
+        .getEvents()
+        .filter((e) => e.type === 'error' && (e.details as any)?.hookId === 'faulty-post-hook');
+      expect(recentErrors.length).toBeGreaterThan(0);
     });
   });
 });

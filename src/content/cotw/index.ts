@@ -8,7 +8,7 @@ import { COTW_ATLAS_THEME } from './atlas';
 import { COTW_STARTER_KIT } from './character';
 import { COTW_AFFINITY_MATRIX } from './elements';
 import { COTW_EQUIPMENT_SLOTS } from './slots';
-import { COTW_THEME_TOKENS } from '../../rendering/theme';
+import { COTW_THEME_TOKENS } from './theme';
 import { COTW_VAULTS } from './vaults';
 import { COTW_SPRITE_RECIPES } from './sprites';
 import { COTW_CHOICES } from './choices';

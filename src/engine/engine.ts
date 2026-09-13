@@ -4,7 +4,7 @@ import type { GameEvent } from './events';
 import { GameMap } from './grid/map';
 import type { Entity } from './entities/entity';
 import { Player } from './entities/player';
-import { Monster } from './entities/monster';
+import { Monster, type AiState } from './entities/monster';
 import { NPC } from './entities/npc';
 import { EnergyScheduler } from './scheduler';
 import { FovManager } from './fov/fov-manager';
@@ -18,6 +18,8 @@ import { GameStateManager } from './quest/gameStateManager';
 import { flightRecorder } from './debug/flightRecorder';
 import { PRNG } from './dungeon/prng';
 import { WanderingMonsterSpawner } from './dungeon/wandering-spawner';
+import { createScaledMonster } from './dungeon/spawner';
+import type { Item } from './items/item';
 import { CompendiumManager } from './compendium/compendiumManager';
 import { AffinityMatrix, DEFAULT_AFFINITY_MATRIX } from './magic/elements';
 import { TownReturnManager } from './townReturn/townReturnManager';
@@ -111,7 +113,20 @@ export interface EngineConfig {
   worldState?: WorldState;
 }
 
+export interface SpawnMonsterOptions {
+  position?: Position;
+  aiState?: AiState;
+}
+
+export interface DiagnosticsAPI {
+  spawnMonster(definitionId: string, options?: SpawnMonsterOptions): Monster | null;
+  spawnItem(item: Item): { placedInPack: boolean; groundTile?: Position };
+  toggleGodMode(): boolean;
+  revealFloorMap(): void;
+}
+
 export class GameEngine {
+  public readonly diagnostics: DiagnosticsAPI;
   public readonly prng: PRNG;
   public rng: () => number;
   public map: GameMap;
@@ -360,6 +375,71 @@ export class GameEngine {
         this.scheduler.addEntity(entity);
       }
     }
+
+    // Initialize Triage & Diagnostic Public API
+    this.diagnostics = {
+      spawnMonster: (definitionId: string, options?: SpawnMonsterOptions): Monster | null => {
+        if (!this.player) return null;
+
+        let spawnTile: Position | undefined = options?.position;
+        if (!spawnTile) {
+          const neighbors: Position[] = [
+            { x: this.player.x + 1, y: this.player.y },
+            { x: this.player.x - 1, y: this.player.y },
+            { x: this.player.x, y: this.player.y + 1 },
+            { x: this.player.x, y: this.player.y - 1 },
+            { x: this.player.x + 1, y: this.player.y + 1 },
+            { x: this.player.x - 1, y: this.player.y - 1 },
+          ];
+          spawnTile = neighbors.find(
+            (n) => this.map.isPassable(n.x, n.y) && !this.map.getEntityAt(n.x, n.y)
+          );
+        }
+
+        if (!spawnTile) {
+          return null;
+        }
+
+        const def = MonsterRegistry.get(definitionId);
+        if (!def) {
+          return null;
+        }
+
+        const monster = createScaledMonster(
+          def,
+          `mob-${definitionId}-${Date.now()}`,
+          spawnTile,
+          this.currentFloor
+        );
+        monster.aiState = options?.aiState ?? 'hunting';
+
+        const added = this.addEntity(monster);
+        return added ? monster : null;
+      },
+
+      spawnItem: (item: Item): { placedInPack: boolean; groundTile?: Position } => {
+        if (!this.player) {
+          return { placedInPack: false };
+        }
+        const added = this.player.addItem(item);
+        if (added) {
+          return { placedInPack: true };
+        }
+        this.map.addItemAt(this.player.x, this.player.y, item);
+        return { placedInPack: false, groundTile: { x: this.player.x, y: this.player.y } };
+      },
+
+      toggleGodMode: (): boolean => {
+        if (!this.player) return false;
+        this.player.isInvulnerable = !this.player.isInvulnerable;
+        return this.player.isInvulnerable;
+      },
+
+      revealFloorMap: (): void => {
+        this.fov.revealAllTiles();
+        this.log('A mystical vision reveals the entire floor layout.');
+      },
+    };
 
     this.updateFov();
   }

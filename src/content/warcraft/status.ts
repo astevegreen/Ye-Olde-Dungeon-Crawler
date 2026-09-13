@@ -4,7 +4,7 @@ export const WARCRAFT_STATUS_HANDLERS: Record<string, StatusHandler> = {
   burning: {
     onTick(entity, effect, _engine) {
       const dmg = effect.potency ?? 3;
-      const res = entity.takeDamage(dmg);
+      const res = (entity as any).takeDamage(dmg, { wakeUp: false });
       return {
         damageTaken: res.damageDealt,
         killed: res.killed,

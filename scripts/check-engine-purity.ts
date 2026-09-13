@@ -4,6 +4,7 @@ import * as path from 'node:path';
 const ENGINE_DIR = path.resolve(process.cwd(), 'src/engine');
 const UI_DIR = path.resolve(process.cwd(), 'src/ui');
 const RENDERING_DIR = path.resolve(process.cwd(), 'src/rendering');
+const CONTENT_DIR = path.resolve(process.cwd(), 'src/content');
 
 interface Violation {
   file: string;
@@ -31,12 +32,16 @@ function walkDirectory(dir: string, fileList: string[] = []): string[] {
 const engineFiles = walkDirectory(ENGINE_DIR);
 const uiFiles = walkDirectory(UI_DIR);
 const renderingFiles = walkDirectory(RENDERING_DIR);
+const contentFiles = walkDirectory(CONTENT_DIR);
 
 // Matches any reverse imports from ui or rendering inside engine
 const ENGINE_REVERSE_IMPORT_REGEX = /from\s+['"][^'"]*(?:ui|rendering)[/'"]/i;
 
 // In engine source files (excluding tests/fixtures), content imports are also barred
 const ENGINE_SOURCE_CONTENT_IMPORT_REGEX = /from\s+['"][^'"]*content[/'"]/i;
+
+// In content source files, imports from UI or rendering are strictly forbidden (Architecture Section 3)
+const CONTENT_REVERSE_IMPORT_REGEX = /from\s+['"][^'"]*(?:ui|rendering)[/'"]/i;
 
 const DOM_GLOBALS = [
   'window.',
@@ -53,9 +58,11 @@ const DOM_GLOBALS = [
 // Matches deep imports into engine internals (beyond the public engine barrel export)
 const DEEP_ENGINE_IMPORT_REGEX = /from\s+['"][^'"]*engine\/[^'"]+['"]/i;
 
-// 1. Audit Engine Purity
-for (const filePath of engineFiles) {
+// 1. Audit Engine & Content Purity
+for (const filePath of [...engineFiles, ...contentFiles]) {
   const relativePath = path.relative(process.cwd(), filePath).replace(/\\/g, '/');
+  const isEngine = relativePath.startsWith('src/engine/');
+  const isContent = relativePath.startsWith('src/content/');
   const isTestOrFixture = relativePath.includes('__tests__') || relativePath.includes('__fixtures__');
   const content = fs.readFileSync(filePath, 'utf-8');
   const lines = content.split('\n');
@@ -64,8 +71,8 @@ for (const filePath of engineFiles) {
     const lineNum = i + 1;
     const line = lines[i];
 
-    // Check: Reverse Imports from UI/Rendering (forbidden in all engine files including tests)
-    if (ENGINE_REVERSE_IMPORT_REGEX.test(line)) {
+    // Check: Reverse Imports into Engine from UI/Rendering (forbidden in all engine files including tests)
+    if (isEngine && ENGINE_REVERSE_IMPORT_REGEX.test(line)) {
       violations.push({
         file: relativePath,
         line: lineNum,
@@ -75,7 +82,7 @@ for (const filePath of engineFiles) {
     }
 
     // Check: Content imports forbidden in engine source files
-    if (!isTestOrFixture && ENGINE_SOURCE_CONTENT_IMPORT_REGEX.test(line)) {
+    if (isEngine && !isTestOrFixture && ENGINE_SOURCE_CONTENT_IMPORT_REGEX.test(line)) {
       violations.push({
         file: relativePath,
         line: lineNum,
@@ -84,7 +91,17 @@ for (const filePath of engineFiles) {
       });
     }
 
-    // Check: DOM & Browser Globals (forbidden in engine source files)
+    // Check: Content importing UI or Rendering (Architecture Section 3: Content NEVER imports UI or rendering)
+    if (isContent && !isTestOrFixture && CONTENT_REVERSE_IMPORT_REGEX.test(line)) {
+      violations.push({
+        file: relativePath,
+        line: lineNum,
+        category: 'CONTENT_REVERSE_IMPORT',
+        detail: `Content package importing UI or rendering: ${line.trim()}`,
+      });
+    }
+
+    // Check: DOM & Browser Globals (forbidden in engine and content source files)
     if (!isTestOrFixture) {
       for (const globalToken of DOM_GLOBALS) {
         if (line.includes(globalToken)) {
@@ -135,9 +152,10 @@ for (const filePath of [...uiFiles, ...renderingFiles]) {
 console.log(`\n======================================================`);
 console.log(`ARCHITECTURAL BOUNDARY & PURITY VERIFICATION AUDIT`);
 console.log(`Engine files inspected: ${engineFiles.length}`);
+console.log(`Content files inspected: ${contentFiles.length}`);
 console.log(`UI files inspected: ${uiFiles.length}`);
 console.log(`Rendering files inspected: ${renderingFiles.length}`);
-console.log(`Total files inspected: ${engineFiles.length + uiFiles.length + renderingFiles.length}`);
+console.log(`Total files inspected: ${engineFiles.length + contentFiles.length + uiFiles.length + renderingFiles.length}`);
 console.log(`======================================================\n`);
 
 if (violations.length > 0) {
@@ -148,9 +166,11 @@ if (violations.length > 0) {
   }
   process.exit(1);
 } else {
-  console.log(`✓ Headless Simulation Purity: 0 DOM/Canvas globals across ${engineFiles.length} engine files.`);
-  console.log(`✓ Boundary Isolation: 0 reverse imports in engine source and test files.`);
+  console.log(`✓ Headless Simulation Purity: 0 DOM/Canvas globals across ${engineFiles.length + contentFiles.length} engine & content files.`);
+  console.log(`✓ Engine Boundary Isolation: 0 reverse imports in engine source and test files.`);
+  console.log(`✓ Content Boundary Isolation: 0 UI/Rendering imports across ${contentFiles.length} content files.`);
   console.log(`✓ Public API Surface: 0 deep imports into engine internals across ${uiFiles.length + renderingFiles.length} UI/Rendering files.`);
   console.log(`All architectural boundaries verified intact!\n`);
   process.exit(0);
 }
+

@@ -107,10 +107,10 @@ describe('Scheduler System - Energy-Based Action Loop', () => {
 
     const slowZombie = new Monster({
       id: 'zombie',
-      name: 'Zombie',
-      position: { x: 1, y: 1 },
-      stats: { hp: 20, maxHp: 20, attack: 4, defense: 0 },
-      speed: 50, // Half speed
+      name: 'Slow Zombie',
+      position: { x: 3, y: 3 },
+      stats: { hp: 20, maxHp: 20, attack: 4, defense: 2 },
+      speed: 50, // Half normal speed
     });
 
     scheduler.addEntity(fastScout);

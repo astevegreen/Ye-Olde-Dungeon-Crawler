@@ -291,6 +291,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
   async function processVisualEffectsAndRender(): Promise<void> {
     try {
+      if (activeEngine?.lastActionResult?.pipelineError) {
+        diagnosticModal.showError(activeEngine.lastActionResult.message ?? 'An unexpected error occurred; the action could not be completed.');
+        activeEngine.lastActionResult.pipelineError = false;
+      }
       updateHeaderInfo();
       renderFlanks();
       if (activeEngine) {
@@ -1207,7 +1211,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         return false;
       } catch (err) {
-        showToast(`Corrupted save file: ${(err as Error).message}`, 'error');
+        diagnosticModal.showError(`Corrupted save file: ${(err as Error).message}`);
         return false;
       }
     },
@@ -1220,7 +1224,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         return false;
       } catch (err) {
-        showToast(`Corrupted autosave file: ${(err as Error).message}`, 'error');
+        diagnosticModal.showError(`Corrupted autosave file: ${(err as Error).message}`);
         return false;
       }
     },

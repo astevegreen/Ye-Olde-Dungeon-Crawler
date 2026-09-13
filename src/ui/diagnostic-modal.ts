@@ -5,13 +5,11 @@ import {
   WaitAction,
   ItemFactory,
   Item,
-  createScaledMonster,
-  MonsterRegistry,
-  type MonsterDefinition,
   safeJsonStringify,
 } from '../engine';
 import type { UIModal, ModalStackManager } from './modalStack';
 import { copyTextToClipboard } from './platform';
+import { showToast as showGlobalToast } from './toast';
 
 export type DiagnosticTabId = 'simulation' | 'actor' | 'pipeline' | 'triage';
 
@@ -854,17 +852,14 @@ export class DiagnosticModal implements UIModal {
 
     const toggleGodBtn = this.tabContent.querySelector('#btn-triage-toggle-god');
     toggleGodBtn?.addEventListener('click', () => {
-      if (engine.player) {
-        engine.player.isInvulnerable = !engine.player.isInvulnerable;
-        this.showToast(`Invulnerability ${engine.player.isInvulnerable ? 'ENABLED (God Mode)' : 'DISABLED'}.`);
-        this.renderCurrentTab();
-      }
+      const isInvulnerable = engine.diagnostics.toggleGodMode();
+      this.showToast(`Invulnerability ${isInvulnerable ? 'ENABLED (God Mode)' : 'DISABLED'}.`);
+      this.renderCurrentTab();
     });
 
     const revealMapBtn = this.tabContent.querySelector('#btn-triage-reveal-map');
     revealMapBtn?.addEventListener('click', () => {
-      engine.fov.revealAllTiles();
-      engine.log('A mystical vision reveals the entire floor layout.');
+      engine.diagnostics.revealFloorMap();
       this.showToast('Floor map revealed (Clairvoyance).');
       this.renderCurrentTab();
     });
@@ -979,55 +974,20 @@ export class DiagnosticModal implements UIModal {
     }
 
     if (item) {
-      const added = p.addItem(item);
-      if (!added) {
-        engine.map.addItemAt(p.x, p.y, item);
-        this.showToast(`Backpack full: Placed ${item.displayName} on ground.`);
-      } else {
+      const res = engine.diagnostics.spawnItem(item);
+      if (res.placedInPack) {
         this.showToast(`Spawned ${item.displayName} in backpack.`);
+      } else {
+        this.showToast(`Backpack full: Placed ${item.displayName} on ground.`);
       }
       this.renderCurrentTab();
     }
   }
 
   private spawnTestMonster(engine: GameEngine, mobId: string): void {
-    const p = engine.player;
-    if (!p) return;
-
-    const def: MonsterDefinition = MonsterRegistry.get(mobId) ?? MonsterRegistry.getAll()[0] ?? {
-      id: mobId,
-      name: mobId.toUpperCase(),
-      stats: { hp: 20, maxHp: 20, attack: 5, defense: 2 },
-      speed: 100,
-      aiType: 'melee',
-      fleeHealthPercent: 0,
-      xpValue: 15,
-      lootTable: [],
-    };
-
-    const neighbors = [
-      { x: p.x + 1, y: p.y },
-      { x: p.x - 1, y: p.y },
-      { x: p.x, y: p.y + 1 },
-      { x: p.x, y: p.y - 1 },
-      { x: p.x + 1, y: p.y + 1 },
-      { x: p.x - 1, y: p.y - 1 },
-    ];
-    const spawnTile = neighbors.find(
-      (n) => engine.map.isPassable(n.x, n.y) && !engine.map.getEntityAt(n.x, n.y)
-    );
-
-    if (spawnTile) {
-      const monster = createScaledMonster(
-        def,
-        `test-mob-${Date.now()}`,
-        spawnTile,
-        engine.currentFloor
-      );
-      monster.aiState = 'hunting';
-      engine.map.addEntity(monster);
-      engine.scheduler.addEntity(monster);
-      this.showToast(`Spawned ${monster.name} at (${spawnTile.x}, ${spawnTile.y})!`);
+    const monster = engine.diagnostics.spawnMonster(mobId, { aiState: 'hunting' });
+    if (monster) {
+      this.showToast(`Spawned ${monster.name} at (${monster.x}, ${monster.y})!`);
       this.renderCurrentTab();
     } else {
       this.showToast('No passable adjacent tile to spawn monster.');
@@ -1088,6 +1048,25 @@ export class DiagnosticModal implements UIModal {
     if (this.crashModal && this.crashText) {
       this.crashText.textContent = `${message}\n\n${stack ?? ''}`;
       this.crashModal.style.display = 'flex';
+    }
+  }
+
+  /**
+   * Generic error toast notification for player-facing diagnostic/error reporting.
+   */
+  public showError(message: string): void {
+    showGlobalToast(message, 'error');
+  }
+
+  /**
+   * Generic modal alert for severe or modal error reporting.
+   */
+  public showErrorModal(message: string): void {
+    if (this.crashModal && this.crashText) {
+      this.crashText.textContent = message;
+      this.crashModal.style.display = 'flex';
+    } else {
+      showGlobalToast(message, 'error');
     }
   }
 }

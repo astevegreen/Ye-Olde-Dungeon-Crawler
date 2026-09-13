@@ -8,6 +8,7 @@ import {
   ItemFactory,
   flightRecorder,
   type CharacterProfile,
+  MonsterRegistry
 } from '../../engine';
 import { DiagnosticModal, type DiagnosticInputContext } from '../diagnostic-modal';
 import { ModalStackManager } from '../modalStack';
@@ -216,6 +217,17 @@ describe('DiagnosticModal - Categorized Sub-Menus & Triage Tool', () => {
   };
 
   beforeEach(() => {
+    MonsterRegistry.register({
+      id: 'goblin',
+      name: 'Goblin',
+      stats: { hp: 10, maxHp: 10, attack: 2, defense: 1 },
+      speed: 100,
+      aiType: 'melee',
+      fleeHealthPercent: 0,
+      xpValue: 5,
+      lootTable: []
+    });
+    
     originalDocument = (globalThis as any).document;
     mockDoc = new MockDocument();
     (globalThis as any).document = mockDoc;

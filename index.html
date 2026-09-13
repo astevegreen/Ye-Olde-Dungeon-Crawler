@@ -730,34 +730,40 @@
 
       <!-- Windows 3.1 / Developer Diagnostic Flight Recorder Modal -->
       <div id="diagnostic-modal" class="retro-window-overlay" style="display: none; z-index: 150;">
-        <div class="retro-window" style="width: 820px; max-height: 90vh;">
+        <div class="retro-window" style="width: 860px; max-height: 92vh; display: flex; flex-direction: column;">
           <div class="retro-titlebar">
             <div class="retro-titlebar-title">
               <span>🛠️</span>
-              <span>Developer Diagnostic Flight Recorder</span>
+              <span>Developer Diagnostic Sub-Menus</span>
             </div>
             <button id="btn-diag-close-title" class="win-btn win-btn-sm" style="padding: 0 5px; font-weight: bold;">✕</button>
           </div>
 
-          <div class="retro-window-body">
-            <div class="retro-banner" style="background: #1e293b;">
-              <div class="retro-banner-title">ENGINE TELEMETRY &amp; FLIGHT RECORDER</div>
-              <div class="retro-banner-sub">Rolling telemetry buffer (150 events) with Markdown report generation for Antigravity debugging.</div>
+          <div class="retro-window-body" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+            <!-- Category Tabs -->
+            <div id="diagnostic-tab-strip" style="display: flex; gap: 4px; margin-bottom: 6px; border-bottom: 2px solid #94a3b8; padding-bottom: 4px; flex-wrap: wrap;">
+              <button id="tab-btn-simulation" class="win-btn diag-tab-btn active-tab" data-tab="simulation" style="font-weight: bold; font-size: 11px; padding: 4px 10px;">[1] 🌍 World &amp; Sim</button>
+              <button id="tab-btn-actor" class="win-btn diag-tab-btn" data-tab="actor" style="font-weight: bold; font-size: 11px; padding: 4px 10px;">[2] ⚔️ Actor &amp; Combat</button>
+              <button id="tab-btn-pipeline" class="win-btn diag-tab-btn" data-tab="pipeline" style="font-weight: bold; font-size: 11px; padding: 4px 10px;">[3] ⚡ Pipeline &amp; Input</button>
+              <button id="tab-btn-triage" class="win-btn diag-tab-btn" data-tab="triage" style="font-weight: bold; font-size: 11px; padding: 4px 10px;">[4] 🛠️ Triage &amp; Overrides</button>
             </div>
 
-            <div style="flex: 1; min-height: 280px; max-height: 55vh; display: flex; flex-direction: column;">
-              <pre id="diagnostic-report-text" class="retro-inset-list" style="flex: 1; padding: 10px; font-family: 'Consolas', 'Courier New', monospace; font-size: 11px; white-space: pre-wrap; background: #090d16; color: #38bdf8; overflow-y: auto; user-select: text; border: 2px inset #ffffff;"></pre>
+            <!-- Dynamic Tab Content Pane -->
+            <div id="diagnostic-tab-content" style="flex: 1; min-height: 320px; max-height: 56vh; display: flex; flex-direction: column; overflow-y: auto;">
+              <!-- Tab content populated by DiagnosticModal -->
             </div>
 
-            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; flex-wrap: wrap; gap: 8px;">
-              <div style="display: flex; gap: 6px;">
-                <button id="btn-diag-copy" class="win-btn primary-btn" style="font-weight: bold;">📋 Copy Diagnostics</button>
-                <button id="btn-diag-download" class="win-btn">💾 Download .md</button>
-                <button id="btn-diag-clear" class="win-btn danger-btn">Clear Log</button>
+            <!-- Hidden / Expandable Raw Pre Report for backwards compatibility & downloads -->
+            <pre id="diagnostic-report-text" style="display: none;"></pre>
+
+            <!-- Bottom Navigation Bar & Actions -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; flex-wrap: wrap; gap: 8px; border-top: 1px solid #cbd5e1; margin-top: 4px;">
+              <div style="font-size: 11px; color: #64748b; font-family: monospace;">
+                Shortcuts: <kbd style="background:#e2e8f0; padding:1px 4px; border:1px solid #94a3b8;">1-4</kbd> Tabs | <kbd style="background:#e2e8f0; padding:1px 4px; border:1px solid #94a3b8;">Tab</kbd> Cycle | <kbd style="background:#e2e8f0; padding:1px 4px; border:1px solid #94a3b8;">Esc</kbd> / <kbd style="background:#e2e8f0; padding:1px 4px; border:1px solid #94a3b8;">F2</kbd> Close
               </div>
               <div style="display: flex; align-items: center; gap: 8px;">
-                <span id="diagnostic-toast" style="font-size: 11px; color: #15803d; font-weight: bold; display: none;">Diagnostic report copied to clipboard for Antigravity debugging</span>
-                <button id="btn-diag-close" class="win-btn">Close</button>
+                <span id="diagnostic-toast" style="font-size: 11px; color: #15803d; font-weight: bold; display: none;">Action completed</span>
+                <button id="btn-diag-close" class="win-btn" style="min-width: 70px;">Close</button>
               </div>
             </div>
           </div>

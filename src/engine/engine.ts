@@ -202,8 +202,15 @@ export class GameEngine {
   }
 
   public onGameEvent?: (event: GameEvent) => void;
+  public readonly recentGameEvents: GameEvent[] = [];
+  public lastActionResult: ActionResult | null = null;
+  public lastActionName: string | null = null;
 
   public emitGameEvent(event: GameEvent): void {
+    this.recentGameEvents.push(event);
+    if (this.recentGameEvents.length > 20) {
+      this.recentGameEvents.shift();
+    }
     if (this.onGameEvent) {
       this.onGameEvent(event);
     }
@@ -642,6 +649,13 @@ export class GameEngine {
   }
 
   /**
+   * Dispatches an action on behalf of the player through the action pipeline.
+   */
+  public dispatchAction(action: Action): ActionResult {
+    return this.handlePlayerAction(action);
+  }
+
+  /**
    * Processes a player action. If the action succeeds and consumes energy,
    * turns are advanced and AI entities process their queued actions until
    * the player is once again ready to act.
@@ -681,6 +695,8 @@ export class GameEngine {
     }
 
     const result = this.actionPipeline.executeWithHooks(action, this);
+    this.lastActionResult = result;
+    this.lastActionName = (action as any).actionType ?? action.constructor.name;
     if (result.effects && result.effects.length > 0) {
       this.recordVisualEffects(result.effects);
     }

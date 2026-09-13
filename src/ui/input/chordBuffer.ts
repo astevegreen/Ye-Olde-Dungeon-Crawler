@@ -155,6 +155,22 @@ export class ChordBuffer {
     return this.activeChord !== null || this.pendingMove !== null;
   }
 
+  public getStatus(): {
+    enabled: boolean;
+    bufferMs: number;
+    pressedKeys: string[];
+    isChording: boolean;
+    hasPendingTimer: boolean;
+  } {
+    return {
+      enabled: this.isEnabledFn(),
+      bufferMs: this.getBufferMsFn(),
+      pressedKeys: Array.from(this.pressedArrows),
+      isChording: this.isChording(),
+      hasPendingTimer: this.pendingTimer !== null,
+    };
+  }
+
   private clearPendingTimer(): void {
     if (this.pendingTimer) {
       clearTimeout(this.pendingTimer);

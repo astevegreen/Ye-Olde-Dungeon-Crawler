@@ -328,6 +328,18 @@ window.addEventListener('DOMContentLoaded', () => {
       if (inputHandler) {
         inputHandler.enabled = true;
       }
+    },
+    {
+      getInputLocked: () => inputHandler?.isInputLocked ?? false,
+      clearInputLock: () => inputHandler?.clearInputLock(),
+      getChordStatus: () =>
+        inputHandler?.chordBuffer.getStatus() ?? {
+          enabled: false,
+          bufferMs: 40,
+          pressedKeys: [],
+          isChording: false,
+          hasPendingTimer: false,
+        },
     }
   );
 
@@ -740,11 +752,16 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 
     const toggleDiagnostics = () => {
-      if (diagnosticModal.isOpen()) {
+      if (diagnosticModal.isOpen) {
         diagnosticModal.close();
-        if (inputHandler) inputHandler.enabled = true;
+        if (inputHandler) {
+          inputHandler.modalStack.remove(diagnosticModal.id);
+          inputHandler.enabled = true;
+        }
       } else {
-        if (inputHandler) inputHandler.enabled = false;
+        if (inputHandler) {
+          inputHandler.modalStack.push(diagnosticModal);
+        }
         diagnosticModal.open();
       }
     };
@@ -1055,6 +1072,7 @@ window.addEventListener('DOMContentLoaded', () => {
       );
       inputHandler.pactModal = pactModal;
       inputHandler.levelUpModal = levelUpModal;
+      diagnosticModal.setModalStack(inputHandler.modalStack);
     } else {
       renderer.setEngine(engine);
       renderer.shopOverlay.onOpenCompendium = () => {
@@ -1077,6 +1095,7 @@ window.addEventListener('DOMContentLoaded', () => {
         inputHandler.pactModal = pactModal;
         inputHandler.levelUpModal = levelUpModal;
         inputHandler.onSaveAndExit = promptSaveAndQuit;
+        diagnosticModal.setModalStack(inputHandler.modalStack);
       }
     }
 

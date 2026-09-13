@@ -43,6 +43,7 @@ export class Entity {
   public isAnchored: boolean;
   public vulnerabilityTags: string[];
   public tags: string[];
+  public isInvulnerable: boolean = false;
 
   constructor(config: EntityConfig) {
     this.id = config.id;
@@ -141,6 +142,9 @@ export class Entity {
   }
 
   public takeDamage(rawAmount: number): { damageDealt: number; killed: boolean } {
+    if (this.isInvulnerable) {
+      return { damageDealt: 0, killed: false };
+    }
     const damageDealt = Math.max(0, Math.min(this.hp, rawAmount));
     this.hp -= damageDealt;
     const killed = this.hp <= 0;

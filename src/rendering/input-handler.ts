@@ -182,8 +182,25 @@ export class InputHandler {
     this.onActionProcessed();
   }
 
+  public clearInputLock(): void {
+    this.isInputLocked = false;
+    this.chordBuffer.clearAllKeys();
+  }
+
   public handleKeyDown(e: KeyboardEvent): boolean {
     if (!this.enabled) return false;
+
+    const code = e.code;
+
+    // Global Developer Diagnostic overlay toggle: 'F2' or Backquote (`) / Tilde (~)
+    // Checked before isInputLocked so testers can always summon diagnostics during animation freezes
+    if (code === 'F2' || code === 'Backquote' || e.key === '`' || e.key === '~') {
+      flightRecorder.recordInput(code, 'ToggleDiagnostics');
+      if (this.onToggleDiagnostics) {
+        this.onToggleDiagnostics();
+        return true;
+      }
+    }
 
     // During active visual effect playback, lock player turn actions while preserving modal responsiveness
     if (this.isInputLocked) {
@@ -192,8 +209,6 @@ export class InputHandler {
       }
       return false;
     }
-
-    const code = e.code;
 
     // Prevent default scrolling on navigation keys
     if (
@@ -232,15 +247,6 @@ export class InputHandler {
     if (this.navigationController?.isNavigating) {
       this.navigationController.cancel('Navigation halted by keypress.');
       this.onActionProcessed();
-    }
-
-    // Global Developer Diagnostic overlay toggle: 'F2' or Backquote (`) / Tilde (~)
-    if (code === 'F2' || code === 'Backquote' || e.key === '`' || e.key === '~') {
-      flightRecorder.recordInput(code, 'ToggleDiagnostics');
-      if (this.onToggleDiagnostics) {
-        this.onToggleDiagnostics();
-        return true;
-      }
     }
 
     // Hotkey: Smart F1 Context Help (F1 or Slash) - can be opened globally over any active modal

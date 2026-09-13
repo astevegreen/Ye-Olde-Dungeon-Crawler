@@ -240,6 +240,9 @@ export class Actor extends Entity implements IItemContainer, IEquipmentBearer {
   }
 
   public override takeDamage(rawAmount: number): { damageDealt: number; killed: boolean } {
+    if (this.isInvulnerable) {
+      return { damageDealt: 0, killed: false };
+    }
     if (this.morphEnvelope) {
       if (rawAmount >= this.hp) {
         const excess = rawAmount - this.hp;

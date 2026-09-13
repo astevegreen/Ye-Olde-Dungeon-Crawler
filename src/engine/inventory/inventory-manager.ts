@@ -11,14 +11,17 @@ import {
 export interface InventoryManagerConfig {
   primaryPack?: Container;
   slots?: EquipmentSlotDefinition[];
+  ownerId?: string;
 }
 
 export class InventoryManager {
   public readonly paperdoll: Paperdoll;
   public primaryPack: Container;
+  public ownerId: string | null = null;
 
   constructor(config?: InventoryManagerConfig) {
     this.paperdoll = new Paperdoll(config?.slots);
+    this.ownerId = config?.ownerId ?? null;
 
     // Default adventurer pack if none provided
     this.primaryPack =
@@ -34,10 +37,26 @@ export class InventoryManager {
         maxWeightCapacity: 30000, // 30kg capacity
         maxBulkCapacity: 25000, // 25L capacity
         identified: true,
+        ownerId: this.ownerId,
       });
+
+    if (this.ownerId) {
+      this.primaryPack.setOwnerId(this.ownerId);
+    }
 
     // Equip pack into paperdoll pack slot
     this.paperdoll.equip(this.primaryPack, 'pack');
+  }
+
+  public setOwnerId(ownerId: string | null): void {
+    this.ownerId = ownerId;
+    this.primaryPack.setOwnerId(ownerId);
+    for (const eq of this.paperdoll.getAllEquipped()) {
+      eq.item.ownerId = ownerId;
+      if (eq.item instanceof Container) {
+        eq.item.setOwnerId(ownerId);
+      }
+    }
   }
 
   public get belt(): Container | null {
@@ -89,6 +108,7 @@ export class InventoryManager {
     // 1. If item is currency and purse exists, stash in purse
     if (item.category === 'currency' && this.purse) {
       if (this.purse.addItem(item)) {
+        if (this.ownerId) item.ownerId = this.ownerId;
         return { success: true, destination: 'purse' };
       }
     }
@@ -96,6 +116,7 @@ export class InventoryManager {
     // 2. Try utility belt if equipped
     if (this.belt && this.belt.canContain(item).allowed) {
       if (this.belt.addItem(item)) {
+        if (this.ownerId) item.ownerId = this.ownerId;
         return { success: true, destination: 'belt' };
       }
     }
@@ -104,6 +125,7 @@ export class InventoryManager {
     const packCheck = this.primaryPack.canContain(item);
     if (packCheck.allowed) {
       this.primaryPack.addItem(item);
+      if (this.ownerId) item.ownerId = this.ownerId;
       return { success: true, destination: 'pack' };
     }
 
@@ -224,6 +246,55 @@ export class InventoryManager {
       }
     }
     return undefined;
+  }
+
+  /**
+   * Safely removes an item from anywhere in the inventory (pack, belt, purse, or paperdoll)
+   * and clears its parentId pointer.
+   */
+  public removeItem(itemId: string): Item | null {
+    // 1. Check primary pack
+    const fromPack = this.primaryPack.removeItem(itemId);
+    if (fromPack) {
+      fromPack.parentId = null;
+      return fromPack;
+    }
+
+    // 2. Check utility belt
+    if (this.belt) {
+      const fromBelt = this.belt.removeItem(itemId);
+      if (fromBelt) {
+        fromBelt.parentId = null;
+        return fromBelt;
+      }
+    }
+
+    // 3. Check purse
+    if (this.purse) {
+      const fromPurse = this.purse.removeItem(itemId);
+      if (fromPurse) {
+        fromPurse.parentId = null;
+        return fromPurse;
+      }
+    }
+
+    // 4. Check paperdoll equipped items & equipped subcontainers
+    for (const { slot, item } of this.paperdoll.getAllEquipped()) {
+      if (item.id === itemId) {
+        this.paperdoll.unequip(slot);
+        item.parentId = null;
+        return item;
+      }
+      if (item instanceof Container) {
+        const fromSub = item.removeItem(itemId);
+        if (fromSub) {
+          fromSub.parentId = null;
+          return fromSub;
+        }
+      }
+    }
+
+    return null;
   }
 
   /**

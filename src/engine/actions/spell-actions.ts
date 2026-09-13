@@ -154,14 +154,7 @@ export class ReadScrollAction implements Action {
 
   public perform(engine: GameEngine): ActionResult {
     // Remove scroll from wherever it is (pack, belt, sub-containers)
-    const allItems = this.user.inventory.getAllCarriedItems();
-    const found = allItems.find((i) => i.id === this.scroll.id);
-    if (found) {
-      const parent = found.parent;
-      if (parent && 'removeItem' in parent) {
-        (parent as { removeItem: (id: string) => unknown }).removeItem(found.id);
-      }
-    }
+    this.user.inventory.removeItem(this.scroll.id);
 
     this.scroll.identified = true;
     engine.identification?.identifyDefinition(this.scroll.id);
@@ -197,15 +190,7 @@ export class DrinkPotionAction implements Action {
     engine.identification?.identifyDefinition(this.potion.id);
 
     // Remove potion from wherever it is (pack, belt, sub-containers)
-    const allItems = this.user.inventory.getAllCarriedItems();
-    const found = allItems.find((i) => i.id === this.potion.id);
-    if (found) {
-      // Walk up the parent chain to remove from the container that holds it
-      const parent = found.parent;
-      if (parent && 'removeItem' in parent) {
-        (parent as { removeItem: (id: string) => unknown }).removeItem(found.id);
-      }
-    }
+    this.user.inventory.removeItem(this.potion.id);
 
     const actionCost = this.user.getActionCost(100);
     this.user.consumeEnergy(actionCost);

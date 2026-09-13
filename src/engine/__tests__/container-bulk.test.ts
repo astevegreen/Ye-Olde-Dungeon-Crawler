@@ -29,7 +29,8 @@ describe('Container Bulk Bubbling & Ancestry Capacity', () => {
     });
 
     backpack.addItem(pouch);
-    expect(pouch.parent).toBe(backpack);
+    expect(pouch.parentId).toBe(backpack.id);
+    expect(pouch.getParentContainer()).toBe(backpack);
 
     // Initial bulk in backpack should include pouch's total bulk (base bulk 300 + 0 contained)
     expect(pouch.totalBulk()).toBe(300);
@@ -48,7 +49,8 @@ describe('Container Bulk Bubbling & Ancestry Capacity', () => {
     expect(pouch.canContain(gem1).allowed).toBe(true);
     const added1 = pouch.addItem(gem1);
     expect(added1).toBe(true);
-    expect(gem1.parent).toBe(pouch);
+    expect(gem1.parentId).toBe(pouch.id);
+    expect(gem1.getParentContainer()).toBe(pouch);
 
     // Pouch contained bulk = 1,000; total bulk = 1,300
     expect(pouch.containedBulk()).toBe(1000);
@@ -127,7 +129,8 @@ describe('Container Bulk Bubbling & Ancestry Capacity', () => {
     });
 
     vault.addItem(ironChest);
-    expect(ironChest.parent).toBe(vault);
+    expect(ironChest.parentId).toBe(vault.id);
+    expect(ironChest.getParentContainer()).toBe(vault);
 
     // Initial total bulk of chest inside vault is 4,000
     expect(ironChest.totalBulk()).toBe(4000);
@@ -178,10 +181,12 @@ describe('Container Bulk Bubbling & Ancestry Capacity', () => {
     });
 
     pack.addItem(item);
-    expect(item.parent).toBe(pack);
+    expect(item.parentId).toBe(pack.id);
+    expect(item.getParentContainer()).toBe(pack);
 
     const removed = pack.removeItem('dagger-1');
     expect(removed).toBe(item);
-    expect(item.parent).toBeNull();
+    expect(item.parentId).toBeNull();
+    expect(item.getParentContainer()).toBeNull();
   });
 });

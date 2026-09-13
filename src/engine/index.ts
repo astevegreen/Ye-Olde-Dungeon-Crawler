@@ -190,3 +190,4 @@ export * from './analytics/deathEnvelope';
 // Debug & Flight Recorder
 export * from './debug/types';
 export * from './debug/flightRecorder';
+export * from './storage/safeJson';

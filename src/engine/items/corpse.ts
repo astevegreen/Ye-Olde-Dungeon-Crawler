@@ -30,6 +30,8 @@ export class CorpseItemInstance extends Item {
       identified: true,
       description: `The preserved remains of a fallen ${config.archetypeId}.`,
       stats: {},
+      parentId: config.parentId,
+      ownerId: config.ownerId,
     });
     this.archetypeId = config.archetypeId;
     this.decayTicksRemaining = config.decayTicksRemaining ?? 50;

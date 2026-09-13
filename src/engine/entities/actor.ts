@@ -81,7 +81,8 @@ export class Actor extends Entity implements IItemContainer, IEquipmentBearer {
     };
     this.aiRoutineId = config.aiRoutineId;
     this.onDestroyed = config.onDestroyed;
-    this.inventory = config.inventory ?? new InventoryManager();
+    this.inventory = config.inventory ?? new InventoryManager({ ownerId: this.id });
+    this.inventory.setOwnerId(this.id);
   }
 
   public override canMove(): boolean {

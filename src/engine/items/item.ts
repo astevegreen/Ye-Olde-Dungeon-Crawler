@@ -2,6 +2,7 @@ import type { ElementType } from '../magic/elements';
 import type { Predicate } from '../predicates/types';
 import type { HookDescriptor } from '../hooks/hookDispatcher';
 import type { ItemModifier } from './modifiers';
+import { getRegisteredContainer } from './containerRegistry';
 
 export type ItemQuality = 'broken' | 'normal' | 'enchanted' | 'cursed' | 'artifact';
 
@@ -88,6 +89,8 @@ export interface ItemConfig {
   aspectState?: string;
   unitWeight?: number;
   modifiers?: ItemModifier[];
+  parentId?: string | null;
+  ownerId?: string | null;
 }
 
 export class Item {
@@ -115,7 +118,8 @@ export class Item {
   public readonly rangedConfig?: RangedWeaponConfig;
   public readonly predicate?: Predicate;
   public readonly hooks?: HookDescriptor[];
-  public parent: Item | null = null;
+  public parentId: string | null = null;
+  public ownerId: string | null = null;
   public durability?: { current: number; max: number };
   public aspectState?: string;
   public modifiers: ItemModifier[] = [];
@@ -133,6 +137,8 @@ export class Item {
     this.quantity = config.quantity ?? 1;
     this.quality = config.quality ?? 'normal';
     this.identified = config.identified ?? false;
+    this.parentId = config.parentId ?? null;
+    this.ownerId = config.ownerId ?? null;
     this.stats = config.stats ?? {};
     this.description = config.description ?? '';
     this.value = config.value ?? 0;
@@ -274,5 +280,9 @@ export class Item {
 
   public totalBulk(): number {
     return this.bulk * (this.quantity ?? 1);
+  }
+
+  public getParentContainer<T = any>(): T | null {
+    return this.parentId ? getRegisteredContainer<T>(this.parentId) : null;
   }
 }

@@ -36,6 +36,8 @@ export class CoinItem extends Item {
       identified: true,
       description: `Minted ${denom} coins of the realm. Each coin is worth ${COIN_VALUES[denom]} CP.`,
       stats: {},
+      parentId: config.parentId,
+      ownerId: config.ownerId,
     });
 
     this.denomination = denom;

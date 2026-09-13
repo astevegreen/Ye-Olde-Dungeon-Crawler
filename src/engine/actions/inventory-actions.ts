@@ -110,6 +110,11 @@ export class DropAction implements Action {
       }
     }
 
+    this.item.parentId = null;
+    this.item.ownerId = null;
+    if (this.item instanceof Container) {
+      this.item.setOwnerId(null);
+    }
     engine.map.addItemAt(this.player.x, this.player.y, this.item);
 
     const cost = this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);

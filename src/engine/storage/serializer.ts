@@ -61,6 +61,8 @@ export function serializeItem(item: Item): SerializedItemNode {
     durability: item.durability ? { ...item.durability } : undefined,
     aspectState: item.aspectState,
     modifiers: item.modifiers.length > 0 ? item.modifiers.map((m) => ({ ...m })) : undefined,
+    parentId: item.parentId ?? undefined,
+    ownerId: item.ownerId ?? undefined,
   };
 
   if (item instanceof Container) {
@@ -132,6 +134,8 @@ export function deserializeItem(node: SerializedItemNode): Item {
       durability: node.durability,
       aspectState: node.aspectState,
       modifiers: node.modifiers ? [...node.modifiers] : undefined,
+      parentId: node.parentId ?? null,
+      ownerId: node.ownerId ?? null,
     });
 
     for (const childNode of node.items) {
@@ -146,6 +150,8 @@ export function deserializeItem(node: SerializedItemNode): Item {
       id: node.id,
       denomination: node.coinData.denomination,
       count: node.coinData.count,
+      parentId: node.parentId ?? null,
+      ownerId: node.ownerId ?? null,
     });
   }
 
@@ -173,6 +179,8 @@ export function deserializeItem(node: SerializedItemNode): Item {
       durability: node.durability,
       aspectState: node.aspectState,
       modifiers: node.modifiers ? [...node.modifiers] : undefined,
+      parentId: node.parentId ?? null,
+      ownerId: node.ownerId ?? null,
     });
   }
 
@@ -198,6 +206,8 @@ export function deserializeItem(node: SerializedItemNode): Item {
       durability: node.durability,
       aspectState: node.aspectState,
       modifiers: node.modifiers ? [...node.modifiers] : undefined,
+      parentId: node.parentId ?? null,
+      ownerId: node.ownerId ?? null,
     });
   }
 
@@ -224,6 +234,8 @@ export function deserializeItem(node: SerializedItemNode): Item {
       durability: node.durability,
       aspectState: node.aspectState,
       modifiers: node.modifiers ? [...node.modifiers] : undefined,
+      parentId: node.parentId ?? null,
+      ownerId: node.ownerId ?? null,
     });
   }
 
@@ -233,6 +245,8 @@ export function deserializeItem(node: SerializedItemNode): Item {
       archetypeId: node.corpseData.archetypeId,
       weight: node.weight,
       decayTicksRemaining: node.corpseData.decayTicksRemaining,
+      parentId: node.parentId ?? null,
+      ownerId: node.ownerId ?? null,
     });
     corpse.isBurned = node.corpseData.isBurned;
     return corpse;
@@ -259,6 +273,8 @@ export function deserializeItem(node: SerializedItemNode): Item {
     durability: node.durability,
     aspectState: node.aspectState,
     modifiers: node.modifiers ? [...node.modifiers] : undefined,
+    parentId: node.parentId ?? null,
+    ownerId: node.ownerId ?? null,
   });
 }
 

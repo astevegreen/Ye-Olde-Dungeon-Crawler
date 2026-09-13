@@ -8,6 +8,7 @@ import {
   createScaledMonster,
   MonsterRegistry,
   type MonsterDefinition,
+  safeJsonStringify,
 } from '../engine';
 import type { UIModal, ModalStackManager } from './modalStack';
 import { copyTextToClipboard } from './platform';
@@ -751,7 +752,7 @@ export class DiagnosticModal implements UIModal {
     if (ev.type === 'Uncurse') {
       return `Purification cleansed ${ev.cleansedCount} negative modifiers from ${ev.targetSlot ?? 'inventory'}`;
     }
-    return JSON.stringify(ev);
+    return safeJsonStringify(ev);
   }
 
   private renderTriageTab(engine: GameEngine): void {

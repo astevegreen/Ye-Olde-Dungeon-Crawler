@@ -2,6 +2,7 @@ import type { GameEngine } from '../engine';
 import type { CharacterProfile } from '../storage/types';
 import { serializeGame } from '../storage/serializer';
 import { getPlayerTotalCp } from '../economy/currency';
+import { safeJsonStringify } from '../storage/safeJson';
 import type { FlightEvent, FlightEventType, DiagnosticReportOptions } from './types';
 
 export class FlightRecorder {
@@ -19,19 +20,31 @@ export class FlightRecorder {
     timestamp?: number;
     details?: Record<string, unknown>;
   }): FlightEvent {
-    const entry: FlightEvent = {
-      id: this.nextId++,
-      timestamp: event.timestamp ?? Date.now(),
-      type: event.type,
-      summary: event.summary,
-      details: event.details,
-    };
+    try {
+      const entry: FlightEvent = {
+        id: this.nextId++,
+        timestamp: event.timestamp ?? Date.now(),
+        type: event.type,
+        summary: event.summary,
+        details: event.details,
+      };
 
-    this.buffer.push(entry);
-    if (this.buffer.length > this.capacity) {
-      this.buffer.shift();
+      this.buffer.push(entry);
+      if (this.buffer.length > this.capacity) {
+        this.buffer.shift();
+      }
+      return entry;
+    } catch (_err) {
+      // Defensive fallback against log cascade
+      const fallbackEntry: FlightEvent = {
+        id: this.nextId++,
+        timestamp: Date.now(),
+        type: event.type ?? 'error',
+        summary: String(event.summary ?? 'Logging failure'),
+      };
+      this.buffer.push(fallbackEntry);
+      return fallbackEntry;
     }
-    return entry;
   }
 
   public recordInput(
@@ -107,13 +120,20 @@ export class FlightRecorder {
     error: Error | string,
     context?: Record<string, unknown>
   ): FlightEvent {
-    const message = error instanceof Error ? error.message : String(error);
-    const stack = error instanceof Error ? error.stack : undefined;
-    return this.record({
-      type: 'error',
-      summary: `ERROR: ${message}`,
-      details: { message, stack, ...context },
-    });
+    try {
+      const message = error instanceof Error ? error.message : String(error);
+      const stack = error instanceof Error ? error.stack : undefined;
+      return this.record({
+        type: 'error',
+        summary: `ERROR: ${message}`,
+        details: { message, stack, ...context },
+      });
+    } catch (_err) {
+      return this.record({
+        type: 'error',
+        summary: `ERROR: [Unrecordable Error]`,
+      });
+    }
   }
 
   public recordWarning(
@@ -255,7 +275,7 @@ export class FlightRecorder {
       lines.push('|---|---|---|---|---|');
       for (const ev of events) {
         const deltaMs = ev.timestamp - firstEventTime;
-        const detailsStr = ev.details ? JSON.stringify(ev.details) : '';
+        const detailsStr = ev.details ? safeJsonStringify(ev.details) : '';
         const sanitizedDetails = detailsStr.length > 60 ? detailsStr.slice(0, 57) + '...' : detailsStr;
         lines.push(`| #${ev.id} | +${deltaMs}ms | \`${ev.type}\` | ${ev.summary} | \`${sanitizedDetails}\` |`);
       }
@@ -283,7 +303,7 @@ export class FlightRecorder {
           xpToNextLevel: engine.player.xpToNextLevel,
         };
         const saveData = serializeGame(engine, mockProfile);
-        const jsonSnapshot = JSON.stringify(saveData);
+        const jsonSnapshot = safeJsonStringify(saveData);
         lines.push('```json');
         lines.push(jsonSnapshot);
         lines.push('```');

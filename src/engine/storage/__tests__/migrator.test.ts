@@ -335,15 +335,101 @@ describe('Schema Migrator & Save State Versioning', () => {
     const result = defaultMigrator.migrate(v6Envelope);
     expect(result.migrated).toBe(true);
     expect(result.fromVersion).toBe(6);
-    expect(result.envelope.schemaVersion).toBe(7);
+    expect(result.envelope.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(result.envelope.data.player.inventory.paperdoll.mainHand!.modifiers).toEqual([]);
     expect(result.envelope.data.player.inventory.primaryPack.items[0].modifiers).toEqual([]);
     expect(result.envelope.data.map.groundItems[0].items[0].modifiers).toEqual([]);
   });
 
-  it('leaves already up-to-date v7 save untouched', () => {
-    const v7Envelope: VersionedSaveEnvelope<any> = {
+  it('migrates v7 save to v8 by normalizing item parentId, ownerId, and stripping legacy parent references', () => {
+    const v7Save: VersionedSaveEnvelope<any> = {
       schemaVersion: 7,
+      contentManifestId: 'cotw',
+      timestamp: 99999,
+      data: {
+        player: {
+          id: 'player-1',
+          inventory: {
+            paperdoll: {
+              mainHand: { id: 'sword-1', name: 'Iron Sword', parent: { id: 'circular' } },
+            },
+            primaryPack: {
+              id: 'backpack-1',
+              name: 'Backpack',
+              items: [
+                {
+                  id: 'pouch-1',
+                  name: 'Pouch',
+                  items: [
+                    { id: 'gem-1', name: 'Ruby', parent: { id: 'circular-pouch' } },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+        map: {
+          groundItems: [
+            {
+              x: 2,
+              y: 3,
+              items: [
+                { id: 'potion-1', name: 'Healing Potion' },
+                {
+                  id: 'chest-1',
+                  name: 'Chest',
+                  items: [
+                    { id: 'gold-1', name: 'Gold Coin' },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      },
+    };
+
+    const result = defaultMigrator.migrate(v7Save);
+    expect(result.migrated).toBe(true);
+    expect(result.fromVersion).toBe(7);
+    expect(result.envelope.schemaVersion).toBe(8);
+
+    // Player inventory items
+    const sword = result.envelope.data.player.inventory.paperdoll.mainHand as any;
+    expect(sword.parentId).toBeNull();
+    expect(sword.ownerId).toBe('player-1');
+    expect(sword.parent).toBeUndefined();
+
+    const pack = result.envelope.data.player.inventory.primaryPack as any;
+    expect(pack.parentId).toBeNull();
+    expect(pack.ownerId).toBe('player-1');
+
+    const pouch = pack.items[0] as any;
+    expect(pouch.parentId).toBe('backpack-1');
+    expect(pouch.ownerId).toBe('player-1');
+
+    const ruby = pouch.items[0] as any;
+    expect(ruby.parentId).toBe('pouch-1');
+    expect(ruby.ownerId).toBe('player-1');
+    expect(ruby.parent).toBeUndefined();
+
+    // Ground items
+    const groundPotion = result.envelope.data.map.groundItems[0].items[0] as any;
+    expect(groundPotion.parentId).toBeNull();
+    expect(groundPotion.ownerId).toBeNull();
+
+    const groundChest = result.envelope.data.map.groundItems[0].items[1] as any;
+    expect(groundChest.parentId).toBeNull();
+    expect(groundChest.ownerId).toBeNull();
+
+    const groundGold = groundChest.items[0] as any;
+    expect(groundGold.parentId).toBe('chest-1');
+    expect(groundGold.ownerId).toBeNull();
+  });
+
+  it('leaves already up-to-date v8 save untouched', () => {
+    const v8Envelope: VersionedSaveEnvelope<any> = {
+      schemaVersion: 8,
       contentManifestId: 'cotw',
       timestamp: 100000,
       data: {
@@ -359,10 +445,10 @@ describe('Schema Migrator & Save State Versioning', () => {
       },
     };
 
-    const result = defaultMigrator.migrate(v7Envelope);
+    const result = defaultMigrator.migrate(v8Envelope);
     expect(result.migrated).toBe(false);
-    expect(result.fromVersion).toBe(7);
-    expect(result.envelope.schemaVersion).toBe(7);
+    expect(result.fromVersion).toBe(8);
+    expect(result.envelope.schemaVersion).toBe(8);
     expect(result.envelope.data.map.tilesRle).toBe('16W');
     expect(result.envelope.data.map.lastVisitedTick).toBe(120);
     expect(result.envelope.data.player.corruptionScore).toBe(5);

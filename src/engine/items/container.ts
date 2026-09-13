@@ -1,5 +1,11 @@
 import { Item, type ItemConfig } from './item';
 import { canStack, mergeItemStacks } from './stacking';
+import {
+  registerContainer,
+  unregisterContainer,
+  getRegisteredContainer,
+  clearContainerRegistry,
+} from './containerRegistry';
 
 export type ContainerType = 'pack' | 'chest' | 'belt' | 'purse';
 export type ContainerSortMode = 'category' | 'weight' | 'bulk';
@@ -13,6 +19,22 @@ export interface ContainerConfig extends ItemConfig {
 }
 
 export class Container extends Item {
+  public static getContainer(id: string): Container | null {
+    return getRegisteredContainer<Container>(id);
+  }
+
+  public static registerContainer(c: Container): void {
+    registerContainer(c);
+  }
+
+  public static unregisterContainer(id: string): void {
+    unregisterContainer(id);
+  }
+
+  public static clearContainerRegistry(): void {
+    clearContainerRegistry();
+  }
+
   public readonly containerType: ContainerType;
   public readonly maxWeightCapacity: number;
   public readonly maxBulkCapacity: number;
@@ -28,6 +50,7 @@ export class Container extends Item {
     this.maxSlots = config.maxSlots;
     this.acceptedCategories = config.acceptedCategories;
     this.items = [];
+    registerContainer(this);
   }
 
   public getItems(): readonly Item[] {
@@ -129,11 +152,14 @@ export class Container extends Item {
     }
 
     // 7. Recursive Ancestor Capacity Checks
-    let currAncestor = this.parent as Container | null;
+    let currAncestorId = this.parentId;
     let currentDeltaBulk = this.containerType === 'chest' ? 0 : itemBulk;
     const currentDeltaWeight = itemWeight;
 
-    while (currAncestor) {
+    while (currAncestorId) {
+      const currAncestor = Container.getContainer(currAncestorId);
+      if (!currAncestor) break;
+
       if (currAncestor.containedWeight() + currentDeltaWeight > currAncestor.maxWeightCapacity) {
         return {
           allowed: false,
@@ -153,7 +179,7 @@ export class Container extends Item {
         currentDeltaBulk = 0;
       }
 
-      currAncestor = currAncestor.parent as Container | null;
+      currAncestorId = currAncestor.parentId;
     }
 
     return { allowed: true };
@@ -172,7 +198,13 @@ export class Container extends Item {
     }
 
     this.items.push(item);
-    item.parent = this;
+    item.parentId = this.id;
+    if (this.ownerId) {
+      item.ownerId = this.ownerId;
+      if (item instanceof Container) {
+        item.setOwnerId(this.ownerId);
+      }
+    }
     return true;
   }
 
@@ -183,9 +215,19 @@ export class Container extends Item {
     }
     const [removed] = this.items.splice(index, 1);
     if (removed) {
-      removed.parent = null;
+      removed.parentId = null;
     }
     return removed;
+  }
+
+  public setOwnerId(ownerId: string | null): void {
+    this.ownerId = ownerId;
+    for (const item of this.items) {
+      item.ownerId = ownerId;
+      if (item instanceof Container) {
+        item.setOwnerId(ownerId);
+      }
+    }
   }
 
   public getItem(itemId: string): Item | null {
@@ -244,7 +286,7 @@ export class Container extends Item {
 
   private isAncestorOf(potentialChild: Container): boolean {
     for (const child of potentialChild.getItems()) {
-      if (child === this) {
+      if (child.id === this.id) {
         return true;
       }
       if (child instanceof Container && this.isAncestorOf(child)) {

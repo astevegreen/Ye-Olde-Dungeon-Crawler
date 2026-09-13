@@ -138,6 +138,8 @@ export interface SerializedItemBase {
     decayTicksRemaining: number;
     isBurned: boolean;
   };
+  parentId?: string | null;
+  ownerId?: string | null;
 }
 
 export interface SerializedMorphEnvelope {

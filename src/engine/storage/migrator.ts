@@ -1,7 +1,7 @@
 import type { SaveData } from './types';
 import { compactTiles, compactFov } from './compaction';
 
-export const CURRENT_SCHEMA_VERSION = 7;
+export const CURRENT_SCHEMA_VERSION = 8;
 
 export interface VersionedSaveEnvelope<T = SaveData> {
   schemaVersion: number;
@@ -337,6 +337,97 @@ export class SchemaMigrator {
 
       return {
         schemaVersion: 7,
+        contentManifestId: envelope.contentManifestId ?? 'cotw',
+        timestamp: envelope.timestamp ?? Date.now(),
+        data,
+      };
+    });
+
+    // Migration v7 -> v8: Enforce scalar ID normalization for item containment (parentId, ownerId)
+    this.registerMigration(7, 8, (envelope: VersionedSaveEnvelope<any>): VersionedSaveEnvelope => {
+      const data = { ...envelope.data };
+      const playerId = data.player?.id ?? null;
+
+      const normalizeItemTree = (it: any, parentId: string | null, ownerId: string | null) => {
+        if (!it || typeof it !== 'object') return;
+        // Strip legacy circular references if present
+        delete it.parent;
+        delete it.container;
+        delete it.owner;
+
+        it.parentId = it.parentId ?? parentId;
+        it.ownerId = it.ownerId ?? ownerId;
+
+        if (Array.isArray(it.items)) {
+          for (const child of it.items) {
+            normalizeItemTree(child, it.id, it.ownerId);
+          }
+        }
+      };
+
+      const normalizeInventory = (inv: any, ownerId: string | null) => {
+        if (!inv) return;
+        if (inv.paperdoll) {
+          for (const item of Object.values(inv.paperdoll) as any[]) {
+            if (item) {
+              normalizeItemTree(item, null, ownerId);
+            }
+          }
+        }
+        if (inv.primaryPack) {
+          normalizeItemTree(inv.primaryPack, null, ownerId);
+        }
+      };
+
+      // 1. Normalize items in player inventory
+      if (data.player?.inventory) {
+        normalizeInventory(data.player.inventory, playerId);
+      }
+
+      // 2. Normalize items in monster inventories
+      if (Array.isArray(data.map?.monsters)) {
+        for (const m of data.map.monsters) {
+          if (m?.inventory) {
+            normalizeInventory(m.inventory, m.id ?? null);
+          }
+        }
+      }
+
+      // 3. Normalize ground items on active map
+      if (data.map?.groundItems) {
+        for (const tile of data.map.groundItems) {
+          if (Array.isArray(tile.items)) {
+            for (const item of tile.items) {
+              normalizeItemTree(item, null, null);
+            }
+          }
+        }
+      }
+
+      // 4. Normalize stored maps
+      if (data.storedMaps) {
+        for (const fMap of Object.values(data.storedMaps) as any[]) {
+          if (Array.isArray(fMap?.monsters)) {
+            for (const m of fMap.monsters) {
+              if (m?.inventory) {
+                normalizeInventory(m.inventory, m.id ?? null);
+              }
+            }
+          }
+          if (fMap?.groundItems) {
+            for (const tile of fMap.groundItems) {
+              if (Array.isArray(tile.items)) {
+                for (const item of tile.items) {
+                  normalizeItemTree(item, null, null);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      return {
+        schemaVersion: 8,
         contentManifestId: envelope.contentManifestId ?? 'cotw',
         timestamp: envelope.timestamp ?? Date.now(),
         data,

@@ -19,6 +19,7 @@ import type { Predicate } from '../predicates/types';
 import type { ChoiceDefinition, ChoiceOption, ChoiceConsequence } from './choice';
 import type { HookDescriptor } from '../hooks/hookDispatcher';
 import type { RunPactDefinition } from '../pacts/pactManager';
+import type { CompanionDefinition } from '../entities/companion';
 
 export interface MerchantConfig {
   id: string;
@@ -37,7 +38,22 @@ export type ConsumableEffectDescriptor =
   | { type: 'apply_status'; status: string; duration: number; potency?: number }
   | { type: 'gain_xp'; amount: number }
   | { type: 'gain_stat'; stat: string; amount: number }
-  | { type: 'teleport'; range?: number; random?: boolean };
+  | { type: 'teleport'; range?: number; random?: boolean }
+  | {
+      /**
+       * Tag-Filtered Radial Aura (ARCHITECTURE.md P-25): applies `status` to every
+       * living entity within `radius` of the user matching any of `tags` (e.g. a
+       * holy torch blinding undead within 4 tiles). Uses the same bounded
+       * `findTaggedEntitiesInRadius` query the `radialAuraFilter` hook primitive
+       * uses — see `combat/radialAuraFilter.ts`.
+       */
+      type: 'radial_status';
+      radius: number;
+      tags: string[];
+      status: string;
+      duration: number;
+      potency?: number;
+    };
 
 export interface ItemDefinition {
   id: string;
@@ -131,6 +147,38 @@ export interface TrackedMilestoneDefinition {
   label: string;
   description?: string;
   icon?: string;
+}
+
+/**
+ * A cumulative renown-granting milestone (Milestone Renown Ledger, ARCHITECTURE.md P-23).
+ * Distinct from TrackedMilestoneDefinition: that is a flag-based display list for the
+ * World Ledger sidebar, while this drives a scalar per-category renown score used for
+ * title thresholds (`RenownTitleDefinition`) and vendor-unlock predicates (`minCounter`
+ * against the `renown:<category>` world-state counter this produces).
+ */
+export interface RenownMilestoneDefinition {
+  /** Stable ID. Engine call sites (e.g. UncurseAction, SearchAction) record milestones
+   *  by ID; a milestone with no matching definition in the active manifest is a no-op,
+   *  the same way an unregistered actionHook/statusHandler is. */
+  id: string;
+  /** Renown category, e.g. 'exploration' | 'combat'. Free-form to allow campaign-specific categories. */
+  category: string;
+  label: string;
+  description?: string;
+  icon?: string;
+  renownValue: number;
+  /** Default false: fires once per character (tracked via an internal world-state flag). */
+  repeatable?: boolean;
+  /** Optional world-state flag to also set when this milestone first fires, so it can
+   *  double as a `trackedMilestones` entry in the World Ledger. */
+  flag?: string;
+}
+
+/** A title unlocked once renown in `category` (or total renown, if omitted) reaches `threshold`. */
+export interface RenownTitleDefinition {
+  title: string;
+  threshold: number;
+  category?: string;
 }
 
 export interface FlankLayoutConfig {
@@ -294,6 +342,9 @@ export interface GameContentManifest {
   /** When true, the storage layer will also check legacy un-namespaced save keys for backward compatibility. Set to true for the COTW manifest only. */
   supportsLegacyKeys?: boolean;
   trackedMilestones?: TrackedMilestoneDefinition[];
+  renownMilestones?: RenownMilestoneDefinition[];
+  renownTitles?: RenownTitleDefinition[];
+  companions?: CompanionDefinition[];
   flankLayout?: FlankLayoutConfig;
 }
 

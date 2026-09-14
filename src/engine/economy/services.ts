@@ -16,6 +16,7 @@ import {
 import type { GameEngine } from '../engine';
 import type { WorldState } from '../state/worldState';
 import { RunAdvisor, type AdvisoryReport } from '../advisory/runAdvisor';
+import type { CompanionArchetype } from '../entities/companion';
 
 export class TempleService {
   public static readonly CURSE_CLEANSE_COST_CP = 50 * COIN_VALUES.gold; // 50 GP = 5,000 CP
@@ -328,6 +329,145 @@ export class BankService {
       message,
       costInCp: 0,
       weightSavedGrams: savedGrams,
+    };
+  }
+}
+
+/**
+ * Companions & Pet Progression, Phase 2 (ARCHITECTURE.md P-14): trainer NPC
+ * (`NpcRole: 'trainer'`) services — the acquisition gate, archetype switching,
+ * skill teaching, and revival. Mirrors `TempleService`/`SageService`'s cost-check-
+ * then-mutate pattern. Uses the literal `'companion_bonded'` world-state flag key
+ * rather than `GameEngine.COMPANION_BONDED_FLAG` — `GameEngine` is imported
+ * type-only here, so its static value isn't accessible; keep the two in sync if
+ * either changes.
+ */
+export class TrainerService {
+  public static readonly BOND_COST_CP = 100 * COIN_VALUES.gold; // 100 GP — one-time acquisition gate
+  public static readonly REVIVE_COST_CP = 60 * COIN_VALUES.gold; // 60 GP
+  public static readonly ARCHETYPE_SWITCH_COST_CP = 15 * COIN_VALUES.gold; // 15 GP
+  public static readonly TEACH_SKILL_COST_CP = 40 * COIN_VALUES.gold; // 40 GP
+
+  /** One-time purchase enabling `engine.summonCompanion()` going forward. */
+  public static bondCompanion(engine: GameEngine, customCostCp?: number): ServiceResult {
+    if (engine.getWorldFlag('companion_bonded')) {
+      return { success: false, message: 'You have already bonded with a companion.', costInCp: 0 };
+    }
+    const costCp = customCostCp ?? TrainerService.BOND_COST_CP;
+    const playerFundsCp = getPlayerTotalCp(engine.player);
+    if (playerFundsCp < costCp) {
+      return {
+        success: false,
+        message: `Bonding with a companion requires ${formatCurrency(costCp)}. You have ${formatCurrency(playerFundsCp)}.`,
+        costInCp: costCp,
+      };
+    }
+    const deduction = deductCurrencyFromPlayer(engine.player, costCp);
+    if (!deduction.success) return deduction;
+
+    engine.setWorldFlag('companion_bonded', true);
+    return {
+      success: true,
+      message: 'A bond is forged. You may now summon your companion whenever you have need of it.',
+      costInCp: costCp,
+    };
+  }
+
+  /** Heals and re-attaches a fallen companion (`engine.deadCompanionRecord`), pack contents intact. */
+  public static reviveCompanion(engine: GameEngine, customCostCp?: number): ServiceResult {
+    if (engine.companion) {
+      return { success: false, message: `${engine.companion.name} is already at your side.`, costInCp: 0 };
+    }
+    const dead = engine.deadCompanionRecord;
+    if (!dead) {
+      return { success: false, message: 'You have no fallen companion to revive.', costInCp: 0 };
+    }
+    const costCp = customCostCp ?? TrainerService.REVIVE_COST_CP;
+    const playerFundsCp = getPlayerTotalCp(engine.player);
+    if (playerFundsCp < costCp) {
+      return {
+        success: false,
+        message: `Reviving ${dead.name} requires ${formatCurrency(costCp)}. You have ${formatCurrency(playerFundsCp)}.`,
+        costInCp: costCp,
+      };
+    }
+    const deduction = deductCurrencyFromPlayer(engine.player, costCp);
+    if (!deduction.success) return deduction;
+
+    dead.hp = dead.maxHp;
+    dead.statusManager.clear();
+    dead.aiState = 'hunting';
+    engine.deadCompanionRecord = null;
+    engine.attachCompanion(dead);
+    return {
+      success: true,
+      message: `${dead.name} draws breath once more and returns to your side!`,
+      costInCp: costCp,
+    };
+  }
+
+  /** Switches the active companion's AI archetype (ARCHITECTURE.md P-14 Phase 2). */
+  public static switchArchetype(
+    engine: GameEngine,
+    archetype: CompanionArchetype,
+    customCostCp?: number
+  ): ServiceResult {
+    if (!engine.companion) {
+      return { success: false, message: 'You have no companion here to train.', costInCp: 0 };
+    }
+    if (engine.companion.archetype === archetype) {
+      return { success: false, message: `${engine.companion.name} is already trained as a ${archetype}.`, costInCp: 0 };
+    }
+    const costCp = customCostCp ?? TrainerService.ARCHETYPE_SWITCH_COST_CP;
+    const playerFundsCp = getPlayerTotalCp(engine.player);
+    if (playerFundsCp < costCp) {
+      return {
+        success: false,
+        message: `Retraining ${engine.companion.name} as a ${archetype} requires ${formatCurrency(costCp)}. You have ${formatCurrency(playerFundsCp)}.`,
+        costInCp: costCp,
+      };
+    }
+    const deduction = deductCurrencyFromPlayer(engine.player, costCp);
+    if (!deduction.success) return deduction;
+
+    engine.companion.setArchetype(archetype);
+    return {
+      success: true,
+      message: `${engine.companion.name} is retrained as a ${archetype}!`,
+      costInCp: costCp,
+    };
+  }
+
+  /** Unlocks an active companion skill by ID, if not already known. */
+  public static teachSkill(
+    engine: GameEngine,
+    skillId: string,
+    skillName?: string,
+    customCostCp?: number
+  ): ServiceResult {
+    if (!engine.companion) {
+      return { success: false, message: 'You have no companion here to train.', costInCp: 0 };
+    }
+    if (engine.companion.unlockedSkills.includes(skillId)) {
+      return { success: false, message: `${engine.companion.name} already knows ${skillName ?? skillId}.`, costInCp: 0 };
+    }
+    const costCp = customCostCp ?? TrainerService.TEACH_SKILL_COST_CP;
+    const playerFundsCp = getPlayerTotalCp(engine.player);
+    if (playerFundsCp < costCp) {
+      return {
+        success: false,
+        message: `Teaching ${skillName ?? skillId} requires ${formatCurrency(costCp)}. You have ${formatCurrency(playerFundsCp)}.`,
+        costInCp: costCp,
+      };
+    }
+    const deduction = deductCurrencyFromPlayer(engine.player, costCp);
+    if (!deduction.success) return deduction;
+
+    engine.companion.unlockSkill(skillId);
+    return {
+      success: true,
+      message: `${engine.companion.name} learns ${skillName ?? skillId}!`,
+      costInCp: costCp,
     };
   }
 }

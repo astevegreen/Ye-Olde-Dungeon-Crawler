@@ -4,6 +4,7 @@ import { BASE_ACTION_COST } from '../types';
 import type { GameEngine } from '../engine';
 import type { Player } from '../entities/player';
 import { TILES } from '../grid/tile';
+import { recordMilestone } from '../renown/renownLedger';
 
 /**
  * Searches the 8 adjacent tiles and current tile (radius 1) for secret doors and hidden traps.
@@ -58,6 +59,7 @@ export class SearchAction implements Action {
               text: 'Uncovered a secret door hidden in the masonry.',
               icon: '🚪',
             });
+            recordMilestone(engine, 'secret_door_found');
             discoveredCount++;
           }
         }

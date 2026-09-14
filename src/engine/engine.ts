@@ -6,6 +6,7 @@ import type { Entity } from './entities/entity';
 import { Player } from './entities/player';
 import { Monster, type AiState } from './entities/monster';
 import { NPC } from './entities/npc';
+import { Companion, CompanionRegistry } from './entities/companion';
 import { EnergyScheduler } from './scheduler';
 import { FovManager } from './fov/fov-manager';
 import type { Action } from './actions/action';
@@ -131,6 +132,16 @@ export class GameEngine {
   public rng: () => number;
   public map: GameMap;
   public readonly player: Player;
+  /** The player's summoned companion, if any (ARCHITECTURE.md P-14). At most one at a time. */
+  public companion: Companion | null = null;
+  /**
+   * A companion that died in combat, kept (not discarded) so a trainer can revive
+   * it — heal + reattach the same instance, pack contents intact (ARCHITECTURE.md
+   * P-14 Phase 2, see `DeathResolver.resolveDeath`). Session-only: not persisted
+   * across save/load — a save made while a companion awaits revival loses that
+   * opportunity on reload, same as Phase 1 treats "no companion" as the baseline.
+   */
+  public deadCompanionRecord: Companion | null = null;
   public readonly scheduler: EnergyScheduler;
   public fov: FovManager;
   public readonly messages: string[];
@@ -273,6 +284,9 @@ export class GameEngine {
     }
     if (this.manifest.monsters && this.manifest.monsters.length > 0) {
       MonsterRegistry.registerAll(this.manifest.monsters);
+    }
+    if (this.manifest.companions && this.manifest.companions.length > 0) {
+      CompanionRegistry.registerAll(this.manifest.companions);
     }
     if (this.manifest.traps && this.manifest.traps.length > 0) {
       TrapRegistry.registerAll(this.manifest.traps);
@@ -447,7 +461,19 @@ export class GameEngine {
   public updateFov(): void {
     const pactFovMod = this.pacts?.getAggregatedMutators().fovRadiusModifier ?? 0;
     const baseRadius = Math.max(2, this.fovRadius + pactFovMod);
-    const effectiveRadius = this.player.statusManager.hasStatus('blindness') ? 1 : baseRadius;
+    // Generic perception-radius override (ARCHITECTURE.md P-26): any active status whose
+    // handler declares `perceptionRadius` forces that radius; the most restrictive wins.
+    // Generalizes what was previously a blindness-only hardcoded case.
+    let perceptionOverride: number | null = null;
+    for (const effect of this.player.statusManager.getAllActive()) {
+      const handler = StatusHandlerRegistry.get(effect.type);
+      if (handler?.perceptionRadius !== undefined) {
+        perceptionOverride = perceptionOverride === null
+          ? handler.perceptionRadius
+          : Math.min(perceptionOverride, handler.perceptionRadius);
+      }
+    }
+    const effectiveRadius = perceptionOverride ?? baseRadius;
     this.fov.update(this.map, this.player.x, this.player.y, effectiveRadius);
 
     // AI State Awakening & Compendium Discovery bounded to visible FOV radius:
@@ -480,6 +506,60 @@ export class GameEngine {
 
   public hasFeature(flag: string): boolean {
     return Boolean(this.manifest.featureFlags?.[flag]);
+  }
+
+  /**
+   * Registers an already-constructed companion onto the active map and scheduler
+   * (ARCHITECTURE.md P-14). Generic attach point used by both `summonCompanion()`
+   * and save/load restoration (`storage/serializer.ts`).
+   */
+  public attachCompanion(companion: Companion): void {
+    this.companion = companion;
+    if (!this.map.getEntityAt(companion.x, companion.y) || this.map.getEntityAt(companion.x, companion.y) === companion) {
+      this.map.addEntity(companion);
+    } else {
+      // Do NOT pass the player as entityToIgnore here: the player legitimately
+      // occupies their own tile, and the companion must land on a genuinely free
+      // neighboring tile, not on top of them.
+      const spawn = findSafeSpawnPosition(this.map, { x: this.player.x, y: this.player.y }, 5);
+      companion.x = spawn.x;
+      companion.y = spawn.y;
+      this.map.addEntity(companion);
+    }
+    if (companion.isAlive()) {
+      this.scheduler.addEntity(companion);
+    }
+  }
+
+  /** World-state flag set once by `TrainerService.bondCompanion()` (ARCHITECTURE.md P-14 Phase 2). */
+  public static readonly COMPANION_BONDED_FLAG = 'companion_bonded';
+
+  /**
+   * Summons a companion by definition ID near the player. Returns null if one is
+   * already summoned, the definition is unknown, or the player has not yet bonded
+   * with a companion (§9 P-14 Phase 2 acquisition gate — see `TrainerService`).
+   */
+  public summonCompanion(definitionId: string): Companion | null {
+    if (this.companion) return null;
+    if (!this.getWorldFlag(GameEngine.COMPANION_BONDED_FLAG)) {
+      this.log('You have not yet bonded with a companion. Seek out a trainer in town.');
+      return null;
+    }
+    const spawn = findSafeSpawnPosition(this.map, { x: this.player.x, y: this.player.y }, 5);
+    const companion = Companion.fromDefinition(definitionId, `companion-${definitionId}-${Date.now()}`, spawn);
+    if (!companion) return null;
+    this.attachCompanion(companion);
+    this.log(`${companion.name} answers your call!`);
+    return companion;
+  }
+
+  /** Dismisses the active companion, if any, removing it from the current floor. */
+  public dismissCompanion(): void {
+    if (!this.companion) return;
+    this.map.removeEntity(this.companion);
+    this.scheduler.removeEntity(this.companion);
+    this.log(`${this.companion.name} is dismissed.`);
+    this.companion = null;
   }
 
   public getWorldFlag(flag: string): boolean {
@@ -556,8 +636,11 @@ export class GameEngine {
     this.storedFov.set(this.currentFloor, this.fov);
     this.floorManager.recordDeparture(this.currentFloor, this.map, this.fov, this.turnCount);
 
-    // 2. Remove player from current map and reset scheduler
+    // 2. Remove player (and companion, which travels with them) from current map, reset scheduler
     this.map.removeEntity(this.player);
+    if (this.companion) {
+      this.map.removeEntity(this.companion);
+    }
     this.scheduler.reset();
 
     // 3. Retrieve or generate target floor
@@ -652,6 +735,19 @@ export class GameEngine {
     this.player.y = safeSpawn.y;
     this.map.addEntity(this.player);
     this.scheduler.addEntity(this.player);
+
+    // 5b. The companion travels with the player (ARCHITECTURE.md P-14)
+    if (this.companion && this.companion.isAlive()) {
+      // The player is already placed at safeSpawn by this point — do not ignore
+      // them here, or the companion lands on the same tile and addEntity refuses it.
+      const companionSpawn = findSafeSpawnPosition(this.map, safeSpawn, 5);
+      this.companion.x = companionSpawn.x;
+      this.companion.y = companionSpawn.y;
+      this.map.addEntity(this.companion);
+    } else if (this.companion) {
+      // Companion died mid-transition (shouldn't normally happen); drop the reference.
+      this.companion = null;
+    }
 
     // Register only living entities on the new active map into scheduler
     for (const ent of this.map.getAllEntities()) {

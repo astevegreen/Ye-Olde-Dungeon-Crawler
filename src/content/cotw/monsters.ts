@@ -90,6 +90,7 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
     statusImmunities: ['poison'],
     fleeHealthPercent: 0.0,
     xpValue: 35,
+    tags: ['undead'],
     lootTable: [
       {
         chance: 0.5,
@@ -145,6 +146,9 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
     resistances: { cold: 'resistant' },
     fleeHealthPercent: 0.15,
     xpValue: 45,
+    // Pack hunters notice whichever prey is closest, including a companion
+    // (ARCHITECTURE.md P-14 Phase 2 — opt-in, no effect on monsters that omit this).
+    targetingMode: 'nearest_hostile',
     lootTable: [
       {
         chance: 0.5,
@@ -203,6 +207,7 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
     },
     fleeHealthPercent: 0.0,
     xpValue: 95,
+    tags: ['undead'],
     lootTable: [
       {
         chance: 0.6,
@@ -234,6 +239,7 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
     },
     fleeHealthPercent: 0.0,
     xpValue: 95,
+    tags: ['undead'],
     lootTable: [
       {
         chance: 0.6,

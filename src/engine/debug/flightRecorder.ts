@@ -1,9 +1,24 @@
 import type { GameEngine } from '../engine';
 import type { CharacterProfile } from '../storage/types';
-import { serializeGame } from '../storage/serializer';
 import { getPlayerTotalCp } from '../economy/currency';
 import { safeJsonStringify } from '../storage/safeJson';
 import type { FlightEvent, FlightEventType, DiagnosticReportOptions } from './types';
+
+/**
+ * Injected by `storage/serializer.ts` (self-registering on load) rather than imported
+ * directly. `storage/serializer.ts` sits behind a chain of value-imports reachable
+ * from `entities/monster.ts` (this module is one of monster.ts's own imports), so a
+ * direct static import here would put `entities/monster.ts` in a load-order cycle
+ * with itself. Everything in that cycle already tolerated it by only touching the
+ * circular value lazily inside function bodies — this diagnostic snapshot is the
+ * same lazy-use case, just expressed as injection instead of a static import so the
+ * cycle never forms in the first place.
+ */
+type SerializeGameFn = (engine: GameEngine, profile?: CharacterProfile) => unknown;
+let serializeGameFn: SerializeGameFn | null = null;
+export function registerSerializeGameFn(fn: SerializeGameFn): void {
+  serializeGameFn = fn;
+}
 
 export class FlightRecorder {
   private buffer: FlightEvent[] = [];
@@ -302,7 +317,10 @@ export class FlightRecorder {
           xp: engine.player.xp,
           xpToNextLevel: engine.player.xpToNextLevel,
         };
-        const saveData = serializeGame(engine, mockProfile);
+        if (!serializeGameFn) {
+          throw new Error('serializeGame is not registered (storage/serializer.ts was not loaded)');
+        }
+        const saveData = serializeGameFn(engine, mockProfile);
         const jsonSnapshot = safeJsonStringify(saveData);
         lines.push('```json');
         lines.push(jsonSnapshot);

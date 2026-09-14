@@ -46,13 +46,42 @@ export const ACTION_METADATA: ActionMetadata[] = [
   { id: 'inspect', name: 'Inspect / Look Mode', category: 'Interaction & Inventory', defaultCodes: ['KeyX', 'KeyL'] },
   { id: 'compendium', name: 'Slayer Bestiary', category: 'Interaction & Inventory', defaultCodes: ['KeyB'] },
   { id: 'pact', name: 'Run Pacts & Bounties', category: 'Interaction & Inventory', defaultCodes: ['KeyP'] },
+  { id: 'radial_menu', name: 'Open Radial Action Menu', category: 'Interaction & Inventory', defaultCodes: ['KeyV'] },
 ];
+
+/**
+ * Configurable Radial Action Menu (ARCHITECTURE.md P-24). A slot bound to a spell,
+ * a registered CommandPalette command, or a directly-usable consumable item (potion
+ * or self-targeted scroll). Indexed by compass direction — see radialMenu.ts's
+ * `RADIAL_DIRECTIONS` for the fixed 8-direction order this array is keyed by.
+ */
+export type RadialMenuSlotConfig =
+  | { type: 'spell'; spellId: string }
+  | { type: 'command'; commandId: string }
+  | { type: 'item'; itemId: string };
+
+export const RADIAL_MENU_SLOT_COUNT = 8;
 
 export interface GameSettings {
   arrowChordingEnabled: boolean;
   arrowChordBufferMs: number;
   mouseVectoringEnabled: boolean;
   keybinds: Record<string, string[]>;
+  radialMenuSlots: (RadialMenuSlotConfig | null)[];
+}
+
+function sanitizeRadialMenuSlots(raw: unknown): (RadialMenuSlotConfig | null)[] {
+  const defaults: (RadialMenuSlotConfig | null)[] = new Array(RADIAL_MENU_SLOT_COUNT).fill(null);
+  if (!Array.isArray(raw)) return defaults;
+
+  return defaults.map((_, i) => {
+    const slot = raw[i];
+    if (!slot || typeof slot !== 'object') return null;
+    if (slot.type === 'spell' && typeof slot.spellId === 'string') return { type: 'spell', spellId: slot.spellId };
+    if (slot.type === 'command' && typeof slot.commandId === 'string') return { type: 'command', commandId: slot.commandId };
+    if (slot.type === 'item' && typeof slot.itemId === 'string') return { type: 'item', itemId: slot.itemId };
+    return null;
+  });
 }
 
 export const SETTINGS_STORAGE_KEY = 'cotw_settings';
@@ -71,6 +100,7 @@ export function getDefaultSettings(): GameSettings {
     arrowChordBufferMs: 40,
     mouseVectoringEnabled: true,
     keybinds: getDefaultKeybinds(),
+    radialMenuSlots: new Array(RADIAL_MENU_SLOT_COUNT).fill(null),
   };
 }
 
@@ -201,6 +231,7 @@ export class SettingsManager {
         arrowChordBufferMs: typeof parsed.arrowChordBufferMs === 'number' ? Math.max(25, Math.min(75, parsed.arrowChordBufferMs)) : defaults.arrowChordBufferMs,
         mouseVectoringEnabled: typeof parsed.mouseVectoringEnabled === 'boolean' ? parsed.mouseVectoringEnabled : defaults.mouseVectoringEnabled,
         keybinds: typeof parsed.keybinds === 'object' && parsed.keybinds !== null ? { ...defaults.keybinds, ...parsed.keybinds } : defaults.keybinds,
+        radialMenuSlots: sanitizeRadialMenuSlots(parsed.radialMenuSlots),
       };
     } catch {
       return defaults;

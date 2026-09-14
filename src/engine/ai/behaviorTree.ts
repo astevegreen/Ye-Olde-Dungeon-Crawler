@@ -12,13 +12,14 @@ import { AiBehaviorRegistry, type AiBehaviorStrategy } from './aiBehaviorRegistr
 import { AIRegistry } from './aiRegistry';
 import { BUILTIN_AI_TYPES } from '../bestiary/monsterDefinitions';
 import { computeDangerTiles } from './intent';
+import { selectAttackTarget } from './targetSelection';
 
 class CasterBehavior implements AiBehaviorStrategy {
   public readonly id = BUILTIN_AI_TYPES.CASTER;
   public readonly name = 'Tactical Caster';
 
   public decideAction(monster: Monster, engine: GameEngine): Action {
-    const player = engine.player;
+    const player = selectAttackTarget(engine, monster);
     const chebyshevDist = Math.max(Math.abs(monster.x - player.x), Math.abs(monster.y - player.y));
     const dist = Math.hypot(monster.x - player.x, monster.y - player.y);
     const hasLos = dist <= 8 && MonsterAI.hasLineOfSight(engine, monster.x, monster.y, player.x, player.y);
@@ -101,7 +102,7 @@ class MeleeBehavior implements AiBehaviorStrategy {
   public readonly name = 'Melee Attacker';
 
   public decideAction(monster: Monster, engine: GameEngine): Action {
-    const player = engine.player;
+    const player = selectAttackTarget(engine, monster);
     const chebyshevDist = Math.max(Math.abs(monster.x - player.x), Math.abs(monster.y - player.y));
 
     if (chebyshevDist <= 1) {
@@ -129,7 +130,7 @@ class BruteBehavior implements AiBehaviorStrategy {
   public readonly name = 'Brute Attacker';
 
   public decideAction(monster: Monster, engine: GameEngine): Action {
-    const player = engine.player;
+    const player = selectAttackTarget(engine, monster);
     const chebyshevDist = Math.max(Math.abs(monster.x - player.x), Math.abs(monster.y - player.y));
     const dist = Math.hypot(monster.x - player.x, monster.y - player.y);
     const hasLos = dist <= 8 && MonsterAI.hasLineOfSight(engine, monster.x, monster.y, player.x, player.y);
@@ -197,7 +198,7 @@ class CowardBehavior implements AiBehaviorStrategy {
   public readonly name = 'Cowardly Attacker';
 
   public decideAction(monster: Monster, engine: GameEngine): Action {
-    const player = engine.player;
+    const player = selectAttackTarget(engine, monster);
     const chebyshevDist = Math.max(Math.abs(monster.x - player.x), Math.abs(monster.y - player.y));
 
     if (chebyshevDist <= 1) {
@@ -250,7 +251,7 @@ export class MonsterAI {
       return new WaitAction(monster);
     }
 
-    const player = engine.player;
+    const player = selectAttackTarget(engine, monster);
     if (!player.isAlive()) {
       return new WaitAction(monster);
     }

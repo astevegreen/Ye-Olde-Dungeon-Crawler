@@ -4,6 +4,7 @@ import { BASE_ACTION_COST } from '../types';
 import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
 import type { EquipmentSlot, Item } from '../items/item';
+import { recordMilestone } from '../renown/renownLedger';
 
 export interface UncurseTarget {
   slot?: EquipmentSlot;
@@ -81,6 +82,7 @@ export class UncurseAction implements Action {
     const itemNames = uncursedItems.map((i) => i.name).join(', ');
     const msg = `Purifying light envelops ${this.actor.name}! The curse on ${itemNames} has been broken!`;
     engine.log(msg);
+    recordMilestone(engine, 'item_uncursed');
     engine.recordVisualEffects([
       {
         type: 'burst',

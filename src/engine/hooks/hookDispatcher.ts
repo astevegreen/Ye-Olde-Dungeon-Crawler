@@ -11,6 +11,7 @@ import type { Position } from '../types';
 import { applyImpulse } from '../combat/impulse';
 import { DeathResolver } from '../combat/deathResolver';
 import { CastSpellAction } from '../actions/spell-actions';
+import { findTaggedEntitiesInRadius } from '../combat/radialAuraFilter';
 
 export type HookEvent =
   | 'onHit'
@@ -60,6 +61,19 @@ export type ActionPrimitive =
       type: 'bonusDamage';
       amount: number;
       element?: ElementType;
+    }
+  | {
+      /**
+       * Tag-Filtered Radial Aura (ARCHITECTURE.md P-25): finds living entities within
+       * `radius` of the hook's position matching any of `tags` (via `Entity.hasTag()`,
+       * bounded via `findTaggedEntitiesInRadius` per §6's scoping principle), and
+       * applies `apply` to each match as its own target. The generic, reusable
+       * primitive; which tags a holy torch or ward cares about is content data.
+       */
+      type: 'radialAuraFilter';
+      radius: number;
+      tags: string[];
+      apply: ActionPrimitive;
     };
 
 export interface HookDescriptor {
@@ -226,7 +240,9 @@ export class HookDispatcher {
     }
   }
 
-  private static executePrimitive(
+  // Public (not private) so the standalone `executeRadialAuraFilter` primitive
+  // executor below can recurse into it for each tag-matched entity.
+  public static executePrimitive(
     action: ActionPrimitive,
     ctx: HookContext,
     owner: Entity,
@@ -410,6 +426,32 @@ function executeCastSpell(
   }
 }
 
+function executeRadialAuraFilter(
+  action: any,
+  context: HookContext,
+  owner: Entity,
+  _target: Entity | undefined,
+  summary: HookExecutionSummary,
+  sourceName: string,
+  description?: string
+): void {
+  const engine = context.engine;
+  const center = context.position ?? { x: owner.x, y: owner.y };
+  const matches = findTaggedEntitiesInRadius(engine, center, action.radius, action.tags);
+
+  if (matches.length === 0) return;
+
+  for (const matched of matches) {
+    // Each match is its own primitive target; owner stays the aura's source for
+    // messaging/attribution, mirroring how the other primitives attribute PROCs.
+    HookDispatcher.executePrimitive(action.apply, context, owner, matched, summary, sourceName);
+  }
+
+  const msg = description ?? `✦ [PROC: ${sourceName}] A radial aura washes over ${matches.length} ${action.tags.join('/')} creature(s)!`;
+  engine.log(msg);
+  summary.messages.push(msg);
+}
+
 primitiveExecutors.set('applyStatus', executeApplyStatus);
 primitiveExecutors.set('pushImpulse', executePushImpulse);
 primitiveExecutors.set('spawnSurface', executeSpawnSurface);
@@ -417,3 +459,4 @@ primitiveExecutors.set('spawnGas', executeSpawnGas);
 primitiveExecutors.set('heal', executeHeal);
 primitiveExecutors.set('bonusDamage', executeBonusDamage);
 primitiveExecutors.set('castSpell', executeCastSpell);
+primitiveExecutors.set('radialAuraFilter', executeRadialAuraFilter);

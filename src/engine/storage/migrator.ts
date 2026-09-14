@@ -1,7 +1,7 @@
 import type { SaveData } from './types';
 import { compactTiles, compactFov } from './compaction';
 
-export const CURRENT_SCHEMA_VERSION = 8;
+export const CURRENT_SCHEMA_VERSION = 9;
 
 export interface VersionedSaveEnvelope<T = SaveData> {
   schemaVersion: number;
@@ -428,6 +428,20 @@ export class SchemaMigrator {
 
       return {
         schemaVersion: 8,
+        contentManifestId: envelope.contentManifestId ?? 'cotw',
+        timestamp: envelope.timestamp ?? Date.now(),
+        data,
+      };
+    });
+
+    // Migration v8 -> v9: Companions & Pet Progression (ARCHITECTURE.md P-14) —
+    // additive top-level `companion` field, absent/null meaning no companion summoned.
+    this.registerMigration(8, 9, (envelope: VersionedSaveEnvelope<any>): VersionedSaveEnvelope => {
+      const data = { ...envelope.data };
+      data.companion = data.companion ?? null;
+
+      return {
+        schemaVersion: 9,
         contentManifestId: envelope.contentManifestId ?? 'cotw',
         timestamp: envelope.timestamp ?? Date.now(),
         data,

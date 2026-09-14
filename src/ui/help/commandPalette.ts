@@ -51,6 +51,10 @@ export class CommandPalette {
     this.commands = commands;
   }
 
+  public getCommand(id: string): CommandItem | undefined {
+    return this.commands.find((c) => c.id === id);
+  }
+
   public open(engine: GameEngine, onClose?: () => void): void {
     this.engine = engine;
     this.onCloseCallback = onClose;

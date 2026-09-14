@@ -18,6 +18,7 @@ export * from './entities/actor';
 export * from './entities/player';
 export * from './entities/monster';
 export * from './entities/npc';
+export * from './entities/companion';
 
 // Actions
 export * from './actions/action';
@@ -74,11 +75,13 @@ export * from './traps/trapRegistry';
 export * from './fov/types';
 export * from './fov/shadowcasting';
 export * from './fov/fov-manager';
+export * from './fov/echolocation';
 
 // Combat, Death, & Physics
 export * from './combat/impulse';
 export * from './combat/deathResolver';
 export * from './combat/mitigationPipeline';
+export * from './combat/radialAuraFilter';
 
 // World & Floor Management
 export * from './world/floorManager';
@@ -192,3 +195,6 @@ export * from './analytics/deathEnvelope';
 export * from './debug/types';
 export * from './debug/flightRecorder';
 export * from './storage/safeJson';
+
+// Renown & Meta-Progression
+export * from './renown/renownLedger';

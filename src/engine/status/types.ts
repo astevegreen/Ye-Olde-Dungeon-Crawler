@@ -9,6 +9,7 @@ export const BUILTIN_STATUS = {
   HASTE: 'haste' as StatusType,
   BLINDNESS: 'blindness' as StatusType,
   STUNNED: 'stunned' as StatusType,
+  SENSORY_MASKED: 'sensory_masked' as StatusType,
 } as const;
 
 export interface StatusEffect {

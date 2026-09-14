@@ -20,6 +20,17 @@ import { CanvasFXRunner } from './fxRunner';
 import type { NavigationController } from '../ui/navigation';
 import { CloseDoorAction } from '../engine';
 import { MouseVectorOverlay } from './mouseVectorOverlay';
+import { RadialMenuOverlay } from './radialMenu';
+import type { RadialMenuSlotConfig } from '../ui/settings/settingsManager';
+import { getAudibleEntitiesInRadius, getAudibleTilesInRadius, ECHOLOCATION_HEARING_RADIUS } from '../engine';
+
+function defaultRadialLabel(slot: RadialMenuSlotConfig): string {
+  switch (slot.type) {
+    case 'spell': return slot.spellId;
+    case 'command': return slot.commandId;
+    case 'item': return slot.itemId;
+  }
+}
 
 export class CanvasRenderer {
   private canvas: HTMLCanvasElement;
@@ -36,6 +47,9 @@ export class CanvasRenderer {
   public readonly mapOverlay: MapOverlay;
   public readonly intentOverlay: IntentOverlay;
   public readonly mouseVectorOverlay: MouseVectorOverlay;
+  public readonly radialMenuOverlay: RadialMenuOverlay;
+  /** Resolves a display label for a radial-menu slot; wired from main.ts (spell/command/item lookups live there). */
+  public onResolveRadialLabel?: (slot: RadialMenuSlotConfig) => string;
   public mouseVectoringEnabled = true;
   public navigationController?: NavigationController;
   private hud: HUDMessageLogRenderer;
@@ -84,6 +98,7 @@ export class CanvasRenderer {
     this.mapOverlay = new MapOverlay(() => this.render());
     this.intentOverlay = new IntentOverlay();
     this.mouseVectorOverlay = new MouseVectorOverlay();
+    this.radialMenuOverlay = new RadialMenuOverlay();
     this.hud = new HUDMessageLogRenderer({ maxLines: 4, lineHeight: 13 });
     this.hookEngineEvents();
 
@@ -377,21 +392,30 @@ export class CanvasRenderer {
     // Top Bar (HUD)
     this.renderTopBar(virtualW);
 
-    // Tiles & Fog of War
-    this.renderTiles();
+    // Sensory Masking & Echolocation (ARCHITECTURE.md P-26): while active, replace the
+    // normal FOV-based tile/entity pass with an audible-only view instead of drawing
+    // what the (heavily reduced) visual FOV alone would show.
+    const isSensoryMasked = this.engine.player.statusManager.hasStatus('sensory_masked');
 
-    // Emergent Surfaces (water, oil, acid, ice) & Atmospheric Gasses
-    this.intentOverlay.renderSurfaces(
-      ctx,
-      this.engine,
-      this.camera,
-      this.cellSize,
-      this.offsetX,
-      this.offsetY
-    );
+    if (isSensoryMasked) {
+      this.renderEcholocationView();
+    } else {
+      // Tiles & Fog of War
+      this.renderTiles();
 
-    // Ground Items in line of sight
-    this.renderGroundItems();
+      // Emergent Surfaces (water, oil, acid, ice) & Atmospheric Gasses
+      this.intentOverlay.renderSurfaces(
+        ctx,
+        this.engine,
+        this.camera,
+        this.cellSize,
+        this.offsetX,
+        this.offsetY
+      );
+
+      // Ground Items in line of sight
+      this.renderGroundItems();
+    }
 
     // Enemy Intent Telegraph Reticles & Danger Zones
     this.intentOverlay.render(
@@ -407,7 +431,9 @@ export class CanvasRenderer {
     this.renderNavigationPath();
 
     // Entities in line of sight
-    this.renderEntities();
+    if (!isSensoryMasked) {
+      this.renderEntities();
+    }
 
     // Direct Canvas Mouse Vectoring & 8-Way Hover Ring
     this.mouseVectorOverlay.render(
@@ -465,6 +491,15 @@ export class CanvasRenderer {
 
     // Explored Dungeon Map Overlay
     this.mapOverlay.render(ctx, this.engine, virtualW, virtualH);
+
+    // Configurable Radial Action Menu
+    this.radialMenuOverlay.render(
+      ctx,
+      this.engine,
+      virtualW,
+      virtualH,
+      this.onResolveRadialLabel ?? defaultRadialLabel
+    );
   }
 
   private renderTopBar(width: number): void {
@@ -1000,6 +1035,51 @@ export class CanvasRenderer {
     this.ctx.fillStyle = prevFillStyle;
     this.ctx.strokeStyle = prevStrokeStyle;
     this.ctx.lineWidth = prevLineWidth;
+  }
+
+  /**
+   * Sensory Masking & Echolocation (ARCHITECTURE.md P-26): replaces the normal tile/
+   * entity pass while `sensory_masked` is active. Draws a blank board, the player's
+   * own icon, and only audible actors/terrain — reusing the existing ESP-detected
+   * pulsing-indicator style for actors rather than their normal sprites, since they
+   * are heard, not seen.
+   */
+  private renderEcholocationView(): void {
+    const ctx = this.ctx;
+    const cs = this.cellSize;
+    const cols = this.camera.viewWidthTiles;
+    const rows = this.camera.viewHeightTiles;
+    const player = this.engine.player;
+    const center = { x: player.x, y: player.y };
+
+    ctx.save();
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(this.offsetX, this.offsetY, cols * cs, rows * cs);
+    ctx.restore();
+
+    for (const pos of getAudibleTilesInRadius(this.engine, center, ECHOLOCATION_HEARING_RADIUS)) {
+      const screenPos = this.camera.worldToScreen(pos.x, pos.y, cs, this.offsetX, this.offsetY);
+      if (!screenPos) continue;
+      ctx.save();
+      const pulse = (Math.sin(Date.now() / 220) + 1) / 2;
+      ctx.strokeStyle = `rgba(56, 189, 248, ${0.35 + 0.3 * pulse})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(screenPos.x + cs / 2, screenPos.y + cs / 2, cs * 0.3, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    for (const entity of getAudibleEntitiesInRadius(this.engine, center, ECHOLOCATION_HEARING_RADIUS)) {
+      const screenPos = this.camera.worldToScreen(entity.x, entity.y, cs, this.offsetX, this.offsetY);
+      if (!screenPos) continue;
+      this.renderEspMonster(screenPos.x, screenPos.y, cs, entity);
+    }
+
+    const playerScreenPos = this.camera.worldToScreen(player.x, player.y, cs, this.offsetX, this.offsetY);
+    if (playerScreenPos) {
+      this.renderPlayer(playerScreenPos.x, playerScreenPos.y, cs, player);
+    }
   }
 
   private renderEntities(): void {

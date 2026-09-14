@@ -389,7 +389,9 @@ describe('Schema Migrator & Save State Versioning', () => {
       },
     };
 
-    const result = defaultMigrator.migrate(v7Save);
+    // Pin targetVersion to 8 to isolate this step's own behavior from later
+    // migrations (e.g. v8->v9's companion field) added since this test was written.
+    const result = defaultMigrator.migrate(v7Save, 8);
     expect(result.migrated).toBe(true);
     expect(result.fromVersion).toBe(7);
     expect(result.envelope.schemaVersion).toBe(8);
@@ -427,7 +429,7 @@ describe('Schema Migrator & Save State Versioning', () => {
     expect(groundGold.ownerId).toBeNull();
   });
 
-  it('leaves already up-to-date v8 save untouched', () => {
+  it('migrates v8 save to v9 by defaulting the new companion field to null (ARCHITECTURE.md P-14)', () => {
     const v8Envelope: VersionedSaveEnvelope<any> = {
       schemaVersion: 8,
       contentManifestId: 'cotw',
@@ -446,15 +448,37 @@ describe('Schema Migrator & Save State Versioning', () => {
     };
 
     const result = defaultMigrator.migrate(v8Envelope);
-    expect(result.migrated).toBe(false);
+    expect(result.migrated).toBe(true);
     expect(result.fromVersion).toBe(8);
-    expect(result.envelope.schemaVersion).toBe(8);
+    expect(result.envelope.schemaVersion).toBe(9);
+    expect(result.envelope.data.companion).toBeNull();
+    // Everything else from the v7->v8 step onward is untouched
     expect(result.envelope.data.map.tilesRle).toBe('16W');
     expect(result.envelope.data.map.lastVisitedTick).toBe(120);
     expect(result.envelope.data.player.corruptionScore).toBe(5);
     expect(result.envelope.data.player.unspentStatPoints).toBe(4);
     expect(result.envelope.data.map.floorTurnCount).toBe(15);
     expect(result.envelope.data.map.isCleared).toBe(true);
+  });
+
+  it('leaves an already up-to-date v9 save (with a companion) untouched', () => {
+    const v9Envelope: VersionedSaveEnvelope<any> = {
+      schemaVersion: 9,
+      contentManifestId: 'cotw',
+      timestamp: 100001,
+      data: {
+        player: { id: 'hero', name: 'Sven' },
+        map: { width: 4, height: 4, tilesRle: '16W', groundItems: [], monsters: [] },
+        companion: { id: 'companion-1', name: 'Fenrir-kin Battle-Hound', companionDefinitionId: 'battle_hound', x: 3, y: 3, hp: 20, maxHp: 30, attack: 6, defense: 2, speed: 110, energy: 0, primaryPack: { id: 'pack-1', name: 'Pack', items: [] } },
+      },
+    };
+
+    const result = defaultMigrator.migrate(v9Envelope);
+    expect(result.migrated).toBe(false);
+    expect(result.fromVersion).toBe(9);
+    expect(result.envelope.schemaVersion).toBe(9);
+    expect(result.envelope.data.companion!.id).toBe('companion-1');
+    expect(result.envelope.data.companion!.hp).toBe(20);
   });
 
   it('parses raw JSON string input transparently', () => {

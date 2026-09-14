@@ -11,6 +11,10 @@ import {
   SearchAction,
   DisarmTrapAction,
   ClimbStairsAction,
+  DrinkPotionAction,
+  ReadScrollAction,
+  PotionItem,
+  ScrollItem,
   type Action,
   flightRecorder,
 } from '../engine';
@@ -29,7 +33,23 @@ import type { PactModal } from '../ui/pactModal';
 import type { LevelUpModal } from '../ui/levelUpModal';
 import { ModalStackManager } from '../ui/modalStack';
 import { SettingsManager } from '../ui/settings/settingsManager';
+import type { RadialMenuSlotConfig } from '../ui/settings/settingsManager';
 import { ChordBuffer } from '../ui/input/chordBuffer';
+import type { RadialMenuOverlay, RadialDirection } from './radialMenu';
+
+function resolveCompassDirection(code: string): RadialDirection | null {
+  switch (code) {
+    case 'ArrowUp': case 'KeyW': case 'KeyK': case 'Numpad8': return 'N';
+    case 'ArrowDown': case 'KeyS': case 'KeyJ': case 'Numpad2': return 'S';
+    case 'ArrowLeft': case 'KeyA': case 'KeyH': case 'Numpad4': return 'W';
+    case 'ArrowRight': case 'KeyD': case 'KeyL': case 'Numpad6': return 'E';
+    case 'Numpad7': case 'KeyY': return 'NW';
+    case 'Numpad9': case 'KeyU': return 'NE';
+    case 'Numpad1': case 'KeyB': return 'SW';
+    case 'Numpad3': case 'KeyN': return 'SE';
+    default: return null;
+  }
+}
 
 export class InputHandler {
   private engine: GameEngine;
@@ -48,10 +68,13 @@ export class InputHandler {
   public commandPalette?: CommandPalette;
   public pactModal?: PactModal;
   public levelUpModal?: LevelUpModal;
+  public radialMenuOverlay?: RadialMenuOverlay;
   public onSaveAndExit?: () => void;
   public onToggleDiagnostics?: () => void;
   public onTriggerQuickSpell?: (slotIndex: number) => void;
   public onOpenSpellbook?: () => void;
+  /** Casts a spell by ID (as opposed to a QuickSpellsBar slot index) — wired from main.ts's castOrTargetSpell. */
+  public onCastSpellById?: (spellId: string) => void;
   public enabled = true;
   public isInputLocked = false;
   public pendingCloseDoorDirection = false;
@@ -75,10 +98,12 @@ export class InputHandler {
     compendiumModal?: CompendiumModal,
     commandPalette?: CommandPalette,
     mapOverlay?: MapOverlay,
-    settingsManager?: SettingsManager
+    settingsManager?: SettingsManager,
+    radialMenuOverlay?: RadialMenuOverlay
   ) {
     this.engine = engine;
     this.onActionProcessed = onActionProcessed;
+    this.radialMenuOverlay = radialMenuOverlay;
     this.modalStack = new ModalStackManager((paused) => {
       this.engine.isPaused = paused;
     });
@@ -126,9 +151,17 @@ export class InputHandler {
     this.boundKeyUpHandler = (e: KeyboardEvent) => {
       if (!this.enabled) return;
       this.chordBuffer.handleKeyUp(e.code);
+      // Radial menu confirms on release of the same key that opened it (hold-to-open).
+      if (this.radialMenuOverlay?.isOpen && this.settingsManager.getActionForCode(e.code) === 'radial_menu') {
+        this.confirmRadialMenu();
+      }
     };
     this.boundBlurHandler = () => {
       this.chordBuffer.clearAllKeys();
+      if (this.radialMenuOverlay?.isOpen) {
+        this.radialMenuOverlay.close();
+        this.modalStack.remove('radial-menu');
+      }
     };
     if (typeof window !== 'undefined') {
       window.addEventListener('keydown', this.boundKeyDownHandler);
@@ -187,6 +220,46 @@ export class InputHandler {
     this.chordBuffer.clearAllKeys();
   }
 
+  /** Resolves the currently-hovered radial-menu slot, executes it, and closes the menu. */
+  public confirmRadialMenu(): void {
+    const overlay = this.radialMenuOverlay;
+    if (!overlay) return;
+    const slot = overlay.getSelectedSlot();
+    overlay.close();
+    this.modalStack.remove('radial-menu');
+    if (slot) {
+      this.executeRadialSlot(slot);
+    }
+    this.onActionProcessed();
+  }
+
+  private executeRadialSlot(slot: RadialMenuSlotConfig): void {
+    switch (slot.type) {
+      case 'spell': {
+        this.onCastSpellById?.(slot.spellId);
+        return;
+      }
+      case 'command': {
+        const command = this.commandPalette?.getCommand(slot.commandId);
+        command?.execute(this.engine);
+        return;
+      }
+      case 'item': {
+        const player = this.engine.player;
+        const item = player.inventory.findItemById(slot.itemId);
+        if (!item) return;
+        if (item instanceof PotionItem) {
+          this.engine.handlePlayerAction(new DrinkPotionAction(player, item));
+        } else if (item instanceof ScrollItem) {
+          // Self-targeted use only — aimed scrolls (e.g. targeted teleport) need a
+          // reticle and aren't a fit for direct radial-menu activation in this pass.
+          this.engine.handlePlayerAction(new ReadScrollAction(player, item, player.x, player.y));
+        }
+        return;
+      }
+    }
+  }
+
   public handleKeyDown(e: KeyboardEvent): boolean {
     if (!this.enabled) return false;
 
@@ -208,6 +281,24 @@ export class InputHandler {
         return this.modalStack.handleKeyDown(e);
       }
       return false;
+    }
+
+    // Configurable Radial Action Menu (ARCHITECTURE.md P-24): while open, directional
+    // keys (arrows/WASD/vi/numpad) select a wedge instead of moving, Escape cancels,
+    // and every other key is consumed so gameplay input can't leak through mid-selection.
+    if (this.radialMenuOverlay?.isOpen) {
+      if (code === 'Escape') {
+        this.radialMenuOverlay.close();
+        this.modalStack.remove('radial-menu');
+        this.onActionProcessed();
+        return true;
+      }
+      const direction = resolveCompassDirection(code);
+      if (direction) {
+        this.radialMenuOverlay.setHoveredDirection(direction);
+        this.onActionProcessed();
+      }
+      return true;
     }
 
     // Prevent default scrolling on navigation keys
@@ -821,6 +912,23 @@ export class InputHandler {
       if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
       const searchAction = new SearchAction(p);
       this.engine.handlePlayerAction(searchAction);
+      this.onActionProcessed();
+      return true;
+    }
+    if (userAction === 'radial_menu' && !e.repeat && this.radialMenuOverlay) {
+      const self = this;
+      if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
+      this.radialMenuOverlay.open();
+      this.modalStack.push({
+        id: 'radial-menu',
+        get isOpen() { return self.radialMenuOverlay?.isOpen ?? false; },
+        set isOpen(val: boolean) { if (!val) self.radialMenuOverlay?.close(); },
+        // Directional selection and Escape are handled directly at the top of
+        // InputHandler.handleKeyDown (before this modal-stack dispatch is ever
+        // reached), so this modal only needs to exist for pause/LIFO bookkeeping.
+        handleKeyDown: () => true,
+        close: () => { self.radialMenuOverlay?.close(); },
+      });
       this.onActionProcessed();
       return true;
     }

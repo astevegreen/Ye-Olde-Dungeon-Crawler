@@ -27,6 +27,7 @@ import { ChoiceModal } from './ui/choiceModal';
 import { PactModal } from './ui/pactModal';
 import { LevelUpModal } from './ui/levelUpModal';
 import type { GameEvent } from './engine';
+import { getActiveTitle } from './engine';
 import { AutoRestRunner } from './ui/autoRestRunner';
 import { NavigationController } from './ui/navigation';
 import { cotwManifest } from './content/cotw';
@@ -52,6 +53,7 @@ import { BottomStatusBar } from './ui/bottomStatusBar';
 import { AutosaveManager } from './engine/storage/autosaveManager';
 import { getSpell } from './engine/magic/spellRegistry';
 import { SettingsManager } from './ui/settings/settingsManager';
+import type { RadialMenuSlotConfig } from './ui/settings/settingsManager';
 import { KeybindModal } from './ui/settings/keybindModal';
 import { MainMenu } from './ui/menus/mainMenu';
 
@@ -221,6 +223,30 @@ window.addEventListener('DOMContentLoaded', () => {
     castOrTargetSpell(spell);
   }
 
+  // Configurable Radial Action Menu (ARCHITECTURE.md P-24): casts an arbitrary spell
+  // by ID, as opposed to triggerQuickSpell's fixed quickSpells-bar slot index.
+  function castSpellById(spellId: string): void {
+    if (!activeEngine || !renderer) return;
+    const spell = activeEngine.manifest?.spells?.find((s) => s.id === spellId) ?? getSpell(spellId);
+    if (spell) castOrTargetSpell(spell);
+  }
+
+  function resolveRadialMenuLabel(slot: RadialMenuSlotConfig): string {
+    if (!activeEngine) return '';
+    switch (slot.type) {
+      case 'spell': {
+        const spell = activeEngine.manifest?.spells?.find((s) => s.id === slot.spellId) ?? getSpell(slot.spellId);
+        return spell?.name ?? slot.spellId;
+      }
+      case 'command':
+        return commandPalette.getCommand(slot.commandId)?.title ?? slot.commandId;
+      case 'item': {
+        const item = activeEngine.player.inventory.findItemById(slot.itemId);
+        return item?.displayName ?? slot.itemId;
+      }
+    }
+  }
+
   quickSpellsBar = new QuickSpellsBar({
     onTriggerSlot: (slotIdx) => triggerQuickSpell(slotIdx),
     onOpenSpellbook: () => openSpellbook(),
@@ -262,7 +288,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const turnsEl = document.getElementById('header-turns');
     if (nameEl) {
       const heroName = activeProfile?.name || activeEngine.player.name || 'Hero';
-      nameEl.textContent = `🛡️ ${heroName}`;
+      const title = getActiveTitle(activeEngine);
+      nameEl.textContent = title ? `🛡️ ${heroName}, ${title}` : `🛡️ ${heroName}`;
     }
     if (floorEl) {
       floorEl.textContent = activeEngine.currentFloor === 0 ? 'Town (Bjarnarhaven)' : `Floor ${activeEngine.currentFloor}`;
@@ -1036,6 +1063,47 @@ window.addEventListener('DOMContentLoaded', () => {
           keybindModal.open();
         },
       },
+      {
+        id: 'summon_companion',
+        title: 'Summon Companion',
+        category: 'Action',
+        shortcut: 'Cmds',
+        description: 'Call your bonded companion to your side (Companions & Pet Progression)',
+        execute: (eng) => {
+          const defId = eng.manifest?.companions?.[0]?.id;
+          if (eng.companion) {
+            eng.log(`${eng.companion.name} is already at your side.`);
+          } else if (defId) {
+            eng.summonCompanion(defId);
+          } else {
+            eng.log('No companion is available in this campaign.');
+          }
+          renderer?.render();
+        },
+      },
+      {
+        id: 'dismiss_companion',
+        title: 'Dismiss Companion',
+        category: 'Action',
+        shortcut: 'Cmds',
+        description: 'Send your companion away until next summoned',
+        execute: (eng) => {
+          eng.dismissCompanion();
+          renderer?.render();
+        },
+      },
+      {
+        id: 'use_companion_skill_rally_howl',
+        title: 'Companion Skill: Rally Howl',
+        category: 'Action',
+        shortcut: 'Cmds',
+        description: "Command your companion to use its Rally Howl, if it has learned one (Companions & Pet Progression)",
+        execute: (eng) => {
+          const res = eng.commandBus.dispatch({ type: 'use_companion_skill', payload: { skillId: 'rally_howl' } });
+          if (!res.success && res.message) eng.log(res.message);
+          void processVisualEffectsAndRender();
+        },
+      },
     ]);
 
     applyThemeTokens(engine.manifest?.theme ?? COTW_THEME_TOKENS);
@@ -1043,9 +1111,12 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!renderer) {
       renderer = new CanvasRenderer(canvas!, engine);
       renderer.mouseVectoringEnabled = settingsManager.getSettings().mouseVectoringEnabled;
+      renderer.radialMenuOverlay.slots = settingsManager.getSettings().radialMenuSlots;
+      renderer.onResolveRadialLabel = resolveRadialMenuLabel;
       settingsManager.subscribe((settings) => {
         if (renderer) {
           renderer.mouseVectoringEnabled = settings.mouseVectoringEnabled;
+          renderer.radialMenuOverlay.slots = settings.radialMenuSlots;
           renderer.render();
         }
       });
@@ -1072,13 +1143,16 @@ window.addEventListener('DOMContentLoaded', () => {
         compendiumModal,
         commandPalette,
         renderer.mapOverlay,
-        settingsManager
+        settingsManager,
+        renderer.radialMenuOverlay
       );
       inputHandler.pactModal = pactModal;
       inputHandler.levelUpModal = levelUpModal;
+      inputHandler.onCastSpellById = castSpellById;
       diagnosticModal.setModalStack(inputHandler.modalStack);
     } else {
       renderer.setEngine(engine);
+      renderer.onResolveRadialLabel = resolveRadialMenuLabel;
       renderer.shopOverlay.onOpenCompendium = () => {
         compendiumModal.open(engine);
       };
@@ -1092,6 +1166,7 @@ window.addEventListener('DOMContentLoaded', () => {
         inputHandler.shopOverlay = renderer.shopOverlay;
         inputHandler.inspectOverlay = renderer.inspectOverlay;
         inputHandler.mapOverlay = renderer.mapOverlay;
+        inputHandler.radialMenuOverlay = renderer.radialMenuOverlay;
         inputHandler.onToggleDiagnostics = toggleDiagnostics;
         inputHandler.contextHelp = contextHelp;
         inputHandler.compendiumModal = compendiumModal;
@@ -1099,6 +1174,7 @@ window.addEventListener('DOMContentLoaded', () => {
         inputHandler.pactModal = pactModal;
         inputHandler.levelUpModal = levelUpModal;
         inputHandler.onSaveAndExit = promptSaveAndQuit;
+        inputHandler.onCastSpellById = castSpellById;
         diagnosticModal.setModalStack(inputHandler.modalStack);
       }
     }

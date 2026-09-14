@@ -8,6 +8,7 @@ import { getSpell } from '../magic/spellRegistry';
 import { SpellPipeline } from '../magic/spellPipeline';
 import { WandItem, ScrollItem, PotionItem } from '../items/consumables';
 import { flightRecorder } from '../debug/flightRecorder';
+import { findTaggedEntitiesInRadius } from '../combat/radialAuraFilter';
 
 export class CastSpellAction implements Action {
   public readonly caster: Entity;
@@ -241,6 +242,29 @@ export class DrinkPotionAction implements Action {
         case 'teleport': {
           SpellPipeline.teleportEntity(engine, this.user, effect.range ?? 6, effect.random ?? true);
           messages.push(`teleporting through space`);
+          break;
+        }
+        case 'radial_status': {
+          const targets = findTaggedEntitiesInRadius(
+            engine,
+            { x: this.user.x, y: this.user.y },
+            effect.radius,
+            effect.tags
+          );
+          let affected = 0;
+          for (const target of targets) {
+            if (target.id === this.user.id) continue;
+            const applied = target.statusManager.applyStatus(
+              { type: effect.status, duration: effect.duration, potency: effect.potency },
+              target.statusImmunities,
+              target,
+              engine
+            );
+            if (applied) affected++;
+          }
+          if (affected > 0) {
+            messages.push(`afflicting ${affected} nearby ${effect.tags.join('/')} creature(s) with ${effect.status}`);
+          }
           break;
         }
       }

@@ -116,6 +116,16 @@ export const COTW_TOWN: TownLayoutDefinition = {
           ItemFactory.createScrollOfTeleport('astrid-tele-1'),
           ItemFactory.createScrollOfIdentify('astrid-id-1'),
           ItemFactory.createWandOfLightning('astrid-wand-1'),
+          // Vendor unlock: appears only once the hero's exploration renown reaches 25
+          // (Milestone Renown Ledger, ARCHITECTURE.md P-23).
+          ItemFactory.createRenownCharm({
+            id: 'astrid-charm-watchful-eye',
+            name: 'Charm of the Watchful Eye',
+            description:
+              "Astrid sets this aside only for adventurers whose reputation for uncovering the dungeon's secrets precedes them.",
+            stats: { defenseBonus: 2 },
+            predicate: { type: 'minCounter', counter: 'renown:exploration', value: 25 },
+          }),
         ],
       },
     },
@@ -150,6 +160,14 @@ export const COTW_TOWN: TownLayoutDefinition = {
       position: { x: 25, y: 15 },
       greeting: 'Halt! Keep your weapons sheathed in Bjarnarhaven, adventurer.',
       dialogText: 'The dungeon cellar to the north-east leads into the depths. Many go down; few return.',
+    },
+    {
+      id: 'npc-trainer',
+      name: 'Ranvild the Hound-Warden',
+      role: 'trainer',
+      position: { x: 30, y: 15 },
+      greeting: 'A warrior alone is a warrior half-armed. Let me bond you with a loyal companion.',
+      dialogText: 'For a price I can bond you with a battle-hound, revive one that has fallen, retrain its instincts, or teach it new tricks.',
     },
   ],
   services: {

@@ -8,6 +8,7 @@ import {
   getPlayerCurrencyBreakdown,
   getPlayerTotalCp,
   getPlayerCoinItems,
+  TrainerService,
 } from '../engine';
 import type { SpriteAtlas } from './atlas/sprite-atlas';
 import { getItemSpriteKey, getEntitySpriteKey } from './atlas/sprite-mapper';
@@ -89,7 +90,7 @@ export class ShopOverlay {
 
   public handleDoubleClick(_mouseX: number, _mouseY: number, engine: GameEngine): boolean {
     if (!this.isOpen || !this.merchant) return false;
-    const items = this.activeTab === 'buy' ? this.merchant.stock : this.getSellableItems(engine);
+    const items = this.activeTab === 'buy' ? this.getBuyableItems(engine) : this.getSellableItems(engine);
     const selectedIdx = this.activeTab === 'buy' ? this.selectedBuyIndex : this.selectedSellIndex;
     if (selectedIdx >= 0 && selectedIdx < items.length) {
       if (this.activeTab === 'buy') {
@@ -147,7 +148,7 @@ export class ShopOverlay {
     if (key === 'ArrowDown') {
       event.preventDefault();
       if (this.activeTab === 'buy' && this.merchant) {
-        this.selectedBuyIndex = Math.min(this.merchant.stock.length - 1, this.selectedBuyIndex + 1);
+        this.selectedBuyIndex = Math.min(this.getBuyableItems(engine).length - 1, this.selectedBuyIndex + 1);
       } else {
         const sellable = this.getSellableItems(engine);
         this.selectedSellIndex = Math.min(sellable.length - 1, this.selectedSellIndex + 1);
@@ -215,6 +216,29 @@ export class ShopOverlay {
       }
     }
 
+    if (this.activeNpc?.role === 'trainer') {
+      if (key.toLowerCase() === 't') {
+        this.executeBondCompanion(engine);
+        return true;
+      }
+      if (key.toLowerCase() === 'r') {
+        this.executeReviveCompanion(engine);
+        return true;
+      }
+      if (key.toLowerCase() === 'g') {
+        this.executeSwitchArchetype(engine, 'bodyguard');
+        return true;
+      }
+      if (key.toLowerCase() === 'k') {
+        this.executeSwitchArchetype(engine, 'skirmisher');
+        return true;
+      }
+      if (key.toLowerCase() === 'w') {
+        this.executeTeachRallyHowl(engine);
+        return true;
+      }
+    }
+
     return true; // Consume other keys when dialog is active
   }
 
@@ -224,16 +248,35 @@ export class ShopOverlay {
     return items.filter((i) => i.category !== 'currency');
   }
 
-  public executeBuy(engine: GameEngine, itemIndex: number): void {
+  /**
+   * Stock filtered by each item's `predicate` against live world state (e.g. a
+   * renown-gated vendor unlock via `minCounter`) — see `Merchant.getAvailableStock`.
+   */
+  public getBuyableItems(engine: GameEngine): Item[] {
+    return this.merchant ? this.merchant.getAvailableStock(engine.worldState) : [];
+  }
+
+  public executeBuy(engine: GameEngine, displayIndex: number): void {
     if (!this.merchant) return;
+    const buyable = this.getBuyableItems(engine);
+    const item = buyable[displayIndex];
+    if (!item) {
+      this.statusMessage = 'That item is no longer available.';
+      this.statusColor = '#f87171';
+      if (this.onStateChanged) this.onStateChanged();
+      return;
+    }
+    // Resolve by item ID rather than a raw stock-array index, since the displayed
+    // (predicate-filtered) list can be a strict subset of the merchant's full stock.
     const result = engine.commandBus.dispatch({
       type: 'buy_item',
-      payload: { merchant: this.merchant, itemIndex },
+      payload: { merchant: this.merchant, itemIndex: item.id },
     });
     this.statusMessage = result.message ?? '';
     this.statusColor = result.success ? '#4ade80' : '#f87171';
-    if (this.selectedBuyIndex >= this.merchant.stock.length) {
-      this.selectedBuyIndex = Math.max(0, this.merchant.stock.length - 1);
+    const updatedBuyable = this.getBuyableItems(engine);
+    if (this.selectedBuyIndex >= updatedBuyable.length) {
+      this.selectedBuyIndex = Math.max(0, updatedBuyable.length - 1);
     }
     if (this.onStateChanged) this.onStateChanged();
   }
@@ -294,6 +337,38 @@ export class ShopOverlay {
     const result = engine.commandBus.dispatch({ type: 'bank_compact' });
     this.statusMessage = result.message ?? '';
     this.statusColor = result.success ? '#4ade80' : '#facc15';
+    if (this.onStateChanged) this.onStateChanged();
+  }
+
+  // Companions & Pet Progression, Phase 2 (ARCHITECTURE.md P-14) trainer services.
+  public executeBondCompanion(engine: GameEngine): void {
+    const result = engine.commandBus.dispatch({ type: 'trainer_bond_companion' });
+    this.statusMessage = result.message ?? '';
+    this.statusColor = result.success ? '#4ade80' : '#f87171';
+    if (this.onStateChanged) this.onStateChanged();
+  }
+
+  public executeReviveCompanion(engine: GameEngine): void {
+    const result = engine.commandBus.dispatch({ type: 'trainer_revive_companion' });
+    this.statusMessage = result.message ?? '';
+    this.statusColor = result.success ? '#4ade80' : '#f87171';
+    if (this.onStateChanged) this.onStateChanged();
+  }
+
+  public executeSwitchArchetype(engine: GameEngine, archetype: 'bodyguard' | 'skirmisher'): void {
+    const result = engine.commandBus.dispatch({ type: 'trainer_switch_archetype', payload: { archetype } });
+    this.statusMessage = result.message ?? '';
+    this.statusColor = result.success ? '#4ade80' : '#f87171';
+    if (this.onStateChanged) this.onStateChanged();
+  }
+
+  public executeTeachRallyHowl(engine: GameEngine): void {
+    const result = engine.commandBus.dispatch({
+      type: 'trainer_teach_skill',
+      payload: { skillId: 'rally_howl', skillName: 'Rally Howl' },
+    });
+    this.statusMessage = result.message ?? '';
+    this.statusColor = result.success ? '#4ade80' : '#f87171';
     if (this.onStateChanged) this.onStateChanged();
   }
 
@@ -405,6 +480,8 @@ export class ShopOverlay {
       this.renderSageServices(ctx, engine, modalX, modalY, modalW, modalH, bannerY + bannerH + 12);
     } else if (npc.role === 'banker') {
       this.renderBankerServices(ctx, engine, modalX, modalY, modalW, modalH, bannerY + bannerH + 12, coinItems, coinWeightGrams);
+    } else if (npc.role === 'trainer') {
+      this.renderTrainerServices(ctx, engine, modalX, modalY, modalW, modalH, bannerY + bannerH + 12);
     } else {
       this.renderTownspersonDialog(ctx, engine, modalX, modalY, modalW, modalH, bannerY + bannerH + 12);
     }
@@ -425,6 +502,7 @@ export class ShopOverlay {
     if (!this.merchant) return;
     const theme = this.theme ?? resolveThemeTokens(engine.manifest?.theme);
     const font = theme.fontFamily ?? '"Courier New", Courier, monospace';
+    const buyable = this.getBuyableItems(engine);
 
     // Tabs: [Buy Goods] | [Sell Items]
     const tabW = 140;
@@ -440,7 +518,7 @@ export class ShopOverlay {
     ctx.fillStyle = this.activeTab === 'buy' ? theme.text : theme.textMuted;
     ctx.font = `bold 11px ${font}`;
     ctx.textAlign = 'center';
-    ctx.fillText(`[B] BUY GOODS (${this.merchant.stock.length})`, buyTabX + tabW / 2, startY + tabH / 2 + 1);
+    ctx.fillText(`[B] BUY GOODS (${buyable.length})`, buyTabX + tabW / 2, startY + tabH / 2 + 1);
 
     this.clickZones.push({
       x: buyTabX,
@@ -481,7 +559,7 @@ export class ShopOverlay {
     ctx.strokeStyle = theme.cardBorder;
     ctx.strokeRect(modalX + 12.5, listY + 0.5, listW - 1, listH - 1);
 
-    const items = this.activeTab === 'buy' ? this.merchant.stock : sellable;
+    const items = this.activeTab === 'buy' ? buyable : sellable;
     const selectedIdx = this.activeTab === 'buy' ? this.selectedBuyIndex : this.selectedSellIndex;
     const rowH = 24;
 
@@ -852,6 +930,75 @@ export class ShopOverlay {
       height: btnH,
       action: () => this.executeCompactCoins(engine),
     });
+  }
+
+  /** Companions & Pet Progression, Phase 2 (ARCHITECTURE.md P-14) trainer panel. */
+  private renderTrainerServices(
+    ctx: CanvasRenderingContext2D,
+    engine: GameEngine,
+    modalX: number,
+    _modalY: number,
+    modalW: number,
+    _modalH: number,
+    startY: number
+  ): void {
+    const boxW = modalW - 24;
+    const boxX = modalX + 12;
+    const theme = this.theme ?? resolveThemeTokens(engine.manifest?.theme);
+    const font = theme.fontFamily ?? '"Courier New", Courier, monospace';
+    const boxH = 200;
+
+    ctx.fillStyle = theme.cardBg;
+    ctx.fillRect(boxX, startY, boxW, boxH);
+    ctx.strokeStyle = theme.cardBorder;
+    ctx.strokeRect(boxX + 0.5, startY + 0.5, boxW - 1, boxH - 1);
+
+    ctx.font = `bold 13px ${font}`;
+    ctx.fillStyle = '#facc15';
+    ctx.textAlign = 'left';
+    ctx.fillText('COMPANION TRAINING', boxX + 14, startY + 22);
+
+    const companion = engine.companion;
+    const bonded = engine.getWorldFlag('companion_bonded');
+    ctx.font = `11px ${font}`;
+    ctx.fillStyle = theme.hudText;
+    const statusLine = !bonded
+      ? 'You have not yet bonded with a companion.'
+      : companion
+      ? `${companion.name} (${companion.archetype}) — HP ${companion.hp}/${companion.maxHp}`
+      : engine.deadCompanionRecord
+      ? `${engine.deadCompanionRecord.name} has fallen and awaits revival.`
+      : 'Bonded, but no companion is currently summoned.';
+    ctx.fillText(statusLine, boxX + 14, startY + 40);
+
+    const rows: Array<{ label: string; key: string }> = [
+      { label: `[T] Bond with a Companion (${(TrainerService.BOND_COST_CP / 100).toFixed(0)} GP)`, key: 't' },
+      { label: `[R] Revive Fallen Companion (${(TrainerService.REVIVE_COST_CP / 100).toFixed(0)} GP)`, key: 'r' },
+      { label: `[G] Train as Bodyguard (${(TrainerService.ARCHETYPE_SWITCH_COST_CP / 100).toFixed(0)} GP)`, key: 'g' },
+      { label: `[K] Train as Skirmisher (${(TrainerService.ARCHETYPE_SWITCH_COST_CP / 100).toFixed(0)} GP)`, key: 'k' },
+      { label: `[W] Teach Rally Howl (${(TrainerService.TEACH_SKILL_COST_CP / 100).toFixed(0)} GP)`, key: 'w' },
+    ];
+
+    ctx.font = `11px ${font}`;
+    ctx.fillStyle = theme.hudAccent;
+    let rowY = startY + 62;
+    for (const row of rows) {
+      ctx.fillText(row.label, boxX + 14, rowY);
+      this.clickZones.push({
+        x: boxX + 10,
+        y: rowY - 14,
+        width: boxW - 20,
+        height: 18,
+        action: () => {
+          if (row.key === 't') this.executeBondCompanion(engine);
+          else if (row.key === 'r') this.executeReviveCompanion(engine);
+          else if (row.key === 'g') this.executeSwitchArchetype(engine, 'bodyguard');
+          else if (row.key === 'k') this.executeSwitchArchetype(engine, 'skirmisher');
+          else if (row.key === 'w') this.executeTeachRallyHowl(engine);
+        },
+      });
+      rowY += 22;
+    }
   }
 
   private renderTownspersonDialog(

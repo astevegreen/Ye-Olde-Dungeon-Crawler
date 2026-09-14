@@ -1,11 +1,23 @@
 import type { Entity } from '../entities/entity';
 import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
+// Type-only: erased at compile time, so this does not create a runtime import edge.
+// entities/companion.ts's `class Companion extends Monster` sits in a load-order
+// cycle reachable from entities/monster.ts (which imports this very file) — a
+// *value* import of Companion here would reintroduce that crash. `isCompanion()`
+// below duck-types on `companionDefinitionId` instead, so this module never needs
+// the runtime class at all.
+import type { Companion } from '../entities/companion';
 import type { GameEngine } from '../engine';
 import { TILES } from '../grid/tile';
 import { HookDispatcher } from '../hooks/hookDispatcher';
 import { CorpseItemInstance } from '../items/corpse';
 import { DeathEnvelopeTracker } from '../analytics/deathEnvelope';
+
+/** Duck-typed check avoiding a value import of Companion (see import comment above). */
+function isCompanion(entity: Entity): entity is Companion {
+  return entity instanceof Monster && typeof (entity as any).companionDefinitionId === 'string';
+}
 
 export class DeathResolver {
   public static resolveDeath(
@@ -26,6 +38,21 @@ export class DeathResolver {
 
     if ((victim as any).onDestroyed) {
       (victim as any).onDestroyed(engine, killer);
+    }
+
+    // Companions & Pet Progression, Phase 2 (ARCHITECTURE.md P-14): a dying
+    // companion skips the generic Monster death pipeline entirely (no XP award,
+    // no loot/corpse, no compendium kill-tracking) and is kept — not discarded —
+    // as `engine.deadCompanionRecord` so a trainer can revive it (heal + reattach
+    // the same instance, pack contents intact) rather than replace it.
+    if (isCompanion(victim)) {
+      engine.log(`${victim.name} falls in battle and can no longer fight by your side!`);
+      if (engine.companion === victim) {
+        engine.companion = null;
+      }
+      engine.deadCompanionRecord = victim;
+      engine.removeEntity(victim);
+      return;
     }
 
     if (victim instanceof Monster) {
@@ -152,8 +179,10 @@ export class DeathResolver {
     engine.removeEntity(victim);
 
     if (victim instanceof Monster && engine.currentFloor >= 1) {
+      // Exclude the companion: it's player-aligned, not a hostile the floor needs
+      // cleared of. Without this, an alive companion permanently blocks floor-clear.
       const remainingLiving = engine.map.getAllEntities().filter(
-        (e) => e instanceof Monster && e.isAlive()
+        (e) => e instanceof Monster && e.isAlive() && !isCompanion(e)
       );
       if (remainingLiving.length === 0 && !engine.map.isCleared) {
         engine.map.isCleared = true;

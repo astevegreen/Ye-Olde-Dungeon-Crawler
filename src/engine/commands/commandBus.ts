@@ -19,8 +19,9 @@ import {
   ReadScrollAction,
   DrinkPotionAction,
 } from '../actions/spell-actions';
-import { TempleService, SageService, BankService } from '../economy/services';
+import { TempleService, SageService, BankService, TrainerService } from '../economy/services';
 import type { Merchant } from '../economy/merchant';
+import type { CompanionArchetype } from '../entities/companion';
 
 /**
  * GameCommand — encapsulates a player/UI intent into a decoupled command message.
@@ -164,6 +165,29 @@ export class EngineCommandBus implements GameCommandBus {
         return { success: res.success, message: res.message };
       }
 
+      // Companions & Pet Progression, Phase 2 (ARCHITECTURE.md P-14): the
+      // companion's pack is a plain Container, so these reuse the existing
+      // container-transfer actions rather than needing new ones.
+      case 'transfer_to_companion': {
+        if (!this.engine.companion) return { success: false, message: 'You have no companion to give items to.' };
+        const item = (p.item as Item) ?? this.resolveItem(p.itemId as string);
+        if (!item) return { success: false, message: 'Item not found.' };
+        const res = this.engine.handlePlayerAction(
+          new StoreInContainerAction(this.engine.player, this.engine.companion.inventory.primaryPack, item)
+        );
+        return { success: res.success, message: res.message };
+      }
+
+      case 'transfer_from_companion': {
+        if (!this.engine.companion) return { success: false, message: 'You have no companion to take items from.' };
+        const item = (p.item as Item) ?? this.resolveItem(p.itemId as string);
+        if (!item) return { success: false, message: 'Item not found.' };
+        const res = this.engine.handlePlayerAction(
+          new LootFromContainerAction(this.engine.player, this.engine.companion.inventory.primaryPack, item)
+        );
+        return { success: res.success, message: res.message };
+      }
+
       // ─────────────────────────────────────────────────────────────
       // Spells & Combat Actions
       // ─────────────────────────────────────────────────────────────
@@ -185,7 +209,7 @@ export class EngineCommandBus implements GameCommandBus {
       // ─────────────────────────────────────────────────────────────
       case 'buy_item': {
         const merchant = (p.merchant as Merchant) ?? this.engine.merchants.get(p.merchantId as string);
-        const itemIndex = p.itemIndex as number;
+        const itemIndex = p.itemIndex as number | string;
         if (!merchant || itemIndex === undefined) {
           return { success: false, message: 'Invalid buy request' };
         }
@@ -261,6 +285,60 @@ export class EngineCommandBus implements GameCommandBus {
         const res = BankService.compactCurrency(this.engine.player);
         this.engine.log(res.message);
         return { success: res.success, message: res.message };
+      }
+
+      case 'trainer_bond_companion': {
+        const res = TrainerService.bondCompanion(this.engine);
+        this.engine.log(res.message);
+        return { success: res.success, message: res.message };
+      }
+
+      case 'trainer_revive_companion': {
+        const res = TrainerService.reviveCompanion(this.engine);
+        this.engine.log(res.message);
+        return { success: res.success, message: res.message };
+      }
+
+      case 'trainer_switch_archetype': {
+        const archetype = p.archetype as CompanionArchetype;
+        const res = TrainerService.switchArchetype(this.engine, archetype);
+        this.engine.log(res.message);
+        return { success: res.success, message: res.message };
+      }
+
+      case 'trainer_teach_skill': {
+        const skillId = p.skillId as string;
+        const skillName = p.skillName as string | undefined;
+        const res = TrainerService.teachSkill(this.engine, skillId, skillName);
+        this.engine.log(res.message);
+        return { success: res.success, message: res.message };
+      }
+
+      // Companions & Pet Progression, Phase 2 (ARCHITECTURE.md P-14): one example
+      // active companion skill, unlocked via 'trainer_teach_skill'. Instant utility
+      // (no player turn cost), matching 'sage_advisory''s existing pattern above.
+      case 'use_companion_skill': {
+        const skillId = p.skillId as string;
+        const companion = this.engine.companion;
+        if (!companion) {
+          return { success: false, message: 'You have no companion here to command.' };
+        }
+        if (!companion.unlockedSkills.includes(skillId)) {
+          return { success: false, message: `${companion.name} has not learned that skill.` };
+        }
+        if (skillId === 'rally_howl') {
+          const healed = companion.heal(Math.ceil(companion.maxHp * 0.2));
+          this.engine.player.statusManager.applyStatus(
+            { type: 'haste', duration: 3 },
+            this.engine.player.statusImmunities,
+            this.engine.player,
+            this.engine
+          );
+          const msg = `${companion.name} lets out a rallying howl! (+${healed} HP to ${companion.name}, you feel hastened for 3 turns)`;
+          this.engine.log(msg);
+          return { success: true, message: msg };
+        }
+        return { success: false, message: `Unknown companion skill: '${skillId}'` };
       }
 
       default:

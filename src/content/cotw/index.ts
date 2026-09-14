@@ -13,6 +13,8 @@ import { COTW_VAULTS } from './vaults';
 import { COTW_SPRITE_RECIPES } from './sprites';
 import { COTW_CHOICES } from './choices';
 import { COTW_PACTS } from './pacts';
+import { COTW_RENOWN_MILESTONES, COTW_RENOWN_TITLES } from './renown';
+import { COTW_COMPANIONS } from './companions';
 
 export const cotwManifest: GameContentManifest = {
   id: 'cotw',
@@ -51,6 +53,9 @@ export const cotwManifest: GameContentManifest = {
     { flag: 'boss_slain', label: 'Hrungnir Slain', description: 'Vanquished the Frost Giant Overlord in epic combat.', icon: '👑' },
     { flag: 'altar_cleansed', label: 'Altar of Tyr Cleansed', description: 'Purified the corrupted altar with solemn sacrifice.', icon: '⚖️' },
   ],
+  renownMilestones: COTW_RENOWN_MILESTONES,
+  renownTitles: COTW_RENOWN_TITLES,
+  companions: COTW_COMPANIONS,
   initialWorldState: {
     flags: {},
     counters: {},

@@ -60,6 +60,7 @@ export interface MonsterConfig {
   inventory?: import('../inventory/inventory-manager').InventoryManager;
   items?: import('../items/item').Item[];
   tags?: string[];
+  targetingMode?: 'player' | 'nearest_hostile';
 }
 
 export class Monster extends Actor {
@@ -79,6 +80,13 @@ export class Monster extends Actor {
   public xpValue: number;
   public lootTable: LootDropRule[];
   public hooks: HookDescriptor[];
+  /**
+   * Monster AI Targeting Generalization (ARCHITECTURE.md P-14 Phase 2). Default
+   * 'player' preserves the original hardcoded-to-`engine.player` behavior exactly;
+   * opting a monster definition into 'nearest_hostile' lets it engage a companion
+   * instead, via `ai/targetSelection.ts`'s `selectAttackTarget()`.
+   */
+  public targetingMode: 'player' | 'nearest_hostile';
 
   constructor(config: MonsterConfig) {
     super({
@@ -119,6 +127,7 @@ export class Monster extends Actor {
     this.xpValue = config.xpValue ?? 15;
     this.lootTable = config.lootTable ? [...config.lootTable] : [];
     this.hooks = config.hooks ? [...config.hooks] : [];
+    this.targetingMode = config.targetingMode ?? 'player';
   }
 
   public interruptWindUp(_reason?: string): boolean {
@@ -244,6 +253,8 @@ export class Monster extends Actor {
       xpValue: def.xpValue,
       lootTable: def.lootTable,
       hooks: def.hooks,
+      tags: def.tags,
+      targetingMode: def.targetingMode,
     });
   }
 }

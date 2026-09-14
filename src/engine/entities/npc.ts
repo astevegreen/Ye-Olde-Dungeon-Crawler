@@ -1,7 +1,7 @@
 import { Actor } from './actor';
 import type { Position } from '../types';
 
-export type NpcRole = 'merchant' | 'priest' | 'sage' | 'banker' | 'guard' | 'villager';
+export type NpcRole = 'merchant' | 'priest' | 'sage' | 'banker' | 'guard' | 'villager' | 'trainer';
 
 export interface NpcConfig {
   id: string;

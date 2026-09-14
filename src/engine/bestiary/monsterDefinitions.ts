@@ -38,6 +38,20 @@ export interface MonsterDefinition {
   xpValue: number;
   lootTable: LootDropRule[];
   hooks?: import('../hooks/hookDispatcher').HookDescriptor[];
+  /**
+   * Free-form creature tags (e.g. 'undead', 'aberration') resolved onto spawned
+   * instances via `Entity.tags`/`hasTag()` (ARCHITECTURE.md P-25). `hasTag` already
+   * also matches faction and entity type, so a tag only needs to name things that
+   * aren't already implied by those.
+   */
+  tags?: string[];
+  /**
+   * Monster AI Targeting Generalization (ARCHITECTURE.md P-14 Phase 2). Default
+   * (omitted, i.e. 'player') preserves this monster's exact current behavior —
+   * always engaging `engine.player` — with zero change. Opt a monster into
+   * 'nearest_hostile' only when you want it capable of engaging a companion.
+   */
+  targetingMode?: 'player' | 'nearest_hostile';
 }
 
 const monsterDefinitionsMap = new Map<string, MonsterDefinition>();

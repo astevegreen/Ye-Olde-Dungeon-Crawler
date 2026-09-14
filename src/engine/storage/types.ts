@@ -242,6 +242,23 @@ export interface SerializedMonster {
   planeId?: string;
 }
 
+/** Companions & Pet Progression, Phase 1 (ARCHITECTURE.md P-14). Top-level in SaveData, not per-floor. */
+export interface SerializedCompanion {
+  id: string;
+  name: string;
+  companionDefinitionId: string;
+  x: number;
+  y: number;
+  hp: number;
+  maxHp: number;
+  attack: number;
+  defense: number;
+  speed: number;
+  energy: number;
+  statusEffects?: SerializedStatusEffect[];
+  primaryPack: SerializedContainer;
+}
+
 export interface SerializedNpc {
   id: string;
   name: string;
@@ -313,6 +330,8 @@ export interface SaveData {
   worldState?: WorldState;
   planes?: Record<string, PlaneState>;
   prngState?: number;
+  /** Companions & Pet Progression, Phase 1 (ARCHITECTURE.md P-14). Null/absent = no companion summoned. */
+  companion?: SerializedCompanion | null;
 }
 
 export interface StorageAdapter {

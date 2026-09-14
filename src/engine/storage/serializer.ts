@@ -8,6 +8,7 @@ import { CoinItem } from '../economy/currency';
 import { CorpseItemInstance } from '../items/corpse';
 import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
+import { Companion, CompanionRegistry } from '../entities/companion';
 import { NPC, type NpcRole } from '../entities/npc';
 import { Merchant } from '../economy/merchant';
 import { InventoryManager } from '../inventory/inventory-manager';
@@ -15,6 +16,7 @@ import { TrapInstance } from '../dungeon/traps';
 import { Visibility } from '../fov/types';
 import { FovManager } from '../fov/fov-manager';
 import { GameEngine } from '../engine';
+import { registerSerializeGameFn } from '../debug/flightRecorder';
 import { CompendiumManager } from '../compendium/compendiumManager';
 import type { GameContentManifest } from '../types/manifest';
 import { cloneWorldState, createWorldState } from '../state/worldState';
@@ -29,6 +31,7 @@ import type {
   SerializedMonster,
   SerializedNpc,
   SerializedMap,
+  SerializedCompanion,
 } from './types';
 
 export const SAVE_VERSION = 5;
@@ -278,6 +281,58 @@ export function deserializeItem(node: SerializedItemNode): Item {
   });
 }
 
+/**
+ * Companions & Pet Progression, Phase 1 (ARCHITECTURE.md P-14). Serialized at the
+ * SaveData top level (sibling to `player`), not inside `SerializedMap.monsters`,
+ * since the companion travels with the player across floors rather than
+ * belonging to any one floor.
+ */
+export function serializeCompanion(companion: Companion): SerializedCompanion {
+  return {
+    id: companion.id,
+    name: companion.name,
+    companionDefinitionId: companion.companionDefinitionId,
+    x: companion.x,
+    y: companion.y,
+    hp: companion.hp,
+    maxHp: companion.maxHp,
+    attack: companion.attack,
+    defense: companion.defense,
+    speed: companion.speed,
+    energy: companion.energy,
+    statusEffects: companion.statusManager.serialize(),
+    primaryPack: serializeItem(companion.inventory.primaryPack) as SerializedContainer,
+  };
+}
+
+export function deserializeCompanion(data: SerializedCompanion): Companion {
+  const primaryPack = deserializeItem(data.primaryPack) as Container;
+  const inventory = new InventoryManager({ primaryPack, ownerId: data.id });
+
+  const def = CompanionRegistry.get(data.companionDefinitionId);
+  const companion = new Companion({
+    id: data.id,
+    name: data.name,
+    position: { x: data.x, y: data.y },
+    stats: {
+      hp: data.hp,
+      maxHp: data.maxHp,
+      attack: data.attack,
+      defense: data.defense,
+    },
+    speed: data.speed,
+    companionDefinitionId: data.companionDefinitionId,
+    packWeightCapacity: def?.packWeightCapacity ?? primaryPack.maxWeightCapacity,
+    packBulkCapacity: def?.packBulkCapacity ?? primaryPack.maxBulkCapacity,
+    inventory,
+  });
+  companion.energy = data.energy;
+  if (data.statusEffects) {
+    companion.statusManager.deserialize(data.statusEffects);
+  }
+  return companion;
+}
+
 export function serializeGame(engine: GameEngine, profile?: CharacterProfile): SaveData {
   const p = engine.player;
   const inv = p.inventory;
@@ -442,8 +497,14 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     })() : undefined,
     planes: engine.planeManager ? engine.planeManager.serialize() : undefined,
     prngState: engine.prng ? engine.prng.getState() : undefined,
+    companion: engine.companion ? serializeCompanion(engine.companion) : undefined,
   };
 }
+
+// Self-register with flightRecorder's diagnostic-snapshot injection point (see
+// debug/flightRecorder.ts) instead of flightRecorder.ts importing this module
+// directly, which would sit in a load-order cycle with entities/monster.ts.
+registerSerializeGameFn(serializeGame);
 
 export function serializeMapObject(map: GameMap): SerializedMap {
   const tiles: TileType[][] = [];
@@ -464,7 +525,9 @@ export function serializeMapObject(map: GameMap): SerializedMap {
 
   const monsters: SerializedMonster[] = map
     .getAllEntities()
-    .filter((e) => e.type === 'monster')
+    // Companions are serialized separately at the SaveData top level (they travel
+    // with the player across floors rather than belonging to one floor's monster list).
+    .filter((e) => e.type === 'monster' && !(e instanceof Companion))
     .map((m) => {
       const mon = m as Monster;
       return {
@@ -746,6 +809,11 @@ export function deserializeGame(
 
   if (saveData.planes && engine.planeManager) {
     engine.planeManager.deserialize(saveData.planes);
+  }
+
+  // 5b. Restore Companion (ARCHITECTURE.md P-14) — top-level, not part of map.monsters
+  if (saveData.companion) {
+    engine.attachCompanion(deserializeCompanion(saveData.companion));
   }
 
   // 6. Restore Turn Count & Messages

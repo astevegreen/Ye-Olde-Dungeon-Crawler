@@ -1,6 +1,8 @@
 import { Item } from './item';
+import type { ItemStatModifiers } from './item';
 import { Container } from './container';
 import { WandItem, ScrollItem, PotionItem } from './consumables';
+import type { Predicate } from '../predicates/types';
 
 export class ItemFactory {
   public static createDagger(id = 'dagger-1'): Item {
@@ -507,6 +509,35 @@ export class ItemFactory {
       bulk: 1500,
       identified: true,
       description: 'A dense, heavy granite stone carved from subterranean bedrock, ideal as counterweight ballast.',
+    });
+  }
+
+  /**
+   * A generic reward trinket a merchant can gate behind a `Predicate` (e.g. a
+   * `minCounter` renown threshold — see `renown/renownLedger.ts`). Deliberately
+   * campaign-agnostic: content chooses the name, description, stat bonus, and
+   * predicate; the engine only owns the mechanism.
+   */
+  public static createRenownCharm(config: {
+    id: string;
+    name: string;
+    description: string;
+    unidentifiedName?: string;
+    stats?: ItemStatModifiers;
+    predicate?: Predicate;
+  }): Item {
+    return new Item({
+      id: config.id,
+      name: config.name,
+      unidentifiedName: config.unidentifiedName ?? 'Engraved Charm',
+      category: 'amulet',
+      slot: 'neck',
+      weight: 40,
+      bulk: 20,
+      stats: config.stats,
+      identified: true,
+      description: config.description,
+      predicate: config.predicate,
     });
   }
 }

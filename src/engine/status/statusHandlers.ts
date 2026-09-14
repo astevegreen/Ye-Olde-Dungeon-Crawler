@@ -15,6 +15,13 @@ export interface StatusHandler {
   onApply?(entity: Entity, effect: StatusEffect, engine: GameEngine): string | undefined;
   /** Called when the status expires naturally. Return a message to log. */
   onExpire?(entity: Entity, engine: GameEngine): string | undefined;
+  /**
+   * When set, this status forces the player's FOV radius to this value while active
+   * (see `GameEngine.updateFov()`, ARCHITECTURE.md P-26). If several active statuses
+   * declare one, the most restrictive (smallest) applies. Generalizes what was
+   * previously a `blindness`-only hardcoded case in `engine.ts`.
+   */
+  perceptionRadius?: number;
 }
 
 const registry = new Map<StatusType, StatusHandler>();
@@ -95,6 +102,7 @@ export const BUILTIN_STATUS_HANDLERS: Record<string, StatusHandler> = {
     },
   },
   blindness: {
+    perceptionRadius: 1,
     onExpire(entity) {
       return `${entity.name}'s vision returns!`;
     },
@@ -102,6 +110,14 @@ export const BUILTIN_STATUS_HANDLERS: Record<string, StatusHandler> = {
   stunned: {
     onExpire(entity) {
       return `${entity.name} recovers from the stunning blow and regains composure.`;
+    },
+  },
+  sensory_masked: {
+    // Vision is crippled like blindness; ECHOLOCATION_HEARING_RADIUS (fov/echolocation.ts)
+    // separately lets rendering detect audible actors/terrain beyond this radius.
+    perceptionRadius: 1,
+    onExpire(entity) {
+      return `${entity.name}'s heightened hearing fades as ordinary senses return.`;
     },
   },
 };

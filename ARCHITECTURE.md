@@ -1,24 +1,37 @@
 # Architectural Specification & Engine Invariants
 
-> **AI Context Instruction:** This document defines the core architectural specification and hard invariants for the repository. When executing implementation tasks, prioritize these rules over general software patterns. Do not violate system boundaries, bypass the public API barrel, or introduce platform leaks.
+> **AI Context Instruction:** This document is the authoritative architecture spec for this repository. Read it in full before any structural change (new files, new dependencies between `src/engine/`, `src/content/`, `src/ui/`, `src/rendering/`, or edits to protected files). Prioritize these rules over general software patterns.
+>
+> **Status conventions:**
+> - **Unmarked statements** describe the codebase as it exists today. Treat them as facts and enforceable invariants.
+> - **[Planned: P-NN]** marks a guideline the codebase does not yet satisfy. The linked entry in §9 records the current state and the target. Do not write code that assumes a planned capability exists, and do not implement a planned item unless the task explicitly requests it (§8.3).
+> - Section numbers are stable and are cited by agent configuration files. Do not renumber sections.
 
 ---
 
 ## 1. Game Concept & Core Simulation Loops
-- **Vision & Genre:** A turn-based, grid-based dungeon crawler and roguelike inspired by *Castle of the Winds*, featuring modular systems to support variable narrative campaigns and thematic content packs (e.g., *Castle of the Winds*, *WarCraft*, *The Old Kingdom*).
+- **Vision & Genre:** A turn-based, grid-based dungeon crawler and roguelike inspired by *Castle of the Winds*, built from modular systems that support variable narrative campaigns and thematic content packs. Shipping packs: `src/content/cotw/` (*Castle of the Winds*) and `src/content/warcraft/` (*WarCraft*). Future packs (e.g. *The Old Kingdom*) must be addable without engine changes beyond generic capabilities (§3, No Engine Creep).
 - **Core Gameplay Loop:** Headless turn execution -> actor intent dispatch -> spatial calculation & collision resolution -> tactical bump combat / spellcasting / inventory management -> status & environmental propagation -> floor progression / level transitions.
 - **Target Aesthetic:** Clean, retro tile-blitted presentation rendered via Canvas texture atlases, coupled with responsive modal dialogs, sliding-window chorded keyboard controls, and tactile visual effect feedback.
 
 ---
 
 ## 2. System Boundaries & Tech Stack Invariants
-- **Language & Build Target:** TypeScript with Vite and `vite-plugin-singlefile`, configured with `assetsInlineLimit: 100000000` (100MB) and `cssCodeSplit: false` to compile into 100% offline-capable, zero-dependency, self-contained single-file HTML distributions.
-- **Release Strategy:** Compiles campaign packs into distinct single-file distribution bundles at build time (`npm run build:cotw` -> `dist/cotw.html`, additionally copied to `dist/index.html` as the default distributable; `npm run build:warcraft` -> `dist/warcraft.html`), or performs multi-bundle deployment via `npm run build:all`. Inlined scripts are post-processed to remove module CORS constraints, guaranteeing zero-CORS compatibility under the `file://` protocol.
-- **Execution-Path Headless Simulation Purity:** Defined strictly by *execution path* rather than file location. All game state, spatial resolution, combat calculations, AI decision trees, and action pipelines execute in headless purity. Any function, handler, or hook executed within the simulation pipeline—regardless of whether it is authored in `src/engine/`, `src/content/`, or registered dynamically at runtime—is strictly prohibited from accessing DOM globals (`window`, `document`, `HTMLElement`), Canvas contexts (`CanvasRenderingContext2D`), audio APIs, or timing globals (`requestAnimationFrame`, `setTimeout`).
-- **Public API Surface Integrity:** External layers (`src/ui/`, `src/rendering/`) interact with the engine exclusively through `src/engine/index.ts`. All deep imports into engine internals (`src/engine/grid/*`, `src/engine/storage/*`, `src/engine/actions/*`) are strictly barred by static boundary enforcement.
-- **Diagnostic API Namespacing & Triage Access:** Triage and inspection methods (`spawnMonster`, `spawnItem`, `toggleGodMode`, `revealFloorMap`) are cleanly namespaced under `engine.diagnostics` to preserve the integrity of the primary engine API surface. The associated `[F2]`/backtick triage menu is a deliberate, always-reachable, in-game feature for players — not developer-only, not gated behind a build flag.
-- **Deterministic Action Pipeline:** All turns, actor intents, and environmental reactions flow through `src/engine/actions/actionPipeline.ts`, returning typed domain results.
-- **Bounded Simulation Scoping:** Simulation execution cost is capped at `O(K)` active cells around the player bubble using dormant actor states and bounded spatial indexing, eliminating global `O(N)` map-wide scaling bottlenecks.
+- **Language & Build Target:** TypeScript with Vite and `vite-plugin-singlefile`, configured with `assetsInlineLimit: 100000000` (100MB) and `cssCodeSplit: false`, compiling into offline-capable, zero-dependency, self-contained single-file HTML distributions.
+- **Release Strategy:** One single-file bundle per content pack, selected at build time by Vite mode (or the `THEME` environment variable) and exposed to the app as `import.meta.env.VITE_THEME`:
+  - `npm run build:cotw` (and plain `npm run build`, which defaults to the cotw theme) -> `dist/index.html` plus an identical `dist/cotw.html`.
+  - `npm run build:warcraft` -> `dist/warcraft.html`.
+  - `npm run build:all` builds both.
+  - `emptyOutDir` is `false`, so bundles from earlier builds remain in `dist/`.
+  - The `clean-script-for-file-protocol` post-build plugin in `vite.config.ts` rewrites `<script type="module" crossorigin>` to a classic `<script>`, so bundles run under the `file://` protocol without CORS errors.
+- **Execution-Path Headless Simulation Purity:** Purity is defined by *execution path*, not file location. Any function, handler, hook, or callback that runs inside the simulation — whether authored in `src/engine/`, in `src/content/`, or registered at runtime — must not access DOM globals (`window`, `document`, `HTMLElement`), Canvas contexts (`CanvasRenderingContext2D`), audio APIs, or timing globals (`requestAnimationFrame`, `setTimeout`). Simulation outcomes must also be deterministic (§7.2).
+- **Public API Surface Integrity:** `src/ui/`, `src/rendering/`, and `src/content/` import the engine only through `src/engine/index.ts`. Deep imports into engine internals (e.g. `src/engine/grid/*`, `src/engine/storage/*`, `src/engine/actions/*`) are barred for these layers.
+  - Enforced today for `src/ui/` and `src/rendering/` by `npm run check:engine-purity`.
+  - Content packs still contain deep imports. **[Planned: P-02]** removes them, and **[Planned: P-19]** adds enforcement.
+  - `scripts/` and test files may deep-import engine internals.
+- **Diagnostic API Namespacing & Triage Access:** Triage and inspection methods (`spawnMonster`, `spawnItem`, `toggleGodMode`, `revealFloorMap`) are namespaced under `engine.diagnostics`, keeping the primary engine API surface clean. The `[F2]`/backtick triage menu is a deliberate, always-reachable, in-game feature for players — not developer-only and not gated behind a build flag. `InputHandler` checks the toggle before the input lock, so it works during effect playback.
+- **Deterministic Action Pipeline:** Player actions flow through `ActionPipeline.executeWithHooks()` in `src/engine/actions/actionPipeline.ts` and return a typed `ActionResult` (§4). Monster actions and environmental reactions do not yet use the pipeline. **[Planned: P-05]**
+- **Bounded Simulation Scoping:** Only the active floor is simulated. Per-actor expensive work — AI decision-making, pathfinding, combat, awakening and bestiary checks — is limited to the player's vicinity through dormant-actor short-circuiting and bounded FOV (§6). Turn selection in `EnergyScheduler` deliberately stays linear in the active floor's actor count; see §6, *Scheduler Partitioning (Evaluated, Not Adopted)*.
 
 ---
 
@@ -26,126 +39,321 @@
 
 | Layer / Directory | Primary Responsibility | Dependency & Import Rules |
 | :--- | :--- | :--- |
-| `src/main.ts` | **Composition Root.** Bootstraps theme selection, instantiates `GameEngine`, wires content manifests, configures presentation layers, and mounts DOM listeners. | The **sole module** authorized to import both `src/engine/` and `src/content/`, as well as `src/rendering/` and `src/ui/`. |
-| `src/content/` | Campaign content packs, item/monster catalogs, encounter tables, floor templates, and quest arcs. | Implements engine type interfaces only (`src/engine/types/manifest.ts`, etc.) — a deliberate, narrow exception to the `index.ts`-only rule stated in Section 2, since type-only imports are erased at compile time and carry no runtime coupling. This exception never extends to engine internals. NEVER imports UI or rendering. `src/engine/` has **ZERO** imports from `src/content/` (Dependency Inversion). |
-| `src/engine/` | Headless state coordinator, action pipeline, spatial grid, FOV, scheduler, AI behavior trees, storage serializers, and PRNG. | Zero browser/DOM/Canvas dependencies. Exposes its public API strictly through `src/engine/index.ts`. Zero imports from `src/content/`. |
-| `src/rendering/` | Canvas texture atlas management, sprite blitting, camera transforms, visual effect pipelines (`fxRunner`). | Consumes `src/engine/index.ts`. Zero deep imports into engine internals. |
-| `src/ui/` | DOM HUD, LIFO modal stack management, sliding-window chorded input, settings, diagnostic tools. | Consumes `src/engine/index.ts`. Zero deep imports into engine internals. |
-| `scripts/` | Headless verification tooling, engine purity auditors, chaos simulation runners, schema migration validators. | Developer automation only. Not bundled into client build. |
-| `tests/` | Vitest suites, deterministic regressions, invariant audits, long-duration chaos monkey tests (parameters live in `npm run sim`'s config, not restated here). | Testing harness only. Not bundled into client build. |
+| `src/main.ts` | **Composition Root.** Selects the content manifest and theme from `VITE_THEME`; creates presentation components; obtains `GameEngine` instances from the storage layer (`ProfileManager`, `AutosaveManager`); wires engine callbacks (`onGameEvent`, `onFloorChanged`, `onChoiceInteract`, …); mounts DOM listeners. | The **only** source module that imports content packs. May import every layer. Its engine imports should go through `src/engine/index.ts`. **[Planned: P-01]** |
+| `src/content/` | Campaign content packs: item/monster catalogs, spells, status effects, encounter tables, vaults, towns, quest arcs, themes, and scripted behaviors. | Imports the engine (types *and* runtime values) only through `src/engine/index.ts`, never engine internals. **[Planned: P-02]** NEVER imports `src/ui/` or `src/rendering/`. Reaches the engine only through the `GameContentManifest` (§3, Content Extensibility Model). |
+| `src/engine/` | Headless state coordinator, action pipeline, spatial grid, FOV, scheduler, AI behavior trees, storage and serialization, PRNG. | Zero browser/DOM/Canvas dependencies. Exposes its public API through `src/engine/index.ts`. Production source has **zero** imports from `src/content/`, `src/ui/`, or `src/rendering/` (Dependency Inversion). Colocated engine tests (`src/engine/**/__tests__/`) may import content packs as integration fixtures, never `src/ui/` or `src/rendering/`. |
+| `src/rendering/` | Canvas texture atlases, sprite blitting, camera, canvas overlays, visual effect playback (`fxRunner.ts`), and keyboard dispatch (`input-handler.ts`, class `InputHandler`). | Engine via `src/engine/index.ts` only. May import `src/ui/` (presentation tier). Never imports `src/content/`. |
+| `src/ui/` | DOM HUD, LIFO modal stack (`modalStack.ts`), chorded input buffer (`input/chordBuffer.ts`), settings & keybindings, diagnostic tools. | Engine via `src/engine/index.ts` only. May import `src/rendering/` **types only**. Never imports `src/content/`. |
+| `scripts/` | Headless verification tooling, purity auditor, simulation benchmark, schema validator. | Developer automation only; may deep-import engine internals. Not bundled into the client build. |
+| `tests/` | Top-level Vitest suites. Most suites are colocated in `src/**/__tests__/`. | Testing harness only. Not bundled into the client build. |
 
 ### Module Import Hierarchy
 ```
-                       ┌─────────────────┐
-                       │   src/main.ts   │  ◄── Composition Root (Theme bootstrap & wiring)
-                       └────────┬────────┘
-        ┌───────────────────────┼───────────────────────┬──────────────────────┐
-        ▼                       ▼                       ▼                      │
-┌──────────────┐        ┌──────────────┐        ┌──────────────┐               │  direct import —
-│   src/ui/    │        │src/rendering/│        │ src/content/ │               │  instantiates
-└───────┬──────┘        └───────┬──────┘        └───────┬──────┘               │  GameEngine /
-        │                       │                       │                      │  Engine.initialize()
-        │    Consumes Public API Barrel                 │  Implements Engine   │
-        │   (src/engine/index.ts ONLY)                  │  Interfaces          │
-        ▼                       ▼                       ▼                      ▼
-┌───────────────────────────────────────────────────────────────────────────────────┐
-│                                 src/engine/                                       │  ◄── Headless Pure Simulation
-└───────────────────────────────────────────────────────────────────────────────────┘
+                              src/main.ts  (Composition Root: may import every layer)
+                                   │
+                 ┌─────────────────┴──────────────────┐
+                 ▼                                    ▼
+┌─────────────────────────────────┐          ┌──────────────────┐
+│       Presentation tier         │          │   src/content/   │
+│  src/rendering/ ──► src/ui/     │          │  (content packs) │
+│  src/ui/ ┄┄types┄┄► rendering   │          └────────┬─────────┘
+└────────────────┬────────────────┘                   │
+                 │  via src/engine/index.ts only      │
+                 ▼                                    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│               src/engine/  (headless simulation)                │
+└─────────────────────────────────────────────────────────────────┘
 ```
-`src/main.ts` is the only module with a direct edge into `src/engine/` that bypasses the public-API-consumption path above — it calls `Engine.initialize(manifest)` once, at boot, to construct the engine and hand it the selected content pack. `src/ui/` and `src/rendering/` never get this direct edge; they only ever consume the already-running engine through `src/engine/index.ts`.
+- `src/engine/` never imports `src/content/`, `src/ui/`, or `src/rendering/`.
+- At runtime, content reaches the engine only as data and callbacks inside the `GameContentManifest`. The storage layer passes the manifest to the `GameEngine` constructor when creating or loading a game.
 
 ### Content Extensibility Model
-- **Declarative Primitives:** Content packs (`src/content/cotw/`, `src/content/warcraft/`) define declarative manifests assembled from composable effect primitives: status afflictions, procedural spawners, stat triggers, damage affinities, drop tables, and quest arcs.
-- **Dynamic Handlers:** Scripted behaviors, hooks, or dynamic event handlers register via manifest properties (e.g. `manifest.actionHooks`) during `GameEngine` construction, conforming strictly to engine interface contracts without polluting the headless engine core. Handlers never import engine runtime code directly; the engine instead calls them with an injected context object (`ActionHookContext` in `actionPipeline.ts`, `HookContext` in `hookDispatcher.ts`) exposing `engine` plus relevant participants (e.g. `attacker`, `defender`) — preserving the type-only import boundary from Section 3 while still letting content read and mutate live simulation state. **Planned hardening:** both context types currently expose the raw `GameEngine` instance rather than a scoped query/mutation surface; consolidating them into one narrower `EngineContext` interface is a follow-up, not yet implemented.
+- **Declarative Manifests:** Each content pack exports a `GameContentManifest` (`src/engine/types/manifest.ts`). The `GameEngine` constructor registers its entries, for example: `monsters`, `spells`, `traps`, `statusEffects`/`statusHandlers`, `aiBehaviors`/`aiStrategies`, `actionCommands`, `actionHooks`, `affinityMatrix`, `pacts`, `progressionConfig`, `initialWorldState`, `quest`, and `theme`. Content assembles behavior from composable primitives: status afflictions, spawners, stat triggers, damage affinities, drop tables, and quest arcs.
+- **Two Hook Mechanisms:**
+  1. **Action hooks** (`manifest.actionHooks`, interface `ActionHook` in `actionPipeline.ts`): priority-ordered `pre`/`post` hooks around pipeline-executed actions. They receive `ActionHookContext` (`action`, `engine`, `actionType`, and `result` in the post phase). A pre-hook can short-circuit with its own `ActionResult`. Hooks currently fire only for player actions. **[Planned: P-05]**
+  2. **Declarative event hooks** (`HookDispatcher` in `src/engine/hooks/hookDispatcher.ts`): `HookDescriptor` data (event, chance, predicate, primitive action) attached to items and monsters or registered globally. They receive `HookContext` (`engine`, `attacker`, `defender`, `damage`, …). Content can add new primitive types with `HookDispatcher.registerPrimitive`.
+- **Injected Context:** Handlers get the live engine through an injected context object rather than importing engine runtime state. Both context types currently expose the raw `GameEngine` instance. **[Planned: P-04]** narrows them to a scoped `EngineContext` interface.
+- **Process-Wide Registries:** Manifest registration writes to module-level registries shared by the whole process (`MonsterRegistry`, `StatusHandlerRegistry`, `AiBehaviorRegistry`, `AIRegistry`, `ActionRegistry`, the spell and trap registries, `HookDispatcher` global hooks, and the item container registry). Code that constructs engines with different manifests in one process (for example tests, or two simultaneous campaign runs) must account for this shared state; a second manifest's registrations can silently override or leak into the first engine's lookups. **[Planned: P-22]**
+- **No Engine Creep:** Campaign-specific mechanics, items, monsters, quests, and narrative belong in `src/content/`. Change `src/engine/` only to add a *generic, reusable capability* — a primitive, hook point, registry, or manifest field — that content packs then use. Engine code must not gain new campaign-specific names or logic. Some existing engine code is campaign-specific. **[Planned: P-03]**
 
 ---
 
 ## 4. Action Pipeline & Domain Event Contract
-- **Contract of `actionPipeline.ts`:**
-  Every player action, monster action, and environmental interaction executed via `actionPipeline.executeWithHooks()` returns a strongly typed, deterministic result:
+- **Contract of `actionPipeline.ts`:** `ActionPipeline.executeWithHooks(action, engine)` (alias `execute`) returns the `ActionResult` defined in `src/engine/types.ts`:
   ```typescript
   export interface ActionResult {
-    success: boolean;                   // Boolean resolution status
-    cost: number;                      // Energy/tick cost consumed (0 for rejected actions)
-    message?: string;                  // Narrative combat log string
+    success: boolean;                   // Resolution status
+    cost: number;                       // Energy cost consumed (0 for rejected actions)
+    message?: string;                   // Narrative combat log string
     effects?: VisualEffectDescriptor[]; // Declarative visual effect primitives (projectiles, bursts, flashes)
-    events?: GameEvent[];              // Typed domain events for state transition auditing
-    pipelineError?: boolean;           // True if an unexpected exception was caught and isolated
+    pipelineError?: boolean;            // True if an unexpected exception was caught and isolated
   }
   ```
-- **Failure-Isolation:**
-  - `actionPipeline.executeWithHooks()` implements a comprehensive try/catch boundary surrounding pre-hooks, core action logic, and post-hooks.
-  - Uncaught exceptions do not propagate to the main event loop. Instead, they are caught, isolated, recorded to the flight recorder telemetry, and returned gracefully as `{ success: false, cost: 0, pipelineError: true }`.
-  - The UI layer intercepts `pipelineError` to safely notify the player via a diagnostic modal without locking the game state.
-- **Domain Event Extensibility (`GameEvent`):**
-  - Captures state transitions decoupled from UI/audio concerns: e.g., `damage_dealt`, `entity_killed`, `tile_altered`, `status_applied`, `item_acquired`, `level_transition`.
-  - Structured with extensible payload envelopes so modular content packs can emit custom campaign-specific events without altering engine core.
-- **Presentation Layer Consumption & Animation Gating:**
-  - Presentation layers (`src/rendering/`, `src/ui/`) subscribe to domain events and visual effect descriptors.
-  - **Tactical Turn Gating:** Visual effects that convey critical tactical information (projectile flight paths, beam reflections, explosion bursts, chain lightning) enter `fxRunner` and activate an input lock (`InputHandler.isInputLocked = true`). This temporarily gates player turn inputs until visual resolution finishes, preventing desynchronized turn stepping.
-  - **Asynchronous Queuing:** Ambient and non-blocking effects (floating damage numbers, HUD badge pulses, ledger updates) process asynchronously through decoupled queues without impeding turn dispatch.
+  A typed `events?: GameEvent[]` field is planned. **[Planned: P-07]**
+- **Pipeline Coverage:**
+  - All player actions, including those issued through `EngineCommandBus`, go through `engine.handlePlayerAction()` -> `executeWithHooks()`.
+  - Composite actions may perform sub-actions directly (e.g. a movement bump performs an attack). Sub-actions run inside the outer action's error boundary, and hooks match only the outer action.
+  - Monster turns (`Monster.takeTurn` calls `action.perform`) and per-turn environmental updates (status, surface, substance, plane drift, wandering spawns) are invoked directly from `GameEngine`. **[Planned: P-05]**
+- **Failure Isolation:**
+  - `executeWithHooks()` wraps pre-hooks, `action.perform()`, and post-hooks in try/catch boundaries.
+  - A caught exception is recorded with `flightRecorder.recordError`, logged to the narrative log, counted (`caughtExceptionCount`, static `totalCaughtExceptions`), and returned as `{ success: false, cost: 0, message, pipelineError: true }`.
+  - This isolation covers only the `executeWithHooks()` call. Exceptions thrown during monster turns or environmental updates propagate out of `handlePlayerAction()`. **[Planned: P-06]**
+  - Current last-resort backstop: `src/main.ts` installs `window` `error`/`unhandledrejection` handlers that record to the flight recorder and show the crash dialog.
+- **`pipelineError` Consumption:** After each player action, presentation code (currently `processVisualEffectsAndRender` in `src/main.ts`) checks `engine.lastActionResult.pipelineError` and notifies the player through `DiagnosticModal.showError` without locking game state.
+- **Domain Events (`GameEvent`):**
+  - **Current:** `GameEvent` in `src/engine/events.ts` is a closed union: `player_leveled_up`, `alignment_renown`, `chaotic_proc`, `uncurse`. Events are emitted with `engine.emitGameEvent()`, buffered in `engine.recentGameEvents`, and delivered through the `engine.onGameEvent` callback that `src/main.ts` wires. Payloads currently hold live `Player`/`Entity`/`Item` references. Treat them as read-only and never persist them.
+  - **Target [Planned: P-07]:** state-transition events decoupled from UI/audio (e.g. `damage_dealt`, `entity_killed`, `tile_altered`, `status_applied`, `item_acquired`, `level_transition`); an extensible envelope that lets content packs emit campaign-specific events without editing `events.ts`; scalar-ID payloads; and events also returned on `ActionResult.events`.
+- **Presentation Consumption & Animation Gating:**
+  - Visual effects from player `ActionResult.effects` and monster turns accumulate in `engine.pendingVisualEffects`.
+  - After each player action, `src/main.ts` drains them with `consumePendingVisualEffects()`. Unless `fxRunner.mode` is `'instant'`, it sets `InputHandler.isInputLocked = true` for the whole `fxRunner.playEffects()` run.
+  - While locked, gameplay keys (including `ChordBuffer` moves) are ignored. The diagnostics toggle and any open modal still receive input.
+  - **Target [Planned: P-08]:** only tactical effects that convey critical information (projectile paths, beam reflections, explosion bursts, chain lightning) lock input. Ambient effects (floating damage numbers, HUD pulses, ledger updates) play through a non-blocking queue. `fxRunner.playQueue()` is currently just an alias for `playEffects()`.
 
 ---
 
 ## 5. State Normalization, Storage & Schema Evolution
-- **Normalized Flat Entity Storage:**
-  - Game state is strictly normalized: entities, items, and map cells are stored in flat, ID-keyed lookup tables (`Map<string, Entity>`, `Map<string, ItemInstance>`, coordinate-keyed tile dictionaries).
-  - Eliminates live circular object references across actor containers, equipment slots, and world floor grids. Entity relationships and container contents reference scalar unique IDs (`itemId`, `ownerId`).
+- **Reference Invariant:** Persistent game state contains no live circular object references. Relationships between entities, containers, and items use scalar IDs (`parentId`, `ownerId`).
+- **Current State Representation:**
+  - **Entities:** `GameMap` keeps a `Map<string, Entity>` keyed by ID, plus spatial indexes (§6).
+  - **Tiles:** a dense `TileDefinition[][]` grid indexed `[y][x]`. Dense arrays are the intended representation for per-cell map data.
+  - **Ground items:** `Map<string, Item[]>` keyed by plane-qualified coordinate (`planeId:x,y`).
+  - **Items in containers:** containers hold `Item[]`. Each item carries scalar `parentId`/`ownerId` (schema v8), resolved at runtime through the module-level container registry (`src/engine/items/containerRegistry.ts`). Saves serialize containers as nested item trees carrying those IDs.
+  - A flat ID-keyed item index as the single source of truth for item lookup is planned. **[Planned: P-09]**
 - **Seeded PRNG Serialization:**
-  - Mulberry32 32-bit PRNG state (initial seed and current step counter) is directly serialized into `SaveData.prngState`.
-  - Hydration restores exact PRNG counter state, guaranteeing deterministic replayability and scum-proof save/load cycles.
+  - `PRNG` (`src/engine/dungeon/prng.ts`, exported alias `Mulberry32`) keeps a single 32-bit internal state. It is saved as `SaveData.prngState` via `getState()` and restored via `setState()` on load, so the random stream resumes exactly where it stopped.
+  - Replay determinism holds only for code that draws from the engine PRNG (§7.2). Existing unseeded code paths break it. **[Planned: P-10]**
 - **Persistence Architecture & Storage Tradeoffs:**
-  - **`localStorage` Backend:** Default synchronous browser sandbox backend for quick-save and auto-save. Bound by 5MB–10MB quota constraints, addressed via delta compaction (`compaction.ts`) and single-floor active cache policies.
-  - **`IndexedDB` Backend:** Asynchronous persistent storage tier designated for large multi-floor dungeon states, comprehensive bestiary records, and flight recorder black-box logs exceeding quota limits.
-  - **Native File Export/Import:** Base64/JSON file export via `Blob`/`File` API enables zero-dependency offline backup, run sharing, and cross-browser transfer.
+  - **`localStorage` Backend:** synchronous default for character saves (`ProfileManager`) and autosaves (`AutosaveManager`, periodic and on floor change). Both live in `src/engine/storage/` and accept a `Storage`-shaped adapter; in the browser, `src/main.ts` supplies `window.localStorage` through `getBrowserStorage()` in `src/ui/platform.ts`. At boot, `src/ui/persistenceInit.ts` requests persistent storage (`navigator.storage.persist()`).
+  - **Quota Management:** map tiles and FOV exploration are run-length encoded (`compaction.ts`). A save currently includes every visited floor (`storedMaps`). A single-floor active cache policy to bound payload size is planned. **[Planned: P-11]**
+  - **`IndexedDB` Backend:** asynchronous storage tier for large multi-floor dungeon states, bestiary records, and flight-recorder logs that exceed `localStorage` quotas. Not implemented. **[Planned: P-12]**
+  - **Native File Export/Import:** `.cotw` file download via `Blob` (`src/ui/platform.ts`), file and drag-and-drop import (`src/ui/saveImporter.ts`), and Base64 save codes (`src/engine/storage/saveTransfer.ts`) provide zero-dependency offline backup, run sharing, and cross-browser transfer.
 - **Forward-Only Schema Migrations (`src/engine/storage/migrator.ts`):**
-  - Saves carry a numeric `schemaVersion` (currently v5). Every breaking change increments this version and registers an isolated, forward-only transform step in `migrator.ts`.
-- **Graceful Failure & UI Reset Notification:**
-  - In the event of schema deserialization failure, version mismatch beyond migration range, or payload corruption, the engine falls back cleanly to a pristine baseline state.
-  - The **UI layer bears explicit responsibility** for intercepting corrupted load events and notifying the user via a modal alert or diagnostic toast, preventing silent data loss or corrupted overwrites.
+  - Saves are wrapped in a `VersionedSaveEnvelope` (`schemaVersion`, `contentManifestId`, `timestamp`, `data`). `CURRENT_SCHEMA_VERSION` in `migrator.ts` is the authoritative current version (8 as of 2026-09-13; do not restate it elsewhere).
+  - `SchemaMigrator.migrate()` applies registered `N -> N+1` steps in sequence. It throws when the payload is unparseable, newer than the engine, missing a step, or a step fails.
+  - Every breaking save-format change increments `CURRENT_SCHEMA_VERSION` and registers exactly one new forward-only step. Existing steps are never rewritten except as a confirmed bug fix (§8.1).
+- **Load Failure Handling:**
+  - **Invariant:** a failed load never yields a partially-loaded engine and never overwrites the stored payload.
+  - **Current:** `ProfileManager.loadCharacter()` and `AutosaveManager.loadAutosave()` catch migration and deserialization errors, log them, and return `null`. Callers cannot distinguish a missing save from a corrupt one. Some flows show a status message; the Continue flow silently falls back to the autosave or another profile.
+  - **Target [Planned: P-13]:** a typed load result (missing / corrupt / newer-than-engine / migration-failed). Presentation code must notify the player with a modal or toast for every failure other than "missing".
 
 ---
 
 ## 6. Simulation Scoping & Input Architecture
-- **Bounded Simulation Scoping:**
-  Simulating entire multi-floor dungeons simultaneously is prohibited. Simulation execution is strictly bounded to the active floor, and within the active floor, actor processing is spatially throttled:
-  - **Dormant Actor Scheduling:** Monsters outside the player's active sensory radius remain in `aiState === 'sleeping'`. Each scheduler turn, a line-of-sight check determines whether they wake; if not, they execute a lightweight `WaitAction` (`O(1)` pass-turn) that consumes energy without triggering AI decision-making, A* pathfinding, or combat resolution. Status-effect ticks (e.g. poison, regeneration) bypass this short-circuit and resolve on schedule regardless of visibility — `statusManager.tick()` runs before AI decision-making on every actor's turn, sleeping or not. **Planned, not yet implemented:** player-owned pets/companions are intended to retain full autonomous AI outside the player's sensory radius once pets exist in the engine.
-  - **Scheduler Partitioning (Evaluated, Not Adopted):** An active/dormant scheduler partition (splitting `EnergyScheduler`'s entity storage into separate active/dormant lists to decouple turn-selection cost from dormant population) was implemented and benchmarked on 2026-09-13. At realistic per-floor dormant populations (~30, per `dungeon/spawner.ts`), the measured throughput difference was well under human-perceptible thresholds (sub-millisecond per turn at any tested population up to 500), and the added complexity — six new call sites keeping two lists in sync with `aiState`, one of which was found to desync and produce a real bug — was judged not worth it. Reverted; `EnergyScheduler` uses a single flat entity list. See project history around this date for the full benchmark data before re-attempting this.
-  - **Bounded FOV Awakenings:** The FOV manager computes visibility strictly within a bounded radius; monster awakenings and bestiary records evaluate only across the bounding box `[minX..maxX, minY..maxY]` of the player's vision.
-  - **Spatial Bucketing:** Entity lookups utilize `O(1)` coordinate bucket maps (`entityBuckets: Map<string, Entity[]>`), guaranteeing constant-time proximity and collision checks regardless of total monster counts.
-- **Input Architecture & `ChordBuffer` Mechanics (`src/ui/input/chordBuffer.ts`):**
-  - **Sliding-Window Arrow Chording:** Combines orthogonal arrow keypresses within a configurable micro-debounce window (`arrowChordBufferMs`, default ~40ms) into diagonal movement vectors (e.g., Up + Right -> NorthEast).
-  - **Keyup-Flush Mechanism:** When an arrow key is released before the debounce timer expires without forming a chord, the buffer immediately flushes the pending cardinal step, eliminating sluggish input latency.
-  - **Key-Repeat Bypass:** When an arrow key or active diagonal chord is held down and browser `isRepeat` events fire, the buffer bypasses the micro-debounce timer completely, dispatching continuous movement ticks at the native keyboard repeat rate.
-  - **Opposing Direction Reversal:** Pressing opposing keys (e.g., Left while Right is pending) immediately clears the pending move and honors the new vector without dropping keystrokes.
-  - **Multi-Scheme Directional Controls:** Built-in first-class support for:
-    1. Arrow keys (with micro-debounce chording or instant cardinal mode),
-    2. Roguelike Numpad 1-9 (including diagonal keys 7, 9, 1, 3, cardinal keys 8, 2, 4, 6, and center 5 for wait),
-    3. Classic Vi keys (HJKL + YUBN),
-    4. WASD directional scheme.
-  - **Focus & Modal Isolation:** All open modals (inventory, targeting, spellbook, pacts, diagnostics) register on a LIFO `ModalStackManager`. Modal keydown listeners invoke `event.preventDefault()`, preventing keystrokes from bleeding into the game simulation or triggering browser shortcut conflicts.
+- **Bounded Simulation Scoping:** Simulating multiple floors at once is prohibited. Visited floors other than the active one are stored (`engine.storedFloors`) and not simulated. Within the active floor, per-actor work is throttled:
+  - **Dormant Actor Scheduling:** Every living actor on the active floor stays in `EnergyScheduler` and accrues energy. On a monster's turn, `Monster.takeTurn()` does the following, in order:
+    1. Resolves status-effect ticks (`statusManager.tick()`), always, sleeping or not.
+    2. Checks paralysis/stun.
+    3. Calls `MonsterAI.decideAction()`. Inside it, any pending wind-up and the spell-cooldown decrement resolve first. A monster with `aiState === 'sleeping'` then wakes if it has line of sight to the player within Euclidean distance 8 or stands on a tile visible in the player's FOV. Otherwise it returns a `WaitAction` without pathfinding, item use, or combat resolution.
+    - `GameEngine.updateFov()` also wakes sleeping monsters on visible tiles.
+    - Player-owned pets/companions are intended to keep full autonomous AI outside the player's sensory radius once pets exist in the engine. **[Planned: P-14]**
+  - **Scheduler Partitioning (Evaluated, Not Adopted):** An active/dormant scheduler partition — splitting `EnergyScheduler`'s entity storage into separate active and dormant lists so turn-selection cost no longer depends on the dormant population — was implemented and benchmarked on 2026-09-13.
+    - At realistic per-floor dormant populations (~30, per `dungeon/spawner.ts`), the throughput difference was well below human-perceptible thresholds: sub-millisecond per turn at every tested population up to 500.
+    - The added complexity was judged not worth it: six new call sites had to keep two lists in sync with `aiState`, and one of them desynced and produced a real bug.
+    - The change was reverted; `EnergyScheduler` uses a single flat entity list. The benchmark harness remains at the repo root (`run-bench.cjs`, `run-bench-internal.ts`). Review project history around this date for the full data before re-attempting.
+  - **Bounded FOV Awakenings:** `FovManager` computes visibility with recursive shadowcasting limited to the player's radius (default 8, reduced to 1 by blindness, adjusted by pact modifiers). Monster awakenings and bestiary records are checked only across the bounding box `[minX..maxX, minY..maxY]` of the player's vision. Each update currently resets previously visible tiles to explored by sweeping the whole map. **[Planned: P-15]**
+  - **Spatial Bucketing:** Entity lookups use constant-time coordinate bucket maps (`entityBuckets: Map<string, Entity[]>` keyed `"x,y"` in `GameMap`), so proximity and collision checks do not scale with total monster count.
+  - **Modal Pause:** Pushing the first modal onto `ModalStackManager` sets `engine.isPaused`, and `advanceWorldUntilPlayerTurn()` does nothing while paused.
+- **Input Architecture:** `InputHandler` (`src/rendering/input-handler.ts`) owns the `window` `keydown`/`keyup`/`blur` listeners, the `ModalStackManager`, and the `ChordBuffer`.
+- **`ChordBuffer` Mechanics (`src/ui/input/chordBuffer.ts`):**
+  - **Sliding-Window Arrow Chording:** When `arrowChordingEnabled` is on (the default), orthogonal arrow keypresses within the micro-debounce window (`arrowChordBufferMs`, default 40ms, clamped to 25–75ms) combine into a diagonal (e.g., Up + Right -> NorthEast). When it is off, arrows move cardinally with no buffering.
+  - **Keyup Flush:** Releasing an arrow key before the debounce timer expires, without forming a chord, should immediately dispatch the pending cardinal step. Currently keyup only updates held-key state; the pending step waits for the timer, and `ChordBuffer.flush()` has no production caller. **[Planned: P-16]**
+  - **Key-Repeat Bypass:** While an arrow key or an active diagonal chord is held and the browser sends repeat events (`KeyboardEvent.repeat`), the buffer skips the debounce timer and dispatches a move on each repeat.
+  - **Opposing Direction Reversal:** Pressing the opposite key while a step is pending (e.g. Left while Right is pending) cancels the pending move and immediately honors the new direction.
+  - **Focus Loss:** Window `blur` clears all held-key state.
+  - **Multi-Scheme Directional Controls:** Default bindings live in `src/ui/settings/settingsManager.ts`. Only arrow keys go through `ChordBuffer`; the other schemes dispatch immediately:
+    1. Arrow keys (chorded or instant cardinal mode).
+    2. Roguelike Numpad 1–9: diagonals 7, 9, 1, 3; cardinals 8, 2, 4, 6; center 5 to wait.
+    3. Classic Vi keys: HJKL + YUBN.
+    4. WASD (cardinal directions).
+- **Focus & Modal Isolation:**
+  - **Rule:** every open modal registers on the LIFO `ModalStackManager` (`src/ui/modalStack.ts`).
+  - **Stack behavior:** the top modal receives all keystrokes. If it does not handle `Escape`, the stack pops it. All other keys are trapped so they never reach the simulation. Modal handlers call `event.preventDefault()` for keys they consume, which prevents browser shortcut conflicts.
+  - **Registered today:** inventory, targeting, spellbook, diagnostics, level-up, and pacts (keyboard path).
+  - **Not yet registered:** Dwarven Winch, town-return, choice, save & quit, settings/keybinds, save-code, and pacts opened by click. These disable `InputHandler.enabled` instead. **[Planned: P-17]**
 
 ---
 
 ## 7. Build Configuration & Automated Quality Gates
-- **Single-File Bundling Architecture:**
-  - Build pipeline uses Vite with `vite-plugin-singlefile`.
-  - Configured with `assetsInlineLimit: 100000000` (100MB) to inline all spritesheets, audio, fonts, and stylesheets.
-  - Post-build plugin transforms module scripts to classic scripts, ensuring zero-CORS offline execution via the `file://` protocol.
-- **Automated Quality Gates:**
-  Every pull request and local commit must pass automated verification checks before merging:
-  1. **Architectural Purity & Boundaries (`npm run check:engine-purity`):**
-     - Scans all files across engine, UI, rendering, and content.
-     - Enforces zero DOM/Canvas globals (`window`, `document`, `HTMLElement`, `CanvasRenderingContext2D`, `localStorage`, etc.) anywhere reachable from the simulation execution path — `src/engine/**`, plus any `src/content/**` module registered as a handler or hook via the Composition Root (e.g. `src/content/*/hooks.ts`). File location alone does not exempt a module from this check.
-     - Enforces zero reverse imports from `src/ui/`, `src/rendering/`, or `src/content/` into `src/engine/**`.
-     - Enforces public API integrity: zero deep imports into engine internals from `src/ui/` and `src/rendering/` (all imports must resolve through `src/engine/index.ts`).
-  2. **Determinism & PRNG Linting:**
-     - Automated static checks enforce that all simulation dice, loot drops, combat calculations, and AI decision trees route through the engine's seeded PRNG (`engine.prng` — the sole canonical accessor; do not introduce alternate names for this). Unseeded `Math.random()` in simulation hot-paths fails CI.
-  3. **Schema Evolution Integrity (`npm run validate:schema`):**
-     - Automated test harness verifies sequential migrations from schema v1 to current schema (v5), verifying backward compatibility, surface grids, substance grids, corpse items, and PRNG state serialization.
-  4. **Headless Chaos Simulation (`npm run sim`):**
-     - Executes long-duration headless chaos / monkey runs under pure Node.js, asserting zero invariant violations, zero deadlock conditions, and zero NaN values. Current run lengths and results are whatever `npm run sim`'s latest output reports; this document intentionally does not restate them.
-  5. **Static Analysis & Build Verification (`npm test`, `npm run lint`, `npm run build`):**
-     - `npm test`: Executes all unit, integration, and chaos test suites. Current suite/test counts are whatever `npm test` reports when run; this document intentionally does not restate them.
-     - `npm run lint`: Enforces TypeScript compilation (`tsc --noEmit`) and engine boundary verification (`npm run check:engine-purity`).
-     - `npm run build`: Verifies single-file production compilation without type errors or bundler warnings.
+
+### 7.1 Single-File Bundling Architecture
+- The build uses Vite with `vite-plugin-singlefile`.
+- `assetsInlineLimit: 100000000` (100MB) inlines all spritesheets, audio, fonts, and stylesheets; `cssCodeSplit: false`; `rollupOptions.output.inlineDynamicImports: true`.
+- A post-build plugin converts module scripts to classic scripts so bundles run offline under `file://` without CORS errors.
+
+### 7.2 Automated Quality Gates
+- **Requirement:** every change must pass the gates below before merging. Coding agents run the relevant gates locally and report real output.
+- **Current CI:** `.github/workflows/deploy.yml` runs on push to `main` (and manual dispatch). It runs `npm run lint`, `npm test`, `npm run sim`, `npm run validate:schema`, then `npm run build:all`, and deploys `dist/` to GitHub Pages.
+- There is no pull-request CI and no local pre-commit hook yet, so today the gates run after merge. **[Planned: P-18]**
+
+1. **Architectural Purity & Boundaries (`npm run check:engine-purity`, `scripts/check-engine-purity.ts`):**
+   - Scans every `.ts` file under `src/engine/`, `src/content/`, `src/ui/`, and `src/rendering/`. Content source files are checked for DOM tokens regardless of whether they are registered as hooks, because file location never exempts simulation code (§2).
+   - **DOM and browser tokens:** fails on `window.`, `document.`, `navigator.`, `localStorage`, `sessionStorage`, `HTMLElement`, `CanvasRenderingContext2D`, `HTMLCanvasElement`, or `ImageData` in engine and content source files (test and fixture files are exempt).
+   - **Reverse imports:** fails on any `src/ui/` or `src/rendering/` import in `src/engine/` (tests included), and on `src/content/` imports in engine production source.
+   - **Content isolation:** fails on `src/ui/` or `src/rendering/` imports in content source.
+   - **Public API:** fails on any `engine/<path>` deep import in `src/ui/` or `src/rendering/` (tests included), and on content imports in UI/rendering source.
+   - Planned extensions: timing and audio globals, deep engine imports from content, a `Math.random` check for simulation code, and accurate reporting of the test-file exemption. **[Planned: P-19]**
+2. **Determinism & PRNG Discipline:**
+   - All simulation randomness — dice, loot drops, spawns, combat rolls, AI choices, hook chance rolls, and generated entity/item IDs — must come from the engine's seeded PRNG.
+   - `engine.prng` is the canonical accessor. `engine.rng` is an existing bound delegate (`() => engine.prng.next()`) for APIs that take a `() => number`. Do not introduce further aliases.
+   - Simulation code must not use `Math.random()` or wall-clock time (`Date.now()`) to determine outcomes or IDs. Functions that accept an `rng` parameter must receive a seeded source from simulation callers.
+   - The codebase does not yet satisfy this rule, and no automated check exists yet. **[Planned: P-10]**, **[Planned: P-19]**
+3. **Schema Evolution Integrity (`npm run validate:schema`, `scripts/validate-schema.ts`):**
+   - Currently migrates a minimal v1 envelope to `CURRENT_SCHEMA_VERSION` and asserts the final version.
+   - Per-step migration assertions live in `src/engine/storage/__tests__/migrator.test.ts` (run by `npm test`).
+   - The script should also verify surface grids, substance grids, corpse items, and PRNG state round-tripping. **[Planned: P-20]**
+4. **Headless Simulation (`npm run sim`, `scripts/headless-sim.ts`):**
+   - Currently a headless throughput benchmark under Node.js: a fixed-length run of player moves across a map of sleeping monsters. It fails on a rejected move or any caught pipeline exception, and reports latency and throughput.
+   - The long-running chaos/monkey simulation (random actions, save/reload cycles, invariant, deadlock, and NaN assertions) is `src/engine/__tests__/chaosSimulation.test.ts`, run by `npm test`.
+   - `npm run sim` should itself assert zero invariant violations, deadlocks, and NaN values. **[Planned: P-21]**
+   - Run lengths and results are whatever the latest output reports; this document intentionally does not restate them.
+5. **Static Analysis & Build Verification (`npm test`, `npm run lint`, `npm run build`):**
+   - `npm test`: runs all Vitest suites (`src/**/__tests__/` and `tests/`). Suite and test counts are whatever the run reports; this document intentionally does not restate them.
+   - `npm run lint`: `tsc --noEmit` over the `tsconfig.json` `include` set (`src`, `tests`, `vite.config.ts`), then `npm run check:engine-purity`. `scripts/` is not yet type-checked. **[Planned: P-19]**
+   - `npm run build`: `tsc && vite build`, verifying single-file production compilation (cotw theme) without type errors or bundler warnings. Use `npm run build:all` when changing `vite.config.ts`, theme selection, or manifest wiring.
+
+---
+
+## 8. Change Control
+
+### 8.1 Protected Files
+`src/engine/actions/actionPipeline.ts`, `src/engine/engine.ts`, and `src/engine/storage/migrator.ts` may be modified only when one of these exceptions applies:
+1. **Confirmed bug fix:** a reproducible defect, demonstrated by a failing test or a documented reproduction.
+2. **Additive schema migration:** adding a new forward-only step and incrementing `CURRENT_SCHEMA_VERSION` (§5). Existing steps are changed only under exception 1.
+3. **Requested planned item:** implementing a Planned Work item (§9) that the task explicitly requests.
+
+Keep such diffs minimal and scoped, and state which exception applies in the change summary.
+
+### 8.2 Documentation Synchronization
+- `ARCHITECTURE.md` is authoritative. `.antigravity/rules.md`, `CLAUDE.md`, and the files under `.antigravity/skills/` and `.antigravity/archetypes/` summarize or apply it and must not contradict it. If they disagree, stop and flag the conflict to the user instead of picking a side.
+- When a change makes an unmarked statement in this document untrue, update this document in the same change.
+- When a change completes a planned item, remove its **[Planned]** tags, make the affected text describe the new current state, and delete the item from §9.
+
+### 8.3 Working With Planned Items
+- Do not write code that depends on a planned capability existing.
+- Implement a planned item only when the task explicitly requests it (by ID or unambiguous scope).
+- New work must not widen the gap to a planned target. For example: no new deep engine imports from content, no new `Math.random()` in simulation code, and no new modals that bypass `ModalStackManager`.
+
+---
+
+## 9. Planned Work Register
+Each entry records the current state, the target, and whether the work is expected to touch protected files (§8.1).
+
+**P-01 — Composition root uses the engine barrel** (§2, §3)
+- Current: `src/main.ts` deep-imports engine internals (`./engine/engine`, `./engine/storage/*`, `./engine/actions/*`, and others).
+- Target: all engine imports in `src/main.ts` resolve through `src/engine/index.ts`.
+- Protected files: no.
+
+**P-02 — Content packs use the engine barrel only** (§2, §3)
+- Current: content files deep-import engine internals, including runtime values (`warcraft/ai.ts` action classes and `findPath`; `ItemFactory`, `Merchant`, `MonsterRegistry` in the cotw and warcraft `monsters.ts`/`town.ts`). Some needed types are not exported from the barrel (e.g. `VaultBlueprint` from `dungeon/vaultStamp.ts`).
+- Target: every content import resolves through `src/engine/index.ts`, with the barrel exporting what content needs.
+- Protected files: no.
+
+**P-03 — Extract campaign-specific mechanics from the engine** (§1, §3)
+- Current: the engine contains campaign-flavored logic, e.g. town-return fixtures in `src/engine/townReturn/` (Dwarven Winch, Valkyrie Sprint, Runic Conduit), named monster abilities in `ai/behaviorTree.ts`, and theme-specific tile types.
+- Target: the engine provides generic primitives; campaign specifics live in content packs.
+- Status: unscoped. Requires a design pass before implementation.
+- Protected files: likely `engine.ts`.
+
+**P-04 — Scoped `EngineContext` for handlers** (§3)
+- Current: `ActionHookContext` and `HookContext` expose the raw `GameEngine`.
+- Target: one narrower `EngineContext` interface exposing a scoped query/mutation surface.
+- Protected files: `actionPipeline.ts`.
+
+**P-05 — All actor actions and environmental reactions use the pipeline** (§2, §4)
+- Current: only player actions use `executeWithHooks()`. Monster actions call `perform()` directly, and environmental updates are called directly from `GameEngine`.
+- Target: monster actions (and environmental reactions where meaningful) execute through the pipeline, so action hooks fire for every actor.
+- Protected files: `engine.ts`, possibly `actionPipeline.ts`.
+
+**P-06 — Failure isolation for the whole turn** (§4)
+- Current: exceptions in monster turns and environmental updates propagate out of `handlePlayerAction()`.
+- Target: no exception escapes a turn. Failures are isolated, recorded to the flight recorder, and surfaced as `pipelineError`.
+- Protected files: `engine.ts`.
+
+**P-07 — Extensible, serializable domain events** (§4)
+- Current: closed four-member `GameEvent` union with live-reference payloads, delivered only via `onGameEvent`.
+- Target: state-transition events, an envelope that content packs can extend, scalar-ID payloads, and `ActionResult.events`.
+- Protected files: `engine.ts`, possibly `actionPipeline.ts`.
+
+**P-08 — Tactical vs. ambient effect queues** (§4)
+- Current: every pending effect locks input for the whole playback; `playQueue()` is an alias for `playEffects()`.
+- Target: only tactical effects lock input; ambient effects play through a non-blocking queue.
+- Protected files: no.
+
+**P-09 — Flat item index** (§5)
+- Current: items live in per-container arrays with scalar parent/owner IDs.
+- Target: a flat ID-keyed item index as the single source of truth for item lookup.
+- Protected files: `migrator.ts` if the save format changes (exception 2).
+
+**P-10 — Seeded determinism across simulation code** (§5, §7.2)
+- Current: unseeded randomness and wall-clock IDs exist on simulation paths. Examples:
+  - floor population and loot in `quest/dungeonArc.ts`, via `Math.random` defaults in `dungeon/spawner.ts` and `dungeon/lootSpawner.ts`
+  - `Math.random` default parameters in `items/modifierRoller.ts` and `actions/search.ts`
+  - `SearchAction` constructed with `Math.random` in `rendering/input-handler.ts` and `main.ts`
+  - `warcraft/hooks.ts`, `warcraft/ai.ts`, and gold-drop generators in both packs' `monsters.ts`
+  - `townReturn/runicConduit.ts` and `townReturn/valkyrieSprint.ts`
+  - `engine ? engine.rng() : Math.random()` fallbacks
+  - `Date.now()`-based IDs in item, loot, corpse, and vault code
+- Target: §7.2 rule fully satisfied.
+- Protected files: no, unless the engine PRNG accessors change.
+
+**P-11 — Single-floor active cache policy** (§5)
+- Current: saves include every visited floor.
+- Target: a bounded payload policy for inactive floors, coordinated with P-12.
+- Protected files: `migrator.ts` if the save format changes.
+
+**P-12 — IndexedDB storage tier** (§5)
+- Current: `localStorage` only.
+- Target: an asynchronous IndexedDB backend for large multi-floor states, bestiary records, and flight-recorder logs.
+- Protected files: no.
+
+**P-13 — Typed load failures and player notification** (§5)
+- Current: load failures return `null` and are sometimes silent.
+- Target: a typed failure result, with presentation code notifying the player for every non-missing failure.
+- Protected files: no.
+
+**P-14 — Autonomous pet/companion AI** (§6)
+- Current: pets do not exist.
+- Target: player-owned companions keep full AI outside the player's sensory radius.
+- Status: unscoped.
+- Protected files: likely `engine.ts`.
+
+**P-15 — Bounded FOV fog-of-war update** (§6)
+- Current: `FovManager.update()` sweeps the whole map to demote visible tiles.
+- Target: demote only previously visible tiles.
+- Protected files: no.
+
+**P-16 — ChordBuffer keyup flush** (§6)
+- Current: keyup does not flush a pending unchorded step.
+- Target: releasing the key dispatches the pending cardinal step immediately.
+- Protected files: no.
+
+**P-17 — All modals on `ModalStackManager`** (§6)
+- Current: Dwarven Winch, town-return, choice, save & quit, settings/keybinds, save-code, and click-opened pact modals toggle `InputHandler.enabled` instead.
+- Target: every modal registers on the stack.
+- Protected files: no.
+
+**P-18 — Pre-merge gating** (§7.2)
+- Current: CI runs only on push to `main`; there is no local hook.
+- Target: a pull-request CI workflow running all gates, plus a local pre-commit hook.
+- Protected files: no.
+
+**P-19 — Boundary and static-check extensions** (§2, §7.2)
+- Current: the purity checker misses timing/audio globals, content deep imports, and `Math.random`; its success message overstates coverage of engine test files; `scripts/` is not type-checked.
+- Target: all of these are checked and reported accurately.
+- Protected files: no.
+
+**P-20 — Schema validator coverage** (§7.2)
+- Current: `validate:schema` asserts only the final version of a minimal envelope.
+- Target: it also verifies surfaces, substances, corpse items, and PRNG round-tripping.
+- Protected files: no.
+
+**P-21 — Simulation invariant assertions** (§7.2)
+- Current: `npm run sim` is a benchmark with no invariant, deadlock, or NaN checks.
+- Target: it asserts all three.
+- Protected files: no.
+
+**P-22 — Per-engine content registries** (§3)
+- Current: manifest registration (monsters, status handlers, AI behaviors/strategies, action commands, spells, traps, global hooks, item containers) writes to module-level registries shared by the whole process. Constructing two engines with different manifests in one process — concurrent campaign runs, or tests that don't isolate state — risks one manifest's registrations overriding or leaking into the other engine's lookups.
+- Target: registrations are scoped per `GameEngine` instance (instance-owned registries, or a registry keyed by engine/manifest identity), so multiple engines with different content packs can coexist safely in one process.
+- Status: unscoped. Requires a design pass — likely touches every registry class and their call sites in the `GameEngine` constructor.
+- Protected files: `engine.ts`.

@@ -276,10 +276,8 @@ export class CanvasRenderer {
             const groundItems = this.engine.map.getItemsAt(p.x, p.y);
             if (groundItems.length > 0) {
               const itemToPick = groundItems[groundItems.length - 1];
-              const added = p.inventory.primaryPack.addItem(itemToPick);
-              if (added) {
-                this.engine.map.removeItemAt(p.x, p.y, itemToPick.id);
-                this.engine.log(`Picked up ${itemToPick.displayName}.`);
+              const res = this.engine.commandBus.dispatch({ type: 'pickup_item', payload: { itemId: itemToPick.id } });
+              if (res.success) {
                 this.render();
                 return;
               }

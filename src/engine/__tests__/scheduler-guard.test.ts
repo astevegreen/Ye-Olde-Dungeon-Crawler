@@ -59,11 +59,19 @@ describe('Scheduler Zero-Division & Circuit-Breaker Guards', () => {
     warnSpy.mockRestore();
   });
 
-  it('handles entities with negative speed without throwing or crashing scheduler', () => {
+  it('excludes negative-speed entities from energy gain instead of draining them or crashing the scheduler', () => {
     const scheduler = new EnergyScheduler();
     const e = new MockEntity('e-neg', -50);
     scheduler.addEntity(e);
+    const energyBefore = e.energy;
 
-    expect(() => scheduler.advanceToNextActor(10)).not.toThrow();
+    let actor: Entity | null | undefined;
+    expect(() => {
+      actor = scheduler.advanceToNextActor(10);
+    }).not.toThrow();
+
+    expect(actor).toBeNull();
+    expect(e.energy).toBe(energyBefore);
+    expect(Number.isFinite(e.energy)).toBe(true);
   });
 });

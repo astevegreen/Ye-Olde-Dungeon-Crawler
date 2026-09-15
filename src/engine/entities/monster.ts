@@ -223,18 +223,7 @@ export class Monster extends Actor {
   public static createFromDefinition(defId: string, id: string, position: Position): Monster {
     const def = getMonsterDefinition(defId);
     if (!def) {
-      // Generic fallback monster when definition is not found
-      return new Monster({
-        id,
-        name: 'Unknown Creature',
-        position,
-        stats: { hp: 10, maxHp: 10, attack: 3, defense: 1 },
-        speed: 100,
-        definitionId: defId,
-        aiType: 'melee',
-        xpValue: 10,
-        lootTable: [],
-      });
+      throw new Error(`Unknown monster definition: '${defId}' is not registered in MonsterRegistry.`);
     }
     return new Monster({
       id,

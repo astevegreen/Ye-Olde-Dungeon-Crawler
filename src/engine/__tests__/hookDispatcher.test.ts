@@ -159,19 +159,53 @@ describe('Event-Driven Hook Engine', () => {
   });
 
   it('enforces re-entrancy depth cap to prevent infinite recursion cascades', () => {
+    let executions = 0;
+    HookDispatcher.registerPrimitive('test_recursive_redispatch', (_action, ctx) => {
+      executions += 1;
+      // Hard stop so a missing cap fails the assertion below instead of overflowing the stack.
+      if (executions >= 10) return;
+      HookDispatcher.dispatch('onDamageTaken', ctx);
+    });
     HookDispatcher.registerGlobalHook({
       event: 'onDamageTaken',
       chance: 1.0,
-      action: { type: 'bonusDamage', amount: 2 },
+      action: { type: 'test_recursive_redispatch' } as any,
     });
 
-    // Inflicting damage should hit max depth 3 and stop cleanly without throwing
-    HookDispatcher.dispatch('onDamageTaken', {
-      engine,
-      defender: player,
-      damage: 5,
-    });
-
+    HookDispatcher.dispatch('onDamageTaken', { engine, defender: player, damage: 5 });
     HookDispatcher.clearGlobalHooks();
+
+    expect(executions).toBe(3);
+  });
+
+  it('restores re-entrancy depth when a primitive throws, so later hooks still fire', () => {
+    HookDispatcher.registerPrimitive('test_throwing_primitive', () => {
+      throw new Error('PRIMITIVE_FAULT');
+    });
+    HookDispatcher.registerGlobalHook({
+      event: 'onTurnStart',
+      chance: 1.0,
+      action: { type: 'test_throwing_primitive' } as any,
+    });
+    // More throwing dispatches than the depth cap: a leaked depth increment would disable all hooks.
+    for (let i = 0; i < 3; i++) {
+      expect(() => HookDispatcher.dispatch('onTurnStart', { engine, attacker: player })).toThrow('PRIMITIVE_FAULT');
+    }
+    HookDispatcher.clearGlobalHooks();
+
+    let fired = 0;
+    HookDispatcher.registerPrimitive('test_counting_primitive', () => {
+      fired += 1;
+    });
+    HookDispatcher.registerGlobalHook({
+      event: 'onTurnStart',
+      chance: 1.0,
+      action: { type: 'test_counting_primitive' } as any,
+    });
+    const summary = HookDispatcher.dispatch('onTurnStart', { engine, attacker: player });
+    HookDispatcher.clearGlobalHooks();
+
+    expect(fired).toBe(1);
+    expect(summary.executedHooks).toBe(1);
   });
 });

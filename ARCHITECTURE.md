@@ -104,9 +104,11 @@
   - Composite actions may perform sub-actions directly (e.g. a movement bump performs an attack). Sub-actions run inside the outer action's error boundary, and hooks match only the outer action.
   - Monster turns (`Monster.takeTurn` calls `action.perform`) and per-turn environmental updates (status, surface, substance, plane drift, wandering spawns) are invoked directly from `GameEngine`. **[Planned: P-05]**
 - **Failure Isolation:**
-  - `executeWithHooks()` wraps pre-hooks, `action.perform()`, and post-hooks in try/catch boundaries.
-  - A caught exception is recorded with `flightRecorder.recordError`, logged to the narrative log, counted (`caughtExceptionCount`, static `totalCaughtExceptions`), and returned as `{ success: false, cost: 0, message, pipelineError: true }`.
-  - This isolation covers only the `executeWithHooks()` call. Exceptions thrown during monster turns or environmental updates propagate out of `handlePlayerAction()`. **[Planned: P-06]**
+  - `executeWithHooks()` wraps pre-hooks, `action.perform()`, and post-hooks in try/catch boundaries, inside a top-level boundary, and always returns a valid `ActionResult`: a hook that short-circuits or replaces the result without one, or a `perform()` that returns none, is treated as a failure.
+  - A caught exception is recorded with `flightRecorder.recordError`, logged to the narrative log, counted (`caughtExceptionCount`, static `totalCaughtExceptions`), and returned as `{ success: false, cost: 0, message, pipelineError: true }`. A failed player action does not advance the world.
+  - Monster turns run inside their own boundary (`GameEngine.processMonsterAction`). An exception from a monster's status ticks, AI, or action is recorded through the same counters (`ActionPipeline.recordIsolatedFailure`, phase `monster-turn`); the monster's turn energy is spent so the scheduler cannot reselect it in a loop; and the enclosing `handlePlayerAction()` result is marked `pipelineError: true`.
+  - `HookDispatcher.dispatch` does not catch primitive exceptions; they propagate to the enclosing pipeline or monster-turn boundary, and its re-entrancy depth counter is restored either way.
+  - Per-turn environmental updates invoked directly from `handlePlayerAction()` (player status ticks, surfaces, substances, plane drift, wandering spawns, floor respawn, town-return ticks) are not isolated; exceptions there still propagate. **[Planned: P-06]**
   - Current last-resort backstop: `src/main.ts` installs `window` `error`/`unhandledrejection` handlers that record to the flight recorder and show the crash dialog.
 - **`pipelineError` Consumption:** After each player action, presentation code (currently `processVisualEffectsAndRender` in `src/main.ts`) checks `engine.lastActionResult.pipelineError` and notifies the player through `DiagnosticModal.showError` without locking game state.
 - **Domain Events (`GameEvent`):**
@@ -156,7 +158,8 @@
     - `GameEngine.updateFov()` also wakes sleeping monsters on visible tiles.
     - Companions (§3) never sleep (`aiState: 'hunting'` always) and are registered on `EnergyScheduler` like any other active-floor actor — no new scoping exception to this bounded-simulation model.
   - **Scheduler Partitioning (Evaluated, Not Adopted):** An active/dormant scheduler partition — splitting `EnergyScheduler`'s entity storage into separate active and dormant lists so turn-selection cost no longer depends on the dormant population — was implemented and benchmarked on 2026-09-13.
-    - At realistic per-floor dormant populations (~30, per `dungeon/spawner.ts`), the throughput difference was well below human-perceptible thresholds: sub-millisecond per turn at every tested population up to 500.
+    - The throughput difference was well below human-perceptible thresholds: sub-millisecond per turn at every tested population up to 500. The "~30 per floor" figure then cited as realistic was not derived from the spawner; `npm run sim` now measures realistic populations from generated floors, and they fall below every population tested, so the conclusion stands.
+    - That benchmark sampled each population once and measured only sleeping monsters. `npm run sim` supersedes it for population-anchored, multi-sample measurement and adds an awake-monster floor.
     - The added complexity was judged not worth it: six new call sites had to keep two lists in sync with `aiState`, and one of them desynced and produced a real bug.
     - The change was reverted; `EnergyScheduler` uses a single flat entity list. The benchmark harness remains at the repo root (`run-bench.cjs`, `run-bench-internal.ts`). Review project history around this date for the full data before re-attempting.
   - **Bounded FOV Awakenings:** `FovManager` computes visibility with recursive shadowcasting limited to the player's radius (default 8, adjusted by pact modifiers). Monster awakenings and bestiary records are checked only across the bounding box `[minX..maxX, minY..maxY]` of the player's vision. Each update currently resets previously visible tiles to explored by sweeping the whole map. **[Planned: P-15]**
@@ -204,6 +207,11 @@
    - **Content isolation:** fails on `src/ui/` or `src/rendering/` imports in content source.
    - **Public API:** fails on any `engine/<path>` deep import in `src/ui/` or `src/rendering/` (tests included), and on content imports in UI/rendering source.
    - Planned extensions: timing and audio globals, deep engine imports from content, a `Math.random` check for simulation code, and accurate reporting of the test-file exemption. **[Planned: P-19]**
+   - **Engine encapsulation (`npm run check:engine-encapsulation`, `scripts/check-engine-encapsulation.ts`):** complements the import checks by checking *mutation*. It uses the TypeScript type checker, so a write is matched by the declaring class of the member written, not by variable name.
+     - In `src/ui/`, `src/rendering/`, `src/main.ts`, and `src/content/` (tests exempt), it fails on assignment, compound assignment, `++`/`--`, `delete`, or index writes to an engine class member; on writes through an `as any` cast of an engine object; and on `Object.assign` onto one.
+     - In presentation code it also fails on mutator-named calls into internal engine subsystems (`GameMap`, `Container`, `InventoryManager`, `StatusManager`, `EnergyScheduler`, and similar) and on Array/Map/Set mutator calls against engine members. `GameEngine`, `Player`, and `Entity` methods and `engine.commandBus` are the sanctioned paths.
+     - Sanctioned writes (composition-root wiring of `engine.on*` callback slots; content AI strategies publishing `Monster.intent`) are listed with reasons in `scripts/engine-encapsulation-allowlist.json`. A stale allowlist entry also fails the check.
+     - Not traced: writes through a local alias of a member's value (e.g. `const qs = player.quickSpells; qs[0] = x`).
 2. **Determinism & PRNG Discipline:**
    - All simulation randomness — dice, loot drops, spawns, combat rolls, AI choices, hook chance rolls, and generated entity/item IDs — must come from the engine's seeded PRNG.
    - `engine.prng` is the canonical accessor. `engine.rng` is an existing bound delegate (`() => engine.prng.next()`) for APIs that take a `() => number`. Do not introduce further aliases.
@@ -214,13 +222,15 @@
    - Per-step migration assertions live in `src/engine/storage/__tests__/migrator.test.ts` (run by `npm test`).
    - The script should also verify surface grids, substance grids, corpse items, and PRNG state round-tripping. **[Planned: P-20]**
 4. **Headless Simulation (`npm run sim`, `scripts/headless-sim.ts`):**
-   - Currently a headless throughput benchmark under Node.js: a fixed-length run of player moves across a map of sleeping monsters. It fails on a rejected move or any caught pipeline exception, and reports latency and throughput.
+   - **Population anchor:** generates CotW floors through `DungeonArc.generateFloor` across several floors, repeated generations, and the base and pact-boosted monster densities, then derives its data points from the measured counts (realistic median, realistic high, and a labeled stress multiple) instead of a hard-coded population. Monster placement still uses `Math.random` (P-10), so counts are sampled, not seeded.
+   - **Scenarios:** a dormant floor (player moves; sleeping monsters outside FOV), an awake floor (hunting monsters path to and attack an invulnerable player), and a 1,000-cast spell workload. After a global JIT warmup, each data point runs a warmup plus repeated samples and reports median and max.
+   - **Fails on:** any rejected action, any caught pipeline exception (including isolated monster-turn failures), or a wall-clock budget exceeded by a median at realistic populations. Wall-clock budgets live here, not in `npm test`. `--inject-error` demonstrates the failure path.
    - The long-running chaos/monkey simulation (random actions, save/reload cycles, invariant, deadlock, and NaN assertions) is `src/engine/__tests__/chaosSimulation.test.ts`, run by `npm test`.
    - `npm run sim` should itself assert zero invariant violations, deadlocks, and NaN values. **[Planned: P-21]**
    - Run lengths and results are whatever the latest output reports; this document intentionally does not restate them.
 5. **Static Analysis & Build Verification (`npm test`, `npm run lint`, `npm run build`):**
    - `npm test`: runs all Vitest suites (`src/**/__tests__/` and `tests/`). Suite and test counts are whatever the run reports; this document intentionally does not restate them.
-   - `npm run lint`: `tsc --noEmit` over the `tsconfig.json` `include` set (`src`, `tests`, `vite.config.ts`), then `npm run check:engine-purity`. `scripts/` is not yet type-checked. **[Planned: P-19]**
+   - `npm run lint`: `tsc --noEmit` over the `tsconfig.json` `include` set (`src`, `tests`, `vite.config.ts`), then `npm run check:engine-purity` and `npm run check:engine-encapsulation`. `scripts/` is not yet type-checked. **[Planned: P-19]**
    - `npm run build`: `tsc && vite build`, verifying single-file production compilation (cotw theme) without type errors or bundler warnings. Use `npm run build:all` when changing `vite.config.ts`, theme selection, or manifest wiring.
 
 ---
@@ -276,9 +286,9 @@ Each entry records the current state, the target, and whether the work is expect
 - Target: monster actions (and environmental reactions where meaningful) execute through the pipeline, so action hooks fire for every actor.
 - Protected files: `engine.ts`, possibly `actionPipeline.ts`.
 
-**P-06 — Failure isolation for the whole turn** (§4)
-- Current: exceptions in monster turns and environmental updates propagate out of `handlePlayerAction()`.
-- Target: no exception escapes a turn. Failures are isolated, recorded to the flight recorder, and surfaced as `pipelineError`.
+**P-06 — Failure isolation for environmental updates** (§4)
+- Current: player actions (`executeWithHooks()`) and monster turns (`GameEngine.processMonsterAction`) are isolated. Per-turn environmental updates called directly from `handlePlayerAction()` (player status ticks, surfaces, substances, plane drift, wandering spawns, floor respawn, town-return ticks) are not; an exception there propagates.
+- Target: no exception escapes a turn. Environmental-update failures are isolated through `ActionPipeline.recordIsolatedFailure`, recorded to the flight recorder, and surfaced as `pipelineError`.
 - Protected files: `engine.ts`.
 
 **P-07 — Extensible, serializable domain events** (§4)

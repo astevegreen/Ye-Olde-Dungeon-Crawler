@@ -73,7 +73,14 @@ describe('Companion engine integration (ARCHITECTURE.md P-14, Phase 1 MVP)', () 
 
     it('dismissCompanion is a safe no-op when no companion is active', () => {
       const { engine } = buildEngine();
+      const entitiesBefore = engine.map.getAllEntities().length;
+      const messagesBefore = engine.messages.length;
+
       expect(() => engine.dismissCompanion()).not.toThrow();
+
+      expect(engine.companion).toBeNull();
+      expect(engine.map.getAllEntities().length).toBe(entitiesBefore);
+      expect(engine.messages.length).toBe(messagesBefore);
     });
   });
 

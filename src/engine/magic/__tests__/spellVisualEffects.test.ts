@@ -239,10 +239,10 @@ describe('Visual Effect Queue & Declarative FX Engine', () => {
     expect(engine.pendingVisualEffects.length).toBe(0);
   });
 
-  it('executes in Instant Mode headlessly with 0ms delay and < 200ms for 1,000 casts', () => {
+  it('executes 1,000 instant-mode casts headlessly, each producing exactly one effect descriptor', () => {
     const { engine, player } = createCorridorEngine();
 
-    const tStart = performance.now();
+    // The wall-clock budget for this workload lives in `npm run sim` (scripts/headless-sim.ts).
     for (let i = 0; i < 1000; i++) {
       player.mana = 100;
       const action = new CastSpellAction(player, 'magic_arrow', 8, 3);
@@ -250,9 +250,5 @@ describe('Visual Effect Queue & Declarative FX Engine', () => {
       expect(result.success).toBe(true);
       expect(result.effects?.length).toBe(1);
     }
-    const duration = performance.now() - tStart;
-
-    // Headless simulation purity: 1,000 synchronous casts complete rapidly
-    expect(duration).toBeLessThan(200);
   });
 });

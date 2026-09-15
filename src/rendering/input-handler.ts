@@ -105,7 +105,7 @@ export class InputHandler {
     this.onActionProcessed = onActionProcessed;
     this.radialMenuOverlay = radialMenuOverlay;
     this.modalStack = new ModalStackManager((paused) => {
-      this.engine.isPaused = paused;
+      this.engine.setPaused(paused);
     });
     this.keybindings = new KeybindingManager();
     this.settingsManager = settingsManager ?? new SettingsManager();

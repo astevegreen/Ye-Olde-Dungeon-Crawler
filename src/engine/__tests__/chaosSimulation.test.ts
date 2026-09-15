@@ -313,6 +313,6 @@ describe('Headless Chaos / Monkey Simulation (5,000 Actions)', () => {
     console.log(`======================================================\n`);
 
     expect(successfulActions + failedActions).toBeGreaterThanOrEqual(TOTAL_ACTIONS - 100);
-    expect(avgMsPerTick).toBeLessThan(25); // Fast headless execution (<25ms per tick with full recursive tree validation and serialization)
+    // Wall-clock budgets live in `npm run sim` (scripts/headless-sim.ts), not in the correctness suite.
   }, 120_000);
 });

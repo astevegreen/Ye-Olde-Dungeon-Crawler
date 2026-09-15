@@ -2,6 +2,7 @@ import type { Position } from '../types';
 import { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
 import { Monster } from '../entities/monster';
+import { flightRecorder } from '../debug/flightRecorder';
 import { PRNG } from './prng';
 import { CorridorGraph, BraidWeaver } from './corridors';
 import { RoomDecorator } from './roomDecorator';
@@ -337,27 +338,29 @@ export class DungeonGenerator {
           continue;
         }
 
-        let monster: Monster;
+        let defId: string;
         if (i === 1 && m === 0) {
           // Guarantee a Kobold Shaman in the first monster room for tactical magic encounters
-          monster = Monster.createFromDefinition('kobold_shaman', `monster-${monsterId++}`, { x: mx, y: my });
+          defId = 'kobold_shaman';
         } else {
           const roll = this.prng.next();
           if (roll < 0.25) {
-            monster = Monster.createFromDefinition('kobold', `monster-${monsterId++}`, { x: mx, y: my });
+            defId = 'kobold';
           } else if (roll < 0.45) {
-            monster = Monster.createFromDefinition('skeleton', `monster-${monsterId++}`, { x: mx, y: my });
+            defId = 'skeleton';
           } else if (roll < 0.65) {
-            monster = Monster.createFromDefinition('giant_rat', `monster-${monsterId++}`, { x: mx, y: my });
+            defId = 'giant_rat';
           } else if (roll < 0.85) {
-            monster = Monster.createFromDefinition('kobold_shaman', `monster-${monsterId++}`, { x: mx, y: my });
+            defId = 'kobold_shaman';
           } else if (roll < 0.95) {
-            monster = Monster.createFromDefinition('goblin', `monster-${monsterId++}`, { x: mx, y: my });
+            defId = 'goblin';
           } else {
-            monster = Monster.createFromDefinition('ogre', `monster-${monsterId++}`, { x: mx, y: my });
+            defId = 'ogre';
           }
         }
 
+        const monster = this.spawnDefinedMonster(defId, `monster-${monsterId++}`, { x: mx, y: my });
+        if (!monster) continue;
         map.addEntity(monster);
         monsters.push(monster);
       }
@@ -434,8 +437,18 @@ export class DungeonGenerator {
     const stairsDown: Position = { x: room2.centerX, y: room2.centerY };
     map.setTile(stairsDown.x, stairsDown.y, TILES.STAIRS_DOWN);
 
-    const monster = Monster.createFromDefinition('monster', 'fallback-monster', { x: room2.centerX, y: room2.centerY - 1 });
-    map.addEntity(monster);
+    const monsters: Monster[] = [];
+    if (this.spawnMonsters && this.monsterCandidates.length > 0) {
+      const candidate = this.monsterCandidates[this.prng.nextInt(0, this.monsterCandidates.length - 1)];
+      const monster = this.spawnDefinedMonster(candidate.id, 'fallback-monster', {
+        x: room2.centerX,
+        y: room2.centerY - 1,
+      });
+      if (monster) {
+        map.addEntity(monster);
+        monsters.push(monster);
+      }
+    }
 
     const fallbackGraph = new CorridorGraph(2);
     fallbackGraph.addEdge(0, 1);
@@ -445,8 +458,26 @@ export class DungeonGenerator {
       playerSpawn,
       stairsDown,
       rooms: [room1, room2],
-      monsters: [monster],
+      monsters,
       graph: fallbackGraph,
     };
+  }
+
+  /**
+   * `Monster.createFromDefinition` throws on an unregistered ID. Generation also runs outside
+   * the action pipeline (character creation, UI-confirmed floor changes), so a missing
+   * definition is skipped and recorded instead of crashing generation or faking a creature.
+   */
+  private spawnDefinedMonster(defId: string, id: string, position: Position): Monster | null {
+    try {
+      return Monster.createFromDefinition(defId, id, position);
+    } catch (err) {
+      flightRecorder.recordWarning(`Skipped spawning unregistered monster definition '${defId}'`, {
+        source: 'DungeonGenerator',
+        definitionId: defId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return null;
+    }
   }
 }

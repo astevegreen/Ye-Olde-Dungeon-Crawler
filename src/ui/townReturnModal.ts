@@ -225,19 +225,19 @@ export class TownReturnModal {
     `;
 
     document.getElementById('btn-trmodal-x')?.addEventListener('click', () => {
-      engine.player.tutorialFlags[config.flag] = true;
+      engine.player.markTutorialSeen(config.flag);
       this.close();
       if (onCancel) onCancel();
     });
 
     document.getElementById('btn-trmodal-cancel')?.addEventListener('click', () => {
-      engine.player.tutorialFlags[config.flag] = true;
+      engine.player.markTutorialSeen(config.flag);
       this.close();
       if (onCancel) onCancel();
     });
 
     document.getElementById('btn-trmodal-confirm')?.addEventListener('click', () => {
-      engine.player.tutorialFlags[config.flag] = true;
+      engine.player.markTutorialSeen(config.flag);
       this.close();
       onConfirm();
     });

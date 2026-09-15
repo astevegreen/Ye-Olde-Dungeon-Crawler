@@ -1,0 +1,49 @@
+{
+  "entries": [
+    {
+      "file": "src/main.ts",
+      "member": "GameEngine.onGameEvent",
+      "reason": "Composition root wires the engine's domain-event callback slot (ARCHITECTURE.md §4)."
+    },
+    {
+      "file": "src/main.ts",
+      "member": "GameEngine.onWinchInteract",
+      "reason": "Composition root wires the engine-to-presentation callback that opens the Dwarven Winch modal."
+    },
+    {
+      "file": "src/main.ts",
+      "member": "GameEngine.onTownReturnInteract",
+      "reason": "Composition root wires the engine-to-presentation callback that opens the town-return modal."
+    },
+    {
+      "file": "src/main.ts",
+      "member": "GameEngine.onChoiceInteract",
+      "reason": "Composition root wires the engine-to-presentation callback that opens the choice modal."
+    },
+    {
+      "file": "src/main.ts",
+      "member": "GameEngine.onFloorChanged",
+      "reason": "Composition root chains a floor-change callback for autosave and HUD refresh."
+    },
+    {
+      "file": "src/main.ts",
+      "member": "GameStateManager.onStateChanged",
+      "reason": "Composition root wires the quest-state callback that updates the profile and Hall of Fame."
+    },
+    {
+      "file": "src/rendering/canvas-renderer.ts",
+      "member": "GameEngine.onNpcInteract",
+      "reason": "Renderer registers (and unregisters on teardown) its NPC dialog callback slot."
+    },
+    {
+      "file": "src/rendering/canvas-renderer.ts",
+      "member": "GameEngine.onFloorChanged",
+      "reason": "Renderer registers (and unregisters on teardown) its re-render-on-floor-change callback slot."
+    },
+    {
+      "file": "src/content/warcraft/ai.ts",
+      "member": "Monster.intent",
+      "reason": "A content-provided AIStrategy publishes its telegraphed intent; the engine's own AIStrategy implementations (ai/aiRegistry.ts) set Monster.intent the same way."
+    }
+  ]
+}

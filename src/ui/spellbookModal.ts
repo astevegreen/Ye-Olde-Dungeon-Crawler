@@ -161,16 +161,8 @@ export class SpellbookModal implements UIModal {
     if (!currentSpell) return;
 
     const player = this.engine.player;
-    if (!player.quickSpells) {
-      player.quickSpells = Array(10).fill(null);
-    }
-
-    if (player.quickSpells[slotIndex] === currentSpell.id) {
-      // Toggle off
-      player.quickSpells[slotIndex] = null;
-    } else {
-      player.quickSpells[slotIndex] = currentSpell.id;
-    }
+    const alreadyAssigned = player.quickSpells[slotIndex] === currentSpell.id;
+    player.setQuickSpell(slotIndex, alreadyAssigned ? null : currentSpell.id);
 
     this.options.onQuickSpellsChanged();
     this.render();

@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { DungeonGenerator } from '../dungeon/dungeon-generator';
+import { MonsterRegistry } from '../bestiary/monsterDefinitions';
+import { COTW_MONSTERS } from '../../content/cotw/monsters';
 import type { Position } from '../types';
 
 describe('Dungeon Generation System', () => {
@@ -83,22 +85,29 @@ describe('Dungeon Generation System', () => {
     }
   });
 
-  it('spawns monsters in non-starting rooms', () => {
-    const generator = new DungeonGenerator({
-      width: 40,
-      height: 30,
-      maxRooms: 8,
-      seed: 5555,
-      spawnMonsters: true,
-    });
+  it('spawns real registered monsters in non-starting rooms', () => {
+    // Registration is required: this previously passed only because unregistered IDs
+    // were silently replaced with "Unknown Creature" placeholders.
+    MonsterRegistry.registerAll(COTW_MONSTERS);
+    try {
+      const generator = new DungeonGenerator({
+        width: 40,
+        height: 30,
+        maxRooms: 8,
+        seed: 5555,
+        spawnMonsters: true,
+      });
 
-    const dungeon = generator.generate();
+      const dungeon = generator.generate();
 
-    expect(dungeon.monsters.length).toBeGreaterThan(0);
-    // Ensure no monster spawns directly on player's spawn tile
-    for (const monster of dungeon.monsters) {
-      const isAtSpawn = monster.x === dungeon.playerSpawn.x && monster.y === dungeon.playerSpawn.y;
-      expect(isAtSpawn).toBe(false);
+      expect(dungeon.monsters.length).toBeGreaterThan(0);
+      for (const monster of dungeon.monsters) {
+        expect(MonsterRegistry.has(monster.definitionId)).toBe(true);
+        const isAtSpawn = monster.x === dungeon.playerSpawn.x && monster.y === dungeon.playerSpawn.y;
+        expect(isAtSpawn).toBe(false);
+      }
+    } finally {
+      MonsterRegistry.clear();
     }
   });
 });

@@ -38,9 +38,10 @@ export class WarchiefBehavior implements AiBehaviorStrategy {
     const player = engine.player;
     const chebyshevDist = Math.max(Math.abs(monster.x - player.x), Math.abs(monster.y - player.y));
 
-    // Bloodlust battle roar when entering critical health
-    if (monster.hp <= monster.maxHp * 0.4 && !(monster as any)._hasRoared) {
-      (monster as any)._hasRoared = true;
+    // Bloodlust battle roar when entering critical health (once per warchief; world flags persist in saves)
+    const roarFlag = `warchief_roared:${monster.id}`;
+    if (monster.hp <= monster.maxHp * 0.4 && !engine.getWorldFlag(roarFlag)) {
+      engine.setWorldFlag(roarFlag, true);
       engine.log(`${monster.name} enters a blood-crazed frenzy: "Lok'tar Ogar! None shall escape the Horde!"`);
     }
 

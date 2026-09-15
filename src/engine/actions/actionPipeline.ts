@@ -109,6 +109,10 @@ export class ActionPipeline {
         try {
           const hookResult = hook.execute({ action, engine, actionType });
           if (hookResult && !hookResult.proceed) {
+            // Untyped content can short-circuit without a result; returning it would crash the caller.
+            if (!ActionPipeline.isActionResult(hookResult.result)) {
+              throw new Error('Pre-hook short-circuited without a valid ActionResult');
+            }
             return hookResult.result;
           }
         } catch (err) {
@@ -120,6 +124,9 @@ export class ActionPipeline {
       let result: ActionResult;
       try {
         result = action.perform(engine);
+        if (!ActionPipeline.isActionResult(result)) {
+          throw new Error(`${actionType}.perform() did not return a valid ActionResult`);
+        }
       } catch (err) {
         return this.handlePipelineError(err, action, engine, actionType, 'action-perform');
       }
@@ -130,6 +137,9 @@ export class ActionPipeline {
         try {
           const hookResult = hook.execute({ action, engine, actionType, result });
           if (hookResult && !hookResult.proceed) {
+            if (!ActionPipeline.isActionResult(hookResult.result)) {
+              throw new Error('Post-hook replaced the result without a valid ActionResult');
+            }
             result = hookResult.result;
           }
         } catch (err) {
@@ -143,6 +153,32 @@ export class ActionPipeline {
     }
   }
 
+  private static isActionResult(value: unknown): value is ActionResult {
+    return typeof value === 'object' && value !== null && typeof (value as ActionResult).success === 'boolean';
+  }
+
+  /**
+   * Records an exception isolated at a failure boundary: counters, flight recorder, and
+   * narrative log. Shared by `executeWithHooks` and the engine's monster-turn boundary so
+   * every isolated failure trips the same CI counters (`caughtExceptionCount`).
+   */
+  public recordIsolatedFailure(
+    err: unknown,
+    engine: GameEngine,
+    context: { entityId: string; actionType: string; phase: string; source: string; hookId?: string },
+    logMessage: string
+  ): void {
+    this.caughtExceptionCount += 1;
+    ActionPipeline.totalCaughtExceptions += 1;
+
+    const error = err instanceof Error ? err : new Error(String(err));
+    flightRecorder.recordError(error, { ...context });
+
+    if (typeof engine?.log === 'function') {
+      engine.log(logMessage);
+    }
+  }
+
   private handlePipelineError(
     err: unknown,
     action: Action,
@@ -151,10 +187,6 @@ export class ActionPipeline {
     phase: string,
     hookId?: string
   ): ActionResult {
-    this.caughtExceptionCount += 1;
-    ActionPipeline.totalCaughtExceptions += 1;
-
-    const error = err instanceof Error ? err : new Error(String(err));
     const entityId =
       (action as any)?.entity?.id ??
       (action as any)?.attacker?.id ??
@@ -162,25 +194,19 @@ export class ActionPipeline {
       (action as any)?.player?.id ??
       engine?.player?.id ??
       'unknown';
+    const message = 'An unexpected error occurred; the action could not be completed.';
 
-    // Telemetry & diagnostics recording
-    flightRecorder.recordError(error, {
-      entityId,
-      actionType,
-      phase,
-      hookId,
-      source: 'ActionPipeline.executeWithHooks',
-    });
-
-    // Narrative player log
-    if (typeof engine?.log === 'function') {
-      engine.log('An unexpected error occurred; the action could not be completed.');
-    }
+    this.recordIsolatedFailure(
+      err,
+      engine,
+      { entityId, actionType, phase, hookId, source: 'ActionPipeline.executeWithHooks' },
+      message
+    );
 
     return {
       success: false,
       cost: 0,
-      message: 'An unexpected error occurred; the action could not be completed.',
+      message,
       pipelineError: true,
     };
   }

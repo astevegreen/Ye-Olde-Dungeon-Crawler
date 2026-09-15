@@ -834,9 +834,15 @@ export class GameEngine {
   /**
    * Processes a player action. If the action succeeds and consumes energy,
    * turns are advanced and AI entities process their queued actions until
-   * the player is once again ready to act.
+   * the player is once again ready to act. A monster-turn failure isolated during
+   * the turn is surfaced on the returned result as `pipelineError`.
    */
   public handlePlayerAction(action: Action): ActionResult {
+    const failuresBefore = this.actionPipeline.caughtExceptionCount;
+    return this.surfaceIsolatedTurnFailures(this.executePlayerTurn(action), failuresBefore);
+  }
+
+  private executePlayerTurn(action: Action): ActionResult {
     if (!this.player.isAlive()) {
       return {
         success: false,
@@ -986,7 +992,9 @@ export class GameEngine {
   }
 
   /**
-   * Monster AI behavior delegation.
+   * Monster AI behavior delegation, inside a failure boundary (ARCHITECTURE.md §4): an
+   * exception from a monster's status ticks, AI, or action is isolated and recorded rather
+   * than escaping `handlePlayerAction()`.
    */
   private processMonsterAction(entity: Entity): void {
     if (!entity.isAlive()) {
@@ -994,13 +1002,51 @@ export class GameEngine {
     }
 
     if (entity instanceof Monster) {
-      const res = entity.takeTurn(this);
-      if (res?.effects && res.effects.length > 0) {
-        this.recordVisualEffects(res.effects);
+      const energyBefore = entity.energy;
+      try {
+        const res = entity.takeTurn(this);
+        if (res?.effects && res.effects.length > 0) {
+          this.recordVisualEffects(res.effects);
+        }
+      } catch (err) {
+        this.actionPipeline.recordIsolatedFailure(
+          err,
+          this,
+          {
+            entityId: entity.id,
+            actionType: `${entity.constructor.name}.takeTurn`,
+            phase: 'monster-turn',
+            source: 'GameEngine.processMonsterAction',
+          },
+          `An unexpected error disrupted ${entity.name}'s turn.`
+        );
+        // A turn that threw before spending energy would be reselected at once, spinning the scheduler.
+        if (entity.energy >= energyBefore) {
+          entity.consumeEnergy(BASE_ACTION_COST);
+        }
       }
     } else {
       // Non-monster safety: consume energy to prevent scheduler deadlocks
       entity.consumeEnergy(BASE_ACTION_COST);
     }
+  }
+
+  /** Marks a player turn's result as `pipelineError` if any monster turn failed during it. */
+  private surfaceIsolatedTurnFailures(result: ActionResult, failuresBefore: number): ActionResult {
+    if (result.pipelineError || this.actionPipeline.caughtExceptionCount === failuresBefore) {
+      return result;
+    }
+    const surfaced: ActionResult = {
+      ...result,
+      pipelineError: true,
+      message: "An unexpected error disrupted another creature's turn; play continues.",
+    };
+    this.lastActionResult = surfaced;
+    return surfaced;
+  }
+
+  /** Pauses or resumes world advancement; driven by the modal stack (ARCHITECTURE.md §6). */
+  public setPaused(paused: boolean): void {
+    this.isPaused = paused;
   }
 }

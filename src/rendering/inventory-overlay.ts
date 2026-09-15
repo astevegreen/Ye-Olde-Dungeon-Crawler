@@ -454,8 +454,7 @@ export class InventoryOverlay {
       this.sortModeIndex = (this.sortModeIndex + 1) % 3;
       const modes: Array<'category' | 'weight' | 'bulk'> = ['category', 'weight', 'bulk'];
       const selected = modes[this.sortModeIndex];
-      inv.primaryPack.sort(selected);
-      engine.log(`Sorted backpack items by ${selected.toUpperCase()}.`);
+      this.commandBus.dispatch({ type: 'sort_pack', payload: { mode: selected } });
       if (this.onStateChanged) this.onStateChanged();
       return true;
     }
@@ -603,12 +602,7 @@ export class InventoryOverlay {
               width: zw,
               height: zh,
               action: () => {
-                const res = inv.unequipToPack(slotId as EquipmentSlot);
-                if (!res.success) {
-                  engine.log(res.reason ?? 'Cannot unequip item.');
-                } else {
-                  engine.log(`Unequipped ${item.displayName} to pack.`);
-                }
+                this.commandBus.dispatch({ type: 'unequip_item', payload: { slot: slotId as EquipmentSlot } });
                 this.inspector.clearSelection();
               },
             });
@@ -618,12 +612,7 @@ export class InventoryOverlay {
               width: zw,
               height: zh,
               action: () => {
-                const res = inv.unequipToPack(slotId as EquipmentSlot);
-                if (!res.success) {
-                  engine.log(res.reason ?? 'Cannot unequip item.');
-                } else {
-                  engine.log(`Unequipped ${item.displayName} to pack.`);
-                }
+                this.commandBus.dispatch({ type: 'unequip_item', payload: { slot: slotId as EquipmentSlot } });
                 this.inspector.clearSelection();
               },
             });
@@ -676,8 +665,7 @@ export class InventoryOverlay {
         this.sortModeIndex = (this.sortModeIndex + 1) % 3;
         const modes: Array<'category' | 'weight' | 'bulk'> = ['category', 'weight', 'bulk'];
         const selected = modes[this.sortModeIndex];
-        inv.primaryPack.sort(selected);
-        engine.log(`Sorted backpack items by ${selected.toUpperCase()}.`);
+        this.commandBus.dispatch({ type: 'sort_pack', payload: { mode: selected } });
       },
     });
 

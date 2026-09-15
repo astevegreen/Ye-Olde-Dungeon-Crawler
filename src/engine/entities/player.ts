@@ -262,6 +262,15 @@ export class Player extends Actor {
     return true;
   }
 
+  /** Assigns a spell to a quick-cast slot, or clears the slot with `null`. */
+  public setQuickSpell(slotIndex: number, spellId: string | null): void {
+    this.quickSpells[slotIndex] = spellId;
+  }
+
+  public markTutorialSeen(flag: keyof TutorialFlags): void {
+    this.tutorialFlags[flag] = true;
+  }
+
   public override get maxHp(): number {
     return calculateAttribute(this, 'maxHp');
   }

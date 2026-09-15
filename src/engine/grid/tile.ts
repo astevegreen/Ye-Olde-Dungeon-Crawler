@@ -218,6 +218,10 @@ export function getTileDefinition(type: string): TileDefinition {
   return tileRegistry.get(type) ?? TILES.FLOOR;
 }
 
+export function hasTileDefinition(type: string): boolean {
+  return tileRegistry.has(type);
+}
+
 /**
  * Registers or overrides a TileDefinition in the registry.
  */

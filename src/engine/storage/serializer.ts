@@ -1,5 +1,5 @@
 import { GameMap } from '../grid/map';
-import { TILES, getTileDefinition } from '../grid/tile';
+import { TILES, getTileDefinition, hasTileDefinition } from '../grid/tile';
 import type { TileDefinition, TileType } from '../types';
 import { Item } from '../items/item';
 import { Container } from '../items/container';
@@ -16,7 +16,7 @@ import { TrapInstance } from '../dungeon/traps';
 import { Visibility } from '../fov/types';
 import { FovManager } from '../fov/fov-manager';
 import { GameEngine } from '../engine';
-import { registerSerializeGameFn } from '../debug/flightRecorder';
+import { registerSerializeGameFn, flightRecorder } from '../debug/flightRecorder';
 import { CompendiumManager } from '../compendium/compendiumManager';
 import type { GameContentManifest } from '../types/manifest';
 import { cloneWorldState, createWorldState } from '../state/worldState';
@@ -616,11 +616,25 @@ export function deserializeMapObject(mapData: SerializedMap): GameMap {
     : mapData.tiles;
 
   if (tileGrid) {
+    // A renamed or corrupted tile type must not load as walkable floor (getTileDefinition's default).
+    const unknownTileCounts = new Map<string, number>();
     for (let y = 0; y < mapData.height; y++) {
       for (let x = 0; x < mapData.width; x++) {
         const tileType = tileGrid[y]?.[x] ?? 'wall';
-        map.setTile(x, y, getTileDefinitionByType(tileType));
+        if (hasTileDefinition(tileType)) {
+          map.setTile(x, y, getTileDefinitionByType(tileType));
+        } else {
+          unknownTileCounts.set(tileType, (unknownTileCounts.get(tileType) ?? 0) + 1);
+          map.setTile(x, y, TILES.WALL);
+        }
       }
+    }
+    for (const [tileType, count] of unknownTileCounts) {
+      flightRecorder.recordWarning(`Unknown tile type '${tileType}' in save data loaded as wall`, {
+        source: 'deserializeMapObject',
+        tileType,
+        count,
+      });
     }
   }
 

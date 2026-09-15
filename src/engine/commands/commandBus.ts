@@ -131,6 +131,16 @@ export class EngineCommandBus implements GameCommandBus {
         return { success: res.success, message: res.message };
       }
 
+      // Instant bookkeeping with no turn cost, preserving the behavior of the former direct sort calls.
+      case 'sort_pack': {
+        const mode = p.mode as Parameters<Container['sort']>[0];
+        if (!mode) return { success: false, message: 'No sort mode specified' };
+        this.engine.player.inventory.primaryPack.sort(mode);
+        const message = `Sorted backpack items by ${mode.toUpperCase()}.`;
+        this.engine.log(message);
+        return { success: true, message };
+      }
+
       case 'quick_loot': {
         const res = this.engine.handlePlayerAction(new QuickLootAction(this.engine.player));
         return { success: res.success, message: res.message };

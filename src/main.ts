@@ -909,8 +909,7 @@ window.addEventListener('DOMContentLoaded', () => {
         shortcut: 'O',
         description: 'Cycle inventory sorting by Category, Weight, or Bulk',
         execute: (eng) => {
-          eng.player.inventory.primaryPack.sort('category');
-          eng.log('Sorted backpack items by CATEGORY.');
+          eng.commandBus.dispatch({ type: 'sort_pack', payload: { mode: 'category' } });
           renderer?.render();
         },
       },

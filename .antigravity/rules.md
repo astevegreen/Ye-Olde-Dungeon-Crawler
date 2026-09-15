@@ -18,10 +18,11 @@
 - **Save format (§5):** any breaking save-format change increments `CURRENT_SCHEMA_VERSION` and adds exactly one forward-only step in `migrator.ts`.
 - **Protected files (§8.1):** modify `src/engine/actions/actionPipeline.ts`, `src/engine/engine.ts`, and `src/engine/storage/migrator.ts` only for (1) a confirmed bug fix, (2) an additive migration step, or (3) an explicitly requested planned item. State which exception applies.
 - **Documentation sync (§8.2):** if a change makes `ARCHITECTURE.md` inaccurate or completes a planned item, update `ARCHITECTURE.md` in the same change.
+- **Encapsulation (§7.2):** code outside `src/engine/` changes engine state only through engine methods (`GameEngine`, `Player`, `Entity`) or `engine.commandBus` — never by writing engine object fields directly or calling mutators on internal subsystems (`GameMap`, `Container`, `InventoryManager`, …). `check:engine-encapsulation` enforces this; add to its allowlist only with a stated reason.
 
 ## Verification Gates (§7.2)
 Before reporting a change complete, run these and report the real output:
-- `npm run lint` (type-check plus `check:engine-purity`)
+- `npm run lint` (type-check, `check:engine-purity`, and `check:engine-encapsulation`)
 - `npm test`
 - `npm run sim`
 - `npm run validate:schema`

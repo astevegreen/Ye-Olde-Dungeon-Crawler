@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { EnergyScheduler } from '../scheduler';
-import { TurnScheduler } from '../core/turnScheduler';
+import { EnergyScheduler, TurnScheduler } from '../scheduler';
 import { Entity } from '../entities/entity';
 
 class MockEntity extends Entity {

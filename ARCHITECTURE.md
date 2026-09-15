@@ -46,6 +46,7 @@
 | `src/ui/` | DOM HUD, LIFO modal stack (`modalStack.ts`), chorded input buffer (`input/chordBuffer.ts`), settings & keybindings, diagnostic tools. | Engine via `src/engine/index.ts` only. May import `src/rendering/` **types only**. Never imports `src/content/`. |
 | `scripts/` | Headless verification tooling, purity auditor, simulation benchmark, schema validator. | Developer automation only; may deep-import engine internals. Not bundled into the client build. |
 | `tests/` | Top-level Vitest suites. Most suites are colocated in `src/**/__tests__/`. | Testing harness only. Not bundled into the client build. |
+| `e2e/` | Playwright end-to-end smoke tests (config: `playwright.config.ts`) that load the built `dist/index.html` over `file://`. Requires `npm run build` first. | Testing harness only. Not bundled into the client build; excluded from Vitest. |
 
 ### Module Import Hierarchy
 ```
@@ -139,7 +140,7 @@
   - **`IndexedDB` Backend:** asynchronous storage tier for large multi-floor dungeon states, bestiary records, and flight-recorder logs that exceed `localStorage` quotas. Not implemented. **[Planned: P-12]**
   - **Native File Export/Import:** `.cotw` file download via `Blob` (`src/ui/platform.ts`), file and drag-and-drop import (`src/ui/saveImporter.ts`), and Base64 save codes (`src/engine/storage/saveTransfer.ts`) provide zero-dependency offline backup, run sharing, and cross-browser transfer.
 - **Forward-Only Schema Migrations (`src/engine/storage/migrator.ts`):**
-  - Saves are wrapped in a `VersionedSaveEnvelope` (`schemaVersion`, `contentManifestId`, `timestamp`, `data`). `CURRENT_SCHEMA_VERSION` in `migrator.ts` is the authoritative current version (8 as of 2026-09-13; do not restate it elsewhere).
+  - Saves are wrapped in a `VersionedSaveEnvelope` (`schemaVersion`, `contentManifestId`, `timestamp`, `data`). `CURRENT_SCHEMA_VERSION` in `migrator.ts` is the authoritative current version. Do not restate its value in this document or elsewhere; read it from `migrator.ts`.
   - `SchemaMigrator.migrate()` applies registered `N -> N+1` steps in sequence. It throws when the payload is unparseable, newer than the engine, missing a step, or a step fails.
   - Every breaking save-format change increments `CURRENT_SCHEMA_VERSION` and registers exactly one new forward-only step. Existing steps are never rewritten except as a confirmed bug fix (§8.1).
 - **Load Failure Handling:**
@@ -161,7 +162,7 @@
     - The throughput difference was well below human-perceptible thresholds: sub-millisecond per turn at every tested population up to 500. The "~30 per floor" figure then cited as realistic was not derived from the spawner; `npm run sim` now measures realistic populations from generated floors, and they fall below every population tested, so the conclusion stands.
     - That benchmark sampled each population once and measured only sleeping monsters. `npm run sim` supersedes it for population-anchored, multi-sample measurement and adds an awake-monster floor.
     - The added complexity was judged not worth it: six new call sites had to keep two lists in sync with `aiState`, and one of them desynced and produced a real bug.
-    - The change was reverted; `EnergyScheduler` uses a single flat entity list. The benchmark harness remains at the repo root (`run-bench.cjs`, `run-bench-internal.ts`). Review project history around this date for the full data before re-attempting.
+    - The change was reverted; `EnergyScheduler` uses a single flat entity list. The one-off benchmark scripts from that evaluation (`run-bench.cjs`, `run-bench-internal.ts`) were removed on 2026-09-15: they could only measure the post-revert single-list scheduler, and `run-bench.cjs` no longer ran. They remain in git history (last committed in `3d71469`). Review project history around 2026-09-13 for the full data before re-attempting.
   - **Bounded FOV Awakenings:** `FovManager` computes visibility with recursive shadowcasting limited to the player's radius (default 8, adjusted by pact modifiers). Monster awakenings and bestiary records are checked only across the bounding box `[minX..maxX, minY..maxY]` of the player's vision. Each update currently resets previously visible tiles to explored by sweeping the whole map. **[Planned: P-15]**
   - **Perception-Radius Override:** any active status whose handler declares `StatusHandler.perceptionRadius` forces `updateFov()`'s radius to that value (the most restrictive wins if several are active) — a generic mechanism, not a hardcoded per-status check. `blindness` and `sensory_masked` both declare `perceptionRadius: 1` today.
   - **Sensory Masking & Echolocation:** the `sensory_masked` status (content-applied, e.g. a Bat Senses Potion) cripples FOV to radius 1 via the override above, and separately lets the renderer detect things beyond it: `getAudibleEntitiesInRadius`/`getAudibleTilesInRadius` (`src/engine/fov/echolocation.ts`, radius `ECHOLOCATION_HEARING_RADIUS` = 6) find non-dormant actors (a sleeping monster makes no noise) and noisy terrain (inherently audible tile types, or an active surface/gas/trap) within a bounded query. `CanvasRenderer.renderEcholocationView()` (`src/rendering/canvas-renderer.ts`) replaces the normal tile/entity pass while the status is active: a blank board, the player's own icon, and only audible actors (reusing the existing ESP-detected pulsing-indicator style) and terrain. The underlying FOV/awakening simulation is unchanged — only what gets drawn changes.
@@ -198,7 +199,7 @@
 ### 7.2 Automated Quality Gates
 - **Requirement:** every change must pass the gates below before merging. Coding agents run the relevant gates locally and report real output.
 - **Current CI:** `.github/workflows/deploy.yml` runs on push to `main` (and manual dispatch). It runs `npm run lint`, `npm test`, `npm run sim`, `npm run validate:schema`, then `npm run build:all`, and deploys `dist/` to GitHub Pages.
-- There is no pull-request CI and no local pre-commit hook yet, so today the gates run after merge. **[Planned: P-18]**
+- The gates above run only in `deploy.yml`, after merge; there is no pull-request gate workflow and no local pre-commit hook yet. `.github/workflows/playwright.yml` also runs on pushes and pull requests to `main`, but it only builds the bundle and runs the Playwright smoke suite in `e2e/` (the built `dist/index.html` must boot to the main menu over `file://` with no uncaught errors, in Chromium, Firefox, and WebKit), not these gates. **[Planned: P-18]**
 
 1. **Architectural Purity & Boundaries (`npm run check:engine-purity`, `scripts/check-engine-purity.ts`):**
    - Scans every `.ts` file under `src/engine/`, `src/content/`, `src/ui/`, and `src/rendering/`. Content source files are checked for DOM tokens regardless of whether they are registered as hooks, because file location never exempts simulation code (§2).
@@ -354,7 +355,7 @@ Each entry records the current state, the target, and whether the work is expect
 - Protected files: no.
 
 **P-18 — Pre-merge gating** (§7.2)
-- Current: CI runs only on push to `main`; there is no local hook.
+- Current: the gates run only in `deploy.yml`, on push to `main`. `playwright.yml` also runs on pull requests, but executes only the `e2e/` Playwright suite, not the gates. There is no local hook.
 - Target: a pull-request CI workflow running all gates, plus a local pre-commit hook.
 - Protected files: no.
 
@@ -383,4 +384,4 @@ Each entry records the current state, the target, and whether the work is expect
 - Current: the radial menu itself is implemented (`src/rendering/radialMenu.ts`) — keyboard hold-to-open, directional wedge selection, spell/command/item slots. See §6 for the current-state description. Gamepad invocation is not implemented; `navigator.getGamepads()` is not referenced anywhere in `src/`.
 - Target: gamepad button-hold opens the menu and stick angle selects a wedge, confined to `src/rendering/` (never on the simulation execution path, so it doesn't affect headless purity, §2).
 - Protected files: none.
-- Sequencing: independent of the other four.
+- Sequencing: independent of all other planned items.

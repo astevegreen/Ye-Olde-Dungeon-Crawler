@@ -46,11 +46,11 @@ Before drafting a modification, run these mandatory checks:
 ### Step 4: Proposal Format
 If an update is justified, present the following structured proposal to the user as your final output:
 
-```text
+````text
 [RETROSPECTIVE EVALUATION]
 - Friction Event: <1 concise sentence describing the failure or correction>
 - Target File: <path to skill or archetype definition>
-- Justification: <Why a an change, ephemeral fact is not procedural systemic this>
+- Justification: <Why this is a systemic procedural change, not an ephemeral fact>
 - Architectural Safety: Verified against ARCHITECTURE.md (no boundary leaks or engine creep).
 
 PROPOSED DIFF:
@@ -59,3 +59,5 @@ PROPOSED DIFF:
 +++ b/<target-file>
 - <Existing ambiguous or failing instruction>
 + <Sharpened, concrete instruction>
+```
+````

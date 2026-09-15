@@ -18,7 +18,7 @@
 - **Save format (§5):** any breaking save-format change increments `CURRENT_SCHEMA_VERSION` and adds exactly one forward-only step in `migrator.ts`.
 - **Protected files (§8.1):** modify `src/engine/actions/actionPipeline.ts`, `src/engine/engine.ts`, and `src/engine/storage/migrator.ts` only for (1) a confirmed bug fix, (2) an additive migration step, or (3) an explicitly requested planned item. State which exception applies.
 - **Documentation sync (§8.2):** if a change makes `ARCHITECTURE.md` inaccurate or completes a planned item, update `ARCHITECTURE.md` in the same change.
-- **Encapsulation (§7.2):** code outside `src/engine/` changes engine state only through engine methods (`GameEngine`, `Player`, `Entity`) or `engine.commandBus` — never by writing engine object fields directly or calling mutators on internal subsystems (`GameMap`, `Container`, `InventoryManager`, …). `check:engine-encapsulation` enforces this; add to its allowlist only with a stated reason.
+- **Encapsulation (§7.2):** code outside `src/engine/` (presentation and content alike) never writes engine object fields directly — no assignment, index write, write through an `as any` cast, or `Object.assign` onto an engine object. Presentation code (`src/ui/`, `src/rendering/`, `src/main.ts`) additionally changes engine state only through `GameEngine`, `Player`, and `Entity` methods or `engine.commandBus` — never by calling mutators on internal subsystems (`GameMap`, `Container`, `InventoryManager`, …) or Array/Map/Set mutators on engine members. That subsystem-mutator restriction does not apply to `src/content/` (§7.2). `check:engine-encapsulation` enforces all of this; add to its allowlist only with a stated reason.
 
 ## Verification Gates (§7.2)
 Before reporting a change complete, run these and report the real output:
@@ -33,4 +33,4 @@ If a prompt starts with one of these tags, adopt that persona's rules from `.ant
 - `[Auditor]` -> Adopt `.antigravity/skills/adversarial-audit.md`. Perform an adversarial critique, produce a prioritized plan, and await approval before modifying code.
 - `[Designer]` -> Adopt `.antigravity/archetypes/designer.md`. Confine edits to `src/content/`; import the engine only via `src/engine/index.ts`.
 - `[Guardian]` -> Adopt `.antigravity/archetypes/guardian.md`. Focus on execution-path headless purity (including content hooks), determinism, and Vitest coverage.
-- `[UI]` -> Adopt `.antigravity/archetypes/ui-specialist.md`. Focus on Canvas rendering, `src/rendering/input-handler.ts`, `src/ui/input/chordBuffer.ts`, and DOM modals.
+- `[UI]` -> Adopt `.antigravity/archetypes/ui-specialist.md`. Focus on Canvas rendering, `src/rendering/input-handler.ts`, `src/ui/input/chordBuffer.ts`, and DOM modals. Triage and inspection features (god mode, spawning, map reveal) go through `engine.diagnostics` methods (§2) — never implemented as direct engine-state writes from `src/ui/` or `src/rendering/`.

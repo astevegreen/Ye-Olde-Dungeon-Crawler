@@ -125,8 +125,16 @@ export class DungeonArc {
   ): DungeonFloorResult {
     const generatorStrategyId =
       questArc?.floorGenerators?.[floorNumber] ?? questArc?.defaultGenerator ?? 'bsp';
-    const strategy =
-      DungeonGeneratorRegistry.get(generatorStrategyId) ?? DungeonGeneratorRegistry.getDefault();
+    const strategy = DungeonGeneratorRegistry.get(generatorStrategyId);
+    if (!strategy) {
+      // Floor generation always runs inside a pipeline-isolated player action
+      // (stairs, town-return fixtures) or a UI-confirmed floor change, so throwing
+      // here fails that one action loudly instead of silently generating a floor
+      // with the wrong (possibly much easier/harder) layout algorithm.
+      throw new Error(
+        `Unknown dungeon generator strategy: '${generatorStrategyId}' is not registered in DungeonGeneratorRegistry.`
+      );
+    }
 
     const monsterCatalog: MonsterDefinition[] = manifest?.monsters
       ? (Array.isArray(manifest.monsters) ? manifest.monsters : Object.values(manifest.monsters) as MonsterDefinition[])

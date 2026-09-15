@@ -3,6 +3,7 @@ import { DungeonArc } from '../dungeonArc';
 import { Player } from '../../entities/player';
 import { createTestSunStone } from '../../__fixtures__/testHelpers';
 import { QUEST_RELIC_ID } from '../types';
+import type { QuestArcDefinition } from '../../types/manifest';
 
 describe('DungeonArc & Floor 5 Chieftain Encounter', () => {
   it('identifies Floor 5 as the Boss Floor', () => {
@@ -63,5 +64,43 @@ describe('DungeonArc & Floor 5 Chieftain Encounter', () => {
     player.inventory.primaryPack.addItem(sunStone);
 
     expect(DungeonArc.isRelicInPlayerPossession(player)).toBe(true);
+  });
+
+  describe('Unknown generator strategy ID (ARCHITECTURE.md registry-contract audit)', () => {
+    it('throws instead of silently falling back to BSP for a misspelled floorGenerators entry', () => {
+      const brokenQuestArc: Partial<QuestArcDefinition> = {
+        id: 'broken_arc',
+        name: 'Broken Arc',
+        maxFloor: 5,
+        bossFloor: 5,
+        floorGenerators: {
+          2: 'cvaern', // typo of 'cavern'
+        },
+      };
+
+      expect(() => DungeonArc.generateFloor(2, 1111, brokenQuestArc as QuestArcDefinition)).toThrow(
+        'cvaern'
+      );
+    });
+
+    it('throws instead of silently falling back to BSP for a misspelled defaultGenerator', () => {
+      const brokenQuestArc: Partial<QuestArcDefinition> = {
+        id: 'broken_arc_2',
+        name: 'Broken Arc 2',
+        maxFloor: 5,
+        bossFloor: 5,
+        defaultGenerator: 'bsp_typo',
+      };
+
+      expect(() => DungeonArc.generateFloor(1, 1111, brokenQuestArc as QuestArcDefinition)).toThrow(
+        'bsp_typo'
+      );
+    });
+
+    it('still generates normally when floorGenerators/defaultGenerator are omitted (implicit bsp default)', () => {
+      const floor1 = DungeonArc.generateFloor(1, 1111);
+      expect(floor1.map).toBeDefined();
+      expect(floor1.stairsDown).toBeDefined();
+    });
   });
 });

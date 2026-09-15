@@ -34,8 +34,6 @@ import type {
   SerializedCompanion,
 } from './types';
 
-export const SAVE_VERSION = 5;
-
 export function getTileDefinitionByType(type: TileType): TileDefinition {
   return getTileDefinition(type);
 }
@@ -465,7 +463,6 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
   };
 
   return {
-    version: SAVE_VERSION,
     profile: updatedProfile,
     savedAt: Date.now(),
     player: serializedPlayer,

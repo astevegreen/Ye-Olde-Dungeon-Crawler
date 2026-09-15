@@ -13,6 +13,7 @@ import { AIRegistry } from './aiRegistry';
 import { BUILTIN_AI_TYPES } from '../bestiary/monsterDefinitions';
 import { computeDangerTiles } from './intent';
 import { selectAttackTarget } from './targetSelection';
+import { flightRecorder } from '../debug/flightRecorder';
 
 class CasterBehavior implements AiBehaviorStrategy {
   public readonly id = BUILTIN_AI_TYPES.CASTER;
@@ -354,14 +355,45 @@ export class MonsterAI {
     }
 
     // Check if monster has an aiRoutineId registered in AIRegistry
-    const routine = AIRegistry.get(monster.aiRoutineId ?? monster.aiType);
+    const requestedRoutineId = monster.aiRoutineId ?? monster.aiType;
+    const routine = AIRegistry.get(requestedRoutineId);
     if (routine) {
       const res = routine.decideAction(monster, engine);
       return (res as any).action ?? res;
     }
 
-    // Delegate to legacy strategy
+    // Delegate to legacy strategy. Reaching here means requestedRoutineId matched no
+    // AIRegistry entry, alias, or legacy AiBehaviorRegistry strategy — a content bug
+    // (typo'd aiRoutineId/aiType). Warn once per monster instance rather than every
+    // turn, since this runs on the monster-turn path (isolated per-turn by
+    // GameEngine.processMonsterAction) and would otherwise spam a flight-recorder
+    // entry (and, transitively, a pipelineError banner) for the monster's whole life.
     const strategy = AiBehaviorRegistry.get(monster.aiType) ?? AiBehaviorRegistry.getDefault();
+    if (!warnedFallbackMonsterIds.has(monster.id)) {
+      warnedFallbackMonsterIds.add(monster.id);
+      flightRecorder.recordWarning(
+        `Monster '${monster.id}' has no registered AI routine for '${requestedRoutineId}'; using fallback strategy '${strategy.id}' instead.`,
+        {
+          source: 'MonsterAI.decideAction',
+          entityId: monster.id,
+          definitionId: monster.definitionId,
+          requestedRoutineId,
+          aiType: monster.aiType,
+          fallbackStrategyId: strategy.id,
+        }
+      );
+    }
     return strategy.decideAction(monster, engine);
   }
+}
+
+/**
+ * Tracks monster IDs that have already logged a fallback-strategy warning so a
+ * misconfigured monster's every turn doesn't spam the flight recorder (or, if
+ * pipelineError surfacing is added later, the player) for its whole lifetime.
+ * Exported for test teardown; safe to clear freely since it's advisory-only.
+ */
+const warnedFallbackMonsterIds = new Set<string>();
+export function resetAiFallbackWarnings(): void {
+  warnedFallbackMonsterIds.clear();
 }

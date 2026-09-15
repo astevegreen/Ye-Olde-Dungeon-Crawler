@@ -58,7 +58,7 @@ describe('MonsterAI fallback-strategy visibility (ARCHITECTURE.md registry-contr
     expect(action).toBeDefined();
 
     const warnings = fallbackWarnings();
-    expect(warnings.length).toBe(1);
+    expect(warnings).toHaveLength(1);
     expect(warnings[0].summary).toContain(UNKNOWN_AI_TYPE);
     expect((warnings[0].details as any)?.entityId).toBe('broken-1');
   });
@@ -80,7 +80,7 @@ describe('MonsterAI fallback-strategy visibility (ARCHITECTURE.md registry-contr
       MonsterAI.decideAction(monster, engine);
     }
 
-    expect(fallbackWarnings().length).toBe(1);
+    expect(fallbackWarnings()).toHaveLength(1);
   });
 
   it('warns separately for a second, distinct monster instance hitting the same fallback', () => {
@@ -110,7 +110,7 @@ describe('MonsterAI fallback-strategy visibility (ARCHITECTURE.md registry-contr
     MonsterAI.decideAction(monsterA, engine);
     MonsterAI.decideAction(monsterB, engine);
 
-    expect(fallbackWarnings().length).toBe(2);
+    expect(fallbackWarnings()).toHaveLength(2);
   });
 
   it('never warns for a monster with a valid, registered aiType', () => {
@@ -128,6 +128,6 @@ describe('MonsterAI fallback-strategy visibility (ARCHITECTURE.md registry-contr
 
     MonsterAI.decideAction(monster, engine);
 
-    expect(fallbackWarnings().length).toBe(0);
+    expect(fallbackWarnings()).toHaveLength(0);
   });
 });

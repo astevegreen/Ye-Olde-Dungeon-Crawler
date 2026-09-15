@@ -106,6 +106,18 @@ export function scaleMonsterStats(
 }
 
 /**
+ * Whether a definition may be drawn by selectDungeonMonsterDefinition on the given floor:
+ * non-boss and unlocked (minFloor <= currentFloor).
+ */
+export function isEligibleDungeonMonster(def: MonsterDefinition, currentFloor: number): boolean {
+  return (
+    !def.id.toLowerCase().includes('boss') &&
+    !def.name.toLowerCase().includes('hrungnir') &&
+    (def.minFloor ?? 1) <= currentFloor
+  );
+}
+
+/**
  * Selects a monster definition from candidates based on floor depth and tiering:
  * - Filters to non-boss candidates where minFloor <= currentFloor
  * - Separates candidates into "recently unlocked" (highest minFloor) and "lower-tier" groups
@@ -116,12 +128,7 @@ export function selectDungeonMonsterDefinition(
   currentFloor: number,
   rng: () => number = Math.random
 ): MonsterDefinition | null {
-  const eligible = candidates.filter(
-    (m) =>
-      !m.id.toLowerCase().includes('boss') &&
-      !m.name.toLowerCase().includes('hrungnir') &&
-      (m.minFloor ?? 1) <= currentFloor
-  );
+  const eligible = candidates.filter((m) => isEligibleDungeonMonster(m, currentFloor));
 
   if (eligible.length === 0) {
     return null;

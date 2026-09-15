@@ -3,7 +3,11 @@ import type { FovManager } from '../fov/fov-manager';
 import type { GameEngine } from '../engine';
 import { Monster } from '../entities/monster';
 import type { Position } from '../types';
-import { selectDungeonMonsterDefinition, createScaledMonster } from '../dungeon/spawner';
+import {
+  selectDungeonMonsterDefinition,
+  createScaledMonster,
+  isEligibleDungeonMonster,
+} from '../dungeon/spawner';
 
 export interface DungeonFloorRecord {
   floorNumber: number;
@@ -243,6 +247,16 @@ export class FloorManager {
       return [];
     }
 
+    // Every attempt past this point restarts the interval, even if nothing ends up spawning
+    // (no eligible definitions, no candidate tiles, or addEntity rejecting). Otherwise a
+    // failed attempt would repeat the full-map scan below on every subsequent turn.
+    map.lastRespawnTurn = map.floorTurnCount;
+
+    const monsterCatalog = engine.manifest?.monsters ?? [];
+    if (!monsterCatalog.some((def) => isEligibleDungeonMonster(def, engine.currentFloor))) {
+      return [];
+    }
+
     const spawnsToPerform = Math.min(this.maxBatchSpawns, availableSlots);
     const px = engine.player ? engine.player.x : 0;
     const py = engine.player ? engine.player.y : 0;
@@ -267,7 +281,6 @@ export class FloorManager {
 
     const rng = engine.rng ? () => engine.rng() : Math.random;
     const spawned: Monster[] = [];
-    const monsterCatalog = engine.manifest?.monsters ?? [];
 
     for (let i = 0; i < spawnsToPerform && candidateTiles.length > 0; i++) {
       const tileIdx = Math.floor(rng() * candidateTiles.length);
@@ -294,7 +307,6 @@ export class FloorManager {
     }
 
     if (spawned.length > 0) {
-      map.lastRespawnTurn = map.floorTurnCount;
       map.isCleared = false;
       engine.log('You sense hostile presence returning to the shadowy halls...');
     }

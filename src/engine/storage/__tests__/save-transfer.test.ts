@@ -17,7 +17,6 @@ function createMockSaveEnvelope(manifestId = 'cotw', heroName = 'Sven'): Version
     contentManifestId: manifestId,
     timestamp: 1700000000000,
     data: {
-      version: 2,
       savedAt: 1700000000000,
       turnCount: 42,
       currentFloor: 1,

@@ -57,13 +57,18 @@ export class EffectPrimitiveRegistry {
   }
 
   /**
-   * Dispatches an effect primitive to its registered handler.
-   * Returns true if a handler was found and executed, false otherwise.
+   * Dispatches an effect primitive to its registered handler and returns true.
+   * Throws on an unregistered primitive type instead of silently no-op'ing: every
+   * call site (spellPipeline.ts, reciprocalPipeline.ts) previously ignored a `false`
+   * return, so an unknown effect type — a typo'd spell/ability definition — was a
+   * silent no-op reported to the player as a successful cast. All call sites run
+   * inside a pipeline-isolated player/monster action, so throwing here fails that
+   * one action loudly instead. Use `has()` first if a non-throwing check is needed.
    */
-  public static dispatch(effect: EffectPrimitive, ctx: EffectContext): boolean {
+  public static dispatch(effect: EffectPrimitive, ctx: EffectContext): true {
     const handler = EffectPrimitiveRegistry.handlers.get(effect.type);
     if (!handler) {
-      return false;
+      throw new Error(`Unknown spell effect primitive: '${effect.type}' is not registered in EffectPrimitiveRegistry.`);
     }
     handler(effect, ctx);
     return true;

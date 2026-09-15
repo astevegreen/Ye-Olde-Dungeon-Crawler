@@ -310,7 +310,6 @@ export interface SerializedMap {
 }
 
 export interface SaveData {
-  version: number;
   profile: CharacterProfile;
   savedAt: number;
   player: SerializedPlayer;

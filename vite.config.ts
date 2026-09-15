@@ -1,4 +1,5 @@
 import { defineConfig, type Plugin } from 'vite';
+import { configDefaults } from 'vitest/config';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 
 declare const process: any;
@@ -60,6 +61,7 @@ export default defineConfig(({ mode }) => {
     },
     test: {
       environment: 'node',
+      exclude: [...configDefaults.exclude, 'e2e/**', 'playwright/**', '**/.claude/**'],
     },
   };
 });

@@ -1,6 +1,7 @@
 // Core Types & Manifest
 export * from './types';
 export * from './types/manifest';
+export * from './types/engineContext';
 export * from './types/choice';
 export * from './types/effects';
 export * from './types/theme';

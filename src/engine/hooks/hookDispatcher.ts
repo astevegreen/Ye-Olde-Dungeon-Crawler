@@ -1,4 +1,5 @@
 import type { GameEngine } from '../engine';
+import type { EngineContext } from '../types/engineContext';
 import type { Entity } from '../entities/entity';
 import type { Item } from '../items/item';
 import { Player } from '../entities/player';
@@ -84,8 +85,19 @@ export interface HookDescriptor {
   description?: string;
 }
 
+/**
+ * Built-in hook primitives are engine code, not content handlers: they resolve damage,
+ * deaths, impulses and spells, which need the full engine. Content handlers only ever see
+ * the scoped EngineContext (ARCHITECTURE.md §3); GameEngine is its only implementation, so
+ * this one narrowing-cast keeps the content-facing contract tight without wrapping.
+ */
+function asGameEngine(context: EngineContext): GameEngine {
+  return context as GameEngine;
+}
+
 export interface HookContext {
-  engine: GameEngine;
+  /** Scoped engine surface (§3); not the whole GameEngine. */
+  engine: EngineContext;
   attacker?: Entity;
   defender?: Entity;
   damage?: number;
@@ -269,7 +281,7 @@ function executeApplyStatus(
   sourceName: string,
   description?: string
 ): void {
-  const engine = context.engine;
+  const engine = asGameEngine(context.engine);
   const dest = target ?? owner;
   if (dest && dest.isAlive()) {
     const applied = dest.statusManager.applyStatus(
@@ -295,7 +307,7 @@ function executePushImpulse(
   sourceName: string,
   description?: string
 ): void {
-  const engine = context.engine;
+  const engine = asGameEngine(context.engine);
   const dest = target ?? owner;
   if (dest && dest.isAlive()) {
     // Push vector away from owner or along context vector
@@ -319,7 +331,7 @@ function executeSpawnSurface(
   sourceName: string,
   description?: string
 ): void {
-  const engine = context.engine;
+  const engine = asGameEngine(context.engine);
   const pos = context.position ?? (target ? { x: target.x, y: target.y } : { x: owner.x, y: owner.y });
   const radius = action.radius ?? 1;
   const dur = action.duration ?? 6;
@@ -346,7 +358,7 @@ function executeSpawnGas(
   sourceName: string,
   description?: string
 ): void {
-  const engine = context.engine;
+  const engine = asGameEngine(context.engine);
   const pos = context.position ?? (target ? { x: target.x, y: target.y } : { x: owner.x, y: owner.y });
   const radius = action.radius ?? 1;
   const dur = action.duration ?? 4;
@@ -373,7 +385,7 @@ function executeHeal(
   sourceName: string,
   description?: string
 ): void {
-  const engine = context.engine;
+  const engine = asGameEngine(context.engine);
   const dest = target ?? owner;
   if (dest && dest.isAlive()) {
     const healed = dest.heal(action.amount);
@@ -392,7 +404,7 @@ function executeBonusDamage(
   sourceName: string,
   description?: string
 ): void {
-  const engine = context.engine;
+  const engine = asGameEngine(context.engine);
   summary.bonusDamage += action.amount;
   const dest = target;
   if (dest && dest.isAlive() && action.amount > 0) {
@@ -416,7 +428,7 @@ function executeCastSpell(
   sourceName: string,
   description?: string
 ): void {
-  const engine = context.engine;
+  const engine = asGameEngine(context.engine);
   const dest = target ?? owner;
   if (dest) {
     const castAction = new CastSpellAction(owner, action.spellId, dest.x, dest.y, undefined, true);
@@ -435,7 +447,7 @@ function executeRadialAuraFilter(
   sourceName: string,
   description?: string
 ): void {
-  const engine = context.engine;
+  const engine = asGameEngine(context.engine);
   const center = context.position ?? { x: owner.x, y: owner.y };
   const matches = findTaggedEntitiesInRadius(engine, center, action.radius, action.tags);
 

@@ -1,12 +1,14 @@
 import type { ActionResult } from '../types';
 import type { GameEngine } from '../engine';
+import type { EngineContext } from '../types/engineContext';
 import type { Action } from './action';
 import type { Entity } from '../entities/entity';
 import { flightRecorder } from '../debug/flightRecorder';
 
 export interface ActionHookContext {
   action: Action;
-  engine: GameEngine;
+  /** Scoped engine surface (§3); not the whole GameEngine. */
+  engine: EngineContext;
   actionType: string;  // Constructor name or registered type
   /**
    * The entity performing the action. Hooks fire for every actor (§4), so content that

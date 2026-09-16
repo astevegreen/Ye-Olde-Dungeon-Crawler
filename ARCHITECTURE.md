@@ -238,7 +238,7 @@
    - **Scenarios:** a dormant floor (player moves; sleeping monsters outside FOV), an awake floor (hunting monsters path to and attack an invulnerable player), and a 1,000-cast spell workload. After a global JIT warmup, each data point runs a warmup plus repeated samples and reports median and max.
    - **Fails on:** any rejected action, any caught pipeline exception (including isolated monster-turn failures), or a wall-clock budget exceeded by a median at realistic populations. Wall-clock budgets live here, not in `npm test`. `--inject-error` demonstrates the failure path.
    - The long-running chaos/monkey simulation (random actions, save/reload cycles, invariant, deadlock, and NaN assertions) is `src/engine/__tests__/chaosSimulation.test.ts`, run by `npm test`.
-   - `npm run sim` should itself assert zero invariant violations, deadlocks, and NaN values. **[Planned: P-21]**
+   - **Invariant, NaN, and deadlock assertions:** at 100-turn checkpoints and once at scenario end, the sim asserts that player and entity scalars (hp, mana, position, energy, speed, carried weight, `turnCount`) are finite, that speeds are positive, that entities stay in bounds with unique ids, and that a living player has positive HP. A deadlock watch runs every turn: a successful player action that does not advance `turnCount` six times running is reported as a deadlock. Checkpoint scans are timed and subtracted from the scenario's elapsed time, so they never inflate the wall-clock budgets above.
    - Run lengths and results are whatever the latest output reports; this document intentionally does not restate them.
 5. **Static Analysis & Build Verification (`npm test`, `npm run lint`, `npm run build`):**
    - `npm test`: runs all Vitest suites (`src/**/__tests__/` and `tests/`). Suite and test counts are whatever the run reports; this document intentionally does not restate them.
@@ -368,11 +368,6 @@ Each entry records the current state, the target, and whether the work is expect
 **P-19 — Boundary and static-check extensions** (§2, §7.2)
 - Current: the purity checker misses content deep imports and `Math.random` in simulation code. Timing/audio globals are checked, the success line reports scanned-vs-exempt file counts accurately, and `scripts/` is type-checked (§7.2 items 1 and 5).
 - Target: content deep imports and `Math.random` are checked too. The `Math.random` check depends on P-10, and the content deep-import check on P-02: enabling either before those land would fail CI on pre-existing violations.
-- Protected files: no.
-
-**P-21 — Simulation invariant assertions** (§7.2)
-- Current: `npm run sim` is a benchmark with no invariant, deadlock, or NaN checks.
-- Target: it asserts all three.
 - Protected files: no.
 
 **P-22 — Per-engine content registries** (§3)

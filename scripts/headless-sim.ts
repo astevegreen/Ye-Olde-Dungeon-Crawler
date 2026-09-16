@@ -85,6 +85,77 @@ function recordEngine(engine: GameEngine, label: string): void {
   }
 }
 
+const CHECK_INTERVAL = 100;
+let invariantChecks = 0;
+
+/**
+ * Invariant, NaN, and deadlock assertions (ARCHITECTURE.md §7.2 item 4).
+ *
+ * Checks run at CHECK_INTERVAL-turn checkpoints and once more at scenario end.
+ * Each call is timed by the caller and subtracted from the scenario's elapsed
+ * time, so adding assertions never inflates the wall-clock budgets measured here.
+ */
+function assertInvariants(engine: GameEngine, label: string, turn: number): void {
+  invariantChecks++;
+  const where = `${label} @turn ${turn}`;
+  const p = engine.player;
+  const bad = (what: string) => failures.push(`${where}: ${what}`);
+
+  // NaN: any non-finite scalar on the simulation's hot path.
+  const scalars: Array<[string, number]> = [
+    ['player.hp', p.hp], ['player.maxHp', p.maxHp], ['player.mana', p.mana], ['player.maxMana', p.maxMana],
+    ['player.x', p.x], ['player.y', p.y], ['player.energy', p.energy], ['player.speed', p.speed],
+    ['player.inventory.totalWeight()', p.inventory.totalWeight()], ['engine.turnCount', engine.turnCount],
+  ];
+  for (const [name, value] of scalars) {
+    if (!Number.isFinite(value)) bad(`${name} is ${value}`);
+  }
+
+  // Invariants: positive speeds (division by zero in the scheduler), in-bounds
+  // positions, unique entity ids, and a living player with positive HP.
+  if (p.isAlive() && p.hp <= 0) bad(`player alive with hp ${p.hp}`);
+  if (p.speed <= 0) bad(`player.speed is ${p.speed}`);
+  const seen = new Set<string>();
+  for (const ent of engine.map.getAllEntities()) {
+    if (!Number.isFinite(ent.energy)) bad(`${ent.id}.energy is ${ent.energy}`);
+    if (!Number.isFinite(ent.x) || !Number.isFinite(ent.y)) bad(`${ent.id} position is (${ent.x}, ${ent.y})`);
+    if (ent.speed <= 0) bad(`${ent.id}.speed is ${ent.speed}`);
+    if (!engine.map.inBounds(ent.x, ent.y)) bad(`${ent.id} out of bounds at (${ent.x}, ${ent.y})`);
+    if (seen.has(ent.id)) bad(`duplicate entity id ${ent.id}`);
+    seen.add(ent.id);
+  }
+}
+
+/**
+ * Deadlock detection: a successful player action must advance the world clock.
+ * A turn that resolves without turnCount moving means the scheduler never handed
+ * the turn back, which is how a stuck simulation presents.
+ */
+/** Runs assertInvariants off the clock, returning the milliseconds to subtract. */
+function timeCheck(engine: GameEngine, label: string, turn: number): number {
+  const t0 = performance.now();
+  assertInvariants(engine, label, turn);
+  return performance.now() - t0;
+}
+
+function makeDeadlockWatch(engine: GameEngine, label: string) {
+  let lastTurnCount = engine.turnCount;
+  let stalled = 0;
+  let reported = false;
+  return (turn: number): void => {
+    if (engine.turnCount > lastTurnCount) {
+      lastTurnCount = engine.turnCount;
+      stalled = 0;
+      return;
+    }
+    stalled++;
+    if (stalled > 5 && !reported) {
+      reported = true;
+      failures.push(`${label}: deadlock — turnCount stuck at ${lastTurnCount} across ${stalled} successful actions (turn ${turn})`);
+    }
+  };
+}
+
 // ── 1. Population anchor ──────────────────────────────────────────────────────
 interface AnchorRow {
   density: number;
@@ -139,15 +210,20 @@ function runDormantFloor(count: number): RunResult {
     });
   }
 
+  const label = `dormant(${count})`;
+  const watchDeadlock = makeDeadlockWatch(engine, label);
+  let checkOverhead = 0;
   const start = performance.now();
   for (let turn = 1; turn <= DORMANT_TURNS; turn++) {
     const res = engine.handlePlayerAction(new MovementAction(engine.player, turn % 2 === 1 ? 1 : -1, 0));
     if (!res.success) {
-      failures.push(`dormant(${count}): move rejected on turn ${turn}: ${res.message ?? ''}`);
+      failures.push(`${label}: move rejected on turn ${turn}: ${res.message ?? ''}`);
       break;
     }
+    watchDeadlock(turn);
+    if (turn % CHECK_INTERVAL === 0) checkOverhead += timeCheck(engine, label, turn);
   }
-  const ms = performance.now() - start;
+  const ms = performance.now() - start - checkOverhead - timeCheck(engine, label, DORMANT_TURNS);
   recordEngine(engine, `dormant(${count})`);
   return { ms: ms / DORMANT_TURNS, finalMonsters: livingMonsters(engine) };
 }
@@ -171,15 +247,20 @@ function runAwakeFloor(count: number): RunResult {
   }
   if (spawned < count) failures.push(`awake(${count}): arena holds only ${spawned} monsters`);
 
+  const label = `awake(${count})`;
+  const watchDeadlock = makeDeadlockWatch(engine, label);
+  let checkOverhead = 0;
   const start = performance.now();
   for (let turn = 1; turn <= AWAKE_TURNS; turn++) {
     const res = engine.handlePlayerAction(new WaitAction(player));
     if (!res.success) {
-      failures.push(`awake(${count}): wait rejected on turn ${turn}: ${res.message ?? ''}`);
+      failures.push(`${label}: wait rejected on turn ${turn}: ${res.message ?? ''}`);
       break;
     }
+    watchDeadlock(turn);
+    if (turn % CHECK_INTERVAL === 0) checkOverhead += timeCheck(engine, label, turn);
   }
-  const ms = performance.now() - start;
+  const ms = performance.now() - start - checkOverhead - timeCheck(engine, label, AWAKE_TURNS);
   recordEngine(engine, `awake(${count})`);
   return { ms: ms / AWAKE_TURNS, finalMonsters: livingMonsters(engine) };
 }
@@ -205,7 +286,7 @@ function runSpellCasts(): RunResult {
       break;
     }
   }
-  const ms = performance.now() - start;
+  const ms = performance.now() - start - timeCheck(engine, 'spells', SPELL_CASTS);
   recordEngine(engine, 'spells');
   return { ms, finalMonsters: 0 };
 }
@@ -279,6 +360,7 @@ console.log(`spells    ${SPELL_CASTS} casts: median ${spells.medianMs.toFixed(1)
 console.log('------------------------------------------------------');
 console.log(`Budgets (medians): awake <= ${TURN_BUDGET_MS} ms/turn up to realistic-high; ${SPELL_CASTS} casts <= ${SPELL_BUDGET_MS} ms`);
 console.log(`Pipeline Caught Errors: ${caughtPipelineErrors}`);
+console.log(`Invariant/NaN checkpoints: ${invariantChecks} (deadlock watch on every turn)`);
 console.log('======================================================');
 
 if (failures.length > 0) {

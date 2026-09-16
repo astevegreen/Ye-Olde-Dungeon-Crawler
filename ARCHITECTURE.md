@@ -215,7 +215,9 @@
    - **Reverse imports:** fails on any `src/ui/` or `src/rendering/` import in `src/engine/` (tests included), and on `src/content/` imports in engine production source.
    - **Content isolation:** fails on `src/ui/` or `src/rendering/` imports in content source.
    - **Public API:** fails on any `engine/<path>` deep import in `src/ui/` or `src/rendering/` (tests included), and on content imports in UI/rendering source.
-   - Planned extensions: timing and audio globals, deep engine imports from content, a `Math.random` check for simulation code, and accurate reporting of the test-file exemption. **[Planned: P-19]**
+   - **Timing and audio globals:** fails on `setTimeout`, `setInterval`, `clearTimeout`, `clearInterval`, `requestAnimationFrame`, `cancelAnimationFrame`, `requestIdleCallback`, `performance.now`, `AudioContext`, `webkitAudioContext`, `HTMLAudioElement`, or `new Audio` in engine and content source files, on the same execution-path rule as DOM tokens (§2).
+   - The success line reports how many engine and content **source** files were scanned and how many test/fixture files were exempt, rather than counting exempt files as covered.
+   - Planned extensions: deep engine imports from content, and a `Math.random` check for simulation code. **[Planned: P-19]**
    - **Engine encapsulation (`npm run check:engine-encapsulation`, `scripts/check-engine-encapsulation.ts`):** complements the import checks by checking *mutation*. It uses the TypeScript type checker, so a write is matched by the declaring class of the member written, not by variable name.
      - In `src/ui/`, `src/rendering/`, `src/main.ts`, and `src/content/` (tests exempt), it fails on assignment, compound assignment, `++`/`--`, `delete`, or index writes to an engine class member; on writes through an `as any` cast of an engine object; and on `Object.assign` onto one.
      - In presentation code it also fails on mutator-named calls into internal engine subsystems (`GameMap`, `Container`, `InventoryManager`, `StatusManager`, `EnergyScheduler`, and similar) and on Array/Map/Set mutator calls against engine members. `GameEngine`, `Player`, and `Entity` methods and `engine.commandBus` are the sanctioned paths.
@@ -239,7 +241,7 @@
    - Run lengths and results are whatever the latest output reports; this document intentionally does not restate them.
 5. **Static Analysis & Build Verification (`npm test`, `npm run lint`, `npm run build`):**
    - `npm test`: runs all Vitest suites (`src/**/__tests__/` and `tests/`). Suite and test counts are whatever the run reports; this document intentionally does not restate them.
-   - `npm run lint`: `tsc --noEmit` over the `tsconfig.json` `include` set (`src`, `tests`, `vite.config.ts`), then `npm run check:engine-purity` and `npm run check:engine-encapsulation`. `scripts/` is not yet type-checked. **[Planned: P-19]**
+   - `npm run lint`: `tsc --noEmit` over the `tsconfig.json` `include` set (`src`, `tests`, `scripts`, `vite.config.ts`), then `npm run check:engine-purity` and `npm run check:engine-encapsulation`.
    - `npm run build`: `tsc && vite build`, verifying single-file production compilation (cotw theme) without type errors or bundler warnings. Use `npm run build:all` when changing `vite.config.ts`, theme selection, or manifest wiring.
 
 ---
@@ -363,8 +365,8 @@ Each entry records the current state, the target, and whether the work is expect
 - Protected files: no.
 
 **P-19 — Boundary and static-check extensions** (§2, §7.2)
-- Current: the purity checker misses timing/audio globals, content deep imports, and `Math.random`; its success message overstates coverage of engine test files; `scripts/` is not type-checked.
-- Target: all of these are checked and reported accurately.
+- Current: the purity checker misses content deep imports and `Math.random` in simulation code. Timing/audio globals are checked, the success line reports scanned-vs-exempt file counts accurately, and `scripts/` is type-checked (§7.2 items 1 and 5).
+- Target: content deep imports and `Math.random` are checked too. The `Math.random` check depends on P-10, and the content deep-import check on P-02: enabling either before those land would fail CI on pre-existing violations.
 - Protected files: no.
 
 **P-20 — Schema validator coverage** (§7.2)

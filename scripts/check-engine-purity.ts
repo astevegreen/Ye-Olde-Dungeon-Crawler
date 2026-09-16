@@ -55,8 +55,28 @@ const DOM_GLOBALS = [
   'ImageData',
 ];
 
+// Timing and audio globals: simulation code must be deterministic and headless (ARCHITECTURE.md §2),
+// so it may not schedule work off the turn loop or touch audio APIs.
+const TIMING_AUDIO_GLOBALS = [
+  'setTimeout',
+  'setInterval',
+  'clearTimeout',
+  'clearInterval',
+  'requestAnimationFrame',
+  'cancelAnimationFrame',
+  'requestIdleCallback',
+  'performance.now',
+  'AudioContext',
+  'webkitAudioContext',
+  'HTMLAudioElement',
+  'new Audio',
+];
+
 // Matches deep imports into engine internals (beyond the public engine barrel export)
 const DEEP_ENGINE_IMPORT_REGEX = /from\s+['"][^'"]*engine\/[^'"]+['"]/i;
+
+// Non-test engine/content files actually scanned for globals; test and fixture files are exempt.
+const purityScannedFiles = new Set<string>();
 
 // 1. Audit Engine & Content Purity
 for (const filePath of [...engineFiles, ...contentFiles]) {
@@ -103,12 +123,25 @@ for (const filePath of [...engineFiles, ...contentFiles]) {
 
     // Check: DOM & Browser Globals (forbidden in engine and content source files)
     if (!isTestOrFixture) {
+      purityScannedFiles.add(relativePath);
       for (const globalToken of DOM_GLOBALS) {
         if (line.includes(globalToken)) {
           violations.push({
             file: relativePath,
             line: lineNum,
             category: 'DOM_GLOBAL',
+            detail: `Found '${globalToken}' in line: ${line.trim()}`,
+          });
+        }
+      }
+
+      // Check: Timing & Audio Globals (same execution-path rule as DOM globals)
+      for (const globalToken of TIMING_AUDIO_GLOBALS) {
+        if (line.includes(globalToken)) {
+          violations.push({
+            file: relativePath,
+            line: lineNum,
+            category: 'TIMING_AUDIO_GLOBAL',
             detail: `Found '${globalToken}' in line: ${line.trim()}`,
           });
         }
@@ -166,7 +199,11 @@ if (violations.length > 0) {
   }
   process.exit(1);
 } else {
-  console.log(`✓ Headless Simulation Purity: 0 DOM/Canvas globals across ${engineFiles.length + contentFiles.length} engine & content files.`);
+  const exemptCount = engineFiles.length + contentFiles.length - purityScannedFiles.size;
+  console.log(
+    `✓ Headless Simulation Purity: 0 DOM/Canvas/timing/audio globals across ${purityScannedFiles.size} engine & content source files ` +
+      `(${exemptCount} test/fixture files exempt).`
+  );
   console.log(`✓ Engine Boundary Isolation: 0 reverse imports in engine source and test files.`);
   console.log(`✓ Content Boundary Isolation: 0 UI/Rendering imports across ${contentFiles.length} content files.`);
   console.log(`✓ Public API Surface: 0 deep imports into engine internals across ${uiFiles.length + renderingFiles.length} UI/Rendering files.`);

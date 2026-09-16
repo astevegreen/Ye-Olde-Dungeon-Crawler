@@ -137,7 +137,11 @@
   - **Tiles:** a dense `TileDefinition[][]` grid indexed `[y][x]`. Dense arrays are the intended representation for per-cell map data.
   - **Ground items:** `Map<string, Item[]>` keyed by plane-qualified coordinate (`planeId:x,y`).
   - **Items in containers:** containers hold `Item[]`. Each item carries scalar `parentId`/`ownerId` (schema v8), resolved at runtime through the module-level container registry (`src/engine/items/containerRegistry.ts`). Saves serialize containers as nested item trees carrying those IDs.
-  - A flat ID-keyed item index as the single source of truth for item lookup is planned. **[Planned: P-09]**
+  - **Flat item index (`src/engine/items/itemIndex.ts`):** containers still hold their items, but lookup by ID goes through a flat `Map<id, { item, location }>` rather than walking packs, belts, purses, paperdolls, and floor tiles. `location` records whether the item sits in a container, on the ground at a coordinate, or in an equipment slot.
+    - Entries are written at the choke points every item passes through: `Container.addItem`/`removeItem`, `GameMap.addItemAt`/`removeItemAt`, and `Paperdoll.equip`/`unequip`. Deserialization routes through `Container.addItem`, so a load rebuilds the index with no schema change.
+    - `EngineCommandBus.resolveItem` resolves IDs through the index; reachability is unchanged (carried, worn, or underfoot).
+    - Scoped questions ("is this item in *this* inventory?") stay structural via `InventoryManager.findItemById`.
+    - This is a second structure tracking a first, which is how the scheduler partition failed (§6). `itemIndex.test.ts` audits the index against a full structural scan after a save/load round trip.
 - **Seeded PRNG Serialization:**
   - `PRNG` (`src/engine/dungeon/prng.ts`, exported alias `Mulberry32`) keeps a single 32-bit internal state. It is saved as `SaveData.prngState` via `getState()` and restored via `setState()` on load, so the random stream resumes exactly where it stopped.
   - Replay determinism holds for simulation code: randomness and spawned-entity IDs both derive from the engine PRNG (§7.2). Save timestamps and profile IDs are deliberately outside that boundary.
@@ -294,11 +298,6 @@ Each entry records the current state, the target, and whether the work is expect
 - Current: every pending effect locks input for the whole playback; `playQueue()` is an alias for `playEffects()`.
 - Target: only tactical effects lock input; ambient effects play through a non-blocking queue.
 - Protected files: no.
-
-**P-09 — Flat item index** (§5)
-- Current: items live in per-container arrays with scalar parent/owner IDs.
-- Target: a flat ID-keyed item index as the single source of truth for item lookup.
-- Protected files: `migrator.ts` if the save format changes (exception 2).
 
 **P-11 — Single-floor active cache policy** (§5)
 - Current: saves include every visited floor.

@@ -1,4 +1,5 @@
 import type { TileDefinition } from '../types';
+import { itemIndex } from '../items/itemIndex';
 import type { Entity } from '../entities/entity';
 import type { Item } from '../items/item';
 import type { TrapInstance } from '../dungeon/traps';
@@ -244,6 +245,7 @@ export class GameMap {
     const existing = this.groundItems.get(key) ?? [];
     existing.push(item);
     this.groundItems.set(key, existing);
+    itemIndex.register(item, { kind: 'ground', x, y });
     return true;
   }
 
@@ -257,6 +259,7 @@ export class GameMap {
     if (existing.length === 0) {
       this.groundItems.delete(key);
     }
+    if (item) itemIndex.unregister(item.id);
     return item;
   }
 

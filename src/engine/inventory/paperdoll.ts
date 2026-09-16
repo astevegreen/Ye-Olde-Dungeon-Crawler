@@ -1,4 +1,5 @@
 import { Item, type EquipmentSlot, type ItemCategory } from '../items/item';
+import { itemIndex } from '../items/itemIndex';
 
 export interface EquipmentStats {
   attackBonus: number;
@@ -189,6 +190,7 @@ export class Paperdoll {
     }
 
     this.slots.set(slot, item);
+    itemIndex.register(item, { kind: 'equipped', ownerId: item.ownerId ?? 'unknown', slot });
     return {
       success: true,
       unequippedItem: previousItem ?? (unequippedItems[0] ?? null),
@@ -220,6 +222,7 @@ export class Paperdoll {
 
     const item = this.getItem(slot);
     this.slots.set(slot, null);
+    if (item) itemIndex.unregister(item.id);
     return { success: true, item };
   }
 

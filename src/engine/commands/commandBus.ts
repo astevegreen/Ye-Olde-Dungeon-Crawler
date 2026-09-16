@@ -1,4 +1,5 @@
 import type { GameEngine } from '../engine';
+import { getItemById, itemIndex } from '../items/itemIndex';
 import type { Item, EquipmentSlot } from '../items/item';
 import type { VisualEffectDescriptor } from '../types';
 import { Container } from '../items/container';
@@ -359,12 +360,22 @@ export class EngineCommandBus implements GameCommandBus {
     }
   }
 
+  /**
+   * Resolves an item id through the flat index (ARCHITECTURE.md §5) rather than walking
+   * packs and floor tiles. Reachability is unchanged: a command may only act on an item the
+   * player carries, wears, or is standing on.
+   */
   private resolveItem(itemId?: string): Item | undefined {
     if (!itemId) return undefined;
+    const item = getItemById(itemId);
+    if (!item) return undefined;
+
     const player = this.engine.player;
-    return (
-      player.inventory.findItemById(itemId) ??
-      this.engine.map.getItemsAt(player.x, player.y).find((i) => i.id === itemId)
-    );
+    const location = itemIndex.locationOf(itemId);
+    if (!location) return undefined;
+    if (location.kind === 'ground') {
+      return location.x === player.x && location.y === player.y ? item : undefined;
+    }
+    return player.inventory.findItemById(itemId) ? item : undefined;
   }
 }

@@ -1,4 +1,5 @@
 import { Item, type ItemConfig } from './item';
+import { itemIndex } from './itemIndex';
 import { canStack, mergeItemStacks } from './stacking';
 import {
   registerContainer,
@@ -194,11 +195,14 @@ export class Container extends Item {
     const stackTarget = this.items.find((i) => canStack(i, item));
     if (stackTarget) {
       mergeItemStacks(stackTarget, item);
+      // The absorbed stack no longer exists as a distinct item.
+      itemIndex.unregister(item.id);
       return true;
     }
 
     this.items.push(item);
     item.parentId = this.id;
+    itemIndex.register(item, { kind: 'container', containerId: this.id });
     if (this.ownerId) {
       item.ownerId = this.ownerId;
       if (item instanceof Container) {
@@ -216,6 +220,7 @@ export class Container extends Item {
     const [removed] = this.items.splice(index, 1);
     if (removed) {
       removed.parentId = null;
+      itemIndex.unregister(removed.id);
     }
     return removed;
   }

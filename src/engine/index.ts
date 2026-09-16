@@ -48,6 +48,7 @@ export * from './items/item';
 export * from './items/modifiers';
 export * from './items/modifierRoller';
 export * from './items/container';
+export * from './items/itemIndex';
 export * from './items/factory';
 export * from './items/consumables';
 export * from './items/identification';

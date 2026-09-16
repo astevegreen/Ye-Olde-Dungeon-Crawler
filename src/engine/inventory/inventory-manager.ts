@@ -234,9 +234,17 @@ export class InventoryManager {
   /**
    * Finds an item anywhere in the inventory (pack, equipped items, or sub-containers).
    */
+  /**
+   * Scoped lookup: is this item in *this* inventory? Belt and purse are searched too —
+   * `removeItem` has always checked them, so an item there was removable but not findable.
+   */
   public findItemById(itemId: string): Item | undefined {
     const fromPack = this.primaryPack.getItem(itemId);
     if (fromPack) return fromPack;
+    const fromBelt = this.belt?.getItem(itemId);
+    if (fromBelt) return fromBelt;
+    const fromPurse = this.purse?.getItem(itemId);
+    if (fromPurse) return fromPurse;
     const equipped = this.paperdoll.getAllEquipped();
     for (const eq of equipped) {
       if (eq.item.id === itemId) return eq.item;

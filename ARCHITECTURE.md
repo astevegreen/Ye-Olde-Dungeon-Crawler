@@ -201,8 +201,13 @@
 
 ### 7.2 Automated Quality Gates
 - **Requirement:** every change must pass the gates below before merging. Coding agents run the relevant gates locally and report real output.
-- **Current CI:** `.github/workflows/deploy.yml` runs on push to `main` (and manual dispatch). It runs `npm run lint`, `npm test`, `npm run sim`, `npm run validate:schema`, then `npm run build:all`, and deploys `dist/` to GitHub Pages.
-- The gates above run only in `deploy.yml`, after merge; there is no pull-request gate workflow and no local pre-commit hook yet. `.github/workflows/playwright.yml` also runs on pushes and pull requests to `main`, but it only builds the bundle and runs the Playwright smoke suite in `e2e/` (the built `dist/index.html` must boot to the main menu over `file://` with no uncaught errors, in Chromium, Firefox, and WebKit), not these gates. **[Planned: P-18]**
+- **Current CI:**
+  - `.github/workflows/ci.yml` (*Quality Gates*) runs on every pull request to `main` and on manual dispatch: `npm run lint`, `npm test`, `npm run sim`, `npm run validate:schema`, then `npm run build:all`.
+  - `.github/workflows/deploy.yml` runs the same gates on push to `main` (and manual dispatch), then deploys `dist/` to GitHub Pages.
+  - `.github/workflows/playwright.yml` runs on pushes and pull requests to `main`: it builds the bundle and runs the Playwright smoke suite in `e2e/`.
+- **Local pre-commit hook:** `.githooks/pre-commit` runs the fast gates — `npm run lint` and `npm test` — before every commit. The `prepare` npm script points git at it (`git config core.hooksPath .githooks`), so `npm install` wires it up; `SKIP_HOOKS=1` bypasses it deliberately. The slower gates (`npm run sim`, `npm run validate:schema`, `npm run build:all`) run in CI rather than on every commit.
+- `.gitattributes` pins LF endings for `.githooks/**` and `*.sh`, because a CRLF `#!/bin/sh` line breaks the hook under `sh`.
+- The Playwright smoke suite asserts the built `dist/index.html` boots to the main menu over `file://` with no uncaught errors, in Chromium, Firefox, and WebKit.
 
 1. **Architectural Purity & Boundaries (`npm run check:engine-purity`, `scripts/check-engine-purity.ts`):**
    - Scans every `.ts` file under `src/engine/`, `src/content/`, `src/ui/`, and `src/rendering/`. Content source files are checked for DOM tokens regardless of whether they are registered as hooks, because file location never exempts simulation code (§2).
@@ -355,11 +360,6 @@ Each entry records the current state, the target, and whether the work is expect
 **P-17 — All modals on `ModalStackManager`** (§6)
 - Current: Dwarven Winch, town-return, choice, save & quit, settings/keybinds, save-code, and click-opened pact modals toggle `InputHandler.enabled` instead. The shop, map, and inspect overlays neither register nor toggle it — `InputHandler` intercepts their keys inline (§6).
 - Target: every modal registers on the stack.
-- Protected files: no.
-
-**P-18 — Pre-merge gating** (§7.2)
-- Current: the gates run only in `deploy.yml`, on push to `main`. `playwright.yml` also runs on pull requests, but executes only the `e2e/` Playwright suite, not the gates. There is no local hook.
-- Target: a pull-request CI workflow running all gates, plus a local pre-commit hook.
 - Protected files: no.
 
 **P-19 — Boundary and static-check extensions** (§2, §7.2)

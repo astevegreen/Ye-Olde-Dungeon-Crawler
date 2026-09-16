@@ -1,0 +1,27 @@
+#!/bin/sh
+# Pre-commit gate (ARCHITECTURE.md §7.2).
+#
+# Runs the fast gates only: `npm run lint` (tsc, engine purity, engine
+# encapsulation) and `npm test`. The slower gates — `npm run sim`,
+# `npm run validate:schema`, `npm run build:all` — run in CI on every
+# pull request (.github/workflows/ci.yml) instead of on every commit.
+#
+# Git is pointed at this directory by the `prepare` npm script
+# (`git config core.hooksPath .githooks`), so `npm install` wires it up.
+#
+# Set SKIP_HOOKS=1 to bypass deliberately, e.g. a checkpoint commit on a
+# scratch branch: SKIP_HOOKS=1 git commit -m "wip"
+set -e
+
+if [ "$SKIP_HOOKS" = "1" ]; then
+  echo "pre-commit: skipped (SKIP_HOOKS=1)"
+  exit 0
+fi
+
+echo "pre-commit: npm run lint"
+npm run lint
+
+echo "pre-commit: npm test"
+npm test
+
+echo "pre-commit: passed"

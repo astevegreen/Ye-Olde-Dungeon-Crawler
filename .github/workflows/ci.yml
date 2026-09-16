@@ -1,0 +1,35 @@
+name: Quality Gates
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Quality Gates
+        run: |
+          npm run lint
+          npm test
+          npm run sim
+          npm run validate:schema
+
+      - name: Build static bundles
+        run: npm run build:all

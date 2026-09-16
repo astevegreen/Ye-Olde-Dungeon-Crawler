@@ -14,6 +14,7 @@
     "build:all": "npm run build:cotw && npm run build:warcraft",
     "preview": "vite preview",
     "test": "vitest run",
+    "prepare": "git config core.hooksPath .githooks || exit 0",
     "lint": "tsc --noEmit && npm run check:engine-purity && npm run check:engine-encapsulation",
     "check:engine-purity": "tsx scripts/check-engine-purity.ts",
     "check:engine-encapsulation": "tsx scripts/check-engine-encapsulation.ts",

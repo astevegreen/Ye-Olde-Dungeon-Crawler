@@ -34,6 +34,13 @@ export interface ClickZone {
  */
 export class InventoryOverlay {
   public isOpen = false;
+  /**
+   * Companion pack browser (ARCHITECTURE.md §3). Giving items was one-directional because
+   * nothing listed what the companion was carrying; this view is the missing half.
+   */
+  private companionViewOpen = false;
+  private companionIndex = 0;
+
   private clickZones: ClickZone[] = [];
   private rightClickZones: ClickZone[] = [];
   private doubleClickZones: ClickZone[] = [];
@@ -101,6 +108,7 @@ export class InventoryOverlay {
   }
 
   public close(): void {
+    this.companionViewOpen = false;
     this.isOpen = false;
     this.inspector.clearSelection();
     this.hoveredSlot = null;
@@ -203,7 +211,13 @@ export class InventoryOverlay {
     const inv = player.inventory;
     const doll = inv.paperdoll;
 
-    // 1. Close overlay
+    // 1. Close overlay. The companion browser is a sub-view, so Escape backs out of it
+    //    first rather than dismissing the whole overlay.
+    if (code === 'Escape' && this.companionViewOpen) {
+      this.companionViewOpen = false;
+      if (this.onStateChanged) this.onStateChanged();
+      return true;
+    }
     if (code === 'KeyI' || code === 'Escape') {
       this.close();
       return true;
@@ -414,6 +428,54 @@ export class InventoryOverlay {
         payload: { container: activeContainer, item: this.inspector.selectedItem },
       });
       this.inspector.clearSelection();
+      if (this.onStateChanged) this.onStateChanged();
+      return true;
+    }
+
+    // 9a-bis. Companion pack browser: KeyK opens it, arrows move, Enter takes an item.
+    // (KeyT is already "take from ground/container" above, and KeyG gives to the companion.)
+    if (this.companionViewOpen) {
+      const packItems = engine.companion?.inventory.primaryPack.getItems() ?? [];
+      if (code === 'Escape' || code === 'KeyK') {
+        this.companionViewOpen = false;
+        if (this.onStateChanged) this.onStateChanged();
+        return true;
+      }
+      if (code === 'ArrowDown' || code === 'ArrowUp') {
+        if (packItems.length > 0) {
+          const delta = code === 'ArrowDown' ? 1 : -1;
+          this.companionIndex = (this.companionIndex + delta + packItems.length) % packItems.length;
+        }
+        if (this.onStateChanged) this.onStateChanged();
+        return true;
+      }
+      if (code === 'Enter' || code === 'KeyG') {
+        const item = packItems[this.companionIndex];
+        if (!item) {
+          engine.log('Your companion is carrying nothing.');
+        } else {
+          const res = this.commandBus.dispatch({
+            type: 'transfer_from_companion',
+            payload: { itemId: item.id },
+          });
+          if (!res.success && res.message) engine.log(res.message);
+          const remaining = engine.companion?.inventory.primaryPack.getItems().length ?? 0;
+          if (this.companionIndex >= remaining) this.companionIndex = Math.max(0, remaining - 1);
+        }
+        if (this.onStateChanged) this.onStateChanged();
+        return true;
+      }
+      // Any other key is swallowed so the browser behaves like a focused panel.
+      return true;
+    }
+
+    if (code === 'KeyK') {
+      if (!engine.companion) {
+        engine.log('You have no companion here.');
+      } else {
+        this.companionViewOpen = true;
+        this.companionIndex = 0;
+      }
       if (this.onStateChanged) this.onStateChanged();
       return true;
     }
@@ -1253,6 +1315,66 @@ export class InventoryOverlay {
       statsY + 84
     );
 
+    if (this.companionViewOpen) {
+      this.renderCompanionPack(ctx, engine, modalX, modalY, modalW, modalH, font);
+    }
+
     // NOTE: Floating tooltip popup (renderTooltip) is completely removed!
+  }
+
+  /**
+   * Lists the active companion's pack so items can be taken back
+   * (ARCHITECTURE.md §3). Giving was already possible with [G]; this is the other half.
+   */
+  private renderCompanionPack(
+    ctx: CanvasRenderingContext2D,
+    engine: GameEngine,
+    modalX: number,
+    modalY: number,
+    modalW: number,
+    modalH: number,
+    font: string
+  ): void {
+    const theme = this.theme ?? resolveThemeTokens(engine.manifest?.theme);
+    const panelW = Math.min(360, modalW - 40);
+    const panelH = Math.min(320, modalH - 60);
+    const panelX = modalX + (modalW - panelW) / 2;
+    const panelY = modalY + (modalH - panelH) / 2;
+
+    ctx.fillStyle = theme.modalBg;
+    ctx.fillRect(panelX, panelY, panelW, panelH);
+    ctx.strokeStyle = theme.modalBorder;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(panelX + 0.5, panelY + 0.5, panelW - 1, panelH - 1);
+
+    const companion = engine.companion;
+    ctx.font = `bold 12px ${font}`;
+    ctx.fillStyle = theme.hudAccent;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`${companion?.name ?? 'Companion'} — PACK`, panelX + 12, panelY + 18);
+
+    const items = companion?.inventory.primaryPack.getItems() ?? [];
+    ctx.font = `11px ${font}`;
+    if (items.length === 0) {
+      ctx.fillStyle = theme.hudText;
+      ctx.fillText('(carrying nothing)', panelX + 12, panelY + 44);
+    } else {
+      items.forEach((item, idx) => {
+        const rowY = panelY + 44 + idx * 18;
+        if (rowY > panelY + panelH - 34) return;
+        const selected = idx === this.companionIndex;
+        if (selected) {
+          ctx.fillStyle = theme.cardBorder;
+          ctx.fillRect(panelX + 8, rowY - 9, panelW - 16, 18);
+        }
+        ctx.fillStyle = selected ? theme.modalBg : theme.hudText;
+        ctx.fillText(`${item.name}`, panelX + 14, rowY);
+      });
+    }
+
+    ctx.font = `10px ${font}`;
+    ctx.fillStyle = theme.hudAccent;
+    ctx.fillText('[↑↓] Select  [Enter] Take  [Esc] Back', panelX + 12, panelY + panelH - 14);
   }
 }

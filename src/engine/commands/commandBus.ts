@@ -376,6 +376,9 @@ export class EngineCommandBus implements GameCommandBus {
     if (location.kind === 'ground') {
       return location.x === player.x && location.y === player.y ? item : undefined;
     }
-    return player.inventory.findItemById(itemId) ? item : undefined;
+    if (player.inventory.findItemById(itemId)) return item;
+    // The active companion's pack is reachable too — that is what taking an item back
+    // from it means (ARCHITECTURE.md §3).
+    return this.engine.companion?.inventory.findItemById(itemId) ? item : undefined;
   }
 }

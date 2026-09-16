@@ -5,6 +5,7 @@
 > **Status conventions:**
 > - **Unmarked statements** describe the codebase as it exists today. Treat them as facts and enforceable invariants.
 > - **[Planned: P-NN]** marks a guideline the codebase does not yet satisfy. The linked entry in §9 records the current state and the target. Do not write code that assumes a planned capability exists, and do not implement a planned item unless the task explicitly requests it (§8.3).
+> - **[Deferred: P-NN]** marks work that is recorded but deliberately out of scope, with no schedule. The linked entry in §9's *Deferred* subsection records why. Treat it as not planned: do not implement it unless the task explicitly revives it.
 > - Section numbers are stable and are cited by agent configuration files. Do not renumber sections.
 
 ---
@@ -180,12 +181,14 @@
     2. Roguelike Numpad 1–9: diagonals 7, 9, 1, 3; cardinals 8, 2, 4, 6; center 5 to wait.
     3. Classic Vi keys: HJKL + YUBN.
     4. WASD (cardinal directions).
-- **Configurable Radial Action Menu (`src/rendering/radialMenu.ts`):** a hold-to-open canvas overlay bound to the configurable `radial_menu` action (default `KeyV`, remappable through the same `SettingsManager`/`ACTION_METADATA` keybind system as every other action). While held, the same directional-key vocabulary above (arrows/WASD/vi/numpad) selects one of 8 compass wedges instead of moving; releasing the trigger key confirms the hovered wedge, `Escape` cancels. Slots (`SettingsManager.radialMenuSlots`, keyed by the fixed 8-direction order) are `{ type: 'spell' }`, `{ type: 'command' }` (dispatched via `CommandPalette.getCommand`), or `{ type: 'item' }` (a potion or self-targeted scroll resolved via `InventoryManager.findItemById` — aimed items that need a target reticle, like wands, are not a fit for direct radial activation). It registers on `ModalStackManager` like other overlays. Gamepad invocation is not implemented. **[Planned: P-24]**
+- **Configurable Radial Action Menu (`src/rendering/radialMenu.ts`):** a hold-to-open canvas overlay bound to the configurable `radial_menu` action (default `KeyV`, remappable through the same `SettingsManager`/`ACTION_METADATA` keybind system as every other action). While held, the same directional-key vocabulary above (arrows/WASD/vi/numpad) selects one of 8 compass wedges instead of moving; releasing the trigger key confirms the hovered wedge, `Escape` cancels. Slots (`SettingsManager.radialMenuSlots`, keyed by the fixed 8-direction order) are `{ type: 'spell' }`, `{ type: 'command' }` (dispatched via `CommandPalette.getCommand`), or `{ type: 'item' }` (a potion or self-targeted scroll resolved via `InventoryManager.findItemById` — aimed items that need a target reticle, like wands, are not a fit for direct radial activation). It registers on `ModalStackManager` like other overlays. Gamepad invocation is not implemented and is deliberately out of scope. **[Deferred: P-24]**
 - **Focus & Modal Isolation:**
   - **Rule:** every open modal registers on the LIFO `ModalStackManager` (`src/ui/modalStack.ts`).
   - **Stack behavior:** the top modal receives all keystrokes. If it does not handle `Escape`, the stack pops it. All other keys are trapped so they never reach the simulation. Modal handlers call `event.preventDefault()` for keys they consume, which prevents browser shortcut conflicts.
-  - **Registered today:** inventory, targeting, spellbook, diagnostics, level-up, and pacts (keyboard path).
-  - **Not yet registered:** Dwarven Winch, town-return, choice, save & quit, settings/keybinds, save-code, and pacts opened by click. These disable `InputHandler.enabled` instead. **[Planned: P-17]**
+  - **Registered today:** inventory, targeting, spellbook, diagnostics, level-up, pacts (keyboard path), context help, compendium, and the radial menu.
+  - **Not registered, gated by `InputHandler.enabled`:** Dwarven Winch, town-return, choice, save & quit, settings/keybinds, save-code, and pacts opened by click. **[Planned: P-17]**
+  - **Not registered, intercepted inline by `InputHandler`:** the shop, map, and inspect overlays. `InputHandler` checks each one's `isOpen` before dispatching other keys, so they neither register on the stack nor toggle `enabled`. **[Planned: P-17]**
+  - **Outside the in-game stack:** the save-slot and saga-share modals belong to the main-menu and game-over screens, where no simulation input is active.
 
 ---
 
@@ -259,7 +262,7 @@ Keep such diffs minimal and scoped, and state which exception applies in the cha
 ---
 
 ## 9. Planned Work Register
-Each entry records the current state, the target, and whether the work is expected to touch protected files (§8.1).
+Each entry records the current state, the target, and whether the work is expected to touch protected files (§8.1). Work that is recorded but deliberately out of scope is listed under *Deferred* at the end of this section, and is not planned work.
 
 **P-01 — Composition root uses the engine barrel** (§2, §3)
 - Current: `src/main.ts` deep-imports engine internals (`./engine/engine`, `./engine/storage/*`, `./engine/actions/*`, and others).
@@ -350,7 +353,7 @@ Each entry records the current state, the target, and whether the work is expect
 - Protected files: no.
 
 **P-17 — All modals on `ModalStackManager`** (§6)
-- Current: Dwarven Winch, town-return, choice, save & quit, settings/keybinds, save-code, and click-opened pact modals toggle `InputHandler.enabled` instead.
+- Current: Dwarven Winch, town-return, choice, save & quit, settings/keybinds, save-code, and click-opened pact modals toggle `InputHandler.enabled` instead. The shop, map, and inspect overlays neither register nor toggle it — `InputHandler` intercepts their keys inline (§6).
 - Target: every modal registers on the stack.
 - Protected files: no.
 
@@ -380,8 +383,11 @@ Each entry records the current state, the target, and whether the work is expect
 - Status: unscoped. Requires a design pass — likely touches every registry class and their call sites in the `GameEngine` constructor.
 - Protected files: `engine.ts`.
 
-**P-24 — Configurable Radial Action Menu: gamepad invocation** (§6)
+### Deferred (out of scope)
+Entries here are recorded, not planned: no work is scheduled and none has been attempted. They keep their reserved IDs so numbering stays stable (§0). A deferred item is not a **[Planned]** item — do not pick one up as planned work; moving one back into the active register above is an explicit decision.
+
+**P-24 — Configurable Radial Action Menu: gamepad invocation** (§6) — **Deferred 2026-09-15**
 - Current: the radial menu itself is implemented (`src/rendering/radialMenu.ts`) — keyboard hold-to-open, directional wedge selection, spell/command/item slots. See §6 for the current-state description. Gamepad invocation is not implemented; `navigator.getGamepads()` is not referenced anywhere in `src/`.
-- Target: gamepad button-hold opens the menu and stick angle selects a wedge, confined to `src/rendering/` (never on the simulation execution path, so it doesn't affect headless purity, §2).
-- Protected files: none.
-- Sequencing: independent of all other planned items.
+- Reason: gamepad and controller support is intentionally out of scope until the game is feature-complete. It may be reconsidered afterwards.
+- Not the same as *Evaluated, Not Adopted* (§6, Scheduler Partitioning): that design was built, benchmarked, and rejected on evidence. P-24 was never attempted, so deferral is a scheduling decision, not a verdict on the design.
+- If revisited: gamepad button-hold opens the menu and stick angle selects a wedge, confined to `src/rendering/` (never on the simulation execution path, so it doesn't affect headless purity, §2). Protected files: none.

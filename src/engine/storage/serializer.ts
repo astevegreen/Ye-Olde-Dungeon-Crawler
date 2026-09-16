@@ -6,6 +6,7 @@ import { Container } from '../items/container';
 import { WandItem, ScrollItem, PotionItem, type PotionType } from '../items/consumables';
 import { CoinItem } from '../economy/currency';
 import { CorpseItemInstance } from '../items/corpse';
+import { RuneOfReturnItem, defaultRuneMastery } from '../magic/runeOfReturn';
 import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
 import { Companion, CompanionRegistry } from '../entities/companion';
@@ -91,6 +92,8 @@ export function serializeItem(item: Item): SerializedItemNode {
   } else if (item instanceof PotionItem) {
     base.potionType = item.potionType;
     base.potionPotency = item.potency;
+  } else if (item instanceof RuneOfReturnItem) {
+    base.runeOfReturnData = { charges: item.charges };
   } else if (item instanceof CoinItem) {
     base.coinData = {
       denomination: item.denomination,
@@ -232,6 +235,33 @@ export function deserializeItem(node: SerializedItemNode): Item {
       elementalAffix: node.elementalAffix,
       potionType: node.potionType as PotionType,
       potency: node.potionPotency ?? 20,
+      durability: node.durability,
+      aspectState: node.aspectState,
+      modifiers: node.modifiers ? [...node.modifiers] : undefined,
+      parentId: node.parentId ?? null,
+      ownerId: node.ownerId ?? null,
+    });
+  }
+
+  if (node.runeOfReturnData) {
+    return new RuneOfReturnItem({
+      id: node.id,
+      name: node.name,
+      unidentifiedName: node.unidentifiedName,
+      slot: node.slot,
+      weight: node.weight,
+      unitWeight: node.unitWeight,
+      bulk: node.bulk,
+      quality: node.quality,
+      identified: node.identified,
+      stats: node.stats,
+      description: node.description,
+      value: node.value,
+      minFloor: node.minFloor,
+      tier: node.tier,
+      enchantmentLevel: node.enchantmentLevel,
+      elementalAffix: node.elementalAffix,
+      charges: node.runeOfReturnData.charges,
       durability: node.durability,
       aspectState: node.aspectState,
       modifiers: node.modifiers ? [...node.modifiers] : undefined,
@@ -395,6 +425,8 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     planeId: p.planeId ?? 'physical',
     corruptionScore: p.corruptionScore ?? 0,
     unspentStatPoints: p.unspentStatPoints ?? 0,
+    runeMastery: { ...p.runeMastery },
+    runeChannelBankedTurns: p.runeChannelBankedTurns ?? 0,
   };
 
   if (profile) {
@@ -788,6 +820,8 @@ export function deserializeGame(
     quickSpells: pData.quickSpells ? [...pData.quickSpells] : undefined,
     tutorialFlags: pData.tutorialFlags ? { ...pData.tutorialFlags } : (saveData.profile?.tutorialFlags ? { ...saveData.profile.tutorialFlags } : undefined),
     unspentStatPoints: Number(pData.unspentStatPoints) || Number(saveData.profile?.unspentStatPoints) || 0,
+    runeMastery: pData.runeMastery ? { ...pData.runeMastery } : defaultRuneMastery(),
+    runeChannelBankedTurns: Number(pData.runeChannelBankedTurns) || 0,
   });
   player.energy = Number(pData.energy) || 0;
   player.hp = Math.min(Number(pData.hp) || 1, player.maxHp);

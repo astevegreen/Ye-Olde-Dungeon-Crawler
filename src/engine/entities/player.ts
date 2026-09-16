@@ -7,6 +7,12 @@ import type { CharacterAttributes, Gender } from '../character/types';
 import type { ProgressionConfig, LevelUpBonus } from '../types/manifest';
 import type { TutorialFlags } from '../storage/types';
 import { calculateAttribute } from '../stats/attributeCalculator';
+import {
+  defaultRuneMastery,
+  allocateRuneMastery as allocateRuneMasteryPoints,
+  type RuneOfReturnMastery,
+  type RuneOfReturnTrack,
+} from '../magic/runeOfReturn';
 
 export interface PlayerConfig {
   id?: string;
@@ -33,6 +39,8 @@ export interface PlayerConfig {
   recallPosition?: Position;
   quickSpells?: (string | null)[];
   unspentStatPoints?: number;
+  runeMastery?: RuneOfReturnMastery;
+  runeChannelBankedTurns?: number;
 }
 
 const DEFAULT_PLAYER_STATS: CombatStats = {
@@ -63,6 +71,12 @@ export class Player extends Actor {
   public recallPosition?: Position;
   public quickSpells: (string | null)[];
   public unspentStatPoints: number;
+  /** Rune of Return progression (ARCHITECTURE.md P-03 stage 3): mastery lives on the
+   * player (like an attribute), not the item, so losing/replacing the rune doesn't
+   * reset invested points. */
+  public runeMastery: RuneOfReturnMastery;
+  /** Turns of channel progress banked from the last interrupt (Steadfast Weave). */
+  public runeChannelBankedTurns: number;
   public pactMutatorsSupplier?: () => import('../pacts/pactManager').RunPactMutatorRules;
 
   constructor(config: PlayerConfig) {
@@ -102,6 +116,8 @@ export class Player extends Actor {
     this.tutorialFlags = config.tutorialFlags ? { ...config.tutorialFlags } : {};
     this.deepestRecallFloor = config.deepestRecallFloor;
     this.recallPosition = config.recallPosition ? { ...config.recallPosition } : undefined;
+    this.runeMastery = config.runeMastery ? { ...config.runeMastery } : defaultRuneMastery();
+    this.runeChannelBankedTurns = config.runeChannelBankedTurns ?? 0;
   }
 
   public get attributes(): CharacterAttributes {
@@ -238,6 +254,12 @@ export class Player extends Actor {
         return false;
     }
     return true;
+  }
+
+  /** Spends unspent mastery points on a Rune of Return track, from the same pool as
+   * `allocateAttribute`. See `allocateRuneMastery` in `magic/runeOfReturn.ts`. */
+  public allocateRuneMastery(track: RuneOfReturnTrack, amount: number = 1): boolean {
+    return allocateRuneMasteryPoints(this, track, amount);
   }
 
   public consumeMana(amount: number): boolean {

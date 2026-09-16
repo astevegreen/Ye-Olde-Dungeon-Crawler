@@ -5,6 +5,7 @@ import { addCoinsToContainer } from '../economy/currency';
 import { Container } from '../items/container';
 import { createScaledItem } from '../dungeon/lootSpawner';
 import type { StarterKitDefinition, ItemDefinition } from '../types/manifest';
+import { RuneOfReturnItem } from '../magic/runeOfReturn';
 
 export const MIN_ATTRIBUTE = 8;
 export const MAX_ATTRIBUTE = 18;
@@ -181,6 +182,15 @@ export class CharacterRoller {
       if (id === 'travel_bread') return ItemFactory.createTravelBread(instanceId);
       if (id === 'mana_potion') return ItemFactory.createManaPotion(instanceId);
       if (id === 'scroll_phase_door' || id === 'scroll_teleport') return ItemFactory.createScrollOfTeleport(instanceId);
+      if (id === 'rune_of_return') {
+        return new RuneOfReturnItem({
+          id: instanceId,
+          name: 'Rune of Return',
+          unidentifiedName: 'Carved Rune Stone',
+          identified: true,
+          description: 'A palm-sized stone etched with a rune that hums faintly. Channeling it over several turns teleports you back to town.',
+        });
+      }
       return ItemFactory.createDagger(instanceId);
     };
 

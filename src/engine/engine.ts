@@ -59,6 +59,7 @@ import { PactManager } from './pacts/pactManager';
 import { validateManifest, type GameContentManifest } from './types/manifest';
 import { EngineCommandBus, type GameCommandBus } from './commands/commandBus';
 import { IdentificationManager } from './items/identification';
+import { attuneRuneOfReturn, findRuneOfReturn } from './magic/runeOfReturn';
 
 const DEFAULT_EMPTY_MANIFEST: GameContentManifest = {
   id: 'generic',
@@ -649,6 +650,17 @@ export class GameEngine {
     const victoryNpcId = this.manifest.quest?.victoryNpcId;
     if (victoryNpcId && npc.id === victoryNpcId && this.gameState.checkVictoryEligible(this)) {
       this.gameState.triggerVictory(this);
+      return;
+    }
+    // Rune of Return attunement (ARCHITECTURE.md P-03 stage 3): a pack-declared NPC id
+    // triggers a full refill. The mechanism is fixed; the trigger and its flavor are
+    // entirely content-provided, so a pack with no NPC configured simply has no
+    // in-town refill (the item/channel mechanic itself still works).
+    const attunementNpcId = this.manifest.runeOfReturn?.attunementNpcId;
+    if (attunementNpcId && npc.id === attunementNpcId) {
+      this.log(`Spoke with ${npc.name}: "${npc.greeting}"`);
+      const item = findRuneOfReturn(this.player);
+      this.log(item ? attuneRuneOfReturn(item) : `${npc.name} has nothing to attune — you carry no Rune of Return.`);
       return;
     }
     this.log(`Spoke with ${npc.name}: "${npc.greeting}"`);

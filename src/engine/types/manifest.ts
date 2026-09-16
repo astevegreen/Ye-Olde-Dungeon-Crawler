@@ -346,6 +346,25 @@ export interface GameContentManifest {
   renownTitles?: RenownTitleDefinition[];
   companions?: CompanionDefinition[];
   flankLayout?: FlankLayoutConfig;
+  /**
+   * Pack-neutral wiring for the Rune of Return (ARCHITECTURE.md P-03 stage 3). The
+   * mechanic (channel timing, banking, mobility, interrupt rules) is fixed engine
+   * logic; only presentation and the town refill trigger vary per pack. `undefined`
+   * disables the attunement-on-interact hook, but the item/channel mechanic itself
+   * still works without it (charges just can't be refilled).
+   */
+  runeOfReturn?: RuneOfReturnManifestConfig;
+}
+
+/** See `GameContentManifest.runeOfReturn`. */
+export interface RuneOfReturnManifestConfig {
+  /** NPC id whose interaction triggers a full, free, instant charge refill (the base
+   * pack's dwarven rune-smith at the forge; another pack reskins by pointing this at
+   * its own NPC). */
+  attunementNpcId?: string;
+  /** Pack-provided display names for the three progression tracks, shown in logs and
+   * (eventually) the level-up UI. Falls back to generic engine names. */
+  trackNames?: { celerity?: string; weave?: string; mobility?: string };
 }
 
 export type {

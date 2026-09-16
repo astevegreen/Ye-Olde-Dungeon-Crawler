@@ -23,6 +23,7 @@ import {
 import { TempleService, SageService, BankService, TrainerService } from '../economy/services';
 import type { Merchant } from '../economy/merchant';
 import type { CompanionArchetype } from '../entities/companion';
+import { ChannelRuneOfReturnAction, RuneOfReturnItem, cancelChannel } from '../magic/runeOfReturn';
 
 /**
  * GameCommand — encapsulates a player/UI intent into a decoupled command message.
@@ -100,6 +101,20 @@ export class EngineCommandBus implements GameCommandBus {
           return { success: res.success, message: res.message, effects: res.effects };
         }
         return { success: false, message: 'Not a wand' };
+      }
+
+      case 'channel_rune_of_return': {
+        const item = this.resolveItem(p.itemId as string);
+        if (!(item instanceof RuneOfReturnItem)) {
+          return { success: false, message: 'Not a Rune of Return' };
+        }
+        const res = this.engine.handlePlayerAction(new ChannelRuneOfReturnAction(this.engine.player));
+        return { success: res.success, message: res.message };
+      }
+
+      case 'cancel_rune_of_return_channel': {
+        const res = cancelChannel(this.engine, this.engine.player);
+        return { success: res.success, message: res.message };
       }
 
       case 'equip_item': {

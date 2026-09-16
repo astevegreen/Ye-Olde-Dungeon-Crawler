@@ -171,6 +171,17 @@ export const COTW_TOWN: TownLayoutDefinition = {
       greeting: 'A warrior alone is a warrior half-armed. Let me bond you with a loyal companion.',
       dialogText: 'For a price I can bond you with a battle-hound, revive one that has fallen, retrain its instincts, or teach it new tricks.',
     },
+    {
+      // Rune of Return attunement trigger (ARCHITECTURE.md P-03 stage 3, engine's
+      // `manifest.runeOfReturn.attunementNpcId`). The mechanism is engine-owned and
+      // fixed; only this NPC's placement, name, and flavor are pack-provided.
+      id: 'npc-rune-smith',
+      name: 'Thrain the Rune-Smith',
+      role: 'villager',
+      position: { x: 40, y: 7 },
+      greeting: "Bring your Rune of Return to my forge and I'll strike its charges anew — free, and quick as the hammer falls.",
+      dialogText: 'Every charge spent walking these halls is a charge I can restore. Just say the word.',
+    },
   ],
   services: {
     templeName: 'Temple of Thor',

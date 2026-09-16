@@ -98,6 +98,14 @@ export const cotwManifest: GameContentManifest = {
       expireMessage: '{name} recovers from the stunning blow and regains composure.',
     },
   ],
+  runeOfReturn: {
+    attunementNpcId: 'npc-rune-smith',
+    trackNames: {
+      celerity: 'Channel Celerity',
+      weave: 'Steadfast Weave',
+      mobility: 'Unbound Casting',
+    },
+  },
 };
 
 export const COTW_MANIFEST = cotwManifest;

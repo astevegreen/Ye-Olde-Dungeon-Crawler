@@ -10,5 +10,5 @@ export const COTW_STARTER_KIT: StarterKitDefinition = {
   ],
   beltItemId: 'utility_belt',
   beltSlotItemIds: ['wand_lightning'],
-  packItemIds: ['travel_bread', 'health_potion', 'mana_potion', 'scroll_phase_door'],
+  packItemIds: ['travel_bread', 'health_potion', 'mana_potion', 'scroll_phase_door', 'rune_of_return'],
 };

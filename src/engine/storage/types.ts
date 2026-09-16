@@ -121,6 +121,7 @@ export interface SerializedItemBase {
   scrollSpellId?: string;
   potionType?: string;
   potionPotency?: number;
+  runeOfReturnData?: { charges: number };
   coinData?: {
     denomination: CoinDenomination;
     count: number;
@@ -213,6 +214,13 @@ export interface SerializedPlayer {
   planeId?: string;
   corruptionScore?: number;
   unspentStatPoints?: number;
+  /** Rune of Return mastery investment (ARCHITECTURE.md P-03 stage 3): points spent
+   * from the same `unspentStatPoints` pool as core attributes, on the rune's three
+   * independent progression tracks. */
+  runeMastery?: { celerityPoints: number; weavePoints: number; mobilityPoints: number };
+  /** Turns of channel progress banked from the last interrupt, applied to the next
+   * attempt with the same charge (Steadfast Weave track). Resets to 0 on completion. */
+  runeChannelBankedTurns?: number;
 }
 
 export interface SerializedMonster {

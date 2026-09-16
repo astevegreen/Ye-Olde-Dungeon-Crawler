@@ -121,6 +121,17 @@ for (const filePath of [...engineFiles, ...contentFiles]) {
       });
     }
 
+    // Check: Content deep imports into engine internals (ARCHITECTURE.md §2, §3).
+    // Content reaches the engine only through src/engine/index.ts; test files may deep-import.
+    if (isContent && !isTestOrFixture && DEEP_ENGINE_IMPORT_REGEX.test(line)) {
+      violations.push({
+        file: relativePath,
+        line: lineNum,
+        category: 'CONTENT_DEEP_ENGINE_IMPORT',
+        detail: `Content deep import bypassing engine public API barrel: ${line.trim()}`,
+      });
+    }
+
     // Check: DOM & Browser Globals (forbidden in engine and content source files)
     if (!isTestOrFixture) {
       purityScannedFiles.add(relativePath);
@@ -222,7 +233,7 @@ if (violations.length > 0) {
       `(${exemptCount} test/fixture files exempt).`
   );
   console.log(`✓ Engine Boundary Isolation: 0 reverse imports in engine source and test files.`);
-  console.log(`✓ Content Boundary Isolation: 0 UI/Rendering imports across ${contentFiles.length} content files.`);
+  console.log(`✓ Content Boundary Isolation: 0 UI/Rendering imports and 0 deep engine imports across ${contentFiles.length} content files.`);
   console.log(`✓ Public API Surface: 0 deep imports into engine internals across ${uiFiles.length + renderingFiles.length} UI/Rendering files and the composition root (src/main.ts).`);
   console.log(`All architectural boundaries verified intact!\n`);
   process.exit(0);

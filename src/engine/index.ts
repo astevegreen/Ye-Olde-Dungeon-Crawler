@@ -69,6 +69,7 @@ export * from './dungeon/dungeon-generator';
 export * from './dungeon/wandering-spawner';
 export * from './dungeon/spawner';
 export * from './dungeon/lootSpawner';
+export * from './dungeon/vaultStamp';
 export * from './traps/trapRegistry';
 
 // Field of View

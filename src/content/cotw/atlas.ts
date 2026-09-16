@@ -1,4 +1,4 @@
-import type { AtlasProceduralTheme } from '../../engine/types/manifest';
+import type { AtlasProceduralTheme } from '../../engine';
 
 export const COTW_PALETTE: Record<string, string> = {
   stoneDark: '#1c2333',

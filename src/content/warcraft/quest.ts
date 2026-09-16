@@ -1,4 +1,4 @@
-import type { QuestArcDefinition } from '../../engine/types/manifest';
+import type { QuestArcDefinition } from '../../engine';
 
 export const WARCRAFT_QUEST: QuestArcDefinition = {
   id: 'warcraft_blackrock_spire',

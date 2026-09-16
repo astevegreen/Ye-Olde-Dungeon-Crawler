@@ -1,4 +1,4 @@
-import type { StarterKitDefinition } from '../../engine/types/manifest';
+import type { StarterKitDefinition } from '../../engine';
 
 export const WARCRAFT_STARTER_KIT: StarterKitDefinition = {
   weaponItemId: 'warhammer',

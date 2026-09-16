@@ -1,4 +1,4 @@
-import type { StarterKitDefinition } from '../../engine/types/manifest';
+import type { StarterKitDefinition } from '../../engine';
 
 export const COTW_STARTER_KIT: StarterKitDefinition = {
   weaponItemId: 'dagger',

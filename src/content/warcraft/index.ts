@@ -1,4 +1,4 @@
-import type { GameContentManifest } from '../../engine/types/manifest';
+import type { GameContentManifest } from '../../engine';
 import { WARCRAFT_MONSTERS } from './monsters';
 import { WARCRAFT_ITEMS } from './items';
 import { WARCRAFT_SPELLS } from './spells';

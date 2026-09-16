@@ -1,6 +1,8 @@
-import type { TownLayoutDefinition } from '../../engine/types/manifest';
-import { ItemFactory } from '../../engine/items/factory';
-import { Merchant } from '../../engine/economy/merchant';
+import {
+  ItemFactory,
+  Merchant,
+} from '../../engine';
+import type { TownLayoutDefinition } from '../../engine';
 
 export const COTW_TOWN: TownLayoutDefinition = {
   name: 'Bjarnarhaven',

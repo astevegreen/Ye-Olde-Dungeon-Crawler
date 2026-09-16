@@ -1,4 +1,4 @@
-import type { SpriteRecipe } from '../../engine/types/manifest';
+import type { SpriteRecipe } from '../../engine';
 
 export const WARCRAFT_SPRITE_RECIPES: Record<string, SpriteRecipe> = {
   // Warcraft Wall: Dark Iron & Molten Blackrock Stone

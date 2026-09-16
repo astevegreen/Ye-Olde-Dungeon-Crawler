@@ -1,12 +1,17 @@
-import type { Action } from '../../engine/actions/action';
+import {
+  findPath,
+  MeleeAttackAction,
+  MovementAction,
+  OpenDoorAction,
+  WaitAction,
+  WindUpDeclareAction,
+} from '../../engine';
+import type {
+  Action,
+  AiBehaviorStrategy,
+  Monster,
+} from '../../engine';
 import type { GameEngine } from '../../engine';
-import type { Monster } from '../../engine/entities/monster';
-import type { AiBehaviorStrategy } from '../../engine/ai/aiBehaviorRegistry';
-import { MeleeAttackAction, WindUpDeclareAction } from '../../engine/actions/combat';
-import { MovementAction } from '../../engine/actions/movement';
-import { OpenDoorAction } from '../../engine/actions/door';
-import { WaitAction } from '../../engine/actions/wait';
-import { findPath } from '../../engine/ai/pathfinding';
 
 /**
  * Warcraft AI Behavior Strategies — Compliant-by-Design

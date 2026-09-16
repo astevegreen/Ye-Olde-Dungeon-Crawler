@@ -1,4 +1,4 @@
-import type { AffinityMatrixConfig } from '../../engine/magic/elements';
+import type { AffinityMatrixConfig } from '../../engine';
 
 export const WARCRAFT_AFFINITY_MATRIX: AffinityMatrixConfig = {
   elements: [

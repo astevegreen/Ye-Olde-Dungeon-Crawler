@@ -1,5 +1,5 @@
-import type { MonsterDefinition } from '../../engine/bestiary/monsterDefinitions';
-import { ItemFactory } from '../../engine/items/factory';
+import { ItemFactory } from '../../engine';
+import type { MonsterDefinition } from '../../engine';
 
 export const WARCRAFT_MONSTERS: MonsterDefinition[] = [
   {

@@ -1,4 +1,4 @@
-import type { EquipmentSlotDefinition } from '../../engine/inventory/paperdoll';
+import type { EquipmentSlotDefinition } from '../../engine';
 
 export const COTW_EQUIPMENT_SLOTS: EquipmentSlotDefinition[] = [
   { id: 'head', name: 'Head', acceptedCategories: ['helmet', 'armor'], layout: { x: 93, y: 16, width: 34, height: 34, gridArea: 'head' } },

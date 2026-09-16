@@ -1,4 +1,4 @@
-import type { ActionHook } from '../../engine/actions/actionPipeline';
+import type { ActionHook } from '../../engine';
 
 /**
  * Warcraft Action Hooks — Compliant-by-Design

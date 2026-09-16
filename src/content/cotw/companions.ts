@@ -1,4 +1,4 @@
-import type { CompanionDefinition } from '../../engine/entities/companion';
+import type { CompanionDefinition } from '../../engine';
 
 export const COTW_COMPANIONS: CompanionDefinition[] = [
   {

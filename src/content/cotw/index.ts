@@ -1,4 +1,4 @@
-import type { GameContentManifest } from '../../engine/types/manifest';
+import type { GameContentManifest } from '../../engine';
 import { COTW_MONSTERS, COTW_BESTIARY } from './monsters';
 import { COTW_ITEMS } from './items';
 import { COTW_SPELLS } from './spells';

@@ -1,5 +1,5 @@
-import type { TownLayoutDefinition } from '../../engine/types/manifest';
-import { ItemFactory } from '../../engine/items/factory';
+import { ItemFactory } from '../../engine';
+import type { TownLayoutDefinition } from '../../engine';
 
 export const WARCRAFT_TOWN: TownLayoutDefinition = {
   name: 'Stormwind Outpost',

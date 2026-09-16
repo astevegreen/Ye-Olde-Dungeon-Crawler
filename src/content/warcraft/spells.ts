@@ -1,4 +1,4 @@
-import type { SpellDefinition } from '../../engine/magic/types';
+import type { SpellDefinition } from '../../engine';
 
 export const WARCRAFT_SPELLS: SpellDefinition[] = [
   {

@@ -1,4 +1,4 @@
-import type { ItemDefinition } from '../../engine/types/manifest';
+import type { ItemDefinition } from '../../engine';
 
 export const COTW_ITEMS: ItemDefinition[] = [
   // ==========================================

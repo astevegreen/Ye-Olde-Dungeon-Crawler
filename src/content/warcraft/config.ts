@@ -1,4 +1,7 @@
-import type { CombatConfig, ProgressionConfig } from '../../engine/types/manifest';
+import type {
+  CombatConfig,
+  ProgressionConfig,
+} from '../../engine';
 
 export const WARCRAFT_FEATURE_FLAGS: Record<string, boolean> = {
   ammoCombat: false,

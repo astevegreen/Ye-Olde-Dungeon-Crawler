@@ -1,4 +1,4 @@
-import type { StatusHandler } from '../../engine/status/statusHandlers';
+import type { StatusHandler } from '../../engine';
 
 export const WARCRAFT_STATUS_HANDLERS: Record<string, StatusHandler> = {
   burning: {

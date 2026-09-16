@@ -1,4 +1,4 @@
-import type { ChoiceDefinition } from '../../engine/types/choice';
+import type { ChoiceDefinition } from '../../engine';
 
 export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
   altar_tyr: {

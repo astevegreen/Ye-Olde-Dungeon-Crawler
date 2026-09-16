@@ -1,4 +1,4 @@
-import type { VaultBlueprint } from '../../engine/dungeon/vaultStamp';
+import type { VaultBlueprint } from '../../engine';
 
 export const COTW_VAULTS: VaultBlueprint[] = [
   {

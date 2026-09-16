@@ -1,4 +1,4 @@
-import type { RunPactDefinition } from '../../engine/pacts/pactManager';
+import type { RunPactDefinition } from '../../engine';
 
 export const COTW_PACTS: RunPactDefinition[] = [
   {

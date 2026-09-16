@@ -1,6 +1,8 @@
-import type { MonsterDefinition } from '../../engine/bestiary/monsterDefinitions';
-import { MonsterRegistry } from '../../engine/bestiary/monsterDefinitions';
-import { ItemFactory } from '../../engine/items/factory';
+import {
+  ItemFactory,
+  MonsterRegistry,
+} from '../../engine';
+import type { MonsterDefinition } from '../../engine';
 
 export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
   // --- Tier 1 (Floors 1–4) ---

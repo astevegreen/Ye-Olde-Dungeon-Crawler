@@ -28,7 +28,7 @@
 - **Execution-Path Headless Simulation Purity:** Purity is defined by *execution path*, not file location. Any function, handler, hook, or callback that runs inside the simulation — whether authored in `src/engine/`, in `src/content/`, or registered at runtime — must not access DOM globals (`window`, `document`, `HTMLElement`), Canvas contexts (`CanvasRenderingContext2D`), audio APIs, or timing globals (`requestAnimationFrame`, `setTimeout`). Simulation outcomes must also be deterministic (§7.2).
 - **Public API Surface Integrity:** `src/ui/`, `src/rendering/`, and `src/content/` import the engine only through `src/engine/index.ts`. Deep imports into engine internals (e.g. `src/engine/grid/*`, `src/engine/storage/*`, `src/engine/actions/*`) are barred for these layers.
   - Enforced today for `src/ui/` and `src/rendering/` by `npm run check:engine-purity`.
-  - Content packs still contain deep imports. **[Planned: P-02]** removes them, and **[Planned: P-19]** adds enforcement.
+  - Enforced for `src/content/` too: `check:engine-purity` fails on any deep engine import in content source (test files may still deep-import).
   - `scripts/` and test files may deep-import engine internals.
 - **Diagnostic API Namespacing & Triage Access:** Triage and inspection methods (`spawnMonster`, `spawnItem`, `toggleGodMode`, `revealFloorMap`) are namespaced under `engine.diagnostics`, keeping the primary engine API surface clean. The `[F2]`/backtick triage menu is a deliberate, always-reachable, in-game feature for players — not developer-only and not gated behind a build flag. `InputHandler` checks the toggle before the input lock, so it works during effect playback.
 - **Deterministic Action Pipeline:** Player actions flow through `ActionPipeline.executeWithHooks()` in `src/engine/actions/actionPipeline.ts` and return a typed `ActionResult` (§4). Monster actions and environmental reactions do not yet use the pipeline. **[Planned: P-05]**
@@ -41,7 +41,7 @@
 | Layer / Directory | Primary Responsibility | Dependency & Import Rules |
 | :--- | :--- | :--- |
 | `src/main.ts` | **Composition Root.** Selects the content manifest and theme from `VITE_THEME`; creates presentation components; obtains `GameEngine` instances from the storage layer (`ProfileManager`, `AutosaveManager`); wires engine callbacks (`onGameEvent`, `onFloorChanged`, `onChoiceInteract`, …); mounts DOM listeners. | The **only** source module that imports content packs. May import every layer. All its engine imports resolve through `src/engine/index.ts`; `check:engine-purity` enforces this. |
-| `src/content/` | Campaign content packs: item/monster catalogs, spells, status effects, encounter tables, vaults, towns, quest arcs, themes, and scripted behaviors. | Imports the engine (types *and* runtime values) only through `src/engine/index.ts`, never engine internals. **[Planned: P-02]** NEVER imports `src/ui/` or `src/rendering/`. Reaches the engine only through the `GameContentManifest` (§3, Content Extensibility Model). |
+| `src/content/` | Campaign content packs: item/monster catalogs, spells, status effects, encounter tables, vaults, towns, quest arcs, themes, and scripted behaviors. | Imports the engine (types *and* runtime values) only through `src/engine/index.ts`, never engine internals; `check:engine-purity` enforces this. NEVER imports `src/ui/` or `src/rendering/`. Reaches the engine only through the `GameContentManifest` (§3, Content Extensibility Model). |
 | `src/engine/` | Headless state coordinator, action pipeline, spatial grid, FOV, scheduler, AI behavior trees, storage and serialization, PRNG. | Zero browser/DOM/Canvas dependencies. Exposes its public API through `src/engine/index.ts`. Production source has **zero** imports from `src/content/`, `src/ui/`, or `src/rendering/` (Dependency Inversion). Colocated engine tests (`src/engine/**/__tests__/`) may import content packs as integration fixtures, never `src/ui/` or `src/rendering/`. |
 | `src/rendering/` | Canvas texture atlases, sprite blitting, camera, canvas overlays, visual effect playback (`fxRunner.ts`), and keyboard dispatch (`input-handler.ts`, class `InputHandler`). | Engine via `src/engine/index.ts` only. May import `src/ui/` (presentation tier). Never imports `src/content/`. |
 | `src/ui/` | DOM HUD, LIFO modal stack (`modalStack.ts`), chorded input buffer (`input/chordBuffer.ts`), settings & keybindings, diagnostic tools. | Engine via `src/engine/index.ts` only. May import `src/rendering/` **types only**. Never imports `src/content/`. |
@@ -213,7 +213,7 @@
    - Scans every `.ts` file under `src/engine/`, `src/content/`, `src/ui/`, and `src/rendering/`. Content source files are checked for DOM tokens regardless of whether they are registered as hooks, because file location never exempts simulation code (§2).
    - **DOM and browser tokens:** fails on `window.`, `document.`, `navigator.`, `localStorage`, `sessionStorage`, `HTMLElement`, `CanvasRenderingContext2D`, `HTMLCanvasElement`, or `ImageData` in engine and content source files (test and fixture files are exempt).
    - **Reverse imports:** fails on any `src/ui/` or `src/rendering/` import in `src/engine/` (tests included), and on `src/content/` imports in engine production source.
-   - **Content isolation:** fails on `src/ui/` or `src/rendering/` imports in content source.
+   - **Content isolation:** fails on `src/ui/` or `src/rendering/` imports in content source, and on any `engine/<path>` deep import in content source (test and fixture files exempt).
    - **Public API:** fails on any `engine/<path>` deep import in `src/ui/` or `src/rendering/` (tests included) or in `src/main.ts`, and on content imports in UI/rendering source. `src/main.ts` is checked for deep engine imports only — as the composition root it is the one module allowed to import content packs.
    - **Timing and audio globals:** fails on `setTimeout`, `setInterval`, `clearTimeout`, `clearInterval`, `requestAnimationFrame`, `cancelAnimationFrame`, `requestIdleCallback`, `performance.now`, `AudioContext`, `webkitAudioContext`, `HTMLAudioElement`, or `new Audio` in engine and content source files, on the same execution-path rule as DOM tokens (§2).
    - The success line reports how many engine and content **source** files were scanned and how many test/fixture files were exempt, rather than counting exempt files as covered.
@@ -271,11 +271,6 @@ Keep such diffs minimal and scoped, and state which exception applies in the cha
 
 ## 9. Planned Work Register
 Each entry records the current state, the target, and whether the work is expected to touch protected files (§8.1). Work that is recorded but deliberately out of scope is listed under *Deferred* at the end of this section, and is not planned work.
-
-**P-02 — Content packs use the engine barrel only** (§2, §3)
-- Current: content files deep-import engine internals, including runtime values (`warcraft/ai.ts` action classes and `findPath`; `ItemFactory`, `Merchant`, `MonsterRegistry` in the cotw and warcraft `monsters.ts`/`town.ts`). Some needed types are not exported from the barrel (e.g. `VaultBlueprint` from `dungeon/vaultStamp.ts`).
-- Target: every content import resolves through `src/engine/index.ts`, with the barrel exporting what content needs.
-- Protected files: no.
 
 **P-03 — Extract campaign-specific mechanics from the engine** (§1, §3)
 - Current: the engine contains campaign-flavored logic, e.g. town-return fixtures in `src/engine/townReturn/` (Dwarven Winch, Valkyrie Sprint, Runic Conduit), named monster abilities in `ai/behaviorTree.ts`, and theme-specific tile types.
@@ -361,8 +356,8 @@ Each entry records the current state, the target, and whether the work is expect
 - Protected files: no.
 
 **P-19 — Boundary and static-check extensions** (§2, §7.2)
-- Current: the purity checker misses content deep imports and `Math.random` in simulation code. Timing/audio globals are checked, the success line reports scanned-vs-exempt file counts accurately, and `scripts/` is type-checked (§7.2 items 1 and 5).
-- Target: content deep imports and `Math.random` are checked too. The `Math.random` check depends on P-10, and the content deep-import check on P-02: enabling either before those land would fail CI on pre-existing violations.
+- Current: the purity checker misses `Math.random` in simulation code. Timing/audio globals, content deep imports, and composition-root deep imports are checked; the success line reports scanned-vs-exempt file counts accurately; and `scripts/` is type-checked (§7.2 items 1 and 5).
+- Target: `Math.random` in simulation code is checked too. That check depends on P-10 — enabling it first would fail CI on pre-existing violations.
 - Protected files: no.
 
 **P-22 — Per-engine content registries** (§3)

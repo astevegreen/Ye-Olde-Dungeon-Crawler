@@ -1,4 +1,4 @@
-import type { SpriteRecipe } from '../../engine/types/manifest';
+import type { SpriteRecipe } from '../../engine';
 
 export const COTW_SPRITE_RECIPES: Record<string, SpriteRecipe> = {
   wall: (ctx, ox, oy) => {

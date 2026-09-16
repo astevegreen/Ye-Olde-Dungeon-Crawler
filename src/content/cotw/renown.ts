@@ -1,4 +1,7 @@
-import type { RenownMilestoneDefinition, RenownTitleDefinition } from '../../engine/types/manifest';
+import type {
+  RenownMilestoneDefinition,
+  RenownTitleDefinition,
+} from '../../engine';
 
 export const COTW_RENOWN_MILESTONES: RenownMilestoneDefinition[] = [
   {

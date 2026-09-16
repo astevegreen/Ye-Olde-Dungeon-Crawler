@@ -1,4 +1,4 @@
-import type { ThemeTokens } from '../../engine/types/theme';
+import type { ThemeTokens } from '../../engine';
 
 export const COTW_THEME_TOKENS: ThemeTokens = {
   bg: '#0a0b10',

@@ -8,6 +8,8 @@
 
 export interface ProjectileEffectDescriptor {
   type: 'projectile';
+  /** Overrides the default tactical/ambient classification (§4). */
+  priority?: EffectPriority;
   id?: string;
   path: Array<{ x: number; y: number; isReflection?: boolean }>;
   spriteId?: string;
@@ -19,6 +21,8 @@ export interface ProjectileEffectDescriptor {
 
 export interface BurstEffectDescriptor {
   type: 'burst';
+  /** Overrides the default tactical/ambient classification (§4). */
+  priority?: EffectPriority;
   id?: string;
   epicenter: { x: number; y: number };
   radius: number;
@@ -29,6 +33,8 @@ export interface BurstEffectDescriptor {
 
 export interface ScreenFlashEffectDescriptor {
   type: 'screen_flash';
+  /** Overrides the default tactical/ambient classification (§4). */
+  priority?: EffectPriority;
   id?: string;
   color: string;
   durationMs: number;
@@ -36,6 +42,8 @@ export interface ScreenFlashEffectDescriptor {
 
 export interface ChainLinkEffectDescriptor {
   type: 'chain_link';
+  /** Overrides the default tactical/ambient classification (§4). */
+  priority?: EffectPriority;
   id?: string;
   from: { x: number; y: number };
   to: { x: number; y: number };
@@ -57,4 +65,27 @@ export interface SpellVisualConfig {
   durationMs?: number;
   burstRadius?: number;
   travelMode?: 'stepped' | 'smooth';
+}
+
+/**
+ * Whether an effect gates input while it plays (ARCHITECTURE.md §4).
+ *
+ * - `tactical` conveys information the player needs before acting: where a projectile
+ *   flew, where a beam reflected, what an explosion covered. Input waits for it.
+ * - `ambient` is feedback: screen pulses, floating numbers, ledger updates. It plays
+ *   without blocking, so a fast player is never held up by decoration.
+ */
+export type EffectPriority = 'tactical' | 'ambient';
+
+/** Effect types that are ambient unless a descriptor says otherwise. */
+const AMBIENT_BY_DEFAULT: ReadonlySet<string> = new Set(['screen_flash']);
+
+/**
+ * Classifies an effect. A descriptor may set `priority` explicitly — content can mark a
+ * decorative burst as ambient, or a screen flash as tactical when it is the only cue.
+ */
+export function isTacticalEffect(effect: VisualEffectDescriptor): boolean {
+  const declared = (effect as { priority?: EffectPriority }).priority;
+  if (declared) return declared === 'tactical';
+  return !AMBIENT_BY_DEFAULT.has(effect.type);
 }

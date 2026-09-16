@@ -19,6 +19,7 @@ import {
   BulkArchive,
   InMemoryAsyncStore,
   hydrateArchivedFloors,
+  isTacticalEffect,
 } from './engine';
 import type {
   CharacterProfile,
@@ -374,11 +375,14 @@ window.addEventListener('DOMContentLoaded', () => {
       if (activeEngine && renderer && renderer.fxRunner.mode !== 'instant') {
         const pending = activeEngine.consumePendingVisualEffects();
         if (pending.length > 0) {
-          if (inputHandler) inputHandler.isInputLocked = true;
+          // Only tactical effects gate input (ARCHITECTURE.md §4); ambient ones play on
+          // through the non-blocking queue while the player acts.
+          const hasTactical = pending.some(isTacticalEffect);
+          if (hasTactical && inputHandler) inputHandler.isInputLocked = true;
           try {
-            await renderer.fxRunner.playEffects(pending);
+            await renderer.fxRunner.playQueue(pending);
           } finally {
-            if (inputHandler) inputHandler.isInputLocked = false;
+            if (hasTactical && inputHandler) inputHandler.isInputLocked = false;
           }
         }
       }

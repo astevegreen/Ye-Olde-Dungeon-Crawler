@@ -1,4 +1,5 @@
 import type { VisualEffectDescriptor, ProjectileEffectDescriptor, BurstEffectDescriptor, ScreenFlashEffectDescriptor, ChainLinkEffectDescriptor } from '../engine';
+import { isTacticalEffect } from '../engine';
 import type { Camera } from './camera';
 import type { SpriteAtlas } from './atlas/sprite-atlas';
 
@@ -125,8 +126,39 @@ export class CanvasFXRunner {
     });
   }
 
+  /**
+   * Starts ambient effects without gating anything (ARCHITECTURE.md §4). They are pushed
+   * straight onto the active list rather than the track queue, so they never join the
+   * promise chain that `playEffects` resolves — a caller awaiting tactical playback is
+   * not held up by decoration still fading out.
+   */
+  public playAmbient(effects: VisualEffectDescriptor[]): void {
+    if (this.isDestroyed || !effects || effects.length === 0 || this.mode === 'instant') {
+      return;
+    }
+    if (typeof window === 'undefined' || typeof requestAnimationFrame === 'undefined') {
+      return;
+    }
+
+    const now = performance.now();
+    for (const desc of effects) {
+      this.activeEffects.push(this.createActiveEffect(desc, now));
+    }
+    if (!this.animationFrameId) {
+      this.startLoop();
+    }
+  }
+
+  /**
+   * Plays a mixed batch: tactical effects are awaited (callers gate input on them),
+   * ambient effects start at once and are not awaited.
+   */
   public playQueue(effects: VisualEffectDescriptor[]): Promise<void> {
-    return this.playEffects(effects);
+    if (!effects || effects.length === 0) return Promise.resolve();
+    const tactical = effects.filter(isTacticalEffect);
+    const ambient = effects.filter((e) => !isTacticalEffect(e));
+    this.playAmbient(ambient);
+    return tactical.length > 0 ? this.playEffects(tactical) : Promise.resolve();
   }
 
   private advanceTrack(): void {

@@ -124,9 +124,10 @@
   - **Narrowing:** the open `type` stops TypeScript discriminating the union on a literal, so `isGameEvent(event, 'entity_killed')` narrows to a built-in.
 - **Presentation Consumption & Animation Gating:**
   - Visual effects from player `ActionResult.effects` and monster turns accumulate in `engine.pendingVisualEffects`.
-  - After each player action, `src/main.ts` drains them with `consumePendingVisualEffects()`. Unless `fxRunner.mode` is `'instant'`, it sets `InputHandler.isInputLocked = true` for the whole `fxRunner.playEffects()` run.
+  - After each player action, `src/main.ts` drains them with `consumePendingVisualEffects()` and plays them through `fxRunner.playQueue()`, which splits the batch by priority.
+  - **Tactical effects gate input; ambient effects do not.** `isTacticalEffect` (`src/engine/types/effects.ts`) classifies: positional cues the player needs before acting — projectile paths, beam reflections, explosion bursts, chain lightning — are tactical, while screen pulses and similar feedback are ambient. A descriptor may set `priority` explicitly to override the default either way.
+  - Ambient effects are pushed straight onto the runner's active list rather than its track queue, so they never join the promise chain `playEffects` resolves. `main.ts` sets `InputHandler.isInputLocked` only when the batch contains a tactical effect, so a screen flash never makes the next keypress wait.
   - While locked, gameplay keys (including `ChordBuffer` moves) are ignored. The diagnostics toggle and any open modal still receive input.
-  - **Target [Planned: P-08]:** only tactical effects that convey critical information (projectile paths, beam reflections, explosion bursts, chain lightning) lock input. Ambient effects (floating damage numbers, HUD pulses, ledger updates) play through a non-blocking queue. `fxRunner.playQueue()` is currently just an alias for `playEffects()`.
 
 ---
 
@@ -297,11 +298,6 @@ Each entry records the current state, the target, and whether the work is expect
 - Target: the engine provides generic primitives; campaign specifics live in content packs.
 - Status: unscoped. Requires a design pass before implementation.
 - Protected files: likely `engine.ts`.
-
-**P-08 — Tactical vs. ambient effect queues** (§4)
-- Current: every pending effect locks input for the whole playback; `playQueue()` is an alias for `playEffects()`.
-- Target: only tactical effects lock input; ambient effects play through a non-blocking queue.
-- Protected files: no.
 
 **P-14 — Companion-pack browsing UI** (§3)
 - Current: Companions & Pet Progression (§3) is otherwise complete: AI-targeting generalization, acquisition gating, archetypes, death/revival, and active skills all ship. Item transfer is one-directional from the player's side only — `inventory-overlay.ts`'s `KeyG` sends an item to the companion's pack (`transfer_to_companion`), and `transfer_from_companion` exists on the command bus, but no UI browses the companion's pack contents to select an item to take back.

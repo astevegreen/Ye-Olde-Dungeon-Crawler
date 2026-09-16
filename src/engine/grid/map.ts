@@ -263,8 +263,16 @@ export class GameMap {
   public getAllGroundItems(): Array<{ x: number; y: number; items: Item[] }> {
     const result: Array<{ x: number; y: number; items: Item[] }> = [];
     for (const [key, items] of this.groundItems.entries()) {
-      const [xStr, yStr] = key.split(',');
-      result.push({ x: parseInt(xStr, 10), y: parseInt(yStr, 10), items });
+      // Keys are plane-qualified — `${planeId}:${x},${y}` (posKey, ARCHITECTURE.md §5) — so
+      // splitting on ',' alone yields 'physical:3' for x and parses to NaN. Read the
+      // coordinates from the end, which also tolerates a planeId containing ':' or ','.
+      const comma = key.lastIndexOf(',');
+      const colon = key.lastIndexOf(':', comma);
+      result.push({
+        x: parseInt(key.slice(colon + 1, comma), 10),
+        y: parseInt(key.slice(comma + 1), 10),
+        items,
+      });
     }
     return result;
   }

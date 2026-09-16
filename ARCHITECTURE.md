@@ -229,9 +229,10 @@
    - Simulation code must not use `Math.random()` or wall-clock time (`Date.now()`) to determine outcomes or IDs. Functions that accept an `rng` parameter must receive a seeded source from simulation callers.
    - The codebase does not yet satisfy this rule, and no automated check exists yet. **[Planned: P-10]**, **[Planned: P-19]**
 3. **Schema Evolution Integrity (`npm run validate:schema`, `scripts/validate-schema.ts`):**
-   - Currently migrates a minimal v1 envelope to `CURRENT_SCHEMA_VERSION` and asserts the final version.
+   - Migrates a minimal v1 envelope to `CURRENT_SCHEMA_VERSION` and asserts the final version.
+   - Round-trips a live engine through `serializeGame` -> `JSON.stringify`/`JSON.parse` -> `deserializeGame`, asserting that surface cells (type, duration, potency), substance bitmasks, ground corpse items (class, archetype, decay counter), and PRNG state all survive. JSON is in the loop because saves persist as strings, so a value that cannot round-trip through JSON is as lost as one the serializer drops.
+   - `PRNG.getState()` returns the raw internal state while `setState()` coerces to int32, so a restored generator reports an equivalent but differently-encoded state. The validator compares int32-normalized states and separately asserts the next draw matches.
    - Per-step migration assertions live in `src/engine/storage/__tests__/migrator.test.ts` (run by `npm test`).
-   - The script should also verify surface grids, substance grids, corpse items, and PRNG state round-tripping. **[Planned: P-20]**
 4. **Headless Simulation (`npm run sim`, `scripts/headless-sim.ts`):**
    - **Population anchor:** generates CotW floors through `DungeonArc.generateFloor` across several floors, repeated generations, and the base and pact-boosted monster densities, then derives its data points from the measured counts (realistic median, realistic high, and a labeled stress multiple) instead of a hard-coded population. Monster placement still uses `Math.random` (P-10), so counts are sampled, not seeded.
    - **Scenarios:** a dormant floor (player moves; sleeping monsters outside FOV), an awake floor (hunting monsters path to and attack an invulnerable player), and a 1,000-cast spell workload. After a global JIT warmup, each data point runs a warmup plus repeated samples and reports median and max.
@@ -367,11 +368,6 @@ Each entry records the current state, the target, and whether the work is expect
 **P-19 — Boundary and static-check extensions** (§2, §7.2)
 - Current: the purity checker misses content deep imports and `Math.random` in simulation code. Timing/audio globals are checked, the success line reports scanned-vs-exempt file counts accurately, and `scripts/` is type-checked (§7.2 items 1 and 5).
 - Target: content deep imports and `Math.random` are checked too. The `Math.random` check depends on P-10, and the content deep-import check on P-02: enabling either before those land would fail CI on pre-existing violations.
-- Protected files: no.
-
-**P-20 — Schema validator coverage** (§7.2)
-- Current: `validate:schema` asserts only the final version of a minimal envelope.
-- Target: it also verifies surfaces, substances, corpse items, and PRNG round-tripping.
 - Protected files: no.
 
 **P-21 — Simulation invariant assertions** (§7.2)

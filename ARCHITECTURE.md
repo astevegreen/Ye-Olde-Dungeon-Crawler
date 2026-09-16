@@ -105,13 +105,14 @@
   - All player actions, including those issued through `EngineCommandBus`, go through `engine.handlePlayerAction()` -> `executeWithHooks()`.
   - Composite actions may perform sub-actions directly (e.g. a movement bump performs an attack). Sub-actions run inside the outer action's error boundary, and hooks match only the outer action.
   - Monster turns run their AI-chosen action through `executeWithHooks()` as well, so hooks fire for every actor. A monster action that a pre-hook short-circuits, or that fails, falls back to a `WaitAction` so the scheduler cannot reselect it in a loop.
-  - Per-turn environmental updates (status, surface, substance, plane drift, wandering spawns) stay outside the pipeline deliberately: they are not `Action` objects and have no actor, so routing them would mean synthesizing wrapper actions and inventing hook semantics for them. Their failure isolation is tracked separately. **[Planned: P-06]**
+  - Per-turn environmental updates (status, surface, substance, plane drift, wandering spawns) stay outside the pipeline deliberately: they are not `Action` objects and have no actor, so routing them would mean synthesizing wrapper actions and inventing hook semantics for them. They each run inside their own failure boundary instead (§4, Failure Isolation).
 - **Failure Isolation:**
   - `executeWithHooks()` wraps pre-hooks, `action.perform()`, and post-hooks in try/catch boundaries, inside a top-level boundary, and always returns a valid `ActionResult`: a hook that short-circuits or replaces the result without one, or a `perform()` that returns none, is treated as a failure.
   - A caught exception is recorded with `flightRecorder.recordError`, logged to the narrative log, counted (`caughtExceptionCount`, static `totalCaughtExceptions`), and returned as `{ success: false, cost: 0, message, pipelineError: true }`. A failed player action does not advance the world.
   - Monster turns run inside their own boundary (`GameEngine.processMonsterAction`). An exception from a monster's status ticks, AI, or action is recorded through the same counters (`ActionPipeline.recordIsolatedFailure`, phase `monster-turn`); the monster's turn energy is spent so the scheduler cannot reselect it in a loop; and the enclosing `handlePlayerAction()` result is marked `pipelineError: true`.
   - `HookDispatcher.dispatch` does not catch primitive exceptions; they propagate to the enclosing pipeline or monster-turn boundary, and its re-entrancy depth counter is restored either way.
-  - Per-turn environmental updates invoked directly from `handlePlayerAction()` (player status ticks, surfaces, substances, plane drift, wandering spawns, floor respawn, town-return ticks) are not isolated; exceptions there still propagate. **[Planned: P-06]**
+  - Per-turn environmental updates (player status ticks, surfaces, substances, plane drift, wandering spawns, floor respawn, town-return ticks) each run through `GameEngine.runEnvironmentalUpdate`, which catches, records via `ActionPipeline.recordIsolatedFailure` (phase `environmental-update`), and continues with the remaining updates — a throwing surface tick must not silently skip substances, spawns, or the town-return timer. The failure trips the same counters, so the turn's result is marked `pipelineError`.
+  - No exception now escapes a turn: player actions, monster turns, and environmental updates are each isolated.
   - Current last-resort backstop: `src/main.ts` installs `window` `error`/`unhandledrejection` handlers that record to the flight recorder and show the crash dialog.
 - **`pipelineError` Consumption:** After each player action, presentation code (currently `processVisualEffectsAndRender` in `src/main.ts`) checks `engine.lastActionResult.pipelineError` and notifies the player through `DiagnosticModal.showError` without locking game state.
 - **Domain Events (`GameEvent`):**
@@ -288,11 +289,6 @@ Each entry records the current state, the target, and whether the work is expect
 - Current: `ActionHookContext` and `HookContext` expose the raw `GameEngine`.
 - Target: one narrower `EngineContext` interface exposing a scoped query/mutation surface.
 - Protected files: `actionPipeline.ts`.
-
-**P-06 — Failure isolation for environmental updates** (§4)
-- Current: player actions (`executeWithHooks()`) and monster turns (`GameEngine.processMonsterAction`) are isolated. Per-turn environmental updates called directly from `handlePlayerAction()` (player status ticks, surfaces, substances, plane drift, wandering spawns, floor respawn, town-return ticks) are not; an exception there propagates.
-- Target: no exception escapes a turn. Environmental-update failures are isolated through `ActionPipeline.recordIsolatedFailure`, recorded to the flight recorder, and surfaced as `pipelineError`.
-- Protected files: `engine.ts`.
 
 **P-07 — Extensible, serializable domain events** (§4)
 - Current: closed four-member `GameEvent` union with live-reference payloads, delivered only via `onGameEvent`.

@@ -894,17 +894,19 @@ export class GameEngine {
       if (this.currentFloor >= 1) {
         this.map.floorTurnCount = (this.map.floorTurnCount ?? 0) + 1;
       }
-      const tickRes = this.player.statusManager.tick(this.player, this);
-      if (tickRes.killed) {
-        DeathResolver.resolveDeath(this, undefined, this.player);
-      }
-
-      this.surfaces.tick(this);
-      this.substances.tickSubstances(this.map, this);
-      this.planeManager.tickDrift(this.map, this.scheduler.ticks, this);
-      this.wanderingSpawner.checkAndSpawn(this, this.rng);
-      this.floorManager.checkClearedFloorRespawn(this);
-      this.townReturnManager.onPlayerTurn(this);
+      // Per-turn environmental updates, each inside its own boundary (ARCHITECTURE.md §4).
+      this.runEnvironmentalUpdate('player-status-tick', () => {
+        const tickRes = this.player.statusManager.tick(this.player, this);
+        if (tickRes.killed) {
+          DeathResolver.resolveDeath(this, undefined, this.player);
+        }
+      });
+      this.runEnvironmentalUpdate('surface-tick', () => this.surfaces.tick(this));
+      this.runEnvironmentalUpdate('substance-tick', () => this.substances.tickSubstances(this.map, this));
+      this.runEnvironmentalUpdate('plane-drift', () => this.planeManager.tickDrift(this.map, this.scheduler.ticks, this));
+      this.runEnvironmentalUpdate('wandering-spawn', () => this.wanderingSpawner.checkAndSpawn(this, this.rng));
+      this.runEnvironmentalUpdate('floor-respawn', () => this.floorManager.checkClearedFloorRespawn(this));
+      this.runEnvironmentalUpdate('town-return-tick', () => this.townReturnManager.onPlayerTurn(this));
 
       if (this.detectMonstersTurns > 0) this.detectMonstersTurns -= 1;
       if (this.detectObjectsTurns > 0) this.detectObjectsTurns -= 1;
@@ -1028,6 +1030,31 @@ export class GameEngine {
     } else {
       // Non-monster safety: consume energy to prevent scheduler deadlocks
       entity.consumeEnergy(BASE_ACTION_COST);
+    }
+  }
+
+  /**
+   * Runs one per-turn environmental update inside its own failure boundary
+   * (ARCHITECTURE.md §4). A failure is recorded through the same counters as pipeline and
+   * monster-turn failures — so the turn's result is marked `pipelineError` — and the
+   * remaining updates still run: a throwing surface tick must not silently skip
+   * substances, spawns, or the town-return timer.
+   */
+  private runEnvironmentalUpdate(label: string, update: () => void): void {
+    try {
+      update();
+    } catch (err) {
+      this.actionPipeline.recordIsolatedFailure(
+        err,
+        this,
+        {
+          entityId: this.player?.id ?? 'world',
+          actionType: label,
+          phase: 'environmental-update',
+          source: 'GameEngine.executePlayerTurn',
+        },
+        'Something in the world misbehaved; play continues.'
+      );
     }
   }
 

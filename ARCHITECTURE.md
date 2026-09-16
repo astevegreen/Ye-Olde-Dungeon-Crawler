@@ -201,10 +201,10 @@
 - **Focus & Modal Isolation:**
   - **Rule:** every open modal registers on the LIFO `ModalStackManager` (`src/ui/modalStack.ts`).
   - **Stack behavior:** the top modal receives all keystrokes. If it does not handle `Escape`, the stack pops it. All other keys are trapped so they never reach the simulation. Modal handlers call `event.preventDefault()` for keys they consume, which prevents browser shortcut conflicts.
-  - **Registered today:** inventory, targeting, spellbook, diagnostics, level-up, pacts (keyboard path), context help, compendium, and the radial menu.
-  - **Not registered, gated by `InputHandler.enabled`:** Dwarven Winch, town-return, choice, save & quit, settings/keybinds, save-code, and pacts opened by click. **[Planned: P-17]**
-  - **Not registered, intercepted inline by `InputHandler`:** the shop, map, and inspect overlays. `InputHandler` checks each one's `isOpen` before dispatching other keys, so they neither register on the stack nor toggle `enabled`. **[Planned: P-17]**
-  - **Outside the in-game stack:** the save-slot and saga-share modals belong to the main-menu and game-over screens, where no simulation input is active.
+  - **Registered:** every in-game modal. Inventory, targeting, spellbook, diagnostics, level-up, pacts (both the keyboard path and click), context help, compendium, the radial menu, the shop overlay, Dwarven Winch, town-return, choice, save & quit, settings/keybinds, and save-code.
+  - Modal classes here predate the `UIModal` interface and differ in shape — one exposes `isOpen` as a method rather than a property — so `src/main.ts` registers each through a small adapter (`pushModal`/`popModal`) instead of reshaping the classes. Closing a modal removes it from the stack; nothing toggles `InputHandler.enabled` for a modal any more.
+  - **Still intercepted inline by `InputHandler`:** the map and inspect overlays. `InputHandler` checks each one's `isOpen` before dispatching other keys, which is equivalent to stack gating for a single non-nesting overlay.
+  - **Screen-level, not modals:** `InputHandler.enabled` remains for whole-screen transitions — entering the game, returning to the main menu, the game-over screen, and the title/saga screens. Those are not modals over a live simulation, so the stack does not apply.
 
 ---
 
@@ -302,11 +302,6 @@ Each entry records the current state, the target, and whether the work is expect
 **P-14 — Companion-pack browsing UI** (§3)
 - Current: Companions & Pet Progression (§3) is otherwise complete: AI-targeting generalization, acquisition gating, archetypes, death/revival, and active skills all ship. Item transfer is one-directional from the player's side only — `inventory-overlay.ts`'s `KeyG` sends an item to the companion's pack (`transfer_to_companion`), and `transfer_from_companion` exists on the command bus, but no UI browses the companion's pack contents to select an item to take back.
 - Target: extend `inventory-overlay.ts` (or a dedicated companion-pack view) to list the companion's pack contents and dispatch `transfer_from_companion` for a selected item.
-- Protected files: no.
-
-**P-17 — All modals on `ModalStackManager`** (§6)
-- Current: Dwarven Winch, town-return, choice, save & quit, settings/keybinds, save-code, and click-opened pact modals toggle `InputHandler.enabled` instead. The shop, map, and inspect overlays neither register nor toggle it — `InputHandler` intercepts their keys inline (§6).
-- Target: every modal registers on the stack.
 - Protected files: no.
 
 **P-22 — Per-engine content registries** (§3)

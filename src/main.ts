@@ -119,20 +119,20 @@ window.addEventListener('DOMContentLoaded', () => {
   const compendiumModal = new CompendiumModal();
   const commandPalette = new CommandPalette();
   const winchModal = new DwarvenWinchModal(() => {
-    if (inputHandler) inputHandler.enabled = true;
+    popModal('dwarven-winch');
     renderer?.render();
   });
   const townReturnModal = new TownReturnModal(() => {
-    if (inputHandler) inputHandler.enabled = true;
+    popModal('town-return');
     renderer?.render();
   });
   const choiceModal = new ChoiceModal(() => {
-    if (inputHandler) inputHandler.enabled = true;
+    popModal('choice');
     renderer?.render();
   });
   const pactModal = new PactModal();
   const levelUpModal = new LevelUpModal(() => {
-    if (inputHandler) inputHandler.enabled = true;
+    popModal(levelUpModal.id);
     renderer?.render();
   });
   const autosaveManager = new AutosaveManager(undefined, activeManifest);
@@ -147,6 +147,42 @@ window.addEventListener('DOMContentLoaded', () => {
    * silent; a corrupt, too-new, or unmigratable save is shown to the player rather than
    * silently falling through to another profile.
    */
+  /**
+   * Registers a modal on the LIFO stack (ARCHITECTURE.md §6) instead of switching the
+   * whole InputHandler off. The stack gives Escape handling, key trapping, and engine
+   * pause for free, and keeps nested modals ordered — disabling the handler did none of
+   * that and left no record of what was open.
+   *
+   * Modal classes here predate UIModal and differ in shape (one exposes isOpen as a
+   * method), so each is adapted rather than reshaped.
+   */
+  const pushModal = (
+    id: string,
+    target: {
+      isOpen: boolean | (() => boolean);
+      handleKeyDown?: (e: KeyboardEvent) => boolean;
+      close: () => void;
+    }
+  ): void => {
+    if (!inputHandler) return;
+    const openNow = () => (typeof target.isOpen === 'function' ? target.isOpen() : target.isOpen);
+    inputHandler.modalStack.push({
+      id,
+      get isOpen() {
+        return openNow();
+      },
+      set isOpen(value: boolean) {
+        if (!value) target.close();
+      },
+      handleKeyDown: (e: KeyboardEvent) => (openNow() ? (target.handleKeyDown?.(e) ?? false) : false),
+      close: () => target.close(),
+    });
+  };
+
+  const popModal = (id: string): void => {
+    inputHandler?.modalStack.remove(id);
+  };
+
   const loadProfileOrNotify = (profileId: string) => {
     const outcome = profileManager.loadCharacterResult(profileId);
     if (outcome.ok) {
@@ -296,7 +332,6 @@ window.addEventListener('DOMContentLoaded', () => {
     onCastSpell: (spell) => {
       if (inputHandler) {
         inputHandler.modalStack.remove('spellbook');
-        inputHandler.enabled = true;
         inputHandler.isInputLocked = false;
       }
       castOrTargetSpell(spell);
@@ -307,7 +342,6 @@ window.addEventListener('DOMContentLoaded', () => {
     onClose: () => {
       if (inputHandler) {
         inputHandler.modalStack.remove('spellbook');
-        inputHandler.enabled = true;
         inputHandler.isInputLocked = false;
       }
       if (typeof document !== 'undefined') {
@@ -399,9 +433,7 @@ window.addEventListener('DOMContentLoaded', () => {
     () => activeEngine,
     () => activeProfile,
     () => {
-      if (inputHandler) {
-        inputHandler.enabled = true;
-      }
+      popModal(diagnosticModal.id);
     },
     {
       getInputLocked: () => inputHandler?.isInputLocked ?? false,
@@ -440,9 +472,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     },
     onClose: () => {
-      if (inputHandler && activeEngine && gameContainer && gameContainer.style.display !== 'none') {
-        inputHandler.enabled = true;
-      }
+      popModal('save-code');
     },
   });
 
@@ -462,9 +492,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const keybindModal = new KeybindModal({
     settingsManager,
     onClose: () => {
-      if (activeEngine && inputHandler && !saveQuitModal.isOpen) {
-        inputHandler.enabled = true;
-      }
+      popModal('keybinds');
     },
   });
 
@@ -475,9 +503,7 @@ window.addEventListener('DOMContentLoaded', () => {
       saveAndReturnToTitle();
     },
     onResume: () => {
-      if (inputHandler) {
-        inputHandler.enabled = true;
-      }
+      popModal('save-quit');
       renderer?.render();
     },
     onOpenSettings: () => {
@@ -492,17 +518,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
   function promptSaveAndQuit(): void {
     if (activeEngine && activeProfile) {
-      if (inputHandler) inputHandler.enabled = false;
       saveQuitModal.open(activeEngine, activeProfile);
+      pushModal('save-quit', saveQuitModal);
     } else {
       saveAndReturnToTitle();
     }
   }
 
   devDiagBtn?.addEventListener('click', () => {
-    if (inputHandler) {
-      inputHandler.enabled = false;
-    }
     diagnosticModal.open();
   });
 
@@ -780,25 +803,25 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Wire Dwarven Winch interaction
     engine.onWinchInteract = (winch) => {
-      if (inputHandler) inputHandler.enabled = false;
       winchModal.open(winch, engine);
+      pushModal('dwarven-winch', winchModal);
       renderer?.render();
     };
 
     // Wire Town-Return fixtures and Two-Way portal interactions
     engine.onTownReturnInteract = (fixture, onConfirm, onCancel) => {
-      if (inputHandler) inputHandler.enabled = false;
+      pushModal('town-return', townReturnModal);
       townReturnModal.open(
         fixture.type,
         engine,
         () => {
-          if (inputHandler) inputHandler.enabled = true;
+          popModal('town-return');
           onConfirm();
           updateHeaderInfo();
           renderer?.render();
         },
         () => {
-          if (inputHandler) inputHandler.enabled = true;
+          popModal('town-return');
           if (onCancel) onCancel();
           updateHeaderInfo();
           renderer?.render();
@@ -809,18 +832,18 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Wire interactive Choice modal
     engine.onChoiceInteract = (choice, onOptionSelected, onCancel) => {
-      if (inputHandler) inputHandler.enabled = false;
+      pushModal('choice', choiceModal);
       choiceModal.open(
         choice,
         engine,
         (optionId) => {
-          if (inputHandler) inputHandler.enabled = true;
+          popModal('choice');
           onOptionSelected(optionId);
           updateHeaderInfo();
           renderer?.render();
         },
         () => {
-          if (inputHandler) inputHandler.enabled = true;
+          popModal('choice');
           if (onCancel) onCancel();
           updateHeaderInfo();
           renderer?.render();
@@ -834,7 +857,6 @@ window.addEventListener('DOMContentLoaded', () => {
         diagnosticModal.close();
         if (inputHandler) {
           inputHandler.modalStack.remove(diagnosticModal.id);
-          inputHandler.enabled = true;
         }
       } else {
         if (inputHandler) {
@@ -1093,8 +1115,8 @@ window.addEventListener('DOMContentLoaded', () => {
               timestamp: Date.now(),
               data: saveData,
             };
-            if (inputHandler) inputHandler.enabled = false;
             saveCodeModal.open('copy', env);
+            pushModal('save-code', { isOpen: () => saveCodeModal.isOpen(), close: () => saveCodeModal.close() });
           }
         },
       },
@@ -1105,8 +1127,8 @@ window.addEventListener('DOMContentLoaded', () => {
         shortcut: 'Esc -> Settings',
         description: 'Configure 8-directional movement modes and customize keyboard bindings',
         execute: () => {
-          if (inputHandler) inputHandler.enabled = false;
           keybindModal.open();
+          pushModal('keybinds', keybindModal);
         },
       },
       {
@@ -1171,8 +1193,10 @@ window.addEventListener('DOMContentLoaded', () => {
       };
       renderer.onPactModalRequested = () => {
         pactModal.open(engine, () => {
+          popModal(pactModal.id);
           renderer?.render();
         });
+        pushModal(pactModal.id, pactModal);
       };
       inputHandler = new InputHandler(
         engine,
@@ -1204,8 +1228,10 @@ window.addEventListener('DOMContentLoaded', () => {
       };
       renderer.onPactModalRequested = () => {
         pactModal.open(engine, () => {
+          popModal(pactModal.id);
           renderer?.render();
         });
+        pushModal(pactModal.id, pactModal);
       };
       inputHandler?.setEngine(engine);
       if (inputHandler) {

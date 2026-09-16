@@ -113,6 +113,12 @@ export class ChordBuffer {
 
     this.pressedArrows.delete(code);
 
+    // Releasing the key that started a pending step means no chord is coming, so dispatch
+    // it now instead of making the player wait out the debounce window (ARCHITECTURE.md §6).
+    if (this.pendingMove && this.pendingMove.code === code) {
+      this.flush();
+    }
+
     // If all arrow keys are released, reset active chord state
     if (this.pressedArrows.size === 0) {
       this.activeChord = null;

@@ -188,7 +188,7 @@
 - **Input Architecture:** `InputHandler` (`src/rendering/input-handler.ts`) owns the `window` `keydown`/`keyup`/`blur` listeners, the `ModalStackManager`, and the `ChordBuffer`.
 - **`ChordBuffer` Mechanics (`src/ui/input/chordBuffer.ts`):**
   - **Sliding-Window Arrow Chording:** When `arrowChordingEnabled` is on (the default), orthogonal arrow keypresses within the micro-debounce window (`arrowChordBufferMs`, default 40ms, clamped to 25–75ms) combine into a diagonal (e.g., Up + Right -> NorthEast). When it is off, arrows move cardinally with no buffering.
-  - **Keyup Flush:** Releasing an arrow key before the debounce timer expires, without forming a chord, should immediately dispatch the pending cardinal step. Currently keyup only updates held-key state; the pending step waits for the timer, and `ChordBuffer.flush()` has no production caller. **[Planned: P-16]**
+  - **Keyup Flush:** Releasing an arrow key before the debounce timer expires dispatches the pending cardinal step immediately — `handleKeyUp` calls `flush()` when the released key is the one that started the pending step, since no chord can follow it. Waiting out the window after the key is already up is latency the player feels on every step. A chord that formed before release still wins, and the release emits nothing further.
   - **Key-Repeat Bypass:** While an arrow key or an active diagonal chord is held and the browser sends repeat events (`KeyboardEvent.repeat`), the buffer skips the debounce timer and dispatches a move on each repeat.
   - **Opposing Direction Reversal:** Pressing the opposite key while a step is pending (e.g. Left while Right is pending) cancels the pending move and immediately honors the new direction.
   - **Focus Loss:** Window `blur` clears all held-key state.
@@ -302,11 +302,6 @@ Each entry records the current state, the target, and whether the work is expect
 **P-14 — Companion-pack browsing UI** (§3)
 - Current: Companions & Pet Progression (§3) is otherwise complete: AI-targeting generalization, acquisition gating, archetypes, death/revival, and active skills all ship. Item transfer is one-directional from the player's side only — `inventory-overlay.ts`'s `KeyG` sends an item to the companion's pack (`transfer_to_companion`), and `transfer_from_companion` exists on the command bus, but no UI browses the companion's pack contents to select an item to take back.
 - Target: extend `inventory-overlay.ts` (or a dedicated companion-pack view) to list the companion's pack contents and dispatch `transfer_from_companion` for a selected item.
-- Protected files: no.
-
-**P-16 — ChordBuffer keyup flush** (§6)
-- Current: keyup does not flush a pending unchorded step.
-- Target: releasing the key dispatches the pending cardinal step immediately.
 - Protected files: no.
 
 **P-17 — All modals on `ModalStackManager`** (§6)

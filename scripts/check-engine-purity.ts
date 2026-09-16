@@ -182,6 +182,23 @@ for (const filePath of [...uiFiles, ...renderingFiles]) {
   }
 }
 
+// 3. Composition root: src/main.ts is the one module that may import content packs,
+// but its engine imports must still resolve through the barrel (ARCHITECTURE.md §2, §3).
+const mainPath = path.resolve(process.cwd(), 'src/main.ts');
+if (fs.existsSync(mainPath)) {
+  const mainLines = fs.readFileSync(mainPath, 'utf-8').split(/\r?\n/);
+  for (let i = 0; i < mainLines.length; i++) {
+    if (DEEP_ENGINE_IMPORT_REGEX.test(mainLines[i])) {
+      violations.push({
+        file: 'src/main.ts',
+        line: i + 1,
+        category: 'DEEP_ENGINE_IMPORT',
+        detail: `Deep import bypassing engine public API barrel: ${mainLines[i].trim()}`,
+      });
+    }
+  }
+}
+
 console.log(`\n======================================================`);
 console.log(`ARCHITECTURAL BOUNDARY & PURITY VERIFICATION AUDIT`);
 console.log(`Engine files inspected: ${engineFiles.length}`);
@@ -206,7 +223,7 @@ if (violations.length > 0) {
   );
   console.log(`✓ Engine Boundary Isolation: 0 reverse imports in engine source and test files.`);
   console.log(`✓ Content Boundary Isolation: 0 UI/Rendering imports across ${contentFiles.length} content files.`);
-  console.log(`✓ Public API Surface: 0 deep imports into engine internals across ${uiFiles.length + renderingFiles.length} UI/Rendering files.`);
+  console.log(`✓ Public API Surface: 0 deep imports into engine internals across ${uiFiles.length + renderingFiles.length} UI/Rendering files and the composition root (src/main.ts).`);
   console.log(`All architectural boundaries verified intact!\n`);
   process.exit(0);
 }

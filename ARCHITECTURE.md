@@ -40,7 +40,7 @@
 
 | Layer / Directory | Primary Responsibility | Dependency & Import Rules |
 | :--- | :--- | :--- |
-| `src/main.ts` | **Composition Root.** Selects the content manifest and theme from `VITE_THEME`; creates presentation components; obtains `GameEngine` instances from the storage layer (`ProfileManager`, `AutosaveManager`); wires engine callbacks (`onGameEvent`, `onFloorChanged`, `onChoiceInteract`, …); mounts DOM listeners. | The **only** source module that imports content packs. May import every layer. Its engine imports should go through `src/engine/index.ts`. **[Planned: P-01]** |
+| `src/main.ts` | **Composition Root.** Selects the content manifest and theme from `VITE_THEME`; creates presentation components; obtains `GameEngine` instances from the storage layer (`ProfileManager`, `AutosaveManager`); wires engine callbacks (`onGameEvent`, `onFloorChanged`, `onChoiceInteract`, …); mounts DOM listeners. | The **only** source module that imports content packs. May import every layer. All its engine imports resolve through `src/engine/index.ts`; `check:engine-purity` enforces this. |
 | `src/content/` | Campaign content packs: item/monster catalogs, spells, status effects, encounter tables, vaults, towns, quest arcs, themes, and scripted behaviors. | Imports the engine (types *and* runtime values) only through `src/engine/index.ts`, never engine internals. **[Planned: P-02]** NEVER imports `src/ui/` or `src/rendering/`. Reaches the engine only through the `GameContentManifest` (§3, Content Extensibility Model). |
 | `src/engine/` | Headless state coordinator, action pipeline, spatial grid, FOV, scheduler, AI behavior trees, storage and serialization, PRNG. | Zero browser/DOM/Canvas dependencies. Exposes its public API through `src/engine/index.ts`. Production source has **zero** imports from `src/content/`, `src/ui/`, or `src/rendering/` (Dependency Inversion). Colocated engine tests (`src/engine/**/__tests__/`) may import content packs as integration fixtures, never `src/ui/` or `src/rendering/`. |
 | `src/rendering/` | Canvas texture atlases, sprite blitting, camera, canvas overlays, visual effect playback (`fxRunner.ts`), and keyboard dispatch (`input-handler.ts`, class `InputHandler`). | Engine via `src/engine/index.ts` only. May import `src/ui/` (presentation tier). Never imports `src/content/`. |
@@ -214,7 +214,7 @@
    - **DOM and browser tokens:** fails on `window.`, `document.`, `navigator.`, `localStorage`, `sessionStorage`, `HTMLElement`, `CanvasRenderingContext2D`, `HTMLCanvasElement`, or `ImageData` in engine and content source files (test and fixture files are exempt).
    - **Reverse imports:** fails on any `src/ui/` or `src/rendering/` import in `src/engine/` (tests included), and on `src/content/` imports in engine production source.
    - **Content isolation:** fails on `src/ui/` or `src/rendering/` imports in content source.
-   - **Public API:** fails on any `engine/<path>` deep import in `src/ui/` or `src/rendering/` (tests included), and on content imports in UI/rendering source.
+   - **Public API:** fails on any `engine/<path>` deep import in `src/ui/` or `src/rendering/` (tests included) or in `src/main.ts`, and on content imports in UI/rendering source. `src/main.ts` is checked for deep engine imports only — as the composition root it is the one module allowed to import content packs.
    - **Timing and audio globals:** fails on `setTimeout`, `setInterval`, `clearTimeout`, `clearInterval`, `requestAnimationFrame`, `cancelAnimationFrame`, `requestIdleCallback`, `performance.now`, `AudioContext`, `webkitAudioContext`, `HTMLAudioElement`, or `new Audio` in engine and content source files, on the same execution-path rule as DOM tokens (§2).
    - The success line reports how many engine and content **source** files were scanned and how many test/fixture files were exempt, rather than counting exempt files as covered.
    - Planned extensions: deep engine imports from content, and a `Math.random` check for simulation code. **[Planned: P-19]**
@@ -271,11 +271,6 @@ Keep such diffs minimal and scoped, and state which exception applies in the cha
 
 ## 9. Planned Work Register
 Each entry records the current state, the target, and whether the work is expected to touch protected files (§8.1). Work that is recorded but deliberately out of scope is listed under *Deferred* at the end of this section, and is not planned work.
-
-**P-01 — Composition root uses the engine barrel** (§2, §3)
-- Current: `src/main.ts` deep-imports engine internals (`./engine/engine`, `./engine/storage/*`, `./engine/actions/*`, and others).
-- Target: all engine imports in `src/main.ts` resolve through `src/engine/index.ts`.
-- Protected files: no.
 
 **P-02 — Content packs use the engine barrel only** (§2, §3)
 - Current: content files deep-import engine internals, including runtime values (`warcraft/ai.ts` action classes and `findPath`; `ItemFactory`, `Merchant`, `MonsterRegistry` in the cotw and warcraft `monsters.ts`/`town.ts`). Some needed types are not exported from the barrel (e.g. `VaultBlueprint` from `dungeon/vaultStamp.ts`).

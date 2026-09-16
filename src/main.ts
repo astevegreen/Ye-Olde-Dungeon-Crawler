@@ -1,33 +1,42 @@
-import { ProfileManager } from './engine/storage/profile-manager';
-import type { CharacterProfile } from './engine/storage/types';
-import { GameEngine } from './engine/engine';
+import {
+  AutosaveManager,
+  CastSpellAction,
+  ClimbStairsAction,
+  CURRENT_SCHEMA_VERSION,
+  flightRecorder,
+  GameEngine,
+  getActiveTitle,
+  getSpell,
+  Leaderboard,
+  ProfileManager,
+  QuickLootAction,
+  RestAction,
+  SageService,
+  SearchAction,
+  serializeGame,
+  WaitAction,
+} from './engine';
+import type {
+  CharacterProfile,
+  GameEvent,
+  SpellDefinition,
+  ValhallaEntry,
+} from './engine';
 import { CanvasRenderer } from './rendering/canvas-renderer';
 import { InputHandler } from './rendering/input-handler';
 import { TitleScreen } from './ui/title-screen';
-import { Leaderboard, type ValhallaEntry } from './engine/hallOfFame/leaderboard';
 import { DiagnosticModal } from './ui/diagnostic-modal';
 import { SagaShareModal } from './ui/sagaShareModal';
-import { flightRecorder } from './engine/debug/flightRecorder';
 import { ContextHelp } from './ui/help/contextHelp';
 import { CompendiumModal } from './ui/help/compendiumModal';
 import { CommandPalette } from './ui/help/commandPalette';
-import { SageService } from './engine/economy/services';
-import { QuickLootAction } from './engine/actions/inventory-actions';
-import { WaitAction } from './engine/actions/wait';
-import { RestAction } from './engine/actions/rest';
-import { SearchAction } from './engine/actions/search';
-import { ClimbStairsAction } from './engine/actions/stairs';
-import { CastSpellAction } from './engine/actions/spell-actions';
 import type { SpellbookEntry } from './rendering/targeting-overlay';
-import type { SpellDefinition } from './engine/magic/types';
 import { applyThemeTokens, COTW_THEME_TOKENS } from './rendering/theme';
 import { DwarvenWinchModal } from './ui/dwarvenWinchModal';
 import { TownReturnModal } from './ui/townReturnModal';
 import { ChoiceModal } from './ui/choiceModal';
 import { PactModal } from './ui/pactModal';
 import { LevelUpModal } from './ui/levelUpModal';
-import type { GameEvent } from './engine';
-import { getActiveTitle } from './engine';
 import { AutoRestRunner } from './ui/autoRestRunner';
 import { NavigationController } from './ui/navigation';
 import { cotwManifest } from './content/cotw';
@@ -40,8 +49,6 @@ import { SaveSlotModal } from './ui/saveSlotModal';
 import { showToast } from './ui/toast';
 import { setupSaveDragAndDrop, importSaveWithValidation } from './ui/saveImporter';
 import { defaultPlatformAdapter, getBrowserStorage } from './ui/platform';
-import { serializeGame } from './engine/storage/serializer';
-import { CURRENT_SCHEMA_VERSION } from './engine/storage/migrator';
 import './ui/styles/flanks.css';
 import './ui/styles/layout.css';
 import { FlankManager } from './ui/flanks/flankManager';
@@ -50,8 +57,6 @@ import { JournalModule } from './ui/flanks/journalModule';
 import { QuickSpellsBar } from './ui/quickSpellsBar';
 import { SpellbookModal } from './ui/spellbookModal';
 import { BottomStatusBar } from './ui/bottomStatusBar';
-import { AutosaveManager } from './engine/storage/autosaveManager';
-import { getSpell } from './engine/magic/spellRegistry';
 import { SettingsManager } from './ui/settings/settingsManager';
 import type { RadialMenuSlotConfig } from './ui/settings/settingsManager';
 import { KeybindModal } from './ui/settings/keybindModal';

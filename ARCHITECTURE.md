@@ -148,7 +148,9 @@
 - **Persistence Architecture & Storage Tradeoffs:**
   - **`localStorage` Backend:** synchronous default for character saves (`ProfileManager`) and autosaves (`AutosaveManager`, periodic and on floor change). Both live in `src/engine/storage/` and accept a `Storage`-shaped adapter; in the browser, `src/main.ts` supplies `window.localStorage` through `getBrowserStorage()` in `src/ui/platform.ts`. At boot, `src/ui/persistenceInit.ts` requests persistent storage (`navigator.storage.persist()`).
   - **Quota Management:** map tiles and FOV exploration are run-length encoded (`compaction.ts`). A save currently includes every visited floor (`storedMaps`). A single-floor active cache policy to bound payload size is planned. **[Planned: P-11]**
-  - **`IndexedDB` Backend:** asynchronous storage tier for large multi-floor dungeon states, bestiary records, and flight-recorder logs that exceed `localStorage` quotas. Not implemented. **[Planned: P-12]**
+  - **Asynchronous tier (`src/engine/storage/asyncStore.ts`):** `AsyncKeyValueStore` is the contract for bulk records that would otherwise strain the synchronous quota — every visited floor, bestiary records, and flight-recorder logs. The engine defines the interface only: `indexedDB` is a browser global and engine code may not touch those (§2), so `IndexedDbStore` lives in `src/ui/indexedDbStore.ts` and is injected by the composition root. `InMemoryAsyncStore` backs headless callers (tests, `npm run sim`), so engine code depends on the tier without depending on a browser.
+  - **`BulkArchive` (`src/engine/storage/bulkArchive.ts`)** is the typed surface over that tier: per-profile floors (`putFloor`/`getFloor`/`listFloors`/`deleteFloors`), bestiary records, and flight-recorder log dumps. Keys are profile-scoped so two characters never collide. `src/main.ts` constructs it with the IndexedDB store when available and archives the flight log on a crash; an archive failure is swallowed so it can never mask the crash it is recording.
+  - Moving stored floors out of the synchronous save and onto this tier is the bounded-payload policy. **[Planned: P-11]**
   - **Native File Export/Import:** `.cotw` file download via `Blob` (`src/ui/platform.ts`), file and drag-and-drop import (`src/ui/saveImporter.ts`), and Base64 save codes (`src/engine/storage/saveTransfer.ts`) provide zero-dependency offline backup, run sharing, and cross-browser transfer.
 - **Forward-Only Schema Migrations (`src/engine/storage/migrator.ts`):**
   - Saves are wrapped in a `VersionedSaveEnvelope` (`schemaVersion`, `contentManifestId`, `timestamp`, `data`). `CURRENT_SCHEMA_VERSION` in `migrator.ts` is the authoritative current version. Do not restate its value in this document or elsewhere; read it from `migrator.ts`.
@@ -303,11 +305,6 @@ Each entry records the current state, the target, and whether the work is expect
 - Current: saves include every visited floor.
 - Target: a bounded payload policy for inactive floors, coordinated with P-12.
 - Protected files: `migrator.ts` if the save format changes.
-
-**P-12 — IndexedDB storage tier** (§5)
-- Current: `localStorage` only.
-- Target: an asynchronous IndexedDB backend for large multi-floor states, bestiary records, and flight-recorder logs.
-- Protected files: no.
 
 **P-14 — Companion-pack browsing UI** (§3)
 - Current: Companions & Pet Progression (§3) is otherwise complete: AI-targeting generalization, acquisition gating, archetypes, death/revival, and active skills all ship. Item transfer is one-directional from the player's side only — `inventory-overlay.ts`'s `KeyG` sends an item to the companion's pack (`transfer_to_companion`), and `transfer_from_companion` exists on the command bus, but no UI browses the companion's pack contents to select an item to take back.

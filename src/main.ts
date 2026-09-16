@@ -16,6 +16,8 @@ import {
   serializeGame,
   WaitAction,
   shouldNotifyPlayer,
+  BulkArchive,
+  InMemoryAsyncStore,
 } from './engine';
 import type {
   CharacterProfile,
@@ -48,6 +50,7 @@ import { SaveCodeModal } from './ui/saveCodeModal';
 import { SaveQuitModal } from './ui/saveQuitModal';
 import { SaveSlotModal } from './ui/saveSlotModal';
 import { showToast } from './ui/toast';
+import { getBrowserAsyncStore } from './ui/indexedDbStore';
 import { setupSaveDragAndDrop, importSaveWithValidation } from './ui/saveImporter';
 import { defaultPlatformAdapter, getBrowserStorage } from './ui/platform';
 import './ui/styles/flanks.css';
@@ -131,6 +134,10 @@ window.addEventListener('DOMContentLoaded', () => {
     renderer?.render();
   });
   const autosaveManager = new AutosaveManager(undefined, activeManifest);
+
+  // Asynchronous bulk tier (ARCHITECTURE.md §5): IndexedDB in the browser, in-memory when
+  // the browser has none, so callers never branch on availability.
+  const bulkArchive = new BulkArchive(getBrowserAsyncStore() ?? new InMemoryAsyncStore());
 
   /**
    * Loads report why they failed (ARCHITECTURE.md §5). A missing save is routine and stays
@@ -594,6 +601,10 @@ window.addEventListener('DOMContentLoaded', () => {
   const onGlobalError = (event: ErrorEvent) => {
     const err = event.error || new Error(String(event.message));
     flightRecorder.recordError(err, { source: event.filename, lineno: event.lineno, colno: event.colno });
+    // Archive the log off the synchronous quota; failure here must never mask the crash.
+    void bulkArchive
+      .archiveFlightLog(`crash-${flightRecorder.getEvents().length}-${err.name}`, flightRecorder.getEvents())
+      .catch(() => undefined);
     diagnosticModal.showCrash(err);
   };
 

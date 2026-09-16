@@ -146,6 +146,7 @@ export * from './storage/autosaveManager';
 export * from './storage/loadResult';
 export * from './storage/asyncStore';
 export * from './storage/bulkArchive';
+export * from './storage/floorCachePolicy';
 export * from './storage/saveTransfer';
 
 // Quest & Game State Progression

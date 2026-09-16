@@ -450,7 +450,7 @@ describe('Schema Migrator & Save State Versioning', () => {
     const result = defaultMigrator.migrate(v8Envelope);
     expect(result.migrated).toBe(true);
     expect(result.fromVersion).toBe(8);
-    expect(result.envelope.schemaVersion).toBe(9);
+    expect(result.envelope.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(result.envelope.data.companion).toBeNull();
     // Everything else from the v7->v8 step onward is untouched
     expect(result.envelope.data.map.tilesRle).toBe('16W');
@@ -461,7 +461,7 @@ describe('Schema Migrator & Save State Versioning', () => {
     expect(result.envelope.data.map.isCleared).toBe(true);
   });
 
-  it('leaves an already up-to-date v9 save (with a companion) untouched', () => {
+  it('migrates a v9 save with a companion to v10, preserving the companion', () => {
     const v9Envelope: VersionedSaveEnvelope<any> = {
       schemaVersion: 9,
       contentManifestId: 'cotw',
@@ -474,9 +474,11 @@ describe('Schema Migrator & Save State Versioning', () => {
     };
 
     const result = defaultMigrator.migrate(v9Envelope);
-    expect(result.migrated).toBe(false);
+    expect(result.migrated).toBe(true);
     expect(result.fromVersion).toBe(9);
-    expect(result.envelope.schemaVersion).toBe(9);
+    expect(result.envelope.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    // v9 saves carry every floor inline, so nothing is archived yet (ARCHITECTURE.md §5).
+    expect(result.envelope.data.archivedFloors).toEqual([]);
     expect(result.envelope.data.companion!.id).toBe('companion-1');
     expect(result.envelope.data.companion!.hp).toBe(20);
   });

@@ -1,7 +1,7 @@
 import type { SaveData } from './types';
 import { compactTiles, compactFov } from './compaction';
 
-export const CURRENT_SCHEMA_VERSION = 9;
+export const CURRENT_SCHEMA_VERSION = 10;
 
 export interface VersionedSaveEnvelope<T = SaveData> {
   schemaVersion: number;
@@ -442,6 +442,20 @@ export class SchemaMigrator {
 
       return {
         schemaVersion: 9,
+        contentManifestId: envelope.contentManifestId ?? 'cotw',
+        timestamp: envelope.timestamp ?? Date.now(),
+        data,
+      };
+    });
+
+    // v9 -> v10: floors may live in the async tier (ARCHITECTURE.md §5). A v9 save carries
+    // every floor inline, so nothing is archived yet; the field just becomes explicit.
+    this.registerMigration(9, 10, (envelope: VersionedSaveEnvelope<any>): VersionedSaveEnvelope => {
+      const data = { ...envelope.data };
+      data.archivedFloors = data.archivedFloors ?? [];
+
+      return {
+        schemaVersion: 10,
         contentManifestId: envelope.contentManifestId ?? 'cotw',
         timestamp: envelope.timestamp ?? Date.now(),
         data,

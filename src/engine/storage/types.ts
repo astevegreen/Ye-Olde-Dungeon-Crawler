@@ -323,6 +323,8 @@ export interface SaveData {
   difficulty?: GameDifficulty;
   maxFloor?: number;
   storedMaps?: Record<number, SerializedMap>;
+  /** Floors held in the async tier rather than inline (schema v10, ARCHITECTURE.md §5). */
+  archivedFloors?: number[];
   storedFovRle?: Record<number, string>;
   compendium?: Record<string, { kills: number; tier: 0 | 1 | 2 | 3; firstEncounterFloor?: number }>;
   townReturn?: SerializedTownReturnData;

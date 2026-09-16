@@ -18,6 +18,7 @@ import {
   shouldNotifyPlayer,
   BulkArchive,
   InMemoryAsyncStore,
+  hydrateArchivedFloors,
 } from './engine';
 import type {
   CharacterProfile,
@@ -138,6 +139,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Asynchronous bulk tier (ARCHITECTURE.md §5): IndexedDB in the browser, in-memory when
   // the browser has none, so callers never branch on availability.
   const bulkArchive = new BulkArchive(getBrowserAsyncStore() ?? new InMemoryAsyncStore());
+  profileManager.setBulkArchive(bulkArchive);
 
   /**
    * Loads report why they failed (ARCHITECTURE.md §5). A missing save is routine and stays
@@ -146,7 +148,12 @@ window.addEventListener('DOMContentLoaded', () => {
    */
   const loadProfileOrNotify = (profileId: string) => {
     const outcome = profileManager.loadCharacterResult(profileId);
-    if (outcome.ok) return outcome.value;
+    if (outcome.ok) {
+      // Floors live in the async tier (ARCHITECTURE.md §5). Hydrate them after the
+      // synchronous load; any that cannot be fetched simply regenerate on revisit.
+      void hydrateArchivedFloors(outcome.value.engine, profileId, bulkArchive).catch(() => undefined);
+      return outcome.value;
+    }
     if (shouldNotifyPlayer(outcome)) showToast(outcome.message, 'error', 6000);
     return null;
   };

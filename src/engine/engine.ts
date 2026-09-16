@@ -28,7 +28,6 @@ import { createScaledMonster } from './dungeon/spawner';
 import type { Item } from './items/item';
 import { CompendiumManager } from './compendium/compendiumManager';
 import { AffinityMatrix, DEFAULT_AFFINITY_MATRIX } from './magic/elements';
-import { TownReturnManager } from './townReturn/townReturnManager';
 import { FloorManager } from './world/floorManager';
 import { PlaneManager } from './world/planeManager';
 import type { SurfaceGrid } from './surfaces/surfaceGrid';
@@ -113,7 +112,6 @@ export interface EngineConfig {
   gameState?: GameStateManager;
   manifest?: GameContentManifest;
   compendium?: CompendiumManager;
-  townReturnManager?: TownReturnManager;
   floorManager?: FloorManager;
   planeManager?: PlaneManager;
   worldState?: WorldState;
@@ -172,23 +170,12 @@ export class GameEngine {
   public readonly affinityMatrix: AffinityMatrix;
   public readonly compendium: CompendiumManager;
   public readonly wanderingSpawner: WanderingMonsterSpawner;
-  public readonly townReturnManager: TownReturnManager;
   public readonly floorManager: FloorManager;
   public readonly planeManager: PlaneManager;
   public readonly identification: IdentificationManager;
   public worldState: WorldState;
   public onNpcInteract?: (npc: NPC) => void;
   public onFloorChanged?: (floor: number) => void;
-  public onWinchInteract?: (winch: any) => void;
-  public onTownReturnInteract?: (
-    fixture: {
-      type: 'runic_conduit' | 'valkyrie_sprint' | 'dwarven_winch' | 'town_portal';
-      position: Position;
-      fixtureData?: any;
-    },
-    onConfirm: () => void,
-    onCancel?: () => void
-  ) => void;
   public onChoiceInteract?: (
     choice: ChoiceDefinition,
     onOptionSelected: (optionId: string) => void,
@@ -380,7 +367,6 @@ export class GameEngine {
       : DEFAULT_AFFINITY_MATRIX;
     this.compendium = config.compendium ?? new CompendiumManager();
     this.wanderingSpawner = new WanderingMonsterSpawner();
-    this.townReturnManager = config.townReturnManager ?? new TownReturnManager();
     this.floorManager = config.floorManager ?? new FloorManager();
     this.planeManager = config.planeManager ?? new PlaneManager();
     this.gameState = config.gameState ?? new GameStateManager();
@@ -815,9 +801,6 @@ export class GameEngine {
         ? (this.player.maxFloor ?? this.manifest.quest.maxFloor)
         : (this.manifest.quest?.maxFloor ?? this.player.maxFloor)) ?? DungeonArc.MAX_FLOOR;
     if (targetFloor === 0) {
-      if (this.townReturnManager?.townPortal?.active) {
-        this.townReturnManager.townPortal.ensureSpawnedInTown(this.map);
-      }
       this.log(`You climb up into the light of ${this.manifest.town?.name ?? 'the town'}, haven of adventurers.`);
     } else if (targetFloor >= effectiveMaxFloor) {
       this.log(this.manifest.quest?.bossLairTitle ?? `*** FLOOR ${targetFloor}: THE BOSS'S LAIR ***`);
@@ -958,7 +941,6 @@ export class GameEngine {
       this.runEnvironmentalUpdate('plane-drift', () => this.planeManager.tickDrift(this.map, this.scheduler.ticks, this));
       this.runEnvironmentalUpdate('wandering-spawn', () => this.wanderingSpawner.checkAndSpawn(this, this.rng));
       this.runEnvironmentalUpdate('floor-respawn', () => this.floorManager.checkClearedFloorRespawn(this));
-      this.runEnvironmentalUpdate('town-return-tick', () => this.townReturnManager.onPlayerTurn(this));
 
       if (this.detectMonstersTurns > 0) this.detectMonstersTurns -= 1;
       if (this.detectObjectsTurns > 0) this.detectObjectsTurns -= 1;
@@ -1090,7 +1072,7 @@ export class GameEngine {
    * (ARCHITECTURE.md §4). A failure is recorded through the same counters as pipeline and
    * monster-turn failures — so the turn's result is marked `pipelineError` — and the
    * remaining updates still run: a throwing surface tick must not silently skip
-   * substances, spawns, or the town-return timer.
+   * substances, spawns, or the floor-respawn check.
    */
   private runEnvironmentalUpdate(label: string, update: () => void): void {
     try {

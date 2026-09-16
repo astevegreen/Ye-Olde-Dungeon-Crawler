@@ -7,18 +7,17 @@ import type { CharacterAttributes, Gender } from '../character/types';
 import type { ElementType, ElementalAffinity } from '../magic/elements';
 import type { AiBehaviorType } from '../bestiary/monsterDefinitions';
 import type { AiState, MonsterIntent } from '../entities/monster';
-import type { SerializedTownReturnData } from '../townReturn/types';
 import type { Position } from '../types';
 import type { WorldState } from '../state/worldState';
 import type { PlaneState } from '../spatial/planeTypes';
 import type { SerializedSurfaceCell } from '../surfaces/surfaceGrid';
 import type { SerializedSubstanceCell } from '../environment/substanceGrid';
 
+// Reserved for future one-time tutorial-tip flags (ARCHITECTURE.md §0 pack-neutrality:
+// content packs may populate this without engine changes). Empty since the town-return
+// fixtures that previously used it were removed.
 export interface TutorialFlags {
-  conduitSeen?: boolean;
-  sprintSeen?: boolean;
-  winchSeen?: boolean;
-  townPortalSeen?: boolean;
+  [flag: string]: boolean | undefined;
 }
 
 export interface CharacterProfile {
@@ -327,7 +326,6 @@ export interface SaveData {
   archivedFloors?: number[];
   storedFovRle?: Record<number, string>;
   compendium?: Record<string, { kills: number; tier: 0 | 1 | 2 | 3; firstEncounterFloor?: number }>;
-  townReturn?: SerializedTownReturnData;
   worldState?: WorldState;
   planes?: Record<string, PlaneState>;
   prngState?: number;

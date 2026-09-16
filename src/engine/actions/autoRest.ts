@@ -121,7 +121,6 @@ export class AutoRestManager {
     // Advance world simulation (monsters take actions)
     engine.surfaces?.tick(engine);
     engine.wanderingSpawner?.checkAndSpawn(engine);
-    engine.townReturnManager?.onPlayerTurn(engine);
 
     engine.updateFov();
     engine.advanceWorldUntilPlayerTurn();

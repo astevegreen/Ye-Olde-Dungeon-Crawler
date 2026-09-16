@@ -41,16 +41,6 @@ export class ClimbStairsAction implements Action {
     }
 
     if (tile.isStairsUp || tile.type === 'stairs_up') {
-      if (engine.townReturnManager?.valkyrieGauntlet?.active) {
-        engine.townReturnManager.valkyrieGauntlet.checkThresholdStep(engine, this.entity.x, this.entity.y);
-        const cost = this.entity.getActionCost(BASE_ACTION_COST);
-        this.entity.consumeEnergy(cost);
-        return {
-          success: true,
-          cost,
-          message: 'You advance against the threshold winds of the Valkyrie Gauntlet.',
-        };
-      }
       const prevFloor = Math.max(0, engine.currentFloor - 1);
       engine.changeFloor(prevFloor);
       const cost = this.entity.getActionCost(BASE_ACTION_COST);

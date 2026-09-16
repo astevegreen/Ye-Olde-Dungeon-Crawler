@@ -478,7 +478,6 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     storedMaps,
     storedFovRle,
     compendium: compendiumData,
-    townReturn: engine.townReturnManager ? engine.townReturnManager.serialize() : undefined,
     worldState: engine.worldState ? (() => {
       const cloned = cloneWorldState(engine.worldState);
       const serializedVaults: Record<string, SerializedItemNode[]> = {};
@@ -893,10 +892,6 @@ export function deserializeGame(
     engine.storedFov.set(engine.currentFloor, engine.fov);
   }
   engine.updateFov();
-
-  if (saveData.townReturn && engine.townReturnManager) {
-    engine.townReturnManager.deserialize(saveData.townReturn);
-  }
 
   if (saveData.worldState) {
     const ws = createWorldState(saveData.worldState as any);

@@ -85,10 +85,6 @@ export class JournalModule implements FlankModule {
                 landmarks.push('Altar of Tyr ⚖️');
               } else if (tile.type === 'gateway_valhalla' && !landmarks.includes('Valhalla Gateway ✨')) {
                 landmarks.push('Valhalla Gateway ✨');
-              } else if (tile.type === 'dwarven_winch' && !landmarks.includes('Dwarven Winch ⚙️')) {
-                landmarks.push('Dwarven Winch ⚙️');
-              } else if (tile.type === 'town_portal' && !landmarks.includes('Town Portal 🌀')) {
-                landmarks.push('Town Portal 🌀');
               }
             }
           }

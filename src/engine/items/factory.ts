@@ -499,19 +499,6 @@ export class ItemFactory {
     });
   }
 
-  public static createScrapCobblestone(id = 'cobblestone-1', weight = 3500): Item {
-    return new Item({
-      id,
-      name: 'Cobblestone Ballast',
-      unidentifiedName: 'Heavy Granite Stone',
-      category: 'misc',
-      weight,
-      bulk: 1500,
-      identified: true,
-      description: 'A dense, heavy granite stone carved from subterranean bedrock, ideal as counterweight ballast.',
-    });
-  }
-
   /**
    * A generic reward trinket a merchant can gate behind a `Predicate` (e.g. a
    * `minCounter` renown threshold — see `renown/renownLedger.ts`). Deliberately

@@ -162,14 +162,6 @@ export * from './economy/services';
 // Town
 export * from './town/townMap';
 
-// Town Return
-export * from './townReturn/types';
-export * from './townReturn/townReturnManager';
-export * from './townReturn/townPortal';
-export * from './townReturn/dwarvenWinch';
-export * from './townReturn/runicConduit';
-export * from './townReturn/valkyrieSprint';
-
 // Hall of Fame & Sharing
 export * from './hallOfFame/leaderboard';
 

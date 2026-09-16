@@ -37,8 +37,6 @@ import { CompendiumModal } from './ui/help/compendiumModal';
 import { CommandPalette } from './ui/help/commandPalette';
 import type { SpellbookEntry } from './rendering/targeting-overlay';
 import { applyThemeTokens, COTW_THEME_TOKENS } from './rendering/theme';
-import { DwarvenWinchModal } from './ui/dwarvenWinchModal';
-import { TownReturnModal } from './ui/townReturnModal';
 import { ChoiceModal } from './ui/choiceModal';
 import { PactModal } from './ui/pactModal';
 import { LevelUpModal } from './ui/levelUpModal';
@@ -118,14 +116,6 @@ window.addEventListener('DOMContentLoaded', () => {
   const contextHelp = new ContextHelp();
   const compendiumModal = new CompendiumModal();
   const commandPalette = new CommandPalette();
-  const winchModal = new DwarvenWinchModal(() => {
-    popModal('dwarven-winch');
-    renderer?.render();
-  });
-  const townReturnModal = new TownReturnModal(() => {
-    popModal('town-return');
-    renderer?.render();
-  });
   const choiceModal = new ChoiceModal(() => {
     popModal('choice');
     renderer?.render();
@@ -799,35 +789,6 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         renderer?.render();
       }
-    };
-
-    // Wire Dwarven Winch interaction
-    engine.onWinchInteract = (winch) => {
-      winchModal.open(winch, engine);
-      pushModal('dwarven-winch', winchModal);
-      renderer?.render();
-    };
-
-    // Wire Town-Return fixtures and Two-Way portal interactions
-    engine.onTownReturnInteract = (fixture, onConfirm, onCancel) => {
-      pushModal('town-return', townReturnModal);
-      townReturnModal.open(
-        fixture.type,
-        engine,
-        () => {
-          popModal('town-return');
-          onConfirm();
-          updateHeaderInfo();
-          renderer?.render();
-        },
-        () => {
-          popModal('town-return');
-          if (onCancel) onCancel();
-          updateHeaderInfo();
-          renderer?.render();
-        }
-      );
-      renderer?.render();
     };
 
     // Wire interactive Choice modal

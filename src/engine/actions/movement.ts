@@ -202,8 +202,7 @@ export class MovementAction implements Action {
       }
     }
 
-    // 6. Stairs, Portals, and Town-Return Fixtures Check for Player
-    // 6. Stairs, Portals, and Town-Return Fixtures Check for Player
+    // 6. Stairs and Altar Check for Player
     if (this.entity.type === 'player') {
       const destTile = engine.map.getTile(targetX, targetY);
       const handlerId = destTile?.interactionHandlerId ?? destTile?.type;
@@ -215,76 +214,6 @@ export class MovementAction implements Action {
         engine.log('*** You step into the shimmering Gateway to Valhalla! ***');
         engine.gameState?.triggerVictory(engine, (engine as any).profileManager);
         engine.changeFloor(0, { x: 25, y: 23 });
-      } else if (handlerId === 'runic_conduit') {
-        const conduit = engine.townReturnManager?.getOrCreateConduit(engine.currentFloor, { x: targetX, y: targetY });
-        if (conduit && !conduit.ritualActive) {
-          if (engine.onTownReturnInteract) {
-            engine.onTownReturnInteract(
-              { type: 'runic_conduit', position: { x: targetX, y: targetY }, fixtureData: conduit },
-              () => conduit.startRitual(engine),
-              () => {
-                this.entity.energy += cost;
-              }
-            );
-          } else {
-            conduit.startRitual(engine);
-          }
-        }
-      } else if (handlerId === 'conduit_node') {
-        const conduit = engine.townReturnManager?.getOrCreateConduit(engine.currentFloor, { x: targetX, y: targetY });
-        if (conduit) {
-          conduit.checkNodeStep(engine, targetX, targetY);
-        }
-      } else if (handlerId === 'valkyrie_sprint') {
-        if (engine.townReturnManager && !engine.townReturnManager.valkyrieGauntlet.active) {
-          if (engine.onTownReturnInteract) {
-            engine.onTownReturnInteract(
-              { type: 'valkyrie_sprint', position: { x: targetX, y: targetY }, fixtureData: engine.townReturnManager.valkyrieGauntlet },
-              () => engine.townReturnManager.valkyrieGauntlet.startGauntlet(engine),
-              () => {
-                this.entity.energy += cost;
-              }
-            );
-          } else {
-            engine.townReturnManager.valkyrieGauntlet.startGauntlet(engine);
-          }
-        }
-      } else if (handlerId === 'dwarven_winch') {
-        const winch = engine.townReturnManager?.getOrCreateWinch(engine.currentFloor, { x: targetX, y: targetY });
-        if (winch) {
-          if (engine.onTownReturnInteract) {
-            engine.onTownReturnInteract(
-              { type: 'dwarven_winch', position: { x: targetX, y: targetY }, fixtureData: winch },
-              () => {
-                if (engine.onWinchInteract) {
-                  engine.onWinchInteract(winch);
-                }
-              },
-              () => {
-                this.entity.energy += cost;
-              }
-            );
-          } else if (engine.onWinchInteract) {
-            engine.onWinchInteract(winch);
-          } else {
-            engine.log('You stand before the Dwarven Counterweight Winch. Access the hopper to balance weight.');
-          }
-        }
-      } else if (handlerId === 'town_portal') {
-        const portal = engine.townReturnManager?.townPortal;
-        if (portal && portal.active) {
-          if (engine.onTownReturnInteract) {
-            engine.onTownReturnInteract(
-              { type: 'town_portal', position: { x: targetX, y: targetY }, fixtureData: portal },
-              () => portal.teleportToDepths(engine),
-              () => {
-                this.entity.energy += cost;
-              }
-            );
-          } else {
-            portal.teleportToDepths(engine);
-          }
-        }
       } else if (handlerId === 'altar_tyr') {
         const isPurified = engine.getWorldFlag('tyr_purified');
         const isDesecrated = engine.getWorldFlag('tyr_desecrated');

@@ -46,7 +46,6 @@ const INTERNAL_SUBSYSTEM_CLASSES = new Set([
   'PlaneManager',
   'FovManager',
   'FloorManager',
-  'TownReturnManager',
   'PactManager',
   'CompendiumManager',
   'GameStateManager',

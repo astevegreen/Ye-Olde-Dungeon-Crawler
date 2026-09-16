@@ -622,31 +622,6 @@ export class CanvasRenderer {
       statusX += ctx.measureText(text).width + 8;
     }
 
-    // 6. Active Conduit Ritual HUD Badge
-    const conduit = this.engine.townReturnManager?.conduits?.get(this.engine.currentFloor);
-    if (conduit && conduit.ritualActive) {
-      const ritualText = `⚡ Conduit Ritual: Charges ${conduit.charges}/3 | Turns Remaining: ${conduit.turnsRemaining}/6 ⚡`;
-      ctx.font = `bold 11px ${font}`;
-      const badgeW = ctx.measureText(ritualText).width + 16;
-      const badgeH = 18;
-      const badgeX = Math.floor((width - badgeW) / 2);
-      const badgeY = 6;
-
-      ctx.fillStyle = '#78350f';
-      ctx.fillRect(badgeX - 1, badgeY - 1, badgeW + 2, badgeH + 2);
-      ctx.fillStyle = '#fef08a';
-      ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
-
-      ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(badgeX + 0.5, badgeY + 0.5, badgeW - 1, badgeH - 1);
-
-      ctx.fillStyle = '#b45309';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(ritualText, badgeX + badgeW / 2, badgeY + badgeH / 2 + 1);
-    }
-
     // 7. Active Run Pacts HUD Badge
     const activePacts = this.engine.pacts?.getActivePacts() ?? [];
     if (activePacts.length > 0) {
@@ -761,14 +736,7 @@ export class CanvasRenderer {
     const spriteKey = getTerrainSpriteKey(tile.type);
     this.atlas.drawSprite(this.ctx, spriteKey, px, py, cs, visibility);
 
-    if (
-      tile.type === 'runic_conduit' ||
-      tile.type === 'conduit_node' ||
-      tile.type === 'valkyrie_sprint' ||
-      tile.type === 'dwarven_winch' ||
-      tile.type === 'gateway_valhalla' ||
-      tile.type === 'town_portal'
-    ) {
+    if (tile.type === 'gateway_valhalla') {
       this.drawFixtureOverlay(px, py, cs, tile.type, visibility);
     } else if (
       tile.type === 'shallow_water' ||
@@ -795,68 +763,6 @@ export class CanvasRenderer {
     const cy = py + cs / 2;
 
     switch (type) {
-      case 'runic_conduit': {
-        this.ctx.strokeStyle = isVisible ? '#38bdf8' : '#1e3a5f';
-        this.ctx.lineWidth = 2;
-        this.ctx.beginPath();
-        this.ctx.arc(cx, cy, cs * 0.38, 0, Math.PI * 2);
-        this.ctx.stroke();
-        this.ctx.font = `bold ${Math.floor(cs * 0.55)}px sans-serif`;
-        this.ctx.fillStyle = isVisible ? '#7dd3fc' : '#334155';
-        this.ctx.fillText('Ω', cx, cy + 1);
-        break;
-      }
-      case 'conduit_node': {
-        // Distinct glowing pulsing concentric rings on active charging nodes
-        const pulse = (Math.sin(Date.now() / 160) + 1) / 2; // 0 to 1
-        const r1 = cs * (0.28 + 0.12 * pulse);
-        const r2 = cs * (0.38 + 0.08 * (1 - pulse));
-
-        // Outer pulsing ring
-        this.ctx.strokeStyle = isVisible ? `rgba(251, 191, 36, ${0.4 + 0.5 * pulse})` : '#b45309';
-        this.ctx.lineWidth = 2;
-        this.ctx.beginPath();
-        this.ctx.arc(cx, cy, r1, 0, Math.PI * 2);
-        this.ctx.stroke();
-
-        // Inner pulsing ring
-        this.ctx.strokeStyle = isVisible ? `rgba(245, 158, 11, ${0.5 + 0.4 * (1 - pulse)})` : '#78350f';
-        this.ctx.lineWidth = 1.5;
-        this.ctx.beginPath();
-        this.ctx.arc(cx, cy, r2, 0, Math.PI * 2);
-        this.ctx.stroke();
-
-        // Core glowing orb
-        this.ctx.fillStyle = isVisible ? 'rgba(251, 191, 36, 0.45)' : 'rgba(217, 119, 6, 0.2)';
-        this.ctx.beginPath();
-        this.ctx.arc(cx, cy, cs * 0.24, 0, Math.PI * 2);
-        this.ctx.fill();
-
-        this.ctx.font = `bold ${Math.floor(cs * 0.6)}px sans-serif`;
-        this.ctx.fillStyle = isVisible ? '#fef08a' : '#d97706';
-        this.ctx.fillText('☼', cx, cy);
-        break;
-      }
-      case 'valkyrie_sprint': {
-        this.ctx.strokeStyle = isVisible ? '#c084fc' : '#4c1d95';
-        this.ctx.lineWidth = 2;
-        this.ctx.strokeRect(px + 4, py + 4, cs - 8, cs - 8);
-        this.ctx.font = `bold ${Math.floor(cs * 0.55)}px sans-serif`;
-        this.ctx.fillStyle = isVisible ? '#e9d5ff' : '#6b21a8';
-        this.ctx.fillText('Ψ', cx, cy + 1);
-        break;
-      }
-      case 'dwarven_winch': {
-        this.ctx.fillStyle = isVisible ? 'rgba(217, 119, 6, 0.25)' : 'rgba(120, 53, 15, 0.15)';
-        this.ctx.fillRect(px + 3, py + 3, cs - 6, cs - 6);
-        this.ctx.strokeStyle = isVisible ? '#d97706' : '#78350f';
-        this.ctx.lineWidth = 2;
-        this.ctx.strokeRect(px + 3, py + 3, cs - 6, cs - 6);
-        this.ctx.font = `${(cs * 0.55).toFixed(1)}px sans-serif`;
-        this.ctx.fillStyle = isVisible ? '#fde68a' : '#92400e';
-        this.ctx.fillText('⚙', cx, cy);
-        break;
-      }
       case 'gateway_valhalla': {
         this.ctx.fillStyle = isVisible ? 'rgba(234, 179, 8, 0.35)' : 'rgba(161, 98, 7, 0.2)';
         this.ctx.beginPath();
@@ -868,30 +774,6 @@ export class CanvasRenderer {
         this.ctx.font = `bold ${(cs * 0.65).toFixed(1)}px sans-serif`;
         this.ctx.fillStyle = isVisible ? '#ffffff' : '#ca8a04';
         this.ctx.fillText('▲', cx, cy + 1);
-        break;
-      }
-      case 'town_portal': {
-        // Shimmering celestial dimensional vortex
-        const portalPulse = (Math.sin(Date.now() / 200) + 1) / 2;
-        this.ctx.fillStyle = isVisible ? `rgba(56, 189, 248, ${0.25 + 0.2 * portalPulse})` : 'rgba(30, 58, 138, 0.2)';
-        this.ctx.beginPath();
-        this.ctx.arc(cx, cy, cs * (0.38 + 0.08 * portalPulse), 0, Math.PI * 2);
-        this.ctx.fill();
-
-        this.ctx.strokeStyle = isVisible ? '#38bdf8' : '#1e3a5f';
-        this.ctx.lineWidth = 2;
-        this.ctx.stroke();
-
-        // Concentric dimensional ring
-        this.ctx.strokeStyle = isVisible ? `rgba(186, 230, 253, ${0.6 + 0.3 * (1 - portalPulse)})` : '#3b82f6';
-        this.ctx.lineWidth = 1.5;
-        this.ctx.beginPath();
-        this.ctx.arc(cx, cy, cs * (0.24 + 0.1 * (1 - portalPulse)), 0, Math.PI * 2);
-        this.ctx.stroke();
-
-        this.ctx.font = `bold ${Math.floor(cs * 0.65)}px sans-serif`;
-        this.ctx.fillStyle = isVisible ? '#f0f9ff' : '#93c5fd';
-        this.ctx.fillText('🌀', cx, cy);
         break;
       }
     }

@@ -614,60 +614,8 @@ export class InputHandler {
 
       if (isMove) {
         this.inspectOverlay.moveCursor(rdx, rdy, this.engine);
-        const curTile = this.engine.map.getTile(this.inspectOverlay.cursorX, this.inspectOverlay.cursorY);
-        if (
-          curTile?.type === 'runic_conduit' ||
-          curTile?.type === 'valkyrie_sprint' ||
-          curTile?.type === 'dwarven_winch' ||
-          curTile?.type === 'town_portal'
-        ) {
-          const flagKey =
-            curTile.type === 'runic_conduit'
-              ? 'conduitSeen'
-              : curTile.type === 'valkyrie_sprint'
-              ? 'sprintSeen'
-              : curTile.type === 'dwarven_winch'
-              ? 'winchSeen'
-              : 'townPortalSeen';
-          if (!this.engine.player.tutorialFlags[flagKey]) {
-            if (this.engine.onTownReturnInteract) {
-              this.engine.onTownReturnInteract(
-                {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  type: curTile.type as any,
-                  position: { x: this.inspectOverlay.cursorX, y: this.inspectOverlay.cursorY },
-                },
-                () => {},
-                () => {}
-              );
-            }
-          }
-        }
         this.onActionProcessed();
         return true;
-      }
-
-      if (code === 'Enter' || code === 'Space') {
-        const inspectedTile = this.engine.map.getTile(this.inspectOverlay.cursorX, this.inspectOverlay.cursorY);
-        if (
-          inspectedTile?.type === 'runic_conduit' ||
-          inspectedTile?.type === 'valkyrie_sprint' ||
-          inspectedTile?.type === 'dwarven_winch' ||
-          inspectedTile?.type === 'town_portal'
-        ) {
-          if (this.engine.onTownReturnInteract) {
-            this.engine.onTownReturnInteract(
-              {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                type: inspectedTile.type as any,
-                position: { x: this.inspectOverlay.cursorX, y: this.inspectOverlay.cursorY },
-              },
-              () => {},
-              () => {}
-            );
-            return true;
-          }
-        }
       }
 
       // Absorb all other keys during Inspect Mode without advancing ticks

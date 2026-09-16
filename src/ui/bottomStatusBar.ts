@@ -52,14 +52,6 @@ export function formatGroundStatus(engine: GameEngine, x: number, y: number): Gr
     promptText = '🚪 Closed Door — Bump or press [C] to open';
   } else if (tile.type === 'door_open') {
     promptText = '🚪 Open Doorway — Press [C] to close';
-  } else if (tile.type === 'runic_conduit') {
-    promptText = '⚡ Runic Conduit — Siphon ley energy to restore mana';
-  } else if (tile.type === 'valkyrie_sprint') {
-    promptText = '⚡ Valkyrie Conduit — Step onto conduit for burst of haste';
-  } else if (tile.type === 'dwarven_winch') {
-    promptText = '⚙️ Dwarven Winch — Activate to lower drawbridge';
-  } else if (tile.type === 'town_portal') {
-    promptText = '🌀 Town Portal — Press [Enter] to teleport to town';
   }
 
   // 3. Ground Items

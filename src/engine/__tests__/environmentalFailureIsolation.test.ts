@@ -33,7 +33,7 @@ describe('Environmental update failure isolation (P-06)', () => {
   it('isolates a throwing surface tick and still runs later updates', () => {
     const { engine, player } = buildEngine();
     let substancesTicked = false;
-    let townReturnTicked = false;
+    let floorRespawnTicked = false;
     (engine.surfaces as any).tick = () => {
       throw new Error('SURFACE_TICK_FAULT');
     };
@@ -42,8 +42,9 @@ describe('Environmental update failure isolation (P-06)', () => {
       substancesTicked = true;
       return (realSubstanceTick as any)(...args);
     };
-    (engine.townReturnManager as any).onPlayerTurn = () => {
-      townReturnTicked = true;
+    (engine.floorManager as any).checkClearedFloorRespawn = () => {
+      floorRespawnTicked = true;
+      return [];
     };
     const before = envFailures().length;
 
@@ -54,7 +55,7 @@ describe('Environmental update failure isolation (P-06)', () => {
 
     expect(result!.pipelineError).toBe(true);
     expect(substancesTicked).toBe(true);
-    expect(townReturnTicked).toBe(true);
+    expect(floorRespawnTicked).toBe(true);
     const recorded = envFailures();
     expect(recorded.length).toBeGreaterThan(before);
     expect(recorded[recorded.length - 1].summary).toContain('SURFACE_TICK_FAULT');

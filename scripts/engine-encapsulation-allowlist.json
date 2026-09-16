@@ -7,16 +7,6 @@
     },
     {
       "file": "src/main.ts",
-      "member": "GameEngine.onWinchInteract",
-      "reason": "Composition root wires the engine-to-presentation callback that opens the Dwarven Winch modal."
-    },
-    {
-      "file": "src/main.ts",
-      "member": "GameEngine.onTownReturnInteract",
-      "reason": "Composition root wires the engine-to-presentation callback that opens the town-return modal."
-    },
-    {
-      "file": "src/main.ts",
       "member": "GameEngine.onChoiceInteract",
       "reason": "Composition root wires the engine-to-presentation callback that opens the choice modal."
     },

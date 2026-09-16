@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { GameEngine } from '../../engine';
-import { Player } from '../../entities/player';
-import { GameMap } from '../../grid/map';
-import { TILES } from '../../grid/tile';
-import { DungeonArc } from '../../quest/dungeonArc';
-import { DeathResolver } from '../../combat/deathResolver';
-import { MovementAction } from '../../actions/movement';
+import { GameEngine } from '../engine';
+import { Player } from '../entities/player';
+import { GameMap } from '../grid/map';
+import { TILES } from '../grid/tile';
+import { DungeonArc } from '../quest/dungeonArc';
+import { DeathResolver } from '../combat/deathResolver';
+import { MovementAction } from '../actions/movement';
 
 describe('Final Boss Ascent Portal & Victory Trigger', () => {
   it('spawns Gateway to Valhalla portal tile upon slaying the campaign boss on maxFloor', () => {

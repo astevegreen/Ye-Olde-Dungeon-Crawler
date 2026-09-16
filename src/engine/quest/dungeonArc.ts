@@ -10,7 +10,6 @@ import { QUEST_RELIC_ID, MAX_DUNGEON_FLOOR } from './types';
 import { ItemFactory } from '../items/factory';
 import { populateDungeonFloor, scaleMonsterStats } from '../dungeon/spawner';
 import { populateDungeonLoot } from '../dungeon/lootSpawner';
-import { TownReturnDispatcher } from '../dungeon/townReturnDispatcher';
 import type { GameContentManifest, QuestArcDefinition, ItemDefinition } from '../types/manifest';
 import { getMonsterDefinition, type MonsterDefinition } from '../bestiary/monsterDefinitions';
 
@@ -129,9 +128,9 @@ export class DungeonArc {
     const strategy = DungeonGeneratorRegistry.get(generatorStrategyId);
     if (!strategy) {
       // Floor generation always runs inside a pipeline-isolated player action
-      // (stairs, town-return fixtures) or a UI-confirmed floor change, so throwing
-      // here fails that one action loudly instead of silently generating a floor
-      // with the wrong (possibly much easier/harder) layout algorithm.
+      // (stairs) or a UI-confirmed floor change, so throwing here fails that one
+      // action loudly instead of silently generating a floor with the wrong
+      // (possibly much easier/harder) layout algorithm.
       throw new Error(
         `Unknown dungeon generator strategy: '${generatorStrategyId}' is not registered in DungeonGeneratorRegistry.`
       );
@@ -179,17 +178,7 @@ export class DungeonArc {
     // 4. Spawn Floor-scaled loot and chests
     populateDungeonLoot(map, dungeon.rooms, floorNumber, itemCatalog, populationRng);
 
-    // 5. Spawn Town-Return shortcut fixture if floor >= 5 and < maxFloor
-    TownReturnDispatcher.spawnShortcutFixture(
-      map,
-      floorNumber,
-      maxFloor,
-      dungeon.rooms,
-      playerSpawn,
-      stairsDown
-    );
-
-    // 6. Spawn Reference Choice Encounter: Ancient Altar of Tyr on Floor 3
+    // 5. Spawn Reference Choice Encounter: Ancient Altar of Tyr on Floor 3
     if (floorNumber === 3 && manifest?.choices?.['altar_tyr']) {
       const targetRoom =
         dungeon.rooms.length > 2 ? dungeon.rooms[Math.floor(dungeon.rooms.length / 2)] : dungeon.rooms[0];

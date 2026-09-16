@@ -26,6 +26,19 @@ describe('Storage Payload Compaction & RLE Benchmarking', () => {
     expect(restored).toEqual(rawTiles);
   });
 
+  it('compacts and decompacts the Gateway to Valhalla victory-portal tile correctly', () => {
+    // Regression coverage carried over from the removed townReturn test suite
+    // (ARCHITECTURE.md P-03, 2026-09-16): gateway_valhalla is unrelated campaign
+    // content and was explicitly kept, but its only RLE round-trip coverage lived
+    // in the deleted persistence.test.ts alongside the mechanics that were removed.
+    const row: any[] = ['floor', 'gateway_valhalla', 'floor'];
+    const rle = compactTiles([row]);
+    expect(rle).toBe('1F1G1F');
+
+    const restored = decompactTiles(rle, 3, 1);
+    expect(restored[0]).toEqual(row);
+  });
+
   it('correctly compresses and decompresses explored FOV bitstreams', () => {
     const width = 10;
     const height = 10;

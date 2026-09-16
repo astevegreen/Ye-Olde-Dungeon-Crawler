@@ -1,4 +1,5 @@
 import type { Action } from '../actions/action';
+import { getMonsterDefinition } from '../bestiary/monsterDefinitions';
 import { MovementAction } from '../actions/movement';
 import { MeleeAttackAction, WindUpDeclareAction, WindUpExecuteAction } from '../actions/combat';
 import { WaitAction } from '../actions/wait';
@@ -36,36 +37,51 @@ class CasterBehavior implements AiBehaviorStrategy {
     }
 
     if (chebyshevDist >= 2 && chebyshevDist <= 5 && hasLos) {
-      // Hellfire Surge (blast pattern, radius 1, range 5, fire element, fire surface)
+      // Telegraphed ability, declared by content on the monster definition (§3). The
+      // engine supplies the wind-up mechanism; the name, flavour, and shape are data.
+      const ability = getMonsterDefinition(monster.definitionId)?.telegraphedAbility;
       if (
-        monster.spells.includes('firebolt') &&
+        ability &&
+        monster.spells.includes(ability.requiresSpellId) &&
         monster.spellCooldown <= 0 &&
-        engine.rng() < 0.35
+        chebyshevDist <= ability.range &&
+        engine.rng() < ability.chance
       ) {
-        monster.spellCooldown = 2;
-        const dangerTiles = computeDangerTiles(monster.position, player.position, 'blast', engine.map, 5, 1);
+        monster.spellCooldown = ability.cooldown;
+        const dangerTiles = computeDangerTiles(
+          monster.position,
+          player.position,
+          ability.pattern,
+          engine.map,
+          ability.range,
+          ability.radius
+        );
         return new WindUpDeclareAction(
           monster,
           { x: player.x, y: player.y },
-          'Hellfire Surge',
-          `The ${monster.name} channels primordial hellfire, preparing to unleash Hellfire Surge!`,
+          ability.name,
+          ability.message.replace('{monster}', monster.name),
           {
             targetTiles: dangerTiles,
-            pattern: 'blast',
+            pattern: ability.pattern,
             turnsRemaining: 1,
-            multiplier: 2.2,
-            element: 'fire',
-            spawnSurface: 'fire',
+            multiplier: ability.multiplier,
+            element: ability.element,
+            spawnSurface: ability.spawnSurface,
           }
         );
       }
 
       if (monster.spells.length > 0 && monster.spellCooldown <= 0) {
+        // Content declares what this monster favours; the engine just applies the rules.
         let chosenSpell = monster.spells[0];
-        if (monster.spells.includes('slow') && !player.statusManager.hasStatus('slow') && engine.rng() < 0.4) {
-          chosenSpell = 'slow';
-        } else if (monster.spells.includes('firebolt')) {
-          chosenSpell = 'firebolt';
+        const preferences = getMonsterDefinition(monster.definitionId)?.spellPreferences ?? [];
+        for (const pref of preferences) {
+          if (!monster.spells.includes(pref.spellId)) continue;
+          if (pref.skipIfTargetHasStatus && player.statusManager.hasStatus(pref.skipIfTargetHasStatus)) continue;
+          if (pref.chance !== undefined && engine.rng() >= pref.chance) continue;
+          chosenSpell = pref.spellId;
+          break;
         }
 
         monster.spellCooldown = 2;

@@ -294,10 +294,11 @@ Keep such diffs minimal and scoped, and state which exception applies in the cha
 Each entry records the current state, the target, and whether the work is expected to touch protected files (§8.1). Work that is recorded but deliberately out of scope is listed under *Deferred* at the end of this section, and is not planned work.
 
 **P-03 — Extract campaign-specific mechanics from the engine** (§1, §3)
-- Current: the engine contains campaign-flavored logic, e.g. town-return fixtures in `src/engine/townReturn/` (Dwarven Winch, Valkyrie Sprint, Runic Conduit), named monster abilities in `ai/behaviorTree.ts`, and theme-specific tile types.
-- Target: the engine provides generic primitives; campaign specifics live in content packs.
-- Status: unscoped. Requires a design pass before implementation.
-- Protected files: likely `engine.ts`.
+- Current: stage 1 is done — the caster AI no longer names campaign content. Telegraphed wind-up abilities and spell preference are declared on `MonsterDefinition` (`telegraphedAbility`, `spellPreferences`), so "Hellfire Surge", `firebolt`, and `slow` live in `src/content/cotw/monsters.ts` while the engine supplies only the mechanism. Both AI paths are converted: the `AIRegistry` caster strategy that actually runs, and the legacy `AiBehaviorRegistry` fallback.
+- Remaining, in dependency order:
+  1. **Theme-specific tile types** (`runic_conduit`, `conduit_node`, `valkyrie_sprint`, `dwarven_winch`, `gateway_valhalla`, `town_portal`, `altar_tyr`). `registerTileDefinition` already exists, but these are baked into the canonical `TileType` union *and* into `compaction.ts`'s RLE code table, which every stored floor is encoded against. Extracting them means widening `TileType` to `string` and persisting a registry-driven code table — a save-format change needing a version bump and migration (§8.1 exception 2).
+  2. **Town-return fixtures** (`src/engine/townReturn/`, ~1,150 lines across six files, 56 engine references). Dwarven Winch, Valkyrie Sprint, and Runic Conduit need to become manifest-declared interactive fixtures with content-provided handlers, leaving the engine a generic fixture-interaction and serialization hook. Depends on (1) for their tiles, and fits the `EngineContext` handler surface from P-04.
+- Protected files: `engine.ts` for the fixture callbacks; `migrator.ts` for (1).
 
 **P-22 — Per-engine content registries** (§3)
 - Current: stage 1 is done — monster definitions are per-engine (`engine.registries.monsters`), with the module-level `MonsterRegistry` forwarding into the active store rather than owning a map. Every other registry is still process-wide, so constructing two engines with different manifests still risks one overwriting the other for status handlers, AI behaviours and strategies, action commands, spells, traps, companions, dungeon generators, effect primitives, global hooks, and item containers.

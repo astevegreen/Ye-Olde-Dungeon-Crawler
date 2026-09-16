@@ -1,4 +1,5 @@
 import type { Action } from '../actions/action';
+import { getMonsterDefinition } from '../bestiary/monsterDefinitions';
 import type { GameEngine } from '../engine';
 import type { Actor } from '../entities/actor';
 import type { Monster } from '../entities/monster';
@@ -229,32 +230,52 @@ export class KitingRangedStrategy implements AIStrategy {
 
     // 2. Ranged spell casting at optimal range (2 - 5 tiles)
     if (chebyshevDist >= 2 && chebyshevDist <= 5 && hasLos) {
+      // Telegraphed ability declared by content on the monster definition (§3, No Engine
+      // Creep). The engine supplies the wind-up mechanism; the name, flavour, and shape
+      // are data, so no campaign spell id appears here.
+      const ability = getMonsterDefinition(monster.definitionId)?.telegraphedAbility;
       if (
-        monster.aiType === 'caster' &&
-        monster.spells?.includes('firebolt') &&
+        ability &&
+        monster.spells?.includes(ability.requiresSpellId) &&
         monster.spellCooldown <= 0 &&
-        engine.rng() < 0.35
+        chebyshevDist <= ability.range &&
+        engine.rng() < ability.chance
       ) {
-        monster.spellCooldown = 2;
-        const dangerTiles = computeDangerTiles(actor.position, player.position, 'blast', engine.map, 5, 1);
+        monster.spellCooldown = ability.cooldown;
+        const dangerTiles = computeDangerTiles(
+          actor.position,
+          player.position,
+          ability.pattern,
+          engine.map,
+          ability.range,
+          ability.radius
+        );
         return new WindUpDeclareAction(
           monster,
           { x: player.x, y: player.y },
-          'Hellfire Surge',
-          `The ${actor.name} channels primordial hellfire, preparing to unleash Hellfire Surge!`,
+          ability.name,
+          ability.message.replace('{monster}', actor.name),
           {
             targetTiles: dangerTiles,
-            pattern: 'blast',
+            pattern: ability.pattern,
             turnsRemaining: 1,
-            multiplier: 2.2,
-            element: 'fire',
-            spawnSurface: 'fire',
+            multiplier: ability.multiplier,
+            element: ability.element,
+            spawnSurface: ability.spawnSurface,
           }
         );
       }
 
       if (monster.spells && monster.spells.length > 0 && monster.spellCooldown <= 0) {
-        const chosenSpell = monster.spells[0];
+        // Content declares the preference order; the engine only applies the rules.
+        let chosenSpell = monster.spells[0];
+        for (const pref of getMonsterDefinition(monster.definitionId)?.spellPreferences ?? []) {
+          if (!monster.spells.includes(pref.spellId)) continue;
+          if (pref.skipIfTargetHasStatus && player.statusManager.hasStatus(pref.skipIfTargetHasStatus)) continue;
+          if (pref.chance !== undefined && engine.rng() >= pref.chance) continue;
+          chosenSpell = pref.spellId;
+          break;
+        }
         monster.spellCooldown = 2;
         monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
         return new CastSpellAction(monster, chosenSpell, player.x, player.y);

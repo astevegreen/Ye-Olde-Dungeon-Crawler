@@ -204,9 +204,10 @@ export class Monster extends Actor {
       return { success: true, cost: BASE_ACTION_COST, message: `${this.name} is ${reason} and cannot act.` };
     }
 
-    // 3. AI decision and execution
+    // 3. AI decision and execution. Monster actions run through the same pipeline as the
+    // player's, so action hooks fire for every actor (ARCHITECTURE.md §4).
     const action = MonsterAI.decideAction(this, engine);
-    const result = action.perform(engine);
+    const result = engine.actionPipeline.executeWithHooks(action, engine);
 
     flightRecorder.recordScheduler(this.name, result.cost, engine.turnCount, {
       action: action.constructor.name,

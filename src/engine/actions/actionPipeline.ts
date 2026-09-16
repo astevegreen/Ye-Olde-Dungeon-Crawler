@@ -1,12 +1,18 @@
 import type { ActionResult } from '../types';
 import type { GameEngine } from '../engine';
 import type { Action } from './action';
+import type { Entity } from '../entities/entity';
 import { flightRecorder } from '../debug/flightRecorder';
 
 export interface ActionHookContext {
   action: Action;
   engine: GameEngine;
   actionType: string;  // Constructor name or registered type
+  /**
+   * The entity performing the action. Hooks fire for every actor (§4), so content that
+   * should only react to the player must compare this against `engine.player`.
+   */
+  actor: Entity;
   result?: ActionResult;  // Only available in 'post' phase
 }
 
@@ -99,15 +105,27 @@ export class ActionPipeline {
    * If any pre-hook, action logic, or post-hook throws, the exception is caught,
    * recorded to telemetry/logging, and rejected cleanly with { success: false, cost: 0 }.
    */
+  /** Resolves the acting entity, mirroring how handlePipelineError attributes failures. */
+  private static resolveActor(action: Action, engine: GameEngine): Entity {
+    return (
+      (action as any)?.entity ??
+      (action as any)?.attacker ??
+      (action as any)?.actor ??
+      (action as any)?.player ??
+      engine?.player
+    );
+  }
+
   public executeWithHooks(action: Action, engine: GameEngine): ActionResult {
     try {
       const actionType = (action as any)?.actionType ?? action?.constructor?.name ?? 'Action';
+      const actor = ActionPipeline.resolveActor(action, engine);
 
       // 1. Pre-hooks execution boundary
       for (const hook of this.preHooks) {
         if (!matchesActionType(hook.actionType, actionType, action)) continue;
         try {
-          const hookResult = hook.execute({ action, engine, actionType });
+          const hookResult = hook.execute({ action, engine, actionType, actor });
           if (hookResult && !hookResult.proceed) {
             // Untyped content can short-circuit without a result; returning it would crash the caller.
             if (!ActionPipeline.isActionResult(hookResult.result)) {
@@ -135,7 +153,7 @@ export class ActionPipeline {
       for (const hook of this.postHooks) {
         if (!matchesActionType(hook.actionType, actionType, action)) continue;
         try {
-          const hookResult = hook.execute({ action, engine, actionType, result });
+          const hookResult = hook.execute({ action, engine, actionType, actor, result });
           if (hookResult && !hookResult.proceed) {
             if (!ActionPipeline.isActionResult(hookResult.result)) {
               throw new Error('Post-hook replaced the result without a valid ActionResult');

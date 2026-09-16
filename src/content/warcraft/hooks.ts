@@ -22,7 +22,8 @@ export const warcraftBattleCryHook: ActionHook = {
   actionType: 'melee',
   priority: 50,
   execute(context) {
-    if (context.result?.success) {
+    // Hooks now fire for monsters too (§4); these cries are the player's.
+    if (context.result?.success && context.actor === context.engine.player) {
       const cries = [
         'For the Alliance!',
         "Lok'tar Ogar! Victory or death!",

@@ -1,4 +1,5 @@
 import type { CombatStats } from '../types';
+import { activeMonsterStore } from '../registries/monsterRegistryStore';
 import type { ElementType, ElementalAffinity } from '../magic/elements';
 import type { StatusType } from '../status/types';
 import type { Item } from '../items/item';
@@ -55,34 +56,34 @@ export interface MonsterDefinition {
   targetingMode?: 'player' | 'nearest_hostile';
 }
 
-const monsterDefinitionsMap = new Map<string, MonsterDefinition>();
-
+/**
+ * Process-wide facade over whichever monster store is active (ARCHITECTURE.md §3, P-22).
+ * It holds no map of its own: an engine's registrations live in that engine's store, and
+ * this forwards there, so there is one copy of the data rather than two.
+ */
 export class MonsterRegistry {
   public static register(def: MonsterDefinition): void {
-    monsterDefinitionsMap.set(def.id, def);
+    activeMonsterStore().register(def);
   }
 
   public static registerAll(defs: MonsterDefinition[] | Record<string, MonsterDefinition>): void {
-    const list = Array.isArray(defs) ? defs : Object.values(defs);
-    for (const def of list) {
-      monsterDefinitionsMap.set(def.id, def);
-    }
+    activeMonsterStore().registerAll(defs);
   }
 
   public static get(id: string): MonsterDefinition | undefined {
-    return monsterDefinitionsMap.get(id);
+    return activeMonsterStore().get(id);
   }
 
   public static has(id: string): boolean {
-    return monsterDefinitionsMap.has(id);
+    return activeMonsterStore().has(id);
   }
 
   public static getAll(): MonsterDefinition[] {
-    return Array.from(monsterDefinitionsMap.values());
+    return activeMonsterStore().getAll();
   }
 
   public static clear(): void {
-    monsterDefinitionsMap.clear();
+    activeMonsterStore().clear();
   }
 }
 

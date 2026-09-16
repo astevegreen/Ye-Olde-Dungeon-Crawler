@@ -1,4 +1,9 @@
 import type { ActionResult, Position, VisualEffectDescriptor } from './types';
+import {
+  MonsterRegistryStore,
+  processDefaultMonsterStore,
+  setActiveMonsterStore,
+} from './registries/monsterRegistryStore';
 import { BASE_ACTION_COST } from './types';
 import type { GameEvent } from './events';
 import { GameMap } from './grid/map';
@@ -129,6 +134,11 @@ export interface DiagnosticsAPI {
 export class GameEngine {
   public readonly diagnostics: DiagnosticsAPI;
   public readonly prng: PRNG;
+  /**
+   * This engine's own content registries (ARCHITECTURE.md §3, P-22). Stage 1 covers
+   * monster definitions; the remaining registries are still process-wide.
+   */
+  public readonly registries: { monsters: MonsterRegistryStore };
   public rng: () => number;
   public map: GameMap;
   public readonly player: Player;
@@ -302,12 +312,22 @@ export class GameEngine {
     this.turnCount = 0;
     this.fovRadius = config.fovRadius ?? 8;
     this.currentFloor = config.floor ?? 1;
+    // This engine's registries. Seeded from the process default so fixtures registered
+    // before construction (a common test shape) remain visible, then made active so the
+    // static lookup paths resolve against this engine — today's behaviour for a
+    // single-engine process, per-engine ownership for everything reached via
+    // `engine.registries` (ARCHITECTURE.md §3, P-22).
+    const monsterStore = new MonsterRegistryStore();
+    monsterStore.seedFrom(processDefaultMonsterStore());
+    this.registries = { monsters: monsterStore };
+    setActiveMonsterStore(monsterStore);
+
     SpellPipeline.ensureBuiltinEffects();
     if (this.manifest.spells && this.manifest.spells.length > 0) {
       registerSpells(this.manifest.spells);
     }
     if (this.manifest.monsters && this.manifest.monsters.length > 0) {
-      MonsterRegistry.registerAll(this.manifest.monsters);
+      this.registries.monsters.registerAll(this.manifest.monsters);
     }
     if (this.manifest.companions && this.manifest.companions.length > 0) {
       CompanionRegistry.registerAll(this.manifest.companions);

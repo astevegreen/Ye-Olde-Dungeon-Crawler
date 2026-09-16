@@ -217,7 +217,7 @@
    - **Public API:** fails on any `engine/<path>` deep import in `src/ui/` or `src/rendering/` (tests included) or in `src/main.ts`, and on content imports in UI/rendering source. `src/main.ts` is checked for deep engine imports only — as the composition root it is the one module allowed to import content packs.
    - **Timing and audio globals:** fails on `setTimeout`, `setInterval`, `clearTimeout`, `clearInterval`, `requestAnimationFrame`, `cancelAnimationFrame`, `requestIdleCallback`, `performance.now`, `AudioContext`, `webkitAudioContext`, `HTMLAudioElement`, or `new Audio` in engine and content source files, on the same execution-path rule as DOM tokens (§2).
    - The success line reports how many engine and content **source** files were scanned and how many test/fixture files were exempt, rather than counting exempt files as covered.
-   - Planned extensions: deep engine imports from content, and a `Math.random` check for simulation code. **[Planned: P-19]**
+   - **Unseeded randomness:** fails on `Math.random` in engine and content source. Scope is deliberate — presentation code may use it for effects that draw no simulation state (particle jitter in `rendering/fxRunner.ts`). Full-line comments are skipped so prose may name the banned call, and a `// purity-allow: <reason>` pragma on or above a line exempts a reasoned entropy-boundary case (today: `ProfileManager`'s profile IDs).
    - **Engine encapsulation (`npm run check:engine-encapsulation`, `scripts/check-engine-encapsulation.ts`):** complements the import checks by checking *mutation*. It uses the TypeScript type checker, so a write is matched by the declaring class of the member written, not by variable name.
      - In `src/ui/`, `src/rendering/`, `src/main.ts`, and `src/content/` (tests exempt), it fails on assignment, compound assignment, `++`/`--`, `delete`, or index writes to an engine class member; on writes through an `as any` cast of an engine object; and on `Object.assign` onto one.
      - In presentation code it also fails on mutator-named calls into internal engine subsystems (`GameMap`, `Container`, `InventoryManager`, `StatusManager`, `EnergyScheduler`, and similar) and on Array/Map/Set mutator calls against engine members. `GameEngine`, `Player`, and `Entity` methods and `engine.commandBus` are the sanctioned paths.
@@ -346,11 +346,6 @@ Each entry records the current state, the target, and whether the work is expect
 **P-17 — All modals on `ModalStackManager`** (§6)
 - Current: Dwarven Winch, town-return, choice, save & quit, settings/keybinds, save-code, and click-opened pact modals toggle `InputHandler.enabled` instead. The shop, map, and inspect overlays neither register nor toggle it — `InputHandler` intercepts their keys inline (§6).
 - Target: every modal registers on the stack.
-- Protected files: no.
-
-**P-19 — Boundary and static-check extensions** (§2, §7.2)
-- Current: the purity checker misses `Math.random` in simulation code. Timing/audio globals, content deep imports, and composition-root deep imports are checked; the success line reports scanned-vs-exempt file counts accurately; and `scripts/` is type-checked (§7.2 items 1 and 5).
-- Target: `Math.random` in simulation code is checked too. That check depends on P-10 — enabling it first would fail CI on pre-existing violations.
 - Protected files: no.
 
 **P-22 — Per-engine content registries** (§3)

@@ -72,6 +72,11 @@ const TIMING_AUDIO_GLOBALS = [
   'new Audio',
 ];
 
+// Simulation randomness must come from the engine's seeded PRNG (ARCHITECTURE.md §7.2).
+// Scope is engine + content source: presentation code may use Math.random for effects that
+// draw no simulation state (e.g. particle jitter in rendering/fxRunner.ts).
+const SIMULATION_RANDOMNESS = ['Math.random'];
+
 // Matches deep imports into engine internals (beyond the public engine barrel export)
 const DEEP_ENGINE_IMPORT_REGEX = /from\s+['"][^'"]*engine\/[^'"]+['"]/i;
 
@@ -143,6 +148,26 @@ for (const filePath of [...engineFiles, ...contentFiles]) {
             category: 'DOM_GLOBAL',
             detail: `Found '${globalToken}' in line: ${line.trim()}`,
           });
+        }
+      }
+
+      // Check: Unseeded randomness. Full-line comments are skipped so prose may name the
+      // banned call (e.g. a doc comment telling content authors not to use it).
+      const trimmed = line.trimStart();
+      const isCommentLine = trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*');
+      // An explicit, reasoned exemption for the entropy boundary (e.g. profile ids, which
+      // must not collide when two characters share a seed). Mirrors the encapsulation allowlist.
+      const allowed = line.includes('purity-allow:') || (lines[i - 1] ?? '').includes('purity-allow:');
+      if (!isCommentLine && !allowed) {
+        for (const token of SIMULATION_RANDOMNESS) {
+          if (line.includes(token)) {
+            violations.push({
+              file: relativePath,
+              line: lineNum,
+              category: 'UNSEEDED_RANDOMNESS',
+              detail: `Simulation randomness must draw from engine.prng/engine.rng: ${line.trim()}`,
+            });
+          }
         }
       }
 
@@ -229,7 +254,7 @@ if (violations.length > 0) {
 } else {
   const exemptCount = engineFiles.length + contentFiles.length - purityScannedFiles.size;
   console.log(
-    `✓ Headless Simulation Purity: 0 DOM/Canvas/timing/audio globals across ${purityScannedFiles.size} engine & content source files ` +
+    `✓ Headless Simulation Purity: 0 DOM/Canvas/timing/audio globals and 0 unseeded Math.random across ${purityScannedFiles.size} engine & content source files ` +
       `(${exemptCount} test/fixture files exempt).`
   );
   console.log(`✓ Engine Boundary Isolation: 0 reverse imports in engine source and test files.`);

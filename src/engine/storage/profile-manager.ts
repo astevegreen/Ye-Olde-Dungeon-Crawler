@@ -187,6 +187,7 @@ export class ProfileManager {
     }
   ): { profile: CharacterProfile; engine: GameEngine } {
     const trimmedName = name.trim() || 'Adventurer';
+    // purity-allow: profile identity is storage metadata, not simulation state — seeding it would collide across characters sharing a seed (ARCHITECTURE.md §7.2)
     const profileId = `hero_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const gender = options?.gender ?? 'male';
     const difficulty = options?.difficulty ?? DEFAULT_DIFFICULTY;
@@ -473,6 +474,7 @@ export class ProfileManager {
     let profileId = parsed.profile.id;
     const existing = this.getProfile(profileId);
     if (existing) {
+      // purity-allow: see the profile-id note above — identity, not simulation state
       profileId = `hero_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
       parsed.profile.id = profileId;
       parsed.player.id = profileId;

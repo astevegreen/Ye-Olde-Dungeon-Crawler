@@ -232,7 +232,7 @@
    - **Not simulation:** `rendering/fxRunner.ts` uses `Math.random` for particle jitter. It draws no simulation state and changes no outcome, so it stays.
    - **Simulation IDs:** `GameEngine.nextSimulationId(prefix)` derives spawned-entity and item IDs from `turnCount` plus a seeded PRNG draw, so one seed replays to the same IDs. Generators that already receive a seeded `rng` (loot, vaults, coin stacks, stack splits) derive their suffixes from it; a cremated corpse's ash derives its ID from the corpse's own ID. `CorpseConfig.id` is required so no corpse can mint a clock-based ID.
    - **Outside the boundary, by design:** save and telemetry timestamps record real time, and `ProfileManager`'s profile IDs stay clock-derived — seeding them would make two characters created from the same seed collide. Those lines carry a `// purity-allow:` pragma (§7.2 item 1).
-   - No automated `Math.random` check exists yet. **[Planned: P-19]**
+   - `check:engine-purity` enforces this: it fails on `Math.random` in engine and content source (§7.2 item 1).
 3. **Schema Evolution Integrity (`npm run validate:schema`, `scripts/validate-schema.ts`):**
    - Migrates a minimal v1 envelope to `CURRENT_SCHEMA_VERSION` and asserts the final version.
    - Round-trips a live engine through `serializeGame` -> `JSON.stringify`/`JSON.parse` -> `deserializeGame`, asserting that surface cells (type, duration, potency), substance bitmasks, ground corpse items (class, archetype, decay counter), and PRNG state all survive. JSON is in the loop because saves persist as strings, so a value that cannot round-trip through JSON is as lost as one the serializer drops.

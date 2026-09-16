@@ -1,4 +1,5 @@
 import type { GameEngine } from '../engine';
+import { classifyLoadError, MISSING_SAVE, type LoadOutcome } from './loadResult';
 import type { CharacterProfile, SaveData, StorageAdapter } from './types';
 import type { GameContentManifest } from '../types/manifest';
 import { serializeGame, deserializeGame } from './serializer';
@@ -96,12 +97,17 @@ export class AutosaveManager {
   /**
    * Loads and deserializes the game state from the autosave slot.
    */
-  public loadAutosave(activeManifest?: GameContentManifest): { engine: GameEngine; profile: CharacterProfile } | null {
+  /** Loads the autosave, reporting why it failed (ARCHITECTURE.md §5). */
+  public loadAutosaveResult(
+    activeManifest?: GameContentManifest
+  ): LoadOutcome<{ engine: GameEngine; profile: CharacterProfile }> {
     try {
       const raw = this.storage.getItem(AutosaveManager.AUTOSAVE_KEY);
-      if (!raw) return null;
+      if (!raw) return MISSING_SAVE;
       const env = JSON.parse(raw) as AutosaveEnvelope;
-      if (!env.data || !env.profile) return null;
+      if (!env.data || !env.profile) {
+        return { ok: false, reason: 'corrupt', message: 'The autosave is damaged and could not be loaded.', detail: 'autosave envelope missing data or profile' };
+      }
 
       let migratedData = env.data;
       if (env.schemaVersion < CURRENT_SCHEMA_VERSION) {
@@ -111,11 +117,18 @@ export class AutosaveManager {
 
       const manifest = activeManifest ?? this.manifest;
       const deserialized = deserializeGame(migratedData, manifest);
-      return { engine: deserialized.engine, profile: deserialized.profile ?? env.profile };
+      return { ok: true, value: { engine: deserialized.engine, profile: deserialized.profile ?? env.profile } };
     } catch (err) {
-      console.error('[AutosaveManager] Error loading autosave:', err);
-      return null;
+      const failure = classifyLoadError(err);
+      console.error(`[AutosaveManager] Error loading autosave (${failure.reason}):`, err);
+      return failure;
     }
+  }
+
+  /** Back-compatible shape: the loaded game, or `null` for any failure. */
+  public loadAutosave(activeManifest?: GameContentManifest): { engine: GameEngine; profile: CharacterProfile } | null {
+    const outcome = this.loadAutosaveResult(activeManifest);
+    return outcome.ok ? outcome.value : null;
   }
 
   /**

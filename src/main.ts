@@ -15,6 +15,7 @@ import {
   SearchAction,
   serializeGame,
   WaitAction,
+  shouldNotifyPlayer,
 } from './engine';
 import type {
   CharacterProfile,
@@ -130,6 +131,25 @@ window.addEventListener('DOMContentLoaded', () => {
     renderer?.render();
   });
   const autosaveManager = new AutosaveManager(undefined, activeManifest);
+
+  /**
+   * Loads report why they failed (ARCHITECTURE.md §5). A missing save is routine and stays
+   * silent; a corrupt, too-new, or unmigratable save is shown to the player rather than
+   * silently falling through to another profile.
+   */
+  const loadProfileOrNotify = (profileId: string) => {
+    const outcome = profileManager.loadCharacterResult(profileId);
+    if (outcome.ok) return outcome.value;
+    if (shouldNotifyPlayer(outcome)) showToast(outcome.message, 'error', 6000);
+    return null;
+  };
+
+  const loadAutosaveOrNotify = () => {
+    const outcome = autosaveManager.loadAutosaveResult(activeManifest);
+    if (outcome.ok) return outcome.value;
+    if (shouldNotifyPlayer(outcome)) showToast(outcome.message, 'error', 6000);
+    return null;
+  };
 
   let spellbookModal: SpellbookModal;
   let quickSpellsBar: QuickSpellsBar;
@@ -396,7 +416,7 @@ window.addEventListener('DOMContentLoaded', () => {
     },
     onRestored: (profile) => {
       titleScreen.refresh();
-      const loaded = profileManager.loadCharacter(profile.id);
+      const loaded = loadProfileOrNotify(profile.id);
       if (loaded) {
         launchGame(loaded.engine, loaded.profile);
       }
@@ -665,7 +685,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const gameOverAutosaveBtn = document.getElementById('btn-game-over-autosave');
   gameOverAutosaveBtn?.addEventListener('click', () => {
-    const loaded = autosaveManager.loadAutosave(activeManifest);
+    const loaded = loadAutosaveOrNotify();
     if (loaded) {
       const modal = document.getElementById('game-over-modal');
       if (modal) modal.style.display = 'none';
@@ -1248,7 +1268,7 @@ window.addEventListener('DOMContentLoaded', () => {
     saveCodeModal,
     sagaShareModal,
     onResume: (profileId: string) => {
-      const loaded = profileManager.loadCharacter(profileId);
+      const loaded = loadProfileOrNotify(profileId);
       if (loaded) {
         launchGame(loaded.engine, loaded.profile);
       } else {
@@ -1284,7 +1304,7 @@ window.addEventListener('DOMContentLoaded', () => {
     autosaveManager,
     onLoadProfile: (profileId: string) => {
       try {
-        const loaded = profileManager.loadCharacter(profileId);
+        const loaded = loadProfileOrNotify(profileId);
         if (loaded) {
           launchGame(loaded.engine, loaded.profile);
           return true;
@@ -1297,7 +1317,7 @@ window.addEventListener('DOMContentLoaded', () => {
     },
     onLoadAutosave: () => {
       try {
-        const autosave = autosaveManager.loadAutosave(activeManifest);
+        const autosave = loadAutosaveOrNotify();
         if (autosave) {
           launchGame(autosave.engine, autosave.profile);
           return true;
@@ -1328,13 +1348,13 @@ window.addEventListener('DOMContentLoaded', () => {
     onContinue: (profileId?: string) => {
       try {
         if (profileId) {
-          const loaded = profileManager.loadCharacter(profileId);
+          const loaded = loadProfileOrNotify(profileId);
           if (loaded) {
             launchGame(loaded.engine, loaded.profile);
             return;
           }
         }
-        const autosave = autosaveManager.loadAutosave(activeManifest);
+        const autosave = loadAutosaveOrNotify();
         if (autosave) {
           launchGame(autosave.engine, autosave.profile);
           return;
@@ -1342,7 +1362,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const profiles = profileManager.listProfiles();
         if (profiles.length > 0) {
           const latestProfile = [...profiles].sort((a, b) => b.lastSaved - a.lastSaved)[0];
-          const loaded = profileManager.loadCharacter(latestProfile.id);
+          const loaded = loadProfileOrNotify(latestProfile.id);
           if (loaded) {
             launchGame(loaded.engine, loaded.profile);
             return;
@@ -1381,7 +1401,7 @@ window.addEventListener('DOMContentLoaded', () => {
           profileManager,
           activeManifestId: activeManifest.id,
           onSuccess: (p) => {
-            const loaded = profileManager.loadCharacter(p.id);
+            const loaded = loadProfileOrNotify(p.id);
             if (loaded) {
               launchGame(loaded.engine, loaded.profile);
             }

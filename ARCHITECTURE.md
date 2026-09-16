@@ -152,8 +152,9 @@
   - Every breaking save-format change increments `CURRENT_SCHEMA_VERSION` and registers exactly one new forward-only step. Existing steps are never rewritten except as a confirmed bug fix (§8.1).
 - **Load Failure Handling:**
   - **Invariant:** a failed load never yields a partially-loaded engine and never overwrites the stored payload.
-  - **Current:** `ProfileManager.loadCharacter()` and `AutosaveManager.loadAutosave()` catch migration and deserialization errors, log them, and return `null`. Callers cannot distinguish a missing save from a corrupt one. Some flows show a status message; the Continue flow silently falls back to the autosave or another profile.
-  - **Target [Planned: P-13]:** a typed load result (missing / corrupt / newer-than-engine / migration-failed). Presentation code must notify the player with a modal or toast for every failure other than "missing".
+  - **Typed outcomes:** `ProfileManager.loadCharacterResult()` and `AutosaveManager.loadAutosaveResult()` return a `LoadOutcome` (`src/engine/storage/loadResult.ts`): either the loaded game, or a failure naming one of `missing`, `corrupt`, `newer-than-engine`, or `migration-failed`, with a player-facing message and the underlying error as `detail`. `classifyLoadError` maps the messages `SchemaMigrator` throws; anything unrecognised is `corrupt`, since the save exists but could not be read.
+  - **Notification:** `src/main.ts` routes every load through helpers that show the failure message as a toast when `shouldNotifyPlayer(failure)` is true — that is, for everything except `missing`. A missing save stays silent, because starting fresh or having no autosave yet is routine.
+  - The older `loadCharacter()` / `loadAutosave()` methods remain as thin wrappers returning the game or `null`, so callers that do not care why a load failed are unaffected.
 
 ---
 
@@ -307,11 +308,6 @@ Each entry records the current state, the target, and whether the work is expect
 **P-12 — IndexedDB storage tier** (§5)
 - Current: `localStorage` only.
 - Target: an asynchronous IndexedDB backend for large multi-floor states, bestiary records, and flight-recorder logs.
-- Protected files: no.
-
-**P-13 — Typed load failures and player notification** (§5)
-- Current: load failures return `null` and are sometimes silent.
-- Target: a typed failure result, with presentation code notifying the player for every non-missing failure.
 - Protected files: no.
 
 **P-14 — Companion-pack browsing UI** (§3)

@@ -1,4 +1,5 @@
 import { PRNG } from '../dungeon/prng';
+import { classifyLoadError, MISSING_SAVE, type LoadOutcome } from './loadResult';
 import { DungeonGenerator } from '../dungeon/dungeon-generator';
 import { TownMapGenerator } from '../town/townMap';
 import { Player } from '../entities/player';
@@ -386,17 +387,21 @@ export class ProfileManager {
   /**
    * Loads and deserializes a character save by profile ID.
    */
-  public loadCharacter(
+  /**
+   * Loads a character, reporting *why* a load failed (ARCHITECTURE.md §5). Presentation
+   * notifies the player for every reason except `missing`.
+   */
+  public loadCharacterResult(
     profileId: string,
     manifest?: GameContentManifest
-  ): { engine: GameEngine; profile: CharacterProfile } | null {
+  ): LoadOutcome<{ engine: GameEngine; profile: CharacterProfile }> {
     const saveKey = `${this.saveKeyPrefix}${profileId}`;
     let raw = this.storage.getItem(saveKey);
     if (!raw && this.manifest?.supportsLegacyKeys === true) {
       raw = this.storage.getItem(`${SAVE_KEY_PREFIX}${profileId}`);
     }
     if (!raw) {
-      return null;
+      return MISSING_SAVE;
     }
 
     try {
@@ -409,11 +414,21 @@ export class ProfileManager {
       roster.activeProfileId = profileId;
       this.saveManifest(roster);
 
-      return result;
+      return { ok: true, value: result };
     } catch (err) {
-      console.error(`Failed to load save for ${profileId}:`, err);
-      return null;
+      const failure = classifyLoadError(err);
+      console.error(`Failed to load save for ${profileId} (${failure.reason}):`, err);
+      return failure;
     }
+  }
+
+  /** Back-compatible shape: the loaded game, or `null` for any failure. */
+  public loadCharacter(
+    profileId: string,
+    manifest?: GameContentManifest
+  ): { engine: GameEngine; profile: CharacterProfile } | null {
+    const outcome = this.loadCharacterResult(profileId, manifest);
+    return outcome.ok ? outcome.value : null;
   }
 
   /**

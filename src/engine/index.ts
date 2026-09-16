@@ -142,6 +142,7 @@ export * from './storage/migrator';
 export * from './storage/compaction';
 export * from './storage/profile-manager';
 export * from './storage/autosaveManager';
+export * from './storage/loadResult';
 export * from './storage/saveTransfer';
 
 // Quest & Game State Progression

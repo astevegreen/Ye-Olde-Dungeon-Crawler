@@ -88,12 +88,15 @@ export interface CombatStats {
 
 export * from './types/effects';
 import type { VisualEffectDescriptor } from './types/effects';
+import type { GameEvent } from './events';
 
 export interface ActionResult {
   success: boolean;
   cost: number;
   message?: string;
   effects?: VisualEffectDescriptor[];
+  /** Domain events emitted while this action ran, in order (§4). */
+  events?: GameEvent[];
   pipelineError?: boolean;
 }
 

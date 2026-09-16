@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GameEngine, GameMap, Player, TILES, serializeGame, deserializeGame, type GameEvent, type CharacterProfile } from '../src/engine';
+import { GameEngine, GameMap, Player, TILES, serializeGame, deserializeGame, type GameEvent, isGameEvent, type CharacterProfile } from '../src/engine';
 import { DeathResolver } from '../src/engine/combat/deathResolver';
 import { Monster } from '../src/engine/entities/monster';
 import { LevelUpModal } from '../src/ui/levelUpModal';
@@ -50,12 +50,18 @@ describe('Level-Up Attribute / Skill Allocation System', () => {
 
     expect(player.level).toBe(2);
     expect(player.unspentStatPoints).toBe(3);
-    expect(eventSpy).toHaveBeenCalledTimes(1);
+    // A kill now also emits entity_killed (§4), so assert on the level-up event itself
+    // rather than the total number of events the turn produced.
+    const levelUpCalls = eventSpy.mock.calls
+      .map((c) => c[0] as GameEvent)
+      .filter((e) => e.type === 'player_leveled_up');
+    expect(levelUpCalls).toHaveLength(1);
 
-    const emittedEvent = eventSpy.mock.calls[0][0] as GameEvent;
-    expect(emittedEvent.type).toBe('player_leveled_up');
-    if (emittedEvent.type === 'player_leveled_up') {
-      expect(emittedEvent.player).toBe(player);
+    const emittedEvent = levelUpCalls[0];
+    if (isGameEvent(emittedEvent, 'player_leveled_up')) {
+      // Events carry scalar IDs, never live entity references (ARCHITECTURE.md §4).
+      expect(emittedEvent.actorId).toBe(player.id);
+      expect(emittedEvent.turn).toBe(engine.turnCount);
       expect(emittedEvent.newLevel).toBe(2);
       expect(emittedEvent.statPointsAwarded).toBe(3);
       expect(emittedEvent.unspentStatPoints).toBe(3);

@@ -613,7 +613,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       // Verify UncurseEvent was emitted
       const uncurseEv = emittedEvents.find((e) => e.type === 'uncurse') as UncurseEvent;
       expect(uncurseEv).toBeDefined();
-      expect(uncurseEv.item.id).toBe('ch1');
+      expect(uncurseEv.itemId).toBe('ch1');
       expect(uncurseEv.removedModifiers).toContain('Cursed');
 
       // Can now unequip cleanly

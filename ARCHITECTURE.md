@@ -97,10 +97,11 @@
     cost: number;                       // Energy cost consumed (0 for rejected actions)
     message?: string;                   // Narrative combat log string
     effects?: VisualEffectDescriptor[]; // Declarative visual effect primitives (projectiles, bursts, flashes)
+    events?: GameEvent[];              // Domain events emitted while the action ran (scalar payloads)
     pipelineError?: boolean;            // True if an unexpected exception was caught and isolated
   }
   ```
-  A typed `events?: GameEvent[]` field is planned. **[Planned: P-07]**
+  `events` carries the domain events the action emitted, in order.
 - **Pipeline Coverage:**
   - All player actions, including those issued through `EngineCommandBus`, go through `engine.handlePlayerAction()` -> `executeWithHooks()`.
   - Composite actions may perform sub-actions directly (e.g. a movement bump performs an attack). Sub-actions run inside the outer action's error boundary, and hooks match only the outer action.
@@ -116,8 +117,11 @@
   - Current last-resort backstop: `src/main.ts` installs `window` `error`/`unhandledrejection` handlers that record to the flight recorder and show the crash dialog.
 - **`pipelineError` Consumption:** After each player action, presentation code (currently `processVisualEffectsAndRender` in `src/main.ts`) checks `engine.lastActionResult.pipelineError` and notifies the player through `DiagnosticModal.showError` without locking game state.
 - **Domain Events (`GameEvent`):**
-  - **Current:** `GameEvent` in `src/engine/events.ts` is a closed union: `player_leveled_up`, `alignment_renown`, `chaotic_proc`, `uncurse`. Events are emitted with `engine.emitGameEvent()`, buffered in `engine.recentGameEvents`, and delivered through the `engine.onGameEvent` callback that `src/main.ts` wires. Payloads currently hold live `Player`/`Entity`/`Item` references. Treat them as read-only and never persist them.
-  - **Target [Planned: P-07]:** state-transition events decoupled from UI/audio (e.g. `damage_dealt`, `entity_killed`, `tile_altered`, `status_applied`, `item_acquired`, `level_transition`); an extensible envelope that lets content packs emit campaign-specific events without editing `events.ts`; scalar-ID payloads; and events also returned on `ActionResult.events`.
+  - **Envelope:** every event extends `GameEventBase` — `type`, `turn`, and optional `actorId`, `targetId`, `itemId`, and a flat scalar `data` bag. `type` is a plain string, so content packs emit their own events (e.g. `cotw:relic_attuned`) without editing `events.ts`; `BuiltInGameEventType` lists the engine's own.
+  - **Scalar payloads:** events carry IDs and numbers, never live `Player`, `Entity`, or `Item` references. A live reference pins a mutable object and cannot be serialized, so every event survives `JSON.stringify` and can be persisted or replayed.
+  - **Built-ins:** `player_leveled_up`, `alignment_renown`, `chaotic_proc`, `uncurse`, `damage_dealt`, `entity_killed`, `level_transition`.
+  - **Delivery:** emitted with `engine.emitGameEvent()`, buffered in `engine.recentGameEvents`, delivered through the `engine.onGameEvent` callback that `src/main.ts` wires, and returned on `ActionResult.events` for the action that emitted them. `ActionPipeline` opens an event capture per action; the engine keeps a capture stack so a composite action's sub-actions attribute correctly.
+  - **Narrowing:** the open `type` stops TypeScript discriminating the union on a literal, so `isGameEvent(event, 'entity_killed')` narrows to a built-in.
 - **Presentation Consumption & Animation Gating:**
   - Visual effects from player `ActionResult.effects` and monster turns accumulate in `engine.pendingVisualEffects`.
   - After each player action, `src/main.ts` drains them with `consumePendingVisualEffects()`. Unless `fxRunner.mode` is `'instant'`, it sets `InputHandler.isInputLocked = true` for the whole `fxRunner.playEffects()` run.
@@ -284,11 +288,6 @@ Each entry records the current state, the target, and whether the work is expect
 - Target: the engine provides generic primitives; campaign specifics live in content packs.
 - Status: unscoped. Requires a design pass before implementation.
 - Protected files: likely `engine.ts`.
-
-**P-07 — Extensible, serializable domain events** (§4)
-- Current: closed four-member `GameEvent` union with live-reference payloads, delivered only via `onGameEvent`.
-- Target: state-transition events, an envelope that content packs can extend, scalar-ID payloads, and `ActionResult.events`.
-- Protected files: `engine.ts`, possibly `actionPipeline.ts`.
 
 **P-08 — Tactical vs. ambient effect queues** (§4)
 - Current: every pending effect locks input for the whole playback; `playQueue()` is an alias for `playEffects()`.

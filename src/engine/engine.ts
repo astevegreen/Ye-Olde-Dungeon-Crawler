@@ -232,7 +232,31 @@ export class GameEngine {
   public lastActionResult: ActionResult | null = null;
   public lastActionName: string | null = null;
 
+  /**
+   * Active event captures, innermost last. `ActionPipeline` opens one per action so the
+   * events an action emits can ride back on its `ActionResult` (§4). A stack rather than a
+   * single buffer because composite actions perform sub-actions inside the outer boundary.
+   */
+  private readonly eventCaptures: GameEvent[][] = [];
+
+  /** Starts capturing emitted events; pass the returned buffer to `endEventCapture`. */
+  public beginEventCapture(): GameEvent[] {
+    const buffer: GameEvent[] = [];
+    this.eventCaptures.push(buffer);
+    return buffer;
+  }
+
+  /** Stops the capture started by `beginEventCapture` and returns what it collected. */
+  public endEventCapture(buffer: GameEvent[]): GameEvent[] {
+    const idx = this.eventCaptures.lastIndexOf(buffer);
+    if (idx >= 0) this.eventCaptures.splice(idx, 1);
+    return buffer;
+  }
+
   public emitGameEvent(event: GameEvent): void {
+    for (const capture of this.eventCaptures) {
+      capture.push(event);
+    }
     this.recentGameEvents.push(event);
     if (this.recentGameEvents.length > 20) {
       this.recentGameEvents.shift();
@@ -713,7 +737,15 @@ export class GameEngine {
 
     // 4. Update active map and floor
     this.map = nextMap;
+    const previousFloor = this.currentFloor;
     this.currentFloor = targetFloor;
+    this.emitGameEvent({
+      type: 'level_transition',
+      turn: this.turnCount,
+      actorId: this.player?.id,
+      fromFloor: previousFloor,
+      toFloor: targetFloor,
+    });
     this.gameState.updateFloor(targetFloor);
 
     // Simulate catch-up on inactive revisited floors

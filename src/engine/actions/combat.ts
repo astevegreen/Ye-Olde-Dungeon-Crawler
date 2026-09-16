@@ -148,8 +148,9 @@ export class MeleeAttackAction implements Action {
               const totalRenown = engine.modifyWorldCounter(renownCategory, amount);
               engine.emitGameEvent({
                 type: 'alignment_renown',
-                actor: this.attacker,
-                target: this.defender,
+                turn: engine.turnCount,
+                actorId: this.attacker.id,
+                targetId: this.defender.id,
                 renownCategory,
                 amount,
                 totalRenown,
@@ -239,8 +240,9 @@ export class MeleeAttackAction implements Action {
             engine.log(`*** CHAOTIC BACKLASH! Volatile recoil sears ${this.attacker.name} for ${backlashDmg} damage! ***`);
             engine.emitGameEvent({
               type: 'chaotic_proc',
-              actor: this.attacker,
-              target: this.defender,
+              turn: engine.turnCount,
+              actorId: this.attacker.id,
+              targetId: this.defender.id,
               procType: 'backlash',
               description: proc.description,
               damageDealt: backlashDmg,
@@ -280,8 +282,9 @@ export class MeleeAttackAction implements Action {
               engine.log(`*** CHAOTIC WARP! Spatial instability scatters ${this.attacker.name} across the chamber! ***`);
               engine.emitGameEvent({
                 type: 'chaotic_proc',
-                actor: this.attacker,
-                target: this.defender,
+                turn: engine.turnCount,
+                actorId: this.attacker.id,
+                targetId: this.defender.id,
                 procType: 'teleport',
                 description: proc.description,
                 teleportDestination: dest,

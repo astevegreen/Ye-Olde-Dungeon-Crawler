@@ -34,8 +34,9 @@ export class UncurseAction implements Action {
           removedAllModifiers.push(...res.removedModifiers);
           engine.emitGameEvent({
             type: 'uncurse',
-            actor: this.actor,
-            item,
+            turn: engine.turnCount,
+            actorId: this.actor.id,
+            itemId: item.id,
             removedModifiers: res.removedModifiers,
           });
           return true;

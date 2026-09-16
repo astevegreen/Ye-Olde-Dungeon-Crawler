@@ -119,6 +119,9 @@ export class ActionPipeline {
   }
 
   public executeWithHooks(action: Action, engine: GameEngine): ActionResult {
+    // Events emitted while this action runs ride back on its result (§4). Sub-actions
+    // nest, so the engine keeps a capture stack rather than one buffer.
+    const captured = engine?.beginEventCapture ? engine.beginEventCapture() : undefined;
     try {
       const actionType = (action as any)?.actionType ?? action?.constructor?.name ?? 'Action';
       const actor = ActionPipeline.resolveActor(action, engine);
@@ -167,9 +170,11 @@ export class ActionPipeline {
         }
       }
 
-      return result;
+      return captured && captured.length > 0 ? { ...result, events: [...captured] } : result;
     } catch (topLevelErr) {
       return this.handlePipelineError(topLevelErr, action, engine, 'UnknownAction', 'pipeline-top-level');
+    } finally {
+      if (captured) engine.endEventCapture(captured);
     }
   }
 

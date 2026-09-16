@@ -81,7 +81,8 @@ export class DeathResolver {
           }
           engine.emitGameEvent({
             type: 'player_leveled_up',
-            player: engine.player,
+            turn: engine.turnCount,
+            actorId: engine.player.id,
             level: levelUpRes.newLevel,
             newLevel: levelUpRes.newLevel,
             statPointsAwarded: levelUpRes.statPointsAwarded ?? 3,
@@ -92,6 +93,13 @@ export class DeathResolver {
       } else {
         engine.log(`${victim.name} is slain!`);
       }
+      engine.emitGameEvent({
+        type: 'entity_killed',
+        turn: engine.turnCount,
+        actorId: killer?.id,
+        targetId: victim.id,
+        data: { victimName: victim.name },
+      });
 
       // Record kill in Slayer's Compendium
       if (engine.compendium) {

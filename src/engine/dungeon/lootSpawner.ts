@@ -307,7 +307,7 @@ export function createDungeonChest(
       const def = selectFloorItemDefinition(candidates, currentFloor, rng);
       let added = false;
       if (def) {
-        const itemId = `${id}-item-${idx}-${Date.now()}-${attempts}`;
+        const itemId = `${id}-item-${idx}-${Math.floor(rng() * 1000000)}-${attempts}`;
         added = chest.addItem(createScaledItem(def, itemId, currentFloor, rng));
       }
       if (!added) {
@@ -345,14 +345,14 @@ export function populateDungeonLoot(
       if (map.isPassable(lx, ly) && !map.getEntityAt(lx, ly)) {
         // 40% currency pile, 60% equipment/consumable
         if (rng() < 0.40) {
-          const coinId = `loot-coin-${currentFloor}-${i}-${Date.now()}`;
+          const coinId = `loot-coin-${currentFloor}-${i}-${Math.floor(rng() * 1000000)}`;
           const coins = spawnFloorCurrency(currentFloor, coinId, rng);
           map.addItemAt(lx, ly, coins);
           spawnedItems.push(coins);
         } else {
           const def = selectFloorItemDefinition(candidates, currentFloor, rng);
           if (def) {
-            const itemId = `loot-item-${currentFloor}-${i}-${Date.now()}`;
+            const itemId = `loot-item-${currentFloor}-${i}-${Math.floor(rng() * 1000000)}`;
             const item = createScaledItem(def, itemId, currentFloor, rng);
             map.addItemAt(lx, ly, item);
             spawnedItems.push(item);
@@ -367,7 +367,7 @@ export function populateDungeonLoot(
       const cy = room.y1 + 1 + Math.floor(rng() * (room.y2 - room.y1 - 1));
 
       if (map.isPassable(cx, cy) && !map.getEntityAt(cx, cy)) {
-        const chestId = `loot-chest-${currentFloor}-${i}-${Date.now()}`;
+        const chestId = `loot-chest-${currentFloor}-${i}-${Math.floor(rng() * 1000000)}`;
         const chest = createDungeonChest(chestId, currentFloor, candidates, rng);
         map.addItemAt(cx, cy, chest);
         spawnedItems.push(chest);

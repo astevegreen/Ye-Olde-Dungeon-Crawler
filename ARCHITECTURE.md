@@ -134,7 +134,7 @@
   - A flat ID-keyed item index as the single source of truth for item lookup is planned. **[Planned: P-09]**
 - **Seeded PRNG Serialization:**
   - `PRNG` (`src/engine/dungeon/prng.ts`, exported alias `Mulberry32`) keeps a single 32-bit internal state. It is saved as `SaveData.prngState` via `getState()` and restored via `setState()` on load, so the random stream resumes exactly where it stopped.
-  - Replay determinism holds only for code that draws from the engine PRNG (§7.2). Existing unseeded code paths break it. **[Planned: P-10]**
+  - Replay determinism holds for simulation code: randomness and spawned-entity IDs both derive from the engine PRNG (§7.2). Save timestamps and profile IDs are deliberately outside that boundary.
 - **Persistence Architecture & Storage Tradeoffs:**
   - **`localStorage` Backend:** synchronous default for character saves (`ProfileManager`) and autosaves (`AutosaveManager`, periodic and on floor change). Both live in `src/engine/storage/` and accept a `Storage`-shaped adapter; in the browser, `src/main.ts` supplies `window.localStorage` through `getBrowserStorage()` in `src/ui/platform.ts`. At boot, `src/ui/persistenceInit.ts` requests persistent storage (`navigator.storage.persist()`).
   - **Quota Management:** map tiles and FOV exploration are run-length encoded (`compaction.ts`). A save currently includes every visited floor (`storedMaps`). A single-floor active cache policy to bound payload size is planned. **[Planned: P-11]**
@@ -230,7 +230,8 @@
    - Every `Math.random` call on a simulation path is gone: rng parameters are required rather than defaulted, and the `engine ? engine.rng() : Math.random()` fallbacks (all unreachable, since those functions take a required `GameEngine`) were removed. `LootEntry.generate` receives the seeded delegate, so content gold drops roll from it.
    - **Entropy boundary:** a run's seed is drawn from the clock exactly once, outside the simulation — `ProfileManager.createCharacter` creates the run PRNG (from `options.seed` when given) and hands it to both the starting-kit roll and the `GameEngine`; `TitleScreen` owns a similar stream for attribute re-rolls before any engine exists.
    - **Not simulation:** `rendering/fxRunner.ts` uses `Math.random` for particle jitter. It draws no simulation state and changes no outcome, so it stays.
-   - Wall-clock IDs remain on simulation paths. **[Planned: P-10]**
+   - **Simulation IDs:** `GameEngine.nextSimulationId(prefix)` derives spawned-entity and item IDs from `turnCount` plus a seeded PRNG draw, so one seed replays to the same IDs. Generators that already receive a seeded `rng` (loot, vaults, coin stacks, stack splits) derive their suffixes from it; a cremated corpse's ash derives its ID from the corpse's own ID. `CorpseConfig.id` is required so no corpse can mint a clock-based ID.
+   - **Outside the boundary, by design:** save and telemetry timestamps record real time, and `ProfileManager`'s profile IDs stay clock-derived — seeding them would make two characters created from the same seed collide. Those lines carry a `// purity-allow:` pragma (§7.2 item 1).
    - No automated `Math.random` check exists yet. **[Planned: P-19]**
 3. **Schema Evolution Integrity (`npm run validate:schema`, `scripts/validate-schema.ts`):**
    - Migrates a minimal v1 envelope to `CURRENT_SCHEMA_VERSION` and asserts the final version.
@@ -238,7 +239,7 @@
    - `PRNG.getState()` returns the raw internal state while `setState()` coerces to int32, so a restored generator reports an equivalent but differently-encoded state. The validator compares int32-normalized states and separately asserts the next draw matches.
    - Per-step migration assertions live in `src/engine/storage/__tests__/migrator.test.ts` (run by `npm test`).
 4. **Headless Simulation (`npm run sim`, `scripts/headless-sim.ts`):**
-   - **Population anchor:** generates CotW floors through `DungeonArc.generateFloor` across several floors, repeated generations, and the base and pact-boosted monster densities, then derives its data points from the measured counts (realistic median, realistic high, and a labeled stress multiple) instead of a hard-coded population. Monster placement still uses `Math.random` (P-10), so counts are sampled, not seeded.
+   - **Population anchor:** generates CotW floors through `DungeonArc.generateFloor` across several floors, repeated generations, and the base and pact-boosted monster densities, then derives its data points from the measured counts (realistic median, realistic high, and a labeled stress multiple) instead of a hard-coded population. Placement is seeded per floor (§7.2), so the anchor varies the seed across generations to sample a realistic spread rather than one floor repeatedly.
    - **Scenarios:** a dormant floor (player moves; sleeping monsters outside FOV), an awake floor (hunting monsters path to and attack an invulnerable player), and a 1,000-cast spell workload. After a global JIT warmup, each data point runs a warmup plus repeated samples and reports median and max.
    - **Fails on:** any rejected action, any caught pipeline exception (including isolated monster-turn failures), or a wall-clock budget exceeded by a median at realistic populations. Wall-clock budgets live here, not in `npm test`. `--inject-error` demonstrates the failure path.
    - The long-running chaos/monkey simulation (random actions, save/reload cycles, invariant, deadlock, and NaN assertions) is `src/engine/__tests__/chaosSimulation.test.ts`, run by `npm test`.
@@ -311,13 +312,6 @@ Each entry records the current state, the target, and whether the work is expect
 - Current: items live in per-container arrays with scalar parent/owner IDs.
 - Target: a flat ID-keyed item index as the single source of truth for item lookup.
 - Protected files: `migrator.ts` if the save format changes (exception 2).
-
-**P-10 — Wall-clock IDs on simulation paths** (§5, §7.2)
-- Current: `Math.random` is gone from simulation code (§7.2 item 2), but six sites still derive IDs from `Date.now()`, so two runs of one seed produce different entity and item IDs:
-  - `economy/currency.ts` (coin stacks), `items/corpse.ts` (corpses and ash), `items/stacking.ts` (split stacks)
-  - `storage/profile-manager.ts` (profile IDs, twice)
-- Target: simulation IDs derive from engine-owned state that survives save/load — a persisted counter or the seeded PRNG — rather than the clock. A profile ID created before any run exists may legitimately stay clock-derived; that boundary needs deciding.
-- Protected files: `engine.ts` if the engine gains an ID counter; `migrator.ts` if that counter is persisted (exception 2).
 
 **P-11 — Single-floor active cache policy** (§5)
 - Current: saves include every visited floor.

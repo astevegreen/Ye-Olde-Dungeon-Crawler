@@ -100,7 +100,7 @@ describe('Item Stacking & Multi-Selection Engine', () => {
     pot.quantity = 10;
 
     // Split 4 off
-    const split = splitItemStack(pot, 4);
+    const split = splitItemStack(pot, 4, Math.random);
     expect(split).not.toBeNull();
     expect(pot.quantity).toBe(6);
     expect(split?.quantity).toBe(4);
@@ -108,7 +108,7 @@ describe('Item Stacking & Multi-Selection Engine', () => {
     expect(split?.name).toBe(pot.name);
 
     // Splitting 0 or invalid amount throws
-    expect(() => splitItemStack(pot, 0)).toThrow();
-    expect(() => splitItemStack(pot, 10)).toThrow();
+    expect(() => splitItemStack(pot, 0, Math.random)).toThrow();
+    expect(() => splitItemStack(pot, 10, Math.random)).toThrow();
   });
 });

@@ -344,7 +344,7 @@ console.log('======================================================');
 console.log('HEADLESS SIMULATION');
 console.log('------------------------------------------------------');
 console.log(`Population anchor: ${ANCHOR_FLOORS.length} floors x ${ANCHOR_SAMPLES_PER_FLOOR} generations per density`);
-console.log('(monster placement uses Math.random, ARCHITECTURE.md P-10, so counts are sampled, not seeded)');
+console.log('(placement is seeded per floor; the anchor varies the seed per generation to sample a spread)');
 console.log('  density  samples  min  median  p90  max');
 for (const r of anchor) {
   console.log(`  ${pad(r.density.toFixed(1), 7)}  ${pad(r.samples, 7)}  ${pad(r.min, 3)}  ${pad(r.median, 6)}  ${pad(r.p90, 3)}  ${pad(r.max, 3)}`);

@@ -8,6 +8,8 @@ import type { ActionResult } from '../types';
 import { BASE_ACTION_COST } from '../types';
 
 export interface CorpseConfig extends Partial<ItemConfig> {
+  /** Required: corpses are named by their creator so ids stay seeded (ARCHITECTURE.md §7.2). */
+  id: string;
   archetypeId: string;
   weight?: number;
   decayTicksRemaining?: number;
@@ -20,7 +22,7 @@ export class CorpseItemInstance extends Item {
 
   constructor(config: CorpseConfig) {
     super({
-      id: config.id ?? `corpse-${config.archetypeId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: config.id,
       name: `Corpse of ${config.archetypeId}`,
       unidentifiedName: 'Lifeless Remains',
       category: 'quest',
@@ -41,7 +43,7 @@ export class CorpseItemInstance extends Item {
     map.removeItemAt(x, y, this.id);
     this.isBurned = true;
     const ash = new Item({
-      id: `ash-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: `${this.id}-ash`,
       name: 'Pile of Ash',
       unidentifiedName: 'Grey Powder',
       category: 'quest',
@@ -84,7 +86,7 @@ export class ReanimateCorpseAction implements Action {
 
     // Spawn reanimated thrall allied with caster
     const thrall = new Monster({
-      id: `thrall-${Date.now()}`,
+      id: engine.nextSimulationId(`thrall-${this.corpse.archetypeId}`),
       name: `Reanimated ${this.corpse.archetypeId} Thrall`,
       position: { x: this.targetX, y: this.targetY },
       stats: { hp: 20, maxHp: 20, attack: 4, defense: 1 },

@@ -144,7 +144,7 @@ export class DeathResolver {
           const roll = engine.rng();
           if (roll < effectiveChance) {
             const randSuffix = engine.prng.nextInt(1000, 9999).toString();
-            const lootId = `drop-${engine ? engine.turnCount : Date.now()}-${randSuffix}`;
+            const lootId = `drop-${engine.turnCount}-${randSuffix}`;
             const item = rule.generate(lootId, engine.rng);
             if (item.category === 'coin' && goldMult !== 1.0) {
               item.value = Math.round(item.value * goldMult);
@@ -167,6 +167,7 @@ export class DeathResolver {
 
       // Drop organic corpse on monster defeat
       const corpse = new CorpseItemInstance({
+        id: engine.nextSimulationId(`corpse-${victim.definitionId ?? victim.name}`),
         archetypeId: victim.definitionId ?? victim.name,
       });
       engine.map.addItemAt(victim.x, victim.y, corpse);

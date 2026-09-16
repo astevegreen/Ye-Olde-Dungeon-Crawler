@@ -190,7 +190,8 @@ export function addCoinsToContainer(
   container: Container,
   denomination: CoinDenomination,
   count: number,
-  idPrefix = 'coin'
+  idPrefix = 'coin',
+  rng: () => number = () => 0
 ): boolean {
   if (count <= 0) return true;
 
@@ -204,7 +205,7 @@ export function addCoinsToContainer(
 
   // 2. Otherwise instantiate a new CoinItem
   const newCoin = new CoinItem({
-    id: `${idPrefix}-${denomination}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    id: `${idPrefix}-${denomination}-${Math.floor(rng() * 1000000)}`,
     denomination,
     count,
   });

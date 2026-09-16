@@ -106,7 +106,7 @@ export class VaultStamper {
           connectors.push({ x: worldX, y: worldY });
         } else if (parsed.isChest) {
           chestSpawns.push({ x: worldX, y: worldY });
-          const chestId = `vault-chest-${blueprint.id}-${worldX}-${worldY}-${Date.now()}`;
+          const chestId = `vault-chest-${blueprint.id}-${worldX}-${worldY}-${Math.floor(rng() * 1000000)}`;
           const chest = createDungeonChest(chestId, currentFloor, itemCandidates, rng);
           map.addItemAt(worldX, worldY, chest);
         } else if (parsed.isMonster) {

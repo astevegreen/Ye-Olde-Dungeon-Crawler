@@ -25,7 +25,7 @@ function floorDigest(seed: number, floorNumber = 3): string {
     .join('|');
   const loot = result.map
     .getAllGroundItems()
-    .map((pile) => `${pile.x},${pile.y}:${pile.items.map((i) => i.name).sort().join('+')}`)
+    .map((pile) => `${pile.x},${pile.y}:${pile.items.map((i) => i.id).sort().join('+')}`)
     .sort()
     .join('|');
   return `monsters=[${monsters}]||loot=[${loot}]`;

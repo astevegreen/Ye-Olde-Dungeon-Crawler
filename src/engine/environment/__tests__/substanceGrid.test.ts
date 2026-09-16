@@ -153,7 +153,7 @@ describe('SubstanceGrid & Organic Corpse Lifecycle', () => {
   it('consumes corpse to restore health and cremates corpse with thermal substance', () => {
     player.hp = 30; // 30 / 50 HP
 
-    const corpse1 = new CorpseItemInstance({ archetypeId: 'wolf' });
+    const corpse1 = new CorpseItemInstance({ id: 'corpse-test-1', archetypeId: 'wolf' });
     map.addItemAt(5, 6, corpse1);
 
     const consumeAction = new ConsumeCorpseAction(player, corpse1, 5, 6);
@@ -163,7 +163,7 @@ describe('SubstanceGrid & Organic Corpse Lifecycle', () => {
     expect(map.getItemsAt(5, 6).length).toBe(0);
 
     // Thermal cremation in ignited cell
-    const corpse2 = new CorpseItemInstance({ archetypeId: 'ogre' });
+    const corpse2 = new CorpseItemInstance({ id: 'corpse-test-2', archetypeId: 'ogre' });
     map.addItemAt(8, 8, corpse2);
     substances.addSubstance(8, 8, SubstanceBitmask.IGNITED);
 
@@ -175,7 +175,7 @@ describe('SubstanceGrid & Organic Corpse Lifecycle', () => {
     expect(remainingItems.some((i) => i.name === 'Pile of Ash')).toBe(true);
 
     // Manual cremation action
-    const corpse3 = new CorpseItemInstance({ archetypeId: 'goblin' });
+    const corpse3 = new CorpseItemInstance({ id: 'corpse-test-3', archetypeId: 'goblin' });
     map.addItemAt(4, 4, corpse3);
     const cremateAction = new CremateCorpseAction(player, corpse3, 4, 4);
     const cremateRes = cremateAction.perform(engine);

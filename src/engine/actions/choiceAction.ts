@@ -55,12 +55,12 @@ export class ExecuteChoiceAction implements Action {
         case 'grantItem': {
           const itemDef = engine.manifest?.items?.find((i) => i.id === c.itemId);
           let item: Item;
-          const timestamp = Date.now();
+          const itemInstanceId = engine.nextSimulationId(c.itemId ?? 'choice');
           if (itemDef) {
-            item = createScaledItem(itemDef, `${c.itemId}-${timestamp}`, engine.currentFloor, engine.rng);
+            item = createScaledItem(itemDef, itemInstanceId, engine.currentFloor, engine.rng);
           } else {
             item = new Item({
-              id: `${c.itemId}-${timestamp}`,
+              id: itemInstanceId,
               name: c.itemId.replace(/_/g, ' '),
               unidentifiedName: 'Mysterious Item',
               category: 'weapon',

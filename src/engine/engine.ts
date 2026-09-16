@@ -421,7 +421,7 @@ export class GameEngine {
 
         const monster = createScaledMonster(
           def,
-          `mob-${definitionId}-${Date.now()}`,
+          this.nextSimulationId(`mob-${definitionId}`),
           spawnTile,
           this.currentFloor
         );
@@ -546,7 +546,7 @@ export class GameEngine {
       return null;
     }
     const spawn = findSafeSpawnPosition(this.map, { x: this.player.x, y: this.player.y }, 5);
-    const companion = Companion.fromDefinition(definitionId, `companion-${definitionId}-${Date.now()}`, spawn);
+    const companion = Companion.fromDefinition(definitionId, this.nextSimulationId(`companion-${definitionId}`), spawn);
     if (!companion) return null;
     this.attachCompanion(companion);
     this.log(`${companion.name} answers your call!`);
@@ -1043,6 +1043,15 @@ export class GameEngine {
     };
     this.lastActionResult = surfaced;
     return surfaced;
+  }
+
+  /**
+   * Deterministic id for anything spawned during simulation. Derived from turn count and
+   * the seeded PRNG (which persists in the save), so one seed replays to the same ids
+   * (ARCHITECTURE.md §7.2). Never derive simulation ids from the clock.
+   */
+  public nextSimulationId(prefix: string): string {
+    return `${prefix}-${this.turnCount}-${this.prng.nextInt(100000, 999999)}`;
   }
 
   /** Pauses or resumes world advancement; driven by the modal stack (ARCHITECTURE.md §6). */

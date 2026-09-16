@@ -41,7 +41,7 @@ export class DepositToVaultAction implements Action {
         this.item.quantity -= this.quantity;
         const clonedConfig = {
           ...this.item,
-          id: `${this.item.id}_vault_${Date.now()}`,
+          id: engine.nextSimulationId(`${this.item.id}_vault`),
           quantity: this.quantity,
           stats: { ...this.item.stats },
           durability: this.item.durability ? { ...this.item.durability } : undefined,

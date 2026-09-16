@@ -35,7 +35,7 @@ export function applyItemWear(
   item: Item,
   _actor: Entity,
   degradationChance = 0.15,
-  rng?: () => number
+  rng: () => number
 ): { degraded: boolean; broken: boolean } {
   if (!item.durability) {
     return { degraded: false, broken: false };
@@ -45,7 +45,7 @@ export function applyItemWear(
     return { degraded: false, broken: true };
   }
 
-  const roll = rng ? rng() : Math.random();
+  const roll = rng();
   if (roll < degradationChance) {
     item.durability.current = Math.max(0, item.durability.current - 1);
     if (item.durability.current === 0) {
@@ -113,7 +113,7 @@ export function resolveCombatMitigation(
   attacker: Entity,
   defender: Entity,
   rawDamage: number,
-  engine?: GameEngine,
+  engine: GameEngine,
   degradationChance = 0.15
 ): MitigationResult {
   const wornItems: ItemWearEvent[] = [];
@@ -136,7 +136,7 @@ export function resolveCombatMitigation(
 
   // 1. Weapon wear on attack
   if (weapon && weapon.durability) {
-    const wear = applyItemWear(weapon, attacker, degradationChance, engine ? engine.rng : undefined);
+    const wear = applyItemWear(weapon, attacker, degradationChance, engine.rng);
     if (wear.degraded) {
       wornItems.push({
         item: weapon,
@@ -152,7 +152,7 @@ export function resolveCombatMitigation(
 
   // 2. Defender armor & shield wear on hit
   if (shield && shield.durability) {
-    const wear = applyItemWear(shield, defender, degradationChance, engine ? engine.rng : undefined);
+    const wear = applyItemWear(shield, defender, degradationChance, engine.rng);
     if (wear.degraded) {
       wornItems.push({
         item: shield,
@@ -167,7 +167,7 @@ export function resolveCombatMitigation(
   }
 
   if (armor && armor.durability) {
-    const wear = applyItemWear(armor, defender, degradationChance, engine ? engine.rng : undefined);
+    const wear = applyItemWear(armor, defender, degradationChance, engine.rng);
     if (wear.degraded) {
       wornItems.push({
         item: armor,

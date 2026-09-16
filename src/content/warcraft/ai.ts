@@ -51,7 +51,7 @@ export class WarchiefBehavior implements AiBehaviorStrategy {
     }
 
     if (chebyshevDist <= 1) {
-      if (Math.random() < 0.4) {
+      if (engine.rng() < 0.4) {
         return new WindUpDeclareAction(
           monster,
           { x: player.x, y: player.y },

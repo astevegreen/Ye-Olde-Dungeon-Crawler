@@ -23,7 +23,7 @@ describe('Vault / Prefab Stamp Injector', () => {
     };
 
     const map = new GameMap(10, 10, TILES.WALL);
-    const result = VaultStamper.stamp(map, blueprint, 1, 1, 5, COTW_MONSTERS);
+    const result = VaultStamper.stamp(map, blueprint, 1, 1, 5, COTW_MONSTERS, [], Math.random);
 
     expect(result.width).toBe(5);
     expect(result.height).toBe(5);
@@ -62,7 +62,7 @@ describe('Vault / Prefab Stamp Injector', () => {
 
     for (const vault of COTW_VAULTS) {
       const map = new GameMap(30, 25, TILES.WALL);
-      const res = VaultStamper.stamp(map, vault, 2, 2, vault.minFloor);
+      const res = VaultStamper.stamp(map, vault, 2, 2, vault.minFloor, [], [], Math.random);
       expect(res.connectors.length).toBeGreaterThanOrEqual(1);
     }
   });

@@ -1,3 +1,4 @@
+import { PRNG } from '../dungeon/prng';
 import { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
 import type { Position } from '../types';
@@ -171,10 +172,12 @@ export class DungeonArc {
     }
 
     // 3. Spawn Floor-scaled monsters via encounter spawner
-    populateDungeonFloor(map, dungeon.rooms, floorNumber, monsterCatalog, Math.random, densityMultiplier);
+    const populationPrng = new PRNG((seed ?? floorNumber) + floorNumber * 7919);
+    const populationRng = () => populationPrng.next();
+    populateDungeonFloor(map, dungeon.rooms, floorNumber, monsterCatalog, populationRng, densityMultiplier);
 
     // 4. Spawn Floor-scaled loot and chests
-    populateDungeonLoot(map, dungeon.rooms, floorNumber, itemCatalog);
+    populateDungeonLoot(map, dungeon.rooms, floorNumber, itemCatalog, populationRng);
 
     // 5. Spawn Town-Return shortcut fixture if floor >= 5 and < maxFloor
     TownReturnDispatcher.spawnShortcutFixture(

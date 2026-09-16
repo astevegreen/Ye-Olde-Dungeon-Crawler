@@ -126,7 +126,7 @@ export function isEligibleDungeonMonster(def: MonsterDefinition, currentFloor: n
 export function selectDungeonMonsterDefinition(
   candidates: MonsterDefinition[],
   currentFloor: number,
-  rng: () => number = Math.random
+  rng: () => number
 ): MonsterDefinition | null {
   const eligible = candidates.filter((m) => isEligibleDungeonMonster(m, currentFloor));
 
@@ -199,7 +199,7 @@ export function populateDungeonFloor(
   rooms: Array<{ x1: number; y1: number; x2: number; y2: number }>,
   currentFloor: number,
   candidates: MonsterDefinition[],
-  rng: () => number = Math.random,
+  rng: () => number,
   densityMultiplier = 1.0
 ): void {
   // Start from room index 1 so room 0 remains player spawn

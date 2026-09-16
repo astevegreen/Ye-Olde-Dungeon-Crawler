@@ -57,7 +57,7 @@ export class ExecuteChoiceAction implements Action {
           let item: Item;
           const timestamp = Date.now();
           if (itemDef) {
-            item = createScaledItem(itemDef, `${c.itemId}-${timestamp}`, engine.currentFloor);
+            item = createScaledItem(itemDef, `${c.itemId}-${timestamp}`, engine.currentFloor, engine.rng);
           } else {
             item = new Item({
               id: `${c.itemId}-${timestamp}`,

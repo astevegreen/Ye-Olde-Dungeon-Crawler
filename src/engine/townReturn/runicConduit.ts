@@ -192,7 +192,7 @@ export class RunicConduit {
       }
     }
 
-    const randomIndex = Math.floor(Math.random() * reachableCandidates.length);
+    const randomIndex = Math.floor(engine.rng() * reachableCandidates.length);
     const chosen = reachableCandidates[randomIndex];
     this.activeNode = { ...chosen };
     engine.map.setTile(chosen.x, chosen.y, TILES.CONDUIT_NODE);

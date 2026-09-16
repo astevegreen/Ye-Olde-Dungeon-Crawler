@@ -36,6 +36,8 @@ export class ShopOverlay {
   private clickZones: ClickZone[] = [];
   private onStateChanged?: () => void;
   public onOpenCompendium?: () => void;
+  public onOpen?: (npc: NPC) => void;
+  public onClose?: () => void;
   public atlas?: SpriteAtlas;
 
   constructor(onStateChanged?: () => void, atlas?: SpriteAtlas) {
@@ -52,6 +54,9 @@ export class ShopOverlay {
     this.selectedSellIndex = 0;
     this.statusMessage = '';
     this.statusColor = '#38bdf8';
+    if (this.onOpen) {
+      this.onOpen(npc);
+    }
     if (this.onStateChanged) {
       this.onStateChanged();
     }
@@ -62,6 +67,9 @@ export class ShopOverlay {
     this.activeNpc = null;
     this.merchant = null;
     this.statusMessage = '';
+    if (this.onClose) {
+      this.onClose();
+    }
     if (this.onStateChanged) {
       this.onStateChanged();
     }

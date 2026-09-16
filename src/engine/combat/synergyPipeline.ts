@@ -40,13 +40,13 @@ export class SynergyPipeline {
    */
   public static evaluateProcTrigger(
     config: ProcTriggerConfig,
-    randomRoll?: number
+    randomRoll: number
   ): EffectiveProcResult {
     const cProc = Math.min(1.0, Math.max(0.0, config.procCoefficient));
     const pBase = Math.min(1.0, Math.max(0.0, config.baseChance));
     const effectiveChance = pBase * cProc;
 
-    const roll = randomRoll !== undefined ? randomRoll : Math.random();
+    const roll = randomRoll;
     const triggered = roll < effectiveChance;
 
     const effectiveDuration =

@@ -57,7 +57,7 @@ export class WanderingMonsterSpawner {
    */
   public checkAndSpawn(
     engine: GameEngine,
-    rng: () => number = () => (engine?.rng ? engine.rng() : Math.random())
+    rng: () => number = () => engine.rng()
   ): Monster | null {
     // 1. Dungeon floor check: strictly floors >= 1 (no wandering monsters in town)
     if (engine.currentFloor < 1) {

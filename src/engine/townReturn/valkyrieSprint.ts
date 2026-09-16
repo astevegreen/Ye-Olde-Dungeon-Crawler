@@ -123,7 +123,7 @@ export class ValkyrieSprintGauntlet {
     }
 
     const p = engine.player;
-    const rollStr = engine ? engine.rng() : Math.random();
+    const rollStr = engine.rng();
     // Strength check: STR >= 12 or roll
     const strCheck = p.strength >= 12 || rollStr + (p.strength / 20) >= 0.7;
     if (strCheck) {
@@ -149,7 +149,7 @@ export class ValkyrieSprintGauntlet {
 
     const p = engine.player;
     const hasLockpicks = p.inventory.primaryPack.hasItem('lockpicks');
-    const rollDex = engine ? engine.rng() : Math.random();
+    const rollDex = engine.rng();
     const dexCheck = hasLockpicks || p.dexterity >= 12 || rollDex + (p.dexterity / 20) >= 0.7;
 
     if (dexCheck) {
@@ -328,7 +328,7 @@ export class ValkyrieSprintGauntlet {
 
     // Pick 2 random candidate tiles
     for (let i = 0; i < 2 && candidates.length > 0; i++) {
-      const idx = Math.floor(Math.random() * candidates.length);
+      const idx = Math.floor(engine.rng() * candidates.length);
       const chosen = candidates.splice(idx, 1)[0];
       this.telegraphedDangerTiles.push(chosen);
       engine.log(`Crumbling dust and falling pebbles warn of collapse at (${chosen.x}, ${chosen.y}) next turn!`);

@@ -157,7 +157,7 @@ export class FloorManager {
 
       // Pick monster definitions appropriate for manifest or floor
       const monsterCatalog = engine.manifest?.monsters ?? [];
-      const rng = engine.rng ? () => engine.rng() : Math.random;
+      const rng = () => engine.rng();
 
       for (let i = 0; i < spawnsToPerform && candidateTiles.length > 0; i++) {
         const tileIdx = Math.floor(rng() * candidateTiles.length);
@@ -279,7 +279,7 @@ export class FloorManager {
       return [];
     }
 
-    const rng = engine.rng ? () => engine.rng() : Math.random;
+    const rng = () => engine.rng();
     const spawned: Monster[] = [];
 
     for (let i = 0; i < spawnsToPerform && candidateTiles.length > 0; i++) {

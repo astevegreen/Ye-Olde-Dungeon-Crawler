@@ -306,7 +306,7 @@ export function createModifier(category: ModifierCategory, tier = 1): ItemModifi
 export function rollItemModifiers(
   item: Item,
   currentFloor: number,
-  rng: () => number = Math.random
+  rng: () => number
 ): ItemModifier[] {
   const isEquipment =
     item.category === 'weapon' ||
@@ -353,7 +353,7 @@ export function rollItemModifiers(
 export function applyProceduralModifiers(
   item: Item,
   currentFloor: number,
-  rng: () => number = Math.random
+  rng: () => number
 ): Item {
   const mods = rollItemModifiers(item, currentFloor, rng);
   for (const m of mods) {

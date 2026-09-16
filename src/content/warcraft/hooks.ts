@@ -30,8 +30,8 @@ export const warcraftBattleCryHook: ActionHook = {
         'By the Light!',
       ];
       // 25% chance to shout during combat
-      if (Math.random() < 0.25) {
-        const cry = cries[Math.floor(Math.random() * cries.length)];
+      if (context.engine.rng() < 0.25) {
+        const cry = cries[Math.floor(context.engine.rng() * cries.length)];
         context.engine.log(`Battle Cry: "${cry}"`);
       }
     }

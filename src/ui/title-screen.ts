@@ -1,6 +1,7 @@
 import { ProfileManager } from '../engine';
 import type { CharacterProfile } from '../engine';
 import { CharacterRoller } from '../engine';
+import { PRNG } from '../engine';
 import type { CharacterAttributes, Gender } from '../engine';
 import type { GameDifficulty } from '../engine';
 import { Leaderboard, type ValhallaEntry } from '../engine';
@@ -70,6 +71,13 @@ export class TitleScreen {
   // Stat Roller state
   private selectedGender: Gender = 'male';
   private selectedDifficulty: GameDifficulty = 'medium';
+  /**
+   * Character creation happens before any GameEngine exists, so the screen owns its own
+   * seeded stream rather than reaching for Math.random. This is the entropy boundary:
+   * the seed is drawn from the clock once, here, and every roll after that is seeded
+   * (ARCHITECTURE.md §7.2).
+   */
+  private readonly rollPrng = new PRNG((Date.now() ^ 0x5f3759df) >>> 0);
   private attributes: CharacterAttributes = { strength: 12, intelligence: 12, constitution: 12, dexterity: 12 };
   private poolPoints = 5;
 
@@ -388,7 +396,7 @@ export class TitleScreen {
   }
 
   public rerollStats(): void {
-    const roll = CharacterRoller.generateRoll();
+    const roll = CharacterRoller.generateRoll(this.rollPrng.next.bind(this.rollPrng));
     this.attributes = roll.attributes;
     this.poolPoints = roll.availablePoints;
     this.updateStatRollUi();

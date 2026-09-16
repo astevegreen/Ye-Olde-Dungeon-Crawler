@@ -5,14 +5,14 @@ import { Player } from '../../entities/player';
 describe('CharacterRoller & Attribute Engine', () => {
   it('rolls 3d6 within range 3 to 18', () => {
     for (let i = 0; i < 50; i++) {
-      const roll = CharacterRoller.roll3d6();
+      const roll = CharacterRoller.roll3d6(Math.random);
       expect(roll).toBeGreaterThanOrEqual(3);
       expect(roll).toBeLessThanOrEqual(18);
     }
   });
 
   it('generates a heroic roll with 4 attributes and 5 available points', () => {
-    const roll = CharacterRoller.generateRoll();
+    const roll = CharacterRoller.generateRoll(Math.random);
     expect(roll.availablePoints).toBe(5);
     expect(roll.attributes.strength).toBeGreaterThanOrEqual(MIN_ATTRIBUTE);
     expect(roll.attributes.strength).toBeLessThanOrEqual(MAX_ATTRIBUTE);
@@ -90,7 +90,7 @@ describe('CharacterRoller & Attribute Engine', () => {
       position: { x: 5, y: 5 },
     });
 
-    CharacterRoller.equipStartingKit(player, 'test-hero-kit');
+    CharacterRoller.equipStartingKit(player, 'test-hero-kit', undefined, undefined, Math.random);
 
     // Equipped items
     const weapon = player.inventory.paperdoll.getItem('mainHand');

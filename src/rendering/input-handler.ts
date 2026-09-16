@@ -60,7 +60,16 @@ export class InputHandler {
   public readonly chordBuffer: ChordBuffer;
   public inventoryOverlay?: InventoryOverlay;
   public targetingOverlay?: TargetingOverlay;
-  public shopOverlay?: ShopOverlay;
+  private _shopOverlay?: ShopOverlay;
+  public get shopOverlay(): ShopOverlay | undefined {
+    return this._shopOverlay;
+  }
+  public set shopOverlay(overlay: ShopOverlay | undefined) {
+    this._shopOverlay = overlay;
+    if (overlay) {
+      this.bindShopOverlay(overlay);
+    }
+  }
   public inspectOverlay?: InspectOverlay;
   public mapOverlay?: MapOverlay;
   public contextHelp?: ContextHelp;
@@ -141,6 +150,29 @@ export class InputHandler {
 
   public setEngine(engine: GameEngine): void {
     this.engine = engine;
+  }
+
+  private bindShopOverlay(overlay: ShopOverlay): void {
+    const self = this;
+    const origOpen = overlay.onOpen;
+    overlay.onOpen = (npc) => {
+      if (origOpen) origOpen(npc);
+      self.modalStack.push({
+        id: 'shop',
+        get isOpen() { return self.shopOverlay?.isOpen ?? false; },
+        set isOpen(val: boolean) { if (!val) self.shopOverlay?.close(); },
+        handleKeyDown: (ke: KeyboardEvent) => {
+          if (!self.shopOverlay?.isOpen) return false;
+          return self.shopOverlay.handleKeyDown(ke, self.engine);
+        },
+        close: () => { self.shopOverlay?.close(); },
+      });
+    };
+    const origClose = overlay.onClose;
+    overlay.onClose = () => {
+      if (origClose) origClose();
+      self.modalStack.remove('shop');
+    };
   }
 
   private init(): void {
@@ -741,7 +773,7 @@ export class InputHandler {
       if (this.inventoryOverlay?.isOpen) {
         this.inventoryOverlay.close();
       }
-      const searchAction = new SearchAction(p);
+      const searchAction = new SearchAction(p, this.engine.rng);
       this.engine.handlePlayerAction(searchAction);
       this.onActionProcessed();
       return true;
@@ -910,7 +942,7 @@ export class InputHandler {
     }
     if (userAction === 'search') {
       if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
-      const searchAction = new SearchAction(p);
+      const searchAction = new SearchAction(p, this.engine.rng);
       this.engine.handlePlayerAction(searchAction);
       this.onActionProcessed();
       return true;
@@ -991,7 +1023,7 @@ export class InputHandler {
         case 'move_sw': dx = -1; dy = 1; isMovement = true; break;
         case 'move_se': dx = 1; dy = 1; isMovement = true; break;
         case 'wait': return new WaitAction(p);
-        case 'search': return new SearchAction(p, Math.random, 2);
+        case 'search': return new SearchAction(p, this.engine.rng, 2);
         case 'rest': return new RestAction(p);
         case 'pickup': return new PickUpAction(p);
         case 'quick_loot': return new QuickLootAction(p);
@@ -1008,7 +1040,7 @@ export class InputHandler {
       } else if (binding.actionId === 'wait') {
         return new WaitAction(p);
       } else if (binding.actionId === 'interact' && binding.args?.interactionType === 'search') {
-        return new SearchAction(p, Math.random, 2);
+        return new SearchAction(p, this.engine.rng, 2);
       }
     }
 
@@ -1087,7 +1119,7 @@ export class InputHandler {
 
       // Active Search (KeyS)
       case 'KeyS':
-        return new SearchAction(p, Math.random, 2);
+        return new SearchAction(p, this.engine.rng, 2);
 
       // Disarm Trap (KeyT)
       case 'KeyT':

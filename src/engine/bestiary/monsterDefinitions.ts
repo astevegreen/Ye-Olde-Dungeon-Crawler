@@ -14,7 +14,8 @@ export const BUILTIN_AI_TYPES = {
 
 export interface LootDropRule {
   chance: number; // 0.0 - 1.0 probability
-  generate: (uniqueId: string) => Item;
+  /** Receives the engine's seeded PRNG delegate; never use Math.random here (ARCHITECTURE.md §7.2). */
+  generate: (uniqueId: string, rng: () => number) => Item;
 }
 
 export interface MonsterDefinition {

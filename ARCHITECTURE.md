@@ -227,7 +227,11 @@
    - All simulation randomness — dice, loot drops, spawns, combat rolls, AI choices, hook chance rolls, and generated entity/item IDs — must come from the engine's seeded PRNG.
    - `engine.prng` is the canonical accessor. `engine.rng` is an existing bound delegate (`() => engine.prng.next()`) for APIs that take a `() => number`. Do not introduce further aliases.
    - Simulation code must not use `Math.random()` or wall-clock time (`Date.now()`) to determine outcomes or IDs. Functions that accept an `rng` parameter must receive a seeded source from simulation callers.
-   - The codebase does not yet satisfy this rule, and no automated check exists yet. **[Planned: P-10]**, **[Planned: P-19]**
+   - Every `Math.random` call on a simulation path is gone: rng parameters are required rather than defaulted, and the `engine ? engine.rng() : Math.random()` fallbacks (all unreachable, since those functions take a required `GameEngine`) were removed. `LootEntry.generate` receives the seeded delegate, so content gold drops roll from it.
+   - **Entropy boundary:** a run's seed is drawn from the clock exactly once, outside the simulation — `ProfileManager.createCharacter` creates the run PRNG (from `options.seed` when given) and hands it to both the starting-kit roll and the `GameEngine`; `TitleScreen` owns a similar stream for attribute re-rolls before any engine exists.
+   - **Not simulation:** `rendering/fxRunner.ts` uses `Math.random` for particle jitter. It draws no simulation state and changes no outcome, so it stays.
+   - Wall-clock IDs remain on simulation paths. **[Planned: P-10]**
+   - No automated `Math.random` check exists yet. **[Planned: P-19]**
 3. **Schema Evolution Integrity (`npm run validate:schema`, `scripts/validate-schema.ts`):**
    - Migrates a minimal v1 envelope to `CURRENT_SCHEMA_VERSION` and asserts the final version.
    - Round-trips a live engine through `serializeGame` -> `JSON.stringify`/`JSON.parse` -> `deserializeGame`, asserting that surface cells (type, duration, potency), substance bitmasks, ground corpse items (class, archetype, decay counter), and PRNG state all survive. JSON is in the loop because saves persist as strings, so a value that cannot round-trip through JSON is as lost as one the serializer drops.
@@ -308,17 +312,12 @@ Each entry records the current state, the target, and whether the work is expect
 - Target: a flat ID-keyed item index as the single source of truth for item lookup.
 - Protected files: `migrator.ts` if the save format changes (exception 2).
 
-**P-10 — Seeded determinism across simulation code** (§5, §7.2)
-- Current: unseeded randomness and wall-clock IDs exist on simulation paths. Examples:
-  - floor population and loot in `quest/dungeonArc.ts`, via `Math.random` defaults in `dungeon/spawner.ts` and `dungeon/lootSpawner.ts`
-  - `Math.random` default parameters in `items/modifierRoller.ts` and `actions/search.ts`
-  - `SearchAction` constructed with `Math.random` in `rendering/input-handler.ts` and `main.ts`
-  - `warcraft/hooks.ts`, `warcraft/ai.ts`, and gold-drop generators in both packs' `monsters.ts`
-  - `townReturn/runicConduit.ts` and `townReturn/valkyrieSprint.ts`
-  - `engine ? engine.rng() : Math.random()` fallbacks
-  - `Date.now()`-based IDs in item, loot, corpse, and vault code
-- Target: §7.2 rule fully satisfied.
-- Protected files: no, unless the engine PRNG accessors change.
+**P-10 — Wall-clock IDs on simulation paths** (§5, §7.2)
+- Current: `Math.random` is gone from simulation code (§7.2 item 2), but six sites still derive IDs from `Date.now()`, so two runs of one seed produce different entity and item IDs:
+  - `economy/currency.ts` (coin stacks), `items/corpse.ts` (corpses and ash), `items/stacking.ts` (split stacks)
+  - `storage/profile-manager.ts` (profile IDs, twice)
+- Target: simulation IDs derive from engine-owned state that survives save/load — a persisted counter or the seeded PRNG — rather than the clock. A profile ID created before any run exists may legitimately stay clock-derived; that boundary needs deciding.
+- Protected files: `engine.ts` if the engine gains an ID counter; `migrator.ts` if that counter is persisted (exception 2).
 
 **P-11 — Single-floor active cache policy** (§5)
 - Current: saves include every visited floor.

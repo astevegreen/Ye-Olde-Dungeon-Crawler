@@ -80,7 +80,7 @@ export class VaultStamper {
     currentFloor: number,
     monsterCandidates: MonsterDefinition[] = [],
     itemCandidates: ItemDefinition[] = [],
-    rng: () => number = Math.random
+    rng: () => number
   ): StampedVaultResult {
     const layout = blueprint.layout;
     const height = layout.length;
@@ -107,7 +107,7 @@ export class VaultStamper {
         } else if (parsed.isChest) {
           chestSpawns.push({ x: worldX, y: worldY });
           const chestId = `vault-chest-${blueprint.id}-${worldX}-${worldY}-${Date.now()}`;
-          const chest = createDungeonChest(chestId, currentFloor, itemCandidates);
+          const chest = createDungeonChest(chestId, currentFloor, itemCandidates, rng);
           map.addItemAt(worldX, worldY, chest);
         } else if (parsed.isMonster) {
           monsterSpawns.push({ x: worldX, y: worldY });
@@ -118,7 +118,7 @@ export class VaultStamper {
             def = monsterCandidates.find((m) => m.id === chosenId) ?? null;
           }
           if (!def) {
-            def = selectDungeonMonsterDefinition(monsterCandidates, currentFloor);
+            def = selectDungeonMonsterDefinition(monsterCandidates, currentFloor, rng);
           }
           if (def) {
             const mId = `vault-mon-${blueprint.id}-${worldX}-${worldY}-${Math.floor(rng() * 1000)}`;

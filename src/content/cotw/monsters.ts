@@ -25,7 +25,7 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.4,
-        generate: (id) => ItemFactory.createGoldCoins(id, Math.floor(Math.random() * 6) + 1),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 6) + 1),
       },
       {
         chance: 0.15,
@@ -46,7 +46,7 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.7,
-        generate: (id) => ItemFactory.createGoldCoins(id, Math.floor(Math.random() * 10) + 5),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 10) + 5),
       },
       {
         chance: 0.35,
@@ -67,7 +67,7 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.65,
-        generate: (id) => ItemFactory.createGoldCoins(id, Math.floor(Math.random() * 15) + 10),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 15) + 10),
       },
       {
         chance: 0.35,
@@ -104,7 +104,7 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.3,
-        generate: (id) => ItemFactory.createGoldCoins(id, Math.floor(Math.random() * 20) + 10),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 20) + 10),
       },
     ],
   },
@@ -154,7 +154,7 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.5,
-        generate: (id) => ItemFactory.createGoldCoins(id, Math.floor(Math.random() * 15) + 5),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 15) + 5),
       },
       {
         chance: 0.2,
@@ -177,7 +177,7 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 1.0,
-        generate: (id) => ItemFactory.createGoldCoins(id, Math.floor(Math.random() * 50) + 40),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 50) + 40),
       },
       {
         chance: 0.5,
@@ -213,7 +213,7 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.6,
-        generate: (id) => ItemFactory.createGoldCoins(id, Math.floor(Math.random() * 35) + 20),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 35) + 20),
       },
       {
         chance: 0.3,
@@ -245,7 +245,7 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.6,
-        generate: (id) => ItemFactory.createGoldCoins(id, Math.floor(Math.random() * 35) + 20),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 35) + 20),
       },
       {
         chance: 0.3,
@@ -266,7 +266,7 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.8,
-        generate: (id) => ItemFactory.createGoldCoins(id, Math.floor(Math.random() * 60) + 40),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 60) + 40),
       },
       {
         chance: 0.4,
@@ -294,7 +294,7 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.9,
-        generate: (id) => ItemFactory.createGoldCoins(id, Math.floor(Math.random() * 100) + 50),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 100) + 50),
       },
       {
         chance: 0.3,
@@ -317,7 +317,7 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.8,
-        generate: (id) => ItemFactory.createGoldCoins(id, Math.floor(Math.random() * 120) + 60),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 120) + 60),
       },
       {
         chance: 0.4,
@@ -374,7 +374,7 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 1.0,
-        generate: (id) => ItemFactory.createGoldCoins(id, Math.floor(Math.random() * 200) + 100),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 200) + 100),
       },
       {
         chance: 0.6,
@@ -400,7 +400,7 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 1.0,
-        generate: (id) => ItemFactory.createGoldCoins(id, Math.floor(Math.random() * 250) + 150),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 250) + 150),
       },
       {
         chance: 0.6,
@@ -433,7 +433,7 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 1.0,
-        generate: (id) => ItemFactory.createGoldCoins(id, Math.floor(Math.random() * 300) + 200),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 300) + 200),
       },
       {
         chance: 0.6,
@@ -504,7 +504,7 @@ export const COTW_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.4,
-        generate: (id) => ItemFactory.createGoldCoins(id, Math.floor(Math.random() * 20) + 10),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 20) + 10),
       },
     ],
   },

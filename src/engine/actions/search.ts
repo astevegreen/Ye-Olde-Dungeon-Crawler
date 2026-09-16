@@ -16,7 +16,7 @@ export class SearchAction implements Action {
 
   public readonly radius: number;
 
-  constructor(player: Player, rng: () => number = Math.random, radius = 2) {
+  constructor(player: Player, rng: () => number, radius = 2) {
     this.player = player;
     this.rng = rng;
     this.radius = radius;

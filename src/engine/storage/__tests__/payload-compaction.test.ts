@@ -52,7 +52,7 @@ describe('Storage Payload Compaction & RLE Benchmarking', () => {
       position: town.playerSpawn,
       stats: { hp: 50, maxHp: 50, attack: 12, defense: 6 },
     });
-    CharacterRoller.equipStartingKit(player, 'hero-campaign');
+    CharacterRoller.equipStartingKit(player, 'hero-campaign', undefined, undefined, Math.random);
 
     const engine = new GameEngine({
       map: town.map,

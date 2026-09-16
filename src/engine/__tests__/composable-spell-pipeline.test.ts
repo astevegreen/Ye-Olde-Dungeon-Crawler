@@ -26,12 +26,12 @@ describe('Composable Spell Pipeline & Effect Primitives', () => {
   }
 
   it('correctly parses and evaluates dice notations and fixed numbers', () => {
-    expect(parseAndRollDice(25)).toBe(25);
-    expect(parseAndRollDice('30')).toBe(30);
+    expect(parseAndRollDice(25, Math.random)).toBe(25);
+    expect(parseAndRollDice('30', Math.random)).toBe(30);
 
     // Roll 100 iterations of 2d6+4 to verify range [6, 16]
     for (let i = 0; i < 50; i++) {
-      const rolled = parseAndRollDice('2d6+4');
+      const rolled = parseAndRollDice('2d6+4', Math.random);
       expect(rolled).toBeGreaterThanOrEqual(6);
       expect(rolled).toBeLessThanOrEqual(16);
     }

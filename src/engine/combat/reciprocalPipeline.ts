@@ -80,7 +80,7 @@ export function registerReciprocalPrimitives(): void {
       const target = targets[0] ?? caster;
       const failChance = effect.failureChance ?? 0.25;
 
-      const roll = engine ? engine.rng() : Math.random();
+      const roll = engine.rng();
       const isFailure = roll < failChance;
       if (isFailure) {
         // Vector reverses onto the caster

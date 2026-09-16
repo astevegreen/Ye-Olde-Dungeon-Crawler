@@ -49,7 +49,8 @@ describe('Vault Generation Integration', () => {
         2,
         vault.minFloor,
         warcraftManifest.monsters,
-        warcraftManifest.items
+        warcraftManifest.items,
+        Math.random
       );
       expect(res.connectors.length).toBeGreaterThanOrEqual(1);
       expect(res.width).toBe(vault.layout[0].length);

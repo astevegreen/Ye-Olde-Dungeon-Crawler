@@ -14,7 +14,7 @@ export const WARCRAFT_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.5,
-        generate: (id) => ItemFactory.createGoldCoins(id, Math.floor(Math.random() * 10) + 5),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 10) + 5),
       },
     ],
   },
@@ -34,7 +34,7 @@ export const WARCRAFT_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.5,
-        generate: (id) => ItemFactory.createGoldCoins(id, Math.floor(Math.random() * 20) + 10),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 20) + 10),
       },
     ],
   },
@@ -54,7 +54,7 @@ export const WARCRAFT_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.6,
-        generate: (id) => ItemFactory.createGoldCoins(id, Math.floor(Math.random() * 30) + 15),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 30) + 15),
       },
     ],
   },
@@ -75,7 +75,7 @@ export const WARCRAFT_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.5,
-        generate: (id) => ItemFactory.createGoldCoins(id, Math.floor(Math.random() * 50) + 25),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 50) + 25),
       },
     ],
   },

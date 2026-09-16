@@ -40,7 +40,7 @@ class CasterBehavior implements AiBehaviorStrategy {
       if (
         monster.spells.includes('firebolt') &&
         monster.spellCooldown <= 0 &&
-        (engine ? engine.rng() : Math.random()) < 0.35
+        engine.rng() < 0.35
       ) {
         monster.spellCooldown = 2;
         const dangerTiles = computeDangerTiles(monster.position, player.position, 'blast', engine.map, 5, 1);
@@ -62,7 +62,7 @@ class CasterBehavior implements AiBehaviorStrategy {
 
       if (monster.spells.length > 0 && monster.spellCooldown <= 0) {
         let chosenSpell = monster.spells[0];
-        if (monster.spells.includes('slow') && !player.statusManager.hasStatus('slow') && (engine ? engine.rng() : Math.random()) < 0.4) {
+        if (monster.spells.includes('slow') && !player.statusManager.hasStatus('slow') && engine.rng() < 0.4) {
           chosenSpell = 'slow';
         } else if (monster.spells.includes('firebolt')) {
           chosenSpell = 'firebolt';
@@ -138,7 +138,7 @@ class BruteBehavior implements AiBehaviorStrategy {
 
     // 1. Seismic Ground Slam (adjacent, cross pattern, radius 2, pushImpulse 2, multiplier 2.6, mud surface)
     if (chebyshevDist <= 1) {
-      if ((engine ? engine.rng() : Math.random()) < 0.45) {
+      if (engine.rng() < 0.45) {
         const dangerTiles = computeDangerTiles(monster.position, player.position, 'cross', engine.map, 1, 2);
         return new WindUpDeclareAction(
           monster,
@@ -161,7 +161,7 @@ class BruteBehavior implements AiBehaviorStrategy {
 
     // 2. Battering Charge (distance 2-4 with LOS, line pattern, pushImpulse 3, multiplier 2.4)
     if (chebyshevDist >= 2 && chebyshevDist <= 4 && hasLos) {
-      if ((engine ? engine.rng() : Math.random()) < 0.4) {
+      if (engine.rng() < 0.4) {
         const dangerTiles = computeDangerTiles(monster.position, player.position, 'line', engine.map, 4);
         return new WindUpDeclareAction(
           monster,

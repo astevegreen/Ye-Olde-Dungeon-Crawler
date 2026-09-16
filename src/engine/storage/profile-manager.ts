@@ -1,3 +1,4 @@
+import { PRNG } from '../dungeon/prng';
 import { DungeonGenerator } from '../dungeon/dungeon-generator';
 import { TownMapGenerator } from '../town/townMap';
 import { Player } from '../entities/player';
@@ -272,11 +273,15 @@ export class ProfileManager {
       spellsKnown: manifest.starterKit?.spellsKnown ?? (manifest.spells?.length ? manifest.spells.map(s => s.id) : undefined),
     });
 
-    // 3. Equip starting kit
-    CharacterRoller.equipStartingKit(player, profileId, manifest.starterKit, manifest.items);
+    // 3. Equip starting kit.
+    // The run's seeded stream is created here, before the engine, so starting gear rolls
+    // come from the same PRNG the engine then continues (ARCHITECTURE.md §7.2).
+    const runPrng = new PRNG(options?.seed ?? (Date.now() >>> 0));
+    CharacterRoller.equipStartingKit(player, profileId, manifest.starterKit, manifest.items, () => runPrng.next());
 
     // 4. Initialize Engine
     const engine = new GameEngine({
+      prng: runPrng,
       map,
       player,
       fovRadius: 8,

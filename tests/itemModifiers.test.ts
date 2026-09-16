@@ -114,7 +114,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         weight: 200,
         bulk: 200,
       });
-      const mods = rollItemModifiers(potion, 20);
+      const mods = rollItemModifiers(potion, 20, Math.random);
       expect(mods).toEqual([]);
     });
   });

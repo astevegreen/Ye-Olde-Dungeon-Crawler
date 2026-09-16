@@ -39,7 +39,7 @@ describe('SynergyPipeline: Proc Normalization & Three-Bucket Damage', () => {
       baseChance: 0.5,
       procCoefficient: 0.1,
       baseDuration: 4,
-    });
+    }, 0.5);
     expect(microProc.effectiveChance).toBe(0.05);
     expect(microProc.effectiveDuration).toBe(1); // max(1, round(4 * 0.1))
   });

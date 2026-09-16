@@ -241,7 +241,7 @@ export class RunAdvisor {
       '"He who descends unwarded into the frost will leave only bone for the ravens."',
     ];
     const sageQuotes = engine.manifest?.advisorQuotes ?? defaultQuotes;
-    const sageQuote = sageQuotes[Math.floor(Math.random() * sageQuotes.length)];
+    const sageQuote = sageQuotes[Math.floor(engine.rng() * sageQuotes.length)];
 
     return {
       overallStatus,

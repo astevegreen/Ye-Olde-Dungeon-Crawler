@@ -50,7 +50,7 @@ export class OpenDoorAction implements Action {
 
           // 2. Lockpicking / Dexterity check
           const lockDC = tile.lockDifficulty ?? 14;
-          const pickRoll = (engine ? engine.prng.nextInt(1, 20) : Math.floor(Math.random() * 20) + 1) + Math.floor(player.dexterity / 4);
+          const pickRoll = engine.prng.nextInt(1, 20) + Math.floor(player.dexterity / 4);
           if (pickRoll >= lockDC) {
             tile.locked = false;
             engine.map.setTile(this.x, this.y, TILES.DOOR_OPEN);
@@ -251,7 +251,7 @@ export class BashDoorAction implements Action {
 
     const str = (this.entity as any).strength ?? 10;
     const lockDC = tile.lockDifficulty ?? 14;
-    const roll = (engine ? engine.prng.nextInt(1, 20) : Math.floor(Math.random() * 20) + 1) + Math.floor(str / 4);
+    const roll = engine.prng.nextInt(1, 20) + Math.floor(str / 4);
 
     this.entity.consumeEnergy(BASE_ACTION_COST);
 
@@ -264,7 +264,7 @@ export class BashDoorAction implements Action {
     }
 
     // Failed bash — take recoil damage (1d4)
-    const recoil = engine ? engine.prng.nextInt(1, 4) : Math.floor(Math.random() * 4) + 1;
+    const recoil = engine.prng.nextInt(1, 4);
     this.entity.takeDamage(recoil);
     const msg = `${this.entity.name} slams into the door but it holds! (Rolled ${roll} vs DC ${lockDC}) — takes ${recoil} recoil damage.`;
     engine.log(msg);

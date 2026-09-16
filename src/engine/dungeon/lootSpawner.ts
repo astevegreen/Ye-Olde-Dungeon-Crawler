@@ -14,7 +14,7 @@ import { flightRecorder } from '../debug/flightRecorder';
  */
 export function calculateEnchantmentLevel(
   currentFloor: number,
-  rng: () => number = Math.random
+  rng: () => number
 ): number {
   const targetBonus = Math.min(5, Math.floor(currentFloor / 10));
   const variance = Math.floor(rng() * 3) - 1; // -1, 0, or 1
@@ -28,7 +28,7 @@ export function calculateEnchantmentLevel(
 export function rollElementalAffix(
   currentFloor: number,
   category: ItemCategory,
-  rng: () => number = Math.random
+  rng: () => number
 ): ElementalAffix | undefined {
   if (currentFloor < 30 || category !== 'weapon') {
     return undefined;
@@ -56,7 +56,7 @@ export function createScaledItem(
   def: ItemDefinition,
   id: string,
   currentFloor: number,
-  rng: () => number = Math.random
+  rng: () => number
 ): Item {
   const isEquipment =
     def.category === 'weapon' ||
@@ -195,7 +195,7 @@ export function createScaledItem(
 export function selectFloorItemDefinition(
   candidates: ItemDefinition[],
   currentFloor: number,
-  rng: () => number = Math.random
+  rng: () => number
 ): ItemDefinition | null {
   const eligible = candidates.filter(
     (i) => i.category !== 'quest' && (i.minFloor ?? 1) <= currentFloor
@@ -229,7 +229,7 @@ export function selectFloorItemDefinition(
 export function spawnFloorCurrency(
   currentFloor: number,
   id: string,
-  rng: () => number = Math.random
+  rng: () => number
 ): CoinItem {
   let denomination: CoinDenomination;
   let count: number;
@@ -277,7 +277,7 @@ export function createDungeonChest(
   id: string,
   currentFloor: number,
   candidates: ItemDefinition[],
-  rng: () => number = Math.random
+  rng: () => number
 ): Container {
   const chest = new Container({
     id,
@@ -329,7 +329,7 @@ export function populateDungeonLoot(
   rooms: Array<{ x1: number; y1: number; x2: number; y2: number }>,
   currentFloor: number,
   candidates: ItemDefinition[],
-  rng: () => number = Math.random
+  rng: () => number
 ): Item[] {
   const spawnedItems: Item[] = [];
 

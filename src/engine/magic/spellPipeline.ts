@@ -40,7 +40,7 @@ export function getElementDefaultColor(element?: string): string {
   }
 }
 
-export function parseAndRollDice(amount: string | number, rng?: () => number): number {
+export function parseAndRollDice(amount: string | number, rng: () => number): number {
   if (typeof amount === 'number') return Math.max(0, Math.floor(amount));
   const str = amount.trim();
   const diceMatch = str.match(/^(\d+)d(\d+)(?:\s*([+-])\s*(\d+))?$/i);
@@ -51,7 +51,7 @@ export function parseAndRollDice(amount: string | number, rng?: () => number): n
     const mod = diceMatch[4] ? parseInt(diceMatch[4], 10) * sign : 0;
     let sum = 0;
     for (let i = 0; i < count; i++) {
-      const roll = rng ? rng() : Math.random();
+      const roll = rng();
       sum += Math.floor(roll * sides) + 1;
     }
     return Math.max(1, sum + mod);
@@ -449,7 +449,7 @@ export class SpellPipeline {
     effect: DamageEffect
   ): void {
     if (!target.isAlive()) return;
-    let rawDamage = parseAndRollDice(effect.amount, engine ? engine.rng : undefined);
+    let rawDamage = parseAndRollDice(effect.amount, engine.rng);
     if (rawDamage <= 0) return;
 
     // Apply Enchanted spellDamageMultiplier from caster's equipped items
@@ -539,7 +539,7 @@ export class SpellPipeline {
     effect: HealEffect
   ): void {
     if (!target.isAlive()) return;
-    const amount = parseAndRollDice(effect.amount, engine ? engine.rng : undefined);
+    const amount = parseAndRollDice(effect.amount, engine.rng);
     const healed = target.heal(amount);
     engine.log(`${target.name} is healed for ${healed} HP! (HP: ${target.hp}/${target.maxHp})`);
   }
@@ -580,8 +580,8 @@ export class SpellPipeline {
       return;
     }
 
-    const spawnPos = engine.prng ? engine.prng.choice(candidates) : candidates[Math.floor(Math.random() * candidates.length)];
-    const randSuffix = engine.prng ? engine.prng.nextInt(1000, 9999).toString() : Math.random().toString(36).slice(2, 7);
+    const spawnPos = engine.prng.choice(candidates);
+    const randSuffix = engine.prng.nextInt(1000, 9999).toString();
     const entityId = `summon_${monsterId}_${engine.turnCount}_${randSuffix}`;
 
     let summoned: Monster;
@@ -655,7 +655,7 @@ export class SpellPipeline {
     const visitedIds = new Set<string>([caster.id, ...initialTargets.map((t) => t.id)]);
     let current = initialTargets[0];
     const baseDamage = damageContext
-      ? parseAndRollDice(damageContext.amount, engine ? engine.rng : undefined)
+      ? parseAndRollDice(damageContext.amount, engine.rng)
       : (spell.basePower || 16);
     const element = damageContext?.element || spell.element || 'lightning';
 
@@ -742,7 +742,7 @@ export class SpellPipeline {
 
     if (validTiles.length === 0) return false;
 
-    const rawDest = engine.prng ? engine.prng.choice(validTiles) : validTiles[Math.floor(Math.random() * validTiles.length)];
+    const rawDest = engine.prng.choice(validTiles);
     const dest = findSafeSpawnPosition(engine.map, rawDest, 3, entity);
     engine.map.moveEntity(entity, dest.x, dest.y);
     if (entity instanceof Player) {

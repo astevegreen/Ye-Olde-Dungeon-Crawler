@@ -551,7 +551,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   hudSearchBtn?.addEventListener('click', () => {
     if (activeEngine && renderer) {
-      activeEngine.handlePlayerAction(new SearchAction(activeEngine.player, Math.random, 2));
+      activeEngine.handlePlayerAction(new SearchAction(activeEngine.player, activeEngine.rng, 2));
       void processVisualEffectsAndRender();
     }
   });
@@ -965,7 +965,7 @@ window.addEventListener('DOMContentLoaded', () => {
         shortcut: 'S',
         description: 'Thoroughly search surrounding tiles for hidden traps and secret doors',
         execute: (eng) => {
-          const act = new SearchAction(eng.player);
+          const act = new SearchAction(eng.player, eng.rng);
           eng.handlePlayerAction(act);
           void processVisualEffectsAndRender();
         },

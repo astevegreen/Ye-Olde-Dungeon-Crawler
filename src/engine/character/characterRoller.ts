@@ -14,8 +14,8 @@ export class CharacterRoller {
   /**
    * Simulates rolling 3 standard six-sided dice (3d6), resulting in 3 to 18.
    */
-  public static roll3d6(rng?: () => number): number {
-    const roll = rng || Math.random;
+  public static roll3d6(rng: () => number): number {
+    const roll = rng;
     const d1 = Math.floor(roll() * 6) + 1;
     const d2 = Math.floor(roll() * 6) + 1;
     const d3 = Math.floor(roll() * 6) + 1;
@@ -25,7 +25,7 @@ export class CharacterRoller {
   /**
    * Rolls an attribute guaranteed to be within playable heroic bounds (min 8, max 18).
    */
-  public static rollHeroAttribute(rng?: () => number): number {
+  public static rollHeroAttribute(rng: () => number): number {
     const raw = this.roll3d6(rng);
     return Math.max(MIN_ATTRIBUTE, Math.min(MAX_ATTRIBUTE, raw));
   }
@@ -33,7 +33,7 @@ export class CharacterRoller {
   /**
    * Generates a fresh roll for all 4 primary attributes with a customizable point pool.
    */
-  public static generateRoll(rng?: () => number): AttributeRoll {
+  public static generateRoll(rng: () => number): AttributeRoll {
     return {
       attributes: {
         strength: this.rollHeroAttribute(rng),
@@ -134,8 +134,9 @@ export class CharacterRoller {
   public static equipStartingKit(
     player: Player,
     profileId: string,
-    starterKit?: StarterKitDefinition,
-    itemCatalog?: Record<string, ItemDefinition> | ItemDefinition[]
+    starterKit: StarterKitDefinition | undefined,
+    itemCatalog: Record<string, ItemDefinition> | ItemDefinition[] | undefined,
+    rng: () => number
   ): void {
     if (!starterKit) {
       // 1. Weapon: Iron Dagger
@@ -171,7 +172,7 @@ export class CharacterRoller {
     const instantiateItem = (id: string, instanceId: string) => {
       const def = itemsMap[id];
       if (def) {
-        return createScaledItem(def, instanceId, 1);
+        return createScaledItem(def, instanceId, 1, rng);
       }
       if (id === 'dagger') return ItemFactory.createDagger(instanceId);
       if (id === 'coin_purse') return ItemFactory.createCoinPurse(instanceId);

@@ -141,11 +141,11 @@ export class DeathResolver {
         let dropCount = 0;
         for (const rule of victim.lootTable) {
           const effectiveChance = Math.min(1.0, rule.chance + (rule.chance * mf));
-          const roll = engine ? engine.rng() : Math.random();
+          const roll = engine.rng();
           if (roll < effectiveChance) {
-            const randSuffix = engine ? engine.prng.nextInt(1000, 9999).toString() : Math.random().toString(36).slice(2, 6);
+            const randSuffix = engine.prng.nextInt(1000, 9999).toString();
             const lootId = `drop-${engine ? engine.turnCount : Date.now()}-${randSuffix}`;
-            const item = rule.generate(lootId);
+            const item = rule.generate(lootId, engine.rng);
             if (item.category === 'coin' && goldMult !== 1.0) {
               item.value = Math.round(item.value * goldMult);
             }

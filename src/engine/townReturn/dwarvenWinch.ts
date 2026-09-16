@@ -138,7 +138,7 @@ export class DwarvenWinch {
 
     // 25% chance to shatter a potion in inventory
     let shatteredPotionName: string | undefined;
-    const shatterRoll = engine ? engine.rng() : Math.random();
+    const shatterRoll = engine.rng();
     if (shatterRoll < 0.25) {
       const potions = engine.player.inventory.primaryPack
         .getItems()

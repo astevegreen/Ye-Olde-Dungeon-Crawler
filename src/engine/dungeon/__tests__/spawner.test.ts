@@ -27,7 +27,7 @@ describe('Dungeon Spawner - Tiering & Population', () => {
         lootTable: [],
       };
 
-      const selected = selectDungeonMonsterDefinition([highFloorMonster], 1);
+      const selected = selectDungeonMonsterDefinition([highFloorMonster], 1, Math.random);
       expect(selected).toBeNull();
     });
 
@@ -35,14 +35,14 @@ describe('Dungeon Spawner - Tiering & Population', () => {
       const boss = BESTIARY.boss_hrungnir;
       expect(boss).toBeDefined();
 
-      const selected = selectDungeonMonsterDefinition([boss], 30);
+      const selected = selectDungeonMonsterDefinition([boss], 30, Math.random);
       expect(selected).toBeNull();
     });
 
     it('filters candidates to only those with minFloor <= currentFloor', () => {
       // On floor 1, only Tier 1 monsters (giant_rat, kobold) should be eligible
       for (let i = 0; i < 20; i++) {
-        const selected = selectDungeonMonsterDefinition(allCandidates, 1);
+        const selected = selectDungeonMonsterDefinition(allCandidates, 1, Math.random);
         expect(selected).not.toBeNull();
         expect(selected!.minFloor ?? 1).toBeLessThanOrEqual(1);
       }
@@ -116,7 +116,7 @@ describe('Dungeon Spawner - Tiering & Population', () => {
         }
       }
 
-      populateDungeonFloor(map, rooms, 5, allCandidates);
+      populateDungeonFloor(map, rooms, 5, allCandidates, Math.random);
 
       const entities = map.getAllEntities();
       expect(entities.length).toBeGreaterThan(0);

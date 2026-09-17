@@ -512,24 +512,12 @@ export class InputHandler {
     // Hotkey: Level-Up Attribute Allocation (KeyU when not inspecting)
     if ((code === 'KeyU' || e.key === 'u' || e.key === 'U') && !this.inspectOverlay?.isOpen) {
       if (this.levelUpModal) {
+        this.levelUpModal.setModalStack(this.modalStack);
         this.levelUpModal.toggle(this.engine);
         if (this.levelUpModal.isOpen) {
-          const self = this;
-          this.modalStack.push({
-            id: 'level-up-modal',
-            get isOpen() { return self.levelUpModal?.isOpen ?? false; },
-            set isOpen(val: boolean) { if (!val) self.levelUpModal?.close(); },
-            handleKeyDown: (ke: KeyboardEvent) => {
-              const h = self.levelUpModal?.handleKeyDown(ke) ?? false;
-              if (!self.levelUpModal?.isOpen) {
-                self.modalStack.remove('level-up-modal');
-              }
-              return h;
-            },
-            close: () => { self.levelUpModal?.close(); },
-          });
+          this.modalStack.push(this.levelUpModal);
         } else {
-          this.modalStack.remove('level-up-modal');
+          this.modalStack.remove(this.levelUpModal.id);
         }
         this.onActionProcessed();
         return true;

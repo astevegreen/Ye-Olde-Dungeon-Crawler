@@ -62,9 +62,33 @@ class MockElement {
   }
 
   public syncChildHtml(childId: string, childHtml: string): void {
-    const regex = new RegExp(`(<[^>]*id=["']${childId}["'][^>]*>)[\\s\\S]*?(<\\/[a-zA-Z0-9]+>)`, 'i');
-    if (regex.test(this._innerHTML)) {
-      this._innerHTML = this._innerHTML.replace(regex, `$1${childHtml}$2`);
+    const startPattern = new RegExp(`(<([a-zA-Z0-9]+)[^>]*id=["']${childId}["'][^>]*>)`, 'i');
+    const match = startPattern.exec(this._innerHTML);
+    if (match) {
+      const openTag = match[1];
+      const tagName = match[2];
+      const startIndex = match.index + openTag.length;
+      let depth = 1;
+      const tagRegex = new RegExp(`(<${tagName}\\b[^>]*>)|(<\\/${tagName}>)`, 'gi');
+      tagRegex.lastIndex = startIndex;
+      let m;
+      let endIndex = -1;
+      while ((m = tagRegex.exec(this._innerHTML)) !== null) {
+        if (m[1]) {
+          depth++;
+        } else if (m[2]) {
+          depth--;
+          if (depth === 0) {
+            endIndex = m.index;
+            break;
+          }
+        }
+      }
+      if (endIndex !== -1) {
+        this._innerHTML = this._innerHTML.slice(0, startIndex) + childHtml + this._innerHTML.slice(endIndex);
+      } else {
+        this._innerHTML = this._innerHTML.slice(0, startIndex) + childHtml;
+      }
     } else {
       this._innerHTML += childHtml;
     }
@@ -74,7 +98,32 @@ class MockElement {
     }
   }
 
+  public extractChildHtml(childId: string): string | null {
+    const startPattern = new RegExp(`(<([a-zA-Z0-9]+)[^>]*id=["']${childId}["'][^>]*>)`, 'i');
+    const match = startPattern.exec(this._innerHTML);
+    if (!match) return null;
+    const openTag = match[1];
+    const tagName = match[2];
+    const startIndex = match.index + openTag.length;
+    let depth = 1;
+    const tagRegex = new RegExp(`(<${tagName}\\b[^>]*>)|(<\\/${tagName}>)`, 'gi');
+    tagRegex.lastIndex = startIndex;
+    let m;
+    while ((m = tagRegex.exec(this._innerHTML)) !== null) {
+      if (m[1]) {
+        depth++;
+      } else if (m[2]) {
+        depth--;
+        if (depth === 0) {
+          return this._innerHTML.slice(startIndex, m.index);
+        }
+      }
+    }
+    return null;
+  }
+
   public reindex(): void {
+    const existingById = new Map(this.childNodesById);
     this.childNodesById.clear();
     this.childNodesByClass.clear();
 
@@ -83,9 +132,13 @@ class MockElement {
     while ((match = idRegex.exec(this._innerHTML)) !== null) {
       const id = match[1];
       if (!this.childNodesById.has(id)) {
-        const child = new MockElement();
+        const child = existingById.get(id) ?? new MockElement();
         child.id = id;
         child.parent = this;
+        const inner = this.extractChildHtml(id);
+        if (inner !== null) {
+          child._innerHTML = inner;
+        }
         this.childNodesById.set(id, child);
       }
     }
@@ -502,6 +555,45 @@ describe('Widescreen Flank Containers Framework', () => {
 
       expect(rightContainer.innerHTML).toContain('Descended stone steps into Floor 2.');
       expect(rightContainer.innerHTML).toContain('Detected hidden runic seam in the granite wall.');
+    });
+
+    it('does not re-render or re-trigger entry-fresh animation on subsequent turns without new discoveries', () => {
+      const journal = new JournalModule();
+      journal.mount(rightContainer as any);
+
+      const state = createMockGameState();
+      state.engine.emitDiscovery({
+        type: 'floor_transition',
+        text: 'Descended stone steps into Floor 2.',
+        icon: '🪜',
+      });
+
+      journal.render(state);
+      const feedEl = rightContainer.querySelector('#journal-chronicle-feed')!;
+      const initialHtml = feedEl.innerHTML;
+
+      // Spy on feedEl.innerHTML setter to verify DOM is not rebuilt on subsequent actions
+      const setSpy = vi.spyOn(feedEl, 'innerHTML', 'set');
+
+      // Next action without new discoveries:
+      journal.render(state);
+
+      // DOM must NOT be rewritten on turns without new discoveries:
+      expect(setSpy).not.toHaveBeenCalled();
+      expect(feedEl.innerHTML).toBe(initialHtml);
+
+      // When a second discovery arrives, only the new entry is fresh, not older entries:
+      state.engine.emitDiscovery({
+        type: 'secret_door',
+        text: 'Found hidden door.',
+        icon: '🔍',
+      });
+      journal.render(state);
+      const updatedFeed = rightContainer.querySelector('#journal-chronicle-feed')!;
+      expect(updatedFeed.innerHTML).toContain('Found hidden door.');
+      const entries = updatedFeed.innerHTML.split('</article>');
+      expect(entries[0]).not.toContain('entry-fresh');
+      expect(entries[1]).toContain('entry-fresh');
     });
 
     it('caps chronicle log entries to prevent DOM bloat', () => {

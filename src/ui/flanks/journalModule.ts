@@ -132,20 +132,32 @@ export class JournalModule implements FlankModule {
 
     if (feedEl) {
       if (events.length === 0) {
-        feedEl.innerHTML = `
-          <div class="chronicle-empty-prompt">
-            The ink is fresh. As you venture through the dungeon, secrets, traps, and triumphs will be inscribed here.
-          </div>
-        `;
-        this.lastRenderedEventCount = 0;
+        if (this.lastRenderedEventCount !== 0 || !feedEl.innerHTML.trim() || feedEl.querySelector('.chronicle-empty-prompt') === null) {
+          feedEl.innerHTML = `
+            <div class="chronicle-empty-prompt">
+              The ink is fresh. As you venture through the dungeon, secrets, traps, and triumphs will be inscribed here.
+            </div>
+          `;
+          this.lastRenderedEventCount = 0;
+        }
       } else {
+        // If event count has not changed, do NOT re-render feedEl.innerHTML every turn.
+        // Rebuilding innerHTML every action resets DOM nodes and re-triggers CSS fade-in animations.
+        if (events.length === this.lastRenderedEventCount) {
+          return;
+        }
+
         // Keep the latest 25 events
         const displayEvents = events.slice(-25);
+        const newEventsCount = this.lastRenderedEventCount === 0
+          ? 1 // On initial mount, only the newest event animates in
+          : Math.max(0, events.length - this.lastRenderedEventCount);
+
         const shouldScroll = events.length > this.lastRenderedEventCount;
 
         feedEl.innerHTML = displayEvents
           .map((evt, idx) => {
-            const isNew = idx >= displayEvents.length - 2;
+            const isNew = newEventsCount > 0 && idx >= displayEvents.length - newEventsCount;
             const icon = evt.icon ?? this.getDefaultIcon(evt.type);
             return `
               <article class="chronicle-entry chronicle-type-${evt.type} ${isNew ? 'entry-fresh' : ''}">

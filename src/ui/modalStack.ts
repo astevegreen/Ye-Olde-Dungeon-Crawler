@@ -125,12 +125,22 @@ export class ModalStackManager {
    * If top modal does not handle 'Escape', the stack automatically pops the modal.
    */
   public handleKeyDown(e: KeyboardEvent): boolean {
+    // Purge any modals that are already closed from the top of the stack
+    while (this.stack.length > 0 && !this.stack[this.stack.length - 1].isOpen) {
+      this.pop();
+    }
+
     const active = this.top();
     if (!active) {
       return false;
     }
 
     const handled = active.handleKeyDown(e);
+    // If the modal closed itself as a result of handling the key event, purge it immediately
+    if (!active.isOpen) {
+      this.remove(active.id);
+    }
+
     if (handled) {
       return true;
     }

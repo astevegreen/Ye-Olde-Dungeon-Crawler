@@ -160,5 +160,6 @@ describe('Level-Up Attribute / Skill Allocation System', () => {
     const escEvent = { key: 'Escape', code: 'Escape', preventDefault: () => {} } as unknown as KeyboardEvent;
     modalStack.handleKeyDown(escEvent);
     expect(modal.isOpen).toBe(false);
+    expect(modalStack.isEmpty()).toBe(true);
   });
 });

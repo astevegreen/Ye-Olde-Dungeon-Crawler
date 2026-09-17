@@ -1,5 +1,5 @@
 import type { GameEngine } from '../engine';
-import type { UIModal } from './modalStack';
+import type { ModalStackManager, UIModal } from './modalStack';
 
 export type AttributeKey = 'strength' | 'dexterity' | 'constitution' | 'intelligence';
 
@@ -52,6 +52,7 @@ export class LevelUpModal implements UIModal {
   private overlayEl: HTMLElement | null = null;
   private isOpenState = false;
   private engine?: GameEngine;
+  private modalStack?: ModalStackManager;
   private onCloseCallback?: () => void;
   private onAllocateCallback?: (attr: AttributeKey) => void;
 
@@ -83,6 +84,10 @@ export class LevelUpModal implements UIModal {
     this.isOpenState = val;
   }
 
+  public setModalStack(stack: ModalStackManager): void {
+    this.modalStack = stack;
+  }
+
   public setOnClose(cb: () => void): void {
     this.onCloseCallback = cb;
   }
@@ -112,10 +117,11 @@ export class LevelUpModal implements UIModal {
     if (this.overlayEl) {
       this.overlayEl.style.display = 'none';
     }
+    if (this.modalStack) {
+      this.modalStack.remove(this.id);
+    }
     if (this.onCloseCallback) {
-      const cb = this.onCloseCallback;
-      this.onCloseCallback = undefined;
-      cb();
+      this.onCloseCallback();
     }
   }
 

@@ -786,9 +786,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
     engine.onGameEvent = (event: GameEvent) => {
       if (event.type === 'player_leveled_up') {
-        levelUpModal.open(engine);
         if (inputHandler) {
+          levelUpModal.setModalStack(inputHandler.modalStack);
+          levelUpModal.open(engine);
           inputHandler.modalStack.push(levelUpModal);
+        } else {
+          levelUpModal.open(engine);
         }
         renderer?.render();
       }
@@ -891,9 +894,12 @@ window.addEventListener('DOMContentLoaded', () => {
         shortcut: 'U',
         description: 'Spend unspent attribute points on Strength, Dexterity, Constitution, or Intelligence',
         execute: (eng) => {
-          levelUpModal.open(eng);
           if (inputHandler) {
+            levelUpModal.setModalStack(inputHandler.modalStack);
+            levelUpModal.open(eng);
             inputHandler.modalStack.push(levelUpModal);
+          } else {
+            levelUpModal.open(eng);
           }
         },
       },
@@ -1182,6 +1188,7 @@ window.addEventListener('DOMContentLoaded', () => {
       );
       inputHandler.pactModal = pactModal;
       inputHandler.levelUpModal = levelUpModal;
+      levelUpModal.setModalStack(inputHandler.modalStack);
       inputHandler.onCastSpellById = castSpellById;
       diagnosticModal.setModalStack(inputHandler.modalStack);
     } else {
@@ -1209,6 +1216,7 @@ window.addEventListener('DOMContentLoaded', () => {
         inputHandler.commandPalette = commandPalette;
         inputHandler.pactModal = pactModal;
         inputHandler.levelUpModal = levelUpModal;
+        levelUpModal.setModalStack(inputHandler.modalStack);
         inputHandler.onSaveAndExit = promptSaveAndQuit;
         inputHandler.onCastSpellById = castSpellById;
         diagnosticModal.setModalStack(inputHandler.modalStack);

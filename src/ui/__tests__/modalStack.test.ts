@@ -210,5 +210,42 @@ describe('Centralized LIFO Modal Stack Manager', () => {
       const handled = modalStack.handleKeyDown(moveEvent);
       expect(handled).toBe(false);
     });
+
+    it('automatically purges modal from stack if handleKeyDown closes it', () => {
+      const modal = new MockModal('m-self-closing');
+      modalStack.push(modal);
+      expect(modalStack.isEmpty()).toBe(false);
+
+      // Mock modal closing itself upon receiving an Enter key
+      modal.handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Enter') {
+          modal.close();
+          return true;
+        }
+        return false;
+      };
+
+      const enterEvent = { key: 'Enter', code: 'Enter' } as KeyboardEvent;
+      const handled = modalStack.handleKeyDown(enterEvent);
+      expect(handled).toBe(true);
+      expect(modal.isOpen).toBe(false);
+      expect(modalStack.isEmpty()).toBe(true);
+      expect(pauseEvents).toEqual([true, false]);
+    });
+
+    it('automatically purges stale closed modals on top of the stack during handleKeyDown', () => {
+      const modal = new MockModal('m-stale');
+      modalStack.push(modal);
+      expect(modalStack.isEmpty()).toBe(false);
+
+      // Modal closed externally (e.g. by direct DOM click without stack pop)
+      modal.isOpen = false;
+
+      // When player presses movement key, modalStack cleans up the closed modal and passes control
+      const moveEvent = { code: 'KeyW', key: 'w' } as KeyboardEvent;
+      const handled = modalStack.handleKeyDown(moveEvent);
+      expect(handled).toBe(false); // stack became empty, allowing game movement
+      expect(modalStack.isEmpty()).toBe(true);
+    });
   });
 });

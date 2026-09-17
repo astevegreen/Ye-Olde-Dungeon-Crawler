@@ -4,7 +4,11 @@
 
 #game-container {
   width: 100%;
-  max-width: 960px;
+  /* A generous safety net only — `ViewportManager` (rendering/viewport.ts) owns the
+     real ceiling via its `maxScale` clamp and sets this element's width inline on
+     every recalculation. This used to be a hard 960px cap that fought the JS-computed
+     width on large/high-res displays, clipping the header/footer bars. */
+  max-width: 2400px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -13,6 +17,88 @@
   position: relative;
   z-index: 15;
   box-shadow: 0 0 32px rgba(0, 0, 0, 0.9);
+  /* Query container for `.hud-word`/`.hud-key` collapse below — this element's width
+     tracks the letterboxed canvas (via ViewportManager), not the browser window, so a
+     viewport-relative @media query would miss a narrow-but-tall window where the
+     letterboxed area is much narrower than the window itself. */
+  container-type: inline-size;
+}
+
+/* ==========================================================================
+   HUD Bars (Header & Bottom Action Bar): fixed-height rows that never wrap.
+   Buttons collapse their text label at narrow widths instead — an unpredictable
+   flex-wrap onto a second line used to silently blow the viewport's height
+   budget (see rendering/viewport.ts), so wrapping is avoided entirely here.
+   ========================================================================== */
+.hud-bar-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.hud-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  min-width: 0;
+  /* Icon-only mode still won't fit every button at extreme widths (a handful of
+     phone-narrow letterboxed sessions) — scroll horizontally rather than clip a
+     button invisibly. Never triggers at normal desktop widths. */
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.hud-btn-group::-webkit-scrollbar {
+  display: none;
+}
+
+.hud-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.hud-btn .hud-key {
+  font-family: "Courier New", Courier, monospace;
+}
+
+/* Below this width, drop the descriptive word and keep icon + key only — the
+   full label always survives in the button's `title` tooltip. Sized against
+   `#game-container` (the letterboxed canvas width), not the browser viewport —
+   see its `container-type: inline-size` above. */
+@container (max-width: 720px) {
+  .hud-word {
+    display: none;
+  }
+}
+
+/* Below this width, drop the key badge too (icon-only); still fully labeled via
+   the `title` tooltip on hover/long-press. */
+@container (max-width: 460px) {
+  .hud-key {
+    display: none;
+  }
+}
+
+.hud-btn-quiet {
+  opacity: 0.7;
+}
+
+.hud-btn-quiet:hover {
+  opacity: 1;
+}
+
+.hud-btn-menu {
+  font-weight: bold;
+  border-color: #ffffff #7f1d1d #7f1d1d #ffffff;
+  background: #fca5a5;
 }
 
 /* Ground Status Bar (Mounted between Canvas and Bottom Controls) */
@@ -71,6 +157,14 @@
 .ground-status-prompt {
   color: #94a3b8;
   letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* The sole turn-count readout (ARCHITECTURE.md HUD overhaul) — de-emphasized,
+   secondary info alongside the per-tile status text it already shares a bar with. */
+.ground-status-turn {
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 

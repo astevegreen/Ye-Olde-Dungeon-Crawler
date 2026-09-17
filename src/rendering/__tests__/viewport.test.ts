@@ -114,4 +114,57 @@ describe('Responsive High-DPI ViewportManager', () => {
 
     delete (globalThis as any).document;
   });
+
+  it('subtracts every surrounding bar\'s real measured height, not just header+footer', () => {
+    const { canvas, dummyCtx } = createMockCanvas();
+    const barHeight = (h: number) => ({ getBoundingClientRect: () => ({ height: h }) });
+    // Four bars actually mounted around the canvas in a real game session; a prior
+    // version only knew about two of these (hardcoded 34+36), which is exactly the
+    // bug this test guards against regressing.
+    const bars: Record<string, unknown> = {
+      'game-header-bar': barHeight(40),
+      'quick-spells-bar': barHeight(30),
+      'ground-status-bar': barHeight(25),
+      'game-bottom-bar': barHeight(45),
+    };
+    // Width is deliberately generous so height (the dimension the bars eat into) is
+    // the binding constraint on scale — otherwise a wrong overhead sum wouldn't
+    // change the result and this test would pass even with the old two-bar guess.
+    const centerViewport = { clientWidth: 2000, clientHeight: 800 };
+
+    (globalThis as any).document = {
+      getElementById: (id: string) => {
+        if (id === 'center-viewport') return centerViewport;
+        return bars[id] ?? null;
+      },
+    };
+    (globalThis as any).window = { devicePixelRatio: 1, innerWidth: 2000, innerHeight: 800 };
+
+    const vp = new ViewportManager(canvas, dummyCtx, { virtualWidth: 960, virtualHeight: 600 });
+    vp.recalculate(); // no explicit args -> exercises the real DOM-measurement branch
+
+    // availH = 800 - (40+30+25+45) = 660; scale = min(2000/960, 660/600) = 660/600
+    const expectedScale = 660 / 600;
+    expect(vp.scale).toBeCloseTo(expectedScale, 4);
+    expect(vp.displayHeight).toBe(Math.floor(600 * expectedScale));
+
+    delete (globalThis as any).document;
+    delete (globalThis as any).window;
+  });
+
+  it('clamps to maxScale on very large displays instead of growing unbounded', () => {
+    const { canvas, dummyCtx } = createMockCanvas();
+    const vp = new ViewportManager(canvas, dummyCtx, {
+      virtualWidth: 960,
+      virtualHeight: 600,
+      maxScale: 2,
+    });
+
+    // Naive aspect-fit would compute scale 5 here; maxScale caps it at 2.
+    vp.recalculate(4800, 3000);
+
+    expect(vp.scale).toBe(2);
+    expect(vp.displayWidth).toBe(1920);
+    expect(vp.displayHeight).toBe(1200);
+  });
 });

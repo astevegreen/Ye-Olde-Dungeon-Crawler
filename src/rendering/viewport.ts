@@ -3,13 +3,24 @@ export interface ViewportConfig {
   virtualHeight?: number;
   integerScale?: boolean;
   minScale?: number;
+  maxScale?: number;
 }
+
+/**
+ * DOM ids of every bar mounted around the canvas whose real rendered height must be
+ * subtracted from the available space before letterboxing the canvas. Missing an
+ * entry here is exactly the bug this list exists to prevent: the canvas gets sized
+ * as if that bar weren't there, so the actual stack (this bar + canvas + everything
+ * else) overflows the viewport and `body { overflow: hidden }` clips it silently.
+ */
+const SURROUNDING_BAR_IDS = ['game-header-bar', 'quick-spells-bar', 'ground-status-bar', 'game-bottom-bar'] as const;
 
 export class ViewportManager {
   public readonly virtualWidth: number;
   public readonly virtualHeight: number;
   public readonly integerScale: boolean;
   public readonly minScale: number;
+  public readonly maxScale: number;
 
   public displayWidth = 960;
   public displayHeight = 600;
@@ -30,12 +41,31 @@ export class ViewportManager {
     this.virtualHeight = config.virtualHeight ?? 600;
     this.integerScale = config.integerScale ?? false;
     this.minScale = config.minScale ?? 0.25;
+    this.maxScale = config.maxScale ?? 4;
 
     // Apply baseline CSS pixelation styles to the canvas
     this.canvas.style.imageRendering = 'pixelated';
 
     this.recalculate();
     this.watchDpr();
+    this.watchSurroundingBars();
+  }
+
+  /**
+   * Re-measures whenever a surrounding bar's own size changes (wrapping to a second
+   * line, a quickbar mounting/unmounting, a font finishing load, …) rather than only
+   * on `window.resize`. A ResizeObserver on `#center-viewport` catches all of these,
+   * since every bar lives inside it and any bar's height change resizes that ancestor.
+   */
+  private watchSurroundingBars(): void {
+    if (typeof ResizeObserver === 'undefined' || typeof document === 'undefined') return;
+    const centerEl = document.getElementById('center-viewport');
+    if (!centerEl) return;
+    this.resizeObserver = new ResizeObserver(() => {
+      this.recalculate();
+      this.onResizeCallback?.();
+    });
+    this.resizeObserver.observe(centerEl);
   }
 
   private watchDpr(): void {
@@ -79,11 +109,15 @@ export class ViewportManager {
               availH = centerEl.clientHeight;
             }
           }
-          const headerEl = document.getElementById('game-header-bar');
-          const footerEl = document.getElementById('game-bottom-bar');
+          // Measure every bar actually mounted around the canvas rather than
+          // guessing two fixed constants — a header wrapping to a second line, or a
+          // bar this list didn't know about, used to silently blow the height
+          // budget and get clipped by `body { overflow: hidden }`.
           let overheadH = 0;
-          if (headerEl) overheadH += 34;
-          if (footerEl) overheadH += 36;
+          for (const id of SURROUNDING_BAR_IDS) {
+            const el = document.getElementById(id);
+            if (el) overheadH += el.getBoundingClientRect().height;
+          }
           if (availH > overheadH + 120) {
             availH -= overheadH;
           }
@@ -105,8 +139,10 @@ export class ViewportManager {
       scale = Math.floor(scale);
     }
 
-    // Clamp to minimum scale
-    this.scale = Math.max(this.minScale, scale);
+    // Clamp to [minScale, maxScale] — the ceiling stops the canvas from growing
+    // past a sane size on very large/high-res displays instead of fighting a hard
+    // CSS width cap on `#game-container` (which used to clip rather than scale).
+    this.scale = Math.min(this.maxScale, Math.max(this.minScale, scale));
 
     this.displayWidth = Math.floor(this.virtualWidth * this.scale);
     this.displayHeight = Math.floor(this.virtualHeight * this.scale);

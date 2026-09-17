@@ -629,7 +629,10 @@ export class CanvasRenderer {
       ctx.font = `bold 11px ${font}`;
       const badgeW = ctx.measureText(pactText).width + 14;
       const badgeH = 18;
-      const badgeX = width - badgeW - 200;
+      // Right-aligned with a small margin now that the duplicate POS/TURN text
+      // (removed — it was also shown in the DOM header bar) no longer reserves
+      // space here.
+      const badgeX = width - badgeW - 14;
       const badgeY = 24;
 
       this.pactBadgeBounds = { x: badgeX, y: badgeY, width: badgeW, height: badgeH };
@@ -651,15 +654,6 @@ export class CanvasRenderer {
       this.pactBadgeBounds = undefined;
     }
 
-    // Turn & Coordinate Info
-    ctx.font = `12px ${font}`;
-    ctx.fillStyle = theme.textMuted;
-    ctx.textAlign = 'right';
-    ctx.fillText(
-      `POS: (${p.x}, ${p.y}) | TURN: ${this.engine.turnCount}`,
-      width - 14,
-      this.topBarHeight / 2
-    );
     ctx.restore();
   }
 

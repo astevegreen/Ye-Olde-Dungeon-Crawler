@@ -163,7 +163,7 @@ export class KeybindModal implements UIModal {
                   <span id="badge-standard-mode" class="storage-badge-pill" style="font-size: 10px; padding: 2px 6px;">0ms Latency</span>
                 </div>
                 <p style="font-size: 11px; color: #475569; margin-top: 4px; line-height: 1.4;">
-                  Instant cardinal arrow keys &amp; 8-directional Numpad (0ms input latency). Best for desktop keyboards with a full number pad.
+                  Instant cardinal arrow keys &amp; 8-directional Numpad (0ms input latency). Best for desktop keyboards with a full number pad. <b>You can also just click a tile</b> — click adjacent to step or attack, or click farther away to auto-pathfind there. This already works; it isn't limited to the Hover Ring toggle below.
                 </p>
               </div>
 

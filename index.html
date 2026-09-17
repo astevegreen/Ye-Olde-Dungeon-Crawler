@@ -460,27 +460,21 @@
           <div id="game-container" style="display: flex; position: relative; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 0 32px rgba(0, 0, 0, 0.9);">
             <!-- Top Header Bar -->
             <div id="game-header-bar" class="retro-window" style="width: 100%; border-bottom: none; border-radius: 0; box-shadow: none;">
-              <div class="retro-titlebar" style="display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; flex-wrap: wrap; gap: 6px;">
+              <div class="retro-titlebar hud-bar-row">
                 <!-- Left: Hero info -->
                 <div id="header-info-col" style="display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: bold; color: #f8fafc; text-shadow: 1px 1px 0 #000; flex-shrink: 0;">
                   <span id="header-name">🛡️ Adventurer</span>
                   <span style="color: #64748b;">|</span>
                   <span id="header-floor" style="color: #fde047;">Floor 1</span>
                 </div>
-                <!-- Middle: Position & Turn telemetry readout -->
-                <div id="header-telemetry-col" style="display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: bold; font-family: monospace;">
-                  <span id="header-pos" style="color: #67e8f9;">POS: (0, 0)</span>
-                  <span style="color: #64748b;">|</span>
-                  <span id="header-turns" style="color: #93c5fd;">Turn: 0</span>
-                </div>
-                <!-- Right: Action / Modal buttons -->
-                <div id="header-actions-col" style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
-                  <button id="btn-map" class="win-btn win-btn-sm" title="Explored Dungeon Map Viewer (M)">🗺️ [M] Map</button>
-                  <button id="btn-help-card" class="win-btn win-btn-sm" title="Open Context Help (F1 / ?)">💡 [?] Help</button>
-                  <button id="btn-compendium" class="win-btn win-btn-sm" title="Open Slayer's Compendium & Codex (B)">📖 [B] Codex</button>
-                  <button id="btn-cmd-palette" class="win-btn win-btn-sm" title="Open Quick Command Palette (Shift+? / Ctrl+K)">⌨️ Cmds</button>
-                  <button id="btn-dev-diagnostics" class="win-btn win-btn-sm" title="Open Developer Diagnostics (F2 or `)">🛠️ [F2] Dev</button>
-                  <button id="btn-save-title" class="win-btn win-btn-sm" title="Save character and return to Title screen">💾 [Q] Save &amp; Quit</button>
+                <!-- Right: System / modal buttons, plus the way out -->
+                <div id="header-actions-col" class="hud-btn-group">
+                  <button id="btn-map" class="win-btn win-btn-sm hud-btn" title="Explored Dungeon Map Viewer (M)"><span class="hud-icon">🗺️</span> <span class="hud-key">[M]</span> <span class="hud-word">Map</span></button>
+                  <button id="btn-compendium" class="win-btn win-btn-sm hud-btn" title="Open Slayer's Compendium & Codex (B)"><span class="hud-icon">📖</span> <span class="hud-key">[B]</span> <span class="hud-word">Codex</span></button>
+                  <button id="btn-cmd-palette" class="win-btn win-btn-sm hud-btn" title="Open Quick Command Palette (Shift+? / Ctrl+K)"><span class="hud-icon">⌨️</span> <span class="hud-word">Cmds</span></button>
+                  <button id="btn-help-card" class="win-btn win-btn-sm hud-btn" title="Open Context Help (F1 / ?)"><span class="hud-icon">💡</span> <span class="hud-key">[?]</span> <span class="hud-word">Help</span></button>
+                  <button id="btn-dev-diagnostics" class="win-btn win-btn-sm hud-btn hud-btn-quiet" title="Open Developer Diagnostics (F2 or `)"><span class="hud-icon">🛠️</span> <span class="hud-key">[F2]</span> <span class="hud-word">Dev</span></button>
+                  <button id="btn-save-title" class="win-btn win-btn-sm hud-btn hud-btn-menu" title="Menu: Resume, Settings &amp; Controls, or Save &amp; Quit (Esc)"><span class="hud-icon">☰</span> <span class="hud-key">[Esc]</span> <span class="hud-word">Menu</span></button>
                 </div>
               </div>
             </div>
@@ -491,15 +485,18 @@
             <!-- Ground Status & Tile Inspection Bar -->
             <div id="ground-status-bar"></div>
 
-            <!-- Bottom Controls Bar -->
-            <div id="game-bottom-bar" style="width: 100%; display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 6px; background: var(--ui-panel, #0f172a); border: 1px solid var(--ui-border-dark, #334155); border-top: none; justify-content: center; align-items: center;">
-              <button id="btn-hud-inv" class="win-btn win-btn-sm" title="Inventory & Equipment (I)">🎒 [I] Inv</button>
-              <button id="btn-hud-cast" class="win-btn win-btn-sm" title="Spellbook & Cast (Z/C)">⚡ [Z] Cast</button>
-              <button id="btn-hud-look" class="win-btn win-btn-sm" title="Inspect / Look (L/X)">👁️ [L] Look</button>
-              <button id="btn-hud-rest" class="win-btn win-btn-sm" title="Rest until full HP/MP (R)">💤 [R] Rest</button>
-              <button id="btn-hud-search" class="win-btn win-btn-sm" title="Search secret doors / traps (S)">🔍 [S] Search</button>
-              <button id="btn-hud-wait" class="win-btn win-btn-sm" title="Pass Turn (Space / .)">⏳ [.] Wait</button>
-              <button id="btn-hud-stairs" class="win-btn win-btn-sm" title="Stairs Up / Down (&lt; / &gt;)">🪜 [&lt;/&gt;] Stairs</button>
+            <!-- Bottom Controls Bar (primary action bar, ordered by rough frequency of use) -->
+            <div id="game-bottom-bar" class="hud-bar-row" style="background: var(--ui-panel, #0f172a); border: 1px solid var(--ui-border-dark, #334155); border-top: none; justify-content: center;">
+              <div class="hud-btn-group">
+                <button id="btn-hud-inv" class="win-btn win-btn-sm hud-btn" title="Inventory & Equipment (I)"><span class="hud-icon">🎒</span> <span class="hud-key">[I]</span> <span class="hud-word">Inv</span></button>
+                <button id="btn-hud-cast" class="win-btn win-btn-sm hud-btn" title="Spellbook & Cast (Z/C)"><span class="hud-icon">⚡</span> <span class="hud-key">[Z]</span> <span class="hud-word">Cast</span></button>
+                <button id="btn-hud-look" class="win-btn win-btn-sm hud-btn" title="Inspect / Look (L/X)"><span class="hud-icon">👁️</span> <span class="hud-key">[L]</span> <span class="hud-word">Look</span></button>
+                <button id="btn-hud-pacts" class="win-btn win-btn-sm hud-btn" title="Ancient Run Pacts &amp; Bounties (P)"><span class="hud-icon">📜</span> <span class="hud-key">[P]</span> <span class="hud-word">Pacts</span></button>
+                <button id="btn-hud-rest" class="win-btn win-btn-sm hud-btn" title="Rest until full HP/MP (R)"><span class="hud-icon">💤</span> <span class="hud-key">[R]</span> <span class="hud-word">Rest</span></button>
+                <button id="btn-hud-search" class="win-btn win-btn-sm hud-btn" title="Search secret doors / traps (S)"><span class="hud-icon">🔍</span> <span class="hud-key">[S]</span> <span class="hud-word">Search</span></button>
+                <button id="btn-hud-wait" class="win-btn win-btn-sm hud-btn" title="Pass Turn (Space / .)"><span class="hud-icon">⏳</span> <span class="hud-key">[.]</span> <span class="hud-word">Wait</span></button>
+                <button id="btn-hud-stairs" class="win-btn win-btn-sm hud-btn" title="Stairs Up / Down (&lt; / &gt;)"><span class="hud-icon">🪜</span> <span class="hud-key">[&lt;/&gt;]</span> <span class="hud-word">Stairs</span></button>
+              </div>
             </div>
           </div>
         </main>

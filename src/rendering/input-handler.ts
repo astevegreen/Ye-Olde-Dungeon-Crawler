@@ -252,6 +252,32 @@ export class InputHandler {
     this.chordBuffer.clearAllKeys();
   }
 
+  /** Opens/closes Ancient Run Pacts & Bounties, registering it on the modal stack the
+   * same way `toggleInventory()` does — shared by the `[P]` keybind and the bottom-bar
+   * button so both stay in sync with the modal stack. */
+  public togglePactModal(): void {
+    if (!this.pactModal) return;
+    this.pactModal.toggle(this.engine);
+    if (this.pactModal.isOpen) {
+      const self = this;
+      this.modalStack.push({
+        id: 'pact-modal',
+        get isOpen() { return self.pactModal?.isOpen ?? false; },
+        set isOpen(val: boolean) { if (!val) self.pactModal?.close(); },
+        handleKeyDown: (ke: KeyboardEvent) => {
+          const h = self.pactModal?.handleKeyDown(ke) ?? false;
+          if (!self.pactModal?.isOpen) {
+            self.modalStack.remove('pact-modal');
+          }
+          return h;
+        },
+        close: () => { self.pactModal?.close(); },
+      });
+    } else {
+      this.modalStack.remove('pact-modal');
+    }
+  }
+
   /** Resolves the currently-hovered radial-menu slot, executes it, and closes the menu. */
   public confirmRadialMenu(): void {
     const overlay = this.radialMenuOverlay;
@@ -477,25 +503,7 @@ export class InputHandler {
     // Hotkey: Ancient Run Pacts & Bounties (KeyP when not inspecting)
     if ((code === 'KeyP' || e.key === 'p' || e.key === 'P') && !this.inspectOverlay?.isOpen) {
       if (this.pactModal) {
-        this.pactModal.toggle(this.engine);
-        if (this.pactModal.isOpen) {
-          const self = this;
-          this.modalStack.push({
-            id: 'pact-modal',
-            get isOpen() { return self.pactModal?.isOpen ?? false; },
-            set isOpen(val: boolean) { if (!val) self.pactModal?.close(); },
-            handleKeyDown: (ke: KeyboardEvent) => {
-              const h = self.pactModal?.handleKeyDown(ke) ?? false;
-              if (!self.pactModal?.isOpen) {
-                self.modalStack.remove('pact-modal');
-              }
-              return h;
-            },
-            close: () => { self.pactModal?.close(); },
-          });
-        } else {
-          this.modalStack.remove('pact-modal');
-        }
+        this.togglePactModal();
         this.onActionProcessed();
         return true;
       }

@@ -79,6 +79,7 @@ export class BottomStatusBar {
   private standingEl: HTMLElement;
   private detailsEl: HTMLElement;
   private promptEl: HTMLElement;
+  private turnEl: HTMLElement;
 
   constructor() {
     this.container = document.createElement('div');
@@ -94,6 +95,11 @@ export class BottomStatusBar {
     this.promptEl = document.createElement('span');
     this.promptEl.className = 'ground-status-prompt';
 
+    // The one place a turn count is shown (HUD overhaul) — previously duplicated
+    // between the DOM header bar and the canvas's own internal HUD.
+    this.turnEl = document.createElement('span');
+    this.turnEl.className = 'ground-status-turn';
+
     const leftCol = document.createElement('div');
     leftCol.className = 'ground-status-left';
     leftCol.appendChild(this.standingEl);
@@ -102,6 +108,7 @@ export class BottomStatusBar {
     const rightCol = document.createElement('div');
     rightCol.className = 'ground-status-right';
     rightCol.appendChild(this.promptEl);
+    rightCol.appendChild(this.turnEl);
 
     this.container.appendChild(leftCol);
     this.container.appendChild(rightCol);
@@ -148,6 +155,7 @@ export class BottomStatusBar {
     this.standingEl.textContent = status.standingText;
     this.detailsEl.textContent = status.detailText ? ` | ${status.detailText}` : '';
     this.promptEl.textContent = promptText;
+    this.turnEl.textContent = `Turn ${engine.turnCount}`;
 
     if (unspent > 0) {
       this.promptEl.style.color = '#facc15';

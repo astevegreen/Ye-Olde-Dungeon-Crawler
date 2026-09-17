@@ -108,6 +108,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const hudInvBtn = document.getElementById('btn-hud-inv');
   const hudCastBtn = document.getElementById('btn-hud-cast');
   const hudLookBtn = document.getElementById('btn-hud-look');
+  const hudPactsBtn = document.getElementById('btn-hud-pacts');
   const hudRestBtn = document.getElementById('btn-hud-rest');
   const hudSearchBtn = document.getElementById('btn-hud-search');
   const hudWaitBtn = document.getElementById('btn-hud-wait');
@@ -348,8 +349,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!activeEngine) return;
     const nameEl = document.getElementById('header-name');
     const floorEl = document.getElementById('header-floor');
-    const posEl = document.getElementById('header-pos');
-    const turnsEl = document.getElementById('header-turns');
     if (nameEl) {
       const heroName = activeProfile?.name || activeEngine.player.name || 'Hero';
       const title = getActiveTitle(activeEngine);
@@ -358,12 +357,9 @@ window.addEventListener('DOMContentLoaded', () => {
     if (floorEl) {
       floorEl.textContent = activeEngine.currentFloor === 0 ? 'Town (Bjarnarhaven)' : `Floor ${activeEngine.currentFloor}`;
     }
-    if (posEl) {
-      posEl.textContent = `POS: (${activeEngine.player.x}, ${activeEngine.player.y})`;
-    }
-    if (turnsEl) {
-      turnsEl.textContent = `Turn: ${activeEngine.turnCount}`;
-    }
+    // Position/turn were previously also shown here, duplicating both the canvas's own
+    // HUD and each other (HUD overhaul). The one remaining turn readout lives in
+    // BottomStatusBar's ground-status-bar (`.ground-status-turn`, updated per player turn).
   }
 
   function renderFlanks(): void {
@@ -578,6 +574,13 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer.targetingOverlay.close();
       renderer.mapOverlay.close();
       renderer.inspectOverlay.open(activeEngine);
+      renderer.render();
+    }
+  });
+
+  hudPactsBtn?.addEventListener('click', () => {
+    if (activeEngine && renderer && inputHandler) {
+      inputHandler.togglePactModal();
       renderer.render();
     }
   });

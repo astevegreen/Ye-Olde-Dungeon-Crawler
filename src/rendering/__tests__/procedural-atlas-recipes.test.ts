@@ -1,13 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SpriteAtlas, ATLAS_MAP, SPRITE_SIZE } from '../atlas/sprite-atlas';
+import { SpriteAtlas, ATLAS_MAP, SPRITE_SIZE, ATLAS_TILE_SIZE } from '../atlas/sprite-atlas';
 import type { SpriteRecipe } from '../../engine';
 
 function createMockCanvas(): HTMLCanvasElement {
   const dummyCtx: any = new Proxy(
     {
-      getImageData: vi.fn(() => ({ data: new Uint8ClampedArray(16 * 32 * 4 * 32 * 4) })),
+      getImageData: vi.fn(() => ({
+        data: new Uint8ClampedArray(16 * ATLAS_TILE_SIZE * (4 * ATLAS_TILE_SIZE) * 4),
+      })),
       putImageData: vi.fn(),
       drawImage: vi.fn(),
+      createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
     },
     {
       get(target: any, prop: string) {
@@ -44,8 +47,8 @@ describe('Procedural Sprite Recipe Registry & Atlas Baking', () => {
     const atlas = new SpriteAtlas();
     expect(atlas.atlasCanvas).toBeDefined();
     expect(atlas.dimmedAtlasCanvas).toBeDefined();
-    expect(atlas.atlasCanvas.width).toBe(16 * SPRITE_SIZE);
-    expect(atlas.atlasCanvas.height).toBe(4 * SPRITE_SIZE);
+    expect(atlas.atlasCanvas.width).toBe(16 * ATLAS_TILE_SIZE);
+    expect(atlas.atlasCanvas.height).toBe(4 * ATLAS_TILE_SIZE);
 
     // Verify individual sprite canvases can be retrieved from the baked atlas
     const playerCanvas = atlas.getSpriteCanvas('player');

@@ -2,7 +2,37 @@ import { Visibility } from '../../engine';
 import type { SpriteKey, AtlasCoords } from './types';
 import type { SpriteRecipe } from '../../engine';
 
+/**
+ * The coordinate unit every sprite recipe draws in — fixed forever. Recipes (both
+ * content packs) hardcode absolute pixel literals assuming this box and never read
+ * their `size` argument, so this must never change independently of the bake-time
+ * scale applied below; recipes are always invoked with exactly `SPRITE_SIZE`.
+ */
 export const SPRITE_SIZE = 32;
+
+/** Physical resolution of one atlas cell as actually stored/sampled at runtime. */
+export const ATLAS_TILE_SIZE = 64;
+
+/** Bake-time-only antialiasing multiplier; never affects runtime draw cost. */
+const BAKE_SUPERSAMPLE = 4;
+
+/** Recipe-space -> stored-atlas-space scale (the "higher base resolution" lever). */
+const NATIVE_SCALE = ATLAS_TILE_SIZE / SPRITE_SIZE;
+
+/** Total scratch-canvas scale recipes are baked at before the final downsample. */
+const BAKE_SCALE = NATIVE_SCALE * BAKE_SUPERSAMPLE;
+
+/** Alpha (0-255) above which a pixel counts as "solid" for outline/highlight purposes. */
+export const OUTLINE_ALPHA_THRESHOLD = 160;
+
+/** '#0f172a' — already the darkest shade used throughout both content packs. */
+export const OUTLINE_COLOR: readonly [number, number, number] = [0x0f, 0x17, 0x2a];
+
+/** Lighten-blend factor for the top/left highlight rim (not a flat overwrite). */
+export const HIGHLIGHT_MIX = 0.35;
+
+const SHADE_LIGHT = 'rgba(255, 255, 255, 0.12)';
+const SHADE_DARK = 'rgba(0, 0, 0, 0.18)';
 
 export const ATLAS_MAP: Record<SpriteKey, AtlasCoords> = {
   // Row 0: Terrain
@@ -48,6 +78,12 @@ export const ATLAS_MAP: Record<SpriteKey, AtlasCoords> = {
   travel_bread: { col: 14, row: 2 },
 };
 
+interface AtlasCell {
+  ox: number;
+  oy: number;
+  size: number;
+}
+
 export class SpriteAtlas {
   public readonly atlasCanvas: HTMLCanvasElement;
   public readonly dimmedAtlasCanvas: HTMLCanvasElement;
@@ -59,9 +95,9 @@ export class SpriteAtlas {
     this.atlasCanvas = document.createElement('canvas');
     this.dimmedAtlasCanvas = document.createElement('canvas');
 
-    // 16 columns by 4 rows of 32x32 tiles
-    const width = 16 * SPRITE_SIZE;
-    const height = 4 * SPRITE_SIZE;
+    // 16 columns by 4 rows of ATLAS_TILE_SIZE tiles
+    const width = 16 * ATLAS_TILE_SIZE;
+    const height = 4 * ATLAS_TILE_SIZE;
 
     this.atlasCanvas.width = width;
     this.atlasCanvas.height = height;
@@ -72,23 +108,87 @@ export class SpriteAtlas {
     this.buildDimmedAtlas();
   }
 
+  /**
+   * Bakes every recipe onto a supersampled scratch canvas (recipes see the exact same
+   * `(ctx, ox, oy, SPRITE_SIZE)` call shape they always have — the extra resolution is
+   * applied purely via `scratchCtx.scale(BAKE_SCALE, ...)`, invisible to recipe code),
+   * downsamples once into the real atlas with smoothing on, then applies the shared
+   * shading and outline/highlight passes to the final, smaller resolution.
+   */
   private buildAtlas(): void {
     const ctx = this.atlasCanvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.imageSmoothingEnabled = false;
+    const scratch = document.createElement('canvas');
+    scratch.width = 16 * SPRITE_SIZE * BAKE_SCALE;
+    scratch.height = 4 * SPRITE_SIZE * BAKE_SCALE;
+    const sctx = scratch.getContext('2d');
+    if (!sctx) return;
+    sctx.scale(BAKE_SCALE, BAKE_SCALE);
 
-    // Render each sprite into its allocated cell on the atlas
     for (const [key, coords] of Object.entries(ATLAS_MAP) as [SpriteKey, AtlasCoords][]) {
       const ox = coords.col * SPRITE_SIZE;
       const oy = coords.row * SPRITE_SIZE;
       const recipe = this.recipes?.[key];
       if (recipe) {
-        recipe(ctx, ox, oy, SPRITE_SIZE);
+        recipe(sctx, ox, oy, SPRITE_SIZE);
       } else {
-        this.renderFallback(ctx, ox, oy, key);
+        this.renderFallback(sctx, ox, oy, key);
       }
     }
+
+    // The one smoothed operation in the whole pipeline: averages the supersampled
+    // scratch buffer down into real, anti-aliased atlas pixels. Reset immediately so
+    // every other draw (including the passes below) stays nearest-neighbor.
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(scratch, 0, 0, scratch.width, scratch.height, 0, 0, this.atlasCanvas.width, this.atlasCanvas.height);
+    ctx.imageSmoothingEnabled = false;
+
+    const cells = this.getUniqueCells();
+    this.applyShadingOverlay(ctx, cells);
+    this.bakeOutlineAndHighlight(ctx, cells);
+  }
+
+  /** Every occupied atlas cell, in stored/physical (ATLAS_TILE_SIZE) space, deduped by
+   *  (col, row) — `wall`/`secret_door` share a cell, and each pixel pass below must
+   *  run on it exactly once. */
+  private getUniqueCells(): AtlasCell[] {
+    const seen = new Set<string>();
+    const cells: AtlasCell[] = [];
+    for (const coords of Object.values(ATLAS_MAP) as AtlasCoords[]) {
+      const key = `${coords.col},${coords.row}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      cells.push({ ox: coords.col * ATLAS_TILE_SIZE, oy: coords.row * ATLAS_TILE_SIZE, size: ATLAS_TILE_SIZE });
+    }
+    return cells;
+  }
+
+  /**
+   * Whole-silhouette directional-light gradient, composited with `source-atop` so it
+   * only paints over each sprite's own already-opaque/semi-opaque pixels — respects
+   * whatever silhouette a recipe drew without any per-shape knowledge. Applies
+   * identically to every sprite, current or future, in either content pack.
+   */
+  private applyShadingOverlay(ctx: CanvasRenderingContext2D, cells: AtlasCell[]): void {
+    for (const { ox, oy, size } of cells) {
+      const grad = ctx.createLinearGradient(ox, oy, ox + size, oy + size);
+      grad.addColorStop(0, SHADE_LIGHT);
+      grad.addColorStop(1, SHADE_DARK);
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-atop';
+      ctx.fillStyle = grad;
+      ctx.fillRect(ox, oy, size, size);
+      ctx.restore();
+    }
+  }
+
+  /** Reads back the baked atlas pixels, runs the shared outline/highlight pass, writes them back. */
+  private bakeOutlineAndHighlight(ctx: CanvasRenderingContext2D, cells: AtlasCell[]): void {
+    const { width, height } = this.atlasCanvas;
+    const imgData = ctx.getImageData(0, 0, width, height);
+    applyOutlineAndHighlight(imgData.data, width, height, cells);
+    ctx.putImageData(imgData, 0, 0);
   }
 
   private buildDimmedAtlas(): void {
@@ -141,10 +241,10 @@ export class SpriteAtlas {
     if (!coords) return;
 
     const source = visibility === Visibility.Explored ? this.dimmedAtlasCanvas : this.atlasCanvas;
-    const sx = coords.col * SPRITE_SIZE;
-    const sy = coords.row * SPRITE_SIZE;
+    const sx = coords.col * ATLAS_TILE_SIZE;
+    const sy = coords.row * ATLAS_TILE_SIZE;
 
-    targetCtx.drawImage(source, sx, sy, SPRITE_SIZE, SPRITE_SIZE, dx, dy, dSize, dSize);
+    targetCtx.drawImage(source, sx, sy, ATLAS_TILE_SIZE, ATLAS_TILE_SIZE, dx, dy, dSize, dSize);
   }
 
   public getSpriteCanvas(key: SpriteKey): HTMLCanvasElement {
@@ -152,8 +252,8 @@ export class SpriteAtlas {
     if (cached) return cached;
 
     const canvas = document.createElement('canvas');
-    canvas.width = SPRITE_SIZE;
-    canvas.height = SPRITE_SIZE;
+    canvas.width = ATLAS_TILE_SIZE;
+    canvas.height = ATLAS_TILE_SIZE;
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.imageSmoothingEnabled = false;
@@ -161,14 +261,14 @@ export class SpriteAtlas {
       if (coords) {
         ctx.drawImage(
           this.atlasCanvas,
-          coords.col * SPRITE_SIZE,
-          coords.row * SPRITE_SIZE,
-          SPRITE_SIZE,
-          SPRITE_SIZE,
+          coords.col * ATLAS_TILE_SIZE,
+          coords.row * ATLAS_TILE_SIZE,
+          ATLAS_TILE_SIZE,
+          ATLAS_TILE_SIZE,
           0,
           0,
-          SPRITE_SIZE,
-          SPRITE_SIZE
+          ATLAS_TILE_SIZE,
+          ATLAS_TILE_SIZE
         );
       }
     }
@@ -188,4 +288,96 @@ export class SpriteAtlas {
     ctx.textBaseline = 'middle';
     ctx.fillText(key[0].toUpperCase(), ox + SPRITE_SIZE / 2, oy + SPRITE_SIZE / 2);
   }
+}
+
+/**
+ * Shared, generic outline+highlight post-process: dilates a dark outline just outside
+ * each sprite's solid silhouette, and lightens a top/left-facing interior rim to
+ * simulate a fixed upper-left light source. Pure and DOM-free (operates on a raw
+ * `Uint8ClampedArray`) so it's unit-testable without a canvas, and reusable for any
+ * atlas layout, current or future, with no per-sprite special-casing.
+ *
+ * A pixel counts as "solid" only above OUTLINE_ALPHA_THRESHOLD, so existing soft
+ * translucent glow/aura effects (e.g. the health potion's halo) fall below the
+ * threshold and never grow a hard ring at their own soft edge — only at the boundary
+ * of whatever fully-opaque shape sits on top of them. Fully-opaque, edge-to-edge
+ * terrain tiles have no alpha=0..threshold pixels anywhere in their cell, so both
+ * passes are a guaranteed no-op there — no seams between adjacent floor/wall tiles.
+ */
+export function applyOutlineAndHighlight(
+  data: Uint8ClampedArray,
+  width: number,
+  height: number,
+  cells: AtlasCell[]
+): void {
+  const src = data.slice();
+  const alphaAt = (x: number, y: number): number => src[(y * width + x) * 4 + 3];
+
+  for (const { ox, oy, size } of cells) {
+    const minX = ox;
+    const minY = oy;
+    // Clamped defensively — a caller-supplied cell must never let the pixel loop walk
+    // past the actual buffer bounds.
+    const maxX = Math.min(ox + size, width);
+    const maxY = Math.min(oy + size, height);
+
+    for (let y = minY; y < maxY; y++) {
+      for (let x = minX; x < maxX; x++) {
+        const i = (y * width + x) * 4;
+        const solid = alphaAt(x, y) >= OUTLINE_ALPHA_THRESHOLD;
+
+        if (!solid) {
+          if (hasSolidNeighbor8(x, y, minX, minY, maxX, maxY, alphaAt)) {
+            data[i] = OUTLINE_COLOR[0];
+            data[i + 1] = OUTLINE_COLOR[1];
+            data[i + 2] = OUTLINE_COLOR[2];
+            data[i + 3] = 255;
+          }
+        } else if (hasNonSolidNorthOrWest(x, y, minX, minY, alphaAt)) {
+          data[i] = src[i] + (255 - src[i]) * HIGHLIGHT_MIX;
+          data[i + 1] = src[i + 1] + (255 - src[i + 1]) * HIGHLIGHT_MIX;
+          data[i + 2] = src[i + 2] + (255 - src[i + 2]) * HIGHLIGHT_MIX;
+        }
+      }
+    }
+  }
+}
+
+function hasSolidNeighbor8(
+  x: number,
+  y: number,
+  minX: number,
+  minY: number,
+  maxX: number,
+  maxY: number,
+  alphaAt: (x: number, y: number) => number
+): boolean {
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      if (dx === 0 && dy === 0) continue;
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx < minX || nx >= maxX || ny < minY || ny >= maxY) continue;
+      if (alphaAt(nx, ny) >= OUTLINE_ALPHA_THRESHOLD) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Out-of-cell-bounds neighbors default to "solid" (255) rather than "transparent" —
+ * otherwise every sprite's own top row / left column would read as a false rim purely
+ * from hitting the cell edge, which would break the terrain-tile no-op guarantee above
+ * (a fully opaque tile's top-left border would otherwise always get highlighted).
+ */
+function hasNonSolidNorthOrWest(
+  x: number,
+  y: number,
+  minX: number,
+  minY: number,
+  alphaAt: (x: number, y: number) => number
+): boolean {
+  const north = y - 1 >= minY ? alphaAt(x, y - 1) : 255;
+  const west = x - 1 >= minX ? alphaAt(x - 1, y) : 255;
+  return north < OUTLINE_ALPHA_THRESHOLD || west < OUTLINE_ALPHA_THRESHOLD;
 }

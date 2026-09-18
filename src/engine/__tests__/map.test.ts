@@ -85,4 +85,51 @@ describe('GameMap - Spatial Grid & Tile Queries', () => {
     expect(map.removeEntity(goblin)).toBe(true);
     expect(map.getEntityAt(3, 4)).toBeNull();
   });
+
+  it('manages coordinate bucketing and multi-plane entity coexistence via getEntitiesAt()', () => {
+    const physicalEntity = new Entity({
+      id: 'warrior-1',
+      name: 'Warrior',
+      type: 'player',
+      faction: 'player',
+      position: { x: 4, y: 4 },
+      planeId: 'physical',
+      stats: { hp: 30, maxHp: 30, attack: 5, defense: 2 },
+    });
+
+    const etherealEntity = new Entity({
+      id: 'ghost-1',
+      name: 'Ghost',
+      type: 'monster',
+      faction: 'hostile',
+      position: { x: 4, y: 4 },
+      planeId: 'ethereal',
+      stats: { hp: 15, maxHp: 15, attack: 3, defense: 1 },
+    });
+
+    expect(map.addEntity(physicalEntity)).toBe(true);
+    // Coexistence on distinct plane
+    expect(map.addEntity(etherealEntity)).toBe(true);
+
+    // Plane-specific queries
+    expect(map.getEntityAt(4, 4, 'physical')).toBe(physicalEntity);
+    expect(map.getEntityAt(4, 4, 'ethereal')).toBe(etherealEntity);
+
+    // Multi-plane coordinate bucketing
+    const bucket = map.getEntitiesAt(4, 4);
+    expect(bucket).toHaveLength(2);
+    expect(bucket).toContain(physicalEntity);
+    expect(bucket).toContain(etherealEntity);
+
+    // Moving entity updates coordinate buckets
+    map.moveEntity(etherealEntity, 4, 5);
+    expect(map.getEntitiesAt(4, 4)).toEqual([physicalEntity]);
+    expect(map.getEntitiesAt(4, 5)).toEqual([etherealEntity]);
+
+    // Removing entity purges coordinate buckets
+    map.removeEntity(physicalEntity);
+    expect(map.getEntitiesAt(4, 4)).toHaveLength(0);
+    map.removeEntity(etherealEntity);
+    expect(map.getEntitiesAt(4, 5)).toHaveLength(0);
+  });
 });

@@ -12,7 +12,7 @@ import type { WorldState } from '../state/worldState';
 
 export type ShopType = 'general' | 'armory' | 'alchemist';
 
-export const BASE_ITEM_VALUES_CP: Record<string, number> = {
+const BASE_ITEM_VALUES_CP: Record<string, number> = {
   'Iron Dagger': 2000,
   'Steel Broadsword': 15000,
   'Bearded Battleaxe': 20000,

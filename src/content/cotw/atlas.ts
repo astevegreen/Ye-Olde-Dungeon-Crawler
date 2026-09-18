@@ -1,6 +1,6 @@
 import type { AtlasProceduralTheme } from '../../engine';
 
-export const COTW_PALETTE: Record<string, string> = {
+const COTW_PALETTE: Record<string, string> = {
   stoneDark: '#1c2333',
   stoneFloor: '#0f172a',
   woodBrown: '#78350f',

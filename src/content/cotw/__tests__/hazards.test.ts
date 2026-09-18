@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterAll } from 'vitest';
 import { GameEngine, GameMap, TILES, Player } from '../../../engine';
 import { WaitAction } from '../../../engine/actions/wait';
 import { COTW_PROGRESSION } from '../character';
@@ -22,6 +22,10 @@ function buildEngine(floor: number) {
 }
 
 describe('Járnviðr temperature exposure (Act 1 hazard)', () => {
+  afterAll(() => {
+    StatusHandlerRegistry.resetToDefaults();
+  });
+
   it('applies itself to the player on the first action and never re-applies', () => {
     const { engine, player } = buildEngine(3);
     expect(player.statusManager.hasStatus(JARNVIDR_EXPOSURE_STATUS)).toBe(false);

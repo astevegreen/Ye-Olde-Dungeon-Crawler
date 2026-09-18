@@ -7,7 +7,7 @@ export interface ModifierTemplate extends Omit<ItemModifier, 'id'> {
   allowedCategories?: ItemCategory[];
 }
 
-export const MODIFIER_TEMPLATES: Record<ModifierCategory, ModifierTemplate[]> = {
+const MODIFIER_TEMPLATES: Record<ModifierCategory, ModifierTemplate[]> = {
   blessed: [
     {
       tier: 1,

@@ -9,26 +9,28 @@ import {
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { flightRecorder } from '../../debug/flightRecorder';
+import { Mulberry32 } from '../prng';
 
 describe('Dungeon Loot Spawner & Currency Scaling', () => {
   it('scales currency denominations according to floor depth', () => {
+    const prng = new Mulberry32(99);
     // Floors 1-9: Copper (CP) and Silver (SP)
     for (let f = 1; f <= 9; f++) {
-      const coin = spawnFloorCurrency(f, `coin-${f}`, Math.random);
+      const coin = spawnFloorCurrency(f, `coin-${f}`, () => prng.next());
       expect(['copper', 'silver']).toContain(coin.denomination);
       expect(coin.count).toBeGreaterThan(0);
     }
 
     // Floors 10-24: Silver (SP) and Gold (GP)
     for (let f = 10; f <= 24; f += 2) {
-      const coin = spawnFloorCurrency(f, `coin-${f}`, Math.random);
+      const coin = spawnFloorCurrency(f, `coin-${f}`, () => prng.next());
       expect(['silver', 'gold']).toContain(coin.denomination);
       expect(coin.count).toBeGreaterThan(0);
     }
 
     // Floors 25-50: Gold (GP) and Platinum (PP)
     for (let f = 25; f <= 50; f += 5) {
-      const coin = spawnFloorCurrency(f, `coin-${f}`, Math.random);
+      const coin = spawnFloorCurrency(f, `coin-${f}`, () => prng.next());
       expect(['gold', 'platinum']).toContain(coin.denomination);
       expect(coin.count).toBeGreaterThan(0);
     }

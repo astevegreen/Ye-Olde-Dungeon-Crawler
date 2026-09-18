@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import {
   AIRegistry,
   type AIStrategy,
@@ -32,6 +32,10 @@ describe('Pluggable AI Strategy Registry (AIRegistry)', () => {
       stats: { hp: 100, maxHp: 100, attack: 10, defense: 5 },
     });
     engine = new GameEngine({ map, player, floor: 1 });
+  });
+
+  afterAll(() => {
+    AIRegistry.resetToDefaults();
   });
 
   describe('Default Strategies', () => {

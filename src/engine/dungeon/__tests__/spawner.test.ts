@@ -9,6 +9,7 @@ import {
   populateDungeonFloor,
   scaleMonsterStats,
 } from '../spawner';
+import { Mulberry32 } from '../prng';
 
 describe('Dungeon Spawner - Tiering & Population', () => {
   const allCandidates: MonsterDefinition[] = COTW_MONSTERS;
@@ -27,7 +28,7 @@ describe('Dungeon Spawner - Tiering & Population', () => {
         lootTable: [],
       };
 
-      const selected = selectDungeonMonsterDefinition([highFloorMonster], 1, Math.random);
+      const selected = selectDungeonMonsterDefinition([highFloorMonster], 1, () => 0.5);
       expect(selected).toBeNull();
     });
 
@@ -35,14 +36,15 @@ describe('Dungeon Spawner - Tiering & Population', () => {
       const boss = BESTIARY.boss_hrungnir;
       expect(boss).toBeDefined();
 
-      const selected = selectDungeonMonsterDefinition([boss], 30, Math.random);
+      const selected = selectDungeonMonsterDefinition([boss], 30, () => 0.5);
       expect(selected).toBeNull();
     });
 
     it('filters candidates to only those with minFloor <= currentFloor', () => {
+      const prng = new Mulberry32(777);
       // On floor 1, only Tier 1 monsters (giant_rat, kobold) should be eligible
       for (let i = 0; i < 20; i++) {
-        const selected = selectDungeonMonsterDefinition(allCandidates, 1, Math.random);
+        const selected = selectDungeonMonsterDefinition(allCandidates, 1, () => prng.next());
         expect(selected).not.toBeNull();
         expect(selected!.minFloor ?? 1).toBeLessThanOrEqual(1);
       }
@@ -116,7 +118,8 @@ describe('Dungeon Spawner - Tiering & Population', () => {
         }
       }
 
-      populateDungeonFloor(map, rooms, 5, allCandidates, Math.random);
+      const prng = new Mulberry32(888);
+      populateDungeonFloor(map, rooms, 5, allCandidates, () => prng.next());
 
       const entities = map.getAllEntities();
       expect(entities.length).toBeGreaterThan(0);

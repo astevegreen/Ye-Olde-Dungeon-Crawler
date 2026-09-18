@@ -210,9 +210,3 @@ export function createGuntherArmory(): Merchant {
   return new Merchant(cfg.id, cfg.name, cfg.name, 'armory', cfg.greeting, [...cfg.initialInventory]);
 }
 
-export function createAstridAlchemist(): Merchant {
-  const npc = COTW_TOWN.npcs.find((n) => n.id === 'npc-astrid')!;
-  const cfg = npc.merchantConfig!;
-  return new Merchant(cfg.id, cfg.name, cfg.name, 'alchemist', cfg.greeting, [...cfg.initialInventory]);
-}
-

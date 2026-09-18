@@ -43,7 +43,6 @@ export * from './actions/identificationActions';
 export * from './actions/uncurseAction';
 
 // Items & Containers
-export { MonsterRegistry, type MonsterDefinition } from './bestiary/monsterDefinitions';
 export * from './items/item';
 export * from './items/modifiers';
 export * from './items/modifierRoller';
@@ -185,7 +184,6 @@ export * from './actors/energyModel';
 
 // Reactive Substances & Corpse Lifecycles
 export * from './environment/substanceGrid';
-export * from './surfaces/surfaceGrid';
 export * from './items/corpse';
 
 // Run Telemetry & Death Analytics

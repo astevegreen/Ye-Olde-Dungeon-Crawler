@@ -7,6 +7,7 @@ import { WARCRAFT_VAULTS } from '../../../content/warcraft/vaults';
 import { VaultStamper } from '../vaultStamp';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
+import { Mulberry32 } from '../prng';
 
 describe('Vault Generation Integration', () => {
   it('stamps vaults using provided monsterCandidates and itemCandidates in DungeonGenerator', () => {
@@ -40,6 +41,7 @@ describe('Vault Generation Integration', () => {
     expect(vaultNames).toContain('Shadow Council Sanctum');
     expect(vaultNames).toContain('Bladespire Stronghold');
 
+    const prng = new Mulberry32(333);
     for (const vault of WARCRAFT_VAULTS) {
       const map = new GameMap(30, 25, TILES.WALL);
       const res = VaultStamper.stamp(
@@ -50,7 +52,7 @@ describe('Vault Generation Integration', () => {
         vault.minFloor,
         warcraftManifest.monsters,
         warcraftManifest.items,
-        Math.random
+        () => prng.next()
       );
       expect(res.connectors.length).toBeGreaterThanOrEqual(1);
       expect(res.width).toBe(vault.layout[0].length);

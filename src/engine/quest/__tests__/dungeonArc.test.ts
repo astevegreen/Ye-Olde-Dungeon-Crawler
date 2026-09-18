@@ -43,7 +43,7 @@ describe('DungeonArc & Floor 5 Chieftain Encounter', () => {
 
     // Guaranteed Sun-Stone of Freyr loot drop rule
     const sunStoneRule = boss.lootTable.find((r) => {
-      const itm = r.generate('test-check', Math.random);
+      const itm = r.generate('test-check', () => 0.5);
       return itm.name === 'The Sun-Stone of Freyr';
     });
     expect(sunStoneRule).toBeDefined();

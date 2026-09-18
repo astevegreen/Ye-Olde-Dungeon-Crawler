@@ -9,7 +9,7 @@ import { RuneOfReturnItem } from '../magic/runeOfReturn';
 
 export const MIN_ATTRIBUTE = 8;
 export const MAX_ATTRIBUTE = 18;
-export const DEFAULT_POOL_POINTS = 5;
+const DEFAULT_POOL_POINTS = 5;
 
 export class CharacterRoller {
   /**

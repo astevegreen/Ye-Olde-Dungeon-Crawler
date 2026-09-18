@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { ActionRegistry, type GameAction } from '../actions/actionRegistry';
 import { GameEngine } from '../engine';
 import { GameMap } from '../grid/map';
@@ -15,6 +15,10 @@ describe('Pluggable Action Command Registry', () => {
     map.fill(TILES.FLOOR);
     player = new Player({ position: { x: 5, y: 5 } });
     engine = new GameEngine({ map, player, floor: 1 });
+    ActionRegistry.resetToDefaults();
+  });
+
+  afterAll(() => {
     ActionRegistry.resetToDefaults();
   });
 

@@ -6,6 +6,7 @@ import {
   COIN_VALUES,
   COIN_WEIGHT_GRAMS,
   COIN_NAMES,
+  COIN_ABBREV,
   type CurrencyBreakdown,
   type TransactionResult,
 } from './types';
@@ -113,10 +114,10 @@ export function breakdownToCp(breakdown: CurrencyBreakdown): number {
 export function formatCurrency(totalCp: number): string {
   const b = breakdownChange(totalCp);
   const parts: string[] = [];
-  if (b.platinum > 0) parts.push(`${b.platinum} PP`);
-  if (b.gold > 0) parts.push(`${b.gold} GP`);
-  if (b.silver > 0) parts.push(`${b.silver} SP`);
-  if (b.copper > 0 || parts.length === 0) parts.push(`${b.copper} CP`);
+  if (b.platinum > 0) parts.push(`${b.platinum} ${COIN_ABBREV.platinum}`);
+  if (b.gold > 0) parts.push(`${b.gold} ${COIN_ABBREV.gold}`);
+  if (b.silver > 0) parts.push(`${b.silver} ${COIN_ABBREV.silver}`);
+  if (b.copper > 0 || parts.length === 0) parts.push(`${b.copper} ${COIN_ABBREV.copper}`);
   return parts.join(', ');
 }
 

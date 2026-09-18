@@ -50,7 +50,7 @@ const DEFAULT_PLAYER_STATS: CombatStats = {
   defense: 2,
 };
 
-export const DEFAULT_STARTER_SPELLS: string[] = [];
+const DEFAULT_STARTER_SPELLS: string[] = [];
 
 export class Player extends Actor {
   declare public inventory: InventoryManager;

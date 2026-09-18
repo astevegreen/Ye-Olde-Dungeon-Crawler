@@ -3,7 +3,7 @@ import type { StorageAdapter } from '../storage/types';
 import { getDefaultStorage } from '../storage/profile-manager';
 import { utf8ToBase64, base64ToUtf8 } from '../storage/saveTransfer';
 
-export const VALHALLA_STORAGE_KEY = 'cotw_valhalla_champions';
+const VALHALLA_STORAGE_KEY = 'cotw_valhalla_champions';
 
 export interface ValhallaEntry {
   id: string;
@@ -28,7 +28,7 @@ export interface SharedSagaEnvelope {
   checksum: number;
 }
 
-export function computeSagaChecksum(entry: ValhallaEntry): number {
+function computeSagaChecksum(entry: ValhallaEntry): number {
   const str = `${entry.id}:${entry.heroName}:${entry.status}:${entry.score}:${entry.level}:${entry.deepestFloor}:${entry.turns}:${entry.xp}:${entry.goldCp}:${entry.date}`;
   let hash = 0x811c9dc5;
   for (let i = 0; i < str.length; i++) {

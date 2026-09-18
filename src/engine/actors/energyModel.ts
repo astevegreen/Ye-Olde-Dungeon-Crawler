@@ -5,7 +5,7 @@ export type CorruptionAffliction =
   | 'neural_decay'
   | 'loss_of_divine_wards';
 
-export const CORRUPTION_THRESHOLDS = {
+const CORRUPTION_THRESHOLDS = {
   NECROSIS: 25,
   NEURAL_DECAY: 50,
   DIVINE_LOSS: 75,

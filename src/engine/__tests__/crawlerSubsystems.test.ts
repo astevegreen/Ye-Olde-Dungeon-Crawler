@@ -203,13 +203,13 @@ describe('Dungeon Exploration & Tactical Crawler Subsystems', () => {
       });
 
       // Without key or high roll:
+      const origNextInt = engine.prng.nextInt.bind(engine.prng);
+      engine.prng.nextInt = () => 1; // roll = 1 + floor(14/4) = 4 < 12 DC
       const openWithoutKey = new OpenDoorAction(player, 10, 11);
-      // Mock math.random to fail roll
-      const origRandom = Math.random;
-      Math.random = () => 0.01; // roll = 1 + 3 = 4 < 12 DC
       const failRes = openWithoutKey.perform(engine);
       expect(failRes.success).toBe(false);
       expect(map.getTile(10, 11)?.type).toBe('door_closed');
+      engine.prng.nextInt = origNextInt;
 
       // Add iron key
       const key = new Item({
@@ -226,8 +226,6 @@ describe('Dungeon Exploration & Tactical Crawler Subsystems', () => {
       const keyRes = openWithKey.perform(engine);
       expect(keyRes.success).toBe(true);
       expect(map.getTile(10, 11)?.type).toBe('door_open');
-
-      Math.random = origRandom;
     });
   });
 

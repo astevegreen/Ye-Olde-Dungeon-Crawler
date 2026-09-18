@@ -33,7 +33,7 @@ describe('Mitigation Pipeline, Item Integrity & Aspect Alignment', () => {
     });
 
     // Wear roll with 100% chance
-    const roll1 = applyItemWear(sword, actor, 1.0, Math.random);
+    const roll1 = applyItemWear(sword, actor, 1.0, () => 0.5);
     expect(roll1.degraded).toBe(true);
     expect(roll1.broken).toBe(false);
     expect(sword.durability?.current).toBe(1);
@@ -41,7 +41,7 @@ describe('Mitigation Pipeline, Item Integrity & Aspect Alignment', () => {
     expect(sword.effectiveStats.attackBonus).toBe(5);
 
     // Second wear roll brings durability to 0 -> breaks
-    const roll2 = applyItemWear(sword, actor, 1.0, Math.random);
+    const roll2 = applyItemWear(sword, actor, 1.0, () => 0.5);
     expect(roll2.degraded).toBe(true);
     expect(roll2.broken).toBe(true);
     expect(sword.durability?.current).toBe(0);

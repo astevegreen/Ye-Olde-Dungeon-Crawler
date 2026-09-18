@@ -14,11 +14,13 @@ import { TILES } from '../../grid/tile';
 import { GameEngine } from '../../engine';
 import { MeleeAttackAction } from '../../actions/combat';
 import { serializeItem, deserializeItem } from '../../storage/serializer';
+import { Mulberry32 } from '../../dungeon/prng';
 
 describe('Depth-Scaled Tiered Loot & Enchantments', () => {
   it('restricts Floor 1 item definitions strictly to Tier 1 items', () => {
+    const prng = new Mulberry32(101);
     for (let i = 0; i < 50; i++) {
-      const def = selectFloorItemDefinition(COTW_ITEMS, 1, Math.random);
+      const def = selectFloorItemDefinition(COTW_ITEMS, 1, () => prng.next());
       expect(def).toBeDefined();
       expect(def!.minFloor ?? 1).toBeLessThanOrEqual(1);
       expect(def!.tier ?? 1).toBe(1);
@@ -26,9 +28,10 @@ describe('Depth-Scaled Tiered Loot & Enchantments', () => {
   });
 
   it('allows Tier 3 and Tier 4 item generation on deep floors (e.g. Floor 45)', () => {
+    const prng = new Mulberry32(202);
     const selectedTiers = new Set<number>();
     for (let i = 0; i < 100; i++) {
-      const def = selectFloorItemDefinition(COTW_ITEMS, 45, Math.random);
+      const def = selectFloorItemDefinition(COTW_ITEMS, 45, () => prng.next());
       if (def?.tier) {
         selectedTiers.add(def.tier);
       }
@@ -38,13 +41,15 @@ describe('Depth-Scaled Tiered Loot & Enchantments', () => {
   });
 
   it('calculates procedural enchantment bonuses scaled by depth (+0 to +5)', () => {
+    const prng1 = new Mulberry32(303);
     // Floor 1: target 0, clamped [0, 1]
-    const f1Levels = Array.from({ length: 30 }, () => calculateEnchantmentLevel(1, Math.random));
+    const f1Levels = Array.from({ length: 30 }, () => calculateEnchantmentLevel(1, () => prng1.next()));
     expect(Math.max(...f1Levels)).toBeLessThanOrEqual(1);
     expect(Math.min(...f1Levels)).toBe(0);
 
+    const prng2 = new Mulberry32(404);
     // Floor 45: target 4, clamped [3, 5]
-    const f45Levels = Array.from({ length: 30 }, () => calculateEnchantmentLevel(45, Math.random));
+    const f45Levels = Array.from({ length: 30 }, () => calculateEnchantmentLevel(45, () => prng2.next()));
     expect(Math.min(...f45Levels)).toBeGreaterThanOrEqual(3);
     expect(Math.max(...f45Levels)).toBeLessThanOrEqual(5);
   });

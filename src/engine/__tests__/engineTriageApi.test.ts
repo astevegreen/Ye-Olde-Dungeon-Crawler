@@ -1,15 +1,21 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { GameEngine } from '../engine';
 import { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
 import { Player } from '../entities/player';
 import { ItemFactory } from '../items/factory';
 import { MonsterRegistry } from '../bestiary/monsterDefinitions';
+import { setActiveMonsterStore } from '../registries/monsterRegistryStore';
 
 describe('GameEngine Triage & Diagnostic Public API', () => {
   let engine: GameEngine;
   let player: Player;
   let map: GameMap;
+
+  afterAll(() => {
+    setActiveMonsterStore(null);
+    MonsterRegistry.clear();
+  });
 
   beforeEach(() => {
     MonsterRegistry.register({

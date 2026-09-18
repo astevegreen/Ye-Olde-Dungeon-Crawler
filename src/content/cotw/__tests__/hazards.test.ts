@@ -41,22 +41,28 @@ describe('Járnviðr temperature exposure (Act 1 hazard)', () => {
     expect(effect.duration).toBeGreaterThan(0);
   });
 
-  it('deals cold damage on permafrost floors (1-12), mitigated by the level-1 cold curve (50%)', () => {
+  it('only bites every third turn, and ramps with depth, on permafrost floors (1-12)', () => {
     const { engine, player } = buildEngine(3);
-    engine.handlePlayerAction(new WaitAction(player)); // bootstrap + first tick
-    const hpAfterFirstTick = player.hp;
-    engine.handlePlayerAction(new WaitAction(player));
-    // Base 4 cold damage * (1 - 0.5 resistance) = 2
-    expect(hpAfterFirstTick - player.hp).toBe(2);
+    const startHp = player.hp;
+    engine.handlePlayerAction(new WaitAction(player)); // turn 1: bootstrap; interval gate silences the tick
+    engine.handlePlayerAction(new WaitAction(player)); // turn 2: interval gate still silences the tick
+    expect(player.hp).toBe(startHp);
+    engine.handlePlayerAction(new WaitAction(player)); // turn 3: hazard fires
+    // Depth-ramped base at floor 3 of [1,12]: round(4 * (0.25 + 0.75 * 2/11)) = 2,
+    // then mitigated by the level-1 cold curve (50%): round(2 * 0.5) = 1.
+    expect(startHp - player.hp).toBe(1);
   });
 
-  it('deals fire damage on obsidian floors (13-25), amplified by the level-1 fire vulnerability (-10%)', () => {
+  it('only bites every third turn, and ramps with depth, on obsidian floors (13-25)', () => {
     const { engine, player } = buildEngine(15);
-    engine.handlePlayerAction(new WaitAction(player));
-    const hpAfterFirstTick = player.hp;
-    engine.handlePlayerAction(new WaitAction(player));
-    // Base 5 fire damage * (1 - (-0.1)) = 5.5 -> rounds to 6
-    expect(hpAfterFirstTick - player.hp).toBe(6);
+    const startHp = player.hp;
+    engine.handlePlayerAction(new WaitAction(player)); // turn 1: interval gate silences the tick
+    engine.handlePlayerAction(new WaitAction(player)); // turn 2: interval gate silences the tick
+    expect(player.hp).toBe(startHp);
+    engine.handlePlayerAction(new WaitAction(player)); // turn 3: hazard fires
+    // Depth-ramped base at floor 15 of [13,25]: round(5 * (0.25 + 0.75 * 2/12)) = 2,
+    // then amplified by the level-1 fire vulnerability (-10%): round(2 * 1.1) = 2.
+    expect(startHp - player.hp).toBe(2);
   });
 
   it('deals no exposure damage in town or on Act 2 floors (26+)', () => {
@@ -73,7 +79,7 @@ describe('Járnviðr temperature exposure (Act 1 hazard)', () => {
     expect(act2Player.hp).toBe(act2Hp);
   });
 
-  it('the level-20 cold curve mitigates more (75%) than level 1 (50%)', () => {
+  it('the level-20 cold curve mitigates more (75%) than level 1 (50%) at full depth-ramp (floor 12)', () => {
     const map = new GameMap(10, 10, TILES.FLOOR);
     const highLevelPlayer = new Player({
       id: 'hero2',
@@ -82,15 +88,18 @@ describe('Járnviðr temperature exposure (Act 1 hazard)', () => {
       stats: { hp: 500, maxHp: 500, attack: 10, defense: 5 },
       level: 20,
     });
-    const engine = new GameEngine({ map, player: highLevelPlayer, floor: 3 });
+    const engine = new GameEngine({ map, player: highLevelPlayer, floor: 12 });
     (engine.manifest as any).progressionConfig = COTW_PROGRESSION;
     engine.actionPipeline.registerHook(JARNVIDR_HAZARD_BOOTSTRAP_HOOK);
     StatusHandlerRegistry.register(JARNVIDR_EXPOSURE_STATUS, jarnvidrExposureHandler);
 
-    engine.handlePlayerAction(new WaitAction(highLevelPlayer));
-    const hpAfterFirst = highLevelPlayer.hp;
-    engine.handlePlayerAction(new WaitAction(highLevelPlayer));
-    // Base 4 cold damage * (1 - 0.75) = 1
-    expect(hpAfterFirst - highLevelPlayer.hp).toBe(1);
+    const startHp = highLevelPlayer.hp;
+    engine.handlePlayerAction(new WaitAction(highLevelPlayer)); // turn 1: bootstrap; interval gate silences the tick
+    engine.handlePlayerAction(new WaitAction(highLevelPlayer)); // turn 2: interval gate silences the tick
+    engine.handlePlayerAction(new WaitAction(highLevelPlayer)); // turn 3: hazard fires
+    // Floor 12 is the far edge of the permafrost range, so the depth ramp is at full
+    // strength: base damage is the flat 4. Mitigated by the level-20 cold curve (75%):
+    // round(4 * 0.25) = 1.
+    expect(startHp - highLevelPlayer.hp).toBe(1);
   });
 });

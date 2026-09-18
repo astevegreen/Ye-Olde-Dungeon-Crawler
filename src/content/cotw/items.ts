@@ -620,7 +620,7 @@ export const COTW_ITEMS: ItemDefinition[] = [
   },
 
   // ==========================================
-  // QUEST RELIC
+  // QUEST RELICS
   // ==========================================
   {
     id: 'sun_stone_freyr',
@@ -635,5 +635,19 @@ export const COTW_ITEMS: ItemDefinition[] = [
     identified: true,
     description: 'The sacred solar relic stolen by Hrungnir. Restore it to Bjarnarhaven to save the realm.',
     value: 10000,
+  },
+  {
+    id: 'hearth_tear_fragment',
+    name: 'Shard of the Hearth-Tear',
+    unidentifiedName: 'Warm Splinter of Glass',
+    category: 'quest',
+    tier: 3,
+    minFloor: 15,
+    weight: 100,
+    bulk: 50,
+    quality: 'artifact',
+    identified: true,
+    description: 'A splinter of Sól’s stolen sun-chariot, still warm despite the permafrost. The troll-wife warlocks of Járnviðr siphoned its fire into the abandoned dwarven forge to freeze the village.',
+    value: 500,
   },
 ];

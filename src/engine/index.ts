@@ -129,6 +129,7 @@ export * from './bestiary/monsterDefinitions';
 
 // Stats & Calculations
 export * from './stats/attributeCalculator';
+export * from './stats/levelScaledResistance';
 
 // Predicates
 export * from './predicates/predicateEvaluator';

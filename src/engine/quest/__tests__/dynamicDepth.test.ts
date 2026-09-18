@@ -7,9 +7,15 @@ import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { GameEngine } from '../../engine';
 import { DIFFICULTY_MAX_FLOORS } from '../../types';
-import type { QuestArcDefinition } from '../../types/manifest';
+import type { QuestArcDefinition, GameContentManifest } from '../../types/manifest';
 import type { CharacterProfile } from '../../storage/types';
 import { COTW_QUEST } from '../../../content/cotw/quest';
+import { COTW_MONSTERS } from '../../../content/cotw/monsters';
+
+// Passed explicitly (rather than relying on the global MonsterRegistry) so boss
+// resolution is deterministic regardless of what else has loaded content/cotw in
+// this test run — DungeonArc.generateFloor checks manifest.monsters first.
+const testManifest = { monsters: COTW_MONSTERS } as GameContentManifest;
 
 describe('Dynamic Dungeon Depth & Difficulty Scaling', () => {
   const makeQuestArc = (maxFloor: number): QuestArcDefinition => ({
@@ -29,54 +35,54 @@ describe('Dynamic Dungeon Depth & Difficulty Scaling', () => {
       expect(DungeonArc.isBossFloor(25, easyArc)).toBe(true);
 
       // Floor 24 should have stairs down
-      const floor24 = DungeonArc.generateFloor(24, 1234, easyArc);
+      const floor24 = DungeonArc.generateFloor(24, 1234, easyArc, testManifest);
       expect(floor24.stairsUp).toBeDefined();
       expect(floor24.stairsDown).toBeDefined();
       expect(floor24.boss).toBeUndefined();
 
       // Floor 25 should be the Chieftain's Lair: boss present, no stairs down
-      const floor25 = DungeonArc.generateFloor(25, 1234, easyArc);
+      const floor25 = DungeonArc.generateFloor(25, 1234, easyArc, testManifest);
       expect(floor25.stairsUp).toBeDefined();
       expect(floor25.stairsDown).toBeUndefined();
       expect(floor25.boss).toBeDefined();
 
       const boss = floor25.boss!;
-      expect(boss.name).toBe('Hrungnir the Hill Giant Chieftain');
-      // Scaled math on Floor 25:
-      // HP: 120 * (1 + 0.08 * 24) = 120 * 2.92 = 350
-      // Atk: 18 + floor(0.6 * 24) = 18 + 14 = 32
-      // Def: 8 + floor(0.4 * 24) = 8 + 9 = 17
-      expect(boss.hp).toBe(350);
-      expect(boss.attack).toBe(32);
-      expect(boss.defense).toBe(17);
+      expect(boss.name).toBe('Níðhögg, the Root-Gnawer');
+      // Scaled math on Floor 25 (Níðhögg base: hp 400, attack 30, defense 14):
+      // HP: 400 * (1 + 0.08 * 24) = 400 * 2.92 = 1168
+      // Atk: 30 + floor(0.6 * 24) = 30 + 14 = 44
+      // Def: 14 + floor(0.4 * 24) = 14 + 9 = 23
+      expect(boss.hp).toBe(1168);
+      expect(boss.attack).toBe(44);
+      expect(boss.defense).toBe(23);
     });
 
     it('generates Medium difficulty (37F) and Hard difficulty (50F) climax chambers', () => {
       const medArc = makeQuestArc(37);
       expect(DungeonArc.isBossFloor(37, medArc)).toBe(true);
-      const floor37 = DungeonArc.generateFloor(37, 5678, medArc);
+      const floor37 = DungeonArc.generateFloor(37, 5678, medArc, testManifest);
       expect(floor37.boss).toBeDefined();
       expect(floor37.stairsDown).toBeUndefined();
       // Floor 37 Boss stats:
-      // HP: 120 * (1 + 0.08 * 36) = 120 * 3.88 = 466
-      // Atk: 18 + floor(0.6 * 36) = 18 + 21 = 39
-      // Def: 8 + floor(0.4 * 36) = 8 + 14 = 22
-      expect(floor37.boss!.hp).toBe(466);
-      expect(floor37.boss!.attack).toBe(39);
-      expect(floor37.boss!.defense).toBe(22);
+      // HP: 400 * (1 + 0.08 * 36) = 400 * 3.88 = 1552
+      // Atk: 30 + floor(0.6 * 36) = 30 + 21 = 51
+      // Def: 14 + floor(0.4 * 36) = 14 + 14 = 28
+      expect(floor37.boss!.hp).toBe(1552);
+      expect(floor37.boss!.attack).toBe(51);
+      expect(floor37.boss!.defense).toBe(28);
 
       const hardArc = makeQuestArc(50);
       expect(DungeonArc.isBossFloor(50, hardArc)).toBe(true);
-      const floor50 = DungeonArc.generateFloor(50, 9999, hardArc);
+      const floor50 = DungeonArc.generateFloor(50, 9999, hardArc, testManifest);
       expect(floor50.boss).toBeDefined();
       expect(floor50.stairsDown).toBeUndefined();
       // Floor 50 Boss stats:
-      // HP: 120 * (1 + 0.08 * 49) = 120 * 4.92 = 590
-      // Atk: 18 + floor(0.6 * 49) = 18 + 29 = 47
-      // Def: 8 + floor(0.4 * 49) = 8 + 19 = 27
-      expect(floor50.boss!.hp).toBe(590);
-      expect(floor50.boss!.attack).toBe(47);
-      expect(floor50.boss!.defense).toBe(27);
+      // HP: 400 * (1 + 0.08 * 49) = 400 * 4.92 = 1968
+      // Atk: 30 + floor(0.6 * 49) = 30 + 29 = 59
+      // Def: 14 + floor(0.4 * 49) = 14 + 19 = 33
+      expect(floor50.boss!.hp).toBe(1968);
+      expect(floor50.boss!.attack).toBe(59);
+      expect(floor50.boss!.defense).toBe(33);
     });
   });
 

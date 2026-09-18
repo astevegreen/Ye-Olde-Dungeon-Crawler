@@ -5,7 +5,7 @@ import { COTW_SPELLS } from './spells';
 import { COTW_TOWN } from './town';
 import { COTW_QUEST } from './quest';
 import { COTW_ATLAS_THEME } from './atlas';
-import { COTW_STARTER_KIT } from './character';
+import { COTW_STARTER_KIT, COTW_PROGRESSION } from './character';
 import { COTW_AFFINITY_MATRIX } from './elements';
 import { COTW_EQUIPMENT_SLOTS } from './slots';
 import { COTW_THEME_TOKENS } from './theme';
@@ -15,6 +15,8 @@ import { COTW_CHOICES } from './choices';
 import { COTW_PACTS } from './pacts';
 import { COTW_RENOWN_MILESTONES, COTW_RENOWN_TITLES } from './renown';
 import { COTW_COMPANIONS } from './companions';
+import { JARNVIDR_EXPOSURE_STATUS, jarnvidrExposureHandler, JARNVIDR_HAZARD_BOOTSTRAP_HOOK } from './hazards';
+import { OATH_TRIGGER, OATH_TIMED_EVENT } from './oath';
 
 export const cotwManifest: GameContentManifest = {
   id: 'cotw',
@@ -52,10 +54,19 @@ export const cotwManifest: GameContentManifest = {
     { flag: 'winch_repaired', label: 'Mine Lift Restored', description: 'Repaired the main haulage winch to descend into the abyss.', icon: '⚙️' },
     { flag: 'boss_slain', label: 'Hrungnir Slain', description: 'Vanquished the Frost Giant Overlord in epic combat.', icon: '👑' },
     { flag: 'altar_cleansed', label: 'Altar of Tyr Cleansed', description: 'Purified the corrupted altar with solemn sacrifice.', icon: '⚖️' },
+    { flag: 'oath_resolved', label: "The Matriarch's Blood-Oath", description: 'Struck a lasting bargain with a troll-wife matriarch to sever the siphon on the village.', icon: '🩸' },
+    { flag: 'nidhogg_root_sealed', label: 'The Root Sealed', description: 'Drove Níðhögg from the rotting root of Yggdrasil without ending it.', icon: '🌳' },
   ],
   renownMilestones: COTW_RENOWN_MILESTONES,
   renownTitles: COTW_RENOWN_TITLES,
   companions: COTW_COMPANIONS,
+  progressionConfig: COTW_PROGRESSION,
+  actionHooks: [JARNVIDR_HAZARD_BOOTSTRAP_HOOK],
+  storyChoiceTriggers: [OATH_TRIGGER],
+  timedEvents: [OATH_TIMED_EVENT],
+  bossFleeResolutions: [
+    { monsterDefinitionId: 'nidhogg', fleeTurnsRequired: 5, sealedFlag: 'nidhogg_root_sealed' },
+  ],
   initialWorldState: {
     flags: {},
     counters: {},
@@ -98,6 +109,9 @@ export const cotwManifest: GameContentManifest = {
       expireMessage: '{name} recovers from the stunning blow and regains composure.',
     },
   ],
+  statusHandlers: {
+    [JARNVIDR_EXPOSURE_STATUS]: jarnvidrExposureHandler,
+  },
   runeOfReturn: {
     attunementNpcId: 'npc-rune-smith',
     trackNames: {

@@ -547,6 +547,192 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
       },
     ],
   },
+
+  // --- The Hearth-Tear of Járnviðr (Act 1) ---
+  troll_wife_warlock: {
+    id: 'troll_wife_warlock',
+    name: 'Troll-Wife Warlock',
+    minFloor: 15,
+    stats: { hp: 55, maxHp: 55, attack: 12, defense: 6 },
+    speed: 95,
+    aiType: 'caster',
+    resistances: { cold: 'resistant', fire: 'weak' },
+    onHitAffliction: {
+      type: 'slow',
+      chance: 0.3,
+      duration: 5,
+    },
+    spells: ['slow'],
+    spellCooldown: 3,
+    fleeHealthPercent: 0.2,
+    xpValue: 220,
+    lootTable: [
+      {
+        chance: 0.7,
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 70) + 30),
+      },
+      {
+        chance: 0.4,
+        generate: (id) => ItemFactory.createManaPotion(id),
+      },
+      {
+        chance: 0.25,
+        generate: (id) => ItemFactory.createFrostBlade(id),
+      },
+      {
+        // Each fallen warlock yields a piece of the siphoned chariot-fire they were
+        // hoarding — the campaign relic, recoverable without needing a single
+        // guaranteed drop tied to a specific kill (ARCHITECTURE.md §3's oath
+        // mechanic, see content/cotw/oath.ts, resolves on a kill *count* instead).
+        chance: 0.5,
+        generate: (id) =>
+          ItemFactory.createQuestRelic(
+            id,
+            'Shard of the Hearth-Tear',
+            'A splinter of Sól’s stolen sun-chariot, still warm despite the permafrost. The warlocks siphoned its fire to freeze Járnviðr.'
+          ),
+      },
+    ],
+  },
+  nidhogg: {
+    id: 'nidhogg',
+    name: 'Níðhögg, the Root-Gnawer',
+    minFloor: 50,
+    stats: { hp: 400, maxHp: 400, attack: 30, defense: 14 },
+    speed: 95,
+    aiType: 'caster',
+    resistances: { poison: 'immune', physical: 'resistant' },
+    statusImmunities: ['paralysis', 'poison', 'slow'],
+    spells: ['lightning_bolt', 'firebolt'],
+    spellCooldown: 2,
+    telegraphedAbility: {
+      requiresSpellId: 'lightning_bolt',
+      name: 'Rootbound Ruin',
+      message: 'Níðhögg coils around the World Root, gnawing rot into it before Rootbound Ruin erupts!',
+      pattern: 'blast',
+      range: 6,
+      radius: 2,
+      multiplier: 2.5,
+      element: 'poison',
+      spawnSurface: 'acid_pool',
+      chance: 0.3,
+      cooldown: 3,
+    },
+    spellPreferences: [{ spellId: 'lightning_bolt' }],
+    // Driven off rather than slain below 15% HP (ARCHITECTURE.md §3, QuestArcDefinition.endings
+    // 'sealed' — see quest.ts): content detects sustained fleeing and resolves the
+    // alternate ending, reusing the existing generic flee mechanic rather than a
+    // bespoke "boss surrender" state.
+    fleeHealthPercent: 0.15,
+    xpValue: 5000,
+    lootTable: [
+      {
+        chance: 1.0,
+        generate: (id, rng) => ItemFactory.createPlatinumCoins(id, Math.floor(rng() * 20) + 20),
+      },
+    ],
+  },
+
+  // --- Act 2: The Rotting Root (corrupted silver mines) ---
+  root_wraith: {
+    id: 'root_wraith',
+    name: 'Root-Wraith',
+    minFloor: 27,
+    stats: { hp: 90, maxHp: 90, attack: 20, defense: 7 },
+    speed: 100,
+    aiType: 'melee',
+    resistances: { poison: 'immune', cold: 'neutral' },
+    statusImmunities: ['poison'],
+    onHitAffliction: {
+      type: 'poison',
+      chance: 0.5,
+      duration: 6,
+      potency: 4,
+    },
+    fleeHealthPercent: 0.0,
+    xpValue: 340,
+    lootTable: [
+      {
+        chance: 0.8,
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 140) + 80),
+      },
+      {
+        chance: 0.35,
+        generate: (id) => ItemFactory.createCurePoisonPotion(id),
+      },
+    ],
+  },
+  bark_husk_miner: {
+    id: 'bark_husk_miner',
+    name: 'Bark-Husk Miner',
+    minFloor: 30,
+    stats: { hp: 110, maxHp: 110, attack: 19, defense: 10 },
+    speed: 80,
+    aiType: 'brute',
+    resistances: { poison: 'resistant' },
+    fleeHealthPercent: 0.0,
+    xpValue: 380,
+    lootTable: [
+      {
+        chance: 0.85,
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 160) + 90),
+      },
+      {
+        chance: 0.3,
+        generate: (id) => ItemFactory.createIronChest(id),
+      },
+    ],
+  },
+
+  // --- Folklore Detour (between-acts side quest, optional) ---
+  huldra: {
+    id: 'huldra',
+    name: 'Huldra of the Hollow Wood',
+    minFloor: 8,
+    stats: { hp: 35, maxHp: 35, attack: 9, defense: 3 },
+    speed: 105,
+    aiType: 'caster',
+    resistances: { arcane: 'resistant' },
+    onHitAffliction: {
+      type: 'slow',
+      chance: 0.35,
+      duration: 4,
+    },
+    spells: ['slow'],
+    spellCooldown: 4,
+    fleeHealthPercent: 0.3,
+    xpValue: 130,
+    lootTable: [
+      {
+        chance: 0.6,
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 50) + 20),
+      },
+      {
+        chance: 0.3,
+        generate: (id) => ItemFactory.createHealthPotion(id),
+      },
+    ],
+  },
+  nisse: {
+    id: 'nisse',
+    name: 'Vengeful Nisse',
+    minFloor: 6,
+    stats: { hp: 18, maxHp: 18, attack: 6, defense: 2 },
+    speed: 130,
+    aiType: 'melee',
+    fleeHealthPercent: 0.4,
+    xpValue: 70,
+    lootTable: [
+      {
+        chance: 0.5,
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 30) + 10),
+      },
+      {
+        chance: 0.2,
+        generate: (id) => ItemFactory.createLockpicks(id),
+      },
+    ],
+  },
 };
 
 export const COTW_MONSTERS: MonsterDefinition[] = [

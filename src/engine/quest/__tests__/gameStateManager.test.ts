@@ -81,16 +81,17 @@ describe('GameStateManager & Win/Loss Sequences', () => {
   it('validates victory conditions: in town with Sun-Stone', () => {
     // 1. In town without Sun-Stone
     engine.currentFloor = 0;
-    expect(gameState.checkVictoryEligible(engine)).toBe(false);
+    expect(gameState.checkVictoryEligible(engine)).toBeUndefined();
 
     // 2. In dungeon (Floor 3) with Sun-Stone
     engine.currentFloor = 3;
     player.inventory.primaryPack.addItem(createTestSunStone(QUEST_RELIC_ID));
-    expect(gameState.checkVictoryEligible(engine)).toBe(false);
+    expect(gameState.checkVictoryEligible(engine)).toBeUndefined();
 
-    // 3. In town (Floor 0) with Sun-Stone
+    // 3. In town (Floor 0) with Sun-Stone — the legacy single-ending fallback
+    // (no manifest.quest.endings declared) reports the 'default' ending id.
     engine.currentFloor = 0;
-    expect(gameState.checkVictoryEligible(engine)).toBe(true);
+    expect(gameState.checkVictoryEligible(engine)).toBe('default');
   });
 
   it('triggers victory, awards 5000 victory points, and updates profile', () => {
@@ -118,6 +119,90 @@ describe('GameStateManager & Win/Loss Sequences', () => {
     // Check profile status is marked as victorious
     const updatedProf = manager.getProfile(profile.id);
     expect(updatedProf?.questStatus).toBe('victorious');
+  });
+
+  it('supports multiple named endings (ARCHITECTURE.md §3), picking the first satisfied condition', () => {
+    const endingsEngine = new GameEngine({
+      map: new GameMap(10, 10, TILES.FLOOR),
+      player,
+      floor: 5,
+      gameState,
+      manifest: {
+        ...engine.manifest,
+        quest: {
+          ...engine.manifest.quest,
+          victoryFloor: 5,
+          endings: {
+            ragnarok: {
+              id: 'ragnarok',
+              requiredFlag: 'nidhogg_slain',
+              victoryDialogue: 'The World Serpent falls; the sky splits.',
+              victoryEpitaph: 'Ended Nidhogg, and with it, an age.',
+              victoryScoreBonus: 9000,
+            },
+            sealed: {
+              id: 'sealed',
+              requiredFlag: 'nidhogg_sealed',
+              victoryDialogue: 'The root is sealed; the world holds.',
+              victoryEpitaph: 'Drove Nidhogg from the root of Yggdrasil.',
+              victoryScoreBonus: 6000,
+            },
+          },
+        },
+      },
+    });
+
+    // Neither flag set yet: not eligible for either ending.
+    expect(gameState.checkVictoryEligible(endingsEngine)).toBeUndefined();
+
+    // Driving the boss off (not killing it) satisfies 'sealed', checked before
+    // 'ragnarok' in insertion order but only matching its own flag.
+    endingsEngine.setWorldFlag('nidhogg_sealed', true);
+    expect(gameState.checkVictoryEligible(endingsEngine)).toBe('sealed');
+
+    const sealedEntry = gameState.triggerVictory(endingsEngine, undefined, 'sealed');
+    expect(sealedEntry.epitaph).toBe('Drove Nidhogg from the root of Yggdrasil.');
+    expect(sealedEntry.score).toBeGreaterThanOrEqual(6000);
+  });
+
+  it('the ragnarok ending fires only for its own flag, with its own text and bonus', () => {
+    gameState.runStatus = 'active'; // reset from the previous test's victory
+    const endingsEngine = new GameEngine({
+      map: new GameMap(10, 10, TILES.FLOOR),
+      player,
+      floor: 5,
+      gameState,
+      manifest: {
+        ...engine.manifest,
+        quest: {
+          ...engine.manifest.quest,
+          victoryFloor: 5,
+          endings: {
+            ragnarok: {
+              id: 'ragnarok',
+              requiredFlag: 'nidhogg_slain',
+              victoryDialogue: 'The World Serpent falls; the sky splits.',
+              victoryEpitaph: 'Ended Nidhogg, and with it, an age.',
+              victoryScoreBonus: 9000,
+            },
+            sealed: {
+              id: 'sealed',
+              requiredFlag: 'nidhogg_sealed',
+              victoryDialogue: 'The root is sealed; the world holds.',
+              victoryEpitaph: 'Drove Nidhogg from the root of Yggdrasil.',
+              victoryScoreBonus: 6000,
+            },
+          },
+        },
+      },
+    });
+
+    endingsEngine.setWorldFlag('nidhogg_slain', true);
+    expect(gameState.checkVictoryEligible(endingsEngine)).toBe('ragnarok');
+
+    const entry = gameState.triggerVictory(endingsEngine, undefined, 'ragnarok');
+    expect(entry.epitaph).toBe('Ended Nidhogg, and with it, an age.');
+    expect(entry.score).toBeGreaterThanOrEqual(9000);
   });
 
   it('triggers permadeath on fatal wounds, archives fallen hero, and records in Valhalla', () => {

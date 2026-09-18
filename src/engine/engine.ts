@@ -55,6 +55,7 @@ import {
   modifyFaction,
 } from './state/worldState';
 import type { ChoiceDefinition } from './types/choice';
+import { applyConsequences } from './actions/choiceAction';
 import { PactManager } from './pacts/pactManager';
 import { validateManifest, type GameContentManifest } from './types/manifest';
 import { EngineCommandBus, type GameCommandBus } from './commands/commandBus';
@@ -648,8 +649,9 @@ export class GameEngine {
 
   public interactWithNpc(npc: NPC): void {
     const victoryNpcId = this.manifest.quest?.victoryNpcId;
-    if (victoryNpcId && npc.id === victoryNpcId && this.gameState.checkVictoryEligible(this)) {
-      this.gameState.triggerVictory(this);
+    const eligibleEndingId = victoryNpcId && npc.id === victoryNpcId ? this.gameState.checkVictoryEligible(this) : undefined;
+    if (eligibleEndingId) {
+      this.gameState.triggerVictory(this, undefined, eligibleEndingId === 'default' ? undefined : eligibleEndingId);
       return;
     }
     // Rune of Return attunement (ARCHITECTURE.md P-03 stage 3): a pack-declared NPC id
@@ -953,6 +955,7 @@ export class GameEngine {
       this.runEnvironmentalUpdate('plane-drift', () => this.planeManager.tickDrift(this.map, this.scheduler.ticks, this));
       this.runEnvironmentalUpdate('wandering-spawn', () => this.wanderingSpawner.checkAndSpawn(this, this.rng));
       this.runEnvironmentalUpdate('floor-respawn', () => this.floorManager.checkClearedFloorRespawn(this));
+      this.runEnvironmentalUpdate('timed-events-tick', () => this.tickTimedEvents());
 
       if (this.detectMonstersTurns > 0) this.detectMonstersTurns -= 1;
       if (this.detectObjectsTurns > 0) this.detectObjectsTurns -= 1;
@@ -1076,6 +1079,39 @@ export class GameEngine {
     } else {
       // Non-monster safety: consume energy to prevent scheduler deadlocks
       entity.consumeEnergy(BASE_ACTION_COST);
+    }
+  }
+
+  /**
+   * Ticks every `manifest.timedEvents` entry (ARCHITECTURE.md §3). Runs every player
+   * turn, whether or not any event has started, so the countdown genuinely keeps
+   * running while the player takes other actions rather than only being checked when
+   * something else happens to touch it.
+   */
+  private tickTimedEvents(): void {
+    const events = this.manifest.timedEvents;
+    if (!events || events.length === 0) return;
+
+    for (const def of events) {
+      if (this.getWorldFlag(def.resolvedFlag)) continue;
+      if (!this.getWorldFlag(def.startFlag)) continue;
+
+      const startCounterKey = `timed_event_start:${def.id}`;
+      let startTurn = this.getWorldCounter(startCounterKey);
+      if (startTurn === 0 && !this.getWorldFlag(`timed_event_started:${def.id}`)) {
+        // First tick observing startFlag true: this turn is turn zero of the countdown.
+        startTurn = this.turnCount;
+        this.modifyWorldCounter(startCounterKey, startTurn);
+        this.setWorldFlag(`timed_event_started:${def.id}`, true);
+      }
+
+      if (this.turnCount - startTurn >= def.turnLimit) {
+        applyConsequences(def.expireConsequences, this, this.player);
+        this.setWorldFlag(def.resolvedFlag, true);
+        if (def.expireMessage) {
+          this.log(def.expireMessage);
+        }
+      }
     }
   }
 

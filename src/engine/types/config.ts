@@ -1,5 +1,6 @@
 import type { Entity } from '../entities/entity';
 import type { GameEngine } from '../engine';
+import type { ElementalResistanceCurveConfig } from '../stats/levelScaledResistance';
 
 export interface CombatConfig {
   /** Minimum damage an attack can deal. Default: 1 */
@@ -41,4 +42,12 @@ export interface ProgressionConfig {
   statPointsPerLevel?: number;
   /** Max attainable level */
   maxLevel?: number;
+  /**
+   * Level-scaled elemental resistance curves (ARCHITECTURE.md §3, `stats/
+   * levelScaledResistance.ts`). Not consulted by combat's categorical
+   * `elementalResistances`/`takeElementalDamage` — a content-defined mechanic (e.g.
+   * an environmental exposure status effect) reads this explicitly via
+   * `resolveLevelScaledResistance`/`applyLevelScaledElementalMitigation`.
+   */
+  elementalResistanceCurve?: ElementalResistanceCurveConfig;
 }

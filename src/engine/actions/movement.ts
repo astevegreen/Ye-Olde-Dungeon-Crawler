@@ -239,6 +239,72 @@ export class MovementAction implements Action {
             }
           }
         }
+      } else if (handlerId && engine.manifest?.choices?.[handlerId] && !engine.getWorldFlag(`${handlerId}_resolved`)) {
+        // Generic tile-triggered choice (ARCHITECTURE.md §3): any tile whose
+        // interactionHandlerId matches a manifest.choices key becomes an interactive
+        // decision point, with zero campaign-specific names baked in here — unlike
+        // the altar_tyr branch above (a known, tracked exception; see P-03's
+        // remaining tile-type work), a pack needs no engine change to add one.
+        // Resolves at most once: the handler-scoped `<handlerId>_resolved` flag is
+        // set the moment any option is actually chosen (not on open, so cancelling
+        // leaves it re-triggerable).
+        const choiceDef = engine.manifest.choices[handlerId];
+        if (engine.onChoiceInteract) {
+          engine.onChoiceInteract(
+            choiceDef,
+            (optionId: string) => {
+              engine.setWorldFlag(`${handlerId}_resolved`, true);
+              engine.handlePlayerAction(new ExecuteChoiceAction(this.entity as Player, choiceDef, optionId));
+            },
+            () => {
+              this.entity.energy += cost;
+            }
+          );
+        } else {
+          engine.log(`You stand before ${choiceDef.title}. It awaits your decision.`);
+        }
+      }
+
+      // Kill-count-gated choice unlocks (ARCHITECTURE.md §3, StoryChoiceTrigger):
+      // checked every player move rather than only on a specific tile, since the
+      // trigger condition is progress (kills), not location.
+      for (const trigger of engine.manifest?.storyChoiceTriggers ?? []) {
+        const kills = engine.compendium.getEntry(trigger.monsterDefinitionId).kills;
+        if (trigger.progressStartFlag && kills >= 1 && !engine.getWorldFlag(trigger.progressStartFlag)) {
+          engine.setWorldFlag(trigger.progressStartFlag, true);
+        }
+        if (kills < trigger.killsRequired) continue;
+        const offeredFlag = `${trigger.id}_offered`;
+        if (engine.getWorldFlag(offeredFlag)) continue;
+        const choiceDef = engine.manifest?.choices?.[trigger.choiceId];
+        if (!choiceDef) continue;
+        engine.setWorldFlag(offeredFlag, true);
+        if (engine.onChoiceInteract) {
+          engine.onChoiceInteract(choiceDef, (optionId: string) => {
+            engine.handlePlayerAction(new ExecuteChoiceAction(this.entity as Player, choiceDef, optionId));
+          });
+        } else {
+          engine.log(`You stand before ${choiceDef.title}. It awaits your decision.`);
+        }
+      }
+
+      // "Driven off" boss resolution (ARCHITECTURE.md §3, BossFleeResolution):
+      // converts sustained fleeing (the existing fleeHealthPercent mechanic) into a
+      // concluded encounter, since nothing else does.
+      for (const watcher of engine.manifest?.bossFleeResolutions ?? []) {
+        if (engine.getWorldFlag(watcher.sealedFlag)) continue;
+        const boss = engine.map
+          .getAllEntities()
+          .find((e) => (e as any).definitionId === watcher.monsterDefinitionId && e.isAlive());
+        const fleeCounterKey = `boss_flee_turns:${watcher.monsterDefinitionId}`;
+        if (boss && (boss as any).aiState === 'fleeing') {
+          const turnsFled = engine.modifyWorldCounter(fleeCounterKey, 1);
+          if (turnsFled >= watcher.fleeTurnsRequired) {
+            engine.setWorldFlag(watcher.sealedFlag, true);
+            engine.map.removeEntity(boss);
+            engine.log(`${boss.name} flees into the dark, driven off for good!`);
+          }
+        }
       }
     }
 

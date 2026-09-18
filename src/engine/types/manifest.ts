@@ -268,6 +268,104 @@ export interface QuestArcDefinition {
   floorEncounters: Record<number, FloorEncounterConfig>;
   floorGenerators?: Record<number, string>;
   defaultGenerator?: string;
+  /**
+   * Multiple named victory endings (ARCHITECTURE.md §3) — a gap surfaced by a
+   * branching campaign finale (e.g. slaying vs. driving off the same boss). Each
+   * `EndingDefinition` has its own eligibility condition and text, generalizing the
+   * flat `victoryDialogue`/`victoryEpitaph`/`championProclamation`/
+   * `victoryScoreBonus`/`relicItemId`/`victoryFloor` fields above, which remain the
+   * sole, default ending when this is omitted — existing packs are unaffected.
+   * `GameStateManager.checkVictoryEligible` checks each in insertion order and
+   * returns the first whose condition holds.
+   */
+  endings?: Record<string, EndingDefinition>;
+}
+
+/** See `QuestArcDefinition.endings`. */
+export interface EndingDefinition {
+  id: string;
+  /** Eligibility, evaluated the same way the base flat fields are: the player must
+   *  be on `victoryFloor` (defaults to the quest's own `victoryFloor`) and satisfy
+   *  at least one of `relicItemId` (carrying it), `requiredFlag` (world-state flag
+   *  set), or `requiredMonsterKillId` (that monster's `GameEngine.compendium` kill
+   *  count is at least 1 — cross-floor-safe and needs no extra flag-setting for the
+   *  common "did the player kill X" condition). */
+  relicItemId?: string;
+  requiredFlag?: string;
+  requiredMonsterKillId?: string;
+  victoryFloor?: number;
+  victoryDialogue: string;
+  victoryEpitaph: string;
+  championProclamation?: string;
+  victoryScoreBonus?: number;
+}
+
+/**
+ * Resolves a boss encounter as "driven off" rather than killed (ARCHITECTURE.md
+ * §3) — a branching-finale gap: the existing `fleeHealthPercent` mechanic already
+ * makes a monster flee at low HP, but nothing converts sustained fleeing into a
+ * concluded encounter. Checked in `movement.ts` (full `GameEngine` access) each
+ * player turn: while the named monster is alive, on the active floor, and
+ * `aiState === 'fleeing'`, a turn counter accrues; once it reaches
+ * `fleeTurnsRequired`, `sealedFlag` is set (once) and the monster is removed from
+ * the map, so the fight cannot simply resume once it stops.
+ */
+export interface BossFleeResolution {
+  monsterDefinitionId: string;
+  fleeTurnsRequired: number;
+  sealedFlag: string;
+}
+
+/**
+ * Unlocks a `ChoiceDefinition` once a monster (by `definitionId`) has been slain a
+ * given number of times (ARCHITECTURE.md §3) — a gap surfaced by a climactic choice
+ * with no fixed map location to trigger from (no engine mechanism guarantees a
+ * hand-placed special room on a procedurally generated non-final floor; only the
+ * quest's own boss floor gets that treatment). Reads `GameEngine.compendium`
+ * (kill counts are tracked there per `definitionId` already, cross-floor and
+ * persisted), so it's checked in `movement.ts` — which has real `GameEngine`
+ * access — rather than an action hook (whose `EngineContext` deliberately can't
+ * reach the compendium or open a choice modal; ARCHITECTURE.md §3).
+ */
+export interface StoryChoiceTrigger {
+  /** Stable id, used for its own `<id>_offered`/`<id>_started` internal flags. */
+  id: string;
+  choiceId: string;
+  monsterDefinitionId: string;
+  killsRequired: number;
+  /** World-state flag set (if not already) the moment the first qualifying kill is
+   *  observed — before `killsRequired` is reached — so a `TimedEventDefinition` can
+   *  start counting down from first contact rather than only once the full
+   *  threshold, if the story point should feel pressured before it's fully unlocked. */
+  progressStartFlag?: string;
+}
+
+/**
+ * A turn-limited world event (ARCHITECTURE.md §3) — a gap surfaced by a climactic
+ * story choice that needed to feel time-pressured rather than a calm, simulation-
+ * paused dialogue menu. Ticked once per player turn by `GameEngine` (a `'timed-
+ * events-tick'` environmental update, alongside surfaces/substances/spawns) rather
+ * than gated behind a modal, so the countdown keeps running while the player acts.
+ */
+export interface TimedEventDefinition {
+  id: string;
+  /** World-state flag whose becoming true starts this event's countdown (checked
+   *  once per tick; the turn it first reads true is turn zero of the countdown). */
+  startFlag: string;
+  /** Turns after `startFlag` first reads true before `expireConsequences` fire. */
+  turnLimit: number;
+  /** World-state flag marking this event as manually resolved. If true by the time
+   *  the timer would expire, expiry is skipped entirely — content sets this itself
+   *  (e.g. as a `setFlag` consequence on whatever in-world action resolves the
+   *  event) before the timer runs out. Also set automatically the moment expiry
+   *  *does* fire, so a expired event never re-fires. */
+  resolvedFlag: string;
+  /** Applied via the same `applyConsequences` used by choice resolution, once,
+   *  exactly when the timer expires unresolved. */
+  expireConsequences: ChoiceConsequence[];
+  /** Logged when expiry fires. Content usually also narrates the moment itself via
+   *  a `logMessage` consequence; this is a fallback/redundant nudge, not required. */
+  expireMessage?: string;
 }
 
 export interface AtlasProceduralTheme<TContext = any> {
@@ -346,6 +444,12 @@ export interface GameContentManifest {
   renownTitles?: RenownTitleDefinition[];
   companions?: CompanionDefinition[];
   flankLayout?: FlankLayoutConfig;
+  /** Turn-limited world events (ARCHITECTURE.md §3, `TimedEventDefinition`). */
+  timedEvents?: TimedEventDefinition[];
+  /** Kill-count-gated choice unlocks (ARCHITECTURE.md §3, `StoryChoiceTrigger`). */
+  storyChoiceTriggers?: StoryChoiceTrigger[];
+  /** "Driven off" boss resolutions (ARCHITECTURE.md §3, `BossFleeResolution`). */
+  bossFleeResolutions?: BossFleeResolution[];
   /**
    * Pack-neutral wiring for the Rune of Return (ARCHITECTURE.md P-03 stage 3). The
    * mechanic (channel timing, banking, mobility, interrupt rules) is fixed engine

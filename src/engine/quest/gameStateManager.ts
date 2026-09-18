@@ -44,33 +44,67 @@ export class GameStateManager {
   }
 
   /**
-   * Checks whether the player currently satisfies the quest victory condition.
-   * Condition: Player is back on the victory floor and carrying the quest relic.
+   * Checks whether the player currently satisfies the quest victory condition, and
+   * if so, which one — a quest may declare several named `endings` (ARCHITECTURE.md
+   * §3), checked in insertion order; a quest with no `endings` map falls back to the
+   * single legacy relic-at-victory-floor condition (`'default'`). Returns the
+   * matching ending id, or `undefined` if none is satisfied yet.
    */
-  public checkVictoryEligible(engine: GameEngine): boolean {
-    if (this.runStatus !== 'active') return false;
-    const victoryFloor = engine.manifest?.quest?.victoryFloor ?? 0;
-    const relicId = engine.manifest?.quest?.relicItemId ?? 'sun-stone-of-freyr';
-    const hasRelic =
-      engine.player.inventory.primaryPack.getItem(relicId) !== null ||
-      engine.player.inventory.paperdoll.getAllEquipped().some((e) => e.item.id === relicId) ||
-      DungeonArc.isRelicInPlayerPossession(engine.player);
-    return engine.currentFloor === victoryFloor && hasRelic;
+  public checkVictoryEligible(engine: GameEngine): string | undefined {
+    if (this.runStatus !== 'active') return undefined;
+    const quest = engine.manifest?.quest;
+    const defaultVictoryFloor = quest?.victoryFloor ?? 0;
+
+    const endings = quest?.endings;
+    if (endings) {
+      for (const [id, ending] of Object.entries(endings)) {
+        const victoryFloor = ending.victoryFloor ?? defaultVictoryFloor;
+        if (engine.currentFloor !== victoryFloor) continue;
+        const hasRelic = ending.relicItemId ? this.playerCarries(engine, ending.relicItemId) : false;
+        const hasFlag = ending.requiredFlag ? engine.getWorldFlag(ending.requiredFlag) : false;
+        const hasKill = ending.requiredMonsterKillId
+          ? engine.compendium.getEntry(ending.requiredMonsterKillId).kills >= 1
+          : false;
+        if (
+          (ending.relicItemId && hasRelic) ||
+          (ending.requiredFlag && hasFlag) ||
+          (ending.requiredMonsterKillId && hasKill)
+        ) {
+          return id;
+        }
+      }
+      return undefined;
+    }
+
+    const relicId = quest?.relicItemId ?? 'sun-stone-of-freyr';
+    const hasRelic = this.playerCarries(engine, relicId);
+    return engine.currentFloor === defaultVictoryFloor && hasRelic ? 'default' : undefined;
+  }
+
+  private playerCarries(engine: GameEngine, itemId: string): boolean {
+    return (
+      engine.player.inventory.primaryPack.getItem(itemId) !== null ||
+      engine.player.inventory.paperdoll.getAllEquipped().some((e) => e.item.id === itemId) ||
+      DungeonArc.isRelicInPlayerPossession(engine.player)
+    );
   }
 
   /**
-   * Triggers the grand victory sequence, records champion into the Hall of Valhalla,
-   * and updates profile status to 'victorious'.
+   * Triggers the grand victory sequence for the given ending (from
+   * `checkVictoryEligible`, or omitted for the legacy single-ending behavior),
+   * records champion into the Hall of Valhalla, and updates profile status to
+   * 'victorious'.
    */
-  public triggerVictory(engine: GameEngine, profileManager?: ProfileManager): ValhallaEntry {
+  public triggerVictory(engine: GameEngine, profileManager?: ProfileManager, endingId?: string): ValhallaEntry {
     this.runStatus = 'victorious';
     const p = engine.player;
+    const quest = engine.manifest?.quest;
+    const ending = endingId ? quest?.endings?.[endingId] : undefined;
+
     const totalGoldCp = getPlayerTotalCp(p);
-    const bonus = engine.manifest?.quest?.victoryScoreBonus ?? 5000;
+    const bonus = ending?.victoryScoreBonus ?? quest?.victoryScoreBonus ?? 5000;
     const score = Leaderboard.calculateScore(p.xp, totalGoldCp, this.deepestFloor, true, bonus);
-    const epitaph =
-      engine.manifest?.quest?.victoryEpitaph ??
-      `Champion - Recovered the Quest Relic`;
+    const epitaph = ending?.victoryEpitaph ?? quest?.victoryEpitaph ?? `Champion - Recovered the Quest Relic`;
 
     const entry: ValhallaEntry = {
       id: p.id,
@@ -100,11 +134,10 @@ export class GameStateManager {
     }
 
     engine.log(
-      engine.manifest?.quest?.victoryDialogue ??
-        '✦✦✦ VICTORY! You have returned with the quest relic! ✦✦✦'
+      ending?.victoryDialogue ?? quest?.victoryDialogue ?? '✦✦✦ VICTORY! You have returned with the quest relic! ✦✦✦'
     );
     engine.log(
-      `${engine.manifest?.quest?.championProclamation ?? 'You are proclaimed Champion!'} Final Score: ${score} Points.`
+      `${ending?.championProclamation ?? quest?.championProclamation ?? 'You are proclaimed Champion!'} Final Score: ${score} Points.`
     );
 
     if (this.onStateChanged) {

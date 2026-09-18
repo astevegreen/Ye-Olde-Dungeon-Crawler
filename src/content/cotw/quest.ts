@@ -2,33 +2,41 @@ import type { QuestArcDefinition } from '../../engine';
 
 /**
  * Blood of Thrym (ARCHITECTURE.md §3 — see index.ts for the wiring: `oath.ts`'s
- * StoryChoiceTrigger/TimedEventDefinition, `hazards.ts`'s temperature exposure, and
+ * StoryChoiceTrigger/TimedEventDefinition, `giantBlood.ts`'s heritage buff, and
  * `BossFleeResolution` for Níðhögg's alternate ending). Set centuries after the
  * original Castle of the Winds sagas, in the same Midgard — Thrym, Útgarðaloki,
  * Rungnir, and Þjazi are half-remembered legend here, not characters in this story.
  *
  * Act 1 — The Hearth-Tear of Járnviðr (floors 1-25): a stolen fragment of Sól's
  * sun-chariot, siphoned by troll-wife warlocks into an abandoned dwarven forge, has
- * frozen the protagonist's village. The dungeon inverts from permafrost into
- * soot-choked obsidian depths as the player descends (`hazards.ts`); a troll-wife
- * matriarch's blood-oath (`choices.ts`'s `oath_hearth`, unlocked in `oath.ts`)
- * offers to sever the siphon, at a permanent cost.
+ * frozen the protagonist's village. The dungeon warms from permafrost toward the
+ * stolen sun-chariot as the player descends, felt as the protagonist's frost-giant
+ * heritage fading from a strong early edge to nothing by floor 25 (`giantBlood.ts`),
+ * mirrored by monster power itself climbing in zone-tiered steps rather than the
+ * old smooth per-floor curve (`monsterScaling.ts`); a troll-wife matriarch's
+ * blood-oath (`choices.ts`'s `oath_hearth`, unlocked in `oath.ts`) offers to sever
+ * the siphon, at a permanent cost.
  *
  * Act 2 — The Rotting Root of Níðhögg (floors 26-50): Níðhögg has gnawed a
  * secondary root of Yggdrasil, leaking rot into old silver mines; the architecture
- * warps from stone into world-bark with depth. No plot device inverts biome
- * expectations here the way Act 1's permafrost/obsidian split does — enemies simply
- * scale with floor, same as any other stretch of the dungeon.
+ * warps from stone into world-bark with depth. No plot device and no heritage buff
+ * carries over from Act 1 — monster power keeps climbing from wherever Act 1 left
+ * off (`monsterScaling.ts`, no reset at the Act boundary), pure escalating
+ * difficulty with no thematic tie-in of its own.
  *
  * The player gets the full Níðhögg fight regardless of ending — the branch is in
  * how it resolves (`endings` below), not whether it happens.
+ *
+ * `allowsDifficultyScaling: false` — floor count is fixed at 50 for every
+ * difficulty (Easy/Medium/Hard now control only monster power via
+ * `monsterScaling.ts`, not how much of the campaign is reachable).
  */
 export const COTW_QUEST: QuestArcDefinition = {
   id: 'cotw_blood_of_thrym',
   name: 'Blood of Thrym',
   maxFloor: 50,
   bossFloor: 50,
-  allowsDifficultyScaling: true,
+  allowsDifficultyScaling: false,
   bossMonsterId: 'nidhogg',
   relicItemId: 'hearth_tear_fragment',
   victoryNpcId: 'npc-olaf',

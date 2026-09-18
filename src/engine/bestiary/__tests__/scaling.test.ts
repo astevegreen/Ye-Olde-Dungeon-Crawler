@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { COTW_BESTIARY as BESTIARY } from '../../../content/cotw/monsters';
+import { COTW_MONSTER_SCALING } from '../../../content/cotw/monsterScaling';
 import { scaleMonsterStats } from '../../dungeon/spawner';
 
 describe('Monster Stat Scaling & Bestiary Immutability', () => {
@@ -75,5 +76,64 @@ describe('Monster Stat Scaling & Bestiary Immutability', () => {
     expect(kobold.stats.attack).toBe(baseStatsSnapshot.attack);
     expect(kobold.stats.defense).toBe(baseStatsSnapshot.defense);
     expect(kobold.name).toBe(baseName);
+  });
+
+  describe('with a MonsterScalingConfig (zone-tiered, difficulty-scaled — ARCHITECTURE.md §3)', () => {
+    it('is a no-op at the first tier on Medium (multiplier 1.0)', () => {
+      const kobold = BESTIARY.kobold; // Base: HP 10, Atk 3, Def 1, XP 15, minFloor 1
+      const scaled = scaleMonsterStats(kobold, 1, undefined, undefined, COTW_MONSTER_SCALING, 'medium');
+
+      expect(scaled.hp).toBe(10);
+      expect(scaled.attack).toBe(3);
+      expect(scaled.defense).toBe(1);
+      expect(scaled.xpValue).toBe(15);
+      expect(scaled.name).toBe('Kobold');
+    });
+
+    it('scales a regular monster through the difficulty knobs at a late-game tier (floor 43, Hard)', () => {
+      const kobold = BESTIARY.kobold; // Base: HP 10, Atk 3, Def 1, XP 15, minFloor 1
+      // Maw of Malice tier (floor 43) = 4.2; Hard = { base: 1.3, rate: 1.25 }.
+      // multiplier = 1.3 * (1 + (4.2 - 1) * 1.25) = 1.3 * 5.0 = 6.5
+      const scaled = scaleMonsterStats(kobold, 43, undefined, undefined, COTW_MONSTER_SCALING, 'hard');
+
+      expect(scaled.hp).toBe(65); // round(10 * 6.5)
+      expect(scaled.attack).toBe(20); // round(3 * 6.5) = round(19.5)
+      expect(scaled.defense).toBe(7); // round(1 * 6.5) = round(6.5)
+      expect(scaled.xpValue).toBe(98); // round(15 * 6.5) = round(97.5)
+      expect(scaled.name).toBe('Veteran Kobold'); // 43 - 1 >= 10
+    });
+
+    it('guards the Act 1 climax boss on Easy — the boss floor dominates the plain curve', () => {
+      const boss = BESTIARY.sun_chariot_warden; // Base: HP 220, Atk 22, Def 9, XP 1200, minFloor 25, tags include 'boss'
+      // Obsidian Siphon tier (floor 25) = 1.85; Easy = { base: 0.75, rate: 0.8, bossFloor: 1.15 }.
+      // Plain curve: 0.75 * (1 + (1.85 - 1) * 0.8) = 0.75 * 1.68 = 1.26
+      // Boss guard:  1.85 * 1.15 = 2.1275 (wins, since it's higher than the plain curve)
+      const scaled = scaleMonsterStats(boss, 25, undefined, undefined, COTW_MONSTER_SCALING, 'easy');
+
+      expect(scaled.hp).toBe(468); // round(220 * 2.1275)
+      expect(scaled.attack).toBe(47); // round(22 * 2.1275)
+      expect(scaled.defense).toBe(19); // round(9 * 2.1275)
+      expect(scaled.xpValue).toBe(2553); // round(1200 * 2.1275)
+      expect(scaled.name).toBe('Veteran The Sun-Chariot Warden'); // multiplier >= 1.8
+      // Still a real fight, nowhere near a one-shot: HP more than doubled vs. base.
+      expect(scaled.hp).toBeGreaterThan(boss.stats.hp * 2);
+    });
+
+    it('never lets a difficulty knob scale a monster below its authored base stats', () => {
+      const kobold = BESTIARY.kobold;
+      // Even a hypothetically tiny multiplier is clamped by the existing Math.max floor guard.
+      const tinyConfig = {
+        tiers: [{ floor: 1, multiplier: 1.0 }],
+        difficulty: {
+          easy: { basePowerMultiplier: 0.01, scalingRateMultiplier: 0.01 },
+          medium: { basePowerMultiplier: 0.01, scalingRateMultiplier: 0.01 },
+          hard: { basePowerMultiplier: 0.01, scalingRateMultiplier: 0.01 },
+        },
+      };
+      const scaled = scaleMonsterStats(kobold, 1, undefined, undefined, tinyConfig, 'easy');
+      expect(scaled.hp).toBe(kobold.stats.hp);
+      expect(scaled.attack).toBe(kobold.stats.attack);
+      expect(scaled.defense).toBe(kobold.stats.defense);
+    });
   });
 });

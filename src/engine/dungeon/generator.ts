@@ -7,6 +7,8 @@ import { DungeonGenerator, type RectRoom } from './dungeon-generator';
 import type { VaultBlueprint } from './vaultStamp';
 import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
 import type { ItemDefinition } from '../types/manifest';
+import type { MonsterScalingConfig } from '../types/monsterScaling';
+import type { GameDifficulty } from '../types';
 
 export interface DungeonGenParams {
   width: number;
@@ -20,6 +22,8 @@ export interface DungeonGenParams {
   vaults?: VaultBlueprint[];
   monsterCandidates?: MonsterDefinition[];
   itemCandidates?: ItemDefinition[];
+  scalingConfig?: MonsterScalingConfig;
+  difficulty?: GameDifficulty;
 }
 
 export interface GeneratedFloorData {
@@ -58,6 +62,8 @@ export class BspDungeonGenerator implements DungeonGeneratorStrategy {
       vaults: params.vaults,
       monsterCandidates: params.monsterCandidates,
       itemCandidates: params.itemCandidates,
+      scalingConfig: params.scalingConfig,
+      difficulty: params.difficulty,
     });
 
     const result = generator.generate();

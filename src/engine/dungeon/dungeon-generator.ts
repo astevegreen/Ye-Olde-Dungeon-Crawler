@@ -9,6 +9,8 @@ import { RoomDecorator } from './roomDecorator';
 import { VaultStamper, type VaultBlueprint } from './vaultStamp';
 import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
 import type { ItemDefinition } from '../types/manifest';
+import type { MonsterScalingConfig } from '../types/monsterScaling';
+import type { GameDifficulty } from '../types';
 
 export interface RectRoom {
   x1: number;
@@ -33,6 +35,8 @@ export interface DungeonConfig {
   itemCandidates?: ItemDefinition[];
   enableBraiding?: boolean;
   enableDecoration?: boolean;
+  scalingConfig?: MonsterScalingConfig;
+  difficulty?: GameDifficulty;
 }
 
 export interface DungeonResult {
@@ -58,6 +62,8 @@ export class DungeonGenerator {
   public itemCandidates: ItemDefinition[];
   public enableBraiding: boolean;
   public enableDecoration: boolean;
+  public scalingConfig?: MonsterScalingConfig;
+  public difficulty?: GameDifficulty;
 
   constructor(config: DungeonConfig) {
     this.width = config.width;
@@ -73,6 +79,8 @@ export class DungeonGenerator {
     this.itemCandidates = config.itemCandidates ?? [];
     this.enableBraiding = config.enableBraiding ?? true;
     this.enableDecoration = config.enableDecoration ?? true;
+    this.scalingConfig = config.scalingConfig;
+    this.difficulty = config.difficulty;
   }
 
   public generate(): DungeonResult {
@@ -133,7 +141,9 @@ export class DungeonGenerator {
               this.floorNumber,
               this.monsterCandidates,
               this.itemCandidates,
-              () => this.prng.next()
+              () => this.prng.next(),
+              this.scalingConfig,
+              this.difficulty
             );
             vaultRoomIndices.add(rooms.length);
             rooms.push(vRoom);

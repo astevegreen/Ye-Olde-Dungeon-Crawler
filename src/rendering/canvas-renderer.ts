@@ -601,8 +601,14 @@ export class CanvasRenderer {
       else if (eff.type === 'slow') color = '#0ea5e9';
       else if (eff.type === 'haste') color = '#f97316';
       else if (eff.type === 'blindness') color = '#a855f7';
+      else if (eff.type === 'cotw:giant_blood') {
+        color = '#38bdf8';
+        label = "GIANT'S BLOOD";
+      }
 
-      const text = `[${label} ${eff.duration}t]`;
+      // duration >= 9999 is this codebase's sentinel for "ambient, not counting
+      // down" (jarnvidr/giant_blood) — showing e.g. "9999t" misreads as a bug.
+      const text = eff.duration >= 9999 ? `[${label}]` : `[${label} ${eff.duration}t]`;
       ctx.fillStyle = color;
       ctx.fillText(text, statusX, mpBarY + 5);
       statusX += ctx.measureText(text).width + 8;

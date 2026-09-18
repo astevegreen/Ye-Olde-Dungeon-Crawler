@@ -1,7 +1,7 @@
 import { PRNG } from '../dungeon/prng';
 import { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
-import type { Position } from '../types';
+import type { Position, GameDifficulty } from '../types';
 import { DungeonGeneratorRegistry } from '../dungeon/generator';
 import { Monster } from '../entities/monster';
 
@@ -11,6 +11,7 @@ import { ItemFactory } from '../items/factory';
 import { populateDungeonFloor, scaleMonsterStats } from '../dungeon/spawner';
 import { populateDungeonLoot } from '../dungeon/lootSpawner';
 import type { GameContentManifest, QuestArcDefinition, ItemDefinition } from '../types/manifest';
+import type { MonsterScalingConfig } from '../types/monsterScaling';
 import { getMonsterDefinition, type MonsterDefinition } from '../bestiary/monsterDefinitions';
 
 export interface DungeonFloorResult {
@@ -37,7 +38,9 @@ export class DungeonArc {
     y: number,
     floorNumber: number = 5,
     bossDef?: MonsterDefinition,
-    bossId: string = 'boss_hrungnir'
+    bossId: string = 'boss_hrungnir',
+    scalingConfig?: MonsterScalingConfig,
+    difficulty?: GameDifficulty
   ): Monster {
     const def = bossDef ?? getMonsterDefinition(bossId) ?? {
       id: bossId,
@@ -65,8 +68,8 @@ export class DungeonArc {
     };
     let stats = { ...def.stats };
     let xpValue = def.xpValue;
-    if (floorNumber > 5) {
-      const scaled = scaleMonsterStats(def, floorNumber);
+    if (scalingConfig || floorNumber > 5) {
+      const scaled = scaleMonsterStats(def, floorNumber, undefined, undefined, scalingConfig, difficulty);
       stats = { hp: scaled.hp, maxHp: scaled.maxHp, attack: scaled.attack, defense: scaled.defense };
       xpValue = scaled.xpValue;
     }
@@ -102,14 +105,15 @@ export class DungeonArc {
     seed?: number,
     questArc?: QuestArcDefinition,
     manifest?: GameContentManifest,
-    densityMultiplier = 1.0
+    densityMultiplier = 1.0,
+    difficulty?: GameDifficulty
   ): DungeonFloorResult {
     const maxFloor = questArc?.maxFloor ?? this.MAX_FLOOR;
     if (floorNumber >= maxFloor) {
-      return this.generateChieftainLair(floorNumber, questArc, manifest);
+      return this.generateChieftainLair(floorNumber, questArc, manifest, difficulty);
     }
 
-    return this.generateProceduralFloor(floorNumber, seed, maxFloor, questArc, manifest, densityMultiplier);
+    return this.generateProceduralFloor(floorNumber, seed, maxFloor, questArc, manifest, densityMultiplier, difficulty);
   }
 
   /**
@@ -121,7 +125,8 @@ export class DungeonArc {
     maxFloor: number = this.MAX_FLOOR,
     questArc?: QuestArcDefinition,
     manifest?: GameContentManifest,
-    densityMultiplier = 1.0
+    densityMultiplier = 1.0,
+    difficulty?: GameDifficulty
   ): DungeonFloorResult {
     const generatorStrategyId =
       questArc?.floorGenerators?.[floorNumber] ?? questArc?.defaultGenerator ?? 'bsp';
@@ -154,6 +159,8 @@ export class DungeonArc {
       vaults: manifest?.vaults ?? [],
       monsterCandidates: monsterCatalog,
       itemCandidates: itemCatalog,
+      scalingConfig: manifest?.monsterScaling,
+      difficulty,
     });
 
     const map = dungeon.map;
@@ -173,7 +180,16 @@ export class DungeonArc {
     // 3. Spawn Floor-scaled monsters via encounter spawner
     const populationPrng = new PRNG((seed ?? floorNumber) + floorNumber * 7919);
     const populationRng = () => populationPrng.next();
-    populateDungeonFloor(map, dungeon.rooms, floorNumber, monsterCatalog, populationRng, densityMultiplier);
+    populateDungeonFloor(
+      map,
+      dungeon.rooms,
+      floorNumber,
+      monsterCatalog,
+      populationRng,
+      densityMultiplier,
+      manifest?.monsterScaling,
+      difficulty
+    );
 
     // 4. Spawn Floor-scaled loot and chests
     populateDungeonLoot(map, dungeon.rooms, floorNumber, itemCatalog, populationRng);
@@ -209,7 +225,8 @@ export class DungeonArc {
   public static generateChieftainLair(
     floorNumber: number = 5,
     questArc?: QuestArcDefinition,
-    manifest?: GameContentManifest
+    manifest?: GameContentManifest,
+    difficulty?: GameDifficulty
   ): DungeonFloorResult {
 
     const width = 44;
@@ -268,7 +285,7 @@ export class DungeonArc {
     const bossId = questArc?.bossMonsterId ?? 'boss_hrungnir';
     const bossDef = (Array.isArray(manifest?.monsters) ? manifest?.monsters.find((m) => m.id === bossId) : undefined) ??
       getMonsterDefinition(bossId);
-    const boss = this.createBoss(22, 7, floorNumber, bossDef, bossId);
+    const boss = this.createBoss(22, 7, floorNumber, bossDef, bossId, manifest?.monsterScaling, difficulty);
     map.addEntity(boss);
 
     // Spawn Bodyguard Minions flanking the throne

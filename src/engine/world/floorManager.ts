@@ -296,7 +296,9 @@ export class FloorManager {
         tile,
         engine.currentFloor,
         engine.gameState?.deepestFloor,
-        engine.player?.level
+        engine.player?.level,
+        engine.manifest?.monsterScaling,
+        engine.player?.difficulty
       );
       monster.aiState = 'sleeping';
 

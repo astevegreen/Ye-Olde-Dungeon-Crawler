@@ -10,6 +10,7 @@ import {
   scaleMonsterStats,
 } from '../spawner';
 import { Mulberry32 } from '../prng';
+import { COTW_MONSTER_SCALING } from '../../../content/cotw/monsterScaling';
 
 describe('Dungeon Spawner - Tiering & Population', () => {
   const allCandidates: MonsterDefinition[] = COTW_MONSTERS;
@@ -98,6 +99,34 @@ describe('Dungeon Spawner - Tiering & Population', () => {
       expect(monster.defense).toBe(expected.defense);
       expect(monster.xpValue).toBe(expected.xpValue);
     });
+
+    it('uses the zone-tiered difficulty curve when a MonsterScalingConfig is supplied', () => {
+      const kobold = BESTIARY.kobold;
+      const pos = { x: 3, y: 3 };
+      const floor = 43;
+
+      const monster = createScaledMonster(
+        kobold,
+        'test-kobold-1',
+        pos,
+        floor,
+        undefined,
+        undefined,
+        COTW_MONSTER_SCALING,
+        'hard'
+      );
+
+      const expected = scaleMonsterStats(kobold, floor, undefined, undefined, COTW_MONSTER_SCALING, 'hard');
+      expect(monster.hp).toBe(expected.hp);
+      expect(monster.attack).toBe(expected.attack);
+      expect(monster.defense).toBe(expected.defense);
+      expect(monster.xpValue).toBe(expected.xpValue);
+      expect(monster.name).toBe(expected.name);
+      // Sanity: the new path produces a materially different result from the old
+      // smooth curve at the same floor, proving the config actually took effect.
+      const oldFormula = scaleMonsterStats(kobold, floor);
+      expect(monster.hp).not.toBe(oldFormula.hp);
+    });
   });
 
   describe('populateDungeonFloor', () => {
@@ -135,6 +164,31 @@ describe('Dungeon Spawner - Tiering & Population', () => {
       }
 
       // Verify all spawned monsters are properly scaled for Floor 5
+      for (const e of entities) {
+        expect(e.hp).toBeGreaterThan(0);
+        expect(e.attack).toBeGreaterThan(0);
+      }
+    });
+
+    it('threads a MonsterScalingConfig + difficulty through to every spawned monster', () => {
+      const map = new GameMap(40, 40);
+      const rooms = [
+        { x1: 2, y1: 2, x2: 8, y2: 8 },
+        { x1: 12, y1: 2, x2: 18, y2: 8 },
+      ];
+      for (const r of rooms) {
+        for (let x = r.x1; x <= r.x2; x++) {
+          for (let y = r.y1; y <= r.y2; y++) {
+            map.setTile(x, y, TILES.FLOOR);
+          }
+        }
+      }
+
+      const prng = new Mulberry32(888);
+      populateDungeonFloor(map, rooms, 43, allCandidates, () => prng.next(), 1.0, COTW_MONSTER_SCALING, 'hard');
+
+      const entities = map.getAllEntities();
+      expect(entities.length).toBeGreaterThan(0);
       for (const e of entities) {
         expect(e.hp).toBeGreaterThan(0);
         expect(e.attack).toBeGreaterThan(0);

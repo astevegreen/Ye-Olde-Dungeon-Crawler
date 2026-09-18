@@ -1,9 +1,10 @@
-import type { Position } from '../types';
+import type { Position, GameDifficulty } from '../types';
 import type { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
 import type { TileDefinition } from '../types';
 import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
 import type { ItemDefinition } from '../types/manifest';
+import type { MonsterScalingConfig } from '../types/monsterScaling';
 import { createScaledMonster, selectDungeonMonsterDefinition } from './spawner';
 import { createDungeonChest } from './lootSpawner';
 
@@ -80,7 +81,9 @@ export class VaultStamper {
     currentFloor: number,
     monsterCandidates: MonsterDefinition[] = [],
     itemCandidates: ItemDefinition[] = [],
-    rng: () => number
+    rng: () => number,
+    scalingConfig?: MonsterScalingConfig,
+    difficulty?: GameDifficulty
   ): StampedVaultResult {
     const layout = blueprint.layout;
     const height = layout.length;
@@ -122,7 +125,16 @@ export class VaultStamper {
           }
           if (def) {
             const mId = `vault-mon-${blueprint.id}-${worldX}-${worldY}-${Math.floor(rng() * 1000)}`;
-            const monster = createScaledMonster(def, mId, { x: worldX, y: worldY }, currentFloor);
+            const monster = createScaledMonster(
+              def,
+              mId,
+              { x: worldX, y: worldY },
+              currentFloor,
+              undefined,
+              undefined,
+              scalingConfig,
+              difficulty
+            );
             map.addEntity(monster);
           }
         }

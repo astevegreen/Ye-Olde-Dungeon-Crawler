@@ -20,6 +20,7 @@ import type { ChoiceDefinition, ChoiceOption, ChoiceConsequence } from './choice
 import type { HookDescriptor } from '../hooks/hookDispatcher';
 import type { RunPactDefinition } from '../pacts/pactManager';
 import type { CompanionDefinition } from '../entities/companion';
+import type { MonsterScalingConfig } from './monsterScaling';
 
 export interface MerchantConfig {
   id: string;
@@ -430,6 +431,9 @@ export interface GameContentManifest {
   featureFlags?: Record<string, boolean>;
   combatConfig?: CombatConfig;
   progressionConfig?: ProgressionConfig;
+  /** Zone-tiered, difficulty-scaled monster power (ARCHITECTURE.md §3). When omitted,
+   * `dungeon/spawner.ts`'s monster-scaling functions fall back to the flat per-floor curve. */
+  monsterScaling?: MonsterScalingConfig;
   initialWorldState?: WorldState;
   choices?: Record<string, ChoiceDefinition>;
   pacts?: RunPactDefinition[];

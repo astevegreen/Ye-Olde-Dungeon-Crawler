@@ -455,7 +455,11 @@ export class GameEngine {
           def,
           this.nextSimulationId(`mob-${definitionId}`),
           spawnTile,
-          this.currentFloor
+          this.currentFloor,
+          undefined,
+          undefined,
+          this.manifest.monsterScaling,
+          this.player.difficulty
         );
         monster.aiState = options?.aiState ?? 'hunting';
 
@@ -715,7 +719,14 @@ export class GameEngine {
             }
           : undefined;
         const density = this.pacts?.getAggregatedMutators().monsterDensityMultiplier ?? 1.0;
-        const floorResult = DungeonArc.generateFloor(targetFloor, undefined, dynamicQuest, this.manifest, density);
+        const floorResult = DungeonArc.generateFloor(
+          targetFloor,
+          undefined,
+          dynamicQuest,
+          this.manifest,
+          density,
+          this.player.difficulty
+        );
         nextMap = floorResult.map;
         targetSpawn = floorResult.playerSpawn;
       }

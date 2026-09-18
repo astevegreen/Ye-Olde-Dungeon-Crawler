@@ -5,7 +5,7 @@ import { COTW_SPELLS } from './spells';
 import { COTW_TOWN } from './town';
 import { COTW_QUEST } from './quest';
 import { COTW_ATLAS_THEME } from './atlas';
-import { COTW_STARTER_KIT, COTW_PROGRESSION } from './character';
+import { COTW_STARTER_KIT } from './character';
 import { COTW_AFFINITY_MATRIX } from './elements';
 import { COTW_EQUIPMENT_SLOTS } from './slots';
 import { COTW_THEME_TOKENS } from './theme';
@@ -15,7 +15,8 @@ import { COTW_CHOICES } from './choices';
 import { COTW_PACTS } from './pacts';
 import { COTW_RENOWN_MILESTONES, COTW_RENOWN_TITLES } from './renown';
 import { COTW_COMPANIONS } from './companions';
-import { JARNVIDR_EXPOSURE_STATUS, jarnvidrExposureHandler, JARNVIDR_HAZARD_BOOTSTRAP_HOOK } from './hazards';
+import { GIANT_BLOOD_STATUS, giantBloodHandler, GIANT_BLOOD_BOOTSTRAP_HOOK } from './giantBlood';
+import { COTW_MONSTER_SCALING } from './monsterScaling';
 import { OATH_TRIGGER, OATH_TIMED_EVENT } from './oath';
 
 export const cotwManifest: GameContentManifest = {
@@ -60,8 +61,8 @@ export const cotwManifest: GameContentManifest = {
   renownMilestones: COTW_RENOWN_MILESTONES,
   renownTitles: COTW_RENOWN_TITLES,
   companions: COTW_COMPANIONS,
-  progressionConfig: COTW_PROGRESSION,
-  actionHooks: [JARNVIDR_HAZARD_BOOTSTRAP_HOOK],
+  monsterScaling: COTW_MONSTER_SCALING,
+  actionHooks: [GIANT_BLOOD_BOOTSTRAP_HOOK],
   storyChoiceTriggers: [OATH_TRIGGER],
   timedEvents: [OATH_TIMED_EVENT],
   bossFleeResolutions: [
@@ -110,7 +111,7 @@ export const cotwManifest: GameContentManifest = {
     },
   ],
   statusHandlers: {
-    [JARNVIDR_EXPOSURE_STATUS]: jarnvidrExposureHandler,
+    [GIANT_BLOOD_STATUS]: giantBloodHandler,
   },
   runeOfReturn: {
     attunementNpcId: 'npc-rune-smith',

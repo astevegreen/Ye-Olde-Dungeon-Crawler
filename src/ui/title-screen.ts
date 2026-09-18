@@ -618,7 +618,7 @@ export class TitleScreen {
             <span>•</span>
             <span>Floor ${profile.floor}</span>
             <span>•</span>
-            <span style="font-weight: bold; color: #1e3a8a;">[${(profile.difficulty ?? 'medium').toUpperCase()} ${profile.maxFloor ?? 37}F]</span>
+            <span style="font-weight: bold; color: #1e3a8a;">[${(profile.difficulty ?? 'medium').toUpperCase()}]</span>
             <span>•</span>
             <span>HP: ${profile.hp}/${profile.maxHp}</span>
           </div>
@@ -657,7 +657,7 @@ export class TitleScreen {
 
     const selected = this.getSelectedProfile();
     if (selected) {
-      this.setStatus(`Ready to resume journey as ${selected.name} (${(selected.difficulty ?? 'medium').toUpperCase()} [${selected.maxFloor ?? 37}F], Level ${selected.level}, Floor ${selected.floor}).`);
+      this.setStatus(`Ready to resume journey as ${selected.name} (${(selected.difficulty ?? 'medium').toUpperCase()}, Level ${selected.level}, Floor ${selected.floor}).`);
     } else {
       this.setStatus('Select an adventurer or roll a new hero to embark.');
     }

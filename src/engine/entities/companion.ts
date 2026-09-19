@@ -36,25 +36,36 @@ const ARCHETYPE_AI_ROUTINE: Record<CompanionArchetype, string> = {
   skirmisher: 'companion_skirmisher',
 };
 
-const companionDefinitionsMap = new Map<string, CompanionDefinition>();
+import { activeCompanionStore } from '../registries/companionRegistryStore';
 
+/**
+ * Process-wide facade over whichever companion store is active (ARCHITECTURE.md §3, P-22).
+ * It holds no map of its own: an engine's registrations live in that engine's store, and
+ * this forwards there, so there is one copy of the data rather than two.
+ */
 export class CompanionRegistry {
   public static register(def: CompanionDefinition): void {
-    companionDefinitionsMap.set(def.id, def);
+    activeCompanionStore().register(def);
   }
 
-  public static registerAll(defs: CompanionDefinition[]): void {
-    for (const def of defs) {
-      this.register(def);
-    }
+  public static registerAll(defs: CompanionDefinition[] | Record<string, CompanionDefinition>): void {
+    activeCompanionStore().registerAll(defs);
   }
 
   public static get(id: string): CompanionDefinition | undefined {
-    return companionDefinitionsMap.get(id);
+    return activeCompanionStore().get(id);
+  }
+
+  public static has(id: string): boolean {
+    return activeCompanionStore().has(id);
+  }
+
+  public static getAll(): CompanionDefinition[] {
+    return activeCompanionStore().getAll();
   }
 
   public static clear(): void {
-    companionDefinitionsMap.clear();
+    activeCompanionStore().clear();
   }
 }
 

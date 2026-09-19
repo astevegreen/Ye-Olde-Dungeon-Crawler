@@ -7,11 +7,13 @@ import { MonsterRegistry } from '../../bestiary/monsterDefinitions';
 import { TrapRegistry } from '../../traps/trapRegistry';
 import { ActionRegistry, type GameAction } from '../../actions/actionRegistry';
 import { SpellRegistry, getSpell, SPELL_REGISTRY } from '../../magic/spellRegistry';
+import { CompanionRegistry, type CompanionDefinition } from '../../entities/companion';
 import { WaitAction } from '../../actions/wait';
 import { processDefaultMonsterStore, setActiveMonsterStore } from '../monsterRegistryStore';
 import { processDefaultTrapStore, setActiveTrapStore } from '../trapRegistryStore';
 import { setActiveActionStore } from '../actionRegistryStore';
 import { processDefaultSpellStore, setActiveSpellStore } from '../spellRegistryStore';
+import { processDefaultCompanionStore, setActiveCompanionStore } from '../companionRegistryStore';
 import type { MonsterDefinition } from '../../bestiary/monsterDefinitions';
 import type { TrapDefinition, TrapType } from '../../types/manifest';
 import type { SpellDefinition } from '../../magic/types';
@@ -63,16 +65,27 @@ const spellDef = (id: string): SpellDefinition =>
     effects: [],
   }) as unknown as SpellDefinition;
 
+const companionDef = (id: string): CompanionDefinition =>
+  ({
+    id,
+    name: id,
+    stats: { hp: 10, maxHp: 10, attack: 2, defense: 1 },
+    speed: 100,
+    packWeightCapacity: 20,
+    packBulkCapacity: 10,
+  }) as CompanionDefinition;
+
 function engineWith(
   monsters: MonsterDefinition[],
   traps: TrapDefinition[] = [],
   actionCommands: GameAction[] = [],
-  spells: SpellDefinition[] = []
+  spells: SpellDefinition[] = [],
+  companions: CompanionDefinition[] = []
 ): GameEngine {
   return new GameEngine({
     map: new GameMap(10, 10, TILES.FLOOR),
     player: new Player({ id: 'hero', name: 'Hero', position: { x: 1, y: 1 } }),
-    manifest: { id: 'test', name: 'Test', monsters, traps, actionCommands, spells } as never,
+    manifest: { id: 'test', name: 'Test', monsters, traps, actionCommands, spells, companions } as never,
   });
 }
 
@@ -86,6 +99,8 @@ describe('Per-engine content registries', () => {
     setActiveActionStore(null);
     processDefaultSpellStore().clear();
     setActiveSpellStore(null);
+    processDefaultCompanionStore().clear();
+    setActiveCompanionStore(null);
   });
 
   it('keeps two engines built from different manifests separate', () => {
@@ -211,5 +226,24 @@ describe('Per-engine content registries', () => {
     expect(getSpell('pyroblast')).toBeUndefined();
     expect(SPELL_REGISTRY['frostbolt']).toBeDefined();
     expect(SPELL_REGISTRY['pyroblast']).toBeUndefined();
+  });
+
+  it('keeps two engines built from different companion manifests separate', () => {
+    const engineA = engineWith([], [], [], [], [companionDef('wolf_hound')]);
+    const engineB = engineWith([], [], [], [], [companionDef('snow_leopard')]);
+
+    expect(engineA.registries.companions.has('wolf_hound')).toBe(true);
+    expect(engineA.registries.companions.has('snow_leopard')).toBe(false);
+    expect(engineB.registries.companions.has('snow_leopard')).toBe(true);
+    expect(engineB.registries.companions.has('wolf_hound')).toBe(false);
+
+    // Static facade points to B
+    expect(CompanionRegistry.has('snow_leopard')).toBe(true);
+    expect(CompanionRegistry.has('wolf_hound')).toBe(false);
+
+    // Acting on A switches CompanionRegistry to A
+    engineA.handlePlayerAction(new WaitAction(engineA.player));
+    expect(CompanionRegistry.has('wolf_hound')).toBe(true);
+    expect(CompanionRegistry.has('snow_leopard')).toBe(false);
   });
 });

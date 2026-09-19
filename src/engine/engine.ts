@@ -8,6 +8,8 @@ import {
   processDefaultActionStore,
   SpellRegistryStore,
   processDefaultSpellStore,
+  CompanionRegistryStore,
+  processDefaultCompanionStore,
   activateRegistries,
   type EngineRegistries,
 } from './registries';
@@ -18,7 +20,7 @@ import type { Entity } from './entities/entity';
 import { Player } from './entities/player';
 import { Monster, type AiState } from './entities/monster';
 import { NPC } from './entities/npc';
-import { Companion, CompanionRegistry } from './entities/companion';
+import { Companion } from './entities/companion';
 import { EnergyScheduler } from './scheduler';
 import { FovManager } from './fov/fov-manager';
 import type { Action } from './actions/action';
@@ -317,11 +319,14 @@ export class GameEngine {
     actionStore.seedFrom(processDefaultActionStore());
     const spellStore = new SpellRegistryStore();
     spellStore.seedFrom(processDefaultSpellStore());
+    const companionStore = new CompanionRegistryStore();
+    companionStore.seedFrom(processDefaultCompanionStore());
     this.registries = {
       monsters: monsterStore,
       traps: trapStore,
       actionCommands: actionStore,
       spells: spellStore,
+      companions: companionStore,
     };
     activateRegistries(this.registries);
 
@@ -333,7 +338,7 @@ export class GameEngine {
       this.registries.monsters.registerAll(this.manifest.monsters);
     }
     if (this.manifest.companions && this.manifest.companions.length > 0) {
-      CompanionRegistry.registerAll(this.manifest.companions);
+      this.registries.companions.registerAll(this.manifest.companions);
     }
     if (this.manifest.traps && this.manifest.traps.length > 0) {
       this.registries.traps.registerAll(this.manifest.traps);

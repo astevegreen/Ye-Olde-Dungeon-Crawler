@@ -14,6 +14,10 @@ import {
   SpellRegistryStore,
   setActiveSpellStore,
 } from './spellRegistryStore';
+import {
+  CompanionRegistryStore,
+  setActiveCompanionStore,
+} from './companionRegistryStore';
 
 export { RegistryStore } from './registryStore';
 export {
@@ -40,6 +44,12 @@ export {
   processDefaultSpellStore,
   setActiveSpellStore,
 } from './spellRegistryStore';
+export {
+  CompanionRegistryStore,
+  activeCompanionStore,
+  processDefaultCompanionStore,
+  setActiveCompanionStore,
+} from './companionRegistryStore';
 
 /**
  * Bundle of per-engine content registries (ARCHITECTURE.md §3, P-22).
@@ -49,6 +59,7 @@ export interface EngineRegistries {
   traps: TrapRegistryStore;
   actionCommands: ActionRegistryStore;
   spells: SpellRegistryStore;
+  companions: CompanionRegistryStore;
 }
 
 /**
@@ -61,4 +72,5 @@ export function activateRegistries(registries: EngineRegistries | null): void {
   setActiveTrapStore(registries ? registries.traps : null);
   setActiveActionStore(registries ? registries.actionCommands : null);
   setActiveSpellStore(registries ? registries.spells : null);
+  setActiveCompanionStore(registries ? registries.companions : null);
 }

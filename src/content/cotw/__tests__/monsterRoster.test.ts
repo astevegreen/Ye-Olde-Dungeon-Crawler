@@ -13,8 +13,9 @@ import {
   MAW_OF_MALICE_MONSTERS,
   BOSS_MONSTERS,
 } from '../monsters';
+import { MonsterRegistry, GameEngine, GameMap, TILES, Player } from '../../../engine';
 import { AIRegistry } from '../../../engine/ai/aiRegistry';
-import { MonsterRegistry } from '../../../engine';
+import { cotwManifest } from '../index';
 
 describe('Castle of the Winds Monster Roster (37 entries)', () => {
   it('contains exactly 37 total entries in the canonical roster', () => {
@@ -159,7 +160,12 @@ describe('Castle of the Winds Monster Roster (37 entries)', () => {
     expect(COTW_BESTIARY.huldra).toBeDefined();
   });
 
-  it('registers roster monsters in the global MonsterRegistry', () => {
+  it('registers roster monsters in the MonsterRegistry via manifest', () => {
+    new GameEngine({
+      map: new GameMap(10, 10, TILES.FLOOR),
+      player: new Player({ id: 'hero', name: 'Hero', position: { x: 1, y: 1 } }),
+      manifest: cotwManifest,
+    });
     expect(MonsterRegistry.get('glod')).toBeDefined();
     expect(MonsterRegistry.get('sun_chariot_warden')).toBeDefined();
     expect(MonsterRegistry.get('nidhogg')).toBeDefined();

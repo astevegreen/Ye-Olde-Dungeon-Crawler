@@ -16,6 +16,7 @@ import { TrapInstance } from '../dungeon/traps';
 import { Visibility } from '../fov/types';
 import { FovManager } from '../fov/fov-manager';
 import { GameEngine } from '../engine';
+import { activateRegistries } from '../registries';
 import { registerSerializeGameFn, flightRecorder } from '../debug/flightRecorder';
 import { CompendiumManager } from '../compendium/compendiumManager';
 import type { GameContentManifest } from '../types/manifest';
@@ -923,6 +924,8 @@ export function deserializeGame(
     }
     engine.worldState = ws;
   }
+
+  activateRegistries(engine.registries);
 
   return {
     engine,

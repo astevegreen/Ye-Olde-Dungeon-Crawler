@@ -1,4 +1,5 @@
 import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
+import { RegistryStore } from './registryStore';
 
 /**
  * One engine's monster definitions (ARCHITECTURE.md §3, P-22).
@@ -11,40 +12,9 @@ import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
  * into whichever store is active rather than keeping its own map. Two structures holding
  * the same data is the failure mode §6 records for the scheduler partition.
  */
-export class MonsterRegistryStore {
-  private readonly definitions = new Map<string, MonsterDefinition>();
-
-  public register(def: MonsterDefinition): void {
-    this.definitions.set(def.id, def);
-  }
-
-  public registerAll(defs: MonsterDefinition[] | Record<string, MonsterDefinition>): void {
-    for (const def of Array.isArray(defs) ? defs : Object.values(defs)) {
-      this.definitions.set(def.id, def);
-    }
-  }
-
-  public get(id: string): MonsterDefinition | undefined {
-    return this.definitions.get(id);
-  }
-
-  public has(id: string): boolean {
-    return this.definitions.has(id);
-  }
-
-  public getAll(): MonsterDefinition[] {
-    return [...this.definitions.values()];
-  }
-
-  public clear(): void {
-    this.definitions.clear();
-  }
-
-  /** Copies another store's registrations into this one. */
-  public seedFrom(other: MonsterRegistryStore): void {
-    for (const def of other.getAll()) {
-      this.definitions.set(def.id, def);
-    }
+export class MonsterRegistryStore extends RegistryStore<string, MonsterDefinition> {
+  constructor() {
+    super((def) => def.id);
   }
 }
 
@@ -66,10 +36,8 @@ export function processDefaultMonsterStore(): MonsterRegistryStore {
 }
 
 /**
- * Points the facade at an engine's own store. Called when a `GameEngine` is constructed,
- * so the most recently built engine owns the static lookup path — today's behaviour for a
- * single-engine process, and correct per-engine behaviour for code reaching its
- * registries through `engine.registries`.
+ * Points the facade at an engine's own store. Called when a `GameEngine` is activated,
+ * so the active engine owns the static lookup path.
  */
 export function setActiveMonsterStore(store: MonsterRegistryStore | null): void {
   activeStore = store ?? processDefaultStore;

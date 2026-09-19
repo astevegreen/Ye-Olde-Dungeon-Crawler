@@ -1,4 +1,3 @@
-import { MonsterRegistry } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
 
 import { RIME_HOLLOWS_MONSTERS } from './rimeHollows';
@@ -96,5 +95,3 @@ export const COTW_MONSTERS: MonsterDefinition[] = allMonsters;
 /** Alias for backward compatibility */
 export const BESTIARY = COTW_BESTIARY;
 
-// Register with MonsterRegistry for runtime access
-MonsterRegistry.registerAll(COTW_MONSTERS);

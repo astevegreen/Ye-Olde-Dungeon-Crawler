@@ -2,7 +2,7 @@
 
 > **Source:** ARCHITECTURE.md §9 (Planned Work Register), P-03 and P-22.
 > **Author:** Claude Code, 2026-09-19. Based on the code at `21f929e` plus the uncommitted working tree at that time.
-> **Status:** Draft. **Do not start step 2 or step 5** until the decision in the last section is recorded. ARCHITECTURE.md is authoritative. If this plan conflicts with it, stop and flag the conflict. Do not pick a side.
+> **Status:** Approved (Option a - 2026-09-19). ARCHITECTURE.md is authoritative. If this plan conflicts with it, stop and flag the conflict. Do not pick a side.
 
 ---
 
@@ -170,4 +170,4 @@ Steps 2 and 5 go beyond what the §9 entries currently say. Choose one:
 - **(a) Expand the entries.** Expand P-03 and P-22 in §9 to cover steps 2 and 5, then carry out this plan as written.
 - **(b) Keep the entries narrow.** Keep P-03 limited to the two tile types (step 4 only, plus the step-2 changes step 4 depends on). Record the other campaign-specific engine code as a new Planned item with its own ID.
 
-Decision: _(pending)_
+Decision: **(a) Expand the entries.** Expand P-03 and P-22 in §9 to cover steps 2 and 5, then carry out this plan as written (approved by project owner 2026-09-19).

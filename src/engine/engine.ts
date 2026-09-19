@@ -2,8 +2,9 @@ import type { ActionResult, Position, VisualEffectDescriptor } from './types';
 import {
   MonsterRegistryStore,
   processDefaultMonsterStore,
-  setActiveMonsterStore,
-} from './registries/monsterRegistryStore';
+  activateRegistries,
+  type EngineRegistries,
+} from './registries';
 import { BASE_ACTION_COST } from './types';
 import type { GameEvent } from './events';
 import { GameMap } from './grid/map';
@@ -135,10 +136,9 @@ export class GameEngine {
   public readonly diagnostics: DiagnosticsAPI;
   public readonly prng: PRNG;
   /**
-   * This engine's own content registries (ARCHITECTURE.md §3, P-22). Stage 1 covers
-   * monster definitions; the remaining registries are still process-wide.
+   * This engine's own content registries (ARCHITECTURE.md §3, P-22).
    */
-  public readonly registries: { monsters: MonsterRegistryStore };
+  public readonly registries: EngineRegistries;
   public rng: () => number;
   public map: GameMap;
   public readonly player: Player;
@@ -309,7 +309,7 @@ export class GameEngine {
     const monsterStore = new MonsterRegistryStore();
     monsterStore.seedFrom(processDefaultMonsterStore());
     this.registries = { monsters: monsterStore };
-    setActiveMonsterStore(monsterStore);
+    activateRegistries(this.registries);
 
     SpellPipeline.ensureBuiltinEffects();
     if (this.manifest.spells && this.manifest.spells.length > 0) {
@@ -684,6 +684,7 @@ export class GameEngine {
   }
 
   public changeFloor(targetFloor: number, customSpawn?: Position): void {
+    activateRegistries(this.registries);
     if (targetFloor === this.currentFloor) return;
     const prevFloor = this.currentFloor;
 
@@ -906,6 +907,7 @@ export class GameEngine {
    * the turn is surfaced on the returned result as `pipelineError`.
    */
   public handlePlayerAction(action: Action): ActionResult {
+    activateRegistries(this.registries);
     const failuresBefore = this.actionPipeline.caughtExceptionCount;
     return this.surfaceIsolatedTurnFailures(this.executePlayerTurn(action), failuresBefore);
   }
@@ -1055,6 +1057,7 @@ export class GameEngine {
    * the player has sufficient energy to take their next action (or until game over).
    */
   public advanceWorldUntilPlayerTurn(maxIterations = 5000): void {
+    activateRegistries(this.registries);
     if (this.isPaused) {
       return;
     }

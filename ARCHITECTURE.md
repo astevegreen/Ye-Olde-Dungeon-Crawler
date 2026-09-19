@@ -322,15 +322,29 @@ Each entry records the current state, the target, and whether the work is expect
 - Current: stage 1 is done — the caster AI no longer names campaign content. Telegraphed wind-up abilities and spell preference are declared on `MonsterDefinition` (`telegraphedAbility`, `spellPreferences`), so "Hellfire Surge", `firebolt`, and `slow` live in `src/content/cotw/monsters.ts` while the engine supplies only the mechanism. Both AI paths are converted: the `AIRegistry` caster strategy that actually runs, and the legacy `AiBehaviorRegistry` fallback.
 - **2026-09-16: the Town-Return fixtures (Runic Leyline Conduit, Valkyrie's Sprint, Dwarven Counterweight Winch, Two-Way Town Portal) and their four tile types (`runic_conduit`, `conduit_node`, `valkyrie_sprint`, `dwarven_winch`, `town_portal`) were removed entirely, not extracted.** They were undocumented, unreviewed additions (traced to a separate untrusted session) that never went through an architecture decision, so removal rather than pack-neutral extraction was the correct call once confirmed — there was no design intent to preserve. This closes what was the larger remaining chunk of this item (`src/engine/townReturn/`, ~1,150 lines across six files and 56 engine references, plus their dispatcher, UI modals, HUD/tile rendering, and 213 total references across 31 files). No migration was written for the save-format change (`SerializedTownReturnData` dropped from `SavedGameData`, RLE codes freed) because there are no real player saves to preserve pre-release.
 - **2026-09-16: the Rune of Return was implemented as their pack-neutral replacement** (§3's Content Extensibility Model has the full writeup) — a fixed engine mechanic (channel timing, banking, mobility, interrupt rules, two-way dimensional recall, and innate spiritual dissolution with zero inventory footprint) with only presentation, the Floor 5 Miniboss Sanctuary acquisition encounter, and the town refill trigger left to content. Genuinely new engine-owned capability, not extracted campaign content, so it doesn't reduce the remaining item below.
-- Remaining, in dependency order:
-  1. **Theme-specific tile types** (`gateway_valhalla`, `altar_tyr` — the boss-victory portal and the Floor-3 choice-encounter altar, both out of scope for removal and still legitimate campaign content). `registerTileDefinition` already exists, but these two are still baked into the canonical `TileType` union *and* into `compaction.ts`'s RLE code table, which every stored floor is encoded against. Extracting them means widening `TileType` to `string` and persisting a registry-driven code table — a save-format change needing a version bump and migration (§8.1 exception 2).
-- Protected files: `migrator.ts` for (1).
+- Remaining, expanded to full scope (approved 2026-09-19):
+  1. **Campaign-specific engine logic & references:**
+     - `src/engine/combat/deathResolver.ts`: remove `'boss_hrungnir'` hardcoded check and direct placement of `TILES.GATEWAY_VALHALLA`, generalizing via `manifest.quest.victoryPortalTileId`.
+     - `src/engine/actions/movement.ts`: generalize `altar_tyr` and `tyr_purified`/`tyr_desecrated` into generic tile-choice resolution with content-defined `ChoiceDefinition.resolvedStates`.
+     - `src/engine/quest/dungeonArc.ts`: generalize floor-3 altar and floor-5 rune vault placement into generic manifest placement configuration (`fixedTilePlacements` and `manifest.runeOfReturn.acquisition`).
+     - Presentation (`canvas-renderer.ts`, `journalModule.ts`): generalize `'gateway_valhalla'` type checks into `TileDefinition` metadata (`visual: 'portal'`, `landmarkLabel`).
+  2. **Theme-specific tile types:**
+     - Extract `gateway_valhalla` and `altar_tyr` from `CanonicalTileType` to `src/content/cotw/tiles.ts`.
+     - Implement dictionary-based RLE map compaction (`tileCodes: string[]`) with backward-compatible legacy codec fallback for v10 saves and archived floors in `BulkArchive`, incrementing `CURRENT_SCHEMA_VERSION` to 11 (§8.1 exception 2).
+- Protected files: `engine.ts` for (1), `migrator.ts` for (2).
 
 **P-22 — Per-engine content registries** (§3)
-- Current: stage 1 is done — monster definitions are per-engine (`engine.registries.monsters`), with the module-level `MonsterRegistry` forwarding into the active store rather than owning a map. Every other registry is still process-wide, so constructing two engines with different manifests still risks one overwriting the other for status handlers, AI behaviours and strategies, action commands, spells, traps, companions, dungeon generators, effect primitives, global hooks, and item containers.
-- Target: every registry scoped per `GameEngine`, and the process-default store plus its active-store pointer removed once no static entry point needs them.
-- Approach: repeat the stage-1 pattern per registry — an instance store, a facade that forwards rather than duplicating, and the engine seeding its store from the process default so fixtures registered before construction stay visible. The static entry points that have no engine in scope (notably `Monster.createFromDefinition`) are what keep the process default alive; migrating them is the bulk of the remaining work.
-- Protected files: `engine.ts`.
+- Current: stage 1 is done — monster definitions are per-engine (`engine.registries.monsters`), with the module-level `MonsterRegistry` forwarding into the active store rather than owning a map.
+- Scope & flaws identified (approved 2026-09-19):
+  - **Activation flaw:** `setActiveMonsterStore` makes the last-constructed engine own all static lookups; switching active engines requires explicit bundle activation (`activateRegistries(engine.registries)`) at all engine entry points (`constructor`, `handlePlayerAction`, `advanceWorldUntilPlayerTurn`, `changeFloor`, deserialization).
+  - **Tile registry:** `src/engine/grid/tile.ts`'s tile registry is process-wide and must be converted to an engine-owned registry ahead of P-03 custom tile extraction (§8.3).
+  - **Remaining content registries:** traps, action commands, spells, companions, AI strategies, AI behaviours, status handlers, tiles, and built-ins (dungeon generators, effect primitives, hook primitives, global hooks).
+  - **Runtime state separation:** `containerRegistry` and `itemIndex` hold mutable per-game state, not content, and must not be seeded from process defaults.
+- Approach:
+  - Stage 2: generic `RegistryStore<K, V>`, `EngineRegistries` bundle, and entry-point `activateRegistries` wiring.
+  - Stage 3: migrate content registries (traps, action commands, spells, companions, AI strategies, AI behaviours, status handlers, tiles).
+  - Stage 4: isolate runtime state (`containerRegistry`, `itemIndex`), thread registries to static entry points (`createScaledMonster`, `populateDungeonFloor`), and eliminate the process-default mutable stores.
+- Protected files: `engine.ts` (exception 3).
 
 ### Deferred (out of scope)
 Entries here are recorded, not planned: no work is scheduled and none has been attempted. They keep their reserved IDs so numbering stays stable (§0). A deferred item is not a **[Planned]** item — do not pick one up as planned work; moving one back into the active register above is an explicit decision.

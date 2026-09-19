@@ -197,3 +197,6 @@ export * from './storage/safeJson';
 
 // Renown & Meta-Progression
 export * from './renown/renownLedger';
+
+// Per-Engine Registries
+export * from './registries';

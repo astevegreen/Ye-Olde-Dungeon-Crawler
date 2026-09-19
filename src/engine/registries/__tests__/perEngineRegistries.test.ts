@@ -4,6 +4,7 @@ import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { MonsterRegistry } from '../../bestiary/monsterDefinitions';
+import { WaitAction } from '../../actions/wait';
 import { processDefaultMonsterStore, setActiveMonsterStore } from '../monsterRegistryStore';
 import type { MonsterDefinition } from '../../bestiary/monsterDefinitions';
 
@@ -71,5 +72,26 @@ describe('Per-engine monster registries', () => {
     engineWith([def('grunt')]);
 
     expect(MonsterRegistry.has('grunt')).toBe(true);
+  });
+
+  it('switches static facade lookups to engine A when acting on engine A after constructing engine B', () => {
+    const engineA = engineWith([def('kobold')]);
+    const engineB = engineWith([def('grunt')]);
+
+    // Right after engine B is constructed, the static facade points to B
+    expect(MonsterRegistry.has('grunt')).toBe(true);
+    expect(MonsterRegistry.has('kobold')).toBe(false);
+
+    // Now execute an action on engine A
+    engineA.handlePlayerAction(new WaitAction(engineA.player));
+
+    // The static facade must now resolve against engine A's data!
+    expect(MonsterRegistry.has('kobold')).toBe(true);
+    expect(MonsterRegistry.has('grunt')).toBe(false);
+
+    // Acting on engine B switches back to B
+    engineB.handlePlayerAction(new WaitAction(engineB.player));
+    expect(MonsterRegistry.has('grunt')).toBe(true);
+    expect(MonsterRegistry.has('kobold')).toBe(false);
   });
 });

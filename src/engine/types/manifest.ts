@@ -192,7 +192,9 @@ export interface TownBuildingDefinition {
   name: string;
   bounds: { x1: number; y1: number; x2: number; y2: number };
   door: { x: number; y: number; isOpen?: boolean };
+  buildingType?: 'temple' | 'bank' | 'shop' | 'smithy' | 'house' | 'generic';
 }
+
 
 export interface TownServicesDefinition {
   templeName?: string;
@@ -369,6 +371,12 @@ export interface TimedEventDefinition {
   expireMessage?: string;
 }
 
+export interface TileZoneBand {
+  floor: number;
+  zoneKey: string;
+  label?: string;
+}
+
 export interface AtlasProceduralTheme<TContext = any> {
   themeId: string;
   renderTile?: (
@@ -383,7 +391,9 @@ export interface AtlasProceduralTheme<TContext = any> {
     (ctx: TContext, ox: number, oy: number, size: number) => void
   >;
   palette?: Record<string, string>;
+  tileZoneBands?: TileZoneBand[];
 }
+
 
 export interface StarterKitDefinition {
   weaponItemId: string;

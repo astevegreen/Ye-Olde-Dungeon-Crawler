@@ -6,7 +6,7 @@ function createMockCanvas(): HTMLCanvasElement {
   const dummyCtx: any = new Proxy(
     {
       getImageData: vi.fn(() => ({
-        data: new Uint8ClampedArray(16 * ATLAS_TILE_SIZE * (4 * ATLAS_TILE_SIZE) * 4),
+        data: new Uint8ClampedArray(16 * ATLAS_TILE_SIZE * (10 * ATLAS_TILE_SIZE) * 4),
       })),
       putImageData: vi.fn(),
       drawImage: vi.fn(),
@@ -48,7 +48,8 @@ describe('Procedural Sprite Recipe Registry & Atlas Baking', () => {
     expect(atlas.atlasCanvas).toBeDefined();
     expect(atlas.dimmedAtlasCanvas).toBeDefined();
     expect(atlas.atlasCanvas.width).toBe(16 * ATLAS_TILE_SIZE);
-    expect(atlas.atlasCanvas.height).toBe(4 * ATLAS_TILE_SIZE);
+    expect(atlas.atlasCanvas.height).toBe(10 * ATLAS_TILE_SIZE);
+
 
     // Verify individual sprite canvases can be retrieved from the baked atlas
     const playerCanvas = atlas.getSpriteCanvas('player');

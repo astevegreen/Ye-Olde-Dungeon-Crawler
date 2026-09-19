@@ -14,30 +14,35 @@ export const COTW_TOWN: TownLayoutDefinition = {
     // Olaf's General Store (North-West)
     {
       name: "Olaf's General Store",
+      buildingType: 'shop',
       bounds: { x1: 3, y1: 2, x2: 16, y2: 9 },
       door: { x: 10, y: 9, isOpen: false },
     },
     // Gunther's Armory (North-East)
     {
       name: "Gunther's Armory",
+      buildingType: 'smithy',
       bounds: { x1: 33, y1: 2, x2: 46, y2: 9 },
       door: { x: 40, y: 9, isOpen: false },
     },
     // Astrid's Alchemical Herbs (South-West)
     {
       name: "Astrid's Alchemy",
+      buildingType: 'shop',
       bounds: { x1: 3, y1: 19, x2: 16, y2: 27 },
       door: { x: 10, y: 19, isOpen: false },
     },
     // Father Torvald's Temple of Thor (South-Center)
     {
       name: 'Temple of Thor',
+      buildingType: 'temple',
       bounds: { x1: 20, y1: 19, x2: 30, y2: 28 },
       door: { x: 25, y: 19, isOpen: true },
     },
     // Sage's Study & Bank of Bjarnarhaven (South-East)
     {
       name: "Sage Study & Vault",
+      buildingType: 'bank',
       bounds: { x1: 33, y1: 19, x2: 46, y2: 27 },
       door: { x: 40, y: 19, isOpen: false },
     },

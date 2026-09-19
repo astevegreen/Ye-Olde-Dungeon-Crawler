@@ -687,9 +687,10 @@ export class CanvasRenderer {
 
         if (!tile) continue;
 
-        this.drawTileWithFov(screenX, screenY, cs, tile, visibility);
+        this.drawTileWithFov(screenX, screenY, cs, tile, visibility, worldX, worldY);
       }
     }
+
 
     // Threatened Target Tiles Hazard Highlight (Telegraphed Wind-Up)
     for (const entity of this.engine.map.getAllEntities()) {
@@ -724,7 +725,9 @@ export class CanvasRenderer {
     py: number,
     cs: number,
     tile: TileDefinition,
-    visibility: Visibility
+    visibility: Visibility,
+    worldX?: number,
+    worldY?: number
   ): void {
     // State 1: Unexplored (pitch black)
     if (visibility === Visibility.Unexplored) {
@@ -733,8 +736,25 @@ export class CanvasRenderer {
       return;
     }
 
+    const currentFloor = this.engine.currentFloor;
+    const tileZoneBands = this.engine.manifest?.atlas?.tileZoneBands;
+
+    let buildingType: string | undefined;
+    if (currentFloor === 0 && worldX !== undefined && worldY !== undefined) {
+      const buildings = this.engine.manifest?.town?.buildings;
+      if (buildings) {
+        for (let i = 0; i < buildings.length; i++) {
+          const b = buildings[i];
+          if (worldX >= b.bounds.x1 && worldX <= b.bounds.x2 && worldY >= b.bounds.y1 && worldY <= b.bounds.y2) {
+            buildingType = b.buildingType ?? 'generic';
+            break;
+          }
+        }
+      }
+    }
+
     // State 2 & 3: Explored vs Visible via Sprite Atlas
-    const spriteKey = getTerrainSpriteKey(tile.type);
+    const spriteKey = getTerrainSpriteKey(tile.type, currentFloor, tileZoneBands, buildingType);
     this.atlas.drawSprite(this.ctx, spriteKey, px, py, cs, visibility);
 
     if (tile.type === 'gateway_valhalla') {
@@ -745,7 +765,7 @@ export class CanvasRenderer {
       tile.type === 'iron_bars' ||
       tile.type === 'pillar'
     ) {
-      this.drawTacticalTerrain(px, py, cs, tile.type, visibility);
+      this.drawTacticalTerrain(px, py, cs, tile.type, visibility, currentFloor);
     }
   }
 
@@ -786,7 +806,8 @@ export class CanvasRenderer {
     py: number,
     cs: number,
     type: string,
-    visibility: Visibility
+    visibility: Visibility,
+    currentFloor?: number
   ): void {
     const isVisible = visibility === Visibility.Visible;
     const prevFillStyle = this.ctx.fillStyle;
@@ -795,6 +816,41 @@ export class CanvasRenderer {
 
     switch (type) {
       case 'shallow_water': {
+        if (currentFloor !== undefined && currentFloor > 0 && currentFloor <= 9) {
+          // Early zone (Rime Hollows): cracked ice sheet
+          this.ctx.fillStyle = isVisible ? 'rgba(56, 189, 248, 0.45)' : 'rgba(15, 23, 42, 0.6)';
+          this.ctx.fillRect(px, py, cs, cs);
+
+          // Cracked ice fracture lines
+          this.ctx.strokeStyle = isVisible ? '#e0f2fe' : '#38bdf8';
+          this.ctx.lineWidth = 1.5;
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + cs * 0.15, py + cs * 0.25);
+          this.ctx.lineTo(px + cs * 0.45, py + cs * 0.5);
+          this.ctx.lineTo(px + cs * 0.85, py + cs * 0.35);
+          this.ctx.moveTo(px + cs * 0.45, py + cs * 0.5);
+          this.ctx.lineTo(px + cs * 0.35, py + cs * 0.85);
+          this.ctx.moveTo(px + cs * 0.65, py + cs * 0.43);
+          this.ctx.lineTo(px + cs * 0.8, py + cs * 0.75);
+          this.ctx.stroke();
+          break;
+        }
+
+        if (currentFloor !== undefined && currentFloor >= 18 && currentFloor <= 25) {
+          // Obsidian Siphon: molten runoff
+          this.ctx.fillStyle = isVisible ? 'rgba(234, 88, 12, 0.55)' : 'rgba(30, 27, 75, 0.6)';
+          this.ctx.fillRect(px, py, cs, cs);
+          this.ctx.strokeStyle = isVisible ? '#fef08a' : '#ea580c';
+          this.ctx.lineWidth = 1.5;
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + cs * 0.2, py + cs * 0.4);
+          this.ctx.quadraticCurveTo(px + cs * 0.5, py + cs * 0.2, px + cs * 0.8, py + cs * 0.4);
+          this.ctx.moveTo(px + cs * 0.25, py + cs * 0.7);
+          this.ctx.quadraticCurveTo(px + cs * 0.55, py + cs * 0.5, px + cs * 0.85, py + cs * 0.7);
+          this.ctx.stroke();
+          break;
+        }
+
         // Translucent azure water wash over stone floor
         this.ctx.fillStyle = isVisible ? 'rgba(14, 116, 144, 0.55)' : 'rgba(15, 23, 42, 0.6)';
         this.ctx.fillRect(px, py, cs, cs);
@@ -814,6 +870,7 @@ export class CanvasRenderer {
         this.ctx.stroke();
         break;
       }
+
 
       case 'chasm': {
         // Pitch abyssal void
@@ -876,30 +933,152 @@ export class CanvasRenderer {
       }
 
       case 'pillar': {
-        // 3D beveled stone column
         const pad = Math.floor(cs * 0.12);
         const colW = cs - pad * 2;
+        const cx = px + cs / 2;
+        const cy = py + cs / 2;
 
         // Base shadow
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
         this.ctx.fillRect(px + pad + 2, py + pad + 2, colW, colW);
 
-        // Outer plinth
+        if (currentFloor !== undefined && currentFloor >= 1 && currentFloor <= 9) {
+          // Ice Spire (Floors 1-9: Rime Hollows)
+          this.ctx.fillStyle = isVisible ? '#0c4a6e' : '#031c2c';
+          this.ctx.fillRect(px + pad, py + pad, colW, colW);
+
+          this.ctx.strokeStyle = isVisible ? '#38bdf8' : '#0284c7';
+          this.ctx.lineWidth = 2;
+          this.ctx.strokeRect(px + pad + 1, py + pad + 1, colW - 2, colW - 2);
+
+          this.ctx.fillStyle = isVisible ? '#0284c7' : '#075985';
+          this.ctx.fillRect(px + pad + 3, py + pad + 3, colW - 6, colW - 6);
+
+          // Frost crystal diamond
+          const dSize = Math.floor(cs * 0.16);
+          this.ctx.fillStyle = isVisible ? '#e0f2fe' : '#38bdf8';
+          this.ctx.beginPath();
+          this.ctx.moveTo(cx, cy - dSize);
+          this.ctx.lineTo(cx + dSize, cy);
+          this.ctx.lineTo(cx, cy + dSize);
+          this.ctx.lineTo(cx - dSize, cy);
+          this.ctx.closePath();
+          this.ctx.fill();
+          break;
+        }
+
+        if (currentFloor !== undefined && currentFloor >= 10 && currentFloor <= 17) {
+          // Dwarven Forge Column (Floors 10-17: Abandoned Dwarven Works)
+          this.ctx.fillStyle = isVisible ? '#44403c' : '#1c1917';
+          this.ctx.fillRect(px + pad, py + pad, colW, colW);
+
+          this.ctx.strokeStyle = isVisible ? '#d97706' : '#78350f';
+          this.ctx.lineWidth = 2;
+          this.ctx.strokeRect(px + pad + 1, py + pad + 1, colW - 2, colW - 2);
+
+          this.ctx.fillStyle = isVisible ? '#292524' : '#0c0a09';
+          this.ctx.fillRect(px + pad + 3, py + pad + 3, colW - 6, colW - 6);
+
+          // Brass rivet diamond motif
+          const dSize = Math.floor(cs * 0.16);
+          this.ctx.fillStyle = isVisible ? '#f97316' : '#b45309';
+          this.ctx.beginPath();
+          this.ctx.moveTo(cx, cy - dSize);
+          this.ctx.lineTo(cx + dSize, cy);
+          this.ctx.lineTo(cx, cy + dSize);
+          this.ctx.lineTo(cx - dSize, cy);
+          this.ctx.closePath();
+          this.ctx.fill();
+          break;
+        }
+
+        if (currentFloor !== undefined && currentFloor >= 18 && currentFloor <= 25) {
+          // Obsidian Furnace (Floors 18-25: Obsidian Siphon)
+          this.ctx.fillStyle = isVisible ? '#0a0a0c' : '#050508';
+          this.ctx.fillRect(px + pad, py + pad, colW, colW);
+
+          this.ctx.strokeStyle = isVisible ? '#ea580c' : '#9a3412';
+          this.ctx.lineWidth = 2;
+          this.ctx.strokeRect(px + pad + 1, py + pad + 1, colW - 2, colW - 2);
+
+          this.ctx.fillStyle = isVisible ? '#431407' : '#1a0500';
+          this.ctx.fillRect(px + pad + 3, py + pad + 3, colW - 6, colW - 6);
+
+          // Magma core diamond
+          const dSize = Math.floor(cs * 0.16);
+          this.ctx.fillStyle = isVisible ? '#fef08a' : '#ea580c';
+          this.ctx.beginPath();
+          this.ctx.moveTo(cx, cy - dSize);
+          this.ctx.lineTo(cx + dSize, cy);
+          this.ctx.lineTo(cx, cy + dSize);
+          this.ctx.lineTo(cx - dSize, cy);
+          this.ctx.closePath();
+          this.ctx.fill();
+          break;
+        }
+
+        if (currentFloor !== undefined && currentFloor >= 34 && currentFloor <= 42) {
+          // Tree Root (Floors 34-42: World Bark Descent)
+          this.ctx.fillStyle = isVisible ? '#451a03' : '#1c0a01';
+          this.ctx.fillRect(px + pad, py + pad, colW, colW);
+
+          this.ctx.strokeStyle = isVisible ? '#15803d' : '#14532d';
+          this.ctx.lineWidth = 2;
+          this.ctx.strokeRect(px + pad + 1, py + pad + 1, colW - 2, colW - 2);
+
+          this.ctx.fillStyle = isVisible ? '#291505' : '#0f0500';
+          this.ctx.fillRect(px + pad + 3, py + pad + 3, colW - 6, colW - 6);
+
+          // Moss / leaf motif
+          const dSize = Math.floor(cs * 0.16);
+          this.ctx.fillStyle = isVisible ? '#84cc16' : '#4d7c0f';
+          this.ctx.beginPath();
+          this.ctx.moveTo(cx, cy - dSize);
+          this.ctx.lineTo(cx + dSize, cy);
+          this.ctx.lineTo(cx, cy + dSize);
+          this.ctx.lineTo(cx - dSize, cy);
+          this.ctx.closePath();
+          this.ctx.fill();
+          break;
+        }
+
+        if (currentFloor !== undefined && currentFloor >= 43) {
+          // Blight / Bone Monolith (Floors 43+: Maw of Malice / The Rotting Root)
+          this.ctx.fillStyle = isVisible ? '#090514' : '#030207';
+          this.ctx.fillRect(px + pad, py + pad, colW, colW);
+
+          this.ctx.strokeStyle = isVisible ? '#4c1d95' : '#2e1065';
+          this.ctx.lineWidth = 2;
+          this.ctx.strokeRect(px + pad + 1, py + pad + 1, colW - 2, colW - 2);
+
+          this.ctx.fillStyle = isVisible ? '#1e1035' : '#0a0512';
+          this.ctx.fillRect(px + pad + 3, py + pad + 3, colW - 6, colW - 6);
+
+          // Toxic necrotic core
+          const dSize = Math.floor(cs * 0.16);
+          this.ctx.fillStyle = isVisible ? '#a3e635' : '#4c1d95';
+          this.ctx.beginPath();
+          this.ctx.moveTo(cx, cy - dSize);
+          this.ctx.lineTo(cx + dSize, cy);
+          this.ctx.lineTo(cx, cy + dSize);
+          this.ctx.lineTo(cx - dSize, cy);
+          this.ctx.closePath();
+          this.ctx.fill();
+          break;
+        }
+
+        // Default stone pillar
         this.ctx.fillStyle = isVisible ? '#334155' : '#1e293b';
         this.ctx.fillRect(px + pad, py + pad, colW, colW);
 
-        // Bevel highlight
         this.ctx.strokeStyle = isVisible ? '#64748b' : '#334155';
         this.ctx.lineWidth = 2;
         this.ctx.strokeRect(px + pad + 1, py + pad + 1, colW - 2, colW - 2);
 
-        // Capital detail
         this.ctx.fillStyle = isVisible ? '#475569' : '#0f172a';
         this.ctx.fillRect(px + pad + 3, py + pad + 3, colW - 6, colW - 6);
 
         // Center diamond motif
-        const cx = px + cs / 2;
-        const cy = py + cs / 2;
         const dSize = Math.floor(cs * 0.16);
         this.ctx.fillStyle = isVisible ? '#94a3b8' : '#334155';
         this.ctx.beginPath();

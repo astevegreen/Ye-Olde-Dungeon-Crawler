@@ -282,7 +282,7 @@ export class DungeonGenerator {
     // 6. Room Cover & Architecture Decoration (Pillars, Colonnades, Partitions)
     if (this.enableDecoration) {
       const nonVaultRooms = rooms.filter((_, idx) => !vaultRoomIndices.has(idx));
-      RoomDecorator.decorateRooms(map, nonVaultRooms, this.prng);
+      RoomDecorator.decorateRooms(map, nonVaultRooms, this.prng, this.floorNumber ?? 1);
     }
 
     const playerSpawn: Position = {

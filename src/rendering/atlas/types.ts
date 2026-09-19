@@ -6,7 +6,35 @@ export type TerrainSpriteKey =
   | 'stairs_up'
   | 'stairs_down'
   | 'trap'
-  | 'secret_door';
+  | 'secret_door'
+  // Zone terrain variants
+  | 'wall_rime_hollows'
+  | 'floor_rime_hollows'
+  | 'wall_dwarven_works'
+  | 'floor_dwarven_works'
+  | 'wall_obsidian_siphon'
+  | 'floor_obsidian_siphon'
+  | 'wall_tarnished_silver'
+  | 'floor_tarnished_silver'
+  | 'wall_world_bark'
+  | 'floor_world_bark'
+  | 'wall_maw_of_malice'
+  | 'floor_maw_of_malice'
+  | 'wall_rotting_root'
+  | 'floor_rotting_root'
+  // Town terrain variants
+  | 'wall_town'
+  | 'floor_town'
+  | 'floor_town_snow'
+  | 'wall_town_temple'
+  | 'floor_town_temple'
+  | 'wall_town_smithy'
+  | 'floor_town_smithy'
+  | 'wall_town_shop'
+  | 'floor_town_shop'
+  | 'wall_town_bank'
+  | 'floor_town_bank'
+  | 'hearth_fire';
 
 export type EntitySpriteKey =
   | 'player'
@@ -21,7 +49,36 @@ export type EntitySpriteKey =
   | 'priest'
   | 'sage'
   | 'banker'
-  | 'guard';
+  | 'guard'
+  // Monster Archetype Families
+  | 'dragon'
+  | 'wyrm'
+  | 'aberration'
+  | 'fiend'
+  | 'dragon_boss'
+  | 'draugr'
+  | 'wight'
+  | 'zombie'
+  | 'wraith'
+  | 'spectral'
+  | 'spirit'
+  | 'fae'
+  | 'imp'
+  | 'bone_horror'
+  | 'construct'
+  | 'slime'
+  | 'golem'
+  | 'hound'
+  | 'salamander'
+  | 'parasite'
+  | 'insect'
+  | 'spider'
+  | 'wolf'
+  | 'dwarf'
+  | 'hag'
+  | 'zealot'
+  | 'cultist'
+  | 'troll';
 
 export type ItemSpriteKey =
   | 'broadsword'
@@ -38,7 +95,24 @@ export type ItemSpriteKey =
   | 'chest'
   | 'belt'
   | 'sun_stone'
-  | 'travel_bread';
+  | 'travel_bread'
+  // Expanded Equipment & Consumables
+  | 'iron_armor'
+  | 'iron_shield'
+  | 'mace'
+  | 'battleaxe'
+  | 'warhammer'
+  | 'bow'
+  | 'ring'
+  | 'amulet'
+  | 'cloak'
+  | 'gauntlets'
+  | 'bracers'
+  | 'mana_potion'
+  | 'scroll'
+  | 'gem'
+  | 'key'
+  | 'torch';
 
 export type SpriteKey = TerrainSpriteKey | EntitySpriteKey | ItemSpriteKey;
 
@@ -46,3 +120,4 @@ export interface AtlasCoords {
   col: number;
   row: number;
 }
+

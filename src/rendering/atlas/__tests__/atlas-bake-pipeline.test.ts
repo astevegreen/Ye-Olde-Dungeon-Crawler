@@ -15,7 +15,7 @@ function createMockCanvas(): HTMLCanvasElement {
   const dummyCtx: any = new Proxy(
     {
       getImageData: vi.fn(() => ({
-        data: new Uint8ClampedArray(16 * ATLAS_TILE_SIZE * (4 * ATLAS_TILE_SIZE) * 4),
+        data: new Uint8ClampedArray(16 * ATLAS_TILE_SIZE * (10 * ATLAS_TILE_SIZE) * 4),
       })),
       putImageData: vi.fn(),
       drawImage: vi.fn(),
@@ -64,8 +64,9 @@ describe('Atlas bake pipeline — supersampling, downsample, shading, outline/hi
       const atlas = new SpriteAtlas();
       expect(ATLAS_TILE_SIZE).toBeGreaterThan(SPRITE_SIZE);
       expect(atlas.atlasCanvas.width).toBe(16 * ATLAS_TILE_SIZE);
-      expect(atlas.atlasCanvas.height).toBe(4 * ATLAS_TILE_SIZE);
+      expect(atlas.atlasCanvas.height).toBe(10 * ATLAS_TILE_SIZE);
     });
+
 
     it('still invokes recipes with the original SPRITE_SIZE-spaced coordinates, unaffected by the higher stored resolution', () => {
       const customWallRecipe = vi.fn((ctx: CanvasRenderingContext2D, ox: number, oy: number, size: number) => {

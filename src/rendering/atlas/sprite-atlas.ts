@@ -34,8 +34,11 @@ export const HIGHLIGHT_MIX = 0.35;
 const SHADE_LIGHT = 'rgba(255, 255, 255, 0.12)';
 const SHADE_DARK = 'rgba(0, 0, 0, 0.18)';
 
+export const ATLAS_COLS = 16;
+export const ATLAS_ROWS = 10;
+
 export const ATLAS_MAP: Record<SpriteKey, AtlasCoords> = {
-  // Row 0: Terrain
+  // Row 0: Base Terrain
   wall: { col: 0, row: 0 },
   floor: { col: 1, row: 0 },
   door_closed: { col: 2, row: 0 },
@@ -45,7 +48,7 @@ export const ATLAS_MAP: Record<SpriteKey, AtlasCoords> = {
   trap: { col: 6, row: 0 },
   secret_door: { col: 0, row: 0 },
 
-  // Row 1: Entities
+  // Row 1: Player & Base NPCs
   player: { col: 0, row: 1 },
   kobold: { col: 1, row: 1 },
   skeleton: { col: 2, row: 1 },
@@ -60,7 +63,7 @@ export const ATLAS_MAP: Record<SpriteKey, AtlasCoords> = {
   player_female: { col: 11, row: 1 },
   giant_boss: { col: 12, row: 1 },
 
-  // Row 2: Items
+  // Row 2: Base Items
   broadsword: { col: 0, row: 2 },
   leather_armor: { col: 1, row: 2 },
   wooden_shield: { col: 2, row: 2 },
@@ -76,6 +79,88 @@ export const ATLAS_MAP: Record<SpriteKey, AtlasCoords> = {
   belt: { col: 12, row: 2 },
   sun_stone: { col: 13, row: 2 },
   travel_bread: { col: 14, row: 2 },
+
+  // Row 3: Monstrous & Beasts Archetypes
+  dragon: { col: 0, row: 3 },
+  wyrm: { col: 1, row: 3 },
+  aberration: { col: 2, row: 3 },
+  fiend: { col: 3, row: 3 },
+  hound: { col: 4, row: 3 },
+  salamander: { col: 5, row: 3 },
+  parasite: { col: 6, row: 3 },
+  insect: { col: 7, row: 3 },
+  spider: { col: 8, row: 3 },
+  wolf: { col: 9, row: 3 },
+  construct: { col: 10, row: 3 },
+  slime: { col: 11, row: 3 },
+  golem: { col: 12, row: 3 },
+  dragon_boss: { col: 13, row: 3 },
+  troll: { col: 14, row: 3 },
+  bone_horror: { col: 15, row: 3 },
+
+  // Row 4: Undead, Spectral, Humanoids
+  draugr: { col: 0, row: 4 },
+  wight: { col: 1, row: 4 },
+  zombie: { col: 2, row: 4 },
+  wraith: { col: 3, row: 4 },
+  spectral: { col: 4, row: 4 },
+  spirit: { col: 5, row: 4 },
+  fae: { col: 6, row: 4 },
+  imp: { col: 7, row: 4 },
+  dwarf: { col: 8, row: 4 },
+  hag: { col: 9, row: 4 },
+  zealot: { col: 10, row: 4 },
+  cultist: { col: 11, row: 4 },
+
+  // Row 5: Expanded Equipment & Consumables
+  iron_armor: { col: 0, row: 5 },
+  iron_shield: { col: 1, row: 5 },
+  mace: { col: 2, row: 5 },
+  battleaxe: { col: 3, row: 5 },
+  warhammer: { col: 4, row: 5 },
+  bow: { col: 5, row: 5 },
+  ring: { col: 6, row: 5 },
+  amulet: { col: 7, row: 5 },
+  cloak: { col: 8, row: 5 },
+  gauntlets: { col: 9, row: 5 },
+  bracers: { col: 10, row: 5 },
+  mana_potion: { col: 11, row: 5 },
+  scroll: { col: 12, row: 5 },
+  gem: { col: 13, row: 5 },
+  key: { col: 14, row: 5 },
+  torch: { col: 15, row: 5 },
+
+  // Row 6: Dungeon Zone Walls
+  wall_rime_hollows: { col: 0, row: 6 },
+  wall_dwarven_works: { col: 1, row: 6 },
+  wall_obsidian_siphon: { col: 2, row: 6 },
+  wall_tarnished_silver: { col: 3, row: 6 },
+  wall_world_bark: { col: 4, row: 6 },
+  wall_maw_of_malice: { col: 5, row: 6 },
+  wall_rotting_root: { col: 6, row: 6 },
+
+  // Row 7: Dungeon Zone Floors
+  floor_rime_hollows: { col: 0, row: 7 },
+  floor_dwarven_works: { col: 1, row: 7 },
+  floor_obsidian_siphon: { col: 2, row: 7 },
+  floor_tarnished_silver: { col: 3, row: 7 },
+  floor_world_bark: { col: 4, row: 7 },
+  floor_maw_of_malice: { col: 5, row: 7 },
+  floor_rotting_root: { col: 6, row: 7 },
+
+  // Row 8: Town Themed Walls & Floors
+  wall_town: { col: 0, row: 8 },
+  floor_town: { col: 1, row: 8 },
+  floor_town_snow: { col: 2, row: 8 },
+  wall_town_temple: { col: 3, row: 8 },
+  floor_town_temple: { col: 4, row: 8 },
+  wall_town_smithy: { col: 5, row: 8 },
+  floor_town_smithy: { col: 6, row: 8 },
+  wall_town_shop: { col: 7, row: 8 },
+  floor_town_shop: { col: 8, row: 8 },
+  wall_town_bank: { col: 9, row: 8 },
+  floor_town_bank: { col: 10, row: 8 },
+  hearth_fire: { col: 11, row: 8 },
 };
 
 interface AtlasCell {
@@ -95,9 +180,9 @@ export class SpriteAtlas {
     this.atlasCanvas = document.createElement('canvas');
     this.dimmedAtlasCanvas = document.createElement('canvas');
 
-    // 16 columns by 4 rows of ATLAS_TILE_SIZE tiles
-    const width = 16 * ATLAS_TILE_SIZE;
-    const height = 4 * ATLAS_TILE_SIZE;
+    // 16 columns by 10 rows of ATLAS_TILE_SIZE tiles
+    const width = ATLAS_COLS * ATLAS_TILE_SIZE;
+    const height = ATLAS_ROWS * ATLAS_TILE_SIZE;
 
     this.atlasCanvas.width = width;
     this.atlasCanvas.height = height;
@@ -120,8 +205,9 @@ export class SpriteAtlas {
     if (!ctx) return;
 
     const scratch = document.createElement('canvas');
-    scratch.width = 16 * SPRITE_SIZE * BAKE_SCALE;
-    scratch.height = 4 * SPRITE_SIZE * BAKE_SCALE;
+    scratch.width = ATLAS_COLS * SPRITE_SIZE * BAKE_SCALE;
+    scratch.height = ATLAS_ROWS * SPRITE_SIZE * BAKE_SCALE;
+
     const sctx = scratch.getContext('2d');
     if (!sctx) return;
     sctx.scale(BAKE_SCALE, BAKE_SCALE);

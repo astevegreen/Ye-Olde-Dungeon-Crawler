@@ -216,6 +216,7 @@ export interface SerializedPlayer {
   /** Turns of channel progress banked from the last interrupt, applied to the next
    * attempt with the same charge (Steadfast Weave track). Resets to 0 on completion. */
   runeChannelBankedTurns?: number;
+  hasDiscoveredRune?: boolean;
 }
 
 export interface SerializedMonster {

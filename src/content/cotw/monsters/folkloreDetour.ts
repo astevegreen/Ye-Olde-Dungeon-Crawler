@@ -69,7 +69,7 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
     },
     fleeHealthPercent: 0.5,
     xpValue: 30,
-    tags: ['undead', 'spirit', 'hazard', 'fodder'],
+    tags: ['undead', 'spirit', 'ghost', 'hazard', 'fodder'],
     lootTable: [
       {
         chance: 0.4,

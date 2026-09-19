@@ -605,6 +605,9 @@ export class CanvasRenderer {
       else if (eff.type === 'cotw:giant_blood') {
         color = '#38bdf8';
         label = "GIANT'S BLOOD";
+      } else if (eff.type === 'rune_of_return_channel') {
+        color = '#38bdf8';
+        label = 'CHANNELING RUNE';
       }
 
       // duration >= 9999 is this codebase's sentinel for "ambient, not counting

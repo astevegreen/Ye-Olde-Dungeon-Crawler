@@ -5,6 +5,7 @@ import { EncumbranceLevel } from '../engine';
 import { SpriteAtlas } from './atlas/sprite-atlas';
 import { getItemSpriteKey } from './atlas/sprite-mapper';
 import { PotionItem, ScrollItem, WandItem } from '../engine';
+import { RuneOfReturnItem, ChannelRuneOfReturnAction } from '../engine';
 import { resolveThemeTokens } from './theme';
 import type { ThemeTokens } from '../engine';
 import { PaperdollView } from './paperdoll-view';
@@ -400,7 +401,21 @@ export class InventoryOverlay {
           if (this.onStateChanged) this.onStateChanged();
           return true;
         }
+        if (item instanceof RuneOfReturnItem) {
+          engine.handlePlayerAction(new ChannelRuneOfReturnAction(engine.player));
+          this.close();
+          if (this.onStateChanged) this.onStateChanged();
+          return true;
+        }
       }
+    }
+
+    // KeyM: Open Rune Mastery Tree if Rune of Return is inspected
+    if (code === 'KeyM' && this.inspector.selectedItem instanceof RuneOfReturnItem) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('open_rune_of_return_tree'));
+      }
+      return true;
     }
 
     // 7. KeyD: Contextual Drop
@@ -444,6 +459,12 @@ export class InventoryOverlay {
             payload: { container: activeContainer, item: this.inspector.selectedItem },
           });
           this.inspector.clearSelection();
+          if (this.onStateChanged) this.onStateChanged();
+          return true;
+        }
+        if (this.inspector.selectedItem instanceof RuneOfReturnItem && this.inspector.selectedSource === 'backpack') {
+          engine.handlePlayerAction(new ChannelRuneOfReturnAction(engine.player));
+          this.close();
           if (this.onStateChanged) this.onStateChanged();
           return true;
         }

@@ -60,7 +60,7 @@ import { PactManager } from './pacts/pactManager';
 import { validateManifest, type GameContentManifest } from './types/manifest';
 import { EngineCommandBus, type GameCommandBus } from './commands/commandBus';
 import { IdentificationManager } from './items/identification';
-import { attuneRuneOfReturn, findRuneOfReturn } from './magic/runeOfReturn';
+import { attuneRuneOfReturn, findRuneOfReturn, createRuneOfReturnActionHooks } from './magic/runeOfReturn';
 
 const DEFAULT_EMPTY_MANIFEST: GameContentManifest = {
   id: 'generic',
@@ -374,6 +374,7 @@ export class GameEngine {
     this.gameState = config.gameState ?? new GameStateManager();
     this.gameState.updateFloor(this.currentFloor);
     this.actionPipeline = new ActionPipeline();
+    this.actionPipeline.registerHooks(createRuneOfReturnActionHooks());
     if (this.manifest.actionHooks && this.manifest.actionHooks.length > 0) {
       this.actionPipeline.registerHooks(this.manifest.actionHooks);
     }
@@ -473,6 +474,14 @@ export class GameEngine {
         }
         const added = this.player.addItem(item);
         if (added) {
+          if (!this.player.hasDiscoveredRune && findRuneOfReturn(this.player)) {
+            this.player.hasDiscoveredRune = true;
+            this.emitGameEvent({
+              type: 'rune_of_return_discovered',
+              turn: this.turnCount,
+              actorId: this.player.id,
+            });
+          }
           return { placedInPack: true };
         }
         this.map.addItemAt(this.player.x, this.player.y, item);
@@ -667,6 +676,9 @@ export class GameEngine {
       this.log(`Spoke with ${npc.name}: "${npc.greeting}"`);
       const item = findRuneOfReturn(this.player);
       this.log(item ? attuneRuneOfReturn(item) : `${npc.name} has nothing to attune — you carry no Rune of Return.`);
+      if (this.onNpcInteract) {
+        this.onNpcInteract(npc);
+      }
       return;
     }
     this.log(`Spoke with ${npc.name}: "${npc.greeting}"`);
@@ -989,6 +1001,16 @@ export class GameEngine {
           icon: '🩸',
         });
       }
+    }
+
+    // Check for Rune of Return acquisition
+    if (!this.player.hasDiscoveredRune && findRuneOfReturn(this.player)) {
+      this.player.hasDiscoveredRune = true;
+      this.emitGameEvent({
+        type: 'rune_of_return_discovered',
+        turn: this.turnCount,
+        actorId: this.player.id,
+      });
     }
 
     return result;

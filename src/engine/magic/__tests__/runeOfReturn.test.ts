@@ -3,6 +3,7 @@ import { GameEngine } from '../../engine';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
+import { Monster } from '../../entities/monster';
 import { WaitAction } from '../../actions/wait';
 import { MovementAction } from '../../actions/movement';
 import { serializeGame, deserializeGame } from '../../storage/serializer';
@@ -120,13 +121,34 @@ describe('Rune of Return — channel lifecycle', () => {
     expect(player.runeChannelBankedTurns).toBe(0);
   });
 
+  it('WaitAction (.) sustains and advances the channel turn by turn until completion', () => {
+    const { engine, player, rune } = buildEngine(1);
+    const channelTime = computeChannelTime(player.runeMastery.celerityPoints, engine.currentFloor); // 6
+    expect(channelTime).toBe(6);
+
+    // Start channel on turn 1
+    const startRes = engine.handlePlayerAction(new ChannelRuneOfReturnAction(player));
+    expect(startRes.success).toBe(true);
+    expect(player.statusManager.hasStatus(RUNE_OF_RETURN_STATUS)).toBe(true);
+
+    // Sustain with WaitAction (.) for the remaining 5 turns
+    for (let turn = 1; turn < channelTime; turn++) {
+      const waitRes = engine.handlePlayerAction(new WaitAction(player));
+      expect(waitRes.success).toBe(true);
+    }
+
+    expect(player.statusManager.hasStatus(RUNE_OF_RETURN_STATUS)).toBe(false);
+    expect(rune.charges).toBe(RUNE_MAX_CHARGES - 1);
+    expect(engine.currentFloor).toBe(0); // successfully teleported to town!
+  });
+
   it('does not consume a charge or teleport if interrupted before completion', () => {
     const { engine, player, rune } = buildEngine(1);
     engine.handlePlayerAction(new ChannelRuneOfReturnAction(player)); // turn 1 of 6
     expect(player.statusManager.hasStatus(RUNE_OF_RETURN_STATUS)).toBe(true);
 
-    // A different, non-exempt action interrupts (mobility is 0 by default).
-    engine.handlePlayerAction(new WaitAction(player));
+    // Voluntary movement without mobility upgrade interrupts the channel
+    engine.handlePlayerAction(new MovementAction(player, 1, 0));
 
     expect(player.statusManager.hasStatus(RUNE_OF_RETURN_STATUS)).toBe(false);
     expect(rune.charges).toBe(RUNE_MAX_CHARGES);
@@ -162,9 +184,9 @@ describe('Rune of Return — channel lifecycle', () => {
     allocateRuneMasteryPointsForTest(player, 'weave', 2); // 65% retention
     const channelTime = computeChannelTime(0, 1); // 6
 
-    // Complete 4 of 6 turns, then get interrupted by a different action.
+    // Complete 4 of 6 turns, then get interrupted by a voluntary movement action.
     for (let i = 0; i < 4; i++) engine.handlePlayerAction(new ChannelRuneOfReturnAction(player));
-    engine.handlePlayerAction(new WaitAction(player));
+    engine.handlePlayerAction(new MovementAction(player, 1, 0));
 
     const expectedBanked = Math.floor(4 * 0.65); // 2
     expect(player.runeChannelBankedTurns).toBe(expectedBanked);
@@ -220,6 +242,96 @@ describe('Rune of Return — channel lifecycle', () => {
     const effect = player.statusManager.getStatus(RUNE_OF_RETURN_STATUS)!;
     expect(effect.potency).toBe(8); // 6 + 2
     expect(effect.duration).toBe(7); // one tick already consumed this turn
+  });
+
+  it('bumping into an enemy with mobility breaks concentration to attack', () => {
+    const { engine, player } = buildEngine(1);
+    allocateRuneMasteryPointsForTest(player, 'mobility', 1);
+    engine.handlePlayerAction(new ChannelRuneOfReturnAction(player));
+    expect(player.statusManager.hasStatus(RUNE_OF_RETURN_STATUS)).toBe(true);
+
+    // Spawn an enemy directly adjacent to the player (x: 6, y: 5)
+    const enemy = new Monster({
+      id: 'kobold-test',
+      name: 'Kobold',
+      position: { x: 6, y: 5 },
+      stats: { hp: 10, maxHp: 10, attack: 3, defense: 1 },
+      speed: 100,
+      aiType: 'melee',
+      definitionId: 'kobold',
+      xpValue: 10,
+      lootTable: [],
+    });
+    engine.addEntity(enemy);
+
+    // Bump move into the enemy tile
+    engine.handlePlayerAction(new MovementAction(player, 1, 0));
+
+    expect(player.statusManager.hasStatus(RUNE_OF_RETURN_STATUS)).toBe(false);
+  });
+
+  it('monster attack damage during the turn cycle interrupts channeling immediately via post-hook', () => {
+    const { engine, player } = buildEngine(1);
+    engine.handlePlayerAction(new ChannelRuneOfReturnAction(player));
+    expect(player.statusManager.hasStatus(RUNE_OF_RETURN_STATUS)).toBe(true);
+
+    // Spawn an adjacent monster with enough attack to bypass player defense
+    const enemy = new Monster({
+      id: 'attacker',
+      name: 'Attacker',
+      position: { x: 6, y: 5 },
+      stats: { hp: 50, maxHp: 50, attack: 15, defense: 0 },
+      speed: 100,
+      aiType: 'melee',
+      definitionId: 'attacker',
+      xpValue: 10,
+      lootTable: [],
+    });
+    engine.addEntity(enemy);
+
+    // Player waits with '.'; the monster acts and attacks the player
+    engine.handlePlayerAction(new WaitAction(player));
+
+    // Player took damage, causing the channel to interrupt immediately
+    expect(player.hp).toBeLessThan(100);
+    expect(player.statusManager.hasStatus(RUNE_OF_RETURN_STATUS)).toBe(false);
+  });
+
+  it('emits rune_of_return_discovered when the rune is first acquired', () => {
+    const map = new GameMap(20, 20, TILES.FLOOR);
+    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } });
+    const engine = new GameEngine({ map, player, floor: 1 });
+
+    const events: string[] = [];
+    engine.onGameEvent = (e) => events.push(e.type);
+
+    expect(player.hasDiscoveredRune).toBe(false);
+
+    const rune = new RuneOfReturnItem({ id: 'rune-found', name: 'Rune of Return' });
+    engine.diagnostics.spawnItem(rune);
+
+    expect(player.hasDiscoveredRune).toBe(true);
+    expect(events).toContain('rune_of_return_discovered');
+  });
+});
+
+describe('Rune of Return — 7 point total cap', () => {
+  it('enforces a maximum of 7 points allocated across all tracks combined', () => {
+    const { player } = buildEngine();
+    player.unspentStatPoints = 20;
+
+    expect(allocateRuneMastery(player, 'celerity', 3)).toBe(true);
+    expect(allocateRuneMastery(player, 'weave', 3)).toBe(true);
+    expect(allocateRuneMastery(player, 'mobility', 1)).toBe(true);
+
+    expect(player.runeMastery.celerityPoints).toBe(3);
+    expect(player.runeMastery.weavePoints).toBe(3);
+    expect(player.runeMastery.mobilityPoints).toBe(1);
+
+    // Attempting to allocate any further points returns false
+    expect(allocateRuneMastery(player, 'celerity', 1)).toBe(false);
+    expect(allocateRuneMastery(player, 'weave', 1)).toBe(false);
+    expect(allocateRuneMastery(player, 'mobility', 1)).toBe(false);
   });
 });
 

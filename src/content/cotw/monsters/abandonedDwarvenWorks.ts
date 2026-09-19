@@ -18,7 +18,7 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
     },
     fleeHealthPercent: 0.1,
     xpValue: 90,
-    tags: ['undead', 'dwarf'],
+    tags: ['undead', 'dwarf', 'duergar'],
     lootTable: [
       {
         chance: 0.7,
@@ -103,7 +103,7 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
     statusImmunities: ['poison', 'paralysis'],
     fleeHealthPercent: 0.0,
     xpValue: 140,
-    tags: ['undead', 'dwarf', 'guardian'],
+    tags: ['undead', 'dwarf', 'duergar', 'guardian'],
     lootTable: [
       {
         chance: 0.8,

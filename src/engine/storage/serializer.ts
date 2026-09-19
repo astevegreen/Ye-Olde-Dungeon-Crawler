@@ -407,6 +407,7 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     unspentStatPoints: p.unspentStatPoints ?? 0,
     runeMastery: { ...p.runeMastery },
     runeChannelBankedTurns: p.runeChannelBankedTurns ?? 0,
+    hasDiscoveredRune: p.hasDiscoveredRune,
   };
 
   if (profile) {
@@ -802,6 +803,7 @@ export function deserializeGame(
     unspentStatPoints: Number(pData.unspentStatPoints) || Number(saveData.profile?.unspentStatPoints) || 0,
     runeMastery: pData.runeMastery ? { ...pData.runeMastery } : defaultRuneMastery(),
     runeChannelBankedTurns: Number(pData.runeChannelBankedTurns) || 0,
+    hasDiscoveredRune: Boolean(pData.hasDiscoveredRune),
   });
   player.energy = Number(pData.energy) || 0;
   player.hp = Math.min(Number(pData.hp) || 1, player.maxHp);

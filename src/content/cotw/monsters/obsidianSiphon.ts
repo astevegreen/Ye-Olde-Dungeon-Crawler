@@ -58,7 +58,7 @@ export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
     ],
     fleeHealthPercent: 0.2,
     xpValue: 250,
-    tags: ['troll', 'elite', 'caster'],
+    tags: ['troll_witch', 'elite', 'caster'],
     lootTable: [
       {
         chance: 0.8,
@@ -143,7 +143,7 @@ export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
     },
     fleeHealthPercent: 0.0,
     xpValue: 220,
-    tags: ['spirit', 'hazard'],
+    tags: ['bound_spirit', 'hazard'],
     lootTable: [
       {
         chance: 1.0,

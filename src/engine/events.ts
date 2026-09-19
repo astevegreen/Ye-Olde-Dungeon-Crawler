@@ -37,7 +37,8 @@ export type BuiltInGameEventType =
   | 'uncurse'
   | 'damage_dealt'
   | 'entity_killed'
-  | 'level_transition';
+  | 'level_transition'
+  | 'rune_of_return_discovered';
 
 export interface PlayerLeveledUpEvent extends GameEventBase {
   type: 'player_leveled_up';
@@ -87,6 +88,10 @@ export interface LevelTransitionEvent extends GameEventBase {
   toFloor: number;
 }
 
+export interface RuneOfReturnDiscoveredEvent extends GameEventBase {
+  type: 'rune_of_return_discovered';
+}
+
 /**
  * Any event. The union names the built-ins for authoring convenience, and
  * `GameEventBase` keeps it open so content packs can emit their own types.
@@ -99,6 +104,7 @@ export type GameEvent =
   | DamageDealtEvent
   | EntityKilledEvent
   | LevelTransitionEvent
+  | RuneOfReturnDiscoveredEvent
   | GameEventBase;
 
 /**

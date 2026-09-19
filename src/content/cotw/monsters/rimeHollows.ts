@@ -78,7 +78,7 @@ export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
     resistances: { cold: 'immune', fire: 'weak' },
     fleeHealthPercent: 0.0,
     xpValue: 50,
-    tags: ['beast', 'hazard'],
+    tags: ['insect', 'hazard'],
     lootTable: [
       {
         chance: 0.6,

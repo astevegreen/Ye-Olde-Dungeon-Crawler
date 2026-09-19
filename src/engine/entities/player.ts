@@ -41,6 +41,7 @@ export interface PlayerConfig {
   unspentStatPoints?: number;
   runeMastery?: RuneOfReturnMastery;
   runeChannelBankedTurns?: number;
+  hasDiscoveredRune?: boolean;
 }
 
 const DEFAULT_PLAYER_STATS: CombatStats = {
@@ -77,6 +78,7 @@ export class Player extends Actor {
   public runeMastery: RuneOfReturnMastery;
   /** Turns of channel progress banked from the last interrupt (Steadfast Weave). */
   public runeChannelBankedTurns: number;
+  public hasDiscoveredRune: boolean;
   public pactMutatorsSupplier?: () => import('../pacts/pactManager').RunPactMutatorRules;
 
   constructor(config: PlayerConfig) {
@@ -118,6 +120,7 @@ export class Player extends Actor {
     this.recallPosition = config.recallPosition ? { ...config.recallPosition } : undefined;
     this.runeMastery = config.runeMastery ? { ...config.runeMastery } : defaultRuneMastery();
     this.runeChannelBankedTurns = config.runeChannelBankedTurns ?? 0;
+    this.hasDiscoveredRune = config.hasDiscoveredRune ?? false;
   }
 
   public get attributes(): CharacterAttributes {

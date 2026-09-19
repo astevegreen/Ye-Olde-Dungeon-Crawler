@@ -9,6 +9,7 @@ import {
   getPlayerTotalCp,
   getPlayerCoinItems,
   TrainerService,
+  findRuneOfReturn,
 } from '../engine';
 import type { SpriteAtlas } from './atlas/sprite-atlas';
 import { getItemSpriteKey, getEntitySpriteKey } from './atlas/sprite-mapper';
@@ -36,6 +37,7 @@ export class ShopOverlay {
   private clickZones: ClickZone[] = [];
   private onStateChanged?: () => void;
   public onOpenCompendium?: () => void;
+  public onOpenRuneTree?: () => void;
   public onOpen?: (npc: NPC) => void;
   public onClose?: () => void;
   public atlas?: SpriteAtlas;
@@ -243,6 +245,17 @@ export class ShopOverlay {
       }
       if (key.toLowerCase() === 'w') {
         this.executeTeachRallyHowl(engine);
+        return true;
+      }
+    }
+
+    const attunementNpcId = engine.manifest?.runeOfReturn?.attunementNpcId;
+    if (attunementNpcId && this.activeNpc?.id === attunementNpcId) {
+      if (key.toLowerCase() === 'u') {
+        if (this.onOpenRuneTree) {
+          this.close();
+          this.onOpenRuneTree();
+        }
         return true;
       }
     }
@@ -1022,6 +1035,62 @@ export class ShopOverlay {
     const boxX = modalX + 12;
     const theme = this.theme ?? resolveThemeTokens(_engine.manifest?.theme);
     const font = theme.fontFamily ?? '"Courier New", Courier, monospace';
+
+    const attunementNpcId = _engine.manifest?.runeOfReturn?.attunementNpcId;
+    if (attunementNpcId && this.activeNpc?.id === attunementNpcId) {
+      const rune = findRuneOfReturn(_engine.player);
+      const boxH = 140;
+      ctx.fillStyle = theme.cardBg;
+      ctx.fillRect(boxX, startY, boxW, boxH);
+      ctx.strokeStyle = theme.cardBorder;
+      ctx.strokeRect(boxX + 0.5, startY + 0.5, boxW - 1, boxH - 1);
+
+      ctx.font = `bold 13px ${font}`;
+      ctx.fillStyle = '#38bdf8';
+      ctx.textAlign = 'left';
+      ctx.fillText('RUNE-SMITH FORGE & ATTUNEMENT', boxX + 14, startY + 24);
+
+      ctx.font = `11px ${font}`;
+      if (rune) {
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(`Rune of Return: ${rune.charges}/${rune.maxCharges} Charges (Fully Refilled)`, boxX + 14, startY + 48);
+        ctx.fillStyle = '#a3e635';
+        ctx.fillText('Attuned and ready for escape channeling in the dungeon depths.', boxX + 14, startY + 68);
+      } else {
+        ctx.fillStyle = '#f87171';
+        ctx.fillText('You do not yet carry the Rune of Return.', boxX + 14, startY + 48);
+        ctx.fillStyle = theme.hudText;
+        ctx.fillText('Thrain speaks of an ancient ice vault on Floor 5 guarded by Gálmr the Frost-Warden.', boxX + 14, startY + 68);
+      }
+
+      // Upgrade tree button
+      const btnY = startY + 92;
+      const btnH = 28;
+      ctx.fillStyle = theme.modalTitlebar;
+      ctx.fillRect(boxX + 14, btnY, boxW - 28, btnH);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.strokeRect(boxX + 14.5, btnY + 0.5, boxW - 29, btnH - 1);
+
+      ctx.font = `bold 12px ${font}`;
+      ctx.fillStyle = '#38bdf8';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚡ [U] Open Rune of Return Mastery Tree', boxX + boxW / 2, btnY + 18);
+      ctx.textAlign = 'left';
+
+      this.clickZones.push({
+        x: boxX + 14,
+        y: btnY,
+        width: boxW - 28,
+        height: btnH,
+        action: () => {
+          if (this.onOpenRuneTree) {
+            this.close();
+            this.onOpenRuneTree();
+          }
+        },
+      });
+      return;
+    }
 
     ctx.fillStyle = theme.cardBg;
     ctx.fillRect(boxX, startY, boxW, 140);

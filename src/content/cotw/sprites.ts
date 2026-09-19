@@ -1887,18 +1887,18 @@ export const COTW_SPRITE_RECIPES: Record<string, SpriteRecipe> = {
   },
 
   floor_town_snow: (ctx, ox, oy) => {
-    // Snow-dusted cobblestone exterior path
+    // Packed snow-dusted cobblestone path. Deliberately low-contrast and sparse —
+    // this tile repeats across the entire town square, so anything bolder than a
+    // faint dusting turns into a loud grid pattern at that scale.
     ctx.fillStyle = P.stoneDark ?? '#1c2333';
     ctx.fillRect(ox, oy, 32, 32);
-    // Snow cover patches
-    ctx.fillStyle = P.townSnow ?? '#e2e8f0';
-    ctx.fillRect(ox + 2, oy + 2, 12, 10);
-    ctx.fillRect(ox + 16, oy + 6, 13, 11);
-    ctx.fillRect(ox + 4, oy + 18, 14, 11);
-    // Icy glint
-    ctx.fillStyle = P.rimeIce ?? '#38bdf8';
-    ctx.fillRect(ox + 6, oy + 5, 3, 2);
-    ctx.fillRect(ox + 22, oy + 12, 3, 2);
+    ctx.fillStyle = P.rimeWall ?? '#1e293b';
+    ctx.fillRect(ox + 3, oy + 19, 12, 9);
+    ctx.fillRect(ox + 17, oy + 4, 11, 8);
+    // Faint snow dusting, just a couple of small flecks
+    ctx.fillStyle = P.rimeFrost ?? '#e0f2fe';
+    ctx.fillRect(ox + 7, oy + 10, 3, 2);
+    ctx.fillRect(ox + 21, oy + 23, 3, 2);
   },
 
   wall_town_temple: (ctx, ox, oy) => {
@@ -1914,10 +1914,11 @@ export const COTW_SPRITE_RECIPES: Record<string, SpriteRecipe> = {
   },
 
   floor_town_temple: (ctx, ox, oy) => {
-    // Sacred temple mosaic floor
+    // Sacred temple mosaic floor — muted stone rather than a near-white fill, so
+    // the gold inlay reads as the deliberate accent instead of everything glaring
     ctx.fillStyle = P.townTempleStone ?? '#475569';
     ctx.fillRect(ox, oy, 32, 32);
-    ctx.fillStyle = '#f8fafc';
+    ctx.fillStyle = P.silverVein ?? '#94a3b8';
     ctx.fillRect(ox + 4, oy + 4, 24, 24);
     ctx.fillStyle = P.townTempleGold ?? '#eab308';
     ctx.fillRect(ox + 14, oy + 14, 4, 4);
@@ -2024,6 +2025,260 @@ export const COTW_SPRITE_RECIPES: Record<string, SpriteRecipe> = {
     ctx.fill();
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(ox + 15, oy + 15, 2, 2);
+  },
+
+  // ==========================================
+  // COLLISION-BREAKING VARIANTS (Phase 6 polish)
+  // Distinct archetypes that would otherwise fall back to a broader family's
+  // shared icon (dark_sorcerer/jotun_champion/etc. all reading as 'kobold',
+  // several unrelated undead all reading as 'skeleton', ...). See
+  // sprite-mapper.ts's DEFAULT_TAG_SPRITE_ORDER for which monster resolves here.
+  // ==========================================
+
+  sorcerer: (ctx, ox, oy) => {
+    // Tall dark hooded robe (narrower/taller silhouette than the hunched `hag`)
+    ctx.fillStyle = P.obsidianPurple ?? '#1e1b4b';
+    drawOrganicBlob(ctx, ox + 15, oy + 19, 6, 11, 0.12);
+
+    // Hood shadow & pale gaunt face
+    ctx.fillStyle = P.maliceVoid ?? '#090514';
+    ctx.fillRect(ox + 11, oy + 6, 8, 7);
+    ctx.fillStyle = P.skinTone ?? '#fed7aa';
+    ctx.fillRect(ox + 12, oy + 9, 6, 4);
+
+    // Hellfire-glowing eyes (matches the Hellfire Surge telegraph)
+    ctx.fillStyle = P.magmaOrange ?? '#ea580c';
+    ctx.fillRect(ox + 13, oy + 10, 1, 2);
+    ctx.fillRect(ox + 16, oy + 10, 1, 2);
+
+    // Gnarled staff topped with a fire orb, held out to the side
+    ctx.fillStyle = P.barkBrown ?? '#451a03';
+    ctx.fillRect(ox + 23, oy + 6, 2, 21);
+    ctx.fillStyle = P.magmaOrange ?? '#ea580c';
+    ctx.beginPath();
+    ctx.arc(ox + 24, oy + 5, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = P.lavaYellow ?? '#fef08a';
+    ctx.beginPath();
+    ctx.arc(ox + 24, oy + 5, 1.3, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  giant: (ctx, ox, oy) => {
+    // Towering frost-jotun frame — taller/more upright than the squat, bare-chested `troll`
+    ctx.fillStyle = P.rimeWall ?? '#1e293b';
+    drawOrganicBlob(ctx, ox + 16, oy + 18, 9, 10, 0.1);
+
+    // Pale ice-blue giant hide (head & forearms)
+    ctx.fillStyle = P.steelBlue ?? '#7dd3fc';
+    ctx.fillRect(ox + 12, oy + 5, 9, 8);
+    drawRoundedLimb(ctx, ox + 9, oy + 14, ox + 5, oy + 24, 4);
+    drawRoundedLimb(ctx, ox + 23, oy + 14, ox + 27, oy + 24, 4);
+
+    // Braided frost-giant beard
+    ctx.fillStyle = P.rimeFrost ?? '#e0f2fe';
+    ctx.fillRect(ox + 12, oy + 11, 9, 4);
+
+    // Cold, pale eyes
+    ctx.fillStyle = P.rimeIce ?? '#38bdf8';
+    ctx.fillRect(ox + 13, oy + 8, 2, 2);
+    ctx.fillRect(ox + 17, oy + 8, 2, 2);
+
+    // Huge stone warclub
+    ctx.fillStyle = P.dwarfStone ?? '#292524';
+    ctx.fillRect(ox + 25, oy + 4, 4, 10);
+    ctx.fillStyle = P.barkBrown ?? '#451a03';
+    ctx.fillRect(ox + 26, oy + 14, 2, 13);
+  },
+
+  giant_fire: (ctx, ox, oy) => {
+    // Same towering frame as `giant`, recolored molten — the fire-immune counterpart
+    ctx.fillStyle = P.dwarfRust ?? '#7c2d12';
+    drawOrganicBlob(ctx, ox + 16, oy + 18, 9, 10, 0.1);
+
+    // Cracked magma-glow hide (head & forearms)
+    ctx.fillStyle = P.magmaOrange ?? '#ea580c';
+    ctx.fillRect(ox + 12, oy + 5, 9, 8);
+    drawRoundedLimb(ctx, ox + 9, oy + 14, ox + 5, oy + 24, 4);
+    drawRoundedLimb(ctx, ox + 23, oy + 14, ox + 27, oy + 24, 4);
+
+    // Ember-crack lines across the torso
+    ctx.fillStyle = P.lavaYellow ?? '#fef08a';
+    ctx.fillRect(ox + 12, oy + 20, 8, 1);
+    ctx.fillRect(ox + 14, oy + 24, 6, 1);
+
+    // Burning eyes
+    ctx.fillStyle = P.magmaRed ?? '#dc2626';
+    ctx.fillRect(ox + 13, oy + 8, 2, 2);
+    ctx.fillRect(ox + 17, oy + 8, 2, 2);
+
+    // Molten warclub
+    ctx.fillStyle = P.ashGray ?? '#3f3f46';
+    ctx.fillRect(ox + 25, oy + 4, 4, 10);
+    ctx.fillStyle = P.magmaOrange ?? '#ea580c';
+    ctx.fillRect(ox + 26, oy + 14, 2, 13);
+  },
+
+  shadow: (ctx, ox, oy) => {
+    // Jagged, flame-like smoke trail (vs `wraith`'s smoother hooded-mist silhouette)
+    ctx.fillStyle = P.maliceVoid ?? '#090514';
+    ctx.beginPath();
+    ctx.moveTo(ox + 16, oy + 8);
+    ctx.lineTo(ox + 24, oy + 16);
+    ctx.lineTo(ox + 21, oy + 20);
+    ctx.lineTo(ox + 26, oy + 28);
+    ctx.lineTo(ox + 18, oy + 24);
+    ctx.lineTo(ox + 16, oy + 29);
+    ctx.lineTo(ox + 14, oy + 24);
+    ctx.lineTo(ox + 6, oy + 28);
+    ctx.lineTo(ox + 11, oy + 20);
+    ctx.lineTo(ox + 8, oy + 16);
+    ctx.closePath();
+    ctx.fill();
+
+    // Featureless dark head
+    ctx.fillStyle = P.malicePurple ?? '#4c1d95';
+    drawOrganicBlob(ctx, ox + 16, oy + 11, 5, 5, 0.15);
+
+    // Burning malicious eyes
+    ctx.fillStyle = P.maliceCrimson ?? '#991b1b';
+    ctx.fillRect(ox + 13, oy + 10, 2, 2);
+    ctx.fillRect(ox + 17, oy + 10, 2, 2);
+  },
+
+  ghost: (ctx, ox, oy) => {
+    // Small, child-sized wisp — deliberately drawn tiny/centered so it reads as
+    // frail rather than menacing, unlike the game's taller undead
+    ctx.fillStyle = P.boneGray ?? '#cbd5e1';
+    drawOrganicBlob(ctx, ox + 16, oy + 18, 5, 6, 0.2);
+    ctx.fillStyle = P.boneWhite ?? '#f1f5f9';
+    ctx.fillRect(ox + 13, oy + 10, 6, 6);
+
+    // Tattered hem fading to nothing
+    ctx.fillStyle = P.silverDark ?? '#181e29';
+    ctx.fillRect(ox + 12, oy + 23, 2, 3);
+    ctx.fillRect(ox + 15, oy + 24, 2, 3);
+    ctx.fillRect(ox + 18, oy + 23, 2, 3);
+
+    // Small, sorrowful pale-blue eyes
+    ctx.fillStyle = P.rimeIce ?? '#38bdf8';
+    ctx.fillRect(ox + 14, oy + 12, 1, 2);
+    ctx.fillRect(ox + 17, oy + 12, 1, 2);
+  },
+
+  bound_spirit: (ctx, ox, oy) => {
+    // Spectral prisoner still wrapped in chains
+    ctx.fillStyle = P.phantomTeal ?? '#2dd4bf';
+    drawOrganicBlob(ctx, ox + 16, oy + 16, 7, 10, 0.18);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(ox + 13, oy + 9, 2, 2);
+    ctx.fillRect(ox + 17, oy + 9, 2, 2);
+
+    // Iron chain links wrapped diagonally across the body — bright metallic against
+    // the teal body for contrast, and kept well inside the blob's silhouette
+    ctx.fillStyle = P.silverShine ?? '#e2e8f0';
+    ctx.fillRect(ox + 12, oy + 12, 2, 2);
+    ctx.fillRect(ox + 15, oy + 15, 2, 2);
+    ctx.fillRect(ox + 18, oy + 18, 2, 2);
+    ctx.fillRect(ox + 15, oy + 21, 2, 2);
+  },
+
+  duergar: (ctx, ox, oy) => {
+    // Undead dwarf — same stocky `dwarf` silhouette, rotted and tarnished instead
+    // of living and brass-trimmed
+    ctx.fillStyle = P.silverDark ?? '#181e29';
+    ctx.fillRect(ox + 10, oy + 13, 12, 10);
+    ctx.fillStyle = P.dwarfRust ?? '#7c2d12';
+    ctx.fillRect(ox + 10, oy + 18, 12, 2);
+
+    // Grey, moss-shot beard
+    ctx.fillStyle = P.ashGray ?? '#3f3f46';
+    ctx.fillRect(ox + 11, oy + 12, 10, 8);
+
+    // Rotted grey-green face
+    ctx.fillStyle = P.toxicGreen ?? '#4d7c0f';
+    ctx.fillRect(ox + 13, oy + 9, 6, 4);
+
+    // Tarnished helmet
+    ctx.fillStyle = P.dwarfIron ?? '#44403c';
+    ctx.fillRect(ox + 11, oy + 6, 10, 4);
+
+    // Sickly glowing eyes (no living highlight, unlike `dwarf`)
+    ctx.fillStyle = P.eldritchGlow ?? '#a3e635';
+    ctx.fillRect(ox + 13, oy + 10, 2, 2);
+    ctx.fillRect(ox + 17, oy + 10, 2, 2);
+
+    // Ceremonial pickaxe
+    ctx.fillStyle = P.woodBrown ?? '#78350f';
+    ctx.fillRect(ox + 23, oy + 8, 2, 16);
+    ctx.fillStyle = P.silverOre ?? '#64748b';
+    ctx.fillRect(ox + 20, oy + 6, 8, 3);
+  },
+
+  troll_witch: (ctx, ox, oy) => {
+    // Robed & hatted — a narrower, upright silhouette vs the bulky bare-chested `troll`
+    ctx.fillStyle = P.barkGreen ?? '#14532d';
+    drawOrganicBlob(ctx, ox + 16, oy + 20, 6, 9, 0.15);
+
+    // Ragged shawl
+    ctx.fillStyle = P.malicePurple ?? '#4c1d95';
+    ctx.fillRect(ox + 10, oy + 15, 12, 6);
+
+    // Head with tusks (family resemblance to `troll`)
+    ctx.fillStyle = P.barkGreen ?? '#14532d';
+    ctx.fillRect(ox + 13, oy + 8, 7, 6);
+    ctx.fillStyle = P.boneWhite ?? '#f1f5f9';
+    ctx.fillRect(ox + 13, oy + 11, 1, 3);
+    ctx.fillRect(ox + 19, oy + 11, 1, 3);
+
+    // Pointed witch hat
+    ctx.fillStyle = P.malicePurple ?? '#4c1d95';
+    ctx.beginPath();
+    ctx.moveTo(ox + 11, oy + 8);
+    ctx.lineTo(ox + 21, oy + 8);
+    ctx.lineTo(ox + 16, oy - 1);
+    ctx.closePath();
+    ctx.fill();
+
+    // Glowing eyes & crooked staff
+    ctx.fillStyle = P.lavaYellow ?? '#fef08a';
+    ctx.fillRect(ox + 14, oy + 10, 2, 2);
+    ctx.fillRect(ox + 17, oy + 10, 2, 2);
+    ctx.fillStyle = P.woodBrown ?? '#78350f';
+    ctx.fillRect(ox + 24, oy + 6, 2, 21);
+  },
+
+  dragon_elder: (ctx, ox, oy) => {
+    // Larger, icier dragon variant — same wings/tail/snout language as `dragon`,
+    // recolored frost-white/blue so the two never look interchangeable
+    ctx.fillStyle = P.rimeIce ?? '#38bdf8';
+    drawTaperedTail(ctx, ox + 16, oy + 21, ox + 3, oy + 27, 7, 2);
+    drawOrganicBlob(ctx, ox + 16, oy + 16, 10, 9, 0.12);
+
+    // Broad frost wings
+    ctx.fillStyle = P.rimeFrost ?? '#e0f2fe';
+    ctx.beginPath();
+    ctx.moveTo(ox + 16, oy + 13);
+    ctx.lineTo(ox + 4, oy + 5);
+    ctx.lineTo(ox + 9, oy + 16);
+    ctx.lineTo(ox + 16, oy + 13);
+    ctx.moveTo(ox + 16, oy + 13);
+    ctx.lineTo(ox + 28, oy + 5);
+    ctx.lineTo(ox + 23, oy + 16);
+    ctx.closePath();
+    ctx.fill();
+
+    // Head and snout
+    ctx.fillStyle = P.rimeIce ?? '#38bdf8';
+    ctx.fillRect(ox + 11, oy + 5, 9, 8);
+    ctx.fillRect(ox + 9, oy + 8, 3, 4);
+
+    // Frost-breath vapor & piercing eyes
+    ctx.fillStyle = P.silverShine ?? '#e2e8f0';
+    ctx.fillRect(ox + 6, oy + 9, 2, 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(ox + 13, oy + 8, 2, 2);
+    ctx.fillRect(ox + 17, oy + 8, 2, 2);
   },
 };
 

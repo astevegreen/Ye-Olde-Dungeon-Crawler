@@ -9,6 +9,7 @@ import { SILVER_VEINS_MONSTERS } from './tarnishedSilverVeins';
 import { WORLD_BARK_MONSTERS } from './worldBarkDescent';
 import { MAW_OF_MALICE_MONSTERS } from './mawOfMalice';
 import { BOSS_MONSTERS } from './bosses';
+import { MINIBOSS_MONSTERS } from './minibosses';
 import { LEGACY_COTW_MONSTERS } from './legacy';
 
 export * from './rimeHollows';
@@ -19,6 +20,7 @@ export * from './tarnishedSilverVeins';
 export * from './worldBarkDescent';
 export * from './mawOfMalice';
 export * from './bosses';
+export * from './minibosses';
 export * from './legacy';
 
 /**
@@ -49,6 +51,7 @@ export const COTW_ROSTER_BESTIARY: Record<string, MonsterDefinition> = Object.fr
 export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
   ...LEGACY_COTW_MONSTERS,
   ...COTW_ROSTER_BESTIARY,
+  ...Object.fromEntries(MINIBOSS_MONSTERS.map((m) => [m.id, m])),
 };
 
 // Aliases for quest continuity and backward compatibility
@@ -75,6 +78,13 @@ for (const m of Object.values(LEGACY_COTW_MONSTERS)) {
 }
 
 for (const m of COTW_ROSTER_37) {
+  if (!seenIds.has(m.id)) {
+    seenIds.add(m.id);
+    allMonsters.push(m);
+  }
+}
+
+for (const m of MINIBOSS_MONSTERS) {
   if (!seenIds.has(m.id)) {
     seenIds.add(m.id);
     allMonsters.push(m);

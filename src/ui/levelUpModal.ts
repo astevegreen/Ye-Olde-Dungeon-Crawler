@@ -183,6 +183,15 @@ export class LevelUpModal implements UIModal {
       return true;
     }
 
+    if ((key === 'T' || code === 'KeyT' || key === 'M' || code === 'KeyM') && this.engine?.player?.hasDiscoveredRune) {
+      e.preventDefault();
+      this.close();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('open_rune_of_return_tree'));
+      }
+      return true;
+    }
+
     // Absorb any other keys while modal is open
     return true;
   }
@@ -297,6 +306,34 @@ export class LevelUpModal implements UIModal {
           </div>
         </div>
 
+        ${player.hasDiscoveredRune ? `
+          <div style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(14, 116, 144, 0.25);
+            border: 1px solid #0284c7;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+          ">
+            <span style="color: #38bdf8; font-size: 12px;">
+              🌀 <strong>Rune of Return Mastery:</strong> Spend unspent stat points on escape channel upgrades.
+            </span>
+            <button id="btn-open-rune-tree-from-levelup" style="
+              padding: 4px 10px;
+              background: #0369a1;
+              color: #ffffff;
+              border: 1px solid #38bdf8;
+              border-radius: 3px;
+              cursor: pointer;
+              font-weight: bold;
+              font-size: 11px;
+              font-family: inherit;
+            ">Mastery [T]</button>
+          </div>
+        ` : ''}
+
         <div class="stat-list" style="margin-bottom: 16px;">
           ${rowsHtml}
         </div>
@@ -330,6 +367,12 @@ export class LevelUpModal implements UIModal {
     // Bind click handlers
     this.overlayEl.querySelector('#btn-close-levelup-top')?.addEventListener('click', () => this.close());
     this.overlayEl.querySelector('#btn-close-levelup-bottom')?.addEventListener('click', () => this.close());
+    this.overlayEl.querySelector('#btn-open-rune-tree-from-levelup')?.addEventListener('click', () => {
+      this.close();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('open_rune_of_return_tree'));
+      }
+    });
 
     const allocBtns = this.overlayEl.querySelectorAll('.btn-allocate-stat');
     allocBtns.forEach((btn) => {

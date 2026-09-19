@@ -2,7 +2,7 @@ import type { Position, GameDifficulty } from '../types';
 import type { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
 import type { TileDefinition } from '../types';
-import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
+import { getMonsterDefinition, type MonsterDefinition } from '../bestiary/monsterDefinitions';
 import type { ItemDefinition } from '../types/manifest';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
 import { createScaledMonster, selectDungeonMonsterDefinition } from './spawner';
@@ -19,6 +19,7 @@ export interface VaultBlueprint {
   maxFloor?: number;
   layout: string[];
   preferredMonsters?: string[];
+  minibossId?: string;
   predicate?: Predicate;
 }
 
@@ -42,31 +43,34 @@ export class VaultStamper {
     isConnector: boolean;
     isChest: boolean;
     isMonster: boolean;
+    isMiniboss: boolean;
   } {
     switch (char) {
       case '#':
-        return { tile: TILES.WALL, isConnector: false, isChest: false, isMonster: false };
+        return { tile: TILES.WALL, isConnector: false, isChest: false, isMonster: false, isMiniboss: false };
       case '.':
-        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: false };
+        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: false, isMiniboss: false };
       case '~':
-        return { tile: TILES.SHALLOW_WATER, isConnector: false, isChest: false, isMonster: false };
+        return { tile: TILES.SHALLOW_WATER, isConnector: false, isChest: false, isMonster: false, isMiniboss: false };
       case 'X':
-        return { tile: TILES.CHASM, isConnector: false, isChest: false, isMonster: false };
+        return { tile: TILES.CHASM, isConnector: false, isChest: false, isMonster: false, isMiniboss: false };
       case '+':
-        return { tile: TILES.DOOR_CLOSED, isConnector: false, isChest: false, isMonster: false };
+        return { tile: TILES.DOOR_CLOSED, isConnector: false, isChest: false, isMonster: false, isMiniboss: false };
       case 'B':
-        return { tile: TILES.IRON_BARS, isConnector: false, isChest: false, isMonster: false };
+        return { tile: TILES.IRON_BARS, isConnector: false, isChest: false, isMonster: false, isMiniboss: false };
       case 'P':
-        return { tile: TILES.PILLAR, isConnector: false, isChest: false, isMonster: false };
+        return { tile: TILES.PILLAR, isConnector: false, isChest: false, isMonster: false, isMiniboss: false };
       case '@':
         // Connector doorway / passage into the corridor network
-        return { tile: TILES.FLOOR, isConnector: true, isChest: false, isMonster: false };
+        return { tile: TILES.FLOOR, isConnector: true, isChest: false, isMonster: false, isMiniboss: false };
       case 'C':
-        return { tile: TILES.FLOOR, isConnector: false, isChest: true, isMonster: false };
+        return { tile: TILES.FLOOR, isConnector: false, isChest: true, isMonster: false, isMiniboss: false };
       case 'M':
-        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: true };
+        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: true, isMiniboss: false };
+      case 'K':
+        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: true, isMiniboss: true };
       default:
-        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: false };
+        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: false, isMiniboss: false };
     }
   }
 
@@ -114,9 +118,12 @@ export class VaultStamper {
           map.addItemAt(worldX, worldY, chest);
         } else if (parsed.isMonster) {
           monsterSpawns.push({ x: worldX, y: worldY });
-          // Select preferred monster or suitable scaled monster for this floor
+          // Select designated miniboss, preferred monster, or suitable scaled monster for this floor
           let def: MonsterDefinition | null = null;
-          if (blueprint.preferredMonsters && blueprint.preferredMonsters.length > 0) {
+          if (parsed.isMiniboss && blueprint.minibossId) {
+            def = monsterCandidates.find((m) => m.id === blueprint.minibossId) ?? getMonsterDefinition(blueprint.minibossId) ?? null;
+          }
+          if (!def && blueprint.preferredMonsters && blueprint.preferredMonsters.length > 0) {
             const chosenId = blueprint.preferredMonsters[Math.floor(rng() * blueprint.preferredMonsters.length)];
             def = monsterCandidates.find((m) => m.id === chosenId) ?? null;
           }
@@ -124,7 +131,9 @@ export class VaultStamper {
             def = selectDungeonMonsterDefinition(monsterCandidates, currentFloor, rng);
           }
           if (def) {
-            const mId = `vault-mon-${blueprint.id}-${worldX}-${worldY}-${Math.floor(rng() * 1000)}`;
+            const mId = parsed.isMiniboss
+              ? `vault-miniboss-${blueprint.id}-${worldX}-${worldY}`
+              : `vault-mon-${blueprint.id}-${worldX}-${worldY}-${Math.floor(rng() * 1000)}`;
             const monster = createScaledMonster(
               def,
               mId,
@@ -135,6 +144,9 @@ export class VaultStamper {
               scalingConfig,
               difficulty
             );
+            if (parsed.isMiniboss) {
+              monster.aiState = 'hunting';
+            }
             map.addEntity(monster);
           }
         }

@@ -161,6 +161,17 @@ export const ATLAS_MAP: Record<SpriteKey, AtlasCoords> = {
   wall_town_bank: { col: 9, row: 8 },
   floor_town_bank: { col: 10, row: 8 },
   hearth_fire: { col: 11, row: 8 },
+
+  // Row 9: Collision-breaking monster variants (see sprite-mapper.ts)
+  sorcerer: { col: 0, row: 9 },
+  giant: { col: 1, row: 9 },
+  giant_fire: { col: 2, row: 9 },
+  shadow: { col: 3, row: 9 },
+  ghost: { col: 4, row: 9 },
+  bound_spirit: { col: 5, row: 9 },
+  duergar: { col: 6, row: 9 },
+  troll_witch: { col: 7, row: 9 },
+  dragon_elder: { col: 8, row: 9 },
 };
 
 interface AtlasCell {

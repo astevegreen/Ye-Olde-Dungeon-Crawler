@@ -126,7 +126,7 @@ export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
     statusImmunities: ['paralysis', 'slow'],
     fleeHealthPercent: 0.1,
     xpValue: 480,
-    tags: ['troll', 'elite', 'caster'],
+    tags: ['troll_witch', 'elite', 'caster'],
     lootTable: [
       {
         chance: 1.0,

@@ -3,6 +3,7 @@ import { Player } from '../../engine';
 import { Item, type EquipmentSlot } from '../../engine';
 import { Container } from '../../engine';
 import { PotionItem, ScrollItem, WandItem } from '../../engine';
+import { RuneOfReturnItem, ChannelRuneOfReturnAction } from '../../engine';
 import { EncumbranceLevel } from '../../engine';
 import type { Paperdoll } from '../../engine';
 import type { ThemeTokens } from '../../engine';
@@ -416,6 +417,29 @@ export class ItemInspector {
           execute: (eng) => {
             eng.commandBus.dispatch({ type: 'zap_wand', payload: { itemId: item.id } });
             this.clearSelection();
+          },
+        });
+      } else if (item instanceof RuneOfReturnItem) {
+        actions.push({
+          id: 'use',
+          label: `Channel (${item.charges}/${item.maxCharges}) [T]`,
+          shortcut: 'T',
+          enabled: item.charges > 0,
+          reason: item.charges <= 0 ? 'No charges remaining (refill freely at Thrain in town).' : undefined,
+          execute: (eng) => {
+            eng.handlePlayerAction(new ChannelRuneOfReturnAction(eng.player));
+            this.clearSelection();
+          },
+        });
+        actions.push({
+          id: 'use',
+          label: 'Mastery Tree [M]',
+          shortcut: 'M',
+          enabled: true,
+          execute: () => {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('open_rune_of_return_tree'));
+            }
           },
         });
       }

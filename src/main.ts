@@ -20,6 +20,7 @@ import {
   InMemoryAsyncStore,
   hydrateArchivedFloors,
   isTacticalEffect,
+  ChannelRuneOfReturnAction,
 } from './engine';
 import type {
   CharacterProfile,
@@ -40,6 +41,8 @@ import { applyThemeTokens, COTW_THEME_TOKENS } from './rendering/theme';
 import { ChoiceModal } from './ui/choiceModal';
 import { PactModal } from './ui/pactModal';
 import { LevelUpModal } from './ui/levelUpModal';
+import { RuneOfReturnDiscoveryModal } from './ui/runeOfReturnDiscoveryModal';
+import { RuneOfReturnTreeModal } from './ui/runeOfReturnTreeModal';
 import { AutoRestRunner } from './ui/autoRestRunner';
 import { NavigationController } from './ui/navigation';
 import { cotwManifest } from './content/cotw';
@@ -125,6 +128,19 @@ window.addEventListener('DOMContentLoaded', () => {
   const levelUpModal = new LevelUpModal(() => {
     popModal(levelUpModal.id);
     renderer?.render();
+  });
+  const runeTreeModal = new RuneOfReturnTreeModal(() => {
+    popModal(runeTreeModal.id);
+    renderer?.render();
+  });
+  const runeDiscoveryModal = new RuneOfReturnDiscoveryModal({
+    onClose: () => {
+      popModal(runeDiscoveryModal.id);
+      renderer?.render();
+    },
+    onOpenTree: () => {
+      openRuneTree();
+    },
   });
   const autosaveManager = new AutosaveManager(undefined, activeManifest);
 
@@ -212,6 +228,30 @@ window.addEventListener('DOMContentLoaded', () => {
       inputHandler.modalStack.push(spellbookModal);
     }
   }
+
+  function openRuneTree(): void {
+    if (!activeEngine) return;
+    if (renderer) {
+      renderer.inventoryOverlay.close();
+      renderer.inspectOverlay.close();
+      renderer.targetingOverlay.close();
+    }
+    if (inputHandler) {
+      runeTreeModal.setModalStack(inputHandler.modalStack);
+      runeTreeModal.open(activeEngine, () => {
+        popModal(runeTreeModal.id);
+        renderer?.render();
+      });
+      pushModal(runeTreeModal.id, runeTreeModal);
+    } else {
+      runeTreeModal.open(activeEngine);
+    }
+    renderer?.render();
+  }
+
+  window.addEventListener('open_rune_of_return_tree', () => {
+    openRuneTree();
+  });
 
   function castOrTargetSpell(spell: SpellDefinition): void {
     if (!activeEngine || !renderer) return;
@@ -794,6 +834,18 @@ window.addEventListener('DOMContentLoaded', () => {
           levelUpModal.open(engine);
         }
         renderer?.render();
+      } else if (event.type === 'rune_of_return_discovered') {
+        if (inputHandler) {
+          runeDiscoveryModal.setModalStack(inputHandler.modalStack);
+          runeDiscoveryModal.open(engine, () => {
+            popModal(runeDiscoveryModal.id);
+            renderer?.render();
+          });
+          pushModal(runeDiscoveryModal.id, runeDiscoveryModal);
+        } else {
+          runeDiscoveryModal.open(engine);
+        }
+        renderer?.render();
       }
     };
 
@@ -1142,6 +1194,27 @@ window.addEventListener('DOMContentLoaded', () => {
           void processVisualEffectsAndRender();
         },
       },
+      {
+        id: 'rune_of_return_tree',
+        title: 'Rune of Return Mastery Tree',
+        category: 'Action',
+        shortcut: 'Shift+T',
+        description: 'Upgrade Channel Celerity, Steadfast Weave, and Unbound Casting using unspent points',
+        execute: () => {
+          openRuneTree();
+        },
+      },
+      {
+        id: 'channel_rune_of_return',
+        title: 'Channel Rune of Return',
+        category: 'Action',
+        shortcut: 'T',
+        description: 'Begin channeled recall ritual to escape dungeon and return to town',
+        execute: (eng) => {
+          eng.handlePlayerAction(new ChannelRuneOfReturnAction(eng.player));
+          void processVisualEffectsAndRender();
+        },
+      },
     ]);
 
     applyThemeTokens(engine.manifest?.theme ?? COTW_THEME_TOKENS);
@@ -1160,6 +1233,9 @@ window.addEventListener('DOMContentLoaded', () => {
       });
       renderer.shopOverlay.onOpenCompendium = () => {
         compendiumModal.open(engine);
+      };
+      renderer.shopOverlay.onOpenRuneTree = () => {
+        openRuneTree();
       };
       renderer.onPactModalRequested = () => {
         pactModal.open(engine, () => {
@@ -1188,7 +1264,11 @@ window.addEventListener('DOMContentLoaded', () => {
       );
       inputHandler.pactModal = pactModal;
       inputHandler.levelUpModal = levelUpModal;
+      inputHandler.runeOfReturnTreeModal = runeTreeModal;
+      inputHandler.runeOfReturnDiscoveryModal = runeDiscoveryModal;
       levelUpModal.setModalStack(inputHandler.modalStack);
+      runeTreeModal.setModalStack(inputHandler.modalStack);
+      runeDiscoveryModal.setModalStack(inputHandler.modalStack);
       inputHandler.onCastSpellById = castSpellById;
       diagnosticModal.setModalStack(inputHandler.modalStack);
     } else {
@@ -1196,6 +1276,9 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer.onResolveRadialLabel = resolveRadialMenuLabel;
       renderer.shopOverlay.onOpenCompendium = () => {
         compendiumModal.open(engine);
+      };
+      renderer.shopOverlay.onOpenRuneTree = () => {
+        openRuneTree();
       };
       renderer.onPactModalRequested = () => {
         pactModal.open(engine, () => {
@@ -1216,7 +1299,11 @@ window.addEventListener('DOMContentLoaded', () => {
         inputHandler.commandPalette = commandPalette;
         inputHandler.pactModal = pactModal;
         inputHandler.levelUpModal = levelUpModal;
+        inputHandler.runeOfReturnTreeModal = runeTreeModal;
+        inputHandler.runeOfReturnDiscoveryModal = runeDiscoveryModal;
         levelUpModal.setModalStack(inputHandler.modalStack);
+        runeTreeModal.setModalStack(inputHandler.modalStack);
+        runeDiscoveryModal.setModalStack(inputHandler.modalStack);
         inputHandler.onSaveAndExit = promptSaveAndQuit;
         inputHandler.onCastSpellById = castSpellById;
         diagnosticModal.setModalStack(inputHandler.modalStack);

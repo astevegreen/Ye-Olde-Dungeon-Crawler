@@ -3,6 +3,9 @@ import type { Entity } from '../entities/entity';
 import type { Player } from '../entities/player';
 import type { ActionResult } from '../types';
 import type { Action } from '../actions/action';
+import { WaitAction } from '../actions/wait';
+import { MovementAction } from '../actions/movement';
+import type { ActionHook, ActionHookContext } from '../actions/actionPipeline';
 import { BASE_ACTION_COST } from '../types';
 import { Item, type ItemConfig } from '../items/item';
 import type { StatusHandler, StatusTickOutput } from '../status/statusHandlers';
@@ -17,15 +20,18 @@ import type { StatusEffect } from '../status/types';
  * and interrupt rules are fixed; only the item's name/art, the town refill trigger,
  * and each track's display name are content-provided (`GameContentManifest.runeOfReturn`).
  *
- * Modeled as a status effect on the player, consistent with the existing dormant-actor
- * / status-tick scheduling semantics (P-06's `player-status-tick` environmental update
- * already ticks every status every player turn, awake or not). One known tradeoff from
- * that choice, documented rather than silently accepted: `player-status-tick` runs
- * *before* monster turns within a single `executePlayerTurn` cycle (see engine.ts), so
- * damage from a monster's counter-attack this cycle is only observed on the *next*
- * tick — i.e. interruption can lag by up to one player turn rather than firing the
- * instant the blow lands. Zero-net (fully mitigated) hits never interrupt regardless,
- * since they never move `entity.hp`.
+ * Modeled as a status effect on the player (dormant-actor / status-tick semantics —
+ * `player-status-tick` ticks it every player turn like poison or slow), but the
+ * interrupt/continuation *decision* itself lives in `createRuneOfReturnActionHooks`'s
+ * `ActionPipeline` hooks, not in the tick handler: a `pre` hook fires before every
+ * action in the game (player or monster) to decide whether that action sustains the
+ * channel (Wait, the channel action itself, or movement once Unbound Casting is maxed)
+ * or breaks it, and a `post` hook fires after every action to catch HP loss the instant
+ * it happens — including a monster's own attack action, so a counter-attack this cycle
+ * no longer has to wait for next turn's tick to be noticed (the previous tick-only
+ * design had up to one player turn of interrupt lag; this closes that gap). The tick
+ * handler's job is now just bookkeeping (the progress log and completion), not
+ * deciding whether the channel survives.
  */
 
 export const RUNE_OF_RETURN_STATUS = 'rune_of_return_channel';
@@ -48,6 +54,12 @@ export const RUNE_TRACK_MAX: Readonly<Record<RuneOfReturnTrack, number>> = {
   weave: 3,
   mobility: 1,
 };
+
+export const RUNE_TOTAL_POINTS_CAP = 7;
+
+export function getTotalRuneMasteryPoints(mastery: RuneOfReturnMastery): number {
+  return (mastery?.celerityPoints ?? 0) + (mastery?.weavePoints ?? 0) + (mastery?.mobilityPoints ?? 0);
+}
 
 export function defaultRuneMastery(): RuneOfReturnMastery {
   return { celerityPoints: 0, weavePoints: 0, mobilityPoints: 0 };
@@ -134,8 +146,8 @@ export function startOrContinueChannel(
   item: RuneOfReturnItem
 ): { success: boolean; message: string } {
   if (isChanneling(player)) {
-    const effect = player.statusManager.getStatus(RUNE_OF_RETURN_STATUS)!;
-    effect.data = { ...effect.data, continuedThisTick: true };
+    // The pre-hook already recognized this as a sustaining action before `perform()`
+    // ran; nothing left to record here.
     return { success: true, message: 'You continue channeling the Rune of Return...' };
   }
 
@@ -153,7 +165,7 @@ export function startOrContinueChannel(
       duration,
       potency: channelTime,
       sourceEntityId: player.id,
-      data: { continuedThisTick: true, lastHp: player.hp, channelTime },
+      data: { startedThisTick: true, lastHp: player.hp, channelTime },
     },
     [],
     player,
@@ -179,7 +191,7 @@ export function cancelChannel(engine: GameEngine, player: Player): { success: bo
 }
 
 /** Shared fizzle path for both damage/other-action interrupts and voluntary cancellation. */
-function interruptChannel(engine: GameEngine, player: Player, message: string): void {
+export function interruptChannel(engine: GameEngine, player: Player, message: string): void {
   const effect = player.statusManager.getStatus(RUNE_OF_RETURN_STATUS);
   if (effect) {
     const channelTime = (effect.data?.channelTime as number | undefined) ?? effect.potency ?? 0;
@@ -209,6 +221,10 @@ export function allocateRuneMastery(player: Player, track: RuneOfReturnTrack, am
   if (current + amount > max) {
     return false;
   }
+  const totalPoints = getTotalRuneMasteryPoints(player.runeMastery);
+  if (totalPoints + amount > RUNE_TOTAL_POINTS_CAP) {
+    return false;
+  }
   player.unspentStatPoints -= amount;
   player.runeMastery = { ...player.runeMastery, [key]: current + amount };
   return true;
@@ -229,32 +245,19 @@ function completeChannel(player: Player, engine: GameEngine): string | undefined
 }
 
 /**
- * The status handler driving per-turn advancement (dormant-actor/status-tick
+ * The status handler driving per-turn bookkeeping (dormant-actor/status-tick
  * semantics — this runs every player turn via `player-status-tick`, exactly like
- * poison or slow). See the module doc for the one documented timing tradeoff.
+ * poison or slow). Interrupt/continuation is decided earlier, by the ActionPipeline
+ * hooks below — a still-active effect by the time this fires means the current turn's
+ * action already sustained it, so there is nothing left to decide here.
  */
 const runeOfReturnStatusHandler: StatusHandler = {
-  onTick(entity: Entity, effect: StatusEffect, engine: GameEngine): StatusTickOutput {
-    const player = entity as Player;
-    const data = effect.data ?? {};
-    const lastHp = typeof data.lastHp === 'number' ? data.lastHp : player.hp;
-    const tookDamage = player.hp < lastHp;
-
-    if (tookDamage) {
-      interruptChannel(engine, player, 'Pain sears through you and your grip on the rune slips — the channel fizzles!');
-      return { damageTaken: 0, killed: false };
+  onTick(_entity: Entity, effect: StatusEffect, engine: GameEngine): StatusTickOutput {
+    // Log progress on continuations after the first turn.
+    if (!effect.data?.startedThisTick && effect.duration > 1) {
+      engine.log(`You continue channeling... (${effect.duration - 1} turns remaining)`);
     }
-
-    const continuedThisTick = data.continuedThisTick === true;
-    const mobilityMaxed = player.runeMastery.mobilityPoints >= RUNE_TRACK_MAX.mobility;
-    if (!continuedThisTick && !mobilityMaxed) {
-      interruptChannel(engine, player, 'Your concentration breaks and the channel fizzles.');
-      return { damageTaken: 0, killed: false };
-    }
-
-    // Continuing: reset the per-turn continuation flag (next turn must prove itself
-    // again unless mobility is maxed) and refresh the HP watermark.
-    effect.data = { ...effect.data, continuedThisTick: false, lastHp: player.hp };
+    effect.data = { ...effect.data, startedThisTick: false };
     return { damageTaken: 0, killed: false };
   },
 
@@ -263,14 +266,102 @@ const runeOfReturnStatusHandler: StatusHandler = {
   },
 };
 
+/**
+ * ActionPipeline hooks that own the channel's interrupt/continuation decision (see
+ * module doc). Registered unconditionally in `GameEngine`'s constructor alongside the
+ * built-in status handlers — `runeOfReturn.ts` is already an engine-owned mechanic
+ * (ARCHITECTURE.md §9, P-03), not campaign content, so this follows that precedent
+ * rather than routing through `manifest.actionHooks`. Touches the protected
+ * `engine.ts` under §8.1 exception 1 (confirmed bug fix): the previous tick-only
+ * implementation could take up to one player turn to notice a monster's counter-attack
+ * (see the module doc), which this hook pair fixes by observing every action, player's
+ * or monster's, as it happens.
+ */
+export function createRuneOfReturnActionHooks(): ActionHook[] {
+  return [
+    {
+      id: 'rune_of_return_action_guard',
+      phase: 'pre',
+      priority: 50,
+      execute(ctx: ActionHookContext) {
+        const player = ctx.engine.player as Player | undefined;
+        if (!player || ctx.actor !== player) return;
+        if (!player.statusManager?.hasStatus(RUNE_OF_RETURN_STATUS)) return;
+
+        const action = ctx.action;
+        const actionType = ctx.actionType;
+
+        // 1. WaitAction or ChannelRuneOfReturnAction: sustains the channel.
+        if (
+          action instanceof WaitAction ||
+          actionType === 'WaitAction' ||
+          action instanceof ChannelRuneOfReturnAction ||
+          actionType === 'ChannelRuneOfReturnAction'
+        ) {
+          return;
+        }
+
+        // 2. MovementAction
+        if (action instanceof MovementAction || actionType === 'MovementAction') {
+          const move = action as MovementAction;
+          const targetX = player.x + (move.dx ?? 0);
+          const targetY = player.y + (move.dy ?? 0);
+          const targetEntity = (ctx.engine as any).map?.getEntityAt?.(targetX, targetY, player.planeId);
+
+          if (targetEntity && player.isHostileTo(targetEntity)) {
+            // Bump attack breaks concentration
+            interruptChannel(ctx.engine as GameEngine, player, 'You break concentration to attack — the channel fizzles.');
+            return;
+          }
+
+          if (player.runeMastery.mobilityPoints >= RUNE_TRACK_MAX.mobility) {
+            // Unbound Casting: movement sustains the channel.
+            return;
+          }
+          interruptChannel(ctx.engine as GameEngine, player, 'You move, breaking your concentration — the channel fizzles.');
+          return;
+        }
+
+        // 3. Any other player action breaks concentration voluntarily
+        interruptChannel(ctx.engine as GameEngine, player, 'Your concentration breaks and the channel fizzles.');
+      },
+    },
+    {
+      id: 'rune_of_return_damage_interrupter',
+      phase: 'post',
+      priority: 50,
+      execute(ctx: ActionHookContext) {
+        const player = ctx.engine.player as Player | undefined;
+        if (!player) return;
+        if (!player.statusManager?.hasStatus(RUNE_OF_RETURN_STATUS)) return;
+
+        const effect = player.statusManager.getStatus(RUNE_OF_RETURN_STATUS);
+        if (!effect) return;
+
+        const lastHp = typeof effect.data?.lastHp === 'number' ? effect.data.lastHp : player.hp;
+        if (player.hp < lastHp) {
+          interruptChannel(
+            ctx.engine as GameEngine,
+            player,
+            'Pain sears through you and your grip on the rune slips — the channel fizzles!'
+          );
+        } else {
+          effect.data = { ...effect.data, lastHp: player.hp };
+        }
+      },
+    },
+  ];
+}
+
 export function registerRuneOfReturnStatusHandler(): void {
   StatusHandlerRegistry.register(RUNE_OF_RETURN_STATUS, runeOfReturnStatusHandler);
 }
 
 /** The explicit "keep channeling" action a player takes each turn to sustain the
- * channel (or start one). Any *other* turn-consuming action interrupts it instead,
- * per the core channel rules — never special-cased per action type; whatever action
- * the player takes next simply won't be this one, which the status handler sees. */
+ * channel (or start one). `WaitAction` also sustains it — standing still to
+ * concentrate reads naturally as compatible with channeling — and movement sustains
+ * it too once Unbound Casting (mobility mastery) is maxed. Every other action
+ * interrupts it. See `createRuneOfReturnActionHooks` for the actual decision logic. */
 export class ChannelRuneOfReturnAction implements Action {
   public readonly entity: Player;
 

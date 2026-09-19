@@ -50,5 +50,10 @@ describe('Floor 5: guaranteed Rune of Return vault', () => {
       .getAllEntities()
       .filter((e) => e instanceof Monster && Math.hypot(e.x - position!.x, e.y - position!.y) <= 6);
     expect(nearbyMonsters.length).toBeGreaterThanOrEqual(2);
+
+    const frostWarden = nearbyMonsters.find(
+      (e) => (e as Monster).definitionId === 'miniboss_frost_warden' || (e as Monster).name.includes('Gálmr')
+    );
+    expect(frostWarden).toBeDefined();
   });
 });

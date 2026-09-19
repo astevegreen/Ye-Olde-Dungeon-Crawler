@@ -78,7 +78,18 @@ export type EntitySpriteKey =
   | 'hag'
   | 'zealot'
   | 'cultist'
-  | 'troll';
+  | 'troll'
+  // Collision-breaking variants (distinct archetypes that would otherwise share
+  // a broader family's icon — see sprite-mapper.ts's DEFAULT_TAG_SPRITE_ORDER)
+  | 'sorcerer'
+  | 'giant'
+  | 'giant_fire'
+  | 'shadow'
+  | 'ghost'
+  | 'bound_spirit'
+  | 'duergar'
+  | 'troll_witch'
+  | 'dragon_elder';
 
 export type ItemSpriteKey =
   | 'broadsword'

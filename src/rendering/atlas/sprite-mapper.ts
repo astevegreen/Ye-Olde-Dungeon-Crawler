@@ -91,18 +91,25 @@ export const DEFAULT_TAG_SPRITE_ORDER: Array<{ tag: string; spriteKey: SpriteKey
   { tag: 'boss', spriteKey: 'giant_boss' },
   { tag: 'miniboss', spriteKey: 'giant_boss' },
 
-  // Monstrous Specifics
+  // Monstrous Specifics — elder variants checked first so a shared 'dragon'/'wyrm'
+  // tag on a late-game monster doesn't collapse it onto the early-game look.
+  { tag: 'dragon_elder', spriteKey: 'dragon_elder' },
   { tag: 'dragon', spriteKey: 'dragon' },
   { tag: 'wyrm', spriteKey: 'wyrm' },
   { tag: 'aberration', spriteKey: 'aberration' },
+  { tag: 'shadow', spriteKey: 'shadow' },
   { tag: 'fiend', spriteKey: 'fiend' },
 
-  // Undead & Spectral Specifics
+  // Undead & Spectral Specifics — 'ghost' and 'bound_spirit' checked before the
+  // broader 'spirit'/'undead' fallbacks they'd otherwise collapse into.
   { tag: 'wraith', spriteKey: 'wraith' },
   { tag: 'draugr', spriteKey: 'draugr' },
+  { tag: 'duergar', spriteKey: 'duergar' },
   { tag: 'wight', spriteKey: 'wight' },
   { tag: 'zombie', spriteKey: 'zombie' },
   { tag: 'spectral', spriteKey: 'spectral' },
+  { tag: 'ghost', spriteKey: 'ghost' },
+  { tag: 'bound_spirit', spriteKey: 'bound_spirit' },
   { tag: 'spirit', spriteKey: 'spirit' },
   { tag: 'fae', spriteKey: 'fae' },
   { tag: 'imp', spriteKey: 'imp' },
@@ -121,9 +128,13 @@ export const DEFAULT_TAG_SPRITE_ORDER: Array<{ tag: string; spriteKey: SpriteKey
   // Humanoid Specifics
   { tag: 'dwarf', spriteKey: 'dwarf' },
   { tag: 'hag', spriteKey: 'hag' },
+  { tag: 'sorcerer', spriteKey: 'sorcerer' },
   { tag: 'zealot', spriteKey: 'zealot' },
   { tag: 'cultist', spriteKey: 'cultist' },
+  { tag: 'troll_witch', spriteKey: 'troll_witch' },
   { tag: 'troll', spriteKey: 'troll' },
+  { tag: 'fire_giant', spriteKey: 'giant_fire' },
+  { tag: 'giant', spriteKey: 'giant' },
   { tag: 'goblinoid', spriteKey: 'kobold' },
 
   // Broad Archetype Fallbacks
@@ -160,11 +171,21 @@ export function getEntitySpriteKey(entity: Entity): SpriteKey {
   const name = entity.name.toLowerCase();
   const id = entity instanceof Monster ? entity.definitionId : entity.id;
 
-  // Boss overrides
-  if (name.includes('nidhogg') || id === 'boss_nidhogg') {
+  // Boss overrides. Exact id match only for Níðhögg — its name carries diacritics
+  // ('Níðhögg, the Root-Gnawer') that a plain-ASCII substring check would never match,
+  // but other monsters' flavor text can legitimately *reference* "Níðhögg" (e.g. the
+  // grave-wyrmling brood), so a name-substring check would over-match instead.
+  if (id === 'nidhogg') {
     return 'dragon_boss';
   }
-  if (name.includes('hrungnir') || name.includes('chieftain') || id === 'boss_hrungnir') {
+  if (
+    name.includes('hrungnir') ||
+    name.includes('chieftain') ||
+    id === 'boss_hrungnir' ||
+    name.includes('gálmr') ||
+    name.includes('frost-warden') ||
+    id === 'miniboss_frost_warden'
+  ) {
     return 'giant_boss';
   }
 

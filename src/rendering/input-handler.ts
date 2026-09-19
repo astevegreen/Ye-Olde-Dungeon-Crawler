@@ -32,6 +32,8 @@ import type { CompendiumModal } from '../ui/help/compendiumModal';
 import type { CommandPalette } from '../ui/help/commandPalette';
 import type { PactModal } from '../ui/pactModal';
 import type { LevelUpModal } from '../ui/levelUpModal';
+import type { RuneOfReturnTreeModal } from '../ui/runeOfReturnTreeModal';
+import type { RuneOfReturnDiscoveryModal } from '../ui/runeOfReturnDiscoveryModal';
 import { ModalStackManager } from '../ui/modalStack';
 import { SettingsManager } from '../ui/settings/settingsManager';
 import type { RadialMenuSlotConfig } from '../ui/settings/settingsManager';
@@ -78,6 +80,8 @@ export class InputHandler {
   public commandPalette?: CommandPalette;
   public pactModal?: PactModal;
   public levelUpModal?: LevelUpModal;
+  public runeOfReturnTreeModal?: RuneOfReturnTreeModal;
+  public runeOfReturnDiscoveryModal?: RuneOfReturnDiscoveryModal;
   public radialMenuOverlay?: RadialMenuOverlay;
   public onSaveAndExit?: () => void;
   public onToggleDiagnostics?: () => void;
@@ -276,6 +280,18 @@ export class InputHandler {
       });
     } else {
       this.modalStack.remove('pact-modal');
+    }
+  }
+
+  /** Opens/closes Rune of Return Mastery Tree modal, registering it on the modal stack. */
+  public toggleRuneOfReturnTreeModal(): void {
+    if (!this.runeOfReturnTreeModal) return;
+    this.runeOfReturnTreeModal.setModalStack(this.modalStack);
+    this.runeOfReturnTreeModal.toggle(this.engine);
+    if (this.runeOfReturnTreeModal.isOpen) {
+      this.modalStack.push(this.runeOfReturnTreeModal);
+    } else {
+      this.modalStack.remove(this.runeOfReturnTreeModal.id);
     }
   }
 
@@ -824,8 +840,9 @@ export class InputHandler {
       return true;
     }
 
-    // Check SettingsManager dynamic action mapping
-    const userAction = this.settingsManager.getActionForCode(code);
+    // Check SettingsManager dynamic action mapping (including Shift chords)
+    const effectiveCode = e.shiftKey ? `Shift+${code}` : code;
+    const userAction = this.settingsManager.getActionForCode(effectiveCode) ?? this.settingsManager.getActionForCode(code);
     if (userAction === 'inventory') {
       this.toggleInventory();
       return true;
@@ -927,6 +944,12 @@ export class InputHandler {
       if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
       const channelAction = new ChannelRuneOfReturnAction(p);
       this.engine.handlePlayerAction(channelAction);
+      this.onActionProcessed();
+      return true;
+    }
+    if (userAction === 'rune_of_return_tree') {
+      if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
+      this.toggleRuneOfReturnTreeModal();
       this.onActionProcessed();
       return true;
     }

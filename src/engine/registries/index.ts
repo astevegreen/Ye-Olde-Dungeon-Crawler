@@ -30,6 +30,10 @@ import {
   StatusHandlerRegistryStore,
   setActiveStatusHandlerStore,
 } from './statusHandlerRegistryStore';
+import {
+  TileRegistryStore,
+  setActiveTileStore,
+} from './tileRegistryStore';
 
 export { RegistryStore } from './registryStore';
 export {
@@ -82,6 +86,12 @@ export {
   setDefaultStatusHandlerRegistrar,
   getDefaultStatusHandlerRegistrar,
 } from './statusHandlerRegistryStore';
+export {
+  TileRegistryStore,
+  activeTileStore,
+  processDefaultTileStore,
+  setActiveTileStore,
+} from './tileRegistryStore';
 
 /**
  * Bundle of per-engine content registries (ARCHITECTURE.md §3, P-22).
@@ -95,6 +105,7 @@ export interface EngineRegistries {
   aiStrategies: AIStrategyRegistryStore;
   aiBehaviors: AIBehaviorRegistryStore;
   statusHandlers: StatusHandlerRegistryStore;
+  tiles: TileRegistryStore;
 }
 
 /**
@@ -111,4 +122,5 @@ export function activateRegistries(registries: EngineRegistries | null): void {
   setActiveAIStrategyStore(registries ? registries.aiStrategies : null);
   setActiveAIBehaviorStore(registries ? registries.aiBehaviors : null);
   setActiveStatusHandlerStore(registries ? registries.statusHandlers : null);
+  setActiveTileStore(registries ? registries.tiles : null);
 }

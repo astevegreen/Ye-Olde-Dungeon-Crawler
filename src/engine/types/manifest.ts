@@ -1,4 +1,4 @@
-import type { Position } from '../types';
+import type { Position, TileDefinition } from '../types';
 import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
 import type { SpellDefinition } from '../magic/types';
 import type { ItemCategory, ItemQuality, EquipmentSlot, ItemStatModifiers, Item, RangedWeaponConfig } from '../items/item';
@@ -450,6 +450,7 @@ export interface GameContentManifest {
   choices?: Record<string, ChoiceDefinition>;
   pacts?: RunPactDefinition[];
   traps?: TrapDefinition[];
+  tiles?: TileDefinition[];
   itemAliasPools?: ItemAliasPools;
   surfaceTypes?: SurfaceTypeDefinition[];
   statusEffects?: StatusEffectDefinition[];

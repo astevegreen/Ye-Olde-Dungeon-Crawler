@@ -156,30 +156,78 @@ export const TILES: Record<string, TileDefinition> = {
   },
 };
 
-const tileRegistry = new Map<string, TileDefinition>();
+import {
+  type TileRegistryStore,
+  activeTileStore,
+  processDefaultTileStore,
+} from '../registries/tileRegistryStore';
 
-// Initialize registry with all canonical definitions
-for (const tile of Object.values(TILES)) {
-  tileRegistry.set(tile.type, tile);
+export function registerBuiltinTiles(store: TileRegistryStore): void {
+  for (const tile of Object.values(TILES)) {
+    store.register(tile);
+  }
 }
+
+// Initialize default store with all canonical definitions
+registerBuiltinTiles(processDefaultTileStore());
 
 /**
  * Retrieves a TileDefinition from the data-driven tile registry.
  * Falls back to TILES.FLOOR for unknown tile types.
  */
 export function getTileDefinition(type: string): TileDefinition {
-  return tileRegistry.get(type) ?? TILES.FLOOR;
+  return activeTileStore().get(type) ?? TILES.FLOOR;
 }
 
 export function hasTileDefinition(type: string): boolean {
-  return tileRegistry.has(type);
+  return activeTileStore().has(type);
 }
 
 /**
  * Registers or overrides a TileDefinition in the registry.
  */
 export function registerTileDefinition(definition: TileDefinition): void {
-  tileRegistry.set(definition.type, definition);
+  activeTileStore().register(definition);
+}
+
+/**
+ * Process-wide facade over whichever tile store is active (ARCHITECTURE.md §3, P-22).
+ */
+export class TileRegistry {
+  public static register(definition: TileDefinition): void {
+    activeTileStore().register(definition);
+  }
+
+  public static registerAll(
+    definitions: readonly TileDefinition[] | TileDefinition[] | Record<string, TileDefinition> | Map<string, TileDefinition>
+  ): void {
+    activeTileStore().registerAll(definitions);
+  }
+
+  public static get(type: string): TileDefinition | undefined {
+    return activeTileStore().get(type);
+  }
+
+  public static getDefinition(type: string): TileDefinition {
+    return getTileDefinition(type);
+  }
+
+  public static has(type: string): boolean {
+    return activeTileStore().has(type);
+  }
+
+  public static getAll(): readonly TileDefinition[] {
+    return activeTileStore().getAll();
+  }
+
+  public static clear(): void {
+    activeTileStore().clear();
+  }
+
+  public static resetToDefaults(): void {
+    activeTileStore().clear();
+    registerBuiltinTiles(activeTileStore());
+  }
 }
 
 

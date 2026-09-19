@@ -16,6 +16,8 @@ import {
   processDefaultAIBehaviorStore,
   StatusHandlerRegistryStore,
   processDefaultStatusHandlerStore,
+  TileRegistryStore,
+  processDefaultTileStore,
   activateRegistries,
   type EngineRegistries,
 } from './registries';
@@ -330,6 +332,8 @@ export class GameEngine {
     aiBehaviorStore.seedFrom(processDefaultAIBehaviorStore());
     const statusHandlerStore = new StatusHandlerRegistryStore();
     statusHandlerStore.seedFrom(processDefaultStatusHandlerStore());
+    const tileStore = new TileRegistryStore();
+    tileStore.seedFrom(processDefaultTileStore());
     this.registries = {
       monsters: monsterStore,
       traps: trapStore,
@@ -339,10 +343,14 @@ export class GameEngine {
       aiStrategies: aiStrategyStore,
       aiBehaviors: aiBehaviorStore,
       statusHandlers: statusHandlerStore,
+      tiles: tileStore,
     };
     activateRegistries(this.registries);
 
     SpellPipeline.ensureBuiltinEffects();
+    if (this.manifest.tiles && this.manifest.tiles.length > 0) {
+      this.registries.tiles.registerAll(this.manifest.tiles);
+    }
     if (this.manifest.spells && this.manifest.spells.length > 0) {
       this.registries.spells.registerAll(this.manifest.spells);
     }

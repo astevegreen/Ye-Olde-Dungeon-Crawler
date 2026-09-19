@@ -11,6 +11,7 @@ import { CompanionRegistry, type CompanionDefinition } from '../../entities/comp
 import { AIRegistry, type AIStrategy } from '../../ai/aiRegistry';
 import { AiBehaviorRegistry, type AiBehaviorStrategy } from '../../ai/aiBehaviorRegistry';
 import { StatusHandlerRegistry, type StatusHandler } from '../../status/statusHandlers';
+import { TileRegistry, getTileDefinition, hasTileDefinition } from '../../grid/tile';
 import { WaitAction } from '../../actions/wait';
 import { processDefaultMonsterStore, setActiveMonsterStore } from '../monsterRegistryStore';
 import { processDefaultTrapStore, setActiveTrapStore } from '../trapRegistryStore';
@@ -20,9 +21,11 @@ import { processDefaultCompanionStore, setActiveCompanionStore } from '../compan
 import { setActiveAIStrategyStore } from '../aiStrategyRegistryStore';
 import { setActiveAIBehaviorStore } from '../aiBehaviorRegistryStore';
 import { setActiveStatusHandlerStore } from '../statusHandlerRegistryStore';
+import { setActiveTileStore } from '../tileRegistryStore';
 import type { MonsterDefinition } from '../../bestiary/monsterDefinitions';
 import type { TrapDefinition, TrapType } from '../../types/manifest';
 import type { SpellDefinition } from '../../magic/types';
+import type { TileDefinition } from '../../types';
 
 /**
  * Per-engine content registries (ARCHITECTURE.md §3, P-22 stage 1).
@@ -97,6 +100,16 @@ const statusDef = (message: string): StatusHandler => ({
   onExpire: () => message,
 });
 
+const tileDef = (type: string): TileDefinition => ({
+  type,
+  name: type,
+  passable: true,
+  walkable: true,
+  transparent: true,
+  glyph: '%',
+  description: `${type} tile`,
+});
+
 function engineWith(
   monsters: MonsterDefinition[],
   traps: TrapDefinition[] = [],
@@ -105,7 +118,8 @@ function engineWith(
   companions: CompanionDefinition[] = [],
   aiStrategies: AIStrategy[] = [],
   aiBehaviors: Record<string, AiBehaviorStrategy> = {},
-  statusHandlers: Record<string, StatusHandler> = {}
+  statusHandlers: Record<string, StatusHandler> = {},
+  tiles: TileDefinition[] = []
 ): GameEngine {
   return new GameEngine({
     map: new GameMap(10, 10, TILES.FLOOR),
@@ -121,6 +135,7 @@ function engineWith(
       aiStrategies,
       aiBehaviors,
       statusHandlers,
+      tiles,
     } as never,
   });
 }
@@ -143,6 +158,8 @@ describe('Per-engine content registries', () => {
     setActiveAIBehaviorStore(null);
     StatusHandlerRegistry.resetToDefaults();
     setActiveStatusHandlerStore(null);
+    TileRegistry.resetToDefaults();
+    setActiveTileStore(null);
   });
 
   it('keeps two engines built from different manifests separate', () => {
@@ -359,5 +376,35 @@ describe('Per-engine content registries', () => {
     engineA.handlePlayerAction(new WaitAction(engineA.player));
     expect(StatusHandlerRegistry.has('frozen')).toBe(true);
     expect(StatusHandlerRegistry.has('cursed')).toBe(false);
+  });
+
+  it('keeps two engines built from different tile manifests separate', () => {
+    const engineA = engineWith([], [], [], [], [], [], {}, {}, [tileDef('elven_grass')]);
+    const engineB = engineWith([], [], [], [], [], [], {}, {}, [tileDef('blighted_soil')]);
+
+    // Both inherit canonical tiles (e.g. floor, wall)
+    expect(engineA.registries.tiles.has('floor')).toBe(true);
+    expect(engineB.registries.tiles.has('floor')).toBe(true);
+
+    // Isolated custom tiles
+    expect(engineA.registries.tiles.has('elven_grass')).toBe(true);
+    expect(engineA.registries.tiles.has('blighted_soil')).toBe(false);
+    expect(engineB.registries.tiles.has('blighted_soil')).toBe(true);
+    expect(engineB.registries.tiles.has('elven_grass')).toBe(false);
+
+    // Static facade points to B
+    expect(TileRegistry.has('blighted_soil')).toBe(true);
+    expect(TileRegistry.has('elven_grass')).toBe(false);
+    expect(hasTileDefinition('blighted_soil')).toBe(true);
+    expect(hasTileDefinition('elven_grass')).toBe(false);
+    expect(getTileDefinition('blighted_soil').name).toBe('blighted_soil');
+
+    // Acting on A switches TileRegistry to A
+    engineA.handlePlayerAction(new WaitAction(engineA.player));
+    expect(TileRegistry.has('elven_grass')).toBe(true);
+    expect(TileRegistry.has('blighted_soil')).toBe(false);
+    expect(hasTileDefinition('elven_grass')).toBe(true);
+    expect(hasTileDefinition('blighted_soil')).toBe(false);
+    expect(getTileDefinition('elven_grass').name).toBe('elven_grass');
   });
 });

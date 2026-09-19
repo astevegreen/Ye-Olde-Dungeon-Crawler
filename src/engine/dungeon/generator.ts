@@ -9,6 +9,7 @@ import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
 import type { ItemDefinition } from '../types/manifest';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
 import type { GameDifficulty } from '../types';
+import type { EngineRegistries } from '../registries';
 
 export interface DungeonGenParams {
   width: number;
@@ -25,6 +26,7 @@ export interface DungeonGenParams {
   scalingConfig?: MonsterScalingConfig;
   difficulty?: GameDifficulty;
   forcedVaultId?: string;
+  registries?: EngineRegistries;
 }
 
 export interface GeneratedFloorData {
@@ -67,6 +69,7 @@ export class BspDungeonGenerator implements DungeonGeneratorStrategy {
       scalingConfig: params.scalingConfig,
       difficulty: params.difficulty,
       forcedVaultId: params.forcedVaultId,
+      registries: params.registries,
     });
 
     const result = generator.generate();

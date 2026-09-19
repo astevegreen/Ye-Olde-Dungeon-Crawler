@@ -7,6 +7,7 @@ import type { ItemDefinition } from '../types/manifest';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
 import { createScaledMonster, selectDungeonMonsterDefinition } from './spawner';
 import { createDungeonChest } from './lootSpawner';
+import type { EngineRegistries } from '../registries';
 
 
 import type { Predicate } from '../predicates/types';
@@ -87,7 +88,8 @@ export class VaultStamper {
     itemCandidates: ItemDefinition[] = [],
     rng: () => number,
     scalingConfig?: MonsterScalingConfig,
-    difficulty?: GameDifficulty
+    difficulty?: GameDifficulty,
+    registries?: EngineRegistries
   ): StampedVaultResult {
     const layout = blueprint.layout;
     const height = layout.length;
@@ -111,21 +113,27 @@ export class VaultStamper {
 
         if (parsed.isConnector) {
           connectors.push({ x: worldX, y: worldY });
-        } else if (parsed.isChest) {
+        }
+
+        if (parsed.isChest) {
           chestSpawns.push({ x: worldX, y: worldY });
           const chestId = `vault-chest-${blueprint.id}-${worldX}-${worldY}-${Math.floor(rng() * 1000000)}`;
           const chest = createDungeonChest(chestId, currentFloor, itemCandidates, rng);
           map.addItemAt(worldX, worldY, chest);
-        } else if (parsed.isMonster) {
+        }
+
+        if (parsed.isMonster || parsed.isMiniboss) {
           monsterSpawns.push({ x: worldX, y: worldY });
-          // Select designated miniboss, preferred monster, or suitable scaled monster for this floor
-          let def: MonsterDefinition | null = null;
+          let def: MonsterDefinition | null | undefined;
           if (parsed.isMiniboss && blueprint.minibossId) {
-            def = monsterCandidates.find((m) => m.id === blueprint.minibossId) ?? getMonsterDefinition(blueprint.minibossId) ?? null;
-          }
-          if (!def && blueprint.preferredMonsters && blueprint.preferredMonsters.length > 0) {
-            const chosenId = blueprint.preferredMonsters[Math.floor(rng() * blueprint.preferredMonsters.length)];
-            def = monsterCandidates.find((m) => m.id === chosenId) ?? null;
+            def =
+              monsterCandidates.find((m) => m.id === blueprint.minibossId) ??
+              (registries ? registries.monsters.get(blueprint.minibossId) : getMonsterDefinition(blueprint.minibossId));
+          } else if (blueprint.preferredMonsters && blueprint.preferredMonsters.length > 0) {
+            const prefId = blueprint.preferredMonsters[Math.floor(rng() * blueprint.preferredMonsters.length)];
+            def =
+              monsterCandidates.find((m) => m.id === prefId) ??
+              (registries ? registries.monsters.get(prefId) : getMonsterDefinition(prefId));
           }
           if (!def) {
             def = selectDungeonMonsterDefinition(monsterCandidates, currentFloor, rng);
@@ -142,7 +150,8 @@ export class VaultStamper {
               undefined,
               undefined,
               scalingConfig,
-              difficulty
+              difficulty,
+              registries
             );
             if (parsed.isMiniboss) {
               monster.aiState = 'hunting';

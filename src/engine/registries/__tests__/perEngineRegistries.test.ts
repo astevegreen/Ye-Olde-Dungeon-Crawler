@@ -12,6 +12,8 @@ import { AIRegistry, type AIStrategy } from '../../ai/aiRegistry';
 import { AiBehaviorRegistry, type AiBehaviorStrategy } from '../../ai/aiBehaviorRegistry';
 import { StatusHandlerRegistry, type StatusHandler } from '../../status/statusHandlers';
 import { TileRegistry, getTileDefinition, hasTileDefinition } from '../../grid/tile';
+import { Item } from '../../items/item';
+import { itemIndex, getItemById } from '../../items/itemIndex';
 import { WaitAction } from '../../actions/wait';
 import { processDefaultMonsterStore, setActiveMonsterStore } from '../monsterRegistryStore';
 import { processDefaultTrapStore, setActiveTrapStore } from '../trapRegistryStore';
@@ -160,6 +162,7 @@ describe('Per-engine content registries', () => {
     setActiveStatusHandlerStore(null);
     TileRegistry.resetToDefaults();
     setActiveTileStore(null);
+    itemIndex.clear();
   });
 
   it('keeps two engines built from different manifests separate', () => {
@@ -406,5 +409,163 @@ describe('Per-engine content registries', () => {
     expect(hasTileDefinition('elven_grass')).toBe(true);
     expect(hasTileDefinition('blighted_soil')).toBe(false);
     expect(getTileDefinition('elven_grass').name).toBe('elven_grass');
+  });
+
+  it('keeps two engines strictly isolated across all registries and runtime item state over 200 interleaved turns', () => {
+    const engineA = engineWith(
+      [def('grunt')],
+      [trapDef('dart_trap')],
+      [actionDef('whirlwind')],
+      [spellDef('frostbolt')],
+      [companionDef('wolf_hound')],
+      [aiStrategyDef('tactical_cover')],
+      { tactical_retreat: aiBehaviorDef('tactical_retreat') },
+      { frozen: statusDef('thawed') },
+      [tileDef('elven_grass')]
+    );
+
+    const engineB = engineWith(
+      [def('kobold')],
+      [trapDef('fire_rune')],
+      [actionDef('shadowstep')],
+      [spellDef('pyroblast')],
+      [companionDef('snow_leopard')],
+      [aiStrategyDef('berserk_charge')],
+      { berserk_rush: aiBehaviorDef('berserk_rush') },
+      { cursed: statusDef('cleansed') },
+      [tileDef('blighted_soil')]
+    );
+
+    // Activate Engine A and give it distinct items
+    engineA.activate();
+    const itemA = new Item({ id: 'item_a', name: 'Item A', category: 'misc', weight: 1, bulk: 1 });
+    engineA.player.inventory.primaryPack.addItem(itemA);
+    const groundA = new Item({ id: 'ground_a', name: 'Ground A', category: 'misc', weight: 1, bulk: 1 });
+    engineA.map.addItemAt(3, 3, groundA);
+
+    // Activate Engine B and give it distinct items
+    engineB.activate();
+    const itemB = new Item({ id: 'item_b', name: 'Item B', category: 'misc', weight: 1, bulk: 1 });
+    engineB.player.inventory.primaryPack.addItem(itemB);
+    const groundB = new Item({ id: 'ground_b', name: 'Ground B', category: 'misc', weight: 1, bulk: 1 });
+    engineB.map.addItemAt(5, 5, groundB);
+
+    for (let turn = 0; turn < 200; turn++) {
+      // 1. Act on Engine A
+      engineA.handlePlayerAction(new WaitAction(engineA.player));
+
+      // Direct registry lookups on Engine A
+      expect(engineA.registries.monsters.has('grunt')).toBe(true);
+      expect(engineA.registries.monsters.has('kobold')).toBe(false);
+      expect(engineA.registries.traps.has('dart_trap')).toBe(true);
+      expect(engineA.registries.traps.has('fire_rune')).toBe(false);
+      expect(engineA.registries.actionCommands.has('whirlwind')).toBe(true);
+      expect(engineA.registries.actionCommands.has('shadowstep')).toBe(false);
+      expect(engineA.registries.spells.has('frostbolt')).toBe(true);
+      expect(engineA.registries.spells.has('pyroblast')).toBe(false);
+      expect(engineA.registries.companions.has('wolf_hound')).toBe(true);
+      expect(engineA.registries.companions.has('snow_leopard')).toBe(false);
+      expect(engineA.registries.aiStrategies.has('tactical_cover')).toBe(true);
+      expect(engineA.registries.aiStrategies.has('berserk_charge')).toBe(false);
+      expect(engineA.registries.aiBehaviors.has('tactical_retreat')).toBe(true);
+      expect(engineA.registries.aiBehaviors.has('berserk_rush')).toBe(false);
+      expect(engineA.registries.statusHandlers.has('frozen')).toBe(true);
+      expect(engineA.registries.statusHandlers.has('cursed')).toBe(false);
+      expect(engineA.registries.tiles.has('elven_grass')).toBe(true);
+      expect(engineA.registries.tiles.has('blighted_soil')).toBe(false);
+      expect(engineA.registries.itemIndex.has('item_a')).toBe(true);
+      expect(engineA.registries.itemIndex.has('ground_a')).toBe(true);
+      expect(engineA.registries.itemIndex.has('item_b')).toBe(false);
+      expect(engineA.registries.itemIndex.has('ground_b')).toBe(false);
+
+      // Facades resolve against active Engine A
+      expect(MonsterRegistry.has('grunt')).toBe(true);
+      expect(MonsterRegistry.has('kobold')).toBe(false);
+      expect(TrapRegistry.has('dart_trap')).toBe(true);
+      expect(TrapRegistry.has('fire_rune')).toBe(false);
+      expect(ActionRegistry.has('whirlwind')).toBe(true);
+      expect(ActionRegistry.has('shadowstep')).toBe(false);
+      expect(SpellRegistry.has('frostbolt')).toBe(true);
+      expect(SpellRegistry.has('pyroblast')).toBe(false);
+      expect(getSpell('frostbolt')).toBeDefined();
+      expect(getSpell('pyroblast')).toBeUndefined();
+      expect(CompanionRegistry.has('wolf_hound')).toBe(true);
+      expect(CompanionRegistry.has('snow_leopard')).toBe(false);
+      expect(AIRegistry.has('tactical_cover')).toBe(true);
+      expect(AIRegistry.has('berserk_charge')).toBe(false);
+      expect(AiBehaviorRegistry.has('tactical_retreat')).toBe(true);
+      expect(AiBehaviorRegistry.has('berserk_rush')).toBe(false);
+      expect(StatusHandlerRegistry.has('frozen')).toBe(true);
+      expect(StatusHandlerRegistry.has('cursed')).toBe(false);
+      expect(TileRegistry.has('elven_grass')).toBe(true);
+      expect(TileRegistry.has('blighted_soil')).toBe(false);
+      expect(getItemById('item_a')).toBe(itemA);
+      expect(getItemById('ground_a')).toBe(groundA);
+      expect(getItemById('item_b')).toBeUndefined();
+      expect(getItemById('ground_b')).toBeUndefined();
+      expect(itemIndex.locationOf('item_a')).toEqual({
+        kind: 'container',
+        containerId: engineA.player.inventory.primaryPack.id,
+      });
+      expect(itemIndex.locationOf('ground_a')).toEqual({ kind: 'ground', x: 3, y: 3 });
+
+      // 2. Act on Engine B
+      engineB.handlePlayerAction(new WaitAction(engineB.player));
+
+      // Direct registry lookups on Engine B
+      expect(engineB.registries.monsters.has('kobold')).toBe(true);
+      expect(engineB.registries.monsters.has('grunt')).toBe(false);
+      expect(engineB.registries.traps.has('fire_rune')).toBe(true);
+      expect(engineB.registries.traps.has('dart_trap')).toBe(false);
+      expect(engineB.registries.actionCommands.has('shadowstep')).toBe(true);
+      expect(engineB.registries.actionCommands.has('whirlwind')).toBe(false);
+      expect(engineB.registries.spells.has('pyroblast')).toBe(true);
+      expect(engineB.registries.spells.has('frostbolt')).toBe(false);
+      expect(engineB.registries.companions.has('snow_leopard')).toBe(true);
+      expect(engineB.registries.companions.has('wolf_hound')).toBe(false);
+      expect(engineB.registries.aiStrategies.has('berserk_charge')).toBe(true);
+      expect(engineB.registries.aiStrategies.has('tactical_cover')).toBe(false);
+      expect(engineB.registries.aiBehaviors.has('berserk_rush')).toBe(true);
+      expect(engineB.registries.aiBehaviors.has('tactical_retreat')).toBe(false);
+      expect(engineB.registries.statusHandlers.has('cursed')).toBe(true);
+      expect(engineB.registries.statusHandlers.has('frozen')).toBe(false);
+      expect(engineB.registries.tiles.has('blighted_soil')).toBe(true);
+      expect(engineB.registries.tiles.has('elven_grass')).toBe(false);
+      expect(engineB.registries.itemIndex.has('item_b')).toBe(true);
+      expect(engineB.registries.itemIndex.has('ground_b')).toBe(true);
+      expect(engineB.registries.itemIndex.has('item_a')).toBe(false);
+      expect(engineB.registries.itemIndex.has('ground_a')).toBe(false);
+
+      // Facades resolve against active Engine B
+      expect(MonsterRegistry.has('kobold')).toBe(true);
+      expect(MonsterRegistry.has('grunt')).toBe(false);
+      expect(TrapRegistry.has('fire_rune')).toBe(true);
+      expect(TrapRegistry.has('dart_trap')).toBe(false);
+      expect(ActionRegistry.has('shadowstep')).toBe(true);
+      expect(ActionRegistry.has('whirlwind')).toBe(false);
+      expect(SpellRegistry.has('pyroblast')).toBe(true);
+      expect(SpellRegistry.has('frostbolt')).toBe(false);
+      expect(getSpell('pyroblast')).toBeDefined();
+      expect(getSpell('frostbolt')).toBeUndefined();
+      expect(CompanionRegistry.has('snow_leopard')).toBe(true);
+      expect(CompanionRegistry.has('wolf_hound')).toBe(false);
+      expect(AIRegistry.has('berserk_charge')).toBe(true);
+      expect(AIRegistry.has('tactical_cover')).toBe(false);
+      expect(AiBehaviorRegistry.has('berserk_rush')).toBe(true);
+      expect(AiBehaviorRegistry.has('tactical_retreat')).toBe(false);
+      expect(StatusHandlerRegistry.has('cursed')).toBe(true);
+      expect(StatusHandlerRegistry.has('frozen')).toBe(false);
+      expect(TileRegistry.has('blighted_soil')).toBe(true);
+      expect(TileRegistry.has('elven_grass')).toBe(false);
+      expect(getItemById('item_b')).toBe(itemB);
+      expect(getItemById('ground_b')).toBe(groundB);
+      expect(getItemById('item_a')).toBeUndefined();
+      expect(getItemById('ground_a')).toBeUndefined();
+      expect(itemIndex.locationOf('item_b')).toEqual({
+        kind: 'container',
+        containerId: engineB.player.inventory.primaryPack.id,
+      });
+      expect(itemIndex.locationOf('ground_b')).toEqual({ kind: 'ground', x: 5, y: 5 });
+    }
   });
 });

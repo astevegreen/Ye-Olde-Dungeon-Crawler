@@ -11,6 +11,7 @@ import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
 import type { ItemDefinition } from '../types/manifest';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
 import type { GameDifficulty } from '../types';
+import type { EngineRegistries } from '../registries';
 
 export interface RectRoom {
   x1: number;
@@ -41,6 +42,7 @@ export interface DungeonConfig {
    * randomly-chosen eligible vaults (excluded from that random pool so it's
    * never double-picked). Used for hand-placed floor rewards. */
   forcedVaultId?: string;
+  registries?: EngineRegistries;
 }
 
 export interface DungeonResult {
@@ -72,6 +74,7 @@ export class DungeonGenerator {
   public scalingConfig?: MonsterScalingConfig;
   public difficulty?: GameDifficulty;
   public forcedVaultId?: string;
+  public registries?: EngineRegistries;
 
   constructor(config: DungeonConfig) {
     this.width = config.width;
@@ -90,6 +93,7 @@ export class DungeonGenerator {
     this.scalingConfig = config.scalingConfig;
     this.difficulty = config.difficulty;
     this.forcedVaultId = config.forcedVaultId;
+    this.registries = config.registries;
   }
 
   public generate(): DungeonResult {
@@ -170,7 +174,8 @@ export class DungeonGenerator {
           this.itemCandidates,
           () => this.prng.next(),
           this.scalingConfig,
-          this.difficulty
+          this.difficulty,
+          this.registries
         );
         vaultRoomIndices.add(rooms.length);
         rooms.push(vRoom);
@@ -540,7 +545,7 @@ export class DungeonGenerator {
    */
   private spawnDefinedMonster(defId: string, id: string, position: Position): Monster | null {
     try {
-      return Monster.createFromDefinition(defId, id, position);
+      return Monster.createFromDefinition(defId, id, position, this.registries);
     } catch (err) {
       flightRecorder.recordWarning(`Skipped spawning unregistered monster definition '${defId}'`, {
         source: 'DungeonGenerator',

@@ -15,6 +15,7 @@ import type { MonsterScalingConfig } from '../types/monsterScaling';
 import { getMonsterDefinition, type MonsterDefinition } from '../bestiary/monsterDefinitions';
 import { Container } from '../items/container';
 import { RuneOfReturnItem } from '../magic/runeOfReturn';
+import type { EngineRegistries } from '../registries';
 export interface DungeonFloorResult {
   map: GameMap;
   playerSpawn: Position;
@@ -107,14 +108,24 @@ export class DungeonArc {
     questArc?: QuestArcDefinition,
     manifest?: GameContentManifest,
     densityMultiplier = 1.0,
-    difficulty?: GameDifficulty
+    difficulty?: GameDifficulty,
+    registries?: EngineRegistries
   ): DungeonFloorResult {
     const maxFloor = questArc?.maxFloor ?? this.MAX_FLOOR;
     if (floorNumber >= maxFloor) {
       return this.generateChieftainLair(floorNumber, questArc, manifest, difficulty);
     }
 
-    return this.generateProceduralFloor(floorNumber, seed, maxFloor, questArc, manifest, densityMultiplier, difficulty);
+    return this.generateProceduralFloor(
+      floorNumber,
+      seed,
+      maxFloor,
+      questArc,
+      manifest,
+      densityMultiplier,
+      difficulty,
+      registries
+    );
   }
 
   /**
@@ -127,7 +138,8 @@ export class DungeonArc {
     questArc?: QuestArcDefinition,
     manifest?: GameContentManifest,
     densityMultiplier = 1.0,
-    difficulty?: GameDifficulty
+    difficulty?: GameDifficulty,
+    registries?: EngineRegistries
   ): DungeonFloorResult {
     const generatorStrategyId =
       questArc?.floorGenerators?.[floorNumber] ?? questArc?.defaultGenerator ?? 'bsp';
@@ -144,6 +156,8 @@ export class DungeonArc {
 
     const monsterCatalog: MonsterDefinition[] = manifest?.monsters
       ? (Array.isArray(manifest.monsters) ? manifest.monsters : Object.values(manifest.monsters) as MonsterDefinition[])
+      : registries
+      ? registries.monsters.getAll()
       : [];
     const itemCatalog: ItemDefinition[] = manifest?.items
       ? (Array.isArray(manifest.items) ? manifest.items : Object.values(manifest.items) as ItemDefinition[])
@@ -162,6 +176,7 @@ export class DungeonArc {
       itemCandidates: itemCatalog,
       scalingConfig: manifest?.monsterScaling,
       difficulty,
+      registries,
       forcedVaultId:
         manifest?.runeOfReturn?.acquisition?.floor === floorNumber
           ? manifest.runeOfReturn.acquisition.vaultId
@@ -193,7 +208,8 @@ export class DungeonArc {
       populationRng,
       densityMultiplier,
       manifest?.monsterScaling,
-      difficulty
+      difficulty,
+      registries
     );
 
     // 4. Spawn Floor-scaled loot and chests

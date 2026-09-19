@@ -7,6 +7,7 @@ import { Actor } from './actor';
 import { calculateAttribute } from '../stats/attributeCalculator';
 import { type AiBehaviorType, type LootDropRule, getMonsterDefinition } from '../bestiary/monsterDefinitions';
 import type { GameEngine } from '../engine';
+import type { EngineRegistries } from '../registries';
 import { DeathResolver } from '../combat/deathResolver';
 import { MonsterAI } from '../ai/behaviorTree';
 import { WaitAction } from '../actions/wait';
@@ -221,8 +222,13 @@ export class Monster extends Actor {
     return result;
   }
 
-  public static createFromDefinition(defId: string, id: string, position: Position): Monster {
-    const def = getMonsterDefinition(defId);
+  public static createFromDefinition(
+    defId: string,
+    id: string,
+    position: Position,
+    registries?: EngineRegistries
+  ): Monster {
+    const def = registries ? registries.monsters.get(defId) : getMonsterDefinition(defId);
     if (!def) {
       throw new Error(`Unknown monster definition: '${defId}' is not registered in MonsterRegistry.`);
     }

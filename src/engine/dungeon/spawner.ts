@@ -2,6 +2,7 @@ import type { GameMap } from '../grid/map';
 import type { Position, GameDifficulty } from '../types';
 import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
+import type { EngineRegistries } from '../registries';
 import { Monster } from '../entities/monster';
 
 export interface ScaledMonsterStats {
@@ -223,7 +224,8 @@ export function createScaledMonster(
   deepestFloor?: number,
   playerLevel?: number,
   scalingConfig?: MonsterScalingConfig,
-  difficulty?: GameDifficulty
+  difficulty?: GameDifficulty,
+  _registries?: EngineRegistries
 ): Monster {
   const scaled = scaleMonsterStats(def, currentFloor, deepestFloor, playerLevel, scalingConfig, difficulty);
 
@@ -265,8 +267,16 @@ export function populateDungeonFloor(
   rng: () => number,
   densityMultiplier = 1.0,
   scalingConfig?: MonsterScalingConfig,
-  difficulty?: GameDifficulty
+  difficulty?: GameDifficulty,
+  registries?: EngineRegistries
 ): void {
+  const effectiveCandidates =
+    candidates.length > 0
+      ? candidates
+      : registries
+      ? registries.monsters.getAll()
+      : [];
+
   // Start from room index 1 so room 0 remains player spawn
   for (let i = 1; i < rooms.length; i++) {
     const room = rooms[i];
@@ -274,7 +284,7 @@ export function populateDungeonFloor(
     const count = Math.max(1, Math.round(baseCount * densityMultiplier));
 
     for (let j = 0; j < count; j++) {
-      const def = selectDungeonMonsterDefinition(candidates, currentFloor, rng);
+      const def = selectDungeonMonsterDefinition(effectiveCandidates, currentFloor, rng);
       if (!def) continue;
 
       const mx = room.x1 + 1 + Math.floor(rng() * (room.x2 - room.x1 - 1));
@@ -291,7 +301,8 @@ export function populateDungeonFloor(
           undefined,
           undefined,
           scalingConfig,
-          difficulty
+          difficulty,
+          registries
         );
         map.addEntity(monster);
       }

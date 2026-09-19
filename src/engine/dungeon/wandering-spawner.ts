@@ -116,7 +116,8 @@ export class WanderingMonsterSpawner {
       engine.gameState?.deepestFloor,
       engine.player?.level,
       engine.manifest?.monsterScaling,
-      engine.player?.difficulty
+      engine.player?.difficulty,
+      engine.registries
     );
     monster.aiState = 'sleeping';
 

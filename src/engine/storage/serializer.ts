@@ -16,7 +16,8 @@ import { TrapInstance } from '../dungeon/traps';
 import { Visibility } from '../fov/types';
 import { FovManager } from '../fov/fov-manager';
 import { GameEngine } from '../engine';
-import { activateRegistries } from '../registries';
+import { activateRegistries, type EngineRegistries } from '../registries';
+import { rebuildItemRegistries } from '../items/rebuildItemRegistries';
 import { registerSerializeGameFn, flightRecorder } from '../debug/flightRecorder';
 import { CompendiumManager } from '../compendium/compendiumManager';
 import type { GameContentManifest } from '../types/manifest';
@@ -314,11 +315,11 @@ export function serializeCompanion(companion: Companion): SerializedCompanion {
   };
 }
 
-export function deserializeCompanion(data: SerializedCompanion): Companion {
+export function deserializeCompanion(data: SerializedCompanion, registries?: EngineRegistries): Companion {
   const primaryPack = deserializeItem(data.primaryPack) as Container;
   const inventory = new InventoryManager({ primaryPack, ownerId: data.id });
 
-  const def = CompanionRegistry.get(data.companionDefinitionId);
+  const def = registries ? registries.companions.get(data.companionDefinitionId) : CompanionRegistry.get(data.companionDefinitionId);
   const companion = new Companion({
     id: data.id,
     name: data.name,
@@ -853,7 +854,7 @@ export function deserializeGame(
 
   // 5b. Restore Companion (ARCHITECTURE.md P-14) — top-level, not part of map.monsters
   if (saveData.companion) {
-    engine.attachCompanion(deserializeCompanion(saveData.companion));
+    engine.attachCompanion(deserializeCompanion(saveData.companion, engine.registries));
   }
 
   // 6. Restore Turn Count & Messages
@@ -934,6 +935,7 @@ export function deserializeGame(
     engine.worldState = ws;
   }
 
+  rebuildItemRegistries(engine);
   activateRegistries(engine.registries);
 
   return {

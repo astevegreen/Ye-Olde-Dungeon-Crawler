@@ -18,9 +18,12 @@ import {
   processDefaultStatusHandlerStore,
   TileRegistryStore,
   processDefaultTileStore,
+  ContainerRegistryStore,
+  ItemIndex,
   activateRegistries,
   type EngineRegistries,
 } from './registries';
+import { rebuildItemRegistries } from './items/rebuildItemRegistries';
 import { BASE_ACTION_COST } from './types';
 import type { GameEvent } from './events';
 import { GameMap } from './grid/map';
@@ -334,6 +337,8 @@ export class GameEngine {
     statusHandlerStore.seedFrom(processDefaultStatusHandlerStore());
     const tileStore = new TileRegistryStore();
     tileStore.seedFrom(processDefaultTileStore());
+    const containerStore = new ContainerRegistryStore();
+    const itemIndexInstance = new ItemIndex();
     this.registries = {
       monsters: monsterStore,
       traps: trapStore,
@@ -344,8 +349,11 @@ export class GameEngine {
       aiBehaviors: aiBehaviorStore,
       statusHandlers: statusHandlerStore,
       tiles: tileStore,
+      containers: containerStore,
+      itemIndex: itemIndexInstance,
     };
     activateRegistries(this.registries);
+    rebuildItemRegistries(this);
 
     SpellPipeline.ensureBuiltinEffects();
     if (this.manifest.tiles && this.manifest.tiles.length > 0) {
@@ -486,7 +494,7 @@ export class GameEngine {
           return null;
         }
 
-        const def = MonsterRegistry.get(definitionId);
+        const def = this.registries.monsters.get(definitionId) ?? MonsterRegistry.get(definitionId);
         if (!def) {
           return null;
         }
@@ -499,7 +507,8 @@ export class GameEngine {
           undefined,
           undefined,
           this.manifest.monsterScaling,
-          this.player.difficulty
+          this.player.difficulty,
+          this.registries
         );
         monster.aiState = options?.aiState ?? 'hunting';
 
@@ -536,6 +545,13 @@ export class GameEngine {
     };
 
     this.updateFov();
+  }
+
+  /**
+   * Activates this engine's registry bundle across all facades (ARCHITECTURE.md §3, P-22).
+   */
+  public activate(): void {
+    activateRegistries(this.registries);
   }
 
   public updateFov(): void {
@@ -773,7 +789,8 @@ export class GameEngine {
           dynamicQuest,
           this.manifest,
           density,
-          this.player.difficulty
+          this.player.difficulty,
+          this.registries
         );
         nextMap = floorResult.map;
         targetSpawn = floorResult.playerSpawn;

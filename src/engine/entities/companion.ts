@@ -2,6 +2,7 @@ import type { Position, CombatStats } from '../types';
 import { Monster } from './monster';
 import { InventoryManager } from '../inventory/inventory-manager';
 import { Container } from '../items/container';
+import type { EngineRegistries } from '../registries';
 
 /**
  * Companions & Pet Progression (ARCHITECTURE.md P-14).
@@ -148,8 +149,13 @@ export class Companion extends Monster {
   // Named distinctly from `Monster.createFromDefinition` (rather than overriding it)
   // since that static method's return type isn't nullable, and companion lookups
   // are (definition may not exist), so an override would be an incompatible signature.
-  public static fromDefinition(definitionId: string, id: string, position: Position): Companion | null {
-    const def = CompanionRegistry.get(definitionId);
+  public static fromDefinition(
+    definitionId: string,
+    id: string,
+    position: Position,
+    registries?: EngineRegistries
+  ): Companion | null {
+    const def = registries ? registries.companions.get(definitionId) : CompanionRegistry.get(definitionId);
     if (!def) return null;
     return new Companion({
       id,

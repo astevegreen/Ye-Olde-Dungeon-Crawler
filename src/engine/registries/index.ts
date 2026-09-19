@@ -34,6 +34,14 @@ import {
   TileRegistryStore,
   setActiveTileStore,
 } from './tileRegistryStore';
+import {
+  ContainerRegistryStore,
+  setActiveContainerStore,
+} from './containerRegistryStore';
+import {
+  type ItemIndex,
+  setActiveItemIndex,
+} from '../items/itemIndex';
 
 export { RegistryStore } from './registryStore';
 export {
@@ -92,9 +100,21 @@ export {
   processDefaultTileStore,
   setActiveTileStore,
 } from './tileRegistryStore';
+export {
+  ContainerRegistryStore,
+  activeContainerStore,
+  processDefaultContainerStore,
+  setActiveContainerStore,
+} from './containerRegistryStore';
+export {
+  ItemIndex,
+  activeItemIndex,
+  processDefaultItemIndex,
+  setActiveItemIndex,
+} from '../items/itemIndex';
 
 /**
- * Bundle of per-engine content registries (ARCHITECTURE.md §3, P-22).
+ * Bundle of per-engine content and runtime state registries (ARCHITECTURE.md §3, §5, P-22).
  */
 export interface EngineRegistries {
   monsters: MonsterRegistryStore;
@@ -106,6 +126,8 @@ export interface EngineRegistries {
   aiBehaviors: AIBehaviorRegistryStore;
   statusHandlers: StatusHandlerRegistryStore;
   tiles: TileRegistryStore;
+  containers: ContainerRegistryStore;
+  itemIndex: ItemIndex;
 }
 
 /**
@@ -123,4 +145,6 @@ export function activateRegistries(registries: EngineRegistries | null): void {
   setActiveAIBehaviorStore(registries ? registries.aiBehaviors : null);
   setActiveStatusHandlerStore(registries ? registries.statusHandlers : null);
   setActiveTileStore(registries ? registries.tiles : null);
+  setActiveContainerStore(registries ? registries.containers : null);
+  setActiveItemIndex(registries ? registries.itemIndex : null);
 }

@@ -113,7 +113,7 @@ export class CompendiumModal {
   }
 
   private getFilteredMonsters(): MonsterDefinition[] {
-    const all = this.engine?.manifest?.monsters ?? MonsterRegistry.getAll();
+    const all = this.engine?.registries?.monsters?.getAll() ?? (this.engine?.manifest?.monsters ? (Array.isArray(this.engine.manifest.monsters) ? this.engine.manifest.monsters : Object.values(this.engine.manifest.monsters)) : MonsterRegistry.getAll());
     if (!this.engine) return all;
 
     const compendium = this.engine.compendium;
@@ -134,7 +134,7 @@ export class CompendiumModal {
     if (!this.overlayEl || !this.engine) return;
 
     const compendium = this.engine.compendium;
-    const allMonsters = this.engine?.manifest?.monsters ?? MonsterRegistry.getAll();
+    const allMonsters = this.engine?.registries?.monsters?.getAll() ?? (this.engine?.manifest?.monsters ? (Array.isArray(this.engine.manifest.monsters) ? this.engine.manifest.monsters : Object.values(this.engine.manifest.monsters)) : MonsterRegistry.getAll());
     const filtered = this.getFilteredMonsters();
 
     // Ensure selectedMonsterId is valid in filtered set
@@ -142,7 +142,7 @@ export class CompendiumModal {
       this.selectedMonsterId = filtered[0].id;
     }
 
-    const selectedDef = allMonsters.find((m) => m.id === this.selectedMonsterId) ?? MonsterRegistry.get(this.selectedMonsterId) ?? allMonsters[0];
+    const selectedDef = allMonsters.find((m) => m.id === this.selectedMonsterId) ?? this.engine?.registries?.monsters?.get(this.selectedMonsterId) ?? MonsterRegistry.get(this.selectedMonsterId) ?? allMonsters[0];
     const selectedEntry = compendium.getEntry(selectedDef.id);
     const tier = selectedEntry.tier;
     const kills = selectedEntry.kills;

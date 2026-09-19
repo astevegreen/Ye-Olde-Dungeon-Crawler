@@ -586,7 +586,7 @@ export class SpellPipeline {
 
     let summoned: Monster;
     try {
-      summoned = Monster.createFromDefinition(monsterId, entityId, spawnPos);
+      summoned = Monster.createFromDefinition(monsterId, entityId, spawnPos, engine.registries);
     } catch {
       engine.log(`Summoning failed — unknown creature definition: ${monsterId}`);
       return;

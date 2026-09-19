@@ -49,6 +49,10 @@ export class RegistryStore<K, V> {
     this.entries.clear();
   }
 
+  public unregister(key: K): boolean {
+    return this.entries.delete(key);
+  }
+
   /** Copies another store's registrations into this one. */
   public seedFrom(other: RegistryStore<K, V>): void {
     for (const [key, value] of other.entries.entries()) {

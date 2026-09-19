@@ -1,25 +1,28 @@
+import { activeContainerStore } from '../registries/containerRegistryStore';
+
 /**
  * Normalized container registry for runtime scalar parentId resolution.
  * Allows nested containers and items to resolve ancestor capacities without
  * storing live object references on item instances, eliminating circular JSON graphs.
+ *
+ * Scoped per GameEngine instance via activeContainerStore() (ARCHITECTURE.md §3, §5, P-22).
  */
-
-const containerRegistry = new Map<string, any>();
 
 export function registerContainer(container: any): void {
   if (container?.id) {
-    containerRegistry.set(container.id, container);
+    activeContainerStore().register(container.id, container);
   }
 }
 
 export function unregisterContainer(id: string): void {
-  containerRegistry.delete(id);
+  activeContainerStore().unregister(id);
 }
 
 export function getRegisteredContainer<T = any>(id: string): T | null {
-  return (containerRegistry.get(id) as T) ?? null;
+  return (activeContainerStore().get(id) as T) ?? null;
 }
 
 export function clearContainerRegistry(): void {
-  containerRegistry.clear();
+  activeContainerStore().clear();
 }
+

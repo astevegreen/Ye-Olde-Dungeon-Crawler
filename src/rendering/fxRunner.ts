@@ -56,6 +56,15 @@ interface ActiveChainLink {
 
 type ActiveEffect = ActiveProjectile | ActiveBurst | ActiveScreenFlash | ActiveChainLink;
 
+/**
+ * Global spell-FX pacing knob (gameplay note: animations read as too fast to
+ * follow the mechanics). Applied uniformly to every effect's step delay /
+ * duration *after* the descriptor's own fallback resolves, so a content-
+ * authored per-spell override (`spell.visual.stepDelayMs`/`durationMs` in
+ * `spellPipeline.ts`) gets slowed too, not just the built-in defaults.
+ */
+const FX_SPEED_MULTIPLIER = 1.75;
+
 export class CanvasFXRunner {
   public mode: FXRunnerMode;
   public onFrame?: () => void;
@@ -225,7 +234,7 @@ export class CanvasFXRunner {
           type: 'burst',
           descriptor: { ...desc, epicenter, radius },
           startTime: now,
-          durationMs: desc.durationMs || 250,
+          durationMs: (desc.durationMs || 250) * FX_SPEED_MULTIPLIER,
           completed: false,
           particles,
         };
@@ -236,7 +245,7 @@ export class CanvasFXRunner {
           type: 'screen_flash',
           descriptor: desc,
           startTime: now,
-          durationMs: desc.durationMs || 180,
+          durationMs: (desc.durationMs || 180) * FX_SPEED_MULTIPLIER,
           completed: false,
         };
 
@@ -268,7 +277,7 @@ export class CanvasFXRunner {
           type: 'chain_link',
           descriptor: { ...desc, from, to },
           startTime: now,
-          durationMs: desc.durationMs || 150,
+          durationMs: (desc.durationMs || 150) * FX_SPEED_MULTIPLIER,
           completed: false,
           segments,
         };
@@ -307,7 +316,7 @@ export class CanvasFXRunner {
       const elapsed = now - ef.startTime;
 
       if (ef.type === 'projectile') {
-        const stepDelay = Math.max(10, ef.descriptor.stepDelayMs || 22);
+        const stepDelay = Math.max(10, (ef.descriptor.stepDelayMs || 22) * FX_SPEED_MULTIPLIER);
         const totalDuration = stepDelay * Math.max(1, ef.totalSteps);
 
         if (this.mode === 'retro' || ef.descriptor.travelMode === 'stepped') {

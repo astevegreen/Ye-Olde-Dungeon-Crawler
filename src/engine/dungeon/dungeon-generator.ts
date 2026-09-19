@@ -37,6 +37,10 @@ export interface DungeonConfig {
   enableDecoration?: boolean;
   scalingConfig?: MonsterScalingConfig;
   difficulty?: GameDifficulty;
+  /** Guarantees this vault (by id) is placed, on top of the normal 1-2
+   * randomly-chosen eligible vaults (excluded from that random pool so it's
+   * never double-picked). Used for hand-placed floor rewards. */
+  forcedVaultId?: string;
 }
 
 export interface DungeonResult {
@@ -46,6 +50,9 @@ export interface DungeonResult {
   rooms: RectRoom[];
   monsters: Monster[];
   graph?: CorridorGraph;
+  /** Ground positions of any chest(s) stamped by `forcedVaultId`, if it was
+   * placed successfully this attempt. */
+  forcedVaultChestSpawns?: Position[];
 }
 
 export class DungeonGenerator {
@@ -64,6 +71,7 @@ export class DungeonGenerator {
   public enableDecoration: boolean;
   public scalingConfig?: MonsterScalingConfig;
   public difficulty?: GameDifficulty;
+  public forcedVaultId?: string;
 
   constructor(config: DungeonConfig) {
     this.width = config.width;
@@ -81,15 +89,38 @@ export class DungeonGenerator {
     this.enableDecoration = config.enableDecoration ?? true;
     this.scalingConfig = config.scalingConfig;
     this.difficulty = config.difficulty;
+    this.forcedVaultId = config.forcedVaultId;
   }
 
   public generate(): DungeonResult {
-    // Attempt generation with reachability guarantee
+    // Attempt generation with reachability guarantee. When a vault is
+    // forced (e.g. a hand-placed floor reward), prefer a reachable attempt
+    // that also placed it — the per-attempt vault placement loop already
+    // retries internally (see tryGenerate's vault-stamping pass), but a
+    // reachable layout that happened to miss the vault would otherwise be
+    // returned immediately by the loop below, silently dropping the reward.
+    let firstReachable: DungeonResult | undefined;
     for (let attempt = 0; attempt < 10; attempt++) {
       const result = this.tryGenerate();
-      if (this.isReachable(result.map, result.playerSpawn, result.stairsDown)) {
+      if (!this.isReachable(result.map, result.playerSpawn, result.stairsDown)) {
+        continue;
+      }
+      if (!firstReachable) {
+        firstReachable = result;
+      }
+      if (!this.forcedVaultId || (result.forcedVaultChestSpawns && result.forcedVaultChestSpawns.length > 0)) {
         return result;
       }
+    }
+
+    if (firstReachable) {
+      if (this.forcedVaultId) {
+        flightRecorder.recordError(
+          new Error(`forcedVaultId '${this.forcedVaultId}' could not be placed after 10 reachable attempts`),
+          { phase: 'dungeon-generation', floorNumber: this.floorNumber }
+        );
+      }
+      return firstReachable;
     }
 
     // Fallback: guaranteed simple connected 2-room layout if 10 attempts failed
@@ -103,58 +134,86 @@ export class DungeonGenerator {
     const vaultRoomIndices = new Set<number>();
     const allConnectors: Position[] = [];
 
-    // 1. Vault Stamping Pass (1–2 vaults if floorNumber >= 3)
+    // Attempts to fit `blueprint` into an unoccupied spot (25 tries), stamp it, and
+    // register its room/connectors. Shared by the random vault pass and the forced-
+    // vault pass below so both place vaults identically.
+    let forcedVaultChestSpawns: Position[] | undefined;
+    const tryPlaceVault = (blueprint: VaultBlueprint): boolean => {
+      const vH = blueprint.layout.length;
+      const vW = blueprint.layout[0]?.length ?? 0;
+      if (vW + 4 >= this.width || vH + 4 >= this.height) return false;
+
+      for (let attempt = 0; attempt < 25; attempt++) {
+        const vx = this.prng.nextInt(2, this.width - vW - 2);
+        const vy = this.prng.nextInt(2, this.height - vH - 2);
+
+        const vRoom: RectRoom = {
+          x1: vx,
+          y1: vy,
+          x2: vx + vW - 1,
+          y2: vy + vH - 1,
+          centerX: Math.floor(vx + vW / 2),
+          centerY: Math.floor(vy + vH / 2),
+        };
+
+        if (rooms.some((other) => this.roomIntersects(vRoom, other, 2))) {
+          continue;
+        }
+
+        const stamped = VaultStamper.stamp(
+          map,
+          blueprint,
+          vx,
+          vy,
+          this.floorNumber!,
+          this.monsterCandidates,
+          this.itemCandidates,
+          () => this.prng.next(),
+          this.scalingConfig,
+          this.difficulty
+        );
+        vaultRoomIndices.add(rooms.length);
+        rooms.push(vRoom);
+        allConnectors.push(...stamped.connectors);
+        if (blueprint.id === this.forcedVaultId) {
+          forcedVaultChestSpawns = stamped.chestSpawns;
+        }
+        return true;
+      }
+      return false;
+    };
+
+    // 1. Forced Vault Pass — guarantees a specific vault (e.g. a hand-placed floor
+    // reward) is placed. Goes first, against an empty room list, so it never has
+    // to compete for space with the random pool below — maximizes the chance any
+    // given generation attempt succeeds, which matters since `generate()` only
+    // retries a bounded number of times looking for one that placed it.
+    if (this.floorNumber !== undefined && this.forcedVaultId && this.vaults) {
+      const forcedBlueprint = this.vaults.find((v) => v.id === this.forcedVaultId);
+      if (forcedBlueprint) {
+        tryPlaceVault(forcedBlueprint);
+      }
+    }
+
+    // 2. Random Vault Pass (1–2 vaults if floorNumber >= 3), excluding the forced
+    // vault so it's never double-picked here.
     if (this.floorNumber !== undefined && this.vaults && this.vaults.length > 0) {
       const eligible = this.vaults.filter(
-        (v) => (v.minFloor ?? 1) <= this.floorNumber! && (!v.maxFloor || v.maxFloor >= this.floorNumber!)
+        (v) =>
+          v.id !== this.forcedVaultId &&
+          (v.minFloor ?? 1) <= this.floorNumber! &&
+          (!v.maxFloor || v.maxFloor >= this.floorNumber!)
       );
       if (eligible.length > 0) {
         const vaultCount = Math.min(2, Math.floor(this.prng.next() * 2) + 1); // 1 or 2
         for (let vi = 0; vi < vaultCount; vi++) {
           const blueprint = eligible[Math.floor(this.prng.next() * eligible.length)];
-          const vH = blueprint.layout.length;
-          const vW = blueprint.layout[0]?.length ?? 0;
-          if (vW + 4 >= this.width || vH + 4 >= this.height) continue;
-
-          for (let attempt = 0; attempt < 25; attempt++) {
-            const vx = this.prng.nextInt(2, this.width - vW - 2);
-            const vy = this.prng.nextInt(2, this.height - vH - 2);
-
-            const vRoom: RectRoom = {
-              x1: vx,
-              y1: vy,
-              x2: vx + vW - 1,
-              y2: vy + vH - 1,
-              centerX: Math.floor(vx + vW / 2),
-              centerY: Math.floor(vy + vH / 2),
-            };
-
-            if (rooms.some((other) => this.roomIntersects(vRoom, other, 2))) {
-              continue;
-            }
-
-            const stamped = VaultStamper.stamp(
-              map,
-              blueprint,
-              vx,
-              vy,
-              this.floorNumber,
-              this.monsterCandidates,
-              this.itemCandidates,
-              () => this.prng.next(),
-              this.scalingConfig,
-              this.difficulty
-            );
-            vaultRoomIndices.add(rooms.length);
-            rooms.push(vRoom);
-            allConnectors.push(...stamped.connectors);
-            break;
-          }
+          tryPlaceVault(blueprint);
         }
       }
     }
 
-    // 2. Standard BSP Room Carving
+    // 3. Standard BSP Room Carving
     for (let r = 0; r < this.maxRooms * 2 && rooms.length < this.maxRooms; r++) {
       const w = this.prng.nextInt(this.minRoomSize, this.maxRoomSize);
       const h = this.prng.nextInt(this.minRoomSize, this.maxRoomSize);
@@ -185,7 +244,7 @@ export class DungeonGenerator {
       return this.createFallbackDungeon();
     }
 
-    // 3. Corridor Carving & Braiding
+    // 4. Corridor Carving & Braiding
     const graph = new CorridorGraph(rooms.length);
     for (let i = 1; i < rooms.length; i++) {
       BraidWeaver.carveCorridor(
@@ -217,10 +276,10 @@ export class DungeonGenerator {
       BraidWeaver.braidRooms(map, rooms, graph, this.prng, 0.30);
     }
 
-    // 4. Doors at entry junctions
+    // 5. Doors at entry junctions
     this.placeDoors(map, rooms);
 
-    // 5. Room Cover & Architecture Decoration (Pillars, Colonnades, Partitions)
+    // 6. Room Cover & Architecture Decoration (Pillars, Colonnades, Partitions)
     if (this.enableDecoration) {
       const nonVaultRooms = rooms.filter((_, idx) => !vaultRoomIndices.has(idx));
       RoomDecorator.decorateRooms(map, nonVaultRooms, this.prng);
@@ -259,6 +318,7 @@ export class DungeonGenerator {
       rooms,
       monsters,
       graph,
+      forcedVaultChestSpawns,
     };
   }
 

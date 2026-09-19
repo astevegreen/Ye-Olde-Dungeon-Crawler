@@ -33,6 +33,7 @@ export const ACTION_METADATA: ActionMetadata[] = [
   { id: 'quick_spell_8', name: 'Quick Spell Slot 8', category: 'Combat & Magic', defaultCodes: ['Digit8'] },
   { id: 'quick_spell_9', name: 'Quick Spell Slot 9', category: 'Combat & Magic', defaultCodes: ['Digit9'] },
   { id: 'quick_spell_0', name: 'Quick Spell Slot 10', category: 'Combat & Magic', defaultCodes: ['Digit0'] },
+  { id: 'channel_rune_of_return', name: 'Channel Rune of Return', category: 'Combat & Magic', defaultCodes: ['KeyT'] },
 
   // Interaction & Inventory
   { id: 'inventory', name: 'Open Inventory', category: 'Interaction & Inventory', defaultCodes: ['KeyI'] },

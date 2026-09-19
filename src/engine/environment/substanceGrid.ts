@@ -1,7 +1,6 @@
 import type { GameMap } from '../grid/map';
 import type { Entity } from '../entities/entity';
 import type { GameEngine } from '../engine';
-import { CorpseItemInstance } from '../items/corpse';
 
 export const SubstanceBitmask = {
   NONE: 0,
@@ -14,7 +13,6 @@ export const SubstanceBitmask = {
 export interface SubstanceTickSummary {
   cellsProcessed: number;
   damageDealt: number;
-  crematedCount: number;
 }
 
 export interface SerializedSubstanceCell {
@@ -113,7 +111,6 @@ export class SubstanceGrid {
   public tickSubstances(map: GameMap, engine?: GameEngine): SubstanceTickSummary {
     let cellsProcessed = 0;
     let damageDealt = 0;
-    let crematedCount = 0;
 
     for (const key of this.activeCells) {
       if (cellsProcessed >= this.maxTickBudget) {
@@ -156,22 +153,10 @@ export class SubstanceGrid {
             }
           }
         }
-
-        // Cremate organic corpses into ash
-        const groundItems = map.getItemsAt(x, y);
-        for (const item of [...groundItems]) {
-          if (item instanceof CorpseItemInstance && !item.isBurned) {
-            item.cremate(map, x, y);
-            crematedCount++;
-            if (engine) {
-              engine.log(`[Cremation] The corpse of ${item.archetypeId} is cremated into harmless ash!`);
-            }
-          }
-        }
       }
     }
 
-    return { cellsProcessed, damageDealt, crematedCount };
+    return { cellsProcessed, damageDealt };
   }
 
   /**

@@ -44,6 +44,15 @@ export class InventoryOverlay {
   private clickZones: ClickZone[] = [];
   private rightClickZones: ClickZone[] = [];
   private doubleClickZones: ClickZone[] = [];
+  /** Grid-cell hover tracking (inventory note: icons were tiny and names got cut
+   * off in the old row layout; square cells fix the layout, this fills in the
+   * "how do I see the full name without clicking" gap with a tooltip). Rebuilt
+   * every render(), hit-tested in handleMouseMove against the last known cursor
+   * position — mirrors the clickZones pattern above. */
+  private hoverZones: Array<{ x: number; y: number; width: number; height: number; item: Item }> = [];
+  private hoveredGridItem: Item | null = null;
+  private lastMouseX = 0;
+  private lastMouseY = 0;
   public selectedGroundContainer: Container | null = null;
   public selectedPackContainer: Container | null = null;
   private onStateChanged?: () => void;
@@ -114,6 +123,7 @@ export class InventoryOverlay {
     this.hoveredSlot = null;
     this.hoveredBackpackIndex = null;
     this.hoveredGroundIndex = null;
+    this.hoveredGridItem = null;
     this.selectedGroundContainer = null;
     this.selectedPackContainer = null;
     if (this.onClose) {
@@ -124,19 +134,37 @@ export class InventoryOverlay {
     }
   }
 
-  public handleMouseMove(_mouseX: number, _mouseY: number): boolean {
+  /** Shared by handleMouseMove and the three click handlers below — a click
+   * changes the mouse position too (a `dblclick`/`contextmenu` event fires
+   * with no preceding `mousemove` on some input paths), and without this the
+   * hover tooltip could keep showing whatever was hovered before the click. */
+  private updateHoverAt(mouseX: number, mouseY: number): void {
+    this.lastMouseX = mouseX;
+    this.lastMouseY = mouseY;
+    // Grid cells register into hoverZones during the render() that just ran, so
+    // this reflects last frame's layout — one frame of lag on a resize, never
+    // visible in practice since layout is otherwise static while the mouse moves.
+    const zone = this.hoverZones.find(
+      (z) => mouseX >= z.x && mouseX <= z.x + z.width && mouseY >= z.y && mouseY <= z.y + z.height
+    );
+    this.hoveredGridItem = zone?.item ?? null;
+  }
+
+  public handleMouseMove(mouseX: number, mouseY: number): boolean {
     if (!this.isOpen) {
       this.hoveredSlot = null;
       this.hoveredBackpackIndex = null;
       this.hoveredGroundIndex = null;
+      this.hoveredGridItem = null;
       return false;
     }
-    // Hover zones are updated during render and checked here
+    this.updateHoverAt(mouseX, mouseY);
     return true;
   }
 
   public handleClick(mouseX: number, mouseY: number, isMultiModifier: boolean = false): boolean {
     if (!this.isOpen) return false;
+    this.updateHoverAt(mouseX, mouseY);
 
     for (let i = this.clickZones.length - 1; i >= 0; i--) {
       const zone = this.clickZones[i];
@@ -159,6 +187,7 @@ export class InventoryOverlay {
 
   public handleDoubleClick(mouseX: number, mouseY: number, _engine?: GameEngine): boolean {
     if (!this.isOpen) return false;
+    this.updateHoverAt(mouseX, mouseY);
 
     for (let i = this.doubleClickZones.length - 1; i >= 0; i--) {
       const zone = this.doubleClickZones[i];
@@ -181,6 +210,7 @@ export class InventoryOverlay {
 
   public handleRightClick(mouseX: number, mouseY: number, _engine: GameEngine): boolean {
     if (!this.isOpen) return false;
+    this.updateHoverAt(mouseX, mouseY);
 
     for (let i = this.rightClickZones.length - 1; i >= 0; i--) {
       const zone = this.rightClickZones[i];
@@ -536,9 +566,140 @@ export class InventoryOverlay {
     return false;
   }
 
+/** One row's worth of behavior for `renderItemGrid` below — the three item lists
+   * (backpack, ground, an opened container) each supply their own selection state
+   * and click semantics, but share the same square-cell layout, sprite, and
+   * hover/click-zone wiring. */
+  private renderItemGrid(
+    ctx: CanvasRenderingContext2D,
+    items: readonly Item[],
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    theme: Required<ThemeTokens>,
+    font: string,
+    opts: {
+      emptyLabel: string;
+      showIndexTag?: boolean;
+      isSelected: (item: Item, index: number) => boolean;
+      isFocused: (item: Item, index: number) => boolean;
+      isMultiSelected?: (item: Item) => boolean;
+      onSelect: (item: Item, index: number, isMultiMod?: boolean) => void;
+      /** Double-click and right-click both trigger this — the item's one
+       * "primary action" (equip/consume, open, or take/pickup depending on
+       * which list this is), matching the single-gesture convention the old
+       * per-row row buttons used to need a dedicated hit-zone for. */
+      onActivate: (item: Item, index: number) => void;
+    }
+  ): void {
+    if (items.length === 0) {
+      ctx.font = `italic 11px ${font}`;
+      ctx.fillStyle = theme.textMuted;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(opts.emptyLabel, x + 10, y + 14);
+      return;
+    }
+
+    const gap = 4;
+    const cols = Math.max(2, Math.floor((width - gap) / (50 + gap)));
+    const cellSize = Math.max(40, Math.min(64, Math.floor((width - gap * (cols + 1)) / cols)));
+    const rows = Math.max(1, Math.floor((height - gap) / (cellSize + gap)));
+    const maxVisible = cols * rows;
+
+    const truncate = (text: string, maxWidth: number): string => {
+      if (ctx.measureText(text).width <= maxWidth) return text;
+      let end = text.length;
+      while (end > 1 && ctx.measureText(text.slice(0, end) + '…').width > maxWidth) end--;
+      return text.slice(0, end) + '…';
+    };
+
+    for (let i = 0; i < Math.min(items.length, maxVisible); i++) {
+      const it = items[i];
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const cellX = x + gap + col * (cellSize + gap);
+      const cellY = y + gap + row * (cellSize + gap);
+
+      const isCursed = it.isCursed() && it.identified;
+      const isEnchanted = it.identified && it.quality === 'enchanted';
+      const isContainer = it instanceof Container;
+      const selected = opts.isSelected(it, i);
+      const focused = opts.isFocused(it, i);
+      const multiSelected = opts.isMultiSelected?.(it) ?? false;
+
+      ctx.fillStyle = selected ? 'rgba(56, 189, 248, 0.25)' : focused ? 'rgba(56, 189, 248, 0.15)' : theme.modalBg;
+      ctx.fillRect(cellX, cellY, cellSize, cellSize);
+
+      const borderColor = multiSelected
+        ? '#38bdf8'
+        : isCursed
+        ? '#ef4444'
+        : selected || focused
+        ? theme.hudAccent
+        : theme.cardBorder;
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = selected || focused || multiSelected ? 1.5 : 1;
+      ctx.strokeRect(cellX + 0.5, cellY + 0.5, cellSize - 1, cellSize - 1);
+
+      // Sprite, sized to fill most of the cell (paperdoll-view.ts's square-slot
+      // precedent) — this is the actual fix for "icons are small": 16px rows
+      // become cells this large, icon included.
+      const nameplateH = 13;
+      const spriteArea = cellSize - nameplateH - 6;
+      if (this.atlas) {
+        const spriteKey = getItemSpriteKey(it);
+        const spriteSize = Math.max(16, Math.min(spriteArea, cellSize - 8));
+        const spriteX = cellX + Math.floor((cellSize - spriteSize) / 2);
+        const spriteY = cellY + 4;
+        this.atlas.drawSprite(ctx, spriteKey, spriteX, spriteY, spriteSize);
+      }
+
+      // Name, truncated to the cell's width rather than a fixed character count
+      // — still short, but the tooltip (see render()) carries the full name.
+      ctx.font = `9px ${font}`;
+      ctx.fillStyle = isCursed ? '#ef4444' : isEnchanted ? '#c084fc' : theme.hudText;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+      const label = truncate(it.displayName, cellSize - 4);
+      ctx.fillText(label, cellX + cellSize / 2, cellY + cellSize - 3);
+
+      // Index shortcut tag (1-9), backpack only.
+      if (opts.showIndexTag && i < 9) {
+        ctx.font = `bold 8px ${font}`;
+        ctx.fillStyle = theme.textMuted;
+        ctx.textAlign = 'left';
+        ctx.fillText(`${i + 1}`, cellX + 2, cellY + 9);
+      }
+
+      // Container corner glyph — replaces the old dedicated [Open] row-button;
+      // opening is now the cell's onActivate (double-click / right-click).
+      if (isContainer) {
+        ctx.font = `bold 9px ${font}`;
+        ctx.fillStyle = theme.accent;
+        ctx.textAlign = 'right';
+        ctx.fillText('▣', cellX + cellSize - 3, cellY + 10);
+      }
+
+      const capturedItem = it;
+      const capturedIdx = i;
+      const zoneRect = { x: cellX, y: cellY, width: cellSize, height: cellSize };
+      this.hoverZones.push({ ...zoneRect, item: capturedItem });
+      this.clickZones.push({
+        ...zoneRect,
+        action: (isMultiMod) => opts.onSelect(capturedItem, capturedIdx, isMultiMod),
+      });
+      this.doubleClickZones.push({ ...zoneRect, action: () => opts.onActivate(capturedItem, capturedIdx) });
+      this.rightClickZones.push({ ...zoneRect, action: () => opts.onActivate(capturedItem, capturedIdx) });
+    }
+  }
+
   /**
    * Main render method: draws 4-column layout with Paperdoll, Backpack, Ground, and Stationary Inspector.
-   * Floating tooltips are completely eliminated.
+   * Items render as a square icon grid (renderItemGrid) rather than text rows; a
+   * hover tooltip (drawn last, see bottom of this method) shows the full name,
+   * since the grid cells themselves only have room for a short truncated label.
    */
   public render(ctx: CanvasRenderingContext2D, engine: GameEngine, canvasW: number, canvasH: number): void {
     if (!this.isOpen) return;
@@ -546,6 +707,7 @@ export class InventoryOverlay {
     this.clickZones = [];
     this.rightClickZones = [];
     this.doubleClickZones = [];
+    this.hoverZones = [];
     this.engine = engine;
     const player = engine.player;
     const inv = player.inventory;
@@ -630,7 +792,6 @@ export class InventoryOverlay {
     const contentY = modalY + 36;
     const statsY = modalY + modalH - 110;
     const contentH = statsY - contentY - 8;
-    const slotRowH = 20;
 
     // ─── COLUMN 1: ANATOMICAL CHARACTER PAPERDOLL ───
     this.paperdollView.render(
@@ -750,152 +911,45 @@ export class InventoryOverlay {
       },
     });
 
-    // Backpack item list
+    // Backpack item grid
     const packItems = inv.primaryPack.getItems();
-    let packY = contentY + 30;
-    const maxItems = Math.floor((contentH - 36) / slotRowH);
-
-    if (packItems.length === 0) {
-      ctx.font = `italic 11px ${font}`;
-      ctx.fillStyle = theme.textMuted;
-      ctx.textAlign = 'left';
-      ctx.fillText('(Backpack is empty)', col2X + 10, packY + 14);
-    } else {
-      for (let i = 0; i < Math.min(packItems.length, maxItems); i++) {
-        const it = packItems[i];
-        const isCursed = it.isCursed() && it.identified;
-        const isSelected = this.inspector.selectedSource === 'backpack' && this.inspector.selectedItem?.id === it.id;
-        const isFocused = this.inspector.focusedPanel === 'backpack' && this.inspector.focusedIndex === i;
-
-        ctx.fillStyle = isSelected
-          ? 'rgba(56, 189, 248, 0.25)'
-          : isFocused
-          ? 'rgba(56, 189, 248, 0.15)'
-          : theme.modalBg;
-        ctx.fillRect(col2X + 4, packY, col2W - 8, slotRowH - 2);
-
-        ctx.strokeStyle = isSelected || isFocused ? theme.hudAccent : theme.cardBorder;
-        ctx.lineWidth = isSelected || isFocused ? 1.5 : 1;
-        ctx.strokeRect(col2X + 4.5, packY + 0.5, col2W - 9, slotRowH - 3);
-
-        // Index shortcut tag (1-9)
-        ctx.font = `bold 9px ${font}`;
-        ctx.fillStyle = theme.textMuted;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        if (i < 9) {
-          ctx.fillText(`${i + 1}.`, col2X + 8, packY + slotRowH / 2 - 1);
-        }
-
-        // Sprite
-        if (this.atlas) {
-          const spriteKey = getItemSpriteKey(it);
-          this.atlas.drawSprite(ctx, spriteKey, col2X + 22, packY + 1, 16);
-        }
-
-        // Name
-        ctx.fillStyle = isCursed ? '#ef4444' : it.identified && it.quality === 'enchanted' ? '#c084fc' : theme.hudText;
-        const nameStr = it.displayName.length > 12 ? it.displayName.slice(0, 11) + '…' : it.displayName;
-        ctx.fillText(nameStr, col2X + (this.atlas ? 42 : 24), packY + slotRowH / 2 - 1);
-
-        // Weight
-        ctx.fillStyle = theme.textMuted;
-        ctx.textAlign = 'right';
-        ctx.fillText(`${it.weight}g`, col2X + col2W - 10, packY + slotRowH / 2 - 1);
-
-        const isMulti = this.inspector.isMultiSelected(it.id);
-        if (isMulti) {
-          ctx.strokeStyle = '#38bdf8';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(col2X + 4.5, packY + 0.5, col2W - 9, slotRowH - 3);
-        }
-
-        // Click zone to select row into inspector or toggle multi-select
-        const capturedItem = it;
-        const capturedIdx = i;
-        this.clickZones.push({
-          x: col2X + 4,
-          y: packY,
-          width: col2W - 8,
-          height: slotRowH - 2,
-          action: (isMultiMod) => {
-            if (isMultiMod) {
-              this.inspector.toggleMultiSelect(capturedItem);
-            } else {
-              this.inspector.clearMultiSelect();
-              this.inspector.setFocus('backpack', capturedIdx);
-              this.inspector.select(capturedItem, 'backpack');
-            }
-          },
-        });
-
-        // Double-click zone: equip or consume
-        this.doubleClickZones.push({
-          x: col2X + 4,
-          y: packY,
-          width: col2W - 8,
-          height: slotRowH - 2,
-          action: () => {
-            if (capturedItem instanceof PotionItem) {
-              this.commandBus.dispatch({ type: 'drink_potion', payload: { itemId: capturedItem.id } });
-            } else if (capturedItem instanceof ScrollItem) {
-              this.commandBus.dispatch({ type: 'read_scroll', payload: { itemId: capturedItem.id } });
-            } else if (capturedItem instanceof WandItem) {
-              this.commandBus.dispatch({ type: 'zap_wand', payload: { itemId: capturedItem.id } });
-            } else {
-              this.commandBus.dispatch({ type: 'equip_item', payload: { itemId: capturedItem.id } });
-            }
-            this.inspector.clearSelection();
-          },
-        });
-
-        // Open badge for nested container in pack
-        if (it instanceof Container) {
-          const openBtnW = 28;
-          const openBtnX = col2X + col2W - openBtnW - 46;
-          ctx.fillStyle = theme.cardBorder;
-          ctx.fillRect(openBtnX, packY + 2, openBtnW, slotRowH - 6);
-          ctx.fillStyle = theme.hudAccent;
-          ctx.font = `bold 8px ${font}`;
-          ctx.textAlign = 'center';
-          ctx.fillText('Open', openBtnX + openBtnW / 2, packY + slotRowH / 2 - 1);
-
-          const capturedContainer = it;
-          this.clickZones.push({
-            x: openBtnX,
-            y: packY + 2,
-            width: openBtnW,
-            height: slotRowH - 6,
-            action: () => {
-              this.selectedPackContainer = capturedContainer;
-              this.selectedGroundContainer = null;
-              this.inspector.select(null, 'none', undefined, capturedContainer);
-              this.inspector.setFocus('ground', 0);
-            },
-          });
-        }
-
-        // Right-click quick action: equip or consume
-        this.rightClickZones.push({
-          x: col2X + 4,
-          y: packY,
-          width: col2W - 8,
-          height: slotRowH - 2,
-          action: () => {
-            if (capturedItem instanceof PotionItem) {
-              this.commandBus.dispatch({ type: 'drink_potion', payload: { itemId: capturedItem.id } });
-            } else if (capturedItem instanceof ScrollItem) {
-              this.commandBus.dispatch({ type: 'read_scroll', payload: { itemId: capturedItem.id } });
-            } else {
-              this.commandBus.dispatch({ type: 'equip_item', payload: { itemId: capturedItem.id } });
-            }
-            this.inspector.clearSelection();
-          },
-        });
-
-        packY += slotRowH;
+    const activateBackpackItem = (capturedItem: Item) => {
+      if (capturedItem instanceof Container) {
+        this.selectedPackContainer = capturedItem;
+        this.selectedGroundContainer = null;
+        this.inspector.select(null, 'none', undefined, capturedItem);
+        this.inspector.setFocus('ground', 0);
+      } else if (capturedItem instanceof PotionItem) {
+        this.commandBus.dispatch({ type: 'drink_potion', payload: { itemId: capturedItem.id } });
+        this.inspector.clearSelection();
+      } else if (capturedItem instanceof ScrollItem) {
+        this.commandBus.dispatch({ type: 'read_scroll', payload: { itemId: capturedItem.id } });
+        this.inspector.clearSelection();
+      } else if (capturedItem instanceof WandItem) {
+        this.commandBus.dispatch({ type: 'zap_wand', payload: { itemId: capturedItem.id } });
+        this.inspector.clearSelection();
+      } else {
+        this.commandBus.dispatch({ type: 'equip_item', payload: { itemId: capturedItem.id } });
+        this.inspector.clearSelection();
       }
-    }
+    };
+    this.renderItemGrid(ctx, packItems, col2X, contentY + 28, col2W, contentH - 34, theme, font, {
+      emptyLabel: '(Backpack is empty)',
+      showIndexTag: true,
+      isSelected: (it) => this.inspector.selectedSource === 'backpack' && this.inspector.selectedItem?.id === it.id,
+      isFocused: (_it, i) => this.inspector.focusedPanel === 'backpack' && this.inspector.focusedIndex === i,
+      isMultiSelected: (it) => this.inspector.isMultiSelected(it.id),
+      onSelect: (it, i, isMultiMod) => {
+        if (isMultiMod) {
+          this.inspector.toggleMultiSelect(it);
+        } else {
+          this.inspector.clearMultiSelect();
+          this.inspector.setFocus('backpack', i);
+          this.inspector.select(it, 'backpack');
+        }
+      },
+      onActivate: (it) => activateBackpackItem(it),
+    });
 
     // ─── COLUMN 3: ON THE GROUND & CONTAINER PEEKING ───
     const groundItems = engine.map.getItemsAt(player.x, player.y);
@@ -988,111 +1042,23 @@ export class InventoryOverlay {
 
       // Container items
       const cItems = activeContainer.getItems();
-      let cY = contentY + 30;
-
-      if (cItems.length === 0) {
-        ctx.font = `italic 11px ${font}`;
-        ctx.fillStyle = theme.textMuted;
-        ctx.textAlign = 'left';
-        ctx.fillText('(Container is empty)', col3X + 10, cY + 14);
-      } else {
-        for (let i = 0; i < Math.min(cItems.length, maxItems); i++) {
-          const it = cItems[i];
-          const isCursed = it.isCursed() && it.identified;
-          const isSelected = this.inspector.selectedSource === 'container' && this.inspector.selectedItem?.id === it.id;
-          const isFocused = this.inspector.focusedPanel === 'ground' && this.inspector.focusedIndex === i;
-
-          ctx.fillStyle = isSelected
-            ? 'rgba(56, 189, 248, 0.25)'
-            : isFocused
-            ? 'rgba(56, 189, 248, 0.15)'
-            : theme.modalBg;
-          ctx.fillRect(col3X + 4, cY, col3W - 8, slotRowH - 2);
-
-          ctx.strokeStyle = isSelected || isFocused ? theme.hudAccent : theme.cardBorder;
-          ctx.lineWidth = isSelected || isFocused ? 1.5 : 1;
-          ctx.strokeRect(col3X + 4.5, cY + 0.5, col3W - 9, slotRowH - 3);
-
-          if (this.atlas) {
-            const spriteKey = getItemSpriteKey(it);
-            this.atlas.drawSprite(ctx, spriteKey, col3X + 8, cY + 1, 16);
-          }
-
-          ctx.fillStyle = isCursed ? '#ef4444' : it.identified && it.quality === 'enchanted' ? '#c084fc' : theme.hudText;
-          const nameStr = it.displayName.length > 11 ? it.displayName.slice(0, 10) + '…' : it.displayName;
-          ctx.font = `bold 10px ${font}`;
-          ctx.textAlign = 'left';
-          ctx.fillText(nameStr, col3X + (this.atlas ? 28 : 10), cY + slotRowH / 2 - 1);
-
-          // [Take] button
-          const takeBtnW = 28;
-          const takeBtnX = col3X + col3W - takeBtnW - 8;
-          ctx.fillStyle = theme.cardBorder;
-          ctx.fillRect(takeBtnX, cY + 2, takeBtnW, slotRowH - 6);
-          ctx.fillStyle = theme.hudAccent;
-          ctx.font = `bold 8px ${font}`;
-          ctx.textAlign = 'center';
-          ctx.fillText('Take', takeBtnX + takeBtnW / 2, cY + slotRowH / 2 - 1);
-
-          const capturedItem = it;
-          const capturedIdx = i;
-          this.clickZones.push({
-            x: col3X + 4,
-            y: cY,
-            width: col3W - 8,
-            height: slotRowH - 2,
-            action: () => {
-              this.inspector.setFocus('ground', capturedIdx);
-              this.inspector.select(capturedItem, 'container', undefined, activeContainer);
-            },
-          });
-
-          this.doubleClickZones.push({
-            x: col3X + 4,
-            y: cY,
-            width: col3W - 8,
-            height: slotRowH - 2,
-            action: () => {
-              this.commandBus.dispatch({
-                type: 'loot_container',
-                payload: { container: activeContainer, item: capturedItem },
-              });
-              this.inspector.clearSelection();
-            },
-          });
-
-          // Click zone specifically on the [Take] button
-          this.clickZones.push({
-            x: takeBtnX,
-            y: cY + 2,
-            width: takeBtnW,
-            height: slotRowH - 6,
-            action: () => {
-              this.commandBus.dispatch({
-                type: 'loot_container',
-                payload: { container: activeContainer, item: capturedItem },
-              });
-              this.inspector.clearSelection();
-            },
-          });
-
-          this.rightClickZones.push({
-            x: col3X + 4,
-            y: cY,
-            width: col3W - 8,
-            height: slotRowH - 2,
-            action: () => {
-              this.commandBus.dispatch({
-                type: 'loot_container',
-                payload: { container: activeContainer, item: capturedItem },
-              });
-              this.inspector.clearSelection();
-            },
-          });
-
-          cY += slotRowH;
-        }
-      }
+      const takeFromContainer = (capturedItem: Item) => {
+        this.commandBus.dispatch({
+          type: 'loot_container',
+          payload: { container: activeContainer, item: capturedItem },
+        });
+        this.inspector.clearSelection();
+      };
+      this.renderItemGrid(ctx, cItems, col3X, contentY + 28, col3W, contentH - 34, theme, font, {
+        emptyLabel: '(Container is empty)',
+        isSelected: (it) => this.inspector.selectedSource === 'container' && this.inspector.selectedItem?.id === it.id,
+        isFocused: (_it, i) => this.inspector.focusedPanel === 'ground' && this.inspector.focusedIndex === i,
+        onSelect: (it, i) => {
+          this.inspector.setFocus('ground', i);
+          this.inspector.select(it, 'container', undefined, activeContainer);
+        },
+        onActivate: (it) => takeFromContainer(it),
+      });
     } else {
       // Default: On the ground
       ctx.fillText('ON GROUND', col3X + 8, contentY + 12);
@@ -1117,123 +1083,28 @@ export class InventoryOverlay {
         },
       });
 
-      let gY = contentY + 30;
-
-      if (groundItems.length === 0) {
-        ctx.font = `italic 11px ${font}`;
-        ctx.fillStyle = theme.textMuted;
-        ctx.textAlign = 'left';
-        ctx.fillText('(Ground is empty)', col3X + 10, gY + 14);
-      } else {
-        for (let i = 0; i < Math.min(groundItems.length, maxItems); i++) {
-          const it = groundItems[i];
-          const isContainer = it instanceof Container;
-          const isCursed = it.isCursed() && it.identified;
-          const isSelected = this.inspector.selectedSource === 'ground' && this.inspector.selectedItem?.id === it.id;
-          const isFocused = this.inspector.focusedPanel === 'ground' && this.inspector.focusedIndex === i;
-
-          ctx.fillStyle = isSelected
-            ? 'rgba(56, 189, 248, 0.25)'
-            : isFocused
-            ? 'rgba(56, 189, 248, 0.15)'
-            : theme.modalBg;
-          ctx.fillRect(col3X + 4, gY, col3W - 8, slotRowH - 2);
-
-          ctx.strokeStyle = isSelected || isFocused ? theme.hudAccent : theme.cardBorder;
-          ctx.lineWidth = isSelected || isFocused ? 1.5 : 1;
-          ctx.strokeRect(col3X + 4.5, gY + 0.5, col3W - 9, slotRowH - 3);
-
-          if (this.atlas) {
-            const spriteKey = getItemSpriteKey(it);
-            this.atlas.drawSprite(ctx, spriteKey, col3X + 8, gY + 1, 16);
-          }
-
-          ctx.fillStyle = isContainer ? theme.accent : isCursed ? '#ef4444' : it.identified && it.quality === 'enchanted' ? '#c084fc' : theme.hudText;
-          const nameStr = it.displayName.length > 11 ? it.displayName.slice(0, 10) + '…' : it.displayName;
-          ctx.font = `bold 10px ${font}`;
-          ctx.textAlign = 'left';
-          ctx.fillText(nameStr, col3X + (this.atlas ? 28 : 10), gY + slotRowH / 2 - 1);
-
-          // Action badge: [Open] for container, [Take] for regular item
-          const actBtnW = 28;
-          const actBtnX = col3X + col3W - actBtnW - 8;
-          ctx.fillStyle = theme.cardBorder;
-          ctx.fillRect(actBtnX, gY + 2, actBtnW, slotRowH - 6);
-          ctx.fillStyle = isContainer ? theme.accent : theme.hudAccent;
-          ctx.font = `bold 8px ${font}`;
-          ctx.textAlign = 'center';
-          ctx.fillText(isContainer ? 'Open' : 'Take', actBtnX + actBtnW / 2, gY + slotRowH / 2 - 1);
-
-          const capturedItem = it;
-          const capturedIdx = i;
-          this.clickZones.push({
-            x: col3X + 4,
-            y: gY,
-            width: col3W - 8,
-            height: slotRowH - 2,
-            action: () => {
-              this.inspector.setFocus('ground', capturedIdx);
-              if (capturedItem instanceof Container) {
-                this.selectedGroundContainer = capturedItem;
-                this.inspector.clearSelection();
-              } else {
-                this.inspector.select(capturedItem, 'ground');
-              }
-            },
-          });
-
-          this.doubleClickZones.push({
-            x: col3X + 4,
-            y: gY,
-            width: col3W - 8,
-            height: slotRowH - 2,
-            action: () => {
-              if (capturedItem instanceof Container) {
-                this.selectedGroundContainer = capturedItem;
-                this.inspector.clearSelection();
-              } else {
-                this.commandBus.dispatch({ type: 'pickup_item', payload: { itemId: capturedItem.id } });
-                this.inspector.clearSelection();
-              }
-            },
-          });
-
-          // Explicit click zone for action badge [Open] or [Take]
-          this.clickZones.push({
-            x: actBtnX,
-            y: gY + 2,
-            width: actBtnW,
-            height: slotRowH - 6,
-            action: () => {
-              if (capturedItem instanceof Container) {
-                this.selectedGroundContainer = capturedItem;
-                this.inspector.clearSelection();
-              } else {
-                this.commandBus.dispatch({ type: 'pickup_item', payload: { itemId: capturedItem.id } });
-                this.inspector.clearSelection();
-              }
-            },
-          });
-
-          this.rightClickZones.push({
-            x: col3X + 4,
-            y: gY,
-            width: col3W - 8,
-            height: slotRowH - 2,
-            action: () => {
-              if (capturedItem instanceof Container) {
-                this.selectedGroundContainer = capturedItem;
-                this.inspector.clearSelection();
-              } else {
-                this.commandBus.dispatch({ type: 'pickup_item', payload: { itemId: capturedItem.id } });
-                this.inspector.clearSelection();
-              }
-            },
-          });
-
-          gY += slotRowH;
+      const openOrPickUp = (capturedItem: Item) => {
+        if (capturedItem instanceof Container) {
+          this.selectedGroundContainer = capturedItem;
+          this.inspector.clearSelection();
+        } else {
+          this.commandBus.dispatch({ type: 'pickup_item', payload: { itemId: capturedItem.id } });
+          this.inspector.clearSelection();
         }
-      }
+      };
+      this.renderItemGrid(ctx, groundItems, col3X, contentY + 28, col3W, contentH - 34, theme, font, {
+        emptyLabel: '(Ground is empty)',
+        isSelected: (it) => this.inspector.selectedSource === 'ground' && this.inspector.selectedItem?.id === it.id,
+        isFocused: (_it, i) => this.inspector.focusedPanel === 'ground' && this.inspector.focusedIndex === i,
+        onSelect: (it, i) => {
+          // Ground containers open immediately on a single click (existing
+          // behavior, unlike the backpack column's click-then-double-click) —
+          // there's no separate "peek" step for something already on the floor.
+          this.inspector.setFocus('ground', i);
+          openOrPickUp(it);
+        },
+        onActivate: (it) => openOrPickUp(it),
+      });
     }
 
     // ─── COLUMN 4: STATIONARY ITEM INSPECTOR & ATTRIBUTES ───
@@ -1319,7 +1190,40 @@ export class InventoryOverlay {
       this.renderCompanionPack(ctx, engine, modalX, modalY, modalW, modalH, font);
     }
 
-    // NOTE: Floating tooltip popup (renderTooltip) is completely removed!
+    // Grid cells only have room for a short truncated label (renderItemGrid
+    // above) — this is where the full name actually lives for a quick glance
+    // without clicking. Drawn last so it always sits on top.
+    this.renderHoverTooltip(ctx, canvasW, canvasH, font);
+  }
+
+  private renderHoverTooltip(ctx: CanvasRenderingContext2D, canvasW: number, canvasH: number, font: string): void {
+    if (!this.hoveredGridItem || !this.theme) return;
+    const theme = this.theme;
+    const item = this.hoveredGridItem;
+
+    ctx.font = `bold 11px ${font}`;
+    const text = `${item.displayName} (${item.weight}g)`;
+    const textWidth = ctx.measureText(text).width;
+    const boxW = textWidth + 16;
+    const boxH = 22;
+
+    let boxX = this.lastMouseX + 14;
+    let boxY = this.lastMouseY + 14;
+    if (boxX + boxW > canvasW) boxX = this.lastMouseX - boxW - 14;
+    if (boxY + boxH > canvasH) boxY = this.lastMouseY - boxH - 14;
+
+    ctx.fillStyle = theme.modalBg;
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+    ctx.strokeStyle = theme.hudAccent;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(boxX + 0.5, boxY + 0.5, boxW - 1, boxH - 1);
+
+    const isCursed = item.isCursed() && item.identified;
+    const isEnchanted = item.identified && item.quality === 'enchanted';
+    ctx.fillStyle = isCursed ? '#ef4444' : isEnchanted ? '#c084fc' : theme.hudText;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, boxX + 8, boxY + boxH / 2);
   }
 
   /**

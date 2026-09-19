@@ -24,6 +24,7 @@ export interface DungeonGenParams {
   itemCandidates?: ItemDefinition[];
   scalingConfig?: MonsterScalingConfig;
   difficulty?: GameDifficulty;
+  forcedVaultId?: string;
 }
 
 export interface GeneratedFloorData {
@@ -33,6 +34,7 @@ export interface GeneratedFloorData {
   stairsUp?: Position;
   rooms: RectRoom[];
   monsters: Monster[];
+  forcedVaultChestSpawns?: Position[];
 }
 
 export interface DungeonGeneratorStrategy {
@@ -64,6 +66,7 @@ export class BspDungeonGenerator implements DungeonGeneratorStrategy {
       itemCandidates: params.itemCandidates,
       scalingConfig: params.scalingConfig,
       difficulty: params.difficulty,
+      forcedVaultId: params.forcedVaultId,
     });
 
     const result = generator.generate();
@@ -74,6 +77,7 @@ export class BspDungeonGenerator implements DungeonGeneratorStrategy {
       stairsUp: result.playerSpawn,
       rooms: result.rooms,
       monsters: result.monsters,
+      forcedVaultChestSpawns: result.forcedVaultChestSpawns,
     };
   }
 }

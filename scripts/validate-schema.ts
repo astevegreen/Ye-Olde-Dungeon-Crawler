@@ -3,7 +3,7 @@
  *
  * 1. Forward migration: a minimal v1 envelope migrates to CURRENT_SCHEMA_VERSION.
  * 2. Round-trip fidelity: state that lives outside the plain player/map fields —
- *    surface grids, substance grids, corpse items, and PRNG state — survives
+ *    surface grids, substance grids, ground items, and PRNG state — survives
  *    serialize -> JSON -> deserialize unchanged. JSON is in the loop because saves
  *    are persisted as strings, so a value that cannot round-trip through JSON is
  *    just as lost as one the serializer drops.
@@ -14,7 +14,7 @@ import { GameEngine } from '../src/engine/engine';
 import { GameMap } from '../src/engine/grid/map';
 import { TILES } from '../src/engine/grid/tile';
 import { Player } from '../src/engine/entities/player';
-import { CorpseItemInstance } from '../src/engine/items/corpse';
+import { Item } from '../src/engine/items/item';
 import { SubstanceBitmask } from '../src/engine/environment/substanceGrid';
 
 const failures: string[] = [];
@@ -52,7 +52,7 @@ console.log('\nRound-trip fidelity (serialize -> JSON -> deserialize):');
 
 const SURFACE_POS = { x: 2, y: 3 };
 const SUBSTANCE_POS = { x: 4, y: 5 };
-const CORPSE_POS = { x: 6, y: 7 };
+const GROUND_ITEM_POS = { x: 6, y: 7 };
 const SUBSTANCE_MASK = SubstanceBitmask.FLOWING_FLUID | SubstanceBitmask.IGNITED;
 
 const map = new GameMap(20, 20, TILES.FLOOR);
@@ -62,9 +62,15 @@ const engine = new GameEngine({ map, player, seed: 4242 });
 engine.surfaces.setSurface(SURFACE_POS.x, SURFACE_POS.y, 'water', 9, 2);
 engine.substances.addSubstance(SUBSTANCE_POS.x, SUBSTANCE_POS.y, SUBSTANCE_MASK);
 map.addItemAt(
-  CORPSE_POS.x,
-  CORPSE_POS.y,
-  new CorpseItemInstance({ id: 'corpse-validator-1', archetypeId: 'kobold', decayTicksRemaining: 33 })
+  GROUND_ITEM_POS.x,
+  GROUND_ITEM_POS.y,
+  new Item({
+    id: 'ground-item-validator-1',
+    name: 'Validator Test Item',
+    category: 'quest',
+    weight: 100,
+    bulk: 50,
+  })
 );
 
 // Advance the stream so a restored engine must resume mid-sequence, not from the seed.
@@ -85,12 +91,11 @@ check('surface duration', cell?.surface?.duration, 9);
 check('surface potency', cell?.surface?.potency, 2);
 check('substance mask', restored.substances.getSubstances(SUBSTANCE_POS.x, SUBSTANCE_POS.y), SUBSTANCE_MASK);
 
-const groundItems = restored.map.getItemsAt(CORPSE_POS.x, CORPSE_POS.y);
-const corpse = groundItems[0];
-check('corpse present', groundItems.length, 1);
-check('corpse is CorpseItemInstance', corpse instanceof CorpseItemInstance, true);
-check('corpse archetypeId', corpse instanceof CorpseItemInstance ? corpse.archetypeId : undefined, 'kobold');
-check('corpse decayTicksRemaining', corpse instanceof CorpseItemInstance ? corpse.decayTicksRemaining : undefined, 33);
+const groundItems = restored.map.getItemsAt(GROUND_ITEM_POS.x, GROUND_ITEM_POS.y);
+const groundItem = groundItems[0];
+check('ground item present', groundItems.length, 1);
+check('ground item id', groundItem?.id, 'ground-item-validator-1');
+check('ground item name', groundItem?.name, 'Validator Test Item');
 // PRNG.getState() returns the raw internal state while setState() coerces to int32, so a
 // restored generator reports a differently-encoded but equivalent state. Compare normalized
 // values, and let the next-draw check below prove the stream itself resumed.
@@ -103,5 +108,5 @@ if (failures.length > 0) {
   for (const f of failures) console.error(`  - ${f}`);
   process.exit(1);
 }
-console.log(`\n✅ Schema validation passed: v1 -> v${CURRENT_SCHEMA_VERSION}, plus surface, substance, corpse, and PRNG round-tripping.`);
+console.log(`\n✅ Schema validation passed: v1 -> v${CURRENT_SCHEMA_VERSION}, plus surface, substance, ground item, and PRNG round-tripping.`);
 process.exit(0);

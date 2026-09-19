@@ -5,7 +5,6 @@ import { Item } from '../items/item';
 import { Container } from '../items/container';
 import { WandItem, ScrollItem, PotionItem, type PotionType } from '../items/consumables';
 import { CoinItem } from '../economy/currency';
-import { CorpseItemInstance } from '../items/corpse';
 import { RuneOfReturnItem, defaultRuneMastery } from '../magic/runeOfReturn';
 import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
@@ -98,12 +97,6 @@ export function serializeItem(item: Item): SerializedItemNode {
     base.coinData = {
       denomination: item.denomination,
       count: item.count,
-    };
-  } else if (item instanceof CorpseItemInstance) {
-    base.corpseData = {
-      archetypeId: item.archetypeId,
-      decayTicksRemaining: item.decayTicksRemaining,
-      isBurned: item.isBurned,
     };
   }
 
@@ -268,19 +261,6 @@ export function deserializeItem(node: SerializedItemNode): Item {
       parentId: node.parentId ?? null,
       ownerId: node.ownerId ?? null,
     });
-  }
-
-  if (node.corpseData) {
-    const corpse = new CorpseItemInstance({
-      id: node.id,
-      archetypeId: node.corpseData.archetypeId,
-      weight: node.weight,
-      decayTicksRemaining: node.corpseData.decayTicksRemaining,
-      parentId: node.parentId ?? null,
-      ownerId: node.ownerId ?? null,
-    });
-    corpse.isBurned = node.corpseData.isBurned;
-    return corpse;
   }
 
   return new Item({

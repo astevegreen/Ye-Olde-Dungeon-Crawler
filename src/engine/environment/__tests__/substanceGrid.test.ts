@@ -3,18 +3,10 @@ import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Entity } from '../../entities/entity';
 import { Player } from '../../entities/player';
-import { Monster } from '../../entities/monster';
 import { GameEngine } from '../../engine';
 import { SubstanceGrid, SubstanceBitmask } from '../substanceGrid';
-import {
-  CorpseItemInstance,
-  ReanimateCorpseAction,
-  ConsumeCorpseAction,
-  CremateCorpseAction,
-} from '../../items/corpse';
-import { DeathResolver } from '../../combat/deathResolver';
 
-describe('SubstanceGrid & Organic Corpse Lifecycle', () => {
+describe('SubstanceGrid', () => {
   let map: GameMap;
   let player: Player;
   let engine: GameEngine;
@@ -117,70 +109,6 @@ describe('SubstanceGrid & Organic Corpse Lifecycle', () => {
     const summary = substances.tickSubstances(map, engine);
     expect(summary.damageDealt).toBe(3);
     expect(vampire.hp).toBe(12); // 15 - 3 radiant damage
-  });
-
-  it('drops CorpseItemInstance on monster death and supports reanimation, consumption, and cremation', () => {
-    const goblin = new Monster({
-      id: 'goblin-1',
-      name: 'Goblin Scout',
-      position: { x: 7, y: 7 },
-      stats: { hp: 1, maxHp: 10, attack: 3, defense: 1 },
-      definitionId: 'goblin',
-    });
-    map.addEntity(goblin);
-
-    // Monster death resolution
-    DeathResolver.resolveDeath(engine, player, goblin);
-
-    // Verify corpse dropped on death tile (7, 7)
-    const items = map.getItemsAt(7, 7);
-    const corpse = items.find((i) => i instanceof CorpseItemInstance) as CorpseItemInstance;
-    expect(corpse).toBeDefined();
-    expect(corpse.archetypeId).toBe('goblin');
-
-    // 1. Reanimate Corpse Action
-    const reanimateAction = new ReanimateCorpseAction(player, corpse, 7, 7);
-    const reanimateRes = reanimateAction.perform(engine);
-    expect(reanimateRes.success).toBe(true);
-
-    const thrall = map.getEntityAt(7, 7) as Monster;
-    expect(thrall).toBeDefined();
-    expect(thrall.name).toContain('Thrall');
-    expect(thrall.faction).toBe(player.faction);
-    expect(map.getItemsAt(7, 7).some((i) => i.id === corpse.id)).toBe(false);
-  });
-
-  it('consumes corpse to restore health and cremates corpse with thermal substance', () => {
-    player.hp = 30; // 30 / 50 HP
-
-    const corpse1 = new CorpseItemInstance({ id: 'corpse-test-1', archetypeId: 'wolf' });
-    map.addItemAt(5, 6, corpse1);
-
-    const consumeAction = new ConsumeCorpseAction(player, corpse1, 5, 6);
-    const consumeRes = consumeAction.perform(engine);
-    expect(consumeRes.success).toBe(true);
-    expect(player.hp).toBe(45); // 30 + 15
-    expect(map.getItemsAt(5, 6).length).toBe(0);
-
-    // Thermal cremation in ignited cell
-    const corpse2 = new CorpseItemInstance({ id: 'corpse-test-2', archetypeId: 'ogre' });
-    map.addItemAt(8, 8, corpse2);
-    substances.addSubstance(8, 8, SubstanceBitmask.IGNITED);
-
-    const summary = substances.tickSubstances(map, engine);
-    expect(summary.crematedCount).toBe(1);
-
-    const remainingItems = map.getItemsAt(8, 8);
-    expect(remainingItems.some((i) => i instanceof CorpseItemInstance)).toBe(false);
-    expect(remainingItems.some((i) => i.name === 'Pile of Ash')).toBe(true);
-
-    // Manual cremation action
-    const corpse3 = new CorpseItemInstance({ id: 'corpse-test-3', archetypeId: 'goblin' });
-    map.addItemAt(4, 4, corpse3);
-    const cremateAction = new CremateCorpseAction(player, corpse3, 4, 4);
-    const cremateRes = cremateAction.perform(engine);
-    expect(cremateRes.success).toBe(true);
-    expect(map.getItemsAt(4, 4).some((i) => i.name === 'Pile of Ash')).toBe(true);
   });
 
   it('respects maxTickBudget for bounded spatial sweep complexity', () => {

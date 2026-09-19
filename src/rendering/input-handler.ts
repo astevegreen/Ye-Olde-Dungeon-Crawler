@@ -15,6 +15,7 @@ import {
   ReadScrollAction,
   PotionItem,
   ScrollItem,
+  ChannelRuneOfReturnAction,
   type Action,
   flightRecorder,
 } from '../engine';
@@ -919,6 +920,13 @@ export class InputHandler {
       }
       const restAction = new RestAction(p);
       this.engine.handlePlayerAction(restAction);
+      this.onActionProcessed();
+      return true;
+    }
+    if (userAction === 'channel_rune_of_return') {
+      if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
+      const channelAction = new ChannelRuneOfReturnAction(p);
+      this.engine.handlePlayerAction(channelAction);
       this.onActionProcessed();
       return true;
     }

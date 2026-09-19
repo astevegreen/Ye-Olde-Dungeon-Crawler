@@ -133,11 +133,6 @@ export interface SerializedItemBase {
   aspectState?: string;
   unitWeight?: number;
   modifiers?: SerializedItemModifier[];
-  corpseData?: {
-    archetypeId: string;
-    decayTicksRemaining: number;
-    isBurned: boolean;
-  };
   parentId?: string | null;
   ownerId?: string | null;
 }

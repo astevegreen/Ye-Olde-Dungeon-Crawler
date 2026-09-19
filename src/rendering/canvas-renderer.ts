@@ -197,6 +197,7 @@ export class CanvasRenderer {
 
       if (this.inventoryOverlay.isOpen) {
         this.inventoryOverlay.handleMouseMove(mouseX, mouseY);
+        this.render();
       }
 
       if (

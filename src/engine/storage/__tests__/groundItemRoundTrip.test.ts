@@ -4,7 +4,6 @@ import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { Item } from '../../items/item';
-import { CorpseItemInstance } from '../../items/corpse';
 import { serializeGame, deserializeGame } from '../serializer';
 
 /**
@@ -40,16 +39,5 @@ describe('Ground items survive a save/load round trip', () => {
     const restored = roundTrip(engine);
 
     expect(restored.map.getItemsAt(6, 7).map((i) => i.id)).toEqual(['rock-1']);
-  });
-
-  it('restores a corpse with its archetype and decay intact', () => {
-    const { map, engine } = buildEngine();
-    map.addItemAt(3, 4, new CorpseItemInstance({ id: 'c1', archetypeId: 'kobold', decayTicksRemaining: 33 }));
-
-    const corpse = roundTrip(engine).map.getItemsAt(3, 4)[0];
-
-    expect(corpse).toBeInstanceOf(CorpseItemInstance);
-    expect((corpse as CorpseItemInstance).archetypeId).toBe('kobold');
-    expect((corpse as CorpseItemInstance).decayTicksRemaining).toBe(33);
   });
 });

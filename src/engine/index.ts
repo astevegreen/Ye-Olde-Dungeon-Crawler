@@ -96,6 +96,7 @@ export * from './magic/spellRegistry';
 export * from './magic/spellPipeline';
 export * from './magic/effectRegistry';
 export * from './magic/targeting';
+export * from './magic/runeOfReturn';
 
 // Surfaces & Elemental Reactions
 export * from './surfaces/surfaceGrid';
@@ -183,9 +184,8 @@ export * from './combat/synergyPipeline';
 // Dual-Energy Dynamics & Corruption
 export * from './actors/energyModel';
 
-// Reactive Substances & Corpse Lifecycles
+// Reactive Substances
 export * from './environment/substanceGrid';
-export * from './items/corpse';
 
 // Run Telemetry & Death Analytics
 export * from './analytics/deathEnvelope';

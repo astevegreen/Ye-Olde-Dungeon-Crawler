@@ -133,8 +133,6 @@ export class MovementAction implements Action {
     const baseCost = destTile?.type === SHALLOW_WATER_TILE ? BASE_ACTION_COST + 50 : BASE_ACTION_COST;
     const cost = this.entity.getActionCost(baseCost);
     this.entity.consumeEnergy(cost);
-    const message = `${this.entity.name} moved to (${targetX}, ${targetY}).`;
-    engine.log(message);
     if (destTile?.type === SHALLOW_WATER_TILE && this.entity.type === 'player') {
       engine.log('You wade through the cold shallow water (+50 move energy cost).');
     }
@@ -311,7 +309,6 @@ export class MovementAction implements Action {
     return {
       success: true,
       cost,
-      message,
     };
   }
 }

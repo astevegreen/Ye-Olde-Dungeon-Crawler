@@ -11,7 +11,6 @@ import type { Companion } from '../entities/companion';
 import type { GameEngine } from '../engine';
 import { TILES } from '../grid/tile';
 import { HookDispatcher } from '../hooks/hookDispatcher';
-import { CorpseItemInstance } from '../items/corpse';
 import { DeathEnvelopeTracker } from '../analytics/deathEnvelope';
 
 /** Duck-typed check avoiding a value import of Companion (see import comment above). */
@@ -42,7 +41,7 @@ export class DeathResolver {
 
     // Companions & Pet Progression, Phase 2 (ARCHITECTURE.md P-14): a dying
     // companion skips the generic Monster death pipeline entirely (no XP award,
-    // no loot/corpse, no compendium kill-tracking) and is kept — not discarded —
+    // no loot, no compendium kill-tracking) and is kept — not discarded —
     // as `engine.deadCompanionRecord` so a trainer can revive it (heal + reattach
     // the same instance, pack contents intact) rather than replace it.
     if (isCompanion(victim)) {
@@ -173,12 +172,6 @@ export class DeathResolver {
         }
       }
 
-      // Drop organic corpse on monster defeat
-      const corpse = new CorpseItemInstance({
-        id: engine.nextSimulationId(`corpse-${victim.definitionId ?? victim.name}`),
-        archetypeId: victim.definitionId ?? victim.name,
-      });
-      engine.map.addItemAt(victim.x, victim.y, corpse);
     } else if (victim instanceof Player) {
       DeathEnvelopeTracker.recordPlayerDeath(engine, killer);
       engine.gameState?.triggerDeath(engine, killer);

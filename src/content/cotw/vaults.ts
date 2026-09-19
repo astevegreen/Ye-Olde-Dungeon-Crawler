@@ -92,6 +92,31 @@ export const COTW_VAULTS: VaultBlueprint[] = [
     preferredMonsters: ['orc', 'ogre', 'kobold_shaman'],
   },
   {
+    // Guaranteed floor-5 reward room (ARCHITECTURE.md §3, `dungeonArc.ts`'s
+    // FLOOR5_RUNE_VAULT_ID) — forced onto floor 5 regardless of the normal
+    // random-eligible-vault pool, so it always appears exactly once, guarded
+    // by several Rime Hollows monsters. `dungeonArc.ts` adds the Rune of
+    // Return to the chest after stamping; `minFloor`/`maxFloor` here are for
+    // documentation only, since the forced-placement path bypasses them.
+    id: 'floor5_rune_vault',
+    name: 'The Frostbound Rune Chamber',
+    description: 'A sealed ice-hollow where a carved rune-stone hums beneath a coat of ancient frost, watched over by its guardians.',
+    minFloor: 5,
+    maxFloor: 5,
+    layout: [
+      '#############',
+      '#...M...M...#',
+      '@...........@',
+      '#.....C.....#',
+      '#...........#',
+      '#...........#',
+      '@...........@',
+      '#...M...M...#',
+      '#############',
+    ],
+    preferredMonsters: ['hoarfrost_skraeling', 'skratti', 'brim_howler', 'glacier_borer'],
+  },
+  {
     id: 'chasm_crossing',
     name: 'The Chasm Crossing',
     description: 'A precarious stone bridge spanning a dizzying abyss, guarded by lurking subterranean predators.',

@@ -13,6 +13,18 @@ import { populateDungeonLoot } from '../dungeon/lootSpawner';
 import type { GameContentManifest, QuestArcDefinition, ItemDefinition } from '../types/manifest';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
 import { getMonsterDefinition, type MonsterDefinition } from '../bestiary/monsterDefinitions';
+import { Container } from '../items/container';
+import { RuneOfReturnItem } from '../magic/runeOfReturn';
+
+/**
+ * Well-known id of the hand-placed floor-5 reward vault (a room with several
+ * guarding monsters plus a chest containing the Rune of Return) — mirrors the
+ * `'altar_tyr'` literal-id pattern just below rather than importing a content
+ * constant (engine code must not import `src/content/`, ARCHITECTURE.md §3).
+ * The matching `VaultBlueprint` is `src/content/cotw/vaults.ts`'s entry with
+ * this same `id`; a pack without one simply never triggers this branch.
+ */
+const FLOOR5_RUNE_VAULT_ID = 'floor5_rune_vault';
 
 export interface DungeonFloorResult {
   map: GameMap;
@@ -161,6 +173,7 @@ export class DungeonArc {
       itemCandidates: itemCatalog,
       scalingConfig: manifest?.monsterScaling,
       difficulty,
+      forcedVaultId: floorNumber === 5 ? FLOOR5_RUNE_VAULT_ID : undefined,
     });
 
     const map = dungeon.map;
@@ -207,6 +220,32 @@ export class DungeonArc {
         ) {
           map.setTile(altarX, altarY, TILES.ALTAR_TYR);
         }
+      }
+    }
+
+    // 6. Guaranteed Floor-5 Reward: Rune of Return, guarded by several monsters
+    // in a hand-placed vault room (`forcedVaultId` above) rather than handed out
+    // free at character creation.
+    if (floorNumber === 5 && dungeon.forcedVaultChestSpawns?.length) {
+      const chestPos = dungeon.forcedVaultChestSpawns[0];
+      const rune = new RuneOfReturnItem({
+        id: `rune-of-return-f5-${seed ?? floorNumber}`,
+        name: 'Rune of Return',
+        unidentifiedName: 'Carved Rune Stone',
+        identified: true,
+        description:
+          'A palm-sized stone etched with a rune that hums faintly. Channeling it over several turns teleports you back to town.',
+      });
+      const chest = map.getItemsAt(chestPos.x, chestPos.y).find((it) => it instanceof Container) as
+        | Container
+        | undefined;
+      // Preferred: inside the chest, alongside its randomly-rolled filler loot.
+      // Fallback: dropped loose at the same tile — the general chest-fill logic
+      // (lootSpawner.ts's createDungeonChest) can occasionally roll another
+      // container as filler and exceed capacity for anything more, and the
+      // reward must never silently vanish because of that unrelated quirk.
+      if (!chest || !chest.addItem(rune)) {
+        map.addItemAt(chestPos.x, chestPos.y, rune);
       }
     }
 

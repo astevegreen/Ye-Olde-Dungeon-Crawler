@@ -6,6 +6,8 @@ import {
   processDefaultTrapStore,
   ActionRegistryStore,
   processDefaultActionStore,
+  SpellRegistryStore,
+  processDefaultSpellStore,
   activateRegistries,
   type EngineRegistries,
 } from './registries';
@@ -37,7 +39,6 @@ import { FloorManager } from './world/floorManager';
 import { PlaneManager } from './world/planeManager';
 import type { SurfaceGrid } from './surfaces/surfaceGrid';
 import type { SubstanceGrid } from './environment/substanceGrid';
-import { registerSpells } from './magic/spellRegistry';
 import { SpellPipeline } from './magic/spellPipeline';
 import { findSafeSpawnPosition } from './spatial/collisionSolver';
 import { ActionPipeline } from './actions/actionPipeline';
@@ -314,16 +315,19 @@ export class GameEngine {
     trapStore.seedFrom(processDefaultTrapStore());
     const actionStore = new ActionRegistryStore();
     actionStore.seedFrom(processDefaultActionStore());
+    const spellStore = new SpellRegistryStore();
+    spellStore.seedFrom(processDefaultSpellStore());
     this.registries = {
       monsters: monsterStore,
       traps: trapStore,
       actionCommands: actionStore,
+      spells: spellStore,
     };
     activateRegistries(this.registries);
 
     SpellPipeline.ensureBuiltinEffects();
     if (this.manifest.spells && this.manifest.spells.length > 0) {
-      registerSpells(this.manifest.spells);
+      this.registries.spells.registerAll(this.manifest.spells);
     }
     if (this.manifest.monsters && this.manifest.monsters.length > 0) {
       this.registries.monsters.registerAll(this.manifest.monsters);

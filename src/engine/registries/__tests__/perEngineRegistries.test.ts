@@ -6,12 +6,15 @@ import { Player } from '../../entities/player';
 import { MonsterRegistry } from '../../bestiary/monsterDefinitions';
 import { TrapRegistry } from '../../traps/trapRegistry';
 import { ActionRegistry, type GameAction } from '../../actions/actionRegistry';
+import { SpellRegistry, getSpell, SPELL_REGISTRY } from '../../magic/spellRegistry';
 import { WaitAction } from '../../actions/wait';
 import { processDefaultMonsterStore, setActiveMonsterStore } from '../monsterRegistryStore';
 import { processDefaultTrapStore, setActiveTrapStore } from '../trapRegistryStore';
 import { setActiveActionStore } from '../actionRegistryStore';
+import { processDefaultSpellStore, setActiveSpellStore } from '../spellRegistryStore';
 import type { MonsterDefinition } from '../../bestiary/monsterDefinitions';
 import type { TrapDefinition, TrapType } from '../../types/manifest';
+import type { SpellDefinition } from '../../magic/types';
 
 /**
  * Per-engine content registries (ARCHITECTURE.md §3, P-22 stage 1).
@@ -48,15 +51,28 @@ const actionDef = (id: string): GameAction => ({
   execute: () => ({ success: true, cost: 100, message: `${id} executed` }),
 });
 
+const spellDef = (id: string): SpellDefinition =>
+  ({
+    id,
+    name: id,
+    level: 1,
+    school: 'sorcery',
+    manaCost: 5,
+    range: 5,
+    targetType: 'directional',
+    effects: [],
+  }) as unknown as SpellDefinition;
+
 function engineWith(
   monsters: MonsterDefinition[],
   traps: TrapDefinition[] = [],
-  actionCommands: GameAction[] = []
+  actionCommands: GameAction[] = [],
+  spells: SpellDefinition[] = []
 ): GameEngine {
   return new GameEngine({
     map: new GameMap(10, 10, TILES.FLOOR),
     player: new Player({ id: 'hero', name: 'Hero', position: { x: 1, y: 1 } }),
-    manifest: { id: 'test', name: 'Test', monsters, traps, actionCommands } as never,
+    manifest: { id: 'test', name: 'Test', monsters, traps, actionCommands, spells } as never,
   });
 }
 
@@ -68,6 +84,8 @@ describe('Per-engine content registries', () => {
     setActiveTrapStore(null);
     ActionRegistry.resetToDefaults();
     setActiveActionStore(null);
+    processDefaultSpellStore().clear();
+    setActiveSpellStore(null);
   });
 
   it('keeps two engines built from different manifests separate', () => {
@@ -166,5 +184,32 @@ describe('Per-engine content registries', () => {
     engineA.handlePlayerAction(new WaitAction(engineA.player));
     expect(ActionRegistry.has('whirlwind')).toBe(true);
     expect(ActionRegistry.has('shadowstep')).toBe(false);
+  });
+
+  it('keeps two engines built from different spell manifests separate', () => {
+    const engineA = engineWith([], [], [], [spellDef('frostbolt')]);
+    const engineB = engineWith([], [], [], [spellDef('pyroblast')]);
+
+    expect(engineA.registries.spells.has('frostbolt')).toBe(true);
+    expect(engineA.registries.spells.has('pyroblast')).toBe(false);
+    expect(engineB.registries.spells.has('pyroblast')).toBe(true);
+    expect(engineB.registries.spells.has('frostbolt')).toBe(false);
+
+    // Static facade & proxy point to B
+    expect(SpellRegistry.has('pyroblast')).toBe(true);
+    expect(SpellRegistry.has('frostbolt')).toBe(false);
+    expect(getSpell('pyroblast')).toBeDefined();
+    expect(getSpell('frostbolt')).toBeUndefined();
+    expect(SPELL_REGISTRY['pyroblast']).toBeDefined();
+    expect(SPELL_REGISTRY['frostbolt']).toBeUndefined();
+
+    // Acting on A switches SpellRegistry to A
+    engineA.handlePlayerAction(new WaitAction(engineA.player));
+    expect(SpellRegistry.has('frostbolt')).toBe(true);
+    expect(SpellRegistry.has('pyroblast')).toBe(false);
+    expect(getSpell('frostbolt')).toBeDefined();
+    expect(getSpell('pyroblast')).toBeUndefined();
+    expect(SPELL_REGISTRY['frostbolt']).toBeDefined();
+    expect(SPELL_REGISTRY['pyroblast']).toBeUndefined();
   });
 });

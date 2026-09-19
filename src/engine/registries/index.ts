@@ -10,6 +10,10 @@ import {
   ActionRegistryStore,
   setActiveActionStore,
 } from './actionRegistryStore';
+import {
+  SpellRegistryStore,
+  setActiveSpellStore,
+} from './spellRegistryStore';
 
 export { RegistryStore } from './registryStore';
 export {
@@ -30,6 +34,12 @@ export {
   processDefaultActionStore,
   setActiveActionStore,
 } from './actionRegistryStore';
+export {
+  SpellRegistryStore,
+  activeSpellStore,
+  processDefaultSpellStore,
+  setActiveSpellStore,
+} from './spellRegistryStore';
 
 /**
  * Bundle of per-engine content registries (ARCHITECTURE.md §3, P-22).
@@ -38,6 +48,7 @@ export interface EngineRegistries {
   monsters: MonsterRegistryStore;
   traps: TrapRegistryStore;
   actionCommands: ActionRegistryStore;
+  spells: SpellRegistryStore;
 }
 
 /**
@@ -49,4 +60,5 @@ export function activateRegistries(registries: EngineRegistries | null): void {
   setActiveMonsterStore(registries ? registries.monsters : null);
   setActiveTrapStore(registries ? registries.traps : null);
   setActiveActionStore(registries ? registries.actionCommands : null);
+  setActiveSpellStore(registries ? registries.spells : null);
 }

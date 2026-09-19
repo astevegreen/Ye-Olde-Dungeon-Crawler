@@ -1,19 +1,17 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { GameEngine } from '../engine';
 import { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
 import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
 import { WaitAction } from '../actions/wait';
-import { AIRegistry } from '../ai/aiRegistry';
-import { StatusHandlerRegistry } from '../status/statusHandlers';
 import { flightRecorder } from '../debug/flightRecorder';
 import type { ActionResult } from '../types';
 
 const THROWING_ROUTINE = 'test_throwing_routine';
 const FAULTY_STATUS = 'test_faulty_status';
 
-function buildEngine() {
+function buildEngine(manifest?: any) {
   const map = new GameMap(14, 14, TILES.FLOOR);
   const player = new Player({
     id: 'hero',
@@ -21,7 +19,8 @@ function buildEngine() {
     position: { x: 2, y: 2 },
     stats: { hp: 500, maxHp: 500, attack: 1, defense: 50 },
   });
-  const engine = new GameEngine({ map, player });
+  const fullManifest = manifest ? { id: 'test_manifest', name: 'Test Manifest', ...manifest } : undefined;
+  const engine = new GameEngine({ map, player, manifest: fullManifest });
   return { engine, player };
 }
 
@@ -60,19 +59,18 @@ const chebyshev = (a: { x: number; y: number }, b: { x: number; y: number }) =>
   Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 
 describe('Whole-turn failure isolation: monster turns (ARCHITECTURE.md P-06)', () => {
-  afterEach(() => {
-    AIRegistry.unregister(THROWING_ROUTINE);
-  });
-
   it('isolates a throwing monster AI routine, surfaces it as pipelineError, and does not spin the scheduler', () => {
-    AIRegistry.register({
-      id: THROWING_ROUTINE,
-      name: 'Throwing Routine',
-      decideAction: () => {
-        throw new Error('AI_ROUTINE_FAULT');
-      },
+    const { engine, player } = buildEngine({
+      aiStrategies: [
+        {
+          id: THROWING_ROUTINE,
+          name: 'Throwing Routine',
+          decideAction: () => {
+            throw new Error('AI_ROUTINE_FAULT');
+          },
+        },
+      ],
     });
-    const { engine, player } = buildEngine();
     const faulty = addMonster(engine, 'faulty-ai', { x: 10, y: 10 }, { aiRoutineId: THROWING_ROUTINE });
     const failuresBefore = engine.actionPipeline.caughtExceptionCount;
 
@@ -97,12 +95,15 @@ describe('Whole-turn failure isolation: monster turns (ARCHITECTURE.md P-06)', (
   });
 
   it('isolates a throwing status handler ticking on a monster', () => {
-    StatusHandlerRegistry.register(FAULTY_STATUS, {
-      onTick: () => {
-        throw new Error('STATUS_TICK_FAULT');
+    const { engine, player } = buildEngine({
+      statusHandlers: {
+        [FAULTY_STATUS]: {
+          onTick: () => {
+            throw new Error('STATUS_TICK_FAULT');
+          },
+        },
       },
     });
-    const { engine, player } = buildEngine();
     const afflicted = addMonster(engine, 'afflicted', { x: 10, y: 10 });
     afflicted.statusManager.applyStatus({ type: FAULTY_STATUS, duration: 5 }, [], afflicted, engine);
 
@@ -116,14 +117,17 @@ describe('Whole-turn failure isolation: monster turns (ARCHITECTURE.md P-06)', (
   });
 
   it('keeps other monsters acting after one monster turn fails', () => {
-    AIRegistry.register({
-      id: THROWING_ROUTINE,
-      name: 'Throwing Routine',
-      decideAction: () => {
-        throw new Error('AI_ROUTINE_FAULT');
-      },
+    const { engine, player } = buildEngine({
+      aiStrategies: [
+        {
+          id: THROWING_ROUTINE,
+          name: 'Throwing Routine',
+          decideAction: () => {
+            throw new Error('AI_ROUTINE_FAULT');
+          },
+        },
+      ],
     });
-    const { engine, player } = buildEngine();
     addMonster(engine, 'a-faulty', { x: 12, y: 12 }, { aiRoutineId: THROWING_ROUTINE });
     const healthy = addMonster(engine, 'b-healthy', { x: 9, y: 2 });
     const startDistance = chebyshev(healthy, player);

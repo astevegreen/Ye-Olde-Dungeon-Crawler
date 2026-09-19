@@ -24,45 +24,59 @@ export interface StatusHandler {
   perceptionRadius?: number;
 }
 
-const registry = new Map<StatusType, StatusHandler>();
+import {
+  activeStatusHandlerStore,
+  getDefaultStatusHandlerRegistrar,
+  setDefaultStatusHandlerRegistrar,
+} from '../registries/statusHandlerRegistryStore';
 
+/**
+ * Process-wide facade over whichever status handler store is active (ARCHITECTURE.md §3, P-22).
+ * It holds no map of its own: an engine's registrations live in that engine's store, and
+ * this forwards there, so there is one copy of the data rather than two.
+ */
 export class StatusHandlerRegistry {
   public static register(statusType: StatusType, handler: StatusHandler): void {
-    registry.set(statusType, handler);
+    activeStatusHandlerStore().register(statusType, handler);
   }
 
   public static registerAll(handlers: Record<StatusType, StatusHandler> | Map<StatusType, StatusHandler>): void {
-    const entries = handlers instanceof Map ? handlers.entries() : Object.entries(handlers);
-    for (const [statusType, handler] of entries) {
-      registry.set(statusType, handler);
-    }
+    activeStatusHandlerStore().registerAll(handlers);
   }
 
   public static get(statusType: StatusType): StatusHandler | undefined {
-    return registry.get(statusType);
+    return activeStatusHandlerStore().get(statusType);
   }
 
   public static has(statusType: StatusType): boolean {
-    return registry.has(statusType);
+    return activeStatusHandlerStore().has(statusType);
   }
 
   public static getAll(): ReadonlyMap<StatusType, StatusHandler> {
-    return registry;
+    return activeStatusHandlerStore().getMap();
   }
 
   public static clear(): void {
-    registry.clear();
+    activeStatusHandlerStore().clear();
   }
 
   public static registerBuiltins(): void {
     for (const [type, handler] of Object.entries(BUILTIN_STATUS_HANDLERS)) {
-      registry.set(type, handler);
+      activeStatusHandlerStore().register(type, handler);
     }
   }
 
+  public static setDefaultRegistrar(registrar: () => void): void {
+    setDefaultStatusHandlerRegistrar(registrar);
+  }
+
   public static resetToDefaults(): void {
-    registry.clear();
+    activeStatusHandlerStore().clear();
     this.registerBuiltins();
+    const registrar = getDefaultStatusHandlerRegistrar();
+    if (registrar) {
+      registrar();
+    }
   }
 }
 

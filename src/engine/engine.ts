@@ -14,6 +14,8 @@ import {
   processDefaultAIStrategyStore,
   AIBehaviorRegistryStore,
   processDefaultAIBehaviorStore,
+  StatusHandlerRegistryStore,
+  processDefaultStatusHandlerStore,
   activateRegistries,
   type EngineRegistries,
 } from './registries';
@@ -49,7 +51,6 @@ import { SpellPipeline } from './magic/spellPipeline';
 import { findSafeSpawnPosition } from './spatial/collisionSolver';
 import { ActionPipeline } from './actions/actionPipeline';
 import { MonsterRegistry } from './bestiary/monsterDefinitions';
-import { StatusHandlerRegistry } from './status/statusHandlers';
 import type { StatusHandler } from './status/statusHandlers';
 import {
   type WorldState,
@@ -327,6 +328,8 @@ export class GameEngine {
     aiStrategyStore.seedFrom(processDefaultAIStrategyStore());
     const aiBehaviorStore = new AIBehaviorRegistryStore();
     aiBehaviorStore.seedFrom(processDefaultAIBehaviorStore());
+    const statusHandlerStore = new StatusHandlerRegistryStore();
+    statusHandlerStore.seedFrom(processDefaultStatusHandlerStore());
     this.registries = {
       monsters: monsterStore,
       traps: trapStore,
@@ -335,6 +338,7 @@ export class GameEngine {
       companions: companionStore,
       aiStrategies: aiStrategyStore,
       aiBehaviors: aiBehaviorStore,
+      statusHandlers: statusHandlerStore,
     };
     activateRegistries(this.registries);
 
@@ -352,13 +356,13 @@ export class GameEngine {
       this.registries.traps.registerAll(this.manifest.traps);
     }
     if (this.manifest.statusHandlers) {
-      StatusHandlerRegistry.registerAll(this.manifest.statusHandlers);
+      this.registries.statusHandlers.registerAll(this.manifest.statusHandlers);
     }
     // Override status handler narrative text from manifest.statusEffects definitions
     if (this.manifest.statusEffects && Array.isArray(this.manifest.statusEffects)) {
       for (const se of this.manifest.statusEffects) {
         if (!se.applyMessage && !se.tickMessage && !se.expireMessage) continue;
-        const existing = StatusHandlerRegistry.get(se.id);
+        const existing = this.registries.statusHandlers.get(se.id);
         if (!existing) continue;
         const capturedOnTick = existing.onTick;
         const overridden: StatusHandler = {
@@ -379,7 +383,7 @@ export class GameEngine {
             onExpire: (entity, _engine) => se.expireMessage!.replace('{name}', entity.name),
           } : {}),
         };
-        StatusHandlerRegistry.register(se.id, overridden);
+        this.registries.statusHandlers.register(se.id, overridden);
       }
     }
     if (this.manifest.aiBehaviors) {
@@ -534,7 +538,7 @@ export class GameEngine {
     // Generalizes what was previously a blindness-only hardcoded case.
     let perceptionOverride: number | null = null;
     for (const effect of this.player.statusManager.getAllActive()) {
-      const handler = StatusHandlerRegistry.get(effect.type);
+      const handler = this.registries.statusHandlers.get(effect.type);
       if (handler?.perceptionRadius !== undefined) {
         perceptionOverride = perceptionOverride === null
           ? handler.perceptionRadius

@@ -26,6 +26,10 @@ import {
   AIBehaviorRegistryStore,
   setActiveAIBehaviorStore,
 } from './aiBehaviorRegistryStore';
+import {
+  StatusHandlerRegistryStore,
+  setActiveStatusHandlerStore,
+} from './statusHandlerRegistryStore';
 
 export { RegistryStore } from './registryStore';
 export {
@@ -70,6 +74,14 @@ export {
   processDefaultAIBehaviorStore,
   setActiveAIBehaviorStore,
 } from './aiBehaviorRegistryStore';
+export {
+  StatusHandlerRegistryStore,
+  activeStatusHandlerStore,
+  processDefaultStatusHandlerStore,
+  setActiveStatusHandlerStore,
+  setDefaultStatusHandlerRegistrar,
+  getDefaultStatusHandlerRegistrar,
+} from './statusHandlerRegistryStore';
 
 /**
  * Bundle of per-engine content registries (ARCHITECTURE.md §3, P-22).
@@ -82,6 +94,7 @@ export interface EngineRegistries {
   companions: CompanionRegistryStore;
   aiStrategies: AIStrategyRegistryStore;
   aiBehaviors: AIBehaviorRegistryStore;
+  statusHandlers: StatusHandlerRegistryStore;
 }
 
 /**
@@ -97,4 +110,5 @@ export function activateRegistries(registries: EngineRegistries | null): void {
   setActiveCompanionStore(registries ? registries.companions : null);
   setActiveAIStrategyStore(registries ? registries.aiStrategies : null);
   setActiveAIBehaviorStore(registries ? registries.aiBehaviors : null);
+  setActiveStatusHandlerStore(registries ? registries.statusHandlers : null);
 }

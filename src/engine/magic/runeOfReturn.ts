@@ -472,3 +472,4 @@ export class ChannelRuneOfReturnAction implements Action {
 // Self-register on load, matching StatusHandlerRegistry.registerBuiltins()'s own
 // module-scope registration in status/statusHandlers.ts.
 registerRuneOfReturnStatusHandler();
+StatusHandlerRegistry.setDefaultRegistrar(registerRuneOfReturnStatusHandler);

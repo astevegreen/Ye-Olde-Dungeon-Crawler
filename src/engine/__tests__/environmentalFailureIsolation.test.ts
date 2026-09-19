@@ -4,7 +4,6 @@ import { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
 import { Player } from '../entities/player';
 import { WaitAction } from '../actions/wait';
-import { StatusHandlerRegistry } from '../status/statusHandlers';
 import { flightRecorder } from '../debug/flightRecorder';
 
 /**
@@ -15,7 +14,7 @@ import { flightRecorder } from '../debug/flightRecorder';
  */
 const FAULTY_STATUS = 'test_env_faulty_status';
 
-function buildEngine() {
+function buildEngine(manifest?: any) {
   const map = new GameMap(12, 12, TILES.FLOOR);
   const player = new Player({
     id: 'hero',
@@ -23,7 +22,8 @@ function buildEngine() {
     position: { x: 3, y: 3 },
     stats: { hp: 100, maxHp: 100, attack: 5, defense: 2 },
   });
-  return { engine: new GameEngine({ map, player }), player };
+  const fullManifest = manifest ? { id: 'test_manifest', name: 'Test Manifest', ...manifest } : undefined;
+  return { engine: new GameEngine({ map, player, manifest: fullManifest }), player };
 }
 
 const envFailures = () =>
@@ -62,12 +62,15 @@ describe('Environmental update failure isolation (P-06)', () => {
   });
 
   it('isolates a throwing player status tick', () => {
-    StatusHandlerRegistry.register(FAULTY_STATUS, {
-      onTick: () => {
-        throw new Error('PLAYER_STATUS_FAULT');
+    const { engine, player } = buildEngine({
+      statusHandlers: {
+        [FAULTY_STATUS]: {
+          onTick: () => {
+            throw new Error('PLAYER_STATUS_FAULT');
+          },
+        },
       },
     });
-    const { engine, player } = buildEngine();
     player.statusManager.applyStatus({ type: FAULTY_STATUS, duration: 5 }, [], player, engine);
 
     let result;

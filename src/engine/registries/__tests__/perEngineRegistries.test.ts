@@ -10,6 +10,7 @@ import { SpellRegistry, getSpell, SPELL_REGISTRY } from '../../magic/spellRegist
 import { CompanionRegistry, type CompanionDefinition } from '../../entities/companion';
 import { AIRegistry, type AIStrategy } from '../../ai/aiRegistry';
 import { AiBehaviorRegistry, type AiBehaviorStrategy } from '../../ai/aiBehaviorRegistry';
+import { StatusHandlerRegistry, type StatusHandler } from '../../status/statusHandlers';
 import { WaitAction } from '../../actions/wait';
 import { processDefaultMonsterStore, setActiveMonsterStore } from '../monsterRegistryStore';
 import { processDefaultTrapStore, setActiveTrapStore } from '../trapRegistryStore';
@@ -18,6 +19,7 @@ import { processDefaultSpellStore, setActiveSpellStore } from '../spellRegistryS
 import { processDefaultCompanionStore, setActiveCompanionStore } from '../companionRegistryStore';
 import { setActiveAIStrategyStore } from '../aiStrategyRegistryStore';
 import { setActiveAIBehaviorStore } from '../aiBehaviorRegistryStore';
+import { setActiveStatusHandlerStore } from '../statusHandlerRegistryStore';
 import type { MonsterDefinition } from '../../bestiary/monsterDefinitions';
 import type { TrapDefinition, TrapType } from '../../types/manifest';
 import type { SpellDefinition } from '../../magic/types';
@@ -91,6 +93,10 @@ const aiBehaviorDef = (id: string): AiBehaviorStrategy => ({
   decideAction: (monster) => new WaitAction(monster),
 });
 
+const statusDef = (message: string): StatusHandler => ({
+  onExpire: () => message,
+});
+
 function engineWith(
   monsters: MonsterDefinition[],
   traps: TrapDefinition[] = [],
@@ -98,12 +104,24 @@ function engineWith(
   spells: SpellDefinition[] = [],
   companions: CompanionDefinition[] = [],
   aiStrategies: AIStrategy[] = [],
-  aiBehaviors: Record<string, AiBehaviorStrategy> = {}
+  aiBehaviors: Record<string, AiBehaviorStrategy> = {},
+  statusHandlers: Record<string, StatusHandler> = {}
 ): GameEngine {
   return new GameEngine({
     map: new GameMap(10, 10, TILES.FLOOR),
     player: new Player({ id: 'hero', name: 'Hero', position: { x: 1, y: 1 } }),
-    manifest: { id: 'test', name: 'Test', monsters, traps, actionCommands, spells, companions, aiStrategies, aiBehaviors } as never,
+    manifest: {
+      id: 'test',
+      name: 'Test',
+      monsters,
+      traps,
+      actionCommands,
+      spells,
+      companions,
+      aiStrategies,
+      aiBehaviors,
+      statusHandlers,
+    } as never,
   });
 }
 
@@ -123,6 +141,8 @@ describe('Per-engine content registries', () => {
     setActiveAIStrategyStore(null);
     AiBehaviorRegistry.resetToDefaults();
     setActiveAIBehaviorStore(null);
+    StatusHandlerRegistry.resetToDefaults();
+    setActiveStatusHandlerStore(null);
   });
 
   it('keeps two engines built from different manifests separate', () => {
@@ -315,5 +335,29 @@ describe('Per-engine content registries', () => {
     engineA.handlePlayerAction(new WaitAction(engineA.player));
     expect(AiBehaviorRegistry.has('tactical_retreat')).toBe(true);
     expect(AiBehaviorRegistry.has('berserk_charge')).toBe(false);
+  });
+
+  it('keeps two engines built from different status handler manifests separate', () => {
+    const engineA = engineWith([], [], [], [], [], [], {}, { frozen: statusDef('thawed') });
+    const engineB = engineWith([], [], [], [], [], [], {}, { cursed: statusDef('cleansed') });
+
+    // Both inherit builtin statuses (e.g. poison, blindness)
+    expect(engineA.registries.statusHandlers.has('poison')).toBe(true);
+    expect(engineB.registries.statusHandlers.has('poison')).toBe(true);
+
+    // Isolated custom status handlers
+    expect(engineA.registries.statusHandlers.has('frozen')).toBe(true);
+    expect(engineA.registries.statusHandlers.has('cursed')).toBe(false);
+    expect(engineB.registries.statusHandlers.has('cursed')).toBe(true);
+    expect(engineB.registries.statusHandlers.has('frozen')).toBe(false);
+
+    // Static facade points to B
+    expect(StatusHandlerRegistry.has('cursed')).toBe(true);
+    expect(StatusHandlerRegistry.has('frozen')).toBe(false);
+
+    // Acting on A switches StatusHandlerRegistry to A
+    engineA.handlePlayerAction(new WaitAction(engineA.player));
+    expect(StatusHandlerRegistry.has('frozen')).toBe(true);
+    expect(StatusHandlerRegistry.has('cursed')).toBe(false);
   });
 });

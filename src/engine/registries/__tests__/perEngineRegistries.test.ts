@@ -4,9 +4,12 @@ import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { MonsterRegistry } from '../../bestiary/monsterDefinitions';
+import { TrapRegistry } from '../../traps/trapRegistry';
 import { WaitAction } from '../../actions/wait';
 import { processDefaultMonsterStore, setActiveMonsterStore } from '../monsterRegistryStore';
+import { processDefaultTrapStore, setActiveTrapStore } from '../trapRegistryStore';
 import type { MonsterDefinition } from '../../bestiary/monsterDefinitions';
+import type { TrapDefinition, TrapType } from '../../types/manifest';
 
 /**
  * Per-engine content registries (ARCHITECTURE.md §3, P-22 stage 1).
@@ -26,18 +29,29 @@ const def = (id: string): MonsterDefinition =>
     lootTable: [],
   }) as MonsterDefinition;
 
-function engineWith(monsters: MonsterDefinition[]): GameEngine {
+const trapDef = (type: string): TrapDefinition =>
+  ({
+    type: type as TrapType,
+    name: type,
+    damage: 6,
+    disarmDifficulty: 10,
+    message: `${type} triggered!`,
+  }) as TrapDefinition;
+
+function engineWith(monsters: MonsterDefinition[], traps: TrapDefinition[] = []): GameEngine {
   return new GameEngine({
     map: new GameMap(10, 10, TILES.FLOOR),
     player: new Player({ id: 'hero', name: 'Hero', position: { x: 1, y: 1 } }),
-    manifest: { id: 'test', name: 'Test', monsters } as never,
+    manifest: { id: 'test', name: 'Test', monsters, traps } as never,
   });
 }
 
-describe('Per-engine monster registries', () => {
+describe('Per-engine content registries', () => {
   beforeEach(() => {
     processDefaultMonsterStore().clear();
     setActiveMonsterStore(null);
+    processDefaultTrapStore().clear();
+    setActiveTrapStore(null);
   });
 
   it('keeps two engines built from different manifests separate', () => {
@@ -93,5 +107,24 @@ describe('Per-engine monster registries', () => {
     engineB.handlePlayerAction(new WaitAction(engineB.player));
     expect(MonsterRegistry.has('grunt')).toBe(true);
     expect(MonsterRegistry.has('kobold')).toBe(false);
+  });
+
+  it('keeps two engines built from different trap manifests separate', () => {
+    const engineA = engineWith([], [trapDef('dart_trap')]);
+    const engineB = engineWith([], [trapDef('fire_rune')]);
+
+    expect(engineA.registries.traps.has('dart_trap')).toBe(true);
+    expect(engineA.registries.traps.has('fire_rune')).toBe(false);
+    expect(engineB.registries.traps.has('fire_rune')).toBe(true);
+    expect(engineB.registries.traps.has('dart_trap')).toBe(false);
+
+    // Static facade points to B
+    expect(TrapRegistry.has('fire_rune')).toBe(true);
+    expect(TrapRegistry.has('dart_trap')).toBe(false);
+
+    // Acting on A switches TrapRegistry to A
+    engineA.handlePlayerAction(new WaitAction(engineA.player));
+    expect(TrapRegistry.has('dart_trap')).toBe(true);
+    expect(TrapRegistry.has('fire_rune')).toBe(false);
   });
 });

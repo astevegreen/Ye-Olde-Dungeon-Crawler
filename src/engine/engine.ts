@@ -2,6 +2,8 @@ import type { ActionResult, Position, VisualEffectDescriptor } from './types';
 import {
   MonsterRegistryStore,
   processDefaultMonsterStore,
+  TrapRegistryStore,
+  processDefaultTrapStore,
   activateRegistries,
   type EngineRegistries,
 } from './registries';
@@ -38,7 +40,6 @@ import { SpellPipeline } from './magic/spellPipeline';
 import { findSafeSpawnPosition } from './spatial/collisionSolver';
 import { ActionPipeline } from './actions/actionPipeline';
 import { MonsterRegistry } from './bestiary/monsterDefinitions';
-import { TrapRegistry } from './traps/trapRegistry';
 import { StatusHandlerRegistry } from './status/statusHandlers';
 import type { StatusHandler } from './status/statusHandlers';
 import { AiBehaviorRegistry } from './ai/aiBehaviorRegistry';
@@ -308,7 +309,12 @@ export class GameEngine {
     // `engine.registries` (ARCHITECTURE.md §3, P-22).
     const monsterStore = new MonsterRegistryStore();
     monsterStore.seedFrom(processDefaultMonsterStore());
-    this.registries = { monsters: monsterStore };
+    const trapStore = new TrapRegistryStore();
+    trapStore.seedFrom(processDefaultTrapStore());
+    this.registries = {
+      monsters: monsterStore,
+      traps: trapStore,
+    };
     activateRegistries(this.registries);
 
     SpellPipeline.ensureBuiltinEffects();
@@ -322,7 +328,7 @@ export class GameEngine {
       CompanionRegistry.registerAll(this.manifest.companions);
     }
     if (this.manifest.traps && this.manifest.traps.length > 0) {
-      TrapRegistry.registerAll(this.manifest.traps);
+      this.registries.traps.registerAll(this.manifest.traps);
     }
     if (this.manifest.statusHandlers) {
       StatusHandlerRegistry.registerAll(this.manifest.statusHandlers);

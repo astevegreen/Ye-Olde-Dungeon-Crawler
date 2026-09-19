@@ -23,47 +23,47 @@ export interface GameAction<TArgs = any> {
   execute(actor: Actor, args: TArgs, engine: GameEngine): ActionResult;
 }
 
-const registry = new Map<string, GameAction<any>>();
+import { activeActionStore } from '../registries/actionRegistryStore';
 
+/**
+ * Process-wide facade over whichever action command store is active (ARCHITECTURE.md §3, P-22).
+ * It holds no map of its own: an engine's registrations live in that engine's store, and
+ * this forwards there, so there is one copy of the data rather than two.
+ */
 export class ActionRegistry {
   public static register<TArgs = any>(action: GameAction<TArgs>): void {
-    registry.set(action.id, action);
+    activeActionStore().register(action);
   }
 
   public static registerAll(actions: readonly GameAction<any>[] | Record<string, GameAction<any>>): void {
-    if (Array.isArray(actions)) {
-      for (const a of actions) {
-        this.register(a);
-      }
-    } else {
-      for (const a of Object.values(actions)) {
-        this.register(a);
-      }
+    const list = Array.isArray(actions) ? actions : Object.values(actions);
+    for (const a of list) {
+      this.register(a);
     }
   }
 
   public static get<TArgs = any>(id: string): GameAction<TArgs> | undefined {
-    return registry.get(id);
+    return activeActionStore().get(id);
   }
 
   public static has(id: string): boolean {
-    return registry.has(id);
+    return activeActionStore().has(id);
   }
 
   public static getAll(): ReadonlyMap<string, GameAction<any>> {
-    return registry;
+    return activeActionStore().getMap();
   }
 
   public static unregister(id: string): boolean {
-    return registry.delete(id);
+    return activeActionStore().unregister(id);
   }
 
   public static clear(): void {
-    registry.clear();
+    activeActionStore().clear();
   }
 
   public static resetToDefaults(): void {
-    registry.clear();
+    activeActionStore().clear();
     registerDefaultActions();
   }
 
@@ -73,7 +73,7 @@ export class ActionRegistry {
     args: TArgs,
     engine: GameEngine
   ): ActionResult {
-    const action = registry.get(actionId);
+    const action = activeActionStore().get(actionId);
     if (!action) {
       return {
         success: false,

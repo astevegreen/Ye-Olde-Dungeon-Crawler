@@ -4,6 +4,8 @@ import {
   processDefaultMonsterStore,
   TrapRegistryStore,
   processDefaultTrapStore,
+  ActionRegistryStore,
+  processDefaultActionStore,
   activateRegistries,
   type EngineRegistries,
 } from './registries';
@@ -43,7 +45,6 @@ import { MonsterRegistry } from './bestiary/monsterDefinitions';
 import { StatusHandlerRegistry } from './status/statusHandlers';
 import type { StatusHandler } from './status/statusHandlers';
 import { AiBehaviorRegistry } from './ai/aiBehaviorRegistry';
-import { ActionRegistry } from './actions/actionRegistry';
 import { AIRegistry } from './ai/aiRegistry';
 import {
   type WorldState,
@@ -311,9 +312,12 @@ export class GameEngine {
     monsterStore.seedFrom(processDefaultMonsterStore());
     const trapStore = new TrapRegistryStore();
     trapStore.seedFrom(processDefaultTrapStore());
+    const actionStore = new ActionRegistryStore();
+    actionStore.seedFrom(processDefaultActionStore());
     this.registries = {
       monsters: monsterStore,
       traps: trapStore,
+      actionCommands: actionStore,
     };
     activateRegistries(this.registries);
 
@@ -368,7 +372,7 @@ export class GameEngine {
       AIRegistry.registerAll(this.manifest.aiStrategies);
     }
     if (this.manifest.actionCommands) {
-      ActionRegistry.registerAll(this.manifest.actionCommands);
+      this.registries.actionCommands.registerAll(this.manifest.actionCommands);
     }
     this.affinityMatrix = this.manifest.affinityMatrix
       ? new AffinityMatrix(this.manifest.affinityMatrix)

@@ -6,6 +6,10 @@ import {
   TrapRegistryStore,
   setActiveTrapStore,
 } from './trapRegistryStore';
+import {
+  ActionRegistryStore,
+  setActiveActionStore,
+} from './actionRegistryStore';
 
 export { RegistryStore } from './registryStore';
 export {
@@ -20,6 +24,12 @@ export {
   processDefaultTrapStore,
   setActiveTrapStore,
 } from './trapRegistryStore';
+export {
+  ActionRegistryStore,
+  activeActionStore,
+  processDefaultActionStore,
+  setActiveActionStore,
+} from './actionRegistryStore';
 
 /**
  * Bundle of per-engine content registries (ARCHITECTURE.md §3, P-22).
@@ -27,6 +37,7 @@ export {
 export interface EngineRegistries {
   monsters: MonsterRegistryStore;
   traps: TrapRegistryStore;
+  actionCommands: ActionRegistryStore;
 }
 
 /**
@@ -37,4 +48,5 @@ export interface EngineRegistries {
 export function activateRegistries(registries: EngineRegistries | null): void {
   setActiveMonsterStore(registries ? registries.monsters : null);
   setActiveTrapStore(registries ? registries.traps : null);
+  setActiveActionStore(registries ? registries.actionCommands : null);
 }

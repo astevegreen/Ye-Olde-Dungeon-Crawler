@@ -5,9 +5,11 @@ import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { MonsterRegistry } from '../../bestiary/monsterDefinitions';
 import { TrapRegistry } from '../../traps/trapRegistry';
+import { ActionRegistry, type GameAction } from '../../actions/actionRegistry';
 import { WaitAction } from '../../actions/wait';
 import { processDefaultMonsterStore, setActiveMonsterStore } from '../monsterRegistryStore';
 import { processDefaultTrapStore, setActiveTrapStore } from '../trapRegistryStore';
+import { setActiveActionStore } from '../actionRegistryStore';
 import type { MonsterDefinition } from '../../bestiary/monsterDefinitions';
 import type { TrapDefinition, TrapType } from '../../types/manifest';
 
@@ -38,11 +40,23 @@ const trapDef = (type: string): TrapDefinition =>
     message: `${type} triggered!`,
   }) as TrapDefinition;
 
-function engineWith(monsters: MonsterDefinition[], traps: TrapDefinition[] = []): GameEngine {
+const actionDef = (id: string): GameAction => ({
+  id,
+  name: id,
+  validate: () => ({ valid: true }),
+  calculateEnergyCost: () => 100,
+  execute: () => ({ success: true, cost: 100, message: `${id} executed` }),
+});
+
+function engineWith(
+  monsters: MonsterDefinition[],
+  traps: TrapDefinition[] = [],
+  actionCommands: GameAction[] = []
+): GameEngine {
   return new GameEngine({
     map: new GameMap(10, 10, TILES.FLOOR),
     player: new Player({ id: 'hero', name: 'Hero', position: { x: 1, y: 1 } }),
-    manifest: { id: 'test', name: 'Test', monsters, traps } as never,
+    manifest: { id: 'test', name: 'Test', monsters, traps, actionCommands } as never,
   });
 }
 
@@ -52,6 +66,8 @@ describe('Per-engine content registries', () => {
     setActiveMonsterStore(null);
     processDefaultTrapStore().clear();
     setActiveTrapStore(null);
+    ActionRegistry.resetToDefaults();
+    setActiveActionStore(null);
   });
 
   it('keeps two engines built from different manifests separate', () => {
@@ -126,5 +142,29 @@ describe('Per-engine content registries', () => {
     engineA.handlePlayerAction(new WaitAction(engineA.player));
     expect(TrapRegistry.has('dart_trap')).toBe(true);
     expect(TrapRegistry.has('fire_rune')).toBe(false);
+  });
+
+  it('keeps two engines built from different action command manifests separate', () => {
+    const engineA = engineWith([], [], [actionDef('whirlwind')]);
+    const engineB = engineWith([], [], [actionDef('shadowstep')]);
+
+    // Both inherit default actions
+    expect(engineA.registries.actionCommands.has('move')).toBe(true);
+    expect(engineB.registries.actionCommands.has('move')).toBe(true);
+
+    // Isolated custom actions
+    expect(engineA.registries.actionCommands.has('whirlwind')).toBe(true);
+    expect(engineA.registries.actionCommands.has('shadowstep')).toBe(false);
+    expect(engineB.registries.actionCommands.has('shadowstep')).toBe(true);
+    expect(engineB.registries.actionCommands.has('whirlwind')).toBe(false);
+
+    // Static facade points to B
+    expect(ActionRegistry.has('shadowstep')).toBe(true);
+    expect(ActionRegistry.has('whirlwind')).toBe(false);
+
+    // Acting on A switches ActionRegistry to A
+    engineA.handlePlayerAction(new WaitAction(engineA.player));
+    expect(ActionRegistry.has('whirlwind')).toBe(true);
+    expect(ActionRegistry.has('shadowstep')).toBe(false);
   });
 });

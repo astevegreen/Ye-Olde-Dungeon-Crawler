@@ -178,6 +178,13 @@ describe('sprite-mapper — Tag-Priority Monster, Item, and Zone-Themed Terrain 
       expect(getItemSpriteKey(mana)).toBe('mana_potion');
       expect(getItemSpriteKey(scroll)).toBe('scroll');
     });
+
+    it('resolves Rune of Return to dedicated rune_stone sprite', () => {
+      const rune = { id: 'rune_of_return', name: 'Rune of Return', category: 'misc' } as Item;
+      const stone = { id: 'item-1', name: 'Ancient Rune Stone', category: 'misc' } as Item;
+      expect(getItemSpriteKey(rune)).toBe('rune_stone');
+      expect(getItemSpriteKey(stone)).toBe('rune_stone');
+    });
   });
 
   describe('getTerrainSpriteKey — Town and Zone Theming', () => {

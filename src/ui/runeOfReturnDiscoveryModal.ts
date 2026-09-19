@@ -136,14 +136,19 @@ export class RuneOfReturnDiscoveryModal implements UIModal {
         </div>
 
         <div style="font-size: 13px; line-height: 1.5; color: #cbd5e1; margin-bottom: 16px;">
-          You have recovered a legendary carved rune-stone humming with primordial translocational energy.
+          You have recovered a legendary carved rune-stone. Upon touching your hands, it dissolves into a pulse of ethereal light, binding its translocational power directly to your soul! You no longer need to carry or manage it in your inventory.
         </div>
 
         <!-- Mechanics list -->
         <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
           <div style="background: rgba(30, 41, 59, 0.6); padding: 10px 12px; border-radius: 6px; border-left: 3px solid #38bdf8;">
+            <span style="font-weight: bold; color: #38bdf8;">Two-Way Dimensional Recall:</span>
+            <span style="color: #cbd5e1;"> In the dungeon, channeling recalls you to town and anchors a rift to your departure point. In town, channeling steps back through the rift, returning you directly to that dungeon level!</span>
+          </div>
+
+          <div style="background: rgba(30, 41, 59, 0.6); padding: 10px 12px; border-radius: 6px; border-left: 3px solid #38bdf8;">
             <span style="font-weight: bold; color: #38bdf8;">Charges (3 Max):</span>
-            <span style="color: #cbd5e1;"> Teleports you back to town upon channel completion. Only spends a charge on a <em>successful</em> teleport. Free, unlimited refills at <strong>Thrain the Rune-Smith</strong> in town.</span>
+            <span style="color: #cbd5e1;"> Only spends a charge on a <em>successful</em> teleport. Free, unlimited refills at <strong>Thrain the Rune-Smith</strong> in town.</span>
           </div>
 
           <div style="background: rgba(30, 41, 59, 0.6); padding: 10px 12px; border-radius: 6px; border-left: 3px solid #fde047;">

@@ -234,6 +234,9 @@ export function getItemSpriteKey(item: Item): SpriteKey {
   const id = item.id || '';
 
   // Unique / Plot items
+  if (name.includes('rune of return') || id.includes('rune_of_return') || name.includes('rune stone') || id.includes('rune_stone')) {
+    return 'rune_stone';
+  }
   if (name.includes('sun-stone') || name.includes('sun stone') || id.includes('sun_stone')) {
     return 'sun_stone';
   }

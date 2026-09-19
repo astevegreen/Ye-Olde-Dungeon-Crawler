@@ -123,7 +123,8 @@ export type ItemSpriteKey =
   | 'scroll'
   | 'gem'
   | 'key'
-  | 'torch';
+  | 'torch'
+  | 'rune_stone';
 
 export type SpriteKey = TerrainSpriteKey | EntitySpriteKey | ItemSpriteKey;
 

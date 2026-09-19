@@ -60,7 +60,7 @@ import { PactManager } from './pacts/pactManager';
 import { validateManifest, type GameContentManifest } from './types/manifest';
 import { EngineCommandBus, type GameCommandBus } from './commands/commandBus';
 import { IdentificationManager } from './items/identification';
-import { attuneRuneOfReturn, findRuneOfReturn, createRuneOfReturnActionHooks } from './magic/runeOfReturn';
+import { attuneRuneOfReturn, findRuneOfReturn, createRuneOfReturnActionHooks, RuneOfReturnItem } from './magic/runeOfReturn';
 
 const DEFAULT_EMPTY_MANIFEST: GameContentManifest = {
   id: 'generic',
@@ -472,16 +472,12 @@ export class GameEngine {
         if (!this.player) {
           return { placedInPack: false };
         }
+        if (item instanceof RuneOfReturnItem) {
+          this.absorbRuneOfReturn(item);
+          return { placedInPack: true };
+        }
         const added = this.player.addItem(item);
         if (added) {
-          if (!this.player.hasDiscoveredRune && findRuneOfReturn(this.player)) {
-            this.player.hasDiscoveredRune = true;
-            this.emitGameEvent({
-              type: 'rune_of_return_discovered',
-              turn: this.turnCount,
-              actorId: this.player.id,
-            });
-          }
           return { placedInPack: true };
         }
         this.map.addItemAt(this.player.x, this.player.y, item);
@@ -1014,6 +1010,44 @@ export class GameEngine {
     }
 
     return result;
+  }
+
+  /**
+   * Absorbs the physical Rune of Return into the player's spirit as an innate power.
+   * Transfers charges, marks hasDiscoveredRune, dissolves any physical copies from
+   * inventory/ground, logs the spiritual binding, and fires rune_of_return_discovered.
+   */
+  public absorbRuneOfReturn(item?: Item): void {
+    if (!this.player) return;
+    if (item instanceof RuneOfReturnItem) {
+      this.player.runeCharges = item.charges;
+      this.player.runeMaxCharges = item.maxCharges;
+    } else {
+      this.player.runeCharges = this.player.runeCharges ?? 3;
+      this.player.runeMaxCharges = this.player.runeMaxCharges ?? 3;
+    }
+    const wasDiscovered = this.player.hasDiscoveredRune;
+    this.player.hasDiscoveredRune = true;
+
+    // Dissolve any physical rune items in player inventory
+    if (item && item.id) {
+      this.player.inventory?.primaryPack?.removeItem(item.id);
+    }
+    const carriedRunes = this.player.inventory?.getAllCarriedItems?.().filter(
+      (i) => i instanceof RuneOfReturnItem && i.id !== 'innate_rune_of_return'
+    ) ?? [];
+    for (const r of carriedRunes) {
+      this.player.inventory?.primaryPack?.removeItem(r.id);
+    }
+
+    this.log('*** The Rune of Return dissolves into a pulse of ethereal light, binding its power directly to your spirit! ***');
+    if (!wasDiscovered) {
+      this.emitGameEvent({
+        type: 'rune_of_return_discovered',
+        turn: this.turnCount,
+        actorId: this.player.id,
+      });
+    }
   }
 
   /**

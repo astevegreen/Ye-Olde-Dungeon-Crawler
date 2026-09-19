@@ -6,6 +6,7 @@ import { Player } from '../entities/player';
 import type { Item, EquipmentSlot } from '../items/item';
 import { Container } from '../items/container';
 import { CombatLogger } from '../logging/combatLogger';
+import { RuneOfReturnItem } from '../magic/runeOfReturn';
 
 export class PickUpAction implements Action {
   public readonly player: Player;
@@ -36,12 +37,32 @@ export class PickUpAction implements Action {
       return { success: false, cost: 0, message: 'Specified item was not found on the ground.' };
     }
 
+    // Rune of Return dissolution: absorbs directly into the player's spirit without requiring pack space
+    if (itemToPick instanceof RuneOfReturnItem) {
+      engine.map.removeItemAt(this.player.x, this.player.y, itemToPick.id);
+      engine.absorbRuneOfReturn(itemToPick);
+      const cost = this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);
+      this.player.consumeEnergy(cost);
+      const msg = 'You pick up the Rune of Return. It dissolves into your spirit!';
+      engine.log(msg);
+      return { success: true, cost, message: msg };
+    }
+
     // Try storing in player inventory (purse, belt, or pack)
     const storeResult = this.player.inventory.storeItem(itemToPick);
     if (!storeResult.success) {
       // If the item is a container with nested items (e.g. heavy chest), loot from inside it
       if (itemToPick instanceof Container && itemToPick.getItems().length > 0) {
         const contained = itemToPick.getItems()[0];
+        if (contained instanceof RuneOfReturnItem) {
+          itemToPick.removeItem(contained.id);
+          engine.absorbRuneOfReturn(contained);
+          const cost = this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);
+          this.player.consumeEnergy(cost);
+          const msg = `Took ${contained.displayName} from ${itemToPick.displayName} — it dissolves into your spirit!`;
+          engine.log(msg);
+          return { success: true, cost, message: msg };
+        }
         const removed = itemToPick.removeItem(contained.id);
         if (removed) {
           const subStore = this.player.inventory.storeItem(removed);
@@ -234,6 +255,12 @@ export class QuickLootAction implements Action {
         // If the ground item is a container with nested items, loot its contents directly
         const containedItems = [...item.getItems()];
         for (const subItem of containedItems) {
+          if (subItem instanceof RuneOfReturnItem) {
+            item.removeItem(subItem.id);
+            engine.absorbRuneOfReturn(subItem);
+            lootedItems.push(subItem);
+            continue;
+          }
           const removed = item.removeItem(subItem.id);
           if (!removed) continue;
           const subStore = this.player.inventory.storeItem(removed);
@@ -248,6 +275,13 @@ export class QuickLootAction implements Action {
         if (failureReason) {
           break;
         }
+      }
+
+      if (item instanceof RuneOfReturnItem) {
+        engine.map.removeItemAt(this.player.x, this.player.y, item.id);
+        engine.absorbRuneOfReturn(item);
+        lootedItems.push(item);
+        continue;
       }
 
       const storeResult = this.player.inventory.storeItem(item);
@@ -304,6 +338,15 @@ export class LootFromContainerAction implements Action {
     const removed = this.container.removeItem(this.item.id);
     if (!removed) {
       return { success: false, cost: 0, message: 'Item is no longer inside the container.' };
+    }
+
+    if (removed instanceof RuneOfReturnItem) {
+      engine.absorbRuneOfReturn(removed);
+      const cost = this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);
+      this.player.consumeEnergy(cost);
+      const msg = `Took ${removed.displayName} from ${this.container.displayName} — it dissolves into your spirit!`;
+      engine.log(msg);
+      return { success: true, cost, message: msg };
     }
 
     const storeResult = this.player.inventory.storeItem(removed);

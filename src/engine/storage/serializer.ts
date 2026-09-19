@@ -408,6 +408,8 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     runeMastery: { ...p.runeMastery },
     runeChannelBankedTurns: p.runeChannelBankedTurns ?? 0,
     hasDiscoveredRune: p.hasDiscoveredRune,
+    runeCharges: p.runeCharges,
+    runeMaxCharges: p.runeMaxCharges,
   };
 
   if (profile) {
@@ -804,6 +806,8 @@ export function deserializeGame(
     runeMastery: pData.runeMastery ? { ...pData.runeMastery } : defaultRuneMastery(),
     runeChannelBankedTurns: Number(pData.runeChannelBankedTurns) || 0,
     hasDiscoveredRune: Boolean(pData.hasDiscoveredRune),
+    runeCharges: pData.runeCharges !== undefined ? Number(pData.runeCharges) : undefined,
+    runeMaxCharges: pData.runeMaxCharges !== undefined ? Number(pData.runeMaxCharges) : undefined,
   });
   player.energy = Number(pData.energy) || 0;
   player.hp = Math.min(Number(pData.hp) || 1, player.maxHp);

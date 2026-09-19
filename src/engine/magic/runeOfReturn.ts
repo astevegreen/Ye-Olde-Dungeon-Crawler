@@ -102,8 +102,8 @@ export interface RuneOfReturnConfig extends Omit<ItemConfig, 'category' | 'weigh
  * mastery is the player's (like an attribute), so a lost/replaced rune doesn't reset
  * invested points. */
 export class RuneOfReturnItem extends Item {
-  public charges: number;
-  public readonly maxCharges: number;
+  protected _charges: number;
+  protected _maxCharges: number;
 
   constructor(config: RuneOfReturnConfig) {
     super({
@@ -112,8 +112,20 @@ export class RuneOfReturnItem extends Item {
       weight: config.weight ?? 40,
       bulk: config.bulk ?? 20,
     });
-    this.maxCharges = RUNE_MAX_CHARGES;
-    this.charges = Math.max(0, Math.min(config.charges ?? RUNE_MAX_CHARGES, this.maxCharges));
+    this._maxCharges = RUNE_MAX_CHARGES;
+    this._charges = Math.max(0, Math.min(config.charges ?? RUNE_MAX_CHARGES, this._maxCharges));
+  }
+
+  public get charges(): number {
+    return this._charges;
+  }
+
+  public set charges(val: number) {
+    this._charges = Math.max(0, Math.min(val, this.maxCharges));
+  }
+
+  public get maxCharges(): number {
+    return this._maxCharges;
   }
 
   public override get displayName(): string {
@@ -122,12 +134,47 @@ export class RuneOfReturnItem extends Item {
   }
 }
 
-/** Finds the player's carried Rune of Return, if any. Treated as a singleton item
- * per the design spec; a player carrying more than one uses the first found. */
+/**
+ * Innate virtual Rune of Return bound directly to the player's spirit.
+ * Delegates charges and maxCharges directly to `Player.runeCharges` and `Player.runeMaxCharges`.
+ */
+export class InnateRuneOfReturnItem extends RuneOfReturnItem {
+  private playerRef: Player;
+
+  constructor(player: Player) {
+    super({
+      id: 'innate_rune_of_return',
+      name: 'Rune of Return',
+      unidentifiedName: 'Rune of Return',
+      description: 'Bound to your spirit. Channels a dimensional recall back to town or your departure anchor.',
+      charges: player.runeCharges,
+    });
+    this.playerRef = player;
+  }
+
+  public override get charges(): number {
+    return this.playerRef.runeCharges;
+  }
+
+  public override set charges(val: number) {
+    this.playerRef.runeCharges = Math.max(0, Math.min(val, this.maxCharges));
+  }
+
+  public override get maxCharges(): number {
+    return this.playerRef.runeMaxCharges ?? RUNE_MAX_CHARGES;
+  }
+}
+
+/** Finds the player's carried Rune of Return, or returns the innate spiritual rune if discovered. */
 export function findRuneOfReturn(player: Player): RuneOfReturnItem | undefined {
-  return player.inventory
-    .getAllCarriedItems()
+  const carried = player.inventory
+    ?.getAllCarriedItems?.()
     .find((item): item is RuneOfReturnItem => item instanceof RuneOfReturnItem);
+  if (carried) return carried;
+  if (player.hasDiscoveredRune) {
+    return new InnateRuneOfReturnItem(player);
+  }
+  return undefined;
 }
 
 function isChanneling(player: Player): boolean {
@@ -155,6 +202,13 @@ export function startOrContinueChannel(
     return { success: false, message: 'The Rune of Return has no charges remaining.' };
   }
 
+  // If channeling in town (Floor 0), verify an active dungeon return anchor exists
+  if (engine.currentFloor === 0) {
+    if (!player.deepestRecallFloor || player.deepestRecallFloor <= 0) {
+      return { success: false, message: 'You have no active dungeon return anchor.' };
+    }
+  }
+
   const channelTime = computeChannelTime(player.runeMastery.celerityPoints, engine.currentFloor);
   const banked = Math.min(player.runeChannelBankedTurns, channelTime - 1);
   const duration = Math.max(1, channelTime - banked);
@@ -172,10 +226,14 @@ export function startOrContinueChannel(
     engine
   );
 
+  const destinationDesc = engine.currentFloor === 0
+    ? `returning to Floor ${player.deepestRecallFloor}`
+    : 'recalling to town';
+
   engine.log(
     banked > 0
-      ? `You resume channeling the Rune of Return, drawing on banked power (${duration} turns remaining)...`
-      : `You begin channeling the Rune of Return (${duration} turns)...`
+      ? `You resume channeling the Rune of Return (${destinationDesc}), drawing on banked power (${duration} turns remaining)...`
+      : `You begin channeling the Rune of Return (${destinationDesc}) (${duration} turns)...`
   );
 
   return { success: true, message: 'Channel started.' };
@@ -202,10 +260,15 @@ export function interruptChannel(engine: GameEngine, player: Player, message: st
 }
 
 /** Refill hook: full, free, instant, regardless of pack (only the trigger and its
- * flavor text are pack-provided — see `GameContentManifest.runeOfReturn`). */
-export function attuneRuneOfReturn(item: RuneOfReturnItem): string {
-  item.charges = item.maxCharges;
-  return `The Rune of Return hums with restored power! (${item.charges}/${item.maxCharges} charges)`;
+ * flavor text are pack-provided — see `GameContentManifest.runeOfReturn`). Accepts
+ * either a physical RuneOfReturnItem or the Player directly. */
+export function attuneRuneOfReturn(target: Player | RuneOfReturnItem): string {
+  if ('runeCharges' in target) {
+    target.runeCharges = target.runeMaxCharges ?? RUNE_MAX_CHARGES;
+    return `The Rune of Return hums with restored power! (${target.runeCharges}/${target.runeMaxCharges} charges)`;
+  }
+  target.charges = target.maxCharges;
+  return `The Rune of Return hums with restored power! (${target.charges}/${target.maxCharges} charges)`;
 }
 
 /** Spends one of the player's unspent mastery points on a Rune of Return track,
@@ -239,8 +302,27 @@ function completeChannel(player: Player, engine: GameEngine): string | undefined
     return 'The channel completes, but you have no charge left to spend on it. It fizzles harmlessly.';
   }
   item.charges -= 1;
-  engine.log('*** The Rune of Return flares white-hot and unravels the air around you! ***');
-  engine.changeFloor(0);
+  player.runeCharges = item.charges;
+
+  if (engine.currentFloor === 0) {
+    const targetFloor = player.deepestRecallFloor;
+    const targetPos = player.recallPosition;
+    player.deepestRecallFloor = undefined;
+    player.recallPosition = undefined;
+
+    if (!targetFloor || targetFloor <= 0) {
+      return 'The rune flares, but your anchor has dissolved into nothingness.';
+    }
+
+    engine.log(`*** The Rune of Return blazes with portal energy, opening a path back to Floor ${targetFloor}! ***`);
+    engine.changeFloor(targetFloor, targetPos);
+  } else {
+    player.deepestRecallFloor = engine.currentFloor;
+    player.recallPosition = { x: player.x, y: player.y };
+
+    engine.log(`*** The Rune of Return flares white-hot and unravels the air around you! (Return anchor set to Floor ${engine.currentFloor}) ***`);
+    engine.changeFloor(0);
+  }
   return undefined;
 }
 

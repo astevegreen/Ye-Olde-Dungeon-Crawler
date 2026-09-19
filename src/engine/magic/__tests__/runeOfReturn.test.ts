@@ -6,6 +6,9 @@ import { Player } from '../../entities/player';
 import { Monster } from '../../entities/monster';
 import { WaitAction } from '../../actions/wait';
 import { MovementAction } from '../../actions/movement';
+import { PickUpAction, LootFromContainerAction } from '../../actions/inventory-actions';
+import { Container } from '../../items/container';
+import { Item } from '../../items/item';
 import { serializeGame, deserializeGame } from '../../storage/serializer';
 import {
   RuneOfReturnItem,
@@ -377,6 +380,166 @@ describe('Rune of Return — persistence', () => {
     expect(restored.engine.player.statusManager.hasStatus(RUNE_OF_RETURN_STATUS)).toBe(true);
     const restoredEffect = restored.engine.player.statusManager.getStatus(RUNE_OF_RETURN_STATUS)!;
     expect(restoredEffect.data?.channelTime).toBe(4); // max(3, 6 - celerityPoints=2)
+  });
+});
+
+describe('Rune of Return — Two-Way Dimensional Recall', () => {
+  it('anchors dungeon floor and coordinates when recalling to town, consuming 1 charge', () => {
+    const { engine, player } = buildEngine(5);
+    player.x = 12;
+    player.y = 18;
+    const rune = findRuneOfReturn(player)!;
+    rune.charges = 3;
+
+    // Start channel on floor 5
+    const startRes = engine.handlePlayerAction(new ChannelRuneOfReturnAction(player));
+    expect(startRes.success).toBe(true);
+    expect(player.statusManager.hasStatus(RUNE_OF_RETURN_STATUS)).toBe(true);
+
+    // Sustain until complete
+    const channelTime = computeChannelTime(0, 5); // 6 + depthBonus(0) = 6 turns
+    for (let i = 0; i < channelTime - 1; i++) {
+      engine.handlePlayerAction(new WaitAction(player));
+    }
+
+    // Now player should be on Floor 0 (Town), with return anchor set to Floor 5 at (12, 18)
+    expect(engine.currentFloor).toBe(0);
+    expect(player.deepestRecallFloor).toBe(5);
+    expect(player.recallPosition).toEqual({ x: 12, y: 18 });
+    expect(rune.charges).toBe(2);
+  });
+
+  it('fails to channel in town if no return anchor is active', () => {
+    const { engine, player } = buildEngine(0);
+    player.deepestRecallFloor = undefined;
+    player.recallPosition = undefined;
+
+    const res = engine.handlePlayerAction(new ChannelRuneOfReturnAction(player));
+    expect(res.success).toBe(false);
+    expect(res.message).toBe('You have no active dungeon return anchor.');
+    expect(player.statusManager.hasStatus(RUNE_OF_RETURN_STATUS)).toBe(false);
+  });
+
+  it('channels in town and teleports player back to anchored floor and position, clearing the anchor', () => {
+    const { engine, player } = buildEngine(0);
+    player.deepestRecallFloor = 4;
+    player.recallPosition = { x: 14, y: 16 };
+    const rune = findRuneOfReturn(player)!;
+    rune.charges = 2;
+
+    const startRes = engine.handlePlayerAction(new ChannelRuneOfReturnAction(player));
+    expect(startRes.success).toBe(true);
+    expect(player.statusManager.hasStatus(RUNE_OF_RETURN_STATUS)).toBe(true);
+
+    const channelTime = computeChannelTime(0, 0); // 6 turns in town
+    for (let i = 0; i < channelTime - 1; i++) {
+      engine.handlePlayerAction(new WaitAction(player));
+    }
+
+    expect(engine.currentFloor).toBe(4);
+    expect(player.deepestRecallFloor).toBeUndefined();
+    expect(player.recallPosition).toBeUndefined();
+    expect(rune.charges).toBe(1);
+    // Player spawned at safe position near (14, 16)
+    expect(Math.abs(player.x - 14)).toBeLessThanOrEqual(5);
+    expect(Math.abs(player.y - 16)).toBeLessThanOrEqual(5);
+  });
+});
+
+describe('Rune of Return — Physical Item Dissolution & Innate Relic', () => {
+  it('dissolves physical item upon pickup and grants innate spirit power without using pack slots', () => {
+    const map = new GameMap(20, 20, TILES.FLOOR);
+    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } });
+    const engine = new GameEngine({ map, player, floor: 1 });
+
+    const groundRune = new RuneOfReturnItem({ id: 'rune-floor-5', name: 'Rune of Return', charges: 3 });
+    map.addItemAt(5, 5, groundRune);
+
+    expect(player.hasDiscoveredRune).toBe(false);
+    expect(map.getItemsAt(5, 5).length).toBe(1);
+
+    const pickup = new PickUpAction(player);
+    const res = engine.handlePlayerAction(pickup);
+
+    expect(res.success).toBe(true);
+    expect(player.hasDiscoveredRune).toBe(true);
+    expect(player.runeCharges).toBe(3);
+    // Physical item removed from ground and NOT added to pack
+    expect(map.getItemsAt(5, 5).length).toBe(0);
+    expect(player.inventory.primaryPack.getItems().length).toBe(0);
+
+    // Innate rune is still found and usable
+    const innateRune = findRuneOfReturn(player);
+    expect(innateRune).toBeDefined();
+    expect(innateRune?.charges).toBe(3);
+  });
+
+  it('can be picked up even if the player pack is completely full', () => {
+    const map = new GameMap(20, 20, TILES.FLOOR);
+    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } });
+    const engine = new GameEngine({ map, player, floor: 1 });
+
+    // Fill the pack to capacity (e.g. 50 items or heavy items)
+    for (let i = 0; i < 50; i++) {
+      player.inventory.primaryPack.addItem(
+        new Item({ id: `junk-${i}`, name: `Heavy Anvil ${i}`, category: 'misc', weight: 1000, bulk: 100 })
+      );
+    }
+
+    const groundRune = new RuneOfReturnItem({ id: 'rune-vault', name: 'Rune of Return' });
+    map.addItemAt(5, 5, groundRune);
+
+    const pickup = new PickUpAction(player);
+    const res = engine.handlePlayerAction(pickup);
+
+    expect(res.success).toBe(true);
+    expect(player.hasDiscoveredRune).toBe(true);
+    expect(map.getItemsAt(5, 5).length).toBe(0);
+  });
+
+  it('dissolves when looted from a container', () => {
+    const map = new GameMap(20, 20, TILES.FLOOR);
+    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } });
+    const engine = new GameEngine({ map, player, floor: 1 });
+
+    const chest = new Container({
+      id: 'ice-chest',
+      name: 'Frost Chest',
+      category: 'container',
+      weight: 1000,
+      bulk: 1000,
+      containerType: 'chest',
+      maxWeightCapacity: 1000,
+      maxBulkCapacity: 1000,
+    });
+    const runeInChest = new RuneOfReturnItem({ id: 'rune-chest', name: 'Rune of Return', charges: 3 });
+    chest.addItem(runeInChest);
+
+    const lootAction = new LootFromContainerAction(player, chest, runeInChest);
+    const res = engine.handlePlayerAction(lootAction);
+
+    expect(res.success).toBe(true);
+    expect(player.hasDiscoveredRune).toBe(true);
+    expect(chest.getItems().length).toBe(0);
+    expect(player.inventory.primaryPack.getItems().length).toBe(0);
+    expect(player.runeCharges).toBe(3);
+  });
+
+  it('Thrain attunement refills innate player rune charges for free with no item in pack', () => {
+    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } });
+    player.hasDiscoveredRune = true;
+    player.runeCharges = 1;
+    player.runeMaxCharges = 3;
+
+    expect(player.inventory.primaryPack.getItems().length).toBe(0);
+
+    const rune = findRuneOfReturn(player)!;
+    expect(rune).toBeDefined();
+    expect(rune.charges).toBe(1);
+
+    const msg = attuneRuneOfReturn(rune);
+    expect(msg).toContain('3/3');
+    expect(player.runeCharges).toBe(3);
   });
 });
 

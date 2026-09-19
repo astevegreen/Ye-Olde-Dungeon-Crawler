@@ -12,6 +12,7 @@ import {
   allocateRuneMastery as allocateRuneMasteryPoints,
   type RuneOfReturnMastery,
   type RuneOfReturnTrack,
+  RUNE_MAX_CHARGES,
 } from '../magic/runeOfReturn';
 
 export interface PlayerConfig {
@@ -42,6 +43,8 @@ export interface PlayerConfig {
   runeMastery?: RuneOfReturnMastery;
   runeChannelBankedTurns?: number;
   hasDiscoveredRune?: boolean;
+  runeCharges?: number;
+  runeMaxCharges?: number;
 }
 
 const DEFAULT_PLAYER_STATS: CombatStats = {
@@ -79,6 +82,8 @@ export class Player extends Actor {
   /** Turns of channel progress banked from the last interrupt (Steadfast Weave). */
   public runeChannelBankedTurns: number;
   public hasDiscoveredRune: boolean;
+  public runeCharges: number;
+  public runeMaxCharges: number;
   public pactMutatorsSupplier?: () => import('../pacts/pactManager').RunPactMutatorRules;
 
   constructor(config: PlayerConfig) {
@@ -121,6 +126,10 @@ export class Player extends Actor {
     this.runeMastery = config.runeMastery ? { ...config.runeMastery } : defaultRuneMastery();
     this.runeChannelBankedTurns = config.runeChannelBankedTurns ?? 0;
     this.hasDiscoveredRune = config.hasDiscoveredRune ?? false;
+    this.runeMaxCharges = config.runeMaxCharges ?? RUNE_MAX_CHARGES;
+    this.runeCharges = config.runeCharges !== undefined
+      ? Math.max(0, Math.min(config.runeCharges, this.runeMaxCharges))
+      : this.runeMaxCharges;
   }
 
   public get attributes(): CharacterAttributes {

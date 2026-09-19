@@ -2280,5 +2280,83 @@ export const COTW_SPRITE_RECIPES: Record<string, SpriteRecipe> = {
     ctx.fillRect(ox + 13, oy + 8, 2, 2);
     ctx.fillRect(ox + 17, oy + 8, 2, 2);
   },
+
+  rune_stone: (ctx, ox, oy) => {
+    // Ethereal azure halo/aura
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 16, 13, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Dark slate stone tablet body (rounded polygon)
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.moveTo(ox + 9, oy + 5);
+    ctx.lineTo(ox + 23, oy + 5);
+    ctx.lineTo(ox + 27, oy + 10);
+    ctx.lineTo(ox + 27, oy + 22);
+    ctx.lineTo(ox + 23, oy + 27);
+    ctx.lineTo(ox + 9, oy + 27);
+    ctx.lineTo(ox + 5, oy + 22);
+    ctx.lineTo(ox + 5, oy + 10);
+    ctx.closePath();
+    ctx.fill();
+
+    // Interior stone face texture
+    ctx.fillStyle = '#334155';
+    ctx.beginPath();
+    ctx.moveTo(ox + 10, oy + 7);
+    ctx.lineTo(ox + 22, oy + 7);
+    ctx.lineTo(ox + 25, oy + 11);
+    ctx.lineTo(ox + 25, oy + 21);
+    ctx.lineTo(ox + 22, oy + 25);
+    ctx.lineTo(ox + 10, oy + 25);
+    ctx.lineTo(ox + 7, oy + 21);
+    ctx.lineTo(ox + 7, oy + 11);
+    ctx.closePath();
+    ctx.fill();
+
+    // Stone chiseled rim highlight (top-left)
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(ox + 9, oy + 5, 14, 1);
+    ctx.fillRect(ox + 5, oy + 10, 1, 12);
+    ctx.fillRect(ox + 6, oy + 8, 2, 2);
+
+    // Weathered crack lines
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(ox + 8, oy + 13, 3, 1);
+    ctx.fillRect(ox + 11, oy + 14, 2, 1);
+    ctx.fillRect(ox + 22, oy + 18, 3, 1);
+
+    // Glowing cyan etched runic lines (Odal / Algiz recall sigil)
+    ctx.fillStyle = '#0284c7';
+    // Vertical channel stem
+    ctx.fillRect(ox + 15, oy + 9, 2, 14);
+    // Upper diamond / wings
+    ctx.fillRect(ox + 12, oy + 11, 2, 2);
+    ctx.fillRect(ox + 18, oy + 11, 2, 2);
+    ctx.fillRect(ox + 10, oy + 13, 2, 2);
+    ctx.fillRect(ox + 20, oy + 13, 2, 2);
+    // Crossed chevron base
+    ctx.fillRect(ox + 12, oy + 19, 2, 2);
+    ctx.fillRect(ox + 18, oy + 19, 2, 2);
+    ctx.fillRect(ox + 10, oy + 21, 2, 2);
+    ctx.fillRect(ox + 20, oy + 21, 2, 2);
+
+    // Arcane cyan bright core
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillRect(ox + 15, oy + 11, 2, 10);
+    ctx.fillRect(ox + 13, oy + 15, 6, 2);
+
+    // Hot-white focus center
+    ctx.fillStyle = '#f0f9ff';
+    ctx.fillRect(ox + 15, oy + 15, 2, 2);
+
+    // Floating runic sparks
+    ctx.fillStyle = '#7dd3fc';
+    ctx.fillRect(ox + 7, oy + 6, 1, 1);
+    ctx.fillRect(ox + 24, oy + 8, 1, 1);
+    ctx.fillRect(ox + 23, oy + 24, 1, 1);
+  },
 };
 

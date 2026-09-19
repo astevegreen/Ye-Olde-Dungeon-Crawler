@@ -1053,12 +1053,16 @@ export class ShopOverlay {
       ctx.font = `11px ${font}`;
       if (rune) {
         ctx.fillStyle = '#38bdf8';
-        ctx.fillText(`Rune of Return: ${rune.charges}/${rune.maxCharges} Charges (Fully Refilled)`, boxX + 14, startY + 48);
+        ctx.fillText(`Rune of Return: ${rune.charges}/${rune.maxCharges} Charges (Innate Spirit Power)`, boxX + 14, startY + 48);
         ctx.fillStyle = '#a3e635';
-        ctx.fillText('Attuned and ready for escape channeling in the dungeon depths.', boxX + 14, startY + 68);
+        if (_engine.player?.deepestRecallFloor) {
+          ctx.fillText(`Return Rift Active: Floor ${_engine.player.deepestRecallFloor} (Press [T] in town to return)`, boxX + 14, startY + 68);
+        } else {
+          ctx.fillText('Attuned and ready for recall channeling in the dungeon depths.', boxX + 14, startY + 68);
+        }
       } else {
         ctx.fillStyle = '#f87171';
-        ctx.fillText('You do not yet carry the Rune of Return.', boxX + 14, startY + 48);
+        ctx.fillText('You have not yet discovered the Rune of Return.', boxX + 14, startY + 48);
         ctx.fillStyle = theme.hudText;
         ctx.fillText('Thrain speaks of an ancient ice vault on Floor 5 guarded by Gálmr the Frost-Warden.', boxX + 14, startY + 68);
       }

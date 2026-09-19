@@ -217,6 +217,10 @@ export class RuneOfReturnTreeModal implements UIModal {
             <div>Tree Investment: <strong style="color: #38bdf8;">${totalInvested}/${RUNE_TOTAL_POINTS_CAP}</strong></div>
           </div>
 
+          <div style="margin-top: 6px; font-size: 12px; color: #94a3b8;">
+            Return Anchor: <strong style="color: ${player.deepestRecallFloor ? '#38bdf8' : '#64748b'};">${player.deepestRecallFloor ? `Floor ${player.deepestRecallFloor}` : 'None (Recalls to Town)'}</strong>
+          </div>
+
           <!-- Floor Timing Breakdown -->
           <div style="margin-top: 10px; padding: 6px 10px; background: rgba(15, 23, 42, 0.8); border: 1px solid #1e293b; border-radius: 4px; font-size: 12px; color: #94a3b8;">
             Channel Time (Floor ${currentFloor}): Base <strong style="color: #f8fafc;">${baseChannel}t</strong> + Depth Penalty <strong style="color: #f8fafc;">+${depthPenalty}t</strong> = <strong style="color: #38bdf8; font-size: 13px;">${effectiveChannel} turns</strong>

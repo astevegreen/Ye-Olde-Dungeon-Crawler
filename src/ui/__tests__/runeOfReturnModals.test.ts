@@ -154,6 +154,8 @@ describe('RuneOfReturnDiscoveryModal & RuneOfReturnTreeModal', () => {
       expect(el?.style.display).toBe('flex');
       expect(el?.innerHTML).toContain('ANCIENT RELIC DISCOVERED');
       expect(el?.innerHTML).toContain('THE RUNE OF RETURN');
+      expect(el?.innerHTML).toContain('dissolves into a pulse of ethereal light');
+      expect(el?.innerHTML).toContain('Two-Way Dimensional Recall:');
       expect(el?.innerHTML).toContain('Thrain the Rune-Smith');
       expect(el?.innerHTML).toContain('Channeling (T):');
       expect(el?.innerHTML).toContain('Vulnerability & Concentration:');
@@ -203,6 +205,7 @@ describe('RuneOfReturnDiscoveryModal & RuneOfReturnTreeModal', () => {
       expect(el?.innerHTML).toContain('Steadfast Weave');
       expect(el?.innerHTML).toContain('Unbound Casting');
       expect(el?.innerHTML).toContain('Unspent Stat Points:');
+      expect(el?.innerHTML).toContain('Return Anchor:');
       expect(el?.innerHTML).toContain('3/3');
     });
 

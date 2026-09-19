@@ -217,6 +217,8 @@ export interface SerializedPlayer {
    * attempt with the same charge (Steadfast Weave track). Resets to 0 on completion. */
   runeChannelBankedTurns?: number;
   hasDiscoveredRune?: boolean;
+  runeCharges?: number;
+  runeMaxCharges?: number;
 }
 
 export interface SerializedMonster {

@@ -9,7 +9,7 @@ import { Monster } from '../entities/monster';
 // the runtime class at all.
 import type { Companion } from '../entities/companion';
 import type { GameEngine } from '../engine';
-import { TILES } from '../grid/tile';
+import { getTileDefinition } from '../grid/tile';
 import { HookDispatcher } from '../hooks/hookDispatcher';
 import { DeathEnvelopeTracker } from '../analytics/deathEnvelope';
 
@@ -113,8 +113,8 @@ export class DeathResolver {
       }
 
       // Record kill in game state manager
-      const bossId = engine.manifest?.quest?.bossMonsterId ?? 'boss_hrungnir';
-      const isBoss = victim.definitionId === bossId || victim.definitionId === 'boss_hrungnir';
+      const bossId = engine.manifest?.quest?.bossMonsterId;
+      const isBoss = bossId ? victim.definitionId === bossId : false;
       if (isBoss) {
         const bossDeathMsg = engine.manifest?.quest?.bossEntryMessage
           ? `*** ${victim.name.toUpperCase()} HAS FALLEN! ***`
@@ -124,8 +124,14 @@ export class DeathResolver {
         engine.log(relicMsg);
 
         // Spawn victory portal at boss death coordinate
-        engine.map.setTile(victim.x, victim.y, TILES.GATEWAY_VALHALLA);
-        engine.log('*** A shimmering VICTORY PORTAL opens where the boss fell! Step through to claim victory! ***');
+        const victoryPortalTileId = engine.manifest?.quest?.victoryPortalTileId;
+        if (victoryPortalTileId) {
+          const portalDef = getTileDefinition(victoryPortalTileId);
+          if (portalDef) {
+            engine.map.setTile(victim.x, victim.y, portalDef);
+            engine.log('*** A shimmering VICTORY PORTAL opens where the boss fell! Step through to claim victory! ***');
+          }
+        }
 
         engine.emitDiscovery({
           type: 'boss_slain',

@@ -1,6 +1,6 @@
 import { PRNG } from '../dungeon/prng';
 import { GameMap } from '../grid/map';
-import { TILES } from '../grid/tile';
+import { TILES, getTileDefinition } from '../grid/tile';
 import type { Position, GameDifficulty } from '../types';
 import { DungeonGeneratorRegistry } from '../dungeon/generator';
 import { Monster } from '../entities/monster';
@@ -15,17 +15,6 @@ import type { MonsterScalingConfig } from '../types/monsterScaling';
 import { getMonsterDefinition, type MonsterDefinition } from '../bestiary/monsterDefinitions';
 import { Container } from '../items/container';
 import { RuneOfReturnItem } from '../magic/runeOfReturn';
-
-/**
- * Well-known id of the hand-placed floor-5 reward vault (a room with several
- * guarding monsters plus a chest containing the Rune of Return) — mirrors the
- * `'altar_tyr'` literal-id pattern just below rather than importing a content
- * constant (engine code must not import `src/content/`, ARCHITECTURE.md §3).
- * The matching `VaultBlueprint` is `src/content/cotw/vaults.ts`'s entry with
- * this same `id`; a pack without one simply never triggers this branch.
- */
-const FLOOR5_RUNE_VAULT_ID = 'floor5_rune_vault';
-
 export interface DungeonFloorResult {
   map: GameMap;
   playerSpawn: Position;
@@ -50,13 +39,13 @@ export class DungeonArc {
     y: number,
     floorNumber: number = 5,
     bossDef?: MonsterDefinition,
-    bossId: string = 'boss_hrungnir',
+    bossId: string = 'boss-monster',
     scalingConfig?: MonsterScalingConfig,
     difficulty?: GameDifficulty
   ): Monster {
     const def = bossDef ?? getMonsterDefinition(bossId) ?? {
       id: bossId,
-      name: bossId === 'boss_hrungnir' || bossId === 'boss-monster' ? 'Hrungnir the Hill Giant Chieftain' : 'Boss',
+      name: bossId === 'boss-monster' ? 'Dungeon Boss' : 'Boss',
       stats: { hp: 120, maxHp: 120, attack: 18, defense: 8 },
       speed: 80,
       aiType: 'brute',
@@ -68,8 +57,8 @@ export class DungeonArc {
           generate: (id) =>
             ItemFactory.createQuestRelic(
               id,
-              bossId === 'boss_hrungnir' || bossId === 'boss-monster'
-                ? 'The Sun-Stone of Freyr'
+              bossId === 'boss-monster'
+                ? 'Ancient Relic'
                 : 'Quest Relic',
               'The ancient radiant relic, warm to the touch. Returning it to town will bring lasting peace.'
             ),
@@ -173,7 +162,10 @@ export class DungeonArc {
       itemCandidates: itemCatalog,
       scalingConfig: manifest?.monsterScaling,
       difficulty,
-      forcedVaultId: floorNumber === 5 ? FLOOR5_RUNE_VAULT_ID : undefined,
+      forcedVaultId:
+        manifest?.runeOfReturn?.acquisition?.floor === floorNumber
+          ? manifest.runeOfReturn.acquisition.vaultId
+          : undefined,
     });
 
     const map = dungeon.map;
@@ -207,29 +199,37 @@ export class DungeonArc {
     // 4. Spawn Floor-scaled loot and chests
     populateDungeonLoot(map, dungeon.rooms, floorNumber, itemCatalog, populationRng);
 
-    // 5. Spawn Reference Choice Encounter: Ancient Altar of Tyr on Floor 3
-    if (floorNumber === 3 && manifest?.choices?.['altar_tyr']) {
-      const targetRoom =
-        dungeon.rooms.length > 2 ? dungeon.rooms[Math.floor(dungeon.rooms.length / 2)] : dungeon.rooms[0];
-      if (targetRoom) {
-        const altarX = targetRoom.centerX;
-        const altarY = targetRoom.centerY;
-        if (
-          (altarX !== playerSpawn.x || altarY !== playerSpawn.y) &&
-          (!stairsDown || altarX !== stairsDown.x || altarY !== stairsDown.y)
-        ) {
-          map.setTile(altarX, altarY, TILES.ALTAR_TYR);
+    // 5. Fixed tile placements declared in manifest (ARCHITECTURE.md P-03 stage 2)
+    if (manifest?.fixedTilePlacements?.length) {
+      for (const placement of manifest.fixedTilePlacements) {
+        if (placement.floor !== floorNumber) continue;
+        if (placement.requiresChoiceId && !manifest.choices?.[placement.requiresChoiceId]) continue;
+        const tileDef = getTileDefinition(placement.tileId);
+        if (!tileDef) continue;
+
+        if (placement.placement === 'middle_room_center') {
+          const targetRoom =
+            dungeon.rooms.length > 2 ? dungeon.rooms[Math.floor(dungeon.rooms.length / 2)] : dungeon.rooms[0];
+          if (targetRoom) {
+            const posX = targetRoom.centerX;
+            const posY = targetRoom.centerY;
+            if (
+              (posX !== playerSpawn.x || posY !== playerSpawn.y) &&
+              (!stairsDown || posX !== stairsDown.x || posY !== stairsDown.y)
+            ) {
+              map.setTile(posX, posY, tileDef);
+            }
+          }
         }
       }
     }
 
-    // 6. Guaranteed Floor-5 Reward: Rune of Return, guarded by several monsters
-    // in a hand-placed vault room (`forcedVaultId` above) rather than handed out
-    // free at character creation.
-    if (floorNumber === 5 && dungeon.forcedVaultChestSpawns?.length) {
+    // 6. Guaranteed Reward: Rune of Return, guarded by monsters in a hand-placed vault room
+    const runeAcquisition = manifest?.runeOfReturn?.acquisition;
+    if (runeAcquisition && floorNumber === runeAcquisition.floor && dungeon.forcedVaultChestSpawns?.length) {
       const chestPos = dungeon.forcedVaultChestSpawns[0];
       const rune = new RuneOfReturnItem({
-        id: `rune-of-return-f5-${seed ?? floorNumber}`,
+        id: `rune-of-return-f${floorNumber}-${seed ?? floorNumber}`,
         name: 'Rune of Return',
         unidentifiedName: 'Carved Rune Stone',
         identified: true,
@@ -259,7 +259,7 @@ export class DungeonArc {
 
   /**
    * Handcrafted Climax Floor: The Chieftain's Lair.
-   * Grand Hall with decorative stone pillars, throne dais, bodyguards, and Hrungnir.
+   * Grand Hall with decorative stone pillars, throne dais, bodyguards, and boss.
    */
   public static generateChieftainLair(
     floorNumber: number = 5,
@@ -321,7 +321,7 @@ export class DungeonArc {
     const playerSpawn: Position = { x: 22, y: 28 };
 
     // Spawn Boss: on the Throne Dais
-    const bossId = questArc?.bossMonsterId ?? 'boss_hrungnir';
+    const bossId = questArc?.bossMonsterId ?? 'boss-monster';
     const bossDef = (Array.isArray(manifest?.monsters) ? manifest?.monsters.find((m) => m.id === bossId) : undefined) ??
       getMonsterDefinition(bossId);
     const boss = this.createBoss(22, 7, floorNumber, bossDef, bossId, manifest?.monsterScaling, difficulty);

@@ -69,6 +69,8 @@ export interface TileDefinition {
   locked?: boolean;
   lockDifficulty?: number;
   trapId?: string;
+  visual?: string;
+  landmarkLabel?: string;
 }
 
 export type EntityType = 'player' | 'monster' | 'npc';

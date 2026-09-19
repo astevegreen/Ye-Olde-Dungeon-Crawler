@@ -113,12 +113,24 @@ export const cotwManifest: GameContentManifest = {
   statusHandlers: {
     [GIANT_BLOOD_STATUS]: giantBloodHandler,
   },
+  fixedTilePlacements: [
+    {
+      floor: 3,
+      tileId: 'altar_tyr',
+      placement: 'middle_room_center',
+      requiresChoiceId: 'altar_tyr',
+    },
+  ],
   runeOfReturn: {
     attunementNpcId: 'npc-rune-smith',
     trackNames: {
       celerity: 'Channel Celerity',
       weave: 'Steadfast Weave',
       mobility: 'Unbound Casting',
+    },
+    acquisition: {
+      floor: 5,
+      vaultId: 'floor5_rune_vault',
     },
   },
 };

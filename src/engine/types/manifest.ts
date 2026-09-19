@@ -267,6 +267,8 @@ export interface QuestArcDefinition {
   championProclamation?: string;
   bossLairTitle?: string;
   bossEntryMessage?: string;
+  victoryPortalTileId?: string;
+  townReturnPosition?: Position;
   bossFloorLayout: BossFloorLayoutDefinition;
   floorEncounters: Record<number, FloorEncounterConfig>;
   floorGenerators?: Record<number, string>;
@@ -472,6 +474,15 @@ export interface GameContentManifest {
    * still works without it (charges just can't be refilled).
    */
   runeOfReturn?: RuneOfReturnManifestConfig;
+  /** Fixed tile placements stamped at specific floor generation (ARCHITECTURE.md P-03 stage 2). */
+  fixedTilePlacements?: FixedTilePlacement[];
+}
+
+export interface FixedTilePlacement {
+  floor: number;
+  tileId: string;
+  placement: 'middle_room_center';
+  requiresChoiceId?: string;
 }
 
 /** See `GameContentManifest.runeOfReturn`. */
@@ -483,6 +494,8 @@ export interface RuneOfReturnManifestConfig {
   /** Pack-provided display names for the three progression tracks, shown in logs and
    * (eventually) the level-up UI. Falls back to generic engine names. */
   trackNames?: { celerity?: string; weave?: string; mobility?: string };
+  /** Location where the Rune of Return is first acquired. */
+  acquisition?: { floor: number; vaultId: string };
 }
 
 export type {

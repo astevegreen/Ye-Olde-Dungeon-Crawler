@@ -208,58 +208,45 @@ export class MovementAction implements Action {
         engine.log("You stand upon stairs leading down. Press '>' or [Enter] to descend.");
       } else if (handlerId === 'stairs_up' || destTile?.isStairsUp) {
         engine.log("You stand upon stairs leading up. Press '<' or [Enter] to ascend.");
-      } else if (handlerId === 'gateway_valhalla') {
-        engine.log('*** You step into the shimmering Gateway to Valhalla! ***');
+      } else if (handlerId === 'quest_victory_portal') {
+        engine.log('*** You step into the shimmering victory portal! ***');
         engine.gameState?.triggerVictory(engine, (engine as any).profileManager);
-        engine.changeFloor(0, { x: 25, y: 23 });
-      } else if (handlerId === 'altar_tyr') {
-        const isPurified = engine.getWorldFlag('tyr_purified');
-        const isDesecrated = engine.getWorldFlag('tyr_desecrated');
-        if (isPurified) {
-          engine.log('The purified Altar of Tyr radiates peace. The runes remain holy and silent.');
-        } else if (isDesecrated) {
-          engine.log('The shattered Altar of Tyr lies cold and ruined. Its power is spent.');
-        } else {
-          const choiceDef = engine.manifest?.choices?.['altar_tyr'];
-          if (choiceDef) {
-            if (engine.onChoiceInteract) {
-              engine.onChoiceInteract(
-                choiceDef,
-                (optionId: string) => {
-                  engine.handlePlayerAction(new ExecuteChoiceAction(this.entity as Player, choiceDef, optionId));
-                },
-                () => {
-                  this.entity.energy += cost;
-                }
-              );
-            } else {
-              engine.log('You stand before the Ancient Altar of Tyr. Its divine power awaits your decision.');
+        const returnPos =
+          engine.manifest?.quest?.townReturnPosition ??
+          engine.manifest?.town?.playerSpawn ??
+          { x: 5, y: 5 };
+        engine.changeFloor(0, returnPos);
+      } else if (handlerId && engine.manifest?.choices?.[handlerId]) {
+        // Generic tile-triggered choice (ARCHITECTURE.md §3): any tile whose
+        // interactionHandlerId matches a manifest.choices key becomes an interactive
+        // decision point, with zero campaign-specific names baked into engine code.
+        const choiceDef = engine.manifest.choices[handlerId];
+        let resolvedMsg: string | undefined;
+        if (choiceDef.resolvedStates) {
+          for (const state of choiceDef.resolvedStates) {
+            if (engine.getWorldFlag(state.flag)) {
+              resolvedMsg = state.message;
+              break;
             }
           }
         }
-      } else if (handlerId && engine.manifest?.choices?.[handlerId] && !engine.getWorldFlag(`${handlerId}_resolved`)) {
-        // Generic tile-triggered choice (ARCHITECTURE.md §3): any tile whose
-        // interactionHandlerId matches a manifest.choices key becomes an interactive
-        // decision point, with zero campaign-specific names baked in here — unlike
-        // the altar_tyr branch above (a known, tracked exception; see P-03's
-        // remaining tile-type work), a pack needs no engine change to add one.
-        // Resolves at most once: the handler-scoped `<handlerId>_resolved` flag is
-        // set the moment any option is actually chosen (not on open, so cancelling
-        // leaves it re-triggerable).
-        const choiceDef = engine.manifest.choices[handlerId];
-        if (engine.onChoiceInteract) {
-          engine.onChoiceInteract(
-            choiceDef,
-            (optionId: string) => {
-              engine.setWorldFlag(`${handlerId}_resolved`, true);
-              engine.handlePlayerAction(new ExecuteChoiceAction(this.entity as Player, choiceDef, optionId));
-            },
-            () => {
-              this.entity.energy += cost;
-            }
-          );
-        } else {
-          engine.log(`You stand before ${choiceDef.title}. It awaits your decision.`);
+        if (resolvedMsg) {
+          engine.log(resolvedMsg);
+        } else if (!engine.getWorldFlag(`${handlerId}_resolved`)) {
+          if (engine.onChoiceInteract) {
+            engine.onChoiceInteract(
+              choiceDef,
+              (optionId: string) => {
+                engine.setWorldFlag(`${handlerId}_resolved`, true);
+                engine.handlePlayerAction(new ExecuteChoiceAction(this.entity as Player, choiceDef, optionId));
+              },
+              () => {
+                this.entity.energy += cost;
+              }
+            );
+          } else {
+            engine.log(`You stand before ${choiceDef.title}. It awaits your decision.`);
+          }
         }
       }
 

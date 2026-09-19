@@ -174,7 +174,6 @@ export function scaleMonsterStats(
 export function isEligibleDungeonMonster(def: MonsterDefinition, currentFloor: number): boolean {
   return (
     !def.id.toLowerCase().includes('boss') &&
-    !def.name.toLowerCase().includes('hrungnir') &&
     (def.minFloor ?? 1) <= currentFloor
   );
 }

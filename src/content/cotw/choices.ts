@@ -101,5 +101,15 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
     ],
     cancelable: true,
     cancelLabel: 'Leave Untouched for Now',
+    resolvedStates: [
+      {
+        flag: 'tyr_purified',
+        message: 'The purified Altar of Tyr radiates peace. The runes remain holy and silent.',
+      },
+      {
+        flag: 'tyr_desecrated',
+        message: 'The shattered Altar of Tyr lies cold and ruined. Its power is spent.',
+      },
+    ],
   },
 };

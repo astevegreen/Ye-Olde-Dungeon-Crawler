@@ -41,6 +41,8 @@ export const COTW_QUEST: QuestArcDefinition = {
   relicItemId: 'hearth_tear_fragment',
   victoryNpcId: 'npc-olaf',
   victoryFloor: 0,
+  victoryPortalTileId: 'gateway_valhalla',
+  townReturnPosition: { x: 25, y: 23 },
   victoryDialogue:
     '✦✦✦ The saga is told and retold in Bjarnarhaven’s halls: the Hearth-Tear reclaimed, and Níðhögg’s root answered at last. ✦✦✦',
   victoryScoreBonus: 8000,

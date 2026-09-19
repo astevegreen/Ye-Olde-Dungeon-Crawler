@@ -37,8 +37,8 @@ export class GameStateManager {
 
   public recordMonsterKill(monster: Monster, engine?: GameEngine): void {
     this.monstersKilled += 1;
-    const bossId = engine?.manifest?.quest?.bossMonsterId ?? 'boss_hrungnir';
-    if (monster.definitionId === bossId || (bossId === 'boss_hrungnir' && monster.definitionId === 'boss_hrungnir') || monster.definitionId === 'boss-monster') {
+    const bossId = engine?.manifest?.quest?.bossMonsterId;
+    if ((bossId && monster.definitionId === bossId) || monster.definitionId === 'boss-monster') {
       this.bossDefeated = true;
     }
   }
@@ -92,7 +92,7 @@ export class GameStateManager {
   /**
    * Triggers the grand victory sequence for the given ending (from
    * `checkVictoryEligible`, or omitted for the legacy single-ending behavior),
-   * records champion into the Hall of Valhalla, and updates profile status to
+   * records champion into the leaderboard, and updates profile status to
    * 'victorious'.
    */
   public triggerVictory(engine: GameEngine, profileManager?: ProfileManager, endingId?: string): ValhallaEntry {
@@ -148,7 +148,7 @@ export class GameStateManager {
   }
 
   /**
-   * Triggers permadeath, records fallen hero into the Hall of Valhalla,
+   * Triggers permadeath, records fallen hero into the leaderboard,
    * and updates profile status to 'fallen'.
    */
   public triggerDeath(engine: GameEngine, killer?: Entity, profileManager?: ProfileManager): ValhallaEntry {

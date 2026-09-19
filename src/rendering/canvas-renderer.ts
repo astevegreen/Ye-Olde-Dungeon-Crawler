@@ -760,8 +760,8 @@ export class CanvasRenderer {
     const spriteKey = getTerrainSpriteKey(tile.type, currentFloor, tileZoneBands, buildingType);
     this.atlas.drawSprite(this.ctx, spriteKey, px, py, cs, visibility);
 
-    if (tile.type === 'gateway_valhalla') {
-      this.drawFixtureOverlay(px, py, cs, tile.type, visibility);
+    if (tile.visual === 'portal' || tile.type === 'gateway_valhalla') {
+      this.drawFixtureOverlay(px, py, cs, tile.visual ?? tile.type, visibility);
     } else if (
       tile.type === 'shallow_water' ||
       tile.type === 'chasm' ||
@@ -787,6 +787,7 @@ export class CanvasRenderer {
     const cy = py + cs / 2;
 
     switch (type) {
+      case 'portal':
       case 'gateway_valhalla': {
         this.ctx.fillStyle = isVisible ? 'rgba(234, 179, 8, 0.35)' : 'rgba(161, 98, 7, 0.2)';
         this.ctx.beginPath();

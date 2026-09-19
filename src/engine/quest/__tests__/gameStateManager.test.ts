@@ -52,7 +52,7 @@ describe('GameStateManager & Win/Loss Sequences', () => {
     expect(gameState.deepestFloor).toBe(3);
   });
 
-  it('records monster kills and flags boss defeat when Hrungnir is slain', () => {
+  it('records monster kills and flags boss defeat when boss is slain', () => {
     const minion = new Monster({
       id: 'minion-1',
       name: 'Goblin',
@@ -67,13 +67,13 @@ describe('GameStateManager & Win/Loss Sequences', () => {
 
     const boss = new Monster({
       id: 'boss-1',
-      name: 'Hrungnir the Hill Giant Chieftain',
+      name: 'Dungeon Boss',
       position: { x: 7, y: 5 },
       stats: { hp: 120, maxHp: 120, attack: 18, defense: 8 },
-      definitionId: 'boss_hrungnir',
+      definitionId: 'boss-monster',
     });
 
-    gameState.recordMonsterKill(boss);
+    gameState.recordMonsterKill(boss, engine);
     expect(gameState.monstersKilled).toBe(2);
     expect(gameState.bossDefeated).toBe(true);
   });

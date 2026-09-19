@@ -110,4 +110,24 @@ describe('Generic tile-triggered choice', () => {
     engine.handlePlayerAction(new MovementAction(player, 0, 1));
     expect(interactCount).toBe(0);
   });
+
+  it('displays resolvedState message instead of prompting when a resolvedState flag is set', () => {
+    const choiceWithResolved: ChoiceDefinition = {
+      ...TEST_CHOICE,
+      resolvedStates: [
+        { flag: 'shrine_cleansed', message: 'The shrine radiates serene calm.' },
+      ],
+    };
+    const { engine, player } = buildEngine(choiceWithResolved);
+    engine.setWorldFlag('shrine_cleansed', true);
+
+    let interactCount = 0;
+    engine.onChoiceInteract = () => {
+      interactCount++;
+    };
+
+    engine.handlePlayerAction(new MovementAction(player, 1, 0));
+    expect(interactCount).toBe(0);
+    expect(engine.messages).toContain('The shrine radiates serene calm.');
+  });
 });

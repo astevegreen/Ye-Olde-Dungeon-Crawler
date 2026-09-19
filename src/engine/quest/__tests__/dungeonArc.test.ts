@@ -27,7 +27,7 @@ describe('DungeonArc & Floor 5 Chieftain Encounter', () => {
     expect(downTile?.type).toBe('stairs_down');
   });
 
-  it('generates Floor 5 (The Chieftain\'s Lair) with Hrungnir, stairs up, and no stairs down', () => {
+  it('generates Floor 5 (The Chieftain\'s Lair) with stairs up, and no stairs down', () => {
     const floor5 = DungeonArc.generateFloor(5);
     expect(floor5.map.width).toBe(44);
     expect(floor5.map.height).toBe(34);
@@ -36,18 +36,18 @@ describe('DungeonArc & Floor 5 Chieftain Encounter', () => {
     expect(floor5.boss).toBeDefined();
 
     const boss = floor5.boss!;
-    expect(boss.name).toBe('Hrungnir the Hill Giant Chieftain');
+    expect(boss.name).toBe('Dungeon Boss');
     expect(boss.hp).toBe(120);
     expect(boss.attack).toBe(18);
     expect(boss.defense).toBe(8);
 
-    // Guaranteed Sun-Stone of Freyr loot drop rule
-    const sunStoneRule = boss.lootTable.find((r) => {
+    // Guaranteed relic loot drop rule
+    const relicRule = boss.lootTable.find((r) => {
       const itm = r.generate('test-check', () => 0.5);
-      return itm.name === 'The Sun-Stone of Freyr';
+      return itm.name === 'Ancient Relic';
     });
-    expect(sunStoneRule).toBeDefined();
-    expect(sunStoneRule!.chance).toBe(1.0);
+    expect(relicRule).toBeDefined();
+    expect(relicRule!.chance).toBe(1.0);
   });
 
   it('detects when the player carries The Sun-Stone of Freyr', () => {

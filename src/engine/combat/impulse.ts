@@ -93,8 +93,8 @@ export function applyImpulse(
 
     // 1. Chasm Check: Fatal plunge (or heavy damage for massive bosses)
     if (nextTile.type === 'chasm') {
-      const bossId = engine.manifest?.quest?.bossMonsterId ?? 'boss_hrungnir';
-      const isBoss = (target as any).definitionId === bossId || target.maxHp >= 200;
+      const bossId = engine.manifest?.quest?.bossMonsterId;
+      const isBoss = (bossId && (target as any).definitionId === bossId) || target.maxHp >= 200;
 
       if (isBoss) {
         const fallDmg = Math.max(50, Math.floor(target.maxHp * 0.5));

@@ -33,6 +33,11 @@ export interface ChoiceOption {
   consequences: ChoiceConsequence[];
 }
 
+export interface ChoiceResolvedState {
+  flag: string;
+  message: string;
+}
+
 export interface ChoiceDefinition {
   id: string;
   title: string;
@@ -40,4 +45,5 @@ export interface ChoiceDefinition {
   options: ChoiceOption[];
   cancelable?: boolean;
   cancelLabel?: string;
+  resolvedStates?: ChoiceResolvedState[];
 }

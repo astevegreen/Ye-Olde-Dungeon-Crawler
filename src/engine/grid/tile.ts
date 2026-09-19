@@ -99,7 +99,9 @@ export const TILES: Record<string, TileDefinition> = {
     transparent: true,
     glyph: '▲',
     description: 'A divine golden vortex radiating celestial light. Step through to claim eternal victory!',
-    interactionHandlerId: 'gateway_valhalla',
+    interactionHandlerId: 'quest_victory_portal',
+    visual: 'portal',
+    landmarkLabel: 'Valhalla Gateway ✨',
   },
   SHALLOW_WATER: {
     type: 'shallow_water',
@@ -150,6 +152,7 @@ export const TILES: Record<string, TileDefinition> = {
     glyph: '⛩',
     description: 'A weathered runic altar consecrated to Tyr, god of justice. Blood-stained defilement clings to the ancient runes.',
     interactionHandlerId: 'altar_tyr',
+    landmarkLabel: 'Altar of Tyr ⚖️',
   },
 };
 

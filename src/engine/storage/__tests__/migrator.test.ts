@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { defaultMigrator, CURRENT_SCHEMA_VERSION, type VersionedSaveEnvelope } from '../migrator';
 import { decompactTiles } from '../compaction';
+import { deserializeMapObject } from '../serializer';
+import type { SerializedMap } from '../types';
+import { COTW_TILES } from '../../../content/cotw';
 
 describe('Schema Migrator & Save State Versioning', () => {
   it('migrates legacy v0 save directly into v2 versioned and compacted envelope', () => {
@@ -499,6 +502,50 @@ describe('Schema Migrator & Save State Versioning', () => {
     expect(result.envelope.data.map.tilesRle).toBe('4W');
     expect(result.envelope.data.map.lastVisitedTick).toBe(0);
     expect(result.envelope.data.planes).toBeDefined();
+  });
+
+  it('migrates v10 save payload forward to CURRENT_SCHEMA_VERSION', () => {
+    const v10Envelope = {
+      schemaVersion: 10,
+      contentManifestId: 'cotw',
+      timestamp: 123456789,
+      data: {
+        player: { id: 'hero', name: 'Sven' },
+        map: { width: 4, height: 4, tilesRle: '16W', groundItems: [], monsters: [] },
+        archivedFloors: [1, 2],
+      },
+    };
+
+    const result = defaultMigrator.migrate(v10Envelope);
+    expect(result.migrated).toBe(true);
+    expect(result.fromVersion).toBe(10);
+    expect(result.envelope.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(result.envelope.data.archivedFloors).toEqual([1, 2]);
+  });
+
+  it('loads legacy v10 save containing G/Y codes with definitions supplied by content', () => {
+    // In legacy format (v10), 'G' is gateway_valhalla and 'Y' is altar_tyr
+    const legacyRle = '1G1Y2F';
+    const tileGrid = decompactTiles(legacyRle, 2, 2);
+    expect(tileGrid[0][0]).toBe('gateway_valhalla');
+    expect(tileGrid[0][1]).toBe('altar_tyr');
+    expect(tileGrid[1][0]).toBe('floor');
+    expect(tileGrid[1][1]).toBe('floor');
+  });
+
+  it('deserializes an archived floor without tileCodes via legacy fallback', () => {
+    const archivedMap: SerializedMap = {
+      width: 2,
+      height: 2,
+      tilesRle: '1G1Y2F',
+      groundItems: [],
+      monsters: [],
+    };
+    const map = deserializeMapObject(archivedMap, COTW_TILES);
+    expect(map.getTile(0, 0)?.type).toBe('gateway_valhalla');
+    expect(map.getTile(1, 0)?.type).toBe('altar_tyr');
+    expect(map.getTile(0, 1)?.type).toBe('floor');
+    expect(map.getTile(1, 1)?.type).toBe('floor');
   });
 
   it('rejects saves from future schema versions with descriptive error', () => {

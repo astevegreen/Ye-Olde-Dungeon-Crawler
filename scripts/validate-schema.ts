@@ -16,6 +16,7 @@ import { TILES } from '../src/engine/grid/tile';
 import { Player } from '../src/engine/entities/player';
 import { Item } from '../src/engine/items/item';
 import { SubstanceBitmask } from '../src/engine/environment/substanceGrid';
+import type { TileDefinition } from '../src/engine/types';
 
 const failures: string[] = [];
 
@@ -53,11 +54,28 @@ console.log('\nRound-trip fidelity (serialize -> JSON -> deserialize):');
 const SURFACE_POS = { x: 2, y: 3 };
 const SUBSTANCE_POS = { x: 4, y: 5 };
 const GROUND_ITEM_POS = { x: 6, y: 7 };
+const CUSTOM_TILE_POS = { x: 8, y: 8 };
 const SUBSTANCE_MASK = SubstanceBitmask.FLOWING_FLUID | SubstanceBitmask.IGNITED;
 
+const CUSTOM_TILE_DEF: TileDefinition = {
+  type: 'custom_validator_crystal',
+  name: 'Validator Crystal',
+  passable: true,
+  walkable: true,
+  transparent: true,
+  glyph: '💎',
+};
+
+const validatorManifest: any = {
+  id: 'validator_manifest',
+  name: 'Validator Manifest',
+  tiles: [CUSTOM_TILE_DEF],
+};
+
 const map = new GameMap(20, 20, TILES.FLOOR);
+map.setTile(CUSTOM_TILE_POS.x, CUSTOM_TILE_POS.y, CUSTOM_TILE_DEF);
 const player = new Player({ id: 'validator', name: 'Validator', position: { x: 1, y: 1 } });
-const engine = new GameEngine({ map, player, seed: 4242 });
+const engine = new GameEngine({ map, player, seed: 4242, manifest: validatorManifest });
 
 engine.surfaces.setSurface(SURFACE_POS.x, SURFACE_POS.y, 'water', 9, 2);
 engine.substances.addSubstance(SUBSTANCE_POS.x, SUBSTANCE_POS.y, SUBSTANCE_MASK);
@@ -83,7 +101,7 @@ engine.prng.setState(prngStateBefore);
 
 const saved = serializeGame(engine);
 const roundTripped = JSON.parse(JSON.stringify(saved));
-const { engine: restored } = deserializeGame(roundTripped);
+const { engine: restored } = deserializeGame(roundTripped, validatorManifest);
 
 check('surface type', restored.surfaces.getSurface(SURFACE_POS.x, SURFACE_POS.y), 'water');
 const cell = restored.surfaces.getCell(SURFACE_POS.x, SURFACE_POS.y);
@@ -102,11 +120,15 @@ check('ground item name', groundItem?.name, 'Validator Test Item');
 check('prng state (int32-normalized)', restored.prng.getState() | 0, prngStateBefore | 0);
 check('prng next draw resumes stream', restored.prng.next(), nextDrawBefore);
 
+// Content-registered custom tile round-trip
+check('custom tile round-trip type', restored.map.getTile(CUSTOM_TILE_POS.x, CUSTOM_TILE_POS.y)?.type, 'custom_validator_crystal');
+check('custom tile round-trip glyph', restored.map.getTile(CUSTOM_TILE_POS.x, CUSTOM_TILE_POS.y)?.glyph, '💎');
+
 // --------------------------------------------------------------- 3. verdict
 if (failures.length > 0) {
   console.error(`\n❌ Schema validation failed (${failures.length}):`);
   for (const f of failures) console.error(`  - ${f}`);
   process.exit(1);
 }
-console.log(`\n✅ Schema validation passed: v1 -> v${CURRENT_SCHEMA_VERSION}, plus surface, substance, ground item, and PRNG round-tripping.`);
+console.log(`\n✅ Schema validation passed: v1 -> v${CURRENT_SCHEMA_VERSION}, plus surface, substance, ground item, PRNG, and content tile round-tripping.`);
 process.exit(0);

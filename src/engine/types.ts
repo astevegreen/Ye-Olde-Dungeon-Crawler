@@ -39,12 +39,10 @@ export type CanonicalTileType =
   | 'stairs_down'
   | 'trap'
   | 'secret_door'
-  | 'gateway_valhalla'
   | 'shallow_water'
   | 'chasm'
   | 'iron_bars'
-  | 'pillar'
-  | 'altar_tyr';
+  | 'pillar';
 
 export type TileType = CanonicalTileType | (string & {});
 

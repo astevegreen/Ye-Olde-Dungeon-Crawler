@@ -525,7 +525,16 @@ describe('Widescreen Flank Containers Framework', () => {
 
       const state = createMockGameState();
       state.map.setTile(2, 2, TILES.STAIRS_DOWN);
-      state.map.setTile(3, 3, TILES.ALTAR_TYR);
+      state.map.setTile(3, 3, {
+        type: 'altar_tyr',
+        name: 'Ancient Altar of Tyr',
+        passable: true,
+        walkable: true,
+        transparent: true,
+        glyph: '⛩',
+        interactionHandlerId: 'altar_tyr',
+        landmarkLabel: 'Altar of Tyr ⚖️',
+      });
       state.engine.fov.setVisibility(2, 2, 2);
       state.engine.fov.setVisibility(3, 3, 2);
 

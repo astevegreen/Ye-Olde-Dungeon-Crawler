@@ -21,7 +21,7 @@ import { registerSerializeGameFn, flightRecorder } from '../debug/flightRecorder
 import { CompendiumManager } from '../compendium/compendiumManager';
 import type { GameContentManifest } from '../types/manifest';
 import { cloneWorldState, createWorldState } from '../state/worldState';
-import { compactTiles, decompactTiles, compactFov, decompactFov } from './compaction';
+import { compactTilesWithDictionary, decompactTiles, compactFov, decompactFov } from './compaction';
 import type {
   CharacterProfile,
   SaveData,
@@ -585,7 +585,7 @@ export function serializeMapObject(map: GameMap): SerializedMap {
       };
     });
 
-  const tilesRle = compactTiles(tiles);
+  const { tilesRle, tileCodes } = compactTilesWithDictionary(tiles);
 
   const traps = map.getAllTraps().map((t) => ({
     id: t.id,
@@ -605,6 +605,7 @@ export function serializeMapObject(map: GameMap): SerializedMap {
     width: map.width,
     height: map.height,
     tilesRle,
+    tileCodes,
     groundItems,
     monsters,
     npcs,
@@ -617,23 +618,31 @@ export function serializeMapObject(map: GameMap): SerializedMap {
   };
 }
 
-export function deserializeMapObject(mapData: SerializedMap): GameMap {
+export function deserializeMapObject(mapData: SerializedMap, customTiles?: TileDefinition[]): GameMap {
   const map = new GameMap(mapData.width, mapData.height, TILES.WALL);
   map.lastVisitedTick = mapData.lastVisitedTick ?? 0;
   map.floorTurnCount = mapData.floorTurnCount ?? 0;
   map.isCleared = mapData.isCleared ?? false;
 
   const tileGrid = mapData.tilesRle
-    ? decompactTiles(mapData.tilesRle, mapData.width, mapData.height)
+    ? decompactTiles(mapData.tilesRle, mapData.width, mapData.height, mapData.tileCodes)
     : mapData.tiles;
 
   if (tileGrid) {
+    const customTileMap = new Map<string, TileDefinition>();
+    if (customTiles) {
+      for (const t of customTiles) {
+        customTileMap.set(t.type, t);
+      }
+    }
     // A renamed or corrupted tile type must not load as walkable floor (getTileDefinition's default).
     const unknownTileCounts = new Map<string, number>();
     for (let y = 0; y < mapData.height; y++) {
       for (let x = 0; x < mapData.width; x++) {
         const tileType = tileGrid[y]?.[x] ?? 'wall';
-        if (hasTileDefinition(tileType)) {
+        if (customTileMap.has(tileType)) {
+          map.setTile(x, y, customTileMap.get(tileType)!);
+        } else if (hasTileDefinition(tileType)) {
           map.setTile(x, y, getTileDefinitionByType(tileType));
         } else {
           unknownTileCounts.set(tileType, (unknownTileCounts.get(tileType) ?? 0) + 1);
@@ -754,7 +763,7 @@ export function deserializeGame(
   }
 
   // 1. Reconstruct Active Map
-  const map = deserializeMapObject(saveData.map);
+  const map = deserializeMapObject(saveData.map, manifest?.tiles);
 
   // 2. Reconstruct Primary Pack & Inventory Manager
   const primaryPack = deserializeItem(saveData.player.inventory.primaryPack) as Container;
@@ -857,7 +866,7 @@ export function deserializeGame(
   if (saveData.storedMaps) {
     for (const [fStr, sMap] of Object.entries(saveData.storedMaps)) {
       const fNum = parseInt(fStr, 10);
-      engine.storedFloors.set(fNum, deserializeMapObject(sMap));
+      engine.storedFloors.set(fNum, deserializeMapObject(sMap, manifest?.tiles));
     }
   }
 

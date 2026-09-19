@@ -6,11 +6,11 @@ import { Player } from '../../entities/player';
 import { CharacterRoller } from '../../character/characterRoller';
 import { serializeGame, deserializeGame } from '../serializer';
 import { CURRENT_SCHEMA_VERSION, type VersionedSaveEnvelope } from '../migrator';
-import { compactTiles, decompactTiles, compactFov, decompactFov } from '../compaction';
+import { compactTiles, compactTilesWithDictionary, decompactTiles, compactFov, decompactFov } from '../compaction';
 import type { CharacterProfile, SaveData } from '../types';
 
 describe('Storage Payload Compaction & RLE Benchmarking', () => {
-  it('correctly compresses and decompresses complex 2D tile patterns with RLE', () => {
+  it('correctly compresses and decompresses complex 2D tile patterns with legacy RLE', () => {
     const rawTiles: any[][] = [
       ['wall', 'wall', 'wall', 'wall', 'wall'],
       ['wall', 'floor', 'floor', 'floor', 'wall'],
@@ -24,6 +24,44 @@ describe('Storage Payload Compaction & RLE Benchmarking', () => {
 
     const restored = decompactTiles(rle, 5, 5);
     expect(restored).toEqual(rawTiles);
+  });
+
+  it('encodes and decodes tiles with dictionary-based RLE compaction', () => {
+    const rawTiles: any[][] = [
+      ['wall', 'wall', 'wall', 'wall', 'wall'],
+      ['wall', 'floor', 'floor', 'floor', 'wall'],
+      ['wall', 'door_closed', 'floor', 'door_open', 'wall'],
+      ['wall', 'stairs_up', 'floor', 'stairs_down', 'wall'],
+      ['wall', 'wall', 'wall', 'wall', 'wall'],
+    ];
+
+    const { tilesRle, tileCodes } = compactTilesWithDictionary(rawTiles);
+    expect(tilesRle).toBe('6:0;3:1;2:0;1:2;1:1;1:3;2:0;1:4;1:1;1:5;6:0;');
+    expect(tileCodes).toEqual(['wall', 'floor', 'door_closed', 'door_open', 'stairs_up', 'stairs_down']);
+
+    const restored = decompactTiles(tilesRle, 5, 5, tileCodes);
+    expect(restored).toEqual(rawTiles);
+  });
+
+  it('compacts custom content tile types without defaulting to wall', () => {
+    const rawTiles: any[][] = [
+      ['floor', 'crystal_pillar', 'floor'],
+      ['magma_vent', 'magma_vent', 'floor'],
+    ];
+
+    const { tilesRle, tileCodes } = compactTilesWithDictionary(rawTiles);
+    expect(tileCodes).toEqual(['floor', 'crystal_pillar', 'magma_vent']);
+    expect(tilesRle).toBe('1:0;1:1;1:0;2:2;1:0;');
+
+    const restored = decompactTiles(tilesRle, 3, 2, tileCodes);
+    expect(restored).toEqual(rawTiles);
+  });
+
+  it('falls back to legacy decoding when tileCodes is not provided', () => {
+    const legacyRle = '6W3F2W1C1F1O2W1U1F1D6W';
+    const restored = decompactTiles(legacyRle, 5, 5);
+    expect(restored[0]).toEqual(['wall', 'wall', 'wall', 'wall', 'wall']);
+    expect(restored[1]).toEqual(['wall', 'floor', 'floor', 'floor', 'wall']);
   });
 
   it('compacts and decompacts the Gateway to Valhalla victory-portal tile correctly', () => {

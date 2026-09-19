@@ -91,18 +91,6 @@ export const TILES: Record<string, TileDefinition> = {
     glyph: '^',
     description: 'Triggered Floor Mechanism.',
   },
-  GATEWAY_VALHALLA: {
-    type: 'gateway_valhalla',
-    name: 'Gateway to Valhalla',
-    passable: true,
-    walkable: true,
-    transparent: true,
-    glyph: '▲',
-    description: 'A divine golden vortex radiating celestial light. Step through to claim eternal victory!',
-    interactionHandlerId: 'quest_victory_portal',
-    visual: 'portal',
-    landmarkLabel: 'Valhalla Gateway ✨',
-  },
   SHALLOW_WATER: {
     type: 'shallow_water',
     name: 'Shallow Water',
@@ -142,17 +130,6 @@ export const TILES: Record<string, TileDefinition> = {
     blocksProjectiles: true,
     glyph: 'P',
     description: 'A massive carved column supporting the vaulted stone ceiling. Provides hard cover against ranged spells and arrows.',
-  },
-  ALTAR_TYR: {
-    type: 'altar_tyr',
-    name: 'Ancient Altar of Tyr',
-    passable: true,
-    walkable: true,
-    transparent: true,
-    glyph: '⛩',
-    description: 'A weathered runic altar consecrated to Tyr, god of justice. Blood-stained defilement clings to the ancient runes.',
-    interactionHandlerId: 'altar_tyr',
-    landmarkLabel: 'Altar of Tyr ⚖️',
   },
 };
 

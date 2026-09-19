@@ -97,9 +97,10 @@ describe('Campaign Separation (P-03 Stage 2)', () => {
     const engineDir = path.resolve(__dirname, '..');
     const allowedExceptionsRegex = /ValhallaEntry|cotw_valhalla/g;
 
-    // In Step 2, tile.ts, types.ts, and compaction.ts still declare the legacy tile definitions until Step 4 moves them.
-    // hallOfFame/ defines ValhallaEntry and the cotw_valhalla leaderboard system.
-    const step4ExemptFiles = new Set(['tile.ts', 'types.ts', 'compaction.ts', 'leaderboard.ts']);
+    // In Step 4, tile types have moved to src/content/cotw/tiles.ts.
+    // compaction.ts retains legacy single-letter codes for schema <= 10 saves (ARCHITECTURE.md §5).
+    // leaderboard.ts defines cotw_valhalla storage key / ValhallaEntry leaderboard.
+    const exemptFiles = new Set(['compaction.ts', 'leaderboard.ts']);
 
     function scanDir(dir: string): { file: string; match: string; line: number }[] {
       const violations: { file: string; match: string; line: number }[] = [];
@@ -113,7 +114,7 @@ describe('Campaign Separation (P-03 Stage 2)', () => {
             violations.push(...scanDir(fullPath));
           }
         } else if (entry.isFile() && (entry.name.endsWith('.ts') || entry.name.endsWith('.js'))) {
-          if (step4ExemptFiles.has(entry.name)) {
+          if (exemptFiles.has(entry.name)) {
             continue;
           }
           const content = fs.readFileSync(fullPath, 'utf8');

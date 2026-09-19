@@ -26,7 +26,7 @@ import { TempleService } from '../economy/services';
 import { MovementAction } from '../actions/movement';
 import { Monster } from '../entities/monster';
 import { DungeonArc } from '../quest/dungeonArc';
-import { cotwManifest } from '../../content/cotw';
+import { cotwManifest, COTW_TILES } from '../../content/cotw';
 import { serializeGame, deserializeGame } from '../storage/serializer';
 
 describe('World State Ledger (Pure Mutations & Queries)', () => {
@@ -455,7 +455,8 @@ describe('Floor 3 Ancient Altar of Tyr Encounter & Temple Healer Reaction', () =
 
   it('triggers onChoiceInteract when stepping onto the Altar of Tyr and executes Purify', () => {
     const map = new GameMap(10, 10, TILES.FLOOR);
-    map.setTile(5, 5, TILES.ALTAR_TYR);
+    const altarTyr = COTW_TILES.find((t) => t.type === 'altar_tyr')!;
+    map.setTile(5, 5, altarTyr);
 
     const primaryPack = new Container({
       id: 'pack-1',
@@ -513,7 +514,8 @@ describe('Floor 3 Ancient Altar of Tyr Encounter & Temple Healer Reaction', () =
 
   it('triggers Desecrate choice and causes temple priest to refuse services', () => {
     const map = new GameMap(10, 10, TILES.FLOOR);
-    map.setTile(5, 5, TILES.ALTAR_TYR);
+    const altarTyr = COTW_TILES.find((t) => t.type === 'altar_tyr')!;
+    map.setTile(5, 5, altarTyr);
 
     const primaryPack = new Container({
       id: 'pack-1',

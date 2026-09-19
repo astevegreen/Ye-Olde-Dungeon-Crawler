@@ -1,7 +1,7 @@
 import type { SaveData } from './types';
 import { compactTiles, compactFov } from './compaction';
 
-export const CURRENT_SCHEMA_VERSION = 10;
+export const CURRENT_SCHEMA_VERSION = 11;
 
 export interface VersionedSaveEnvelope<T = SaveData> {
   schemaVersion: number;
@@ -456,6 +456,20 @@ export class SchemaMigrator {
 
       return {
         schemaVersion: 10,
+        contentManifestId: envelope.contentManifestId ?? 'cotw',
+        timestamp: envelope.timestamp ?? Date.now(),
+        data,
+      };
+    });
+
+    // v10 -> v11: Dictionary-based RLE map compaction (tileCodes: string[]) (ARCHITECTURE.md §5, P-03 stage 3).
+    // Older builds reject v11 saves as newer-than-engine. Legacy saves and unmigrated BulkArchive
+    // floors decode transparently via the backward-compatible legacy tile table fallback.
+    this.registerMigration(10, 11, (envelope: VersionedSaveEnvelope<any>): VersionedSaveEnvelope => {
+      const data = { ...envelope.data };
+
+      return {
+        schemaVersion: 11,
         contentManifestId: envelope.contentManifestId ?? 'cotw',
         timestamp: envelope.timestamp ?? Date.now(),
         data,

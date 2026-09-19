@@ -3,6 +3,7 @@ import { GameEngine } from '../engine';
 import { Player } from '../entities/player';
 import { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
+import { COTW_TILES } from '../../content/cotw/tiles';
 import { DungeonArc } from '../quest/dungeonArc';
 import { DeathResolver } from '../combat/deathResolver';
 import { MovementAction } from '../actions/movement';
@@ -32,6 +33,7 @@ describe('Final Boss Ascent Portal & Victory Trigger', () => {
         id: 'test',
         name: 'Test Manifest',
         quest: questArc,
+        tiles: COTW_TILES,
       } as any,
     });
 
@@ -68,11 +70,13 @@ describe('Final Boss Ascent Portal & Victory Trigger', () => {
         quest: {
           townReturnPosition: { x: 25, y: 23 },
         } as any,
+        tiles: COTW_TILES,
       } as any,
     });
 
     // Place portal at (11, 10)
-    map.setTile(11, 10, TILES.GATEWAY_VALHALLA);
+    const portalTile = COTW_TILES.find((t) => t.type === 'gateway_valhalla')!;
+    map.setTile(11, 10, portalTile);
 
     // Step onto portal tile via MovementAction
     const moveAction = new MovementAction(player, 1, 0);

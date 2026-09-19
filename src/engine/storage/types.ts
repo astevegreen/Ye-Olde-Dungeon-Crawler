@@ -303,6 +303,7 @@ export interface SerializedMap {
   height: number;
   tiles?: TileType[][];
   tilesRle?: string;
+  tileCodes?: string[];
   groundItems: SerializedGroundTile[];
   monsters: SerializedMonster[];
   npcs?: SerializedNpc[];

@@ -18,12 +18,14 @@ import { COTW_COMPANIONS } from './companions';
 import { GIANT_BLOOD_STATUS, giantBloodHandler, GIANT_BLOOD_BOOTSTRAP_HOOK } from './giantBlood';
 import { COTW_MONSTER_SCALING } from './monsterScaling';
 import { OATH_TRIGGER, OATH_TIMED_EVENT } from './oath';
+import { COTW_TILES } from './tiles';
 
 export const cotwManifest: GameContentManifest = {
   id: 'cotw',
   name: 'Castle of the Winds',
   description: 'Classic Norse-themed roguelike fantasy adventure in Midgard.',
   supportsLegacyKeys: true,
+  tiles: COTW_TILES,
   monsters: COTW_MONSTERS,
   items: COTW_ITEMS,
   spells: COTW_SPELLS,
@@ -150,4 +152,5 @@ export {
   COTW_EQUIPMENT_SLOTS,
   COTW_VAULTS,
   COTW_SPRITE_RECIPES,
+  COTW_TILES,
 };

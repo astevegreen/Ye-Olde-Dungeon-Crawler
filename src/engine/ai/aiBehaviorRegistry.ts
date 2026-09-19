@@ -8,76 +8,61 @@ export interface AiBehaviorStrategy {
   decideAction(monster: Monster, engine: GameEngine): Action;
 }
 
-const registry = new Map<string, AiBehaviorStrategy>();
-let defaultStrategy: AiBehaviorStrategy | undefined;
+import {
+  activeAIBehaviorStore,
+  setDefaultAiBehaviorRegistrar,
+  getDefaultAiBehaviorRegistrar,
+} from '../registries/aiBehaviorRegistryStore';
 
-let defaultRegistrar: (() => void) | undefined;
-
+/**
+ * Process-wide facade over whichever AI behavior store is active (ARCHITECTURE.md §3, P-22).
+ * It holds no map of its own: an engine's registrations live in that engine's store, and
+ * this forwards there, so there is one copy of the data rather than two.
+ */
 export class AiBehaviorRegistry {
   public static register(strategy: AiBehaviorStrategy): void {
-    registry.set(strategy.id, strategy);
-    if (!defaultStrategy || strategy.id === 'melee') {
-      defaultStrategy = strategy;
-    }
+    activeAIBehaviorStore().register(strategy);
   }
 
   public static registerAll(
     strategies: Record<string, AiBehaviorStrategy> | Map<string, AiBehaviorStrategy> | readonly AiBehaviorStrategy[]
   ): void {
-    if (Array.isArray(strategies)) {
-      for (const s of strategies) {
-        this.register(s);
-      }
-    } else {
-      const entries = strategies instanceof Map ? strategies.entries() : Object.entries(strategies);
-      for (const [, strategy] of entries) {
-        this.register(strategy);
-      }
-    }
+    activeAIBehaviorStore().registerAll(strategies);
   }
 
   public static get(id: string): AiBehaviorStrategy | undefined {
-    return registry.get(id);
+    return activeAIBehaviorStore().get(id);
   }
 
   public static getDefault(): AiBehaviorStrategy {
-    if (!defaultStrategy) {
-      const first = registry.values().next().value;
-      if (first) {
-        defaultStrategy = first;
-        return defaultStrategy;
-      }
-      throw new Error('No AI behavior strategies registered.');
-    }
-    return defaultStrategy;
+    return activeAIBehaviorStore().getDefault();
   }
 
   public static setDefault(strategy: AiBehaviorStrategy): void {
-    defaultStrategy = strategy;
+    activeAIBehaviorStore().setDefault(strategy);
   }
 
   public static has(id: string): boolean {
-    return registry.has(id);
+    return activeAIBehaviorStore().has(id);
   }
 
   public static getAll(): ReadonlyMap<string, AiBehaviorStrategy> {
-    return registry;
+    return activeAIBehaviorStore().getMap();
   }
 
   public static clear(): void {
-    registry.clear();
-    defaultStrategy = undefined;
+    activeAIBehaviorStore().clear();
   }
 
   public static setDefaultRegistrar(registrar: () => void): void {
-    defaultRegistrar = registrar;
+    setDefaultAiBehaviorRegistrar(registrar);
   }
 
   public static resetToDefaults(): void {
-    registry.clear();
-    defaultStrategy = undefined;
-    if (defaultRegistrar) {
-      defaultRegistrar();
+    activeAIBehaviorStore().clear();
+    const registrar = getDefaultAiBehaviorRegistrar();
+    if (registrar) {
+      registrar();
     }
   }
 }

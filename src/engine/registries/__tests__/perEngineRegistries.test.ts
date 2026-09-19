@@ -9,6 +9,7 @@ import { ActionRegistry, type GameAction } from '../../actions/actionRegistry';
 import { SpellRegistry, getSpell, SPELL_REGISTRY } from '../../magic/spellRegistry';
 import { CompanionRegistry, type CompanionDefinition } from '../../entities/companion';
 import { AIRegistry, type AIStrategy } from '../../ai/aiRegistry';
+import { AiBehaviorRegistry, type AiBehaviorStrategy } from '../../ai/aiBehaviorRegistry';
 import { WaitAction } from '../../actions/wait';
 import { processDefaultMonsterStore, setActiveMonsterStore } from '../monsterRegistryStore';
 import { processDefaultTrapStore, setActiveTrapStore } from '../trapRegistryStore';
@@ -16,6 +17,7 @@ import { setActiveActionStore } from '../actionRegistryStore';
 import { processDefaultSpellStore, setActiveSpellStore } from '../spellRegistryStore';
 import { processDefaultCompanionStore, setActiveCompanionStore } from '../companionRegistryStore';
 import { setActiveAIStrategyStore } from '../aiStrategyRegistryStore';
+import { setActiveAIBehaviorStore } from '../aiBehaviorRegistryStore';
 import type { MonsterDefinition } from '../../bestiary/monsterDefinitions';
 import type { TrapDefinition, TrapType } from '../../types/manifest';
 import type { SpellDefinition } from '../../magic/types';
@@ -83,18 +85,25 @@ const aiStrategyDef = (id: string): AIStrategy => ({
   decideAction: (actor) => new WaitAction(actor),
 });
 
+const aiBehaviorDef = (id: string): AiBehaviorStrategy => ({
+  id,
+  name: id,
+  decideAction: (monster) => new WaitAction(monster),
+});
+
 function engineWith(
   monsters: MonsterDefinition[],
   traps: TrapDefinition[] = [],
   actionCommands: GameAction[] = [],
   spells: SpellDefinition[] = [],
   companions: CompanionDefinition[] = [],
-  aiStrategies: AIStrategy[] = []
+  aiStrategies: AIStrategy[] = [],
+  aiBehaviors: Record<string, AiBehaviorStrategy> = {}
 ): GameEngine {
   return new GameEngine({
     map: new GameMap(10, 10, TILES.FLOOR),
     player: new Player({ id: 'hero', name: 'Hero', position: { x: 1, y: 1 } }),
-    manifest: { id: 'test', name: 'Test', monsters, traps, actionCommands, spells, companions, aiStrategies } as never,
+    manifest: { id: 'test', name: 'Test', monsters, traps, actionCommands, spells, companions, aiStrategies, aiBehaviors } as never,
   });
 }
 
@@ -112,6 +121,8 @@ describe('Per-engine content registries', () => {
     setActiveCompanionStore(null);
     AIRegistry.resetToDefaults();
     setActiveAIStrategyStore(null);
+    AiBehaviorRegistry.resetToDefaults();
+    setActiveAIBehaviorStore(null);
   });
 
   it('keeps two engines built from different manifests separate', () => {
@@ -280,5 +291,29 @@ describe('Per-engine content registries', () => {
     engineA.handlePlayerAction(new WaitAction(engineA.player));
     expect(AIRegistry.has('flank_attack')).toBe(true);
     expect(AIRegistry.has('ambush_strike')).toBe(false);
+  });
+
+  it('keeps two engines built from different AI behavior manifests separate', () => {
+    const engineA = engineWith([], [], [], [], [], [], { tactical_retreat: aiBehaviorDef('tactical_retreat') });
+    const engineB = engineWith([], [], [], [], [], [], { berserk_charge: aiBehaviorDef('berserk_charge') });
+
+    // Both inherit default behaviors (e.g. melee)
+    expect(engineA.registries.aiBehaviors.has('melee')).toBe(true);
+    expect(engineB.registries.aiBehaviors.has('melee')).toBe(true);
+
+    // Isolated custom behaviors
+    expect(engineA.registries.aiBehaviors.has('tactical_retreat')).toBe(true);
+    expect(engineA.registries.aiBehaviors.has('berserk_charge')).toBe(false);
+    expect(engineB.registries.aiBehaviors.has('berserk_charge')).toBe(true);
+    expect(engineB.registries.aiBehaviors.has('tactical_retreat')).toBe(false);
+
+    // Static facade points to B
+    expect(AiBehaviorRegistry.has('berserk_charge')).toBe(true);
+    expect(AiBehaviorRegistry.has('tactical_retreat')).toBe(false);
+
+    // Acting on A switches AiBehaviorRegistry to A
+    engineA.handlePlayerAction(new WaitAction(engineA.player));
+    expect(AiBehaviorRegistry.has('tactical_retreat')).toBe(true);
+    expect(AiBehaviorRegistry.has('berserk_charge')).toBe(false);
   });
 });

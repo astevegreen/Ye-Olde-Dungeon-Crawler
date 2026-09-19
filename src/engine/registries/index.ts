@@ -18,6 +18,10 @@ import {
   CompanionRegistryStore,
   setActiveCompanionStore,
 } from './companionRegistryStore';
+import {
+  AIStrategyRegistryStore,
+  setActiveAIStrategyStore,
+} from './aiStrategyRegistryStore';
 
 export { RegistryStore } from './registryStore';
 export {
@@ -50,6 +54,12 @@ export {
   processDefaultCompanionStore,
   setActiveCompanionStore,
 } from './companionRegistryStore';
+export {
+  AIStrategyRegistryStore,
+  activeAIStrategyStore,
+  processDefaultAIStrategyStore,
+  setActiveAIStrategyStore,
+} from './aiStrategyRegistryStore';
 
 /**
  * Bundle of per-engine content registries (ARCHITECTURE.md §3, P-22).
@@ -60,6 +70,7 @@ export interface EngineRegistries {
   actionCommands: ActionRegistryStore;
   spells: SpellRegistryStore;
   companions: CompanionRegistryStore;
+  aiStrategies: AIStrategyRegistryStore;
 }
 
 /**
@@ -73,4 +84,5 @@ export function activateRegistries(registries: EngineRegistries | null): void {
   setActiveActionStore(registries ? registries.actionCommands : null);
   setActiveSpellStore(registries ? registries.spells : null);
   setActiveCompanionStore(registries ? registries.companions : null);
+  setActiveAIStrategyStore(registries ? registries.aiStrategies : null);
 }

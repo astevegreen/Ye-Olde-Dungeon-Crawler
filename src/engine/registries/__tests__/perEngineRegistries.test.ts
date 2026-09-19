@@ -8,12 +8,14 @@ import { TrapRegistry } from '../../traps/trapRegistry';
 import { ActionRegistry, type GameAction } from '../../actions/actionRegistry';
 import { SpellRegistry, getSpell, SPELL_REGISTRY } from '../../magic/spellRegistry';
 import { CompanionRegistry, type CompanionDefinition } from '../../entities/companion';
+import { AIRegistry, type AIStrategy } from '../../ai/aiRegistry';
 import { WaitAction } from '../../actions/wait';
 import { processDefaultMonsterStore, setActiveMonsterStore } from '../monsterRegistryStore';
 import { processDefaultTrapStore, setActiveTrapStore } from '../trapRegistryStore';
 import { setActiveActionStore } from '../actionRegistryStore';
 import { processDefaultSpellStore, setActiveSpellStore } from '../spellRegistryStore';
 import { processDefaultCompanionStore, setActiveCompanionStore } from '../companionRegistryStore';
+import { setActiveAIStrategyStore } from '../aiStrategyRegistryStore';
 import type { MonsterDefinition } from '../../bestiary/monsterDefinitions';
 import type { TrapDefinition, TrapType } from '../../types/manifest';
 import type { SpellDefinition } from '../../magic/types';
@@ -75,17 +77,24 @@ const companionDef = (id: string): CompanionDefinition =>
     packBulkCapacity: 10,
   }) as CompanionDefinition;
 
+const aiStrategyDef = (id: string): AIStrategy => ({
+  id,
+  name: id,
+  decideAction: (actor) => new WaitAction(actor),
+});
+
 function engineWith(
   monsters: MonsterDefinition[],
   traps: TrapDefinition[] = [],
   actionCommands: GameAction[] = [],
   spells: SpellDefinition[] = [],
-  companions: CompanionDefinition[] = []
+  companions: CompanionDefinition[] = [],
+  aiStrategies: AIStrategy[] = []
 ): GameEngine {
   return new GameEngine({
     map: new GameMap(10, 10, TILES.FLOOR),
     player: new Player({ id: 'hero', name: 'Hero', position: { x: 1, y: 1 } }),
-    manifest: { id: 'test', name: 'Test', monsters, traps, actionCommands, spells, companions } as never,
+    manifest: { id: 'test', name: 'Test', monsters, traps, actionCommands, spells, companions, aiStrategies } as never,
   });
 }
 
@@ -101,6 +110,8 @@ describe('Per-engine content registries', () => {
     setActiveSpellStore(null);
     processDefaultCompanionStore().clear();
     setActiveCompanionStore(null);
+    AIRegistry.resetToDefaults();
+    setActiveAIStrategyStore(null);
   });
 
   it('keeps two engines built from different manifests separate', () => {
@@ -245,5 +256,29 @@ describe('Per-engine content registries', () => {
     engineA.handlePlayerAction(new WaitAction(engineA.player));
     expect(CompanionRegistry.has('wolf_hound')).toBe(true);
     expect(CompanionRegistry.has('snow_leopard')).toBe(false);
+  });
+
+  it('keeps two engines built from different AI strategy manifests separate', () => {
+    const engineA = engineWith([], [], [], [], [], [aiStrategyDef('flank_attack')]);
+    const engineB = engineWith([], [], [], [], [], [aiStrategyDef('ambush_strike')]);
+
+    // Both inherit default strategies
+    expect(engineA.registries.aiStrategies.has('aggressive_melee')).toBe(true);
+    expect(engineB.registries.aiStrategies.has('aggressive_melee')).toBe(true);
+
+    // Isolated custom strategies
+    expect(engineA.registries.aiStrategies.has('flank_attack')).toBe(true);
+    expect(engineA.registries.aiStrategies.has('ambush_strike')).toBe(false);
+    expect(engineB.registries.aiStrategies.has('ambush_strike')).toBe(true);
+    expect(engineB.registries.aiStrategies.has('flank_attack')).toBe(false);
+
+    // Static facade points to B
+    expect(AIRegistry.has('ambush_strike')).toBe(true);
+    expect(AIRegistry.has('flank_attack')).toBe(false);
+
+    // Acting on A switches AIRegistry to A
+    engineA.handlePlayerAction(new WaitAction(engineA.player));
+    expect(AIRegistry.has('flank_attack')).toBe(true);
+    expect(AIRegistry.has('ambush_strike')).toBe(false);
   });
 });

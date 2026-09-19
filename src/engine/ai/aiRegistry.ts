@@ -12,7 +12,6 @@ import { CastSpellAction } from '../actions/spell-actions';
 import { findPath, findFleeStep } from './pathfinding';
 import { computeDangerTiles } from './intent';
 import { getBresenhamLine } from '../magic/targeting';
-import { AiBehaviorRegistry } from './aiBehaviorRegistry';
 import { selectAttackTarget } from './targetSelection';
 
 function hasLineOfSight(engine: GameEngine, startX: number, startY: number, endX: number, endY: number): boolean {
@@ -37,28 +36,21 @@ export interface AIStrategy {
   decideAction(actor: Actor, engine: GameEngine): Action | QueuedAction;
 }
 
-const registry = new Map<string, AIStrategy>();
-let defaultStrategy: AIStrategy | undefined;
+import { activeAIStrategyStore } from '../registries/aiStrategyRegistryStore';
 
-/** Maps legacy/shorthand AI strategy aliases to their canonical registered IDs. */
-const LEGACY_ALIASES: Record<string, string> = {
-  melee: 'aggressive_melee',
-  caster: 'kiting_ranged',
-  coward: 'fleeing_coward',
-  brute: 'aggressive_melee',
-};
-
+/**
+ * Process-wide facade over whichever AI strategy store is active (ARCHITECTURE.md §3, P-22).
+ * It holds no map of its own: an engine's registrations live in that engine's store, and
+ * this forwards there, so there is one copy of the data rather than two.
+ */
 export class AIRegistry {
   public static register(strategy: AIStrategy): void {
-    registry.set(strategy.id, strategy);
-    if (!defaultStrategy || strategy.id === 'aggressive_melee') {
-      defaultStrategy = strategy;
-    }
+    activeAIStrategyStore().register(strategy);
   }
 
   /** Register a custom alias that maps to an existing canonical strategy ID. */
   public static registerAlias(alias: string, canonicalId: string): void {
-    LEGACY_ALIASES[alias] = canonicalId;
+    activeAIStrategyStore().registerAlias(alias, canonicalId);
   }
 
   public static registerAll(
@@ -77,49 +69,36 @@ export class AIRegistry {
   }
 
   public static get(id?: string): AIStrategy | undefined {
-    if (!id) return defaultStrategy;
-    // Direct match
-    if (registry.has(id)) return registry.get(id);
-
-    // Legacy alias resolution
-    const canonicalId = LEGACY_ALIASES[id];
-    if (canonicalId) return registry.get(canonicalId);
-
-    const legacy = AiBehaviorRegistry.get(id);
-    if (legacy) return legacy;
-
-    return undefined;
+    return activeAIStrategyStore().get(id);
   }
 
   public static getDefault(): AIStrategy {
-    if (!defaultStrategy) {
+    let def = activeAIStrategyStore().getDefault();
+    if (!def) {
       registerDefaultAIStrategies();
+      def = activeAIStrategyStore().getDefault();
     }
-    return defaultStrategy!;
+    return def!;
   }
 
   public static has(id: string): boolean {
-    if (registry.has(id)) return true;
-    if (id in LEGACY_ALIASES) return true;
-    if (AiBehaviorRegistry.has(id)) return true;
-    return false;
+    return activeAIStrategyStore().has(id);
   }
 
   public static getAll(): ReadonlyMap<string, AIStrategy> {
-    return registry;
+    return activeAIStrategyStore().getMap();
   }
 
   public static unregister(id: string): boolean {
-    return registry.delete(id);
+    return activeAIStrategyStore().unregister(id);
   }
 
   public static clear(): void {
-    registry.clear();
-    defaultStrategy = undefined;
+    activeAIStrategyStore().clear();
   }
 
   public static resetToDefaults(): void {
-    this.clear();
+    activeAIStrategyStore().clear();
     registerDefaultAIStrategies();
   }
 }

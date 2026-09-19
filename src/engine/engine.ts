@@ -10,6 +10,8 @@ import {
   processDefaultSpellStore,
   CompanionRegistryStore,
   processDefaultCompanionStore,
+  AIStrategyRegistryStore,
+  processDefaultAIStrategyStore,
   activateRegistries,
   type EngineRegistries,
 } from './registries';
@@ -48,7 +50,6 @@ import { MonsterRegistry } from './bestiary/monsterDefinitions';
 import { StatusHandlerRegistry } from './status/statusHandlers';
 import type { StatusHandler } from './status/statusHandlers';
 import { AiBehaviorRegistry } from './ai/aiBehaviorRegistry';
-import { AIRegistry } from './ai/aiRegistry';
 import {
   type WorldState,
   createWorldState,
@@ -321,12 +322,15 @@ export class GameEngine {
     spellStore.seedFrom(processDefaultSpellStore());
     const companionStore = new CompanionRegistryStore();
     companionStore.seedFrom(processDefaultCompanionStore());
+    const aiStrategyStore = new AIStrategyRegistryStore();
+    aiStrategyStore.seedFrom(processDefaultAIStrategyStore());
     this.registries = {
       monsters: monsterStore,
       traps: trapStore,
       actionCommands: actionStore,
       spells: spellStore,
       companions: companionStore,
+      aiStrategies: aiStrategyStore,
     };
     activateRegistries(this.registries);
 
@@ -378,7 +382,7 @@ export class GameEngine {
       AiBehaviorRegistry.registerAll(this.manifest.aiBehaviors);
     }
     if (this.manifest.aiStrategies) {
-      AIRegistry.registerAll(this.manifest.aiStrategies);
+      this.registries.aiStrategies.registerAll(this.manifest.aiStrategies);
     }
     if (this.manifest.actionCommands) {
       this.registries.actionCommands.registerAll(this.manifest.actionCommands);

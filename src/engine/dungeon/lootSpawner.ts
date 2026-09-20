@@ -78,7 +78,9 @@ export function createScaledItem(
     stats.defenseBonus = baseDef + (enchantmentLevel * 1);
   }
 
-  const quality = (enchantmentLevel > 0 || elementalAffix) ? 'enchanted' : (def.quality ?? 'normal');
+  const quality = (def.quality && def.quality !== 'normal')
+    ? def.quality
+    : (enchantmentLevel > 0 || elementalAffix) ? 'enchanted' : 'normal';
   const baseValue = def.value ?? 20;
   const scaledValue = Math.round(baseValue * (1 + enchantmentLevel * 0.4) + (elementalAffix ? 150 : 0));
 
@@ -86,6 +88,7 @@ export function createScaledItem(
   if (def.itemType === 'wand' && def.wandConfig) {
     return new WandItem({
       id,
+      definitionId: def.id,
       name: def.name,
       unidentifiedName: def.unidentifiedName,
       spellId: def.wandConfig.spellId,
@@ -105,6 +108,7 @@ export function createScaledItem(
   if (def.itemType === 'scroll' && def.scrollConfig) {
     return new ScrollItem({
       id,
+      definitionId: def.id,
       name: def.name,
       unidentifiedName: def.unidentifiedName,
       spellId: def.scrollConfig.spellId,
@@ -122,6 +126,7 @@ export function createScaledItem(
   if (def.itemType === 'potion' && def.potionConfig) {
     return new PotionItem({
       id,
+      definitionId: def.id,
       name: def.name,
       unidentifiedName: def.unidentifiedName,
       potionType: def.potionConfig.potionType,
@@ -141,6 +146,7 @@ export function createScaledItem(
   if (def.itemType === 'container' && def.containerConfig) {
     return new Container({
       id,
+      definitionId: def.id,
       name: def.name,
       unidentifiedName: def.unidentifiedName,
       category: def.category,
@@ -164,6 +170,7 @@ export function createScaledItem(
 
   return new Item({
     id,
+    definitionId: def.id,
     name: def.name,
     unidentifiedName: def.unidentifiedName,
     category: def.category,

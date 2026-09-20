@@ -232,6 +232,27 @@ export function getEntitySpriteKey(entity: Entity): SpriteKey {
 export function getItemSpriteKey(item: Item): SpriteKey {
   const name = item.name.toLowerCase();
   const id = item.id || '';
+  const defId = (item.definitionId || '').toLowerCase();
+
+  // Signature Relics & Artifacts (CotW)
+  if (defId === 'nidhogg_fang' || name.includes("níðhögg's fang") || name.includes("nidhogg's fang") || id.includes('nidhogg_fang')) {
+    return 'nidhogg_fang';
+  }
+  if (defId === 'sol_shard_focus' || name.includes('sól-shard focus') || name.includes('sol-shard focus') || id.includes('sol_shard_focus')) {
+    return 'sol_shard_focus';
+  }
+  if (defId === 'petrified_world_bark_tower_shield' || name.includes('world-bark tower shield') || id.includes('world_bark_tower_shield') || id.includes('petrified_world_bark')) {
+    return 'petrified_world_bark_tower_shield';
+  }
+  if (defId === 'antler_crowned_mask' || name.includes('antler-crowned mask') || id.includes('antler_crowned_mask')) {
+    return 'antler_crowned_mask';
+  }
+  if (defId === 'marrow_gnawed_ring' || name.includes('marrow-gnawed ring') || id.includes('marrow_gnawed_ring')) {
+    return 'marrow_gnawed_ring';
+  }
+  if (defId === 'duergar_lodestone' || name.includes('duergar lodestone') || id.includes('duergar_lodestone')) {
+    return 'duergar_lodestone';
+  }
 
   // Unique / Plot items
   if (name.includes('rune of return') || id.includes('rune_of_return') || name.includes('rune stone') || id.includes('rune_stone')) {

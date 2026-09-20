@@ -173,6 +173,12 @@ export const ATLAS_MAP: Record<SpriteKey, AtlasCoords> = {
   troll_witch: { col: 7, row: 9 },
   dragon_elder: { col: 8, row: 9 },
   rune_stone: { col: 9, row: 9 },
+  nidhogg_fang: { col: 10, row: 9 },
+  sol_shard_focus: { col: 11, row: 9 },
+  petrified_world_bark_tower_shield: { col: 12, row: 9 },
+  antler_crowned_mask: { col: 13, row: 9 },
+  marrow_gnawed_ring: { col: 14, row: 9 },
+  duergar_lodestone: { col: 15, row: 9 },
 };
 
 interface AtlasCell {

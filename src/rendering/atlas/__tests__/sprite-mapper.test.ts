@@ -185,6 +185,36 @@ describe('sprite-mapper — Tag-Priority Monster, Item, and Zone-Themed Terrain 
       expect(getItemSpriteKey(rune)).toBe('rune_stone');
       expect(getItemSpriteKey(stone)).toBe('rune_stone');
     });
+
+    it('resolves CotW signature relics and artifacts to dedicated procedural sprites', () => {
+      // 1. Níðhögg's Fang (Floor 45 relic)
+      const fangByDef = { id: 'loot-1', definitionId: 'nidhogg_fang', name: "Níðhögg's Fang", category: 'weapon' } as Item;
+      const fangByName = { id: 'loot-2', name: "Níðhögg's Fang", category: 'weapon' } as Item;
+      expect(getItemSpriteKey(fangByDef)).toBe('nidhogg_fang');
+      expect(getItemSpriteKey(fangByName)).toBe('nidhogg_fang');
+
+      // 2. Sól-Shard Focus
+      const focusByDef = { id: 'loot-3', definitionId: 'sol_shard_focus', name: 'Sól-Shard Focus', category: 'shield' } as Item;
+      const focusByName = { id: 'loot-4', name: 'Sol-Shard Focus', category: 'shield' } as Item;
+      expect(getItemSpriteKey(focusByDef)).toBe('sol_shard_focus');
+      expect(getItemSpriteKey(focusByName)).toBe('sol_shard_focus');
+
+      // 3. Petrified World-Bark Tower Shield
+      const shieldByDef = { id: 'loot-5', definitionId: 'petrified_world_bark_tower_shield', name: 'Petrified World-Bark Tower Shield', category: 'shield' } as Item;
+      expect(getItemSpriteKey(shieldByDef)).toBe('petrified_world_bark_tower_shield');
+
+      // 4. Antler-Crowned Mask of the Iviðja
+      const maskByDef = { id: 'loot-6', definitionId: 'antler_crowned_mask', name: 'Antler-Crowned Mask of the Iviðja', category: 'helmet' } as Item;
+      expect(getItemSpriteKey(maskByDef)).toBe('antler_crowned_mask');
+
+      // 5. Marrow-Gnawed Ring (Corrupted relic)
+      const ringByDef = { id: 'loot-7', definitionId: 'marrow_gnawed_ring', name: 'Marrow-Gnawed Ring', category: 'ring', quality: 'cursed' } as Item;
+      expect(getItemSpriteKey(ringByDef)).toBe('marrow_gnawed_ring');
+
+      // 6. Duergar Lodestone
+      const stoneByDef = { id: 'loot-8', definitionId: 'duergar_lodestone', name: 'Duergar Lodestone', category: 'misc' } as Item;
+      expect(getItemSpriteKey(stoneByDef)).toBe('duergar_lodestone');
+    });
   });
 
   describe('getTerrainSpriteKey — Town and Zone Theming', () => {

@@ -1,8 +1,18 @@
 import {
   ItemFactory,
   Merchant,
+  createScaledItem,
 } from '../../engine';
 import type { TownLayoutDefinition } from '../../engine';
+import { COTW_CATALOG_RECORD } from './items';
+
+function makeItem(itemId: string, instanceId: string) {
+  const def = COTW_CATALOG_RECORD[itemId];
+  if (!def) {
+    throw new Error(`Item definition not found in COTW_CATALOG_RECORD: ${itemId}`);
+  }
+  return createScaledItem(def, instanceId, 1, () => 0.5);
+}
 
 export const COTW_TOWN: TownLayoutDefinition = {
   name: 'Bjarnarhaven',
@@ -65,12 +75,16 @@ export const COTW_TOWN: TownLayoutDefinition = {
         initialInventory: [
           ItemFactory.createTorch('olaf-torch-1'),
           ItemFactory.createTorch('olaf-torch-2'),
-          ItemFactory.createRations('olaf-rations-1'),
-          ItemFactory.createRations('olaf-rations-2'),
+          ItemFactory.createTravelBread('olaf-bread-1'),
+          ItemFactory.createTravelBread('olaf-bread-2'),
           ItemFactory.createLockpicks('olaf-picks-1'),
-          ItemFactory.createDagger('olaf-dagger-1'),
-          ItemFactory.createUtilityBelt('olaf-belt-1'),
-          ItemFactory.createCoinPurse('olaf-purse-1'),
+          makeItem('sealskin_rucksack', 'olaf-pack-1'),
+          makeItem('leather_coin_pouch', 'olaf-purse-1'),
+          makeItem('braided_sinew_cord', 'olaf-belt-1'),
+          makeItem('tattered_travelers_wrap', 'olaf-wrap-1'),
+          makeItem('bound_hide_wrappings', 'olaf-boots-1'),
+          makeItem('hearth_broth_flask', 'olaf-broth-1'),
+          makeItem('birch_tar_poultice', 'olaf-poultice-1'),
         ],
       },
     },
@@ -89,15 +103,20 @@ export const COTW_TOWN: TownLayoutDefinition = {
         markupRatio: 1.3,
         markdownRatio: 0.5,
         initialInventory: [
-          ItemFactory.createBroadsword('gunther-sword-1'),
-          ItemFactory.createBattleaxe('gunther-axe-1'),
-          ItemFactory.createWoodenShield('gunther-shield-wood'),
-          ItemFactory.createIronShield('gunther-shield-iron'),
-          ItemFactory.createLeatherArmor('gunther-leather-1'),
-          ItemFactory.createChainmail('gunther-chain-1'),
-          ItemFactory.createPlateArmor('gunther-plate-1'),
-          ItemFactory.createIronHelmet('gunther-helm-1'),
-          ItemFactory.createBoots('gunther-boots-1'),
+          ItemFactory.createBroadsword('gunther-broadsword-1'),
+          makeItem('mammut_bone_cudgel', 'gunther-cudgel-1'),
+          makeItem('rime_bit_chisel', 'gunther-chisel-1'),
+          makeItem('cinder_edge_shortsword', 'gunther-sword-1'),
+          makeItem('forge_tongue_hammer', 'gunther-hammer-1'),
+          makeItem('lashed_driftwood_buckler', 'gunther-buckler-1'),
+          makeItem('bellows_plate_shield', 'gunther-shield-1'),
+          makeItem('layered_fur_jerkin', 'gunther-jerkin-1'),
+          makeItem('mammut_hide_brigandine', 'gunther-brigandine-1'),
+          makeItem('cinder_quenched_hauberk', 'gunther-hauberk-1'),
+          makeItem('skraeling_bone_circlet', 'gunther-circlet-1'),
+          makeItem('soot_visored_helm', 'gunther-helm-1'),
+          makeItem('crampon_nailed_boots', 'gunther-boots-1'),
+          makeItem('duergar_forge_gauntlets', 'gunther-gauntlets-1'),
         ],
       },
     },
@@ -116,10 +135,16 @@ export const COTW_TOWN: TownLayoutDefinition = {
         markupRatio: 1.35,
         markdownRatio: 0.45,
         initialInventory: [
-          ItemFactory.createHealthPotion('astrid-hp-1'),
-          ItemFactory.createHealthPotion('astrid-hp-2'),
-          ItemFactory.createManaPotion('astrid-mana-1'),
-          ItemFactory.createManaPotion('astrid-mana-2'),
+          makeItem('hearth_broth_flask', 'astrid-broth-1'),
+          makeItem('hearth_broth_flask', 'astrid-broth-2'),
+          makeItem('birch_tar_poultice', 'astrid-poultice-1'),
+          makeItem('birch_tar_poultice', 'astrid-poultice-2'),
+          makeItem('bog_myrtle_tonic', 'astrid-tonic-1'),
+          makeItem('bog_myrtle_tonic', 'astrid-tonic-2'),
+          makeItem('bog_iron_whetstone', 'astrid-whetstone-1'),
+          makeItem('bellows_skin_canteen', 'astrid-canteen-1'),
+          makeItem('ice_stave_rune_tablet', 'astrid-tablet-1'),
+          makeItem('rune_scratched_bark_map', 'astrid-map-1'),
           ItemFactory.createScrollOfTeleport('astrid-tele-1'),
           ItemFactory.createScrollOfIdentify('astrid-id-1'),
           ItemFactory.createWandOfLightning('astrid-wand-1'),

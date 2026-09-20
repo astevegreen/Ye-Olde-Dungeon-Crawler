@@ -61,6 +61,19 @@ function resolveTier(floor: number): GiantBloodTier | undefined {
   return result;
 }
 
+function isItemEquipped(entity: Entity, itemId: string): boolean {
+  const actor = entity as {
+    inventory?: {
+      paperdoll?: {
+        getEquippedItems?: () => Array<{ id?: string; definitionId?: string }>;
+      };
+    };
+  };
+  const items = actor.inventory?.paperdoll?.getEquippedItems?.();
+  if (!items) return false;
+  return items.some((item) => item.id === itemId || item.definitionId === itemId);
+}
+
 export const giantBloodHandler: StatusHandler = {
   // No onApply: action hooks (`ActionHook.execute`) receive the narrower
   // `EngineContext`, not a full `GameEngine` (ARCHITECTURE.md §3), so the
@@ -70,11 +83,16 @@ export const giantBloodHandler: StatusHandler = {
   // does get the full `GameEngine`.
   onTick(entity: Entity, effect, engine): StatusTickOutput {
     // Ambient while active, like the hazard it replaced — it never counts down on
-    // its own; onTick below removes it explicitly once Act 2 begins.
+    // its own; onTick below removes it explicitly once Act 2 begins (or floor 34 if
+    // Brim-Wolf Pelt Hood is equipped).
     effect.duration = 9999;
 
     const floor = engine.currentFloor;
-    if (floor >= FADE_FLOOR) {
+    const hasHood = isItemEquipped(entity, 'brim_wolf_pelt_hood');
+    const hasFocus = isItemEquipped(entity, 'sol_shard_focus');
+    const effectiveFadeFloor = hasHood ? 34 : FADE_FLOOR;
+
+    if (floor >= effectiveFadeFloor) {
       // Self-removal from inside onTick, the same documented pattern the Rune of
       // Return's interrupt-fizzle uses (statusManager.ts) — no engine change needed
       // for a status to end itself mid-tick instead of expiring naturally.
@@ -83,10 +101,17 @@ export const giantBloodHandler: StatusHandler = {
     }
 
     const isFirstTick = effect.data === undefined;
-    const tier = resolveTier(floor);
+    const effectiveFloor = hasHood ? Math.max(1, floor - 8) : floor;
+    const tier = resolveTier(effectiveFloor);
     const previousTierFloor = effect.data?.tierFloor as number | undefined;
-    const attackBonus = tier?.attackBonus ?? 0;
-    const defenseBonus = tier?.defenseBonus ?? 0;
+    let attackBonus = tier?.attackBonus ?? 0;
+    let defenseBonus = tier?.defenseBonus ?? 0;
+
+    if (hasFocus) {
+      attackBonus = 0;
+      defenseBonus = 0;
+    }
+
     effect.data = { attackBonus, defenseBonus, tierFloor: tier?.floor };
 
     let message: string | undefined;
@@ -118,6 +143,9 @@ export const GIANT_BLOOD_BOOTSTRAP_HOOK: ActionHook = {
 };
 
 function giantBloodBonus(actor: Entity, key: 'attackBonus' | 'defenseBonus'): number {
+  if (isItemEquipped(actor, 'sol_shard_focus')) {
+    return 0;
+  }
   const status = actor.statusManager?.getStatus(GIANT_BLOOD_STATUS);
   const value = status?.data?.[key];
   return typeof value === 'number' ? value : 0;

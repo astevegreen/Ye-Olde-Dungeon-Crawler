@@ -201,6 +201,20 @@ export class CharacterRoller {
       player.inventory.equipFromPack(weapon.id);
     }
 
+    // 1b. Armor (Torso)
+    if (starterKit.armorItemId) {
+      const armor = instantiateItem(starterKit.armorItemId, `${profileId}-armor`);
+      player.inventory.primaryPack.addItem(armor);
+      player.inventory.equipFromPack(armor.id);
+    }
+
+    // 1c. Boots (Feet)
+    if (starterKit.bootsItemId) {
+      const boots = instantiateItem(starterKit.bootsItemId, `${profileId}-boots`);
+      player.inventory.primaryPack.addItem(boots);
+      player.inventory.equipFromPack(boots.id);
+    }
+
     // 2. Purse
     if (starterKit.purseItemId) {
       const purse = instantiateItem(starterKit.purseItemId, `${profileId}-purse`);

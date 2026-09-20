@@ -891,6 +891,324 @@ export const COTW_SPRITE_RECIPES: Record<string, SpriteRecipe> = {
   },
 
   // ==========================================
+  // SIGNATURE RELICS & ARTIFACTS (CotW)
+  // ==========================================
+
+  nidhogg_fang: (ctx, ox, oy) => {
+    // Sinew-wrapped hilt & pommel at bottom-left
+    ctx.fillStyle = '#451a03';
+    ctx.fillRect(ox + 7, oy + 23, 6, 5);
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(ox + 8, oy + 22, 5, 4);
+    // Gold filigree collar
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(ox + 10, oy + 20, 5, 3);
+    ctx.fillStyle = '#d97706';
+    ctx.fillRect(ox + 11, oy + 21, 3, 1);
+
+    // Colossal curved dragon tooth blade
+    ctx.fillStyle = '#e2e8f0';
+    ctx.beginPath();
+    ctx.moveTo(ox + 11, oy + 20);
+    ctx.quadraticCurveTo(ox + 13, oy + 10, ox + 24, oy + 4); // sharp forward curve to tip
+    ctx.quadraticCurveTo(ox + 20, oy + 14, ox + 15, oy + 21); // inner belly curve
+    ctx.closePath();
+    ctx.fill();
+
+    // Dark necrotic enamel core
+    ctx.fillStyle = '#1e1b4b';
+    ctx.beginPath();
+    ctx.moveTo(ox + 12, oy + 18);
+    ctx.quadraticCurveTo(ox + 14, oy + 11, ox + 22, oy + 6);
+    ctx.quadraticCurveTo(ox + 18, oy + 14, ox + 14, oy + 19);
+    ctx.closePath();
+    ctx.fill();
+
+    // Poisoned runic venom channels along the spine
+    ctx.fillStyle = '#10b981';
+    ctx.fillRect(ox + 14, oy + 15, 2, 2);
+    ctx.fillRect(ox + 16, oy + 12, 2, 2);
+    ctx.fillRect(ox + 19, oy + 9, 2, 2);
+    ctx.fillStyle = '#6ee7b7';
+    ctx.fillRect(ox + 17, oy + 11, 1, 2);
+
+    // Malice purple necrotic miasma droplets
+    ctx.fillStyle = '#a855f7';
+    ctx.fillRect(ox + 23, oy + 3, 2, 2);
+    ctx.fillRect(ox + 25, oy + 6, 2, 2);
+    ctx.fillRect(ox + 21, oy + 2, 1, 2);
+
+    // Blade razor highlight along outer spine
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(ox + 22, oy + 5, 2, 1);
+    ctx.fillRect(ox + 18, oy + 8, 1, 2);
+  },
+
+  sol_shard_focus: (ctx, ox, oy) => {
+    // Ambient solar radiance aura
+    ctx.fillStyle = 'rgba(254, 240, 138, 0.25)';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 15, 13, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Golden tripod gimbal / claw mount
+    ctx.fillStyle = '#b45309';
+    ctx.fillRect(ox + 14, oy + 23, 4, 6);
+    ctx.fillStyle = '#d97706';
+    ctx.fillRect(ox + 9, oy + 25, 14, 2);
+    ctx.fillRect(ox + 8, oy + 27, 3, 2);
+    ctx.fillRect(ox + 21, oy + 27, 3, 2);
+
+    // Claw prongs holding the prism
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(ox + 8, oy + 16, 3, 7);
+    ctx.fillRect(ox + 21, oy + 16, 3, 7);
+    ctx.fillRect(ox + 15, oy + 20, 2, 4);
+
+    // Brilliant faceted solar quartz prism (hexagonal crystal)
+    ctx.fillStyle = '#f59e0b';
+    ctx.beginPath();
+    ctx.moveTo(ox + 16, oy + 4);
+    ctx.lineTo(ox + 22, oy + 10);
+    ctx.lineTo(ox + 22, oy + 18);
+    ctx.lineTo(ox + 16, oy + 22);
+    ctx.lineTo(ox + 10, oy + 18);
+    ctx.lineTo(ox + 10, oy + 10);
+    ctx.closePath();
+    ctx.fill();
+
+    // Luminous inner facets
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath();
+    ctx.moveTo(ox + 16, oy + 6);
+    ctx.lineTo(ox + 20, oy + 11);
+    ctx.lineTo(ox + 16, oy + 16);
+    ctx.lineTo(ox + 12, oy + 11);
+    ctx.closePath();
+    ctx.fill();
+
+    // Radiant core
+    ctx.fillStyle = '#fef08a';
+    ctx.fillRect(ox + 14, oy + 9, 4, 6);
+
+    // Cross-glint light flares
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(ox + 15, oy + 2, 2, 4);
+    ctx.fillRect(ox + 15, oy + 11, 2, 2);
+    ctx.fillRect(ox + 4, oy + 13, 4, 2);
+    ctx.fillRect(ox + 24, oy + 13, 4, 2);
+  },
+
+  petrified_world_bark_tower_shield: (ctx, ox, oy) => {
+    // Massive rectangular ironwood slab body
+    ctx.fillStyle = '#292524';
+    ctx.fillRect(ox + 6, oy + 3, 20, 26);
+    ctx.fillStyle = '#451a03';
+    ctx.fillRect(ox + 8, oy + 4, 16, 24);
+
+    // Petrified bark vertical striations & fissures
+    ctx.fillStyle = '#1c1917';
+    ctx.fillRect(ox + 10, oy + 5, 2, 22);
+    ctx.fillRect(ox + 15, oy + 5, 2, 22);
+    ctx.fillRect(ox + 20, oy + 5, 2, 22);
+
+    // Living Yggdrasil sap-green growth rings & runic grain
+    ctx.fillStyle = '#15803d';
+    ctx.fillRect(ox + 11, oy + 8, 1, 8);
+    ctx.fillRect(ox + 14, oy + 18, 1, 7);
+    ctx.fillRect(ox + 19, oy + 9, 1, 10);
+    ctx.fillStyle = '#22c55e';
+    ctx.fillRect(ox + 11, oy + 11, 2, 2);
+    ctx.fillRect(ox + 19, oy + 14, 2, 2);
+
+    // Iron reinforcement boss & brackets
+    ctx.fillStyle = '#334155';
+    // Corner brackets
+    ctx.fillRect(ox + 6, oy + 3, 5, 4);
+    ctx.fillRect(ox + 21, oy + 3, 5, 4);
+    ctx.fillRect(ox + 6, oy + 25, 5, 4);
+    ctx.fillRect(ox + 21, oy + 25, 5, 4);
+    // Center boss
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 16, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Boss center spike & iron highlights
+    ctx.fillStyle = '#64748b';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 16, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillRect(ox + 15, oy + 15, 2, 2);
+    // Rivets
+    ctx.fillRect(ox + 8, oy + 5, 1, 1);
+    ctx.fillRect(ox + 23, oy + 5, 1, 1);
+    ctx.fillRect(ox + 8, oy + 27, 1, 1);
+    ctx.fillRect(ox + 23, oy + 27, 1, 1);
+  },
+
+  antler_crowned_mask: (ctx, ox, oy) => {
+    // Stag Antlers (sweeping upward and outwards)
+    ctx.fillStyle = '#78350f';
+    // Left antler main beam & tines
+    ctx.fillRect(ox + 10, oy + 8, 3, 5);
+    ctx.fillRect(ox + 7, oy + 5, 4, 4);
+    ctx.fillRect(ox + 4, oy + 2, 4, 4);
+    ctx.fillRect(ox + 3, oy + 1, 2, 3);
+    ctx.fillRect(ox + 7, oy + 1, 2, 4); // top tine
+    ctx.fillRect(ox + 2, oy + 5, 4, 2); // brow tine
+    // Right antler main beam & tines
+    ctx.fillRect(ox + 19, oy + 8, 3, 5);
+    ctx.fillRect(ox + 21, oy + 5, 4, 4);
+    ctx.fillRect(ox + 24, oy + 2, 4, 4);
+    ctx.fillRect(ox + 27, oy + 1, 2, 3);
+    ctx.fillRect(ox + 23, oy + 1, 2, 4); // top tine
+    ctx.fillRect(ox + 26, oy + 5, 4, 2); // brow tine
+
+    // Antler tips bone highlights
+    ctx.fillStyle = '#d97706';
+    ctx.fillRect(ox + 3, oy + 1, 2, 1);
+    ctx.fillRect(ox + 7, oy + 1, 2, 1);
+    ctx.fillRect(ox + 27, oy + 1, 2, 1);
+    ctx.fillRect(ox + 23, oy + 1, 2, 1);
+
+    // Troll-Wife Bone Face Mask
+    ctx.fillStyle = '#e2e8f0';
+    ctx.beginPath();
+    ctx.ellipse(ox + 16, oy + 17, 6, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Mask shading & carved hollow eyes
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(ox + 11, oy + 14, 10, 1);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(ox + 13, oy + 15, 2, 3);
+    ctx.fillRect(ox + 17, oy + 15, 2, 3);
+    ctx.fillRect(ox + 15, oy + 20, 2, 2); // nose slit
+
+    // Forehead runic mark of the Iviðja
+    ctx.fillStyle = '#7e22ce';
+    ctx.fillRect(ox + 15, oy + 11, 2, 2);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(ox + 15, oy + 9, 2, 1);
+
+    // Hanging willow moss & charm beads below chin
+    ctx.fillStyle = '#15803d';
+    ctx.fillRect(ox + 13, oy + 24, 2, 5);
+    ctx.fillRect(ox + 17, oy + 24, 2, 5);
+    ctx.fillStyle = '#84cc16';
+    ctx.fillRect(ox + 15, oy + 25, 2, 4);
+  },
+
+  marrow_gnawed_ring: (ctx, ox, oy) => {
+    // Jagged primeval dragon vertebra bone ring (outer circle)
+    ctx.fillStyle = '#cbd5e1';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 16, 10, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bone texture and gnawed notches
+    ctx.fillStyle = '#f1f5f9';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 16, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Carved gnawed tooth marks along perimeter
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(ox + 15, oy + 5, 2, 2);
+    ctx.fillRect(ox + 24, oy + 15, 2, 2);
+    ctx.fillRect(ox + 15, oy + 25, 2, 2);
+    ctx.fillRect(ox + 6, oy + 15, 2, 2);
+    ctx.fillRect(ox + 22, oy + 9, 2, 2);
+    ctx.fillRect(ox + 8, oy + 21, 2, 2);
+
+    // Hollow center containing pulsating void marrow
+    ctx.fillStyle = '#090514';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 16, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Dark void marrow core & corruption tendrils
+    ctx.fillStyle = '#4c1d95';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 16, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#7e22ce';
+    ctx.fillRect(ox + 15, oy + 14, 2, 4);
+    ctx.fillRect(ox + 14, oy + 15, 4, 2);
+
+    // Glowing necrotic violet marrow flecks
+    ctx.fillStyle = '#c084fc';
+    ctx.fillRect(ox + 15, oy + 15, 2, 2);
+    ctx.fillRect(ox + 19, oy + 12, 1, 2);
+    ctx.fillRect(ox + 12, oy + 19, 1, 2);
+
+    // Bone rim glint
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(ox + 12, oy + 8, 2, 2);
+  },
+
+  duergar_lodestone: (ctx, ox, oy) => {
+    // Outer brass armillary gimbal ring
+    ctx.fillStyle = '#b45309';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 16, 11, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hollow out outer ring
+    ctx.fillStyle = '#0c1017';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 16, 9, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Inner tilted brass armillary ellipse
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(ox + 16, oy + 16, 8, 4, Math.PI / 4, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Top suspension loop & pivot screws
+    ctx.fillStyle = '#d97706';
+    ctx.fillRect(ox + 14, oy + 2, 4, 3);
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillRect(ox + 15, oy + 1, 2, 2);
+    ctx.fillRect(ox + 4, oy + 15, 2, 2);
+    ctx.fillRect(ox + 26, oy + 15, 2, 2);
+
+    // Floating magnetic lodestone core (dark faceted iron octahedron)
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.moveTo(ox + 16, oy + 9);
+    ctx.lineTo(ox + 21, oy + 16);
+    ctx.lineTo(ox + 16, oy + 23);
+    ctx.lineTo(ox + 11, oy + 16);
+    ctx.closePath();
+    ctx.fill();
+
+    // Lodestone facet highlights
+    ctx.fillStyle = '#334155';
+    ctx.beginPath();
+    ctx.moveTo(ox + 16, oy + 11);
+    ctx.lineTo(ox + 19, oy + 16);
+    ctx.lineTo(ox + 16, oy + 21);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(ox + 15, oy + 14, 2, 4);
+
+    // Cyan magnetic spark arcs and polar needles
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillRect(ox + 15, oy + 7, 2, 3); // North pole flare
+    ctx.fillRect(ox + 15, oy + 22, 2, 3); // South pole flare
+    ctx.fillStyle = '#67e8f9';
+    ctx.fillRect(ox + 9, oy + 11, 2, 2);
+    ctx.fillRect(ox + 21, oy + 19, 2, 2);
+    ctx.fillStyle = '#e0f2fe';
+    ctx.fillRect(ox + 15, oy + 8, 2, 1);
+  },
+
+  // ==========================================
   // MONSTER ARCHETYPES (Phase 5)
   // ==========================================
 

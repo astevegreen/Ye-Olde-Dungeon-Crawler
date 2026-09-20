@@ -399,6 +399,8 @@ export interface AtlasProceduralTheme<TContext = any> {
 
 export interface StarterKitDefinition {
   weaponItemId: string;
+  armorItemId?: string;
+  bootsItemId?: string;
   purseItemId?: string;
   coins?: Array<{ denomination: CoinDenomination; count: number }>;
   beltItemId?: string;

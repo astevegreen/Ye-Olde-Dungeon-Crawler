@@ -135,5 +135,26 @@ export const COTW_VAULTS: VaultBlueprint[] = [
     ],
     preferredMonsters: ['frost_drake', 'ogre'],
   },
+  {
+    id: 'floor45_fang_vault',
+    name: "The Dragon's Maw Vault",
+    description: 'A subterranean sanctum carved into the root-rock of the Maw of Malice, where Víðnir guards Níðhögg’s shed relic fang.',
+    minFloor: 45,
+    maxFloor: 45,
+    minibossId: 'miniboss_maw_herald',
+    layout: [
+      '###############',
+      '#P.~~.....~~.P#',
+      '#.~~.......~~.#',
+      '@....P.K.P....@',
+      '#.~...C.C...~.#',
+      '#.~..M...M..~.#',
+      '@....P...P....@',
+      '#.~~.......~~.#',
+      '#P.~~.....~~.P#',
+      '###############',
+    ],
+    preferredMonsters: ['primordial_drake', 'root_rot_abomination', 'void_gazer'],
+  },
 ];
 

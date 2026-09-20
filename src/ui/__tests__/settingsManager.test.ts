@@ -61,7 +61,7 @@ describe('SettingsManager', () => {
     expect(loaded2.radialMenuSlots[1]).toBeNull();
   });
 
-  it('persists changes to storage under dedicated cotw_settings key', () => {
+  it('persists changes to storage under dedicated yodc_settings key', () => {
     manager.updateSettings({
       arrowChordingEnabled: false,
       arrowChordBufferMs: 60,

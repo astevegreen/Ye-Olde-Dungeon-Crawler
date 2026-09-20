@@ -1,4 +1,4 @@
-import type { GameContentManifest } from '../../engine';
+import type { GameContentManifest, AttributeMilestoneTrigger } from '../../engine';
 import { COTW_MONSTERS, COTW_BESTIARY } from './monsters';
 import { COTW_ITEMS } from './items';
 import { COTW_SPELLS } from './spells';
@@ -20,11 +20,17 @@ import { COTW_MONSTER_SCALING } from './monsterScaling';
 import { OATH_TRIGGER, OATH_TIMED_EVENT } from './oath';
 import { COTW_TILES } from './tiles';
 
+export const COTW_ATTRIBUTE_MILESTONES: AttributeMilestoneTrigger[] = [
+  { id: 'milestone_dex_15', attribute: 'dexterity', threshold: 15, choiceId: 'milestone_dex_15' },
+  { id: 'milestone_str_15', attribute: 'strength', threshold: 15, choiceId: 'milestone_str_15' },
+  { id: 'milestone_con_15', attribute: 'constitution', threshold: 15, choiceId: 'milestone_con_15' },
+  { id: 'milestone_int_15', attribute: 'intelligence', threshold: 15, choiceId: 'milestone_int_15' },
+];
+
 export const cotwManifest: GameContentManifest = {
   id: 'cotw',
   name: 'Castle of the Winds',
   description: 'Classic Norse-themed roguelike fantasy adventure in Midgard.',
-  supportsLegacyKeys: true,
   tiles: COTW_TILES,
   monsters: COTW_MONSTERS,
   items: COTW_ITEMS,
@@ -66,6 +72,7 @@ export const cotwManifest: GameContentManifest = {
   monsterScaling: COTW_MONSTER_SCALING,
   actionHooks: [GIANT_BLOOD_BOOTSTRAP_HOOK],
   storyChoiceTriggers: [OATH_TRIGGER],
+  attributeMilestones: COTW_ATTRIBUTE_MILESTONES,
   timedEvents: [OATH_TIMED_EVENT],
   bossFleeResolutions: [
     { monsterDefinitionId: 'nidhogg', fleeTurnsRequired: 5, sealedFlag: 'nidhogg_root_sealed' },

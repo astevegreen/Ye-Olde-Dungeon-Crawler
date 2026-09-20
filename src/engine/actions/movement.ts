@@ -202,6 +202,7 @@ export class MovementAction implements Action {
 
     // 6. Stairs and Altar Check for Player
     if (this.entity.type === 'player') {
+      let choiceTriggered = false;
       const destTile = engine.map.getTile(targetX, targetY);
       const handlerId = destTile?.interactionHandlerId ?? destTile?.type;
       if (handlerId === 'stairs_down' || destTile?.isStairsDown) {
@@ -234,6 +235,7 @@ export class MovementAction implements Action {
           engine.log(resolvedMsg);
         } else if (!engine.getWorldFlag(`${handlerId}_resolved`)) {
           if (engine.onChoiceInteract) {
+            choiceTriggered = true;
             engine.onChoiceInteract(
               choiceDef,
               (optionId: string) => {
@@ -265,11 +267,41 @@ export class MovementAction implements Action {
         if (!choiceDef) continue;
         engine.setWorldFlag(offeredFlag, true);
         if (engine.onChoiceInteract) {
+          choiceTriggered = true;
           engine.onChoiceInteract(choiceDef, (optionId: string) => {
             engine.handlePlayerAction(new ExecuteChoiceAction(this.entity as Player, choiceDef, optionId));
           });
+          break;
         } else {
           engine.log(`You stand before ${choiceDef.title}. It awaits your decision.`);
+          break;
+        }
+      }
+
+      // Attribute-threshold-gated choice unlocks (ARCHITECTURE.md §3, AttributeMilestoneTrigger):
+      // checked every player move rather than inside Player.allocateAttribute for three reasons:
+      // (1) matches StoryChoiceTrigger: the condition is progress (attributes), not location;
+      // (2) allocateAttribute is a pure mutator with no engine handle and must not gain one;
+      // (3) avoids opening a choice modal on top of the still-open level-up modal.
+      if (!choiceTriggered) {
+        for (const milestone of engine.manifest?.attributeMilestones ?? []) {
+          const playerAttr = (this.entity as Player)[milestone.attribute];
+          if (typeof playerAttr !== 'number' || playerAttr < milestone.threshold) continue;
+          const offeredFlag = `${milestone.id}_offered`;
+          if (engine.getWorldFlag(offeredFlag)) continue;
+          const choiceDef = engine.manifest?.choices?.[milestone.choiceId];
+          if (!choiceDef) continue;
+          engine.setWorldFlag(offeredFlag, true);
+          if (engine.onChoiceInteract) {
+            choiceTriggered = true;
+            engine.onChoiceInteract(choiceDef, (optionId: string) => {
+              engine.handlePlayerAction(new ExecuteChoiceAction(this.entity as Player, choiceDef, optionId));
+            });
+            break;
+          } else {
+            engine.log(`You stand before ${choiceDef.title}. It awaits your decision.`);
+            break;
+          }
         }
       }
 

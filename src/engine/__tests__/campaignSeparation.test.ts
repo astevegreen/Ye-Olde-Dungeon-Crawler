@@ -93,14 +93,13 @@ describe('Campaign Separation (P-03 Stage 2)', () => {
     expect(tileAtBoss?.interactionHandlerId).not.toBe('quest_victory_portal');
   });
 
-  it('verifies src/engine production code contains no tyr|valhalla|hrungnir except allowed legacy/storage tokens', () => {
+  it('verifies src/engine production code contains no tyr|valhalla|hrungnir outside hall-of-fame display copy', () => {
     const engineDir = path.resolve(__dirname, '..');
-    const allowedExceptionsRegex = /ValhallaEntry|cotw_valhalla/g;
 
-    // In Step 4, tile types have moved to src/content/cotw/tiles.ts.
-    // compaction.ts retains legacy single-letter codes for schema <= 10 saves (ARCHITECTURE.md §5).
-    // leaderboard.ts defines cotw_valhalla storage key / ValhallaEntry leaderboard.
-    const exemptFiles = new Set(['compaction.ts', 'leaderboard.ts']);
+    // leaderboard.ts is the only remaining exemption, and only for two player-facing
+    // message strings ("Hall of Valhalla"). Its identifiers and storage key are generic.
+    // Making that copy pack-supplied would remove the last exemption.
+    const exemptFiles = new Set(['leaderboard.ts']);
 
     function scanDir(dir: string): { file: string; match: string; line: number }[] {
       const violations: { file: string; match: string; line: number }[] = [];
@@ -120,9 +119,7 @@ describe('Campaign Separation (P-03 Stage 2)', () => {
           const content = fs.readFileSync(fullPath, 'utf8');
           const lines = content.split('\n');
           lines.forEach((line, idx) => {
-            // Strip permitted exceptions
-            const sanitized = line.replace(allowedExceptionsRegex, '');
-            const match = sanitized.match(/\b(tyr|valhalla|hrungnir)\b/i);
+            const match = line.match(/\b(tyr|valhalla|hrungnir)\b/i);
             if (match) {
               violations.push({
                 file: path.relative(engineDir, fullPath),

@@ -37,6 +37,7 @@ export const ACTION_METADATA: ActionMetadata[] = [
   { id: 'rune_of_return_tree', name: 'Rune of Return Mastery', category: 'Combat & Magic', defaultCodes: ['Shift+KeyT'] },
 
   // Interaction & Inventory
+  { id: 'character_menu', name: 'Character Menu', category: 'Interaction & Inventory', defaultCodes: ['KeyE'] },
   { id: 'inventory', name: 'Open Inventory', category: 'Interaction & Inventory', defaultCodes: ['KeyI'] },
   { id: 'pickup', name: 'Pick Up Item', category: 'Interaction & Inventory', defaultCodes: ['KeyG', 'Comma'] },
   { id: 'quick_loot', name: 'Quick-Loot All Items', category: 'Interaction & Inventory', defaultCodes: ['Shift+KeyG', 'Shift+Comma'] },
@@ -86,7 +87,7 @@ function sanitizeRadialMenuSlots(raw: unknown): (RadialMenuSlotConfig | null)[] 
   });
 }
 
-export const SETTINGS_STORAGE_KEY = 'cotw_settings';
+export const SETTINGS_STORAGE_KEY = 'yodc_settings';
 
 export function getDefaultKeybinds(): Record<string, string[]> {
   const binds: Record<string, string[]> = {};

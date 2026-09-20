@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ProfileManager, MemoryStorage, SAVE_KEY_PREFIX } from '../profile-manager';
+import { ProfileManager, MemoryStorage } from '../profile-manager';
 import { Container } from '../../items/container';
 import { Item } from '../../items/item';
 import { ItemFactory } from '../../items/factory';
@@ -36,8 +36,8 @@ describe('Multi-Character Profile Save Manager', () => {
     manager.saveCharacter(astridEngine, astridProfile);
 
     // 3. Verify distinct storage keys
-    const svenKey = `${SAVE_KEY_PREFIX}${svenProfile.id}`;
-    const astridKey = `${SAVE_KEY_PREFIX}${astridProfile.id}`;
+    const svenKey = `${manager.saveKeyPrefix}${svenProfile.id}`;
+    const astridKey = `${manager.saveKeyPrefix}${astridProfile.id}`;
     expect(storage.getItem(svenKey)).not.toBeNull();
     expect(storage.getItem(astridKey)).not.toBeNull();
     expect(svenKey).not.toBe(astridKey);
@@ -153,7 +153,7 @@ describe('Multi-Character Profile Save Manager', () => {
     expect(deleted).toBe(true);
 
     // Verify Hero 2 save payload removed
-    expect(storage.getItem(`${SAVE_KEY_PREFIX}${p2.id}`)).toBeNull();
+    expect(storage.getItem(`${manager.saveKeyPrefix}${p2.id}`)).toBeNull();
 
     // Verify Hero 1 and Hero 3 remain
     const remaining = manager.listProfiles();

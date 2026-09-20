@@ -26,7 +26,7 @@ import type {
   CharacterProfile,
   GameEvent,
   SpellDefinition,
-  ValhallaEntry,
+  HallOfFameEntry,
 } from './engine';
 import { CanvasRenderer } from './rendering/canvas-renderer';
 import { InputHandler } from './rendering/input-handler';
@@ -56,6 +56,15 @@ import { showToast } from './ui/toast';
 import { getBrowserAsyncStore } from './ui/indexedDbStore';
 import { setupSaveDragAndDrop, importSaveWithValidation } from './ui/saveImporter';
 import { defaultPlatformAdapter, getBrowserStorage } from './ui/platform';
+import {
+  CharacterMenuModal,
+  CharacterTab,
+  FlankModuleTab,
+  CompendiumTabAdapter,
+  PactTabAdapter,
+  SpellbookTabAdapter,
+} from './ui/characterMenu';
+import { InventoryTabAdapter } from './rendering/inventoryTabAdapter';
 import './ui/styles/flanks.css';
 import './ui/styles/layout.css';
 import { FlankManager } from './ui/flanks/flankManager';
@@ -144,6 +153,24 @@ window.addEventListener('DOMContentLoaded', () => {
   });
   const autosaveManager = new AutosaveManager(undefined, activeManifest);
 
+  let characterMenuModal: CharacterMenuModal;
+  const characterTab = new CharacterTab();
+  characterTab.onAllocateCallback = () => {
+    updateHeaderInfo();
+    renderer?.render();
+  };
+  const storyTab = new FlankModuleTab([new JournalModule(), new WorldLedgerModule()]);
+  const bestiaryTab = new CompendiumTabAdapter(compendiumModal, () => {
+    characterMenuModal?.close();
+    renderer?.render();
+  });
+  const pactsTab = new PactTabAdapter(pactModal, () => {
+    characterMenuModal?.close();
+    renderer?.render();
+  });
+  let spellbookTab: SpellbookTabAdapter;
+  let inventoryTab: InventoryTabAdapter;
+
   // Asynchronous bulk tier (ARCHITECTURE.md §5): IndexedDB in the browser, in-memory when
   // the browser has none, so callers never branch on availability.
   const bulkArchive = new BulkArchive(getBrowserAsyncStore() ?? new InMemoryAsyncStore());
@@ -215,6 +242,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
   function openSpellbook(): void {
     if (!activeEngine) return;
+    if (characterMenuModal) {
+      if (inputHandler) {
+        inputHandler.modalStack.push(characterMenuModal);
+      }
+      characterMenuModal.open('spellbook');
+      return;
+    }
     if (renderer) {
       renderer.inventoryOverlay.close();
       renderer.inspectOverlay.close();
@@ -361,6 +395,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
   spellbookModal = new SpellbookModal({
     onCastSpell: (spell) => {
+      if (characterMenuModal?.isOpen) {
+        characterMenuModal.close();
+      }
       if (inputHandler) {
         inputHandler.modalStack.remove('spellbook');
         inputHandler.isInputLocked = false;
@@ -381,6 +418,7 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer?.render();
     },
   });
+  spellbookTab = new SpellbookTabAdapter(spellbookModal);
   spellbookModal.mount(document.body);
 
   bottomStatusBar = new BottomStatusBar();
@@ -580,7 +618,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
   compendiumBtn?.addEventListener('click', () => {
     if (activeEngine) {
-      compendiumModal.toggle(activeEngine);
+      if (characterMenuModal) {
+        if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+        characterMenuModal.open('bestiary');
+      } else {
+        compendiumModal.toggle(activeEngine);
+      }
     }
   });
 
@@ -708,7 +751,7 @@ window.addEventListener('DOMContentLoaded', () => {
     mainMenu.show();
   }
 
-  let currentGameOverEntry: ValhallaEntry | null = null;
+  let currentGameOverEntry: HallOfFameEntry | null = null;
 
   function showGameOverModal(status: 'victorious' | 'fallen' | 'active', summary: any): void {
     const modal = document.getElementById('game-over-modal');
@@ -908,7 +951,10 @@ window.addEventListener('DOMContentLoaded', () => {
         shortcut: 'Z or C',
         description: 'Open spellbook to select and aim magical attacks',
         execute: (eng) => {
-          if (renderer) {
+          if (characterMenuModal) {
+            if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+            characterMenuModal.open('spellbook');
+          } else if (renderer) {
             renderer.inventoryOverlay.close();
             renderer.inspectOverlay.close();
             renderer.targetingOverlay.openSpellbook(eng);
@@ -923,7 +969,11 @@ window.addEventListener('DOMContentLoaded', () => {
         shortcut: 'I',
         description: 'Manage backpack, equip weapons/armor, and view paperdoll',
         execute: (eng) => {
-          if (renderer) {
+          if (characterMenuModal) {
+            if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+            characterMenuModal.open('inventory');
+            renderer?.render();
+          } else if (renderer) {
             renderer.inventoryOverlay.toggle(eng);
             renderer.render();
           }
@@ -936,22 +986,69 @@ window.addEventListener('DOMContentLoaded', () => {
         shortcut: 'B',
         description: 'Review monster vulnerabilities, stats, and mastery combat perks',
         execute: (eng) => {
-          compendiumModal.open(eng);
+          if (characterMenuModal) {
+            if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+            characterMenuModal.open('bestiary');
+          } else {
+            compendiumModal.open(eng);
+          }
         },
       },
       {
         id: 'allocate-stats',
         title: 'Allocate Stat Points',
         category: 'Action',
-        shortcut: 'U',
+        shortcut: 'U or E',
         description: 'Spend unspent attribute points on Strength, Dexterity, Constitution, or Intelligence',
         execute: (eng) => {
-          if (inputHandler) {
+          if (characterMenuModal) {
+            if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+            characterMenuModal.open('character');
+          } else if (inputHandler) {
             levelUpModal.setModalStack(inputHandler.modalStack);
             levelUpModal.open(eng);
             inputHandler.modalStack.push(levelUpModal);
           } else {
             levelUpModal.open(eng);
+          }
+        },
+      },
+      {
+        id: 'character_menu',
+        title: 'Character Menu',
+        category: 'Mode',
+        shortcut: 'E',
+        description: 'Open consolidated character menu (Character sheet, Inventory, Spells, Bestiary, Pacts, Story)',
+        execute: () => {
+          if (characterMenuModal) {
+            if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+            characterMenuModal.open('character');
+          }
+        },
+      },
+      {
+        id: 'pacts',
+        title: 'Ancient Run Pacts & Bounties',
+        category: 'Mode',
+        shortcut: 'P',
+        description: 'View, seal, or renounce ancient difficulty pacts',
+        execute: () => {
+          if (characterMenuModal) {
+            if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+            characterMenuModal.open('pacts');
+          }
+        },
+      },
+      {
+        id: 'story',
+        title: 'Cartographer & World Ledger',
+        category: 'Help',
+        shortcut: 'Story',
+        description: 'Inspect explored floor chronicle and faction standings',
+        execute: () => {
+          if (characterMenuModal) {
+            if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+            characterMenuModal.open('story');
           }
         },
       },
@@ -1221,6 +1318,23 @@ window.addEventListener('DOMContentLoaded', () => {
 
     if (!renderer) {
       renderer = new CanvasRenderer(canvas!, engine);
+      inventoryTab = new InventoryTabAdapter(renderer.inventoryOverlay, renderer);
+      characterMenuModal = new CharacterMenuModal(
+        [inventoryTab, characterTab, spellbookTab, bestiaryTab, pactsTab, storyTab],
+        () => ({
+          engine: activeEngine!,
+          worldState: activeEngine!.worldState,
+          player: activeEngine!.player,
+          map: activeEngine!.map,
+          currentFloor: activeEngine!.currentFloor,
+          turnCount: activeEngine!.turnCount,
+          manifest: activeEngine!.manifest ?? activeManifest,
+          pacts: activeEngine!.pacts,
+        }),
+        () => {
+          renderer?.render();
+        }
+      );
       renderer.mouseVectoringEnabled = settingsManager.getSettings().mouseVectoringEnabled;
       renderer.radialMenuOverlay.slots = settingsManager.getSettings().radialMenuSlots;
       renderer.onResolveRadialLabel = resolveRadialMenuLabel;
@@ -1232,17 +1346,27 @@ window.addEventListener('DOMContentLoaded', () => {
         }
       });
       renderer.shopOverlay.onOpenCompendium = () => {
-        compendiumModal.open(engine);
+        if (characterMenuModal) {
+          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+          characterMenuModal.open('bestiary');
+        } else {
+          compendiumModal.open(engine);
+        }
       };
       renderer.shopOverlay.onOpenRuneTree = () => {
         openRuneTree();
       };
       renderer.onPactModalRequested = () => {
-        pactModal.open(engine, () => {
-          popModal(pactModal.id);
-          renderer?.render();
-        });
-        pushModal(pactModal.id, pactModal);
+        if (characterMenuModal) {
+          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+          characterMenuModal.open('pacts');
+        } else {
+          pactModal.open(engine, () => {
+            popModal(pactModal.id);
+            renderer?.render();
+          });
+          pushModal(pactModal.id, pactModal);
+        }
       };
       inputHandler = new InputHandler(
         engine,
@@ -1262,6 +1386,8 @@ window.addEventListener('DOMContentLoaded', () => {
         settingsManager,
         renderer.radialMenuOverlay
       );
+      inputHandler.characterMenuModal = characterMenuModal;
+      characterMenuModal.setModalStack(inputHandler.modalStack);
       inputHandler.pactModal = pactModal;
       inputHandler.levelUpModal = levelUpModal;
       inputHandler.runeOfReturnTreeModal = runeTreeModal;
@@ -1275,20 +1401,32 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer.setEngine(engine);
       renderer.onResolveRadialLabel = resolveRadialMenuLabel;
       renderer.shopOverlay.onOpenCompendium = () => {
-        compendiumModal.open(engine);
+        if (characterMenuModal) {
+          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+          characterMenuModal.open('bestiary');
+        } else {
+          compendiumModal.open(engine);
+        }
       };
       renderer.shopOverlay.onOpenRuneTree = () => {
         openRuneTree();
       };
       renderer.onPactModalRequested = () => {
-        pactModal.open(engine, () => {
-          popModal(pactModal.id);
-          renderer?.render();
-        });
-        pushModal(pactModal.id, pactModal);
+        if (characterMenuModal) {
+          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+          characterMenuModal.open('pacts');
+        } else {
+          pactModal.open(engine, () => {
+            popModal(pactModal.id);
+            renderer?.render();
+          });
+          pushModal(pactModal.id, pactModal);
+        }
       };
       inputHandler?.setEngine(engine);
       if (inputHandler) {
+        inputHandler.characterMenuModal = characterMenuModal;
+        characterMenuModal.setModalStack(inputHandler.modalStack);
         inputHandler.shopOverlay = renderer.shopOverlay;
         inputHandler.inspectOverlay = renderer.inspectOverlay;
         inputHandler.mapOverlay = renderer.mapOverlay;

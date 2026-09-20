@@ -6,26 +6,10 @@ import { Player } from '../../entities/player';
 import { CharacterRoller } from '../../character/characterRoller';
 import { serializeGame, deserializeGame } from '../serializer';
 import { CURRENT_SCHEMA_VERSION, type VersionedSaveEnvelope } from '../migrator';
-import { compactTiles, compactTilesWithDictionary, decompactTiles, compactFov, decompactFov } from '../compaction';
+import { compactTilesWithDictionary, decompactTiles, compactFov, decompactFov } from '../compaction';
 import type { CharacterProfile, SaveData } from '../types';
 
 describe('Storage Payload Compaction & RLE Benchmarking', () => {
-  it('correctly compresses and decompresses complex 2D tile patterns with legacy RLE', () => {
-    const rawTiles: any[][] = [
-      ['wall', 'wall', 'wall', 'wall', 'wall'],
-      ['wall', 'floor', 'floor', 'floor', 'wall'],
-      ['wall', 'door_closed', 'floor', 'door_open', 'wall'],
-      ['wall', 'stairs_up', 'floor', 'stairs_down', 'wall'],
-      ['wall', 'wall', 'wall', 'wall', 'wall'],
-    ];
-
-    const rle = compactTiles(rawTiles);
-    expect(rle).toBe('6W3F2W1C1F1O2W1U1F1D6W');
-
-    const restored = decompactTiles(rle, 5, 5);
-    expect(restored).toEqual(rawTiles);
-  });
-
   it('encodes and decodes tiles with dictionary-based RLE compaction', () => {
     const rawTiles: any[][] = [
       ['wall', 'wall', 'wall', 'wall', 'wall'],
@@ -57,24 +41,12 @@ describe('Storage Payload Compaction & RLE Benchmarking', () => {
     expect(restored).toEqual(rawTiles);
   });
 
-  it('falls back to legacy decoding when tileCodes is not provided', () => {
-    const legacyRle = '6W3F2W1C1F1O2W1U1F1D6W';
-    const restored = decompactTiles(legacyRle, 5, 5);
-    expect(restored[0]).toEqual(['wall', 'wall', 'wall', 'wall', 'wall']);
-    expect(restored[1]).toEqual(['wall', 'floor', 'floor', 'floor', 'wall']);
-  });
-
-  it('compacts and decompacts the Gateway to Valhalla victory-portal tile correctly', () => {
-    // Regression coverage carried over from the removed townReturn test suite
-    // (ARCHITECTURE.md P-03, 2026-09-16): gateway_valhalla is unrelated campaign
-    // content and was explicitly kept, but its only RLE round-trip coverage lived
-    // in the deleted persistence.test.ts alongside the mechanics that were removed.
-    const row: any[] = ['floor', 'gateway_valhalla', 'floor'];
-    const rle = compactTiles([row]);
-    expect(rle).toBe('1F1G1F');
-
-    const restored = decompactTiles(rle, 3, 1);
-    expect(restored[0]).toEqual(row);
+  it('decodes an empty dictionary to an all-wall grid rather than throwing', () => {
+    const restored = decompactTiles('', 3, 2, []);
+    expect(restored).toEqual([
+      ['wall', 'wall', 'wall'],
+      ['wall', 'wall', 'wall'],
+    ]);
   });
 
   it('correctly compresses and decompresses explored FOV bitstreams', () => {

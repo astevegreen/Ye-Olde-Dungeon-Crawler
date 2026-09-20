@@ -198,6 +198,6 @@ describe('KeybindModal', () => {
 
     settingsManager.bindKey('move_n', 'KeyP');
     expect(settingsManager.getCodesForAction('move_n')).toContain('KeyP');
-    expect(storage.getItem('cotw_settings')).toContain('KeyP');
+    expect(storage.getItem('yodc_settings')).toContain('KeyP');
   });
 });

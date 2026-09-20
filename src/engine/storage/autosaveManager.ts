@@ -16,13 +16,17 @@ export interface AutosaveEnvelope {
 }
 
 export class AutosaveManager {
-  public static readonly AUTOSAVE_KEY = 'cotw_autosave';
   private storage: StorageAdapter;
   private manifest?: GameContentManifest;
 
   constructor(storage?: StorageAdapter, manifest?: GameContentManifest) {
     this.storage = storage ?? getDefaultStorage();
     this.manifest = manifest;
+  }
+
+  /** Namespaced per content pack, so two packs never overwrite each other's autosave. */
+  public get autosaveKey(): string {
+    return `${this.manifest?.id ?? 'default'}_autosave`;
   }
 
   /**
@@ -41,7 +45,7 @@ export class AutosaveManager {
       const saveData = serializeGame(engine, profile);
       const envelope: AutosaveEnvelope = {
         schemaVersion: CURRENT_SCHEMA_VERSION,
-        contentManifestId: engine.manifest?.id ?? this.manifest?.id ?? 'cotw',
+        contentManifestId: engine.manifest?.id ?? this.manifest?.id ?? 'default',
         timestamp: Date.now(),
         profile: {
           ...profile,
@@ -57,7 +61,7 @@ export class AutosaveManager {
         data: saveData,
       };
 
-      this.storage.setItem(AutosaveManager.AUTOSAVE_KEY, JSON.stringify(envelope));
+      this.storage.setItem(this.autosaveKey, JSON.stringify(envelope));
       return true;
     } catch (err) {
       flightRecorder.warn('[AutosaveManager] Failed to record autosave:', { error: String(err) });
@@ -70,7 +74,7 @@ export class AutosaveManager {
    */
   public hasAutosave(): boolean {
     try {
-      return !!this.storage.getItem(AutosaveManager.AUTOSAVE_KEY);
+      return !!this.storage.getItem(this.autosaveKey);
     } catch {
       return false;
     }
@@ -81,7 +85,7 @@ export class AutosaveManager {
    */
   public getAutosaveMetadata(): { timestamp: number; profileName: string; floor: number } | null {
     try {
-      const raw = this.storage.getItem(AutosaveManager.AUTOSAVE_KEY);
+      const raw = this.storage.getItem(this.autosaveKey);
       if (!raw) return null;
       const env = JSON.parse(raw) as AutosaveEnvelope;
       return {
@@ -102,7 +106,7 @@ export class AutosaveManager {
     activeManifest?: GameContentManifest
   ): LoadOutcome<{ engine: GameEngine; profile: CharacterProfile }> {
     try {
-      const raw = this.storage.getItem(AutosaveManager.AUTOSAVE_KEY);
+      const raw = this.storage.getItem(this.autosaveKey);
       if (!raw) return MISSING_SAVE;
       const env = JSON.parse(raw) as AutosaveEnvelope;
       if (!env.data || !env.profile) {
@@ -136,7 +140,7 @@ export class AutosaveManager {
    */
   public clearAutosave(): void {
     try {
-      this.storage.removeItem(AutosaveManager.AUTOSAVE_KEY);
+      this.storage.removeItem(this.autosaveKey);
     } catch {
       // Ignore
     }

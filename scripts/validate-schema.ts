@@ -1,14 +1,16 @@
 /**
  * Schema evolution integrity gate (ARCHITECTURE.md §7.2 item 3).
  *
- * 1. Forward migration: a minimal v1 envelope migrates to CURRENT_SCHEMA_VERSION.
+ * 1. Migration machinery: a current-version save passes through untouched, a save
+ *    predating the supported format is refused, and a newly registered forward step
+ *    still runs — so the next real migration will work.
  * 2. Round-trip fidelity: state that lives outside the plain player/map fields —
  *    surface grids, substance grids, ground items, and PRNG state — survives
  *    serialize -> JSON -> deserialize unchanged. JSON is in the loop because saves
  *    are persisted as strings, so a value that cannot round-trip through JSON is
  *    just as lost as one the serializer drops.
  */
-import { defaultMigrator, CURRENT_SCHEMA_VERSION } from '../src/engine/storage/migrator';
+import { SchemaMigrator, defaultMigrator, CURRENT_SCHEMA_VERSION } from '../src/engine/storage/migrator';
 import { serializeGame, deserializeGame } from '../src/engine/storage/serializer';
 import { GameEngine } from '../src/engine/engine';
 import { GameMap } from '../src/engine/grid/map';
@@ -29,23 +31,48 @@ function check(label: string, actual: unknown, expected: unknown): void {
 }
 
 // ---------------------------------------------------------------- 1. migration
-console.log('Forward migration:');
-const mockLegacySave = {
-  schemaVersion: 1,
+console.log('Migration machinery:');
+const currentSave = {
+  schemaVersion: CURRENT_SCHEMA_VERSION,
   contentManifestId: 'cotw',
   timestamp: Date.now(),
   data: {
     player: { hp: 20, maxHp: 20, position: { x: 5, y: 5 } },
-    map: { width: 20, height: 20, tiles: [] },
+    map: { width: 20, height: 20, tilesRle: '', tileCodes: [] },
   },
 };
 
 try {
-  const result = defaultMigrator.migrate(mockLegacySave);
-  check(`v1 -> v${CURRENT_SCHEMA_VERSION}`, result.envelope.schemaVersion, CURRENT_SCHEMA_VERSION);
+  const result = defaultMigrator.migrate(currentSave);
+  check(`v${CURRENT_SCHEMA_VERSION} passes through unmigrated`, result.migrated, false);
+  check(`v${CURRENT_SCHEMA_VERSION} version preserved`, result.envelope.schemaVersion, CURRENT_SCHEMA_VERSION);
 } catch (err) {
-  failures.push(`migration threw: ${err instanceof Error ? err.message : String(err)}`);
-  console.log(`  ✗ v1 -> v${CURRENT_SCHEMA_VERSION} — threw: ${err instanceof Error ? err.message : String(err)}`);
+  failures.push(`current-version migrate threw: ${err instanceof Error ? err.message : String(err)}`);
+  console.log(`  ✗ v${CURRENT_SCHEMA_VERSION} pass-through — threw: ${err instanceof Error ? err.message : String(err)}`);
+}
+
+// A save older than the supported floor must be refused, never silently mis-decoded.
+let refusedPreBaseline = false;
+try {
+  defaultMigrator.migrate({ ...currentSave, schemaVersion: CURRENT_SCHEMA_VERSION - 1 });
+} catch {
+  refusedPreBaseline = true;
+}
+check(`v${CURRENT_SCHEMA_VERSION - 1} save refused`, refusedPreBaseline, true);
+
+// The registration path must still work, or the next real migration silently won't run.
+const probe = new SchemaMigrator();
+const nextVersion = CURRENT_SCHEMA_VERSION + 1;
+probe.registerMigration(CURRENT_SCHEMA_VERSION, nextVersion, (env: any) => ({
+  ...env,
+  schemaVersion: nextVersion,
+}));
+try {
+  const stepped = probe.migrate(currentSave, nextVersion);
+  check(`registered v${CURRENT_SCHEMA_VERSION} -> v${nextVersion} step runs`, stepped.envelope.schemaVersion, nextVersion);
+} catch (err) {
+  failures.push(`forward step threw: ${err instanceof Error ? err.message : String(err)}`);
+  console.log(`  ✗ forward step — threw: ${err instanceof Error ? err.message : String(err)}`);
 }
 
 // ------------------------------------------------------------- 2. round-trip
@@ -130,5 +157,5 @@ if (failures.length > 0) {
   for (const f of failures) console.error(`  - ${f}`);
   process.exit(1);
 }
-console.log(`\n✅ Schema validation passed: v1 -> v${CURRENT_SCHEMA_VERSION}, plus surface, substance, ground item, PRNG, and content tile round-tripping.`);
+console.log(`\n✅ Schema validation passed: v${CURRENT_SCHEMA_VERSION} migration machinery, plus surface, substance, ground item, PRNG, and content tile round-tripping.`);
 process.exit(0);

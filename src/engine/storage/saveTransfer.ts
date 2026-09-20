@@ -19,7 +19,6 @@ export interface SaveValidationResult {
 export interface SaveValidationOptions {
   expectedManifestId?: string;
   strictManifest?: boolean;
-  allowLegacyManifestAlias?: boolean;
 }
 
 /**
@@ -247,9 +246,7 @@ export function validateSavePayload(
     'cotw';
 
   const manifestMismatch =
-    !!opts.expectedManifestId &&
-    detectedManifestId !== opts.expectedManifestId &&
-    !(opts.allowLegacyManifestAlias === true && detectedManifestId === 'headless_default');
+    !!opts.expectedManifestId && detectedManifestId !== opts.expectedManifestId;
 
   if (manifestMismatch && opts.strictManifest) {
     return {

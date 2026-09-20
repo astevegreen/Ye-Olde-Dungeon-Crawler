@@ -1,10 +1,10 @@
-import { Leaderboard, type ValhallaEntry } from '../engine';
+import { Leaderboard, type HallOfFameEntry } from '../engine';
 import { copyTextToClipboard } from './platform';
 import type { UIModal } from './modalStack';
 
 export interface SagaShareModalOptions {
   leaderboard: Leaderboard;
-  onSagaInscribed?: (entry: ValhallaEntry) => void;
+  onSagaInscribed?: (entry: HallOfFameEntry) => void;
   onClose?: () => void;
 }
 
@@ -34,8 +34,8 @@ export class SagaShareModal implements UIModal {
 
   private statusEl: HTMLElement | null = null;
 
-  private activeEntry: ValhallaEntry | null = null;
-  private inspectedEntry: ValhallaEntry | null = null;
+  private activeEntry: HallOfFameEntry | null = null;
+  private inspectedEntry: HallOfFameEntry | null = null;
   private options: SagaShareModalOptions;
 
   constructor(options: SagaShareModalOptions) {
@@ -219,7 +219,7 @@ export class SagaShareModal implements UIModal {
     }
   }
 
-  public openShare(entry: ValhallaEntry): void {
+  public openShare(entry: HallOfFameEntry): void {
     this.activeEntry = entry;
     const baseUrl = typeof window !== 'undefined' && window.location
       ? `${window.location.origin}${window.location.pathname}`
@@ -261,7 +261,7 @@ export class SagaShareModal implements UIModal {
     return clean;
   }
 
-  public inspectInputCode(): ValhallaEntry | null {
+  public inspectInputCode(): HallOfFameEntry | null {
     const raw = this.importTextarea?.value ?? '';
     const code = this.extractCode(raw);
     if (!code) {

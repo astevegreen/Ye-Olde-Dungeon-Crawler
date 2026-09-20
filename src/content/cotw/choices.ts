@@ -112,4 +112,149 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
       },
     ],
   },
+
+  milestone_dex_15: {
+    id: 'milestone_dex_15',
+    title: 'Dexterity Milestone: Mastery of the Swift Wind',
+    description:
+      'Your hands move with uncanny swiftness and your step makes no sound upon the frost. The spirits of the hunt take note of your nimble blood. Will you hone your reflexes into lethal precision, or elusive evasion?',
+    options: [
+      {
+        id: 'precision',
+        label: 'Precision Strikes (+2 Attack)',
+        description: 'Permanently increases base attack by +2.',
+        consequences: [
+          { type: 'setFlag', flag: 'milestone_dex_15_precision', value: true },
+          { type: 'modifyPermanentStat', stat: 'attack', delta: 2 },
+          {
+            type: 'logMessage',
+            message: '✦ Your strikes pierce through the smallest gaps in enemy armor! Permanently +2 Attack. ✦',
+          },
+        ],
+      },
+      {
+        id: 'evasion',
+        label: 'Evasive Grace (+2 Defense)',
+        description: 'Permanently increases base defense by +2.',
+        consequences: [
+          { type: 'setFlag', flag: 'milestone_dex_15_evasion', value: true },
+          { type: 'modifyPermanentStat', stat: 'defense', delta: 2 },
+          {
+            type: 'logMessage',
+            message: '✦ You dance aside incoming blows like falling snow on the wind! Permanently +2 Defense. ✦',
+          },
+        ],
+      },
+    ],
+    cancelable: false,
+  },
+
+  milestone_str_15: {
+    id: 'milestone_str_15',
+    title: 'Strength Milestone: Might of the Mountain Giant',
+    description:
+      'Your muscles surge with the brute vigor of Hrungnir’s kin. Stone breaks beneath your grip. Will you pour this colossal might into shattering offenses, or turn your frame into an impenetrable fortress?',
+    options: [
+      {
+        id: 'raw_power',
+        label: 'Crushing Might (+3 Attack)',
+        description: 'Permanently increases base attack by +3.',
+        consequences: [
+          { type: 'setFlag', flag: 'milestone_str_15_power', value: true },
+          { type: 'modifyPermanentStat', stat: 'attack', delta: 3 },
+          {
+            type: 'logMessage',
+            message: '⚒ Your ferocious blow shakes the bedrock! Permanently +3 Attack. ⚒',
+          },
+        ],
+      },
+      {
+        id: 'iron_bulwark',
+        label: 'Iron Bulwark (+3 Defense)',
+        description: 'Permanently increases base defense by +3.',
+        consequences: [
+          { type: 'setFlag', flag: 'milestone_str_15_bulwark', value: true },
+          { type: 'modifyPermanentStat', stat: 'defense', delta: 3 },
+          {
+            type: 'logMessage',
+            message: '🛡 You brace like a monolith of granite! Permanently +3 Defense. 🛡',
+          },
+        ],
+      },
+    ],
+    cancelable: false,
+  },
+
+  milestone_con_15: {
+    id: 'milestone_con_15',
+    title: 'Constitution Milestone: Vigor of the Ancient Oak',
+    description:
+      'The bitter cold of the deep north cannot chill your veins. Your flesh is hard as bog iron and your heart beats with unyielding endurance. Will you temper yourself for total resilience, or hardened vigor?',
+    options: [
+      {
+        id: 'stone_resilience',
+        label: 'Stone Resilience (+3 Defense)',
+        description: 'Permanently increases base defense by +3.',
+        consequences: [
+          { type: 'setFlag', flag: 'milestone_con_15_resilience', value: true },
+          { type: 'modifyPermanentStat', stat: 'defense', delta: 3 },
+          {
+            type: 'logMessage',
+            message: '🛡 Your hide turns aside blades and claws alike! Permanently +3 Defense. 🛡',
+          },
+        ],
+      },
+      {
+        id: 'battle_hardened',
+        label: 'Battle-Hardened Vigor (+2 Attack, +1 Defense)',
+        description: 'Permanently increases base attack by +2 and base defense by +1.',
+        consequences: [
+          { type: 'setFlag', flag: 'milestone_con_15_hardened', value: true },
+          { type: 'modifyPermanentStat', stat: 'attack', delta: 2 },
+          { type: 'modifyPermanentStat', stat: 'defense', delta: 1 },
+          {
+            type: 'logMessage',
+            message: '⚔ Pain only stokes your relentless momentum! Permanently +2 Attack and +1 Defense. ⚔',
+          },
+        ],
+      },
+    ],
+    cancelable: false,
+  },
+
+  milestone_int_15: {
+    id: 'milestone_int_15',
+    title: 'Intelligence Milestone: Runic Illumination',
+    description:
+      'The whispered wisdom of Mimir and the secrets of the Elder Futhark burn into your consciousness. Will you etch runes of devastating potency, or weave ethereal wards of warding spirit?',
+    options: [
+      {
+        id: 'runic_strike',
+        label: 'Runic Destruction (+3 Attack)',
+        description: 'Permanently increases base attack by +3.',
+        consequences: [
+          { type: 'setFlag', flag: 'milestone_int_15_destruction', value: true },
+          { type: 'modifyPermanentStat', stat: 'attack', delta: 3 },
+          {
+            type: 'logMessage',
+            message: '⚡ Eldritch runes flare bright upon your weapons! Permanently +3 Attack. ⚡',
+          },
+        ],
+      },
+      {
+        id: 'warded_spirit',
+        label: 'Warded Spirit (+3 Defense)',
+        description: 'Permanently increases base defense by +3.',
+        consequences: [
+          { type: 'setFlag', flag: 'milestone_int_15_ward', value: true },
+          { type: 'modifyPermanentStat', stat: 'defense', delta: 3 },
+          {
+            type: 'logMessage',
+            message: '✨ Glowing runes deflect incoming sorcery and blades! Permanently +3 Defense. ✨',
+          },
+        ],
+      },
+    ],
+    cancelable: false,
+  },
 };

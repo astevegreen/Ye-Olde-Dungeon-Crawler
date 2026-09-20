@@ -345,6 +345,18 @@ export interface StoryChoiceTrigger {
   progressStartFlag?: string;
 }
 
+/** Attribute-threshold-gated choice unlocks (ARCHITECTURE.md §3). Sibling of `StoryChoiceTrigger`:
+ *  same one-time `<id>_offered` world-flag idiom, keyed on an attribute value instead of kill count. */
+export interface AttributeMilestoneTrigger {
+  /** Stable id, used for its own `<id>_offered` internal flag. */
+  id: string;
+  attribute: 'strength' | 'dexterity' | 'constitution' | 'intelligence';
+  /** Fires once the attribute is at or above this value. */
+  threshold: number;
+  /** Key into `manifest.choices`. */
+  choiceId: string;
+}
+
 /**
  * A turn-limited world event (ARCHITECTURE.md §3) — a gap surfaced by a climactic
  * story choice that needed to feel time-pressured rather than a calm, simulation-
@@ -456,8 +468,6 @@ export interface GameContentManifest {
   itemAliasPools?: ItemAliasPools;
   surfaceTypes?: SurfaceTypeDefinition[];
   statusEffects?: StatusEffectDefinition[];
-  /** When true, the storage layer will also check legacy un-namespaced save keys for backward compatibility. Set to true for the COTW manifest only. */
-  supportsLegacyKeys?: boolean;
   trackedMilestones?: TrackedMilestoneDefinition[];
   renownMilestones?: RenownMilestoneDefinition[];
   renownTitles?: RenownTitleDefinition[];
@@ -467,6 +477,8 @@ export interface GameContentManifest {
   timedEvents?: TimedEventDefinition[];
   /** Kill-count-gated choice unlocks (ARCHITECTURE.md §3, `StoryChoiceTrigger`). */
   storyChoiceTriggers?: StoryChoiceTrigger[];
+  /** Attribute-threshold-gated choice unlocks (ARCHITECTURE.md §3, `AttributeMilestoneTrigger`). */
+  attributeMilestones?: AttributeMilestoneTrigger[];
   /** "Driven off" boss resolutions (ARCHITECTURE.md §3, `BossFleeResolution`). */
   bossFleeResolutions?: BossFleeResolution[];
   /**

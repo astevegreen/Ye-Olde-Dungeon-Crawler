@@ -8,12 +8,12 @@ import {
   utf8ToBase64,
   base64ToUtf8,
 } from '../saveTransfer';
-import type { VersionedSaveEnvelope } from '../migrator';
+import { CURRENT_SCHEMA_VERSION, type VersionedSaveEnvelope } from '../migrator';
 import type { SaveData } from '../types';
 
 function createMockSaveEnvelope(manifestId = 'cotw', heroName = 'Sven'): VersionedSaveEnvelope<SaveData> {
   return {
-    schemaVersion: 2,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     contentManifestId: manifestId,
     timestamp: 1700000000000,
     data: {
@@ -105,7 +105,7 @@ describe('Save Transfer & Export (.cotw & Base64)', () => {
       const json = createSavePackage(envelope);
       const parsed = JSON.parse(json);
 
-      expect(parsed.schemaVersion).toBe(2);
+      expect(parsed.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
       expect(parsed.contentManifestId).toBe('cotw');
       expect(parsed.data.profile.name).toBe('Thor');
       expect(parsed.data.currentFloor).toBe(1);
@@ -179,11 +179,11 @@ describe('Save Transfer & Export (.cotw & Base64)', () => {
 
     it('detects missing critical components (corrupted data)', () => {
       const corrupt = {
-        schemaVersion: 2,
+        schemaVersion: CURRENT_SCHEMA_VERSION,
         contentManifestId: 'cotw',
         timestamp: Date.now(),
         data: {
-          version: 2,
+          version: CURRENT_SCHEMA_VERSION,
           savedAt: Date.now(),
           profile: null,
         },

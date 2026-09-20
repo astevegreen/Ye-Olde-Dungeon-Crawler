@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Leaderboard, type ValhallaEntry } from '../leaderboard';
+import { Leaderboard, type HallOfFameEntry } from '../leaderboard';
 import { MemoryStorage } from '../../storage/profile-manager';
 
 describe('Leaderboard & Hall of Valhalla High Score System', () => {
@@ -26,7 +26,7 @@ describe('Leaderboard & Hall of Valhalla High Score System', () => {
   });
 
   it('records champions and retrieves sorted in descending score order', () => {
-    const entry1: ValhallaEntry = {
+    const entry1: HallOfFameEntry = {
       id: 'hero-1',
       heroName: 'Torvald',
       gender: 'male',
@@ -41,7 +41,7 @@ describe('Leaderboard & Hall of Valhalla High Score System', () => {
       date: 1000,
     };
 
-    const entry2: ValhallaEntry = {
+    const entry2: HallOfFameEntry = {
       id: 'hero-2',
       heroName: 'Astrid',
       gender: 'female',
@@ -56,7 +56,7 @@ describe('Leaderboard & Hall of Valhalla High Score System', () => {
       date: 2000,
     };
 
-    const entry3: ValhallaEntry = {
+    const entry3: HallOfFameEntry = {
       id: 'hero-3',
       heroName: 'Sven',
       gender: 'male',
@@ -84,7 +84,7 @@ describe('Leaderboard & Hall of Valhalla High Score System', () => {
   });
 
   it('generates a formatted ASCII memorial scroll for epitaph export', () => {
-    const entry: ValhallaEntry = {
+    const entry: HallOfFameEntry = {
       id: 'hero-export',
       heroName: 'Freya the Bold',
       gender: 'female',

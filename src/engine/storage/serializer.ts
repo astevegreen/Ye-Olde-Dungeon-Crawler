@@ -625,8 +625,16 @@ export function deserializeMapObject(mapData: SerializedMap, customTiles?: TileD
   map.floorTurnCount = mapData.floorTurnCount ?? 0;
   map.isCleared = mapData.isCleared ?? false;
 
+  // Run-length tile data is meaningless without the dictionary its tokens index into;
+  // decoding anyway would turn the whole floor into walls without saying so.
+  if (mapData.tilesRle && !mapData.tileCodes) {
+    flightRecorder.recordWarning('Serialized map has tilesRle but no tileCodes dictionary', {
+      source: 'deserializeMapObject',
+    });
+  }
+
   const tileGrid = mapData.tilesRle
-    ? decompactTiles(mapData.tilesRle, mapData.width, mapData.height, mapData.tileCodes)
+    ? decompactTiles(mapData.tilesRle, mapData.width, mapData.height, mapData.tileCodes ?? [])
     : mapData.tiles;
 
   if (tileGrid) {

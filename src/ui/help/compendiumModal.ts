@@ -4,10 +4,12 @@ import {
   type MonsterDefinition,
   type MonsterMasteryTier,
 } from '../../engine';
+import type { UIModal } from '../modalStack';
 
-export class CompendiumModal {
+export class CompendiumModal implements UIModal {
+  public readonly id = 'compendium';
+  public isOpen = false;
   private overlayEl: HTMLElement | null = null;
-  private isOpenState = false;
   private activeFilter: 'all' | 'discovered' | 'mastered' = 'all';
   private selectedMonsterId: string = 'giant_rat';
   private engine?: GameEngine;
@@ -32,14 +34,10 @@ export class CompendiumModal {
     this.overlayEl = overlay;
   }
 
-  public get isOpen(): boolean {
-    return this.isOpenState;
-  }
-
   public open(engine: GameEngine, onClose?: () => void): void {
     this.engine = engine;
     this.onCloseCallback = onClose;
-    this.isOpenState = true;
+    this.isOpen = true;
     this.render();
     if (this.overlayEl) {
       this.overlayEl.style.display = 'flex';
@@ -47,8 +45,8 @@ export class CompendiumModal {
   }
 
   public close(): void {
-    if (!this.isOpenState) return;
-    this.isOpenState = false;
+    if (!this.isOpen) return;
+    this.isOpen = false;
     if (this.overlayEl) {
       this.overlayEl.style.display = 'none';
     }
@@ -59,8 +57,12 @@ export class CompendiumModal {
     }
   }
 
+  public onPop(): void {
+    this.close();
+  }
+
   public toggle(engine: GameEngine, onClose?: () => void): void {
-    if (this.isOpenState) {
+    if (this.isOpen) {
       this.close();
     } else {
       this.open(engine, onClose);
@@ -68,7 +70,7 @@ export class CompendiumModal {
   }
 
   public handleKeyDown(e: KeyboardEvent): boolean {
-    if (!this.isOpenState) return false;
+    if (!this.isOpen) return false;
 
     if (e.key === 'Escape' || e.code === 'KeyB') {
       this.close();

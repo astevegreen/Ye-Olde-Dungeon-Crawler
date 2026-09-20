@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Leaderboard, type ValhallaEntry } from '../leaderboard';
+import { Leaderboard, type HallOfFameEntry } from '../leaderboard';
 import { MemoryStorage } from '../../storage/profile-manager';
 
 describe('Run Sharing & Saga Exchange System', () => {
   let storage: MemoryStorage;
   let leaderboard: Leaderboard;
 
-  const testEntry: ValhallaEntry = {
+  const testEntry: HallOfFameEntry = {
     id: 'hero-sigurd',
     heroName: 'Sigurd Dragonbane',
     gender: 'male',
@@ -100,7 +100,7 @@ describe('Run Sharing & Saga Exchange System', () => {
   });
 
   it('correctly ranks imported runs alongside local runs in descending score order', () => {
-    const localEntry: ValhallaEntry = {
+    const localEntry: HallOfFameEntry = {
       id: 'local-bjorn',
       heroName: 'Bjorn the Stout',
       gender: 'male',

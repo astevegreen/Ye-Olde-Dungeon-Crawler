@@ -179,4 +179,22 @@ describe('Branching save-states — Níðhögg’s two endings (real cotwManifes
     expect(engine.gameState.checkVictoryEligible(engine)).toBe('sealed');
     expect(engine.getWorldFlag('nidhogg_slain')).toBe(false);
   });
+
+  describe('COTW Attribute Milestones Content Integrity', () => {
+    it('declares attribute milestones where each choiceId resolves and has exactly two options', () => {
+      const milestones = cotwManifest.attributeMilestones;
+      expect(milestones).toBeDefined();
+      expect(milestones!.length).toBeGreaterThanOrEqual(4);
+
+      for (const milestone of milestones!) {
+        const choice = cotwManifest.choices?.[milestone.choiceId];
+        expect(choice, `Milestone ${milestone.id} references missing choice ${milestone.choiceId}`).toBeDefined();
+        expect(choice!.options.length, `Choice ${milestone.choiceId} must have exactly two options`).toBe(2);
+        for (const opt of choice!.options) {
+          expect(opt.consequences.length).toBeGreaterThan(0);
+          expect(opt.consequences.some((c) => c.type === 'setFlag')).toBe(true);
+        }
+      }
+    });
+  });
 });

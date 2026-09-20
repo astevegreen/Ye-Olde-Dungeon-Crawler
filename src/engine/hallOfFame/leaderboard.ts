@@ -3,9 +3,9 @@ import type { StorageAdapter } from '../storage/types';
 import { getDefaultStorage } from '../storage/profile-manager';
 import { utf8ToBase64, base64ToUtf8 } from '../storage/saveTransfer';
 
-const VALHALLA_STORAGE_KEY = 'cotw_valhalla_champions';
+const HALL_OF_FAME_STORAGE_KEY = 'yodc_hall_of_fame';
 
-export interface ValhallaEntry {
+export interface HallOfFameEntry {
   id: string;
   heroName: string;
   gender: Gender;
@@ -22,13 +22,13 @@ export interface ValhallaEntry {
 
 export interface SharedSagaEnvelope {
   version: 1;
-  generator: 'cotw_valhalla';
+  generator: 'yodc_saga';
   timestamp: number;
-  entry: ValhallaEntry;
+  entry: HallOfFameEntry;
   checksum: number;
 }
 
-function computeSagaChecksum(entry: ValhallaEntry): number {
+function computeSagaChecksum(entry: HallOfFameEntry): number {
   const str = `${entry.id}:${entry.heroName}:${entry.status}:${entry.score}:${entry.level}:${entry.deepestFloor}:${entry.turns}:${entry.xp}:${entry.goldCp}:${entry.date}`;
   let hash = 0x811c9dc5;
   for (let i = 0; i < str.length; i++) {
@@ -68,13 +68,13 @@ export class Leaderboard {
   /**
    * Retrieves all champions from storage sorted in descending score order.
    */
-  public getChampions(): ValhallaEntry[] {
-    const raw = this.storage.getItem(VALHALLA_STORAGE_KEY);
+  public getChampions(): HallOfFameEntry[] {
+    const raw = this.storage.getItem(HALL_OF_FAME_STORAGE_KEY);
     if (!raw) return [];
     try {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        return (parsed as ValhallaEntry[]).sort((a, b) => b.score - a.score);
+        return (parsed as HallOfFameEntry[]).sort((a, b) => b.score - a.score);
       }
       return [];
     } catch {
@@ -83,19 +83,19 @@ export class Leaderboard {
   }
 
   /**
-   * Records a new run entry into the Hall of Valhalla.
+   * Records a new run entry into the hall of fame.
    */
-  public recordRun(entry: ValhallaEntry): void {
+  public recordRun(entry: HallOfFameEntry): void {
     const champions = this.getChampions();
     champions.push(entry);
     champions.sort((a, b) => b.score - a.score);
-    this.storage.setItem(VALHALLA_STORAGE_KEY, JSON.stringify(champions));
+    this.storage.setItem(HALL_OF_FAME_STORAGE_KEY, JSON.stringify(champions));
   }
 
   /**
    * Formats a glorious ASCII memorial epitaph for clipboard export.
    */
-  public static formatEpitaph(entry: ValhallaEntry): string {
+  public static formatEpitaph(entry: HallOfFameEntry): string {
     const dateStr = new Date(entry.date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -130,12 +130,12 @@ export class Leaderboard {
   }
 
   /**
-   * Encodes a Valhalla run entry into a compact, URL-safe Base64 string with checksum.
+   * Encodes a hall-of-fame entry into a compact, URL-safe Base64 string with checksum.
    */
-  public static encodeRunShare(entry: ValhallaEntry): string {
+  public static encodeRunShare(entry: HallOfFameEntry): string {
     const envelope: SharedSagaEnvelope = {
       version: 1,
-      generator: 'cotw_valhalla',
+      generator: 'yodc_saga',
       timestamp: Date.now(),
       entry: {
         id: entry.id,
@@ -161,16 +161,14 @@ export class Leaderboard {
   }
 
   /**
-   * Decodes a URL-safe Base64 run share code into a validated ValhallaEntry,
+   * Decodes a URL-safe Base64 run share code into a validated HallOfFameEntry,
    * verifying schema integrity and checksum. Returns null if corrupted or invalid.
    */
-  public static decodeRunShare(code: string): ValhallaEntry | null {
+  public static decodeRunShare(code: string): HallOfFameEntry | null {
     if (!code || typeof code !== 'string') return null;
     let raw = code.trim();
     if (raw.startsWith('SAGA1_')) {
       raw = raw.slice(6);
-    } else if (raw.startsWith('COTW_SAGA_')) {
-      raw = raw.slice(10);
     }
 
     let b64 = raw.replace(/-/g, '+').replace(/_/g, '/');
@@ -182,7 +180,7 @@ export class Leaderboard {
       const json = base64ToUtf8(b64);
       const parsed = JSON.parse(json);
       if (!parsed || parsed.version !== 1 || !parsed.entry) return null;
-      const entry = parsed.entry as ValhallaEntry;
+      const entry = parsed.entry as HallOfFameEntry;
 
       if (
         typeof entry.heroName !== 'string' ||
@@ -209,7 +207,7 @@ export class Leaderboard {
   /**
    * Generates a complete web share URL embedding the run saga code in the query string.
    */
-  public static generateShareUrl(entry: ValhallaEntry, baseUrl?: string): string {
+  public static generateShareUrl(entry: HallOfFameEntry, baseUrl?: string): string {
     const code = Leaderboard.encodeRunShare(entry);
     const base = baseUrl || 'https://cotw.game/';
 
@@ -224,10 +222,10 @@ export class Leaderboard {
   }
 
   /**
-   * Imports a shared saga entry and records it into the Hall of Valhalla.
+   * Imports a shared saga entry and records it into the hall of fame.
    * Idempotent: detects duplicate saga entries and avoids duplicate inscriptions.
    */
-  public importSharedRun(entry: ValhallaEntry): { success: boolean; message: string; champion?: ValhallaEntry } {
+  public importSharedRun(entry: HallOfFameEntry): { success: boolean; message: string; champion?: HallOfFameEntry } {
     const champions = this.getChampions();
     const isDuplicate = champions.some(
       (c) => c.id === entry.id || (c.heroName === entry.heroName && c.score === entry.score && c.date === entry.date)
@@ -247,6 +245,6 @@ export class Leaderboard {
    * Clears all leaderboard entries (useful for testing).
    */
   public clear(): void {
-    this.storage.removeItem(VALHALLA_STORAGE_KEY);
+    this.storage.removeItem(HALL_OF_FAME_STORAGE_KEY);
   }
 }

@@ -1,11 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { ProfileManager, MemoryStorage, ROSTER_MANIFEST_KEY, SAVE_KEY_PREFIX } from '../storage/profile-manager';
+import { ProfileManager, MemoryStorage } from '../storage/profile-manager';
 import type { GameContentManifest } from '../types/manifest';
 
 describe('Manifest-Namespaced Storage Isolation', () => {
   const cotwManifest: GameContentManifest = {
     id: 'cotw',
-    supportsLegacyKeys: true,
     name: 'Castle of the Winds',
     monsters: [],
     items: [],
@@ -117,35 +116,18 @@ describe('Manifest-Namespaced Storage Isolation', () => {
     expect(warcraftManager.loadCharacter(cotwHero.id)).toBeNull();
   });
 
-  it('gracefully migrates and reads legacy cotw saves from cotw_roster_manifest', () => {
+  it('ignores un-namespaced keys left by an unrelated app on the same origin', () => {
     const sharedStorage = new MemoryStorage();
 
-    // 1. Create a character using ProfileManager
-    const tempManager = new ProfileManager(sharedStorage, cotwManifest);
-    const { profile: legacyHero } = tempManager.createCharacter('OldViking', { manifest: cotwManifest });
+    const manager = new ProfileManager(sharedStorage, cotwManifest);
+    const { profile: hero } = manager.createCharacter('Bjorn', { manifest: cotwManifest });
 
-    // 2. Relocate to legacy storage keys to simulate an existing pre-v2 installation
-    const savedRoster = sharedStorage.getItem(tempManager.rosterKey)!;
-    const savedChar = sharedStorage.getItem(`${tempManager.saveKeyPrefix}${legacyHero.id}`)!;
+    // A bare, un-namespaced key must never be consulted as a fallback.
+    sharedStorage.setItem('cotw_roster_manifest', JSON.stringify({ profiles: [{ id: 'ghost', name: 'Ghost' }] }));
 
-    sharedStorage.removeItem(tempManager.rosterKey);
-    sharedStorage.removeItem(`${tempManager.saveKeyPrefix}${legacyHero.id}`);
-
-    sharedStorage.setItem(ROSTER_MANIFEST_KEY, savedRoster);
-    sharedStorage.setItem(`${SAVE_KEY_PREFIX}${legacyHero.id}`, savedChar);
-
-    // 3. Create a fresh ProfileManager for CotW without any existing v2 roster
-    const cotwManager = new ProfileManager(sharedStorage, cotwManifest);
-
-    // Should read profile from legacy roster
-    const profiles = cotwManager.listProfiles();
+    const profiles = manager.listProfiles();
     expect(profiles).toHaveLength(1);
-    expect(profiles[0].name).toBe('OldViking');
-
-    // Should successfully load legacy character
-    const loaded = cotwManager.loadCharacter(legacyHero.id, cotwManifest);
-    expect(loaded).not.toBeNull();
-    expect(loaded?.profile.name).toBe('OldViking');
-    expect(loaded?.engine.player.name).toBe('OldViking');
+    expect(profiles[0].id).toBe(hero.id);
+    expect(manager.loadCharacter('ghost')).toBeNull();
   });
 });

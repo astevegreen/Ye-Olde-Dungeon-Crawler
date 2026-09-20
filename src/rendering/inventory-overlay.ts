@@ -11,6 +11,7 @@ import type { ThemeTokens } from '../engine';
 import { PaperdollView } from './paperdoll-view';
 import { ItemInspector } from '../ui/inventory/itemInspector';
 import { type GameCommand, type GameCommandBus } from '../engine';
+import type { UIModal } from '../ui/modalStack';
 
 export interface ClickZone {
   x: number;
@@ -33,7 +34,8 @@ export interface ClickZone {
  * Other overlays (ShopOverlay, etc.) should migrate to this pattern.
  * See: src/engine/commands/commandBus.ts
  */
-export class InventoryOverlay {
+export class InventoryOverlay implements UIModal {
+  public readonly id = 'inventory';
   public isOpen = false;
   /**
    * Companion pack browser (ARCHITECTURE.md §3). Giving items was one-directional because
@@ -135,6 +137,10 @@ export class InventoryOverlay {
     }
   }
 
+  public onPop(): void {
+    this.close();
+  }
+
   /** Shared by handleMouseMove and the three click handlers below — a click
    * changes the mouse position too (a `dblclick`/`contextmenu` event fires
    * with no preceding `mousemove` on some input paths), and without this the
@@ -142,9 +148,6 @@ export class InventoryOverlay {
   private updateHoverAt(mouseX: number, mouseY: number): void {
     this.lastMouseX = mouseX;
     this.lastMouseY = mouseY;
-    // Grid cells register into hoverZones during the render() that just ran, so
-    // this reflects last frame's layout — one frame of lag on a resize, never
-    // visible in practice since layout is otherwise static while the mouse moves.
     const zone = this.hoverZones.find(
       (z) => mouseX >= z.x && mouseX <= z.x + z.width && mouseY >= z.y && mouseY <= z.y + z.height
     );
@@ -235,8 +238,11 @@ export class InventoryOverlay {
   /**
    * Keyboard handler for all inventory navigation and actions.
    */
-  public handleKeyDown(code: string, engine: GameEngine): boolean {
+  public handleKeyDown(eOrCode: KeyboardEvent | string, engineParam?: GameEngine): boolean {
     if (!this.isOpen) return false;
+    const code = typeof eOrCode === 'string' ? eOrCode : eOrCode.code;
+    const engine = engineParam ?? this.engine;
+    if (!engine) return false;
     this.engine = engine;
     const player = engine.player;
     const inv = player.inventory;

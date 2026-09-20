@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ProfileManager, SAVE_KEY_PREFIX } from '../profile-manager';
+import { ProfileManager } from '../profile-manager';
 import { AutosaveManager } from '../autosaveManager';
 import { CURRENT_SCHEMA_VERSION } from '../migrator';
 import { shouldNotifyPlayer } from '../loadResult';
@@ -38,7 +38,7 @@ describe('Typed load failures', () => {
 
   it('reports unparseable JSON as corrupt, and notifies', () => {
     const pm = new ProfileManager(storage as any);
-    storage.setItem(`${SAVE_KEY_PREFIX}hero-1`, '{ this is not json');
+    storage.setItem(`${pm.saveKeyPrefix}hero-1`, '{ this is not json');
 
     const outcome = pm.loadCharacterResult('hero-1');
 
@@ -54,7 +54,7 @@ describe('Typed load failures', () => {
   it('reports a save from a newer engine distinctly', () => {
     const pm = new ProfileManager(storage as any);
     storage.setItem(
-      `${SAVE_KEY_PREFIX}hero-2`,
+      `${pm.saveKeyPrefix}hero-2`,
       JSON.stringify({ schemaVersion: CURRENT_SCHEMA_VERSION + 5, contentManifestId: 'cotw', timestamp: 1, data: {} })
     );
 
@@ -75,7 +75,7 @@ describe('Typed load failures', () => {
     expect(missing.ok).toBe(false);
     if (!missing.ok) expect(missing.reason).toBe('missing');
 
-    storage.setItem(AutosaveManager.AUTOSAVE_KEY, '{ broken');
+    storage.setItem(am.autosaveKey, '{ broken');
     const corrupt = am.loadAutosaveResult();
     expect(corrupt.ok).toBe(false);
     if (!corrupt.ok) {

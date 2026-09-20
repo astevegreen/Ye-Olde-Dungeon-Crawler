@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SagaShareModal } from '../sagaShareModal';
-import { Leaderboard, type ValhallaEntry } from '../../engine';
+import { Leaderboard, type HallOfFameEntry } from '../../engine';
 import { MemoryStorage } from '../../engine';
 
 class MockElement {
@@ -46,7 +46,7 @@ describe('SagaShareModal (Headless)', () => {
   let elementMap: Map<string, MockElement>;
   let leaderboard: Leaderboard;
 
-  const testEntry: ValhallaEntry = {
+  const testEntry: HallOfFameEntry = {
     id: 'hero-freya',
     heroName: 'Freya the Shieldmaiden',
     gender: 'female',

@@ -34,6 +34,7 @@ import type { PactModal } from '../ui/pactModal';
 import type { LevelUpModal } from '../ui/levelUpModal';
 import type { RuneOfReturnTreeModal } from '../ui/runeOfReturnTreeModal';
 import type { RuneOfReturnDiscoveryModal } from '../ui/runeOfReturnDiscoveryModal';
+import type { CharacterMenuModal } from '../ui/characterMenu/characterMenuModal';
 import { ModalStackManager } from '../ui/modalStack';
 import { SettingsManager } from '../ui/settings/settingsManager';
 import type { RadialMenuSlotConfig } from '../ui/settings/settingsManager';
@@ -82,6 +83,7 @@ export class InputHandler {
   public levelUpModal?: LevelUpModal;
   public runeOfReturnTreeModal?: RuneOfReturnTreeModal;
   public runeOfReturnDiscoveryModal?: RuneOfReturnDiscoveryModal;
+  public characterMenuModal?: CharacterMenuModal;
   public radialMenuOverlay?: RadialMenuOverlay;
   public onSaveAndExit?: () => void;
   public onToggleDiagnostics?: () => void;
@@ -227,25 +229,27 @@ export class InputHandler {
     this.destroy();
   }
 
+  public toggleCharacterMenu(tabId: string = 'character'): void {
+    if (!this.characterMenuModal) return;
+    if (this.characterMenuModal.isOpen && this.characterMenuModal.activeTabId === tabId) {
+      this.characterMenuModal.close();
+      this.modalStack.remove(this.characterMenuModal.id);
+    } else {
+      this.characterMenuModal.open(tabId);
+      this.modalStack.push(this.characterMenuModal);
+    }
+    this.onActionProcessed();
+  }
+
   public toggleInventory(): void {
+    if (this.characterMenuModal) {
+      this.toggleCharacterMenu('inventory');
+      return;
+    }
     if (!this.inventoryOverlay) return;
     this.inventoryOverlay.toggle(this.engine);
     if (this.inventoryOverlay.isOpen) {
-      const self = this;
-      this.modalStack.push({
-        id: 'inventory',
-        get isOpen() { return self.inventoryOverlay?.isOpen ?? false; },
-        set isOpen(val: boolean) { if (!val) self.inventoryOverlay?.close(); },
-        handleKeyDown: (ke: KeyboardEvent) => {
-          if (ke.code === 'KeyI' || ke.code === 'Escape') {
-            self.inventoryOverlay?.close();
-            self.modalStack.remove('inventory');
-            return true;
-          }
-          return self.inventoryOverlay?.handleKeyDown(ke.code, self.engine) ?? false;
-        },
-        close: () => { self.inventoryOverlay?.close(); },
-      });
+      this.modalStack.push(this.inventoryOverlay);
     } else {
       this.modalStack.remove('inventory');
     }
@@ -261,6 +265,10 @@ export class InputHandler {
    * same way `toggleInventory()` does — shared by the `[P]` keybind and the bottom-bar
    * button so both stay in sync with the modal stack. */
   public togglePactModal(): void {
+    if (this.characterMenuModal) {
+      this.toggleCharacterMenu('pacts');
+      return;
+    }
     if (!this.pactModal) return;
     this.pactModal.toggle(this.engine);
     if (this.pactModal.isOpen) {
@@ -493,23 +501,14 @@ export class InputHandler {
 
     // Hotkey: Slayer's Compendium / Bestiary (KeyB when not inspecting)
     if (code === 'KeyB' && !this.inspectOverlay?.isOpen) {
+      if (this.characterMenuModal) {
+        this.toggleCharacterMenu('bestiary');
+        return true;
+      }
       if (this.compendiumModal) {
         this.compendiumModal.toggle(this.engine);
         if (this.compendiumModal.isOpen) {
-          const self = this;
-          this.modalStack.push({
-            id: 'compendium',
-            get isOpen() { return self.compendiumModal?.isOpen ?? false; },
-            set isOpen(val: boolean) { if (!val) self.compendiumModal?.close(); },
-            handleKeyDown: (ke: KeyboardEvent) => {
-              const h = self.compendiumModal?.handleKeyDown(ke) ?? false;
-              if (!self.compendiumModal?.isOpen) {
-                self.modalStack.remove('compendium');
-              }
-              return h;
-            },
-            close: () => { self.compendiumModal?.close(); },
-          });
+          this.modalStack.push(this.compendiumModal);
         } else {
           this.modalStack.remove('compendium');
         }
@@ -519,6 +518,10 @@ export class InputHandler {
 
     // Hotkey: Ancient Run Pacts & Bounties (KeyP when not inspecting)
     if ((code === 'KeyP' || e.key === 'p' || e.key === 'P') && !this.inspectOverlay?.isOpen) {
+      if (this.characterMenuModal) {
+        this.toggleCharacterMenu('pacts');
+        return true;
+      }
       if (this.pactModal) {
         this.togglePactModal();
         this.onActionProcessed();
@@ -669,6 +672,10 @@ export class InputHandler {
 
     // Toggle Spellbook / Cast Spell Mode: 'KeyZ'
     if (code === 'KeyZ') {
+      if (this.characterMenuModal) {
+        this.toggleCharacterMenu('spellbook');
+        return true;
+      }
       if (this.inventoryOverlay?.isOpen) {
         this.inventoryOverlay.close();
       }
@@ -843,11 +850,33 @@ export class InputHandler {
     // Check SettingsManager dynamic action mapping (including Shift chords)
     const effectiveCode = e.shiftKey ? `Shift+${code}` : code;
     const userAction = this.settingsManager.getActionForCode(effectiveCode) ?? this.settingsManager.getActionForCode(code);
+    if (userAction === 'character_menu' || code === 'KeyE') {
+      if (this.characterMenuModal) {
+        this.toggleCharacterMenu('character');
+        return true;
+      }
+    }
+    if (userAction === 'compendium') {
+      if (this.characterMenuModal) {
+        this.toggleCharacterMenu('bestiary');
+        return true;
+      }
+    }
+    if (userAction === 'pact') {
+      if (this.characterMenuModal) {
+        this.toggleCharacterMenu('pacts');
+        return true;
+      }
+    }
     if (userAction === 'inventory') {
       this.toggleInventory();
       return true;
     }
     if (userAction === 'cast_spell') {
+      if (this.characterMenuModal) {
+        this.toggleCharacterMenu('spellbook');
+        return true;
+      }
       if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
       if (this.onOpenSpellbook) {
         this.onOpenSpellbook();

@@ -24,9 +24,6 @@ export interface DownloadAdapter {
   triggerFileDownload(filename: string, content: string, mimeType: string): void;
 }
 
-export const ROSTER_MANIFEST_KEY = 'cotw_roster_manifest';
-export const SAVE_KEY_PREFIX = 'cotw_save_';
-
 export const DEFAULT_HEADLESS_MANIFEST: GameContentManifest = {
   id: 'headless_default',
   name: 'Headless Dungeon',
@@ -116,7 +113,7 @@ export class ProfileManager {
   }
 
   public get manifestId(): string {
-    return this.defaultManifest?.id ?? 'cotw';
+    return this.defaultManifest?.id ?? 'default';
   }
 
   public get rosterKey(): string {
@@ -128,10 +125,7 @@ export class ProfileManager {
   }
 
   public getManifest(): RosterManifest {
-    let raw = this.storage.getItem(this.rosterKey);
-    if (!raw && this.manifest?.supportsLegacyKeys === true) {
-      raw = this.storage.getItem(ROSTER_MANIFEST_KEY);
-    }
+    const raw = this.storage.getItem(this.rosterKey);
     if (!raw) {
       return { profiles: [] };
     }
@@ -438,10 +432,7 @@ export class ProfileManager {
     manifest?: GameContentManifest
   ): LoadOutcome<{ engine: GameEngine; profile: CharacterProfile }> {
     const saveKey = `${this.saveKeyPrefix}${profileId}`;
-    let raw = this.storage.getItem(saveKey);
-    if (!raw && this.manifest?.supportsLegacyKeys === true) {
-      raw = this.storage.getItem(`${SAVE_KEY_PREFIX}${profileId}`);
-    }
+    const raw = this.storage.getItem(saveKey);
     if (!raw) {
       return MISSING_SAVE;
     }
@@ -479,9 +470,6 @@ export class ProfileManager {
   public deleteCharacter(profileId: string): boolean {
     const saveKey = `${this.saveKeyPrefix}${profileId}`;
     this.storage.removeItem(saveKey);
-    if (this.manifest?.supportsLegacyKeys === true) {
-      this.storage.removeItem(`${SAVE_KEY_PREFIX}${profileId}`);
-    }
 
     const manifest = this.getManifest();
     const prevCount = manifest.profiles.length;
@@ -500,10 +488,7 @@ export class ProfileManager {
    */
   public exportHero(profileId: string): string {
     const saveKey = `${this.saveKeyPrefix}${profileId}`;
-    let raw = this.storage.getItem(saveKey);
-    if (!raw && this.manifest?.supportsLegacyKeys === true) {
-      raw = this.storage.getItem(`${SAVE_KEY_PREFIX}${profileId}`);
-    }
+    const raw = this.storage.getItem(saveKey);
     if (!raw) {
       throw new Error(`Save state for character ID ${profileId} not found.`);
     }

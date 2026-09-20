@@ -5,11 +5,11 @@ import type { ProfileManager } from '../storage/profile-manager';
 import { getPlayerTotalCp } from '../economy/currency';
 import { DungeonArc } from './dungeonArc';
 import type { QuestStatus } from './types';
-import { Leaderboard, type ValhallaEntry } from '../hallOfFame/leaderboard';
+import { Leaderboard, type HallOfFameEntry } from '../hallOfFame/leaderboard';
 
 export interface GameStateSummary {
   status: QuestStatus;
-  entry?: ValhallaEntry;
+  entry?: HallOfFameEntry;
   causeOfDeath?: string;
   killerName?: string;
 }
@@ -95,7 +95,7 @@ export class GameStateManager {
    * records champion into the leaderboard, and updates profile status to
    * 'victorious'.
    */
-  public triggerVictory(engine: GameEngine, profileManager?: ProfileManager, endingId?: string): ValhallaEntry {
+  public triggerVictory(engine: GameEngine, profileManager?: ProfileManager, endingId?: string): HallOfFameEntry {
     this.runStatus = 'victorious';
     const p = engine.player;
     const quest = engine.manifest?.quest;
@@ -106,7 +106,7 @@ export class GameStateManager {
     const score = Leaderboard.calculateScore(p.xp, totalGoldCp, this.deepestFloor, true, bonus);
     const epitaph = ending?.victoryEpitaph ?? quest?.victoryEpitaph ?? `Champion - Recovered the Quest Relic`;
 
-    const entry: ValhallaEntry = {
+    const entry: HallOfFameEntry = {
       id: p.id,
       heroName: p.name,
       gender: p.gender,
@@ -151,7 +151,7 @@ export class GameStateManager {
    * Triggers permadeath, records fallen hero into the leaderboard,
    * and updates profile status to 'fallen'.
    */
-  public triggerDeath(engine: GameEngine, killer?: Entity, profileManager?: ProfileManager): ValhallaEntry {
+  public triggerDeath(engine: GameEngine, killer?: Entity, profileManager?: ProfileManager): HallOfFameEntry {
     this.runStatus = 'fallen';
     const p = engine.player;
     this.killerName = killer?.name ?? 'Mortal Wounds';
@@ -159,7 +159,7 @@ export class GameStateManager {
     const totalGoldCp = getPlayerTotalCp(p);
     const score = Leaderboard.calculateScore(p.xp, totalGoldCp, this.deepestFloor, false);
 
-    const entry: ValhallaEntry = {
+    const entry: HallOfFameEntry = {
       id: p.id,
       heroName: p.name,
       gender: p.gender,

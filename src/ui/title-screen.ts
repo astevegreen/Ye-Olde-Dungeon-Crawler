@@ -4,7 +4,7 @@ import { CharacterRoller } from '../engine';
 import { PRNG } from '../engine';
 import type { CharacterAttributes, Gender } from '../engine';
 import type { GameDifficulty } from '../engine';
-import { Leaderboard, type ValhallaEntry } from '../engine';
+import { Leaderboard, type HallOfFameEntry } from '../engine';
 import { getStoragePersistenceInfo, formatStorageStatus } from './persistenceInit';
 import { setupSaveDragAndDrop, importSaveWithValidation } from './saveImporter';
 import type { SaveCodeModal } from './saveCodeModal';
@@ -92,7 +92,7 @@ export class TitleScreen {
   private valhallaCloseBtn: HTMLButtonElement | null = null;
   private valhallaCloseXBtn: HTMLButtonElement | null = null;
   private valhallaStatusEl: HTMLElement | null = null;
-  private selectedChampion: ValhallaEntry | null = null;
+  private selectedChampion: HallOfFameEntry | null = null;
 
   private selectedProfileId: string | null = null;
 
@@ -501,7 +501,7 @@ export class TitleScreen {
     }
   }
 
-  private selectChampion(champ: ValhallaEntry): void {
+  private selectChampion(champ: HallOfFameEntry): void {
     this.selectedChampion = champ;
     const items = this.valhallaListEl?.querySelectorAll('.valhalla-item');
     items?.forEach((el) => {

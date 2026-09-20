@@ -241,7 +241,6 @@ export function importSaveWithValidation(options: {
 
   const validation: SaveValidationResult = validateSavePayload(content, {
     expectedManifestId: activeManifestId,
-    allowLegacyManifestAlias: profileManager.manifest?.supportsLegacyKeys === true,
   });
 
   if (!validation.valid || !validation.envelope) {

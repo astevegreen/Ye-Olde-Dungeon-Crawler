@@ -1,0 +1,443 @@
+      :root {
+        --ui-bg: #0a0b10;
+        --ui-panel: #c0c0c0;
+        --ui-border-light: #ffffff;
+        --ui-border-dark: #404040;
+        --ui-text: #000000;
+        --ui-titlebar-start: #000080;
+        --ui-titlebar-end: #1084d0;
+        --ui-titlebar-text: #ffffff;
+        --ui-accent: #3b82f6;
+        --ui-font-family: "Courier New", Courier, "MS Sans Serif", monospace;
+      }
+
+      *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html, body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: var(--ui-bg, #0a0b10);
+        color: #d1d5db;
+        font-family: var(--ui-font-family, "Courier New", Courier, "MS Sans Serif", monospace);
+        user-select: none;
+        -webkit-user-select: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #app {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+      #game-canvas {
+        display: block;
+        background-color: #0d0e15;
+        box-shadow: 0 0 32px rgba(0, 0, 0, 0.9), inset 0 0 2px rgba(255, 255, 255, 0.05);
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+      }
+
+      /* In-game Floating HUD Bar Controls */
+      #game-overlay-controls {
+        position: absolute;
+        top: 8px;
+        right: 14px;
+        z-index: 40;
+        display: flex;
+        gap: 8px;
+      }
+
+      /* Windows 3.1 / DOS Retro UI Dialog */
+      .retro-window-overlay {
+        position: absolute;
+        inset: 0;
+        background-color: rgba(10, 11, 16, 0.82);
+        backdrop-filter: blur(2px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+      }
+
+      .retro-window {
+        width: 620px;
+        max-width: 95vw;
+        background-color: var(--ui-panel, #c0c0c0);
+        color: var(--ui-text, #000000);
+        border: 2px solid var(--ui-border-light, #ffffff);
+        border-right-color: var(--ui-border-dark, #404040);
+        border-bottom-color: var(--ui-border-dark, #404040);
+        box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.85);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .retro-titlebar {
+        background: linear-gradient(90deg, var(--ui-titlebar-start, #000080), var(--ui-titlebar-end, #1084d0));
+        color: var(--ui-titlebar-text, #ffffff);
+        font-size: 13px;
+        font-weight: bold;
+        padding: 4px 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--ui-border-dark, #404040);
+      }
+
+      .retro-titlebar-title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        letter-spacing: 0.5px;
+      }
+
+      .retro-window-body {
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .retro-banner {
+        text-align: center;
+        border: 2px groove #ffffff;
+        background: #000080;
+        color: #fef08a;
+        padding: 8px 12px;
+        box-shadow: inset 1px 1px 0 #000;
+      }
+
+      .retro-banner-title {
+        font-size: 18px;
+        font-weight: bold;
+        letter-spacing: 2px;
+        text-shadow: 2px 2px 0 #000000;
+      }
+
+      .retro-banner-sub {
+        font-size: 11px;
+        color: #93c5fd;
+        margin-top: 2px;
+      }
+
+      .retro-columns {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 12px;
+      }
+
+      .retro-col {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .retro-label {
+        font-size: 12px;
+        font-weight: bold;
+        color: #1f2937;
+      }
+
+      .retro-inset-list {
+        background-color: #ffffff;
+        border: 2px solid #808080;
+        border-right-color: #ffffff;
+        border-bottom-color: #ffffff;
+        height: 200px;
+        overflow-y: auto;
+        font-size: 12px;
+        color: #000000;
+      }
+
+      .roster-empty-notice {
+        padding: 24px 12px;
+        text-align: center;
+        color: #6b7280;
+        font-style: italic;
+      }
+
+      .roster-item {
+        padding: 6px 8px;
+        border-bottom: 1px dotted #d1d5db;
+        cursor: pointer;
+        transition: background 0.1s;
+      }
+
+      .roster-item:hover:not(.selected) {
+        background-color: #eff6ff;
+      }
+
+      .roster-item.selected {
+        background-color: #000080;
+        color: #ffffff;
+      }
+
+      .roster-item-header {
+        display: flex;
+        justify-content: space-between;
+        font-weight: bold;
+      }
+
+      .roster-name {
+        font-size: 13px;
+      }
+
+      .roster-date {
+        font-size: 10px;
+        opacity: 0.85;
+      }
+
+      .roster-item-details {
+        font-size: 11px;
+        margin-top: 3px;
+        display: flex;
+        gap: 5px;
+        opacity: 0.9;
+      }
+
+      .retro-btn-row {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      /* Beveled Classic Windows 3.1 Buttons */
+      .win-btn {
+        background-color: #c0c0c0;
+        color: #000000;
+        border-top: 2px solid #ffffff;
+        border-left: 2px solid #ffffff;
+        border-right: 2px solid #404040;
+        border-bottom: 2px solid #404040;
+        padding: 4px 10px;
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: bold;
+        cursor: pointer;
+        text-align: center;
+      }
+
+      .win-btn:active:not(:disabled) {
+        border-top: 2px solid #404040;
+        border-left: 2px solid #404040;
+        border-right: 2px solid #ffffff;
+        border-bottom: 2px solid #ffffff;
+        padding: 5px 9px 3px 11px;
+      }
+
+      .win-btn:disabled {
+        color: #808080;
+        text-shadow: 1px 1px 0 #ffffff;
+        cursor: not-allowed;
+      }
+
+      .win-btn-sm {
+        padding: 2px 8px;
+        font-size: 11px;
+      }
+
+      .primary-btn {
+        border-color: #ffffff #000000 #000000 #ffffff;
+        outline: 1px solid #000000;
+      }
+
+      .danger-btn {
+        color: #7f1d1d;
+      }
+
+      .create-btn {
+        width: 100%;
+        margin-top: 6px;
+        padding: 6px;
+      }
+
+      /* Fieldset Groups */
+      .retro-group {
+        border: 2px groove #ffffff;
+        padding: 8px 10px;
+        background: #c8c8c8;
+      }
+
+      .retro-group legend {
+        padding: 0 4px;
+        font-size: 11px;
+        font-weight: bold;
+        color: #1e3a8a;
+      }
+
+      .retro-input {
+        width: 100%;
+        padding: 4px 6px;
+        background-color: #ffffff;
+        border: 2px solid #808080;
+        border-right-color: #ffffff;
+        border-bottom-color: #ffffff;
+        color: #000000;
+        font-family: inherit;
+        font-size: 13px;
+        margin-top: 4px;
+      }
+
+      .retro-hero-preset {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 4px;
+        flex-wrap: wrap;
+      }
+
+      .preset-label {
+        font-size: 10px;
+        color: #4b5563;
+      }
+
+      .preset-tag {
+        font-size: 10px;
+        padding: 1px 6px;
+        background: #e5e7eb;
+        border: 1px solid #9ca3af;
+        cursor: pointer;
+        color: #111827;
+      }
+
+      .preset-tag:hover {
+        background: #bfdbfe;
+        border-color: #3b82f6;
+      }
+
+      .retro-note {
+        font-size: 11px;
+        color: #374151;
+        margin-bottom: 6px;
+      }
+
+      .retro-statusbar {
+        border-top: 2px solid #808080;
+        border-left: 2px solid #808080;
+        border-right: 2px solid #ffffff;
+        border-bottom: 2px solid #ffffff;
+        background: #d8d8d8;
+        padding: 3px 8px;
+        font-size: 11px;
+        display: flex;
+        justify-content: space-between;
+        color: #111827;
+      }
+
+      .version-tag {
+        font-weight: bold;
+        color: #4b5563;
+      }
+
+      /* Stat Roller & Valhalla styling */
+      .stat-roller-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        margin-bottom: 6px;
+      }
+      .stat-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #dfdfdf;
+        padding: 2px 4px;
+        border: 1px solid #a0a0a0;
+      }
+      .stat-name {
+        font-size: 11px;
+        font-weight: bold;
+        color: #1f2937;
+        width: 30px;
+      }
+      .stat-value {
+        font-size: 12px;
+        font-weight: bold;
+        color: #000080;
+        min-width: 20px;
+        text-align: center;
+      }
+      .stat-adj-btn {
+        width: 20px;
+        padding: 1px 0;
+        text-align: center;
+        font-weight: bold;
+      }
+      .derived-preview-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        background: #e2e8f0;
+        border: 1px inset #808080;
+        padding: 4px;
+        font-size: 10px;
+        text-align: center;
+        color: #1e293b;
+      }
+      .gender-btn-group button.active,
+      .difficulty-btn-group button.active {
+        background: #000080 !important;
+        color: #ffffff !important;
+      }
+      .valhalla-item {
+        padding: 4px 6px;
+        border-bottom: 1px dotted #ccc;
+        cursor: pointer;
+        font-size: 11px;
+      }
+      .valhalla-item:hover:not(.selected) {
+        background: #eff6ff;
+      }
+      .valhalla-item.selected {
+        background: #000080;
+        color: #ffffff;
+      }
+      .valhalla-badge-win {
+        color: #16a34a;
+        font-weight: bold;
+      }
+      .valhalla-badge-loss {
+        color: #dc2626;
+        font-weight: bold;
+      }
+      .valhalla-item.selected .valhalla-badge-win {
+        color: #86efac;
+      }
+      .valhalla-item.selected .valhalla-badge-loss {
+        color: #fca5a5;
+      }
+      .save-drop-overlay {
+        position: absolute;
+        inset: 0;
+        background-color: rgba(10, 15, 30, 0.88);
+        backdrop-filter: blur(4px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 250;
+        pointer-events: none;
+      }
+      .save-drop-box {
+        border: 3px dashed #38bdf8;
+        background: rgba(15, 23, 42, 0.95);
+        color: #f8fafc;
+        padding: 30px 50px;
+        text-align: center;
+        box-shadow: 0 0 24px rgba(56, 189, 248, 0.4);
+      }
+      .storage-badge-pill {
+        font-size: 10px;
+        font-weight: bold;
+        padding: 2px 6px;
+        border: 1px solid #64748b;
+        background: #e2e8f0;
+        border-radius: 2px;
+      }

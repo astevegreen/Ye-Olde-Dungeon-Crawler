@@ -65,6 +65,7 @@ import {
   SpellbookTabAdapter,
 } from './ui/characterMenu';
 import { InventoryTabAdapter } from './rendering/inventoryTabAdapter';
+import './ui/styles/base.css';
 import './ui/styles/flanks.css';
 import './ui/styles/layout.css';
 import { FlankManager } from './ui/flanks/flankManager';

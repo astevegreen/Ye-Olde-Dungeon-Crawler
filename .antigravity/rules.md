@@ -3,9 +3,10 @@
 `ARCHITECTURE.md` (repo root) is the authoritative architecture spec. This file summarizes it for enforcement; it does not replace it. Section numbers below (§N) refer to `ARCHITECTURE.md`. If this file, a skill, or an archetype ever disagrees with `ARCHITECTURE.md`, stop and flag the conflict to the user — do not silently pick a side.
 
 ## Before Editing Code
-1. Read `ARCHITECTURE.md` in full before any structural change: new files, new dependencies between `src/engine/`, `src/content/`, `src/ui/`, and `src/rendering/`, or edits to protected files.
+1. Read `ARCHITECTURE.md` in full before any structural change: new files, new dependencies between `src/engine/`, `src/content/`, `src/ui/`, `src/rendering/`, or `src/main/`, or edits to protected files. It is kept small on purpose and carries its own routing table — use it to find the right `docs/architecture/**` sub-doc for the area you're touching (content packs, storage/schema, simulation/input, or quality gates) before you start.
 2. Respect status markers. Text tagged **[Planned: P-NN]** describes future work, not existing code. Never call APIs or rely on behavior it describes. Implement a planned item only when the task explicitly requests it (§8.3).
 3. Do not widen the gap to a planned target. For example: no new deep engine imports from content, no new `Math.random()` in simulation code, and no new modals that bypass `ModalStackManager`.
+4. No ephemeral task or prompt markdown at the repo root. Working prompts go in `/.prompts/` (gitignored) or outside the repo — the root holds exactly `ARCHITECTURE.md` and `CLAUDE.md`.
 
 ## Invariants
 - **Headless purity by execution path (§2):** any code that runs inside the simulation — engine code, content hooks and handlers, injected callbacks — uses no DOM, Canvas, audio, or timing globals.

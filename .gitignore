@@ -18,3 +18,6 @@ dist-ssr
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Ephemeral agent task/prompt markdown (see CLAUDE.md, .antigravity/rules.md)
+/.prompts/

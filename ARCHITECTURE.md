@@ -42,7 +42,7 @@
 | Layer / Directory | Primary Responsibility | Dependency & Import Rules |
 | :--- | :--- | :--- |
 | `src/main.ts` | **Composition Root.** Selects manifest/theme from `VITE_THEME`; creates presentation components; obtains `GameEngine` instances (`ProfileManager`, `AutosaveManager`); wires engine callbacks; mounts DOM listeners. | The **only** source module, anywhere — including `src/main/` below — that imports content packs. May import every layer. Engine imports resolve through `src/engine/index.ts`; `check:engine-purity` enforces this. |
-| `src/main/` (if present) | Composition-root helpers extracted from `src/main.ts` (command registration, modal wiring, etc.). | Same rules as `src/ui/`/`src/rendering/` (presentation scope) — **may not** import `src/content/`; only `src/main.ts` itself keeps that privilege. Enforced by `check:engine-purity`/`check:engine-encapsulation` (§7.2). |
+| `src/main/` | Composition-root helpers extracted from `src/main.ts` — today, `commandCatalog.ts` (pure data, zero closures). `execute` callbacks stay in `src/main.ts`, which owns the mutable session state they close over. | Same rules as `src/ui/`/`src/rendering/` (presentation scope) — **may not** import `src/content/`; only `src/main.ts` keeps that privilege. Enforced by `check:engine-purity`/`check:engine-encapsulation` (§7.2). |
 | `src/content/` | Campaign content packs: item/monster catalogs, spells, status effects, encounter tables, vaults, towns, quest arcs, themes, scripted behaviors. | Imports the engine (types and runtime values) only through `src/engine/index.ts`; `check:engine-purity` enforces this. Never imports `src/ui/`/`src/rendering/`. Reaches the engine only through `GameContentManifest` (Content Extensibility Model, above). |
 | `src/engine/` | Headless state coordinator, action pipeline, spatial grid, FOV, scheduler, AI behavior trees, storage/serialization, PRNG. | Zero browser/DOM/Canvas deps. Public API via `src/engine/index.ts`. **Zero** imports from `src/content/`/`src/ui/`/`src/rendering/`. Colocated engine tests may import content as fixtures only. |
 | `src/rendering/` | Canvas atlases, sprite blitting, camera, overlays, effect playback (`fxRunner.ts`), keyboard dispatch (`input-handler.ts`). | Engine via `src/engine/index.ts` only. May import `src/ui/`. Never `src/content/`. |
@@ -70,7 +70,7 @@
 ```
 - `src/engine/` never imports `src/content/`, `src/ui/`, or `src/rendering/`.
 - At runtime, content reaches the engine only as data/callbacks inside `GameContentManifest`, passed to the `GameEngine` constructor on create/load.
-- `src/main/`, if it exists, is presentation tier for import purposes — it does **not** carry `src/main.ts`'s content-pack privilege.
+- `src/main/` is presentation tier for imports — it does **not** carry `src/main.ts`'s content-pack privilege.
 
 ### Content Extensibility Model
 *Details: [content-extensibility.md](docs/architecture/content-extensibility.md).*
@@ -200,7 +200,7 @@ Each entry records the current state, the target, and whether the work touches p
 ### Deferred (out of scope)
 Entries here are recorded, not planned: no work is scheduled, none attempted. They keep reserved IDs so numbering stays stable. A deferred item is not **[Planned]** — do not pick one up as planned work; moving one back into the register above is an explicit decision.
 
-**P-24 — Configurable Radial Action Menu: gamepad invocation** (§6) — **Deferred 2026-09-15**
+**P-24 — Radial Action Menu: gamepad invocation** (§6) — **Deferred 2026-09-15**
 - Current: the radial menu itself is implemented (`src/rendering/radialMenu.ts`) — see `docs/architecture/simulation-and-input.md`. Gamepad invocation is not implemented; `navigator.getGamepads()` is unreferenced in `src/`.
 - Reason: gamepad/controller support is intentionally out of scope until the game is feature-complete; may be reconsidered afterwards.
 - Not the same as an *Evaluated, Not Adopted* design (e.g. [ADR-0001](docs/decisions/0001-scheduler-partitioning-evaluated-not-adopted.md)) — that was built and rejected on evidence. P-24 was never attempted; deferral is scheduling, not a verdict.

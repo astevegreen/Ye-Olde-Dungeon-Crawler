@@ -78,6 +78,7 @@ import { SettingsManager } from './ui/settings/settingsManager';
 import type { RadialMenuSlotConfig } from './ui/settings/settingsManager';
 import { KeybindModal } from './ui/settings/keybindModal';
 import { MainMenu } from './ui/menus/mainMenu';
+import { COMMAND_CATALOG, type CommandId } from './main/commandCatalog';
 
 const targetTheme = ((import.meta as any).env?.VITE_THEME as string) || 'cotw';
 const activeManifest = targetTheme === 'warcraft' ? warcraftManifest : cotwManifest;
@@ -923,391 +924,197 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    commandPalette.registerCommands([
-      {
-        id: 'inspect',
-        title: 'Look / Inspect Tile',
-        category: 'Mode',
-        shortcut: 'X or L',
-        description: 'Pan targeting reticle to inspect monsters, terrain, and loot',
-        execute: (eng) => {
-          if (renderer) {
-            renderer.inventoryOverlay.close();
-            renderer.targetingOverlay.close();
-            renderer.inspectOverlay.open(eng);
-            renderer.render();
-          }
-        },
+    const commandExecutors: Record<CommandId, (eng: GameEngine) => void> = {
+      inspect: (eng) => {
+        if (renderer) {
+          renderer.inventoryOverlay.close();
+          renderer.targetingOverlay.close();
+          renderer.inspectOverlay.open(eng);
+          renderer.render();
+        }
       },
-      {
-        id: 'spellbook',
-        title: 'Cast Spell / Spellbook',
-        category: 'Mode',
-        shortcut: 'Z or C',
-        description: 'Open spellbook to select and aim magical attacks',
-        execute: (eng) => {
-          if (characterMenuModal) {
-            if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-            characterMenuModal.open('spellbook');
-          } else if (renderer) {
-            renderer.inventoryOverlay.close();
-            renderer.inspectOverlay.close();
-            renderer.targetingOverlay.openSpellbook(eng);
-            renderer.render();
-          }
-        },
+      spellbook: (eng) => {
+        if (characterMenuModal) {
+          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+          characterMenuModal.open('spellbook');
+        } else if (renderer) {
+          renderer.inventoryOverlay.close();
+          renderer.inspectOverlay.close();
+          renderer.targetingOverlay.openSpellbook(eng);
+          renderer.render();
+        }
       },
-      {
-        id: 'inventory',
-        title: 'Open Inventory & Equipment',
-        category: 'Mode',
-        shortcut: 'I',
-        description: 'Manage backpack, equip weapons/armor, and view paperdoll',
-        execute: (eng) => {
-          if (characterMenuModal) {
-            if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-            characterMenuModal.open('inventory');
+      inventory: (eng) => {
+        if (characterMenuModal) {
+          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+          characterMenuModal.open('inventory');
+          renderer?.render();
+        } else if (renderer) {
+          renderer.inventoryOverlay.toggle(eng);
+          renderer.render();
+        }
+      },
+      compendium: (eng) => {
+        if (characterMenuModal) {
+          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+          characterMenuModal.open('bestiary');
+        } else {
+          compendiumModal.open(eng);
+        }
+      },
+      'allocate-stats': (eng) => {
+        if (characterMenuModal) {
+          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+          characterMenuModal.open('character');
+        } else if (inputHandler) {
+          levelUpModal.setModalStack(inputHandler.modalStack);
+          levelUpModal.open(eng);
+          inputHandler.modalStack.push(levelUpModal);
+        } else {
+          levelUpModal.open(eng);
+        }
+      },
+      character_menu: () => {
+        if (characterMenuModal) {
+          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+          characterMenuModal.open('character');
+        }
+      },
+      pacts: () => {
+        if (characterMenuModal) {
+          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+          characterMenuModal.open('pacts');
+        }
+      },
+      story: () => {
+        if (characterMenuModal) {
+          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+          characterMenuModal.open('story');
+        }
+      },
+      'run-advisory': (eng) => {
+        const rep = SageService.getRunAdvisory(eng);
+        eng.log(`*** SAGE ADVISORY (Floor ${rep.targetFloor}): ${rep.summary} ***`);
+        for (const w of rep.warnings) {
+          eng.log(`[${w.severity.toUpperCase()}] ${w.title}: ${w.recommendation}`);
+        }
+        contextHelp.open(eng, renderer?.inventoryOverlay, renderer?.targetingOverlay, renderer?.shopOverlay, renderer?.inspectOverlay);
+        renderer?.render();
+      },
+      help: (eng) => {
+        contextHelp.open(eng, renderer?.inventoryOverlay, renderer?.targetingOverlay, renderer?.shopOverlay, renderer?.inspectOverlay);
+      },
+      'quick-loot': (eng) => {
+        const act = new QuickLootAction(eng.player);
+        eng.handlePlayerAction(act);
+        void processVisualEffectsAndRender();
+      },
+      'sort-pack': (eng) => {
+        eng.commandBus.dispatch({ type: 'sort_pack', payload: { mode: 'category' } });
+        renderer?.render();
+      },
+      'consolidate-coins': (eng) => {
+        const res = eng.player.inventory.consolidateCoins();
+        if (res.count > 0) {
+          eng.log(`Consolidated ${res.count} coin stack(s) into purse.`);
+        } else {
+          eng.log('No loose coins in backpack to consolidate.');
+        }
+        renderer?.render();
+      },
+      wait: (eng) => {
+        const act = new WaitAction(eng.player);
+        eng.handlePlayerAction(act);
+        void processVisualEffectsAndRender();
+      },
+      rest: (eng) => {
+        const act = new RestAction(eng.player);
+        eng.handlePlayerAction(act);
+        void processVisualEffectsAndRender();
+      },
+      search: (eng) => {
+        const act = new SearchAction(eng.player, eng.rng);
+        eng.handlePlayerAction(act);
+        void processVisualEffectsAndRender();
+      },
+      stairs: (eng) => {
+        const act = new ClimbStairsAction(eng.player);
+        eng.handlePlayerAction(act);
+        void processVisualEffectsAndRender();
+      },
+      map: (eng) => {
+        if (renderer) {
+          renderer.inventoryOverlay.close();
+          renderer.inspectOverlay.close();
+          renderer.targetingOverlay.close();
+          renderer.mapOverlay.open(eng);
+          renderer.render();
+        }
+      },
+      diagnostics: () => {
+        toggleDiagnostics();
+      },
+      'save-quit': () => {
+        promptSaveAndQuit();
+      },
+      'export-save': (eng) => {
+        if (activeProfile) {
+          try {
+            const fileName = profileManager.triggerCotwDownload(activeProfile.id, defaultPlatformAdapter);
+            eng.log(`Exported character save to ${fileName} 💾`);
             renderer?.render();
-          } else if (renderer) {
-            renderer.inventoryOverlay.toggle(eng);
-            renderer.render();
+          } catch (err) {
+            eng.log(`Export failed: ${(err as Error).message}`);
           }
-        },
+        }
       },
-      {
-        id: 'compendium',
-        title: "Slayer's Compendium & Codex",
-        category: 'Help',
-        shortcut: 'B',
-        description: 'Review monster vulnerabilities, stats, and mastery combat perks',
-        execute: (eng) => {
-          if (characterMenuModal) {
-            if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-            characterMenuModal.open('bestiary');
-          } else {
-            compendiumModal.open(eng);
-          }
-        },
+      'save-code': () => {
+        if (activeEngine && activeProfile) {
+          const saveData = serializeGame(activeEngine, activeProfile);
+          const env = {
+            schemaVersion: CURRENT_SCHEMA_VERSION,
+            contentManifestId: activeManifest.id,
+            timestamp: Date.now(),
+            data: saveData,
+          };
+          saveCodeModal.open('copy', env);
+          pushModal('save-code', { isOpen: () => saveCodeModal.isOpen(), close: () => saveCodeModal.close() });
+        }
       },
-      {
-        id: 'allocate-stats',
-        title: 'Allocate Stat Points',
-        category: 'Action',
-        shortcut: 'U or E',
-        description: 'Spend unspent attribute points on Strength, Dexterity, Constitution, or Intelligence',
-        execute: (eng) => {
-          if (characterMenuModal) {
-            if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-            characterMenuModal.open('character');
-          } else if (inputHandler) {
-            levelUpModal.setModalStack(inputHandler.modalStack);
-            levelUpModal.open(eng);
-            inputHandler.modalStack.push(levelUpModal);
-          } else {
-            levelUpModal.open(eng);
-          }
-        },
+      settings: () => {
+        keybindModal.open();
+        pushModal('keybinds', keybindModal);
       },
-      {
-        id: 'character_menu',
-        title: 'Character Menu',
-        category: 'Mode',
-        shortcut: 'E',
-        description: 'Open consolidated character menu (Character sheet, Inventory, Spells, Bestiary, Pacts, Story)',
-        execute: () => {
-          if (characterMenuModal) {
-            if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-            characterMenuModal.open('character');
-          }
-        },
+      summon_companion: (eng) => {
+        const defId = eng.manifest?.companions?.[0]?.id;
+        if (eng.companion) {
+          eng.log(`${eng.companion.name} is already at your side.`);
+        } else if (defId) {
+          eng.summonCompanion(defId);
+        } else {
+          eng.log('No companion is available in this campaign.');
+        }
+        renderer?.render();
       },
-      {
-        id: 'pacts',
-        title: 'Ancient Run Pacts & Bounties',
-        category: 'Mode',
-        shortcut: 'P',
-        description: 'View, seal, or renounce ancient difficulty pacts',
-        execute: () => {
-          if (characterMenuModal) {
-            if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-            characterMenuModal.open('pacts');
-          }
-        },
+      dismiss_companion: (eng) => {
+        eng.dismissCompanion();
+        renderer?.render();
       },
-      {
-        id: 'story',
-        title: 'Cartographer & World Ledger',
-        category: 'Help',
-        shortcut: 'Story',
-        description: 'Inspect explored floor chronicle and faction standings',
-        execute: () => {
-          if (characterMenuModal) {
-            if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-            characterMenuModal.open('story');
-          }
-        },
+      use_companion_skill_rally_howl: (eng) => {
+        const res = eng.commandBus.dispatch({ type: 'use_companion_skill', payload: { skillId: 'rally_howl' } });
+        if (!res.success && res.message) eng.log(res.message);
+        void processVisualEffectsAndRender();
       },
-      {
-        id: 'run-advisory',
-        title: 'Town Sage Run Advisory',
-        category: 'Help',
-        shortcut: 'Sage / Cmds',
-        description: 'Seek strategic analysis on inventory bulk, cursed gear, and threats',
-        execute: (eng) => {
-          const rep = SageService.getRunAdvisory(eng);
-          eng.log(`*** SAGE ADVISORY (Floor ${rep.targetFloor}): ${rep.summary} ***`);
-          for (const w of rep.warnings) {
-            eng.log(`[${w.severity.toUpperCase()}] ${w.title}: ${w.recommendation}`);
-          }
-          contextHelp.open(eng, renderer?.inventoryOverlay, renderer?.targetingOverlay, renderer?.shopOverlay, renderer?.inspectOverlay);
-          renderer?.render();
-        },
+      rune_of_return_tree: () => {
+        openRuneTree();
       },
-      {
-        id: 'help',
-        title: 'Context-Sensitive Help Card',
-        category: 'Help',
-        shortcut: 'F1 or /',
-        description: 'View active keybindings and rules for the current game context',
-        execute: (eng) => {
-          contextHelp.open(eng, renderer?.inventoryOverlay, renderer?.targetingOverlay, renderer?.shopOverlay, renderer?.inspectOverlay);
-        },
+      channel_rune_of_return: (eng) => {
+        eng.handlePlayerAction(new ChannelRuneOfReturnAction(eng.player));
+        void processVisualEffectsAndRender();
       },
-      {
-        id: 'quick-loot',
-        title: 'Quick-Loot Ground Tile',
-        category: 'Action',
-        shortcut: 'Shift+G',
-        description: 'Instantly pick up all items lying on the current ground tile',
-        execute: (eng) => {
-          const act = new QuickLootAction(eng.player);
-          eng.handlePlayerAction(act);
-          void processVisualEffectsAndRender();
-        },
-      },
-      {
-        id: 'sort-pack',
-        title: 'Sort Backpack Items',
-        category: 'Action',
-        shortcut: 'O',
-        description: 'Cycle inventory sorting by Category, Weight, or Bulk',
-        execute: (eng) => {
-          eng.commandBus.dispatch({ type: 'sort_pack', payload: { mode: 'category' } });
-          renderer?.render();
-        },
-      },
-      {
-        id: 'consolidate-coins',
-        title: 'Consolidate Loose Coins',
-        category: 'Action',
-        shortcut: 'C',
-        description: 'Pack all loose coins in backpack into your coin purse',
-        execute: (eng) => {
-          const res = eng.player.inventory.consolidateCoins();
-          if (res.count > 0) {
-            eng.log(`Consolidated ${res.count} coin stack(s) into purse.`);
-          } else {
-            eng.log('No loose coins in backpack to consolidate.');
-          }
-          renderer?.render();
-        },
-      },
-      {
-        id: 'wait',
-        title: 'Wait / Pass Turn',
-        category: 'Action',
-        shortcut: 'Space or .',
-        description: 'Pass turn to recover energy or wait for monsters to advance',
-        execute: (eng) => {
-          const act = new WaitAction(eng.player);
-          eng.handlePlayerAction(act);
-          void processVisualEffectsAndRender();
-        },
-      },
-      {
-        id: 'rest',
-        title: 'Rest Until Healed',
-        category: 'Action',
-        shortcut: 'R',
-        description: 'Rest safely until Hit Points and Mana are fully replenished',
-        execute: (eng) => {
-          const act = new RestAction(eng.player);
-          eng.handlePlayerAction(act);
-          void processVisualEffectsAndRender();
-        },
-      },
-      {
-        id: 'search',
-        title: 'Search for Hidden Traps',
-        category: 'Action',
-        shortcut: 'S',
-        description: 'Thoroughly search surrounding tiles for hidden traps and secret doors',
-        execute: (eng) => {
-          const act = new SearchAction(eng.player, eng.rng);
-          eng.handlePlayerAction(act);
-          void processVisualEffectsAndRender();
-        },
-      },
-      {
-        id: 'stairs',
-        title: 'Climb Stairs Up / Down',
-        category: 'Action',
-        shortcut: '> or <',
-        description: 'Ascend or descend staircase to change dungeon floor',
-        execute: (eng) => {
-          const act = new ClimbStairsAction(eng.player);
-          eng.handlePlayerAction(act);
-          void processVisualEffectsAndRender();
-        },
-      },
-      {
-        id: 'map',
-        title: 'Explored Dungeon Map Viewer',
-        category: 'Mode',
-        shortcut: 'M',
-        description: 'View fully explored rooms and navigate visited floor maps (0 energy cost)',
-        execute: (eng) => {
-          if (renderer) {
-            renderer.inventoryOverlay.close();
-            renderer.inspectOverlay.close();
-            renderer.targetingOverlay.close();
-            renderer.mapOverlay.open(eng);
-            renderer.render();
-          }
-        },
-      },
-      {
-        id: 'diagnostics',
-        title: 'Developer Diagnostics Flight Recorder',
-        category: 'System',
-        shortcut: 'F2 or `',
-        description: 'Inspect live engine telemetry and copy diagnostic debug reports',
-        execute: () => {
-          toggleDiagnostics();
-        },
-      },
-      {
-        id: 'save-quit',
-        title: 'Save Character & System Menu',
-        category: 'System',
-        shortcut: 'Q',
-        description: 'Open save and quit menu to export backups or return to title',
-        execute: () => {
-          promptSaveAndQuit();
-        },
-      },
-      {
-        id: 'export-save',
-        title: 'Export Save File (.cotw)',
-        category: 'System',
-        shortcut: 'Ctrl+S',
-        description: 'Download current game state as a standalone .cotw file',
-        execute: (eng) => {
-          if (activeProfile) {
-            try {
-              const fileName = profileManager.triggerCotwDownload(activeProfile.id, defaultPlatformAdapter);
-              eng.log(`Exported character save to ${fileName} 💾`);
-              renderer?.render();
-            } catch (err) {
-              eng.log(`Export failed: ${(err as Error).message}`);
-            }
-          }
-        },
-      },
-      {
-        id: 'save-code',
-        title: 'Transfer Save Code (Base64)',
-        category: 'System',
-        shortcut: 'Code',
-        description: 'View or copy character Base64 backup save code to clipboard',
-        execute: () => {
-          if (activeEngine && activeProfile) {
-            const saveData = serializeGame(activeEngine, activeProfile);
-            const env = {
-              schemaVersion: CURRENT_SCHEMA_VERSION,
-              contentManifestId: activeManifest.id,
-              timestamp: Date.now(),
-              data: saveData,
-            };
-            saveCodeModal.open('copy', env);
-            pushModal('save-code', { isOpen: () => saveCodeModal.isOpen(), close: () => saveCodeModal.close() });
-          }
-        },
-      },
-      {
-        id: 'settings',
-        title: 'Settings & Keybinding Remapping',
-        category: 'System',
-        shortcut: 'Esc -> Settings',
-        description: 'Configure 8-directional movement modes and customize keyboard bindings',
-        execute: () => {
-          keybindModal.open();
-          pushModal('keybinds', keybindModal);
-        },
-      },
-      {
-        id: 'summon_companion',
-        title: 'Summon Companion',
-        category: 'Action',
-        shortcut: 'Cmds',
-        description: 'Call your bonded companion to your side (Companions & Pet Progression)',
-        execute: (eng) => {
-          const defId = eng.manifest?.companions?.[0]?.id;
-          if (eng.companion) {
-            eng.log(`${eng.companion.name} is already at your side.`);
-          } else if (defId) {
-            eng.summonCompanion(defId);
-          } else {
-            eng.log('No companion is available in this campaign.');
-          }
-          renderer?.render();
-        },
-      },
-      {
-        id: 'dismiss_companion',
-        title: 'Dismiss Companion',
-        category: 'Action',
-        shortcut: 'Cmds',
-        description: 'Send your companion away until next summoned',
-        execute: (eng) => {
-          eng.dismissCompanion();
-          renderer?.render();
-        },
-      },
-      {
-        id: 'use_companion_skill_rally_howl',
-        title: 'Companion Skill: Rally Howl',
-        category: 'Action',
-        shortcut: 'Cmds',
-        description: "Command your companion to use its Rally Howl, if it has learned one (Companions & Pet Progression)",
-        execute: (eng) => {
-          const res = eng.commandBus.dispatch({ type: 'use_companion_skill', payload: { skillId: 'rally_howl' } });
-          if (!res.success && res.message) eng.log(res.message);
-          void processVisualEffectsAndRender();
-        },
-      },
-      {
-        id: 'rune_of_return_tree',
-        title: 'Rune of Return Mastery Tree',
-        category: 'Action',
-        shortcut: 'Shift+T',
-        description: 'Upgrade Channel Celerity, Steadfast Weave, and Unbound Casting using unspent points',
-        execute: () => {
-          openRuneTree();
-        },
-      },
-      {
-        id: 'channel_rune_of_return',
-        title: 'Channel Rune of Return',
-        category: 'Action',
-        shortcut: 'T',
-        description: 'Begin channeled recall ritual to escape dungeon and return to town',
-        execute: (eng) => {
-          eng.handlePlayerAction(new ChannelRuneOfReturnAction(eng.player));
-          void processVisualEffectsAndRender();
-        },
-      },
-    ]);
+    };
+
+    commandPalette.registerCommands(COMMAND_CATALOG.map((meta) => ({ ...meta, execute: commandExecutors[meta.id] })));
 
     applyThemeTokens(engine.manifest?.theme ?? COTW_THEME_TOKENS);
 

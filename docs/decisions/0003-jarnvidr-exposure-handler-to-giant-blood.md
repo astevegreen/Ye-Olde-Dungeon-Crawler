@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-18
 **Status:** Accepted
-**Related:** [docs/architecture/content-extensibility.md](../architecture/content-extensibility.md) — Level-Scaled Elemental Resistance, Zone-Tiered Monster Power
+**Related:** [docs/architecture/content-progression-scaling.md](../architecture/content-progression-scaling.md) — Level-Scaled Elemental Resistance, Zone-Tiered Monster Power
 
 ## Context
 `stats/levelScaledResistance.ts` (`resolveLevelScaledResistance`/`applyLevelScaledElementalMitigation`) was built to resolve a numeric mitigation fraction from an ascending `{level, resistance}` step curve — the first real consumer of `calculateAttribute`'s long-reserved but previously-unused `'elementalResistance'` attribute key. Its one consumer was `cotw/hazards.ts`'s `jarnvidrExposureHandler`, an environmental hot/cold damage-over-time tick.

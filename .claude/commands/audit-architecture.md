@@ -5,9 +5,13 @@ description: Verify ARCHITECTURE.md against the actual codebase and Antigravity 
 Read ARCHITECTURE.md (the core document) in full. It is deliberately
 short and carries a routing table to four sub-docs under
 `docs/architecture/**` and decision records under `docs/decisions/**`.
-Read every sub-doc too — the core document's binding statements are
-the ground truth, but a sub-doc that drifts from them is exactly the
-kind of rot this audit exists to catch. Then verify every concrete,
+One of those four, `content-extensibility.md`, is itself a second-level
+core doc with its own routing table to four topic docs
+(`content-companions.md`, `content-rune-of-return.md`,
+`content-progression-scaling.md`, `content-quests-and-triggers.md`) —
+read all of them too. The core document's binding statements are the
+ground truth, but a sub-doc or topic doc that drifts from them is
+exactly the kind of rot this audit exists to catch. Then verify every concrete,
 checkable claim against the actual code, section by section — do not
 treat any claim as true because it's written down; find the file and
 line that proves or disproves it. Section labels below are
@@ -20,11 +24,15 @@ known gap: confirm only that the gap still exists as §9 describes it.
    diagram against actual imports (grep for cross-layer imports that
    shouldn't exist, per each row's stated rule, including the
    `src/main/` row if that directory exists). For the Content
-   Extensibility Model stub, cross-check
-   `docs/architecture/content-extensibility.md` against the actual
-   manifest/hook code it describes, and confirm the stub's binding
-   rules (manifest contract, the two hook mechanisms, injected
-   context, no engine creep) aren't contradicted by the sub-doc.
+   Extensibility Model stub, cross-check `content-extensibility.md`
+   against the actual manifest/hook code it describes, and confirm the
+   stub's binding rules (manifest contract, the two hook mechanisms,
+   injected context, content registries, no engine creep) aren't
+   contradicted by it or by any of its four topic docs. Confirm
+   `content-extensibility.md` itself stays ≤5 KB (it routes onward
+   rather than restating topic detail) and that each topic doc under it
+   has real `##` headings — a topic doc that regrows into one unheaded
+   wall of text is the exact failure this split fixed.
 §4 Action Pipeline & Domain Event Contract — verify ActionResult,
    GameEvent, and the failure-isolation behavior directly against
    actions/actionPipeline.ts and engine.ts (processMonsterAction).

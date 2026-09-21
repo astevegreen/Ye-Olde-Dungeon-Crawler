@@ -1,0 +1,25 @@
+# Rune of Return
+
+> Topic doc under [content-extensibility.md](content-extensibility.md) ([ARCHITECTURE.md](../../ARCHITECTURE.md) §3). Explanatory only — every binding rule about content integration lives on the guaranteed-read path (`ARCHITECTURE.md`'s §3 stub and `content-extensibility.md`'s core sections), never only here. Flag a conflict rather than resolving it here (§8.2).
+
+`src/engine/magic/runeOfReturn.ts`: a limited-charge, pack-neutral dimensional travel mechanic (max 3 charges) that channels a two-way recall spell between dungeon and town, replacing the removed campaign-specific town-return fixtures (P-03). In the physical world, it appears as an ancient inscribed stone tablet (`rune_stone` sprite); upon first acquisition (pickup, quickloot, or container looting), it spiritually dissolves into the hero's essence (`player.hasDiscoveredRune = true`), consuming **0 inventory slots and 0 weight/bulk**. Casting (`T`), upgrading (`Shift+T`), and town recharging remain seamlessly accessible via an innate spirit-rune proxy (`InnateRuneOfReturnItem`, returned by `findRuneOfReturn(player)`). `ChannelRuneOfReturnAction` is the explicit "keep channeling" action a player repeats each turn (via the `channel_rune_of_return` command); `WaitAction` (`.`) also sustains it, and movement sustains it once the Unbound Casting track is maxed — every other action breaks it. The interrupt/continuation decision and immediate (same-action) damage interruption are owned by a pair of `ActionPipeline` hooks (`createRuneOfReturnActionHooks`), registered unconditionally alongside the built-in status handlers since this mechanic is engine-owned, not content-provided. First pickup surfaces a one-time `RuneOfReturnDiscoveryModal` via the `rune_of_return_discovered` event, and optional mastery-point spending has a dedicated UI entry point (`RuneOfReturnTreeModal`, `Shift+T` / command palette / the town rune-smith NPC / level-up banner).
+
+## Two-Way Dimensional Recall
+
+### Dungeon to Town (Floor > 0)
+Channeling anchors the departure depth and tile (`player.deepestRecallFloor = currentFloor`, `player.recallPosition = { x, y }`) and teleports the player safely to town (Floor 0).
+
+### Town to Dungeon (Floor 0)
+Channeling consumes 1 charge and opens a dimensional return rift directly back to `deepestRecallFloor` at `recallPosition`, clearing the anchor upon arrival. Channeling in town without an active anchor is cleanly rejected without energy or charge loss.
+
+## Mechanic
+Three independent progression tracks — Channel Celerity (speed, 0-3), Steadfast Weave (banking, 0-3), Unbound Casting (mobility, 0-1) — funded from `Player.unspentStatPoints`, the same pool `allocateAttribute` spends on core stats. `channelTime = max(3, 6 - celerityPoints) + floor((currentFloor - 1) / 5)`. Any actual HP loss interrupts unconditionally (zero-net/fully-mitigated hits don't, since they never move `entity.hp`); an interrupt cleanly fizzles and banks `floor(turnsCompleted * retentionPct)` turns (0/35/65/100% by Steadfast Weave) toward the next attempt with the same charge. A charge is spent only on natural completion.
+
+## Implementation & Hook Architecture
+Modeled as a status effect (`RUNE_OF_RETURN_STATUS`), consistent with the existing dormant-actor/status-tick scheduling (poison, slow, etc. tick the same way) rather than a bespoke per-turn loop. `StatusEffect` gained an optional `data` scalar bag (carrying `channelTime`, `lastHp`, and `startedThisTick`). The interrupt/continuation decision and damage detection live in `ActionPipeline` hooks (`createRuneOfReturnActionHooks`): a `pre` hook validates sustaining vs. invalid actions, and a `post` hook evaluates `player.hp < lastHp` immediately after *every* action in the game — including monster attacks during the monster turn phase — eliminating turn lag and breaking concentration the exact instant unmitigated damage is dealt.
+
+## Presentation & HUD Integration
+Real-time channel progress is rendered by `CanvasRenderer` as a HUD status badge (`[CHANNELING RUNE Xt]` in `#38bdf8` cyan). `RuneOfReturnTreeModal` displays the active Return Anchor status (`Return Anchor: Floor X (x, y)` or `None`).
+
+## Pack-Neutrality & Content Integration
+The mechanic's rules are engine-fixed; only presentation, acquisition, and refill triggers vary. `GameContentManifest.runeOfReturn` (optional) supplies `attunementNpcId` — interacting with that NPC (`GameEngine.interactWithNpc`, mirroring the existing `quest.victoryNpcId` pattern) fully refills charges (free and instant, restoring innate `player.runeCharges`) — and `trackNames` for pack-specific display strings. The base pack (`cotw`) points this at "Thrain the Rune-Smith," stationed at Gunther's forge in town. In `cotw`, the physical rune is placed inside a conspicuous 13x9 icy sanctuary vault on Floor 5, surrounded by impassable ice spires, shallow freezing waterways, an altar dais with an ancient frost chest, and guarded by **Gálmr the Frost-Warden** (`miniboss_frost_warden`). A manifest with no `runeOfReturn` config simply has no in-town refill trigger (`warcraft` builds unaffected).

@@ -33,6 +33,35 @@ export class ViewportManager {
   private windowResizeListener?: () => void;
   private debounceTimer: number | null = null;
   private onResizeCallback?: () => void;
+  private resizeListeners: Set<() => void> = new Set();
+
+  public get canvasElement(): HTMLCanvasElement {
+    return this.canvas;
+  }
+
+  public addResizeListener(callback: () => void): () => void {
+    this.resizeListeners.add(callback);
+    return () => {
+      this.resizeListeners.delete(callback);
+    };
+  }
+
+  public removeResizeListener(callback: () => void): void {
+    this.resizeListeners.delete(callback);
+  }
+
+  private notifyResize(): void {
+    if (this.onResizeCallback) {
+      this.onResizeCallback();
+    }
+    for (const listener of this.resizeListeners) {
+      try {
+        listener();
+      } catch (err) {
+        console.error('[ViewportManager] Error in resize listener:', err);
+      }
+    }
+  }
 
   constructor(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, config: ViewportConfig = {}) {
     this.canvas = canvas;
@@ -63,7 +92,7 @@ export class ViewportManager {
     if (!centerEl) return;
     this.resizeObserver = new ResizeObserver(() => {
       this.recalculate();
-      this.onResizeCallback?.();
+      this.notifyResize();
     });
     this.resizeObserver.observe(centerEl);
   }
@@ -253,16 +282,12 @@ export class ViewportManager {
       if (typeof window !== 'undefined' && typeof window.setTimeout === 'function') {
         this.debounceTimer = window.setTimeout(() => {
           this.recalculate();
-          if (this.onResizeCallback) {
-            this.onResizeCallback();
-          }
+          this.notifyResize();
           this.debounceTimer = null;
         }, debounceMs);
       } else {
         this.recalculate();
-        if (this.onResizeCallback) {
-          this.onResizeCallback();
-        }
+        this.notifyResize();
       }
     };
 
@@ -285,6 +310,7 @@ export class ViewportManager {
 
   public destroy(): void {
     this.detachResizeListener();
+    this.resizeListeners.clear();
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
       this.resizeObserver = undefined;

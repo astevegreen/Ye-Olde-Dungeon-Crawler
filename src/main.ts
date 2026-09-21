@@ -1327,7 +1327,9 @@ window.addEventListener('DOMContentLoaded', () => {
         }),
         () => {
           renderer?.render();
-        }
+        },
+        renderer.viewport,
+        canvas ?? undefined
       );
       renderer.mouseVectoringEnabled = settingsManager.getSettings().mouseVectoringEnabled;
       renderer.radialMenuOverlay.slots = settingsManager.getSettings().radialMenuSlots;
@@ -1421,6 +1423,8 @@ window.addEventListener('DOMContentLoaded', () => {
       if (inputHandler) {
         inputHandler.characterMenuModal = characterMenuModal;
         characterMenuModal.setModalStack(inputHandler.modalStack);
+        characterMenuModal.setViewport(renderer.viewport);
+        if (canvas) characterMenuModal.setCanvas(canvas);
         inputHandler.shopOverlay = renderer.shopOverlay;
         inputHandler.inspectOverlay = renderer.inspectOverlay;
         inputHandler.mapOverlay = renderer.mapOverlay;

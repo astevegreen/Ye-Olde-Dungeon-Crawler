@@ -1,6 +1,7 @@
 import type { UIModal, ModalStackManager } from '../modalStack';
 import type { GameState } from '../flanks/types';
 import type { MenuTab } from './menuTab';
+import type { ViewportManager } from '../../rendering/viewport';
 
 /**
  * Consolidated Character Menu Shell (ARCHITECTURE.md §3, §6).
@@ -15,19 +16,31 @@ export class CharacterMenuModal implements UIModal {
   private stateSupplier?: () => GameState;
   private modalStack?: ModalStackManager;
   private onCloseCallback?: () => void;
+  private viewport?: ViewportManager;
+  private canvas?: HTMLCanvasElement;
+  private detachResizeListener?: () => void;
 
   private overlayEl: HTMLElement | null = null;
   private windowEl: HTMLElement | null = null;
   private navEl: HTMLElement | null = null;
   private contentEl: HTMLElement | null = null;
 
-  constructor(tabs: MenuTab[] = [], stateSupplier?: () => GameState, onClose?: () => void) {
+  constructor(
+    tabs: MenuTab[] = [],
+    stateSupplier?: () => GameState,
+    onClose?: () => void,
+    viewport?: ViewportManager,
+    canvas?: HTMLCanvasElement
+  ) {
     this.tabs = tabs;
     this.stateSupplier = stateSupplier;
     this.onCloseCallback = onClose;
+    this.viewport = viewport;
+    this.canvas = canvas;
     if (tabs.length > 0) {
       this.activeTabId = tabs[0].id;
     }
+    this.hookResize();
     this.createDom();
   }
 
@@ -41,6 +54,37 @@ export class CharacterMenuModal implements UIModal {
 
   public setOnClose(cb: () => void): void {
     this.onCloseCallback = cb;
+  }
+
+  public setViewport(viewport: ViewportManager): void {
+    if (this.viewport === viewport) return;
+    this.detachResizeListener?.();
+    this.viewport = viewport;
+    this.hookResize();
+    if (this.isOpen) {
+      this.updateLayout();
+    }
+  }
+
+  public setCanvas(canvas: HTMLCanvasElement): void {
+    this.canvas = canvas;
+    if (this.isOpen) {
+      this.updateLayout();
+    }
+  }
+
+  private hookResize(): void {
+    if (!this.viewport || typeof this.viewport.addResizeListener !== 'function') return;
+    this.detachResizeListener = this.viewport.addResizeListener(() => {
+      if (this.isOpen) {
+        this.updateLayout();
+      }
+    });
+  }
+
+  public destroy(): void {
+    this.detachResizeListener?.();
+    this.detachResizeListener = undefined;
   }
 
   public registerTab(tab: MenuTab): void {
@@ -64,6 +108,56 @@ export class CharacterMenuModal implements UIModal {
     return this.tabs.find((t) => t.id === this.activeTabId);
   }
 
+  public updateLayout(): void {
+    if (!this.windowEl || typeof document === 'undefined') return;
+
+    const virtualWidth = this.viewport?.virtualWidth ?? 960;
+    const virtualHeight = this.viewport?.virtualHeight ?? 600;
+    const modalVirtualW = Math.min(virtualWidth - 20, 920);
+    const modalVirtualH = Math.min(virtualHeight - 24, 576);
+    const modalVirtualX = Math.floor((virtualWidth - modalVirtualW) / 2);
+    const modalVirtualY = Math.floor((virtualHeight - modalVirtualH) / 2);
+
+    const canvas =
+      this.canvas ??
+      this.viewport?.canvasElement ??
+      (typeof document.getElementById === 'function'
+        ? (document.getElementById('game-canvas') as HTMLCanvasElement | null)
+        : null);
+
+    if (
+      canvas &&
+      typeof canvas.getBoundingClientRect === 'function' &&
+      this.overlayEl &&
+      typeof this.overlayEl.getBoundingClientRect === 'function'
+    ) {
+      const canvasRect = canvas.getBoundingClientRect();
+      const overlayRect = this.overlayEl.getBoundingClientRect();
+
+      const scale =
+        this.viewport?.scale ??
+        (canvasRect.width > 0 && virtualWidth > 0 ? canvasRect.width / virtualWidth : 1);
+
+      const cssW = Math.round(modalVirtualW * scale);
+      const cssH = Math.round(modalVirtualH * scale);
+      const cssLeft = Math.round(canvasRect.left - overlayRect.left + modalVirtualX * scale);
+      const cssTop = Math.round(canvasRect.top - overlayRect.top + modalVirtualY * scale);
+
+      this.windowEl.style.position = 'absolute';
+      this.windowEl.style.margin = '0';
+      this.windowEl.style.left = `${cssLeft}px`;
+      this.windowEl.style.top = `${cssTop}px`;
+      this.windowEl.style.width = `${cssW}px`;
+      this.windowEl.style.height = `${cssH}px`;
+    } else {
+      const scale = this.viewport?.scale ?? 1;
+      this.windowEl.style.position = 'absolute';
+      this.windowEl.style.margin = '0';
+      this.windowEl.style.width = `${Math.round(modalVirtualW * scale)}px`;
+      this.windowEl.style.height = `${Math.round(modalVirtualH * scale)}px`;
+    }
+  }
+
   private createDom(): void {
     if (typeof document === 'undefined') return;
 
@@ -85,10 +179,8 @@ export class CharacterMenuModal implements UIModal {
     if (!win) {
       win = document.createElement('div');
       win.className = 'retro-window character-menu-window';
-      win.style.width = '920px';
-      win.style.maxWidth = 'calc(100vw - 20px)';
-      win.style.height = '576px';
-      win.style.maxHeight = 'calc(100vh - 24px)';
+      win.style.position = 'absolute';
+      win.style.margin = '0';
       win.style.display = 'flex';
       win.style.flexDirection = 'column';
       win.style.fontFamily = '"Courier New", Courier, monospace';
@@ -99,6 +191,7 @@ export class CharacterMenuModal implements UIModal {
       overlay.appendChild(win);
     }
     this.windowEl = win;
+    this.updateLayout();
 
     // Header with Tabs
     let header = win.querySelector<HTMLElement>('.character-menu-header');
@@ -250,6 +343,7 @@ export class CharacterMenuModal implements UIModal {
       if (this.stateSupplier) {
         targetTab.onActivate(this.stateSupplier());
       }
+      this.updateLayout();
     }
 
     return true;
@@ -261,8 +355,9 @@ export class CharacterMenuModal implements UIModal {
       this.createDom();
     }
     if (this.overlayEl) {
-      this.overlayEl.style.display = 'flex';
+      this.overlayEl.style.display = 'block';
     }
+    this.updateLayout();
 
     const targetTabId =
       tabId && this.tabs.some((t) => t.id === tabId)

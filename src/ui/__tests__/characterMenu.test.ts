@@ -60,6 +60,14 @@ class MockElement {
     this.eventListeners.get(type)!.add(listener);
   }
 
+  public clientWidth: number = 0;
+  public clientHeight: number = 0;
+  public mockRect: { left: number; top: number; width: number; height: number } | null = null;
+
+  getBoundingClientRect(): { left: number; top: number; width: number; height: number } {
+    return this.mockRect ?? { left: 0, top: 0, width: this.clientWidth, height: this.clientHeight };
+  }
+
   contains(el: MockElement): boolean {
     if (this === el) return true;
     for (const child of this.children) {
@@ -328,6 +336,67 @@ describe('CharacterMenuModal & Consolidated Character Menu', () => {
     // Switching back restores the golden border
     menu.activateTab('character');
     expect(win?.style.border).toBe('2px solid #ca8a04');
+  });
+
+  it('scales DOM window according to ViewportManager scale and anchors to canvas rect', () => {
+    const doc = (globalThis as any).document;
+    const canvas = new MockElement();
+    canvas.id = 'game-canvas';
+    canvas.mockRect = { left: 100, top: 50, width: 1440, height: 900 };
+    doc.elements.set('game-canvas', canvas);
+
+    const resizeCallbacks: Array<() => void> = [];
+    const mockViewport: any = {
+      virtualWidth: 960,
+      virtualHeight: 600,
+      scale: 1.5,
+      canvasElement: canvas,
+      addResizeListener: (cb: () => void) => {
+        resizeCallbacks.push(cb);
+        return () => {
+          const idx = resizeCallbacks.indexOf(cb);
+          if (idx >= 0) resizeCallbacks.splice(idx, 1);
+        };
+      },
+    };
+
+    const scaledMenu = new CharacterMenuModal(
+      [tab1, tab2],
+      () => createMockGameState(engine),
+      undefined,
+      mockViewport,
+      canvas as unknown as HTMLCanvasElement
+    );
+
+    const overlay = doc.getElementById('character-menu-modal');
+    overlay.mockRect = { left: 0, top: 0, width: 1920, height: 1080 };
+    const win = overlay?.querySelector('.character-menu-window');
+
+    scaledMenu.open('character');
+
+    // modalVirtualW = 920, modalVirtualH = 576
+    // scaled by 1.5 => 1380 x 864
+    expect(win?.style.width).toBe('1380px');
+    expect(win?.style.height).toBe('864px');
+
+    // modalVirtualX = 20, modalVirtualY = 12
+    // cssLeft = 100 - 0 + 20 * 1.5 = 130px
+    // cssTop = 50 - 0 + 12 * 1.5 = 68px
+    expect(win?.style.left).toBe('130px');
+    expect(win?.style.top).toBe('68px');
+
+    // Recompute on window resize while open
+    mockViewport.scale = 2.0;
+    canvas.mockRect = { left: 50, top: 20, width: 1920, height: 1200 };
+    for (const cb of resizeCallbacks) cb();
+
+    expect(win?.style.width).toBe('1840px'); // 920 * 2
+    expect(win?.style.height).toBe('1152px'); // 576 * 2
+    expect(win?.style.left).toBe('90px'); // 50 + 20 * 2
+    expect(win?.style.top).toBe('44px'); // 20 + 12 * 2
+
+    scaledMenu.close();
+    scaledMenu.destroy();
   });
 
   it('PactTabAdapter does not close parent shell on tab switch and toggles shell on KeyP', () => {

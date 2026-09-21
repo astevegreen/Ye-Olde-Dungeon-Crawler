@@ -72,6 +72,10 @@ export class CanvasRenderer {
   public onPactModalRequested?: () => void;
   private pactBadgeBounds?: { x: number; y: number; width: number; height: number };
 
+  public get canvasElement(): HTMLCanvasElement {
+    return this.canvas;
+  }
+
   public get theme(): Required<ThemeTokens> {
     return resolveThemeTokens(this.engine?.manifest?.theme);
   }

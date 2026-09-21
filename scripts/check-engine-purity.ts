@@ -5,6 +5,11 @@ const ENGINE_DIR = path.resolve(process.cwd(), 'src/engine');
 const UI_DIR = path.resolve(process.cwd(), 'src/ui');
 const RENDERING_DIR = path.resolve(process.cwd(), 'src/rendering');
 const CONTENT_DIR = path.resolve(process.cwd(), 'src/content');
+// Composition-root helpers, if the root is ever split out of src/main.ts (ARCHITECTURE.md §3, §7.2).
+// Presentation scope for import purposes, but — unlike src/main.ts itself — never gets the
+// content-pack import privilege: that stays on src/main.ts alone so the composition-root
+// invariant still means something.
+const MAIN_DIR = path.resolve(process.cwd(), 'src/main');
 
 interface Violation {
   file: string;
@@ -33,6 +38,7 @@ const engineFiles = walkDirectory(ENGINE_DIR);
 const uiFiles = walkDirectory(UI_DIR);
 const renderingFiles = walkDirectory(RENDERING_DIR);
 const contentFiles = walkDirectory(CONTENT_DIR);
+const mainDirFiles = walkDirectory(MAIN_DIR);
 
 // Matches any reverse imports from ui or rendering inside engine
 const ENGINE_REVERSE_IMPORT_REGEX = /from\s+['"][^'"]*(?:ui|rendering)[/'"]/i;
@@ -186,8 +192,9 @@ for (const filePath of [...engineFiles, ...contentFiles]) {
   }
 }
 
-// 2. Audit UI and Rendering Public API Surface (No deep imports into engine internals)
-for (const filePath of [...uiFiles, ...renderingFiles]) {
+// 2. Audit UI, Rendering, and src/main/** Public API Surface (No deep imports into engine
+//    internals, and no content-pack imports — src/main.ts alone keeps that privilege, see §3).
+for (const filePath of [...uiFiles, ...renderingFiles, ...mainDirFiles]) {
   const relativePath = path.relative(process.cwd(), filePath).replace(/\\/g, '/');
   const content = fs.readFileSync(filePath, 'utf-8');
   const lines = content.split('\n');
@@ -241,7 +248,8 @@ console.log(`Engine files inspected: ${engineFiles.length}`);
 console.log(`Content files inspected: ${contentFiles.length}`);
 console.log(`UI files inspected: ${uiFiles.length}`);
 console.log(`Rendering files inspected: ${renderingFiles.length}`);
-console.log(`Total files inspected: ${engineFiles.length + contentFiles.length + uiFiles.length + renderingFiles.length}`);
+console.log(`src/main/** files inspected: ${mainDirFiles.length}`);
+console.log(`Total files inspected: ${engineFiles.length + contentFiles.length + uiFiles.length + renderingFiles.length + mainDirFiles.length}`);
 console.log(`======================================================\n`);
 
 if (violations.length > 0) {
@@ -259,7 +267,8 @@ if (violations.length > 0) {
   );
   console.log(`✓ Engine Boundary Isolation: 0 reverse imports in engine source and test files.`);
   console.log(`✓ Content Boundary Isolation: 0 UI/Rendering imports and 0 deep engine imports across ${contentFiles.length} content files.`);
-  console.log(`✓ Public API Surface: 0 deep imports into engine internals across ${uiFiles.length + renderingFiles.length} UI/Rendering files and the composition root (src/main.ts).`);
+  console.log(`✓ Public API Surface: 0 deep imports into engine internals across ${uiFiles.length + renderingFiles.length + mainDirFiles.length} UI/Rendering/src/main/** files and the composition root (src/main.ts).`);
+  console.log(`✓ Composition Root Scope: 0 content-pack imports across ${mainDirFiles.length} src/main/** files (privilege stays on src/main.ts alone).`);
   console.log(`All architectural boundaries verified intact!\n`);
   process.exit(0);
 }

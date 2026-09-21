@@ -26,6 +26,10 @@ import ts from 'typescript';
  * Content (src/content/) is exempt from rules 5-6: content hooks receive the engine
  * through an injected context and are expected to act through subsystem methods.
  *
+ * Presentation scope covers src/ui/, src/rendering/, src/main.ts, and any file under
+ * src/main/ (ARCHITECTURE.md §7.2) — a composition root split into src/main/ helpers
+ * does not become invisible to this check.
+ *
  * Known limitation: writes through a local alias of a member's *value*
  * (`const qs = player.quickSpells; qs[0] = x`) are not traced.
  */
@@ -79,7 +83,7 @@ const toRel = (p: string) => path.relative(ROOT, p).split(path.sep).join('/');
 function scopeOf(fileName: string): Scope | null {
   const rel = toRel(fileName);
   if (/\/__(tests|fixtures)__\//.test(rel)) return null;
-  if (rel.startsWith('src/ui/') || rel.startsWith('src/rendering/') || rel === 'src/main.ts') return 'presentation';
+  if (rel.startsWith('src/ui/') || rel.startsWith('src/rendering/') || rel.startsWith('src/main/') || rel === 'src/main.ts') return 'presentation';
   if (rel.startsWith('src/content/')) return 'content';
   return null;
 }
@@ -255,7 +259,7 @@ const staleAllowlist = allowlist.filter((_, i) => !usedAllowlist.has(i));
 
 console.log(`\n======================================================`);
 console.log(`ENGINE ENCAPSULATION VERIFICATION AUDIT`);
-console.log(`Presentation files inspected (ui/rendering/main.ts): ${presentationFiles}`);
+console.log(`Presentation files inspected (ui/rendering/main.ts/main/**): ${presentationFiles}`);
 console.log(`Content files inspected: ${contentFiles}`);
 console.log(`Allowlisted sanctioned writes: ${usedAllowlist.size}`);
 console.log(`======================================================\n`);

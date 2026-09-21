@@ -10,6 +10,10 @@ import { GameEngine, Player, GameMap } from '../../engine';
 import { JournalModule } from '../flanks/journalModule';
 import { WorldLedgerModule } from '../flanks/worldLedgerModule';
 import { FlankManager } from '../flanks/flankManager';
+import { CompendiumTabAdapter, PactTabAdapter, SpellbookTabAdapter } from '../characterMenu/tabAdapters';
+import { CompendiumModal } from '../help/compendiumModal';
+import { PactModal } from '../pactModal';
+import { SpellbookModal } from '../spellbookModal';
 
 class MockElement {
   public id: string = '';
@@ -54,6 +58,14 @@ class MockElement {
       this.eventListeners.set(type, new Set());
     }
     this.eventListeners.get(type)!.add(listener);
+  }
+
+  contains(el: MockElement): boolean {
+    if (this === el) return true;
+    for (const child of this.children) {
+      if (child === el || child.contains(el)) return true;
+    }
+    return false;
   }
 
   removeEventListener(type: string, listener: (e?: any) => void): void {
@@ -295,6 +307,124 @@ describe('CharacterMenuModal & Consolidated Character Menu', () => {
     // Press KeyE again -> toggles/closes the menu
     menu.handleKeyDown(keyE);
     expect(menu.isOpen).toBe(false);
+  });
+
+  it('configures DOM window with 920x576px dimensions and preserves 2px border on inventory tab', () => {
+    const doc = (globalThis as any).document;
+    const overlay = doc.getElementById('character-menu-modal');
+    const win = overlay?.querySelector('.character-menu-window');
+
+    expect(win?.style.width).toBe('920px');
+    expect(win?.style.height).toBe('576px');
+
+    // On non-inventory tab, border is golden
+    menu.open('character');
+    expect(win?.style.border).toBe('2px solid #ca8a04');
+
+    // On inventory tab, border is 2px transparent so layout does not jitter
+    menu.activateTab('inventory');
+    expect(win?.style.border).toBe('2px solid transparent');
+
+    // Switching back restores the golden border
+    menu.activateTab('character');
+    expect(win?.style.border).toBe('2px solid #ca8a04');
+  });
+
+  it('PactTabAdapter does not close parent shell on tab switch and toggles shell on KeyP', () => {
+    const pactModal = new PactModal();
+    const pactTab = new PactTabAdapter(pactModal);
+    const otherTab = new MockTab('character', 'Character', 'character_menu');
+    const charMenu = new CharacterMenuModal([pactTab, otherTab], () => createMockGameState(engine));
+
+    charMenu.open('pacts');
+    expect(charMenu.isOpen).toBe(true);
+    expect(charMenu.activeTabId).toBe('pacts');
+    expect(pactModal.isOpen).toBe(true);
+
+    // Switching tabs unmounts pactTab without closing charMenu
+    charMenu.activateTab('character');
+    expect(charMenu.isOpen).toBe(true);
+    expect(charMenu.activeTabId).toBe('character');
+    expect(pactModal.isOpen).toBe(false);
+
+    // Switch back to pacts
+    charMenu.activateTab('pacts');
+    expect(charMenu.isOpen).toBe(true);
+    expect(charMenu.activeTabId).toBe('pacts');
+    expect(pactModal.isOpen).toBe(true);
+
+    // Re-pressing KeyP toggles the whole shell closed
+    const keyPEvent = makeKey('p', 'KeyP');
+    const handledP = charMenu.handleKeyDown(keyPEvent);
+    expect(handledP).toBe(true);
+    expect(charMenu.isOpen).toBe(false);
+  });
+
+  it('CompendiumTabAdapter does not close parent shell on tab switch and toggles shell on KeyB', () => {
+    const engineWithMonster = createTestEngine({
+      id: 'test_manifest',
+      name: 'Test Manifest',
+      monsters: [
+        {
+          id: 'goblin',
+          name: 'Goblin',
+          symbol: 'g',
+          color: '#00ff00',
+          maxHp: 10,
+          hp: 10,
+          attack: 2,
+          defense: 1,
+          xp: 5,
+          ai: 'simple',
+        },
+      ],
+      items: [],
+      spells: [],
+    });
+    const compendiumModal = new CompendiumModal();
+    const bestiaryTab = new CompendiumTabAdapter(compendiumModal);
+    const otherTab = new MockTab('character', 'Character', 'character_menu');
+    const charMenu = new CharacterMenuModal([bestiaryTab, otherTab], () => createMockGameState(engineWithMonster));
+
+    charMenu.open('bestiary');
+    expect(charMenu.isOpen).toBe(true);
+    expect(charMenu.activeTabId).toBe('bestiary');
+    expect(compendiumModal.isOpen).toBe(true);
+
+    // Switching tabs unmounts bestiaryTab without closing charMenu
+    charMenu.activateTab('character');
+    expect(charMenu.isOpen).toBe(true);
+    expect(charMenu.activeTabId).toBe('character');
+    expect(compendiumModal.isOpen).toBe(false);
+
+    // Switch back to bestiary
+    charMenu.activateTab('bestiary');
+    expect(charMenu.isOpen).toBe(true);
+    expect(charMenu.activeTabId).toBe('bestiary');
+    expect(compendiumModal.isOpen).toBe(true);
+
+    // Re-pressing KeyB toggles the whole shell closed
+    const keyBEvent = makeKey('b', 'KeyB');
+    const handledB = charMenu.handleKeyDown(keyBEvent);
+    expect(handledB).toBe(true);
+    expect(charMenu.isOpen).toBe(false);
+  });
+
+  it('SpellbookTabAdapter toggles shell on KeyZ', () => {
+    const spellbookModal = new SpellbookModal();
+    const spellbookTab = new SpellbookTabAdapter(spellbookModal);
+    const otherTab = new MockTab('character', 'Character', 'character_menu');
+    const charMenu = new CharacterMenuModal([spellbookTab, otherTab], () => createMockGameState(engine));
+
+    charMenu.open('spellbook');
+    expect(charMenu.isOpen).toBe(true);
+    expect(charMenu.activeTabId).toBe('spellbook');
+
+    // Re-pressing KeyZ toggles the whole shell closed
+    const keyZEvent = makeKey('z', 'KeyZ');
+    const handledZ = charMenu.handleKeyDown(keyZEvent);
+    expect(handledZ).toBe(true);
+    expect(charMenu.isOpen).toBe(false);
   });
 });
 

@@ -85,10 +85,10 @@ export class CharacterMenuModal implements UIModal {
     if (!win) {
       win = document.createElement('div');
       win.className = 'retro-window character-menu-window';
-      win.style.width = '880px';
-      win.style.maxWidth = '96vw';
-      win.style.height = '620px';
-      win.style.maxHeight = '94vh';
+      win.style.width = '920px';
+      win.style.maxWidth = 'calc(100vw - 20px)';
+      win.style.height = '576px';
+      win.style.maxHeight = 'calc(100vh - 24px)';
       win.style.display = 'flex';
       win.style.flexDirection = 'column';
       win.style.fontFamily = '"Courier New", Courier, monospace';
@@ -230,7 +230,7 @@ export class CharacterMenuModal implements UIModal {
         this.overlayEl.style.backgroundColor = 'transparent';
         this.overlayEl.style.pointerEvents = 'none';
         this.windowEl.style.backgroundColor = 'transparent';
-        this.windowEl.style.border = 'none';
+        this.windowEl.style.border = '2px solid transparent';
         this.windowEl.style.boxShadow = 'none';
         if (this.navEl?.parentElement) {
           this.navEl.parentElement.style.pointerEvents = 'auto';

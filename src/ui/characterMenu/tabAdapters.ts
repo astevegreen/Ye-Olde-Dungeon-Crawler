@@ -13,11 +13,9 @@ export class CompendiumTabAdapter implements MenuTab {
   public readonly hotkeyActionId = 'compendium';
   private modal: CompendiumModal;
   private container: HTMLElement | null = null;
-  private onTabClosed?: () => void;
 
-  constructor(modal: CompendiumModal, onTabClosed?: () => void) {
+  constructor(modal: CompendiumModal, _onTabClosed?: () => void) {
     this.modal = modal;
-    this.onTabClosed = onTabClosed;
   }
 
   public mount(container: HTMLElement): void {
@@ -39,7 +37,7 @@ export class CompendiumTabAdapter implements MenuTab {
 
   public onActivate(state: GameState): void {
     this.modal.open(state.engine, () => {
-      this.onTabClosed?.();
+      // No-op while embedded as a tab; CharacterMenuModal owns shell lifecycle
     });
   }
 
@@ -61,6 +59,10 @@ export class CompendiumTabAdapter implements MenuTab {
   }
 
   public handleKeyDown(e: KeyboardEvent): boolean {
+    // Suppress wrapped modal's internal close-on-hotkey/Escape so CharacterMenuModal owns shell lifecycle
+    if (e.key === 'Escape' || e.code === 'KeyB') {
+      return false;
+    }
     return this.modal.handleKeyDown(e);
   }
 }
@@ -74,11 +76,9 @@ export class PactTabAdapter implements MenuTab {
   public readonly hotkeyActionId = 'pact';
   private modal: PactModal;
   private container: HTMLElement | null = null;
-  private onTabClosed?: () => void;
 
-  constructor(modal: PactModal, onTabClosed?: () => void) {
+  constructor(modal: PactModal, _onTabClosed?: () => void) {
     this.modal = modal;
-    this.onTabClosed = onTabClosed;
   }
 
   public mount(container: HTMLElement): void {
@@ -100,7 +100,7 @@ export class PactTabAdapter implements MenuTab {
 
   public onActivate(state: GameState): void {
     this.modal.open(state.engine, () => {
-      this.onTabClosed?.();
+      // No-op while embedded as a tab; CharacterMenuModal owns shell lifecycle
     });
   }
 
@@ -122,6 +122,10 @@ export class PactTabAdapter implements MenuTab {
   }
 
   public handleKeyDown(e: KeyboardEvent): boolean {
+    // Suppress wrapped modal's internal close-on-hotkey/Escape so CharacterMenuModal owns shell lifecycle
+    if (e.key === 'Escape' || e.code === 'KeyP') {
+      return false;
+    }
     return this.modal.handleKeyDown(e);
   }
 }
@@ -175,6 +179,10 @@ export class SpellbookTabAdapter implements MenuTab {
   }
 
   public handleKeyDown(e: KeyboardEvent): boolean {
+    // Suppress wrapped modal's internal close-on-hotkey/Escape so CharacterMenuModal owns shell lifecycle
+    if (e.key === 'Escape' || e.code === 'KeyZ') {
+      return false;
+    }
     return this.modal.handleKeyDown(e);
   }
 }

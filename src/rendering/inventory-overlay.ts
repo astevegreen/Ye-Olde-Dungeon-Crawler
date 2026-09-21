@@ -748,11 +748,39 @@ export class InventoryOverlay implements UIModal {
     ctx.fillStyle = theme.modalBackdrop;
     ctx.fillRect(0, 0, canvasW, canvasH);
 
-    // 2. Window Dimensions (920px wide for 4 columns)
-    const modalW = Math.min(canvasW - 20, 920);
-    const modalH = Math.min(canvasH - 24, 540);
-    const modalX = Math.floor((canvasW - modalW) / 2);
-    const modalY = Math.floor((canvasH - modalH) / 2);
+    // 2. Window Dimensions (920px wide for 4 columns, synchronized with Character Menu shell)
+    let modalW = Math.min(canvasW - 20, 920);
+    let modalH = Math.min(canvasH - 24, 576);
+    let modalX = Math.floor((canvasW - modalW) / 2);
+    let modalY = Math.floor((canvasH - modalH) / 2);
+
+    if (typeof document !== 'undefined' && typeof document.querySelector === 'function') {
+      const winEl = document.querySelector<HTMLElement>('#character-menu-modal .character-menu-window');
+      const canvasEl = ctx.canvas;
+      if (
+        winEl &&
+        canvasEl &&
+        typeof winEl.getBoundingClientRect === 'function' &&
+        typeof canvasEl.getBoundingClientRect === 'function'
+      ) {
+        const winRect = winEl.getBoundingClientRect();
+        const canvasRect = canvasEl.getBoundingClientRect();
+        if (winRect.width > 0 && winRect.height > 0 && canvasRect.width > 0 && canvasRect.height > 0) {
+          const scaleX = canvasW / canvasRect.width;
+          const scaleY = canvasH / canvasRect.height;
+          const computedX = Math.round((winRect.left - canvasRect.left) * scaleX);
+          const computedY = Math.round((winRect.top - canvasRect.top) * scaleY);
+          const computedW = Math.round(winRect.width * scaleX);
+          const computedH = Math.round(winRect.height * scaleY);
+          if (computedW > 0 && computedH > 0) {
+            modalX = Math.max(0, Math.min(canvasW - computedW, computedX));
+            modalY = Math.max(0, Math.min(canvasH - computedH, computedY));
+            modalW = Math.min(canvasW, computedW);
+            modalH = Math.min(canvasH, computedH);
+          }
+        }
+      }
+    }
 
     // Window Body
     ctx.fillStyle = theme.modalBg;

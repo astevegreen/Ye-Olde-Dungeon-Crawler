@@ -145,6 +145,7 @@ export class CompendiumModal implements UIModal {
     }
 
     const selectedDef = allMonsters.find((m) => m.id === this.selectedMonsterId) ?? this.engine?.registries?.monsters?.get(this.selectedMonsterId) ?? MonsterRegistry.get(this.selectedMonsterId) ?? allMonsters[0];
+    if (!selectedDef) return;
     const selectedEntry = compendium.getEntry(selectedDef.id);
     const tier = selectedEntry.tier;
     const kills = selectedEntry.kills;

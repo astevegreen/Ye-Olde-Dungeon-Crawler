@@ -18,8 +18,12 @@ export class SpellbookModal implements UIModal {
   private spells: SpellDefinition[] = [];
   private selectedIndex: number = 0;
 
-  constructor(options: SpellbookModalOptions) {
-    this.options = options;
+  constructor(options: Partial<SpellbookModalOptions> = {}) {
+    this.options = {
+      onCastSpell: () => {},
+      onQuickSpellsChanged: () => {},
+      ...options,
+    };
     this.container = document.createElement('div');
     this.container.id = 'spellbook-modal';
     this.container.setAttribute('aria-modal', 'true');

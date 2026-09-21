@@ -160,14 +160,8 @@ window.addEventListener('DOMContentLoaded', () => {
     renderer?.render();
   };
   const storyTab = new FlankModuleTab([new JournalModule(), new WorldLedgerModule()]);
-  const bestiaryTab = new CompendiumTabAdapter(compendiumModal, () => {
-    characterMenuModal?.close();
-    renderer?.render();
-  });
-  const pactsTab = new PactTabAdapter(pactModal, () => {
-    characterMenuModal?.close();
-    renderer?.render();
-  });
+  const bestiaryTab = new CompendiumTabAdapter(compendiumModal);
+  const pactsTab = new PactTabAdapter(pactModal);
   let spellbookTab: SpellbookTabAdapter;
   let inventoryTab: InventoryTabAdapter;
 

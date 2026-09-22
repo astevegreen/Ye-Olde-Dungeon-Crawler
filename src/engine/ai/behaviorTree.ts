@@ -5,6 +5,7 @@ import { MeleeAttackAction, WindUpDeclareAction, WindUpExecuteAction } from '../
 import { WaitAction } from '../actions/wait';
 import { OpenDoorAction } from '../actions/door';
 import { CastSpellAction, DrinkPotionAction, ZapWandAction } from '../actions/spell-actions';
+import { PotionItem, WandItem } from '../items/consumables';
 import type { GameEngine } from '../engine';
 import type { Monster } from '../entities/monster';
 import { findPath, findFleeStep } from './pathfinding';
@@ -323,23 +324,20 @@ export class MonsterAI {
       // Low HP Healing Consumable (< 30% HP)
       if (monster.hp <= Math.floor(monster.maxHp * 0.3)) {
         const healPotion = carriedItems.find(
-          (i) => i.category === 'consumable' && (i as any).potionType !== undefined && (i as any).effects?.some((e: any) => e.type === 'restore_hp')
+          (i): i is PotionItem => i instanceof PotionItem && i.effects.some((e) => e.type === 'restore_hp')
         );
         if (healPotion) {
-          return new DrinkPotionAction(monster, healPotion as any);
+          return new DrinkPotionAction(monster, healPotion);
         }
       }
 
       // Offensive Wand usage in range and line-of-sight
       if (hasLos) {
         const wand = carriedItems.find(
-          (i) =>
-            (i.category === 'wand' || (i as any).wandType !== undefined || typeof (i as any).canZap === 'function') &&
-            typeof (i as any).canZap === 'function' &&
-            (i as any).canZap()
+          (i): i is WandItem => i instanceof WandItem && i.canZap()
         );
         if (wand) {
-          return new ZapWandAction(monster, wand as any, player.x, player.y);
+          return new ZapWandAction(monster, wand, player.x, player.y);
         }
       }
     }

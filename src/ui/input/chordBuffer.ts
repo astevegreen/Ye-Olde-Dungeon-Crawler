@@ -10,7 +10,7 @@ export class ChordBuffer {
   private getBufferMsFn: () => number;
 
   private pressedArrows: Set<string> = new Set();
-  private pendingTimer: any = null;
+  private pendingTimer: ReturnType<typeof setTimeout> | null = null;
   private pendingMove: { dx: number; dy: number; code: string } | null = null;
   private activeChord: { dx: number; dy: number } | null = null;
   private lastPressedKey: string | null = null;

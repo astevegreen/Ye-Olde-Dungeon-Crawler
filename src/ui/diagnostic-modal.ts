@@ -13,7 +13,7 @@ import {
   type DiagnosticTabContext,
 } from './diagnostic';
 
-export type { DiagnosticTabId, DiagnosticInputContext, DiagnosticTabContext };
+export type { DiagnosticInputContext };
 
 export class DiagnosticModal implements UIModal {
   public readonly id = 'diagnostic-modal';
@@ -39,8 +39,8 @@ export class DiagnosticModal implements UIModal {
   private onClosedCallback?: () => void;
 
   private activeTab: DiagnosticTabId = 'simulation';
-  private pollIntervalId: any = null;
-  private toastTimeout: any = null;
+  private pollIntervalId: number | null = null;
+  private toastTimeout: number | null = null;
   public enableAutoPolling: boolean = true;
 
   constructor(

@@ -2,14 +2,7 @@ import type { GameEngine } from '../engine';
 import type { GameMap } from '../engine';
 import { resolveThemeTokens } from './theme';
 import type { ThemeTokens } from '../engine';
-
-interface ClickZone {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  action: () => void;
-}
+import type { ClickZone } from './types';
 
 export class MapOverlay {
   public isOpen = false;

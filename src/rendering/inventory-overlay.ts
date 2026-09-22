@@ -12,14 +12,7 @@ import { PaperdollView } from './paperdoll-view';
 import { ItemInspector } from '../ui/inventory/itemInspector';
 import { type GameCommand, type GameCommandBus } from '../engine';
 import type { UIModal } from '../ui/modalStack';
-
-interface ClickZone {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  action: (isMultiModifier?: boolean) => void;
-}
+import type { ClickZone } from './types';
 
 /**
  * ARCHITECTURAL NOTE: GameCommandBus Pattern

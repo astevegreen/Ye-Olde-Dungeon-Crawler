@@ -1,13 +1,7 @@
 import type { ThemeTokens } from '../theme';
 
-/** A clickable region a shop panel registers while rendering. */
-export interface ClickZone {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  action: () => void;
-}
+import type { ClickZone } from '../types';
+export type { ClickZone };
 
 /** Modal bounds shared by every shop panel renderer. */
 export interface ShopPanelBounds {

@@ -8,20 +8,21 @@ import {
   getPlayerCurrencyBreakdown,
   getPlayerTotalCp,
   getPlayerCoinItems,
-  TrainerService,
-  findRuneOfReturn,
 } from '../engine';
 import type { SpriteAtlas } from './atlas/sprite-atlas';
 import { getItemSpriteKey, getEntitySpriteKey } from './atlas/sprite-mapper';
 import { resolveThemeTokens, type ThemeTokens } from './theme';
+import type { ClickZone, ShopPanelBounds, ShopPanelContext } from './shop/types';
+import {
+  renderTempleServices,
+  renderSageServices,
+  renderBankerServices,
+  renderTrainerServices,
+  renderTownspersonDialog,
+  renderFooter,
+} from './shop';
 
-export interface ClickZone {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  action: () => void;
-}
+export type { ClickZone } from './shop/types';
 
 export class ShopOverlay {
   public isOpen = false;
@@ -493,22 +494,65 @@ export class ShopOverlay {
     ctx.fillText(quote.length > 70 ? quote.slice(0, 68) + '..."' : quote, modalX + 56, bannerY + 32);
 
     // 4. Branch rendering depending on NPC Role
+    const panelBounds: ShopPanelBounds = {
+      modalX,
+      modalY,
+      modalW,
+      modalH,
+      startY: bannerY + bannerH + 12,
+    };
+    const panel: ShopPanelContext = {
+      theme,
+      addClickZone: (zone) => this.clickZones.push(zone),
+    };
+
     if (this.merchant) {
       this.renderMerchantTrading(ctx, engine, modalX, modalY, modalW, modalH, bannerY + bannerH + 8);
     } else if (npc.role === 'priest') {
-      this.renderTempleServices(ctx, engine, modalX, modalY, modalW, modalH, bannerY + bannerH + 12);
+      renderTempleServices(ctx, engine, panelBounds, panel, {
+        cleanseCurses: () => this.executeCleanseCurses(engine),
+        healRestore: () => this.executeHealRestore(engine),
+      });
     } else if (npc.role === 'sage') {
-      this.renderSageServices(ctx, engine, modalX, modalY, modalW, modalH, bannerY + bannerH + 12);
+      renderSageServices(ctx, engine, panelBounds, panel, {
+        identify: () => this.executeIdentify(engine),
+        runAdvisory: () => this.executeRunAdvisory(engine),
+        close: () => this.close(),
+        openCompendium: this.onOpenCompendium,
+      });
     } else if (npc.role === 'banker') {
-      this.renderBankerServices(ctx, engine, modalX, modalY, modalW, modalH, bannerY + bannerH + 12, coinItems, coinWeightGrams);
+      renderBankerServices(ctx, engine, panelBounds, { coinItems, coinWeightGrams }, panel, {
+        compactCoins: () => this.executeCompactCoins(engine),
+      });
     } else if (npc.role === 'trainer') {
-      this.renderTrainerServices(ctx, engine, modalX, modalY, modalW, modalH, bannerY + bannerH + 12);
+      renderTrainerServices(ctx, engine, panelBounds, panel, {
+        bondCompanion: () => this.executeBondCompanion(engine),
+        reviveCompanion: () => this.executeReviveCompanion(engine),
+        switchArchetype: (archetype) => this.executeSwitchArchetype(engine, archetype),
+        teachRallyHowl: () => this.executeTeachRallyHowl(engine),
+      });
     } else {
-      this.renderTownspersonDialog(ctx, engine, modalX, modalY, modalW, modalH, bannerY + bannerH + 12);
+      renderTownspersonDialog(ctx, engine, panelBounds, { activeNpc: this.activeNpc }, panel, {
+        close: () => this.close(),
+        openRuneTree: this.onOpenRuneTree,
+      });
     }
 
     // 5. Common Wealth & Status Footer
-    this.renderFooter(ctx, engine, modalX, modalY, modalW, modalH, coins, totalCp, coinWeightGrams);
+    renderFooter(
+      ctx,
+      engine,
+      panelBounds,
+      {
+        coins,
+        totalCp,
+        coinWeightGrams,
+        statusMessage: this.statusMessage,
+        statusColor: this.statusColor,
+      },
+      panel,
+      { close: () => this.close() }
+    );
   }
 
   private renderMerchantTrading(
@@ -682,518 +726,5 @@ export class ShopOverlay {
       const actionText = `[Enter] or Double-Click to ${this.activeTab === 'buy' ? 'Buy (' + formatCurrency(activePrice) + ')' : 'Sell (' + formatCurrency(activePrice) + ')'}`;
       ctx.fillText(actionText, modalX + 18, inspectY + 42);
     }
-  }
-
-  private renderTempleServices(
-    ctx: CanvasRenderingContext2D,
-    engine: GameEngine,
-    modalX: number,
-    _modalY: number,
-    modalW: number,
-    _modalH: number,
-    startY: number
-  ): void {
-    const boxW = modalW - 24;
-    const boxX = modalX + 12;
-    const theme = this.theme ?? resolveThemeTokens(engine.manifest?.theme);
-    const font = theme.fontFamily ?? '"Courier New", Courier, monospace';
-
-    // Service 1: Cleanse Curses
-    const s1Y = startY;
-    const sH = 75;
-    ctx.fillStyle = theme.cardBg;
-    ctx.fillRect(boxX, s1Y, boxW, sH);
-    ctx.strokeStyle = theme.cardBorder;
-    ctx.strokeRect(boxX + 0.5, s1Y + 0.5, boxW - 1, sH - 1);
-
-    ctx.font = `bold 13px ${font}`;
-    ctx.fillStyle = '#facc15';
-    ctx.textAlign = 'left';
-    const templeName = engine.manifest?.town?.services?.templeName?.toUpperCase() ?? 'CLEANSING RITUAL';
-    ctx.fillText(`${templeName} (Cost: 50 GP)`, boxX + 14, s1Y + 20);
-
-    ctx.font = `11px ${font}`;
-    ctx.fillStyle = theme.textMuted;
-    ctx.fillText("Divine energy shatters all curses bound to your equipped gear.", boxX + 14, s1Y + 38);
-    ctx.fillText("Items are normalized and safely returned to your pack.", boxX + 14, s1Y + 54);
-
-    const btn1W = 180;
-    const btn1H = 30;
-    const btn1X = boxX + boxW - btn1W - 14;
-    const btn1Y = s1Y + 22;
-    ctx.fillStyle = theme.accent;
-    ctx.fillRect(btn1X, btn1Y, btn1W, btn1H);
-    ctx.fillStyle = theme.text;
-    ctx.font = `bold 11px ${font}`;
-    ctx.textAlign = 'center';
-    ctx.fillText('[C] CLEANSE CURSES', btn1X + btn1W / 2, btn1Y + 16);
-
-    this.clickZones.push({
-      x: btn1X,
-      y: btn1Y,
-      width: btn1W,
-      height: btn1H,
-      action: () => this.executeCleanseCurses(engine),
-    });
-
-    // Service 2: Heal & Restore
-    const s2Y = s1Y + sH + 12;
-    ctx.fillStyle = theme.cardBg;
-    ctx.fillRect(boxX, s2Y, boxW, sH);
-    ctx.strokeStyle = theme.cardBorder;
-    ctx.strokeRect(boxX + 0.5, s2Y + 0.5, boxW - 1, sH - 1);
-
-    ctx.font = `bold 13px ${font}`;
-    ctx.fillStyle = theme.healthBar;
-    ctx.textAlign = 'left';
-    ctx.fillText("DIVINE RESTORATION & VITALITY (Cost: 25 GP)", boxX + 14, s2Y + 20);
-
-    ctx.font = `11px ${font}`;
-    ctx.fillStyle = theme.textMuted;
-    ctx.fillText("Purges poison, paralysis, and sluggishness. Restores all Hit Points", boxX + 14, s2Y + 38);
-    ctx.fillText("and refills your arcane Mana pool to maximum.", boxX + 14, s2Y + 54);
-
-    const btn2X = boxX + boxW - btn1W - 14;
-    const btn2Y = s2Y + 22;
-    ctx.fillStyle = theme.healthBar;
-    ctx.fillRect(btn2X, btn2Y, btn1W, btn1H);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = `bold 11px ${font}`;
-    ctx.textAlign = 'center';
-    ctx.fillText('[H] HEAL & RESTORE', btn2X + btn1W / 2, btn2Y + 16);
-
-    this.clickZones.push({
-      x: btn2X,
-      y: btn2Y,
-      width: btn1W,
-      height: btn1H,
-      action: () => this.executeHealRestore(engine),
-    });
-  }
-
-  private renderSageServices(
-    ctx: CanvasRenderingContext2D,
-    engine: GameEngine,
-    modalX: number,
-    _modalY: number,
-    modalW: number,
-    _modalH: number,
-    startY: number
-  ): void {
-    const boxW = modalW - 24;
-    const boxX = modalX + 12;
-    const theme = this.theme ?? resolveThemeTokens(engine.manifest?.theme);
-    const font = theme.fontFamily ?? '"Courier New", Courier, monospace';
-
-    const unIdItems = [
-      ...engine.player.inventory.primaryPack.getItems().filter((i) => !i.identified),
-      ...engine.player.inventory.paperdoll.getAllEquipped().map((e) => e.item).filter((i) => !i.identified),
-    ];
-
-    ctx.fillStyle = theme.cardBg;
-    ctx.fillRect(boxX, startY, boxW, 170);
-    ctx.strokeStyle = theme.cardBorder;
-    ctx.strokeRect(boxX + 0.5, startY + 0.5, boxW - 1, 169);
-
-    ctx.font = `bold 13px ${font}`;
-    ctx.fillStyle = '#c084fc';
-    ctx.textAlign = 'left';
-    ctx.fillText("DECIPHER RUNES & RUNIC ENCHANTMENTS (Cost: 20 GP)", boxX + 14, startY + 22);
-
-    ctx.font = `11px ${font}`;
-    ctx.fillStyle = theme.hudText;
-    const sageName = engine.manifest?.town?.services?.sageName ?? 'The Sage';
-    ctx.fillText(`${sageName} consults ancient texts to reveal unknown potions, scrolls,`, boxX + 14, startY + 40);
-    ctx.fillText("weapons, and armor found within the depths.", boxX + 14, startY + 56);
-
-    ctx.font = `bold 11px ${font}`;
-    ctx.fillStyle = '#facc15';
-    ctx.fillText(`Unidentified Items In Possession: ${unIdItems.length}`, boxX + 14, startY + 84);
-
-    let listY = startY + 102;
-    for (let i = 0; i < Math.min(unIdItems.length, 3); i++) {
-      ctx.font = `italic 11px ${font}`;
-      ctx.fillStyle = theme.textMuted;
-      ctx.fillText(`• ${unIdItems[i].displayName} (${unIdItems[i].category})`, boxX + 24, listY);
-      listY += 16;
-    }
-
-    const btnW = 190;
-    const btnH = 30;
-    const btnX = boxX + boxW - btnW - 14;
-    const btnY = startY + 75;
-    ctx.fillStyle = theme.accent;
-    ctx.fillRect(btnX, btnY, btnW, btnH);
-    ctx.fillStyle = theme.text;
-    ctx.font = `bold 11px ${font}`;
-    ctx.textAlign = 'center';
-    ctx.fillText('[I] IDENTIFY AN ITEM', btnX + btnW / 2, btnY + 18);
-
-    this.clickZones.push({
-      x: btnX,
-      y: btnY,
-      width: btnW,
-      height: btnH,
-      action: () => this.executeIdentify(engine),
-    });
-
-    // Section 2: Strategic Advisory & Bestiary
-    const s2Y = startY + 135;
-    ctx.fillStyle = theme.cardBg;
-    ctx.fillRect(boxX, s2Y, boxW, 140);
-    ctx.strokeStyle = theme.cardBorder;
-    ctx.strokeRect(boxX + 0.5, s2Y + 0.5, boxW - 1, 139);
-
-    ctx.font = `bold 13px ${font}`;
-    ctx.fillStyle = theme.hudAccent;
-    ctx.textAlign = 'left';
-    ctx.fillText("STRATEGIC PREPARATION & SLAYER'S BESTIARY", boxX + 14, s2Y + 22);
-
-    ctx.font = `11px ${font}`;
-    ctx.fillStyle = theme.hudText;
-    ctx.fillText("Consult ancient wisdom to review encumbrance risks, cursed afflictions,", boxX + 14, s2Y + 40);
-    ctx.fillText("and elemental threats before entering the dungeon abyss.", boxX + 14, s2Y + 56);
-
-    // Advisory Button
-    const btnAdvW = 190;
-    const btnAdvX = boxX + 14;
-    const btnAdvY = s2Y + 75;
-    ctx.fillStyle = theme.manaBar;
-    ctx.fillRect(btnAdvX, btnAdvY, btnAdvW, 32);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = `bold 11px ${font}`;
-    ctx.textAlign = 'center';
-    ctx.fillText('[A] SEEK RUN ADVISORY', btnAdvX + btnAdvW / 2, btnAdvY + 19);
-
-    this.clickZones.push({
-      x: btnAdvX,
-      y: btnAdvY,
-      width: btnAdvW,
-      height: 32,
-      action: () => this.executeRunAdvisory(engine),
-    });
-
-    // Bestiary Button
-    const btnBesW = 190;
-    const btnBesX = btnAdvX + btnAdvW + 16;
-    const btnBesY = s2Y + 75;
-    ctx.fillStyle = theme.accent;
-    ctx.fillRect(btnBesX, btnBesY, btnBesW, 32);
-    ctx.fillStyle = theme.text;
-    ctx.font = `bold 11px ${font}`;
-    ctx.textAlign = 'center';
-    ctx.fillText("[B] SLAYER'S CODEX", btnBesX + btnBesW / 2, btnBesY + 19);
-
-    this.clickZones.push({
-      x: btnBesX,
-      y: btnBesY,
-      width: btnBesW,
-      height: 32,
-      action: () => {
-        if (this.onOpenCompendium) {
-          this.close();
-          this.onOpenCompendium();
-        }
-      },
-    });
-  }
-
-  private renderBankerServices(
-    ctx: CanvasRenderingContext2D,
-    engine: GameEngine,
-    modalX: number,
-    _modalY: number,
-    modalW: number,
-    _modalH: number,
-    startY: number,
-    coinItems: Array<{ item: Item }>,
-    coinWeightGrams: number
-  ): void {
-    const boxW = modalW - 24;
-    const boxX = modalX + 12;
-    const theme = this.theme ?? resolveThemeTokens(engine.manifest?.theme);
-    const font = theme.fontFamily ?? '"Courier New", Courier, monospace';
-
-    ctx.fillStyle = theme.cardBg;
-    ctx.fillRect(boxX, startY, boxW, 160);
-    ctx.strokeStyle = theme.cardBorder;
-    ctx.strokeRect(boxX + 0.5, startY + 0.5, boxW - 1, 159);
-
-    ctx.font = `bold 13px ${font}`;
-    ctx.fillStyle = '#facc15';
-    ctx.textAlign = 'left';
-    ctx.fillText("DENOMINATION COMPACTION & BULLION EXCHANGE (No Fee)", boxX + 14, startY + 22);
-
-    ctx.font = `11px ${font}`;
-    ctx.fillStyle = theme.hudText;
-    ctx.fillText("Exchange loose Copper and Silver for compact, light Gold and Platinum pieces.", boxX + 14, startY + 40);
-    ctx.fillText("Greatly reduces carrying weight and prevents encumbrance fatigue!", boxX + 14, startY + 56);
-
-    ctx.font = `bold 11px ${font}`;
-    ctx.fillStyle = theme.hudAccent;
-    ctx.fillText(`Current Coin Item Stacks: ${coinItems.length}   |   Current Total Coin Weight: ${(coinWeightGrams / 1000).toFixed(2)} kg (${coinWeightGrams} g)`, boxX + 14, startY + 84);
-
-    const btnW = 220;
-    const btnH = 34;
-    const btnX = boxX + boxW - btnW - 14;
-    const btnY = startY + 105;
-    ctx.fillStyle = theme.accent;
-    ctx.fillRect(btnX, btnY, btnW, btnH);
-    ctx.fillStyle = theme.text;
-    ctx.font = `bold 12px ${font}`;
-    ctx.textAlign = 'center';
-    ctx.fillText('[E] COMPACT COINS', btnX + btnW / 2, btnY + 21);
-
-    this.clickZones.push({
-      x: btnX,
-      y: btnY,
-      width: btnW,
-      height: btnH,
-      action: () => this.executeCompactCoins(engine),
-    });
-  }
-
-  /** Companions & Pet Progression, Phase 2 (ARCHITECTURE.md P-14) trainer panel. */
-  private renderTrainerServices(
-    ctx: CanvasRenderingContext2D,
-    engine: GameEngine,
-    modalX: number,
-    _modalY: number,
-    modalW: number,
-    _modalH: number,
-    startY: number
-  ): void {
-    const boxW = modalW - 24;
-    const boxX = modalX + 12;
-    const theme = this.theme ?? resolveThemeTokens(engine.manifest?.theme);
-    const font = theme.fontFamily ?? '"Courier New", Courier, monospace';
-    const boxH = 200;
-
-    ctx.fillStyle = theme.cardBg;
-    ctx.fillRect(boxX, startY, boxW, boxH);
-    ctx.strokeStyle = theme.cardBorder;
-    ctx.strokeRect(boxX + 0.5, startY + 0.5, boxW - 1, boxH - 1);
-
-    ctx.font = `bold 13px ${font}`;
-    ctx.fillStyle = '#facc15';
-    ctx.textAlign = 'left';
-    ctx.fillText('COMPANION TRAINING', boxX + 14, startY + 22);
-
-    const companion = engine.companion;
-    const bonded = engine.getWorldFlag('companion_bonded');
-    ctx.font = `11px ${font}`;
-    ctx.fillStyle = theme.hudText;
-    const statusLine = !bonded
-      ? 'You have not yet bonded with a companion.'
-      : companion
-      ? `${companion.name} (${companion.archetype}) — HP ${companion.hp}/${companion.maxHp}`
-      : engine.deadCompanionRecord
-      ? `${engine.deadCompanionRecord.name} has fallen and awaits revival.`
-      : 'Bonded, but no companion is currently summoned.';
-    ctx.fillText(statusLine, boxX + 14, startY + 40);
-
-    const rows: Array<{ label: string; key: string }> = [
-      { label: `[T] Bond with a Companion (${(TrainerService.BOND_COST_CP / 100).toFixed(0)} GP)`, key: 't' },
-      { label: `[R] Revive Fallen Companion (${(TrainerService.REVIVE_COST_CP / 100).toFixed(0)} GP)`, key: 'r' },
-      { label: `[G] Train as Bodyguard (${(TrainerService.ARCHETYPE_SWITCH_COST_CP / 100).toFixed(0)} GP)`, key: 'g' },
-      { label: `[K] Train as Skirmisher (${(TrainerService.ARCHETYPE_SWITCH_COST_CP / 100).toFixed(0)} GP)`, key: 'k' },
-      { label: `[W] Teach Rally Howl (${(TrainerService.TEACH_SKILL_COST_CP / 100).toFixed(0)} GP)`, key: 'w' },
-    ];
-
-    ctx.font = `11px ${font}`;
-    ctx.fillStyle = theme.hudAccent;
-    let rowY = startY + 62;
-    for (const row of rows) {
-      ctx.fillText(row.label, boxX + 14, rowY);
-      this.clickZones.push({
-        x: boxX + 10,
-        y: rowY - 14,
-        width: boxW - 20,
-        height: 18,
-        action: () => {
-          if (row.key === 't') this.executeBondCompanion(engine);
-          else if (row.key === 'r') this.executeReviveCompanion(engine);
-          else if (row.key === 'g') this.executeSwitchArchetype(engine, 'bodyguard');
-          else if (row.key === 'k') this.executeSwitchArchetype(engine, 'skirmisher');
-          else if (row.key === 'w') this.executeTeachRallyHowl(engine);
-        },
-      });
-      rowY += 22;
-    }
-  }
-
-  private renderTownspersonDialog(
-    ctx: CanvasRenderingContext2D,
-    _engine: GameEngine,
-    modalX: number,
-    _modalY: number,
-    modalW: number,
-    _modalH: number,
-    startY: number
-  ): void {
-    const boxW = modalW - 24;
-    const boxX = modalX + 12;
-    const theme = this.theme ?? resolveThemeTokens(_engine.manifest?.theme);
-    const font = theme.fontFamily ?? '"Courier New", Courier, monospace';
-
-    const attunementNpcId = _engine.manifest?.runeOfReturn?.attunementNpcId;
-    if (attunementNpcId && this.activeNpc?.id === attunementNpcId) {
-      const rune = findRuneOfReturn(_engine.player);
-      const boxH = 140;
-      ctx.fillStyle = theme.cardBg;
-      ctx.fillRect(boxX, startY, boxW, boxH);
-      ctx.strokeStyle = theme.cardBorder;
-      ctx.strokeRect(boxX + 0.5, startY + 0.5, boxW - 1, boxH - 1);
-
-      ctx.font = `bold 13px ${font}`;
-      ctx.fillStyle = '#38bdf8';
-      ctx.textAlign = 'left';
-      ctx.fillText('RUNE-SMITH FORGE & ATTUNEMENT', boxX + 14, startY + 24);
-
-      ctx.font = `11px ${font}`;
-      if (rune) {
-        ctx.fillStyle = '#38bdf8';
-        ctx.fillText(`Rune of Return: ${rune.charges}/${rune.maxCharges} Charges (Innate Spirit Power)`, boxX + 14, startY + 48);
-        ctx.fillStyle = '#a3e635';
-        if (_engine.player?.deepestRecallFloor) {
-          ctx.fillText(`Return Rift Active: Floor ${_engine.player.deepestRecallFloor} (Press [T] in town to return)`, boxX + 14, startY + 68);
-        } else {
-          ctx.fillText('Attuned and ready for recall channeling in the dungeon depths.', boxX + 14, startY + 68);
-        }
-      } else {
-        ctx.fillStyle = '#f87171';
-        ctx.fillText('You have not yet discovered the Rune of Return.', boxX + 14, startY + 48);
-        ctx.fillStyle = theme.hudText;
-        ctx.fillText('Thrain speaks of an ancient ice vault on Floor 5 guarded by Gálmr the Frost-Warden.', boxX + 14, startY + 68);
-      }
-
-      // Upgrade tree button
-      const btnY = startY + 92;
-      const btnH = 28;
-      ctx.fillStyle = theme.modalTitlebar;
-      ctx.fillRect(boxX + 14, btnY, boxW - 28, btnH);
-      ctx.strokeStyle = '#38bdf8';
-      ctx.strokeRect(boxX + 14.5, btnY + 0.5, boxW - 29, btnH - 1);
-
-      ctx.font = `bold 12px ${font}`;
-      ctx.fillStyle = '#38bdf8';
-      ctx.textAlign = 'center';
-      ctx.fillText('⚡ [U] Open Rune of Return Mastery Tree', boxX + boxW / 2, btnY + 18);
-      ctx.textAlign = 'left';
-
-      this.clickZones.push({
-        x: boxX + 14,
-        y: btnY,
-        width: boxW - 28,
-        height: btnH,
-        action: () => {
-          if (this.onOpenRuneTree) {
-            this.close();
-            this.onOpenRuneTree();
-          }
-        },
-      });
-      return;
-    }
-
-    ctx.fillStyle = theme.cardBg;
-    ctx.fillRect(boxX, startY, boxW, 140);
-    ctx.strokeStyle = theme.cardBorder;
-    ctx.strokeRect(boxX + 0.5, startY + 0.5, boxW - 1, 139);
-
-    ctx.font = `bold 13px ${font}`;
-    ctx.fillStyle = theme.hudAccent;
-    ctx.textAlign = 'left';
-    ctx.fillText("TOWN ADVICE & LOCAL LORE", boxX + 14, startY + 24);
-
-    ctx.font = `12px ${font}`;
-    ctx.fillStyle = theme.hudText;
-    const townName = _engine.manifest?.town?.name ?? 'The town';
-    ctx.fillText(`${townName} is peaceful, but the cellar entrance north-east holds`, boxX + 14, startY + 50);
-    ctx.fillText("terrors from old myths. Make sure you purchase torches and", boxX + 14, startY + 70);
-    ctx.fillText("sturdy armor before you venture down.", boxX + 14, startY + 90);
-  }
-
-  private renderFooter(
-    ctx: CanvasRenderingContext2D,
-    engine: GameEngine,
-    modalX: number,
-    modalY: number,
-    modalW: number,
-    modalH: number,
-    coins: { platinum: number; gold: number; silver: number; copper: number },
-    totalCp: number,
-    coinWeightGrams: number
-  ): void {
-    const footerY = modalY + modalH - 74;
-    const footerH = 64;
-    const theme = this.theme ?? resolveThemeTokens(engine.manifest?.theme);
-    const font = theme.fontFamily ?? '"Courier New", Courier, monospace';
-
-    ctx.fillStyle = theme.cardBg;
-    ctx.fillRect(modalX + 10, footerY, modalW - 20, footerH);
-    ctx.strokeStyle = theme.cardBorder;
-    ctx.strokeRect(modalX + 10.5, footerY + 0.5, modalW - 21, footerH - 1);
-
-    // Wealth Breakdown
-    ctx.font = `bold 11px ${font}`;
-    ctx.fillStyle = '#facc15';
-    ctx.textAlign = 'left';
-    ctx.fillText(
-      `FUNDS: [${coins.platinum} PP, ${coins.gold} GP, ${coins.silver} SP, ${coins.copper} CP] = ${totalCp} CP total`,
-      modalX + 16,
-      footerY + 16
-    );
-
-    // Coin Weight & Encumbrance
-    const player = engine.player;
-    const pack = player.inventory.primaryPack;
-    ctx.font = `10px ${font}`;
-    ctx.fillStyle = theme.textMuted;
-    ctx.textAlign = 'right';
-    ctx.fillText(
-      `Coin Weight: ${coinWeightGrams}g | Pack: ${pack.totalWeight()}g/${pack.maxWeightCapacity}g`,
-      modalX + modalW - 18,
-      footerY + 16
-    );
-
-    // Feedback Message or Hint
-    ctx.textAlign = 'left';
-    if (this.statusMessage) {
-      ctx.fillStyle = this.statusColor || theme.hudAccent;
-      ctx.font = `bold 11px ${font}`;
-      ctx.fillText(this.statusMessage, modalX + 16, footerY + 36);
-    } else {
-      ctx.fillStyle = theme.textMuted;
-      ctx.font = `italic 10px ${font}`;
-      ctx.fillText(
-        '[Tab] Switch Pane | [1-9] Quick Action | [Enter] Confirm | [Esc] Exit',
-        modalX + 16,
-        footerY + 36
-      );
-    }
-
-    // Leave Button [Esc]
-    const leaveBtnW = 90;
-    const leaveBtnH = 22;
-    const leaveBtnX = modalX + modalW - leaveBtnW - 16;
-    const leaveBtnY = footerY + 34;
-
-    ctx.fillStyle = theme.modalBg;
-    ctx.fillRect(leaveBtnX, leaveBtnY, leaveBtnW, leaveBtnH);
-    ctx.strokeStyle = theme.cardBorder;
-    ctx.strokeRect(leaveBtnX + 0.5, leaveBtnY + 0.5, leaveBtnW - 1, leaveBtnH - 1);
-    ctx.fillStyle = theme.hudText;
-    ctx.font = `bold 10px ${font}`;
-    ctx.textAlign = 'center';
-    ctx.fillText('LEAVE [ESC]', leaveBtnX + leaveBtnW / 2, leaveBtnY + 12);
-
-    this.clickZones.push({
-      x: leaveBtnX,
-      y: leaveBtnY,
-      width: leaveBtnW,
-      height: leaveBtnH,
-      action: () => this.close(),
-    });
   }
 }

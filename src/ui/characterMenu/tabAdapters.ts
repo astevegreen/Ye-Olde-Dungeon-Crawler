@@ -20,7 +20,7 @@ export class CompendiumTabAdapter implements MenuTab {
 
   public mount(container: HTMLElement): void {
     this.container = container;
-    const overlayEl = (this.modal as any).overlayEl as HTMLElement | undefined;
+    const overlayEl = this.modal.rootElement;
     if (overlayEl) {
       overlayEl.style.position = 'relative';
       overlayEl.style.inset = 'auto';
@@ -42,7 +42,7 @@ export class CompendiumTabAdapter implements MenuTab {
   }
 
   public unmount(): void {
-    const overlayEl = (this.modal as any).overlayEl as HTMLElement | undefined;
+    const overlayEl = this.modal.rootElement;
     this.modal.close();
     if (overlayEl && this.container && overlayEl.parentElement === this.container) {
       this.container.removeChild(overlayEl);
@@ -83,7 +83,7 @@ export class PactTabAdapter implements MenuTab {
 
   public mount(container: HTMLElement): void {
     this.container = container;
-    const overlayEl = (this.modal as any).overlayEl as HTMLElement | undefined;
+    const overlayEl = this.modal.rootElement;
     if (overlayEl) {
       overlayEl.style.position = 'relative';
       overlayEl.style.inset = 'auto';
@@ -105,7 +105,7 @@ export class PactTabAdapter implements MenuTab {
   }
 
   public unmount(): void {
-    const overlayEl = (this.modal as any).overlayEl as HTMLElement | undefined;
+    const overlayEl = this.modal.rootElement;
     this.modal.close();
     if (overlayEl && this.container && overlayEl.parentElement === this.container) {
       this.container.removeChild(overlayEl);
@@ -147,7 +147,7 @@ export class SpellbookTabAdapter implements MenuTab {
   public mount(container: HTMLElement): void {
     this.container = container;
     this.modal.mount(container);
-    const modalContainer = (this.modal as any).container as HTMLElement | undefined;
+    const modalContainer = this.modal.rootElement;
     if (modalContainer) {
       modalContainer.style.position = 'relative';
       modalContainer.style.width = '100%';
@@ -163,7 +163,7 @@ export class SpellbookTabAdapter implements MenuTab {
   }
 
   public unmount(): void {
-    const modalContainer = (this.modal as any).container as HTMLElement | undefined;
+    const modalContainer = this.modal.rootElement;
     this.modal.close();
     if (modalContainer && this.container && modalContainer.parentElement === this.container) {
       this.container.removeChild(modalContainer);

@@ -10,6 +10,8 @@ export class CompendiumModal implements UIModal {
   public readonly id = 'compendium';
   public isOpen = false;
   private overlayEl: HTMLElement | null = null;
+  /** Exposes the root DOM element for embedding in the character-menu tab shell. */
+  public get rootElement(): HTMLElement | null { return this.overlayEl; }
   private activeFilter: 'all' | 'discovered' | 'mastered' = 'all';
   private selectedMonsterId: string = 'giant_rat';
   private engine?: GameEngine;

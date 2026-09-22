@@ -12,6 +12,8 @@ export interface SpellbookModalOptions {
 export class SpellbookModal implements UIModal {
   public readonly id = 'spellbook';
   private container: HTMLElement;
+  /** Exposes the root DOM element for embedding in the character-menu tab shell. */
+  public get rootElement(): HTMLElement { return this.container; }
   private options: SpellbookModalOptions;
   public isOpen: boolean = false;
   private engine?: GameEngine;

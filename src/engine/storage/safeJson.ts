@@ -8,7 +8,7 @@
  * Creates a circular-safe JSON replacer function.
  * Replaces circular references with '[Circular]'.
  */
-export function createSafeJsonReplacer(): (key: string, value: unknown) => unknown {
+function createSafeJsonReplacer(): (key: string, value: unknown) => unknown {
   const seen = new WeakSet<object>();
 
   return function (this: unknown, _key: string, value: unknown): unknown {

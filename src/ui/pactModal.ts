@@ -4,6 +4,8 @@ import type { UIModal } from './modalStack';
 export class PactModal implements UIModal {
   public readonly id = 'pact-modal';
   private overlayEl: HTMLElement | null = null;
+  /** Exposes the root DOM element for embedding in the character-menu tab shell. */
+  public get rootElement(): HTMLElement | null { return this.overlayEl; }
   private isOpenState = false;
   private selectedPactId: string = '';
   private engine?: GameEngine;

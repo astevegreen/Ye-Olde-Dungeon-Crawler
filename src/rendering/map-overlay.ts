@@ -3,7 +3,7 @@ import type { GameMap } from '../engine';
 import { resolveThemeTokens } from './theme';
 import type { ThemeTokens } from '../engine';
 
-export interface ClickZone {
+interface ClickZone {
   x: number;
   y: number;
   width: number;

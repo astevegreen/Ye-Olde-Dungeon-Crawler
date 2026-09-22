@@ -13,7 +13,7 @@ import { ItemInspector } from '../ui/inventory/itemInspector';
 import { type GameCommand, type GameCommandBus } from '../engine';
 import type { UIModal } from '../ui/modalStack';
 
-export interface ClickZone {
+interface ClickZone {
   x: number;
   y: number;
   width: number;

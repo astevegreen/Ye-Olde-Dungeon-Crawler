@@ -7,7 +7,7 @@ import {
 } from '../../engine';
 import type { DiagnosticTabContext } from './types';
 
-export function spawnTestItem(ctx: DiagnosticTabContext, engine: GameEngine, type: string | null): void {
+function spawnTestItem(ctx: DiagnosticTabContext, engine: GameEngine, type: string | null): void {
   const p = engine.player;
   if (!p) return;
 
@@ -82,7 +82,7 @@ export function spawnTestItem(ctx: DiagnosticTabContext, engine: GameEngine, typ
   }
 }
 
-export function spawnTestMonster(ctx: DiagnosticTabContext, engine: GameEngine, mobId: string): void {
+function spawnTestMonster(ctx: DiagnosticTabContext, engine: GameEngine, mobId: string): void {
   const monster = engine.diagnostics.spawnMonster(mobId, { aiState: 'hunting' });
   if (monster) {
     ctx.showToast(`Spawned ${monster.name} at (${monster.x}, ${monster.y})!`);

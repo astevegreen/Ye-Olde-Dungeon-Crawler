@@ -1,20 +1,20 @@
-import type { GameEngine } from '../../engine';
-import type { DiagnosticTabId, DiagnosticTabContext } from './types';
+import type { DiagnosticTabId, DiagnosticTabRenderer } from './types';
 import { renderSimulationTab } from './simulationTab';
 import { renderActorTab } from './actorTab';
 import { renderPipelineTab } from './pipelineTab';
 import { renderTriageTab } from './triageTab';
 
 export * from './types';
-export { renderSimulationTab } from './simulationTab';
-export { renderActorTab } from './actorTab';
-export { renderPipelineTab, formatEventSummary } from './pipelineTab';
-export { renderTriageTab, spawnTestItem, spawnTestMonster } from './triageTab';
 
-export const DIAGNOSTIC_TAB_RENDERERS: Record<
-  DiagnosticTabId,
-  (ctx: DiagnosticTabContext, engine: GameEngine) => void
-> = {
+/**
+ * Every diagnostic tab's renderer, keyed by tab id.
+ *
+ * Typing this as a total `Record<DiagnosticTabId, ...>` is deliberate: it is
+ * what replaces the exhaustiveness the old in-class switch gave for free, so
+ * adding a `DiagnosticTabId` without a renderer fails `tsc` rather than
+ * silently rendering nothing.
+ */
+export const DIAGNOSTIC_TAB_RENDERERS: Record<DiagnosticTabId, DiagnosticTabRenderer> = {
   simulation: renderSimulationTab,
   actor: renderActorTab,
   pipeline: renderPipelineTab,

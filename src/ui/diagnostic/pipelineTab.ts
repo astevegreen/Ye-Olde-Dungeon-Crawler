@@ -1,7 +1,7 @@
 import { safeJsonStringify, type GameEngine } from '../../engine';
 import type { DiagnosticTabContext } from './types';
 
-export function formatEventSummary(ev: any): string {
+function formatEventSummary(ev: any): string {
   if (ev.type === 'PlayerLeveledUp') {
     return `Hero reached level ${ev.newLevel}! (+${ev.statPointsGained} stat points)`;
   }

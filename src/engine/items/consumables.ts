@@ -69,7 +69,7 @@ export class ScrollItem extends Item {
 /**
  * Built-in canonical potion categories.
  */
-export type PotionType = 'health' | 'mana' | 'antidote' | 'custom';
+export type PotionType = 'health' | 'mana' | 'antidote' | 'volatile_energy' | 'custom';
 
 export interface PotionConfig extends Omit<ItemConfig, 'category' | 'weight' | 'bulk'> {
   potionType?: PotionType;
@@ -107,6 +107,8 @@ export class PotionItem extends Item {
         this.effects = [{ type: 'restore_mana', amount: config.potency ?? 15 }];
       } else if (config.potionType === 'antidote') {
         this.effects = [{ type: 'cure_status', status: 'poison' }];
+      } else if (config.potionType === 'volatile_energy') {
+        this.effects = [{ type: 'restore_volatile_energy', amount: 'full' }];
       } else {
         this.effects = [];
       }

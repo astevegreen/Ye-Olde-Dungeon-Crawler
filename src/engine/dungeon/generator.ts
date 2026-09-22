@@ -37,6 +37,7 @@ export interface GeneratedFloorData {
   rooms: RectRoom[];
   monsters: Monster[];
   forcedVaultChestSpawns?: Position[];
+  forcedVaultHostageSpawns?: Position[];
 }
 
 export interface DungeonGeneratorStrategy {
@@ -81,6 +82,7 @@ export class BspDungeonGenerator implements DungeonGeneratorStrategy {
       rooms: result.rooms,
       monsters: result.monsters,
       forcedVaultChestSpawns: result.forcedVaultChestSpawns,
+      forcedVaultHostageSpawns: result.forcedVaultHostageSpawns,
     };
   }
 }

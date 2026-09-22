@@ -14,6 +14,7 @@ import {
   type RuneOfReturnTrack,
   RUNE_MAX_CHARGES,
 } from '../magic/runeOfReturn';
+import { EnergyModel, type DualEnergyConfig } from '../actors/energyModel';
 
 export interface PlayerConfig {
   id?: string;
@@ -45,6 +46,7 @@ export interface PlayerConfig {
   hasDiscoveredRune?: boolean;
   runeCharges?: number;
   runeMaxCharges?: number;
+  energyModel?: EnergyModel;
 }
 
 const DEFAULT_PLAYER_STATS: CombatStats = {
@@ -85,6 +87,7 @@ export class Player extends Actor {
   public runeCharges: number;
   public runeMaxCharges: number;
   public pactMutatorsSupplier?: () => import('../pacts/pactManager').RunPactMutatorRules;
+  public energyModel?: EnergyModel;
 
   constructor(config: PlayerConfig) {
     super({
@@ -98,6 +101,7 @@ export class Player extends Actor {
       strength: config.strength ?? 15,
       inventory: config.inventory,
     });
+    this.energyModel = config.energyModel;
     this.gender = config.gender ?? 'male';
     this.difficulty = config.difficulty ?? DEFAULT_DIFFICULTY;
     this.maxFloor = config.maxFloor ?? DIFFICULTY_MAX_FLOORS[this.difficulty];
@@ -303,6 +307,17 @@ export class Player extends Actor {
 
   public markTutorialSeen(flag: keyof TutorialFlags): void {
     this.tutorialFlags[flag] = true;
+  }
+
+  public initEnergyModel(config?: DualEnergyConfig): EnergyModel {
+    if (!this.energyModel) {
+      this.energyModel = new EnergyModel(config);
+    }
+    return this.energyModel;
+  }
+
+  public hasBloodMagicUnlocked(): boolean {
+    return this.energyModel !== undefined;
   }
 
   public override get maxHp(): number {

@@ -22,8 +22,9 @@ import type { StatusType } from '../status/types';
 import { findSafeSpawnPosition } from '../spatial/collisionSolver';
 import { EffectPrimitiveRegistry, type EffectContext } from './effectRegistry';
 import { registerReciprocalPrimitives } from '../combat/reciprocalPipeline';
+import { EnergyModel } from '../actors/energyModel';
 
-export function getElementDefaultColor(element?: string): string {
+function getElementDefaultColor(element?: string): string {
   switch (element) {
     case 'fire':
       return '#f97316';
@@ -76,8 +77,12 @@ export class SpellPipeline {
     });
 
     EffectPrimitiveRegistry.register<HealEffect>('heal', (effect, ctx) => {
-      for (const target of ctx.targets) {
-        SpellPipeline.applyHealEffect(ctx.engine, ctx.caster, target, effect);
+      if (effect.target === 'caster') {
+        SpellPipeline.applyHealEffect(ctx.engine, ctx.caster, ctx.caster, effect);
+      } else {
+        for (const target of ctx.targets) {
+          SpellPipeline.applyHealEffect(ctx.engine, ctx.caster, target, effect);
+        }
       }
     });
 
@@ -470,6 +475,17 @@ export class SpellPipeline {
       rawDamage = Math.max(1, Math.round(rawDamage * spellMultiplier));
     }
 
+    // Apply Entropic damage scaling from caster's corruption if casting blood/entropic/shadow magic
+    if (
+      casterAny.corruptionScore &&
+      (spell.school === 'BloodMagic' || effect.element === 'shadow' || effect.element === 'entropic')
+    ) {
+      const entropicMult = EnergyModel.calculateEntropicDamageMultiplier(casterAny.corruptionScore);
+      if (entropicMult !== 1.0) {
+        rawDamage = Math.max(1, Math.round(rawDamage * entropicMult));
+      }
+    }
+
     const terrain = engine.map.getTile(target.x, target.y)?.type;
     const result = target.takeElementalDamage(rawDamage, effect.element, engine.affinityMatrix, terrain);
 
@@ -539,7 +555,14 @@ export class SpellPipeline {
     effect: HealEffect
   ): void {
     if (!target.isAlive()) return;
-    const amount = parseAndRollDice(effect.amount, engine.rng);
+    let amount = parseAndRollDice(effect.amount, engine.rng);
+    const targetAny = target as any;
+    if (targetAny.corruptionScore !== undefined || target.statusManager.hasStatus('tissue_necrosis' as any)) {
+      const eff = EnergyModel.calculateHealingEfficiency(targetAny);
+      if (eff < 1.0) {
+        amount = Math.max(1, Math.floor(amount * eff));
+      }
+    }
     const healed = target.heal(amount);
     engine.log(`${target.name} is healed for ${healed} HP! (HP: ${target.hp}/${target.maxHp})`);
   }

@@ -1,4 +1,5 @@
 import type { ChoiceDefinition } from '../../engine';
+import { BLOOD_ALTAR_CHOICE } from './hostageRitual';
 
 export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
   /**
@@ -257,4 +258,6 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
     ],
     cancelable: false,
   },
+  blood_altar_ritual: BLOOD_ALTAR_CHOICE,
 };
+

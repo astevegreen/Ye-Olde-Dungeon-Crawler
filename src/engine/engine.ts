@@ -732,6 +732,52 @@ export class GameEngine {
       }
       return;
     }
+
+    if (npc.id.startsWith('captive_villager_')) {
+      const rescued = this.getWorldCounter('hostages_rescued');
+      const sacrificed = this.getWorldCounter('hostages_sacrificed');
+      this.log(`✨ You cut ${npc.name}'s bonds! They trigger an emergency town recall ward and vanish to safety! (+1 Rescued)`);
+      this.removeEntity(npc);
+      this.setWorldFlag(`${npc.id}_rescued`, true);
+      this.modifyWorldCounter('hostages_rescued', 1);
+
+      const total = rescued + 1 + sacrificed;
+      if (total >= 4 && !this.getWorldFlag('siphon_ritual_resolved')) {
+        this.setWorldFlag('siphon_ritual_resolved', true);
+        const finalRescued = rescued + 1;
+        if (finalRescued >= 4) {
+          this.modifyFactionStanding('townsfolk', 30);
+          this.setWorldFlag('savior_of_jarnvidr', true);
+          this.log(
+            '✦✦✦ SAVIOR OF JÁRNVIÐR! All four innocent captives were rescued alive! Bjarnarhaven praises your name (+30 Townsfolk Standing, 25% Town Shop Discount)! ✦✦✦'
+          );
+        } else if (finalRescued === 3) {
+          this.modifyFactionStanding('townsfolk', 15);
+          this.player.initEnergyModel();
+          this.player.learnSpell('blood_tap');
+          this.log(
+            '✦ Three captives escaped to safety. From the single fallen soul, you gleaned Blood Tap (+15 Townsfolk Standing)! ✦'
+          );
+        } else if (finalRescued === 2) {
+          this.player.initEnergyModel();
+          this.player.learnSpell('blood_tap');
+          this.player.learnSpell('crimson_ward');
+          this.log(
+            '⚖ A bitter compromise. Two souls escaped, and two fed the dark altar. You unlock Blood Tap and Crimson Ward with negligible town consequence. ⚖'
+          );
+        } else if (finalRescued === 1) {
+          this.modifyFactionStanding('townsfolk', -15);
+          this.player.initEnergyModel();
+          this.player.learnSpell('blood_tap');
+          this.player.learnSpell('crimson_ward');
+          this.player.learnSpell('blood_spear');
+          this.log(
+            '☠ A grim harvest. Three innocents perished. You unlock Blood Tap, Crimson Ward, and Blood Spear (-15 Townsfolk Standing). ☠'
+          );
+        }
+      }
+      return;
+    }
     this.log(`Spoke with ${npc.name}: "${npc.greeting}"`);
     if (this.onNpcInteract) {
       this.onNpcInteract(npc);

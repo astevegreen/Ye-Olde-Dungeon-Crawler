@@ -165,6 +165,7 @@ export function createScaledItem(
       acceptedCategories: def.containerConfig.acceptedCategories,
       minFloor: def.minFloor,
       tier: def.tier,
+      predicate: def.predicate,
     });
   }
 

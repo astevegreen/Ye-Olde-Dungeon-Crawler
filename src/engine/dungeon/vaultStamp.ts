@@ -33,6 +33,7 @@ export interface StampedVaultResult {
   connectors: Position[];
   chestSpawns: Position[];
   monsterSpawns: Position[];
+  hostageSpawns: Position[];
 }
 
 export class VaultStamper {
@@ -45,33 +46,39 @@ export class VaultStamper {
     isChest: boolean;
     isMonster: boolean;
     isMiniboss: boolean;
+    isHostage: boolean;
+    isAltar: boolean;
   } {
     switch (char) {
       case '#':
-        return { tile: TILES.WALL, isConnector: false, isChest: false, isMonster: false, isMiniboss: false };
+        return { tile: TILES.WALL, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
       case '.':
-        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: false, isMiniboss: false };
+        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
       case '~':
-        return { tile: TILES.SHALLOW_WATER, isConnector: false, isChest: false, isMonster: false, isMiniboss: false };
+        return { tile: TILES.SHALLOW_WATER, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
       case 'X':
-        return { tile: TILES.CHASM, isConnector: false, isChest: false, isMonster: false, isMiniboss: false };
+        return { tile: TILES.CHASM, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
       case '+':
-        return { tile: TILES.DOOR_CLOSED, isConnector: false, isChest: false, isMonster: false, isMiniboss: false };
+        return { tile: TILES.DOOR_CLOSED, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
       case 'B':
-        return { tile: TILES.IRON_BARS, isConnector: false, isChest: false, isMonster: false, isMiniboss: false };
+        return { tile: TILES.IRON_BARS, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
       case 'P':
-        return { tile: TILES.PILLAR, isConnector: false, isChest: false, isMonster: false, isMiniboss: false };
+        return { tile: TILES.PILLAR, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
       case '@':
         // Connector doorway / passage into the corridor network
-        return { tile: TILES.FLOOR, isConnector: true, isChest: false, isMonster: false, isMiniboss: false };
+        return { tile: TILES.FLOOR, isConnector: true, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
       case 'C':
-        return { tile: TILES.FLOOR, isConnector: false, isChest: true, isMonster: false, isMiniboss: false };
+        return { tile: TILES.FLOOR, isConnector: false, isChest: true, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
       case 'M':
-        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: true, isMiniboss: false };
+        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: true, isMiniboss: false, isHostage: false, isAltar: false };
       case 'K':
-        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: true, isMiniboss: true };
+        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: true, isMiniboss: true, isHostage: false, isAltar: false };
+      case 'H':
+        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: true, isAltar: false };
+      case 'A':
+        return { tile: TILES.ALTAR, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: true };
       default:
-        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: false, isMiniboss: false };
+        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
     }
   }
 
@@ -98,6 +105,7 @@ export class VaultStamper {
     const connectors: Position[] = [];
     const chestSpawns: Position[] = [];
     const monsterSpawns: Position[] = [];
+    const hostageSpawns: Position[] = [];
 
     for (let r = 0; r < height; r++) {
       const row = layout[r];
@@ -110,6 +118,10 @@ export class VaultStamper {
 
         const parsed = this.parseSymbol(char);
         map.setTile(worldX, worldY, parsed.tile);
+
+        if (parsed.isHostage) {
+          hostageSpawns.push({ x: worldX, y: worldY });
+        }
 
         if (parsed.isConnector) {
           connectors.push({ x: worldX, y: worldY });
@@ -171,6 +183,7 @@ export class VaultStamper {
       connectors,
       chestSpawns,
       monsterSpawns,
+      hostageSpawns,
     };
   }
 }

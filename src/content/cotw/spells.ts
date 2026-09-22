@@ -1,4 +1,5 @@
 import type { SpellDefinition } from '../../engine';
+import { COTW_BLOOD_SPELLS } from './bloodMagic';
 
 export const COTW_SPELLS: SpellDefinition[] = [
   {
@@ -249,5 +250,9 @@ export const COTW_SPELLS: SpellDefinition[] = [
     visual: { archetype: 'screen_flash', color: '#67e8f9', durationMs: 300 },
     effects: [{ type: 'reveal', target: 'map', duration: 1 }],
   },
+  ...COTW_BLOOD_SPELLS,
 ];
+
+export { COTW_BLOOD_SPELLS };
+
 

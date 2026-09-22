@@ -40,6 +40,7 @@ export type ConsumableEffectDescriptor =
   | { type: 'gain_xp'; amount: number }
   | { type: 'gain_stat'; stat: string; amount: number }
   | { type: 'teleport'; range?: number; random?: boolean }
+  | { type: 'restore_volatile_energy'; amount?: number | 'full' }
   | {
       /**
        * Tag-Filtered Radial Aura (ARCHITECTURE.md P-25): applies `status` to every
@@ -491,6 +492,8 @@ export interface GameContentManifest {
   runeOfReturn?: RuneOfReturnManifestConfig;
   /** Fixed tile placements stamped at specific floor generation (ARCHITECTURE.md P-03 stage 2). */
   fixedTilePlacements?: FixedTilePlacement[];
+  /** Scripted vault blueprints guaranteed to stamp at specific floors (e.g. Floor 22 ritual vault). */
+  scriptedVaultPlacements?: { floor: number; vaultId: string }[];
 }
 
 export interface FixedTilePlacement {

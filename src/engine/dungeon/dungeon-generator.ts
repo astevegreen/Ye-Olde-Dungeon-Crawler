@@ -55,6 +55,8 @@ export interface DungeonResult {
   /** Ground positions of any chest(s) stamped by `forcedVaultId`, if it was
    * placed successfully this attempt. */
   forcedVaultChestSpawns?: Position[];
+  /** Ground positions of any hostage(s) stamped by `forcedVaultId`. */
+  forcedVaultHostageSpawns?: Position[];
 }
 
 export class DungeonGenerator {
@@ -142,6 +144,7 @@ export class DungeonGenerator {
     // register its room/connectors. Shared by the random vault pass and the forced-
     // vault pass below so both place vaults identically.
     let forcedVaultChestSpawns: Position[] | undefined;
+    let forcedVaultHostageSpawns: Position[] | undefined;
     const tryPlaceVault = (blueprint: VaultBlueprint): boolean => {
       const vH = blueprint.layout.length;
       const vW = blueprint.layout[0]?.length ?? 0;
@@ -182,6 +185,7 @@ export class DungeonGenerator {
         allConnectors.push(...stamped.connectors);
         if (blueprint.id === this.forcedVaultId) {
           forcedVaultChestSpawns = stamped.chestSpawns;
+          forcedVaultHostageSpawns = stamped.hostageSpawns;
         }
         return true;
       }
@@ -324,6 +328,7 @@ export class DungeonGenerator {
       monsters,
       graph,
       forcedVaultChestSpawns,
+      forcedVaultHostageSpawns,
     };
   }
 

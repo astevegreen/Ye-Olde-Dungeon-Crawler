@@ -49,15 +49,16 @@ export class EnergyModel {
   public consumeVolatileEnergy(
     actor: Actor,
     amount: number,
-    corruptionMultiplier = 1.0
+    corruptionMultiplier = 1.0,
+    corruptionGain?: number
   ): { success: boolean; corruptionAdded: number } {
     if (amount < 0 || this.volatileEnergy < amount) {
       return { success: false, corruptionAdded: 0 };
     }
     this.volatileEnergy -= amount;
-    const corruptionGain = Math.ceil(amount * corruptionMultiplier);
-    this.addCorruption(actor, corruptionGain);
-    return { success: true, corruptionAdded: corruptionGain };
+    const resolvedCorruption = corruptionGain !== undefined ? corruptionGain : Math.ceil(amount * corruptionMultiplier);
+    this.addCorruption(actor, resolvedCorruption);
+    return { success: true, corruptionAdded: resolvedCorruption };
   }
 
   public burnVitalityTender(

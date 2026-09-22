@@ -6,12 +6,13 @@ import {
 import type { TownLayoutDefinition } from '../../engine';
 import { COTW_CATALOG_RECORD } from './items';
 
-function makeItem(itemId: string, instanceId: string) {
+function makeItem(itemId: string, instanceId: string, predicate?: import('../../engine').Predicate) {
   const def = COTW_CATALOG_RECORD[itemId];
   if (!def) {
     throw new Error(`Item definition not found in COTW_CATALOG_RECORD: ${itemId}`);
   }
-  return createScaledItem(def, instanceId, 1, () => 0.5);
+  const itemDef = predicate ? { ...def, predicate } : def;
+  return createScaledItem(itemDef, instanceId, 1, () => 0.5);
 }
 
 export const COTW_TOWN: TownLayoutDefinition = {
@@ -85,6 +86,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
           makeItem('bound_hide_wrappings', 'olaf-boots-1'),
           makeItem('hearth_broth_flask', 'olaf-broth-1'),
           makeItem('birch_tar_poultice', 'olaf-poultice-1'),
+          makeItem('sealskin_rucksack', 'olaf-hero-rucksack', { type: 'minFaction', faction: 'townsfolk', value: 25 }),
         ],
       },
     },
@@ -117,6 +119,8 @@ export const COTW_TOWN: TownLayoutDefinition = {
           makeItem('soot_visored_helm', 'gunther-helm-1'),
           makeItem('crampon_nailed_boots', 'gunther-boots-1'),
           makeItem('duergar_forge_gauntlets', 'gunther-gauntlets-1'),
+          makeItem('cinder_edge_shortsword', 'gunther-hero-blade', { type: 'minFaction', faction: 'townsfolk', value: 25 }),
+          makeItem('cinder_quenched_hauberk', 'gunther-hero-armor', { type: 'minFaction', faction: 'townsfolk', value: 25 }),
         ],
       },
     },

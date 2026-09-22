@@ -23,6 +23,7 @@ import { CompendiumManager } from '../compendium/compendiumManager';
 import type { GameContentManifest } from '../types/manifest';
 import { cloneWorldState, createWorldState } from '../state/worldState';
 import { compactTilesWithDictionary, decompactTiles, compactFov, decompactFov } from './compaction';
+import { EnergyModel } from '../actors/energyModel';
 import type {
   CharacterProfile,
   SaveData,
@@ -36,7 +37,7 @@ import type {
   SerializedCompanion,
 } from './types';
 
-export function getTileDefinitionByType(type: TileType): TileDefinition {
+function getTileDefinitionByType(type: TileType): TileDefinition {
   return getTileDefinition(type);
 }
 
@@ -297,7 +298,7 @@ export function deserializeItem(node: SerializedItemNode): Item {
  * since the companion travels with the player across floors rather than
  * belonging to any one floor.
  */
-export function serializeCompanion(companion: Companion): SerializedCompanion {
+function serializeCompanion(companion: Companion): SerializedCompanion {
   return {
     id: companion.id,
     name: companion.name,
@@ -315,7 +316,7 @@ export function serializeCompanion(companion: Companion): SerializedCompanion {
   };
 }
 
-export function deserializeCompanion(data: SerializedCompanion, registries?: EngineRegistries): Companion {
+function deserializeCompanion(data: SerializedCompanion, registries?: EngineRegistries): Companion {
   const primaryPack = deserializeItem(data.primaryPack) as Container;
   const inventory = new InventoryManager({ primaryPack, ownerId: data.id });
 
@@ -412,6 +413,15 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     hasDiscoveredRune: p.hasDiscoveredRune,
     runeCharges: p.runeCharges,
     runeMaxCharges: p.runeMaxCharges,
+    energyModel: p.energyModel
+      ? {
+          structuredEnergy: p.energyModel.structuredEnergy,
+          maxStructuredEnergy: p.energyModel.maxStructuredEnergy,
+          volatileEnergy: p.energyModel.volatileEnergy,
+          maxVolatileEnergy: p.energyModel.maxVolatileEnergy,
+          vitalityTenderBurned: p.energyModel.vitalityTenderBurned,
+        }
+      : undefined,
   };
 
   if (profile) {
@@ -837,6 +847,15 @@ export function deserializeGame(
     player.planeId = pData.planeId;
   }
   player.corruptionScore = Number(pData.corruptionScore) || 0;
+  if (pData.energyModel) {
+    player.energyModel = new EnergyModel({
+      structuredEnergy: Number(pData.energyModel.structuredEnergy),
+      maxStructuredEnergy: Number(pData.energyModel.maxStructuredEnergy),
+      volatileEnergy: Number(pData.energyModel.volatileEnergy),
+      maxVolatileEnergy: Number(pData.energyModel.maxVolatileEnergy),
+    });
+    player.energyModel.vitalityTenderBurned = Number(pData.energyModel.vitalityTenderBurned) || 0;
+  }
 
   // 4. Determine Current Floor & Compendium
   const currentFloor = saveData.currentFloor ?? saveData.profile?.floor ?? 1;

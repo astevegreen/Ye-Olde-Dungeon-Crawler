@@ -6,6 +6,7 @@ export type SpellSchool =
   | 'HealingDivination'
   | 'Movement'
   | 'Divination'
+  | 'BloodMagic'
   | string;
 
 export type TargetType =
@@ -53,6 +54,7 @@ export interface TeleportEffect {
 export interface HealEffect {
   type: 'heal';
   amount: string | number;
+  target?: 'caster' | 'target';
 }
 
 export interface RevealEffect {
@@ -100,6 +102,12 @@ export interface SpellDefinition {
   name: string;
   school: SpellSchool;
   manaCost: number;
+  volatileEnergyCost?: number;
+  vitalityCost?: number;
+  corruptionGain?: number;
+  volatileEnergyGain?: number;
+  maxTargetHpPercent?: number;
+  requiresKillForEnergy?: boolean;
   element: ElementType;
   range: number;
   basePower: number;

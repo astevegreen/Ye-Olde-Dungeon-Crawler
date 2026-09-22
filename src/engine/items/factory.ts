@@ -266,6 +266,21 @@ export class ItemFactory {
     });
   }
 
+  public static createDraughtOfVolatileEnergy(id = 'draught-volatile-energy-1'): PotionItem {
+    return new PotionItem({
+      id,
+      name: 'Draught of Volatile Energy',
+      unidentifiedName: 'Black Glass Phial',
+      potionType: 'volatile_energy',
+      weight: 250,
+      bulk: 150,
+      value: 350,
+      quality: 'enchanted',
+      identified: true,
+      description: 'A swirling, effervescent phial of concentrated occult vigor. Very rare. Drinking it completely refills your Volatile Energy meter.',
+    });
+  }
+
   public static createWandOfLightning(id = 'wand-lightning-1', charges = 8): WandItem {
     return new WandItem({
       id,

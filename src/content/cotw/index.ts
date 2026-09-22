@@ -18,6 +18,8 @@ import { COTW_COMPANIONS } from './companions';
 import { GIANT_BLOOD_STATUS, giantBloodHandler, GIANT_BLOOD_BOOTSTRAP_HOOK } from './giantBlood';
 import { COTW_MONSTER_SCALING } from './monsterScaling';
 import { OATH_TRIGGER, OATH_TIMED_EVENT } from './oath';
+import { SIPHON_TIMED_EVENT } from './hostageRitual';
+import { COTW_BLOOD_SPELLS } from './bloodMagic';
 import { COTW_TILES } from './tiles';
 
 export const COTW_ATTRIBUTE_MILESTONES: AttributeMilestoneTrigger[] = [
@@ -65,6 +67,8 @@ export const cotwManifest: GameContentManifest = {
     { flag: 'altar_cleansed', label: 'Altar of Tyr Cleansed', description: 'Purified the corrupted altar with solemn sacrifice.', icon: '⚖️' },
     { flag: 'oath_resolved', label: "The Matriarch's Blood-Oath", description: 'Struck a lasting bargain with a troll-wife matriarch to sever the siphon on the village.', icon: '🩸' },
     { flag: 'nidhogg_root_sealed', label: 'The Root Sealed', description: 'Drove Níðhögg from the rotting root of Yggdrasil without ending it.', icon: '🌳' },
+    { flag: 'savior_of_jarnvidr', label: 'Savior of Járnviðr', description: 'Rescued all four captive villagers from the sacrificial blood siphon.', icon: '🛡️' },
+    { flag: 'blood_tainted_hero', label: 'The Blood-Tainted', description: 'Embraced the forbidden Grimoire of Blood Magic while innocent captives bled.', icon: '🩸' },
   ],
   renownMilestones: COTW_RENOWN_MILESTONES,
   renownTitles: COTW_RENOWN_TITLES,
@@ -73,7 +77,7 @@ export const cotwManifest: GameContentManifest = {
   actionHooks: [GIANT_BLOOD_BOOTSTRAP_HOOK],
   storyChoiceTriggers: [OATH_TRIGGER],
   attributeMilestones: COTW_ATTRIBUTE_MILESTONES,
-  timedEvents: [OATH_TIMED_EVENT],
+  timedEvents: [OATH_TIMED_EVENT, SIPHON_TIMED_EVENT],
   bossFleeResolutions: [
     { monsterDefinitionId: 'nidhogg', fleeTurnsRequired: 5, sealedFlag: 'nidhogg_root_sealed' },
   ],
@@ -142,6 +146,12 @@ export const cotwManifest: GameContentManifest = {
       vaultId: 'floor5_rune_vault',
     },
   },
+  scriptedVaultPlacements: [
+    {
+      floor: 22,
+      vaultId: 'siphon_altar_vault',
+    },
+  ],
 };
 
 export const COTW_MANIFEST = cotwManifest;
@@ -151,6 +161,7 @@ export {
   COTW_BESTIARY,
   COTW_ITEMS,
   COTW_SPELLS,
+  COTW_BLOOD_SPELLS,
   COTW_TOWN,
   COTW_QUEST,
   COTW_ATLAS_THEME,

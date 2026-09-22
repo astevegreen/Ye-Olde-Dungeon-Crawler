@@ -219,6 +219,15 @@ export interface SerializedPlayer {
   hasDiscoveredRune?: boolean;
   runeCharges?: number;
   runeMaxCharges?: number;
+  energyModel?: SerializedEnergyModel;
+}
+
+export interface SerializedEnergyModel {
+  structuredEnergy: number;
+  maxStructuredEnergy: number;
+  volatileEnergy: number;
+  maxVolatileEnergy: number;
+  vitalityTenderBurned: number;
 }
 
 export interface SerializedMonster {

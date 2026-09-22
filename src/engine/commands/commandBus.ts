@@ -239,7 +239,7 @@ export class EngineCommandBus implements GameCommandBus {
         if (!merchant || itemIndex === undefined) {
           return { success: false, message: 'Invalid buy request' };
         }
-        const res = merchant.buyItem(this.engine.player, itemIndex);
+        const res = merchant.buyItem(this.engine.player, itemIndex, this.engine.worldState);
         this.engine.log(res.message);
         return { success: res.success, message: res.message };
       }

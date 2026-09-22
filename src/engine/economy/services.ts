@@ -47,15 +47,17 @@ export class TempleService {
 
     if (worldState) {
       const standing = worldState.factions['temple_standing'] ?? 0;
-      if (standing < 0) {
+      if (standing < 0 || player.corruptionScore >= 75) {
         return {
           success: false,
           costInCp: 0,
           message:
-            "The High Priest of Thor scowls with righteous fury: 'Desecrator of sacred altars! You have betrayed the gods and are unwelcome here!'",
+            "The High Priest of Thor scowls with righteous fury: 'Desecrator of sacred altars! You reek of unholy blood corruption and are unwelcome in Thor\\'s sacred hall!'",
         };
       }
-      if (standing >= 10) {
+      if (player.corruptionScore >= 25) {
+        costCp = costCp * 2;
+      } else if (standing >= 10) {
         costCp = Math.floor(costCp * 0.5);
       }
     }
@@ -145,15 +147,17 @@ export class TempleService {
 
     if (worldState) {
       const standing = worldState.factions['temple_standing'] ?? 0;
-      if (standing < 0) {
+      if (standing < 0 || player.corruptionScore >= 75) {
         return {
           success: false,
           costInCp: 0,
           message:
-            "The High Priest of Thor scowls with righteous fury: 'Desecrator of sacred altars! You have betrayed the gods and are unwelcome here!'",
+            "The High Priest of Thor scowls with righteous fury: 'Desecrator of sacred altars! You reek of unholy blood corruption and are unwelcome in Thor\\'s sacred hall!'",
         };
       }
-      if (standing >= 10) {
+      if (player.corruptionScore >= 25) {
+        costCp = costCp * 2;
+      } else if (standing >= 10) {
         costCp = Math.floor(costCp * 0.5);
       }
     }

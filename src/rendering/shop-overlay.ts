@@ -644,7 +644,7 @@ export class ShopOverlay {
       const item = items[i];
       const isSelected = i === selectedIdx;
       const rowY = listY + 4 + i * rowH;
-      const priceCp = this.activeTab === 'buy' ? getItemBuyPrice(item) : getItemSellPrice(item);
+      const priceCp = this.activeTab === 'buy' ? getItemBuyPrice(item, engine.worldState) : getItemSellPrice(item);
 
       // Row background
       ctx.fillStyle = isSelected ? theme.titlebarStart : i % 2 === 0 ? theme.modalBg : theme.cardBg;
@@ -710,7 +710,7 @@ export class ShopOverlay {
 
     const activeItem = items[selectedIdx];
     if (activeItem) {
-      const activePrice = this.activeTab === 'buy' ? getItemBuyPrice(activeItem) : getItemSellPrice(activeItem);
+      const activePrice = this.activeTab === 'buy' ? getItemBuyPrice(activeItem, engine.worldState) : getItemSellPrice(activeItem);
       ctx.font = `bold 11px ${font}`;
       ctx.fillStyle = activeItem.quality === 'cursed' ? '#ef4444' : activeItem.identified && activeItem.quality === 'enchanted' ? '#c084fc' : theme.hudAccent;
       ctx.textAlign = 'left';

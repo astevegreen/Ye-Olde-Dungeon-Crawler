@@ -156,5 +156,26 @@ export const COTW_VAULTS: VaultBlueprint[] = [
     ],
     preferredMonsters: ['primordial_drake', 'root_rot_abomination', 'void_gazer'],
   },
+  {
+    id: 'siphon_altar_vault',
+    name: 'The Siphon Altar of Járnviðr',
+    description:
+      'An obsidian ritual chamber where troll-wife warlocks prepare captive Bjarnarhaven villagers for blood sacrifice.',
+    minFloor: 21,
+    maxFloor: 23,
+    layout: [
+      '###############',
+      '#P...B...B...P#',
+      '#.H..B.M.B..H.#',
+      '@....#####....@',
+      '#.M....A....M.#',
+      '@....#####....@',
+      '#.H..B.M.B..H.#',
+      '#P...B...B...P#',
+      '###############',
+    ],
+    preferredMonsters: ['ironwood_troll_wife', 'sol_brand_zealot'],
+  },
 ];
+
 

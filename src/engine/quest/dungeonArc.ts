@@ -4,6 +4,7 @@ import { TILES, getTileDefinition } from '../grid/tile';
 import type { Position, GameDifficulty } from '../types';
 import { DungeonGeneratorRegistry } from '../dungeon/generator';
 import { Monster } from '../entities/monster';
+import { NPC } from '../entities/npc';
 
 import type { Player } from '../entities/player';
 import { QUEST_RELIC_ID, MAX_DUNGEON_FLOOR } from './types';
@@ -180,7 +181,7 @@ export class DungeonArc {
       forcedVaultId:
         manifest?.runeOfReturn?.acquisition?.floor === floorNumber
           ? manifest.runeOfReturn.acquisition.vaultId
-          : undefined,
+          : manifest?.scriptedVaultPlacements?.find((p) => p.floor === floorNumber)?.vaultId,
     });
 
     const map = dungeon.map;
@@ -263,6 +264,28 @@ export class DungeonArc {
       if (!chest || !chest.addItem(rune)) {
         map.addItemAt(chestPos.x, chestPos.y, rune);
       }
+    }
+
+    // 7. Guaranteed Scripted Vault Captive NPCs (e.g. Floor 22 Hostage Ritual)
+    if (dungeon.forcedVaultHostageSpawns?.length) {
+      const villagers = [
+        { id: 'captive_villager_1', name: 'Astrid of the Mill' },
+        { id: 'captive_villager_2', name: 'Torstein the Cooper' },
+        { id: 'captive_villager_3', name: 'Sigrid the Weaver' },
+        { id: 'captive_villager_4', name: 'Young Leif' },
+      ];
+      dungeon.forcedVaultHostageSpawns.forEach((pos, idx) => {
+        const v = villagers[idx % villagers.length];
+        const captive = new NPC({
+          id: v.id,
+          name: v.name,
+          role: 'villager',
+          position: { x: pos.x, y: pos.y },
+          greeting: 'Please! Cut my ropes before the warlocks complete the blood siphon!',
+          dialogText: 'Thank the gods! I have an emergency town recall ward! Run!',
+        });
+        map.addEntity(captive);
+      });
     }
 
     return {

@@ -9,6 +9,7 @@ import { SpellPipeline } from '../magic/spellPipeline';
 import { WandItem, ScrollItem, PotionItem } from '../items/consumables';
 import { flightRecorder } from '../debug/flightRecorder';
 import { findTaggedEntitiesInRadius } from '../combat/radialAuraFilter';
+import { traceProjectile } from '../magic/targeting';
 
 export class CastSpellAction implements Action {
   public readonly caster: Entity;
@@ -17,6 +18,7 @@ export class CastSpellAction implements Action {
   public readonly targetY: number;
   public readonly itemTargetId?: string;
   public readonly freeCast: boolean;
+  public readonly allowVitalityBurn: boolean;
 
   constructor(
     caster: Entity,
@@ -24,7 +26,8 @@ export class CastSpellAction implements Action {
     targetX: number,
     targetY: number,
     itemTargetId?: string,
-    freeCast = false
+    freeCast = false,
+    allowVitalityBurn = false
   ) {
     this.caster = caster;
     this.spellId = spellId;
@@ -32,6 +35,7 @@ export class CastSpellAction implements Action {
     this.targetY = targetY;
     this.itemTargetId = itemTargetId;
     this.freeCast = freeCast;
+    this.allowVitalityBurn = allowVitalityBurn;
   }
 
   public perform(engine: GameEngine): ActionResult {
@@ -42,6 +46,44 @@ export class CastSpellAction implements Action {
 
     const isPlayer = this.caster instanceof Player;
     const player = isPlayer ? (this.caster as Player) : null;
+
+    // Find targeted entity if applicable
+    let targetEntity = engine.map.getEntityAt(this.targetX, this.targetY);
+    if (!targetEntity && (spell.targetingMode === 'ray' || spell.targetType === 'ray')) {
+      const rayResult = traceProjectile(
+        engine.map,
+        this.caster.x,
+        this.caster.y,
+        this.targetX,
+        this.targetY,
+        spell.range,
+        spell.reflects,
+        this.caster.id
+      );
+      if (rayResult.hitEntityId) {
+        targetEntity = engine.map.getEntityById(rayResult.hitEntityId);
+      }
+    }
+
+    // Check near-death condition if required by spell (e.g. execution spells like Blood Reap)
+    if (spell.maxTargetHpPercent !== undefined) {
+      if (!targetEntity || !targetEntity.isAlive()) {
+        return {
+          success: false,
+          cost: 0,
+          message: `No living target found to reap!`,
+        };
+      }
+      const maxHp = (targetEntity as any).maxHp ?? 100;
+      const threshold = Math.max(10, Math.floor(maxHp * spell.maxTargetHpPercent));
+      if (targetEntity.hp > threshold) {
+        return {
+          success: false,
+          cost: 0,
+          message: `${targetEntity.name} is too healthy to reap! The victim must be near death (<= ${Math.round(spell.maxTargetHpPercent * 100)}% HP).`,
+        };
+      }
+    }
 
     let manaDiscount = 0;
     if (player?.inventory?.paperdoll) {
@@ -69,6 +111,69 @@ export class CastSpellAction implements Action {
       player.consumeMana(effectiveManaCost);
     }
 
+    // Check Volatile Energy / Vitality Tender cost for blood magic spells
+    let pendingCorruption = 0;
+    if (player && !this.freeCast) {
+      if (spell.volatileEnergyCost && spell.volatileEnergyCost > 0) {
+        const energyModel = player.energyModel ?? player.initEnergyModel();
+        if (energyModel.volatileEnergy < spell.volatileEnergyCost) {
+          const deficit = spell.volatileEnergyCost - energyModel.volatileEnergy;
+          const hpBurn = Math.max(2, Math.ceil(deficit / 5));
+          const canBurn = this.allowVitalityBurn || (player as any).autoBurnVitality;
+
+          if (canBurn) {
+            if (player.maxHp <= hpBurn) {
+              return {
+                success: false,
+                cost: 0,
+                message: `Cannot burn ${hpBurn} Max HP for emergency power: insufficient vitality remaining to survive!`,
+              };
+            }
+            energyModel.burnVitalityTender(player, hpBurn, 0);
+            energyModel.volatileEnergy = 0;
+            pendingCorruption += (spell.corruptionGain ?? spell.volatileEnergyCost) + hpBurn;
+            engine.log(
+              `🩸 Volatile Energy depleted! You burn ${hpBurn} permanent Max HP as emergency power to cast ${spell.name}! (Max HP: ${player.maxHp})`
+            );
+          } else {
+            return {
+              success: false,
+              cost: 0,
+              message: `Not enough Volatile Energy to cast ${spell.name}! (Requires ${spell.volatileEnergyCost}, have ${energyModel.volatileEnergy}). You can burn Vitality Tender for emergency power.`,
+            };
+          }
+        } else {
+          energyModel.volatileEnergy -= spell.volatileEnergyCost;
+          pendingCorruption += (spell.corruptionGain !== undefined ? spell.corruptionGain : spell.volatileEnergyCost);
+        }
+      }
+
+      if (spell.vitalityCost && spell.vitalityCost > 0) {
+        const energyModel = player.energyModel ?? player.initEnergyModel();
+        if (player.maxHp <= spell.vitalityCost) {
+          return {
+            success: false,
+            cost: 0,
+            message: `Cannot cast ${spell.name}: insufficient vitality to burn without perishing!`,
+          };
+        }
+        energyModel.burnVitalityTender(player, spell.vitalityCost, 0);
+        pendingCorruption += (spell.corruptionGain ?? spell.vitalityCost);
+        engine.log(`🩸 You burn ${spell.vitalityCost} permanent Max HP to fuel ${spell.name}! (Max HP: ${player.maxHp})`);
+      }
+
+      if (spell.volatileEnergyGain && spell.volatileEnergyGain > 0 && !spell.requiresKillForEnergy) {
+        const energyModel = player.energyModel ?? player.initEnergyModel();
+        energyModel.volatileEnergy = Math.min(
+          energyModel.maxVolatileEnergy,
+          energyModel.volatileEnergy + spell.volatileEnergyGain
+        );
+        if (spell.corruptionGain && (!spell.volatileEnergyCost || spell.volatileEnergyCost <= 0)) {
+          pendingCorruption += spell.corruptionGain;
+        }
+      }
+    }
+
     const actionCost = this.caster.getActionCost(100);
     this.caster.consumeEnergy(actionCost);
 
@@ -79,7 +184,7 @@ export class CastSpellAction implements Action {
       spell.element
     );
 
-    return SpellPipeline.executeSpell(
+    const result = SpellPipeline.executeSpell(
       engine,
       spell,
       this.caster,
@@ -87,6 +192,34 @@ export class CastSpellAction implements Action {
       this.itemTargetId,
       actionCost
     );
+
+    // If spell requires killing the target to harvest volatile energy (e.g. Blood Reap)
+    if (player && player.energyModel && spell.requiresKillForEnergy && spell.volatileEnergyGain) {
+      const isDead = targetEntity ? !targetEntity.isAlive() : false;
+      if (isDead && player.energyModel) {
+        player.energyModel.volatileEnergy = Math.min(
+          player.energyModel.maxVolatileEnergy,
+          player.energyModel.volatileEnergy + spell.volatileEnergyGain
+        );
+        if (spell.corruptionGain && (!spell.volatileEnergyCost || spell.volatileEnergyCost <= 0)) {
+          pendingCorruption += spell.corruptionGain;
+        }
+        engine.log(
+          `🩸 ${player.name} finishes off ${targetEntity?.name ?? 'the victim'} from close range, reaping their vital essence into +${spell.volatileEnergyGain} Volatile Energy (${player.energyModel.volatileEnergy}/${player.energyModel.maxVolatileEnergy})!`
+        );
+      } else if (targetEntity) {
+        engine.log(
+          `${targetEntity.name} clung to life! No volatile energy could be harvested.`
+        );
+      }
+    }
+
+    if (player && player.energyModel && pendingCorruption > 0) {
+      player.energyModel.addCorruption(player, pendingCorruption);
+      engine.log(`☠ Casting ${spell.name} surges with dark power (+${pendingCorruption} Corruption, Total: ${player.corruptionScore})!`);
+    }
+
+    return result;
   }
 }
 
@@ -264,6 +397,23 @@ export class DrinkPotionAction implements Action {
           }
           if (affected > 0) {
             messages.push(`afflicting ${affected} nearby ${effect.tags.join('/')} creature(s) with ${effect.status}`);
+          }
+          break;
+        }
+        case 'restore_volatile_energy': {
+          const userAny = this.user as any;
+          if (userAny.energyModel) {
+            const prev = userAny.energyModel.volatileEnergy;
+            if (effect.amount === 'full' || effect.amount === undefined) {
+              userAny.energyModel.volatileEnergy = userAny.energyModel.maxVolatileEnergy;
+            } else {
+              userAny.energyModel.volatileEnergy = Math.min(
+                userAny.energyModel.maxVolatileEnergy,
+                userAny.energyModel.volatileEnergy + effect.amount
+              );
+            }
+            const gained = userAny.energyModel.volatileEnergy - prev;
+            messages.push(`surging with volatile energy (+${gained}, meter full: ${userAny.energyModel.volatileEnergy}/${userAny.energyModel.maxVolatileEnergy})`);
           }
           break;
         }

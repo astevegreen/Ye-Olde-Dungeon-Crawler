@@ -1,8 +1,6 @@
 import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
-import { applyImpulse, type ImpulseResult } from './impulse';
-
-export type { ImpulseResult };
+import { applyImpulse } from './impulse';
 
 export interface KnockbackResult {
   pushed: boolean;

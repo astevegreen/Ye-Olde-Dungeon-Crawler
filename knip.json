@@ -1,0 +1,24 @@
+{
+  "$schema": "https://unpkg.com/knip@5/overview.json",
+  "entry": [
+    "src/engine/index.ts!",
+    "src/content/cotw/index.ts!",
+    "src/content/warcraft/index.ts!",
+    "scripts/*.ts!",
+    "src/**/__tests__/**/*.ts!"
+  ],
+  "project": [
+    "src/**/*.ts",
+    "scripts/**/*.ts"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "rules": {
+    "files": "error",
+    "dependencies": "error",
+    "unlisted": "error",
+    "unresolved": "error",
+    "duplicates": "off",
+    "exports": "warn",
+    "types": "warn"
+  }
+}

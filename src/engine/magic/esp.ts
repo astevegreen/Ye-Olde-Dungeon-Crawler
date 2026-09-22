@@ -98,14 +98,3 @@ export class ClairvoyanceAction implements Action {
   }
 }
 
-export function castDetectMonsters(engine: GameEngine, duration = 30): ActionResult {
-  return new DetectMonstersAction(engine.player, duration).perform(engine);
-}
-
-export function castDetectObjects(engine: GameEngine, duration = 30): ActionResult {
-  return new DetectObjectsAction(engine.player, duration).perform(engine);
-}
-
-export function castClairvoyance(engine: GameEngine): ActionResult {
-  return new ClairvoyanceAction(engine.player).perform(engine);
-}

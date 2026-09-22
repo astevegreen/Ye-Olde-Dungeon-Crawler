@@ -3,9 +3,23 @@
  * Headless-pure: uses pure math curves (Bézier, arc, sine wobble) on the provided canvas context.
  */
 
+/**
+ * Structural 2D path context contract for procedural canvas curve recipes.
+ * Avoids direct reference to browser Canvas context to maintain headless purity.
+ */
+export interface CanvasPathContext {
+  beginPath(): void;
+  moveTo(x: number, y: number): void;
+  lineTo(x: number, y: number): void;
+  quadraticCurveTo(cpx: number, cpy: number, x: number, y: number): void;
+  arc(x: number, y: number, radius: number, startAngle: number, endAngle: number, counterclockwise?: boolean): void;
+  closePath(): void;
+  fill(): void;
+}
+
 /** A tapered, gently curved limb/tail: wide at (x0,y0), narrowing to (x1,y1). */
 export function drawTaperedTail(
-  ctx: any,
+  ctx: CanvasPathContext,
   x0: number,
   y0: number,
   x1: number,
@@ -32,7 +46,7 @@ export function drawTaperedTail(
 
 /** An organic, slightly irregular blob silhouette (a body/torso mass) instead of a hard ellipse. */
 export function drawOrganicBlob(
-  ctx: any,
+  ctx: CanvasPathContext,
   cx: number,
   cy: number,
   rx: number,
@@ -69,7 +83,7 @@ export function drawOrganicBlob(
 
 /** A smoothly rounded limb (arm/leg/horn) between two joints, wider at the base. */
 export function drawRoundedLimb(
-  ctx: any,
+  ctx: CanvasPathContext,
   x0: number,
   y0: number,
   x1: number,

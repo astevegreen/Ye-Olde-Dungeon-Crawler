@@ -22,6 +22,15 @@ export function clearBaseAttributeProviders(): void {
   baseAttributeProviders.length = 0;
 }
 
+const DEFAULT_FALLBACK_ATTRIBUTE = 10;
+const DEFAULT_SPEED = 100;
+const DEFAULT_BASE_ACTION_COST = 100;
+const STATUS_SLOW_ACTION_COST_MULTIPLIER = 1.5;
+const STATUS_HASTE_ACTION_COST_MULTIPLIER = 0.75;
+const MIN_ACTION_COST = 10;
+const MIN_ELEMENTAL_RESISTANCE = -1.0;
+const MAX_ELEMENTAL_RESISTANCE = 1.0;
+
 export type AttributeKey =
   | 'maxHp'
   | 'attack'
@@ -118,22 +127,22 @@ export function calculateAttribute(
         value = anyActor.baseDefense ?? anyActor.baseDefenseValue ?? 0;
         break;
       case 'speed':
-        value = anyActor.speed ?? 100;
+        value = anyActor.speed ?? DEFAULT_SPEED;
         break;
       case 'strength':
-        value = anyActor.strength ?? 10;
+        value = anyActor.strength ?? DEFAULT_FALLBACK_ATTRIBUTE;
         break;
       case 'intelligence':
-        value = anyActor.intelligence ?? 10;
+        value = anyActor.intelligence ?? DEFAULT_FALLBACK_ATTRIBUTE;
         break;
       case 'constitution':
-        value = anyActor.constitution ?? 10;
+        value = anyActor.constitution ?? DEFAULT_FALLBACK_ATTRIBUTE;
         break;
       case 'dexterity':
-        value = anyActor.dexterity ?? 10;
+        value = anyActor.dexterity ?? DEFAULT_FALLBACK_ATTRIBUTE;
         break;
       case 'actionCost':
-        value = context?.baseCost ?? 100;
+        value = context?.baseCost ?? DEFAULT_BASE_ACTION_COST;
         break;
       case 'elementalResistance':
         value = 0;
@@ -182,10 +191,10 @@ export function calculateAttribute(
     }
     // Status effects
     if (actor.statusManager?.hasStatus('slow')) {
-      value = Math.floor(value * 1.5);
+      value = Math.floor(value * STATUS_SLOW_ACTION_COST_MULTIPLIER);
     }
     if (actor.statusManager?.hasStatus('haste')) {
-      value = Math.floor(value * 0.75);
+      value = Math.floor(value * STATUS_HASTE_ACTION_COST_MULTIPLIER);
     }
   }
 
@@ -219,10 +228,10 @@ export function calculateAttribute(
       value = Math.max(1, Math.round(value));
       break;
     case 'actionCost':
-      value = Math.max(10, Math.round(value));
+      value = Math.max(MIN_ACTION_COST, Math.round(value));
       break;
     case 'elementalResistance':
-      value = Math.max(-1.0, Math.min(1.0, value));
+      value = Math.max(MIN_ELEMENTAL_RESISTANCE, Math.min(MAX_ELEMENTAL_RESISTANCE, value));
       break;
   }
 

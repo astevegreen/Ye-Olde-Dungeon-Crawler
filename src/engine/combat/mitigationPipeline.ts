@@ -22,6 +22,11 @@ export interface MitigationResult {
   aspectModifier: AspectMitigationModifier;
 }
 
+const RADIANT_VS_CORRUPT_MULTIPLIER = 1.5;
+const RADIANT_VS_CORRUPT_FLAT_BONUS = 3;
+const CORRUPT_VS_RADIANT_MULTIPLIER = 1.5;
+const CORRUPT_VS_RADIANT_FLAT_BONUS = 2;
+
 /**
  * Applies a combat wear check to an item with a durability block.
  * When durability reaches 0, the item transitions to 'broken' quality,
@@ -79,8 +84,8 @@ export function calculateAspectModifier(
       defenderTags.includes('demon')
     ) {
       return {
-        multiplier: 1.5,
-        flatBonus: 3,
+        multiplier: RADIANT_VS_CORRUPT_MULTIPLIER,
+        flatBonus: RADIANT_VS_CORRUPT_FLAT_BONUS,
         message: 'Radiant energy blazes against unholy corruption! (+50% / +3 Holy)',
       };
     }
@@ -89,8 +94,8 @@ export function calculateAspectModifier(
   if (attackerAspect === 'aspect_corrupt') {
     if (defenderAspect === 'aspect_radiant' || defenderTags.includes('radiant')) {
       return {
-        multiplier: 1.5,
-        flatBonus: 2,
+        multiplier: CORRUPT_VS_RADIANT_MULTIPLIER,
+        flatBonus: CORRUPT_VS_RADIANT_FLAT_BONUS,
         message: 'Corrupt malice eats away at radiant warding! (+50% / +2 Corrupt)',
       };
     }

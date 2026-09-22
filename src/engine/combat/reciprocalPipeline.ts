@@ -34,6 +34,12 @@ export interface SomaticBackfireEffect {
   [key: string]: any;
 }
 
+const DEFAULT_RECIPROCAL_RECOIL_DISTANCE = 1;
+const DEFAULT_FORCED_LOCOMOTION_FAIL_CHANCE = 0.25;
+const DEFAULT_MUTUAL_BANISHMENT_DISTANCE = 2;
+const DEFAULT_SOMATIC_BACKFIRE_DIFFICULTY = 14;
+const DEFAULT_CASTER_DISCIPLINE_FALLBACK = 10;
+
 /**
  * Registers reciprocal primitives in EffectPrimitiveRegistry.
  */
@@ -58,7 +64,7 @@ export function registerReciprocalPrimitives(): void {
       const rawDy = target.y - caster.y;
       const recoilDx = rawDx !== 0 ? -Math.sign(rawDx) : 0;
       const recoilDy = rawDy !== 0 ? -Math.sign(rawDy) : 0;
-      const dist = effect.recoilDistance ?? 1;
+      const dist = effect.recoilDistance ?? DEFAULT_RECIPROCAL_RECOIL_DISTANCE;
 
       const recoilX = caster.x + recoilDx * dist;
       const recoilY = caster.y + recoilDy * dist;
@@ -78,7 +84,7 @@ export function registerReciprocalPrimitives(): void {
     (effect, ctx: EffectContext) => {
       const { engine, caster, targets } = ctx;
       const target = targets[0] ?? caster;
-      const failChance = effect.failureChance ?? 0.25;
+      const failChance = effect.failureChance ?? DEFAULT_FORCED_LOCOMOTION_FAIL_CHANCE;
 
       const roll = engine.rng();
       const isFailure = roll < failChance;
@@ -101,7 +107,7 @@ export function registerReciprocalPrimitives(): void {
       const target = targets[0];
       if (!target) return;
 
-      const dist = effect.distance ?? 2;
+      const dist = effect.distance ?? DEFAULT_MUTUAL_BANISHMENT_DISTANCE;
 
       // Displace outward away from each other
       const dx = target.x - caster.x;
@@ -141,8 +147,8 @@ export function registerReciprocalPrimitives(): void {
         (caster as any).intelligence ??
         (caster as any).attributes?.intelligence ??
         caster.strength ??
-        10;
-      const difficulty = effect.difficulty ?? 14;
+        DEFAULT_CASTER_DISCIPLINE_FALLBACK;
+      const difficulty = effect.difficulty ?? DEFAULT_SOMATIC_BACKFIRE_DIFFICULTY;
 
       if (casterDiscipline < difficulty) {
         const feedbackDuration = Math.max(1, Math.floor(effect.duration / 2));

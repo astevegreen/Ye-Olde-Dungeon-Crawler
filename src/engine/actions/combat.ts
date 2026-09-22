@@ -29,6 +29,9 @@ function getActorEquippedItems(actor: Entity): Item[] {
   return [];
 }
 
+const DEFAULT_MIN_DAMAGE = 1;
+const DEFAULT_CRIT_MULTIPLIER = 1.5;
+
 export class MeleeAttackAction implements Action {
   public readonly attacker: Entity;
   public readonly defender: Entity;
@@ -84,16 +87,16 @@ export class MeleeAttackAction implements Action {
 
     if (combatConfig?.calculateDamage) {
       const custom = combatConfig.calculateDamage(this.attacker, this.defender, engine);
-      rawDamage = Math.max(combatConfig.minDamage ?? 1, custom.damage);
+      rawDamage = Math.max(combatConfig.minDamage ?? DEFAULT_MIN_DAMAGE, custom.damage);
       isCrit = custom.isCrit ?? false;
     } else {
-      const minDmg = combatConfig?.minDamage ?? 1;
+      const minDmg = combatConfig?.minDamage ?? DEFAULT_MIN_DAMAGE;
       let base = Math.max(minDmg, this.attacker.attack + masteryBonus - this.defender.defense);
 
       // Critical strike calculation
       if (combatConfig?.critChance && engine.rng() < combatConfig.critChance) {
         isCrit = true;
-        const mult = combatConfig.critMultiplier ?? 1.5;
+        const mult = combatConfig.critMultiplier ?? DEFAULT_CRIT_MULTIPLIER;
         base = Math.max(minDmg, Math.round(base * mult));
       }
 

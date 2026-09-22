@@ -1,5 +1,6 @@
 import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
+import { Monster } from '../entities/monster';
 import type { Position } from '../types';
 import { DeathResolver } from './deathResolver';
 
@@ -9,6 +10,12 @@ const DEFAULT_IMPULSE_TRAP_TYPE = 'pit';
 const WALL_SPLAT_STATUS = 'stunned';
 /** Duration in turns for the wall splat stun. */
 const WALL_SPLAT_STUN_DURATION = 1;
+/** Threshold HP above which an entity is treated as a massive boss with chasm plunge immunity. */
+const BOSS_CHASM_IMMUNITY_HP_THRESHOLD = 200;
+/** Minimum crushing fall damage dealt to a boss surviving a chasm plunge. */
+const BOSS_CHASM_FALL_MIN_DAMAGE = 50;
+/** Proportional fraction of max HP dealt to a boss surviving a chasm plunge. */
+const BOSS_CHASM_FALL_HP_FRACTION = 0.5;
 
 export interface ImpulseResult {
   pushed: boolean;
@@ -94,10 +101,12 @@ export function applyImpulse(
     // 1. Chasm Check: Fatal plunge (or heavy damage for massive bosses)
     if (nextTile.type === 'chasm') {
       const bossId = engine.manifest?.quest?.bossMonsterId;
-      const isBoss = (bossId && (target as any).definitionId === bossId) || target.maxHp >= 200;
+      const isBoss =
+        (bossId && target instanceof Monster && target.definitionId === bossId) ||
+        target.maxHp >= BOSS_CHASM_IMMUNITY_HP_THRESHOLD;
 
       if (isBoss) {
-        const fallDmg = Math.max(50, Math.floor(target.maxHp * 0.5));
+        const fallDmg = Math.max(BOSS_CHASM_FALL_MIN_DAMAGE, Math.floor(target.maxHp * BOSS_CHASM_FALL_HP_FRACTION));
         const { damageDealt, killed } = target.takeDamage(fallDmg);
         engine.log(`*** ${target.name} resists the abyss but suffers ${damageDealt} crushing fall damage clinging to the chasm ledge! ***`);
         if (killed) {

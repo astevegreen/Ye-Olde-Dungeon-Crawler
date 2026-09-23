@@ -1,0 +1,30 @@
+#!/bin/sh
+# Pre-push gate (ARCHITECTURE.md §7.2).
+#
+# Commits land directly on main, and CI's full gate run (.github/workflows/)
+# happens only after a push, so the gates that pre-commit skips for speed run
+# here, before anything reaches origin: the headless sim, schema validation,
+# both bundles, and the Playwright smoke suite against the built bundle.
+# (~20 s; pre-commit has already run lint and the unit tests.)
+#
+# Set SKIP_HOOKS=1 to bypass deliberately, as with the other hooks.
+set -e
+
+if [ "$SKIP_HOOKS" = "1" ]; then
+  echo "pre-push: skipped (SKIP_HOOKS=1)"
+  exit 0
+fi
+
+echo "pre-push: npm run sim"
+npm run sim
+
+echo "pre-push: npm run validate:schema"
+npm run validate:schema
+
+echo "pre-push: npm run build:all"
+npm run build:all
+
+echo "pre-push: npx playwright test"
+npx playwright test
+
+echo "pre-push: passed"

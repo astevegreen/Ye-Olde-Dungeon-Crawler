@@ -2,9 +2,9 @@
 # Pre-commit gate (ARCHITECTURE.md §7.2).
 #
 # Runs the fast gates only: `npm run lint` (tsc, engine purity, engine
-# encapsulation, knip) and `npm test`. The slower gates — `npm run sim`,
-# `npm run validate:schema`, `npm run build:all` — run in CI on every
-# pull request (.github/workflows/ci.yml) instead of on every commit.
+# encapsulation, engine creep, knip) and `npm test`. The slower gates —
+# `npm run sim`, `npm run validate:schema`, `npm run build:all`, and the
+# Playwright smoke suite — run in .githooks/pre-push and in CI.
 #
 # Git is pointed at this directory by the `prepare` npm script
 # (`git config core.hooksPath .githooks`), so `npm install` wires it up.

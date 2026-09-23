@@ -154,7 +154,7 @@ Build tooling per §2's Language & Build Target. `assetsInlineLimit` inlines all
 ### 7.2 Automated Quality Gates
 *Details: [quality-gates.md](docs/architecture/quality-gates.md).*
 
-**Requirement:** every change must pass the gates below before merging; run them locally and report real output — "should pass" is not "does pass."
+**Requirement:** every change must pass the gates below before merging; run them locally and report real output — "should pass" is not "does pass." Work is committed directly to `main`, so the git hooks are the pre-merge gate: `pre-commit` runs lint and tests, `pre-push` runs the sim, schema validation, both builds, and the Playwright smoke suite; CI repeats them after the push.
 
 **Gate commands:**
 - `npm run lint` — `tsc --noEmit`, `check:engine-purity`, `check:engine-encapsulation`, `check:engine-creep`, `knip` (dead files, exports, and dependencies; don't invoke the sub-checks separately).

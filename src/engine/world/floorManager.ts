@@ -162,38 +162,49 @@ export class FloorManager {
       for (let i = 0; i < spawnsToPerform && candidateTiles.length > 0; i++) {
         const tileIdx = Math.floor(rng() * candidateTiles.length);
         const tile = candidateTiles.splice(tileIdx, 1)[0];
-
-        // Choose monster definition
-        const def = monsterCatalog.length > 0
-          ? monsterCatalog[Math.floor(rng() * monsterCatalog.length)]
-          : undefined;
-
         const mId = `catchup-m-${floorNumber}-${currentTick}-${i}`;
-        const mName = def?.name ?? 'Dungeon Stalker';
-        const baseHp = def?.stats?.hp ?? (15 + floorNumber * 4);
-        const baseAtk = def?.stats?.attack ?? (3 + floorNumber * 2);
-        const baseDef = def?.stats?.defense ?? Math.floor(floorNumber / 2);
 
-        const scaledHp = Math.round(baseHp * multiplier);
-        const scaledAtk = Math.round(baseAtk * multiplier);
-        const scaledDef = Math.round(baseDef * multiplier);
+        // Same depth-gated draw as the cleared-floor respawn and initial population:
+        // a uniform draw from the whole catalog put floor-25 bosses on floor 2.
+        if (monsterCatalog.length > 0) {
+          const def = selectDungeonMonsterDefinition(monsterCatalog, floorNumber, rng);
+          if (!def) continue;
+          const monster = createScaledMonster(
+            def,
+            mId,
+            tile,
+            floorNumber,
+            engine.gameState?.deepestFloor,
+            engine.player?.level,
+            engine.manifest?.monsterScaling,
+            engine.player?.difficulty,
+            engine.registries
+          );
+          monster.maxHp = Math.round(monster.maxHp * multiplier);
+          monster.hp = monster.maxHp;
+          monster.attack = Math.round(monster.attack * multiplier);
+          map.addEntity(monster);
+          spawnedCount++;
+          continue;
+        }
 
+        // No catalog (bare test engines): a generic depth-scaled stalker.
+        const scaledHp = Math.round((15 + floorNumber * 4) * multiplier);
         const newMonster = new Monster({
           id: mId,
-          name: mName,
+          name: 'Dungeon Stalker',
           position: tile,
-          definitionId: def?.id ?? 'catchup_monster',
+          definitionId: 'catchup_monster',
           stats: {
             hp: scaledHp,
             maxHp: scaledHp,
-            attack: scaledAtk,
-            defense: scaledDef,
+            attack: Math.round((3 + floorNumber * 2) * multiplier),
+            defense: Math.round(Math.floor(floorNumber / 2) * multiplier),
           },
-          speed: def?.speed ?? 100,
-          aiType: def?.aiType ?? 'melee',
+          speed: 100,
+          aiType: 'melee',
           aiState: 'sleeping',
-          xpValue: Math.round((def?.xpValue ?? 15) * multiplier),
-          lootTable: def?.lootTable,
+          xpValue: Math.round(15 * multiplier),
         });
 
         map.addEntity(newMonster);

@@ -5,6 +5,8 @@ import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { Monster } from '../../entities/monster';
+import type { MonsterDefinition } from '../../bestiary/monsterDefinitions';
+import type { GameContentManifest } from '../../types/manifest';
 
 describe('Inactive Floor Simulation & Temporal Catch-Up (floorManager.ts)', () => {
   let floorManager: FloorManager;
@@ -135,6 +137,43 @@ describe('Inactive Floor Simulation & Temporal Catch-Up (floorManager.ts)', () =
       expect(result.spawnedCount).toBe(2);
       const totalMonsters = mapFloor1.getAllEntities().filter((e) => e instanceof Monster);
       expect(totalMonsters.length).toBe(12);
+    });
+  });
+
+  describe('Catch-up spawns respect floor depth', () => {
+    it('never draws a boss or a deeper-floor monster onto a shallow floor', () => {
+      const def = (id: string, minFloor: number): MonsterDefinition => ({
+        id,
+        name: id,
+        minFloor,
+        stats: { hp: 10, maxHp: 10, attack: 2, defense: 0 },
+        speed: 100,
+        aiType: 'melee',
+        fleeHealthPercent: 0,
+        xpValue: 5,
+        lootTable: [],
+      });
+      const catalog = [def('rat', 1), def('deep_troll', 18), def('boss_giant', 25)];
+      const depthEngine = new GameEngine({
+        map: mapFloor1,
+        player,
+        floor: 2,
+        floorManager,
+        manifest: { id: 'depth-test', name: 'depth-test', monsters: catalog } as GameContentManifest,
+      });
+
+      for (let visit = 0; visit < 10; visit++) {
+        floorManager.recordDeparture(2, mapFloor1, undefined, visit * 1000);
+        floorManager.simulateCatchUp(2, visit * 1000 + 400, depthEngine);
+        for (const e of mapFloor1.getAllEntities()) if (e instanceof Monster) mapFloor1.removeEntity(e);
+      }
+
+      const spawnedIds = new Set<string>();
+      floorManager.recordDeparture(2, mapFloor1, undefined, 20000);
+      floorManager.simulateCatchUp(2, 20400, depthEngine);
+      for (const e of mapFloor1.getAllEntities()) if (e instanceof Monster) spawnedIds.add(e.definitionId);
+      expect(spawnedIds.size).toBeGreaterThan(0);
+      expect([...spawnedIds]).toEqual(['rat']);
     });
   });
 

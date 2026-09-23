@@ -170,7 +170,7 @@ window.addEventListener('DOMContentLoaded', () => {
       openRuneTree();
     },
   });
-  const autosaveManager = new AutosaveManager(undefined, activeManifest);
+  const autosaveManager = new AutosaveManager(getBrowserStorage() ?? undefined, activeManifest);
 
   let characterMenuModal: CharacterMenuModal;
   const characterTab = new CharacterTab();
@@ -1417,28 +1417,12 @@ window.addEventListener('DOMContentLoaded', () => {
       mainMenu.hide();
       saveSlotModal.open();
     },
-    onContinue: (profileId?: string) => {
+    onContinue: (target) => {
       try {
-        if (profileId) {
-          const loaded = loadProfileOrNotify(profileId);
-          if (loaded) {
-            launchGame(loaded.engine, loaded.profile);
-            return;
-          }
-        }
-        const autosave = loadAutosaveOrNotify();
-        if (autosave) {
-          launchGame(autosave.engine, autosave.profile);
+        const loaded = target.kind === 'autosave' ? loadAutosaveOrNotify() : loadProfileOrNotify(target.profileId);
+        if (loaded) {
+          launchGame(loaded.engine, loaded.profile);
           return;
-        }
-        const profiles = profileManager.listProfiles();
-        if (profiles.length > 0) {
-          const latestProfile = [...profiles].sort((a, b) => b.lastSaved - a.lastSaved)[0];
-          const loaded = loadProfileOrNotify(latestProfile.id);
-          if (loaded) {
-            launchGame(loaded.engine, loaded.profile);
-            return;
-          }
         }
       } catch (err) {
         showToast(`Error resuming save: ${(err as Error).message}`, 'error');

@@ -145,6 +145,7 @@ export * from './storage/migrator';
 export * from './storage/compaction';
 export * from './storage/profile-manager';
 export * from './storage/autosaveManager';
+export * from './storage/continueTarget';
 export * from './storage/loadResult';
 export * from './storage/asyncStore';
 export * from './storage/bulkArchive';

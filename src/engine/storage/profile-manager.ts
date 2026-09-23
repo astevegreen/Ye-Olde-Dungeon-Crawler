@@ -367,8 +367,19 @@ export class ProfileManager {
     this.writeSave(serializeGame(engine, profile), engine, profile);
   }
 
-  /** Writes an already-serialized payload and updates the roster. */
+  /**
+   * Writes an already-serialized payload and updates the roster. A dead player's state
+   * is never written: the slot keeps the last living save, so death is recorded on the
+   * roster but can't be resumed (ARCHITECTURE.md §5).
+   */
   private writeSave(saveData: SaveData, engine: GameEngine, profile: CharacterProfile): void {
+    if (engine.player.isAlive()) {
+      this.writePayload(saveData, engine, profile);
+    }
+    this.updateRoster(engine, profile);
+  }
+
+  private writePayload(saveData: SaveData, engine: GameEngine, profile: CharacterProfile): void {
     const envelope: VersionedSaveEnvelope<SaveData> = {
       schemaVersion: CURRENT_SCHEMA_VERSION,
       contentManifestId: engine.manifest?.id ?? this.manifestId,
@@ -393,8 +404,9 @@ export class ProfileManager {
       }
       throw e;
     }
+  }
 
-    // Update roster manifest
+  private updateRoster(engine: GameEngine, profile: CharacterProfile): void {
     const manifest = this.getManifest();
     const existingIdx = manifest.profiles.findIndex((p) => p.id === profile.id);
     const updatedProfile: CharacterProfile = {
@@ -403,6 +415,7 @@ export class ProfileManager {
       attributes: engine.player.attributes,
       questStatus: profile.questStatus ?? 'active',
       level: engine.player.level,
+      floor: engine.currentFloor,
       xp: engine.player.xp,
       xpToNextLevel: engine.player.xpToNextLevel,
       hp: engine.player.hp,

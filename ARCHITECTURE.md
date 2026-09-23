@@ -131,6 +131,7 @@
 - **Forward-Only Schema Migrations (`migrator.ts`, §8.1 protected):** `CURRENT_SCHEMA_VERSION` there is authoritative. Every breaking save-format change increments it and adds exactly one forward-only `N -> N+1` step; existing steps are rewritten only as a confirmed bug fix (§8.1).
 - **Version floor:** the current version is also the oldest readable one — a save below it is refused (`migration-failed`), never silently mis-decoded.
 - **Load Failure Handling:** a failed load never yields a partially-loaded engine and never overwrites the stored payload — `load*Result()` methods return a typed `LoadOutcome`, not a throw.
+- **Death Is Final for the Dead State:** a dead player's state is never written as a loadable save — character slot or autosave. Death updates only the roster record (`questStatus: 'fallen'`); earlier saves stay loadable through Load Saved Game, but Continue never resumes a fallen run (`resolveContinueTarget`).
 
 ---
 

@@ -1,12 +1,12 @@
-import type { ProfileManager } from '../../engine';
-import type { AutosaveManager } from '../../engine';
+import { resolveContinueTarget } from '../../engine';
+import type { AutosaveManager, ContinueTarget, ProfileManager } from '../../engine';
 import { formatStorageStatus, getStoragePersistenceInfo } from '../persistenceInit';
 
 export interface MainMenuOptions {
   profileManager: ProfileManager;
   autosaveManager?: AutosaveManager;
   onNewGame: () => void;
-  onContinue: (profileId?: string) => void;
+  onContinue: (target: ContinueTarget) => void;
   onLoadGame: () => void;
   onOpenSettings: () => void;
   onOpenHelp: () => void;
@@ -49,29 +49,16 @@ export class MainMenu {
   public refreshSaveStatus(): void {
     if (!this.continueBtn) return;
 
-    const autosaveMeta = this.options.autosaveManager?.getAutosaveMetadata();
-    const profiles = this.options.profileManager.listProfiles();
-
-    if (autosaveMeta) {
-      this.continueBtn.disabled = false;
-      this.continueBtn.textContent = `⚡ Continue (${autosaveMeta.profileName} - F${autosaveMeta.floor})`;
-      if (this.saveSummaryEl) {
-        this.saveSummaryEl.textContent = `Active autosave: ${autosaveMeta.profileName} at Depth ${autosaveMeta.floor}.`;
-      }
-    } else if (profiles.length > 0) {
-      // Pick most recently saved profile
-      const latestProfile = [...profiles].sort((a, b) => b.lastSaved - a.lastSaved)[0];
-      this.continueBtn.disabled = false;
-      this.continueBtn.textContent = `⚡ Continue (${latestProfile.name} - F${latestProfile.floor})`;
-      if (this.saveSummaryEl) {
-        this.saveSummaryEl.textContent = `Saved hero: ${latestProfile.name} (Level ${latestProfile.level}, Floor ${latestProfile.floor}).`;
-      }
+    const target = resolveContinueTarget(this.options.profileManager, this.options.autosaveManager);
+    this.continueBtn.disabled = !target;
+    this.continueBtn.textContent = target ? `⚡ Continue (${target.profileName} - F${target.floor})` : '⚡ Continue';
+    if (!this.saveSummaryEl) return;
+    if (target) {
+      this.saveSummaryEl.textContent = `${target.kind === 'autosave' ? 'Active autosave' : 'Saved hero'}: ${target.profileName} at Depth ${target.floor}.`;
+    } else if (this.options.profileManager.listProfiles().length > 0) {
+      this.saveSummaryEl.textContent = 'Your last hero has fallen. Load a saved game or roll a new hero.';
     } else {
-      this.continueBtn.disabled = true;
-      this.continueBtn.textContent = '⚡ Continue';
-      if (this.saveSummaryEl) {
-        this.saveSummaryEl.textContent = 'No saved adventurers found. Roll a new hero to begin!';
-      }
+      this.saveSummaryEl.textContent = 'No saved adventurers found. Roll a new hero to begin!';
     }
   }
 
@@ -168,8 +155,10 @@ export class MainMenu {
 
     // Button event listeners
     this.continueBtn?.addEventListener('click', () => {
+      const target = resolveContinueTarget(this.options.profileManager, this.options.autosaveManager);
+      if (!target) return;
       this.hide();
-      this.options.onContinue();
+      this.options.onContinue(target);
     });
 
     this.loadBtn?.addEventListener('click', () => {

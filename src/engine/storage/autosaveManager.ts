@@ -41,6 +41,8 @@ export class AutosaveManager {
    * Traps quota and serialization errors gracefully without throwing.
    */
   public autosave(engine: GameEngine, profile: CharacterProfile): boolean {
+    // A dead player's state is never saved; the last living autosave stays (ARCHITECTURE.md §5).
+    if (!engine.player.isAlive()) return false;
     try {
       const saveData = serializeGame(engine, profile);
       const envelope: AutosaveEnvelope = {
@@ -83,13 +85,14 @@ export class AutosaveManager {
   /**
    * Retrieves summary metadata for the current autosave without full deserialization.
    */
-  public getAutosaveMetadata(): { timestamp: number; profileName: string; floor: number } | null {
+  public getAutosaveMetadata(): { timestamp: number; profileId?: string; profileName: string; floor: number } | null {
     try {
       const raw = this.storage.getItem(this.autosaveKey);
       if (!raw) return null;
       const env = JSON.parse(raw) as AutosaveEnvelope;
       return {
         timestamp: env.timestamp,
+        profileId: env.profile?.id,
         profileName: env.profile?.name ?? 'Hero',
         floor: env.profile?.floor ?? env.data?.currentFloor ?? 1,
       };

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { InputHandler } from '../input-handler';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../engine';
@@ -24,8 +24,8 @@ describe('InputHandler Keybind Remapping & Movement Modes', () => {
   let storage: MemoryStorage;
   let settingsManager: SettingsManager;
   let inputHandler: InputHandler;
-  let onActionProcessed: ReturnType<typeof vi.fn>;
-  let onSaveAndExit: ReturnType<typeof vi.fn>;
+  let onActionProcessed: Mock<() => void>;
+  let onSaveAndExit: Mock<() => void>;
 
   beforeEach(() => {
     vi.useFakeTimers();

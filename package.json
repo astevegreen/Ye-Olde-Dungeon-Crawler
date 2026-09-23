@@ -35,5 +35,8 @@
     "vite": "^6.4.0",
     "vite-plugin-singlefile": "^2.1.0",
     "vitest": "^5.0.1"
+  },
+  "allowScripts": {
+    "esbuild": false
   }
 }

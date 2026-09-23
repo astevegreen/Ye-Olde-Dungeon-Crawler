@@ -1,6 +1,7 @@
 import type { GameState } from '../flanks/types';
 import type { MenuTab } from './menuTab';
-import type { AttributeMilestoneTrigger, ChoiceDefinition } from '../../engine';
+import type { AttributeMilestoneTrigger, ChoiceDefinition, Player } from '../../engine';
+import { formatCurrency, getMaxCarryWeight, getPlayerTotalCp } from '../../engine';
 
 export type AttributeKey = 'strength' | 'dexterity' | 'constitution' | 'intelligence';
 
@@ -20,7 +21,7 @@ const ATTRIBUTES: AttributeMeta[] = [
     hotkeyNum: '1',
     hotkeyLetter: 'S',
     description: 'Increases melee physical damage and inventory carry capacity.',
-    derivedPreview: (val) => `Carry: ${val * 10} lbs | Melee Atk: +${Math.floor(val / 2)}`,
+    derivedPreview: (val) => `Carry capacity: ${(getMaxCarryWeight(val) / 1000).toFixed(1)} kg`,
   },
   {
     key: 'dexterity',
@@ -47,6 +48,63 @@ const ATTRIBUTES: AttributeMeta[] = [
     derivedPreview: (val) => `Mana Bonus: +${val * 2} MP | Spell Amp: +${Math.floor(val / 2)}%`,
   },
 ];
+
+/** Base value plus what gear/pacts add on top, e.g. "14 (8 base +6)". */
+function withBreakdown(total: number, base: number): string {
+  const bonus = total - base;
+  if (bonus === 0) return `${total}`;
+  return `${total} <span style="color: #94a3b8; font-size: 11px;">(${base} base ${bonus > 0 ? '+' : ''}${bonus})</span>`;
+}
+
+function renderVitals(player: Player, floor: number, turn: number): string {
+  const carriedKg = player.inventory.totalWeight() / 1000;
+  const capacityKg = getMaxCarryWeight(player.strength) / 1000;
+  const actionCost = player.getActionCost(100);
+  const resistances = Object.entries(player.elementalResistances)
+    .filter(([, affinity]) => affinity && affinity !== 'neutral')
+    .map(([element, affinity]) => `${element} ${affinity}`)
+    .join(', ');
+  const statuses = player.statusManager
+    .getAll()
+    .map((eff) => (eff.duration >= 9999 ? eff.type : `${eff.type} (${eff.duration}t)`))
+    .join(', ');
+
+  const rows: Array<[string, string]> = [
+    ['Attack', withBreakdown(player.attack, player.baseAttackValue)],
+    ['Defense', withBreakdown(player.defense, player.baseDefenseValue)],
+    ['Hit Points', `${player.hp} / ${player.maxHp}`],
+    ['Mana', `${player.mana} / ${player.maxMana}`],
+    ['Experience', `${player.xp} / ${player.xpToNextLevel} to Level ${player.level + 1}`],
+    ['Action cost', `${actionCost} energy per action${actionCost === 100 ? ' (normal)' : actionCost > 100 ? ' (slowed)' : ' (hastened)'}`],
+    ['Load', `${carriedKg.toFixed(1)} / ${capacityKg.toFixed(1)} kg — ${player.inventory.getEncumbrance(player.strength)}`],
+    ['Purse', formatCurrency(getPlayerTotalCp(player))],
+    ['Resistances', resistances || 'None'],
+    ['Conditions', statuses || 'None'],
+    ['Depth', `${floor === 0 ? 'Town' : `Floor ${floor}`} · Turn ${turn} · ${(player.difficulty ?? 'medium').toUpperCase()}`],
+  ];
+
+  return `
+    <div class="character-vitals" style="
+      display: grid;
+      grid-template-columns: max-content 1fr;
+      gap: 3px 14px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid #475569;
+      border-radius: 4px;
+      font-size: 12px;
+    ">
+      <h3 style="grid-column: 1 / -1; font-size: 13px; color: #facc15; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.05em;">⚔️ Combat &amp; Vitals</h3>
+      ${rows
+        .map(
+          ([label, value]) =>
+            `<span style="color: #94a3b8;">${label}</span><span style="color: #f8fafc; font-weight: bold;">${value}</span>`
+        )
+        .join('')}
+    </div>
+  `;
+}
 
 export class CharacterTab implements MenuTab {
   public readonly id = 'character';
@@ -279,6 +337,8 @@ export class CharacterTab implements MenuTab {
             ${unspent > 0 ? `⭐ ${unspent} Point(s) Available` : '0 Points Available'}
           </div>
         </div>
+
+        ${renderVitals(player, this.state.currentFloor, this.state.turnCount)}
 
         <div class="character-attributes-section">
           ${rowsHtml}

@@ -1,0 +1,36 @@
+#!/bin/sh
+# Commit-message gate (ARCHITECTURE.md §8.1, §8.4).
+#
+# 1. A commit that stages a §8.1 protected file must name its exception in the
+#    message, e.g. "§8.1 exception 1". The pre-commit gates check what the code
+#    does; this makes every protected-file edit a stated, reviewable decision.
+# 2. A commit should name the tool that wrote it (§8.4): Claude Code's
+#    "Co-Authored-By: Claude" trailer, or an "Agent: <name>" trailer. Missing
+#    attribution only warns, so the owner's own commits are never blocked.
+#
+# Set SKIP_HOOKS=1 to bypass deliberately, as with pre-commit.
+set -e
+
+if [ "$SKIP_HOOKS" = "1" ]; then
+  exit 0
+fi
+
+MSG_FILE="$1"
+# Ignore git's comment lines when reading the message.
+MSG=$(grep -v '^#' "$MSG_FILE" || true)
+
+PROTECTED='^src/engine/actions/actionPipeline\.ts$|^src/engine/engine\.ts$|^src/engine/storage/migrator\.ts$'
+STAGED_PROTECTED=$(git diff --cached --name-only | grep -E "$PROTECTED" || true)
+
+if [ -n "$STAGED_PROTECTED" ]; then
+  if ! printf '%s\n' "$MSG" | grep -Eq '§8\.1 exception [1-4]'; then
+    echo "commit-msg: this commit changes a §8.1 protected file:" >&2
+    printf '  %s\n' $STAGED_PROTECTED >&2
+    echo "State the exception in the message, e.g. \"§8.1 exception 1\" (ARCHITECTURE.md §8.1)." >&2
+    exit 1
+  fi
+fi
+
+if ! printf '%s\n' "$MSG" | grep -Eq '^(Co-Authored-By: Claude|Agent: )'; then
+  echo "commit-msg: warning: no attribution trailer (\"Co-Authored-By: Claude\" or \"Agent: <name>\"), see ARCHITECTURE.md §8.4." >&2
+fi

@@ -49,21 +49,28 @@ known gap: confirm only that the gap still exists as §9 describes it.
    partitioning) and `docs/decisions/0004-*` (HUD overhaul) still read
    as closed retrospectives, not active guidance.
 §7 Build Configuration & Automated Quality Gates — actually run
-   npm run lint (tsc, check:engine-purity, check:engine-encapsulation, knip),
+   npm run lint (tsc, check:engine-purity, check:engine-encapsulation,
+   check:engine-creep, knip),
    npm test, npm run sim, npm run validate:schema, and npm run build,
    and paste the real output, not a description of expected output.
    Also compare .github/workflows/ against the §7.2 stub and
    `docs/architecture/quality-gates.md`. Verify the widened `src/main/`
    scope: both check scripts must treat `src/main/**` as presentation
    scope while keeping content-pack import privilege on `src/main.ts`
-   alone.
+   alone. Confirm every `scripts/engine-creep-allowlist.json` entry's
+   reason still holds, and that the `.githooks/commit-msg` protected-file
+   list matches §8.1.
 §8–§9 Change Control & Planned Work Register — confirm every
    [Planned: P-NN] tag has a §9 entry and vice versa, and that each
    entry's "Current:" line still describes the code. Confirm §8.2 is
    actually being honored: no binding statement should exist only in
    a `docs/architecture/**` sub-doc, and any design built-and-rejected
    since the last audit should have landed as a new ADR under
-   `docs/decisions/**` rather than only in a commit message.
+   `docs/decisions/**` rather than only in a commit message. Confirm
+   every protected-file commit since the last audit names its §8.1
+   exception, and every exception-4 change has its ADR. For §8.4, check
+   commits in `verified..HEAD`: each carries an attribution trailer, and
+   none with `Agent: Antigravity` touches engine production source.
 
 Cross-check the agent configuration specifically: read CLAUDE.md,
 .antigravity/rules.md, and every file under .antigravity/skills/ and

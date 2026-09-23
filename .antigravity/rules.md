@@ -17,13 +17,19 @@
 - **No engine creep (§3):** campaign-specific mechanics, items, monsters, quests, and narrative belong in `src/content/`. Change `src/engine/` only to add a generic, reusable capability (primitive, hook point, registry, or manifest field) that content then uses.
 - **Determinism (§7.2):** simulation randomness comes from `engine.prng` (`engine.rng` is its bound delegate). Never use `Math.random()` or `Date.now()` for simulation outcomes or IDs.
 - **Save format (§5):** any breaking save-format change increments `CURRENT_SCHEMA_VERSION` and adds exactly one forward-only step in `migrator.ts`.
-- **Protected files (§8.1):** modify `src/engine/actions/actionPipeline.ts`, `src/engine/engine.ts`, and `src/engine/storage/migrator.ts` only for (1) a confirmed bug fix, (2) an additive migration step, or (3) an explicitly requested planned item. State which exception applies.
+- **Protected files (§8.1):** `src/engine/actions/actionPipeline.ts`, `src/engine/engine.ts`, and `src/engine/storage/migrator.ts` change only under a §8.1 exception, named in the commit message as `§8.1 exception N`. Exception 4 (owner-authorized) applies only when the owner's own words in the task authorize that specific change.
 - **Documentation sync (§8.2):** if a change makes `ARCHITECTURE.md` or a `docs/architecture/**` sub-doc inaccurate, or completes a planned item, update that document in the same change.
 - **Encapsulation (§7.2):** code outside `src/engine/` (presentation and content alike) never writes engine object fields directly — no assignment, index write, write through an `as any` cast, or `Object.assign` onto an engine object. Presentation code (`src/ui/`, `src/rendering/`, `src/main.ts`, `src/main/**`) additionally changes engine state only through `GameEngine`, `Player`, and `Entity` methods or `engine.commandBus` — never by calling mutators on internal subsystems (`GameMap`, `Container`, `InventoryManager`, …) or Array/Map/Set mutators on engine members. That subsystem-mutator restriction does not apply to `src/content/` (§7.2). `check:engine-encapsulation` enforces all of this; add to its allowlist only with a stated reason.
 
+## Workflow (§8.4)
+- End every commit message with the trailer `Agent: Antigravity`.
+- Commit changes to `src/content/`, `src/ui/`, `src/rendering/`, tests, and docs yourself.
+- Leave any change to engine production source (`src/engine/` outside tests) uncommitted, and tell the owner it needs Claude Code review. This includes a new generic engine capability that content work needs.
+- Describe the change in the commit subject: a feature is titled as a feature, a refactor as a refactor.
+
 ## Verification Gates (§7.2)
 Before reporting a change complete, run these and report the real output:
-- `npm run lint` (type-check, `check:engine-purity`, `check:engine-encapsulation`, and `knip` dead-code analysis)
+- `npm run lint` (type-check, `check:engine-purity`, `check:engine-encapsulation`, `check:engine-creep`, and `knip` dead-code analysis)
 - `npm test`
 - `npm run sim`
 - `npm run validate:schema`

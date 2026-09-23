@@ -1,7 +1,7 @@
 # ADR-0002: Deletion of the v0→v11 Save Migration Chain
 
 **Date:** 2026-09-20
-**Status:** Accepted (pre-launch, owner-authorized exception to §8.1)
+**Status:** Accepted (pre-launch; §8.1 exception 4, owner-authorized — see [ADR-0005](0005-owner-authorized-exception-and-agent-workflow.md))
 **Related:** [docs/architecture/storage-and-schema.md](../architecture/storage-and-schema.md) — Forward-Only Schema Migrations; `ARCHITECTURE.md` §5, §8.1
 
 ## Context
@@ -14,5 +14,5 @@ The v0 -> v11 step chain and the legacy tile codec it depended on were deleted o
 No save predating v11 existed outside development at the time of deletion, so the dead migration steps and the legacy codec they depended on were pure maintenance burden with no live saves to protect. `SchemaMigrator` kept its registration and sequencing machinery — verified by `npm run validate:schema` and `migrator.test.ts` — so the next real migration step behaves exactly as it would have before this deletion.
 
 ## Consequences
-- **Binding invariant going forward:** `CURRENT_SCHEMA_VERSION`'s floor is absolute — there is no migration path below it, by design, and none should be added retroactively. A save below the floor must continue to be refused, never silently mis-decoded.
-- This edit to the protected `migrator.ts` had no literal §8.1 exception (it isn't a bug fix, an additive migration step, or a requested Planned Work item). It was authorized as an explicit, narrowly-scoped owner decision, on the same footing as the 2026-09-18 `engine.ts` difficulty-threading exception (see `docs/architecture/content-progression-scaling.md`, Zone-Tiered Monster Power). Any future deletion of migration history needs the same kind of explicit, narrowly-scoped authorization — it is not covered by the standing §8.1 exceptions.
+- **The floor is absolute:** there is no migration path below `CURRENT_SCHEMA_VERSION`'s floor, by design, and none is added retroactively; a save below it is refused, never silently mis-decoded. The binding statement of this rule lives in `ARCHITECTURE.md` §5.
+- This edit to the protected `migrator.ts` was owner-authorized rather than a bug fix, additive step, or requested Planned Work item. At the time §8.1 had no such exception; ADR-0005 added it as exception 4, and any future deletion of migration history needs the same explicit, narrowly scoped authorization.

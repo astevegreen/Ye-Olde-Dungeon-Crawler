@@ -79,7 +79,7 @@
 - **Declarative Manifests:** each content pack exports a `GameContentManifest` (`src/engine/types/manifest.ts`); the `GameEngine` constructor registers its entries. Content assembles behavior from composable primitives — no bespoke engine code (No Engine Creep, below).
 - **Exactly two hook mechanisms:** (1) **Action hooks** (`manifest.actionHooks`, `ActionHook` in `actionPipeline.ts`) — priority-ordered `pre`/`post` hooks around pipeline-executed actions, `ActionHookContext`; a pre-hook can short-circuit with its own `ActionResult`. (2) **Declarative event hooks** (`HookDispatcher`, `src/engine/hooks/hookDispatcher.ts`) — `HookDescriptor` data attached to items/monsters or global, `HookContext`; new primitives register via `HookDispatcher.registerPrimitive`.
 - **Injected context, never the raw engine:** handlers receive `EngineContext` (`src/engine/types/engineContext.ts`), not `GameEngine` itself. Widening it is deliberate, one member at a time — each addition becomes part of the content-facing contract.
-- **No Engine Creep:** campaign-specific mechanics, items, monsters, quests, and narrative belong in `src/content/`. Change `src/engine/` only to add a *generic, reusable capability* that content packs then use. Engine code must not gain new campaign-specific names or logic.
+- **No Engine Creep:** campaign-specific mechanics, items, monsters, quests, and narrative belong in `src/content/`. Change `src/engine/` only to add a *generic, reusable capability* that content packs then use. Engine code must not gain new campaign-specific names or logic; `check:engine-creep` fails on any pack-declared identifier in engine source (§7.2).
 
 ---
 
@@ -129,7 +129,7 @@
 **Binding rules:**
 - **Reference Invariant:** persistent state has no live circular object references — relationships use scalar IDs (`parentId`, `ownerId`).
 - **Forward-Only Schema Migrations (`migrator.ts`, §8.1 protected):** `CURRENT_SCHEMA_VERSION` there is authoritative. Every breaking save-format change increments it and adds exactly one forward-only `N -> N+1` step; existing steps are rewritten only as a confirmed bug fix (§8.1).
-- **Version floor:** the current version is also the oldest readable one — a save below it is refused (`migration-failed`), never silently mis-decoded.
+- **Version floor:** the current version is also the oldest readable one — a save below it is refused (`migration-failed`), never silently mis-decoded. No migration path is ever added below the floor, and deleting existing migration history needs §8.1 exception 4 ([ADR-0002](docs/decisions/0002-v0-v11-migration-chain-deletion.md)).
 - **Load Failure Handling:** a failed load never yields a partially-loaded engine and never overwrites the stored payload — `load*Result()` methods return a typed `LoadOutcome`, not a throw.
 - **Death Is Final for the Dead State:** a dead player's state is never written as a loadable save — character slot or autosave. Death updates only the roster record (`questStatus: 'fallen'`); earlier saves stay loadable through Load Saved Game, but Continue never resumes a fallen run (`resolveContinueTarget`).
 
@@ -156,7 +156,7 @@ Build tooling per §2's Language & Build Target. `assetsInlineLimit` inlines all
 **Requirement:** every change must pass the gates below before merging; run them locally and report real output — "should pass" is not "does pass."
 
 **Gate commands:**
-- `npm run lint` — `tsc --noEmit`, `check:engine-purity`, `check:engine-encapsulation`, `knip` (dead files, exports, and dependencies; don't invoke the sub-checks separately).
+- `npm run lint` — `tsc --noEmit`, `check:engine-purity`, `check:engine-encapsulation`, `check:engine-creep`, `knip` (dead files, exports, and dependencies; don't invoke the sub-checks separately).
 - `npm test` — all Vitest suites.
 - `npm run sim` — headless population/throughput sim; fails on any rejected action, caught pipeline exception, or wall-clock overrun.
 - `npm run validate:schema` — migrates a v1 envelope to `CURRENT_SCHEMA_VERSION`, round-trips a live engine through serialize/JSON/deserialize.
@@ -165,6 +165,7 @@ Build tooling per §2's Language & Build Target. `assetsInlineLimit` inlines all
 **Binding invariants the gates enforce (stated here only):**
 - **Engine encapsulation:** code outside `src/engine/` never writes engine object fields directly — no assignment, index write, `as any`-cast write, or `Object.assign` onto an engine object. Presentation code (`src/ui/`, `src/rendering/`, `src/main.ts`, `src/main/**`) additionally changes engine state only via `GameEngine`/`Player`/`Entity` methods or `engine.commandBus` — never subsystem mutators (`GameMap`, `Container`, `InventoryManager`, …) or Array/Map/Set mutators on engine members. `src/content/` is exempt from the subsystem-mutator restriction. Allowlist additions (`scripts/engine-encapsulation-allowlist.json`) need a stated reason; stale entries fail the check.
 - **Composition-root scope:** `src/main.ts` alone — never `src/main/**` — may import content packs; `check:engine-purity` enforces this against both.
+- **No engine-creep literals:** engine production source names no identifier a content pack declares (monster, item, spell, pact, companion, vault, choice, NPC, quest reference, or story flag). The few legitimate overlaps are listed with a reason in `scripts/engine-creep-allowlist.json`; stale entries fail the check.
 - **PRNG discipline:** `engine.prng` is canonical; `engine.rng` is its bound delegate — no further aliases. Simulation code must not use `Math.random()`/`Date.now()` for outcomes or IDs.
 
 ---
@@ -176,8 +177,9 @@ Build tooling per §2's Language & Build Target. `assetsInlineLimit` inlines all
 1. **Confirmed bug fix:** a reproducible defect, demonstrated by a failing test or a documented reproduction.
 2. **Additive schema migration:** adding a new forward-only step and incrementing `CURRENT_SCHEMA_VERSION` (§5). Existing steps are changed only under exception 1.
 3. **Requested planned item:** implementing a Planned Work item (§9) that the task explicitly requests.
+4. **Owner-authorized change:** the owner explicitly authorizes a named, narrowly scoped protected-file change in the task itself. An agent never infers this authorization. Record it as an ADR under `docs/decisions/` naming the authorization and scope ([ADR-0005](docs/decisions/0005-owner-authorized-exception-and-agent-workflow.md)).
 
-Keep such diffs minimal and scoped, and state which exception applies in the change summary.
+Keep such diffs minimal and scoped, and state which exception applies in the commit message as `§8.1 exception N`; the `commit-msg` hook rejects a commit that stages a protected file without one.
 
 ### 8.2 Documentation Synchronization
 - This core document is authoritative, together with `docs/architecture/**` and `docs/decisions/**`. `.antigravity/rules.md`, `CLAUDE.md`, and `.antigravity/skills/`/`.antigravity/archetypes/` summarize or apply it and must not contradict it. If they disagree, stop and flag the conflict instead of picking a side.
@@ -189,6 +191,12 @@ Keep such diffs minimal and scoped, and state which exception applies in the cha
 - Do not write code that depends on a planned capability existing.
 - Implement a planned item only when the task explicitly requests it (by ID or unambiguous scope).
 - New work must not widen the gap to a planned target. For example: no new deep engine imports from content, no new `Math.random()` in simulation code, and no new modals that bypass `ModalStackManager`.
+
+### 8.4 Agent Workflow
+Two coding agents work in this repository in alternation, never simultaneously: Antigravity (routine implementation) and Claude Code (design, complex fixes, verification). [ADR-0005](docs/decisions/0005-owner-authorized-exception-and-agent-workflow.md) records why.
+- **Attribution:** every commit names the tool that wrote it — Claude Code's `Co-Authored-By: Claude` trailer, or an `Agent: <name>` trailer (`Agent: Antigravity`). The `commit-msg` hook warns when neither is present.
+- **Engine changes land through review:** Antigravity commits changes to `src/content/`, `src/ui/`, `src/rendering/`, tests, and docs. A change to engine production source (`src/engine/` outside tests) stays uncommitted and is reported to the owner as needing Claude Code review; Claude Code commits it after reviewing it.
+- **Review marker:** the local git tag `verified` marks the last commit Claude Code has reviewed. Each Claude Code session reviews every commit in `verified..HEAD` without its own trailer — against this document, with the gates run — then moves the tag to `HEAD`.
 
 ---
 

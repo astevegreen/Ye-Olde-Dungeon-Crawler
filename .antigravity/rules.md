@@ -9,17 +9,16 @@
 4. No ephemeral task or prompt markdown at the repo root. Working prompts go in `/.prompts/` (gitignored) or outside the repo — the root holds exactly `ARCHITECTURE.md` and `CLAUDE.md`.
 
 ## Invariants
-- **Headless purity by execution path (§2):** any code that runs inside the simulation — engine code, content hooks and handlers, injected callbacks — uses no DOM, Canvas, audio, or timing globals.
-- **Dependency inversion (§3):** engine production source never imports `src/content/`, `src/ui/`, or `src/rendering/`. Colocated engine tests may import content packs as fixtures.
-- **Public API (§2, §3):** `src/ui/`, `src/rendering/`, and `src/content/` import the engine only through `src/engine/index.ts`. `scripts/` and test files may deep-import.
-- **Composition root (§3):** `src/main.ts` is the only source module that imports content packs — `src/main/**` helpers do not share that privilege.
-- **Presentation tier (§3):** `src/rendering/` may import `src/ui/`; `src/ui/` may import `src/rendering/` types only. `src/main/**` follows presentation-tier import rules.
-- **No engine creep (§3):** campaign-specific mechanics, items, monsters, quests, and narrative belong in `src/content/`. Change `src/engine/` only to add a generic, reusable capability (primitive, hook point, registry, or manifest field) that content then uses.
-- **Determinism (§7.2):** simulation randomness comes from `engine.prng` (`engine.rng` is its bound delegate). Never use `Math.random()` or `Date.now()` for simulation outcomes or IDs.
-- **Save format (§5):** any breaking save-format change increments `CURRENT_SCHEMA_VERSION` and adds exactly one forward-only step in `migrator.ts`.
-- **Protected files (§8.1):** `src/engine/actions/actionPipeline.ts`, `src/engine/engine.ts`, and `src/engine/storage/migrator.ts` change only under a §8.1 exception, named in the commit message as `§8.1 exception N`. Exception 4 (owner-authorized) applies only when the owner's own words in the task authorize that specific change.
-- **Documentation sync (§8.2):** if a change makes `ARCHITECTURE.md` or a `docs/architecture/**` sub-doc inaccurate, or completes a planned item, update that document in the same change.
-- **Encapsulation (§7.2):** code outside `src/engine/` (presentation and content alike) never writes engine object fields directly — no assignment, index write, write through an `as any` cast, or `Object.assign` onto an engine object. Presentation code (`src/ui/`, `src/rendering/`, `src/main.ts`, `src/main/**`) additionally changes engine state only through `GameEngine`, `Player`, and `Entity` methods or `engine.commandBus` — never by calling mutators on internal subsystems (`GameMap`, `Container`, `InventoryManager`, …) or Array/Map/Set mutators on engine members. That subsystem-mutator restriction does not apply to `src/content/` (§7.2). `check:engine-encapsulation` enforces all of this; add to its allowlist only with a stated reason.
+One line each; the cited section holds the full rule and its enforcement. The lint gate checks most of them, so a clean `npm run lint` is necessary but not sufficient.
+- **Headless purity (§2):** code on the simulation path — engine, content hooks and handlers, injected callbacks — uses no DOM, Canvas, audio, or timing globals.
+- **Imports (§2, §3):** the engine imports no other layer; `src/ui/`, `src/rendering/`, and `src/content/` reach the engine only through `src/engine/index.ts`; only `src/main.ts` imports content packs; `src/ui/` imports `src/rendering/` types only.
+- **No engine creep (§3):** campaign mechanics, names, and narrative live in `src/content/`; `src/engine/` gains only generic capabilities (primitive, hook point, registry, manifest field).
+- **Pack-neutral presentation (§3):** `src/ui/`, `src/rendering/`, and `src/main/**` name no pack; pack wording comes from the manifest (`name`, `description`, `town.name`, `branding`) and pack art from `spriteRecipes`.
+- **Determinism (§7.2):** simulation randomness and IDs come from `engine.prng`/`engine.rng`, never `Math.random()` or `Date.now()`.
+- **Encapsulation (§7.2):** outside `src/engine/`, change engine state through `GameEngine`/`Player`/`Entity` methods or `engine.commandBus`, never by writing engine fields; allowlist entries need a stated reason.
+- **Save format (§5):** a breaking save-format change bumps `CURRENT_SCHEMA_VERSION` with exactly one forward-only step in `migrator.ts`; a dead player's state is never saved.
+- **Protected files (§8.1):** `actionPipeline.ts`, `engine.ts`, and `migrator.ts` change only under a §8.1 exception, named in the commit message as `§8.1 exception N`. Exception 4 applies only when the owner's own words in the task authorize that specific change.
+- **Documentation sync (§8.2):** a change that makes `ARCHITECTURE.md` or a `docs/architecture/**` sub-doc inaccurate updates that document in the same change. A new Planned Work item takes the "Next free ID" in §9.
 
 ## Workflow (§8.4)
 - End every commit message with the trailer `Agent: Antigravity`.

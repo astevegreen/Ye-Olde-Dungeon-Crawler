@@ -45,6 +45,12 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_THEME': JSON.stringify(theme),
     },
     base: './',
+    // Keep class names through minification: the action pipeline reports
+    // `action.constructor.name` as the hook-matching actionType (ARCHITECTURE.md §4),
+    // so content hooks filtering on e.g. 'MovementAction' match only if names survive.
+    esbuild: {
+      keepNames: true,
+    },
     build: {
       emptyOutDir: false,
       assetsInlineLimit: 100000000,

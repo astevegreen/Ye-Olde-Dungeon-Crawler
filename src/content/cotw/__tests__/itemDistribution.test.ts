@@ -6,6 +6,8 @@ import { MINIBOSS_MONSTERS } from '../monsters/minibosses';
 import { COTW_ITEMS } from '../items';
 import { Player } from '../../../engine/entities/player';
 import { CharacterRoller } from '../../../engine/character/characterRoller';
+import { getItemBuyPrice } from '../../../engine/economy/merchant';
+import { COIN_VALUES } from '../../../engine/economy/types';
 
 describe('CotW Item Distribution & Economic Integration', () => {
   it('equips authentic CotW starter items on new character roll', () => {
@@ -109,7 +111,21 @@ describe('CotW Item Distribution & Economic Integration', () => {
     expect(stockKeys.some((id) => id.includes('bellows_skin_canteen'))).toBe(true);
     expect(stockKeys.some((id) => id.includes('ice_stave_rune_tablet'))).toBe(true);
     expect(stockKeys.some((id) => id.includes('rune_scratched_bark_map'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('charm-watchful-eye'))).toBe(true);
+    expect(stockKeys.some((id) => id.includes('charm_watchful_eye'))).toBe(true);
+  });
+
+  it('prices every town item on the same copper scale as the starting purse', () => {
+    // Engine ItemFactory builders carry legacy prices ~100x the pack's scale; a
+    // playtest found 20 GP bread against a 3.5 GP starting purse.
+    const startingPurseCp = COTW_STARTER_KIT.coins!.reduce(
+      (sum, c) => sum + c.count * COIN_VALUES[c.denomination],
+      0
+    );
+    for (const npc of COTW_TOWN.npcs) {
+      for (const item of npc.merchantConfig?.initialInventory ?? []) {
+        expect(getItemBuyPrice(item), `${npc.name}: ${item.name}`).toBeLessThanOrEqual(startingPurseCp);
+      }
+    }
   });
 
   it('guarantees Níðhögg’s Fang drop from level 45 miniboss Víðnir', () => {

@@ -64,13 +64,14 @@ describe('Merchant Economy & Trading Engine', () => {
     if (!torchItem) return;
 
     const initialStockCount = olaf.stock.length;
+    const price = getItemBuyPrice(torchItem);
 
     const result = olaf.buyItem(player, torchItem.id);
     expect(result.success).toBe(true);
     expect(result.message).toContain('Purchased Wooden Torch');
 
-    // Player funds deducted: 500 - 500 = 0 CP
-    expect(getPlayerTotalCp(player)).toBe(0);
+    // Player funds deducted by exactly the listed price
+    expect(getPlayerTotalCp(player)).toBe(500 - price);
 
     // Item placed in player primary pack
     const purchasedItem = player.inventory.primaryPack.getItem(torchItem.id);

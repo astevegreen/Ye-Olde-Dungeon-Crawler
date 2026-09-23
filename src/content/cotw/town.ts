@@ -1,15 +1,79 @@
 import {
-  ItemFactory,
   Merchant,
   createScaledItem,
 } from '../../engine';
-import type { TownLayoutDefinition } from '../../engine';
-import { COTW_CATALOG_RECORD } from './items';
+import type { ItemDefinition, TownLayoutDefinition } from '../../engine';
+import { COTW_ITEMS } from './items';
+
+/**
+ * Shop-only stock with no dungeon-loot definition. Priced on the pack's copper scale
+ * (starting purse 350 CP, floor 1-9 coin drops 30-200 CP) — the engine's ItemFactory
+ * builders carry legacy prices ~100x higher (a 20 GP loaf of bread).
+ */
+const SHOP_ONLY_ITEMS: ItemDefinition[] = [
+  {
+    id: 'wooden_torch',
+    name: 'Wooden Torch',
+    unidentifiedName: 'Torch',
+    category: 'misc',
+    tier: 1,
+    weight: 800,
+    bulk: 600,
+    identified: true,
+    description: 'Pitch-soaked wooden branch providing essential light in subterranean depths.',
+    value: 5,
+  },
+  {
+    id: 'thief_lockpicks',
+    name: 'Thief Lockpicks',
+    unidentifiedName: 'Slender Metal Picks',
+    category: 'misc',
+    tier: 1,
+    weight: 200,
+    bulk: 100,
+    identified: true,
+    description: 'Delicate tempered steel tension tools for bypassing locked chests and gates.',
+    value: 40,
+  },
+  {
+    id: 'scroll_identify',
+    name: 'Scroll of Identify',
+    unidentifiedName: 'Parchment Scroll',
+    category: 'consumable',
+    tier: 1,
+    weight: 50,
+    bulk: 40,
+    identified: true,
+    description: 'A crisp parchment inscribed with golden revelation runes.',
+    value: 40,
+    itemType: 'scroll',
+    scrollConfig: { spellId: 'identify' },
+  },
+  {
+    id: 'charm_watchful_eye',
+    name: 'Charm of the Watchful Eye',
+    unidentifiedName: 'Engraved Charm',
+    category: 'amulet',
+    slot: 'neck',
+    tier: 1,
+    weight: 40,
+    bulk: 20,
+    stats: { defenseBonus: 2 },
+    identified: true,
+    description:
+      "Astrid sets this aside only for adventurers whose reputation for uncovering the dungeon's secrets precedes them.",
+    value: 150,
+  },
+];
+
+const STOCK_DEFINITIONS: Record<string, ItemDefinition> = Object.fromEntries(
+  [...COTW_ITEMS, ...SHOP_ONLY_ITEMS].map((def) => [def.id, def])
+);
 
 function makeItem(itemId: string, instanceId: string, predicate?: import('../../engine').Predicate) {
-  const def = COTW_CATALOG_RECORD[itemId];
+  const def = STOCK_DEFINITIONS[itemId];
   if (!def) {
-    throw new Error(`Item definition not found in COTW_CATALOG_RECORD: ${itemId}`);
+    throw new Error(`No cotw item definition for shop stock: ${itemId}`);
   }
   const itemDef = predicate ? { ...def, predicate } : def;
   return createScaledItem(itemDef, instanceId, 1, () => 0.5);
@@ -74,11 +138,11 @@ export const COTW_TOWN: TownLayoutDefinition = {
         markupRatio: 1.25,
         markdownRatio: 0.5,
         initialInventory: [
-          ItemFactory.createTorch('olaf-torch-1'),
-          ItemFactory.createTorch('olaf-torch-2'),
-          ItemFactory.createTravelBread('olaf-bread-1'),
-          ItemFactory.createTravelBread('olaf-bread-2'),
-          ItemFactory.createLockpicks('olaf-picks-1'),
+          makeItem('wooden_torch', 'olaf-torch-1'),
+          makeItem('wooden_torch', 'olaf-torch-2'),
+          makeItem('travel_bread', 'olaf-bread-1'),
+          makeItem('travel_bread', 'olaf-bread-2'),
+          makeItem('thief_lockpicks', 'olaf-picks-1'),
           makeItem('sealskin_rucksack', 'olaf-pack-1'),
           makeItem('leather_coin_pouch', 'olaf-purse-1'),
           makeItem('braided_sinew_cord', 'olaf-belt-1'),
@@ -105,7 +169,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
         markupRatio: 1.3,
         markdownRatio: 0.5,
         initialInventory: [
-          ItemFactory.createBroadsword('gunther-broadsword-1'),
+          makeItem('broadsword', 'gunther-broadsword-1'),
           makeItem('mammut_bone_cudgel', 'gunther-cudgel-1'),
           makeItem('rime_bit_chisel', 'gunther-chisel-1'),
           makeItem('cinder_edge_shortsword', 'gunther-sword-1'),
@@ -149,19 +213,13 @@ export const COTW_TOWN: TownLayoutDefinition = {
           makeItem('bellows_skin_canteen', 'astrid-canteen-1'),
           makeItem('ice_stave_rune_tablet', 'astrid-tablet-1'),
           makeItem('rune_scratched_bark_map', 'astrid-map-1'),
-          ItemFactory.createScrollOfTeleport('astrid-tele-1'),
-          ItemFactory.createScrollOfIdentify('astrid-id-1'),
-          ItemFactory.createWandOfLightning('astrid-wand-1'),
+          makeItem('scroll_phase_door', 'astrid-tele-1'),
+          makeItem('scroll_identify', 'astrid-id-1'),
+          makeItem('scroll_identify', 'astrid-id-2'),
+          makeItem('wand_lightning', 'astrid-wand-1'),
           // Vendor unlock: appears only once the hero's exploration renown reaches 25
           // (Milestone Renown Ledger, docs/architecture/content-progression-scaling.md).
-          ItemFactory.createRenownCharm({
-            id: 'astrid-charm-watchful-eye',
-            name: 'Charm of the Watchful Eye',
-            description:
-              "Astrid sets this aside only for adventurers whose reputation for uncovering the dungeon's secrets precedes them.",
-            stats: { defenseBonus: 2 },
-            predicate: { type: 'minCounter', counter: 'renown:exploration', value: 25 },
-          }),
+          makeItem('charm_watchful_eye', 'astrid-charm-watchful-eye', { type: 'minCounter', counter: 'renown:exploration', value: 25 }),
         ],
       },
     },

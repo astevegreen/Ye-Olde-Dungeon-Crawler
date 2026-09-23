@@ -8,9 +8,12 @@ import { EncumbranceLevel } from '../../engine';
 import type { Paperdoll } from '../../engine';
 import type { ThemeTokens } from '../../engine';
 
+/** Engine spell id both the Identify scroll and spell cast (`spellPipeline.ts`'s `identify` effect). */
+const IDENTIFY_SPELL_ID = 'identify';
+
 export type InspectorSource = 'paperdoll' | 'backpack' | 'ground' | 'container' | 'none';
 export type FocusedPanel = 'paperdoll' | 'backpack' | 'ground' | 'inspector';
-export type ItemInspectorActionId = 'equip' | 'unequip' | 'use' | 'drop' | 'take' | 'put' | 'peek';
+export type ItemInspectorActionId = 'equip' | 'unequip' | 'use' | 'drop' | 'take' | 'put' | 'peek' | 'identify';
 
 export interface ItemInspectorActionButton {
   id: ItemInspectorActionId;
@@ -260,6 +263,34 @@ export class ItemInspector {
     };
   }
 
+  /** What would identify an item right now: a known Scroll of Identify, else the Identify
+   * spell if the player knows it and can pay its mana. */
+  private findIdentifySource(
+    player: Player
+  ): { label: string; dispatch: (engine: GameEngine, itemId: string) => void } | null {
+    const scroll = player.inventory
+      .getAllCarriedItems()
+      .find((i): i is ScrollItem => i instanceof ScrollItem && i.spellId === IDENTIFY_SPELL_ID && i.identified);
+    if (scroll) {
+      return {
+        label: 'reads a scroll',
+        dispatch: (engine, itemId) =>
+          engine.commandBus.dispatch({ type: 'read_scroll', payload: { itemId: scroll.id, itemTargetId: itemId } }),
+      };
+    }
+    if (player.spellsKnown.includes(IDENTIFY_SPELL_ID)) {
+      return {
+        label: 'casts the spell',
+        dispatch: (engine, itemId) =>
+          engine.commandBus.dispatch({
+            type: 'cast_spell',
+            payload: { spellId: IDENTIFY_SPELL_ID, targetX: player.x, targetY: player.y, itemTargetId: itemId },
+          }),
+      };
+    }
+    return null;
+  }
+
   /**
    * Generates context-sensitive action buttons based on item type and location.
    */
@@ -319,6 +350,23 @@ export class ItemInspector {
     const item = this.selectedItem;
     const source = this.selectedSource;
     const slotId = this.selectedSlot;
+
+    // Identify an unidentified carried item in place: a known Scroll of Identify first,
+    // else the Identify spell. Both target this exact item (itemTargetId).
+    if (!item.identified && (source === 'paperdoll' || source === 'backpack')) {
+      const identifySource = this.findIdentifySource(player);
+      actions.push({
+        id: 'identify',
+        label: identifySource ? `Identify (Y) — ${identifySource.label}` : 'Identify (Y)',
+        shortcut: 'Y',
+        enabled: identifySource !== null,
+        reason: identifySource ? undefined : 'Needs a Scroll of Identify or the Identify spell',
+        execute: (eng) => {
+          identifySource?.dispatch(eng, item.id);
+          this.clearSelection();
+        },
+      });
+    }
 
     // 1. Paperdoll item actions
     if (source === 'paperdoll' && slotId) {

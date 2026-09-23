@@ -416,7 +416,11 @@ export class CharacterMenuModal implements UIModal {
       return true;
     }
 
-    // 2. Escape closes the whole shell
+    // 2. Escape closes the whole shell — unless the active tab uses it to back out of
+    //    something first (the inventory clears a selection before closing).
+    if (key === 'Escape' && this.getActiveTab()?.handleKeyDown(e)) {
+      return true;
+    }
     if (key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();

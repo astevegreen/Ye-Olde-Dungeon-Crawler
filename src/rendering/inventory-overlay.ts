@@ -95,6 +95,14 @@ export class InventoryOverlay implements UIModal {
   }
 
   public onClose?: () => void;
+  private closeListeners: Array<() => void> = [];
+  /** Columns each item grid drew with last render, so arrow keys move by cell/row. */
+  private gridColumns: Record<'backpack' | 'ground', number> = { backpack: 1, ground: 1 };
+
+  /** Notified after every close, alongside the single `onClose` slot InputHandler owns. */
+  public addCloseListener(listener: () => void): void {
+    this.closeListeners.push(listener);
+  }
 
   public open(engine?: GameEngine): void {
     if (engine) this.engine = engine;
@@ -125,6 +133,7 @@ export class InventoryOverlay implements UIModal {
     if (this.onClose) {
       this.onClose();
     }
+    for (const listener of this.closeListeners) listener();
     if (this.onStateChanged) {
       this.onStateChanged();
     }
@@ -179,6 +188,11 @@ export class InventoryOverlay implements UIModal {
       }
     }
 
+    // Clicking empty space "clicks off" the current selection.
+    if (this.inspector.selectedItem || this.inspector.selectedItemIds.size > 0) {
+      this.inspector.clearSelection();
+      if (this.onStateChanged) this.onStateChanged();
+    }
     return true; // Consume clicks when overlay is open
   }
 
@@ -248,6 +262,12 @@ export class InventoryOverlay implements UIModal {
       if (this.onStateChanged) this.onStateChanged();
       return true;
     }
+    // Escape backs out of a selection before it closes the overlay.
+    if (code === 'Escape' && (this.inspector.selectedItem || this.inspector.selectedItemIds.size > 0)) {
+      this.inspector.clearSelection();
+      if (this.onStateChanged) this.onStateChanged();
+      return true;
+    }
     if (code === 'KeyI' || code === 'Escape') {
       this.close();
       return true;
@@ -287,34 +307,54 @@ export class InventoryOverlay implements UIModal {
       return true;
     }
 
-    // 3. Arrow keys: navigate inside focused panel
-    if (code === 'ArrowUp' || code === 'ArrowDown') {
-      const delta = code === 'ArrowDown' ? 1 : -1;
+    // 3. Arrow keys: navigate inside focused panel. The backpack and ground/container
+    //    panels are drawn as grids, so Left/Right step one cell and Up/Down one row;
+    //    the paperdoll is a slot list, so every arrow steps one slot.
+    const ARROW_STEPS: Record<string, 'prev' | 'next' | 'up' | 'down'> = {
+      ArrowLeft: 'prev',
+      ArrowRight: 'next',
+      ArrowUp: 'up',
+      ArrowDown: 'down',
+    };
+    const arrow = ARROW_STEPS[code];
+    if (arrow && !this.companionViewOpen) {
       const panel = this.inspector.focusedPanel;
+      const rowStep = panel === 'backpack' || panel === 'ground' ? this.gridColumns[panel] : 1;
+      const delta = arrow === 'next' ? 1 : arrow === 'prev' ? -1 : arrow === 'down' ? rowStep : -rowStep;
+      const step = (count: number): number | null => {
+        if (count === 0) return null;
+        const target = this.inspector.focusedIndex + delta;
+        // A row step off the grid's edge stays put rather than wrapping sideways.
+        if ((arrow === 'up' || arrow === 'down') && (target < 0 || target >= count)) {
+          return arrow === 'down' && Math.floor(this.inspector.focusedIndex / rowStep) < Math.floor((count - 1) / rowStep)
+            ? count - 1
+            : this.inspector.focusedIndex;
+        }
+        return Math.max(0, Math.min(count - 1, target));
+      };
 
       if (panel === 'paperdoll') {
-        const slotCount = doll.getSlotDefinitions().length;
-        this.inspector.focusedIndex = Math.max(0, Math.min(slotCount - 1, this.inspector.focusedIndex + delta));
-        const slot = doll.getSlotDefinitions()[this.inspector.focusedIndex];
-        if (slot) {
-          const item = doll.getItem(slot.id);
-          this.inspector.select(item, 'paperdoll', slot.id);
+        const slots = doll.getSlotDefinitions();
+        const next = step(slots.length);
+        if (next !== null) {
+          this.inspector.focusedIndex = next;
+          const slot = slots[next];
+          this.inspector.select(doll.getItem(slot.id), 'paperdoll', slot.id);
         }
       } else if (panel === 'backpack') {
         const packItems = inv.primaryPack.getItems();
-        if (packItems.length > 0) {
-          this.inspector.focusedIndex = Math.max(0, Math.min(packItems.length - 1, this.inspector.focusedIndex + delta));
-          this.inspector.select(packItems[this.inspector.focusedIndex], 'backpack');
+        const next = step(packItems.length);
+        if (next !== null) {
+          this.inspector.focusedIndex = next;
+          this.inspector.select(packItems[next], 'backpack');
         }
       } else if (panel === 'ground') {
         const activeContainer = this.selectedPackContainer || this.selectedGroundContainer;
-        const items = activeContainer
-          ? activeContainer.getItems()
-          : engine.map.getItemsAt(player.x, player.y);
-        if (items.length > 0) {
-          this.inspector.focusedIndex = Math.max(0, Math.min(items.length - 1, this.inspector.focusedIndex + delta));
-          const src = activeContainer ? 'container' : 'ground';
-          this.inspector.select(items[this.inspector.focusedIndex], src, undefined, activeContainer);
+        const items = activeContainer ? activeContainer.getItems() : engine.map.getItemsAt(player.x, player.y);
+        const next = step(items.length);
+        if (next !== null) {
+          this.inspector.focusedIndex = next;
+          this.inspector.select(items[next], activeContainer ? 'container' : 'ground', undefined, activeContainer);
         }
       }
       if (this.onStateChanged) this.onStateChanged();
@@ -407,6 +447,20 @@ export class InventoryOverlay implements UIModal {
           return true;
         }
       }
+    }
+
+    // KeyY: Identify the selected unidentified item (scroll or spell, via the inspector)
+    if (code === 'KeyY') {
+      const identify = this.inspector.getAvailableActions(engine).find((a) => a.id === 'identify');
+      if (identify?.enabled) {
+        identify.execute(engine);
+      } else if (identify) {
+        engine.log(identify.reason ?? 'You cannot identify that right now.');
+      } else {
+        engine.log('Select an unidentified item you are carrying to identify it.');
+      }
+      if (this.onStateChanged) this.onStateChanged();
+      return true;
     }
 
     // KeyM: Open Rune Mastery Tree if Rune of Return is inspected
@@ -600,6 +654,8 @@ export class InventoryOverlay implements UIModal {
     theme: Required<ThemeTokens>,
     font: string,
     opts: {
+      /** Which keyboard panel this grid is; its column count drives Up/Down steps. */
+      panel: 'backpack' | 'ground';
       emptyLabel: string;
       showIndexTag?: boolean;
       isSelected: (item: Item, index: number) => boolean;
@@ -627,6 +683,7 @@ export class InventoryOverlay implements UIModal {
     const cellSize = Math.max(40, Math.min(64, Math.floor((width - gap * (cols + 1)) / cols)));
     const rows = Math.max(1, Math.floor((height - gap) / (cellSize + gap)));
     const maxVisible = cols * rows;
+    this.gridColumns[opts.panel] = cols;
 
     const truncate = (text: string, maxWidth: number): string => {
       if (ctx.measureText(text).width <= maxWidth) return text;
@@ -954,6 +1011,7 @@ export class InventoryOverlay implements UIModal {
       }
     };
     this.renderItemGrid(ctx, packItems, col2X, contentY + 28, col2W, contentH - 34, theme, font, {
+      panel: 'backpack',
       emptyLabel: '(Backpack is empty)',
       showIndexTag: true,
       isSelected: (it) => this.inspector.selectedSource === 'backpack' && this.inspector.selectedItem?.id === it.id,
@@ -1070,6 +1128,7 @@ export class InventoryOverlay implements UIModal {
         this.inspector.clearSelection();
       };
       this.renderItemGrid(ctx, cItems, col3X, contentY + 28, col3W, contentH - 34, theme, font, {
+        panel: 'ground',
         emptyLabel: '(Container is empty)',
         isSelected: (it) => this.inspector.selectedSource === 'container' && this.inspector.selectedItem?.id === it.id,
         isFocused: (_it, i) => this.inspector.focusedPanel === 'ground' && this.inspector.focusedIndex === i,
@@ -1113,6 +1172,7 @@ export class InventoryOverlay implements UIModal {
         }
       };
       this.renderItemGrid(ctx, groundItems, col3X, contentY + 28, col3W, contentH - 34, theme, font, {
+        panel: 'ground',
         emptyLabel: '(Ground is empty)',
         isSelected: (it) => this.inspector.selectedSource === 'ground' && this.inspector.selectedItem?.id === it.id,
         isFocused: (_it, i) => this.inspector.focusedPanel === 'ground' && this.inspector.focusedIndex === i,

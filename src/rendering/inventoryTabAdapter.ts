@@ -13,14 +13,17 @@ export class InventoryTabAdapter implements MenuTab {
   public readonly hotkeyActionId = 'inventory';
   private overlay: InventoryOverlay;
   private renderer?: CanvasRenderer;
-  private onDismiss?: () => void;
+  private unmounting = false;
 
-  /** `onDismiss` closes the hosting menu shell when the overlay closes itself (e.g. `[I]`);
-   * otherwise the shell's blurred backdrop stays up and traps every key. */
+  /** `onDismiss` closes the hosting menu shell whenever the overlay closes itself — `[I]`,
+   * its canvas close button, channeling the Rune — since the shell would otherwise stay
+   * up, invisible, trapping every key. Closes the shell causes (unmount) don't count. */
   constructor(overlay: InventoryOverlay, renderer?: CanvasRenderer, onDismiss?: () => void) {
     this.overlay = overlay;
     this.renderer = renderer;
-    this.onDismiss = onDismiss;
+    overlay.addCloseListener(() => {
+      if (!this.unmounting) onDismiss?.();
+    });
   }
 
   public mount(container: HTMLElement): void {
@@ -33,15 +36,16 @@ export class InventoryTabAdapter implements MenuTab {
   }
 
   public unmount(): void {
-    this.overlay.close();
+    this.unmounting = true;
+    try {
+      this.overlay.close();
+    } finally {
+      this.unmounting = false;
+    }
     this.renderer?.render();
   }
 
   public handleKeyDown(e: KeyboardEvent): boolean {
-    const handled = this.overlay.handleKeyDown(e);
-    if (handled && !this.overlay.isOpen) {
-      this.onDismiss?.();
-    }
-    return handled;
+    return this.overlay.handleKeyDown(e);
   }
 }

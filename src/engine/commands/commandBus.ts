@@ -83,7 +83,7 @@ export class EngineCommandBus implements GameCommandBus {
           const targetX = p.targetX as number | undefined;
           const targetY = p.targetY as number | undefined;
           const res = this.engine.handlePlayerAction(
-            new ReadScrollAction(this.engine.player, item, targetX, targetY)
+            new ReadScrollAction(this.engine.player, item, targetX, targetY, p.itemTargetId as string | undefined)
           );
           return { success: res.success, message: res.message, effects: res.effects };
         }
@@ -225,7 +225,7 @@ export class EngineCommandBus implements GameCommandBus {
           return { success: false, message: 'Incomplete spell target parameters' };
         }
         const res = this.engine.handlePlayerAction(
-          new CastSpellAction(this.engine.player, spellId, targetX, targetY)
+          new CastSpellAction(this.engine.player, spellId, targetX, targetY, p.itemTargetId as string | undefined)
         );
         return { success: res.success, message: res.message, effects: res.effects };
       }

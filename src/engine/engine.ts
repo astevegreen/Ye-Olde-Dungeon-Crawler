@@ -1004,7 +1004,7 @@ export class GameEngine {
 
     const result = this.actionPipeline.executeWithHooks(action, this);
     this.lastActionResult = result;
-    this.lastActionName = (action as any).actionType ?? action.constructor.name;
+    this.lastActionName = action.actionType ?? action.constructor.name;
     if (result.effects && result.effects.length > 0) {
       this.recordVisualEffects(result.effects);
     }

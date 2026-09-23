@@ -194,10 +194,7 @@ Keep such diffs minimal and scoped, and state which exception applies in the cha
 ## 9. Planned Work Register
 Each entry records the current state, the target, and whether the work touches protected files (§8.1). Work recorded but deliberately out of scope is listed under *Deferred* below, and is not planned work.
 
-**P-25 — Typed action introspection in the pipeline** (§4)
-- Current: `ActionPipeline` and `GameEngine.handlePlayerAction` read an action's hook-matching name (`actionType`/`type`) and its acting entity (`entity`/`attacker`/`actor`/`player`) through 11 `as any` casts, because the `Action` interface (`src/engine/actions/action.ts`) declares only `perform()`.
-- Target: `Action` declares those members as optional, typed properties, and the casts are removed. String matching, the actor fallback order (`entity` → `attacker` → `actor` → `player` → `engine.player`), and failure attribution behave exactly as before.
-- Protected files: `src/engine/actions/actionPipeline.ts`, `src/engine/engine.ts`.
+*There are currently no active planned work items.*
 
 
 ### Deferred (out of scope)

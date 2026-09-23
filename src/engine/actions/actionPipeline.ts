@@ -45,7 +45,7 @@ function matchesActionType(filter: string | undefined, actionType: string, actio
   if (typeLower.startsWith(filterLower)) return true;
 
   // Custom actionType or type property on the action instance
-  const customType = (action as any).actionType ?? (action as any).type;
+  const customType = action.actionType ?? action.type;
   if (typeof customType === 'string' && customType.toLowerCase() === filterLower) return true;
 
   return false;
@@ -110,10 +110,10 @@ export class ActionPipeline {
   /** Resolves the acting entity, mirroring how handlePipelineError attributes failures. */
   private static resolveActor(action: Action, engine: GameEngine): Entity {
     return (
-      (action as any)?.entity ??
-      (action as any)?.attacker ??
-      (action as any)?.actor ??
-      (action as any)?.player ??
+      action?.entity ??
+      action?.attacker ??
+      action?.actor ??
+      action?.player ??
       engine?.player
     );
   }
@@ -123,7 +123,7 @@ export class ActionPipeline {
     // nest, so the engine keeps a capture stack rather than one buffer.
     const captured = engine?.beginEventCapture ? engine.beginEventCapture() : undefined;
     try {
-      const actionType = (action as any)?.actionType ?? action?.constructor?.name ?? 'Action';
+      const actionType = action?.actionType ?? action?.constructor?.name ?? 'Action';
       const actor = ActionPipeline.resolveActor(action, engine);
 
       // 1. Pre-hooks execution boundary
@@ -213,10 +213,10 @@ export class ActionPipeline {
     hookId?: string
   ): ActionResult {
     const entityId =
-      (action as any)?.entity?.id ??
-      (action as any)?.attacker?.id ??
-      (action as any)?.actor?.id ??
-      (action as any)?.player?.id ??
+      action?.entity?.id ??
+      action?.attacker?.id ??
+      action?.actor?.id ??
+      action?.player?.id ??
       engine?.player?.id ??
       'unknown';
     const message = 'An unexpected error occurred; the action could not be completed.';

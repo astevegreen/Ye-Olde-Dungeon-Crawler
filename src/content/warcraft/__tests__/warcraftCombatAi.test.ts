@@ -3,7 +3,7 @@ import { GameEngine, GameMap, Player, Monster, TILES } from '../../../engine';
 import { WarchiefBehavior } from '../ai';
 import { warcraftBattleCryHook } from '../hooks';
 import { WARCRAFT_STATUS_HANDLERS } from '../status';
-import { WindUpDeclareAction, MeleeAttackAction } from '../../../engine';
+import { WindUpDeclareAction, MeleeAttackAction, MovementAction } from '../../../engine';
 
 describe('Warcraft Combat AI, Hooks & Statuses', () => {
   let engine: GameEngine;
@@ -78,71 +78,45 @@ describe('Warcraft Combat AI, Hooks & Statuses', () => {
   });
 
   describe('warcraftBattleCryHook', () => {
-    it('logs iconic battle cries on successful player melee strikes when rng proc triggers', () => {
-      let loggedMessage = '';
+    let logs: string[];
+    let grunt: Monster;
+
+    beforeEach(() => {
+      logs = [];
       const originalLog = engine.log.bind(engine);
       engine.log = (msg: string) => {
-        loggedMessage = msg;
+        logs.push(msg);
         originalLog(msg);
       };
-
-      engine.rng = () => 0.1; // < 0.25 triggers battle cry
-
-      const dummy = new Monster({
-        id: 'dummy',
-        name: 'Training Dummy',
+      engine.rng = () => 0.1; // < 0.25 always shouts
+      engine.actionPipeline.registerHook(warcraftBattleCryHook);
+      grunt = new Monster({
+        id: 'grunt-1',
+        name: 'Orc Grunt',
         position: { x: 6, y: 5 },
         stats: { hp: 100, maxHp: 100, attack: 0, defense: 0 },
         speed: 100,
         aiType: 'melee',
       });
-
-      warcraftBattleCryHook.execute({
-        engine,
-        actor: player,
-        actionType: 'melee',
-        action: new MeleeAttackAction(player, dummy),
-        result: { success: true, cost: 100 },
-      });
-
-      expect(loggedMessage).toContain('Battle Cry:');
+      map.addEntity(grunt);
     });
 
-    it('does not log battle cries when strike fails or actor is a monster', () => {
-      let loggedMessage = '';
-      engine.log = (msg: string) => {
-        loggedMessage = msg;
-      };
-      engine.rng = () => 0.1;
+    const cries = () => logs.filter((m) => m.startsWith('Battle Cry:'));
 
-      const monster = new Monster({
-        id: 'grunt-1',
-        name: 'Orc Grunt',
-        position: { x: 6, y: 5 },
-        stats: { hp: 25, maxHp: 25, attack: 8, defense: 2 },
-        speed: 100,
-        aiType: 'melee',
-      });
+    it('shouts when the player bump-attacks a hostile through the real pipeline', () => {
+      engine.handlePlayerAction(new MovementAction(player, 1, 0));
+      expect(cries()).toHaveLength(1);
+    });
 
-      // Strike by monster: should not fire player battle cries
-      warcraftBattleCryHook.execute({
-        engine,
-        actor: monster,
-        actionType: 'melee',
-        action: new MeleeAttackAction(monster, player),
-        result: { success: true, cost: 100 },
-      });
-      expect(loggedMessage).toBe('');
+    it('shouts on a direct player melee strike', () => {
+      engine.actionPipeline.executeWithHooks(new MeleeAttackAction(player, grunt), engine);
+      expect(cries()).toHaveLength(1);
+    });
 
-      // Failed strike by player: should not fire
-      warcraftBattleCryHook.execute({
-        engine,
-        actor: player,
-        actionType: 'melee',
-        action: new MeleeAttackAction(player, monster),
-        result: { success: false, cost: 0 },
-      });
-      expect(loggedMessage).toBe('');
+    it('stays silent for plain movement and for monster attacks', () => {
+      engine.handlePlayerAction(new MovementAction(player, 0, 1));
+      engine.actionPipeline.executeWithHooks(new MeleeAttackAction(grunt, player), engine);
+      expect(cries()).toEqual([]);
     });
   });
 

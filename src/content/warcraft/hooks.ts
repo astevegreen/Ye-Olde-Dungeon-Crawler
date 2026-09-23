@@ -1,4 +1,4 @@
-import type { ActionHook } from '../../engine';
+import { MeleeAttackAction, MovementAction, type ActionHook } from '../../engine';
 
 /**
  * Warcraft Action Hooks — Compliant-by-Design
@@ -12,29 +12,31 @@ import type { ActionHook } from '../../engine';
 
 /**
  * Warcraft Theme Action Hooks.
- * 
- * Demonstrates manifest-driven action pipeline hooks:
- * 1. `warcraftBattleCryHook`: Post-melee hook that logs an iconic Warcraft battle cry on successful strikes.
+ *
+ * `warcraftBattleCryHook`: the player may shout a battle cry as they strike in melee.
+ * Player melee is almost always a bump (a MovementAction into a hostile, which performs
+ * the attack as a sub-action), and hooks match only the outer action (§4), so this is a
+ * pre-hook on every action that recognizes both a bump attack and a direct melee strike.
  */
+const BATTLE_CRIES = ['For the Alliance!', "Lok'tar Ogar! Victory or death!", 'For Azeroth!', 'By the Light!'];
+
 export const warcraftBattleCryHook: ActionHook = {
   id: 'warcraft-battle-cry',
-  phase: 'post',
-  actionType: 'melee',
+  phase: 'pre',
+  actionType: '*',
   priority: 50,
-  execute(context) {
-    // Hooks now fire for monsters too (§4); these cries are the player's.
-    if (context.result?.success && context.actor === context.engine.player) {
-      const cries = [
-        'For the Alliance!',
-        "Lok'tar Ogar! Victory or death!",
-        'For Azeroth!',
-        'By the Light!',
-      ];
-      // 25% chance to shout during combat
-      if (context.engine.rng() < 0.25) {
-        const cry = cries[Math.floor(context.engine.rng() * cries.length)];
-        context.engine.log(`Battle Cry: "${cry}"`);
-      }
+  execute({ action, actor, engine }) {
+    // Hooks fire for monsters too (§4); these cries are the player's.
+    if (actor !== engine.player) return;
+    const bumpTarget =
+      action instanceof MovementAction
+        ? engine.map.getEntityAt(actor.x + action.dx, actor.y + action.dy, actor.planeId)
+        : null;
+    const strikes = action instanceof MeleeAttackAction || (!!bumpTarget && actor.isHostileTo(bumpTarget));
+    // 25% chance to shout as the blow lands
+    if (strikes && engine.rng() < 0.25) {
+      const cry = BATTLE_CRIES[Math.floor(engine.rng() * BATTLE_CRIES.length)];
+      engine.log(`Battle Cry: "${cry}"`);
     }
   },
 };

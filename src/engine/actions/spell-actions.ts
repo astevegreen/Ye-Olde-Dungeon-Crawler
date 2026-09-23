@@ -20,6 +20,11 @@ export class CastSpellAction implements Action {
   public readonly freeCast: boolean;
   public readonly allowVitalityBurn: boolean;
 
+  /** The acting entity, as the pipeline resolves it for hooks (§4). */
+  get actor(): Entity {
+    return this.caster;
+  }
+
   constructor(
     caster: Entity,
     spellId: string,
@@ -228,6 +233,11 @@ export class ZapWandAction implements Action {
   public readonly targetX: number;
   public readonly targetY: number;
 
+  /** The acting entity, as the pipeline resolves it for hooks (§4). */
+  get actor(): Actor {
+    return this.user;
+  }
+
   constructor(user: Actor, wand: WandItem, targetX: number, targetY: number) {
     this.user = user;
     this.wand = wand;
@@ -271,6 +281,11 @@ export class ReadScrollAction implements Action {
   public readonly targetY: number;
   public readonly itemTargetId?: string;
 
+  /** The acting entity, as the pipeline resolves it for hooks (§4). */
+  get actor(): Actor {
+    return this.user;
+  }
+
   constructor(
     user: Actor,
     scroll: ScrollItem,
@@ -312,6 +327,11 @@ export class ReadScrollAction implements Action {
 export class DrinkPotionAction implements Action {
   public readonly user: Actor;
   public readonly potion: PotionItem;
+
+  /** The acting entity, as the pipeline resolves it for hooks (§4). */
+  get actor(): Actor {
+    return this.user;
+  }
 
   constructor(user: Actor, potion: PotionItem) {
     this.user = user;

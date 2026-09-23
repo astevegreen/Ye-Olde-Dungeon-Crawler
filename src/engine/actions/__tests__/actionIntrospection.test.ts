@@ -5,9 +5,12 @@ import { GameEngine } from '../../engine';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
-import type { Entity } from '../../entities/entity';
+import type { Monster } from '../../entities/monster';
 import { createTestKobold } from '../../__fixtures__/testHelpers';
 import { flightRecorder } from '../../debug/flightRecorder';
+import { ItemFactory } from '../../items/factory';
+import { WindUpDeclareAction, WindUpExecuteAction } from '../combat';
+import { CastSpellAction, ZapWandAction, ReadScrollAction, DrinkPotionAction } from '../spell-actions';
 
 // Pins how the pipeline reads an action's optional introspection members (§4):
 // the hook-matching name and the acting entity.
@@ -15,7 +18,7 @@ describe('ActionPipeline action introspection', () => {
   let pipeline: ActionPipeline;
   let engine: GameEngine;
   let player: Player;
-  let kobold: Entity;
+  let kobold: Monster;
   let seen: ActionHookContext[];
 
   const ok = () => ({ success: true, cost: 100 });
@@ -60,6 +63,34 @@ describe('ActionPipeline action introspection', () => {
         .filter((e) => e.type === 'error' && e.summary.includes('INTROSPECTION_ATTRIBUTION'))
         .at(-1);
       expect(err?.details).toMatchObject({ entityId: kobold.id, phase: 'action-perform' });
+    });
+  });
+
+  describe('built-in actions name their actor', () => {
+    it('resolves the monster, not engine.player, for spell, item, and wind-up actions', () => {
+      // Short-circuit so only actor resolution runs, not the actions themselves.
+      pipeline.registerHook({
+        phase: 'pre',
+        execute: (ctx) => {
+          seen.push(ctx);
+          return { proceed: false, result: { success: true, cost: 0 } };
+        },
+      });
+      const target = { x: 5, y: 5 };
+      const actions: Action[] = [
+        new CastSpellAction(kobold, 'magic_missile', target.x, target.y),
+        new ZapWandAction(kobold, ItemFactory.createWandOfLightning(), target.x, target.y),
+        new ReadScrollAction(kobold, ItemFactory.createScrollOfTeleport()),
+        new DrinkPotionAction(kobold, ItemFactory.createManaPotion()),
+        new WindUpDeclareAction(kobold, target, 'Slam', 'The kobold winds up!'),
+        new WindUpExecuteAction(kobold, target, 'Slam'),
+      ];
+
+      for (const action of actions) pipeline.executeWithHooks(action, engine);
+
+      expect(seen.map((c) => [c.actionType, c.actor])).toEqual(
+        actions.map((a) => [a.constructor.name, kobold])
+      );
     });
   });
 

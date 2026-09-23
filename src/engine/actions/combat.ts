@@ -417,6 +417,11 @@ export class WindUpDeclareAction implements Action {
   public readonly warningMessage: string;
   public readonly options?: WindUpOptions;
 
+  /** The acting entity, as the pipeline resolves it for hooks (§4). */
+  get actor(): Monster {
+    return this.monster;
+  }
+
   constructor(
     monster: Monster,
     targetTile: Position,
@@ -466,6 +471,11 @@ export class WindUpExecuteAction implements Action {
   public readonly abilityName: string;
   public readonly multiplier: number;
   public readonly options?: WindUpOptions;
+
+  /** The acting entity, as the pipeline resolves it for hooks (§4). */
+  get actor(): Monster {
+    return this.monster;
+  }
 
   constructor(
     monster: Monster,

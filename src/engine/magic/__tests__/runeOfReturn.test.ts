@@ -6,6 +6,8 @@ import { Player } from '../../entities/player';
 import { Monster } from '../../entities/monster';
 import { WaitAction } from '../../actions/wait';
 import { MovementAction } from '../../actions/movement';
+import { WindUpDeclareAction } from '../../actions/combat';
+import { createTestKobold } from '../../__fixtures__/testHelpers';
 import { PickUpAction, LootFromContainerAction } from '../../actions/inventory-actions';
 import { Container } from '../../items/container';
 import { Item } from '../../items/item';
@@ -143,6 +145,22 @@ describe('Rune of Return — channel lifecycle', () => {
     expect(player.statusManager.hasStatus(RUNE_OF_RETURN_STATUS)).toBe(false);
     expect(rune.charges).toBe(RUNE_MAX_CHARGES - 1);
     expect(engine.currentFloor).toBe(0); // successfully teleported to town!
+  });
+
+  it("a monster's own action does not break the player's channel", () => {
+    const { engine, player } = buildEngine(1);
+    const kobold = createTestKobold('kobold-caster', { x: 12, y: 5 });
+    engine.map.addEntity(kobold);
+    engine.handlePlayerAction(new ChannelRuneOfReturnAction(player));
+    expect(player.statusManager.hasStatus(RUNE_OF_RETURN_STATUS)).toBe(true);
+
+    // A telegraph deals no damage; only the player's own actions or real damage may interrupt.
+    engine.actionPipeline.executeWithHooks(
+      new WindUpDeclareAction(kobold, { x: 12, y: 6 }, 'Slam', 'The kobold winds up!'),
+      engine
+    );
+
+    expect(player.statusManager.hasStatus(RUNE_OF_RETURN_STATUS)).toBe(true);
   });
 
   it('does not consume a charge or teleport if interrupted before completion', () => {

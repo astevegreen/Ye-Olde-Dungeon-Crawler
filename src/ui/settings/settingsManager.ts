@@ -9,15 +9,18 @@ export interface ActionMetadata {
   defaultCodes: string[];
 }
 
+// Every default code maps to exactly one action. Letters shared by the vi and WASD
+// schemes and a command (S Search, L Look, U Allocate, B Bestiary) belong to the command;
+// players who want full vi or WASD movement rebind in Settings.
 export const ACTION_METADATA: ActionMetadata[] = [
   // Locomotion
   { id: 'move_n', name: 'Move North', category: 'Locomotion', defaultCodes: ['ArrowUp', 'KeyW', 'KeyK', 'Numpad8'] },
-  { id: 'move_s', name: 'Move South', category: 'Locomotion', defaultCodes: ['ArrowDown', 'KeyS', 'KeyJ', 'Numpad2'] },
+  { id: 'move_s', name: 'Move South', category: 'Locomotion', defaultCodes: ['ArrowDown', 'KeyJ', 'Numpad2'] },
   { id: 'move_w', name: 'Move West', category: 'Locomotion', defaultCodes: ['ArrowLeft', 'KeyA', 'KeyH', 'Numpad4'] },
-  { id: 'move_e', name: 'Move East', category: 'Locomotion', defaultCodes: ['ArrowRight', 'KeyD', 'KeyL', 'Numpad6'] },
+  { id: 'move_e', name: 'Move East', category: 'Locomotion', defaultCodes: ['ArrowRight', 'KeyD', 'Numpad6'] },
   { id: 'move_nw', name: 'Move Northwest', category: 'Locomotion', defaultCodes: ['Numpad7', 'KeyY'] },
-  { id: 'move_ne', name: 'Move Northeast', category: 'Locomotion', defaultCodes: ['Numpad9', 'KeyU'] },
-  { id: 'move_sw', name: 'Move Southwest', category: 'Locomotion', defaultCodes: ['Numpad1', 'KeyB'] },
+  { id: 'move_ne', name: 'Move Northeast', category: 'Locomotion', defaultCodes: ['Numpad9'] },
+  { id: 'move_sw', name: 'Move Southwest', category: 'Locomotion', defaultCodes: ['Numpad1'] },
   { id: 'move_se', name: 'Move Southeast', category: 'Locomotion', defaultCodes: ['Numpad3', 'KeyN'] },
   { id: 'wait', name: 'Wait / Pass Turn', category: 'Locomotion', defaultCodes: ['Space', 'Numpad5', 'Period'] },
 

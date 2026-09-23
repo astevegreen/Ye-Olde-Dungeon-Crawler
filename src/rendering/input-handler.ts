@@ -466,6 +466,14 @@ export class InputHandler {
       }
     }
 
+    // 0.05. An open map owns the keyboard (§6): it closes on M/Esc/Space, pages floors,
+    // and absorbs everything else, so no key reaches the simulation underneath it.
+    if (this.mapOverlay?.isOpen) {
+      this.mapOverlay.handleKeyDown(e, this.engine);
+      this.onActionProcessed();
+      return true;
+    }
+
     // 0.1. Direction Prompt for Smart-Close Door
     if (this.pendingCloseDoorDirection) {
       if (code === 'Escape') {

@@ -10,6 +10,8 @@ import { NPC } from '../../../engine';
 import type { Item } from '../../../engine';
 import { COTW_TILE_ZONE_BANDS } from '../../../content/cotw/tileZones';
 import { COTW_TOWN } from '../../../content/cotw/town';
+import { COTW_SPRITE_RECIPES } from '../../../content/cotw/sprites';
+import { ATLAS_MAP } from '../sprite-atlas';
 
 describe('sprite-mapper — Tag-Priority Monster, Item, and Zone-Themed Terrain Resolvers', () => {
   describe('getEntitySpriteKey', () => {
@@ -186,38 +188,32 @@ describe('sprite-mapper — Tag-Priority Monster, Item, and Zone-Themed Terrain 
       expect(getItemSpriteKey(stone)).toBe('rune_stone');
     });
 
-    it('resolves CotW signature relics and artifacts to dedicated procedural sprites', () => {
-      // 1. Níðhögg's Fang (Floor 45 relic)
-      const fangByDef = { id: 'loot-1', definitionId: 'nidhogg_fang', name: "Níðhögg's Fang", category: 'weapon' } as Item;
-      const fangByName = { id: 'loot-2', name: "Níðhögg's Fang", category: 'weapon' } as Item;
-      expect(getItemSpriteKey(fangByDef)).toBe('nidhogg_fang');
-      expect(getItemSpriteKey(fangByName)).toBe('nidhogg_fang');
+    it("uses a pack recipe keyed by the definition ID, for items and monsters alike", () => {
+      // What SpriteAtlas.hasSprite reports for cotw: built-in cells plus every cotw recipe.
+      const hasSprite = (key: string) => key in ATLAS_MAP || key in COTW_SPRITE_RECIPES;
 
-      // 2. Sól-Shard Focus
-      const focusByDef = { id: 'loot-3', definitionId: 'sol_shard_focus', name: 'Sól-Shard Focus', category: 'shield' } as Item;
-      const focusByName = { id: 'loot-4', name: 'Sol-Shard Focus', category: 'shield' } as Item;
-      expect(getItemSpriteKey(focusByDef)).toBe('sol_shard_focus');
-      expect(getItemSpriteKey(focusByName)).toBe('sol_shard_focus');
+      const fang = { id: 'loot-1', definitionId: 'nidhogg_fang', name: "Níðhögg's Fang", category: 'weapon' } as Item;
+      const lodestone = { id: 'loot-2', definitionId: 'duergar_lodestone', name: 'Duergar Lodestone', category: 'misc' } as Item;
+      expect(getItemSpriteKey(fang, hasSprite)).toBe('nidhogg_fang');
+      expect(getItemSpriteKey(lodestone, hasSprite)).toBe('duergar_lodestone');
 
-      // 3. Petrified World-Bark Tower Shield
-      const shieldByDef = { id: 'loot-5', definitionId: 'petrified_world_bark_tower_shield', name: 'Petrified World-Bark Tower Shield', category: 'shield' } as Item;
-      expect(getItemSpriteKey(shieldByDef)).toBe('petrified_world_bark_tower_shield');
+      const nidhogg = new Monster({ id: 'm-nid', name: 'Níðhögg, the Root-Gnawer', position: { x: 0, y: 0 }, stats: { hp: 10, maxHp: 10, attack: 1, defense: 0 }, definitionId: 'nidhogg', tags: ['boss', 'dragon'] });
+      expect(getEntitySpriteKey(nidhogg, hasSprite)).toBe('nidhogg');
 
-      // 4. Antler-Crowned Mask of the Iviðja
-      const maskByDef = { id: 'loot-6', definitionId: 'antler_crowned_mask', name: 'Antler-Crowned Mask of the Iviðja', category: 'helmet' } as Item;
-      expect(getItemSpriteKey(maskByDef)).toBe('antler_crowned_mask');
-
-      // 5. Marrow-Gnawed Ring (Corrupted relic)
-      const ringByDef = { id: 'loot-7', definitionId: 'marrow_gnawed_ring', name: 'Marrow-Gnawed Ring', category: 'ring', quality: 'cursed' } as Item;
-      expect(getItemSpriteKey(ringByDef)).toBe('marrow_gnawed_ring');
-
-      // 6. Duergar Lodestone
-      const stoneByDef = { id: 'loot-8', definitionId: 'duergar_lodestone', name: 'Duergar Lodestone', category: 'misc' } as Item;
-      expect(getItemSpriteKey(stoneByDef)).toBe('duergar_lodestone');
+      // Without a pack recipe the same entities fall back to shared archetype sprites.
+      expect(getItemSpriteKey(fang)).toBe('broadsword');
+      expect(getEntitySpriteKey(nidhogg)).toBe('giant_boss');
     });
   });
 
   describe('getTerrainSpriteKey — Town and Zone Theming', () => {
+    it("falls back to the pack's base floor and wall when it draws no town or zone variant", () => {
+      const baseOnly = (key: string) => key === 'floor' || key === 'wall';
+      expect(getTerrainSpriteKey('floor', 0, COTW_TILE_ZONE_BANDS, 'shop', baseOnly)).toBe('floor');
+      expect(getTerrainSpriteKey('wall', 0, undefined, undefined, baseOnly)).toBe('wall');
+      expect(getTerrainSpriteKey('floor', 12, COTW_TILE_ZONE_BANDS, undefined, baseOnly)).toBe('floor');
+    });
+
     it('resolves distinct town building floor and wall tiles when inside buildings on floor 0', () => {
       expect(getTerrainSpriteKey('floor', 0, COTW_TILE_ZONE_BANDS, 'shop')).toBe('floor_town_shop');
       expect(getTerrainSpriteKey('wall', 0, COTW_TILE_ZONE_BANDS, 'shop')).toBe('wall_town_shop');

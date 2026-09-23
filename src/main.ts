@@ -57,6 +57,7 @@ import { showToast } from './ui/toast';
 import { getBrowserAsyncStore } from './ui/indexedDbStore';
 import { setupSaveDragAndDrop, importSaveWithValidation } from './ui/saveImporter';
 import { defaultPlatformAdapter, getBrowserStorage } from './ui/platform';
+import { applyDocumentBranding, resolveBranding } from './ui/branding';
 import {
   CharacterMenuModal,
   CharacterTab,
@@ -85,6 +86,8 @@ declare global {
   interface ImportMetaEnv {
     /** Content pack selected at build time (vite.config.ts). */
     readonly VITE_THEME?: string;
+    /** package.json version, injected by vite.config.ts. */
+    readonly VITE_APP_VERSION?: string;
   }
   /** Debug/e2e introspection handles (e2e/campaign-flow.spec.ts reads the engine and input handler). */
   interface Window {
@@ -100,10 +103,11 @@ declare global {
 const targetTheme = import.meta.env.VITE_THEME || 'cotw';
 const activeManifest = targetTheme === 'warcraft' ? warcraftManifest : cotwManifest;
 const activeThemeTokens = targetTheme === 'warcraft' ? WARCRAFT_THEME_TOKENS : COTW_THEME_TOKENS;
+const brand = resolveBranding(activeManifest);
 
 window.addEventListener('DOMContentLoaded', () => {
   applyThemeTokens(activeThemeTokens);
-  document.title = activeManifest.name;
+  applyDocumentBranding(document, brand);
   const canvas = document.getElementById('game-canvas') as HTMLCanvasElement | null;
   if (!canvas) {
     console.error('Fatal: Canvas element #game-canvas not found.');
@@ -446,7 +450,7 @@ window.addEventListener('DOMContentLoaded', () => {
       nameEl.textContent = title ? `🛡️ ${heroName}, ${title}` : `🛡️ ${heroName}`;
     }
     if (floorEl) {
-      floorEl.textContent = activeEngine.currentFloor === 0 ? 'Town (Bjarnarhaven)' : `Floor ${activeEngine.currentFloor}`;
+      floorEl.textContent = activeEngine.currentFloor === 0 ? `Town (${brand.townName})` : `Floor ${activeEngine.currentFloor}`;
     }
     // Position/turn were previously also shown here, duplicating both the canvas's own
     // HUD and each other (HUD overhaul). The one remaining turn readout lives in
@@ -559,9 +563,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const sagaShareModal = new SagaShareModal({
     leaderboard: new Leaderboard(getBrowserStorage() ?? undefined),
+    branding: brand,
     onSagaInscribed: (entry) => {
       titleScreen?.refreshValhalla();
-      titleScreen?.setStatus(`Inscribed ${entry.heroName}'s saga into the Hall of Valhalla! 🏆`);
+      titleScreen?.setStatus(`Inscribed ${entry.heroName}'s saga into the ${brand.hallOfFameName}! 🏆`);
     },
     onClose: () => {
       if (inputHandler && activeEngine && gameContainer && gameContainer.style.display !== 'none') {
@@ -791,21 +796,21 @@ window.addEventListener('DOMContentLoaded', () => {
 
     if (status === 'victorious') {
       if (icon) icon.textContent = '🏆';
-      if (title) title.textContent = 'Victory in Midgard!';
+      if (title) title.textContent = brand.victoryTitle;
       if (banner) banner.style.background = '#15803d';
-      if (bannerTitle) bannerTitle.textContent = 'VICTOR OF THE NORTH';
-      if (bannerSub) bannerSub.textContent = 'The Sun-Stone of Freyr is restored to Bjarnarhaven!';
+      if (bannerTitle) bannerTitle.textContent = 'VICTORIOUS';
+      if (bannerSub) bannerSub.textContent = brand.victoryBanner;
     } else {
       if (icon) icon.textContent = '✝';
       if (title) title.textContent = 'Fallen in Battle';
       if (banner) banner.style.background = '#7f1d1d';
       if (bannerTitle) bannerTitle.textContent = 'FALLEN IN BATTLE';
-      if (bannerSub) bannerSub.textContent = 'Your soul departs Midgard for the eternal halls of Valhalla.';
+      if (bannerSub) bannerSub.textContent = brand.fallenBanner;
     }
 
     if (summary.entry) {
       if (pre) pre.textContent = Leaderboard.formatEpitaph(summary.entry);
-      if (scoreBadge) scoreBadge.textContent = `Valhalla Score: ${summary.entry.score.toLocaleString()} PTS`;
+      if (scoreBadge) scoreBadge.textContent = `${brand.hallOfFameShortName} Score: ${summary.entry.score.toLocaleString()} PTS`;
     }
 
     if (autosaveBtn) {
@@ -1484,6 +1489,6 @@ window.addEventListener('DOMContentLoaded', () => {
   mainMenu.show();
 
   if (import.meta.env?.DEV) {
-    console.log('Castle of the Winds initialized with Main Menu & Settings.');
+    console.log(`${brand.title} initialized with Main Menu & Settings.`);
   }
 });

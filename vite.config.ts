@@ -1,8 +1,12 @@
 import { defineConfig, type Plugin } from 'vite';
 import { configDefaults } from 'vitest/config';
 import { viteSingleFile } from 'vite-plugin-singlefile';
+import { readFileSync } from 'node:fs';
 
 declare const process: any;
+
+// Shown on the title screens (src/ui/branding.ts), so the UI never claims a version the build isn't.
+const APP_VERSION: string = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')).version;
 
 // Browser file:// security treats ES module scripts (<script type="module" crossorigin>)
 // as unique/opaque origins and throws CORS security errors on local files.
@@ -43,6 +47,7 @@ export default defineConfig(({ mode }) => {
     ],
     define: {
       'import.meta.env.VITE_THEME': JSON.stringify(theme),
+      'import.meta.env.VITE_APP_VERSION': JSON.stringify(APP_VERSION),
     },
     base: './',
     // Keep class names through minification: the action pipeline reports

@@ -439,10 +439,31 @@ export type SpriteRecipe<TContext = any> = (
   size: number
 ) => void;
 
+/**
+ * Pack-specific wording for shared presentation screens (§3: presentation code names no
+ * pack). The pack's title and tagline are `GameContentManifest.name`/`description`, and
+ * its town is `town.name`; everything here is optional and falls back to neutral text.
+ */
+export interface PackBranding {
+  /** The high-score hall, e.g. "Hall of Heroes". */
+  hallOfFameName?: string;
+  /** Short form for buttons and score badges, e.g. "Heroes". */
+  hallOfFameShortName?: string;
+  /** The world in flavor text, e.g. "Azeroth". */
+  worldName?: string;
+  /** Game-over heading after a win, e.g. "Victory in Azeroth!". */
+  victoryTitle?: string;
+  /** Game-over banner line after a win. */
+  victoryBanner?: string;
+  /** Game-over banner line after a death. */
+  fallenBanner?: string;
+}
+
 export interface GameContentManifest {
   id: string;
   name: string;
   description?: string;
+  branding?: PackBranding;
   monsters: MonsterDefinition[];
   items: ItemDefinition[];
   spells: SpellDefinition[];

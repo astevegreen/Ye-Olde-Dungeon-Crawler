@@ -34,6 +34,14 @@ export const cotwManifest: GameContentManifest = {
   id: 'cotw',
   name: 'Castle of the Winds',
   description: 'Classic Norse-themed roguelike fantasy adventure in Midgard.',
+  branding: {
+    hallOfFameName: 'Hall of Valhalla',
+    hallOfFameShortName: 'Valhalla',
+    worldName: 'Midgard',
+    victoryTitle: 'Victory in Midgard!',
+    victoryBanner: 'The Sun-Stone of Freyr is restored to Bjarnarhaven!',
+    fallenBanner: 'Your soul departs Midgard for the eternal halls of Valhalla.',
+  },
   tiles: COTW_TILES,
   monsters: COTW_MONSTERS,
   items: COTW_ITEMS,
@@ -63,7 +71,6 @@ export const cotwManifest: GameContentManifest = {
   },
   trackedMilestones: [
     { flag: 'relic_recovered', label: 'Sun-Stone Claimed', description: 'Recovered the Sun-Stone of Freyr from the dungeon depths.', icon: '☀️' },
-    { flag: 'winch_repaired', label: 'Mine Lift Restored', description: 'Repaired the main haulage winch to descend into the abyss.', icon: '⚙️' },
     { flag: 'boss_slain', label: 'Hrungnir Slain', description: 'Vanquished the Frost Giant Overlord in epic combat.', icon: '👑' },
     { flag: 'altar_cleansed', label: 'Altar of Tyr Cleansed', description: 'Purified the corrupted altar with solemn sacrifice.', icon: '⚖️' },
     { flag: 'oath_resolved', label: "The Matriarch's Blood-Oath", description: 'Struck a lasting bargain with a troll-wife matriarch to sever the siphon on the village.', icon: '🩸' },

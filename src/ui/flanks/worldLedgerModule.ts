@@ -28,12 +28,9 @@ function formatFactionName(key: string): string {
     .join(' ');
 }
 
-const DEFAULT_MILESTONES: TrackedMilestoneDefinition[] = [
-  { flag: 'relic_recovered', label: 'Sun-Stone Claimed', description: 'Recovered the radiant Sun-Stone from the depths.', icon: '☀️' },
-  { flag: 'winch_repaired', label: 'Mine Lift Restored', description: 'Restored the haulage winch for deep shaft descent.', icon: '⚙️' },
-  { flag: 'boss_slain', label: 'Hrungnir Vanquished', description: 'Defeated the ancient giant guarding the abyss.', icon: '👑' },
-  { flag: 'altar_cleansed', label: 'Altar Purified', description: 'Offered sacred dedication at the Altar of Tyr.', icon: '⚖️' },
-];
+// A pack lists the story milestones its ledger tracks (manifest.trackedMilestones); without
+// that list the ledger shows none.
+const DEFAULT_MILESTONES: TrackedMilestoneDefinition[] = [];
 
 export class WorldLedgerModule implements FlankModule {
   public readonly id = 'world_ledger';

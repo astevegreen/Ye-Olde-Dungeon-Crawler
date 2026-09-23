@@ -10,6 +10,7 @@ import { setupSaveDragAndDrop, importSaveWithValidation } from './saveImporter';
 import type { SaveCodeModal } from './saveCodeModal';
 import type { SagaShareModal } from './sagaShareModal';
 import { defaultPlatformAdapter, copyTextToClipboard, getBrowserStorage } from './platform';
+import { resolveBranding } from './branding';
 import type { AutosaveManager } from '../engine';
 import type { GameEngine } from '../engine';
 
@@ -81,7 +82,7 @@ export class TitleScreen {
   private attributes: CharacterAttributes = { strength: 12, intelligence: 12, constitution: 12, dexterity: 12 };
   private poolPoints = 5;
 
-  // Hall of Valhalla Leaderboard
+  // Hall of Fame leaderboard
   public readonly leaderboard: Leaderboard = new Leaderboard(getBrowserStorage() ?? undefined);
   private valhallaModalEl: HTMLElement | null = null;
   private valhallaListEl: HTMLElement | null = null;
@@ -226,7 +227,7 @@ export class TitleScreen {
     document.getElementById('btn-dec-dex')?.addEventListener('click', () => this.adjustStat('dexterity', -1));
     document.getElementById('btn-inc-dex')?.addEventListener('click', () => this.adjustStat('dexterity', 1));
 
-    // Hall of Valhalla Leaderboard modal elements
+    // Hall of Fame leaderboard modal elements
     const valhallaOpenBtn = document.getElementById('btn-valhalla');
     this.valhallaModalEl = document.getElementById('valhalla-modal');
     this.valhallaListEl = document.getElementById('valhalla-list');
@@ -455,12 +456,13 @@ export class TitleScreen {
     this.valhallaListEl.innerHTML = '';
 
     if (champions.length === 0) {
+      const hall = resolveBranding(this.profileManager.manifest).hallOfFameName;
       const empty = document.createElement('div');
       empty.className = 'roster-empty-notice';
-      empty.textContent = 'No champions have yet entered Valhalla. Embark on a saga to be recorded!';
+      empty.textContent = `No champions have yet entered the ${hall}. Embark on a saga to be recorded!`;
       this.valhallaListEl.appendChild(empty);
       if (this.valhallaEpitaphCardEl) {
-        this.valhallaEpitaphCardEl.textContent = 'No records in the Hall of Valhalla.';
+        this.valhallaEpitaphCardEl.textContent = `No records in the ${hall}.`;
       }
       if (this.valhallaExportBtn) this.valhallaExportBtn.disabled = true;
       if (this.valhallaShareBtn) this.valhallaShareBtn.disabled = true;

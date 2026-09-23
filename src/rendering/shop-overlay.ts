@@ -478,7 +478,7 @@ export class ShopOverlay {
 
     // Draw NPC avatar sprite
     if (this.atlas) {
-      const npcSprite = getEntitySpriteKey(npc);
+      const npcSprite = getEntitySpriteKey(npc, (k) => this.atlas?.hasSprite(k) ?? false);
       this.atlas.drawSprite(ctx, npcSprite, modalX + 16, bannerY + 7, 32);
     }
 
@@ -658,7 +658,7 @@ export class ShopOverlay {
 
       // Item icon
       if (this.atlas) {
-        const spriteKey = getItemSpriteKey(item);
+        const spriteKey = getItemSpriteKey(item, (k) => this.atlas?.hasSprite(k) ?? false);
         this.atlas.drawSprite(ctx, spriteKey, modalX + 44, rowY + 1, 20);
       }
 

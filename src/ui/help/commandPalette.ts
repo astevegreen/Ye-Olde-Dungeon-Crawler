@@ -162,7 +162,7 @@ export class CommandPalette {
         <div class="retro-titlebar" style="background: linear-gradient(90deg, #1e3a8a, #2563eb); padding: 4px 8px;">
           <div class="retro-titlebar-title" style="font-size: 12px;">
             <span>⌨️</span>
-            <span>Castle of the Winds - Quick Command Palette</span>
+            <span>Quick Command Palette</span>
           </div>
           <button id="btn-cmd-palette-close" class="win-btn win-btn-sm" style="padding: 0 4px; font-weight: bold;">✕</button>
         </div>

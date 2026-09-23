@@ -1,9 +1,12 @@
 import { Leaderboard, type HallOfFameEntry } from '../engine';
 import { copyTextToClipboard } from './platform';
 import type { UIModal } from './modalStack';
+import { resolveBranding, type ResolvedBranding } from './branding';
 
 export interface SagaShareModalOptions {
   leaderboard: Leaderboard;
+  /** The active pack's wording; neutral text when omitted. */
+  branding?: ResolvedBranding;
   onSagaInscribed?: (entry: HallOfFameEntry) => void;
   onClose?: () => void;
 }
@@ -57,12 +60,13 @@ export class SagaShareModal implements UIModal {
     modal.style.display = 'none';
     modal.style.zIndex = '270';
 
+    const brand = this.options.branding ?? resolveBranding();
     modal.innerHTML = `
       <div class="retro-window" style="width: 640px; max-width: 95vw;">
         <div class="retro-titlebar">
           <div class="retro-titlebar-title">
             <span>📜</span>
-            <span>Saga Exchange - Hall of Valhalla Run Sharing</span>
+            <span>Saga Exchange - ${brand.hallOfFameName} Run Sharing</span>
           </div>
           <button id="btn-saga-close-x" class="win-btn win-btn-sm" style="padding: 0 5px; font-weight: bold;">✕</button>
         </div>
@@ -77,7 +81,7 @@ export class SagaShareModal implements UIModal {
           <!-- Share Section -->
           <div id="saga-share-section">
             <p class="retro-note" style="margin-bottom: 6px;">
-              Share your champion's heroic saga across Midgard via compact code or direct URL.
+              Share your champion's heroic saga across ${brand.worldName} via compact code or direct URL.
             </p>
 
             <div id="saga-share-preview" class="retro-inset-list" style="height: 120px; padding: 6px; font-family: monospace; font-size: 11px; white-space: pre-wrap; background: #0f172a; color: #f8fafc; overflow-y: auto; margin-bottom: 8px;">
@@ -109,7 +113,7 @@ export class SagaShareModal implements UIModal {
           <!-- Import Section -->
           <div id="saga-import-section" style="display: none;">
             <p class="retro-note" style="margin-bottom: 6px;">
-              Paste a saga run code (e.g. <code>SAGA1_...</code>) or full share link to inspect and inscribe into Valhalla.
+              Paste a saga run code (e.g. <code>SAGA1_...</code>) or full share link to inspect and inscribe into the ${brand.hallOfFameName}.
             </p>
 
             <textarea
@@ -122,7 +126,7 @@ export class SagaShareModal implements UIModal {
 
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <button id="btn-saga-inspect" class="win-btn" style="font-weight: bold;">🔍 Inspect Saga</button>
-              <button id="btn-saga-inscribe" class="win-btn primary-btn" disabled style="font-weight: bold;">🏆 Inscribe into Valhalla</button>
+              <button id="btn-saga-inscribe" class="win-btn primary-btn" disabled style="font-weight: bold;">🏆 Inscribe into ${brand.hallOfFameShortName}</button>
             </div>
 
             <label class="retro-label" style="display: block; margin-bottom: 2px;">Inspected Hero Saga:</label>

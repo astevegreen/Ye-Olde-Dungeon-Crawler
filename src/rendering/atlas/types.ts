@@ -124,14 +124,7 @@ export type ItemSpriteKey =
   | 'gem'
   | 'key'
   | 'torch'
-  | 'rune_stone'
-  // Signature Relics & Artifacts (Castle of the Winds)
-  | 'nidhogg_fang'
-  | 'sol_shard_focus'
-  | 'petrified_world_bark_tower_shield'
-  | 'antler_crowned_mask'
-  | 'marrow_gnawed_ring'
-  | 'duergar_lodestone';
+  | 'rune_stone';
 
 export type SpriteKey = TerrainSpriteKey | EntitySpriteKey | ItemSpriteKey;
 

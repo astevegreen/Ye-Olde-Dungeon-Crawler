@@ -669,7 +669,7 @@ export class InventoryOverlay implements UIModal {
       const nameplateH = 13;
       const spriteArea = cellSize - nameplateH - 6;
       if (this.atlas) {
-        const spriteKey = getItemSpriteKey(it);
+        const spriteKey = getItemSpriteKey(it, (k) => this.atlas?.hasSprite(k) ?? false);
         const spriteSize = Math.max(16, Math.min(spriteArea, cellSize - 8));
         const spriteX = cellX + Math.floor((cellSize - spriteSize) / 2);
         const spriteY = cellY + 4;

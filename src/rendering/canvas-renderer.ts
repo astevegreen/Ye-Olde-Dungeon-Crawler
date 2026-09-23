@@ -761,11 +761,11 @@ export class CanvasRenderer {
     }
 
     // State 2 & 3: Explored vs Visible via Sprite Atlas
-    const spriteKey = getTerrainSpriteKey(tile.type, currentFloor, tileZoneBands, buildingType);
+    const spriteKey = getTerrainSpriteKey(tile.type, currentFloor, tileZoneBands, buildingType, (k) => this.atlas.hasRecipe(k));
     this.atlas.drawSprite(this.ctx, spriteKey, px, py, cs, visibility);
 
-    if (tile.visual === 'portal' || tile.type === 'gateway_valhalla') {
-      this.drawFixtureOverlay(px, py, cs, tile.visual ?? tile.type, visibility);
+    if (tile.visual === 'portal') {
+      this.drawFixtureOverlay(px, py, cs, tile.visual, visibility);
     } else if (
       tile.type === 'shallow_water' ||
       tile.type === 'chasm' ||
@@ -791,8 +791,7 @@ export class CanvasRenderer {
     const cy = py + cs / 2;
 
     switch (type) {
-      case 'portal':
-      case 'gateway_valhalla': {
+      case 'portal': {
         this.ctx.fillStyle = isVisible ? 'rgba(234, 179, 8, 0.35)' : 'rgba(161, 98, 7, 0.2)';
         this.ctx.beginPath();
         this.ctx.arc(cx, cy, cs * 0.44, 0, Math.PI * 2);
@@ -1267,14 +1266,14 @@ export class CanvasRenderer {
     ctx.fill();
 
     // Sprite
-    const spriteKey = player ? getEntitySpriteKey(player) : 'player';
+    const spriteKey = player ? getEntitySpriteKey(player, this.atlas.hasSprite.bind(this.atlas)) : 'player';
     this.atlas.drawSprite(ctx, spriteKey, px, py, cs, Visibility.Visible);
   }
 
   private renderMonster(px: number, py: number, cs: number, monster: Entity): void {
     const ctx = this.ctx;
 
-    const spriteKey = getEntitySpriteKey(monster);
+    const spriteKey = getEntitySpriteKey(monster, this.atlas.hasSprite.bind(this.atlas));
     this.atlas.drawSprite(ctx, spriteKey, px, py, cs, Visibility.Visible);
 
     // Monster mini HP bar if damaged
@@ -1434,7 +1433,7 @@ export class CanvasRenderer {
     ctx.restore();
 
     // Draw item sprite
-    const spriteKey = getItemSpriteKey(item);
+    const spriteKey = getItemSpriteKey(item, this.atlas.hasSprite.bind(this.atlas));
     this.atlas.drawSprite(ctx, spriteKey, px + 2, py + 2, cs - 4, Visibility.Visible);
 
     // Multi-item indicator dot

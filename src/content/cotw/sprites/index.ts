@@ -8,11 +8,14 @@ export { COTW_TILE_SPRITES, COTW_MONSTER_SPRITES, COTW_ITEM_SPRITES };
 /**
  * Full CotW procedural sprite recipe set.
  *
- * Consumers look recipes up by string key (`SpriteAtlas` iterates `ATLAS_MAP`),
- * so merge order carries no meaning.
+ * Keys are atlas sprite keys. A key the atlas doesn't build in gets its own cell, and a
+ * key equal to a monster or item definition ID becomes that entity's sprite (the relic
+ * recipes in items.ts work this way). Merge order carries no meaning.
  */
 export const COTW_SPRITE_RECIPES: Record<string, SpriteRecipe> = {
   ...COTW_TILE_SPRITES,
   ...COTW_MONSTER_SPRITES,
   ...COTW_ITEM_SPRITES,
+  // Níðhögg wears the elder-dragon boss art rather than the generic boss giant.
+  nidhogg: COTW_MONSTER_SPRITES.dragon_boss,
 };

@@ -83,10 +83,8 @@ export class JournalModule implements FlankModule {
                 landmarks.push('Stairs Down 🪜');
               } else if (tile.landmarkLabel && !landmarks.includes(tile.landmarkLabel)) {
                 landmarks.push(tile.landmarkLabel);
-              } else if ((tile.type === 'altar' || tile.type.includes('altar')) && !landmarks.includes('Altar of Tyr ⚖️')) {
-                landmarks.push('Altar of Tyr ⚖️');
-              } else if (tile.type === 'gateway_valhalla' && !landmarks.includes('Valhalla Gateway ✨')) {
-                landmarks.push('Valhalla Gateway ✨');
+              } else if (tile.type.includes('altar') && !tile.landmarkLabel && !landmarks.includes('Altar')) {
+                landmarks.push('Altar');
               }
             }
           }

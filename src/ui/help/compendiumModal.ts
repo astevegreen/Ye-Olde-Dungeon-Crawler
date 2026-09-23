@@ -275,7 +275,7 @@ export class CompendiumModal implements UIModal {
         <div style="text-align: center; padding: 40px 10px; color: #64748b;">
           <div style="font-size: 48px; margin-bottom: 8px;">❓</div>
           <div style="font-size: 14px; font-weight: bold; color: #94a3b8; margin-bottom: 6px;">Undiscovered Creature</div>
-          <div style="max-width: 320px; margin: 0 auto; font-size: 11px;">You have not yet laid eyes on this creature in Midgard's dungeon depths. Explore deeper subterranean floors to encounter it and reveal its profile.</div>
+          <div style="max-width: 320px; margin: 0 auto; font-size: 11px;">You have not yet laid eyes on this creature in the dungeon depths. Explore deeper subterranean floors to encounter it and reveal its profile.</div>
         </div>
       `;
     }

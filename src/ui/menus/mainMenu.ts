@@ -1,6 +1,7 @@
 import { resolveContinueTarget } from '../../engine';
 import type { AutosaveManager, ContinueTarget, ProfileManager } from '../../engine';
 import { formatStorageStatus, getStoragePersistenceInfo } from '../persistenceInit';
+import { APP_VERSION, resolveBranding } from '../branding';
 
 export interface MainMenuOptions {
   profileManager: ProfileManager;
@@ -92,12 +93,13 @@ export class MainMenu {
     overlay.style.display = 'none';
     overlay.style.zIndex = '180';
 
+    const brand = resolveBranding(this.options.profileManager.manifest);
     overlay.innerHTML = `
       <div class="retro-window" style="width: 520px; max-width: 95vw; box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);">
         <div class="retro-titlebar">
           <div class="retro-titlebar-title">
             <span>🛡️</span>
-            <span>Castle of the Winds - Main Menu</span>
+            <span>${brand.title} - Main Menu</span>
           </div>
           <div style="font-size: 10px; opacity: 0.9;">DOS / Win 3.1</div>
         </div>
@@ -105,8 +107,8 @@ export class MainMenu {
         <div class="retro-window-body" style="padding: 16px; gap: 14px;">
           <!-- Banner -->
           <div class="retro-banner" style="padding: 14px 12px;">
-            <div class="retro-banner-title" style="font-size: 22px; letter-spacing: 3px;">CASTLE OF THE WINDS</div>
-            <div class="retro-banner-sub" style="font-size: 12px; margin-top: 4px;">A Classic Role-Playing Adventure (1989-1993)</div>
+            <div class="retro-banner-title" style="font-size: 22px; letter-spacing: 3px;">${brand.title.toUpperCase()}</div>
+            <div class="retro-banner-sub" style="font-size: 12px; margin-top: 4px;">${brand.tagline}</div>
           </div>
 
           <!-- Main Options List -->
@@ -127,7 +129,7 @@ export class MainMenu {
               📖 Help &amp; Controls Manual
             </button>
             <button type="button" id="btn-menu-valhalla" class="win-btn" style="padding: 9px; font-size: 13px;">
-              🏆 Hall of Valhalla Leaderboard
+              🏆 ${brand.hallOfFameName} Leaderboard
             </button>
           </div>
 
@@ -139,7 +141,7 @@ export class MainMenu {
           <!-- Statusbar -->
           <div class="retro-statusbar" style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
             <span id="main-menu-storage-status" class="storage-badge-pill">Storage: Checking...</span>
-            <span class="version-tag">v1.0.0-final</span>
+            <span class="version-tag">${APP_VERSION}</span>
           </div>
         </div>
       </div>

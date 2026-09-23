@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Castle of the Winds</title>
+    <title>Dungeon Crawler</title>
   </head>
   <body>
     <div id="app">
@@ -64,7 +64,7 @@
           <div class="retro-titlebar">
             <div class="retro-titlebar-title">
               <span>🛡️</span>
-              <span>Castle of the Winds - Character Roster</span>
+              <span>Character Roster</span>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
               <button id="btn-title-back-menu" class="win-btn win-btn-sm" style="padding: 1px 6px; font-size: 11px;">⮌ Main Menu</button>
@@ -74,8 +74,8 @@
 
           <div class="retro-window-body">
             <div class="retro-banner">
-              <div class="retro-banner-title">CASTLE OF THE WINDS</div>
-              <div class="retro-banner-sub">A Fantasy Role-Playing Adventure (1989-1993)</div>
+              <div class="retro-banner-title">DUNGEON CRAWLER</div>
+              <div class="retro-banner-sub">A turn-based dungeon adventure.</div>
             </div>
 
             <div class="retro-columns">
@@ -92,7 +92,7 @@
                 </div>
                 <div style="margin-top: 4px; display: flex; gap: 4px;">
                   <button id="btn-title-savecode" class="win-btn" style="flex: 1;" disabled>📋 Save Code</button>
-                  <button id="btn-valhalla" class="win-btn" style="flex: 1;">🏆 Valhalla</button>
+                  <button id="btn-valhalla" class="win-btn" style="flex: 1;">🏆 Legends</button>
                 </div>
                 <button id="btn-title-load-autosave" class="win-btn" style="width: 100%; margin-top: 4px; display: none; background: #064e3b; color: #a7f3d0; border-color: #34d399;">⚡ Load Autosave</button>
               </div>
@@ -128,7 +128,7 @@
                     <div class="difficulty-btn-group" style="display: flex; gap: 4px;">
                       <button type="button" id="btn-diff-easy" class="win-btn win-btn-sm" data-diff="easy" title="A forgiving start — still a fight at the big moments.">Easy</button>
                       <button type="button" id="btn-diff-medium" class="win-btn win-btn-sm active" data-diff="medium" title="A balanced saga, as the sagas intended.">Medium</button>
-                      <button type="button" id="btn-diff-hard" class="win-btn win-btn-sm" data-diff="hard" title="No mercy. Midgard bites back.">Hard</button>
+                      <button type="button" id="btn-diff-hard" class="win-btn win-btn-sm" data-diff="hard" title="No mercy. The dungeon bites back.">Hard</button>
                     </div>
                   </div>
 
@@ -194,28 +194,28 @@
               <span id="title-status" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Select a character or roll a new hero to embark.</span>
               <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
                 <span id="title-storage-status" class="storage-badge-pill">Storage: Checking...</span>
-                <span class="version-tag">v1.0.0-final</span>
+                <span class="version-tag"></span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Windows 3.1 / Hall of Valhalla Leaderboard Modal -->
+      <!-- Windows 3.1 / Hall of Fame Leaderboard Modal (title text filled from the pack's branding) -->
       <div id="valhalla-modal" class="retro-window-overlay" style="display: none;">
         <div class="retro-window" style="width: 720px;">
           <div class="retro-titlebar">
             <div class="retro-titlebar-title">
               <span>🏆</span>
-              <span>Hall of Valhalla - Legends of Midgard</span>
+              <span id="valhalla-modal-title">Hall of Legends</span>
             </div>
             <button id="btn-valhalla-close-x" class="win-btn win-btn-sm" style="padding: 0 5px; font-weight: bold;">✕</button>
           </div>
 
           <div class="retro-window-body">
             <div class="retro-banner" style="background: #1e1b4b;">
-              <div class="retro-banner-title" style="color: #fde047;">HALL OF VALHALLA</div>
-              <div class="retro-banner-sub">Eternal Honors of Midgard Champions</div>
+              <div id="valhalla-modal-banner" class="retro-banner-title" style="color: #fde047;">HALL OF LEGENDS</div>
+              <div id="valhalla-modal-sub" class="retro-banner-sub">Eternal honors of the realm's champions</div>
             </div>
 
             <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px;">
@@ -241,7 +241,7 @@
                 <button id="btn-valhalla-import" class="win-btn">📥 Import Saga</button>
                 <button id="btn-valhalla-close" class="win-btn primary-btn">Close</button>
               </div>
-              <span id="valhalla-status" style="font-size: 11px; color: #374151; align-self: center;">Valhalla Leaderboard</span>
+              <span id="valhalla-status" style="font-size: 11px; color: #374151; align-self: center;">Leaderboard</span>
             </div>
           </div>
         </div>
@@ -268,7 +268,7 @@
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 4px; gap: 8px;">
-              <span id="game-over-score-badge" style="font-weight: bold; font-size: 13px; color: #1e3a8a;">Valhalla Score: 0</span>
+              <span id="game-over-score-badge" style="font-weight: bold; font-size: 13px; color: #1e3a8a;">Score: 0</span>
               <div style="display: flex; gap: 6px;">
                 <button id="btn-game-over-autosave" class="win-btn" style="padding: 6px 12px; display: none; background: #064e3b; color: #a7f3d0; border-color: #34d399;">⚡ Load Autosave</button>
                 <button id="btn-game-over-share" class="win-btn" style="padding: 6px 12px;">🔗 Share Saga</button>
@@ -328,7 +328,7 @@
           <div class="retro-titlebar" style="background: linear-gradient(90deg, #991b1b, #ef4444);">
             <div class="retro-titlebar-title">
               <span>⚠️</span>
-              <span>Castle of the Winds - Application Error</span>
+              <span id="error-dialog-title">Application Error</span>
             </div>
           </div>
 

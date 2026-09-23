@@ -7,11 +7,17 @@ import type { Item } from '../../engine';
 import type { SpriteKey } from './types';
 import { ATLAS_MAP } from './sprite-atlas';
 
+/**
+ * Town and zone variants (`floor_town_shop`, `wall_frost`, …) are used only when the pack
+ * draws them (`hasRecipe`); otherwise the pack's base floor/wall stands in, so a pack with
+ * a small sprite set never shows unpainted cells.
+ */
 export function getTerrainSpriteKey(
   tileType: TileType,
   currentFloor?: number,
   zoneBands?: TileZoneBand[],
-  buildingType?: string
+  buildingType?: string,
+  hasRecipe: (key: string) => boolean = (key) => key in ATLAS_MAP
 ): SpriteKey {
   let baseKey: SpriteKey;
   switch (tileType) {
@@ -41,23 +47,23 @@ export function getTerrainSpriteKey(
   if (currentFloor === 0) {
     if (buildingType) {
       const buildingKey = `${baseKey}_town_${buildingType}` as SpriteKey;
-      if (buildingKey in ATLAS_MAP) {
+      if (hasRecipe(buildingKey)) {
         return buildingKey;
       }
       const townBase = `${baseKey}_town` as SpriteKey;
-      if (townBase in ATLAS_MAP) {
+      if (hasRecipe(townBase)) {
         return townBase;
       }
     } else {
       // Exterior town ground / border walls
       if (baseKey === 'floor') {
         const snowKey = 'floor_town_snow' as SpriteKey;
-        if (snowKey in ATLAS_MAP) {
+        if (hasRecipe(snowKey)) {
           return snowKey;
         }
       }
       const townBase = `${baseKey}_town` as SpriteKey;
-      if (townBase in ATLAS_MAP) {
+      if (hasRecipe(townBase)) {
         return townBase;
       }
     }
@@ -76,7 +82,7 @@ export function getTerrainSpriteKey(
     }
     if (activeZoneKey) {
       const candidateKey = `${baseKey}_${activeZoneKey}` as SpriteKey;
-      if (candidateKey in ATLAS_MAP) {
+      if (hasRecipe(candidateKey)) {
         return candidateKey;
       }
     }
@@ -145,7 +151,14 @@ export const DEFAULT_TAG_SPRITE_ORDER: Array<{ tag: string; spriteKey: SpriteKey
   { tag: 'humanoid', spriteKey: 'orc' },
 ];
 
-export function getEntitySpriteKey(entity: Entity): SpriteKey {
+/** Tells the mapper which sprite keys the atlas holds (built-ins plus pack recipes). */
+type HasSprite = (key: string) => boolean;
+
+/**
+ * A pack gives a monster its own art by keying a sprite recipe with the monster's
+ * definition ID; otherwise tags and name heuristics pick a shared archetype sprite.
+ */
+export function getEntitySpriteKey(entity: Entity, hasSprite?: HasSprite): SpriteKey | string {
   if (entity instanceof Player) {
     return entity.gender === 'female' ? 'player_female' : 'player';
   }
@@ -169,24 +182,9 @@ export function getEntitySpriteKey(entity: Entity): SpriteKey {
   }
 
   const name = entity.name.toLowerCase();
-  const id = entity instanceof Monster ? entity.definitionId : entity.id;
 
-  // Boss overrides. Exact id match only for Níðhögg — its name carries diacritics
-  // ('Níðhögg, the Root-Gnawer') that a plain-ASCII substring check would never match,
-  // but other monsters' flavor text can legitimately *reference* "Níðhögg" (e.g. the
-  // grave-wyrmling brood), so a name-substring check would over-match instead.
-  if (id === 'nidhogg') {
-    return 'dragon_boss';
-  }
-  if (
-    name.includes('hrungnir') ||
-    name.includes('chieftain') ||
-    id === 'boss_hrungnir' ||
-    name.includes('gálmr') ||
-    name.includes('frost-warden') ||
-    id === 'miniboss_frost_warden'
-  ) {
-    return 'giant_boss';
+  if (entity instanceof Monster && entity.definitionId && hasSprite?.(entity.definitionId)) {
+    return entity.definitionId;
   }
 
   // Tag-priority resolution (dragon > undead > construct > beast > humanoid)
@@ -198,7 +196,7 @@ export function getEntitySpriteKey(entity: Entity): SpriteKey {
   }
 
   // Name / ID fallbacks for legacy or untagged entities
-  if (name.includes('skeleton') || name.includes('draugr')) {
+  if (name.includes('skeleton')) {
     return 'skeleton';
   }
   if (name.includes('spider')) {
@@ -229,29 +227,14 @@ export function getEntitySpriteKey(entity: Entity): SpriteKey {
   return 'kobold';
 }
 
-export function getItemSpriteKey(item: Item): SpriteKey {
+/** As for monsters, a pack recipe keyed by the item's definition ID wins over the heuristics. */
+export function getItemSpriteKey(item: Item, hasSprite?: HasSprite): SpriteKey | string {
   const name = item.name.toLowerCase();
   const id = item.id || '';
   const defId = (item.definitionId || '').toLowerCase();
 
-  // Signature Relics & Artifacts (CotW)
-  if (defId === 'nidhogg_fang' || name.includes("níðhögg's fang") || name.includes("nidhogg's fang") || id.includes('nidhogg_fang')) {
-    return 'nidhogg_fang';
-  }
-  if (defId === 'sol_shard_focus' || name.includes('sól-shard focus') || name.includes('sol-shard focus') || id.includes('sol_shard_focus')) {
-    return 'sol_shard_focus';
-  }
-  if (defId === 'petrified_world_bark_tower_shield' || name.includes('world-bark tower shield') || id.includes('world_bark_tower_shield') || id.includes('petrified_world_bark')) {
-    return 'petrified_world_bark_tower_shield';
-  }
-  if (defId === 'antler_crowned_mask' || name.includes('antler-crowned mask') || id.includes('antler_crowned_mask')) {
-    return 'antler_crowned_mask';
-  }
-  if (defId === 'marrow_gnawed_ring' || name.includes('marrow-gnawed ring') || id.includes('marrow_gnawed_ring')) {
-    return 'marrow_gnawed_ring';
-  }
-  if (defId === 'duergar_lodestone' || name.includes('duergar lodestone') || id.includes('duergar_lodestone')) {
-    return 'duergar_lodestone';
+  if (defId && hasSprite?.(defId)) {
+    return defId;
   }
 
   // Unique / Plot items

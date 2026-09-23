@@ -1,4 +1,4 @@
-import type { GameEngine } from '../../engine';
+import type { GameContentManifest, GameEngine } from '../../engine';
 import type { InventoryOverlay } from '../../rendering/inventory-overlay';
 import type { TargetingOverlay } from '../../rendering/targeting-overlay';
 import type { ShopOverlay } from '../../rendering/shop-overlay';
@@ -13,6 +13,15 @@ export interface HelpCardContent {
   bullets: Array<{ key: string; label: string }>;
   tip: string;
 }
+
+const TOWN_ROLE_HELP: Partial<Record<string, string>> = {
+  merchant: 'Buy and sell goods',
+  priest: 'Lift curses and restore vitality',
+  sage: 'Identify items and seek run advice',
+  banker: 'Compact heavy coins into lighter ones',
+  trainer: 'Bond with and train a companion',
+  guard: 'Local news and warnings',
+};
 
 export class ContextHelp {
   private overlayEl: HTMLElement | null = null;
@@ -64,7 +73,7 @@ export class ContextHelp {
     return 'exploration';
   }
 
-  public getHelpContent(context: GameHelpContext): HelpCardContent {
+  public getHelpContent(context: GameHelpContext, manifest?: GameContentManifest): HelpCardContent {
     switch (context) {
       case 'shop':
         return {
@@ -119,20 +128,20 @@ export class ContextHelp {
           tip: 'Tip: Click items to examine stats, enchanted +X bonuses, and elemental burst affixes.',
         };
 
-      case 'town':
+      case 'town': {
+        // The pack's own townsfolk, so the card never names another pack's town.
+        const npcs = (manifest?.town?.npcs ?? []).slice(0, 5);
         return {
-          title: 'Bjarnarhaven Haven (Floor 0)',
+          title: `${manifest?.town?.name ?? 'Town'} (Floor 0)`,
           contextTag: 'SAFE HAVEN',
           bullets: [
-            { key: 'Bump NPC', label: 'Olaf (General), Gunther (Smith), Astrid (Alchemy)' },
-            { key: 'Sage Mimir', label: 'Identify items & Seek Strategic Run Advisory' },
-            { key: 'Banker Haakon', label: 'Compact heavy copper/silver into lightweight gold' },
-            { key: 'Father Torvald', label: 'Temple of Thor: shatter curses and restore full vitality' },
+            ...npcs.map((npc) => ({ key: npc.name, label: TOWN_ROLE_HELP[npc.role] ?? 'Talk by bumping into them' })),
             { key: 'B', label: 'Open Slayer’s Compendium & Monster Codex' },
             { key: 'Shift+? / Ctrl+K', label: 'Open Quick Command Palette' },
           ],
-          tip: 'Tip: Store supplies or bank coinage before entering the northeast cellar staircase!',
+          tip: 'Tip: Stock up on supplies and bank your coins before taking the stairs down!',
         };
+      }
 
       case 'map':
         return {
@@ -182,7 +191,7 @@ export class ContextHelp {
     this.onDismissCallback = onDismiss;
 
     const context = this.detectContext(engine, inventoryOverlay, targetingOverlay, shopOverlay, inspectOverlay, mapOverlay);
-    const content = this.getHelpContent(context);
+    const content = this.getHelpContent(context, engine.manifest);
 
     this.overlayEl.innerHTML = `
       <div class="retro-window" style="width: 380px; box-shadow: 4px 4px 12px rgba(0,0,0,0.85); font-family: 'MS Sans Serif', monospace;">
@@ -214,7 +223,7 @@ export class ContextHelp {
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; font-size: 9px; color: #64748b; border-top: 1px solid #808080; padding-top: 4px;">
             <span>Move, Esc, or F1 to dismiss</span>
-            <span style="color: #1e3a8a; font-weight: bold;">Castle of the Winds</span>
+            <span style="color: #1e3a8a; font-weight: bold;">${engine.manifest?.name ?? ''}</span>
           </div>
         </div>
       </div>

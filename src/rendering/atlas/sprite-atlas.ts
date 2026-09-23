@@ -173,13 +173,23 @@ export const ATLAS_MAP: Record<SpriteKey, AtlasCoords> = {
   troll_witch: { col: 7, row: 9 },
   dragon_elder: { col: 8, row: 9 },
   rune_stone: { col: 9, row: 9 },
-  nidhogg_fang: { col: 10, row: 9 },
-  sol_shard_focus: { col: 11, row: 9 },
-  petrified_world_bark_tower_shield: { col: 12, row: 9 },
-  antler_crowned_mask: { col: 13, row: 9 },
-  marrow_gnawed_ring: { col: 14, row: 9 },
-  duergar_lodestone: { col: 15, row: 9 },
 };
+
+/**
+ * The built-in cells plus one per pack recipe the fixed map doesn't name, appended row
+ * by row after it. A pack gives a monster or item its own sprite by keying a recipe with
+ * the definition ID (see sprite-mapper.ts), with no rendering change.
+ */
+function layoutCells(recipes?: Record<string, SpriteRecipe>): Record<string, AtlasCoords> {
+  const cells: Record<string, AtlasCoords> = { ...ATLAS_MAP };
+  let next = ATLAS_COLS * ATLAS_ROWS;
+  for (const key of Object.keys(recipes ?? {})) {
+    if (key in cells) continue;
+    cells[key] = { col: next % ATLAS_COLS, row: Math.floor(next / ATLAS_COLS) };
+    next++;
+  }
+  return cells;
+}
 
 interface AtlasCell {
   ox: number;
@@ -190,17 +200,21 @@ interface AtlasCell {
 export class SpriteAtlas {
   public readonly atlasCanvas: HTMLCanvasElement;
   public readonly dimmedAtlasCanvas: HTMLCanvasElement;
-  private spriteCache = new Map<SpriteKey, HTMLCanvasElement>();
+  private spriteCache = new Map<string, HTMLCanvasElement>();
   private recipes?: Record<string, SpriteRecipe>;
+  private readonly cells: Record<string, AtlasCoords>;
+  private readonly rows: number;
 
   constructor(recipes?: Record<string, SpriteRecipe>) {
     this.recipes = recipes;
+    this.cells = layoutCells(recipes);
+    this.rows = Math.max(ATLAS_ROWS, ...Object.values(this.cells).map((c) => c.row + 1));
     this.atlasCanvas = document.createElement('canvas');
     this.dimmedAtlasCanvas = document.createElement('canvas');
 
-    // 16 columns by 10 rows of ATLAS_TILE_SIZE tiles
+    // 16 columns of ATLAS_TILE_SIZE tiles; 10 built-in rows plus any pack-recipe rows
     const width = ATLAS_COLS * ATLAS_TILE_SIZE;
-    const height = ATLAS_ROWS * ATLAS_TILE_SIZE;
+    const height = this.rows * ATLAS_TILE_SIZE;
 
     this.atlasCanvas.width = width;
     this.atlasCanvas.height = height;
@@ -224,21 +238,26 @@ export class SpriteAtlas {
 
     const scratch = document.createElement('canvas');
     scratch.width = ATLAS_COLS * SPRITE_SIZE * BAKE_SCALE;
-    scratch.height = ATLAS_ROWS * SPRITE_SIZE * BAKE_SCALE;
+    scratch.height = this.rows * SPRITE_SIZE * BAKE_SCALE;
 
     const sctx = scratch.getContext('2d');
     if (!sctx) return;
     sctx.scale(BAKE_SCALE, BAKE_SCALE);
 
-    for (const [key, coords] of Object.entries(ATLAS_MAP) as [SpriteKey, AtlasCoords][]) {
-      const ox = coords.col * SPRITE_SIZE;
-      const oy = coords.row * SPRITE_SIZE;
+    // Recipes first, then lettered fallbacks only into cells no recipe painted: keys that
+    // share a cell (`wall`/`secret_door`) must not have a fallback overwrite real art.
+    const painted = new Set<string>();
+    for (const [key, coords] of Object.entries(this.cells)) {
       const recipe = this.recipes?.[key];
-      if (recipe) {
-        recipe(sctx, ox, oy, SPRITE_SIZE);
-      } else {
-        this.renderFallback(sctx, ox, oy, key);
-      }
+      if (!recipe) continue;
+      recipe(sctx, coords.col * SPRITE_SIZE, coords.row * SPRITE_SIZE, SPRITE_SIZE);
+      painted.add(`${coords.col},${coords.row}`);
+    }
+    for (const [key, coords] of Object.entries(this.cells)) {
+      const cell = `${coords.col},${coords.row}`;
+      if (painted.has(cell)) continue;
+      this.renderFallback(sctx, coords.col * SPRITE_SIZE, coords.row * SPRITE_SIZE, key);
+      painted.add(cell);
     }
 
     // The one smoothed operation in the whole pipeline: averages the supersampled
@@ -259,7 +278,7 @@ export class SpriteAtlas {
   private getUniqueCells(): AtlasCell[] {
     const seen = new Set<string>();
     const cells: AtlasCell[] = [];
-    for (const coords of Object.values(ATLAS_MAP) as AtlasCoords[]) {
+    for (const coords of Object.values(this.cells)) {
       const key = `${coords.col},${coords.row}`;
       if (seen.has(key)) continue;
       seen.add(key);
@@ -331,7 +350,7 @@ export class SpriteAtlas {
 
   public drawSprite(
     targetCtx: CanvasRenderingContext2D,
-    key: SpriteKey,
+    key: SpriteKey | string,
     dx: number,
     dy: number,
     dSize: number,
@@ -341,7 +360,7 @@ export class SpriteAtlas {
       return;
     }
 
-    const coords = ATLAS_MAP[key];
+    const coords = this.cells[key];
     if (!coords) return;
 
     const source = visibility === Visibility.Explored ? this.dimmedAtlasCanvas : this.atlasCanvas;
@@ -351,7 +370,7 @@ export class SpriteAtlas {
     targetCtx.drawImage(source, sx, sy, ATLAS_TILE_SIZE, ATLAS_TILE_SIZE, dx, dy, dSize, dSize);
   }
 
-  public getSpriteCanvas(key: SpriteKey): HTMLCanvasElement {
+  public getSpriteCanvas(key: SpriteKey | string): HTMLCanvasElement {
     const cached = this.spriteCache.get(key);
     if (cached) return cached;
 
@@ -361,7 +380,7 @@ export class SpriteAtlas {
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.imageSmoothingEnabled = false;
-      const coords = ATLAS_MAP[key];
+      const coords = this.cells[key];
       if (coords) {
         ctx.drawImage(
           this.atlasCanvas,
@@ -379,6 +398,16 @@ export class SpriteAtlas {
 
     this.spriteCache.set(key, canvas);
     return canvas;
+  }
+
+  /** Whether the active pack draws `key` itself (rather than the atlas's lettered fallback). */
+  public hasRecipe(key: string): boolean {
+    return !!this.recipes?.[key];
+  }
+
+  /** Whether the atlas holds a cell for `key`: a built-in sprite or a pack recipe. */
+  public hasSprite(key: string): boolean {
+    return key in this.cells;
   }
 
   private renderFallback(ctx: CanvasRenderingContext2D, ox: number, oy: number, key: string): void {

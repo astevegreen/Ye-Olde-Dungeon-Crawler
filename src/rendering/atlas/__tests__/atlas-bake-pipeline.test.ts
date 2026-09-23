@@ -67,6 +67,29 @@ describe('Atlas bake pipeline — supersampling, downsample, shading, outline/hi
       expect(atlas.atlasCanvas.height).toBe(10 * ATLAS_TILE_SIZE);
     });
 
+    it('never letters over a shared cell a recipe painted (wall/secret_door)', () => {
+      const fallback = vi.spyOn(SpriteAtlas.prototype as unknown as { renderFallback: () => void }, 'renderFallback');
+      const wall = vi.fn();
+      new SpriteAtlas({ wall });
+      const letteredKeys = fallback.mock.calls.map((call) => (call as unknown[])[3]);
+      fallback.mockRestore();
+
+      expect(wall).toHaveBeenCalledTimes(1);
+      expect(letteredKeys).not.toContain('secret_door'); // shares wall's cell
+      expect(letteredKeys).toContain('floor'); // a cell with no recipe still gets its letter
+    });
+
+    it('gives a pack recipe the built-in map lacks its own cell in an extra row', () => {
+      const relic = vi.fn();
+      const atlas = new SpriteAtlas({ some_pack_relic: relic });
+
+      expect(atlas.hasSprite('some_pack_relic')).toBe(true);
+      expect(atlas.hasSprite('never_declared')).toBe(false);
+      expect(relic).toHaveBeenCalledTimes(1);
+      expect(relic).toHaveBeenCalledWith(expect.anything(), 0, 10 * SPRITE_SIZE, SPRITE_SIZE);
+      expect(atlas.atlasCanvas.height).toBe(11 * ATLAS_TILE_SIZE);
+    });
+
 
     it('still invokes recipes with the original SPRITE_SIZE-spaced coordinates, unaffected by the higher stored resolution', () => {
       const customWallRecipe = vi.fn((ctx: CanvasRenderingContext2D, ox: number, oy: number, size: number) => {

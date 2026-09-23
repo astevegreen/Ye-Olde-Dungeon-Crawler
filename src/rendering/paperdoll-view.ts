@@ -168,7 +168,7 @@ export class PaperdollView {
 
       if (slotItem) {
         // Equipped item rendering
-        const spriteKey = getItemSpriteKey(slotItem);
+        const spriteKey = getItemSpriteKey(slotItem, (k) => this.atlas?.hasSprite(k) ?? false);
         const spriteSize = Math.min(slotW - 10, slotH - 10);
         const spriteOffset = Math.floor((slotW - spriteSize) / 2);
 

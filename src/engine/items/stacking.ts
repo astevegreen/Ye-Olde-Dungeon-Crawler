@@ -21,6 +21,12 @@ export function isStackable(item: Item): boolean {
 export function canStack(a: Item, b: Item): boolean {
   if (!isStackable(a) || !isStackable(b)) return false;
 
+  // Coins carry their amount in `count` and in their name ("50 Gold Pieces"), so the
+  // name-based identity below would never match two piles: stack by denomination.
+  if (a instanceof CoinItem || b instanceof CoinItem) {
+    return a instanceof CoinItem && b instanceof CoinItem && a.denomination === b.denomination;
+  }
+
   // Containers and equipped items cannot stack
   if (a.slot !== undefined && b.slot !== undefined && a.slot !== b.slot) return false;
 
@@ -53,6 +59,10 @@ export function canStack(a: Item, b: Item): boolean {
  */
 export function mergeItemStacks(target: Item, source: Item): boolean {
   if (!canStack(target, source)) return false;
+  if (target instanceof CoinItem && source instanceof CoinItem) {
+    target.add(source.count);
+    return true;
+  }
   target.quantity = (target.quantity ?? 1) + (source.quantity ?? 1);
   return true;
 }

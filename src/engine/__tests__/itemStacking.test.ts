@@ -111,4 +111,37 @@ describe('Item Stacking & Multi-Selection Engine', () => {
     expect(() => splitItemStack(pot, 0, Math.random)).toThrow();
     expect(() => splitItemStack(pot, 10, Math.random)).toThrow();
   });
+
+  describe('coins', () => {
+    const purse = () =>
+      new Container({
+        id: 'purse-1',
+        name: 'Purse',
+        category: 'container',
+        containerType: 'purse',
+        weight: 50,
+        bulk: 50,
+        maxWeightCapacity: 100000,
+        maxBulkCapacity: 100000,
+      });
+
+    it('merges piles of one denomination into a single stack whatever their counts', () => {
+      const bag = purse();
+      bag.addItem(new CoinItem({ id: 'g-1', denomination: 'gold', count: 50 }));
+      bag.addItem(new CoinItem({ id: 'g-2', denomination: 'gold', count: 30 }));
+
+      const gold = bag.getItems().filter((i) => i instanceof CoinItem) as CoinItem[];
+      expect(gold).toHaveLength(1);
+      expect(gold[0].count).toBe(80);
+      expect(gold[0].name).toBe('80 Gold Pieces');
+      expect(gold[0].valueInCp).toBe(8000);
+    });
+
+    it('keeps different denominations apart', () => {
+      const bag = purse();
+      bag.addItem(new CoinItem({ id: 'g-1', denomination: 'gold', count: 5 }));
+      bag.addItem(new CoinItem({ id: 's-1', denomination: 'silver', count: 5 }));
+      expect(bag.getItems()).toHaveLength(2);
+    });
+  });
 });

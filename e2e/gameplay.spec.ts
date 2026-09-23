@@ -20,6 +20,11 @@ test('a new hero moves, the map owns the keyboard, and save & continue restores 
 
   await page.goto(pathToFileURL(BUNDLE).href);
   await page.locator('#btn-menu-new-game').click();
+  // Keep every rolled attribute under 15: the first step would otherwise offer that
+  // attribute's milestone choice, whose modal takes the keyboard (flaky on high rolls).
+  for (const attr of ['str', 'dex', 'con', 'int']) {
+    for (let i = 0; i < 6; i++) await page.locator(`#btn-dec-${attr}`).click();
+  }
   await page.locator('#btn-create-embark').click();
   await expect.poll(() => page.evaluate(() => Boolean(window.__cotwEngine))).toBe(true);
 

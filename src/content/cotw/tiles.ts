@@ -1,7 +1,7 @@
 import type { TileDefinition } from '../../engine';
 
 /**
- * Castle of the Winds campaign-specific tile definitions (ARCHITECTURE.md §3, P-03 stage 3).
+ * Castle of the Winds campaign-specific tile definitions (ARCHITECTURE.md §3).
  * Extracted from engine built-in TILES so the core engine remains completely pack-neutral.
  */
 export const COTW_TILES: TileDefinition[] = [

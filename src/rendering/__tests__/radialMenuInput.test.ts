@@ -19,7 +19,7 @@ function makeKeyEvent(code: string, repeat = false): KeyboardEvent {
   } as unknown as KeyboardEvent;
 }
 
-describe('InputHandler <-> RadialMenuOverlay wiring (P-24)', () => {
+describe('InputHandler <-> RadialMenuOverlay wiring', () => {
   let engine: GameEngine;
   let settingsManager: SettingsManager;
   let radialMenuOverlay: RadialMenuOverlay;

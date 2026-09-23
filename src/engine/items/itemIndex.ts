@@ -78,7 +78,7 @@ export function setActiveItemIndex(index: ItemIndex | null): void {
 }
 
 /**
- * Facade forwarding to the currently active engine's ItemIndex (ARCHITECTURE.md §3, §5, P-22).
+ * Facade forwarding to the currently active engine's ItemIndex (ARCHITECTURE.md §3, §5; docs/architecture/content-extensibility.md).
  */
 export const itemIndex = {
   register(item: Item, location: ItemLocation): void {

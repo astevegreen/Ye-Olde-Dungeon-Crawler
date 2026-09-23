@@ -34,7 +34,7 @@ function buildMonster(id: string, x: number, y: number, aiState: 'sleeping' | 'h
   });
 }
 
-describe('Sensory Masking & Echolocation (P-26)', () => {
+describe('Sensory Masking & Echolocation', () => {
   describe('isAudibleEntity', () => {
     it('is false for sleeping (dormant) monsters and true for awake ones', () => {
       expect(isAudibleEntity(buildMonster('a', 1, 1, 'sleeping'))).toBe(false);

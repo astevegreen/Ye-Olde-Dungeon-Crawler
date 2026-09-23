@@ -4,7 +4,7 @@ import { TrapInstance, type TrapOptions } from '../dungeon/traps';
 import { activeTrapStore } from '../registries/trapRegistryStore';
 
 /**
- * Process-wide facade over whichever trap store is active (ARCHITECTURE.md §3, P-22).
+ * Process-wide facade over whichever trap store is active (ARCHITECTURE.md §3).
  * It holds no map of its own: an engine's registrations live in that engine's store, and
  * this forwards there, so there is one copy of the data rather than two.
  */

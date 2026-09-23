@@ -54,5 +54,6 @@
    - Run lengths and results are whatever the latest output reports; this document intentionally does not restate them.
 5. **Static Analysis & Build Verification (`npm test`, `npm run lint`, `npm run build`):**
    - `npm test`: runs all Vitest suites (`src/**/__tests__/` and `tests/`). Suite and test counts are whatever the run reports; this document intentionally does not restate them.
+   - Governance references are tested there too: `scripts/__tests__/docReferences.test.ts` fails on a cited `§N` that ARCHITECTURE.md lacks, a cited `P-NN` that is neither registered in §9 nor below its "Next free ID", a `[Planned: P-NN]` tag without a §9 entry, and a relative doc link to a missing file.
    - `npm run lint`: `tsc --noEmit` over the `tsconfig.json` `include` set (`src`, `tests`, `scripts`, `vite.config.ts`), then `npm run check:engine-purity`, `npm run check:engine-encapsulation`, `npm run check:engine-creep`, and `npm run knip` (`knip.json`: unused files, exports, types, and dependencies all fail the gate).
    - `npm run build`: `tsc && vite build`, verifying single-file production compilation (cotw theme) without type errors or bundler warnings. Use `npm run build:all` when changing `vite.config.ts`, theme selection, or manifest wiring.

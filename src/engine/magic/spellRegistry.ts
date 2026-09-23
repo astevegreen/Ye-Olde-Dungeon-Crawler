@@ -5,7 +5,7 @@ export type { SpellDefinition } from './types';
 export { SPELL_ID_ALIASES } from '../registries/spellRegistryStore';
 
 /**
- * Process-wide facade over whichever spell store is active (ARCHITECTURE.md §3, P-22).
+ * Process-wide facade over whichever spell store is active (ARCHITECTURE.md §3).
  * It holds no map of its own: an engine's registrations live in that engine's store, and
  * this forwards there, so there is one copy of the data rather than two.
  */

@@ -191,7 +191,7 @@ export class EngineCommandBus implements GameCommandBus {
         return { success: res.success, message: res.message };
       }
 
-      // Companions & Pet Progression, Phase 2 (ARCHITECTURE.md P-14): the
+      // Companions & Pet Progression, Phase 2 (docs/architecture/content-companions.md): the
       // companion's pack is a plain Container, so these reuse the existing
       // container-transfer actions rather than needing new ones.
       case 'transfer_to_companion': {
@@ -340,7 +340,7 @@ export class EngineCommandBus implements GameCommandBus {
         return { success: res.success, message: res.message };
       }
 
-      // Companions & Pet Progression, Phase 2 (ARCHITECTURE.md P-14): one example
+      // Companions & Pet Progression, Phase 2 (docs/architecture/content-companions.md): one example
       // active companion skill, unlocked via 'trainer_teach_skill'. Instant utility
       // (no player turn cost), matching 'sage_advisory''s existing pattern above.
       case 'use_companion_skill': {

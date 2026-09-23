@@ -29,7 +29,7 @@ function buildEngine(manifest?: any) {
 const envFailures = () =>
   flightRecorder.getEvents().filter((e) => (e.details as any)?.phase === 'environmental-update');
 
-describe('Environmental update failure isolation (P-06)', () => {
+describe('Environmental update failure isolation', () => {
   it('isolates a throwing surface tick and still runs later updates', () => {
     const { engine, player } = buildEngine();
     let substancesTicked = false;

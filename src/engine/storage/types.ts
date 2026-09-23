@@ -13,7 +13,7 @@ import type { PlaneState } from '../spatial/planeTypes';
 import type { SerializedSurfaceCell } from '../surfaces/surfaceGrid';
 import type { SerializedSubstanceCell } from '../environment/substanceGrid';
 
-// Reserved for future one-time tutorial-tip flags (ARCHITECTURE.md §0 pack-neutrality:
+// Reserved for future one-time tutorial-tip flags (ARCHITECTURE.md §3 No Engine Creep:
 // content packs may populate this without engine changes). Empty since the town-return
 // fixtures that previously used it were removed.
 export interface TutorialFlags {
@@ -209,7 +209,7 @@ export interface SerializedPlayer {
   planeId?: string;
   corruptionScore?: number;
   unspentStatPoints?: number;
-  /** Rune of Return mastery investment (ARCHITECTURE.md P-03 stage 3): points spent
+  /** Rune of Return mastery investment (docs/architecture/content-rune-of-return.md): points spent
    * from the same `unspentStatPoints` pool as core attributes, on the rune's three
    * independent progression tracks. */
   runeMastery?: { celerityPoints: number; weavePoints: number; mobilityPoints: number };
@@ -261,7 +261,7 @@ export interface SerializedMonster {
   planeId?: string;
 }
 
-/** Companions & Pet Progression, Phase 1 (ARCHITECTURE.md P-14). Top-level in SaveData, not per-floor. */
+/** Companions & Pet Progression, Phase 1 (docs/architecture/content-companions.md). Top-level in SaveData, not per-floor. */
 export interface SerializedCompanion {
   id: string;
   name: string;
@@ -350,7 +350,7 @@ export interface SaveData {
   worldState?: SerializedWorldState;
   planes?: Record<string, PlaneState>;
   prngState?: number;
-  /** Companions & Pet Progression, Phase 1 (ARCHITECTURE.md P-14). Null/absent = no companion summoned. */
+  /** Companions & Pet Progression, Phase 1 (docs/architecture/content-companions.md). Null/absent = no companion summoned. */
   companion?: SerializedCompanion | null;
 }
 

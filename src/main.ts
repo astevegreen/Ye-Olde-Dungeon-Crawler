@@ -381,7 +381,7 @@ window.addEventListener('DOMContentLoaded', () => {
     castOrTargetSpell(spell);
   }
 
-  // Configurable Radial Action Menu (ARCHITECTURE.md P-24): casts an arbitrary spell
+  // Configurable Radial Action Menu (docs/architecture/simulation-and-input.md): casts an arbitrary spell
   // by ID, as opposed to triggerQuickSpell's fixed quickSpells-bar slot index.
   function castSpellById(spellId: string): void {
     if (!activeEngine || !renderer) return;

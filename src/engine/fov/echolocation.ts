@@ -4,7 +4,7 @@ import type { Position } from '../types';
 import { Monster } from '../entities/monster';
 
 /**
- * Sensory Masking & Echolocation (ARCHITECTURE.md §9, P-26).
+ * Sensory Masking & Echolocation (docs/architecture/simulation-and-input.md).
  *
  * Detection radius, independent of the crippled visual FOV radius the
  * `sensory_masked` status also applies via `StatusHandler.perceptionRadius`

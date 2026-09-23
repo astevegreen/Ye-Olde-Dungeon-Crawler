@@ -77,7 +77,7 @@ export class Player extends Actor {
   public recallPosition?: Position;
   public quickSpells: (string | null)[];
   public unspentStatPoints: number;
-  /** Rune of Return progression (ARCHITECTURE.md P-03 stage 3): mastery lives on the
+  /** Rune of Return progression (docs/architecture/content-rune-of-return.md): mastery lives on the
    * player (like an attribute), not the item, so losing/replacing the rune doesn't
    * reset invested points. */
   public runeMastery: RuneOfReturnMastery;

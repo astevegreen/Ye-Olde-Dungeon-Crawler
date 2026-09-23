@@ -4,7 +4,7 @@ import type { Entity } from '../entities/entity';
 import { Monster } from '../entities/monster';
 
 /**
- * Monster AI Targeting Generalization (ARCHITECTURE.md §9, P-14 Phase 2).
+ * Monster AI Targeting Generalization (docs/architecture/content-companions.md Phase 2).
  *
  * Resolves the entity a monster's AI should engage this turn. Defaults to
  * `engine.player` — behaviorally identical to the engine's original hardcoded

@@ -112,7 +112,7 @@ export class StatusManager {
 
       // An onTick handler may have removed its own effect already (e.g. an
       // interrupted Rune of Return channel, which fizzles rather than "expiring" —
-      // ARCHITECTURE.md P-03). Don't double-process expiry for an effect that's no
+      // docs/architecture/content-extensibility.md). Don't double-process expiry for an effect that's no
       // longer tracked.
       if (!this.effects.has(type)) continue;
 

@@ -3,7 +3,7 @@ import { Companion, CompanionRegistry } from '../companion';
 import { Monster } from '../monster';
 import { Player } from '../player';
 
-describe('Companion (ARCHITECTURE.md P-14, Phase 1 MVP)', () => {
+describe('Companion (docs/architecture/content-companions.md, Phase 1 MVP)', () => {
   it('is player-aligned: not hostile to the player, and hostile monsters are hostile to it', () => {
     const player = new Player({ id: 'hero', name: 'Hero', position: { x: 0, y: 0 } });
     const companion = new Companion({
@@ -98,7 +98,7 @@ describe('Companion (ARCHITECTURE.md P-14, Phase 1 MVP)', () => {
     });
   });
 
-  describe('setArchetype / unlockSkill (ARCHITECTURE.md P-14 Phase 2)', () => {
+  describe('setArchetype / unlockSkill (docs/architecture/content-companions.md Phase 2)', () => {
     it('starts as "balanced" with the companion_follow AI routine', () => {
       const companion = new Companion({
         id: 'comp-6',

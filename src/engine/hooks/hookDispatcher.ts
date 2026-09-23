@@ -65,7 +65,7 @@ export type ActionPrimitive =
     }
   | {
       /**
-       * Tag-Filtered Radial Aura (ARCHITECTURE.md P-25): finds living entities within
+       * Tag-Filtered Radial Aura (docs/architecture/content-progression-scaling.md): finds living entities within
        * `radius` of the hook's position matching any of `tags` (via `Entity.hasTag()`,
        * bounded via `findTaggedEntitiesInRadius` per §6's scoping principle), and
        * applies `apply` to each match as its own target. The generic, reusable

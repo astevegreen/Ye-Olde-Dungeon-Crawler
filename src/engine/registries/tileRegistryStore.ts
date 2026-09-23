@@ -2,7 +2,7 @@ import type { TileDefinition } from '../types';
 import { RegistryStore } from './registryStore';
 
 /**
- * One engine's tile definitions (ARCHITECTURE.md §3, P-22).
+ * One engine's tile definitions (ARCHITECTURE.md §3).
  */
 export class TileRegistryStore extends RegistryStore<string, TileDefinition> {
   constructor() {

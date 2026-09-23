@@ -7,7 +7,7 @@ import { Monster } from '../entities/monster';
 import * as fs from 'fs';
 import * as path from 'path';
 
-describe('Campaign Separation (P-03 Stage 2)', () => {
+describe('Campaign Separation', () => {
   it('does not fire campaign-specific hooks or placement when manifest leaves new fields unset', () => {
     const blankManifest: any = {
       id: 'blank',

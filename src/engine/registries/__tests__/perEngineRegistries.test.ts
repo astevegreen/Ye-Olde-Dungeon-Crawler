@@ -30,7 +30,7 @@ import type { SpellDefinition } from '../../magic/types';
 import type { TileDefinition } from '../../types';
 
 /**
- * Per-engine content registries (ARCHITECTURE.md §3, P-22 stage 1).
+ * Per-engine content registries (ARCHITECTURE.md §3).
  *
  * Two engines built from different manifests used to share one set of monster lookups, so
  * the second registration leaked into the first. Each engine now owns its store.
@@ -179,7 +179,7 @@ describe('Per-engine content registries', () => {
     const first = engineWith([def('kobold')]);
     engineWith([def('grunt')]);
 
-    // Before P-22 this returned the second manifest's set.
+    // Before per-engine registries this returned the second manifest's set.
     expect(first.registries.monsters.getAll().map((d) => d.id)).toEqual(['kobold']);
   });
 

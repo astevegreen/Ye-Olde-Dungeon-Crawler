@@ -13,7 +13,7 @@ export function getDefaultStatusHandlerRegistrar(): (() => void) | undefined {
 }
 
 /**
- * One engine's status effect handlers (ARCHITECTURE.md §3, P-22).
+ * One engine's status effect handlers (ARCHITECTURE.md §3).
  */
 export class StatusHandlerRegistryStore extends RegistryStore<StatusType, StatusHandler> {
   constructor() {

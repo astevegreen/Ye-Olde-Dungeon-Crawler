@@ -15,7 +15,7 @@ function buildEngine(): GameEngine {
   return new GameEngine({ map, player });
 }
 
-describe('TrainerService (ARCHITECTURE.md P-14 Phase 2)', () => {
+describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () => {
   beforeEach(() => {
     CompanionRegistry.clear();
     CompanionRegistry.register({

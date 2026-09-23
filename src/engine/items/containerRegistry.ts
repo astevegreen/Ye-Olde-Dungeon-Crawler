@@ -5,7 +5,7 @@ import { activeContainerStore } from '../registries/containerRegistryStore';
  * Allows nested containers and items to resolve ancestor capacities without
  * storing live object references on item instances, eliminating circular JSON graphs.
  *
- * Scoped per GameEngine instance via activeContainerStore() (ARCHITECTURE.md §3, §5, P-22).
+ * Scoped per GameEngine instance via activeContainerStore() (ARCHITECTURE.md §3, §5; docs/architecture/content-extensibility.md).
  */
 
 export function registerContainer(container: any): void {

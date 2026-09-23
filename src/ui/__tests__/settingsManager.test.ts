@@ -25,7 +25,7 @@ describe('SettingsManager', () => {
     expect(settings.radialMenuSlots).toEqual(new Array(8).fill(null));
   });
 
-  it('persists and reloads a configured radialMenuSlots array (P-24)', () => {
+  it('persists and reloads a configured radialMenuSlots array', () => {
     manager.updateSettings({
       radialMenuSlots: [
         { type: 'spell', spellId: 'firebolt' },

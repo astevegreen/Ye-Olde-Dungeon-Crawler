@@ -224,7 +224,7 @@ export class DungeonArc {
     // 4. Spawn Floor-scaled loot and chests
     populateDungeonLoot(map, dungeon.rooms, floorNumber, itemCatalog, populationRng);
 
-    // 5. Fixed tile placements declared in manifest (ARCHITECTURE.md P-03 stage 2)
+    // 5. Fixed tile placements declared in manifest (docs/architecture/content-quests-and-triggers.md)
     if (manifest?.fixedTilePlacements?.length) {
       for (const placement of manifest.fixedTilePlacements) {
         if (placement.floor !== floorNumber) continue;

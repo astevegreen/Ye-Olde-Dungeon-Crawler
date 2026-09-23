@@ -43,7 +43,7 @@ function buildEngine(actionHooks: ActionHook[]) {
   return { engine, player, monster };
 }
 
-describe('Action hooks fire for every actor (P-05)', () => {
+describe('Action hooks fire for every actor', () => {
   it('fires for a monster turn and reports the monster as the actor', () => {
     const seen: Array<{ actorId: string; actionType: string }> = [];
     const spy: ActionHook = {

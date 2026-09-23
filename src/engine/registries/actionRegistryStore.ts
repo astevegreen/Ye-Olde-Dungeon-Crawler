@@ -2,7 +2,7 @@ import type { GameAction } from '../actions/actionRegistry';
 import { RegistryStore } from './registryStore';
 
 /**
- * One engine's action command definitions (ARCHITECTURE.md §3, P-22).
+ * One engine's action command definitions (ARCHITECTURE.md §3).
  */
 export class ActionRegistryStore extends RegistryStore<string, GameAction<any>> {
   constructor() {

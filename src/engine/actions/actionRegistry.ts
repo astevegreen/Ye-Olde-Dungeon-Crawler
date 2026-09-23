@@ -27,7 +27,7 @@ export interface GameAction<TArgs = any> {
 import { activeActionStore } from '../registries/actionRegistryStore';
 
 /**
- * Process-wide facade over whichever action command store is active (ARCHITECTURE.md §3, P-22).
+ * Process-wide facade over whichever action command store is active (ARCHITECTURE.md §3).
  * It holds no map of its own: an engine's registrations live in that engine's store, and
  * this forwards there, so there is one copy of the data rather than two.
  */

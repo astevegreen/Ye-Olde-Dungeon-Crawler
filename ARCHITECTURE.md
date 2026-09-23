@@ -207,6 +207,19 @@ Each entry records the current state, the target, and whether the work touches p
 *There are currently no active planned work items.*
 
 
+### Retired IDs
+A completed item is deleted from this register, but its ID is retired, never reused, and code comments may still cite it. Retired: P-01–P-23 and P-25–P-26. **Next free ID: P-27.** Where the commonly cited ones now live:
+
+| ID | Feature | Documented in |
+|---|---|---|
+| P-03 | Campaign content moved into packs; Rune of Return | [content-extensibility.md](docs/architecture/content-extensibility.md), [content-rune-of-return.md](docs/architecture/content-rune-of-return.md) |
+| P-05, P-06 | Hooks for every actor; turn failure isolation | §4 |
+| P-14 | Companions | [content-companions.md](docs/architecture/content-companions.md) |
+| P-22 | Per-engine registries | [content-extensibility.md](docs/architecture/content-extensibility.md) (Content Registries) |
+| P-23 | Milestone renown ledger | [content-progression-scaling.md](docs/architecture/content-progression-scaling.md) |
+| P-25 | Assigned twice in error: tag-filtered radial auras ([content-progression-scaling.md](docs/architecture/content-progression-scaling.md)), and on 2026-09-23 typed action introspection (§4) | — |
+| P-26 | Sensory masking & echolocation | [simulation-and-input.md](docs/architecture/simulation-and-input.md) |
+
 ### Deferred (out of scope)
 Entries here are recorded, not planned: no work is scheduled, none attempted. They keep reserved IDs so numbering stays stable. A deferred item is not **[Planned]** — do not pick one up as planned work; moving one back into the register above is an explicit decision.
 

@@ -43,7 +43,7 @@ function makeCompanion(position: { x: number; y: number }): Companion {
   });
 }
 
-describe('selectAttackTarget (ARCHITECTURE.md P-14 Phase 2)', () => {
+describe('selectAttackTarget (docs/architecture/content-companions.md Phase 2)', () => {
   it('defaults to the player when a monster has no targetingMode set', () => {
     const { engine, player } = buildEngine();
     const monster = makeMonster('m1', { x: 12, y: 10 });

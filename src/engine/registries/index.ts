@@ -114,7 +114,7 @@ export {
 } from '../items/itemIndex';
 
 /**
- * Bundle of per-engine content and runtime state registries (ARCHITECTURE.md §3, §5, P-22).
+ * Bundle of per-engine content and runtime state registries (ARCHITECTURE.md §3, §5; docs/architecture/content-extensibility.md).
  */
 export interface EngineRegistries {
   monsters: MonsterRegistryStore;

@@ -357,7 +357,7 @@ export class BankService {
 }
 
 /**
- * Companions & Pet Progression, Phase 2 (ARCHITECTURE.md P-14): trainer NPC
+ * Companions & Pet Progression, Phase 2 (docs/architecture/content-companions.md): trainer NPC
  * (`NpcRole: 'trainer'`) services — the acquisition gate, archetype switching,
  * skill teaching, and revival. Mirrors `TempleService`/`SageService`'s cost-check-
  * then-mutate pattern. Uses the literal `'companion_bonded'` world-state flag key
@@ -429,7 +429,7 @@ export class TrainerService {
     };
   }
 
-  /** Switches the active companion's AI archetype (ARCHITECTURE.md P-14 Phase 2). */
+  /** Switches the active companion's AI archetype (docs/architecture/content-companions.md Phase 2). */
   public static switchArchetype(
     engine: GameEngine,
     archetype: CompanionArchetype,

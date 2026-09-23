@@ -82,7 +82,7 @@ export class Monster extends Actor {
   public lootTable: LootDropRule[];
   public hooks: HookDescriptor[];
   /**
-   * Monster AI Targeting Generalization (ARCHITECTURE.md P-14 Phase 2). Default
+   * Monster AI Targeting Generalization (docs/architecture/content-companions.md Phase 2). Default
    * 'player' preserves the original hardcoded-to-`engine.player` behavior exactly;
    * opting a monster definition into 'nearest_hostile' lets it engage a companion
    * instead, via `ai/targetSelection.ts`'s `selectAttackTarget()`.

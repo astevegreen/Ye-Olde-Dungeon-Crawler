@@ -2,7 +2,7 @@ import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
 import { RegistryStore } from './registryStore';
 
 /**
- * One engine's monster definitions (ARCHITECTURE.md §3, P-22).
+ * One engine's monster definitions (ARCHITECTURE.md §3).
  *
  * Registries were static classes over module-level maps, so two engines built from
  * different manifests in one process shared a single set of lookups and the second
@@ -21,7 +21,7 @@ export class MonsterRegistryStore extends RegistryStore<string, MonsterDefinitio
 /**
  * Store used when no engine owns the lookup: fixtures registered before an engine exists,
  * and static entry points with no engine in scope (`Monster.createFromDefinition`).
- * Stage 2 of P-22 migrates those; until then this is the process default.
+ * It remains the process default for those entry points.
  */
 const processDefaultStore = new MonsterRegistryStore();
 let activeStore: MonsterRegistryStore = processDefaultStore;

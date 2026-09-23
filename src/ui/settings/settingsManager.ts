@@ -56,7 +56,7 @@ export const ACTION_METADATA: ActionMetadata[] = [
 ];
 
 /**
- * Configurable Radial Action Menu (ARCHITECTURE.md P-24). A slot bound to a spell,
+ * Configurable Radial Action Menu (docs/architecture/simulation-and-input.md). A slot bound to a spell,
  * a registered CommandPalette command, or a directly-usable consumable item (potion
  * or self-targeted scroll). Indexed by compass direction — see radialMenu.ts's
  * `RADIAL_DIRECTIONS` for the fixed 8-direction order this array is keyed by.

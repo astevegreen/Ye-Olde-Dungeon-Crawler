@@ -46,7 +46,7 @@ function makeHostile(id: string, position: { x: number; y: number }): Monster {
   });
 }
 
-describe('CompanionBodyguardStrategy (ARCHITECTURE.md P-14 Phase 2)', () => {
+describe('CompanionBodyguardStrategy (docs/architecture/content-companions.md Phase 2)', () => {
   const strategy = new CompanionBodyguardStrategy();
 
   it('attacks an adjacent hostile instead of moving', () => {
@@ -84,7 +84,7 @@ describe('CompanionBodyguardStrategy (ARCHITECTURE.md P-14 Phase 2)', () => {
   });
 });
 
-describe('CompanionSkirmisherStrategy (ARCHITECTURE.md P-14 Phase 2)', () => {
+describe('CompanionSkirmisherStrategy (docs/architecture/content-companions.md Phase 2)', () => {
   const strategy = new CompanionSkirmisherStrategy();
 
   it('attacks an adjacent hostile instead of moving', () => {

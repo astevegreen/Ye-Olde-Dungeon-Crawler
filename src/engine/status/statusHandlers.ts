@@ -18,7 +18,7 @@ export interface StatusHandler {
   onExpire?(entity: Entity, engine: GameEngine): string | undefined;
   /**
    * When set, this status forces the player's FOV radius to this value while active
-   * (see `GameEngine.updateFov()`, ARCHITECTURE.md P-26). If several active statuses
+   * (see `GameEngine.updateFov()`, docs/architecture/simulation-and-input.md). If several active statuses
    * declare one, the most restrictive (smallest) applies. Generalizes what was
    * previously a `blindness`-only hardcoded case in `engine.ts`.
    */
@@ -32,7 +32,7 @@ import {
 } from '../registries/statusHandlerRegistryStore';
 
 /**
- * Process-wide facade over whichever status handler store is active (ARCHITECTURE.md §3, P-22).
+ * Process-wide facade over whichever status handler store is active (ARCHITECTURE.md §3).
  * It holds no map of its own: an engine's registrations live in that engine's store, and
  * this forwards there, so there is one copy of the data rather than two.
  */

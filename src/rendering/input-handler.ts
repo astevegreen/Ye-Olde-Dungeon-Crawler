@@ -366,7 +366,7 @@ export class InputHandler {
       return false;
     }
 
-    // Configurable Radial Action Menu (ARCHITECTURE.md P-24): while open, directional
+    // Configurable Radial Action Menu (docs/architecture/simulation-and-input.md): while open, directional
     // keys (arrows/WASD/vi/numpad) select a wedge instead of moving, Escape cancels,
     // and every other key is consumed so gameplay input can't leak through mid-selection.
     if (this.radialMenuOverlay?.isOpen) {

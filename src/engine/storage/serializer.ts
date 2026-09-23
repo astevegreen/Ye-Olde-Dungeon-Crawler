@@ -293,7 +293,7 @@ export function deserializeItem(node: SerializedItemNode): Item {
 }
 
 /**
- * Companions & Pet Progression, Phase 1 (ARCHITECTURE.md P-14). Serialized at the
+ * Companions & Pet Progression, Phase 1 (docs/architecture/content-companions.md). Serialized at the
  * SaveData top level (sibling to `player`), not inside `SerializedMap.monsters`,
  * since the companion travels with the player across floors rather than
  * belonging to any one floor.
@@ -893,7 +893,7 @@ export function deserializeGame(
     engine.planeManager.deserialize(saveData.planes);
   }
 
-  // 5b. Restore Companion (ARCHITECTURE.md P-14) — top-level, not part of map.monsters
+  // 5b. Restore Companion (docs/architecture/content-companions.md) — top-level, not part of map.monsters
   if (saveData.companion) {
     engine.attachCompanion(deserializeCompanion(saveData.companion, engine.registries));
   }

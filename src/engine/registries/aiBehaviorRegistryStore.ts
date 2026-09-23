@@ -12,7 +12,7 @@ export function getDefaultAiBehaviorRegistrar(): (() => void) | undefined {
 }
 
 /**
- * One engine's AI behavior definitions (ARCHITECTURE.md §3, P-22).
+ * One engine's AI behavior definitions (ARCHITECTURE.md §3).
  */
 export class AIBehaviorRegistryStore extends RegistryStore<string, AiBehaviorStrategy> {
   private defaultStrategy?: AiBehaviorStrategy;

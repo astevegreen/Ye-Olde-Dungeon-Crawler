@@ -3,7 +3,7 @@ import type { GameEngine } from '../engine';
 
 /**
  * Reconstructs an engine's containerRegistry and itemIndex by scanning
- * live world structures (ARCHITECTURE.md §3, §5, P-22 stage 4).
+ * live world structures (ARCHITECTURE.md §3, §5; docs/architecture/content-extensibility.md).
  *
  * Scans active map ground items, stored floors, player inventory (pack,
  * purse, paperdoll), and companion inventory, registering containers into

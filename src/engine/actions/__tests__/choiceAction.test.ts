@@ -72,7 +72,7 @@ describe('ChoiceConsequence — grantCompanion', () => {
     expect(engine.getWorldFlag('companion_bonded')).toBe(false);
     expect(engine.companion).toBeNull();
 
-    // CompanionRegistry is process-wide (P-22) — register directly here, mirroring
+    // CompanionRegistry is process-wide (per-engine registries, docs/architecture/content-extensibility.md) — register directly here, mirroring
     // what GameEngine's constructor does for a manifest-declared companion.
     CompanionRegistry.register({
       id: 'test_frost_pet',

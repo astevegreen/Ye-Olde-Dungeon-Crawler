@@ -83,13 +83,13 @@ export interface MonsterDefinition {
   hooks?: import('../hooks/hookDispatcher').HookDescriptor[];
   /**
    * Free-form creature tags (e.g. 'undead', 'aberration') resolved onto spawned
-   * instances via `Entity.tags`/`hasTag()` (ARCHITECTURE.md P-25). `hasTag` already
+   * instances via `Entity.tags`/`hasTag()` (docs/architecture/content-progression-scaling.md). `hasTag` already
    * also matches faction and entity type, so a tag only needs to name things that
    * aren't already implied by those.
    */
   tags?: string[];
   /**
-   * Monster AI Targeting Generalization (ARCHITECTURE.md P-14 Phase 2). Default
+   * Monster AI Targeting Generalization (docs/architecture/content-companions.md Phase 2). Default
    * (omitted, i.e. 'player') preserves this monster's exact current behavior —
    * always engaging `engine.player` — with zero change. Opt a monster into
    * 'nearest_hostile' only when you want it capable of engaging a companion.
@@ -98,7 +98,7 @@ export interface MonsterDefinition {
 }
 
 /**
- * Process-wide facade over whichever monster store is active (ARCHITECTURE.md §3, P-22).
+ * Process-wide facade over whichever monster store is active (ARCHITECTURE.md §3).
  * It holds no map of its own: an engine's registrations live in that engine's store, and
  * this forwards there, so there is one copy of the data rather than two.
  */

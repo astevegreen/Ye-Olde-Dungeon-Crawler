@@ -16,7 +16,7 @@ function buildEngine(): GameEngine {
   return new GameEngine({ map, player });
 }
 
-describe('Companion commands via EngineCommandBus (ARCHITECTURE.md P-14 Phase 2)', () => {
+describe('Companion commands via EngineCommandBus (docs/architecture/content-companions.md Phase 2)', () => {
   beforeEach(() => {
     CompanionRegistry.clear();
     CompanionRegistry.register({

@@ -32,7 +32,7 @@ function buildMonster(id: string, x: number, y: number, tags: string[] = []): Mo
   });
 }
 
-describe('Tag-Filtered Radial Auras (P-25)', () => {
+describe('Tag-Filtered Radial Auras', () => {
   describe('findTaggedEntitiesInRadius', () => {
     it('finds only living entities within radius that match a given tag', () => {
       const { engine } = buildEngine();

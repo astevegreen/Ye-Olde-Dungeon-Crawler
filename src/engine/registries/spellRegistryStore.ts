@@ -10,7 +10,7 @@ export const SPELL_ID_ALIASES: Record<string, string> = {
 };
 
 /**
- * One engine's spell definitions (ARCHITECTURE.md §3, P-22).
+ * One engine's spell definitions (ARCHITECTURE.md §3).
  */
 export class SpellRegistryStore extends RegistryStore<string, SpellDefinition> {
   constructor() {

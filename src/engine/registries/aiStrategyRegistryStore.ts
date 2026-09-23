@@ -10,7 +10,7 @@ export const LEGACY_AI_ALIASES: Record<string, string> = {
 };
 
 /**
- * One engine's AI strategies (ARCHITECTURE.md §3, P-22).
+ * One engine's AI strategies (ARCHITECTURE.md §3).
  */
 export class AIStrategyRegistryStore extends RegistryStore<string, AIStrategy> {
   private defaultStrategy?: AIStrategy;

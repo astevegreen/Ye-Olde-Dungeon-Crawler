@@ -531,7 +531,7 @@ export class InventoryOverlay implements UIModal {
     }
 
     // 9b. KeyG: Give selected backpack item to the active companion's pack
-    // (Companions & Pet Progression, Phase 2 — ARCHITECTURE.md P-14). One-
+    // (Companions & Pet Progression, Phase 2 — docs/architecture/content-companions.md). One-
     // directional from this overlay; taking an item back is dispatched the same
     // way ('transfer_from_companion') but has no browsing UI for the companion's
     // pack yet — a further UI enhancement, not built in this pass.

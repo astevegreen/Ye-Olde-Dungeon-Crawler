@@ -43,7 +43,7 @@ export type ConsumableEffectDescriptor =
   | { type: 'restore_volatile_energy'; amount?: number | 'full' }
   | {
       /**
-       * Tag-Filtered Radial Aura (ARCHITECTURE.md P-25): applies `status` to every
+       * Tag-Filtered Radial Aura (docs/architecture/content-progression-scaling.md): applies `status` to every
        * living entity within `radius` of the user matching any of `tags` (e.g. a
        * holy torch blinding undead within 4 tiles). Uses the same bounded
        * `findTaggedEntitiesInRadius` query the `radialAuraFilter` hook primitive
@@ -152,7 +152,7 @@ export interface TrackedMilestoneDefinition {
 }
 
 /**
- * A cumulative renown-granting milestone (Milestone Renown Ledger, ARCHITECTURE.md P-23).
+ * A cumulative renown-granting milestone (Milestone Renown Ledger, docs/architecture/content-progression-scaling.md).
  * Distinct from TrackedMilestoneDefinition: that is a flag-based display list for the
  * World Ledger sidebar, while this drives a scalar per-category renown score used for
  * title thresholds (`RenownTitleDefinition`) and vendor-unlock predicates (`minCounter`
@@ -514,14 +514,14 @@ export interface GameContentManifest {
   /** "Driven off" boss resolutions (ARCHITECTURE.md §3, `BossFleeResolution`). */
   bossFleeResolutions?: BossFleeResolution[];
   /**
-   * Pack-neutral wiring for the Rune of Return (ARCHITECTURE.md P-03 stage 3). The
+   * Pack-neutral wiring for the Rune of Return (docs/architecture/content-rune-of-return.md). The
    * mechanic (channel timing, banking, mobility, interrupt rules) is fixed engine
    * logic; only presentation and the town refill trigger vary per pack. `undefined`
    * disables the attunement-on-interact hook, but the item/channel mechanic itself
    * still works without it (charges just can't be refilled).
    */
   runeOfReturn?: RuneOfReturnManifestConfig;
-  /** Fixed tile placements stamped at specific floor generation (ARCHITECTURE.md P-03 stage 2). */
+  /** Fixed tile placements stamped at specific floor generation (docs/architecture/content-quests-and-triggers.md). */
   fixedTilePlacements?: FixedTilePlacement[];
   /** Vault blueprints guaranteed to stamp at specific floors, optionally populated with NPCs. */
   scriptedVaultPlacements?: ScriptedVaultPlacement[];

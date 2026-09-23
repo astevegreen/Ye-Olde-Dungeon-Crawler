@@ -168,7 +168,7 @@ export function registerTileDefinition(definition: TileDefinition): void {
 }
 
 /**
- * Process-wide facade over whichever tile store is active (ARCHITECTURE.md §3, P-22).
+ * Process-wide facade over whichever tile store is active (ARCHITECTURE.md §3).
  */
 export class TileRegistry {
   public static register(definition: TileDefinition): void {

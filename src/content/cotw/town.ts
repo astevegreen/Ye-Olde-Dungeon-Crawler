@@ -153,7 +153,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
           ItemFactory.createScrollOfIdentify('astrid-id-1'),
           ItemFactory.createWandOfLightning('astrid-wand-1'),
           // Vendor unlock: appears only once the hero's exploration renown reaches 25
-          // (Milestone Renown Ledger, ARCHITECTURE.md P-23).
+          // (Milestone Renown Ledger, docs/architecture/content-progression-scaling.md).
           ItemFactory.createRenownCharm({
             id: 'astrid-charm-watchful-eye',
             name: 'Charm of the Watchful Eye',
@@ -206,7 +206,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
       dialogText: 'For a price I can bond you with a battle-hound, revive one that has fallen, retrain its instincts, or teach it new tricks.',
     },
     {
-      // Rune of Return attunement trigger (ARCHITECTURE.md P-03 stage 3, engine's
+      // Rune of Return attunement trigger (docs/architecture/content-rune-of-return.md, engine's
       // `manifest.runeOfReturn.attunementNpcId`). The mechanism is engine-owned and
       // fixed; only this NPC's placement, name, and flavor are pack-provided.
       id: 'npc-rune-smith',

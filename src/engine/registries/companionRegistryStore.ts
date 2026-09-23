@@ -2,7 +2,7 @@ import type { CompanionDefinition } from '../entities/companion';
 import { RegistryStore } from './registryStore';
 
 /**
- * One engine's companion definitions (ARCHITECTURE.md §3, P-22).
+ * One engine's companion definitions (ARCHITECTURE.md §3).
  */
 export class CompanionRegistryStore extends RegistryStore<string, CompanionDefinition> {
   constructor() {

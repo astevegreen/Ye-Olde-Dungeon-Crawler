@@ -13,7 +13,7 @@ import { StatusHandlerRegistry } from '../status/statusHandlers';
 import type { StatusEffect } from '../status/types';
 
 /**
- * Rune of Return (ARCHITECTURE.md P-03 stage 3, §9).
+ * Rune of Return (docs/architecture/content-rune-of-return.md).
  *
  * A limited-charge item that channels a multi-turn teleport-to-town spell. The
  * mechanic is engine-owned and pack-neutral (§9): channel timing, banking, mobility,
@@ -352,7 +352,7 @@ const runeOfReturnStatusHandler: StatusHandler = {
  * ActionPipeline hooks that own the channel's interrupt/continuation decision (see
  * module doc). Registered unconditionally in `GameEngine`'s constructor alongside the
  * built-in status handlers — `runeOfReturn.ts` is already an engine-owned mechanic
- * (ARCHITECTURE.md §9, P-03), not campaign content, so this follows that precedent
+ * (docs/architecture/content-rune-of-return.md), not campaign content, so this follows that precedent
  * rather than routing through `manifest.actionHooks`. Touches the protected
  * `engine.ts` under §8.1 exception 1 (confirmed bug fix): the previous tick-only
  * implementation could take up to one player turn to notice a monster's counter-attack

@@ -58,7 +58,7 @@ function lastMonsterTurnError() {
 const chebyshev = (a: { x: number; y: number }, b: { x: number; y: number }) =>
   Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 
-describe('Whole-turn failure isolation: monster turns (ARCHITECTURE.md P-06)', () => {
+describe('Whole-turn failure isolation: monster turns', () => {
   it('isolates a throwing monster AI routine, surfaces it as pipelineError, and does not spin the scheduler', () => {
     const { engine, player } = buildEngine({
       aiStrategies: [

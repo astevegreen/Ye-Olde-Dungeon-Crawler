@@ -395,7 +395,7 @@ export class CanvasRenderer {
     // Top Bar (HUD)
     this.renderTopBar(virtualW);
 
-    // Sensory Masking & Echolocation (ARCHITECTURE.md P-26): while active, replace the
+    // Sensory Masking & Echolocation (docs/architecture/simulation-and-input.md): while active, replace the
     // normal FOV-based tile/entity pass with an audible-only view instead of drawing
     // what the (heavily reduced) visual FOV alone would show.
     const isSensoryMasked = this.engine.player.statusManager.hasStatus('sensory_masked');
@@ -1105,7 +1105,7 @@ export class CanvasRenderer {
   }
 
   /**
-   * Sensory Masking & Echolocation (ARCHITECTURE.md P-26): replaces the normal tile/
+   * Sensory Masking & Echolocation (docs/architecture/simulation-and-input.md): replaces the normal tile/
    * entity pass while `sensory_masked` is active. Draws a blank board, the player's
    * own icon, and only audible actors/terrain — reusing the existing ESP-detected
    * pulsing-indicator style for actors rather than their normal sprites, since they

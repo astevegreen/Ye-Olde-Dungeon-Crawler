@@ -40,7 +40,7 @@ export class DeathResolver {
       victim.onDestroyed(engine, killer);
     }
 
-    // Companions & Pet Progression, Phase 2 (ARCHITECTURE.md P-14): a dying
+    // Companions & Pet Progression, Phase 2 (docs/architecture/content-companions.md): a dying
     // companion skips the generic Monster death pipeline entirely (no XP award,
     // no loot, no compendium kill-tracking) and is kept — not discarded —
     // as `engine.deadCompanionRecord` so a trainer can revive it (heal + reattach

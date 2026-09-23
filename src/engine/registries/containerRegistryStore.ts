@@ -1,7 +1,7 @@
 import { RegistryStore } from './registryStore';
 
 /**
- * One engine's container registry (ARCHITECTURE.md §3, §5, P-22 stage 4).
+ * One engine's container registry (ARCHITECTURE.md §3, §5; docs/architecture/content-extensibility.md).
  *
  * Holds runtime container instances keyed by scalar string ID.
  * Does NOT hold content data — this is live game state, so instances

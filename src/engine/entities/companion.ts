@@ -5,7 +5,7 @@ import { Container } from '../items/container';
 import type { EngineRegistries } from '../registries';
 
 /**
- * Companions & Pet Progression (ARCHITECTURE.md P-14).
+ * Companions & Pet Progression (docs/architecture/content-companions.md).
  *
  * Content-defined data for a summonable companion: stats/speed for combat and
  * movement, and a pack-mule capacity. AI archetype and unlocked skills are
@@ -23,7 +23,7 @@ export interface CompanionDefinition {
 }
 
 /**
- * Trainer-taught AI archetype (ARCHITECTURE.md P-14 Phase 2). Each maps to its own
+ * Trainer-taught AI archetype (docs/architecture/content-companions.md Phase 2). Each maps to its own
  * `AIStrategy` id in `ai/aiRegistry.ts`. 'balanced' is `companion_follow` (Phase 1's
  * original behavior); 'bodyguard' stays tight to the player (more likely to be the
  * nearest hostile target for any monster that has opted into `targetingMode:
@@ -40,7 +40,7 @@ const ARCHETYPE_AI_ROUTINE: Record<CompanionArchetype, string> = {
 import { activeCompanionStore } from '../registries/companionRegistryStore';
 
 /**
- * Process-wide facade over whichever companion store is active (ARCHITECTURE.md §3, P-22).
+ * Process-wide facade over whichever companion store is active (ARCHITECTURE.md §3).
  * It holds no map of its own: an engine's registrations live in that engine's store, and
  * this forwards there, so there is one copy of the data rather than two.
  */
@@ -77,7 +77,7 @@ export class CompanionRegistry {
  * hostile monsters as hostile to it — no changes needed to the hostility system.
  *
  * Whether a hostile monster can actually engage the companion instead of the
- * player depends on that monster's own `targetingMode` (ARCHITECTURE.md P-14
+ * player depends on that monster's own `targetingMode` (docs/architecture/content-companions.md
  * Phase 2, `ai/targetSelection.ts`) — a companion cannot "tank" against a monster
  * that hasn't opted into `'nearest_hostile'` targeting.
  */
@@ -133,7 +133,7 @@ export class Companion extends Monster {
     this.companionDefinitionId = config.companionDefinitionId;
   }
 
-  /** Switches AI archetype (ARCHITECTURE.md P-14 Phase 2), taught by a trainer NPC. */
+  /** Switches AI archetype (docs/architecture/content-companions.md Phase 2), taught by a trainer NPC. */
   public setArchetype(archetype: CompanionArchetype): void {
     this.archetype = archetype;
     this.aiRoutineId = ARCHETYPE_AI_ROUTINE[archetype];

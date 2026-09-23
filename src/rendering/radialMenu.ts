@@ -4,7 +4,7 @@ import { RADIAL_MENU_SLOT_COUNT } from '../ui/settings/settingsManager';
 import { resolveThemeTokens } from './theme';
 
 /**
- * Configurable Radial Action Menu (ARCHITECTURE.md P-24).
+ * Configurable Radial Action Menu (docs/architecture/simulation-and-input.md).
  *
  * A hold-to-open canvas overlay: `InputHandler` opens it on the configurable
  * `radial_menu` action keydown, routes the existing directional-key vocabulary

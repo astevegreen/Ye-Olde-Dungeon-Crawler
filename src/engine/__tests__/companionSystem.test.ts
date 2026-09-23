@@ -14,14 +14,14 @@ function buildEngine(): { engine: GameEngine; player: Player } {
   const map = new GameMap(20, 20, TILES.FLOOR);
   const player = new Player({ id: 'hero', name: 'Hero', position: { x: 10, y: 10 } });
   const engine = new GameEngine({ map, player });
-  // Phase 2's acquisition gate (ARCHITECTURE.md P-14) requires bonding before
+  // Phase 2's acquisition gate (docs/architecture/content-companions.md) requires bonding before
   // summonCompanion succeeds. The gate itself is covered by trainerService.test.ts;
   // these tests are about summon/follow/persistence mechanics, so pre-bond here.
   engine.setWorldFlag(GameEngine.COMPANION_BONDED_FLAG, true);
   return { engine, player };
 }
 
-describe('Companion engine integration (ARCHITECTURE.md P-14, Phase 1 MVP)', () => {
+describe('Companion engine integration (docs/architecture/content-companions.md, Phase 1 MVP)', () => {
   beforeEach(() => {
     CompanionRegistry.clear();
     CompanionRegistry.register({
@@ -200,7 +200,7 @@ describe('Companion engine integration (ARCHITECTURE.md P-14, Phase 1 MVP)', () 
     });
   });
 
-  describe('death and revival (ARCHITECTURE.md P-14 Phase 2)', () => {
+  describe('death and revival (docs/architecture/content-companions.md Phase 2)', () => {
     it('routes a dying companion to deadCompanionRecord instead of the generic Monster death pipeline', () => {
       const { engine } = buildEngine();
       const companion = engine.summonCompanion(TEST_DEF_ID)!;

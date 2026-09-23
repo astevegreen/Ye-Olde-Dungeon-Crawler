@@ -362,7 +362,7 @@ export class ShopOverlay {
     if (this.onStateChanged) this.onStateChanged();
   }
 
-  // Companions & Pet Progression, Phase 2 (ARCHITECTURE.md P-14) trainer services.
+  // Companions & Pet Progression, Phase 2 (docs/architecture/content-companions.md) trainer services.
   public executeBondCompanion(engine: GameEngine): void {
     const result = engine.commandBus.dispatch({ type: 'trainer_bond_companion' });
     this.statusMessage = result.message ?? '';

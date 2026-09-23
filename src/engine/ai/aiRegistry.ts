@@ -39,7 +39,7 @@ export interface AIStrategy {
 import { activeAIStrategyStore } from '../registries/aiStrategyRegistryStore';
 
 /**
- * Process-wide facade over whichever AI strategy store is active (ARCHITECTURE.md §3, P-22).
+ * Process-wide facade over whichever AI strategy store is active (ARCHITECTURE.md §3).
  * It holds no map of its own: an engine's registrations live in that engine's store, and
  * this forwards there, so there is one copy of the data rather than two.
  */
@@ -424,7 +424,7 @@ function findNearestHostileWithin(engine: GameEngine, actor: Actor, radius: numb
 }
 
 /**
- * Companions & Pet Progression (ARCHITECTURE.md P-14): follow the player within
+ * Companions & Pet Progression (docs/architecture/content-companions.md): follow the player within
  * FOLLOW_DISTANCE and auto-attack an adjacent hostile. Generic over any
  * `faction: 'player'` actor with this aiRoutineId — not aware of the `Companion`
  * class specifically. This is the default 'balanced' archetype (`Companion.
@@ -470,7 +470,7 @@ export class CompanionFollowStrategy implements AIStrategy {
 }
 
 /**
- * Bodyguard archetype (ARCHITECTURE.md P-14 Phase 2): hugs the player at
+ * Bodyguard archetype (docs/architecture/content-companions.md Phase 2): hugs the player at
  * FOLLOW_DISTANCE 1 instead of 2. No mechanic here forces monsters to attack it —
  * staying adjacent to the player simply makes the companion likelier to be the
  * *nearest* hostile target for any monster with `targetingMode: 'nearest_hostile'`.
@@ -511,7 +511,7 @@ export class CompanionBodyguardStrategy implements AIStrategy {
 }
 
 /**
- * Skirmisher archetype (ARCHITECTURE.md P-14 Phase 2): a much looser leash
+ * Skirmisher archetype (docs/architecture/content-companions.md Phase 2): a much looser leash
  * (FOLLOW_DISTANCE 5) and, unlike the other two archetypes, will proactively
  * path toward a hostile within SEEK_RADIUS even before it's adjacent, rather
  * than waiting for one to come to it. Deals more independent damage but spends

@@ -32,7 +32,7 @@ function setup(def: MonsterDefinition) {
   const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 }, stats: { hp: 99, maxHp: 99, attack: 1, defense: 0 } });
   const engine = new GameEngine({ map, player, seed: 4 });
   // Register after construction: the facade writes into the active engine store, and a new
-   // engine seeds only from the process default (P-22) — seeding from the active store would
+   // engine seeds only from the process default (docs/architecture/content-extensibility.md, Content Registries) — seeding from the active store would
    // re-create the cross-engine leak that item fixed.
   MonsterRegistry.register(def);
   const monster = new Monster({

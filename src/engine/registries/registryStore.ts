@@ -1,5 +1,5 @@
 /**
- * Generic store for one engine's content registrations (ARCHITECTURE.md §3, P-22).
+ * Generic store for one engine's content registrations (ARCHITECTURE.md §3).
  *
  * Encapsulates a key-value collection scoped per GameEngine instance. Supports
  * registering values either with an explicit key or by extracting a key via an

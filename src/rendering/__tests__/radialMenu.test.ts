@@ -32,7 +32,7 @@ function createMockCanvasContext(): CanvasRenderingContext2D {
   } as unknown as CanvasRenderingContext2D;
 }
 
-describe('RadialMenuOverlay (P-24)', () => {
+describe('RadialMenuOverlay', () => {
   it('starts closed with all slots empty and no hovered direction', () => {
     const overlay = new RadialMenuOverlay();
     expect(overlay.isOpen).toBe(false);

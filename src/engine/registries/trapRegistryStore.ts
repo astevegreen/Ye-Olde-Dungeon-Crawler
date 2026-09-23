@@ -2,7 +2,7 @@ import type { TrapDefinition } from '../types/manifest';
 import { RegistryStore } from './registryStore';
 
 /**
- * One engine's trap definitions (ARCHITECTURE.md §3, P-22).
+ * One engine's trap definitions (ARCHITECTURE.md §3).
  */
 export class TrapRegistryStore extends RegistryStore<string, TrapDefinition> {
   constructor() {

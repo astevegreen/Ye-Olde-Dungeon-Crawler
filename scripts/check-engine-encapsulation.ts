@@ -22,6 +22,9 @@ import ts from 'typescript';
  *                        methods are the public API and are not flagged.        [presentation only]
  *  6. COLLECTION_MUTATION - Array/Map/Set mutator call on an engine class member
  *                        (player.spellsKnown.push(x)).                          [presentation only]
+ *  7. NESTED_WRITE     - property write into a plain object or interface-typed value
+ *                        reached through an engine class member
+ *                        (engine.lastActionResult.pipelineError = x).        [presentation + content]
  *
  * Content (src/content/) is exempt from rules 5-6: content hooks receive the engine
  * through an injected context and are expected to act through subsystem methods.
@@ -183,6 +186,17 @@ function checkWriteTarget(sf: ts.SourceFile, target: ts.Expression, statement: t
     if (uncast !== receiver) {
       const cls = engineClassOfType(uncast);
       if (cls) report(sf, statement, 'ANY_CAST_WRITE', `${cls}.${t.name.text}`);
+      return;
+    }
+    // A plain object or interface-typed value reached through an engine member is engine
+    // state too (`engine.lastActionResult.pipelineError = …`), though its own field
+    // isn't declared on a class.
+    for (let r: ts.Expression = receiver; ts.isPropertyAccessExpression(r); r = unwrap(r.expression)) {
+      const owner = engineClassMember(checker.getSymbolAtLocation(r.name));
+      if (owner) {
+        report(sf, statement, 'NESTED_WRITE', `${owner.className}.${owner.member}`);
+        return;
+      }
     }
     return;
   }

@@ -87,4 +87,27 @@ describe('gate scripts cover src/main/** (ARCHITECTURE.md §7.2 widened scope)',
     expect(result.output).toContain('GameEngine.turnCount');
     expect(result.output).toContain('__scratch_gate_violation__.ts');
   }, 30000);
+
+  it('check-engine-encapsulation fails on a write into plain engine state reached through a member', () => {
+    // The shape of the old src/main.ts bug: ActionResult is an interface, so the field
+    // written is not a class member, but the object belongs to the engine.
+    fs.mkdirSync(MAIN_DIR, { recursive: true });
+    fs.writeFileSync(
+      SCRATCH_FILE,
+      [
+        "import type { GameEngine } from '../engine/engine';",
+        '',
+        'export function scratchGateViolation(engine: GameEngine): void {',
+        '  if (engine.lastActionResult) engine.lastActionResult.pipelineError = false;',
+        '}',
+        '',
+      ].join('\n')
+    );
+
+    const result = runScript('scripts/check-engine-encapsulation.ts');
+
+    expect(result.status).not.toBe(0);
+    expect(result.output).toContain('NESTED_WRITE');
+    expect(result.output).toContain('GameEngine.lastActionResult');
+  }, 30000);
 });

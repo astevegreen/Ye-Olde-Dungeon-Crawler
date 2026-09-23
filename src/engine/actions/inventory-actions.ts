@@ -53,6 +53,7 @@ export class PickUpAction implements Action {
     if (!storeResult.success) {
       // If the item is a container with nested items (e.g. heavy chest), loot from inside it
       if (itemToPick instanceof Container && itemToPick.getItems().length > 0) {
+        itemToPick.markOpened();
         const contained = itemToPick.getItems()[0];
         if (contained instanceof RuneOfReturnItem) {
           itemToPick.removeItem(contained.id);
@@ -253,6 +254,7 @@ export class QuickLootAction implements Action {
     for (const item of groundItems) {
       if (item instanceof Container && item.getItems().length > 0) {
         // If the ground item is a container with nested items, loot its contents directly
+        item.markOpened();
         const containedItems = [...item.getItems()];
         for (const subItem of containedItems) {
           if (subItem instanceof RuneOfReturnItem) {
@@ -335,6 +337,7 @@ export class LootFromContainerAction implements Action {
       return { success: false, cost: 0, message: 'You cannot loot items while dead.' };
     }
 
+    this.container.markOpened();
     const removed = this.container.removeItem(this.item.id);
     if (!removed) {
       return { success: false, cost: 0, message: 'Item is no longer inside the container.' };
@@ -383,6 +386,7 @@ export class StoreInContainerAction implements Action {
       return { success: false, cost: 0, message: 'You cannot store items while dead.' };
     }
 
+    this.container.markOpened();
     const check = this.container.canContain(this.item);
     if (!check.allowed) {
       const msg = `Cannot place into ${this.container.displayName}: ${check.reason}`;
@@ -421,6 +425,7 @@ export class LootAllFromContainerAction implements Action {
       return { success: false, cost: 0, message: 'You cannot loot items while dead.' };
     }
 
+    this.container.markOpened();
     const items = [...this.container.getItems()];
     if (items.length === 0) {
       const msg = `${this.container.displayName} is empty.`;

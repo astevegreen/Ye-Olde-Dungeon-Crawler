@@ -79,6 +79,7 @@ export function serializeItem(item: Item): SerializedItemNode {
       maxSlots: item.maxSlots,
       acceptedCategories: item.acceptedCategories,
       items: item.getItems().map(serializeItem),
+      opened: item.wasOpened || undefined,
     };
     return container;
   }
@@ -141,6 +142,7 @@ export function deserializeItem(node: SerializedItemNode): Item {
     for (const childNode of node.items) {
       container.addItem(deserializeItem(childNode));
     }
+    if (node.opened) container.markOpened();
 
     return container;
   }

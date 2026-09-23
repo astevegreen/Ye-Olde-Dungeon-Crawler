@@ -54,6 +54,18 @@ export class Container extends Item {
     registerContainer(this);
   }
 
+  private opened = false;
+
+  /** Whether the player has ever looked inside (opened, looted, or stored into) this
+   *  container — the HUD flags unopened ground containers. Saved with the item. */
+  public get wasOpened(): boolean {
+    return this.opened;
+  }
+
+  public markOpened(): void {
+    this.opened = true;
+  }
+
   public getItems(): readonly Item[] {
     return this.items;
   }

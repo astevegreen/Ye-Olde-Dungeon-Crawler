@@ -5,6 +5,7 @@ import { Camera } from './camera';
 import type { Entity } from '../engine';
 import type { TileDefinition } from '../engine';
 import type { Item } from '../engine';
+import { Container } from '../engine';
 import { InventoryOverlay } from './inventory-overlay';
 import { TargetingOverlay } from './targeting-overlay';
 import { ShopOverlay } from './shop-overlay';
@@ -32,6 +33,9 @@ function defaultRadialLabel(slot: RadialMenuSlotConfig): string {
     case 'item': return slot.itemId;
   }
 }
+
+/** Optional pack art for a multi-item tile; without it the renderer draws a generic heap. */
+const LOOT_PILE_SPRITE_KEY = 'loot_pile';
 
 export class CanvasRenderer {
   private canvas: HTMLCanvasElement;
@@ -1402,8 +1406,11 @@ export class CanvasRenderer {
       if (isObjectSensed) {
         this.drawEspItem(screenPos.x, screenPos.y, cs);
       } else {
-        const topItem = pile.items[pile.items.length - 1];
-        this.drawGroundItem(screenPos.x, screenPos.y, cs, topItem, pile.items.length);
+        if (pile.items.length > 1) {
+          this.drawLootPile(screenPos.x, screenPos.y, cs, pile.items);
+        } else {
+          this.drawGroundItem(screenPos.x, screenPos.y, cs, pile.items[0]);
+        }
       }
     }
   }
@@ -1431,26 +1438,99 @@ export class CanvasRenderer {
     ctx.restore();
   }
 
-  private drawGroundItem(px: number, py: number, cs: number, item: Item, count: number): void {
+  private drawGroundHighlight(px: number, py: number, cs: number): void {
     const ctx = this.ctx;
-
-    // Ground loot subtle highlight
     ctx.save();
     ctx.globalAlpha = 0.2;
     ctx.fillStyle = this.theme.accent;
     ctx.fillRect(px + 2, py + 2, cs - 4, cs - 4);
     ctx.restore();
+  }
 
-    // Draw item sprite
+  private drawGroundItem(px: number, py: number, cs: number, item: Item): void {
+    this.drawGroundHighlight(px, py, cs);
     const spriteKey = getItemSpriteKey(item, this.atlas.hasSprite.bind(this.atlas));
-    this.atlas.drawSprite(ctx, spriteKey, px + 2, py + 2, cs - 4, Visibility.Visible);
-
-    // Multi-item indicator dot
-    if (count > 1) {
-      ctx.fillStyle = '#f59e0b';
-      ctx.beginPath();
-      ctx.arc(px + cs - 4, py + 4, 3, 0, Math.PI * 2);
-      ctx.fill();
+    this.atlas.drawSprite(this.ctx, spriteKey, px + 2, py + 2, cs - 4, Visibility.Visible);
+    if (item instanceof Container) {
+      this.drawContainerBadge(px, py, cs, !item.wasOpened);
     }
+  }
+
+  /** Several items on one tile: a heap icon and a count, rather than whichever item
+   * happens to be on top. A pack may supply its own art under the `loot_pile` key. */
+  private drawLootPile(px: number, py: number, cs: number, items: readonly Item[]): void {
+    const ctx = this.ctx;
+    this.drawGroundHighlight(px, py, cs);
+
+    if (this.atlas.hasSprite(LOOT_PILE_SPRITE_KEY)) {
+      this.atlas.drawSprite(ctx, LOOT_PILE_SPRITE_KEY, px + 2, py + 2, cs - 4, Visibility.Visible);
+    } else {
+      const cx = px + cs / 2;
+      const baseY = py + cs * 0.78;
+      ctx.save();
+      // Mound
+      ctx.fillStyle = '#6b4423';
+      ctx.beginPath();
+      ctx.ellipse(cx, baseY, cs * 0.36, cs * 0.14, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Heaped goods: a sack, a blade-grey lump, and coins on top
+      ctx.fillStyle = '#a16207';
+      ctx.beginPath();
+      ctx.arc(cx - cs * 0.12, baseY - cs * 0.12, cs * 0.16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#94a3b8';
+      ctx.beginPath();
+      ctx.arc(cx + cs * 0.13, baseY - cs * 0.1, cs * 0.13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#facc15';
+      for (const [dx, dy] of [[-0.02, -0.3], [0.1, -0.26], [-0.14, -0.24]] as const) {
+        ctx.beginPath();
+        ctx.ellipse(cx + cs * dx, baseY + cs * dy, cs * 0.07, cs * 0.04, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Count badge (bottom-right)
+    const label = items.length > 9 ? '9+' : `${items.length}`;
+    const fontPx = Math.max(8, Math.floor(cs * 0.3));
+    ctx.save();
+    ctx.font = `bold ${fontPx}px ${this.theme.fontFamily ?? 'monospace'}`;
+    const w = ctx.measureText(label).width + 4;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fillRect(px + cs - w - 1, py + cs - fontPx - 2, w, fontPx + 1);
+    ctx.fillStyle = '#f8fafc';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(label, px + cs - 3, py + cs - 1);
+    ctx.restore();
+
+    const containers = items.filter((i): i is Container => i instanceof Container);
+    if (containers.length > 0) {
+      this.drawContainerBadge(px, py, cs, containers.some((c) => !c.wasOpened));
+    }
+  }
+
+  /** Top-right corner flag on containers: a gold star while unopened, a grey check once
+   * the player has looked inside. */
+  private drawContainerBadge(px: number, py: number, cs: number, unopened: boolean): void {
+    const ctx = this.ctx;
+    const r = Math.max(3, cs * 0.14);
+    const cx = px + cs - r - 1;
+    const cy = py + r + 1;
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.font = `bold ${Math.max(7, Math.floor(r * 1.6))}px ${this.theme.fontFamily ?? 'monospace'}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = unopened ? '#facc15' : '#94a3b8';
+    ctx.fillText(unopened ? '★' : '✓', cx, cy + 0.5);
+    ctx.restore();
   }
 }

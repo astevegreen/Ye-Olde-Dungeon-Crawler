@@ -1045,6 +1045,11 @@ export class InventoryOverlay implements UIModal {
     if (this.selectedGroundContainer && !groundItems.some((i) => i.id === this.selectedGroundContainer?.id)) {
       this.selectedGroundContainer = null;
     }
+    // Every path that opens a ground container (Enter, double-click, the inspector's Open
+    // button) lands here, so record the look once for the HUD's opened/unopened flag.
+    if (this.selectedGroundContainer && !this.selectedGroundContainer.wasOpened) {
+      this.commandBus.dispatch({ type: 'open_container', payload: { container: this.selectedGroundContainer } });
+    }
     if (this.selectedPackContainer && !player.inventory.primaryPack.getItems().some((i) => i.id === this.selectedPackContainer?.id)) {
       this.selectedPackContainer = null;
     }

@@ -157,6 +157,15 @@ export class EngineCommandBus implements GameCommandBus {
         return { success: true, message };
       }
 
+      // Looking inside a container is free bookkeeping, like sort_pack: it only records
+      // that the player has seen its contents (Container.wasOpened, flagged on the HUD).
+      case 'open_container': {
+        const container = p.container as Container | undefined;
+        if (!(container instanceof Container)) return { success: false, message: 'Invalid container' };
+        container.markOpened();
+        return { success: true };
+      }
+
       case 'quick_loot': {
         const res = this.engine.handlePlayerAction(new QuickLootAction(this.engine.player));
         return { success: res.success, message: res.message };

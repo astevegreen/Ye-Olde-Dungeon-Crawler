@@ -47,15 +47,21 @@ export class SaveSlotModal implements UIModal {
     }
   }
 
+  /** Cancels out of the modal: hides it and hands control back via `onClose` (the main menu). */
   public close(): void {
-    if (!this.isOpen) return;
+    if (!this.hide()) return;
+    this.options.onClose?.();
+  }
+
+  /** Hides without `onClose` — after a successful load the game owns the screen, and
+   * `onClose` reopening the main menu would cover it. */
+  private hide(): boolean {
+    if (!this.isOpen) return false;
     this.isOpen = false;
     if (this.overlayEl) {
       this.overlayEl.style.display = 'none';
     }
-    if (this.options.onClose) {
-      this.options.onClose();
-    }
+    return true;
   }
 
   public handleKeyDown(e: KeyboardEvent): boolean {
@@ -74,7 +80,7 @@ export class SaveSlotModal implements UIModal {
     try {
       const success = await this.options.onLoadAutosave();
       if (success) {
-        this.close();
+        this.hide();
       } else {
         showToast('Unable to load autosave payload: save data is invalid or empty.', 'error');
       }
@@ -87,7 +93,7 @@ export class SaveSlotModal implements UIModal {
     try {
       const success = await this.options.onLoadProfile(profileId);
       if (success) {
-        this.close();
+        this.hide();
       } else {
         showToast(`Unable to load character save: save payload not found.`, 'error');
       }

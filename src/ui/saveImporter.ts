@@ -53,7 +53,12 @@ export function setupSaveDragAndDrop(options: DragAndDropOptions): () => void {
     overlay.style.zIndex = '250';
     overlay.style.pointerEvents = 'none';
 
-    container.style.position = 'relative';
+    // Only establish a containing block when there isn't one: forcing `relative` onto an
+    // already-positioned overlay (the title screen is `position: absolute; inset: 0`)
+    // dropped it into document flow, stacking the roster below the game view.
+    if (getComputedStyle(container).position === 'static') {
+      container.style.position = 'relative';
+    }
     container.appendChild(overlay);
     createdOverlay = true;
   }

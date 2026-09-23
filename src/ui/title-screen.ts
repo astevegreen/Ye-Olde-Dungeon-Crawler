@@ -610,9 +610,12 @@ export class TitleScreen {
           minute: '2-digit',
         });
 
+        // A fallen hero's roster record holds the death stats, but its slot holds the last
+        // save made while alive (ARCHITECTURE.md §5) — say so rather than silently rewinding.
+        const fallen = profile.questStatus === 'fallen';
         item.innerHTML = `
           <div class="roster-item-header">
-            <span class="roster-name">⚔️ ${this.escapeHtml(profile.name)}</span>
+            <span class="roster-name">${fallen ? '☠️' : '⚔️'} ${this.escapeHtml(profile.name)}${fallen ? ' <span style="color: #b91c1c;">(Fallen)</span>' : ''}</span>
             <span class="roster-date">${dateStr}</span>
           </div>
           <div class="roster-item-details">
@@ -658,7 +661,11 @@ export class TitleScreen {
     });
 
     const selected = this.getSelectedProfile();
-    if (selected) {
+    const selectedFallen = selected?.questStatus === 'fallen';
+    if (this.resumeBtn) this.resumeBtn.textContent = selectedFallen ? 'Load Last Save' : 'Resume Quest';
+    if (selected && selectedFallen) {
+      this.setStatus(`${selected.name} fell on Floor ${selected.floor}. Loading restores the last save made while alive, not the moment of death.`);
+    } else if (selected) {
       this.setStatus(`Ready to resume journey as ${selected.name} (${(selected.difficulty ?? 'medium').toUpperCase()}, Level ${selected.level}, Floor ${selected.floor}).`);
     } else {
       this.setStatus('Select an adventurer or roll a new hero to embark.');

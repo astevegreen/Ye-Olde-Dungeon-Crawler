@@ -18,4 +18,7 @@ export const COTW_SPRITE_RECIPES: Record<string, SpriteRecipe> = {
   ...COTW_ITEM_SPRITES,
   // Níðhögg wears the elder-dragon boss art rather than the generic boss giant.
   nidhogg: COTW_MONSTER_SPRITES.dragon_boss,
+  // Hrungnir is untagged (he predates the boss tags, and tagging him would change his
+  // scaling), so his giant-boss art comes from his definition ID.
+  boss_hrungnir: COTW_MONSTER_SPRITES.giant_boss,
 };

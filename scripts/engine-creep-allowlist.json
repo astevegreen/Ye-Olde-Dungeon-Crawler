@@ -1,28 +1,96 @@
 {
   "entries": [
-    { "id": "teleport", "reason": "Engine effect, trap, and item-modifier kind; cotw also uses it as a spell ID." },
-    { "id": "slow", "reason": "Engine built-in status type; cotw also uses it as a spell ID." },
-    { "id": "identify", "reason": "Engine built-in spell effect (spellPipeline); cotw registers a spell with the same ID." },
-    { "id": "detect_monsters", "reason": "Engine default spell seeded by SpellRegistryStore; packs may override it." },
-    { "id": "detect_objects", "reason": "Engine default spell seeded by SpellRegistryStore; packs may override it." },
-    { "id": "firebolt", "reason": "Engine default boss-lair caster loadout (dungeonArc) when a pack declares none." },
-    { "id": "fireball", "reason": "ItemFactory's built-in wand/scroll spell binding; packs reuse the spell ID." },
-    { "id": "lightning_bolt", "reason": "ItemFactory's built-in wand/scroll spell binding; packs reuse the spell ID." },
-    { "id": "phase_door", "reason": "ItemFactory's built-in scroll spell binding; packs reuse the spell ID." },
-    { "id": "helmet", "reason": "Engine item-type vocabulary (paperdoll, loot, modifiers); cotw also uses it as an item ID." },
-    { "id": "boots", "reason": "Engine item-type vocabulary (paperdoll, loot, modifiers); cotw also uses it as an item ID." },
-    { "id": "chest", "reason": "Engine container type; cotw also uses it as an item ID." },
-    { "id": "item_uncursed", "reason": "Engine-owned renown trigger name (UncurseAction calls recordMilestone); packs opt in by declaring a milestone with this ID." },
-    { "id": "secret_door_found", "reason": "Engine-owned renown trigger name (SearchAction calls recordMilestone); packs opt in by declaring a milestone with this ID." },
-    { "id": "dagger", "reason": "Pre-existing: engine default starter kit, used when a manifest declares none. Candidate to move behind manifest.starterKit." },
-    { "id": "coin_purse", "reason": "Pre-existing: engine default starter kit. Candidate to move behind manifest.starterKit." },
-    { "id": "utility_belt", "reason": "Pre-existing: engine default starter kit. Candidate to move behind manifest.starterKit." },
-    { "id": "travel_bread", "reason": "Pre-existing: engine default starter kit. Candidate to move behind manifest.starterKit." },
-    { "id": "wand_lightning", "reason": "Pre-existing: engine default starter kit. Candidate to move behind manifest.starterKit." },
-    { "id": "scroll_phase_door", "reason": "Pre-existing: engine default starter kit. Candidate to move behind manifest.starterKit." },
-    { "id": "scroll_teleport", "reason": "Pre-existing: engine default starter kit alias. Candidate to move behind manifest.starterKit." },
-    { "id": "mana_potion", "reason": "Pre-existing: engine default starter kit. Candidate to move behind manifest.starterKit." },
-    { "id": "health_potion", "reason": "Pre-existing: engine default starter kit. Candidate to move behind manifest.starterKit." },
-    { "id": "skeleton", "reason": "Pre-existing: Entity's undead heuristic matches definition IDs containing 'skeleton'. Candidate to replace with an 'undead' tag." }
+    {
+      "id": "teleport",
+      "reason": "Engine effect, trap, and item-modifier kind; cotw also uses it as a spell ID."
+    },
+    {
+      "id": "slow",
+      "reason": "Engine built-in status type; cotw also uses it as a spell ID."
+    },
+    {
+      "id": "identify",
+      "reason": "Engine built-in spell effect (spellPipeline); cotw registers a spell with the same ID."
+    },
+    {
+      "id": "detect_monsters",
+      "reason": "Engine default spell seeded by SpellRegistryStore; packs may override it."
+    },
+    {
+      "id": "detect_objects",
+      "reason": "Engine default spell seeded by SpellRegistryStore; packs may override it."
+    },
+    {
+      "id": "firebolt",
+      "reason": "Engine default boss-lair caster loadout (dungeonArc) when a pack declares none."
+    },
+    {
+      "id": "fireball",
+      "reason": "ItemFactory's built-in wand/scroll spell binding; packs reuse the spell ID."
+    },
+    {
+      "id": "lightning_bolt",
+      "reason": "ItemFactory's built-in wand/scroll spell binding; packs reuse the spell ID."
+    },
+    {
+      "id": "phase_door",
+      "reason": "ItemFactory's built-in scroll spell binding; packs reuse the spell ID."
+    },
+    {
+      "id": "helmet",
+      "reason": "Engine item-type vocabulary (paperdoll, loot, modifiers); cotw also uses it as an item ID."
+    },
+    {
+      "id": "boots",
+      "reason": "Engine item-type vocabulary (paperdoll, loot, modifiers); cotw also uses it as an item ID."
+    },
+    {
+      "id": "chest",
+      "reason": "Engine container type; cotw also uses it as an item ID."
+    },
+    {
+      "id": "item_uncursed",
+      "reason": "Engine-owned renown trigger name (UncurseAction calls recordMilestone); packs opt in by declaring a milestone with this ID."
+    },
+    {
+      "id": "secret_door_found",
+      "reason": "Engine-owned renown trigger name (SearchAction calls recordMilestone); packs opt in by declaring a milestone with this ID."
+    },
+    {
+      "id": "dagger",
+      "reason": "Engine built-in item (an ItemFactory constructor) in the default starter kit used by the headless manifest and CharacterRoller's fallback; cotw re-declares an item with the same ID."
+    },
+    {
+      "id": "coin_purse",
+      "reason": "Engine built-in item (an ItemFactory constructor) in the default starter kit used by the headless manifest and CharacterRoller's fallback; cotw re-declares an item with the same ID."
+    },
+    {
+      "id": "utility_belt",
+      "reason": "Engine built-in item (an ItemFactory constructor) in the default starter kit used by the headless manifest and CharacterRoller's fallback; cotw re-declares an item with the same ID."
+    },
+    {
+      "id": "travel_bread",
+      "reason": "Engine built-in item (an ItemFactory constructor) in the default starter kit used by the headless manifest and CharacterRoller's fallback; cotw re-declares an item with the same ID."
+    },
+    {
+      "id": "wand_lightning",
+      "reason": "Engine built-in item (an ItemFactory constructor) in the default starter kit used by the headless manifest and CharacterRoller's fallback; cotw re-declares an item with the same ID."
+    },
+    {
+      "id": "scroll_phase_door",
+      "reason": "Engine built-in item (an ItemFactory constructor) in the default starter kit used by the headless manifest and CharacterRoller's fallback; cotw re-declares an item with the same ID."
+    },
+    {
+      "id": "scroll_teleport",
+      "reason": "Engine built-in item (an ItemFactory constructor) in the default starter kit used by the headless manifest and CharacterRoller's fallback; cotw re-declares an item with the same ID."
+    },
+    {
+      "id": "mana_potion",
+      "reason": "Engine built-in item (an ItemFactory constructor) in the default starter kit used by the headless manifest and CharacterRoller's fallback; cotw re-declares an item with the same ID."
+    },
+    {
+      "id": "health_potion",
+      "reason": "Engine built-in item (an ItemFactory constructor) in the default starter kit used by the headless manifest and CharacterRoller's fallback; cotw re-declares an item with the same ID."
+    }
   ]
 }

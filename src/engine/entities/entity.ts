@@ -225,43 +225,24 @@ export class Entity {
     if (this.faction && this.faction.toLowerCase() === lower) return true;
     if (this.type && this.type.toLowerCase() === lower) return true;
 
-    if (this.definitionId && typeof this.definitionId === 'string') {
-      if (this.definitionId.toLowerCase().includes(lower)) return true;
-    }
+    // Tags are declared, not guessed from definition IDs: a substring match made
+    // `giant_rat` a "giant". Content lists every tag a monster should answer to.
     if (this.role && typeof this.role === 'string') {
       if (this.role.toLowerCase().includes(lower)) return true;
     }
 
     // Semantic aliases for game archetypes
     if (lower === 'clergy') {
-      return (
-        this.role === 'priest' ||
-        this.role === 'cleric' ||
-        Boolean(this.definitionId?.includes('priest')) ||
-        Boolean(this.definitionId?.includes('cleric'))
-      );
+      return this.role === 'priest' || this.role === 'cleric';
     }
     if (lower === 'innocent') {
       return this.role === 'villager' || this.role === 'merchant' || this.type === 'npc';
     }
     if (lower === 'undead') {
-      return (
-        this.vulnerabilityTags.includes('radiant') ||
-        Boolean(this.definitionId?.includes('skeleton')) ||
-        Boolean(this.definitionId?.includes('zombie')) ||
-        Boolean(this.definitionId?.includes('ghost')) ||
-        Boolean(this.definitionId?.includes('vampire')) ||
-        Boolean(this.definitionId?.includes('ghoul')) ||
-        Boolean(this.definitionId?.includes('lich'))
-      );
+      return this.vulnerabilityTags.includes('radiant');
     }
     if (lower === 'demon') {
-      return (
-        this.vulnerabilityTags.includes('holy') ||
-        Boolean(this.definitionId?.includes('demon')) ||
-        Boolean(this.definitionId?.includes('imp')) ||
-        Boolean(this.definitionId?.includes('fiend'))
-      );
+      return this.vulnerabilityTags.includes('holy');
     }
     if (lower === 'holy') {
       return this.vulnerabilityTags.includes('unholy') || this.aspectState === 'aspect_radiant';

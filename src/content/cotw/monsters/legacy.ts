@@ -220,7 +220,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     },
     fleeHealthPercent: 0.0,
     xpValue: 95,
-    tags: ['undead', 'draugr'],
+    tags: ['undead', 'draugr', 'warrior'],
     lootTable: [
       {
         chance: 0.6,
@@ -300,7 +300,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     statusImmunities: ['paralysis'],
     fleeHealthPercent: 0.0,
     xpValue: 250,
-    tags: ['fire_giant'],
+    tags: ['fire_giant', 'giant'],
     lootTable: [
       {
         chance: 0.9,
@@ -415,7 +415,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     spellCooldown: 3,
     fleeHealthPercent: 0.0,
     xpValue: 500,
-    tags: ['dragon_elder'],
+    tags: ['dragon_elder', 'wyrm'],
     lootTable: [
       {
         chance: 1.0,
@@ -442,7 +442,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     statusImmunities: ['paralysis'],
     fleeHealthPercent: 0.0,
     xpValue: 650,
-    tags: ['giant'],
+    tags: ['giant', 'jotun'],
     lootTable: [
       {
         chance: 1.0,
@@ -476,7 +476,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     spellCooldown: 2,
     fleeHealthPercent: 0.0,
     xpValue: 750,
-    tags: ['shadow'],
+    tags: ['shadow', 'fiend', 'demon'],
     lootTable: [
       {
         chance: 1.0,

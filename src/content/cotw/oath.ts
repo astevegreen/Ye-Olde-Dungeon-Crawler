@@ -23,12 +23,17 @@ export const OATH_TRIGGER: StoryChoiceTrigger = {
   monsterDefinitionId: 'troll_wife_warlock',
   killsRequired: OATH_WARLOCKS_REQUIRED,
   progressStartFlag: 'oath_climax_started',
+  progressStartMessage:
+    "*** The warlock's death-cry carries through the stone, and the coven answers: their siphon ritual has begun. Break the troll-wife coven before it completes! ***",
 };
 
 export const OATH_TIMED_EVENT: TimedEventDefinition = {
   id: 'oath_climax',
+  label: 'Coven Ritual',
   startFlag: 'oath_climax_started',
-  turnLimit: 40,
+  // The coven spans several floors; 40 turns expired before most players had even
+  // noticed the ritual. The HUD now shows the countdown (TimedEventDefinition.label).
+  turnLimit: 250,
   resolvedFlag: 'oath_resolved',
   expireConsequences: [
     { type: 'setFlag', flag: 'oath_defaulted', value: true },

@@ -260,6 +260,7 @@ export class MovementAction implements Action {
         const kills = engine.compendium.getEntry(trigger.monsterDefinitionId).kills;
         if (trigger.progressStartFlag && kills >= 1 && !engine.getWorldFlag(trigger.progressStartFlag)) {
           engine.setWorldFlag(trigger.progressStartFlag, true);
+          if (trigger.progressStartMessage) engine.log(trigger.progressStartMessage);
         }
         if (kills < trigger.killsRequired) continue;
         const offeredFlag = `${trigger.id}_offered`;

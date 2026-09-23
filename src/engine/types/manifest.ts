@@ -354,6 +354,9 @@ export interface StoryChoiceTrigger {
    *  start counting down from first contact rather than only once the full
    *  threshold, if the story point should feel pressured before it's fully unlocked. */
   progressStartFlag?: string;
+  /** Logged once, the moment `progressStartFlag` is set — tells the player a countdown
+   *  just started, since a silent timer can expire before they know it exists. */
+  progressStartMessage?: string;
 }
 
 /** Attribute-threshold-gated choice unlocks (ARCHITECTURE.md §3). Sibling of `StoryChoiceTrigger`:
@@ -382,6 +385,9 @@ export interface TimedEventDefinition {
   startFlag: string;
   /** Turns after `startFlag` first reads true before `expireConsequences` fire. */
   turnLimit: number;
+  /** Player-facing name. When set, the HUD shows the running countdown
+   *  (`getTimedEventCountdowns`); unlabelled events stay hidden. */
+  label?: string;
   /** World-state flag marking this event as manually resolved. If true by the time
    *  the timer would expire, expiry is skipped entirely — content sets this itself
    *  (e.g. as a `setFlag` consequence on whatever in-world action resolves the

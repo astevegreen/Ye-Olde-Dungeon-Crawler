@@ -1,5 +1,6 @@
 import { GameEngine } from '../engine';
 import { Visibility } from '../engine';
+import { getTimedEventCountdowns } from '../engine';
 import { Camera } from './camera';
 import type { Entity } from '../engine';
 import type { TileDefinition } from '../engine';
@@ -632,6 +633,14 @@ export class CanvasRenderer {
     if (this.engine.detectObjectsTurns > 0) {
       const text = `[SENSE ${this.engine.detectObjectsTurns}t]`;
       ctx.fillStyle = '#fbbf24';
+      ctx.fillText(text, statusX, mpBarY + 5);
+      statusX += ctx.measureText(text).width + 8;
+    }
+
+    // 6. Running story countdowns (labelled manifest.timedEvents)
+    for (const countdown of getTimedEventCountdowns(this.engine)) {
+      const text = `[${countdown.label.toUpperCase()} ${countdown.turnsRemaining}t]`;
+      ctx.fillStyle = countdown.turnsRemaining <= 20 ? '#ef4444' : '#f59e0b';
       ctx.fillText(text, statusX, mpBarY + 5);
       statusX += ctx.measureText(text).width + 8;
     }

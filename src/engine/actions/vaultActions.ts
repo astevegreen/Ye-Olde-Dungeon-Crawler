@@ -32,10 +32,10 @@ export class DepositToVaultAction implements Action {
     }
 
     // Check if actor carries the item
-    const actorAny = this.actor as any;
+    const inventory = this.actor.inventory;
     let removedItem: Item | null = null;
 
-    if (actorAny.inventory?.primaryPack) {
+    {
       if (this.quantity && this.quantity < this.item.quantity) {
         // Partial split deposit
         this.item.quantity -= this.quantity;
@@ -50,24 +50,22 @@ export class DepositToVaultAction implements Action {
         const ItemCtor = Object.getPrototypeOf(this.item).constructor;
         removedItem = new ItemCtor(clonedConfig);
       } else {
-        removedItem = actorAny.inventory.primaryPack.removeItem(this.item.id);
-        if (!removedItem && actorAny.inventory.belt) {
-          removedItem = actorAny.inventory.belt.removeItem(this.item.id);
+        removedItem = inventory.primaryPack.removeItem(this.item.id);
+        if (!removedItem && inventory.belt) {
+          removedItem = inventory.belt.removeItem(this.item.id);
         }
-        if (!removedItem && actorAny.inventory.purse) {
-          removedItem = actorAny.inventory.purse.removeItem(this.item.id);
+        if (!removedItem && inventory.purse) {
+          removedItem = inventory.purse.removeItem(this.item.id);
         }
-        if (!removedItem && actorAny.inventory.paperdoll) {
+        if (!removedItem) {
           // If equipped, unequip first
           const slot = this.item.slot;
-          if (slot && actorAny.inventory.paperdoll.getItem(slot) === this.item) {
-            actorAny.inventory.paperdoll.unequip(slot);
+          if (slot && inventory.paperdoll.getItem(slot) === this.item) {
+            inventory.paperdoll.unequip(slot);
             removedItem = this.item;
           }
         }
       }
-    } else if (typeof actorAny.removeItem === 'function') {
-      removedItem = actorAny.removeItem(this.item.id) ?? actorAny.removeItem(this.item);
     }
 
     if (!removedItem) {
@@ -129,25 +127,12 @@ export class WithdrawFromVaultAction implements Action {
       };
     }
 
-    const actorAny = this.actor as any;
-    if (actorAny.inventory?.primaryPack) {
-      const added = actorAny.inventory.primaryPack.addItem(itemInVault);
-      if (!added) {
-        return {
-          success: false,
-          cost: 0,
-          message: `${this.actor.name}'s pack cannot hold ${itemInVault.displayName}.`,
-        };
-      }
-    } else if (typeof actorAny.addItem === 'function') {
-      const added = actorAny.addItem(itemInVault);
-      if (!added) {
-        return {
-          success: false,
-          cost: 0,
-          message: `${this.actor.name} cannot carry ${itemInVault.displayName}.`,
-        };
-      }
+    if (!this.actor.inventory.primaryPack.addItem(itemInVault)) {
+      return {
+        success: false,
+        cost: 0,
+        message: `${this.actor.name}'s pack cannot hold ${itemInVault.displayName}.`,
+      };
     }
 
     // Remove from vault now that it was successfully transferred

@@ -9,6 +9,7 @@ export class ItemFactory {
     return new Item({
       id,
       name: 'Iron Dagger',
+      value: 2000,
       unidentifiedName: 'Small Dagger',
       category: 'weapon',
       slot: 'mainHand',
@@ -24,6 +25,7 @@ export class ItemFactory {
     return new Item({
       id,
       name: 'Steel Broadsword',
+      value: 15000,
       unidentifiedName: 'Heavy Sword',
       category: 'weapon',
       slot: 'mainHand',
@@ -39,6 +41,7 @@ export class ItemFactory {
     return new Item({
       id,
       name: 'Frost Broadsword',
+      value: 45000,
       unidentifiedName: 'Glowing Broadsword',
       category: 'weapon',
       slot: 'mainHand',
@@ -55,6 +58,7 @@ export class ItemFactory {
     return new Item({
       id,
       name: 'Spiked Mace',
+      value: 12000,
       unidentifiedName: 'Dark Spiked Mace',
       category: 'weapon',
       slot: 'mainHand',
@@ -71,6 +75,7 @@ export class ItemFactory {
     return new Item({
       id,
       name: 'Reinforced Wooden Shield',
+      value: 3000,
       unidentifiedName: 'Round Shield',
       category: 'shield',
       slot: 'offHand',
@@ -86,6 +91,7 @@ export class ItemFactory {
     return new Item({
       id,
       name: 'Studded Leather Armor',
+      value: 8000,
       unidentifiedName: 'Leather Tunic',
       category: 'armor',
       slot: 'torso',
@@ -101,6 +107,7 @@ export class ItemFactory {
     return new Item({
       id,
       name: 'Iron Chainmail',
+      value: 30000,
       unidentifiedName: 'Heavy Mail Shirt',
       category: 'armor',
       slot: 'torso',
@@ -116,6 +123,7 @@ export class ItemFactory {
     return new Item({
       id,
       name: 'Iron Helmet',
+      value: 5000,
       unidentifiedName: 'Iron Cap',
       category: 'helmet',
       slot: 'head',
@@ -131,6 +139,7 @@ export class ItemFactory {
     return new Item({
       id,
       name: 'Traveler Boots',
+      value: 3000,
       unidentifiedName: 'Leather Boots',
       category: 'boots',
       slot: 'feet',
@@ -162,6 +171,7 @@ export class ItemFactory {
     return new Container({
       id,
       name: 'Leather Utility Belt',
+      value: 4000,
       category: 'container',
       slot: 'waist',
       containerType: 'belt',
@@ -228,6 +238,7 @@ export class ItemFactory {
     return new PotionItem({
       id,
       name: 'Minor Health Potion',
+      value: 5000,
       unidentifiedName: 'Red Potion',
       potionType: 'health',
       potency: 25,
@@ -242,6 +253,7 @@ export class ItemFactory {
     return new PotionItem({
       id,
       name: 'Mana Draught',
+      value: 7500,
       unidentifiedName: 'Blue Potion',
       potionType: 'mana',
       potency: 20,
@@ -285,6 +297,7 @@ export class ItemFactory {
     return new WandItem({
       id,
       name: 'Wand of Lightning',
+      value: 50000,
       unidentifiedName: 'Copper Wand',
       spellId: 'lightning_bolt',
       charges,
@@ -300,6 +313,7 @@ export class ItemFactory {
     return new WandItem({
       id,
       name: 'Wand of Fireballs',
+      value: 60000,
       unidentifiedName: 'Brass Wand',
       spellId: 'fireball',
       charges,
@@ -315,6 +329,7 @@ export class ItemFactory {
     return new ScrollItem({
       id,
       name: 'Scroll of Identify',
+      value: 5000,
       unidentifiedName: 'Parchment Scroll',
       spellId: 'identify',
       weight: 50,
@@ -328,6 +343,7 @@ export class ItemFactory {
     return new ScrollItem({
       id,
       name: 'Scroll of Phase Door',
+      value: 4000,
       unidentifiedName: 'Faded Scroll',
       spellId: 'phase_door',
       weight: 50,
@@ -341,6 +357,7 @@ export class ItemFactory {
     return new Item({
       id,
       name: 'Full Plate Armor',
+      value: 80000,
       unidentifiedName: 'Heavy Steel Armor',
       category: 'armor',
       slot: 'torso',
@@ -356,6 +373,7 @@ export class ItemFactory {
     return new Item({
       id,
       name: 'Bearded Battleaxe',
+      value: 20000,
       unidentifiedName: 'Heavy Axe',
       category: 'weapon',
       slot: 'mainHand',
@@ -363,7 +381,7 @@ export class ItemFactory {
       bulk: 1800,
       stats: { attackBonus: 11 },
       identified: true,
-      description: 'A traditional Norse bearded axe forged for powerful cleaving.',
+      description: 'A heavy bearded axe forged for powerful cleaving.',
     });
   }
 
@@ -371,6 +389,7 @@ export class ItemFactory {
     return new Item({
       id,
       name: 'Iron Tower Shield',
+      value: 12000,
       unidentifiedName: 'Large Iron Shield',
       category: 'shield',
       slot: 'offHand',
@@ -386,6 +405,7 @@ export class ItemFactory {
     return new Item({
       id,
       name: 'Wooden Torch',
+      value: 500,
       unidentifiedName: 'Torch',
       category: 'misc',
       weight: 800,
@@ -399,6 +419,7 @@ export class ItemFactory {
     return new Item({
       id,
       name: 'Iron Rations',
+      value: 1000,
       unidentifiedName: 'Travel Rations',
       category: 'consumable',
       weight: 500,
@@ -412,6 +433,7 @@ export class ItemFactory {
     return new Item({
       id,
       name: 'Thief Lockpicks',
+      value: 2500,
       unidentifiedName: 'Slender Metal Picks',
       category: 'misc',
       weight: 200,
@@ -425,6 +447,7 @@ export class ItemFactory {
     return new PotionItem({
       id,
       name: 'Antidote Potion',
+      value: 4000,
       unidentifiedName: 'Emerald Potion',
       potionType: 'health',
       potency: 10,
@@ -444,7 +467,7 @@ export class ItemFactory {
       weight: amount * 10,
       bulk: Math.max(1, Math.ceil(amount * 0.5)),
       identified: true,
-      description: 'Brightly minted gold coins bearing the Nordic sigil of Heimdall (100 CP value).',
+      description: 'Brightly minted gold coins (100 CP value).',
     });
   }
 

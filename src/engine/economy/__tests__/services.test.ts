@@ -34,7 +34,7 @@ describe('Town Services (Temple, Sage, Bank)', () => {
 
       const result = TempleService.cleanseCurses(player);
       expect(result.success).toBe(true);
-      expect(result.message).toContain("Thor's divine lightning shatters the foul bindings");
+      expect(result.message).toContain('shatters the foul bindings');
       expect(cursedArmor.quality).toBe('normal');
       expect(getPlayerTotalCp(player)).toBe(0);
 
@@ -53,7 +53,7 @@ describe('Town Services (Temple, Sage, Bank)', () => {
 
       const result = TempleService.healAndRestore(player);
       expect(result.success).toBe(true);
-      expect(result.message).toContain('bathes you in golden light');
+      expect(result.message).toContain('bathes you in healing light');
 
       // Restored to max
       expect(player.hp).toBe(player.maxHp);

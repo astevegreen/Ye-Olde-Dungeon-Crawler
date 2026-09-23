@@ -1,3 +1,7 @@
+# Normalize text files to LF in the repository; the working-tree ending follows
+# each checkout's core.autocrlf.
+* text=auto
+
 # Shell scripts and git hooks must keep LF endings: CRLF breaks the
 # `#!/bin/sh` interpreter line when they run under sh (ARCHITECTURE.md §7.2).
 .githooks/** text eol=lf

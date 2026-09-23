@@ -373,7 +373,7 @@ export class MonsterAI {
     const routine = AIRegistry.get(requestedRoutineId);
     if (routine) {
       const res = routine.decideAction(monster, engine);
-      return (res as any).action ?? res;
+      return 'action' in res ? res.action : res;
     }
 
     // Delegate to legacy strategy. Reaching here means requestedRoutineId matched no

@@ -23,6 +23,7 @@ import { findSafeSpawnPosition } from '../spatial/collisionSolver';
 import { EffectPrimitiveRegistry, type EffectContext } from './effectRegistry';
 import { registerReciprocalPrimitives } from '../combat/reciprocalPipeline';
 import { EnergyModel } from '../actors/energyModel';
+import { Actor } from '../entities/actor';
 
 function getElementDefaultColor(element?: string): string {
   switch (element) {
@@ -458,10 +459,9 @@ export class SpellPipeline {
     if (rawDamage <= 0) return;
 
     // Apply Enchanted spellDamageMultiplier from caster's equipped items
-    const casterAny = caster as any;
     let spellMultiplier = 1.0;
-    if (casterAny.inventory?.paperdoll) {
-      for (const item of casterAny.inventory.paperdoll.getEquippedItems()) {
+    if (caster.inventory) {
+      for (const item of caster.inventory.paperdoll.getEquippedItems()) {
         if (!item.isBroken() && item.modifiers) {
           for (const mod of item.modifiers) {
             if (mod.spellDamageMultiplier) {
@@ -475,12 +475,13 @@ export class SpellPipeline {
       rawDamage = Math.max(1, Math.round(rawDamage * spellMultiplier));
     }
 
-    // Apply Entropic damage scaling from caster's corruption if casting blood/entropic/shadow magic
+    // Entropic scaling: shadow/entropic damage grows with the caster's corruption.
     if (
-      casterAny.corruptionScore &&
-      (spell.school === 'BloodMagic' || effect.element === 'shadow' || effect.element === 'entropic')
+      caster instanceof Actor &&
+      caster.corruptionScore > 0 &&
+      (effect.element === 'shadow' || effect.element === 'entropic')
     ) {
-      const entropicMult = EnergyModel.calculateEntropicDamageMultiplier(casterAny.corruptionScore);
+      const entropicMult = EnergyModel.calculateEntropicDamageMultiplier(caster.corruptionScore);
       if (entropicMult !== 1.0) {
         rawDamage = Math.max(1, Math.round(rawDamage * entropicMult));
       }
@@ -556,9 +557,8 @@ export class SpellPipeline {
   ): void {
     if (!target.isAlive()) return;
     let amount = parseAndRollDice(effect.amount, engine.rng);
-    const targetAny = target as any;
-    if (targetAny.corruptionScore !== undefined || target.statusManager.hasStatus('tissue_necrosis' as any)) {
-      const eff = EnergyModel.calculateHealingEfficiency(targetAny);
+    if (target instanceof Actor) {
+      const eff = EnergyModel.calculateHealingEfficiency(target);
       if (eff < 1.0) {
         amount = Math.max(1, Math.floor(amount * eff));
       }

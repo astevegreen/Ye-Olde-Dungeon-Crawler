@@ -4,6 +4,9 @@ import type { ElementType, ElementalAffinity, AffinityMatrix } from '../magic/el
 import { calculateElementalDamage } from '../magic/elements';
 import { StatusManager } from '../status/statusManager';
 import type { StatusType } from '../status/types';
+import type { ActorCapabilities } from './actor';
+import type { InventoryManager } from '../inventory/inventory-manager';
+import type { RunPactMutatorRules } from '../pacts/pactManager';
 
 export interface EntityConfig {
   id: string;
@@ -43,6 +46,20 @@ export class Entity {
   public isAnchored: boolean;
   public vulnerabilityTags: string[];
   public tags: string[];
+
+  // Members only some subclasses provide (Actor, Monster, NPC, Player). Declared here,
+  // type-only (`declare` emits nothing), so base-class logic like hasTag() and the
+  // attribute calculator can read them without casting.
+  declare public capabilities?: Partial<ActorCapabilities>;
+  declare public inventory?: InventoryManager;
+  declare public definitionId?: string;
+  declare public readonly role?: string;
+  declare public intelligence?: number;
+  declare public constitution?: number;
+  declare public dexterity?: number;
+  declare public pactMutatorsSupplier?: () => RunPactMutatorRules;
+  /** Innate alignment aspect (e.g. 'aspect_corrupt'), used when no armor carries one. */
+  public aspectState?: string;
   public isInvulnerable: boolean = false;
 
   constructor(config: EntityConfig) {
@@ -81,6 +98,11 @@ export class Entity {
 
   public set attack(value: number) {
     this.baseAttack = value;
+  }
+
+  /** Raw max HP before attribute modifiers (`maxHp` may be computed in subclasses). */
+  public get baseMaxHpValue(): number {
+    return this._maxHp;
   }
 
   public get baseAttackValue(): number {
@@ -203,50 +225,46 @@ export class Entity {
     if (this.faction && this.faction.toLowerCase() === lower) return true;
     if (this.type && this.type.toLowerCase() === lower) return true;
 
-    const anyEnt = this as any;
-    if (anyEnt.definitionId && typeof anyEnt.definitionId === 'string') {
-      if (anyEnt.definitionId.toLowerCase().includes(lower)) return true;
+    if (this.definitionId && typeof this.definitionId === 'string') {
+      if (this.definitionId.toLowerCase().includes(lower)) return true;
     }
-    if (anyEnt.role && typeof anyEnt.role === 'string') {
-      if (anyEnt.role.toLowerCase().includes(lower)) return true;
+    if (this.role && typeof this.role === 'string') {
+      if (this.role.toLowerCase().includes(lower)) return true;
     }
 
     // Semantic aliases for game archetypes
     if (lower === 'clergy') {
       return (
-        anyEnt.role === 'priest' ||
-        anyEnt.role === 'cleric' ||
-        Boolean(anyEnt.definitionId?.includes('priest')) ||
-        Boolean(anyEnt.definitionId?.includes('cleric'))
+        this.role === 'priest' ||
+        this.role === 'cleric' ||
+        Boolean(this.definitionId?.includes('priest')) ||
+        Boolean(this.definitionId?.includes('cleric'))
       );
     }
     if (lower === 'innocent') {
-      return anyEnt.role === 'villager' || anyEnt.role === 'merchant' || this.type === 'npc';
+      return this.role === 'villager' || this.role === 'merchant' || this.type === 'npc';
     }
     if (lower === 'undead') {
       return (
         this.vulnerabilityTags.includes('radiant') ||
-        Boolean(anyEnt.definitionId?.includes('skeleton')) ||
-        Boolean(anyEnt.definitionId?.includes('zombie')) ||
-        Boolean(anyEnt.definitionId?.includes('ghost')) ||
-        Boolean(anyEnt.definitionId?.includes('vampire')) ||
-        Boolean(anyEnt.definitionId?.includes('ghoul')) ||
-        Boolean(anyEnt.definitionId?.includes('lich'))
+        Boolean(this.definitionId?.includes('skeleton')) ||
+        Boolean(this.definitionId?.includes('zombie')) ||
+        Boolean(this.definitionId?.includes('ghost')) ||
+        Boolean(this.definitionId?.includes('vampire')) ||
+        Boolean(this.definitionId?.includes('ghoul')) ||
+        Boolean(this.definitionId?.includes('lich'))
       );
     }
     if (lower === 'demon') {
       return (
         this.vulnerabilityTags.includes('holy') ||
-        Boolean(anyEnt.definitionId?.includes('demon')) ||
-        Boolean(anyEnt.definitionId?.includes('imp')) ||
-        Boolean(anyEnt.definitionId?.includes('fiend'))
+        Boolean(this.definitionId?.includes('demon')) ||
+        Boolean(this.definitionId?.includes('imp')) ||
+        Boolean(this.definitionId?.includes('fiend'))
       );
     }
     if (lower === 'holy') {
-      return (
-        this.vulnerabilityTags.includes('unholy') ||
-        anyEnt.aspectState === 'aspect_radiant'
-      );
+      return this.vulnerabilityTags.includes('unholy') || this.aspectState === 'aspect_radiant';
     }
 
     return false;

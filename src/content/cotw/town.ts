@@ -229,6 +229,11 @@ export const COTW_TOWN: TownLayoutDefinition = {
     bankName: 'First Bank of Bjarnarhaven',
     bankerTitle: 'Banker Haakon',
     compactionMessageTemplate: 'Banker Haakon exchanged your currency into {coins}! Carry weight reduced by {savedWeight}g (from {oldWeight}g to {newWeight}g).',
+    templeRefusalMessage:
+      "The High Priest of Thor scowls with righteous fury: 'Desecrator of sacred altars! You have betrayed the gods and are unwelcome in Thor's sacred hall!'",
+    // Blood-magic corruption: doubled donations from 25, refused outright from 75.
+    corruptionSurchargeThreshold: 25,
+    corruptionRefusalThreshold: 75,
   },
 };
 

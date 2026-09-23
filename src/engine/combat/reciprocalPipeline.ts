@@ -139,20 +139,19 @@ export function registerReciprocalPrimitives(): void {
       if (!target) return;
 
       // Apply condition to target
-      target.statusManager.applyStatus(effect.status as any, effect.duration);
+      target.statusManager.applyStatus(effect.status, effect.duration);
       engine.log(`${target.name} is afflicted by ${effect.status} for ${effect.duration} turns!`);
 
       // Roll acoustic/somatic feedback test against caster's discipline / intelligence
       const casterDiscipline =
-        (caster as any).intelligence ??
-        (caster as any).attributes?.intelligence ??
+        caster.intelligence ??
         caster.strength ??
         DEFAULT_CASTER_DISCIPLINE_FALLBACK;
       const difficulty = effect.difficulty ?? DEFAULT_SOMATIC_BACKFIRE_DIFFICULTY;
 
       if (casterDiscipline < difficulty) {
         const feedbackDuration = Math.max(1, Math.floor(effect.duration / 2));
-        caster.statusManager.applyStatus(effect.status as any, feedbackDuration);
+        caster.statusManager.applyStatus(effect.status, feedbackDuration);
         engine.log(
           `Somatic feedback! ${caster.name} suffers resonant backfire (${effect.status}) for ${feedbackDuration} turns!`
         );

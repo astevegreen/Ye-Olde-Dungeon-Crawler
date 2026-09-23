@@ -2,7 +2,7 @@ import type { GameEngine } from '../engine';
 import { Player } from '../entities/player';
 import { getPlayerCoinItems, getPlayerTotalCp, formatCurrency } from '../economy/currency';
 import { PotionItem, ScrollItem } from '../items/consumables';
-import type { TownServicesDefinition } from '../types/manifest';
+import type { FloorHazardAdvisory, TownServicesDefinition } from '../types/manifest';
 
 export type AdvisorySeverity = 'safe' | 'caution' | 'danger';
 
@@ -59,7 +59,7 @@ export class RunAdvisor {
     const totalWeightGrams = coinItems.reduce((sum, c) => sum + (typeof c.item.totalWeight === 'function' ? c.item.totalWeight() : c.item.weight), 0);
 
     if (totalCp >= 5000 || totalWeightGrams >= 2000) {
-      const banker = services?.bankerTitle ?? (services?.bankName ? `the ${services.bankName}` : 'Banker Haakon');
+      const banker = services?.bankerTitle ?? (services?.bankName ? `the ${services.bankName}` : 'the town banker');
       return {
         type: 'currency',
         severity: totalWeightGrams >= 4000 ? 'danger' : 'warning',
@@ -83,7 +83,7 @@ export class RunAdvisor {
 
     if (cursed.length > 0) {
       const names = cursed.map((e) => e.item.name).join(', ');
-      const priest = services?.priestTitle ?? (services?.templeName ? `the priest at ${services.templeName}` : 'Father Torvald at the Temple of Thor');
+      const priest = services?.priestTitle ?? (services?.templeName ? `the priest at ${services.templeName}` : 'the town temple priest');
       return {
         type: 'cursed',
         severity: 'danger',
@@ -135,7 +135,7 @@ export class RunAdvisor {
         severity: recoveryCount === 0 ? 'danger' : 'warning',
         title: 'Insufficient Emergency Consumables',
         message: `You possess only ${recoveryCount} recovery/escape items while preparing for Floor ${targetFloor}.`,
-        recommendation: 'Deep dungeon floors harbor relentless foes. Purchase at least 2 Health Potions or Teleport Scrolls from Astrid\'s Alchemy.',
+        recommendation: 'Deep dungeon floors harbor relentless foes. Purchase at least 2 Health Potions or Teleport Scrolls before descending.',
       };
     }
 
@@ -143,56 +143,31 @@ export class RunAdvisor {
   }
 
   /**
-   * Evaluates elemental hazards on the upcoming floor against equipped player resistances.
+   * Evaluates the upcoming floor's elemental hazard (the pack's `floorHazards` band
+   * containing it) against the player's resistance to that element.
    */
-  public static checkElementalPreparedness(player: Player, targetFloor: number): AdvisoryWarning | null {
-    if (targetFloor < 8) {
+  public static checkElementalPreparedness(
+    player: Player,
+    targetFloor: number,
+    hazards: readonly FloorHazardAdvisory[] = []
+  ): AdvisoryWarning | null {
+    const hazard = hazards.find(
+      (h) => targetFloor >= h.minFloor && (h.maxFloor === undefined || targetFloor <= h.maxFloor)
+    );
+    if (!hazard) {
       return null;
     }
-
-    // Floors 8-24: Cold and Frost hazards
-    if (targetFloor >= 8 && targetFloor <= 24) {
-      const res = player.elementalResistances.cold;
-      if (!res || res === 'neutral' || res === 'weak') {
-        return {
-          type: 'elemental',
-          severity: res === 'weak' ? 'danger' : 'warning',
-          title: 'Vulnerable to Glacial Frost',
-          message: `The icy caverns of Floor ${targetFloor} harbor frost drakes and winter wolves.`,
-          recommendation: 'Equip cold-warding shields or brew frost-resist elixirs to avoid crippling freeze damage.',
-        };
-      }
+    const res = player.elementalResistances[hazard.element];
+    if (res && res !== 'neutral' && res !== 'weak') {
+      return null;
     }
-
-    // Floors 25-36: Fire and Inferno hazards
-    if (targetFloor >= 25 && targetFloor <= 36) {
-      const res = player.elementalResistances.fire;
-      if (!res || res === 'neutral' || res === 'weak') {
-        return {
-          type: 'elemental',
-          severity: res === 'weak' ? 'danger' : 'warning',
-          title: 'Vulnerable to Scorching Flame',
-          message: `Floor ${targetFloor} descends into molten chasms with fire elementals and hell hounds.`,
-          recommendation: 'Equip flame-resistant plate armor or charms of fire protection before crossing the threshold.',
-        };
-      }
-    }
-
-    // Floors 37+: Chieftain & Dragon lightning/elemental devastation
-    if (targetFloor >= 37) {
-      const res = player.elementalResistances.lightning;
-      if (!res || res === 'neutral' || res === 'weak') {
-        return {
-          type: 'elemental',
-          severity: 'warning',
-          title: 'Vulnerable to Storm Tempest',
-          message: `The summit depths of Floor ${targetFloor} crackle with Jotun lightning and thunderous strikes.`,
-          recommendation: 'Acquire lightning-resistant gear and warding runes from high-tier smiths or deep vaults.',
-        };
-      }
-    }
-
-    return null;
+    return {
+      type: 'elemental',
+      severity: res === 'weak' && hazard.escalateWhenWeak !== false ? 'danger' : 'warning',
+      title: hazard.title,
+      message: hazard.message.replace('{floor}', String(targetFloor)),
+      recommendation: hazard.recommendation,
+    };
   }
 
   /**
@@ -216,7 +191,7 @@ export class RunAdvisor {
     const consWarn = this.checkDeepFloorConsumables(player, targetFloor);
     if (consWarn) warnings.push(consWarn);
 
-    const elemWarn = this.checkElementalPreparedness(player, targetFloor);
+    const elemWarn = this.checkElementalPreparedness(player, targetFloor, engine.manifest?.floorHazards);
     if (elemWarn) warnings.push(elemWarn);
 
     let overallStatus: AdvisorySeverity = 'safe';

@@ -226,6 +226,8 @@ export class ProfileManager {
         maxRoomSize: 10,
         seed: options?.seed,
         spawnMonsters: true,
+        monsterCandidates: Array.isArray(manifest.monsters) ? manifest.monsters : Object.values(manifest.monsters ?? {}),
+        roomDecoration: manifest.roomDecoration,
       });
       const dungeon = generator.generate();
       map = dungeon.map;

@@ -5,6 +5,8 @@ import { GameMap } from '../../grid/map';
 import { GameEngine } from '../../engine';
 import { ItemFactory } from '../../items/factory';
 import { Item } from '../../items/item';
+import { COTW_FLOOR_HAZARDS } from '../../../content/cotw/floorBands';
+import { COTW_MANIFEST } from '../../../content/cotw';
 
 describe('Town Sage Run Advisory Heuristics', () => {
   it('detects and warns when inventory bulk or weight exceeds 80% capacity', () => {
@@ -52,7 +54,7 @@ describe('Town Sage Run Advisory Heuristics', () => {
     expect(warn).not.toBeNull();
     expect(warn?.type).toBe('currency');
     expect(warn?.message).toContain('6 PP');
-    expect(warn?.recommendation).toContain('Banker Haakon');
+    expect(warn?.recommendation).toContain('town banker');
   });
 
   it('flags equipped cursed gear on paperdoll', () => {
@@ -82,7 +84,7 @@ describe('Town Sage Run Advisory Heuristics', () => {
     expect(warn?.type).toBe('cursed');
     expect(warn?.severity).toBe('danger');
     expect(warn?.message).toContain('Cursed Broadsword of Despair');
-    expect(warn?.recommendation).toContain('Temple of Thor');
+    expect(warn?.recommendation).toContain('town temple priest');
   });
 
   it('checks emergency consumables for deep dungeon floors (Floor 10+)', () => {
@@ -101,7 +103,7 @@ describe('Town Sage Run Advisory Heuristics', () => {
     expect(warn).not.toBeNull();
     expect(warn?.type).toBe('consumables');
     expect(warn?.severity).toBe('danger');
-    expect(warn?.recommendation).toContain('Astrid\'s Alchemy');
+    expect(warn?.recommendation).toContain('before descending');
 
     // Add 2 Health Potions
     player.inventory.primaryPack.addItem(ItemFactory.createHealthPotion('hp-1'));
@@ -119,13 +121,16 @@ describe('Town Sage Run Advisory Heuristics', () => {
     });
 
     // Floor 12 cold threats
-    const coldWarn = RunAdvisor.checkElementalPreparedness(player, 12);
+    // A pack with no floorHazards gets no elemental warnings at all.
+    expect(RunAdvisor.checkElementalPreparedness(player, 12)).toBeNull();
+
+    const coldWarn = RunAdvisor.checkElementalPreparedness(player, 12, COTW_FLOOR_HAZARDS);
     expect(coldWarn).not.toBeNull();
     expect(coldWarn?.type).toBe('elemental');
     expect(coldWarn?.message).toContain('frost drakes');
 
     // Floor 28 fire threats
-    const fireWarn = RunAdvisor.checkElementalPreparedness(player, 28);
+    const fireWarn = RunAdvisor.checkElementalPreparedness(player, 28, COTW_FLOOR_HAZARDS);
     expect(fireWarn).not.toBeNull();
     expect(fireWarn?.type).toBe('elemental');
     expect(fireWarn?.message).toContain('fire elementals');
@@ -139,7 +144,7 @@ describe('Town Sage Run Advisory Heuristics', () => {
       position: { x: 0, y: 0 },
       stats: { hp: 30, maxHp: 30, attack: 10, defense: 2 },
     });
-    const engine = new GameEngine({ map, player, floor: 0 });
+    const engine = new GameEngine({ map, player, floor: 0, manifest: COTW_MANIFEST });
 
     const report = RunAdvisor.evaluateRun(engine, 1);
     expect(report.overallStatus).toBe('safe');

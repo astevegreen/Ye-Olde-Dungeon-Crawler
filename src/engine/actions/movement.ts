@@ -8,6 +8,7 @@ import { OpenDoorAction } from './door';
 import { NPC } from '../entities/npc';
 import { ExecuteChoiceAction } from './choiceAction';
 import type { Player } from '../entities/player';
+import { Monster } from '../entities/monster';
 import { HookDispatcher } from '../hooks/hookDispatcher';
 import { TILES } from '../grid/tile';
 
@@ -211,7 +212,7 @@ export class MovementAction implements Action {
         engine.log("You stand upon stairs leading up. Press '<' or [Enter] to ascend.");
       } else if (handlerId === 'quest_victory_portal') {
         engine.log('*** You step into the shimmering victory portal! ***');
-        engine.gameState?.triggerVictory(engine, (engine as any).profileManager);
+        engine.gameState?.triggerVictory(engine);
         const returnPos =
           engine.manifest?.quest?.townReturnPosition ??
           engine.manifest?.town?.playerSpawn ??
@@ -312,9 +313,11 @@ export class MovementAction implements Action {
         if (engine.getWorldFlag(watcher.sealedFlag)) continue;
         const boss = engine.map
           .getAllEntities()
-          .find((e) => (e as any).definitionId === watcher.monsterDefinitionId && e.isAlive());
+          .find(
+            (e): e is Monster => e instanceof Monster && e.definitionId === watcher.monsterDefinitionId && e.isAlive()
+          );
         const fleeCounterKey = `boss_flee_turns:${watcher.monsterDefinitionId}`;
-        if (boss && (boss as any).aiState === 'fleeing') {
+        if (boss && boss.aiState === 'fleeing') {
           const turnsFled = engine.modifyWorldCounter(fleeCounterKey, 1);
           if (turnsFled >= watcher.fleeTurnsRequired) {
             engine.setWorldFlag(watcher.sealedFlag, true);

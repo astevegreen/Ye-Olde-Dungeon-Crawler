@@ -74,7 +74,7 @@ export class CastSpellAction implements Action {
           message: `No living target found to reap!`,
         };
       }
-      const maxHp = (targetEntity as any).maxHp ?? 100;
+      const maxHp = targetEntity.maxHp;
       const threshold = Math.max(10, Math.floor(maxHp * spell.maxTargetHpPercent));
       if (targetEntity.hp > threshold) {
         return {
@@ -99,67 +99,66 @@ export class CastSpellAction implements Action {
     }
     const effectiveManaCost = Math.max(0, spell.manaCost - manaDiscount);
 
-    // Check mana cost for player (unless free cast via wand or scroll)
-    if (player && !this.freeCast && effectiveManaCost > 0) {
-      if (player.mana < effectiveManaCost) {
+    // Validate every cost (mana, volatile energy, vitality) before paying any of them,
+    // so a cast rejected on its second cost never leaves the first one spent.
+    const paysCosts = player !== null && !this.freeCast;
+    const volatileCost = paysCosts ? (spell.volatileEnergyCost ?? 0) : 0;
+    const vitalityCost = paysCosts ? (spell.vitalityCost ?? 0) : 0;
+    let emergencyHpBurn = 0;
+    if (player && paysCosts) {
+      if (effectiveManaCost > 0 && player.mana < effectiveManaCost) {
         return {
           success: false,
           cost: 0,
           message: `Not enough mana to cast ${spell.name}! (Requires ${effectiveManaCost} MP, have ${player.mana})`,
         };
       }
-      player.consumeMana(effectiveManaCost);
-    }
-
-    // Check Volatile Energy / Vitality Tender cost for blood magic spells
-    let pendingCorruption = 0;
-    if (player && !this.freeCast) {
-      if (spell.volatileEnergyCost && spell.volatileEnergyCost > 0) {
-        const energyModel = player.energyModel ?? player.initEnergyModel();
-        if (energyModel.volatileEnergy < spell.volatileEnergyCost) {
-          const deficit = spell.volatileEnergyCost - energyModel.volatileEnergy;
-          const hpBurn = Math.max(2, Math.ceil(deficit / 5));
-          const canBurn = this.allowVitalityBurn || (player as any).autoBurnVitality;
-
-          if (canBurn) {
-            if (player.maxHp <= hpBurn) {
-              return {
-                success: false,
-                cost: 0,
-                message: `Cannot burn ${hpBurn} Max HP for emergency power: insufficient vitality remaining to survive!`,
-              };
-            }
-            energyModel.burnVitalityTender(player, hpBurn, 0);
-            energyModel.volatileEnergy = 0;
-            pendingCorruption += (spell.corruptionGain ?? spell.volatileEnergyCost) + hpBurn;
-            engine.log(
-              `🩸 Volatile Energy depleted! You burn ${hpBurn} permanent Max HP as emergency power to cast ${spell.name}! (Max HP: ${player.maxHp})`
-            );
-          } else {
-            return {
-              success: false,
-              cost: 0,
-              message: `Not enough Volatile Energy to cast ${spell.name}! (Requires ${spell.volatileEnergyCost}, have ${energyModel.volatileEnergy}). You can burn Vitality Tender for emergency power.`,
-            };
-          }
-        } else {
-          energyModel.volatileEnergy -= spell.volatileEnergyCost;
-          pendingCorruption += (spell.corruptionGain !== undefined ? spell.corruptionGain : spell.volatileEnergyCost);
-        }
-      }
-
-      if (spell.vitalityCost && spell.vitalityCost > 0) {
-        const energyModel = player.energyModel ?? player.initEnergyModel();
-        if (player.maxHp <= spell.vitalityCost) {
+      const volatileAvailable = player.energyModel?.volatileEnergy ?? 0;
+      if (volatileCost > 0 && volatileAvailable < volatileCost) {
+        if (!this.allowVitalityBurn) {
           return {
             success: false,
             cost: 0,
-            message: `Cannot cast ${spell.name}: insufficient vitality to burn without perishing!`,
+            message: `Not enough Volatile Energy to cast ${spell.name}! (Requires ${volatileCost}, have ${volatileAvailable}). You can burn Vitality Tender for emergency power.`,
           };
         }
-        energyModel.burnVitalityTender(player, spell.vitalityCost, 0);
-        pendingCorruption += (spell.corruptionGain ?? spell.vitalityCost);
-        engine.log(`🩸 You burn ${spell.vitalityCost} permanent Max HP to fuel ${spell.name}! (Max HP: ${player.maxHp})`);
+        emergencyHpBurn = Math.max(2, Math.ceil((volatileCost - volatileAvailable) / 5));
+      }
+      if (player.maxHp <= emergencyHpBurn + vitalityCost) {
+        return {
+          success: false,
+          cost: 0,
+          message: `Cannot cast ${spell.name}: insufficient vitality to burn without perishing!`,
+        };
+      }
+    }
+
+    let pendingCorruption = 0;
+    if (player && paysCosts) {
+      if (effectiveManaCost > 0) {
+        player.consumeMana(effectiveManaCost);
+      }
+
+      if (volatileCost > 0) {
+        const energyModel = player.energyModel ?? player.initEnergyModel();
+        if (emergencyHpBurn > 0) {
+          energyModel.burnVitalityTender(player, emergencyHpBurn, 0);
+          energyModel.volatileEnergy = 0;
+          pendingCorruption += (spell.corruptionGain ?? volatileCost) + emergencyHpBurn;
+          engine.log(
+            `🩸 Volatile Energy depleted! You burn ${emergencyHpBurn} permanent Max HP as emergency power to cast ${spell.name}! (Max HP: ${player.maxHp})`
+          );
+        } else {
+          energyModel.volatileEnergy -= volatileCost;
+          pendingCorruption += spell.corruptionGain ?? volatileCost;
+        }
+      }
+
+      if (vitalityCost > 0) {
+        const energyModel = player.energyModel ?? player.initEnergyModel();
+        energyModel.burnVitalityTender(player, vitalityCost, 0);
+        pendingCorruption += spell.corruptionGain ?? vitalityCost;
+        engine.log(`🩸 You burn ${vitalityCost} permanent Max HP to fuel ${spell.name}! (Max HP: ${player.maxHp})`);
       }
 
       if (spell.volatileEnergyGain && spell.volatileEnergyGain > 0 && !spell.requiresKillForEnergy) {
@@ -342,9 +341,9 @@ export class DrinkPotionAction implements Action {
         }
         case 'restore_mana': {
           const amount = typeof effect.amount === 'number' ? effect.amount : parseInt(effect.amount, 10) || 15;
-          if ('restoreMana' in this.user && typeof (this.user as any).restoreMana === 'function') {
-            const restored = (this.user as any).restoreMana(amount);
-            messages.push(`restoring ${restored} Mana (${(this.user as any).mana}/${(this.user as any).maxMana})`);
+          if (this.user instanceof Player) {
+            const restored = this.user.restoreMana(amount);
+            messages.push(`restoring ${restored} Mana (${this.user.mana}/${this.user.maxMana})`);
           }
           break;
         }
@@ -359,15 +358,17 @@ export class DrinkPotionAction implements Action {
           break;
         }
         case 'gain_xp': {
-          if ('gainXp' in this.user && typeof (this.user as any).gainXp === 'function') {
-            (this.user as any).gainXp(effect.amount);
+          if (this.user instanceof Player) {
+            this.user.gainXp(effect.amount);
             messages.push(`gaining ${effect.amount} XP`);
           }
           break;
         }
         case 'gain_stat': {
-          if ((this.user as any).modifyAttribute) {
-            (this.user as any).modifyAttribute(effect.stat, effect.amount);
+          // Previously called a `modifyAttribute` method no entity defines, so the
+          // effect silently did nothing. Applies to the player's core attributes.
+          if (this.user instanceof Player) {
+            this.user[effect.stat] += effect.amount;
             messages.push(`increasing ${effect.stat} by ${effect.amount}`);
           }
           break;
@@ -401,19 +402,17 @@ export class DrinkPotionAction implements Action {
           break;
         }
         case 'restore_volatile_energy': {
-          const userAny = this.user as any;
-          if (userAny.energyModel) {
-            const prev = userAny.energyModel.volatileEnergy;
-            if (effect.amount === 'full' || effect.amount === undefined) {
-              userAny.energyModel.volatileEnergy = userAny.energyModel.maxVolatileEnergy;
-            } else {
-              userAny.energyModel.volatileEnergy = Math.min(
-                userAny.energyModel.maxVolatileEnergy,
-                userAny.energyModel.volatileEnergy + effect.amount
-              );
-            }
-            const gained = userAny.energyModel.volatileEnergy - prev;
-            messages.push(`surging with volatile energy (+${gained}, meter full: ${userAny.energyModel.volatileEnergy}/${userAny.energyModel.maxVolatileEnergy})`);
+          const energyModel = this.user instanceof Player ? this.user.energyModel : undefined;
+          if (energyModel) {
+            const prev = energyModel.volatileEnergy;
+            energyModel.volatileEnergy =
+              effect.amount === 'full' || effect.amount === undefined
+                ? energyModel.maxVolatileEnergy
+                : Math.min(energyModel.maxVolatileEnergy, energyModel.volatileEnergy + effect.amount);
+            const gained = energyModel.volatileEnergy - prev;
+            messages.push(
+              `surging with volatile energy (+${gained}, ${energyModel.volatileEnergy}/${energyModel.maxVolatileEnergy})`
+            );
           }
           break;
         }

@@ -18,9 +18,10 @@ import { COTW_COMPANIONS } from './companions';
 import { GIANT_BLOOD_STATUS, giantBloodHandler, GIANT_BLOOD_BOOTSTRAP_HOOK } from './giantBlood';
 import { COTW_MONSTER_SCALING } from './monsterScaling';
 import { OATH_TRIGGER, OATH_TIMED_EVENT } from './oath';
-import { SIPHON_TIMED_EVENT } from './hostageRitual';
+import { HOSTAGE_VILLAGERS, SIPHON_RITUAL_FLOOR, SIPHON_RITUAL_HOOKS, SIPHON_TIMED_EVENT, SIPHON_VAULT_ID } from './hostageRitual';
 import { COTW_BLOOD_SPELLS } from './bloodMagic';
 import { COTW_TILES } from './tiles';
+import { COTW_FLOOR_HAZARDS, COTW_ROOM_DECORATION } from './floorBands';
 
 export const COTW_ATTRIBUTE_MILESTONES: AttributeMilestoneTrigger[] = [
   { id: 'milestone_dex_15', attribute: 'dexterity', threshold: 15, choiceId: 'milestone_dex_15' },
@@ -74,7 +75,7 @@ export const cotwManifest: GameContentManifest = {
   renownTitles: COTW_RENOWN_TITLES,
   companions: COTW_COMPANIONS,
   monsterScaling: COTW_MONSTER_SCALING,
-  actionHooks: [GIANT_BLOOD_BOOTSTRAP_HOOK],
+  actionHooks: [GIANT_BLOOD_BOOTSTRAP_HOOK, ...SIPHON_RITUAL_HOOKS],
   storyChoiceTriggers: [OATH_TRIGGER],
   attributeMilestones: COTW_ATTRIBUTE_MILESTONES,
   timedEvents: [OATH_TIMED_EVENT, SIPHON_TIMED_EVENT],
@@ -148,10 +149,23 @@ export const cotwManifest: GameContentManifest = {
   },
   scriptedVaultPlacements: [
     {
-      floor: 22,
-      vaultId: 'siphon_altar_vault',
+      floor: SIPHON_RITUAL_FLOOR,
+      vaultId: SIPHON_VAULT_ID,
+      npcs: HOSTAGE_VILLAGERS,
     },
   ],
+  // Townsfolk standing moves shop prices (hostage ritual outcome, story choices).
+  roomDecoration: COTW_ROOM_DECORATION,
+  floorHazards: COTW_FLOOR_HAZARDS,
+  merchantPricing: {
+    faction: 'townsfolk',
+    tiers: [
+      { minStanding: 30, multiplier: 0.75 },
+      { minStanding: 20, multiplier: 0.9 },
+      { maxStanding: -20, multiplier: 1.3 },
+      { maxStanding: -10, multiplier: 1.15 },
+    ],
+  },
 };
 
 export const COTW_MANIFEST = cotwManifest;

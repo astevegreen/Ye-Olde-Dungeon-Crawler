@@ -1,4 +1,5 @@
 import type { VaultBlueprint } from '../../engine';
+import { SIPHON_ALTAR_TILE, SIPHON_RITUAL_FLOOR, SIPHON_VAULT_ID } from './hostageRitual';
 
 export const COTW_VAULTS: VaultBlueprint[] = [
   {
@@ -157,20 +158,24 @@ export const COTW_VAULTS: VaultBlueprint[] = [
     preferredMonsters: ['primordial_drake', 'root_rot_abomination', 'void_gazer'],
   },
   {
-    id: 'siphon_altar_vault',
+    id: SIPHON_VAULT_ID,
     name: 'The Siphon Altar of Járnviðr',
     description:
       'An obsidian ritual chamber where troll-wife warlocks prepare captive Bjarnarhaven villagers for blood sacrifice.',
-    minFloor: 21,
-    maxFloor: 23,
+    // Stamped only on the scripted floor (hostageRitual.ts); the `N` markers hold the
+    // four captives and `A` is the Siphon Altar tile.
+    minFloor: SIPHON_RITUAL_FLOOR,
+    maxFloor: SIPHON_RITUAL_FLOOR,
+    scriptedOnly: true,
+    legend: { A: SIPHON_ALTAR_TILE },
     layout: [
       '###############',
       '#P...B...B...P#',
-      '#.H..B.M.B..H.#',
+      '#.N..B.M.B..N.#',
       '@....#####....@',
       '#.M....A....M.#',
       '@....#####....@',
-      '#.H..B.M.B..H.#',
+      '#.N..B.M.B..N.#',
       '#P...B...B...P#',
       '###############',
     ],

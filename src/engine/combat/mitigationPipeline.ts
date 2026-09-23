@@ -1,4 +1,4 @@
-import type { Item } from '../items/item';
+import type { Item, EquipmentSlot } from '../items/item';
 import type { Entity } from '../entities/entity';
 import type { GameEngine } from '../engine';
 
@@ -124,16 +124,8 @@ export function resolveCombatMitigation(
   const wornItems: ItemWearEvent[] = [];
 
   // Helper to extract equipped item from actor if paperdoll exists
-  const getEquipped = (ent: Entity, slot: string): Item | null => {
-    const actorAny = ent as any;
-    if (actorAny.inventory?.paperdoll) {
-      return actorAny.inventory.paperdoll.getItem(slot);
-    }
-    if (typeof actorAny.getEquippedItem === 'function') {
-      return actorAny.getEquippedItem(slot);
-    }
-    return null;
-  };
+  const getEquipped = (ent: Entity, slot: EquipmentSlot): Item | null =>
+    ent.inventory?.paperdoll.getItem(slot) ?? null;
 
   const weapon = getEquipped(attacker, 'mainHand');
   const shield = getEquipped(defender, 'offHand');
@@ -188,8 +180,10 @@ export function resolveCombatMitigation(
 
   // 3. Aspect modifiers
   const attackerAspect = weapon?.aspectState;
-  const defenderAspect = armor?.aspectState ?? (defender as any).aspectState;
-  const defenderFactions = [defender.faction, (defender as any).definitionId].filter(Boolean) as string[];
+  const defenderAspect = armor?.aspectState ?? defender.aspectState;
+  const defenderFactions = [defender.faction, defender.definitionId].filter(
+    (f): f is string => typeof f === 'string' && f.length > 0
+  );
 
   const aspectModifier = calculateAspectModifier(attackerAspect, defenderAspect, defenderFactions);
   if (aspectModifier.message && engine) {

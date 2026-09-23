@@ -26,9 +26,8 @@ export interface SaveValidationOptions {
  * Safe in Node.js, Vitest, and browser environments.
  */
 export function utf8ToBase64(str: string): string {
-  const nodeBuffer = (globalThis as any).Buffer;
-  if (typeof nodeBuffer !== 'undefined') {
-    return nodeBuffer.from(str, 'utf-8').toString('base64');
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(str, 'utf-8').toString('base64');
   }
   const bytes = new TextEncoder().encode(str);
   let bin = '';
@@ -45,9 +44,8 @@ export function utf8ToBase64(str: string): string {
  */
 export function base64ToUtf8(base64: string): string {
   const cleanBase64 = base64.trim().replace(/\s+/g, '');
-  const nodeBuffer = (globalThis as any).Buffer;
-  if (typeof nodeBuffer !== 'undefined') {
-    return nodeBuffer.from(cleanBase64, 'base64').toString('utf-8');
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(cleanBase64, 'base64').toString('utf-8');
   }
   const bin = atob(cleanBase64);
   const bytes = new Uint8Array(bin.length);

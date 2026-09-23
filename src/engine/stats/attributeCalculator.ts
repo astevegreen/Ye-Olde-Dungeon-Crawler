@@ -101,8 +101,6 @@ export function calculateAttribute(
   attributeKey: string,
   context?: AttributeContext
 ): number {
-  const anyActor = actor as any;
-
   // ─────────────────────────────────────────────────────────────
   // PHASE 1: Base Value
   // ─────────────────────────────────────────────────────────────
@@ -118,28 +116,28 @@ export function calculateAttribute(
   } else {
     switch (attributeKey) {
       case 'maxHp':
-        value = anyActor._maxHp ?? anyActor.maxHp ?? 10;
+        value = actor.baseMaxHpValue;
         break;
       case 'attack':
-        value = anyActor.baseAttack ?? anyActor.baseAttackValue ?? 1;
+        value = actor.baseAttackValue;
         break;
       case 'defense':
-        value = anyActor.baseDefense ?? anyActor.baseDefenseValue ?? 0;
+        value = actor.baseDefenseValue;
         break;
       case 'speed':
-        value = anyActor.speed ?? DEFAULT_SPEED;
+        value = actor.speed ?? DEFAULT_SPEED;
         break;
       case 'strength':
-        value = anyActor.strength ?? DEFAULT_FALLBACK_ATTRIBUTE;
+        value = actor.strength ?? DEFAULT_FALLBACK_ATTRIBUTE;
         break;
       case 'intelligence':
-        value = anyActor.intelligence ?? DEFAULT_FALLBACK_ATTRIBUTE;
+        value = actor.intelligence ?? DEFAULT_FALLBACK_ATTRIBUTE;
         break;
       case 'constitution':
-        value = anyActor.constitution ?? DEFAULT_FALLBACK_ATTRIBUTE;
+        value = actor.constitution ?? DEFAULT_FALLBACK_ATTRIBUTE;
         break;
       case 'dexterity':
-        value = anyActor.dexterity ?? DEFAULT_FALLBACK_ATTRIBUTE;
+        value = actor.dexterity ?? DEFAULT_FALLBACK_ATTRIBUTE;
         break;
       case 'actionCost':
         value = context?.baseCost ?? DEFAULT_BASE_ACTION_COST;
@@ -154,19 +152,11 @@ export function calculateAttribute(
   // PHASE 2: Flat Additions
   // ─────────────────────────────────────────────────────────────
   if (attributeKey === 'attack') {
-    if (anyActor.inventory?.getEquipmentStats) {
-      value += anyActor.inventory.getEquipmentStats().attackBonus ?? 0;
-    }
-    if (anyActor.pactMutatorsSupplier) {
-      value += anyActor.pactMutatorsSupplier().playerAttackBonus ?? 0;
-    }
+    value += actor.inventory?.getEquipmentStats().attackBonus ?? 0;
+    value += actor.pactMutatorsSupplier?.().playerAttackBonus ?? 0;
   } else if (attributeKey === 'defense') {
-    if (anyActor.inventory?.getEquipmentStats) {
-      value += anyActor.inventory.getEquipmentStats().defenseBonus ?? 0;
-    }
-    if (anyActor.pactMutatorsSupplier) {
-      value += anyActor.pactMutatorsSupplier().playerDefenseBonus ?? 0;
-    }
+    value += actor.inventory?.getEquipmentStats().defenseBonus ?? 0;
+    value += actor.pactMutatorsSupplier?.().playerDefenseBonus ?? 0;
   }
 
   // Execute custom flat modifiers
@@ -180,14 +170,14 @@ export function calculateAttribute(
   // PHASE 3: Multipliers
   // ─────────────────────────────────────────────────────────────
   if (attributeKey === 'maxHp') {
-    if (anyActor.pactMutatorsSupplier) {
-      const pct = anyActor.pactMutatorsSupplier().playerMaxHpPercent ?? 0;
+    if (actor.pactMutatorsSupplier) {
+      const pct = actor.pactMutatorsSupplier().playerMaxHpPercent ?? 0;
       value = value * (1 + pct);
     }
   } else if (attributeKey === 'actionCost') {
     // Encumbrance cost adjustment first if available on inventory
-    if (anyActor.inventory?.calculateActionCost && typeof anyActor.strength === 'number') {
-      value = anyActor.inventory.calculateActionCost(value, anyActor.strength);
+    if (actor.inventory) {
+      value = actor.inventory.calculateActionCost(value, actor.strength);
     }
     // Status effects
     if (actor.statusManager?.hasStatus('slow')) {

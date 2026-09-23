@@ -109,7 +109,7 @@ describe('Mitigation Pipeline, Item Integrity & Aspect Alignment', () => {
       position: { x: 6, y: 5 },
       stats: { hp: 25, maxHp: 25, attack: 4, defense: 0 },
     });
-    (corruptZombie as any).aspectState = 'aspect_corrupt';
+    corruptZombie.aspectState = 'aspect_corrupt';
 
     const engine = new GameEngine({
       map: new GameMap(12, 12, TILES.FLOOR),

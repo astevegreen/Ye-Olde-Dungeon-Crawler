@@ -222,6 +222,11 @@ export interface SerializedPlayer {
   energyModel?: SerializedEnergyModel;
 }
 
+/** `WorldState` as saved: remote-vault items are serialized item trees, not live Items. */
+export type SerializedWorldState = Omit<WorldState, 'remoteVaults'> & {
+  remoteVaults?: Record<string, SerializedItemNode[]>;
+};
+
 export interface SerializedEnergyModel {
   structuredEnergy: number;
   maxStructuredEnergy: number;
@@ -342,7 +347,7 @@ export interface SaveData {
   archivedFloors?: number[];
   storedFovRle?: Record<number, string>;
   compendium?: Record<string, { kills: number; tier: 0 | 1 | 2 | 3; firstEncounterFloor?: number }>;
-  worldState?: WorldState;
+  worldState?: SerializedWorldState;
   planes?: Record<string, PlaneState>;
   prngState?: number;
   /** Companions & Pet Progression, Phase 1 (ARCHITECTURE.md P-14). Null/absent = no companion summoned. */

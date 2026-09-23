@@ -100,7 +100,7 @@ describe('Leaderboard & Hall of Valhalla High Score System', () => {
     };
 
     const epitaph = Leaderboard.formatEpitaph(entry);
-    expect(epitaph).toContain('HALL OF VALHALLA MEMORIAL');
+    expect(epitaph).toContain('HALL OF FAME MEMORIAL');
     expect(epitaph).toContain('VICTOR OF THE NORTH');
     expect(epitaph).toContain('Freya the Bold');
     expect(epitaph).toContain('10,792 POINTS');

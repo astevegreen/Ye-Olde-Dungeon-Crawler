@@ -120,8 +120,10 @@ export class RangedAttackAction implements Action {
         engine.map.getEntityAt(rayResult.impactTile.x, rayResult.impactTile.y);
 
       if (target && target.isAlive()) {
-        const attackerDex = (this.attacker as any).attributes?.dexterity ?? 14;
-        const targetDefense = (target as any).defense ?? (target as any).stats?.defense ?? 0;
+        // Previously read a nonexistent `attributes.dexterity`, so every shot rolled at
+        // DEX 14 regardless of the shooter. Non-player shooters keep that baseline.
+        const attackerDex = this.attacker instanceof Player ? this.attacker.dexterity : 14;
+        const targetDefense = target.defense;
 
         // Hit roll: 75% base + DEX modifier - target defense
         const hitChance = Math.max(20, Math.min(95, 75 + (attackerDex - 10) * 2 - targetDefense * 2));
@@ -137,7 +139,7 @@ export class RangedAttackAction implements Action {
 
           let affixMsg = '';
           if (weapon.elementalAffix) {
-            const affinity = target.elementalResistances?.[weapon.elementalAffix.element] ?? (target as any).resistances?.[weapon.elementalAffix.element] ?? 'neutral';
+            const affinity = target.elementalResistances[weapon.elementalAffix.element] ?? 'neutral';
             const elResult = engine.affinityMatrix.calculateDamage(
               weapon.elementalAffix.bonusDamage,
               weapon.elementalAffix.element,

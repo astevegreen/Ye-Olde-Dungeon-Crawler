@@ -7,8 +7,9 @@ import { PRNG } from './prng';
 import { CorridorGraph, BraidWeaver } from './corridors';
 import { RoomDecorator } from './roomDecorator';
 import { VaultStamper, type VaultBlueprint } from './vaultStamp';
-import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
-import type { ItemDefinition } from '../types/manifest';
+import { MonsterRegistry, type MonsterDefinition } from '../bestiary/monsterDefinitions';
+import { selectDungeonMonsterDefinition } from './spawner';
+import type { ItemDefinition, RoomDecorationBand } from '../types/manifest';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
 import type { GameDifficulty } from '../types';
 import type { EngineRegistries } from '../registries';
@@ -42,6 +43,8 @@ export interface DungeonConfig {
    * randomly-chosen eligible vaults (excluded from that random pool so it's
    * never double-picked). Used for hand-placed floor rewards. */
   forcedVaultId?: string;
+  /** Per-floor-band room decoration (manifest `roomDecoration`). */
+  roomDecoration?: RoomDecorationBand[];
   registries?: EngineRegistries;
 }
 
@@ -55,8 +58,10 @@ export interface DungeonResult {
   /** Ground positions of any chest(s) stamped by `forcedVaultId`, if it was
    * placed successfully this attempt. */
   forcedVaultChestSpawns?: Position[];
-  /** Ground positions of any hostage(s) stamped by `forcedVaultId`. */
-  forcedVaultHostageSpawns?: Position[];
+  /** Ground positions of the `N` (NPC) markers stamped by `forcedVaultId`. */
+  forcedVaultNpcSpawns?: Position[];
+  /** True when `forcedVaultId` was stamped this attempt. */
+  forcedVaultPlaced?: boolean;
 }
 
 export class DungeonGenerator {
@@ -76,6 +81,7 @@ export class DungeonGenerator {
   public scalingConfig?: MonsterScalingConfig;
   public difficulty?: GameDifficulty;
   public forcedVaultId?: string;
+  public roomDecoration: RoomDecorationBand[];
   public registries?: EngineRegistries;
 
   constructor(config: DungeonConfig) {
@@ -95,6 +101,7 @@ export class DungeonGenerator {
     this.scalingConfig = config.scalingConfig;
     this.difficulty = config.difficulty;
     this.forcedVaultId = config.forcedVaultId;
+    this.roomDecoration = config.roomDecoration ?? [];
     this.registries = config.registries;
   }
 
@@ -114,7 +121,7 @@ export class DungeonGenerator {
       if (!firstReachable) {
         firstReachable = result;
       }
-      if (!this.forcedVaultId || (result.forcedVaultChestSpawns && result.forcedVaultChestSpawns.length > 0)) {
+      if (!this.forcedVaultId || result.forcedVaultPlaced) {
         return result;
       }
     }
@@ -144,7 +151,8 @@ export class DungeonGenerator {
     // register its room/connectors. Shared by the random vault pass and the forced-
     // vault pass below so both place vaults identically.
     let forcedVaultChestSpawns: Position[] | undefined;
-    let forcedVaultHostageSpawns: Position[] | undefined;
+    let forcedVaultNpcSpawns: Position[] | undefined;
+    let forcedVaultPlaced = false;
     const tryPlaceVault = (blueprint: VaultBlueprint): boolean => {
       const vH = blueprint.layout.length;
       const vW = blueprint.layout[0]?.length ?? 0;
@@ -185,7 +193,8 @@ export class DungeonGenerator {
         allConnectors.push(...stamped.connectors);
         if (blueprint.id === this.forcedVaultId) {
           forcedVaultChestSpawns = stamped.chestSpawns;
-          forcedVaultHostageSpawns = stamped.hostageSpawns;
+          forcedVaultNpcSpawns = stamped.npcSpawns;
+          forcedVaultPlaced = true;
         }
         return true;
       }
@@ -205,11 +214,12 @@ export class DungeonGenerator {
     }
 
     // 2. Random Vault Pass (1–2 vaults if floorNumber >= 3), excluding the forced
-    // vault so it's never double-picked here.
+    // vault so it's never double-picked here, and any scripted-only vault.
     if (this.floorNumber !== undefined && this.vaults && this.vaults.length > 0) {
       const eligible = this.vaults.filter(
         (v) =>
           v.id !== this.forcedVaultId &&
+          !v.scriptedOnly &&
           (v.minFloor ?? 1) <= this.floorNumber! &&
           (!v.maxFloor || v.maxFloor >= this.floorNumber!)
       );
@@ -291,15 +301,21 @@ export class DungeonGenerator {
     // 6. Room Cover & Architecture Decoration (Pillars, Colonnades, Partitions)
     if (this.enableDecoration) {
       const nonVaultRooms = rooms.filter((_, idx) => !vaultRoomIndices.has(idx));
-      RoomDecorator.decorateRooms(map, nonVaultRooms, this.prng, this.floorNumber ?? 1);
+      RoomDecorator.decorateRooms(map, nonVaultRooms, this.prng, this.floorNumber ?? 1, this.roomDecoration);
     }
 
+    // Spawn and exit go in ordinary rooms, never a vault: the forced vault is always
+    // rooms[0], and its center is authored content (an altar, a guarded dais) that the
+    // up-stairs would overwrite, with the player spawning inside the guarded chamber.
+    const ordinaryRooms = rooms.filter((_, idx) => !vaultRoomIndices.has(idx));
+    const spawnCandidates = ordinaryRooms.length > 0 ? ordinaryRooms : rooms;
+    const firstRoom = spawnCandidates[0];
     const playerSpawn: Position = {
-      x: rooms[0].centerX,
-      y: rooms[0].centerY,
+      x: firstRoom.centerX,
+      y: firstRoom.centerY,
     };
 
-    const lastRoom = rooms[rooms.length - 1];
+    const lastRoom = spawnCandidates[spawnCandidates.length - 1];
     const stairsDown: Position = {
       x: lastRoom.centerX,
       y: lastRoom.centerY,
@@ -310,7 +326,7 @@ export class DungeonGenerator {
 
     // Spawn monsters in non-starting rooms
     if (this.spawnMonsters) {
-      this.populateMonsters(map, rooms, monsters);
+      this.populateMonsters(map, rooms, monsters, firstRoom);
     }
 
     // Collect any monsters already added to map during vault stamping
@@ -328,7 +344,8 @@ export class DungeonGenerator {
       monsters,
       graph,
       forcedVaultChestSpawns,
-      forcedVaultHostageSpawns,
+      forcedVaultNpcSpawns,
+      forcedVaultPlaced,
     };
   }
 
@@ -398,11 +415,28 @@ export class DungeonGenerator {
     }
   }
 
-  private populateMonsters(map: GameMap, rooms: RectRoom[], monsters: Monster[]): void {
+  private populateMonsters(map: GameMap, rooms: RectRoom[], monsters: Monster[], spawnRoom: RectRoom): void {
+    // Draw from the pack's candidates, else whatever the registry holds. The engine
+    // names no monsters of its own, so with neither there is nothing to spawn.
+    const candidates =
+      this.monsterCandidates.length > 0
+        ? this.monsterCandidates
+        : this.registries
+          ? this.registries.monsters.getAll()
+          : MonsterRegistry.getAll();
+    if (candidates.length === 0) {
+      flightRecorder.recordWarning('No monster definitions available; floor left unpopulated', {
+        source: 'DungeonGenerator',
+        floorNumber: this.floorNumber,
+      });
+      return;
+    }
+
     let monsterId = 1;
-    // Skip room 0 (safe player spawn room)
-    for (let i = 1; i < rooms.length; i++) {
+    // Skip the player spawn room (kept safe)
+    for (let i = 0; i < rooms.length; i++) {
       const room = rooms[i];
+      if (room === spawnRoom) continue;
       const count = this.prng.nextInt(1, 2);
 
       for (let m = 0; m < count; m++) {
@@ -418,28 +452,10 @@ export class DungeonGenerator {
           continue;
         }
 
-        let defId: string;
-        if (i === 1 && m === 0) {
-          // Guarantee a Kobold Shaman in the first monster room for tactical magic encounters
-          defId = 'kobold_shaman';
-        } else {
-          const roll = this.prng.next();
-          if (roll < 0.25) {
-            defId = 'kobold';
-          } else if (roll < 0.45) {
-            defId = 'skeleton';
-          } else if (roll < 0.65) {
-            defId = 'giant_rat';
-          } else if (roll < 0.85) {
-            defId = 'kobold_shaman';
-          } else if (roll < 0.95) {
-            defId = 'goblin';
-          } else {
-            defId = 'ogre';
-          }
-        }
+        const def = selectDungeonMonsterDefinition(candidates, this.floorNumber ?? 1, () => this.prng.next());
+        if (!def) continue;
 
-        const monster = this.spawnDefinedMonster(defId, `monster-${monsterId++}`, { x: mx, y: my });
+        const monster = this.spawnDefinedMonster(def.id, `monster-${monsterId++}`, { x: mx, y: my });
         if (!monster) continue;
         map.addEntity(monster);
         monsters.push(monster);

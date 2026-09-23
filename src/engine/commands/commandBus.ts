@@ -239,7 +239,7 @@ export class EngineCommandBus implements GameCommandBus {
         if (!merchant || itemIndex === undefined) {
           return { success: false, message: 'Invalid buy request' };
         }
-        const res = merchant.buyItem(this.engine.player, itemIndex, this.engine.worldState);
+        const res = merchant.buyItem(this.engine.player, itemIndex, this.engine.worldState, this.engine.manifest.merchantPricing);
         this.engine.log(res.message);
         return { success: res.success, message: res.message };
       }
@@ -281,7 +281,7 @@ export class EngineCommandBus implements GameCommandBus {
             message: `${sageName} senses no unidentified items in your possession.`,
           };
         }
-        const res = SageService.identifyItem(this.engine.player, targetItem);
+        const res = SageService.identifyItem(this.engine.player, targetItem, undefined, this.engine.manifest.town?.services);
         this.engine.log(res.message);
         return { success: res.success, message: res.message };
       }
@@ -308,7 +308,7 @@ export class EngineCommandBus implements GameCommandBus {
       }
 
       case 'bank_compact': {
-        const res = BankService.compactCurrency(this.engine.player);
+        const res = BankService.compactCurrency(this.engine.player, this.engine.manifest.town?.services);
         this.engine.log(res.message);
         return { success: res.success, message: res.message };
       }

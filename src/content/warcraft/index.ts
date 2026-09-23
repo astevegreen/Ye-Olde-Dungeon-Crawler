@@ -39,6 +39,9 @@ export const warcraftManifest: GameContentManifest = {
   vaults: WARCRAFT_VAULTS,
   choices: {},
   pacts: [],
+  // Water puddles and sparse architecture on every floor (the pack's floors top out at
+  // its boss floor, 5).
+  roomDecoration: [{ minFloor: 1, puddleChance: 0.4, grandHallChance: 0.3, pillarChance: 0.25 }],
 };
 
 export const WARCRAFT_MANIFEST = warcraftManifest;

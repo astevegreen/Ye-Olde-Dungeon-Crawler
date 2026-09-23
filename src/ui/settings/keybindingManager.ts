@@ -91,5 +91,3 @@ export class KeybindingManager {
     }
   }
 }
-
-export const defaultKeybindingManager = new KeybindingManager();

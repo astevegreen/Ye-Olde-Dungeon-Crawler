@@ -21,3 +21,6 @@ dist-ssr
 
 # Ephemeral agent task/prompt markdown (see CLAUDE.md, .antigravity/rules.md)
 /.prompts/
+
+# Repomix codebase snapshots (generated for AI review, not source)
+repomix-output.*

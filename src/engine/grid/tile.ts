@@ -131,16 +131,6 @@ export const TILES: Record<string, TileDefinition> = {
     glyph: 'P',
     description: 'A massive carved column supporting the vaulted stone ceiling. Provides hard cover against ranged spells and arrows.',
   },
-  ALTAR: {
-    type: 'altar',
-    name: 'Stone Altar',
-    passable: true,
-    walkable: true,
-    transparent: true,
-    glyph: '_',
-    description: 'An ancient carved stone altar marked with blood runes.',
-    interactionHandlerId: 'blood_altar_ritual',
-  },
 };
 
 import {

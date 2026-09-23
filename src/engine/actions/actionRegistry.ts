@@ -1,6 +1,7 @@
 import type { ActionResult } from '../types';
 import { BASE_ACTION_COST } from '../types';
 import type { Actor } from '../entities/actor';
+import { Player } from '../entities/player';
 import type { GameEngine } from '../engine';
 import { MovementAction } from './movement';
 import { MeleeAttackAction } from './combat';
@@ -198,8 +199,7 @@ export function registerDefaultActions(): void {
       if (!spell) {
         return { valid: false, reason: `Unknown spell: ${args.spellId}` };
       }
-      const player = actor as any;
-      if (player.mana !== undefined && player.mana < spell.manaCost) {
+      if (actor instanceof Player && actor.mana < spell.manaCost) {
         return { valid: false, reason: 'Not enough mana!' };
       }
       return { valid: true };
@@ -229,11 +229,10 @@ export function registerDefaultActions(): void {
       return actor.getActionCost(BASE_ACTION_COST);
     },
     execute(actor, args, engine) {
-      const player = actor as any;
-      if (!player.inventory) {
-        return { success: false, cost: 0, message: 'Actor has no inventory.' };
+      if (!(actor instanceof Player)) {
+        return { success: false, cost: 0, message: 'Only the player can equip items.' };
       }
-      const equip = new EquipAction(player, args.item.id, args.slot);
+      const equip = new EquipAction(actor, args.item.id, args.slot);
       return equip.perform(engine);
     },
   });
@@ -254,7 +253,10 @@ export function registerDefaultActions(): void {
       const tile = engine.map.getTile(x, y);
 
       if (args.interactionType === 'stairs' || tile?.type === 'stairs_down' || tile?.type === 'stairs_up') {
-        const stairs = new ClimbStairsAction(actor as any);
+        if (!(actor instanceof Player)) {
+          return { success: false, cost: 0, message: 'Only the player can take the stairs.' };
+        }
+        const stairs = new ClimbStairsAction(actor);
         return stairs.perform(engine);
       }
 

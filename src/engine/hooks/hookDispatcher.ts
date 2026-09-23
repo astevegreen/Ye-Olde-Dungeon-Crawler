@@ -205,7 +205,7 @@ export class HookDispatcher {
         }
 
         // Execute action primitive
-        const targetEntity = (hook.action as any).target === 'self'
+        const targetEntity = 'target' in hook.action && hook.action.target === 'self'
           ? owner
           : (owner === context.attacker ? context.defender : context.attacker);
 
@@ -228,22 +228,18 @@ export class HookDispatcher {
     if (entity instanceof Player) {
       const equippedItems = entity.inventory.paperdoll.getEquippedItems();
       for (const item of equippedItems) {
-        const itemHooks = (item as any).hooks as HookDescriptor[] | undefined;
-        if (itemHooks && Array.isArray(itemHooks)) {
-          for (const h of itemHooks) {
+        for (const h of item.hooks ?? []) {
             if (h.event === event) {
               out.push({ hook: h, sourceName: item.name, owner: entity });
             }
-          }
         }
       }
     }
 
     // B. Monster traits / hooks
     if (entity instanceof Monster) {
-      const monsterHooks = (entity as any).hooks as HookDescriptor[] | undefined;
-      if (monsterHooks && Array.isArray(monsterHooks)) {
-        for (const h of monsterHooks) {
+      {
+        for (const h of entity.hooks) {
           if (h.event === event) {
             out.push({ hook: h, sourceName: entity.name, owner: entity });
           }
@@ -267,7 +263,7 @@ export class HookDispatcher {
     if (executor) {
       executor(action, ctx, owner, target, summary, sourceName, description);
     } else {
-      ctx.engine.log(`[HookDispatcher] Unknown primitive action type: '${(action as any).type}'`);
+      ctx.engine.log(`[HookDispatcher] Unknown primitive action type: '${action.type}'`);
     }
   }
 }

@@ -21,7 +21,7 @@ import { rebuildItemRegistries } from '../items/rebuildItemRegistries';
 import { registerSerializeGameFn, flightRecorder } from '../debug/flightRecorder';
 import { CompendiumManager } from '../compendium/compendiumManager';
 import type { GameContentManifest } from '../types/manifest';
-import { cloneWorldState, createWorldState } from '../state/worldState';
+import { cloneWorldState, createWorldState, type WorldState } from '../state/worldState';
 import { compactTilesWithDictionary, decompactTiles, compactFov, decompactFov } from './compaction';
 import { EnergyModel } from '../actors/energyModel';
 import type {
@@ -515,7 +515,7 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
       }
       return {
         ...cloned,
-        remoteVaults: serializedVaults as any,
+        remoteVaults: serializedVaults,
       };
     })() : undefined,
     planes: engine.planeManager ? engine.planeManager.serialize() : undefined,
@@ -861,14 +861,28 @@ export function deserializeGame(
   const currentFloor = saveData.currentFloor ?? saveData.profile?.floor ?? 1;
   const compendium = new CompendiumManager(saveData.compendium ?? saveData.profile?.compendium);
 
-  // 5. Instantiate Engine Core
+  // 5. Rebuild world state (remote-vault items are serialized trees) before the engine
+  // sees it, so it is never handed plain JSON where live Items belong.
+  let worldState: WorldState | undefined;
+  if (saveData.worldState) {
+    const { remoteVaults: savedVaults, ...savedState } = saveData.worldState;
+    worldState = createWorldState(savedState);
+    if (savedVaults) {
+      worldState.remoteVaults = {};
+      for (const [k, items] of Object.entries(savedVaults)) {
+        worldState.remoteVaults[k] = items.map(deserializeItem);
+      }
+    }
+  }
+
+  // 6. Instantiate Engine Core
   const engine = new GameEngine({
     map,
     player,
     floor: currentFloor,
     manifest,
     compendium,
-    worldState: saveData.worldState,
+    worldState,
   });
 
   if (saveData.prngState !== undefined && engine.prng) {
@@ -951,16 +965,6 @@ export function deserializeGame(
   }
   engine.updateFov();
 
-  if (saveData.worldState) {
-    const ws = createWorldState(saveData.worldState as any);
-    if (saveData.worldState.remoteVaults) {
-      ws.remoteVaults = {};
-      for (const [k, items] of Object.entries(saveData.worldState.remoteVaults as any)) {
-        ws.remoteVaults[k] = (items as SerializedItemNode[]).map(deserializeItem);
-      }
-    }
-    engine.worldState = ws;
-  }
 
   rebuildItemRegistries(engine);
   activateRegistries(engine.registries);

@@ -183,7 +183,7 @@ export class Actor extends Entity implements IItemContainer, IEquipmentBearer {
     const maxTempHp = newStats.maxHp ?? tempHp;
 
     this.morphEnvelope = {
-      originalArchetypeId: archetypeId || (this as any).definitionId || this.id,
+      originalArchetypeId: archetypeId || this.definitionId || this.id,
       originalName: origName,
       originalStats: origStats,
       originalSpeed: origSpeed,

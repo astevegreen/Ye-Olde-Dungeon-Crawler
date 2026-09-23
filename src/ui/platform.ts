@@ -27,15 +27,6 @@ export const defaultPlatformAdapter: PlatformAdapter = {
 };
 
 /**
- * No-op adapter for headless/test environments where DOM is unavailable.
- */
-export const noopPlatformAdapter: PlatformAdapter = {
-  triggerFileDownload(_filename: string, _content: string, _mimeType: string): void {
-    // No-op in headless/test environments
-  },
-};
-
-/**
  * Copies text to the system clipboard with cross-browser and file:/// protocol fallback.
  */
 export async function copyTextToClipboard(text: string): Promise<boolean> {

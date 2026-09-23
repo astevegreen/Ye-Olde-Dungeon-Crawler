@@ -86,7 +86,7 @@ export class Player extends Actor {
   public hasDiscoveredRune: boolean;
   public runeCharges: number;
   public runeMaxCharges: number;
-  public pactMutatorsSupplier?: () => import('../pacts/pactManager').RunPactMutatorRules;
+  declare public pactMutatorsSupplier?: () => import('../pacts/pactManager').RunPactMutatorRules;
   public energyModel?: EnergyModel;
 
   constructor(config: PlayerConfig) {
@@ -316,7 +316,7 @@ export class Player extends Actor {
     return this.energyModel;
   }
 
-  public hasBloodMagicUnlocked(): boolean {
+  public hasEnergyModel(): boolean {
     return this.energyModel !== undefined;
   }
 

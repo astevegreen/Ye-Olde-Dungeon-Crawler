@@ -1,10 +1,5 @@
 export type ToastType = 'info' | 'success' | 'warning' | 'error';
 
-export interface ToastOptions {
-  durationMs?: number;
-  type?: ToastType;
-}
-
 let toastContainer: HTMLElement | null = null;
 
 function ensureToastContainer(): HTMLElement | null {

@@ -1,6 +1,7 @@
 import type { Entity } from '../entities/entity';
 import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
+import { Actor } from '../entities/actor';
 // Type-only: erased at compile time, so this does not create a runtime import edge.
 // entities/companion.ts's `class Companion extends Monster` sits in a load-order
 // cycle reachable from entities/monster.ts (which imports this very file) — a
@@ -15,7 +16,7 @@ import { DeathEnvelopeTracker } from '../analytics/deathEnvelope';
 
 /** Duck-typed check avoiding a value import of Companion (see import comment above). */
 function isCompanion(entity: Entity): entity is Companion {
-  return entity instanceof Monster && typeof (entity as any).companionDefinitionId === 'string';
+  return entity instanceof Monster && 'companionDefinitionId' in entity && typeof entity.companionDefinitionId === 'string';
 }
 
 export class DeathResolver {
@@ -35,8 +36,8 @@ export class DeathResolver {
       });
     }
 
-    if ((victim as any).onDestroyed) {
-      (victim as any).onDestroyed(engine, killer);
+    if (victim instanceof Actor && victim.onDestroyed) {
+      victim.onDestroyed(engine, killer);
     }
 
     // Companions & Pet Progression, Phase 2 (ARCHITECTURE.md P-14): a dying

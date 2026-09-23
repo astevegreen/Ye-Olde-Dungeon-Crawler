@@ -249,7 +249,7 @@ export class BashDoorAction implements Action {
       return { success: true, cost: BASE_ACTION_COST, message: msg };
     }
 
-    const str = (this.entity as any).strength ?? 10;
+    const str = this.entity.strength ?? 10;
     const lockDC = tile.lockDifficulty ?? 14;
     const roll = engine.prng.nextInt(1, 20) + Math.floor(str / 4);
 

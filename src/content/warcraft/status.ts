@@ -1,10 +1,12 @@
-import type { StatusHandler } from '../../engine';
+import type { Monster, StatusHandler } from '../../engine';
 
 export const WARCRAFT_STATUS_HANDLERS: Record<string, StatusHandler> = {
   burning: {
     onTick(entity, effect, _engine) {
       const dmg = effect.potency ?? 3;
-      const res = (entity as any).takeDamage(dmg, { wakeUp: false });
+      // Periodic damage must not wake a sleeping monster.
+      const res =
+        entity.type === 'monster' ? (entity as Monster).takeDamage(dmg, { wakeUp: false }) : entity.takeDamage(dmg);
       return {
         damageTaken: res.damageDealt,
         killed: res.killed,

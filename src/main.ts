@@ -80,7 +80,23 @@ import { KeybindModal } from './ui/settings/keybindModal';
 import { MainMenu } from './ui/menus/mainMenu';
 import { COMMAND_CATALOG, type CommandId } from './main/commandCatalog';
 
-const targetTheme = ((import.meta as any).env?.VITE_THEME as string) || 'cotw';
+declare global {
+  interface ImportMetaEnv {
+    /** Content pack selected at build time (vite.config.ts). */
+    readonly VITE_THEME?: string;
+  }
+  /** Debug/e2e introspection handles (e2e/campaign-flow.spec.ts reads the engine and input handler). */
+  interface Window {
+    __cotwEngine?: GameEngine;
+    __cotwSaveAndReturn?: () => void;
+    __cotwRenderer?: CanvasRenderer | null;
+    __cotwInputHandler?: InputHandler | null;
+    __cotwInput?: InputHandler | null;
+    __teardownGlobalErrorHandlers?: () => void;
+  }
+}
+
+const targetTheme = import.meta.env.VITE_THEME || 'cotw';
 const activeManifest = targetTheme === 'warcraft' ? warcraftManifest : cotwManifest;
 const activeThemeTokens = targetTheme === 'warcraft' ? WARCRAFT_THEME_TOKENS : COTW_THEME_TOKENS;
 
@@ -723,7 +739,7 @@ window.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('error', onGlobalError);
   window.addEventListener('unhandledrejection', onGlobalUnhandledRejection);
 
-  (window as any).__teardownGlobalErrorHandlers = () => {
+  window.__teardownGlobalErrorHandlers = () => {
     window.removeEventListener('error', onGlobalError);
     window.removeEventListener('unhandledrejection', onGlobalUnhandledRejection);
   };
@@ -842,8 +858,8 @@ window.addEventListener('DOMContentLoaded', () => {
   function launchGame(engine: GameEngine, profile: CharacterProfile): void {
     activeEngine = engine;
     activeProfile = profile;
-    (window as any).__cotwEngine = engine;
-    (window as any).__cotwSaveAndReturn = saveAndReturnToTitle;
+    window.__cotwEngine = engine;
+    window.__cotwSaveAndReturn = saveAndReturnToTitle;
 
     // Wire GameState victory/defeat listener
     engine.gameState.onStateChanged = (status, summary) => {
@@ -1262,8 +1278,8 @@ window.addEventListener('DOMContentLoaded', () => {
       inputHandler.autoRestRunner = restRunner;
     }
 
-    (window as any).__cotwRenderer = renderer;
-    (window as any).__cotwInputHandler = inputHandler;
+    window.__cotwRenderer = renderer;
+    window.__cotwInputHandler = inputHandler;
 
     if (inputHandler) {
       inputHandler.enabled = true;
@@ -1280,8 +1296,8 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer?.render();
     };
 
-    (window as any).__cotwInput = inputHandler;
-    (window as any).__cotwRenderer = renderer;
+    window.__cotwInput = inputHandler;
+    window.__cotwRenderer = renderer;
 
     if (widescreenLayout) {
       widescreenLayout.style.display = 'flex';

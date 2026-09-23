@@ -22,6 +22,55 @@ export class TempleService {
   public static readonly CURSE_CLEANSE_COST_CP = 50 * COIN_VALUES.gold; // 50 GP = 5,000 CP
   public static readonly HEAL_RESTORE_COST_CP = 25 * COIN_VALUES.gold;  // 25 GP = 2,500 CP
 
+  /** Town services from the engine manifest, when the caller passed an engine. */
+  private static manifestServices(engineOrWorldState?: GameEngine | WorldState): TownServicesDefinition | undefined {
+    return engineOrWorldState && 'manifest' in engineOrWorldState
+      ? engineOrWorldState.manifest.town?.services
+      : undefined;
+  }
+
+  /**
+   * Standing and corruption gate shared by every temple service: negative standing
+   * (or corruption past the pack's refusal threshold) refuses service; corruption past
+   * the surcharge threshold multiplies the price; favored standing (>= 10) halves it.
+   */
+  private static applyTempleStanding(
+    player: Player,
+    costCp: number,
+    services: TownServicesDefinition | undefined,
+    engineOrWorldState?: GameEngine | WorldState
+  ): { refusal?: ServiceResult; costCp: number } {
+    const worldState: WorldState | undefined =
+      engineOrWorldState && 'worldState' in engineOrWorldState
+        ? (engineOrWorldState as GameEngine).worldState
+        : (engineOrWorldState as WorldState | undefined);
+    if (!worldState) {
+      return { costCp };
+    }
+
+    const standing = worldState.factions[services?.templeStandingFaction ?? 'temple_standing'] ?? 0;
+    const refusalThreshold = services?.corruptionRefusalThreshold;
+    if (standing < 0 || (refusalThreshold !== undefined && player.corruptionScore >= refusalThreshold)) {
+      return {
+        costCp,
+        refusal: {
+          success: false,
+          costInCp: 0,
+          message: services?.templeRefusalMessage ?? `${services?.priestTitle ?? 'The priest'} refuses to serve you.`,
+        },
+      };
+    }
+
+    const surchargeThreshold = services?.corruptionSurchargeThreshold;
+    if (surchargeThreshold !== undefined && player.corruptionScore >= surchargeThreshold) {
+      return { costCp: Math.floor(costCp * (services?.corruptionSurchargeMultiplier ?? 2)) };
+    }
+    if (standing >= 10) {
+      return { costCp: Math.floor(costCp * 0.5) };
+    }
+    return { costCp };
+  }
+
   /**
    * Cleanses and unbinds all cursed items equipped on the player's paperdoll.
    */
@@ -40,27 +89,12 @@ export class TempleService {
       services = customCostCpOrServices;
     }
 
-    const worldState: WorldState | undefined =
-      engineOrWorldState && 'worldState' in engineOrWorldState
-        ? (engineOrWorldState as GameEngine).worldState
-        : (engineOrWorldState as WorldState | undefined);
-
-    if (worldState) {
-      const standing = worldState.factions['temple_standing'] ?? 0;
-      if (standing < 0 || player.corruptionScore >= 75) {
-        return {
-          success: false,
-          costInCp: 0,
-          message:
-            "The High Priest of Thor scowls with righteous fury: 'Desecrator of sacred altars! You reek of unholy blood corruption and are unwelcome in Thor\\'s sacred hall!'",
-        };
-      }
-      if (player.corruptionScore >= 25) {
-        costCp = costCp * 2;
-      } else if (standing >= 10) {
-        costCp = Math.floor(costCp * 0.5);
-      }
+    services ??= TempleService.manifestServices(engineOrWorldState);
+    const gate = TempleService.applyTempleStanding(player, costCp, services, engineOrWorldState);
+    if (gate.refusal) {
+      return gate.refusal;
     }
+    costCp = gate.costCp;
 
     const equipped = player.inventory.paperdoll.getAllEquipped();
     const cursedItems = equipped.filter((e) => e.item.quality === 'cursed');
@@ -70,14 +104,14 @@ export class TempleService {
         success: false,
         message:
           services?.noCursesMessage ??
-          `${services?.priestTitle ?? 'The High Priest of Thor'} senses no foul curses binding your body.`,
+          `${services?.priestTitle ?? 'The priest'} senses no foul curses binding your body.`,
         costInCp: 0,
       };
     }
 
     const playerFundsCp = getPlayerTotalCp(player);
     if (playerFundsCp < costCp) {
-      const defaultDonation = `A donation of ${formatCurrency(costCp)} is required to call upon ${services?.priestTitle ?? "Thor's"} cleansing thunder. You have ${formatCurrency(playerFundsCp)}.`;
+      const defaultDonation = `A donation of ${formatCurrency(costCp)} is required for ${services?.priestTitle ?? 'the priest'} to lift your curses. You have ${formatCurrency(playerFundsCp)}.`;
       const donationMsg = services?.donationRequiredTemplate
         ? services.donationRequiredTemplate
             .replace('{cost}', formatCurrency(costCp))
@@ -108,7 +142,7 @@ export class TempleService {
       player.inventory.primaryPack.addItem(entry.item);
     }
 
-    const defaultSuccess = `Thor's divine lightning shatters the foul bindings on: ${cleansedNames.join(', ')}! The items are now safely stored in your pack.`;
+    const defaultSuccess = `Divine power shatters the foul bindings on: ${cleansedNames.join(', ')}! The items are now safely stored in your pack.`;
     const message = services?.cleanseMessageTemplate
       ? services.cleanseMessageTemplate
           .replace('{items}', cleansedNames.join(', '))
@@ -140,27 +174,12 @@ export class TempleService {
       services = customCostCpOrServices;
     }
 
-    const worldState: WorldState | undefined =
-      engineOrWorldState && 'worldState' in engineOrWorldState
-        ? (engineOrWorldState as GameEngine).worldState
-        : (engineOrWorldState as WorldState | undefined);
-
-    if (worldState) {
-      const standing = worldState.factions['temple_standing'] ?? 0;
-      if (standing < 0 || player.corruptionScore >= 75) {
-        return {
-          success: false,
-          costInCp: 0,
-          message:
-            "The High Priest of Thor scowls with righteous fury: 'Desecrator of sacred altars! You reek of unholy blood corruption and are unwelcome in Thor\\'s sacred hall!'",
-        };
-      }
-      if (player.corruptionScore >= 25) {
-        costCp = costCp * 2;
-      } else if (standing >= 10) {
-        costCp = Math.floor(costCp * 0.5);
-      }
+    services ??= TempleService.manifestServices(engineOrWorldState);
+    const gate = TempleService.applyTempleStanding(player, costCp, services, engineOrWorldState);
+    if (gate.refusal) {
+      return gate.refusal;
     }
+    costCp = gate.costCp;
 
     const isFullHp = player.hp >= player.maxHp;
     const isFullMana = player.mana >= player.maxMana;
@@ -195,7 +214,7 @@ export class TempleService {
     player.mana = player.maxMana;
 
     const defaultHealMsg =
-      'The Priest of Thor bathes you in golden light! All afflictions are cured, and your HP and Mana are fully restored!';
+      'The priest bathes you in healing light! All afflictions are cured, and your HP and Mana are fully restored!';
     const message = services?.healMessageTemplate ?? defaultHealMsg;
 
     return {
@@ -219,7 +238,7 @@ export class SageService {
     services?: TownServicesDefinition
   ): ServiceResult {
     const feeCp = customFeeCp ?? SageService.IDENTIFY_FEE_CP;
-    const sageName = services?.sageName ?? services?.sageTitle ?? 'Sage Mimir';
+    const sageName = services?.sageName ?? services?.sageTitle ?? 'The sage';
 
     let item: Item | null = null;
     if (typeof itemOrId === 'string') {
@@ -318,7 +337,7 @@ export class BankService {
     addCurrencyToPlayer(player, compacted);
 
     const savedGrams = weightBefore - weightAfter;
-    const bankerTitle = services?.bankerTitle ?? 'Banker Haakon';
+    const bankerTitle = services?.bankerTitle ?? 'The banker';
     const defaultMsg = `${bankerTitle} exchanged your currency into ${formatCurrency(totalCp)}! Carry weight reduced by ${savedGrams}g (from ${weightBefore}g to ${weightAfter}g).`;
     const message = services?.compactionMessageTemplate
       ? services.compactionMessageTemplate

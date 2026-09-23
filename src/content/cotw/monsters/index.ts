@@ -91,7 +91,3 @@ for (const m of MINIBOSS_MONSTERS) {
 }
 
 export const COTW_MONSTERS: MonsterDefinition[] = allMonsters;
-
-/** Alias for backward compatibility */
-export const BESTIARY = COTW_BESTIARY;
-

@@ -87,7 +87,7 @@ export class TileInspector {
           speed: ent.speed,
           speedTier,
           statusEffects,
-          intent: (ent as any).intent ?? (ent instanceof Monster ? ent.intent : undefined),
+          intent: ent instanceof Monster ? ent.intent : undefined,
         };
       }
     }

@@ -31,8 +31,9 @@ on.
 ## Verification is not optional
 Before considering any task complete, actually run — don't just
 describe running — whichever of these are relevant: `npm run lint`
-(this already runs `tsc --noEmit`, `check:engine-purity`, AND
-`check:engine-encapsulation` — don't invoke those separately), `npm
+(this already runs `tsc --noEmit`, `check:engine-purity`,
+`check:engine-encapsulation`, AND `knip` — don't invoke those
+separately), `npm
 test`, `npm run sim`, `npm run validate:schema`, `npm run build` (use
 `npm run build:all` when changing `vite.config.ts`, theme selection,
 or manifest wiring). Paste real output. A change that "should" pass

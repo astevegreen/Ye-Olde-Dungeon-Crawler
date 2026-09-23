@@ -3,6 +3,7 @@ import { BASE_ACTION_COST } from '../types';
 import type { Entity } from '../entities/entity';
 import { Monster } from '../entities/monster';
 import { Player } from '../entities/player';
+import { Actor } from '../entities/actor';
 import { calculateElementalDamage } from '../magic/elements';
 import type { GameEngine } from '../engine';
 import type { Action } from './action';
@@ -15,18 +16,9 @@ import type { Item } from '../items/item';
 import type { ItemModifier } from '../items/modifiers';
 
 function getActorEquippedItems(actor: Entity): Item[] {
-  const actorAny = actor as any;
-  if (actorAny.inventory?.paperdoll) {
-    return actorAny.inventory.paperdoll.getEquippedItems();
-  }
-  if (typeof actorAny.getEquippedItems === 'function') {
-    return actorAny.getEquippedItems();
-  }
-  if (typeof actorAny.getEquippedItem === 'function') {
-    const item = actorAny.getEquippedItem('mainHand');
-    return item ? [item] : [];
-  }
-  return [];
+  // Every Actor owns an inventory (a default one if none was configured); plain
+  // entities (e.g. destructible props) carry no equipment.
+  return actor instanceof Actor ? actor.inventory.paperdoll.getEquippedItems() : [];
 }
 
 const DEFAULT_MIN_DAMAGE = 1;
@@ -174,8 +166,7 @@ export class MeleeAttackAction implements Action {
           surface === 'consecrated_ground' ||
           surface === 'blessed_ground' ||
           tile?.type === 'consecrated_ground' ||
-          (tile as any)?.type === 'blessed_ground' ||
-          (tile as any)?.isConsecrated === true ||
+          tile?.type === 'blessed_ground' ||
           tile?.name?.toLowerCase().includes('consecrated') ||
           tile?.name?.toLowerCase().includes('altar');
 

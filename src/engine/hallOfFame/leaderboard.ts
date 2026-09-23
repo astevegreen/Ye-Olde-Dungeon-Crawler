@@ -46,7 +46,7 @@ export class Leaderboard {
   }
 
   /**
-   * Calculates final score according to the official Castle of the Winds rubric:
+   * Calculates final score:
    * (XP * 1.0) + (Total Gold GP * 0.5) + (Deepest Floor * 500) + (Victory ? 5000 : 0)
    */
   public static calculateScore(
@@ -111,7 +111,7 @@ export class Leaderboard {
 
     return [
       '╔════════════════════════════════════════════════════════════╗',
-      '║                 HALL OF VALHALLA MEMORIAL                  ║',
+      '║                   HALL OF FAME MEMORIAL                    ║',
       '╠════════════════════════════════════════════════════════════╣',
       `║ ${statusBanner.padEnd(58)} ║`,
       '╠════════════════════════════════════════════════════════════╣',
@@ -231,12 +231,12 @@ export class Leaderboard {
       (c) => c.id === entry.id || (c.heroName === entry.heroName && c.score === entry.score && c.date === entry.date)
     );
     if (isDuplicate) {
-      return { success: false, message: `${entry.heroName}'s saga is already inscribed in Valhalla!`, champion: entry };
+      return { success: false, message: `${entry.heroName}'s saga is already inscribed in the Hall of Fame!`, champion: entry };
     }
     this.recordRun(entry);
     return {
       success: true,
-      message: `Inscribed ${entry.heroName} (${entry.score.toLocaleString()} pts) into the Hall of Valhalla! 🏆`,
+      message: `Inscribed ${entry.heroName} (${entry.score.toLocaleString()} pts) into the Hall of Fame! 🏆`,
       champion: entry,
     };
   }

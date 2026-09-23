@@ -124,7 +124,7 @@ export class AffinityMatrix {
   }
 
   public getOpposite(element: string): string | undefined {
-    return this.elements.get(element)?.oppositeElementId ?? (ELEMENT_OPPOSITES as any)[element];
+    return this.elements.get(element)?.oppositeElementId ?? ELEMENT_OPPOSITES[element];
   }
 
   public calculateDamage(

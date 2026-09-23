@@ -1,6 +1,6 @@
 import type { Position, GameDifficulty } from '../types';
 import type { GameMap } from '../grid/map';
-import { TILES } from '../grid/tile';
+import { TILES, getTileDefinition, hasTileDefinition } from '../grid/tile';
 import type { TileDefinition } from '../types';
 import { getMonsterDefinition, type MonsterDefinition } from '../bestiary/monsterDefinitions';
 import type { ItemDefinition } from '../types/manifest';
@@ -22,6 +22,17 @@ export interface VaultBlueprint {
   preferredMonsters?: string[];
   minibossId?: string;
   predicate?: Predicate;
+  /**
+   * Extra layout symbols mapped to tile types (resolved through the tile registry, so
+   * a pack's own `customTiles` work). Checked before the built-in symbols, letting a
+   * pack stamp its own interactive tiles without the engine knowing their names.
+   */
+  legend?: Record<string, string>;
+  /**
+   * Excluded from the random vault pass: stamped only when a manifest names it as a
+   * floor's forced vault (`scriptedVaultPlacements`, `runeOfReturn.acquisition`).
+   */
+  scriptedOnly?: boolean;
 }
 
 export interface StampedVaultResult {
@@ -33,52 +44,55 @@ export interface StampedVaultResult {
   connectors: Position[];
   chestSpawns: Position[];
   monsterSpawns: Position[];
-  hostageSpawns: Position[];
+  /** Ground positions of `N` markers, filled with the placement's declared NPCs. */
+  npcSpawns: Position[];
+}
+
+interface ParsedVaultSymbol {
+  tile: TileDefinition;
+  isConnector?: boolean;
+  isChest?: boolean;
+  isMonster?: boolean;
+  isMiniboss?: boolean;
+  isNpcSpawn?: boolean;
 }
 
 export class VaultStamper {
   /**
-   * Translates an ASCII legend symbol into a TileDefinition, plus entity/item markers.
+   * Translates an ASCII layout symbol into a TileDefinition, plus entity/item markers.
+   * A blueprint `legend` entry wins over the built-in symbols below.
    */
-  public static parseSymbol(char: string): {
-    tile: TileDefinition;
-    isConnector: boolean;
-    isChest: boolean;
-    isMonster: boolean;
-    isMiniboss: boolean;
-    isHostage: boolean;
-    isAltar: boolean;
-  } {
+  public static parseSymbol(char: string, legend?: Record<string, string>): ParsedVaultSymbol {
+    const legendType = legend?.[char];
+    if (legendType !== undefined && hasTileDefinition(legendType)) {
+      return { tile: getTileDefinition(legendType) };
+    }
     switch (char) {
       case '#':
-        return { tile: TILES.WALL, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
-      case '.':
-        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
+        return { tile: TILES.WALL };
       case '~':
-        return { tile: TILES.SHALLOW_WATER, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
+        return { tile: TILES.SHALLOW_WATER };
       case 'X':
-        return { tile: TILES.CHASM, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
+        return { tile: TILES.CHASM };
       case '+':
-        return { tile: TILES.DOOR_CLOSED, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
+        return { tile: TILES.DOOR_CLOSED };
       case 'B':
-        return { tile: TILES.IRON_BARS, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
+        return { tile: TILES.IRON_BARS };
       case 'P':
-        return { tile: TILES.PILLAR, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
+        return { tile: TILES.PILLAR };
       case '@':
         // Connector doorway / passage into the corridor network
-        return { tile: TILES.FLOOR, isConnector: true, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
+        return { tile: TILES.FLOOR, isConnector: true };
       case 'C':
-        return { tile: TILES.FLOOR, isConnector: false, isChest: true, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
+        return { tile: TILES.FLOOR, isChest: true };
       case 'M':
-        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: true, isMiniboss: false, isHostage: false, isAltar: false };
+        return { tile: TILES.FLOOR, isMonster: true };
       case 'K':
-        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: true, isMiniboss: true, isHostage: false, isAltar: false };
-      case 'H':
-        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: true, isAltar: false };
-      case 'A':
-        return { tile: TILES.ALTAR, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: true };
+        return { tile: TILES.FLOOR, isMonster: true, isMiniboss: true };
+      case 'N':
+        return { tile: TILES.FLOOR, isNpcSpawn: true };
       default:
-        return { tile: TILES.FLOOR, isConnector: false, isChest: false, isMonster: false, isMiniboss: false, isHostage: false, isAltar: false };
+        return { tile: TILES.FLOOR };
     }
   }
 
@@ -105,7 +119,7 @@ export class VaultStamper {
     const connectors: Position[] = [];
     const chestSpawns: Position[] = [];
     const monsterSpawns: Position[] = [];
-    const hostageSpawns: Position[] = [];
+    const npcSpawns: Position[] = [];
 
     for (let r = 0; r < height; r++) {
       const row = layout[r];
@@ -116,11 +130,11 @@ export class VaultStamper {
 
         if (!map.inBounds(worldX, worldY)) continue;
 
-        const parsed = this.parseSymbol(char);
+        const parsed = this.parseSymbol(char, blueprint.legend);
         map.setTile(worldX, worldY, parsed.tile);
 
-        if (parsed.isHostage) {
-          hostageSpawns.push({ x: worldX, y: worldY });
+        if (parsed.isNpcSpawn) {
+          npcSpawns.push({ x: worldX, y: worldY });
         }
 
         if (parsed.isConnector) {
@@ -183,7 +197,7 @@ export class VaultStamper {
       connectors,
       chestSpawns,
       monsterSpawns,
-      hostageSpawns,
+      npcSpawns,
     };
   }
 }

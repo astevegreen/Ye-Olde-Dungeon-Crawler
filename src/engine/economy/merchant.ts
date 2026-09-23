@@ -9,45 +9,17 @@ import {
 import type { TransactionResult } from './types';
 import { evaluatePredicate } from '../predicates/predicateEvaluator';
 import { type WorldState, getFaction } from '../state/worldState';
+import type { MerchantPricingRules } from '../types/manifest';
 
 export type ShopType = 'general' | 'armory' | 'alchemist';
-
-const BASE_ITEM_VALUES_CP: Record<string, number> = {
-  'Iron Dagger': 2000,
-  'Steel Broadsword': 15000,
-  'Bearded Battleaxe': 20000,
-  'Frost Broadsword': 45000,
-  'Spiked Mace': 12000,
-  'Studded Leather Armor': 8000,
-  'Iron Chainmail': 30000,
-  'Full Plate Armor': 80000,
-  'Reinforced Wooden Shield': 3000,
-  'Iron Tower Shield': 12000,
-  'Iron Helmet': 5000,
-  'Traveler Boots': 3000,
-  'Minor Health Potion': 5000,
-  'Mana Draught': 7500,
-  'Antidote Potion': 4000,
-  'Scroll of Identify': 5000,
-  'Scroll of Phase Door': 4000,
-  'Wand of Lightning': 50000,
-  'Wand of Fireballs': 60000,
-  "Adventurer's Backpack": 5000,
-  'Leather Utility Belt': 4000,
-  'Wooden Torch': 500,
-  'Iron Rations': 1000,
-  'Thief Lockpicks': 2500,
-};
 
 /**
  * Calculates purchase price for an item in a merchant shop.
  */
-export function getItemBuyPrice(item: Item, worldState?: WorldState): number {
+export function getItemBuyPrice(item: Item, worldState?: WorldState, pricing?: MerchantPricingRules): number {
   let basePrice = 0;
   if (item.value && item.value > 0) {
     basePrice = item.value;
-  } else if (BASE_ITEM_VALUES_CP[item.name]) {
-    basePrice = BASE_ITEM_VALUES_CP[item.name];
   } else {
     // Default based on category
     switch (item.category) {
@@ -72,20 +44,15 @@ export function getItemBuyPrice(item: Item, worldState?: WorldState): number {
     }
   }
 
-  if (worldState) {
-    const standing = getFaction(worldState, 'townsfolk');
-    if (standing >= 30) {
-      // Heroic savior: 25% discount
-      return Math.max(1, Math.floor(basePrice * 0.75));
-    } else if (standing >= 20) {
-      // Righteous favor: 10% discount
-      return Math.max(1, Math.floor(basePrice * 0.90));
-    } else if (standing <= -20) {
-      // Blood-tainted terror: 30% markup
-      return Math.max(1, Math.floor(basePrice * 1.30));
-    } else if (standing <= -10) {
-      // Dark suspicion: 15% markup
-      return Math.max(1, Math.floor(basePrice * 1.15));
+  if (worldState && pricing) {
+    const standing = getFaction(worldState, pricing.faction);
+    const tier = pricing.tiers.find(
+      (t) =>
+        (t.minStanding === undefined || standing >= t.minStanding) &&
+        (t.maxStanding === undefined || standing <= t.maxStanding)
+    );
+    if (tier) {
+      return Math.max(1, Math.floor(basePrice * tier.multiplier));
     }
   }
 
@@ -151,7 +118,12 @@ export class Merchant {
   /**
    * Purchases an item from the merchant and transfers it into the player's pack.
    */
-  public buyItem(player: Player, itemIndexOrId: number | string, worldState?: WorldState): TransactionResult {
+  public buyItem(
+    player: Player,
+    itemIndexOrId: number | string,
+    worldState?: WorldState,
+    pricing?: MerchantPricingRules
+  ): TransactionResult {
     let itemIndex = -1;
     if (typeof itemIndexOrId === 'number') {
       itemIndex = itemIndexOrId;
@@ -164,7 +136,7 @@ export class Merchant {
     }
 
     const item = this.stock[itemIndex];
-    const costCp = getItemBuyPrice(item, worldState);
+    const costCp = getItemBuyPrice(item, worldState, pricing);
 
     // 1. Check player purchasing power
     const playerFundsCp = getPlayerTotalCp(player);

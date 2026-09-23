@@ -56,4 +56,15 @@ describe('Floor 5: guaranteed Rune of Return vault', () => {
     );
     expect(frostWarden).toBeDefined();
   });
+
+  it('never spawns the player inside the guarded vault', () => {
+    // The forced vault is the generator's first room; spawn and stairs used to be
+    // placed at rooms[0]'s center, i.e. inside the vault beside its miniboss.
+    for (let seed = 1; seed <= 20; seed++) {
+      const { floor5, position } = findRuneOfReturn(seed);
+      const spawn = floor5.playerSpawn;
+      const distance = Math.max(Math.abs(spawn.x - position!.x), Math.abs(spawn.y - position!.y));
+      expect(distance, `seed ${seed} spawned the player in the rune vault`).toBeGreaterThan(6);
+    }
+  });
 });

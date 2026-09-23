@@ -209,7 +209,7 @@ export class FlightRecorder {
 
     // 1. System Telemetry
     lines.push('## 1. System Telemetry');
-    lines.push(`- **Content Manifest**: \`${engine?.manifest?.id ?? 'cotw'}\` (${engine?.manifest?.name ?? 'Castle of the Winds'})`);
+    lines.push(`- **Content Manifest**: \`${engine?.manifest?.id ?? 'none'}\` (${engine?.manifest?.name ?? 'no manifest loaded'})`);
     lines.push(`- **Engine Version**: \`1.0.0\` (Architecture: Swappable Manifest + RLE V2)`);
     lines.push(`- **Display / Viewport**: ${winW}x${winH} (DPR: \`${dpr}\`)`);
     lines.push(`- **User Agent**: \`${userAgent}\``);

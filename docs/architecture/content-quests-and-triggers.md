@@ -8,6 +8,17 @@
 ## Fixed Tile Placements & Acquisition Configuration
 `types/manifest.ts`, `dungeonArc.ts`: `manifest.fixedTilePlacements` (`FixedTilePlacement[]`) declares floor-specific tile placement patterns (e.g. `'middle_room_center'`) gated by optional choice prerequisites (`requiresChoiceId`), replacing hardcoded campaign floor-3 altar stamps. Similarly, `manifest.runeOfReturn.acquisition` (`{ floor, vaultId }`) specifies where the Rune of Return appears, removing `FLOOR5_RUNE_VAULT_ID` from the engine.
 
+## Scripted Vault Placements
+`types/manifest.ts`'s `ScriptedVaultPlacement`, `manifest.scriptedVaultPlacements`, `dungeonArc.ts`: `{ floor, vaultId, npcs? }` forces a vault onto a floor (the Rune of Return acquisition vault wins if both name the same floor) and fills the vault's `N` layout markers with the declared NPCs, in row-major order. Three generic `VaultBlueprint` fields support it:
+- `legend` maps extra layout symbols to tile types resolved through the tile registry, so a vault can stamp the pack's own `tiles` (an interactive altar with an `interactionHandlerId`) without the engine naming them. A legend entry wins over the built-in symbols.
+- `scriptedOnly` keeps a vault out of the random vault pass: it appears only where a manifest forces it.
+- The generator tracks whether the forced vault was actually stamped (`DungeonResult.forcedVaultPlaced`) rather than inferring it from chest spawns, so chest-less vaults don't burn every retry. Player spawn and exit stairs go in ordinary rooms, never a vault, so a forced vault's authored center is never overwritten.
+
+Worked example: the CotW Siphon Altar (`src/content/cotw/hostageRitual.ts`) composes a scripted placement (vault, altar tile via `legend`, four captive NPCs), a tile-triggered choice (the altar), a timed event (the ritual countdown), and two action hooks — a `MovementAction` pre-hook that rescues a captive on bump instead of opening dialogue, and a `'*'` post-hook that starts the countdown, settles captives per the chosen altar option, and sacrifices the remainder on expiry. All three routes funnel into one outcome function. No engine code names any part of it.
+
+## Standing-Driven Town Prices & Temple Gates
+`manifest.merchantPricing` (`{ faction, tiers: { minStanding?, maxStanding?, multiplier }[] }`) multiplies merchant buy prices by the first tier matching the player's standing with `faction`; absent, prices are flat. `TownServicesDefinition` carries the temple's gates: `templeStandingFaction` (default `'temple_standing'`; negative standing refuses service), `templeRefusalMessage`, and optional `corruptionRefusalThreshold` / `corruptionSurchargeThreshold` / `corruptionSurchargeMultiplier` against `Actor.corruptionScore`. `TempleService` reads these from `manifest.town.services` whenever it is handed the engine.
+
 ## Victory Portal & Town Return
 `movement.ts`, `deathResolver.ts`, `types/manifest.ts`: `manifest.quest.victoryPortalTileId` declares the tile stamped at the boss's defeat coordinate, handled by the generic `'quest_victory_portal'` handler in `movement.ts` (triggering victory and teleporting to `manifest.quest.townReturnPosition` or `manifest.town.playerSpawn`), replacing hardcoded `gateway_valhalla` and `{ x: 25, y: 23 }` coordinates. Tile presentation is decoupled via generic `TileDefinition` properties (`visual: 'portal'`, `landmarkLabel`).
 

@@ -28,4 +28,16 @@ export const COTW_TILES: TileDefinition[] = [
     interactionHandlerId: 'altar_tyr',
     landmarkLabel: 'Altar of Tyr ⚖️',
   },
+  {
+    // Stamped by the floor-22 siphon vault's layout legend (hostageRitual.ts).
+    type: 'siphon_altar',
+    name: 'Siphon Altar of Járnviðr',
+    passable: true,
+    walkable: true,
+    transparent: true,
+    glyph: '_',
+    description: 'An ancient obsidian altar marked with blood runes, its grooves pooled with dark vitriol.',
+    interactionHandlerId: 'blood_altar_ritual',
+    landmarkLabel: 'Siphon Altar 🩸',
+  },
 ];

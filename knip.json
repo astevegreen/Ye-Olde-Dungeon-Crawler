@@ -1,5 +1,5 @@
 {
-  "$schema": "https://unpkg.com/knip@5/overview.json",
+  "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
     "src/engine/index.ts!",
     "src/content/cotw/index.ts!",
@@ -18,7 +18,7 @@
     "unlisted": "error",
     "unresolved": "error",
     "duplicates": "off",
-    "exports": "warn",
-    "types": "warn"
+    "exports": "error",
+    "types": "error"
   }
 }

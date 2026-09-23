@@ -4,7 +4,7 @@ import type { GameEngine } from '../engine';
 import type { ProfileManager } from '../storage/profile-manager';
 import { getPlayerTotalCp } from '../economy/currency';
 import { DungeonArc } from './dungeonArc';
-import type { QuestStatus } from './types';
+import { QUEST_RELIC_ID, type QuestStatus } from './types';
 import { Leaderboard, type HallOfFameEntry } from '../hallOfFame/leaderboard';
 
 export interface GameStateSummary {
@@ -76,7 +76,7 @@ export class GameStateManager {
       return undefined;
     }
 
-    const relicId = quest?.relicItemId ?? 'sun-stone-of-freyr';
+    const relicId = quest?.relicItemId ?? QUEST_RELIC_ID;
     const hasRelic = this.playerCarries(engine, relicId);
     return engine.currentFloor === defaultVictoryFloor && hasRelic ? 'default' : undefined;
   }

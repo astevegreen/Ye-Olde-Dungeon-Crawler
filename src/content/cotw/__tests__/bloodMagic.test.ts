@@ -1,16 +1,17 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Player } from '../../entities/player';
-import { Monster } from '../../entities/monster';
-import { GameMap } from '../../grid/map';
-import { TILES } from '../../grid/tile';
-import { GameEngine } from '../../engine';
-import { CastSpellAction, DrinkPotionAction } from '../../actions/spell-actions';
-import { SpellPipeline } from '../../magic/spellPipeline';
-import { SpellRegistry } from '../../magic/spellRegistry';
-import { COTW_BLOOD_SPELLS } from '../../../content/cotw/bloodMagic';
-import { ItemFactory } from '../../items/factory';
-import { TempleService } from '../../economy/services';
-import { addCurrencyToPlayer } from '../../economy/currency';
+import { Player } from '../../../engine/entities/player';
+import { Monster } from '../../../engine/entities/monster';
+import { GameMap } from '../../../engine/grid/map';
+import { TILES } from '../../../engine/grid/tile';
+import { GameEngine } from '../../../engine/engine';
+import { CastSpellAction, DrinkPotionAction } from '../../../engine/actions/spell-actions';
+import { SpellPipeline } from '../../../engine/magic/spellPipeline';
+import { SpellRegistry } from '../../../engine/magic/spellRegistry';
+import { COTW_BLOOD_SPELLS } from '../bloodMagic';
+import { ItemFactory } from '../../../engine/items/factory';
+import { TempleService } from '../../../engine/economy/services';
+import { addCurrencyToPlayer } from '../../../engine/economy/currency';
+import { COTW_TOWN } from '../town';
 
 describe('BloodMagicIntegration: EnergyModel, Casting, Corruption & Scaling', () => {
   let engine: GameEngine;
@@ -139,7 +140,7 @@ describe('BloodMagicIntegration: EnergyModel, Casting, Corruption & Scaling', ()
     addCurrencyToPlayer(player, 50000);
 
     // At low corruption (0) and neutral standing (0): standard cost 5,000 CP
-    const resNormal = TempleService.cleanseCurses(player, undefined, undefined, engine);
+    const resNormal = TempleService.cleanseCurses(player, COTW_TOWN.services, undefined, engine);
     expect(resNormal.success).toBe(true);
     expect(resNormal.costInCp).toBe(5000);
 
@@ -147,7 +148,7 @@ describe('BloodMagicIntegration: EnergyModel, Casting, Corruption & Scaling', ()
     (cursedWeapon as any).quality = 'cursed';
     player.inventory.paperdoll.equip(cursedWeapon, 'mainHand');
     player.corruptionScore = 30;
-    const resTainted = TempleService.cleanseCurses(player, undefined, undefined, engine);
+    const resTainted = TempleService.cleanseCurses(player, COTW_TOWN.services, undefined, engine);
     expect(resTainted.success).toBe(true);
     expect(resTainted.costInCp).toBe(10000);
 
@@ -155,7 +156,7 @@ describe('BloodMagicIntegration: EnergyModel, Casting, Corruption & Scaling', ()
     (cursedWeapon as any).quality = 'cursed';
     player.inventory.paperdoll.equip(cursedWeapon, 'mainHand');
     player.corruptionScore = 80;
-    const resRefused = TempleService.cleanseCurses(player, undefined, undefined, engine);
+    const resRefused = TempleService.cleanseCurses(player, COTW_TOWN.services, undefined, engine);
     expect(resRefused.success).toBe(false);
     expect(resRefused.message).toContain('Desecrator of sacred altars');
   });
@@ -181,6 +182,20 @@ describe('BloodMagicIntegration: EnergyModel, Casting, Corruption & Scaling', ()
     expect(result.success).toBe(false);
     expect(result.message).toContain('Not enough Volatile Energy');
     expect(player.energyModel!.volatileEnergy).toBe(10);
+  });
+
+  it('spends no mana when a cast is rejected for missing Volatile Energy', () => {
+    const spell = COTW_BLOOD_SPELLS.find((s) => s.id === 'crimson_ward')!;
+    const manaCost = 5;
+    SpellRegistry.register({ ...spell, id: 'crimson_ward_mana', manaCost });
+    player.spellsKnown.push('crimson_ward_mana');
+    player.mana = 20;
+    player.energyModel!.volatileEnergy = 0;
+
+    const result = new CastSpellAction(player, 'crimson_ward_mana', 5, 5).perform(engine);
+
+    expect(result.success).toBe(false);
+    expect(player.mana).toBe(20);
   });
 
   it('casts Blood Spear and scales entropic shadow damage with rising corruption', () => {

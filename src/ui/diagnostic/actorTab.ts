@@ -68,7 +68,7 @@ export function renderActorTab(ctx: DiagnosticTabContext, engine: GameEngine): v
               </tr>
               <tr>
                 <td style="color: #94a3b8;">Defense:</td>
-                <td>Base: <strong>${(p as any).baseDefense}</strong> | Effective: <strong style="color: #60a5fa;">${p.defense}</strong></td>
+                <td>Base: <strong>${p.baseDefenseValue}</strong> | Effective: <strong style="color: #60a5fa;">${p.defense}</strong></td>
               </tr>
               <tr>
                 <td style="color: #94a3b8;">Speed / Energy:</td>

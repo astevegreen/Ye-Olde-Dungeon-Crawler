@@ -155,7 +155,7 @@ Build tooling per §2's Language & Build Target. `assetsInlineLimit` inlines all
 **Requirement:** every change must pass the gates below before merging; run them locally and report real output — "should pass" is not "does pass."
 
 **Gate commands:**
-- `npm run lint` — `tsc --noEmit`, `check:engine-purity`, `check:engine-encapsulation` (don't invoke the sub-checks separately).
+- `npm run lint` — `tsc --noEmit`, `check:engine-purity`, `check:engine-encapsulation`, `knip` (dead files, exports, and dependencies; don't invoke the sub-checks separately).
 - `npm test` — all Vitest suites.
 - `npm run sim` — headless population/throughput sim; fails on any rejected action, caught pipeline exception, or wall-clock overrun.
 - `npm run validate:schema` — migrates a v1 envelope to `CURRENT_SCHEMA_VERSION`, round-trips a live engine through serialize/JSON/deserialize.

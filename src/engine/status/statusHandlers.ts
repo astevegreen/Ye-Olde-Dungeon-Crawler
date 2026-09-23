@@ -1,5 +1,6 @@
 import type { StatusType, StatusEffect } from './types';
 import type { Entity } from '../entities/entity';
+import type { Monster } from '../entities/monster';
 import type { GameEngine } from '../engine';
 
 export interface StatusTickOutput {
@@ -89,7 +90,9 @@ export const BUILTIN_STATUS_HANDLERS: Record<string, StatusHandler> = {
   poison: {
     onTick(entity, effect, _engine) {
       const dmg = effect.potency ?? 2;
-      const res = (entity as any).takeDamage(dmg, { wakeUp: false });
+      // Periodic damage must not wake a sleeping monster.
+      const res =
+        entity.type === 'monster' ? (entity as Monster).takeDamage(dmg, { wakeUp: false }) : entity.takeDamage(dmg);
       return {
         damageTaken: res.damageDealt,
         killed: res.killed,

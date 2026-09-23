@@ -4,7 +4,7 @@ import type { StoryChoiceTrigger, TimedEventDefinition } from '../../engine';
  * The Oath's climax (ARCHITECTURE.md §3): a time-pressured story choice, not a calm
  * dialogue menu. There is no guaranteed-placement mechanism in this engine for a
  * hand-authored mid-game special room on a procedurally generated floor (only the
- * final boss floor gets that treatment, via `DungeonArc.generateChieftainLair` at
+ * final boss floor gets that treatment, via `DungeonArc.generateBossLair` at
  * `floorNumber >= maxFloor`), so this is unlocked by *progress* — clearing enough of
  * the troll-wife warlock coven (`StoryChoiceTrigger`, checked against
  * `GameEngine.compendium`'s cross-floor-safe kill count in `movement.ts`) — rather

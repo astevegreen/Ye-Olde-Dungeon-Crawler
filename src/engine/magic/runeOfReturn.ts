@@ -388,7 +388,7 @@ export function createRuneOfReturnActionHooks(): ActionHook[] {
           const move = action as MovementAction;
           const targetX = player.x + (move.dx ?? 0);
           const targetY = player.y + (move.dy ?? 0);
-          const targetEntity = (ctx.engine as any).map?.getEntityAt?.(targetX, targetY, player.planeId);
+          const targetEntity = ctx.engine.map.getEntityAt(targetX, targetY, player.planeId);
 
           if (targetEntity && player.isHostileTo(targetEntity)) {
             // Bump attack breaks concentration

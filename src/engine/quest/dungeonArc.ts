@@ -101,7 +101,7 @@ export class DungeonArc {
   /**
    * Generates a floor for the multi-level quest descent.
    * Procedural dungeons for floors < maxFloor.
-   * Handcrafted Chieftain's Lair on floor >= maxFloor.
+   * Handcrafted boss lair on floor >= maxFloor.
    */
   public static generateFloor(
     floorNumber: number,
@@ -114,7 +114,7 @@ export class DungeonArc {
   ): DungeonFloorResult {
     const maxFloor = questArc?.maxFloor ?? this.MAX_FLOOR;
     if (floorNumber >= maxFloor) {
-      return this.generateChieftainLair(floorNumber, questArc, manifest, difficulty);
+      return this.generateBossLair(floorNumber, questArc, manifest, difficulty);
     }
 
     return this.generateProceduralFloor(
@@ -164,6 +164,13 @@ export class DungeonArc {
       ? (Array.isArray(manifest.items) ? manifest.items : Object.values(manifest.items) as ItemDefinition[])
       : [];
 
+    // The Rune of Return acquisition vault takes precedence over a scripted placement
+    // on the same floor (only one forced vault per floor).
+    const scriptedPlacement =
+      manifest?.runeOfReturn?.acquisition?.floor === floorNumber
+        ? undefined
+        : manifest?.scriptedVaultPlacements?.find((p) => p.floor === floorNumber);
+
     const dungeon = strategy.generate({
       width: 50,
       height: 35,
@@ -178,10 +185,11 @@ export class DungeonArc {
       scalingConfig: manifest?.monsterScaling,
       difficulty,
       registries,
+      roomDecoration: manifest?.roomDecoration,
       forcedVaultId:
         manifest?.runeOfReturn?.acquisition?.floor === floorNumber
           ? manifest.runeOfReturn.acquisition.vaultId
-          : manifest?.scriptedVaultPlacements?.find((p) => p.floor === floorNumber)?.vaultId,
+          : scriptedPlacement?.vaultId,
     });
 
     const map = dungeon.map;
@@ -266,26 +274,23 @@ export class DungeonArc {
       }
     }
 
-    // 7. Guaranteed Scripted Vault Captive NPCs (e.g. Floor 22 Hostage Ritual)
-    if (dungeon.forcedVaultHostageSpawns?.length) {
-      const villagers = [
-        { id: 'captive_villager_1', name: 'Astrid of the Mill' },
-        { id: 'captive_villager_2', name: 'Torstein the Cooper' },
-        { id: 'captive_villager_3', name: 'Sigrid the Weaver' },
-        { id: 'captive_villager_4', name: 'Young Leif' },
-      ];
-      dungeon.forcedVaultHostageSpawns.forEach((pos, idx) => {
-        const v = villagers[idx % villagers.length];
-        const captive = new NPC({
-          id: v.id,
-          name: v.name,
-          role: 'villager',
-          position: { x: pos.x, y: pos.y },
-          greeting: 'Please! Cut my ropes before the warlocks complete the blood siphon!',
-          dialogText: 'Thank the gods! I have an emergency town recall ward! Run!',
-        });
-        map.addEntity(captive);
-      });
+    // 7. Scripted vault NPCs: the placement's declared NPCs fill the vault's `N`
+    // markers in layout order. Extra markers stay empty; extra NPCs are not spawned.
+    const npcSpawns = dungeon.forcedVaultNpcSpawns ?? [];
+    const placementNpcs = scriptedPlacement?.npcs ?? [];
+    for (let i = 0; i < Math.min(npcSpawns.length, placementNpcs.length); i++) {
+      const npcDef = placementNpcs[i];
+      map.addEntity(
+        new NPC({
+          id: npcDef.id,
+          name: npcDef.name,
+          role: npcDef.role ?? 'villager',
+          position: { x: npcSpawns[i].x, y: npcSpawns[i].y },
+          greeting: npcDef.greeting,
+          dialogText: npcDef.dialogText,
+          isStationary: true,
+        })
+      );
     }
 
     return {
@@ -297,10 +302,10 @@ export class DungeonArc {
   }
 
   /**
-   * Handcrafted Climax Floor: The Chieftain's Lair.
+   * Handcrafted climax floor: the boss lair.
    * Grand Hall with decorative stone pillars, throne dais, bodyguards, and boss.
    */
-  public static generateChieftainLair(
+  public static generateBossLair(
     floorNumber: number = 5,
     questArc?: QuestArcDefinition,
     manifest?: GameContentManifest,
@@ -432,7 +437,7 @@ export class DungeonArc {
     });
     map.addEntity(shamanRight);
 
-    // Chieftain's Treasure Chest behind throne
+    // Boss treasure chest behind the throne
     map.addItemAt(22, 5, ItemFactory.createIronChest('boss-chest-1'));
     map.addItemAt(21, 5, ItemFactory.createPlatinumCoins('boss-plat-1', 10)); // 10,000 CP
     map.addItemAt(23, 5, ItemFactory.createHealthPotion('boss-pot-1'));

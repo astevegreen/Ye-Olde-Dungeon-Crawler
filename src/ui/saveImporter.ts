@@ -17,36 +17,6 @@ export function triggerSaveDownload(filename: string, content: string): void {
   URL.revokeObjectURL(url);
 }
 
-/**
- * Opens the native browser file picker dialog for save files.
- */
-export function openFilePicker(
-  callback: (content: string, filename: string) => void,
-  accept = '.cotw,.sav,.json'
-): void {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = accept;
-  input.style.display = 'none';
-
-  input.addEventListener('change', (e) => {
-    const target = e.target as HTMLInputElement;
-    const file = target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      callback(content, file.name);
-    };
-    reader.readAsText(file);
-  });
-
-  document.body.appendChild(input);
-  input.click();
-  document.body.removeChild(input);
-}
-
 export interface DragAndDropOptions {
   container: HTMLElement;
   onSaveFile: (content: string, filename: string) => void;

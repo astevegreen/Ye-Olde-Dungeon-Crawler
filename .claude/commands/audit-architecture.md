@@ -49,7 +49,7 @@ known gap: confirm only that the gap still exists as §9 describes it.
    partitioning) and `docs/decisions/0004-*` (HUD overhaul) still read
    as closed retrospectives, not active guidance.
 §7 Build Configuration & Automated Quality Gates — actually run
-   npm run lint (tsc, check:engine-purity, check:engine-encapsulation),
+   npm run lint (tsc, check:engine-purity, check:engine-encapsulation, knip),
    npm test, npm run sim, npm run validate:schema, and npm run build,
    and paste the real output, not a description of expected output.
    Also compare .github/workflows/ against the §7.2 stub and

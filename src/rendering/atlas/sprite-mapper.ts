@@ -190,7 +190,7 @@ export function getEntitySpriteKey(entity: Entity): SpriteKey {
   }
 
   // Tag-priority resolution (dragon > undead > construct > beast > humanoid)
-  const tags: string[] = (entity as any).tags ?? [];
+  const tags: string[] = entity.tags ?? [];
   for (const rule of DEFAULT_TAG_SPRITE_ORDER) {
     if (tags.includes(rule.tag)) {
       return rule.spriteKey;

@@ -83,7 +83,7 @@ export function splitItemStack(item: Item, amount: number, rng: () => number): I
       description: item.description,
       quantity: amount,
       potency: item.potency,
-      effects: item.effects as any,
+      effects: [...item.effects],
     });
     cloned.identified = item.identified;
   } else if (item instanceof ScrollItem) {

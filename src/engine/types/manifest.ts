@@ -6,7 +6,7 @@ import type { ContainerType } from '../items/container';
 import type { PotionType } from '../items/consumables';
 import type { CoinDenomination } from '../economy/types';
 import type { NpcRole } from '../entities/npc';
-import type { AffinityMatrixConfig } from '../magic/elements';
+import type { AffinityMatrixConfig, ElementType } from '../magic/elements';
 import type { EquipmentSlotDefinition, EquipmentSlotLayout } from '../inventory/paperdoll';
 import type { ThemeTokens } from './theme';
 import type { VaultBlueprint } from '../dungeon/vaultStamp';
@@ -38,7 +38,7 @@ export type ConsumableEffectDescriptor =
   | { type: 'cure_status'; status: string }
   | { type: 'apply_status'; status: string; duration: number; potency?: number }
   | { type: 'gain_xp'; amount: number }
-  | { type: 'gain_stat'; stat: string; amount: number }
+  | { type: 'gain_stat'; stat: 'strength' | 'intelligence' | 'constitution' | 'dexterity'; amount: number }
   | { type: 'teleport'; range?: number; random?: boolean }
   | { type: 'restore_volatile_energy'; amount?: number | 'full' }
   | {
@@ -209,6 +209,16 @@ export interface TownServicesDefinition {
   bankName?: string;
   bankerTitle?: string;
   compactionMessageTemplate?: string;
+  /** Faction whose standing gates temple services. Default `'temple_standing'`. */
+  templeStandingFaction?: string;
+  /** Shown when the temple refuses service (negative standing or corruption refusal). */
+  templeRefusalMessage?: string;
+  /** Player `corruptionScore` at or above which the temple refuses service. Absent = never. */
+  corruptionRefusalThreshold?: number;
+  /** Player `corruptionScore` at or above which temple prices are multiplied. Absent = never. */
+  corruptionSurchargeThreshold?: number;
+  /** Price multiplier past `corruptionSurchargeThreshold`. Default 2. */
+  corruptionSurchargeMultiplier?: number;
 }
 
 export interface TownNpcDefinition {
@@ -492,8 +502,86 @@ export interface GameContentManifest {
   runeOfReturn?: RuneOfReturnManifestConfig;
   /** Fixed tile placements stamped at specific floor generation (ARCHITECTURE.md P-03 stage 2). */
   fixedTilePlacements?: FixedTilePlacement[];
-  /** Scripted vault blueprints guaranteed to stamp at specific floors (e.g. Floor 22 ritual vault). */
-  scriptedVaultPlacements?: { floor: number; vaultId: string }[];
+  /** Vault blueprints guaranteed to stamp at specific floors, optionally populated with NPCs. */
+  scriptedVaultPlacements?: ScriptedVaultPlacement[];
+  /**
+   * Faction-standing price tiers applied to merchant buy prices. Absent = flat prices.
+   * The first matching tier wins, so list the most extreme tiers first.
+   */
+  merchantPricing?: MerchantPricingRules;
+  /** Per-floor-band procedural room decoration. The first band containing the floor applies. */
+  roomDecoration?: RoomDecorationBand[];
+  /** Elemental hazards the run advisor warns about, per floor band. */
+  floorHazards?: FloorHazardAdvisory[];
+}
+
+/**
+ * Procedural room decoration for a band of floors (`GameContentManifest.roomDecoration`).
+ * Floors outside every band use the engine defaults: no puddles or fissures, grand-hall
+ * colonnades at 0.6, single pillars at 0.5, plain wall partitions.
+ */
+export interface RoomDecorationBand {
+  minFloor: number;
+  maxFloor?: number;
+  /** Chance per room of a 2x2 shallow-water puddle. */
+  puddleChance?: number;
+  /** Chance per room of a short chasm fissure; a fissured room gets no other decoration. */
+  fissureChance?: number;
+  /** Chance per large (9x9+) room of 2x2 corner pillars. Default 0.6. */
+  grandHallChance?: number;
+  /** Chance per room of four single pillars. Default 0.5. */
+  pillarChance?: number;
+  /** Chance an interior partition is iron bars rather than wall. Default 0. */
+  ironBarsChance?: number;
+}
+
+/**
+ * An elemental hazard the run advisor warns about when the player descends into a band
+ * of floors without resisting `element` (`GameContentManifest.floorHazards`).
+ */
+export interface FloorHazardAdvisory {
+  minFloor: number;
+  maxFloor?: number;
+  element: ElementType;
+  title: string;
+  /** `{floor}` is replaced with the target floor number. */
+  message: string;
+  recommendation: string;
+  /** When false, a weak resistance is still reported as a warning, not a danger. Default true. */
+  escalateWhenWeak?: boolean;
+}
+
+/** An NPC a scripted vault placement puts on one of the vault's `N` layout markers. */
+export interface ScriptedVaultNpc {
+  id: string;
+  name: string;
+  role?: NpcRole;
+  greeting?: string;
+  dialogText?: string;
+}
+
+/** See `GameContentManifest.scriptedVaultPlacements`. */
+export interface ScriptedVaultPlacement {
+  floor: number;
+  vaultId: string;
+  /** Filled into the vault's `N` markers in layout (row-major) order. */
+  npcs?: ScriptedVaultNpc[];
+}
+
+export interface MerchantPriceTier {
+  /** Tier applies when standing >= this value. */
+  minStanding?: number;
+  /** Tier applies when standing <= this value. */
+  maxStanding?: number;
+  /** Multiplier on the base buy price, e.g. 0.75 for a 25% discount. */
+  multiplier: number;
+}
+
+/** See `GameContentManifest.merchantPricing`. */
+export interface MerchantPricingRules {
+  /** Faction whose standing selects the tier. */
+  faction: string;
+  tiers: MerchantPriceTier[];
 }
 
 export interface FixedTilePlacement {
@@ -550,7 +638,7 @@ export function validateManifest(manifest: GameContentManifest): void {
   // Only validate array fields if explicitly provided but wrong type
   const arrayFields: Array<keyof GameContentManifest> = ['monsters', 'items', 'spells'];
   for (const key of arrayFields) {
-    const val = (manifest as any)[key];
+    const val: unknown = manifest[key];
     if (val !== undefined && val !== null && !Array.isArray(val)) {
       throw new Error(
         `[GameContentManifest] Manifest '${manifest.id}' field '${key}' must be an array when provided.`

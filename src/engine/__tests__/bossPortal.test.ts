@@ -18,7 +18,7 @@ describe('Final Boss Ascent Portal & Victory Trigger', () => {
       victoryPortalTileId: 'gateway_valhalla',
       townReturnPosition: { x: 25, y: 23 },
     };
-    const floorResult = DungeonArc.generateChieftainLair(maxFloor, questArc);
+    const floorResult = DungeonArc.generateBossLair(maxFloor, questArc);
     const player = new Player({
       position: { x: 22, y: 28 },
       stats: { hp: 100, maxHp: 100, attack: 10, defense: 5 },

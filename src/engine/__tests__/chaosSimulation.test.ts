@@ -111,7 +111,7 @@ describe('Headless Chaos / Monkey Simulation (5,000 Actions)', () => {
           profile = reloaded.profile;
           saveReloadCount++;
 
-          const rawSave = storage.getItem(`cotw_save_${profile.id}`);
+          const rawSave = storage.getItem(`${pm.saveKeyPrefix}${profile.id}`);
           if (rawSave) {
             saveSizesKb.push(parseFloat((rawSave.length / 1024).toFixed(2)));
           }
@@ -309,6 +309,7 @@ describe('Headless Chaos / Monkey Simulation (5,000 Actions)', () => {
     console.log(`Player Deaths Revived: ${deathCount}`);
     console.log(`Total Duration: ${durationMs}ms`);
     console.log(`Avg Tick Latency: ${avgMsPerTick.toFixed(3)}ms`);
+    expect(saveSizesKb.length).toBe(saveReloadCount);
     console.log(`Save Payload Sizes: ${saveSizesKb.join(' KB, ')} KB`);
     console.log(`======================================================\n`);
 

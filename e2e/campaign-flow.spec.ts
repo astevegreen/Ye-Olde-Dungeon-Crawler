@@ -99,6 +99,12 @@ test('objective-driven multi-floor progression and NPC interaction', { tag: '@ca
       if (engine?.prng) {
         engine.prng.setState(seed);
       }
+      // The stat roll above is unseeded: any attribute rolled at a milestone threshold
+      // opens its attribute-milestone choice on the first step, swallowing the arrow
+      // keys below. Mark every milestone as already offered so the walk is deterministic.
+      for (const milestone of engine?.manifest?.attributeMilestones ?? []) {
+        engine.setWorldFlag(`${milestone.id}_offered`, true);
+      }
     }, TEST_SEED);
 
     // =========================================================================

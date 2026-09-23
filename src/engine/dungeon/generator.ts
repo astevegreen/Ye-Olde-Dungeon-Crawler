@@ -6,7 +6,7 @@ import { PRNG } from './prng';
 import { DungeonGenerator, type RectRoom } from './dungeon-generator';
 import type { VaultBlueprint } from './vaultStamp';
 import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
-import type { ItemDefinition } from '../types/manifest';
+import type { ItemDefinition, RoomDecorationBand } from '../types/manifest';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
 import type { GameDifficulty } from '../types';
 import type { EngineRegistries } from '../registries';
@@ -26,6 +26,7 @@ export interface DungeonGenParams {
   scalingConfig?: MonsterScalingConfig;
   difficulty?: GameDifficulty;
   forcedVaultId?: string;
+  roomDecoration?: RoomDecorationBand[];
   registries?: EngineRegistries;
 }
 
@@ -37,7 +38,7 @@ export interface GeneratedFloorData {
   rooms: RectRoom[];
   monsters: Monster[];
   forcedVaultChestSpawns?: Position[];
-  forcedVaultHostageSpawns?: Position[];
+  forcedVaultNpcSpawns?: Position[];
 }
 
 export interface DungeonGeneratorStrategy {
@@ -48,7 +49,7 @@ export interface DungeonGeneratorStrategy {
 
 /**
  * Standard BSP / Rooms & Corridors Dungeon Generation Strategy.
- * Classic rectangular architecture used in Castle of the Winds dungeons.
+ * Classic rectangular rooms joined by corridors.
  */
 export class BspDungeonGenerator implements DungeonGeneratorStrategy {
   public readonly id = 'bsp';
@@ -70,6 +71,7 @@ export class BspDungeonGenerator implements DungeonGeneratorStrategy {
       scalingConfig: params.scalingConfig,
       difficulty: params.difficulty,
       forcedVaultId: params.forcedVaultId,
+      roomDecoration: params.roomDecoration,
       registries: params.registries,
     });
 
@@ -82,7 +84,7 @@ export class BspDungeonGenerator implements DungeonGeneratorStrategy {
       rooms: result.rooms,
       monsters: result.monsters,
       forcedVaultChestSpawns: result.forcedVaultChestSpawns,
-      forcedVaultHostageSpawns: result.forcedVaultHostageSpawns,
+      forcedVaultNpcSpawns: result.forcedVaultNpcSpawns,
     };
   }
 }

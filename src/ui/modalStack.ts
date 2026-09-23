@@ -155,5 +155,3 @@ export class ModalStackManager {
     return true;
   }
 }
-
-export const defaultModalStack = new ModalStackManager();

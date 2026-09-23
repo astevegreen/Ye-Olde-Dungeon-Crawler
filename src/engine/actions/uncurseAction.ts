@@ -3,6 +3,7 @@ import type { ActionResult } from '../types';
 import { BASE_ACTION_COST } from '../types';
 import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
+import { Actor } from '../entities/actor';
 import type { EquipmentSlot, Item } from '../items/item';
 import { recordMilestone } from '../renown/renownLedger';
 
@@ -21,7 +22,8 @@ export class UncurseAction implements Action {
   }
 
   public perform(engine: GameEngine): ActionResult {
-    const actorAny = this.actor as any;
+    // Only actors carry inventories; a plain entity has nothing to uncurse.
+    const inventory = this.actor instanceof Actor ? this.actor.inventory : undefined;
     const uncursedItems: Item[] = [];
     const removedAllModifiers: string[] = [];
 
@@ -45,25 +47,17 @@ export class UncurseAction implements Action {
       return false;
     };
 
-    if (this.target?.slot && actorAny.inventory?.paperdoll) {
-      const item = actorAny.inventory.paperdoll.getItem(this.target.slot);
-      tryUncurse(item);
-    } else if (this.target?.itemId && actorAny.inventory) {
-      const item = actorAny.inventory.findItemById
-        ? actorAny.inventory.findItemById(this.target.itemId)
-        : null;
-      tryUncurse(item);
-    } else {
+    if (this.target?.slot && inventory) {
+      tryUncurse(inventory.paperdoll.getItem(this.target.slot));
+    } else if (this.target?.itemId && inventory) {
+      tryUncurse(inventory.findItemById(this.target.itemId) ?? null);
+    } else if (inventory) {
       // Uncurse all equipped and carried cursed items
-      if (actorAny.inventory?.paperdoll) {
-        for (const equipped of actorAny.inventory.paperdoll.getEquippedItems()) {
-          tryUncurse(equipped);
-        }
+      for (const equipped of inventory.paperdoll.getEquippedItems()) {
+        tryUncurse(equipped);
       }
-      if (actorAny.inventory?.primaryPack) {
-        for (const carried of actorAny.inventory.primaryPack.getItems()) {
-          tryUncurse(carried);
-        }
+      for (const carried of inventory.primaryPack.getItems()) {
+        tryUncurse(carried);
       }
     }
 

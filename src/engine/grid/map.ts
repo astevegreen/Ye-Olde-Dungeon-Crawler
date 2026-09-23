@@ -87,7 +87,7 @@ export class GameMap {
     if (tile === null || !tile.transparent) return false;
     if (this.surfaces && !this.surfaces.isTransparent(x, y)) return false;
     const ent = this.getEntityAt(x, y, planeId);
-    if (ent && (ent as any).capabilities?.blocksLos) return false;
+    if (ent?.capabilities?.blocksLos) return false;
     return true;
   }
 
@@ -261,6 +261,11 @@ export class GameMap {
     }
     if (item) itemIndex.unregister(item.id);
     return item;
+  }
+
+  /** Index sizes for the diagnostics panel. */
+  public getIndexStats(): { spatialIndexEntries: number; entityBuckets: number } {
+    return { spatialIndexEntries: this.spatialIndex.size, entityBuckets: this.entityBuckets.size };
   }
 
   public getAllGroundItems(): Array<{ x: number; y: number; items: Item[] }> {

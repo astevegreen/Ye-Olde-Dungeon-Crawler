@@ -92,23 +92,23 @@ export class EnergyModel {
 
     if (prevScore < CORRUPTION_THRESHOLDS.NECROSIS && newScore >= CORRUPTION_THRESHOLDS.NECROSIS) {
       newAfflictions.push('tissue_necrosis');
-      actor.statusManager.applyStatus('tissue_necrosis' as any, 9999);
+      actor.statusManager.applyStatus('tissue_necrosis', 9999);
     }
     if (
       prevScore < CORRUPTION_THRESHOLDS.NEURAL_DECAY &&
       newScore >= CORRUPTION_THRESHOLDS.NEURAL_DECAY
     ) {
       newAfflictions.push('neural_decay');
-      actor.statusManager.applyStatus('neural_decay' as any, 9999);
+      actor.statusManager.applyStatus('neural_decay', 9999);
     }
     if (
       prevScore < CORRUPTION_THRESHOLDS.DIVINE_LOSS &&
       newScore >= CORRUPTION_THRESHOLDS.DIVINE_LOSS
     ) {
       newAfflictions.push('loss_of_divine_wards');
-      actor.statusManager.applyStatus('loss_of_divine_wards' as any, 9999);
+      actor.statusManager.applyStatus('loss_of_divine_wards', 9999);
       // Remove divine and holy affinities
-      delete actor.elementalResistances['holy' as any];
+      delete actor.elementalResistances.holy;
     }
 
     return newAfflictions;
@@ -141,7 +141,7 @@ export class EnergyModel {
    * If afflicted with tissue necrosis, healing efficacy is reduced to 75%.
    */
   public static calculateHealingEfficiency(actor: Actor): number {
-    if (actor.corruptionScore >= CORRUPTION_THRESHOLDS.NECROSIS || actor.statusManager.hasStatus('tissue_necrosis' as any)) {
+    if (actor.corruptionScore >= CORRUPTION_THRESHOLDS.NECROSIS || actor.statusManager.hasStatus('tissue_necrosis')) {
       return 0.75;
     }
     return 1.0;

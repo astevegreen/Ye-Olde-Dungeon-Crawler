@@ -2,7 +2,7 @@
 # Pre-commit gate (ARCHITECTURE.md §7.2).
 #
 # Runs the fast gates only: `npm run lint` (tsc, engine purity, engine
-# encapsulation) and `npm test`. The slower gates — `npm run sim`,
+# encapsulation, knip) and `npm test`. The slower gates — `npm run sim`,
 # `npm run validate:schema`, `npm run build:all` — run in CI on every
 # pull request (.github/workflows/ci.yml) instead of on every commit.
 #

@@ -125,23 +125,6 @@ export function createTestOgre(id: string, position: Position): Monster {
   });
 }
 
-export function createTestOrc(id: string, position: Position): Monster {
-  const def = getMonsterDefinition('orc');
-  if (def) return Monster.createFromDefinition('orc', id, position);
-  return new Monster({
-    id,
-    name: 'Orc Warrior',
-    position,
-    stats: { hp: 28, maxHp: 28, attack: 8, defense: 3 },
-    speed: 85,
-    definitionId: 'orc',
-    aiType: 'melee',
-    xpValue: 45,
-    resistances: { lightning: 'neutral' },
-    lootTable: [],
-  });
-}
-
 export function createTestSunStone(id = 'sun-stone-freyr'): Item {
   return ItemFactory.createQuestRelic(
     id,

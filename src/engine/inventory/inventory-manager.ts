@@ -29,6 +29,7 @@ export class InventoryManager {
       new Container({
         id: 'default-pack',
         name: "Adventurer's Backpack",
+        value: 5000,
         category: 'container',
         slot: 'pack',
         containerType: 'pack',

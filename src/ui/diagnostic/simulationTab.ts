@@ -1,4 +1,4 @@
-import type { GameEngine } from '../../engine';
+import { Monster, type GameEngine } from '../../engine';
 import type { DiagnosticTabContext } from './types';
 
 export function renderSimulationTab(ctx: DiagnosticTabContext, engine: GameEngine): void {
@@ -15,7 +15,8 @@ export function renderSimulationTab(ctx: DiagnosticTabContext, engine: GameEngin
   let combatCount = 0;
   let fleeingCount = 0;
 
-  for (const m of monsters as any[]) {
+  for (const m of monsters) {
+    if (!(m instanceof Monster)) continue;
     if (m.aiState === 'sleeping') sleepingCount++;
     else if (m.aiState === 'hunting') huntingCount++;
     else if (m.aiState === 'combat') combatCount++;
@@ -24,21 +25,24 @@ export function renderSimulationTab(ctx: DiagnosticTabContext, engine: GameEngin
 
   let visibleTiles = 0;
   let exploredTiles = 0;
+  let surfaceTiles = 0;
+  let substanceTiles = 0;
   const totalTiles = map.width * map.height;
 
   for (let y = 0; y < map.height; y++) {
     for (let x = 0; x < map.width; x++) {
       if (engine.fov.isVisible(x, y)) visibleTiles++;
       if (engine.fov.isExplored(x, y)) exploredTiles++;
+      if (engine.surfaces.getSurface(x, y) || engine.surfaces.getGas(x, y)) surfaceTiles++;
+      if (engine.substances.getSubstances(x, y) !== 0) substanceTiles++;
     }
   }
 
   const exploredPct = ((exploredTiles / totalTiles) * 100).toFixed(1);
   const visiblePct = ((visibleTiles / totalTiles) * 100).toFixed(1);
 
-  const spatialIndexCount = (map as any).spatialIndex?.size ?? 0;
-  const bucketCount = (map as any).entityBuckets?.size ?? 0;
-  const groundItemCount = map.getAllGroundItems?.().length ?? (map as any).groundItems?.size ?? 0;
+  const { spatialIndexEntries: spatialIndexCount, entityBuckets: bucketCount } = map.getIndexStats();
+  const groundItemCount = map.getAllGroundItems().length;
 
   container.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 10px; padding: 10px; font-family: 'Consolas', 'Courier New', monospace; font-size: 11px; background: #090d16; color: #e2e8f0; border: 2px inset #ffffff; flex: 1;">
@@ -109,8 +113,8 @@ export function renderSimulationTab(ctx: DiagnosticTabContext, engine: GameEngin
             <table style="width: 100%; border-collapse: collapse;">
               <tr><td style="color: #94a3b8; width: 140px;">Spatial Index Size:</td><td><strong>${spatialIndexCount}</strong> entries</td></tr>
               <tr><td style="color: #94a3b8;">Entity Buckets:</td><td><strong>${bucketCount}</strong> coordinates</td></tr>
-              <tr><td style="color: #94a3b8;">Active Surfaces:</td><td><strong>${(engine.surfaces as any)?.activeSurfaces?.size ?? 'Ready'}</strong></td></tr>
-              <tr><td style="color: #94a3b8;">Reactive Substances:</td><td><strong>${(engine.substances as any)?.grid ? 'Online' : 'Active'}</strong></td></tr>
+              <tr><td style="color: #94a3b8;">Active Surfaces:</td><td><strong>${surfaceTiles}</strong> tiles</td></tr>
+              <tr><td style="color: #94a3b8;">Reactive Substances:</td><td><strong>${substanceTiles}</strong> tiles</td></tr>
             </table>
           </div>
 

@@ -184,25 +184,28 @@ export class TargetingOverlay implements UIModal {
 
     const entry = this.activeEntry;
     let result: ActionResult;
+    // Commands may report the energy they spent in `data.cost`; default to a full turn.
+    const costOf = (data: unknown): number =>
+      typeof data === 'object' && data !== null && 'cost' in data && typeof data.cost === 'number' ? data.cost : 100;
 
     if (entry.type === 'wand' && entry.sourceItem instanceof WandItem) {
       const res = engine.commandBus.dispatch({
         type: 'zap_wand',
         payload: { itemId: entry.sourceItem.id, targetX: this.reticleX, targetY: this.reticleY },
       });
-      result = { success: res.success, message: res.message ?? '', cost: (res.data as any)?.cost ?? 100, effects: res.effects };
+      result = { success: res.success, message: res.message ?? '', cost: costOf(res.data), effects: res.effects };
     } else if (entry.type === 'scroll' && entry.sourceItem instanceof ScrollItem) {
       const res = engine.commandBus.dispatch({
         type: 'read_scroll',
         payload: { itemId: entry.sourceItem.id, targetX: this.reticleX, targetY: this.reticleY },
       });
-      result = { success: res.success, message: res.message ?? '', cost: (res.data as any)?.cost ?? 100, effects: res.effects };
+      result = { success: res.success, message: res.message ?? '', cost: costOf(res.data), effects: res.effects };
     } else {
       const res = engine.commandBus.dispatch({
         type: 'cast_spell',
         payload: { spellId: entry.id, targetX: this.reticleX, targetY: this.reticleY },
       });
-      result = { success: res.success, message: res.message ?? '', cost: (res.data as any)?.cost ?? 100, effects: res.effects };
+      result = { success: res.success, message: res.message ?? '', cost: costOf(res.data), effects: res.effects };
     }
 
     // Save visual path for flash animation

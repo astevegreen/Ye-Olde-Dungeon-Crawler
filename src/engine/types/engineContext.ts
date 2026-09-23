@@ -1,3 +1,4 @@
+import type { Entity } from '../entities/entity';
 import type { Player } from '../entities/player';
 import type { GameMap } from '../grid/map';
 import type { SurfaceGrid } from '../surfaces/surfaceGrid';
@@ -29,4 +30,8 @@ export interface EngineContext {
   log(message: string): void;
   getWorldFlag(flag: string): boolean;
   setWorldFlag(flag: string, value: boolean): void;
+  /** The active dungeon floor (0 = town). */
+  readonly currentFloor: number;
+  /** Removes an entity from the active floor's map and the turn scheduler. */
+  removeEntity(entity: Entity): boolean;
 }

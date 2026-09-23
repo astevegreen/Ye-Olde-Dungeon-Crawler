@@ -81,7 +81,7 @@ export class EnergyScheduler {
 
     // Zero-division / zero-speed guard: only entities with positive effective speed and action capability can gain energy
     const living = this.entities.filter(
-      (e) => e.isAlive() && Math.max(0, e.speed) > 0 && (e as any).capabilities?.canAct !== false
+      (e) => e.isAlive() && Math.max(0, e.speed) > 0 && e.capabilities?.canAct !== false
     );
     if (living.length === 0) {
       return null;

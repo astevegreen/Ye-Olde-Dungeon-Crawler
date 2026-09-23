@@ -5,6 +5,7 @@ import { PRNG } from '../prng';
 import { RoomDecorator } from '../roomDecorator';
 import { DungeonGenerator } from '../dungeon-generator';
 import type { RectRoom } from '../dungeon-generator';
+import { COTW_ROOM_DECORATION } from '../../../content/cotw/floorBands';
 
 describe('RoomDecorator — Zone-Specific Tactical Architecture & Theming', () => {
   function createTestMapAndRoom(w: number = 10, h: number = 10): { map: GameMap; room: RectRoom } {
@@ -33,7 +34,7 @@ describe('RoomDecorator — Zone-Specific Tactical Architecture & Theming', () =
     const prng = new PRNG(12345);
 
     // Only room 0 in the list
-    RoomDecorator.decorateRooms(map, [room], prng, 1);
+    RoomDecorator.decorateRooms(map, [room], prng, 1, COTW_ROOM_DECORATION);
 
     // All room tiles should still be FLOOR
     for (let y = room.y1; y <= room.y2; y++) {
@@ -48,7 +49,7 @@ describe('RoomDecorator — Zone-Specific Tactical Architecture & Theming', () =
     const prng = new PRNG(12345);
     const dummyRoom0: RectRoom = { x1: 0, y1: 0, x2: 1, y2: 1, centerX: 0, centerY: 0 };
 
-    RoomDecorator.decorateRooms(map, [dummyRoom0, room], prng, 1);
+    RoomDecorator.decorateRooms(map, [dummyRoom0, room], prng, 1, COTW_ROOM_DECORATION);
 
     for (let y = room.y1; y <= room.y2; y++) {
       for (let x = room.x1; x <= room.x2; x++) {
@@ -64,7 +65,7 @@ describe('RoomDecorator — Zone-Specific Tactical Architecture & Theming', () =
       const prng = new PRNG(seed);
       const dummyRoom0: RectRoom = { x1: 0, y1: 0, x2: 1, y2: 1, centerX: 0, centerY: 0 };
 
-      RoomDecorator.decorateRooms(map, [dummyRoom0, room], prng, 3);
+      RoomDecorator.decorateRooms(map, [dummyRoom0, room], prng, 3, COTW_ROOM_DECORATION);
 
       for (let y = room.y1; y <= room.y2; y++) {
         for (let x = room.x1; x <= room.x2; x++) {
@@ -87,7 +88,7 @@ describe('RoomDecorator — Zone-Specific Tactical Architecture & Theming', () =
       const prng = new PRNG(seed);
       const dummyRoom0: RectRoom = { x1: 0, y1: 0, x2: 1, y2: 1, centerX: 0, centerY: 0 };
 
-      RoomDecorator.decorateRooms(map, [dummyRoom0, room], prng, 12);
+      RoomDecorator.decorateRooms(map, [dummyRoom0, room], prng, 12, COTW_ROOM_DECORATION);
 
       for (let y = room.y1; y <= room.y2; y++) {
         for (let x = room.x1; x <= room.x2; x++) {
@@ -110,7 +111,7 @@ describe('RoomDecorator — Zone-Specific Tactical Architecture & Theming', () =
       const prng = new PRNG(seed);
       const dummyRoom0: RectRoom = { x1: 0, y1: 0, x2: 1, y2: 1, centerX: 0, centerY: 0 };
 
-      RoomDecorator.decorateRooms(map, [dummyRoom0, room], prng, 20);
+      RoomDecorator.decorateRooms(map, [dummyRoom0, room], prng, 20, COTW_ROOM_DECORATION);
 
       for (let y = room.y1; y <= room.y2; y++) {
         for (let x = room.x1; x <= room.x2; x++) {
@@ -126,6 +127,21 @@ describe('RoomDecorator — Zone-Specific Tactical Architecture & Theming', () =
     expect(foundChasm).toBe(true);
   });
 
+  it('places no zone terrain (water, chasms, iron bars) when the pack declares no bands', () => {
+    for (let floor = 1; floor <= 50; floor += 3) {
+      for (let seed = 100; seed <= 110; seed++) {
+        const { map, room } = createTestMapAndRoom(10, 10);
+        const dummyRoom0: RectRoom = { x1: 0, y1: 0, x2: 1, y2: 1, centerX: 0, centerY: 0 };
+        RoomDecorator.decorateRooms(map, [dummyRoom0, room], new PRNG(seed), floor);
+        for (let y = room.y1; y <= room.y2; y++) {
+          for (let x = room.x1; x <= room.x2; x++) {
+            expect(['shallow_water', 'chasm', 'iron_bars']).not.toContain(map.getTile(x, y)?.type);
+          }
+        }
+      }
+    }
+  });
+
   it('never places impassable obstacles in the door zone or room center', () => {
     for (let floor = 1; floor <= 50; floor += 7) {
       for (let seed = 100; seed <= 120; seed++) {
@@ -133,7 +149,7 @@ describe('RoomDecorator — Zone-Specific Tactical Architecture & Theming', () =
         const prng = new PRNG(seed);
         const dummyRoom0: RectRoom = { x1: 0, y1: 0, x2: 1, y2: 1, centerX: 0, centerY: 0 };
 
-        RoomDecorator.decorateRooms(map, [dummyRoom0, room], prng, floor);
+        RoomDecorator.decorateRooms(map, [dummyRoom0, room], prng, floor, COTW_ROOM_DECORATION);
 
         // Door zone: tile directly below top door (room.centerX, room.y1)
         const doorStep = map.getTile(room.centerX, room.y1);

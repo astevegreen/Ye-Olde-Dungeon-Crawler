@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import {
   SpriteAtlas,
   ATLAS_MAP,
@@ -45,7 +45,7 @@ function createMockCanvas(): HTMLCanvasElement {
 }
 
 describe('Atlas bake pipeline — supersampling, downsample, shading, outline/highlight', () => {
-  let createElementSpy: ReturnType<typeof vi.fn>;
+  let createElementSpy: Mock<(tag: string) => unknown>;
 
   beforeEach(() => {
     createElementSpy = vi.fn((tag: string) => (tag === 'canvas' ? createMockCanvas() : {}));
@@ -55,7 +55,7 @@ describe('Atlas bake pipeline — supersampling, downsample, shading, outline/hi
   describe('bake + downsample', () => {
     it('creates an extra supersampled scratch canvas beyond the atlas + dimmed-atlas pair', () => {
       new SpriteAtlas();
-      const canvasCreations = createElementSpy.mock.calls.filter((call: any[]) => call[0] === 'canvas').length;
+      const canvasCreations = createElementSpy.mock.calls.filter((call) => call[0] === 'canvas').length;
       // atlasCanvas + dimmedAtlasCanvas (constructor) + one scratch canvas (buildAtlas)
       expect(canvasCreations).toBeGreaterThanOrEqual(3);
     });

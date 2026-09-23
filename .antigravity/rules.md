@@ -18,7 +18,7 @@
 - **Determinism (§7.2):** simulation randomness comes from `engine.prng` (`engine.rng` is its bound delegate). Never use `Math.random()` or `Date.now()` for simulation outcomes or IDs.
 - **Save format (§5):** any breaking save-format change increments `CURRENT_SCHEMA_VERSION` and adds exactly one forward-only step in `migrator.ts`.
 - **Protected files (§8.1):** modify `src/engine/actions/actionPipeline.ts`, `src/engine/engine.ts`, and `src/engine/storage/migrator.ts` only for (1) a confirmed bug fix, (2) an additive migration step, or (3) an explicitly requested planned item. State which exception applies.
-- **Documentation sync (§8.2):** if a change makes `ARCHITECTURE.md` inaccurate or completes a planned item, update `ARCHITECTURE.md` in the same change.
+- **Documentation sync (§8.2):** if a change makes `ARCHITECTURE.md` or a `docs/architecture/**` sub-doc inaccurate, or completes a planned item, update that document in the same change.
 - **Encapsulation (§7.2):** code outside `src/engine/` (presentation and content alike) never writes engine object fields directly — no assignment, index write, write through an `as any` cast, or `Object.assign` onto an engine object. Presentation code (`src/ui/`, `src/rendering/`, `src/main.ts`, `src/main/**`) additionally changes engine state only through `GameEngine`, `Player`, and `Entity` methods or `engine.commandBus` — never by calling mutators on internal subsystems (`GameMap`, `Container`, `InventoryManager`, …) or Array/Map/Set mutators on engine members. That subsystem-mutator restriction does not apply to `src/content/` (§7.2). `check:engine-encapsulation` enforces all of this; add to its allowlist only with a stated reason.
 
 ## Verification Gates (§7.2)

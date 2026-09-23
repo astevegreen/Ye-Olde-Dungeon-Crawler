@@ -23,6 +23,7 @@ import {
   ChannelRuneOfReturnAction,
 } from './engine';
 import type {
+  ActionResult,
   CharacterProfile,
   GameEvent,
   SpellDefinition,
@@ -466,11 +467,15 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // The engine's result is read-only here (§7.2), so remember which failed result was already shown.
+  let lastReportedPipelineError: ActionResult | null = null;
+
   async function processVisualEffectsAndRender(): Promise<void> {
     try {
-      if (activeEngine?.lastActionResult?.pipelineError) {
-        diagnosticModal.showError(activeEngine.lastActionResult.message ?? 'An unexpected error occurred; the action could not be completed.');
-        activeEngine.lastActionResult.pipelineError = false;
+      const lastResult = activeEngine?.lastActionResult;
+      if (lastResult?.pipelineError && lastResult !== lastReportedPipelineError) {
+        lastReportedPipelineError = lastResult;
+        diagnosticModal.showError(lastResult.message ?? 'An unexpected error occurred; the action could not be completed.');
       }
       updateHeaderInfo();
       renderFlanks();

@@ -112,7 +112,7 @@
 - **Domain Events (`GameEvent`):**
   - **Envelope:** every event extends `GameEventBase` — `type`, `turn`, optional `actorId`/`targetId`/`itemId`, and a flat scalar `data` bag. `type` is a plain string, so content packs emit their own (e.g. `cotw:relic_attuned`) without editing `events.ts`; `BuiltInGameEventType` lists the engine's own.
   - **Scalar payloads:** events carry IDs and numbers, never live `Player`/`Entity`/`Item` references — a live reference can't be serialized, so every event survives `JSON.stringify`.
-  - **Built-ins:** `player_leveled_up`, `alignment_renown`, `chaotic_proc`, `uncurse`, `damage_dealt`, `entity_killed`, `level_transition`.
+  - **Built-ins:** `player_leveled_up`, `alignment_renown`, `chaotic_proc`, `uncurse`, `damage_dealt`, `entity_killed`, `level_transition`, `rune_of_return_discovered`.
   - **Delivery:** `engine.emitGameEvent()` buffers into `engine.recentGameEvents`, delivers via `engine.onGameEvent`, and returns on `ActionResult.events`. `ActionPipeline` keeps a capture stack so a composite action's sub-actions attribute correctly.
   - **Narrowing:** `isGameEvent(event, 'entity_killed')` narrows the open `type` union to a built-in.
 - **Presentation Consumption & Animation Gating:**

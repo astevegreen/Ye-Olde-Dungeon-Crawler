@@ -1146,7 +1146,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     if (!renderer) {
       renderer = new CanvasRenderer(canvas!, engine);
-      inventoryTab = new InventoryTabAdapter(renderer.inventoryOverlay, renderer);
+      inventoryTab = new InventoryTabAdapter(renderer.inventoryOverlay, renderer, () => characterMenuModal.close());
       characterMenuModal = new CharacterMenuModal(
         [inventoryTab, characterTab, spellbookTab, bestiaryTab, pactsTab, storyTab],
         () => ({

@@ -321,6 +321,8 @@ export class CharacterMenuModal implements UIModal {
       if (targetTab.id === 'inventory') {
         // Inventory overlay renders onto the HTML5 Canvas underneath
         this.overlayEl.style.backgroundColor = 'transparent';
+        // .retro-window-overlay's backdrop blur would smear the canvas-drawn inventory.
+        this.overlayEl.style.backdropFilter = 'none';
         this.overlayEl.style.pointerEvents = 'none';
         this.windowEl.style.backgroundColor = 'transparent';
         this.windowEl.style.border = '2px solid transparent';
@@ -331,6 +333,7 @@ export class CharacterMenuModal implements UIModal {
         this.contentEl.style.display = 'none';
       } else {
         this.overlayEl.style.backgroundColor = 'rgba(10, 11, 16, 0.82)';
+        this.overlayEl.style.backdropFilter = '';
         this.overlayEl.style.pointerEvents = 'auto';
         this.windowEl.style.backgroundColor = '#0f172a';
         this.windowEl.style.border = '2px solid #ca8a04';

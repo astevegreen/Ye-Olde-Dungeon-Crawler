@@ -13,10 +13,14 @@ export class InventoryTabAdapter implements MenuTab {
   public readonly hotkeyActionId = 'inventory';
   private overlay: InventoryOverlay;
   private renderer?: CanvasRenderer;
+  private onDismiss?: () => void;
 
-  constructor(overlay: InventoryOverlay, renderer?: CanvasRenderer) {
+  /** `onDismiss` closes the hosting menu shell when the overlay closes itself (e.g. `[I]`);
+   * otherwise the shell's blurred backdrop stays up and traps every key. */
+  constructor(overlay: InventoryOverlay, renderer?: CanvasRenderer, onDismiss?: () => void) {
     this.overlay = overlay;
     this.renderer = renderer;
+    this.onDismiss = onDismiss;
   }
 
   public mount(container: HTMLElement): void {
@@ -34,6 +38,10 @@ export class InventoryTabAdapter implements MenuTab {
   }
 
   public handleKeyDown(e: KeyboardEvent): boolean {
-    return this.overlay.handleKeyDown(e);
+    const handled = this.overlay.handleKeyDown(e);
+    if (handled && !this.overlay.isOpen) {
+      this.onDismiss?.();
+    }
+    return handled;
   }
 }

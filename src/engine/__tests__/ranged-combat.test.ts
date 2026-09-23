@@ -87,6 +87,28 @@ describe('Physical Ranged Combat & Ammunition Pipeline', () => {
     expect(player.mana).toBe(initialMana);
   });
 
+  it("rolls to hit with the shooter's own DEX", () => {
+    // hit% = 75 + (DEX - 10) * 2 - DEF * 2; against DEF 2 that is 87% at DEX 18 and 63% at
+    // DEX 6. A fixed roll of 70 separates them. (Before 2026-09-22 every shot used DEX 14.)
+    const shoot = (dexterity: number) => {
+      const { engine, player, monster } = setupArena();
+      player.dexterity = dexterity;
+      const bow = new Item({
+        id: 'bow-dex', name: 'Hunting Bow', category: 'weapon', slot: 'mainHand', weight: 1200, bulk: 3000,
+        stats: { attackBonus: 8 }, rangedConfig: { range: 8, ammoType: 'arrow', baseDamage: 8 },
+      });
+      player.inventory.paperdoll.equip(bow, 'mainHand');
+      player.inventory.primaryPack.addItem(new Item({ id: 'arrows-dex', name: 'Iron Arrows', category: 'misc', weight: 500, bulk: 500 }));
+      engine.rng = () => 0.7;
+      const hpBefore = monster.hp;
+      new RangedAttackAction(player, monster.x, monster.y).perform(engine);
+      return monster.hp < hpBefore;
+    };
+
+    expect(shoot(18)).toBe(true);
+    expect(shoot(6)).toBe(false);
+  });
+
   it('fails gracefully when out of ammunition without spending energy', () => {
     const { engine, player, monster } = setupArena();
 

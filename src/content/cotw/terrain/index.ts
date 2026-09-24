@@ -1,6 +1,7 @@
 import type { SpriteRecipe, TerrainArtConfig, TerrainStyle } from '../../../engine';
 import { buildZoneRecipes, type ZoneArt } from './kit';
 import { RIME_HOLLOWS } from './zones/rimeHollows';
+import { DWARVEN_WORKS } from './zones/dwarvenWorks';
 
 /**
  * cotw's terrain art (ARCHITECTURE.md §3: art comes from the pack's recipes). Each zone is a
@@ -9,6 +10,7 @@ import { RIME_HOLLOWS } from './zones/rimeHollows';
  */
 const ZONES: readonly ZoneArt[] = [
   RIME_HOLLOWS,
+  DWARVEN_WORKS,
 ];
 
 export const COTW_TERRAIN_SPRITES: Record<string, SpriteRecipe> = Object.assign({}, ...ZONES.map(buildZoneRecipes));
@@ -28,5 +30,6 @@ export const COTW_TERRAIN_ART: TerrainArtConfig = {
   memory: { desaturate: 0.7, flatten: 0.4, darken: 0.26, tint: '#0e1116', tintAmount: 0.12 },
   // Light sources per zone: lava, banked forge coals, sap, fungus, bile.
   emissive: {
+    dwarven_works: { chasm: { color: '#ff8a3a', radius: 2.8, strength: 0.2 } },
   },
 };

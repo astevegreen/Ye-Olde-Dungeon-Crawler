@@ -141,7 +141,7 @@ export class InventoryManager {
               }
             } else {
               const newCoin = new CoinItem({
-                id: item.id || `coin-${parsed.denomination}-${Date.now()}`,
+                id: item.id,
                 denomination: parsed.denomination,
                 count: parsed.count,
                 ownerId: this.ownerId,

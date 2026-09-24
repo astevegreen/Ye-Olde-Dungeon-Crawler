@@ -105,6 +105,14 @@ describe('terrainLayers', () => {
     expect(terrainLayers(v, 1, 1, zone, ART, has)![1]).toBe('fountain~prop');
   });
 
+  it('falls back from a specific suffix to its prefix, for keys and for styles', () => {
+    const v = view(['...', '...']);
+    const art: TerrainArtConfig = { styles: { floor: { kind: 'field', tones: 1 }, floor_town_shop: { kind: 'field', tones: 1, macro: true } } };
+    const has = (k: string) => k.startsWith('floor_town_shop~q') || k === 'floor_town~t0';
+    expect(terrainLayers(v, 1, 1, () => 'town_shop', art, has)).toEqual(['floor_town_shop~q3t0']);
+    expect(terrainLayers(v, 1, 1, () => 'town', art, has)).toEqual(['floor_town~t0']);
+  });
+
   it('returns null when the pack lacks a recipe, sending the cell down the one-recipe path', () => {
     const v = view(['.>.']);
     expect(terrainLayers(v, 1, 0, zone, ART, hasZoned)).toBeNull();

@@ -92,6 +92,17 @@ function smoothNoise(x: number, y: number, scale: number, seed: number): number 
   return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
 }
 
+/** `town_shop` → [`town_shop`, `town`]: a suffix falls back to its prefixes. */
+function suffixChain(suffix: string | undefined): string[] {
+  const out: string[] = [];
+  for (let cur = suffix; cur; ) {
+    out.push(cur);
+    const i = cur.lastIndexOf('_');
+    cur = i > 0 ? cur.slice(0, i) : undefined;
+  }
+  return out;
+}
+
 export function terrainLayers(
   view: TerrainView,
   x: number,
@@ -104,32 +115,37 @@ export function terrainLayers(
   if (type === undefined) return null;
   const base = terrainBase(type);
 
-  // The zone-suffixed key if the pack draws it, else the bare base.
+  // The most specific suffixed key the pack draws (`town_shop`, then `town`), else the bare base.
   const key = (b: string, sx: number, sy: number, part: string): string | null => {
-    const suffix = suffixAt(sx, sy);
-    if (suffix !== undefined && has(`${b}_${suffix}~${part}`)) return `${b}_${suffix}~${part}`;
+    for (const suffix of suffixChain(suffixAt(sx, sy))) if (has(`${b}_${suffix}~${part}`)) return `${b}_${suffix}~${part}`;
     return has(`${b}~${part}`) ? `${b}~${part}` : null;
+  };
+  // Styles resolve the same way, so one zone can tile its floor as a 2x2 macro and another not.
+  const styleOf = (b: string) => {
+    for (const suffix of suffixChain(suffixAt(x, y))) {
+      const st = art.styles[`${b}_${suffix}`];
+      if (st) return st;
+    }
+    return art.styles[b];
   };
 
   const field = (b: string): string | null => {
-    const style = art.styles[b];
+    const style = styleOf(b);
     if (style?.kind !== 'field') return null;
     const tones = Math.max(1, style.tones ?? 1);
-    const macro = !!style.macro;
-    const sx = macro ? x >> 1 : x;
-    const sy = macro ? y >> 1 : y;
-    const q = macro ? `q${(x & 1) + 2 * (y & 1)}` : '';
+    // `macro` only picks the quadrant of the 2x2 texture; tone and detail are chosen per cell.
+    const q = style.macro ? `q${(x & 1) + 2 * (y & 1)}` : '';
     const details = style.details ?? 0;
-    if (details > 0 && hashCell(sx, sy, 11) < (style.detailRate ?? 0.1)) {
-      const d = key(b, x, y, `${q}d${Math.floor(hashCell(sx, sy, 13) * details)}`);
+    if (details > 0 && hashCell(x, y, 11) < (style.detailRate ?? 0.1)) {
+      const d = key(b, x, y, `${q}d${Math.floor(hashCell(x, y, 13) * details)}`);
       if (d) return d;
     }
-    const tone = Math.min(tones - 1, Math.floor(smoothNoise(sx, sy, macro ? 3.2 : 5, 7) * tones));
+    const tone = Math.min(tones - 1, Math.floor(smoothNoise(x, y, 5, 7) * tones));
     return key(b, x, y, `${q}t${tone}`);
   };
 
   const floorUnder = () => field('floor');
-  const style = art.styles[base];
+  const style = styleOf(base);
 
   if (style?.kind === 'field') {
     const f = field(base);

@@ -4,6 +4,7 @@ import { RIME_HOLLOWS } from './zones/rimeHollows';
 import { DWARVEN_WORKS } from './zones/dwarvenWorks';
 import { OBSIDIAN_SIPHON } from './zones/obsidianSiphon';
 import { TARNISHED_SILVER } from './zones/tarnishedSilver';
+import { WORLD_BARK } from './zones/worldBark';
 
 /**
  * cotw's terrain art (ARCHITECTURE.md §3: art comes from the pack's recipes). Each zone is a
@@ -15,6 +16,7 @@ const ZONES: readonly ZoneArt[] = [
   DWARVEN_WORKS,
   OBSIDIAN_SIPHON,
   TARNISHED_SILVER,
+  WORLD_BARK,
 ];
 
 export const COTW_TERRAIN_SPRITES: Record<string, SpriteRecipe> = Object.assign({}, ...ZONES.map(buildZoneRecipes));
@@ -39,5 +41,6 @@ export const COTW_TERRAIN_ART: TerrainArtConfig = {
       chasm: { color: '#ff7a2a', radius: 2.4, strength: 0.2 },
       shallow_water: { color: '#ff7a2a', radius: 1.8, strength: 0.12 },
     },
+    world_bark: { shallow_water: { color: '#c9912f', radius: 2, strength: 0.09 } },
   },
 };

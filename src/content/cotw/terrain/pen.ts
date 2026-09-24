@@ -91,6 +91,13 @@ export function wavyH(pen: Pen, r: Rand, y: number, amp: number, x0 = 0, x1 = 32
   pen.stroke();
 }
 
+export function wavyV(pen: Pen, r: Rand, x: number, amp: number, y0: number, y1: number, step = 4): void {
+  pen.beginPath();
+  pen.moveTo(x, y0);
+  for (let y = y0 + step; y <= y1; y += step) pen.lineTo(x + (r() - 0.5) * amp, y);
+  pen.stroke();
+}
+
 /**
  * Draws a seamless 64x64 pattern and keeps the quadrant `q` (0-3, row-major) of it: the
  * four cells of a 2x2 block show one continuous pattern, and blocks tile edge to edge.

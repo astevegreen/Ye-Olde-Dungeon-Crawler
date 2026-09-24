@@ -619,17 +619,17 @@ export class CanvasRenderer {
     // 5. Active Status Affliction Badges
     let statusX = mpBarX + mpBarWidth + 285;
     for (const eff of p.statusManager.getAll()) {
-      let color = theme.hudAccent;
-      let label = eff.type.toUpperCase();
-      if (eff.type === 'poison') color = '#22c55e';
-      else if (eff.type === 'paralysis') color = '#eab308';
-      else if (eff.type === 'slow') color = '#0ea5e9';
-      else if (eff.type === 'haste') color = '#f97316';
-      else if (eff.type === 'blindness') color = '#a855f7';
-      else if (eff.type === 'cotw:giant_blood') {
-        color = '#38bdf8';
-        label = "GIANT'S BLOOD";
-      } else if (eff.type === 'rune_of_return_channel') {
+      const manifestDef = this.engine.manifest?.statusEffects?.find((s) => s.id === eff.type);
+      let color = manifestDef?.hudColor ?? theme.hudAccent;
+      let label = manifestDef?.name ? manifestDef.name.toUpperCase() : eff.type.toUpperCase();
+      if (!manifestDef?.hudColor) {
+        if (eff.type === 'poison') color = '#22c55e';
+        else if (eff.type === 'paralysis') color = '#eab308';
+        else if (eff.type === 'slow') color = '#0ea5e9';
+        else if (eff.type === 'haste') color = '#f97316';
+        else if (eff.type === 'blindness') color = '#a855f7';
+      }
+      if (eff.type === 'rune_of_return_channel') {
         color = '#38bdf8';
         label = 'CHANNELING RUNE';
       }

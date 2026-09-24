@@ -99,6 +99,20 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
   const isLocked = ctx.inputContext?.getInputLocked() ?? false;
   const isGodMode = p?.isInvulnerable ?? false;
 
+  const sampleMobs = (
+    engine.manifest?.monsters && engine.manifest.monsters.length > 0
+      ? engine.manifest.monsters
+      : engine.registries.monsters.getAll()
+  ).slice(0, 3);
+  const mobButtonsHtml = sampleMobs.length > 0
+    ? sampleMobs
+        .map(
+          (m) =>
+            `<button class="win-btn btn-spawn-monster" data-mob="${m.id}" style="padding: 3px 8px;">+ ${m.name}</button>`
+        )
+        .join('\n')
+    : `<button class="win-btn btn-spawn-monster" data-mob="" style="padding: 3px 8px;">+ No Monsters</button>`;
+
   container.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 10px; padding: 10px; font-family: 'Consolas', 'Courier New', monospace; font-size: 11px; background: #090d16; color: #e2e8f0; border: 2px inset #ffffff; flex: 1;">
         
@@ -148,9 +162,7 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
             </div>
             <div style="display: flex; flex-direction: column; gap: 6px;">
               <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                <button class="win-btn btn-spawn-monster" data-mob="goblin" style="padding: 3px 8px;">+ Goblin (Melee)</button>
-                <button class="win-btn btn-spawn-monster" data-mob="skeleton" style="padding: 3px 8px;">+ Skeleton (Undead)</button>
-                <button class="win-btn btn-spawn-monster" data-mob="ogre" style="padding: 3px 8px;">+ Ogre (Brute)</button>
+                ${mobButtonsHtml}
               </div>
             </div>
           </div>
@@ -227,7 +239,9 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
   spawnMobBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
       const mobId = btn.getAttribute('data-mob');
-      spawnTestMonster(ctx, engine, mobId ?? 'goblin');
+      if (mobId) {
+        spawnTestMonster(ctx, engine, mobId);
+      }
     });
   });
 

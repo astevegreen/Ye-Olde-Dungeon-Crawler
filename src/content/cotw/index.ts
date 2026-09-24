@@ -130,6 +130,11 @@ export const cotwManifest: GameContentManifest = {
       name: 'Stunned',
       expireMessage: '{name} recovers from the stunning blow and regains composure.',
     },
+    {
+      id: GIANT_BLOOD_STATUS,
+      name: "Giant's Blood",
+      hudColor: '#38bdf8',
+    },
   ],
   statusHandlers: {
     [GIANT_BLOOD_STATUS]: giantBloodHandler,

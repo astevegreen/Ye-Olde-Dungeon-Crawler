@@ -137,6 +137,7 @@ export interface SurfaceTypeDefinition {
 export interface StatusEffectDefinition {
   id: string;
   name: string;
+  hudColor?: string;
   applyMessage?: string;
   tickMessage?: string;
   expireMessage?: string;

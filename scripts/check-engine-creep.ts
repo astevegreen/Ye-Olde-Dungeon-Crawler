@@ -77,6 +77,10 @@ function declaredIdentifiers(manifests: GameContentManifest[]): Map<string, stri
     addAll(m.storyChoiceTriggers);
     addAll(m.attributeMilestones);
     addAll(m.renownMilestones);
+    const BUILTIN_STATUS_TYPES = new Set(['poison', 'paralysis', 'slow', 'haste', 'blindness', 'stunned', 'sensory_masked']);
+    for (const eff of m.statusEffects ?? []) {
+      if (eff?.id && !BUILTIN_STATUS_TYPES.has(eff.id)) add(eff.id);
+    }
     for (const choiceId of Object.keys(m.choices ?? {})) add(choiceId);
     for (const npc of m.town?.npcs ?? []) {
       add(npc.id);
@@ -92,25 +96,28 @@ function declaredIdentifiers(manifests: GameContentManifest[]): Map<string, stri
   return ids;
 }
 
-function engineSourceFiles(dir: string): string[] {
+function sourceFiles(dir: string): string[] {
+  if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
     const p = path.join(dir, e.name);
-    if (e.isDirectory()) return /^__(tests|fixtures)__$/.test(e.name) ? [] : engineSourceFiles(p);
-    return e.name.endsWith('.ts') && !e.name.endsWith('.test.ts') ? [p] : [];
+    if (e.isDirectory()) return /^__(tests|fixtures)__$/.test(e.name) ? [] : sourceFiles(p);
+    return e.name.endsWith('.ts') && !e.name.endsWith('.test.ts') && !e.name.endsWith('.d.ts') ? [p] : [];
   });
 }
 
 const manifests = await loadManifests();
 const ids = declaredIdentifiers(manifests);
+const packNamespaces = manifests.map((m) => `${m.id}:`);
 const allowlist: AllowlistEntry[] = fs.existsSync(ALLOWLIST_PATH)
   ? (JSON.parse(fs.readFileSync(ALLOWLIST_PATH, 'utf-8')).entries ?? [])
   : [];
 const allowed = new Set(allowlist.map((a) => a.id));
 const usedAllowlist = new Set<string>();
-const violations: { file: string; line: number; id: string; pack: string; text: string }[] = [];
+const engineViolations: { file: string; line: number; id: string; pack: string; text: string }[] = [];
+const presentationViolations: { file: string; line: number; id: string; pack: string; text: string }[] = [];
 
-const files = engineSourceFiles(ENGINE_DIR);
-for (const file of files) {
+const engineFiles = sourceFiles(ENGINE_DIR);
+for (const file of engineFiles) {
   const rel = path.relative(ROOT, file).split(path.sep).join('/');
   fs.readFileSync(file, 'utf-8')
     .split('\n')
@@ -124,28 +131,68 @@ for (const file of files) {
           usedAllowlist.add(id);
           continue;
         }
-        violations.push({ file: rel, line: i + 1, id, pack, text: text.trim() });
+        engineViolations.push({ file: rel, line: i + 1, id, pack, text: text.trim() });
       }
     });
 }
+
+const PRESENTATION_DIRS = [
+  path.join(ROOT, 'src', 'ui'),
+  path.join(ROOT, 'src', 'rendering'),
+  path.join(ROOT, 'src', 'main'),
+];
+const presentationFiles = PRESENTATION_DIRS.flatMap(sourceFiles);
+for (const file of presentationFiles) {
+  const rel = path.relative(ROOT, file).split(path.sep).join('/');
+  fs.readFileSync(file, 'utf-8')
+    .split('\n')
+    .forEach((text, i) => {
+      if (/^\s*(\/\/|\*|\/\*)/.test(text)) return; // prose may name a pack identifier
+      for (const match of text.matchAll(/(['"`])((?:(?!\1)[^\\$])+)\1/g)) {
+        const id = match[2];
+        let pack = ids.get(id);
+        if (!pack) {
+          const ns = packNamespaces.find((prefix) => id.startsWith(prefix));
+          if (ns) pack = ns.slice(0, -1);
+        }
+        if (!pack) continue;
+        if (allowed.has(id)) {
+          usedAllowlist.add(id);
+          continue;
+        }
+        presentationViolations.push({ file: rel, line: i + 1, id, pack, text: text.trim() });
+      }
+    });
+}
+
 const stale = allowlist.filter((a) => !usedAllowlist.has(a.id) || !ids.has(a.id));
 
 console.log(`\n======================================================`);
-console.log(`ENGINE CREEP VERIFICATION AUDIT`);
+console.log(`ENGINE CREEP & PACK-NEUTRAL PRESENTATION AUDIT`);
 console.log(`Content packs loaded: ${manifests.map((m) => m.id).join(', ')}`);
 console.log(`Pack-declared identifiers: ${ids.size}`);
-console.log(`Engine source files inspected: ${files.length}`);
-console.log(`Allowlisted engine references: ${usedAllowlist.size}`);
+console.log(`Engine source files inspected: ${engineFiles.length}`);
+console.log(`Presentation source files inspected: ${presentationFiles.length}`);
+console.log(`Allowlisted references: ${usedAllowlist.size}`);
 console.log(`======================================================\n`);
 
-if (violations.length > 0 || stale.length > 0) {
-  if (violations.length > 0) {
-    console.error(`❌ Found ${violations.length} content-pack identifier(s) in engine source (No Engine Creep, ARCHITECTURE.md §3):\n`);
-    for (const v of violations) {
+const hasViolations = engineViolations.length > 0 || presentationViolations.length > 0;
+if (hasViolations || stale.length > 0) {
+  if (engineViolations.length > 0) {
+    console.error(`❌ Found ${engineViolations.length} content-pack identifier(s) in engine source (No Engine Creep, ARCHITECTURE.md §3):\n`);
+    for (const v of engineViolations) {
       console.error(`  ${v.file}:${v.line}  '${v.id}' (declared by ${v.pack})`);
       console.error(`    ${v.text}\n`);
     }
     console.error('  Move the logic into the pack behind a generic engine capability, or allowlist it with a reason.\n');
+  }
+  if (presentationViolations.length > 0) {
+    console.error(`❌ Found ${presentationViolations.length} content-pack identifier(s) in presentation source (Pack-Neutral Presentation, ARCHITECTURE.md §3):\n`);
+    for (const v of presentationViolations) {
+      console.error(`  ${v.file}:${v.line}  '${v.id}' (declared by ${v.pack})`);
+      console.error(`    ${v.text}\n`);
+    }
+    console.error('  Move pack wording/styling into manifest fields, or allowlist it with a reason.\n');
   }
   if (stale.length > 0) {
     console.error(`❌ ${stale.length} stale allowlist entr${stale.length === 1 ? 'y' : 'ies'} (no longer matched; remove them):\n`);
@@ -156,4 +203,5 @@ if (violations.length > 0 || stale.length > 0) {
 }
 
 console.log(`✓ No Engine Creep: 0 content-pack identifiers in engine source.`);
+console.log(`✓ Pack-Neutral Presentation: 0 content-pack identifiers or namespaced literals in presentation source.`);
 process.exit(0);

@@ -91,6 +91,78 @@
     {
       "id": "health_potion",
       "reason": "Engine built-in item (an ItemFactory constructor) in the default starter kit used by the headless manifest and CharacterRoller's fallback; cotw re-declares an item with the same ID."
+    },
+    {
+      "id": "backpack",
+      "reason": "Presentation inventory panel identifier (source: 'backpack' | 'ground' | 'paperdoll') and paperdoll empty-slot sprite key; cotw declares a container item with this ID."
+    },
+    {
+      "id": "broadsword",
+      "reason": "Atlas item sprite key and paperdoll mainHand empty-slot sprite key; packs declare weapons with this ID."
+    },
+    {
+      "id": "wooden_shield",
+      "reason": "Atlas item sprite key and paperdoll offHand empty-slot sprite key; packs declare shields with this ID."
+    },
+    {
+      "id": "leather_armor",
+      "reason": "Atlas item sprite key and paperdoll torso empty-slot sprite key; cotw declares armor with this ID."
+    },
+    {
+      "id": "gold_coins",
+      "reason": "Atlas item sprite key; warcraft declares coins with this ID."
+    },
+    {
+      "id": "cursed_mace",
+      "reason": "Atlas item sprite key; cotw declares weapon with this ID."
+    },
+    {
+      "id": "iron_shield",
+      "reason": "Atlas item sprite key; cotw declares shield with this ID."
+    },
+    {
+      "id": "battleaxe",
+      "reason": "Atlas item sprite key; cotw declares weapon with this ID."
+    },
+    {
+      "id": "warhammer",
+      "reason": "Atlas item sprite key; warcraft declares weapon with this ID."
+    },
+    {
+      "id": "kobold",
+      "reason": "Atlas entity sprite key for goblinoid monster tag fallback; cotw declares monster with this ID."
+    },
+    {
+      "id": "skeleton",
+      "reason": "Atlas entity sprite key for undead monster tag fallback; cotw declares monster with this ID."
+    },
+    {
+      "id": "giant_rat",
+      "reason": "Atlas entity sprite key for vermin monster tag fallback; cotw declares monster with this ID."
+    },
+    {
+      "id": "orc",
+      "reason": "Atlas entity sprite key for humanoid monster tag fallback; cotw declares monster with this ID."
+    },
+    {
+      "id": "draugr",
+      "reason": "Atlas entity sprite key; cotw declares monster with this ID."
+    },
+    {
+      "id": "wolf",
+      "reason": "Atlas entity sprite key for beast monster tag fallback; cotw declares monster with this ID."
+    },
+    {
+      "id": "fire_giant",
+      "reason": "Atlas sprite mapping tag; cotw declares a monster with this ID."
+    },
+    {
+      "id": "ogre",
+      "reason": "Atlas name-heuristic monster fallback string in sprite-mapper.ts; cotw declares a monster with this ID."
+    },
+    {
+      "id": "goblin",
+      "reason": "Atlas name-heuristic monster fallback string in sprite-mapper.ts; cotw declares a monster with this ID."
     }
   ]
 }

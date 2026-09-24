@@ -48,4 +48,20 @@ describe('check-engine-creep (ARCHITECTURE.md §3, §7.2)', () => {
     expect(output).toContain("'blood_tap' (declared by cotw)");
     expect(output).not.toContain("'crimson_ward'");
   }, 60_000);
+
+  it('fails on a content-pack identifier or namespaced literal in presentation source', () => {
+    const scratchUi = path.resolve(ROOT, 'src/ui/__scratch_creep_violation__.ts');
+    try {
+      fs.writeFileSync(
+        scratchUi,
+        "export const testVal = 'cotw:giant_blood';\n"
+      );
+      const { status, output } = runGate();
+      expect(status).not.toBe(0);
+      expect(output).toContain('Found 1 content-pack identifier(s) in presentation source');
+      expect(output).toContain("'cotw:giant_blood'");
+    } finally {
+      if (fs.existsSync(scratchUi)) fs.unlinkSync(scratchUi);
+    }
+  }, 60_000);
 });

@@ -32,6 +32,7 @@ You commit — and push when the owner asks — on your own; Claude Code reviews
 - **Engine source** (`src/engine/` outside tests) may be committed like any other code. The three §8.1 protected files still need `§8.1 exception N` in the message (hook-enforced).
 - **Push** when the owner asks. The `pre-push` hook runs the full gates; never bypass hooks (`--no-verify`, `SKIP_HOOKS=1`) unless the owner explicitly says to for that push.
 - **Never move the `verified` tag** — it marks what Claude Code has reviewed.
+- **CLI safety:** never run inline code evaluation (`-e`, `--eval`, `-c`) in shell commands; PowerShell quote parsing causes stdin hangs. Run tests, lints, and builds via defined `package.json` scripts, and write ad-hoc probes to files (or use `npm run safe:eval`).
 - Describe the change in the commit subject: a feature is titled as a feature, a refactor as a refactor.
 
 ## Verification Gates (§7.2)

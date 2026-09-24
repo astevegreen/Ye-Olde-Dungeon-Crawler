@@ -1,5 +1,6 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
+import { makeItem } from '../items/makeItem';
 
 export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
   {
@@ -20,11 +21,11 @@ export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.25,
-        generate: (id) => ItemFactory.createDagger(id),
+        generate: (id, rng) => makeItem('dagger', id, 1, rng),
       },
       {
         chance: 0.15,
-        generate: (id) => ItemFactory.createWoodenShield(id),
+        generate: (id, rng) => makeItem('wooden_shield', id, 1, rng),
       },
     ],
   },
@@ -63,7 +64,7 @@ export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.2,
-        generate: (id) => ItemFactory.createLeatherArmor(id),
+        generate: (id, rng) => makeItem('leather_armor', id, 1, rng),
       },
     ],
   },
@@ -100,11 +101,11 @@ export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.35,
-        generate: (id) => ItemFactory.createHealthPotion(id),
+        generate: (id, rng) => makeItem('health_potion', id, 1, rng),
       },
       {
         chance: 0.35,
-        generate: (id) => ItemFactory.createManaPotion(id),
+        generate: (id, rng) => makeItem('mana_potion', id, 1, rng),
       },
       {
         chance: 0.4,
@@ -136,11 +137,11 @@ export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.5,
-        generate: (id) => ItemFactory.createManaPotion(id),
+        generate: (id, rng) => makeItem('mana_potion', id, 1, rng),
       },
       {
         chance: 0.4,
-        generate: (id) => ItemFactory.createScrollOfIdentify(id),
+        generate: (id, rng) => makeItem('scroll_identify', id, 1, rng),
       },
       {
         chance: 0.6,

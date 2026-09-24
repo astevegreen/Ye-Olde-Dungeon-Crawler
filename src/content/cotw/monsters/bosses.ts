@@ -1,5 +1,6 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
+import { makeItem } from '../items/makeItem';
 
 export const BOSS_MONSTERS: MonsterDefinition[] = [
   {
@@ -36,12 +37,7 @@ export const BOSS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 1.0,
-        generate: (id) =>
-          ItemFactory.createQuestRelic(
-            id,
-            'Shard of the Hearth-Tear',
-            'A radiant fragment of Sól’s stolen sun-chariot, pulsing with trapped solar fire.'
-          ),
+        generate: (id, rng) => makeItem('hearth_tear_fragment', id, 1, rng),
       },
       {
         chance: 1.0,

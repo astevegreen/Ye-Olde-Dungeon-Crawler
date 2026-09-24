@@ -1,5 +1,6 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
+import { makeItem } from '../items/makeItem';
 
 export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
   {
@@ -20,7 +21,7 @@ export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.25,
-        generate: (id) => ItemFactory.createBroadsword(id),
+        generate: (id, rng) => makeItem('broadsword', id, 1, rng),
       },
     ],
   },
@@ -66,20 +67,15 @@ export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.4,
-        generate: (id) => ItemFactory.createManaPotion(id),
+        generate: (id, rng) => makeItem('mana_potion', id, 1, rng),
       },
       {
         chance: 0.3,
-        generate: (id) => ItemFactory.createFrostBlade(id),
+        generate: (id, rng) => makeItem('frost_blade', id, 1, rng),
       },
       {
         chance: 0.5,
-        generate: (id) =>
-          ItemFactory.createQuestRelic(
-            id,
-            'Shard of the Hearth-Tear',
-            'A splinter of Sól’s stolen sun-chariot, still warm despite the permafrost. The warlocks siphoned its fire to freeze Járnviðr.'
-          ),
+        generate: (id, rng) => makeItem('hearth_tear_fragment', id, 1, rng),
       },
     ],
   },
@@ -115,7 +111,7 @@ export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.35,
-        generate: (id) => ItemFactory.createWandOfFireballs(id),
+        generate: (id, rng) => makeItem('wand_fireballs', id, 1, rng),
       },
     ],
   },
@@ -182,7 +178,7 @@ export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.4,
-        generate: (id) => ItemFactory.createHealthPotion(id),
+        generate: (id, rng) => makeItem('health_potion', id, 1, rng),
       },
     ],
   },

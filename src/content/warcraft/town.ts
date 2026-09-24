@@ -1,5 +1,5 @@
-import { ItemFactory } from '../../engine';
 import type { TownLayoutDefinition } from '../../engine';
+import { makeWarcraftItem } from './items';
 
 export const WARCRAFT_TOWN: TownLayoutDefinition = {
   name: 'Stormwind Outpost',
@@ -48,8 +48,8 @@ export const WARCRAFT_TOWN: TownLayoutDefinition = {
         markupRatio: 1.2,
         markdownRatio: 0.5,
         initialInventory: [
-          ItemFactory.createBroadsword('grimstone-sword-1'),
-          ItemFactory.createWoodenShield('grimstone-shield-1'),
+          makeWarcraftItem('broadsword', 'grimstone-sword-1'),
+          makeWarcraftItem('wooden_shield', 'grimstone-shield-1'),
         ],
       },
     },

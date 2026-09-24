@@ -1,6 +1,31 @@
-import type { ItemDefinition } from '../../engine';
+import { createScaledItem } from '../../engine';
+import type { Item, ItemDefinition } from '../../engine';
 
 export const WARCRAFT_ITEMS: ItemDefinition[] = [
+  {
+    id: 'broadsword',
+    name: 'Steel Broadsword',
+    unidentifiedName: 'Heavy Sword',
+    category: 'weapon',
+    slot: 'mainHand',
+    weight: 10,
+    bulk: 7,
+    value: 60,
+    stats: { attackBonus: 8 },
+    description: 'A well-balanced double-edged steel broadsword favored by footmen.',
+  },
+  {
+    id: 'wooden_shield',
+    name: 'Reinforced Wooden Shield',
+    unidentifiedName: 'Round Shield',
+    category: 'shield',
+    slot: 'offHand',
+    weight: 6,
+    bulk: 4,
+    value: 25,
+    stats: { defenseBonus: 3 },
+    description: 'Sturdy oak banded with iron.',
+  },
   {
     id: 'warhammer',
     name: 'Iron Warhammer',
@@ -101,3 +126,17 @@ export const WARCRAFT_ITEMS: ItemDefinition[] = [
     description: 'The blood-stained war sigil of Warchief Blackhand. Proof of the Horde leader’s defeat.',
   },
 ];
+
+export function makeWarcraftItem(
+  itemId: string,
+  instanceId: string,
+  floor = 1,
+  rng: () => number = () => 0.5
+): Item {
+  const def = WARCRAFT_ITEMS.find((item) => item.id === itemId);
+  if (!def) {
+    throw new Error(`No warcraft item definition for: ${itemId}`);
+  }
+  return createScaledItem(def, instanceId, floor, rng);
+}
+

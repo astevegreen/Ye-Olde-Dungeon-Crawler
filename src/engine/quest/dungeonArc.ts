@@ -1,6 +1,6 @@
 import { PRNG } from '../dungeon/prng';
 import { GameMap } from '../grid/map';
-import { TILES, getTileDefinition } from '../grid/tile';
+import { TILES, getTileDefinition, hasTileDefinition } from '../grid/tile';
 import type { Position, GameDifficulty } from '../types';
 import { DungeonGeneratorRegistry } from '../dungeon/generator';
 import { Monster } from '../entities/monster';
@@ -229,12 +229,21 @@ export class DungeonArc {
       for (const placement of manifest.fixedTilePlacements) {
         if (placement.floor !== floorNumber) continue;
         if (placement.requiresChoiceId && !manifest.choices?.[placement.requiresChoiceId]) continue;
-        const tileDef = getTileDefinition(placement.tileId);
+        const tileDef =
+          manifest.tiles?.find((t) => t.type === placement.tileId) ??
+          (hasTileDefinition(placement.tileId) ? getTileDefinition(placement.tileId) : undefined);
         if (!tileDef) continue;
 
         if (placement.placement === 'middle_room_center') {
+          const eligibleRooms = dungeon.rooms.filter(
+            (r) =>
+              (r.centerX !== playerSpawn.x || r.centerY !== playerSpawn.y) &&
+              (!stairsDown || r.centerX !== stairsDown.x || r.centerY !== stairsDown.y)
+          );
           const targetRoom =
-            dungeon.rooms.length > 2 ? dungeon.rooms[Math.floor(dungeon.rooms.length / 2)] : dungeon.rooms[0];
+            eligibleRooms.length > 2
+              ? eligibleRooms[Math.floor(eligibleRooms.length / 2)]
+              : eligibleRooms[0] ?? dungeon.rooms[0];
           if (targetRoom) {
             const posX = targetRoom.centerX;
             const posY = targetRoom.centerY;

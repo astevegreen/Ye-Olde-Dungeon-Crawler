@@ -1,5 +1,6 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
+import { makeItem } from '../items/makeItem';
 
 export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
   {
@@ -27,7 +28,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.35,
-        generate: (id) => ItemFactory.createCurePoisonPotion(id),
+        generate: (id, rng) => makeItem('cure_poison_potion', id, 1, rng),
       },
     ],
   },
@@ -58,7 +59,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.35,
-        generate: (id) => ItemFactory.createManaPotion(id),
+        generate: (id, rng) => makeItem('mana_potion', id, 1, rng),
       },
     ],
   },
@@ -86,7 +87,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.35,
-        generate: (id) => ItemFactory.createIronChest(id),
+        generate: (id, rng) => makeItem('chest', id, 1, rng),
       },
     ],
   },
@@ -109,7 +110,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.3,
-        generate: (id) => ItemFactory.createFrostBlade(id),
+        generate: (id, rng) => makeItem('frost_blade', id, 1, rng),
       },
     ],
   },

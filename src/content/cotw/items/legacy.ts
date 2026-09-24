@@ -619,6 +619,26 @@ export const COTW_LEGACY_ITEMS: ItemDefinition[] = [
     },
   },
 
+  {
+    id: 'cure_poison_potion',
+    name: 'Antidote Potion',
+    unidentifiedName: 'Emerald Potion',
+    category: 'consumable',
+    tier: 1,
+    minFloor: 1,
+    weight: 250,
+    bulk: 150,
+    identified: true,
+    description: 'An herbal tincture that neutralizes toxic venoms and cleanses the blood.',
+    value: 25,
+    itemType: 'potion',
+    potionConfig: {
+      potionType: 'health',
+      potency: 10,
+      effects: [{ type: 'cure_status', status: 'poison' }],
+    },
+  },
+
   // ==========================================
   // QUEST RELICS
   // ==========================================
@@ -634,7 +654,7 @@ export const COTW_LEGACY_ITEMS: ItemDefinition[] = [
     quality: 'artifact',
     identified: true,
     description: 'The sacred solar relic stolen by Hrungnir. Restore it to Bjarnarhaven to save the realm.',
-    value: 10000,
+    value: 1000,
   },
   {
     id: 'hearth_tear_fragment',
@@ -650,4 +670,62 @@ export const COTW_LEGACY_ITEMS: ItemDefinition[] = [
     description: 'A splinter of Sól’s stolen sun-chariot, still warm despite the permafrost. The troll-wife warlocks of Járnviðr siphoned its fire into the abandoned dwarven forge to freeze the village.',
     value: 500,
   },
+
+  // ==========================================
+  // UTILITY & TOWN STOCK
+  // ==========================================
+  {
+    id: 'wooden_torch',
+    name: 'Wooden Torch',
+    unidentifiedName: 'Torch',
+    category: 'misc',
+    tier: 1,
+    weight: 800,
+    bulk: 600,
+    identified: true,
+    description: 'Pitch-soaked wooden branch providing essential light in subterranean depths.',
+    value: 5,
+  },
+  {
+    id: 'thief_lockpicks',
+    name: 'Thief Lockpicks',
+    unidentifiedName: 'Slender Metal Picks',
+    category: 'misc',
+    tier: 1,
+    weight: 200,
+    bulk: 100,
+    identified: true,
+    description: 'Delicate tempered steel tension tools for bypassing locked chests and gates.',
+    value: 40,
+  },
+  {
+    id: 'scroll_identify',
+    name: 'Scroll of Identify',
+    unidentifiedName: 'Parchment Scroll',
+    category: 'consumable',
+    tier: 1,
+    weight: 50,
+    bulk: 40,
+    identified: true,
+    description: 'A crisp parchment inscribed with golden revelation runes.',
+    value: 40,
+    itemType: 'scroll',
+    scrollConfig: { spellId: 'identify' },
+  },
+  {
+    id: 'charm_watchful_eye',
+    name: 'Charm of the Watchful Eye',
+    unidentifiedName: 'Engraved Charm',
+    category: 'amulet',
+    slot: 'neck',
+    tier: 1,
+    weight: 40,
+    bulk: 20,
+    stats: { defenseBonus: 2 },
+    identified: true,
+    description:
+      "Astrid sets this aside only for adventurers whose reputation for uncovering the dungeon's secrets precedes them.",
+    value: 150,
+  },
 ];
+

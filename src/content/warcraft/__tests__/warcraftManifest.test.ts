@@ -15,7 +15,7 @@ import {
   WARCRAFT_COMBAT_CONFIG,
   WARCRAFT_PROGRESSION_CONFIG,
 } from '../index';
-import { validateManifest } from '../../../engine';
+import { validateManifest, CoinItem, getItemBuyPrice, getItemSellPrice, COIN_VALUES } from '../../../engine';
 
 describe('Warcraft Content Pack: Manifest & Data Validation', () => {
   describe('validateManifest contract', () => {
@@ -162,5 +162,32 @@ describe('Warcraft Content Pack: Manifest & Data Validation', () => {
       expect(WARCRAFT_STARTER_KIT.weaponItemId).toBe('warhammer');
       expect(WARCRAFT_STARTER_KIT.packItemIds?.length).toBeGreaterThan(0);
     });
+
+    it('prices every town item on the same copper scale as the starting purse', () => {
+      const startingPurseCp = WARCRAFT_STARTER_KIT.coins!.reduce(
+        (sum, c) => sum + c.count * COIN_VALUES[c.denomination],
+        0
+      );
+      for (const npc of WARCRAFT_TOWN.npcs) {
+        for (const item of npc.merchantConfig?.initialInventory ?? []) {
+          expect(getItemBuyPrice(item), `${npc.name}: ${item.name}`).toBeLessThanOrEqual(startingPurseCp);
+        }
+      }
+    });
+
+    it('ensures every monster loot drop uses pack definitions and pack price scale', () => {
+      const warcraftItemMap = new Map(WARCRAFT_ITEMS.map((i) => [i.id, i]));
+      for (const monster of WARCRAFT_MONSTERS) {
+        for (const rule of monster.lootTable ?? []) {
+          const item = rule.generate('probe', () => 0.5);
+          if (item instanceof CoinItem) continue;
+          expect(item.definitionId, `${monster.id} generated item without definitionId`).toBeDefined();
+          const def = warcraftItemMap.get(item.definitionId!);
+          expect(def, `${monster.id} generated unknown item definition ${item.definitionId}`).toBeDefined();
+          expect(getItemSellPrice(item), `${monster.id}: ${item.name}`).toBeLessThanOrEqual(def!.value ?? 0);
+        }
+      }
+    });
   });
 });
+

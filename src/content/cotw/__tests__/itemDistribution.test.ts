@@ -3,11 +3,13 @@ import { COTW_STARTER_KIT } from '../character';
 import { COTW_TOWN } from '../town';
 import { COTW_VAULTS } from '../vaults';
 import { MINIBOSS_MONSTERS } from '../monsters/minibosses';
+import { COTW_MONSTERS } from '../monsters';
 import { COTW_ITEMS } from '../items';
 import { Player } from '../../../engine/entities/player';
 import { CharacterRoller } from '../../../engine/character/characterRoller';
-import { getItemBuyPrice } from '../../../engine/economy/merchant';
+import { getItemBuyPrice, getItemSellPrice } from '../../../engine/economy/merchant';
 import { COIN_VALUES } from '../../../engine/economy/types';
+import { CoinItem } from '../../../engine/economy/currency';
 
 describe('CotW Item Distribution & Economic Integration', () => {
   it('equips authentic CotW starter items on new character roll', () => {
@@ -187,4 +189,22 @@ describe('CotW Item Distribution & Economic Integration', () => {
     });
     expect(ringDrop).toBe(true);
   });
+
+  it('ensures every monster loot drop uses pack definitions and pack price scale', () => {
+    const cotwItemMap = new Map(COTW_ITEMS.map((i) => [i.id, i]));
+    for (const monster of COTW_MONSTERS) {
+      for (const rule of monster.lootTable ?? []) {
+        const item = rule.generate('probe', () => 0.5);
+        if (item instanceof CoinItem) continue;
+        expect(
+          item.definitionId,
+          `${monster.name} (${monster.id}) generated item without definitionId: ${item.name}`
+        ).toBeDefined();
+        const def = cotwItemMap.get(item.definitionId!);
+        expect(def, `${monster.id} generated unknown definition ${item.definitionId}`).toBeDefined();
+        expect(getItemSellPrice(item), `${monster.id}: ${item.name}`).toBeLessThanOrEqual(def!.value ?? 0);
+      }
+    }
+  });
 });
+

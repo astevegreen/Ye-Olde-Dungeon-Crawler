@@ -1,5 +1,6 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
+import { makeItem } from '../items/makeItem';
 
 /**
  * Legacy monster templates preserved for backward compatibility with existing unit tests
@@ -29,7 +30,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.15,
-        generate: (id) => ItemFactory.createHealthPotion(id),
+        generate: (id, rng) => makeItem('health_potion', id, 1, rng),
       },
     ],
   },
@@ -50,7 +51,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.35,
-        generate: (id) => ItemFactory.createDagger(id),
+        generate: (id, rng) => makeItem('dagger', id, 1, rng),
       },
     ],
   },
@@ -71,11 +72,11 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.35,
-        generate: (id) => ItemFactory.createWoodenShield(id),
+        generate: (id, rng) => makeItem('wooden_shield', id, 1, rng),
       },
       {
         chance: 0.25,
-        generate: (id) => ItemFactory.createDagger(id),
+        generate: (id, rng) => makeItem('dagger', id, 1, rng),
       },
     ],
   },
@@ -94,11 +95,11 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.5,
-        generate: (id) => ItemFactory.createBroadsword(id),
+        generate: (id, rng) => makeItem('broadsword', id, 1, rng),
       },
       {
         chance: 0.4,
-        generate: (id) => ItemFactory.createWoodenShield(id),
+        generate: (id, rng) => makeItem('wooden_shield', id, 1, rng),
       },
       {
         chance: 0.3,
@@ -137,19 +138,19 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.55,
-        generate: (id) => ItemFactory.createManaPotion(id),
+        generate: (id, rng) => makeItem('mana_potion', id, 1, rng),
       },
       {
         chance: 0.45,
-        generate: (id) => ItemFactory.createScrollOfTeleport(id),
+        generate: (id, rng) => makeItem('scroll_teleport', id, 1, rng),
       },
       {
         chance: 0.35,
-        generate: (id) => ItemFactory.createWandOfFireballs(id),
+        generate: (id, rng) => makeItem('wand_fireballs', id, 1, rng),
       },
       {
         chance: 0.3,
-        generate: (id) => ItemFactory.createScrollOfIdentify(id),
+        generate: (id, rng) => makeItem('scroll_identify', id, 1, rng),
       },
     ],
   },
@@ -171,7 +172,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.2,
-        generate: (id) => ItemFactory.createLeatherArmor(id),
+        generate: (id, rng) => makeItem('leather_armor', id, 1, rng),
       },
     ],
   },
@@ -192,15 +193,15 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.5,
-        generate: (id) => ItemFactory.createIronChest(id),
+        generate: (id, rng) => makeItem('chest', id, 1, rng),
       },
       {
         chance: 0.4,
-        generate: (id) => ItemFactory.createChainmail(id),
+        generate: (id, rng) => makeItem('chainmail', id, 1, rng),
       },
       {
         chance: 0.3,
-        generate: (id) => ItemFactory.createFrostBlade(id),
+        generate: (id, rng) => makeItem('frost_blade', id, 1, rng),
       },
     ],
   },
@@ -228,11 +229,11 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.3,
-        generate: (id) => ItemFactory.createCursedMace(id),
+        generate: (id, rng) => makeItem('cursed_mace', id, 1, rng),
       },
       {
         chance: 0.25,
-        generate: (id) => ItemFactory.createIronShield(id),
+        generate: (id, rng) => makeItem('iron_shield', id, 1, rng),
       },
     ],
   },
@@ -260,7 +261,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.3,
-        generate: (id) => ItemFactory.createCursedMace(id),
+        generate: (id, rng) => makeItem('cursed_mace', id, 1, rng),
       },
     ],
   },
@@ -281,11 +282,11 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.4,
-        generate: (id) => ItemFactory.createChainmail(id),
+        generate: (id, rng) => makeItem('chainmail', id, 1, rng),
       },
       {
         chance: 0.3,
-        generate: (id) => ItemFactory.createIronHelmet(id),
+        generate: (id, rng) => makeItem('helmet', id, 1, rng),
       },
     ],
   },
@@ -308,7 +309,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.3,
-        generate: (id) => ItemFactory.createBroadsword(id),
+        generate: (id, rng) => makeItem('broadsword', id, 1, rng),
       },
     ],
   },
@@ -332,11 +333,11 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.4,
-        generate: (id) => ItemFactory.createFrostBlade(id),
+        generate: (id, rng) => makeItem('frost_blade', id, 1, rng),
       },
       {
         chance: 0.3,
-        generate: (id) => ItemFactory.createHealthPotion(id),
+        generate: (id, rng) => makeItem('health_potion', id, 1, rng),
       },
     ],
   },
@@ -373,15 +374,15 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.6,
-        generate: (id) => ItemFactory.createWandOfFireballs(id),
+        generate: (id, rng) => makeItem('wand_fireballs', id, 1, rng),
       },
       {
         chance: 0.5,
-        generate: (id) => ItemFactory.createManaPotion(id),
+        generate: (id, rng) => makeItem('mana_potion', id, 1, rng),
       },
       {
         chance: 0.4,
-        generate: (id) => ItemFactory.createScrollOfTeleport(id),
+        generate: (id, rng) => makeItem('scroll_teleport', id, 1, rng),
       },
     ],
   },
@@ -423,11 +424,11 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.6,
-        generate: (id) => ItemFactory.createFrostBlade(id),
+        generate: (id, rng) => makeItem('frost_blade', id, 1, rng),
       },
       {
         chance: 0.5,
-        generate: (id) => ItemFactory.createHealthPotion(id),
+        generate: (id, rng) => makeItem('health_potion', id, 1, rng),
       },
     ],
   },
@@ -450,11 +451,11 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.6,
-        generate: (id) => ItemFactory.createIronChest(id),
+        generate: (id, rng) => makeItem('chest', id, 1, rng),
       },
       {
         chance: 0.4,
-        generate: (id) => ItemFactory.createChainmail(id),
+        generate: (id, rng) => makeItem('chainmail', id, 1, rng),
       },
     ],
   },
@@ -484,11 +485,11 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.6,
-        generate: (id) => ItemFactory.createScrollOfTeleport(id),
+        generate: (id, rng) => makeItem('scroll_teleport', id, 1, rng),
       },
       {
         chance: 0.5,
-        generate: (id) => ItemFactory.createManaPotion(id),
+        generate: (id, rng) => makeItem('mana_potion', id, 1, rng),
       },
     ],
   },
@@ -524,12 +525,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 1.0,
-        generate: (id) =>
-          ItemFactory.createQuestRelic(
-            id,
-            'The Sun-Stone of Freyr',
-            'The ancient radiant relic of Freyr, warm to the touch. Returning it to town will bring lasting peace and light.'
-          ),
+        generate: (id, rng) => makeItem('sun_stone_freyr', id, 1, rng),
       },
       {
         chance: 1.0,
@@ -537,7 +533,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.8,
-        generate: (id) => ItemFactory.createFrostBlade(id),
+        generate: (id, rng) => makeItem('frost_blade', id, 1, rng),
       },
     ],
   },
@@ -566,20 +562,15 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.4,
-        generate: (id) => ItemFactory.createManaPotion(id),
+        generate: (id, rng) => makeItem('mana_potion', id, 1, rng),
       },
       {
         chance: 0.25,
-        generate: (id) => ItemFactory.createFrostBlade(id),
+        generate: (id, rng) => makeItem('frost_blade', id, 1, rng),
       },
       {
         chance: 0.5,
-        generate: (id) =>
-          ItemFactory.createQuestRelic(
-            id,
-            'Shard of the Hearth-Tear',
-            'A splinter of Sól’s stolen sun-chariot, still warm despite the permafrost. The warlocks siphoned its fire to freeze Járnviðr.'
-          ),
+        generate: (id, rng) => makeItem('hearth_tear_fragment', id, 1, rng),
       },
     ],
   },
@@ -608,7 +599,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.35,
-        generate: (id) => ItemFactory.createCurePoisonPotion(id),
+        generate: (id, rng) => makeItem('cure_poison_potion', id, 1, rng),
       },
     ],
   },
@@ -630,7 +621,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.3,
-        generate: (id) => ItemFactory.createIronChest(id),
+        generate: (id, rng) => makeItem('chest', id, 1, rng),
       },
     ],
   },
@@ -659,7 +650,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.3,
-        generate: (id) => ItemFactory.createHealthPotion(id),
+        generate: (id, rng) => makeItem('health_potion', id, 1, rng),
       },
     ],
   },
@@ -680,7 +671,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.2,
-        generate: (id) => ItemFactory.createLockpicks(id),
+        generate: (id, rng) => makeItem('thief_lockpicks', id, 1, rng),
       },
     ],
   },
@@ -697,11 +688,11 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.35,
-        generate: (id) => ItemFactory.createBroadsword(id),
+        generate: (id, rng) => makeItem('broadsword', id, 1, rng),
       },
       {
         chance: 0.25,
-        generate: (id) => ItemFactory.createWoodenShield(id),
+        generate: (id, rng) => makeItem('wooden_shield', id, 1, rng),
       },
       {
         chance: 0.4,

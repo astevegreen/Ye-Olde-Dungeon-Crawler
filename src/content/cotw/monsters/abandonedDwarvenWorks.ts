@@ -1,5 +1,6 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
+import { makeItem } from '../items/makeItem';
 
 export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
   {
@@ -26,11 +27,11 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.25,
-        generate: (id) => ItemFactory.createCursedMace(id),
+        generate: (id, rng) => makeItem('cursed_mace', id, 1, rng),
       },
       {
         chance: 0.2,
-        generate: (id) => ItemFactory.createIronShield(id),
+        generate: (id, rng) => makeItem('iron_shield', id, 1, rng),
       },
     ],
   },
@@ -61,7 +62,7 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.3,
-        generate: (id) => ItemFactory.createIronChest(id),
+        generate: (id, rng) => makeItem('chest', id, 1, rng),
       },
     ],
   },
@@ -111,11 +112,11 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.35,
-        generate: (id) => ItemFactory.createIronShield(id),
+        generate: (id, rng) => makeItem('iron_shield', id, 1, rng),
       },
       {
         chance: 0.25,
-        generate: (id) => ItemFactory.createBroadsword(id),
+        generate: (id, rng) => makeItem('broadsword', id, 1, rng),
       },
     ],
   },
@@ -137,7 +138,7 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.2,
-        generate: (id) => ItemFactory.createDagger(id),
+        generate: (id, rng) => makeItem('dagger', id, 1, rng),
       },
     ],
   },

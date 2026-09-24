@@ -1,5 +1,6 @@
 import { ItemFactory } from '../../engine';
 import type { MonsterDefinition } from '../../engine';
+import { makeWarcraftItem } from './items';
 
 export const WARCRAFT_MONSTERS: MonsterDefinition[] = [
   {
@@ -30,7 +31,7 @@ export const WARCRAFT_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.3,
-        generate: (id) => ItemFactory.createBroadsword(id),
+        generate: (id) => makeWarcraftItem('broadsword', id, 2),
       },
       {
         chance: 0.5,
@@ -50,7 +51,7 @@ export const WARCRAFT_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.4,
-        generate: (id) => ItemFactory.createHealthPotion(id),
+        generate: (id) => makeWarcraftItem('health_potion', id, 3),
       },
       {
         chance: 0.6,
@@ -71,7 +72,7 @@ export const WARCRAFT_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.5,
-        generate: (id) => ItemFactory.createManaPotion(id),
+        generate: (id) => makeWarcraftItem('mana_potion', id, 4),
       },
       {
         chance: 0.5,

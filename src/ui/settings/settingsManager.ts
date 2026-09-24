@@ -72,6 +72,8 @@ export interface GameSettings {
   arrowChordingEnabled: boolean;
   arrowChordBufferMs: number;
   mouseVectoringEnabled: boolean;
+  /** The content pack's torchlight: sight darkens toward its edge, warm light near the hero. */
+  torchlightEnabled: boolean;
   keybinds: Record<string, string[]>;
   radialMenuSlots: (RadialMenuSlotConfig | null)[];
 }
@@ -105,6 +107,7 @@ export function getDefaultSettings(): GameSettings {
     arrowChordingEnabled: true,
     arrowChordBufferMs: 40,
     mouseVectoringEnabled: true,
+    torchlightEnabled: true,
     keybinds: getDefaultKeybinds(),
     radialMenuSlots: new Array(RADIAL_MENU_SLOT_COUNT).fill(null),
   };
@@ -236,6 +239,7 @@ export class SettingsManager {
         arrowChordingEnabled: typeof parsed.arrowChordingEnabled === 'boolean' ? parsed.arrowChordingEnabled : defaults.arrowChordingEnabled,
         arrowChordBufferMs: typeof parsed.arrowChordBufferMs === 'number' ? Math.max(25, Math.min(75, parsed.arrowChordBufferMs)) : defaults.arrowChordBufferMs,
         mouseVectoringEnabled: typeof parsed.mouseVectoringEnabled === 'boolean' ? parsed.mouseVectoringEnabled : defaults.mouseVectoringEnabled,
+        torchlightEnabled: typeof parsed.torchlightEnabled === 'boolean' ? parsed.torchlightEnabled : defaults.torchlightEnabled,
         keybinds: typeof parsed.keybinds === 'object' && parsed.keybinds !== null ? { ...defaults.keybinds, ...parsed.keybinds } : defaults.keybinds,
         radialMenuSlots: sanitizeRadialMenuSlots(parsed.radialMenuSlots),
       };

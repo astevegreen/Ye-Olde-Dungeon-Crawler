@@ -1203,11 +1203,13 @@ window.addEventListener('DOMContentLoaded', () => {
         canvas ?? undefined
       );
       renderer.mouseVectoringEnabled = settingsManager.getSettings().mouseVectoringEnabled;
+      renderer.torchlightEnabled = settingsManager.getSettings().torchlightEnabled;
       renderer.radialMenuOverlay.slots = settingsManager.getSettings().radialMenuSlots;
       renderer.onResolveRadialLabel = resolveRadialMenuLabel;
       settingsManager.subscribe((settings) => {
         if (renderer) {
           renderer.mouseVectoringEnabled = settings.mouseVectoringEnabled;
+          renderer.torchlightEnabled = settings.torchlightEnabled;
           renderer.radialMenuOverlay.slots = settings.radialMenuSlots;
           renderer.render();
         }

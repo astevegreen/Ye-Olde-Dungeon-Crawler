@@ -424,6 +424,55 @@ export interface AtlasProceduralTheme<TContext = any> {
   >;
   palette?: Record<string, string>;
   tileZoneBands?: TileZoneBand[];
+  /** Neighbour-aware terrain, lighting and memory styling. Absent = one recipe per tile type, as before. */
+  terrain?: TerrainArtConfig;
+}
+
+/**
+ * How a pack draws terrain beyond one recipe per tile type (rendering tier; the engine only
+ * carries the data). Recipes are keyed `<base>[_<zone>]~<part>`: `<base>` is the tile's sprite
+ * name (`floor`, `wall`, `water`, `chasm`, `pillar`, `bars`, `stairs_down`, `stairs_up`,
+ * `trap`, `door_closed`, `door_open`, or a pack tile's type), `<zone>` the active
+ * `tileZoneBands` key (on floor 0, `town` or `town_<buildingType>`), and `<part>`:
+ *
+ *   field  `t<n>` tone picked by smooth world-space noise; `d<n>` detail picked by a stable
+ *          hash at `detailRate`; with `macro`, prefixed `q<0-3>` for the 2x2 quadrant.
+ *   wall   `top` (south neighbour solid) or `face<n>` (south open), plus overlays on open
+ *          sides: `rimN`, `rimE`, `rimW` (top) / `edgeE`, `edgeW` (face), and `cornerNE`,
+ *          `cornerNW`, `cornerSE`, `cornerSW` where only the diagonal is open.
+ *   area   `q<0-3>` (a 2x2 macro that tiles seamlessly), plus `edgeN|E|S|W` toward
+ *          neighbours of another type, so a pool or a pit reads as one body.
+ *   prop   `prop`, drawn over the floor underlay (pillars, bars, stairs, traps, pack tiles).
+ *   door   `face` (between walls east and west, drawn in the wall line) or `side` (over floor).
+ *
+ * A key that has no recipe makes that cell fall back to the one-recipe-per-type path.
+ */
+export interface TerrainArtConfig {
+  /** Keyed by base sprite name. Bases without a style draw as props or doors. */
+  styles: Record<string, TerrainStyle>;
+  /** Soft shadow on floor below and beside walls. */
+  contactShadows?: boolean;
+  /** A ground shadow under the player and monsters. */
+  entityShadows?: boolean;
+  /** Torchlight: visible cells darken toward the edge of sight, with a warm pool near the player. */
+  torch?: { radius: number; color: string; warmth: number; falloff: number };
+  /** Light-emitting tiles: zone key, then tile type. */
+  emissive?: Record<string, Record<string, { color: string; radius: number; strength: number }>>;
+  /** Remembered cells: desaturate, flatten toward each cell's mean and darken (0-1 each). */
+  memory?: { desaturate: number; flatten: number; darken: number; tint?: string; tintAmount?: number };
+}
+
+export interface TerrainStyle {
+  kind: 'field' | 'wall' | 'area';
+  /** field: tone variants picked by smooth world-space noise (clustered shading). */
+  tones?: number;
+  /** field: detail variants swapped in by a stable per-cell hash. */
+  details?: number;
+  detailRate?: number;
+  /** field/area: variants also indexed by the 2x2 quadrant, for tile-spanning patterns. */
+  macro?: boolean;
+  /** wall: face variants picked by a stable per-cell hash. */
+  faces?: number;
 }
 
 

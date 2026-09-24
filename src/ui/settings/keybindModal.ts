@@ -212,6 +212,17 @@ export class KeybindModal implements UIModal {
                   Displays a subtle 8-directional ring around your character when hovering the mouse. Click any adjacent tile to step or attack, or click a distant tile to auto-pathfind.
                 </p>
               </div>
+
+              <!-- Torchlight -->
+              <div class="movement-mode-card" style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 10px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: bold; color: #0f172a;">
+                  <input type="checkbox" id="chk-torchlight" style="width: 15px; height: 15px; cursor: pointer;" />
+                  <span>Torchlight</span>
+                </label>
+                <p style="font-size: 11px; color: #475569; margin-top: 4px; line-height: 1.4;">
+                  What you can see darkens toward the edge of your sight, with warm light around your hero. Turn off for flat, even lighting.
+                </p>
+              </div>
             </div>
           </fieldset>
 
@@ -289,6 +300,11 @@ export class KeybindModal implements UIModal {
       this.settingsManager.updateSettings({ arrowChordBufferMs: val });
     });
 
+    const torchChk = modal.querySelector('#chk-torchlight') as HTMLInputElement | null;
+    torchChk?.addEventListener('change', () => {
+      this.settingsManager.updateSettings({ torchlightEnabled: torchChk.checked });
+    });
+
     // Mouse Vectoring Checkbox
     const mouseChk = modal.querySelector('#chk-mouse-vectoring') as HTMLInputElement | null;
     mouseChk?.addEventListener('change', () => {
@@ -344,6 +360,8 @@ export class KeybindModal implements UIModal {
 
     const mouseChk = this.modalEl.querySelector('#chk-mouse-vectoring') as HTMLInputElement | null;
     if (mouseChk) mouseChk.checked = settings.mouseVectoringEnabled;
+    const torchChk = this.modalEl.querySelector('#chk-torchlight') as HTMLInputElement | null;
+    if (torchChk) torchChk.checked = settings.torchlightEnabled;
 
     const standardBadge = this.modalEl.querySelector('#badge-standard-mode');
     if (standardBadge) {

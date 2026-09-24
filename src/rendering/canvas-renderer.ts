@@ -16,6 +16,7 @@ import { IntentOverlay } from './intentOverlay';
 import { Monster } from '../engine';
 import { SpriteAtlas } from './atlas/sprite-atlas';
 import { getTerrainSpriteKey, getEntitySpriteKey, getItemSpriteKey } from './atlas/sprite-mapper';
+import { terrainLayers, contactShadowSides, zoneForFloor, type TerrainView } from './atlas/terrain-layers';
 import { ViewportManager } from './viewport';
 import { resolveThemeTokens, type ThemeTokens } from './theme';
 import { CanvasFXRunner } from './fxRunner';
@@ -56,6 +57,8 @@ export class CanvasRenderer {
   /** Resolves a display label for a radial-menu slot; wired from main.ts (spell/command/item lookups live there). */
   public onResolveRadialLabel?: (slot: RadialMenuSlotConfig) => string;
   public mouseVectoringEnabled = true;
+  /** Player setting: the pack's torchlight pass (`atlas.terrain.torch`). */
+  public torchlightEnabled = true;
   public navigationController?: NavigationController;
   private hud: HUDMessageLogRenderer;
   private cellSize = 32;
@@ -73,6 +76,19 @@ export class CanvasRenderer {
   private cachedChasmGradVisible?: CanvasGradient;
   private cachedChasmGradDim?: CanvasGradient;
   private cachedChasmCs = 0;
+  private contactShadowCells?: { n: HTMLCanvasElement; w: HTMLCanvasElement; e: HTMLCanvasElement };
+  private readonly terrainView: TerrainView = (() => {
+    const map = () => this.engine.map;
+    return {
+      get width() {
+        return map().width;
+      },
+      get height() {
+        return map().height;
+      },
+      typeAt: (x: number, y: number) => (map().inBounds(x, y) ? map().getTile(x, y)?.type : undefined),
+    };
+  })();
   private cachedHudTitle = '';
   private cachedHudTitleKey = '';
   public onPactModalRequested?: () => void;
@@ -95,7 +111,7 @@ export class CanvasRenderer {
     this.ctx = ctx;
     this.engine = engine;
     this.camera = new Camera(26, 18);
-    this.atlas = new SpriteAtlas(this.engine.manifest?.spriteRecipes);
+    this.atlas = new SpriteAtlas(this.engine.manifest?.spriteRecipes, { memory: this.engine.manifest?.atlas?.terrain?.memory });
     this.viewport = new ViewportManager(this.canvas, this.ctx, {
       virtualWidth: 960,
       virtualHeight: 600,
@@ -726,6 +742,9 @@ export class CanvasRenderer {
       }
     }
 
+    this.renderContactShadows(startX, startY, cols, rows);
+    this.renderTorchlight(startX, startY, cols, rows);
+
 
     // Threatened Target Tiles Hazard Highlight (Telegraphed Wind-Up)
     for (const entity of this.engine.map.getAllEntities()) {
@@ -788,6 +807,17 @@ export class CanvasRenderer {
       }
     }
 
+    // Neighbour-aware terrain the pack opts into (atlas.terrain); cells it doesn't draw fall through.
+    const art = this.engine.manifest?.atlas?.terrain;
+    if (art && worldX !== undefined && worldY !== undefined) {
+      const layers = terrainLayers(this.terrainView, worldX, worldY, this.terrainSuffixAt, art, (k) => this.atlas.hasRecipe(k));
+      if (layers) {
+        for (const key of layers) this.atlas.drawSprite(this.ctx, key, px, py, cs, visibility);
+        if (tile.visual === 'portal') this.drawFixtureOverlay(px, py, cs, tile.visual, visibility);
+        return;
+      }
+    }
+
     // State 2 & 3: Explored vs Visible via Sprite Atlas
     const spriteKey = getTerrainSpriteKey(tile.type, currentFloor, tileZoneBands, buildingType, (k) => this.atlas.hasRecipe(k));
     this.atlas.drawSprite(this.ctx, spriteKey, px, py, cs, visibility);
@@ -800,8 +830,148 @@ export class CanvasRenderer {
       tile.type === 'iron_bars' ||
       tile.type === 'pillar'
     ) {
-      this.drawTacticalTerrain(px, py, cs, tile.type, visibility, currentFloor);
+      this.drawTacticalTerrain(px, py, cs, tile.type, visibility);
     }
+  }
+
+  /** Recipe-key suffix at a cell: the zone band's key, or on floor 0 the town building's. */
+  private readonly terrainSuffixAt = (x: number, y: number): string | undefined => {
+    const floor = this.engine.currentFloor;
+    if (floor === 0) {
+      for (const b of this.engine.manifest?.town?.buildings ?? []) {
+        if (x >= b.bounds.x1 && x <= b.bounds.x2 && y >= b.bounds.y1 && y <= b.bounds.y2) return `town_${b.buildingType ?? 'generic'}`;
+      }
+      return 'town';
+    }
+    return zoneForFloor(floor, this.engine.manifest?.atlas?.tileZoneBands);
+  };
+
+  private getContactShadowCells(): { n: HTMLCanvasElement; w: HTMLCanvasElement; e: HTMLCanvasElement } {
+    if (this.contactShadowCells) return this.contactShadowCells;
+    const make = (paint: (g: CanvasRenderingContext2D) => CanvasGradient) => {
+      const c = document.createElement('canvas');
+      c.width = 32;
+      c.height = 32;
+      const g = c.getContext('2d');
+      if (g) {
+        g.fillStyle = paint(g);
+        g.fillRect(0, 0, 32, 32);
+      }
+      return c;
+    };
+    this.contactShadowCells = {
+      n: make((g) => {
+        const gr = g.createLinearGradient(0, 0, 0, 11);
+        gr.addColorStop(0, 'rgba(0,0,0,0.46)');
+        gr.addColorStop(1, 'rgba(0,0,0,0)');
+        return gr;
+      }),
+      w: make((g) => {
+        const gr = g.createLinearGradient(0, 0, 6, 0);
+        gr.addColorStop(0, 'rgba(0,0,0,0.26)');
+        gr.addColorStop(1, 'rgba(0,0,0,0)');
+        return gr;
+      }),
+      e: make((g) => {
+        const gr = g.createLinearGradient(32, 0, 27, 0);
+        gr.addColorStop(0, 'rgba(0,0,0,0.16)');
+        gr.addColorStop(1, 'rgba(0,0,0,0)');
+        return gr;
+      }),
+    };
+    return this.contactShadowCells;
+  }
+
+  /** Soft shadow on floor under and beside rock (atlas.terrain.contactShadows). */
+  private renderContactShadows(startX: number, startY: number, cols: number, rows: number): void {
+    if (!this.engine.manifest?.atlas?.terrain?.contactShadows) return;
+    const cs = this.cellSize;
+    const cells = this.getContactShadowCells();
+    const ctx = this.ctx;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const x = startX + c;
+        const y = startY + r;
+        if (!this.engine.map.inBounds(x, y)) continue;
+        const vis = this.engine.fov.getVisibility(x, y);
+        if (vis === Visibility.Unexplored) continue;
+        const sides = contactShadowSides(this.terrainView, x, y);
+        if (!sides) continue;
+        const px = this.offsetX + c * cs;
+        const py = this.offsetY + r * cs;
+        ctx.globalAlpha = vis === Visibility.Visible ? 1 : 0.55;
+        if (sides.n) ctx.drawImage(cells.n, px, py, cs, cs);
+        if (sides.w) ctx.drawImage(cells.w, px, py, cs, cs);
+        if (sides.e) ctx.drawImage(cells.e, px, py, cs, cs);
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /**
+   * Torchlight (atlas.terrain.torch): visible cells darken toward the edge of sight, a warm
+   * soft-light pool sits on the player, and emissive tiles add their own glow. Remembered
+   * cells get no light.
+   */
+  private renderTorchlight(startX: number, startY: number, cols: number, rows: number): void {
+    const art = this.engine.manifest?.atlas?.terrain;
+    const torch = art?.torch;
+    if (!torch || !this.torchlightEnabled) return;
+    const cs = this.cellSize;
+    const ctx = this.ctx;
+    const player = this.engine.player;
+    const visible: Array<{ px: number; py: number; x: number; y: number }> = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const x = startX + c;
+        const y = startY + r;
+        if (!this.engine.map.inBounds(x, y) || !this.engine.fov.isVisible(x, y)) continue;
+        visible.push({ px: this.offsetX + c * cs, py: this.offsetY + r * cs, x, y });
+      }
+    }
+    if (visible.length === 0) return;
+    for (const v of visible) {
+      const t = Math.min(1, Math.hypot(v.x - player.x, v.y - player.y) / torch.radius);
+      const a = torch.falloff * Math.pow(t, 1.35);
+      if (a > 0.005) {
+        ctx.fillStyle = `rgba(4,6,10,${a.toFixed(3)})`;
+        ctx.fillRect(v.px, v.py, cs, cs);
+      }
+    }
+    const playerPos = this.camera.worldToScreen(player.x, player.y, cs, this.offsetX, this.offsetY);
+    ctx.save();
+    ctx.beginPath();
+    for (const v of visible) ctx.rect(v.px, v.py, cs, cs);
+    ctx.clip();
+    if (playerPos) {
+      const cx = playerPos.x + cs / 2;
+      const cy = playerPos.y + cs / 2;
+      const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, cs * torch.radius * 0.65);
+      glow.addColorStop(0, hexToRgba(torch.color, torch.warmth));
+      glow.addColorStop(1, hexToRgba(torch.color, 0));
+      ctx.globalCompositeOperation = 'soft-light';
+      ctx.fillStyle = glow;
+      ctx.fillRect(cx - cs * torch.radius, cy - cs * torch.radius, cs * torch.radius * 2, cs * torch.radius * 2);
+    }
+    const zone = this.terrainSuffixAt(player.x, player.y);
+    const lights = (zone && art?.emissive?.[zone]) || undefined;
+    if (lights) {
+      ctx.globalCompositeOperation = 'lighter';
+      for (const v of visible) {
+        const type = this.engine.map.getTile(v.x, v.y)?.type;
+        const light = type ? lights[type] : undefined;
+        if (!light) continue;
+        const cx = v.px + cs / 2;
+        const cy = v.py + cs / 2;
+        const rad = cs * light.radius;
+        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
+        g.addColorStop(0, hexToRgba(light.color, light.strength));
+        g.addColorStop(1, hexToRgba(light.color, 0));
+        ctx.fillStyle = g;
+        ctx.fillRect(cx - rad, cy - rad, rad * 2, rad * 2);
+      }
+    }
+    ctx.restore();
   }
 
   private drawFixtureOverlay(
@@ -841,8 +1011,7 @@ export class CanvasRenderer {
     py: number,
     cs: number,
     type: string,
-    visibility: Visibility,
-    currentFloor?: number
+    visibility: Visibility
   ): void {
     const isVisible = visibility === Visibility.Visible;
     const prevFillStyle = this.ctx.fillStyle;
@@ -851,41 +1020,6 @@ export class CanvasRenderer {
 
     switch (type) {
       case 'shallow_water': {
-        if (currentFloor !== undefined && currentFloor > 0 && currentFloor <= 9) {
-          // Early zone (Rime Hollows): cracked ice sheet
-          this.ctx.fillStyle = isVisible ? 'rgba(56, 189, 248, 0.45)' : 'rgba(15, 23, 42, 0.6)';
-          this.ctx.fillRect(px, py, cs, cs);
-
-          // Cracked ice fracture lines
-          this.ctx.strokeStyle = isVisible ? '#e0f2fe' : '#38bdf8';
-          this.ctx.lineWidth = 1.5;
-          this.ctx.beginPath();
-          this.ctx.moveTo(px + cs * 0.15, py + cs * 0.25);
-          this.ctx.lineTo(px + cs * 0.45, py + cs * 0.5);
-          this.ctx.lineTo(px + cs * 0.85, py + cs * 0.35);
-          this.ctx.moveTo(px + cs * 0.45, py + cs * 0.5);
-          this.ctx.lineTo(px + cs * 0.35, py + cs * 0.85);
-          this.ctx.moveTo(px + cs * 0.65, py + cs * 0.43);
-          this.ctx.lineTo(px + cs * 0.8, py + cs * 0.75);
-          this.ctx.stroke();
-          break;
-        }
-
-        if (currentFloor !== undefined && currentFloor >= 18 && currentFloor <= 25) {
-          // Obsidian Siphon: molten runoff
-          this.ctx.fillStyle = isVisible ? 'rgba(234, 88, 12, 0.55)' : 'rgba(30, 27, 75, 0.6)';
-          this.ctx.fillRect(px, py, cs, cs);
-          this.ctx.strokeStyle = isVisible ? '#fef08a' : '#ea580c';
-          this.ctx.lineWidth = 1.5;
-          this.ctx.beginPath();
-          this.ctx.moveTo(px + cs * 0.2, py + cs * 0.4);
-          this.ctx.quadraticCurveTo(px + cs * 0.5, py + cs * 0.2, px + cs * 0.8, py + cs * 0.4);
-          this.ctx.moveTo(px + cs * 0.25, py + cs * 0.7);
-          this.ctx.quadraticCurveTo(px + cs * 0.55, py + cs * 0.5, px + cs * 0.85, py + cs * 0.7);
-          this.ctx.stroke();
-          break;
-        }
-
         // Translucent azure water wash over stone floor
         this.ctx.fillStyle = isVisible ? 'rgba(14, 116, 144, 0.55)' : 'rgba(15, 23, 42, 0.6)';
         this.ctx.fillRect(px, py, cs, cs);
@@ -976,131 +1110,6 @@ export class CanvasRenderer {
         // Base shadow
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
         this.ctx.fillRect(px + pad + 2, py + pad + 2, colW, colW);
-
-        if (currentFloor !== undefined && currentFloor >= 1 && currentFloor <= 9) {
-          // Ice Spire (Floors 1-9: Rime Hollows)
-          this.ctx.fillStyle = isVisible ? '#0c4a6e' : '#031c2c';
-          this.ctx.fillRect(px + pad, py + pad, colW, colW);
-
-          this.ctx.strokeStyle = isVisible ? '#38bdf8' : '#0284c7';
-          this.ctx.lineWidth = 2;
-          this.ctx.strokeRect(px + pad + 1, py + pad + 1, colW - 2, colW - 2);
-
-          this.ctx.fillStyle = isVisible ? '#0284c7' : '#075985';
-          this.ctx.fillRect(px + pad + 3, py + pad + 3, colW - 6, colW - 6);
-
-          // Frost crystal diamond
-          const dSize = Math.floor(cs * 0.16);
-          this.ctx.fillStyle = isVisible ? '#e0f2fe' : '#38bdf8';
-          this.ctx.beginPath();
-          this.ctx.moveTo(cx, cy - dSize);
-          this.ctx.lineTo(cx + dSize, cy);
-          this.ctx.lineTo(cx, cy + dSize);
-          this.ctx.lineTo(cx - dSize, cy);
-          this.ctx.closePath();
-          this.ctx.fill();
-          break;
-        }
-
-        if (currentFloor !== undefined && currentFloor >= 10 && currentFloor <= 17) {
-          // Dwarven Forge Column (Floors 10-17: Abandoned Dwarven Works)
-          this.ctx.fillStyle = isVisible ? '#44403c' : '#1c1917';
-          this.ctx.fillRect(px + pad, py + pad, colW, colW);
-
-          this.ctx.strokeStyle = isVisible ? '#d97706' : '#78350f';
-          this.ctx.lineWidth = 2;
-          this.ctx.strokeRect(px + pad + 1, py + pad + 1, colW - 2, colW - 2);
-
-          this.ctx.fillStyle = isVisible ? '#292524' : '#0c0a09';
-          this.ctx.fillRect(px + pad + 3, py + pad + 3, colW - 6, colW - 6);
-
-          // Brass rivet diamond motif
-          const dSize = Math.floor(cs * 0.16);
-          this.ctx.fillStyle = isVisible ? '#f97316' : '#b45309';
-          this.ctx.beginPath();
-          this.ctx.moveTo(cx, cy - dSize);
-          this.ctx.lineTo(cx + dSize, cy);
-          this.ctx.lineTo(cx, cy + dSize);
-          this.ctx.lineTo(cx - dSize, cy);
-          this.ctx.closePath();
-          this.ctx.fill();
-          break;
-        }
-
-        if (currentFloor !== undefined && currentFloor >= 18 && currentFloor <= 25) {
-          // Obsidian Furnace (Floors 18-25: Obsidian Siphon)
-          this.ctx.fillStyle = isVisible ? '#0a0a0c' : '#050508';
-          this.ctx.fillRect(px + pad, py + pad, colW, colW);
-
-          this.ctx.strokeStyle = isVisible ? '#ea580c' : '#9a3412';
-          this.ctx.lineWidth = 2;
-          this.ctx.strokeRect(px + pad + 1, py + pad + 1, colW - 2, colW - 2);
-
-          this.ctx.fillStyle = isVisible ? '#431407' : '#1a0500';
-          this.ctx.fillRect(px + pad + 3, py + pad + 3, colW - 6, colW - 6);
-
-          // Magma core diamond
-          const dSize = Math.floor(cs * 0.16);
-          this.ctx.fillStyle = isVisible ? '#fef08a' : '#ea580c';
-          this.ctx.beginPath();
-          this.ctx.moveTo(cx, cy - dSize);
-          this.ctx.lineTo(cx + dSize, cy);
-          this.ctx.lineTo(cx, cy + dSize);
-          this.ctx.lineTo(cx - dSize, cy);
-          this.ctx.closePath();
-          this.ctx.fill();
-          break;
-        }
-
-        if (currentFloor !== undefined && currentFloor >= 34 && currentFloor <= 42) {
-          // Tree Root (Floors 34-42: World Bark Descent)
-          this.ctx.fillStyle = isVisible ? '#451a03' : '#1c0a01';
-          this.ctx.fillRect(px + pad, py + pad, colW, colW);
-
-          this.ctx.strokeStyle = isVisible ? '#15803d' : '#14532d';
-          this.ctx.lineWidth = 2;
-          this.ctx.strokeRect(px + pad + 1, py + pad + 1, colW - 2, colW - 2);
-
-          this.ctx.fillStyle = isVisible ? '#291505' : '#0f0500';
-          this.ctx.fillRect(px + pad + 3, py + pad + 3, colW - 6, colW - 6);
-
-          // Moss / leaf motif
-          const dSize = Math.floor(cs * 0.16);
-          this.ctx.fillStyle = isVisible ? '#84cc16' : '#4d7c0f';
-          this.ctx.beginPath();
-          this.ctx.moveTo(cx, cy - dSize);
-          this.ctx.lineTo(cx + dSize, cy);
-          this.ctx.lineTo(cx, cy + dSize);
-          this.ctx.lineTo(cx - dSize, cy);
-          this.ctx.closePath();
-          this.ctx.fill();
-          break;
-        }
-
-        if (currentFloor !== undefined && currentFloor >= 43) {
-          // Blight / Bone Monolith (Floors 43+: Maw of Malice / The Rotting Root)
-          this.ctx.fillStyle = isVisible ? '#090514' : '#030207';
-          this.ctx.fillRect(px + pad, py + pad, colW, colW);
-
-          this.ctx.strokeStyle = isVisible ? '#4c1d95' : '#2e1065';
-          this.ctx.lineWidth = 2;
-          this.ctx.strokeRect(px + pad + 1, py + pad + 1, colW - 2, colW - 2);
-
-          this.ctx.fillStyle = isVisible ? '#1e1035' : '#0a0512';
-          this.ctx.fillRect(px + pad + 3, py + pad + 3, colW - 6, colW - 6);
-
-          // Toxic necrotic core
-          const dSize = Math.floor(cs * 0.16);
-          this.ctx.fillStyle = isVisible ? '#a3e635' : '#4c1d95';
-          this.ctx.beginPath();
-          this.ctx.moveTo(cx, cy - dSize);
-          this.ctx.lineTo(cx + dSize, cy);
-          this.ctx.lineTo(cx, cy + dSize);
-          this.ctx.lineTo(cx - dSize, cy);
-          this.ctx.closePath();
-          this.ctx.fill();
-          break;
-        }
 
         // Default stone pillar
         this.ctx.fillStyle = isVisible ? '#334155' : '#1e293b';
@@ -1274,8 +1283,26 @@ export class CanvasRenderer {
     ctx.restore();
   }
 
+  /** A ground shadow under an entity (atlas.terrain.entityShadows). */
+  private drawEntityShadow(px: number, py: number, cs: number): void {
+    if (!this.engine.manifest?.atlas?.terrain?.entityShadows) return;
+    const ctx = this.ctx;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(px + cs / 2, py + cs * 0.88, cs * 0.3, cs * 0.09, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   private renderPlayer(px: number, py: number, cs: number, player?: Entity): void {
     const ctx = this.ctx;
+    this.drawEntityShadow(px, py, cs);
+
+    // Torchlight already pools warm light on the player; the aura is its stand-in.
+    if (this.engine.manifest?.atlas?.terrain?.torch && this.torchlightEnabled) {
+      const spriteKey = player ? getEntitySpriteKey(player, this.atlas.hasSprite.bind(this.atlas)) : 'player';
+      this.atlas.drawSprite(ctx, spriteKey, px, py, cs, Visibility.Visible);
+      return;
+    }
 
     // Glowing aura
     const gradient = ctx.createRadialGradient(
@@ -1300,6 +1327,7 @@ export class CanvasRenderer {
 
   private renderMonster(px: number, py: number, cs: number, monster: Entity): void {
     const ctx = this.ctx;
+    this.drawEntityShadow(px, py, cs);
 
     const spriteKey = getEntitySpriteKey(monster, this.atlas.hasSprite.bind(this.atlas));
     this.atlas.drawSprite(ctx, spriteKey, px, py, cs, Visibility.Visible);
@@ -1548,4 +1576,9 @@ export class CanvasRenderer {
     ctx.fillText(unopened ? '★' : '✓', cx, cy + 0.5);
     ctx.restore();
   }
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const n = parseInt(hex.replace('#', '').slice(0, 6), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
 }

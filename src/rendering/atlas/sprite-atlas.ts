@@ -1,6 +1,6 @@
 import { Visibility } from '../../engine';
 import type { SpriteKey, AtlasCoords } from './types';
-import type { SpriteRecipe } from '../../engine';
+import type { SpriteRecipe, TerrainArtConfig } from '../../engine';
 
 /**
  * The coordinate unit every sprite recipe draws in — fixed forever. Recipes (both
@@ -197,6 +197,22 @@ interface AtlasCell {
   size: number;
 }
 
+/** Atlas rows baked per strip: bounds the supersampled scratch canvas to one strip. */
+const BAKE_STRIP_ROWS = 4;
+
+/**
+ * Terrain cells (`<base>~<part>` keys, see `TerrainArtConfig`) tile edge to edge or layer
+ * over each other, so they skip the sprite outline and the diagonal shading pass.
+ */
+export function isFlatTerrainKey(key: string): boolean {
+  return key.includes('~');
+}
+
+export interface SpriteAtlasOptions {
+  /** Remembered-cell styling; absent keeps the blue-slate dimming. */
+  memory?: TerrainArtConfig['memory'];
+}
+
 export class SpriteAtlas {
   public readonly atlasCanvas: HTMLCanvasElement;
   public readonly dimmedAtlasCanvas: HTMLCanvasElement;
@@ -205,8 +221,11 @@ export class SpriteAtlas {
   private readonly cells: Record<string, AtlasCoords>;
   private readonly rows: number;
 
-  constructor(recipes?: Record<string, SpriteRecipe>) {
+  private readonly options: SpriteAtlasOptions;
+
+  constructor(recipes?: Record<string, SpriteRecipe>, options: SpriteAtlasOptions = {}) {
     this.recipes = recipes;
+    this.options = options;
     this.cells = layoutCells(recipes);
     this.rows = Math.max(ATLAS_ROWS, ...Object.values(this.cells).map((c) => c.row + 1));
     this.atlasCanvas = document.createElement('canvas');
@@ -236,38 +255,57 @@ export class SpriteAtlas {
     const ctx = this.atlasCanvas.getContext('2d');
     if (!ctx) return;
 
+    // One strip of rows at a time, so the supersampled scratch never spans the whole atlas.
     const scratch = document.createElement('canvas');
     scratch.width = ATLAS_COLS * SPRITE_SIZE * BAKE_SCALE;
-    scratch.height = this.rows * SPRITE_SIZE * BAKE_SCALE;
-
+    scratch.height = BAKE_STRIP_ROWS * SPRITE_SIZE * BAKE_SCALE;
     const sctx = scratch.getContext('2d');
     if (!sctx) return;
-    sctx.scale(BAKE_SCALE, BAKE_SCALE);
 
     // Recipes first, then lettered fallbacks only into cells no recipe painted: keys that
     // share a cell (`wall`/`secret_door`) must not have a fallback overwrite real art.
+    const entries = Object.entries(this.cells);
     const painted = new Set<string>();
-    for (const [key, coords] of Object.entries(this.cells)) {
-      const recipe = this.recipes?.[key];
-      if (!recipe) continue;
-      recipe(sctx, coords.col * SPRITE_SIZE, coords.row * SPRITE_SIZE, SPRITE_SIZE);
-      painted.add(`${coords.col},${coords.row}`);
-    }
-    for (const [key, coords] of Object.entries(this.cells)) {
-      const cell = `${coords.col},${coords.row}`;
-      if (painted.has(cell)) continue;
-      this.renderFallback(sctx, coords.col * SPRITE_SIZE, coords.row * SPRITE_SIZE, key);
-      painted.add(cell);
+    for (let row0 = 0; row0 < this.rows; row0 += BAKE_STRIP_ROWS) {
+      sctx.setTransform(1, 0, 0, 1, 0, 0);
+      sctx.clearRect(0, 0, scratch.width, scratch.height);
+      // Shift the strip into view so recipes keep drawing at their absolute cell coordinates.
+      sctx.setTransform(BAKE_SCALE, 0, 0, BAKE_SCALE, 0, -row0 * SPRITE_SIZE * BAKE_SCALE);
+      const inStrip = entries.filter(([, c]) => c.row >= row0 && c.row < row0 + BAKE_STRIP_ROWS);
+      for (const [key, coords] of inStrip) {
+        const recipe = this.recipes?.[key];
+        if (!recipe) continue;
+        sctx.save();
+        recipe(sctx, coords.col * SPRITE_SIZE, coords.row * SPRITE_SIZE, SPRITE_SIZE);
+        sctx.restore();
+        painted.add(`${coords.col},${coords.row}`);
+      }
+      for (const [key, coords] of inStrip) {
+        const cell = `${coords.col},${coords.row}`;
+        if (painted.has(cell)) continue;
+        this.renderFallback(sctx, coords.col * SPRITE_SIZE, coords.row * SPRITE_SIZE, key);
+        painted.add(cell);
+      }
+      // The one smoothed operation in the whole pipeline: averages the supersampled
+      // scratch buffer down into real, anti-aliased atlas pixels. Reset immediately so
+      // every other draw (including the passes below) stays nearest-neighbor.
+      const rowsHere = Math.min(BAKE_STRIP_ROWS, this.rows - row0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(
+        scratch,
+        0,
+        0,
+        scratch.width,
+        rowsHere * SPRITE_SIZE * BAKE_SCALE,
+        0,
+        row0 * ATLAS_TILE_SIZE,
+        this.atlasCanvas.width,
+        rowsHere * ATLAS_TILE_SIZE
+      );
+      ctx.imageSmoothingEnabled = false;
     }
 
-    // The one smoothed operation in the whole pipeline: averages the supersampled
-    // scratch buffer down into real, anti-aliased atlas pixels. Reset immediately so
-    // every other draw (including the passes below) stays nearest-neighbor.
-    ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(scratch, 0, 0, scratch.width, scratch.height, 0, 0, this.atlasCanvas.width, this.atlasCanvas.height);
-    ctx.imageSmoothingEnabled = false;
-
-    const cells = this.getUniqueCells();
+    const cells = this.getUniqueCells().filter((c) => !c.flat);
     this.applyShadingOverlay(ctx, cells);
     this.bakeOutlineAndHighlight(ctx, cells);
   }
@@ -275,16 +313,19 @@ export class SpriteAtlas {
   /** Every occupied atlas cell, in stored/physical (ATLAS_TILE_SIZE) space, deduped by
    *  (col, row) — `wall`/`secret_door` share a cell, and each pixel pass below must
    *  run on it exactly once. */
-  private getUniqueCells(): AtlasCell[] {
-    const seen = new Set<string>();
-    const cells: AtlasCell[] = [];
-    for (const coords of Object.values(this.cells)) {
-      const key = `${coords.col},${coords.row}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      cells.push({ ox: coords.col * ATLAS_TILE_SIZE, oy: coords.row * ATLAS_TILE_SIZE, size: ATLAS_TILE_SIZE });
+  private getUniqueCells(): Array<AtlasCell & { flat: boolean }> {
+    const seen = new Map<string, AtlasCell & { flat: boolean }>();
+    for (const [key, coords] of Object.entries(this.cells)) {
+      const id = `${coords.col},${coords.row}`;
+      const flat = isFlatTerrainKey(key) && !!this.recipes?.[key];
+      const existing = seen.get(id);
+      if (existing) {
+        existing.flat = existing.flat && flat;
+        continue;
+      }
+      seen.set(id, { ox: coords.col * ATLAS_TILE_SIZE, oy: coords.row * ATLAS_TILE_SIZE, size: ATLAS_TILE_SIZE, flat });
     }
-    return cells;
+    return [...seen.values()];
   }
 
   /**
@@ -324,8 +365,14 @@ export class SpriteAtlas {
     // Copy full atlas
     dimmedCtx.drawImage(this.atlasCanvas, 0, 0);
 
-    // Apply dark blue-slate Fog of War desaturation
     const imgData = dimmedCtx.getImageData(0, 0, this.dimmedAtlasCanvas.width, this.dimmedAtlasCanvas.height);
+    if (this.options.memory) {
+      applyMemoryStyle(imgData.data, this.dimmedAtlasCanvas.width, this.getUniqueCells(), this.options.memory);
+      dimmedCtx.putImageData(imgData, 0, 0);
+      return;
+    }
+
+    // Apply dark blue-slate Fog of War desaturation
     const data = imgData.data;
 
     for (let i = 0; i < data.length; i += 4) {
@@ -513,4 +560,59 @@ function hasNonSolidNorthOrWest(
   const north = y - 1 >= minY ? alphaAt(x, y - 1) : 255;
   const west = x - 1 >= minX ? alphaAt(x - 1, y) : 255;
   return north < OUTLINE_ALPHA_THRESHOLD || west < OUTLINE_ALPHA_THRESHOLD;
+}
+
+/**
+ * Remembered-cell styling a pack opts into (`TerrainArtConfig.memory`): per cell, desaturate
+ * toward luminance, flatten toward the cell's mean colour, darken, then tint. Keeps each
+ * zone's hue while reading clearly as memory. Pure, like `applyOutlineAndHighlight`.
+ */
+export function applyMemoryStyle(
+  data: Uint8ClampedArray,
+  width: number,
+  cells: readonly AtlasCell[],
+  memory: NonNullable<TerrainArtConfig['memory']>
+): void {
+  const tint = memory.tint ? parseHex(memory.tint) : null;
+  const tintAmount = memory.tintAmount ?? 0.1;
+  const keep = 1 - memory.darken;
+  for (const { ox, oy, size } of cells) {
+    let mr = 0;
+    let mg = 0;
+    let mb = 0;
+    let n = 0;
+    for (let y = oy; y < oy + size; y++) {
+      for (let x = ox; x < ox + size; x++) {
+        const i = (y * width + x) * 4;
+        if (data[i + 3] < 20) continue;
+        mr += data[i];
+        mg += data[i + 1];
+        mb += data[i + 2];
+        n++;
+      }
+    }
+    if (n === 0) continue;
+    const mean = [mr / n, mg / n, mb / n];
+    const meanLum = 0.2126 * mean[0] + 0.7152 * mean[1] + 0.0722 * mean[2];
+    const flatMean = mean.map((m) => m + (meanLum - m) * memory.desaturate);
+    for (let y = oy; y < oy + size; y++) {
+      for (let x = ox; x < ox + size; x++) {
+        const i = (y * width + x) * 4;
+        if (data[i + 3] === 0) continue;
+        const lum = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+        for (let k = 0; k < 3; k++) {
+          let v = data[i + k] + (lum - data[i + k]) * memory.desaturate;
+          v += (flatMean[k] - v) * memory.flatten;
+          v *= keep;
+          if (tint) v += (tint[k] - v) * tintAmount;
+          data[i + k] = v;
+        }
+      }
+    }
+  }
+}
+
+function parseHex(hex: string): [number, number, number] {
+  const n = parseInt(hex.replace('#', '').slice(0, 6), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }

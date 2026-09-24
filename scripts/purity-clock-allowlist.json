@@ -1,0 +1,14 @@
+{
+  "entries": [
+    { "file": "src/engine/analytics/deathEnvelope.ts", "reason": "Wall-clock timestamp on the death record (metadata, never an outcome)." },
+    { "file": "src/engine/debug/flightRecorder.ts", "reason": "Wall-clock timestamps on flight-recorder events (diagnostics metadata)." },
+    { "file": "src/engine/engine.ts", "reason": "Wall-clock timestamp on discovery-journal events (metadata). Protected file, so allowlisted here rather than annotated inline." },
+    { "file": "src/engine/hallOfFame/leaderboard.ts", "reason": "Wall-clock timestamp on Hall of Fame entries (metadata)." },
+    { "file": "src/engine/quest/gameStateManager.ts", "reason": "Wall-clock date on victory/defeat records (metadata)." },
+    { "file": "src/engine/storage/autosaveManager.ts", "reason": "Save timestamps (storage metadata)." },
+    { "file": "src/engine/storage/profile-manager.ts", "reason": "Save timestamps, plus the entropy boundary for a new run: unique profile ids and the new run's seed when none is given." },
+    { "file": "src/engine/storage/saveTransfer.ts", "reason": "Export envelope timestamp (storage metadata)." },
+    { "file": "src/engine/storage/serializer.ts", "reason": "lastSaved/savedAt timestamps (storage metadata)." },
+    { "file": "src/engine/dungeon/prng.ts", "reason": "KNOWN GAP, not a sanctioned use: PRNG's default seed falls back to the wall clock, and GameEngine.changeFloor passes no seed to DungeonArc.generateFloor, so new floor layouts are clock-seeded rather than derived from engine.prng. Fixing it needs a §8.1 exception 1 change to engine.ts; remove this entry when it lands." }
+  ]
+}

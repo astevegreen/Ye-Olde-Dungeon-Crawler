@@ -83,6 +83,17 @@ const TIMING_AUDIO_GLOBALS = [
 // draw no simulation state (e.g. particle jitter in rendering/fxRunner.ts).
 const SIMULATION_RANDOMNESS = ['Math.random'];
 
+// Wall-clock reads in simulation code (ARCHITECTURE.md §7.2: no Date.now() for outcomes or
+// IDs). Timestamps and the new-run entropy boundary are legitimate, so whole files are
+// allowlisted with a reason in scripts/purity-clock-allowlist.json; a stale entry fails.
+const WALL_CLOCK = 'Date.now(';
+const CLOCK_ALLOWLIST_PATH = path.resolve(process.cwd(), 'scripts/purity-clock-allowlist.json');
+const clockAllowlist: Array<{ file: string; reason: string }> = fs.existsSync(CLOCK_ALLOWLIST_PATH)
+  ? JSON.parse(fs.readFileSync(CLOCK_ALLOWLIST_PATH, 'utf-8')).entries
+  : [];
+const clockAllowed = new Set(clockAllowlist.map((e) => e.file));
+const clockAllowlistUsed = new Set<string>();
+
 // Matches deep imports into engine internals (beyond the public engine barrel export)
 const DEEP_ENGINE_IMPORT_REGEX = /from\s+['"][^'"]*engine\/[^'"]+['"]/i;
 
@@ -177,6 +188,19 @@ for (const filePath of [...engineFiles, ...contentFiles]) {
         }
       }
 
+      if (!isCommentLine && line.includes(WALL_CLOCK)) {
+        if (clockAllowed.has(relativePath)) {
+          clockAllowlistUsed.add(relativePath);
+        } else if (!allowed) {
+          violations.push({
+            file: relativePath,
+            line: lineNum,
+            category: 'WALL_CLOCK',
+            detail: `Simulation outcomes and IDs must not read the wall clock (use engine.prng / an existing id), or allowlist a timestamp with a reason: ${line.trim()}`,
+          });
+        }
+      }
+
       // Check: Timing & Audio Globals (same execution-path rule as DOM globals)
       for (const globalToken of TIMING_AUDIO_GLOBALS) {
         if (line.includes(globalToken)) {
@@ -252,6 +276,17 @@ console.log(`src/main/** files inspected: ${mainDirFiles.length}`);
 console.log(`Total files inspected: ${engineFiles.length + contentFiles.length + uiFiles.length + renderingFiles.length + mainDirFiles.length}`);
 console.log(`======================================================\n`);
 
+for (const entry of clockAllowlist) {
+  if (!clockAllowlistUsed.has(entry.file)) {
+    violations.push({
+      file: 'scripts/purity-clock-allowlist.json',
+      line: 0,
+      category: 'STALE_CLOCK_ALLOWLIST',
+      detail: `${entry.file} no longer reads Date.now(); remove its entry.`,
+    });
+  }
+}
+
 if (violations.length > 0) {
   console.error(`❌ Found ${violations.length} architectural boundary violation(s):\n`);
   for (const v of violations) {
@@ -262,7 +297,7 @@ if (violations.length > 0) {
 } else {
   const exemptCount = engineFiles.length + contentFiles.length - purityScannedFiles.size;
   console.log(
-    `✓ Headless Simulation Purity: 0 DOM/Canvas/timing/audio globals and 0 unseeded Math.random across ${purityScannedFiles.size} engine & content source files ` +
+    `✓ Headless Simulation Purity: 0 DOM/Canvas/timing/audio globals and 0 unseeded Math.random or unallowlisted Date.now() across ${purityScannedFiles.size} engine & content source files ` +
       `(${exemptCount} test/fixture files exempt).`
   );
   console.log(`✓ Engine Boundary Isolation: 0 reverse imports in engine source and test files.`);

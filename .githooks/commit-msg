@@ -4,9 +4,12 @@
 # 1. A commit that stages a §8.1 protected file must name its exception in the
 #    message, e.g. "§8.1 exception 1". The pre-commit gates check what the code
 #    does; this makes every protected-file edit a stated, reviewable decision.
-# 2. A commit should name the tool that wrote it (§8.4): Claude Code's
-#    "Co-Authored-By: Claude" trailer, or an "Agent: <name>" trailer. Missing
-#    attribution only warns, so the owner's own commits are never blocked.
+# 2. A commit must name who wrote it (§8.4): Claude Code's "Co-Authored-By:
+#    Claude" trailer, or an "Agent: <name>" trailer ("Agent: Antigravity", or
+#    "Agent: owner" for the owner's own commits). Review happens after commit,
+#    so attribution is what routes each commit to the right reviewer.
+# 3. Warns (never blocks) when a large commit spans several areas: one request
+#    per commit keeps after-the-fact review and reverts cheap.
 #
 # Set SKIP_HOOKS=1 to bypass deliberately, as with pre-commit.
 set -e
@@ -32,5 +35,15 @@ if [ -n "$STAGED_PROTECTED" ]; then
 fi
 
 if ! printf '%s\n' "$MSG" | grep -Eq '^(Co-Authored-By: Claude|Agent: )'; then
-  echo "commit-msg: warning: no attribution trailer (\"Co-Authored-By: Claude\" or \"Agent: <name>\"), see ARCHITECTURE.md §8.4." >&2
+  echo "commit-msg: no attribution trailer. End the message with \"Agent: Antigravity\", \"Agent: owner\"," >&2
+  echo "or Claude Code's \"Co-Authored-By: Claude\" (ARCHITECTURE.md §8.4)." >&2
+  exit 1
+fi
+
+# Large commit spanning several areas: likely several requests bundled together.
+AREAS=$(git diff --cached --name-only | sed -E 's#^(src/[^/]+|[^/]+)/.*#\1#' | sort -u | wc -l | tr -d ' ')
+CHANGED=$(git diff --cached --numstat | awk '{ s += $1 + $2 } END { print s + 0 }')
+if [ "$AREAS" -ge 4 ] && [ "$CHANGED" -ge 1500 ]; then
+  echo "commit-msg: warning: $CHANGED changed lines across $AREAS areas. If this bundles several requests," >&2
+  echo "split it: one request per commit (ARCHITECTURE.md §8.4)." >&2
 fi

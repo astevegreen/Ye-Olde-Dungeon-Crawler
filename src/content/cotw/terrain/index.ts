@@ -3,6 +3,7 @@ import { buildZoneRecipes, type ZoneArt } from './kit';
 import { RIME_HOLLOWS } from './zones/rimeHollows';
 import { DWARVEN_WORKS } from './zones/dwarvenWorks';
 import { OBSIDIAN_SIPHON } from './zones/obsidianSiphon';
+import { TARNISHED_SILVER } from './zones/tarnishedSilver';
 
 /**
  * cotw's terrain art (ARCHITECTURE.md §3: art comes from the pack's recipes). Each zone is a
@@ -13,6 +14,7 @@ const ZONES: readonly ZoneArt[] = [
   RIME_HOLLOWS,
   DWARVEN_WORKS,
   OBSIDIAN_SIPHON,
+  TARNISHED_SILVER,
 ];
 
 export const COTW_TERRAIN_SPRITES: Record<string, SpriteRecipe> = Object.assign({}, ...ZONES.map(buildZoneRecipes));

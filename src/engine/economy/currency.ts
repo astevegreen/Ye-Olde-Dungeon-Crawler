@@ -20,7 +20,6 @@ export interface CoinItemConfig extends Partial<ItemConfig> {
 export class CoinItem extends Item {
   public readonly denomination: CoinDenomination;
   public count: number;
-  public mergedIds: Set<string> = new Set();
 
   constructor(config: CoinItemConfig) {
     const denom = config.denomination;
@@ -66,10 +65,7 @@ export class CoinItem extends Item {
     (this as { bulk: number }).bulk = Math.max(1, Math.ceil(this.count * 0.5));
   }
 
-  public add(amount: number, sourceId?: string): void {
-    if (sourceId) {
-      this.mergedIds.add(sourceId);
-    }
+  public add(amount: number): void {
     this.setCount(this.count + amount);
   }
 
@@ -196,23 +192,21 @@ export function addCoinsToContainer(
   denomination: CoinDenomination,
   count: number,
   idPrefix = 'coin',
-  rng: () => number = () => 0,
-  sourceId?: string
+  rng: () => number = () => 0
 ): boolean {
   if (count <= 0) return true;
 
   // 1. Try to find existing CoinItem stack of same denomination
   for (const item of container.getItems()) {
     if (item instanceof CoinItem && item.denomination === denomination) {
-      item.add(count, sourceId ?? (idPrefix !== 'coin' ? idPrefix : undefined));
+      item.add(count);
       return true;
     }
   }
 
   // 2. Otherwise instantiate a new CoinItem
-  const coinId = sourceId ?? (idPrefix.includes('-') && !idPrefix.endsWith('-c') ? idPrefix : `${idPrefix}-${denomination}-${Math.floor(rng() * 1000000)}`);
   const newCoin = new CoinItem({
-    id: coinId,
+    id: `${idPrefix}-${denomination}-${Math.floor(rng() * 1000000)}`,
     denomination,
     count,
   });

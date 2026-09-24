@@ -7,9 +7,6 @@ import {
   calculateEncumberedActionCost,
   type EncumbranceLevel,
 } from './encumbrance';
-import { parseCoinItem, CoinItem } from '../economy/currency';
-import { COIN_WEIGHT_GRAMS } from '../economy/types';
-import { itemIndex } from '../items/itemIndex';
 
 export interface InventoryManagerConfig {
   primaryPack?: Container;
@@ -109,53 +106,17 @@ export class InventoryManager {
    * First tries utility belt (if quick-draw slot available), then primary pack.
    */
   public storeItem(item: Item): { success: boolean; destination: string; reason?: string } {
-    // 1. If item is currency, route into purse first (if equipped), then primaryPack
+    // 1. Currency goes to the purse (if equipped), then the pack. Container.addItem
+    //    merges it into a same-denomination pile there; the absorbed pile's id retires.
     if (item.category === 'currency') {
-      const parsed = parseCoinItem(item);
-      const targetContainers: Array<{ container: Container; dest: string }> = [];
-      if (this.purse) targetContainers.push({ container: this.purse, dest: 'purse' });
-      targetContainers.push({ container: this.primaryPack, dest: 'pack' });
-
-      for (const { container, dest } of targetContainers) {
-        if (parsed) {
-          const existing = container.getItems().find(
-            (i) => i instanceof CoinItem && i.denomination === parsed.denomination
-          ) as CoinItem | undefined;
-
-          if (existing) {
-            const addedWeight = parsed.count * COIN_WEIGHT_GRAMS;
-            const addedBulk = Math.max(0, Math.ceil((existing.count + parsed.count) * 0.5) - existing.bulk);
-            if (
-              container.totalWeight() + addedWeight <= container.maxWeightCapacity &&
-              container.totalBulk() + addedBulk <= container.maxBulkCapacity
-            ) {
-              existing.add(parsed.count, item.id);
-              if (item.id && item.id !== existing.id) itemIndex.unregister(item.id);
-              return { success: true, destination: dest };
-            }
-          } else {
-            if (item instanceof CoinItem) {
-              if (container.canContain(item).allowed && container.addItem(item)) {
-                if (this.ownerId) item.ownerId = this.ownerId;
-                return { success: true, destination: dest };
-              }
-            } else {
-              const newCoin = new CoinItem({
-                id: item.id,
-                denomination: parsed.denomination,
-                count: parsed.count,
-                ownerId: this.ownerId,
-              });
-              if (container.canContain(newCoin).allowed && container.addItem(newCoin)) {
-                return { success: true, destination: dest };
-              }
-            }
-          }
-        } else {
-          if (container.canContain(item).allowed && container.addItem(item)) {
-            if (this.ownerId) item.ownerId = this.ownerId;
-            return { success: true, destination: dest };
-          }
+      const targets: Array<{ container: Container | null; dest: string }> = [
+        { container: this.purse, dest: 'purse' },
+        { container: this.primaryPack, dest: 'pack' },
+      ];
+      for (const { container, dest } of targets) {
+        if (container?.addItem(item)) {
+          if (this.ownerId) item.ownerId = this.ownerId;
+          return { success: true, destination: dest };
         }
       }
     }
@@ -286,23 +247,17 @@ export class InventoryManager {
    * `removeItem` has always checked them, so an item there was removable but not findable.
    */
   public findItemById(itemId: string): Item | undefined {
-    const checkItem = (it: Item): boolean => {
-      if (it.id === itemId) return true;
-      if (it instanceof CoinItem && it.mergedIds?.has(itemId)) return true;
-      return false;
-    };
-
-    const fromPack = this.primaryPack.getItem(itemId) ?? this.primaryPack.getItems().find(checkItem);
+    const fromPack = this.primaryPack.getItem(itemId);
     if (fromPack) return fromPack;
-    const fromBelt = this.belt ? (this.belt.getItem(itemId) ?? this.belt.getItems().find(checkItem)) : undefined;
+    const fromBelt = this.belt?.getItem(itemId);
     if (fromBelt) return fromBelt;
-    const fromPurse = this.purse ? (this.purse.getItem(itemId) ?? this.purse.getItems().find(checkItem)) : undefined;
+    const fromPurse = this.purse?.getItem(itemId);
     if (fromPurse) return fromPurse;
     const equipped = this.paperdoll.getAllEquipped();
     for (const eq of equipped) {
-      if (checkItem(eq.item)) return eq.item;
+      if (eq.item.id === itemId) return eq.item;
       if (eq.item instanceof Container) {
-        const sub = eq.item.getItem(itemId) ?? eq.item.getItems().find(checkItem);
+        const sub = eq.item.getItem(itemId);
         if (sub) return sub;
       }
     }

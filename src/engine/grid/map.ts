@@ -259,7 +259,12 @@ export class GameMap {
     if (existing.length === 0) {
       this.groundItems.delete(key);
     }
-    if (item) itemIndex.unregister(item.id);
+    // Retract only this tile's entry. A pickup stores the item first, which registers its
+    // new container, and that newer entry has to survive the tile being cleared.
+    const location = item ? itemIndex.locationOf(item.id) : undefined;
+    if (item && location?.kind === 'ground' && location.x === x && location.y === y) {
+      itemIndex.unregister(item.id);
+    }
     return item;
   }
 

@@ -22,6 +22,7 @@ import { HOSTAGE_VILLAGERS, SIPHON_RITUAL_FLOOR, SIPHON_RITUAL_HOOKS, SIPHON_TIM
 import { COTW_BLOOD_SPELLS } from './bloodMagic';
 import { COTW_TILES } from './tiles';
 import { COTW_FLOOR_HAZARDS, COTW_ROOM_DECORATION } from './floorBands';
+import { COTW_FLOOR_LAYOUTS, COTW_FLOOR_SIZE } from './floorLayouts';
 
 export const COTW_ATTRIBUTE_MILESTONES: AttributeMilestoneTrigger[] = [
   { id: 'milestone_dex_15', attribute: 'dexterity', threshold: 15, choiceId: 'milestone_dex_15' },
@@ -165,10 +166,14 @@ export const cotwManifest: GameContentManifest = {
       vaultId: SIPHON_VAULT_ID,
       npcs: HOSTAGE_VILLAGERS,
     },
+    // Víðnir and the shed fang: guaranteed on floor 45, not a chance draw from the vault pool.
+    { floor: 45, vaultId: 'floor45_fang_vault' },
   ],
   // Townsfolk standing moves shop prices (hostage ritual outcome, story choices).
   roomDecoration: COTW_ROOM_DECORATION,
   floorHazards: COTW_FLOOR_HAZARDS,
+  floorLayouts: COTW_FLOOR_LAYOUTS,
+  floorSize: COTW_FLOOR_SIZE,
   merchantPricing: {
     faction: 'townsfolk',
     tiers: [

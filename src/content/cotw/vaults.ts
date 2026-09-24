@@ -2,6 +2,41 @@ import type { VaultBlueprint } from '../../engine';
 import { SIPHON_ALTAR_TILE, SIPHON_RITUAL_FLOOR, SIPHON_VAULT_ID } from './hostageRitual';
 
 export const COTW_VAULTS: VaultBlueprint[] = [
+  // Zone landmarks (floorLayouts.ts `landmarkVaultIds`): one stamps on every floor of its zone.
+  {
+    id: 'draugr_barrow',
+    name: 'The Draugr Barrow',
+    description: 'A burial chamber cut into the permafrost, its dead laid out between frost-cracked pillars.',
+    minFloor: 1,
+    maxFloor: 9,
+    layout: [
+      '###########',
+      '#P.......P#',
+      '#..#...#..#',
+      '@...M.C...@',
+      '#..#...#..#',
+      '#P.......P#',
+      '###########',
+    ],
+    preferredMonsters: ['draugr', 'skeleton'],
+  },
+  {
+    id: 'siphon_pylon',
+    name: 'The Siphon Pylon',
+    description: 'A barred obsidian pump-house where the siphon draws magma from the rift.',
+    minFloor: 18,
+    maxFloor: 25,
+    layout: [
+      '#########',
+      '#B.....B#',
+      '#...P...#',
+      '@..MCM..@',
+      '#...P...#',
+      '#B.....B#',
+      '#########',
+    ],
+    preferredMonsters: ['sol_brand_zealot', 'fire_giant'],
+  },
   {
     id: 'sunken_cistern',
     name: 'The Sunken Cistern',

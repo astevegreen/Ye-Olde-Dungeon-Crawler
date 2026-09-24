@@ -1,4 +1,5 @@
 import type { QuestArcDefinition } from '../../engine';
+import { HEARTWOOD_LAIR, LAIR_WIDTH, LAIR_HEIGHT, LAIR_PLAYER_SPAWN, LAIR_STAIRS_UP, LAIR_BOSS_SPAWN } from './lair';
 
 /**
  * Blood of Thrym (ARCHITECTURE.md §3 — see index.ts for the wiring: `oath.ts`'s
@@ -52,11 +53,13 @@ export const COTW_QUEST: QuestArcDefinition = {
   bossLairTitle: '*** FLOOR 50: THE ROTTING ROOT OF YGGDRASIL ***',
   bossEntryMessage: 'World-bark shudders. Níðhögg, the Root-Gnawer, uncoils from the wound it has chewed into the World Tree.',
   bossFloorLayout: {
-    width: 50,
-    height: 38,
-    playerSpawn: { x: 25, y: 32 },
-    stairsUp: { x: 25, y: 34 },
-    bossSpawn: { x: 25, y: 6 },
+    // The Heartwood (lair.ts): the boss floor on every difficulty.
+    width: LAIR_WIDTH,
+    height: LAIR_HEIGHT,
+    layout: HEARTWOOD_LAIR,
+    playerSpawn: LAIR_PLAYER_SPAWN,
+    stairsUp: LAIR_STAIRS_UP,
+    bossSpawn: LAIR_BOSS_SPAWN,
     pillars: [
       { x: 15, y: 14 },
       { x: 15, y: 20 },

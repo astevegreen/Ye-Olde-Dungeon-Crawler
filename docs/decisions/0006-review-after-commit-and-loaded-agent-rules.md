@@ -28,4 +28,4 @@ Three causes, in order of weight:
 - Instructions only bind an agent if they are in a file it loads; for Antigravity, `.agents/` is the one place.
 - Enforcement lives in hooks and gates wherever possible: attribution and protected files block commits; bundling only warns, because size alone cannot tell a large single request from several small ones.
 - Engine changes can reach `main`, and the remote, before review. The `verified..HEAD` queue plus the pre-push gates are the safety net; a problem found in review becomes a fix-forward commit.
-- The clock allowlist records one known gap rather than a sanctioned use: `PRNG`'s default seed falls back to the wall clock, and `GameEngine.changeFloor` passes no seed, so new floor layouts are clock-seeded. Fixing it needs a §8.1 exception 1 change to `engine.ts`.
+- The new check surfaced one real gap: `PRNG`'s default seed was the wall clock and `GameEngine.changeFloor` passed no seed, so floor layouts were clock-seeded. Fixed under §8.1 exception 1: new floors draw their seed from `engine.prng`, and `PRNG` defaults to a fixed constant.

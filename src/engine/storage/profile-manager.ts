@@ -202,6 +202,11 @@ export class ProfileManager {
     const maxMana = options?.attributes ? derived.maxMana : 30;
     const startInTown = options?.startInTown ?? true;
 
+    // The run's seeded stream is created first, before the map and the engine, so the
+    // starting floor, starting gear rolls, and the engine all draw from one PRNG
+    // (ARCHITECTURE.md §7.2). The wall clock is the run's one entropy source.
+    const runPrng = new PRNG(options?.seed ?? (Date.now() >>> 0));
+
     let map: GameMap;
     let playerSpawn: { x: number; y: number };
     let startingFloor = 0;
@@ -224,7 +229,7 @@ export class ProfileManager {
         maxRooms: 10,
         minRoomSize: 5,
         maxRoomSize: 10,
-        seed: options?.seed,
+        seed: Math.floor(runPrng.next() * 0x100000000),
         spawnMonsters: true,
         monsterCandidates: Array.isArray(manifest.monsters) ? manifest.monsters : Object.values(manifest.monsters ?? {}),
         roomDecoration: manifest.roomDecoration,
@@ -273,10 +278,7 @@ export class ProfileManager {
       spellsKnown: manifest.starterKit?.spellsKnown ?? (manifest.spells?.length ? manifest.spells.map(s => s.id) : undefined),
     });
 
-    // 3. Equip starting kit.
-    // The run's seeded stream is created here, before the engine, so starting gear rolls
-    // come from the same PRNG the engine then continues (ARCHITECTURE.md §7.2).
-    const runPrng = new PRNG(options?.seed ?? (Date.now() >>> 0));
+    // 3. Equip starting kit from the run's stream (created above).
     CharacterRoller.equipStartingKit(player, profileId, manifest.starterKit, manifest.items, () => runPrng.next());
 
     // 4. Initialize Engine

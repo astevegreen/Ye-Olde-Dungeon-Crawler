@@ -1,7 +1,11 @@
 export class PRNG {
   private s: number;
 
-  constructor(seed: number = Date.now()) {
+  /** Fixed fallback, never the wall clock: a caller that forgets a seed gets a
+   *  reproducible stream instead of silently breaking determinism (§7.2). */
+  private static readonly DEFAULT_SEED = 0x2545f491;
+
+  constructor(seed: number = PRNG.DEFAULT_SEED) {
     this.s = seed | 0;
   }
 

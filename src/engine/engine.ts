@@ -783,9 +783,12 @@ export class GameEngine {
             }
           : undefined;
         const density = this.pacts?.getAggregatedMutators().monsterDensityMultiplier ?? 1.0;
+        // Seed the layout from the run's stream (§7.2); passing none let PRNG fall back
+        // to the wall clock, so a run seed didn't reproduce its dungeon.
+        const floorSeed = Math.floor(this.prng.next() * 0x100000000);
         const floorResult = DungeonArc.generateFloor(
           targetFloor,
-          undefined,
+          floorSeed,
           dynamicQuest,
           this.manifest,
           density,

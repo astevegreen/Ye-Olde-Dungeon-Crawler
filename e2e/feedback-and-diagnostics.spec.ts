@@ -5,6 +5,18 @@ import { pathToFileURL } from 'node:url';
 
 const BUNDLE = resolve(process.cwd(), 'dist', 'index.html');
 
+// Replaces window.open with a counter, so a submit is observable without a popup.
+const stubWindowOpen = (page: Page) =>
+  page.evaluate(() => {
+    const w = window as unknown as { __opened: number };
+    w.__opened = 0;
+    window.open = () => {
+      w.__opened += 1;
+      return null;
+    };
+  });
+const openedCount = (page: Page) => page.evaluate(() => (window as unknown as { __opened: number }).__opened);
+
 const getEngineState = (page: Page) =>
   page.evaluate(() => {
     const e = window.__cotwEngine;
@@ -44,6 +56,15 @@ test.describe('Developer Diagnostics & Feedback Systems', () => {
     await page.keyboard.press('Escape');
     await expect(feedbackModal).toBeHidden();
 
+    // Ctrl+Enter submits exactly once on the main menu, where InputHandler is disabled
+    await stubWindowOpen(page);
+    await menuFeedbackBtn.click();
+    await expect(feedbackModal).toBeVisible();
+    await page.locator('#feedback-input-title').fill('Menu submit');
+    await page.keyboard.press('Control+Enter');
+    await expect(feedbackModal).toBeHidden();
+    expect(await openedCount(page)).toBe(1);
+
     // 2. Start new game and embark
     await page.locator('#btn-menu-new-game').click();
     for (const attr of ['str', 'dex', 'con', 'int']) {
@@ -80,6 +101,16 @@ test.describe('Developer Diagnostics & Feedback Systems', () => {
     // Close via cancel button
     await page.locator('#btn-feedback-cancel').click();
     await expect(feedbackModal).toBeHidden();
+
+    // In game, with focus on a button rather than a text field (InputHandler's stack routing
+    // would see the key too), Ctrl+Enter still submits exactly once.
+    await stubWindowOpen(page);
+    await page.keyboard.press('F3');
+    await expect(feedbackModal).toBeVisible();
+    await page.locator('#btn-feedback-tab-bug').click();
+    await page.keyboard.press('Control+Enter');
+    await expect(feedbackModal).toBeHidden();
+    expect(await openedCount(page)).toBe(1);
 
     // 5. Test Developer Diagnostics (F2) and Triage Tab hook
     await page.keyboard.press('F2');

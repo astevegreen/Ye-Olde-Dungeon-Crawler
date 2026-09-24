@@ -541,24 +541,22 @@ window.addEventListener('DOMContentLoaded', () => {
     getProfile: () => activeProfile,
     bulkArchive,
     onClosed: () => {
-      popModal(feedbackModal.id);
       renderer?.render();
     },
   });
 
+  // FeedbackModal registers and removes its own modal-stack entry (setModalStack below),
+  // so it is not adapted through pushModal/popModal like the older modals.
   diagnosticModal.setBulkArchive(bulkArchive);
   diagnosticModal.setOpenFeedbackHandler((opts) => {
     feedbackModal.open(opts);
-    pushModal(feedbackModal.id, feedbackModal);
   });
 
   function toggleFeedback(opts?: any): void {
     if (feedbackModal.isOpen) {
       feedbackModal.close();
-      popModal(feedbackModal.id);
     } else {
       feedbackModal.open(opts);
-      pushModal(feedbackModal.id, feedbackModal);
     }
   }
 

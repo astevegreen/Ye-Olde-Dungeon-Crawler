@@ -255,6 +255,60 @@ describe('FeedbackModal (Headless)', () => {
     expect(modalStack.isEmpty()).toBe(true);
   });
 
+  it('holds exactly one modal-stack entry while open', () => {
+    modal.open();
+    modal.open();
+    expect(modalStack.getStackIds()).toEqual(['feedback-modal']);
+    modal.close();
+    expect(modalStack.isEmpty()).toBe(true);
+  });
+
+  // One input path: its own element's keydown listener, never a second window listener
+  // alongside InputHandler's (which also routes to the stack top) — that pair delivered
+  // every key to handleKeyDown twice.
+  it('takes keys through its own element, once, without a window listener', () => {
+    const addWindowListener = vi.fn();
+    (globalThis as any).window.addEventListener = addWindowListener;
+    const handleSpy = vi.spyOn(modal, 'handleKeyDown');
+    modal.open();
+
+    const el = (globalThis as any).document.getElementById('feedback-modal') as MockElement;
+    const esc = { type: 'keydown', key: 'Escape', preventDefault: vi.fn(), stopPropagation: vi.fn() };
+    el.dispatchEvent(esc);
+
+    expect(addWindowListener).not.toHaveBeenCalledWith('keydown', expect.anything());
+    expect(handleSpy).toHaveBeenCalledTimes(1);
+    expect(esc.stopPropagation).toHaveBeenCalled();
+    expect(modal.isOpen).toBe(false);
+    expect(modalStack.isEmpty()).toBe(true);
+  });
+
+  it('submits once on Ctrl+Enter through its own element', () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    modal.open();
+    const el = (globalThis as any).document.getElementById('feedback-modal') as MockElement;
+    el.dispatchEvent({ type: 'keydown', key: 'Enter', ctrlKey: true, preventDefault: vi.fn(), stopPropagation: vi.fn() } as any);
+    expect(openSpy).toHaveBeenCalledTimes(1);
+    expect(modal.isOpen).toBe(false);
+  });
+
+  // The stack clears isOpen before it calls close(); the window must still hide.
+  it('hides its window when the modal stack closes it', () => {
+    const closed = vi.fn();
+    modal = new FeedbackModal({ getEngine: () => engine, modalStack, onClosed: closed });
+    modal.open();
+    modalStack.closeAll();
+
+    const el = (globalThis as any).document.getElementById('feedback-modal') as MockElement;
+    expect(el.style.display).toBe('none');
+    expect(modal.isOpen).toBe(false);
+    expect(closed).toHaveBeenCalledTimes(1);
+
+    modal.open();
+    expect(el.style.display).toBe('flex');
+    expect(modalStack.getStackIds()).toEqual(['feedback-modal']);
+  });
+
   it('swallows typing keystrokes so game inputs do not bleed', () => {
     modal.open();
     const wKey = { key: 'w', preventDefault: vi.fn(), stopPropagation: vi.fn() } as any;

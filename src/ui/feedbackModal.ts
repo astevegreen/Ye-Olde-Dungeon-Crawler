@@ -87,7 +87,9 @@ export class FeedbackModal implements UIModal {
 
   private currentType: FeedbackType = 'bug';
   private errorContext?: Error | string;
-  private boundKeyDownHandler = (e: KeyboardEvent) => this.handleKeyDown(e);
+  /** Whether the window is showing. Kept apart from `isOpen`, which the modal stack
+   *  clears before it calls `close()`, so a stack-driven close still hides the window. */
+  private shown = false;
 
   constructor(private readonly options: FeedbackModalOptions) {
     this.createDom();
@@ -111,6 +113,10 @@ export class FeedbackModal implements UIModal {
       document.body.appendChild(existing);
     }
     this.modalEl = existing;
+    // Focusable, so a click anywhere in the overlay (or on a button, which WebKit does not
+    // focus) keeps keyboard focus — and keydown — inside the modal.
+    this.modalEl.tabIndex = -1;
+    this.modalEl.style.outline = 'none';
 
     this.modalEl.innerHTML = `
       <div class="retro-window" style="width: 620px; max-width: 95vw; box-shadow: 0 0 32px rgba(0, 0, 0, 0.9);">
@@ -203,6 +209,12 @@ export class FeedbackModal implements UIModal {
   private bindEvents(): void {
     if (!this.modalEl) return;
 
+    // The modal's one input path. The overlay covers the screen and holds focus while
+    // open, so every keystroke starts inside it; handleKeyDown stops propagation, so
+    // InputHandler's window listener never sees the same key. This also works on the
+    // main menu, where InputHandler is disabled and the modal stack routes nothing.
+    this.modalEl.addEventListener('keydown', (e) => this.handleKeyDown(e as KeyboardEvent));
+
     this.modalEl.querySelector('#btn-feedback-close-x')?.addEventListener('click', () => this.close());
     this.modalEl.querySelector('#btn-feedback-cancel')?.addEventListener('click', () => this.close());
 
@@ -225,7 +237,7 @@ export class FeedbackModal implements UIModal {
   public handleKeyDown(e: KeyboardEvent): boolean {
     if (!this.isOpen) return false;
 
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' || e.code === 'F3') {
       e.preventDefault();
       e.stopPropagation();
       this.close();
@@ -251,6 +263,7 @@ export class FeedbackModal implements UIModal {
     if (!this.modalEl) return;
 
     this.isOpen = true;
+    this.shown = true;
     this.errorContext = opts.error;
     this.modalEl.style.display = 'flex';
 
@@ -274,25 +287,18 @@ export class FeedbackModal implements UIModal {
 
     this.updateTelemetryPreview();
 
-    // Focus title input and attach window keydown listener
-    if (typeof window !== 'undefined') {
-      if (typeof window.addEventListener === 'function') {
-        window.addEventListener('keydown', this.boundKeyDownHandler);
-      }
-      if (typeof window.setTimeout === 'function') {
-        window.setTimeout(() => {
-          this.titleInput?.focus();
-        }, 50);
-      }
+    // Focus the title input, which also puts keystrokes on the modal's own listener.
+    if (typeof window !== 'undefined' && typeof window.setTimeout === 'function') {
+      window.setTimeout(() => {
+        this.titleInput?.focus();
+      }, 50);
     }
   }
 
   public close(): void {
-    if (!this.isOpen) return;
+    if (!this.shown) return;
+    this.shown = false;
     this.isOpen = false;
-    if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
-      window.removeEventListener('keydown', this.boundKeyDownHandler);
-    }
     if (this.modalEl) {
       // Release focus from the form, or game keys would keep landing in a hidden field.
       const focused = typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null;

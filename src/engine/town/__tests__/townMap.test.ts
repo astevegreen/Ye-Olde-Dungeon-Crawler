@@ -130,4 +130,48 @@ describe('TownMapGenerator', () => {
       expect(result.map.getTile(7, 10)).toBe(TILES.DOOR_OPEN);
     });
   });
+
+  describe('with authored rows', () => {
+    const well = { type: 'test_well', name: 'Well', passable: false, walkable: false, transparent: true, glyph: 'W', description: 'A well.' };
+    const rows = [
+      '#########',
+      '#..W....#',
+      '#.####..#',
+      '#.#..#..#',
+      "#.##+#.>#",
+      '#..?....#',
+      '#########',
+    ];
+    const authored: TownLayoutDefinition = {
+      name: 'Row Town',
+      width: 50,
+      height: 50,
+      playerSpawn: { x: 1, y: 1 },
+      stairsDown: { x: 7, y: 4 },
+      layout: rows,
+      legend: { W: 'test_well', '?': 'no_such_tile' },
+      // The bounds reach one column past the drawn hut, so walling them in would cover (6,3).
+      buildings: [{ name: 'Hut', bounds: { x1: 2, y1: 2, x2: 6, y2: 4 }, door: { x: 4, y: 4 } }],
+      npcs: [],
+    };
+
+    it('takes its size from the rows and draws them, legend tiles from the pack', () => {
+      const generator = new TownMapGenerator(50, 30, authored, [well]);
+      expect(generator.width).toBe(9);
+      expect(generator.height).toBe(7);
+      const { map } = generator.generate();
+      expect(map.getTile(3, 1)?.type).toBe('test_well');
+      expect(map.getTile(2, 2)).toBe(TILES.WALL);
+      expect(map.getTile(4, 4)).toBe(TILES.DOOR_CLOSED);
+      expect(map.getTile(7, 4)).toBe(TILES.STAIRS_DOWN);
+      // An unknown legend type falls back to ground rather than failing.
+      expect(map.getTile(3, 5)).toBe(TILES.FLOOR);
+    });
+
+    it('does not wall in buildings over the rows', () => {
+      const { map } = new TownMapGenerator(50, 30, authored, [well]).generate();
+      expect(map.getTile(6, 3)).toBe(TILES.FLOOR);
+      expect(map.getTile(5, 3)).toBe(TILES.WALL);
+    });
+  });
 });

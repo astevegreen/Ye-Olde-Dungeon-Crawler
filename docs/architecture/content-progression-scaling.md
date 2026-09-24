@@ -31,3 +31,5 @@ A draft only shapes the grid. `LayoutStrategy` (`layoutStrategy.ts`) owns the gu
 
 The boss floor is `DungeonArc.generateBossLair`. When the quest's `bossFloorLayout.layout` is set (rows of tile characters, with an optional `legend` for pack tiles), the lair is drawn from it; the boss, its four guards and its hoard keep the built-in hall's arrangement around `bossSpawn`. `cotw`'s lair is the Heartwood (`lair.ts`).
 
+The town (floor 0) is `TownMapGenerator`. By default it is an open courtyard with each of `town.buildings` walled in. When `town.layout` is set (rows: `#` rock or wall, `.` ground, `+`/`'` doors, `>` stairs down, and a `legend` from other characters to the pack's tile types), the town is drawn from the rows and takes their size; `buildings` then only name the interiors (merchants, and the renderer's `town_<buildingType>` look). Legend tiles resolve from the pack's `tiles` before an engine exists (a new character starting in town) and from the tile registry after.
+

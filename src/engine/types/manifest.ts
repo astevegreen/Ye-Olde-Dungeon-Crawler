@@ -244,6 +244,14 @@ export interface TownLayoutDefinition {
   buildings: TownBuildingDefinition[];
   npcs: TownNpcDefinition[];
   services?: TownServicesDefinition;
+  /**
+   * The town's tiles, one string per row: '#' rock or wall, '.' ground, '+'/"'" doors, '>'
+   * stairs down; `legend` maps other characters to tile types (the pack's own tiles). When
+   * set, it replaces the open courtyard, and `buildings` only name the interiors (their
+   * walls are in the rows).
+   */
+  layout?: string[];
+  legend?: Record<string, string>;
 }
 
 export interface FloorEncounterConfig {

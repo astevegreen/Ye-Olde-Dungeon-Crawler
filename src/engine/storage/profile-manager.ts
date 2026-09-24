@@ -214,7 +214,7 @@ export class ProfileManager {
 
     if (startInTown) {
       startingFloor = 0;
-      const townGen = new TownMapGenerator(50, 30, manifest.town);
+      const townGen = new TownMapGenerator(50, 30, manifest.town, manifest.tiles ?? []);
       const town = townGen.generate();
       map = town.map;
       playerSpawn = town.playerSpawn;

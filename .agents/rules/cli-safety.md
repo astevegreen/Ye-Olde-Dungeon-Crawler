@@ -2,9 +2,9 @@
 trigger: always_on
 ---
 
-# CLI Command Safety & Execution Rules (Windows PowerShell)
+# CLI Command Safety (Windows PowerShell)
 
-- **No Inline Eval (`-e`, `--eval`, `-c`):** Never run `npx tsx -e`, `node -e`, `python -c`, or multiline string code blocks directly in shell commands. In Windows PowerShell, nested quote stripping mangles string literals, causing Node/TSX to hang indefinitely waiting for closed input on `stdin`.
-- **Run Files, Not Raw Code Strings:** For ad-hoc probes, calculations, or inspections, write code to a scratch file (in `.prompts/` or the conversation scratch directory) and execute it by path: `npx tsx <path/to/script.ts>`. Alternatively, use the safe evaluation wrapper: `npm run safe:eval -- <path/to/script.ts>`.
-- **Always Use Repository Gate Scripts:** When running tests, lints, or builds, always invoke defined `package.json` scripts (`npm test`, `npm run lint`, `npm run sim`, `npm run validate:schema`, `npm run build:all`) or direct test runners (`npx vitest run <path/to/test.ts>`). Never synthesize raw inline CLI commands or one-liners for builds or gate checks.
-- **Enforce Non-Interactive Execution:** Commands must run non-interactively with `stdin` ignored or closed; never run commands that await interactive terminal input.
+- **No inline eval (`-e`, `--eval`, `-c`, `-p`):** never run `npx tsx -e`, `node -e`, `python -c`, or any code passed as a quoted shell argument. Windows PowerShell drops or mangles quoted arguments to native commands; `tsx` left without code starts a REPL and waits on stdin forever.
+- **Probes go in files:** write ad-hoc code to `.prompts/` (gitignored) or your scratch directory and run it with `npm run safe:eval -- <path> [args...]`. It closes stdin and kills the probe after 30s. It has no `-e` mode, on purpose.
+- **Gates run through `package.json` scripts:** `npm test`, `npm run lint`, `npm run sim`, `npm run validate:schema`, `npm run build` / `build:all`, or `npx vitest run <test-file>` for one file. Never hand-assemble one-liners for them.
+- **Nothing interactive:** never run a command that waits for terminal input.

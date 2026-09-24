@@ -1,4 +1,4 @@
-import type { UIModal } from '../modalStack';
+import type { UIModal, ModalStackManager } from '../modalStack';
 import { SettingsManager, ACTION_METADATA, type ActionMetadata } from './settingsManager';
 
 export interface KeybindModalOptions {
@@ -9,19 +9,17 @@ export interface KeybindModalOptions {
 export class KeybindModal implements UIModal {
   public readonly id = 'settings';
   public isOpen = false;
+  /** Whether the window is showing. Kept apart from `isOpen`, which the modal stack clears
+   *  before it calls `close()`, so a stack-driven close still hides the window. */
+  private shown = false;
 
   private settingsManager: SettingsManager;
   private onCloseCallback?: () => void;
+  private modalStack?: ModalStackManager;
   private modalEl: HTMLElement | null = null;
   private listeningActionId: string | null = null;
   private statusMessage = '';
   private statusTimer: any = null;
-
-  private boundKeyDownHandler = (e: KeyboardEvent) => {
-    if (this.isOpen) {
-      this.handleKeyDown(e);
-    }
-  };
 
   constructor(options: KeybindModalOptions) {
     this.settingsManager = options.settingsManager;
@@ -29,14 +27,20 @@ export class KeybindModal implements UIModal {
     this.createDom();
   }
 
+  /** The stack this modal pushes and removes its own single entry on, once one exists. */
+  public setModalStack(stack: ModalStackManager): void {
+    this.modalStack = stack;
+  }
+
   public open(): void {
     if (typeof document !== 'undefined' && !this.modalEl) {
       this.createDom();
     }
     this.isOpen = true;
+    this.shown = true;
     this.listeningActionId = null;
-    if (typeof window !== 'undefined') {
-      window.addEventListener('keydown', this.boundKeyDownHandler, true);
+    if (this.modalStack && !this.modalStack.has(this.id)) {
+      this.modalStack.push(this);
     }
     if (this.modalEl) {
       this.modalEl.style.display = 'flex';
@@ -45,13 +49,20 @@ export class KeybindModal implements UIModal {
   }
 
   public close(): void {
+    if (!this.shown) return;
+    this.shown = false;
     this.isOpen = false;
     this.listeningActionId = null;
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('keydown', this.boundKeyDownHandler, true);
-    }
     if (this.modalEl) {
+      // Release focus, so keys go back to the page (and InputHandler), not a hidden overlay.
+      const focused = typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null;
+      if (focused && typeof this.modalEl.contains === 'function' && this.modalEl.contains(focused)) {
+        focused.blur();
+      }
       this.modalEl.style.display = 'none';
+    }
+    if (this.modalStack?.has(this.id)) {
+      this.modalStack.remove(this.id);
     }
     if (this.onCloseCallback) {
       this.onCloseCallback();
@@ -61,11 +72,15 @@ export class KeybindModal implements UIModal {
   public handleKeyDown(e: KeyboardEvent): boolean {
     if (!this.isOpen) return false;
 
+    // Every key the open modal receives stops here, so InputHandler's window listener never
+    // sees it as well. Only keys the modal acts on are preventDefault-ed, so the checkboxes
+    // and the buffer slider keep their native keys.
+    e.stopPropagation();
+
     try {
       // If currently listening for a key to bind
       if (this.listeningActionId) {
         e.preventDefault();
-        e.stopPropagation();
 
         if (e.code === 'Escape') {
           this.listeningActionId = null;
@@ -96,7 +111,6 @@ export class KeybindModal implements UIModal {
       // Default modal key navigation
       if (e.code === 'Escape') {
         e.preventDefault();
-        e.stopPropagation();
         this.close();
         return true;
       }
@@ -237,6 +251,17 @@ export class KeybindModal implements UIModal {
 
     document.body.appendChild(modal);
     this.modalEl = modal;
+    // Focusable, so a click anywhere in the overlay (or on a button, which WebKit does not
+    // focus) keeps keyboard focus — and keydown — inside the modal.
+    modal.tabIndex = -1;
+    modal.style.outline = 'none';
+
+    // The modal's one input path. The overlay holds focus while open (holdFocus), so every
+    // keystroke passes this listener before InputHandler's window listener, and
+    // handleKeyDown stops it there. That is what rebinding needs: raw keys, before
+    // InputHandler claims F1/F2/F3 and the backquote. It also works on the main menu, where
+    // InputHandler is disabled and the modal stack routes nothing.
+    modal.addEventListener('keydown', (e) => this.handleKeyDown(e as KeyboardEvent));
 
     // Attach base controls
     modal.querySelector('#btn-settings-close-x')?.addEventListener('click', () => this.close());
@@ -289,6 +314,19 @@ export class KeybindModal implements UIModal {
     const cat = (activeTab?.getAttribute('data-cat') as ActionMetadata['category']) || 'Locomotion';
     this.renderKeybindList(cat);
     this.updateStatusBar();
+    this.holdFocus();
+  }
+
+  /**
+   * Keeps keyboard focus inside the open modal, so every keystroke passes its overlay's
+   * listener. Re-rendering the keybind list removes the button just clicked, which drops
+   * focus to the page body, where the next key (the one to bind) would miss the overlay.
+   */
+  private holdFocus(): void {
+    if (!this.isOpen || !this.modalEl || typeof document === 'undefined') return;
+    const focused = document.activeElement;
+    if (focused && typeof this.modalEl.contains === 'function' && this.modalEl.contains(focused)) return;
+    if (typeof this.modalEl.focus === 'function') this.modalEl.focus();
   }
 
   private renderMovementToggles(): void {

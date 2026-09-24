@@ -123,3 +123,78 @@ test('save & quit and choices take each key once, through one modal-stack entry'
   expect(await state(page)).toMatchObject({ turn: start.turn, x: start.x, y: start.y });
   expect(pageErrors).toEqual([]);
 });
+
+// Save & quit's Settings, Help, and Save Code buttons open windows that must each take the
+// one modal-stack entry save & quit gives up; with none, the game took their keys.
+test('windows opened from save & quit each hold one stack entry and keep keys from the game', async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on('pageerror', (err) => pageErrors.push(err.message));
+  await embarkNewHero(page);
+  const start = await state(page);
+  const heldBack = async () => {
+    await page.keyboard.press('ArrowRight');
+    expect(await state(page)).toMatchObject({ turn: start.turn, x: start.x });
+  };
+
+  // Settings, including a rebind to a key InputHandler would otherwise claim (F2 toggles
+  // diagnostics), pressed right after the keybind list re-renders.
+  const settings = page.locator('#settings-keybind-modal');
+  await page.keyboard.press('Escape');
+  await page.locator('#btn-savequit-settings').click();
+  await expect(settings).toBeVisible();
+  expect(await stackIds(page)).toEqual(['settings']);
+  await heldBack();
+  await settings.locator('#settings-keybind-list button').first().click();
+  await expect(page.locator('#settings-status')).toContainText('Press any key');
+  await page.keyboard.press('F2');
+  await expect(page.locator('#settings-status')).toContainText('Bound [F2]');
+  expect(await stackIds(page)).toEqual(['settings']);
+  await page.keyboard.press('Escape');
+  await expect(settings).toBeHidden();
+  expect(await stackIds(page)).toEqual([]);
+
+  // Help: the codex, as the character menu's Bestiary tab, as on every other path to it.
+  const characterMenu = page.locator('#character-menu-modal');
+  await page.keyboard.press('Escape');
+  await page.locator('#btn-savequit-help').click();
+  await expect(characterMenu).toBeVisible();
+  expect(await stackIds(page)).toEqual(['character-menu']);
+  expect(await page.evaluate(() => window.__cotwInputHandler!.characterMenuModal!.activeTabId)).toBe('bestiary');
+  await heldBack();
+  await page.keyboard.press('Escape');
+  await expect(characterMenu).toBeHidden();
+  expect(await stackIds(page)).toEqual([]);
+
+  // Save code.
+  const saveCode = page.locator('#save-code-modal');
+  await page.keyboard.press('Escape');
+  await page.locator('#btn-savequit-copy-code').click();
+  await expect(saveCode).toBeVisible();
+  expect(await stackIds(page)).toEqual(['save-code']);
+  await heldBack();
+  await page.keyboard.press('Escape');
+  await expect(saveCode).toBeHidden();
+  expect(await stackIds(page)).toEqual([]);
+
+  expect(pageErrors).toEqual([]);
+});
+
+// On the main menu InputHandler is disabled, so settings takes keys only through its own
+// focus-holding overlay: rebinding by keyboard and Escape must work with no game running.
+test('settings on the main menu rebinds and closes by keyboard', async ({ page }) => {
+  expect(existsSync(BUNDLE), `${BUNDLE} is missing; run \`npm run build\` first`).toBe(true);
+  const pageErrors: string[] = [];
+  page.on('pageerror', (err) => pageErrors.push(err.message));
+  await page.goto(pathToFileURL(BUNDLE).href);
+
+  const settings = page.locator('#settings-keybind-modal');
+  await page.locator('#btn-menu-settings').click();
+  await expect(settings).toBeVisible();
+  await settings.locator('#settings-keybind-list button').first().click();
+  await page.keyboard.press('KeyG');
+  await expect(page.locator('#settings-status')).toContainText(/\[KeyG\].* to "Move North"/);
+  await page.keyboard.press('Escape');
+  await expect(settings).toBeHidden();
+
+  expect(pageErrors).toEqual([]);
+});

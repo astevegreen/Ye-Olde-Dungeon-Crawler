@@ -28,6 +28,8 @@ import type {
   GameEvent,
   SpellDefinition,
   HallOfFameEntry,
+  SaveData,
+  VersionedSaveEnvelope,
 } from './engine';
 import { CanvasRenderer } from './rendering/canvas-renderer';
 import { InputHandler } from './rendering/input-handler';
@@ -587,6 +589,12 @@ window.addEventListener('DOMContentLoaded', () => {
     },
   });
 
+  /** Opens the save-code window over the game, with its one modal-stack entry. */
+  const openSaveCode = (envelope?: VersionedSaveEnvelope<SaveData>): void => {
+    saveCodeModal.open('copy', envelope);
+    pushModal('save-code', { isOpen: () => saveCodeModal.isOpen(), close: () => saveCodeModal.close() });
+  };
+
   const sagaShareModal = new SagaShareModal({
     leaderboard: new Leaderboard(getBrowserStorage() ?? undefined),
     branding: brand,
@@ -601,16 +609,12 @@ window.addEventListener('DOMContentLoaded', () => {
     },
   });
 
-  const keybindModal = new KeybindModal({
-    settingsManager,
-    onClose: () => {
-      popModal('keybinds');
-    },
-  });
+  // Like FeedbackModal, KeybindModal registers and removes its own modal-stack entry
+  // (setModalStack below): it also opens from the main menu, before any stack exists.
+  const keybindModal = new KeybindModal({ settingsManager });
 
   const saveQuitModal = new SaveQuitModal({
     profileManager,
-    saveCodeModal,
     onSaveAndExit: () => {
       saveAndReturnToTitle();
     },
@@ -622,10 +626,13 @@ window.addEventListener('DOMContentLoaded', () => {
       keybindModal.open();
     },
     onOpenHelp: () => {
-      if (activeEngine) {
-        compendiumModal.open(activeEngine);
+      // The codex is the character menu's Bestiary tab in game, as on every other path to it.
+      if (activeEngine && characterMenuModal) {
+        if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
+        characterMenuModal.open('bestiary');
       }
     },
+    onOpenSaveCode: openSaveCode,
   });
 
   function promptSaveAndQuit(): void {
@@ -1130,19 +1137,16 @@ window.addEventListener('DOMContentLoaded', () => {
       'save-code': () => {
         if (activeEngine && activeProfile) {
           const saveData = serializeGame(activeEngine, activeProfile);
-          const env = {
+          openSaveCode({
             schemaVersion: CURRENT_SCHEMA_VERSION,
             contentManifestId: activeManifest.id,
             timestamp: Date.now(),
             data: saveData,
-          };
-          saveCodeModal.open('copy', env);
-          pushModal('save-code', { isOpen: () => saveCodeModal.isOpen(), close: () => saveCodeModal.close() });
+          });
         }
       },
       settings: () => {
         keybindModal.open();
-        pushModal('keybinds', keybindModal);
       },
       summon_companion: (eng) => {
         const defId = eng.manifest?.companions?.[0]?.id;
@@ -1261,6 +1265,7 @@ window.addEventListener('DOMContentLoaded', () => {
       inputHandler.onCastSpellById = castSpellById;
       diagnosticModal.setModalStack(inputHandler.modalStack);
       feedbackModal.setModalStack(inputHandler.modalStack);
+      keybindModal.setModalStack(inputHandler.modalStack);
       inputHandler.onToggleFeedback = () => toggleFeedback();
     } else {
       renderer.setEngine(engine);
@@ -1301,6 +1306,7 @@ window.addEventListener('DOMContentLoaded', () => {
         inputHandler.onToggleDiagnostics = toggleDiagnostics;
         inputHandler.onToggleFeedback = () => toggleFeedback();
         feedbackModal.setModalStack(inputHandler.modalStack);
+        keybindModal.setModalStack(inputHandler.modalStack);
         inputHandler.contextHelp = contextHelp;
         inputHandler.compendiumModal = compendiumModal;
         inputHandler.commandPalette = commandPalette;

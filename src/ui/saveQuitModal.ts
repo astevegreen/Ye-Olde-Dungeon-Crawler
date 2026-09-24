@@ -12,16 +12,17 @@ import { CURRENT_SCHEMA_VERSION, type VersionedSaveEnvelope } from '../engine';
 import type { GameEngine } from '../engine';
 import type { CharacterProfile, SaveData } from '../engine';
 import type { ProfileManager } from '../engine';
-import type { SaveCodeModal } from './saveCodeModal';
 import type { UIModal } from './modalStack';
 
 export interface SaveQuitModalOptions {
   profileManager: ProfileManager;
-  saveCodeModal?: SaveCodeModal;
   onSaveAndExit: () => void;
   onResume: () => void;
+  /** The openers below run after this modal has closed and left the modal stack; each
+   *  registers the window it opens there, or the game would take its keys. */
   onOpenSettings?: () => void;
   onOpenHelp?: () => void;
+  onOpenSaveCode?: (envelope?: VersionedSaveEnvelope<SaveData>) => void;
 }
 
 export class SaveQuitModal implements UIModal {
@@ -204,9 +205,9 @@ export class SaveQuitModal implements UIModal {
 
   private handleOpenSaveCode(): void {
     const envelope = this.getCurrentEnvelope();
-    if (this.options.saveCodeModal) {
+    if (this.options.onOpenSaveCode) {
       this.close();
-      this.options.saveCodeModal.open('copy', envelope || undefined);
+      this.options.onOpenSaveCode(envelope || undefined);
     }
   }
 

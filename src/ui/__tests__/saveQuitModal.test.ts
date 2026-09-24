@@ -150,6 +150,35 @@ describe('SaveQuitModal input', () => {
     expect(input.modalStack.isEmpty()).toBe(true);
   });
 
+  // The window each button opens registers on the stack itself (main.ts wires the openers);
+  // save & quit must be off the stack by then, so the new window's entry is the only one.
+  it.each(['#btn-savequit-settings', '#btn-savequit-help', '#btn-savequit-copy-code'])(
+    '%s closes it and leaves the stack before its opener runs',
+    (button) => {
+      const seen: Array<{ stack: string[]; open: boolean; envelope?: unknown }> = [];
+      const record = (envelope?: unknown) =>
+        seen.push({ stack: input.modalStack.getStackIds(), open: modal.isOpen, envelope });
+      modal = new SaveQuitModal({
+        profileManager: {} as ProfileManager,
+        onSaveAndExit: vi.fn(),
+        onResume,
+        onOpenSettings: () => record(),
+        onOpenHelp: () => record(),
+        onOpenSaveCode: (envelope) => record(envelope),
+      });
+      openAsMainDoes();
+
+      overlay().querySelector(button).click();
+
+      expect(seen).toHaveLength(1);
+      expect(seen[0]).toMatchObject({ stack: [], open: false });
+      if (button === '#btn-savequit-copy-code') {
+        expect(seen[0].envelope).toMatchObject({ data: expect.anything() });
+      }
+      expect(onResume).toHaveBeenCalledTimes(1);
+    }
+  );
+
   // The stack clears isOpen before it calls close(); the window must still hide.
   it('hides its window when the modal stack closes it', () => {
     openAsMainDoes();

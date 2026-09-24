@@ -1,4 +1,5 @@
 import type { QuestArcDefinition } from '../../engine';
+import { TOWN_RETURN_POSITION } from './townLayout';
 import { HEARTWOOD_LAIR, LAIR_WIDTH, LAIR_HEIGHT, LAIR_PLAYER_SPAWN, LAIR_STAIRS_UP, LAIR_BOSS_SPAWN } from './lair';
 
 /**
@@ -43,7 +44,7 @@ export const COTW_QUEST: QuestArcDefinition = {
   victoryNpcId: 'npc-olaf',
   victoryFloor: 0,
   victoryPortalTileId: 'gateway_valhalla',
-  townReturnPosition: { x: 25, y: 23 },
+  townReturnPosition: TOWN_RETURN_POSITION,
   victoryDialogue:
     '✦✦✦ The saga is told and retold in Bjarnarhaven’s halls: the Hearth-Tear reclaimed, and Níðhögg’s root answered at last. ✦✦✦',
   victoryScoreBonus: 8000,

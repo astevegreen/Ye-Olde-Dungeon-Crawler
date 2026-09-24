@@ -7,6 +7,7 @@ import { TARNISHED_SILVER } from './zones/tarnishedSilver';
 import { WORLD_BARK } from './zones/worldBark';
 import { MAW_OF_MALICE } from './zones/mawOfMalice';
 import { ROTTING_ROOT } from './zones/rottingRoot';
+import { TOWN, TOWN_SHOP, TOWN_SMITHY, TOWN_TEMPLE, TOWN_BANK, TOWN_HOUSE, townThingRecipes } from './zones/town';
 
 /**
  * cotw's terrain art (ARCHITECTURE.md §3: art comes from the pack's recipes). Each zone is a
@@ -21,9 +22,15 @@ const ZONES: readonly ZoneArt[] = [
   WORLD_BARK,
   MAW_OF_MALICE,
   ROTTING_ROOT,
+  TOWN,
+  TOWN_SHOP,
+  TOWN_SMITHY,
+  TOWN_TEMPLE,
+  TOWN_BANK,
+  TOWN_HOUSE,
 ];
 
-export const COTW_TERRAIN_SPRITES: Record<string, SpriteRecipe> = Object.assign({}, ...ZONES.map(buildZoneRecipes));
+export const COTW_TERRAIN_SPRITES: Record<string, SpriteRecipe> = Object.assign({}, ...ZONES.map(buildZoneRecipes), townThingRecipes());
 
 const floorStyles: Record<string, TerrainStyle> = Object.fromEntries(ZONES.map((z) => [`floor_${z.key}`, { ...z.floor, macro: true }]));
 
@@ -33,6 +40,9 @@ export const COTW_TERRAIN_ART: TerrainArtConfig = {
     wall: { kind: 'wall', faces: 2 },
     water: { kind: 'area', macro: true },
     chasm: { kind: 'area', macro: true },
+    // The town's cobbled lanes blend like a liquid; its fountain spans a 2x2 block.
+    town_road: { kind: 'area', macro: true },
+    town_fountain: { kind: 'area', macro: true },
   },
   contactShadows: true,
   entityShadows: true,

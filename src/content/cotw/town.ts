@@ -1,57 +1,26 @@
 import { Merchant } from '../../engine';
 import type { TownLayoutDefinition } from '../../engine';
 import { makeShopItem } from './items/makeItem';
+import { TOWN_ROWS, TOWN_LEGEND, TOWN_WIDTH, TOWN_HEIGHT, TOWN_BUILDINGS, TOWN_PLAYER_SPAWN, TOWN_STAIRS_DOWN } from './townLayout';
 
 export const COTW_TOWN: TownLayoutDefinition = {
   name: 'Bjarnarhaven',
-  width: 50,
-  height: 30,
-  playerSpawn: { x: 10, y: 14 },
-  stairsDown: { x: 25, y: 8 },
-  buildings: [
-    // Olaf's General Store (North-West)
-    {
-      name: "Olaf's General Store",
-      buildingType: 'shop',
-      bounds: { x1: 3, y1: 2, x2: 16, y2: 9 },
-      door: { x: 10, y: 9, isOpen: false },
-    },
-    // Gunther's Armory (North-East)
-    {
-      name: "Gunther's Armory",
-      buildingType: 'smithy',
-      bounds: { x1: 33, y1: 2, x2: 46, y2: 9 },
-      door: { x: 40, y: 9, isOpen: false },
-    },
-    // Astrid's Alchemical Herbs (South-West)
-    {
-      name: "Astrid's Alchemy",
-      buildingType: 'shop',
-      bounds: { x1: 3, y1: 19, x2: 16, y2: 27 },
-      door: { x: 10, y: 19, isOpen: false },
-    },
-    // Father Torvald's Temple of Thor (South-Center)
-    {
-      name: 'Temple of Thor',
-      buildingType: 'temple',
-      bounds: { x1: 20, y1: 19, x2: 30, y2: 28 },
-      door: { x: 25, y: 19, isOpen: true },
-    },
-    // Sage's Study & Bank of Bjarnarhaven (South-East)
-    {
-      name: "Sage Study & Vault",
-      buildingType: 'bank',
-      bounds: { x1: 33, y1: 19, x2: 46, y2: 27 },
-      door: { x: 40, y: 19, isOpen: false },
-    },
-  ],
+  // A clearing in the pine woods (townLayout.ts): lanes wind between the buildings to a
+  // plaza with a frozen fountain.
+  width: TOWN_WIDTH,
+  height: TOWN_HEIGHT,
+  layout: TOWN_ROWS,
+  legend: TOWN_LEGEND,
+  playerSpawn: TOWN_PLAYER_SPAWN,
+  stairsDown: TOWN_STAIRS_DOWN,
+  buildings: TOWN_BUILDINGS,
   npcs: [
     {
       id: 'npc-olaf',
       name: 'Olaf the Chandler',
       role: 'merchant',
       shopId: 'merchant-olaf',
-      position: { x: 10, y: 5 },
+      position: { x: 11, y: 8 },
       greeting: 'Welcome to Olaf’s General Goods! Torches, packs, and bread for hearty souls!',
       dialogText: 'Stock up on torches and rations, traveler. The depths do not forgive an empty pack.',
       merchantConfig: {
@@ -82,7 +51,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
       name: 'Gunther the Smith',
       role: 'merchant',
       shopId: 'merchant-gunther',
-      position: { x: 40, y: 5 },
+      position: { x: 42, y: 6 },
       greeting: 'Need cold steel or sturdy plate? Gunther’s forge provides!',
       dialogText: 'Mind your guard down there. Those hill giants strike hard enough to splinter oak.',
       merchantConfig: {
@@ -116,7 +85,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
       name: 'Astrid the Alchemist',
       role: 'merchant',
       shopId: 'merchant-astrid',
-      position: { x: 10, y: 23 },
+      position: { x: 9, y: 27 },
       greeting: 'Potions and enchanted scrolls to ward off the dark...',
       dialogText: 'Brewing against frost and venom is an art. Drink deeply before battle.',
       merchantConfig: {
@@ -150,7 +119,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
       id: 'npc-priest',
       name: 'Father Torvald',
       role: 'priest',
-      position: { x: 25, y: 23 },
+      position: { x: 28, y: 30 },
       greeting: 'Welcome to the sacred Hall of Thor, the Thunderer.',
       dialogText: "For a humble donation of gold, Thor's lightning will shatter any curse binding your equipment, or heal all your afflictions.",
     },
@@ -158,7 +127,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
       id: 'npc-sage',
       name: 'Sage Mimir',
       role: 'sage',
-      position: { x: 36, y: 23 },
+      position: { x: 42, y: 25 },
       greeting: 'Greetings, young hero. The ancient runes hold no secrets from me.',
       dialogText: 'Bring me mysterious items from the dungeon. For a small fee, I shall unveil their true power and runic enchantments.',
     },
@@ -166,7 +135,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
       id: 'npc-banker',
       name: 'Banker Haakon',
       role: 'banker',
-      position: { x: 43, y: 23 },
+      position: { x: 47, y: 25 },
       greeting: 'Welcome to the First Bank of Bjarnarhaven.',
       dialogText: 'Carrying thousands of copper coins will crush your back! Let me exchange your heavy copper and silver into lightweight gold and platinum.',
     },
@@ -174,7 +143,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
       id: 'npc-guard',
       name: 'Bjorn the Town Guard',
       role: 'guard',
-      position: { x: 25, y: 15 },
+      position: { x: 26, y: 14 },
       greeting: 'Halt! Keep your weapons sheathed in Bjarnarhaven, adventurer.',
       dialogText: 'The dungeon cellar to the north-east leads into the depths. Many go down; few return.',
     },
@@ -182,7 +151,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
       id: 'npc-trainer',
       name: 'Ranvild the Hound-Warden',
       role: 'trainer',
-      position: { x: 30, y: 15 },
+      position: { x: 19, y: 19 },
       greeting: 'A warrior alone is a warrior half-armed. Let me bond you with a loyal companion.',
       dialogText: 'For a price I can bond you with a battle-hound, revive one that has fallen, retrain its instincts, or teach it new tricks.',
     },
@@ -193,7 +162,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
       id: 'npc-rune-smith',
       name: 'Thrain the Rune-Smith',
       role: 'villager',
-      position: { x: 40, y: 7 },
+      position: { x: 45, y: 7 },
       greeting: "Bring your Rune of Return to my forge and I'll strike its charges anew — free, and quick as the hammer falls.",
       dialogText: 'Every charge spent walking these halls is a charge I can restore. Just say the word.',
     },

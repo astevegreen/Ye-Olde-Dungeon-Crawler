@@ -33,3 +33,5 @@ The boss floor is `DungeonArc.generateBossLair`. When the quest's `bossFloorLayo
 
 The town (floor 0) is `TownMapGenerator`. By default it is an open courtyard with each of `town.buildings` walled in. When `town.layout` is set (rows: `#` rock or wall, `.` ground, `+`/`'` doors, `>` stairs down, and a `legend` from other characters to the pack's tile types), the town is drawn from the rows and takes their size; `buildings` then only name the interiors (merchants, and the renderer's `town_<buildingType>` look). Legend tiles resolve from the pack's `tiles` before an engine exists (a new character starting in town) and from the tile registry after.
 
+`cotw`'s Bjarnarhaven (`townLayout.ts`) is a 56x36 clearing in the pines, built from shapes and a fixed seed: cobbled lanes wind from the main street to every door and the cellar stairs, a plaza holds a frozen fountain, and statues, carts, market stalls, barrels and woodpiles are the pack's own impassable tiles. Any open cell the lanes don't reach becomes woods. `townLayout.test.ts` checks that every NPC, door and the stairs are reachable and each shopkeeper stands inside their building.
+

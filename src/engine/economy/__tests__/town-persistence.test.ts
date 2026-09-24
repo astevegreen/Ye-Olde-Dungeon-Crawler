@@ -19,12 +19,12 @@ describe('Town Hub Generation & Multi-Floor Persistence', () => {
     const townGen = new TownMapGenerator(50, 30, COTW_TOWN);
     const town = townGen.generate();
 
-    expect(town.map.width).toBe(50);
-    expect(town.map.height).toBe(30);
+    expect(town.map.width).toBe(COTW_TOWN.width);
+    expect(town.map.height).toBe(COTW_TOWN.height);
 
     // Verify stairs down
-    expect(town.stairsDown).toEqual({ x: 25, y: 8 });
-    expect(town.map.getTile(25, 8)?.type).toBe('stairs_down');
+    expect(town.stairsDown).toEqual(COTW_TOWN.stairsDown);
+    expect(town.map.getTile(COTW_TOWN.stairsDown.x, COTW_TOWN.stairsDown.y)?.type).toBe('stairs_down');
 
     // Verify NPCs
     expect(town.npcs.length).toBeGreaterThanOrEqual(6);

@@ -32,6 +32,7 @@ export interface Pen {
   stroke(): void;
   clip(): void;
   fillRect(x: number, y: number, w: number, h: number): void;
+  strokeRect(x: number, y: number, w: number, h: number): void;
   clearRect(x: number, y: number, w: number, h: number): void;
   createLinearGradient(x0: number, y0: number, x1: number, y1: number): Gradient;
   createRadialGradient(x0: number, y0: number, r0: number, x1: number, y1: number, r1: number): Gradient;

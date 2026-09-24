@@ -49,6 +49,50 @@ function getDirectionKey(dx: number, dy: number): string {
   throw new Error(`Invalid cardinal delta: dx=${dx}, dy=${dy}`);
 }
 
+/**
+ * The arrow key for one step along a shortest walkable path to `target` (breadth-first over
+ * the live map; closed doors open on bump, other entities block except the target itself).
+ * Null when no path exists. Following real paths keeps the walk independent of the town's
+ * layout.
+ */
+async function stepToward(page: import('@playwright/test').Page, target: Coordinate): Promise<string | null> {
+  const delta = await page.evaluate(({ tx, ty }) => {
+    const engine = (window as any).__cotwEngine;
+    const map = engine.map;
+    const player = engine.player;
+    const id = (x: number, y: number) => `${x},${y}`;
+    const walkable = (x: number, y: number) => {
+      if (!map.inBounds(x, y)) return false;
+      const tile = map.getTile(x, y);
+      if (!tile || !(tile.passable || tile.type === 'door_closed')) return false;
+      const occupant = map.getEntityAt(x, y);
+      return !occupant || occupant === player || (x === tx && y === ty);
+    };
+    const prev = new Map<string, [number, number] | null>([[id(player.x, player.y), null]]);
+    const queue: Array<[number, number]> = [[player.x, player.y]];
+    while (queue.length > 0) {
+      const [x, y] = queue.shift()!;
+      if (x === tx && y === ty) break;
+      for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (prev.has(id(nx, ny)) || !walkable(nx, ny)) continue;
+        prev.set(id(nx, ny), [x, y]);
+        queue.push([nx, ny]);
+      }
+    }
+    if (!prev.has(id(tx, ty))) return null;
+    let step: [number, number] = [tx, ty];
+    let back = prev.get(id(tx, ty));
+    while (back && !(back[0] === player.x && back[1] === player.y)) {
+      step = back;
+      back = prev.get(id(back[0], back[1]));
+    }
+    return { dx: step[0] - player.x, dy: step[1] - player.y };
+  }, { tx: target.x, ty: target.y });
+  return delta ? getDirectionKey(delta.dx, delta.dy) : null;
+}
+
 test('objective-driven multi-floor progression and NPC interaction', { tag: '@campaign' }, async ({ page }, testInfo) => {
   // Hard wall-clock timeout: 60s total
   test.setTimeout(60000);
@@ -196,8 +240,15 @@ test('objective-driven multi-floor progression and NPC interaction', { tag: '@ca
       await page.evaluate(() => (window as any).__cotwEngine.turnCount)
     );
 
-    // 2. Navigate adjacent to NPC (tile directly south: x = targetNpc.x, y = targetNpc.y + 1)
-    const adjacentTile: Coordinate = { x: targetNpc!.x, y: targetNpc!.y + 1 };
+    // 2. Navigate to an open tile beside the NPC (south if it is open)
+    const adjacentTile: Coordinate = await page.evaluate((npc) => {
+      const map = (window as any).__cotwEngine.map;
+      for (const [dx, dy] of [[0, 1], [-1, 0], [1, 0], [0, -1]]) {
+        const tile = map.getTile(npc.x + dx, npc.y + dy);
+        if (tile?.passable && !map.getEntityAt(npc.x + dx, npc.y + dy)) return { x: npc.x + dx, y: npc.y + dy };
+      }
+      return { x: npc.x, y: npc.y + 1 };
+    }, { x: targetNpc!.x, y: targetNpc!.y });
 
     while (stage1Turns < MAX_TURNS_PER_STAGE) {
       const playerPos = await page.evaluate(() => {
@@ -209,13 +260,9 @@ test('objective-driven multi-floor progression and NPC interaction', { tag: '@ca
         break;
       }
 
-      // Step towards adjacent tile
-      const dx = Math.sign(adjacentTile.x - playerPos.x);
-      const dy = Math.sign(adjacentTile.y - playerPos.y);
-
-      // Prioritize dy (moving north through shop door) then dx
-      const stepDelta = dy !== 0 ? { dx: 0, dy } : { dx, dy: 0 };
-      const key = getDirectionKey(stepDelta.dx, stepDelta.dy);
+      // Step along a real path towards the adjacent tile
+      const key = await stepToward(page, adjacentTile);
+      if (!key) throw new Error(`No path to the tile beside ${targetNpc!.name}`);
 
       await page.keyboard.press(key);
       await page.waitForTimeout(ACTION_DELAY_MS);
@@ -239,7 +286,7 @@ test('objective-driven multi-floor progression and NPC interaction', { tag: '@ca
     }
 
     // 3. Bump into the NPC to trigger interaction dialog
-    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press(getDirectionKey(targetNpc!.x - adjacentTile.x, targetNpc!.y - adjacentTile.y));
     await page.waitForTimeout(100);
     stage1Turns++;
 
@@ -307,8 +354,27 @@ test('objective-driven multi-floor progression and NPC interaction', { tag: '@ca
       }
     });
 
-    // Spawn a hostile test monster along the courtyard path
-    const spawnCoordinate: Coordinate = { x: 20, y: 10 };
+    // Spawn a hostile test monster on open ground about six steps away
+    const spawnCoordinate: Coordinate = await page.evaluate(() => {
+      const engine = (window as any).__cotwEngine;
+      const map = engine.map;
+      const start = { x: engine.player.x, y: engine.player.y };
+      const seen = new Set([`${start.x},${start.y}`]);
+      let frontier = [start];
+      for (let d = 0; d < 6 && frontier.length > 0; d++) {
+        const next: Array<{ x: number; y: number }> = [];
+        for (const p of frontier) {
+          for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
+            const n = { x: p.x + dx, y: p.y + dy };
+            if (seen.has(`${n.x},${n.y}`) || !map.getTile(n.x, n.y)?.passable || map.getEntityAt(n.x, n.y)) continue;
+            seen.add(`${n.x},${n.y}`);
+            next.push(n);
+          }
+        }
+        if (next.length > 0) frontier = next;
+      }
+      return frontier[0];
+    });
     const spawnedMonster = await page.evaluate((pos) => {
       const engine = (window as any).__cotwEngine;
       const mob = engine.diagnostics.spawnMonster('goblin', {
@@ -330,25 +396,10 @@ test('objective-driven multi-floor progression and NPC interaction', { tag: '@ca
 
     const stairsDownPos = await page.evaluate(() => {
       const engine = (window as any).__cotwEngine;
-      return engine.map.stairsDown ?? { x: 25, y: 8 };
+      return engine.map.stairsDown ?? engine.manifest.town.stairsDown;
     });
 
-    // Step south out of Olaf's store door first
-    const doorExitTile: Coordinate = { x: 10, y: 10 };
-    while (stage2Turns < MAX_TURNS_PER_STAGE) {
-      const playerPos = await page.evaluate(() => {
-        const p = (window as any).__cotwEngine.player;
-        return { x: p.x, y: p.y };
-      });
-      if (playerPos.x === doorExitTile.x && playerPos.y === doorExitTile.y) {
-        break;
-      }
-      await page.keyboard.press('ArrowDown');
-      await page.waitForTimeout(ACTION_DELAY_MS);
-      stage2Turns++;
-    }
-
-    // Now navigate east along y = 10 towards the spawned monster at (20, 10)
+    // Pursue the spawned monster
     let monsterDefeated = false;
     while (stage2Turns < MAX_TURNS_PER_STAGE) {
       const state = await page.evaluate(() => {
@@ -419,15 +470,9 @@ test('objective-driven multi-floor progression and NPC interaction', { tag: '@ca
           break;
         }
       } else {
-        // Move towards monster
-        let moveKey: string;
-        if (Math.abs(dx) > Math.abs(dy)) {
-          moveKey = dx > 0 ? 'ArrowRight' : 'ArrowLeft';
-        } else if (dy !== 0) {
-          moveKey = dy > 0 ? 'ArrowDown' : 'ArrowUp';
-        } else {
-          moveKey = dx > 0 ? 'ArrowRight' : 'ArrowLeft';
-        }
+        // Move towards the monster along a real path
+        const moveKey = await stepToward(page, { x: state.monster.x, y: state.monster.y });
+        if (!moveKey) throw new Error('No path to the spawned monster');
         await page.keyboard.press(moveKey);
         await page.waitForTimeout(ACTION_DELAY_MS);
         stage2Turns++;
@@ -441,7 +486,7 @@ test('objective-driven multi-floor progression and NPC interaction', { tag: '@ca
 
     expect(monsterDefeated, 'Hostile monster must be engaged and defeated').toBe(true);
 
-    // Continue navigation to stairsDown position (25, 8)
+    // Continue along a real path to the stairs down
     while (stage2Turns < MAX_TURNS_PER_STAGE) {
       const pos = await page.evaluate(() => {
         const p = (window as any).__cotwEngine.player;
@@ -452,16 +497,8 @@ test('objective-driven multi-floor progression and NPC interaction', { tag: '@ca
         break;
       }
 
-      let key: string;
-      if (pos.x < stairsDownPos.x) {
-        key = 'ArrowRight';
-      } else if (pos.x > stairsDownPos.x) {
-        key = 'ArrowLeft';
-      } else if (pos.y > stairsDownPos.y) {
-        key = 'ArrowUp';
-      } else {
-        key = 'ArrowDown';
-      }
+      const key = await stepToward(page, stairsDownPos);
+      if (!key) throw new Error('No path to the stairs down');
 
       await page.keyboard.press(key);
       await page.waitForTimeout(ACTION_DELAY_MS);

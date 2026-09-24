@@ -70,17 +70,17 @@ known gap: confirm only that the gap still exists as §9 describes it.
    every protected-file commit since the last audit names its §8.1
    exception, and every exception-4 change has its ADR. For §8.4, check
    commits in `verified..HEAD`: each carries an attribution trailer, and
-   none with `Agent: Antigravity` touches engine production source.
+   owner-requested behavior carries a `Requested:` trailer.
 
 Cross-check the agent configuration specifically: read CLAUDE.md,
-.antigravity/rules.md, and every file under .antigravity/skills/ and
-.antigravity/archetypes/. Report any statement that contradicts or
+and every file under .agents/rules/ and .agents/skills/ (Antigravity's
+loaded instructions; confirm project-rules.md is `trigger: always_on`). Report any statement that contradicts or
 narrows ARCHITECTURE.md's current content — e.g. headless-purity scope,
 encapsulation scope, the engine/content dependency direction,
 schema-migration triggers, or anything describing the scheduler — and
 whether adversarial-audit.md's code-vs-doc process is still consistent
 with this command. Confirm every §N reference in CLAUDE.md and
-.antigravity/rules.md still resolves to the section it names.
+.agents/rules/project-rules.md still resolves to the section it names.
 
 For every mismatch found in any of the above, show the actual
 ARCHITECTURE.md (or sub-doc) text and the actual conflicting code or

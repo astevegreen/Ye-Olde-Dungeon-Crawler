@@ -1,6 +1,10 @@
+---
+trigger: always_on
+---
+
 # Project Rules & Invariants
 
-`ARCHITECTURE.md` (repo root) is the authoritative architecture spec. This file summarizes it for enforcement; it does not replace it. Section numbers below (§N) refer to `ARCHITECTURE.md`. If this file, a skill, or an archetype ever disagrees with `ARCHITECTURE.md`, stop and flag the conflict to the user — do not silently pick a side.
+`ARCHITECTURE.md` (repo root) is the authoritative architecture spec. This file summarizes it for enforcement; it does not replace it. Section numbers below (§N) refer to `ARCHITECTURE.md`. If this file, a skill, or a persona rule ever disagrees with `ARCHITECTURE.md`, stop and flag the conflict to the user — do not silently pick a side.
 
 ## Before Editing Code
 1. Read `ARCHITECTURE.md` in full before any structural change: new files, new dependencies between `src/engine/`, `src/content/`, `src/ui/`, `src/rendering/`, or `src/main/`, or edits to protected files. It is kept small on purpose and carries its own routing table — use it to find the right `docs/architecture/**` sub-doc for the area you're touching (content packs, storage/schema, simulation/input, or quality gates) before you start.
@@ -21,9 +25,13 @@ One line each; the cited section holds the full rule and its enforcement. The li
 - **Documentation sync (§8.2):** a change that makes `ARCHITECTURE.md` or a `docs/architecture/**` sub-doc inaccurate updates that document in the same change. A new Planned Work item takes the "Next free ID" in §9.
 
 ## Workflow (§8.4)
-- End every commit message with the trailer `Agent: Antigravity`.
-- Commit changes to `src/content/`, `src/ui/`, `src/rendering/`, tests, and docs yourself.
-- Leave any change to engine production source (`src/engine/` outside tests) uncommitted, and tell the owner it needs Claude Code review. This includes a new generic engine capability that content work needs.
+You commit — and push when the owner asks — on your own; Claude Code reviews every commit after the fact. So each commit must say who wrote it, what the owner asked for, and nothing else:
+- **Attribution:** end every commit message with the trailer `Agent: Antigravity`. The `commit-msg` hook rejects a commit without one.
+- **Owner's request:** when the owner asked for the change, add a trailer quoting the ask, e.g. `Requested: "rename coins to Gold Coins, show stacks as (5x)"`. The reviewer treats requested behavior as intended and checks only that it is done correctly; an unrequested behavior change gets flagged. Changes you chose yourself (a fix you found, a refactor) carry no `Requested:` trailer.
+- **One request per commit:** a separate commit for each distinct request or fix. Never bundle unrelated work, transcripts, or generated notes into a feature commit.
+- **Engine source** (`src/engine/` outside tests) may be committed like any other code. The three §8.1 protected files still need `§8.1 exception N` in the message (hook-enforced).
+- **Push** when the owner asks. The `pre-push` hook runs the full gates; never bypass hooks (`--no-verify`, `SKIP_HOOKS=1`) unless the owner explicitly says to for that push.
+- **Never move the `verified` tag** — it marks what Claude Code has reviewed.
 - Describe the change in the commit subject: a feature is titled as a feature, a refactor as a refactor.
 
 ## Verification Gates (§7.2)
@@ -34,9 +42,9 @@ Before reporting a change complete, run these and report the real output:
 - `npm run validate:schema`
 - `npm run build` — use `npm run build:all` when changing `vite.config.ts`, theme selection, or manifest wiring.
 
-## Sub-Agent Persona Triggers
-If a prompt starts with one of these tags, adopt that persona's rules from `.antigravity/archetypes/` or `.antigravity/skills/`. Persona files never override the invariants above.
-- `[Auditor]` -> Adopt `.antigravity/skills/adversarial-audit.md`. Perform an adversarial critique, produce a prioritized plan, and await approval before modifying code.
-- `[Designer]` -> Adopt `.antigravity/archetypes/designer.md`. Confine edits to `src/content/`; import the engine only via `src/engine/index.ts`.
-- `[Guardian]` -> Adopt `.antigravity/archetypes/guardian.md`. Focus on execution-path headless purity (including content hooks), determinism, and Vitest coverage.
-- `[UI]` -> Adopt `.antigravity/archetypes/ui-specialist.md`. Focus on Canvas rendering, `src/rendering/input-handler.ts`, `src/ui/input/chordBuffer.ts`, and DOM modals. Triage and inspection features (god mode, spawning, map reveal) go through `engine.diagnostics` methods (§2) — never implemented as direct engine-state writes from `src/ui/` or `src/rendering/`.
+## Personas & Skills
+Persona rules live in `.agents/rules/persona-*.md`; skills in `.agents/skills/<name>/SKILL.md`. When a prompt starts with a tag, adopt that file. Neither ever overrides the invariants above.
+- `[Auditor]` -> skill `adversarial-audit`: adversarial critique, a prioritized plan, and approval before modifying code.
+- `[Designer]` -> `persona-designer.md`: confine edits to `src/content/`; import the engine only via `src/engine/index.ts`.
+- `[Guardian]` -> `persona-guardian.md`: execution-path headless purity (including content hooks), determinism, and Vitest coverage.
+- `[UI]` -> `persona-ui-specialist.md`: Canvas rendering, `src/rendering/input-handler.ts`, `src/ui/input/chordBuffer.ts`, and DOM modals. Triage and inspection features (god mode, spawning, map reveal) go through `engine.diagnostics` methods (§2) — never direct engine-state writes from `src/ui/` or `src/rendering/`.

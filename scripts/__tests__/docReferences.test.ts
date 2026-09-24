@@ -27,7 +27,7 @@ const DOCS = [
   'ARCHITECTURE.md',
   'CLAUDE.md',
   ...filesUnder('docs', '.md'),
-  ...filesUnder('.antigravity', '.md'),
+  ...filesUnder('.agents', '.md'),
   ...filesUnder('.claude/commands', '.md'),
 ];
 const SOURCES = [...filesUnder('src', '.ts'), ...filesUnder('scripts', '.ts')].filter(

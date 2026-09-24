@@ -1,7 +1,6 @@
 ---
 name: meta-retrospective-evolver
-description: Evaluates execution friction, tool failures, and user corrections at the close of a task to propose safe, non-bloating improvements to Antigravity skills and archetypes.
-trigger: post-task-hook
+description: Use at the close of a task. Evaluates execution friction, tool failures, and user corrections at the close of a task to propose safe, non-bloating improvements to Antigravity skills and archetypes.
 ---
 
 ### Role & Purpose

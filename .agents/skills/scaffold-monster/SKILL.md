@@ -1,3 +1,8 @@
+---
+name: scaffold-monster
+description: Scaffold a new monster in a content pack (src/content/<pack>/), with seeded-PRNG loot and engine access only through src/engine/index.ts. Use when asked to create or add a monster.
+---
+
 # Skill: Scaffold Monster
 
 When asked to create or scaffold a new monster:

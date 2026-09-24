@@ -167,7 +167,7 @@ Build tooling per §2's Language & Build Target. `assetsInlineLimit` inlines all
 - **Engine encapsulation:** code outside `src/engine/` never writes engine object fields directly — no assignment, index write, `as any`-cast write, or `Object.assign` onto an engine object, including a plain object reached through an engine member (`engine.lastActionResult.pipelineError`). Presentation code (`src/ui/`, `src/rendering/`, `src/main.ts`, `src/main/**`) additionally changes engine state only via `GameEngine`/`Player`/`Entity` methods or `engine.commandBus` — never subsystem mutators (`GameMap`, `Container`, `InventoryManager`, …) or Array/Map/Set mutators on engine members. `src/content/` is exempt from the subsystem-mutator restriction. Allowlist additions (`scripts/engine-encapsulation-allowlist.json`) need a stated reason; stale entries fail the check.
 - **Composition-root scope:** `src/main.ts` alone — never `src/main/**` — may import content packs; `check:engine-purity` enforces this against both.
 - **No engine-creep literals:** engine production source names no identifier a content pack declares (monster, item, spell, pact, companion, vault, choice, NPC, quest reference, or story flag). The few legitimate overlaps are listed with a reason in `scripts/engine-creep-allowlist.json`; stale entries fail the check.
-- **PRNG discipline:** `engine.prng` is canonical; `engine.rng` is its bound delegate — no further aliases. Simulation code must not use `Math.random()`/`Date.now()` for outcomes or IDs.
+- **PRNG discipline:** `engine.prng` is canonical; `engine.rng` is its bound delegate — no further aliases. Simulation code must not use `Math.random()`/`Date.now()` for outcomes or IDs. `check:engine-purity` fails on both in engine and content source; wall-clock timestamps are allowlisted per file with a reason in `scripts/purity-clock-allowlist.json` (stale entries fail).
 
 ---
 
@@ -183,7 +183,7 @@ Build tooling per §2's Language & Build Target. `assetsInlineLimit` inlines all
 Keep such diffs minimal and scoped, and state which exception applies in the commit message as `§8.1 exception N`; the `commit-msg` hook rejects a commit that stages a protected file without one.
 
 ### 8.2 Documentation Synchronization
-- This core document is authoritative, together with `docs/architecture/**` and `docs/decisions/**`. `.antigravity/rules.md`, `CLAUDE.md`, and `.antigravity/skills/`/`.antigravity/archetypes/` summarize or apply it and must not contradict it. If they disagree, stop and flag the conflict instead of picking a side.
+- This core document is authoritative, together with `docs/architecture/**` and `docs/decisions/**`. `CLAUDE.md` and Antigravity's `.agents/rules/` and `.agents/skills/` summarize or apply it and must not contradict it. If they disagree, stop and flag the conflict instead of picking a side.
 - When a change makes an unmarked statement untrue — here or in a `docs/architecture/**` sub-doc — update that document in the same change. A binding statement is updated here; explanatory detail is updated in its sub-doc.
 - When a design is built and rejected on evidence (not merely deferred), record it as a new ADR under `docs/decisions/**` rather than leaving the rationale in a commit message, and reference it from the relevant stub.
 - When a change completes a planned item, remove its **[Planned]** tags, describe the new current state, and delete the item from §9.
@@ -194,10 +194,13 @@ Keep such diffs minimal and scoped, and state which exception applies in the com
 - New work must not widen the gap to a planned target. For example: no new deep engine imports from content, no new `Math.random()` in simulation code, and no new modals that bypass `ModalStackManager`.
 
 ### 8.4 Agent Workflow
-Two coding agents work in this repository in alternation, never simultaneously: Antigravity (routine implementation) and Claude Code (design, complex fixes, verification). [ADR-0005](docs/decisions/0005-owner-authorized-exception-and-agent-workflow.md) records why.
-- **Attribution:** every commit names the tool that wrote it — Claude Code's `Co-Authored-By: Claude` trailer, or an `Agent: <name>` trailer (`Agent: Antigravity`). The `commit-msg` hook warns when neither is present.
-- **Engine changes land through review:** Antigravity commits changes to `src/content/`, `src/ui/`, `src/rendering/`, tests, and docs. A change to engine production source (`src/engine/` outside tests) stays uncommitted and is reported to the owner as needing Claude Code review; Claude Code commits it after reviewing it.
-- **Review marker:** the local git tag `verified` marks the last commit Claude Code has reviewed. Each Claude Code session reviews every commit in `verified..HEAD` without its own trailer — against this document, with the gates run — then moves the tag to `HEAD`.
+Two coding agents work in this repository in alternation, never simultaneously: Antigravity (routine implementation) and Claude Code (design, complex fixes, verification). Review happens **after** commit: either agent may commit, and push when the owner asks; Claude Code reviews what landed. [ADR-0005](docs/decisions/0005-owner-authorized-exception-and-agent-workflow.md) set up the workflow; [ADR-0006](docs/decisions/0006-review-after-commit-and-loaded-agent-rules.md) moved review after commit.
+- **Agent instructions:** Claude Code loads `CLAUDE.md`; Antigravity loads `.agents/rules/*.md` (`project-rules.md` is `trigger: always_on`) and `.agents/skills/<name>/SKILL.md`. Instructions anywhere else are not loaded automatically.
+- **Attribution:** every commit names who wrote it — Claude Code's `Co-Authored-By: Claude` trailer, or `Agent: <name>` (`Agent: Antigravity`, `Agent: owner`). The `commit-msg` hook rejects a commit without one.
+- **Owner's request:** a commit implementing something the owner asked for carries a `Requested: "<the ask>"` trailer. Review treats requested behavior as intended and checks its correctness; unrequested behavior changes are flagged.
+- **One request per commit:** unrelated work is not bundled; the `commit-msg` hook warns on large commits spanning several areas.
+- **Protected files and gates still bind:** §8.1 is enforced by `commit-msg`; `pre-push` runs the full gates, and hooks are bypassed only on the owner's explicit say-so.
+- **Review marker:** the local git tag `verified` marks the last commit Claude Code has reviewed; only Claude Code moves it. Each Claude Code session reviews every commit in `verified..HEAD` without its own trailer — against this document, with the gates run — then moves the tag to `HEAD`.
 
 ---
 

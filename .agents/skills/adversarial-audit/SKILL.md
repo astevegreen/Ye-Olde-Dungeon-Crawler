@@ -1,10 +1,15 @@
+---
+name: adversarial-audit
+description: Adversarial architectural audit of the code against ARCHITECTURE.md. Use when asked for a codebase audit, architectural review, gap analysis, health critique, or whether the project is on track, or when a prompt starts with [Auditor]. Read-only first: produce a prioritized plan and wait for approval before changing code.
+---
+
 # Skill: Adversarial Architectural Audit & Realignment
 
 ## Trigger Conditions
 Invoke this skill whenever the user asks for a comprehensive codebase audit, architectural review, gap analysis, project health critique, or asks if the project is "on track."
 
 ## Scope Note
-This skill audits the **code** against ARCHITECTURE.md's current-state claims. It does not check whether ARCHITECTURE.md itself is accurate, internally consistent, or in sync with `.antigravity/rules.md` and the files under `.antigravity/skills/`/`.antigravity/archetypes/` — that is a separate documentation audit. Before flagging a mismatch as a violation, check whether ARCHITECTURE.md already tags that behavior **[Planned: P-NN]**; a planned item is a known gap, not a new finding. Likewise, re-propose a design recorded as rejected under `docs/decisions/` — notably ADR-0001, *Scheduler Partitioning* (splitting `EnergyScheduler` into active/dormant lists) — only with new evidence the recorded evaluation did not cover (for example, a measured `npm run sim` regression at realistic populations), and cite that evidence in the finding.
+This skill audits the **code** against ARCHITECTURE.md's current-state claims. It does not check whether ARCHITECTURE.md itself is accurate, internally consistent, or in sync with `.agents/rules/` and `.agents/skills/` — that is a separate documentation audit. Before flagging a mismatch as a violation, check whether ARCHITECTURE.md already tags that behavior **[Planned: P-NN]**; a planned item is a known gap, not a new finding. Likewise, re-propose a design recorded as rejected under `docs/decisions/` — notably ADR-0001, *Scheduler Partitioning* (splitting `EnergyScheduler` into active/dormant lists) — only with new evidence the recorded evaluation did not cover (for example, a measured `npm run sim` regression at realistic populations), and cite that evidence in the finding.
 
 ## Analysis Protocol (Phase 1: Read-Only Audit)
 1. **Architectural Boundary Inspection:**

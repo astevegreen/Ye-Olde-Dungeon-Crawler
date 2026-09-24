@@ -5,9 +5,9 @@ Two AI tools work on this codebase, in the same directory
 (C:\Antigravity\YODC), in alternation, never simultaneously:
 Antigravity handles routine implementation. You (Claude Code) provide
 strategic direction, handle complex fixes, and review everything that
-lands. ARCHITECTURE.md §8.4 is the binding workflow: attribution
-trailers, engine changes committed only after your review, and the
-`verified` review marker.
+lands. ARCHITECTURE.md §8.4 is the binding workflow: review happens
+after commit, attribution and `Requested:` trailers, and the `verified`
+review marker.
 
 ## Before doing anything else, every session
 1. Run `git status` and `git log --oneline verified..HEAD`. If the
@@ -16,9 +16,11 @@ trailers, engine changes committed only after your review, and the
 2. Review every listed commit without a `Co-Authored-By: Claude`
    trailer the way you'd verify your own work: against ARCHITECTURE.md,
    with the relevant gates run. Being merged proves nothing.
-3. Check for uncommitted engine changes Antigravity left for review
-   (§8.4); review them before committing.
-4. Once everything in the range is reviewed and green, run
+   - A `Requested: "..."` trailer quotes the owner. Treat that behavior
+     as intended: check it is done correctly, don't re-litigate it.
+   - Flag behavior changes with no request behind them, bundled
+     unrelated work, and anything that breaks the architecture.
+3. Once everything in the range is reviewed and green, run
    `git tag -f verified HEAD`. Report anything you couldn't clear
    instead of moving the tag past it.
 
@@ -30,11 +32,11 @@ between src/engine, src/ui, src/rendering, src/content, src/main).
 It carries its own routing table pointing to `docs/architecture/**`
 sub-docs (content extensibility, storage/schema, simulation/input,
 quality gates) and `docs/decisions/**` ADRs — consult the sub-doc a
-change actually touches, per that table. Antigravity is expected to
-follow the same document via its own `.antigravity/rules.md` — if you
-ever find the two disagree, or either disagrees with `ARCHITECTURE.md`,
-that's a real problem to flag and resolve, not to silently pick a side
-on.
+change actually touches, per that table. Antigravity follows the
+same document through `.agents/rules/project-rules.md` (always loaded;
+instructions anywhere else are not) — if you ever find the two
+disagree, or either disagrees with `ARCHITECTURE.md`, that's a real
+problem to flag and resolve, not to silently pick a side on.
 
 ## Verification is not optional
 Before considering any task complete, actually run — don't just

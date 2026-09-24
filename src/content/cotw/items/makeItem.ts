@@ -3,11 +3,12 @@ import type { Item, ItemDefinition, Predicate } from '../../../engine';
 import { COTW_ITEMS } from './index';
 
 /**
- * Shop-only stock with no dungeon-loot definition. Priced on the pack's copper scale
- * (starting purse 350 CP, floor 1-9 coin drops 30-200 CP) — the engine's ItemFactory
- * builders carry legacy prices ~100x higher (a 20 GP loaf of bread).
+ * Items outside COTW_ITEMS, so never rolled as random floor loot: sold in town and
+ * dropped by specific monsters. Priced on the pack's copper scale (starting purse
+ * 350 CP, floor 1-9 coin drops 30-200 CP) — the engine's ItemFactory builders carry
+ * legacy prices ~100x higher (a 20 GP loaf of bread).
  */
-export const SHOP_ONLY_ITEMS: ItemDefinition[] = [
+const NON_CATALOG_ITEMS: ItemDefinition[] = [
   {
     id: 'wooden_torch',
     name: 'Wooden Torch',
@@ -63,66 +64,25 @@ export const SHOP_ONLY_ITEMS: ItemDefinition[] = [
   },
 ];
 
-let _stockDefinitions: Record<string, ItemDefinition> | null = null;
-
-export function getStockDefinitions(): Record<string, ItemDefinition> {
-  if (!_stockDefinitions) {
-    _stockDefinitions = Object.fromEntries(
-      [...COTW_ITEMS, ...SHOP_ONLY_ITEMS].map((def) => [def.id, def])
-    );
-  }
-  return _stockDefinitions;
-}
-
-export const STOCK_DEFINITIONS: Record<string, ItemDefinition> = new Proxy(
-  {} as Record<string, ItemDefinition>,
-  {
-    get(_target, prop: string) {
-      return getStockDefinitions()[prop];
-    },
-    has(_target, prop: string) {
-      return prop in getStockDefinitions();
-    },
-    ownKeys() {
-      return Object.keys(getStockDefinitions());
-    },
-    getOwnPropertyDescriptor(_target, prop) {
-      const def = getStockDefinitions()[prop as string];
-      return def ? { configurable: true, enumerable: true, value: def } : undefined;
-    },
-  }
+const DEFINITIONS: Record<string, ItemDefinition> = Object.fromEntries(
+  [...COTW_ITEMS, ...NON_CATALOG_ITEMS].map((def) => [def.id, def])
 );
 
-export function makeItem(
-  itemId: string,
-  instanceId: string,
-  predicateOrFloor?: Predicate | number,
-  rngOrFloor?: (() => number) | number,
-  maybeRng?: () => number
-): Item {
-  const def = STOCK_DEFINITIONS[itemId];
+function definitionFor(itemId: string): ItemDefinition {
+  const def = DEFINITIONS[itemId];
   if (!def) {
     throw new Error(`No cotw item definition for: ${itemId}`);
   }
-  let predicate: Predicate | undefined;
-  let floor = 1;
-  let rng: () => number = () => 0.5;
+  return def;
+}
 
-  if (typeof predicateOrFloor === 'number') {
-    floor = predicateOrFloor;
-    if (typeof rngOrFloor === 'function') {
-      rng = rngOrFloor;
-    }
-  } else if (predicateOrFloor && typeof predicateOrFloor === 'object') {
-    predicate = predicateOrFloor;
-    if (typeof rngOrFloor === 'number') {
-      floor = rngOrFloor;
-    }
-    if (maybeRng) {
-      rng = maybeRng;
-    }
-  }
+/** Merchant stock: floor-1 stats at a fixed mid roll, optionally gated by a predicate. */
+export function makeShopItem(itemId: string, instanceId: string, predicate?: Predicate): Item {
+  const def = definitionFor(itemId);
+  return createScaledItem(predicate ? { ...def, predicate } : def, instanceId, 1, () => 0.5);
+}
 
-  const itemDef = predicate ? { ...def, predicate } : def;
-  return createScaledItem(itemDef, instanceId, floor, rng);
+/** Monster loot: floor-1 stats rolled from the loot table's seeded rng. */
+export function makeLootItem(itemId: string, instanceId: string, rng: () => number): Item {
+  return createScaledItem(definitionFor(itemId), instanceId, 1, rng);
 }

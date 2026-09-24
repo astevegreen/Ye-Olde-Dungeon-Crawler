@@ -1,6 +1,6 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
-import { makeItem } from '../items/makeItem';
+import { makeLootItem } from '../items/makeItem';
 
 export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
   {
@@ -27,11 +27,11 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.25,
-        generate: (id, rng) => makeItem('cursed_mace', id, 1, rng),
+        generate: (id, rng) => makeLootItem('cursed_mace', id, rng),
       },
       {
         chance: 0.2,
-        generate: (id, rng) => makeItem('iron_shield', id, 1, rng),
+        generate: (id, rng) => makeLootItem('iron_shield', id, rng),
       },
     ],
   },
@@ -62,7 +62,7 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.3,
-        generate: (id, rng) => makeItem('chest', id, 1, rng),
+        generate: (id, rng) => makeLootItem('chest', id, rng),
       },
     ],
   },
@@ -112,11 +112,11 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.35,
-        generate: (id, rng) => makeItem('iron_shield', id, 1, rng),
+        generate: (id, rng) => makeLootItem('iron_shield', id, rng),
       },
       {
         chance: 0.25,
-        generate: (id, rng) => makeItem('broadsword', id, 1, rng),
+        generate: (id, rng) => makeLootItem('broadsword', id, rng),
       },
     ],
   },
@@ -138,7 +138,7 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.2,
-        generate: (id, rng) => makeItem('dagger', id, 1, rng),
+        generate: (id, rng) => makeLootItem('dagger', id, rng),
       },
     ],
   },

@@ -1,6 +1,6 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
-import { makeItem } from '../items/makeItem';
+import { makeLootItem } from '../items/makeItem';
 
 export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
   {
@@ -107,7 +107,7 @@ export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.6,
-        generate: (id, rng) => makeItem('scroll_teleport', id, 1, rng),
+        generate: (id, rng) => makeLootItem('scroll_teleport', id, rng),
       },
       {
         chance: 0.5,

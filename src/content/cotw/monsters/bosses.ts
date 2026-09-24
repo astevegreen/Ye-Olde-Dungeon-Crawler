@@ -1,6 +1,6 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
-import { makeItem } from '../items/makeItem';
+import { makeLootItem } from '../items/makeItem';
 
 export const BOSS_MONSTERS: MonsterDefinition[] = [
   {
@@ -37,7 +37,7 @@ export const BOSS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) => makeItem('hearth_tear_fragment', id, 1, rng),
+        generate: (id, rng) => makeLootItem('hearth_tear_fragment', id, rng),
       },
       {
         chance: 1.0,

@@ -1,6 +1,6 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
-import { makeItem } from '../items/makeItem';
+import { makeLootItem } from '../items/makeItem';
 
 export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
   {
@@ -21,7 +21,7 @@ export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.25,
-        generate: (id, rng) => makeItem('broadsword', id, 1, rng),
+        generate: (id, rng) => makeLootItem('broadsword', id, rng),
       },
     ],
   },
@@ -67,15 +67,15 @@ export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.4,
-        generate: (id, rng) => makeItem('mana_potion', id, 1, rng),
+        generate: (id, rng) => makeLootItem('mana_potion', id, rng),
       },
       {
         chance: 0.3,
-        generate: (id, rng) => makeItem('frost_blade', id, 1, rng),
+        generate: (id, rng) => makeLootItem('frost_blade', id, rng),
       },
       {
         chance: 0.5,
-        generate: (id, rng) => makeItem('hearth_tear_fragment', id, 1, rng),
+        generate: (id, rng) => makeLootItem('hearth_tear_fragment', id, rng),
       },
     ],
   },
@@ -111,7 +111,7 @@ export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.35,
-        generate: (id, rng) => makeItem('wand_fireballs', id, 1, rng),
+        generate: (id, rng) => makeLootItem('wand_fireballs', id, rng),
       },
     ],
   },
@@ -178,7 +178,7 @@ export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.4,
-        generate: (id, rng) => makeItem('health_potion', id, 1, rng),
+        generate: (id, rng) => makeLootItem('health_potion', id, rng),
       },
     ],
   },

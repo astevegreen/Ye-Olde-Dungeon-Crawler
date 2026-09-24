@@ -1,7 +1,7 @@
 import { ItemFactory, createScaledItem } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
 import { COTW_CATALOG_RECORD } from '../items';
-import { makeItem } from '../items/makeItem';
+import { makeLootItem } from '../items/makeItem';
 
 export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
   {
@@ -42,11 +42,11 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 1.0,
-        generate: (id, rng) => makeItem('health_potion', id, 1, rng),
+        generate: (id, rng) => makeLootItem('health_potion', id, rng),
       },
       {
         chance: 1.0,
-        generate: (id, rng) => makeItem('mana_potion', id, 1, rng),
+        generate: (id, rng) => makeLootItem('mana_potion', id, rng),
       },
       {
         chance: 1.0,

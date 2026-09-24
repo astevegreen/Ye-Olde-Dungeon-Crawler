@@ -10,6 +10,8 @@ import type { ItemDefinition, RoomDecorationBand } from '../types/manifest';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
 import type { GameDifficulty } from '../types';
 import type { EngineRegistries } from '../registries';
+import { LayoutStrategy } from './layout/layoutStrategy';
+import { draftCaverns, draftHalls, draftRift, draftLattice, draftWarrens, draftSpine } from './layout/drafts';
 
 export interface DungeonGenParams {
   width: number;
@@ -28,6 +30,8 @@ export interface DungeonGenParams {
   forcedVaultId?: string;
   roomDecoration?: RoomDecorationBand[];
   registries?: EngineRegistries;
+  /** Strategy-specific tuning from the pack's `floorLayouts` band (see `layout/drafts.ts`). */
+  layoutParams?: Readonly<Record<string, unknown>>;
 }
 
 export interface GeneratedFloorData {
@@ -39,6 +43,8 @@ export interface GeneratedFloorData {
   monsters: Monster[];
   forcedVaultChestSpawns?: Position[];
   forcedVaultNpcSpawns?: Position[];
+  /** Footprints of the vaults stamped this floor, where the strategy reports them. */
+  vaultRects?: Array<{ x1: number; y1: number; x2: number; y2: number }>;
 }
 
 export interface DungeonGeneratorStrategy {
@@ -281,3 +287,13 @@ export class DungeonGeneratorRegistry {
 // Register default strategies
 DungeonGeneratorRegistry.register(new BspDungeonGenerator());
 DungeonGeneratorRegistry.register(new CellularAutomataGenerator());
+
+// Character-grid layouts (layout/drafts.ts). Each honours forced and random vaults and
+// falls back to rooms and corridors if a draft can't meet the runner's guarantees.
+const bspFallback = (params: DungeonGenParams) => new BspDungeonGenerator().generate(params);
+DungeonGeneratorRegistry.register(new LayoutStrategy('caverns', 'Stitched Caverns', draftCaverns, bspFallback));
+DungeonGeneratorRegistry.register(new LayoutStrategy('halls', 'Pillared Halls', draftHalls, bspFallback));
+DungeonGeneratorRegistry.register(new LayoutStrategy('rift', 'Rift Crossing', draftRift, bspFallback));
+DungeonGeneratorRegistry.register(new LayoutStrategy('lattice', 'Drift Lattice', draftLattice, bspFallback));
+DungeonGeneratorRegistry.register(new LayoutStrategy('warrens', 'Tunnel Warrens', draftWarrens, bspFallback));
+DungeonGeneratorRegistry.register(new LayoutStrategy('spine', 'Spine and Ribs', draftSpine, bspFallback));

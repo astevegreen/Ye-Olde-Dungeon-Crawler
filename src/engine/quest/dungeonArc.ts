@@ -142,8 +142,11 @@ export class DungeonArc {
     difficulty?: GameDifficulty,
     registries?: EngineRegistries
   ): DungeonFloorResult {
+    const layoutBand = manifest?.floorLayouts?.find(
+      (b) => floorNumber >= b.minFloor && (b.maxFloor === undefined || floorNumber <= b.maxFloor)
+    );
     const generatorStrategyId =
-      questArc?.floorGenerators?.[floorNumber] ?? questArc?.defaultGenerator ?? 'bsp';
+      questArc?.floorGenerators?.[floorNumber] ?? layoutBand?.strategy ?? questArc?.defaultGenerator ?? 'bsp';
     const strategy = DungeonGeneratorRegistry.get(generatorStrategyId);
     if (!strategy) {
       // Floor generation always runs inside a pipeline-isolated player action
@@ -171,9 +174,13 @@ export class DungeonArc {
         ? undefined
         : manifest?.scriptedVaultPlacements?.find((p) => p.floor === floorNumber);
 
+    const width = manifest?.floorSize?.width ?? 50;
+    const height = manifest?.floorSize?.height ?? 35;
     const dungeon = strategy.generate({
-      width: 50,
-      height: 35,
+      width,
+      height,
+      // Room count scales with floor area (10 rooms at the default 50x35).
+      maxRooms: Math.max(6, Math.round((10 * width * height) / (50 * 35))),
       minRoomSize: 5,
       maxRoomSize: 10,
       floorNumber,
@@ -186,6 +193,7 @@ export class DungeonArc {
       difficulty,
       registries,
       roomDecoration: manifest?.roomDecoration,
+      layoutParams: layoutBand?.params,
       forcedVaultId:
         manifest?.runeOfReturn?.acquisition?.floor === floorNumber
           ? manifest.runeOfReturn.acquisition.vaultId

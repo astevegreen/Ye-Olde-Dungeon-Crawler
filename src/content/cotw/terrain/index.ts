@@ -2,6 +2,7 @@ import type { SpriteRecipe, TerrainArtConfig, TerrainStyle } from '../../../engi
 import { buildZoneRecipes, type ZoneArt } from './kit';
 import { RIME_HOLLOWS } from './zones/rimeHollows';
 import { DWARVEN_WORKS } from './zones/dwarvenWorks';
+import { OBSIDIAN_SIPHON } from './zones/obsidianSiphon';
 
 /**
  * cotw's terrain art (ARCHITECTURE.md §3: art comes from the pack's recipes). Each zone is a
@@ -11,6 +12,7 @@ import { DWARVEN_WORKS } from './zones/dwarvenWorks';
 const ZONES: readonly ZoneArt[] = [
   RIME_HOLLOWS,
   DWARVEN_WORKS,
+  OBSIDIAN_SIPHON,
 ];
 
 export const COTW_TERRAIN_SPRITES: Record<string, SpriteRecipe> = Object.assign({}, ...ZONES.map(buildZoneRecipes));
@@ -31,5 +33,9 @@ export const COTW_TERRAIN_ART: TerrainArtConfig = {
   // Light sources per zone: lava, banked forge coals, sap, fungus, bile.
   emissive: {
     dwarven_works: { chasm: { color: '#ff8a3a', radius: 2.8, strength: 0.2 } },
+    obsidian_siphon: {
+      chasm: { color: '#ff7a2a', radius: 2.4, strength: 0.2 },
+      shallow_water: { color: '#ff7a2a', radius: 1.8, strength: 0.12 },
+    },
   },
 };

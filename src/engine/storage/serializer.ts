@@ -796,6 +796,10 @@ export function deserializeGame(
   // Clear default equipment to cleanly restore saved paperdoll
   for (const [slot, itemNode] of Object.entries(saveData.player.inventory.paperdoll)) {
     if (itemNode) {
+      // The pack slot holds the primary pack, which the save also records as `primaryPack`.
+      // InventoryManager already equipped that one; a second copy here would displace it
+      // with a ghost pack whose contents count twice toward carried weight.
+      if ((itemNode as SerializedItemNode).id === primaryPack.id) continue;
       const item = deserializeItem(itemNode as SerializedItemNode);
       inventory.paperdoll.equip(item, slot);
     } else {

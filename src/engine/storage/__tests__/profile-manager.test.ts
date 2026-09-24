@@ -193,4 +193,22 @@ describe('Multi-Character Profile Save Manager', () => {
     expect(loaded?.engine.player.name).toBe('Ragnar');
     expect(loaded?.engine.player.hp).toBe(28); // 35 - 7
   });
+
+  // The pack slot and `primaryPack` are the same container, saved twice. Loading used to
+  // equip a second copy over the restored pack: a ghost whose contents counted twice
+  // toward carried weight, while new pickups went into the other copy.
+  it('restores one backpack, equipped as the primary pack, at the weight it was saved with', () => {
+    const { profile, engine } = manager.createCharacter('Bodvar');
+    engine.player.inventory.primaryPack.addItem(
+      new Item({ id: 'anvil-1', name: 'Anvil', category: 'misc', weight: 5000, bulk: 10 })
+    );
+    const savedWeight = engine.player.inventory.totalWeight();
+    manager.saveCharacter(engine, profile);
+
+    const inv = manager.loadCharacter(profile.id)!.engine.player.inventory;
+    expect(inv.paperdoll.getItem('pack')).toBe(inv.primaryPack);
+    expect(inv.primaryPack.getItem('anvil-1')).toBeDefined();
+    expect(inv.totalWeight()).toBe(savedWeight);
+  });
 });
+

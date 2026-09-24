@@ -71,7 +71,6 @@ export class CompendiumTabAdapter implements MenuTab {
 
   public unmount(): void {
     const overlayEl = this.modal.rootElement;
-    this.modal.close();
     if (overlayEl && this.container && overlayEl.parentElement === this.container) {
       this.container.removeChild(overlayEl);
       overlayEl.style.position = '';
@@ -88,6 +87,9 @@ export class CompendiumTabAdapter implements MenuTab {
       overlayEl.style.boxSizing = '';
       document.getElementById('app')?.appendChild(overlayEl);
     }
+    // Close last: clearing the inline layout styles above also cleared the
+    // display:none that close() sets, leaving the window stranded over the game.
+    this.modal.close();
     this.container = null;
   }
 
@@ -167,7 +169,6 @@ export class PactTabAdapter implements MenuTab {
 
   public unmount(): void {
     const overlayEl = this.modal.rootElement;
-    this.modal.close();
     if (overlayEl && this.container && overlayEl.parentElement === this.container) {
       this.container.removeChild(overlayEl);
       overlayEl.style.position = '';
@@ -184,6 +185,9 @@ export class PactTabAdapter implements MenuTab {
       overlayEl.style.boxSizing = '';
       document.getElementById('app')?.appendChild(overlayEl);
     }
+    // Close last: clearing the inline layout styles above also cleared the
+    // display:none that close() sets, leaving the window stranded over the game.
+    this.modal.close();
     this.container = null;
   }
 
@@ -253,7 +257,6 @@ export class SpellbookTabAdapter implements MenuTab {
 
   public unmount(): void {
     const modalContainer = this.modal.rootElement;
-    this.modal.close();
     if (modalContainer && this.container && modalContainer.parentElement === this.container) {
       this.container.removeChild(modalContainer);
       modalContainer.style.position = '';
@@ -270,6 +273,9 @@ export class SpellbookTabAdapter implements MenuTab {
       modalContainer.style.boxSizing = '';
       document.getElementById('app')?.appendChild(modalContainer);
     }
+    // Close last: clearing the inline layout styles above also cleared the
+    // display:none that close() sets, leaving the window stranded over the game.
+    this.modal.close();
     this.container = null;
   }
 

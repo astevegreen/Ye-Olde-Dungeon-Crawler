@@ -13,11 +13,11 @@ export interface CommandMetadata {
  */
 export const COMMAND_CATALOG = [
   { id: 'inventory', title: 'Open Inventory', category: 'Action', shortcut: 'I', description: 'Inspect items, equip gear, and use consumables' },
-  { id: 'spellbook', title: 'Open Spellbook', category: 'Action', shortcut: 'Z / C', description: 'Review spells, manage quick-spell bindings, and cast' },
+  { id: 'spellbook', title: 'Open Spellbook', category: 'Action', shortcut: 'Z', description: 'Review spells, manage quick-spell bindings, and cast' },
   { id: 'inspect', title: 'Inspect Surroundings', category: 'Action', shortcut: 'L / X', description: 'Look at tiles, monsters, and items in view' },
   { id: 'compendium', title: "Open Slayer's Compendium", category: 'Help', shortcut: 'B', description: 'View bestiary weaknesses, lore, and combat notes' },
   { id: 'allocate-stats', title: 'Allocate Stat Points', category: 'Action', shortcut: 'Cmds', description: 'Spend unallocated stat points on attributes' },
-  { id: 'character_menu', title: 'Open Character Sheet', category: 'Action', shortcut: 'C', description: 'View full hero attributes, resistances, traits, and status effects' },
+  { id: 'character_menu', title: 'Open Character Sheet', category: 'Action', shortcut: 'E', description: 'View full hero attributes, resistances, traits, and status effects' },
   { id: 'pacts', title: 'Ancient Run Pacts & Bounties', category: 'Action', shortcut: 'P', description: 'Sign risky pacts or review active covenant penalties' },
   { id: 'story', title: 'Campaign Story & Objectives', category: 'Help', shortcut: 'Cmds', description: 'Check main quest progress and chapter goals' },
   { id: 'run-advisory', title: 'Seek Sage Run Advisory', category: 'Help', shortcut: 'Cmds', description: 'Get tactical warnings and advice tailored to your active floor' },

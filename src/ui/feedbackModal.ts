@@ -6,7 +6,7 @@ import {
   sanitizePaths,
 } from '../engine';
 import type { UIModal, ModalStackManager } from './modalStack';
-import { copyTextToClipboard, defaultPlatformAdapter } from './platform';
+import { copyTextToClipboard, defaultPlatformAdapter, browserReportContext } from './platform';
 import { showToast as showGlobalToast } from './toast';
 
 export type FeedbackType = 'bug' | 'feature';
@@ -294,6 +294,11 @@ export class FeedbackModal implements UIModal {
       window.removeEventListener('keydown', this.boundKeyDownHandler);
     }
     if (this.modalEl) {
+      // Release focus from the form, or game keys would keep landing in a hidden field.
+      const focused = typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null;
+      if (focused && typeof this.modalEl.contains === 'function' && this.modalEl.contains(focused)) {
+        focused.blur();
+      }
       this.modalEl.style.display = 'none';
     }
 
@@ -387,6 +392,7 @@ export class FeedbackModal implements UIModal {
       subject,
       category,
       userNotes: description,
+      ...browserReportContext(),
     });
   }
 

@@ -443,7 +443,11 @@
       }
 
       /* Embedded Character Menu Tab Scaling (Bestiary, Pacts, Spellbook) */
-      .character-menu-tab-content > div {
+      /* Only the embedded modal roots — a blanket "> div" also forced the Story tab's
+         side-by-side columns into a single overflowing column. */
+      .character-menu-tab-content > #pact-modal,
+      .character-menu-tab-content > #compendium-modal,
+      .character-menu-tab-content > #spellbook-modal {
         width: 100% !important;
         height: 100% !important;
         display: flex !important;

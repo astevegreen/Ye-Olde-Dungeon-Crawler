@@ -79,3 +79,21 @@ export function getBrowserStorage(): StorageAdapter | null {
   return null;
 }
 
+
+/** Browser details a diagnostic report needs. The engine can't read them itself
+ * (headless purity, ARCHITECTURE.md §2), so presentation passes them in; without
+ * them a report reads "Headless / Pure Engine" at a default 960x600. */
+export function browserReportContext(): {
+  userAgent?: string;
+  devicePixelRatio?: number;
+  viewportWidth?: number;
+  viewportHeight?: number;
+} {
+  if (typeof window === 'undefined') return {};
+  return {
+    userAgent: window.navigator?.userAgent,
+    devicePixelRatio: window.devicePixelRatio,
+    viewportWidth: window.innerWidth,
+    viewportHeight: window.innerHeight,
+  };
+}

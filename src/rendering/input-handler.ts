@@ -55,6 +55,13 @@ function resolveCompassDirection(code: string): RadialDirection | null {
   }
 }
 
+function isTextEntryTarget(target: EventTarget | null): boolean {
+  const el = target as { tagName?: string; isContentEditable?: boolean } | null;
+  if (!el) return false;
+  const tag = el.tagName?.toUpperCase();
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable === true;
+}
+
 export class InputHandler {
   private engine: GameEngine;
   private onActionProcessed: () => void;
@@ -348,6 +355,13 @@ export class InputHandler {
     if (!this.enabled) return false;
 
     const code = e.code;
+
+    // Typing in a text field (bug-report form, save-code box, ...) belongs to that field:
+    // no hotkeys, no movement, and no preventDefault — which had swallowed Space and the
+    // caret arrows. Escape still reaches the top modal so the form can be dismissed.
+    if (isTextEntryTarget(e.target)) {
+      return code === 'Escape' && !this.modalStack.isEmpty() ? this.modalStack.handleKeyDown(e) : false;
+    }
 
     // Global Developer Diagnostic overlay toggle: 'F2' or Backquote (`) / Tilde (~)
     // Checked before isInputLocked so testers can always summon diagnostics during animation freezes

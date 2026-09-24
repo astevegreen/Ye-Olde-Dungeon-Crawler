@@ -5,7 +5,7 @@ import {
   flightRecorder,
 } from '../engine';
 import type { UIModal, ModalStackManager } from './modalStack';
-import { copyTextToClipboard } from './platform';
+import { copyTextToClipboard, browserReportContext } from './platform';
 import { showToast as showGlobalToast } from './toast';
 import {
   DIAGNOSTIC_TAB_RENDERERS,
@@ -333,7 +333,7 @@ export class DiagnosticModal implements UIModal {
   public async copyReportToClipboard(): Promise<void> {
     const engine = this.getEngine();
     const profile = this.getProfile();
-    const report = flightRecorder.generateReport(engine ?? undefined, profile ?? undefined);
+    const report = flightRecorder.generateReport(engine ?? undefined, profile ?? undefined, browserReportContext());
 
     await copyTextToClipboard(report);
     this.showToast('Diagnostic report copied to clipboard.');
@@ -342,7 +342,7 @@ export class DiagnosticModal implements UIModal {
   public downloadReport(): void {
     const engine = this.getEngine();
     const profile = this.getProfile();
-    const report = flightRecorder.generateReport(engine ?? undefined, profile ?? undefined);
+    const report = flightRecorder.generateReport(engine ?? undefined, profile ?? undefined, browserReportContext());
     const blob = new Blob([report], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

@@ -86,7 +86,7 @@ describe('CombatLogger FOV Culling & Narrative Telemetry', () => {
     expect(result.success).toBe(true);
     const lastMsg = engine.messages[engine.messages.length - 1];
     expect(lastMsg).toContain('You pick up');
-    expect(lastMsg).toContain('(x3)');
+    expect(lastMsg).toContain('(3x)');
     expect(lastMsg).toContain('stored in');
   });
 });

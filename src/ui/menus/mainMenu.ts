@@ -12,6 +12,7 @@ export interface MainMenuOptions {
   onOpenSettings: () => void;
   onOpenHelp: () => void;
   onOpenValhalla: () => void;
+  onOpenFeedback?: () => void;
 }
 
 export class MainMenu {
@@ -128,6 +129,9 @@ export class MainMenu {
             <button type="button" id="btn-menu-help" class="win-btn" style="padding: 9px; font-size: 13px;">
               📖 Help &amp; Controls Manual
             </button>
+            <button type="button" id="btn-menu-feedback" class="win-btn" style="padding: 9px; font-size: 13px;">
+              💬 Send Feedback &amp; Bug Report
+            </button>
             <button type="button" id="btn-menu-valhalla" class="win-btn" style="padding: 9px; font-size: 13px;">
               🏆 ${brand.hallOfFameName} Leaderboard
             </button>
@@ -178,6 +182,10 @@ export class MainMenu {
 
     overlay.querySelector('#btn-menu-help')?.addEventListener('click', () => {
       this.options.onOpenHelp();
+    });
+
+    overlay.querySelector('#btn-menu-feedback')?.addEventListener('click', () => {
+      this.options.onOpenFeedback?.();
     });
 
     overlay.querySelector('#btn-menu-valhalla')?.addEventListener('click', () => {

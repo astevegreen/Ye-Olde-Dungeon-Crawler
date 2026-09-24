@@ -23,3 +23,34 @@ export interface DiagnosticReportOptions {
   viewportHeight?: number;
   userAgent?: string;
 }
+
+export interface DiagnosticPackageMetadata {
+  timestamp: number;
+  isoTimestamp: string;
+  engineVersion: string;
+  manifestId: string;
+  manifestName: string;
+  turnCount?: number;
+  floor?: number;
+  prngState?: number;
+  error?: string;
+  userAgent?: string;
+  display?: string;
+}
+
+export interface DiagnosticPackage {
+  metadata: DiagnosticPackageMetadata;
+  summary: string;
+  asciiMap?: string;
+  flightLog: FlightEvent[];
+  stateSnapshot?: unknown;
+}
+
+export interface DiagnosticPackageOptions extends DiagnosticReportOptions {
+  userNotes?: string;
+  category?: string;
+  subject?: string;
+  error?: Error | string;
+  includeMap?: boolean;
+  mapRadius?: number;
+}

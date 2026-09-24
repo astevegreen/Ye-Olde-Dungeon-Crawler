@@ -253,7 +253,7 @@ describe('Modal Stack Lifecycle & UI Ground Status Polish', () => {
       map.addItemAt(5, 5, potion);
 
       const status = formatGroundStatus(engine, 5, 5);
-      expect(status.detailText).toContain('Floor: Health Potion (x3)');
+      expect(status.detailText).toContain('Floor: Health Potion (3x)');
       expect(status.promptText).toContain('[G] Pickup');
     });
   });

@@ -20,6 +20,7 @@ export interface CoinItemConfig extends Partial<ItemConfig> {
 export class CoinItem extends Item {
   public readonly denomination: CoinDenomination;
   public count: number;
+  public mergedIds: Set<string> = new Set();
 
   constructor(config: CoinItemConfig) {
     const denom = config.denomination;
@@ -65,7 +66,10 @@ export class CoinItem extends Item {
     (this as { bulk: number }).bulk = Math.max(1, Math.ceil(this.count * 0.5));
   }
 
-  public add(amount: number): void {
+  public add(amount: number, sourceId?: string): void {
+    if (sourceId) {
+      this.mergedIds.add(sourceId);
+    }
     this.setCount(this.count + amount);
   }
 
@@ -124,7 +128,7 @@ export function formatCurrency(totalCp: number): string {
 /**
  * Parses coin denomination from item name or properties if not an explicit CoinItem.
  */
-function parseCoinItem(item: Item): { denomination: CoinDenomination; count: number } | null {
+export function parseCoinItem(item: Item): { denomination: CoinDenomination; count: number } | null {
   if (item instanceof CoinItem) {
     return { denomination: item.denomination, count: item.count };
   }
@@ -136,7 +140,7 @@ function parseCoinItem(item: Item): { denomination: CoinDenomination; count: num
 
     if (lower.includes('platinum') || lower.includes('pp')) return { denomination: 'platinum', count };
     if (lower.includes('silver') || lower.includes('sp')) return { denomination: 'silver', count };
-    if (lower.includes('copper') || lower.includes('cp')) return { denomination: 'copper', count };
+    if (lower.includes('copper') || lower.includes('bronze') || lower.includes('cp')) return { denomination: 'copper', count };
     return { denomination: 'gold', count }; // default gold
   }
   return null;
@@ -192,21 +196,23 @@ export function addCoinsToContainer(
   denomination: CoinDenomination,
   count: number,
   idPrefix = 'coin',
-  rng: () => number = () => 0
+  rng: () => number = () => 0,
+  sourceId?: string
 ): boolean {
   if (count <= 0) return true;
 
   // 1. Try to find existing CoinItem stack of same denomination
   for (const item of container.getItems()) {
     if (item instanceof CoinItem && item.denomination === denomination) {
-      item.add(count);
+      item.add(count, sourceId ?? (idPrefix !== 'coin' ? idPrefix : undefined));
       return true;
     }
   }
 
   // 2. Otherwise instantiate a new CoinItem
+  const coinId = sourceId ?? (idPrefix.includes('-') && !idPrefix.endsWith('-c') ? idPrefix : `${idPrefix}-${denomination}-${Math.floor(rng() * 1000000)}`);
   const newCoin = new CoinItem({
-    id: `${idPrefix}-${denomination}-${Math.floor(rng() * 1000000)}`,
+    id: coinId,
     denomination,
     count,
   });

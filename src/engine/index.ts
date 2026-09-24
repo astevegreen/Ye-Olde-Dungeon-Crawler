@@ -159,6 +159,7 @@ export * from './quest/dungeonArc';
 export * from './quest/timedEvents';
 
 // Economy, Merchants, & Services
+export * from './economy/types';
 export * from './economy/currency';
 export * from './economy/merchant';
 export * from './economy/services';

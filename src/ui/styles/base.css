@@ -441,3 +441,36 @@
         background: #e2e8f0;
         border-radius: 2px;
       }
+
+      /* Embedded Character Menu Tab Scaling (Bestiary, Pacts, Spellbook) */
+      .character-menu-tab-content > div {
+        width: 100% !important;
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        justify-content: stretch !important;
+        box-sizing: border-box !important;
+      }
+
+      .character-menu-tab-content .retro-window,
+      .character-menu-tab-content #spellbook-modal > div {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        border: none !important;
+        flex: 1 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        box-sizing: border-box !important;
+      }
+
+      .character-menu-tab-content .retro-window-body {
+        flex: 1 !important;
+        min-height: 0 !important;
+        overflow-y: auto !important;
+      }
+

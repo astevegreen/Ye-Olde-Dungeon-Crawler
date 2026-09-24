@@ -21,6 +21,8 @@ export interface DiagnosticTabContext {
   refresh(): void;
   copyReport?: () => Promise<void> | void;
   downloadReport?: () => void;
+  openFeedback?: (opts?: Record<string, unknown>) => void;
+  bulkArchive?: import('../../engine').BulkArchive | null;
 }
 
 export type DiagnosticTabRenderer = (ctx: DiagnosticTabContext, engine: GameEngine) => void;

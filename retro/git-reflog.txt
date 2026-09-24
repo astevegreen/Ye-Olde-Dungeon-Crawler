@@ -1,0 +1,115 @@
+# Reflog summary: resets, reverts, and other rollbacks
+# Generated 2026-09-23 (read-only: git reflog, git log, git merge-base --is-ancestor)
+#
+# SCOPE CAVEAT: this checkout was cloned on 2026-09-12 19:42, so the reflog only
+# covers local HEAD movements from then on. The first commits (2026-09-11 onward)
+# were made elsewhere and have no reflog here. No stash ref exists now.
+
+## Operation counts (58 reflog entries)
+   48 commit
+    3 reset
+    3 pull (2 fast-forward, 1 merge)
+    2 checkout (branch chore/vitest-5 and back)
+    1 merge (chore/vitest-5, fast-forward)
+    1 clone
+
+## Revert commits in history
+   none - no commit message contains "Revert", and no `git revert` appears in the reflog.
+
+## Rollback-type events
+1) 2026-09-14 22:02  reset: moving to origin/main   (HEAD 0f9f1af -> 7c9b9cf)
+   - Context: local commit 4de7038 "Test Suite Revisions" (20:07) was followed by a
+     `git pull` that produced merge 0f9f1af (20:10) with remote commits made from
+     another machine/checkout (9f6631e .. 7c9b9cf: "Test Suite Overhaul",
+     "Playwright", "Playwright & Fixes", "fix(test): exclude e2e and worktrees...").
+   - The reset threw away the local merge and 4de7038. Verified: 4de7038 is NOT an
+     ancestor of HEAD. What was lost: 3 added lines in package-lock.json only.
+   - Reading: a two-checkout sync collision, resolved by taking the remote side.
+     Negligible work lost.
+
+2) 2026-09-22 05:54  reset: moving to HEAD   (HEAD a05c0b1, unchanged)
+3) 2026-09-23 06:24  reset: moving to HEAD   (HEAD dbd4492, unchanged)
+   - "moving to HEAD" means the commit pointer did not move; this is what
+     `git reset --hard`, `git reset` (unstage), or `git stash` records. It discards
+     or sets aside UNCOMMITTED edits only. The reflog cannot show what those edits
+     were. No stash survives, so if it was a stash it was later popped or dropped.
+   - Cross-referenced with the session logs (timestamps there are UTC; EDT = UTC-4):
+     2) 09:54Z = 05:54 EDT, Antigravity session b3fd102c: "Confirmed - the same errors
+        exist on the baseline (stashed) code ... Let me restore my changes."
+        -> a `git stash` / `git stash pop` to compare against the baseline. Nothing lost.
+     3) 10:25Z = 06:25 EDT, Claude session 60b894eb: "That red check was flawed:
+        stashing reverted the new test along with the hook."
+        -> a `git stash` used to confirm a test fails without the fix. Nothing lost.
+
+## Bottom line
+   No rollback in the reflog discarded meaningful work. The rework in this project
+   happened through ordinary forward commits that replaced or deleted earlier code
+   (see git-churn.txt and the rework audit), not through resets or reverts.
+
+## Other notable HEAD movements (not rollbacks)
+   2026-09-12 19:42  clone from github.com/astevegreen/Ye-Olde-Dungeon-Crawler
+   2026-09-20 13:42  pull fast-forward 7c9b9cf -> df68c71  (6-day gap: work landed
+                     from another checkout between 09-14 and 09-20; those commits
+                     are authored "Steve" rather than "astevegreen")
+   2026-09-20 16:06  pull origin main fast-forward -> fe7c152
+   2026-09-22 21:48  branch chore/vitest-5 created; merged fast-forward 22:20
+
+## Raw reflog (for reference)
+55638f2 HEAD@{2026-09-23 07:10:33 -0400} commit: test(e2e): play the built bundle, not just boot it
+077ec9d HEAD@{2026-09-23 07:08:43 -0400} commit: fix(engine): tags are declared, never guessed from definition IDs
+b33b4c5 HEAD@{2026-09-23 07:04:10 -0400} commit: build(gates): catch writes into engine state reached through a member
+9f1bef6 HEAD@{2026-09-23 07:00:38 -0400} commit: test(combat): pin that ranged hits roll with the shooter's DEX
+d1ef62f HEAD@{2026-09-23 06:58:18 -0400} commit: build(deps): record an explicit allowScripts decision for esbuild
+abb1c0b HEAD@{2026-09-23 06:56:03 -0400} commit: build(hooks): run the slow gates before push
+0b46af9 HEAD@{2026-09-23 06:54:36 -0400} commit: docs(agents): make rules.md invariants a cited checklist
+0470043 HEAD@{2026-09-23 06:53:25 -0400} commit: docs: retire P-IDs explicitly and make governance references resolve
+a67caa4 HEAD@{2026-09-23 06:48:20 -0400} commit: fix(presentation): shared screens and sprites carry no pack-specific names
+51a62ee HEAD@{2026-09-23 06:25:22 -0400} commit: fix(warcraft): battle cry fires on the player's bump attacks
+dbd4492 HEAD@{2026-09-23 06:24:50 -0400} reset: moving to HEAD
+dbd4492 HEAD@{2026-09-23 06:22:52 -0400} commit: fix(input): open map owns the keyboard; default keybinds bind each key once
+f5acc97 HEAD@{2026-09-23 06:08:56 -0400} commit: fix(build): keep class names through minification
+cab9165 HEAD@{2026-09-23 06:02:52 -0400} commit: feat(governance): §8.1 exception 4, §8.4 agent workflow, engine-creep gate
+1c7c234 HEAD@{2026-09-23 05:54:38 -0400} commit: fix(storage): never save a dead player; Continue skips fallen runs
+7aa442f HEAD@{2026-09-23 05:29:11 -0400} commit: fix(engine): name the acting monster on spell, item, and wind-up actions
+f5130ae HEAD@{2026-09-23 05:26:17 -0400} commit: chore(claude): add dist-preview launch config
+4963243 HEAD@{2026-09-23 05:25:45 -0400} commit: fix(governance): sync agent docs and sub-docs with code; stop main.ts writing engine result
+a571661 HEAD@{2026-09-23 05:25:10 -0400} commit: refactor(engine): type action introspection, drop pipeline as-any casts (P-25)
+92a0187 HEAD@{2026-09-23 05:24:17 -0400} commit: docs(architecture): register P-25 typed action introspection
+a3acaae HEAD@{2026-09-22 22:20:28 -0400} merge chore/vitest-5: Fast-forward
+dc5de31 HEAD@{2026-09-22 22:20:28 -0400} checkout: moving from chore/vitest-5 to main
+a3acaae HEAD@{2026-09-22 22:09:48 -0400} commit: build(deps): upgrade vitest 3.2.7 -> 5.0.1
+b2ca822 HEAD@{2026-09-22 22:09:12 -0400} commit: refactor(engine): move campaign content into packs; fix latent bugs and any-casts
+dc5de31 HEAD@{2026-09-22 21:48:10 -0400} checkout: moving from main to chore/vitest-5
+dc5de31 HEAD@{2026-09-22 08:32:06 -0400} commit: Code Hygiene Pass
+7dc4dac HEAD@{2026-09-22 08:28:12 -0400} commit: build(lint): integrate knip into lint gate and clean dead exports
+dea9afc HEAD@{2026-09-22 08:27:19 -0400} commit: refactor(ui): type timer handles without any and trim diagnostic modal re-exports
+b3c8de2 HEAD@{2026-09-22 08:26:28 -0400} commit: refactor(engine): extract combat and stat magic numbers to named constants
+238ad0b HEAD@{2026-09-22 08:16:51 -0400} commit: refactor: type procedural canvas context with CanvasPathContext in organicShapes
+7ebcce4 HEAD@{2026-09-22 08:16:06 -0400} commit: refactor: replace duck-typed consumable and wand casting with instanceof guards in behaviorTree
+9bcc397 HEAD@{2026-09-22 08:15:20 -0400} commit: refactor: consolidate duplicate ClickZone interfaces into src/rendering/types.ts
+66559e0 HEAD@{2026-09-22 08:14:34 -0400} commit: test: add renown ledger unit test suite
+8bd1a15 HEAD@{2026-09-22 08:13:56 -0400} commit: test: add comprehensive unit test suites for warcraft content pack
+dc0f7cc HEAD@{2026-09-22 07:48:20 -0400} commit: chore: remove unused export from ClickZone interfaces
+8c73351 HEAD@{2026-09-22 05:57:17 -0400} commit: refactor: remove dead exports and replace as-any modal casts with rootElement getters
+a05c0b1 HEAD@{2026-09-22 05:54:34 -0400} reset: moving to HEAD
+a05c0b1 HEAD@{2026-09-21 20:49:05 -0400} commit: chore(ui): trim dead export surface from the diagnostic split
+71b8ab5 HEAD@{2026-09-21 20:44:47 -0400} commit: refactor(rendering): extract shop vendor panels to src/rendering/shop/
+f6624cf HEAD@{2026-09-21 19:40:57 -0400} commit: refactor(ui): extract diagnostic-modal tab renderers to src/ui/diagnostic/
+7f94018 HEAD@{2026-09-21 19:23:20 -0400} commit: docs(architecture): split content-extensibility.md into core + 4 topic docs
+af528c6 HEAD@{2026-09-21 18:36:54 -0400} commit: test(content): guard sprite-group key disjointness after the split
+01f0745 HEAD@{2026-09-21 17:46:33 -0400} commit: refactor(main): extract command palette metadata to src/main/commandCatalog.ts
+ca84fc4 HEAD@{2026-09-21 14:12:19 -0400} commit: refactor(content): split cotw sprites.ts into tiles/monsters/items
+16518fa HEAD@{2026-09-21 09:54:18 -0400} commit: chore(rendering): remove unused organic-shapes duplicate
+63a20d3 HEAD@{2026-09-21 09:52:32 -0400} commit: refactor(ui): extract index.html inline styles to src/ui/styles/base.css
+8eae94d HEAD@{2026-09-21 09:49:57 -0400} commit: chore(skills): deduplicate and prune vendored skill packs
+f2befd7 HEAD@{2026-09-21 09:17:00 -0400} commit: fix(scripts): widen quality gates to cover src/main/**
+80156d7 HEAD@{2026-09-21 09:16:13 -0400} commit: docs(agents): align CLAUDE.md, rules.md, and audit-architecture with the split
+ec15022 HEAD@{2026-09-21 09:15:26 -0400} commit: docs(architecture): split ARCHITECTURE.md into core + sub-docs + ADRs
+54b38db HEAD@{2026-09-20 22:10:42 -0400} commit: fix(rendering): invert coordinate sync to drive CharacterMenuModal from ViewportManager
+334c848 HEAD@{2026-09-20 21:52:07 -0400} commit: fix(ui): unify character menu sizing and decouple tab adapter lifecycle
+fe7c152 HEAD@{2026-09-20 16:06:05 -0400} pull origin main: Fast-forward
+df68c71 HEAD@{2026-09-20 13:42:12 -0400} pull: Fast-forward
+7c9b9cf HEAD@{2026-09-14 22:02:05 -0400} reset: moving to origin/main
+0f9f1af HEAD@{2026-09-14 20:10:35 -0400} pull: Merge made by the 'ort' strategy.
+4de7038 HEAD@{2026-09-14 20:07:52 -0400} commit: Test Suite Revisions
+8cd5825 HEAD@{2026-09-12 19:42:47 -0400} clone: from https://github.com/astevegreen/Ye-Olde-Dungeon-Crawler.git

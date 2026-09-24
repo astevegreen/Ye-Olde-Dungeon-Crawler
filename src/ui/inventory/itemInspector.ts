@@ -5,6 +5,7 @@ import { Container } from '../../engine';
 import { PotionItem, ScrollItem, WandItem } from '../../engine';
 import { RuneOfReturnItem, ChannelRuneOfReturnAction } from '../../engine';
 import { EncumbranceLevel } from '../../engine';
+import { CoinItem, COIN_COLORS, parseCoinItem, getSpell } from '../../engine';
 import type { Paperdoll } from '../../engine';
 import type { ThemeTokens } from '../../engine';
 
@@ -266,23 +267,46 @@ export class ItemInspector {
   /** What would identify an item right now: a known Scroll of Identify, else the Identify
    * spell if the player knows it and can pay its mana. */
   private findIdentifySource(
-    player: Player
-  ): { label: string; dispatch: (engine: GameEngine, itemId: string) => void } | null {
+    player: Player,
+    engine?: GameEngine
+  ): { label: string; enabled: boolean; reason?: string; dispatch: (engine: GameEngine, itemId: string) => void } | null {
     const scroll = player.inventory
       .getAllCarriedItems()
       .find((i): i is ScrollItem => i instanceof ScrollItem && i.spellId === IDENTIFY_SPELL_ID && i.identified);
     if (scroll) {
       return {
         label: 'reads a scroll',
-        dispatch: (engine, itemId) =>
-          engine.commandBus.dispatch({ type: 'read_scroll', payload: { itemId: scroll.id, itemTargetId: itemId } }),
+        enabled: true,
+        dispatch: (eng, itemId) =>
+          eng.commandBus.dispatch({ type: 'read_scroll', payload: { itemId: scroll.id, itemTargetId: itemId } }),
       };
     }
     if (player.spellsKnown.includes(IDENTIFY_SPELL_ID)) {
+      const spell = engine?.manifest?.spells?.find((s) => s.id === IDENTIFY_SPELL_ID) ?? getSpell(IDENTIFY_SPELL_ID);
+      let manaDiscount = 0;
+      if (player.inventory?.paperdoll) {
+        for (const it of player.inventory.paperdoll.getEquippedItems()) {
+          if (!it.isBroken() && it.modifiers) {
+            for (const mod of it.modifiers) {
+              if (mod.manaCostDiscount) manaDiscount += mod.manaCostDiscount;
+            }
+          }
+        }
+      }
+      const cost = Math.max(0, (spell?.manaCost ?? 8) - manaDiscount);
+      if (player.mana < cost) {
+        return {
+          label: 'casts the spell',
+          enabled: false,
+          reason: `Not enough mana to cast Identify (Requires ${cost} MP, have ${player.mana})`,
+          dispatch: () => {},
+        };
+      }
       return {
         label: 'casts the spell',
-        dispatch: (engine, itemId) =>
-          engine.commandBus.dispatch({
+        enabled: true,
+        dispatch: (eng, itemId) =>
+          eng.commandBus.dispatch({
             type: 'cast_spell',
             payload: { spellId: IDENTIFY_SPELL_ID, targetX: player.x, targetY: player.y, itemTargetId: itemId },
           }),
@@ -353,23 +377,38 @@ export class ItemInspector {
 
     // Identify an unidentified carried item in place: a known Scroll of Identify first,
     // else the Identify spell. Both target this exact item (itemTargetId).
-    if (!item.identified && (source === 'paperdoll' || source === 'backpack')) {
-      const identifySource = this.findIdentifySource(player);
+    if (!item.identified && (source === 'paperdoll' || source === 'backpack' || source === 'container')) {
+      const identifySource = this.findIdentifySource(player, engine);
       actions.push({
         id: 'identify',
         label: identifySource ? `Identify (Y) — ${identifySource.label}` : 'Identify (Y)',
         shortcut: 'Y',
-        enabled: identifySource !== null,
-        reason: identifySource ? undefined : 'Needs a Scroll of Identify or the Identify spell',
+        enabled: identifySource?.enabled ?? false,
+        reason: identifySource?.reason ?? (identifySource ? undefined : 'Needs a Scroll of Identify or the Identify spell'),
         execute: (eng) => {
-          identifySource?.dispatch(eng, item.id);
-          this.clearSelection();
+          if (identifySource?.enabled) {
+            identifySource.dispatch(eng, item.id);
+            this.clearSelection();
+          }
         },
       });
     }
 
     // 1. Paperdoll item actions
     if (source === 'paperdoll' && slotId) {
+      if (item instanceof Container) {
+        actions.push({
+          id: 'peek',
+          label: 'Open Container (Enter)',
+          shortcut: 'Enter',
+          enabled: true,
+          execute: () => {
+            this.selectedContainer = item;
+            this.clearSelection();
+          },
+        });
+      }
+
       const canUnequip = player.inventory.paperdoll.canUnequip(slotId as EquipmentSlot);
       actions.push({
         id: 'unequip',
@@ -766,13 +805,20 @@ export class ItemInspector {
         engine.player.inventory.paperdoll
       );
 
-      const titleColor = !breakdown.identified
+      let titleColor = !breakdown.identified
         ? theme.hudText
         : breakdown.isCursed
         ? '#ef4444'
         : breakdown.isEnchanted
         ? '#c084fc'
         : theme.hudAccent;
+
+      if (this.selectedItem && (this.selectedItem instanceof CoinItem || this.selectedItem.category === 'currency')) {
+        const parsed = parseCoinItem(this.selectedItem);
+        if (parsed && COIN_COLORS[parsed.denomination]) {
+          titleColor = COIN_COLORS[parsed.denomination];
+        }
+      }
 
       ctx.font = `bold 12px ${font}`;
       ctx.fillStyle = titleColor;

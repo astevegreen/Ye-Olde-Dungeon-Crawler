@@ -2,7 +2,16 @@ import type { GameEngine } from '../engine';
 import type { CharacterProfile } from '../storage/types';
 import { getPlayerTotalCp } from '../economy/currency';
 import { safeJsonStringify } from '../storage/safeJson';
-import type { FlightEvent, FlightEventType, DiagnosticReportOptions } from './types';
+import { sanitizePaths } from './sanitizer';
+export { sanitizePaths } from './sanitizer';
+import type {
+  FlightEvent,
+  FlightEventType,
+  DiagnosticReportOptions,
+  DiagnosticPackage,
+  DiagnosticPackageOptions,
+  DiagnosticPackageMetadata,
+} from './types';
 
 /**
  * Injected by `storage/serializer.ts` (self-registering on load) rather than imported
@@ -40,7 +49,7 @@ export class FlightRecorder {
         id: this.nextId++,
         timestamp: event.timestamp ?? Date.now(),
         type: event.type,
-        summary: event.summary,
+        summary: sanitizePaths(event.summary),
         details: event.details,
       };
 
@@ -67,6 +76,23 @@ export class FlightRecorder {
     actionType?: string,
     details?: Record<string, unknown>
   ): FlightEvent {
+    const last = this.buffer.length > 0 ? this.buffer[this.buffer.length - 1] : null;
+    const isSameInput =
+      last &&
+      last.type === 'input' &&
+      last.details?.key === key &&
+      last.details?.actionType === actionType &&
+      (!details || !('index' in details));
+
+    if (isSameInput && last) {
+      const repeatCount = ((last.details?.repeatCount as number) ?? 1) + 1;
+      last.details = { ...last.details, ...details, repeatCount };
+      last.timestamp = Date.now();
+      const baseSummary = actionType ? `Key '${key}' -> ${actionType}` : `Key '${key}'`;
+      last.summary = `${baseSummary} (x${repeatCount})`;
+      return last;
+    }
+
     return this.record({
       type: 'input',
       summary: actionType ? `Key '${key}' -> ${actionType}` : `Key '${key}'`,
@@ -180,6 +206,257 @@ export class FlightRecorder {
 
   public clear(): void {
     this.buffer = [];
+  }
+
+  public generateStateSnapshot(
+    engine?: GameEngine,
+    profile?: CharacterProfile
+  ): unknown | null {
+    if (!engine) return null;
+    const now = new Date();
+    const mockProfile: CharacterProfile = profile ?? {
+      id: 'diagnostic_snapshot',
+      name: engine.player.name,
+      gender: engine.player.gender,
+      attributes: engine.player.attributes,
+      level: engine.player.level,
+      floor: engine.currentFloor,
+      lastSaved: now.getTime(),
+      hp: engine.player.hp,
+      maxHp: engine.player.maxHp,
+      strength: engine.player.strength,
+      mana: engine.player.mana,
+      maxMana: engine.player.maxMana,
+      xp: engine.player.xp,
+      xpToNextLevel: engine.player.xpToNextLevel,
+    };
+    if (!serializeGameFn) {
+      throw new Error('serializeGame is not registered (storage/serializer.ts was not loaded)');
+    }
+    return serializeGameFn(engine, mockProfile);
+  }
+
+  public generateAsciiMap(engine?: GameEngine, radius = 5): string | null {
+    if (!engine || !engine.map || !engine.player) {
+      return null;
+    }
+    try {
+      const map = engine.map;
+      const player = engine.player;
+      const px = player.x;
+      const py = player.y;
+
+      const lines: string[] = [];
+      const legendEntries = new Map<string, string>();
+      legendEntries.set('@', `Hero (${player.name}, HP: ${player.hp}/${player.maxHp})`);
+
+      for (let dy = -radius; dy <= radius; dy++) {
+        const y = py + dy;
+        let row = '';
+        for (let dx = -radius; dx <= radius; dx++) {
+          const x = px + dx;
+          if (dx === 0 && dy === 0) {
+            row += '@';
+            continue;
+          }
+          if (!map.inBounds(x, y)) {
+            row += ' ';
+            continue;
+          }
+
+          const entity = map.getEntityAt(x, y);
+          if (entity) {
+            if (entity.type === 'player') {
+              row += '@';
+            } else if (entity.type === 'monster') {
+              const sym = entity.name ? entity.name[0].toLowerCase() : 'm';
+              row += sym;
+              if (!legendEntries.has(sym)) {
+                legendEntries.set(sym, `${entity.name} (HP: ${entity.hp}/${entity.maxHp})`);
+              }
+            } else {
+              row += 'N';
+              if (!legendEntries.has('N')) {
+                legendEntries.set('N', `NPC (${entity.name})`);
+              }
+            }
+            continue;
+          }
+
+          const items = typeof map.getItemsAt === 'function' ? map.getItemsAt(x, y) : [];
+          if (items && items.length > 0) {
+            row += '*';
+            if (!legendEntries.has('*')) {
+              const firstItem = items[0]?.name ?? 'Item';
+              legendEntries.set('*', `${firstItem}${items.length > 1 ? ` (+${items.length - 1})` : ''}`);
+            }
+            continue;
+          }
+
+          const tile = map.getTile(x, y);
+          if (!tile) {
+            row += ' ';
+          } else if (tile.isClosedDoor) {
+            row += '+';
+            if (!legendEntries.has('+')) legendEntries.set('+', 'Closed Door');
+          } else if (tile.isOpenDoor) {
+            row += '/';
+            if (!legendEntries.has('/')) legendEntries.set('/', 'Open Door');
+          } else if (tile.isStairsUp) {
+            row += '<';
+            if (!legendEntries.has('<')) legendEntries.set('<', 'Stairs Up');
+          } else if (tile.isStairsDown) {
+            row += '>';
+            if (!legendEntries.has('>')) legendEntries.set('>', 'Stairs Down');
+          } else if (!tile.passable) {
+            row += '#';
+          } else {
+            row += '.';
+          }
+        }
+        lines.push(row);
+      }
+
+      if (!legendEntries.has('#')) legendEntries.set('#', 'Wall');
+      if (!legendEntries.has('.')) legendEntries.set('.', 'Floor');
+
+      const legendStr = Array.from(legendEntries.entries())
+        .map(([sym, desc]) => `[${sym}] ${desc}`)
+        .join(' | ');
+
+      return `Floor ${engine.currentFloor} @ (${px}, ${py}):\n` + lines.join('\n') + `\n\nLegend: ${legendStr}`;
+    } catch {
+      return null;
+    }
+  }
+
+  public generateFlightLogJson(maxEvents?: number): string {
+    const events = this.getRecentEvents(maxEvents ?? this.capacity);
+    return safeJsonStringify(events);
+  }
+
+  public generateSummary(
+    engine?: GameEngine,
+    profile?: CharacterProfile,
+    options: DiagnosticPackageOptions = {}
+  ): string {
+    const now = new Date();
+    const isoTimestamp = now.toISOString();
+    const dpr = options.devicePixelRatio ?? 1;
+    const winW = options.viewportWidth ?? 960;
+    const winH = options.viewportHeight ?? 600;
+    const userAgent = options.userAgent ?? 'Headless / Pure Engine';
+
+    const lines: string[] = [];
+    const manifestName = engine?.manifest?.name ?? 'Roguelike Engine';
+    const manifestId = engine?.manifest?.id ?? 'core';
+
+    lines.push(`### 🛡️ ${manifestName} (${manifestId}) - Diagnostic Summary`);
+    lines.push(`- **Generated**: \`${isoTimestamp}\``);
+    lines.push(`- **Engine Version**: \`1.0.0\` | **Display**: ${winW}x${winH} (DPR: \`${dpr}\`)`);
+    lines.push(`- **Environment**: \`${userAgent}\``);
+
+    if (engine && engine.player) {
+      const p = engine.player;
+      lines.push(`- **Hero**: **${p.name}** (Level ${p.level}, HP \`${p.hp}/${p.maxHp}\`, MP \`${p.mana}/${p.maxMana}\`)`);
+      lines.push(`- **Location**: Floor \`${engine.currentFloor}\` at \`(${p.x}, ${p.y})\` | **Turn**: \`${engine.turnCount}\``);
+      lines.push(`- **Difficulty**: \`${(p.difficulty ?? profile?.difficulty ?? 'medium').toUpperCase()}\``);
+      if (engine.prng) {
+        lines.push(`- **PRNG State / Seed**: \`${engine.prng.getState()}\``);
+      }
+    } else if (profile) {
+      lines.push(`- **Hero Profile**: **${profile.name}** (Level ${profile.level}, Floor ${profile.floor})`);
+    }
+
+    if (options.error) {
+      const err = options.error;
+      const rawMsg = err instanceof Error ? err.message : String(err);
+      const msg = sanitizePaths(rawMsg);
+      const rawStack = err instanceof Error && err.stack ? err.stack.split('\n').slice(0, 3).join('\n') : undefined;
+      const stack = rawStack ? sanitizePaths(rawStack) : undefined;
+      lines.push('');
+      lines.push(`### ⚠️ Error Context`);
+      lines.push(`- **Message**: \`${msg}\``);
+      if (stack) {
+        lines.push('```');
+        lines.push(stack);
+        lines.push('```');
+      }
+    }
+
+    if (options.userNotes) {
+      lines.push('');
+      lines.push(`### 📝 User Notes`);
+      lines.push(sanitizePaths(options.userNotes));
+    }
+
+    if (options.includeMap !== false && engine) {
+      const asciiMap = this.generateAsciiMap(engine, options.mapRadius ?? 5);
+      if (asciiMap) {
+        lines.push('');
+        lines.push(`### 🗺️ Surrounding Area`);
+        lines.push('```text');
+        lines.push(asciiMap);
+        lines.push('```');
+      }
+    }
+
+    return lines.join('\n');
+  }
+
+  public generatePackage(
+    engine?: GameEngine,
+    profile?: CharacterProfile,
+    options: DiagnosticPackageOptions = {}
+  ): DiagnosticPackage {
+    const now = new Date();
+    const dpr = options.devicePixelRatio ?? 1;
+    const winW = options.viewportWidth ?? 960;
+    const winH = options.viewportHeight ?? 600;
+    const userAgent = options.userAgent ?? 'Headless / Pure Engine';
+
+    const events = this.getRecentEvents(options.maxEvents ?? this.capacity);
+    const summary = this.generateSummary(engine, profile, options);
+
+    let stateSnapshot: unknown | undefined;
+    if (options.includeSnapshot !== false && engine) {
+      try {
+        stateSnapshot = this.generateStateSnapshot(engine, profile) ?? undefined;
+      } catch {
+        stateSnapshot = undefined;
+      }
+    }
+
+    const errorMsg = options.error
+      ? sanitizePaths(options.error instanceof Error ? options.error.message : String(options.error))
+      : undefined;
+
+    const asciiMap =
+      options.includeMap !== false && engine
+        ? this.generateAsciiMap(engine, options.mapRadius ?? 5) ?? undefined
+        : undefined;
+
+    const metadata: DiagnosticPackageMetadata = {
+      timestamp: now.getTime(),
+      isoTimestamp: now.toISOString(),
+      engineVersion: '1.0.0',
+      manifestId: engine?.manifest?.id ?? 'core',
+      manifestName: engine?.manifest?.name ?? 'Roguelike Game Engine',
+      turnCount: engine?.turnCount,
+      floor: engine?.currentFloor,
+      prngState: engine?.prng ? engine.prng.getState() : undefined,
+      error: errorMsg,
+      userAgent,
+      display: `${winW}x${winH}@${dpr}x`,
+    };
+
+    return {
+      metadata,
+      summary,
+      asciiMap,
+      flightLog: events,
+      stateSnapshot,
+    };
   }
 
   /**
@@ -301,26 +578,7 @@ export class FlightRecorder {
     if (options.includeSnapshot !== false && engine) {
       lines.push('## 5. Reproducible State Snapshot');
       try {
-        const mockProfile: CharacterProfile = profile ?? {
-          id: 'diagnostic_snapshot',
-          name: engine.player.name,
-          gender: engine.player.gender,
-          attributes: engine.player.attributes,
-          level: engine.player.level,
-          floor: engine.currentFloor,
-          lastSaved: now.getTime(),
-          hp: engine.player.hp,
-          maxHp: engine.player.maxHp,
-          strength: engine.player.strength,
-          mana: engine.player.mana,
-          maxMana: engine.player.maxMana,
-          xp: engine.player.xp,
-          xpToNextLevel: engine.player.xpToNextLevel,
-        };
-        if (!serializeGameFn) {
-          throw new Error('serializeGame is not registered (storage/serializer.ts was not loaded)');
-        }
-        const saveData = serializeGameFn(engine, mockProfile);
+        const saveData = this.generateStateSnapshot(engine, profile);
         const jsonSnapshot = safeJsonStringify(saveData);
         lines.push('```json');
         lines.push(jsonSnapshot);

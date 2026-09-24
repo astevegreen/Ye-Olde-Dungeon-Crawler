@@ -172,13 +172,56 @@ export class Item {
     return combined;
   }
 
+  public canBeIdentified(): boolean {
+    if (this.quality === 'artifact') return false;
+    if (this.category === 'currency') return false;
+    if (this.category === 'quest') return false;
+    if (this.category === 'misc') return false;
+    if (this.category === 'container') return false;
+    const identifiableCategories = [
+      'weapon',
+      'armor',
+      'shield',
+      'helmet',
+      'boots',
+      'gauntlets',
+      'bracers',
+      'cloak',
+      'amulet',
+      'ring',
+      'waist',
+      'belt',
+      'ranged',
+      'wand',
+    ];
+    if (identifiableCategories.includes(this.category)) return true;
+    if (this.modifiers && this.modifiers.length > 0) return true;
+    if (
+      this.quality === 'enchanted' ||
+      this.quality === 'cursed' ||
+      (this.quality as string) === 'blessed' ||
+      (this.quality as string) === 'chaotic'
+    ) {
+      return true;
+    }
+    return false;
+  }
+
   public get displayName(): string {
+    const qtyTag = this.quantity > 1 ? ` (${this.quantity}x)` : '';
     if (!this.identified) {
-      return this.quantity > 1 ? `${this.unidentifiedName} (x${this.quantity})` : this.unidentifiedName;
+      let unId = this.unidentifiedName;
+      const isObfuscatedAlias =
+        (this.category === 'wand' || this.category === 'potion' || this.category === 'scroll') &&
+        this.unidentifiedName !== this.name;
+      if (this.canBeIdentified() && !isObfuscatedAlias && !unId.toLowerCase().startsWith('unidentified')) {
+        unId = `Unidentified ${unId}`;
+      }
+      return `${unId}${qtyTag}`;
     }
     if (this.isBroken()) {
       const brokenName = `Broken ${this.name}`;
-      return this.quantity > 1 ? `${brokenName} (x${this.quantity})` : brokenName;
+      return `${brokenName}${qtyTag}`;
     }
 
     let base = this.name;
@@ -197,15 +240,31 @@ export class Item {
 
     if (prefixes.length > 0) {
       base = `${prefixes.join(' ')} ${base}`;
-    } else if (this.isCursed() && !base.startsWith('Cursed')) {
-      base = `Cursed ${base}`;
+    } else if (
+      (this.quality as string) === 'blessed' ||
+      this.modifiers.some((m) => m.category === 'blessed' || m.alignment === 'positive')
+    ) {
+      if (!base.startsWith('Blessed') && !base.startsWith('Sanctified') && !base.startsWith('Celestial')) {
+        base = `Blessed ${base}`;
+      }
+    } else if (this.isCursed() || this.quality === 'cursed') {
+      if (!base.startsWith('Cursed') && !base.startsWith('Blighted') && !base.startsWith('Hexed')) {
+        base = `Cursed ${base}`;
+      }
+    } else if (
+      (this.quality as string) === 'chaotic' ||
+      this.modifiers.some((m) => m.category === 'chaotic' || m.alignment === 'chaotic')
+    ) {
+      if (!base.startsWith('Chaotic') && !base.startsWith('Frenetic') && !base.startsWith('Warped')) {
+        base = `Chaotic ${base}`;
+      }
     }
 
     if (suffixes.length > 0) {
       base = `${base} ${suffixes.join(' ')}`;
     }
 
-    return this.quantity > 1 ? `${base} (x${this.quantity})` : base;
+    return `${base}${qtyTag}`;
   }
 
   public isCursed(): boolean {

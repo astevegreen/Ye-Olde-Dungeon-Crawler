@@ -87,6 +87,7 @@ export class InputHandler {
   public radialMenuOverlay?: RadialMenuOverlay;
   public onSaveAndExit?: () => void;
   public onToggleDiagnostics?: () => void;
+  public onToggleFeedback?: () => void;
   public onTriggerQuickSpell?: (slotIndex: number) => void;
   public onOpenSpellbook?: () => void;
   /** Casts a spell by ID (as opposed to a QuickSpellsBar slot index) — wired from main.ts's castOrTargetSpell. */
@@ -354,6 +355,15 @@ export class InputHandler {
       flightRecorder.recordInput(code, 'ToggleDiagnostics');
       if (this.onToggleDiagnostics) {
         this.onToggleDiagnostics();
+        return true;
+      }
+    }
+
+    // Global Feedback & Bug Report overlay toggle: 'F3'
+    if (code === 'F3') {
+      flightRecorder.recordInput(code, 'ToggleFeedback');
+      if (this.onToggleFeedback) {
+        this.onToggleFeedback();
         return true;
       }
     }

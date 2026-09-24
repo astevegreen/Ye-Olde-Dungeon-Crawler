@@ -2,6 +2,7 @@ import { Item } from './item';
 import type { ItemStatModifiers } from './item';
 import { Container } from './container';
 import { WandItem, ScrollItem, PotionItem } from './consumables';
+import { CoinItem } from '../economy/currency';
 import type { Predicate } from '../predicates/types';
 
 export class ItemFactory {
@@ -459,54 +460,34 @@ export class ItemFactory {
   }
 
   public static createGoldCoins(id = 'coins-1', amount = 100): Item {
-    return new Item({
+    return new CoinItem({
       id,
-      name: `${amount} Gold Coins`,
-      unidentifiedName: 'Pile of Coins',
-      category: 'currency',
-      weight: amount * 10,
-      bulk: Math.max(1, Math.ceil(amount * 0.5)),
-      identified: true,
-      description: 'Brightly minted gold coins (100 CP value).',
+      denomination: 'gold',
+      count: amount,
     });
   }
 
   public static createCopperCoins(id = 'coins-cp-1', amount = 100): Item {
-    return new Item({
+    return new CoinItem({
       id,
-      name: `${amount} Copper Pieces`,
-      unidentifiedName: 'Pile of Copper Coins',
-      category: 'currency',
-      weight: amount * 10,
-      bulk: Math.max(1, Math.ceil(amount * 0.5)),
-      identified: true,
-      description: 'Heavy reddish copper coins common among tradesfolk (1 CP value).',
+      denomination: 'copper',
+      count: amount,
     });
   }
 
   public static createSilverCoins(id = 'coins-sp-1', amount = 100): Item {
-    return new Item({
+    return new CoinItem({
       id,
-      name: `${amount} Silver Pieces`,
-      unidentifiedName: 'Pile of Silver Coins',
-      category: 'currency',
-      weight: amount * 10,
-      bulk: Math.max(1, Math.ceil(amount * 0.5)),
-      identified: true,
-      description: 'Gleaming silver pieces of fine mint (10 CP value).',
+      denomination: 'silver',
+      count: amount,
     });
   }
 
   public static createPlatinumCoins(id = 'coins-pp-1', amount = 10): Item {
-    return new Item({
+    return new CoinItem({
       id,
-      name: `${amount} Platinum Pieces`,
-      unidentifiedName: 'Gleaming White Coins',
-      category: 'currency',
-      weight: amount * 10,
-      bulk: Math.max(1, Math.ceil(amount * 0.5)),
-      identified: true,
-      description: 'Exceedingly rare and valuable platinum coins of royal mint (1000 CP value).',
+      denomination: 'platinum',
+      count: amount,
     });
   }
 

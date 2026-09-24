@@ -137,7 +137,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       expect(sword.displayName).toBe('Blessed Claymore of Dawn');
     });
 
-    it('preserves unidentified name when item is not identified', () => {
+    it('formats unidentified name with Unidentified prefix when item is not identified', () => {
       const sword = new Item({
         id: 'sw1',
         name: 'Claymore',
@@ -149,7 +149,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         identified: false,
       });
       sword.addModifier(createModifier('blessed', 1));
-      expect(sword.displayName).toBe('Heavy Blade');
+      expect(sword.displayName).toBe('Unidentified Heavy Blade');
     });
 
     it('aggregates stat deltas into effectiveStats', () => {

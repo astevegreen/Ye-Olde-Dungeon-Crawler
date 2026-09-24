@@ -66,7 +66,7 @@ describe('Item Stacking & Multi-Selection Engine', () => {
     expect(potA.quantity).toBe(5);
     expect(potA.totalWeight()).toBe(baseWeight * 5);
     expect(potA.totalBulk()).toBe(baseBulk * 5);
-    expect(potA.displayName).toContain('(x5)');
+    expect(potA.displayName).toContain('(5x)');
   });
 
   it('automatically merges stacks when added to a Container', () => {
@@ -133,7 +133,7 @@ describe('Item Stacking & Multi-Selection Engine', () => {
       const gold = bag.getItems().filter((i) => i instanceof CoinItem) as CoinItem[];
       expect(gold).toHaveLength(1);
       expect(gold[0].count).toBe(80);
-      expect(gold[0].name).toBe('80 Gold Pieces');
+      expect(gold[0].name).toBe('80 Gold Coins');
       expect(gold[0].valueInCp).toBe(8000);
     });
 

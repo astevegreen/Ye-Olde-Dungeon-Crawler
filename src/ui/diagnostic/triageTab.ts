@@ -6,6 +6,7 @@ import {
   type GameEngine,
 } from '../../engine';
 import type { DiagnosticTabContext } from './types';
+import { copyTextToClipboard } from '../platform';
 
 function spawnTestItem(ctx: DiagnosticTabContext, engine: GameEngine, type: string | null): void {
   const p = engine.player;
@@ -156,16 +157,25 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
 
         </div>
 
-        <!-- Telemetry Export Tools -->
+        <!-- Telemetry Export & Feedback Tools -->
         <div style="background: #0f172a; padding: 10px; border: 1px solid #334155; border-radius: 4px;">
-          <div style="color: #38bdf8; font-weight: bold; margin-bottom: 6px; border-bottom: 1px solid #1e293b; padding-bottom: 2px;">
-            📋 Telemetry Report &amp; Flight Recorder Tools
+          <div style="color: #38bdf8; font-weight: bold; margin-bottom: 6px; border-bottom: 1px solid #1e293b; padding-bottom: 2px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+            <span>📋 Telemetry Report &amp; Feedback Tools</span>
+            <button id="btn-diag-open-feedback" class="win-btn primary-btn" style="padding: 2px 8px; font-size: 10px; font-weight: bold; background: #0284c7; color: white;">
+              💬 Open Feedback / Bug Reporter
+            </button>
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
             <button id="btn-diag-copy" class="win-btn primary-btn" style="font-weight: bold; padding: 4px 10px;">📋 Copy Diagnostics</button>
             <button id="btn-diag-download" class="win-btn" style="padding: 4px 10px;">💾 Download .md</button>
             <button id="btn-diag-clear" class="win-btn danger-btn" style="padding: 4px 10px;">Clear Log Buffer</button>
             <button id="btn-diag-refresh" class="win-btn" style="padding: 4px 10px;">🔄 Refresh Telemetry</button>
+          </div>
+
+          <!-- Archived Logs Sub-section -->
+          <div id="diag-crash-logs-container" style="margin-top: 8px; border-top: 1px dashed #334155; padding-top: 6px; display: none;">
+            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: bold;">📜 Archived Crash Logs in Local Storage:</div>
+            <div id="diag-crash-logs-list" style="display: flex; flex-direction: column; gap: 4px; max-height: 90px; overflow-y: auto;"></div>
           </div>
         </div>
 
@@ -248,4 +258,42 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
     ctx.refresh();
     ctx.showToast('Telemetry refreshed.');
   });
+
+  const openFeedbackBtn = container.querySelector('#btn-diag-open-feedback');
+  openFeedbackBtn?.addEventListener('click', () => {
+    if (ctx.openFeedback) {
+      ctx.openFeedback();
+    }
+  });
+
+  // Render archived logs if available
+  if (ctx.bulkArchive) {
+    const logsContainer = container.querySelector<HTMLElement>('#diag-crash-logs-container');
+    const logsList = container.querySelector<HTMLElement>('#diag-crash-logs-list');
+    ctx.bulkArchive.listFlightLogs().then((logs) => {
+      if (logs.length > 0 && logsContainer && logsList) {
+        logsContainer.style.display = 'block';
+        logsList.innerHTML = logs.map((log) => `
+          <div style="display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 2px 6px; border-radius: 2px;">
+            <span style="color: #f87171; font-family: monospace; font-size: 10px;">${log}</span>
+            <button class="win-btn btn-copy-archived-log" data-log="${log}" style="padding: 1px 6px; font-size: 9px;">📋 Copy</button>
+          </div>
+        `).join('');
+
+        logsList.querySelectorAll<HTMLButtonElement>('.btn-copy-archived-log').forEach((btn) => {
+          btn.addEventListener('click', async () => {
+            const label = btn.getAttribute('data-log');
+            if (label && ctx.bulkArchive) {
+              const events = await ctx.bulkArchive.getFlightLog(label);
+              if (events) {
+                await copyTextToClipboard(JSON.stringify(events, null, 2));
+                ctx.showToast(`Archived crash '${label}' copied to clipboard.`);
+              }
+            }
+          });
+        });
+      }
+    }).catch(() => undefined);
+  }
 }
+

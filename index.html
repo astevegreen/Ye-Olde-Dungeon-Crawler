@@ -28,6 +28,7 @@
                   <button id="btn-compendium" class="win-btn win-btn-sm hud-btn" title="Open Slayer's Compendium & Codex (B)"><span class="hud-icon">📖</span> <span class="hud-key">[B]</span> <span class="hud-word">Codex</span></button>
                   <button id="btn-cmd-palette" class="win-btn win-btn-sm hud-btn" title="Open Quick Command Palette (Shift+? / Ctrl+K)"><span class="hud-icon">⌨️</span> <span class="hud-word">Cmds</span></button>
                   <button id="btn-help-card" class="win-btn win-btn-sm hud-btn" title="Open Context Help (F1 / ?)"><span class="hud-icon">💡</span> <span class="hud-key">[?]</span> <span class="hud-word">Help</span></button>
+                  <button id="btn-feedback" class="win-btn win-btn-sm hud-btn" title="Send Feedback or Report Bug (F3)"><span class="hud-icon">💬</span> <span class="hud-key">[F3]</span> <span class="hud-word">Feedback</span></button>
                   <button id="btn-dev-diagnostics" class="win-btn win-btn-sm hud-btn hud-btn-quiet" title="Open Developer Diagnostics (F2 or `)"><span class="hud-icon">🛠️</span> <span class="hud-key">[F2]</span> <span class="hud-word">Dev</span></button>
                   <button id="btn-save-title" class="win-btn win-btn-sm hud-btn hud-btn-menu" title="Menu: Resume, Settings &amp; Controls, or Save &amp; Quit (Esc)"><span class="hud-icon">☰</span> <span class="hud-key">[Esc]</span> <span class="hud-word">Menu</span></button>
                 </div>
@@ -322,6 +323,9 @@
         </div>
       </div>
 
+      <!-- Windows 3.1 / Feedback & Bug Report Modal -->
+      <div id="feedback-modal" class="retro-window-overlay" style="display: none; z-index: 220;"></div>
+
       <!-- Windows 3.1 / Crash Fallback Modal -->
       <div id="crash-modal" class="retro-window-overlay" style="display: none; z-index: 200;">
         <div class="retro-window" style="width: 640px;">
@@ -335,14 +339,17 @@
           <div class="retro-window-body">
             <div class="retro-banner" style="background: #7f1d1d;">
               <div class="retro-banner-title">UNHANDLED RUNTIME ERROR</div>
-              <div class="retro-banner-sub">An unexpected error occurred. A diagnostic telemetry report has been prepared.</div>
+              <div class="retro-banner-sub">An unexpected anomaly disturbed the dungeon. Your progress was safely archived to local storage.</div>
             </div>
 
             <pre id="crash-error-text" class="retro-inset-list" style="height: 160px; padding: 8px; font-family: monospace; font-size: 11px; white-space: pre-wrap; background: #1e1b26; color: #f87171; overflow-y: auto;"></pre>
 
-            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 6px;">
-              <button id="btn-crash-copy" class="win-btn primary-btn">📋 Copy Crash Report</button>
-              <button id="btn-crash-reload" class="win-btn">Reload Game</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 6px; flex-wrap: wrap; gap: 6px;">
+              <button id="btn-crash-submit" class="win-btn primary-btn" style="background: #0284c7; color: white; font-weight: bold;">🚀 Submit Crash to Developers</button>
+              <div style="display: flex; gap: 6px;">
+                <button id="btn-crash-copy" class="win-btn">📋 Copy Report</button>
+                <button id="btn-crash-reload" class="win-btn">Reload Game</button>
+              </div>
             </div>
           </div>
         </div>

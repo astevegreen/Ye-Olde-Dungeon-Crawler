@@ -1,6 +1,7 @@
 import {
   type GameEngine,
   type CharacterProfile,
+  type BulkArchive,
   flightRecorder,
 } from '../engine';
 import type { UIModal, ModalStackManager } from './modalStack';
@@ -31,12 +32,16 @@ export class DiagnosticModal implements UIModal {
   private crashText: HTMLElement | null = null;
   private crashCopyBtn: HTMLButtonElement | null = null;
   private crashReloadBtn: HTMLButtonElement | null = null;
+  private crashSubmitBtn: HTMLButtonElement | null = null;
+  private lastCrashError: Error | string | null = null;
 
   private getEngine: () => GameEngine | null;
   private getProfile: () => CharacterProfile | null;
   private inputContext?: DiagnosticInputContext;
   private modalStack?: ModalStackManager;
   private onClosedCallback?: () => void;
+  private bulkArchive: BulkArchive | null = null;
+  private onOpenFeedback?: (opts?: any) => void;
 
   private activeTab: DiagnosticTabId = 'simulation';
   private pollIntervalId: number | null = null;
@@ -68,6 +73,14 @@ export class DiagnosticModal implements UIModal {
     this.modalStack = stack;
   }
 
+  public setBulkArchive(archive: BulkArchive | null): void {
+    this.bulkArchive = archive;
+  }
+
+  public setOpenFeedbackHandler(handler: (opts?: any) => void): void {
+    this.onOpenFeedback = handler;
+  }
+
   private initDom(): void {
     if (typeof document === 'undefined') return;
 
@@ -82,6 +95,7 @@ export class DiagnosticModal implements UIModal {
     this.crashText = document.getElementById('crash-error-text');
     this.crashCopyBtn = document.getElementById('btn-crash-copy') as HTMLButtonElement | null;
     this.crashReloadBtn = document.getElementById('btn-crash-reload') as HTMLButtonElement | null;
+    this.crashSubmitBtn = document.getElementById('btn-crash-submit') as HTMLButtonElement | null;
 
     // If modal container does not exist in DOM (e.g. test environment), dynamically create it
     if (!this.modal) {
@@ -130,6 +144,10 @@ export class DiagnosticModal implements UIModal {
 
     this.crashCopyBtn?.addEventListener('click', () => {
       void this.copyReportToClipboard();
+    });
+
+    this.crashSubmitBtn?.addEventListener('click', () => {
+      this.submitCrashReport();
     });
 
     this.crashReloadBtn?.addEventListener('click', () => {
@@ -303,6 +321,8 @@ export class DiagnosticModal implements UIModal {
         refresh: () => this.renderCurrentTab(),
         copyReport: () => this.copyReportToClipboard(),
         downloadReport: () => this.downloadReport(),
+        openFeedback: this.onOpenFeedback,
+        bulkArchive: this.bulkArchive,
       };
       renderer(ctx, engine);
     }
@@ -354,6 +374,7 @@ export class DiagnosticModal implements UIModal {
   }
 
   public showCrash(error: Error | string): void {
+    this.lastCrashError = error;
     const message = error instanceof Error ? error.message : String(error);
     const stack = error instanceof Error ? error.stack : '';
 
@@ -362,6 +383,25 @@ export class DiagnosticModal implements UIModal {
     if (this.crashModal && this.crashText) {
       this.crashText.textContent = `${message}\n\n${stack ?? ''}`;
       this.crashModal.style.display = 'flex';
+    }
+  }
+
+  public submitCrashReport(): void {
+    if (this.onOpenFeedback) {
+      if (this.crashModal) {
+        this.crashModal.style.display = 'none';
+      }
+      this.onOpenFeedback({
+        type: 'bug',
+        error: this.lastCrashError ?? undefined,
+        subject: `Crash: ${this.lastCrashError instanceof Error ? this.lastCrashError.message : String(this.lastCrashError ?? 'Runtime Error')}`,
+      });
+    } else {
+      void this.copyReportToClipboard();
+      const title = encodeURIComponent(`[Crash]: ${this.lastCrashError instanceof Error ? this.lastCrashError.message : String(this.lastCrashError ?? 'Runtime Error')}`);
+      if (typeof window !== 'undefined') {
+        window.open(`https://github.com/astevegreen/Ye-Olde-Dungeon-Crawler/issues/new?title=${title}&labels=bug`, '_blank');
+      }
     }
   }
 

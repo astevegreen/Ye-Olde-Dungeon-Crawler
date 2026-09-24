@@ -68,6 +68,7 @@ export class CanvasRenderer {
   private boundMouseMoveHandler?: (e: MouseEvent) => void;
   private boundContextMenuHandler?: (e: MouseEvent) => void;
   private boundMouseLeaveHandler?: () => void;
+  private boundWheelHandler?: (e: WheelEvent) => void;
   private static readonly DASH_PATTERN = Object.freeze([4, 2]);
   private cachedChasmGradVisible?: CanvasGradient;
   private cachedChasmGradDim?: CanvasGradient;
@@ -249,6 +250,17 @@ export class CanvasRenderer {
     };
     this.canvas.addEventListener('contextmenu', this.boundContextMenuHandler);
 
+    this.boundWheelHandler = (e: WheelEvent) => {
+      if (this.inventoryOverlay.isOpen) {
+        const { x, y } = this.viewport.clientToVirtual(e.clientX, e.clientY);
+        if (this.inventoryOverlay.handleWheel(x, y, e.deltaY)) {
+          e.preventDefault();
+          this.render();
+        }
+      }
+    };
+    this.canvas.addEventListener('wheel', this.boundWheelHandler, { passive: false });
+
     this.boundDoubleClickHandler = (e: MouseEvent) => {
       const { x: clickX, y: clickY } = this.viewport.clientToVirtual(e.clientX, e.clientY);
 
@@ -334,6 +346,9 @@ export class CanvasRenderer {
     }
     if (this.canvas && this.boundContextMenuHandler) {
       this.canvas.removeEventListener('contextmenu', this.boundContextMenuHandler);
+    }
+    if (this.canvas && this.boundWheelHandler) {
+      this.canvas.removeEventListener('wheel', this.boundWheelHandler);
     }
     this.viewport.destroy();
     if (this.engine) {

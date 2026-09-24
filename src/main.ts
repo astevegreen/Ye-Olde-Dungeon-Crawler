@@ -33,6 +33,7 @@ import { CanvasRenderer } from './rendering/canvas-renderer';
 import { InputHandler } from './rendering/input-handler';
 import { TitleScreen } from './ui/title-screen';
 import { DiagnosticModal } from './ui/diagnostic-modal';
+import { FeedbackModal } from './ui/feedbackModal';
 import { SagaShareModal } from './ui/sagaShareModal';
 import { ContextHelp } from './ui/help/contextHelp';
 import { CompendiumModal } from './ui/help/compendiumModal';
@@ -133,6 +134,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const gameContainer = document.getElementById('game-container');
   const saveTitleBtn = document.getElementById('btn-save-title');
+  const feedbackBtn = document.getElementById('btn-feedback');
   const devDiagBtn = document.getElementById('btn-dev-diagnostics');
   const helpBtn = document.getElementById('btn-help-card');
   const compendiumBtn = document.getElementById('btn-compendium');
@@ -534,6 +536,32 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   );
 
+  const feedbackModal = new FeedbackModal({
+    getEngine: () => activeEngine,
+    getProfile: () => activeProfile,
+    bulkArchive,
+    onClosed: () => {
+      popModal(feedbackModal.id);
+      renderer?.render();
+    },
+  });
+
+  diagnosticModal.setBulkArchive(bulkArchive);
+  diagnosticModal.setOpenFeedbackHandler((opts) => {
+    feedbackModal.open(opts);
+    pushModal(feedbackModal.id, feedbackModal);
+  });
+
+  function toggleFeedback(opts?: any): void {
+    if (feedbackModal.isOpen) {
+      feedbackModal.close();
+      popModal(feedbackModal.id);
+    } else {
+      feedbackModal.open(opts);
+      pushModal(feedbackModal.id, feedbackModal);
+    }
+  }
+
   const saveCodeModal = new SaveCodeModal({
     profileManager,
     activeManifestId: activeManifest.id,
@@ -610,6 +638,10 @@ window.addEventListener('DOMContentLoaded', () => {
       saveAndReturnToTitle();
     }
   }
+
+  feedbackBtn?.addEventListener('click', () => {
+    toggleFeedback();
+  });
 
   devDiagBtn?.addEventListener('click', () => {
     diagnosticModal.open();
@@ -1080,6 +1112,9 @@ window.addEventListener('DOMContentLoaded', () => {
       diagnostics: () => {
         toggleDiagnostics();
       },
+      feedback: () => {
+        toggleFeedback();
+      },
       'save-quit': () => {
         promptSaveAndQuit();
       },
@@ -1227,6 +1262,8 @@ window.addEventListener('DOMContentLoaded', () => {
       runeDiscoveryModal.setModalStack(inputHandler.modalStack);
       inputHandler.onCastSpellById = castSpellById;
       diagnosticModal.setModalStack(inputHandler.modalStack);
+      feedbackModal.setModalStack(inputHandler.modalStack);
+      inputHandler.onToggleFeedback = () => toggleFeedback();
     } else {
       renderer.setEngine(engine);
       renderer.onResolveRadialLabel = resolveRadialMenuLabel;
@@ -1264,6 +1301,8 @@ window.addEventListener('DOMContentLoaded', () => {
         inputHandler.mapOverlay = renderer.mapOverlay;
         inputHandler.radialMenuOverlay = renderer.radialMenuOverlay;
         inputHandler.onToggleDiagnostics = toggleDiagnostics;
+        inputHandler.onToggleFeedback = () => toggleFeedback();
+        feedbackModal.setModalStack(inputHandler.modalStack);
         inputHandler.contextHelp = contextHelp;
         inputHandler.compendiumModal = compendiumModal;
         inputHandler.commandPalette = commandPalette;
@@ -1443,6 +1482,9 @@ window.addEventListener('DOMContentLoaded', () => {
       } else {
         keybindModal.open();
       }
+    },
+    onOpenFeedback: () => {
+      toggleFeedback();
     },
     onOpenValhalla: () => {
       mainMenu.hide();

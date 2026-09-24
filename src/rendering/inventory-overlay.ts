@@ -11,8 +11,72 @@ import type { ThemeTokens } from '../engine';
 import { PaperdollView } from './paperdoll-view';
 import { ItemInspector } from '../ui/inventory/itemInspector';
 import { type GameCommand, type GameCommandBus } from '../engine';
+import { COIN_COLORS, parseCoinItem } from '../engine';
 import type { UIModal } from '../ui/modalStack';
 import type { ClickZone } from './types';
+
+export interface ContainerNavEntry {
+  container: Container;
+  source: 'backpack' | 'ground' | 'paperdoll';
+  title: string;
+}
+
+export interface DisplayItemGroup {
+  leadItem: Item;
+  items: Item[];
+  totalQuantity: number;
+  totalWeight: number;
+  displayName: string;
+}
+
+export function groupItemsForDisplay(items: readonly Item[]): DisplayItemGroup[] {
+  const groups: DisplayItemGroup[] = [];
+  const keyToGroup = new Map<string, DisplayItemGroup>();
+
+  for (const item of items) {
+    if (item instanceof Container) {
+      groups.push({
+        leadItem: item,
+        items: [item],
+        totalQuantity: item.quantity,
+        totalWeight: item.weight,
+        displayName: item.displayName,
+      });
+      continue;
+    }
+
+    let key: string;
+    if (!item.identified) {
+      const baseName = item.canBeIdentified() ? (item.unidentifiedName || item.name) : item.displayName;
+      key = `unidentified_${item.category}_${baseName}`;
+    } else {
+      const cleanName = item.displayName.replace(/\s\(\d+x\)$/, '');
+      key = `identified_${item.category}_${cleanName}_${item.quality}_${item.enchantmentLevel}`;
+    }
+
+    const existing = keyToGroup.get(key);
+    if (existing) {
+      existing.items.push(item);
+      existing.totalQuantity += item.quantity;
+      existing.totalWeight += item.weight;
+      const baseClean = existing.leadItem.displayName.replace(/\s\(\d+x\)$/, '');
+      existing.displayName = existing.totalQuantity > 1 ? `${baseClean} (${existing.totalQuantity}x)` : baseClean;
+    } else {
+      const baseClean = item.displayName.replace(/\s\(\d+x\)$/, '');
+      const group: DisplayItemGroup = {
+        leadItem: item,
+        items: [item],
+        totalQuantity: item.quantity,
+        totalWeight: item.weight,
+        displayName: item.quantity > 1 ? `${baseClean} (${item.quantity}x)` : baseClean,
+      };
+      keyToGroup.set(key, group);
+      groups.push(group);
+    }
+  }
+
+  return groups;
+}
 
 /**
  * ARCHITECTURAL NOTE: GameCommandBus Pattern
@@ -45,12 +109,29 @@ export class InventoryOverlay implements UIModal {
    * "how do I see the full name without clicking" gap with a tooltip). Rebuilt
    * every render(), hit-tested in handleMouseMove against the last known cursor
    * position — mirrors the clickZones pattern above. */
-  private hoverZones: Array<{ x: number; y: number; width: number; height: number; item: Item }> = [];
-  private hoveredGridItem: Item | null = null;
+  private hoverZones: Array<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    item: Item;
+    displayName: string;
+    totalWeight: number;
+    coinColor?: string;
+  }> = [];
+  private hoveredGroup: { item: Item; displayName: string; totalWeight: number; coinColor?: string } | null = null;
   private lastMouseX = 0;
   private lastMouseY = 0;
+
+  public containerNavStack: ContainerNavEntry[] = [];
   public selectedGroundContainer: Container | null = null;
   public selectedPackContainer: Container | null = null;
+
+  public scrollOffsets: Record<'backpack' | 'ground', number> = { backpack: 0, ground: 0 };
+  private visibleRows: Record<'backpack' | 'ground', number> = { backpack: 1, ground: 1 };
+  private maxScrollOffsets: Record<'backpack' | 'ground', number> = { backpack: 0, ground: 0 };
+  private panelBounds: Partial<Record<'backpack' | 'ground', { x: number; y: number; width: number; height: number }>> = {};
+
   private onStateChanged?: () => void;
   public atlas?: SpriteAtlas;
   private theme?: Required<ThemeTokens>;
@@ -86,6 +167,99 @@ export class InventoryOverlay implements UIModal {
     return this.inspector.selectedItem;
   }
 
+  public get activeContainer(): Container | null {
+    if (this.containerNavStack.length > 0) {
+      return this.containerNavStack[this.containerNavStack.length - 1].container;
+    }
+    return this.selectedPackContainer || this.selectedGroundContainer;
+  }
+
+  public pushContainer(container: Container, source: 'backpack' | 'ground' | 'paperdoll', title?: string): void {
+    this.containerNavStack.push({
+      container,
+      source,
+      title: title ?? container.displayName,
+    });
+    if (source === 'ground') {
+      this.selectedGroundContainer = container;
+      this.selectedPackContainer = null;
+    } else if (source === 'backpack') {
+      this.selectedPackContainer = container;
+      this.selectedGroundContainer = null;
+    } else {
+      this.selectedGroundContainer = null;
+      this.selectedPackContainer = null;
+    }
+    if (!container.wasOpened) {
+      this.commandBus.dispatch({ type: 'open_container', payload: { container } });
+    }
+    this.scrollOffsets['ground'] = 0;
+    this.inspector.clearSelection();
+    this.inspector.setFocus('ground', 0);
+  }
+
+  public popContainer(): boolean {
+    if (this.containerNavStack.length === 0) {
+      if (this.selectedGroundContainer || this.selectedPackContainer) {
+        this.selectedGroundContainer = null;
+        this.selectedPackContainer = null;
+        this.scrollOffsets['ground'] = 0;
+        this.inspector.clearSelection();
+        return true;
+      }
+      return false;
+    }
+    this.containerNavStack.pop();
+    const top = this.containerNavStack[this.containerNavStack.length - 1];
+    if (top) {
+      if (top.source === 'ground') {
+        this.selectedGroundContainer = top.container;
+        this.selectedPackContainer = null;
+      } else if (top.source === 'backpack') {
+        this.selectedPackContainer = top.container;
+        this.selectedGroundContainer = null;
+      } else {
+        this.selectedGroundContainer = null;
+        this.selectedPackContainer = null;
+      }
+    } else {
+      this.selectedGroundContainer = null;
+      this.selectedPackContainer = null;
+    }
+    this.scrollOffsets['ground'] = 0;
+    this.inspector.clearSelection();
+    return true;
+  }
+
+  public handleWheel(mouseX: number, mouseY: number, deltaY: number): boolean {
+    if (!this.isOpen) return false;
+    for (const p of ['backpack', 'ground'] as const) {
+      const b = this.panelBounds[p];
+      if (b && mouseX >= b.x && mouseX <= b.x + b.width && mouseY >= b.y && mouseY <= b.y + b.height) {
+        if (deltaY > 0) {
+          this.scrollOffsets[p] = Math.min(this.maxScrollOffsets[p], this.scrollOffsets[p] + 1);
+        } else if (deltaY < 0) {
+          this.scrollOffsets[p] = Math.max(0, this.scrollOffsets[p] - 1);
+        }
+        if (this.onStateChanged) this.onStateChanged();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public ensureVisible(panel: 'backpack' | 'ground', index: number, cols: number): void {
+    if (cols <= 0) return;
+    const targetRow = Math.floor(index / cols);
+    const currentScroll = this.scrollOffsets[panel];
+    const visRows = this.visibleRows[panel] || 1;
+    if (targetRow < currentScroll) {
+      this.scrollOffsets[panel] = targetRow;
+    } else if (targetRow >= currentScroll + visRows) {
+      this.scrollOffsets[panel] = targetRow - visRows + 1;
+    }
+  }
+
   public toggle(engine?: GameEngine): void {
     if (this.isOpen) {
       this.close();
@@ -109,6 +283,10 @@ export class InventoryOverlay implements UIModal {
     this.isOpen = true;
     this.inspector.clearSelection();
     this.inspector.setFocus('paperdoll', 0);
+    this.containerNavStack = [];
+    this.selectedGroundContainer = null;
+    this.selectedPackContainer = null;
+    this.scrollOffsets = { backpack: 0, ground: 0 };
     if (engine) {
       const res = engine.player.inventory.consolidateCoins();
       if (res.count > 0) {
@@ -127,9 +305,10 @@ export class InventoryOverlay implements UIModal {
     this.hoveredSlot = null;
     this.hoveredBackpackIndex = null;
     this.hoveredGroundIndex = null;
-    this.hoveredGridItem = null;
     this.selectedGroundContainer = null;
     this.selectedPackContainer = null;
+    this.containerNavStack = [];
+    this.scrollOffsets = { backpack: 0, ground: 0 };
     if (this.onClose) {
       this.onClose();
     }
@@ -153,7 +332,9 @@ export class InventoryOverlay implements UIModal {
     const zone = this.hoverZones.find(
       (z) => mouseX >= z.x && mouseX <= z.x + z.width && mouseY >= z.y && mouseY <= z.y + z.height
     );
-    this.hoveredGridItem = zone?.item ?? null;
+    this.hoveredGroup = zone
+      ? { item: zone.item, displayName: zone.displayName, totalWeight: zone.totalWeight, coinColor: zone.coinColor }
+      : null;
   }
 
   public handleMouseMove(mouseX: number, mouseY: number): boolean {
@@ -161,7 +342,7 @@ export class InventoryOverlay implements UIModal {
       this.hoveredSlot = null;
       this.hoveredBackpackIndex = null;
       this.hoveredGroundIndex = null;
-      this.hoveredGridItem = null;
+      this.hoveredGroup = null;
       return false;
     }
     this.updateHoverAt(mouseX, mouseY);
@@ -255,16 +436,21 @@ export class InventoryOverlay implements UIModal {
     const inv = player.inventory;
     const doll = inv.paperdoll;
 
-    // 1. Close overlay. The companion browser is a sub-view, so Escape backs out of it
-    //    first rather than dismissing the whole overlay.
+    // 1. Close overlay or sub-views. The companion browser is a sub-view, so Escape backs out of it first.
     if (code === 'Escape' && this.companionViewOpen) {
       this.companionViewOpen = false;
       if (this.onStateChanged) this.onStateChanged();
       return true;
     }
-    // Escape backs out of a selection before it closes the overlay.
+    // Escape backs out of a selection before it closes the overlay or pops container.
     if (code === 'Escape' && (this.inspector.selectedItem || this.inspector.selectedItemIds.size > 0)) {
       this.inspector.clearSelection();
+      if (this.onStateChanged) this.onStateChanged();
+      return true;
+    }
+    // Escape or Backspace backs out of opened containers!
+    if ((code === 'Escape' || code === 'Backspace') && (this.containerNavStack.length > 0 || this.selectedGroundContainer || this.selectedPackContainer)) {
+      this.popContainer();
       if (this.onStateChanged) this.onStateChanged();
       return true;
     }
@@ -286,19 +472,21 @@ export class InventoryOverlay implements UIModal {
         }
       } else if (panel === 'backpack') {
         const packItems = inv.primaryPack.getItems();
-        if (packItems.length > 0) {
-          this.inspector.select(packItems[0], 'backpack');
+        const groups = groupItemsForDisplay(packItems);
+        if (groups.length > 0) {
+          this.inspector.select(groups[0].leadItem, 'backpack');
         } else {
           this.inspector.clearSelection();
         }
       } else if (panel === 'ground') {
-        const activeContainer = this.selectedPackContainer || this.selectedGroundContainer;
+        const activeContainer = this.activeContainer;
         const items = activeContainer
           ? activeContainer.getItems()
           : engine.map.getItemsAt(player.x, player.y);
-        if (items.length > 0) {
+        const groups = groupItemsForDisplay(items);
+        if (groups.length > 0) {
           const src = activeContainer ? 'container' : 'ground';
-          this.inspector.select(items[0], src, undefined, activeContainer);
+          this.inspector.select(groups[0].leadItem, src, undefined, activeContainer);
         } else {
           this.inspector.clearSelection();
         }
@@ -343,18 +531,22 @@ export class InventoryOverlay implements UIModal {
         }
       } else if (panel === 'backpack') {
         const packItems = inv.primaryPack.getItems();
-        const next = step(packItems.length);
+        const groups = groupItemsForDisplay(packItems);
+        const next = step(groups.length);
         if (next !== null) {
           this.inspector.focusedIndex = next;
-          this.inspector.select(packItems[next], 'backpack');
+          this.inspector.select(groups[next].leadItem, 'backpack');
+          this.ensureVisible('backpack', next, this.gridColumns['backpack']);
         }
       } else if (panel === 'ground') {
-        const activeContainer = this.selectedPackContainer || this.selectedGroundContainer;
+        const activeContainer = this.activeContainer;
         const items = activeContainer ? activeContainer.getItems() : engine.map.getItemsAt(player.x, player.y);
-        const next = step(items.length);
+        const groups = groupItemsForDisplay(items);
+        const next = step(groups.length);
         if (next !== null) {
           this.inspector.focusedIndex = next;
-          this.inspector.select(items[next], activeContainer ? 'container' : 'ground', undefined, activeContainer);
+          this.inspector.select(groups[next].leadItem, activeContainer ? 'container' : 'ground', undefined, activeContainer);
+          this.ensureVisible('ground', next, this.gridColumns['ground']);
         }
       }
       if (this.onStateChanged) this.onStateChanged();
@@ -364,30 +556,33 @@ export class InventoryOverlay implements UIModal {
     // 4. Enter / Space: Primary contextual action or selection
     if (code === 'Enter' || code === 'Space') {
       const panel = this.inspector.focusedPanel;
+      if (panel === 'paperdoll') {
+        const item = this.inspector.selectedItem;
+        if (item instanceof Container) {
+          this.pushContainer(item, 'paperdoll', item.displayName);
+          if (this.onStateChanged) this.onStateChanged();
+          return true;
+        }
+      }
       if (panel === 'backpack') {
         const packItems = inv.primaryPack.getItems();
-        const focusedItem = packItems[this.inspector.focusedIndex];
-        if (focusedItem instanceof Container && !this.selectedPackContainer) {
-          this.selectedPackContainer = focusedItem;
-          this.selectedGroundContainer = null;
-          this.inspector.select(null, 'none', undefined, focusedItem);
-          this.inspector.setFocus('ground', 0);
+        const groups = groupItemsForDisplay(packItems);
+        const focusedGroup = groups[this.inspector.focusedIndex];
+        if (focusedGroup?.leadItem instanceof Container) {
+          this.pushContainer(focusedGroup.leadItem, 'backpack', focusedGroup.leadItem.displayName);
           if (this.onStateChanged) this.onStateChanged();
           return true;
         }
       }
       if (panel === 'ground') {
-        const activeContainer = this.selectedPackContainer || this.selectedGroundContainer;
-        if (!activeContainer) {
-          const groundItems = engine.map.getItemsAt(player.x, player.y);
-          const focusedItem = groundItems[this.inspector.focusedIndex];
-          if (focusedItem instanceof Container) {
-            this.selectedGroundContainer = focusedItem;
-            this.selectedPackContainer = null;
-            this.inspector.clearSelection();
-            if (this.onStateChanged) this.onStateChanged();
-            return true;
-          }
+        const activeContainer = this.activeContainer;
+        const groundItems = activeContainer ? activeContainer.getItems() : engine.map.getItemsAt(player.x, player.y);
+        const groups = groupItemsForDisplay(groundItems);
+        const focusedGroup = groups[this.inspector.focusedIndex];
+        if (focusedGroup?.leadItem instanceof Container) {
+          this.pushContainer(focusedGroup.leadItem, activeContainer ? 'ground' : 'ground', focusedGroup.leadItem.displayName);
+          if (this.onStateChanged) this.onStateChanged();
+          return true;
         }
       }
       const executed = this.inspector.executePrimaryAction(engine);
@@ -505,7 +700,7 @@ export class InventoryOverlay implements UIModal {
           if (this.onStateChanged) this.onStateChanged();
           return true;
         }
-        const activeContainer = this.selectedPackContainer || this.selectedGroundContainer;
+        const activeContainer = this.activeContainer;
         if (this.inspector.selectedSource === 'container' && activeContainer) {
           this.commandBus.dispatch({
             type: 'loot_container',
@@ -525,7 +720,7 @@ export class InventoryOverlay implements UIModal {
     }
 
     // 9. KeyP: Put / Store into open ground or carried container
-    const activeContainer = this.selectedPackContainer || this.selectedGroundContainer;
+    const activeContainer = this.activeContainer;
     if (code === 'KeyP' && activeContainer && this.inspector.selectedItem && this.inspector.selectedSource === 'backpack') {
       this.commandBus.dispatch({
         type: 'store_container',
@@ -669,7 +864,9 @@ export class InventoryOverlay implements UIModal {
       onActivate: (item: Item, index: number) => void;
     }
   ): void {
-    if (items.length === 0) {
+    const groups = groupItemsForDisplay(items);
+
+    if (groups.length === 0) {
       ctx.font = `italic 11px ${font}`;
       ctx.fillStyle = theme.textMuted;
       ctx.textAlign = 'left';
@@ -679,11 +876,30 @@ export class InventoryOverlay implements UIModal {
     }
 
     const gap = 4;
-    const cols = Math.max(2, Math.floor((width - gap) / (50 + gap)));
-    const cellSize = Math.max(40, Math.min(64, Math.floor((width - gap * (cols + 1)) / cols)));
+    let rawCols = Math.max(2, Math.floor((width - gap) / (50 + gap)));
+    let rawCellSize = Math.max(40, Math.min(64, Math.floor((width - gap * (rawCols + 1)) / rawCols)));
+    let rawRows = Math.max(1, Math.floor((height - gap) / (rawCellSize + gap)));
+    let totalRows = Math.ceil(groups.length / rawCols);
+
+    const hasScrollbar = totalRows > rawRows;
+    const scrollTrackW = hasScrollbar ? 14 : 0;
+    const gridW = width - scrollTrackW - (hasScrollbar ? 2 : 0);
+
+    const cols = Math.max(2, Math.floor((gridW - gap) / (50 + gap)));
+    const cellSize = Math.max(40, Math.min(64, Math.floor((gridW - gap * (cols + 1)) / cols)));
     const rows = Math.max(1, Math.floor((height - gap) / (cellSize + gap)));
-    const maxVisible = cols * rows;
+    totalRows = Math.ceil(groups.length / cols);
+
     this.gridColumns[opts.panel] = cols;
+    this.visibleRows[opts.panel] = rows;
+    const maxScroll = Math.max(0, totalRows - rows);
+    this.maxScrollOffsets[opts.panel] = maxScroll;
+    this.scrollOffsets[opts.panel] = Math.max(0, Math.min(maxScroll, this.scrollOffsets[opts.panel]));
+    const scrollRow = this.scrollOffsets[opts.panel];
+
+    const startIndex = scrollRow * cols;
+    const maxVisible = cols * rows;
+    const endIndex = Math.min(groups.length, startIndex + maxVisible);
 
     const truncate = (text: string, maxWidth: number): string => {
       if (ctx.measureText(text).width <= maxWidth) return text;
@@ -692,21 +908,32 @@ export class InventoryOverlay implements UIModal {
       return text.slice(0, end) + '…';
     };
 
-    for (let i = 0; i < Math.min(items.length, maxVisible); i++) {
-      const it = items[i];
-      const col = i % cols;
-      const row = Math.floor(i / cols);
+    for (let i = startIndex; i < endIndex; i++) {
+      const group = groups[i];
+      const it = group.leadItem;
+      const localIdx = i - startIndex;
+      const col = localIdx % cols;
+      const row = Math.floor(localIdx / cols);
       const cellX = x + gap + col * (cellSize + gap);
       const cellY = y + gap + row * (cellSize + gap);
 
       const isCursed = it.isCursed() && it.identified;
       const isEnchanted = it.identified && it.quality === 'enchanted';
       const isContainer = it instanceof Container;
-      const selected = opts.isSelected(it, i);
+      const selected = group.items.some((item) => opts.isSelected(item, i));
       const focused = opts.isFocused(it, i);
-      const multiSelected = opts.isMultiSelected?.(it) ?? false;
+      const multiSelected = group.items.some((item) => opts.isMultiSelected?.(item));
 
-      ctx.fillStyle = selected ? 'rgba(56, 189, 248, 0.25)' : focused ? 'rgba(56, 189, 248, 0.15)' : theme.modalBg;
+      const coinInfo = parseCoinItem(it);
+      const coinColor = coinInfo ? COIN_COLORS[coinInfo.denomination] : undefined;
+
+      ctx.fillStyle = selected
+        ? 'rgba(56, 189, 248, 0.25)'
+        : focused
+        ? 'rgba(56, 189, 248, 0.15)'
+        : coinColor
+        ? 'rgba(15, 23, 42, 0.9)'
+        : theme.modalBg;
       ctx.fillRect(cellX, cellY, cellSize, cellSize);
 
       const borderColor = multiSelected
@@ -715,9 +942,9 @@ export class InventoryOverlay implements UIModal {
         ? '#ef4444'
         : selected || focused
         ? theme.hudAccent
-        : theme.cardBorder;
+        : coinColor ?? theme.cardBorder;
       ctx.strokeStyle = borderColor;
-      ctx.lineWidth = selected || focused || multiSelected ? 1.5 : 1;
+      ctx.lineWidth = selected || focused || multiSelected ? 1.5 : coinColor ? 1.5 : 1;
       ctx.strokeRect(cellX + 0.5, cellY + 0.5, cellSize - 1, cellSize - 1);
 
       // Sprite, sized to fill most of the cell (paperdoll-view.ts's square-slot
@@ -736,10 +963,10 @@ export class InventoryOverlay implements UIModal {
       // Name, truncated to the cell's width rather than a fixed character count
       // — still short, but the tooltip (see render()) carries the full name.
       ctx.font = `9px ${font}`;
-      ctx.fillStyle = isCursed ? '#ef4444' : isEnchanted ? '#c084fc' : theme.hudText;
+      ctx.fillStyle = coinColor ? coinColor : isCursed ? '#ef4444' : isEnchanted ? '#c084fc' : theme.hudText;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'alphabetic';
-      const label = truncate(it.displayName, cellSize - 4);
+      const label = truncate(group.displayName, cellSize - 4);
       ctx.fillText(label, cellX + cellSize / 2, cellY + cellSize - 3);
 
       // Index shortcut tag (1-9), backpack only.
@@ -759,16 +986,104 @@ export class InventoryOverlay implements UIModal {
         ctx.fillText('▣', cellX + cellSize - 3, cellY + 10);
       }
 
-      const capturedItem = it;
+      const capturedGroup = group;
       const capturedIdx = i;
       const zoneRect = { x: cellX, y: cellY, width: cellSize, height: cellSize };
-      this.hoverZones.push({ ...zoneRect, item: capturedItem });
+      this.hoverZones.push({
+        ...zoneRect,
+        item: capturedGroup.leadItem,
+        displayName: capturedGroup.displayName,
+        totalWeight: capturedGroup.totalWeight,
+        coinColor,
+      });
       this.clickZones.push({
         ...zoneRect,
-        action: (isMultiMod) => opts.onSelect(capturedItem, capturedIdx, isMultiMod),
+        action: (isMultiMod) => opts.onSelect(capturedGroup.leadItem, capturedIdx, isMultiMod),
       });
-      this.doubleClickZones.push({ ...zoneRect, action: () => opts.onActivate(capturedItem, capturedIdx) });
-      this.rightClickZones.push({ ...zoneRect, action: () => opts.onActivate(capturedItem, capturedIdx) });
+      this.doubleClickZones.push({ ...zoneRect, action: () => opts.onActivate(capturedGroup.leadItem, capturedIdx) });
+      this.rightClickZones.push({ ...zoneRect, action: () => opts.onActivate(capturedGroup.leadItem, capturedIdx) });
+    }
+
+    // Render scrollbar if content exceeds visible area
+    if (hasScrollbar) {
+      const trackX = x + width - scrollTrackW;
+      const trackY = y + gap;
+      const trackH = height - gap * 2;
+      const btnH = 14;
+
+      // Track background
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      ctx.fillRect(trackX, trackY, scrollTrackW, trackH);
+      ctx.strokeStyle = theme.cardBorder;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(trackX + 0.5, trackY + 0.5, scrollTrackW - 1, trackH - 1);
+
+      // Up button [▲]
+      ctx.fillStyle = scrollRow > 0 ? theme.cardBorder : 'rgba(50, 50, 50, 0.5)';
+      ctx.fillRect(trackX, trackY, scrollTrackW, btnH);
+      ctx.font = `bold 8px ${font}`;
+      ctx.fillStyle = scrollRow > 0 ? theme.hudAccent : theme.textMuted;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('▲', trackX + scrollTrackW / 2, trackY + btnH / 2);
+      this.clickZones.push({
+        x: trackX,
+        y: trackY,
+        width: scrollTrackW,
+        height: btnH,
+        action: () => {
+          this.scrollOffsets[opts.panel] = Math.max(0, this.scrollOffsets[opts.panel] - 1);
+        },
+      });
+
+      // Down button [▼]
+      const downBtnY = trackY + trackH - btnH;
+      ctx.fillStyle = scrollRow < maxScroll ? theme.cardBorder : 'rgba(50, 50, 50, 0.5)';
+      ctx.fillRect(trackX, downBtnY, scrollTrackW, btnH);
+      ctx.fillStyle = scrollRow < maxScroll ? theme.hudAccent : theme.textMuted;
+      ctx.fillText('▼', trackX + scrollTrackW / 2, downBtnY + btnH / 2);
+      this.clickZones.push({
+        x: trackX,
+        y: downBtnY,
+        width: scrollTrackW,
+        height: btnH,
+        action: () => {
+          this.scrollOffsets[opts.panel] = Math.min(maxScroll, this.scrollOffsets[opts.panel] + 1);
+        },
+      });
+
+      // Thumb
+      const scrollableH = trackH - btnH * 2;
+      if (scrollableH > 10 && maxScroll > 0) {
+        const thumbH = Math.max(12, Math.floor(scrollableH * (rows / totalRows)));
+        const thumbTravel = scrollableH - thumbH;
+        const thumbY = trackY + btnH + Math.floor(thumbTravel * (scrollRow / maxScroll));
+        ctx.fillStyle = theme.hudAccent;
+        ctx.fillRect(trackX + 1, thumbY, scrollTrackW - 2, thumbH);
+
+        if (thumbY > trackY + btnH) {
+          this.clickZones.push({
+            x: trackX,
+            y: trackY + btnH,
+            width: scrollTrackW,
+            height: thumbY - (trackY + btnH),
+            action: () => {
+              this.scrollOffsets[opts.panel] = Math.max(0, this.scrollOffsets[opts.panel] - rows);
+            },
+          });
+        }
+        if (downBtnY > thumbY + thumbH) {
+          this.clickZones.push({
+            x: trackX,
+            y: thumbY + thumbH,
+            width: scrollTrackW,
+            height: downBtnY - (thumbY + thumbH),
+            action: () => {
+              this.scrollOffsets[opts.panel] = Math.min(maxScroll, this.scrollOffsets[opts.panel] + rows);
+            },
+          });
+        }
+      }
     }
   }
 
@@ -988,14 +1303,14 @@ export class InventoryOverlay implements UIModal {
       },
     });
 
+    this.panelBounds['backpack'] = { x: col2X, y: contentY, width: col2W, height: contentH };
+    this.panelBounds['ground'] = { x: col3X, y: contentY, width: col3W, height: contentH };
+
     // Backpack item grid
     const packItems = inv.primaryPack.getItems();
     const activateBackpackItem = (capturedItem: Item) => {
       if (capturedItem instanceof Container) {
-        this.selectedPackContainer = capturedItem;
-        this.selectedGroundContainer = null;
-        this.inspector.select(null, 'none', undefined, capturedItem);
-        this.inspector.setFocus('ground', 0);
+        this.pushContainer(capturedItem, 'backpack', capturedItem.displayName);
       } else if (capturedItem instanceof PotionItem) {
         this.commandBus.dispatch({ type: 'drink_potion', payload: { itemId: capturedItem.id } });
         this.inspector.clearSelection();
@@ -1033,28 +1348,33 @@ export class InventoryOverlay implements UIModal {
     const groundItems = engine.map.getItemsAt(player.x, player.y);
 
     if (this.inspector.selectedContainer) {
-      if (player.inventory.primaryPack.getItems().some((i) => i.id === this.inspector.selectedContainer?.id)) {
-        this.selectedPackContainer = this.inspector.selectedContainer;
-        this.selectedGroundContainer = null;
-      } else if (groundItems.some((i) => i.id === this.inspector.selectedContainer?.id)) {
-        this.selectedGroundContainer = this.inspector.selectedContainer;
-        this.selectedPackContainer = null;
+      const c = this.inspector.selectedContainer;
+      this.inspector.selectedContainer = null;
+      let source: 'backpack' | 'ground' | 'paperdoll' = 'ground';
+      if (player.inventory.primaryPack.getItems().some((i) => i.id === c.id)) {
+        source = 'backpack';
+      } else if (player.inventory.paperdoll.getAllEquipped().some((e) => e.item.id === c.id)) {
+        source = 'paperdoll';
+      }
+      this.pushContainer(c, source);
+    }
+
+    for (let i = this.containerNavStack.length - 1; i >= 0; i--) {
+      const entry = this.containerNavStack[i];
+      let stillExists = false;
+      if (entry.source === 'paperdoll') {
+        stillExists = player.inventory.paperdoll.getAllEquipped().some((e) => e.item.id === entry.container.id);
+      } else if (entry.source === 'backpack') {
+        stillExists = player.inventory.primaryPack.getItems().some((it) => it.id === entry.container.id);
+      } else if (entry.source === 'ground') {
+        stillExists = groundItems.some((it) => it.id === entry.container.id) || (i > 0 && this.containerNavStack[i - 1].container.getItems().some((it) => it.id === entry.container.id));
+      }
+      if (!stillExists) {
+        this.containerNavStack.splice(i, 1);
       }
     }
 
-    if (this.selectedGroundContainer && !groundItems.some((i) => i.id === this.selectedGroundContainer?.id)) {
-      this.selectedGroundContainer = null;
-    }
-    // Every path that opens a ground container (Enter, double-click, the inspector's Open
-    // button) lands here, so record the look once for the HUD's opened/unopened flag.
-    if (this.selectedGroundContainer && !this.selectedGroundContainer.wasOpened) {
-      this.commandBus.dispatch({ type: 'open_container', payload: { container: this.selectedGroundContainer } });
-    }
-    if (this.selectedPackContainer && !player.inventory.primaryPack.getItems().some((i) => i.id === this.selectedPackContainer?.id)) {
-      this.selectedPackContainer = null;
-    }
-
-    const activeContainer = this.selectedPackContainer || this.selectedGroundContainer;
+    const activeContainer = this.activeContainer;
 
     ctx.fillStyle = theme.cardBg;
     ctx.fillRect(col3X, contentY, col3W, contentH);
@@ -1078,10 +1398,19 @@ export class InventoryOverlay implements UIModal {
     ctx.textBaseline = 'middle';
 
     if (activeContainer) {
-      const cTitle = `📦 ${activeContainer.displayName.length > 10 ? activeContainer.displayName.slice(0, 9) + '…' : activeContainer.displayName}`;
+      let cTitle: string;
+      if (this.containerNavStack.length > 1) {
+        const prev = this.containerNavStack[this.containerNavStack.length - 2];
+        const pTitle = prev.title.length > 7 ? prev.title.slice(0, 6) + '…' : prev.title;
+        const curTitle = activeContainer.displayName.length > 9 ? activeContainer.displayName.slice(0, 8) + '…' : activeContainer.displayName;
+        cTitle = `📦 ${pTitle} > ${curTitle}`;
+      } else {
+        const curTitle = activeContainer.displayName.length > 12 ? activeContainer.displayName.slice(0, 11) + '…' : activeContainer.displayName;
+        cTitle = `📦 ${curTitle}`;
+      }
       ctx.fillText(cTitle, col3X + 6, contentY + 12);
 
-      // Back button [◀ Ground] or [◀ Pack]
+      // Back button
       const backBtnW = 44;
       const backBtnX = col3X + col3W - backBtnW * 2 - 8;
       ctx.fillStyle = theme.cardBorder;
@@ -1089,7 +1418,15 @@ export class InventoryOverlay implements UIModal {
       ctx.font = `bold 8px ${font}`;
       ctx.fillStyle = theme.hudAccent;
       ctx.textAlign = 'center';
-      const backLabel = this.selectedPackContainer ? '◀ Pack' : '◀ Grnd';
+      let backLabel = '◀ Back';
+      if (this.containerNavStack.length === 1) {
+        const src = this.containerNavStack[0].source;
+        backLabel = src === 'paperdoll' ? '◀ Doll' : src === 'backpack' ? '◀ Pack' : '◀ Grnd';
+      } else if (this.selectedPackContainer) {
+        backLabel = '◀ Pack';
+      } else if (this.selectedGroundContainer) {
+        backLabel = '◀ Grnd';
+      }
       ctx.fillText(backLabel, backBtnX + backBtnW / 2, sortBtnY + 8);
       this.clickZones.push({
         x: backBtnX,
@@ -1097,9 +1434,7 @@ export class InventoryOverlay implements UIModal {
         width: backBtnW,
         height: sortBtnH,
         action: () => {
-          this.selectedGroundContainer = null;
-          this.selectedPackContainer = null;
-          this.inspector.clearSelection();
+          this.popContainer();
         },
       });
 
@@ -1126,11 +1461,15 @@ export class InventoryOverlay implements UIModal {
       // Container items
       const cItems = activeContainer.getItems();
       const takeFromContainer = (capturedItem: Item) => {
-        this.commandBus.dispatch({
-          type: 'loot_container',
-          payload: { container: activeContainer, item: capturedItem },
-        });
-        this.inspector.clearSelection();
+        if (capturedItem instanceof Container) {
+          this.pushContainer(capturedItem, 'ground', capturedItem.displayName);
+        } else {
+          this.commandBus.dispatch({
+            type: 'loot_container',
+            payload: { container: activeContainer, item: capturedItem },
+          });
+          this.inspector.clearSelection();
+        }
       };
       this.renderItemGrid(ctx, cItems, col3X, contentY + 28, col3W, contentH - 34, theme, font, {
         panel: 'ground',
@@ -1138,8 +1477,12 @@ export class InventoryOverlay implements UIModal {
         isSelected: (it) => this.inspector.selectedSource === 'container' && this.inspector.selectedItem?.id === it.id,
         isFocused: (_it, i) => this.inspector.focusedPanel === 'ground' && this.inspector.focusedIndex === i,
         onSelect: (it, i) => {
-          this.inspector.setFocus('ground', i);
-          this.inspector.select(it, 'container', undefined, activeContainer);
+          if (it instanceof Container) {
+            this.pushContainer(it, 'ground', it.displayName);
+          } else {
+            this.inspector.setFocus('ground', i);
+            this.inspector.select(it, 'container', undefined, activeContainer);
+          }
         },
         onActivate: (it) => takeFromContainer(it),
       });
@@ -1169,8 +1512,7 @@ export class InventoryOverlay implements UIModal {
 
       const openOrPickUp = (capturedItem: Item) => {
         if (capturedItem instanceof Container) {
-          this.selectedGroundContainer = capturedItem;
-          this.inspector.clearSelection();
+          this.pushContainer(capturedItem, 'ground', capturedItem.displayName);
         } else {
           this.commandBus.dispatch({ type: 'pickup_item', payload: { itemId: capturedItem.id } });
           this.inspector.clearSelection();
@@ -1182,9 +1524,6 @@ export class InventoryOverlay implements UIModal {
         isSelected: (it) => this.inspector.selectedSource === 'ground' && this.inspector.selectedItem?.id === it.id,
         isFocused: (_it, i) => this.inspector.focusedPanel === 'ground' && this.inspector.focusedIndex === i,
         onSelect: (it, i) => {
-          // Ground containers open immediately on a single click (existing
-          // behavior, unlike the backpack column's click-then-double-click) —
-          // there's no separate "peek" step for something already on the floor.
           this.inspector.setFocus('ground', i);
           openOrPickUp(it);
         },
@@ -1282,12 +1621,12 @@ export class InventoryOverlay implements UIModal {
   }
 
   private renderHoverTooltip(ctx: CanvasRenderingContext2D, canvasW: number, canvasH: number, font: string): void {
-    if (!this.hoveredGridItem || !this.theme) return;
+    if (!this.hoveredGroup || !this.theme) return;
     const theme = this.theme;
-    const item = this.hoveredGridItem;
+    const { item, displayName, totalWeight, coinColor } = this.hoveredGroup;
 
     ctx.font = `bold 11px ${font}`;
-    const text = `${item.displayName} (${item.weight}g)`;
+    const text = `${displayName} (${totalWeight}g)`;
     const textWidth = ctx.measureText(text).width;
     const boxW = textWidth + 16;
     const boxH = 22;
@@ -1299,13 +1638,13 @@ export class InventoryOverlay implements UIModal {
 
     ctx.fillStyle = theme.modalBg;
     ctx.fillRect(boxX, boxY, boxW, boxH);
-    ctx.strokeStyle = theme.hudAccent;
+    ctx.strokeStyle = coinColor ?? theme.hudAccent;
     ctx.lineWidth = 1;
     ctx.strokeRect(boxX + 0.5, boxY + 0.5, boxW - 1, boxH - 1);
 
     const isCursed = item.isCursed() && item.identified;
     const isEnchanted = item.identified && item.quality === 'enchanted';
-    ctx.fillStyle = isCursed ? '#ef4444' : isEnchanted ? '#c084fc' : theme.hudText;
+    ctx.fillStyle = coinColor ? coinColor : isCursed ? '#ef4444' : isEnchanted ? '#c084fc' : theme.hudText;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText(text, boxX + 8, boxY + boxH / 2);

@@ -44,7 +44,7 @@ describe('Multi-Denomination Currency & Physical Coinage System', () => {
 
     // Updating count dynamically updates name, weight, and bulk
     copperStack.setCount(250);
-    expect(copperStack.name).toBe('250 Copper Pieces');
+    expect(copperStack.name).toBe('250 Copper Coins');
     expect(copperStack.totalWeight()).toBe(2500);
     expect(copperStack.totalBulk()).toBe(125);
   });
@@ -77,7 +77,7 @@ describe('Multi-Denomination Currency & Physical Coinage System', () => {
 
     const coinItem = purse.getItems()[0] as CoinItem;
     expect(coinItem.count).toBe(80);
-    expect(coinItem.name).toBe('80 Copper Pieces');
+    expect(coinItem.name).toBe('80 Copper Coins');
   });
 
   it('deposits currency to player and routes into coin purse', () => {

@@ -10,10 +10,17 @@ export const COIN_VALUES: Record<CoinDenomination, number> = {
 export const COIN_WEIGHT_GRAMS = 10; // Every coin weighs exactly 10 grams
 
 export const COIN_NAMES: Record<CoinDenomination, { singular: string; plural: string }> = {
-  copper: { singular: 'Copper Piece', plural: 'Copper Pieces' },
-  silver: { singular: 'Silver Piece', plural: 'Silver Pieces' },
-  gold: { singular: 'Gold Piece', plural: 'Gold Pieces' },
-  platinum: { singular: 'Platinum Piece', plural: 'Platinum Pieces' },
+  copper: { singular: 'Copper Coin', plural: 'Copper Coins' },
+  silver: { singular: 'Silver Coin', plural: 'Silver Coins' },
+  gold: { singular: 'Gold Coin', plural: 'Gold Coins' },
+  platinum: { singular: 'Platinum Coin', plural: 'Platinum Coins' },
+};
+
+export const COIN_COLORS: Record<CoinDenomination, string> = {
+  copper: '#cd7f32', // Bronze / Copper color scheme
+  silver: '#e2e8f0', // Silver sheen
+  gold: '#ffd700',   // Gold yellow
+  platinum: '#7dd3fc', // Cool gleaming platinum
 };
 
 export const COIN_ABBREV: Record<CoinDenomination, string> = {

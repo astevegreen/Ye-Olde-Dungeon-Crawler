@@ -1,7 +1,7 @@
 import { PRNG } from '../dungeon/prng';
 import { GameMap } from '../grid/map';
 import { TILES, getTileDefinition, hasTileDefinition } from '../grid/tile';
-import type { Position, GameDifficulty } from '../types';
+import type { Position, GameDifficulty, TileDefinition } from '../types';
 import { DungeonGeneratorRegistry } from '../dungeon/generator';
 import { Monster } from '../entities/monster';
 import { NPC } from '../entities/npc';
@@ -15,6 +15,7 @@ import type { GameContentManifest, QuestArcDefinition, ItemDefinition } from '..
 import type { MonsterScalingConfig } from '../types/monsterScaling';
 import { getMonsterDefinition, type MonsterDefinition } from '../bestiary/monsterDefinitions';
 import { Container } from '../items/container';
+import type { Item } from '../items/item';
 import { RuneOfReturnItem } from '../magic/runeOfReturn';
 import type { EngineRegistries } from '../registries';
 export interface DungeonFloorResult {
@@ -329,6 +330,11 @@ export class DungeonArc {
     difficulty?: GameDifficulty
   ): DungeonFloorResult {
 
+    const authored = questArc?.bossFloorLayout;
+    if (authored?.layout && authored.layout.length > 0) {
+      return this.generateAuthoredLair(floorNumber, authored, questArc, manifest, difficulty);
+    }
+
     const width = 44;
     const height = 34;
     const map = new GameMap(width, height);
@@ -465,6 +471,86 @@ export class DungeonArc {
       stairsUp,
       boss,
     };
+  }
+
+  /**
+   * A lair drawn from the quest's `bossFloorLayout.layout`. The boss, its four guards and
+   * its hoard keep the built-in hall's arrangement around `bossSpawn`: brutes five tiles to
+   * either side, casters four across and five below, the hoard two rows above.
+   */
+  private static generateAuthoredLair(
+    floorNumber: number,
+    layout: NonNullable<QuestArcDefinition['bossFloorLayout']>,
+    questArc?: QuestArcDefinition,
+    manifest?: GameContentManifest,
+    difficulty?: GameDifficulty
+  ): DungeonFloorResult {
+    const rows = layout.layout!;
+    const height = rows.length;
+    const width = Math.max(...rows.map((r) => r.length));
+    const map = new GameMap(width, height, TILES.WALL);
+    const symbols: Record<string, TileDefinition> = {
+      '#': TILES.WALL,
+      '.': TILES.FLOOR,
+      '~': TILES.SHALLOW_WATER,
+      X: TILES.CHASM,
+      P: TILES.PILLAR,
+      B: TILES.IRON_BARS,
+      '+': TILES.DOOR_CLOSED,
+      "'": TILES.DOOR_OPEN,
+    };
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const ch = rows[y][x] ?? '#';
+        const legendType = layout.legend?.[ch];
+        const tile =
+          legendType !== undefined && hasTileDefinition(legendType)
+            ? getTileDefinition(legendType)
+            : symbols[ch] ?? TILES.FLOOR;
+        map.setTile(x, y, tile);
+      }
+    }
+
+    const stairsUp = { ...layout.stairsUp };
+    map.setTile(stairsUp.x, stairsUp.y, TILES.STAIRS_UP);
+    const playerSpawn = { ...layout.playerSpawn };
+    const { x: bx, y: by } = layout.bossSpawn;
+
+    const bossId = questArc?.bossMonsterId ?? 'boss-monster';
+    const bossDef = (Array.isArray(manifest?.monsters) ? manifest?.monsters.find((m) => m.id === bossId) : undefined) ??
+      getMonsterDefinition(bossId);
+    const boss = this.createBoss(bx, by, floorNumber, bossDef, bossId, manifest?.monsterScaling, difficulty);
+    map.addEntity(boss);
+
+    const place = (x: number, y: number) => map.inBounds(x, y) && map.isPassable(x, y) && !map.getEntityAt(x, y);
+    const guard = (id: string, x: number, y: number, caster: boolean, drop: (itemId: string) => Item) => {
+      if (!place(x, y)) return;
+      map.addEntity(
+        new Monster({
+          id,
+          name: caster ? 'Boss Caster' : 'Boss Guard',
+          position: { x, y },
+          stats: caster ? { hp: 20, maxHp: 20, attack: 6, defense: 3 } : { hp: 45, maxHp: 45, attack: 11, defense: 4 },
+          speed: caster ? 100 : 80,
+          aiType: caster ? 'caster' : 'brute',
+          spells: caster ? ['firebolt', 'slow'] : undefined,
+          spellCooldown: caster ? 3 : undefined,
+          definitionId: caster ? 'boss-caster' : 'boss-guard',
+          xpValue: caster ? 60 : 100,
+          lootTable: [{ chance: caster ? 0.5 : 1.0, generate: drop }],
+        })
+      );
+    };
+    guard('guard-ogre-1', bx - 5, by, false, (id) => ItemFactory.createGoldCoins(id, 40));
+    guard('guard-ogre-2', bx + 5, by, false, (id) => ItemFactory.createGoldCoins(id, 40));
+    guard('guard-shaman-1', bx - 4, by + 5, true, (id) => ItemFactory.createManaPotion(id));
+    guard('guard-shaman-2', bx + 4, by + 5, true, (id) => ItemFactory.createHealthPotion(id));
+
+    if (place(bx, by - 2)) map.addItemAt(bx, by - 2, ItemFactory.createIronChest('boss-chest-1'));
+    if (place(bx - 1, by - 2)) map.addItemAt(bx - 1, by - 2, ItemFactory.createPlatinumCoins('boss-plat-1', 10));
+    if (place(bx + 1, by - 2)) map.addItemAt(bx + 1, by - 2, ItemFactory.createHealthPotion('boss-pot-1'));
+
+    return { map, playerSpawn, stairsUp, boss };
   }
 
   /**

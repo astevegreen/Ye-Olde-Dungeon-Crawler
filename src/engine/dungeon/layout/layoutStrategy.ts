@@ -378,8 +378,10 @@ export function buildRooms(
   if (built && built.length > 0) {
     for (const r of built) if (!vaults.some((v) => inRect(v, r.x1, r.y1))) push(r);
   } else {
-    const cellW = 9;
-    const cellH = 8;
+    // Cells sized so a 57x40 floor yields about as many rooms as rooms-and-corridors would
+    // (its room count scales with area), keeping monster and loot density comparable.
+    const cellW = 12;
+    const cellH = 10;
     for (let gy = 1; gy < H - 1; gy += cellH) {
       for (let gx = 1; gx < W - 1; gx += cellW) {
         let x1 = Infinity;

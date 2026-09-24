@@ -260,6 +260,14 @@ export interface BossFloorLayoutDefinition {
   bossSpawn: Position;
   pillars?: Position[];
   guards?: Array<{ definitionId: string; position: Position }>;
+  /**
+   * The lair's tiles, one string per row (`width` x `height`): '#' rock, '.' floor, '~'
+   * shallow water, 'X' chasm, 'P' pillar, 'B' iron bars, '+'/"'" doors; `legend` maps other
+   * characters to tile types. Absent = the engine's built-in hall. The boss, its guards and
+   * its hoard are placed around `bossSpawn` either way.
+   */
+  layout?: string[];
+  legend?: Record<string, string>;
 }
 
 export interface QuestArcDefinition {

@@ -2,8 +2,9 @@ import type { SpriteRecipe } from '../../../engine';
 import { COTW_TILE_SPRITES } from './tiles';
 import { COTW_MONSTER_SPRITES } from './monsters';
 import { COTW_ITEM_SPRITES } from './items';
+import { COTW_TERRAIN_SPRITES } from '../terrain';
 
-export { COTW_TILE_SPRITES, COTW_MONSTER_SPRITES, COTW_ITEM_SPRITES };
+export { COTW_TILE_SPRITES, COTW_MONSTER_SPRITES, COTW_ITEM_SPRITES, COTW_TERRAIN_SPRITES };
 
 /**
  * Full CotW procedural sprite recipe set.
@@ -16,6 +17,7 @@ export const COTW_SPRITE_RECIPES: Record<string, SpriteRecipe> = {
   ...COTW_TILE_SPRITES,
   ...COTW_MONSTER_SPRITES,
   ...COTW_ITEM_SPRITES,
+  ...COTW_TERRAIN_SPRITES,
   // Níðhögg wears the elder-dragon boss art rather than the generic boss giant.
   nidhogg: COTW_MONSTER_SPRITES.dragon_boss,
   // Hrungnir is untagged (he predates the boss tags, and tagging him would change his

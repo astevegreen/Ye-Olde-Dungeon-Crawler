@@ -45,7 +45,7 @@ export const COTW_TERRAIN_ART: TerrainArtConfig = {
       chasm: { color: '#ff7a2a', radius: 2.4, strength: 0.2 },
       shallow_water: { color: '#ff7a2a', radius: 1.8, strength: 0.12 },
     },
-    world_bark: { shallow_water: { color: '#c9912f', radius: 2, strength: 0.09 } },
+    world_bark: { shallow_water: { color: '#c9912f', radius: 2, strength: 0.06 } },
     maw_of_malice: {
       chasm: { color: '#d63a4f', radius: 2, strength: 0.08 },
       shallow_water: { color: '#c0394f', radius: 1.5, strength: 0.05 },

@@ -50,9 +50,11 @@ export const ROTTING_ROOT: ZoneArt = {
     pitFace: '#20251a',
   },
   floor: { kind: 'field', tones: 3, details: 3, detailRate: 0.1 },
-  // Every floor cell carries some rot: broad dark stains, more on the darker tone.
+  // Rot follows the darker tone, which clusters by smooth noise, so stains gather into
+  // discoloured patches across many cells; soft edges hide the cell boundary.
   floorEvery(pen, _p, r, v) {
-    stain(pen, r, 8 + r() * 16, 8 + r() * 16, 7 + r() * 5, v.tone === 0 ? 0.5 : 0.28);
+    if (v.tone === 0) stain(pen, r, 12 + r() * 8, 12 + r() * 8, 13 + r() * 3, 0.55);
+    else if (v.tone === 2) stain(pen, r, 10 + r() * 12, 10 + r() * 12, 8, 0.18);
   },
   floorDetail(pen, p, r, v) {
     const cx = 9 + r() * 14;

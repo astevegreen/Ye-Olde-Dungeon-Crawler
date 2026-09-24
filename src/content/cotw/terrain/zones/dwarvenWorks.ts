@@ -32,19 +32,18 @@ export const DWARVEN_WORKS: ZoneArt = {
     if (!qx) pen.fillRect(1, qy ? 0 : 1, 1, 31);
     if (!qy) pen.fillRect(qx ? 0 : 1, 1, 31, 1);
   },
-  // A brass ring inlay centred where the four quadrants meet.
-  floorDetail(pen, p, _r, v) {
-    const qx = v.q & 1;
-    const qy = v.q >> 1;
-    pen.strokeStyle = rgba(p.accent, 0.5);
-    pen.lineWidth = 1.2;
-    const cx = qx ? 0 : 32;
-    const cy = qy ? 0 : 32;
-    for (const rad of [9, 5.5]) {
-      pen.beginPath();
-      pen.arc(cx, cy, rad, 0, Math.PI * 2);
-      pen.stroke();
-    }
+  // A brass drain plate set into the slab, riveted at the corners.
+  floorDetail(pen, p, r) {
+    const x = 9 + r() * 8;
+    const y = 9 + r() * 8;
+    pen.fillStyle = rgba('#000000', 0.35);
+    pen.fillRect(x + 0.6, y + 0.6, 10, 10);
+    pen.fillStyle = rgba(p.accent, 0.55);
+    pen.fillRect(x, y, 10, 10);
+    pen.fillStyle = rgba('#140f0a', 0.8);
+    for (let i = 0; i < 3; i++) pen.fillRect(x + 2, y + 2.4 + i * 2.4, 6, 1);
+    pen.fillStyle = rgba('#c39a52', 0.7);
+    for (const [dx, dy] of [[1, 1], [8.4, 1], [1, 8.4], [8.4, 8.4]]) pen.fillRect(x + dx, y + dy, 0.8, 0.8);
   },
   faces: 2,
   face(pen, p, _r, v, top) {

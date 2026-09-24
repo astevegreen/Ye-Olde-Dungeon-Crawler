@@ -13,11 +13,10 @@ const state = (page: Page) =>
     return { turn: e.turnCount, x: e.player.x, y: e.player.y, lastAction: e.lastActionName };
   });
 
-test('a new hero moves, the map owns the keyboard, and save & continue restores the run', async ({ page }) => {
-  expect(existsSync(BUNDLE), `${BUNDLE} is missing; run \`npm run build\` first`).toBe(true);
-  const pageErrors: string[] = [];
-  page.on('pageerror', (err) => pageErrors.push(err.message));
+const stackIds = (page: Page) => page.evaluate(() => window.__cotwInputHandler!.modalStack.getStackIds());
 
+async function embarkNewHero(page: Page): Promise<void> {
+  expect(existsSync(BUNDLE), `${BUNDLE} is missing; run \`npm run build\` first`).toBe(true);
   await page.goto(pathToFileURL(BUNDLE).href);
   await page.locator('#btn-menu-new-game').click();
   // Keep every rolled attribute under 15: the first step would otherwise offer that
@@ -27,6 +26,12 @@ test('a new hero moves, the map owns the keyboard, and save & continue restores 
   }
   await page.locator('#btn-create-embark').click();
   await expect.poll(() => page.evaluate(() => Boolean(window.__cotwEngine))).toBe(true);
+}
+
+test('a new hero moves, the map owns the keyboard, and save & continue restores the run', async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on('pageerror', (err) => pageErrors.push(err.message));
+  await embarkNewHero(page);
 
   // Moving spends a turn, and the pipeline sees the real class name (esbuild keepNames).
   const start = await state(page);
@@ -53,5 +58,68 @@ test('a new hero moves, the map owns the keyboard, and save & continue restores 
   await expect.poll(async () => (await state(page)).turn).toBe(moved.turn);
   expect(await state(page)).toMatchObject({ x: moved.x, y: moved.y });
 
+  expect(pageErrors).toEqual([]);
+});
+
+// Save & quit and choices take keys only through the modal stack, as one entry each: a
+// second window listener delivered every key twice, and the choice's stack entry let
+// Escape dismiss a choice that cannot be cancelled.
+test('save & quit and choices take each key once, through one modal-stack entry', async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on('pageerror', (err) => pageErrors.push(err.message));
+  await embarkNewHero(page);
+  const start = await state(page);
+
+  // Save & quit: gameplay keys are held back, one Escape closes it.
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#save-quit-modal')).toBeVisible();
+  expect(await stackIds(page)).toEqual(['save-quit']);
+  await page.keyboard.press('ArrowRight');
+  expect(await state(page)).toMatchObject({ turn: start.turn, x: start.x });
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#save-quit-modal')).toBeHidden();
+  expect(await stackIds(page)).toEqual([]);
+
+  // Offer the pack's own choices the way movement does, recording what the modal reports.
+  const offer = (choiceId: string) =>
+    page.evaluate((id) => {
+      const w = window as unknown as { __picked: string[]; __cancelled: number };
+      w.__picked = [];
+      w.__cancelled = 0;
+      const engine = window.__cotwEngine!;
+      engine.onChoiceInteract!(
+        engine.manifest!.choices![id],
+        (optionId) => w.__picked.push(optionId),
+        () => (w.__cancelled += 1)
+      );
+    }, choiceId);
+  const outcome = () =>
+    page.evaluate(() => {
+      const w = window as unknown as { __picked: string[]; __cancelled: number };
+      return { picked: w.__picked, cancelled: w.__cancelled };
+    });
+  const choiceOverlay = page.locator('#choice-modal-overlay');
+
+  // The Oath climax cannot be cancelled: Escape leaves it open, a number key picks once.
+  await offer('oath_hearth');
+  await expect(choiceOverlay).toBeVisible();
+  expect(await stackIds(page)).toEqual(['choice']);
+  await page.keyboard.press('Escape');
+  await expect(choiceOverlay).toBeVisible();
+  expect(await stackIds(page)).toEqual(['choice']);
+  await page.keyboard.press('Digit2');
+  await expect(choiceOverlay).toBeHidden();
+  expect(await outcome()).toEqual({ picked: ['break'], cancelled: 0 });
+  expect(await stackIds(page)).toEqual([]);
+
+  // A cancelable choice: Escape cancels it once, through the pack's onCancel.
+  await offer('altar_tyr');
+  await expect(choiceOverlay).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(choiceOverlay).toBeHidden();
+  expect(await outcome()).toEqual({ picked: [], cancelled: 1 });
+  expect(await stackIds(page)).toEqual([]);
+
+  expect(await state(page)).toMatchObject({ turn: start.turn, x: start.x, y: start.y });
   expect(pageErrors).toEqual([]);
 });

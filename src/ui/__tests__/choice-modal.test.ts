@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ChoiceModal } from '../choiceModal';
+import { InputHandler } from '../../rendering/input-handler';
 import { GameEngine } from '../../engine';
 import { Player } from '../../engine';
 import { GameMap } from '../../engine';
@@ -180,5 +181,183 @@ describe('ChoiceModal UI Component', () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
     expect(onSelect).not.toHaveBeenCalled();
     expect(modal.isOpen).toBe(false);
+  });
+});
+
+class MockWindow {
+  public listeners: Map<string, Set<(e: any) => void>> = new Map();
+
+  addEventListener(type: string, listener: (e: any) => void): void {
+    if (!this.listeners.has(type)) this.listeners.set(type, new Set());
+    this.listeners.get(type)!.add(listener);
+  }
+
+  removeEventListener(type: string, listener: (e: any) => void): void {
+    this.listeners.get(type)?.delete(listener);
+  }
+
+  dispatchEvent(event: { type: string; [key: string]: any }): void {
+    for (const listener of Array.from(this.listeners.get(event.type) ?? [])) listener(event);
+  }
+
+  listenerCount(type: string): number {
+    return this.listeners.get(type)?.size ?? 0;
+  }
+}
+
+const keydown = (code: string, key = code) => ({
+  type: 'keydown',
+  code,
+  key,
+  repeat: false,
+  target: null,
+  preventDefault: vi.fn(),
+  stopPropagation: vi.fn(),
+});
+
+/**
+ * A choice opens only in game, so it takes keys only through the modal stack, which
+ * InputHandler's window listener routes to (ARCHITECTURE.md §6). Its own window listener
+ * was a second path, and because the stack entry had no handleKeyDown, the stack's default
+ * Escape pop closed every choice — even one that cannot be cancelled — without onCancel.
+ */
+describe('ChoiceModal input through the modal stack', () => {
+  let win: MockWindow;
+  let originalWindow: unknown;
+  let originalDocument: unknown;
+  let input: InputHandler;
+  let engine: GameEngine;
+  let modal: ChoiceModal;
+  let closed: ReturnType<typeof vi.fn<() => void>>;
+  let onSelect: ReturnType<typeof vi.fn<(optionId: string) => void>>;
+  let onCancel: ReturnType<typeof vi.fn<() => void>>;
+
+  const choice = (cancelable: boolean): ChoiceDefinition => ({
+    id: 'crossroads',
+    title: 'Crossroads',
+    description: 'Pick a road.',
+    options: [
+      { id: 'left', label: 'Left', consequences: [] },
+      { id: 'right', label: 'Right', consequences: [] },
+    ],
+    cancelable,
+  });
+
+  beforeEach(() => {
+    originalWindow = (globalThis as any).window;
+    originalDocument = (globalThis as any).document;
+    win = new MockWindow();
+    (globalThis as any).window = win;
+    (globalThis as any).document = new MockDocument();
+
+    engine = new GameEngine({
+      map: new GameMap(10, 10, TILES.FLOOR),
+      player: new Player({ position: { x: 5, y: 5 }, stats: { hp: 30, maxHp: 30, attack: 5, defense: 2 } }),
+    });
+    input = new InputHandler(engine, vi.fn());
+
+    // Wired as main.ts wires it: the closed callback removes the stack entry.
+    closed = vi.fn(() => {
+      input.modalStack.remove('choice');
+    });
+    modal = new ChoiceModal(closed);
+    onSelect = vi.fn<(optionId: string) => void>();
+    onCancel = vi.fn<() => void>();
+  });
+
+  afterEach(() => {
+    input.destroy();
+    (globalThis as any).window = originalWindow;
+    (globalThis as any).document = originalDocument;
+  });
+
+  const openAsMainDoes = (cancelable: boolean) => {
+    modal.open(choice(cancelable), engine, onSelect, onCancel);
+    input.modalStack.push(modal);
+  };
+  const overlay = () => (globalThis as any).document.getElementById('choice-modal-overlay') as MockElement;
+
+  it('holds one stack entry and adds no window keydown listener of its own', () => {
+    openAsMainDoes(true);
+
+    expect(input.modalStack.getStackIds()).toEqual(['choice']);
+    expect(win.listenerCount('keydown')).toBe(1); // InputHandler's
+  });
+
+  it('selects once on a number key, delivered to handleKeyDown once', () => {
+    openAsMainDoes(true);
+    const handle = vi.spyOn(modal, 'handleKeyDown');
+
+    win.dispatchEvent(keydown('Digit2', '2'));
+
+    expect(handle).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith('right');
+    expect(closed).toHaveBeenCalledTimes(1);
+    expect(input.modalStack.isEmpty()).toBe(true);
+  });
+
+  it('moves focus with the arrows and selects the focused option on Enter', () => {
+    openAsMainDoes(true);
+
+    win.dispatchEvent(keydown('ArrowDown'));
+    expect(onSelect).not.toHaveBeenCalled();
+    win.dispatchEvent(keydown('Enter'));
+
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith('right');
+    expect(input.modalStack.isEmpty()).toBe(true);
+  });
+
+  it('cancels a cancelable choice on Escape through its onCancel, once', () => {
+    openAsMainDoes(true);
+
+    win.dispatchEvent(keydown('Escape'));
+
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(closed).toHaveBeenCalledTimes(1);
+    expect(overlay().style.display).toBe('none');
+    expect(input.modalStack.isEmpty()).toBe(true);
+  });
+
+  it('keeps a choice that cannot be cancelled open on Escape', () => {
+    openAsMainDoes(false);
+
+    win.dispatchEvent(keydown('Escape'));
+
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(modal.isOpen).toBe(true);
+    expect(overlay().style.display).toBe('flex');
+    expect(input.modalStack.getStackIds()).toEqual(['choice']);
+
+    win.dispatchEvent(keydown('Digit1', '1'));
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith('left');
+    expect(input.modalStack.isEmpty()).toBe(true);
+  });
+
+  it('keeps gameplay keys from the simulation while open', () => {
+    openAsMainDoes(true);
+    const turn = engine.turnCount;
+    const pos = { x: engine.player.x, y: engine.player.y };
+
+    win.dispatchEvent(keydown('KeyL', 'l'));
+    win.dispatchEvent(keydown('Period', '.'));
+
+    expect(engine.turnCount).toBe(turn);
+    expect({ x: engine.player.x, y: engine.player.y }).toEqual(pos);
+    expect(modal.isOpen).toBe(true);
+  });
+
+  // The stack clears isOpen before it calls close(); the overlay must still hide.
+  it('hides when the modal stack closes it, running the closed callback once', () => {
+    openAsMainDoes(true);
+
+    input.modalStack.closeAll();
+
+    expect(overlay().style.display).toBe('none');
+    expect(modal.isOpen).toBe(false);
+    expect(closed).toHaveBeenCalledTimes(1);
   });
 });

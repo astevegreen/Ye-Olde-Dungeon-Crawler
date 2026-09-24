@@ -631,7 +631,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function promptSaveAndQuit(): void {
     if (activeEngine && activeProfile) {
       saveQuitModal.open(activeEngine, activeProfile);
-      pushModal('save-quit', saveQuitModal);
+      if (inputHandler) inputHandler.modalStack.push(saveQuitModal);
     } else {
       saveAndReturnToTitle();
     }
@@ -946,7 +946,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Wire interactive Choice modal
     engine.onChoiceInteract = (choice, onOptionSelected, onCancel) => {
-      pushModal('choice', choiceModal);
       choiceModal.open(
         choice,
         engine,
@@ -963,6 +962,7 @@ window.addEventListener('DOMContentLoaded', () => {
           renderer?.render();
         }
       );
+      if (inputHandler) inputHandler.modalStack.push(choiceModal);
       renderer?.render();
     };
 

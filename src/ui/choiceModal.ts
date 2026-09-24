@@ -1,12 +1,20 @@
 import type { GameEngine } from '../engine';
 import type { ChoiceDefinition, ChoiceOption } from '../engine';
 import { evaluatePredicate } from '../engine';
+import type { UIModal } from './modalStack';
 
-export class ChoiceModal {
+export class ChoiceModal implements UIModal {
+  public readonly id = 'choice';
   private overlayEl: HTMLElement | null = null;
   public isOpen: boolean = false;
+  /** Whether the modal is showing. Kept apart from `isOpen`, which the modal stack clears
+   *  before it calls `close()`, so a stack-driven close still hides it, and the closed
+   *  callback runs once however the modal closes. */
+  private shown = false;
   private onClosedCallback?: () => void;
-  private keydownListener?: (e: KeyboardEvent) => void;
+  private choice: ChoiceDefinition | null = null;
+  private onOptionSelected?: (optionId: string) => void;
+  private onCancel?: () => void;
   private activeIndex: number = 0;
   private currentOptions: Array<{ option: ChoiceOption; enabled: boolean; index: number }> = [];
 
@@ -46,6 +54,10 @@ export class ChoiceModal {
     if (!this.overlayEl) return;
 
     this.isOpen = true;
+    this.shown = true;
+    this.choice = choice;
+    this.onOptionSelected = onOptionSelected;
+    this.onCancel = onCancel;
     this.overlayEl.style.display = 'flex';
 
     // Evaluate each option's predicate against world state
@@ -59,32 +71,88 @@ export class ChoiceModal {
     const firstEnabled = this.currentOptions.findIndex((o) => o.enabled);
     this.activeIndex = firstEnabled >= 0 ? firstEnabled : 0;
 
-    this.render(choice, onOptionSelected, onCancel);
-    this.setupKeyboard(choice, onOptionSelected, onCancel);
+    // Keys arrive only through the modal stack (handleKeyDown below): main.ts pushes this
+    // modal, and InputHandler's window listener routes each key to the stack top. A choice
+    // opens only in game, where InputHandler is enabled, so it adds no window listener.
+    this.render();
   }
 
   public close(): void {
+    if (!this.shown) return;
+    this.shown = false;
     this.isOpen = false;
     if (this.overlayEl) {
       this.overlayEl.style.display = 'none';
       this.overlayEl.innerHTML = '';
-    }
-    if (this.keydownListener && typeof window !== 'undefined') {
-      window.removeEventListener('keydown', this.keydownListener);
-      this.keydownListener = undefined;
     }
     if (this.onClosedCallback) {
       this.onClosedCallback();
     }
   }
 
-  private render(
-    choice: ChoiceDefinition,
-    onOptionSelected: (optionId: string) => void,
-    onCancel?: () => void
-  ): void {
-    if (!this.overlayEl) return;
+  /**
+   * Consumes every key while open, Escape included: returning false for Escape would let
+   * the stack pop the modal itself, dismissing a choice that cannot be cancelled and
+   * skipping the pack's `onCancel`.
+   */
+  public handleKeyDown(e: KeyboardEvent): boolean {
+    if (!this.isOpen || !this.choice) return false;
 
+    // Number keys 1-9
+    if (/^[1-9]$/.test(e.key)) {
+      const target = this.currentOptions[parseInt(e.key, 10) - 1];
+      if (target && target.enabled) {
+        e.preventDefault();
+        this.select(target.option.id);
+      }
+      return true;
+    }
+
+    // Arrow navigation
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      this.advanceFocus(e.key === 'ArrowDown' ? 1 : -1);
+      return true;
+    }
+
+    // Enter key
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const active = this.currentOptions[this.activeIndex];
+      if (active && active.enabled) {
+        this.select(active.option.id);
+      }
+      return true;
+    }
+
+    // Escape key
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      if (this.choice.cancelable ?? true) {
+        this.cancel();
+      }
+      return true;
+    }
+
+    return true;
+  }
+
+  private select(optionId: string): void {
+    const onOptionSelected = this.onOptionSelected;
+    this.close();
+    onOptionSelected?.(optionId);
+  }
+
+  private cancel(): void {
+    const onCancel = this.onCancel;
+    this.close();
+    onCancel?.();
+  }
+
+  private render(): void {
+    if (!this.overlayEl || !this.choice) return;
+
+    const choice = this.choice;
     const cancelable = choice.cancelable ?? true;
     const cancelLabel = choice.cancelLabel ?? 'Cancel / Step Away';
 
@@ -224,7 +292,7 @@ export class ChoiceModal {
           align-items: center;
         ">
           <div style="font-size: 11px; color: #475569;">
-            ⌨ Press [1-${this.currentOptions.length}], [↑/↓] + Enter, or [Esc]
+            ⌨ Press [1-${this.currentOptions.length}]${cancelable ? ', [↑/↓] + Enter, or [Esc]' : ' or [↑/↓] + Enter'}
           </div>
           ${
             cancelable
@@ -248,101 +316,17 @@ export class ChoiceModal {
     for (const item of this.currentOptions) {
       if (item.enabled) {
         const rowEl = document.getElementById(`choice-opt-${item.option.id}`);
-        rowEl?.addEventListener('click', () => {
-          this.close();
-          onOptionSelected(item.option.id);
-        });
+        rowEl?.addEventListener('click', () => this.select(item.option.id));
       }
     }
 
     if (cancelable) {
-      document.getElementById('btn-choice-x')?.addEventListener('click', () => {
-        this.close();
-        if (onCancel) onCancel();
-      });
-      document.getElementById('btn-choice-cancel')?.addEventListener('click', () => {
-        this.close();
-        if (onCancel) onCancel();
-      });
+      document.getElementById('btn-choice-x')?.addEventListener('click', () => this.cancel());
+      document.getElementById('btn-choice-cancel')?.addEventListener('click', () => this.cancel());
     }
   }
 
-  private setupKeyboard(
-    choice: ChoiceDefinition,
-    onOptionSelected: (optionId: string) => void,
-    onCancel?: () => void
-  ): void {
-    if (typeof window === 'undefined') return;
-
-    if (this.keydownListener) {
-      window.removeEventListener('keydown', this.keydownListener);
-    }
-
-    this.keydownListener = (e: KeyboardEvent) => {
-      if (!this.isOpen) return;
-
-      // Number keys 1-9
-      if (/^[1-9]$/.test(e.key)) {
-        const num = parseInt(e.key, 10);
-        const idx = num - 1;
-        const target = this.currentOptions[idx];
-        if (target && target.enabled) {
-          e.preventDefault();
-          e.stopPropagation();
-          this.close();
-          onOptionSelected(target.option.id);
-          return;
-        }
-      }
-
-      // Arrow navigation
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        e.stopPropagation();
-        this.advanceFocus(1, choice, onOptionSelected, onCancel);
-        return;
-      }
-
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        e.stopPropagation();
-        this.advanceFocus(-1, choice, onOptionSelected, onCancel);
-        return;
-      }
-
-      // Enter key
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        e.stopPropagation();
-        const active = this.currentOptions[this.activeIndex];
-        if (active && active.enabled) {
-          this.close();
-          onOptionSelected(active.option.id);
-        }
-        return;
-      }
-
-      // Escape key
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        e.stopPropagation();
-        if (choice.cancelable ?? true) {
-          this.close();
-          if (onCancel) onCancel();
-        }
-        return;
-      }
-    };
-
-    window.addEventListener('keydown', this.keydownListener);
-  }
-
-  private advanceFocus(
-    direction: number,
-    choice: ChoiceDefinition,
-    onOptionSelected: (optionId: string) => void,
-    onCancel?: () => void
-  ): void {
+  private advanceFocus(direction: number): void {
     const total = this.currentOptions.length;
     if (total === 0) return;
 
@@ -351,6 +335,6 @@ export class ChoiceModal {
     if (next >= total) next = 0;
 
     this.activeIndex = next;
-    this.render(choice, onOptionSelected, onCancel);
+    this.render();
   }
 }

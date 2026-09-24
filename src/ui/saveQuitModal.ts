@@ -13,6 +13,7 @@ import type { GameEngine } from '../engine';
 import type { CharacterProfile, SaveData } from '../engine';
 import type { ProfileManager } from '../engine';
 import type { SaveCodeModal } from './saveCodeModal';
+import type { UIModal } from './modalStack';
 
 export interface SaveQuitModalOptions {
   profileManager: ProfileManager;
@@ -23,9 +24,13 @@ export interface SaveQuitModalOptions {
   onOpenHelp?: () => void;
 }
 
-export class SaveQuitModal {
+export class SaveQuitModal implements UIModal {
   public readonly id = 'save-quit';
   public isOpen = false;
+  /** Whether the window is showing. Kept apart from `isOpen`, which the modal stack clears
+   *  before it calls `close()`, so a stack-driven close still hides the window, and
+   *  `onResume` runs once however the modal closes. */
+  private shown = false;
   private modalEl: HTMLElement | null = null;
   private storageBadgeEl: HTMLElement | null = null;
   private storageDetailsEl: HTMLElement | null = null;
@@ -234,16 +239,11 @@ export class SaveQuitModal {
     }
   }
 
-  private boundKeyDownHandler = (e: KeyboardEvent) => {
-    if (this.isOpen) {
-      this.handleKeyDown(e);
-    }
-  };
-
   public open(engine: GameEngine, profile: CharacterProfile): void {
     this.activeEngine = engine;
     this.activeProfile = profile;
     this.isOpen = true;
+    this.shown = true;
 
     if (this.heroSummaryEl) {
       const heroName = profile.name || engine.player.name || 'Hero';
@@ -256,19 +256,19 @@ export class SaveQuitModal {
     this.refreshStorageInfo();
     this.setStatus('Choose an option to save progress or adjust settings.');
 
+    // Keys arrive only through the modal stack: main.ts pushes this modal, and InputHandler's
+    // window listener routes each key to the stack top. It opens only in game, where
+    // InputHandler is enabled, so it adds no window listener of its own — that second path
+    // delivered every key to handleKeyDown twice.
     if (this.modalEl) {
       this.modalEl.style.display = 'flex';
-      if (typeof window !== 'undefined') {
-        window.addEventListener('keydown', this.boundKeyDownHandler);
-      }
     }
   }
 
   public close(): void {
+    if (!this.shown) return;
+    this.shown = false;
     this.isOpen = false;
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('keydown', this.boundKeyDownHandler);
-    }
     if (this.modalEl) {
       this.modalEl.style.display = 'none';
     }

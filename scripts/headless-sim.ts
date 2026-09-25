@@ -36,6 +36,8 @@ const SPELL_BUDGET_MS = 200;
 const ANCHOR_FLOORS = [1, 2, 3, 4, 5, 6];
 const ANCHOR_SAMPLES_PER_FLOOR = 25;
 const DENSITIES = [1.0, 1.5];
+/** The awake arena is a real floor's size, so the stress population fits and pathing covers a real floor's area. */
+const FLOOR = cotwManifest.floorSize ?? { width: 50, height: 35 };
 const STRESS_MULTIPLIER = 5;
 const INJECT_ERROR = process.argv.includes('--inject-error');
 
@@ -229,19 +231,19 @@ function runDormantFloor(count: number): RunResult {
 }
 
 function runAwakeFloor(count: number): RunResult {
-  const map = buildArena(50, 35);
+  const map = buildArena(FLOOR.width, FLOOR.height);
   const player = new Player({
     id: 'hero',
     name: 'Hero',
-    position: { x: 2, y: 17 },
+    position: { x: 2, y: Math.floor(FLOOR.height / 2) },
     stats: { hp: 1000, maxHp: 1000, attack: 1, defense: 5 },
   });
   const engine = new GameEngine({ map, player });
   engine.diagnostics.toggleGodMode();
 
   let spawned = 0;
-  for (let y = 2; y < 33 && spawned < count; y += 2) {
-    for (let x = 20; x < 48 && spawned < count; x += 2) {
+  for (let y = 2; y < FLOOR.height - 2 && spawned < count; y += 2) {
+    for (let x = 20; x < FLOOR.width - 2 && spawned < count; x += 2) {
       engine.addEntity(makeMonster(`awake_${spawned++}`, x, y, 'hunting'));
     }
   }

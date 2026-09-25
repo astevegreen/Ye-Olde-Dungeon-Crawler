@@ -19,6 +19,7 @@ class MockElement {
   public style: Record<string, string> = {};
   public _innerHTML = '';
   public textContent = '';
+  public value = '';
   public attributes: Record<string, string> = {};
   public children: MockElement[] = [];
   public parentElement: MockElement | null = null;
@@ -36,12 +37,16 @@ class MockElement {
   }
 
   private parseInnerElements(html: string): void {
-    const tagRegex = /<([a-zA-Z0-9-]+)\s*([^>]*)>/g;
+    const tagRegex = /<([a-zA-Z0-9-]+)\s*([^>]*)>([^<]*)(?:<\/\1>)?/g;
     let match;
     while ((match = tagRegex.exec(html)) !== null) {
       const attrString = match[2];
       const el = new MockElement();
       el.parentElement = this;
+
+      if (match[3]) {
+        el.textContent = match[3].trim();
+      }
 
       const idMatch = /id="([^"]+)"/.exec(attrString);
       if (idMatch) {
@@ -51,6 +56,11 @@ class MockElement {
       const classMatch = /class="([^"]+)"/.exec(attrString);
       if (classMatch) {
         el.className = classMatch[1];
+      }
+
+      const valueMatch = /value="([^"]*)"/.exec(attrString);
+      if (valueMatch) {
+        el.value = valueMatch[1];
       }
 
       const dataRegex = /data-([a-zA-Z0-9-]+)="([^"]+)"/g;
@@ -103,7 +113,10 @@ class MockElement {
     this.dispatchEvent({ type: 'click' });
   }
 
-  dispatchEvent(event: { type: string }): void {
+  dispatchEvent(event: { type: string; target?: any }): void {
+    if (!event.target) {
+      event.target = this;
+    }
     const listeners = this.eventListeners.get(event.type);
     if (listeners) {
       const copy = Array.from(listeners);
@@ -112,8 +125,9 @@ class MockElement {
   }
 
   closest(selector: string): MockElement | null {
-    if (selector.includes('[data-tab]')) {
-      if (this.getAttribute('data-tab')) return this;
+    const dataMatch = /\[data-([a-zA-Z0-9-]+)\]/.exec(selector);
+    if (dataMatch) {
+      if (this.getAttribute(`data-${dataMatch[1]}`)) return this;
       return this.parentElement?.closest(selector) ?? null;
     }
     return this;
@@ -140,8 +154,9 @@ class MockElement {
       return results;
     }
 
-    if (selector.includes('[data-tab]')) {
-      this.findChildrenWithAttr('data-tab', results);
+    const dataMatch = /\[data-([a-zA-Z0-9-]+)\]/.exec(selector);
+    if (dataMatch) {
+      this.findChildrenWithAttr(`data-${dataMatch[1]}`, results);
       return results;
     }
 
@@ -587,5 +602,195 @@ describe('DiagnosticModal - Categorized Sub-Menus & Triage Tool', () => {
       const newCount = map.getAllEntities().length;
       expect(newCount).toBe(initialCount + 1);
     });
+
+    it('advances turns via Step 10, Step 50, and custom turn stepper', () => {
+      modal.open();
+      modal.setActiveTab('triage');
+
+      const initialTurns = engine.turnCount;
+
+      const step10Btn = mockDoc.getElementById('btn-triage-step-10');
+      expect(step10Btn).not.toBeNull();
+      step10Btn?.click();
+      expect(engine.turnCount).toBe(initialTurns + 10);
+
+      const step50Btn = mockDoc.getElementById('btn-triage-step-50');
+      expect(step50Btn).not.toBeNull();
+      step50Btn?.click();
+      expect(engine.turnCount).toBe(initialTurns + 60);
+
+      const stepInput = mockDoc.getElementById('input-triage-step-turns');
+      if (stepInput) stepInput.value = '7';
+      const stepCustomBtn = mockDoc.getElementById('btn-triage-step-custom');
+      expect(stepCustomBtn).not.toBeNull();
+      stepCustomBtn?.click();
+      expect(engine.turnCount).toBe(initialTurns + 67);
+    });
+
+    it('handles floor navigation (prev, next, jump) and stair teleportation', () => {
+      modal.open();
+      modal.setActiveTab('triage');
+
+      expect(engine.currentFloor).toBe(3);
+
+      // Next floor
+      const nextBtn = mockDoc.getElementById('btn-triage-next-floor');
+      expect(nextBtn).not.toBeNull();
+      nextBtn?.click();
+      expect(engine.currentFloor).toBe(4);
+
+      // Prev floor
+      const prevBtn = mockDoc.getElementById('btn-triage-prev-floor');
+      expect(prevBtn).not.toBeNull();
+      prevBtn?.click();
+      expect(engine.currentFloor).toBe(3);
+
+      // Jump to floor 4
+      const jumpInput = mockDoc.getElementById('input-triage-jump-floor');
+      if (jumpInput) jumpInput.value = '4';
+      const jumpBtn = mockDoc.getElementById('btn-triage-jump-floor');
+      expect(jumpBtn).not.toBeNull();
+      jumpBtn?.click();
+      expect(engine.currentFloor).toBe(4);
+
+      // Find generated stairs down on floor 4 and teleport
+      let stairDownPos: { x: number; y: number } | null = null;
+      for (let y = 0; y < engine.map.height; y++) {
+        for (let x = 0; x < engine.map.width; x++) {
+          if (engine.map.getTile(x, y)?.type === 'stairs_down') {
+            stairDownPos = { x, y };
+            break;
+          }
+        }
+        if (stairDownPos) break;
+      }
+      expect(stairDownPos).not.toBeNull();
+      const stairsDownBtn = mockDoc.getElementById('btn-triage-stairs-down');
+      expect(stairsDownBtn).not.toBeNull();
+      stairsDownBtn?.click();
+      expect(player.x).toBe(stairDownPos!.x);
+      expect(player.y).toBe(stairDownPos!.y);
+
+      // Find generated stairs up on floor 6 and teleport
+      let stairUpPos: { x: number; y: number } | null = null;
+      for (let y = 0; y < engine.map.height; y++) {
+        for (let x = 0; x < engine.map.width; x++) {
+          if (engine.map.getTile(x, y)?.type === 'stairs_up') {
+            stairUpPos = { x, y };
+            break;
+          }
+        }
+        if (stairUpPos) break;
+      }
+      expect(stairUpPos).not.toBeNull();
+      const stairsUpBtn = mockDoc.getElementById('btn-triage-stairs-up');
+      expect(stairsUpBtn).not.toBeNull();
+      stairsUpBtn?.click();
+      expect(player.x).toBe(stairUpPos!.x);
+      expect(player.y).toBe(stairUpPos!.y);
+    });
+
+    it('heals and restores hero mana to full vitality', () => {
+      player.hp = 10;
+      player.mana = 2;
+      expect(player.hp).toBeLessThan(player.maxHp);
+      expect(player.mana).toBeLessThan(player.maxMana);
+
+      modal.open();
+      modal.setActiveTab('triage');
+
+      const healBtn = mockDoc.getElementById('btn-triage-heal-mana');
+      expect(healBtn).not.toBeNull();
+      healBtn?.click();
+
+      expect(player.hp).toBe(player.maxHp);
+      expect(player.mana).toBe(player.maxMana);
+    });
+
+    it('clears active status afflictions', () => {
+      player.statusManager.applyStatus('poison', 10, 2);
+      expect(player.statusManager.hasStatus('poison')).toBe(true);
+
+      modal.open();
+      modal.setActiveTab('triage');
+
+      const clearStatusBtn = mockDoc.getElementById('btn-triage-clear-status');
+      expect(clearStatusBtn).not.toBeNull();
+      clearStatusBtn?.click();
+
+      expect(player.statusManager.hasStatus('poison')).toBe(false);
+      expect(player.statusManager.getAll().length).toBe(0);
+    });
+
+    it('reveals hidden secret doors and traps across the floor', () => {
+      engine.map.setTile(15, 15, TILES.SECRET_DOOR);
+      expect(engine.map.getTile(15, 15)?.type).toBe('secret_door');
+
+      modal.open();
+      modal.setActiveTab('triage');
+
+      const revealSecretsBtn = mockDoc.getElementById('btn-triage-reveal-secrets');
+      expect(revealSecretsBtn).not.toBeNull();
+      revealSecretsBtn?.click();
+
+      const tileAfter = engine.map.getTile(15, 15);
+      expect(tileAfter?.isSecret).toBeFalsy();
+      expect(tileAfter?.type).toBe('door_closed');
+    });
+
+    it('filters item catalog by search text and category pills', () => {
+      modal.open();
+      modal.setActiveTab('triage');
+
+      const itemSearch = mockDoc.getElementById('input-item-search');
+      expect(itemSearch).not.toBeNull();
+
+      if (itemSearch) {
+        itemSearch.value = 'Dagger';
+        itemSearch.dispatchEvent({ type: 'input' });
+      }
+
+      const itemContainer = mockDoc.getElementById('container-item-list');
+      const itemButtons = itemContainer?.querySelectorAll('.btn-spawn-item') ?? [];
+      expect(itemButtons.length).toBeGreaterThan(0);
+      for (const btn of itemButtons) {
+        expect(btn.textContent).toContain('Dagger');
+      }
+
+      // Filter by category pill 'armor'
+      const armorPills = mockDoc.querySelectorAll('.btn-item-filter-pill');
+      const armorBtn = armorPills.find((p) => p.getAttribute('data-cat') === 'armor');
+      expect(armorBtn).toBeDefined();
+      armorBtn?.click();
+
+      if (itemSearch) {
+        itemSearch.value = '';
+        itemSearch.dispatchEvent({ type: 'input' });
+      }
+
+      const armorButtons = itemContainer?.querySelectorAll('.btn-spawn-item') ?? [];
+      expect(armorButtons.length).toBeGreaterThan(0);
+    });
+
+    it('filters monster catalog by search text', () => {
+      modal.open();
+      modal.setActiveTab('triage');
+
+      const monsterSearch = mockDoc.getElementById('input-monster-search');
+      expect(monsterSearch).not.toBeNull();
+
+      if (monsterSearch) {
+        monsterSearch.value = 'goblin';
+        monsterSearch.dispatchEvent({ type: 'input' });
+      }
+
+      const mobContainer = mockDoc.getElementById('container-monster-list');
+      const mobButtons = mobContainer?.querySelectorAll('.btn-spawn-monster') ?? [];
+      expect(mobButtons.length).toBeGreaterThan(0);
+      for (const btn of mobButtons) {
+        expect(btn.textContent.toLowerCase()).toContain('goblin');
+      }
+    });
   });
 });
+

@@ -204,6 +204,79 @@ export class FlightRecorder {
     return this.buffer.slice(-count);
   }
 
+  /**
+   * Retrieves the most recent sequence of player actions/inputs from the buffer,
+   * formatted for reproduction by AI agents (Claude Code / Antigravity).
+   */
+  public getRecentActionSequence(max = 15): string[] {
+    const actions: string[] = [];
+    for (let i = this.buffer.length - 1; i >= 0 && actions.length < max; i--) {
+      const ev = this.buffer[i];
+      if (ev.type === 'input') {
+        actions.unshift(ev.summary);
+      } else if (ev.type === 'combat') {
+        actions.unshift(`Combat: ${ev.summary}`);
+      } else if (ev.type === 'spell') {
+        actions.unshift(`Spell: ${ev.summary}`);
+      } else if (ev.type === 'state' && ev.details?.action) {
+        actions.unshift(String(ev.details.action));
+      }
+    }
+    return actions;
+  }
+
+  /**
+   * Scopes flight log events to only those relevant to a specific category,
+   * preventing irrelevant data bloat in bug reports.
+   */
+  public getScopedFlightLog(category?: string, maxEvents?: number): FlightEvent[] {
+    const limit = maxEvents ?? this.capacity;
+    if (!category || category === 'Other' || category === 'Crash / Freeze' || category === 'Balance & Rules') {
+      return this.getRecentEvents(limit);
+    }
+    const catLower = category.toLowerCase();
+    let filtered: FlightEvent[];
+    if (catLower.includes('combat') || catLower.includes('spell')) {
+      filtered = this.buffer.filter(
+        (e) =>
+          e.type === 'combat' ||
+          e.type === 'spell' ||
+          e.type === 'error' ||
+          (e.type === 'state' && (e.details?.category === 'combat' || e.details?.category === 'action'))
+      );
+    } else if (catLower.includes('item') || catLower.includes('inventory')) {
+      filtered = this.buffer.filter(
+        (e) =>
+          e.type === 'error' ||
+          e.type === 'warning' ||
+          (e.type === 'state' && (e.details?.category === 'inventory' || e.details?.category === 'item' || e.details?.category === 'action')) ||
+          (e.type === 'input' && typeof e.summary === 'string' && (e.summary.includes('Pick') || e.summary.includes('Loot') || e.summary.includes('Drop') || e.summary.includes('Item') || e.summary.includes('Use')))
+      );
+    } else if (catLower.includes('visual') || catLower.includes('ui')) {
+      filtered = this.buffer.filter(
+        (e) =>
+          e.type === 'warning' ||
+          e.type === 'error' ||
+          (e.type === 'state' && (e.details?.category === 'ui' || e.details?.category === 'render')) ||
+          (e.type === 'input' && typeof e.summary === 'string' && e.summary.includes('Toggle'))
+      );
+    } else if (catLower.includes('map') || catLower.includes('movement')) {
+      filtered = this.buffer.filter(
+        (e) =>
+          (e.type === 'input' && e.summary.includes('Move')) ||
+          (e.type === 'state' && (e.details?.category === 'movement' || e.details?.category === 'map' || e.details?.category === 'action')) ||
+          e.type === 'error' ||
+          e.type === 'warning'
+      );
+    } else {
+      filtered = this.buffer;
+    }
+    if (filtered.length === 0) {
+      return this.getRecentEvents(Math.min(limit, 25));
+    }
+    return filtered.slice(-limit);
+  }
+
   public clear(): void {
     this.buffer = [];
   }
@@ -414,12 +487,36 @@ export class FlightRecorder {
     const winW = options.viewportWidth ?? 960;
     const winH = options.viewportHeight ?? 600;
     const userAgent = options.userAgent ?? 'Headless / Pure Engine';
+    const category = options.category;
+    const subject = options.subject;
 
-    const events = this.getRecentEvents(options.maxEvents ?? this.capacity);
-    const summary = this.generateSummary(engine, profile, options);
+    // Scoped defaults to avoid massive data dumps:
+    // Visual & UI: omit save snapshot and ascii map unless requested
+    // Items & Inventory: omit ascii map and heavy entity lists unless requested
+    let includeSnapshot = options.includeSnapshot;
+    let includeMap = options.includeMap;
+    if (includeSnapshot === undefined && category) {
+      if (category === 'Visual & UI' || category === 'Items & Inventory') {
+        includeSnapshot = false;
+      } else if (category === 'Crash / Freeze') {
+        includeSnapshot = true;
+      }
+    }
+    if (includeMap === undefined && category) {
+      if (category === 'Visual & UI' || category === 'Items & Inventory') {
+        includeMap = false;
+      }
+    }
+
+    const events = this.getScopedFlightLog(category, options.maxEvents ?? this.capacity);
+    const summary = this.generateSummary(engine, profile, {
+      ...options,
+      includeSnapshot,
+      includeMap,
+    });
 
     let stateSnapshot: unknown | undefined;
-    if (options.includeSnapshot !== false && engine) {
+    if (includeSnapshot !== false && engine) {
       try {
         stateSnapshot = this.generateStateSnapshot(engine, profile) ?? undefined;
       } catch {
@@ -432,8 +529,22 @@ export class FlightRecorder {
       : undefined;
 
     const asciiMap =
-      options.includeMap !== false && engine
+      includeMap !== false && engine
         ? this.generateAsciiMap(engine, options.mapRadius ?? 5) ?? undefined
+        : undefined;
+
+    const p = engine?.player;
+    const reproduction =
+      engine && p
+        ? {
+            manifestId: engine.manifest?.id ?? 'core',
+            floor: engine.currentFloor,
+            turn: engine.turnCount,
+            prngState: engine.prng ? engine.prng.getState() : undefined,
+            playerCoords: { x: p.x, y: p.y },
+            recentActions: this.getRecentActionSequence(15),
+            reproductionHint: `Simulate floor ${engine.currentFloor} with PRNG state ${engine.prng?.getState() ?? 'unknown'} and replay the recent actions.`,
+          }
         : undefined;
 
     const metadata: DiagnosticPackageMetadata = {
@@ -448,7 +559,15 @@ export class FlightRecorder {
       error: errorMsg,
       userAgent,
       display: `${winW}x${winH}@${dpr}x`,
+      category,
+      subject,
     };
+
+    const markdownReport = this.generateReport(engine, profile, {
+      ...options,
+      includeSnapshot,
+      includeMap,
+    });
 
     return {
       metadata,
@@ -456,6 +575,8 @@ export class FlightRecorder {
       asciiMap,
       flightLog: events,
       stateSnapshot,
+      reproduction,
+      markdownReport,
     };
   }
 
@@ -475,14 +596,40 @@ export class FlightRecorder {
     const winH = options.viewportHeight ?? 600;
     const userAgent = options.userAgent ?? 'Headless / Pure Engine';
 
-    const events = this.getRecentEvents(options.maxEvents ?? this.capacity);
+    const events = this.getScopedFlightLog(options.category, options.maxEvents ?? this.capacity);
     const firstEventTime = events.length > 0 ? events[0].timestamp : now.getTime();
 
     const lines: string[] = [];
 
     lines.push(`# ${engine?.manifest?.name ?? 'Roguelike Game Engine'} - Diagnostic Flight Report`);
     lines.push(`Generated: **${isoTimestamp}** | Epoch: \`${now.getTime()}\``);
+    if (options.subject || options.category) {
+      lines.push(`- **Subject**: ${options.subject ?? 'Bug Report'}`);
+      lines.push(`- **Category**: \`${options.category ?? 'General'}\``);
+    }
     lines.push('');
+
+    if (options.userNotes) {
+      lines.push('### 📝 Playtester Notes');
+      lines.push(`> ${sanitizePaths(options.userNotes)}`);
+      lines.push('');
+    }
+
+    if (options.error) {
+      const err = options.error;
+      const rawMsg = err instanceof Error ? err.message : String(err);
+      const msg = sanitizePaths(rawMsg);
+      const rawStack = err instanceof Error && err.stack ? err.stack.split('\n').slice(0, 5).join('\n') : undefined;
+      const stack = rawStack ? sanitizePaths(rawStack) : undefined;
+      lines.push('### ⚠️ Error Context');
+      lines.push(`- **Message**: \`${msg}\``);
+      if (stack) {
+        lines.push('```');
+        lines.push(stack);
+        lines.push('```');
+      }
+      lines.push('');
+    }
 
     // 1. System Telemetry
     lines.push('## 1. System Telemetry');
@@ -492,6 +639,24 @@ export class FlightRecorder {
     lines.push(`- **User Agent**: \`${userAgent}\``);
     lines.push(`- **Buffered Events**: ${events.length} / ${this.capacity}`);
     lines.push('');
+
+    // AI Reproduction Context
+    if (engine && engine.player) {
+      const p = engine.player;
+      const recentActions = this.getRecentActionSequence(10);
+      lines.push('### 🤖 AI Agent Reproduction Context (Claude Code & Antigravity)');
+      lines.push(`- **Target Manifest**: \`${engine.manifest?.id ?? 'cotw'}\` | **Floor**: \`${engine.currentFloor}\` | **Turn**: \`${engine.turnCount}\``);
+      lines.push(`- **PRNG State**: \`${engine.prng ? engine.prng.getState() : 'unknown'}\``);
+      lines.push(`- **Player Coordinates**: \`(${p.x}, ${p.y})\``);
+      if (recentActions.length > 0) {
+        lines.push('- **Recent Actions**:');
+        for (let i = 0; i < recentActions.length; i++) {
+          lines.push(`  ${i + 1}. \`${recentActions[i]}\``);
+        }
+      }
+      lines.push(`- **Reproduction Hint**: Replay the actions above on floor \`${engine.currentFloor}\` with PRNG state \`${engine.prng ? engine.prng.getState() : 'unknown'}\`.`);
+      lines.push('');
+    }
 
     // 2. Player State
     if (engine && engine.player) {

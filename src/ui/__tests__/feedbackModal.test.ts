@@ -317,20 +317,29 @@ describe('FeedbackModal (Headless)', () => {
     expect(wKey.stopPropagation).toHaveBeenCalled();
   });
 
-  it('copies diagnostic bundle to clipboard on copyReport', async () => {
+  it('copies AI-ready markdown report to clipboard on copyReport, and JSON on copyReport("json")', async () => {
     const copySpy = vi.spyOn(platform, 'copyTextToClipboard').mockResolvedValue(true);
     modal.open({ subject: 'Combat glitch' });
 
     flightRecorder.recordInput('ArrowUp', 'Move');
     await modal.copyReport();
 
-    expect(copySpy).toHaveBeenCalledOnce();
+    expect(copySpy).toHaveBeenCalledTimes(1);
     const copiedText = copySpy.mock.calls[0][0];
-    const parsed = JSON.parse(copiedText);
+    expect(copiedText).toContain('cotw');
+    expect(copiedText).toContain('Ragnar');
+    expect(copiedText).toContain('Combat glitch');
+    expect(copiedText).toContain('AI Agent Reproduction Context');
 
+    // JSON format copy
+    await modal.copyReport('json');
+    expect(copySpy).toHaveBeenCalledTimes(2);
+    const jsonText = copySpy.mock.calls[1][0];
+    const parsed = JSON.parse(jsonText);
     expect(parsed.metadata).toBeDefined();
     expect(parsed.metadata.manifestId).toBe('cotw');
     expect(parsed.summary).toContain('Ragnar');
+    expect(parsed.reproduction).toBeDefined();
   });
 
   it('triggers file download on downloadReport', () => {

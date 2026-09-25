@@ -84,6 +84,7 @@ export class FeedbackModal implements UIModal {
   private checkIncludeLog: HTMLInputElement | null = null;
   private checkIncludeSnapshot: HTMLInputElement | null = null;
   private telemetryPreview: HTMLElement | null = null;
+  private scopeDescEl: HTMLElement | null = null;
 
   private currentType: FeedbackType = 'bug';
   private errorContext?: Error | string;
@@ -160,9 +161,12 @@ export class FeedbackModal implements UIModal {
 
           <!-- Diagnostic Telemetry Options Panel -->
           <div id="feedback-telemetry-panel" style="background: #1e293b; color: #e2e8f0; padding: 8px 10px; border-radius: 4px; border: 1px solid #334155; font-size: 11px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
               <span style="font-weight: bold; color: #38bdf8;">📊 Diagnostic Package</span>
               <span id="feedback-telemetry-preview" style="color: #94a3b8; font-family: monospace;">Floor 1 | Turn 0</span>
+            </div>
+            <div id="feedback-scope-desc" style="color: #38bdf8; font-size: 11px; margin-bottom: 6px;">
+              🎯 Scope: General diagnostic summary &amp; recent action log
             </div>
             <div style="display: flex; gap: 14px; flex-wrap: wrap;">
               <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
@@ -179,12 +183,12 @@ export class FeedbackModal implements UIModal {
           <!-- Action Buttons Bar -->
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; border-top: 1px solid #cbd5e1; padding-top: 8px; margin-top: 4px;">
             <div style="display: flex; gap: 6px;">
-              <button id="btn-feedback-copy" class="win-btn" title="Copy formatted report to clipboard">📋 Copy Report</button>
+              <button id="btn-feedback-copy" class="win-btn primary-btn" style="background: #0284c7; color: white;" title="Copy formatted AI-ready markdown report to clipboard">📋 Copy Report for AI</button>
               <button id="btn-feedback-download" class="win-btn" title="Download diagnostic package JSON">💾 Save .json</button>
             </div>
             <div style="display: flex; gap: 6px;">
               <button id="btn-feedback-cancel" class="win-btn" style="min-width: 70px;">Cancel</button>
-              <button id="btn-feedback-submit" class="win-btn primary-btn" style="min-width: 140px; font-weight: bold; background: #0284c7; color: white;">
+              <button id="btn-feedback-submit" class="win-btn" style="min-width: 140px; font-weight: bold;">
                 🚀 Submit to GitHub
               </button>
             </div>
@@ -202,6 +206,7 @@ export class FeedbackModal implements UIModal {
     this.checkIncludeLog = this.modalEl.querySelector('#feedback-check-log');
     this.checkIncludeSnapshot = this.modalEl.querySelector('#feedback-check-snapshot');
     this.telemetryPreview = this.modalEl.querySelector('#feedback-telemetry-preview');
+    this.scopeDescEl = this.modalEl.querySelector('#feedback-scope-desc');
 
     this.populateCategories();
   }
@@ -220,6 +225,10 @@ export class FeedbackModal implements UIModal {
 
     this.btnBugTab?.addEventListener('click', () => this.switchType('bug'));
     this.btnFeatureTab?.addEventListener('click', () => this.switchType('feature'));
+
+    this.categorySelect?.addEventListener('change', () => {
+      this.updateScopeDescription();
+    });
 
     this.modalEl.querySelector('#btn-feedback-submit')?.addEventListener('click', () => {
       this.submitToGitHub();
@@ -273,8 +282,14 @@ export class FeedbackModal implements UIModal {
 
     this.switchType(opts.type ?? (opts.error ? 'bug' : 'bug'));
 
+    const engine = this.options.getEngine();
+    const floor = engine?.currentFloor ?? 1;
+    const turn = engine?.turnCount ?? 0;
+    const initialCategory = opts.category ?? this.categorySelect?.value ?? 'Combat & Spells';
+
     if (this.titleInput) {
       this.titleInput.value = opts.subject ?? (opts.error ? `Crash: ${opts.error instanceof Error ? opts.error.message : String(opts.error)}` : '');
+      this.titleInput.placeholder = `[Floor ${floor} | Turn ${turn}] ${initialCategory} (or leave blank to auto-generate)`;
     }
 
     if (this.descTextarea) {
@@ -286,6 +301,7 @@ export class FeedbackModal implements UIModal {
     }
 
     this.updateTelemetryPreview();
+    this.updateScopeDescription();
 
     // Focus the title input, which also puts keystrokes on the modal's own listener.
     if (typeof window !== 'undefined' && typeof window.setTimeout === 'function') {
@@ -347,6 +363,7 @@ export class FeedbackModal implements UIModal {
     }
 
     this.populateCategories();
+    this.updateScopeDescription();
   }
 
   private populateCategories(): void {
@@ -357,6 +374,38 @@ export class FeedbackModal implements UIModal {
       .join('');
     if (!categories.includes(this.categorySelect.value)) {
       this.categorySelect.value = categories[0] ?? 'Other';
+    }
+  }
+
+  private updateScopeDescription(): void {
+    if (!this.scopeDescEl) return;
+    const cat = this.categorySelect?.value || 'Other';
+    if (this.currentType !== 'bug') {
+      this.scopeDescEl.textContent = '💡 Suggestion: Help us expand and balance the realm!';
+      return;
+    }
+    if (cat === 'Combat & Spells') {
+      this.scopeDescEl.textContent = '🎯 Scope: Combat vitals, nearby monsters, spell logs & PRNG seed (inventory & UI omitted)';
+      if (this.checkIncludeSnapshot) this.checkIncludeSnapshot.checked = false;
+      if (this.checkIncludeLog) this.checkIncludeLog.checked = true;
+    } else if (cat === 'Items & Inventory') {
+      this.scopeDescEl.textContent = '🎯 Scope: Inventory list, equipped gear, weight & ground loot (map & combat logs omitted)';
+      if (this.checkIncludeSnapshot) this.checkIncludeSnapshot.checked = false;
+      if (this.checkIncludeLog) this.checkIncludeLog.checked = true;
+    } else if (cat === 'Visual & UI') {
+      this.scopeDescEl.textContent = '🎯 Scope: Display resolution, DPR & viewport layout (heavy save snapshot & combat omitted)';
+      if (this.checkIncludeSnapshot) this.checkIncludeSnapshot.checked = false;
+      if (this.checkIncludeLog) this.checkIncludeLog.checked = false;
+    } else if (cat === 'Map & Movement') {
+      this.scopeDescEl.textContent = '🎯 Scope: ASCII map, stairs/doors & movement history (inventory & spells omitted)';
+      if (this.checkIncludeSnapshot) this.checkIncludeSnapshot.checked = false;
+      if (this.checkIncludeLog) this.checkIncludeLog.checked = true;
+    } else if (cat === 'Crash / Freeze') {
+      this.scopeDescEl.textContent = '🎯 Scope: Error trace, last 30 actions, PRNG state & full save snapshot for replay';
+      if (this.checkIncludeSnapshot) this.checkIncludeSnapshot.checked = true;
+      if (this.checkIncludeLog) this.checkIncludeLog.checked = true;
+    } else {
+      this.scopeDescEl.textContent = '🎯 Scope: General diagnostic summary & recent action log';
     }
   }
 
@@ -385,15 +434,18 @@ export class FeedbackModal implements UIModal {
     const includeLog = isBug && (this.checkIncludeLog?.checked ?? true);
     const includeSnapshot = isBug && (this.checkIncludeSnapshot?.checked ?? true);
 
-    const subject = this.titleInput?.value.trim() || (isBug ? 'Bug Report' : 'Feature Request');
     const category = this.categorySelect?.value || 'Other';
+    const floor = engine?.currentFloor ?? 1;
+    const turn = engine?.turnCount ?? 0;
+    const defaultSubject = isBug ? `[Floor ${floor} | Turn ${turn}] ${category} Issue` : 'Feature Request';
+    const subject = this.titleInput?.value.trim() || defaultSubject;
     const rawDescription = this.descTextarea?.value.trim() || '*(No details provided)*';
     const description = sanitizePaths(rawDescription);
 
     return flightRecorder.generatePackage(engine, profile, {
       includeSnapshot,
-      includeMap: isBug,
-      maxEvents: includeLog ? 75 : 0,
+      includeMap: isBug && category !== 'Items & Inventory' && category !== 'Visual & UI',
+      maxEvents: includeLog ? 50 : 0,
       error: this.errorContext,
       subject,
       category,
@@ -402,12 +454,20 @@ export class FeedbackModal implements UIModal {
     });
   }
 
-  public async copyReport(): Promise<void> {
+  public async copyReport(format: 'markdown' | 'json' = 'markdown'): Promise<void> {
     const pkg = this.buildPackage();
-    const formatted = JSON.stringify(pkg, null, 2);
-    const success = await copyTextToClipboard(formatted);
+    const textToCopy = format === 'json'
+      ? JSON.stringify(pkg, null, 2)
+      : (pkg.markdownReport ?? pkg.summary);
+
+    const success = await copyTextToClipboard(textToCopy);
     if (success) {
-      this.notify('Copied full diagnostic package to clipboard! 📋', 'success');
+      this.notify(
+        format === 'json'
+          ? 'Copied full diagnostic JSON to clipboard! 📋'
+          : 'Copied AI-Ready bug report to clipboard! 📋',
+        'success'
+      );
     } else {
       this.notify('Failed to copy to clipboard.', 'error');
     }
@@ -424,8 +484,11 @@ export class FeedbackModal implements UIModal {
   public submitToGitHub(): void {
     const pkg = this.buildPackage();
     const isBug = this.currentType === 'bug';
-    const subject = this.titleInput?.value.trim() || (isBug ? 'Bug Report' : 'Feature Request');
     const category = this.categorySelect?.value || 'General';
+    const floor = this.options.getEngine()?.currentFloor ?? 1;
+    const turn = this.options.getEngine()?.turnCount ?? 0;
+    const defaultSubject = isBug ? `[Floor ${floor} | Turn ${turn}] ${category} Issue` : 'Feature Request';
+    const subject = this.titleInput?.value.trim() || defaultSubject;
     const description = sanitizePaths(this.descTextarea?.value.trim() || '*(No description provided)*');
 
     const repo = this.options.repoUrl ?? 'https://github.com/astevegreen/Ye-Olde-Dungeon-Crawler';
@@ -444,8 +507,8 @@ export class FeedbackModal implements UIModal {
     bodyLines.push(pkg.summary);
     bodyLines.push('');
     if (isBug) {
-      bodyLines.push('> 📋 **A detailed diagnostic package has been automatically copied to your clipboard.**');
-      bodyLines.push('> *Press Ctrl+V to paste the telemetry JSON if needed:*');
+      bodyLines.push('> 📋 **AI-ready diagnostic report has been automatically copied to your clipboard.**');
+      bodyLines.push('> *Press Ctrl+V to paste into Claude Code or Antigravity to reproduce & fix!*');
     }
 
     const bodyText = bodyLines.join('\n');
@@ -456,10 +519,10 @@ export class FeedbackModal implements UIModal {
     url.searchParams.set('body', bodyText.slice(0, 1750));
     url.searchParams.set('labels', labels.join(','));
 
-    // Copy full technical package to clipboard
-    void copyTextToClipboard(JSON.stringify(pkg, null, 2));
+    // Copy AI markdown report to clipboard
+    void copyTextToClipboard(pkg.markdownReport ?? JSON.stringify(pkg, null, 2));
 
-    this.notify('Opening GitHub! Full diagnostic bundle copied to clipboard. 📋', 'success');
+    this.notify('Opening GitHub! AI bug report copied to clipboard. 📋', 'success');
 
     if (typeof window !== 'undefined') {
       window.open(url.toString(), '_blank');

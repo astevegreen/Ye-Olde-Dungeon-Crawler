@@ -22,6 +22,12 @@ export interface DiagnosticReportOptions {
   viewportWidth?: number;
   viewportHeight?: number;
   userAgent?: string;
+  category?: string;
+  subject?: string;
+  userNotes?: string;
+  error?: Error | string;
+  includeMap?: boolean;
+  mapRadius?: number;
 }
 
 export interface DiagnosticPackageMetadata {
@@ -36,6 +42,18 @@ export interface DiagnosticPackageMetadata {
   error?: string;
   userAgent?: string;
   display?: string;
+  category?: string;
+  subject?: string;
+}
+
+export interface DiagnosticReproductionContext {
+  manifestId: string;
+  floor: number;
+  turn: number;
+  prngState?: number;
+  playerCoords: { x: number; y: number };
+  recentActions: string[];
+  reproductionHint: string;
 }
 
 export interface DiagnosticPackage {
@@ -44,13 +62,8 @@ export interface DiagnosticPackage {
   asciiMap?: string;
   flightLog: FlightEvent[];
   stateSnapshot?: unknown;
+  reproduction?: DiagnosticReproductionContext;
+  markdownReport?: string;
 }
 
-export interface DiagnosticPackageOptions extends DiagnosticReportOptions {
-  userNotes?: string;
-  category?: string;
-  subject?: string;
-  error?: Error | string;
-  includeMap?: boolean;
-  mapRadius?: number;
-}
+export interface DiagnosticPackageOptions extends DiagnosticReportOptions {}

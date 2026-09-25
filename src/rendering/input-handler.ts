@@ -139,6 +139,7 @@ export class InputHandler {
         if (this.inventoryOverlay?.isOpen) {
           this.inventoryOverlay.close();
         }
+        flightRecorder.recordInput('Arrow', 'MovementAction', { dx, dy });
         this.engine.handlePlayerAction(new MovementAction(this.engine.player, dx, dy));
         this.onActionProcessed();
       },
@@ -1034,6 +1035,7 @@ export class InputHandler {
       this.inventoryOverlay.close();
     }
 
+    flightRecorder.recordInput(code, action.constructor.name);
     this.engine.handlePlayerAction(action);
     this.onActionProcessed();
     return true;

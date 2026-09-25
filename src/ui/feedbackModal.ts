@@ -9,7 +9,7 @@ import {
   sanitizePaths,
 } from '../engine';
 import type { UIModal, ModalStackManager } from './modalStack';
-import { copyTextToClipboard, defaultPlatformAdapter, browserReportContext } from './platform';
+import { copyTextToClipboard, defaultPlatformAdapter, browserReportContext, downloadDataUrl } from './platform';
 import { showToast as showGlobalToast } from './toast';
 import { encodeReplayBlock } from './replayCodec';
 
@@ -23,6 +23,8 @@ export interface FeedbackModalOptions {
   onClosed?: () => void;
   showToast?: (message: string, type?: 'info' | 'success' | 'warning' | 'error') => void;
   repoUrl?: string;
+  /** A PNG data URL of the game view as it is now, or null when there's no game on screen. */
+  captureScreenshot?: () => string | null;
 }
 
 export interface FeedbackOpenOptions {
@@ -31,6 +33,9 @@ export interface FeedbackOpenOptions {
   subject?: string;
   description?: string;
   category?: string;
+  /** Build of the session being reported, when it isn't this one (a recovered freeze). */
+  buildId?: string;
+  appVersion?: string;
 }
 
 interface BugCategory {
@@ -74,7 +79,7 @@ const BUG_CATEGORIES: readonly BugCategory[] = [
   {
     label: 'Visual & UI',
     scope: 'visual',
-    contents: 'Screen size, pixel ratio and device. No log, map or replay data unless ticked.',
+    contents: 'Screen size, pixel ratio and device, plus a screenshot you attach. No log, map or replay data unless ticked.',
     includeLog: false,
     includeReplay: false,
   },
@@ -148,6 +153,9 @@ export class FeedbackModal implements UIModal {
 
   private currentType: FeedbackType = 'bug';
   private errorContext?: Error | string;
+  private buildOverride: { buildId?: string; appVersion?: string } = {};
+  /** The game view when the window opened, before the tester's next move changes it. */
+  private screenshot: string | null = null;
   /** Replay data gzip+base64-encoded ahead of Submit, which must write the clipboard synchronously. */
   private compressedReplay: string | null = null;
   private compressing: Promise<void> = Promise.resolve();
@@ -248,6 +256,7 @@ export class FeedbackModal implements UIModal {
             <div style="display: flex; gap: 6px;">
               <button id="btn-feedback-copy" class="win-btn primary-btn" style="background: #0284c7; color: white;" title="Copy formatted AI-ready markdown report to clipboard">📋 Copy Report for AI</button>
               <button id="btn-feedback-download" class="win-btn" title="Download diagnostic package JSON">💾 Save .json</button>
+              <button id="btn-feedback-screenshot" class="win-btn" title="Save a picture of the game view, taken when this window opened, to attach to the issue">📸 Save Screenshot</button>
             </div>
             <div style="display: flex; gap: 6px;">
               <button id="btn-feedback-cancel" class="win-btn" style="min-width: 70px;">Cancel</button>
@@ -304,6 +313,10 @@ export class FeedbackModal implements UIModal {
     this.modalEl.querySelector('#btn-feedback-download')?.addEventListener('click', () => {
       this.downloadReport();
     });
+
+    this.modalEl.querySelector('#btn-feedback-screenshot')?.addEventListener('click', () => {
+      this.saveScreenshot();
+    });
   }
 
   public handleKeyDown(e: KeyboardEvent): boolean {
@@ -337,6 +350,13 @@ export class FeedbackModal implements UIModal {
     this.isOpen = true;
     this.shown = true;
     this.errorContext = opts.error;
+    this.screenshot = this.options.captureScreenshot?.() ?? null;
+    const shotBtn = this.modalEl.querySelector<HTMLElement>('#btn-feedback-screenshot');
+    if (shotBtn) shotBtn.style.display = this.screenshot ? '' : 'none';
+    this.buildOverride = {
+      ...(opts.buildId ? { buildId: opts.buildId } : {}),
+      ...(opts.appVersion ? { appVersion: opts.appVersion } : {}),
+    };
     this.modalEl.style.display = 'flex';
 
     if (this.options.modalStack && !this.options.modalStack.has(this.id)) {
@@ -501,6 +521,7 @@ export class FeedbackModal implements UIModal {
       category,
       userNotes: sanitizePaths(rawDescription),
       ...browserReportContext(),
+      ...this.buildOverride,
     };
   }
 
@@ -514,7 +535,7 @@ export class FeedbackModal implements UIModal {
 
   private prepareCompressedReplay(): void {
     this.compressedReplay = null;
-    const replay = flightRecorder.getReplayData();
+    const replay = flightRecorder.getReplayData(this.options.getEngine() ?? undefined);
     if (!replay || typeof CompressionStream === 'undefined') return;
     this.compressing = encodeReplayBlock(JSON.stringify(replay))
       .then((block) => {
@@ -570,6 +591,11 @@ export class FeedbackModal implements UIModal {
     body.push(`- **Build**: \`${m.engineVersion}\` (commit \`${m.buildId ?? 'unknown'}\`)`);
     body.push('');
     body.push('> 📋 **Tester: paste the copied report below this line** (Ctrl+V, or long-press → Paste on a phone), then press Submit.');
+    body.push(
+      pkg.metadata.scope === 'visual'
+        ? '> 📸 **A screenshot matters most for this kind of bug.** Use *Save Screenshot* in the report window, or your device\'s own screenshot, then drag it into this box (or tap the attach button on a phone).'
+        : '> 📸 A screenshot helps too (*Save Screenshot* in the report window, or your device\'s own); drag it into this box to attach.'
+    );
 
     const optional: string[][] = [];
     const err = this.errorContext;
@@ -626,6 +652,16 @@ export class FeedbackModal implements UIModal {
     const filename = `yodc-${this.currentType}-${Date.now()}.json`;
     defaultPlatformAdapter.triggerFileDownload(filename, json, 'application/json');
     this.notify(`Downloaded ${filename}`, 'success');
+  }
+
+  public saveScreenshot(): void {
+    if (!this.screenshot) {
+      this.notify('No game view to capture. Use your device\'s screenshot instead.', 'warning');
+      return;
+    }
+    const filename = `yodc-screenshot-${Date.now()}.png`;
+    downloadDataUrl(filename, this.screenshot);
+    this.notify(`Saved ${filename}. Attach it to the issue.`, 'success');
   }
 
   public submitToGitHub(): void {

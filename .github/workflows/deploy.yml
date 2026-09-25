@@ -43,8 +43,24 @@ jobs:
           npm run sim
           npm run validate:schema
 
-      - name: Build static bundles
-        run: npm run build:all
+      # Hidden source maps: nothing in the deployed HTML points at them, and they are moved
+      # out of dist/ before upload, so they never ship. They are kept as a build artifact
+      # (with the HTML they map) for `npm run map:stack` to resolve bug-report stack traces.
+      - name: Build static bundles (with hidden source maps)
+        env:
+          SOURCEMAP: hidden
+        run: |
+          npm run build:cotw
+          mkdir -p sourcemaps/cotw && mv dist/*.map sourcemaps/cotw/ && cp dist/index.html sourcemaps/cotw/
+          npm run build:warcraft
+          mkdir -p sourcemaps/warcraft && mv dist/*.map sourcemaps/warcraft/ && cp dist/warcraft.html sourcemaps/warcraft/
+
+      - name: Keep source maps for this build
+        uses: actions/upload-artifact@v4
+        with:
+          name: sourcemaps-${{ github.sha }}
+          path: sourcemaps
+          retention-days: 90
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5

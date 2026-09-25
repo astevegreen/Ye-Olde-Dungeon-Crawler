@@ -14,6 +14,7 @@ import type {
   DiagnosticPackage,
   DiagnosticPackageOptions,
   DiagnosticPackageMetadata,
+  DiagnosticReproductionContext,
   ReplayCheckpoint,
   ReplayData,
   TrailEntry,
@@ -232,9 +233,43 @@ export class FlightRecorder {
     };
   }
 
-  /** The current checkpoint and the actions since it, or null if none was taken. */
-  public getReplayData(): ReplayData | null {
-    if (!this.checkpoint) return null;
+  /**
+   * `getReplayData()` as JSON, spliced from the stored save string rather than re-parsing
+   * it, so it is cheap enough to persist on every input.
+   */
+  public exportReplayJson(engine?: GameEngine): string | null {
+    if (!this.checkpoint || (engine && engine !== this.checkpointEngine)) return null;
+    const { save, ...meta } = this.checkpoint;
+    return `{"checkpoint":${JSON.stringify(meta).slice(0, -1)},"save":${save}},"trail":${JSON.stringify(this.trail)}}`;
+  }
+
+  /**
+   * Loads replay data and log events persisted by an earlier session that stopped
+   * responding, so a report can be filed for it from the main menu. The next player
+   * action on any engine takes a fresh checkpoint and discards them.
+   */
+  public restoreRecovered(replayJson: string | null, events: readonly FlightEvent[]): void {
+    this.checkpoint = null;
+    this.trail = [];
+    this.checkpointEngine = null;
+    this.pendingCheckpointReason = 'session start';
+    if (replayJson) {
+      const replay = JSON.parse(replayJson) as ReplayData;
+      const { save, ...meta } = replay.checkpoint;
+      this.checkpoint = { ...meta, save: JSON.stringify(save) };
+      this.trail = replay.trail;
+      this.nextTrailSeq = (replay.trail[replay.trail.length - 1]?.seq ?? 0) + 1;
+    }
+    this.buffer = events.slice(-this.capacity).map((e) => ({ ...e }));
+    this.nextId = (this.buffer[this.buffer.length - 1]?.id ?? 0) + 1;
+  }
+
+  /**
+   * The current checkpoint and the actions since it, or null if none was taken. Given an
+   * engine, only that engine's data: a game just loaded has none until its first action.
+   */
+  public getReplayData(engine?: GameEngine): ReplayData | null {
+    if (!this.checkpoint || (engine && engine !== this.checkpointEngine)) return null;
     return {
       checkpoint: { ...this.checkpoint, save: JSON.parse(this.checkpoint.save) as unknown },
       trail: this.trail.map((e) => ({ ...e, params: { ...e.params } })),
@@ -570,7 +605,7 @@ export class FlightRecorder {
         : undefined;
 
     const p = engine?.player;
-    const replay = resolved.includeReplay ? this.getReplayData() ?? undefined : undefined;
+    const replay = resolved.includeReplay ? this.getReplayData(engine) ?? undefined : undefined;
     const reproduction =
       engine && p
         ? {
@@ -583,7 +618,9 @@ export class FlightRecorder {
             replay,
             reproductionHint: this.reproductionHint(replay),
           }
-        : undefined;
+        : replay
+          ? this.reproductionFromCheckpoint(replay)
+          : undefined;
 
     const metadata: DiagnosticPackageMetadata = {
       timestamp: now.getTime(),
@@ -630,6 +667,27 @@ export class FlightRecorder {
     const includeMap = options.includeMap ?? !lean;
     const includeReplay = options.includeReplay ?? includeSnapshot;
     return { ...options, includeSnapshot, includeMap, includeReplay };
+  }
+
+  /** Reproduction details read from a checkpoint save, for reports with no live game. */
+  private reproductionFromCheckpoint(replay: ReplayData): DiagnosticReproductionContext {
+    const save = (replay.checkpoint.save ?? {}) as {
+      contentManifestId?: string;
+      prngState?: number;
+      player?: { x?: number; y?: number };
+    };
+    return {
+      manifestId: save.contentManifestId ?? 'unknown',
+      floor: replay.checkpoint.floor,
+      turn: replay.checkpoint.turn,
+      prngState: save.prngState,
+      playerCoords: { x: save.player?.x ?? -1, y: save.player?.y ?? -1 },
+      recentActions: this.getRecentActionSequence(15),
+      replay,
+      reproductionHint:
+        this.reproductionHint(replay) +
+        ' The last action in the trail is the last one the game started; if the freeze happened on a later input, the report names it.',
+    };
   }
 
   private reproductionHint(replay: ReplayData | undefined): string {
@@ -707,7 +765,7 @@ export class FlightRecorder {
     lines.push('');
 
     // Reproduction context
-    const replay = resolved.includeReplay ? this.getReplayData() ?? undefined : undefined;
+    const replay = resolved.includeReplay ? this.getReplayData(engine) ?? undefined : undefined;
     if (engine && engine.player) {
       const p = engine.player;
       const recentActions = this.getRecentActionSequence(15);
@@ -721,6 +779,17 @@ export class FlightRecorder {
         }
       }
       lines.push(`- **How to Reproduce**: ${this.reproductionHint(replay)}`);
+      lines.push('');
+    } else if (replay) {
+      // No live game: a report filed from the menu for a session that stopped responding.
+      const r = this.reproductionFromCheckpoint(replay);
+      lines.push('### 🤖 Reproduction Context (recovered from an earlier session)');
+      lines.push(`- **Manifest**: \`${r.manifestId}\` | **Checkpoint**: floor \`${r.floor}\`, turn \`${r.turn}\`, player \`(${r.playerCoords.x}, ${r.playerCoords.y})\``);
+      if (r.recentActions.length > 0) {
+        lines.push('- **Last Player Actions Before It Stopped** (oldest first):');
+        r.recentActions.forEach((a, i) => lines.push(`  ${i + 1}. \`${a}\``));
+      }
+      lines.push(`- **How to Reproduce**: ${r.reproductionHint}`);
       lines.push('');
     }
 

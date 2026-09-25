@@ -73,6 +73,9 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       emptyOutDir: false,
+      // SOURCEMAP=hidden (the deploy workflow) writes .map files with no reference from the
+      // bundle; CI keeps them as a build artifact so crash positions can be mapped to source.
+      sourcemap: process.env.SOURCEMAP === 'hidden' ? 'hidden' : false,
       assetsInlineLimit: 100000000,
       cssCodeSplit: false,
       target: 'esnext',

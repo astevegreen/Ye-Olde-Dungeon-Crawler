@@ -229,7 +229,7 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
 
   const allItems = getAllCatalogItems(engine);
   const allMonsters = getAllMonsters(engine);
-  const replay = flightRecorder.getReplayData();
+  const replay = flightRecorder.getReplayData(engine);
   const replayStatus = replay
     ? `Checkpoint at turn ${replay.checkpoint.turn} (${escapeHtml(replay.checkpoint.reason)}), ${replay.trail.length} action(s) since`
     : 'No checkpoint yet (taken at the next action)';

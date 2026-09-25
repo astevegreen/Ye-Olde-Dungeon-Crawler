@@ -60,6 +60,7 @@ import { SaveQuitModal } from './ui/saveQuitModal';
 import { SaveSlotModal } from './ui/saveSlotModal';
 import { showToast } from './ui/toast';
 import { expandCompressedReplay } from './ui/replayCodec';
+import { SessionGuard } from './ui/sessionGuard';
 import { getBrowserAsyncStore } from './ui/indexedDbStore';
 import { setupSaveDragAndDrop, importSaveWithValidation } from './ui/saveImporter';
 import { defaultPlatformAdapter, getBrowserStorage } from './ui/platform';
@@ -185,6 +186,12 @@ window.addEventListener('DOMContentLoaded', () => {
     },
   });
   const autosaveManager = new AutosaveManager(getBrowserStorage() ?? undefined, activeManifest);
+  // Detects a session that stopped responding (see src/ui/sessionGuard.ts).
+  const sessionGuard = new SessionGuard(getBrowserStorage(), {
+    appVersion: import.meta.env.VITE_APP_VERSION,
+    buildId: import.meta.env.VITE_BUILD_ID,
+  });
+  const unfinishedSession = sessionGuard.takeUnfinished();
 
   let characterMenuModal: CharacterMenuModal;
   const characterTab = new CharacterTab();
@@ -548,6 +555,14 @@ window.addEventListener('DOMContentLoaded', () => {
     getEngine: () => activeEngine,
     getProfile: () => activeProfile,
     bulkArchive,
+    captureScreenshot: () => {
+      if (!activeEngine || !canvas || gameContainer?.style.display === 'none') return null;
+      try {
+        return canvas.toDataURL('image/png');
+      } catch {
+        return null;
+      }
+    },
     onClosed: () => {
       renderer?.render();
     },
@@ -815,12 +830,14 @@ window.addEventListener('DOMContentLoaded', () => {
     void bulkArchive
       .archiveFlightLog(`crash-${flightRecorder.getEvents().length}-${err.name}`, flightRecorder.getEvents())
       .catch(() => undefined);
+    sessionGuard.end(); // reported through the crash dialog, not as a freeze
     diagnosticModal.showCrash(err);
   };
 
   const onGlobalUnhandledRejection = (event: PromiseRejectionEvent) => {
     const reason = event.reason instanceof Error ? event.reason : new Error(String(event.reason));
     flightRecorder.recordError(reason, { type: 'unhandledrejection' });
+    sessionGuard.end();
     diagnosticModal.showCrash(reason);
   };
 
@@ -833,6 +850,7 @@ window.addEventListener('DOMContentLoaded', () => {
   };
 
   function saveAndReturnToTitle(): void {
+    sessionGuard.end();
     if (activeEngine && activeProfile) {
       profileManager.saveCharacter(activeEngine, activeProfile);
       autosaveManager.autosave(activeEngine, activeProfile);
@@ -1297,6 +1315,9 @@ window.addEventListener('DOMContentLoaded', () => {
         renderer.radialMenuOverlay
       );
       inputHandler.characterMenuModal = characterMenuModal;
+      inputHandler.onBeforeInput = (code) => {
+        if (activeEngine) sessionGuard.noteInput(activeEngine, code);
+      };
       characterMenuModal.setModalStack(inputHandler.modalStack);
       inputHandler.pactModal = pactModal;
       inputHandler.levelUpModal = levelUpModal;
@@ -1574,8 +1595,37 @@ window.addEventListener('DOMContentLoaded', () => {
     mainMenu.updateStorageIndicator();
   });
 
+  // Taps and clicks drive the game on phones; persist before the game acts on them too.
+  window.addEventListener(
+    'pointerdown',
+    (e) => {
+      if (activeEngine && gameContainer?.style.display !== 'none') {
+        const target = e.target as HTMLElement | null;
+        const label = target?.id ? `#${target.id}` : (target?.tagName ?? 'screen').toLowerCase();
+        sessionGuard.noteInput(activeEngine, `tap on ${label}`);
+      }
+    },
+    { capture: true }
+  );
+  document.addEventListener('visibilitychange', () => sessionGuard.setVisible(document.visibilityState === 'visible'));
+  window.addEventListener('pagehide', () => sessionGuard.end());
+
   // Show Main Menu on start
   mainMenu.show();
+
+  // The last session stopped responding: offer a pre-filled report for it.
+  if (unfinishedSession) {
+    const s = unfinishedSession;
+    flightRecorder.restoreRecovered(s.replay, s.events);
+    feedbackModal.open({
+      type: 'bug',
+      category: 'Crash / Freeze',
+      subject: 'Game stopped responding',
+      error: `The game stopped responding after input '${s.lastInput}' (${s.heroName}, floor ${s.floor}, turn ${s.turn}).`,
+      buildId: s.buildId,
+      appVersion: s.appVersion,
+    });
+  }
 
   if (import.meta.env?.DEV) {
     console.log(`${brand.title} initialized with Main Menu & Settings.`);

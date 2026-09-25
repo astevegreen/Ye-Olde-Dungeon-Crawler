@@ -80,6 +80,16 @@ export function getBrowserStorage(): StorageAdapter | null {
 }
 
 
+/** Saves a data URL (e.g. a canvas screenshot) as a file. */
+export function downloadDataUrl(filename: string, dataUrl: string): void {
+  const link = document.createElement('a');
+  link.href = dataUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 /** Browser details a diagnostic report needs. The engine can't read them itself
  * (headless purity, ARCHITECTURE.md §2), so presentation passes them in; without
  * them a report reads "Headless / Pure Engine" at a default 960x600. */

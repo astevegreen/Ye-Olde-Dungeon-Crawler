@@ -461,4 +461,33 @@ describe('FeedbackModal (Headless)', () => {
     expect(loaded.ok && loaded.value.source).toBe('replay-checkpoint');
     expect(loaded.ok && loaded.value.trail).toHaveLength(2);
   });
+
+  it('offers the game-view screenshot taken when the window opened, and asks for one on visual bugs', () => {
+    const shot = 'data:image/png;base64,AAAA';
+    const withShot = new FeedbackModal({
+      getEngine: () => engine,
+      getProfile: () => profile,
+      modalStack,
+      captureScreenshot: () => shot,
+    });
+    const dl = vi.spyOn(platform, 'downloadDataUrl').mockImplementation(() => {});
+    withShot.open({ category: 'Visual & UI', subject: 'Overlap' });
+    withShot.saveScreenshot();
+    expect(dl).toHaveBeenCalledWith(expect.stringMatching(/^yodc-screenshot-\d+\.png$/), shot);
+
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    vi.spyOn(platform, 'copyTextToClipboard').mockResolvedValue(true);
+    withShot.submitToGitHub();
+    const body = new URL(openSpy.mock.calls[0][0] as string).searchParams.get('body') ?? '';
+    expect(body).toContain('A screenshot matters most');
+  });
+
+  it('reports the build of a recovered session, not the running one', () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    vi.spyOn(platform, 'copyTextToClipboard').mockResolvedValue(true);
+    modal.open({ category: 'Crash / Freeze', subject: 'Froze', buildId: 'old1234', appVersion: '0.0.9' });
+    modal.submitToGitHub();
+    const body = new URL(openSpy.mock.calls[0][0] as string).searchParams.get('body') ?? '';
+    expect(body).toContain('commit `old1234`');
+  });
 });

@@ -351,10 +351,14 @@ export class InputHandler {
     }
   }
 
+  /** Called with each game key before it is handled (the freeze guard persists state here). */
+  public onBeforeInput?: (code: string) => void;
+
   public handleKeyDown(e: KeyboardEvent): boolean {
     if (!this.enabled) return false;
 
     const code = e.code;
+    if (!isTextEntryTarget(e.target) && !e.repeat) this.onBeforeInput?.(code || e.key);
 
     // Typing in a text field (bug-report form, save-code box, ...) belongs to that field:
     // no hotkeys, no movement, and no preventDefault — which had swallowed Space and the

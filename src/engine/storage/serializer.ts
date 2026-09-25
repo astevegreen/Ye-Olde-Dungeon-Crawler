@@ -763,6 +763,19 @@ export function deserializeMapObject(mapData: SerializedMap, customTiles?: TileD
   return map;
 }
 
+function restoreMonsterDefinitionFields(map: GameMap, registries: EngineRegistries): void {
+  for (const entity of map.getAllEntities()) {
+    if (!(entity instanceof Monster)) continue;
+    const def = registries.monsters.get(entity.definitionId);
+    if (!def) continue;
+    entity.lootTable = def.lootTable ? [...def.lootTable] : [];
+    entity.statusImmunities = def.statusImmunities ? [...def.statusImmunities] : entity.statusImmunities;
+    entity.onHitAffliction = def.onHitAffliction;
+    entity.tags = def.tags ? [...def.tags] : entity.tags;
+    entity.targetingMode = def.targetingMode ?? entity.targetingMode;
+  }
+}
+
 export function deserializeGame(
   rawSaveData: SaveData | any,
   manifest?: GameContentManifest
@@ -916,6 +929,13 @@ export function deserializeGame(
       const fNum = parseInt(fStr, 10);
       engine.storedFloors.set(fNum, deserializeMapObject(sMap, manifest?.tiles));
     }
+  }
+
+  // Loot tables hold generator functions, so the save leaves them (and the other
+  // definition-only fields) out; restore them from each monster's definition, or a
+  // monster that existed at save time dies with no drops after a load.
+  for (const floorMap of [engine.map, ...engine.storedFloors.values()]) {
+    restoreMonsterDefinitionFields(floorMap, engine.registries);
   }
 
   // Register merchants dynamically from manifest if town exists in current or cached floors

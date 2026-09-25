@@ -83,6 +83,7 @@ import { SettingsManager } from './ui/settings/settingsManager';
 import type { RadialMenuSlotConfig } from './ui/settings/settingsManager';
 import { KeybindModal } from './ui/settings/keybindModal';
 import { MainMenu } from './ui/menus/mainMenu';
+import { isOpaqueScriptError } from './ui/opaqueScriptError';
 import { COMMAND_CATALOG, type CommandId } from './main/commandCatalog';
 
 declare global {
@@ -768,6 +769,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Global uncaught error & rejection crash safety (HR-6)
   const onGlobalError = (event: ErrorEvent) => {
+    if (isOpaqueScriptError(event)) {
+      flightRecorder.recordWarning('Opaque "Script error." from a script outside the game', {
+        type: 'opaque-script-error',
+        source: event.filename,
+      });
+      return;
+    }
     const err = event.error || new Error(String(event.message));
     flightRecorder.recordError(err, { source: event.filename, lineno: event.lineno, colno: event.colno });
     // Archive the log off the synchronous quota; failure here must never mask the crash.

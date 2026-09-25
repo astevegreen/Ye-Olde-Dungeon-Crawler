@@ -14,7 +14,10 @@ export class PRNG {
    * Mulberry32 algorithm.
    */
   public next(): number {
-    let t = (this.s += 0x6d2b79f5);
+    // Wrap to int32: the stream only ever reads `s` mod 2^32, but an unwrapped `s` grows
+    // without bound, so getState() values stop comparing across a save/load and the
+    // double eventually loses the low bits the stream depends on.
+    let t = (this.s = (this.s + 0x6d2b79f5) | 0);
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;

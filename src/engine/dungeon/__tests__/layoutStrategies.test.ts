@@ -21,7 +21,36 @@ const DRAFTS = {
   spine: draftSpine,
 };
 
-const CASES: Array<{ strategy: keyof typeof DRAFTS; params: Record<string, unknown>; floor: number; forcedVaultId?: string }> = [
+/** A threshold room using every layout character: pillars, a barred gate with a door, a chasm, two exits. */
+const GATEHOUSE = [
+  '#############',
+  '#P....@....P#',
+  '#...........#',
+  '#XX.......XX#',
+  '#####B+B#####',
+  '#...........#',
+  '.....~~~.....',
+  '#############',
+];
+const THRESHOLD_TILE: Record<string, string> = {
+  '#': 'wall',
+  '.': 'floor',
+  '@': 'floor',
+  P: 'pillar',
+  B: 'iron_bars',
+  '+': 'door_closed',
+  "'": 'door_open',
+  '~': 'shallow_water',
+  X: 'chasm',
+};
+
+const CASES: Array<{
+  strategy: keyof typeof DRAFTS;
+  params: Record<string, unknown>;
+  floor: number;
+  forcedVaultId?: string;
+  threshold?: string[];
+}> = [
   { strategy: 'caverns', params: { lake: true }, floor: 3 },
   { strategy: 'caverns', params: { lake: true }, floor: 5, forcedVaultId: 'floor5_rune_vault' },
   { strategy: 'caverns', params: { wallChance: 0.42, pools: 3, pits: 2, groves: 3 }, floor: 40 },
@@ -32,6 +61,15 @@ const CASES: Array<{ strategy: keyof typeof DRAFTS; params: Record<string, unkno
   { strategy: 'warrens', params: { grove: true }, floor: 36 },
   { strategy: 'spine', params: { pool: true, pits: 2 }, floor: 44 },
   { strategy: 'spine', params: { pool: true, pits: 2 }, floor: 45, forcedVaultId: 'floor45_fang_vault' },
+  // A band's first floor opens in its threshold room.
+  { strategy: 'caverns', params: { lake: true }, floor: 1, threshold: GATEHOUSE },
+  { strategy: 'halls', params: { centralPit: true, randomVaults: false }, floor: 10, threshold: GATEHOUSE },
+  { strategy: 'rift', params: { bridges: 3 }, floor: 18, threshold: GATEHOUSE },
+  { strategy: 'rift', params: { bridges: 3 }, floor: 22, forcedVaultId: 'siphon_altar_vault', threshold: GATEHOUSE },
+  { strategy: 'lattice', params: { sump: true }, floor: 26, threshold: GATEHOUSE },
+  { strategy: 'warrens', params: { grove: true }, floor: 34, threshold: GATEHOUSE },
+  { strategy: 'spine', params: { pool: true, pits: 2 }, floor: 43, threshold: GATEHOUSE },
+  { strategy: 'caverns', params: { wallChance: 0.42, pools: 3, pits: 2, groves: 3 }, floor: 50, threshold: GATEHOUSE },
 ];
 
 function params(c: (typeof CASES)[number], seed: number): DungeonGenParams {
@@ -42,6 +80,7 @@ function params(c: (typeof CASES)[number], seed: number): DungeonGenParams {
     vaults: COTW_VAULTS,
     forcedVaultId: c.forcedVaultId,
     layoutParams: c.params,
+    threshold: c.threshold ? { layout: c.threshold } : undefined,
   };
 }
 
@@ -90,7 +129,7 @@ describe('Character-grid layout strategies', () => {
   });
 
   for (const c of CASES) {
-    const label = `${c.strategy} (floor ${c.floor}${c.forcedVaultId ? `, forced ${c.forcedVaultId}` : ''})`;
+    const label = `${c.strategy} (floor ${c.floor}${c.forcedVaultId ? `, forced ${c.forcedVaultId}` : ''}${c.threshold ? ', threshold' : ''})`;
 
     it(`${label}: playable on every seed`, () => {
       let fallbacks = 0;
@@ -136,6 +175,26 @@ describe('Character-grid layout strategies', () => {
 
         if (c.forcedVaultId) {
           expect((r.forcedVaultChestSpawns?.length ?? 0) + (r.forcedVaultNpcSpawns?.length ?? 0), `${where}: forced vault missing`).toBeGreaterThan(0);
+        }
+
+        if (c.threshold) {
+          // The room is stamped whole (no tunnel cut its walls), the player arrives on its '@',
+          // it is the spawn room, and no other room reaches into it.
+          const t = r.thresholdRect;
+          expect(t, `${where}: no threshold room`).toBeDefined();
+          if (!t) continue;
+          c.threshold.forEach((row, dy) => {
+            [...row].forEach((ch, dx) => {
+              if (ch === '@') expect(r.playerSpawn, `${where}: arrival`).toEqual({ x: t.x1 + dx, y: t.y1 + dy });
+              expect(r.map.getTile(t.x1 + dx, t.y1 + dy)?.type, `${where}: threshold cell ${dx},${dy}`).toBe(THRESHOLD_TILE[ch]);
+            });
+          });
+          expect(r.rooms[0]).toMatchObject(t);
+          for (const room of r.rooms.slice(1)) {
+            const overlaps = room.x1 <= t.x2 && room.x2 >= t.x1 && room.y1 <= t.y2 && room.y2 >= t.y1;
+            expect(overlaps, `${where}: room ${room.x1},${room.y1} reaches into the threshold`).toBe(false);
+          }
+          expect(inVault(r.stairsDown.x, r.stairsDown.y) || (r.stairsDown.x >= t.x1 && r.stairsDown.x <= t.x2 && r.stairsDown.y >= t.y1 && r.stairsDown.y <= t.y2), `${where}: stairs in the threshold`).toBe(false);
         }
       }
       expect(fallbacks, `${label} fell back to rooms and corridors ${fallbacks}/${SEEDS} times`).toBeLessThanOrEqual(Math.ceil(SEEDS * 0.05));

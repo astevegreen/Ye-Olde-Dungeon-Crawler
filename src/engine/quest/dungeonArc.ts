@@ -195,6 +195,7 @@ export class DungeonArc {
       registries,
       roomDecoration: manifest?.roomDecoration,
       layoutParams: layoutBand?.params,
+      threshold: layoutBand && floorNumber === layoutBand.minFloor ? layoutBand.threshold : undefined,
       forcedVaultId:
         manifest?.runeOfReturn?.acquisition?.floor === floorNumber
           ? manifest.runeOfReturn.acquisition.vaultId

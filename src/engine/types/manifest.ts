@@ -623,6 +623,19 @@ export interface FloorLayoutBand {
   strategy: string;
   /** Strategy tuning; see `dungeon/layout/drafts.ts` for each strategy's keys. */
   params?: Record<string, unknown>;
+  /** The room the band's first floor opens in, so a new zone arrives as an event. */
+  threshold?: ThresholdRoomDefinition;
+}
+
+/**
+ * An authored arrival room (`FloorLayoutBand.threshold`). `layout` is rows of layout
+ * characters: '#' rock, '.' floor, 'P' pillar, 'B' bars, '+'/"'" doors, '~' water, 'X'
+ * chasm, and one '@' where the player arrives (the up stairs). Walkable cells on its edge
+ * are its exits. Strategies built on `LayoutStrategy` carve it near their usual start;
+ * rooms and corridors ignores it.
+ */
+export interface ThresholdRoomDefinition {
+  layout: string[];
 }
 
 /**

@@ -6,7 +6,7 @@ import { PRNG } from './prng';
 import { DungeonGenerator, type RectRoom } from './dungeon-generator';
 import type { VaultBlueprint } from './vaultStamp';
 import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
-import type { ItemDefinition, RoomDecorationBand } from '../types/manifest';
+import type { ItemDefinition, RoomDecorationBand, ThresholdRoomDefinition } from '../types/manifest';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
 import type { GameDifficulty } from '../types';
 import type { EngineRegistries } from '../registries';
@@ -32,6 +32,8 @@ export interface DungeonGenParams {
   registries?: EngineRegistries;
   /** Strategy-specific tuning from the pack's `floorLayouts` band (see `layout/drafts.ts`). */
   layoutParams?: Readonly<Record<string, unknown>>;
+  /** The band's arrival room; set on a band's first floor only. */
+  threshold?: ThresholdRoomDefinition;
 }
 
 export interface GeneratedFloorData {
@@ -45,6 +47,8 @@ export interface GeneratedFloorData {
   forcedVaultNpcSpawns?: Position[];
   /** Footprints of the vaults stamped this floor, where the strategy reports them. */
   vaultRects?: Array<{ x1: number; y1: number; x2: number; y2: number }>;
+  /** Footprint of the threshold room the player arrived in, when one was carved. */
+  thresholdRect?: { x1: number; y1: number; x2: number; y2: number };
 }
 
 export interface DungeonGeneratorStrategy {

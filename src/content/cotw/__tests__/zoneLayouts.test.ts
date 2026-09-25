@@ -6,7 +6,7 @@ import { Player } from '../../../engine/entities/player';
 import { Monster } from '../../../engine/entities/monster';
 import { cotwManifest } from '../index';
 import { COTW_QUEST } from '../quest';
-import { COTW_FLOOR_SIZE } from '../floorLayouts';
+import { COTW_FLOOR_SIZE, COTW_FLOOR_LAYOUTS } from '../floorLayouts';
 import { SIPHON_ALTAR_TILE } from '../hostageRitual';
 
 /**
@@ -55,6 +55,61 @@ describe('cotw zone layouts', () => {
           ([dx, dy]) => r.map.getTile(r.playerSpawn.x + dx, r.playerSpawn.y + dy)?.type === 'chasm'
         );
         expect(adjacentHazard, `floor ${floor} seed ${seed}: spawn beside a chasm`).toBe(false);
+      }
+    });
+  }
+
+  // Each zone's first floor opens in its threshold room: stamped whole, the hero on its '@'.
+  // The Rotting Root's only floor is the boss lair, so its band has none.
+  const TILE_OF: Record<string, string> = { '#': 'wall', '.': 'floor', '@': 'stairs_up', P: 'pillar', B: 'iron_bars', '+': 'door_closed', "'": 'door_open', '~': 'shallow_water', X: 'chasm' };
+  for (const band of COTW_FLOOR_LAYOUTS) {
+    const layout = band.threshold?.layout;
+    if (band.minFloor >= QUEST.bossFloor) continue;
+    it(`floor ${band.minFloor}: the zone opens in a sound threshold room`, () => {
+      expect(layout, `the band from floor ${band.minFloor} has no threshold`).toBeDefined();
+      if (!layout) return;
+      const w = layout[0].length;
+      expect(layout.every((row) => row.length === w)).toBe(true);
+      const at: Array<{ x: number; y: number }> = [];
+      layout.forEach((row, y) => [...row].forEach((ch, x) => ch === '@' && at.push({ x, y })));
+      expect(at).toHaveLength(1);
+      // Everything walkable inside is reachable from the arrival, and there is a way out.
+      const open = (x: number, y: number) => ['.', '@', '+', "'", '~'].includes(layout[y]?.[x] ?? '#');
+      const seen = new Set([`${at[0].x},${at[0].y}`]);
+      const queue = [at[0]];
+      while (queue.length > 0) {
+        const p = queue.shift()!;
+        for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
+          const n = { x: p.x + dx, y: p.y + dy };
+          if (seen.has(`${n.x},${n.y}`) || !open(n.x, n.y)) continue;
+          seen.add(`${n.x},${n.y}`);
+          queue.push(n);
+        }
+      }
+      let exits = 0;
+      layout.forEach((row, y) =>
+        [...row].forEach((_, x) => {
+          if (!open(x, y)) return;
+          expect(seen.has(`${x},${y}`), `cell ${x},${y} is cut off from the arrival`).toBe(true);
+          if (x === 0 || y === 0 || x === w - 1 || y === layout.length - 1) exits++;
+        })
+      );
+      expect(exits).toBeGreaterThan(0);
+      const besideChasm = [[0, -1], [1, 0], [0, 1], [-1, 0]].some(([dx, dy]) => layout[at[0].y + dy]?.[at[0].x + dx] === 'X');
+      expect(besideChasm).toBe(false);
+
+      for (let seed = 1; seed <= 10; seed++) {
+        const r = DungeonArc.generateFloor(band.minFloor, seed * 104729, QUEST, cotwManifest);
+        const x0 = r.playerSpawn.x - at[0].x;
+        const y0 = r.playerSpawn.y - at[0].y;
+        layout.forEach((row, y) =>
+          [...row].forEach((ch, x) => {
+            expect(r.map.getTile(x0 + x, y0 + y)?.type, `floor ${band.minFloor} seed ${seed}: cell ${x},${y}`).toBe(TILE_OF[ch]);
+          })
+        );
+        const inside = (e: { x: number; y: number }) => e.x >= x0 && e.x < x0 + w && e.y >= y0 && e.y < y0 + layout.length;
+        const hostile = r.map.getAllEntities().filter((e) => e instanceof Monster && inside(e.position));
+        expect(hostile, `floor ${band.minFloor} seed ${seed}: a monster waits in the threshold`).toHaveLength(0);
       }
     });
   }

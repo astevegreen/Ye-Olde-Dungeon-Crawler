@@ -230,4 +230,32 @@ describe('Expanded Enemy Intent Telegraphing System', () => {
       expect(engine.messages.some((m) => m.includes('strikes the empty ground'))).toBe(true);
     });
   });
+
+  describe('5. Caster inside its own blast', () => {
+    it('does not damage the caster when a blast centred on the target covers the caster tile', () => {
+      const caster = new Monster({
+        id: 'warden',
+        name: 'Frost Warden',
+        position: { x: 10, y: 12 },
+        stats: { hp: 68, maxHp: 68, attack: 12, defense: 5 },
+        aiType: 'caster',
+      });
+      map.addEntity(caster);
+
+      // Radius 2 around the hero at (10, 10) reaches the caster two tiles away.
+      const dangerTiles = computeDangerTiles(caster.position, player.position, 'blast', map, 5, 2);
+      expect(dangerTiles.some((t) => t.x === caster.x && t.y === caster.y)).toBe(true);
+
+      const initialCasterHp = caster.hp;
+      const initialPlayerHp = player.hp;
+      new WindUpExecuteAction(caster, { x: 10, y: 10 }, 'Rime Shockwave', 2.2, {
+        targetTiles: dangerTiles,
+        pattern: 'blast',
+      }).perform(engine);
+
+      expect(player.hp).toBeLessThan(initialPlayerHp);
+      expect(caster.hp).toBe(initialCasterHp);
+      expect(caster.isAlive()).toBe(true);
+    });
+  });
 });

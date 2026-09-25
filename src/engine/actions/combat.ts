@@ -515,7 +515,8 @@ export class WindUpExecuteAction implements Action {
 
     for (const t of dangerTiles) {
       const ent = engine.map.getEntityAt(t.x, t.y);
-      if (ent && ent.isAlive() && !hitEntities.includes(ent)) {
+      // A blast centred on the target can cover the caster's own tile; it never hits its source.
+      if (ent && ent !== this.monster && ent.isAlive() && !hitEntities.includes(ent)) {
         hitEntities.push(ent);
       }
       if (this.options?.spawnSurface && engine.surfaces) {

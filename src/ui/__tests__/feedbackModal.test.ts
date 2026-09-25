@@ -490,4 +490,57 @@ describe('FeedbackModal (Headless)', () => {
     const body = new URL(openSpy.mock.calls[0][0] as string).searchParams.get('body') ?? '';
     expect(body).toContain('commit `old1234`');
   });
+
+  describe('with a report relay', () => {
+    function relayModal(): FeedbackModal {
+      return new FeedbackModal({
+        getEngine: () => engine,
+        getProfile: () => profile,
+        modalStack,
+        relayUrl: 'https://relay.example.workers.dev/',
+        captureScreenshot: () => 'data:image/png;base64,AAAA',
+      });
+    }
+
+    it('sends the full report, screenshot and labels to the relay, with no paste prompt, and never opens GitHub', async () => {
+      const fetchSpy = vi.fn(async () => new Response(JSON.stringify({ ok: true, number: 12, url: 'u' }), { status: 201 }));
+      vi.stubGlobal('fetch', fetchSpy);
+      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+      engine.handlePlayerAction(new WaitAction(engine.player));
+
+      const m = relayModal();
+      m.open({ category: 'Crash / Freeze', subject: 'Froze' });
+      m.submitToGitHub();
+      await vi.waitFor(() => expect(m.isOpen).toBe(false));
+
+      expect(openSpy).not.toHaveBeenCalled();
+      const [url, init] = fetchSpy.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toBe('https://relay.example.workers.dev/report');
+      const payload = JSON.parse(String(init.body));
+      expect(payload.type).toBe('bug');
+      expect(payload.labels).toEqual(['bug', 'crash']);
+      expect(payload.title).toBe('[Bug]: Froze');
+      expect(payload.body).not.toContain('paste the copied report');
+      expect(payload.report).toContain('## 5. Replay Data');
+      expect(payload.screenshot).toBe('data:image/png;base64,AAAA');
+      vi.unstubAllGlobals();
+    });
+
+    it('falls back to GitHub on the next press when the relay is unreachable', async () => {
+      vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('offline'); }));
+      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+      vi.spyOn(platform, 'copyTextToClipboard').mockResolvedValue(true);
+
+      const m = relayModal();
+      m.open({ category: 'Other', subject: 'Odd' });
+      m.submitToGitHub();
+      await vi.waitFor(() => expect((globalThis as any).document.getElementById('btn-feedback-submit')?.textContent).toContain('GitHub instead'));
+      expect(m.isOpen).toBe(true);
+      expect(openSpy).not.toHaveBeenCalled();
+
+      m.submitToGitHub();
+      expect(openSpy).toHaveBeenCalledOnce();
+      vi.unstubAllGlobals();
+    });
+  });
 });

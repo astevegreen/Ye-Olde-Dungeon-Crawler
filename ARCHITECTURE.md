@@ -50,6 +50,7 @@
 | `src/ui/` | DOM HUD, LIFO modal stack (`modalStack.ts`), chorded input buffer (`input/chordBuffer.ts`), settings/keybindings, diagnostics. | Engine via `src/engine/index.ts` only. May import `src/rendering/` **types only**. Never `src/content/`. |
 | `scripts/` | Headless verification tooling, purity auditor, sim benchmark, schema validator. | Dev automation only; may deep-import engine. Not bundled. |
 | `tests/` | Top-level Vitest suites; most colocated in `src/**/__tests__/`. | Testing harness only. Not bundled. |
+| `relay/` | Bug-report relay: a Cloudflare Worker that files GitHub issues for the F3 reporter, holding a token scoped to this repo's issues. Deployed separately (`relay/README.md`); the game reaches it only over HTTP at the build-time `REPORT_RELAY_URL`, and falls back to GitHub's new-issue page without it. | Imports nothing from `src/`; not bundled into the game. Its logic (`relay/src/relay.ts`) runs under `npm test`. |
 | `e2e/` | Playwright smoke tests loading built `dist/index.html` over `file://`; needs `npm run build` first. | Testing harness only. Not bundled; excluded from Vitest. |
 
 ### Module Import Hierarchy

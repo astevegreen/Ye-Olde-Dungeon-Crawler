@@ -98,6 +98,8 @@ declare global {
     readonly VITE_APP_VERSION?: string;
     /** Short commit hash of the build (with `-dirty` for uncommitted changes), injected by vite.config.ts. */
     readonly VITE_BUILD_ID?: string;
+    /** Bug-report relay base URL (relay/), from the REPORT_RELAY_URL build variable; empty when unset. */
+    readonly VITE_REPORT_RELAY_URL?: string;
   }
   /** Debug/e2e introspection handles (e2e/campaign-flow.spec.ts reads the engine and input handler). */
   interface Window {
@@ -555,6 +557,7 @@ window.addEventListener('DOMContentLoaded', () => {
     getEngine: () => activeEngine,
     getProfile: () => activeProfile,
     bulkArchive,
+    relayUrl: import.meta.env.VITE_REPORT_RELAY_URL || undefined,
     captureScreenshot: () => {
       if (!activeEngine || !canvas || gameContainer?.style.display === 'none') return null;
       try {

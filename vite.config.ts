@@ -63,6 +63,8 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_THEME': JSON.stringify(theme),
       'import.meta.env.VITE_APP_VERSION': JSON.stringify(APP_VERSION),
       'import.meta.env.VITE_BUILD_ID': JSON.stringify(BUILD_ID),
+      // Bug-report relay (relay/README.md); the deploy workflow reads it from a repo variable.
+      'import.meta.env.VITE_REPORT_RELAY_URL': JSON.stringify(process.env.REPORT_RELAY_URL ?? ''),
     },
     base: './',
     // Keep class names through minification: the action pipeline reports

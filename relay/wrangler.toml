@@ -1,0 +1,26 @@
+# Bug-report relay (see README.md). Deploy with `npx wrangler deploy` from this folder.
+name = "yodc-report-relay"
+main = "src/worker.ts"
+compatibility_date = "2026-09-01"
+
+[vars]
+GITHUB_REPO = "astevegreen/Ye-Olde-Dungeon-Crawler"
+# "null" is the game opened from a downloaded file (file://).
+ALLOWED_ORIGINS = "https://astevegreen.github.io,null"
+
+# GITHUB_TOKEN is a secret, never committed: `npx wrangler secret put GITHUB_TOKEN`.
+
+# Optional: screenshots shown in the issue. Create with
+#   npx wrangler kv namespace create SHOTS
+# then uncomment and paste the id it prints.
+# [[kv_namespaces]]
+# binding = "SHOTS"
+# id = "<paste id here>"
+
+# Optional: at most 5 reports per minute from one IP.
+# [[ratelimits]]
+# name = "REPORT_LIMITER"
+# namespace_id = "1001"
+#   [ratelimits.simple]
+#   limit = 5
+#   period = 60

@@ -5,11 +5,13 @@
     "src/content/cotw/index.ts!",
     "src/content/warcraft/index.ts!",
     "scripts/*.ts!",
+    "relay/src/worker.ts!",
     "src/**/__tests__/**/*.ts!"
   ],
   "project": [
     "src/**/*.ts",
-    "scripts/**/*.ts"
+    "scripts/**/*.ts",
+    "relay/src/**/*.ts"
   ],
   "ignoreExportsUsedInFile": true,
   "rules": {

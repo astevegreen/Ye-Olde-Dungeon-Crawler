@@ -25,6 +25,11 @@ export interface FeedbackModalOptions {
   repoUrl?: string;
   /** A PNG data URL of the game view as it is now, or null when there's no game on screen. */
   captureScreenshot?: () => string | null;
+  /**
+   * Bug-report relay (relay/): files the issue itself, so testers need no GitHub account
+   * and never paste. Unset, or unreachable, falls back to opening GitHub's new-issue page.
+   */
+  relayUrl?: string;
 }
 
 export interface FeedbackOpenOptions {
@@ -156,6 +161,9 @@ export class FeedbackModal implements UIModal {
   private buildOverride: { buildId?: string; appVersion?: string } = {};
   /** The game view when the window opened, before the tester's next move changes it. */
   private screenshot: string | null = null;
+  /** Set when the relay couldn't take a report; the next Submit goes through GitHub. */
+  private relayFailed = false;
+  private sending = false;
   /** Replay data gzip+base64-encoded ahead of Submit, which must write the clipboard synchronously. */
   private compressedReplay: string | null = null;
   private compressing: Promise<void> = Promise.resolve();
@@ -350,6 +358,8 @@ export class FeedbackModal implements UIModal {
     this.isOpen = true;
     this.shown = true;
     this.errorContext = opts.error;
+    this.relayFailed = false;
+    this.setSubmitLabel(this.options.relayUrl ? '🚀 Send Report' : '🚀 Submit to GitHub', false);
     this.screenshot = this.options.captureScreenshot?.() ?? null;
     const shotBtn = this.modalEl.querySelector<HTMLElement>('#btn-feedback-screenshot');
     if (shotBtn) shotBtn.style.display = this.screenshot ? '' : 'none';
@@ -576,7 +586,7 @@ export class FeedbackModal implements UIModal {
    * first (what happened, where, the error, the last actions) and leaves out sections
    * that don't fit; the tester pastes the full report beneath it.
    */
-  private buildIssueBody(pkg: DiagnosticPackage, description: string, category: string, isBug: boolean): string {
+  private buildIssueBody(pkg: DiagnosticPackage, description: string, category: string, isBug: boolean, forRelay = false): string {
     const body: string[] = [
       '### Description',
       description,
@@ -589,13 +599,16 @@ export class FeedbackModal implements UIModal {
     const m = pkg.metadata;
     const r = pkg.reproduction;
     body.push(`- **Build**: \`${m.engineVersion}\` (commit \`${m.buildId ?? 'unknown'}\`)`);
-    body.push('');
-    body.push('> 📋 **Tester: paste the copied report below this line** (Ctrl+V, or long-press → Paste on a phone), then press Submit.');
-    body.push(
-      pkg.metadata.scope === 'visual'
-        ? '> 📸 **A screenshot matters most for this kind of bug.** Use *Save Screenshot* in the report window, or your device\'s own screenshot, then drag it into this box (or tap the attach button on a phone).'
-        : '> 📸 A screenshot helps too (*Save Screenshot* in the report window, or your device\'s own); drag it into this box to attach.'
-    );
+    if (!forRelay) {
+      // The relay sends the full report and screenshot itself; only the GitHub page needs these.
+      body.push('');
+      body.push('> 📋 **Tester: paste the copied report below this line** (Ctrl+V, or long-press → Paste on a phone), then press Submit.');
+      body.push(
+        pkg.metadata.scope === 'visual'
+          ? '> 📸 **A screenshot matters most for this kind of bug.** Use *Save Screenshot* in the report window, or your device\'s own screenshot, then drag it into this box (or tap the attach button on a phone).'
+          : '> 📸 A screenshot helps too (*Save Screenshot* in the report window, or your device\'s own); drag it into this box to attach.'
+      );
+    }
 
     const optional: string[][] = [];
     const err = this.errorContext;
@@ -664,21 +677,78 @@ export class FeedbackModal implements UIModal {
     this.notify(`Saved ${filename}. Attach it to the issue.`, 'success');
   }
 
-  public submitToGitHub(): void {
-    const pkg = this.buildPackage();
+  private setSubmitLabel(label: string, disabled: boolean): void {
+    const btn = this.modalEl?.querySelector<HTMLButtonElement>('#btn-feedback-submit');
+    if (!btn) return;
+    btn.textContent = label;
+    btn.disabled = disabled;
+  }
+
+  private issueTitleAndLabels(pkg: DiagnosticPackage): { title: string; labels: string[]; category: string; isBug: boolean } {
     const isBug = this.currentType === 'bug';
     const category = this.categorySelect?.value || 'General';
     const subject = pkg.metadata.subject ?? (isBug ? 'Bug Report' : 'Feature Request');
+    const labels = [isBug ? 'bug' : 'enhancement', ...(CATEGORY_LABELS[category] ?? ['triage'])];
+    return { title: `[${isBug ? 'Bug' : 'Feature'}]: ${subject}`.slice(0, 100), labels, category, isBug };
+  }
+
+  /** Submit: through the relay when one is configured and reachable, else via GitHub's page. */
+  public submitToGitHub(): void {
+    if (this.options.relayUrl && !this.relayFailed) {
+      void this.submitViaRelay(this.options.relayUrl);
+      return;
+    }
+    this.openGitHubIssue();
+  }
+
+  private async submitViaRelay(relayUrl: string): Promise<void> {
+    if (this.sending) return;
+    this.sending = true;
+    const pkg = this.buildPackage();
+    const { title, labels, category, isBug } = this.issueTitleAndLabels(pkg);
+    const description = sanitizePaths(this.descTextarea?.value.trim() || '*(No description provided)*');
+    const payload = {
+      type: isBug ? 'bug' : 'feature',
+      title,
+      labels,
+      body: this.buildIssueBody(pkg, description, category, isBug, true).slice(0, 19000),
+      report: isBug ? this.buildPasteText(pkg).text : undefined,
+      screenshot: isBug && this.screenshot ? this.screenshot : undefined,
+    };
+    this.setSubmitLabel('⏳ Sending…', true);
+    try {
+      const res = await fetch(`${relayUrl.replace(/\/$/, '')}/report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal ? AbortSignal.timeout(20000) : undefined,
+      });
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; number?: number; error?: string };
+      if (!res.ok || !data.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      this.notify(`Report sent. Thank you! (issue #${data.number})`, 'success');
+      this.close();
+    } catch (err) {
+      // Nothing was filed. Opening GitHub now would be a popup outside the click, which
+      // browsers block, so the next press of the same button goes there instead.
+      this.relayFailed = true;
+      this.setSubmitLabel('🚀 Submit via GitHub instead', false);
+      this.notify(
+        `Couldn't send the report (${(err as Error).message}). Press the button again to send it through GitHub instead.`,
+        'warning'
+      );
+    } finally {
+      this.sending = false;
+    }
+  }
+
+  private openGitHubIssue(): void {
+    const pkg = this.buildPackage();
+    const { title, labels, category, isBug } = this.issueTitleAndLabels(pkg);
     const description = sanitizePaths(this.descTextarea?.value.trim() || '*(No description provided)*');
 
     const repo = this.options.repoUrl ?? 'https://github.com/astevegreen/Ye-Olde-Dungeon-Crawler';
-    const baseLabel = isBug ? 'bug' : 'enhancement';
-    const categoryLabels = CATEGORY_LABELS[category] ?? ['triage'];
-    const labels = [baseLabel, ...categoryLabels];
-
-    const titleText = `[${isBug ? 'Bug' : 'Feature'}]: ${subject}`;
     const url = new URL(`${repo}/issues/new`);
-    url.searchParams.set('title', titleText.slice(0, 100));
+    url.searchParams.set('title', title);
     url.searchParams.set('body', this.buildIssueBody(pkg, description, category, isBug));
     url.searchParams.set('labels', labels.join(','));
 

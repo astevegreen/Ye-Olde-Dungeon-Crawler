@@ -49,6 +49,8 @@ jobs:
       - name: Build static bundles (with hidden source maps)
         env:
           SOURCEMAP: hidden
+          # Bug-report relay URL (relay/README.md). Unset, the game falls back to GitHub's page.
+          REPORT_RELAY_URL: ${{ vars.REPORT_RELAY_URL }}
         run: |
           npm run build:cotw
           mkdir -p sourcemaps/cotw && mv dist/*.map sourcemaps/cotw/ && cp dist/index.html sourcemaps/cotw/

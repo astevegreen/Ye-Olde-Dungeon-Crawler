@@ -2,11 +2,25 @@ import { defineConfig, type Plugin } from 'vite';
 import { configDefaults } from 'vitest/config';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 import { readFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 
 declare const process: any;
 
 // Shown on the title screens (src/ui/branding.ts), so the UI never claims a version the build isn't.
 const APP_VERSION: string = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')).version;
+
+// Commit the bundle was built from, stamped into bug reports: the single-file bundle is
+// minified, so a stack position means nothing until it is mapped to the build that made it.
+function resolveBuildId(): string {
+  try {
+    const sha = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    const dirty = execSync('git status --porcelain', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() !== '';
+    return dirty ? `${sha}-dirty` : sha;
+  } catch {
+    return process.env.GITHUB_SHA?.slice(0, 7) ?? 'unknown';
+  }
+}
+const BUILD_ID = resolveBuildId();
 
 // Browser file:// security treats ES module scripts (<script type="module" crossorigin>)
 // as unique/opaque origins and throws CORS security errors on local files.
@@ -48,6 +62,7 @@ export default defineConfig(({ mode }) => {
     define: {
       'import.meta.env.VITE_THEME': JSON.stringify(theme),
       'import.meta.env.VITE_APP_VERSION': JSON.stringify(APP_VERSION),
+      'import.meta.env.VITE_BUILD_ID': JSON.stringify(BUILD_ID),
     },
     base: './',
     // Keep class names through minification: the action pipeline reports

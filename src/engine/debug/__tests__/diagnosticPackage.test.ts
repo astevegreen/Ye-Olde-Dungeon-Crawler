@@ -87,6 +87,7 @@ describe('DiagnosticPackage & FlightRecorder Enhancements', () => {
 
     const pkg = recorder.generatePackage(engine, undefined, {
       userNotes: 'Spell projectile halted',
+      appVersion: '1.0.0',
       includeSnapshot: false,
     });
 

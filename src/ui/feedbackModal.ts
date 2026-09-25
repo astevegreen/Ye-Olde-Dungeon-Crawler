@@ -3,11 +3,15 @@ import {
   type GameEngine,
   type CharacterProfile,
   type BulkArchive,
+  type BugReportScope,
+  type DiagnosticPackage,
+  type DiagnosticPackageOptions,
   sanitizePaths,
 } from '../engine';
 import type { UIModal, ModalStackManager } from './modalStack';
 import { copyTextToClipboard, defaultPlatformAdapter, browserReportContext } from './platform';
 import { showToast as showGlobalToast } from './toast';
+import { encodeReplayBlock } from './replayCodec';
 
 export type FeedbackType = 'bug' | 'feature';
 
@@ -29,15 +33,71 @@ export interface FeedbackOpenOptions {
   category?: string;
 }
 
-const BUG_CATEGORIES = [
-  'Crash / Freeze',
-  'Combat & Spells',
-  'Items & Inventory',
-  'Map & Movement',
-  'Visual & UI',
-  'Balance & Rules',
-  'Other',
+interface BugCategory {
+  label: string;
+  scope: BugReportScope;
+  /** What the report will contain, shown under the form; keep it true to FlightRecorder. */
+  contents: string;
+  includeLog: boolean;
+  includeReplay: boolean;
+}
+
+const BUG_CATEGORIES: readonly BugCategory[] = [
+  {
+    label: 'Crash / Freeze',
+    scope: 'crash',
+    contents: 'Error and stack, full action log, map around the hero, and replay data (a save plus every action since it).',
+    includeLog: true,
+    includeReplay: true,
+  },
+  {
+    label: 'Combat & Spells',
+    scope: 'combat',
+    contents: 'Combat, spell and movement log, map around the hero, hero stats, and replay data.',
+    includeLog: true,
+    includeReplay: true,
+  },
+  {
+    label: 'Items & Inventory',
+    scope: 'items',
+    contents: "Item and loot log, and the hero's equipment and encumbrance. No map; replay data only if ticked.",
+    includeLog: true,
+    includeReplay: false,
+  },
+  {
+    label: 'Map & Movement',
+    scope: 'map',
+    contents: 'Movement, stairs and door log, floor changes, map around the hero, and replay data.',
+    includeLog: true,
+    includeReplay: true,
+  },
+  {
+    label: 'Visual & UI',
+    scope: 'visual',
+    contents: 'Screen size, pixel ratio and device. No log, map or replay data unless ticked.',
+    includeLog: false,
+    includeReplay: false,
+  },
+  {
+    label: 'Balance & Rules',
+    scope: 'balance',
+    contents: 'Full action log, map around the hero, hero stats, and replay data.',
+    includeLog: true,
+    includeReplay: true,
+  },
+  {
+    label: 'Other',
+    scope: 'other',
+    contents: 'Full action log, map around the hero, hero stats, and replay data.',
+    includeLog: true,
+    includeReplay: true,
+  },
 ];
+
+/** A GitHub new-issue URL much past ~8k characters is rejected; leave room for title and labels. */
+const ISSUE_URL_BODY_BUDGET = 6000;
+/** GitHub caps an issue body at 65,536 characters; the prefilled body takes some of that. */
+const ISSUE_PASTE_BUDGET = 55000;
 
 const FEATURE_CATEGORIES = [
   'Gameplay & Mechanics',
@@ -88,6 +148,9 @@ export class FeedbackModal implements UIModal {
 
   private currentType: FeedbackType = 'bug';
   private errorContext?: Error | string;
+  /** Replay data gzip+base64-encoded ahead of Submit, which must write the clipboard synchronously. */
+  private compressedReplay: string | null = null;
+  private compressing: Promise<void> = Promise.resolve();
   /** Whether the window is showing. Kept apart from `isOpen`, which the modal stack
    *  clears before it calls `close()`, so a stack-driven close still hides the window. */
   private shown = false;
@@ -166,16 +229,16 @@ export class FeedbackModal implements UIModal {
               <span id="feedback-telemetry-preview" style="color: #94a3b8; font-family: monospace;">Floor 1 | Turn 0</span>
             </div>
             <div id="feedback-scope-desc" style="color: #38bdf8; font-size: 11px; margin-bottom: 6px;">
-              🎯 Scope: General diagnostic summary &amp; recent action log
+              🎯 Includes: full action log, map around the hero, and replay data.
             </div>
             <div style="display: flex; gap: 14px; flex-wrap: wrap;">
               <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
                 <input type="checkbox" id="feedback-check-log" checked />
-                <span>Include recent action flight log</span>
+                <span>Include action log</span>
               </label>
               <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
                 <input type="checkbox" id="feedback-check-snapshot" checked />
-                <span>Include floor &amp; save state for replay</span>
+                <span>Include replay data (save + actions since)</span>
               </label>
             </div>
           </div>
@@ -302,6 +365,7 @@ export class FeedbackModal implements UIModal {
 
     this.updateTelemetryPreview();
     this.updateScopeDescription();
+    this.prepareCompressedReplay();
 
     // Focus the title input, which also puts keystrokes on the modal's own listener.
     if (typeof window !== 'undefined' && typeof window.setTimeout === 'function') {
@@ -368,7 +432,7 @@ export class FeedbackModal implements UIModal {
 
   private populateCategories(): void {
     if (!this.categorySelect) return;
-    const categories = this.currentType === 'bug' ? BUG_CATEGORIES : FEATURE_CATEGORIES;
+    const categories = this.currentType === 'bug' ? BUG_CATEGORIES.map((c) => c.label) : FEATURE_CATEGORIES;
     this.categorySelect.innerHTML = categories
       .map((cat) => `<option value="${cat}">${cat}</option>`)
       .join('');
@@ -377,36 +441,21 @@ export class FeedbackModal implements UIModal {
     }
   }
 
+  private currentBugCategory(): BugCategory {
+    const label = this.categorySelect?.value;
+    return BUG_CATEGORIES.find((c) => c.label === label) ?? BUG_CATEGORIES[BUG_CATEGORIES.length - 1];
+  }
+
   private updateScopeDescription(): void {
     if (!this.scopeDescEl) return;
-    const cat = this.categorySelect?.value || 'Other';
     if (this.currentType !== 'bug') {
       this.scopeDescEl.textContent = '💡 Suggestion: Help us expand and balance the realm!';
       return;
     }
-    if (cat === 'Combat & Spells') {
-      this.scopeDescEl.textContent = '🎯 Scope: Combat vitals, nearby monsters, spell logs & PRNG seed (inventory & UI omitted)';
-      if (this.checkIncludeSnapshot) this.checkIncludeSnapshot.checked = false;
-      if (this.checkIncludeLog) this.checkIncludeLog.checked = true;
-    } else if (cat === 'Items & Inventory') {
-      this.scopeDescEl.textContent = '🎯 Scope: Inventory list, equipped gear, weight & ground loot (map & combat logs omitted)';
-      if (this.checkIncludeSnapshot) this.checkIncludeSnapshot.checked = false;
-      if (this.checkIncludeLog) this.checkIncludeLog.checked = true;
-    } else if (cat === 'Visual & UI') {
-      this.scopeDescEl.textContent = '🎯 Scope: Display resolution, DPR & viewport layout (heavy save snapshot & combat omitted)';
-      if (this.checkIncludeSnapshot) this.checkIncludeSnapshot.checked = false;
-      if (this.checkIncludeLog) this.checkIncludeLog.checked = false;
-    } else if (cat === 'Map & Movement') {
-      this.scopeDescEl.textContent = '🎯 Scope: ASCII map, stairs/doors & movement history (inventory & spells omitted)';
-      if (this.checkIncludeSnapshot) this.checkIncludeSnapshot.checked = false;
-      if (this.checkIncludeLog) this.checkIncludeLog.checked = true;
-    } else if (cat === 'Crash / Freeze') {
-      this.scopeDescEl.textContent = '🎯 Scope: Error trace, last 30 actions, PRNG state & full save snapshot for replay';
-      if (this.checkIncludeSnapshot) this.checkIncludeSnapshot.checked = true;
-      if (this.checkIncludeLog) this.checkIncludeLog.checked = true;
-    } else {
-      this.scopeDescEl.textContent = '🎯 Scope: General diagnostic summary & recent action log';
-    }
+    const cat = this.currentBugCategory();
+    this.scopeDescEl.textContent = `🎯 Includes: ${cat.contents}`;
+    if (this.checkIncludeLog) this.checkIncludeLog.checked = cat.includeLog;
+    if (this.checkIncludeSnapshot) this.checkIncludeSnapshot.checked = cat.includeReplay;
   }
 
   private updateTelemetryPreview(): void {
@@ -427,12 +476,11 @@ export class FeedbackModal implements UIModal {
     }
   }
 
-  private buildPackage() {
+  private reportOptions(): DiagnosticPackageOptions {
     const engine = this.options.getEngine() ?? undefined;
-    const profile = this.options.getProfile?.() ?? undefined;
     const isBug = this.currentType === 'bug';
     const includeLog = isBug && (this.checkIncludeLog?.checked ?? true);
-    const includeSnapshot = isBug && (this.checkIncludeSnapshot?.checked ?? true);
+    const includeReplay = isBug && (this.checkIncludeSnapshot?.checked ?? true);
 
     const category = this.categorySelect?.value || 'Other';
     const floor = engine?.currentFloor ?? 1;
@@ -440,18 +488,117 @@ export class FeedbackModal implements UIModal {
     const defaultSubject = isBug ? `[Floor ${floor} | Turn ${turn}] ${category} Issue` : 'Feature Request';
     const subject = this.titleInput?.value.trim() || defaultSubject;
     const rawDescription = this.descTextarea?.value.trim() || '*(No details provided)*';
-    const description = sanitizePaths(rawDescription);
 
-    return flightRecorder.generatePackage(engine, profile, {
-      includeSnapshot,
-      includeMap: isBug && category !== 'Items & Inventory' && category !== 'Visual & UI',
+    return {
+      scope: isBug ? this.currentBugCategory().scope : undefined,
+      includeSnapshot: includeReplay,
+      includeReplay,
+      // Unset for bugs: the scope decides whether the surrounding map is relevant.
+      includeMap: isBug ? undefined : false,
       maxEvents: includeLog ? 50 : 0,
       error: this.errorContext,
       subject,
       category,
-      userNotes: description,
+      userNotes: sanitizePaths(rawDescription),
       ...browserReportContext(),
+    };
+  }
+
+  private buildPackage(): DiagnosticPackage {
+    return flightRecorder.generatePackage(
+      this.options.getEngine() ?? undefined,
+      this.options.getProfile?.() ?? undefined,
+      this.reportOptions()
+    );
+  }
+
+  private prepareCompressedReplay(): void {
+    this.compressedReplay = null;
+    const replay = flightRecorder.getReplayData();
+    if (!replay || typeof CompressionStream === 'undefined') return;
+    this.compressing = encodeReplayBlock(JSON.stringify(replay))
+      .then((block) => {
+        this.compressedReplay = block;
+      })
+      .catch(() => undefined);
+  }
+
+  /** Resolves once the replay data opened with the modal has been compressed. */
+  public whenReplayCompressed(): Promise<void> {
+    return this.compressing;
+  }
+
+  /**
+   * The report the tester pastes into the issue, within GitHub's body limit. In order of
+   * preference: the full report with readable replay JSON; the report with the replay
+   * data compressed; the report without replay data (Save .json still has it).
+   */
+  private buildPasteText(pkg: DiagnosticPackage): { text: string; trimmed: boolean } {
+    const full = pkg.markdownReport ?? pkg.summary;
+    if (full.length <= ISSUE_PASTE_BUDGET) return { text: full, trimmed: false };
+    const lean = flightRecorder.generateReport(this.options.getEngine() ?? undefined, this.options.getProfile?.() ?? undefined, {
+      ...this.reportOptions(),
+      includeReplay: false,
+      includeSnapshot: false,
     });
+    if (pkg.reproduction?.replay && this.compressedReplay) {
+      const section =
+        '\n## 5. Replay Data (gzip + base64: read by F2 > Load State From Report and scripts/replay-report.ts)\n' +
+        '```replay-gz\n' + this.compressedReplay + '\n```\n';
+      if (lean.length + section.length <= ISSUE_PASTE_BUDGET) return { text: lean + section, trimmed: false };
+    }
+    return { text: lean.slice(0, ISSUE_PASTE_BUDGET), trimmed: !!pkg.reproduction?.replay };
+  }
+
+  /**
+   * The prefilled issue body. It travels in the URL, so it holds what a developer needs
+   * first (what happened, where, the error, the last actions) and leaves out sections
+   * that don't fit; the tester pastes the full report beneath it.
+   */
+  private buildIssueBody(pkg: DiagnosticPackage, description: string, category: string, isBug: boolean): string {
+    const body: string[] = [
+      '### Description',
+      description,
+      '',
+      `- **Category**: ${category}`,
+      `- **Type**: ${isBug ? 'Bug Report' : 'Feature Request'}`,
+    ];
+    if (!isBug) return body.join('\n');
+
+    const m = pkg.metadata;
+    const r = pkg.reproduction;
+    body.push(`- **Build**: \`${m.engineVersion}\` (commit \`${m.buildId ?? 'unknown'}\`)`);
+    body.push('');
+    body.push('> 📋 **Tester: paste the copied report below this line** (Ctrl+V, or long-press → Paste on a phone), then press Submit.');
+
+    const optional: string[][] = [];
+    const err = this.errorContext;
+    if (err) {
+      const message = sanitizePaths(err instanceof Error ? err.message : String(err));
+      const stack = err instanceof Error && err.stack ? sanitizePaths(err.stack.split('\n').slice(0, 6).join('\n')) : '';
+      optional.push(['### ⚠️ Error', `\`${message}\``, ...(stack ? ['```', stack, '```'] : [])]);
+    }
+    if (r) {
+      optional.push([
+        '### Where',
+        `Floor \`${r.floor}\`, turn \`${r.turn}\`, hero at \`(${r.playerCoords.x}, ${r.playerCoords.y})\`, manifest \`${r.manifestId}\`, PRNG \`${r.prngState ?? 'unknown'}\``,
+      ]);
+      if (r.recentActions.length > 0) {
+        optional.push(['### Last player actions (oldest first)', ...r.recentActions.map((a, i) => `${i + 1}. \`${a}\``)]);
+      }
+    }
+    optional.push(['### Device', `\`${m.display ?? ''}\` · \`${m.userAgent ?? ''}\``]);
+    if (pkg.asciiMap) optional.push(['### Map around the hero', '```text', pkg.asciiMap, '```']);
+
+    const encodedLength = (lines: string[]): number => encodeURIComponent(lines.join('\n')).length;
+    for (const section of optional) {
+      const candidate = [...body, '', ...section];
+      if (encodedLength(candidate) <= ISSUE_URL_BODY_BUDGET) body.splice(0, body.length, ...candidate);
+    }
+    let text = body.join('\n');
+    // Only a very long description gets here; cut it rather than lose the rest.
+    while (encodeURIComponent(text).length > ISSUE_URL_BODY_BUDGET) text = text.slice(0, Math.floor(text.length * 0.9));
+    return text;
   }
 
   public async copyReport(format: 'markdown' | 'json' = 'markdown'): Promise<void> {
@@ -485,10 +632,7 @@ export class FeedbackModal implements UIModal {
     const pkg = this.buildPackage();
     const isBug = this.currentType === 'bug';
     const category = this.categorySelect?.value || 'General';
-    const floor = this.options.getEngine()?.currentFloor ?? 1;
-    const turn = this.options.getEngine()?.turnCount ?? 0;
-    const defaultSubject = isBug ? `[Floor ${floor} | Turn ${turn}] ${category} Issue` : 'Feature Request';
-    const subject = this.titleInput?.value.trim() || defaultSubject;
+    const subject = pkg.metadata.subject ?? (isBug ? 'Bug Report' : 'Feature Request');
     const description = sanitizePaths(this.descTextarea?.value.trim() || '*(No description provided)*');
 
     const repo = this.options.repoUrl ?? 'https://github.com/astevegreen/Ye-Olde-Dungeon-Crawler';
@@ -496,33 +640,26 @@ export class FeedbackModal implements UIModal {
     const categoryLabels = CATEGORY_LABELS[category] ?? ['triage'];
     const labels = [baseLabel, ...categoryLabels];
 
-    // Concise, URL-safe issue body (< 1800 chars)
-    const bodyLines: string[] = [];
-    bodyLines.push(`### Description`);
-    bodyLines.push(description);
-    bodyLines.push('');
-    bodyLines.push(`- **Category**: ${category}`);
-    bodyLines.push(`- **Type**: ${isBug ? 'Bug Report' : 'Feature Request'}`);
-    bodyLines.push('');
-    bodyLines.push(pkg.summary);
-    bodyLines.push('');
-    if (isBug) {
-      bodyLines.push('> 📋 **AI-ready diagnostic report has been automatically copied to your clipboard.**');
-      bodyLines.push('> *Press Ctrl+V to paste into Claude Code or Antigravity to reproduce & fix!*');
-    }
-
-    const bodyText = bodyLines.join('\n');
     const titleText = `[${isBug ? 'Bug' : 'Feature'}]: ${subject}`;
-
     const url = new URL(`${repo}/issues/new`);
     url.searchParams.set('title', titleText.slice(0, 100));
-    url.searchParams.set('body', bodyText.slice(0, 1750));
+    url.searchParams.set('body', this.buildIssueBody(pkg, description, category, isBug));
     url.searchParams.set('labels', labels.join(','));
 
-    // Copy AI markdown report to clipboard
-    void copyTextToClipboard(pkg.markdownReport ?? JSON.stringify(pkg, null, 2));
-
-    this.notify('Opening GitHub! AI bug report copied to clipboard. 📋', 'success');
+    if (isBug) {
+      // Written before window.open, inside the click, so browsers that need a user
+      // gesture for clipboard writes (Safari) still allow it.
+      const paste = this.buildPasteText(pkg);
+      void copyTextToClipboard(paste.text);
+      this.notify(
+        paste.trimmed
+          ? 'Opening GitHub. Report copied without replay data (too large): paste it into the issue, and attach the file from Save .json. 📋'
+          : 'Opening GitHub. Report copied: paste it into the issue before submitting. 📋',
+        'success'
+      );
+    } else {
+      this.notify('Opening GitHub…', 'success');
+    }
 
     if (typeof window !== 'undefined') {
       window.open(url.toString(), '_blank');

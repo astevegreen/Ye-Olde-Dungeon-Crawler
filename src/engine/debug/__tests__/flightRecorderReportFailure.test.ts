@@ -22,7 +22,7 @@ describe('FlightRecorder.generateReport snapshot failure path', () => {
       expect(() => {
         report = flightRecorder.generateReport(engine);
       }).not.toThrow();
-      expect(report).toContain('## 5. Reproducible State Snapshot');
+      expect(report).toContain('## 5. State Snapshot (at report time)');
       expect(report).toContain('Failed to serialize game state snapshot: serializeGame is not registered');
     } finally {
       registerSerializeGameFn(serializeGame);

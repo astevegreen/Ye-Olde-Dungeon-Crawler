@@ -4,13 +4,17 @@ import {
   GameMap,
   Player,
   TILES,
+  WaitAction,
+  ItemFactory,
   flightRecorder,
+  loadReplayState,
   type CharacterProfile,
 } from '../../engine';
 import { FeedbackModal } from '../feedbackModal';
 import { ModalStackManager } from '../modalStack';
 import { cotwManifest } from '../../content/cotw';
 import * as platform from '../platform';
+import { expandCompressedReplay } from '../replayCodec';
 
 class MockElement {
   public id = '';
@@ -329,7 +333,7 @@ describe('FeedbackModal (Headless)', () => {
     expect(copiedText).toContain('cotw');
     expect(copiedText).toContain('Ragnar');
     expect(copiedText).toContain('Combat glitch');
-    expect(copiedText).toContain('AI Agent Reproduction Context');
+    expect(copiedText).toContain('Reproduction Context');
 
     // JSON format copy
     await modal.copyReport('json');
@@ -392,5 +396,69 @@ describe('FeedbackModal (Headless)', () => {
     modal.submitToGitHub();
     url = openSpy.mock.calls[0][0] as string;
     expect(url).toContain('labels=enhancement%2Cquality-of-life');
+  });
+
+  it('puts the reproduction essentials and a paste prompt in the issue body itself', () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    vi.spyOn(platform, 'copyTextToClipboard').mockResolvedValue(true);
+    engine.handlePlayerAction(new WaitAction(engine.player));
+
+    modal.open({ category: 'Crash / Freeze', subject: 'Froze', error: new Error('boom at turn 1') });
+    modal.submitToGitHub();
+
+    const url = new URL(openSpy.mock.calls[0][0] as string);
+    const body = url.searchParams.get('body') ?? '';
+    expect(body).toContain('**Build**');
+    expect(body).toContain('paste the copied report below this line');
+    expect(body).toContain('boom at turn 1');
+    expect(body).toContain('### Where');
+    expect(body).toContain('WaitAction');
+    expect(encodeURIComponent(body).length).toBeLessThanOrEqual(6000);
+  });
+
+  it('keeps the issue body and the pasted report inside GitHub limits for a huge description', () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const copySpy = vi.spyOn(platform, 'copyTextToClipboard').mockResolvedValue(true);
+
+    modal.open({ category: 'Other', subject: 'Long story', description: 'x'.repeat(70000) });
+    modal.submitToGitHub();
+
+    const body = new URL(openSpy.mock.calls[0][0] as string).searchParams.get('body') ?? '';
+    expect(encodeURIComponent(body).length).toBeLessThanOrEqual(6000);
+    expect((copySpy.mock.calls[0][0] as string).length).toBeLessThanOrEqual(55000);
+  });
+
+  it('leaves the log out when the log box is unticked (Visual & UI default)', async () => {
+    const copySpy = vi.spyOn(platform, 'copyTextToClipboard').mockResolvedValue(true);
+    flightRecorder.recordWarning('something visual');
+
+    modal.open({ category: 'Visual & UI', subject: 'Overlap' });
+    await modal.copyReport();
+
+    const copied = copySpy.mock.calls[0][0] as string;
+    expect(copied).toContain('Flight log not included');
+    expect(copied).not.toContain('something visual');
+  });
+
+  it('compresses replay data into the pasted report when the readable version would not fit', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const copySpy = vi.spyOn(platform, 'copyTextToClipboard').mockResolvedValue(true);
+    // Bloat the checkpoint past the paste budget with ground loot.
+    for (let i = 0; i < 400; i++) engine.map.addItemAt(1 + (i % 8), 1 + Math.floor(i / 50), ItemFactory.createTorch(`bulk-torch-${i}`));
+    engine.handlePlayerAction(new WaitAction(engine.player));
+    engine.handlePlayerAction(new WaitAction(engine.player));
+
+    modal.open({ category: 'Crash / Freeze', subject: 'Big world' });
+    await modal.whenReplayCompressed();
+    modal.submitToGitHub();
+
+    expect(openSpy).toHaveBeenCalledOnce();
+    const pasted = copySpy.mock.calls[0][0] as string;
+    expect(pasted.length).toBeLessThanOrEqual(55000);
+    expect(pasted).toContain('```replay-gz');
+
+    const loaded = loadReplayState(await expandCompressedReplay(pasted), cotwManifest);
+    expect(loaded.ok && loaded.value.source).toBe('replay-checkpoint');
+    expect(loaded.ok && loaded.value.trail).toHaveLength(2);
   });
 });

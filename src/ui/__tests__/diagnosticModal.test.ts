@@ -722,6 +722,59 @@ describe('DiagnosticModal - Categorized Sub-Menus & Triage Tool', () => {
       expect(player.statusManager.getAll().length).toBe(0);
     });
 
+    it('kills visible hostile monsters through engine.diagnostics', () => {
+      const orc = new Monster({ id: 'orc-1', name: 'Orc', position: { x: 6, y: 5 }, stats: { hp: 20, maxHp: 20, attack: 5, defense: 2 } });
+      engine.addEntity(orc);
+      engine.updateFov();
+
+      modal.open();
+      modal.setActiveTab('triage');
+      mockDoc.getElementById('btn-triage-kill-visible')?.click();
+
+      expect(orc.isAlive()).toBe(false);
+    });
+
+    it('grants exactly one level', () => {
+      const before = player.level;
+      modal.open();
+      modal.setActiveTab('triage');
+      mockDoc.getElementById('btn-triage-grant-level')?.click();
+      expect(player.level).toBe(before + 1);
+    });
+
+    it('identifies everything the hero carries', () => {
+      const ring = ItemFactory.createCursedRing('ring-unid');
+      ring.identified = false;
+      player.addItem(ring);
+      expect(engine.identification.isIdentified(ring)).toBe(false);
+
+      modal.open();
+      modal.setActiveTab('triage');
+      mockDoc.getElementById('btn-triage-identify-all')?.click();
+
+      expect(engine.identification.isIdentified(ring)).toBe(true);
+    });
+
+    it('sets the PRNG state', () => {
+      modal.open();
+      modal.setActiveTab('triage');
+      const input = mockDoc.getElementById('input-triage-prng');
+      if (input) input.value = '12345';
+      mockDoc.getElementById('btn-triage-set-prng')?.click();
+      expect(engine.prng.getState()).toBe(12345);
+    });
+
+    it('hands a pasted report to the load-state handler with the replay choice', () => {
+      const handler = vi.fn(async () => 'Loaded.');
+      modal.setLoadReportStateHandler(handler);
+      modal.open();
+      modal.setActiveTab('triage');
+      const input = mockDoc.getElementById('input-triage-report');
+      if (input) input.value = '{"stateSnapshot":{}}';
+      mockDoc.getElementById('btn-triage-load-report')?.click();
+      expect(handler).toHaveBeenCalledWith('{"stateSnapshot":{}}', true);
+    });
+
     it('reveals hidden secret doors and traps across the floor', () => {
       engine.map.setTile(15, 15, TILES.SECRET_DOOR);
       expect(engine.map.getTile(15, 15)?.type).toBe('secret_door');

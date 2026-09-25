@@ -4,14 +4,30 @@ import { getPlayerTotalCp } from '../economy/currency';
 import { safeJsonStringify } from '../storage/safeJson';
 import { sanitizePaths } from './sanitizer';
 export { sanitizePaths } from './sanitizer';
+import type { Action } from '../actions/action';
+import { describeAction, formatTrailEntry } from './actionTrail';
 import type {
+  BugReportScope,
   FlightEvent,
   FlightEventType,
   DiagnosticReportOptions,
   DiagnosticPackage,
   DiagnosticPackageOptions,
   DiagnosticPackageMetadata,
+  ReplayCheckpoint,
+  ReplayData,
+  TrailEntry,
 } from './types';
+
+/** Player actions whose class name marks them as item handling, for scoping. */
+const ITEM_ACTION = /PickUp|Drop|Equip|Loot|Store|Drink|Read|Zap|Identify|Curse|Vault|Deposit|Withdraw/;
+/** Player actions that move the hero or change the floor, for scoping. */
+const MAP_ACTION = /Movement|Stairs|Door|Search|Disarm|Portal|Projection|Rest|Wait/;
+/** Player actions that attack or cast, for scoping. */
+const COMBAT_ACTION = /Attack|Spell|Zap|Ranged|WindUp/;
+
+/** A new checkpoint is taken once the trail since the last one reaches this length. */
+const TRAIL_CAPACITY = 250;
 
 /**
  * Injected by `storage/serializer.ts` (self-registering on load) rather than imported
@@ -33,6 +49,13 @@ export class FlightRecorder {
   private buffer: FlightEvent[] = [];
   public readonly capacity: number;
   private nextId = 1;
+
+  // Replay: a save taken at an action boundary, and every player action since.
+  private trail: TrailEntry[] = [];
+  private checkpoint: (Omit<ReplayCheckpoint, 'save'> & { save: string }) | null = null;
+  private checkpointEngine: GameEngine | null = null;
+  private pendingCheckpointReason: string | null = 'session start';
+  private nextTrailSeq = 1;
 
   constructor(capacity = 150) {
     this.capacity = capacity;
@@ -150,11 +173,72 @@ export class FlightRecorder {
     message: string,
     details?: Record<string, unknown>
   ): FlightEvent {
+    if (category === 'floor_transition') {
+      // The floor changes mid-action; checkpoint before the next action, at a clean boundary.
+      this.requestCheckpoint('floor entry');
+    }
     return this.record({
       type: 'state',
       summary: `[${category}] ${message}`,
       details: { category, message, ...details },
     });
+  }
+
+  /**
+   * Asks for a fresh replay checkpoint before the next player action. Call it after any
+   * state change that doesn't go through `handlePlayerAction` (triage tools, floor changes),
+   * since replaying the trail can't reproduce those.
+   */
+  public requestCheckpoint(reason: string): void {
+    this.pendingCheckpointReason = reason;
+  }
+
+  /**
+   * Records a player action as `handlePlayerAction` received it, before it runs. Takes the
+   * checkpoint first when one is due, so checkpoint + trail always replay from a boundary.
+   * Never throws: diagnostics must not break a turn.
+   */
+  public recordPlayerAction(action: Action, engine: GameEngine): void {
+    try {
+      if (engine !== this.checkpointEngine) {
+        this.pendingCheckpointReason ??= 'game loaded';
+      } else if (this.trail.length >= TRAIL_CAPACITY) {
+        this.pendingCheckpointReason ??= `trail reached ${TRAIL_CAPACITY} actions`;
+      }
+      if (this.pendingCheckpointReason !== null) {
+        this.takeCheckpoint(engine, this.pendingCheckpointReason);
+      }
+      const { action: name, params } = describeAction(action);
+      this.trail.push({ seq: this.nextTrailSeq++, turn: engine.turnCount, floor: engine.currentFloor, action: name, params });
+    } catch {
+      // A checkpoint that fails to serialize leaves no replay data rather than a wrong one.
+      this.checkpoint = null;
+      this.trail = [];
+    }
+  }
+
+  private takeCheckpoint(engine: GameEngine, reason: string): void {
+    this.pendingCheckpointReason = null;
+    this.checkpointEngine = engine;
+    this.trail = [];
+    this.checkpoint = null;
+    const save = this.generateStateSnapshot(engine);
+    if (save === null) return;
+    this.checkpoint = {
+      reason,
+      turn: engine.turnCount,
+      floor: engine.currentFloor,
+      save: safeJsonStringify(save),
+    };
+  }
+
+  /** The current checkpoint and the actions since it, or null if none was taken. */
+  public getReplayData(): ReplayData | null {
+    if (!this.checkpoint) return null;
+    return {
+      checkpoint: { ...this.checkpoint, save: JSON.parse(this.checkpoint.save) as unknown },
+      trail: this.trail.map((e) => ({ ...e, params: { ...e.params } })),
+    };
   }
 
   public recordError(
@@ -201,80 +285,53 @@ export class FlightRecorder {
   }
 
   public getRecentEvents(count = 150): FlightEvent[] {
-    return this.buffer.slice(-count);
+    // slice(-0) is the whole array; zero means none.
+    return count > 0 ? this.buffer.slice(-count) : [];
   }
 
   /**
-   * Retrieves the most recent sequence of player actions/inputs from the buffer,
-   * formatted for reproduction by AI agents (Claude Code / Antigravity).
+   * The most recent player actions, oldest first, with their parameters
+   * (`MovementAction dx=1 dy=0`). Falls back to the logged action names when no trail
+   * has been recorded.
    */
   public getRecentActionSequence(max = 15): string[] {
-    const actions: string[] = [];
-    for (let i = this.buffer.length - 1; i >= 0 && actions.length < max; i--) {
-      const ev = this.buffer[i];
-      if (ev.type === 'input') {
-        actions.unshift(ev.summary);
-      } else if (ev.type === 'combat') {
-        actions.unshift(`Combat: ${ev.summary}`);
-      } else if (ev.type === 'spell') {
-        actions.unshift(`Spell: ${ev.summary}`);
-      } else if (ev.type === 'state' && ev.details?.action) {
-        actions.unshift(String(ev.details.action));
-      }
+    if (this.trail.length > 0) {
+      return this.trail.slice(-max).map((e) => formatTrailEntry(e));
     }
-    return actions;
+    return this.buffer
+      .filter((e) => e.type === 'state' && e.details?.category === 'action' && e.details.action)
+      .slice(-max)
+      .map((e) => String(e.details?.action));
   }
 
   /**
-   * Scopes flight log events to only those relevant to a specific category,
-   * preventing irrelevant data bloat in bug reports.
+   * The flight log narrowed to what a report's scope needs. Errors and warnings are always
+   * kept. With no scope (or crash/balance/other) the whole log is returned.
    */
-  public getScopedFlightLog(category?: string, maxEvents?: number): FlightEvent[] {
+  public getScopedFlightLog(scope?: BugReportScope, maxEvents?: number): FlightEvent[] {
     const limit = maxEvents ?? this.capacity;
-    if (!category || category === 'Other' || category === 'Crash / Freeze' || category === 'Balance & Rules') {
-      return this.getRecentEvents(limit);
+    if (limit <= 0) return [];
+    const actionName = (e: FlightEvent): string =>
+      e.type === 'state' && e.details?.category === 'action' ? String(e.details.action ?? '') : '';
+    let keep: ((e: FlightEvent) => boolean) | null = null;
+    switch (scope) {
+      case 'combat':
+        keep = (e) => e.type === 'combat' || e.type === 'spell' || COMBAT_ACTION.test(actionName(e)) || MAP_ACTION.test(actionName(e));
+        break;
+      case 'items':
+        keep = (e) => ITEM_ACTION.test(actionName(e)) || (e.type === 'state' && e.details?.category === 'loot_spawn');
+        break;
+      case 'map':
+        keep = (e) => MAP_ACTION.test(actionName(e)) || (e.type === 'state' && e.details?.category === 'floor_transition');
+        break;
+      case 'visual':
+        keep = (e) => e.type === 'input';
+        break;
+      default:
+        keep = null;
     }
-    const catLower = category.toLowerCase();
-    let filtered: FlightEvent[];
-    if (catLower.includes('combat') || catLower.includes('spell')) {
-      filtered = this.buffer.filter(
-        (e) =>
-          e.type === 'combat' ||
-          e.type === 'spell' ||
-          e.type === 'error' ||
-          (e.type === 'state' && (e.details?.category === 'combat' || e.details?.category === 'action'))
-      );
-    } else if (catLower.includes('item') || catLower.includes('inventory')) {
-      filtered = this.buffer.filter(
-        (e) =>
-          e.type === 'error' ||
-          e.type === 'warning' ||
-          (e.type === 'state' && (e.details?.category === 'inventory' || e.details?.category === 'item' || e.details?.category === 'action')) ||
-          (e.type === 'input' && typeof e.summary === 'string' && (e.summary.includes('Pick') || e.summary.includes('Loot') || e.summary.includes('Drop') || e.summary.includes('Item') || e.summary.includes('Use')))
-      );
-    } else if (catLower.includes('visual') || catLower.includes('ui')) {
-      filtered = this.buffer.filter(
-        (e) =>
-          e.type === 'warning' ||
-          e.type === 'error' ||
-          (e.type === 'state' && (e.details?.category === 'ui' || e.details?.category === 'render')) ||
-          (e.type === 'input' && typeof e.summary === 'string' && e.summary.includes('Toggle'))
-      );
-    } else if (catLower.includes('map') || catLower.includes('movement')) {
-      filtered = this.buffer.filter(
-        (e) =>
-          (e.type === 'input' && e.summary.includes('Move')) ||
-          (e.type === 'state' && (e.details?.category === 'movement' || e.details?.category === 'map' || e.details?.category === 'action')) ||
-          e.type === 'error' ||
-          e.type === 'warning'
-      );
-    } else {
-      filtered = this.buffer;
-    }
-    if (filtered.length === 0) {
-      return this.getRecentEvents(Math.min(limit, 25));
-    }
-    return filtered.slice(-limit);
+    const events = keep ? this.buffer.filter((e) => e.type === 'error' || e.type === 'warning' || keep(e)) : this.buffer;
+    return events.slice(-limit);
   }
 
   public clear(): void {
@@ -426,7 +483,7 @@ export class FlightRecorder {
 
     lines.push(`### 🛡️ ${manifestName} (${manifestId}) - Diagnostic Summary`);
     lines.push(`- **Generated**: \`${isoTimestamp}\``);
-    lines.push(`- **Engine Version**: \`1.0.0\` | **Display**: ${winW}x${winH} (DPR: \`${dpr}\`)`);
+    lines.push(`- **Build**: \`${options.appVersion ?? 'unknown'}\` (commit \`${options.buildId ?? 'unknown'}\`) | **Display**: ${winW}x${winH} (DPR: \`${dpr}\`)`);
     lines.push(`- **Environment**: \`${userAgent}\``);
 
     if (engine && engine.player) {
@@ -489,34 +546,13 @@ export class FlightRecorder {
     const userAgent = options.userAgent ?? 'Headless / Pure Engine';
     const category = options.category;
     const subject = options.subject;
+    const resolved = this.resolveSections(options);
 
-    // Scoped defaults to avoid massive data dumps:
-    // Visual & UI: omit save snapshot and ascii map unless requested
-    // Items & Inventory: omit ascii map and heavy entity lists unless requested
-    let includeSnapshot = options.includeSnapshot;
-    let includeMap = options.includeMap;
-    if (includeSnapshot === undefined && category) {
-      if (category === 'Visual & UI' || category === 'Items & Inventory') {
-        includeSnapshot = false;
-      } else if (category === 'Crash / Freeze') {
-        includeSnapshot = true;
-      }
-    }
-    if (includeMap === undefined && category) {
-      if (category === 'Visual & UI' || category === 'Items & Inventory') {
-        includeMap = false;
-      }
-    }
-
-    const events = this.getScopedFlightLog(category, options.maxEvents ?? this.capacity);
-    const summary = this.generateSummary(engine, profile, {
-      ...options,
-      includeSnapshot,
-      includeMap,
-    });
+    const events = this.getScopedFlightLog(options.scope, options.maxEvents ?? this.capacity);
+    const summary = this.generateSummary(engine, profile, resolved);
 
     let stateSnapshot: unknown | undefined;
-    if (includeSnapshot !== false && engine) {
+    if (resolved.includeSnapshot && engine) {
       try {
         stateSnapshot = this.generateStateSnapshot(engine, profile) ?? undefined;
       } catch {
@@ -529,11 +565,12 @@ export class FlightRecorder {
       : undefined;
 
     const asciiMap =
-      includeMap !== false && engine
+      resolved.includeMap && engine
         ? this.generateAsciiMap(engine, options.mapRadius ?? 5) ?? undefined
         : undefined;
 
     const p = engine?.player;
+    const replay = resolved.includeReplay ? this.getReplayData() ?? undefined : undefined;
     const reproduction =
       engine && p
         ? {
@@ -543,14 +580,16 @@ export class FlightRecorder {
             prngState: engine.prng ? engine.prng.getState() : undefined,
             playerCoords: { x: p.x, y: p.y },
             recentActions: this.getRecentActionSequence(15),
-            reproductionHint: `Simulate floor ${engine.currentFloor} with PRNG state ${engine.prng?.getState() ?? 'unknown'} and replay the recent actions.`,
+            replay,
+            reproductionHint: this.reproductionHint(replay),
           }
         : undefined;
 
     const metadata: DiagnosticPackageMetadata = {
       timestamp: now.getTime(),
       isoTimestamp: now.toISOString(),
-      engineVersion: '1.0.0',
+      engineVersion: options.appVersion ?? 'unknown',
+      buildId: options.buildId,
       manifestId: engine?.manifest?.id ?? 'core',
       manifestName: engine?.manifest?.name ?? 'Roguelike Game Engine',
       turnCount: engine?.turnCount,
@@ -560,14 +599,11 @@ export class FlightRecorder {
       userAgent,
       display: `${winW}x${winH}@${dpr}x`,
       category,
+      scope: options.scope,
       subject,
     };
 
-    const markdownReport = this.generateReport(engine, profile, {
-      ...options,
-      includeSnapshot,
-      includeMap,
-    });
+    const markdownReport = this.generateReport(engine, profile, resolved);
 
     return {
       metadata,
@@ -578,6 +614,35 @@ export class FlightRecorder {
       reproduction,
       markdownReport,
     };
+  }
+
+  /**
+   * Fills in the sections a scope leaves out by default; explicit options always win.
+   * Visual and item reports skip the map and save; everything else carries them.
+   */
+  private resolveSections(options: DiagnosticPackageOptions): DiagnosticPackageOptions & {
+    includeSnapshot: boolean;
+    includeMap: boolean;
+    includeReplay: boolean;
+  } {
+    const lean = options.scope === 'visual' || options.scope === 'items';
+    const includeSnapshot = options.includeSnapshot ?? !lean;
+    const includeMap = options.includeMap ?? !lean;
+    const includeReplay = options.includeReplay ?? includeSnapshot;
+    return { ...options, includeSnapshot, includeMap, includeReplay };
+  }
+
+  private reproductionHint(replay: ReplayData | undefined): string {
+    if (!replay) {
+      return 'No replay data in this report; load the state snapshot, if present, to inspect the final state.';
+    }
+    return (
+      `Load the checkpoint save (turn ${replay.checkpoint.turn}, floor ${replay.checkpoint.floor}, taken on ` +
+      `${replay.checkpoint.reason}) and replay the ${replay.trail.length} trail action(s) in order through ` +
+      'handlePlayerAction: loadReplayState() + replayActionTrail() in src/engine/debug/replay.ts, or ' +
+      'F2 > Triage > Load State From Report. Changes made outside player actions (shop trades, level-up ' +
+      'stat choices, dialog choices) are not in the trail; if the replay diverges, one of those happened.'
+    );
   }
 
   /**
@@ -596,7 +661,8 @@ export class FlightRecorder {
     const winH = options.viewportHeight ?? 600;
     const userAgent = options.userAgent ?? 'Headless / Pure Engine';
 
-    const events = this.getScopedFlightLog(options.category, options.maxEvents ?? this.capacity);
+    const resolved = this.resolveSections(options);
+    const events = this.getScopedFlightLog(options.scope, options.maxEvents ?? this.capacity);
     const firstEventTime = events.length > 0 ? events[0].timestamp : now.getTime();
 
     const lines: string[] = [];
@@ -634,27 +700,27 @@ export class FlightRecorder {
     // 1. System Telemetry
     lines.push('## 1. System Telemetry');
     lines.push(`- **Content Manifest**: \`${engine?.manifest?.id ?? 'none'}\` (${engine?.manifest?.name ?? 'no manifest loaded'})`);
-    lines.push(`- **Engine Version**: \`1.0.0\` (Architecture: Swappable Manifest + RLE V2)`);
+    lines.push(`- **Build**: \`${options.appVersion ?? 'unknown'}\` (commit \`${options.buildId ?? 'unknown'}\`)`);
     lines.push(`- **Display / Viewport**: ${winW}x${winH} (DPR: \`${dpr}\`)`);
     lines.push(`- **User Agent**: \`${userAgent}\``);
     lines.push(`- **Buffered Events**: ${events.length} / ${this.capacity}`);
     lines.push('');
 
-    // AI Reproduction Context
+    // Reproduction context
+    const replay = resolved.includeReplay ? this.getReplayData() ?? undefined : undefined;
     if (engine && engine.player) {
       const p = engine.player;
-      const recentActions = this.getRecentActionSequence(10);
-      lines.push('### 🤖 AI Agent Reproduction Context (Claude Code & Antigravity)');
-      lines.push(`- **Target Manifest**: \`${engine.manifest?.id ?? 'cotw'}\` | **Floor**: \`${engine.currentFloor}\` | **Turn**: \`${engine.turnCount}\``);
-      lines.push(`- **PRNG State**: \`${engine.prng ? engine.prng.getState() : 'unknown'}\``);
-      lines.push(`- **Player Coordinates**: \`(${p.x}, ${p.y})\``);
+      const recentActions = this.getRecentActionSequence(15);
+      lines.push('### 🤖 Reproduction Context');
+      lines.push(`- **Manifest**: \`${engine.manifest?.id ?? 'core'}\` | **Floor**: \`${engine.currentFloor}\` | **Turn**: \`${engine.turnCount}\` | **Player**: \`(${p.x}, ${p.y})\``);
+      lines.push(`- **PRNG State (at report time)**: \`${engine.prng ? engine.prng.getState() : 'unknown'}\``);
       if (recentActions.length > 0) {
-        lines.push('- **Recent Actions**:');
+        lines.push('- **Recent Player Actions** (oldest first):');
         for (let i = 0; i < recentActions.length; i++) {
           lines.push(`  ${i + 1}. \`${recentActions[i]}\``);
         }
       }
-      lines.push(`- **Reproduction Hint**: Replay the actions above on floor \`${engine.currentFloor}\` with PRNG state \`${engine.prng ? engine.prng.getState() : 'unknown'}\`.`);
+      lines.push(`- **How to Reproduce**: ${this.reproductionHint(replay)}`);
       lines.push('');
     }
 
@@ -726,7 +792,7 @@ export class FlightRecorder {
     // 4. Chronological Flight Log
     lines.push(`## 4. Chronological Flight Log (${events.length} Events)`);
     if (events.length === 0) {
-      lines.push('*(No telemetry events recorded yet)*');
+      lines.push(options.maxEvents === 0 ? '*(Flight log not included in this report)*' : '*(No telemetry events recorded yet)*');
     } else {
       lines.push('| ID | +Time | Type | Summary | Details |');
       lines.push('|---|---|---|---|---|');
@@ -739,9 +805,15 @@ export class FlightRecorder {
     }
     lines.push('');
 
-    // 5. Reproducible State Snapshot
-    if (options.includeSnapshot !== false && engine) {
-      lines.push('## 5. Reproducible State Snapshot');
+    // 5. Replay data, or the final state when there is none
+    if (replay) {
+      lines.push(`## 5. Replay Data (checkpoint + ${replay.trail.length} actions)`);
+      lines.push('```json');
+      lines.push(safeJsonStringify(replay));
+      lines.push('```');
+      lines.push('');
+    } else if (resolved.includeSnapshot && engine) {
+      lines.push('## 5. State Snapshot (at report time)');
       try {
         const saveData = this.generateStateSnapshot(engine, profile);
         const jsonSnapshot = safeJsonStringify(saveData);

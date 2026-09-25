@@ -115,7 +115,7 @@ describe('Developer Diagnostic Flight Recorder', () => {
     recorder.recordInput('ArrowRight', 'MovementAction');
     recorder.recordCombat('Ragnar', 'Orc Warrior', 9, false);
 
-    const report = recorder.generateReport(engine, profile, { includeSnapshot: true });
+    const report = recorder.generateReport(engine, profile, { includeSnapshot: true, appVersion: '1.0.0' });
 
     // Header & Section Verifications
     expect(report).toContain('# Castle of the Winds - Diagnostic Flight Report');
@@ -143,7 +143,7 @@ describe('Developer Diagnostic Flight Recorder', () => {
     expect(report).toContain('Ragnar dealt 9 dmg to Orc Warrior');
 
     // State Snapshot JSON
-    expect(report).toContain('## 5. Reproducible State Snapshot');
+    expect(report).toContain('## 5. State Snapshot (at report time)');
     expect(report).toContain('```json');
     expect(report).toContain('"name":"Ragnar"');
   });

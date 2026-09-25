@@ -196,6 +196,7 @@ export * from './analytics/deathEnvelope';
 // Debug & Flight Recorder
 export * from './debug/types';
 export * from './debug/flightRecorder';
+export { loadReplayState, replayActionTrail, type LoadedReplayState, type ReplayResult } from './debug/replay';
 export * from './storage/safeJson';
 
 // Renown & Meta-Progression

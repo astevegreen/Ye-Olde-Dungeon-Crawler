@@ -34,11 +34,6 @@
       "file": "src/content/warcraft/ai.ts",
       "member": "Monster.intent",
       "reason": "A content-provided AIStrategy publishes its telegraphed intent; the engine's own AIStrategy implementations (ai/aiRegistry.ts) set Monster.intent the same way."
-    },
-    {
-      "file": "src/ui/diagnostic/triageTab.ts",
-      "member": "GameMap.moveEntity",
-      "reason": "Developer triage menu teleports hero directly to staircase on active floor."
     }
   ]
 }

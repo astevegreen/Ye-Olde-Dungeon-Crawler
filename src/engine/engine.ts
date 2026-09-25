@@ -42,6 +42,7 @@ import type { Merchant } from './economy/merchant';
 import { DungeonArc } from './quest/dungeonArc';
 import { GameStateManager } from './quest/gameStateManager';
 import { flightRecorder } from './debug/flightRecorder';
+import { createDiagnosticsApi, type TriageAPI } from './debug/triage';
 import { PRNG } from './dungeon/prng';
 import { WanderingMonsterSpawner } from './dungeon/wandering-spawner';
 import { createScaledMonster } from './dungeon/spawner';
@@ -138,7 +139,7 @@ export interface SpawnMonsterOptions {
   aiState?: AiState;
 }
 
-export interface DiagnosticsAPI {
+export interface DiagnosticsAPI extends TriageAPI {
   spawnMonster(definitionId: string, options?: SpawnMonsterOptions): Monster | null;
   spawnItem(item: Item): { placedInPack: boolean; groundTile?: Position };
   toggleGodMode(): boolean;
@@ -471,7 +472,7 @@ export class GameEngine {
     }
 
     // Initialize Triage & Diagnostic Public API
-    this.diagnostics = {
+    this.diagnostics = createDiagnosticsApi(this, {
       spawnMonster: (definitionId: string, options?: SpawnMonsterOptions): Monster | null => {
         if (!this.player) return null;
 
@@ -542,7 +543,7 @@ export class GameEngine {
         this.fov.revealAllTiles();
         this.log('A mystical vision reveals the entire floor layout.');
       },
-    };
+    });
 
     this.updateFov();
   }
@@ -967,6 +968,7 @@ export class GameEngine {
    */
   public handlePlayerAction(action: Action): ActionResult {
     activateRegistries(this.registries);
+    flightRecorder.recordPlayerAction(action, this);
     const failuresBefore = this.actionPipeline.caughtExceptionCount;
     return this.surfaceIsolatedTurnFailures(this.executePlayerTurn(action), failuresBefore);
   }

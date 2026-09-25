@@ -2,9 +2,9 @@ import {
   ItemFactory,
   Item,
   PotionItem,
+  WandItem,
+  ScrollItem,
   WaitAction,
-  SearchAction,
-  DrinkPotionAction,
   createScaledItem,
   flightRecorder,
   type GameEngine,
@@ -12,29 +12,82 @@ import {
 import type { DiagnosticTabContext } from './types';
 import { copyTextToClipboard } from '../platform';
 
-export interface CatalogItemEntry {
+type ItemCategory = 'weapon' | 'armor' | 'consumable' | 'magic' | 'misc';
+
+interface CatalogItemEntry {
   id: string;
   name: string;
-  category: 'weapon' | 'armor' | 'consumable' | 'magic' | 'misc';
+  category: ItemCategory;
   create: (engine: GameEngine) => Item;
 }
 
 let itemSearchQuery = '';
-let itemCategoryFilter: 'all' | 'weapon' | 'armor' | 'consumable' | 'magic' | 'misc' = 'all';
+let itemCategoryFilter: 'all' | ItemCategory = 'all';
 let monsterSearchQuery = '';
 let stepTurnsVal = 5;
 
-function getStandardItems(): CatalogItemEntry[] {
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function categorize(item: Item): ItemCategory {
+  if (item instanceof WandItem || item instanceof ScrollItem) return 'magic';
+  if (item instanceof PotionItem) return 'consumable';
+  switch (item.category) {
+    case 'weapon':
+      return 'weapon';
+    case 'armor':
+    case 'shield':
+    case 'helmet':
+    case 'boots':
+      return 'armor';
+    case 'consumable':
+    case 'food':
+      return 'consumable';
+    default:
+      return 'misc';
+  }
+}
+
+let factoryCatalog: CatalogItemEntry[] | null = null;
+
+/**
+ * Every argument-free `ItemFactory.create*` method, found by reflection so the menu
+ * can't drift from the factory. A throwaway instance supplies the name and category;
+ * items register with the item index only when placed, so it leaves no trace.
+ */
+function getFactoryItems(): CatalogItemEntry[] {
+  if (factoryCatalog) return factoryCatalog;
+  const factory = ItemFactory as unknown as Record<string, unknown>;
+  const entries: CatalogItemEntry[] = [];
+  for (const key of Object.getOwnPropertyNames(ItemFactory)) {
+    const fn = factory[key];
+    if (!key.startsWith('create') || typeof fn !== 'function' || fn.length > 0) continue;
+    const make = (id?: string) => (fn as (id?: string) => Item).call(ItemFactory, id);
+    let sample: Item;
+    try {
+      sample = make();
+    } catch {
+      continue;
+    }
+    if (!(sample instanceof Item)) continue;
+    entries.push({
+      id: `factory-${key}`,
+      name: sample.displayName,
+      category: categorize(sample),
+      create: (e) => make(e.nextSimulationId(key.replace(/^create/, '').toLowerCase())),
+    });
+  }
+  factoryCatalog = entries.sort((a, b) => a.name.localeCompare(b.name));
+  return factoryCatalog;
+}
+
+/** Hand-built items exercising modifier systems no factory method produces. */
+function getFixtureItems(): CatalogItemEntry[] {
   return [
-    // Weapons
-    { id: 'dagger', name: 'Iron Dagger', category: 'weapon', create: (e) => ItemFactory.createDagger(e.nextSimulationId('dagger')) },
-    { id: 'broadsword', name: 'Steel Broadsword', category: 'weapon', create: (e) => ItemFactory.createBroadsword(e.nextSimulationId('sword')) },
-    { id: 'frost-blade', name: 'Frost Broadsword', category: 'weapon', create: (e) => ItemFactory.createFrostBlade(e.nextSimulationId('frost')) },
-    { id: 'battleaxe', name: 'Bearded Battleaxe', category: 'weapon', create: (e) => ItemFactory.createBattleaxe(e.nextSimulationId('axe')) },
-    { id: 'cursed-mace', name: 'Spiked Mace (Cursed)', category: 'weapon', create: (e) => ItemFactory.createCursedMace(e.nextSimulationId('mace')) },
     {
-      id: 'blessed-sword',
-      name: 'Blessed Longsword',
+      id: 'fixture-blessed-sword',
+      name: 'Blessed Longsword (modifier fixture)',
       category: 'weapon',
       create: (e) =>
         new Item({
@@ -62,8 +115,8 @@ function getStandardItems(): CatalogItemEntry[] {
         }),
     },
     {
-      id: 'chaotic-blade',
-      name: 'Chaotic Warpblade',
+      id: 'fixture-chaotic-blade',
+      name: 'Chaotic Warpblade (modifier fixture)',
       category: 'weapon',
       create: (e) =>
         new Item({
@@ -95,66 +148,30 @@ function getStandardItems(): CatalogItemEntry[] {
           ],
         }),
     },
-
-    // Armor & Shields
-    { id: 'leather-armor', name: 'Studded Leather Armor', category: 'armor', create: (e) => ItemFactory.createLeatherArmor(e.nextSimulationId('armor')) },
-    { id: 'iron-chainmail', name: 'Iron Chainmail', category: 'armor', create: (e) => ItemFactory.createChainmail(e.nextSimulationId('ironmail')) },
-    { id: 'plate-armor', name: 'Full Plate Armor', category: 'armor', create: (e) => ItemFactory.createPlateArmor(e.nextSimulationId('plate')) },
-    { id: 'iron-helm', name: 'Iron Helmet', category: 'armor', create: (e) => ItemFactory.createIronHelmet(e.nextSimulationId('helm')) },
-    { id: 'boots', name: 'Traveler Boots', category: 'armor', create: (e) => ItemFactory.createBoots(e.nextSimulationId('boots')) },
-    { id: 'wood-shield', name: 'Wooden Shield', category: 'armor', create: (e) => ItemFactory.createWoodenShield(e.nextSimulationId('shield')) },
-    { id: 'iron-shield', name: 'Iron Tower Shield', category: 'armor', create: (e) => ItemFactory.createIronShield(e.nextSimulationId('shield-iron')) },
-
-    // Consumables
-    { id: 'potion-hp', name: 'Minor Health Potion', category: 'consumable', create: (e) => ItemFactory.createHealthPotion(e.nextSimulationId('potion-hp')) },
-    { id: 'potion-mana', name: 'Mana Draught', category: 'consumable', create: (e) => ItemFactory.createManaPotion(e.nextSimulationId('potion-mana')) },
-    { id: 'potion-antidote', name: 'Purifying Antidote', category: 'consumable', create: (e) => ItemFactory.createAntidotePotion(e.nextSimulationId('potion-antidote')) },
-    { id: 'potion-volatile', name: 'Draught of Volatile Energy', category: 'consumable', create: (e) => ItemFactory.createDraughtOfVolatileEnergy(e.nextSimulationId('potion-ve')) },
-    { id: 'rations', name: 'Iron Rations', category: 'consumable', create: (e) => ItemFactory.createRations(e.nextSimulationId('rations')) },
-    { id: 'travel-bread', name: 'Travel Bread', category: 'consumable', create: (e) => ItemFactory.createTravelBread(e.nextSimulationId('bread')) },
-
-    // Magic
-    { id: 'wand-lightning', name: 'Wand of Lightning', category: 'magic', create: (e) => ItemFactory.createWandOfLightning(e.nextSimulationId('wand-lt')) },
-    { id: 'wand-fireball', name: 'Wand of Fireballs', category: 'magic', create: (e) => ItemFactory.createWandOfFireballs(e.nextSimulationId('wand-fb')) },
-    { id: 'scroll-identify', name: 'Scroll of Identify', category: 'magic', create: (e) => ItemFactory.createScrollOfIdentify(e.nextSimulationId('scroll-id')) },
-    { id: 'scroll-teleport', name: 'Scroll of Phase Door', category: 'magic', create: (e) => ItemFactory.createScrollOfTeleport(e.nextSimulationId('scroll-tp')) },
-
-    // Misc & Containers
-    { id: 'utility-belt', name: 'Leather Utility Belt', category: 'misc', create: (e) => ItemFactory.createUtilityBelt(e.nextSimulationId('belt')) },
-    { id: 'coin-purse', name: 'Velvet Coin Purse', category: 'misc', create: (e) => ItemFactory.createCoinPurse(e.nextSimulationId('purse')) },
-    { id: 'iron-chest', name: 'Heavy Iron Chest', category: 'misc', create: (e) => ItemFactory.createIronChest(e.nextSimulationId('chest')) },
-    { id: 'lockpicks', name: 'Thief Lockpicks', category: 'misc', create: (e) => ItemFactory.createLockpicks(e.nextSimulationId('picks')) },
-    { id: 'torch', name: 'Wooden Torch', category: 'misc', create: (e) => ItemFactory.createTorch(e.nextSimulationId('torch')) },
-    { id: 'gold-coins', name: '100 Gold Coins', category: 'misc', create: (e) => ItemFactory.createGoldCoins(e.nextSimulationId('coins'), 100) },
-    { id: 'cursed-ring', name: 'Ring of Clumsiness (Cursed)', category: 'misc', create: (e) => ItemFactory.createCursedRing(e.nextSimulationId('ring')) },
   ];
 }
 
 function getAllCatalogItems(engine: GameEngine): CatalogItemEntry[] {
-  const items = [...getStandardItems()];
-  if (engine.manifest?.items && Array.isArray(engine.manifest.items)) {
-    for (const def of engine.manifest.items) {
-      let cat: 'weapon' | 'armor' | 'consumable' | 'magic' | 'misc' = 'misc';
-      if (def.category === 'weapon') cat = 'weapon';
-      else if (def.category === 'armor' || def.category === 'shield' || def.category === 'helmet' || def.category === 'boots') cat = 'armor';
-      else if (def.category === 'consumable' || def.potionConfig) cat = 'consumable';
-      else if (def.wandConfig || def.scrollConfig) cat = 'magic';
+  const items = [...getFactoryItems(), ...getFixtureItems()];
+  for (const def of engine.manifest?.items ?? []) {
+    let cat: ItemCategory = 'misc';
+    if (def.category === 'weapon') cat = 'weapon';
+    else if (def.category === 'armor' || def.category === 'shield' || def.category === 'helmet' || def.category === 'boots') cat = 'armor';
+    else if (def.category === 'consumable' || def.potionConfig) cat = 'consumable';
+    else if (def.wandConfig || def.scrollConfig) cat = 'magic';
 
-      items.push({
-        id: `pack-${def.id}`,
-        name: def.name,
-        category: cat,
-        create: (eng: GameEngine) =>
-          createScaledItem(def, eng.nextSimulationId(`item-${def.id}`), eng.currentFloor, eng.rng),
-      });
-    }
+    items.push({
+      id: `pack-${def.id}`,
+      name: def.name,
+      category: cat,
+      create: (eng: GameEngine) => createScaledItem(def, eng.nextSimulationId(`item-${def.id}`), eng.currentFloor, eng.rng),
+    });
   }
   return items;
 }
 
 function getAllMonsters(engine: GameEngine): Array<{ id: string; name: string }> {
-  const fromManifest =
-    engine.manifest?.monsters && engine.manifest.monsters.length > 0 ? engine.manifest.monsters : [];
+  const fromManifest = engine.manifest?.monsters ?? [];
   const fromRegistry = engine.registries.monsters.getAll();
   const seen = new Set<string>();
   const mobs: Array<{ id: string; name: string }> = [];
@@ -191,12 +208,11 @@ function spawnTestMonster(ctx: DiagnosticTabContext, engine: GameEngine, mobId: 
   }
 }
 
+/** Waits as the player, so every stepped turn is an ordinary, replayable action. */
 function stepSimulationTurns(engine: GameEngine, count: number): number {
-  if (!engine.player || !engine.player.isAlive()) return 0;
   let stepped = 0;
-  for (let i = 0; i < count; i++) {
-    if (!engine.player.isAlive()) break;
-    engine.dispatchAction(new WaitAction(engine.player));
+  for (let i = 0; i < count && engine.player.isAlive(); i++) {
+    engine.handlePlayerAction(new WaitAction(engine.player));
     stepped++;
   }
   return stepped;
@@ -213,10 +229,14 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
 
   const allItems = getAllCatalogItems(engine);
   const allMonsters = getAllMonsters(engine);
+  const replay = flightRecorder.getReplayData();
+  const replayStatus = replay
+    ? `Checkpoint at turn ${replay.checkpoint.turn} (${escapeHtml(replay.checkpoint.reason)}), ${replay.trail.length} action(s) since`
+    : 'No checkpoint yet (taken at the next action)';
 
   container.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 10px; padding: 10px; font-family: 'Consolas', 'Courier New', monospace; font-size: 11px; background: #090d16; color: #e2e8f0; border: 2px inset #ffffff; flex: 1;">
-        
+
         <!-- Emergency Correction & Hero Triage -->
         <div style="background: #1e293b; padding: 8px 10px; border-radius: 4px; border-left: 4px solid #f59e0b;">
           <div style="color: #fbbf24; font-weight: bold; font-size: 11px; margin-bottom: 6px;">
@@ -229,44 +249,29 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
             <button id="btn-triage-toggle-god" class="win-btn ${isGodMode ? 'primary-btn' : ''}" style="font-weight: bold; padding: 3px 8px;">
               🛡️ ${isGodMode ? 'Disable God Mode' : 'Enable God Mode (Invulnerable)'}
             </button>
-            <button id="btn-triage-heal-mana" class="win-btn" style="font-weight: bold; padding: 3px 8px;">
-              💖 Full Heal &amp; Mana
-            </button>
-            <button id="btn-triage-clear-status" class="win-btn" style="padding: 3px 8px;">
-              ✨ Clear Status Afflictions
-            </button>
-            <button id="btn-triage-reveal-map" class="win-btn" style="padding: 3px 8px;">
-              👁️ Reveal Current Floor Map
-            </button>
-            <button id="btn-triage-reveal-secrets" class="win-btn" style="padding: 3px 8px;">
-              🚪 Reveal Traps &amp; Secret Doors
-            </button>
+            <button id="btn-triage-heal-mana" class="win-btn" style="font-weight: bold; padding: 3px 8px;">💖 Full Heal &amp; Mana</button>
+            <button id="btn-triage-clear-status" class="win-btn" style="padding: 3px 8px;">✨ Clear Status Afflictions</button>
+            <button id="btn-triage-reveal-map" class="win-btn" style="padding: 3px 8px;">👁️ Reveal Current Floor Map</button>
+            <button id="btn-triage-reveal-secrets" class="win-btn" style="padding: 3px 8px;">🚪 Reveal Traps &amp; Secret Doors</button>
+            <button id="btn-triage-kill-visible" class="win-btn" style="padding: 3px 8px;">💀 Kill Visible Monsters</button>
+            <button id="btn-triage-grant-level" class="win-btn" style="padding: 3px 8px;">⭐ Grant Level (Lv ${p.level})</button>
+            <button id="btn-triage-identify-all" class="win-btn" style="padding: 3px 8px;">🔍 Identify All Carried</button>
           </div>
         </div>
 
         <!-- Simulation Stepper & Floor Teleportation Row -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px;">
-          
+
           <!-- Simulation Turn Stepper -->
           <div style="background: #1e293b; padding: 8px 10px; border-radius: 4px; border-left: 4px solid #a855f7; display: flex; flex-direction: column; gap: 6px;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-              <div style="color: #c084fc; font-weight: bold; font-size: 11px;">
-                ⏱️ Simulation Turn Stepper
-              </div>
-              <div style="color: #94a3b8; font-size: 10px;">
-                Turn: <strong style="color: #f8fafc;">#${engine.turnCount}</strong>
-              </div>
+              <div style="color: #c084fc; font-weight: bold; font-size: 11px;">⏱️ Simulation Turn Stepper</div>
+              <div style="color: #94a3b8; font-size: 10px;">Turn: <strong style="color: #f8fafc;">#${engine.turnCount}</strong></div>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-              <button id="btn-triage-step-tick" class="win-btn" style="font-weight: bold; padding: 3px 8px;">
-                ⏭️ Step 1 Turn
-              </button>
-              <button id="btn-triage-step-10" class="win-btn" style="padding: 3px 8px;">
-                ⏩ Step 10
-              </button>
-              <button id="btn-triage-step-50" class="win-btn" style="padding: 3px 8px;">
-                ⏩ Step 50
-              </button>
+              <button id="btn-triage-step-tick" class="win-btn" style="font-weight: bold; padding: 3px 8px;">⏭️ Step 1 Turn</button>
+              <button id="btn-triage-step-10" class="win-btn" style="padding: 3px 8px;">⏩ Step 10</button>
+              <button id="btn-triage-step-50" class="win-btn" style="padding: 3px 8px;">⏩ Step 50</button>
               <div style="display: flex; align-items: center; gap: 4px; background: #0f172a; padding: 2px 6px; border: 1px solid #334155; border-radius: 3px;">
                 <span style="color: #94a3b8; font-size: 10px;">Turns:</span>
                 <input id="input-triage-step-turns" type="number" min="1" max="500" value="${stepTurnsVal}" style="width: 38px; background: #1e293b; color: #e2e8f0; border: 1px solid #475569; padding: 1px 4px; font-size: 10px; font-family: monospace;" />
@@ -278,39 +283,47 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
           <!-- Floor Navigation & Stair Teleportation -->
           <div style="background: #1e293b; padding: 8px 10px; border-radius: 4px; border-left: 4px solid #38bdf8; display: flex; flex-direction: column; gap: 6px;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-              <div style="color: #38bdf8; font-weight: bold; font-size: 11px;">
-                🗺️ Floor Navigation &amp; Stairs
-              </div>
-              <div style="color: #94a3b8; font-size: 10px;">
-                Current: <strong style="color: #f8fafc;">Floor ${currentFloorLabel}</strong>
-              </div>
+              <div style="color: #38bdf8; font-weight: bold; font-size: 11px;">🗺️ Floor Navigation &amp; Stairs</div>
+              <div style="color: #94a3b8; font-size: 10px;">Current: <strong style="color: #f8fafc;">Floor ${currentFloorLabel}</strong></div>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-              <button id="btn-triage-prev-floor" class="win-btn" style="padding: 3px 8px; font-weight: bold;">
-                ⏮️ Floor -1
-              </button>
-              <button id="btn-triage-next-floor" class="win-btn" style="padding: 3px 8px; font-weight: bold;">
-                ⏭️ Floor +1
-              </button>
+              <button id="btn-triage-prev-floor" class="win-btn" style="padding: 3px 8px; font-weight: bold;">⏮️ Floor -1</button>
+              <button id="btn-triage-next-floor" class="win-btn" style="padding: 3px 8px; font-weight: bold;">⏭️ Floor +1</button>
               <div style="display: flex; align-items: center; gap: 4px; background: #0f172a; padding: 2px 6px; border: 1px solid #334155; border-radius: 3px;">
                 <span style="color: #94a3b8; font-size: 10px;">Jump:</span>
                 <input id="input-triage-jump-floor" type="number" min="0" max="50" value="${nextFloorCandidate}" style="width: 38px; background: #1e293b; color: #e2e8f0; border: 1px solid #475569; padding: 1px 4px; font-size: 10px; font-family: monospace;" />
                 <button id="btn-triage-jump-floor" class="win-btn" style="padding: 1px 6px; font-size: 10px; font-weight: bold;">Go</button>
               </div>
-              <button id="btn-triage-stairs-down" class="win-btn" style="padding: 3px 8px;">
-                ⬇️ Stairs Down (&gt;)
-              </button>
-              <button id="btn-triage-stairs-up" class="win-btn" style="padding: 3px 8px;">
-                ⬆️ Stairs Up (&lt;)
-              </button>
+              <button id="btn-triage-stairs-down" class="win-btn" style="padding: 3px 8px;">⬇️ Stairs Down (&gt;)</button>
+              <button id="btn-triage-stairs-up" class="win-btn" style="padding: 3px 8px;">⬆️ Stairs Up (&lt;)</button>
             </div>
           </div>
 
         </div>
 
+        <!-- Reproduction: RNG state and loading a reported game -->
+        <div style="background: #1e293b; padding: 8px 10px; border-radius: 4px; border-left: 4px solid #22c55e; display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+            <div style="color: #4ade80; font-weight: bold; font-size: 11px;">🔁 Reproduction</div>
+            <div id="triage-replay-status" style="color: #94a3b8; font-size: 10px;">${replayStatus}</div>
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+            <span style="color: #94a3b8; font-size: 10px;">PRNG state:</span>
+            <input id="input-triage-prng" type="number" value="${engine.prng.getState()}" style="width: 110px; background: #0f172a; color: #e2e8f0; border: 1px solid #475569; padding: 1px 4px; font-size: 10px; font-family: monospace;" />
+            <button id="btn-triage-set-prng" class="win-btn" style="padding: 1px 6px; font-size: 10px; font-weight: bold;">Set</button>
+          </div>
+          <textarea id="input-triage-report" placeholder="Paste a bug report (copied Markdown or .json), a replay block, or a save file..." style="width: 100%; box-sizing: border-box; height: 54px; background: #0f172a; color: #e2e8f0; border: 1px solid #475569; font-size: 10px; font-family: monospace;"></textarea>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; color: #cbd5e1; font-size: 10px;">
+              <input type="checkbox" id="check-triage-replay" checked /> Replay recorded actions after loading
+            </label>
+            <button id="btn-triage-load-report" class="win-btn primary-btn" style="padding: 2px 8px; font-size: 10px; font-weight: bold;">📥 Load State From Report</button>
+          </div>
+        </div>
+
         <!-- Searchable Entity & Item Spawner -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px;">
-          
+
           <!-- Item Spawns -->
           <div style="background: #0f172a; padding: 8px 10px; border: 1px solid #334155; border-radius: 4px; display: flex; flex-direction: column; gap: 6px;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 4px;">
@@ -318,7 +331,7 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
               <span id="badge-item-count" style="color: #94a3b8; font-size: 10px;"></span>
             </div>
             <div style="display: flex; gap: 4px; align-items: center;">
-              <input id="input-item-search" placeholder="Filter items..." value="${itemSearchQuery}" style="flex: 1; background: #1e293b; color: #e2e8f0; border: 1px solid #475569; padding: 2px 6px; font-size: 10px; font-family: monospace; border-radius: 2px;" />
+              <input id="input-item-search" placeholder="Filter items..." value="${escapeHtml(itemSearchQuery)}" style="flex: 1; background: #1e293b; color: #e2e8f0; border: 1px solid #475569; padding: 2px 6px; font-size: 10px; font-family: monospace; border-radius: 2px;" />
             </div>
             <div id="item-category-pills" style="display: flex; gap: 3px; flex-wrap: wrap;">
               <!-- Rendered via updateItemPills -->
@@ -335,7 +348,7 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
               <span id="badge-monster-count" style="color: #94a3b8; font-size: 10px;"></span>
             </div>
             <div style="display: flex; gap: 4px; align-items: center;">
-              <input id="input-monster-search" placeholder="Filter monsters..." value="${monsterSearchQuery}" style="flex: 1; background: #1e293b; color: #e2e8f0; border: 1px solid #475569; padding: 2px 6px; font-size: 10px; font-family: monospace; border-radius: 2px;" />
+              <input id="input-monster-search" placeholder="Filter monsters..." value="${escapeHtml(monsterSearchQuery)}" style="flex: 1; background: #1e293b; color: #e2e8f0; border: 1px solid #475569; padding: 2px 6px; font-size: 10px; font-family: monospace; border-radius: 2px;" />
             </div>
             <div id="container-monster-list" style="max-height: 140px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: #090d16; border: 1px inset #334155; border-radius: 2px;">
               <!-- Populated by updateMonsterList -->
@@ -375,7 +388,7 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
   const itemCountBadge = container.querySelector<HTMLElement>('#badge-item-count');
   const itemSearchInput = container.querySelector<HTMLInputElement>('#input-item-search');
 
-  const categories: Array<{ id: 'all' | 'weapon' | 'armor' | 'consumable' | 'magic' | 'misc'; label: string }> = [
+  const categories: Array<{ id: 'all' | ItemCategory; label: string }> = [
     { id: 'all', label: 'All' },
     { id: 'weapon', label: 'Weapons' },
     { id: 'armor', label: 'Armor' },
@@ -422,15 +435,14 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
     }
 
     if (filtered.length === 0) {
-      itemListContainer.innerHTML =
-        '<div style="color: #64748b; font-size: 10px; padding: 4px;">No matching items found.</div>';
+      itemListContainer.innerHTML = '<div style="color: #64748b; font-size: 10px; padding: 4px;">No matching items found.</div>';
       return;
     }
 
     itemListContainer.innerHTML = filtered
       .map(
         (it) =>
-          `<button class="win-btn btn-spawn-item" data-item-id="${it.id}" style="padding: 2px 6px; font-size: 10px;">+ ${it.name}</button>`
+          `<button class="win-btn btn-spawn-item" data-item-id="${escapeHtml(it.id)}" style="padding: 2px 6px; font-size: 10px;">+ ${escapeHtml(it.name)}</button>`
       )
       .join('');
 
@@ -471,15 +483,14 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
     }
 
     if (filtered.length === 0) {
-      monsterListContainer.innerHTML =
-        '<div style="color: #64748b; font-size: 10px; padding: 4px;">No matching monsters found.</div>';
+      monsterListContainer.innerHTML = '<div style="color: #64748b; font-size: 10px; padding: 4px;">No matching monsters found.</div>';
       return;
     }
 
     monsterListContainer.innerHTML = filtered
       .map(
         (m) =>
-          `<button class="win-btn btn-spawn-monster" data-mob="${m.id}" style="padding: 2px 6px; font-size: 10px;">+ ${m.name}</button>`
+          `<button class="win-btn btn-spawn-monster" data-mob="${escapeHtml(m.id)}" style="padding: 2px 6px; font-size: 10px;">+ ${escapeHtml(m.name)}</button>`
       )
       .join('');
 
@@ -501,216 +512,158 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
   updateMonsterList();
 
   // --- Hero Triage & Emergency Handlers ---
-  const clearLockBtn = container.querySelector('#btn-triage-clear-lock');
-  clearLockBtn?.addEventListener('click', () => {
+  const on = (selector: string, handler: () => void): void => {
+    container.querySelector(selector)?.addEventListener('click', handler);
+  };
+
+  on('#btn-triage-clear-lock', () => {
     ctx.inputContext?.clearInputLock();
     ctx.showToast('Input lock cleared. Keyboard responsiveness restored.');
     ctx.refresh();
   });
 
-  const toggleGodBtn = container.querySelector('#btn-triage-toggle-god');
-  toggleGodBtn?.addEventListener('click', () => {
+  on('#btn-triage-toggle-god', () => {
     const isInvulnerable = engine.diagnostics.toggleGodMode();
     ctx.showToast(`Invulnerability ${isInvulnerable ? 'ENABLED (God Mode)' : 'DISABLED'}.`);
     ctx.refresh();
   });
 
-  const healManaBtn = container.querySelector('#btn-triage-heal-mana');
-  healManaBtn?.addEventListener('click', () => {
-    if (p) {
-      const hpDiff = p.maxHp - p.hp;
-      const manaDiff = p.maxMana - p.mana;
-      if (hpDiff > 0) p.heal(hpDiff);
-      if (manaDiff > 0) p.restoreMana(manaDiff);
-      ctx.showToast(`Restored hero vitality: +${hpDiff} HP, +${manaDiff} Mana.`);
-      ctx.refresh();
-    }
+  on('#btn-triage-heal-mana', () => {
+    const restored = engine.diagnostics.restoreVitals();
+    ctx.showToast(`Restored hero vitality: +${restored.hp} HP, +${restored.mana} Mana.`);
+    ctx.refresh();
   });
 
-  const clearStatusBtn = container.querySelector('#btn-triage-clear-status');
-  clearStatusBtn?.addEventListener('click', () => {
-    if (p) {
-      const active = p.statusManager.getAll();
-      if (active.length === 0) {
-        ctx.showToast('Hero has no active status afflictions.');
-      } else {
-        const panacea = new PotionItem({
-          id: engine.nextSimulationId('panacea'),
-          name: 'Triage Panacea',
-          potionType: 'antidote',
-          effects: active.map((s) => ({
-            type: 'cure_status',
-            status: s.type,
-          })),
-        });
-        const cost = p.getActionCost(100);
-        new DrinkPotionAction(p, panacea).perform(engine);
-        p.gainEnergy(cost); // Energy-neutral triage
-        ctx.showToast(`Cleared ${active.length} active status affliction(s).`);
-        ctx.refresh();
-      }
-    }
+  on('#btn-triage-clear-status', () => {
+    const cleared = engine.diagnostics.clearStatusEffects();
+    ctx.showToast(cleared === 0 ? 'Hero has no active status afflictions.' : `Cleared ${cleared} active status affliction(s).`);
+    ctx.refresh();
   });
 
-  const revealMapBtn = container.querySelector('#btn-triage-reveal-map');
-  revealMapBtn?.addEventListener('click', () => {
+  on('#btn-triage-reveal-map', () => {
     engine.diagnostics.revealFloorMap();
     ctx.showToast('Floor map revealed (Clairvoyance).');
     ctx.refresh();
   });
 
-  const revealSecretsBtn = container.querySelector('#btn-triage-reveal-secrets');
-  revealSecretsBtn?.addEventListener('click', () => {
-    if (p) {
-      const searchAction = new SearchAction(
-        p,
-        () => 1.0,
-        Math.max(engine.map.width, engine.map.height)
-      );
-      const cost = p.getActionCost(100);
-      const res = searchAction.perform(engine);
-      p.gainEnergy(cost);
-      ctx.showToast(res.message ?? 'Revealed secret doors and hidden traps.');
-      ctx.refresh();
-    }
+  on('#btn-triage-reveal-secrets', () => {
+    const found = engine.diagnostics.revealSecrets();
+    ctx.showToast(`Revealed ${found.doors} secret door(s) and ${found.traps} hidden trap(s).`);
+    ctx.refresh();
+  });
+
+  on('#btn-triage-kill-visible', () => {
+    const killed = engine.diagnostics.killVisibleMonsters();
+    ctx.showToast(killed === 0 ? 'No hostile monsters in view.' : `Killed ${killed} visible monster(s).`);
+    ctx.refresh();
+  });
+
+  on('#btn-triage-grant-level', () => {
+    const level = engine.diagnostics.grantLevel();
+    ctx.showToast(`Hero is now level ${level}.`);
+    ctx.refresh();
+  });
+
+  on('#btn-triage-identify-all', () => {
+    const count = engine.diagnostics.identifyAll();
+    ctx.showToast(count === 0 ? 'Everything carried is already identified.' : `Identified ${count} item(s).`);
+    ctx.refresh();
   });
 
   // --- Simulation Stepper Handlers ---
-  const stepTickBtn = container.querySelector('#btn-triage-step-tick');
-  stepTickBtn?.addEventListener('click', () => {
-    const executed = stepSimulationTurns(engine, 1);
-    ctx.showToast(`Executed ${executed} simulation turn.`);
-    ctx.refresh();
-  });
-
-  const step10Btn = container.querySelector('#btn-triage-step-10');
-  step10Btn?.addEventListener('click', () => {
-    const executed = stepSimulationTurns(engine, 10);
-    ctx.showToast(`Executed ${executed} simulation turns.`);
-    ctx.refresh();
-  });
-
-  const step50Btn = container.querySelector('#btn-triage-step-50');
-  step50Btn?.addEventListener('click', () => {
-    const executed = stepSimulationTurns(engine, 50);
-    ctx.showToast(`Executed ${executed} simulation turns.`);
-    ctx.refresh();
-  });
-
-  const stepCustomBtn = container.querySelector('#btn-triage-step-custom');
-  const stepTurnsInput = container.querySelector<HTMLInputElement>('#input-triage-step-turns');
-  stepCustomBtn?.addEventListener('click', () => {
-    const val = parseInt(stepTurnsInput?.value ?? '1', 10);
-    const count = isNaN(val) ? 1 : Math.max(1, Math.min(500, val));
-    stepTurnsVal = count;
+  const step = (count: number): void => {
     const executed = stepSimulationTurns(engine, count);
-    ctx.showToast(`Executed ${executed} simulation turns.`);
+    ctx.showToast(`Executed ${executed} simulation turn${executed === 1 ? '' : 's'}.`);
     ctx.refresh();
+  };
+  on('#btn-triage-step-tick', () => step(1));
+  on('#btn-triage-step-10', () => step(10));
+  on('#btn-triage-step-50', () => step(50));
+
+  const stepTurnsInput = container.querySelector<HTMLInputElement>('#input-triage-step-turns');
+  on('#btn-triage-step-custom', () => {
+    const val = parseInt(stepTurnsInput?.value ?? '1', 10);
+    stepTurnsVal = isNaN(val) ? 1 : Math.max(1, Math.min(500, val));
+    step(stepTurnsVal);
   });
 
   // --- Floor Navigation Handlers ---
-  const prevFloorBtn = container.querySelector('#btn-triage-prev-floor');
-  prevFloorBtn?.addEventListener('click', () => {
-    const target = Math.max(0, engine.currentFloor - 1);
-    engine.changeFloor(target);
-    ctx.showToast(target === 0 ? 'Climbed up into Town.' : `Ascended to Floor ${target}.`);
+  const jump = (target: number): void => {
+    const reached = engine.diagnostics.jumpToFloor(target);
+    ctx.showToast(reached === 0 ? 'Moved to Town.' : `Moved to Floor ${reached}.`);
     ctx.refresh();
-  });
+  };
+  on('#btn-triage-prev-floor', () => jump(engine.currentFloor - 1));
+  on('#btn-triage-next-floor', () => jump(engine.currentFloor + 1));
 
-  const nextFloorBtn = container.querySelector('#btn-triage-next-floor');
-  nextFloorBtn?.addEventListener('click', () => {
-    const target = engine.currentFloor + 1;
-    engine.changeFloor(target);
-    ctx.showToast(`Descended to Floor ${target}.`);
-    ctx.refresh();
-  });
-
-  const jumpFloorBtn = container.querySelector('#btn-triage-jump-floor');
   const jumpFloorInput = container.querySelector<HTMLInputElement>('#input-triage-jump-floor');
-  jumpFloorBtn?.addEventListener('click', () => {
+  on('#btn-triage-jump-floor', () => {
     const val = parseInt(jumpFloorInput?.value ?? '1', 10);
-    const target = isNaN(val) ? 1 : Math.max(0, Math.min(50, val));
-    engine.changeFloor(target);
-    ctx.showToast(target === 0 ? 'Jumped to Town.' : `Jumped to Floor ${target}.`);
+    jump(isNaN(val) ? 1 : Math.min(50, val));
+  });
+
+  const teleport = (direction: 'up' | 'down'): void => {
+    const pos = engine.diagnostics.teleportToStairs(direction);
+    ctx.showToast(pos ? `Teleported to Stairs ${direction === 'down' ? 'Down' : 'Up'} at (${pos.x}, ${pos.y}).` : `No reachable stairs ${direction} on this floor.`);
+    ctx.refresh();
+  };
+  on('#btn-triage-stairs-down', () => teleport('down'));
+  on('#btn-triage-stairs-up', () => teleport('up'));
+
+  // --- Reproduction Handlers ---
+  const prngInput = container.querySelector<HTMLInputElement>('#input-triage-prng');
+  on('#btn-triage-set-prng', () => {
+    const val = Number(prngInput?.value);
+    if (!Number.isFinite(val)) {
+      ctx.showToast('Enter a number for the PRNG state.');
+      return;
+    }
+    engine.diagnostics.setPrngState(val);
+    ctx.showToast(`PRNG state set to ${engine.prng.getState()}.`);
     ctx.refresh();
   });
 
-  const stairsDownBtn = container.querySelector('#btn-triage-stairs-down');
-  stairsDownBtn?.addEventListener('click', () => {
-    let stairPos: { x: number; y: number } | null = null;
-    for (let y = 0; y < engine.map.height; y++) {
-      for (let x = 0; x < engine.map.width; x++) {
-        const tile = engine.map.getTile(x, y);
-        if (tile?.type === 'stairs_down' || tile?.isStairsDown) {
-          stairPos = { x, y: engine.currentFloor === 0 ? y + 1 : y };
-          break;
-        }
-      }
-      if (stairPos) break;
+  const reportInput = container.querySelector<HTMLTextAreaElement>('#input-triage-report');
+  const replayCheck = container.querySelector<HTMLInputElement>('#check-triage-replay');
+  on('#btn-triage-load-report', () => {
+    const text = reportInput?.value ?? '';
+    if (!text.trim()) {
+      ctx.showToast('Paste a bug report, replay block, or save first.');
+      return;
     }
-    if (stairPos && p) {
-      engine.map.moveEntity(p, stairPos.x, stairPos.y);
-      engine.updateFov();
-      ctx.showToast(`Teleported to Stairs Down at (${stairPos.x}, ${stairPos.y}).`);
-      ctx.refresh();
-    } else {
-      ctx.showToast('No stairs down found on this floor.');
+    if (!ctx.loadReportState) {
+      ctx.showToast('Loading a report is not available here.');
+      return;
     }
-  });
-
-  const stairsUpBtn = container.querySelector('#btn-triage-stairs-up');
-  stairsUpBtn?.addEventListener('click', () => {
-    let stairPos: { x: number; y: number } | null = null;
-    for (let y = 0; y < engine.map.height; y++) {
-      for (let x = 0; x < engine.map.width; x++) {
-        const tile = engine.map.getTile(x, y);
-        if (tile?.type === 'stairs_up' || tile?.isStairsUp) {
-          stairPos = { x, y };
-          break;
-        }
-      }
-      if (stairPos) break;
-    }
-    if (stairPos && p) {
-      engine.map.moveEntity(p, stairPos.x, stairPos.y);
-      engine.updateFov();
-      ctx.showToast(`Teleported to Stairs Up at (${stairPos.x}, ${stairPos.y}).`);
-      ctx.refresh();
-    } else {
-      ctx.showToast('No stairs up found on this floor.');
-    }
+    ctx.showToast('Loading report...');
+    void ctx.loadReportState(text, replayCheck?.checked ?? true).then((status) => ctx.showToast(status));
   });
 
   // --- Telemetry Reporting Handlers ---
-  const copyBtn = container.querySelector('#btn-diag-copy');
-  copyBtn?.addEventListener('click', () => {
+  on('#btn-diag-copy', () => {
     if (ctx.copyReport) {
       void ctx.copyReport();
     }
   });
 
-  const downloadBtn = container.querySelector('#btn-diag-download');
-  downloadBtn?.addEventListener('click', () => {
+  on('#btn-diag-download', () => {
     if (ctx.downloadReport) {
       ctx.downloadReport();
     }
   });
 
-  const clearBtn = container.querySelector('#btn-diag-clear');
-  clearBtn?.addEventListener('click', () => {
+  on('#btn-diag-clear', () => {
     flightRecorder.clear();
     ctx.showToast('Flight log buffer cleared.');
     ctx.refresh();
   });
 
-  const refreshBtn = container.querySelector('#btn-diag-refresh');
-  refreshBtn?.addEventListener('click', () => {
+  on('#btn-diag-refresh', () => {
     ctx.refresh();
     ctx.showToast('Telemetry refreshed.');
   });
 
-  const openFeedbackBtn = container.querySelector('#btn-diag-open-feedback');
-  openFeedbackBtn?.addEventListener('click', () => {
+  on('#btn-diag-open-feedback', () => {
     if (ctx.openFeedback) {
       ctx.openFeedback();
     }
@@ -729,8 +682,8 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
             .map(
               (log) => `
             <div style="display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 2px 6px; border-radius: 2px;">
-              <span style="color: #f87171; font-family: monospace; font-size: 10px;">${log}</span>
-              <button class="win-btn btn-copy-archived-log" data-log="${log}" style="padding: 1px 6px; font-size: 9px;">📋 Copy</button>
+              <span style="color: #f87171; font-family: monospace; font-size: 10px;">${escapeHtml(log)}</span>
+              <button class="win-btn btn-copy-archived-log" data-log="${escapeHtml(log)}" style="padding: 1px 6px; font-size: 9px;">📋 Copy</button>
             </div>
           `
             )

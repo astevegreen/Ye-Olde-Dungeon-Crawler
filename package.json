@@ -25,6 +25,7 @@
     "check:engine-creep": "tsx scripts/check-engine-creep.ts",
     "sim": "npx tsx scripts/headless-sim.ts",
     "validate:schema": "npx tsx scripts/validate-schema.ts",
+    "replay:report": "npx tsx scripts/replay-report.ts",
     "safe:eval": "tsx scripts/safe-eval.ts"
   },
   "devDependencies": {

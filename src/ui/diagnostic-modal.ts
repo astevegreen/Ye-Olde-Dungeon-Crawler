@@ -42,6 +42,7 @@ export class DiagnosticModal implements UIModal {
   private onClosedCallback?: () => void;
   private bulkArchive: BulkArchive | null = null;
   private onOpenFeedback?: (opts?: any) => void;
+  private onLoadReportState?: (text: string, replay: boolean) => Promise<string>;
 
   private activeTab: DiagnosticTabId = 'simulation';
   private pollIntervalId: number | null = null;
@@ -75,6 +76,10 @@ export class DiagnosticModal implements UIModal {
 
   public setBulkArchive(archive: BulkArchive | null): void {
     this.bulkArchive = archive;
+  }
+
+  public setLoadReportStateHandler(handler: (text: string, replay: boolean) => Promise<string>): void {
+    this.onLoadReportState = handler;
   }
 
   public setOpenFeedbackHandler(handler: (opts?: any) => void): void {
@@ -322,6 +327,7 @@ export class DiagnosticModal implements UIModal {
         copyReport: () => this.copyReportToClipboard(),
         downloadReport: () => this.downloadReport(),
         openFeedback: this.onOpenFeedback,
+        loadReportState: this.onLoadReportState,
         bulkArchive: this.bulkArchive,
       };
       renderer(ctx, engine);

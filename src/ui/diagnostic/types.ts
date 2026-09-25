@@ -22,6 +22,8 @@ export interface DiagnosticTabContext {
   copyReport?: () => Promise<void> | void;
   downloadReport?: () => void;
   openFeedback?: (opts?: Record<string, unknown>) => void;
+  /** Loads the game a pasted bug report describes; returns a status line to show. */
+  loadReportState?: (text: string, replay: boolean) => Promise<string>;
   bulkArchive?: import('../../engine').BulkArchive | null;
 }
 

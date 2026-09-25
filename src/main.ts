@@ -21,6 +21,8 @@ import {
   hydrateArchivedFloors,
   isTacticalEffect,
   ChannelRuneOfReturnAction,
+  loadReplayState,
+  replayActionTrail,
 } from './engine';
 import type {
   ActionResult,
@@ -57,6 +59,7 @@ import { SaveCodeModal } from './ui/saveCodeModal';
 import { SaveQuitModal } from './ui/saveQuitModal';
 import { SaveSlotModal } from './ui/saveSlotModal';
 import { showToast } from './ui/toast';
+import { expandCompressedReplay } from './ui/replayCodec';
 import { getBrowserAsyncStore } from './ui/indexedDbStore';
 import { setupSaveDragAndDrop, importSaveWithValidation } from './ui/saveImporter';
 import { defaultPlatformAdapter, getBrowserStorage } from './ui/platform';
@@ -92,6 +95,8 @@ declare global {
     readonly VITE_THEME?: string;
     /** package.json version, injected by vite.config.ts. */
     readonly VITE_APP_VERSION?: string;
+    /** Short commit hash of the build (with `-dirty` for uncommitted changes), injected by vite.config.ts. */
+    readonly VITE_BUILD_ID?: string;
   }
   /** Debug/e2e introspection handles (e2e/campaign-flow.spec.ts reads the engine and input handler). */
   interface Window {
@@ -553,6 +558,34 @@ window.addEventListener('DOMContentLoaded', () => {
   diagnosticModal.setBulkArchive(bulkArchive);
   diagnosticModal.setOpenFeedbackHandler((opts) => {
     feedbackModal.open(opts);
+  });
+  // F2 > Load State From Report: swap in the reported game, replaying its action trail.
+  diagnosticModal.setLoadReportStateHandler(async (text, replay) => {
+    let expanded: string;
+    try {
+      expanded = await expandCompressedReplay(text);
+    } catch (err) {
+      return `Could not decode the compressed replay data: ${(err as Error).message}`;
+    }
+    const outcome = loadReplayState(expanded, activeManifest);
+    if (!outcome.ok) return `Could not load: ${outcome.message}`;
+    const { engine, profile, source, trail } = outcome.value;
+    let note = '';
+    if (source !== 'replay-checkpoint') {
+      note = source === 'state-snapshot' ? ' (report-time snapshot; no replay data in it)' : ' (save file)';
+    } else if (!replay) {
+      note = ` at the checkpoint; ${trail.length} action(s) not replayed`;
+    } else {
+      const result = replayActionTrail(engine, trail);
+      note = result.stoppedAt
+        ? `; replayed ${result.replayed}/${result.total}, stopped at #${result.stoppedAt.seq} ${result.stoppedAt.action}: ${result.stoppedAt.reason}`
+        : `; replayed all ${result.replayed} action(s)`;
+    }
+    diagnosticModal.close();
+    popModal(diagnosticModal.id);
+    launchGame(engine, profile);
+    showToast(`Loaded ${profile.name}${note}.`, 'info', 6000);
+    return `Loaded ${profile.name}${note}.`;
   });
 
   function toggleFeedback(opts?: any): void {

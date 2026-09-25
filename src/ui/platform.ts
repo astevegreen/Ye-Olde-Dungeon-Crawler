@@ -88,9 +88,13 @@ export function browserReportContext(): {
   devicePixelRatio?: number;
   viewportWidth?: number;
   viewportHeight?: number;
+  appVersion?: string;
+  buildId?: string;
 } {
-  if (typeof window === 'undefined') return {};
+  const build = { appVersion: import.meta.env.VITE_APP_VERSION, buildId: import.meta.env.VITE_BUILD_ID };
+  if (typeof window === 'undefined') return build;
   return {
+    ...build,
     userAgent: window.navigator?.userAgent,
     devicePixelRatio: window.devicePixelRatio,
     viewportWidth: window.innerWidth,

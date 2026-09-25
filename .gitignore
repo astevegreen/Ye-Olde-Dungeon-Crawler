@@ -24,3 +24,6 @@ dist-ssr
 
 # Repomix codebase snapshots (generated for AI review, not source)
 repomix-output.*
+
+# Session retros written by scripts/extract_*retro.py (kept locally, not source)
+/retro/

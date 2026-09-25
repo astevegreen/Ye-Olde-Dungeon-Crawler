@@ -2,6 +2,8 @@
 name = "yodc-report-relay"
 main = "src/worker.ts"
 compatibility_date = "2026-09-01"
+workers_dev = true
+preview_urls = false
 
 [vars]
 GITHUB_REPO = "astevegreen/Ye-Olde-Dungeon-Crawler"
@@ -10,12 +12,10 @@ ALLOWED_ORIGINS = "https://astevegreen.github.io,null"
 
 # GITHUB_TOKEN is a secret, never committed: `npx wrangler secret put GITHUB_TOKEN`.
 
-# Optional: screenshots shown in the issue. Create with
-#   npx wrangler kv namespace create SHOTS
-# then uncomment and paste the id it prints.
-# [[kv_namespaces]]
-# binding = "SHOTS"
-# id = "<paste id here>"
+# Screenshots shown in issues (created with `npx wrangler kv namespace create SHOTS`).
+[[kv_namespaces]]
+binding = "SHOTS"
+id = "803123c2753f4209af135b506c2e5970"
 
 # Optional: at most 5 reports per minute from one IP.
 # [[ratelimits]]

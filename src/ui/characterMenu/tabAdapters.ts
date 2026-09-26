@@ -5,6 +5,32 @@ import type { PactModal } from '../pactModal';
 import type { SpellbookModal } from '../spellbookModal';
 
 /**
+ * Hands an embedded modal's root back to `#app`, hidden. The modal's own `close()` cannot be
+ * trusted to re-hide it: a modal closed from its own Done button is already closed when the
+ * shell unmounts the tab, so its `close()` returns early — and the inline styles cleared
+ * here include the `display: none` it set, leaving a full-screen window stranded over the game.
+ */
+function releaseEmbeddedRoot(root: HTMLElement | null, container: HTMLElement | null): void {
+  if (!root) return;
+  if (container && root.parentElement === container) {
+    container.removeChild(root);
+  }
+  root.style.position = '';
+  root.style.inset = '';
+  root.style.width = '';
+  root.style.height = '';
+  root.style.backgroundColor = '';
+  root.style.backdropFilter = '';
+  root.style.zIndex = '';
+  root.style.flexDirection = '';
+  root.style.alignItems = '';
+  root.style.justifyContent = '';
+  root.style.boxSizing = '';
+  document.getElementById('app')?.appendChild(root);
+  root.style.display = 'none';
+}
+
+/**
  * Wraps CompendiumModal as a MenuTab.
  */
 export class CompendiumTabAdapter implements MenuTab {
@@ -77,23 +103,7 @@ export class CompendiumTabAdapter implements MenuTab {
   public unmount(): void {
     this.unmounting = true;
     try {
-      const overlayEl = this.modal.rootElement;
-      if (overlayEl && this.container && overlayEl.parentElement === this.container) {
-        this.container.removeChild(overlayEl);
-        overlayEl.style.position = '';
-        overlayEl.style.inset = '';
-        overlayEl.style.width = '';
-        overlayEl.style.height = '';
-        overlayEl.style.backgroundColor = '';
-        overlayEl.style.backdropFilter = '';
-        overlayEl.style.zIndex = '';
-        overlayEl.style.display = '';
-        overlayEl.style.flexDirection = '';
-        overlayEl.style.alignItems = '';
-        overlayEl.style.justifyContent = '';
-        overlayEl.style.boxSizing = '';
-        document.getElementById('app')?.appendChild(overlayEl);
-      }
+      releaseEmbeddedRoot(this.modal.rootElement, this.container);
       this.modal.close();
     } finally {
       this.unmounting = false;
@@ -183,23 +193,7 @@ export class PactTabAdapter implements MenuTab {
   public unmount(): void {
     this.unmounting = true;
     try {
-      const overlayEl = this.modal.rootElement;
-      if (overlayEl && this.container && overlayEl.parentElement === this.container) {
-        this.container.removeChild(overlayEl);
-        overlayEl.style.position = '';
-        overlayEl.style.inset = '';
-        overlayEl.style.width = '';
-        overlayEl.style.height = '';
-        overlayEl.style.backgroundColor = '';
-        overlayEl.style.backdropFilter = '';
-        overlayEl.style.zIndex = '';
-        overlayEl.style.display = '';
-        overlayEl.style.flexDirection = '';
-        overlayEl.style.alignItems = '';
-        overlayEl.style.justifyContent = '';
-        overlayEl.style.boxSizing = '';
-        document.getElementById('app')?.appendChild(overlayEl);
-      }
+      releaseEmbeddedRoot(this.modal.rootElement, this.container);
       this.modal.close();
     } finally {
       this.unmounting = false;
@@ -281,23 +275,7 @@ export class SpellbookTabAdapter implements MenuTab {
   public unmount(): void {
     this.unmounting = true;
     try {
-      const modalContainer = this.modal.rootElement;
-      if (modalContainer && this.container && modalContainer.parentElement === this.container) {
-        this.container.removeChild(modalContainer);
-        modalContainer.style.position = '';
-        modalContainer.style.inset = '';
-        modalContainer.style.width = '';
-        modalContainer.style.height = '';
-        modalContainer.style.backgroundColor = '';
-        modalContainer.style.backdropFilter = '';
-        modalContainer.style.zIndex = '';
-        modalContainer.style.display = '';
-        modalContainer.style.flexDirection = '';
-        modalContainer.style.alignItems = '';
-        modalContainer.style.justifyContent = '';
-        modalContainer.style.boxSizing = '';
-        document.getElementById('app')?.appendChild(modalContainer);
-      }
+      releaseEmbeddedRoot(this.modal.rootElement, this.container);
       this.modal.close();
     } finally {
       this.unmounting = false;

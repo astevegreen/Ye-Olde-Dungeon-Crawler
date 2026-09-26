@@ -6,7 +6,6 @@ export type AttributeKey = 'strength' | 'dexterity' | 'constitution' | 'intellig
 interface AttributeMeta {
   key: AttributeKey;
   label: string;
-  hotkeyNum: string;
   hotkeyLetter: string;
   description: string;
   derivedPreview: (val: number) => string;
@@ -16,7 +15,6 @@ const ATTRIBUTES: AttributeMeta[] = [
   {
     key: 'strength',
     label: 'Strength',
-    hotkeyNum: '1',
     hotkeyLetter: 'S',
     description: 'Increases melee physical damage and inventory carry capacity.',
     derivedPreview: (val) => `Carry: ${val * 10} lbs | Melee Atk: +${Math.floor(val / 2)}`,
@@ -24,7 +22,6 @@ const ATTRIBUTES: AttributeMeta[] = [
   {
     key: 'dexterity',
     label: 'Dexterity',
-    hotkeyNum: '2',
     hotkeyLetter: 'D',
     description: 'Enhances evasion, ranged strike precision, and physical reflex speed.',
     derivedPreview: (val) => `Evasion: +${Math.floor(val / 2)}% | Ranged Atk: +${Math.floor(val / 2)}`,
@@ -32,7 +29,6 @@ const ATTRIBUTES: AttributeMeta[] = [
   {
     key: 'constitution',
     label: 'Constitution',
-    hotkeyNum: '3',
     hotkeyLetter: 'C',
     description: 'Fortifies physical resilience, increasing maximum Hit Points (+2 HP/pt).',
     derivedPreview: (val) => `HP Bonus: +${val * 2}`,
@@ -40,7 +36,6 @@ const ATTRIBUTES: AttributeMeta[] = [
   {
     key: 'intelligence',
     label: 'Intelligence',
-    hotkeyNum: '4',
     hotkeyLetter: 'I',
     description: 'Expands mystical reservoir (+2 MP/pt) and amplifies spell potency.',
     derivedPreview: (val) => `Mana Bonus: +${val * 2} MP | Spell Amp: +${Math.floor(val / 2)}%`,
@@ -55,6 +50,7 @@ export class LevelUpModal implements UIModal {
   private modalStack?: ModalStackManager;
   private onCloseCallback?: () => void;
   private onAllocateCallback?: (attr: AttributeKey) => void;
+  private openedAt = 0;
   private undoStack: Array<{ op: 'allocate' | 'deallocate'; attr: AttributeKey }> = [];
   private redoStack: Array<{ op: 'allocate' | 'deallocate'; attr: AttributeKey }> = [];
   private sessionNetAllocations: Record<AttributeKey, number> = {
@@ -108,6 +104,7 @@ export class LevelUpModal implements UIModal {
     this.engine = engine;
     if (onClose) this.onCloseCallback = onClose;
     this.isOpenState = true;
+    this.openedAt = Date.now();
     this.undoStack = [];
     this.redoStack = [];
     this.sessionNetAllocations = {
@@ -264,6 +261,12 @@ export class LevelUpModal implements UIModal {
       return true;
     }
 
+    // Safety debounce: drop rapid keystrokes within 200ms of opening to avoid accidental allocations from queued movement
+    if (Date.now() - this.openedAt < 200) {
+      e.preventDefault();
+      return true;
+    }
+
     if ((key === 'Z' || code === 'KeyZ') && !e.shiftKey) {
       e.preventDefault();
       this.undo();
@@ -282,22 +285,22 @@ export class LevelUpModal implements UIModal {
       return true;
     }
 
-    if (key === '1' || code === 'Digit1' || code === 'Numpad1' || code === 'KeyS') {
+    if (key === 'S' || code === 'KeyS') {
       e.preventDefault();
       this.allocate('strength');
       return true;
     }
-    if (key === '2' || code === 'Digit2' || code === 'Numpad2' || code === 'KeyD') {
+    if (key === 'D' || code === 'KeyD') {
       e.preventDefault();
       this.allocate('dexterity');
       return true;
     }
-    if (key === '3' || code === 'Digit3' || code === 'Numpad3' || code === 'KeyC') {
+    if (key === 'C' || code === 'KeyC') {
       e.preventDefault();
       this.allocate('constitution');
       return true;
     }
-    if (key === '4' || code === 'Digit4' || code === 'Numpad4' || code === 'KeyI') {
+    if (key === 'I' || code === 'KeyI') {
       e.preventDefault();
       this.allocate('intelligence');
       return true;
@@ -342,7 +345,7 @@ export class LevelUpModal implements UIModal {
         ">
           <div style="flex: 1; min-width: 0;">
             <div style="display: flex; align-items: baseline; gap: 8px;">
-              <span style="font-weight: bold; color: #fde047; font-size: 14px;">[${meta.hotkeyNum}] ${meta.label}</span>
+              <span style="font-weight: bold; color: #fde047; font-size: 14px;">[${meta.hotkeyLetter}] ${meta.label}</span>
               <span style="font-weight: bold; color: #38bdf8; font-size: 15px;">${currentVal}</span>
               ${sessionDelta !== 0 ? `<span style="color: ${sessionDelta > 0 ? '#4ade80' : '#f87171'}; font-weight: bold; font-size: 12px;">(${sessionDelta > 0 ? '+' : ''}${sessionDelta})</span>` : ''}
             </div>
@@ -545,6 +548,7 @@ export class LevelUpModal implements UIModal {
               ↺ Reset [R]
             </button>
           </div>
+          <span style="color: #94a3b8; font-size: 11px;">[S/D/C/I] Allocate | [Z] Undo | [Y] Redo</span>
           <button id="btn-close-levelup-bottom" style="
             padding: 6px 16px;
             background: #475569;

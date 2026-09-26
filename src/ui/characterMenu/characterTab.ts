@@ -8,7 +8,6 @@ export type AttributeKey = 'strength' | 'dexterity' | 'constitution' | 'intellig
 interface AttributeMeta {
   key: AttributeKey;
   label: string;
-  hotkeyNum: string;
   hotkeyLetter: string;
   description: string;
   derivedPreview: (val: number) => string;
@@ -18,7 +17,6 @@ const ATTRIBUTES: AttributeMeta[] = [
   {
     key: 'strength',
     label: 'Strength',
-    hotkeyNum: '1',
     hotkeyLetter: 'S',
     description: 'Increases melee physical damage and inventory carry capacity.',
     derivedPreview: (val) => `Carry capacity: ${(getMaxCarryWeight(val) / 1000).toFixed(1)} kg`,
@@ -26,7 +24,6 @@ const ATTRIBUTES: AttributeMeta[] = [
   {
     key: 'dexterity',
     label: 'Dexterity',
-    hotkeyNum: '2',
     hotkeyLetter: 'D',
     description: 'Enhances evasion, ranged strike precision, and physical reflex speed.',
     derivedPreview: (val) => `Evasion: +${Math.floor(val / 2)}% | Ranged Atk: +${Math.floor(val / 2)}`,
@@ -34,7 +31,6 @@ const ATTRIBUTES: AttributeMeta[] = [
   {
     key: 'constitution',
     label: 'Constitution',
-    hotkeyNum: '3',
     hotkeyLetter: 'C',
     description: 'Fortifies physical resilience, increasing maximum Hit Points (+2 HP/pt).',
     derivedPreview: (val) => `HP Bonus: +${val * 2}`,
@@ -42,7 +38,6 @@ const ATTRIBUTES: AttributeMeta[] = [
   {
     key: 'intelligence',
     label: 'Intelligence',
-    hotkeyNum: '4',
     hotkeyLetter: 'I',
     description: 'Expands mystical reservoir (+2 MP/pt) and amplifies spell potency.',
     derivedPreview: (val) => `Mana Bonus: +${val * 2} MP | Spell Amp: +${Math.floor(val / 2)}%`,
@@ -271,25 +266,25 @@ export class CharacterTab implements MenuTab {
       }
     }
 
-    if (key === '1' || code === 'Digit1' || code === 'Numpad1' || code === 'KeyS') {
+    if (key === 'S' || code === 'KeyS') {
       if (this.allocate('strength')) {
         e.preventDefault();
         return true;
       }
     }
-    if (key === '2' || code === 'Digit2' || code === 'Numpad2' || code === 'KeyD') {
+    if (key === 'D' || code === 'KeyD') {
       if (this.allocate('dexterity')) {
         e.preventDefault();
         return true;
       }
     }
-    if (key === '3' || code === 'Digit3' || code === 'Numpad3' || code === 'KeyC') {
+    if (key === 'C' || code === 'KeyC') {
       if (this.allocate('constitution')) {
         e.preventDefault();
         return true;
       }
     }
-    if (key === '4' || code === 'Digit4' || code === 'Numpad4' || code === 'KeyI') {
+    if (key === 'I' || code === 'KeyI') {
       if (this.allocate('intelligence')) {
         e.preventDefault();
         return true;
@@ -327,7 +322,7 @@ export class CharacterTab implements MenuTab {
         ">
           <div style="flex: 1; min-width: 0;">
             <div style="display: flex; align-items: baseline; gap: 8px;">
-              <span style="font-weight: bold; color: #fde047; font-size: 13px;">[${meta.hotkeyNum}] ${meta.label}</span>
+              <span style="font-weight: bold; color: #fde047; font-size: 13px;">[${meta.hotkeyLetter}] ${meta.label}</span>
               <span style="font-weight: bold; color: #38bdf8; font-size: 15px;">${currentVal}</span>
               ${sessionDelta !== 0 ? `<span style="color: ${sessionDelta > 0 ? '#4ade80' : '#f87171'}; font-weight: bold; font-size: 12px;">(${sessionDelta > 0 ? '+' : ''}${sessionDelta})</span>` : ''}
             </div>

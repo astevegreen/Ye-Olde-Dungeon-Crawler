@@ -142,10 +142,27 @@ describe('Level-Up Attribute / Skill Allocation System', () => {
     expect(modal.isOpen).toBe(true);
     expect(modalStack.top()?.id).toBe('level-up-modal');
 
-    // Key '1' / 'Digit1' allocates strength
+    // Debounce safety: keys within 200ms of opening are dropped
+    const rapidKey = { key: 's', code: 'KeyS', preventDefault: () => {} } as unknown as KeyboardEvent;
+    expect(modalStack.handleKeyDown(rapidKey)).toBe(true);
+    // Dropped during debounce window
+    expect(player.strength).toBe(14);
+    expect(player.unspentStatPoints).toBe(2);
+
+    // After debounce window:
+    (modal as any).openedAt = 0;
+
+    // Number keys (e.g. Digit1, Numpad1) must NOT allocate attributes (prevent accidental movement allocations)
     const key1Event = { key: '1', code: 'Digit1', preventDefault: () => {} } as unknown as KeyboardEvent;
     const handled1 = modalStack.handleKeyDown(key1Event);
     expect(handled1).toBe(true);
+    expect(player.strength).toBe(14);
+    expect(player.unspentStatPoints).toBe(2);
+
+    // Key 'KeyS' allocates strength
+    const keySEvent = { key: 's', code: 'KeyS', preventDefault: () => {} } as unknown as KeyboardEvent;
+    const handledS = modalStack.handleKeyDown(keySEvent);
+    expect(handledS).toBe(true);
     expect(player.strength).toBe(15);
     expect(player.unspentStatPoints).toBe(1);
 
@@ -169,6 +186,7 @@ describe('Level-Up Attribute / Skill Allocation System', () => {
     const modal = new LevelUpModal();
 
     modal.open(engine);
+    (modal as any).openedAt = 0;
 
     // Allocate Strength via modal method
     expect(modal.allocate('strength')).toBe(true);

@@ -611,9 +611,15 @@ describe('CharacterTab stat allocation and attribute milestone surfacing', () =>
     expect(container.innerHTML).toContain('[Locked]');
     expect(container.innerHTML).toContain('Progress: 14 / 15');
 
-    // Allocate 1 point to strength via hotkey '1'
+    // Number keys do not allocate attributes (prevents accidental movement allocations)
     const key1 = makeKey('1', 'Digit1');
-    const handled = charTab.handleKeyDown(key1);
+    expect(charTab.handleKeyDown(key1)).toBe(false);
+    expect(engine.player.strength).toBe(14);
+    expect(engine.player.unspentStatPoints).toBe(2);
+
+    // Allocate 1 point to strength via letter hotkey 'S'
+    const keyS = makeKey('s', 'KeyS');
+    const handled = charTab.handleKeyDown(keyS);
     expect(handled).toBe(true);
     expect(engine.player.strength).toBe(15);
     expect(engine.player.unspentStatPoints).toBe(1);

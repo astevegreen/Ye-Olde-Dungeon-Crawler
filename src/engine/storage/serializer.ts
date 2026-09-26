@@ -523,6 +523,7 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     planes: engine.planeManager ? engine.planeManager.serialize() : undefined,
     prngState: engine.prng ? engine.prng.getState() : undefined,
     companion: engine.companion ? serializeCompanion(engine.companion) : undefined,
+    discoveryEvents: engine.discoveryEvents?.length ? engine.discoveryEvents.slice(-100) : undefined,
   };
 }
 
@@ -917,10 +918,15 @@ export function deserializeGame(
     engine.attachCompanion(deserializeCompanion(saveData.companion, engine.registries));
   }
 
-  // 6. Restore Turn Count & Messages
+  // 6. Restore Turn Count & Messages & Discovery Events
   engine.turnCount = saveData.turnCount;
   for (const msg of saveData.messages) {
     engine.messages.push(msg);
+  }
+  if (Array.isArray(saveData.discoveryEvents)) {
+    for (const evt of saveData.discoveryEvents) {
+      engine.discoveryEvents.push(evt);
+    }
   }
 
   // 7. Restore Multi-Floor Caches

@@ -354,6 +354,15 @@ export interface SaveData {
   prngState?: number;
   /** Companions & Pet Progression, Phase 1 (docs/architecture/content-companions.md). Null/absent = no companion summoned. */
   companion?: SerializedCompanion | null;
+  /** Chronicle of Discoveries rolling event log (ARCHITECTURE.md §5). */
+  discoveryEvents?: Array<{
+    type: 'floor_transition' | 'secret_door' | 'trap_disarmed' | 'boss_slain' | 'close_call' | 'pact_sealed' | 'quest_milestone' | 'general';
+    text: string;
+    floor: number;
+    turn: number;
+    timestamp: number;
+    icon?: string;
+  }>;
 }
 
 export interface StorageAdapter {

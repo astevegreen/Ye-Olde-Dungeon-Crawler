@@ -5,6 +5,7 @@ export class JournalModule implements FlankModule {
   public readonly title = "Cartographer's Journal";
   private container: HTMLElement | null = null;
   private lastRenderedEventCount = 0;
+  private lastEngine: unknown = null;
 
   public mount(container: HTMLElement): void {
     this.container = container;
@@ -122,6 +123,10 @@ export class JournalModule implements FlankModule {
     }
 
     // 2. Rolling Chronicle of Discoveries
+    if (state.engine !== this.lastEngine) {
+      this.lastEngine = state.engine;
+      this.lastRenderedEventCount = 0;
+    }
     const events: DiscoveryEvent[] = state.engine?.discoveryEvents ?? [];
     const feedEl = this.container.querySelector('#journal-chronicle-feed');
     const countBadge = this.container.querySelector('#chronicle-count-badge');

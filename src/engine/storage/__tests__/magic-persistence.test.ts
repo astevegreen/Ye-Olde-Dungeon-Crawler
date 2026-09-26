@@ -72,4 +72,24 @@ describe('Magic & Consumables Persistence', () => {
     expect(loadedWand.charges).toBe(4);
     expect(loadedWand.maxCharges).toBe(8);
   });
+
+  it('preserves discoveryEvents across serialize/deserialize cycles', () => {
+    const map = new GameMap(10, 10, TILES.FLOOR);
+    const player = new Player({ id: 'hero-1', name: 'Hero', position: { x: 2, y: 2 } });
+    const engine = new GameEngine({ map, player, floor: 3 });
+
+    engine.emitDiscovery({ type: 'secret_door', text: 'Revealed a hidden rune vault!' });
+    engine.emitDiscovery({ type: 'boss_slain', text: 'Defeated Gálmr the Frost-Warden!' });
+
+    expect(engine.discoveryEvents).toHaveLength(2);
+
+    const saveData = serializeGame(engine);
+    const loaded = deserializeGame(saveData);
+
+    expect(loaded.engine.discoveryEvents).toHaveLength(2);
+    expect(loaded.engine.discoveryEvents[0].type).toBe('secret_door');
+    expect(loaded.engine.discoveryEvents[0].text).toBe('Revealed a hidden rune vault!');
+    expect(loaded.engine.discoveryEvents[1].type).toBe('boss_slain');
+    expect(loaded.engine.discoveryEvents[1].text).toBe('Defeated Gálmr the Frost-Warden!');
+  });
 });

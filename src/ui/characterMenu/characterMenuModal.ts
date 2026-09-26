@@ -176,6 +176,10 @@ export class CharacterMenuModal implements UIModal {
       document.getElementById('app')?.appendChild(overlay);
     }
     this.overlayEl = overlay;
+    // The class's dark backdrop would dim the flanks a second time and differ per tab; the
+    // surrounding UI is dimmed by `.character-menu-active` (layout.css), identically for all tabs.
+    overlay.style.backgroundColor = 'transparent';
+    overlay.style.backdropFilter = 'none';
 
     // Window Shell
     let win = overlay.querySelector<HTMLElement>('.character-menu-window');
@@ -322,10 +326,7 @@ export class CharacterMenuModal implements UIModal {
 
     if (this.overlayEl && this.windowEl && this.contentEl) {
       if (targetTab.id === 'inventory') {
-        // Inventory overlay renders onto the HTML5 Canvas underneath
-        this.overlayEl.style.backgroundColor = 'transparent';
-        // .retro-window-overlay's backdrop blur would smear the canvas-drawn inventory.
-        this.overlayEl.style.backdropFilter = 'none';
+        // Inventory overlay renders onto the HTML5 Canvas underneath, so clicks must pass through.
         this.overlayEl.style.pointerEvents = 'none';
         this.windowEl.style.backgroundColor = 'transparent';
         this.windowEl.style.border = '2px solid transparent';
@@ -335,8 +336,6 @@ export class CharacterMenuModal implements UIModal {
         }
         this.contentEl.style.display = 'none';
       } else {
-        this.overlayEl.style.backgroundColor = 'rgba(10, 11, 16, 0.82)';
-        this.overlayEl.style.backdropFilter = '';
         this.overlayEl.style.pointerEvents = 'auto';
         this.windowEl.style.backgroundColor = '#0f172a';
         this.windowEl.style.border = '2px solid #ca8a04';

@@ -1,8 +1,14 @@
-/* While character menu is open, blur and darken surrounding UI panels (flanks and HUD bars)
-   identically across all tabs (including inventory) to focus attention on the active modal window. */
+/* ==========================================================================
+   Viewport, Game Container, Ground Status Bar, and Quickbar Layout
+   ========================================================================== */
+
+/* While the character menu is open, blur and darken the surrounding UI (flanks and HUD bars)
+   the same way on every tab. This is the only dimming: the menu overlay itself stays
+   transparent on all tabs, and the map canvas stays crisp because the Inventory tab draws on it. */
 #widescreen-layout.character-menu-active #left-flank,
 #widescreen-layout.character-menu-active #right-flank,
 #widescreen-layout.character-menu-active #game-header-bar,
+#widescreen-layout.character-menu-active #quick-spells-bar,
 #widescreen-layout.character-menu-active #game-bottom-bar,
 #widescreen-layout.character-menu-active #ground-status-bar {
   filter: blur(2px) brightness(0.35);

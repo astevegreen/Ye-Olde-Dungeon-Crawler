@@ -40,7 +40,7 @@ export interface CharacterProfile {
   maxMana?: number;
   xp?: number;
   xpToNextLevel?: number;
-  compendium?: Record<string, { kills: number; tier: 0 | 1 | 2 | 3; firstEncounterFloor?: number }>;
+  compendium?: Record<string, { kills: number; tier: 0 | 1 | 2 | 3; firstEncounterFloor?: number; chosenPerk?: import('../compendium/types').MasteryPerkId }>;
   tutorialFlags?: TutorialFlags;
   deepestRecallFloor?: number;
   recallPosition?: Position;
@@ -350,7 +350,7 @@ export interface SaveData {
   /** Floors held in the async tier rather than inline (schema v10, ARCHITECTURE.md §5). */
   archivedFloors?: number[];
   storedFovRle?: Record<number, string>;
-  compendium?: Record<string, { kills: number; tier: 0 | 1 | 2 | 3; firstEncounterFloor?: number }>;
+  compendium?: Record<string, { kills: number; tier: 0 | 1 | 2 | 3; firstEncounterFloor?: number; chosenPerk?: import('../compendium/types').MasteryPerkId }>;
   worldState?: SerializedWorldState;
   planes?: Record<string, PlaneState>;
   prngState?: number;

@@ -12,6 +12,8 @@ import type { Companion } from '../entities/companion';
 import type { GameEngine } from '../engine';
 import { getTileDefinition } from '../grid/tile';
 import { HookDispatcher } from '../hooks/hookDispatcher';
+import { BASE_ACTION_COST } from '../types';
+import { createMonsterTrophy } from '../compendium/trophies';
 import { DeathEnvelopeTracker } from '../analytics/deathEnvelope';
 
 /** Duck-typed check avoiding a value import of Companion (see import comment above). */
@@ -108,7 +110,40 @@ export class DeathResolver {
           if (killRes.tier === 2) {
             engine.log(`*** Slayer's Compendium: You uncovered the affinities and weaknesses of ${victim.name}! ***`);
           } else if (killRes.tier === 3) {
-            engine.log(`*** MASTERED! You have mastered ${victim.name} (5+ kills)! (+1 ATK damage, +5% evasion unlocked) ***`);
+            engine.log(`*** MASTERED! You have mastered ${victim.name} (5+ kills)! Open your Compendium [B] to select a Mastery Specialization! ***`);
+          }
+        }
+      }
+
+      // Slayer's Compendium Slay Perks (Essence Siphon & Trophy Hunter)
+      if (killer instanceof Player && victim instanceof Monster && engine.compendium) {
+        const perk = engine.compendium.getPerk(victim.definitionId);
+
+        // 1. Essence Siphon: Restores 10% Max HP, 10% Max Mana, and refunds 50% energy
+        if (perk === 'essence_siphon') {
+          const hpGain = Math.max(2, Math.round(killer.maxHp * 0.10));
+          const manaGain = Math.max(2, Math.round((killer.maxMana ?? 20) * 0.10));
+          killer.heal(hpGain);
+          if (typeof killer.mana === 'number' && typeof killer.maxMana === 'number') {
+            killer.mana = Math.min(killer.maxMana, killer.mana + manaGain);
+          }
+          killer.gainEnergy(Math.round(BASE_ACTION_COST * 0.5));
+          engine.recordVisualEffects([
+            {
+              type: 'screen_flash',
+              color: '#38bdf8',
+              durationMs: 150,
+            },
+          ]);
+          engine.log(`*** ESSENCE SIPHON! You draw in ${victim.name}'s vitality (+${hpGain} HP, +${manaGain} Mana, +Energy refund)! ***`);
+        }
+
+        // 2. Trophy Hunter: 35% chance to harvest rare anatomical trophy/reagent
+        if (perk === 'trophy_hunter') {
+          if (engine.rng() < 0.35) {
+            const trophy = createMonsterTrophy(victim, engine);
+            engine.map.addItemAt(victim.x, victim.y, trophy);
+            engine.log(`*** TROPHY HARVEST! You carefully salvage a ${trophy.name} from ${victim.name}! ***`);
           }
         }
       }
@@ -149,9 +184,10 @@ export class DeathResolver {
 
       // Generate loot drops on victim's position
       if (victim.lootTable && victim.lootTable.length > 0) {
+        const isPlunderer = killer instanceof Player && engine.compendium?.getPerk(victim.definitionId) === 'plunderer';
         const rewards = engine.pacts?.getAggregatedRewards();
         const mf = rewards?.magicFindBonus ?? 0;
-        const goldMult = rewards?.goldMultiplier ?? 1.0;
+        const goldMult = (rewards?.goldMultiplier ?? 1.0) * (isPlunderer ? 2.0 : 1.0);
         let dropCount = 0;
         for (const rule of victim.lootTable) {
           const effectiveChance = Math.min(1.0, rule.chance + (rule.chance * mf));
@@ -167,6 +203,21 @@ export class DeathResolver {
             engine.log(`${victim.name} dropped ${item.displayName}!`);
             dropCount += 1;
           }
+        }
+
+        // Plunderer guarantee: if no loot dropped from table, guarantee an item drop
+        if (isPlunderer && dropCount === 0) {
+          const pickRule = victim.lootTable[engine.prng.nextInt(0, victim.lootTable.length - 1)];
+          const randSuffix = engine.prng.nextInt(1000, 9999).toString();
+          const lootId = `plunder-${engine.turnCount}-${randSuffix}`;
+          const item = pickRule.generate(lootId, engine.rng);
+          if (item.category === 'coin') {
+            item.value = Math.round(item.value * goldMult);
+          }
+          engine.map.addItemAt(victim.x, victim.y, item);
+          engine.log(`*** PLUNDERER'S LUCK! You uncover hidden spoils: ${victim.name} dropped ${item.displayName}! ***`);
+        } else if (isPlunderer && dropCount > 0) {
+          engine.log(`*** PLUNDERER'S BOUNTY! Gold and spoils from ${victim.name} were doubled! ***`);
         }
       }
 

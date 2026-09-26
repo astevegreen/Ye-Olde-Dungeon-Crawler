@@ -3,6 +3,9 @@ import {
   MonsterRegistry,
   type MonsterDefinition,
   type MonsterMasteryTier,
+  type MasteryPerkId,
+  MASTERY_PERKS,
+  selectMasteryPerk,
 } from '../../engine';
 import type { UIModal } from '../modalStack';
 
@@ -171,7 +174,7 @@ export class CompendiumModal implements UIModal {
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div>
                 <div class="retro-banner-title" style="color: #facc15; font-size: 13px;">THE SLAYER'S CODEX OF MIDGARD</div>
-                <div class="retro-banner-sub" style="font-size: 11px;">Encounter fiends to record their habits. Slain foes reveal vulnerabilities; 5 kills unlocks permanent combat mastery perks.</div>
+                <div class="retro-banner-sub" style="font-size: 11px;">Encounter fiends to record their habits. Slain foes reveal vulnerabilities; 5 kills unlocks 5 selectable Slayer Mastery Specializations.</div>
               </div>
               <div style="text-align: right; font-size: 11px; font-weight: bold; color: #e2e8f0; white-space: nowrap;">
                 <div>Discovered: <span style="color: #38bdf8;">${discoveredCount}/${allMonsters.length}</span></div>
@@ -267,6 +270,17 @@ export class CompendiumModal implements UIModal {
         }
       });
     });
+
+    const perkButtons = this.overlayEl.querySelectorAll('.btn-select-perk');
+    perkButtons.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const perkId = (e.currentTarget as HTMLElement).getAttribute('data-perk') as MasteryPerkId;
+        if (perkId && this.engine && this.selectedMonsterId) {
+          selectMasteryPerk(this.engine, this.selectedMonsterId, perkId);
+          this.render();
+        }
+      });
+    });
   }
 
   private renderDetailContent(def: MonsterDefinition, tier: MonsterMasteryTier, kills: number): string {
@@ -289,6 +303,8 @@ export class CompendiumModal implements UIModal {
 
     const masteryProgress = Math.min(5, kills);
     const progressPercent = Math.round((masteryProgress / 5) * 100);
+    const inTown = (this.engine?.currentFloor ?? 1) === 0;
+    const currentPerk = this.engine?.compendium?.getPerk(def.id);
 
     return `
       <div style="border-bottom: 1px solid #1e293b; padding-bottom: 8px;">
@@ -303,24 +319,71 @@ export class CompendiumModal implements UIModal {
         </div>
       </div>
 
-      <!-- Mastery Perk Status -->
-      <div style="background: ${tier === 3 ? '#14532d' : '#1e1b4b'}; border: 1px solid ${tier === 3 ? '#22c55e' : '#4338ca'}; padding: 8px;">
+      <!-- Mastery Perk Status & Specialization Selection -->
+      <div style="background: ${tier === 3 ? '#14251a' : '#1e1b4b'}; border: 1px solid ${tier === 3 ? '#22c55e' : '#4338ca'}; padding: 10px; border-radius: 3px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
           <span style="font-weight: bold; color: ${tier === 3 ? '#86efac' : '#a5b4fc'}; font-size: 11px;">
-            ${tier === 3 ? '★ COMBAT MASTERY UNLOCKED' : 'SLAYER MASTERY PROGRESS'}
+            ${tier === 3 ? '★ SLAYER MASTERY SPECIALIZATION' : 'SLAYER MASTERY PROGRESS'}
           </span>
           <span style="font-size: 10px; color: #e2e8f0;">${kills}/5 Kills (${progressPercent}%)</span>
         </div>
-        <div style="height: 6px; background: #0f172a; border: 1px solid #334155; margin-bottom: 6px;">
+        <div style="height: 6px; background: #0f172a; border: 1px solid #334155; margin-bottom: 8px;">
           <div style="height: 100%; width: ${progressPercent}%; background: ${tier === 3 ? '#22c55e' : '#eab308'};"></div>
         </div>
-        <div style="font-size: 10px; color: ${tier === 3 ? '#dcfce7' : '#cbd5e1'};">
-          ${
-            tier === 3
-              ? 'Active Perks: <b>+1 Flat Attack Damage</b> on all strikes against this fiend. <b>+5% Evasion Chance</b> when attacked by this monster.'
-              : `Slay this monster ${5 - kills} more time${5 - kills === 1 ? '' : 's'} to unlock permanent +1 Attack Damage and +5% Evasion perks!`
-          }
-        </div>
+
+        ${
+          tier === 3
+            ? `
+              <div style="font-size: 10px; color: #fef08a; font-weight: bold; margin-bottom: 6px;">
+                Choose 1 of 5 Mastery Specializations for this creature:
+                <span style="font-weight: normal; color: #94a3b8; display: block; margin-top: 2px;">
+                  ${
+                    inTown
+                      ? '🏰 In Town: Study with Guild scholars to freely select or switch specializations.'
+                      : currentPerk
+                      ? '⚔️ In Dungeon: Active specialization locked. Return to Town to respec.'
+                      : '⚡ Mastery Unlocked: Select your initial specialization below.'
+                  }
+                </span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 6px;">
+                ${Object.values(MASTERY_PERKS)
+                  .map((perk) => {
+                    const isSelected = currentPerk === perk.id;
+                    const canSelect = inTown || !currentPerk;
+                    return `
+                      <div style="background: ${isSelected ? '#14532d' : '#0f172a'}; border: 1px solid ${isSelected ? '#22c55e' : '#334155'}; padding: 6px 8px; border-radius: 2px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                        <div style="flex: 1;">
+                          <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="font-size: 13px;">${perk.icon}</span>
+                            <b style="color: ${isSelected ? '#86efac' : '#38bdf8'}; font-size: 11px;">${perk.name}</b>
+                            <span style="font-size: 9px; color: #94a3b8; font-style: italic;">— ${perk.tagline}</span>
+                          </div>
+                          <div style="font-size: 10px; color: ${isSelected ? '#dcfce7' : '#cbd5e1'}; margin-top: 2px;">
+                            ${perk.description}
+                          </div>
+                        </div>
+                        <div>
+                          ${
+                            isSelected
+                              ? `<span style="display: inline-block; padding: 2px 6px; background: #22c55e; color: #052e16; font-size: 9px; font-weight: bold; border-radius: 2px;">ACTIVE</span>`
+                              : canSelect
+                              ? `<button class="win-btn win-btn-sm btn-select-perk" data-perk="${perk.id}" style="font-size: 10px; padding: 2px 8px; cursor: pointer;">Select</button>`
+                              : `<span style="font-size: 9px; color: #64748b;">🔒 In Dungeon</span>`
+                          }
+                        </div>
+                      </div>
+                    `;
+                  })
+                  .join('')}
+              </div>
+            `
+            : `
+              <div style="font-size: 10px; color: #cbd5e1;">
+                Slay this monster ${5 - kills} more time${5 - kills === 1 ? '' : 's'} to unlock permanent Mastery! Upon mastery, you can choose from 5 powerful specializations: <b>Anatomist</b> (Crits/Armor Pen), <b>Survivor</b> (Evasion/Status Resist), <b>Trophy Hunter</b> (Rare Organ Drops), <b>Essence Siphon</b> (HP/Mana Sustain), or <b>Plunderer</b> (Double Gold &amp; Extra Loot).
+              </div>
+            `
+        }
       </div>
 
       <!-- Tier 1 & 2 Attributes -->

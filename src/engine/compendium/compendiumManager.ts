@@ -2,7 +2,10 @@ import type {
   CompendiumEntry,
   MonsterMasteryTier,
   SerializedCompendium,
+  MasteryPerkId,
 } from './types';
+import { MASTERY_PERKS } from './types';
+import type { GameEngine } from '../engine';
 
 export class CompendiumManager {
   private entries: Map<string, CompendiumEntry> = new Map();
@@ -127,18 +130,54 @@ export class CompendiumManager {
     return this.getTier(definitionId) === 3;
   }
 
-  /**
-   * Returns +1 flat attack damage if Tier 3 mastery is unlocked.
-   */
-  public getMasteryDamageBonus(definitionId: string): number {
-    return this.hasMastery(definitionId) ? 1 : 0;
+  public getPerk(definitionId: string): MasteryPerkId | undefined {
+    return this.entries.get(definitionId)?.chosenPerk;
+  }
+
+  public selectPerk(
+    definitionId: string,
+    perkId: MasteryPerkId,
+    inTown: boolean
+  ): { success: boolean; reason?: string } {
+    const entry = this.entries.get(definitionId);
+    if (!entry || entry.tier < 3) {
+      return {
+        success: false,
+        reason: 'Creature must reach Tier 3 (Mastery: 5+ kills) to select a specialization.',
+      };
+    }
+
+    if (entry.chosenPerk && entry.chosenPerk !== perkId && !inTown) {
+      return {
+        success: false,
+        reason: 'Mastery specializations can only be changed while safely resting in Town.',
+      };
+    }
+
+    entry.chosenPerk = perkId;
+    return { success: true };
+  }
+
+  public setPerk(
+    definitionId: string,
+    perkId: MasteryPerkId,
+    inTown: boolean
+  ): { success: boolean; reason?: string } {
+    return this.selectPerk(definitionId, perkId, inTown);
   }
 
   /**
-   * Returns 0.05 (+5%) evasion chance if Tier 3 mastery is unlocked.
+   * Returns +1 flat attack damage if Tier 3 mastery is unlocked with 'anatomist' specialization.
+   */
+  public getMasteryDamageBonus(definitionId: string): number {
+    return this.getPerk(definitionId) === 'anatomist' ? 1 : 0;
+  }
+
+  /**
+   * Returns 0.10 (+10%) evasion chance if Tier 3 mastery is unlocked with 'survivor' specialization.
    */
   public getMasteryEvasionBonus(definitionId: string): number {
-    return this.hasMastery(definitionId) ? 0.05 : 0;
+    return this.getPerk(definitionId) === 'survivor' ? 0.10 : 0;
   }
 
   public serialize(): SerializedCompendium {
@@ -148,6 +187,7 @@ export class CompendiumManager {
         kills: entry.kills,
         tier: entry.tier,
         firstEncounterFloor: entry.firstEncounterFloor,
+        chosenPerk: entry.chosenPerk,
       };
     }
     return result;
@@ -161,6 +201,7 @@ export class CompendiumManager {
         existing.kills = record.kills;
         existing.tier = record.tier;
         existing.firstEncounterFloor = record.firstEncounterFloor ?? existing.firstEncounterFloor;
+        existing.chosenPerk = record.chosenPerk ?? existing.chosenPerk;
       } else {
         this.entries.set(id, {
           definitionId: id,
@@ -168,8 +209,38 @@ export class CompendiumManager {
           kills: record.kills,
           tier: record.tier,
           firstEncounterFloor: record.firstEncounterFloor,
+          chosenPerk: record.chosenPerk,
         });
       }
     }
   }
 }
+
+/**
+ * Public presentation-facing helper to assign a creature's mastery perk
+ * with town-safety checks, game event dispatching, and engine logging.
+ */
+export function selectMasteryPerk(
+  engine: GameEngine,
+  definitionId: string,
+  perkId: MasteryPerkId
+): { success: boolean; reason?: string } {
+  const compendium = engine.compendium;
+  if (!compendium) {
+    return { success: false, reason: 'Compendium is unavailable.' };
+  }
+
+  const inTown = engine.currentFloor === 0;
+  const result = compendium.selectPerk(definitionId, perkId, inTown);
+  if (result.success) {
+    const perk = MASTERY_PERKS[perkId];
+    engine.log(`*** Mastery Specialization: Adopted ${perk.name} for ${definitionId}! ***`);
+    engine.emitGameEvent({
+      type: 'mastery_perk_selected',
+      turn: engine.turnCount,
+      data: { definitionId, perkId },
+    });
+  }
+  return result;
+}
+

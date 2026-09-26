@@ -173,7 +173,7 @@ export class ContextHelp {
             { key: '> / <', label: 'Climb stairs down (>) or climb stairs up (<)' },
             { key: 'Q', label: 'Save progress and return to character roster' },
           ],
-          tip: 'Tip: Killing monsters 5+ times unlocks +1 ATK and +5% evasion mastery combat perks!',
+          tip: 'Tip: Slaying monsters 5+ times unlocks Slayer Mastery! Open the Compendium [B] to choose from 5 specialized combat, sustain, and loot perks.',
         };
     }
   }

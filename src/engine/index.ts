@@ -173,6 +173,7 @@ export * from './hallOfFame/leaderboard';
 // Compendium & Advisory
 export * from './compendium/types';
 export * from './compendium/compendiumManager';
+export * from './compendium/trophies';
 export * from './advisory/runAdvisor';
 
 // Parallel Planes & Spatial Geometry

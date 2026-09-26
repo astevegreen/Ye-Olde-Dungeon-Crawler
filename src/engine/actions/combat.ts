@@ -50,13 +50,13 @@ export class MeleeAttackAction implements Action {
       };
     }
 
-    // Slayer's Compendium Defensive Mastery Evasion Check (+5% evasion if mastered)
+    // Slayer's Compendium Defensive Mastery Evasion Check (Survivor: +10% evasion)
     if (this.attacker instanceof Monster && this.defender instanceof Player && engine.compendium) {
       const evasionBonus = engine.compendium.getMasteryEvasionBonus(this.attacker.definitionId);
       if (evasionBonus > 0 && engine.rng() < evasionBonus) {
         const cost = this.attacker.getActionCost(BASE_ACTION_COST);
         this.attacker.consumeEnergy(cost);
-        const evadeMsg = `${this.defender.name} anticipates ${this.attacker.name}'s attack and evades cleanly! (Mastery Perk)`;
+        const evadeMsg = `${this.defender.name} anticipates ${this.attacker.name}'s attack and evades cleanly! (Survivor Perk)`;
         engine.log(evadeMsg);
         return {
           success: true,
@@ -66,11 +66,12 @@ export class MeleeAttackAction implements Action {
       }
     }
 
-    // Slayer's Compendium Offensive Mastery (+1 flat damage against mastered monsters)
-    let masteryBonus = 0;
-    if (this.attacker instanceof Player && this.defender instanceof Monster && engine.compendium) {
-      masteryBonus = engine.compendium.getMasteryDamageBonus(this.defender.definitionId);
-    }
+    // Slayer's Compendium Offensive Mastery (Anatomist: ignore 50% defense, +25% crit dmg)
+    const isAnatomist = this.attacker instanceof Player &&
+      this.defender instanceof Monster &&
+      engine.compendium?.getPerk(this.defender.definitionId) === 'anatomist';
+
+    let masteryBonus = isAnatomist ? 1 : 0;
 
     // Damage calculation: manifest combatConfig or default formula
     const combatConfig = engine.manifest?.combatConfig;
@@ -83,12 +84,15 @@ export class MeleeAttackAction implements Action {
       isCrit = custom.isCrit ?? false;
     } else {
       const minDmg = combatConfig?.minDamage ?? DEFAULT_MIN_DAMAGE;
-      let base = Math.max(minDmg, this.attacker.attack + masteryBonus - this.defender.defense);
+      const effectiveDefense = isAnatomist
+        ? Math.floor(this.defender.defense * 0.5)
+        : this.defender.defense;
+      let base = Math.max(minDmg, this.attacker.attack + masteryBonus - effectiveDefense);
 
       // Critical strike calculation
       if (combatConfig?.critChance && engine.rng() < combatConfig.critChance) {
         isCrit = true;
-        const mult = combatConfig.critMultiplier ?? DEFAULT_CRIT_MULTIPLIER;
+        const mult = (combatConfig.critMultiplier ?? DEFAULT_CRIT_MULTIPLIER) + (isAnatomist ? 0.25 : 0);
         base = Math.max(minDmg, Math.round(base * mult));
       }
 
@@ -305,7 +309,9 @@ export class MeleeAttackAction implements Action {
 
     flightRecorder.recordCombat(this.attacker.name, this.defender.name, damageDealt, killed);
 
-    const perkNote = masteryBonus > 0 ? ' (+1 Mastery Perk)' : '';
+    const perkNote = isAnatomist
+      ? (isCrit ? ' (Anatomist Critical!)' : ' (Anatomist Exploit)')
+      : '';
     const critPrefix = isCrit ? '*** CRITICAL HIT! *** ' : '';
     let message = `${critPrefix}${this.attacker.name} attacks ${this.defender.name} for ${damageDealt} damage.${perkNote}`;
     engine.log(message);
@@ -344,11 +350,19 @@ export class MeleeAttackAction implements Action {
     // On-hit status affliction (e.g. Giant Rat venomous bite)
     if (this.attacker instanceof Monster && this.attacker.onHitAffliction && !killed) {
       const aff = this.attacker.onHitAffliction;
-      if (engine.rng() < aff.chance) {
+      const isSurvivor = this.defender instanceof Player &&
+        engine.compendium?.getPerk(this.attacker.definitionId) === 'survivor';
+
+      // Survivor: 25% chance to shrug off affliction entirely
+      if (isSurvivor && engine.rng() < 0.25) {
+        engine.log(`${this.defender.name}'s Survivor instincts shrug off ${this.attacker.name}'s ${aff.type}!`);
+      } else if (engine.rng() < aff.chance) {
+        // Survivor: halve the duration of debuffs
+        const effectiveDuration = isSurvivor ? Math.max(1, Math.floor(aff.duration * 0.5)) : aff.duration;
         const applied = this.defender.statusManager.applyStatus(
           {
             type: aff.type,
-            duration: aff.duration,
+            duration: effectiveDuration,
             potency: aff.potency,
             sourceEntityId: this.attacker.id,
           },
@@ -357,7 +371,8 @@ export class MeleeAttackAction implements Action {
           engine
         );
         if (applied) {
-          const affMsg = `${this.attacker.name}'s bite infects ${this.defender.name} with ${aff.type}!`;
+          const survivorNote = isSurvivor ? ' (Duration halved by Survivor)' : '';
+          const affMsg = `${this.attacker.name}'s bite infects ${this.defender.name} with ${aff.type}!${survivorNote}`;
           engine.log(affMsg);
         }
       }

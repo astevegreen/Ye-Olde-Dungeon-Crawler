@@ -537,7 +537,12 @@ export class CanvasRenderer {
       this.engine,
       virtualW,
       virtualH,
-      this.onResolveRadialLabel ?? defaultRadialLabel
+      this.onResolveRadialLabel ?? defaultRadialLabel,
+      (c, x, y, size) => {
+        const player = this.engine.player;
+        const spriteKey = player ? getEntitySpriteKey(player, this.atlas.hasSprite.bind(this.atlas)) : 'player';
+        this.atlas.drawSprite(c, spriteKey, x - size / 2, y - size / 2, size, Visibility.Visible);
+      }
     );
   }
 

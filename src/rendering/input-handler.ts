@@ -41,18 +41,86 @@ import type { RadialMenuSlotConfig } from '../ui/settings/settingsManager';
 import { ChordBuffer } from '../ui/input/chordBuffer';
 import type { RadialMenuOverlay, RadialDirection } from './radialMenu';
 
-function resolveCompassDirection(code: string): RadialDirection | null {
+function isUpKey(code: string): boolean {
+  return code === 'ArrowUp' || code === 'KeyW' || code === 'KeyK' || code === 'Numpad8';
+}
+
+function isDownKey(code: string): boolean {
+  return code === 'ArrowDown' || code === 'KeyS' || code === 'KeyJ' || code === 'Numpad2';
+}
+
+function isLeftKey(code: string): boolean {
+  return code === 'ArrowLeft' || code === 'KeyA' || code === 'KeyH' || code === 'Numpad4';
+}
+
+function isRightKey(code: string): boolean {
+  return code === 'ArrowRight' || code === 'KeyD' || code === 'KeyL' || code === 'Numpad6';
+}
+
+function getDirectDiagonal(code: string): RadialDirection | null {
   switch (code) {
-    case 'ArrowUp': case 'KeyW': case 'KeyK': case 'Numpad8': return 'N';
-    case 'ArrowDown': case 'KeyS': case 'KeyJ': case 'Numpad2': return 'S';
-    case 'ArrowLeft': case 'KeyA': case 'KeyH': case 'Numpad4': return 'W';
-    case 'ArrowRight': case 'KeyD': case 'KeyL': case 'Numpad6': return 'E';
     case 'Numpad7': case 'KeyY': return 'NW';
     case 'Numpad9': case 'KeyU': return 'NE';
     case 'Numpad1': case 'KeyB': return 'SW';
     case 'Numpad3': case 'KeyN': return 'SE';
     default: return null;
   }
+}
+
+export function resolveRadialDirection(heldKeys: Set<string>, latestCode?: string): RadialDirection | null {
+  if (latestCode) {
+    const direct = getDirectDiagonal(latestCode);
+    if (direct) return direct;
+  }
+  for (const k of heldKeys) {
+    const direct = getDirectDiagonal(k);
+    if (direct) return direct;
+  }
+
+  let hasUp = false;
+  let hasDown = false;
+  let hasLeft = false;
+  let hasRight = false;
+
+  for (const k of heldKeys) {
+    if (isUpKey(k)) hasUp = true;
+    if (isDownKey(k)) hasDown = true;
+    if (isLeftKey(k)) hasLeft = true;
+    if (isRightKey(k)) hasRight = true;
+  }
+
+  let vertical: 'up' | 'down' | null = null;
+  if (hasUp && hasDown) {
+    if (latestCode && isUpKey(latestCode)) vertical = 'up';
+    else if (latestCode && isDownKey(latestCode)) vertical = 'down';
+    else vertical = null;
+  } else if (hasUp) {
+    vertical = 'up';
+  } else if (hasDown) {
+    vertical = 'down';
+  }
+
+  let horizontal: 'left' | 'right' | null = null;
+  if (hasLeft && hasRight) {
+    if (latestCode && isLeftKey(latestCode)) horizontal = 'left';
+    else if (latestCode && isRightKey(latestCode)) horizontal = 'right';
+    else horizontal = null;
+  } else if (hasLeft) {
+    horizontal = 'left';
+  } else if (hasRight) {
+    horizontal = 'right';
+  }
+
+  if (vertical === 'up' && horizontal === 'right') return 'NE';
+  if (vertical === 'up' && horizontal === 'left') return 'NW';
+  if (vertical === 'down' && horizontal === 'right') return 'SE';
+  if (vertical === 'down' && horizontal === 'left') return 'SW';
+  if (vertical === 'up') return 'N';
+  if (vertical === 'down') return 'S';
+  if (horizontal === 'right') return 'E';
+  if (horizontal === 'left') return 'W';
+
+  return null;
 }
 
 function isTextEntryTarget(target: EventTarget | null): boolean {
@@ -104,6 +172,7 @@ export class InputHandler {
   public pendingCloseDoorDirection = false;
   public autoRestRunner?: AutoRestRunner;
   public navigationController?: NavigationController;
+  private radialHeldKeys = new Set<string>();
 
   private boundKeyDownHandler?: (e: KeyboardEvent) => void;
   private boundKeyUpHandler?: (e: KeyboardEvent) => void;
@@ -190,21 +259,30 @@ export class InputHandler {
     };
   }
 
+  public handleKeyUp(e: KeyboardEvent): void {
+    if (!this.enabled) return;
+    this.chordBuffer.handleKeyUp(e.code);
+    if (this.radialHeldKeys.has(e.code)) {
+      this.radialHeldKeys.delete(e.code);
+    }
+    // Radial menu confirms on release of the same key that opened it (hold-to-open).
+    if (this.radialMenuOverlay?.isOpen && this.settingsManager.getActionForCode(e.code) === 'radial_menu') {
+      this.radialHeldKeys.clear();
+      this.confirmRadialMenu();
+    }
+  }
+
   private init(): void {
     this.boundKeyDownHandler = (e: KeyboardEvent) => {
       if (!this.enabled) return;
       this.handleKeyDown(e);
     };
     this.boundKeyUpHandler = (e: KeyboardEvent) => {
-      if (!this.enabled) return;
-      this.chordBuffer.handleKeyUp(e.code);
-      // Radial menu confirms on release of the same key that opened it (hold-to-open).
-      if (this.radialMenuOverlay?.isOpen && this.settingsManager.getActionForCode(e.code) === 'radial_menu') {
-        this.confirmRadialMenu();
-      }
+      this.handleKeyUp(e);
     };
     this.boundBlurHandler = () => {
       this.chordBuffer.clearAllKeys();
+      this.radialHeldKeys.clear();
       if (this.radialMenuOverlay?.isOpen) {
         this.radialMenuOverlay.close();
         this.modalStack.remove('radial-menu');
@@ -219,6 +297,7 @@ export class InputHandler {
 
   public destroy(): void {
     this.enabled = false;
+    this.radialHeldKeys.clear();
     this.chordBuffer.destroy();
     if (typeof window !== 'undefined') {
       if (this.boundKeyDownHandler) {
@@ -315,6 +394,7 @@ export class InputHandler {
   public confirmRadialMenu(): void {
     const overlay = this.radialMenuOverlay;
     if (!overlay) return;
+    this.radialHeldKeys.clear();
     const slot = overlay.getSelectedSlot();
     overlay.close();
     this.modalStack.remove('radial-menu');
@@ -399,12 +479,14 @@ export class InputHandler {
     // and every other key is consumed so gameplay input can't leak through mid-selection.
     if (this.radialMenuOverlay?.isOpen) {
       if (code === 'Escape') {
+        this.radialHeldKeys.clear();
         this.radialMenuOverlay.close();
         this.modalStack.remove('radial-menu');
         this.onActionProcessed();
         return true;
       }
-      const direction = resolveCompassDirection(code);
+      this.radialHeldKeys.add(code);
+      const direction = resolveRadialDirection(this.radialHeldKeys, code);
       if (direction) {
         this.radialMenuOverlay.setHoveredDirection(direction);
         this.onActionProcessed();
@@ -977,6 +1059,7 @@ export class InputHandler {
     if (userAction === 'radial_menu' && !e.repeat && this.radialMenuOverlay) {
       const self = this;
       if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
+      this.radialHeldKeys.clear();
       this.radialMenuOverlay.open();
       this.modalStack.push({
         id: 'radial-menu',

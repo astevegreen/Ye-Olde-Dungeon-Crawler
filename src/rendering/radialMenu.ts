@@ -54,7 +54,8 @@ export class RadialMenuOverlay {
     engine: GameEngine,
     canvasW: number,
     canvasH: number,
-    resolveLabel: (slot: RadialMenuSlotConfig) => string
+    resolveLabel: (slot: RadialMenuSlotConfig) => string,
+    drawPlayerCenter?: (ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number) => void
   ): void {
     if (!this.isOpen) return;
 
@@ -102,18 +103,22 @@ export class RadialMenuOverlay {
       ctx.fillText(label, lx, ly, outerRadius * 0.7);
     });
 
-    // Hub.
+    // Center Hub: open boundary ring with player sprite or icon centered in the middle
     ctx.beginPath();
     ctx.arc(cx, cy, innerRadius, 0, Math.PI * 2);
-    ctx.fillStyle = theme.modalBg;
-    ctx.fill();
-    ctx.strokeStyle = theme.modalBorder;
+    ctx.strokeStyle = theme.accent ?? '#38bdf8';
+    ctx.lineWidth = 2;
     ctx.stroke();
-    ctx.font = `10px ${font}`;
-    ctx.fillStyle = theme.textMuted;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Radial', cx, cy);
+
+    const centerSize = Math.round(innerRadius * 1.3);
+    if (drawPlayerCenter) {
+      drawPlayerCenter(ctx, cx, cy, centerSize);
+    } else {
+      ctx.font = `${Math.round(innerRadius * 0.9)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🛡️', cx, cy);
+    }
 
     ctx.restore();
   }

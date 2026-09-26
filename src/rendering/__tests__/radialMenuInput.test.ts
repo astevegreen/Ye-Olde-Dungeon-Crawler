@@ -127,4 +127,48 @@ describe('InputHandler <-> RadialMenuOverlay wiring', () => {
     expect(() => inputHandler.confirmRadialMenu()).not.toThrow();
     expect(radialMenuOverlay.isOpen).toBe(false);
   });
+
+  it('selects diagonals when two adjacent arrow keys are pressed together', () => {
+    inputHandler.handleKeyDown(makeKeyEvent('KeyV'));
+
+    // Up + Right -> NE
+    inputHandler.handleKeyDown(makeKeyEvent('ArrowUp'));
+    expect(radialMenuOverlay.getHoveredDirection()).toBe('N');
+    inputHandler.handleKeyDown(makeKeyEvent('ArrowRight'));
+    expect(radialMenuOverlay.getHoveredDirection()).toBe('NE');
+
+    // Release Up, hold Right, press Down -> SE
+    inputHandler.handleKeyUp(makeKeyEvent('ArrowUp'));
+    inputHandler.handleKeyDown(makeKeyEvent('ArrowDown'));
+    expect(radialMenuOverlay.getHoveredDirection()).toBe('SE');
+
+    // Release Right, press Left -> SW
+    inputHandler.handleKeyUp(makeKeyEvent('ArrowRight'));
+    inputHandler.handleKeyDown(makeKeyEvent('ArrowLeft'));
+    expect(radialMenuOverlay.getHoveredDirection()).toBe('SW');
+
+    // Release Down, press Up -> NW
+    inputHandler.handleKeyUp(makeKeyEvent('ArrowDown'));
+    inputHandler.handleKeyDown(makeKeyEvent('ArrowUp'));
+    expect(radialMenuOverlay.getHoveredDirection()).toBe('NW');
+  });
+
+  it('supports WASD chording for diagonals in radial menu', () => {
+    inputHandler.handleKeyDown(makeKeyEvent('KeyV'));
+
+    // W + D -> NE
+    inputHandler.handleKeyDown(makeKeyEvent('KeyW'));
+    inputHandler.handleKeyDown(makeKeyEvent('KeyD'));
+    expect(radialMenuOverlay.getHoveredDirection()).toBe('NE');
+
+    // Keyup W and D
+    inputHandler.handleKeyUp(makeKeyEvent('KeyW'));
+    inputHandler.handleKeyUp(makeKeyEvent('KeyD'));
+
+    // S + A -> SW
+    inputHandler.handleKeyDown(makeKeyEvent('KeyS'));
+    inputHandler.handleKeyDown(makeKeyEvent('KeyA'));
+    expect(radialMenuOverlay.getHoveredDirection()).toBe('SW');
+  });
 });
+

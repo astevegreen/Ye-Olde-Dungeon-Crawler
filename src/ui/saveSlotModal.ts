@@ -1,4 +1,4 @@
-import type { ProfileManager, AutosaveManager } from '../engine';
+import type { ProfileManager, AutosaveManager, AutosaveSlot } from '../engine';
 import type { UIModal } from './modalStack';
 import { showToast } from './toast';
 
@@ -6,7 +6,7 @@ export interface SaveSlotModalOptions {
   profileManager: ProfileManager;
   autosaveManager?: AutosaveManager;
   onLoadProfile: (profileId: string) => Promise<boolean> | boolean;
-  onLoadAutosave: () => Promise<boolean> | boolean;
+  onLoadAutosave: (slot: AutosaveSlot) => Promise<boolean> | boolean;
   onClose?: () => void;
 }
 
@@ -76,9 +76,9 @@ export class SaveSlotModal implements UIModal {
     return true;
   }
 
-  private async handleLoadAutosave(): Promise<void> {
+  private async handleLoadAutosave(slot: AutosaveSlot): Promise<void> {
     try {
-      const success = await this.options.onLoadAutosave();
+      const success = await this.options.onLoadAutosave(slot);
       if (success) {
         this.hide();
       } else {
@@ -114,19 +114,16 @@ export class SaveSlotModal implements UIModal {
     }
   }
 
-  public render(): void {
-    if (!this.overlayEl) return;
-
-    const autosaveMeta = this.options.autosaveManager?.getAutosaveMetadata();
-    const profiles = this.options.profileManager.listProfiles();
-
-    let autosaveCardHtml = '';
-    if (autosaveMeta) {
-      const dateStr = new Date(autosaveMeta.timestamp).toLocaleString();
-      autosaveCardHtml = `
+  private autosaveCardHtml(
+    slot: AutosaveSlot,
+    meta: { timestamp: number; profileName: string; floor: number }
+  ): string {
+    const preserved = slot === 'preserved';
+    const dateStr = new Date(meta.timestamp).toLocaleString();
+    return `
         <div class="save-slot-card autosave-card" style="
           background: #1e293b;
-          border: 2px solid #38bdf8;
+          border: 2px solid ${preserved ? '#a78bfa' : '#38bdf8'};
           border-radius: 6px;
           padding: 12px 14px;
           margin-bottom: 12px;
@@ -135,33 +132,45 @@ export class SaveSlotModal implements UIModal {
           <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
               <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="background: #0284c7; color: #ffffff; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 3px;">
-                  AUTOSAVE
+                <span style="background: ${preserved ? '#7c3aed' : '#0284c7'}; color: #ffffff; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 3px;">
+                  ${preserved ? 'EARLIER AUTOSAVE' : 'AUTOSAVE'}
                 </span>
-                <span style="font-weight: bold; font-size: 15px; color: #f8fafc;">${autosaveMeta.profileName}</span>
-                <span style="font-size: 12px; color: #94a3b8;">Floor ${autosaveMeta.floor}</span>
+                <span style="font-weight: bold; font-size: 15px; color: #f8fafc;">${meta.profileName}</span>
+                <span style="font-size: 12px; color: #94a3b8;">Floor ${meta.floor}</span>
               </div>
               <div style="font-size: 11px; color: #cbd5e1; margin-top: 4px;">
                 🕒 Last Saved: ${dateStr}
               </div>
+              ${preserved ? '<div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Kept aside when a newer autosave would have overwritten it.</div>' : ''}
             </div>
             <div>
               <button
                 type="button"
-                id="btn-load-autosave"
+                id="btn-load-autosave-${slot}"
                 class="win-btn primary-btn"
                 style="padding: 6px 14px; font-size: 12px; font-weight: bold; cursor: pointer;"
               >
-                ⚡ Resume Autosave
+                ⚡ Resume ${preserved ? 'Earlier ' : ''}Autosave
               </button>
             </div>
           </div>
         </div>
       `;
-    }
+  }
+
+  public render(): void {
+    if (!this.overlayEl) return;
+
+    const autosaveMeta = this.options.autosaveManager?.getAutosaveMetadata('latest');
+    const preservedMeta = this.options.autosaveManager?.getAutosaveMetadata('preserved');
+    const profiles = this.options.profileManager.listProfiles();
+
+    const autosaveCardHtml =
+      (autosaveMeta ? this.autosaveCardHtml('latest', autosaveMeta) : '') +
+      (preservedMeta ? this.autosaveCardHtml('preserved', preservedMeta) : '');
 
     let profileListHtml = '';
-    if (profiles.length === 0 && !autosaveMeta) {
+    if (profiles.length === 0 && !autosaveMeta && !preservedMeta) {
       profileListHtml = `
         <div style="text-align: center; padding: 30px 10px; color: #94a3b8; font-style: italic;">
           No save files found on this machine.<br>
@@ -308,9 +317,11 @@ export class SaveSlotModal implements UIModal {
     this.overlayEl.querySelector('#btn-close-saveslot-top')?.addEventListener('click', () => this.close());
     this.overlayEl.querySelector('#btn-close-saveslot-bottom')?.addEventListener('click', () => this.close());
 
-    this.overlayEl.querySelector('#btn-load-autosave')?.addEventListener('click', () => {
-      void this.handleLoadAutosave();
-    });
+    for (const slot of ['latest', 'preserved'] as const) {
+      this.overlayEl.querySelector(`#btn-load-autosave-${slot}`)?.addEventListener('click', () => {
+        void this.handleLoadAutosave(slot);
+      });
+    }
 
     const loadBtns = this.overlayEl.querySelectorAll('.btn-load-profile');
     loadBtns.forEach((btn) => {

@@ -1,5 +1,6 @@
 import {
   AutosaveManager,
+  type AutosaveSlot,
   CastSpellAction,
   ClimbStairsAction,
   CURRENT_SCHEMA_VERSION,
@@ -265,8 +266,8 @@ window.addEventListener('DOMContentLoaded', () => {
     return null;
   };
 
-  const loadAutosaveOrNotify = () => {
-    const outcome = autosaveManager.loadAutosaveResult(activeManifest);
+  const loadAutosaveOrNotify = (slot: AutosaveSlot = 'latest') => {
+    const outcome = autosaveManager.loadAutosaveResult(activeManifest, slot);
     if (outcome.ok) return outcome.value;
     if (shouldNotifyPlayer(outcome)) showToast(outcome.message, 'error', 6000);
     return null;
@@ -1502,9 +1503,9 @@ window.addEventListener('DOMContentLoaded', () => {
         return false;
       }
     },
-    onLoadAutosave: () => {
+    onLoadAutosave: (slot) => {
       try {
-        const autosave = loadAutosaveOrNotify();
+        const autosave = loadAutosaveOrNotify(slot);
         if (autosave) {
           launchGame(autosave.engine, autosave.profile);
           return true;

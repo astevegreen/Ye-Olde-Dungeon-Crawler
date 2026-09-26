@@ -135,6 +135,7 @@
 - **Version floor:** the current version is also the oldest readable one — a save below it is refused (`migration-failed`), never silently mis-decoded. No migration path is ever added below the floor, and deleting existing migration history needs §8.1 exception 4 ([ADR-0002](docs/decisions/0002-v0-v11-migration-chain-deletion.md)).
 - **Load Failure Handling:** a failed load never yields a partially-loaded engine and never overwrites the stored payload — `load*Result()` methods return a typed `LoadOutcome`, not a throw.
 - **Death Is Final for the Dead State:** a dead player's state is never written as a loadable save — character slot or autosave. Death updates only the roster record (`questStatus: 'fallen'`); earlier saves stay loadable through Load Saved Game, but Continue never resumes a fallen run (`resolveContinueTarget`).
+- **Autosave Never Erases Deeper Progress:** the autosave is one rolling slot, so `AutosaveManager.autosave` first moves the current autosave to a preserved slot when it belongs to another hero or is deeper than the incoming one. Load Saved Game offers both; Continue uses only the rolling slot.
 
 ---
 

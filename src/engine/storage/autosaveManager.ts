@@ -15,6 +15,12 @@ export interface AutosaveEnvelope {
   data: SaveData;
 }
 
+/**
+ * `latest` is the rolling autosave. `preserved` holds the run a newer autosave would
+ * otherwise have destroyed (ARCHITECTURE.md §5, Autosave Never Erases Deeper Progress).
+ */
+export type AutosaveSlot = 'latest' | 'preserved';
+
 export class AutosaveManager {
   private storage: StorageAdapter;
   private manifest?: GameContentManifest;
@@ -27,6 +33,15 @@ export class AutosaveManager {
   /** Namespaced per content pack, so two packs never overwrite each other's autosave. */
   public get autosaveKey(): string {
     return `${this.manifest?.id ?? 'default'}_autosave`;
+  }
+
+  /** Where the superseded autosave is kept; see `preserveIfSuperseded`. */
+  public get preservedAutosaveKey(): string {
+    return `${this.autosaveKey}_preserved`;
+  }
+
+  private slotKey(slot: AutosaveSlot): string {
+    return slot === 'preserved' ? this.preservedAutosaveKey : this.autosaveKey;
   }
 
   /**
@@ -63,11 +78,39 @@ export class AutosaveManager {
         data: saveData,
       };
 
+      this.preserveIfSuperseded(envelope.profile);
       this.storage.setItem(this.autosaveKey, JSON.stringify(envelope));
       return true;
     } catch (err) {
       flightRecorder.warn('[AutosaveManager] Failed to record autosave:', { error: String(err) });
       return false;
+    }
+  }
+
+  /**
+   * The autosave is one rolling slot, so a later autosave can bury better progress: another
+   * hero's, or the same hero's after retreating upstairs or loading an older save. Before
+   * `incoming` replaces the slot, the current autosave moves to the preserved slot when it
+   * belongs to a different hero or is deeper than `incoming`. The preserved slot is replaced
+   * unless it is the same hero's deeper run. A failure here never blocks the autosave itself.
+   */
+  private preserveIfSuperseded(incoming: CharacterProfile): void {
+    try {
+      const raw = this.storage.getItem(this.autosaveKey);
+      if (!raw) return;
+      const current = (JSON.parse(raw) as AutosaveEnvelope).profile;
+      if (!current) return;
+      const sameHero = current.id === incoming.id;
+      if (sameHero && current.floor <= incoming.floor) return;
+
+      const keptRaw = this.storage.getItem(this.preservedAutosaveKey);
+      if (keptRaw) {
+        const kept = (JSON.parse(keptRaw) as AutosaveEnvelope).profile;
+        if (kept && kept.id === current.id && kept.floor > current.floor) return;
+      }
+      this.storage.setItem(this.preservedAutosaveKey, raw);
+    } catch (err) {
+      flightRecorder.warn('[AutosaveManager] Failed to preserve the superseded autosave:', { error: String(err) });
     }
   }
 
@@ -85,9 +128,11 @@ export class AutosaveManager {
   /**
    * Retrieves summary metadata for the current autosave without full deserialization.
    */
-  public getAutosaveMetadata(): { timestamp: number; profileId?: string; profileName: string; floor: number } | null {
+  public getAutosaveMetadata(
+    slot: AutosaveSlot = 'latest'
+  ): { timestamp: number; profileId?: string; profileName: string; floor: number } | null {
     try {
-      const raw = this.storage.getItem(this.autosaveKey);
+      const raw = this.storage.getItem(this.slotKey(slot));
       if (!raw) return null;
       const env = JSON.parse(raw) as AutosaveEnvelope;
       return {
@@ -101,15 +146,13 @@ export class AutosaveManager {
     }
   }
 
-  /**
-   * Loads and deserializes the game state from the autosave slot.
-   */
-  /** Loads the autosave, reporting why it failed (ARCHITECTURE.md §5). */
+  /** Loads an autosave slot, reporting why it failed (ARCHITECTURE.md §5). */
   public loadAutosaveResult(
-    activeManifest?: GameContentManifest
+    activeManifest?: GameContentManifest,
+    slot: AutosaveSlot = 'latest'
   ): LoadOutcome<{ engine: GameEngine; profile: CharacterProfile }> {
     try {
-      const raw = this.storage.getItem(this.autosaveKey);
+      const raw = this.storage.getItem(this.slotKey(slot));
       if (!raw) return MISSING_SAVE;
       const env = JSON.parse(raw) as AutosaveEnvelope;
       if (!env.data || !env.profile) {
@@ -139,13 +182,15 @@ export class AutosaveManager {
   }
 
   /**
-   * Clears the current autosave entry.
+   * Clears both autosave slots.
    */
   public clearAutosave(): void {
-    try {
-      this.storage.removeItem(this.autosaveKey);
-    } catch {
-      // Ignore
+    for (const key of [this.autosaveKey, this.preservedAutosaveKey]) {
+      try {
+        this.storage.removeItem(key);
+      } catch {
+        // Ignore
+      }
     }
   }
 }

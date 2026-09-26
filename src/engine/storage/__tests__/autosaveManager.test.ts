@@ -87,6 +87,72 @@ describe('AutosaveManager Background Persistence', () => {
     expect(autosaveManager.loadAutosave()).toBeNull();
   });
 
+  describe('never erases deeper progress', () => {
+    const autosaveAt = (floor: number, who: CharacterProfile = profile) => {
+      engine.changeFloor(floor);
+      expect(autosaveManager.autosave(engine, who)).toBe(true);
+    };
+
+    it('preserves the deeper autosave when the same hero autosaves higher up', () => {
+      autosaveAt(6);
+      autosaveAt(3);
+
+      expect(autosaveManager.getAutosaveMetadata('latest')?.floor).toBe(3);
+      expect(autosaveManager.getAutosaveMetadata('preserved')?.floor).toBe(6);
+      expect(autosaveManager.loadAutosaveResult(undefined, 'preserved')).toMatchObject({
+        ok: true,
+        value: { engine: { currentFloor: 6 } },
+      });
+    });
+
+    it('does not preserve anything while the hero keeps descending or stays put', () => {
+      autosaveAt(3);
+      autosaveAt(4);
+      autosaveAt(4);
+
+      expect(autosaveManager.getAutosaveMetadata('preserved')).toBeNull();
+    });
+
+    it("preserves one hero's autosave when another hero's would overwrite it", () => {
+      autosaveAt(6);
+      autosaveAt(1, { ...profile, id: 'prof-other', name: 'Other' });
+
+      expect(autosaveManager.getAutosaveMetadata('latest')).toMatchObject({ profileName: 'Other', floor: 1 });
+      expect(autosaveManager.getAutosaveMetadata('preserved')).toMatchObject({ profileName: 'Valkyrie', floor: 6 });
+    });
+
+    it("keeps the same hero's deepest run through repeated retreats", () => {
+      autosaveAt(6);
+      autosaveAt(4);
+      autosaveAt(2);
+
+      expect(autosaveManager.getAutosaveMetadata('latest')?.floor).toBe(2);
+      expect(autosaveManager.getAutosaveMetadata('preserved')?.floor).toBe(6);
+    });
+
+    it('still autosaves when the preserved copy cannot be written', () => {
+      autosaveAt(6);
+      const realSetItem = storage.setItem.bind(storage);
+      storage.setItem = (key: string, value: string) => {
+        if (key === autosaveManager.preservedAutosaveKey) throw new Error('Quota exceeded');
+        realSetItem(key, value);
+      };
+
+      autosaveAt(3);
+
+      expect(autosaveManager.getAutosaveMetadata('latest')?.floor).toBe(3);
+    });
+
+    it('clears both slots', () => {
+      autosaveAt(6);
+      autosaveAt(3);
+      autosaveManager.clearAutosave();
+
+      expect(autosaveManager.getAutosaveMetadata('latest')).toBeNull();
+      expect(autosaveManager.getAutosaveMetadata('preserved')).toBeNull();
+    });
+  });
+
   it('handles storage errors gracefully without throwing', () => {
     const errorStorage = {
       getItem: () => { throw new Error('Storage disabled'); },

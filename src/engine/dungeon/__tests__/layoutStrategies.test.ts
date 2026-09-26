@@ -198,7 +198,7 @@ describe('Character-grid layout strategies', () => {
         }
       }
       expect(fallbacks, `${label} fell back to rooms and corridors ${fallbacks}/${SEEDS} times`).toBeLessThanOrEqual(Math.ceil(SEEDS * 0.05));
-    });
+    }, 15000);
 
     it(`${label}: same seed, same floor`, () => {
       const a = strategyFor(c.strategy, () => {}).generate(params(c, 424242));

@@ -45,6 +45,7 @@ export interface CharacterProfile {
   deepestRecallFloor?: number;
   recallPosition?: Position;
   unspentStatPoints?: number;
+  allocatedAttributes?: { strength: number; dexterity: number; constitution: number; intelligence: number };
 }
 
 export interface RosterManifest {
@@ -211,6 +212,7 @@ export interface SerializedPlayer {
   planeId?: string;
   corruptionScore?: number;
   unspentStatPoints?: number;
+  allocatedAttributes?: { strength: number; dexterity: number; constitution: number; intelligence: number };
   /** Rune of Return mastery investment (docs/architecture/content-rune-of-return.md): points spent
    * from the same `unspentStatPoints` pool as core attributes, on the rune's three
    * independent progression tracks. */

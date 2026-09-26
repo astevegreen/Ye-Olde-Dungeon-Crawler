@@ -162,4 +162,88 @@ describe('Level-Up Attribute / Skill Allocation System', () => {
     expect(modal.isOpen).toBe(false);
     expect(modalStack.isEmpty()).toBe(true);
   });
+
+  it('allows undo and redo of attribute allocations in LevelUpModal and hotkeys', () => {
+    player.unspentStatPoints = 3;
+    const initialStrength = player.strength;
+    const modal = new LevelUpModal();
+
+    modal.open(engine);
+
+    // Allocate Strength via modal method
+    expect(modal.allocate('strength')).toBe(true);
+    expect(player.strength).toBe(initialStrength + 1);
+    expect(player.unspentStatPoints).toBe(2);
+
+    // Allocate Dexterity via modal method
+    expect(modal.allocate('dexterity')).toBe(true);
+    expect(player.dexterity).toBe(13);
+    expect(player.unspentStatPoints).toBe(1);
+
+    // Undo via hotkey 'Z'
+    const zEvent = { key: 'z', code: 'KeyZ', preventDefault: () => {} } as unknown as KeyboardEvent;
+    expect(modal.handleKeyDown(zEvent)).toBe(true);
+    // Dexterity should be reverted
+    expect(player.dexterity).toBe(12);
+    expect(player.unspentStatPoints).toBe(2);
+
+    // Redo via hotkey 'Y'
+    const yEvent = { key: 'y', code: 'KeyY', preventDefault: () => {} } as unknown as KeyboardEvent;
+    expect(modal.handleKeyDown(yEvent)).toBe(true);
+    // Dexterity re-applied
+    expect(player.dexterity).toBe(13);
+    expect(player.unspentStatPoints).toBe(1);
+
+    // Reset via hotkey 'R'
+    const rEvent = { key: 'r', code: 'KeyR', preventDefault: () => {} } as unknown as KeyboardEvent;
+    expect(modal.handleKeyDown(rEvent)).toBe(true);
+    expect(player.strength).toBe(initialStrength);
+    expect(player.dexterity).toBe(12);
+    expect(player.unspentStatPoints).toBe(3);
+  });
+
+  it('deallocates attribute points safely and prevents deallocating below baseline', () => {
+    player.unspentStatPoints = 2;
+    const baselineStrength = player.strength;
+
+    // Cannot deallocate when none allocated
+    expect(player.deallocateAttribute('strength', 1)).toBe(false);
+    expect(player.strength).toBe(baselineStrength);
+
+    // Allocate 2
+    expect(player.allocateAttribute('strength', 2)).toBe(true);
+    expect(player.strength).toBe(baselineStrength + 2);
+    expect(player.unspentStatPoints).toBe(0);
+
+    // Deallocate 1
+    expect(player.deallocateAttribute('strength', 1)).toBe(true);
+    expect(player.strength).toBe(baselineStrength + 1);
+    expect(player.unspentStatPoints).toBe(1);
+
+    // Deallocate remaining 1
+    expect(player.deallocateAttribute('strength', 1)).toBe(true);
+    expect(player.strength).toBe(baselineStrength);
+    expect(player.unspentStatPoints).toBe(2);
+
+    // Further deallocation refused
+    expect(player.deallocateAttribute('strength', 1)).toBe(false);
+    expect(player.strength).toBe(baselineStrength);
+    expect(player.unspentStatPoints).toBe(2);
+  });
+
+  it('persists allocatedAttributes through save serialization and deserialization', () => {
+    player.unspentStatPoints = 2;
+    player.allocateAttribute('constitution', 2);
+
+    const serialized = serializeGame(engine);
+    expect(serialized.player.allocatedAttributes?.constitution).toBe(2);
+
+    const reloaded = deserializeGame(serialized);
+    expect(reloaded.engine.player.allocatedAttributes.constitution).toBe(2);
+
+    // Should be able to deallocate from reloaded save
+    expect(reloaded.engine.player.deallocateAttribute('constitution', 1)).toBe(true);
+    expect(reloaded.engine.player.allocatedAttributes.constitution).toBe(1);
+    expect(reloaded.engine.player.unspentStatPoints).toBe(1);
+  });
 });

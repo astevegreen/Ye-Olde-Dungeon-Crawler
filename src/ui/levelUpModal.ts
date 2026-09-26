@@ -55,6 +55,14 @@ export class LevelUpModal implements UIModal {
   private modalStack?: ModalStackManager;
   private onCloseCallback?: () => void;
   private onAllocateCallback?: (attr: AttributeKey) => void;
+  private undoStack: Array<{ op: 'allocate' | 'deallocate'; attr: AttributeKey }> = [];
+  private redoStack: Array<{ op: 'allocate' | 'deallocate'; attr: AttributeKey }> = [];
+  private sessionNetAllocations: Record<AttributeKey, number> = {
+    strength: 0,
+    dexterity: 0,
+    constitution: 0,
+    intelligence: 0,
+  };
 
   constructor(onClose?: () => void) {
     this.onCloseCallback = onClose;
@@ -100,6 +108,14 @@ export class LevelUpModal implements UIModal {
     this.engine = engine;
     if (onClose) this.onCloseCallback = onClose;
     this.isOpenState = true;
+    this.undoStack = [];
+    this.redoStack = [];
+    this.sessionNetAllocations = {
+      strength: 0,
+      dexterity: 0,
+      constitution: 0,
+      intelligence: 0,
+    };
 
     if (!this.overlayEl) {
       this.createDom();
@@ -140,6 +156,9 @@ export class LevelUpModal implements UIModal {
 
     const success = player.allocateAttribute(attr, 1);
     if (success) {
+      this.undoStack.push({ op: 'allocate', attr });
+      this.redoStack = [];
+      this.sessionNetAllocations[attr] = (this.sessionNetAllocations[attr] ?? 0) + 1;
       this.engine.log(`Allocated 1 point into ${attr.toUpperCase()} (Total: ${player[attr]}). ${player.unspentStatPoints} point(s) remain.`);
       if (this.onAllocateCallback) {
         this.onAllocateCallback(attr);
@@ -148,6 +167,89 @@ export class LevelUpModal implements UIModal {
       return true;
     }
     return false;
+  }
+
+  public deallocate(attr: AttributeKey): boolean {
+    if (!this.engine || !this.engine.player) return false;
+    const player = this.engine.player;
+    if ((player.allocatedAttributes[attr] ?? 0) <= 0) return false;
+
+    const success = player.deallocateAttribute(attr, 1);
+    if (success) {
+      this.undoStack.push({ op: 'deallocate', attr });
+      this.redoStack = [];
+      this.sessionNetAllocations[attr] = (this.sessionNetAllocations[attr] ?? 0) - 1;
+      this.engine.log(`Deallocated 1 point from ${attr.toUpperCase()} (Total: ${player[attr]}). ${player.unspentStatPoints} point(s) remain.`);
+      if (this.onAllocateCallback) {
+        this.onAllocateCallback(attr);
+      }
+      this.render();
+      return true;
+    }
+    return false;
+  }
+
+  public undo(): boolean {
+    if (this.undoStack.length === 0 || !this.engine || !this.engine.player) return false;
+    const action = this.undoStack.pop()!;
+    const player = this.engine.player;
+    if (action.op === 'allocate') {
+      player.deallocateAttribute(action.attr, 1);
+      this.sessionNetAllocations[action.attr] = (this.sessionNetAllocations[action.attr] ?? 0) - 1;
+      this.engine.log(`Reverted allocation in ${action.attr.toUpperCase()} (Total: ${player[action.attr]}). ${player.unspentStatPoints} point(s) remain.`);
+    } else {
+      player.allocateAttribute(action.attr, 1);
+      this.sessionNetAllocations[action.attr] = (this.sessionNetAllocations[action.attr] ?? 0) + 1;
+      this.engine.log(`Re-applied allocation in ${action.attr.toUpperCase()} (Total: ${player[action.attr]}). ${player.unspentStatPoints} point(s) remain.`);
+    }
+    this.redoStack.push(action);
+    if (this.onAllocateCallback) {
+      this.onAllocateCallback(action.attr);
+    }
+    this.render();
+    return true;
+  }
+
+  public redo(): boolean {
+    if (this.redoStack.length === 0 || !this.engine || !this.engine.player) return false;
+    const action = this.redoStack.pop()!;
+    const player = this.engine.player;
+    if (action.op === 'allocate') {
+      player.allocateAttribute(action.attr, 1);
+      this.sessionNetAllocations[action.attr] = (this.sessionNetAllocations[action.attr] ?? 0) + 1;
+      this.engine.log(`Redid allocation of 1 point into ${action.attr.toUpperCase()} (Total: ${player[action.attr]}). ${player.unspentStatPoints} point(s) remain.`);
+    } else {
+      player.deallocateAttribute(action.attr, 1);
+      this.sessionNetAllocations[action.attr] = (this.sessionNetAllocations[action.attr] ?? 0) - 1;
+      this.engine.log(`Redid deallocation of 1 point from ${action.attr.toUpperCase()} (Total: ${player[action.attr]}). ${player.unspentStatPoints} point(s) remain.`);
+    }
+    this.undoStack.push(action);
+    if (this.onAllocateCallback) {
+      this.onAllocateCallback(action.attr);
+    }
+    this.render();
+    return true;
+  }
+
+  public reset(): boolean {
+    if (this.undoStack.length === 0 || !this.engine || !this.engine.player) return false;
+    const player = this.engine.player;
+    while (this.undoStack.length > 0) {
+      const action = this.undoStack.pop()!;
+      if (action.op === 'allocate') {
+        player.deallocateAttribute(action.attr, 1);
+      } else {
+        player.allocateAttribute(action.attr, 1);
+      }
+    }
+    this.redoStack = [];
+    this.sessionNetAllocations = { strength: 0, dexterity: 0, constitution: 0, intelligence: 0 };
+    this.engine.log(`Reset all level-up attribute changes. ${player.unspentStatPoints} point(s) available.`);
+    if (this.onAllocateCallback) {
+      this.onAllocateCallback('strength');
+    }
+    this.render();
+    return true;
   }
 
   public handleKeyDown(e: KeyboardEvent): boolean {
@@ -159,6 +261,24 @@ export class LevelUpModal implements UIModal {
     if (key === 'ESCAPE' || key === 'ENTER' || code === 'KeyU') {
       e.preventDefault();
       this.close();
+      return true;
+    }
+
+    if ((key === 'Z' || code === 'KeyZ') && !e.shiftKey) {
+      e.preventDefault();
+      this.undo();
+      return true;
+    }
+
+    if (key === 'Y' || code === 'KeyY' || (e.shiftKey && (key === 'Z' || code === 'KeyZ'))) {
+      e.preventDefault();
+      this.redo();
+      return true;
+    }
+
+    if (key === 'R' || code === 'KeyR') {
+      e.preventDefault();
+      this.reset();
       return true;
     }
 
@@ -206,6 +326,8 @@ export class LevelUpModal implements UIModal {
       const currentVal = player[meta.key];
       const preview = meta.derivedPreview(currentVal);
       const canAllocate = unspent > 0;
+      const canDeallocate = (player.allocatedAttributes[meta.key] ?? 0) > 0;
+      const sessionDelta = this.sessionNetAllocations[meta.key] ?? 0;
 
       return `
         <div class="stat-alloc-row" style="
@@ -222,6 +344,7 @@ export class LevelUpModal implements UIModal {
             <div style="display: flex; align-items: baseline; gap: 8px;">
               <span style="font-weight: bold; color: #fde047; font-size: 14px;">[${meta.hotkeyNum}] ${meta.label}</span>
               <span style="font-weight: bold; color: #38bdf8; font-size: 15px;">${currentVal}</span>
+              ${sessionDelta !== 0 ? `<span style="color: ${sessionDelta > 0 ? '#4ade80' : '#f87171'}; font-weight: bold; font-size: 12px;">(${sessionDelta > 0 ? '+' : ''}${sessionDelta})</span>` : ''}
             </div>
             <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">
               ${meta.description}
@@ -230,13 +353,32 @@ export class LevelUpModal implements UIModal {
               ${preview}
             </div>
           </div>
-          <div>
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <button
+              class="btn-deallocate-stat"
+              data-attr="${meta.key}"
+              ${canDeallocate ? '' : 'disabled'}
+              style="
+                padding: 6px 10px;
+                background: ${canDeallocate ? '#7f1d1d' : '#334155'};
+                color: ${canDeallocate ? '#fca5a5' : '#64748b'};
+                border: 1px solid ${canDeallocate ? '#ef4444' : '#475569'};
+                border-radius: 4px;
+                cursor: ${canDeallocate ? 'pointer' : 'not-allowed'};
+                font-weight: bold;
+                font-size: 13px;
+                font-family: inherit;
+              "
+              title="Refund 1 point"
+            >
+              -1
+            </button>
             <button
               class="btn-allocate-stat"
               data-attr="${meta.key}"
               ${canAllocate ? '' : 'disabled'}
               style="
-                padding: 6px 14px;
+                padding: 6px 12px;
                 background: ${canAllocate ? '#16a34a' : '#334155'};
                 color: ${canAllocate ? '#ffffff' : '#64748b'};
                 border: 1px solid ${canAllocate ? '#22c55e' : '#475569'};
@@ -346,8 +488,63 @@ export class LevelUpModal implements UIModal {
           color: #94a3b8;
           border-top: 1px solid #334155;
           padding-top: 10px;
+          gap: 8px;
         ">
-          <span>Hotkeys: [1-4] or [S/D/C/I] to allocate | [U] or [Esc] to exit</span>
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <button
+              id="btn-undo-levelup"
+              ${this.undoStack.length > 0 ? '' : 'disabled'}
+              style="
+                padding: 5px 10px;
+                background: ${this.undoStack.length > 0 ? '#2563eb' : '#334155'};
+                color: ${this.undoStack.length > 0 ? '#ffffff' : '#64748b'};
+                border: 1px solid ${this.undoStack.length > 0 ? '#3b82f6' : '#475569'};
+                border-radius: 4px;
+                cursor: ${this.undoStack.length > 0 ? 'pointer' : 'not-allowed'};
+                font-family: inherit;
+                font-size: 11px;
+                font-weight: bold;
+              "
+              title="Undo last allocation (Z)"
+            >
+              ↶ Undo [Z]
+            </button>
+            <button
+              id="btn-redo-levelup"
+              ${this.redoStack.length > 0 ? '' : 'disabled'}
+              style="
+                padding: 5px 10px;
+                background: ${this.redoStack.length > 0 ? '#2563eb' : '#334155'};
+                color: ${this.redoStack.length > 0 ? '#ffffff' : '#64748b'};
+                border: 1px solid ${this.redoStack.length > 0 ? '#3b82f6' : '#475569'};
+                border-radius: 4px;
+                cursor: ${this.redoStack.length > 0 ? 'pointer' : 'not-allowed'};
+                font-family: inherit;
+                font-size: 11px;
+                font-weight: bold;
+              "
+              title="Redo allocation (Y)"
+            >
+              ↷ Redo [Y]
+            </button>
+            <button
+              id="btn-reset-levelup"
+              ${this.undoStack.length > 0 ? '' : 'disabled'}
+              style="
+                padding: 5px 10px;
+                background: ${this.undoStack.length > 0 ? '#475569' : '#334155'};
+                color: ${this.undoStack.length > 0 ? '#f1f5f9' : '#64748b'};
+                border: 1px solid ${this.undoStack.length > 0 ? '#64748b' : '#475569'};
+                border-radius: 4px;
+                cursor: ${this.undoStack.length > 0 ? 'pointer' : 'not-allowed'};
+                font-family: inherit;
+                font-size: 11px;
+              "
+              title="Reset all changes made in this level up (R)"
+            >
+              ↺ Reset [R]
+            </button>
+          </div>
           <button id="btn-close-levelup-bottom" style="
             padding: 6px 16px;
             background: #475569;
@@ -367,6 +564,9 @@ export class LevelUpModal implements UIModal {
     // Bind click handlers
     this.overlayEl.querySelector('#btn-close-levelup-top')?.addEventListener('click', () => this.close());
     this.overlayEl.querySelector('#btn-close-levelup-bottom')?.addEventListener('click', () => this.close());
+    this.overlayEl.querySelector('#btn-undo-levelup')?.addEventListener('click', () => this.undo());
+    this.overlayEl.querySelector('#btn-redo-levelup')?.addEventListener('click', () => this.redo());
+    this.overlayEl.querySelector('#btn-reset-levelup')?.addEventListener('click', () => this.reset());
     this.overlayEl.querySelector('#btn-open-rune-tree-from-levelup')?.addEventListener('click', () => {
       this.close();
       if (typeof window !== 'undefined') {
@@ -380,6 +580,16 @@ export class LevelUpModal implements UIModal {
         const attr = (e.currentTarget as HTMLElement).getAttribute('data-attr') as AttributeKey;
         if (attr) {
           this.allocate(attr);
+        }
+      });
+    });
+
+    const deallocBtns = this.overlayEl.querySelectorAll('.btn-deallocate-stat');
+    deallocBtns.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const attr = (e.currentTarget as HTMLElement).getAttribute('data-attr') as AttributeKey;
+        if (attr) {
+          this.deallocate(attr);
         }
       });
     });

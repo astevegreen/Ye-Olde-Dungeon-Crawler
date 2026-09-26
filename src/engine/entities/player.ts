@@ -41,6 +41,7 @@ export interface PlayerConfig {
   recallPosition?: Position;
   quickSpells?: (string | null)[];
   unspentStatPoints?: number;
+  allocatedAttributes?: { strength?: number; dexterity?: number; constitution?: number; intelligence?: number };
   runeMastery?: RuneOfReturnMastery;
   runeChannelBankedTurns?: number;
   hasDiscoveredRune?: boolean;
@@ -77,6 +78,7 @@ export class Player extends Actor {
   public recallPosition?: Position;
   public quickSpells: (string | null)[];
   public unspentStatPoints: number;
+  public allocatedAttributes: { strength: number; dexterity: number; constitution: number; intelligence: number };
   /** Rune of Return progression (docs/architecture/content-rune-of-return.md): mastery lives on the
    * player (like an attribute), not the item, so losing/replacing the rune doesn't
    * reset invested points. */
@@ -108,6 +110,13 @@ export class Player extends Actor {
     this.intelligence = config.intelligence ?? 15;
     this.constitution = config.constitution ?? 15;
     this.dexterity = config.dexterity ?? 15;
+    this.unspentStatPoints = config.unspentStatPoints ?? 0;
+    this.allocatedAttributes = {
+      strength: config.allocatedAttributes?.strength ?? 0,
+      dexterity: config.allocatedAttributes?.dexterity ?? 0,
+      constitution: config.allocatedAttributes?.constitution ?? 0,
+      intelligence: config.allocatedAttributes?.intelligence ?? 0,
+    };
     this.maxMana = config.maxMana ?? Math.floor(this.intelligence * 2 + 5);
     this.mana = config.mana ?? this.maxMana;
     this.spellsKnown = config.spellsKnown ? [...config.spellsKnown] : [...DEFAULT_STARTER_SPELLS];
@@ -251,22 +260,66 @@ export class Player extends Actor {
     switch (attribute) {
       case 'strength':
         this.strength += amount;
+        this.allocatedAttributes.strength += amount;
         break;
       case 'dexterity':
         this.dexterity += amount;
+        this.allocatedAttributes.dexterity += amount;
         break;
       case 'constitution':
         this.constitution += amount;
         this._maxHp += amount * 2;
         this.hp = Math.min(this.maxHp, this.hp + amount * 2);
+        this.allocatedAttributes.constitution += amount;
         break;
       case 'intelligence':
         this.intelligence += amount;
         this.maxMana += amount * 2;
         this.mana = Math.min(this.maxMana, this.mana + amount * 2);
+        this.allocatedAttributes.intelligence += amount;
         break;
       default:
         this.unspentStatPoints += amount;
+        return false;
+    }
+    return true;
+  }
+
+  public deallocateAttribute(
+    attribute: 'strength' | 'dexterity' | 'constitution' | 'intelligence',
+    amount: number = 1
+  ): boolean {
+    if (amount <= 0) {
+      return false;
+    }
+    const currentAllocated = this.allocatedAttributes[attribute] ?? 0;
+    if (currentAllocated < amount) {
+      return false;
+    }
+    this.unspentStatPoints += amount;
+    switch (attribute) {
+      case 'strength':
+        this.strength -= amount;
+        this.allocatedAttributes.strength -= amount;
+        break;
+      case 'dexterity':
+        this.dexterity -= amount;
+        this.allocatedAttributes.dexterity -= amount;
+        break;
+      case 'constitution':
+        this.constitution -= amount;
+        this._maxHp = Math.max(1, this._maxHp - amount * 2);
+        this.hp = Math.max(1, Math.min(this.maxHp, this.hp - amount * 2));
+        this.allocatedAttributes.constitution -= amount;
+        break;
+      case 'intelligence':
+        this.intelligence -= amount;
+        this.maxMana = Math.max(0, this.maxMana - amount * 2);
+        this.mana = Math.max(0, Math.min(this.maxMana, this.mana - amount * 2));
+        this.allocatedAttributes.intelligence -= amount;
+        break;
+      default:
+        this.unspentStatPoints -= amount;
         return false;
     }
     return true;

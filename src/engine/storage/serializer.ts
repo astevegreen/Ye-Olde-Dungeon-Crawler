@@ -410,6 +410,9 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     planeId: p.planeId ?? 'physical',
     corruptionScore: p.corruptionScore ?? 0,
     unspentStatPoints: p.unspentStatPoints ?? 0,
+    allocatedAttributes: p.allocatedAttributes
+      ? { ...p.allocatedAttributes }
+      : { strength: 0, dexterity: 0, constitution: 0, intelligence: 0 },
     runeMastery: { ...p.runeMastery },
     runeChannelBankedTurns: p.runeChannelBankedTurns ?? 0,
     hasDiscoveredRune: p.hasDiscoveredRune,
@@ -431,6 +434,9 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     profile.deepestRecallFloor = p.deepestRecallFloor;
     profile.recallPosition = p.recallPosition ? { ...p.recallPosition } : undefined;
     profile.unspentStatPoints = p.unspentStatPoints ?? 0;
+    if (p.allocatedAttributes) {
+      profile.allocatedAttributes = { ...p.allocatedAttributes };
+    }
   }
 
   // 4. Map serialization helper
@@ -489,6 +495,9 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     deepestRecallFloor: p.deepestRecallFloor,
     recallPosition: p.recallPosition ? { ...p.recallPosition } : undefined,
     unspentStatPoints: p.unspentStatPoints ?? 0,
+    allocatedAttributes: p.allocatedAttributes
+      ? { ...p.allocatedAttributes }
+      : { strength: 0, dexterity: 0, constitution: 0, intelligence: 0 },
   };
 
   return {
@@ -852,6 +861,11 @@ export function deserializeGame(
     quickSpells: pData.quickSpells ? [...pData.quickSpells] : undefined,
     tutorialFlags: pData.tutorialFlags ? { ...pData.tutorialFlags } : (saveData.profile?.tutorialFlags ? { ...saveData.profile.tutorialFlags } : undefined),
     unspentStatPoints: Number(pData.unspentStatPoints) || Number(saveData.profile?.unspentStatPoints) || 0,
+    allocatedAttributes: pData.allocatedAttributes
+      ? { ...pData.allocatedAttributes }
+      : saveData.profile?.allocatedAttributes
+        ? { ...saveData.profile.allocatedAttributes }
+        : { strength: 0, dexterity: 0, constitution: 0, intelligence: 0 },
     runeMastery: pData.runeMastery ? { ...pData.runeMastery } : defaultRuneMastery(),
     runeChannelBankedTurns: Number(pData.runeChannelBankedTurns) || 0,
     hasDiscoveredRune: Boolean(pData.hasDiscoveredRune),

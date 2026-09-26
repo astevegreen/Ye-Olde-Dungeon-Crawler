@@ -64,7 +64,7 @@ export class DeathResolver {
         const rewards = engine.pacts?.getAggregatedRewards();
         const xp = Math.round(xpBase * (rewards?.xpMultiplier ?? 1.0));
         const levelUpRes = engine.player.gainXp(xp, engine.manifest?.progressionConfig);
-        engine.log(`${victim.name} is slain! (+${xp} XP)`);
+        engine.log(`${victim.name} is slain! (+${xp} Megin)`);
 
         if (levelUpRes.leveledUp) {
           engine.log(`*** LEVEL UP! Welcome to Level ${levelUpRes.newLevel}! ***`);

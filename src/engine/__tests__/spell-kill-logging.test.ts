@@ -33,7 +33,7 @@ describe('Unified Kill Logging & Spell Fatalities', () => {
     return { engine, map, player };
   }
 
-  it('emits unified slain log "${victim.name} is slain! (+${xp} XP)" on lethal spell hit', () => {
+  it('emits unified slain log "${victim.name} is slain! (+${xp} Megin)" on lethal spell hit', () => {
     const { engine, map, player } = setupEngine();
 
     // Create a monster with low HP so magic bolt kills it
@@ -62,7 +62,7 @@ describe('Unified Kill Logging & Spell Fatalities', () => {
     expect(strikeLog).toBeDefined();
 
     // Must contain unified slain message with XP reward
-    const slainLog = logs.find((l) => l.includes('Goblin Scout is slain! (+20 XP)'));
+    const slainLog = logs.find((l) => l.includes('Goblin Scout is slain! (+20 Megin)'));
     expect(slainLog).toBeDefined();
 
     // Must NOT contain old non-standard phrase
@@ -92,7 +92,7 @@ describe('Unified Kill Logging & Spell Fatalities', () => {
     expect(troll.isAlive()).toBe(false);
 
     const logs = engine.messages;
-    const slainLog = logs.find((l) => l.includes('Frost Troll is slain! (+45 XP)'));
+    const slainLog = logs.find((l) => l.includes('Frost Troll is slain! (+45 Megin)'));
     expect(slainLog).toBeDefined();
 
     const vulnLog = logs.find((l) => l.includes('Vulnerable! 150% damage'));

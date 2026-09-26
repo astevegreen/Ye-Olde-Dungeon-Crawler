@@ -807,7 +807,7 @@ export class FlightRecorder {
 
       const townLabel = engine.manifest?.town?.name ? `${engine.manifest.town.name} Town` : 'Town';
       lines.push('## 2. Player State');
-      lines.push(`- **Hero**: **${p.name}** (Gender: ${p.gender}, Level: ${p.level}, XP: ${p.xp}/${p.xpToNextLevel})`);
+      lines.push(`- **Hero**: **${p.name}** (Gender: ${p.gender}, Level: ${p.level}, Megin: ${p.xp}/${p.xpToNextLevel})`);
       lines.push(`- **Location**: Floor ${engine.currentFloor} (${engine.currentFloor === 0 ? townLabel : 'Dungeon'}) at \`(${p.x}, ${p.y})\``);
       lines.push(`- **Difficulty / Campaign Arc**: \`${(p.difficulty ?? 'medium').toUpperCase()}\` (Max Floor: \`${p.maxFloor ?? 37}\`)`);
       lines.push(`- **Vitals**: HP \`${p.hp}/${p.maxHp}\` | MP \`${p.mana}/${p.maxMana}\``);

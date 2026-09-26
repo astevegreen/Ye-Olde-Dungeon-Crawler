@@ -380,7 +380,7 @@ export class DrinkPotionAction implements Action {
         case 'gain_xp': {
           if (this.user instanceof Player) {
             this.user.gainXp(effect.amount);
-            messages.push(`gaining ${effect.amount} XP`);
+            messages.push(`gaining ${effect.amount} Megin`);
           }
           break;
         }

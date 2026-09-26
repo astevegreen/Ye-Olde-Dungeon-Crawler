@@ -120,7 +120,7 @@ export class Leaderboard {
       `║ Fate:         ${entry.epitaph.slice(0, 43).padEnd(43)} ║`,
       `║ Depth:        Floor ${entry.deepestFloor.toString().padEnd(37)} ║`,
       `║ Turns Taken:  ${entry.turns.toString().padEnd(43)} ║`,
-      `║ Experience:   ${entry.xp.toString()} XP`.padEnd(59) + '║',
+      `║ Megin:        ${entry.xp.toString()}`.padEnd(59) + '║',
       `║ Wealth:       ${goldGp.toString()} GP (${entry.goldCp.toString()} CP)`.padEnd(59) + '║',
       '╠════════════════════════════════════════════════════════════╣',
       `║ FINAL SCORE:  ${entry.score.toLocaleString()} POINTS`.padEnd(59) + '║',

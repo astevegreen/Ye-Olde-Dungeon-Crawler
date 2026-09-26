@@ -20,7 +20,7 @@ export const COTW_PACTS: RunPactDefinition[] = [
     name: 'Pact of Everlasting Gloom',
     description: 'Embrace the impenetrable shadows of Niflheim.',
     curseDescription: '-3 Vision (FOV) Radius',
-    rewardDescription: '1.75x Experience Gained',
+    rewardDescription: '1.75x Megin Gained',
     mutators: {
       fovRadiusModifier: -3,
     },
@@ -33,7 +33,7 @@ export const COTW_PACTS: RunPactDefinition[] = [
     name: 'Pact of the Swarm',
     description: 'The dungeon awakens with a frenzy of bloodthirsty denizens.',
     curseDescription: '1.5x Monster Density, -2 Player Defense',
-    rewardDescription: '2.5x Gold drops, 1.5x Experience Gained',
+    rewardDescription: '2.5x Gold drops, 1.5x Megin Gained',
     mutators: {
       monsterDensityMultiplier: 1.5,
       playerDefenseBonus: -2,
@@ -48,7 +48,7 @@ export const COTW_PACTS: RunPactDefinition[] = [
     name: 'Pact of Recklessness',
     description: 'Abandon all caution and defensive technique for lethal striking power.',
     curseDescription: '-4 Player Defense',
-    rewardDescription: '+4 Player Attack, 2.0x Experience Gained',
+    rewardDescription: '+4 Player Attack, 2.0x Megin Gained',
     mutators: {
       playerDefenseBonus: -4,
       playerAttackBonus: 4,

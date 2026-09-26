@@ -128,7 +128,7 @@ export class WorldLedgerModule implements FlankModule {
         const rewardSummary = rewards
           ? `
           <div class="pact-rewards-summary">
-            ${rewards.xpMultiplier !== 1.0 ? `<span class="reward-pill xp">XP: +${Math.round((rewards.xpMultiplier - 1) * 100)}%</span>` : ''}
+            ${rewards.xpMultiplier !== 1.0 ? `<span class="reward-pill xp">Megin: +${Math.round((rewards.xpMultiplier - 1) * 100)}%</span>` : ''}
             ${rewards.goldMultiplier !== 1.0 ? `<span class="reward-pill gold">Gold: +${Math.round((rewards.goldMultiplier - 1) * 100)}%</span>` : ''}
             ${rewards.magicFindBonus > 0 ? `<span class="reward-pill mf">Find: +${Math.round(rewards.magicFindBonus * 100)}%</span>` : ''}
           </div>

@@ -69,7 +69,7 @@ function renderVitals(player: Player, floor: number, turn: number): string {
     ['Defense', withBreakdown(player.defense, player.baseDefenseValue)],
     ['Hit Points', `${player.hp} / ${player.maxHp}`],
     ['Mana', `${player.mana} / ${player.maxMana}`],
-    ['Experience', `${player.xp} / ${player.xpToNextLevel} to Level ${player.level + 1}`],
+    ['Megin', `${player.xp} / ${player.xpToNextLevel} to Level ${player.level + 1}`],
     ['Action cost', `${actionCost} energy per action${actionCost === 100 ? ' (normal)' : actionCost > 100 ? ' (slowed)' : ' (hastened)'}`],
     ['Load', `${carriedKg.toFixed(1)} / ${capacityKg.toFixed(1)} kg — ${player.inventory.getEncumbrance(player.strength)}`],
     ['Purse', formatCurrency(getPlayerTotalCp(player))],

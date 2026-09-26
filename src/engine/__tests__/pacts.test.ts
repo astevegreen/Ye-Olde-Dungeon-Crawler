@@ -107,7 +107,7 @@ describe('Data-Driven Bounties & Run Pacts System', () => {
     DeathResolver.resolveDeath(engine, player, target);
 
     expect(player.xp).toBe(35); // 20 * 1.75 = 35!
-    expect(engine.messages.some((m) => m.includes('(+35 XP)'))).toBe(true);
+    expect(engine.messages.some((m) => m.includes('(+35 Megin)'))).toBe(true);
   });
 
   it('scales monster density when populating dungeon floor with density multiplier', () => {

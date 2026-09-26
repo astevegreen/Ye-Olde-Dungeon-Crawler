@@ -52,7 +52,10 @@ export class SpellbookModal implements UIModal {
     });
   }
 
-  public open(engine: GameEngine): void {
+  private onTabCloseCallback?: () => void;
+
+  public open(engine: GameEngine, onClose?: () => void): void {
+    this.onTabCloseCallback = onClose;
     (document.activeElement as HTMLElement)?.blur();
     this.engine = engine;
     this.isOpen = true;
@@ -80,6 +83,11 @@ export class SpellbookModal implements UIModal {
     (document.activeElement as HTMLElement)?.blur();
     if (typeof document !== 'undefined') {
       document.getElementById('game-canvas')?.focus();
+    }
+    if (this.onTabCloseCallback) {
+      const cb = this.onTabCloseCallback;
+      this.onTabCloseCallback = undefined;
+      cb();
     }
     if (this.options.onClose) {
       this.options.onClose();

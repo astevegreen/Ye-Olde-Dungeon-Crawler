@@ -13,9 +13,12 @@ export class CompendiumTabAdapter implements MenuTab {
   public readonly hotkeyActionId = 'compendium';
   private modal: CompendiumModal;
   private container: HTMLElement | null = null;
+  private onDismiss?: () => void;
+  private unmounting = false;
 
-  constructor(modal: CompendiumModal, _onTabClosed?: () => void) {
+  constructor(modal: CompendiumModal, onDismiss?: () => void) {
     this.modal = modal;
+    this.onDismiss = onDismiss;
   }
 
   public mount(container: HTMLElement): void {
@@ -42,7 +45,9 @@ export class CompendiumTabAdapter implements MenuTab {
 
   public onActivate(state: GameState): void {
     this.modal.open(state.engine, () => {
-      // No-op while embedded as a tab; CharacterMenuModal owns shell lifecycle
+      if (!this.unmounting) {
+        this.onDismiss?.();
+      }
     });
     this.scaleToFit();
   }
@@ -70,27 +75,30 @@ export class CompendiumTabAdapter implements MenuTab {
   }
 
   public unmount(): void {
-    const overlayEl = this.modal.rootElement;
-    if (overlayEl && this.container && overlayEl.parentElement === this.container) {
-      this.container.removeChild(overlayEl);
-      overlayEl.style.position = '';
-      overlayEl.style.inset = '';
-      overlayEl.style.width = '';
-      overlayEl.style.height = '';
-      overlayEl.style.backgroundColor = '';
-      overlayEl.style.backdropFilter = '';
-      overlayEl.style.zIndex = '';
-      overlayEl.style.display = '';
-      overlayEl.style.flexDirection = '';
-      overlayEl.style.alignItems = '';
-      overlayEl.style.justifyContent = '';
-      overlayEl.style.boxSizing = '';
-      document.getElementById('app')?.appendChild(overlayEl);
+    this.unmounting = true;
+    try {
+      const overlayEl = this.modal.rootElement;
+      if (overlayEl && this.container && overlayEl.parentElement === this.container) {
+        this.container.removeChild(overlayEl);
+        overlayEl.style.position = '';
+        overlayEl.style.inset = '';
+        overlayEl.style.width = '';
+        overlayEl.style.height = '';
+        overlayEl.style.backgroundColor = '';
+        overlayEl.style.backdropFilter = '';
+        overlayEl.style.zIndex = '';
+        overlayEl.style.display = '';
+        overlayEl.style.flexDirection = '';
+        overlayEl.style.alignItems = '';
+        overlayEl.style.justifyContent = '';
+        overlayEl.style.boxSizing = '';
+        document.getElementById('app')?.appendChild(overlayEl);
+      }
+      this.modal.close();
+    } finally {
+      this.unmounting = false;
+      this.container = null;
     }
-    // Close last: clearing the inline layout styles above also cleared the
-    // display:none that close() sets, leaving the window stranded over the game.
-    this.modal.close();
-    this.container = null;
   }
 
   public handleKeyDown(e: KeyboardEvent): boolean {
@@ -111,9 +119,12 @@ export class PactTabAdapter implements MenuTab {
   public readonly hotkeyActionId = 'pact';
   private modal: PactModal;
   private container: HTMLElement | null = null;
+  private onDismiss?: () => void;
+  private unmounting = false;
 
-  constructor(modal: PactModal, _onTabClosed?: () => void) {
+  constructor(modal: PactModal, onDismiss?: () => void) {
     this.modal = modal;
+    this.onDismiss = onDismiss;
   }
 
   public mount(container: HTMLElement): void {
@@ -140,7 +151,9 @@ export class PactTabAdapter implements MenuTab {
 
   public onActivate(state: GameState): void {
     this.modal.open(state.engine, () => {
-      // No-op while embedded as a tab; CharacterMenuModal owns shell lifecycle
+      if (!this.unmounting) {
+        this.onDismiss?.();
+      }
     });
     this.scaleToFit();
   }
@@ -168,27 +181,30 @@ export class PactTabAdapter implements MenuTab {
   }
 
   public unmount(): void {
-    const overlayEl = this.modal.rootElement;
-    if (overlayEl && this.container && overlayEl.parentElement === this.container) {
-      this.container.removeChild(overlayEl);
-      overlayEl.style.position = '';
-      overlayEl.style.inset = '';
-      overlayEl.style.width = '';
-      overlayEl.style.height = '';
-      overlayEl.style.backgroundColor = '';
-      overlayEl.style.backdropFilter = '';
-      overlayEl.style.zIndex = '';
-      overlayEl.style.display = '';
-      overlayEl.style.flexDirection = '';
-      overlayEl.style.alignItems = '';
-      overlayEl.style.justifyContent = '';
-      overlayEl.style.boxSizing = '';
-      document.getElementById('app')?.appendChild(overlayEl);
+    this.unmounting = true;
+    try {
+      const overlayEl = this.modal.rootElement;
+      if (overlayEl && this.container && overlayEl.parentElement === this.container) {
+        this.container.removeChild(overlayEl);
+        overlayEl.style.position = '';
+        overlayEl.style.inset = '';
+        overlayEl.style.width = '';
+        overlayEl.style.height = '';
+        overlayEl.style.backgroundColor = '';
+        overlayEl.style.backdropFilter = '';
+        overlayEl.style.zIndex = '';
+        overlayEl.style.display = '';
+        overlayEl.style.flexDirection = '';
+        overlayEl.style.alignItems = '';
+        overlayEl.style.justifyContent = '';
+        overlayEl.style.boxSizing = '';
+        document.getElementById('app')?.appendChild(overlayEl);
+      }
+      this.modal.close();
+    } finally {
+      this.unmounting = false;
+      this.container = null;
     }
-    // Close last: clearing the inline layout styles above also cleared the
-    // display:none that close() sets, leaving the window stranded over the game.
-    this.modal.close();
-    this.container = null;
   }
 
   public handleKeyDown(e: KeyboardEvent): boolean {
@@ -209,9 +225,12 @@ export class SpellbookTabAdapter implements MenuTab {
   public readonly hotkeyActionId = 'cast_spell';
   private modal: SpellbookModal;
   private container: HTMLElement | null = null;
+  private onDismiss?: () => void;
+  private unmounting = false;
 
-  constructor(modal: SpellbookModal) {
+  constructor(modal: SpellbookModal, onDismiss?: () => void) {
     this.modal = modal;
+    this.onDismiss = onDismiss;
   }
 
   public mount(container: HTMLElement): void {
@@ -235,7 +254,11 @@ export class SpellbookTabAdapter implements MenuTab {
   }
 
   public onActivate(state: GameState): void {
-    this.modal.open(state.engine);
+    this.modal.open(state.engine, () => {
+      if (!this.unmounting) {
+        this.onDismiss?.();
+      }
+    });
     this.scaleToFit();
   }
 
@@ -256,27 +279,30 @@ export class SpellbookTabAdapter implements MenuTab {
   }
 
   public unmount(): void {
-    const modalContainer = this.modal.rootElement;
-    if (modalContainer && this.container && modalContainer.parentElement === this.container) {
-      this.container.removeChild(modalContainer);
-      modalContainer.style.position = '';
-      modalContainer.style.inset = '';
-      modalContainer.style.width = '';
-      modalContainer.style.height = '';
-      modalContainer.style.backgroundColor = '';
-      modalContainer.style.backdropFilter = '';
-      modalContainer.style.zIndex = '';
-      modalContainer.style.display = '';
-      modalContainer.style.flexDirection = '';
-      modalContainer.style.alignItems = '';
-      modalContainer.style.justifyContent = '';
-      modalContainer.style.boxSizing = '';
-      document.getElementById('app')?.appendChild(modalContainer);
+    this.unmounting = true;
+    try {
+      const modalContainer = this.modal.rootElement;
+      if (modalContainer && this.container && modalContainer.parentElement === this.container) {
+        this.container.removeChild(modalContainer);
+        modalContainer.style.position = '';
+        modalContainer.style.inset = '';
+        modalContainer.style.width = '';
+        modalContainer.style.height = '';
+        modalContainer.style.backgroundColor = '';
+        modalContainer.style.backdropFilter = '';
+        modalContainer.style.zIndex = '';
+        modalContainer.style.display = '';
+        modalContainer.style.flexDirection = '';
+        modalContainer.style.alignItems = '';
+        modalContainer.style.justifyContent = '';
+        modalContainer.style.boxSizing = '';
+        document.getElementById('app')?.appendChild(modalContainer);
+      }
+      this.modal.close();
+    } finally {
+      this.unmounting = false;
+      this.container = null;
     }
-    // Close last: clearing the inline layout styles above also cleared the
-    // display:none that close() sets, leaving the window stranded over the game.
-    this.modal.close();
-    this.container = null;
   }
 
   public handleKeyDown(e: KeyboardEvent): boolean {

@@ -203,8 +203,8 @@ window.addEventListener('DOMContentLoaded', () => {
     renderer?.render();
   };
   const storyTab = new FlankModuleTab([new JournalModule(), new WorldLedgerModule()]);
-  const bestiaryTab = new CompendiumTabAdapter(compendiumModal);
-  const pactsTab = new PactTabAdapter(pactModal);
+  const bestiaryTab = new CompendiumTabAdapter(compendiumModal, () => characterMenuModal?.close());
+  const pactsTab = new PactTabAdapter(pactModal, () => characterMenuModal?.close());
   let spellbookTab: SpellbookTabAdapter;
   let inventoryTab: InventoryTabAdapter;
 
@@ -455,7 +455,7 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer?.render();
     },
   });
-  spellbookTab = new SpellbookTabAdapter(spellbookModal);
+  spellbookTab = new SpellbookTabAdapter(spellbookModal, () => characterMenuModal?.close());
   spellbookModal.mount(document.body);
 
   bottomStatusBar = new BottomStatusBar();
@@ -966,6 +966,13 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   function launchGame(engine: GameEngine, profile: CharacterProfile): void {
+    if (characterMenuModal?.isOpen) {
+      characterMenuModal.close();
+    }
+    if (inputHandler) {
+      inputHandler.modalStack.closeAll();
+      inputHandler.isInputLocked = false;
+    }
     activeEngine = engine;
     activeProfile = profile;
     window.__cotwEngine = engine;

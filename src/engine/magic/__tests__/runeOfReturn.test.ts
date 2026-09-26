@@ -4,13 +4,13 @@ import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { Monster } from '../../entities/monster';
+import { NPC } from '../../entities/npc';
 import { WaitAction } from '../../actions/wait';
 import { MovementAction } from '../../actions/movement';
 import { WindUpDeclareAction } from '../../actions/combat';
 import { createTestKobold } from '../../__fixtures__/testHelpers';
 import { PickUpAction, LootFromContainerAction } from '../../actions/inventory-actions';
 import { Container } from '../../items/container';
-import { Item } from '../../items/item';
 import { serializeGame, deserializeGame } from '../../storage/serializer';
 import {
   RuneOfReturnItem,
@@ -36,6 +36,7 @@ function buildEngine(floor = 1) {
     position: { x: 5, y: 5 },
     stats: { hp: 100, maxHp: 100, attack: 10, defense: 2 },
   });
+  player.hasDiscoveredRune = true;
   const rune = new RuneOfReturnItem({ id: 'rune-1', name: 'Rune of Return' });
   player.inventory.primaryPack.addItem(rune);
   const engine = new GameEngine({ map, player, floor });
@@ -318,7 +319,7 @@ describe('Rune of Return — channel lifecycle', () => {
     expect(player.statusManager.hasStatus(RUNE_OF_RETURN_STATUS)).toBe(false);
   });
 
-  it('emits rune_of_return_discovered when the rune is first acquired', () => {
+  it('emits rune_of_return_discovered when the rune is awakened and absorbed', () => {
     const map = new GameMap(20, 20, TILES.FLOOR);
     const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } });
     const engine = new GameEngine({ map, player, floor: 1 });
@@ -328,8 +329,11 @@ describe('Rune of Return — channel lifecycle', () => {
 
     expect(player.hasDiscoveredRune).toBe(false);
 
-    const rune = new RuneOfReturnItem({ id: 'rune-found', name: 'Rune of Return' });
-    engine.diagnostics.spawnItem(rune);
+    const rune = new RuneOfReturnItem({ id: 'rune-found', name: 'Rune of Return', charges: 0 });
+    player.addItem(rune);
+    expect(player.hasDiscoveredRune).toBe(false);
+
+    engine.absorbRuneOfReturn(rune);
 
     expect(player.hasDiscoveredRune).toBe(true);
     expect(events).toContain('rune_of_return_discovered');
@@ -464,13 +468,13 @@ describe('Rune of Return — Two-Way Dimensional Recall', () => {
   });
 });
 
-describe('Rune of Return — Physical Item Dissolution & Innate Relic', () => {
-  it('dissolves physical item upon pickup and grants innate spirit power without using pack slots', () => {
+describe('Rune of Return — Dormant Acquisition & Thrain Teaching Flow', () => {
+  it('picks up physical item as a dormant carried item without discovering it right away', () => {
     const map = new GameMap(20, 20, TILES.FLOOR);
     const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } });
-    const engine = new GameEngine({ map, player, floor: 1 });
+    const engine = new GameEngine({ map, player, floor: 5 });
 
-    const groundRune = new RuneOfReturnItem({ id: 'rune-floor-5', name: 'Rune of Return', charges: 3 });
+    const groundRune = new RuneOfReturnItem({ id: 'rune-floor-5', name: 'Rune of Return', charges: 0 });
     map.addItemAt(5, 5, groundRune);
 
     expect(player.hasDiscoveredRune).toBe(false);
@@ -480,45 +484,23 @@ describe('Rune of Return — Physical Item Dissolution & Innate Relic', () => {
     const res = engine.handlePlayerAction(pickup);
 
     expect(res.success).toBe(true);
-    expect(player.hasDiscoveredRune).toBe(true);
-    expect(player.runeCharges).toBe(3);
-    // Physical item removed from ground and NOT added to pack
+    expect(player.hasDiscoveredRune).toBe(false);
+    // Physical item removed from ground and added to pack
     expect(map.getItemsAt(5, 5).length).toBe(0);
-    expect(player.inventory.primaryPack.getItems().length).toBe(0);
+    expect(player.inventory.primaryPack.getItems().length).toBe(1);
+    expect(player.inventory.primaryPack.getItems()[0].id).toBe('rune-floor-5');
 
-    // Innate rune is still found and usable
-    const innateRune = findRuneOfReturn(player);
-    expect(innateRune).toBeDefined();
-    expect(innateRune?.charges).toBe(3);
+    // Channeling fails because it is dormant
+    const channelRes = engine.handlePlayerAction(new ChannelRuneOfReturnAction(player));
+    expect(channelRes.success).toBe(false);
+    expect(channelRes.message).toContain('dormant');
+    expect(player.statusManager.hasStatus(RUNE_OF_RETURN_STATUS)).toBe(false);
   });
 
-  it('can be picked up even if the player pack is completely full', () => {
+  it('loots dormant rune from chest into pack', () => {
     const map = new GameMap(20, 20, TILES.FLOOR);
     const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } });
-    const engine = new GameEngine({ map, player, floor: 1 });
-
-    // Fill the pack to capacity (e.g. 50 items or heavy items)
-    for (let i = 0; i < 50; i++) {
-      player.inventory.primaryPack.addItem(
-        new Item({ id: `junk-${i}`, name: `Heavy Anvil ${i}`, category: 'misc', weight: 1000, bulk: 100 })
-      );
-    }
-
-    const groundRune = new RuneOfReturnItem({ id: 'rune-vault', name: 'Rune of Return' });
-    map.addItemAt(5, 5, groundRune);
-
-    const pickup = new PickUpAction(player);
-    const res = engine.handlePlayerAction(pickup);
-
-    expect(res.success).toBe(true);
-    expect(player.hasDiscoveredRune).toBe(true);
-    expect(map.getItemsAt(5, 5).length).toBe(0);
-  });
-
-  it('dissolves when looted from a container', () => {
-    const map = new GameMap(20, 20, TILES.FLOOR);
-    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } });
-    const engine = new GameEngine({ map, player, floor: 1 });
+    const engine = new GameEngine({ map, player, floor: 5 });
 
     const chest = new Container({
       id: 'ice-chest',
@@ -530,33 +512,65 @@ describe('Rune of Return — Physical Item Dissolution & Innate Relic', () => {
       maxWeightCapacity: 1000,
       maxBulkCapacity: 1000,
     });
-    const runeInChest = new RuneOfReturnItem({ id: 'rune-chest', name: 'Rune of Return', charges: 3 });
+    const runeInChest = new RuneOfReturnItem({ id: 'rune-chest', name: 'Rune of Return', charges: 0 });
     chest.addItem(runeInChest);
 
     const lootAction = new LootFromContainerAction(player, chest, runeInChest);
     const res = engine.handlePlayerAction(lootAction);
 
     expect(res.success).toBe(true);
-    expect(player.hasDiscoveredRune).toBe(true);
+    expect(player.hasDiscoveredRune).toBe(false);
     expect(chest.getItems().length).toBe(0);
-    expect(player.inventory.primaryPack.getItems().length).toBe(0);
-    expect(player.runeCharges).toBe(3);
+    expect(player.inventory.primaryPack.getItems().length).toBe(1);
+    expect(player.inventory.primaryPack.getItems()[0].id).toBe('rune-chest');
   });
 
-  it('Thrain attunement refills innate player rune charges for free with no item in pack', () => {
+  it('Thrain in town teaches the player, awakens the dormant rune, and binds it to spirit', () => {
+    const map = new GameMap(20, 20, TILES.FLOOR);
     const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } });
-    player.hasDiscoveredRune = true;
-    player.runeCharges = 1;
-    player.runeMaxCharges = 3;
+    const rune = new RuneOfReturnItem({ id: 'carried-rune', name: 'Rune of Return', charges: 0 });
+    player.inventory.primaryPack.addItem(rune);
 
+    const engine = new GameEngine({
+      map,
+      player,
+      floor: 0,
+      manifest: {
+        id: 'test-manifest',
+        name: 'Test',
+        runeOfReturn: {
+          attunementNpcId: 'npc-thrain',
+        },
+      } as any,
+    });
+
+    const thrain = new NPC({
+      id: 'npc-thrain',
+      name: 'Thrain the Rune-Smith',
+      greeting: 'Greetings adventurer!',
+      role: 'villager',
+      position: { x: 6, y: 5 },
+    });
+
+    expect(player.hasDiscoveredRune).toBe(false);
+    expect(player.inventory.primaryPack.getItems().length).toBe(1);
+
+    // Speak with Thrain
+    engine.interactWithNpc(thrain);
+
+    // Now player has learned the secrets!
+    expect(player.hasDiscoveredRune).toBe(true);
+    expect(player.runeCharges).toBe(3);
+    // Physical rune dissolved from pack into spirit
     expect(player.inventory.primaryPack.getItems().length).toBe(0);
 
-    const rune = findRuneOfReturn(player)!;
-    expect(rune).toBeDefined();
-    expect(rune.charges).toBe(1);
+    const innateRune = findRuneOfReturn(player);
+    expect(innateRune).toBeDefined();
+    expect(innateRune?.charges).toBe(3);
 
-    const msg = attuneRuneOfReturn(rune);
-    expect(msg).toContain('3/3');
+    // Subsequent interaction attunes / refills charges
+    player.runeCharges = 1;
+    engine.interactWithNpc(thrain);
     expect(player.runeCharges).toBe(3);
   });
 });

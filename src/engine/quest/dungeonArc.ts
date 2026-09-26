@@ -277,8 +277,9 @@ export class DungeonArc {
         name: 'Rune of Return',
         unidentifiedName: 'Carved Rune Stone',
         identified: true,
+        charges: 0,
         description:
-          'A palm-sized stone etched with a rune that hums faintly. Channeling it over several turns teleports you back to town.',
+          'A palm-sized stone etched with a dormant rune. Bring it to Thrain the Rune-Smith in town so he can awaken its power.',
       });
       const chest = map.getItemsAt(chestPos.x, chestPos.y).find((it) => it instanceof Container) as
         | Container

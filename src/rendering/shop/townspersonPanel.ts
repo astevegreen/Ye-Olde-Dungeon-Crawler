@@ -38,7 +38,8 @@ export function renderTownspersonDialog(
       ctx.fillText('RUNE-SMITH FORGE & ATTUNEMENT', boxX + 14, startY + 24);
 
       ctx.font = `11px ${font}`;
-      if (rune) {
+      const isAwakened = Boolean(_engine.player?.hasDiscoveredRune);
+      if (rune && isAwakened) {
         ctx.fillStyle = '#38bdf8';
         ctx.fillText(`Rune of Return: ${rune.charges}/${rune.maxCharges} Charges (Innate Spirit Power)`, boxX + 14, startY + 48);
         ctx.fillStyle = '#a3e635';
@@ -47,6 +48,11 @@ export function renderTownspersonDialog(
         } else {
           ctx.fillText('Attuned and ready for recall channeling in the dungeon depths.', boxX + 14, startY + 68);
         }
+      } else if (rune && !isAwakened) {
+        ctx.fillStyle = '#fde047';
+        ctx.fillText('Dormant Rune Carried: Speak with Thrain to awaken its secrets.', boxX + 14, startY + 48);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText('Thrain will teach you the incantations to bind its recall magic to your spirit.', boxX + 14, startY + 68);
       } else {
         ctx.fillStyle = '#f87171';
         ctx.fillText('You have not yet discovered the Rune of Return.', boxX + 14, startY + 48);
@@ -59,27 +65,33 @@ export function renderTownspersonDialog(
       const btnH = 28;
       ctx.fillStyle = theme.modalTitlebar;
       ctx.fillRect(boxX + 14, btnY, boxW - 28, btnH);
-      ctx.strokeStyle = '#38bdf8';
+      ctx.strokeStyle = isAwakened ? '#38bdf8' : '#475569';
       ctx.strokeRect(boxX + 14.5, btnY + 0.5, boxW - 29, btnH - 1);
 
       ctx.font = `bold 12px ${font}`;
-      ctx.fillStyle = '#38bdf8';
+      ctx.fillStyle = isAwakened ? '#38bdf8' : '#64748b';
       ctx.textAlign = 'center';
-      ctx.fillText('⚡ [U] Open Rune of Return Mastery Tree', boxX + boxW / 2, btnY + 18);
+      ctx.fillText(
+        isAwakened ? '⚡ [U] Open Rune of Return Mastery Tree' : '🔒 Rune Mastery Locked (Awaken Rune with Thrain)',
+        boxX + boxW / 2,
+        btnY + 18
+      );
       ctx.textAlign = 'left';
 
-      panel.addClickZone({
-        x: boxX + 14,
-        y: btnY,
-        width: boxW - 28,
-        height: btnH,
-        action: () => {
-          if (actions.openRuneTree) {
-            actions.close();
-            actions.openRuneTree();
-          }
-        },
-      });
+      if (isAwakened) {
+        panel.addClickZone({
+          x: boxX + 14,
+          y: btnY,
+          width: boxW - 28,
+          height: btnH,
+          action: () => {
+            if (actions.openRuneTree) {
+              actions.close();
+              actions.openRuneTree();
+            }
+          },
+        });
+      }
       return;
     }
 

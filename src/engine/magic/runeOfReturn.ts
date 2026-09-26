@@ -198,6 +198,13 @@ export function startOrContinueChannel(
     return { success: true, message: 'You continue channeling the Rune of Return...' };
   }
 
+  if (!player.hasDiscoveredRune) {
+    return {
+      success: false,
+      message: 'The Rune of Return is dormant. Bring it to Thrain the Rune-Smith in town so he can teach you how to awaken and channel its recall magic.',
+    };
+  }
+
   if (item.charges <= 0) {
     return { success: false, message: 'The Rune of Return has no charges remaining.' };
   }

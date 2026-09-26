@@ -727,7 +727,15 @@ export class GameEngine {
     if (attunementNpcId && npc.id === attunementNpcId) {
       this.log(`Spoke with ${npc.name}: "${npc.greeting}"`);
       const item = findRuneOfReturn(this.player);
-      this.log(item ? attuneRuneOfReturn(item) : `${npc.name} has nothing to attune — you carry no Rune of Return.`);
+      if (item && !this.player.hasDiscoveredRune) {
+        this.log(`${npc.name} examines the carved stone intently: "By the ancestors, the Rune of Return! You found it in the frozen depths!"`);
+        this.log(`${npc.name} teaches you the incantations to awaken its dormant matrix, binding its recall magic directly to your spirit.`);
+        this.absorbRuneOfReturn(item);
+      } else if (item && this.player.hasDiscoveredRune) {
+        this.log(attuneRuneOfReturn(item));
+      } else {
+        this.log(`${npc.name} has nothing to attune — you carry no Rune of Return.`);
+      }
       if (this.onNpcInteract) {
         this.onNpcInteract(npc);
       }
@@ -1062,16 +1070,6 @@ export class GameEngine {
       }
     }
 
-    // Check for Rune of Return acquisition
-    if (!this.player.hasDiscoveredRune && findRuneOfReturn(this.player)) {
-      this.player.hasDiscoveredRune = true;
-      this.emitGameEvent({
-        type: 'rune_of_return_discovered',
-        turn: this.turnCount,
-        actorId: this.player.id,
-      });
-    }
-
     return result;
   }
 
@@ -1082,13 +1080,8 @@ export class GameEngine {
    */
   public absorbRuneOfReturn(item?: Item): void {
     if (!this.player) return;
-    if (item instanceof RuneOfReturnItem) {
-      this.player.runeCharges = item.charges;
-      this.player.runeMaxCharges = item.maxCharges;
-    } else {
-      this.player.runeCharges = this.player.runeCharges ?? 3;
-      this.player.runeMaxCharges = this.player.runeMaxCharges ?? 3;
-    }
+    this.player.runeCharges = 3;
+    this.player.runeMaxCharges = 3;
     const wasDiscovered = this.player.hasDiscoveredRune;
     this.player.hasDiscoveredRune = true;
 
@@ -1109,6 +1102,11 @@ export class GameEngine {
         type: 'rune_of_return_discovered',
         turn: this.turnCount,
         actorId: this.player.id,
+      });
+      this.emitDiscovery({
+        type: 'quest_milestone',
+        text: 'Learned the secrets of the Rune of Return from Thrain! Spiritual recall awakened.',
+        icon: '🌀',
       });
     }
   }

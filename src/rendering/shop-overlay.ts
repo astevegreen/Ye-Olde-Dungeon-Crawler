@@ -253,7 +253,7 @@ export class ShopOverlay {
     const attunementNpcId = engine.manifest?.runeOfReturn?.attunementNpcId;
     if (attunementNpcId && this.activeNpc?.id === attunementNpcId) {
       if (key.toLowerCase() === 'u') {
-        if (this.onOpenRuneTree) {
+        if (engine.player?.hasDiscoveredRune && this.onOpenRuneTree) {
           this.close();
           this.onOpenRuneTree();
         }

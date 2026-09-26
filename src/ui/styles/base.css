@@ -478,3 +478,15 @@
         overflow-y: auto !important;
       }
 
+      /* Suppress redundant nested titlebars inside character menu shell */
+      .character-menu-tab-content .retro-titlebar {
+        display: none !important;
+      }
+
+      /* Allow pacts list to expand to full available tab height instead of clamping at 280px */
+      .character-menu-tab-content #pact-list-container {
+        max-height: none !important;
+        flex: 1 !important;
+        min-height: 0 !important;
+      }
+

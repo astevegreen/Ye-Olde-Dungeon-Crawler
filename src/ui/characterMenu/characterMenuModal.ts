@@ -83,6 +83,9 @@ export class CharacterMenuModal implements UIModal {
   }
 
   public destroy(): void {
+    if (typeof document !== 'undefined') {
+      document.getElementById('widescreen-layout')?.classList.remove('character-menu-active');
+    }
     this.detachResizeListener?.();
     this.detachResizeListener = undefined;
   }
@@ -354,6 +357,9 @@ export class CharacterMenuModal implements UIModal {
 
   public open(tabId?: string): void {
     this.isOpen = true;
+    if (typeof document !== 'undefined') {
+      document.getElementById('widescreen-layout')?.classList.add('character-menu-active');
+    }
     if (!this.overlayEl) {
       this.createDom();
     }
@@ -377,6 +383,9 @@ export class CharacterMenuModal implements UIModal {
   public close(): void {
     if (!this.isOpen) return;
     this.isOpen = false;
+    if (typeof document !== 'undefined') {
+      document.getElementById('widescreen-layout')?.classList.remove('character-menu-active');
+    }
 
     const currentTab = this.getActiveTab();
     if (currentTab) {

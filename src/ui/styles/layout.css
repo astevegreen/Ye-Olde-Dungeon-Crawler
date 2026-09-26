@@ -1,6 +1,15 @@
-/* ==========================================================================
-   Viewport, Game Container, Ground Status Bar, and Quickbar Layout
-   ========================================================================== */
+/* While character menu is open, blur and darken surrounding UI panels (flanks and HUD bars)
+   identically across all tabs (including inventory) to focus attention on the active modal window. */
+#widescreen-layout.character-menu-active #left-flank,
+#widescreen-layout.character-menu-active #right-flank,
+#widescreen-layout.character-menu-active #game-header-bar,
+#widescreen-layout.character-menu-active #game-bottom-bar,
+#widescreen-layout.character-menu-active #ground-status-bar {
+  filter: blur(2px) brightness(0.35);
+  pointer-events: none;
+  user-select: none;
+  transition: filter 0.15s ease;
+}
 
 #game-container {
   width: 100%;

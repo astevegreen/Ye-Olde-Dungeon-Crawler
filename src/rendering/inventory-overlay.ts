@@ -2491,8 +2491,13 @@ export class InventoryOverlay implements UIModal {
       ctx.fillText(it.name.slice(0, 10), gx + ghostSize / 2, gy + ghostSize + 10);
     }
 
-    // Grid cells hover tooltip (rich or compact based on settings)
-    this.renderHoverTooltip(ctx, canvasW, canvasH, font);
+    // Grid cells hover tooltip (rich or compact based on settings). Suppressed while the
+    // context menu or split dialog is open (it would render on top and hide them, since
+    // both open at the last hovered/clicked position) or mid-drag (the ghost already
+    // shows the dragged item).
+    if (!this.contextMenu?.isOpen && !this.splitDialog?.isOpen && !this.dragData?.isDragging) {
+      this.renderHoverTooltip(ctx, canvasW, canvasH, font);
+    }
   }
 
   private renderHoverTooltip(ctx: CanvasRenderingContext2D, canvasW: number, canvasH: number, font: string): void {

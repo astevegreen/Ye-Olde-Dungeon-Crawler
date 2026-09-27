@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(dist/**)",
+      "Read(node_modules/**)",
+      "Read(package-lock.json)",
+      "Read(playwright-report/**)",
+      "Read(test-results/**)",
+      "Read(*.log)"
+    ]
+  }
+}

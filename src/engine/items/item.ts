@@ -1,7 +1,7 @@
 import type { ElementType } from '../magic/elements';
 import type { Predicate } from '../predicates/types';
 import type { HookDescriptor } from '../hooks/hookDispatcher';
-import type { ItemModifier } from './modifiers';
+import { type ItemModifier, isModifierCursed, isModifierBlessed, isModifierChaotic } from './modifiers';
 import { getRegisteredContainer } from './containerRegistry';
 
 export type ItemQuality = 'broken' | 'normal' | 'enchanted' | 'cursed' | 'artifact';
@@ -240,21 +240,15 @@ export class Item {
 
     if (prefixes.length > 0) {
       base = `${prefixes.join(' ')} ${base}`;
-    } else if (
-      (this.quality as string) === 'blessed' ||
-      this.modifiers.some((m) => m.category === 'blessed' || m.alignment === 'positive')
-    ) {
+    } else if (this.isBlessed()) {
       if (!base.startsWith('Blessed') && !base.startsWith('Sanctified') && !base.startsWith('Celestial')) {
         base = `Blessed ${base}`;
       }
-    } else if (this.isCursed() || this.quality === 'cursed') {
+    } else if (this.isCursed()) {
       if (!base.startsWith('Cursed') && !base.startsWith('Blighted') && !base.startsWith('Hexed')) {
         base = `Cursed ${base}`;
       }
-    } else if (
-      (this.quality as string) === 'chaotic' ||
-      this.modifiers.some((m) => m.category === 'chaotic' || m.alignment === 'chaotic')
-    ) {
+    } else if (this.isChaotic()) {
       if (!base.startsWith('Chaotic') && !base.startsWith('Frenetic') && !base.startsWith('Warped')) {
         base = `Chaotic ${base}`;
       }
@@ -271,8 +265,16 @@ export class Item {
     return (
       this.quality === 'cursed' ||
       this.aspectState === 'aspect_corrupt' ||
-      this.modifiers.some((m) => m.cursed === true || m.category === 'cursed')
+      this.modifiers.some(isModifierCursed)
     );
+  }
+
+  public isBlessed(): boolean {
+    return (this.quality as string) === 'blessed' || this.modifiers.some(isModifierBlessed);
+  }
+
+  public isChaotic(): boolean {
+    return (this.quality as string) === 'chaotic' || this.modifiers.some(isModifierChaotic);
   }
 
   public uncurse(): { uncursed: boolean; removedModifiers: string[] } {
@@ -280,7 +282,7 @@ export class Item {
     const kept: ItemModifier[] = [];
 
     for (const mod of this.modifiers) {
-      if (mod.cursed === true || mod.category === 'cursed') {
+      if (isModifierCursed(mod)) {
         removed.push(mod.name);
       } else {
         kept.push(mod);

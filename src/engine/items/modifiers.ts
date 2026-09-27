@@ -58,3 +58,11 @@ export interface ItemModifier {
 export function isModifierCursed(mod: ItemModifier): boolean {
   return mod.cursed === true || mod.category === 'cursed';
 }
+
+export function isModifierBlessed(mod: ItemModifier): boolean {
+  return mod.category === 'blessed' || mod.alignment === 'positive';
+}
+
+export function isModifierChaotic(mod: ItemModifier): boolean {
+  return mod.category === 'chaotic' || mod.alignment === 'chaotic';
+}

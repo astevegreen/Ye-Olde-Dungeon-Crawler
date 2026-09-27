@@ -15,6 +15,7 @@ import { applyImpulse } from '../combat/impulse';
 import { resolveCombatMitigation } from '../combat/mitigationPipeline';
 import type { Item } from '../items/item';
 import type { ItemModifier } from '../items/modifiers';
+import { isModifierBlessed, isModifierChaotic } from '../items/modifiers';
 
 function getActorEquippedItems(actor: Entity): Item[] {
   // Every Actor owns an inventory (a default one if none was configured); plain
@@ -119,7 +120,7 @@ export class MeleeAttackAction implements Action {
 
     // 1. Blessed modifiers (physical/melee scaling)
     for (const mod of attackerModifiers) {
-      if (mod.category === 'blessed' || mod.alignment === 'positive') {
+      if (isModifierBlessed(mod)) {
         if (mod.meleeDamageMultiplier) {
           rawDamage = Math.round(rawDamage * mod.meleeDamageMultiplier);
         }
@@ -224,7 +225,7 @@ export class MeleeAttackAction implements Action {
 
     // 5. Chaotic modifiers (proc checks: backlash & teleport)
     for (const mod of attackerModifiers) {
-      if (mod.category === 'chaotic' || mod.alignment === 'chaotic') {
+      if (isModifierChaotic(mod)) {
         if (mod.meleeDamageMultiplier) {
           rawDamage = Math.round(rawDamage * mod.meleeDamageMultiplier);
         }

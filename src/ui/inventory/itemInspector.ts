@@ -37,23 +37,17 @@ export function getItemThematicColor(item: Item | null | undefined, theme: Requi
   }
 
   // Cursed / Unholy (Crimson Red)
-  if (item.isCursed() || item.quality === 'cursed') {
+  if (item.isCursed()) {
     return '#ef4444';
   }
 
   // Blessed / Holy (Celestial Sky Blue)
-  const isBlessed =
-    (item.quality as string) === 'blessed' ||
-    (item.modifiers && item.modifiers.some((m) => m.category === 'blessed' || m.alignment === 'positive'));
-  if (isBlessed) {
+  if (item.isBlessed()) {
     return '#38bdf8';
   }
 
   // Chaotic / Warped (Fuchsia / Magenta)
-  const isChaotic =
-    (item.quality as string) === 'chaotic' ||
-    (item.modifiers && item.modifiers.some((m) => m.category === 'chaotic' || m.alignment === 'chaotic'));
-  if (isChaotic) {
+  if (item.isChaotic()) {
     return '#e879f9';
   }
 

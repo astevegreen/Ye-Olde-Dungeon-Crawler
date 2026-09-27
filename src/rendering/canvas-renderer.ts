@@ -1528,7 +1528,13 @@ export class CanvasRenderer {
     const spriteKey = getItemSpriteKey(item, this.atlas.hasSprite.bind(this.atlas));
     this.atlas.drawSprite(this.ctx, spriteKey, px + 2, py + 2, cs - 4, Visibility.Visible);
     if (item instanceof Container) {
-      this.drawContainerBadge(px, py, cs, !item.wasOpened);
+      const state =
+        item.getItems().length === 0
+          ? 'empty'
+          : !item.wasOpened
+          ? 'unopened'
+          : 'has_items';
+      this.drawContainerBadge(px, py, cs, state);
     }
   }
 
@@ -1586,13 +1592,26 @@ export class CanvasRenderer {
 
     const containers = items.filter((i): i is Container => i instanceof Container);
     if (containers.length > 0) {
-      this.drawContainerBadge(px, py, cs, containers.some((c) => !c.wasOpened));
+      let state: 'unopened' | 'has_items' | 'empty';
+      if (containers.some((c) => !c.wasOpened && c.getItems().length > 0)) {
+        state = 'unopened';
+      } else if (containers.some((c) => c.getItems().length > 0)) {
+        state = 'has_items';
+      } else {
+        state = 'empty';
+      }
+      this.drawContainerBadge(px, py, cs, state);
     }
   }
 
-  /** Top-right corner flag on containers: a gold star while unopened, a grey check once
-   * the player has looked inside. */
-  private drawContainerBadge(px: number, py: number, cs: number, unopened: boolean): void {
+  /** Top-right corner flag on containers: a gold star while unopened, an amber dot once
+   * opened while items remain, and a grey check once completely empty. */
+  private drawContainerBadge(
+    px: number,
+    py: number,
+    cs: number,
+    state: 'unopened' | 'has_items' | 'empty'
+  ): void {
     const ctx = this.ctx;
     const r = Math.max(3, cs * 0.14);
     const cx = px + cs - r - 1;
@@ -1605,8 +1624,16 @@ export class CanvasRenderer {
     ctx.font = `bold ${Math.max(7, Math.floor(r * 1.6))}px ${this.theme.fontFamily ?? 'monospace'}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = unopened ? '#facc15' : '#94a3b8';
-    ctx.fillText(unopened ? '★' : '✓', cx, cy + 0.5);
+    if (state === 'unopened') {
+      ctx.fillStyle = '#facc15';
+      ctx.fillText('★', cx, cy + 0.5);
+    } else if (state === 'has_items') {
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillText('•', cx, cy + 0.5);
+    } else {
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('✓', cx, cy + 0.5);
+    }
     ctx.restore();
   }
 }

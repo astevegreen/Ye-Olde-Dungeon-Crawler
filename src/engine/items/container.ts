@@ -9,7 +9,7 @@ import {
 } from './containerRegistry';
 
 export type ContainerType = 'pack' | 'chest' | 'belt' | 'purse';
-export type ContainerSortMode = 'category' | 'weight' | 'bulk';
+export type ContainerSortMode = 'category' | 'weight' | 'bulk' | 'value' | 'tier' | 'name';
 
 export interface ContainerConfig extends ItemConfig {
   containerType: ContainerType;
@@ -114,7 +114,7 @@ export class Container extends Item {
    * Verifies if an item can be added into this container based on category, slot,
    * max weight, max bulk, and circular container reference constraints.
    */
-  public canContain(item: Item): { allowed: boolean; reason?: string } {
+  public canContain(item: Item, allowMerge: boolean = true): { allowed: boolean; reason?: string } {
     // 1. Prevent inserting a container into itself
     if (item === this) {
       return { allowed: false, reason: 'Cannot place a container inside itself.' };
@@ -136,7 +136,7 @@ export class Container extends Item {
     }
 
     // 4. Slot limit check (e.g. Belts)
-    const canMerge = this.items.some((i) => canStack(i, item));
+    const canMerge = allowMerge && this.items.some((i) => canStack(i, item));
     if (!canMerge && this.maxSlots !== undefined && this.items.length >= this.maxSlots) {
       return {
         allowed: false,
@@ -198,18 +198,20 @@ export class Container extends Item {
     return { allowed: true };
   }
 
-  public addItem(item: Item): boolean {
-    const check = this.canContain(item);
+  public addItem(item: Item, allowMerge: boolean = true): boolean {
+    const check = this.canContain(item, allowMerge);
     if (!check.allowed) {
       return false;
     }
 
-    const stackTarget = this.items.find((i) => canStack(i, item));
-    if (stackTarget) {
-      mergeItemStacks(stackTarget, item);
-      // The absorbed stack no longer exists as a distinct item.
-      itemIndex.unregister(item.id);
-      return true;
+    if (allowMerge) {
+      const stackTarget = this.items.find((i) => canStack(i, item));
+      if (stackTarget) {
+        mergeItemStacks(stackTarget, item);
+        // The absorbed stack no longer exists as a distinct item.
+        itemIndex.unregister(item.id);
+        return true;
+      }
     }
 
     this.items.push(item);
@@ -295,6 +297,22 @@ export class Container extends Item {
         if (blkB !== blkA) {
           return blkB - blkA; // Bulkiest first
         }
+        return a.displayName.localeCompare(b.displayName);
+      } else if (mode === 'value') {
+        const valA = a.value ?? 0;
+        const valB = b.value ?? 0;
+        if (valB !== valA) {
+          return valB - valA; // Most valuable first
+        }
+        return a.displayName.localeCompare(b.displayName);
+      } else if (mode === 'tier') {
+        const tierA = a.tier ?? 0;
+        const tierB = b.tier ?? 0;
+        if (tierB !== tierA) {
+          return tierB - tierA; // Highest tier first
+        }
+        return a.displayName.localeCompare(b.displayName);
+      } else if (mode === 'name') {
         return a.displayName.localeCompare(b.displayName);
       }
       return 0;

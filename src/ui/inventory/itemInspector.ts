@@ -16,6 +16,74 @@ export type InspectorSource = 'paperdoll' | 'backpack' | 'ground' | 'container' 
 export type FocusedPanel = 'paperdoll' | 'backpack' | 'ground' | 'inspector';
 export type ItemInspectorActionId = 'equip' | 'unequip' | 'use' | 'drop' | 'take' | 'put' | 'peek' | 'identify';
 
+/**
+ * Assigns thematically-appropriate colors based on item alignment and quality.
+ * If the item is still unidentified, it has NO special color (returns neutral theme text color).
+ */
+export function getItemThematicColor(item: Item | null | undefined, theme: Required<ThemeTokens>): string {
+  if (!item) return theme.hudText;
+
+  // Unidentified items have no special color at first (standard text color)
+  if (!item.identified) {
+    return theme.hudText;
+  }
+
+  // Currency
+  if (item instanceof CoinItem || item.category === 'currency') {
+    const parsed = parseCoinItem(item);
+    if (parsed && COIN_COLORS[parsed.denomination]) {
+      return COIN_COLORS[parsed.denomination];
+    }
+  }
+
+  // Cursed / Unholy (Crimson Red)
+  if (item.isCursed() || item.quality === 'cursed') {
+    return '#ef4444';
+  }
+
+  // Blessed / Holy (Celestial Sky Blue)
+  const isBlessed =
+    (item.quality as string) === 'blessed' ||
+    (item.modifiers && item.modifiers.some((m) => m.category === 'blessed' || m.alignment === 'positive'));
+  if (isBlessed) {
+    return '#38bdf8';
+  }
+
+  // Chaotic / Warped (Fuchsia / Magenta)
+  const isChaotic =
+    (item.quality as string) === 'chaotic' ||
+    (item.modifiers && item.modifiers.some((m) => m.category === 'chaotic' || m.alignment === 'chaotic'));
+  if (isChaotic) {
+    return '#e879f9';
+  }
+
+  // Artifact / Legendary (Amber Gold)
+  if (item.quality === 'artifact') {
+    return '#f59e0b';
+  }
+
+  // Enchanted / Elemental (Arcane Violet)
+  if (item.quality === 'enchanted' || (item.enchantmentLevel && item.enchantmentLevel > 0) || item.elementalAffix) {
+    return '#c084fc';
+  }
+
+  if (item.isBroken()) {
+    return '#78716c';
+  }
+
+  return theme.hudAccent ?? theme.hudText;
+}
+
+export interface EquipmentComparison {
+  equippedItem: Item;
+  slotName: string;
+  attackDelta: number;
+  defenseDelta: number;
+  speedDelta: number;
+  strengthDelta: number;
+  weightDelta: number;
+}
+
 export interface ItemInspectorActionButton {
   id: ItemInspectorActionId;
   label: string;
@@ -262,6 +330,42 @@ export class ItemInspector {
       slotId,
       isContainer: item instanceof Container,
     };
+  }
+
+  /**
+   * Compares the selected item against whatever is currently equipped in its compatible slot.
+   */
+  public getEquipmentComparison(item: Item, player: Player): EquipmentComparison | null {
+    if (!item.identified) return null;
+    const doll = player.inventory.paperdoll;
+    for (const slotDef of doll.getSlotDefinitions()) {
+      if (slotDef.acceptedCategories.includes(item.category) || (item.slot && slotDef.id === item.slot)) {
+        const equipped = doll.getItem(slotDef.id);
+        if (equipped && equipped.id !== item.id) {
+          const itemAtk = item.stats.attackBonus ?? 0;
+          const eqAtk = equipped.stats.attackBonus ?? 0;
+          const itemDef = item.stats.defenseBonus ?? 0;
+          const eqDef = equipped.stats.defenseBonus ?? 0;
+          const itemSpd = item.stats.speedBonus ?? 0;
+          const eqSpd = equipped.stats.speedBonus ?? 0;
+          const itemStr = item.stats.strengthBonus ?? 0;
+          const eqStr = equipped.stats.strengthBonus ?? 0;
+          const itemWt = item.weight;
+          const eqWt = equipped.weight;
+
+          return {
+            equippedItem: equipped,
+            slotName: slotDef.name,
+            attackDelta: itemAtk - eqAtk,
+            defenseDelta: itemDef - eqDef,
+            speedDelta: itemSpd - eqSpd,
+            strengthDelta: itemStr - eqStr,
+            weightDelta: itemWt - eqWt,
+          };
+        }
+      }
+    }
+    return null;
   }
 
   /** What would identify an item right now: a known Scroll of Identify, else the Identify
@@ -805,20 +909,7 @@ export class ItemInspector {
         engine.player.inventory.paperdoll
       );
 
-      let titleColor = !breakdown.identified
-        ? theme.hudText
-        : breakdown.isCursed
-        ? '#ef4444'
-        : breakdown.isEnchanted
-        ? '#c084fc'
-        : theme.hudAccent;
-
-      if (this.selectedItem && (this.selectedItem instanceof CoinItem || this.selectedItem.category === 'currency')) {
-        const parsed = parseCoinItem(this.selectedItem);
-        if (parsed && COIN_COLORS[parsed.denomination]) {
-          titleColor = COIN_COLORS[parsed.denomination];
-        }
-      }
+      let titleColor = getItemThematicColor(this.selectedItem, theme);
 
       ctx.font = `bold 12px ${font}`;
       ctx.fillStyle = titleColor;
@@ -905,6 +996,44 @@ export class ItemInspector {
         ctx.fillStyle = '#eab308';
         ctx.fillText(`Value: ${breakdown.value} copper`, innerX, curY);
         curY += 16;
+      }
+
+      // Equipment Comparison Diff (Delta View)
+      if (this.selectedSource !== 'paperdoll' && this.selectedItem) {
+        const comparison = this.getEquipmentComparison(this.selectedItem, engine.player);
+        if (comparison) {
+          ctx.strokeStyle = theme.borderDark;
+          ctx.beginPath();
+          ctx.moveTo(innerX, curY);
+          ctx.lineTo(innerX + innerW, curY);
+          ctx.stroke();
+          curY += 8;
+
+          ctx.font = `bold 9px ${font}`;
+          ctx.fillStyle = '#38bdf8';
+          const eqName = comparison.equippedItem.displayName.length > 20
+            ? comparison.equippedItem.displayName.slice(0, 19) + '…'
+            : comparison.equippedItem.displayName;
+          ctx.fillText(`VS EQUIPPED (${comparison.slotName}): ${eqName}`, innerX, curY);
+          curY += 13;
+
+          const renderDeltaRow = (label: string, delta: number, positiveIsGood = true) => {
+            if (delta === 0) return;
+            const sign = delta > 0 ? `+${delta}` : `${delta}`;
+            const isGood = positiveIsGood ? delta > 0 : delta < 0;
+            ctx.font = `9px ${font}`;
+            ctx.fillStyle = isGood ? '#4ade80' : '#f87171';
+            ctx.fillText(`${label}: ${sign}`, innerX, curY);
+            curY += 12;
+          };
+
+          renderDeltaRow('Attack', comparison.attackDelta, true);
+          renderDeltaRow('Defense', comparison.defenseDelta, true);
+          renderDeltaRow('Speed', comparison.speedDelta, true);
+          renderDeltaRow('Strength', comparison.strengthDelta, true);
+          renderDeltaRow('Weight', comparison.weightDelta, false);
+          curY += 4;
+        }
       }
 
       // Lore Description

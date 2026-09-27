@@ -9,9 +9,9 @@ import { RuneOfReturnItem, ChannelRuneOfReturnAction } from '../engine';
 import { resolveThemeTokens } from './theme';
 import type { ThemeTokens } from '../engine';
 import { PaperdollView } from './paperdoll-view';
-import { ItemInspector } from '../ui/inventory/itemInspector';
+import { ItemInspector, getItemThematicColor } from '../ui/inventory/itemInspector';
 import { type GameCommand, type GameCommandBus } from '../engine';
-import { COIN_COLORS, parseCoinItem } from '../engine';
+import { COIN_COLORS, parseCoinItem, type ContainerSortMode } from '../engine';
 import type { UIModal } from '../ui/modalStack';
 import type { ClickZone } from './types';
 
@@ -130,7 +130,41 @@ export class InventoryOverlay implements UIModal {
   public scrollOffsets: Record<'backpack' | 'ground', number> = { backpack: 0, ground: 0 };
   private visibleRows: Record<'backpack' | 'ground', number> = { backpack: 1, ground: 1 };
   private maxScrollOffsets: Record<'backpack' | 'ground', number> = { backpack: 0, ground: 0 };
-  private panelBounds: Partial<Record<'backpack' | 'ground', { x: number; y: number; width: number; height: number }>> = {};
+  public panelBounds: Partial<Record<'paperdoll' | 'backpack' | 'ground', { x: number; y: number; width: number; height: number }>> = {};
+
+  public backpackFilter: 'all' | 'gear' | 'consumable' | 'magic' | 'valuable' = 'all';
+  public backpackSearch: string = '';
+  public column3View: 'ground' | 'companion' = 'ground';
+  public richHoverCardsEnabled: boolean = true;
+
+  public splitDialog: {
+    isOpen: boolean;
+    item: Item;
+    maxQuantity: number;
+    splitAmount: number;
+  } | null = null;
+
+  public contextMenu: {
+    isOpen: boolean;
+    x: number;
+    y: number;
+    item: Item;
+    source: 'paperdoll' | 'backpack' | 'ground' | 'container' | 'companion';
+    slotId?: string;
+    options: Array<{ label: string; action: () => void }>;
+  } | null = null;
+
+  public dragData: {
+    item: Item;
+    source: 'paperdoll' | 'backpack' | 'ground' | 'container' | 'companion';
+    slotId?: string;
+    startX: number;
+    startY: number;
+    isDragging: boolean;
+  } | null = null;
+
+  private justFinishedDrag = false;
+  private paperdollSlotZones: Array<{ x: number; y: number; width: number; height: number; slotId: string; item: Item | null }> = [];
 
   private onStateChanged?: () => void;
   public atlas?: SpriteAtlas;
@@ -231,6 +265,53 @@ export class InventoryOverlay implements UIModal {
     return true;
   }
 
+  public popContainerTo(targetIndex: number): void {
+    if (targetIndex < 0) {
+      this.containerNavStack = [];
+      this.selectedGroundContainer = null;
+      this.selectedPackContainer = null;
+    } else {
+      while (this.containerNavStack.length > targetIndex + 1) {
+        this.containerNavStack.pop();
+      }
+      const top = this.containerNavStack[this.containerNavStack.length - 1];
+      if (top) {
+        if (top.source === 'ground') {
+          this.selectedGroundContainer = top.container;
+          this.selectedPackContainer = null;
+        } else if (top.source === 'backpack') {
+          this.selectedPackContainer = top.container;
+          this.selectedGroundContainer = null;
+        } else {
+          this.selectedGroundContainer = null;
+          this.selectedPackContainer = null;
+        }
+      } else {
+        this.selectedGroundContainer = null;
+        this.selectedPackContainer = null;
+      }
+    }
+    this.scrollOffsets['ground'] = 0;
+    this.inspector.clearSelection();
+    if (this.onStateChanged) this.onStateChanged();
+  }
+
+  public openSplitDialog(item: Item): void {
+    if (item.quantity <= 1) return;
+    this.splitDialog = {
+      isOpen: true,
+      item,
+      maxQuantity: item.quantity,
+      splitAmount: Math.floor(item.quantity / 2) || 1,
+    };
+    if (this.onStateChanged) this.onStateChanged();
+  }
+
+  public closeSplitDialog(): void {
+    this.splitDialog = null;
+    if (this.onStateChanged) this.onStateChanged();
+  }
+
   public handleWheel(mouseX: number, mouseY: number, deltaY: number): boolean {
     if (!this.isOpen) return false;
     for (const p of ['backpack', 'ground'] as const) {
@@ -287,6 +368,10 @@ export class InventoryOverlay implements UIModal {
     this.selectedGroundContainer = null;
     this.selectedPackContainer = null;
     this.scrollOffsets = { backpack: 0, ground: 0 };
+    this.splitDialog = null;
+    this.contextMenu = null;
+    this.dragData = null;
+    this.justFinishedDrag = false;
     if (engine) {
       const res = engine.player.inventory.consolidateCoins();
       if (res.count > 0) {
@@ -309,6 +394,10 @@ export class InventoryOverlay implements UIModal {
     this.selectedPackContainer = null;
     this.containerNavStack = [];
     this.scrollOffsets = { backpack: 0, ground: 0 };
+    this.splitDialog = null;
+    this.contextMenu = null;
+    this.dragData = null;
+    this.justFinishedDrag = false;
     if (this.onClose) {
       this.onClose();
     }
@@ -322,10 +411,7 @@ export class InventoryOverlay implements UIModal {
     this.close();
   }
 
-  /** Shared by handleMouseMove and the three click handlers below — a click
-   * changes the mouse position too (a `dblclick`/`contextmenu` event fires
-   * with no preceding `mousemove` on some input paths), and without this the
-   * hover tooltip could keep showing whatever was hovered before the click. */
+  /** Shared by handleMouseMove and the click handlers below. */
   private updateHoverAt(mouseX: number, mouseY: number): void {
     this.lastMouseX = mouseX;
     this.lastMouseY = mouseY;
@@ -337,21 +423,150 @@ export class InventoryOverlay implements UIModal {
       : null;
   }
 
+  public handleMouseDown(mouseX: number, mouseY: number): boolean {
+    if (!this.isOpen) return false;
+    this.updateHoverAt(mouseX, mouseY);
+
+    if (this.contextMenu) {
+      const cm = this.contextMenu;
+      const menuW = 140;
+      const menuH = cm.options.length * 20 + 8;
+      if (mouseX < cm.x || mouseX > cm.x + menuW || mouseY < cm.y || mouseY > cm.y + menuH) {
+        this.contextMenu = null;
+        if (this.onStateChanged) this.onStateChanged();
+      }
+    }
+
+    if (this.splitDialog?.isOpen) return true;
+
+    // Check paperdoll slots
+    const slotZone = this.paperdollSlotZones.find(
+      (z) => mouseX >= z.x && mouseX <= z.x + z.width && mouseY >= z.y && mouseY <= z.y + z.height
+    );
+    if (slotZone && slotZone.item) {
+      this.dragData = {
+        item: slotZone.item,
+        source: 'paperdoll',
+        slotId: slotZone.slotId,
+        startX: mouseX,
+        startY: mouseY,
+        isDragging: false,
+      };
+      return true;
+    }
+
+    // Check grid hoverZones (backpack, ground, container, companion)
+    const hZone = this.hoverZones.find(
+      (z) => mouseX >= z.x && mouseX <= z.x + z.width && mouseY >= z.y && mouseY <= z.y + z.height
+    );
+    if (hZone) {
+      let source: 'backpack' | 'ground' | 'container' | 'companion' = 'backpack';
+      const bp = this.panelBounds['backpack'];
+      const gr = this.panelBounds['ground'];
+      if (bp && mouseX >= bp.x && mouseX <= bp.x + bp.width) {
+        source = 'backpack';
+      } else if (gr && mouseX >= gr.x && mouseX <= gr.x + gr.width) {
+        if (this.column3View === 'companion') source = 'companion';
+        else if (this.activeContainer) source = 'container';
+        else source = 'ground';
+      }
+      this.dragData = {
+        item: hZone.item,
+        source,
+        startX: mouseX,
+        startY: mouseY,
+        isDragging: false,
+      };
+      return true;
+    }
+
+    return false;
+  }
+
   public handleMouseMove(mouseX: number, mouseY: number): boolean {
     if (!this.isOpen) {
       this.hoveredSlot = null;
       this.hoveredBackpackIndex = null;
       this.hoveredGroundIndex = null;
       this.hoveredGroup = null;
+      this.dragData = null;
       return false;
     }
     this.updateHoverAt(mouseX, mouseY);
+    if (this.dragData && !this.dragData.isDragging) {
+      const dist = Math.hypot(mouseX - this.dragData.startX, mouseY - this.dragData.startY);
+      if (dist > 6) {
+        this.dragData.isDragging = true;
+      }
+    }
     return true;
+  }
+
+  public handleMouseUp(mouseX: number, mouseY: number): boolean {
+    if (!this.isOpen) return false;
+    if (this.dragData && this.dragData.isDragging) {
+      this.justFinishedDrag = true;
+      const { item, source, slotId } = this.dragData;
+      this.dragData = null;
+
+      const bp = this.panelBounds['backpack'];
+      const gr = this.panelBounds['ground'];
+      const doll = this.panelBounds['paperdoll'];
+
+      // Dropped on Paperdoll -> Equip
+      if (doll && mouseX >= doll.x && mouseX <= doll.x + doll.width && mouseY >= doll.y && mouseY <= doll.y + doll.height) {
+        if (source !== 'paperdoll') {
+          this.commandBus.dispatch({ type: 'equip_item', payload: { itemId: item.id } });
+        }
+      }
+      // Dropped on Backpack -> Unequip / Pick Up / Loot / Transfer
+      else if (bp && mouseX >= bp.x && mouseX <= bp.x + bp.width && mouseY >= bp.y && mouseY <= bp.y + bp.height) {
+        if (source === 'paperdoll' && slotId) {
+          this.commandBus.dispatch({ type: 'unequip_item', payload: { slot: slotId as EquipmentSlot } });
+        } else if (source === 'ground') {
+          this.commandBus.dispatch({ type: 'pickup_item', payload: { itemId: item.id } });
+        } else if (source === 'container' && this.activeContainer) {
+          this.commandBus.dispatch({ type: 'loot_container', payload: { container: this.activeContainer, item } });
+        } else if (source === 'companion') {
+          this.commandBus.dispatch({ type: 'transfer_from_companion', payload: { itemId: item.id } });
+        }
+      }
+      // Dropped on Column 3 -> Drop / Store / Transfer
+      else if (gr && mouseX >= gr.x && mouseX <= gr.x + gr.width && mouseY >= gr.y && mouseY <= gr.y + gr.height) {
+        if (this.column3View === 'companion') {
+          if (source === 'backpack') {
+            this.commandBus.dispatch({ type: 'transfer_to_companion', payload: { itemId: item.id } });
+          }
+        } else if (this.activeContainer) {
+          if (source === 'backpack') {
+            this.commandBus.dispatch({ type: 'store_container', payload: { container: this.activeContainer, item } });
+          }
+        } else {
+          // Ground
+          if (source === 'backpack') {
+            this.commandBus.dispatch({ type: 'drop_item', payload: { item, source: 'pack' } });
+          } else if (source === 'paperdoll' && slotId) {
+            this.commandBus.dispatch({ type: 'drop_item', payload: { item, source: 'paperdoll', slot: slotId as EquipmentSlot } });
+          }
+        }
+      }
+
+      this.inspector.clearSelection();
+      if (this.onStateChanged) this.onStateChanged();
+      return true;
+    }
+    this.dragData = null;
+    return false;
   }
 
   public handleClick(mouseX: number, mouseY: number, isMultiModifier: boolean = false): boolean {
     if (!this.isOpen) return false;
     this.updateHoverAt(mouseX, mouseY);
+
+    if (this.justFinishedDrag) {
+      this.justFinishedDrag = false;
+      return true;
+    }
 
     for (let i = this.clickZones.length - 1; i >= 0; i--) {
       const zone = this.clickZones[i];
@@ -362,11 +577,20 @@ export class InventoryOverlay implements UIModal {
         mouseY <= zone.y + zone.height
       ) {
         zone.action(isMultiModifier);
+        if (this.contextMenu) {
+          this.contextMenu = null;
+        }
         if (this.onStateChanged) {
           this.onStateChanged();
         }
         return true;
       }
+    }
+
+    if (this.contextMenu) {
+      this.contextMenu = null;
+      if (this.onStateChanged) this.onStateChanged();
+      return true;
     }
 
     // Clicking empty space "clicks off" the current selection.
@@ -400,23 +624,257 @@ export class InventoryOverlay implements UIModal {
     return true;
   }
 
-  public handleRightClick(mouseX: number, mouseY: number, _engine: GameEngine): boolean {
+  public handleRightClick(mouseX: number, mouseY: number, engine?: GameEngine): boolean {
     if (!this.isOpen) return false;
     this.updateHoverAt(mouseX, mouseY);
+    const eng = engine ?? this.engine;
+    if (this.splitDialog?.isOpen) return true;
 
-    for (let i = this.rightClickZones.length - 1; i >= 0; i--) {
-      const zone = this.rightClickZones[i];
-      if (
-        mouseX >= zone.x &&
-        mouseX <= zone.x + zone.width &&
-        mouseY >= zone.y &&
-        mouseY <= zone.y + zone.height
-      ) {
-        zone.action();
-        if (this.onStateChanged) {
-          this.onStateChanged();
+    // Check paperdoll slot
+    const slotZone = this.paperdollSlotZones.find(
+      (z) => mouseX >= z.x && mouseX <= z.x + z.width && mouseY >= z.y && mouseY <= z.y + z.height
+    );
+    if (slotZone && slotZone.item) {
+      const it = slotZone.item;
+      const sId = slotZone.slotId;
+      const options: Array<{ label: string; action: () => void }> = [
+        {
+          label: 'Unequip',
+          action: () => {
+            this.commandBus.dispatch({ type: 'unequip_item', payload: { slot: sId as EquipmentSlot } });
+            this.inspector.clearSelection();
+          },
+        },
+        {
+          label: 'Inspect',
+          action: () => {
+            this.inspector.setFocus('paperdoll');
+            this.inspector.select(it, 'paperdoll', sId);
+          },
+        },
+        {
+          label: 'Drop',
+          action: () => {
+            this.commandBus.dispatch({ type: 'drop_item', payload: { item: it, source: 'paperdoll', slot: sId as EquipmentSlot } });
+            this.inspector.clearSelection();
+          },
+        },
+      ];
+      this.contextMenu = {
+        isOpen: true,
+        x: mouseX,
+        y: mouseY,
+        item: it,
+        source: 'paperdoll',
+        slotId: sId,
+        options,
+      };
+      if (this.onStateChanged) this.onStateChanged();
+      return true;
+    }
+
+    // Check grid hoverZones (backpack, ground, container, companion)
+    const hZone = this.hoverZones.find(
+      (z) => mouseX >= z.x && mouseX <= z.x + z.width && mouseY >= z.y && mouseY <= z.y + z.height
+    );
+    if (hZone) {
+      const it = hZone.item;
+      const bp = this.panelBounds['backpack'];
+      const isPack = bp && mouseX >= bp.x && mouseX <= bp.x + bp.width;
+      const options: Array<{ label: string; action: () => void }> = [];
+
+      if (isPack) {
+        if (it instanceof Container) {
+          options.push({
+            label: 'Open',
+            action: () => this.pushContainer(it, 'backpack', it.displayName),
+          });
+        } else if (it instanceof PotionItem) {
+          options.push({
+            label: 'Drink',
+            action: () => {
+              this.commandBus.dispatch({ type: 'drink_potion', payload: { itemId: it.id } });
+              this.inspector.clearSelection();
+            },
+          });
+        } else if (it instanceof ScrollItem) {
+          options.push({
+            label: 'Read',
+            action: () => {
+              this.commandBus.dispatch({ type: 'read_scroll', payload: { itemId: it.id } });
+              this.inspector.clearSelection();
+            },
+          });
+        } else if (it instanceof WandItem) {
+          options.push({
+            label: 'Zap',
+            action: () => {
+              this.commandBus.dispatch({ type: 'zap_wand', payload: { itemId: it.id } });
+              this.inspector.clearSelection();
+            },
+          });
+        } else {
+          // Equippable check
+          if (eng) {
+            const doll = eng.player.inventory.paperdoll;
+            const isEquippable = doll.getSlotDefinitions().some(
+              (def) => def.acceptedCategories.includes(it.category) || (it.slot && def.id === it.slot)
+            );
+            if (isEquippable) {
+              options.push({
+                label: 'Equip',
+                action: () => {
+                  this.commandBus.dispatch({ type: 'equip_item', payload: { itemId: it.id } });
+                  this.inspector.clearSelection();
+                },
+              });
+            }
+          }
         }
+
+        if (it.quantity > 1) {
+          options.push({
+            label: 'Split Stack...',
+            action: () => this.openSplitDialog(it),
+          });
+        }
+
+        if (eng?.companion) {
+          options.push({
+            label: 'Give to Companion',
+            action: () => {
+              this.commandBus.dispatch({ type: 'transfer_to_companion', payload: { itemId: it.id } });
+              this.inspector.clearSelection();
+            },
+          });
+        }
+
+        if (this.activeContainer) {
+          options.push({
+            label: 'Store in Container',
+            action: () => {
+              this.commandBus.dispatch({ type: 'store_container', payload: { container: this.activeContainer!, item: it } });
+              this.inspector.clearSelection();
+            },
+          });
+        }
+
+        options.push({
+          label: 'Drop',
+          action: () => {
+            this.commandBus.dispatch({ type: 'drop_item', payload: { item: it, source: 'pack' } });
+            this.inspector.clearSelection();
+          },
+        });
+
+        options.push({
+          label: 'Inspect',
+          action: () => {
+            this.inspector.setFocus('backpack');
+            this.inspector.select(it, 'backpack');
+          },
+        });
+
+        this.contextMenu = {
+          isOpen: true,
+          x: mouseX,
+          y: mouseY,
+          item: it,
+          source: 'backpack',
+          options,
+        };
+        if (this.onStateChanged) this.onStateChanged();
         return true;
+      } else {
+        // Column 3
+        if (this.column3View === 'companion') {
+          options.push({
+            label: 'Take from Companion',
+            action: () => {
+              this.commandBus.dispatch({ type: 'transfer_from_companion', payload: { itemId: it.id } });
+              this.inspector.clearSelection();
+            },
+          });
+          options.push({
+            label: 'Inspect',
+            action: () => {
+              this.inspector.select(it, 'ground');
+            },
+          });
+          this.contextMenu = {
+            isOpen: true,
+            x: mouseX,
+            y: mouseY,
+            item: it,
+            source: 'companion',
+            options,
+          };
+          if (this.onStateChanged) this.onStateChanged();
+          return true;
+        } else if (this.activeContainer) {
+          if (it instanceof Container) {
+            options.push({
+              label: 'Open',
+              action: () => this.pushContainer(it, 'ground', it.displayName),
+            });
+          }
+          options.push({
+            label: 'Take',
+            action: () => {
+              this.commandBus.dispatch({ type: 'loot_container', payload: { container: this.activeContainer!, item: it } });
+              this.inspector.clearSelection();
+            },
+          });
+          options.push({
+            label: 'Inspect',
+            action: () => {
+              this.inspector.setFocus('ground');
+              this.inspector.select(it, 'container', undefined, this.activeContainer!);
+            },
+          });
+          this.contextMenu = {
+            isOpen: true,
+            x: mouseX,
+            y: mouseY,
+            item: it,
+            source: 'container',
+            options,
+          };
+          if (this.onStateChanged) this.onStateChanged();
+          return true;
+        } else {
+          // Ground
+          if (it instanceof Container) {
+            options.push({
+              label: 'Open',
+              action: () => this.pushContainer(it, 'ground', it.displayName),
+            });
+          }
+          options.push({
+            label: 'Pick Up',
+            action: () => {
+              this.commandBus.dispatch({ type: 'pickup_item', payload: { itemId: it.id } });
+              this.inspector.clearSelection();
+            },
+          });
+          options.push({
+            label: 'Inspect',
+            action: () => {
+              this.inspector.setFocus('ground');
+              this.inspector.select(it, 'ground');
+            },
+          });
+          this.contextMenu = {
+            isOpen: true,
+            x: mouseX,
+            y: mouseY,
+            item: it,
+            source: 'ground',
+            options,
+          };
+          if (this.onStateChanged) this.onStateChanged();
+          return true;
+        }
       }
     }
 
@@ -435,6 +893,42 @@ export class InventoryOverlay implements UIModal {
     const player = engine.player;
     const inv = player.inventory;
     const doll = inv.paperdoll;
+
+    // Handle Split Stack dialog
+    if (this.splitDialog?.isOpen) {
+      if (code === 'Escape') {
+        this.closeSplitDialog();
+        return true;
+      }
+      if (code === 'ArrowLeft' || code === 'ArrowDown') {
+        this.splitDialog.splitAmount = Math.max(1, this.splitDialog.splitAmount - 1);
+        if (this.onStateChanged) this.onStateChanged();
+        return true;
+      }
+      if (code === 'ArrowRight' || code === 'ArrowUp') {
+        this.splitDialog.splitAmount = Math.min(this.splitDialog.maxQuantity - 1, this.splitDialog.splitAmount + 1);
+        if (this.onStateChanged) this.onStateChanged();
+        return true;
+      }
+      if (code === 'Enter') {
+        this.commandBus.dispatch({
+          type: 'split_stack',
+          payload: { item: this.splitDialog.item, amount: this.splitDialog.splitAmount },
+        });
+        this.closeSplitDialog();
+        return true;
+      }
+      return true;
+    }
+
+    // Handle Context Menu dismissal
+    if (this.contextMenu?.isOpen) {
+      if (code === 'Escape') {
+        this.contextMenu = null;
+        if (this.onStateChanged) this.onStateChanged();
+        return true;
+      }
+    }
 
     // 1. Close overlay or sub-views. The companion browser is a sub-view, so Escape backs out of it first.
     if (code === 'Escape' && this.companionViewOpen) {
@@ -810,10 +1304,10 @@ export class InventoryOverlay implements UIModal {
       return true;
     }
 
-    // 11. KeyO: Cycle sort pack items (category -> weight -> bulk)
+    // 11. KeyO: Cycle sort pack items (category -> value -> tier -> weight -> bulk -> name)
     if (code === 'KeyO') {
-      this.sortModeIndex = (this.sortModeIndex + 1) % 3;
-      const modes: Array<'category' | 'weight' | 'bulk'> = ['category', 'weight', 'bulk'];
+      const modes: ContainerSortMode[] = ['category', 'value', 'tier', 'weight', 'bulk', 'name'];
+      this.sortModeIndex = (this.sortModeIndex + 1) % modes.length;
       const selected = modes[this.sortModeIndex];
       this.commandBus.dispatch({ type: 'sort_pack', payload: { mode: selected } });
       if (this.onStateChanged) this.onStateChanged();
@@ -918,7 +1412,6 @@ export class InventoryOverlay implements UIModal {
       const cellY = y + gap + row * (cellSize + gap);
 
       const isCursed = it.isCursed() && it.identified;
-      const isEnchanted = it.identified && it.quality === 'enchanted';
       const isContainer = it instanceof Container;
       const selected = group.items.some((item) => opts.isSelected(item, i));
       const focused = opts.isFocused(it, i);
@@ -963,7 +1456,7 @@ export class InventoryOverlay implements UIModal {
       // Name, truncated to the cell's width rather than a fixed character count
       // — still short, but the tooltip (see render()) carries the full name.
       ctx.font = `9px ${font}`;
-      ctx.fillStyle = coinColor ? coinColor : isCursed ? '#ef4444' : isEnchanted ? '#c084fc' : theme.hudText;
+      ctx.fillStyle = getItemThematicColor(it, theme);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'alphabetic';
       const label = truncate(group.displayName, cellSize - 4);
@@ -1186,6 +1679,22 @@ export class InventoryOverlay implements UIModal {
     const contentH = statsY - contentY - 8;
 
     // ─── COLUMN 1: ANATOMICAL CHARACTER PAPERDOLL ───
+    const activeCandidate = this.dragData?.item ?? this.hoveredGroup?.item ?? this.inspector.selectedItem;
+    let highlightedSlots: string[] | undefined = undefined;
+    if (activeCandidate) {
+      const matching: string[] = [];
+      for (const slotDef of doll.getSlotDefinitions()) {
+        if (slotDef.acceptedCategories.includes(activeCandidate.category) || (activeCandidate.slot && slotDef.id === activeCandidate.slot)) {
+          matching.push(slotDef.id);
+        }
+      }
+      if (matching.length > 0) {
+        highlightedSlots = matching;
+      }
+    }
+
+    this.paperdollSlotZones = [];
+    this.panelBounds['paperdoll'] = { x: col1X, y: contentY, width: col1W, height: contentH };
     this.paperdollView.render(
       ctx,
       doll,
@@ -1199,6 +1708,7 @@ export class InventoryOverlay implements UIModal {
         hoveredSlot: this.hoveredSlot,
         focused: this.inspector.focusedPanel === 'paperdoll',
         focusedSlotIndex: this.inspector.focusedIndex,
+        highlightedSlots,
         onSlotClick: (slotId, item) => {
           this.inspector.setFocus('paperdoll');
           if (item) {
@@ -1208,20 +1718,10 @@ export class InventoryOverlay implements UIModal {
           }
         },
         registerClickZone: (zx, zy, zw, zh, action, slotId, item) => {
+          this.paperdollSlotZones.push({ x: zx, y: zy, width: zw, height: zh, slotId, item: item ?? null });
           this.clickZones.push({ x: zx, y: zy, width: zw, height: zh, action });
-          // Right-click or double-click immediately unequips
           if (item) {
             this.doubleClickZones.push({
-              x: zx,
-              y: zy,
-              width: zw,
-              height: zh,
-              action: () => {
-                this.commandBus.dispatch({ type: 'unequip_item', payload: { slot: slotId as EquipmentSlot } });
-                this.inspector.clearSelection();
-              },
-            });
-            this.rightClickZones.push({
               x: zx,
               y: zy,
               width: zw,
@@ -1259,39 +1759,41 @@ export class InventoryOverlay implements UIModal {
     ctx.textBaseline = 'middle';
     ctx.fillText('BACKPACK', col2X + 8, contentY + 12);
 
-    // Sort buttons inside header: [Sort] [Coins]
-    const sortBtnW = 34;
-    const sortBtnX = col2X + col2W - sortBtnW * 2 - 8;
+    // Sort buttons inside header: [Sort (mode)] [Coins]
+    const sortBtnW = 46;
+    const coinBtnW = 34;
+    const sortBtnX = col2X + col2W - sortBtnW - coinBtnW - 8;
     const sortBtnY = contentY + 4;
     const sortBtnH = 16;
+    const sortModes: ContainerSortMode[] = ['category', 'value', 'tier', 'weight', 'bulk', 'name'];
 
     ctx.fillStyle = theme.cardBorder;
     ctx.fillRect(sortBtnX, sortBtnY, sortBtnW, sortBtnH);
-    ctx.font = `bold 9px ${font}`;
+    ctx.font = `bold 8px ${font}`;
     ctx.fillStyle = theme.hudAccent;
     ctx.textAlign = 'center';
-    ctx.fillText('Sort', sortBtnX + sortBtnW / 2, sortBtnY + 8);
+    const curModeShort = sortModes[this.sortModeIndex % sortModes.length].slice(0, 3);
+    ctx.fillText(`Sort (${curModeShort})`, sortBtnX + sortBtnW / 2, sortBtnY + 8);
     this.clickZones.push({
       x: sortBtnX,
       y: sortBtnY,
       width: sortBtnW,
       height: sortBtnH,
       action: () => {
-        this.sortModeIndex = (this.sortModeIndex + 1) % 3;
-        const modes: Array<'category' | 'weight' | 'bulk'> = ['category', 'weight', 'bulk'];
-        const selected = modes[this.sortModeIndex];
+        this.sortModeIndex = (this.sortModeIndex + 1) % sortModes.length;
+        const selected = sortModes[this.sortModeIndex];
         this.commandBus.dispatch({ type: 'sort_pack', payload: { mode: selected } });
       },
     });
 
     const coinBtnX = sortBtnX + sortBtnW + 4;
     ctx.fillStyle = theme.cardBorder;
-    ctx.fillRect(coinBtnX, sortBtnY, sortBtnW, sortBtnH);
-    ctx.fillText('Coins', coinBtnX + sortBtnW / 2, sortBtnY + 8);
+    ctx.fillRect(coinBtnX, sortBtnY, coinBtnW, sortBtnH);
+    ctx.fillText('Coins', coinBtnX + coinBtnW / 2, sortBtnY + 8);
     this.clickZones.push({
       x: coinBtnX,
       y: sortBtnY,
-      width: sortBtnW,
+      width: coinBtnW,
       height: sortBtnH,
       action: () => {
         const res = inv.consolidateCoins();
@@ -1303,11 +1805,73 @@ export class InventoryOverlay implements UIModal {
       },
     });
 
+    // Category Filter Pills: [All] [Gear] [Cons] [Magic] [Val]
+    const filterY = contentY + 26;
+    const filterH = 15;
+    const filterDefs: Array<{ id: 'all' | 'gear' | 'consumable' | 'magic' | 'valuable'; label: string }> = [
+      { id: 'all', label: 'All' },
+      { id: 'gear', label: 'Gear' },
+      { id: 'consumable', label: 'Cons' },
+      { id: 'magic', label: 'Magic' },
+      { id: 'valuable', label: 'Val' },
+    ];
+    const pillGap = 2;
+    const pillW = Math.floor((col2W - 8 - (filterDefs.length - 1) * pillGap) / filterDefs.length);
+
+    filterDefs.forEach((f, idx) => {
+      const px = col2X + 4 + idx * (pillW + pillGap);
+      const isActive = this.backpackFilter === f.id;
+      ctx.fillStyle = isActive ? 'rgba(56, 189, 248, 0.25)' : theme.cardBg;
+      ctx.fillRect(px, filterY, pillW, filterH);
+      ctx.strokeStyle = isActive ? '#38bdf8' : theme.cardBorder;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(px + 0.5, filterY + 0.5, pillW - 1, filterH - 1);
+
+      ctx.font = `${isActive ? 'bold' : 'normal'} 8px ${font}`;
+      ctx.fillStyle = isActive ? theme.hudAccent : theme.textMuted;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(f.label, px + pillW / 2, filterY + filterH / 2);
+
+      this.clickZones.push({
+        x: px,
+        y: filterY,
+        width: pillW,
+        height: filterH,
+        action: () => {
+          this.backpackFilter = f.id;
+        },
+      });
+    });
+
     this.panelBounds['backpack'] = { x: col2X, y: contentY, width: col2W, height: contentH };
     this.panelBounds['ground'] = { x: col3X, y: contentY, width: col3W, height: contentH };
 
     // Backpack item grid
     const packItems = inv.primaryPack.getItems();
+    const filteredPackItems = packItems.filter((item) => {
+      if (this.backpackFilter === 'gear') {
+        if (!['weapon', 'shield', 'armor', 'helmet', 'boots', 'ring', 'amulet'].includes(item.category)) return false;
+      } else if (this.backpackFilter === 'consumable') {
+        const isCons = ['consumable', 'potion', 'scroll', 'wand'].includes(item.category) ||
+          item instanceof PotionItem || item instanceof ScrollItem || item instanceof WandItem;
+        if (!isCons) return false;
+      } else if (this.backpackFilter === 'magic') {
+        const isMagic = item instanceof ScrollItem || item instanceof WandItem || item instanceof RuneOfReturnItem ||
+          item.quality === 'enchanted' || item.quality === 'artifact' || (item.enchantmentLevel ?? 0) > 0;
+        if (!isMagic) return false;
+      } else if (this.backpackFilter === 'valuable') {
+        const isVal = item.value >= 50 || item.quality === 'artifact' || item.id.includes('coin') || item.id.includes('gem') || item.id.includes('gold');
+        if (!isVal) return false;
+      }
+      if (this.backpackSearch.trim().length > 0) {
+        if (!item.displayName.toLowerCase().includes(this.backpackSearch.trim().toLowerCase())) {
+          return false;
+        }
+      }
+      return true;
+    });
+
     const activateBackpackItem = (capturedItem: Item) => {
       if (capturedItem instanceof Container) {
         this.pushContainer(capturedItem, 'backpack', capturedItem.displayName);
@@ -1325,10 +1889,10 @@ export class InventoryOverlay implements UIModal {
         this.inspector.clearSelection();
       }
     };
-    this.renderItemGrid(ctx, packItems, col2X, contentY + 28, col2W, contentH - 34, theme, font, {
+    this.renderItemGrid(ctx, filteredPackItems, col2X, contentY + 44, col2W, contentH - 50, theme, font, {
       panel: 'backpack',
-      emptyLabel: '(Backpack is empty)',
-      showIndexTag: true,
+      emptyLabel: packItems.length > 0 ? '(No matching items)' : '(Backpack is empty)',
+      showIndexTag: this.backpackFilter === 'all',
       isSelected: (it) => this.inspector.selectedSource === 'backpack' && this.inspector.selectedItem?.id === it.id,
       isFocused: (_it, i) => this.inspector.focusedPanel === 'backpack' && this.inspector.focusedIndex === i,
       isMultiSelected: (it) => this.inspector.isMultiSelected(it.id),
@@ -1397,37 +1961,144 @@ export class InventoryOverlay implements UIModal {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
 
-    if (activeContainer) {
-      let cTitle: string;
-      if (this.containerNavStack.length > 1) {
-        const prev = this.containerNavStack[this.containerNavStack.length - 2];
-        const pTitle = prev.title.length > 7 ? prev.title.slice(0, 6) + '…' : prev.title;
-        const curTitle = activeContainer.displayName.length > 9 ? activeContainer.displayName.slice(0, 8) + '…' : activeContainer.displayName;
-        cTitle = `📦 ${pTitle} > ${curTitle}`;
-      } else {
-        const curTitle = activeContainer.displayName.length > 12 ? activeContainer.displayName.slice(0, 11) + '…' : activeContainer.displayName;
-        cTitle = `📦 ${curTitle}`;
-      }
-      ctx.fillText(cTitle, col3X + 6, contentY + 12);
+    const hasCompanion = !!engine.companion;
+    if (hasCompanion) {
+      const tabW = 46;
+      const tabH = 16;
+      const tabY = contentY + 4;
+
+      // Ground Tab
+      const isGround = this.column3View === 'ground';
+      ctx.fillStyle = isGround ? theme.hudAccent : theme.cardBorder;
+      ctx.fillRect(col3X + 6, tabY, tabW, tabH);
+      ctx.font = `bold 8px ${font}`;
+      ctx.fillStyle = isGround ? theme.modalBg : theme.textMuted;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Ground', col3X + 6 + tabW / 2, tabY + tabH / 2);
+      this.clickZones.push({
+        x: col3X + 6,
+        y: tabY,
+        width: tabW,
+        height: tabH,
+        action: () => {
+          this.column3View = 'ground';
+        },
+      });
+
+      // Companion Tab
+      const compX = col3X + 6 + tabW + 3;
+      const isComp = this.column3View === 'companion';
+      ctx.fillStyle = isComp ? theme.hudAccent : theme.cardBorder;
+      ctx.fillRect(compX, tabY, tabW, tabH);
+      ctx.fillStyle = isComp ? theme.modalBg : theme.textMuted;
+      ctx.fillText('Companion', compX + tabW / 2, tabY + tabH / 2);
+      this.clickZones.push({
+        x: compX,
+        y: tabY,
+        width: tabW,
+        height: tabH,
+        action: () => {
+          this.column3View = 'companion';
+        },
+      });
+    }
+
+    if (this.column3View === 'companion' && engine.companion) {
+      const companion = engine.companion;
+      // Take All button on right of header
+      const takeAllBtnW = 54;
+      const takeAllBtnX = col3X + col3W - takeAllBtnW - 8;
+      ctx.fillStyle = '#15803d';
+      ctx.fillRect(takeAllBtnX, sortBtnY, takeAllBtnW, sortBtnH);
+      ctx.font = `bold 9px ${font}`;
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Take All', takeAllBtnX + takeAllBtnW / 2, sortBtnY + sortBtnH / 2);
+      this.clickZones.push({
+        x: takeAllBtnX,
+        y: sortBtnY,
+        width: takeAllBtnW,
+        height: sortBtnH,
+        action: () => {
+          for (const item of companion.inventory.primaryPack.getItems()) {
+            this.commandBus.dispatch({ type: 'transfer_from_companion', payload: { itemId: item.id } });
+          }
+          this.inspector.clearSelection();
+        },
+      });
+
+      const compItems = companion.inventory.primaryPack.getItems();
+      this.renderItemGrid(ctx, compItems, col3X, contentY + 28, col3W, contentH - 34, theme, font, {
+        panel: 'ground',
+        emptyLabel: '(Companion carrying nothing)',
+        isSelected: (it) => this.inspector.selectedSource === 'ground' && this.inspector.selectedItem?.id === it.id,
+        isFocused: (_it, i) => this.inspector.focusedPanel === 'ground' && this.inspector.focusedIndex === i,
+        onSelect: (it, i) => {
+          this.inspector.setFocus('ground', i);
+          this.inspector.select(it, 'ground');
+        },
+        onActivate: (it) => {
+          this.commandBus.dispatch({ type: 'transfer_from_companion', payload: { itemId: it.id } });
+          this.inspector.clearSelection();
+        },
+      });
+    } else if (activeContainer) {
+      // Interactive breadcrumbs
+      let curX = col3X + (hasCompanion ? 106 : 6);
+      ctx.font = `bold 9px ${font}`;
+      ctx.textBaseline = 'middle';
+
+      // Root crumb
+      ctx.fillStyle = theme.hudAccent;
+      const rootText = 'Root';
+      const rootW = ctx.measureText(rootText).width;
+      ctx.fillText(rootText, curX, contentY + 12);
+      this.clickZones.push({
+        x: curX,
+        y: contentY + 4,
+        width: rootW + 4,
+        height: 16,
+        action: () => {
+          this.popContainerTo(-1);
+        },
+      });
+      curX += rootW + 4;
+
+      this.containerNavStack.forEach((entry, idx) => {
+        ctx.fillStyle = theme.textMuted;
+        ctx.fillText('>', curX, contentY + 12);
+        curX += 8;
+
+        const isLast = idx === this.containerNavStack.length - 1;
+        const eTitle = entry.title.length > 7 ? entry.title.slice(0, 6) + '…' : entry.title;
+        const eW = ctx.measureText(eTitle).width;
+        ctx.fillStyle = isLast ? theme.hudText : theme.hudAccent;
+        ctx.fillText(eTitle, curX, contentY + 12);
+        if (!isLast) {
+          this.clickZones.push({
+            x: curX,
+            y: contentY + 4,
+            width: eW + 4,
+            height: 16,
+            action: () => {
+              this.popContainerTo(idx);
+            },
+          });
+        }
+        curX += eW + 4;
+      });
 
       // Back button
-      const backBtnW = 44;
+      const backBtnW = 40;
       const backBtnX = col3X + col3W - backBtnW * 2 - 8;
       ctx.fillStyle = theme.cardBorder;
       ctx.fillRect(backBtnX, sortBtnY, backBtnW, sortBtnH);
       ctx.font = `bold 8px ${font}`;
       ctx.fillStyle = theme.hudAccent;
       ctx.textAlign = 'center';
-      let backLabel = '◀ Back';
-      if (this.containerNavStack.length === 1) {
-        const src = this.containerNavStack[0].source;
-        backLabel = src === 'paperdoll' ? '◀ Doll' : src === 'backpack' ? '◀ Pack' : '◀ Grnd';
-      } else if (this.selectedPackContainer) {
-        backLabel = '◀ Pack';
-      } else if (this.selectedGroundContainer) {
-        backLabel = '◀ Grnd';
-      }
-      ctx.fillText(backLabel, backBtnX + backBtnW / 2, sortBtnY + 8);
+      ctx.fillText('◀ Back', backBtnX + backBtnW / 2, sortBtnY + 8);
       this.clickZones.push({
         x: backBtnX,
         y: sortBtnY,
@@ -1488,7 +2159,9 @@ export class InventoryOverlay implements UIModal {
       });
     } else {
       // Default: On the ground
-      ctx.fillText('ON GROUND', col3X + 8, contentY + 12);
+      if (!hasCompanion) {
+        ctx.fillText('ON GROUND', col3X + 8, contentY + 12);
+      }
 
       // Quick Loot All button
       const lootAllBtnW = 54;
@@ -1596,9 +2269,39 @@ export class InventoryOverlay implements UIModal {
     ctx.fillStyle = encColor;
     ctx.fillRect(col1X, statsY + 44, Math.floor(barW * weightRatio), barH);
 
+    // Encumbrance threshold markers (75%, 90%, 100%)
+    const notches = [
+      { pct: 0.75, label: '75%', color: '#f59e0b' },
+      { pct: 0.90, label: '90%', color: '#f97316' },
+      { pct: 1.00, label: 'Max', color: '#ef4444' },
+    ];
+    for (const n of notches) {
+      const nx = col1X + Math.floor(barW * n.pct);
+      ctx.fillStyle = n.color;
+      ctx.fillRect(nx - 0.5, statsY + 42, 1.5, barH + 4);
+      ctx.font = `8px ${font}`;
+      ctx.fillStyle = theme.textMuted;
+      ctx.textAlign = 'center';
+      ctx.fillText(n.label, nx, statsY + 56);
+    }
+
     // Bulk Capacity
     ctx.fillStyle = theme.textMuted;
-    ctx.fillText(`PACK VOLUME: ${packBulk} / ${maxBulk} cm³`, col1X, statsY + 64);
+    ctx.textAlign = 'left';
+    ctx.fillText(`PACK VOLUME: ${packBulk} / ${maxBulk} cm³`, col1X, statsY + 68);
+
+    const bulkBarY = statsY + 76;
+    const bulkRatio = Math.min(1.0, maxBulk > 0 ? packBulk / maxBulk : 0);
+    ctx.fillStyle = theme.cardBg;
+    ctx.fillRect(col1X, bulkBarY, barW, barH);
+    ctx.fillStyle = theme.hudAccent;
+    ctx.fillRect(col1X, bulkBarY, Math.floor(barW * bulkRatio), barH);
+
+    for (const n of notches) {
+      const nx = col1X + Math.floor(barW * n.pct);
+      ctx.fillStyle = n.color;
+      ctx.fillRect(nx - 0.5, bulkBarY - 2, 1.5, barH + 4);
+    }
 
     // Controls footer
     ctx.font = `10px ${font}`;
@@ -1607,16 +2310,188 @@ export class InventoryOverlay implements UIModal {
     ctx.fillText(
       'KEYBOARD: [Tab] Cycle Panels | [↑↓] Navigate | [Enter] Select/Act | [E] Equip/Unequip | [U] Use | [D] Drop | [T] Take | [C] Coins | [O] Sort | [I/ESC] Close',
       col1X,
-      statsY + 84
+      statsY + 96
     );
 
     if (this.companionViewOpen) {
       this.renderCompanionPack(ctx, engine, modalX, modalY, modalW, modalH, font);
     }
 
-    // Grid cells only have room for a short truncated label (renderItemGrid
-    // above) — this is where the full name actually lives for a quick glance
-    // without clicking. Drawn last so it always sits on top.
+    // Split Stack Dialog
+    if (this.splitDialog?.isOpen) {
+      const sd = this.splitDialog;
+      const diagW = 220;
+      const diagH = 120;
+      const dx = Math.floor((canvasW - diagW) / 2);
+      const dy = Math.floor((canvasH - diagH) / 2);
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.fillRect(0, 0, canvasW, canvasH);
+
+      ctx.fillStyle = theme.modalBg;
+      ctx.fillRect(dx, dy, diagW, diagH);
+      ctx.strokeStyle = theme.hudAccent;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(dx + 0.5, dy + 0.5, diagW - 1, diagH - 1);
+
+      ctx.font = `bold 11px ${font}`;
+      ctx.fillStyle = theme.hudAccent;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`SPLIT STACK (${sd.maxQuantity}x)`, dx + diagW / 2, dy + 18);
+
+      const btnSize = 22;
+      const minusX = dx + 35;
+      const plusX = dx + diagW - 35 - btnSize;
+      const stepY = dy + 42;
+
+      ctx.fillStyle = theme.cardBg;
+      ctx.fillRect(minusX, stepY, btnSize, btnSize);
+      ctx.strokeStyle = theme.cardBorder;
+      ctx.strokeRect(minusX + 0.5, stepY + 0.5, btnSize - 1, btnSize - 1);
+      ctx.font = `bold 14px ${font}`;
+      ctx.fillStyle = sd.splitAmount > 1 ? theme.hudText : theme.textMuted;
+      ctx.fillText('-', minusX + btnSize / 2, stepY + btnSize / 2);
+      this.clickZones.push({
+        x: minusX,
+        y: stepY,
+        width: btnSize,
+        height: btnSize,
+        action: () => {
+          sd.splitAmount = Math.max(1, sd.splitAmount - 1);
+        },
+      });
+
+      ctx.font = `bold 16px ${font}`;
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText(`${sd.splitAmount}`, dx + diagW / 2, stepY + btnSize / 2);
+
+      ctx.fillStyle = theme.cardBg;
+      ctx.fillRect(plusX, stepY, btnSize, btnSize);
+      ctx.strokeStyle = theme.cardBorder;
+      ctx.strokeRect(plusX + 0.5, stepY + 0.5, btnSize - 1, btnSize - 1);
+      ctx.font = `bold 14px ${font}`;
+      ctx.fillStyle = sd.splitAmount < sd.maxQuantity - 1 ? theme.hudText : theme.textMuted;
+      ctx.fillText('+', plusX + btnSize / 2, stepY + btnSize / 2);
+      this.clickZones.push({
+        x: plusX,
+        y: stepY,
+        width: btnSize,
+        height: btnSize,
+        action: () => {
+          sd.splitAmount = Math.min(sd.maxQuantity - 1, sd.splitAmount + 1);
+        },
+      });
+
+      const btnW = 60;
+      const btnH = 22;
+      const actionY = dy + 82;
+      const splitBtnX = dx + 35;
+      const cancelBtnX = dx + diagW - 35 - btnW;
+
+      ctx.fillStyle = '#15803d';
+      ctx.fillRect(splitBtnX, actionY, btnW, btnH);
+      ctx.font = `bold 10px ${font}`;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('Split', splitBtnX + btnW / 2, actionY + btnH / 2);
+      this.clickZones.push({
+        x: splitBtnX,
+        y: actionY,
+        width: btnW,
+        height: btnH,
+        action: () => {
+          this.commandBus.dispatch({
+            type: 'split_stack',
+            payload: { item: sd.item, amount: sd.splitAmount },
+          });
+          this.closeSplitDialog();
+        },
+      });
+
+      ctx.fillStyle = theme.cardBorder;
+      ctx.fillRect(cancelBtnX, actionY, btnW, btnH);
+      ctx.fillStyle = theme.hudText;
+      ctx.fillText('Cancel', cancelBtnX + btnW / 2, actionY + btnH / 2);
+      this.clickZones.push({
+        x: cancelBtnX,
+        y: actionY,
+        width: btnW,
+        height: btnH,
+        action: () => {
+          this.closeSplitDialog();
+        },
+      });
+    }
+
+    // Context Menu
+    if (this.contextMenu?.isOpen) {
+      const cm = this.contextMenu;
+      const menuW = 140;
+      const itemH = 20;
+      const menuH = cm.options.length * itemH + 8;
+      let mx = cm.x;
+      let my = cm.y;
+      if (mx + menuW > canvasW) mx = canvasW - menuW - 10;
+      if (my + menuH > canvasH) my = canvasH - menuH - 10;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.96)';
+      ctx.fillRect(mx, my, menuW, menuH);
+      ctx.strokeStyle = theme.hudAccent;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(mx + 0.5, my + 0.5, menuW - 1, menuH - 1);
+
+      cm.options.forEach((opt, idx) => {
+        const oy = my + 4 + idx * itemH;
+        const isHovered = this.lastMouseX >= mx && this.lastMouseX <= mx + menuW &&
+                          this.lastMouseY >= oy && this.lastMouseY <= oy + itemH;
+        if (isHovered) {
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
+          ctx.fillRect(mx + 2, oy, menuW - 4, itemH);
+        }
+        ctx.font = `10px ${font}`;
+        ctx.fillStyle = isHovered ? '#38bdf8' : theme.hudText;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(opt.label, mx + 8, oy + itemH / 2);
+
+        this.clickZones.push({
+          x: mx,
+          y: oy,
+          width: menuW,
+          height: itemH,
+          action: () => {
+            opt.action();
+            this.contextMenu = null;
+          },
+        });
+      });
+    }
+
+    // Drag Ghost
+    if (this.dragData?.isDragging) {
+      const it = this.dragData.item;
+      const ghostSize = 36;
+      const gx = this.lastMouseX - ghostSize / 2;
+      const gy = this.lastMouseY - ghostSize / 2;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(gx, gy, ghostSize, ghostSize);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(gx + 0.5, gy + 0.5, ghostSize - 1, ghostSize - 1);
+
+      if (this.atlas) {
+        const spriteKey = getItemSpriteKey(it, (k) => this.atlas?.hasSprite(k) ?? false);
+        this.atlas.drawSprite(ctx, spriteKey, gx + 2, gy + 2, ghostSize - 4);
+      }
+
+      ctx.font = `bold 9px ${font}`;
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.fillText(it.name.slice(0, 10), gx + ghostSize / 2, gy + ghostSize + 10);
+    }
+
+    // Grid cells hover tooltip (rich or compact based on settings)
     this.renderHoverTooltip(ctx, canvasW, canvasH, font);
   }
 
@@ -1625,29 +2500,99 @@ export class InventoryOverlay implements UIModal {
     const theme = this.theme;
     const { item, displayName, totalWeight, coinColor } = this.hoveredGroup;
 
-    ctx.font = `bold 11px ${font}`;
-    const text = `${displayName} (${totalWeight}g)`;
-    const textWidth = ctx.measureText(text).width;
-    const boxW = textWidth + 16;
-    const boxH = 22;
+    const useRich = this.richHoverCardsEnabled;
+    if (!useRich) {
+      ctx.font = `bold 11px ${font}`;
+      const text = `${displayName} (${totalWeight}g)`;
+      const textWidth = ctx.measureText(text).width;
+      const boxW = textWidth + 16;
+      const boxH = 22;
+
+      let boxX = this.lastMouseX + 14;
+      let boxY = this.lastMouseY + 14;
+      if (boxX + boxW > canvasW) boxX = this.lastMouseX - boxW - 14;
+      if (boxY + boxH > canvasH) boxY = this.lastMouseY - boxH - 14;
+
+      ctx.fillStyle = theme.modalBg;
+      ctx.fillRect(boxX, boxY, boxW, boxH);
+      ctx.strokeStyle = coinColor ?? theme.hudAccent;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(boxX + 0.5, boxY + 0.5, boxW - 1, boxH - 1);
+
+      ctx.fillStyle = getItemThematicColor(item, theme);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, boxX + 8, boxY + boxH / 2);
+      return;
+    }
+
+    // Rich Hover Card
+    const titleColor = getItemThematicColor(item, theme);
+    const boxW = 210;
+    const lines: Array<{ text: string; color: string; font: string }> = [];
+
+    // Line 1: Title
+    lines.push({ text: displayName, color: titleColor, font: `bold 11px ${font}` });
+
+    // Line 2: Category / Unidentified / Quality
+    if (!item.identified) {
+      lines.push({ text: 'Unidentified Item', color: theme.textMuted, font: `italic 9px ${font}` });
+    } else {
+      const qual = item.quality !== 'normal' ? `[${item.quality.toUpperCase()}] ` : '';
+      const cat = item.category.toUpperCase();
+      lines.push({ text: `${qual}${cat}`, color: theme.hudAccent, font: `9px ${font}` });
+
+      // Stats
+      const statParts: string[] = [];
+      if (item.stats.attackBonus) statParts.push(`ATK ${item.stats.attackBonus > 0 ? '+' : ''}${item.stats.attackBonus}`);
+      if (item.stats.defenseBonus) statParts.push(`DEF ${item.stats.defenseBonus > 0 ? '+' : ''}${item.stats.defenseBonus}`);
+      if (item.stats.speedBonus) statParts.push(`SPD ${item.stats.speedBonus > 0 ? '+' : ''}${item.stats.speedBonus}`);
+      if (item.stats.strengthBonus) statParts.push(`STR ${item.stats.strengthBonus > 0 ? '+' : ''}${item.stats.strengthBonus}`);
+      if (statParts.length > 0) {
+        lines.push({ text: statParts.join('  '), color: '#38bdf8', font: `bold 9px ${font}` });
+      }
+
+      // VS Equipped comparison diff
+      if (this.engine) {
+        const comp = this.inspector.getEquipmentComparison(item, this.engine.player);
+        if (comp) {
+          const diffParts: string[] = [];
+          if (comp.attackDelta !== 0) diffParts.push(`${comp.attackDelta > 0 ? '+' : ''}${comp.attackDelta} ATK`);
+          if (comp.defenseDelta !== 0) diffParts.push(`${comp.defenseDelta > 0 ? '+' : ''}${comp.defenseDelta} DEF`);
+          if (comp.speedDelta !== 0) diffParts.push(`${comp.speedDelta > 0 ? '+' : ''}${comp.speedDelta} SPD`);
+          if (comp.strengthDelta !== 0) diffParts.push(`${comp.strengthDelta > 0 ? '+' : ''}${comp.strengthDelta} STR`);
+          if (diffParts.length > 0) {
+            lines.push({ text: `vs ${comp.slotName}: ${diffParts.join(', ')}`, color: '#a3e635', font: `9px ${font}` });
+          }
+        }
+      }
+    }
+
+    // Weight and Value
+    const valText = item.identified ? `  |  Value: ${item.value * item.quantity}g` : '';
+    lines.push({ text: `Weight: ${totalWeight}g${valText}`, color: theme.textMuted, font: `9px ${font}` });
+
+    const lineH = 14;
+    const boxH = lines.length * lineH + 12;
 
     let boxX = this.lastMouseX + 14;
     let boxY = this.lastMouseY + 14;
     if (boxX + boxW > canvasW) boxX = this.lastMouseX - boxW - 14;
     if (boxY + boxH > canvasH) boxY = this.lastMouseY - boxH - 14;
 
-    ctx.fillStyle = theme.modalBg;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
     ctx.fillRect(boxX, boxY, boxW, boxH);
-    ctx.strokeStyle = coinColor ?? theme.hudAccent;
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = coinColor ?? (item.identified ? titleColor : theme.cardBorder);
+    ctx.lineWidth = 1.5;
     ctx.strokeRect(boxX + 0.5, boxY + 0.5, boxW - 1, boxH - 1);
 
-    const isCursed = item.isCursed() && item.identified;
-    const isEnchanted = item.identified && item.quality === 'enchanted';
-    ctx.fillStyle = coinColor ? coinColor : isCursed ? '#ef4444' : isEnchanted ? '#c084fc' : theme.hudText;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, boxX + 8, boxY + boxH / 2);
+    lines.forEach((l, idx) => {
+      ctx.font = l.font;
+      ctx.fillStyle = l.color;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(l.text, boxX + 8, boxY + 8 + idx * lineH + lineH / 2);
+    });
   }
 
   /**

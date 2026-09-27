@@ -205,7 +205,7 @@ describe('PaperdollView & 4-Column Stationary Layout', () => {
       expect(p.inventory.primaryPack.getItem('test-dagger')).toBeDefined();
     });
 
-    it('handles right click quick unequip on paperdoll slot and quick equip on backpack row', () => {
+    it('handles right click quick context menu on paperdoll slot with unequip option', () => {
       const overlay = new InventoryOverlay();
       overlay.open(engine);
       const p = engine.player;
@@ -219,13 +219,17 @@ describe('PaperdollView & 4-Column Stationary Layout', () => {
       });
       p.inventory.paperdoll.equip(robe, 'torso');
 
-      // Render to populate rightClickZones
+      // Render to populate paperdollSlotZones
       overlay.render(mockCtx, engine, 960, 600);
 
       // Torso slot anchor is at x: 93, y: 104 in Col 1 (Col 1 x is modalX + 12 = 32)
       // Content Y is 66 + 26 = 92. So torso is at x: 32 + 93 = 125, y: 92 + 104 = 196
       const handled = overlay.handleRightClick(135, 205, engine);
       expect(handled).toBe(true);
+      expect(overlay.contextMenu?.isOpen).toBe(true);
+      const unequipOption = overlay.contextMenu?.options.find((o) => o.label === 'Unequip');
+      expect(unequipOption).toBeDefined();
+      unequipOption?.action();
 
       // Item should be unequipped to pack
       expect(p.inventory.paperdoll.getItem('torso')).toBeNull();

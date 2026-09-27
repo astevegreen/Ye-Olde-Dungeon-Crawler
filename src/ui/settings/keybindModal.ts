@@ -223,6 +223,17 @@ export class KeybindModal implements UIModal {
                   What you can see darkens toward the edge of your sight, with warm light around your hero. Turn off for flat, even lighting.
                 </p>
               </div>
+
+              <!-- Inventory Rich Hover Cards -->
+              <div class="movement-mode-card" style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 10px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: bold; color: #0f172a;">
+                  <input type="checkbox" id="chk-inventory-hover-cards" style="width: 15px; height: 15px; cursor: pointer;" />
+                  <span>Rich Inventory Hover Cards</span>
+                </label>
+                <p style="font-size: 11px; color: #475569; margin-top: 4px; line-height: 1.4;">
+                  Displays rich stat cards, alignment colors, and lore when hovering items in your inventory. Turn off for compact single-line name tooltips.
+                </p>
+              </div>
             </div>
           </fieldset>
 
@@ -305,6 +316,11 @@ export class KeybindModal implements UIModal {
       this.settingsManager.updateSettings({ torchlightEnabled: torchChk.checked });
     });
 
+    const hoverCardsChk = modal.querySelector('#chk-inventory-hover-cards') as HTMLInputElement | null;
+    hoverCardsChk?.addEventListener('change', () => {
+      this.settingsManager.updateSettings({ inventoryRichHoverCards: hoverCardsChk.checked });
+    });
+
     // Mouse Vectoring Checkbox
     const mouseChk = modal.querySelector('#chk-mouse-vectoring') as HTMLInputElement | null;
     mouseChk?.addEventListener('change', () => {
@@ -362,6 +378,8 @@ export class KeybindModal implements UIModal {
     if (mouseChk) mouseChk.checked = settings.mouseVectoringEnabled;
     const torchChk = this.modalEl.querySelector('#chk-torchlight') as HTMLInputElement | null;
     if (torchChk) torchChk.checked = settings.torchlightEnabled;
+    const hoverCardsChk = this.modalEl.querySelector('#chk-inventory-hover-cards') as HTMLInputElement | null;
+    if (hoverCardsChk) hoverCardsChk.checked = settings.inventoryRichHoverCards;
 
     const standardBadge = this.modalEl.querySelector('#badge-standard-mode');
     if (standardBadge) {

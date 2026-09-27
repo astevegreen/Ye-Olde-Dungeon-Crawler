@@ -8,6 +8,7 @@ import type { ThemeTokens } from '../engine';
 export interface PaperdollRenderOptions {
   selectedSlot?: string | null;
   hoveredSlot?: string | null;
+  highlightedSlots?: string[];
   focused?: boolean;
   focusedSlotIndex?: number;
   registerClickZone?: (
@@ -130,12 +131,15 @@ export class PaperdollView {
       const isSelected = options.selectedSlot === def.id;
       const isHovered = options.hoveredSlot === def.id;
       const isFocused = options.focused && options.focusedSlotIndex === i;
+      const isHighlighted = options.highlightedSlots?.includes(def.id);
 
       // Slot background
       ctx.fillStyle = isSelected
         ? 'rgba(56, 189, 248, 0.25)'
         : isHovered
         ? 'rgba(56, 189, 248, 0.15)'
+        : isHighlighted
+        ? 'rgba(56, 189, 248, 0.2)'
         : theme.modalBg;
       ctx.fillRect(slotX, slotY, slotW, slotH);
 
@@ -144,6 +148,9 @@ export class PaperdollView {
       let borderWidth = 1;
       if (isSelected || isFocused) {
         borderColor = theme.hudAccent;
+        borderWidth = 2;
+      } else if (isHighlighted) {
+        borderColor = '#38bdf8';
         borderWidth = 2;
       } else if (isHovered) {
         borderColor = theme.accent;

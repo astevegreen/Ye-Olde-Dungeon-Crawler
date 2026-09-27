@@ -4,6 +4,7 @@ import type { Item, EquipmentSlot } from '../items/item';
 import type { VisualEffectDescriptor } from '../types';
 import { Container } from '../items/container';
 import { PotionItem, ScrollItem, WandItem } from '../items/consumables';
+import { splitItemStack } from '../items/stacking';
 import {
   EquipAction,
   UnequipAction,
@@ -198,6 +199,20 @@ export class EngineCommandBus implements GameCommandBus {
           new StoreInContainerAction(this.engine.player, container, item)
         );
         return { success: res.success, message: res.message };
+      }
+
+      case 'split_stack': {
+        const item = (p.item as Item) ?? this.resolveItem(p.itemId as string);
+        const amount = p.amount as number;
+        if (!item || !amount || amount <= 0 || amount >= (item.quantity ?? 1)) {
+          return { success: false, message: 'Invalid split amount' };
+        }
+        const splitItem = splitItemStack(item, amount, () => this.engine.rng());
+        const destContainer = (p.container as Container) ?? this.engine.player.inventory.primaryPack;
+        destContainer.addItem(splitItem, false);
+        const message = `Split ${amount} ${splitItem.displayName}.`;
+        this.engine.log(message);
+        return { success: true, message, data: { splitItem } };
       }
 
       // Companions & Pet Progression, Phase 2 (docs/architecture/content-companions.md): the

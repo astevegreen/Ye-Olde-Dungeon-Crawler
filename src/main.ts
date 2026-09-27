@@ -1303,12 +1303,14 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer.mouseVectoringEnabled = settingsManager.getSettings().mouseVectoringEnabled;
       renderer.torchlightEnabled = settingsManager.getSettings().torchlightEnabled;
       renderer.radialMenuOverlay.slots = settingsManager.getSettings().radialMenuSlots;
+      renderer.inventoryOverlay.richHoverCardsEnabled = settingsManager.getSettings().inventoryRichHoverCards;
       renderer.onResolveRadialLabel = resolveRadialMenuLabel;
       settingsManager.subscribe((settings) => {
         if (renderer) {
           renderer.mouseVectoringEnabled = settings.mouseVectoringEnabled;
           renderer.torchlightEnabled = settings.torchlightEnabled;
           renderer.radialMenuOverlay.slots = settings.radialMenuSlots;
+          renderer.inventoryOverlay.richHoverCardsEnabled = settings.inventoryRichHoverCards;
           renderer.render();
         }
       });

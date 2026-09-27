@@ -69,6 +69,8 @@ export class CanvasRenderer {
   private boundClickHandler?: (e: MouseEvent) => void;
   private boundDoubleClickHandler?: (e: MouseEvent) => void;
   private boundMouseMoveHandler?: (e: MouseEvent) => void;
+  private boundMouseDownHandler?: (e: MouseEvent) => void;
+  private boundMouseUpHandler?: (e: MouseEvent) => void;
   private boundContextMenuHandler?: (e: MouseEvent) => void;
   private boundMouseLeaveHandler?: () => void;
   private boundWheelHandler?: (e: WheelEvent) => void;
@@ -257,11 +259,31 @@ export class CanvasRenderer {
     };
     this.canvas.addEventListener('mouseleave', this.boundMouseLeaveHandler);
 
+    this.boundMouseDownHandler = (e: MouseEvent) => {
+      if (this.inventoryOverlay.isOpen && e.button === 0) {
+        const { x, y } = this.viewport.clientToVirtual(e.clientX, e.clientY);
+        this.inventoryOverlay.handleMouseDown(x, y);
+      }
+    };
+    this.canvas.addEventListener('mousedown', this.boundMouseDownHandler);
+
+    this.boundMouseUpHandler = (e: MouseEvent) => {
+      if (this.inventoryOverlay.isOpen && e.button === 0) {
+        const { x, y } = this.viewport.clientToVirtual(e.clientX, e.clientY);
+        if (this.inventoryOverlay.handleMouseUp(x, y)) {
+          this.render();
+        }
+      }
+    };
+    this.canvas.addEventListener('mouseup', this.boundMouseUpHandler);
+
     this.boundContextMenuHandler = (e: MouseEvent) => {
       if (this.inventoryOverlay.isOpen) {
         e.preventDefault();
         const { x: clickX, y: clickY } = this.viewport.clientToVirtual(e.clientX, e.clientY);
-        this.inventoryOverlay.handleRightClick(clickX, clickY, this.engine);
+        if (this.inventoryOverlay.handleRightClick(clickX, clickY, this.engine)) {
+          this.render();
+        }
       }
     };
     this.canvas.addEventListener('contextmenu', this.boundContextMenuHandler);
@@ -356,6 +378,12 @@ export class CanvasRenderer {
     }
     if (this.canvas && this.boundMouseMoveHandler) {
       this.canvas.removeEventListener('mousemove', this.boundMouseMoveHandler);
+    }
+    if (this.canvas && this.boundMouseDownHandler) {
+      this.canvas.removeEventListener('mousedown', this.boundMouseDownHandler);
+    }
+    if (this.canvas && this.boundMouseUpHandler) {
+      this.canvas.removeEventListener('mouseup', this.boundMouseUpHandler);
     }
     if (this.canvas && this.boundMouseLeaveHandler) {
       this.canvas.removeEventListener('mouseleave', this.boundMouseLeaveHandler);

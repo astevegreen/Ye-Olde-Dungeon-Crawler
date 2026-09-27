@@ -100,14 +100,22 @@ test('save & quit and choices take each key once, through one modal-stack entry'
     });
   const choiceOverlay = page.locator('#choice-modal-overlay');
 
-  // The Oath climax cannot be cancelled: Escape leaves it open, a number key picks once.
+  // The Oath climax cannot be cancelled: Escape leaves it open. Number keys never pick
+  // (number-pad movement must not choose by accident); arrows highlight, Enter picks once.
   await offer('oath_hearth');
   await expect(choiceOverlay).toBeVisible();
   expect(await stackIds(page)).toEqual(['choice']);
+  await page.waitForTimeout(250); // past the modal's open debounce
   await page.keyboard.press('Escape');
   await expect(choiceOverlay).toBeVisible();
   expect(await stackIds(page)).toEqual(['choice']);
   await page.keyboard.press('Digit2');
+  await page.keyboard.press('Enter'); // nothing highlighted yet
+  await expect(choiceOverlay).toBeVisible();
+  expect(await outcome()).toEqual({ picked: [], cancelled: 0 });
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
   await expect(choiceOverlay).toBeHidden();
   expect(await outcome()).toEqual({ picked: ['break'], cancelled: 0 });
   expect(await stackIds(page)).toEqual([]);
@@ -115,6 +123,7 @@ test('save & quit and choices take each key once, through one modal-stack entry'
   // A cancelable choice: Escape cancels it once, through the pack's onCancel.
   await offer('altar_tyr');
   await expect(choiceOverlay).toBeVisible();
+  await page.waitForTimeout(250);
   await page.keyboard.press('Escape');
   await expect(choiceOverlay).toBeHidden();
   expect(await outcome()).toEqual({ picked: [], cancelled: 1 });

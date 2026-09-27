@@ -10,6 +10,7 @@ import type { Action } from './action';
 import { DeathResolver } from '../combat/deathResolver';
 import { flightRecorder } from '../debug/flightRecorder';
 import { HookDispatcher } from '../hooks/hookDispatcher';
+import { getMonsterCategory, hasMasteryPerk } from '../compendium/compendiumManager';
 import { applyImpulse } from '../combat/impulse';
 import { resolveCombatMitigation } from '../combat/mitigationPipeline';
 import type { Item } from '../items/item';
@@ -52,7 +53,10 @@ export class MeleeAttackAction implements Action {
 
     // Slayer's Compendium Defensive Mastery Evasion Check (Survivor: +10% evasion)
     if (this.attacker instanceof Monster && this.defender instanceof Player && engine.compendium) {
-      const evasionBonus = engine.compendium.getMasteryEvasionBonus(this.attacker.definitionId);
+      const evasionBonus = engine.compendium.getMasteryEvasionBonus(
+        this.attacker.definitionId,
+        getMonsterCategory(engine, this.attacker.definitionId)?.id
+      );
       if (evasionBonus > 0 && engine.rng() < evasionBonus) {
         const cost = this.attacker.getActionCost(BASE_ACTION_COST);
         this.attacker.consumeEnergy(cost);
@@ -69,9 +73,7 @@ export class MeleeAttackAction implements Action {
     // Slayer's Compendium Offensive Mastery (Anatomist: ignore 50% defense, +25% crit dmg)
     const isAnatomist = this.attacker instanceof Player &&
       this.defender instanceof Monster &&
-      engine.compendium?.getPerk(this.defender.definitionId) === 'anatomist';
-
-    let masteryBonus = isAnatomist ? 1 : 0;
+      hasMasteryPerk(engine, this.defender.definitionId, 'anatomist');
 
     // Damage calculation: manifest combatConfig or default formula
     const combatConfig = engine.manifest?.combatConfig;
@@ -87,7 +89,7 @@ export class MeleeAttackAction implements Action {
       const effectiveDefense = isAnatomist
         ? Math.floor(this.defender.defense * 0.5)
         : this.defender.defense;
-      let base = Math.max(minDmg, this.attacker.attack + masteryBonus - effectiveDefense);
+      let base = Math.max(minDmg, this.attacker.attack - effectiveDefense);
 
       // Critical strike calculation
       if (combatConfig?.critChance && engine.rng() < combatConfig.critChance) {
@@ -351,7 +353,7 @@ export class MeleeAttackAction implements Action {
     if (this.attacker instanceof Monster && this.attacker.onHitAffliction && !killed) {
       const aff = this.attacker.onHitAffliction;
       const isSurvivor = this.defender instanceof Player &&
-        engine.compendium?.getPerk(this.attacker.definitionId) === 'survivor';
+        hasMasteryPerk(engine, this.attacker.definitionId, 'survivor');
 
       // Survivor: 25% chance to shrug off affliction entirely
       if (isSurvivor && engine.rng() < 0.25) {

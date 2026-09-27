@@ -2,8 +2,7 @@ import type { GameState } from '../flanks/types';
 import type { MenuTab } from './menuTab';
 import type { AttributeMilestoneTrigger, ChoiceDefinition, Player } from '../../engine';
 import { formatCurrency, getMaxCarryWeight, getPlayerTotalCp } from '../../engine';
-
-export type AttributeKey = 'strength' | 'dexterity' | 'constitution' | 'intelligence';
+import { AttributeAllocationDraft, type AttributeKey } from '../attributeAllocationDraft';
 
 interface AttributeMeta {
   key: AttributeKey;
@@ -109,14 +108,8 @@ export class CharacterTab implements MenuTab {
   private container: HTMLElement | null = null;
   private state: GameState | null = null;
   public onAllocateCallback?: (attr: AttributeKey) => void;
-  private undoStack: Array<{ op: 'allocate' | 'deallocate'; attr: AttributeKey }> = [];
-  private redoStack: Array<{ op: 'allocate' | 'deallocate'; attr: AttributeKey }> = [];
-  private sessionNetAllocations: Record<AttributeKey, number> = {
-    strength: 0,
-    dexterity: 0,
-    constitution: 0,
-    intelligence: 0,
-  };
+  /** This session's planned points; nothing reaches the player until `accept()`. */
+  private readonly draft = new AttributeAllocationDraft();
 
   public mount(container: HTMLElement): void {
     this.container = container;
@@ -124,14 +117,7 @@ export class CharacterTab implements MenuTab {
 
   public onActivate(state: GameState): void {
     this.state = state;
-    this.undoStack = [];
-    this.redoStack = [];
-    this.sessionNetAllocations = {
-      strength: 0,
-      dexterity: 0,
-      constitution: 0,
-      intelligence: 0,
-    };
+    this.draft.clear();
     this.render();
   }
 
@@ -142,99 +128,50 @@ export class CharacterTab implements MenuTab {
     }
   }
 
+  /** Plans one point into `attr`. */
   public allocate(attr: AttributeKey): boolean {
-    if (!this.state || !this.state.player) return false;
-    const player = this.state.player;
-    if (player.unspentStatPoints <= 0) return false;
-
-    const success = player.allocateAttribute(attr, 1);
-    if (success) {
-      this.undoStack.push({ op: 'allocate', attr });
-      this.redoStack = [];
-      this.sessionNetAllocations[attr] = (this.sessionNetAllocations[attr] ?? 0) + 1;
-      this.state.engine.log(
-        `Allocated 1 point into ${attr.toUpperCase()} (Total: ${player[attr]}). ${player.unspentStatPoints} point(s) remain.`
-      );
-      this.onAllocateCallback?.(attr);
-      this.render();
-      return true;
-    }
-    return false;
+    const player = this.state?.player;
+    if (!player || !this.draft.add(attr, player)) return false;
+    this.render();
+    return true;
   }
 
+  /** Takes back one point planned this session; locked-in points can't be removed. */
   public deallocate(attr: AttributeKey): boolean {
-    if (!this.state || !this.state.player) return false;
-    const player = this.state.player;
-    if ((player.allocatedAttributes[attr] ?? 0) <= 0) return false;
-
-    const success = player.deallocateAttribute(attr, 1);
-    if (success) {
-      this.undoStack.push({ op: 'deallocate', attr });
-      this.redoStack = [];
-      this.sessionNetAllocations[attr] = (this.sessionNetAllocations[attr] ?? 0) - 1;
-      this.state.engine.log(
-        `Deallocated 1 point from ${attr.toUpperCase()} (Total: ${player[attr]}). ${player.unspentStatPoints} point(s) remain.`
-      );
-      this.onAllocateCallback?.(attr);
-      this.render();
-      return true;
-    }
-    return false;
+    if (!this.draft.remove(attr)) return false;
+    this.render();
+    return true;
   }
 
   public undo(): boolean {
-    if (this.undoStack.length === 0 || !this.state || !this.state.player) return false;
-    const action = this.undoStack.pop()!;
-    const player = this.state.player;
-    if (action.op === 'allocate') {
-      player.deallocateAttribute(action.attr, 1);
-      this.sessionNetAllocations[action.attr] = (this.sessionNetAllocations[action.attr] ?? 0) - 1;
-      this.state.engine.log(`Reverted allocation in ${action.attr.toUpperCase()} (Total: ${player[action.attr]}). ${player.unspentStatPoints} point(s) remain.`);
-    } else {
-      player.allocateAttribute(action.attr, 1);
-      this.sessionNetAllocations[action.attr] = (this.sessionNetAllocations[action.attr] ?? 0) + 1;
-      this.state.engine.log(`Re-applied allocation in ${action.attr.toUpperCase()} (Total: ${player[action.attr]}). ${player.unspentStatPoints} point(s) remain.`);
-    }
-    this.redoStack.push(action);
-    this.onAllocateCallback?.(action.attr);
+    if (!this.draft.undo()) return false;
     this.render();
     return true;
   }
 
   public redo(): boolean {
-    if (this.redoStack.length === 0 || !this.state || !this.state.player) return false;
-    const action = this.redoStack.pop()!;
-    const player = this.state.player;
-    if (action.op === 'allocate') {
-      player.allocateAttribute(action.attr, 1);
-      this.sessionNetAllocations[action.attr] = (this.sessionNetAllocations[action.attr] ?? 0) + 1;
-      this.state.engine.log(`Redid allocation of 1 point into ${action.attr.toUpperCase()} (Total: ${player[action.attr]}). ${player.unspentStatPoints} point(s) remain.`);
-    } else {
-      player.deallocateAttribute(action.attr, 1);
-      this.sessionNetAllocations[action.attr] = (this.sessionNetAllocations[action.attr] ?? 0) - 1;
-      this.state.engine.log(`Redid deallocation of 1 point from ${action.attr.toUpperCase()} (Total: ${player[action.attr]}). ${player.unspentStatPoints} point(s) remain.`);
-    }
-    this.undoStack.push(action);
-    this.onAllocateCallback?.(action.attr);
+    const player = this.state?.player;
+    if (!player || !this.draft.redo(player)) return false;
     this.render();
     return true;
   }
 
   public reset(): boolean {
-    if (this.undoStack.length === 0 || !this.state || !this.state.player) return false;
-    const player = this.state.player;
-    while (this.undoStack.length > 0) {
-      const action = this.undoStack.pop()!;
-      if (action.op === 'allocate') {
-        player.deallocateAttribute(action.attr, 1);
-      } else {
-        player.allocateAttribute(action.attr, 1);
-      }
+    if (!this.draft.reset()) return false;
+    this.render();
+    return true;
+  }
+
+  /** Locks the planned points into the player. */
+  public accept(): boolean {
+    const state = this.state;
+    if (!state?.player || this.draft.total === 0) return false;
+    const summary = this.draft.describe();
+    const spent = this.draft.commit(state.player);
+    if (spent > 0) {
+      state.engine.log(`Attributes locked in: ${summary}. ${state.player.unspentStatPoints} point(s) remain.`);
+      this.onAllocateCallback?.('strength');
     }
-    this.redoStack = [];
-    this.sessionNetAllocations = { strength: 0, dexterity: 0, constitution: 0, intelligence: 0 };
-    this.state.engine.log(`Reset all attribute changes. ${player.unspentStatPoints} point(s) available.`);
-    this.onAllocateCallback?.('strength');
     this.render();
     return true;
   }
@@ -244,6 +181,13 @@ export class CharacterTab implements MenuTab {
 
     const key = e.key.toUpperCase();
     const code = e.code;
+
+    if (key === 'ENTER' || code === 'NumpadEnter') {
+      if (this.accept()) {
+        e.preventDefault();
+        return true;
+      }
+    }
 
     if ((key === 'Z' || code === 'KeyZ') && !e.shiftKey) {
       if (this.undo()) {
@@ -300,14 +244,17 @@ export class CharacterTab implements MenuTab {
     const player = this.state.player;
     const worldState = this.state.worldState;
     const manifest = this.state.manifest ?? this.state.engine.manifest;
-    const unspent = player.unspentStatPoints;
+    const unspent = this.draft.remaining(player);
+    const planned = this.draft.total;
+    const canUndo = this.draft.canUndo;
+    const canRedo = this.draft.canRedo;
 
     const rowsHtml = ATTRIBUTES.map((meta) => {
-      const currentVal = player[meta.key];
+      const sessionDelta = this.draft.get(meta.key);
+      const currentVal = player[meta.key] + sessionDelta;
       const preview = meta.derivedPreview(currentVal);
       const canAllocate = unspent > 0;
-      const canDeallocate = (player.allocatedAttributes[meta.key] ?? 0) > 0;
-      const sessionDelta = this.sessionNetAllocations[meta.key] ?? 0;
+      const canDeallocate = sessionDelta > 0;
 
       return `
         <div class="stat-alloc-row" style="
@@ -324,7 +271,7 @@ export class CharacterTab implements MenuTab {
             <div style="display: flex; align-items: baseline; gap: 8px;">
               <span style="font-weight: bold; color: #fde047; font-size: 13px;">[${meta.hotkeyLetter}] ${meta.label}</span>
               <span style="font-weight: bold; color: #38bdf8; font-size: 15px;">${currentVal}</span>
-              ${sessionDelta !== 0 ? `<span style="color: ${sessionDelta > 0 ? '#4ade80' : '#f87171'}; font-weight: bold; font-size: 12px;">(${sessionDelta > 0 ? '+' : ''}${sessionDelta})</span>` : ''}
+              ${sessionDelta > 0 ? `<span style="color: #4ade80; font-weight: bold; font-size: 12px;">(+${sessionDelta})</span>` : ''}
             </div>
             <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">
               ${meta.description}
@@ -348,7 +295,7 @@ export class CharacterTab implements MenuTab {
                 font-weight: bold;
                 font-size: 12px;
               "
-              title="Refund 1 point"
+              title="Take back 1 planned point"
             >
               -1
             </button>
@@ -482,14 +429,14 @@ export class CharacterTab implements MenuTab {
               <button
                 id="btn-undo-char"
                 class="win-btn"
-                ${this.undoStack.length > 0 ? '' : 'disabled'}
+                ${canUndo ? '' : 'disabled'}
                 style="
                   padding: 3px 8px;
-                  background: ${this.undoStack.length > 0 ? '#2563eb' : '#334155'};
-                  color: ${this.undoStack.length > 0 ? '#ffffff' : '#64748b'};
-                  border: 1px solid ${this.undoStack.length > 0 ? '#3b82f6' : '#475569'};
+                  background: ${canUndo ? '#2563eb' : '#334155'};
+                  color: ${canUndo ? '#ffffff' : '#64748b'};
+                  border: 1px solid ${canUndo ? '#3b82f6' : '#475569'};
                   border-radius: 3px;
-                  cursor: ${this.undoStack.length > 0 ? 'pointer' : 'not-allowed'};
+                  cursor: ${canUndo ? 'pointer' : 'not-allowed'};
                   font-size: 11px;
                   font-weight: bold;
                 "
@@ -500,14 +447,14 @@ export class CharacterTab implements MenuTab {
               <button
                 id="btn-redo-char"
                 class="win-btn"
-                ${this.redoStack.length > 0 ? '' : 'disabled'}
+                ${canRedo ? '' : 'disabled'}
                 style="
                   padding: 3px 8px;
-                  background: ${this.redoStack.length > 0 ? '#2563eb' : '#334155'};
-                  color: ${this.redoStack.length > 0 ? '#ffffff' : '#64748b'};
-                  border: 1px solid ${this.redoStack.length > 0 ? '#3b82f6' : '#475569'};
+                  background: ${canRedo ? '#2563eb' : '#334155'};
+                  color: ${canRedo ? '#ffffff' : '#64748b'};
+                  border: 1px solid ${canRedo ? '#3b82f6' : '#475569'};
                   border-radius: 3px;
-                  cursor: ${this.redoStack.length > 0 ? 'pointer' : 'not-allowed'};
+                  cursor: ${canRedo ? 'pointer' : 'not-allowed'};
                   font-size: 11px;
                   font-weight: bold;
                 "
@@ -518,22 +465,41 @@ export class CharacterTab implements MenuTab {
               <button
                 id="btn-reset-char"
                 class="win-btn"
-                ${this.undoStack.length > 0 ? '' : 'disabled'}
+                ${canUndo ? '' : 'disabled'}
                 style="
                   padding: 3px 8px;
-                  background: ${this.undoStack.length > 0 ? '#475569' : '#334155'};
-                  color: ${this.undoStack.length > 0 ? '#f1f5f9' : '#64748b'};
-                  border: 1px solid ${this.undoStack.length > 0 ? '#64748b' : '#475569'};
+                  background: ${canUndo ? '#475569' : '#334155'};
+                  color: ${canUndo ? '#f1f5f9' : '#64748b'};
+                  border: 1px solid ${canUndo ? '#64748b' : '#475569'};
                   border-radius: 3px;
-                  cursor: ${this.undoStack.length > 0 ? 'pointer' : 'not-allowed'};
+                  cursor: ${canUndo ? 'pointer' : 'not-allowed'};
                   font-size: 11px;
                 "
-                title="Reset all changes made in this session (R)"
+                title="Clear every planned point (R)"
               >
                 ↺ Reset [R]
               </button>
+              <button
+                id="btn-accept-char"
+                class="win-btn"
+                ${planned > 0 ? '' : 'disabled'}
+                style="
+                  padding: 3px 10px;
+                  background: ${planned > 0 ? '#16a34a' : '#334155'};
+                  color: ${planned > 0 ? '#ffffff' : '#64748b'};
+                  border: 1px solid ${planned > 0 ? '#22c55e' : '#475569'};
+                  border-radius: 3px;
+                  cursor: ${planned > 0 ? 'pointer' : 'not-allowed'};
+                  font-size: 11px;
+                  font-weight: bold;
+                "
+                title="Lock in the planned points (Enter)"
+              >
+                ✔ Accept [Enter]
+              </button>
             </div>
           </div>
+          ${planned > 0 ? `<div style="font-size: 11px; color: #fef08a; margin-bottom: 6px;">Planned: ${this.draft.describe()} — press [Enter] or Accept to lock in. Unaccepted points are discarded when you leave this tab.</div>` : ''}
           ${rowsHtml}
         </div>
 
@@ -545,6 +511,7 @@ export class CharacterTab implements MenuTab {
     this.container.querySelector('#btn-undo-char')?.addEventListener('click', () => this.undo());
     this.container.querySelector('#btn-redo-char')?.addEventListener('click', () => this.redo());
     this.container.querySelector('#btn-reset-char')?.addEventListener('click', () => this.reset());
+    this.container.querySelector('#btn-accept-char')?.addEventListener('click', () => this.accept());
 
     const buttons = this.container.querySelectorAll<HTMLButtonElement>('.btn-allocate-stat');
     buttons.forEach((btn) => {

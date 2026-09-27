@@ -23,6 +23,7 @@ import { COTW_BLOOD_SPELLS } from './bloodMagic';
 import { COTW_TILES } from './tiles';
 import { COTW_FLOOR_HAZARDS, COTW_ROOM_DECORATION } from './floorBands';
 import { COTW_FLOOR_LAYOUTS, COTW_FLOOR_SIZE } from './floorLayouts';
+import { COTW_MONSTER_CATEGORIES } from './monsterCategories';
 
 export const COTW_ATTRIBUTE_MILESTONES: AttributeMilestoneTrigger[] = [
   { id: 'milestone_dex_15', attribute: 'dexterity', threshold: 15, choiceId: 'milestone_dex_15' },
@@ -86,6 +87,7 @@ export const cotwManifest: GameContentManifest = {
   actionHooks: [GIANT_BLOOD_BOOTSTRAP_HOOK, ...SIPHON_RITUAL_HOOKS],
   storyChoiceTriggers: [OATH_TRIGGER],
   attributeMilestones: COTW_ATTRIBUTE_MILESTONES,
+  monsterCategories: COTW_MONSTER_CATEGORIES,
   timedEvents: [OATH_TIMED_EVENT, SIPHON_TIMED_EVENT],
   bossFleeResolutions: [
     { monsterDefinitionId: 'nidhogg', fleeTurnsRequired: 5, sealedFlag: 'nidhogg_root_sealed' },

@@ -41,11 +41,12 @@ export interface CharacterProfile {
   xp?: number;
   xpToNextLevel?: number;
   compendium?: Record<string, { kills: number; tier: 0 | 1 | 2 | 3; firstEncounterFloor?: number; chosenPerk?: import('../compendium/types').MasteryPerkId }>;
+  /** Chosen category-mastery perks by monster category ID. Optional; absent = none chosen. */
+  compendiumCategoryPerks?: Record<string, import('../compendium/types').MasteryPerkId>;
   tutorialFlags?: TutorialFlags;
   deepestRecallFloor?: number;
   recallPosition?: Position;
   unspentStatPoints?: number;
-  allocatedAttributes?: { strength: number; dexterity: number; constitution: number; intelligence: number };
 }
 
 export interface RosterManifest {
@@ -212,7 +213,6 @@ export interface SerializedPlayer {
   planeId?: string;
   corruptionScore?: number;
   unspentStatPoints?: number;
-  allocatedAttributes?: { strength: number; dexterity: number; constitution: number; intelligence: number };
   /** Rune of Return mastery investment (docs/architecture/content-rune-of-return.md): points spent
    * from the same `unspentStatPoints` pool as core attributes, on the rune's three
    * independent progression tracks. */
@@ -351,6 +351,8 @@ export interface SaveData {
   archivedFloors?: number[];
   storedFovRle?: Record<number, string>;
   compendium?: Record<string, { kills: number; tier: 0 | 1 | 2 | 3; firstEncounterFloor?: number; chosenPerk?: import('../compendium/types').MasteryPerkId }>;
+  /** Chosen category-mastery perks by monster category ID. Optional; absent = none chosen. */
+  compendiumCategoryPerks?: Record<string, import('../compendium/types').MasteryPerkId>;
   worldState?: SerializedWorldState;
   planes?: Record<string, PlaneState>;
   prngState?: number;

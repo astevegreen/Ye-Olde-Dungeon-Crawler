@@ -173,7 +173,7 @@ export class ContextHelp {
             { key: '> / <', label: 'Climb stairs down (>) or climb stairs up (<)' },
             { key: 'Q', label: 'Save progress and return to character roster' },
           ],
-          tip: 'Tip: Slaying monsters 5+ times unlocks Slayer Mastery! Open the Compendium [B] to choose from 5 specialized combat, sustain, and loot perks.',
+          tip: 'Tip: Slay 15 of one creature, or many of its whole family, to earn a Mastery Perk against them. Review and change perks in the Compendium [B].',
         };
     }
   }

@@ -1,7 +1,8 @@
 import type { GameEngine } from '../engine';
 import type { ModalStackManager, UIModal } from './modalStack';
+import { AttributeAllocationDraft, type AttributeKey } from './attributeAllocationDraft';
 
-export type AttributeKey = 'strength' | 'dexterity' | 'constitution' | 'intelligence';
+export type { AttributeKey };
 
 interface AttributeMeta {
   key: AttributeKey;
@@ -51,14 +52,8 @@ export class LevelUpModal implements UIModal {
   private onCloseCallback?: () => void;
   private onAllocateCallback?: (attr: AttributeKey) => void;
   private openedAt = 0;
-  private undoStack: Array<{ op: 'allocate' | 'deallocate'; attr: AttributeKey }> = [];
-  private redoStack: Array<{ op: 'allocate' | 'deallocate'; attr: AttributeKey }> = [];
-  private sessionNetAllocations: Record<AttributeKey, number> = {
-    strength: 0,
-    dexterity: 0,
-    constitution: 0,
-    intelligence: 0,
-  };
+  /** This session's planned points; nothing reaches the player until `accept()`. */
+  private readonly draft = new AttributeAllocationDraft();
 
   constructor(onClose?: () => void) {
     this.onCloseCallback = onClose;
@@ -105,14 +100,7 @@ export class LevelUpModal implements UIModal {
     if (onClose) this.onCloseCallback = onClose;
     this.isOpenState = true;
     this.openedAt = Date.now();
-    this.undoStack = [];
-    this.redoStack = [];
-    this.sessionNetAllocations = {
-      strength: 0,
-      dexterity: 0,
-      constitution: 0,
-      intelligence: 0,
-    };
+    this.draft.clear();
 
     if (!this.overlayEl) {
       this.createDom();
@@ -124,9 +112,11 @@ export class LevelUpModal implements UIModal {
     }
   }
 
+  /** Closes without spending anything still planned; the points stay unspent. */
   public close(): void {
     if (!this.isOpenState) return;
     this.isOpenState = false;
+    this.draft.clear();
     if (this.overlayEl) {
       this.overlayEl.style.display = 'none';
     }
@@ -146,107 +136,53 @@ export class LevelUpModal implements UIModal {
     }
   }
 
+  /** Plans one point into `attr`. */
   public allocate(attr: AttributeKey): boolean {
-    if (!this.engine || !this.engine.player) return false;
-    const player = this.engine.player;
-    if (player.unspentStatPoints <= 0) return false;
-
-    const success = player.allocateAttribute(attr, 1);
-    if (success) {
-      this.undoStack.push({ op: 'allocate', attr });
-      this.redoStack = [];
-      this.sessionNetAllocations[attr] = (this.sessionNetAllocations[attr] ?? 0) + 1;
-      this.engine.log(`Allocated 1 point into ${attr.toUpperCase()} (Total: ${player[attr]}). ${player.unspentStatPoints} point(s) remain.`);
-      if (this.onAllocateCallback) {
-        this.onAllocateCallback(attr);
-      }
-      this.render();
-      return true;
-    }
-    return false;
+    const player = this.engine?.player;
+    if (!player || !this.draft.add(attr, player)) return false;
+    this.render();
+    return true;
   }
 
+  /** Takes back one point planned this session; locked-in points can't be removed. */
   public deallocate(attr: AttributeKey): boolean {
-    if (!this.engine || !this.engine.player) return false;
-    const player = this.engine.player;
-    if ((player.allocatedAttributes[attr] ?? 0) <= 0) return false;
-
-    const success = player.deallocateAttribute(attr, 1);
-    if (success) {
-      this.undoStack.push({ op: 'deallocate', attr });
-      this.redoStack = [];
-      this.sessionNetAllocations[attr] = (this.sessionNetAllocations[attr] ?? 0) - 1;
-      this.engine.log(`Deallocated 1 point from ${attr.toUpperCase()} (Total: ${player[attr]}). ${player.unspentStatPoints} point(s) remain.`);
-      if (this.onAllocateCallback) {
-        this.onAllocateCallback(attr);
-      }
-      this.render();
-      return true;
-    }
-    return false;
+    if (!this.draft.remove(attr)) return false;
+    this.render();
+    return true;
   }
 
   public undo(): boolean {
-    if (this.undoStack.length === 0 || !this.engine || !this.engine.player) return false;
-    const action = this.undoStack.pop()!;
-    const player = this.engine.player;
-    if (action.op === 'allocate') {
-      player.deallocateAttribute(action.attr, 1);
-      this.sessionNetAllocations[action.attr] = (this.sessionNetAllocations[action.attr] ?? 0) - 1;
-      this.engine.log(`Reverted allocation in ${action.attr.toUpperCase()} (Total: ${player[action.attr]}). ${player.unspentStatPoints} point(s) remain.`);
-    } else {
-      player.allocateAttribute(action.attr, 1);
-      this.sessionNetAllocations[action.attr] = (this.sessionNetAllocations[action.attr] ?? 0) + 1;
-      this.engine.log(`Re-applied allocation in ${action.attr.toUpperCase()} (Total: ${player[action.attr]}). ${player.unspentStatPoints} point(s) remain.`);
-    }
-    this.redoStack.push(action);
-    if (this.onAllocateCallback) {
-      this.onAllocateCallback(action.attr);
-    }
+    if (!this.draft.undo()) return false;
     this.render();
     return true;
   }
 
   public redo(): boolean {
-    if (this.redoStack.length === 0 || !this.engine || !this.engine.player) return false;
-    const action = this.redoStack.pop()!;
-    const player = this.engine.player;
-    if (action.op === 'allocate') {
-      player.allocateAttribute(action.attr, 1);
-      this.sessionNetAllocations[action.attr] = (this.sessionNetAllocations[action.attr] ?? 0) + 1;
-      this.engine.log(`Redid allocation of 1 point into ${action.attr.toUpperCase()} (Total: ${player[action.attr]}). ${player.unspentStatPoints} point(s) remain.`);
-    } else {
-      player.deallocateAttribute(action.attr, 1);
-      this.sessionNetAllocations[action.attr] = (this.sessionNetAllocations[action.attr] ?? 0) - 1;
-      this.engine.log(`Redid deallocation of 1 point from ${action.attr.toUpperCase()} (Total: ${player[action.attr]}). ${player.unspentStatPoints} point(s) remain.`);
-    }
-    this.undoStack.push(action);
-    if (this.onAllocateCallback) {
-      this.onAllocateCallback(action.attr);
-    }
+    const player = this.engine?.player;
+    if (!player || !this.draft.redo(player)) return false;
     this.render();
     return true;
   }
 
   public reset(): boolean {
-    if (this.undoStack.length === 0 || !this.engine || !this.engine.player) return false;
-    const player = this.engine.player;
-    while (this.undoStack.length > 0) {
-      const action = this.undoStack.pop()!;
-      if (action.op === 'allocate') {
-        player.deallocateAttribute(action.attr, 1);
-      } else {
-        player.allocateAttribute(action.attr, 1);
-      }
-    }
-    this.redoStack = [];
-    this.sessionNetAllocations = { strength: 0, dexterity: 0, constitution: 0, intelligence: 0 };
-    this.engine.log(`Reset all level-up attribute changes. ${player.unspentStatPoints} point(s) available.`);
-    if (this.onAllocateCallback) {
-      this.onAllocateCallback('strength');
-    }
+    if (!this.draft.reset()) return false;
     this.render();
     return true;
+  }
+
+  /** Locks the planned points in and closes. With nothing planned it just closes. */
+  public accept(): void {
+    const engine = this.engine;
+    const player = engine?.player;
+    if (engine && player && this.draft.total > 0) {
+      const summary = this.draft.describe();
+      const spent = this.draft.commit(player);
+      if (spent > 0) {
+        engine.log(`Attributes locked in: ${summary}. ${player.unspentStatPoints} point(s) remain.`);
+        this.onAllocateCallback?.('strength');
+      }
+    }
+    this.close();
   }
 
   public handleKeyDown(e: KeyboardEvent): boolean {
@@ -255,15 +191,22 @@ export class LevelUpModal implements UIModal {
     const key = e.key.toUpperCase();
     const code = e.code;
 
-    if (key === 'ESCAPE' || key === 'ENTER' || code === 'KeyU') {
+    if (key === 'ESCAPE' || code === 'KeyU') {
       e.preventDefault();
       this.close();
       return true;
     }
 
-    // Safety debounce: drop rapid keystrokes within 200ms of opening to avoid accidental allocations from queued movement
+    // Safety debounce: drop rapid keystrokes within 200ms of opening to avoid accidental
+    // allocations (or an accidental accept) from queued movement keys.
     if (Date.now() - this.openedAt < 200) {
       e.preventDefault();
+      return true;
+    }
+
+    if (key === 'ENTER' || code === 'NumpadEnter') {
+      e.preventDefault();
+      this.accept();
       return true;
     }
 
@@ -306,11 +249,14 @@ export class LevelUpModal implements UIModal {
       return true;
     }
 
+    // The rune tree spends from the same pool, so it waits until planned points are settled.
     if ((key === 'T' || code === 'KeyT' || key === 'M' || code === 'KeyM') && this.engine?.player?.hasDiscoveredRune) {
       e.preventDefault();
-      this.close();
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('open_rune_of_return_tree'));
+      if (this.draft.total === 0) {
+        this.close();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('open_rune_of_return_tree'));
+        }
       }
       return true;
     }
@@ -323,14 +269,18 @@ export class LevelUpModal implements UIModal {
     if (!this.overlayEl || !this.engine || !this.engine.player) return;
 
     const player = this.engine.player;
-    const unspent = player.unspentStatPoints;
+    const remaining = this.draft.remaining(player);
+    const planned = this.draft.total;
+    const canUndo = this.draft.canUndo;
+    const canRedo = this.draft.canRedo;
+    const runeTreeReady = planned === 0;
 
     const rowsHtml = ATTRIBUTES.map((meta) => {
-      const currentVal = player[meta.key];
+      const sessionDelta = this.draft.get(meta.key);
+      const currentVal = player[meta.key] + sessionDelta;
       const preview = meta.derivedPreview(currentVal);
-      const canAllocate = unspent > 0;
-      const canDeallocate = (player.allocatedAttributes[meta.key] ?? 0) > 0;
-      const sessionDelta = this.sessionNetAllocations[meta.key] ?? 0;
+      const canAllocate = remaining > 0;
+      const canDeallocate = sessionDelta > 0;
 
       return `
         <div class="stat-alloc-row" style="
@@ -347,7 +297,7 @@ export class LevelUpModal implements UIModal {
             <div style="display: flex; align-items: baseline; gap: 8px;">
               <span style="font-weight: bold; color: #fde047; font-size: 14px;">[${meta.hotkeyLetter}] ${meta.label}</span>
               <span style="font-weight: bold; color: #38bdf8; font-size: 15px;">${currentVal}</span>
-              ${sessionDelta !== 0 ? `<span style="color: ${sessionDelta > 0 ? '#4ade80' : '#f87171'}; font-weight: bold; font-size: 12px;">(${sessionDelta > 0 ? '+' : ''}${sessionDelta})</span>` : ''}
+              ${sessionDelta > 0 ? `<span style="color: #4ade80; font-weight: bold; font-size: 12px;">(+${sessionDelta})</span>` : ''}
             </div>
             <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">
               ${meta.description}
@@ -372,7 +322,7 @@ export class LevelUpModal implements UIModal {
                 font-size: 13px;
                 font-family: inherit;
               "
-              title="Refund 1 point"
+              title="Take back 1 point planned this level-up"
             >
               -1
             </button>
@@ -447,7 +397,7 @@ export class LevelUpModal implements UIModal {
             padding: 3px 8px;
             border-radius: 3px;
           ">
-            ⭐ Unspent Points: ${unspent}
+            ⭐ Points to Spend: ${remaining}
           </div>
         </div>
 
@@ -465,13 +415,13 @@ export class LevelUpModal implements UIModal {
             <span style="color: #38bdf8; font-size: 12px;">
               🌀 <strong>Rune of Return Mastery:</strong> Spend unspent stat points on escape channel upgrades.
             </span>
-            <button id="btn-open-rune-tree-from-levelup" style="
+            <button id="btn-open-rune-tree-from-levelup" ${runeTreeReady ? '' : 'disabled title="Accept or reset your planned points first"'} style="
               padding: 4px 10px;
-              background: #0369a1;
-              color: #ffffff;
-              border: 1px solid #38bdf8;
+              background: ${runeTreeReady ? '#0369a1' : '#334155'};
+              color: ${runeTreeReady ? '#ffffff' : '#64748b'};
+              border: 1px solid ${runeTreeReady ? '#38bdf8' : '#475569'};
               border-radius: 3px;
-              cursor: pointer;
+              cursor: ${runeTreeReady ? 'pointer' : 'not-allowed'};
               font-weight: bold;
               font-size: 11px;
               font-family: inherit;
@@ -496,14 +446,14 @@ export class LevelUpModal implements UIModal {
           <div style="display: flex; gap: 6px; align-items: center;">
             <button
               id="btn-undo-levelup"
-              ${this.undoStack.length > 0 ? '' : 'disabled'}
+              ${canUndo ? '' : 'disabled'}
               style="
                 padding: 5px 10px;
-                background: ${this.undoStack.length > 0 ? '#2563eb' : '#334155'};
-                color: ${this.undoStack.length > 0 ? '#ffffff' : '#64748b'};
-                border: 1px solid ${this.undoStack.length > 0 ? '#3b82f6' : '#475569'};
+                background: ${canUndo ? '#2563eb' : '#334155'};
+                color: ${canUndo ? '#ffffff' : '#64748b'};
+                border: 1px solid ${canUndo ? '#3b82f6' : '#475569'};
                 border-radius: 4px;
-                cursor: ${this.undoStack.length > 0 ? 'pointer' : 'not-allowed'};
+                cursor: ${canUndo ? 'pointer' : 'not-allowed'};
                 font-family: inherit;
                 font-size: 11px;
                 font-weight: bold;
@@ -514,14 +464,14 @@ export class LevelUpModal implements UIModal {
             </button>
             <button
               id="btn-redo-levelup"
-              ${this.redoStack.length > 0 ? '' : 'disabled'}
+              ${canRedo ? '' : 'disabled'}
               style="
                 padding: 5px 10px;
-                background: ${this.redoStack.length > 0 ? '#2563eb' : '#334155'};
-                color: ${this.redoStack.length > 0 ? '#ffffff' : '#64748b'};
-                border: 1px solid ${this.redoStack.length > 0 ? '#3b82f6' : '#475569'};
+                background: ${canRedo ? '#2563eb' : '#334155'};
+                color: ${canRedo ? '#ffffff' : '#64748b'};
+                border: 1px solid ${canRedo ? '#3b82f6' : '#475569'};
                 border-radius: 4px;
-                cursor: ${this.redoStack.length > 0 ? 'pointer' : 'not-allowed'};
+                cursor: ${canRedo ? 'pointer' : 'not-allowed'};
                 font-family: inherit;
                 font-size: 11px;
                 font-weight: bold;
@@ -532,46 +482,49 @@ export class LevelUpModal implements UIModal {
             </button>
             <button
               id="btn-reset-levelup"
-              ${this.undoStack.length > 0 ? '' : 'disabled'}
+              ${canUndo ? '' : 'disabled'}
               style="
                 padding: 5px 10px;
-                background: ${this.undoStack.length > 0 ? '#475569' : '#334155'};
-                color: ${this.undoStack.length > 0 ? '#f1f5f9' : '#64748b'};
-                border: 1px solid ${this.undoStack.length > 0 ? '#64748b' : '#475569'};
+                background: ${canUndo ? '#475569' : '#334155'};
+                color: ${canUndo ? '#f1f5f9' : '#64748b'};
+                border: 1px solid ${canUndo ? '#64748b' : '#475569'};
                 border-radius: 4px;
-                cursor: ${this.undoStack.length > 0 ? 'pointer' : 'not-allowed'};
+                cursor: ${canUndo ? 'pointer' : 'not-allowed'};
                 font-family: inherit;
                 font-size: 11px;
               "
-              title="Reset all changes made in this level up (R)"
+              title="Clear every point planned this level-up (R)"
             >
               ↺ Reset [R]
             </button>
           </div>
-          <span style="color: #94a3b8; font-size: 11px;">[S/D/C/I] Allocate | [Z] Undo | [Y] Redo</span>
-          <button id="btn-close-levelup-bottom" style="
+          <button id="btn-accept-levelup" style="
             padding: 6px 16px;
-            background: #475569;
+            background: ${planned > 0 ? '#16a34a' : '#475569'};
             color: #ffffff;
-            border: 1px solid #64748b;
+            border: 1px solid ${planned > 0 ? '#22c55e' : '#64748b'};
             border-radius: 4px;
             cursor: pointer;
             font-family: inherit;
             font-weight: bold;
-          ">
-            Done [Esc]
+          " title="${planned > 0 ? 'Lock in the planned points and return to the game' : 'Return to the game'}">
+            ${planned > 0 ? 'Accept [Enter]' : 'Done [Enter]'}
           </button>
+        </div>
+        <div style="margin-top: 8px; font-size: 11px; color: #94a3b8; text-align: center;">
+          [S/D/C/I] plan a point · [Z] Undo · [Y] Redo · [Enter] lock in · [Esc] close without spending
         </div>
       </div>
     `;
 
     // Bind click handlers
     this.overlayEl.querySelector('#btn-close-levelup-top')?.addEventListener('click', () => this.close());
-    this.overlayEl.querySelector('#btn-close-levelup-bottom')?.addEventListener('click', () => this.close());
+    this.overlayEl.querySelector('#btn-accept-levelup')?.addEventListener('click', () => this.accept());
     this.overlayEl.querySelector('#btn-undo-levelup')?.addEventListener('click', () => this.undo());
     this.overlayEl.querySelector('#btn-redo-levelup')?.addEventListener('click', () => this.redo());
     this.overlayEl.querySelector('#btn-reset-levelup')?.addEventListener('click', () => this.reset());
     this.overlayEl.querySelector('#btn-open-rune-tree-from-levelup')?.addEventListener('click', () => {
+      if (this.draft.total > 0) return;
       this.close();
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('open_rune_of_return_tree'));

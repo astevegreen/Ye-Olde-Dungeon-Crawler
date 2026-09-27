@@ -1,5 +1,11 @@
 export type MonsterMasteryTier = 0 | 1 | 2 | 3;
 
+/** Kills of one monster type that unlock its species mastery (tier 3) and a perk choice. */
+export const SPECIES_MASTERY_KILLS = 15;
+
+/** Which mastery a perk was chosen for: one monster type, or a whole monster category. */
+export type MasteryScope = 'species' | 'category';
+
 export type MasteryPerkId =
   | 'anatomist'
   | 'survivor'
@@ -21,35 +27,35 @@ export const MASTERY_PERKS: Record<MasteryPerkId, MasteryPerkInfo> = {
     name: 'Anatomist',
     icon: '🗡️',
     tagline: 'Strike where the bone is thin.',
-    description: '+25% Critical Hit damage bonus and ignores 50% of the creature\'s defense.',
+    description: 'Ignores 50% of the foe\'s defense, and critical hits against it deal +25% more damage.',
   },
   survivor: {
     id: 'survivor',
     name: 'Survivor',
     icon: '🛡️',
     tagline: 'Read their tells; anticipate the blow.',
-    description: '+10% evasion against this creature, debuff durations halved, and +25% chance to resist afflictions.',
+    description: '+10% evasion against the foe, 25% chance to shrug off its afflictions, and halved affliction durations.',
   },
   trophy_hunter: {
     id: 'trophy_hunter',
     name: 'Trophy Hunter',
     icon: '🏹',
     tagline: 'A clean carve preserves vital organs.',
-    description: '35% chance on kill to harvest a rare monster trophy or organ that sells for valuable gold in town.',
+    description: '35% chance on kill to harvest a rare trophy or organ that sells for good coin in town.',
   },
   essence_siphon: {
     id: 'essence_siphon',
     name: 'Essence Siphon',
     icon: '✨',
-    tagline: 'Draw vitality from the creature\'s dying breath.',
-    description: 'Slaying this creature restores 10% Max HP and 10% Max Mana, and refunds 50% turn energy.',
+    tagline: 'Draw vitality from the dying breath.',
+    description: 'Each kill restores 10% Max HP and 10% Max Mana, and refunds half a turn of energy.',
   },
   plunderer: {
     id: 'plunderer',
     name: 'Plunderer',
     icon: '💰',
     tagline: 'Leave nothing behind; uncover hidden caches.',
-    description: 'Doubles gold dropped (+100% coin value) and guarantees extra loot drops with no empty duds.',
+    description: 'Doubles coin dropped and guarantees at least one loot drop from creatures that carry loot.',
   },
 };
 
@@ -70,8 +76,3 @@ export interface SerializedCompendiumRecord {
 }
 
 export type SerializedCompendium = Record<string, SerializedCompendiumRecord>;
-
-export interface MasteryCombatPerks {
-  damageBonus: number;
-  evasionChance: number;
-}

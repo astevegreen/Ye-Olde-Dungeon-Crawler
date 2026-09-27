@@ -410,9 +410,6 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     planeId: p.planeId ?? 'physical',
     corruptionScore: p.corruptionScore ?? 0,
     unspentStatPoints: p.unspentStatPoints ?? 0,
-    allocatedAttributes: p.allocatedAttributes
-      ? { ...p.allocatedAttributes }
-      : { strength: 0, dexterity: 0, constitution: 0, intelligence: 0 },
     runeMastery: { ...p.runeMastery },
     runeChannelBankedTurns: p.runeChannelBankedTurns ?? 0,
     hasDiscoveredRune: p.hasDiscoveredRune,
@@ -434,9 +431,6 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     profile.deepestRecallFloor = p.deepestRecallFloor;
     profile.recallPosition = p.recallPosition ? { ...p.recallPosition } : undefined;
     profile.unspentStatPoints = p.unspentStatPoints ?? 0;
-    if (p.allocatedAttributes) {
-      profile.allocatedAttributes = { ...p.allocatedAttributes };
-    }
   }
 
   // 4. Map serialization helper
@@ -473,6 +467,7 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
   storedFovRle[engine.currentFloor] = fovRle;
 
   const compendiumData = engine.compendium.serialize();
+  const compendiumCategoryPerks = engine.compendium.serializeCategoryPerks();
 
   const updatedProfile: CharacterProfile = {
     ...baseProfile,
@@ -490,14 +485,12 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     xp: p.xp,
     xpToNextLevel: p.xpToNextLevel,
     compendium: compendiumData,
+    compendiumCategoryPerks,
     lastSaved: Date.now(),
     tutorialFlags: p.tutorialFlags ? { ...p.tutorialFlags } : undefined,
     deepestRecallFloor: p.deepestRecallFloor,
     recallPosition: p.recallPosition ? { ...p.recallPosition } : undefined,
     unspentStatPoints: p.unspentStatPoints ?? 0,
-    allocatedAttributes: p.allocatedAttributes
-      ? { ...p.allocatedAttributes }
-      : { strength: 0, dexterity: 0, constitution: 0, intelligence: 0 },
   };
 
   return {
@@ -516,6 +509,7 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     storedMaps,
     storedFovRle,
     compendium: compendiumData,
+    compendiumCategoryPerks,
     worldState: engine.worldState ? (() => {
       const cloned = cloneWorldState(engine.worldState);
       const serializedVaults: Record<string, SerializedItemNode[]> = {};
@@ -861,11 +855,6 @@ export function deserializeGame(
     quickSpells: pData.quickSpells ? [...pData.quickSpells] : undefined,
     tutorialFlags: pData.tutorialFlags ? { ...pData.tutorialFlags } : (saveData.profile?.tutorialFlags ? { ...saveData.profile.tutorialFlags } : undefined),
     unspentStatPoints: Number(pData.unspentStatPoints) || Number(saveData.profile?.unspentStatPoints) || 0,
-    allocatedAttributes: pData.allocatedAttributes
-      ? { ...pData.allocatedAttributes }
-      : saveData.profile?.allocatedAttributes
-        ? { ...saveData.profile.allocatedAttributes }
-        : { strength: 0, dexterity: 0, constitution: 0, intelligence: 0 },
     runeMastery: pData.runeMastery ? { ...pData.runeMastery } : defaultRuneMastery(),
     runeChannelBankedTurns: Number(pData.runeChannelBankedTurns) || 0,
     hasDiscoveredRune: Boolean(pData.hasDiscoveredRune),
@@ -893,7 +882,10 @@ export function deserializeGame(
 
   // 4. Determine Current Floor & Compendium
   const currentFloor = saveData.currentFloor ?? saveData.profile?.floor ?? 1;
-  const compendium = new CompendiumManager(saveData.compendium ?? saveData.profile?.compendium);
+  const compendium = new CompendiumManager(
+    saveData.compendium ?? saveData.profile?.compendium,
+    saveData.compendiumCategoryPerks ?? saveData.profile?.compendiumCategoryPerks
+  );
 
   // 5. Rebuild world state (remote-vault items are serialized trees) before the engine
   // sees it, so it is never handed plain JSON where live Items belong.

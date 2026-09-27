@@ -27,6 +27,16 @@ export const warcraftManifest: GameContentManifest = {
     fallenBanner: 'You fall in battle, and your name joins the honored dead of Azeroth.',
   },
   monsters: WARCRAFT_MONSTERS,
+  monsterCategories: [
+    {
+      id: 'warcraft_horde',
+      name: 'The Orcish Horde',
+      icon: '🪓',
+      description: 'Peons, grunts, wolf raiders, ogre magi and the warchief who leads them.',
+      masteryKills: 75,
+      members: ['peon', 'grunt', 'raider', 'ogre_mage', 'warchief_blackhand'],
+    },
+  ],
   items: WARCRAFT_ITEMS,
   spells: WARCRAFT_SPELLS,
   town: WARCRAFT_TOWN,

@@ -4,7 +4,10 @@ import {
   type MonsterDefinition,
   type MonsterMasteryTier,
   type MasteryPerkId,
+  type MasteryScope,
   MASTERY_PERKS,
+  SPECIES_MASTERY_KILLS,
+  getMonsterCategory,
   selectMasteryPerk,
 } from '../../engine';
 import type { UIModal } from '../modalStack';
@@ -174,7 +177,7 @@ export class CompendiumModal implements UIModal {
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div>
                 <div class="retro-banner-title" style="color: #facc15; font-size: 13px;">THE SLAYER'S CODEX OF MIDGARD</div>
-                <div class="retro-banner-sub" style="font-size: 11px;">Encounter fiends to record their habits. Slain foes reveal vulnerabilities; 5 kills unlocks 5 selectable Slayer Mastery Specializations.</div>
+                <div class="retro-banner-sub" style="font-size: 11px;">Encounter fiends to record their habits. Slain foes reveal vulnerabilities. ${SPECIES_MASTERY_KILLS} kills of one creature — or many across its family — earn a Mastery Perk.</div>
               </div>
               <div style="text-align: right; font-size: 11px; font-weight: bold; color: #e2e8f0; white-space: nowrap;">
                 <div>Discovered: <span style="color: #38bdf8;">${discoveredCount}/${allMonsters.length}</span></div>
@@ -274,13 +277,105 @@ export class CompendiumModal implements UIModal {
     const perkButtons = this.overlayEl.querySelectorAll('.btn-select-perk');
     perkButtons.forEach((btn) => {
       btn.addEventListener('click', (e) => {
-        const perkId = (e.currentTarget as HTMLElement).getAttribute('data-perk') as MasteryPerkId;
-        if (perkId && this.engine && this.selectedMonsterId) {
-          selectMasteryPerk(this.engine, this.selectedMonsterId, perkId);
+        const el = e.currentTarget as HTMLElement;
+        const perkId = el.getAttribute('data-perk') as MasteryPerkId | null;
+        const scope = el.getAttribute('data-scope') as MasteryScope | null;
+        const masteryId = el.getAttribute('data-mastery');
+        if (perkId && scope && masteryId && this.engine) {
+          selectMasteryPerk(this.engine, scope, masteryId, perkId);
           this.render();
         }
       });
     });
+  }
+
+  /** Progress bar plus the perk picker for one mastery (a monster type or its category). */
+  private renderMasteryPanel(opts: {
+    scope: MasteryScope;
+    masteryId: string;
+    title: string;
+    subject: string;
+    kills: number;
+    needed: number;
+    perk?: MasteryPerkId;
+    /** The perk already active through the other mastery; picking it again adds nothing. */
+    otherPerk?: MasteryPerkId;
+    note?: string;
+  }): string {
+    const unlocked = opts.kills >= opts.needed;
+    const progressPercent = Math.round((Math.min(opts.kills, opts.needed) / opts.needed) * 100);
+    const inTown = (this.engine?.currentFloor ?? 1) === 0;
+    const remaining = opts.needed - opts.kills;
+
+    const picker = unlocked
+      ? `
+        <div style="font-size: 10px; color: #fef08a; font-weight: bold; margin-bottom: 6px;">
+          ${opts.perk ? `Mastery perk against ${opts.subject}:` : `Choose a mastery perk against ${opts.subject}:`}
+          <span style="font-weight: normal; color: #94a3b8; display: block; margin-top: 2px;">
+            ${
+              inTown
+                ? '🏰 In Town: you may freely choose or switch perks.'
+                : opts.perk
+                ? '⚔️ In the dungeon your perk is locked. Return to Town to change it.'
+                : '⚡ Mastery earned: pick your perk below.'
+            }
+          </span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 6px;">
+          ${Object.values(MASTERY_PERKS)
+            .map((perk) => {
+              const isSelected = opts.perk === perk.id;
+              const canSelect = inTown || !opts.perk;
+              const redundant = !isSelected && opts.otherPerk === perk.id;
+              return `
+                <div style="background: ${isSelected ? '#14532d' : '#0f172a'}; border: 1px solid ${isSelected ? '#22c55e' : '#334155'}; padding: 6px 8px; border-radius: 2px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                  <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span style="font-size: 13px;">${perk.icon}</span>
+                      <b style="color: ${isSelected ? '#86efac' : '#38bdf8'}; font-size: 11px;">${perk.name}</b>
+                      <span style="font-size: 9px; color: #94a3b8; font-style: italic;">— ${perk.tagline}</span>
+                    </div>
+                    <div style="font-size: 10px; color: ${isSelected ? '#dcfce7' : '#cbd5e1'}; margin-top: 2px;">
+                      ${perk.description}
+                    </div>
+                    ${redundant ? `<div style="font-size: 9px; color: #fbbf24; margin-top: 2px;">Already active through your other mastery — it would not stack.</div>` : ''}
+                  </div>
+                  <div>
+                    ${
+                      isSelected
+                        ? `<span style="display: inline-block; padding: 2px 6px; background: #22c55e; color: #052e16; font-size: 9px; font-weight: bold; border-radius: 2px;">ACTIVE</span>`
+                        : canSelect
+                        ? `<button class="win-btn win-btn-sm btn-select-perk" data-scope="${opts.scope}" data-mastery="${opts.masteryId}" data-perk="${perk.id}" style="font-size: 10px; padding: 2px 8px; cursor: pointer;">Select</button>`
+                        : `<span style="font-size: 9px; color: #64748b;">🔒 In Dungeon</span>`
+                    }
+                  </div>
+                </div>
+              `;
+            })
+            .join('')}
+        </div>
+      `
+      : `
+        <div style="font-size: 10px; color: #cbd5e1;">
+          Slay ${remaining} more to master ${opts.subject} and choose a perk: <b>Anatomist</b>, <b>Survivor</b>, <b>Trophy Hunter</b>, <b>Essence Siphon</b> or <b>Plunderer</b>.
+        </div>
+      `;
+
+    return `
+      <div style="background: ${unlocked ? '#14251a' : '#1e1b4b'}; border: 1px solid ${unlocked ? '#22c55e' : '#4338ca'}; padding: 10px; border-radius: 3px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <span style="font-weight: bold; color: ${unlocked ? '#86efac' : '#a5b4fc'}; font-size: 11px;">
+            ${unlocked ? '★ ' : ''}${opts.title}
+          </span>
+          <span style="font-size: 10px; color: #e2e8f0;">${opts.kills}/${opts.needed} Kills (${progressPercent}%)</span>
+        </div>
+        ${opts.note ? `<div style="font-size: 9px; color: #94a3b8; margin-bottom: 4px;">${opts.note}</div>` : ''}
+        <div style="height: 6px; background: #0f172a; border: 1px solid #334155; margin-bottom: 8px;">
+          <div style="height: 100%; width: ${progressPercent}%; background: ${unlocked ? '#22c55e' : '#eab308'};"></div>
+        </div>
+        ${picker}
+      </div>
+    `;
   }
 
   private renderDetailContent(def: MonsterDefinition, tier: MonsterMasteryTier, kills: number): string {
@@ -301,10 +396,8 @@ export class CompendiumModal implements UIModal {
       'Tier 3: Mastered (Gold ★)',
     ];
 
-    const masteryProgress = Math.min(5, kills);
-    const progressPercent = Math.round((masteryProgress / 5) * 100);
-    const inTown = (this.engine?.currentFloor ?? 1) === 0;
-    const currentPerk = this.engine?.compendium?.getPerk(def.id);
+    const compendium = this.engine?.compendium;
+    const category = this.engine ? getMonsterCategory(this.engine, def.id) : undefined;
 
     return `
       <div style="border-bottom: 1px solid #1e293b; padding-bottom: 8px;">
@@ -319,72 +412,31 @@ export class CompendiumModal implements UIModal {
         </div>
       </div>
 
-      <!-- Mastery Perk Status & Specialization Selection -->
-      <div style="background: ${tier === 3 ? '#14251a' : '#1e1b4b'}; border: 1px solid ${tier === 3 ? '#22c55e' : '#4338ca'}; padding: 10px; border-radius: 3px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-          <span style="font-weight: bold; color: ${tier === 3 ? '#86efac' : '#a5b4fc'}; font-size: 11px;">
-            ${tier === 3 ? '★ SLAYER MASTERY SPECIALIZATION' : 'SLAYER MASTERY PROGRESS'}
-          </span>
-          <span style="font-size: 10px; color: #e2e8f0;">${kills}/5 Kills (${progressPercent}%)</span>
-        </div>
-        <div style="height: 6px; background: #0f172a; border: 1px solid #334155; margin-bottom: 8px;">
-          <div style="height: 100%; width: ${progressPercent}%; background: ${tier === 3 ? '#22c55e' : '#eab308'};"></div>
-        </div>
-
-        ${
-          tier === 3
-            ? `
-              <div style="font-size: 10px; color: #fef08a; font-weight: bold; margin-bottom: 6px;">
-                Choose 1 of 5 Mastery Specializations for this creature:
-                <span style="font-weight: normal; color: #94a3b8; display: block; margin-top: 2px;">
-                  ${
-                    inTown
-                      ? '🏰 In Town: Study with Guild scholars to freely select or switch specializations.'
-                      : currentPerk
-                      ? '⚔️ In Dungeon: Active specialization locked. Return to Town to respec.'
-                      : '⚡ Mastery Unlocked: Select your initial specialization below.'
-                  }
-                </span>
-              </div>
-              <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 6px;">
-                ${Object.values(MASTERY_PERKS)
-                  .map((perk) => {
-                    const isSelected = currentPerk === perk.id;
-                    const canSelect = inTown || !currentPerk;
-                    return `
-                      <div style="background: ${isSelected ? '#14532d' : '#0f172a'}; border: 1px solid ${isSelected ? '#22c55e' : '#334155'}; padding: 6px 8px; border-radius: 2px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-                        <div style="flex: 1;">
-                          <div style="display: flex; align-items: center; gap: 6px;">
-                            <span style="font-size: 13px;">${perk.icon}</span>
-                            <b style="color: ${isSelected ? '#86efac' : '#38bdf8'}; font-size: 11px;">${perk.name}</b>
-                            <span style="font-size: 9px; color: #94a3b8; font-style: italic;">— ${perk.tagline}</span>
-                          </div>
-                          <div style="font-size: 10px; color: ${isSelected ? '#dcfce7' : '#cbd5e1'}; margin-top: 2px;">
-                            ${perk.description}
-                          </div>
-                        </div>
-                        <div>
-                          ${
-                            isSelected
-                              ? `<span style="display: inline-block; padding: 2px 6px; background: #22c55e; color: #052e16; font-size: 9px; font-weight: bold; border-radius: 2px;">ACTIVE</span>`
-                              : canSelect
-                              ? `<button class="win-btn win-btn-sm btn-select-perk" data-perk="${perk.id}" style="font-size: 10px; padding: 2px 8px; cursor: pointer;">Select</button>`
-                              : `<span style="font-size: 9px; color: #64748b;">🔒 In Dungeon</span>`
-                          }
-                        </div>
-                      </div>
-                    `;
-                  })
-                  .join('')}
-              </div>
-            `
-            : `
-              <div style="font-size: 10px; color: #cbd5e1;">
-                Slay this monster ${5 - kills} more time${5 - kills === 1 ? '' : 's'} to unlock permanent Mastery! Upon mastery, you can choose from 5 powerful specializations: <b>Anatomist</b> (Crits/Armor Pen), <b>Survivor</b> (Evasion/Status Resist), <b>Trophy Hunter</b> (Rare Organ Drops), <b>Essence Siphon</b> (HP/Mana Sustain), or <b>Plunderer</b> (Double Gold &amp; Extra Loot).
-              </div>
-            `
-        }
-      </div>
+      ${this.renderMasteryPanel({
+        scope: 'species',
+        masteryId: def.id,
+        title: `${def.name} Mastery`,
+        subject: 'this creature',
+        kills,
+        needed: SPECIES_MASTERY_KILLS,
+        perk: compendium?.getPerk(def.id),
+        otherPerk: category ? compendium?.getCategoryPerk(category.id) : undefined,
+      })}
+      ${
+        category && compendium
+          ? this.renderMasteryPanel({
+              scope: 'category',
+              masteryId: category.id,
+              title: `${category.icon ?? ''} ${category.name} (Category)`.trim(),
+              subject: `every creature of ${category.name}`,
+              kills: compendium.getCategoryKills(category),
+              needed: category.masteryKills,
+              perk: compendium.getCategoryPerk(category.id),
+              otherPerk: compendium.getPerk(def.id),
+              note: category.description,
+            })
+          : ''
+      }
 
       <!-- Tier 1 & 2 Attributes -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">

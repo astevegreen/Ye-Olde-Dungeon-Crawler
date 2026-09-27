@@ -24,6 +24,7 @@ import {
   ChannelRuneOfReturnAction,
   loadReplayState,
   replayActionTrail,
+  isGameEvent,
 } from './engine';
 import type {
   ActionResult,
@@ -48,6 +49,7 @@ import { applyThemeTokens, COTW_THEME_TOKENS } from './rendering/theme';
 import { ChoiceModal } from './ui/choiceModal';
 import { PactModal } from './ui/pactModal';
 import { LevelUpModal } from './ui/levelUpModal';
+import { MasteryChoiceModal } from './ui/masteryChoiceModal';
 import { RuneOfReturnDiscoveryModal } from './ui/runeOfReturnDiscoveryModal';
 import { RuneOfReturnTreeModal } from './ui/runeOfReturnTreeModal';
 import { AutoRestRunner } from './ui/autoRestRunner';
@@ -174,6 +176,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const levelUpModal = new LevelUpModal(() => {
     popModal(levelUpModal.id);
     renderer?.render();
+    showPendingMastery();
   });
   const runeTreeModal = new RuneOfReturnTreeModal(() => {
     popModal(runeTreeModal.id);
@@ -183,11 +186,26 @@ window.addEventListener('DOMContentLoaded', () => {
     onClose: () => {
       popModal(runeDiscoveryModal.id);
       renderer?.render();
+      showPendingMastery();
     },
     onOpenTree: () => {
       openRuneTree();
     },
   });
+  const masteryModal = new MasteryChoiceModal(() => {
+    popModal(masteryModal.id);
+    renderer?.render();
+  });
+  /** Shows queued mastery-perk choices once no modal drawn above them (level-up, rune
+   *  discovery) is open, so the visible window is always the one taking keys. */
+  const showPendingMastery = (): void => {
+    if (!activeEngine || masteryModal.isOpen || !masteryModal.hasPending) return;
+    if (levelUpModal.isOpen || runeDiscoveryModal.isOpen) return;
+    if (masteryModal.open(activeEngine)) {
+      inputHandler?.modalStack.push(masteryModal);
+      renderer?.render();
+    }
+  };
   const autosaveManager = new AutosaveManager(getBrowserStorage() ?? undefined, activeManifest);
   // Detects a session that stopped responding (see src/ui/sessionGuard.ts).
   const sessionGuard = new SessionGuard(getBrowserStorage(), {
@@ -973,6 +991,7 @@ window.addEventListener('DOMContentLoaded', () => {
       inputHandler.modalStack.closeAll();
       inputHandler.isInputLocked = false;
     }
+    masteryModal.clearQueue();
     activeEngine = engine;
     activeProfile = profile;
     window.__cotwEngine = engine;
@@ -1012,12 +1031,21 @@ window.addEventListener('DOMContentLoaded', () => {
           runeDiscoveryModal.open(engine, () => {
             popModal(runeDiscoveryModal.id);
             renderer?.render();
+            showPendingMastery();
           });
           pushModal(runeDiscoveryModal.id, runeDiscoveryModal);
         } else {
           runeDiscoveryModal.open(engine);
         }
         renderer?.render();
+      } else if (isGameEvent(event, 'mastery_unlocked')) {
+        masteryModal.enqueue({
+          scope: event.scope,
+          masteryId: event.masteryId,
+          name: event.name,
+          kills: event.kills,
+        });
+        showPendingMastery();
       }
     };
 

@@ -14,6 +14,7 @@ import { getTileDefinition } from '../grid/tile';
 import { HookDispatcher } from '../hooks/hookDispatcher';
 import { BASE_ACTION_COST } from '../types';
 import { createMonsterTrophy } from '../compendium/trophies';
+import { hasMasteryPerk, recordMasteryKill } from '../compendium/compendiumManager';
 import { DeathEnvelopeTracker } from '../analytics/deathEnvelope';
 
 /** Duck-typed check avoiding a value import of Companion (see import comment above). */
@@ -103,24 +104,13 @@ export class DeathResolver {
         data: { victimName: victim.name },
       });
 
-      // Record kill in Slayer's Compendium
-      if (engine.compendium) {
-        const killRes = engine.compendium.recordKill(victim.definitionId, victim.name);
-        if (killRes.tierAdvanced) {
-          if (killRes.tier === 2) {
-            engine.log(`*** Slayer's Compendium: You uncovered the affinities and weaknesses of ${victim.name}! ***`);
-          } else if (killRes.tier === 3) {
-            engine.log(`*** MASTERED! You have mastered ${victim.name} (5+ kills)! Open your Compendium [B] to select a Mastery Specialization! ***`);
-          }
-        }
-      }
+      // Record kill in Slayer's Compendium (species and category mastery)
+      recordMasteryKill(engine, victim.definitionId, victim.name);
 
-      // Slayer's Compendium Slay Perks (Essence Siphon & Trophy Hunter)
+      // Slayer's Compendium Slay Perks (Essence Siphon & Trophy Hunter), from species or category mastery
       if (killer instanceof Player && victim instanceof Monster && engine.compendium) {
-        const perk = engine.compendium.getPerk(victim.definitionId);
-
         // 1. Essence Siphon: Restores 10% Max HP, 10% Max Mana, and refunds 50% energy
-        if (perk === 'essence_siphon') {
+        if (hasMasteryPerk(engine, victim.definitionId, 'essence_siphon')) {
           const hpGain = Math.max(2, Math.round(killer.maxHp * 0.10));
           const manaGain = Math.max(2, Math.round((killer.maxMana ?? 20) * 0.10));
           killer.heal(hpGain);
@@ -139,7 +129,7 @@ export class DeathResolver {
         }
 
         // 2. Trophy Hunter: 35% chance to harvest rare anatomical trophy/reagent
-        if (perk === 'trophy_hunter') {
+        if (hasMasteryPerk(engine, victim.definitionId, 'trophy_hunter')) {
           if (engine.rng() < 0.35) {
             const trophy = createMonsterTrophy(victim, engine);
             engine.map.addItemAt(victim.x, victim.y, trophy);
@@ -184,7 +174,7 @@ export class DeathResolver {
 
       // Generate loot drops on victim's position
       if (victim.lootTable && victim.lootTable.length > 0) {
-        const isPlunderer = killer instanceof Player && engine.compendium?.getPerk(victim.definitionId) === 'plunderer';
+        const isPlunderer = killer instanceof Player && hasMasteryPerk(engine, victim.definitionId, 'plunderer');
         const rewards = engine.pacts?.getAggregatedRewards();
         const mf = rewards?.magicFindBonus ?? 0;
         const goldMult = (rewards?.goldMultiplier ?? 1.0) * (isPlunderer ? 2.0 : 1.0);

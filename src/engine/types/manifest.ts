@@ -389,6 +389,24 @@ export interface AttributeMilestoneTrigger {
 }
 
 /**
+ * A thematic family of monsters for Slayer's Compendium category mastery
+ * (`src/engine/compendium/`). Kills of every member count toward the category; at
+ * `masteryKills` the player chooses a mastery perk that applies to the whole family.
+ * A monster belongs to at most one category.
+ */
+export interface MonsterCategoryDefinition {
+  id: string;
+  /** Player-facing name, e.g. "The Restless Dead". */
+  name: string;
+  icon?: string;
+  description?: string;
+  /** Monster definition IDs in this category. */
+  members: string[];
+  /** Combined kills across all members needed to unlock category mastery. */
+  masteryKills: number;
+}
+
+/**
  * A turn-limited world event (ARCHITECTURE.md §3) — a gap surfaced by a climactic
  * story choice that needed to feel time-pressured rather than a calm, simulation-
  * paused dialogue menu. Ticked once per player turn by `GameEngine` (a `'timed-
@@ -585,6 +603,8 @@ export interface GameContentManifest {
   attributeMilestones?: AttributeMilestoneTrigger[];
   /** "Driven off" boss resolutions (ARCHITECTURE.md §3, `BossFleeResolution`). */
   bossFleeResolutions?: BossFleeResolution[];
+  /** Monster families for compendium category mastery (`MonsterCategoryDefinition`). */
+  monsterCategories?: MonsterCategoryDefinition[];
   /**
    * Pack-neutral wiring for the Rune of Return (docs/architecture/content-rune-of-return.md). The
    * mechanic (channel timing, banking, mobility, interrupt rules) is fixed engine

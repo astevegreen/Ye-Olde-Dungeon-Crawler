@@ -38,7 +38,9 @@ export type BuiltInGameEventType =
   | 'damage_dealt'
   | 'entity_killed'
   | 'level_transition'
-  | 'rune_of_return_discovered';
+  | 'rune_of_return_discovered'
+  | 'mastery_unlocked'
+  | 'mastery_perk_selected';
 
 export interface PlayerLeveledUpEvent extends GameEventBase {
   type: 'player_leveled_up';
@@ -92,6 +94,24 @@ export interface RuneOfReturnDiscoveredEvent extends GameEventBase {
   type: 'rune_of_return_discovered';
 }
 
+/** Slayer's Compendium mastery reached — the player may now choose a perk. */
+export interface MasteryUnlockedEvent extends GameEventBase {
+  type: 'mastery_unlocked';
+  /** 'species' = one monster type; 'category' = a whole `MonsterCategoryDefinition`. */
+  scope: 'species' | 'category';
+  /** Monster definition ID (species) or category ID. */
+  masteryId: string;
+  name: string;
+  kills: number;
+}
+
+export interface MasteryPerkSelectedEvent extends GameEventBase {
+  type: 'mastery_perk_selected';
+  scope: 'species' | 'category';
+  masteryId: string;
+  perkId: string;
+}
+
 /**
  * Any event. The union names the built-ins for authoring convenience, and
  * `GameEventBase` keeps it open so content packs can emit their own types.
@@ -105,6 +125,8 @@ export type GameEvent =
   | EntityKilledEvent
   | LevelTransitionEvent
   | RuneOfReturnDiscoveredEvent
+  | MasteryUnlockedEvent
+  | MasteryPerkSelectedEvent
   | GameEventBase;
 
 /**

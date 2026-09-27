@@ -131,7 +131,10 @@ describe('Level-Up Attribute / Skill Allocation System', () => {
     expect(reloaded.profile.unspentStatPoints).toBe(5);
   });
 
-  it('integrates LevelUpModal with ModalStackManager and keyboard allocation', () => {
+  const key = (k: string, code: string) =>
+    ({ key: k, code, shiftKey: false, preventDefault: () => {} }) as unknown as KeyboardEvent;
+
+  it('integrates LevelUpModal with ModalStackManager: letters plan points, Enter locks them in', () => {
     player.unspentStatPoints = 2;
     const modal = new LevelUpModal();
     const modalStack = new ModalStackManager();
@@ -142,126 +145,113 @@ describe('Level-Up Attribute / Skill Allocation System', () => {
     expect(modal.isOpen).toBe(true);
     expect(modalStack.top()?.id).toBe('level-up-modal');
 
-    // Debounce safety: keys within 200ms of opening are dropped
-    const rapidKey = { key: 's', code: 'KeyS', preventDefault: () => {} } as unknown as KeyboardEvent;
-    expect(modalStack.handleKeyDown(rapidKey)).toBe(true);
-    // Dropped during debounce window
+    // Debounce safety: keys within 200ms of opening are dropped — Enter included
+    expect(modalStack.handleKeyDown(key('s', 'KeyS'))).toBe(true);
+    expect(modalStack.handleKeyDown(key('Enter', 'Enter'))).toBe(true);
+    expect(modal.isOpen).toBe(true);
     expect(player.strength).toBe(14);
     expect(player.unspentStatPoints).toBe(2);
 
-    // After debounce window:
     (modal as any).openedAt = 0;
 
-    // Number keys (e.g. Digit1, Numpad1) must NOT allocate attributes (prevent accidental movement allocations)
-    const key1Event = { key: '1', code: 'Digit1', preventDefault: () => {} } as unknown as KeyboardEvent;
-    const handled1 = modalStack.handleKeyDown(key1Event);
-    expect(handled1).toBe(true);
+    // Number keys (e.g. Digit1, Numpad1) must NOT allocate attributes
+    expect(modalStack.handleKeyDown(key('1', 'Digit1'))).toBe(true);
+    expect(modalStack.handleKeyDown(key('1', 'Numpad1'))).toBe(true);
+
+    // Letters only plan points — the player is untouched until accepted
+    modalStack.handleKeyDown(key('s', 'KeyS'));
+    modalStack.handleKeyDown(key('c', 'KeyC'));
+    modalStack.handleKeyDown(key('c', 'KeyC')); // no third point to plan
     expect(player.strength).toBe(14);
+    expect(player.constitution).toBe(13);
     expect(player.unspentStatPoints).toBe(2);
 
-    // Key 'KeyS' allocates strength
-    const keySEvent = { key: 's', code: 'KeyS', preventDefault: () => {} } as unknown as KeyboardEvent;
-    const handledS = modalStack.handleKeyDown(keySEvent);
-    expect(handledS).toBe(true);
+    // Enter locks them in and returns to the game
+    modalStack.handleKeyDown(key('Enter', 'Enter'));
     expect(player.strength).toBe(15);
-    expect(player.unspentStatPoints).toBe(1);
-
-    // Key 'KeyC' allocates constitution
-    const keyCEvent = { key: 'c', code: 'KeyC', preventDefault: () => {} } as unknown as KeyboardEvent;
-    const handledC = modalStack.handleKeyDown(keyCEvent);
-    expect(handledC).toBe(true);
     expect(player.constitution).toBe(14);
     expect(player.unspentStatPoints).toBe(0);
-
-    // Escape closes modal
-    const escEvent = { key: 'Escape', code: 'Escape', preventDefault: () => {} } as unknown as KeyboardEvent;
-    modalStack.handleKeyDown(escEvent);
     expect(modal.isOpen).toBe(false);
     expect(modalStack.isEmpty()).toBe(true);
   });
 
-  it('allows undo and redo of attribute allocations in LevelUpModal and hotkeys', () => {
+  it('Escape closes without spending planned points', () => {
     player.unspentStatPoints = 3;
-    const initialStrength = player.strength;
     const modal = new LevelUpModal();
-
     modal.open(engine);
     (modal as any).openedAt = 0;
 
-    // Allocate Strength via modal method
-    expect(modal.allocate('strength')).toBe(true);
-    expect(player.strength).toBe(initialStrength + 1);
-    expect(player.unspentStatPoints).toBe(2);
+    modal.allocate('strength');
+    modal.allocate('strength');
+    modal.handleKeyDown(key('Escape', 'Escape'));
 
-    // Allocate Dexterity via modal method
-    expect(modal.allocate('dexterity')).toBe(true);
-    expect(player.dexterity).toBe(13);
-    expect(player.unspentStatPoints).toBe(1);
-
-    // Undo via hotkey 'Z'
-    const zEvent = { key: 'z', code: 'KeyZ', preventDefault: () => {} } as unknown as KeyboardEvent;
-    expect(modal.handleKeyDown(zEvent)).toBe(true);
-    // Dexterity should be reverted
-    expect(player.dexterity).toBe(12);
-    expect(player.unspentStatPoints).toBe(2);
-
-    // Redo via hotkey 'Y'
-    const yEvent = { key: 'y', code: 'KeyY', preventDefault: () => {} } as unknown as KeyboardEvent;
-    expect(modal.handleKeyDown(yEvent)).toBe(true);
-    // Dexterity re-applied
-    expect(player.dexterity).toBe(13);
-    expect(player.unspentStatPoints).toBe(1);
-
-    // Reset via hotkey 'R'
-    const rEvent = { key: 'r', code: 'KeyR', preventDefault: () => {} } as unknown as KeyboardEvent;
-    expect(modal.handleKeyDown(rEvent)).toBe(true);
-    expect(player.strength).toBe(initialStrength);
-    expect(player.dexterity).toBe(12);
+    expect(modal.isOpen).toBe(false);
+    expect(player.strength).toBe(14);
     expect(player.unspentStatPoints).toBe(3);
+
+    // Reopening starts from a clean plan
+    modal.open(engine);
+    (modal as any).openedAt = 0;
+    expect(modal.deallocate('strength')).toBe(false);
   });
 
-  it('deallocates attribute points safely and prevents deallocating below baseline', () => {
-    player.unspentStatPoints = 2;
-    const baselineStrength = player.strength;
+  it('undo, redo, reset and -1 only move points planned this session', () => {
+    player.unspentStatPoints = 3;
+    const modal = new LevelUpModal();
+    modal.open(engine);
+    (modal as any).openedAt = 0;
 
-    // Cannot deallocate when none allocated
-    expect(player.deallocateAttribute('strength', 1)).toBe(false);
-    expect(player.strength).toBe(baselineStrength);
+    // Previously locked-in points can never be taken back
+    expect(modal.deallocate('strength')).toBe(false);
 
-    // Allocate 2
-    expect(player.allocateAttribute('strength', 2)).toBe(true);
-    expect(player.strength).toBe(baselineStrength + 2);
+    expect(modal.allocate('strength')).toBe(true);
+    expect(modal.allocate('strength')).toBe(true);
+    expect(modal.allocate('strength')).toBe(true);
+    expect(modal.allocate('dexterity')).toBe(false); // all 3 planned
+
+    // -1 removes a planned point, freeing it for another attribute
+    expect(modal.deallocate('strength')).toBe(true);
+    expect(modal.allocate('dexterity')).toBe(true);
+
+    // Undo via Z reverses the dexterity plan, Y redoes it
+    modal.handleKeyDown(key('z', 'KeyZ'));
+    expect((modal as any).draft.get('dexterity')).toBe(0);
+    modal.handleKeyDown(key('y', 'KeyY'));
+    expect((modal as any).draft.get('dexterity')).toBe(1);
+
+    // Reset clears the whole plan
+    modal.handleKeyDown(key('r', 'KeyR'));
+    expect((modal as any).draft.total).toBe(0);
+
+    // Re-plan all three into intelligence and accept
+    modal.allocate('intelligence');
+    modal.allocate('intelligence');
+    modal.allocate('intelligence');
+    modal.accept();
+    expect(player.intelligence).toBe(13);
+    expect(player.strength).toBe(14);
     expect(player.unspentStatPoints).toBe(0);
-
-    // Deallocate 1
-    expect(player.deallocateAttribute('strength', 1)).toBe(true);
-    expect(player.strength).toBe(baselineStrength + 1);
-    expect(player.unspentStatPoints).toBe(1);
-
-    // Deallocate remaining 1
-    expect(player.deallocateAttribute('strength', 1)).toBe(true);
-    expect(player.strength).toBe(baselineStrength);
-    expect(player.unspentStatPoints).toBe(2);
-
-    // Further deallocation refused
-    expect(player.deallocateAttribute('strength', 1)).toBe(false);
-    expect(player.strength).toBe(baselineStrength);
-    expect(player.unspentStatPoints).toBe(2);
   });
 
-  it('persists allocatedAttributes through save serialization and deserialization', () => {
-    player.unspentStatPoints = 2;
-    player.allocateAttribute('constitution', 2);
+  it('a new level-up cannot remove points locked in by an earlier one', () => {
+    player.unspentStatPoints = 3;
+    const modal = new LevelUpModal();
+    modal.open(engine);
+    (modal as any).openedAt = 0;
+    modal.allocate('strength');
+    modal.allocate('strength');
+    modal.allocate('strength');
+    modal.accept();
+    expect(player.strength).toBe(17);
 
-    const serialized = serializeGame(engine);
-    expect(serialized.player.allocatedAttributes?.constitution).toBe(2);
-
-    const reloaded = deserializeGame(serialized);
-    expect(reloaded.engine.player.allocatedAttributes.constitution).toBe(2);
-
-    // Should be able to deallocate from reloaded save
-    expect(reloaded.engine.player.deallocateAttribute('constitution', 1)).toBe(true);
-    expect(reloaded.engine.player.allocatedAttributes.constitution).toBe(1);
-    expect(reloaded.engine.player.unspentStatPoints).toBe(1);
+    player.unspentStatPoints = 3;
+    modal.open(engine);
+    (modal as any).openedAt = 0;
+    expect(modal.deallocate('strength')).toBe(false);
+    modal.handleKeyDown(key('z', 'KeyZ'));
+    modal.handleKeyDown(key('r', 'KeyR'));
+    modal.accept();
+    expect(player.strength).toBe(17);
+    expect(player.unspentStatPoints).toBe(3);
   });
 });

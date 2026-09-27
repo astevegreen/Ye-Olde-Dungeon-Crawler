@@ -119,11 +119,16 @@ describe('ChoiceModal UI Component', () => {
     expect(overlay?.innerHTML).toContain('Purify with Holy Waters');
     expect(overlay?.innerHTML).toContain('Desecrate for Dark Power');
 
-    // Click option 1
+    // Clicking an option only highlights it
     const optRow = mockDoc.getElementById('choice-opt-purify');
     expect(optRow).not.toBeNull();
     optRow?.click();
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(modal.isOpen).toBe(true);
 
+    // The Confirm button locks it in
+    mockDoc.getElementById('btn-choice-confirm')?.click();
+    expect(onSelect).toHaveBeenCalledTimes(1);
     expect(onSelect).toHaveBeenCalledWith('purify');
     expect(modal.isOpen).toBe(false);
   });
@@ -273,6 +278,7 @@ describe('ChoiceModal input through the modal stack', () => {
 
   const openAsMainDoes = (cancelable: boolean) => {
     modal.open(choice(cancelable), engine, onSelect, onCancel);
+    (modal as any).openedAt = 0; // past the open debounce
     input.modalStack.push(modal);
   };
   const overlay = () => (globalThis as any).document.getElementById('choice-modal-overlay') as MockElement;
@@ -284,22 +290,37 @@ describe('ChoiceModal input through the modal stack', () => {
     expect(win.listenerCount('keydown')).toBe(1); // InputHandler's
   });
 
-  it('selects once on a number key, delivered to handleKeyDown once', () => {
+  it('ignores number keys, so number-pad movement cannot pick an option', () => {
     openAsMainDoes(true);
     const handle = vi.spyOn(modal, 'handleKeyDown');
 
     win.dispatchEvent(keydown('Digit2', '2'));
+    win.dispatchEvent(keydown('Numpad1', '1'));
 
-    expect(handle).toHaveBeenCalledTimes(1);
-    expect(onSelect).toHaveBeenCalledTimes(1);
-    expect(onSelect).toHaveBeenCalledWith('right');
-    expect(closed).toHaveBeenCalledTimes(1);
-    expect(input.modalStack.isEmpty()).toBe(true);
+    expect(handle).toHaveBeenCalledTimes(2);
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(modal.isOpen).toBe(true);
+  });
+
+  it('does nothing on Enter until an option is highlighted', () => {
+    openAsMainDoes(true);
+    win.dispatchEvent(keydown('Enter'));
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(modal.isOpen).toBe(true);
+  });
+
+  it('swallows keys in flight when it opens', () => {
+    modal.open(choice(true), engine, onSelect, onCancel);
+    input.modalStack.push(modal);
+    win.dispatchEvent(keydown('ArrowDown'));
+    win.dispatchEvent(keydown('Enter'));
+    expect(onSelect).not.toHaveBeenCalled();
   });
 
   it('moves focus with the arrows and selects the focused option on Enter', () => {
     openAsMainDoes(true);
 
+    win.dispatchEvent(keydown('ArrowDown'));
     win.dispatchEvent(keydown('ArrowDown'));
     expect(onSelect).not.toHaveBeenCalled();
     win.dispatchEvent(keydown('Enter'));
@@ -331,7 +352,8 @@ describe('ChoiceModal input through the modal stack', () => {
     expect(overlay().style.display).toBe('flex');
     expect(input.modalStack.getStackIds()).toEqual(['choice']);
 
-    win.dispatchEvent(keydown('Digit1', '1'));
+    win.dispatchEvent(keydown('ArrowDown'));
+    win.dispatchEvent(keydown('Enter'));
     expect(onSelect).toHaveBeenCalledTimes(1);
     expect(onSelect).toHaveBeenCalledWith('left');
     expect(input.modalStack.isEmpty()).toBe(true);

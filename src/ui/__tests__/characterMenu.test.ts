@@ -617,12 +617,22 @@ describe('CharacterTab stat allocation and attribute milestone surfacing', () =>
     expect(engine.player.strength).toBe(14);
     expect(engine.player.unspentStatPoints).toBe(2);
 
-    // Allocate 1 point to strength via letter hotkey 'S'
+    // Letter hotkey 'S' only plans a point; the player is untouched until accepted
     const keyS = makeKey('s', 'KeyS');
     const handled = charTab.handleKeyDown(keyS);
     expect(handled).toBe(true);
+    expect(engine.player.strength).toBe(14);
+    expect(engine.player.unspentStatPoints).toBe(2);
+    expect(container.innerHTML).toContain('Planned: +1 STR');
+
+    // Enter locks the planned point in
+    expect(charTab.handleKeyDown(makeKey('Enter', 'Enter'))).toBe(true);
     expect(engine.player.strength).toBe(15);
     expect(engine.player.unspentStatPoints).toBe(1);
+
+    // Locked-in points cannot be taken back; Enter with nothing planned falls through to the shell
+    expect(charTab.deallocate('strength')).toBe(false);
+    expect(charTab.handleKeyDown(makeKey('Enter', 'Enter'))).toBe(false);
 
     // After re-render, strength milestone is now Ready to Unlock
     expect(container.innerHTML).toContain('Strength ≥ 15');

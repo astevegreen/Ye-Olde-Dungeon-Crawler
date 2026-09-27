@@ -140,8 +140,9 @@ describe('CompendiumModal UI & Mastery Specializations', () => {
 
     const overlay = mockDoc.getElementById('compendium-modal');
     expect(overlay).toBeDefined();
-    expect(overlay?.innerHTML).toContain('2/5 Kills');
-    expect(overlay?.innerHTML).toContain('SLAYER MASTERY PROGRESS');
+    expect(overlay?.innerHTML).toContain('2/15 Kills');
+    expect(overlay?.innerHTML).toContain('Kobold Slinker Mastery');
+    expect(overlay?.innerHTML).toContain('Slay 13 more');
     expect(overlay?.innerHTML).toContain('Anatomist');
     expect(overlay?.innerHTML).toContain('Survivor');
     expect(overlay?.innerHTML).toContain('Trophy Hunter');
@@ -166,7 +167,7 @@ describe('CompendiumModal UI & Mastery Specializations', () => {
       lootTable: [],
     });
 
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 15; i++) {
       engine.compendium.recordKill('giant_rat', 'Giant Rat');
     }
 
@@ -174,8 +175,8 @@ describe('CompendiumModal UI & Mastery Specializations', () => {
     modal.open(engine);
 
     const overlay = mockDoc.getElementById('compendium-modal');
-    expect(overlay?.innerHTML).toContain('SLAYER MASTERY SPECIALIZATION');
-    expect(overlay?.innerHTML).toContain('In Town: Study with Guild scholars');
+    expect(overlay?.innerHTML).toContain('★ Giant Rat Mastery');
+    expect(overlay?.innerHTML).toContain('In Town: you may freely choose or switch perks');
     expect(overlay?.innerHTML).toContain('Anatomist');
     expect(overlay?.innerHTML).toContain('Survivor');
     expect(overlay?.innerHTML).toContain('Trophy Hunter');
@@ -216,7 +217,7 @@ describe('CompendiumModal UI & Mastery Specializations', () => {
       lootTable: [],
     });
 
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 15; i++) {
       engine.compendium.recordKill('giant_rat', 'Giant Rat');
     }
 
@@ -230,7 +231,7 @@ describe('CompendiumModal UI & Mastery Specializations', () => {
 
     const overlay = mockDoc.getElementById('compendium-modal');
     // Once survivor is chosen, switching in dungeon is locked
-    expect(overlay?.innerHTML).toContain('Return to Town to respec');
+    expect(overlay?.innerHTML).toContain('Return to Town to change it');
     expect(overlay?.innerHTML).toContain('🔒 In Dungeon');
 
     // Trying to respec in dungeon fails
@@ -238,5 +239,38 @@ describe('CompendiumModal UI & Mastery Specializations', () => {
     expect(invalidRespec.success).toBe(false);
     expect(invalidRespec.reason).toContain('Town');
     expect(engine.compendium.getPerk('giant_rat')).toBe('survivor');
+  });
+
+  it('shows the category mastery panel for a monster in a category', () => {
+    const map = new GameMap(10, 10);
+    const player = new Player({ id: 'p1', name: 'Hero', position: { x: 1, y: 1 } });
+    const monster = (id: string, name: string) => ({
+      id, name, stats: { hp: 5, maxHp: 5, attack: 2, defense: 0 }, speed: 100, aiType: 'melee', fleeHealthPercent: 0, xpValue: 1, lootTable: [],
+    });
+    const manifest = {
+      id: 'test',
+      name: 'Test',
+      monsters: [monster('skeleton', 'Skeleton'), monster('draugr', 'Draugr')],
+      items: [],
+      spells: [],
+      monsterCategories: [
+        { id: 'undead', name: 'The Restless Dead', members: ['skeleton', 'draugr'], masteryKills: 40 },
+      ],
+    } as any;
+    const engine = new GameEngine({ map, player, floor: 1, manifest });
+    for (let i = 0; i < 12; i++) engine.compendium.recordKill('skeleton', 'Skeleton');
+    for (let i = 0; i < 30; i++) engine.compendium.recordKill('draugr', 'Draugr');
+
+    const modal = new CompendiumModal();
+    modal.open(engine);
+    (modal as any).selectedMonsterId = 'skeleton';
+    modal.render();
+
+    const html = mockDoc.getElementById('compendium-modal')?.innerHTML ?? '';
+    expect(html).toContain('12/15 Kills'); // species not yet mastered
+    expect(html).toContain('The Restless Dead (Category)');
+    expect(html).toContain('42/40 Kills');
+    expect(html).toContain('data-scope="category"');
+    expect(html).not.toContain('data-scope="species"');
   });
 });

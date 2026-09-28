@@ -19,6 +19,17 @@ export type ItemInspectorActionId = 'equip' | 'unequip' | 'use' | 'drop' | 'take
 /**
  * Assigns thematically-appropriate colors based on item alignment and quality.
  * If the item is still unidentified, it has NO special color (returns neutral theme text color).
+ *
+ * There are exactly eight alignment buckets, each with its own unique color: normal (no
+ * glow), three positive (blessed, enchanted, holy), three negative (cursed, hexed, unholy),
+ * and chaotic. Quality-tier cues (artifact, broken) are a separate axis from alignment and
+ * fall back to their own color only once none of the eight apply.
+ *
+ * Checks within a polarity run most-specific first: `isBlessed()`/`isModifierBlessed` also
+ * matches any positive-alignment modifier (a broader, pre-existing gameplay bucket used by
+ * combat.ts and Item.displayName), so `isHoly()`/`isEnchanted()` — which check their exact
+ * modifier category only — must be tested before `isBlessed()` or every holy/enchanted item
+ * would render as plain blessed.
  */
 export function getItemThematicColor(item: Item | null | undefined, theme: Required<ThemeTokens>): string {
   if (!item) return theme.hudText;
@@ -36,46 +47,60 @@ export function getItemThematicColor(item: Item | null | undefined, theme: Requi
     }
   }
 
+  // --- Negative (3): cursed, hexed, unholy ---
+
   // Cursed (Crimson Red)
   if (item.isCursed()) {
     return '#ef4444';
   }
 
-  // Hexed (Sickly Amber)
+  // Hexed (Sickly Orange)
   if (item.isHexed()) {
     return '#f97316';
   }
 
-  // Unholy (Profane Violet-Black)
+  // Unholy (Profane Teal)
   if (item.isUnholy()) {
-    return '#7c3aed';
+    return '#0d9488';
   }
 
-  // Blessed / Holy (Celestial Sky Blue)
+  // --- Positive (3): holy, enchanted, blessed ---
+
+  // Holy (Radiant Gold)
+  if (item.isHoly()) {
+    return '#fbbf24';
+  }
+
+  // Enchanted / Elemental (Arcane Violet)
+  if (item.isEnchanted()) {
+    return '#c084fc';
+  }
+
+  // Blessed (Celestial Sky Blue)
   if (item.isBlessed()) {
     return '#38bdf8';
   }
+
+  // --- Chaotic (1) ---
 
   // Chaotic / Warped (Fuchsia / Magenta)
   if (item.isChaotic()) {
     return '#e879f9';
   }
 
-  // Artifact / Legendary (Amber Gold)
-  if (item.quality === 'artifact') {
-    return '#f59e0b';
-  }
+  // --- Quality tier, orthogonal to alignment: only applies once none of the above match ---
 
-  // Enchanted / Elemental (Arcane Violet)
-  if (item.quality === 'enchanted' || (item.enchantmentLevel && item.enchantmentLevel > 0) || item.elementalAffix) {
-    return '#c084fc';
+  // Artifact / Legendary (Bronze)
+  if (item.quality === 'artifact') {
+    return '#b45309';
   }
 
   if (item.isBroken()) {
     return '#78716c';
   }
 
-  return theme.hudAccent ?? theme.hudText;
+  // Normal: no special alignment, same neutral text color as an unidentified item.
+  return theme.hudText;
 }
 
 export interface EquipmentComparison {

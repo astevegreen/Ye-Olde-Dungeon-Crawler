@@ -61,13 +61,7 @@ export function getItemBuyPrice(item: Item, worldState?: WorldState, pricing?: M
 
 /** True if the item carries a beneficial identity: blessed, artifact-tier, or enchanted/elemental. */
 function hasPositiveAttribute(item: Item): boolean {
-  return (
-    item.isBlessed() ||
-    item.quality === 'artifact' ||
-    item.quality === 'enchanted' ||
-    (item.enchantmentLevel ?? 0) > 0 ||
-    !!item.elementalAffix
-  );
+  return item.isBlessed() || item.isHoly() || item.isEnchanted() || item.quality === 'artifact';
 }
 
 /** True if the item carries a harmful identity: cursed, hexed, unholy, or chaotic. */

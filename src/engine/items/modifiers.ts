@@ -74,3 +74,12 @@ export function isModifierHexed(mod: ItemModifier): boolean {
 export function isModifierUnholy(mod: ItemModifier): boolean {
   return mod.category === 'unholy';
 }
+
+export function isModifierHoly(mod: ItemModifier): boolean {
+  return mod.category === 'holy';
+}
+
+/** Exact-category check, unlike `isModifierBlessed`'s broader "any positive modifier" catch. */
+export function isModifierEnchantedCategory(mod: ItemModifier): boolean {
+  return mod.category === 'enchanted';
+}

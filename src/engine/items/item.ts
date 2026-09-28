@@ -8,6 +8,8 @@ import {
   isModifierChaotic,
   isModifierHexed,
   isModifierUnholy,
+  isModifierHoly,
+  isModifierEnchantedCategory,
 } from './modifiers';
 import { getRegisteredContainer } from './containerRegistry';
 
@@ -290,6 +292,20 @@ export class Item {
 
   public isUnholy(): boolean {
     return this.modifiers.some(isModifierUnholy);
+  }
+
+  public isHoly(): boolean {
+    return this.modifiers.some(isModifierHoly);
+  }
+
+  /** Distinct from `isBlessed()`: only the 'enchanted' modifier category or quality/enchantment-level tier. */
+  public isEnchanted(): boolean {
+    return (
+      this.quality === 'enchanted' ||
+      this.enchantmentLevel > 0 ||
+      !!this.elementalAffix ||
+      this.modifiers.some(isModifierEnchantedCategory)
+    );
   }
 
   public uncurse(): { uncursed: boolean; removedModifiers: string[] } {

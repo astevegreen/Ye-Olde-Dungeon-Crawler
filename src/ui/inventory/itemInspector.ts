@@ -36,9 +36,19 @@ export function getItemThematicColor(item: Item | null | undefined, theme: Requi
     }
   }
 
-  // Cursed / Unholy (Crimson Red)
+  // Cursed (Crimson Red)
   if (item.isCursed()) {
     return '#ef4444';
+  }
+
+  // Hexed (Sickly Amber)
+  if (item.isHexed()) {
+    return '#f97316';
+  }
+
+  // Unholy (Profane Violet-Black)
+  if (item.isUnholy()) {
+    return '#7c3aed';
   }
 
   // Blessed / Holy (Celestial Sky Blue)

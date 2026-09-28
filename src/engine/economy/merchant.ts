@@ -59,19 +59,44 @@ export function getItemBuyPrice(item: Item, worldState?: WorldState, pricing?: M
   return basePrice;
 }
 
+/** True if the item carries a beneficial identity: blessed, artifact-tier, or enchanted/elemental. */
+function hasPositiveAttribute(item: Item): boolean {
+  return (
+    item.isBlessed() ||
+    item.quality === 'artifact' ||
+    item.quality === 'enchanted' ||
+    (item.enchantmentLevel ?? 0) > 0 ||
+    !!item.elementalAffix
+  );
+}
+
+/** True if the item carries a harmful identity: cursed, hexed, unholy, or chaotic. */
+function hasNegativeAttribute(item: Item): boolean {
+  return item.isCursed() || item.isHexed() || item.isUnholy() || item.isChaotic();
+}
+
 /**
  * Calculates sell valuation for an item offered by the player:
  * - Base sell rate is 50% of buy value.
- * - Unidentified items suffer a 75% penalty (merchants pay scrap for mystery goods).
- * - Enchanted items that are identified receive a +50% bonus.
- * - Cursed items sell for only 10% value.
+ * - A merchant appraises anything crossing the counter, whether or not the seller ever
+ *   paid to identify it. An unidentified item that turns out blessed/enchanted/artifact
+ *   fetches a windfall price; one that turns out cursed/hexed/unholy/chaotic fetches scrap;
+ *   a plain unidentified item still suffers the ordinary mystery-goods penalty.
+ * - Once identified, enchanted items receive a +50% bonus and cursed items sell for 10%.
  */
 export function getItemSellPrice(item: Item): number {
   const buyPrice = getItemBuyPrice(item);
   let sellPrice = Math.floor(buyPrice * 0.5);
 
   if (!item.identified) {
-    sellPrice = Math.floor(sellPrice * 0.25);
+    // Negative takes priority: a cursed blade stays scrap even if it also rolled a stat bonus.
+    if (hasNegativeAttribute(item)) {
+      sellPrice = Math.floor(sellPrice * 0.1);
+    } else if (hasPositiveAttribute(item)) {
+      sellPrice = Math.floor(sellPrice * 2.0);
+    } else {
+      sellPrice = Math.floor(sellPrice * 0.25);
+    }
   } else if (item.quality === 'enchanted') {
     sellPrice = Math.floor(sellPrice * 1.5);
   } else if (item.quality === 'cursed') {
@@ -219,11 +244,14 @@ export class Merchant {
       return { success: false, message: `Could not locate ${item.name} in your inventory.` };
     }
 
-    // 3. Calculate sell price and deposit coins into purse
+    // 3. Calculate sell price (appraising the item's true nature, identified or not)
+    //    before revealing it, then deposit coins into the player's purse.
     const sellPriceCp = getItemSellPrice(item);
     addCurrencyToPlayer(player, sellPriceCp);
 
-    // 4. Add sold item to merchant stock
+    // 4. The merchant's appraisal identifies the item; it now shows its true color
+    //    scheme and is added to stock as a known good.
+    item.identified = true;
     this.stock.push(item);
 
     return {

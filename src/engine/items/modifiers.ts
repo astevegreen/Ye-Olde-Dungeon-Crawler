@@ -66,3 +66,11 @@ export function isModifierBlessed(mod: ItemModifier): boolean {
 export function isModifierChaotic(mod: ItemModifier): boolean {
   return mod.category === 'chaotic' || mod.alignment === 'chaotic';
 }
+
+export function isModifierHexed(mod: ItemModifier): boolean {
+  return mod.category === 'hexed';
+}
+
+export function isModifierUnholy(mod: ItemModifier): boolean {
+  return mod.category === 'unholy';
+}

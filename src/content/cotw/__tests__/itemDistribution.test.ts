@@ -202,7 +202,9 @@ describe('CotW Item Distribution & Economic Integration', () => {
         ).toBeDefined();
         const def = cotwItemMap.get(item.definitionId!);
         expect(def, `${monster.id} generated unknown definition ${item.definitionId}`).toBeDefined();
-        expect(getItemSellPrice(item), `${monster.id}: ${item.name}`).toBeLessThanOrEqual(def!.value ?? 0);
+        // A merchant's unidentified-windfall appraisal (Item is blessed/enchanted/artifact) can pay
+        // up to the item's own buy price, but never more than a merchant could resell it for.
+        expect(getItemSellPrice(item), `${monster.id}: ${item.name}`).toBeLessThanOrEqual(getItemBuyPrice(item));
       }
     }
   });

@@ -116,6 +116,56 @@ describe('Merchant Economy & Trading Engine', () => {
     expect(getPlayerTotalCp(player)).toBe(1000);
   });
 
+  it('pays a windfall for an unidentified item that turns out blessed, and scrap for one that turns out cursed', () => {
+    const blessedSword = ItemFactory.createBroadsword('blessed-sword');
+    blessedSword.identified = false;
+    blessedSword.modifiers = [
+      {
+        id: 'blessed-test',
+        name: 'Blessed',
+        alignment: 'positive',
+        category: 'blessed',
+      },
+    ];
+    // Base sell 7500 CP * 2.0 windfall = 15000 CP
+    expect(getItemSellPrice(blessedSword)).toBe(15000);
+
+    const hexedSword = ItemFactory.createBroadsword('hexed-sword');
+    hexedSword.identified = false;
+    hexedSword.modifiers = [
+      {
+        id: 'hexed-test',
+        name: 'Hexed',
+        alignment: 'negative',
+        category: 'hexed',
+      },
+    ];
+    // Base sell 7500 CP * 0.1 scrap = 750 CP
+    expect(getItemSellPrice(hexedSword)).toBe(750);
+
+    // A plain unidentified item (no hidden attribute either way) keeps the ordinary penalty
+    const plainSword = ItemFactory.createBroadsword('plain-sword');
+    plainSword.identified = false;
+    expect(getItemSellPrice(plainSword)).toBe(1875);
+  });
+
+  it('identifies an item once it is sold, so it shows its true color scheme in shop stock', () => {
+    const gunther = createGuntherArmory();
+    const blessedDagger = ItemFactory.createDagger('blessed-dagger');
+    blessedDagger.identified = false;
+    blessedDagger.modifiers = [
+      { id: 'blessed-test', name: 'Blessed', alignment: 'positive', category: 'blessed' },
+    ];
+    player.inventory.primaryPack.addItem(blessedDagger);
+
+    const result = gunther.sellItem(player, 'blessed-dagger');
+    expect(result.success).toBe(true);
+
+    const soldItem = gunther.stock.find((i) => i.id === 'blessed-dagger');
+    expect(soldItem).toBeDefined();
+    expect(soldItem?.identified).toBe(true);
+  });
+
   it('rejects selling cursed equipment that is currently bound to player paperdoll', () => {
     const gunther = createGuntherArmory();
     const cursedSword = ItemFactory.createBroadsword('cursed-sword');

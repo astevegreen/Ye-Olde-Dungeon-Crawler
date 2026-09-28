@@ -1,7 +1,14 @@
 import type { ElementType } from '../magic/elements';
 import type { Predicate } from '../predicates/types';
 import type { HookDescriptor } from '../hooks/hookDispatcher';
-import { type ItemModifier, isModifierCursed, isModifierBlessed, isModifierChaotic } from './modifiers';
+import {
+  type ItemModifier,
+  isModifierCursed,
+  isModifierBlessed,
+  isModifierChaotic,
+  isModifierHexed,
+  isModifierUnholy,
+} from './modifiers';
 import { getRegisteredContainer } from './containerRegistry';
 
 export type ItemQuality = 'broken' | 'normal' | 'enchanted' | 'cursed' | 'artifact';
@@ -275,6 +282,14 @@ export class Item {
 
   public isChaotic(): boolean {
     return (this.quality as string) === 'chaotic' || this.modifiers.some(isModifierChaotic);
+  }
+
+  public isHexed(): boolean {
+    return this.modifiers.some(isModifierHexed);
+  }
+
+  public isUnholy(): boolean {
+    return this.modifiers.some(isModifierUnholy);
   }
 
   public uncurse(): { uncursed: boolean; removedModifiers: string[] } {

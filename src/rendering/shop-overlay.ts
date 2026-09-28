@@ -12,6 +12,7 @@ import {
 import type { SpriteAtlas } from './atlas/sprite-atlas';
 import { getItemSpriteKey, getEntitySpriteKey } from './atlas/sprite-mapper';
 import { resolveThemeTokens, type ThemeTokens } from './theme';
+import { getItemThematicColor } from '../ui/inventory/itemInspector';
 import type { ClickZone, ShopPanelBounds, ShopPanelContext } from './shop/types';
 import {
   renderTempleServices,
@@ -663,13 +664,7 @@ export class ShopOverlay {
       }
 
       // Name and quality
-      ctx.fillStyle = isSelected
-        ? theme.titlebarText
-        : item.quality === 'cursed'
-        ? '#ef4444'
-        : item.quality === 'enchanted'
-        ? '#c084fc'
-        : theme.hudText;
+      ctx.fillStyle = isSelected ? theme.titlebarText : getItemThematicColor(item, theme);
       ctx.fillText(item.displayName, modalX + 70, rowY + 12);
 
       // Weight & Bulk
@@ -712,7 +707,7 @@ export class ShopOverlay {
     if (activeItem) {
       const activePrice = this.activeTab === 'buy' ? getItemBuyPrice(activeItem, engine.worldState, engine.manifest.merchantPricing) : getItemSellPrice(activeItem);
       ctx.font = `bold 11px ${font}`;
-      ctx.fillStyle = activeItem.quality === 'cursed' ? '#ef4444' : activeItem.identified && activeItem.quality === 'enchanted' ? '#c084fc' : theme.hudAccent;
+      ctx.fillStyle = getItemThematicColor(activeItem, theme);
       ctx.textAlign = 'left';
       ctx.fillText(`${activeItem.displayName} [${activeItem.category}] - ${activeItem.weight}g / ${activeItem.bulk}cm³`, modalX + 18, inspectY + 14);
 

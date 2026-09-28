@@ -110,7 +110,7 @@ describe('Tactical Surface Tiles & Terrain Physics', () => {
 
     // Monster was shocked via water conductivity!
     expect(monster.hp).toBeLessThan(30);
-    const messages = engine.messages.filter((m) => m.includes('Lightning conducts through the shallow water'));
+    const messages = engine.messages.filter((m) => m.includes('Lightning surges through the connected water pool'));
     expect(messages.length).toBeGreaterThan(0);
   });
 });

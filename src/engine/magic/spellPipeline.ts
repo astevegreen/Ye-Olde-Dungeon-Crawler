@@ -338,7 +338,7 @@ export class SpellPipeline {
 
       // Check water shock
       if (spell.element === 'lightning') {
-        this.checkAndPropagateWaterShock(engine, spell, caster, rayResult.path, rayResult.hitEntityId);
+        this.checkAndPropagateWaterShock(engine, spell, rayResult.path, rayResult.hitEntityId);
       }
     } else if (mode === 'area_burst' || (mode === 'tile' && spell.areaOfEffect > 0) || spell.visual?.archetype === 'direct_burst') {
       let burstOrigin = targetPos;
@@ -777,54 +777,36 @@ export class SpellPipeline {
   private static checkAndPropagateWaterShock(
     engine: GameEngine,
     spell: SpellDefinition,
-    caster: Entity,
     path: Array<{ x: number; y: number }>,
     hitEntityId?: string
   ): void {
-    const waterSeeds = path.filter((p) => engine.map.getTile(p.x, p.y)?.type === 'shallow_water');
-    if (waterSeeds.length === 0) return;
+    if (!engine.surfaces) return;
 
-    const visited = new Set<string>();
-    const queue: Array<{ x: number; y: number }> = [...waterSeeds];
-    for (const seed of waterSeeds) {
-      visited.add(`${seed.x},${seed.y}`);
-    }
-
-    const waterPool: Array<{ x: number; y: number }> = [];
-    while (queue.length > 0 && waterPool.length < 50) {
-      const curr = queue.shift()!;
-      waterPool.push(curr);
-
-      const neighbors = [
-        { x: curr.x + 1, y: curr.y },
-        { x: curr.x - 1, y: curr.y },
-        { x: curr.x, y: curr.y + 1 },
-        { x: curr.x, y: curr.y - 1 },
-      ];
-
-      for (const n of neighbors) {
-        const key = `${n.x},${n.y}`;
-        if (!visited.has(key) && engine.map.inBounds(n.x, n.y)) {
-          const tile = engine.map.getTile(n.x, n.y);
-          if (tile?.type === 'shallow_water') {
-            visited.add(key);
-            queue.push(n);
-          }
-        }
+    // If the ray's own impact hit an entity standing in water, applyDamageEffect's
+    // call to triggerElementalReaction will already flood-fill and shock the whole
+    // pool at the correct 200% rate — firing again here would double-damage everyone
+    // in that pool. Only self-trigger when that won't happen (miss, or hit entity
+    // standing on dry land while the ray still crossed water).
+    if (hitEntityId) {
+      const hitEnt = engine.map.getEntityById(hitEntityId);
+      if (hitEnt) {
+        const tile = engine.map.getTile(hitEnt.x, hitEnt.y);
+        const cell = engine.surfaces.getCell(hitEnt.x, hitEnt.y);
+        const hitEntInWater = cell?.surface?.type === 'water' || tile?.type === 'shallow_water';
+        if (hitEntInWater) return;
       }
     }
 
-    for (const pos of waterPool) {
-      const ent = engine.map.getEntityAt(pos.x, pos.y);
-      if (ent && ent.isAlive() && ent.id !== caster.id && ent.id !== hitEntityId) {
-        engine.log(`⚡ Lightning conducts through the shallow water! ${ent.name} is shocked!`);
-        this.applyDamageEffect(engine, spell, caster, ent, {
-          type: 'damage',
-          amount: spell.basePower || 16,
-          element: spell.element || 'lightning',
-        });
-      }
-    }
+    const waterSeed = path.find((p) => engine.map.getTile(p.x, p.y)?.type === 'shallow_water');
+    if (!waterSeed) return;
+
+    engine.surfaces.triggerElementalReaction(
+      waterSeed.x,
+      waterSeed.y,
+      spell.element || 'lightning',
+      spell.basePower || 16,
+      engine
+    );
   }
 
   private static applyLegacySpellDamageAndStatus(

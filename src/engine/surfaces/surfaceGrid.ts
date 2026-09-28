@@ -295,8 +295,9 @@ export class SurfaceGrid {
       const queue: Position[] = [{ x, y }];
       const visited = new Set<string>();
       let totalDmg = 0;
+      const MAX_POOL_TILES = 50;
 
-      while (queue.length > 0) {
+      while (queue.length > 0 && affectedCells.length < MAX_POOL_TILES) {
         const p = queue.shift()!;
         const k = this.key(p.x, p.y);
         if (visited.has(k)) continue;

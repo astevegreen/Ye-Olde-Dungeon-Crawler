@@ -516,7 +516,8 @@ export class SpellPipeline {
     if (result.killed) {
       DeathResolver.resolveDeath(engine, caster, target, {
         damageElement: effect.element,
-        damageDealt: result.damageDealt,
+        damageDealt: result.finalDamage,
+        remainingHpBeforeBlow: result.damageDealt,
       });
     }
 
@@ -727,7 +728,8 @@ export class SpellPipeline {
       if (result.killed) {
         DeathResolver.resolveDeath(engine, caster, nextTarget, {
           damageElement: element,
-          damageDealt: result.damageDealt,
+          damageDealt: result.finalDamage,
+          remainingHpBeforeBlow: result.damageDealt,
         });
       }
 
@@ -851,7 +853,8 @@ export class SpellPipeline {
       if (result.killed) {
         DeathResolver.resolveDeath(engine, caster, target, {
           damageElement: spell.element,
-          damageDealt: result.damageDealt,
+          damageDealt: result.finalDamage,
+          remainingHpBeforeBlow: result.damageDealt,
         });
         return;
       }

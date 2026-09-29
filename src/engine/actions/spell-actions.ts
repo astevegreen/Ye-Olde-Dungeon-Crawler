@@ -1,5 +1,6 @@
 import type { Action } from './action';
 import type { ActionResult } from '../types';
+import { BASE_ACTION_COST } from '../types';
 import type { GameEngine } from '../engine';
 import { Entity } from '../entities/entity';
 import { Actor } from '../entities/actor';
@@ -52,9 +53,15 @@ export class CastSpellAction implements Action {
     const isPlayer = this.caster instanceof Player;
     const player = isPlayer ? (this.caster as Player) : null;
 
+    // A player's own cast takes its grimoire slot's synergies: the slot given, or else
+    // wherever the spell sits on the active page. Hook-driven free casts stay unmodified.
+    const slotIndex =
+      player && !this.freeCast
+        ? GrimoireMatrixManager.findSlotForSpell(player, this.spellId, this.slotIndex)
+        : undefined;
     const matrixEffective =
-      player && this.slotIndex !== undefined
-        ? GrimoireMatrixManager.resolveEffectiveSpell(engine, player, this.slotIndex)
+      player && slotIndex !== undefined
+        ? GrimoireMatrixManager.resolveEffectiveSpell(engine, player, slotIndex)
         : undefined;
 
     const spell =
@@ -244,15 +251,23 @@ export class CastSpellAction implements Action {
       engine.log(`☠ Casting ${spell.name} surges with dark power (+${pendingCorruption} Corruption, Total: ${player.corruptionScore})!`);
     }
 
-    if (player && this.slotIndex !== undefined) {
-      const slot = player.grimoire[this.slotIndex];
+    if (player && slotIndex !== undefined) {
+      const slot = player.grimoire[slotIndex];
       const vanishGlyph = slot?.infusedGlyphs?.find((g) => g.type === 'vanish_step');
       if (vanishGlyph) {
         const dx = Math.sign(player.x - this.targetX);
         const dy = Math.sign(player.y - this.targetY);
-        const destX = player.x + dx * vanishGlyph.potency;
-        const destY = player.y + dy * vanishGlyph.potency;
-        if (engine.map.inBounds(destX, destY) && engine.map.isPassable(destX, destY) && !engine.map.getEntityAt(destX, destY)) {
+        // Step back one cell at a time so the glyph never carries the caster through a wall.
+        let destX = player.x;
+        let destY = player.y;
+        for (let step = 0; step < vanishGlyph.potency && (dx !== 0 || dy !== 0); step++) {
+          const nx = destX + dx;
+          const ny = destY + dy;
+          if (!engine.map.inBounds(nx, ny) || !engine.map.isPassable(nx, ny) || engine.map.getEntityAt(nx, ny)) break;
+          destX = nx;
+          destY = ny;
+        }
+        if (destX !== player.x || destY !== player.y) {
           engine.map.moveEntity(player, destX, destY);
           engine.updateFov();
           engine.log(`💨 Vanish Step! ${player.name} phases backward to safety!`);
@@ -504,12 +519,11 @@ export class AttuneGrimoirePageAction implements Action {
       return { success: false, cost: 0, message: 'Defeated spellcasters cannot attune grimoires.' };
     }
     const outcome = GrimoireMatrixManager.startOrContinueAttunement(engine, this.player, this.targetPageIndex);
-    const instant = outcome.completed && GrimoireMatrixManager.canSwitchPageInstantly(engine, this.player);
-    return {
-      success: outcome.success,
-      cost: instant ? 0 : 100,
-      message: outcome.message,
-    };
+    let cost = 0;
+    if (outcome.consumesTurn) {
+      cost = this.player.getActionCost(BASE_ACTION_COST);
+      this.player.consumeEnergy(cost);
+    }
+    return { success: outcome.success, cost, message: outcome.message };
   }
 }
-

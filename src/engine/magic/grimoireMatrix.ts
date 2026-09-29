@@ -87,6 +87,18 @@ export class GrimoireMatrixManager {
   }
 
   /**
+   * The active-page slot a cast of `spellId` draws its synergies from: `preferred` when it
+   * holds that spell, else the first slot that does, else undefined (the spell is known but
+   * not slotted, so it casts unmodified).
+   */
+  public static findSlotForSpell(player: Player, spellId: string, preferred?: number): number | undefined {
+    const slots = player.grimoire;
+    if (preferred !== undefined && slots[preferred]?.spellId === spellId) return preferred;
+    const index = slots.findIndex((s) => s.spellId === spellId);
+    return index >= 0 ? index : undefined;
+  }
+
+  /**
    * Calculates the effective, matrix-modified SpellDefinition when cast from a slot.
    */
   public static resolveEffectiveSpell(
@@ -127,6 +139,12 @@ export class GrimoireMatrixManager {
         (effective.element === 'cold' && neighbor.element === 'fire')
       ) {
         effective.basePower = Math.round((effective.basePower ?? 10) * 1.25);
+        // Damage comes from the damage effects, not basePower, so scale those too.
+        effective.effects = effective.effects?.map((e) =>
+          e.type === 'damage' && typeof e.amount === 'number'
+            ? { ...e, amount: Math.round(e.amount * 1.25) }
+            : e
+        );
       }
 
       // Ray adjacent to Burst -> Expands AoE
@@ -212,8 +230,7 @@ export class GrimoireMatrixManager {
     };
 
     // Permanently destroy the sacrificed spell
-    sacSlot.spellId = null;
-    player.spellsKnown = player.spellsKnown.filter((id) => id !== sacSpellId);
+    player.forgetSpell(sacSpellId);
     tgtSlot.infusedGlyphs.push(glyph);
 
     return {
@@ -243,13 +260,14 @@ export class GrimoireMatrixManager {
     const spellAId = sA.spellId;
     const spellBId = sB.spellId;
 
-    // Remove both spells
-    player.spellsKnown = player.spellsKnown.filter((id) => id !== spellAId && id !== spellBId);
-    sB.spellId = null;
-
-    // Place hybrid in slot A
+    // Remove both spells, then place the hybrid in slot A
+    player.forgetSpell(spellAId);
+    player.forgetSpell(spellBId);
+    player.learnSpell(hybridSpell.id); // may auto-slot into the first empty slot
+    for (const slot of player.grimoire) {
+      if (slot.spellId === hybridSpell.id) slot.spellId = null;
+    }
     sA.spellId = hybridSpell.id;
-    player.learnSpell(hybridSpell.id);
 
     return {
       success: true,
@@ -274,52 +292,43 @@ export class GrimoireMatrixManager {
 
   /**
    * Starts or continues a channeled attunement to switch active grimoire pages.
-   * If out of combat, performs an instant switch.
-   * If in combat, requires concentration turns (like Rune of Return) that can be interrupted by damage.
+   * Out of combat (or in town) the switch is instant and free. With hostiles in view it
+   * starts a 2-turn channel; the status handler below completes it on its final tick, and
+   * damage interrupts it. Choosing the page again mid-channel just sustains it for a turn.
    */
   public static startOrContinueAttunement(
     engine: GameEngine,
     player: Player,
     targetPageIndex: number
-  ): { success: boolean; completed: boolean; message: string } {
+  ): { success: boolean; completed: boolean; consumesTurn: boolean; message: string } {
     if (targetPageIndex < 0 || targetPageIndex >= player.grimoirePages.length) {
-      return { success: false, completed: false, message: 'Invalid grimoire page.' };
+      return { success: false, completed: false, consumesTurn: false, message: 'Invalid grimoire page.' };
     }
-    if (targetPageIndex === player.activeGrimoireIndex) {
-      const pageName = player.grimoirePages[targetPageIndex]?.name ?? `Page ${targetPageIndex + 1}`;
-      return { success: true, completed: true, message: `Already attuned to ${pageName}.` };
-    }
-
     const pageName = player.grimoirePages[targetPageIndex]?.name ?? `Page ${targetPageIndex + 1}`;
+    if (targetPageIndex === player.activeGrimoireIndex) {
+      player.statusManager.removeStatus(GRIMOIRE_ATTUNE_STATUS);
+      return { success: true, completed: true, consumesTurn: false, message: `Already attuned to ${pageName}.` };
+    }
 
     // Instant switch if no hostiles in FOV or in town
     if (this.canSwitchPageInstantly(engine, player)) {
+      player.statusManager.removeStatus(GRIMOIRE_ATTUNE_STATUS);
       player.switchGrimoirePage(targetPageIndex);
       const msg = `You open your grimoire to ${pageName}. Arcane matrix attuned.`;
       engine.log(msg);
-      return { success: true, completed: true, message: msg };
+      return { success: true, completed: true, consumesTurn: false, message: msg };
     }
 
-    // Mid-conflict attunement channel
+    // Already channeling toward this page: spend the turn sustaining it.
     const effect = player.statusManager.getStatus(GRIMOIRE_ATTUNE_STATUS);
-    if (effect) {
-      const lastHp = typeof effect.data?.lastHp === 'number' ? effect.data.lastHp : player.hp;
-      if (player.hp < lastHp) {
-        this.interruptAttunement(engine, player, 'Pain shatters your focus! The grimoire attunement fizzles!');
-        return { success: false, completed: false, message: 'Attunement interrupted by damage.' };
-      }
-      effect.data = { ...effect.data, lastHp: player.hp };
-
-      const finalPageIndex = typeof effect.data?.targetPageIndex === 'number' ? effect.data.targetPageIndex : targetPageIndex;
-      const finalPageName = player.grimoirePages[finalPageIndex]?.name ?? `Page ${finalPageIndex + 1}`;
-      player.statusManager.removeStatus(GRIMOIRE_ATTUNE_STATUS);
-      player.switchGrimoirePage(finalPageIndex);
-      const msg = `*** Grimoire attunement complete! Your arcane resonance shifts to ${finalPageName}! ***`;
+    if (effect && effect.data?.targetPageIndex === targetPageIndex) {
+      const msg = `You hold your focus on ${pageName}...`;
       engine.log(msg);
-      return { success: true, completed: true, message: msg };
+      return { success: true, completed: false, consumesTurn: true, message: msg };
     }
 
-    // Initiate new channel
+    // Initiate a new channel (replacing one aimed at a different page)
+    player.statusManager.removeStatus(GRIMOIRE_ATTUNE_STATUS);
     const duration = 2;
     player.statusManager.applyStatus(
       {
@@ -333,9 +342,9 @@ export class GrimoireMatrixManager {
       player,
       engine
     );
-    const msg = `Hostiles in sight! You begin a 2-turn concentration ritual to attune to ${pageName}...`;
+    const msg = `Hostiles in sight! You begin a ${duration}-turn concentration ritual to attune to ${pageName}...`;
     engine.log(msg);
-    return { success: true, completed: false, message: msg };
+    return { success: true, completed: false, consumesTurn: true, message: msg };
   }
 
   /**
@@ -360,22 +369,19 @@ const grimoireAttuneStatusHandler: StatusHandler = {
       effect.data = { ...effect.data, lastHp: player.hp };
       if (effect.duration > 1) {
         engine.log(`Concentrating on grimoire attunement... (${effect.duration - 1} turn remaining)`);
+      } else {
+        // Final tick. Switch here: by onExpire the effect (and its target page) is already gone.
+        const targetIndex = Number(effect.data?.targetPageIndex) || 0;
+        player.switchGrimoirePage(targetIndex);
+        const pageName = player.grimoirePages[targetIndex]?.name ?? `Page ${targetIndex + 1}`;
+        engine.log(`*** Grimoire attunement complete! Switched to ${pageName}! ***`);
       }
     }
     return { damageTaken: 0, killed: false };
   },
 
-  onExpire(entity: Entity, engine: GameEngine): string | undefined {
-    if (entity === engine.player) {
-      const player = engine.player;
-      const effect = player.statusManager.getStatus(GRIMOIRE_ATTUNE_STATUS);
-      const targetIndex = Number(effect?.data?.targetPageIndex) || 0;
-      player.switchGrimoirePage(targetIndex);
-      const pageName = player.grimoirePages[targetIndex]?.name ?? `Page ${targetIndex + 1}`;
-      const msg = `*** Grimoire attunement complete! Switched to ${pageName}! ***`;
-      engine.log(msg);
-      return msg;
-    }
+  // Completion is logged on the final tick; returning nothing suppresses the generic "worn off" line.
+  onExpire(): string | undefined {
     return undefined;
   },
 };

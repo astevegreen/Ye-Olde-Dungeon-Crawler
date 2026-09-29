@@ -15,6 +15,7 @@ import {
   RUNE_MAX_CHARGES,
 } from '../magic/runeOfReturn';
 import { EnergyModel, type DualEnergyConfig } from '../actors/energyModel';
+import { OVERFLOW_TIER_THRESHOLDS } from '../magic/manaOverflow';
 import {
   GrimoireMatrixManager,
   type GrimoireSlot,
@@ -341,7 +342,8 @@ export class Player extends Actor {
   }
 
   public decayVoidDebt(amount: number = 1, allowClearingTier3: boolean = false): number {
-    const minDebt = !allowClearingTier3 && (this.voidDebt ?? 0) >= 16 ? 16 : 0;
+    const scar = OVERFLOW_TIER_THRESHOLDS.TIER_3;
+    const minDebt = !allowClearingTier3 && (this.voidDebt ?? 0) >= scar ? scar : 0;
     this.voidDebt = Math.max(minDebt, (this.voidDebt ?? 0) - Math.max(0, amount));
     return this.voidDebt;
   }
@@ -368,6 +370,17 @@ export class Player extends Actor {
       emptySlot.spellId = spellId;
     }
     return true;
+  }
+
+  /** Permanently forgets a spell: removes it from the known list, every grimoire page, and the quick-cast bar. */
+  public forgetSpell(spellId: string): void {
+    this.spellsKnown = this.spellsKnown.filter((id) => id !== spellId);
+    for (const page of this.grimoirePages) {
+      for (const slot of page.slots) {
+        if (slot.spellId === spellId) slot.spellId = null;
+      }
+    }
+    this.quickSpells = this.quickSpells.map((id) => (id === spellId ? null : id));
   }
 
   /** Assigns a known spell to a 3x3 grimoire slot (0..8) on the active page (or target page), or clears it with `null`. */

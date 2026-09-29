@@ -1,6 +1,7 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
 import { makeLootItem } from '../items/makeItem';
+import { COTW_HALLOWED_GROUND } from '../tiles';
 
 export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
   {
@@ -50,7 +51,7 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
     galdrHarvest: {
       rewardSpellId: 'heal_minor',
       hintVerse: 'Slay the spectral tomb-guardian upon consecrated ground,\nputting its mournful shade to rest,\nto claim its blessing of restoration.',
-      requiresHolyGroundOrStatus: true,
+      requiredSurfaceOrTile: COTW_HALLOWED_GROUND,
     },
     fleeHealthPercent: 0.0,
     xpValue: 140,

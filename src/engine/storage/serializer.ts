@@ -426,7 +426,6 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
           })),
         }))
       : undefined,
-    grimoire: p.grimoire ? [...p.grimoire.map((s) => ({ ...s, infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined }))] : undefined,
     energyModel: p.energyModel
       ? {
           structuredEnergy: p.energyModel.structuredEnergy,
@@ -872,6 +871,7 @@ export function deserializeGame(
     hasDiscoveredRune: Boolean(pData.hasDiscoveredRune),
     runeCharges: pData.runeCharges !== undefined ? Number(pData.runeCharges) : undefined,
     runeMaxCharges: pData.runeMaxCharges !== undefined ? Number(pData.runeMaxCharges) : undefined,
+    // Single-page `grimoire` is only read, for saves made before grimoirePages existed.
     grimoire: pData.grimoire ? [...pData.grimoire.map((s) => ({ ...s, infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined }))] : undefined,
     grimoirePages: pData.grimoirePages
       ? pData.grimoirePages.map((page) => ({

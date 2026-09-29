@@ -68,33 +68,8 @@ export class DeathResolver {
         const xpBase = victim.xpValue ?? 15;
         const rewards = engine.pacts?.getAggregatedRewards();
         const xp = Math.round(xpBase * (rewards?.xpMultiplier ?? 1.0));
-        const levelUpRes = engine.player.gainXp(xp, engine.manifest?.progressionConfig);
         engine.log(`${victim.name} is slain! (+${xp} Megin)`);
-
-        if (levelUpRes.leveledUp) {
-          engine.log(`*** LEVEL UP! Welcome to Level ${levelUpRes.newLevel}! ***`);
-          const g = levelUpRes.statGains;
-          if (g) {
-            engine.log(
-              `Vitality surge: +${g.maxHp ?? 5} Max HP, +${g.maxMana ?? 4} Max Mana${g.strength ? `, +${g.strength} Strength` : ''}, +${g.baseAttack ?? 1} Attack, +${g.baseDefense ?? 1} Defense!`
-            );
-          } else {
-            engine.log('Vitality surge: +5 Max HP, +4 Max Mana, +1 Attack, +1 Defense!');
-          }
-          if (levelUpRes.statPointsAwarded && levelUpRes.statPointsAwarded > 0) {
-            engine.log(`You have gained ${levelUpRes.statPointsAwarded} attribute point${levelUpRes.statPointsAwarded > 1 ? 's' : ''}! (${engine.player.unspentStatPoints} total unspent)`);
-          }
-          engine.emitGameEvent({
-            type: 'player_leveled_up',
-            turn: engine.turnCount,
-            actorId: engine.player.id,
-            level: levelUpRes.newLevel,
-            newLevel: levelUpRes.newLevel,
-            statPointsAwarded: levelUpRes.statPointsAwarded ?? 3,
-            unspentStatPoints: engine.player.unspentStatPoints,
-            statGains: levelUpRes.statGains,
-          });
-        }
+        awardPlayerXp(engine, xp);
       } else {
         engine.log(`${victim.name} is slain!`);
       }
@@ -245,5 +220,37 @@ export class DeathResolver {
         engine.log('The floor is clear of monsters... for now.');
       }
     }
+  }
+}
+
+/**
+ * Grants the player XP and, on a level-up, logs it and emits `player_leveled_up` — the
+ * event the level-up UI listens for. Every XP award that can level the player goes through here.
+ */
+export function awardPlayerXp(engine: GameEngine, xp: number): void {
+  const levelUpRes = engine.player.gainXp(xp, engine.manifest?.progressionConfig);
+  if (levelUpRes.leveledUp) {
+    engine.log(`*** LEVEL UP! Welcome to Level ${levelUpRes.newLevel}! ***`);
+    const g = levelUpRes.statGains;
+    if (g) {
+      engine.log(
+        `Vitality surge: +${g.maxHp ?? 5} Max HP, +${g.maxMana ?? 4} Max Mana${g.strength ? `, +${g.strength} Strength` : ''}, +${g.baseAttack ?? 1} Attack, +${g.baseDefense ?? 1} Defense!`
+      );
+    } else {
+      engine.log('Vitality surge: +5 Max HP, +4 Max Mana, +1 Attack, +1 Defense!');
+    }
+    if (levelUpRes.statPointsAwarded && levelUpRes.statPointsAwarded > 0) {
+      engine.log(`You have gained ${levelUpRes.statPointsAwarded} attribute point${levelUpRes.statPointsAwarded > 1 ? 's' : ''}! (${engine.player.unspentStatPoints} total unspent)`);
+    }
+    engine.emitGameEvent({
+      type: 'player_leveled_up',
+      turn: engine.turnCount,
+      actorId: engine.player.id,
+      level: levelUpRes.newLevel,
+      newLevel: levelUpRes.newLevel,
+      statPointsAwarded: levelUpRes.statPointsAwarded ?? 3,
+      unspentStatPoints: engine.player.unspentStatPoints,
+      statGains: levelUpRes.statGains,
+    });
   }
 }

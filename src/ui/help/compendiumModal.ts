@@ -8,6 +8,8 @@ import {
   MASTERY_PERKS,
   SPECIES_MASTERY_KILLS,
   getMonsterCategory,
+  getTileDefinition,
+  hasTileDefinition,
   selectMasteryPerk,
 } from '../../engine';
 import type { UIModal } from '../modalStack';
@@ -519,10 +521,13 @@ export class CompendiumModal implements UIModal {
     if (isHarvested) {
       const conditions: string[] = [];
       if (galdr.requiredDamageElement) conditions.push(`Killing Blow: <b>${galdr.requiredDamageElement.toUpperCase()}</b> damage`);
-      if (galdr.requiredSurfaceOrTile) conditions.push(`Surface: <b>${galdr.requiredSurfaceOrTile}</b>`);
+      if (galdr.requiredSurfaceOrTile) {
+        const grounds = Array.isArray(galdr.requiredSurfaceOrTile) ? galdr.requiredSurfaceOrTile : [galdr.requiredSurfaceOrTile];
+        const names = grounds.map((t) => (hasTileDefinition(t) ? getTileDefinition(t).name : t.replace(/_/g, ' ')));
+        conditions.push(`Slain upon: <b>${names.join(' or ')}</b>`);
+      }
       if (galdr.requiredVictimStatus) conditions.push(`Victim Affliction: <b>${galdr.requiredVictimStatus}</b>`);
-      if (galdr.requiresHolyGroundOrStatus) conditions.push(`Ground: <b>Consecrated / Holy ground</b>`);
-      if (galdr.requiresOverkillPercent) conditions.push(`Overkill: <b>≥${galdr.requiresOverkillPercent}% max HP</b>`);
+      if (galdr.requiresOverkillPercent) conditions.push(`Overkill: <b>blow exceeds its remaining HP by ≥${galdr.requiresOverkillPercent}% of max HP</b>`);
 
       return `
         <div style="background: #142e1d; border: 1px solid #22c55e; padding: 10px; border-radius: 4px; margin-top: 8px;">

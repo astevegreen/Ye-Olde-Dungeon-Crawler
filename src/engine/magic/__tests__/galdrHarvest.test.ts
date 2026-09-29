@@ -138,4 +138,80 @@ describe('Galdr of the Slain (Thematic Ritual Harvesting)', () => {
     expect(player.level).toBe(2);
     expect(player.xp).toBe(25);
   });
+
+  describe('overkill and ground rules', () => {
+    const registerRite = (id: string, galdrHarvest: Record<string, unknown>) =>
+      MonsterRegistry.register({
+        id,
+        name: id,
+        stats: { hp: 40, maxHp: 40, attack: 1, defense: 0 },
+        speed: 100,
+        aiType: 'melee',
+        fleeHealthPercent: 0,
+        xpValue: 0,
+        lootTable: [],
+        galdrHarvest: { rewardSpellId: 'jotunbrann', hintVerse: '', ...galdrHarvest },
+      });
+    const spawn = (definitionId: string) => {
+      const m = new Monster({
+        id: `m_${definitionId}`,
+        definitionId,
+        name: definitionId,
+        position: { x: 5, y: 6 },
+        stats: { hp: 40, maxHp: 40, attack: 1, defense: 0 },
+        speed: 100,
+        aiType: 'melee',
+        xpValue: 0,
+      });
+      engine.map.addEntity(m);
+      return m;
+    };
+
+    it('reaps when the blow exceeds remaining HP by the required share of max HP', () => {
+      registerRite('overkill_target', { requiresOverkillPercent: 50 });
+      // 40 max HP -> 20 overkill needed; 40 into 10 remaining is 30 over
+      DeathResolver.resolveDeath(engine, player, spawn('overkill_target'), {
+        damageElement: 'arcane',
+        damageDealt: 40,
+        remainingHpBeforeBlow: 10,
+      });
+      expect(player.spellsKnown).toContain('jotunbrann');
+    });
+
+    it('does not reap on too small an overkill', () => {
+      registerRite('overkill_target', { requiresOverkillPercent: 50 });
+      DeathResolver.resolveDeath(engine, player, spawn('overkill_target'), {
+        damageElement: 'arcane',
+        damageDealt: 25,
+        remainingHpBeforeBlow: 10,
+      });
+      expect(player.spellsKnown).not.toContain('jotunbrann');
+    });
+
+    it('does not reap an overkill rite from a kill that reports no blow', () => {
+      registerRite('overkill_target', { requiresOverkillPercent: 50 });
+      DeathResolver.resolveDeath(engine, player, spawn('overkill_target'));
+      expect(player.spellsKnown).not.toContain('jotunbrann');
+    });
+
+    it('accepts any of several listed grounds', () => {
+      registerRite('ground_target', { requiredSurfaceOrTile: ['hallowed_altar', 'shallow_water'] });
+      const m = spawn('ground_target');
+      engine.surfaces!.setSurface(m.x, m.y, 'shallow_water', 10, 1);
+      DeathResolver.resolveDeath(engine, player, m, { damageElement: 'fire', damageDealt: 50, remainingHpBeforeBlow: 40 });
+      expect(player.spellsKnown).toContain('jotunbrann');
+    });
+
+    it('emits player_leveled_up when a repeat harvest levels the player', () => {
+      registerRite('repeat_target', {});
+      player.learnSpell('jotunbrann');
+      player.xp = player.xpToNextLevel - 1;
+      const capture = engine.beginEventCapture();
+
+      DeathResolver.resolveDeath(engine, player, spawn('repeat_target'));
+
+      expect(player.level).toBe(2);
+      expect(capture.some((e) => e.type === 'player_leveled_up')).toBe(true);
+    });
+  });
 });

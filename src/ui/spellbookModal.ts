@@ -1,11 +1,13 @@
 import type { GameEngine } from '../engine';
 import type { SpellDefinition } from '../engine';
-import { getSpell, GrimoireMatrixManager, NEXUS_SLOT_INDEX, GRIMOIRE_SIZE } from '../engine';
+import { getSpell, NEXUS_SLOT_INDEX, GRIMOIRE_SIZE, OVERFLOW_TIER_THRESHOLDS } from '../engine';
 import type { UIModal } from './modalStack';
 
 export interface SpellbookModalOptions {
   onCastSpell: (spell: SpellDefinition) => void;
   onQuickSpellsChanged: () => void;
+  /** Switch grimoire page; runs as a player action, since it can cost a turn in combat. */
+  onSwitchGrimoirePage: (pageIndex: number) => void;
   onClose?: () => void;
 }
 
@@ -24,6 +26,7 @@ export class SpellbookModal implements UIModal {
     this.options = {
       onCastSpell: () => {},
       onQuickSpellsChanged: () => {},
+      onSwitchGrimoirePage: () => {},
       ...options,
     };
     this.container = document.createElement('div');
@@ -224,8 +227,8 @@ export class SpellbookModal implements UIModal {
       alignItems: 'center',
     });
     const voidDebtNotice = player.voidDebt > 0
-      ? `<span style="margin-left: 12px; font-weight: bold; color: ${player.voidDebt >= 16 ? '#f87171' : player.voidDebt >= 6 ? '#c084fc' : '#38bdf8'}; font-size: 11px;">
-           ⚡ Void Debt: ${player.voidDebt} ${player.voidDebt >= 16 ? '(Tier 3 Primordial Scar - Lingering)' : player.voidDebt >= 6 ? '(Tier 2 Tremor)' : '(Tier 1 Fracture)'}
+      ? `<span style="margin-left: 12px; font-weight: bold; color: ${player.voidDebt >= OVERFLOW_TIER_THRESHOLDS.TIER_3 ? '#f87171' : player.voidDebt >= OVERFLOW_TIER_THRESHOLDS.TIER_2 ? '#c084fc' : '#38bdf8'}; font-size: 11px;">
+           ⚡ Void Debt: ${player.voidDebt} ${player.voidDebt >= OVERFLOW_TIER_THRESHOLDS.TIER_3 ? '(Tier 3 Primordial Scar - Lingering)' : player.voidDebt >= OVERFLOW_TIER_THRESHOLDS.TIER_2 ? '(Tier 2 Tremor)' : '(Tier 1 Fracture)'}
          </span>`
       : '';
 
@@ -501,10 +504,8 @@ export class SpellbookModal implements UIModal {
       btn.title = `Switch to ${page.name}`;
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (this.engine) {
-          GrimoireMatrixManager.startOrContinueAttunement(this.engine, player, pIdx);
-          this.render();
-        }
+        this.options.onSwitchGrimoirePage(pIdx);
+        this.render();
       });
       pageBtnGroup.appendChild(btn);
     });

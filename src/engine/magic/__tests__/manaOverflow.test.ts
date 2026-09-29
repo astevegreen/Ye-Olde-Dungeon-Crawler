@@ -163,4 +163,12 @@ describe('Ginnungagap / Mana Overflow System', () => {
 
     expect(reloaded.engine.player.voidDebt).toBe(14);
   });
+
+  it('settles even a very large debt down to the Tier 3 scar on a full dungeon rest', () => {
+    engine.currentFloor = 1;
+    player.hp = 20;
+    player.voidDebt = 250;
+    new RestAction(player).perform(engine);
+    expect(player.voidDebt).toBe(16);
+  });
 });

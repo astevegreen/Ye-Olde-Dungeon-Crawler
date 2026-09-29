@@ -427,16 +427,8 @@ export class ItemInspector {
         }
       }
       const cost = Math.max(0, (spell?.manaCost ?? 8) - manaDiscount);
-      if (player.mana < cost) {
-        return {
-          label: 'casts the spell',
-          enabled: false,
-          reason: `Not enough mana to cast Identify (Requires ${cost} MP, have ${player.mana})`,
-          dispatch: () => {},
-        };
-      }
       return {
-        label: 'casts the spell',
+        label: player.mana < cost ? 'overcasts the spell (Void Debt)' : 'casts the spell',
         enabled: true,
         dispatch: (eng, itemId) =>
           eng.commandBus.dispatch({

@@ -155,13 +155,8 @@ export class AutoRestManager {
 
     // Check if HP and Mana reached 100%
     if (player.hp >= player.maxHp && player.mana >= player.maxMana) {
-      if (engine.currentFloor === 0) {
-        player.clearVoidDebt();
-      } else if (player.voidDebt >= 16) {
-        player.decayVoidDebt(100, false);
-      } else {
-        player.clearVoidDebt();
-      }
+      // A full rest settles all Void Debt, except that a Tier 3 scar lingers until town.
+      player.decayVoidDebt(player.voidDebt, engine.currentFloor === 0);
       const msg = 'Fully rested (HP and Mana full).';
       engine.log(msg);
       return {

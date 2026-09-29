@@ -194,14 +194,12 @@ export function registerDefaultActions(): void {
   ActionRegistry.register<CastSpellActionArgs>({
     id: 'cast_spell',
     name: 'Cast Spell',
-    validate(actor, args, engine) {
+    validate(_actor, args, engine) {
       const spell = engine.manifest?.spells?.find((s) => s.id === args.spellId);
       if (!spell) {
         return { valid: false, reason: `Unknown spell: ${args.spellId}` };
       }
-      if (actor instanceof Player && actor.mana < spell.manaCost) {
-        return { valid: false, reason: 'Not enough mana!' };
-      }
+      // No mana check: a short cast overflows into Void Debt (CastSpellAction).
       return { valid: true };
     },
     calculateEnergyCost(actor, _args, _engine) {

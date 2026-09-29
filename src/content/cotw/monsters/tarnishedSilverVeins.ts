@@ -1,6 +1,7 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
 import { makeLootItem } from '../items/makeItem';
+import { COTW_HALLOWED_GROUND } from '../tiles';
 
 export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
   {
@@ -80,7 +81,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
     galdrHarvest: {
       rewardSpellId: 'phase_door',
       hintVerse: 'Lay the pit-draugr to rest on consecrated stone\nwith blazing fire while he strikes sluggishly,\nto master the uncanny Phase Door.',
-      requiresHolyGroundOrStatus: true,
+      requiredSurfaceOrTile: COTW_HALLOWED_GROUND,
       requiredDamageElement: 'fire',
     },
     fleeHealthPercent: 0.0,
@@ -109,7 +110,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
     galdrHarvest: {
       rewardSpellId: 'cold_ray',
       hintVerse: 'Shatter the silver wight of the deep veins\nwith holy arcana upon consecrated stone,\nto reap his freezing beam.',
-      requiresHolyGroundOrStatus: true,
+      requiredSurfaceOrTile: COTW_HALLOWED_GROUND,
     },
     fleeHealthPercent: 0.0,
     xpValue: 290,

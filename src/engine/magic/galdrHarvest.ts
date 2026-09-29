@@ -6,19 +6,23 @@ import type { ElementType } from './elements';
 import type { StatusType } from '../status/types';
 import { getSpell } from './spellRegistry';
 import { getMonsterDefinition } from '../bestiary/monsterDefinitions';
+import { awardPlayerXp } from '../combat/deathResolver';
 
 export interface GaldrHarvestConfig {
   rewardSpellId: string;
   hintVerse: string;
   requiredDamageElement?: ElementType;
-  requiredSurfaceOrTile?: string;
+  /** The victim must die on one of these tile types or surfaces (e.g. a pack's hallowed tiles). */
+  requiredSurfaceOrTile?: string | string[];
   requiredVictimStatus?: StatusType;
+  /** The killing blow's damage beyond the victim's remaining HP must reach this % of its max HP. */
   requiresOverkillPercent?: number;
-  requiresHolyGroundOrStatus?: boolean;
 }
 
+/** How the killing blow landed, as reported by the spell pipeline. */
 export interface GaldrHarvestContext {
   damageElement?: ElementType;
+  /** Full damage of the killing blow, before it was capped at the victim's remaining HP. */
   damageDealt?: number;
   remainingHpBeforeBlow?: number;
 }
@@ -63,11 +67,11 @@ export class GaldrHarvestManager {
 
     // 2. Surface / Tile criterion
     if (rule.requiredSurfaceOrTile) {
+      const allowed = Array.isArray(rule.requiredSurfaceOrTile) ? rule.requiredSurfaceOrTile : [rule.requiredSurfaceOrTile];
       const tileType = engine.map.getTile(victim.x, victim.y)?.type;
       const surfaceType = engine.surfaces?.getCell(victim.x, victim.y)?.surface?.type;
-      const matchesTile = tileType === rule.requiredSurfaceOrTile;
-      const matchesSurface = surfaceType === rule.requiredSurfaceOrTile;
-      if (!matchesTile && !matchesSurface) {
+      const matches = allowed.some((t) => t === tileType || t === surfaceType);
+      if (!matches) {
         return { harvested: false };
       }
     }
@@ -79,22 +83,13 @@ export class GaldrHarvestManager {
       }
     }
 
-    // 4. Overkill criterion
-    if (rule.requiresOverkillPercent && context?.damageDealt && context?.remainingHpBeforeBlow) {
-      const overkillThreshold = Math.ceil(context.remainingHpBeforeBlow * rule.requiresOverkillPercent);
-      if (context.damageDealt < overkillThreshold) {
+    // 4. Overkill criterion (a kill with no reported blow, e.g. melee or a surface, can't prove it)
+    if (rule.requiresOverkillPercent) {
+      if (context?.damageDealt === undefined || context.remainingHpBeforeBlow === undefined) {
         return { harvested: false };
       }
-    }
-
-    // 5. Holy ground or status criterion
-    if (rule.requiresHolyGroundOrStatus) {
-      const tileType = engine.map.getTile(victim.x, victim.y)?.type;
-      const isHolyStatus =
-        victim.statusManager.hasStatus('blessed' as StatusType) ||
-        victim.statusManager.hasStatus('holy' as StatusType);
-      const isHolyTile = tileType === 'consecrated' || tileType === 'altar';
-      if (!isHolyStatus && !isHolyTile) {
+      const overkill = context.damageDealt - context.remainingHpBeforeBlow;
+      if (overkill < Math.ceil(victim.maxHp * (rule.requiresOverkillPercent / 100))) {
         return { harvested: false };
       }
     }
@@ -111,7 +106,6 @@ export class GaldrHarvestManager {
     let message = '';
 
     if (isDuplicate) {
-      engine.player.gainXp(25, engine.manifest?.progressionConfig);
       message = `*** GALDR RESONANCE! ${victim.name}'s spirit echoes with familiar power (+25 Megin)! ***`;
     } else {
       engine.player.learnSpell(rule.rewardSpellId);
@@ -126,6 +120,9 @@ export class GaldrHarvestManager {
     }
 
     engine.log(message);
+    if (isDuplicate) {
+      awardPlayerXp(engine, 25);
+    }
     engine.emitGameEvent({
       type: 'galdr_harvested',
       turn: engine.turnCount,

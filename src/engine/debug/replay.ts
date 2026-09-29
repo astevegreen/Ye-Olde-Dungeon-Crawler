@@ -28,7 +28,13 @@ import {
 } from '../actions/inventory-actions';
 import { MeleeAttackAction } from '../actions/combat';
 import { RangedAttackAction } from '../actions/rangedAttack';
-import { CastSpellAction, ZapWandAction, ReadScrollAction, DrinkPotionAction } from '../actions/spell-actions';
+import {
+  CastSpellAction,
+  ZapWandAction,
+  ReadScrollAction,
+  DrinkPotionAction,
+  AttuneGrimoirePageAction,
+} from '../actions/spell-actions';
 import { IdentifyAction } from '../actions/identificationActions';
 import type { ReplayData, TrailEntry, TrailValue } from './types';
 
@@ -110,10 +116,12 @@ const BUILDERS: Record<string, Builder> = {
           num(p, 'targetY') ?? e.player.y,
           str(p, 'itemTargetId'),
           bool(p, 'freeCast'),
-          bool(p, 'allowVitalityBurn')
+          bool(p, 'allowVitalityBurn'),
+          num(p, 'slotIndex')
         )
       : null;
   },
+  AttuneGrimoirePageAction: (e, p) => new AttuneGrimoirePageAction(e.player, num(p, 'targetPageIndex') ?? 0),
   ZapWandAction: (e, p) => {
     const wand = item<WandItem>(p, 'wandId');
     return wand ? new ZapWandAction(e.player, wand, num(p, 'targetX') ?? 0, num(p, 'targetY') ?? 0) : null;

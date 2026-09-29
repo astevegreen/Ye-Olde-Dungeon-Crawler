@@ -4,6 +4,7 @@ import type { GameEngine } from '../engine';
 import type { Player } from '../entities/player';
 import type { Entity } from '../entities/entity';
 import { DeathResolver } from '../combat/deathResolver';
+import { OVERFLOW_TIER_THRESHOLDS } from '../magic/manaOverflow';
 
 export class RestAction implements Action {
   public readonly player: Player;
@@ -99,13 +100,9 @@ export class RestAction implements Action {
       return { success: true, cost: 0, message: msg };
     }
 
-    if (engine.currentFloor === 0) {
-      this.player.clearVoidDebt();
-    } else if (this.player.voidDebt >= 16) {
-      this.player.decayVoidDebt(100, false);
+    // A full rest settles all Void Debt, except that a Tier 3 scar lingers until town.
+    if (this.player.decayVoidDebt(this.player.voidDebt, engine.currentFloor === 0) >= OVERFLOW_TIER_THRESHOLDS.TIER_3) {
       engine.log('☠ Your primordial void scar (Tier 3 Void Debt) throbs with abyssal energy — it lingers indefinitely until cleansed in Town!');
-    } else {
-      this.player.clearVoidDebt();
     }
     const msg = `You rest peacefully for ${ticksElapsed} turn(s). HP and Mana fully restored! (+${hpGained} HP, +${manaGained} MP)`;
     engine.log(msg);

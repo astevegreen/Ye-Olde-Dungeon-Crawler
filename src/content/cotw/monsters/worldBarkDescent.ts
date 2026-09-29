@@ -1,6 +1,7 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
 import { makeLootItem } from '../items/makeItem';
+import { COTW_HALLOWED_GROUND } from '../tiles';
 
 export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
   {
@@ -22,7 +23,7 @@ export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
     galdrHarvest: {
       rewardSpellId: 'heal_medium',
       hintVerse: 'Cleanse the weeping resin-beast of the World Tree\nupon consecrated holy ground,\nto bottle the restorative sap of Yggdrasil.',
-      requiresHolyGroundOrStatus: true,
+      requiredSurfaceOrTile: COTW_HALLOWED_GROUND,
     },
     fleeHealthPercent: 0.0,
     xpValue: 360,

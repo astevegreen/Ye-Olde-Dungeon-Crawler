@@ -1,4 +1,5 @@
 import {
+  AttuneGrimoirePageAction,
   AutosaveManager,
   type AutosaveSlot,
   CastSpellAction,
@@ -344,12 +345,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
   function castOrTargetSpell(spell: SpellDefinition): void {
     if (!activeEngine || !renderer) return;
-    if (activeEngine.player.mana < (spell.manaCost ?? 0)) {
-      activeEngine.log(`Insufficient mana to cast ${spell.name} (${activeEngine.player.mana}/${spell.manaCost} MP).`);
-      renderer.render();
-      return;
-    }
-
+    // No mana wall: a short cast still goes off and the shortfall becomes Void Debt
+    // (CastSpellAction / ManaOverflowManager).
     if (spell.targetingMode === 'self' || spell.targetType === 'self') {
       activeEngine.handlePlayerAction(
         new CastSpellAction(activeEngine.player, spell.id, activeEngine.player.x, activeEngine.player.y)
@@ -461,6 +458,13 @@ window.addEventListener('DOMContentLoaded', () => {
     },
     onQuickSpellsChanged: () => {
       if (activeEngine) quickSpellsBar.update(activeEngine);
+    },
+    onSwitchGrimoirePage: (pageIndex) => {
+      if (!activeEngine) return;
+      activeEngine.handlePlayerAction(new AttuneGrimoirePageAction(activeEngine.player, pageIndex));
+      quickSpellsBar.update(activeEngine);
+      bottomStatusBar.update(activeEngine);
+      void processVisualEffectsAndRender();
     },
     onClose: () => {
       if (inputHandler) {

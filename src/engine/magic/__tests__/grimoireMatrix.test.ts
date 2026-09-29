@@ -58,13 +58,29 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     description: 'Phase through space.',
   };
 
+  const fireLance: SpellDefinition = {
+    id: 'fire_lance',
+    name: 'Fire Lance',
+    school: 'Combat',
+    manaCost: 6,
+    element: 'fire',
+    range: 6,
+    basePower: 20,
+    areaOfEffect: 0,
+    reflects: false,
+    targetType: 'ray',
+    targetingMode: 'ray',
+    description: 'A lance of flame.',
+    effects: [{ type: 'damage', amount: 20, element: 'fire' }],
+  };
+
   const testManifest = {
     id: 'test_pack',
     name: 'Test Pack',
     version: '1.0.0',
     description: 'Test pack description',
     dungeonFloors: 10,
-    spells: [fireRay, coldBurst, blinkSelf],
+    spells: [fireRay, coldBurst, blinkSelf, fireLance],
     monsters: [],
     items: [],
   };
@@ -238,11 +254,39 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     expect(player.activeGrimoireIndex).toBe(0); // Not switched yet
     expect(player.statusManager.hasStatus(GRIMOIRE_ATTUNE_STATUS)).toBe(true);
 
-    // Turn 2 of attunement channel completes the ritual
-    const action2 = new AttuneGrimoirePageAction(player, 1);
-    const res2 = action2.perform(engine);
+    // Choosing the page again mid-channel sustains it (spends a turn) rather than finishing early
+    const res2 = new AttuneGrimoirePageAction(player, 1).perform(engine);
     expect(res2.success).toBe(true);
+    expect(res2.cost).toBe(100);
+    expect(player.activeGrimoireIndex).toBe(0);
+
+    // The status completes the ritual on its final tick
+    player.statusManager.tick(player, engine);
+    expect(player.activeGrimoireIndex).toBe(0);
+    player.statusManager.tick(player, engine);
     expect(player.activeGrimoireIndex).toBe(1); // Switched to Page II
+    expect(player.statusManager.hasStatus(GRIMOIRE_ATTUNE_STATUS)).toBe(false);
+  });
+
+  it('completes a channel on the page it targeted, not the first page', () => {
+    engine.currentFloor = 1;
+    const hostile = new Monster({
+      id: 'test_enemy_3',
+      name: 'Test Enemy 3',
+      position: { x: 5, y: 6 },
+      stats: { hp: 20, maxHp: 20, attack: 5, defense: 0 },
+      definitionId: 'test_enemy_3',
+      faction: 'hostile',
+    });
+    engine.map.addEntity(hostile);
+    engine.updateFov();
+    player.switchGrimoirePage(1);
+
+    new AttuneGrimoirePageAction(player, 2).perform(engine);
+    player.statusManager.tick(player, engine);
+    player.statusManager.tick(player, engine);
+
+    expect(player.activeGrimoireIndex).toBe(2);
     expect(player.statusManager.hasStatus(GRIMOIRE_ATTUNE_STATUS)).toBe(false);
   });
 
@@ -268,11 +312,10 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     player.takeDamage(10);
     expect(player.hp).toBe(40);
 
-    // Next attunement attempt or check detects damage and interrupts
-    const res = GrimoireMatrixManager.startOrContinueAttunement(engine, player, 2);
-    expect(res.success).toBe(false);
-    expect(res.message).toContain('interrupted');
+    // The channel's next tick detects the damage and fizzles
+    player.statusManager.tick(player, engine);
     expect(player.statusManager.hasStatus(GRIMOIRE_ATTUNE_STATUS)).toBe(false);
+    player.statusManager.tick(player, engine);
     expect(player.activeGrimoireIndex).toBe(0); // Remains on page 0
   });
 
@@ -290,5 +333,51 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     expect(reloadedPlayer.grimoirePages[0].slots[0].spellId).toBe('fire_ray');
     expect(reloadedPlayer.grimoirePages[2].slots[0].spellId).toBe('cold_burst');
   });
-});
 
+  it('applies grid synergies to a normal cast that names no slot', () => {
+    // fire_lance auto-slots into slot 2, orthogonally next to cold_burst in slot 1
+    player.learnSpell('fire_lance');
+    expect(player.grimoire[2].spellId).toBe('fire_lance');
+
+    const effective = GrimoireMatrixManager.resolveEffectiveSpell(engine, player, 2);
+    expect(effective!.effects![0]).toMatchObject({ type: 'damage', amount: 25 });
+
+    const target = new Monster({
+      id: 'dummy',
+      name: 'Dummy',
+      position: { x: 5, y: 8 },
+      stats: { hp: 100, maxHp: 100, attack: 0, defense: 0 },
+      definitionId: 'dummy',
+      faction: 'hostile',
+    });
+    engine.map.addEntity(target);
+
+    // No slotIndex: the cast finds the spell's slot on the active page itself
+    const res = new CastSpellAction(player, 'fire_lance', 5, 8).perform(engine);
+    expect(res.success).toBe(true);
+    expect(target.hp).toBe(75); // Thermal Shock: 20 * 1.25
+  });
+
+  it('never carries a vanish_step caster through a wall', () => {
+    player.learnSpell('blink_self');
+    player.setGrimoireSlot(2, 'blink_self');
+    GrimoireMatrixManager.sacrificeAndInfuse(player, 2, 0);
+    engine.map.setTile(5, 4, TILES.WALL);
+
+    new CastSpellAction(player, 'fire_ray', 5, 8, undefined, false, false, 0).perform(engine);
+    expect({ x: player.x, y: player.y }).toEqual({ x: 5, y: 5 });
+  });
+
+  it('removes a sacrificed spell from every page and the quick-cast bar', () => {
+    player.learnSpell('blink_self');
+    player.setGrimoireSlot(2, 'blink_self');
+    player.setGrimoireSlot(4, 'blink_self', 1);
+    player.setQuickSpell(3, 'blink_self');
+
+    GrimoireMatrixManager.sacrificeAndInfuse(player, 2, 0);
+
+    expect(player.spellsKnown).not.toContain('blink_self');
+    expect(player.grimoirePages[1].slots[4].spellId).toBeNull();
+    expect(player.quickSpells[3]).toBeNull();
+  });
+});

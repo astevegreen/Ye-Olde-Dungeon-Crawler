@@ -1,6 +1,12 @@
 import type { VaultBlueprint } from '../../engine';
 import { SIPHON_ALTAR_TILE, SIPHON_RITUAL_FLOOR, SIPHON_VAULT_ID } from './hostageRitual';
 
+export const DWARVEN_HEARTH_VAULT_ID = 'dwarven_hearth_grotto';
+export const DWARVEN_HEARTH_FLOOR = 13;
+
+export const WORLD_BARK_VAULT_ID = 'world_bark_grotto';
+export const WORLD_BARK_FLOOR = 37;
+
 export const COTW_VAULTS: VaultBlueprint[] = [
   // Zone landmarks (floorLayouts.ts `landmarkVaultIds`): one stamps on every floor of its zone.
   {
@@ -216,6 +222,55 @@ export const COTW_VAULTS: VaultBlueprint[] = [
     ],
     preferredMonsters: ['ironwood_troll_wife', 'sol_brand_zealot'],
   },
+  {
+    id: DWARVEN_HEARTH_VAULT_ID,
+    name: 'The Dwarven Hearth Grotto',
+    description:
+      'A secluded thermal haven carved behind a roaring cascade of mountain runoff, warmed by an ancient stone hearth.',
+    minFloor: DWARVEN_HEARTH_FLOOR,
+    maxFloor: DWARVEN_HEARTH_FLOOR,
+    scriptedOnly: true,
+    legend: {
+      '@': 'dwarven_cascade_veil',
+      H: 'grotto_hearth',
+      '~': 'grotto_mineral_spring',
+      B: 'grotto_stone_bench',
+      S: 'grotto_supplies',
+    },
+    layout: [
+      '#####@#####',
+      '#....~....#',
+      '#..B.H.S..#',
+      '#....~....#',
+      '#.........#',
+      '###########',
+    ],
+  },
+  {
+    id: WORLD_BARK_VAULT_ID,
+    name: 'The Heartwood Knothole',
+    description:
+      'A peaceful hollow nestled deep within an ancient knot of Yggdrasil, sheltered by woven roots and lit by an amber peat fire.',
+    minFloor: WORLD_BARK_FLOOR,
+    maxFloor: WORLD_BARK_FLOOR,
+    scriptedOnly: true,
+    legend: {
+      '@': 'root_curtain_veil',
+      F: 'world_bark_campfire',
+      '~': 'world_bark_sap_pool',
+      M: 'world_bark_moss_bed',
+      T: 'world_bark_chimes',
+    },
+    layout: [
+      '#####@#####',
+      '#....~....#',
+      '#..M.F.T..#',
+      '#....~....#',
+      '#.........#',
+      '###########',
+    ],
+  },
 ];
+
 
 

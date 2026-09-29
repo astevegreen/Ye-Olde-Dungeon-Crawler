@@ -524,21 +524,34 @@ export function buildRooms(
     }
   }
 
+  // Rooms that reach over vaults keep their largest side clear of them.
+  let clear: RectRoom[] = rooms;
+  for (const v of vaults) {
+    const next: RectRoom[] = [];
+    for (const r of clear) {
+      const part = clipAway(r, v);
+      if (!part) continue;
+      if (part === r) next.push(r);
+      else if (hasFloor(part)) next.push({ ...part, ...centerAt(centerOf(part)) });
+    }
+    clear = next;
+  }
+
   if (home) {
     // Rooms that reach over the threshold keep their largest side clear of it.
-    const clear: RectRoom[] = [];
-    for (const r of rooms) {
+    const nonHome: RectRoom[] = [];
+    for (const r of clear) {
       const part = clipAway(r, home);
       if (!part) continue;
-      if (part === r) clear.push(r);
-      else if (hasFloor(part)) clear.push({ ...part, ...centerAt(centerOf(part)) });
+      if (part === r) nonHome.push(r);
+      else if (hasFloor(part)) nonHome.push({ ...part, ...centerAt(centerOf(part)) });
     }
-    return [{ ...home, centerX: spawn.x, centerY: spawn.y }, ...clear];
+    return [{ ...home, centerX: spawn.x, centerY: spawn.y }, ...nonHome];
   }
-  const at = rooms.findIndex((r) => spawn.x >= r.x1 && spawn.x <= r.x2 && spawn.y >= r.y1 && spawn.y <= r.y2);
-  if (at > 0) rooms.unshift(rooms.splice(at, 1)[0]);
+  const at = clear.findIndex((r) => spawn.x >= r.x1 && spawn.x <= r.x2 && spawn.y >= r.y1 && spawn.y <= r.y2);
+  if (at > 0) clear.unshift(clear.splice(at, 1)[0]);
   else if (at < 0) {
-    rooms.unshift({
+    clear.unshift({
       x1: Math.max(1, spawn.x - 2),
       y1: Math.max(1, spawn.y - 2),
       x2: Math.min(W - 2, spawn.x + 2),
@@ -547,5 +560,5 @@ export function buildRooms(
       centerY: spawn.y,
     });
   }
-  return rooms;
+  return clear;
 }

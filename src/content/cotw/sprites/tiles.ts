@@ -506,4 +506,329 @@ export const COTW_TILE_SPRITES: Record<string, SpriteRecipe> = {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(ox + 15, oy + 15, 2, 2);
   },
+
+  // --- Act 1 Campfire Grotto: Dwarven Hearth Grotto Sprites ---
+  dwarven_cascade_veil: (ctx, ox, oy) => {
+    // Stone frame on sides
+    ctx.fillStyle = P.dwarfStone ?? '#292524';
+    ctx.fillRect(ox, oy, 4, 32);
+    ctx.fillRect(ox + 28, oy, 4, 32);
+    ctx.fillStyle = P.stoneDark ?? '#1c1917';
+    ctx.fillRect(ox, oy, 32, 4);
+
+    // Deep rushing water backdrop
+    ctx.fillStyle = '#0369a1';
+    ctx.fillRect(ox + 4, oy + 4, 24, 28);
+
+    // Vertical rushing streams of white and sky-blue water
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillRect(ox + 6, oy + 4, 3, 24);
+    ctx.fillRect(ox + 12, oy + 4, 4, 25);
+    ctx.fillRect(ox + 19, oy + 4, 3, 23);
+    ctx.fillRect(ox + 24, oy + 4, 2, 24);
+
+    ctx.fillStyle = '#7dd3fc';
+    ctx.fillRect(ox + 8, oy + 5, 2, 20);
+    ctx.fillRect(ox + 14, oy + 4, 2, 22);
+    ctx.fillRect(ox + 21, oy + 6, 2, 19);
+
+    // Foaming water crests and splash spray at bottom
+    ctx.fillStyle = '#e0f2fe';
+    ctx.fillRect(ox + 5, oy + 26, 22, 5);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(ox + 7, oy + 25, 4, 2);
+    ctx.fillRect(ox + 15, oy + 24, 5, 2);
+    ctx.fillRect(ox + 22, oy + 25, 3, 2);
+  },
+  'dwarven_cascade_veil~prop': (ctx, ox, oy) => {
+    COTW_TILE_SPRITES.dwarven_cascade_veil(ctx, ox, oy, 32);
+  },
+
+  grotto_hearth: (ctx, ox, oy) => {
+    // Ancient circular stone hearth with banked geothermal embers
+    ctx.fillStyle = P.dwarfStone ?? '#292524';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 18, 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Dark iron rim
+    ctx.strokeStyle = P.dwarfIron ?? '#44403c';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Inner glowing coal pit
+    ctx.fillStyle = '#1c1917';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 18, 9, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Split firewood logs
+    ctx.fillStyle = '#451a03';
+    ctx.fillRect(ox + 10, oy + 17, 12, 3);
+    ctx.fillRect(ox + 13, oy + 14, 6, 8);
+
+    // Radiant amber embers
+    ctx.fillStyle = P.hearthGlow ?? '#ea580c';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 17, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = P.hearthAmber ?? '#f59e0b';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 16, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#fef08a';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 15, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Floating sparks
+    ctx.fillStyle = '#fef08a';
+    ctx.fillRect(ox + 13, oy + 9, 1.5, 1.5);
+    ctx.fillRect(ox + 18, oy + 8, 1.5, 1.5);
+  },
+  'grotto_hearth~prop': (ctx, ox, oy) => {
+    COTW_TILE_SPRITES.grotto_hearth(ctx, ox, oy, 32);
+  },
+
+  grotto_mineral_spring: (ctx, ox, oy) => {
+    // Basalt basin
+    ctx.fillStyle = P.dwarfStone ?? '#292524';
+    ctx.beginPath();
+    ctx.ellipse(ox + 16, oy + 17, 13, 11, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Water pool
+    ctx.fillStyle = '#0284c7';
+    ctx.beginPath();
+    ctx.ellipse(ox + 16, oy + 17, 10, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Inner bright azure swirl
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.ellipse(ox + 16, oy + 17, 7, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Center bubbling ripple
+    ctx.fillStyle = '#bae6fd';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 17, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Steam wisps
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.fillRect(ox + 12, oy + 7, 2, 4);
+    ctx.fillRect(ox + 18, oy + 6, 2, 5);
+  },
+  'grotto_mineral_spring~prop': (ctx, ox, oy) => {
+    COTW_TILE_SPRITES.grotto_mineral_spring(ctx, ox, oy, 32);
+  },
+
+  grotto_stone_bench: (ctx, ox, oy) => {
+    // Basalt bench base
+    ctx.fillStyle = P.dwarfStone ?? '#292524';
+    ctx.fillRect(ox + 5, oy + 11, 22, 12);
+    ctx.fillStyle = P.dwarfIron ?? '#44403c';
+    ctx.fillRect(ox + 4, oy + 9, 24, 4);
+
+    // Warm woolen blanket draped on left side
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(ox + 6, oy + 8, 9, 13);
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(ox + 8, oy + 9, 2, 11);
+    ctx.fillRect(ox + 12, oy + 9, 2, 11);
+  },
+  'grotto_stone_bench~prop': (ctx, ox, oy) => {
+    COTW_TILE_SPRITES.grotto_stone_bench(ctx, ox, oy, 32);
+  },
+
+  grotto_supplies: (ctx, ox, oy) => {
+    // Wooden crate/shelf table
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(ox + 5, oy + 13, 22, 11);
+    ctx.fillStyle = '#451a03';
+    ctx.fillRect(ox + 4, oy + 11, 24, 3);
+
+    // Copper kettle
+    ctx.fillStyle = P.dwarfBrass ?? '#d97706';
+    ctx.beginPath();
+    ctx.arc(ox + 10, oy + 9, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(ox + 8, oy + 4, 4, 2); // handle
+
+    // Bundle of dried green mountain herbs
+    ctx.fillStyle = '#15803d';
+    ctx.fillRect(ox + 18, oy + 8, 7, 3);
+    ctx.fillStyle = '#84cc16';
+    ctx.fillRect(ox + 19, oy + 6, 5, 2);
+    ctx.fillStyle = '#eab308';
+    ctx.fillRect(ox + 21, oy + 7, 1, 4); // twine
+  },
+  'grotto_supplies~prop': (ctx, ox, oy) => {
+    COTW_TILE_SPRITES.grotto_supplies(ctx, ox, oy, 32);
+  },
+
+  // --- Act 2 Campfire Grotto: World Bark Knothole Sprites ---
+  root_curtain_veil: (ctx, ox, oy) => {
+    // Dense interwoven ancient roots and hanging vines
+    ctx.fillStyle = P.barkBrown ?? '#451a03';
+    ctx.fillRect(ox, oy, 32, 32);
+
+    // Deep moss background
+    ctx.fillStyle = P.barkGreen ?? '#14532d';
+    ctx.fillRect(ox + 2, oy + 2, 28, 28);
+
+    // Vertical twisting root cords
+    ctx.fillStyle = P.woodBrown ?? '#78350f';
+    ctx.fillRect(ox + 5, oy, 4, 32);
+    ctx.fillRect(ox + 14, oy, 5, 32);
+    ctx.fillRect(ox + 23, oy, 4, 32);
+
+    ctx.fillStyle = '#92400e';
+    ctx.fillRect(ox + 7, oy, 2, 32);
+    ctx.fillRect(ox + 16, oy, 2, 32);
+    ctx.fillRect(ox + 25, oy, 2, 32);
+
+    // Hanging green lianas and moss
+    ctx.fillStyle = P.mossGreen ?? '#15803d';
+    ctx.fillRect(ox + 3, oy + 6, 3, 18);
+    ctx.fillRect(ox + 11, oy + 4, 3, 22);
+    ctx.fillRect(ox + 20, oy + 8, 3, 16);
+
+    // Glowing golden amber sap droplets
+    ctx.fillStyle = P.goldYellow ?? '#f59e0b';
+    ctx.beginPath();
+    ctx.arc(ox + 12, oy + 22, 2, 0, Math.PI * 2);
+    ctx.arc(ox + 21, oy + 14, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fef08a';
+    ctx.fillRect(ox + 11.5, oy + 21.5, 1, 1);
+  },
+  'root_curtain_veil~prop': (ctx, ox, oy) => {
+    COTW_TILE_SPRITES.root_curtain_veil(ctx, ox, oy, 32);
+  },
+
+  world_bark_campfire: (ctx, ox, oy) => {
+    // Smooth river pebble ring
+    ctx.fillStyle = '#334155';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 18, 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Dark peat bedding
+    ctx.fillStyle = '#271911';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 18, 9, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Golden pine knots & peat coals
+    ctx.fillStyle = P.barkBrown ?? '#451a03';
+    ctx.fillRect(ox + 11, oy + 17, 10, 3);
+    ctx.fillRect(ox + 14, oy + 13, 4, 8);
+
+    // Glowing amber core
+    ctx.fillStyle = P.hearthGlow ?? '#ea580c';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 17, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = P.goldYellow ?? '#f59e0b';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 16, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#fef08a';
+    ctx.beginPath();
+    ctx.arc(ox + 16, oy + 15, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Fragrant smoke tendril
+    ctx.fillStyle = 'rgba(251, 191, 36, 0.4)';
+    ctx.fillRect(ox + 15, oy + 9, 2, 4);
+    ctx.fillRect(ox + 17, oy + 6, 2, 4);
+  },
+  'world_bark_campfire~prop': (ctx, ox, oy) => {
+    COTW_TILE_SPRITES.world_bark_campfire(ctx, ox, oy, 32);
+  },
+
+  world_bark_sap_pool: (ctx, ox, oy) => {
+    // Hollowed tree burl
+    ctx.fillStyle = P.barkBrown ?? '#451a03';
+    ctx.beginPath();
+    ctx.ellipse(ox + 16, oy + 17, 13, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Pure golden amber sap
+    ctx.fillStyle = P.goldYellow ?? '#d97706';
+    ctx.beginPath();
+    ctx.ellipse(ox + 16, oy + 17, 10, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Glowing core
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath();
+    ctx.ellipse(ox + 16, oy + 17, 6, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#fef08a';
+    ctx.fillRect(ox + 15, oy + 16, 2, 2);
+  },
+  'world_bark_sap_pool~prop': (ctx, ox, oy) => {
+    COTW_TILE_SPRITES.world_bark_sap_pool(ctx, ox, oy, 32);
+  },
+
+  world_bark_moss_bed: (ctx, ox, oy) => {
+    // Lush pillow of emerald moss
+    ctx.fillStyle = P.barkGreen ?? '#14532d';
+    ctx.beginPath();
+    ctx.ellipse(ox + 16, oy + 17, 13, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = P.mossGreen ?? '#15803d';
+    ctx.beginPath();
+    ctx.ellipse(ox + 16, oy + 17, 10, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bioluminescent star-lichen specks
+    ctx.fillStyle = '#67e8f9';
+    ctx.fillRect(ox + 10, oy + 14, 2, 2);
+    ctx.fillRect(ox + 20, oy + 15, 2, 2);
+    ctx.fillStyle = '#a3e635';
+    ctx.fillRect(ox + 15, oy + 12, 2, 2);
+    ctx.fillRect(ox + 16, oy + 19, 2, 2);
+  },
+  'world_bark_moss_bed~prop': (ctx, ox, oy) => {
+    COTW_TILE_SPRITES.world_bark_moss_bed(ctx, ox, oy, 32);
+  },
+
+  world_bark_chimes: (ctx, ox, oy) => {
+    // Overhead branch
+    ctx.fillStyle = P.barkBrown ?? '#451a03';
+    ctx.fillRect(ox + 3, oy + 4, 26, 3);
+
+    // Hanging strings
+    ctx.fillStyle = '#a8a29e';
+    ctx.fillRect(ox + 7, oy + 7, 1, 14);
+    ctx.fillRect(ox + 13, oy + 7, 1, 18);
+    ctx.fillRect(ox + 19, oy + 7, 1, 12);
+    ctx.fillRect(ox + 25, oy + 7, 1, 16);
+
+    // Wooden alder pendants
+    ctx.fillStyle = P.woodBrown ?? '#78350f';
+    ctx.fillRect(ox + 6, oy + 19, 3, 5);
+    ctx.fillRect(ox + 12, oy + 23, 3, 6);
+    ctx.fillRect(ox + 18, oy + 17, 3, 5);
+    ctx.fillRect(ox + 24, oy + 21, 3, 5);
+
+    // Small feathers on chimes
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillRect(ox + 13, oy + 27, 1, 3);
+  },
+  'world_bark_chimes~prop': (ctx, ox, oy) => {
+    COTW_TILE_SPRITES.world_bark_chimes(ctx, ox, oy, 32);
+  },
 };
+

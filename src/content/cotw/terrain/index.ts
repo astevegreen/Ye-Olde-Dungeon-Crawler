@@ -50,12 +50,18 @@ export const COTW_TERRAIN_ART: TerrainArtConfig = {
   memory: { desaturate: 0.7, flatten: 0.4, darken: 0.26, tint: '#0e1116', tintAmount: 0.12 },
   // Light sources per zone: lava, banked forge coals, sap, fungus, bile.
   emissive: {
-    dwarven_works: { chasm: { color: '#ff8a3a', radius: 2.8, strength: 0.2 } },
+    dwarven_works: {
+      chasm: { color: '#ff8a3a', radius: 2.8, strength: 0.2 },
+      grotto_hearth: { color: '#f97316', radius: 3.5, strength: 0.28 },
+    },
     obsidian_siphon: {
       chasm: { color: '#ff7a2a', radius: 2.4, strength: 0.2 },
       shallow_water: { color: '#ff7a2a', radius: 1.8, strength: 0.12 },
     },
-    world_bark: { shallow_water: { color: '#c9912f', radius: 2, strength: 0.06 } },
+    world_bark: {
+      shallow_water: { color: '#c9912f', radius: 2, strength: 0.06 },
+      world_bark_campfire: { color: '#fbbf24', radius: 3.5, strength: 0.28 },
+    },
     maw_of_malice: {
       chasm: { color: '#d63a4f', radius: 2, strength: 0.08 },
       shallow_water: { color: '#c0394f', radius: 1.5, strength: 0.05 },

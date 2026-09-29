@@ -263,5 +263,157 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
   blood_altar_ritual: BLOOD_ALTAR_CHOICE,
   vidnir_revelation: VIDNIR_REVELATION_CHOICE,
   ...SKALDIC_RUNESTONE_CHOICES,
+
+  choice_dwarven_hearth: {
+    id: 'choice_dwarven_hearth',
+    title: 'The Dwarven Hearth',
+    description:
+      'An ancient iron-banded stone hearth glows with banked embers in this quiet mountain hollow. The roar of the waterfall outside is muted to a steady, rhythmic rush. A kettle sits beside a tin of dried herbs, and soot-carved inscriptions cover the stones.',
+    options: [
+      {
+        id: 'warmth',
+        label: 'Rest by the Coals',
+        description:
+          'Warm your hands over the embers and listen to the water. Grants a moment of deep peace and adds +10 Exploration Renown.',
+        consequences: [
+          { type: 'setFlag', flag: 'dwarven_hearth_rested', value: true },
+          { type: 'modifyCounter', counter: 'renown:exploration', delta: 10 },
+          {
+            type: 'logMessage',
+            message:
+              '♨ You sit by the steady embers, letting the warmth soak into cold bones. The oppressive weight of the abandoned works recedes.',
+          },
+        ],
+      },
+      {
+        id: 'read_notes',
+        label: 'Read the Wayfarer’s Scratched Notes',
+        description: 'Examine the runes carved into the mantle by previous travelers.',
+        consequences: [
+          { type: 'setFlag', flag: 'dwarven_hearth_notes_read', value: true },
+          { type: 'modifyCounter', counter: 'renown:exploration', delta: 5 },
+          {
+            type: 'logMessage',
+            message:
+              '✦ WAYFARER’S RUNES: “Beyond the works, where the rock turns black as glass, fire and cold war continuously. Do not cast frost upon the magma hounds; strike them with blunt iron instead, or let the steam drown their fires.” ✦',
+          },
+        ],
+      },
+    ],
+    cancelable: true,
+    cancelLabel: 'Step Away from the Hearth',
+    resolvedStates: [
+      {
+        flag: 'dwarven_hearth_rested',
+        message: 'The banked coals of the Dwarven Hearth still glow with tranquil warmth.',
+      },
+    ],
+  },
+
+  choice_dwarven_spring: {
+    id: 'choice_dwarven_spring',
+    title: 'Thermal Mountain Spring',
+    description:
+      'Steam rises softly from a basin of crystal-clear mineral water. The rock beneath your feet is smooth and warm.',
+    options: [
+      {
+        id: 'sip',
+        label: 'Drink the Mineral Water',
+        description: 'Take a long draught of pure mountain water. Cleanses fatigue and clears your mind.',
+        consequences: [
+          { type: 'setFlag', flag: 'dwarven_spring_drank', value: true },
+          {
+            type: 'logMessage',
+            message:
+              '💧 The water tastes of sweet rain and deep mountain stone. A refreshing calm settles over your senses.',
+          },
+        ],
+      },
+    ],
+    cancelable: true,
+    cancelLabel: 'Leave the Spring Untouched',
+    resolvedStates: [
+      {
+        flag: 'dwarven_spring_drank',
+        message: 'The thermal spring bubbles peacefully in its stone basin.',
+      },
+    ],
+  },
+
+  choice_world_bark_hearth: {
+    id: 'choice_world_bark_hearth',
+    title: 'The Amber Root Fire',
+    description:
+      'Deep within a hollow knot of Yggdrasil, a low fire of fragrant peat and golden pine resin crackles quietly. Polished root talismans sway overhead in the gentle breath of the tree.',
+    options: [
+      {
+        id: 'meditate',
+        label: 'Meditate in the Heartwood Warmth',
+        description:
+          'Close your eyes and breathe the sweet resin smoke. Dispels blindness and confusion, and adds +10 Exploration Renown.',
+        consequences: [
+          { type: 'setFlag', flag: 'world_bark_hearth_rested', value: true },
+          { type: 'modifyCounter', counter: 'renown:exploration', delta: 10 },
+          {
+            type: 'logMessage',
+            message:
+              '🌳 The sweet resin incense steadies your breath. You feel the slow, colossal pulse of the World Tree under your feet, ancient and enduring.',
+          },
+        ],
+      },
+      {
+        id: 'listen_chimes',
+        label: 'Listen to the Swaying Talismans',
+        description: 'Interpret the rhythmic clicks of the carved alder charms.',
+        consequences: [
+          { type: 'setFlag', flag: 'world_bark_chimes_listened', value: true },
+          { type: 'modifyCounter', counter: 'renown:exploration', delta: 5 },
+          {
+            type: 'logMessage',
+            message:
+              '✦ SONG OF THE ROOTS: “Where the Maw begins, the ancient wyrms sleep lightly. If you do not disturb their hoard, they will often let a quiet traveler pass without rising to strike.” ✦',
+          },
+        ],
+      },
+    ],
+    cancelable: true,
+    cancelLabel: 'Leave the Hollow Quiet',
+    resolvedStates: [
+      {
+        flag: 'world_bark_hearth_rested',
+        message: 'The amber peat fire burns with quiet, fragrant dignity.',
+      },
+    ],
+  },
+
+  choice_world_bark_font: {
+    id: 'choice_world_bark_font',
+    title: 'Living Sap Font',
+    description:
+      'A natural cup in the living wood catches slow, golden drops of pure uncorrupted Yggdrasil sap.',
+    options: [
+      {
+        id: 'taste',
+        label: 'Taste the Pure Sap',
+        description: 'Take a single drop of golden sap. It hums with vital harmony.',
+        consequences: [
+          { type: 'setFlag', flag: 'world_bark_sap_tasted', value: true },
+          {
+            type: 'logMessage',
+            message:
+              '✨ A taste like wild clover honey and sunlit leaves. The creeping dread of the abyss fades from your heart.',
+          },
+        ],
+      },
+    ],
+    cancelable: true,
+    cancelLabel: 'Leave the Font',
+    resolvedStates: [
+      {
+        flag: 'world_bark_sap_tasted',
+        message: 'The pure sap font gathers golden drops in rhythmic silence.',
+      },
+    ],
+  },
 };
 

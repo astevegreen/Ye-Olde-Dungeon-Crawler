@@ -11,7 +11,13 @@ import { DEEPEST_FLOOR_HOOK } from './spellTablets';
 import { COTW_AFFINITY_MATRIX } from './elements';
 import { COTW_EQUIPMENT_SLOTS } from './slots';
 import { COTW_THEME_TOKENS } from './theme';
-import { COTW_VAULTS } from './vaults';
+import {
+  COTW_VAULTS,
+  DWARVEN_HEARTH_FLOOR,
+  DWARVEN_HEARTH_VAULT_ID,
+  WORLD_BARK_FLOOR,
+  WORLD_BARK_VAULT_ID,
+} from './vaults';
 import { COTW_SPRITE_RECIPES } from './sprites';
 import { COTW_CHOICES } from './choices';
 import { COTW_PACTS } from './pacts';
@@ -92,6 +98,8 @@ export const cotwManifest: GameContentManifest = {
     { flag: 'vidnir_slain', label: "The Wyrm's Fate Revealed", description: 'Learned from the dying herald Víðnir that slaying Níðhögg will split Yggdrasil and trigger Ragnarök, while driving it off will seal the root.', icon: '🐉' },
     { flag: 'skaldic_runestone_1_resolved', label: 'Lay of the Frost King', description: 'Uncovered the ancient frost saga and claimed the Slow & Cold Ray runic spell hint.', icon: 'ᚱ' },
     { flag: 'skaldic_runestone_4_resolved', label: 'The Scorched Root’s Lament', description: 'Learned how the stolen sun-chariot heat woke Níðhögg, and claimed the Rime Shard runic spell hint.', icon: '🌱' },
+    { flag: 'dwarven_hearth_rested', label: 'Dwarven Hearth Respite', description: 'Found solace in the secluded thermal grotto behind the rushing cascade.', icon: '♨️' },
+    { flag: 'world_bark_hearth_rested', label: 'Heartwood Sanctuary', description: 'Rested in the peaceful hollow among the ancient roots of Yggdrasil.', icon: '🌳' },
   ],
   renownMilestones: COTW_RENOWN_MILESTONES,
   renownTitles: COTW_RENOWN_TITLES,
@@ -204,6 +212,10 @@ export const cotwManifest: GameContentManifest = {
     },
     // Víðnir and the shed fang: guaranteed on floor 45, not a chance draw from the vault pool.
     { floor: 45, vaultId: 'floor45_fang_vault' },
+    // Act 1 Campfire Grotto: The Dwarven Hearth Grotto on floor 13
+    { floor: DWARVEN_HEARTH_FLOOR, vaultId: DWARVEN_HEARTH_VAULT_ID },
+    // Act 2 Campfire Grotto: The Heartwood Knothole on floor 37
+    { floor: WORLD_BARK_FLOOR, vaultId: WORLD_BARK_VAULT_ID },
   ],
   // Townsfolk standing moves shop prices (hostage ritual outcome, story choices).
   roomDecoration: COTW_ROOM_DECORATION,

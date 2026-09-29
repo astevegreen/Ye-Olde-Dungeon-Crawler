@@ -123,4 +123,114 @@ export const COTW_TILES: TileDefinition[] = [
     landmarkLabel: "Loki's Cairn ᛚ",
   },
   ...SKALDIC_RUNESTONE_TILES,
+
+  // --- Act 1 Campfire Grotto: The Dwarven Hearth Grotto (Floor 13) ---
+  {
+    type: 'dwarven_cascade_veil',
+    name: 'Subterranean Cascade',
+    passable: true,
+    walkable: true,
+    transparent: false,
+    glyph: '≈',
+    description:
+      'A rushing veil of cold mountain runoff pouring from a fissure in the rock. The spray obscures the passage behind it.',
+  },
+  {
+    type: 'grotto_hearth',
+    name: 'Dwarven Hearth',
+    passable: true,
+    walkable: true,
+    transparent: true,
+    glyph: '♨',
+    landmarkLabel: 'Dwarven Hearth 🔥',
+    description:
+      'An ancient iron-banded stone hearth glowing with banked geothermal embers. The radiating warmth soothes tired bones and dispels the dungeon chill.',
+    interactionHandlerId: 'choice_dwarven_hearth',
+  },
+  {
+    type: 'grotto_mineral_spring',
+    name: 'Thermal Mountain Spring',
+    passable: true,
+    walkable: true,
+    transparent: true,
+    glyph: '~',
+    description:
+      'A bubbling pool of crystal-clear mineral water. Wisps of steam rise gently into the quiet air.',
+    interactionHandlerId: 'choice_dwarven_spring',
+  },
+  {
+    type: 'grotto_stone_bench',
+    name: 'Carved Basalt Bench',
+    passable: true,
+    walkable: true,
+    transparent: true,
+    glyph: 'π',
+    description:
+      'A low bench carved directly into the basalt wall, polished smooth by centuries of miners resting in peace.',
+  },
+  {
+    type: 'grotto_supplies',
+    name: 'Wayfarer Supplies',
+    passable: true,
+    walkable: true,
+    transparent: true,
+    glyph: '⌂',
+    description:
+      'A weathered copper kettle, dried mountain herbs, and a bundle of dry kindling left behind for weary travelers.',
+  },
+
+  // --- Act 2 Campfire Grotto: The Heartwood Knothole (Floor 37) ---
+  {
+    type: 'root_curtain_veil',
+    name: 'Woven Root Curtain',
+    passable: true,
+    walkable: true,
+    transparent: false,
+    glyph: '}',
+    description:
+      'A dense curtain of hanging tree rootlets, woven lianas, and weeping amber bark. The fibrous tendrils yield easily to a gentle push.',
+  },
+  {
+    type: 'world_bark_campfire',
+    name: 'Amber Peat Fire',
+    passable: true,
+    walkable: true,
+    transparent: true,
+    glyph: '♨',
+    landmarkLabel: 'Amber Hearth 🔥',
+    description:
+      'A low campfire of fragrant dried peat and pine resin glowing within a ring of smooth river stones. It crackles softly, driving away the creeping blight.',
+    interactionHandlerId: 'choice_world_bark_hearth',
+  },
+  {
+    type: 'world_bark_sap_pool',
+    name: 'Living Sap Font',
+    passable: true,
+    walkable: true,
+    transparent: true,
+    glyph: '~',
+    description:
+      'A natural hollow in the heartwood catching slow, golden droplets of uncorrupted Yggdrasil sap. The liquid gleams with gentle warmth.',
+    interactionHandlerId: 'choice_world_bark_font',
+  },
+  {
+    type: 'world_bark_moss_bed',
+    name: 'Star-Lichen Bed',
+    passable: true,
+    walkable: true,
+    transparent: true,
+    glyph: '≈',
+    description:
+      'A thick, springy bed of emerald moss and luminescent star-lichen. It yields gently underfoot, smelling of rain and fresh soil.',
+  },
+  {
+    type: 'world_bark_chimes',
+    name: 'Carved Root Talismans',
+    passable: true,
+    walkable: true,
+    transparent: true,
+    glyph: '♪',
+    description:
+      'Polished alder chimes and woven bark talismans hung on fine sinew. They chime in gentle, rhythmic tones whenever the cavern breathes.',
+  },
 ];

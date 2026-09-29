@@ -491,6 +491,69 @@ export class CompendiumModal implements UIModal {
           }
         </div>
       </div>
+
+      <!-- Galdr of the Slain: Harvest Rite or Skaldic Prophecy -->
+      ${this.renderGaldrSection(def)}
+    `;
+  }
+
+  private renderGaldrSection(def: MonsterDefinition): string {
+    const compendium = this.engine?.compendium;
+    const isHarvested = Boolean(compendium?.isGaldrHarvested(def.id));
+    const galdr = def.galdrHarvest;
+
+    if (!galdr) {
+      return `
+        <div style="background: #0f172a; border: 1px solid #334155; padding: 8px 10px; border-radius: 4px; margin-top: 8px;">
+          <div style="font-weight: bold; color: #64748b; font-size: 11px;">✦ GALDR OF THE SLAIN ✦</div>
+          <div style="font-size: 10px; color: #94a3b8; font-style: italic; margin-top: 2px;">
+            No supernatural galdr is bound within this mundane creature's blood.
+          </div>
+        </div>
+      `;
+    }
+
+    const rewardSpell = this.engine?.manifest?.spells?.find((s) => s.id === galdr.rewardSpellId);
+    const rewardName = rewardSpell?.name ?? galdr.rewardSpellId;
+
+    if (isHarvested) {
+      const conditions: string[] = [];
+      if (galdr.requiredDamageElement) conditions.push(`Killing Blow: <b>${galdr.requiredDamageElement.toUpperCase()}</b> damage`);
+      if (galdr.requiredSurfaceOrTile) conditions.push(`Surface: <b>${galdr.requiredSurfaceOrTile}</b>`);
+      if (galdr.requiredVictimStatus) conditions.push(`Victim Affliction: <b>${galdr.requiredVictimStatus}</b>`);
+      if (galdr.requiresHolyGroundOrStatus) conditions.push(`Ground: <b>Consecrated / Holy ground</b>`);
+      if (galdr.requiresOverkillPercent) conditions.push(`Overkill: <b>≥${galdr.requiresOverkillPercent}% max HP</b>`);
+
+      return `
+        <div style="background: #142e1d; border: 1px solid #22c55e; padding: 10px; border-radius: 4px; margin-top: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-weight: bold; color: #86efac; font-size: 11px;">✦ GALDR OF THE SLAIN: CONQUERED RITE ✦</span>
+            <span style="font-size: 9px; padding: 2px 6px; background: #22c55e; color: #052e16; font-weight: bold; border-radius: 2px;">REAPED</span>
+          </div>
+          <div style="font-size: 11px; color: #dcfce7; margin-bottom: 6px;">
+            Harvested Spell: <b style="color: #facc15;">${rewardName}</b>
+          </div>
+          <div style="font-size: 10px; color: #a7f3d0; line-height: 1.5;">
+            <b>Execution Ritual:</b>
+            <div style="margin-left: 6px; margin-top: 2px;">• ${conditions.length > 0 ? conditions.join('<br>• ') : 'Executed through mortal combat.'}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    return `
+      <div style="background: #1e1b4b; border: 1px solid #6366f1; padding: 10px; border-radius: 4px; margin-top: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-weight: bold; color: #c7d2fe; font-size: 11px;">✦ GALDR OF THE SLAIN: SKALDIC PROPHECY ✦</span>
+          <span style="font-size: 9px; padding: 2px 6px; background: #3730a3; color: #e0e7ff; font-weight: bold; border-radius: 2px;">UNREAPED</span>
+        </div>
+        <div style="font-size: 11px; font-style: italic; color: #fef08a; background: rgba(15, 23, 42, 0.6); padding: 8px 10px; border-left: 3px solid #eab308; margin-bottom: 6px; white-space: pre-line; line-height: 1.4;">
+"${galdr.hintVerse}"
+        </div>
+        <div style="font-size: 9px; color: #94a3b8;">
+          Decipher the skaldic prophecy to execute this creature under the required ritual conditions and tear forth its magic.
+        </div>
+      </div>
     `;
   }
 }

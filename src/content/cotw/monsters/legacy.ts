@@ -133,6 +133,11 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       { spellId: 'slow', skipIfTargetHasStatus: 'slow', chance: 0.4 },
       { spellId: 'firebolt' },
     ],
+    galdrHarvest: {
+      rewardSpellId: 'firebolt',
+      hintVerse: 'Quench the shaman’s hellfire spark\nwith an overload of crushing kinetic force,\nto wrest the firebolt from his charred hands.',
+      requiresOverkillPercent: 40,
+    },
     fleeHealthPercent: 0.3,
     xpValue: 50,
     lootTable: [
@@ -250,6 +255,11 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       type: 'slow',
       chance: 0.25,
       duration: 5,
+    },
+    galdrHarvest: {
+      rewardSpellId: 'heal_minor',
+      hintVerse: 'Lay the deathless warrior of the barrow to final rest\nupon consecrated holy stones,\nto wrest life from the tomb.',
+      requiresHolyGroundOrStatus: true,
     },
     fleeHealthPercent: 0.0,
     xpValue: 95,

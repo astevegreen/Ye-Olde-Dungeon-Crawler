@@ -4,6 +4,7 @@ import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { CastSpellAction } from '../../actions/spell-actions';
+import { RestAction } from '../../actions/rest';
 import { ManaOverflowManager } from '../manaOverflow';
 import type { SpellDefinition } from '../types';
 import { serializeGame, deserializeGame } from '../../storage/serializer';
@@ -102,6 +103,55 @@ describe('Ginnungagap / Mana Overflow System', () => {
     expect(player.voidDebt).toBe(3);
 
     player.clearVoidDebt();
+    expect(player.voidDebt).toBe(0);
+  });
+
+  it('lingers indefinitely at Tier 3 threshold (16) when decaying in dungeon', () => {
+    // Starting with Tier 3 primordial void scar (debt >= 16)
+    player.voidDebt = 25;
+
+    // Decay by 20 without allowing Tier 3 clearing (dungeon exploration/rest)
+    player.decayVoidDebt(20, false);
+    // Should cap/floor at 16 (Tier 3 primordial scar)
+    expect(player.voidDebt).toBe(16);
+
+    // Minor debt (< 16) decays naturally to 0 even in dungeons
+    player.voidDebt = 10;
+    player.decayVoidDebt(10, false);
+    expect(player.voidDebt).toBe(0);
+  });
+
+  it('clears Tier 3 primordial scars when resting in town sanctuary', () => {
+    player.voidDebt = 25;
+    // Clearing Tier 3 is permitted (in Town / Floor 0)
+    player.decayVoidDebt(25, true);
+    expect(player.voidDebt).toBe(0);
+  });
+
+  it('retains Tier 3 void debt when resting in dungeon, but purges in Town', () => {
+    // 1. Rest in dungeon (Floor 1)
+    engine.currentFloor = 1;
+    player.hp = 20;
+    player.mana = 0;
+    player.voidDebt = 22;
+
+    const dungeonRest = new RestAction(player);
+    const res1 = dungeonRest.perform(engine);
+    expect(res1.success).toBe(true);
+    // Player recovers HP/Mana, but Tier 3 void debt lingers at floor 16
+    expect(player.hp).toBe(player.maxHp);
+    expect(player.mana).toBe(player.maxMana);
+    expect(player.voidDebt).toBe(16);
+
+    // 2. Rest in Town (Floor 0)
+    engine.currentFloor = 0;
+    player.hp = 20;
+    player.mana = 0;
+
+    const townRest = new RestAction(player);
+    const res2 = townRest.perform(engine);
+    expect(res2.success).toBe(true);
+    // Entire void debt is cleansed in town sanctuary
     expect(player.voidDebt).toBe(0);
   });
 

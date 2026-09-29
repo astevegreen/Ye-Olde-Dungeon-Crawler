@@ -1,7 +1,11 @@
 import type { GameEngine } from '../engine';
+import type { Entity } from '../entities/entity';
 import type { Player } from '../entities/player';
 import type { SpellDefinition } from './types';
 import { getSpell } from './spellRegistry';
+import { StatusHandlerRegistry } from '../status/statusHandlers';
+import type { StatusHandler, StatusTickOutput } from '../status/statusHandlers';
+import type { StatusEffect } from '../status/types';
 
 export type InfusionGlyphType =
   | 'vanish_step'
@@ -22,8 +26,22 @@ export interface GrimoireSlot {
   infusedGlyphs?: InfusedGlyph[];
 }
 
+export interface GrimoirePage {
+  id: string;
+  name: string;
+  slots: GrimoireSlot[];
+}
+
 export const GRIMOIRE_SIZE = 9;
 export const NEXUS_SLOT_INDEX = 4; // Midgard (center: row 1, col 1)
+export const DEFAULT_GRIMOIRE_PAGES = 3;
+export const DEFAULT_GRIMOIRE_PAGE_NAMES = [
+  'Page I: Sol',
+  'Page II: Máni',
+  'Page III: Yggdrasil',
+] as const;
+
+export const GRIMOIRE_ATTUNE_STATUS = 'grimoire_attunement';
 
 export class GrimoireMatrixManager {
   /**
@@ -38,6 +56,18 @@ export class GrimoireMatrixManager {
       });
     }
     return slots;
+  }
+
+  /**
+   * Initializes a default set of swappable grimoire pages.
+   * Page 0 holds initial known spells; subsequent pages start blank for deckbuilding.
+   */
+  public static createDefaultGrimoirePages(spellsKnown: string[] = []): GrimoirePage[] {
+    return DEFAULT_GRIMOIRE_PAGE_NAMES.map((name, index) => ({
+      id: `page_${index + 1}`,
+      name,
+      slots: index === 0 ? this.createDefaultGrimoire(spellsKnown) : this.createDefaultGrimoire([]),
+    }));
   }
 
   /**
@@ -226,4 +256,133 @@ export class GrimoireMatrixManager {
       message: `*** PRIMORDIAL TRANSMUTATION! The cosmic synthesis of ${spellAId} and ${spellBId} forged ${hybridSpell.name}! ***`,
     };
   }
+
+  /**
+   * Checks whether the player can swap grimoire pages instantaneously without concentration.
+   * Allowed only when in town (Floor 0) or when no hostile monsters are in line-of-sight.
+   */
+  public static canSwitchPageInstantly(engine: GameEngine, player: Player): boolean {
+    if (engine.currentFloor === 0) return true;
+    const entities = engine.map.getAllEntities();
+    for (const e of entities) {
+      if (e.isAlive() && e.isHostileTo(player) && engine.fov.isVisible(e.x, e.y)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Starts or continues a channeled attunement to switch active grimoire pages.
+   * If out of combat, performs an instant switch.
+   * If in combat, requires concentration turns (like Rune of Return) that can be interrupted by damage.
+   */
+  public static startOrContinueAttunement(
+    engine: GameEngine,
+    player: Player,
+    targetPageIndex: number
+  ): { success: boolean; completed: boolean; message: string } {
+    if (targetPageIndex < 0 || targetPageIndex >= player.grimoirePages.length) {
+      return { success: false, completed: false, message: 'Invalid grimoire page.' };
+    }
+    if (targetPageIndex === player.activeGrimoireIndex) {
+      const pageName = player.grimoirePages[targetPageIndex]?.name ?? `Page ${targetPageIndex + 1}`;
+      return { success: true, completed: true, message: `Already attuned to ${pageName}.` };
+    }
+
+    const pageName = player.grimoirePages[targetPageIndex]?.name ?? `Page ${targetPageIndex + 1}`;
+
+    // Instant switch if no hostiles in FOV or in town
+    if (this.canSwitchPageInstantly(engine, player)) {
+      player.switchGrimoirePage(targetPageIndex);
+      const msg = `You open your grimoire to ${pageName}. Arcane matrix attuned.`;
+      engine.log(msg);
+      return { success: true, completed: true, message: msg };
+    }
+
+    // Mid-conflict attunement channel
+    const effect = player.statusManager.getStatus(GRIMOIRE_ATTUNE_STATUS);
+    if (effect) {
+      const lastHp = typeof effect.data?.lastHp === 'number' ? effect.data.lastHp : player.hp;
+      if (player.hp < lastHp) {
+        this.interruptAttunement(engine, player, 'Pain shatters your focus! The grimoire attunement fizzles!');
+        return { success: false, completed: false, message: 'Attunement interrupted by damage.' };
+      }
+      effect.data = { ...effect.data, lastHp: player.hp };
+
+      const finalPageIndex = typeof effect.data?.targetPageIndex === 'number' ? effect.data.targetPageIndex : targetPageIndex;
+      const finalPageName = player.grimoirePages[finalPageIndex]?.name ?? `Page ${finalPageIndex + 1}`;
+      player.statusManager.removeStatus(GRIMOIRE_ATTUNE_STATUS);
+      player.switchGrimoirePage(finalPageIndex);
+      const msg = `*** Grimoire attunement complete! Your arcane resonance shifts to ${finalPageName}! ***`;
+      engine.log(msg);
+      return { success: true, completed: true, message: msg };
+    }
+
+    // Initiate new channel
+    const duration = 2;
+    player.statusManager.applyStatus(
+      {
+        type: GRIMOIRE_ATTUNE_STATUS,
+        duration,
+        potency: 1,
+        sourceEntityId: player.id,
+        data: { targetPageIndex, lastHp: player.hp },
+      },
+      player.statusImmunities,
+      player,
+      engine
+    );
+    const msg = `Hostiles in sight! You begin a 2-turn concentration ritual to attune to ${pageName}...`;
+    engine.log(msg);
+    return { success: true, completed: false, message: msg };
+  }
+
+  /**
+   * Interrupts an active grimoire attunement channel.
+   */
+  public static interruptAttunement(engine: GameEngine, player: Player, message: string): void {
+    if (!player.statusManager.hasStatus(GRIMOIRE_ATTUNE_STATUS)) return;
+    player.statusManager.removeStatus(GRIMOIRE_ATTUNE_STATUS);
+    engine.log(message);
+  }
 }
+
+const grimoireAttuneStatusHandler: StatusHandler = {
+  onTick(entity: Entity, effect: StatusEffect, engine: GameEngine): StatusTickOutput {
+    if (entity === engine.player) {
+      const player = engine.player;
+      const lastHp = typeof effect.data?.lastHp === 'number' ? effect.data.lastHp : player.hp;
+      if (player.hp < lastHp) {
+        GrimoireMatrixManager.interruptAttunement(engine, player, 'Pain shatters your focus! The grimoire attunement fizzles!');
+        return { damageTaken: 0, killed: false };
+      }
+      effect.data = { ...effect.data, lastHp: player.hp };
+      if (effect.duration > 1) {
+        engine.log(`Concentrating on grimoire attunement... (${effect.duration - 1} turn remaining)`);
+      }
+    }
+    return { damageTaken: 0, killed: false };
+  },
+
+  onExpire(entity: Entity, engine: GameEngine): string | undefined {
+    if (entity === engine.player) {
+      const player = engine.player;
+      const effect = player.statusManager.getStatus(GRIMOIRE_ATTUNE_STATUS);
+      const targetIndex = Number(effect?.data?.targetPageIndex) || 0;
+      player.switchGrimoirePage(targetIndex);
+      const pageName = player.grimoirePages[targetIndex]?.name ?? `Page ${targetIndex + 1}`;
+      const msg = `*** Grimoire attunement complete! Switched to ${pageName}! ***`;
+      engine.log(msg);
+      return msg;
+    }
+    return undefined;
+  },
+};
+
+export function registerGrimoireAttuneStatusHandler(): void {
+  StatusHandlerRegistry.register(GRIMOIRE_ATTUNE_STATUS, grimoireAttuneStatusHandler);
+}
+
+registerGrimoireAttuneStatusHandler();
+

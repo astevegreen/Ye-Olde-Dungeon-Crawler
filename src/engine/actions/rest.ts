@@ -45,7 +45,7 @@ export class RestAction implements Action {
       // Natural recovery per rest tick
       this.player.heal(1);
       this.player.restoreMana(1);
-      this.player.decayVoidDebt(1);
+      this.player.decayVoidDebt(1, engine.currentFloor === 0);
 
       // Simulate turn passage for monsters
       this.player.consumeEnergy(100);
@@ -99,7 +99,14 @@ export class RestAction implements Action {
       return { success: true, cost: 0, message: msg };
     }
 
-    this.player.clearVoidDebt();
+    if (engine.currentFloor === 0) {
+      this.player.clearVoidDebt();
+    } else if (this.player.voidDebt >= 16) {
+      this.player.decayVoidDebt(100, false);
+      engine.log('☠ Your primordial void scar (Tier 3 Void Debt) throbs with abyssal energy — it lingers indefinitely until cleansed in Town!');
+    } else {
+      this.player.clearVoidDebt();
+    }
     const msg = `You rest peacefully for ${ticksElapsed} turn(s). HP and Mana fully restored! (+${hpGained} HP, +${manaGained} MP)`;
     engine.log(msg);
     return { success: true, cost: 0, message: msg };

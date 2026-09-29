@@ -18,6 +18,12 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
     },
     spells: ['slow'],
     spellCooldown: 3,
+    galdrHarvest: {
+      rewardSpellId: 'teleport',
+      hintVerse: 'Corner the deceitful maid of the elder hollows,\nslaying her with pure arcane force as she stumbles slowed,\nand claim the secret of stepping across space.',
+      requiredDamageElement: 'arcane',
+      requiredVictimStatus: 'slow',
+    },
     fleeHealthPercent: 0.3,
     xpValue: 130,
     tags: ['fae', 'spirit'],
@@ -41,6 +47,11 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
     aiType: 'melee',
     resistances: { cold: 'resistant', physical: 'resistant' },
     statusImmunities: ['poison', 'paralysis', 'blindness'],
+    galdrHarvest: {
+      rewardSpellId: 'heal_minor',
+      hintVerse: 'Slay the spectral tomb-guardian upon consecrated ground,\nputting its mournful shade to rest,\nto claim its blessing of restoration.',
+      requiresHolyGroundOrStatus: true,
+    },
     fleeHealthPercent: 0.0,
     xpValue: 140,
     tags: ['spectral', 'undead', 'guardian'],
@@ -109,6 +120,11 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
     aiType: 'immobile_turret',
     spells: ['slow'],
     resistances: { cold: 'immune', fire: 'weak' },
+    galdrHarvest: {
+      rewardSpellId: 'slow',
+      hintVerse: 'Break the enchanted melody of Näcken with fire,\nsilencing the brook-spirit’s mournful song,\nto learn the binding chord of the Slow spell.',
+      requiredDamageElement: 'fire',
+    },
     hooks: [
       {
         event: 'onTurnStart',

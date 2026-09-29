@@ -416,6 +416,16 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     runeCharges: p.runeCharges,
     runeMaxCharges: p.runeMaxCharges,
     voidDebt: p.voidDebt ?? 0,
+    activeGrimoireIndex: p.activeGrimoireIndex ?? 0,
+    grimoirePages: p.grimoirePages
+      ? p.grimoirePages.map((page) => ({
+          ...page,
+          slots: page.slots.map((s) => ({
+            ...s,
+            infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined,
+          })),
+        }))
+      : undefined,
     grimoire: p.grimoire ? [...p.grimoire.map((s) => ({ ...s, infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined }))] : undefined,
     energyModel: p.energyModel
       ? {
@@ -863,6 +873,16 @@ export function deserializeGame(
     runeCharges: pData.runeCharges !== undefined ? Number(pData.runeCharges) : undefined,
     runeMaxCharges: pData.runeMaxCharges !== undefined ? Number(pData.runeMaxCharges) : undefined,
     grimoire: pData.grimoire ? [...pData.grimoire.map((s) => ({ ...s, infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined }))] : undefined,
+    grimoirePages: pData.grimoirePages
+      ? pData.grimoirePages.map((page) => ({
+          ...page,
+          slots: page.slots.map((s) => ({
+            ...s,
+            infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined,
+          })),
+        }))
+      : undefined,
+    activeGrimoireIndex: pData.activeGrimoireIndex !== undefined ? Number(pData.activeGrimoireIndex) : undefined,
   });
   player.energy = Number(pData.energy) || 0;
   player.hp = Math.min(Number(pData.hp) || 1, player.maxHp);

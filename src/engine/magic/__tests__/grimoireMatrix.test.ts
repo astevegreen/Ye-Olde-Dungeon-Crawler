@@ -3,8 +3,9 @@ import { GameEngine } from '../../engine';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
-import { CastSpellAction } from '../../actions/spell-actions';
-import { GrimoireMatrixManager } from '../grimoireMatrix';
+import { CastSpellAction, AttuneGrimoirePageAction } from '../../actions/spell-actions';
+import { GrimoireMatrixManager, GRIMOIRE_ATTUNE_STATUS } from '../grimoireMatrix';
+import { Monster } from '../../entities/monster';
 import type { SpellDefinition } from '../types';
 import { serializeGame, deserializeGame } from '../../storage/serializer';
 
@@ -173,4 +174,121 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     expect(reloadedPlayer.grimoire[0].infusedGlyphs![0].type).toBe('vanish_step');
     expect(reloadedPlayer.grimoire[2].spellId).toBeNull();
   });
+
+  it('manages multiple grimoire pages independently', () => {
+    expect(player.grimoirePages.length).toBe(3);
+    expect(player.activeGrimoireIndex).toBe(0);
+    expect(player.grimoire[0].spellId).toBe('fire_ray');
+
+    // Switch to Page II (Máni)
+    player.switchGrimoirePage(1);
+    expect(player.activeGrimoireIndex).toBe(1);
+    // Page II slots are initially null
+    expect(player.grimoire[0].spellId).toBeNull();
+
+    // Assign cold_burst to Page II slot 4 (nexus)
+    player.setGrimoireSlot(4, 'cold_burst');
+    expect(player.grimoire[4].spellId).toBe('cold_burst');
+
+    // Switch back to Page I (Sol)
+    player.switchGrimoirePage(0);
+    expect(player.activeGrimoireIndex).toBe(0);
+    expect(player.grimoire[0].spellId).toBe('fire_ray');
+    expect(player.grimoire[4].spellId).toBeNull();
+
+    // Verify Page II still retained cold_burst
+    player.switchGrimoirePage(1);
+    expect(player.grimoire[4].spellId).toBe('cold_burst');
+  });
+
+  it('swaps grimoire pages instantly when out of combat', () => {
+    // In town / floor 0, or floor > 0 with no hostiles visible
+    engine.currentFloor = 0;
+    const action = new AttuneGrimoirePageAction(player, 1);
+    const result = action.perform(engine);
+
+    expect(result.success).toBe(true);
+    expect(result.cost).toBe(0);
+    expect(player.activeGrimoireIndex).toBe(1);
+  });
+
+  it('initiates and channels 2-turn attunement when hostiles are in line-of-sight', () => {
+    // Set dungeon floor > 0
+    engine.currentFloor = 1;
+
+    // Spawn a hostile monster in line of sight (player is at 5, 5)
+    const hostile = new Monster({
+      id: 'test_enemy',
+      name: 'Test Enemy',
+      position: { x: 5, y: 6 },
+      stats: { hp: 20, maxHp: 20, attack: 5, defense: 0 },
+      definitionId: 'test_enemy',
+      faction: 'hostile',
+    });
+    engine.map.addEntity(hostile);
+    engine.updateFov();
+
+    expect(GrimoireMatrixManager.canSwitchPageInstantly(engine, player)).toBe(false);
+
+    // Turn 1 of attunement channel
+    const action1 = new AttuneGrimoirePageAction(player, 1);
+    const res1 = action1.perform(engine);
+    expect(res1.success).toBe(true);
+    expect(res1.cost).toBe(100);
+    expect(player.activeGrimoireIndex).toBe(0); // Not switched yet
+    expect(player.statusManager.hasStatus(GRIMOIRE_ATTUNE_STATUS)).toBe(true);
+
+    // Turn 2 of attunement channel completes the ritual
+    const action2 = new AttuneGrimoirePageAction(player, 1);
+    const res2 = action2.perform(engine);
+    expect(res2.success).toBe(true);
+    expect(player.activeGrimoireIndex).toBe(1); // Switched to Page II
+    expect(player.statusManager.hasStatus(GRIMOIRE_ATTUNE_STATUS)).toBe(false);
+  });
+
+  it('interrupts channeled attunement when the player takes damage', () => {
+    engine.currentFloor = 1;
+    const hostile = new Monster({
+      id: 'test_enemy_2',
+      name: 'Test Enemy 2',
+      position: { x: 5, y: 6 },
+      stats: { hp: 20, maxHp: 20, attack: 5, defense: 0 },
+      definitionId: 'test_enemy_2',
+      faction: 'hostile',
+    });
+    engine.map.addEntity(hostile);
+    engine.updateFov();
+
+    // Start attunement
+    const action = new AttuneGrimoirePageAction(player, 2);
+    action.perform(engine);
+    expect(player.statusManager.hasStatus(GRIMOIRE_ATTUNE_STATUS)).toBe(true);
+
+    // Player takes damage mid-channel
+    player.takeDamage(10);
+    expect(player.hp).toBe(40);
+
+    // Next attunement attempt or check detects damage and interrupts
+    const res = GrimoireMatrixManager.startOrContinueAttunement(engine, player, 2);
+    expect(res.success).toBe(false);
+    expect(res.message).toContain('interrupted');
+    expect(player.statusManager.hasStatus(GRIMOIRE_ATTUNE_STATUS)).toBe(false);
+    expect(player.activeGrimoireIndex).toBe(0); // Remains on page 0
+  });
+
+  it('serializes and deserializes multiple grimoire pages and active page index', () => {
+    player.switchGrimoirePage(2); // Yggdrasil
+    player.setGrimoireSlot(0, 'cold_burst');
+
+    const serialized = serializeGame(engine);
+    const parsed = JSON.parse(JSON.stringify(serialized));
+    const reloaded = deserializeGame(parsed);
+
+    const reloadedPlayer = reloaded.engine.player;
+    expect(reloadedPlayer.activeGrimoireIndex).toBe(2);
+    expect(reloadedPlayer.grimoirePages.length).toBe(3);
+    expect(reloadedPlayer.grimoirePages[0].slots[0].spellId).toBe('fire_ray');
+    expect(reloadedPlayer.grimoirePages[2].slots[0].spellId).toBe('cold_burst');
+  });
 });
+

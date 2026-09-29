@@ -485,3 +485,31 @@ export class DrinkPotionAction implements Action {
     return { success: true, cost: actionCost, message: finalMsg };
   }
 }
+
+export class AttuneGrimoirePageAction implements Action {
+  public readonly player: Player;
+  public readonly targetPageIndex: number;
+
+  get actor(): Entity {
+    return this.player;
+  }
+
+  constructor(player: Player, targetPageIndex: number) {
+    this.player = player;
+    this.targetPageIndex = targetPageIndex;
+  }
+
+  public perform(engine: GameEngine): ActionResult {
+    if (!this.player.isAlive()) {
+      return { success: false, cost: 0, message: 'Defeated spellcasters cannot attune grimoires.' };
+    }
+    const outcome = GrimoireMatrixManager.startOrContinueAttunement(engine, this.player, this.targetPageIndex);
+    const instant = outcome.completed && GrimoireMatrixManager.canSwitchPageInstantly(engine, this.player);
+    return {
+      success: outcome.success,
+      cost: instant ? 0 : 100,
+      message: outcome.message,
+    };
+  }
+}
+

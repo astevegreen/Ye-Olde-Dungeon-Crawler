@@ -1,6 +1,6 @@
 import type { GameEngine } from '../engine';
 import type { SpellDefinition } from '../engine';
-import { getSpell } from '../engine';
+import { getSpell, GrimoireMatrixManager, NEXUS_SLOT_INDEX, GRIMOIRE_SIZE } from '../engine';
 import type { UIModal } from './modalStack';
 
 export interface SpellbookModalOptions {
@@ -200,10 +200,10 @@ export class SpellbookModal implements UIModal {
 
     const dialog = document.createElement('div');
     Object.assign(dialog.style, {
-      width: '720px',
-      maxWidth: '92vw',
-      height: '520px',
-      maxHeight: '90vh',
+      width: '780px',
+      maxWidth: '94vw',
+      height: '600px',
+      maxHeight: '92vh',
       backgroundColor: '#0f172a',
       border: '2px solid #38bdf8',
       borderRadius: '8px',
@@ -223,9 +223,16 @@ export class SpellbookModal implements UIModal {
       justifyContent: 'space-between',
       alignItems: 'center',
     });
+    const voidDebtNotice = player.voidDebt > 0
+      ? `<span style="margin-left: 12px; font-weight: bold; color: ${player.voidDebt >= 16 ? '#f87171' : player.voidDebt >= 6 ? '#c084fc' : '#38bdf8'}; font-size: 11px;">
+           ⚡ Void Debt: ${player.voidDebt} ${player.voidDebt >= 16 ? '(Tier 3 Primordial Scar - Lingering)' : player.voidDebt >= 6 ? '(Tier 2 Tremor)' : '(Tier 1 Fracture)'}
+         </span>`
+      : '';
+
     header.innerHTML = `
-      <div style="font-weight: bold; font-size: 16px; color: #f8fafc; letter-spacing: 0.05em;">
-        📜 ARCANE SPELLBOOK & QUICKBAR ASSIGNMENT
+      <div style="font-weight: bold; font-size: 15px; color: #f8fafc; letter-spacing: 0.05em; display: flex; align-items: center;">
+        <span>📜 ARCANE SPELLBOOK &amp; GRIMOIRE MATRIX</span>
+        ${voidDebtNotice}
       </div>
       <div style="font-size: 12px; color: #67e8f9;">
         Mana: <span style="font-weight: bold; color: #38bdf8;">${player.mana}</span> / ${player.maxMana} MP
@@ -302,8 +309,17 @@ export class SpellbookModal implements UIModal {
       overflowY: 'auto',
     });
 
+    // Prepend Grimoire Spatial Matrix Section
+    rightCol.appendChild(this.renderGrimoireMatrixSection(player, currentSpell));
+
     if (!currentSpell) {
-      rightCol.innerHTML = `<div style="color: #64748b; font-style: italic; margin-top: 40px; text-align: center;">Select a spell to view details.</div>`;
+      const emptyNotice = document.createElement('div');
+      emptyNotice.style.color = '#64748b';
+      emptyNotice.style.fontStyle = 'italic';
+      emptyNotice.style.marginTop = '16px';
+      emptyNotice.style.textAlign = 'center';
+      emptyNotice.textContent = 'Select a spell from the list to view stats, assign to quickbar, or slot into the Grimoire.';
+      rightCol.appendChild(emptyNotice);
     } else {
       const detailsContainer = document.createElement('div');
 
@@ -437,4 +453,161 @@ export class SpellbookModal implements UIModal {
     this.container.innerHTML = '';
     this.container.appendChild(dialog);
   }
+
+  private renderGrimoireMatrixSection(
+    player: import('../engine').Player,
+    currentSpell: SpellDefinition | undefined
+  ): HTMLElement {
+    const container = document.createElement('div');
+    container.style.marginBottom = '12px';
+    container.style.borderBottom = '1px solid #1e293b';
+    container.style.paddingBottom = '10px';
+
+    // Grimoire Page Switcher header
+    const pageHeader = document.createElement('div');
+    pageHeader.style.display = 'flex';
+    pageHeader.style.justifyContent = 'space-between';
+    pageHeader.style.alignItems = 'center';
+    pageHeader.style.marginBottom = '6px';
+
+    const pageTitle = document.createElement('span');
+    pageTitle.style.fontSize = '11px';
+    pageTitle.style.fontWeight = 'bold';
+    pageTitle.style.color = '#38bdf8';
+    pageTitle.style.letterSpacing = '0.05em';
+    pageTitle.textContent = 'ᚱ GRIMOIRE SPATIAL MATRIX';
+    pageHeader.appendChild(pageTitle);
+
+    // Page Buttons
+    const pageBtnGroup = document.createElement('div');
+    pageBtnGroup.style.display = 'flex';
+    pageBtnGroup.style.gap = '4px';
+
+    player.grimoirePages.forEach((page, pIdx) => {
+      const isCurrentPage = pIdx === player.activeGrimoireIndex;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      Object.assign(btn.style, {
+        padding: '3px 8px',
+        fontSize: '10px',
+        fontWeight: isCurrentPage ? 'bold' : 'normal',
+        backgroundColor: isCurrentPage ? '#0284c7' : '#1e293b',
+        color: isCurrentPage ? '#ffffff' : '#94a3b8',
+        border: isCurrentPage ? '1px solid #38bdf8' : '1px solid #334155',
+        borderRadius: '3px',
+        cursor: 'pointer',
+      });
+      btn.textContent = page.name;
+      btn.title = `Switch to ${page.name}`;
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.engine) {
+          GrimoireMatrixManager.startOrContinueAttunement(this.engine, player, pIdx);
+          this.render();
+        }
+      });
+      pageBtnGroup.appendChild(btn);
+    });
+    pageHeader.appendChild(pageBtnGroup);
+    container.appendChild(pageHeader);
+
+    // Channeling status indicator if active
+    if (player.statusManager.hasStatus('grimoire_attunement')) {
+      const attuneEffect = player.statusManager.getStatus('grimoire_attunement');
+      const attuneBanner = document.createElement('div');
+      attuneBanner.style.padding = '4px 8px';
+      attuneBanner.style.backgroundColor = '#451a03';
+      attuneBanner.style.border = '1px solid #d97706';
+      attuneBanner.style.color = '#fef08a';
+      attuneBanner.style.fontSize = '10px';
+      attuneBanner.style.borderRadius = '3px';
+      attuneBanner.style.marginBottom = '6px';
+      attuneBanner.innerHTML = `⏳ <b>Concentrating:</b> Attuning to grimoire page (${attuneEffect?.duration ?? 1} turn remaining)...`;
+      container.appendChild(attuneBanner);
+    }
+
+    // 3x3 Matrix Grid
+    const gridEl = document.createElement('div');
+    Object.assign(gridEl.style, {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(3, 1fr)',
+      gap: '6px',
+      backgroundColor: '#050811',
+      padding: '6px',
+      borderRadius: '4px',
+      border: '1px solid #1e293b',
+    });
+
+    const activeSlots = player.grimoire;
+    for (let sIdx = 0; sIdx < GRIMOIRE_SIZE; sIdx++) {
+      const slot = activeSlots[sIdx];
+      const isNexus = sIdx === NEXUS_SLOT_INDEX;
+      const spellId = slot?.spellId;
+      const slottedSpell = spellId
+        ? this.engine?.manifest?.spells?.find((s) => s.id === spellId) ?? getSpell(spellId)
+        : null;
+
+      const slotCell = document.createElement('div');
+      Object.assign(slotCell.style, {
+        padding: '5px 6px',
+        minHeight: '40px',
+        backgroundColor: slottedSpell ? '#0f172a' : 'rgba(15, 23, 42, 0.4)',
+        border: isNexus ? '1px solid #eab308' : slottedSpell ? '1px solid #38bdf8' : '1px dashed #334155',
+        borderRadius: '3px',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        fontSize: '10px',
+      });
+
+      // Header row inside slot
+      const slotLabel = document.createElement('div');
+      slotLabel.style.display = 'flex';
+      slotLabel.style.justifyContent = 'space-between';
+      slotLabel.style.color = isNexus ? '#facc15' : '#64748b';
+      slotLabel.style.fontSize = '9px';
+      slotLabel.innerHTML = `<span>Slot ${sIdx + 1}</span>${isNexus ? '<span>MIDGARD</span>' : ''}`;
+      slotCell.appendChild(slotLabel);
+
+      // Spell content or empty prompt
+      const contentEl = document.createElement('div');
+      contentEl.style.marginTop = '2px';
+      if (slottedSpell) {
+        contentEl.innerHTML = `
+          <div style="font-weight: bold; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            ${slottedSpell.name}
+          </div>
+          <div style="font-size: 8px; color: #94a3b8;">
+            ${slottedSpell.element ?? 'arcane'} | ${slottedSpell.manaCost ?? 0}m
+          </div>
+        `;
+        if (slot.infusedGlyphs && slot.infusedGlyphs.length > 0) {
+          const glyphsStr = slot.infusedGlyphs.map((g) => `✦${g.type}`).join(' ');
+          contentEl.innerHTML += `<div style="font-size: 8px; color: #a855f7;">${glyphsStr}</div>`;
+        }
+      } else {
+        contentEl.innerHTML = `<span style="color: #475569; font-style: italic;">[Empty]</span>`;
+      }
+      slotCell.appendChild(contentEl);
+
+      // Click: assign or unassign current spell
+      slotCell.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!currentSpell) return;
+        if (slot?.spellId === currentSpell.id) {
+          player.setGrimoireSlot(sIdx, null);
+        } else {
+          player.setGrimoireSlot(sIdx, currentSpell.id);
+        }
+        this.render();
+      });
+
+      gridEl.appendChild(slotCell);
+    }
+
+    container.appendChild(gridEl);
+    return container;
+  }
 }
+

@@ -226,6 +226,8 @@ export interface SerializedPlayer {
   energyModel?: SerializedEnergyModel;
   voidDebt?: number;
   grimoire?: import('../magic/grimoireMatrix').GrimoireSlot[];
+  grimoirePages?: import('../magic/grimoireMatrix').GrimoirePage[];
+  activeGrimoireIndex?: number;
 }
 
 /** `WorldState` as saved: remote-vault items are serialized item trees, not live Items. */

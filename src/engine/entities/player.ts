@@ -15,7 +15,12 @@ import {
   RUNE_MAX_CHARGES,
 } from '../magic/runeOfReturn';
 import { EnergyModel, type DualEnergyConfig } from '../actors/energyModel';
-import { GrimoireMatrixManager, type GrimoireSlot } from '../magic/grimoireMatrix';
+import {
+  GrimoireMatrixManager,
+  type GrimoireSlot,
+  type GrimoirePage,
+  GRIMOIRE_SIZE,
+} from '../magic/grimoireMatrix';
 
 export interface PlayerConfig {
   id?: string;
@@ -50,6 +55,8 @@ export interface PlayerConfig {
   energyModel?: EnergyModel;
   voidDebt?: number;
   grimoire?: GrimoireSlot[];
+  grimoirePages?: GrimoirePage[];
+  activeGrimoireIndex?: number;
 }
 
 const DEFAULT_PLAYER_STATS: CombatStats = {
@@ -92,7 +99,18 @@ export class Player extends Actor {
   declare public pactMutatorsSupplier?: () => import('../pacts/pactManager').RunPactMutatorRules;
   public energyModel?: EnergyModel;
   public voidDebt: number;
-  public grimoire: GrimoireSlot[];
+  public grimoirePages: GrimoirePage[];
+  public activeGrimoireIndex: number;
+
+  public get grimoire(): GrimoireSlot[] {
+    return this.grimoirePages[this.activeGrimoireIndex]?.slots ?? this.grimoirePages[0]?.slots ?? [];
+  }
+
+  public set grimoire(slots: GrimoireSlot[]) {
+    if (this.grimoirePages[this.activeGrimoireIndex]) {
+      this.grimoirePages[this.activeGrimoireIndex].slots = slots;
+    }
+  }
 
   constructor(config: PlayerConfig) {
     super({
@@ -117,9 +135,25 @@ export class Player extends Actor {
     this.maxMana = config.maxMana ?? Math.floor(this.intelligence * 2 + 5);
     this.mana = config.mana ?? this.maxMana;
     this.spellsKnown = config.spellsKnown ? [...config.spellsKnown] : [...DEFAULT_STARTER_SPELLS];
-    this.grimoire = config.grimoire
-      ? [...config.grimoire.map((s) => ({ ...s, infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined }))]
-      : GrimoireMatrixManager.createDefaultGrimoire(this.spellsKnown);
+    this.activeGrimoireIndex = config.activeGrimoireIndex ?? 0;
+    if (config.grimoirePages && config.grimoirePages.length > 0) {
+      this.grimoirePages = config.grimoirePages.map((page) => ({
+        ...page,
+        slots: page.slots.map((s) => ({
+          ...s,
+          infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined,
+        })),
+      }));
+    } else if (config.grimoire) {
+      const defaultPages = GrimoireMatrixManager.createDefaultGrimoirePages(this.spellsKnown);
+      defaultPages[0].slots = config.grimoire.map((s) => ({
+        ...s,
+        infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined,
+      }));
+      this.grimoirePages = defaultPages;
+    } else {
+      this.grimoirePages = GrimoireMatrixManager.createDefaultGrimoirePages(this.spellsKnown);
+    }
     if (config.quickSpells) {
       this.quickSpells = [...config.quickSpells];
       while (this.quickSpells.length < 10) this.quickSpells.push(null);
@@ -306,8 +340,9 @@ export class Player extends Actor {
     return this.voidDebt;
   }
 
-  public decayVoidDebt(amount: number = 1): number {
-    this.voidDebt = Math.max(0, (this.voidDebt ?? 0) - Math.max(0, amount));
+  public decayVoidDebt(amount: number = 1, allowClearingTier3: boolean = false): number {
+    const minDebt = !allowClearingTier3 && (this.voidDebt ?? 0) >= 16 ? 16 : 0;
+    this.voidDebt = Math.max(minDebt, (this.voidDebt ?? 0) - Math.max(0, amount));
     return this.voidDebt;
   }
 
@@ -315,12 +350,19 @@ export class Player extends Actor {
     this.voidDebt = 0;
   }
 
+  /** Switches the active grimoire page to the specified index. */
+  public switchGrimoirePage(index: number): boolean {
+    if (index < 0 || index >= this.grimoirePages.length) return false;
+    this.activeGrimoireIndex = index;
+    return true;
+  }
+
   public learnSpell(spellId: string): boolean {
     if (this.spellsKnown.includes(spellId)) {
       return false;
     }
     this.spellsKnown.push(spellId);
-    // Auto-slot into first empty grimoire slot if available
+    // Auto-slot into first empty grimoire slot in active page if available
     const emptySlot = this.grimoire.find((s) => s.spellId === null);
     if (emptySlot) {
       emptySlot.spellId = spellId;
@@ -328,11 +370,13 @@ export class Player extends Actor {
     return true;
   }
 
-  /** Assigns a known spell to a 3x3 grimoire slot (0..8), or clears it with `null`. */
-  public setGrimoireSlot(slotIndex: number, spellId: string | null): boolean {
-    if (slotIndex < 0 || slotIndex >= 9) return false;
+  /** Assigns a known spell to a 3x3 grimoire slot (0..8) on the active page (or target page), or clears it with `null`. */
+  public setGrimoireSlot(slotIndex: number, spellId: string | null, pageIndex?: number): boolean {
+    if (slotIndex < 0 || slotIndex >= GRIMOIRE_SIZE) return false;
     if (spellId && !this.spellsKnown.includes(spellId)) return false;
-    this.grimoire[slotIndex].spellId = spellId;
+    const page = pageIndex !== undefined ? this.grimoirePages[pageIndex] : this.grimoirePages[this.activeGrimoireIndex];
+    if (!page || !page.slots[slotIndex]) return false;
+    page.slots[slotIndex].spellId = spellId;
     return true;
   }
 

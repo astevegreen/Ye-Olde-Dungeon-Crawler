@@ -25,6 +25,11 @@ export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
       chance: 0.4,
       cooldown: 2,
     },
+    galdrHarvest: {
+      rewardSpellId: 'slow',
+      hintVerse: 'Crush the vile broodling of Níðhögg\nwith blazing fire while its venom pools beneath it,\nto extract its bone-chilling slow.',
+      requiredDamageElement: 'fire',
+    },
     fleeHealthPercent: 0.0,
     xpValue: 520,
     tags: ['dragon', 'wyrm'],
@@ -97,6 +102,11 @@ export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
       { spellId: 'slow', skipIfTargetHasStatus: 'slow', chance: 0.4 },
       { spellId: 'lightning_bolt' },
     ],
+    galdrHarvest: {
+      rewardSpellId: 'clairvoyance',
+      hintVerse: 'Strike down the malice-weaver in the deep void\nwith divine lightning while its mind resonates,\nto pierce the planar veil with all-seeing sight.',
+      requiredDamageElement: 'lightning',
+    },
     fleeHealthPercent: 0.0,
     xpValue: 650,
     tags: ['aberration', 'elite'],

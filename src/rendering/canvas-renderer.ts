@@ -24,6 +24,8 @@ import type { NavigationController } from '../ui/navigation';
 import { CloseDoorAction } from '../engine';
 import { MouseVectorOverlay } from './mouseVectorOverlay';
 import { RadialMenuOverlay } from './radialMenu';
+import { FloatingTextRunner } from './floatingTextRunner';
+import { TacticalTargetOverlay } from './tacticalTargetOverlay';
 import type { RadialMenuSlotConfig } from '../ui/settings/settingsManager';
 import { getAudibleEntitiesInRadius, getAudibleTilesInRadius, ECHOLOCATION_HEARING_RADIUS } from '../engine';
 
@@ -54,6 +56,8 @@ export class CanvasRenderer {
   public readonly intentOverlay: IntentOverlay;
   public readonly mouseVectorOverlay: MouseVectorOverlay;
   public readonly radialMenuOverlay: RadialMenuOverlay;
+  public readonly floatingTextRunner: FloatingTextRunner;
+  public readonly tacticalTargetOverlay: TacticalTargetOverlay;
   /** Resolves a display label for a radial-menu slot; wired from main.ts (spell/command/item lookups live there). */
   public onResolveRadialLabel?: (slot: RadialMenuSlotConfig) => string;
   public mouseVectoringEnabled = true;
@@ -127,6 +131,8 @@ export class CanvasRenderer {
     this.intentOverlay = new IntentOverlay();
     this.mouseVectorOverlay = new MouseVectorOverlay();
     this.radialMenuOverlay = new RadialMenuOverlay();
+    this.floatingTextRunner = new FloatingTextRunner({ onFrame: () => this.render() });
+    this.tacticalTargetOverlay = new TacticalTargetOverlay();
     this.hud = new HUDMessageLogRenderer({ maxLines: 4, lineHeight: 13 });
     this.hookEngineEvents();
 
@@ -228,6 +234,29 @@ export class CanvasRenderer {
         this.render();
       }
 
+      const worldCoords = this.camera.screenToWorld(
+        mouseX,
+        mouseY,
+        this.cellSize,
+        this.offsetX,
+        this.offsetY
+      );
+
+      if (
+        !this.inventoryOverlay.isOpen &&
+        !this.shopOverlay.isOpen &&
+        !this.inspectOverlay.isOpen &&
+        !this.targetingOverlay.isOpen &&
+        !this.mapOverlay.isOpen &&
+        mouseY >= this.topBarHeight &&
+        mouseY < this.viewport.virtualHeight - this.bottomBarHeight &&
+        worldCoords
+      ) {
+        this.tacticalTargetOverlay.setHoveredTile(worldCoords.x, worldCoords.y);
+      } else {
+        this.tacticalTargetOverlay.clearHover();
+      }
+
       if (
         this.mouseVectoringEnabled &&
         !this.inventoryOverlay.isOpen &&
@@ -255,6 +284,7 @@ export class CanvasRenderer {
 
     this.boundMouseLeaveHandler = () => {
       this.mouseVectorOverlay.handleMouseLeave();
+      this.tacticalTargetOverlay.clearHover();
       this.render();
     };
     this.canvas.addEventListener('mouseleave', this.boundMouseLeaveHandler);
@@ -405,6 +435,7 @@ export class CanvasRenderer {
     this.inspectOverlay.close();
     this.mapOverlay.close();
     this.fxRunner.destroy();
+    this.floatingTextRunner.destroy();
   }
 
   public cleanup(): void {
@@ -522,6 +553,37 @@ export class CanvasRenderer {
       this.offsetY,
       this.atlas
     );
+
+    // Active Floating Combat Numbers & Status Splashes
+    this.floatingTextRunner.render(
+      ctx,
+      this.camera,
+      this.cellSize,
+      this.offsetX,
+      this.offsetY,
+      theme
+    );
+
+    // Live On-Grid Tactical Target Card & Ground Item Tooltip (Zero-Click Inspect)
+    if (
+      !this.inspectOverlay.isOpen &&
+      !this.inventoryOverlay.isOpen &&
+      !this.targetingOverlay.isOpen &&
+      !this.shopOverlay.isOpen &&
+      !this.mapOverlay.isOpen
+    ) {
+      this.tacticalTargetOverlay.render(
+        ctx,
+        this.engine,
+        this.camera,
+        this.cellSize,
+        this.offsetX,
+        this.offsetY,
+        virtualW,
+        virtualH,
+        theme
+      );
+    }
 
     // Bottom Bar (Action log)
     this.renderBottomBar(virtualW, virtualH);

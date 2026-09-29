@@ -524,6 +524,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // The engine's result is read-only here (§7.2), so remember which failed result was already shown.
   let lastReportedPipelineError: ActionResult | null = null;
+  let lastObservedPlayerHp: number | null = null;
 
   async function processVisualEffectsAndRender(): Promise<void> {
     try {
@@ -535,6 +536,14 @@ window.addEventListener('DOMContentLoaded', () => {
       updateHeaderInfo();
       renderFlanks();
       if (activeEngine) {
+        if (lastObservedPlayerHp !== null && activeEngine.player.hp > lastObservedPlayerHp) {
+          renderer?.floatingTextRunner.spawnHeal(
+            activeEngine.player.x,
+            activeEngine.player.y,
+            activeEngine.player.hp - lastObservedPlayerHp
+          );
+        }
+        lastObservedPlayerHp = activeEngine.player.hp;
         quickSpellsBar.update(activeEngine);
         bottomStatusBar.update(activeEngine);
         // Periodic background autosave every 50 turns
@@ -1028,8 +1037,28 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer?.render();
     });
 
+    lastObservedPlayerHp = engine.player.hp;
+
     engine.onGameEvent = (event: GameEvent) => {
-      if (event.type === 'player_leveled_up') {
+      if (isGameEvent(event, 'damage_dealt')) {
+        const targetId = event.targetId;
+        const target = targetId === engine.player.id
+          ? engine.player
+          : (targetId ? engine.map.getEntityById(targetId) : undefined);
+        if (target) {
+          renderer?.floatingTextRunner.spawnDamage(target.x, target.y, event.amount, {
+            isPlayer: target === engine.player,
+            element: event.element,
+            killed: event.killed,
+          });
+        }
+      } else if (event.type === 'player_leveled_up') {
+        renderer?.floatingTextRunner.spawnText(engine.player.x, engine.player.y, 'LEVEL UP! ★', {
+          color: '#facc15',
+          strokeColor: '#78350f',
+          isCrit: true,
+          fontSize: 14,
+        });
         if (inputHandler) {
           levelUpModal.setModalStack(inputHandler.modalStack);
           levelUpModal.open(engine);

@@ -31,7 +31,7 @@ const DOCS = [
   ...filesUnder('.claude/commands', '.md'),
 ];
 const SOURCES = [...filesUnder('src', '.ts'), ...filesUnder('scripts', '.ts')].filter(
-  (f) => !f.endsWith('docReferences.test.ts')
+  (f) => !f.endsWith('docReferences.test.ts') && !f.includes('__scratch_')
 );
 
 const sections = new Set([
@@ -42,9 +42,11 @@ const registered = new Set([...ARCH.matchAll(/^\*\*(P-\d+) —/gm)].map((m) => m
 const nextFree = Number(/Next free ID: P-(\d+)/.exec(ARCH)?.[1]);
 
 function citations(pattern: RegExp): { file: string; ref: string }[] {
-  return [...DOCS, ...SOURCES].flatMap((file) =>
-    [...fs.readFileSync(path.join(ROOT, file), 'utf-8').matchAll(pattern)].map((m) => ({ file, ref: m[1] }))
-  );
+  return [...DOCS, ...SOURCES].flatMap((file) => {
+    const fullPath = path.join(ROOT, file);
+    if (!fs.existsSync(fullPath)) return [];
+    return [...fs.readFileSync(fullPath, 'utf-8').matchAll(pattern)].map((m) => ({ file, ref: m[1] }));
+  });
 }
 
 describe('governance references resolve', () => {

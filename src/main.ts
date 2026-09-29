@@ -29,6 +29,8 @@ import {
   loadReplayState,
   replayActionTrail,
   isGameEvent,
+  Monster,
+  parseCoinItem,
 } from './engine';
 import type {
   ActionResult,
@@ -525,6 +527,151 @@ window.addEventListener('DOMContentLoaded', () => {
   // The engine's result is read-only here (§7.2), so remember which failed result was already shown.
   let lastReportedPipelineError: ActionResult | null = null;
   let lastObservedPlayerHp: number | null = null;
+  const knownMonsterHp = new Map<string, number>();
+
+  function checkCoinAutoPickup(engine: GameEngine): void {
+    if (!engine.player.isAlive()) return;
+    const items = engine.map.getItemsAt(engine.player.x, engine.player.y);
+    if (!items || items.length === 0) return;
+
+    for (const item of [...items]) {
+      const coinInfo = parseCoinItem(item);
+      if (coinInfo) {
+        engine.commandBus.dispatch({
+          type: 'pickup_item',
+          payload: { itemId: item.id, freeAction: true },
+        });
+      }
+    }
+  }
+
+  function updateCombatFloatingText(engine: GameEngine): void {
+    if (!renderer) return;
+
+    // 1. Player damage & heal
+    if (lastObservedPlayerHp !== null) {
+      if (engine.player.hp > lastObservedPlayerHp) {
+        renderer.floatingTextRunner.spawnHeal(
+          engine.player.x,
+          engine.player.y,
+          engine.player.hp - lastObservedPlayerHp
+        );
+      } else if (engine.player.hp < lastObservedPlayerHp) {
+        renderer.floatingTextRunner.spawnDamage(
+          engine.player.x,
+          engine.player.y,
+          lastObservedPlayerHp - engine.player.hp,
+          { isPlayer: true }
+        );
+      }
+    }
+    lastObservedPlayerHp = engine.player.hp;
+
+    // 2. Monster damage, crits, and fatal blows
+    const livingMonsterIds = new Set<string>();
+    for (const entity of engine.map.getAllEntities()) {
+      if (entity instanceof Monster) {
+        livingMonsterIds.add(entity.id);
+        const prevHp = knownMonsterHp.get(entity.id);
+        if (prevHp !== undefined && entity.hp < prevHp) {
+          const dmg = prevHp - entity.hp;
+          renderer.floatingTextRunner.spawnDamage(entity.x, entity.y, dmg, {
+            isPlayer: false,
+            killed: entity.hp <= 0,
+            isCrit: dmg >= 15,
+          });
+        }
+        if (entity.hp > 0) {
+          knownMonsterHp.set(entity.id, entity.hp);
+        } else {
+          knownMonsterHp.delete(entity.id);
+        }
+      }
+    }
+
+    for (const id of knownMonsterHp.keys()) {
+      if (!livingMonsterIds.has(id)) {
+        knownMonsterHp.delete(id);
+      }
+    }
+  }
+
+  function updateGothicConsole(engine: GameEngine): void {
+    const healthTextEl = document.getElementById('health-orb-text');
+    const healthFillEl = document.getElementById('health-orb-fill');
+    const manaTextEl = document.getElementById('mana-orb-text');
+    const manaFillEl = document.getElementById('mana-orb-fill');
+
+    const p = engine.player;
+    if (healthTextEl) {
+      healthTextEl.textContent = `${p.hp}/${p.maxHp}`;
+    }
+    if (healthFillEl) {
+      const pct = p.maxHp > 0 ? Math.max(0, Math.min(100, Math.round((p.hp / p.maxHp) * 100))) : 0;
+      healthFillEl.style.height = `${pct}%`;
+    }
+
+    if (manaTextEl) {
+      manaTextEl.textContent = `${p.mana}/${p.maxMana}`;
+    }
+    if (manaFillEl) {
+      const pct = p.maxMana > 0 ? Math.max(0, Math.min(100, Math.round((p.mana / p.maxMana) * 100))) : 0;
+      manaFillEl.style.height = `${pct}%`;
+    }
+  }
+
+  function updateMessageLog(engine: GameEngine): void {
+    const streamEl = document.getElementById('log-messages-stream');
+    if (!streamEl) return;
+
+    const msgs = engine.messages.slice(-6);
+    if (msgs.length === 0) {
+      streamEl.innerHTML = '<div class="log-line log-line-muted">Explore the dungeon.</div>';
+      return;
+    }
+
+    streamEl.innerHTML = '';
+    const total = msgs.length;
+    for (let i = 0; i < total; i++) {
+      const msg = msgs[i];
+      const lineEl = document.createElement('div');
+      lineEl.className = 'log-line';
+
+      if (i === total - 1) {
+        lineEl.classList.add('log-line-newest');
+      } else if (i === total - 2) {
+        lineEl.classList.add('log-line-recent');
+      } else {
+        lineEl.classList.add('log-line-muted');
+      }
+
+      const lower = msg.toLowerCase();
+      if (
+        msg.includes('***') ||
+        msg.includes('CRITICAL') ||
+        msg.includes('FATAL') ||
+        lower.includes('slain') ||
+        lower.includes('level up')
+      ) {
+        lineEl.classList.add('log-line-highlight');
+      } else if (
+        lower.includes(`attacks ${engine.player.name.toLowerCase()}`) ||
+        (lower.includes('takes') && lower.includes('damage')) ||
+        lower.includes('perishes') ||
+        lower.includes('defeated')
+      ) {
+        lineEl.classList.add('log-line-danger');
+      } else if (lower.includes('heals') || lower.includes('restores') || lower.includes('recovered')) {
+        lineEl.classList.add('log-line-heal');
+      } else if (lower.includes('casts') || lower.includes('spark') || lower.includes('bolt') || lower.includes('rune')) {
+        lineEl.classList.add('log-line-arcane');
+      }
+
+      lineEl.textContent = msg;
+      streamEl.appendChild(lineEl);
+    }
+    streamEl.scrollTop = streamEl.scrollHeight;
+  }
 
   async function processVisualEffectsAndRender(): Promise<void> {
     try {
@@ -536,14 +683,10 @@ window.addEventListener('DOMContentLoaded', () => {
       updateHeaderInfo();
       renderFlanks();
       if (activeEngine) {
-        if (lastObservedPlayerHp !== null && activeEngine.player.hp > lastObservedPlayerHp) {
-          renderer?.floatingTextRunner.spawnHeal(
-            activeEngine.player.x,
-            activeEngine.player.y,
-            activeEngine.player.hp - lastObservedPlayerHp
-          );
-        }
-        lastObservedPlayerHp = activeEngine.player.hp;
+        checkCoinAutoPickup(activeEngine);
+        updateCombatFloatingText(activeEngine);
+        updateGothicConsole(activeEngine);
+        updateMessageLog(activeEngine);
         quickSpellsBar.update(activeEngine);
         bottomStatusBar.update(activeEngine);
         // Periodic background autosave every 50 turns
@@ -859,6 +1002,17 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  const healthOrbEl = document.getElementById('hud-health-orb');
+  const manaOrbEl = document.getElementById('hud-mana-orb');
+
+  healthOrbEl?.addEventListener('click', () => {
+    hudRestBtn?.click();
+  });
+
+  manaOrbEl?.addEventListener('click', () => {
+    openSpellbook();
+  });
+
   // Global uncaught error & rejection crash safety (HR-6)
   const onGlobalError = (event: ErrorEvent) => {
     if (isOpaqueScriptError(event)) {
@@ -1014,6 +1168,7 @@ window.addEventListener('DOMContentLoaded', () => {
       inputHandler.isInputLocked = false;
     }
     masteryModal.clearQueue();
+    knownMonsterHp.clear();
     activeEngine = engine;
     activeProfile = profile;
     window.__cotwEngine = engine;

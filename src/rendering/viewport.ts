@@ -13,7 +13,14 @@ export interface ViewportConfig {
  * as if that bar weren't there, so the actual stack (this bar + canvas + everything
  * else) overflows the viewport and `body { overflow: hidden }` clips it silently.
  */
-const SURROUNDING_BAR_IDS = ['game-header-bar', 'quick-spells-bar', 'ground-status-bar', 'game-bottom-bar'] as const;
+const SURROUNDING_BAR_IDS = [
+  'game-header-bar',
+  'quick-spells-bar',
+  'gothic-action-console',
+  'game-full-width-log',
+  'ground-status-bar',
+  'game-bottom-bar',
+] as const;
 
 export class ViewportManager {
   public readonly virtualWidth: number;
@@ -143,9 +150,21 @@ export class ViewportManager {
           // bar this list didn't know about, used to silently blow the height
           // budget and get clipped by `body { overflow: hidden }`.
           let overheadH = 0;
+          const measuredElements = new Set<Element>();
           for (const id of SURROUNDING_BAR_IDS) {
             const el = document.getElementById(id);
-            if (el) overheadH += el.getBoundingClientRect().height;
+            if (!el) continue;
+            let ancestorAlreadyMeasured = false;
+            for (const measured of measuredElements) {
+              if (typeof (measured as any).contains === 'function' && (measured as any).contains(el)) {
+                ancestorAlreadyMeasured = true;
+                break;
+              }
+            }
+            if (!ancestorAlreadyMeasured) {
+              overheadH += el.getBoundingClientRect().height;
+              measuredElements.add(el);
+            }
           }
           if (availH > overheadH + 120) {
             availH -= overheadH;

@@ -98,7 +98,6 @@ export class CanvasRenderer {
   private cachedHudTitle = '';
   private cachedHudTitleKey = '';
   public onPactModalRequested?: () => void;
-  private pactBadgeBounds?: { x: number; y: number; width: number; height: number };
 
   public get canvasElement(): HTMLCanvasElement {
     return this.canvas;
@@ -155,13 +154,7 @@ export class CanvasRenderer {
         return;
       }
 
-      if (this.pactBadgeBounds && this.onPactModalRequested) {
-        const { x, y, width, height } = this.pactBadgeBounds;
-        if (clickX >= x && clickX <= x + width && clickY >= y && clickY <= y + height) {
-          this.onPactModalRequested();
-          return;
-        }
-      }
+
 
       // Direct Canvas Mouse Vectoring or Click-to-Move Pathfinding on dungeon floor
       if (
@@ -362,7 +355,22 @@ export class CanvasRenderer {
         );
         if (worldCoords) {
           const p = this.engine.player;
-          if (worldCoords.x === p.x && worldCoords.y === p.y) {
+          const isCurrent = worldCoords.x === p.x && worldCoords.y === p.y;
+          const isAdjacent = Math.abs(worldCoords.x - p.x) <= 1 && Math.abs(worldCoords.y - p.y) <= 1;
+
+          // Double-clicking an adjacent or current tile with a container opens it directly
+          if (isAdjacent || isCurrent) {
+            const tileItems = this.engine.map.getItemsAt(worldCoords.x, worldCoords.y);
+            const container = tileItems.find((it) => it instanceof Container) as Container | undefined;
+            if (container) {
+              this.inventoryOverlay.open(this.engine);
+              this.inventoryOverlay.pushContainer(container, 'ground', container.displayName);
+              this.render();
+              return;
+            }
+          }
+
+          if (isCurrent) {
             const groundItems = this.engine.map.getItemsAt(p.x, p.y);
             if (groundItems.length > 0) {
               const itemToPick = groundItems[groundItems.length - 1];
@@ -775,37 +783,7 @@ export class CanvasRenderer {
       statusX += ctx.measureText(text).width + 8;
     }
 
-    // 7. Active Run Pacts HUD Badge
-    const activePacts = this.engine.pacts?.getActivePacts() ?? [];
-    if (activePacts.length > 0) {
-      const pactText = `📜 [Pacts: ${activePacts.length} active]`;
-      ctx.font = `bold 11px ${font}`;
-      const badgeW = ctx.measureText(pactText).width + 14;
-      const badgeH = 18;
-      // Right-aligned with a small margin now that the duplicate POS/TURN text
-      // (removed — it was also shown in the DOM header bar) no longer reserves
-      // space here.
-      const badgeX = width - badgeW - 14;
-      const badgeY = 24;
 
-      this.pactBadgeBounds = { x: badgeX, y: badgeY, width: badgeW, height: badgeH };
-
-      ctx.fillStyle = '#7f1d1d';
-      ctx.fillRect(badgeX - 1, badgeY - 1, badgeW + 2, badgeH + 2);
-      ctx.fillStyle = '#fef08a';
-      ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
-
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(badgeX + 0.5, badgeY + 0.5, badgeW - 1, badgeH - 1);
-
-      ctx.fillStyle = '#991b1b';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(pactText, badgeX + badgeW / 2, badgeY + badgeH / 2 + 1);
-    } else {
-      this.pactBadgeBounds = undefined;
-    }
 
     ctx.restore();
   }

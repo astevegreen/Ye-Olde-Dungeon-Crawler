@@ -20,6 +20,13 @@ export class QuickSpellsBar {
   }
 
   public mount(parent: HTMLElement): void {
+    const belt = parent.querySelector('#action-belt-slots') as HTMLElement | null;
+    if (belt) {
+      if (!belt.contains(this.container)) {
+        belt.appendChild(this.container);
+      }
+      return;
+    }
     if (!parent.contains(this.container)) {
       // Place right before canvas or at top of parent
       const canvas = parent.querySelector('#game-canvas');
@@ -45,7 +52,7 @@ export class QuickSpellsBar {
     this.container.innerHTML = '';
     this.slotElements = [];
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 8; i++) {
       const slotEl = document.createElement('button');
       slotEl.type = 'button';
       slotEl.className = `quick-spell-slot quick-spell-slot-${i} quick-spell-slot-unassigned`;
@@ -81,7 +88,7 @@ export class QuickSpellsBar {
     const quickSpells = player.quickSpells ?? [];
     const slotLabels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < this.slotElements.length; i++) {
       const slotEl = this.slotElements[i];
       const spellId = quickSpells[i];
       const slotKey = slotLabels[i];

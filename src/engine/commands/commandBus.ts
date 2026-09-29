@@ -143,8 +143,9 @@ export class EngineCommandBus implements GameCommandBus {
 
       case 'pickup_item': {
         const itemId = p.itemId as string;
+        const free = Boolean(p.freeAction);
         if (!itemId) return { success: false, message: 'No item specified to pick up' };
-        const res = this.engine.handlePlayerAction(new PickUpAction(this.engine.player, itemId));
+        const res = this.engine.handlePlayerAction(new PickUpAction(this.engine.player, itemId, free));
         return { success: res.success, message: res.message };
       }
 

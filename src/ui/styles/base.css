@@ -1,14 +1,17 @@
       :root {
-        --ui-bg: #0a0b10;
-        --ui-panel: #c0c0c0;
-        --ui-border-light: #ffffff;
-        --ui-border-dark: #404040;
-        --ui-text: #000000;
-        --ui-titlebar-start: #000080;
-        --ui-titlebar-end: #1084d0;
-        --ui-titlebar-text: #ffffff;
-        --ui-accent: #3b82f6;
-        --ui-font-family: "Courier New", Courier, "MS Sans Serif", monospace;
+        --ui-bg: #0a0c14;
+        --ui-panel: #161a26;
+        --ui-border-light: #3b455b;
+        --ui-border-dark: #0c0e17;
+        --ui-text: #f1f5f9;
+        --ui-titlebar-start: #1e2433;
+        --ui-titlebar-end: #0f1420;
+        --ui-titlebar-text: #fde047;
+        --ui-accent: #f59e0b;
+        --ui-font-family: "Courier New", Courier, monospace;
+        --ui-hud-bg: #101420;
+        --ui-hud-border: #2d3748;
+        --ui-hud-accent: #f59e0b;
       }
 
       *, *::before, *::after {
@@ -210,34 +213,41 @@
         flex-wrap: wrap;
       }
 
-      /* Beveled Classic Windows 3.1 Buttons */
+      /* Beveled Classic / Norse Runic Buttons */
       .win-btn {
-        background-color: #c0c0c0;
-        color: #000000;
-        border-top: 2px solid #ffffff;
-        border-left: 2px solid #ffffff;
-        border-right: 2px solid #404040;
-        border-bottom: 2px solid #404040;
+        background-color: var(--ui-panel, #161a26);
+        color: var(--ui-text, #f1f5f9);
+        border-top: 2px solid var(--ui-border-light, #3b455b);
+        border-left: 2px solid var(--ui-border-light, #3b455b);
+        border-right: 2px solid var(--ui-border-dark, #0c0e17);
+        border-bottom: 2px solid var(--ui-border-dark, #0c0e17);
         padding: 4px 10px;
         font-family: inherit;
         font-size: 12px;
         font-weight: bold;
         cursor: pointer;
         text-align: center;
+        transition: background-color 0.1s, border-color 0.1s;
+      }
+
+      .win-btn:hover:not(:disabled) {
+        border-top-color: var(--ui-accent, #f59e0b);
+        border-left-color: var(--ui-accent, #f59e0b);
       }
 
       .win-btn:active:not(:disabled) {
-        border-top: 2px solid #404040;
-        border-left: 2px solid #404040;
-        border-right: 2px solid #ffffff;
-        border-bottom: 2px solid #ffffff;
+        border-top: 2px solid var(--ui-border-dark, #0c0e17);
+        border-left: 2px solid var(--ui-border-dark, #0c0e17);
+        border-right: 2px solid var(--ui-border-light, #3b455b);
+        border-bottom: 2px solid var(--ui-border-light, #3b455b);
         padding: 5px 9px 3px 11px;
       }
 
       .win-btn:disabled {
-        color: #808080;
-        text-shadow: 1px 1px 0 #ffffff;
+        color: #64748b;
+        text-shadow: 1px 1px 0 #0f172a;
         cursor: not-allowed;
+        opacity: 0.6;
       }
 
       .win-btn-sm {
@@ -246,12 +256,12 @@
       }
 
       .primary-btn {
-        border-color: #ffffff #000000 #000000 #ffffff;
-        outline: 1px solid #000000;
+        border-color: var(--ui-accent, #f59e0b) var(--ui-border-dark, #0c0e17) var(--ui-border-dark, #0c0e17) var(--ui-accent, #f59e0b);
+        color: #fef08a;
       }
 
       .danger-btn {
-        color: #7f1d1d;
+        color: #ef4444;
       }
 
       .create-btn {
@@ -262,9 +272,9 @@
 
       /* Fieldset Groups */
       .retro-group {
-        border: 2px groove #ffffff;
+        border: 2px groove var(--ui-border-light, #3b455b);
         padding: 8px 10px;
-        background: #c8c8c8;
+        background: rgba(15, 23, 42, 0.6);
       }
 
       .retro-group legend {
@@ -321,16 +331,16 @@
       }
 
       .retro-statusbar {
-        border-top: 2px solid #808080;
-        border-left: 2px solid #808080;
-        border-right: 2px solid #ffffff;
-        border-bottom: 2px solid #ffffff;
-        background: #d8d8d8;
+        border-top: 2px solid var(--ui-border-dark, #0c0e17);
+        border-left: 2px solid var(--ui-border-dark, #0c0e17);
+        border-right: 2px solid var(--ui-border-light, #3b455b);
+        border-bottom: 2px solid var(--ui-border-light, #3b455b);
+        background: var(--ui-panel, #161a26);
         padding: 3px 8px;
         font-size: 11px;
         display: flex;
         justify-content: space-between;
-        color: #111827;
+        color: var(--ui-text, #f1f5f9);
       }
 
       .version-tag {

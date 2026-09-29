@@ -38,21 +38,56 @@
             <!-- Canvas -->
             <canvas id="game-canvas"></canvas>
 
-            <!-- Ground Status & Tile Inspection Bar -->
-            <div id="ground-status-bar"></div>
-
-            <!-- Bottom Controls Bar (primary action bar, ordered by rough frequency of use) -->
-            <div id="game-bottom-bar" class="hud-bar-row" style="background: var(--ui-panel, #0f172a); border: 1px solid var(--ui-border-dark, #334155); border-top: none; justify-content: center;">
-              <div class="hud-btn-group">
-                <button id="btn-hud-inv" class="win-btn win-btn-sm hud-btn" title="Inventory & Equipment (I)"><span class="hud-icon">🎒</span> <span class="hud-key">[I]</span> <span class="hud-word">Inv</span></button>
-                <button id="btn-hud-cast" class="win-btn win-btn-sm hud-btn" title="Spellbook & Cast (Z/C)"><span class="hud-icon">⚡</span> <span class="hud-key">[Z]</span> <span class="hud-word">Cast</span></button>
-                <button id="btn-hud-look" class="win-btn win-btn-sm hud-btn" title="Inspect / Look (L/X)"><span class="hud-icon">👁️</span> <span class="hud-key">[L]</span> <span class="hud-word">Look</span></button>
-                <button id="btn-hud-pacts" class="win-btn win-btn-sm hud-btn" title="Ancient Run Pacts &amp; Bounties (P)"><span class="hud-icon">📜</span> <span class="hud-key">[P]</span> <span class="hud-word">Pacts</span></button>
-                <button id="btn-hud-rest" class="win-btn win-btn-sm hud-btn" title="Rest until full HP/MP (R)"><span class="hud-icon">💤</span> <span class="hud-key">[R]</span> <span class="hud-word">Rest</span></button>
-                <button id="btn-hud-search" class="win-btn win-btn-sm hud-btn" title="Search secret doors / traps (S)"><span class="hud-icon">🔍</span> <span class="hud-key">[S]</span> <span class="hud-word">Search</span></button>
-                <button id="btn-hud-wait" class="win-btn win-btn-sm hud-btn" title="Pass Turn (Space / .)"><span class="hud-icon">⏳</span> <span class="hud-key">[.]</span> <span class="hud-word">Wait</span></button>
-                <button id="btn-hud-stairs" class="win-btn win-btn-sm hud-btn" title="Stairs Up / Down (&lt; / &gt;)"><span class="hud-icon">🪜</span> <span class="hud-key">[&lt;/&gt;]</span> <span class="hud-word">Stairs</span></button>
+            <!-- Gothic Action Console Dashboard -->
+            <div id="gothic-action-console">
+              <!-- Left: Crimson Health Orb -->
+              <div id="hud-health-orb" class="gothic-orb-container" title="Current and Maximum Health (Click to Rest)">
+                <div class="gothic-orb health-orb">
+                  <div class="orb-liquid health-liquid" id="health-orb-fill"></div>
+                  <div class="orb-glass-shine"></div>
+                  <div class="orb-rune-ring">ᚦ</div>
+                  <div class="orb-value" id="health-orb-text">50/50</div>
+                </div>
+                <div class="orb-label">HEALTH</div>
               </div>
+
+              <!-- Center: Action Belt, Utility Buttons & Ground Status -->
+              <div class="console-center-cluster">
+                <!-- 8-Slot Action/Ability Belt (QuickSpellsBar mounts here) -->
+                <div id="action-belt-slots" class="action-belt-slots"></div>
+
+                <!-- Primary Action Verbs (Pacts removed, spaced cleanly) -->
+                <div id="game-bottom-bar" class="hud-bar-row">
+                  <div class="hud-btn-group">
+                    <button id="btn-hud-inv" class="win-btn win-btn-sm hud-btn" title="Inventory & Equipment (I)"><span class="hud-icon">🎒</span> <span class="hud-key">[I]</span> <span class="hud-word">Inv</span></button>
+                    <button id="btn-hud-cast" class="win-btn win-btn-sm hud-btn" title="Spellbook & Cast (Z/C)"><span class="hud-icon">⚡</span> <span class="hud-key">[Z]</span> <span class="hud-word">Cast</span></button>
+                    <button id="btn-hud-look" class="win-btn win-btn-sm hud-btn" title="Inspect / Look (L/X)"><span class="hud-icon">👁️</span> <span class="hud-key">[L]</span> <span class="hud-word">Look</span></button>
+                    <button id="btn-hud-rest" class="win-btn win-btn-sm hud-btn" title="Rest until full HP/MP (R)"><span class="hud-icon">💤</span> <span class="hud-key">[R]</span> <span class="hud-word">Rest</span></button>
+                    <button id="btn-hud-search" class="win-btn win-btn-sm hud-btn" title="Search secret doors / traps (S)"><span class="hud-icon">🔍</span> <span class="hud-key">[S]</span> <span class="hud-word">Search</span></button>
+                    <button id="btn-hud-wait" class="win-btn win-btn-sm hud-btn" title="Pass Turn (Space / .)"><span class="hud-icon">⏳</span> <span class="hud-key">[.]</span> <span class="hud-word">Wait</span></button>
+                    <button id="btn-hud-stairs" class="win-btn win-btn-sm hud-btn" title="Stairs Up / Down (< / >)"><span class="hud-icon">🪜</span> <span class="hud-key">[&lt;/&gt;]</span> <span class="hud-word">Stairs</span></button>
+                  </div>
+                </div>
+
+                <!-- Ground Status & Tile Inspection Bar -->
+                <div id="ground-status-bar"></div>
+              </div>
+
+              <!-- Right: Arcane Mana Orb -->
+              <div id="hud-mana-orb" class="gothic-orb-container" title="Current and Maximum Mana (Click to Open Spellbook)">
+                <div class="gothic-orb mana-orb">
+                  <div class="orb-liquid mana-liquid" id="mana-orb-fill"></div>
+                  <div class="orb-glass-shine"></div>
+                  <div class="orb-rune-ring">ᚨ</div>
+                  <div class="orb-value" id="mana-orb-text">20/20</div>
+                </div>
+                <div class="orb-label">MANA</div>
+              </div>
+            </div>
+
+            <!-- Full-Width Bottom Combat & Event Log -->
+            <div id="game-full-width-log" class="full-width-message-log" aria-label="Combat and Event Log">
+              <div id="log-messages-stream" class="log-messages-stream"></div>
             </div>
           </div>
         </main>

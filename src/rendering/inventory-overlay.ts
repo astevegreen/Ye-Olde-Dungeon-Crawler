@@ -2148,14 +2148,16 @@ export class InventoryOverlay implements UIModal {
         isSelected: (it) => this.inspector.selectedSource === 'container' && this.inspector.selectedItem?.id === it.id,
         isFocused: (_it, i) => this.inspector.focusedPanel === 'ground' && this.inspector.focusedIndex === i,
         onSelect: (it, i) => {
+          this.inspector.setFocus('ground', i);
+          this.inspector.select(it, 'container', undefined, activeContainer);
+        },
+        onActivate: (it) => {
           if (it instanceof Container) {
             this.pushContainer(it, 'ground', it.displayName);
           } else {
-            this.inspector.setFocus('ground', i);
-            this.inspector.select(it, 'container', undefined, activeContainer);
+            takeFromContainer(it);
           }
         },
-        onActivate: (it) => takeFromContainer(it),
       });
     } else {
       // Default: On the ground
@@ -2198,7 +2200,7 @@ export class InventoryOverlay implements UIModal {
         isFocused: (_it, i) => this.inspector.focusedPanel === 'ground' && this.inspector.focusedIndex === i,
         onSelect: (it, i) => {
           this.inspector.setFocus('ground', i);
-          openOrPickUp(it);
+          this.inspector.select(it, 'ground');
         },
         onActivate: (it) => openOrPickUp(it),
       });
@@ -2561,13 +2563,26 @@ export class InventoryOverlay implements UIModal {
       if (this.engine) {
         const comp = this.inspector.getEquipmentComparison(item, this.engine.player);
         if (comp) {
-          const diffParts: string[] = [];
-          if (comp.attackDelta !== 0) diffParts.push(`${comp.attackDelta > 0 ? '+' : ''}${comp.attackDelta} ATK`);
-          if (comp.defenseDelta !== 0) diffParts.push(`${comp.defenseDelta > 0 ? '+' : ''}${comp.defenseDelta} DEF`);
-          if (comp.speedDelta !== 0) diffParts.push(`${comp.speedDelta > 0 ? '+' : ''}${comp.speedDelta} SPD`);
-          if (comp.strengthDelta !== 0) diffParts.push(`${comp.strengthDelta > 0 ? '+' : ''}${comp.strengthDelta} STR`);
-          if (diffParts.length > 0) {
-            lines.push({ text: `vs ${comp.slotName}: ${diffParts.join(', ')}`, color: '#a3e635', font: `9px ${font}` });
+          const eqName = comp.equippedItem.displayName.length > 18
+            ? comp.equippedItem.displayName.slice(0, 17) + '…'
+            : comp.equippedItem.displayName;
+          lines.push({ text: `VS EQUIPPED (${comp.slotName}): ${eqName}`, color: '#fde047', font: `bold 9px ${font}` });
+
+          if (comp.attackDelta !== 0) {
+            const isGood = comp.attackDelta > 0;
+            lines.push({ text: `  Attack: ${isGood ? '+' : ''}${comp.attackDelta}`, color: isGood ? '#4ade80' : '#f87171', font: `9px ${font}` });
+          }
+          if (comp.defenseDelta !== 0) {
+            const isGood = comp.defenseDelta > 0;
+            lines.push({ text: `  Defense: ${isGood ? '+' : ''}${comp.defenseDelta}`, color: isGood ? '#4ade80' : '#f87171', font: `9px ${font}` });
+          }
+          if (comp.strengthDelta !== 0) {
+            const isGood = comp.strengthDelta > 0;
+            lines.push({ text: `  Strength: ${isGood ? '+' : ''}${comp.strengthDelta}`, color: isGood ? '#4ade80' : '#f87171', font: `9px ${font}` });
+          }
+          if (comp.speedDelta !== 0) {
+            const isGood = comp.speedDelta > 0;
+            lines.push({ text: `  Speed: ${isGood ? '+' : ''}${comp.speedDelta}`, color: isGood ? '#4ade80' : '#f87171', font: `9px ${font}` });
           }
         }
       }

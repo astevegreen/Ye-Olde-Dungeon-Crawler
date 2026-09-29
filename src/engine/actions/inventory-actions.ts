@@ -10,10 +10,12 @@ import { CombatLogger } from '../logging/combatLogger';
 export class PickUpAction implements Action {
   public readonly player: Player;
   public readonly itemId?: string;
+  public readonly freeAction: boolean;
 
-  constructor(player: Player, itemId?: string) {
+  constructor(player: Player, itemId?: string, freeAction: boolean = false) {
     this.player = player;
     this.itemId = itemId;
+    this.freeAction = freeAction;
   }
 
   public perform(engine: GameEngine): ActionResult {
@@ -69,8 +71,10 @@ export class PickUpAction implements Action {
     // Remove from map ground
     engine.map.removeItemAt(this.player.x, this.player.y, itemToPick.id);
 
-    const cost = this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);
-    this.player.consumeEnergy(cost);
+    const cost = this.freeAction ? 0 : this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);
+    if (cost > 0) {
+      this.player.consumeEnergy(cost);
+    }
 
     const msg = CombatLogger.formatPickupMessage(itemToPick, storeResult.destination);
     engine.log(msg);

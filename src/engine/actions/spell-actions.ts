@@ -61,11 +61,11 @@ export class CastSpellAction implements Action {
         : undefined;
     const matrixEffective =
       player && slotIndex !== undefined
-        ? GrimoireMatrixManager.resolveEffectiveSpell(engine, player, slotIndex)
+        ? GrimoireMatrixManager.resolveEffectiveSpellDetailed(engine, player, slotIndex)
         : undefined;
 
     const spell =
-      matrixEffective ??
+      matrixEffective?.spell ??
       (engine.manifest?.spells?.find((s) => s.id === this.spellId) ?? getSpell(this.spellId));
     if (!spell) {
       return { success: false, cost: 0, message: `Unknown spell: ${this.spellId}` };
@@ -258,27 +258,24 @@ export class CastSpellAction implements Action {
       engine.log(`☠ Casting ${spell.name} surges with dark power (+${pendingCorruption} Corruption, Total: ${player.corruptionScore})!`);
     }
 
-    if (player && slotIndex !== undefined) {
-      const slot = player.grimoire[slotIndex];
-      const vanishGlyph = slot?.infusedGlyphs?.find((g) => g.type === 'vanish_step');
-      if (vanishGlyph) {
-        const dx = Math.sign(player.x - this.targetX);
-        const dy = Math.sign(player.y - this.targetY);
-        // Step back one cell at a time so the glyph never carries the caster through a wall.
-        let destX = player.x;
-        let destY = player.y;
-        for (let step = 0; step < vanishGlyph.potency && (dx !== 0 || dy !== 0); step++) {
-          const nx = destX + dx;
-          const ny = destY + dy;
-          if (!engine.map.inBounds(nx, ny) || !engine.map.isPassable(nx, ny) || engine.map.getEntityAt(nx, ny)) break;
-          destX = nx;
-          destY = ny;
-        }
-        if (destX !== player.x || destY !== player.y) {
-          engine.map.moveEntity(player, destX, destY);
-          engine.updateFov();
-          engine.log(`💨 Vanish Step! ${player.name} phases backward to safety!`);
-        }
+    const retreatSteps = matrixEffective?.retreatSteps ?? 0;
+    if (player && retreatSteps > 0) {
+      const dx = Math.sign(player.x - this.targetX);
+      const dy = Math.sign(player.y - this.targetY);
+      // Step back one cell at a time so the glyph never carries the caster through a wall.
+      let destX = player.x;
+      let destY = player.y;
+      for (let step = 0; step < retreatSteps && (dx !== 0 || dy !== 0); step++) {
+        const nx = destX + dx;
+        const ny = destY + dy;
+        if (!engine.map.inBounds(nx, ny) || !engine.map.isPassable(nx, ny) || engine.map.getEntityAt(nx, ny)) break;
+        destX = nx;
+        destY = ny;
+      }
+      if (destX !== player.x || destY !== player.y) {
+        engine.map.moveEntity(player, destX, destY);
+        engine.updateFov();
+        engine.log(`💨 ${player.name} steps back from the blast!`);
       }
     }
 

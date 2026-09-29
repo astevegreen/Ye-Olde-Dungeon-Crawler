@@ -139,6 +139,10 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     expect(nexusSpell).toBeDefined();
     // Nexus increases cost by +15% per active neighbor (10 * 1.15 = 12)
     expect(nexusSpell!.manaCost).toBe(12);
+    // ...and power by +20% per neighbor; the cold neighbor is also opposed (20 * 1.2 * 1.25 = 30)
+    expect(nexusSpell!.basePower).toBe(30);
+    const detailed = GrimoireMatrixManager.resolveEffectiveSpellDetailed(engine, player, 4);
+    expect(detailed!.notes.some((n) => n.includes('Midgard'))).toBe(true);
   });
 
   it('sacrifices a spell at an altar to permanently infuse a glyph onto another spell', () => {

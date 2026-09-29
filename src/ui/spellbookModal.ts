@@ -2,6 +2,7 @@ import type { GameEngine } from '../engine';
 import type { SpellDefinition } from '../engine';
 import {
   getSpell,
+  GrimoireMatrixManager,
   CENTER_SLOT_INDEX,
   GRIMOIRE_SIZE,
   getGrimoireConfig,
@@ -340,6 +341,17 @@ export class SpellbookModal implements UIModal {
     } else {
       const detailsContainer = document.createElement('div');
 
+      // As cast from its grimoire slot on the active page, if it has one
+      const slotIndex = grimoireConfig ? GrimoireMatrixManager.findSlotForSpell(player, currentSpell.id) : undefined;
+      const effective =
+        slotIndex !== undefined ? GrimoireMatrixManager.resolveEffectiveSpellDetailed(this.engine!, player, slotIndex) : undefined;
+      const cast = effective?.spell ?? currentSpell;
+      const changed = (base: number, now: number) =>
+        base === now ? `${now}` : `${base} → <span style="color: #4ade80;">${now}</span>`;
+      const synergyNotes = effective && effective.notes.length > 0
+        ? `<div style="font-size: 11px; color: #a7f3d0; margin-bottom: 12px;"><b>Grid synergies:</b>${effective.notes.map((n) => `<div style="margin-left: 6px;">• ${n}</div>`).join('')}</div>`
+        : '';
+
       detailsContainer.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; border-bottom: 1px solid #1e293b; padding-bottom: 8px;">
           <h2 style="margin: 0; font-size: 18px; color: #38bdf8; font-weight: bold;">${currentSpell.name}</h2>
@@ -347,14 +359,15 @@ export class SpellbookModal implements UIModal {
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 16px; margin-bottom: 16px; font-size: 12px;">
-          <div><span style="color: #64748b;">Mana Cost:</span> <span style="font-weight: bold; color: #facc15;">${currentSpell.manaCost ?? 0} MP</span></div>
+          <div><span style="color: #64748b;">Mana Cost:</span> <span style="font-weight: bold; color: #facc15;">${changed(currentSpell.manaCost ?? 0, cast.manaCost ?? 0)} MP</span></div>
           <div><span style="color: #64748b;">Element:</span> <span style="font-weight: bold; color: #38bdf8;">${currentSpell.element ?? 'Arcane'}</span></div>
-          <div><span style="color: #64748b;">Range:</span> <span style="font-weight: bold; color: #e2e8f0;">${currentSpell.range ? `${currentSpell.range} tiles` : 'Self / Touch'}</span></div>
-          <div><span style="color: #64748b;">Base Power:</span> <span style="font-weight: bold; color: #f87171;">${currentSpell.basePower ?? 0}</span></div>
-          <div><span style="color: #64748b;">Area of Effect:</span> <span style="font-weight: bold; color: #e2e8f0;">${currentSpell.areaOfEffect ? `${currentSpell.areaOfEffect} radius` : 'Single Target'}</span></div>
+          <div><span style="color: #64748b;">Range:</span> <span style="font-weight: bold; color: #e2e8f0;">${cast.range ? `${changed(currentSpell.range, cast.range)} tiles` : 'Self / Touch'}</span></div>
+          <div><span style="color: #64748b;">Power:</span> <span style="font-weight: bold; color: #f87171;">${changed(spellPower(currentSpell), spellPower(cast))}</span></div>
+          <div><span style="color: #64748b;">Area of Effect:</span> <span style="font-weight: bold; color: #e2e8f0;">${cast.areaOfEffect ? `${changed(currentSpell.areaOfEffect, cast.areaOfEffect)} radius` : 'Single Target'}</span></div>
           <div><span style="color: #64748b;">Reflective:</span> <span style="font-weight: bold; color: #e2e8f0;">${currentSpell.reflects ? 'Yes (Bounces off walls)' : 'No'}</span></div>
         </div>
 
+        ${synergyNotes}
         <div style="font-size: 12px; line-height: 1.5; color: #cbd5e1; margin-bottom: 20px; background: rgba(30, 41, 59, 0.4); padding: 10px; border-radius: 4px; border: 1px solid #1e293b;">
           ${currentSpell.description || 'Chants sacred words of power to manipulate planar currents and weave mystical energy.'}
         </div>
@@ -596,7 +609,7 @@ export class SpellbookModal implements UIModal {
             ${slottedSpell.name}
           </div>
           <div style="font-size: 8px; color: #94a3b8;">
-            ${slottedSpell.element ?? 'arcane'} | ${slottedSpell.manaCost ?? 0}m
+            ${slottedSpell.element ?? 'arcane'} | ${slotCostLabel(slottedSpell.manaCost ?? 0, GrimoireMatrixManager.resolveEffectiveSpell(this.engine!, player, sIdx)?.manaCost)}
           </div>
         `;
         if (slot.infusedGlyphs && slot.infusedGlyphs.length > 0) {
@@ -628,3 +641,15 @@ export class SpellbookModal implements UIModal {
   }
 }
 
+/** A spell's headline power: its first numeric damage or heal amount, else basePower. */
+function spellPower(spell: SpellDefinition): number {
+  for (const e of spell.effects ?? []) {
+    if ((e.type === 'damage' || e.type === 'heal') && typeof e.amount === 'number') return e.amount;
+  }
+  return spell.basePower ?? 0;
+}
+
+/** Grid-cell mana label: the cost as cast, flagged when the grid changed it. */
+function slotCostLabel(base: number, cast: number | undefined): string {
+  return cast === undefined || cast === base ? `${base}m` : `<span style="color: #facc15;">${cast}m</span> (${base})`;
+}

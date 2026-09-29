@@ -54,6 +54,29 @@ export function getGrimoirePageName(engine: GameEngine, player: Player, pageInde
 
 export const GRIMOIRE_ATTUNE_STATUS = 'grimoire_attunement';
 
+/** A slot's spell as it will actually be cast. */
+export interface EffectiveSpell {
+  spell: SpellDefinition;
+  /** One plain note per synergy that changed the spell. */
+  notes: string[];
+  /** Cells the caster steps away from the target after the cast. */
+  retreatSteps: number;
+}
+
+function lookupSpell(engine: GameEngine, spellId: string): SpellDefinition | undefined {
+  return engine.manifest?.spells?.find((s) => s.id === spellId) ?? getSpell(spellId);
+}
+
+/** Multiplies a spell's power: basePower and every numeric damage or heal amount. */
+function scaleSpellPower(spell: SpellDefinition, mult: number): void {
+  spell.basePower = Math.round((spell.basePower ?? 0) * mult);
+  spell.effects = spell.effects?.map((e) =>
+    (e.type === 'damage' || e.type === 'heal') && typeof e.amount === 'number'
+      ? { ...e, amount: Math.round(e.amount * mult) }
+      : e
+  );
+}
+
 export class GrimoireMatrixManager {
   /**
    * Initializes a default 9-slot grimoire, placing initial known spells into slots.
@@ -109,56 +132,68 @@ export class GrimoireMatrixManager {
     return index >= 0 ? index : undefined;
   }
 
+  /** The spell cast from `slotIndex` after grid synergies, or undefined if the slot is empty or the grid is off. */
+  public static resolveEffectiveSpell(engine: GameEngine, player: Player, slotIndex: number): SpellDefinition | undefined {
+    return this.resolveEffectiveSpellDetailed(engine, player, slotIndex)?.spell;
+  }
+
   /**
-   * Calculates the effective, matrix-modified SpellDefinition when cast from a slot.
+   * The spell cast from `slotIndex` after grid synergies, with a plain note per synergy that
+   * changed it (for the spellbook) and how far a glyph steps the caster back after casting.
    */
-  public static resolveEffectiveSpell(
+  public static resolveEffectiveSpellDetailed(
     engine: GameEngine,
     player: Player,
     slotIndex: number
-  ): SpellDefinition | undefined {
+  ): EffectiveSpell | undefined {
     const config = getGrimoireConfig(engine);
     if (!config) return undefined;
     const grimoire = player.grimoire;
     const slot = grimoire[slotIndex];
     if (!slot || !slot.spellId) return undefined;
 
-    const baseSpell = engine.manifest?.spells?.find((s) => s.id === slot.spellId) ?? getSpell(slot.spellId);
+    const baseSpell = lookupSpell(engine, slot.spellId);
     if (!baseSpell) return undefined;
 
     // Clone to prevent mutating global definition
-    const effective: SpellDefinition = {
+    const spell: SpellDefinition = {
       ...baseSpell,
       effects: baseSpell.effects ? [...baseSpell.effects] : undefined,
     };
+    const notes: string[] = [];
+    let retreatSteps = 0;
 
     const neighbors = this.getOrthogonalNeighbors(slotIndex)
       .map((idx) => grimoire[idx]?.spellId)
       .filter((id): id is string => Boolean(id))
-      .map((id) => engine.manifest?.spells?.find((s) => s.id === id) ?? getSpell(id))
+      .map((id) => lookupSpell(engine, id))
       .filter((s): s is SpellDefinition => Boolean(s));
 
-    // Center slot: costs more mana per occupied neighbor
-    if (slotIndex === CENTER_SLOT_INDEX && neighbors.length > 0 && config.centerCostPerNeighbor) {
-      effective.manaCost = Math.round(effective.manaCost * (1 + neighbors.length * config.centerCostPerNeighbor));
+    // Center slot: more mana and more power per occupied neighbor
+    if (slotIndex === CENTER_SLOT_INDEX && neighbors.length > 0) {
+      const cost = (config.centerCostPerNeighbor ?? 0) * neighbors.length;
+      const power = (config.centerPowerPerNeighbor ?? 0) * neighbors.length;
+      if (cost) spell.manaCost = Math.round(spell.manaCost * (1 + cost));
+      if (power) scaleSpellPower(spell, 1 + power);
+      if (cost || power) {
+        notes.push(`${config.centerSlotLabel ?? 'Center'}: ${neighbors.length} neighbor${neighbors.length > 1 ? 's' : ''}, +${Math.round(cost * 100)}% mana, +${Math.round(power * 100)}% power`);
+      }
     }
 
     // Elemental Adjacency Synergies
-    const opposed = ELEMENT_OPPOSITES[effective.element as ElementType];
+    const opposed = ELEMENT_OPPOSITES[spell.element as ElementType];
     for (const neighbor of neighbors) {
       // Next to its opposing element (e.g. fire beside cold): more power
       if (opposed && neighbor.element === opposed) {
         const mult = config.opposedElementPowerMultiplier ?? DEFAULT_OPPOSED_ELEMENT_POWER;
-        effective.basePower = Math.round((effective.basePower ?? 10) * mult);
-        // Damage comes from the damage effects, not basePower, so scale those too.
-        effective.effects = effective.effects?.map((e) =>
-          e.type === 'damage' && typeof e.amount === 'number' ? { ...e, amount: Math.round(e.amount * mult) } : e
-        );
+        scaleSpellPower(spell, mult);
+        notes.push(`Beside ${neighbor.name} (${neighbor.element}): ×${mult} power`);
       }
 
       // Ray adjacent to Burst -> Expands AoE
-      if (effective.targetingMode === 'ray' && neighbor.targetingMode === 'area_burst') {
-        effective.areaOfEffect = Math.max(1, (effective.areaOfEffect ?? 0) + 1);
+      if (spell.targetingMode === 'ray' && neighbor.targetingMode === 'area_burst') {
+        spell.areaOfEffect = Math.max(1, (spell.areaOfEffect ?? 0) + 1);
+        notes.push(`Beside ${neighbor.name} (burst): bursts on impact`);
       }
     }
 
@@ -166,14 +201,17 @@ export class GrimoireMatrixManager {
     if (slot.infusedGlyphs) {
       for (const glyph of slot.infusedGlyphs) {
         if (glyph.type === 'concussive_blast') {
-          effective.areaOfEffect = (effective.areaOfEffect ?? 0) + glyph.potency;
+          spell.areaOfEffect = (spell.areaOfEffect ?? 0) + glyph.potency;
         } else if (glyph.type === 'all_seeing') {
-          effective.range = (effective.range ?? 5) + glyph.potency;
+          spell.range = (spell.range ?? 5) + glyph.potency;
+        } else if (glyph.type === 'vanish_step') {
+          retreatSteps += glyph.potency;
         }
+        notes.push(`Glyph: ${glyph.type}`);
       }
     }
 
-    return effective;
+    return { spell, notes, retreatSteps };
   }
 
   /**

@@ -113,6 +113,7 @@ export const COTW_MAGIC: MagicSystemConfig = {
     pageNames: ['Page I: Sol', 'Page II: Máni', 'Page III: Yggdrasil'],
     centerSlotLabel: 'Midgard',
     centerCostPerNeighbor: 0.15,
+    centerPowerPerNeighbor: 0.2,
     opposedElementPowerMultiplier: 1.25,
   },
 };

@@ -1,4 +1,5 @@
 import type { TileDefinition } from '../../engine';
+import { SKALDIC_RUNESTONE_TILES } from './runestones';
 
 /** Bjarnarhaven's lanes and street furniture (townLayout.ts). */
 const townThing = (type: string, name: string, glyph: string, description: string): TileDefinition => ({
@@ -121,4 +122,5 @@ export const COTW_TILES: TileDefinition[] = [
     interactionHandlerId: 'galdr_altar_loki',
     landmarkLabel: "Loki's Cairn ᛚ",
   },
+  ...SKALDIC_RUNESTONE_TILES,
 ];

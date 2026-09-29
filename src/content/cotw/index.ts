@@ -26,6 +26,13 @@ import { COTW_TILES } from './tiles';
 import { COTW_FLOOR_HAZARDS, COTW_ROOM_DECORATION } from './floorBands';
 import { COTW_FLOOR_LAYOUTS, COTW_FLOOR_SIZE } from './floorLayouts';
 import { COTW_MONSTER_CATEGORIES } from './monsterCategories';
+import { SKALDIC_RUNESTONE_PLACEMENTS } from './runestones';
+import {
+  VIDNIR_DEFEATED_TRIGGER,
+  COTW_ZONE_VIGNETTES_HOOK,
+  COTW_SVART_TAUNT_HOOK,
+  COTW_TOWN_REACTIVE_HOOK,
+} from './narrative';
 
 export const COTW_ATTRIBUTE_MILESTONES: AttributeMilestoneTrigger[] = [
   { id: 'milestone_dex_15', attribute: 'dexterity', threshold: 15, choiceId: 'milestone_dex_15' },
@@ -82,13 +89,23 @@ export const cotwManifest: GameContentManifest = {
     { flag: 'nidhogg_root_sealed', label: 'The Root Sealed', description: 'Drove Níðhögg from the rotting root of Yggdrasil without ending it.', icon: '🌳' },
     { flag: 'savior_of_jarnvidr', label: 'Savior of Járnviðr', description: 'Rescued all four captive villagers from the sacrificial blood siphon.', icon: '🛡️' },
     { flag: 'blood_tainted_hero', label: 'The Blood-Tainted', description: 'Embraced the forbidden Grimoire of Blood Magic while innocent captives bled.', icon: '🩸' },
+    { flag: 'vidnir_slain', label: "The Wyrm's Fate Revealed", description: 'Learned from the dying herald Víðnir that slaying Níðhögg will split Yggdrasil and trigger Ragnarök, while driving it off will seal the root.', icon: '🐉' },
+    { flag: 'skaldic_runestone_1_resolved', label: 'Lay of the Frost King', description: 'Uncovered the ancient frost saga and claimed the Slow & Cold Ray runic spell hint.', icon: 'ᚱ' },
+    { flag: 'skaldic_runestone_4_resolved', label: 'The Scorched Root’s Lament', description: 'Learned how the stolen sun-chariot heat woke Níðhögg, and claimed the Rime Shard runic spell hint.', icon: '🌱' },
   ],
   renownMilestones: COTW_RENOWN_MILESTONES,
   renownTitles: COTW_RENOWN_TITLES,
   companions: COTW_COMPANIONS,
   monsterScaling: COTW_MONSTER_SCALING,
-  actionHooks: [GIANT_BLOOD_BOOTSTRAP_HOOK, ...SIPHON_RITUAL_HOOKS, DEEPEST_FLOOR_HOOK],
-  storyChoiceTriggers: [OATH_TRIGGER],
+  actionHooks: [
+    GIANT_BLOOD_BOOTSTRAP_HOOK,
+    ...SIPHON_RITUAL_HOOKS,
+    DEEPEST_FLOOR_HOOK,
+    COTW_ZONE_VIGNETTES_HOOK,
+    COTW_SVART_TAUNT_HOOK,
+    COTW_TOWN_REACTIVE_HOOK,
+  ],
+  storyChoiceTriggers: [OATH_TRIGGER, VIDNIR_DEFEATED_TRIGGER],
   attributeMilestones: COTW_ATTRIBUTE_MILESTONES,
   monsterCategories: COTW_MONSTER_CATEGORIES,
   timedEvents: [OATH_TIMED_EVENT, SIPHON_TIMED_EVENT],
@@ -152,6 +169,7 @@ export const cotwManifest: GameContentManifest = {
       placement: 'middle_room_center',
       requiresChoiceId: 'altar_tyr',
     },
+    ...SKALDIC_RUNESTONE_PLACEMENTS,
     // Runic spell altars (COTW_MAGIC.altars): one every few floors; four are Hel's, one per sealed corner
     { floor: 4, tileId: 'galdr_altar_tyr', placement: 'middle_room_center' },
     { floor: 7, tileId: 'galdr_altar_hel', placement: 'middle_room_center' },
@@ -220,4 +238,5 @@ export {
   COTW_VAULTS,
   COTW_SPRITE_RECIPES,
   COTW_TILES,
+  COTW_CHOICES,
 };

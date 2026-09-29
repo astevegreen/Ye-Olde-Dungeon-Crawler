@@ -1,5 +1,7 @@
 import type { ChoiceDefinition } from '../../engine';
 import { BLOOD_ALTAR_CHOICE } from './hostageRitual';
+import { SKALDIC_RUNESTONE_CHOICES } from './runestones';
+import { VIDNIR_REVELATION_CHOICE } from './narrative';
 
 export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
   /**
@@ -259,5 +261,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
     cancelable: false,
   },
   blood_altar_ritual: BLOOD_ALTAR_CHOICE,
+  vidnir_revelation: VIDNIR_REVELATION_CHOICE,
+  ...SKALDIC_RUNESTONE_CHOICES,
 };
 

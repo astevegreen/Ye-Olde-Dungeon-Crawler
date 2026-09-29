@@ -584,6 +584,8 @@ export interface GameContentManifest {
   monsterScaling?: MonsterScalingConfig;
   initialWorldState?: WorldState;
   choices?: Record<string, ChoiceDefinition>;
+  /** Optional magic systems: mana overflow, grimoire grid, kill rites, altars (`magic/magicConfig.ts`). */
+  magic?: import('../magic/magicConfig').MagicSystemConfig;
   pacts?: RunPactDefinition[];
   traps?: TrapDefinition[];
   tiles?: TileDefinition[];

@@ -4,7 +4,7 @@ import type { GameEngine } from '../engine';
 import type { Player } from '../entities/player';
 import type { Entity } from '../entities/entity';
 import { DeathResolver } from '../combat/deathResolver';
-import { OVERFLOW_TIER_THRESHOLDS } from '../magic/manaOverflow';
+import { getOverflowConfig, lingeringDebtFloor } from '../magic/manaOverflow';
 
 export class RestAction implements Action {
   public readonly player: Player;
@@ -46,7 +46,7 @@ export class RestAction implements Action {
       // Natural recovery per rest tick
       this.player.heal(1);
       this.player.restoreMana(1);
-      this.player.decayVoidDebt(1, engine.currentFloor === 0);
+      this.player.decayVoidDebt(1, lingeringDebtFloor(engine, this.player.voidDebt));
 
       // Simulate turn passage for monsters
       this.player.consumeEnergy(100);
@@ -100,9 +100,10 @@ export class RestAction implements Action {
       return { success: true, cost: 0, message: msg };
     }
 
-    // A full rest settles all Void Debt, except that a Tier 3 scar lingers until town.
-    if (this.player.decayVoidDebt(this.player.voidDebt, engine.currentFloor === 0) >= OVERFLOW_TIER_THRESHOLDS.TIER_3) {
-      engine.log('☠ Your primordial void scar (Tier 3 Void Debt) throbs with abyssal energy — it lingers indefinitely until cleansed in Town!');
+    // A full rest settles all debt, except what the pack lets linger until town.
+    if (this.player.decayVoidDebt(this.player.voidDebt, lingeringDebtFloor(engine, this.player.voidDebt)) > 0) {
+      const lingering = getOverflowConfig(engine)?.lingeringRestMessage;
+      if (lingering) engine.log(lingering);
     }
     const msg = `You rest peacefully for ${ticksElapsed} turn(s). HP and Mana fully restored! (+${hpGained} HP, +${manaGained} MP)`;
     engine.log(msg);

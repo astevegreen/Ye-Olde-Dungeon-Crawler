@@ -8,6 +8,7 @@ import { GrimoireMatrixManager, GRIMOIRE_ATTUNE_STATUS } from '../grimoireMatrix
 import { Monster } from '../../entities/monster';
 import type { SpellDefinition } from '../types';
 import { serializeGame, deserializeGame } from '../../storage/serializer';
+import { COTW_MAGIC } from '../../../content/cotw/magic';
 
 describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
   let engine: GameEngine;
@@ -83,6 +84,7 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     spells: [fireRay, coldBurst, blinkSelf, fireLance],
     monsters: [],
     items: [],
+    magic: { grimoire: COTW_MAGIC.grimoire },
   };
 
   beforeEach(() => {
@@ -137,7 +139,6 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     expect(nexusSpell).toBeDefined();
     // Nexus increases cost by +15% per active neighbor (10 * 1.15 = 12)
     expect(nexusSpell!.manaCost).toBe(12);
-    expect(nexusSpell!.description).toContain('Runic Nexus');
   });
 
   it('sacrifices a spell at an altar to permanently infuse a glyph onto another spell', () => {

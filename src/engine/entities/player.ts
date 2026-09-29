@@ -15,7 +15,6 @@ import {
   RUNE_MAX_CHARGES,
 } from '../magic/runeOfReturn';
 import { EnergyModel, type DualEnergyConfig } from '../actors/energyModel';
-import { OVERFLOW_TIER_THRESHOLDS } from '../magic/manaOverflow';
 import {
   GrimoireMatrixManager,
   type GrimoireSlot,
@@ -341,10 +340,10 @@ export class Player extends Actor {
     return this.voidDebt;
   }
 
-  public decayVoidDebt(amount: number = 1, allowClearingTier3: boolean = false): number {
-    const scar = OVERFLOW_TIER_THRESHOLDS.TIER_3;
-    const minDebt = !allowClearingTier3 && (this.voidDebt ?? 0) >= scar ? scar : 0;
-    this.voidDebt = Math.max(minDebt, (this.voidDebt ?? 0) - Math.max(0, amount));
+  /** Lowers debt by `amount`, never below `floor` (see `lingeringDebtFloor`). */
+  public decayVoidDebt(amount: number = 1, floor: number = 0): number {
+    const debt = this.voidDebt ?? 0;
+    this.voidDebt = Math.max(Math.min(floor, debt), debt - Math.max(0, amount));
     return this.voidDebt;
   }
 

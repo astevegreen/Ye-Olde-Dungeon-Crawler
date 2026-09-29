@@ -6,6 +6,7 @@ import type { GameEngine } from '../engine';
 import { MovementAction } from './movement';
 import { MeleeAttackAction } from './combat';
 import { CastSpellAction } from './spell-actions';
+import { canOvercast } from '../magic/manaOverflow';
 import { WaitAction } from './wait';
 import { OpenDoorAction, CloseDoorAction, SmartCloseDoorAction } from './door';
 import { ClimbStairsAction } from './stairs';
@@ -194,12 +195,15 @@ export function registerDefaultActions(): void {
   ActionRegistry.register<CastSpellActionArgs>({
     id: 'cast_spell',
     name: 'Cast Spell',
-    validate(_actor, args, engine) {
+    validate(actor, args, engine) {
       const spell = engine.manifest?.spells?.find((s) => s.id === args.spellId);
       if (!spell) {
         return { valid: false, reason: `Unknown spell: ${args.spellId}` };
       }
-      // No mana check: a short cast overflows into Void Debt (CastSpellAction).
+      // A pack with mana overflow lets a short cast go into debt (CastSpellAction).
+      if (actor instanceof Player && actor.mana < spell.manaCost && !canOvercast(engine)) {
+        return { valid: false, reason: 'Not enough mana!' };
+      }
       return { valid: true };
     },
     calculateEnergyCost(actor, _args, _engine) {

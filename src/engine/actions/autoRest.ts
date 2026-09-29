@@ -2,6 +2,7 @@ import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
 import { Monster } from '../entities/monster';
 import { DeathResolver } from '../combat/deathResolver';
+import { lingeringDebtFloor } from '../magic/manaOverflow';
 import { BASE_ACTION_COST } from '../types';
 
 export interface AutoRestStepResult {
@@ -82,7 +83,7 @@ export class AutoRestManager {
     // Natural recovery per rest tick
     player.heal(1);
     player.restoreMana(1);
-    player.decayVoidDebt(1, engine.currentFloor === 0);
+    player.decayVoidDebt(1, lingeringDebtFloor(engine, player.voidDebt));
 
     // Consume player turn energy
     player.consumeEnergy(BASE_ACTION_COST);
@@ -155,8 +156,8 @@ export class AutoRestManager {
 
     // Check if HP and Mana reached 100%
     if (player.hp >= player.maxHp && player.mana >= player.maxMana) {
-      // A full rest settles all Void Debt, except that a Tier 3 scar lingers until town.
-      player.decayVoidDebt(player.voidDebt, engine.currentFloor === 0);
+      // A full rest settles all debt, except what the pack lets linger until town.
+      player.decayVoidDebt(player.voidDebt, lingeringDebtFloor(engine, player.voidDebt));
       const msg = 'Fully rested (HP and Mana full).';
       engine.log(msg);
       return {

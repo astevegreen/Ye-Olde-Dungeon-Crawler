@@ -2,6 +2,7 @@ import {
   AttuneGrimoirePageAction,
   AutosaveManager,
   type AutosaveSlot,
+  canOvercast,
   CastSpellAction,
   ClimbStairsAction,
   CURRENT_SCHEMA_VERSION,
@@ -345,8 +346,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
   function castOrTargetSpell(spell: SpellDefinition): void {
     if (!activeEngine || !renderer) return;
-    // No mana wall: a short cast still goes off and the shortfall becomes Void Debt
-    // (CastSpellAction / ManaOverflowManager).
+    // Packs with mana overflow let a short cast go off into debt (ManaOverflowManager).
+    if (!canOvercast(activeEngine) && activeEngine.player.mana < (spell.manaCost ?? 0)) {
+      activeEngine.log(`Insufficient mana to cast ${spell.name} (${activeEngine.player.mana}/${spell.manaCost} MP).`);
+      renderer.render();
+      return;
+    }
     if (spell.targetingMode === 'self' || spell.targetType === 'self') {
       activeEngine.handlePlayerAction(
         new CastSpellAction(activeEngine.player, spell.id, activeEngine.player.x, activeEngine.player.y)

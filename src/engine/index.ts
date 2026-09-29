@@ -98,6 +98,7 @@ export * from './magic/effectRegistry';
 export * from './magic/targeting';
 export * from './magic/runeOfReturn';
 export * from './magic/manaOverflow';
+export * from './magic/magicConfig';
 export * from './magic/galdrHarvest';
 export * from './magic/grimoireMatrix';
 

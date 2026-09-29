@@ -6,6 +6,7 @@ import { COTW_TOWN } from './town';
 import { COTW_QUEST } from './quest';
 import { COTW_ATLAS_THEME } from './atlas';
 import { COTW_STARTER_KIT } from './character';
+import { COTW_MAGIC } from './magic';
 import { COTW_AFFINITY_MATRIX } from './elements';
 import { COTW_EQUIPMENT_SLOTS } from './slots';
 import { COTW_THEME_TOKENS } from './theme';
@@ -59,6 +60,7 @@ export const cotwManifest: GameContentManifest = {
   spriteRecipes: COTW_SPRITE_RECIPES,
   presetNames: ['Sven', 'Astrid', 'Bjorn', 'Freya'],
   choices: COTW_CHOICES,
+  magic: COTW_MAGIC,
   pacts: COTW_PACTS,
   traps: [
     { type: 'pit', name: 'Hidden Pit', damage: 10, disarmDifficulty: 12 },

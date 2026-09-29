@@ -11,7 +11,7 @@ import { WandItem, ScrollItem, PotionItem } from '../items/consumables';
 import { flightRecorder } from '../debug/flightRecorder';
 import { findTaggedEntitiesInRadius } from '../combat/radialAuraFilter';
 import { traceProjectile } from '../magic/targeting';
-import { ManaOverflowManager } from '../magic/manaOverflow';
+import { ManaOverflowManager, canOvercast } from '../magic/manaOverflow';
 import { GrimoireMatrixManager } from '../magic/grimoireMatrix';
 
 export class CastSpellAction implements Action {
@@ -132,6 +132,13 @@ export class CastSpellAction implements Action {
     let manaDeficit = 0;
     if (player && paysCosts) {
       if (effectiveManaCost > 0 && player.mana < effectiveManaCost) {
+        if (!canOvercast(engine)) {
+          return {
+            success: false,
+            cost: 0,
+            message: `Not enough mana to cast ${spell.name}! (Requires ${effectiveManaCost} MP, have ${player.mana})`,
+          };
+        }
         manaDeficit = effectiveManaCost - player.mana;
       }
       const volatileAvailable = player.energyModel?.volatileEnergy ?? 0;
@@ -217,9 +224,9 @@ export class CastSpellAction implements Action {
       actionCost
     );
 
-    // Evaluate Mana / Ginnungagap Overflow if cast with mana deficit
+    // A cast paid partly from debt rolls a surge from the pack's overflow table
     if (player && paysCosts && manaDeficit > 0) {
-      const overflowRes = ManaOverflowManager.evaluateOverflow(engine, this.caster, manaDeficit, spell);
+      const overflowRes = ManaOverflowManager.evaluateOverflow(engine, this.caster, manaDeficit);
       if (overflowRes.effects.length > 0) {
         result.effects = [...(result.effects ?? []), ...overflowRes.effects];
       }

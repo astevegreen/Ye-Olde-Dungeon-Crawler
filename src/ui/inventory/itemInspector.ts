@@ -5,7 +5,7 @@ import { Container } from '../../engine';
 import { PotionItem, ScrollItem, WandItem } from '../../engine';
 import { RuneOfReturnItem, ChannelRuneOfReturnAction } from '../../engine';
 import { EncumbranceLevel } from '../../engine';
-import { CoinItem, COIN_COLORS, parseCoinItem, getSpell } from '../../engine';
+import { CoinItem, COIN_COLORS, parseCoinItem, getSpell, getOverflowConfig } from '../../engine';
 import type { Paperdoll } from '../../engine';
 import type { ThemeTokens } from '../../engine';
 
@@ -427,8 +427,17 @@ export class ItemInspector {
         }
       }
       const cost = Math.max(0, (spell?.manaCost ?? 8) - manaDiscount);
+      const overflow = engine ? getOverflowConfig(engine) : undefined;
+      if (player.mana < cost && !overflow) {
+        return {
+          label: 'casts the spell',
+          enabled: false,
+          reason: `Not enough mana to cast Identify (Requires ${cost} MP, have ${player.mana})`,
+          dispatch: () => {},
+        };
+      }
       return {
-        label: player.mana < cost ? 'overcasts the spell (Void Debt)' : 'casts the spell',
+        label: player.mana < cost && overflow ? `overcasts the spell (${overflow.debtName})` : 'casts the spell',
         enabled: true,
         dispatch: (eng, itemId) =>
           eng.commandBus.dispatch({

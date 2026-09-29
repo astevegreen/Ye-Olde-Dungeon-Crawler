@@ -1,21 +1,14 @@
 import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
 import { Player } from '../entities/player';
-import type { SpellDefinition } from './types';
 import type { VisualEffectDescriptor } from '../types';
 import { DeathResolver } from '../combat/deathResolver';
-
-export type VoidOverflowTier = 0 | 1 | 2 | 3;
-
-export const OVERFLOW_TIER_THRESHOLDS = {
-  TIER_1: 1,
-  TIER_2: 6,
-  TIER_3: 16,
-} as const;
+import { formatMagicMessage, type ManaOverflowConfig, type OverflowOutcome, type OverflowTier } from './magicConfig';
 
 export interface ManaOverflowResolution {
   occurred: boolean;
-  tier: VoidOverflowTier;
+  /** Index into the pack's tiers, 1-based; 0 when no tier was reached. */
+  tier: number;
   deficit: number;
   totalDebt: number;
   message?: string;
@@ -23,180 +16,169 @@ export interface ManaOverflowResolution {
   damageToCaster: number;
 }
 
+/** The pack's overflow config, or undefined when the pack keeps a hard mana wall. */
+export function getOverflowConfig(engine: GameEngine): ManaOverflowConfig | undefined {
+  return engine.manifest?.magic?.overflow;
+}
+
+/** True when a cast may go past zero mana into debt (the pack declares overflow). */
+export function canOvercast(engine: GameEngine): boolean {
+  return getOverflowConfig(engine) !== undefined;
+}
+
+/** The highest tier `debt` has reached, with its 1-based index, or undefined below the first. */
+export function getOverflowTier(
+  config: ManaOverflowConfig | undefined,
+  debt: number
+): { tier: OverflowTier; index: number } | undefined {
+  if (!config) return undefined;
+  let found: { tier: OverflowTier; index: number } | undefined;
+  config.tiers.forEach((tier, i) => {
+    if (debt >= tier.minDebt) found = { tier, index: i + 1 };
+  });
+  return found;
+}
+
 /**
- * Evaluates the Ginnungagap / Mana Overflow when a caster spends past zero mana.
- * Pure headless simulation: relies solely on engine.prng / engine.rng, never Math.random().
+ * The lowest debt a rest may leave: 0 in town, else the pack's lingering floor once the
+ * debt has reached it.
+ */
+export function lingeringDebtFloor(engine: GameEngine, debt: number): number {
+  const lingering = getOverflowConfig(engine)?.lingeringDebt;
+  if (lingering === undefined || engine.currentFloor === 0) return 0;
+  return debt >= lingering ? lingering : 0;
+}
+
+/**
+ * Resolves a cast that spent past zero mana: accrues the deficit as debt, then rolls a
+ * surge from the pack's tier table. Deterministic: draws only from `engine.prng`.
  */
 export class ManaOverflowManager {
-  public static evaluateOverflow(
-    engine: GameEngine,
-    caster: Entity,
-    deficit: number,
-    _spell: SpellDefinition
-  ): ManaOverflowResolution {
-    const isPlayer = caster instanceof Player;
-    const player = isPlayer ? (caster as Player) : undefined;
+  public static evaluateOverflow(engine: GameEngine, caster: Entity, deficit: number): ManaOverflowResolution {
+    const player = caster instanceof Player ? caster : undefined;
     const totalDebt = player ? player.accrueVoidDebt(deficit) : deficit;
-
     const effects: VisualEffectDescriptor[] = [];
-    let tier: VoidOverflowTier = 0;
-    let message = '';
-    let damageToCaster = 0;
 
-    if (totalDebt >= OVERFLOW_TIER_THRESHOLDS.TIER_3) {
-      tier = 3;
-    } else if (totalDebt >= OVERFLOW_TIER_THRESHOLDS.TIER_2) {
-      tier = 2;
-    } else if (totalDebt >= OVERFLOW_TIER_THRESHOLDS.TIER_1) {
-      tier = 1;
+    const reached = getOverflowTier(getOverflowConfig(engine), totalDebt);
+    if (!reached || reached.tier.outcomes.length === 0) {
+      return { occurred: false, tier: 0, deficit, totalDebt, effects, damageToCaster: 0 };
     }
+    const { tier, index } = reached;
 
-    if (tier === 0) {
-      return { occurred: false, tier: 0, deficit, totalDebt, effects, damageToCaster };
-    }
-
-    const prng = engine.prng;
-    const roll = prng.nextInt(1, 100);
-
-    // Visual rift burst at caster location
     effects.push({
       type: 'burst',
       epicenter: { x: caster.x, y: caster.y },
-      radius: tier === 3 ? 2 : 1,
-      color: tier === 3 ? '#7c3aed' : tier === 2 ? '#a855f7' : '#c084fc',
-      durationMs: tier === 3 ? 300 : 200,
+      radius: tier.burstRadius,
+      color: tier.color,
+      durationMs: tier.burstDurationMs,
       style: 'shockwave',
     });
 
-    if (tier === 1) {
-      // Tier 1: Reality Fracture (Debt 1 - 5)
-      // Minor environmental spill or acoustic crack
-      if (roll <= 60 && engine.surfaces) {
-        // Spawn volatile surface on an adjacent passable tile
-        const neighbors = [
-          { x: caster.x + 1, y: caster.y },
-          { x: caster.x - 1, y: caster.y },
-          { x: caster.x, y: caster.y + 1 },
-          { x: caster.x, y: caster.y - 1 },
-        ].filter((p) => engine.map.inBounds(p.x, p.y) && engine.map.isPassable(p.x, p.y));
+    const outcome = rollOutcome(engine, tier.outcomes);
+    const values: Record<string, string | number> = { caster: caster.name, debt: totalDebt };
+    const { message, damageToCaster } = applyOutcome(engine, caster, player, deficit, outcome, values, effects);
 
-        if (neighbors.length > 0) {
-          const chosen = prng.choice(neighbors);
-          const surfaceType = prng.choice(['dense_steam', 'ice_sheet', 'fire_storm'] as const);
-          if (surfaceType === 'dense_steam') {
-            engine.surfaces.setGas(chosen.x, chosen.y, 'dense_steam', 4, 1);
-            message = `🌀 Aetheric overflow! A pocket of dense steam billows from the floor! (Void Debt: ${totalDebt})`;
-          } else if (surfaceType === 'ice_sheet') {
-            engine.surfaces.setSurface(chosen.x, chosen.y, 'ice_sheet', 5, 1);
-            message = `🌀 Aetheric overflow! Frost condenses into a slick sheet of ice! (Void Debt: ${totalDebt})`;
-          } else {
-            engine.surfaces.setGas(chosen.x, chosen.y, 'fire_storm', 3, 4);
-            message = `🌀 Aetheric overflow! A brief fiery rift flares on the stone! (Void Debt: ${totalDebt})`;
-          }
-        } else {
-          message = `🌀 Aetheric overflow ripples harmlessly through the stone! (Void Debt: ${totalDebt})`;
-        }
-      } else {
-        // Acoustic crack: alerts sleeping enemies nearby
-        message = `🌀 Mana depleted! An eerie rift crackles around ${caster.name}! (Void Debt: ${totalDebt})`;
+    engine.log(message);
+    return { occurred: true, tier: index, deficit, totalDebt, message, effects, damageToCaster };
+  }
+}
+
+function rollOutcome(engine: GameEngine, outcomes: OverflowOutcome[]): OverflowOutcome {
+  const total = outcomes.reduce((sum, o) => sum + Math.max(0, o.weight), 0);
+  let roll = engine.prng.nextInt(1, Math.max(1, total));
+  for (const o of outcomes) {
+    roll -= Math.max(0, o.weight);
+    if (roll <= 0) return o;
+  }
+  return outcomes[outcomes.length - 1];
+}
+
+function applyOutcome(
+  engine: GameEngine,
+  caster: Entity,
+  player: Player | undefined,
+  deficit: number,
+  outcome: OverflowOutcome,
+  values: Record<string, string | number>,
+  effects: VisualEffectDescriptor[]
+): { message: string; damageToCaster: number } {
+  const format = (template: string) => formatMagicMessage(template, values);
+  const hurt = (amount: number, flashColor?: string): number => {
+    const res = caster.takeDamage(amount);
+    if (flashColor) effects.push({ type: 'screen_flash', color: flashColor, durationMs: 250 });
+    if (res.killed) DeathResolver.resolveDeath(engine, undefined, caster);
+    return res.damageDealt;
+  };
+
+  switch (outcome.kind) {
+    case 'spill': {
+      const neighbors = [
+        { x: caster.x + 1, y: caster.y },
+        { x: caster.x - 1, y: caster.y },
+        { x: caster.x, y: caster.y + 1 },
+        { x: caster.x, y: caster.y - 1 },
+      ].filter((p) => engine.map.inBounds(p.x, p.y) && engine.map.isPassable(p.x, p.y));
+      if (neighbors.length === 0 || !engine.surfaces || outcome.spills.length === 0) {
+        return { message: format(outcome.blockedMessage), damageToCaster: 0 };
       }
-    } else if (tier === 2) {
-      // Tier 2: Primordial Tremor (Debt 6 - 15)
-      if (roll <= 45) {
-        // Inverted recoil shock
-        damageToCaster = Math.max(3, Math.floor(deficit * 0.75));
-        const res = caster.takeDamage(damageToCaster);
-        damageToCaster = res.damageDealt;
-        message = `⚡ Primordial tremor! The uncontained ether recoils into ${caster.name} for ${damageToCaster} backlash damage! (Void Debt: ${totalDebt})`;
-        effects.push({
-          type: 'screen_flash',
-          color: '#9333ea',
-          durationMs: 180,
-        });
-        if (res.killed) {
-          DeathResolver.resolveDeath(engine, undefined, caster);
-        }
-      } else if (roll <= 80) {
-        // Spiritual palsy: stunned for 1 turn
-        caster.statusManager.applyStatus(
-          { type: 'stunned', duration: 1, potency: 1 },
-          caster.statusImmunities,
-          caster,
-          engine
-        );
-        message = `⚡ Primordial tremor! The dimensional shockwave stuns ${caster.name} for 1 turn! (Void Debt: ${totalDebt})`;
-      } else if (engine.surfaces) {
-        // Acid pool or boiling geyser under caster
-        engine.surfaces.setSurface(caster.x, caster.y, 'acid_pool', 4, 1);
-        message = `⚡ Primordial tremor! Caustic aether pools beneath ${caster.name}! (Void Debt: ${totalDebt})`;
-      } else {
-        message = `⚡ Primordial tremor vibrates through reality! (Void Debt: ${totalDebt})`;
+      const cell = engine.prng.choice(neighbors);
+      const spill = engine.prng.choice(outcome.spills);
+      if (spill.gas) {
+        engine.surfaces.setGas(cell.x, cell.y, spill.gas as Parameters<typeof engine.surfaces.setGas>[2], spill.duration, spill.potency);
+      } else if (spill.surface) {
+        engine.surfaces.setSurface(cell.x, cell.y, spill.surface, spill.duration, spill.potency);
       }
-    } else {
-      // Tier 3: Ymir's Wrath (Debt 16+)
-      if (roll <= 40) {
-        // Severe entropic backlash
-        damageToCaster = Math.max(10, Math.floor(deficit * 1.2));
-        const res = caster.takeDamage(damageToCaster);
-        damageToCaster = res.damageDealt;
-        message = `☠ YMIR'S WRATH! Catastrophic void backlash tears into ${caster.name} for ${damageToCaster} damage! (Void Debt: ${totalDebt})`;
-        effects.push({
-          type: 'screen_flash',
-          color: '#581c87',
-          durationMs: 300,
-        });
-        if (res.killed) {
-          DeathResolver.resolveDeath(engine, undefined, caster);
-        }
-      } else if (roll <= 70 && player) {
-        // Mortal conduit burn: burns 1 permanent Max HP
-        if (player.maxHp > 5) {
-          player.maxHp = Math.max(5, player.maxHp - 1);
-          player.hp = Math.min(player.hp, player.maxHp);
-          message = `☠ YMIR'S WRATH! The abyssal conduit burns away 1 permanent Max HP! (Max HP: ${player.maxHp}, Void Debt: ${totalDebt})`;
-        } else {
-          damageToCaster = 12;
-          caster.takeDamage(damageToCaster);
-          message = `☠ YMIR'S WRATH! The cosmic conduit ravages ${caster.name} for ${damageToCaster} damage! (Void Debt: ${totalDebt})`;
-        }
-      } else {
-        // Spatial displacement: teleport caster a short distance away
-        const validTiles: Array<{ x: number; y: number }> = [];
-        for (let dy = -4; dy <= 4; dy++) {
-          for (let dx = -4; dx <= 4; dx++) {
-            if (Math.abs(dx) + Math.abs(dy) < 2) continue;
-            const tx = caster.x + dx;
-            const ty = caster.y + dy;
-            if (engine.map.inBounds(tx, ty) && engine.map.isPassable(tx, ty) && !engine.map.getEntityAt(tx, ty)) {
-              validTiles.push({ x: tx, y: ty });
-            }
-          }
-        }
-        if (validTiles.length > 0) {
-          const dest = prng.choice(validTiles);
-          engine.map.moveEntity(caster, dest.x, dest.y);
-          if (caster instanceof Player) {
-            engine.updateFov();
-          }
-          message = `☠ YMIR'S WRATH! A spatial rupture violently displaces ${caster.name}! (Void Debt: ${totalDebt})`;
-        } else {
-          message = `☠ YMIR'S WRATH shatters the surrounding reality! (Void Debt: ${totalDebt})`;
-        }
-      }
+      return { message: format(spill.message), damageToCaster: 0 };
     }
-
-    if (message) {
-      engine.log(message);
+    case 'backlash': {
+      const damage = hurt(Math.max(outcome.minDamage, Math.floor(deficit * outcome.deficitMultiplier)), outcome.flashColor);
+      values.damage = damage;
+      return { message: format(outcome.message), damageToCaster: damage };
     }
-
-    return {
-      occurred: true,
-      tier,
-      deficit,
-      totalDebt,
-      message,
-      effects,
-      damageToCaster,
-    };
+    case 'status': {
+      caster.statusManager.applyStatus(
+        { type: outcome.statusId, duration: outcome.duration, potency: 1 },
+        caster.statusImmunities,
+        caster,
+        engine
+      );
+      return { message: format(outcome.message), damageToCaster: 0 };
+    }
+    case 'surface_under_caster': {
+      engine.surfaces?.setSurface(caster.x, caster.y, outcome.surface, outcome.duration, outcome.potency);
+      return { message: format(outcome.message), damageToCaster: 0 };
+    }
+    case 'max_hp_burn': {
+      if (player && player.maxHp - outcome.amount >= outcome.minMaxHp) {
+        player.maxHp -= outcome.amount;
+        player.hp = Math.min(player.hp, player.maxHp);
+        values.maxHp = player.maxHp;
+        if (outcome.flashColor) effects.push({ type: 'screen_flash', color: outcome.flashColor, durationMs: 300 });
+        return { message: format(outcome.message), damageToCaster: 0 };
+      }
+      const damage = hurt(outcome.fallbackDamage, outcome.flashColor);
+      values.damage = damage;
+      return { message: format(outcome.fallbackMessage), damageToCaster: damage };
+    }
+    case 'displace': {
+      const cells: Array<{ x: number; y: number }> = [];
+      for (let dy = -outcome.radius; dy <= outcome.radius; dy++) {
+        for (let dx = -outcome.radius; dx <= outcome.radius; dx++) {
+          if (Math.abs(dx) + Math.abs(dy) < 2) continue;
+          const tx = caster.x + dx;
+          const ty = caster.y + dy;
+          if (engine.map.inBounds(tx, ty) && engine.map.isPassable(tx, ty) && !engine.map.getEntityAt(tx, ty)) {
+            cells.push({ x: tx, y: ty });
+          }
+        }
+      }
+      if (cells.length === 0) return { message: format(outcome.blockedMessage), damageToCaster: 0 };
+      const dest = engine.prng.choice(cells);
+      engine.map.moveEntity(caster, dest.x, dest.y);
+      if (player) engine.updateFov();
+      return { message: format(outcome.message), damageToCaster: 0 };
+    }
+    case 'message':
+      return { message: format(outcome.message), damageToCaster: 0 };
   }
 }

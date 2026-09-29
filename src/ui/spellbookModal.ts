@@ -1,6 +1,14 @@
 import type { GameEngine } from '../engine';
 import type { SpellDefinition } from '../engine';
-import { getSpell, NEXUS_SLOT_INDEX, GRIMOIRE_SIZE, OVERFLOW_TIER_THRESHOLDS } from '../engine';
+import {
+  getSpell,
+  CENTER_SLOT_INDEX,
+  GRIMOIRE_SIZE,
+  getGrimoireConfig,
+  getGrimoirePageName,
+  getOverflowConfig,
+  getOverflowTier,
+} from '../engine';
 import type { UIModal } from './modalStack';
 
 export interface SpellbookModalOptions {
@@ -226,15 +234,19 @@ export class SpellbookModal implements UIModal {
       justifyContent: 'space-between',
       alignItems: 'center',
     });
-    const voidDebtNotice = player.voidDebt > 0
-      ? `<span style="margin-left: 12px; font-weight: bold; color: ${player.voidDebt >= OVERFLOW_TIER_THRESHOLDS.TIER_3 ? '#f87171' : player.voidDebt >= OVERFLOW_TIER_THRESHOLDS.TIER_2 ? '#c084fc' : '#38bdf8'}; font-size: 11px;">
-           ⚡ Void Debt: ${player.voidDebt} ${player.voidDebt >= OVERFLOW_TIER_THRESHOLDS.TIER_3 ? '(Tier 3 Primordial Scar - Lingering)' : player.voidDebt >= OVERFLOW_TIER_THRESHOLDS.TIER_2 ? '(Tier 2 Tremor)' : '(Tier 1 Fracture)'}
+    const overflow = getOverflowConfig(this.engine!);
+    const debtTier = getOverflowTier(overflow, player.voidDebt);
+    const voidDebtNotice = overflow && player.voidDebt > 0
+      ? `<span style="margin-left: 12px; font-weight: bold; color: ${debtTier?.tier.color ?? '#38bdf8'}; font-size: 11px;">
+           ⚡ ${overflow.debtName}: ${player.voidDebt}${debtTier ? ` (${debtTier.tier.label})` : ''}
          </span>`
       : '';
+    const grimoireConfig = getGrimoireConfig(this.engine!);
+    const title = grimoireConfig ? `ARCANE SPELLBOOK &amp; ${grimoireConfig.title.toUpperCase()}` : 'ARCANE SPELLBOOK &amp; QUICKBAR ASSIGNMENT';
 
     header.innerHTML = `
       <div style="font-weight: bold; font-size: 15px; color: #f8fafc; letter-spacing: 0.05em; display: flex; align-items: center;">
-        <span>📜 ARCANE SPELLBOOK &amp; GRIMOIRE MATRIX</span>
+        <span>📜 ${title}</span>
         ${voidDebtNotice}
       </div>
       <div style="font-size: 12px; color: #67e8f9;">
@@ -312,8 +324,10 @@ export class SpellbookModal implements UIModal {
       overflowY: 'auto',
     });
 
-    // Prepend Grimoire Spatial Matrix Section
-    rightCol.appendChild(this.renderGrimoireMatrixSection(player, currentSpell));
+    // Grimoire grid, for packs that have one
+    if (grimoireConfig) {
+      rightCol.appendChild(this.renderGrimoireMatrixSection(player, currentSpell));
+    }
 
     if (!currentSpell) {
       const emptyNotice = document.createElement('div');
@@ -478,7 +492,7 @@ export class SpellbookModal implements UIModal {
     pageTitle.style.fontWeight = 'bold';
     pageTitle.style.color = '#38bdf8';
     pageTitle.style.letterSpacing = '0.05em';
-    pageTitle.textContent = 'ᚱ GRIMOIRE SPATIAL MATRIX';
+    pageTitle.textContent = getGrimoireConfig(this.engine!)?.title.toUpperCase() ?? '';
     pageHeader.appendChild(pageTitle);
 
     // Page Buttons
@@ -486,7 +500,7 @@ export class SpellbookModal implements UIModal {
     pageBtnGroup.style.display = 'flex';
     pageBtnGroup.style.gap = '4px';
 
-    player.grimoirePages.forEach((page, pIdx) => {
+    player.grimoirePages.forEach((_page, pIdx) => {
       const isCurrentPage = pIdx === player.activeGrimoireIndex;
       const btn = document.createElement('button');
       btn.type = 'button';
@@ -500,8 +514,9 @@ export class SpellbookModal implements UIModal {
         borderRadius: '3px',
         cursor: 'pointer',
       });
-      btn.textContent = page.name;
-      btn.title = `Switch to ${page.name}`;
+      const pageName = getGrimoirePageName(this.engine!, player, pIdx);
+      btn.textContent = pageName;
+      btn.title = `Switch to ${pageName}`;
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.options.onSwitchGrimoirePage(pIdx);
@@ -542,7 +557,7 @@ export class SpellbookModal implements UIModal {
     const activeSlots = player.grimoire;
     for (let sIdx = 0; sIdx < GRIMOIRE_SIZE; sIdx++) {
       const slot = activeSlots[sIdx];
-      const isNexus = sIdx === NEXUS_SLOT_INDEX;
+      const isNexus = sIdx === CENTER_SLOT_INDEX;
       const spellId = slot?.spellId;
       const slottedSpell = spellId
         ? this.engine?.manifest?.spells?.find((s) => s.id === spellId) ?? getSpell(spellId)
@@ -568,7 +583,8 @@ export class SpellbookModal implements UIModal {
       slotLabel.style.justifyContent = 'space-between';
       slotLabel.style.color = isNexus ? '#facc15' : '#64748b';
       slotLabel.style.fontSize = '9px';
-      slotLabel.innerHTML = `<span>Slot ${sIdx + 1}</span>${isNexus ? '<span>MIDGARD</span>' : ''}`;
+      const centerLabel = getGrimoireConfig(this.engine!)?.centerSlotLabel;
+      slotLabel.innerHTML = `<span>Slot ${sIdx + 1}</span>${isNexus && centerLabel ? `<span>${centerLabel.toUpperCase()}</span>` : ''}`;
       slotCell.appendChild(slotLabel);
 
       // Spell content or empty prompt

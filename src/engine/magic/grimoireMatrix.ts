@@ -3,6 +3,8 @@ import type { Entity } from '../entities/entity';
 import type { Player } from '../entities/player';
 import type { SpellDefinition } from './types';
 import { getSpell } from './spellRegistry';
+import { ELEMENT_OPPOSITES, type ElementType } from './elements';
+import type { GrimoireConfig } from './magicConfig';
 import { StatusHandlerRegistry } from '../status/statusHandlers';
 import type { StatusHandler, StatusTickOutput } from '../status/statusHandlers';
 import type { StatusEffect } from '../status/types';
@@ -33,13 +35,22 @@ export interface GrimoirePage {
 }
 
 export const GRIMOIRE_SIZE = 9;
-export const NEXUS_SLOT_INDEX = 4; // Midgard (center: row 1, col 1)
-export const DEFAULT_GRIMOIRE_PAGES = 3;
-export const DEFAULT_GRIMOIRE_PAGE_NAMES = [
-  'Page I: Sol',
-  'Page II: Máni',
-  'Page III: Yggdrasil',
-] as const;
+export const CENTER_SLOT_INDEX = 4; // row 1, col 1
+/** Neutral stored page names; a pack's `grimoire.pageNames` replace them for display. */
+export const DEFAULT_GRIMOIRE_PAGE_NAMES = ['Page I', 'Page II', 'Page III'] as const;
+const DEFAULT_OPPOSED_ELEMENT_POWER = 1.25;
+
+/** The pack's grimoire config; without one the grid is off and spells cast unmodified. */
+export function getGrimoireConfig(engine: GameEngine): GrimoireConfig | undefined {
+  return engine.manifest?.magic?.grimoire;
+}
+
+/** A page's display name: the pack's name for that index, else the stored one. */
+export function getGrimoirePageName(engine: GameEngine, player: Player, pageIndex: number): string {
+  return (
+    getGrimoireConfig(engine)?.pageNames[pageIndex] ?? player.grimoirePages[pageIndex]?.name ?? `Page ${pageIndex + 1}`
+  );
+}
 
 export const GRIMOIRE_ATTUNE_STATUS = 'grimoire_attunement';
 
@@ -106,7 +117,9 @@ export class GrimoireMatrixManager {
     player: Player,
     slotIndex: number
   ): SpellDefinition | undefined {
-    const grimoire = player.grimoire ?? GrimoireMatrixManager.createDefaultGrimoire(player.spellsKnown);
+    const config = getGrimoireConfig(engine);
+    if (!config) return undefined;
+    const grimoire = player.grimoire;
     const slot = grimoire[slotIndex];
     if (!slot || !slot.spellId) return undefined;
 
@@ -125,25 +138,21 @@ export class GrimoireMatrixManager {
       .map((id) => engine.manifest?.spells?.find((s) => s.id === id) ?? getSpell(id))
       .filter((s): s is SpellDefinition => Boolean(s));
 
-    // Nexus Rule (Center Slot 4: Midgard)
-    if (slotIndex === NEXUS_SLOT_INDEX && neighbors.length > 0) {
-      effective.manaCost = Math.round(effective.manaCost * (1 + neighbors.length * 0.15));
-      effective.description = `${effective.description} [Runic Nexus: Multi-element resonance]`;
+    // Center slot: costs more mana per occupied neighbor
+    if (slotIndex === CENTER_SLOT_INDEX && neighbors.length > 0 && config.centerCostPerNeighbor) {
+      effective.manaCost = Math.round(effective.manaCost * (1 + neighbors.length * config.centerCostPerNeighbor));
     }
 
     // Elemental Adjacency Synergies
+    const opposed = ELEMENT_OPPOSITES[effective.element as ElementType];
     for (const neighbor of neighbors) {
-      // Fire next to Cold -> Thermal Shock
-      if (
-        (effective.element === 'fire' && neighbor.element === 'cold') ||
-        (effective.element === 'cold' && neighbor.element === 'fire')
-      ) {
-        effective.basePower = Math.round((effective.basePower ?? 10) * 1.25);
+      // Next to its opposing element (e.g. fire beside cold): more power
+      if (opposed && neighbor.element === opposed) {
+        const mult = config.opposedElementPowerMultiplier ?? DEFAULT_OPPOSED_ELEMENT_POWER;
+        effective.basePower = Math.round((effective.basePower ?? 10) * mult);
         // Damage comes from the damage effects, not basePower, so scale those too.
         effective.effects = effective.effects?.map((e) =>
-          e.type === 'damage' && typeof e.amount === 'number'
-            ? { ...e, amount: Math.round(e.amount * 1.25) }
-            : e
+          e.type === 'damage' && typeof e.amount === 'number' ? { ...e, amount: Math.round(e.amount * mult) } : e
         );
       }
 
@@ -236,7 +245,7 @@ export class GrimoireMatrixManager {
     return {
       success: true,
       glyph,
-      message: `*** RITE OF THE ASH TREE! ${sacName} was consumed on the altar. Its essence (${glyphType}) is permanently grafted onto ${tgtSlot.spellId}! ***`,
+      message: `${sacName} is consumed; its essence (${glyphType}) is grafted onto ${tgtSlot.spellId}.`,
     };
   }
 
@@ -271,7 +280,7 @@ export class GrimoireMatrixManager {
 
     return {
       success: true,
-      message: `*** PRIMORDIAL TRANSMUTATION! The cosmic synthesis of ${spellAId} and ${spellBId} forged ${hybridSpell.name}! ***`,
+      message: `${spellAId} and ${spellBId} are fused into ${hybridSpell.name}.`,
     };
   }
 
@@ -304,7 +313,7 @@ export class GrimoireMatrixManager {
     if (targetPageIndex < 0 || targetPageIndex >= player.grimoirePages.length) {
       return { success: false, completed: false, consumesTurn: false, message: 'Invalid grimoire page.' };
     }
-    const pageName = player.grimoirePages[targetPageIndex]?.name ?? `Page ${targetPageIndex + 1}`;
+    const pageName = getGrimoirePageName(engine, player, targetPageIndex);
     if (targetPageIndex === player.activeGrimoireIndex) {
       player.statusManager.removeStatus(GRIMOIRE_ATTUNE_STATUS);
       return { success: true, completed: true, consumesTurn: false, message: `Already attuned to ${pageName}.` };
@@ -314,7 +323,7 @@ export class GrimoireMatrixManager {
     if (this.canSwitchPageInstantly(engine, player)) {
       player.statusManager.removeStatus(GRIMOIRE_ATTUNE_STATUS);
       player.switchGrimoirePage(targetPageIndex);
-      const msg = `You open your grimoire to ${pageName}. Arcane matrix attuned.`;
+      const msg = `You open your grimoire to ${pageName}.`;
       engine.log(msg);
       return { success: true, completed: true, consumesTurn: false, message: msg };
     }
@@ -373,7 +382,7 @@ const grimoireAttuneStatusHandler: StatusHandler = {
         // Final tick. Switch here: by onExpire the effect (and its target page) is already gone.
         const targetIndex = Number(effect.data?.targetPageIndex) || 0;
         player.switchGrimoirePage(targetIndex);
-        const pageName = player.grimoirePages[targetIndex]?.name ?? `Page ${targetIndex + 1}`;
+        const pageName = getGrimoirePageName(engine, player, targetIndex);
         engine.log(`*** Grimoire attunement complete! Switched to ${pageName}! ***`);
       }
     }

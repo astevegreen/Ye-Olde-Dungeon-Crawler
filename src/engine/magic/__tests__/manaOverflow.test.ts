@@ -6,6 +6,7 @@ import { Player } from '../../entities/player';
 import { CastSpellAction } from '../../actions/spell-actions';
 import { RestAction } from '../../actions/rest';
 import { ManaOverflowManager } from '../manaOverflow';
+import { COTW_MAGIC } from '../../../content/cotw/magic';
 import type { SpellDefinition } from '../types';
 import { serializeGame, deserializeGame } from '../../storage/serializer';
 
@@ -37,6 +38,7 @@ describe('Ginnungagap / Mana Overflow System', () => {
     spells: [testSpell],
     monsters: [],
     items: [],
+    magic: { overflow: COTW_MAGIC.overflow },
   };
 
   beforeEach(() => {
@@ -79,19 +81,19 @@ describe('Ginnungagap / Mana Overflow System', () => {
     // Low deficit: Tier 1 (1 - 5)
     player.mana = 7; // deficit = 3
     player.voidDebt = 0;
-    const res1 = ManaOverflowManager.evaluateOverflow(engine, player, 3, testSpell);
+    const res1 = ManaOverflowManager.evaluateOverflow(engine, player, 3);
     expect(res1.occurred).toBe(true);
     expect(res1.tier).toBe(1);
     expect(player.voidDebt).toBe(3);
 
     // Cumulative deficit: Tier 2 (6 - 15)
-    const res2 = ManaOverflowManager.evaluateOverflow(engine, player, 5, testSpell);
+    const res2 = ManaOverflowManager.evaluateOverflow(engine, player, 5);
     expect(res2.occurred).toBe(true);
     expect(res2.tier).toBe(2);
     expect(player.voidDebt).toBe(8);
 
     // Cumulative deficit: Tier 3 (16+)
-    const res3 = ManaOverflowManager.evaluateOverflow(engine, player, 10, testSpell);
+    const res3 = ManaOverflowManager.evaluateOverflow(engine, player, 10);
     expect(res3.occurred).toBe(true);
     expect(res3.tier).toBe(3);
     expect(player.voidDebt).toBe(18);
@@ -111,20 +113,20 @@ describe('Ginnungagap / Mana Overflow System', () => {
     player.voidDebt = 25;
 
     // Decay by 20 without allowing Tier 3 clearing (dungeon exploration/rest)
-    player.decayVoidDebt(20, false);
+    player.decayVoidDebt(20, 16);
     // Should cap/floor at 16 (Tier 3 primordial scar)
     expect(player.voidDebt).toBe(16);
 
     // Minor debt (< 16) decays naturally to 0 even in dungeons
     player.voidDebt = 10;
-    player.decayVoidDebt(10, false);
+    player.decayVoidDebt(10, 0);
     expect(player.voidDebt).toBe(0);
   });
 
   it('clears Tier 3 primordial scars when resting in town sanctuary', () => {
     player.voidDebt = 25;
     // Clearing Tier 3 is permitted (in Town / Floor 0)
-    player.decayVoidDebt(25, true);
+    player.decayVoidDebt(25, 0);
     expect(player.voidDebt).toBe(0);
   });
 
@@ -170,5 +172,20 @@ describe('Ginnungagap / Mana Overflow System', () => {
     player.voidDebt = 250;
     new RestAction(player).perform(engine);
     expect(player.voidDebt).toBe(16);
+  });
+
+  it('keeps the hard mana wall for a pack that declares no overflow', () => {
+    const wallEngine = new GameEngine({
+      map: new GameMap(15, 15, TILES.FLOOR),
+      player,
+      manifest: { ...testManifest, magic: undefined } as any,
+      seed: 1337,
+    });
+    player.mana = 4;
+    const result = new CastSpellAction(player, testSpell.id, 5, 8).perform(wallEngine);
+    expect(result.success).toBe(false);
+    expect(result.message).toContain('Not enough mana');
+    expect(player.mana).toBe(4);
+    expect(player.voidDebt).toBe(0);
   });
 });

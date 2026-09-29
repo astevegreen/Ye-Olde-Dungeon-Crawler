@@ -846,7 +846,7 @@ export class CanvasRenderer {
       const layers = terrainLayers(this.terrainView, worldX, worldY, this.terrainSuffixAt, art, (k) => this.atlas.hasRecipe(k));
       if (layers) {
         for (const key of layers) this.atlas.drawSprite(this.ctx, key, px, py, cs, visibility);
-        if (tile.visual === 'portal') this.drawFixtureOverlay(px, py, cs, tile.visual, visibility);
+        if (tile.visual === 'portal' || tile.visual === 'altar') this.drawFixtureOverlay(px, py, cs, tile.visual, visibility, tile.glyph);
         return;
       }
     }
@@ -855,8 +855,8 @@ export class CanvasRenderer {
     const spriteKey = getTerrainSpriteKey(tile.type, currentFloor, tileZoneBands, buildingType, (k) => this.atlas.hasRecipe(k));
     this.atlas.drawSprite(this.ctx, spriteKey, px, py, cs, visibility);
 
-    if (tile.visual === 'portal') {
-      this.drawFixtureOverlay(px, py, cs, tile.visual, visibility);
+    if (tile.visual === 'portal' || tile.visual === 'altar') {
+      this.drawFixtureOverlay(px, py, cs, tile.visual, visibility, tile.glyph);
     } else if (
       tile.type === 'shallow_water' ||
       tile.type === 'chasm' ||
@@ -1012,7 +1012,8 @@ export class CanvasRenderer {
     py: number,
     cs: number,
     type: string,
-    visibility: Visibility
+    visibility: Visibility,
+    glyph?: string
   ): void {
     const isVisible = visibility === Visibility.Visible;
     this.ctx.save();
@@ -1033,6 +1034,18 @@ export class CanvasRenderer {
         this.ctx.font = `bold ${(cs * 0.65).toFixed(1)}px sans-serif`;
         this.ctx.fillStyle = isVisible ? '#ffffff' : '#ca8a04';
         this.ctx.fillText('▲', cx, cy + 1);
+        break;
+      }
+      case 'altar': {
+        // An interactive altar: a violet ring around the tile's own glyph
+        this.ctx.fillStyle = isVisible ? 'rgba(139, 92, 246, 0.3)' : 'rgba(76, 29, 149, 0.2)';
+        this.ctx.fillRect(px + cs * 0.12, py + cs * 0.12, cs * 0.76, cs * 0.76);
+        this.ctx.strokeStyle = isVisible ? '#a78bfa' : '#4c1d95';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(px + cs * 0.12, py + cs * 0.12, cs * 0.76, cs * 0.76);
+        this.ctx.font = `bold ${(cs * 0.55).toFixed(1)}px serif`;
+        this.ctx.fillStyle = isVisible ? '#ede9fe' : '#7c3aed';
+        this.ctx.fillText(glyph ?? '✦', cx, cy + 1);
         break;
       }
     }

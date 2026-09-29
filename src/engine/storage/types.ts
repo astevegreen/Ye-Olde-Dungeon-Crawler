@@ -228,6 +228,8 @@ export interface SerializedPlayer {
   grimoire?: import('../magic/grimoireMatrix').GrimoireSlot[];
   grimoirePages?: import('../magic/grimoireMatrix').GrimoirePage[];
   activeGrimoireIndex?: number;
+  grimoireOpenSlots?: number[];
+  grimoireGrounds?: Record<number, string>;
 }
 
 /** `WorldState` as saved: remote-vault items are serialized item trees, not live Items. */

@@ -100,6 +100,7 @@ export * from './magic/runeOfReturn';
 export * from './magic/manaOverflow';
 export * from './magic/magicConfig';
 export * from './magic/killRites';
+export * from './magic/altars';
 export * from './magic/grimoireMatrix';
 
 // Surfaces & Elemental Reactions

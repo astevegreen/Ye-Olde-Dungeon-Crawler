@@ -576,14 +576,18 @@ export class SpellbookModal implements UIModal {
         ? this.engine?.manifest?.spells?.find((s) => s.id === spellId) ?? getSpell(spellId)
         : null;
 
+      const isOpen = player.isGrimoireSlotOpen(sIdx);
+      const ground = player.grimoireGrounds[sIdx];
+      const config = getGrimoireConfig(this.engine!);
+
       const slotCell = document.createElement('div');
       Object.assign(slotCell.style, {
         padding: '5px 6px',
         minHeight: '40px',
-        backgroundColor: slottedSpell ? '#0f172a' : 'rgba(15, 23, 42, 0.4)',
-        border: isNexus ? '1px solid #eab308' : slottedSpell ? '1px solid #38bdf8' : '1px dashed #334155',
+        backgroundColor: !isOpen ? '#020409' : slottedSpell ? '#0f172a' : 'rgba(15, 23, 42, 0.4)',
+        border: !isOpen ? '1px solid #1e293b' : isNexus ? '1px solid #eab308' : slottedSpell ? '1px solid #38bdf8' : '1px dashed #334155',
         borderRadius: '3px',
-        cursor: 'pointer',
+        cursor: isOpen ? 'pointer' : 'default',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -596,14 +600,17 @@ export class SpellbookModal implements UIModal {
       slotLabel.style.justifyContent = 'space-between';
       slotLabel.style.color = isNexus ? '#facc15' : '#64748b';
       slotLabel.style.fontSize = '9px';
-      const centerLabel = getGrimoireConfig(this.engine!)?.centerSlotLabel;
-      slotLabel.innerHTML = `<span>Slot ${sIdx + 1}</span>${isNexus && centerLabel ? `<span>${centerLabel.toUpperCase()}</span>` : ''}`;
+      const centerLabel = config?.centerSlotLabel;
+      const tag = isNexus && centerLabel ? centerLabel.toUpperCase() : ground ? `⛬ ${ground}` : '';
+      slotLabel.innerHTML = `<span>Slot ${sIdx + 1}</span>${tag ? `<span>${tag}</span>` : ''}`;
       slotCell.appendChild(slotLabel);
 
       // Spell content or empty prompt
       const contentEl = document.createElement('div');
       contentEl.style.marginTop = '2px';
-      if (slottedSpell) {
+      if (!isOpen) {
+        contentEl.innerHTML = `<span style="color: #334155; font-style: italic;">🔒 ${config?.lockedSlotLabel ?? 'Sealed'}</span>`;
+      } else if (slottedSpell) {
         contentEl.innerHTML = `
           <div style="font-weight: bold; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
             ${slottedSpell.name}
@@ -612,19 +619,22 @@ export class SpellbookModal implements UIModal {
             ${slottedSpell.element ?? 'arcane'} | ${slotCostLabel(slottedSpell.manaCost ?? 0, GrimoireMatrixManager.resolveEffectiveSpell(this.engine!, player, sIdx)?.manaCost)}
           </div>
         `;
-        if (slot.infusedGlyphs && slot.infusedGlyphs.length > 0) {
-          const glyphsStr = slot.infusedGlyphs.map((g) => `✦${g.type}`).join(' ');
-          contentEl.innerHTML += `<div style="font-size: 8px; color: #a855f7;">${glyphsStr}</div>`;
-        }
       } else {
         contentEl.innerHTML = `<span style="color: #475569; font-style: italic;">[Empty]</span>`;
+      }
+      // Glyphs belong to the slot, so show them even when it is empty
+      if (isOpen && slot?.infusedGlyphs && slot.infusedGlyphs.length > 0) {
+        const glyphsStr = slot.infusedGlyphs
+          .map((g) => `✦${config?.glyphs?.find((d) => d.id === g.glyphId)?.name ?? g.glyphId}${g.potency > 1 ? `×${g.potency}` : ''}`)
+          .join(' ');
+        contentEl.innerHTML += `<div style="font-size: 8px; color: #a855f7;">${glyphsStr}</div>`;
       }
       slotCell.appendChild(contentEl);
 
       // Click: assign or unassign current spell
       slotCell.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (!currentSpell) return;
+        if (!currentSpell || !isOpen) return;
         if (slot?.spellId === currentSpell.id) {
           player.setGrimoireSlot(sIdx, null);
         } else {

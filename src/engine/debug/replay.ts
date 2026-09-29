@@ -36,6 +36,7 @@ import {
   AttuneGrimoirePageAction,
 } from '../actions/spell-actions';
 import { IdentifyAction } from '../actions/identificationActions';
+import { PerformAltarRiteAction } from '../magic/altars';
 import type { ReplayData, TrailEntry, TrailValue } from './types';
 
 type Params = Record<string, TrailValue>;
@@ -122,6 +123,19 @@ const BUILDERS: Record<string, Builder> = {
       : null;
   },
   AttuneGrimoirePageAction: (e, p) => new AttuneGrimoirePageAction(e.player, num(p, 'targetPageIndex') ?? 0),
+  PerformAltarRiteAction: (e, p) => {
+    const altarId = str(p, 'altarId');
+    const offeringId = str(p, 'offeringId');
+    const offeringKind = str(p, 'offeringKind');
+    return altarId && offeringId && (offeringKind === 'spell' || offeringKind === 'essence')
+      ? new PerformAltarRiteAction(e.player, altarId, num(p, 'x') ?? 0, num(p, 'y') ?? 0, {
+          offeringKind,
+          offeringId,
+          slotIndex: num(p, 'slotIndex'),
+          targetSpellId: str(p, 'targetSpellId'),
+        })
+      : null;
+  },
   ZapWandAction: (e, p) => {
     const wand = item<WandItem>(p, 'wandId');
     return wand ? new ZapWandAction(e.player, wand, num(p, 'targetX') ?? 0, num(p, 'targetY') ?? 0) : null;

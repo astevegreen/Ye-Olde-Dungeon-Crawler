@@ -40,7 +40,11 @@ export type BuiltInGameEventType =
   | 'level_transition'
   | 'rune_of_return_discovered'
   | 'mastery_unlocked'
-  | 'mastery_perk_selected';
+  | 'mastery_perk_selected'
+  // Magic systems (magic/killRites.ts, magic/altars.ts); details in the scalar `data` bag
+  | 'kill_rite_performed'
+  | 'altar_reached'
+  | 'altar_rite_performed';
 
 export interface PlayerLeveledUpEvent extends GameEventBase {
   type: 'player_leveled_up';

@@ -1,5 +1,12 @@
 import type { MagicSystemConfig } from '../../engine';
 import { COTW_ESSENCE_BY_ELEMENT } from './items/essences';
+import { COTW_HYBRID_RECIPES } from './hybridSpells';
+
+/** Spells Loki's Cairn may teach: every spell kill rites and tablets teach. */
+const LOKI_SPELL_POOL = [
+  'slow', 'cold_ray', 'firebolt', 'phase_door', 'detect_monsters', 'detect_objects', 'lightning_bolt',
+  'heal_medium', 'identify', 'teleport', 'fireball', 'paralyze', 'clairvoyance',
+];
 
 /**
  * cotw's magic systems (engine `MagicSystemConfig`): Ginnungagap overflow, the
@@ -115,5 +122,104 @@ export const COTW_MAGIC: MagicSystemConfig = {
     centerCostPerNeighbor: 0.15,
     centerPowerPerNeighbor: 0.2,
     opposedElementPowerMultiplier: 1.25,
+    // New heroes start with a cross of five slots; Hel's Grave-Altars unseal the corners.
+    initialOpenSlots: [1, 3, 4, 5, 7],
+    lockedSlotLabel: 'Sealed',
+    maxGlyphsPerSlot: 2,
+    groundedModifier: { manaCostDelta: -1, powerMultiplier: 1.1 },
+    glyphs: [
+      { id: 'kenaz', name: 'Kenaz', description: '+20% power', fromElements: ['fire'], modifier: { powerMultiplier: 1.2 } },
+      {
+        id: 'isa',
+        name: 'Isa',
+        description: 'damaging spells slow for 2 turns',
+        fromElements: ['cold'],
+        modifier: { addEffects: [{ type: 'applyStatus', statusId: 'slow', duration: 2 }] },
+      },
+      {
+        id: 'thurisaz',
+        name: 'Thurisaz',
+        description: 'damage leaps to one more foe',
+        fromElements: ['lightning'],
+        modifier: { addEffects: [{ type: 'chain', maxHops: 1, hopRange: 3, damageDecay: 0.5 }] },
+      },
+      { id: 'ansuz', name: 'Ansuz', description: '+2 range', fromElements: ['arcane'], fromSchools: ['Divination'], modifier: { rangeDelta: 2 } },
+      { id: 'uruz', name: 'Uruz', description: '+1 blast radius', fromElements: ['physical'], modifier: { areaDelta: 1 } },
+      {
+        id: 'nauthiz',
+        name: 'Nauthiz',
+        description: 'damaging spells heal you 3',
+        fromElements: ['shadow'],
+        modifier: { addEffects: [{ type: 'heal', amount: 3, target: 'caster' }] },
+      },
+      {
+        id: 'berkano',
+        name: 'Berkano',
+        description: '-2 mana',
+        fromElements: ['healing'],
+        fromSchools: ['HealingDivination'],
+        modifier: { manaCostDelta: -2 },
+      },
+      {
+        id: 'raido',
+        name: 'Raidō',
+        description: 'step 2 back from your target after casting',
+        fromSchools: ['Movement'],
+        modifier: { retreatSteps: 2 },
+      },
+      {
+        id: 'binding',
+        name: 'Binding',
+        description: 'damaging spells paralyze for 1 turn',
+        fromSchools: ['Enchantment'],
+        modifier: { addEffects: [{ type: 'applyStatus', statusId: 'paralysis', duration: 1 }] },
+      },
+    ],
   },
+  hybrids: COTW_HYBRID_RECIPES,
+  altars: [
+    {
+      id: 'galdr_altar_tyr',
+      name: "Týr's Oath-Stone",
+      description:
+        'Týr gave his hand to bind the wolf. Burn an offering here, and its essence is bound into a slot of your open grimoire page as a glyph.',
+      rite: 'inscribe',
+      performedMessage: '⚖ Týr accepts {offering}. The {glyph} glyph is bound into slot {slot} of your grimoire.',
+      spentMessage: '{altar} stands cold; its oath is already sworn.',
+    },
+    {
+      id: 'galdr_altar_odin',
+      name: "Odin's Gallows-Stone",
+      description:
+        'Odin hung nine nights to win the runes. Give up an offering here to fuse one of your spells with its element, forging a new spell in its place.',
+      rite: 'forge',
+      performedMessage: '✦ Odin takes {offering}. {spell} is reforged as {hybrid}.',
+      spentMessage: '{altar} is silent; the Hanged One has taken his due.',
+    },
+    {
+      id: 'galdr_altar_hel',
+      name: "Hel's Grave-Altar",
+      description:
+        'Hel keeps what is owed. Burn an offering to unseal a corner of your grimoire, grounded in its element (spells of that element cost less and strike harder there), and she takes your Void Debt with it.',
+      rite: 'ground',
+      performedMessage: '☠ Hel takes {offering}. Slot {slot} of your grimoire opens, grounded in {element}, and your debts are paid.',
+      spentMessage: '{altar} is sated.',
+    },
+    {
+      id: 'galdr_altar_loki',
+      name: "Loki's Cairn",
+      description: 'The trickster takes what you offer and gives back whatever amuses him: a spell, a doubled glyph, or a price.',
+      rite: 'gamble',
+      performedMessage: '✦ Loki takes {offering}.',
+      spentMessage: '{altar} is only stones now; the trickster has moved on.',
+      gamble: {
+        spellPool: LOKI_SPELL_POOL,
+        debtPenalty: 10,
+        spellMessage: '✦ Loki takes {offering} and laughs, and the galdr of {spell} rings in your head!',
+        glyphMessage: '✦ Loki takes {offering} and scratches a doubled {glyph} glyph into slot {slot}!',
+        debtMessage: '✦ Loki takes {offering}, and the price is yours: the Void comes to collect. (Void Debt: {debt})',
+      },
+    },
+  ],
 };
+

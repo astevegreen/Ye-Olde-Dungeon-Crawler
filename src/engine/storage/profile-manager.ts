@@ -276,6 +276,7 @@ export class ProfileManager {
       mana: maxMana,
       maxMana,
       spellsKnown: manifest.starterKit?.spellsKnown ?? (manifest.spells?.length ? manifest.spells.map(s => s.id) : undefined),
+      grimoireOpenSlots: manifest.magic?.grimoire?.initialOpenSlots,
     });
 
     // 3. Equip starting kit from the run's stream (created above).

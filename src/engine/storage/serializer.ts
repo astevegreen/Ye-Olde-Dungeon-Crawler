@@ -417,6 +417,8 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     runeMaxCharges: p.runeMaxCharges,
     voidDebt: p.voidDebt ?? 0,
     activeGrimoireIndex: p.activeGrimoireIndex ?? 0,
+    grimoireOpenSlots: p.grimoireOpenSlots ? [...p.grimoireOpenSlots] : undefined,
+    grimoireGrounds: Object.keys(p.grimoireGrounds).length > 0 ? { ...p.grimoireGrounds } : undefined,
     grimoirePages: p.grimoirePages
       ? p.grimoirePages.map((page) => ({
           ...page,
@@ -883,6 +885,8 @@ export function deserializeGame(
         }))
       : undefined,
     activeGrimoireIndex: pData.activeGrimoireIndex !== undefined ? Number(pData.activeGrimoireIndex) : undefined,
+    grimoireOpenSlots: Array.isArray(pData.grimoireOpenSlots) ? pData.grimoireOpenSlots.map(Number) : undefined,
+    grimoireGrounds: pData.grimoireGrounds ? { ...pData.grimoireGrounds } : undefined,
   });
   player.energy = Number(pData.energy) || 0;
   player.hp = Math.min(Number(pData.hp) || 1, player.maxHp);

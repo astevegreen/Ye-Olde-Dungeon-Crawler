@@ -4,22 +4,17 @@ import type { Player } from '../entities/player';
 import type { SpellDefinition } from './types';
 import { getSpell } from './spellRegistry';
 import { ELEMENT_OPPOSITES, type ElementType } from './elements';
-import type { GrimoireConfig } from './magicConfig';
+import type { GlyphDefinition, GrimoireConfig, SpellModifier } from './magicConfig';
 import { StatusHandlerRegistry } from '../status/statusHandlers';
 import type { StatusHandler, StatusTickOutput } from '../status/statusHandlers';
 import type { StatusEffect } from '../status/types';
 
-export type InfusionGlyphType =
-  | 'vanish_step'
-  | 'all_seeing'
-  | 'lethargic'
-  | 'martyrs_osmosis'
-  | 'concussive_blast';
-
+/** A glyph inscribed on a slot at an altar: a pack `GlyphDefinition` at some potency. */
 export interface InfusedGlyph {
-  type: InfusionGlyphType;
+  glyphId: string;
   potency: number;
-  sourceSpellName: string;
+  /** Name of the offering burned to make it. */
+  sourceName: string;
 }
 
 export interface GrimoireSlot {
@@ -67,6 +62,37 @@ function lookupSpell(engine: GameEngine, spellId: string): SpellDefinition | und
   return engine.manifest?.spells?.find((s) => s.id === spellId) ?? getSpell(spellId);
 }
 
+/**
+ * Applies a declarative modifier `potency` times over (deltas multiply, a power multiplier
+ * compounds). Extra effects only join spells that deal damage, so a glyph's slow or chain
+ * never lands on the caster of a self spell. Returns the steps to retreat after casting.
+ */
+function applySpellModifier(spell: SpellDefinition, modifier: SpellModifier, potency = 1): number {
+  if (modifier.manaCostDelta) spell.manaCost = Math.max(0, spell.manaCost + modifier.manaCostDelta * potency);
+  if (modifier.rangeDelta && spell.range > 0) spell.range += modifier.rangeDelta * potency;
+  if (modifier.areaDelta && spell.targetingMode !== 'self') {
+    spell.areaOfEffect = (spell.areaOfEffect ?? 0) + modifier.areaDelta * potency;
+  }
+  if (modifier.powerMultiplier) scaleSpellPower(spell, Math.pow(modifier.powerMultiplier, potency));
+  if (modifier.addEffects?.length && spell.effects?.some((e) => e.type === 'damage')) {
+    spell.effects = [...spell.effects, ...modifier.addEffects];
+  }
+  return (modifier.retreatSteps ?? 0) * potency;
+}
+
+/** The glyph an offering of this element (and, for a spell, school) inscribes, if any. */
+export function glyphForOffering(
+  config: GrimoireConfig | undefined,
+  element: string,
+  school?: string
+): GlyphDefinition | undefined {
+  const glyphs = config?.glyphs ?? [];
+  return (
+    (school ? glyphs.find((g) => g.fromSchools?.includes(school)) : undefined) ??
+    glyphs.find((g) => g.fromElements?.includes(element))
+  );
+}
+
 /** Multiplies a spell's power: basePower and every numeric damage or heal amount. */
 function scaleSpellPower(spell: SpellDefinition, mult: number): void {
   spell.basePower = Math.round((spell.basePower ?? 0) * mult);
@@ -81,14 +107,16 @@ export class GrimoireMatrixManager {
   /**
    * Initializes a default 9-slot grimoire, placing initial known spells into slots.
    */
-  public static createDefaultGrimoire(spellsKnown: string[] = []): GrimoireSlot[] {
+  public static createDefaultGrimoire(spellsKnown: string[] = [], openSlots?: number[]): GrimoireSlot[] {
     const slots: GrimoireSlot[] = [];
     for (let i = 0; i < GRIMOIRE_SIZE; i++) {
-      slots.push({
-        slotIndex: i,
-        spellId: spellsKnown[i] ?? null,
-      });
+      slots.push({ slotIndex: i, spellId: null });
     }
+    // Fill open slots in order; sealed ones stay empty
+    const fillable = slots.filter((s) => !openSlots || openSlots.includes(s.slotIndex));
+    spellsKnown.slice(0, fillable.length).forEach((spellId, i) => {
+      fillable[i].spellId = spellId;
+    });
     return slots;
   }
 
@@ -96,11 +124,11 @@ export class GrimoireMatrixManager {
    * Initializes a default set of swappable grimoire pages.
    * Page 0 holds initial known spells; subsequent pages start blank for deckbuilding.
    */
-  public static createDefaultGrimoirePages(spellsKnown: string[] = []): GrimoirePage[] {
+  public static createDefaultGrimoirePages(spellsKnown: string[] = [], openSlots?: number[]): GrimoirePage[] {
     return DEFAULT_GRIMOIRE_PAGE_NAMES.map((name, index) => ({
       id: `page_${index + 1}`,
       name,
-      slots: index === 0 ? this.createDefaultGrimoire(spellsKnown) : this.createDefaultGrimoire([]),
+      slots: this.createDefaultGrimoire(index === 0 ? spellsKnown : [], openSlots),
     }));
   }
 
@@ -150,7 +178,7 @@ export class GrimoireMatrixManager {
     if (!config) return undefined;
     const grimoire = player.grimoire;
     const slot = grimoire[slotIndex];
-    if (!slot || !slot.spellId) return undefined;
+    if (!slot || !slot.spellId || !player.isGrimoireSlotOpen(slotIndex)) return undefined;
 
     const baseSpell = lookupSpell(engine, slot.spellId);
     if (!baseSpell) return undefined;
@@ -164,6 +192,7 @@ export class GrimoireMatrixManager {
     let retreatSteps = 0;
 
     const neighbors = this.getOrthogonalNeighbors(slotIndex)
+      .filter((idx) => player.isGrimoireSlotOpen(idx))
       .map((idx) => grimoire[idx]?.spellId)
       .filter((id): id is string => Boolean(id))
       .map((id) => lookupSpell(engine, id))
@@ -197,129 +226,22 @@ export class GrimoireMatrixManager {
       }
     }
 
-    // Apply Infused Glyphs from Sacrifice
-    if (slot.infusedGlyphs) {
-      for (const glyph of slot.infusedGlyphs) {
-        if (glyph.type === 'concussive_blast') {
-          spell.areaOfEffect = (spell.areaOfEffect ?? 0) + glyph.potency;
-        } else if (glyph.type === 'all_seeing') {
-          spell.range = (spell.range ?? 5) + glyph.potency;
-        } else if (glyph.type === 'vanish_step') {
-          retreatSteps += glyph.potency;
-        }
-        notes.push(`Glyph: ${glyph.type}`);
-      }
+    // Grounded slot: a spell of the slot's element draws on it
+    const ground = player.grimoireGrounds[slotIndex];
+    if (ground && ground === spell.element && config.groundedModifier) {
+      retreatSteps += applySpellModifier(spell, config.groundedModifier);
+      notes.push(`Grounded in ${ground}`);
+    }
+
+    // Glyphs inscribed at altars
+    for (const glyph of slot.infusedGlyphs ?? []) {
+      const def = config.glyphs?.find((g) => g.id === glyph.glyphId);
+      if (!def) continue;
+      retreatSteps += applySpellModifier(spell, def.modifier, glyph.potency);
+      notes.push(`Glyph: ${def.name}${glyph.potency > 1 ? ` ×${glyph.potency}` : ''} (${def.description})`);
     }
 
     return { spell, notes, retreatSteps };
-  }
-
-  /**
-   * Permanently sacrifices a known spell at an altar to infuse its essence onto a target spell.
-   */
-  public static sacrificeAndInfuse(
-    player: Player,
-    sacrificeSlotIndex: number,
-    targetSlotIndex: number
-  ): { success: boolean; message: string; glyph?: InfusedGlyph } {
-    if (sacrificeSlotIndex === targetSlotIndex) {
-      return { success: false, message: 'Cannot sacrifice a spell into itself.' };
-    }
-
-    const grimoire = player.grimoire ?? GrimoireMatrixManager.createDefaultGrimoire(player.spellsKnown);
-    const sacSlot = grimoire[sacrificeSlotIndex];
-    const tgtSlot = grimoire[targetSlotIndex];
-
-    if (!sacSlot || !sacSlot.spellId) {
-      return { success: false, message: 'No spell in the sacrificial slot.' };
-    }
-    if (!tgtSlot || !tgtSlot.spellId) {
-      return { success: false, message: 'No recipient spell in the target slot.' };
-    }
-
-    tgtSlot.infusedGlyphs = tgtSlot.infusedGlyphs ?? [];
-    if (tgtSlot.infusedGlyphs.length >= 2) {
-      return { success: false, message: 'Target spell already bears the maximum of 2 infusions.' };
-    }
-
-    const sacSpellId = sacSlot.spellId;
-    const sacSpell = getSpell(sacSpellId);
-    const sacName = sacSpell?.name ?? sacSpellId;
-
-    // Determine glyph type from sacrificed spell properties
-    let glyphType: InfusionGlyphType = 'concussive_blast';
-    let potency = 1;
-
-    if (sacSpell?.school === 'Movement') {
-      glyphType = 'vanish_step';
-      potency = 2;
-    } else if (sacSpell?.school === 'Healing' || sacSpell?.targetingMode === 'self') {
-      glyphType = 'martyrs_osmosis';
-      potency = 1;
-    } else if (sacSpell?.school === 'Enchantment' || sacSpell?.statusAffliction) {
-      glyphType = 'lethargic';
-      potency = 1;
-    } else if (sacSpell?.school === 'Divination') {
-      glyphType = 'all_seeing';
-      potency = 2;
-    } else if (sacSpell?.areaOfEffect && sacSpell.areaOfEffect > 0) {
-      glyphType = 'concussive_blast';
-      potency = 1;
-    } else {
-      glyphType = 'vanish_step';
-      potency = 2;
-    }
-
-    const glyph: InfusedGlyph = {
-      type: glyphType,
-      potency,
-      sourceSpellName: sacName,
-    };
-
-    // Permanently destroy the sacrificed spell
-    player.forgetSpell(sacSpellId);
-    tgtSlot.infusedGlyphs.push(glyph);
-
-    return {
-      success: true,
-      glyph,
-      message: `${sacName} is consumed; its essence (${glyphType}) is grafted onto ${tgtSlot.spellId}.`,
-    };
-  }
-
-  /**
-   * Fuses two mutually opposing spells at an altar into an occult hybrid.
-   */
-  public static transmuteHybrid(
-    player: Player,
-    slotA: number,
-    slotB: number,
-    hybridSpell: SpellDefinition
-  ): { success: boolean; message: string } {
-    const grimoire = player.grimoire ?? GrimoireMatrixManager.createDefaultGrimoire(player.spellsKnown);
-    const sA = grimoire[slotA];
-    const sB = grimoire[slotB];
-
-    if (!sA?.spellId || !sB?.spellId) {
-      return { success: false, message: 'Both altar slots must contain a known spell.' };
-    }
-
-    const spellAId = sA.spellId;
-    const spellBId = sB.spellId;
-
-    // Remove both spells, then place the hybrid in slot A
-    player.forgetSpell(spellAId);
-    player.forgetSpell(spellBId);
-    player.learnSpell(hybridSpell.id); // may auto-slot into the first empty slot
-    for (const slot of player.grimoire) {
-      if (slot.spellId === hybridSpell.id) slot.spellId = null;
-    }
-    sA.spellId = hybridSpell.id;
-
-    return {
-      success: true,
-      message: `${spellAId} and ${spellBId} are fused into ${hybridSpell.name}.`,
-    };
   }
 
   /**

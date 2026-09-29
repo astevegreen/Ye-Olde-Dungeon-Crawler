@@ -3,6 +3,8 @@ import {
   AutosaveManager,
   type AutosaveSlot,
   canOvercast,
+  getAltarDefinition,
+  PerformAltarRiteAction,
   CastSpellAction,
   ClimbStairsAction,
   CURRENT_SCHEMA_VERSION,
@@ -49,6 +51,7 @@ import { CommandPalette } from './ui/help/commandPalette';
 import type { SpellbookEntry } from './rendering/targeting-overlay';
 import { applyThemeTokens, COTW_THEME_TOKENS } from './rendering/theme';
 import { ChoiceModal } from './ui/choiceModal';
+import { AltarModal } from './ui/altarModal';
 import { PactModal } from './ui/pactModal';
 import { LevelUpModal } from './ui/levelUpModal';
 import { MasteryChoiceModal } from './ui/masteryChoiceModal';
@@ -174,6 +177,7 @@ window.addEventListener('DOMContentLoaded', () => {
     popModal('choice');
     renderer?.render();
   });
+  const altarModal = new AltarModal();
   const pactModal = new PactModal();
   const levelUpModal = new LevelUpModal(() => {
     popModal(levelUpModal.id);
@@ -1047,6 +1051,31 @@ window.addEventListener('DOMContentLoaded', () => {
           runeDiscoveryModal.open(engine);
         }
         renderer?.render();
+      } else if (event.type === 'altar_reached') {
+        // Spell altar underfoot: open its rite; performing it is a replayable player action.
+        const altar = getAltarDefinition(engine, String(event.data?.altarId ?? ''));
+        const x = Number(event.data?.x);
+        const y = Number(event.data?.y);
+        if (altar) {
+          altarModal.open(
+            engine,
+            altar,
+            (request) => {
+              popModal(altarModal.id);
+              engine.handlePlayerAction(new PerformAltarRiteAction(engine.player, altar.id, x, y, request));
+              quickSpellsBar.update(engine);
+              bottomStatusBar.update(engine);
+              updateHeaderInfo();
+              void processVisualEffectsAndRender();
+            },
+            () => {
+              popModal(altarModal.id);
+              renderer?.render();
+            }
+          );
+          inputHandler?.modalStack.push(altarModal);
+          renderer?.render();
+        }
       } else if (isGameEvent(event, 'mastery_unlocked')) {
         masteryModal.enqueue({
           scope: event.scope,

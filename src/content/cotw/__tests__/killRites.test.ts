@@ -9,8 +9,8 @@ import { COTW_MAGIC } from '../magic';
 import { COTW_TABLET_STOCK } from '../spellTablets';
 
 const spellById = new Map(COTW_SPELLS.map((s) => [s.id, s]));
-/** Spells rites and tablets are meant to teach: everything but Blood Magic and the tablet-only "learn_*" spells. */
-const CORE_SPELLS = COTW_SPELLS.filter((s) => s.school !== 'BloodMagic' && s.school !== 'Lore').map((s) => s.id);
+/** Spells rites and tablets teach: all but Blood Magic, the tablet-only "learn_*" spells and altar-forged hybrids. */
+const CORE_SPELLS = COTW_SPELLS.filter((s) => !['BloodMagic', 'Lore', 'Hybrid'].includes(String(s.school))).map((s) => s.id);
 
 /** What a known spell lets the hero do to meet a rite: its damage element and inflicted status. */
 function grants(spell: SpellDefinition): { elements: string[]; statuses: string[] } {

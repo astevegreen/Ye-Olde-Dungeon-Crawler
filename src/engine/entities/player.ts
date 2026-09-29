@@ -57,6 +57,10 @@ export interface PlayerConfig {
   grimoire?: GrimoireSlot[];
   grimoirePages?: GrimoirePage[];
   activeGrimoireIndex?: number;
+  /** Grimoire slots open to spells; omitted means all nine. */
+  grimoireOpenSlots?: number[];
+  /** Element each grounded slot was opened with, by slot index. */
+  grimoireGrounds?: Record<number, string>;
 }
 
 const DEFAULT_PLAYER_STATS: CombatStats = {
@@ -101,6 +105,9 @@ export class Player extends Actor {
   public voidDebt: number;
   public grimoirePages: GrimoirePage[];
   public activeGrimoireIndex: number;
+  /** Slots open to spells on every page; undefined means all nine (saves from before sealing). */
+  public grimoireOpenSlots?: number[];
+  public grimoireGrounds: Record<number, string>;
 
   public get grimoire(): GrimoireSlot[] {
     return this.grimoirePages[this.activeGrimoireIndex]?.slots ?? this.grimoirePages[0]?.slots ?? [];
@@ -136,6 +143,8 @@ export class Player extends Actor {
     this.mana = config.mana ?? this.maxMana;
     this.spellsKnown = config.spellsKnown ? [...config.spellsKnown] : [...DEFAULT_STARTER_SPELLS];
     this.activeGrimoireIndex = config.activeGrimoireIndex ?? 0;
+    this.grimoireOpenSlots = config.grimoireOpenSlots ? [...config.grimoireOpenSlots] : undefined;
+    this.grimoireGrounds = { ...(config.grimoireGrounds ?? {}) };
     if (config.grimoirePages && config.grimoirePages.length > 0) {
       this.grimoirePages = config.grimoirePages.map((page) => ({
         ...page,
@@ -152,7 +161,7 @@ export class Player extends Actor {
       }));
       this.grimoirePages = defaultPages;
     } else {
-      this.grimoirePages = GrimoireMatrixManager.createDefaultGrimoirePages(this.spellsKnown);
+      this.grimoirePages = GrimoireMatrixManager.createDefaultGrimoirePages(this.spellsKnown, this.grimoireOpenSlots);
     }
     if (config.quickSpells) {
       this.quickSpells = [...config.quickSpells];
@@ -351,6 +360,19 @@ export class Player extends Actor {
     this.voidDebt = 0;
   }
 
+  /** Whether a grimoire slot is open to spells (not sealed). */
+  public isGrimoireSlotOpen(slotIndex: number): boolean {
+    return !this.grimoireOpenSlots || this.grimoireOpenSlots.includes(slotIndex);
+  }
+
+  /** Unseals a grimoire slot on every page, grounding it in `element`. */
+  public openGrimoireSlot(slotIndex: number, element: string): boolean {
+    if (this.isGrimoireSlotOpen(slotIndex) || slotIndex < 0 || slotIndex >= GRIMOIRE_SIZE) return false;
+    this.grimoireOpenSlots = [...(this.grimoireOpenSlots ?? []), slotIndex].sort((a, b) => a - b);
+    this.grimoireGrounds[slotIndex] = element;
+    return true;
+  }
+
   /** Switches the active grimoire page to the specified index. */
   public switchGrimoirePage(index: number): boolean {
     if (index < 0 || index >= this.grimoirePages.length) return false;
@@ -363,8 +385,8 @@ export class Player extends Actor {
       return false;
     }
     this.spellsKnown.push(spellId);
-    // Auto-slot into the first empty grimoire slot on the active page, and the first free quick-cast key
-    const emptySlot = this.grimoire.find((s) => s.spellId === null);
+    // Auto-slot into the first empty open grimoire slot on the active page, and the first free quick-cast key
+    const emptySlot = this.grimoire.find((s) => s.spellId === null && this.isGrimoireSlotOpen(s.slotIndex));
     if (emptySlot) {
       emptySlot.spellId = spellId;
     }
@@ -389,7 +411,7 @@ export class Player extends Actor {
   /** Assigns a known spell to a 3x3 grimoire slot (0..8) on the active page (or target page), or clears it with `null`. */
   public setGrimoireSlot(slotIndex: number, spellId: string | null, pageIndex?: number): boolean {
     if (slotIndex < 0 || slotIndex >= GRIMOIRE_SIZE) return false;
-    if (spellId && !this.spellsKnown.includes(spellId)) return false;
+    if (spellId && (!this.spellsKnown.includes(spellId) || !this.isGrimoireSlotOpen(slotIndex))) return false;
     const page = pageIndex !== undefined ? this.grimoirePages[pageIndex] : this.grimoirePages[this.activeGrimoireIndex];
     if (!page || !page.slots[slotIndex]) return false;
     page.slots[slotIndex].spellId = spellId;

@@ -11,6 +11,8 @@ import type { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
 import { HookDispatcher } from '../hooks/hookDispatcher';
 import { TILES } from '../grid/tile';
+import { getAltarDefinition, isAltarSpent } from '../magic/altars';
+import { formatMagicMessage } from '../magic/magicConfig';
 
 /** Tile type identifier for shallow water terrain that imposes a movement energy penalty. */
 const SHALLOW_WATER_TILE = 'shallow_water';
@@ -218,6 +220,20 @@ export class MovementAction implements Action {
           engine.manifest?.town?.playerSpawn ??
           { x: 5, y: 5 };
         engine.changeFloor(0, returnPos);
+      } else if (handlerId && getAltarDefinition(engine, handlerId)) {
+        // Spell altar (manifest.magic.altars): the presentation layer opens its rite on this event.
+        const altar = getAltarDefinition(engine, handlerId)!;
+        if (isAltarSpent(engine, targetX, targetY)) {
+          engine.log(formatMagicMessage(altar.spentMessage, { altar: altar.name }));
+        } else {
+          engine.log(`You stand before ${altar.name}.`);
+          engine.emitGameEvent({
+            type: 'altar_reached',
+            turn: engine.turnCount,
+            actorId: this.entity.id,
+            data: { altarId: altar.id, x: targetX, y: targetY },
+          });
+        }
       } else if (handlerId && engine.manifest?.choices?.[handlerId]) {
         // Generic tile-triggered choice (ARCHITECTURE.md §3): any tile whose
         // interactionHandlerId matches a manifest.choices key becomes an interactive

@@ -145,28 +145,31 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     expect(detailed!.notes.some((n) => n.includes('Midgard'))).toBe(true);
   });
 
-  it('sacrifices a spell at an altar to permanently infuse a glyph onto another spell', () => {
-    player.learnSpell('blink_self');
-    player.setGrimoireSlot(2, 'blink_self');
-
-    // Sacrifice Blink (slot 2) into Fire Ray (slot 0)
-    const res = GrimoireMatrixManager.sacrificeAndInfuse(player, 2, 0);
-    expect(res.success).toBe(true);
-    expect(res.glyph?.type).toBe('vanish_step');
-
-    // Blink is permanently removed from known spells and grimoire
-    expect(player.spellsKnown).not.toContain('blink_self');
-    expect(player.grimoire[2].spellId).toBeNull();
-
-    // Fire Ray bears the vanish_step glyph
-    expect(player.grimoire[0].infusedGlyphs?.length).toBe(1);
-    expect(player.grimoire[0].infusedGlyphs![0].type).toBe('vanish_step');
+  it('applies a glyph inscribed on a slot to the spell cast from it', () => {
+    // Ansuz (+2 range) on slot 0
+    player.grimoire[0].infusedGlyphs = [{ glyphId: 'ansuz', potency: 1, sourceName: 'test' }];
+    const detailed = GrimoireMatrixManager.resolveEffectiveSpellDetailed(engine, player, 0);
+    expect(detailed!.spell.range).toBe(8);
+    expect(detailed!.notes.some((n) => n.includes('Ansuz'))).toBe(true);
   });
 
-  it('triggers vanish_step displacement when casting an infused spell from its slot', () => {
+  it('adds a glyph rider only to damaging spells', () => {
+    // Isa (slow rider) beside a self spell must not slow the caster
     player.learnSpell('blink_self');
     player.setGrimoireSlot(2, 'blink_self');
-    GrimoireMatrixManager.sacrificeAndInfuse(player, 2, 0);
+    player.grimoire[2].infusedGlyphs = [{ glyphId: 'isa', potency: 1, sourceName: 'test' }];
+    const blink = GrimoireMatrixManager.resolveEffectiveSpell(engine, player, 2);
+    expect(blink!.effects ?? []).toHaveLength(0);
+
+    player.learnSpell('fire_lance');
+    const slot = player.grimoire.findIndex((s) => s.spellId === 'fire_lance');
+    player.grimoire[slot].infusedGlyphs = [{ glyphId: 'isa', potency: 1, sourceName: 'test' }];
+    const lance = GrimoireMatrixManager.resolveEffectiveSpell(engine, player, slot);
+    expect(lance!.effects!.some((e) => e.type === 'applyStatus')).toBe(true);
+  });
+
+  it('steps the caster back after casting from a retreat-glyph slot', () => {
+    player.grimoire[0].infusedGlyphs = [{ glyphId: 'raido', potency: 1, sourceName: 'test' }];
 
     const initialPos = { x: player.x, y: player.y }; // (5, 5)
 
@@ -179,10 +182,10 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     expect(player.y).toBeLessThan(initialPos.y);
   });
 
-  it('serializes and deserializes the full 9-slot grimoire and infused glyphs', () => {
-    player.learnSpell('blink_self');
-    player.setGrimoireSlot(2, 'blink_self');
-    GrimoireMatrixManager.sacrificeAndInfuse(player, 2, 0);
+  it('serializes and deserializes the full 9-slot grimoire, glyphs, seals and grounds', () => {
+    player.grimoire[0].infusedGlyphs = [{ glyphId: 'raido', potency: 1, sourceName: 'Blink' }];
+    player.grimoireOpenSlots = [0, 1, 3, 4, 5, 7];
+    player.grimoireGrounds = { 0: 'fire' };
 
     const serialized = serializeGame(engine);
     const parsed = JSON.parse(JSON.stringify(serialized));
@@ -192,8 +195,10 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     expect(reloadedPlayer.grimoire.length).toBe(9);
     expect(reloadedPlayer.grimoire[0].spellId).toBe('fire_ray');
     expect(reloadedPlayer.grimoire[0].infusedGlyphs?.length).toBe(1);
-    expect(reloadedPlayer.grimoire[0].infusedGlyphs![0].type).toBe('vanish_step');
+    expect(reloadedPlayer.grimoire[0].infusedGlyphs![0].glyphId).toBe('raido');
     expect(reloadedPlayer.grimoire[2].spellId).toBeNull();
+    expect(reloadedPlayer.isGrimoireSlotOpen(2)).toBe(false);
+    expect(reloadedPlayer.grimoireGrounds[0]).toBe('fire');
   });
 
   it('manages multiple grimoire pages independently', () => {
@@ -363,26 +368,51 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     expect(target.hp).toBe(75); // Thermal Shock: 20 * 1.25
   });
 
-  it('never carries a vanish_step caster through a wall', () => {
-    player.learnSpell('blink_self');
-    player.setGrimoireSlot(2, 'blink_self');
-    GrimoireMatrixManager.sacrificeAndInfuse(player, 2, 0);
+  it('never carries a retreating caster through a wall', () => {
+    player.grimoire[0].infusedGlyphs = [{ glyphId: 'raido', potency: 1, sourceName: 'test' }];
     engine.map.setTile(5, 4, TILES.WALL);
 
     new CastSpellAction(player, 'fire_ray', 5, 8, undefined, false, false, 0).perform(engine);
     expect({ x: player.x, y: player.y }).toEqual({ x: 5, y: 5 });
   });
 
-  it('removes a sacrificed spell from every page and the quick-cast bar', () => {
+  it('forgets a spell from every page and the quick-cast bar', () => {
     player.learnSpell('blink_self');
     player.setGrimoireSlot(2, 'blink_self');
     player.setGrimoireSlot(4, 'blink_self', 1);
     player.setQuickSpell(3, 'blink_self');
 
-    GrimoireMatrixManager.sacrificeAndInfuse(player, 2, 0);
+    player.forgetSpell('blink_self');
 
     expect(player.spellsKnown).not.toContain('blink_self');
     expect(player.grimoirePages[1].slots[4].spellId).toBeNull();
     expect(player.quickSpells[3]).toBeNull();
+  });
+
+  it('keeps sealed slots out of the grid until they are opened', () => {
+    const sealed = new Player({
+      position: { x: 5, y: 5 },
+      stats: { hp: 50, maxHp: 50, attack: 5, defense: 2 },
+      spellsKnown: ['fire_ray', 'cold_burst'],
+      grimoireOpenSlots: [1, 3, 4, 5, 7],
+    });
+    // Starting spells fill open slots in order, skipping the sealed corner 0
+    expect(sealed.grimoire[0].spellId).toBeNull();
+    expect(sealed.grimoire[1].spellId).toBe('fire_ray');
+    expect(sealed.grimoire[3].spellId).toBe('cold_burst');
+    expect(sealed.setGrimoireSlot(0, 'fire_ray')).toBe(false);
+
+    expect(sealed.openGrimoireSlot(0, 'fire')).toBe(true);
+    expect(sealed.setGrimoireSlot(0, 'fire_ray')).toBe(true);
+    expect(sealed.grimoireGrounds[0]).toBe('fire');
+  });
+
+  it('grounds a matching spell in its grounded slot', () => {
+    player.grimoireOpenSlots = [0, 1, 3, 4, 5, 7];
+    player.grimoireGrounds = { 0: 'fire' };
+    player.setGrimoireSlot(1, null); // no opposed-element neighbor
+    const spell = GrimoireMatrixManager.resolveEffectiveSpell(engine, player, 0);
+    expect(spell!.manaCost).toBe(9); // 10 - 1
+    expect(spell!.basePower).toBe(22); // 20 * 1.1
   });
 });

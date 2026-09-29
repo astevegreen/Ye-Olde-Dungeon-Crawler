@@ -1,6 +1,7 @@
 import type { SpellDefinition } from '../../engine';
 import { COTW_BLOOD_SPELLS } from './bloodMagic';
 import { COTW_TABLET_SPELLS } from './spellTablets';
+import { COTW_HYBRID_SPELLS } from './hybridSpells';
 
 export const COTW_SPELLS: SpellDefinition[] = [
   {
@@ -253,6 +254,7 @@ export const COTW_SPELLS: SpellDefinition[] = [
   },
   ...COTW_BLOOD_SPELLS,
   ...COTW_TABLET_SPELLS,
+  ...COTW_HYBRID_SPELLS,
 ];
 
 export { COTW_BLOOD_SPELLS };

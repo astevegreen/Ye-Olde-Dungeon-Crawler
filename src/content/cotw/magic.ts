@@ -1,4 +1,5 @@
 import type { MagicSystemConfig } from '../../engine';
+import { COTW_ESSENCE_BY_ELEMENT } from './items/essences';
 
 /**
  * cotw's magic systems (engine `MagicSystemConfig`): Ginnungagap overflow, the
@@ -97,6 +98,15 @@ export const COTW_MAGIC: MagicSystemConfig = {
         ],
       },
     ],
+  },
+  killRites: {
+    title: 'Galdr of the Slain',
+    prophecyLabel: 'Skaldic Prophecy',
+    reapedLabel: 'Reaped',
+    learnMessage: "*** GALDR OF THE SLAIN! You sever {monster}'s spirit thread and claim {spell}! ***",
+    essenceMessage: "✦ Galdr resonance! {monster}'s spirit leaves behind a {essence}. ✦",
+    essenceItems: COTW_ESSENCE_BY_ELEMENT,
+    killsPerRevealedCondition: 2,
   },
   grimoire: {
     title: 'Grimoire Spatial Matrix',

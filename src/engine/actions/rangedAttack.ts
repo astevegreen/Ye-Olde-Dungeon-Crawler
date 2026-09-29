@@ -162,7 +162,7 @@ export class RangedAttackAction implements Action {
           });
 
           if (!target.isAlive()) {
-            DeathResolver.resolveDeath(engine, this.attacker, target);
+            DeathResolver.resolveDeath(engine, this.attacker, target, { damageElement: 'physical' });
           }
 
           return { success: true, cost, message: msg };

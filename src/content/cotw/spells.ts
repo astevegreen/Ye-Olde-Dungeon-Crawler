@@ -1,5 +1,6 @@
 import type { SpellDefinition } from '../../engine';
 import { COTW_BLOOD_SPELLS } from './bloodMagic';
+import { COTW_TABLET_SPELLS } from './spellTablets';
 
 export const COTW_SPELLS: SpellDefinition[] = [
   {
@@ -251,6 +252,7 @@ export const COTW_SPELLS: SpellDefinition[] = [
     effects: [{ type: 'reveal', target: 'map', duration: 1 }],
   },
   ...COTW_BLOOD_SPELLS,
+  ...COTW_TABLET_SPELLS,
 ];
 
 export { COTW_BLOOD_SPELLS };

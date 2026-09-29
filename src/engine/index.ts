@@ -99,7 +99,7 @@ export * from './magic/targeting';
 export * from './magic/runeOfReturn';
 export * from './magic/manaOverflow';
 export * from './magic/magicConfig';
-export * from './magic/galdrHarvest';
+export * from './magic/killRites';
 export * from './magic/grimoireMatrix';
 
 // Surfaces & Elemental Reactions

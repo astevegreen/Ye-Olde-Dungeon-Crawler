@@ -8,8 +8,7 @@ import {
   MASTERY_PERKS,
   SPECIES_MASTERY_KILLS,
   getMonsterCategory,
-  getTileDefinition,
-  hasTileDefinition,
+  type KillRiteDefinition,
   selectMasteryPerk,
 } from '../../engine';
 import type { UIModal } from '../modalStack';
@@ -494,70 +493,77 @@ export class CompendiumModal implements UIModal {
         </div>
       </div>
 
-      <!-- Galdr of the Slain: Harvest Rite or Skaldic Prophecy -->
-      ${this.renderGaldrSection(def)}
+      <!-- Kill rite: hint before it is performed, the full rite after -->
+      ${this.renderKillRiteSection(def)}
     `;
   }
 
-  private renderGaldrSection(def: MonsterDefinition): string {
-    const compendium = this.engine?.compendium;
-    const isHarvested = Boolean(compendium?.isGaldrHarvested(def.id));
-    const galdr = def.galdrHarvest;
-
-    if (!galdr) {
-      return `
-        <div style="background: #0f172a; border: 1px solid #334155; padding: 8px 10px; border-radius: 4px; margin-top: 8px;">
-          <div style="font-weight: bold; color: #64748b; font-size: 11px;">✦ GALDR OF THE SLAIN ✦</div>
-          <div style="font-size: 10px; color: #94a3b8; font-style: italic; margin-top: 2px;">
-            No supernatural galdr is bound within this mundane creature's blood.
-          </div>
-        </div>
-      `;
+  /** Plain-language conditions of a kill rite, in the order they are revealed. */
+  private describeRiteConditions(rite: KillRiteDefinition): string[] {
+    const conditions: string[] = [];
+    if (rite.requiredDamageElement) conditions.push(`Killing blow: <b>${rite.requiredDamageElement}</b> damage`);
+    if (rite.requiredVictimStatus) conditions.push(`It must be: <b>${rite.requiredVictimStatus}</b>`);
+    if (rite.requiresOverkillPercent) {
+      conditions.push(`The blow exceeds its remaining HP by <b>${rite.requiresOverkillPercent}% of its max HP</b>`);
     }
+    if (rite.requiresCasterDebt) conditions.push(`You carry <b>${this.engine?.manifest?.magic?.overflow?.debtName ?? 'debt'}</b>`);
+    if (rite.maxCasterHpPercent !== undefined) conditions.push(`Your HP is at most <b>${rite.maxCasterHpPercent}%</b>`);
+    return conditions;
+  }
 
-    const rewardSpell = this.engine?.manifest?.spells?.find((s) => s.id === galdr.rewardSpellId);
-    const rewardName = rewardSpell?.name ?? galdr.rewardSpellId;
+  private renderKillRiteSection(def: MonsterDefinition): string {
+    const config = this.engine?.manifest?.magic?.killRites;
+    const rite = def.killRite;
+    if (!config || !rite) return '';
 
-    if (isHarvested) {
-      const conditions: string[] = [];
-      if (galdr.requiredDamageElement) conditions.push(`Killing Blow: <b>${galdr.requiredDamageElement.toUpperCase()}</b> damage`);
-      if (galdr.requiredSurfaceOrTile) {
-        const grounds = Array.isArray(galdr.requiredSurfaceOrTile) ? galdr.requiredSurfaceOrTile : [galdr.requiredSurfaceOrTile];
-        const names = grounds.map((t) => (hasTileDefinition(t) ? getTileDefinition(t).name : t.replace(/_/g, ' ')));
-        conditions.push(`Slain upon: <b>${names.join(' or ')}</b>`);
-      }
-      if (galdr.requiredVictimStatus) conditions.push(`Victim Affliction: <b>${galdr.requiredVictimStatus}</b>`);
-      if (galdr.requiresOverkillPercent) conditions.push(`Overkill: <b>blow exceeds its remaining HP by ≥${galdr.requiresOverkillPercent}% of max HP</b>`);
+    const compendium = this.engine?.compendium;
+    const performed = Boolean(compendium?.isKillRitePerformed(def.id));
+    const conditions = this.describeRiteConditions(rite);
+    const known = this.engine?.player.spellsKnown ?? [];
+    const spellName = rite.teachesSpellId
+      ? (this.engine?.manifest?.spells?.find((s) => s.id === rite.teachesSpellId)?.name ?? rite.teachesSpellId)
+      : undefined;
+    const essenceId = config.essenceItems[rite.essenceElement];
+    const essenceName = this.engine?.manifest?.items?.find((i) => i.id === essenceId)?.name ?? `${rite.essenceElement} essence`;
+    const yields =
+      spellName && !known.includes(rite.teachesSpellId!)
+        ? `Teaches <b style="color: #facc15;">${spellName}</b>`
+        : `Yields: <b style="color: #c4b5fd;">${essenceName}</b>${spellName ? ` (you know ${spellName})` : ''}`;
+    const conditionList = (items: string[]) => items.map((c) => `<div style="margin-left: 6px;">• ${c}</div>`).join('');
 
+    if (performed) {
       return `
         <div style="background: #142e1d; border: 1px solid #22c55e; padding: 10px; border-radius: 4px; margin-top: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-            <span style="font-weight: bold; color: #86efac; font-size: 11px;">✦ GALDR OF THE SLAIN: CONQUERED RITE ✦</span>
-            <span style="font-size: 9px; padding: 2px 6px; background: #22c55e; color: #052e16; font-weight: bold; border-radius: 2px;">REAPED</span>
+            <span style="font-weight: bold; color: #86efac; font-size: 11px;">✦ ${config.title.toUpperCase()} ✦</span>
+            <span style="font-size: 9px; padding: 2px 6px; background: #22c55e; color: #052e16; font-weight: bold; border-radius: 2px;">${config.reapedLabel.toUpperCase()}</span>
           </div>
-          <div style="font-size: 11px; color: #dcfce7; margin-bottom: 6px;">
-            Harvested Spell: <b style="color: #facc15;">${rewardName}</b>
-          </div>
-          <div style="font-size: 10px; color: #a7f3d0; line-height: 1.5;">
-            <b>Execution Ritual:</b>
-            <div style="margin-left: 6px; margin-top: 2px;">• ${conditions.length > 0 ? conditions.join('<br>• ') : 'Executed through mortal combat.'}</div>
-          </div>
+          <div style="font-size: 11px; color: #dcfce7; margin-bottom: 6px;">${yields}</div>
+          <div style="font-size: 10px; color: #a7f3d0; line-height: 1.5;"><b>The rite:</b>${conditionList(conditions)}</div>
         </div>
       `;
     }
 
+    // Before the rite is performed, each few kills reveal one condition in plain words.
+    const perCondition = Math.max(1, config.killsPerRevealedCondition ?? Number.POSITIVE_INFINITY);
+    const kills = compendium?.getEntry(def.id).kills ?? 0;
+    const revealed = conditions.slice(0, Math.floor(kills / perCondition));
+    const remaining = conditions.length - revealed.length;
+    const progress =
+      remaining > 0 && Number.isFinite(perCondition)
+        ? `${remaining} more condition${remaining > 1 ? 's' : ''} hidden; each ${perCondition} kills reveal one.`
+        : '';
     return `
       <div style="background: #1e1b4b; border: 1px solid #6366f1; padding: 10px; border-radius: 4px; margin-top: 8px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <span style="font-weight: bold; color: #c7d2fe; font-size: 11px;">✦ GALDR OF THE SLAIN: SKALDIC PROPHECY ✦</span>
-          <span style="font-size: 9px; padding: 2px 6px; background: #3730a3; color: #e0e7ff; font-weight: bold; border-radius: 2px;">UNREAPED</span>
+          <span style="font-weight: bold; color: #c7d2fe; font-size: 11px;">✦ ${config.title.toUpperCase()}: ${config.prophecyLabel.toUpperCase()} ✦</span>
         </div>
         <div style="font-size: 11px; font-style: italic; color: #fef08a; background: rgba(15, 23, 42, 0.6); padding: 8px 10px; border-left: 3px solid #eab308; margin-bottom: 6px; white-space: pre-line; line-height: 1.4;">
-"${galdr.hintVerse}"
+"${rite.hintVerse}"
         </div>
-        <div style="font-size: 9px; color: #94a3b8;">
-          Decipher the skaldic prophecy to execute this creature under the required ritual conditions and tear forth its magic.
-        </div>
+        <div style="font-size: 10px; color: #e0e7ff; margin-bottom: 4px;">${yields}</div>
+        ${revealed.length > 0 ? `<div style="font-size: 10px; color: #c7d2fe; line-height: 1.5;"><b>Learned from your kills:</b>${conditionList(revealed)}</div>` : ''}
+        ${progress ? `<div style="font-size: 9px; color: #94a3b8; margin-top: 4px;">${progress}</div>` : ''}
       </div>
     `;
   }

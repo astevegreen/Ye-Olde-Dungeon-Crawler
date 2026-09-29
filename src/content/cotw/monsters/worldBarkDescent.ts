@@ -1,7 +1,6 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
 import { makeLootItem } from '../items/makeItem';
-import { COTW_HALLOWED_GROUND } from '../tiles';
 
 export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
   {
@@ -20,11 +19,6 @@ export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
         description: '✦ Amber Sap-Weeper leaves a trail of thick sticky resin!',
       },
     ],
-    galdrHarvest: {
-      rewardSpellId: 'heal_medium',
-      hintVerse: 'Cleanse the weeping resin-beast of the World Tree\nupon consecrated holy ground,\nto bottle the restorative sap of Yggdrasil.',
-      requiredSurfaceOrTile: COTW_HALLOWED_GROUND,
-    },
     fleeHealthPercent: 0.0,
     xpValue: 360,
     tags: ['beast', 'insect'],
@@ -131,11 +125,6 @@ export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
     ],
     resistances: { cold: 'resistant', arcane: 'resistant', fire: 'weak' },
     statusImmunities: ['paralysis', 'slow'],
-    galdrHarvest: {
-      rewardSpellId: 'paralyze',
-      hintVerse: 'Burn the ancient giantess of the iron-bark\nwith searing flame upon her tangled taproots,\nto wrest the ancient secret of Paralysis.',
-      requiredDamageElement: 'fire',
-    },
     fleeHealthPercent: 0.1,
     xpValue: 480,
     tags: ['troll_witch', 'elite', 'caster'],

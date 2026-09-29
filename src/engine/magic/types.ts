@@ -81,7 +81,14 @@ export interface SummonEffect {
   friendly?: boolean;
 }
 
+/** Permanently teaches the (player) caster a spell, e.g. from a rune tablet read as a scroll. */
+export interface LearnSpellEffect {
+  type: 'learn_spell';
+  spellId: string;
+}
+
 export type EffectPrimitive =
+  | LearnSpellEffect
   | DamageEffect
   | StatusEffectPrimitive
   | ChainEffect

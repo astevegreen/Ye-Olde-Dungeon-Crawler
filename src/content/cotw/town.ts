@@ -1,6 +1,7 @@
 import { Merchant } from '../../engine';
 import type { TownLayoutDefinition } from '../../engine';
 import { makeShopItem } from './items/makeItem';
+import { COTW_TABLET_STOCK } from './spellTablets';
 import { TOWN_ROWS, TOWN_LEGEND, TOWN_WIDTH, TOWN_HEIGHT, TOWN_BUILDINGS, TOWN_PLAYER_SPAWN, TOWN_STAIRS_DOWN } from './townLayout';
 
 export const COTW_TOWN: TownLayoutDefinition = {
@@ -112,6 +113,8 @@ export const COTW_TOWN: TownLayoutDefinition = {
           // Vendor unlock: appears only once the hero's exploration renown reaches 25
           // (Milestone Renown Ledger, docs/architecture/content-progression-scaling.md).
           makeShopItem('charm_watchful_eye', 'astrid-charm-watchful-eye', { type: 'minCounter', counter: 'renown:exploration', value: 25 }),
+          // Catch-up rune tablets, each unlocked once the hero is past the zone that teaches it (spellTablets.ts)
+          ...COTW_TABLET_STOCK.map((t) => makeShopItem(t.itemId, `astrid-${t.itemId}`, t.predicate)),
         ],
       },
     },

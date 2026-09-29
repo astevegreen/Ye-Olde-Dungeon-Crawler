@@ -10,6 +10,7 @@ import { MAW_OF_MALICE_MONSTERS } from './mawOfMalice';
 import { BOSS_MONSTERS } from './bosses';
 import { MINIBOSS_MONSTERS } from './minibosses';
 import { LEGACY_COTW_MONSTERS } from './legacy';
+import { COTW_KILL_RITES } from '../killRites';
 
 export * from './rimeHollows';
 export * from './abandonedDwarvenWorks';
@@ -88,6 +89,12 @@ for (const m of MINIBOSS_MONSTERS) {
     seenIds.add(m.id);
     allMonsters.push(m);
   }
+}
+
+// Attach each monster's kill rite from the single pacing table (killRites.ts).
+for (const m of [...allMonsters, ...Object.values(COTW_BESTIARY)]) {
+  const rite = COTW_KILL_RITES[m.id];
+  if (rite) m.killRite = rite;
 }
 
 export const COTW_MONSTERS: MonsterDefinition[] = allMonsters;

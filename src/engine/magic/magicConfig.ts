@@ -2,7 +2,7 @@ import type { EffectPrimitive } from './types';
 
 /**
  * Pack-declared configuration for the optional magic systems: mana overflow, the
- * grimoire grid, kill rites ("Galdr" in cotw) and spell altars (`GameContentManifest.magic`).
+ * grimoire grid, kill rites and spell altars (`GameContentManifest.magic`).
  *
  * The engine owns the mechanisms and holds only neutral defaults; every table, label and
  * player-facing message comes from here (ARCHITECTURE.md §3, No Engine Creep and
@@ -16,7 +16,7 @@ import type { EffectPrimitive } from './types';
 export interface MagicSystemConfig {
   overflow?: ManaOverflowConfig;
   grimoire?: GrimoireConfig;
-  galdr?: KillRiteConfig;
+  killRites?: KillRiteConfig;
   altars?: AltarDefinition[];
   /** Element pairs a forging altar fuses into a new spell (order-insensitive). */
   hybrids?: HybridRecipe[];

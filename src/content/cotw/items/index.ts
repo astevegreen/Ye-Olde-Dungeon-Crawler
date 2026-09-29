@@ -12,6 +12,7 @@ import { COTW_RINGS } from './rings';
 import { COTW_CONTAINERS } from './containers';
 import { COTW_CONSUMABLES } from './consumables';
 import { COTW_LEGACY_ITEMS } from './legacy';
+import { COTW_ESSENCE_RUNES } from './essences';
 
 export * from './weapons';
 export * from './offhand';
@@ -26,6 +27,7 @@ export * from './rings';
 export * from './containers';
 export * from './consumables';
 export * from './legacy';
+export * from './essences';
 
 /**
  * The complete 83-item CotW catalog specified in CotW-Content-Pack.md.
@@ -58,4 +60,5 @@ export const COTW_CATALOG_RECORD: Record<string, ItemDefinition> = Object.fromEn
 export const COTW_ITEMS: ItemDefinition[] = [
   ...COTW_CATALOG_83,
   ...COTW_LEGACY_ITEMS.filter((legacy) => !COTW_CATALOG_RECORD[legacy.id]),
+  ...COTW_ESSENCE_RUNES,
 ];

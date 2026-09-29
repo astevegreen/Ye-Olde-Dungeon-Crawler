@@ -233,7 +233,7 @@ export class CompendiumManager {
         tier: entry.tier,
         firstEncounterFloor: entry.firstEncounterFloor,
         chosenPerk: entry.chosenPerk,
-        galdrHarvested: entry.galdrHarvested,
+        ritePerformed: entry.ritePerformed,
       };
     }
     return result;
@@ -257,7 +257,7 @@ export class CompendiumManager {
         existing.tier = tier;
         existing.firstEncounterFloor = record.firstEncounterFloor ?? existing.firstEncounterFloor;
         existing.chosenPerk = chosenPerk ?? existing.chosenPerk;
-        existing.galdrHarvested = record.galdrHarvested ?? existing.galdrHarvested;
+        existing.ritePerformed = record.ritePerformed ?? record.galdrHarvested ?? existing.ritePerformed;
       } else {
         this.entries.set(id, {
           definitionId: id,
@@ -266,13 +266,13 @@ export class CompendiumManager {
           tier,
           firstEncounterFloor: record.firstEncounterFloor,
           chosenPerk,
-          galdrHarvested: record.galdrHarvested,
+          ritePerformed: record.ritePerformed ?? record.galdrHarvested,
         });
       }
     }
   }
 
-  public recordGaldrHarvest(definitionId: string): void {
+  public recordKillRite(definitionId: string): void {
     const entry = this.entries.get(definitionId);
     if (!entry) {
       this.entries.set(definitionId, {
@@ -280,15 +280,15 @@ export class CompendiumManager {
         name: definitionId,
         kills: 0,
         tier: 1,
-        galdrHarvested: true,
+        ritePerformed: true,
       });
     } else {
-      entry.galdrHarvested = true;
+      entry.ritePerformed = true;
     }
   }
 
-  public isGaldrHarvested(definitionId: string): boolean {
-    return Boolean(this.entries.get(definitionId)?.galdrHarvested);
+  public isKillRitePerformed(definitionId: string): boolean {
+    return Boolean(this.entries.get(definitionId)?.ritePerformed);
   }
 
   private deserializeCategoryPerks(data: SerializedCategoryPerks): void {

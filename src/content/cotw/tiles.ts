@@ -70,9 +70,3 @@ export const COTW_TILES: TileDefinition[] = [
     landmarkLabel: 'Siphon Altar 🩸',
   },
 ];
-
-/**
- * Tile types that count as hallowed ground for Galdr of the Slain rites
- * (`GaldrHarvestConfig.requiredSurfaceOrTile`). Today only the floor-3 Altar of Tyr.
- */
-export const COTW_HALLOWED_GROUND: string[] = ['altar_tyr'];

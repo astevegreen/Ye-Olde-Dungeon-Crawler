@@ -66,7 +66,8 @@ export interface CompendiumEntry {
   tier: MonsterMasteryTier;
   firstEncounterFloor?: number;
   chosenPerk?: MasteryPerkId;
-  galdrHarvested?: boolean;
+  /** The player has performed this monster's kill rite at least once. */
+  ritePerformed?: boolean;
 }
 
 export interface SerializedCompendiumRecord {
@@ -74,6 +75,8 @@ export interface SerializedCompendiumRecord {
   tier: MonsterMasteryTier;
   firstEncounterFloor?: number;
   chosenPerk?: MasteryPerkId;
+  ritePerformed?: boolean;
+  /** Read only: this flag's name before the kill-rite rename. */
   galdrHarvested?: boolean;
 }
 

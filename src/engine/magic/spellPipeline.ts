@@ -14,6 +14,7 @@ import type {
   RevealEffect,
   IdentifyEffect,
   SummonEffect,
+  LearnSpellEffect,
   TargetingMode,
 } from './types';
 import { traceProjectile, getAreaOfEffectTiles } from './targeting';
@@ -115,6 +116,17 @@ export class SpellPipeline {
 
     EffectPrimitiveRegistry.register<SummonEffect>('summon', (effect, ctx) => {
       SpellPipeline.executeSummonEffect(ctx.engine, ctx.caster, effect);
+    });
+
+    EffectPrimitiveRegistry.register<LearnSpellEffect>('learn_spell', (effect, ctx) => {
+      if (!(ctx.caster instanceof Player)) return;
+      const spell = ctx.engine.manifest?.spells?.find((s) => s.id === effect.spellId);
+      const name = spell?.name ?? effect.spellId;
+      if (ctx.caster.learnSpell(effect.spellId)) {
+        ctx.engine.log(`You have learned ${name}!`);
+      } else {
+        ctx.engine.log(`You already know ${name}; the runes teach you nothing new.`);
+      }
     });
 
     registerReciprocalPrimitives();

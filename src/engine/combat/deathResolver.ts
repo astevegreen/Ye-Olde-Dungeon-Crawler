@@ -16,7 +16,7 @@ import { BASE_ACTION_COST } from '../types';
 import { createMonsterTrophy } from '../compendium/trophies';
 import { hasMasteryPerk, recordMasteryKill } from '../compendium/compendiumManager';
 import { DeathEnvelopeTracker } from '../analytics/deathEnvelope';
-import { GaldrHarvestManager, type GaldrHarvestContext } from '../magic/galdrHarvest';
+import { KillRiteManager, type KillContext } from '../magic/killRites';
 
 /** Duck-typed check avoiding a value import of Companion (see import comment above). */
 function isCompanion(entity: Entity): entity is Companion {
@@ -28,7 +28,7 @@ export class DeathResolver {
     engine: GameEngine,
     killer: Entity | undefined,
     victim: Entity,
-    context?: GaldrHarvestContext
+    context?: KillContext
   ): void {
     victim.hp = 0;
 
@@ -84,8 +84,8 @@ export class DeathResolver {
       // Record kill in Slayer's Compendium (species and category mastery)
       recordMasteryKill(engine, victim.definitionId, victim.name);
 
-      // Galdr of the Slain thematic spell harvesting
-      GaldrHarvestManager.evaluateHarvest(engine, killer, victim, context);
+      // Kill rites: a death that meets the victim's rite yields its magic
+      KillRiteManager.evaluate(engine, killer, victim, context);
 
       // Slayer's Compendium Slay Perks (Essence Siphon & Trophy Hunter), from species or category mastery
       if (killer instanceof Player && victim instanceof Monster && engine.compendium) {

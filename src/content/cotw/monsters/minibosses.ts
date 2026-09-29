@@ -31,11 +31,6 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
     spellPreferences: [
       { spellId: 'cold_ray' },
     ],
-    galdrHarvest: {
-      rewardSpellId: 'cold_ray',
-      hintVerse: 'Slay the frost-warden of Jotunheim\nwith blazing fire while standing submerged in water,\nto seize the freezing beam of the glaciers.',
-      requiredDamageElement: 'fire',
-    },
     fleeHealthPercent: 0.0,
     xpValue: 250,
     tags: ['jotun', 'humanoid', 'miniboss', 'boss'],
@@ -70,11 +65,6 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
     statusImmunities: ['poison', 'paralysis'],
     spells: ['lightning_bolt'],
     spellCooldown: 2,
-    galdrHarvest: {
-      rewardSpellId: 'lightning_bolt',
-      hintVerse: 'Shatter the taproot matriarch in the ancient deep\nwith divine celestial lightning upon sacred ground,\nto wield the arcing fury of Thor.',
-      requiredDamageElement: 'lightning',
-    },
     fleeHealthPercent: 0.0,
     xpValue: 800,
     tags: ['undead', 'boss', 'miniboss'],

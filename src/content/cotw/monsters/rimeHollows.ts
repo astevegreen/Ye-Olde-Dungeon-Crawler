@@ -54,12 +54,6 @@ export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
     spellPreferences: [
       { spellId: 'slow', skipIfTargetHasStatus: 'slow' },
     ],
-    galdrHarvest: {
-      rewardSpellId: 'slow',
-      hintVerse: 'When the howling rime-wolf falls,\nquenched in searing flame upon the frozen ice,\nits chilling breath shall bind thy enemies’ feet.',
-      requiredDamageElement: 'fire',
-      requiredSurfaceOrTile: 'ice_sheet',
-    },
     fleeHealthPercent: 0.15,
     xpValue: 45,
     tags: ['beast', 'pack'],
@@ -136,12 +130,6 @@ export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
       type: 'slow',
       chance: 0.4,
       duration: 4,
-    },
-    galdrHarvest: {
-      rewardSpellId: 'cold_ray',
-      hintVerse: 'Strike down the cackling winter hag\nwith piercing fire as her own limbs turn sluggish and slow,\nto inherit her devastating Cold Ray.',
-      requiredDamageElement: 'fire',
-      requiredVictimStatus: 'slow',
     },
     fleeHealthPercent: 0.3,
     xpValue: 60,

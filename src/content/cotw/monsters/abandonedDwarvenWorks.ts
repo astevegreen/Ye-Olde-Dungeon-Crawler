@@ -17,12 +17,6 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
       duration: 4,
       potency: 2,
     },
-    galdrHarvest: {
-      rewardSpellId: 'firebolt',
-      hintVerse: 'Strike down the cinder-smith of the dark dwarven halls\nwith sudden piercing cold while he breathes poison,\nand tear forth the embers of his forge-bolt.',
-      requiredDamageElement: 'cold',
-      requiredVictimStatus: 'poison',
-    },
     fleeHealthPercent: 0.1,
     xpValue: 90,
     tags: ['undead', 'dwarf', 'duergar'],

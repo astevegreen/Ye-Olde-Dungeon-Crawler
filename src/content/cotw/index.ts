@@ -7,6 +7,7 @@ import { COTW_QUEST } from './quest';
 import { COTW_ATLAS_THEME } from './atlas';
 import { COTW_STARTER_KIT } from './character';
 import { COTW_MAGIC } from './magic';
+import { DEEPEST_FLOOR_HOOK } from './spellTablets';
 import { COTW_AFFINITY_MATRIX } from './elements';
 import { COTW_EQUIPMENT_SLOTS } from './slots';
 import { COTW_THEME_TOKENS } from './theme';
@@ -86,7 +87,7 @@ export const cotwManifest: GameContentManifest = {
   renownTitles: COTW_RENOWN_TITLES,
   companions: COTW_COMPANIONS,
   monsterScaling: COTW_MONSTER_SCALING,
-  actionHooks: [GIANT_BLOOD_BOOTSTRAP_HOOK, ...SIPHON_RITUAL_HOOKS],
+  actionHooks: [GIANT_BLOOD_BOOTSTRAP_HOOK, ...SIPHON_RITUAL_HOOKS, DEEPEST_FLOOR_HOOK],
   storyChoiceTriggers: [OATH_TRIGGER],
   attributeMilestones: COTW_ATTRIBUTE_MILESTONES,
   monsterCategories: COTW_MONSTER_CATEGORIES,

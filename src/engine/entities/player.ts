@@ -363,10 +363,14 @@ export class Player extends Actor {
       return false;
     }
     this.spellsKnown.push(spellId);
-    // Auto-slot into first empty grimoire slot in active page if available
+    // Auto-slot into the first empty grimoire slot on the active page, and the first free quick-cast key
     const emptySlot = this.grimoire.find((s) => s.spellId === null);
     if (emptySlot) {
       emptySlot.spellId = spellId;
+    }
+    const freeQuickSlot = this.quickSpells.indexOf(null);
+    if (freeQuickSlot >= 0) {
+      this.quickSpells[freeQuickSlot] = spellId;
     }
     return true;
   }

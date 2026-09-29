@@ -382,6 +382,7 @@ export class MeleeAttackAction implements Action {
     }
 
     let isFatal = killed;
+    let killingElement: string = 'physical';
 
     // Elemental Weapon Affix Bonus Damage (e.g. "of Fire", "of Cold", "of Lightning")
     if (this.attacker instanceof Player && !isFatal) {
@@ -397,6 +398,7 @@ export class MeleeAttackAction implements Action {
           message += ` ${elemMsg}`;
           if (elemDmgRes.killed) {
             isFatal = true;
+            killingElement = affix.element;
           }
           if (engine.surfaces) {
             engine.surfaces.triggerElementalReaction(this.defender.x, this.defender.y, affix.element, elemDmgRes.damageDealt, engine);
@@ -407,7 +409,7 @@ export class MeleeAttackAction implements Action {
 
     if (isFatal) {
       message += ` ${this.defender.name} is slain!`;
-      DeathResolver.resolveDeath(engine, this.attacker, this.defender);
+      DeathResolver.resolveDeath(engine, this.attacker, this.defender, { damageElement: killingElement });
     }
 
     return {

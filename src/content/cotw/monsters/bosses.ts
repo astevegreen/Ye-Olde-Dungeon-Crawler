@@ -31,11 +31,6 @@ export const BOSS_MONSTERS: MonsterDefinition[] = [
       { spellId: 'lightning_bolt' },
       { spellId: 'firebolt' },
     ],
-    galdrHarvest: {
-      rewardSpellId: 'fireball',
-      hintVerse: 'Extinguish the stolen sun within the iron warden\nwith piercing cold upon blazing stone,\nto seize the radiant cataclysm of the Fireball.',
-      requiredDamageElement: 'cold',
-    },
     fleeHealthPercent: 0.0,
     xpValue: 1200,
     tags: ['construct', 'boss', 'miniboss'],
@@ -78,11 +73,6 @@ export const BOSS_MONSTERS: MonsterDefinition[] = [
       { spellId: 'lightning_bolt' },
       { spellId: 'firebolt' },
     ],
-    galdrHarvest: {
-      rewardSpellId: 'lightning_bolt',
-      hintVerse: 'Sever the ancient malice from the root-gnawer\nwith holy lightning upon sacred stone,\nto claim the apocalyptic tempest of Ragnarok.',
-      requiredDamageElement: 'lightning',
-    },
     hooks: [
       {
         event: 'onDamageTaken',

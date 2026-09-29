@@ -1,6 +1,7 @@
 import { createScaledItem } from '../../../engine';
 import type { Item, ItemDefinition, Predicate } from '../../../engine';
 import { COTW_ITEMS } from './index';
+import { COTW_SPELL_TABLETS } from '../spellTablets';
 
 /**
  * Items outside COTW_ITEMS, so never rolled as random floor loot: sold in town and
@@ -62,6 +63,7 @@ const NON_CATALOG_ITEMS: ItemDefinition[] = [
       "Astrid sets this aside only for adventurers whose reputation for uncovering the dungeon's secrets precedes them.",
     value: 150,
   },
+  ...COTW_SPELL_TABLETS,
 ];
 
 const DEFINITIONS: Record<string, ItemDefinition> = Object.fromEntries(

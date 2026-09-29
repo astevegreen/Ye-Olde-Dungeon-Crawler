@@ -224,6 +224,8 @@ export interface SerializedPlayer {
   runeCharges?: number;
   runeMaxCharges?: number;
   energyModel?: SerializedEnergyModel;
+  voidDebt?: number;
+  grimoire?: import('../magic/grimoireMatrix').GrimoireSlot[];
 }
 
 /** `WorldState` as saved: remote-vault items are serialized item trees, not live Items. */

@@ -66,6 +66,7 @@ export interface CompendiumEntry {
   tier: MonsterMasteryTier;
   firstEncounterFloor?: number;
   chosenPerk?: MasteryPerkId;
+  galdrHarvested?: boolean;
 }
 
 export interface SerializedCompendiumRecord {
@@ -73,6 +74,7 @@ export interface SerializedCompendiumRecord {
   tier: MonsterMasteryTier;
   firstEncounterFloor?: number;
   chosenPerk?: MasteryPerkId;
+  galdrHarvested?: boolean;
 }
 
 export type SerializedCompendium = Record<string, SerializedCompendiumRecord>;

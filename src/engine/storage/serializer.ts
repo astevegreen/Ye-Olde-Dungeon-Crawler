@@ -415,6 +415,8 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     hasDiscoveredRune: p.hasDiscoveredRune,
     runeCharges: p.runeCharges,
     runeMaxCharges: p.runeMaxCharges,
+    voidDebt: p.voidDebt ?? 0,
+    grimoire: p.grimoire ? [...p.grimoire.map((s) => ({ ...s, infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined }))] : undefined,
     energyModel: p.energyModel
       ? {
           structuredEnergy: p.energyModel.structuredEnergy,
@@ -860,6 +862,7 @@ export function deserializeGame(
     hasDiscoveredRune: Boolean(pData.hasDiscoveredRune),
     runeCharges: pData.runeCharges !== undefined ? Number(pData.runeCharges) : undefined,
     runeMaxCharges: pData.runeMaxCharges !== undefined ? Number(pData.runeMaxCharges) : undefined,
+    grimoire: pData.grimoire ? [...pData.grimoire.map((s) => ({ ...s, infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined }))] : undefined,
   });
   player.energy = Number(pData.energy) || 0;
   player.hp = Math.min(Number(pData.hp) || 1, player.maxHp);
@@ -870,6 +873,7 @@ export function deserializeGame(
     player.planeId = pData.planeId;
   }
   player.corruptionScore = Number(pData.corruptionScore) || 0;
+  player.voidDebt = Number(pData.voidDebt) || 0;
   if (pData.energyModel) {
     player.energyModel = new EnergyModel({
       structuredEnergy: Number(pData.energyModel.structuredEnergy),

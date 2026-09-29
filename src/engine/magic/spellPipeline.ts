@@ -514,7 +514,10 @@ export class SpellPipeline {
     }
 
     if (result.killed) {
-      DeathResolver.resolveDeath(engine, caster, target);
+      DeathResolver.resolveDeath(engine, caster, target, {
+        damageElement: effect.element,
+        damageDealt: result.damageDealt,
+      });
     }
 
     if (engine.surfaces) {
@@ -722,7 +725,10 @@ export class SpellPipeline {
       const result = nextTarget.takeElementalDamage(hopDamage, element, engine.affinityMatrix, terrain);
 
       if (result.killed) {
-        DeathResolver.resolveDeath(engine, caster, nextTarget);
+        DeathResolver.resolveDeath(engine, caster, nextTarget, {
+          damageElement: element,
+          damageDealt: result.damageDealt,
+        });
       }
 
       current = nextTarget;
@@ -843,7 +849,10 @@ export class SpellPipeline {
       }
 
       if (result.killed) {
-        DeathResolver.resolveDeath(engine, caster, target);
+        DeathResolver.resolveDeath(engine, caster, target, {
+          damageElement: spell.element,
+          damageDealt: result.damageDealt,
+        });
         return;
       }
     }

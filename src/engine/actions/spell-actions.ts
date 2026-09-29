@@ -10,6 +10,8 @@ import { WandItem, ScrollItem, PotionItem } from '../items/consumables';
 import { flightRecorder } from '../debug/flightRecorder';
 import { findTaggedEntitiesInRadius } from '../combat/radialAuraFilter';
 import { traceProjectile } from '../magic/targeting';
+import { ManaOverflowManager } from '../magic/manaOverflow';
+import { GrimoireMatrixManager } from '../magic/grimoireMatrix';
 
 export class CastSpellAction implements Action {
   public readonly caster: Entity;
@@ -19,6 +21,7 @@ export class CastSpellAction implements Action {
   public readonly itemTargetId?: string;
   public readonly freeCast: boolean;
   public readonly allowVitalityBurn: boolean;
+  public readonly slotIndex?: number;
 
   /** The acting entity, as the pipeline resolves it for hooks (§4). */
   get actor(): Entity {
@@ -32,7 +35,8 @@ export class CastSpellAction implements Action {
     targetY: number,
     itemTargetId?: string,
     freeCast = false,
-    allowVitalityBurn = false
+    allowVitalityBurn = false,
+    slotIndex?: number
   ) {
     this.caster = caster;
     this.spellId = spellId;
@@ -41,16 +45,24 @@ export class CastSpellAction implements Action {
     this.itemTargetId = itemTargetId;
     this.freeCast = freeCast;
     this.allowVitalityBurn = allowVitalityBurn;
+    this.slotIndex = slotIndex;
   }
 
   public perform(engine: GameEngine): ActionResult {
-    const spell = engine.manifest?.spells?.find((s) => s.id === this.spellId) ?? getSpell(this.spellId);
+    const isPlayer = this.caster instanceof Player;
+    const player = isPlayer ? (this.caster as Player) : null;
+
+    const matrixEffective =
+      player && this.slotIndex !== undefined
+        ? GrimoireMatrixManager.resolveEffectiveSpell(engine, player, this.slotIndex)
+        : undefined;
+
+    const spell =
+      matrixEffective ??
+      (engine.manifest?.spells?.find((s) => s.id === this.spellId) ?? getSpell(this.spellId));
     if (!spell) {
       return { success: false, cost: 0, message: `Unknown spell: ${this.spellId}` };
     }
-
-    const isPlayer = this.caster instanceof Player;
-    const player = isPlayer ? (this.caster as Player) : null;
 
     // Find targeted entity if applicable
     let targetEntity = engine.map.getEntityAt(this.targetX, this.targetY);
@@ -110,13 +122,10 @@ export class CastSpellAction implements Action {
     const volatileCost = paysCosts ? (spell.volatileEnergyCost ?? 0) : 0;
     const vitalityCost = paysCosts ? (spell.vitalityCost ?? 0) : 0;
     let emergencyHpBurn = 0;
+    let manaDeficit = 0;
     if (player && paysCosts) {
       if (effectiveManaCost > 0 && player.mana < effectiveManaCost) {
-        return {
-          success: false,
-          cost: 0,
-          message: `Not enough mana to cast ${spell.name}! (Requires ${effectiveManaCost} MP, have ${player.mana})`,
-        };
+        manaDeficit = effectiveManaCost - player.mana;
       }
       const volatileAvailable = player.energyModel?.volatileEnergy ?? 0;
       if (volatileCost > 0 && volatileAvailable < volatileCost) {
@@ -141,7 +150,11 @@ export class CastSpellAction implements Action {
     let pendingCorruption = 0;
     if (player && paysCosts) {
       if (effectiveManaCost > 0) {
-        player.consumeMana(effectiveManaCost);
+        if (manaDeficit > 0) {
+          player.consumeMana(player.mana);
+        } else {
+          player.consumeMana(effectiveManaCost);
+        }
       }
 
       if (volatileCost > 0) {
@@ -197,6 +210,14 @@ export class CastSpellAction implements Action {
       actionCost
     );
 
+    // Evaluate Mana / Ginnungagap Overflow if cast with mana deficit
+    if (player && paysCosts && manaDeficit > 0) {
+      const overflowRes = ManaOverflowManager.evaluateOverflow(engine, this.caster, manaDeficit, spell);
+      if (overflowRes.effects.length > 0) {
+        result.effects = [...(result.effects ?? []), ...overflowRes.effects];
+      }
+    }
+
     // If spell requires killing the target to harvest volatile energy (e.g. Blood Reap)
     if (player && player.energyModel && spell.requiresKillForEnergy && spell.volatileEnergyGain) {
       const isDead = targetEntity ? !targetEntity.isAlive() : false;
@@ -221,6 +242,22 @@ export class CastSpellAction implements Action {
     if (player && player.energyModel && pendingCorruption > 0) {
       player.energyModel.addCorruption(player, pendingCorruption);
       engine.log(`☠ Casting ${spell.name} surges with dark power (+${pendingCorruption} Corruption, Total: ${player.corruptionScore})!`);
+    }
+
+    if (player && this.slotIndex !== undefined) {
+      const slot = player.grimoire[this.slotIndex];
+      const vanishGlyph = slot?.infusedGlyphs?.find((g) => g.type === 'vanish_step');
+      if (vanishGlyph) {
+        const dx = Math.sign(player.x - this.targetX);
+        const dy = Math.sign(player.y - this.targetY);
+        const destX = player.x + dx * vanishGlyph.potency;
+        const destY = player.y + dy * vanishGlyph.potency;
+        if (engine.map.inBounds(destX, destY) && engine.map.isPassable(destX, destY) && !engine.map.getEntityAt(destX, destY)) {
+          engine.map.moveEntity(player, destX, destY);
+          engine.updateFov();
+          engine.log(`💨 Vanish Step! ${player.name} phases backward to safety!`);
+        }
+      }
     }
 
     return result;

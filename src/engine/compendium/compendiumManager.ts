@@ -233,6 +233,7 @@ export class CompendiumManager {
         tier: entry.tier,
         firstEncounterFloor: entry.firstEncounterFloor,
         chosenPerk: entry.chosenPerk,
+        galdrHarvested: entry.galdrHarvested,
       };
     }
     return result;
@@ -256,6 +257,7 @@ export class CompendiumManager {
         existing.tier = tier;
         existing.firstEncounterFloor = record.firstEncounterFloor ?? existing.firstEncounterFloor;
         existing.chosenPerk = chosenPerk ?? existing.chosenPerk;
+        existing.galdrHarvested = record.galdrHarvested ?? existing.galdrHarvested;
       } else {
         this.entries.set(id, {
           definitionId: id,
@@ -264,9 +266,29 @@ export class CompendiumManager {
           tier,
           firstEncounterFloor: record.firstEncounterFloor,
           chosenPerk,
+          galdrHarvested: record.galdrHarvested,
         });
       }
     }
+  }
+
+  public recordGaldrHarvest(definitionId: string): void {
+    const entry = this.entries.get(definitionId);
+    if (!entry) {
+      this.entries.set(definitionId, {
+        definitionId,
+        name: definitionId,
+        kills: 0,
+        tier: 1,
+        galdrHarvested: true,
+      });
+    } else {
+      entry.galdrHarvested = true;
+    }
+  }
+
+  public isGaldrHarvested(definitionId: string): boolean {
+    return Boolean(this.entries.get(definitionId)?.galdrHarvested);
   }
 
   private deserializeCategoryPerks(data: SerializedCategoryPerks): void {

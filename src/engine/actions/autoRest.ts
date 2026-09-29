@@ -82,6 +82,7 @@ export class AutoRestManager {
     // Natural recovery per rest tick
     player.heal(1);
     player.restoreMana(1);
+    player.decayVoidDebt(1);
 
     // Consume player turn energy
     player.consumeEnergy(BASE_ACTION_COST);
@@ -154,6 +155,7 @@ export class AutoRestManager {
 
     // Check if HP and Mana reached 100%
     if (player.hp >= player.maxHp && player.mana >= player.maxMana) {
+      player.clearVoidDebt();
       const msg = 'Fully rested (HP and Mana full).';
       engine.log(msg);
       return {

@@ -97,6 +97,9 @@ export * from './magic/spellPipeline';
 export * from './magic/effectRegistry';
 export * from './magic/targeting';
 export * from './magic/runeOfReturn';
+export * from './magic/manaOverflow';
+export * from './magic/galdrHarvest';
+export * from './magic/grimoireMatrix';
 
 // Surfaces & Elemental Reactions
 export * from './surfaces/surfaceGrid';

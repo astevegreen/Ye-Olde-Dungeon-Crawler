@@ -81,6 +81,8 @@ export interface MonsterDefinition {
   xpValue: number;
   lootTable: LootDropRule[];
   hooks?: import('../hooks/hookDispatcher').HookDescriptor[];
+  /** Galdr of the Slain thematic execution rite and spell harvest rule. */
+  galdrHarvest?: import('../magic/galdrHarvest').GaldrHarvestConfig;
   /**
    * Free-form creature tags (e.g. 'undead', 'aberration') resolved onto spawned
    * instances via `Entity.tags`/`hasTag()` (docs/architecture/content-progression-scaling.md). `hasTag` already

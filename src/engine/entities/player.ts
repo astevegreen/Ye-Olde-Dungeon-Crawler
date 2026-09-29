@@ -15,6 +15,7 @@ import {
   RUNE_MAX_CHARGES,
 } from '../magic/runeOfReturn';
 import { EnergyModel, type DualEnergyConfig } from '../actors/energyModel';
+import { GrimoireMatrixManager, type GrimoireSlot } from '../magic/grimoireMatrix';
 
 export interface PlayerConfig {
   id?: string;
@@ -47,6 +48,8 @@ export interface PlayerConfig {
   runeCharges?: number;
   runeMaxCharges?: number;
   energyModel?: EnergyModel;
+  voidDebt?: number;
+  grimoire?: GrimoireSlot[];
 }
 
 const DEFAULT_PLAYER_STATS: CombatStats = {
@@ -88,6 +91,8 @@ export class Player extends Actor {
   public runeMaxCharges: number;
   declare public pactMutatorsSupplier?: () => import('../pacts/pactManager').RunPactMutatorRules;
   public energyModel?: EnergyModel;
+  public voidDebt: number;
+  public grimoire: GrimoireSlot[];
 
   constructor(config: PlayerConfig) {
     super({
@@ -102,6 +107,7 @@ export class Player extends Actor {
       inventory: config.inventory,
     });
     this.energyModel = config.energyModel;
+    this.voidDebt = config.voidDebt ?? 0;
     this.gender = config.gender ?? 'male';
     this.difficulty = config.difficulty ?? DEFAULT_DIFFICULTY;
     this.maxFloor = config.maxFloor ?? DIFFICULTY_MAX_FLOORS[this.difficulty];
@@ -111,6 +117,9 @@ export class Player extends Actor {
     this.maxMana = config.maxMana ?? Math.floor(this.intelligence * 2 + 5);
     this.mana = config.mana ?? this.maxMana;
     this.spellsKnown = config.spellsKnown ? [...config.spellsKnown] : [...DEFAULT_STARTER_SPELLS];
+    this.grimoire = config.grimoire
+      ? [...config.grimoire.map((s) => ({ ...s, infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined }))]
+      : GrimoireMatrixManager.createDefaultGrimoire(this.spellsKnown);
     if (config.quickSpells) {
       this.quickSpells = [...config.quickSpells];
       while (this.quickSpells.length < 10) this.quickSpells.push(null);
@@ -292,11 +301,38 @@ export class Player extends Actor {
     return this.mana - prev;
   }
 
+  public accrueVoidDebt(amount: number): number {
+    this.voidDebt = (this.voidDebt ?? 0) + Math.max(0, amount);
+    return this.voidDebt;
+  }
+
+  public decayVoidDebt(amount: number = 1): number {
+    this.voidDebt = Math.max(0, (this.voidDebt ?? 0) - Math.max(0, amount));
+    return this.voidDebt;
+  }
+
+  public clearVoidDebt(): void {
+    this.voidDebt = 0;
+  }
+
   public learnSpell(spellId: string): boolean {
     if (this.spellsKnown.includes(spellId)) {
       return false;
     }
     this.spellsKnown.push(spellId);
+    // Auto-slot into first empty grimoire slot if available
+    const emptySlot = this.grimoire.find((s) => s.spellId === null);
+    if (emptySlot) {
+      emptySlot.spellId = spellId;
+    }
+    return true;
+  }
+
+  /** Assigns a known spell to a 3x3 grimoire slot (0..8), or clears it with `null`. */
+  public setGrimoireSlot(slotIndex: number, spellId: string | null): boolean {
+    if (slotIndex < 0 || slotIndex >= 9) return false;
+    if (spellId && !this.spellsKnown.includes(spellId)) return false;
+    this.grimoire[slotIndex].spellId = spellId;
     return true;
   }
 

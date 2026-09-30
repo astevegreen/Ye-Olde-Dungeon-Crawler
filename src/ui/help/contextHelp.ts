@@ -168,6 +168,7 @@ export class ContextHelp {
             { key: 'Shift+G / Shift+,', label: 'Quick-Loot all items on ground tile' },
             { key: 'Z / C', label: 'Open Spellbook and cast known spells' },
             { key: 'I', label: 'Open Inventory, Paperdoll, and Containers' },
+            { key: 'F', label: 'Context action: stairs, loot, doors, talk, or rest, as the console button shows' },
             { key: 'Shift+1-4', label: 'Drink a potion from the row beside the health orb' },
             { key: 'B', label: 'Open Bestiary' },
             { key: 'Shift+? / Ctrl+K', label: 'Open Quick Command Palette' },

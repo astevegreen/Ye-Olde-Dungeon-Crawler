@@ -92,8 +92,10 @@ export class ViewportManager {
   /**
    * Re-measures whenever a surrounding bar's own size changes (wrapping to a second
    * line, a quickbar mounting/unmounting, a font finishing load, …) rather than only
-   * on `window.resize`. A ResizeObserver on `#center-viewport` catches all of these,
-   * since every bar lives inside it and any bar's height change resizes that ancestor.
+   * on `window.resize`. A ResizeObserver watches `#center-viewport` (the window's
+   * share) and each surrounding bar and side column itself: `#center-viewport` has a
+   * fixed height, so a bar growing (the console gaining a companion card, say) does
+   * not resize it, and would otherwise push the layout past the window.
    */
   private watchSurroundingBars(): void {
     if (typeof ResizeObserver === 'undefined' || typeof document === 'undefined') return;
@@ -104,6 +106,10 @@ export class ViewportManager {
       this.notifyResize();
     });
     this.resizeObserver.observe(centerEl);
+    for (const id of [...SURROUNDING_BAR_IDS, ...SIDE_COLUMN_IDS]) {
+      const el = document.getElementById(id);
+      if (el) this.resizeObserver.observe(el);
+    }
   }
 
   private watchDpr(): void {

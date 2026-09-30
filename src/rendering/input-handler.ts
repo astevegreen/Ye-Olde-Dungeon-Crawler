@@ -166,6 +166,8 @@ export class InputHandler {
   public onTriggerQuickSpell?: (slotIndex: number) => void;
   /** Opens or closes the command palette; wired from main.ts. */
   public onToggleCommandPalette?: () => void;
+  /** Runs the console's context action; wired from main.ts. */
+  public onContextAction?: () => void;
   /** Drinks the potion in a potion-row slot (0-based); wired from main.ts. */
   public onDrinkPotionSlot?: (slotIndex: number) => void;
   public onOpenSpellbook?: () => void;
@@ -818,6 +820,14 @@ export class InputHandler {
         return true;
       }
       this.targetingOverlay?.openSpellbook(this.engine);
+      this.onActionProcessed();
+      return true;
+    }
+
+    // Context action (F by default): whatever the console's context button offers here.
+    if (this.settingsManager.getActionForCode(e.shiftKey ? `Shift+${code}` : code) === 'context_action' && this.onContextAction) {
+      if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
+      this.onContextAction();
       this.onActionProcessed();
       return true;
     }

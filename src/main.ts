@@ -35,6 +35,9 @@ import {
   parseCoinItem,
   PotionItem,
   DrinkPotionAction,
+  MovementAction,
+  PickUpAction,
+  CloseDoorAction,
 } from './engine';
 import type {
   ActionResult,
@@ -98,6 +101,8 @@ import { PotionRow } from './ui/potionRow';
 import { classifyLogLine, CriticalLineTracker } from './ui/logClassifier';
 import { SpellbookModal } from './ui/spellbookModal';
 import { CombatSidebar } from './ui/sidebar/combatSidebar';
+import { ConsoleExtras } from './ui/console/consoleExtras';
+import type { ContextAction } from './ui/console/consoleModel';
 import { SettingsManager } from './ui/settings/settingsManager';
 import type { RadialMenuSlotConfig } from './ui/settings/settingsManager';
 import { KeybindModal } from './ui/settings/keybindModal';
@@ -302,6 +307,7 @@ window.addEventListener('DOMContentLoaded', () => {
   let quickSpellsBar: QuickSpellsBar;
   let potionRow: PotionRow;
   let combatSidebar: CombatSidebar;
+  let consoleExtras: ConsoleExtras;
 
   function openSpellbook(): void {
     if (!activeEngine) return;
@@ -524,6 +530,55 @@ window.addEventListener('DOMContentLoaded', () => {
   spellbookTab = new SpellbookTabAdapter(spellbookModal, () => characterMenuModal?.close());
   spellbookModal.mount(document.body);
 
+  /** Runs the console's context action through the same engine actions its keys use. */
+  function runContextAction(action: ContextAction): void {
+    const engine = activeEngine;
+    if (!engine) return;
+    const p = engine.player;
+    switch (action.kind) {
+      case 'attack':
+      case 'talk':
+      case 'open_door':
+        engine.handlePlayerAction(new MovementAction(p, action.dx ?? 0, action.dy ?? 0));
+        break;
+      case 'take_all':
+        engine.handlePlayerAction(new QuickLootAction(p));
+        break;
+      case 'pickup':
+        engine.handlePlayerAction(new PickUpAction(p));
+        break;
+      case 'descend':
+      case 'ascend':
+        engine.handlePlayerAction(new ClimbStairsAction(p));
+        break;
+      case 'close_door':
+        engine.handlePlayerAction(new CloseDoorAction(p, action.x ?? p.x, action.y ?? p.y));
+        break;
+      case 'rest':
+        // The rest button runs the same auto-rest as R, stopping when a monster appears.
+        document.getElementById('btn-hud-rest')?.click();
+        return;
+      case 'none':
+        return;
+    }
+  }
+
+  consoleExtras = new ConsoleExtras({
+    onContextAction: (action) => {
+      runContextAction(action);
+      void processVisualEffectsAndRender();
+    },
+    onChip: (action) => {
+      // Chips do what their keys do: T channels the rune, P opens the pacts tab.
+      const code = action === 'channel_rune' ? 'KeyT' : 'KeyP';
+      window.dispatchEvent(new KeyboardEvent('keydown', { code, key: code.slice(3).toLowerCase() }));
+    },
+    onPointAt: (x, y) => renderer?.pointAtTile(x, y),
+    drawEntityIcon: (canvas, entity) => renderer?.drawEntityIcon(canvas, entity),
+    contextKey: () => (settingsManager.getCodesForAction('context_action')[0] ?? '').replace(/^Shift\+/, '⇧').replace(/Digit|Key/, ''),
+    smithName: () => resolveBranding(activeEngine?.manifest ?? activeManifest).runeSmithName,
+  });
+
   combatSidebar = new CombatSidebar({
     drawMinimap: (canvas) => renderer?.drawMinimap(canvas),
     drawEntityIcon: (canvas, entity) => renderer?.drawEntityIcon(canvas, entity),
@@ -732,6 +787,7 @@ window.addEventListener('DOMContentLoaded', () => {
         quickSpellsBar.update(activeEngine);
         potionRow.update(activeEngine);
         combatSidebar.update(activeEngine);
+        consoleExtras.update(activeEngine);
         // Periodic background autosave every 50 turns
         if (activeProfile && autosaveManager.shouldAutosave(activeEngine.turnCount)) {
           autosaveManager.autosave(activeEngine, activeProfile);
@@ -1644,6 +1700,7 @@ window.addEventListener('DOMContentLoaded', () => {
       inputHandler.onCastSpellById = castSpellById;
       inputHandler.onDrinkPotionSlot = drinkPotionSlot;
       inputHandler.onToggleCommandPalette = toggleCommandPalette;
+      inputHandler.onContextAction = () => runContextAction(consoleExtras.currentAction);
       commandPalette.setModalStack(inputHandler.modalStack);
       potionRow.setModalStack(inputHandler.modalStack);
       diagnosticModal.setModalStack(inputHandler.modalStack);
@@ -1704,6 +1761,7 @@ window.addEventListener('DOMContentLoaded', () => {
         inputHandler.onCastSpellById = castSpellById;
         inputHandler.onDrinkPotionSlot = drinkPotionSlot;
         inputHandler.onToggleCommandPalette = toggleCommandPalette;
+      inputHandler.onContextAction = () => runContextAction(consoleExtras.currentAction);
         commandPalette.setModalStack(inputHandler.modalStack);
       potionRow.setModalStack(inputHandler.modalStack);
         diagnosticModal.setModalStack(inputHandler.modalStack);
@@ -1754,6 +1812,9 @@ window.addEventListener('DOMContentLoaded', () => {
     quickSpellsBar.update(engine);
     potionRow.update(engine);
     combatSidebar.update(engine);
+    const consoleEl = document.getElementById('gothic-action-console');
+    if (consoleEl) consoleExtras.mount(consoleEl);
+    consoleExtras.update(engine);
 
     updateHeaderInfo();
     mainMenu.hide();

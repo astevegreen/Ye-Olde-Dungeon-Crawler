@@ -236,10 +236,11 @@ export function formatGroundStatus(engine: GameEngine, x: number, y: number): Gr
   }
 
   // Say where the hero stands only when it tells them something: a building's name,
-  // or terrain that isn't plain floor and that no prompt already names.
+  // or ground that isn't ordinary walkable floor (streets and floors of every kind
+  // are not worth a line) and that no prompt already names.
   let standingText = '';
   if (buildingName) standingText = `📍 ${buildingName}`;
-  else if (tile.type !== 'floor' && !promptText) standingText = `Standing on: ${tileDef.name}`;
+  else if (!tile.passable && !promptText) standingText = `Standing on: ${tileDef.name}`;
 
   return { standingText, detailText, promptText };
 }

@@ -46,6 +46,7 @@ export const ACTION_METADATA: ActionMetadata[] = [
   // Interaction & Inventory
   { id: 'character_menu', name: 'Character Menu', category: 'Interaction & Inventory', defaultCodes: ['KeyE'] },
   { id: 'inventory', name: 'Open Inventory', category: 'Interaction & Inventory', defaultCodes: ['KeyI'] },
+  { id: 'context_action', name: 'Context Action (stairs, loot, doors, talk)', category: 'Interaction & Inventory', defaultCodes: ['KeyF'] },
   { id: 'pickup', name: 'Pick Up Item', category: 'Interaction & Inventory', defaultCodes: ['KeyG', 'Comma'] },
   { id: 'quick_loot', name: 'Quick-Loot All Items', category: 'Interaction & Inventory', defaultCodes: ['Shift+KeyG', 'Shift+Comma'] },
   { id: 'close_door', name: 'Smart Close Door', category: 'Interaction & Inventory', defaultCodes: ['KeyC'] },

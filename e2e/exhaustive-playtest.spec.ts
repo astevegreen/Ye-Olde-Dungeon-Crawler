@@ -16,6 +16,47 @@ async function embarkNewHero(page: Page): Promise<void> {
   await expect.poll(() => page.evaluate(() => Boolean((window as any).__cotwEngine))).toBe(true);
 }
 
+/**
+ * Steps with `key` and waits for `modalId` to reach the modal stack. A keypress during
+ * effect playback or under heavy parallel load can be dropped, so a step that left the
+ * hero where they stood is retried; a fixed sleep used to race the modal instead.
+ */
+async function stepAndAwaitModal(page: Page, key: string, modalId: string): Promise<void> {
+  const state = () =>
+    page.evaluate((id) => {
+      const w = window as any;
+      const e = w.__cotwEngine;
+      return {
+        open: Boolean(w.__cotwInputHandler?.modalStack.has(id)),
+        locked: Boolean(w.__cotwInputHandler?.isInputLocked),
+        pos: `${e.player.x},${e.player.y}`,
+        stack: w.__cotwInputHandler?.modalStack.getStackIds() ?? [],
+        log: e.messages.slice(-3),
+        focus: `${document.activeElement?.tagName}#${document.activeElement?.id}`,
+        enabled: w.__cotwInputHandler?.enabled,
+        hp: `${e.player.hp}/${e.player.maxHp}`,
+        gameOver: document.getElementById('game-over-modal')?.style.display,
+        here: e.map.getTile(e.player.x, e.player.y)?.type,
+        around: [[0,-1],[0,1],[-1,0],[1,0]].map(([dx,dy]) => `${e.map.getTile(e.player.x+dx, e.player.y+dy)?.type}${e.map.getEntityAt(e.player.x+dx, e.player.y+dy) ? '+ent' : ''}`),
+      };
+    }, modalId);
+
+  const start = await state();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await expect.poll(async () => (await state()).locked).toBe(false);
+    await page.keyboard.press(key);
+    try {
+      await expect.poll(async () => (await state()).open, { timeout: 2000 }).toBe(true);
+      // Choice dialogs ignore keys for 200ms after opening, so a held key can't pick for you.
+      await page.waitForTimeout(250);
+      return;
+    } catch {
+      if ((await state()).pos !== start.pos) break; // the step happened; retrying would walk away
+    }
+  }
+  expect((await state()).open, `'${modalId}' never opened after ${key}: ${JSON.stringify(await state())}`).toBe(true);
+}
+
 test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems', () => {
   test('full end-to-end playtest across all recent updates', async ({ page }) => {
     test.setTimeout(120000);
@@ -300,6 +341,9 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
     // Test Floor 13 Dwarven Hearth Grotto
     const floor13Result = await page.evaluate(() => {
       const engine = (window as any).__cotwEngine;
+      // A level-1 hero teleported this deep can be killed between steps (floor 45 did,
+      // under load), which ends the run mid-test; the floor tests below aren't about combat.
+      if (!engine.player.isInvulnerable) engine.diagnostics.toggleGodMode();
       engine.diagnostics.jumpToFloor(13);
 
       const map = engine.map;
@@ -360,8 +404,7 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
     expect(floor13Result.monstersInGrottoCount, 'Grotto must be peaceful sanctuary with 0 monsters').toBe(0);
 
     // Step onto hearth to trigger choice modal
-    await page.keyboard.press('ArrowUp');
-    await page.waitForTimeout(250);
+    await stepAndAwaitModal(page, 'ArrowUp', 'choice');
 
     const hearthChoiceOpened = await page.evaluate(() => {
       const handler = (window as any).__cotwInputHandler;
@@ -471,13 +514,25 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
 
       if (!runePos) return { error: 'Floor 8 missing skaldic_runestone_1' };
 
-      // Teleport player adjacent to runestone
-      engine.map.moveEntity(engine.player, runePos.x, runePos.y + 1);
+      // Stand on a free side of it, confirming the move landed (a blind moveEntity onto an
+      // occupied or blocked tile left the hero at the stairs, stepping into nothing).
+      let stepKey: string | null = null;
+      for (const [dx, dy, key] of [[0, 1, 'ArrowUp'], [0, -1, 'ArrowDown'], [1, 0, 'ArrowLeft'], [-1, 0, 'ArrowRight']] as const) {
+        const x = runePos.x + dx;
+        const y = runePos.y + dy;
+        if (!map.isPassable(x, y) || map.getEntityAt(x, y)) continue;
+        engine.map.moveEntity(engine.player, x, y);
+        if (engine.player.x === x && engine.player.y === y) {
+          stepKey = key;
+          break;
+        }
+      }
       engine.updateFov();
 
       return {
         currentFloor: engine.currentFloor,
         runePos,
+        stepKey,
       };
     });
 
@@ -485,8 +540,8 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
     expect(runestoneResult.runePos).toBeDefined();
 
     // Step onto runestone
-    await page.keyboard.press('ArrowUp');
-    await page.waitForTimeout(250);
+    expect(runestoneResult.stepKey, 'no free tile beside the runestone').toBeTruthy();
+    await stepAndAwaitModal(page, runestoneResult.stepKey!, 'choice');
 
     const runestoneModalCheck = await page.evaluate(() => {
       const handler = (window as any).__cotwInputHandler;
@@ -613,11 +668,7 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
 
     // Step to trigger MovementAction storyChoiceTrigger check. A keypress during effect
     // playback is dropped, so wait for the input lock to clear first.
-    await expect.poll(() => page.evaluate(() => (window as any).__cotwInputHandler?.isInputLocked)).toBe(false);
-    await page.keyboard.press(vidnirResult.stepDir);
-    await expect
-      .poll(() => page.evaluate(() => (window as any).__cotwInputHandler?.modalStack.has('choice')))
-      .toBe(true);
+    await stepAndAwaitModal(page, vidnirResult.stepDir, 'choice');
     await page.waitForTimeout(300);
 
     const vidnirChoiceCheck = await page.evaluate(() => {
@@ -671,20 +722,18 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
 
       if (!altarPos) return { error: 'Floor 4 missing galdr_altar_tyr altar' };
 
-      // Find an adjacent walkable tile around altar to position the player
-      let stepKey = 'ArrowUp';
-      if (map.isPassable(altarPos.x, altarPos.y + 1)) {
-        engine.map.moveEntity(engine.player, altarPos.x, altarPos.y + 1);
-        stepKey = 'ArrowUp';
-      } else if (map.isPassable(altarPos.x, altarPos.y - 1)) {
-        engine.map.moveEntity(engine.player, altarPos.x, altarPos.y - 1);
-        stepKey = 'ArrowDown';
-      } else if (map.isPassable(altarPos.x + 1, altarPos.y)) {
-        engine.map.moveEntity(engine.player, altarPos.x + 1, altarPos.y);
-        stepKey = 'ArrowLeft';
-      } else if (map.isPassable(altarPos.x - 1, altarPos.y)) {
-        engine.map.moveEntity(engine.player, altarPos.x - 1, altarPos.y);
-        stepKey = 'ArrowRight';
+      // Stand on a free side of it, confirming the move landed (a blind moveEntity onto an
+      // occupied or blocked tile left the hero at the stairs, stepping into nothing).
+      let stepKey: string | null = null;
+      for (const [dx, dy, key] of [[0, 1, 'ArrowUp'], [0, -1, 'ArrowDown'], [1, 0, 'ArrowLeft'], [-1, 0, 'ArrowRight']] as const) {
+        const x = altarPos.x + dx;
+        const y = altarPos.y + dy;
+        if (!map.isPassable(x, y) || map.getEntityAt(x, y)) continue;
+        engine.map.moveEntity(engine.player, x, y);
+        if (engine.player.x === x && engine.player.y === y) {
+          stepKey = key;
+          break;
+        }
       }
 
       engine.updateFov();
@@ -700,8 +749,8 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
     expect(altarResult.altarPos).toBeDefined();
 
     // Step onto altar
-    await page.keyboard.press(altarResult.stepKey ?? 'ArrowUp');
-    await page.waitForTimeout(250);
+    expect(altarResult.stepKey, 'no free tile beside the altar').toBeTruthy();
+    await stepAndAwaitModal(page, altarResult.stepKey!, 'altar');
 
     const altarModalCheck = await page.evaluate(() => {
       const handler = (window as any).__cotwInputHandler;

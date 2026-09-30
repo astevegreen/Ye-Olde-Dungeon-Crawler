@@ -1,8 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { cotwManifest, COTW_TILES, COTW_CHOICES } from '../index';
 import { SKALDIC_RUNESTONE_PLACEMENTS, SKALDIC_RUNESTONE_TILES } from '../runestones';
-import { VIDNIR_DEFEATED_TRIGGER, VIDNIR_REVELATION_CHOICE, COTW_ZONE_VIGNETTES_HOOK, COTW_TOWN_REACTIVE_HOOK } from '../narrative';
-import { GameMap, NPC, Player, setFlag, createWorldState } from '../../../engine';
+import {
+  VIDNIR_DEFEATED_TRIGGER,
+  VIDNIR_REVELATION_CHOICE,
+  COTW_ZONE_VIGNETTES_HOOK,
+  COTW_TOWN_REACTIVE_HOOK,
+  COTW_SVART_TAUNT_HOOK,
+} from '../narrative';
+import { GameMap, Monster, NPC, Player, setFlag, createWorldState } from '../../../engine';
 import { COTW_DEEPEST_FLOOR_COUNTER } from '../spellTablets';
 
 describe('CotW Narrative Progression & Skaldic Runestones', () => {
@@ -181,5 +187,43 @@ describe('CotW Narrative Progression & Skaldic Runestones', () => {
     COTW_TOWN_REACTIVE_HOOK.execute({ action: null as any, actionType: 'wait', actor: player, engine: engineContext });
     expect(olaf.greeting).toContain('You broke the Herald Víðnir');
     expect(mimir.dialogText).toContain('Slaying Níðhögg in fury will shatter the dying root');
+  });
+  it("has Víðnir taunt the hero once Svartr falls on floor 36, and not before", () => {
+    const logs: string[] = [];
+    const worldState = createWorldState();
+    const player = new Player({ name: 'Sven', position: { x: 1, y: 1 } });
+    const map = new GameMap(20, 20);
+    const svartr = new Monster({
+      id: 'svartr-1',
+      name: 'Svartr, the Taproot Matriarch',
+      definitionId: 'miniboss_rot_matriarch',
+      position: { x: 5, y: 5 },
+      stats: { hp: 180, maxHp: 180, attack: 22, defense: 10 },
+    });
+    map.addEntity(svartr);
+    const engineContext = {
+      player,
+      map,
+      surfaces: null as any,
+      worldState,
+      rng: () => 0.5,
+      log: (msg: string) => logs.push(msg),
+      getWorldFlag: (f: string) => Boolean(worldState.flags[f]),
+      setWorldFlag: (f: string, v: boolean) => setFlag(worldState, f, v),
+      currentFloor: 36,
+      removeEntity: () => true,
+    };
+    const tick = () =>
+      COTW_SVART_TAUNT_HOOK.execute({ action: null as any, actionType: 'wait', actor: player, engine: engineContext });
+
+    tick();
+    expect(logs.some((l) => l.includes('spectral silhouette'))).toBe(false);
+
+    map.removeEntity(svartr);
+    tick();
+    expect(logs.filter((l) => l.includes('spectral silhouette'))).toHaveLength(1);
+
+    tick();
+    expect(logs.filter((l) => l.includes('spectral silhouette'))).toHaveLength(1);
   });
 });

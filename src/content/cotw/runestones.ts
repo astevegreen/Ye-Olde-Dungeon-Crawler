@@ -101,7 +101,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '✦ RUNIC SPELL HINT: Slain Brim-Howlers yield the Slow galdr, while Glacier-Borers yield Cold Ray. In your grimoire, the Isa glyph (from cold essence) causes all damaging spells to slow their targets! ✦',
+              '✦ RUNIC SPELL HINT: Brim-Howlers felled by pure rune-force yield the Slow galdr, while a Winter Hag melted with flame yields Cold Ray. In your grimoire, the Isa glyph (from cold essence) causes all damaging spells to slow their targets! ✦',
           },
         ],
       },
@@ -117,7 +117,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '✦ RUNIC SPELL HINT: Slain Brim-Howlers yield the Slow galdr, while Glacier-Borers yield Cold Ray. In your grimoire, the Isa glyph (from cold essence) causes all damaging spells to slow their targets! ✦',
+              '✦ RUNIC SPELL HINT: Brim-Howlers felled by pure rune-force yield the Slow galdr, while a Winter Hag melted with flame yields Cold Ray. In your grimoire, the Isa glyph (from cold essence) causes all damaging spells to slow their targets! ✦',
           },
         ],
       },

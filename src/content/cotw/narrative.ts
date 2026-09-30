@@ -1,5 +1,5 @@
 import type { ActionHook, ChoiceDefinition, NPC, StoryChoiceTrigger } from '../../engine';
-import { getCounter, getFlag, setFlag } from '../../engine';
+import { Monster, getCounter, getFlag, setFlag } from '../../engine';
 import { COTW_DEEPEST_FLOOR_COUNTER } from './spellTablets';
 
 /**
@@ -12,9 +12,8 @@ export const VIDNIR_DEFEATED_TRIGGER: StoryChoiceTrigger = {
   choiceId: 'vidnir_revelation',
   monsterDefinitionId: 'miniboss_maw_herald',
   killsRequired: 1,
-  progressStartFlag: 'vidnir_confronted',
-  progressStartMessage:
-    '*** Víðnir, Herald of the Wyrm, snarls and brandishes the dragon’s relic fang! The herald must fall before the Heartwood can be reached! ***',
+  // No progressStartMessage: with a single required kill it would print at the moment
+  // of death, after the herald has already fallen.
 };
 
 export const VIDNIR_REVELATION_CHOICE: ChoiceDefinition = {
@@ -132,23 +131,30 @@ export const COTW_ZONE_VIGNETTES_HOOK: ActionHook = {
 /**
  * Floor 36 Svartr Taunt: when the Taproot Matriarch falls on floor 36, Víðnir's
  * phantom laughter echoes through the root galleries, establishing him as a recurring nemesis.
+ *
+ * Kill tracking isn't on `EngineContext`, so the hook watches the floor instead: once
+ * Svartr has been seen alive there, her absence from the floor means she has fallen.
  */
+const SVARTR_ID = 'miniboss_rot_matriarch';
+const SVARTR_FLOOR = 36;
+
 export const COTW_SVART_TAUNT_HOOK: ActionHook = {
   id: 'cotw-svartr-taunt',
   phase: 'post',
   actionType: '*',
   execute: ({ actor, engine }) => {
     if (actor !== engine.player) return;
-    if (engine.currentFloor === 36 && !getFlag(engine.worldState, 'svartr_taunt_seen')) {
-      const kills = (engine.worldState as unknown as { compendiumKills?: Record<string, number> })
-        ?.compendiumKills?.['miniboss_rot_matriarch'];
-      // Check kill flag
-      if (kills && kills >= 1) {
-        setFlag(engine.worldState, 'svartr_taunt_seen', true);
-        engine.log(
-          '*** A spectral silhouette appears atop the root-gallery! Víðnir, Herald of the Wyrm, laughs down at you: "Slay the matriarch if you must, heir of Thrym! Her rot was merely the prelude. Come to the Maw on Floor 45 if you dare meet the dragon’s fang!" ***'
-        );
-      }
+    if (engine.currentFloor !== SVARTR_FLOOR || getFlag(engine.worldState, 'svartr_taunt_seen')) return;
+    const svartrAlive = engine.map
+      .getAllEntities()
+      .some((e) => e instanceof Monster && e.definitionId === SVARTR_ID && e.isAlive());
+    if (svartrAlive) {
+      setFlag(engine.worldState, 'svartr_encountered', true);
+    } else if (getFlag(engine.worldState, 'svartr_encountered')) {
+      setFlag(engine.worldState, 'svartr_taunt_seen', true);
+      engine.log(
+        '*** A spectral silhouette appears atop the root-gallery! Víðnir, Herald of the Wyrm, laughs down at you: "Slay the matriarch if you must, heir of Thrym! Her rot was merely the prelude. Come to the Maw on Floor 45 if you dare meet the dragon’s fang!" ***'
+      );
     }
   },
 };
@@ -215,8 +221,8 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
         o.greeting = 'You reached the Dwarven Works? Our ancestors traded honey and hides with those halls.';
         o.dialogText =
           'If the duergar forges are cold, what is drawing all the warmth down from above? Stock up and delve deeper.';
-      } else if (deepest >= 5) {
-        o.greeting = 'The Rune of Return is in Thrain’s hands! Hope returns to Bjarnarhaven!';
+      } else if (engine.player.hasDiscoveredRune) {
+        o.greeting = 'You carry the Rune of Return! Hope returns to Bjarnarhaven!';
         o.dialogText =
           'With the rune, you can always retreat to our hearth when the depths turn lethal. Stay vigilant, hero.';
       }
@@ -227,7 +233,7 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
       if (vidnirSlain) {
         g.greeting = 'Níðhögg’s fang itself is in your grasp! The final battle draws near.';
         g.dialogText =
-          'Whether you slay or seal the beast, strike true. Khaz Modan steel and frost-giant blood will see you through.';
+          'Whether you slay or seal the beast, strike true. Duergar steel and frost-giant blood will see you through.';
       } else if (hasRelic) {
         g.greeting = 'The forge fire burns hot again without choking on ice! But the anvil vibrates with deep tremors.';
         g.dialogText =

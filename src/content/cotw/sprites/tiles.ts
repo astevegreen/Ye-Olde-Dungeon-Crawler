@@ -508,37 +508,34 @@ export const COTW_TILE_SPRITES: Record<string, SpriteRecipe> = {
   },
 
   // --- Act 1 Campfire Grotto: Dwarven Hearth Grotto Sprites ---
+  // A thin sheet of runoff over the works' rock face: wall-coloured, so it reads as wall
+  // until you look closely (dwarvenWorks.ts palette: faceLo/face/rim/cap, liquidHi sheen).
   dwarven_cascade_veil: (ctx, ox, oy) => {
-    // Stone frame on sides
-    ctx.fillStyle = P.dwarfStone ?? '#292524';
-    ctx.fillRect(ox, oy, 4, 32);
-    ctx.fillRect(ox + 28, oy, 4, 32);
-    ctx.fillStyle = P.stoneDark ?? '#1c1917';
-    ctx.fillRect(ox, oy, 32, 4);
+    const g = ctx.createLinearGradient(ox, oy, ox, oy + 32);
+    g.addColorStop(0, '#554a3c');
+    g.addColorStop(0.5, '#463c32');
+    g.addColorStop(1, '#302922');
+    ctx.fillStyle = g;
+    ctx.fillRect(ox, oy, 32, 32);
+    ctx.fillStyle = '#6d5e4e';
+    ctx.fillRect(ox, oy, 32, 3);
 
-    // Deep rushing water backdrop
-    ctx.fillStyle = '#0369a1';
-    ctx.fillRect(ox + 4, oy + 4, 24, 28);
+    // Mortar courses, broken where the water runs
+    ctx.fillStyle = 'rgba(20, 15, 10, 0.55)';
+    ctx.fillRect(ox, oy + 11, 7, 1);
+    ctx.fillRect(ox + 25, oy + 11, 7, 1);
+    ctx.fillRect(ox, oy + 21, 5, 1);
+    ctx.fillRect(ox + 27, oy + 21, 5, 1);
 
-    // Vertical rushing streams of white and sky-blue water
-    ctx.fillStyle = '#38bdf8';
-    ctx.fillRect(ox + 6, oy + 4, 3, 24);
-    ctx.fillRect(ox + 12, oy + 4, 4, 25);
-    ctx.fillRect(ox + 19, oy + 4, 3, 23);
-    ctx.fillRect(ox + 24, oy + 4, 2, 24);
-
-    ctx.fillStyle = '#7dd3fc';
-    ctx.fillRect(ox + 8, oy + 5, 2, 20);
-    ctx.fillRect(ox + 14, oy + 4, 2, 22);
-    ctx.fillRect(ox + 21, oy + 6, 2, 19);
-
-    // Foaming water crests and splash spray at bottom
-    ctx.fillStyle = '#e0f2fe';
-    ctx.fillRect(ox + 5, oy + 26, 22, 5);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(ox + 7, oy + 25, 4, 2);
-    ctx.fillRect(ox + 15, oy + 24, 5, 2);
-    ctx.fillRect(ox + 22, oy + 25, 3, 2);
+    // Faint wet streaks down the middle of the face
+    ctx.fillStyle = 'rgba(111, 154, 163, 0.28)';
+    ctx.fillRect(ox + 8, oy + 3, 16, 29);
+    ctx.fillStyle = 'rgba(111, 154, 163, 0.35)';
+    ctx.fillRect(ox + 10, oy + 3, 1, 27);
+    ctx.fillRect(ox + 15, oy + 3, 2, 29);
+    ctx.fillRect(ox + 21, oy + 3, 1, 26);
+    ctx.fillStyle = 'rgba(190, 215, 220, 0.25)';
+    ctx.fillRect(ox + 9, oy + 30, 14, 2);
   },
   'dwarven_cascade_veil~prop': (ctx, ox, oy) => {
     COTW_TILE_SPRITES.dwarven_cascade_veil(ctx, ox, oy, 32);

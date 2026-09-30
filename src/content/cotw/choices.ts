@@ -319,7 +319,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
       {
         id: 'sip',
         label: 'Drink the Mineral Water',
-        description: 'Take a long draught of pure mountain water. Cleanses fatigue and clears your mind.',
+        description: 'Take a long draught of pure mountain water and let the quiet settle over you.',
         consequences: [
           { type: 'setFlag', flag: 'dwarven_spring_drank', value: true },
           {

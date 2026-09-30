@@ -1,4 +1,5 @@
 import { type GameEngine, getTileDefinition } from '../engine';
+import type { ModeHint } from '../rendering/canvas-renderer';
 
 export interface GroundStatusInfo {
   standingText: string;
@@ -27,19 +28,18 @@ export function formatGroundStatus(engine: GameEngine, x: number, y: number): Gr
     };
   }
   const tileDef = getTileDefinition(tile.type);
-  let locationModifier = '';
+  let buildingName = '';
 
   // 1. Check if standing in a named town building (when on Floor 0 / Town)
   if (engine.currentFloor === 0 && engine.manifest?.town?.buildings) {
     for (const b of engine.manifest.town.buildings) {
       if (x >= b.bounds.x1 && x <= b.bounds.x2 && y >= b.bounds.y1 && y <= b.bounds.y2) {
-        locationModifier = ` (${b.name})`;
+        buildingName = b.name;
         break;
       }
     }
   }
 
-  const standingText = `Standing on: ${tileDef.name}${locationModifier}`;
   let detailText = '';
   let promptText = '';
 
@@ -71,6 +71,15 @@ export function formatGroundStatus(engine: GameEngine, x: number, y: number): Gr
     detailText = detailText ? `${detailText} | ${hazardMsg}` : hazardMsg;
   }
 
+  // Say where you stand only when it tells you something: a building's name, or
+  // terrain that isn't plain floor and that no prompt already names.
+  let standingText = '';
+  if (buildingName) {
+    standingText = `📍 ${buildingName}`;
+  } else if (tile.type !== 'floor' && !promptText) {
+    standingText = `Standing on: ${tileDef.name}`;
+  }
+
   return { standingText, detailText, promptText };
 }
 
@@ -80,6 +89,8 @@ export class BottomStatusBar {
   private detailsEl: HTMLElement;
   private promptEl: HTMLElement;
   private turnEl: HTMLElement;
+  private modeHint: ModeHint | null = null;
+  private tilePrompt = '';
 
   constructor() {
     this.container = document.createElement('div');
@@ -153,11 +164,33 @@ export class BottomStatusBar {
     }
 
     this.standingEl.textContent = status.standingText;
-    this.detailsEl.textContent = status.detailText ? ` | ${status.detailText}` : '';
-    this.promptEl.textContent = promptText;
+    const separator = status.standingText ? ' | ' : '';
+    this.detailsEl.textContent = status.detailText ? `${separator}${status.detailText}` : '';
+    this.tilePrompt = promptText;
     this.turnEl.textContent = `Turn ${engine.turnCount}`;
+    this.renderPrompt();
+  }
 
-    if (unspent > 0) {
+  /**
+   * While the map viewer, look mode, aiming or the grimoire is open, its controls
+   * take the prompt slot; the tile prompt comes back when the mode closes.
+   */
+  public setModeHint(hint: ModeHint | null): void {
+    this.modeHint = hint;
+    this.renderPrompt();
+  }
+
+  private renderPrompt(): void {
+    if (this.modeHint) {
+      this.promptEl.textContent = this.modeHint.text;
+      this.promptEl.style.color = this.modeHint.tone === 'aim' ? '#fde047' : '#fbbf24';
+      this.promptEl.style.fontWeight = 'bold';
+      return;
+    }
+
+    const promptText = this.tilePrompt;
+    this.promptEl.textContent = promptText;
+    if (promptText.startsWith('⭐')) {
       this.promptEl.style.color = '#facc15';
       this.promptEl.style.fontWeight = 'bold';
     } else if (promptText.includes('🪜') || promptText.includes('🌀')) {

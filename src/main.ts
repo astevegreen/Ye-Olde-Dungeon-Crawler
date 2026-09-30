@@ -505,6 +505,20 @@ window.addEventListener('DOMContentLoaded', () => {
     if (floorEl) {
       floorEl.textContent = activeEngine.currentFloor === 0 ? `Town (${brand.townName})` : `Floor ${activeEngine.currentFloor}`;
     }
+    // Level and experience moved here from the canvas strip, which used to repeat
+    // the title, location and HP/MP the header and orbs already show.
+    const levelEl = document.getElementById('header-level');
+    if (levelEl) {
+      const p = activeEngine.player;
+      const xpText = `${p.xp}/${p.xpToNextLevel} ${brand.xpName}`;
+      levelEl.innerHTML = '';
+      levelEl.append(`Lvl ${p.level}`);
+      const xpEl = document.createElement('span');
+      xpEl.className = 'header-xp';
+      xpEl.textContent = ` · ${xpText}`;
+      levelEl.append(xpEl);
+      levelEl.title = `Level ${p.level} — ${xpText} to level ${p.level + 1}`;
+    }
     // Position/turn were previously also shown here, duplicating both the canvas's own
     // HUD and each other (HUD overhaul). The one remaining turn readout lives in
     // BottomStatusBar's ground-status-bar (`.ground-status-turn`, updated per player turn).
@@ -1533,6 +1547,7 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer.radialMenuOverlay.slots = settingsManager.getSettings().radialMenuSlots;
       renderer.inventoryOverlay.richHoverCardsEnabled = settingsManager.getSettings().inventoryRichHoverCards;
       renderer.onResolveRadialLabel = resolveRadialMenuLabel;
+      renderer.onModeHintChanged = (hint) => bottomStatusBar.setModeHint(hint);
       settingsManager.subscribe((settings) => {
         if (renderer) {
           renderer.mouseVectoringEnabled = settings.mouseVectoringEnabled;

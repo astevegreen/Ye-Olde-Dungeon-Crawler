@@ -90,6 +90,14 @@
    full label always survives in the button's `title` tooltip. Sized against
    `#game-container` (the letterboxed canvas width), not the browser viewport —
    see its `container-type: inline-size` above. */
+/* On a narrow canvas the header keeps "Lvl N" and moves experience into its tooltip,
+   so the header buttons don't have to scroll. */
+@container game (max-width: 860px) {
+  #header-level .header-xp {
+    display: none;
+  }
+}
+
 @container game (max-width: 720px) {
   #game-header-bar .hud-word {
     display: none;
@@ -106,6 +114,12 @@
 
 .hud-btn-quiet {
   opacity: 0.7;
+}
+
+/* Rarely used tools (feedback, dev triage) keep their icon and key; the title
+   tooltip carries the name, so they don't take header room from hero and depth. */
+.hud-btn-quiet .hud-word {
+  display: none;
 }
 
 .hud-btn-quiet:hover {

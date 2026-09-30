@@ -191,11 +191,11 @@ describe('Modal Stack Lifecycle & UI Ground Status Polish', () => {
   });
 
   describe('formatGroundStatus', () => {
-    it('formats standard dungeon floor correctly', () => {
+    it('says nothing about plain dungeon floor', () => {
       engine.currentFloor = 1;
       map.setTile(5, 5, TILES.FLOOR);
       const status = formatGroundStatus(engine, 5, 5);
-      expect(status.standingText).toBe('Standing on: Stone Dungeon Floor');
+      expect(status.standingText).toBe('');
       expect(status.detailText).toBe('');
       expect(status.promptText).toBe('');
     });
@@ -215,7 +215,7 @@ describe('Modal Stack Lifecycle & UI Ground Status Polish', () => {
       map.setTile(5, 5, woodenPlanks);
       // (5, 5) is inside Olaf's General Store (3, 2 to 16, 9)
       const status = formatGroundStatus(engine, 5, 5);
-      expect(status.standingText).toBe("Standing on: Wooden Planks (Olaf's General Store)");
+      expect(status.standingText).toBe("📍 Olaf's General Store");
     });
 
     it('formats actionable stair prompts for stairs down and up', () => {

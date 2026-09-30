@@ -93,6 +93,23 @@ describe('BottomStatusBar — turn counter (HUD overhaul)', () => {
     expect(parent.querySelector('.ground-status-turn')?.textContent).toBe('Turn 42');
   });
 
+  it('shows an open mode\'s controls in the prompt slot, then restores the tile prompt', () => {
+    const bar = new BottomStatusBar();
+    const parent = new FakeElement();
+    bar.mount(parent as unknown as HTMLElement);
+    const engine = buildEngine();
+    engine.map.setTile(3, 3, TILES.STAIRS_DOWN);
+    bar.update(engine);
+    const prompt = () => parent.querySelector('.ground-status-prompt')?.textContent;
+    expect(prompt()).toContain('Stairs Down');
+
+    bar.setModeHint({ text: 'Look: [arrows] move the reticle · [L / Esc] exit', tone: 'mode' });
+    expect(prompt()).toBe('Look: [arrows] move the reticle · [L / Esc] exit');
+
+    bar.setModeHint(null);
+    expect(prompt()).toContain('Stairs Down');
+  });
+
   it('mounts the turn readout in the status bar\'s right column alongside the tile prompt', () => {
     const bar = new BottomStatusBar();
     const parent = new FakeElement();
@@ -109,6 +126,14 @@ describe('formatGroundStatus (pre-existing, exercised for regression safety)', (
     const engine = buildEngine();
     const status = formatGroundStatus(engine, -1, -1);
     expect(status.standingText).toBe('Standing on: Unknown Void');
+  });
+
+  it('names unusual terrain, but not stairs (the prompt already names them)', () => {
+    const engine = buildEngine();
+    engine.map.setTile(5, 5, TILES.WALL);
+    expect(formatGroundStatus(engine, 5, 5).standingText).toBe('Standing on: Carved Stone Wall');
+    engine.map.setTile(6, 6, TILES.STAIRS_DOWN);
+    expect(formatGroundStatus(engine, 6, 6).standingText).toBe('');
   });
 
   it('prompts to descend on a stairs-down tile', () => {

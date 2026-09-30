@@ -39,6 +39,12 @@ function defaultRadialLabel(slot: RadialMenuSlotConfig): string {
 /** Optional pack art for a multi-item tile; without it the renderer draws a generic heap. */
 const LOOT_PILE_SPRITE_KEY = 'loot_pile';
 
+export interface ModeHint {
+  text: string;
+  /** `aim` is the one mode where a key press spends a turn, so it reads louder. */
+  tone: 'mode' | 'aim';
+}
+
 /**
  * Ambient statuses (giant_blood, the energy-model afflictions) are applied with a
  * 9999-turn sentinel, but the status manager still decrements them each tick
@@ -74,9 +80,10 @@ export class CanvasRenderer {
   public torchlightEnabled = true;
   public navigationController?: NavigationController;
   private cellSize = 32;
-  private topBarHeight = 46;
-  // Context hints only (map/look/aim controls); the message log lives in the DOM below the canvas.
-  private bottomBarHeight = 22;
+  private topBarHeight = 24;
+  private lastModeHintKey = '';
+  /** Fires when the open mode's control hint changes (null when back to normal play). */
+  public onModeHintChanged?: (hint: ModeHint | null) => void;
   private offsetX = 0;
   private offsetY = 0;
   private boundClickHandler?: (e: MouseEvent) => void;
@@ -104,8 +111,6 @@ export class CanvasRenderer {
       typeAt: (x: number, y: number) => (map().inBounds(x, y) ? map().getTile(x, y)?.type : undefined),
     };
   })();
-  private cachedHudTitle = '';
-  private cachedHudTitleKey = '';
   public onPactModalRequested?: () => void;
 
   public get canvasElement(): HTMLCanvasElement {
@@ -167,7 +172,7 @@ export class CanvasRenderer {
       // Direct Canvas Mouse Vectoring or Click-to-Move Pathfinding on dungeon floor
       if (
         clickY >= this.topBarHeight &&
-        clickY < this.viewport.virtualHeight - this.bottomBarHeight &&
+        clickY < this.viewport.virtualHeight &&
         !this.inspectOverlay.isOpen &&
         !this.targetingOverlay.isOpen
       ) {
@@ -250,7 +255,7 @@ export class CanvasRenderer {
         !this.targetingOverlay.isOpen &&
         !this.mapOverlay.isOpen &&
         mouseY >= this.topBarHeight &&
-        mouseY < this.viewport.virtualHeight - this.bottomBarHeight &&
+        mouseY < this.viewport.virtualHeight &&
         worldCoords
       ) {
         this.tacticalTargetOverlay.setHoveredTile(worldCoords.x, worldCoords.y);
@@ -265,7 +270,7 @@ export class CanvasRenderer {
         !this.inspectOverlay.isOpen &&
         !this.targetingOverlay.isOpen &&
         mouseY >= this.topBarHeight &&
-        mouseY < this.viewport.virtualHeight - this.bottomBarHeight
+        mouseY < this.viewport.virtualHeight
       ) {
         this.mouseVectorOverlay.handleMouseMove(
           mouseX,
@@ -350,7 +355,7 @@ export class CanvasRenderer {
       // Universal double-click on canvas floor: ground loot pick-up
       if (
         clickY >= this.topBarHeight &&
-        clickY < this.viewport.virtualHeight - this.bottomBarHeight &&
+        clickY < this.viewport.virtualHeight &&
         !this.inspectOverlay.isOpen &&
         !this.targetingOverlay.isOpen
       ) {
@@ -462,11 +467,11 @@ export class CanvasRenderer {
     this.viewport.recalculate();
 
     const availW = this.viewport.virtualWidth;
-    const availH = this.viewport.virtualHeight - (this.topBarHeight + this.bottomBarHeight);
+    const availH = this.viewport.virtualHeight - this.topBarHeight;
 
     // Fixed tile grid inside 960x600 virtual resolution
     const targetCols = Math.min(this.engine.map.width, 28);
-    const targetRows = Math.min(this.engine.map.height, 14);
+    const targetRows = Math.min(this.engine.map.height, 17);
 
     this.camera.viewWidthTiles = targetCols;
     this.camera.viewHeightTiles = targetRows;
@@ -602,7 +607,7 @@ export class CanvasRenderer {
     }
 
     // Bottom Bar (Action log)
-    this.renderBottomBar(virtualW, virtualH);
+    this.notifyModeHint();
 
     // Inventory / Paperdoll Overlay (if open)
     this.inventoryOverlay.render(ctx, this.engine, virtualW, virtualH);
@@ -652,12 +657,18 @@ export class CanvasRenderer {
     );
   }
 
+  /**
+   * One-line tactical strip: combat stats, then only the conditions worth a glance —
+   * encumbrance once it slows you, statuses, sensing spells and story countdowns.
+   * Name, depth, level and HP/MP live in the header and the orbs, not here too.
+   */
   private renderTopBar(width: number): void {
     const ctx = this.ctx;
     ctx.save();
     const p = this.engine.player;
     const theme = this.theme;
     const font = theme.fontFamily ?? '"Courier New", Courier, monospace';
+    const midY = Math.round(this.topBarHeight / 2);
 
     ctx.fillStyle = theme.hudBg;
     ctx.fillRect(0, 0, width, this.topBarHeight);
@@ -669,82 +680,19 @@ export class CanvasRenderer {
     ctx.lineTo(width, this.topBarHeight - 0.5);
     ctx.stroke();
 
-    // Title, Dungeon Depth / Town Hub, Level & XP (cached for zero-allocation frames)
-    const townName = this.engine.manifest?.town?.name?.toUpperCase() ?? 'TOWN';
-    const gameTitle = this.engine.manifest?.name?.toUpperCase() ?? 'ADVENTURE';
-    const locationLabel = this.engine.currentFloor === 0 ? `TOWN: ${townName}` : `DEPTH ${this.engine.currentFloor}`;
-    const hudKey = `${gameTitle}|${locationLabel}|${p.level}|${p.xp}|${p.xpToNextLevel}`;
-    if (this.cachedHudTitleKey !== hudKey) {
-      this.cachedHudTitleKey = hudKey;
-      this.cachedHudTitle = `${gameTitle} [${locationLabel}]  LVL:${p.level} (${this.engine.manifest?.branding?.xpName ?? 'XP'}:${p.xp}/${p.xpToNextLevel})`;
-    }
-    ctx.font = `bold 12px ${font}`;
-    ctx.fillStyle = theme.hudAccent;
+    ctx.font = `bold 11px ${font}`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(this.cachedHudTitle, 14, 15);
 
-    // 1. Health Bar
-    const hpBarX = 14;
-    const hpBarY = 28;
-    const hpBarWidth = 80;
-    const hpBarHeight = 9;
-    const hpRatio = Math.max(0, Math.min(1, p.hp / p.maxHp));
+    const badges: Array<{ text: string; color: string }> = [
+      { text: `ATK ${p.attack} · DEF ${p.defense}`, color: theme.textMuted },
+    ];
 
-    ctx.fillStyle = theme.cardBg;
-    ctx.fillRect(hpBarX, hpBarY, hpBarWidth, hpBarHeight);
-
-    ctx.fillStyle = hpRatio > 0.5 ? theme.healthBar : hpRatio > 0.25 ? '#f59e0b' : '#ef4444';
-    ctx.fillRect(hpBarX, hpBarY, Math.floor(hpBarWidth * hpRatio), hpBarHeight);
-
-    ctx.strokeStyle = theme.cardBorder;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(hpBarX + 0.5, hpBarY + 0.5, hpBarWidth - 1, hpBarHeight - 1);
-
-    ctx.font = `bold 10px ${font}`;
-    ctx.fillStyle = theme.hudText;
-    ctx.textAlign = 'left';
-    ctx.fillText(`HP:${p.hp}/${p.maxHp}`, hpBarX + hpBarWidth + 6, hpBarY + 5);
-
-    // 2. Mana Bar
-    const mpBarX = hpBarX + hpBarWidth + 72;
-    const mpBarY = 28;
-    const mpBarWidth = 80;
-    const mpBarHeight = 9;
-    const mpRatio = p.maxMana > 0 ? Math.max(0, Math.min(1, p.mana / p.maxMana)) : 0;
-
-    ctx.fillStyle = theme.cardBg;
-    ctx.fillRect(mpBarX, mpBarY, mpBarWidth, mpBarHeight);
-
-    ctx.fillStyle = theme.manaBar;
-    ctx.fillRect(mpBarX, mpBarY, Math.floor(mpBarWidth * mpRatio), hpBarHeight);
-
-    ctx.strokeStyle = theme.cardBorder;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(mpBarX + 0.5, mpBarY + 0.5, mpBarWidth - 1, hpBarHeight - 1);
-
-    ctx.font = `bold 10px ${font}`;
-    ctx.fillStyle = theme.hudAccent;
-    ctx.textAlign = 'left';
-    ctx.fillText(`MP:${p.mana}/${p.maxMana}`, mpBarX + mpBarWidth + 6, mpBarY + 5);
-
-    // 3. Dynamic Attack / Defense Stats
-    ctx.font = `bold 11px ${font}`;
-    ctx.fillStyle = theme.textMuted;
-    ctx.fillText(`ATK:${p.attack} | DEF:${p.defense}`, mpBarX + mpBarWidth + 78, mpBarY + 5);
-
-    // 4. Encumbrance Badge
     const enc = p.inventory.getEncumbrance(p.strength);
-    let encColor = '#10b981';
-    if (enc === 'Burdened') encColor = '#f59e0b';
-    else if (enc === 'Overburdened') encColor = '#f97316';
-    else if (enc === 'Immobilized') encColor = '#ef4444';
+    if (enc === 'Burdened') badges.push({ text: `[${enc.toUpperCase()}]`, color: '#f59e0b' });
+    else if (enc === 'Overburdened') badges.push({ text: `[${enc.toUpperCase()}]`, color: '#f97316' });
+    else if (enc === 'Immobilized') badges.push({ text: `[${enc.toUpperCase()}]`, color: '#ef4444' });
 
-    ctx.fillStyle = encColor;
-    ctx.fillText(`[${enc.toUpperCase()}]`, mpBarX + mpBarWidth + 185, mpBarY + 5);
-
-    // 5. Active Status Affliction Badges
-    let statusX = mpBarX + mpBarWidth + 285;
     for (const eff of p.statusManager.getAll()) {
       const manifestDef = this.engine.manifest?.statusEffects?.find((s) => s.id === eff.type);
       let color = manifestDef?.hudColor ?? theme.hudAccent;
@@ -760,36 +708,43 @@ export class CanvasRenderer {
         color = '#38bdf8';
         label = 'CHANNELING RUNE';
       }
-
-      const text = isAmbientDuration(eff.duration) ? `[${label}]` : `[${label} ${eff.duration}t]`;
-      ctx.fillStyle = color;
-      ctx.fillText(text, statusX, mpBarY + 5);
-      statusX += ctx.measureText(text).width + 8;
+      badges.push({ text: isAmbientDuration(eff.duration) ? `[${label}]` : `[${label} ${eff.duration}t]`, color });
     }
 
     if (this.engine.detectMonstersTurns > 0) {
-      const text = `[ESP ${this.engine.detectMonstersTurns}t]`;
-      ctx.fillStyle = '#38bdf8';
-      ctx.fillText(text, statusX, mpBarY + 5);
-      statusX += ctx.measureText(text).width + 8;
+      badges.push({ text: `[ESP ${this.engine.detectMonstersTurns}t]`, color: '#38bdf8' });
     }
-
     if (this.engine.detectObjectsTurns > 0) {
-      const text = `[SENSE ${this.engine.detectObjectsTurns}t]`;
-      ctx.fillStyle = '#fbbf24';
-      ctx.fillText(text, statusX, mpBarY + 5);
-      statusX += ctx.measureText(text).width + 8;
+      badges.push({ text: `[SENSE ${this.engine.detectObjectsTurns}t]`, color: '#fbbf24' });
     }
 
-    // 6. Running story countdowns (labelled manifest.timedEvents)
+    // Running story countdowns (labelled manifest.timedEvents)
     for (const countdown of getTimedEventCountdowns(this.engine)) {
-      const text = `[${countdown.label.toUpperCase()} ${countdown.turnsRemaining}t]`;
-      ctx.fillStyle = countdown.turnsRemaining <= 20 ? '#ef4444' : '#f59e0b';
-      ctx.fillText(text, statusX, mpBarY + 5);
-      statusX += ctx.measureText(text).width + 8;
+      badges.push({
+        text: `[${countdown.label.toUpperCase()} ${countdown.turnsRemaining}t]`,
+        color: countdown.turnsRemaining <= 20 ? '#ef4444' : '#f59e0b',
+      });
     }
 
-
+    // Lay badges left to right; what doesn't fit collapses into "+N" rather than
+    // running off the canvas edge.
+    const gap = 10;
+    const rightEdge = width - 14;
+    let x = 14;
+    for (let i = 0; i < badges.length; i++) {
+      const badge = badges[i];
+      const w = ctx.measureText(badge.text).width;
+      const remaining = badges.length - i - 1;
+      const overflowW = remaining > 0 ? ctx.measureText(` +${remaining}`).width + gap : 0;
+      if (x + w + overflowW > rightEdge) {
+        ctx.fillStyle = theme.hudAccent;
+        ctx.fillText(`+${badges.length - i}`, x, midY);
+        break;
+      }
+      ctx.fillStyle = badge.color;
+      ctx.fillText(badge.text, x, midY);
+      x += w + gap;
+    }
 
     ctx.restore();
   }
@@ -1462,48 +1417,33 @@ export class CanvasRenderer {
     }
   }
 
-  private renderBottomBar(width: number, totalHeight: number): void {
-    const ctx = this.ctx;
-    const footerY = totalHeight - this.bottomBarHeight;
-    const theme = this.theme;
-    const font = theme.fontFamily ?? '"Courier New", Courier, monospace';
-
-    ctx.fillStyle = theme.hudBg;
-    ctx.fillRect(0, footerY, width, this.bottomBarHeight);
-
-    ctx.strokeStyle = theme.hudBorder;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, footerY + 0.5);
-    ctx.lineTo(width, footerY + 0.5);
-    ctx.stroke();
-
-    let controlsText = '';
-    let textColor = theme.textMuted;
-
+  /**
+   * The controls for whichever map-side mode is open (map viewer, look, aiming,
+   * grimoire), or null in normal play. Shown in the DOM ground-status bar through
+   * `onModeHintChanged` rather than in a strip of canvas that sat empty most turns.
+   */
+  public getModeHint(): ModeHint | null {
     if (this.mapOverlay.isOpen) {
-      controlsText = 'MAP VIEWER: [< / > / PgUp / PgDn] Cycle Floors | [M / Esc / Space] Close Map';
-      textColor = theme.hudAccent;
-    } else if (this.inspectOverlay.isOpen) {
-      controlsText = 'LOOK / INSPECT: [Arrows/WASD/Numpad] Move Reticle | [X / L / ESC] Exit Look Mode';
-      textColor = theme.hudAccent;
-    } else if (this.targetingOverlay.mode === 'reticle') {
-      controlsText = 'AIMING RETICLE: [Arrows/Numpad] Move Reticle | [Enter/Space] Fire | [Esc] Cancel';
-      textColor = '#fde047';
-    } else if (this.targetingOverlay.mode === 'spellbook') {
-      controlsText = 'GRIMOIRE: Press [1-9] to Select Spell/Wand to Aim | [Esc] Close';
-      textColor = theme.hudAccent;
+      return { text: 'Map: [< > PgUp PgDn] change floor · [M / Esc] close', tone: 'mode' };
     }
+    if (this.inspectOverlay.isOpen) {
+      return { text: 'Look: [arrows] move the reticle · [L / Esc] exit', tone: 'mode' };
+    }
+    if (this.targetingOverlay.mode === 'reticle') {
+      return { text: 'Aim: [arrows] move · [Enter / Space] fire · [Esc] cancel', tone: 'aim' };
+    }
+    if (this.targetingOverlay.mode === 'spellbook') {
+      return { text: 'Grimoire: [1-9] pick a spell or wand to aim · [Esc] close', tone: 'mode' };
+    }
+    return null;
+  }
 
-    if (controlsText) {
-      ctx.save();
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.font = `11px ${font}`;
-      ctx.fillStyle = textColor;
-      ctx.fillText(controlsText, 14, footerY + this.bottomBarHeight / 2);
-      ctx.restore();
-    }
+  private notifyModeHint(): void {
+    const hint = this.getModeHint();
+    const key = hint ? `${hint.tone}|${hint.text}` : '';
+    if (key === this.lastModeHintKey) return;
+    this.lastModeHintKey = key;
+    this.onModeHintChanged?.(hint);
   }
 
   private renderGroundItems(): void {

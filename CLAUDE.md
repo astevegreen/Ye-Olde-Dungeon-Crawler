@@ -43,9 +43,7 @@ Before considering any task complete, actually run — don't just
 describe running — whichever of these are relevant: `npm run lint`
 (this already runs `tsc --noEmit`, `check:engine-purity`,
 `check:engine-encapsulation`, `check:engine-creep`, AND `knip` — don't
-invoke those separately), `npm test`, `npm run sim`, `npm run validate:schema`, `npm run build` (use
-`npm run build:all` when changing `vite.config.ts`, theme selection,
-or manifest wiring). Paste real output. A change that "should" pass
+invoke those separately), `npm test`, `npm run sim`, `npm run validate:schema`, `npm run build`. Paste real output. A change that "should" pass
 is not the same as a change that does.
 
 ## Standing invariant, restated because it's easy to forget
@@ -54,6 +52,14 @@ is not the same as a change that does.
 §8.1 exception, named in the commit message as `§8.1 exception N`.
 Exception 4 (owner-authorized) comes only from the owner's own words
 in the task. Prefer a fix outside these files when one exists.
+
+## The WarCraft pack is parked
+All work targets the Castle of the Winds sequel (ADR-0010). Don't build,
+screenshot, design for or extend `src/content/warcraft/`, and don't
+plan work around a second pack. It stays only because it compiles and
+serves as the second-pack test fixture: when a shared change breaks it,
+make the smallest fix that restores `tsc` and the tests. Pack-neutral
+presentation (§3) still binds.
 
 ## No ephemeral markdown at the repo root
 Working prompts, task notes, and other scratch markdown for a single

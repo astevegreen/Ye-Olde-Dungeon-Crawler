@@ -48,6 +48,6 @@ Only proceed after the user explicitly approves the remediation plan:
    - `npm test` (Unit, integration, and chaos regression pass)
    - `npm run sim` (Headless turn loop pass)
    - `npm run validate:schema` (Forward schema migration pass)
-   - `npm run build` (Single-file offline bundle verification) — use `npm run build:all` if the change touched `vite.config.ts`, theme selection, or manifest wiring.
+   - `npm run build` (Single-file offline bundle verification; the cotw bundle only, since WarCraft is parked per ADR-0010).
 3. If any remediation completed a Planned Work item, update ARCHITECTURE.md in the same change: remove its **[Planned]** tags and delete it from §9 (§8.2).
 4. Report final diff summary and test results back to the user.

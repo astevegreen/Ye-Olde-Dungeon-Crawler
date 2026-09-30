@@ -17,6 +17,7 @@ One line each; the cited section holds the full rule and its enforcement. The li
 - **Headless purity (§2):** code on the simulation path — engine, content hooks and handlers, injected callbacks — uses no DOM, Canvas, audio, or timing globals.
 - **Imports (§2, §3):** the engine imports no other layer; `src/ui/`, `src/rendering/`, and `src/content/` reach the engine only through `src/engine/index.ts`; only `src/main.ts` imports content packs; `src/ui/` imports `src/rendering/` types only.
 - **No engine creep (§3):** campaign mechanics, names, and narrative live in `src/content/`; `src/engine/` gains only generic capabilities (primitive, hook point, registry, manifest field).
+- **WarCraft is parked (ADR-0010):** all work targets the Castle of the Winds sequel. Do not build, screenshot, design for or extend `src/content/warcraft/`; when a shared change breaks it, make only the smallest fix that restores `tsc` and the tests.
 - **Pack-neutral presentation (§3):** `src/ui/`, `src/rendering/`, and `src/main/**` name no pack; pack wording comes from the manifest (`name`, `description`, `town.name`, `branding`) and pack art from `spriteRecipes`.
 - **Determinism (§7.2):** simulation randomness and IDs come from `engine.prng`/`engine.rng`, never `Math.random()` or `Date.now()`.
 - **Encapsulation (§7.2):** outside `src/engine/`, change engine state through `GameEngine`/`Player`/`Entity` methods or `engine.commandBus`, never by writing engine fields; allowlist entries need a stated reason.
@@ -41,7 +42,7 @@ Before reporting a change complete, run these and report the real output:
 - `npm test`
 - `npm run sim`
 - `npm run validate:schema`
-- `npm run build` — use `npm run build:all` when changing `vite.config.ts`, theme selection, or manifest wiring.
+- `npm run build` (the cotw bundle).
 
 ## Personas & Skills
 Persona rules live in `.agents/rules/persona-*.md`; skills in `.agents/skills/<name>/SKILL.md`. When a prompt starts with a tag, adopt that file. Neither ever overrides the invariants above.

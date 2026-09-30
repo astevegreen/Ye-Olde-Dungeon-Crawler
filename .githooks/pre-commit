@@ -3,7 +3,7 @@
 #
 # Runs the fast gates only: `npm run lint` (tsc, engine purity, engine
 # encapsulation, engine creep, knip) and `npm test`. The slower gates —
-# `npm run sim`, `npm run validate:schema`, `npm run build:all`, and the
+# `npm run sim`, `npm run validate:schema`, `npm run build`, and the
 # Playwright smoke suite — run in .githooks/pre-push and in CI.
 #
 # Git is pointed at this directory by the `prepare` npm script

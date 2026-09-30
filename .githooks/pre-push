@@ -4,7 +4,7 @@
 # Commits land directly on main, and CI's full gate run (.github/workflows/)
 # happens only after a push, so the gates that pre-commit skips for speed run
 # here, before anything reaches origin: the headless sim, schema validation,
-# both bundles, and the Playwright smoke suite against the built bundle.
+# the cotw bundle (WarCraft is parked, ADR-0010), and the Playwright smoke suite against the built bundle.
 # (~20 s; pre-commit has already run lint and the unit tests.)
 #
 # Set SKIP_HOOKS=1 to bypass deliberately, as with the other hooks.
@@ -21,8 +21,8 @@ npm run sim
 echo "pre-push: npm run validate:schema"
 npm run validate:schema
 
-echo "pre-push: npm run build:all"
-npm run build:all
+echo "pre-push: npm run build"
+npm run build
 
 echo "pre-push: npx playwright test"
 npx playwright test

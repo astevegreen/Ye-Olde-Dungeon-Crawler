@@ -32,4 +32,4 @@ jobs:
           npm run validate:schema
 
       - name: Build static bundles
-        run: npm run build:all
+        run: npm run build

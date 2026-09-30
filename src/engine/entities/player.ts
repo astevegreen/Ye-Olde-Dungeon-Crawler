@@ -46,6 +46,7 @@ export interface PlayerConfig {
   deepestRecallFloor?: number;
   recallPosition?: Position;
   quickSpells?: (string | null)[];
+  quickPotions?: (string | null)[];
   unspentStatPoints?: number;
   runeMastery?: RuneOfReturnMastery;
   runeChannelBankedTurns?: number;
@@ -90,6 +91,12 @@ export class Player extends Actor {
   public deepestRecallFloor?: number;
   public recallPosition?: Position;
   public quickSpells: (string | null)[];
+  /**
+   * Potion kinds pinned to the HUD's potion row, one per slot, keyed by
+   * `potionKindKey`. Undefined until the player (or the HUD's first-run default)
+   * pins something, so the HUD can tell "never set" from "deliberately emptied".
+   */
+  public quickPotions?: (string | null)[];
   public unspentStatPoints: number;
   /** Rune of Return progression (docs/architecture/content-rune-of-return.md): mastery lives on the
    * player (like an attribute), not the item, so losing/replacing the rune doesn't
@@ -172,6 +179,7 @@ export class Player extends Actor {
         this.quickSpells[i] = this.spellsKnown[i];
       }
     }
+    if (config.quickPotions) this.quickPotions = [...config.quickPotions];
     this.level = config.level ?? 1;
     this.xp = config.xp ?? 0;
     this.unspentStatPoints = config.unspentStatPoints ?? 0;
@@ -406,6 +414,21 @@ export class Player extends Actor {
       }
     }
     this.quickSpells = this.quickSpells.map((id) => (id === spellId ? null : id));
+  }
+
+  /**
+   * Pins a potion kind to a potion-row slot, or clears it with `null`. A kind lives in
+   * one slot at a time: pinning it elsewhere moves it.
+   */
+  public setQuickPotion(slotIndex: number, kindKey: string | null, slotCount = 4): void {
+    const pins = [...(this.quickPotions ?? [])];
+    while (pins.length < slotCount) pins.push(null);
+    if (slotIndex < 0 || slotIndex >= pins.length) return;
+    if (kindKey !== null) {
+      for (let i = 0; i < pins.length; i++) if (pins[i] === kindKey) pins[i] = null;
+    }
+    pins[slotIndex] = kindKey;
+    this.quickPotions = pins;
   }
 
   /** Assigns a known spell to a 3x3 grimoire slot (0..8) on the active page (or target page), or clears it with `null`. */

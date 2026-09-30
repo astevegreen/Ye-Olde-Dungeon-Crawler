@@ -463,7 +463,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const entry = potionRow.entryAt(slotIndex);
     const item = entry ? activeEngine.player.inventory.findItemById(entry.itemId) : undefined;
     if (!(item instanceof PotionItem)) {
-      activeEngine.log('No potion in that slot.');
+      // Nothing to drink: an empty or run-out slot opens its picker instead.
+      potionRow.openPicker(slotIndex);
       return;
     }
     activeEngine.handlePlayerAction(new DrinkPotionAction(activeEngine.player, item));
@@ -473,6 +474,9 @@ window.addEventListener('DOMContentLoaded', () => {
     onDrinkSlot: (slotIdx) => {
       drinkPotionSlot(slotIdx);
       void processVisualEffectsAndRender();
+    },
+    onPinsChanged: () => {
+      if (activeEngine) potionRow.update(activeEngine);
     },
     drawIcon: (canvas, item) => renderer?.drawItemIcon(canvas, item),
     keyLabel: formatPotionKey,
@@ -1639,6 +1643,7 @@ window.addEventListener('DOMContentLoaded', () => {
       inputHandler.onDrinkPotionSlot = drinkPotionSlot;
       inputHandler.onToggleCommandPalette = toggleCommandPalette;
       commandPalette.setModalStack(inputHandler.modalStack);
+      potionRow.setModalStack(inputHandler.modalStack);
       diagnosticModal.setModalStack(inputHandler.modalStack);
       feedbackModal.setModalStack(inputHandler.modalStack);
       keybindModal.setModalStack(inputHandler.modalStack);
@@ -1698,6 +1703,7 @@ window.addEventListener('DOMContentLoaded', () => {
         inputHandler.onDrinkPotionSlot = drinkPotionSlot;
         inputHandler.onToggleCommandPalette = toggleCommandPalette;
         commandPalette.setModalStack(inputHandler.modalStack);
+      potionRow.setModalStack(inputHandler.modalStack);
         diagnosticModal.setModalStack(inputHandler.modalStack);
       }
     }

@@ -209,6 +209,8 @@ export interface SerializedPlayer {
   deepestRecallFloor?: number;
   recallPosition?: Position;
   quickSpells?: (string | null)[];
+  /** Potion-row pins; absent in saves from before the row could be pinned. */
+  quickPotions?: (string | null)[];
   morphEnvelope?: SerializedMorphEnvelope;
   planeId?: string;
   corruptionScore?: number;

@@ -587,48 +587,52 @@
 
 
 
-/* Potion row: up to four potion kinds beside the health orb, a 2x2 grid so it
-   fits the console's height. One click or Shift+1..4 drinks; hidden until the
-   hero carries a potion. */
+/* Potion row: four pinned slots beside the health orb, a 2x2 grid so it fits the
+   console's height. Slots use the inventory cell's surface and border, so a potion's
+   icon looks here exactly as it does in the backpack. */
 #potion-row {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(2, 36px);
-  grid-auto-rows: 36px;
+  grid-template-columns: repeat(2, 38px);
+  grid-auto-rows: 38px;
   gap: 4px;
   flex-shrink: 0;
   margin-left: -4px;
 }
-#potion-row.potion-row-empty {
-  display: none;
-}
 .potion-slot {
   position: relative;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(127, 29, 29, 0.28);
-  border: 1px solid rgba(248, 113, 113, 0.55);
-  border-radius: 4px;
+  background: var(--ui-modal-bg, #161a26);
+  border: 1px solid var(--ui-card-border, #3b455b);
+  border-radius: 3px;
   cursor: pointer;
-}
-.potion-slot[hidden] {
-  display: none;
+  font: bold 16px/1 var(--ui-font-family, monospace);
+  color: #64748b;
 }
 .potion-slot:hover {
   border-color: var(--ui-accent, #f59e0b);
-  transform: translateY(-1px);
+}
+.potion-slot-empty {
+  border-style: dashed;
+  background: rgba(22, 26, 38, 0.5);
+}
+.potion-slot-out .potion-slot-icon {
+  filter: grayscale(1) brightness(0.55);
+}
+.potion-slot-out .potion-slot-count {
+  color: #f87171;
 }
 .potion-slot-unknown {
   border-style: dashed;
-  border-color: rgba(148, 163, 184, 0.55);
-  background: rgba(30, 41, 59, 0.45);
 }
 .potion-slot-icon {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   image-rendering: pixelated;
   pointer-events: none;
 }
@@ -638,7 +642,7 @@
   font-size: 10px;
   line-height: 11px;
   font-weight: bold;
-  text-shadow: 1px 1px 0 #000;
+  text-shadow: 1px 1px 0 #000, -1px -1px 0 #000;
   pointer-events: none;
 }
 .potion-slot-key {
@@ -650,6 +654,97 @@
   bottom: 1px;
   right: 2px;
   color: #f8fafc;
+}
+
+/* Hover card above a slot: the full name, how many, and what a click does. */
+.potion-tooltip {
+  position: absolute;
+  z-index: 60;
+  transform: translate(-50%, calc(-100% - 6px));
+  min-width: 150px;
+  max-width: 240px;
+  padding: 5px 8px;
+  background: #0b1020;
+  border: 1px solid var(--ui-accent, #f59e0b);
+  border-radius: 4px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7);
+  font: 11px/14px var(--ui-font-family, monospace);
+  color: #cbd5e1;
+  pointer-events: none;
+  white-space: normal;
+}
+.potion-tooltip[hidden] {
+  display: none;
+}
+.potion-tooltip-name {
+  font-weight: bold;
+  color: #f8fafc;
+}
+.potion-tooltip-meta {
+  color: #94a3b8;
+}
+.potion-tooltip-hint {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 10px;
+}
+
+/* Pin picker, opening upward from the slot. */
+.potion-picker {
+  position: absolute;
+  z-index: 70;
+  transform: translateY(calc(-100% - 6px));
+  width: 230px;
+  padding: 4px;
+  background: #0b1020;
+  border: 1px solid var(--ui-accent, #f59e0b);
+  border-radius: 4px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.75);
+  font: 12px/15px var(--ui-font-family, monospace);
+}
+.potion-picker-title {
+  padding: 2px 4px 4px;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ui-accent, #f59e0b);
+}
+.potion-picker-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
+  gap: 7px;
+  align-items: center;
+  padding: 3px 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: #e2e8f0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.potion-picker-row:hover {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+.potion-picker-current {
+  box-shadow: inset 2px 0 0 var(--ui-accent, #f59e0b);
+}
+.potion-picker-count {
+  color: #94a3b8;
+  font-size: 11px;
+}
+.potion-picker-clear {
+  display: block;
+  margin-top: 3px;
+  border-top: 1px solid #1c2433;
+  color: #f87171;
+}
+.potion-picker-empty {
+  padding: 4px;
+  color: #64748b;
 }
 
 /* ==========================================================================

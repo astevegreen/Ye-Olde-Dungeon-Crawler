@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { getPotionRowEntries, POTION_ROW_SLOT_COUNT } from '../potionRow';
-import { GameEngine, GameMap, TILES, Player, PotionItem, Item } from '../../engine';
+import { getCarriedPotionKinds, potionKindKey, resolvePotionSlots, POTION_ROW_SLOT_COUNT } from '../potionRow';
+import { GameEngine, GameMap, TILES, Player, PotionItem, Item, serializeGame, deserializeGame } from '../../engine';
 
 function buildEngine() {
   const map = new GameMap(10, 10, TILES.FLOOR);
@@ -14,35 +14,65 @@ function potion(id: string, name: string, identified = true, unidentifiedName?: 
   return p;
 }
 
-describe('getPotionRowEntries', () => {
-  it('groups carried potions by name and counts them', () => {
+describe('getCarriedPotionKinds', () => {
+  it('groups carried potions by kind and counts them', () => {
     const engine = buildEngine();
     const pack = engine.player.inventory.primaryPack;
     pack.addItem(potion('p1', 'Potion of Healing'));
     pack.addItem(potion('p2', 'Potion of Healing'));
     pack.addItem(new Item({ id: 'gem', name: 'Ruby', category: 'misc', weight: 10, bulk: 5, value: 100 }));
 
-    const entries = getPotionRowEntries(engine);
-    expect(entries).toHaveLength(1);
-    expect(entries[0]).toMatchObject({ itemId: 'p1', name: 'Potion of Healing', count: 2, identified: true });
+    expect(getCarriedPotionKinds(engine)).toEqual([
+      { key: 'Potion of Healing', itemId: 'p1', name: 'Potion of Healing', count: 2, identified: true },
+    ]);
   });
 
-  it('lists identified kinds first, then unknown ones, each alphabetically, capped at the slot count', () => {
+  it('shows an unidentified kind by its appearance, keyed by what it really is', () => {
+    const engine = buildEngine();
+    const murky = potion('u1', 'Potion of Speed', false, 'Murky Flask');
+    engine.player.inventory.primaryPack.addItem(murky);
+
+    const [kind] = getCarriedPotionKinds(engine);
+    expect(kind.name).toBe('Murky Flask');
+    expect(kind.key).toBe(potionKindKey(murky));
+  });
+});
+
+describe('resolvePotionSlots', () => {
+  it('pins what the hero carries the first time, then leaves pins to the player', () => {
     const engine = buildEngine();
     const pack = engine.player.inventory.primaryPack;
-    pack.addItem(potion('u1', 'Potion of Speed', false, 'Murky Flask'));
     pack.addItem(potion('h1', 'Potion of Healing'));
-    pack.addItem(potion('u2', 'Potion of Poison', false, 'Bubbling Vial'));
     pack.addItem(potion('m1', 'Potion of Mana'));
-    pack.addItem(potion('x1', 'Potion of Extra'));
 
-    const entries = getPotionRowEntries(engine);
-    expect(entries).toHaveLength(POTION_ROW_SLOT_COUNT);
-    expect(entries.map((e) => e.identified)).toEqual([true, true, true, false]);
-    expect(entries.slice(0, 3).map((e) => e.name)).toEqual(['Potion of Extra', 'Potion of Healing', 'Potion of Mana']);
+    const first = resolvePotionSlots(engine);
+    expect(first.map((s) => s.key)).toEqual(['Potion of Healing', 'Potion of Mana', null, null]);
+
+    // The player empties slot 1; a new kind picked up does not refill it.
+    engine.player.setQuickPotion(0, null, POTION_ROW_SLOT_COUNT);
+    pack.addItem(potion('x1', 'Potion of Extra'));
+    expect(resolvePotionSlots(engine).map((s) => s.key)).toEqual([null, 'Potion of Mana', null, null]);
   });
 
-  it('is empty when the hero carries no potions', () => {
-    expect(getPotionRowEntries(buildEngine())).toEqual([]);
+  it('keeps a pinned kind in its slot after the last one is drunk', () => {
+    const engine = buildEngine();
+    engine.player.setQuickPotion(2, 'Potion of Healing', POTION_ROW_SLOT_COUNT);
+
+    const slots = resolvePotionSlots(engine);
+    expect(slots[2]).toEqual({ key: 'Potion of Healing', carried: null });
+  });
+
+  it('moves a kind rather than pinning it twice', () => {
+    const engine = buildEngine();
+    engine.player.setQuickPotion(0, 'Potion of Healing', POTION_ROW_SLOT_COUNT);
+    engine.player.setQuickPotion(3, 'Potion of Healing', POTION_ROW_SLOT_COUNT);
+    expect(engine.player.quickPotions).toEqual([null, null, null, 'Potion of Healing']);
+  });
+
+  it('survives a save and load', () => {
+    const engine = buildEngine();
+    engine.player.setQuickPotion(1, 'Potion of Mana', POTION_ROW_SLOT_COUNT);
+    const restored = deserializeGame(JSON.parse(JSON.stringify(serializeGame(engine))));
+    expect(restored.engine.player.quickPotions).toEqual([null, 'Potion of Mana', null, null]);
   });
 });

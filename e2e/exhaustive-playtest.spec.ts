@@ -379,7 +379,6 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
         inputEnabled: handler?.enabled,
       };
     });
-    console.log('hearthChoiceOpened debug:', JSON.stringify(hearthChoiceOpened));
 
     expect(hearthChoiceOpened.hasChoiceOnStack, 'Stepping on Dwarven Hearth must open choice modal').toBe(true);
     expect(hearthChoiceOpened.isOverlayVisible).toBe(true);
@@ -612,8 +611,13 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
     expect(vidnirResult.currentFloor).toBe(45);
     expect(vidnirResult.kills, 'Vidnir must be recorded as killed').toBeGreaterThanOrEqual(1);
 
-    // Step to trigger MovementAction storyChoiceTrigger check
+    // Step to trigger MovementAction storyChoiceTrigger check. A keypress during effect
+    // playback is dropped, so wait for the input lock to clear first.
+    await expect.poll(() => page.evaluate(() => (window as any).__cotwInputHandler?.isInputLocked)).toBe(false);
     await page.keyboard.press(vidnirResult.stepDir);
+    await expect
+      .poll(() => page.evaluate(() => (window as any).__cotwInputHandler?.modalStack.has('choice')))
+      .toBe(true);
     await page.waitForTimeout(300);
 
     const vidnirChoiceCheck = await page.evaluate(() => {

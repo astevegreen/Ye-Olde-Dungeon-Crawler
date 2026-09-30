@@ -615,7 +615,7 @@ export class TitleScreen {
         const fallen = profile.questStatus === 'fallen';
         item.innerHTML = `
           <div class="roster-item-header">
-            <span class="roster-name">${fallen ? '☠️' : '⚔️'} ${this.escapeHtml(profile.name)}${fallen ? ' <span style="color: #b91c1c;">(Fallen)</span>' : ''}</span>
+            <span class="roster-name">${fallen ? '☠️' : '⚔️'} ${this.escapeHtml(profile.name)}${fallen ? ' <span style="color: #f87171;">(Fallen)</span>' : ''}</span>
             <span class="roster-date">${dateStr}</span>
           </div>
           <div class="roster-item-details">
@@ -623,7 +623,7 @@ export class TitleScreen {
             <span>•</span>
             <span>Floor ${profile.floor}</span>
             <span>•</span>
-            <span style="font-weight: bold; color: #1e3a8a;">[${(profile.difficulty ?? 'medium').toUpperCase()}]</span>
+            <span style="font-weight: bold; color: var(--ui-accent, #f59e0b);">[${(profile.difficulty ?? 'medium').toUpperCase()}]</span>
             <span>•</span>
             <span>HP: ${profile.hp}/${profile.maxHp}</span>
           </div>

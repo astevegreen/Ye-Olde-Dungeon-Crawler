@@ -189,13 +189,13 @@ export class CompendiumModal implements UIModal {
 
           <!-- Filter Tabs -->
           <div style="display: flex; gap: 4px; border-bottom: 2px solid #808080; padding-bottom: 4px;">
-            <button id="tab-comp-all" class="win-btn win-btn-sm ${this.activeFilter === 'all' ? 'active-tab' : ''}" style="font-weight: bold; ${this.activeFilter === 'all' ? 'background: #000080; color: #fff;' : ''}">
+            <button id="tab-comp-all" class="win-btn win-btn-sm ${this.activeFilter === 'all' ? 'active-tab' : ''}" style="font-weight: bold; ${this.activeFilter === 'all' ? 'background: var(--ui-accent, #f59e0b); color: #0a0c14;' : ''}">
               All Monsters (${allMonsters.length})
             </button>
-            <button id="tab-comp-discovered" class="win-btn win-btn-sm ${this.activeFilter === 'discovered' ? 'active-tab' : ''}" style="font-weight: bold; ${this.activeFilter === 'discovered' ? 'background: #000080; color: #fff;' : ''}">
+            <button id="tab-comp-discovered" class="win-btn win-btn-sm ${this.activeFilter === 'discovered' ? 'active-tab' : ''}" style="font-weight: bold; ${this.activeFilter === 'discovered' ? 'background: var(--ui-accent, #f59e0b); color: #0a0c14;' : ''}">
               Discovered (${discoveredCount})
             </button>
-            <button id="tab-comp-mastered" class="win-btn win-btn-sm ${this.activeFilter === 'mastered' ? 'active-tab' : ''}" style="font-weight: bold; ${this.activeFilter === 'mastered' ? 'background: #000080; color: #fff;' : ''}">
+            <button id="tab-comp-mastered" class="win-btn win-btn-sm ${this.activeFilter === 'mastered' ? 'active-tab' : ''}" style="font-weight: bold; ${this.activeFilter === 'mastered' ? 'background: var(--ui-accent, #f59e0b); color: #0a0c14;' : ''}">
               ★ Mastered (${masteredCount})
             </button>
           </div>

@@ -76,19 +76,19 @@ export class SaveQuitModal implements UIModal {
         </div>
 
         <div class="retro-window-body" style="padding: 12px;">
-          <div id="savequit-hero-summary" style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #1e3a8a;">
+          <div id="savequit-hero-summary" style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: var(--ui-titlebar-text, #fde047);">
             🛡️ Adventurer
           </div>
 
           <!-- Storage Persistence Banner -->
-          <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 10px; margin-bottom: 12px;">
+          <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid var(--ui-border-light, #3b455b); padding: 8px 10px; margin-bottom: 12px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <span style="font-size: 11px; font-weight: bold; color: #334155;">BROWSER STORAGE PERSISTENCE:</span>
-              <span id="savequit-storage-badge" style="font-size: 11px; font-weight: bold; padding: 2px 6px; border: 1px solid #64748b; background: #e2e8f0;">
+              <span style="font-size: 11px; font-weight: bold; color: var(--ui-text, #f1f5f9);">BROWSER STORAGE PERSISTENCE:</span>
+              <span id="savequit-storage-badge" style="font-size: 11px; font-weight: bold; padding: 2px 6px; border: 1px solid #64748b; background: transparent;">
                 Storage: Standard
               </span>
             </div>
-            <div id="savequit-storage-details" style="font-size: 11px; color: #64748b;">
+            <div id="savequit-storage-details" style="font-size: 11px; color: #94a3b8;">
               Checking storage quota...
             </div>
           </div>
@@ -218,13 +218,13 @@ export class SaveQuitModal implements UIModal {
     if (this.storageBadgeEl) {
       this.storageBadgeEl.textContent = formatted.badge;
       if (formatted.isPersistent) {
-        this.storageBadgeEl.style.color = '#15803d';
-        this.storageBadgeEl.style.borderColor = '#15803d';
-        this.storageBadgeEl.style.background = '#dcfce7';
+        this.storageBadgeEl.style.color = '#4ade80';
+        this.storageBadgeEl.style.borderColor = '#4ade80';
+        this.storageBadgeEl.style.background = 'rgba(74, 222, 128, 0.1)';
       } else {
-        this.storageBadgeEl.style.color = '#b45309';
-        this.storageBadgeEl.style.borderColor = '#b45309';
-        this.storageBadgeEl.style.background = '#fef3c7';
+        this.storageBadgeEl.style.color = '#fbbf24';
+        this.storageBadgeEl.style.borderColor = '#fbbf24';
+        this.storageBadgeEl.style.background = 'rgba(251, 191, 36, 0.1)';
       }
     }
 

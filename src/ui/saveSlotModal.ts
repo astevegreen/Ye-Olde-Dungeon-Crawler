@@ -244,8 +244,8 @@ export class SaveSlotModal implements UIModal {
         width: 580px;
         max-width: 95vw;
         max-height: 85vh;
-        background: #0f172a;
-        border: 2px solid #3b82f6;
+        background: var(--ui-panel, #161a26);
+        border: 1px solid var(--ui-accent, #f59e0b);
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
         border-radius: 6px;
         display: flex;
@@ -259,12 +259,12 @@ export class SaveSlotModal implements UIModal {
           justify-content: space-between;
           align-items: center;
           padding: 10px 14px;
-          background: #1e3a8a;
-          border-bottom: 2px solid #2563eb;
+          background: linear-gradient(90deg, var(--ui-titlebar-start, #1e2433), var(--ui-titlebar-end, #0f1420));
+          border-bottom: 1px solid var(--ui-accent, #f59e0b);
         ">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 16px;">💾</span>
-            <span style="font-weight: bold; font-size: 15px; color: #ffffff; letter-spacing: 1px;">
+            <span style="font-weight: bold; font-size: 15px; color: var(--ui-titlebar-text, #fde047); letter-spacing: 1px;">
               Load Saved Adventure
             </span>
           </div>

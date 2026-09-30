@@ -158,8 +158,8 @@ export class CommandPalette {
     if (!this.overlayEl) return;
 
     this.overlayEl.innerHTML = `
-      <div class="retro-window" style="width: 580px; box-shadow: 6px 6px 16px rgba(0,0,0,0.9); font-family: 'MS Sans Serif', monospace;">
-        <div class="retro-titlebar" style="background: linear-gradient(90deg, #1e3a8a, #2563eb); padding: 4px 8px;">
+      <div class="retro-window" style="width: 580px; box-shadow: 0 10px 30px rgba(0,0,0,0.9); border: 1px solid var(--ui-accent, #f59e0b);">
+        <div class="retro-titlebar" style="padding: 4px 8px; border-bottom-color: var(--ui-accent, #f59e0b);">
           <div class="retro-titlebar-title" style="font-size: 12px;">
             <span>⌨️</span>
             <span>Quick Command Palette</span>
@@ -167,7 +167,7 @@ export class CommandPalette {
           <button id="btn-cmd-palette-close" class="win-btn win-btn-sm" style="padding: 0 4px; font-weight: bold;">✕</button>
         </div>
 
-        <div class="retro-window-body" style="padding: 8px; background: #c0c0c0; gap: 6px;">
+        <div class="retro-window-body" style="padding: 8px; background: var(--ui-panel, #161a26); gap: 6px;">
           <!-- Search input -->
           <div style="position: relative;">
             <input
@@ -175,7 +175,7 @@ export class CommandPalette {
               type="text"
               class="retro-input"
               placeholder="Type a command, hotkey, or mechanic (e.g. 'Bestiary', 'Sort', 'Rest', 'Stairs')..."
-              style="font-size: 13px; font-family: monospace; padding: 6px 8px; margin: 0; background: #ffffff; width: 100%;"
+              style="font-size: 13px; font-family: monospace; padding: 6px 8px; margin: 0; background: var(--ui-bg, #0a0c14); color: var(--ui-text, #f1f5f9); border: 1px solid var(--ui-border-light, #3b455b); width: 100%;"
               autocomplete="off"
               spellcheck="false"
             />
@@ -186,9 +186,9 @@ export class CommandPalette {
             <!-- Rendered by updateList -->
           </div>
 
-          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #4b5563; padding-top: 2px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--ui-text, #f1f5f9); opacity: 0.7; padding-top: 2px;">
             <span>Press <b>Enter</b> to execute, <b>↑/↓</b> to navigate, <b>Esc</b> to dismiss.</span>
-            <span style="font-weight: bold; color: #1e3a8a;">Shift+? / Ctrl+K</span>
+            <span style="font-weight: bold; color: var(--ui-accent, #f59e0b);">Shift+? / Ctrl+K</span>
           </div>
         </div>
       </div>
@@ -247,7 +247,8 @@ export class CommandPalette {
               display: flex;
               justify-content: space-between;
               align-items: center;
-              background: ${isSel ? '#1e3a8a' : 'transparent'};
+              background: ${isSel ? 'rgba(245, 158, 11, 0.16)' : 'transparent'};
+              box-shadow: ${isSel ? 'inset 3px 0 0 var(--ui-accent, #f59e0b)' : 'none'};
               color: ${isSel ? '#ffffff' : '#e2e8f0'};
               border-bottom: 1px solid #1e293b;
               font-size: 11px;
@@ -259,10 +260,10 @@ export class CommandPalette {
               </span>
               <div>
                 <div style="font-weight: bold;">${cmd.title}</div>
-                <div style="font-size: 9px; color: ${isSel ? '#bfdbfe' : '#94a3b8'};">${cmd.description}</div>
+                <div style="font-size: 9px; color: ${isSel ? '#fde68a' : '#94a3b8'};">${cmd.description}</div>
               </div>
             </div>
-            <span style="font-family: monospace; font-size: 10px; padding: 2px 5px; background: ${isSel ? '#0284c7' : '#1e293b'}; color: #ffffff; border-radius: 2px; white-space: nowrap;">
+            <span style="font-family: monospace; font-size: 10px; padding: 2px 5px; background: ${isSel ? '#b45309' : '#1e293b'}; color: #ffffff; border-radius: 2px; white-space: nowrap;">
               ${cmd.shortcut}
             </span>
           </div>

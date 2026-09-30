@@ -102,7 +102,7 @@ export class MainMenu {
             <span>🛡️</span>
             <span>${brand.title} - Main Menu</span>
           </div>
-          <div style="font-size: 10px; opacity: 0.9;">DOS / Win 3.1</div>
+          
         </div>
 
         <div class="retro-window-body" style="padding: 16px; gap: 14px;">
@@ -138,7 +138,7 @@ export class MainMenu {
           </div>
 
           <!-- Save File Summary Inset -->
-          <div id="main-menu-save-summary" style="background: #ffffff; border: 2px inset #ffffff; padding: 6px 10px; font-size: 11px; color: #334155; min-height: 24px;">
+          <div id="main-menu-save-summary" style="background: var(--ui-bg, #0a0c14); border: 1px solid var(--ui-border-light, #3b455b); padding: 6px 10px; font-size: 11px; color: var(--ui-text, #f1f5f9); min-height: 24px;">
             Checking save files...
           </div>
 

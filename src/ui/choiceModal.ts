@@ -173,122 +173,30 @@ export class ChoiceModal implements UIModal {
     const cancelLabel = choice.cancelLabel ?? 'Cancel / Step Away';
     const hasSelection = Boolean(this.currentOptions[this.activeIndex]?.enabled);
 
+    // Styled by `.choice-dialog*` in styles/base.css, from the theme's --ui-* variables.
     this.overlayEl.innerHTML = `
-      <div style="
-        width: 620px;
-        max-width: 95vw;
-        background: var(--ui-panel, #c0c0c0);
-        border: 2px solid var(--ui-border-light, #ffffff);
-        border-right-color: var(--ui-border-dark, #000000);
-        border-bottom-color: var(--ui-border-dark, #000000);
-        box-shadow: 6px 6px 20px rgba(0,0,0,0.85);
-        display: flex;
-        flex-direction: column;
-        font-family: 'Segoe UI', Tahoma, monospace, sans-serif;
-        color: var(--ui-text, #000000);
-        user-select: none;
-      ">
-        <!-- Title Bar -->
-        <div style="
-          background: linear-gradient(90deg, #000080, #1084d0);
-          color: #ffffff;
-          padding: 6px 12px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-weight: bold;
-          font-size: 14px;
-        ">
-          <span id="choice-modal-title">⛩ ${choice.title}</span>
-          ${
-            cancelable
-              ? `<button id="btn-choice-x" style="
-                  background: #c0c0c0; border: 1px solid #fff; border-right-color: #000; border-bottom-color: #000;
-                  font-size: 12px; font-weight: bold; cursor: pointer; width: 20px; height: 20px; line-height: 14px;
-                ">✕</button>`
-              : ''
-          }
+      <div class="choice-dialog">
+        <div class="choice-dialog-titlebar">
+          <span id="choice-modal-title">◆ ${choice.title}</span>
+          ${cancelable ? '<button id="btn-choice-x" class="choice-dialog-close" title="Step away [Esc]">✕</button>' : ''}
         </div>
 
-        <!-- Narrative Description -->
-        <div style="
-          padding: 14px 16px;
-          background: #f8fafc;
-          border-bottom: 2px solid #808080;
-          font-size: 13px;
-          line-height: 1.5;
-          color: #1e293b;
-        ">
-          ${choice.description}
-        </div>
+        <div class="choice-dialog-description">${choice.description}</div>
 
-        <!-- Options Container -->
-        <div id="choice-options-list" style="
-          padding: 14px 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          background: var(--ui-panel, #c0c0c0);
-        ">
+        <div id="choice-options-list" class="choice-dialog-options">
           ${this.currentOptions
             .map(({ option, enabled, index }) => {
               const isFocused = index === this.activeIndex;
-              const bg = !enabled
-                ? '#94a3b8'
-                : isFocused
-                ? '#fef08a'
-                : '#ffffff';
-              const border = isFocused ? '2px solid #ca8a04' : '2px solid #808080';
-              const cursor = enabled ? 'pointer' : 'not-allowed';
-              const opacity = enabled ? '1' : '0.6';
-
+              const stateClass = !enabled ? ' choice-option-disabled' : isFocused ? ' choice-option-focused' : '';
               return `
-                <div id="choice-opt-${option.id}" class="choice-option-row" data-index="${index}" style="
-                  display: flex;
-                  align-items: flex-start;
-                  gap: 12px;
-                  background: ${bg};
-                  border: ${border};
-                  padding: 10px 12px;
-                  cursor: ${cursor};
-                  opacity: ${opacity};
-                  transition: background 0.1s ease;
-                ">
-                  <div style="
-                    background: ${enabled ? '#000080' : '#64748b'};
-                    color: #ffffff;
-                    font-weight: bold;
-                    font-size: 12px;
-                    padding: 2px 8px;
-                    border: 1px solid #ffffff;
-                    border-right-color: #000000;
-                    border-bottom-color: #000000;
-                    border-radius: 2px;
-                    min-width: 24px;
-                    text-align: center;
-                  ">${isFocused ? '●' : '○'}</div>
-
-                  <div style="flex: 1;">
-                    <div style="
-                      font-weight: bold;
-                      font-size: 13px;
-                      color: ${enabled ? '#0f172a' : '#475569'};
-                      ${!enabled ? 'text-decoration: line-through;' : ''}
-                    ">
-                      ${option.label}
-                    </div>
-                    ${
-                      option.description
-                        ? `<div style="font-size: 12px; color: ${enabled ? '#334155' : '#64748b'}; margin-top: 3px;">
-                            ${option.description}
-                           </div>`
-                        : ''
-                    }
+                <div id="choice-opt-${option.id}" class="choice-option-row${stateClass}" data-index="${index}">
+                  <div class="choice-option-marker">${isFocused ? '▶' : '◇'}</div>
+                  <div class="choice-option-body">
+                    <div class="choice-option-label">${option.label}</div>
+                    ${option.description ? `<div class="choice-option-desc">${option.description}</div>` : ''}
                     ${
                       !enabled
-                        ? `<div style="font-size: 11px; color: #b91c1c; font-style: italic; margin-top: 4px;">
-                            ⚠️ ${option.disabledReason ?? 'Requirements not met'}
-                           </div>`
+                        ? `<div class="choice-option-reason">⚠️ ${option.disabledReason ?? 'Requirements not met'}</div>`
                         : ''
                     }
                   </div>
@@ -298,44 +206,13 @@ export class ChoiceModal implements UIModal {
             .join('')}
         </div>
 
-        <!-- Footer -->
-        <div style="
-          padding: 10px 16px;
-          background: #c0c0c0;
-          border-top: 2px solid #ffffff;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        ">
-          <div style="font-size: 11px; color: #475569;">
+        <div class="choice-dialog-footer">
+          <div class="choice-dialog-hint">
             ⌨ Click or [↑/↓] to choose, then [Enter] or Confirm to lock it in${cancelable ? ' · [Esc] to step away' : ''}
           </div>
-          <div style="display: flex; gap: 8px;">
-          <button id="btn-choice-confirm" ${hasSelection ? '' : 'disabled'} style="
-            padding: 6px 16px;
-            background: ${hasSelection ? '#000080' : '#94a3b8'};
-            color: #ffffff;
-            border: 2px solid #fff;
-            border-right-color: #000;
-            border-bottom-color: #000;
-            font-weight: bold;
-            font-size: 12px;
-            cursor: ${hasSelection ? 'pointer' : 'not-allowed'};
-          ">Confirm [Enter]</button>
-          ${
-            cancelable
-              ? `<button id="btn-choice-cancel" style="
-                  padding: 6px 16px;
-                  background: #e2e8f0;
-                  border: 2px solid #fff;
-                  border-right-color: #000;
-                  border-bottom-color: #000;
-                  font-weight: bold;
-                  font-size: 12px;
-                  cursor: pointer;
-                ">${cancelLabel}</button>`
-              : ''
-          }
+          <div class="choice-dialog-buttons">
+            <button id="btn-choice-confirm" class="choice-btn choice-btn-primary" ${hasSelection ? '' : 'disabled'}>Confirm [Enter]</button>
+            ${cancelable ? `<button id="btn-choice-cancel" class="choice-btn">${cancelLabel}</button>` : ''}
           </div>
         </div>
       </div>

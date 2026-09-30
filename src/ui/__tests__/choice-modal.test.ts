@@ -160,7 +160,7 @@ describe('ChoiceModal UI Component', () => {
 
     const overlay = mockDoc.getElementById('choice-modal-overlay');
     expect(overlay?.innerHTML).toContain('Requires 10 Temple Standing');
-    expect(overlay?.innerHTML).toContain('text-decoration: line-through');
+    expect(overlay?.innerHTML).toContain('choice-option-disabled');
   });
 
   it('handles cancellation via close button', () => {

@@ -194,36 +194,36 @@ export class ContextHelp {
     const content = this.getHelpContent(context, engine.manifest);
 
     this.overlayEl.innerHTML = `
-      <div class="retro-window" style="width: 380px; box-shadow: 4px 4px 12px rgba(0,0,0,0.85); font-family: 'MS Sans Serif', monospace;">
-        <div class="retro-titlebar" style="background: linear-gradient(90deg, #1e3a8a, #3b82f6); padding: 3px 6px;">
+      <div class="retro-window" style="width: 380px; box-shadow: 0 8px 24px rgba(0,0,0,0.85); border: 1px solid var(--ui-accent, #f59e0b);">
+        <div class="retro-titlebar" style="padding: 3px 6px; border-bottom-color: var(--ui-accent, #f59e0b);">
           <div class="retro-titlebar-title" style="font-size: 11px;">
             <span>💡</span>
             <span>${content.title} (F1)</span>
           </div>
           <button id="btn-context-help-close" class="win-btn win-btn-sm" style="padding: 0 4px; font-weight: bold; line-height: 1;">✕</button>
         </div>
-        <div class="retro-window-body" style="padding: 8px; font-size: 11px; background: #c0c0c0;">
-          <div style="font-weight: bold; color: #1e3a8a; font-size: 10px; letter-spacing: 0.5px; margin-bottom: 6px; border-bottom: 1px solid #808080; padding-bottom: 2px;">
+        <div class="retro-window-body" style="padding: 8px; font-size: 11px; background: var(--ui-panel, #161a26); color: var(--ui-text, #f1f5f9);">
+          <div style="font-weight: bold; color: var(--ui-accent, #f59e0b); font-size: 10px; letter-spacing: 0.5px; margin-bottom: 6px; border-bottom: 1px solid var(--ui-border-light, #3b455b); padding-bottom: 2px;">
             ${content.contextTag}
           </div>
           <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px;">
             ${content.bullets
               .map(
                 (b) => `
-              <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; background: #d4d4d4; padding: 2px 4px; border: 1px inset #fff;">
-                <span style="font-family: monospace; font-weight: bold; color: #0f172a; white-space: nowrap;">[${b.key}]</span>
-                <span style="color: #334155; text-align: right; font-size: 10px;">${b.label}</span>
+              <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; background: rgba(255, 255, 255, 0.04); padding: 2px 4px; border: 1px solid var(--ui-border-light, #3b455b);">
+                <span style="font-family: monospace; font-weight: bold; color: var(--ui-titlebar-text, #fde047); white-space: nowrap;">[${b.key}]</span>
+                <span style="opacity: 0.8; text-align: right; font-size: 10px;">${b.label}</span>
               </div>
             `
               )
               .join('')}
           </div>
-          <div style="font-size: 10px; color: #15803d; font-style: italic; background: #ecfdf5; border: 1px solid #86efac; padding: 4px; margin-bottom: 6px;">
+          <div style="font-size: 10px; color: #86efac; font-style: italic; background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(134, 239, 172, 0.4); padding: 4px; margin-bottom: 6px;">
             ${content.tip}
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 9px; color: #64748b; border-top: 1px solid #808080; padding-top: 4px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 9px; opacity: 0.7; border-top: 1px solid var(--ui-border-light, #3b455b); padding-top: 4px;">
             <span>Move, Esc, or F1 to dismiss</span>
-            <span style="color: #1e3a8a; font-weight: bold;">${engine.manifest?.name ?? ''}</span>
+            <span style="color: var(--ui-accent, #f59e0b); font-weight: bold;">${engine.manifest?.name ?? ''}</span>
           </div>
         </div>
       </div>

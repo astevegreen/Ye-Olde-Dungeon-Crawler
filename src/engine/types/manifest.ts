@@ -547,6 +547,8 @@ export interface PackBranding {
   victoryBanner?: string;
   /** Game-over banner line after a death. */
   fallenBanner?: string;
+  /** The pack's name for experience points, e.g. "Megin". Defaults to "XP". */
+  xpName?: string;
 }
 
 export interface GameContentManifest {

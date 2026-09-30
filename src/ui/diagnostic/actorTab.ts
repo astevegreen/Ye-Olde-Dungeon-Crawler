@@ -40,7 +40,7 @@ export function renderActorTab(ctx: DiagnosticTabContext, engine: GameEngine): v
           <div style="display: flex; gap: 6px; align-items: center;">
             ${p.isInvulnerable ? `<span style="background: #7c3aed; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold;">🛡️ GOD MODE ACTIVE</span>` : ''}
             ${p.unspentStatPoints > 0 ? `<span style="background: #d97706; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold;">⭐ ${p.unspentStatPoints} UNSPENT</span>` : ''}
-            <span style="color: #cbd5e1;">Megin: <strong>${p.xp} / ${p.xpToNextLevel}</strong></span>
+            <span style="color: #cbd5e1;">XP: <strong>${p.xp} / ${p.xpToNextLevel}</strong></span>
           </div>
         </div>
 

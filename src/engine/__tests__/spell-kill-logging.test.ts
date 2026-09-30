@@ -33,7 +33,22 @@ describe('Unified Kill Logging & Spell Fatalities', () => {
     return { engine, map, player };
   }
 
-  it('emits unified slain log "${victim.name} is slain! (+${xp} Megin)" on lethal spell hit', () => {
+  it("names XP with the pack's branding.xpName when it declares one", () => {
+    const map = new GameMap(10, 10, TILES.FLOOR);
+    const player = new Player({ id: 'p1', name: 'Freya', position: { x: 2, y: 2 }, stats: { hp: 50, maxHp: 50, attack: 10, defense: 5 } });
+    player.mana = 50;
+    player.maxMana = 50;
+    const manifest = { id: 'test_pack', name: 'Test Pack', branding: { xpName: 'Megin' } } as any;
+    const engine = new GameEngine({ map, player, manifest });
+    const goblin = new Monster({ id: 'gob-1', name: 'Goblin Scout', position: { x: 4, y: 2 }, stats: { hp: 4, maxHp: 15, attack: 4, defense: 1 }, xpValue: 20 });
+    map.addEntity(goblin);
+
+    engine.handlePlayerAction(new CastSpellAction(player, 'magic_arrow', 4, 2));
+
+    expect(engine.messages).toContain('Goblin Scout is slain! (+20 Megin)');
+  });
+
+  it('emits unified slain log "${victim.name} is slain! (+${xp} XP)" on lethal spell hit', () => {
     const { engine, map, player } = setupEngine();
 
     // Create a monster with low HP so magic bolt kills it
@@ -62,7 +77,7 @@ describe('Unified Kill Logging & Spell Fatalities', () => {
     expect(strikeLog).toBeDefined();
 
     // Must contain unified slain message with XP reward
-    const slainLog = logs.find((l) => l.includes('Goblin Scout is slain! (+20 Megin)'));
+    const slainLog = logs.find((l) => l.includes('Goblin Scout is slain! (+20 XP)'));
     expect(slainLog).toBeDefined();
 
     // Must NOT contain old non-standard phrase
@@ -92,7 +107,7 @@ describe('Unified Kill Logging & Spell Fatalities', () => {
     expect(troll.isAlive()).toBe(false);
 
     const logs = engine.messages;
-    const slainLog = logs.find((l) => l.includes('Frost Troll is slain! (+45 Megin)'));
+    const slainLog = logs.find((l) => l.includes('Frost Troll is slain! (+45 XP)'));
     expect(slainLog).toBeDefined();
 
     const vulnLog = logs.find((l) => l.includes('Vulnerable! 150% damage'));

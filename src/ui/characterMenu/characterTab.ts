@@ -50,7 +50,7 @@ function withBreakdown(total: number, base: number): string {
   return `${total} <span style="color: #94a3b8; font-size: 11px;">(${base} base ${bonus > 0 ? '+' : ''}${bonus})</span>`;
 }
 
-function renderVitals(player: Player, floor: number, turn: number): string {
+function renderVitals(player: Player, floor: number, turn: number, xpName: string): string {
   const carriedKg = player.inventory.totalWeight() / 1000;
   const capacityKg = getMaxCarryWeight(player.strength) / 1000;
   const actionCost = player.getActionCost(100);
@@ -68,7 +68,7 @@ function renderVitals(player: Player, floor: number, turn: number): string {
     ['Defense', withBreakdown(player.defense, player.baseDefenseValue)],
     ['Hit Points', `${player.hp} / ${player.maxHp}`],
     ['Mana', `${player.mana} / ${player.maxMana}`],
-    ['Megin', `${player.xp} / ${player.xpToNextLevel} to Level ${player.level + 1}`],
+    [xpName, `${player.xp} / ${player.xpToNextLevel} to Level ${player.level + 1}`],
     ['Action cost', `${actionCost} energy per action${actionCost === 100 ? ' (normal)' : actionCost > 100 ? ' (slowed)' : ' (hastened)'}`],
     ['Load', `${carriedKg.toFixed(1)} / ${capacityKg.toFixed(1)} kg — ${player.inventory.getEncumbrance(player.strength)}`],
     ['Purse', formatCurrency(getPlayerTotalCp(player))],
@@ -418,7 +418,7 @@ export class CharacterTab implements MenuTab {
           </div>
         </div>
 
-        ${renderVitals(player, this.state.currentFloor, this.state.turnCount)}
+        ${renderVitals(player, this.state.currentFloor, this.state.turnCount, manifest?.branding?.xpName ?? 'XP')}
 
         <div class="character-attributes-section">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">

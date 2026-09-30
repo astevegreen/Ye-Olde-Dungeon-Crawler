@@ -11,6 +11,7 @@ export interface ResolvedBranding {
   victoryTitle: string;
   victoryBanner: string;
   fallenBanner: string;
+  xpName: string;
 }
 
 export function resolveBranding(manifest?: GameContentManifest): ResolvedBranding {
@@ -25,6 +26,7 @@ export function resolveBranding(manifest?: GameContentManifest): ResolvedBrandin
     victoryTitle: b.victoryTitle ?? 'Victory!',
     victoryBanner: b.victoryBanner ?? 'Your quest is complete.',
     fallenBanner: b.fallenBanner ?? 'Your journey ends here.',
+    xpName: b.xpName ?? 'XP',
   };
 }
 

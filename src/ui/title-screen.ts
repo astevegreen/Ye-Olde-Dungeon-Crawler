@@ -512,7 +512,7 @@ export class TitleScreen {
     });
 
     if (this.valhallaEpitaphCardEl) {
-      this.valhallaEpitaphCardEl.textContent = Leaderboard.formatEpitaph(champ);
+      this.valhallaEpitaphCardEl.textContent = Leaderboard.formatEpitaph(champ, resolveBranding(this.profileManager.manifest).xpName);
     }
     if (this.valhallaExportBtn) {
       this.valhallaExportBtn.disabled = false;
@@ -527,7 +527,7 @@ export class TitleScreen {
 
   public async exportSelectedEpitaph(): Promise<void> {
     if (!this.selectedChampion) return;
-    const epitaphText = Leaderboard.formatEpitaph(this.selectedChampion);
+    const epitaphText = Leaderboard.formatEpitaph(this.selectedChampion, resolveBranding(this.profileManager.manifest).xpName);
     await copyTextToClipboard(epitaphText);
     if (this.valhallaStatusEl) {
       this.valhallaStatusEl.textContent = `Copied ${this.selectedChampion.heroName}'s epitaph to clipboard!`;

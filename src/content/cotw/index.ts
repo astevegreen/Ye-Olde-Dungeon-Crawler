@@ -58,6 +58,7 @@ export const cotwManifest: GameContentManifest = {
     victoryTitle: 'Victory in Midgard!',
     victoryBanner: 'The Sun-Stone of Freyr is restored to Bjarnarhaven!',
     fallenBanner: 'Your soul departs Midgard for the eternal halls of Valhalla.',
+    xpName: 'Megin',
   },
   tiles: COTW_TILES,
   monsters: COTW_MONSTERS,

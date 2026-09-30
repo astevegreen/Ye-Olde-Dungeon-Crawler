@@ -41,6 +41,10 @@ export class SagaShareModal implements UIModal {
   private inspectedEntry: HallOfFameEntry | null = null;
   private options: SagaShareModalOptions;
 
+  private get xpName(): string {
+    return (this.options.branding ?? resolveBranding()).xpName;
+  }
+
   constructor(options: SagaShareModalOptions) {
     this.options = options;
     this.createDom();
@@ -191,7 +195,7 @@ export class SagaShareModal implements UIModal {
 
     this.shareCopyEpitaphBtn?.addEventListener('click', async () => {
       if (this.activeEntry) {
-        const epitaph = Leaderboard.formatEpitaph(this.activeEntry);
+        const epitaph = Leaderboard.formatEpitaph(this.activeEntry, this.xpName);
         await copyTextToClipboard(epitaph);
         this.setStatus('Copied ASCII Epitaph to clipboard! 📜');
       }
@@ -232,7 +236,7 @@ export class SagaShareModal implements UIModal {
     const url = Leaderboard.generateShareUrl(entry, baseUrl);
     if (this.shareCodeInput) this.shareCodeInput.value = code;
     if (this.shareUrlInput) this.shareUrlInput.value = url;
-    if (this.sharePreviewEl) this.sharePreviewEl.textContent = Leaderboard.formatEpitaph(entry);
+    if (this.sharePreviewEl) this.sharePreviewEl.textContent = Leaderboard.formatEpitaph(entry, this.xpName);
 
     this.switchTab('share');
     this.setStatus(`Sharing ${entry.heroName}'s saga (${entry.score.toLocaleString()} pts).`);
@@ -287,7 +291,7 @@ export class SagaShareModal implements UIModal {
 
     this.inspectedEntry = entry;
     if (this.importPreviewEl) {
-      this.importPreviewEl.textContent = Leaderboard.formatEpitaph(entry);
+      this.importPreviewEl.textContent = Leaderboard.formatEpitaph(entry, this.xpName);
       this.importPreviewEl.style.color = '#f8fafc';
     }
     if (this.importInscribeBtn) {

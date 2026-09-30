@@ -68,7 +68,7 @@ export class DeathResolver {
         const xpBase = victim.xpValue ?? 15;
         const rewards = engine.pacts?.getAggregatedRewards();
         const xp = Math.round(xpBase * (rewards?.xpMultiplier ?? 1.0));
-        engine.log(`${victim.name} is slain! (+${xp} Megin)`);
+        engine.log(`${victim.name} is slain! (+${xp} ${engine.manifest?.branding?.xpName ?? 'XP'})`);
         awardPlayerXp(engine, xp);
       } else {
         engine.log(`${victim.name} is slain!`);

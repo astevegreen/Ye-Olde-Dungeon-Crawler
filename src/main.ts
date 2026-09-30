@@ -1112,7 +1112,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     if (summary.entry) {
-      if (pre) pre.textContent = Leaderboard.formatEpitaph(summary.entry);
+      if (pre) pre.textContent = Leaderboard.formatEpitaph(summary.entry, brand.xpName);
       if (scoreBadge) scoreBadge.textContent = `${brand.hallOfFameShortName} Score: ${summary.entry.score.toLocaleString()} PTS`;
     }
 

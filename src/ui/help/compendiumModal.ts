@@ -484,7 +484,7 @@ export class CompendiumModal implements UIModal {
             tier >= 3
               ? `<div>• Spells / Wind-Ups: ${def.spells && def.spells.length > 0 ? def.spells.join(', ') : 'Melee attack only'}</div>
                  <div>• Status On-Hit: ${def.onHitAffliction ? `${def.onHitAffliction.type} (${Math.round(def.onHitAffliction.chance * 100)}% chance)` : 'None'}</div>
-                 <div>• Drop Table: ${def.lootTable.length} potential items (Megin Value: ${def.xpValue})</div>`
+                 <div>• Drop Table: ${def.lootTable.length} potential items (${this.engine?.manifest?.branding?.xpName ?? 'XP'} Value: ${def.xpValue})</div>`
               : tier >= 2
               ? `<div>• Status Affliction: ${def.onHitAffliction ? `${def.onHitAffliction.type}` : 'None known'}</div>
                  <div>• Known to carry gold and equipment into battle.</div>`

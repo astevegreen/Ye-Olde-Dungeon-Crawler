@@ -451,7 +451,7 @@ describe('Widescreen Flank Containers Framework', () => {
 
       expect(leftContainer.innerHTML).toContain('Blood Tithe');
       expect(leftContainer.innerHTML).toContain('Gold: +100%');
-      expect(leftContainer.innerHTML).toContain('Megin: +25%');
+      expect(leftContainer.innerHTML).toContain('XP: +25%');
     });
 
     it('renders wax seal milestone badges and displays completed status for true flags', () => {

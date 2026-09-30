@@ -676,7 +676,7 @@ export class CanvasRenderer {
     const hudKey = `${gameTitle}|${locationLabel}|${p.level}|${p.xp}|${p.xpToNextLevel}`;
     if (this.cachedHudTitleKey !== hudKey) {
       this.cachedHudTitleKey = hudKey;
-      this.cachedHudTitle = `${gameTitle} [${locationLabel}]  LVL:${p.level} (Megin:${p.xp}/${p.xpToNextLevel})`;
+      this.cachedHudTitle = `${gameTitle} [${locationLabel}]  LVL:${p.level} (${this.engine.manifest?.branding?.xpName ?? 'XP'}:${p.xp}/${p.xpToNextLevel})`;
     }
     ctx.font = `bold 12px ${font}`;
     ctx.fillStyle = theme.hudAccent;

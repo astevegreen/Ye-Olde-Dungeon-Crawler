@@ -95,7 +95,7 @@ export class Leaderboard {
   /**
    * Formats a glorious ASCII memorial epitaph for clipboard export.
    */
-  public static formatEpitaph(entry: HallOfFameEntry): string {
+  public static formatEpitaph(entry: HallOfFameEntry, xpName = 'XP'): string {
     const dateStr = new Date(entry.date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -120,7 +120,7 @@ export class Leaderboard {
       `║ Fate:         ${entry.epitaph.slice(0, 43).padEnd(43)} ║`,
       `║ Depth:        Floor ${entry.deepestFloor.toString().padEnd(37)} ║`,
       `║ Turns Taken:  ${entry.turns.toString().padEnd(43)} ║`,
-      `║ Megin:        ${entry.xp.toString()}`.padEnd(59) + '║',
+      `║ ${`${xpName}:`.padEnd(14)}${entry.xp.toString()}`.padEnd(59) + '║',
       `║ Wealth:       ${goldGp.toString()} GP (${entry.goldCp.toString()} CP)`.padEnd(59) + '║',
       '╠════════════════════════════════════════════════════════════╣',
       `║ FINAL SCORE:  ${entry.score.toLocaleString()} POINTS`.padEnd(59) + '║',

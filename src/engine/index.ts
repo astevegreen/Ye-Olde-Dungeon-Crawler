@@ -162,6 +162,7 @@ export * from './quest/types';
 export * from './quest/gameStateManager';
 export * from './quest/dungeonArc';
 export * from './quest/timedEvents';
+export * from './quest/objectives';
 
 // Economy, Merchants, & Services
 export * from './economy/types';

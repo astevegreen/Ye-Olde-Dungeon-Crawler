@@ -413,6 +413,23 @@ export interface MonsterCategoryDefinition {
  * events-tick'` environmental update, alongside surfaces/substances/spawns) rather
  * than gated behind a modal, so the countdown keeps running while the player acts.
  */
+/**
+ * One line of the pack's running objective (`manifest.objectives`, read by
+ * `getCurrentObjective`): the HUD shows the first entry that is available and not
+ * yet done, so a pack lists them in story order.
+ */
+export interface ObjectiveDefinition {
+  id: string;
+  /** What the HUD shows, e.g. "Find what steals the village's warmth." */
+  text: string;
+  /** Shown only once this world flag is set. */
+  availableWhenFlag?: string;
+  /** Done once any of these world flags is set. */
+  doneWhenAnyFlag?: string[];
+  /** Done once this world counter reaches the value (e.g. a deepest-floor counter). */
+  doneWhenCounterAtLeast?: { counter: string; value: number };
+}
+
 export interface TimedEventDefinition {
   id: string;
   /** World-state flag whose becoming true starts this event's countdown (checked
@@ -635,6 +652,8 @@ export interface GameContentManifest {
   flankLayout?: FlankLayoutConfig;
   /** Turn-limited world events (ARCHITECTURE.md §3, `TimedEventDefinition`). */
   timedEvents?: TimedEventDefinition[];
+  /** The running objective, in story order (`ObjectiveDefinition`). */
+  objectives?: ObjectiveDefinition[];
   /** Kill-count-gated choice unlocks (ARCHITECTURE.md §3, `StoryChoiceTrigger`). */
   storyChoiceTriggers?: StoryChoiceTrigger[];
   /** Attribute-threshold-gated choice unlocks (ARCHITECTURE.md §3, `AttributeMilestoneTrigger`). */

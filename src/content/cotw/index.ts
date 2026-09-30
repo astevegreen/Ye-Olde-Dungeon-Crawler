@@ -22,6 +22,7 @@ import { COTW_SPRITE_RECIPES } from './sprites';
 import { COTW_CHOICES } from './choices';
 import { COTW_PACTS } from './pacts';
 import { COTW_RENOWN_MILESTONES, COTW_RENOWN_TITLES } from './renown';
+import { COTW_OBJECTIVES } from './objectives';
 import { COTW_COMPANIONS } from './companions';
 import { GIANT_BLOOD_STATUS, giantBloodHandler, GIANT_BLOOD_BOOTSTRAP_HOOK } from './giantBlood';
 import { COTW_MONSTER_SCALING } from './monsterScaling';
@@ -108,6 +109,7 @@ export const cotwManifest: GameContentManifest = {
   ],
   renownMilestones: COTW_RENOWN_MILESTONES,
   renownTitles: COTW_RENOWN_TITLES,
+  objectives: COTW_OBJECTIVES,
   companions: COTW_COMPANIONS,
   monsterScaling: COTW_MONSTER_SCALING,
   actionHooks: [

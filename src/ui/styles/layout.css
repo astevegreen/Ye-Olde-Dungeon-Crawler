@@ -275,6 +275,10 @@
    ========================================================================== */
 #gothic-action-console {
   width: 100%;
+  /* A fixed height: width-driven rules (smaller orbs on a narrow console) must not
+     change it, or resizing the canvas would resize the console that sized it. */
+  height: 104px;
+  flex: 0 0 104px;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -1342,4 +1346,42 @@ button.tray-chip:hover {
 #console-tray:has(.tray-companion) .tray-chips {
   max-height: 42px;
   overflow: hidden;
+}
+
+/* A narrow console with the context button and tray both showing leaves the spell
+   belt little room; give it back some: smaller orbs, a tighter button, and a "+"
+   slot that needs no word. */
+@container game (max-width: 900px) {
+  #gothic-action-console {
+    gap: 8px;
+    padding: 6px 8px;
+  }
+  .gothic-orb {
+    width: 66px;
+    height: 66px;
+  }
+  #context-action {
+    width: 118px;
+    grid-template-columns: 20px 1fr auto;
+    column-gap: 5px;
+    padding: 5px 6px;
+  }
+  .context-icon {
+    font-size: 16px;
+  }
+  #console-tray {
+    width: 128px;
+  }
+  .action-belt-slots .quick-spell-slot-add {
+    flex: 0 0 auto;
+    min-width: 34px;
+    max-width: 34px;
+  }
+  .action-belt-slots .quick-spell-slot-add .slot-badge-name {
+    font-size: 0;
+  }
+  .action-belt-slots .quick-spell-slot-add .slot-badge-name::after {
+    content: '+';
+    font-size: 13px;
+  }
 }

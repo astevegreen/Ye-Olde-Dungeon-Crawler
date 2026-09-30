@@ -101,9 +101,18 @@ export class ViewportManager {
     if (typeof ResizeObserver === 'undefined' || typeof document === 'undefined') return;
     const centerEl = document.getElementById('center-viewport');
     if (!centerEl) return;
+    // Re-fit on the next frame rather than inside the observer callback: resizing the
+    // canvas resizes the bars being observed, which the browser would otherwise report
+    // as a "ResizeObserver loop" error. One pending frame at a time.
+    let pending = false;
     this.resizeObserver = new ResizeObserver(() => {
-      this.recalculate();
-      this.notifyResize();
+      if (pending) return;
+      pending = true;
+      requestAnimationFrame(() => {
+        pending = false;
+        this.recalculate();
+        this.notifyResize();
+      });
     });
     this.resizeObserver.observe(centerEl);
     for (const id of [...SURROUNDING_BAR_IDS, ...SIDE_COLUMN_IDS]) {

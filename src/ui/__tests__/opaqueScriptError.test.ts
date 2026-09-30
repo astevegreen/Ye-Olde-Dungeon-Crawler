@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isOpaqueScriptError } from '../opaqueScriptError';
+import { isBenignResizeObserverError, isOpaqueScriptError } from '../opaqueScriptError';
 
 describe('isOpaqueScriptError', () => {
   it('flags the browser-sanitized "Script error." with no error object (issue #4)', () => {
@@ -13,5 +13,17 @@ describe('isOpaqueScriptError', () => {
 
   it('does not flag an ordinary message without an error object', () => {
     expect(isOpaqueScriptError({ error: null, message: 'Uncaught TypeError: x is undefined' })).toBe(false);
+  });
+});
+
+describe('isBenignResizeObserverError', () => {
+  it('matches the browser\'s deferred-notification messages without an error object', () => {
+    expect(isBenignResizeObserverError({ error: null, message: 'ResizeObserver loop completed with undelivered notifications.' })).toBe(true);
+    expect(isBenignResizeObserverError({ error: undefined, message: 'ResizeObserver loop limit exceeded' })).toBe(true);
+  });
+
+  it('leaves real errors alone', () => {
+    expect(isBenignResizeObserverError({ error: new Error('x'), message: 'ResizeObserver loop limit exceeded' })).toBe(false);
+    expect(isBenignResizeObserverError({ error: null, message: 'TypeError: foo is undefined' })).toBe(false);
   });
 });

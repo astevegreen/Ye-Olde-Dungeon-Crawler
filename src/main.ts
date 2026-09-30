@@ -107,7 +107,7 @@ import { SettingsManager } from './ui/settings/settingsManager';
 import type { RadialMenuSlotConfig } from './ui/settings/settingsManager';
 import { KeybindModal } from './ui/settings/keybindModal';
 import { MainMenu } from './ui/menus/mainMenu';
-import { isOpaqueScriptError } from './ui/opaqueScriptError';
+import { isBenignResizeObserverError, isOpaqueScriptError } from './ui/opaqueScriptError';
 import { COMMAND_CATALOG, type CommandId } from './main/commandCatalog';
 
 declare global {
@@ -1122,6 +1122,12 @@ window.addEventListener('DOMContentLoaded', () => {
       flightRecorder.recordWarning('Opaque "Script error." from a script outside the game', {
         type: 'opaque-script-error',
         source: event.filename,
+      });
+      return;
+    }
+    if (isBenignResizeObserverError(event)) {
+      flightRecorder.recordWarning('ResizeObserver deferred a notification to the next frame', {
+        type: 'resize-observer-loop',
       });
       return;
     }

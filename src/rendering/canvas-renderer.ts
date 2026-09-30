@@ -1,6 +1,5 @@
 import { GameEngine } from '../engine';
 import { Visibility } from '../engine';
-import { getTimedEventCountdowns } from '../engine';
 import { Camera } from './camera';
 import type { Entity } from '../engine';
 import type { TileDefinition } from '../engine';
@@ -45,16 +44,6 @@ export interface ModeHint {
   tone: 'mode' | 'aim';
 }
 
-/**
- * Ambient statuses (giant_blood, the energy-model afflictions) are applied with a
- * 9999-turn sentinel, but the status manager still decrements them each tick
- * (a handler may reset it first), so the live value drifts to 9998, 9997, ….
- * Anything this far out isn't a countdown the player can act on.
- */
-function isAmbientDuration(duration: number): boolean {
-  return duration >= 9000;
-}
-
 export class CanvasRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -80,10 +69,13 @@ export class CanvasRenderer {
   public torchlightEnabled = true;
   public navigationController?: NavigationController;
   private cellSize = 32;
-  private topBarHeight = 24;
-  private lastModeHintKey = '';
-  /** Fires when the open mode's control hint changes (null when back to normal play). */
-  public onModeHintChanged?: (hint: ModeHint | null) => void;
+  private topBarHeight = 0;
+  private lastFocusEntityId: string | null = null;
+  /**
+   * Fires when the monster under the mouse (or under the look reticle) changes, so
+   * the sidebar can highlight its row. Null when no monster is focused.
+   */
+  public onFocusEntityChanged?: (entityId: string | null) => void;
   private offsetX = 0;
   private offsetY = 0;
   private boundClickHandler?: (e: MouseEvent) => void;
@@ -470,8 +462,8 @@ export class CanvasRenderer {
     const availH = this.viewport.virtualHeight - this.topBarHeight;
 
     // Fixed tile grid inside 960x600 virtual resolution
-    const targetCols = Math.min(this.engine.map.width, 28);
-    const targetRows = Math.min(this.engine.map.height, 17);
+    const targetCols = Math.min(this.engine.map.width, 30);
+    const targetRows = Math.min(this.engine.map.height, 18);
 
     this.camera.viewWidthTiles = targetCols;
     this.camera.viewHeightTiles = targetRows;
@@ -507,9 +499,6 @@ export class CanvasRenderer {
     // Background
     ctx.fillStyle = theme.canvasBg;
     ctx.fillRect(0, 0, virtualW, virtualH);
-
-    // Top Bar (HUD)
-    this.renderTopBar(virtualW);
 
     // Sensory Masking & Echolocation (docs/architecture/simulation-and-input.md): while active, replace the
     // normal FOV-based tile/entity pass with an audible-only view instead of drawing
@@ -606,9 +595,6 @@ export class CanvasRenderer {
       );
     }
 
-    // Bottom Bar (Action log)
-    this.notifyModeHint();
-
     // Inventory / Paperdoll Overlay (if open)
     this.inventoryOverlay.render(ctx, this.engine, virtualW, virtualH);
 
@@ -655,98 +641,9 @@ export class CanvasRenderer {
         this.atlas.drawSprite(c, spriteKey, x - size / 2, y - size / 2, size, Visibility.Visible);
       }
     );
-  }
 
-  /**
-   * One-line tactical strip: combat stats, then only the conditions worth a glance —
-   * encumbrance once it slows you, statuses, sensing spells and story countdowns.
-   * Name, depth, level and HP/MP live in the header and the orbs, not here too.
-   */
-  private renderTopBar(width: number): void {
-    const ctx = this.ctx;
-    ctx.save();
-    const p = this.engine.player;
-    const theme = this.theme;
-    const font = theme.fontFamily ?? '"Courier New", Courier, monospace';
-    const midY = Math.round(this.topBarHeight / 2);
-
-    ctx.fillStyle = theme.hudBg;
-    ctx.fillRect(0, 0, width, this.topBarHeight);
-
-    ctx.strokeStyle = theme.hudBorder;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, this.topBarHeight - 0.5);
-    ctx.lineTo(width, this.topBarHeight - 0.5);
-    ctx.stroke();
-
-    ctx.font = `bold 11px ${font}`;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-
-    const badges: Array<{ text: string; color: string }> = [
-      { text: `ATK ${p.attack} · DEF ${p.defense}`, color: theme.textMuted },
-    ];
-
-    const enc = p.inventory.getEncumbrance(p.strength);
-    if (enc === 'Burdened') badges.push({ text: `[${enc.toUpperCase()}]`, color: '#f59e0b' });
-    else if (enc === 'Overburdened') badges.push({ text: `[${enc.toUpperCase()}]`, color: '#f97316' });
-    else if (enc === 'Immobilized') badges.push({ text: `[${enc.toUpperCase()}]`, color: '#ef4444' });
-
-    for (const eff of p.statusManager.getAll()) {
-      const manifestDef = this.engine.manifest?.statusEffects?.find((s) => s.id === eff.type);
-      let color = manifestDef?.hudColor ?? theme.hudAccent;
-      let label = manifestDef?.name ? manifestDef.name.toUpperCase() : eff.type.toUpperCase();
-      if (!manifestDef?.hudColor) {
-        if (eff.type === 'poison') color = '#22c55e';
-        else if (eff.type === 'paralysis') color = '#eab308';
-        else if (eff.type === 'slow') color = '#0ea5e9';
-        else if (eff.type === 'haste') color = '#f97316';
-        else if (eff.type === 'blindness') color = '#a855f7';
-      }
-      if (eff.type === 'rune_of_return_channel') {
-        color = '#38bdf8';
-        label = 'CHANNELING RUNE';
-      }
-      badges.push({ text: isAmbientDuration(eff.duration) ? `[${label}]` : `[${label} ${eff.duration}t]`, color });
-    }
-
-    if (this.engine.detectMonstersTurns > 0) {
-      badges.push({ text: `[ESP ${this.engine.detectMonstersTurns}t]`, color: '#38bdf8' });
-    }
-    if (this.engine.detectObjectsTurns > 0) {
-      badges.push({ text: `[SENSE ${this.engine.detectObjectsTurns}t]`, color: '#fbbf24' });
-    }
-
-    // Running story countdowns (labelled manifest.timedEvents)
-    for (const countdown of getTimedEventCountdowns(this.engine)) {
-      badges.push({
-        text: `[${countdown.label.toUpperCase()} ${countdown.turnsRemaining}t]`,
-        color: countdown.turnsRemaining <= 20 ? '#ef4444' : '#f59e0b',
-      });
-    }
-
-    // Lay badges left to right; what doesn't fit collapses into "+N" rather than
-    // running off the canvas edge.
-    const gap = 10;
-    const rightEdge = width - 14;
-    let x = 14;
-    for (let i = 0; i < badges.length; i++) {
-      const badge = badges[i];
-      const w = ctx.measureText(badge.text).width;
-      const remaining = badges.length - i - 1;
-      const overflowW = remaining > 0 ? ctx.measureText(` +${remaining}`).width + gap : 0;
-      if (x + w + overflowW > rightEdge) {
-        ctx.fillStyle = theme.hudAccent;
-        ctx.fillText(`+${badges.length - i}`, x, midY);
-        break;
-      }
-      ctx.fillStyle = badge.color;
-      ctx.fillText(badge.text, x, midY);
-      x += w + gap;
-    }
-
-    ctx.restore();
+    this.renderModeHintPill(virtualW, virtualH);
+    this.notifyFocusEntity();
   }
 
   private renderTiles(): void {
@@ -1452,12 +1349,105 @@ export class CanvasRenderer {
     return null;
   }
 
-  private notifyModeHint(): void {
+  /**
+   * The open mode's controls as a pill along the bottom of the map. It reserves no
+   * space: in normal play nothing is drawn.
+   */
+  private renderModeHintPill(width: number, height: number): void {
     const hint = this.getModeHint();
-    const key = hint ? `${hint.tone}|${hint.text}` : '';
-    if (key === this.lastModeHintKey) return;
-    this.lastModeHintKey = key;
-    this.onModeHintChanged?.(hint);
+    if (!hint) return;
+    const ctx = this.ctx;
+    const font = this.theme.fontFamily ?? '"Courier New", Courier, monospace';
+    ctx.save();
+    ctx.font = `bold 12px ${font}`;
+    const padX = 12;
+    const w = Math.min(width - 24, ctx.measureText(hint.text).width + padX * 2);
+    const h = 22;
+    const x = Math.round((width - w) / 2);
+    const y = height - h - 8;
+    ctx.fillStyle = 'rgba(10, 14, 23, 0.88)';
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = hint.tone === 'aim' ? '#fde047' : this.theme.hudAccent;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    ctx.fillStyle = hint.tone === 'aim' ? '#fde047' : this.theme.hudAccent;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(hint.text, width / 2, y + h / 2 + 1);
+    ctx.restore();
+  }
+
+  /** The monster the player is pointing at: the look reticle's tile, else the mouse's. */
+  private notifyFocusEntity(): void {
+    let tile: { x: number; y: number } | null = null;
+    if (this.inspectOverlay.isOpen) tile = { x: this.inspectOverlay.cursorX, y: this.inspectOverlay.cursorY };
+    else tile = this.tacticalTargetOverlay.hoveredTile;
+    let id: string | null = null;
+    if (tile && this.engine.map.inBounds(tile.x, tile.y) && this.engine.fov.isVisible(tile.x, tile.y)) {
+      const entity = this.engine.map.getEntityAt(tile.x, tile.y);
+      if (entity instanceof Monster && entity.isAlive()) id = entity.id;
+    }
+    if (id === this.lastFocusEntityId) return;
+    this.lastFocusEntityId = id;
+    this.onFocusEntityChanged?.(id);
+  }
+
+  /**
+   * Points at a tile from outside the canvas (a sidebar row), exactly as hovering it
+   * with the mouse would: the monster gets its brackets and card, an item pile its pill.
+   */
+  public pointAtTile(x: number | null, y: number | null): void {
+    if (x === null || y === null) this.tacticalTargetOverlay.clearHover();
+    else this.tacticalTargetOverlay.setHoveredTile(x, y);
+    this.render();
+  }
+
+  /** Paints an entity's atlas sprite to fill a small DOM canvas (sidebar rows). */
+  public drawEntityIcon(canvas: HTMLCanvasElement, entity: Entity): void {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.imageSmoothingEnabled = false;
+    const key = getEntitySpriteKey(entity, this.atlas.hasSprite.bind(this.atlas));
+    this.atlas.drawSprite(ctx, key, 0, 0, Math.min(canvas.width, canvas.height));
+  }
+
+  /**
+   * Draws the explored floor into a small DOM canvas: known floor and walls, doors,
+   * stairs, visible monsters, and the hero. Sized to the map, one block per tile.
+   */
+  public drawMinimap(canvas: HTMLCanvasElement): void {
+    const map = this.engine.map;
+    const fov = this.engine.fov;
+    const cell = Math.max(1, Math.floor(Math.min(canvas.width / map.width, canvas.height / map.height)));
+    const ox = Math.floor((canvas.width - map.width * cell) / 2);
+    const oy = Math.floor((canvas.height - map.height * cell) / 2);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let y = 0; y < map.height; y++) {
+      for (let x = 0; x < map.width; x++) {
+        if (!fov.isExplored(x, y)) continue;
+        const tile = map.getTile(x, y);
+        if (!tile) continue;
+        const visible = fov.isVisible(x, y);
+        let color: string;
+        if (tile.type === 'stairs_down' || tile.type === 'stairs_up') color = '#facc15';
+        else if (tile.type.startsWith('door')) color = '#b45309';
+        else if (tile.passable) color = visible ? '#56627a' : '#323b4d';
+        else color = visible ? '#1c2230' : '#141925';
+        ctx.fillStyle = color;
+        ctx.fillRect(ox + x * cell, oy + y * cell, cell, cell);
+      }
+    }
+    for (const entity of map.getAllEntities()) {
+      if (!(entity instanceof Monster) || !entity.isAlive() || !fov.isVisible(entity.x, entity.y)) continue;
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(ox + entity.x * cell - 1, oy + entity.y * cell - 1, cell + 2, cell + 2);
+    }
+    const p = this.engine.player;
+    ctx.fillStyle = this.theme.hudAccent;
+    ctx.fillRect(ox + p.x * cell - 2, oy + p.y * cell - 2, cell + 4, cell + 4);
   }
 
   private renderGroundItems(): void {

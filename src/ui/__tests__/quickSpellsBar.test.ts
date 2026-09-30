@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { QuickSpellsBar } from '../quickSpellsBar';
 import { GameEngine, GameMap, TILES, Player } from '../../engine';
 
-// No DOM library is installed (see bottomStatusBar.test.ts), so this stubs just
+// No DOM library is installed, so this stubs just
 // what QuickSpellsBar touches: slot buttons and the name span it fills by selector.
 class FakeSlot {
   className = '';

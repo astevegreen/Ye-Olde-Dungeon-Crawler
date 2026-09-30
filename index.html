@@ -7,32 +7,48 @@
   </head>
   <body>
     <div id="app">
-      <!-- Widescreen Flank Containers Layout -->
+      <!-- Game layout: the map column (header, canvas, console, log) and the sidebar beside it -->
       <div id="widescreen-layout" style="display: none;">
-        <aside id="left-flank" class="flank-column flank-left" aria-label="World Ledger and Reputation"></aside>
         <main id="center-viewport">
+          <div id="game-frame">
           <!-- Main Game Letterboxed Container -->
-          <div id="game-container" style="display: flex; position: relative; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 0 32px rgba(0, 0, 0, 0.9);">
-            <!-- Top Header Bar -->
-            <div id="game-header-bar" class="retro-window" style="width: 100%; border-bottom: none; border-radius: 0; box-shadow: none;">
-              <div class="retro-titlebar hud-bar-row">
-                <!-- Left: Hero info -->
-                <div id="header-info-col" style="display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: bold; color: #f8fafc; text-shadow: 1px 1px 0 #000; flex-shrink: 0;">
-                  <span id="header-name">🛡️ Adventurer</span>
-                  <span style="color: #64748b;">|</span>
-                  <span id="header-floor" style="color: #fde047;">Floor 1</span>
-                  <span style="color: #64748b;">|</span>
-                  <span id="header-level" style="color: #cbd5e1; font-weight: normal;">Lvl 1</span>
+          <div id="game-container">
+            <!-- Header: the hero's square, then two bars: screens & system, and actions -->
+            <div id="game-header-bar">
+              <div id="hud-portrait" title="">
+                <div id="header-name">Adventurer</div>
+                <div id="header-floor">Floor 1</div>
+                <div id="header-level">Lvl 1</div>
+                <div id="header-xp-bar"><i id="header-xp-fill"></i></div>
+                <div id="header-renown">Renown 0</div>
+                <button id="btn-alloc-points" type="button" hidden title="Unspent attribute points: open the Character tab (E)"></button>
+              </div>
+              <div class="hud-header-bars">
+                <!-- Top: screens and system menus -->
+                <div id="hud-admin-bar" class="hud-bar-row">
+                  <div id="header-actions-col" class="hud-btn-group">
+                    <button id="btn-compendium" class="win-btn win-btn-sm hud-btn" title="Bestiary: monster lore, weaknesses and mastery perks (B)"><span class="hud-icon">📖</span> <kbd class="hud-key">B</kbd> <span class="hud-word">Bestiary</span></button>
+                    <button id="btn-cmd-palette" class="win-btn win-btn-sm hud-btn" title="Command palette (Ctrl+K or Shift+/)"><span class="hud-icon">⌨️</span> <kbd class="hud-key">^K</kbd> <span class="hud-word">Cmds</span></button>
+                    <button id="btn-help-card" class="win-btn win-btn-sm hud-btn" title="Context help (F1 or /)"><span class="hud-icon">💡</span> <kbd class="hud-key">F1</kbd> <span class="hud-word">Help</span></button>
+                  </div>
+                  <div class="hud-btn-group">
+                    <button id="btn-feedback" class="win-btn win-btn-sm hud-btn hud-btn-quiet" title="Send Feedback or Report Bug (F3)"><span class="hud-icon">💬</span> <kbd class="hud-key">F3</kbd> <span class="hud-word">Feedback</span></button>
+                    <button id="btn-dev-diagnostics" class="win-btn win-btn-sm hud-btn hud-btn-quiet" title="Open Developer Diagnostics (F2 or `)"><span class="hud-icon">🛠️</span> <kbd class="hud-key">F2</kbd> <span class="hud-word">Dev</span></button>
+                    <button id="btn-save-title" class="win-btn win-btn-sm hud-btn hud-btn-menu" title="Menu: Resume, Settings &amp; Controls, or Save &amp; Quit (Esc)"><span class="hud-icon">☰</span> <kbd class="hud-key">Esc</kbd> <span class="hud-word">Menu</span></button>
+                  </div>
                 </div>
-                <!-- Right: System / modal buttons, plus the way out -->
-                <div id="header-actions-col" class="hud-btn-group">
-                  <button id="btn-map" class="win-btn win-btn-sm hud-btn" title="Explored Dungeon Map Viewer (M)"><span class="hud-icon">🗺️</span> <kbd class="hud-key">M</kbd> <span class="hud-word">Map</span></button>
-                  <button id="btn-compendium" class="win-btn win-btn-sm hud-btn" title="Bestiary: monster lore, weaknesses and mastery perks (B)"><span class="hud-icon">📖</span> <kbd class="hud-key">B</kbd> <span class="hud-word">Bestiary</span></button>
-                  <button id="btn-cmd-palette" class="win-btn win-btn-sm hud-btn" title="Open Quick Command Palette (Shift+? / Ctrl+K)"><span class="hud-icon">⌨️</span> <span class="hud-word">Cmds</span></button>
-                  <button id="btn-help-card" class="win-btn win-btn-sm hud-btn" title="Open Context Help (F1 / ?)"><span class="hud-icon">💡</span> <kbd class="hud-key">?</kbd> <span class="hud-word">Help</span></button>
-                  <button id="btn-feedback" class="win-btn win-btn-sm hud-btn hud-btn-quiet" title="Send Feedback or Report Bug (F3)"><span class="hud-icon">💬</span> <kbd class="hud-key">F3</kbd> <span class="hud-word">Feedback</span></button>
-                  <button id="btn-dev-diagnostics" class="win-btn win-btn-sm hud-btn hud-btn-quiet" title="Open Developer Diagnostics (F2 or `)"><span class="hud-icon">🛠️</span> <kbd class="hud-key">F2</kbd> <span class="hud-word">Dev</span></button>
-                  <button id="btn-save-title" class="win-btn win-btn-sm hud-btn hud-btn-menu" title="Menu: Resume, Settings &amp; Controls, or Save &amp; Quit (Esc)"><span class="hud-icon">☰</span> <kbd class="hud-key">Esc</kbd> <span class="hud-word">Menu</span></button>
+                <!-- Bottom: things you do in play -->
+                <div id="game-bottom-bar" class="hud-bar-row">
+                  <div class="hud-btn-group">
+                    <button id="btn-hud-inv" class="win-btn win-btn-sm hud-btn" title="Inventory & Equipment (I)"><span class="hud-icon">🎒</span> <kbd class="hud-key">I</kbd> <span class="hud-word">Inv</span></button>
+                    <button id="btn-hud-cast" class="win-btn win-btn-sm hud-btn" title="Spellbook & Cast (Z)"><span class="hud-icon">⚡</span> <kbd class="hud-key">Z</kbd> <span class="hud-word">Cast</span></button>
+                    <button id="btn-hud-look" class="win-btn win-btn-sm hud-btn" title="Inspect / Look (L/X)"><span class="hud-icon">👁️</span> <kbd class="hud-key">L</kbd> <span class="hud-word">Look</span></button>
+                    <button id="btn-map" class="win-btn win-btn-sm hud-btn" title="Explored Dungeon Map (M)"><span class="hud-icon">🗺️</span> <kbd class="hud-key">M</kbd> <span class="hud-word">Map</span></button>
+                    <button id="btn-hud-rest" class="win-btn win-btn-sm hud-btn" title="Rest until full HP/MP (R)"><span class="hud-icon">💤</span> <kbd class="hud-key">R</kbd> <span class="hud-word">Rest</span></button>
+                    <button id="btn-hud-wait" class="win-btn win-btn-sm hud-btn" title="Pass Turn (Space / .)"><span class="hud-icon">⏳</span> <kbd class="hud-key">.</kbd> <span class="hud-word">Wait</span></button>
+                    <button id="btn-hud-search" class="win-btn win-btn-sm hud-btn" title="Search secret doors / traps (S)"><span class="hud-icon">🔍</span> <kbd class="hud-key">S</kbd> <span class="hud-word">Search</span></button>
+                    <button id="btn-hud-stairs" class="win-btn win-btn-sm hud-btn" title="Stairs Up / Down (< / >)"><span class="hud-icon">🪜</span> <kbd class="hud-key">&lt;&gt;</kbd> <span class="hud-word">Stairs</span></button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -40,7 +56,7 @@
             <!-- Canvas -->
             <canvas id="game-canvas"></canvas>
 
-            <!-- Gothic Action Console Dashboard -->
+            <!-- Action console: vitals, potions and spells -->
             <div id="gothic-action-console">
               <!-- Left: Crimson Health Orb -->
               <div id="hud-health-orb" class="gothic-orb-container" title="Current and Maximum Health (Click to Rest)">
@@ -50,32 +66,15 @@
                   <div class="orb-glyph" id="health-orb-glyph">♥</div>
                   <div class="orb-value" id="health-orb-text">50/50</div>
                 </div>
-                <div class="orb-label">HEALTH</div>
+                <div class="orb-label" id="health-orb-label">HEALTH</div>
               </div>
 
-              <!-- Center: Action Belt, Utility Buttons & Ground Status -->
+              <!-- Center: spell belt (QuickSpellsBar mounts here) -->
               <div class="console-center-cluster">
-                <!-- 10-Slot Action/Ability Belt (QuickSpellsBar mounts here) -->
                 <div id="action-belt-slots" class="action-belt-slots"></div>
-
-                <!-- Primary Action Verbs (Pacts removed, spaced cleanly) -->
-                <div id="game-bottom-bar" class="hud-bar-row">
-                  <div class="hud-btn-group">
-                    <button id="btn-hud-inv" class="win-btn win-btn-sm hud-btn" title="Inventory & Equipment (I)"><span class="hud-icon">🎒</span> <kbd class="hud-key">I</kbd> <span class="hud-word">Inv</span></button>
-                    <button id="btn-hud-cast" class="win-btn win-btn-sm hud-btn" title="Spellbook & Cast (Z/C)"><span class="hud-icon">⚡</span> <kbd class="hud-key">Z</kbd> <span class="hud-word">Cast</span></button>
-                    <button id="btn-hud-look" class="win-btn win-btn-sm hud-btn" title="Inspect / Look (L/X)"><span class="hud-icon">👁️</span> <kbd class="hud-key">L</kbd> <span class="hud-word">Look</span></button>
-                    <button id="btn-hud-rest" class="win-btn win-btn-sm hud-btn" title="Rest until full HP/MP (R)"><span class="hud-icon">💤</span> <kbd class="hud-key">R</kbd> <span class="hud-word">Rest</span></button>
-                    <button id="btn-hud-search" class="win-btn win-btn-sm hud-btn" title="Search secret doors / traps (S)"><span class="hud-icon">🔍</span> <kbd class="hud-key">S</kbd> <span class="hud-word">Search</span></button>
-                    <button id="btn-hud-wait" class="win-btn win-btn-sm hud-btn" title="Pass Turn (Space / .)"><span class="hud-icon">⏳</span> <kbd class="hud-key">.</kbd> <span class="hud-word">Wait</span></button>
-                    <button id="btn-hud-stairs" class="win-btn win-btn-sm hud-btn" title="Stairs Up / Down (< / >)"><span class="hud-icon">🪜</span> <kbd class="hud-key">&lt;/&gt;</kbd> <span class="hud-word">Stairs</span></button>
-                  </div>
-                </div>
-
-                <!-- Ground Status & Tile Inspection Bar -->
-                <div id="ground-status-bar"></div>
               </div>
 
-              <!-- Right: Arcane Mana Orb -->
+              <!-- Right: Mana Orb -->
               <div id="hud-mana-orb" class="gothic-orb-container" title="Current and Maximum Mana (Click to Open Spellbook)">
                 <div class="gothic-orb mana-orb">
                   <div class="orb-liquid mana-liquid" id="mana-orb-fill"></div>
@@ -83,17 +82,17 @@
                   <div class="orb-glyph" id="mana-orb-glyph">✦</div>
                   <div class="orb-value" id="mana-orb-text">20/20</div>
                 </div>
-                <div class="orb-label">MANA</div>
+                <div class="orb-label" id="mana-orb-label">MANA</div>
               </div>
             </div>
 
-            <!-- Full-Width Bottom Combat & Event Log -->
+            <!-- Combat & event log, the console's last row -->
             <div id="game-full-width-log" class="full-width-message-log" aria-label="Combat and Event Log">
               <div id="log-messages-stream" class="log-messages-stream"></div>
             </div>
           </div>
+          </div>
         </main>
-        <aside id="right-flank" class="flank-column flank-right" aria-label="Auto-Inking Journal and Cartographer"></aside>
       </div>
 
       <!-- Windows 3.1 / DOS Character Roster Dialog -->

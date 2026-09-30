@@ -14,6 +14,7 @@ export interface ResolvedBranding {
   xpName: string;
   healthGlyph: string;
   manaGlyph: string;
+  manaName: string;
   /** Who compacts coin in town, e.g. "Banker Haakon". */
   bankerTitle: string;
   /** The townsperson who attunes and refills the Rune of Return. */
@@ -37,6 +38,7 @@ export function resolveBranding(manifest?: GameContentManifest): ResolvedBrandin
     xpName: b.xpName ?? 'XP',
     healthGlyph: b.healthGlyph ?? '♥',
     manaGlyph: b.manaGlyph ?? '✦',
+    manaName: b.manaName ?? 'Mana',
     bankerTitle: manifest?.town?.services?.bankerTitle ?? 'the town banker',
     runeSmithName: attunementNpcName(manifest),
     defaultHeroName: manifest?.presetNames?.[0] ?? 'Hero',
@@ -67,4 +69,8 @@ export function applyDocumentBranding(doc: Document, branding: ResolvedBranding)
   set('#error-dialog-title', `${branding.title} - Application Error`);
   set('#health-orb-glyph', branding.healthGlyph);
   set('#mana-orb-glyph', branding.manaGlyph);
+  set('#mana-orb-label', branding.manaName.toUpperCase());
+  doc.querySelectorAll('#hud-mana-orb').forEach((el) => {
+    el.setAttribute('title', `Current and Maximum ${branding.manaName} (Click to Open Spellbook)`);
+  });
 }

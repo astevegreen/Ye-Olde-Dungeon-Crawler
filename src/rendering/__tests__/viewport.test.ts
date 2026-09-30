@@ -118,13 +118,12 @@ describe('Responsive High-DPI ViewportManager', () => {
   it('subtracts every surrounding bar\'s real measured height, not just header+footer', () => {
     const { canvas, dummyCtx } = createMockCanvas();
     const barHeight = (h: number) => ({ getBoundingClientRect: () => ({ height: h }) });
-    // Four bars actually mounted around the canvas in a real game session; a prior
+    // Bars actually mounted around the canvas in a real game session; a prior
     // version only knew about two of these (hardcoded 34+36), which is exactly the
     // bug this test guards against regressing.
     const bars: Record<string, unknown> = {
       'game-header-bar': barHeight(40),
       'quick-spells-bar': barHeight(30),
-      'ground-status-bar': barHeight(25),
       'game-bottom-bar': barHeight(45),
     };
     // Width is deliberately generous so height (the dimension the bars eat into) is
@@ -143,8 +142,8 @@ describe('Responsive High-DPI ViewportManager', () => {
     const vp = new ViewportManager(canvas, dummyCtx, { virtualWidth: 960, virtualHeight: 600 });
     vp.recalculate(); // no explicit args -> exercises the real DOM-measurement branch
 
-    // availH = 800 - (40+30+25+45) = 660; scale = min(2000/960, 660/600) = 660/600
-    const expectedScale = 660 / 600;
+    // availH = 800 - (40+30+45) = 685; scale = min(2000/960, 685/600) = 685/600
+    const expectedScale = 685 / 600;
     expect(vp.scale).toBeCloseTo(expectedScale, 4);
     expect(vp.displayHeight).toBe(Math.floor(600 * expectedScale));
 

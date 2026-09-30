@@ -4,7 +4,7 @@ import { GameMap } from '../../engine';
 import { Player } from '../../engine';
 import { TILES, registerTileDefinition } from '../../engine';
 import { Item } from '../../engine';
-import { formatGroundStatus } from '../bottomStatusBar';
+import { formatGroundStatus } from '../sidebar/sidebarModel';
 import { SpellbookModal } from '../spellbookModal';
 import { TargetingOverlay } from '../../rendering/targeting-overlay';
 import { ModalStackManager } from '../modalStack';

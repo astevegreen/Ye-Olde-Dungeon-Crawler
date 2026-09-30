@@ -11,6 +11,7 @@ import {
   flightRecorder,
   GameEngine,
   getActiveTitle,
+  getRenownTotal,
   getSpell,
   Leaderboard,
   ProfileManager,
@@ -89,14 +90,13 @@ import { InventoryTabAdapter } from './rendering/inventoryTabAdapter';
 import './ui/styles/base.css';
 import './ui/styles/flanks.css';
 import './ui/styles/layout.css';
-import { FlankManager } from './ui/flanks/flankManager';
 import { WorldLedgerModule } from './ui/flanks/worldLedgerModule';
 import { JournalModule } from './ui/flanks/journalModule';
 import { QuickSpellsBar } from './ui/quickSpellsBar';
 import { PotionRow } from './ui/potionRow';
 import { classifyLogLine, CriticalLineTracker } from './ui/logClassifier';
 import { SpellbookModal } from './ui/spellbookModal';
-import { BottomStatusBar } from './ui/bottomStatusBar';
+import { CombatSidebar } from './ui/sidebar/combatSidebar';
 import { SettingsManager } from './ui/settings/settingsManager';
 import type { RadialMenuSlotConfig } from './ui/settings/settingsManager';
 import { KeybindModal } from './ui/settings/keybindModal';
@@ -150,12 +150,6 @@ window.addEventListener('DOMContentLoaded', () => {
   let mainMenu: MainMenu;
 
   const widescreenLayout = document.getElementById('widescreen-layout');
-  const leftFlank = document.getElementById('left-flank');
-  const rightFlank = document.getElementById('right-flank');
-
-  const flankManager = new FlankManager();
-  flankManager.registerModule(new WorldLedgerModule());
-  flankManager.registerModule(new JournalModule());
 
   const gameContainer = document.getElementById('game-container');
   const saveTitleBtn = document.getElementById('btn-save-title');
@@ -306,7 +300,7 @@ window.addEventListener('DOMContentLoaded', () => {
   let spellbookModal: SpellbookModal;
   let quickSpellsBar: QuickSpellsBar;
   let potionRow: PotionRow;
-  let bottomStatusBar: BottomStatusBar;
+  let combatSidebar: CombatSidebar;
 
   function openSpellbook(): void {
     if (!activeEngine) return;
@@ -368,7 +362,7 @@ window.addEventListener('DOMContentLoaded', () => {
         new CastSpellAction(activeEngine.player, spell.id, activeEngine.player.x, activeEngine.player.y)
       );
       quickSpellsBar.update(activeEngine);
-      bottomStatusBar.update(activeEngine);
+      combatSidebar.update(activeEngine);
       void processVisualEffectsAndRender();
     } else {
       const entry: SpellbookEntry = {
@@ -507,7 +501,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if (!activeEngine) return;
       activeEngine.handlePlayerAction(new AttuneGrimoirePageAction(activeEngine.player, pageIndex));
       quickSpellsBar.update(activeEngine);
-      bottomStatusBar.update(activeEngine);
+      combatSidebar.update(activeEngine);
       void processVisualEffectsAndRender();
     },
     onClose: () => {
@@ -524,51 +518,55 @@ window.addEventListener('DOMContentLoaded', () => {
   spellbookTab = new SpellbookTabAdapter(spellbookModal, () => characterMenuModal?.close());
   spellbookModal.mount(document.body);
 
-  bottomStatusBar = new BottomStatusBar();
+  combatSidebar = new CombatSidebar({
+    drawMinimap: (canvas) => renderer?.drawMinimap(canvas),
+    drawEntityIcon: (canvas, entity) => renderer?.drawEntityIcon(canvas, entity),
+    drawItemIcon: (canvas, item) => renderer?.drawItemIcon(canvas, item),
+    onPointAt: (x, y) => renderer?.pointAtTile(x, y),
+    onOpenMap: () => document.getElementById('btn-map')?.click(),
+  });
 
+  /**
+   * The hero's square above the map: name, depth, level with experience, renown,
+   * and a badge when attribute points wait to be spent. Stats and conditions live
+   * in the sidebar; there is no turn counter.
+   */
   function updateHeaderInfo(): void {
     if (!activeEngine) return;
-    const nameEl = document.getElementById('header-name');
-    const floorEl = document.getElementById('header-floor');
-    if (nameEl) {
-      const heroName = activeProfile?.name || activeEngine.player.name || 'Hero';
-      const title = getActiveTitle(activeEngine);
-      nameEl.textContent = title ? `🛡️ ${heroName}, ${title}` : `🛡️ ${heroName}`;
-    }
-    if (floorEl) {
-      floorEl.textContent = activeEngine.currentFloor === 0 ? `Town (${brand.townName})` : `Floor ${activeEngine.currentFloor}`;
-    }
-    // Level and experience moved here from the canvas strip, which used to repeat
-    // the title, location and HP/MP the header and orbs already show.
-    const levelEl = document.getElementById('header-level');
-    if (levelEl) {
-      const p = activeEngine.player;
-      const xpText = `${p.xp}/${p.xpToNextLevel} ${brand.xpName}`;
-      levelEl.innerHTML = '';
-      levelEl.append(`Lvl ${p.level}`);
-      const xpEl = document.createElement('span');
-      xpEl.className = 'header-xp';
-      xpEl.textContent = ` · ${xpText}`;
-      levelEl.append(xpEl);
-      levelEl.title = `Level ${p.level} — ${xpText} to level ${p.level + 1}`;
-    }
-    // Position/turn were previously also shown here, duplicating both the canvas's own
-    // HUD and each other (HUD overhaul). The one remaining turn readout lives in
-    // BottomStatusBar's ground-status-bar (`.ground-status-turn`, updated per player turn).
-  }
+    const p = activeEngine.player;
+    const heroName = activeProfile?.name || p.name || 'Hero';
+    const title = getActiveTitle(activeEngine);
+    const renown = getRenownTotal(activeEngine);
+    const xpText = `${p.xp}/${p.xpToNextLevel} ${brand.xpName}`;
+    const where = activeEngine.currentFloor === 0 ? brand.townName : `Floor ${activeEngine.currentFloor}`;
 
-  function renderFlanks(): void {
-    if (!activeEngine) return;
-    flankManager.render({
-      engine: activeEngine,
-      worldState: activeEngine.worldState,
-      player: activeEngine.player,
-      map: activeEngine.map,
-      currentFloor: activeEngine.currentFloor,
-      turnCount: activeEngine.turnCount,
-      manifest: activeEngine.manifest ?? activeManifest,
-      pacts: activeEngine.pacts,
-    });
+    const setText = (id: string, text: string) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    };
+    setText('header-name', heroName);
+    setText('header-floor', where);
+    setText('header-level', `Lvl ${p.level}`);
+    setText('header-renown', title ? title : `Renown ${renown}`);
+    const fill = document.getElementById('header-xp-fill');
+    if (fill) fill.style.width = `${Math.round((p.xp / Math.max(1, p.xpToNextLevel)) * 100)}%`;
+
+    const portrait = document.getElementById('hud-portrait');
+    if (portrait) {
+      portrait.title = [
+        title ? `${heroName}, ${title}` : heroName,
+        activeEngine.currentFloor === 0 ? `Town: ${brand.townName}` : `Floor ${activeEngine.currentFloor}`,
+        `Level ${p.level} — ${xpText} to level ${p.level + 1}`,
+        `Renown ${renown}`,
+      ].join('\n');
+    }
+
+    const alloc = document.getElementById('btn-alloc-points');
+    const unspent = p.unspentStatPoints ?? 0;
+    if (alloc) {
+      alloc.hidden = unspent <= 0;
+      alloc.textContent = `+${unspent}`;
+    }
   }
 
   // The engine's result is read-only here (§7.2), so remember which failed result was already shown.
@@ -720,7 +718,6 @@ window.addEventListener('DOMContentLoaded', () => {
         diagnosticModal.showError(lastResult.message ?? 'An unexpected error occurred; the action could not be completed.');
       }
       updateHeaderInfo();
-      renderFlanks();
       if (activeEngine) {
         checkCoinAutoPickup(activeEngine);
         updateCombatFloatingText(activeEngine);
@@ -728,7 +725,7 @@ window.addEventListener('DOMContentLoaded', () => {
         updateMessageLog(activeEngine);
         quickSpellsBar.update(activeEngine);
         potionRow.update(activeEngine);
-        bottomStatusBar.update(activeEngine);
+        combatSidebar.update(activeEngine);
         // Periodic background autosave every 50 turns
         if (activeProfile && autosaveManager.shouldAutosave(activeEngine.turnCount)) {
           autosaveManager.autosave(activeEngine, activeProfile);
@@ -968,6 +965,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
   cmdPaletteBtn?.addEventListener('click', () => toggleCommandPalette());
 
+  document.getElementById('btn-alloc-points')?.addEventListener('click', () => {
+    inputHandler?.toggleCharacterMenu('character');
+  });
+
   hudInvBtn?.addEventListener('click', () => {
     if (activeEngine && renderer) {
       if (inputHandler) {
@@ -1100,7 +1101,6 @@ window.addEventListener('DOMContentLoaded', () => {
       gameContainer.style.display = 'none';
     }
     quickSpellsBar.unmount();
-    flankManager.destroy();
     if (inputHandler) {
       inputHandler.enabled = false;
     }
@@ -1227,7 +1227,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Wire Player Level Up and Game Events
     levelUpModal.setOnAllocate(() => {
-      if (activeEngine) bottomStatusBar.update(activeEngine);
+      if (activeEngine) combatSidebar.update(activeEngine);
       renderer?.render();
     });
 
@@ -1293,7 +1293,7 @@ window.addEventListener('DOMContentLoaded', () => {
               popModal(altarModal.id);
               engine.handlePlayerAction(new PerformAltarRiteAction(engine.player, altar.id, x, y, request));
               quickSpellsBar.update(engine);
-              bottomStatusBar.update(engine);
+              combatSidebar.update(engine);
               updateHeaderInfo();
               void processVisualEffectsAndRender();
             },
@@ -1572,7 +1572,7 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer.radialMenuOverlay.slots = settingsManager.getSettings().radialMenuSlots;
       renderer.inventoryOverlay.richHoverCardsEnabled = settingsManager.getSettings().inventoryRichHoverCards;
       renderer.onResolveRadialLabel = resolveRadialMenuLabel;
-      renderer.onModeHintChanged = (hint) => bottomStatusBar.setModeHint(hint);
+      renderer.onFocusEntityChanged = (id) => combatSidebar.setFocusedEntity(id);
       settingsManager.subscribe((settings) => {
         if (renderer) {
           renderer.mouseVectoringEnabled = settings.mouseVectoringEnabled;
@@ -1738,17 +1738,16 @@ window.addEventListener('DOMContentLoaded', () => {
     if (gameContainer) {
       gameContainer.style.display = 'flex';
       quickSpellsBar.mount(gameContainer);
-      bottomStatusBar.mount(gameContainer);
+      const frame = document.getElementById('game-frame');
+      if (frame && !frame.contains(combatSidebar.element)) frame.appendChild(combatSidebar.element);
       const healthOrb = document.getElementById('hud-health-orb');
       if (healthOrb?.parentElement) potionRow.mount(healthOrb.parentElement, healthOrb.nextElementSibling);
     }
     quickSpellsBar.update(engine);
     potionRow.update(engine);
-    bottomStatusBar.update(engine);
+    combatSidebar.update(engine);
 
-    flankManager.mount(leftFlank, rightFlank, engine.manifest ?? activeManifest);
     updateHeaderInfo();
-    renderFlanks();
     mainMenu.hide();
     titleScreen.hide();
     renderer.resize();

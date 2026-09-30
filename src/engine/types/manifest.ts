@@ -562,6 +562,8 @@ export interface PackBranding {
   healthGlyph?: string;
   /** Glyph engraved on the HUD mana orb. Defaults to a neutral star. */
   manaGlyph?: string;
+  /** The pack's name for the spell resource, shown under the mana orb. Defaults to "Mana". */
+  manaName?: string;
 }
 
 export interface GameContentManifest {

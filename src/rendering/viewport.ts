@@ -18,9 +18,11 @@ const SURROUNDING_BAR_IDS = [
   'quick-spells-bar',
   'gothic-action-console',
   'game-full-width-log',
-  'ground-status-bar',
   'game-bottom-bar',
 ] as const;
+
+/** Columns laid out beside the map column, whose width the canvas must leave free. */
+const SIDE_COLUMN_IDS = ['combat-sidebar'] as const;
 
 export class ViewportManager {
   public readonly virtualWidth: number;
@@ -144,6 +146,12 @@ export class ViewportManager {
             if (typeof centerEl.clientHeight === 'number' && centerEl.clientHeight > 0) {
               availH = centerEl.clientHeight;
             }
+          }
+          // Columns beside the map column (the combat sidebar) take width, not height.
+          for (const id of SIDE_COLUMN_IDS) {
+            const el = document.getElementById(id);
+            const w = el?.getBoundingClientRect().width ?? 0;
+            if (w > 0 && availW > w + 320) availW -= w;
           }
           // Measure every bar actually mounted around the canvas rather than
           // guessing two fixed constants — a header wrapping to a second line, or a

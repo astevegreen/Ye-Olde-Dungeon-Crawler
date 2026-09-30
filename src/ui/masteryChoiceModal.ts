@@ -115,7 +115,7 @@ export class MasteryChoiceModal implements UIModal {
   public defer(): void {
     const request = this.queue[0];
     if (request && this.engine) {
-      this.engine.log(`Mastery perk for ${request.name} deferred — choose it any time in the Slayer's Compendium [B].`);
+      this.engine.log(`Mastery perk for ${request.name} deferred — choose it any time in the Bestiary [B].`);
     }
     this.advance();
   }

@@ -349,7 +349,7 @@ export function recordMasteryKill(engine: GameEngine, definitionId: string, name
 
   const killRes = compendium.recordKill(definitionId, name);
   if (killRes.tierAdvanced && killRes.tier === 2) {
-    engine.log(`*** Slayer's Compendium: You uncovered the affinities and weaknesses of ${name}! ***`);
+    engine.log(`*** Bestiary: You uncovered the affinities and weaknesses of ${name}! ***`);
   } else if (killRes.tierAdvanced && killRes.tier === 3) {
     engine.log(`*** MASTERED! You have slain ${killRes.kills} ${name} — choose a Mastery Perk against them! ***`);
     engine.emitGameEvent({

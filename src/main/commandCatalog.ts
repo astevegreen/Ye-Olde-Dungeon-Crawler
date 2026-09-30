@@ -15,7 +15,7 @@ export const COMMAND_CATALOG = [
   { id: 'inventory', title: 'Open Inventory', category: 'Action', shortcut: 'I', description: 'Inspect items, equip gear, and use consumables' },
   { id: 'spellbook', title: 'Open Spellbook', category: 'Action', shortcut: 'Z', description: 'Review spells, manage quick-spell bindings, and cast' },
   { id: 'inspect', title: 'Inspect Surroundings', category: 'Action', shortcut: 'L / X', description: 'Look at tiles, monsters, and items in view' },
-  { id: 'compendium', title: "Open Slayer's Compendium", category: 'Help', shortcut: 'B', description: 'View bestiary weaknesses, lore, and combat notes' },
+  { id: 'compendium', title: 'Open Bestiary', category: 'Help', shortcut: 'B', description: 'View bestiary weaknesses, lore, and combat notes' },
   { id: 'allocate-stats', title: 'Allocate Stat Points', category: 'Action', shortcut: 'Cmds', description: 'Spend unallocated stat points on attributes' },
   { id: 'character_menu', title: 'Open Character Sheet', category: 'Action', shortcut: 'E', description: 'View full hero attributes, resistances, traits, and status effects' },
   { id: 'pacts', title: 'Ancient Run Pacts & Bounties', category: 'Action', shortcut: 'P', description: 'Sign risky pacts or review active covenant penalties' },

@@ -83,7 +83,7 @@ export class ContextHelp {
             { key: 'Tab / S', label: 'Toggle Buy Stock vs Sell Items' },
             { key: '1-9 / Space', label: 'Purchase or Sell selected merchandise' },
             { key: 'C / H', label: 'Cleanse Curses (50 GP) or Heal & Vitality (25 GP)' },
-            { key: 'I / A / B', label: 'Identify items, Seek Run Advisory, or Open Codex' },
+            { key: 'I / A / B', label: 'Identify items, Seek Run Advisory, or Open Bestiary' },
             { key: 'Esc', label: 'Exit shop or return to town streets' },
           ],
           tip: 'Tip: Always compact loose copper and silver at Banker Haakon before entering the dungeon!',
@@ -136,7 +136,7 @@ export class ContextHelp {
           contextTag: 'SAFE HAVEN',
           bullets: [
             ...npcs.map((npc) => ({ key: npc.name, label: TOWN_ROLE_HELP[npc.role] ?? 'Talk by bumping into them' })),
-            { key: 'B', label: 'Open Slayer’s Compendium & Monster Codex' },
+            { key: 'B', label: 'Open Bestiary' },
             { key: 'Shift+? / Ctrl+K', label: 'Open Quick Command Palette' },
           ],
           tip: 'Tip: Stock up on supplies and bank your coins before taking the stairs down!',
@@ -167,13 +167,13 @@ export class ContextHelp {
             { key: 'Shift+G / Shift+,', label: 'Quick-Loot all items on ground tile' },
             { key: 'Z / C', label: 'Open Spellbook and cast known spells' },
             { key: 'I', label: 'Open Inventory, Paperdoll, and Containers' },
-            { key: 'B', label: 'Open Slayer’s Compendium & Bestiary Codex' },
+            { key: 'B', label: 'Open Bestiary' },
             { key: 'Shift+? / Ctrl+K', label: 'Open Quick Command Palette' },
             { key: 'R / S', label: 'Rest until healed (R) / Search for hidden traps (S)' },
             { key: '> / <', label: 'Climb stairs down (>) or climb stairs up (<)' },
             { key: 'Q', label: 'Save progress and return to character roster' },
           ],
-          tip: 'Tip: Slay 15 of one creature, or many of its whole family, to earn a Mastery Perk against them. Review and change perks in the Compendium [B].',
+          tip: 'Tip: Slay 15 of one creature, or many of its whole family, to earn a Mastery Perk against them. Review and change perks in the Bestiary [B].',
         };
     }
   }

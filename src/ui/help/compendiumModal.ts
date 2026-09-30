@@ -168,7 +168,7 @@ export class CompendiumModal implements UIModal {
         <div class="retro-titlebar">
           <div class="retro-titlebar-title">
             <span>📖</span>
-            <span>The Slayer's Compendium &amp; Monster Codex</span>
+            <span>Bestiary</span>
           </div>
           <button id="btn-compendium-close-x" class="win-btn win-btn-sm" style="padding: 0 5px; font-weight: bold;">✕</button>
         </div>

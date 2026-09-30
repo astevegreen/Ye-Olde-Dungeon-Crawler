@@ -95,7 +95,7 @@ describe('HUD status badge rendering', () => {
     renderer.destroy();
   });
 
-  it('renders ambient status (duration >= 9999) without turns countdown', () => {
+  it('renders ambient status (a decremented 9999 sentinel) without turns countdown', () => {
     const manifest = {
       id: 'test_pack',
       name: 'Test Pack',
@@ -108,7 +108,9 @@ describe('HUD status badge rendering', () => {
 
     const map = new GameMap(30, 30, TILES.FLOOR);
     const player = new Player({ id: 'player', name: 'Hero', position: { x: 5, y: 5 } });
-    player.statusManager.applyStatus({ type: 'test:glow', duration: 9999 });
+    // 9998, not 9999: the status manager decrements the sentinel after each tick,
+    // so a live ambient status is never exactly 9999 by the time the HUD draws it.
+    player.statusManager.applyStatus({ type: 'test:glow', duration: 9998 });
     const engine = new GameEngine({ map, player, manifest });
 
     const canvas = createMockCanvas();

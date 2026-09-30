@@ -39,6 +39,16 @@ function defaultRadialLabel(slot: RadialMenuSlotConfig): string {
 /** Optional pack art for a multi-item tile; without it the renderer draws a generic heap. */
 const LOOT_PILE_SPRITE_KEY = 'loot_pile';
 
+/**
+ * Ambient statuses (giant_blood, the energy-model afflictions) are applied with a
+ * 9999-turn sentinel, but the status manager still decrements them each tick
+ * (a handler may reset it first), so the live value drifts to 9998, 9997, ….
+ * Anything this far out isn't a countdown the player can act on.
+ */
+function isAmbientDuration(duration: number): boolean {
+  return duration >= 9000;
+}
+
 export class CanvasRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -751,9 +761,7 @@ export class CanvasRenderer {
         label = 'CHANNELING RUNE';
       }
 
-      // duration >= 9999 is this codebase's sentinel for "ambient, not counting
-      // down" (jarnvidr/giant_blood) — showing e.g. "9999t" misreads as a bug.
-      const text = eff.duration >= 9999 ? `[${label}]` : `[${label} ${eff.duration}t]`;
+      const text = isAmbientDuration(eff.duration) ? `[${label}]` : `[${label} ${eff.duration}t]`;
       ctx.fillStyle = color;
       ctx.fillText(text, statusX, mpBarY + 5);
       statusX += ctx.measureText(text).width + 8;

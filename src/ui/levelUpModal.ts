@@ -114,13 +114,14 @@ export class LevelUpModal implements UIModal {
 
   /** Closes without spending anything still planned; the points stay unspent. */
   public close(): void {
-    if (!this.isOpenState) return;
+    const wasOpen = this.isOpenState || (this.overlayEl && this.overlayEl.style.display !== 'none');
+    if (!wasOpen) return;
     this.isOpenState = false;
     this.draft.clear();
     if (this.overlayEl) {
       this.overlayEl.style.display = 'none';
     }
-    if (this.modalStack) {
+    if (this.modalStack && this.modalStack.has(this.id)) {
       this.modalStack.remove(this.id);
     }
     if (this.onCloseCallback) {

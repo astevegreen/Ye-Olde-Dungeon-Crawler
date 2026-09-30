@@ -133,6 +133,17 @@ describe('cotw zone layouts', () => {
     }
   });
 
+  it('floor 36 always stamps Svartr in her hollow, reachable from the stairs', () => {
+    for (let seed = 1; seed <= 15; seed++) {
+      const r = DungeonArc.generateFloor(36, seed * 7919, QUEST, cotwManifest);
+      const svartr = r.map
+        .getAllEntities()
+        .find((e) => e instanceof Monster && e.definitionId === 'miniboss_rot_matriarch');
+      expect(svartr, `seed ${seed}`).toBeDefined();
+      expect(path(r.map, r.playerSpawn, { x: svartr!.x, y: svartr!.y }), `seed ${seed}`).toBe(true);
+    }
+  });
+
   it('the Heartwood lair: boss on the dais, reachable from the stairs', () => {
     const r = DungeonArc.generateFloor(50, 1, QUEST, cotwManifest);
     expect(r.map.width).toBe(57);

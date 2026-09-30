@@ -178,6 +178,27 @@ export const COTW_VAULTS: VaultBlueprint[] = [
     preferredMonsters: ['frost_drake', 'ogre'],
   },
   {
+    id: 'floor36_matriarch_hollow',
+    name: "The Matriarch's Rot-Hollow",
+    description:
+      'A hollow gnawed out of a dying taproot, its floor pooled with black sap, where Svartr the Taproot Matriarch tends the rot that feeds Níðhögg.',
+    minFloor: 36,
+    maxFloor: 36,
+    scriptedOnly: true,
+    minibossId: 'miniboss_rot_matriarch',
+    layout: [
+      '#############',
+      '#P.~~...~~.P#',
+      '@....P.P....@',
+      '#.~...K...~.#',
+      '#.~.M.C.M.~.#',
+      '@....P.P....@',
+      '#P.~~...~~.P#',
+      '#############',
+    ],
+    preferredMonsters: ['rotwood_crawler', 'yggdrasil_parasite', 'amber_sap_weeper'],
+  },
+  {
     id: 'floor45_fang_vault',
     name: "The Dragon's Maw Vault",
     description: 'A subterranean sanctum carved into the root-rock of the Maw of Malice, where Víðnir guards Níðhögg’s shed relic fang.',

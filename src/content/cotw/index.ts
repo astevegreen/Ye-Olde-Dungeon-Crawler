@@ -210,6 +210,8 @@ export const cotwManifest: GameContentManifest = {
       vaultId: SIPHON_VAULT_ID,
       npcs: HOSTAGE_VILLAGERS,
     },
+    // Svartr, the Taproot Matriarch: guaranteed on floor 36 (her fall draws Víðnir's taunt, narrative.ts).
+    { floor: 36, vaultId: 'floor36_matriarch_hollow' },
     // Víðnir and the shed fang: guaranteed on floor 45, not a chance draw from the vault pool.
     { floor: 45, vaultId: 'floor45_fang_vault' },
     // Act 1 Campfire Grotto: The Dwarven Hearth Grotto on floor 13

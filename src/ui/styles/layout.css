@@ -2,7 +2,7 @@
    Viewport, Game Container, Ground Status Bar, and Quickbar Layout
    ========================================================================== */
 
-/* While the character menu is open, blur and darken the surrounding UI (flanks and HUD bars)
+/* While the character menu is open, blur and darken the surrounding UI (sidebar and HUD bars)
    the same way on every tab. This is the only dimming: the menu overlay itself stays
    transparent on all tabs, and the map canvas stays crisp because the Inventory tab draws on it. */
 #widescreen-layout.character-menu-active #combat-sidebar,

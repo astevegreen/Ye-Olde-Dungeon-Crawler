@@ -88,11 +88,6 @@ export const cotwManifest: GameContentManifest = {
     { type: 'teleport', name: 'Teleportation Rune', damage: 0, disarmDifficulty: 15 },
     { type: 'alarm', name: 'Brass Alarm Trap', damage: 0, disarmDifficulty: 10 },
   ],
-  flankLayout: {
-    left: ['world_ledger'],
-    right: ['auto_journal'],
-    theme: 'parchment',
-  },
   trackedMilestones: [
     { flag: 'relic_recovered', label: 'Sun-Stone Claimed', description: 'Recovered the Sun-Stone of Freyr from the dungeon depths.', icon: '☀️' },
     { flag: 'boss_slain', label: 'Hrungnir Slain', description: 'Vanquished the Frost Giant Overlord in epic combat.', icon: '👑' },

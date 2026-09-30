@@ -176,7 +176,7 @@ export class CharacterMenuModal implements UIModal {
       document.getElementById('app')?.appendChild(overlay);
     }
     this.overlayEl = overlay;
-    // The class's dark backdrop would dim the flanks a second time and differ per tab; the
+    // The class's dark backdrop would dim the sidebar and bars a second time and differ per tab; the
     // surrounding UI is dimmed by `.character-menu-active` (layout.css), identically for all tabs.
     overlay.style.backgroundColor = 'transparent';
     overlay.style.backdropFilter = 'none';

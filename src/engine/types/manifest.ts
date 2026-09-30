@@ -184,12 +184,6 @@ export interface RenownTitleDefinition {
   category?: string;
 }
 
-export interface FlankLayoutConfig {
-  left?: string[];
-  right?: string[];
-  theme?: 'parchment' | 'slate' | 'retro-win31' | 'cyber' | string;
-}
-
 export interface TownBuildingDefinition {
   name: string;
   bounds: { x1: number; y1: number; x2: number; y2: number };
@@ -649,7 +643,6 @@ export interface GameContentManifest {
   renownMilestones?: RenownMilestoneDefinition[];
   renownTitles?: RenownTitleDefinition[];
   companions?: CompanionDefinition[];
-  flankLayout?: FlankLayoutConfig;
   /** Turn-limited world events (ARCHITECTURE.md §3, `TimedEventDefinition`). */
   timedEvents?: TimedEventDefinition[];
   /** The running objective, in story order (`ObjectiveDefinition`). */

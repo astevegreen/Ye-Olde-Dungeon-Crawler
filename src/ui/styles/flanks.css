@@ -1,5 +1,6 @@
 /* ==========================================================================
-   Widescreen Flank Containers & Thematic Gutter Framework
+   Game layout shell (map column + combat sidebar), then the Story tab's
+   World Ledger and Journal modules (src/ui/flanks/, shown in the character menu)
    ========================================================================== */
 
 #widescreen-layout {
@@ -25,83 +26,8 @@
   z-index: 10;
 }
 
-/* Base Flank Columns */
-.flank-column {
-  flex: 0 0 280px;
-  width: 280px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow-y: auto;
-  overflow-x: hidden;
-  z-index: 20;
-  padding: 12px 10px;
-  box-sizing: border-box;
-  scrollbar-width: thin;
-}
-
-.flank-left {
-  border-right: 2px solid #332415;
-  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.65);
-}
-
-.flank-right {
-  flex: 0 0 310px;
-  width: 310px;
-  border-left: 2px solid #332415;
-  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.65);
-}
-
 /* ==========================================================================
-   Responsive Collapse: Viewport < 1280px or Aspect Ratio < 16:10
-   Collapses side flanks to ensure layout immunity and preserve center canvas.
-   ========================================================================== */
-@media (max-width: 1280px), (max-aspect-ratio: 16/10) {
-  #left-flank,
-  #right-flank,
-  .flank-column {
-    display: none !important;
-  }
-
-  #center-viewport {
-    width: 100vw;
-    height: 100vh;
-  }
-}
-
-/* ==========================================================================
-   Thematic Styling: Parchment Theme (Default CotW Norse Fantasy)
-   ========================================================================== */
-.flank-theme-parchment {
-  background: radial-gradient(circle at 50% 10%, #2a1f15 0%, #17110c 100%);
-  color: #e6d3b3;
-  border-color: #5c442a;
-  scrollbar-color: #5c442a #17110c;
-  font-family: "Georgia", "Times New Roman", "MS Sans Serif", serif;
-}
-
-.flank-theme-parchment::-webkit-scrollbar {
-  width: 6px;
-}
-.flank-theme-parchment::-webkit-scrollbar-track {
-  background: #17110c;
-}
-.flank-theme-parchment::-webkit-scrollbar-thumb {
-  background: #5c442a;
-  border-radius: 3px;
-}
-
-/* Flank Module Structure */
-.flank-module {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  margin-bottom: 12px;
-}
-
-/* ==========================================================================
-   World Ledger Module (Left Flank)
+   World Ledger Module (Story tab)
    ========================================================================== */
 .ledger-container {
   display: flex;
@@ -382,7 +308,7 @@
 }
 
 /* ==========================================================================
-   Auto-Inking Journal Module (Right Flank)
+   Auto-Inking Journal Module (Story tab)
    ========================================================================== */
 .journal-container {
   display: flex;

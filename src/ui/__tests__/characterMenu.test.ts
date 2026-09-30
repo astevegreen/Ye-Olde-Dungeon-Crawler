@@ -7,9 +7,6 @@ import type { FlankModule, GameState } from '../flanks/types';
 import { ModalStackManager } from '../modalStack';
 import { InputHandler } from '../../rendering/input-handler';
 import { GameEngine, Player, GameMap } from '../../engine';
-import { JournalModule } from '../flanks/journalModule';
-import { WorldLedgerModule } from '../flanks/worldLedgerModule';
-import { FlankManager } from '../flanks/flankManager';
 import { CompendiumTabAdapter, PactTabAdapter, SpellbookTabAdapter } from '../characterMenu/tabAdapters';
 import { CompendiumModal } from '../help/compendiumModal';
 import { PactModal } from '../pactModal';
@@ -541,23 +538,6 @@ describe('FlankModuleTab & Story Tab Isolation', () => {
     storyTab.unmount();
     expect(mockModule1.destroy).toHaveBeenCalled();
     expect(mockModule2.destroy).toHaveBeenCalled();
-  });
-
-  it('story tab instances are distinct objects from flank column instances', () => {
-    const flankJournal = new JournalModule();
-    const flankLedger = new WorldLedgerModule();
-    const flankManager = new FlankManager();
-    flankManager.registerModule(flankLedger);
-    flankManager.registerModule(flankJournal);
-
-    const storyJournal = new JournalModule();
-    const storyLedger = new WorldLedgerModule();
-    const storyTab = new FlankModuleTab([storyJournal, storyLedger]);
-
-    expect(storyJournal).not.toBe(flankJournal);
-    expect(storyLedger).not.toBe(flankLedger);
-    expect(storyTab.modules).not.toContain(flankJournal);
-    expect(storyTab.modules).not.toContain(flankLedger);
   });
 });
 

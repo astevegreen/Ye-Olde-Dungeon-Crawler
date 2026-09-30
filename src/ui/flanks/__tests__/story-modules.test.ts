@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { FlankManager } from '../flankManager';
 import { WorldLedgerModule, getReputationTier } from '../worldLedgerModule';
 import { JournalModule } from '../journalModule';
-import type { FlankModule, GameState } from '../types';
+import type { GameState } from '../types';
 import { GameEngine } from '../../../engine';
 import { GameMap } from '../../../engine';
 import { TILES } from '../../../engine';
@@ -206,19 +205,19 @@ class MockDocument {
   }
 }
 
-describe('Widescreen Flank Containers Framework', () => {
-  let leftContainer: MockElement;
-  let rightContainer: MockElement;
+describe('Story tab modules', () => {
+  let ledgerContainer: MockElement;
+  let journalContainer: MockElement;
 
   beforeEach(() => {
     (globalThis as any).document = new MockDocument();
     (globalThis as any).window = globalThis;
     (globalThis as any).requestAnimationFrame = (cb: () => void) => cb();
 
-    leftContainer = (globalThis as any).document.createElement('div');
-    rightContainer = (globalThis as any).document.createElement('div');
-    (globalThis as any).document.body.appendChild(leftContainer);
-    (globalThis as any).document.body.appendChild(rightContainer);
+    ledgerContainer = (globalThis as any).document.createElement('div');
+    journalContainer = (globalThis as any).document.createElement('div');
+    (globalThis as any).document.body.appendChild(ledgerContainer);
+    (globalThis as any).document.body.appendChild(journalContainer);
   });
 
   afterEach(() => {
@@ -252,11 +251,6 @@ describe('Widescreen Flank Containers Framework', () => {
       quest: {} as any,
       atlas: {} as any,
       starterKit: {} as any,
-      flankLayout: {
-        left: ['world_ledger'],
-        right: ['auto_journal'],
-        theme: 'parchment',
-      },
       trackedMilestones: [
         { flag: 'relic_recovered', label: 'Sun-Stone Claimed', icon: '☀️' },
         { flag: 'winch_repaired', label: 'Mine Lift Restored', icon: '⚙️' },
@@ -278,128 +272,7 @@ describe('Widescreen Flank Containers Framework', () => {
     };
   }
 
-  describe('FlankManager Lifecycle & Coordination', () => {
-    it('registers and retrieves modules by ID', () => {
-      const manager = new FlankManager();
-      const ledger = new WorldLedgerModule();
-      manager.registerModule(ledger);
-
-      expect(manager.getModule('world_ledger')).toBe(ledger);
-      expect(manager.getModule('unknown_module')).toBeUndefined();
-    });
-
-    it('mounts configured flank modules into left and right containers based on manifest', () => {
-      const manager = new FlankManager();
-      const ledger = new WorldLedgerModule();
-      const journal = new JournalModule();
-      manager.registerModule(ledger);
-      manager.registerModule(journal);
-
-      const manifest: GameContentManifest = {
-        id: 'test',
-        name: 'Test',
-        monsters: [],
-        items: [],
-        spells: [],
-        town: {} as any,
-        quest: {} as any,
-        atlas: {} as any,
-        starterKit: {} as any,
-        flankLayout: {
-          left: ['world_ledger'],
-          right: ['auto_journal'],
-          theme: 'parchment',
-        },
-      };
-
-      manager.mount(leftContainer as any, rightContainer as any, manifest);
-
-      expect(manager.getMountedModules()).toHaveLength(2);
-      expect(leftContainer.className).toContain('flank-theme-parchment');
-      expect(rightContainer.className).toContain('flank-theme-parchment');
-      expect(leftContainer.children[0].className).toContain('flank-module-world_ledger');
-      expect(rightContainer.children[0].className).toContain('flank-module-auto_journal');
-    });
-
-    it('falls back to default module assignments if manifest omits flankLayout', () => {
-      const manager = new FlankManager();
-      manager.registerModule(new WorldLedgerModule());
-      manager.registerModule(new JournalModule());
-
-      manager.mount(leftContainer as any, rightContainer as any, undefined);
-
-      expect(manager.getMountedModules()).toHaveLength(2);
-      expect(leftContainer.children[0].className).toContain('flank-module-world_ledger');
-      expect(rightContainer.children[0].className).toContain('flank-module-auto_journal');
-    });
-
-    it('invokes render on all mounted modules and catches errors gracefully', () => {
-      const manager = new FlankManager();
-      const dummyModule: FlankModule = {
-        id: 'error_prone',
-        title: 'Error Prone',
-        mount: vi.fn(),
-        render: vi.fn().mockImplementation(() => {
-          throw new Error('Simulated module crash');
-        }),
-      };
-      manager.registerModule(dummyModule);
-
-      manager.mount(leftContainer as any, null, {
-        id: 't',
-        name: 'T',
-        monsters: [],
-        items: [],
-        spells: [],
-        town: {} as any,
-        quest: {} as any,
-        atlas: {} as any,
-        starterKit: {} as any,
-        flankLayout: { left: ['error_prone'] },
-      });
-
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const state = createMockGameState();
-
-      // Should not throw, preserving main simulation loop immunity
-      expect(() => manager.render(state)).not.toThrow();
-      expect(dummyModule.render).toHaveBeenCalledWith(state);
-      expect(consoleSpy).toHaveBeenCalled();
-    });
-
-    it('cleans up mounted modules on destroy', () => {
-      const manager = new FlankManager();
-      const mockDestroy = vi.fn();
-      const customModule: FlankModule = {
-        id: 'test_mod',
-        title: 'Test',
-        mount: vi.fn(),
-        render: vi.fn(),
-        destroy: mockDestroy,
-      };
-      manager.registerModule(customModule);
-      manager.mount(leftContainer as any, null, {
-        id: 't',
-        name: 'T',
-        monsters: [],
-        items: [],
-        spells: [],
-        town: {} as any,
-        quest: {} as any,
-        atlas: {} as any,
-        starterKit: {} as any,
-        flankLayout: { left: ['test_mod'] },
-      });
-
-      manager.destroy();
-
-      expect(mockDestroy).toHaveBeenCalled();
-      expect(manager.getMountedModules()).toHaveLength(0);
-      expect(leftContainer.innerHTML).toBe('');
-    });
-  });
-
-  describe('WorldLedgerModule (Left Flank Pilot)', () => {
+  describe('WorldLedgerModule', () => {
     it('calculates reputation tiers accurately across threshold boundaries', () => {
       expect(getReputationTier(-75).label).toBe('Hostile');
       expect(getReputationTier(-50).label).toBe('Hostile');
@@ -416,20 +289,20 @@ describe('Widescreen Flank Containers Framework', () => {
 
     it('renders reputation meters with names, tags, and progress fills', () => {
       const ledger = new WorldLedgerModule();
-      ledger.mount(leftContainer as any);
+      ledger.mount(ledgerContainer as any);
 
       const state = createMockGameState();
       ledger.render(state);
 
-      expect(leftContainer.innerHTML).toContain('Townsfolk');
-      expect(leftContainer.innerHTML).toContain('Friendly (+25)');
-      expect(leftContainer.innerHTML).toContain('Iron Clans');
-      expect(leftContainer.innerHTML).toContain('Honored (+60)');
+      expect(ledgerContainer.innerHTML).toContain('Townsfolk');
+      expect(ledgerContainer.innerHTML).toContain('Friendly (+25)');
+      expect(ledgerContainer.innerHTML).toContain('Iron Clans');
+      expect(ledgerContainer.innerHTML).toContain('Honored (+60)');
     });
 
     it('renders sealed pact chips and aggregated reward badges', () => {
       const ledger = new WorldLedgerModule();
-      ledger.mount(leftContainer as any);
+      ledger.mount(ledgerContainer as any);
 
       const state = createMockGameState();
       const pacts = new PactManager(state.engine, [
@@ -449,27 +322,27 @@ describe('Widescreen Flank Containers Framework', () => {
 
       ledger.render(state);
 
-      expect(leftContainer.innerHTML).toContain('Blood Tithe');
-      expect(leftContainer.innerHTML).toContain('Gold: +100%');
-      expect(leftContainer.innerHTML).toContain('XP: +25%');
+      expect(ledgerContainer.innerHTML).toContain('Blood Tithe');
+      expect(ledgerContainer.innerHTML).toContain('Gold: +100%');
+      expect(ledgerContainer.innerHTML).toContain('XP: +25%');
     });
 
     it('renders wax seal milestone badges and displays completed status for true flags', () => {
       const ledger = new WorldLedgerModule();
-      ledger.mount(leftContainer as any);
+      ledger.mount(ledgerContainer as any);
 
       const state = createMockGameState();
       ledger.render(state);
 
-      expect(leftContainer.innerHTML).toContain('Sun-Stone Claimed');
-      expect(leftContainer.innerHTML).toContain('Achieved');
-      expect(leftContainer.innerHTML).toContain('Mine Lift Restored');
-      expect(leftContainer.innerHTML).toContain('Locked');
+      expect(ledgerContainer.innerHTML).toContain('Sun-Stone Claimed');
+      expect(ledgerContainer.innerHTML).toContain('Achieved');
+      expect(ledgerContainer.innerHTML).toContain('Mine Lift Restored');
+      expect(ledgerContainer.innerHTML).toContain('Locked');
     });
 
     it('renders safely when state or worldState is uninitialized', () => {
       const ledger = new WorldLedgerModule();
-      ledger.mount(leftContainer as any);
+      ledger.mount(ledgerContainer as any);
 
       const partialState = {
         engine: {} as any,
@@ -481,31 +354,31 @@ describe('Widescreen Flank Containers Framework', () => {
       };
 
       expect(() => ledger.render(partialState)).not.toThrow();
-      expect(leftContainer.innerHTML).toContain('No faction standings');
-      expect(leftContainer.innerHTML).toContain('No active pacts sealed');
+      expect(ledgerContainer.innerHTML).toContain('No faction standings');
+      expect(ledgerContainer.innerHTML).toContain('No active pacts sealed');
     });
   });
 
-  describe('JournalModule (Right Flank Pilot)', () => {
+  describe('JournalModule', () => {
     it('mounts initial UI with feathered quill header and survey cards', () => {
       const journal = new JournalModule();
-      journal.mount(rightContainer as any);
+      journal.mount(journalContainer as any);
 
-      expect(rightContainer.innerHTML).toContain('feather-quill-svg');
-      expect(rightContainer.innerHTML).toContain('Auto-Inking Journal');
-      expect(rightContainer.innerHTML).toContain("Cartographer's Survey");
-      expect(rightContainer.innerHTML).toContain('journal-chronicle-feed');
+      expect(journalContainer.innerHTML).toContain('feather-quill-svg');
+      expect(journalContainer.innerHTML).toContain('Auto-Inking Journal');
+      expect(journalContainer.innerHTML).toContain("Cartographer's Survey");
+      expect(journalContainer.innerHTML).toContain('journal-chronicle-feed');
     });
 
     it('calculates map exploration percentage accurately', () => {
       const journal = new JournalModule();
-      journal.mount(rightContainer as any);
+      journal.mount(journalContainer as any);
 
       const state = createMockGameState();
       journal.render(state);
 
       // Initial exploration from spawn vision radius
-      expect(rightContainer.innerHTML).toContain('40%');
+      expect(journalContainer.innerHTML).toContain('40%');
 
       // Reveal unvisited quadrant (x: 10..19, y: 10..19)
       const fov = state.engine.fov;
@@ -516,12 +389,12 @@ describe('Widescreen Flank Containers Framework', () => {
       }
 
       journal.render(state);
-      expect(rightContainer.innerHTML).toContain('56%');
+      expect(journalContainer.innerHTML).toContain('56%');
     });
 
     it('surveys landmarks such as stairs and altars when discovered', () => {
       const journal = new JournalModule();
-      journal.mount(rightContainer as any);
+      journal.mount(journalContainer as any);
 
       const state = createMockGameState();
       state.map.setTile(2, 2, TILES.STAIRS_DOWN);
@@ -540,13 +413,13 @@ describe('Widescreen Flank Containers Framework', () => {
 
       journal.render(state);
 
-      expect(rightContainer.innerHTML).toContain('Stairs Down 🪜');
-      expect(rightContainer.innerHTML).toContain('Altar of Tyr ⚖️');
+      expect(journalContainer.innerHTML).toContain('Stairs Down 🪜');
+      expect(journalContainer.innerHTML).toContain('Altar of Tyr ⚖️');
     });
 
     it('streams discovery chronicle events published by the engine', () => {
       const journal = new JournalModule();
-      journal.mount(rightContainer as any);
+      journal.mount(journalContainer as any);
 
       const state = createMockGameState();
       state.engine.emitDiscovery({
@@ -562,13 +435,13 @@ describe('Widescreen Flank Containers Framework', () => {
 
       journal.render(state);
 
-      expect(rightContainer.innerHTML).toContain('Descended stone steps into Floor 2.');
-      expect(rightContainer.innerHTML).toContain('Detected hidden runic seam in the granite wall.');
+      expect(journalContainer.innerHTML).toContain('Descended stone steps into Floor 2.');
+      expect(journalContainer.innerHTML).toContain('Detected hidden runic seam in the granite wall.');
     });
 
     it('does not re-render or re-trigger entry-fresh animation on subsequent turns without new discoveries', () => {
       const journal = new JournalModule();
-      journal.mount(rightContainer as any);
+      journal.mount(journalContainer as any);
 
       const state = createMockGameState();
       state.engine.emitDiscovery({
@@ -578,7 +451,7 @@ describe('Widescreen Flank Containers Framework', () => {
       });
 
       journal.render(state);
-      const feedEl = rightContainer.querySelector('#journal-chronicle-feed')!;
+      const feedEl = journalContainer.querySelector('#journal-chronicle-feed')!;
       const initialHtml = feedEl.innerHTML;
 
       // Spy on feedEl.innerHTML setter to verify DOM is not rebuilt on subsequent actions
@@ -598,7 +471,7 @@ describe('Widescreen Flank Containers Framework', () => {
         icon: '🔍',
       });
       journal.render(state);
-      const updatedFeed = rightContainer.querySelector('#journal-chronicle-feed')!;
+      const updatedFeed = journalContainer.querySelector('#journal-chronicle-feed')!;
       expect(updatedFeed.innerHTML).toContain('Found hidden door.');
       const entries = updatedFeed.innerHTML.split('</article>');
       expect(entries[0]).not.toContain('entry-fresh');
@@ -607,7 +480,7 @@ describe('Widescreen Flank Containers Framework', () => {
 
     it('caps chronicle log entries to prevent DOM bloat', () => {
       const journal = new JournalModule();
-      journal.mount(rightContainer as any);
+      journal.mount(journalContainer as any);
 
       const state = createMockGameState();
       for (let i = 1; i <= 40; i++) {
@@ -620,23 +493,23 @@ describe('Widescreen Flank Containers Framework', () => {
       journal.render(state);
 
       // Latest item #40 is present
-      expect(rightContainer.innerHTML).toContain('Discovery #40');
+      expect(journalContainer.innerHTML).toContain('Discovery #40');
       // Earliest items should have been trimmed beyond the 25 cap
-      expect(rightContainer.innerHTML).not.toContain('Discovery #5<');
+      expect(journalContainer.innerHTML).not.toContain('Discovery #5<');
     });
 
     it('handles empty state and clears gracefully on destroy', () => {
       const journal = new JournalModule();
-      journal.mount(rightContainer as any);
+      journal.mount(journalContainer as any);
 
       const state = createMockGameState();
       (state.engine as any).discoveryEvents = [];
 
       expect(() => journal.render(state)).not.toThrow();
-      expect(rightContainer.innerHTML).toContain('The ink is fresh');
+      expect(journalContainer.innerHTML).toContain('The ink is fresh');
 
       journal.destroy();
-      expect(rightContainer.innerHTML).toBe('');
+      expect(journalContainer.innerHTML).toBe('');
     });
   });
 });

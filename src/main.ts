@@ -962,11 +962,11 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  cmdPaletteBtn?.addEventListener('click', () => {
-    if (activeEngine) {
-      commandPalette.toggle(activeEngine);
-    }
-  });
+  function toggleCommandPalette(): void {
+    if (activeEngine) commandPalette.toggle(activeEngine, () => renderer?.render());
+  }
+
+  cmdPaletteBtn?.addEventListener('click', () => toggleCommandPalette());
 
   hudInvBtn?.addEventListener('click', () => {
     if (activeEngine && renderer) {
@@ -1637,6 +1637,8 @@ window.addEventListener('DOMContentLoaded', () => {
       runeDiscoveryModal.setModalStack(inputHandler.modalStack);
       inputHandler.onCastSpellById = castSpellById;
       inputHandler.onDrinkPotionSlot = drinkPotionSlot;
+      inputHandler.onToggleCommandPalette = toggleCommandPalette;
+      commandPalette.setModalStack(inputHandler.modalStack);
       diagnosticModal.setModalStack(inputHandler.modalStack);
       feedbackModal.setModalStack(inputHandler.modalStack);
       keybindModal.setModalStack(inputHandler.modalStack);
@@ -1694,6 +1696,8 @@ window.addEventListener('DOMContentLoaded', () => {
         inputHandler.onSaveAndExit = promptSaveAndQuit;
         inputHandler.onCastSpellById = castSpellById;
         inputHandler.onDrinkPotionSlot = drinkPotionSlot;
+        inputHandler.onToggleCommandPalette = toggleCommandPalette;
+        commandPalette.setModalStack(inputHandler.modalStack);
         diagnosticModal.setModalStack(inputHandler.modalStack);
       }
     }

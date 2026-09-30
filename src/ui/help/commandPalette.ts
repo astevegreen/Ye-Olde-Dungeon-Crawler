@@ -1,4 +1,5 @@
 import type { GameEngine } from '../../engine';
+import type { ModalStackManager, UIModal } from '../modalStack';
 
 export interface CommandItem {
   id: string;
@@ -9,7 +10,13 @@ export interface CommandItem {
   execute: (engine: GameEngine) => void;
 }
 
-export class CommandPalette {
+/**
+ * Registers on the modal stack while open (ARCHITECTURE.md §6), so the game pauses and
+ * every key reaches the palette even when its text box loses focus.
+ */
+export class CommandPalette implements UIModal {
+  public readonly id = 'command-palette';
+  private modalStack?: ModalStackManager;
   private overlayEl: HTMLElement | null = null;
   private inputEl: HTMLInputElement | null = null;
   private listEl: HTMLElement | null = null;
@@ -47,6 +54,15 @@ export class CommandPalette {
     return this.isOpenState;
   }
 
+  /** The stack sets this on push/pop; only a close needs acting on. */
+  public set isOpen(value: boolean) {
+    if (!value) this.close();
+  }
+
+  public setModalStack(stack: ModalStackManager): void {
+    this.modalStack = stack;
+  }
+
   public registerCommands(commands: CommandItem[]): void {
     this.commands = commands;
   }
@@ -62,6 +78,7 @@ export class CommandPalette {
     this.filteredCommands = [...this.commands];
     this.selectedIndex = 0;
     this.render();
+    this.modalStack?.push(this);
 
     if (this.overlayEl) {
       this.overlayEl.style.display = 'flex';
@@ -78,6 +95,7 @@ export class CommandPalette {
     if (this.overlayEl) {
       this.overlayEl.style.display = 'none';
     }
+    this.modalStack?.remove(this.id);
     if (this.onCloseCallback) {
       const cb = this.onCloseCallback;
       this.onCloseCallback = undefined;

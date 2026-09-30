@@ -164,6 +164,8 @@ export class InputHandler {
   public onToggleDiagnostics?: () => void;
   public onToggleFeedback?: () => void;
   public onTriggerQuickSpell?: (slotIndex: number) => void;
+  /** Opens or closes the command palette; wired from main.ts. */
+  public onToggleCommandPalette?: () => void;
   /** Drinks the potion in a potion-row slot (0-based); wired from main.ts. */
   public onDrinkPotionSlot?: (slotIndex: number) => void;
   public onOpenSpellbook?: () => void;
@@ -533,6 +535,17 @@ export class InputHandler {
     if (this.navigationController?.isNavigating) {
       this.navigationController.cancel('Navigation halted by keypress.');
       this.onActionProcessed();
+    }
+
+    // Command palette: Ctrl+K / Cmd+K or Shift+/ ("?"), as the Help card and the header
+    // button advertise. It opens only over the map (or closes itself when on top).
+    if ((code === 'KeyK' && (e.ctrlKey || e.metaKey)) || (code === 'Slash' && e.shiftKey)) {
+      const top = this.modalStack.top();
+      if (this.onToggleCommandPalette && (!top || top.id === 'command-palette')) {
+        e.preventDefault();
+        this.onToggleCommandPalette();
+        return true;
+      }
     }
 
     // Hotkey: Smart F1 Context Help (F1 or Slash) - can be opened globally over any active modal

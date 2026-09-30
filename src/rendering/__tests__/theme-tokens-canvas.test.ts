@@ -11,7 +11,6 @@ import { MapOverlay } from '../map-overlay';
 import { InventoryOverlay } from '../inventory-overlay';
 import { ShopOverlay } from '../shop-overlay';
 import { TargetingOverlay } from '../targeting-overlay';
-import { HUDMessageLogRenderer } from '../hud';
 
 function createMockCanvasContext() {
   return {
@@ -180,19 +179,6 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
   });
 
   describe('Canvas Overlays Theming', () => {
-    it('renders HUDMessageLogRenderer with themed colors without throwing', () => {
-      const ctx = createMockCanvasContext();
-      const engine = createTestEngine({
-        id: 'warcraft-orcs',
-        name: 'Warcraft',
-        theme: WARCRAFT_THEME_TOKENS,
-      });
-
-      const hud = new HUDMessageLogRenderer();
-      expect(() => hud.render(ctx, engine, 0, 500, 960, 100)).not.toThrow();
-      expect(ctx.fillRect).toHaveBeenCalled();
-    });
-
     it('renders TargetingOverlay with themed colors without throwing', () => {
       const ctx = createMockCanvasContext();
       const engine = createTestEngine({

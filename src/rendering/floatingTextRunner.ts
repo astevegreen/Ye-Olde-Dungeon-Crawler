@@ -50,7 +50,7 @@ export class FloatingTextRunner {
     } = {}
   ): void {
     const isPlayer = options.isPlayer ?? false;
-    const isCrit = options.isCrit || (amount >= 20 && !isPlayer);
+    const isCrit = options.isCrit ?? false;
     let color = isPlayer ? '#ef4444' : '#f8fafc';
     const stroke = '#000000';
     let text = `-${amount}`;

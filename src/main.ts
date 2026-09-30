@@ -527,10 +527,17 @@ window.addEventListener('DOMContentLoaded', () => {
   // The engine's result is read-only here (§7.2), so remember which failed result was already shown.
   let lastReportedPipelineError: ActionResult | null = null;
   let lastObservedPlayerHp: number | null = null;
-  const knownMonsterHp = new Map<string, number>();
+  // Last seen HP and tile of each monster, so a killing blow (the monster is already off
+  // the map by render time) can still show its number where the monster fell.
+  const knownMonsters = new Map<string, { hp: number; x: number; y: number }>();
+  // Coins are auto-picked up only on entering a tile, so coins the hero drops stay dropped.
+  let lastCoinPickupTile: string | null = null;
 
   function checkCoinAutoPickup(engine: GameEngine): void {
     if (!engine.player.isAlive()) return;
+    const tileKey = `${engine.currentFloor}:${engine.player.x},${engine.player.y}`;
+    if (tileKey === lastCoinPickupTile) return;
+    lastCoinPickupTile = tileKey;
     const items = engine.map.getItemsAt(engine.player.x, engine.player.y);
     if (!items || items.length === 0) return;
 
@@ -567,32 +574,34 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     lastObservedPlayerHp = engine.player.hp;
 
-    // 2. Monster damage, crits, and fatal blows
+    // 2. Monster damage and crits (killing blows are shown from `entity_killed`)
+    const actionMessage = engine.lastActionResult?.message ?? '';
     const livingMonsterIds = new Set<string>();
     for (const entity of engine.map.getAllEntities()) {
       if (entity instanceof Monster) {
         livingMonsterIds.add(entity.id);
-        const prevHp = knownMonsterHp.get(entity.id);
-        if (prevHp !== undefined && entity.hp < prevHp) {
-          const dmg = prevHp - entity.hp;
-          renderer.floatingTextRunner.spawnDamage(entity.x, entity.y, dmg, {
+        const prev = knownMonsters.get(entity.id);
+        if (prev && entity.hp < prev.hp) {
+          renderer.floatingTextRunner.spawnDamage(entity.x, entity.y, prev.hp - entity.hp, {
             isPlayer: false,
-            killed: entity.hp <= 0,
-            isCrit: dmg >= 15,
+            isCrit: actionMessage.startsWith('*** CRITICAL HIT!') && actionMessage.includes(`attacks ${entity.name} `),
           });
         }
-        if (entity.hp > 0) {
-          knownMonsterHp.set(entity.id, entity.hp);
-        } else {
-          knownMonsterHp.delete(entity.id);
-        }
+        knownMonsters.set(entity.id, { hp: entity.hp, x: entity.x, y: entity.y });
       }
     }
 
-    for (const id of knownMonsterHp.keys()) {
+    for (const id of knownMonsters.keys()) {
       if (!livingMonsterIds.has(id)) {
-        knownMonsterHp.delete(id);
+        knownMonsters.delete(id);
       }
+    }
+  }
+
+  function recordKnownMonsters(engine: GameEngine): void {
+    knownMonsters.clear();
+    for (const entity of engine.map.getAllEntities()) {
+      if (entity instanceof Monster) knownMonsters.set(entity.id, { hp: entity.hp, x: entity.x, y: entity.y });
     }
   }
 
@@ -1168,7 +1177,6 @@ window.addEventListener('DOMContentLoaded', () => {
       inputHandler.isInputLocked = false;
     }
     masteryModal.clearQueue();
-    knownMonsterHp.clear();
     activeEngine = engine;
     activeProfile = profile;
     window.__cotwEngine = engine;
@@ -1193,19 +1201,17 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     lastObservedPlayerHp = engine.player.hp;
+    lastCoinPickupTile = `${engine.currentFloor}:${engine.player.x},${engine.player.y}`;
+    recordKnownMonsters(engine);
+    updateGothicConsole(engine);
+    updateMessageLog(engine);
 
     engine.onGameEvent = (event: GameEvent) => {
-      if (isGameEvent(event, 'damage_dealt')) {
-        const targetId = event.targetId;
-        const target = targetId === engine.player.id
-          ? engine.player
-          : (targetId ? engine.map.getEntityById(targetId) : undefined);
-        if (target) {
-          renderer?.floatingTextRunner.spawnDamage(target.x, target.y, event.amount, {
-            isPlayer: target === engine.player,
-            element: event.element,
-            killed: event.killed,
-          });
+      if (isGameEvent(event, 'entity_killed')) {
+        const fallen = event.targetId ? knownMonsters.get(event.targetId) : undefined;
+        if (fallen && event.targetId) {
+          renderer?.floatingTextRunner.spawnDamage(fallen.x, fallen.y, fallen.hp, { killed: true });
+          knownMonsters.delete(event.targetId);
         }
       } else if (event.type === 'player_leveled_up') {
         renderer?.floatingTextRunner.spawnText(engine.player.x, engine.player.y, 'LEVEL UP! ★', {

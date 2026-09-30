@@ -11,7 +11,6 @@ import { TargetingOverlay } from './targeting-overlay';
 import { ShopOverlay } from './shop-overlay';
 import { InspectOverlay } from './inspect-overlay';
 import { MapOverlay } from './map-overlay';
-import { HUDMessageLogRenderer } from './hud';
 import { IntentOverlay } from './intentOverlay';
 import { Monster } from '../engine';
 import { SpriteAtlas } from './atlas/sprite-atlas';
@@ -64,10 +63,10 @@ export class CanvasRenderer {
   /** Player setting: the pack's torchlight pass (`atlas.terrain.torch`). */
   public torchlightEnabled = true;
   public navigationController?: NavigationController;
-  private hud: HUDMessageLogRenderer;
   private cellSize = 32;
   private topBarHeight = 46;
-  private bottomBarHeight = 88;
+  // Context hints only (map/look/aim controls); the message log lives in the DOM below the canvas.
+  private bottomBarHeight = 22;
   private offsetX = 0;
   private offsetY = 0;
   private boundClickHandler?: (e: MouseEvent) => void;
@@ -132,7 +131,6 @@ export class CanvasRenderer {
     this.radialMenuOverlay = new RadialMenuOverlay();
     this.floatingTextRunner = new FloatingTextRunner({ onFrame: () => this.render() });
     this.tacticalTargetOverlay = new TacticalTargetOverlay();
-    this.hud = new HUDMessageLogRenderer({ maxLines: 4, lineHeight: 13 });
     this.hookEngineEvents();
 
     // Register click event on canvas using ViewportManager coordinate transform
@@ -1472,13 +1470,6 @@ export class CanvasRenderer {
     ctx.lineTo(width, footerY + 0.5);
     ctx.stroke();
 
-    // 1. Expanded HUD Message Feed (4-5 lines with recency gradient)
-    const logX = 14;
-    const logY = footerY + 5;
-    const logW = width - 28;
-    const logH = 58;
-    this.hud.render(ctx, this.engine, logX, logY, logW, logH);
-
     let controlsText = '';
     let textColor = theme.textMuted;
 
@@ -1502,7 +1493,7 @@ export class CanvasRenderer {
       ctx.textBaseline = 'middle';
       ctx.font = `11px ${font}`;
       ctx.fillStyle = textColor;
-      ctx.fillText(controlsText, 14, footerY + 76);
+      ctx.fillText(controlsText, 14, footerY + this.bottomBarHeight / 2);
       ctx.restore();
     }
   }

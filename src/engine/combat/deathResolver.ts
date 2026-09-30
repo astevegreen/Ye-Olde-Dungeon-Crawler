@@ -1,3 +1,4 @@
+import { resolveManaTerms } from '../types/manifest';
 import type { Entity } from '../entities/entity';
 import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
@@ -105,7 +106,7 @@ export class DeathResolver {
               durationMs: 150,
             },
           ]);
-          engine.log(`*** ESSENCE SIPHON! You draw in ${victim.name}'s vitality (+${hpGain} HP, +${manaGain} Mana, +Energy refund)! ***`);
+          engine.log(`*** ESSENCE SIPHON! You draw in ${victim.name}'s vitality (+${hpGain} HP, +${manaGain} ${resolveManaTerms(engine.manifest).name}, +Energy refund)! ***`);
         }
 
         // 2. Trophy Hunter: 35% chance to harvest rare anatomical trophy/reagent
@@ -234,10 +235,10 @@ export function awardPlayerXp(engine: GameEngine, xp: number): void {
     const g = levelUpRes.statGains;
     if (g) {
       engine.log(
-        `Vitality surge: +${g.maxHp ?? 5} Max HP, +${g.maxMana ?? 4} Max Mana${g.strength ? `, +${g.strength} Strength` : ''}, +${g.baseAttack ?? 1} Attack, +${g.baseDefense ?? 1} Defense!`
+        `Vitality surge: +${g.maxHp ?? 5} Max HP, +${g.maxMana ?? 4} Max ${resolveManaTerms(engine.manifest).name}${g.strength ? `, +${g.strength} Strength` : ''}, +${g.baseAttack ?? 1} Attack, +${g.baseDefense ?? 1} Defense!`
       );
     } else {
-      engine.log('Vitality surge: +5 Max HP, +4 Max Mana, +1 Attack, +1 Defense!');
+      engine.log(`Vitality surge: +5 Max HP, +4 Max ${resolveManaTerms(engine.manifest).name}, +1 Attack, +1 Defense!`);
     }
     if (levelUpRes.statPointsAwarded && levelUpRes.statPointsAwarded > 0) {
       engine.log(`You have gained ${levelUpRes.statPointsAwarded} attribute point${levelUpRes.statPointsAwarded > 1 ? 's' : ''}! (${engine.player.unspentStatPoints} total unspent)`);

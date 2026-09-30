@@ -12,6 +12,7 @@ import {
   GameEngine,
   getActiveTitle,
   getRenownTotal,
+  resolveManaTerms,
   getSpell,
   Leaderboard,
   ProfileManager,
@@ -353,7 +354,8 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!activeEngine || !renderer) return;
     // Packs with mana overflow let a short cast go off into debt (ManaOverflowManager).
     if (!canOvercast(activeEngine) && activeEngine.player.mana < (spell.manaCost ?? 0)) {
-      activeEngine.log(`Insufficient mana to cast ${spell.name} (${activeEngine.player.mana}/${spell.manaCost} MP).`);
+      const mana = resolveManaTerms(activeEngine.manifest);
+      activeEngine.log(`Not enough ${mana.name} to cast ${spell.name} (${activeEngine.player.mana}/${spell.manaCost} ${mana.unit}).`);
       renderer.render();
       return;
     }

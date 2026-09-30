@@ -1,5 +1,7 @@
 import type { GameEngine } from '../engine';
 import type { ModalStackManager, UIModal } from './modalStack';
+import { resolveManaTerms } from '../engine';
+import { fillManaTerms } from './characterMenu/characterTab';
 import { AttributeAllocationDraft, type AttributeKey } from './attributeAllocationDraft';
 
 export type { AttributeKey };
@@ -38,8 +40,9 @@ const ATTRIBUTES: AttributeMeta[] = [
     key: 'intelligence',
     label: 'Intelligence',
     hotkeyLetter: 'I',
-    description: 'Expands mystical reservoir (+2 MP/pt) and amplifies spell potency.',
-    derivedPreview: (val) => `Mana Bonus: +${val * 2} MP | Spell Amp: +${Math.floor(val / 2)}%`,
+    // {mana}/{unit} are filled from the pack's terms where the text is shown.
+    description: 'Expands mystical reservoir (+2 {unit}/pt) and amplifies spell potency.',
+    derivedPreview: (val) => `{mana} Bonus: +${val * 2} {unit} | Spell Amp: +${Math.floor(val / 2)}%`,
   },
 ];
 
@@ -270,6 +273,7 @@ export class LevelUpModal implements UIModal {
     if (!this.overlayEl || !this.engine || !this.engine.player) return;
 
     const player = this.engine.player;
+    const mana = resolveManaTerms(this.engine.manifest);
     const remaining = this.draft.remaining(player);
     const planned = this.draft.total;
     const canUndo = this.draft.canUndo;
@@ -279,7 +283,7 @@ export class LevelUpModal implements UIModal {
     const rowsHtml = ATTRIBUTES.map((meta) => {
       const sessionDelta = this.draft.get(meta.key);
       const currentVal = player[meta.key] + sessionDelta;
-      const preview = meta.derivedPreview(currentVal);
+      const preview = fillManaTerms(meta.derivedPreview(currentVal), mana);
       const canAllocate = remaining > 0;
       const canDeallocate = sessionDelta > 0;
 
@@ -301,7 +305,7 @@ export class LevelUpModal implements UIModal {
               ${sessionDelta > 0 ? `<span style="color: #4ade80; font-weight: bold; font-size: 12px;">(+${sessionDelta})</span>` : ''}
             </div>
             <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">
-              ${meta.description}
+              ${fillManaTerms(meta.description, mana)}
             </div>
             <div style="font-size: 11px; color: #a3e635; margin-top: 2px;">
               ${preview}

@@ -53,7 +53,7 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
     weight: 200,
     bulk: 120,
     identified: false,
-    description: 'Fermented swamp herbs and honey that restore 30 Mana while briefly muddling mental clarity.',
+    description: 'Fermented swamp herbs and honey that restore 30 Seiðr while briefly muddling mental clarity.',
     value: 45,
     itemType: 'potion',
     potionConfig: {

@@ -1,3 +1,4 @@
+import { resolveManaTerms } from '../../engine';
 import type { GameEngine } from '../../engine';
 import type { ShopPanelBounds, ShopPanelContext } from './types';
 
@@ -73,7 +74,7 @@ export function renderTempleServices(
     ctx.font = `11px ${font}`;
     ctx.fillStyle = theme.textMuted;
     ctx.fillText("Purges poison, paralysis, and sluggishness. Restores all Hit Points", boxX + 14, s2Y + 38);
-    ctx.fillText("and refills your arcane Mana pool to maximum.", boxX + 14, s2Y + 54);
+    ctx.fillText(`and refills your ${resolveManaTerms(engine.manifest).name} to its maximum.`, boxX + 14, s2Y + 54);
 
     const btn2X = boxX + boxW - btn1W - 14;
     const btn2Y = s2Y + 22;

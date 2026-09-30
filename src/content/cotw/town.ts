@@ -176,7 +176,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
     cleanseMessageTemplate: "Thor's divine lightning shatters the foul bindings on: {items}! The items are now safely stored in your pack.",
     noCursesMessage: 'The High Priest of Thor senses no foul curses binding your body.',
     donationRequiredTemplate: 'A donation of {cost} is required to call upon Thor\'s cleansing thunder. You have {funds}.',
-    healMessageTemplate: 'The Priest of Thor bathes you in golden light! All afflictions are cured, and your HP and Mana are fully restored!',
+    healMessageTemplate: 'The Priest of Thor bathes you in golden light! All afflictions are cured, and your HP and Seiðr are fully restored!',
     sageName: 'Sage Mimir',
     sageTitle: 'Sage Mimir',
     bankName: 'First Bank of Bjarnarhaven',

@@ -1,3 +1,4 @@
+import { resolveManaTerms } from '../types/manifest';
 import type { Action } from './action';
 import type { ActionResult } from '../types';
 import type { GameEngine } from '../engine';
@@ -29,7 +30,7 @@ export class RestAction implements Action {
     }
 
     if (this.player.hp >= this.player.maxHp && this.player.mana >= this.player.maxMana) {
-      const msg = 'You are already fully rested (HP and Mana full).';
+      const msg = `You are already fully rested (HP and ${resolveManaTerms(engine.manifest).name} full).`;
       engine.log(msg);
       return { success: false, cost: 0, message: msg };
     }
@@ -95,7 +96,7 @@ export class RestAction implements Action {
     }
 
     if (interruptedByMonster) {
-      const msg = `Rest interrupted after ${ticksElapsed} turn(s)! A ${interruptedByMonster.name} comes into view! (Recovered ${hpGained} HP, ${manaGained} MP)`;
+      const msg = `Rest interrupted after ${ticksElapsed} turn(s)! A ${interruptedByMonster.name} comes into view! (Recovered ${hpGained} HP, ${manaGained} ${resolveManaTerms(engine.manifest).unit})`;
       engine.log(msg);
       return { success: true, cost: 0, message: msg };
     }
@@ -105,7 +106,7 @@ export class RestAction implements Action {
       const lingering = getOverflowConfig(engine)?.lingeringRestMessage;
       if (lingering) engine.log(lingering);
     }
-    const msg = `You rest peacefully for ${ticksElapsed} turn(s). HP and Mana fully restored! (+${hpGained} HP, +${manaGained} MP)`;
+    const msg = `You rest peacefully for ${ticksElapsed} turn(s). HP and ${resolveManaTerms(engine.manifest).name} fully restored! (+${hpGained} HP, +${manaGained} ${resolveManaTerms(engine.manifest).unit})`;
     engine.log(msg);
     return { success: true, cost: 0, message: msg };
   }

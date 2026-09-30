@@ -1,3 +1,4 @@
+import { resolveManaTerms } from '../types/manifest';
 import type { Action } from './action';
 import type { ActionResult } from '../types';
 import { BASE_ACTION_COST } from '../types';
@@ -136,7 +137,7 @@ export class CastSpellAction implements Action {
           return {
             success: false,
             cost: 0,
-            message: `Not enough mana to cast ${spell.name}! (Requires ${effectiveManaCost} MP, have ${player.mana})`,
+            message: `Not enough ${resolveManaTerms(engine.manifest).name} to cast ${spell.name}! (Requires ${effectiveManaCost} ${resolveManaTerms(engine.manifest).unit}, have ${player.mana})`,
           };
         }
         manaDeficit = effectiveManaCost - player.mana;
@@ -419,7 +420,7 @@ export class DrinkPotionAction implements Action {
           const amount = typeof effect.amount === 'number' ? effect.amount : parseInt(effect.amount, 10) || 15;
           if (this.user instanceof Player) {
             const restored = this.user.restoreMana(amount);
-            messages.push(`restoring ${restored} Mana (${this.user.mana}/${this.user.maxMana})`);
+            messages.push(`restoring ${restored} ${resolveManaTerms(engine.manifest).name} (${this.user.mana}/${this.user.maxMana})`);
           }
           break;
         }

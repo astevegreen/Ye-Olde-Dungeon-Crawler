@@ -36,7 +36,7 @@ export const COTW_MAGIC: MagicSystemConfig = {
             ],
             blockedMessage: '🌀 Aetheric overflow ripples harmlessly through the stone! (Void Debt: {debt})',
           },
-          { kind: 'message', weight: 40, message: '🌀 Mana depleted! An eerie rift crackles around {caster}! (Void Debt: {debt})' },
+          { kind: 'message', weight: 40, message: '🌀 Seiðr depleted! An eerie rift crackles around {caster}! (Void Debt: {debt})' },
         ],
       },
       {

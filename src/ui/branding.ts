@@ -1,3 +1,4 @@
+import { resolveManaTerms } from '../engine';
 import { attunementNpcName, type GameContentManifest } from '../engine';
 
 /** Every pack-specific string shared screens show, resolved with neutral fallbacks (§3). */
@@ -38,7 +39,7 @@ export function resolveBranding(manifest?: GameContentManifest): ResolvedBrandin
     xpName: b.xpName ?? 'XP',
     healthGlyph: b.healthGlyph ?? '♥',
     manaGlyph: b.manaGlyph ?? '✦',
-    manaName: b.manaName ?? 'Mana',
+    manaName: resolveManaTerms(manifest).name,
     bankerTitle: manifest?.town?.services?.bankerTitle ?? 'the town banker',
     runeSmithName: attunementNpcName(manifest),
     defaultHeroName: manifest?.presetNames?.[0] ?? 'Hero',

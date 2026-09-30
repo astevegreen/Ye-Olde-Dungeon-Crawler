@@ -1,3 +1,4 @@
+import { resolveManaTerms } from '../engine';
 import {
   type GameEngine,
   type Position,
@@ -537,7 +538,7 @@ export class TargetingOverlay implements UIModal {
     ctx.textAlign = 'left';
     const costOrCharge = this.activeEntry.type === 'wand'
       ? `[Wand: ${this.activeEntry.charges}/${this.activeEntry.maxCharges} charges]`
-      : `[Mana: ${spell.manaCost} MP]`;
+      : `[Cost: ${spell.manaCost} ${resolveManaTerms(engine.manifest).unit}]`;
     const bounceNote = spell.reflects ? ' (Bounces off walls)' : '';
     ctx.fillText(`AIMING: ${spell.name} ${costOrCharge}${bounceNote}`, 22, bannerY + 18);
 
@@ -665,7 +666,7 @@ export class TargetingOverlay implements UIModal {
     ctx.font = `11px ${font}`;
     ctx.fillStyle = theme.textMuted;
     ctx.fillText(
-      `Caster: ${engine.player.name} | MP: ${engine.player.mana}/${engine.player.maxMana} | Press [1-9] to Select & Aim | [Esc] Close`,
+      `Caster: ${engine.player.name} | ${resolveManaTerms(engine.manifest).unit}: ${engine.player.mana}/${engine.player.maxMana} | Press [1-9] to Select & Aim | [Esc] Close`,
       dialogX + 12,
       dialogY + 45
     );
@@ -695,7 +696,7 @@ export class TargetingOverlay implements UIModal {
 
       let costStr = '';
       if (entry.type === 'spell') {
-        costStr = `${entry.manaCost} MP`;
+        costStr = `${entry.manaCost} ${resolveManaTerms(engine.manifest).unit}`;
       } else if (entry.type === 'wand') {
         costStr = `${entry.charges}/${entry.maxCharges} chg (${entry.locationLabel})`;
       }

@@ -26,7 +26,7 @@ export const COMMAND_CATALOG = [
   { id: 'sort-pack', title: 'Sort Inventory by Category', category: 'Action', shortcut: 'Cmds', description: 'Organize backpack by weapons, armor, potions, and scrolls' },
   { id: 'consolidate-coins', title: 'Consolidate Coinage to Purse', category: 'Action', shortcut: 'Cmds', description: 'Deposit loose coins into your total purchasing power' },
   { id: 'wait', title: 'Pass Turn (Wait)', category: 'Action', shortcut: 'Space / .', description: 'Wait one turn and let energy advance' },
-  { id: 'rest', title: 'Rest Until Healed', category: 'Action', shortcut: 'R', description: 'Rest safely until HP and Mana are fully recovered' },
+  { id: 'rest', title: 'Rest Until Healed', category: 'Action', shortcut: 'R', description: 'Rest safely until fully recovered' },
   { id: 'search', title: 'Search for Secrets & Traps', category: 'Action', shortcut: 'S', description: 'Examine adjacent walls and floors for hidden traps or doors' },
   { id: 'stairs', title: 'Use Stairs Up / Down', category: 'Action', shortcut: '< / >', description: 'Descend deeper into the dungeon or return to the floor above' },
   { id: 'map', title: 'View Explored Dungeon Map', category: 'Action', shortcut: 'M', description: 'Pan and inspect the complete surveyed floor map' },

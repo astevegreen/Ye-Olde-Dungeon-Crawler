@@ -59,6 +59,8 @@ export const cotwManifest: GameContentManifest = {
     victoryBanner: 'The Sun-Stone of Freyr is restored to Bjarnarhaven!',
     fallenBanner: 'Your soul departs Midgard for the eternal halls of Valhalla.',
     xpName: 'Megin',
+    // Seiðr: the Norse practice of magic, the spell resource under the blue orb.
+    manaName: 'Seiðr',
     healthGlyph: 'ᚦ',
     manaGlyph: 'ᚨ',
   },

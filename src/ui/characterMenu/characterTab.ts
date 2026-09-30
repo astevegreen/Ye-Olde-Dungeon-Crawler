@@ -1,7 +1,7 @@
 import type { GameState } from '../flanks/types';
 import type { MenuTab } from './menuTab';
 import type { AttributeMilestoneTrigger, ChoiceDefinition, Player } from '../../engine';
-import { formatCurrency, getMaxCarryWeight, getPlayerTotalCp } from '../../engine';
+import { formatCurrency, getMaxCarryWeight, getPlayerTotalCp, resolveManaTerms, type ManaTerms } from '../../engine';
 import { AttributeAllocationDraft, type AttributeKey } from '../attributeAllocationDraft';
 
 interface AttributeMeta {
@@ -38,8 +38,9 @@ const ATTRIBUTES: AttributeMeta[] = [
     key: 'intelligence',
     label: 'Intelligence',
     hotkeyLetter: 'I',
-    description: 'Expands mystical reservoir (+2 MP/pt) and amplifies spell potency.',
-    derivedPreview: (val) => `Mana Bonus: +${val * 2} MP | Spell Amp: +${Math.floor(val / 2)}%`,
+    // {mana}/{unit} are filled from the pack's terms where the text is shown.
+    description: 'Expands mystical reservoir (+2 {unit}/pt) and amplifies spell potency.',
+    derivedPreview: (val) => `{mana} Bonus: +${val * 2} {unit} | Spell Amp: +${Math.floor(val / 2)}%`,
   },
 ];
 
@@ -50,7 +51,12 @@ function withBreakdown(total: number, base: number): string {
   return `${total} <span style="color: #94a3b8; font-size: 11px;">(${base} base ${bonus > 0 ? '+' : ''}${bonus})</span>`;
 }
 
-function renderVitals(player: Player, floor: number, turn: number, xpName: string): string {
+/** Fills an attribute text's {mana}/{unit} placeholders with the pack's terms. */
+export function fillManaTerms(text: string, mana: ManaTerms): string {
+  return text.replace(/\{mana\}/g, mana.name).replace(/\{unit\}/g, mana.unit);
+}
+
+function renderVitals(player: Player, floor: number, turn: number, xpName: string, manaName: string): string {
   const carriedKg = player.inventory.totalWeight() / 1000;
   const capacityKg = getMaxCarryWeight(player.strength) / 1000;
   const actionCost = player.getActionCost(100);
@@ -67,7 +73,7 @@ function renderVitals(player: Player, floor: number, turn: number, xpName: strin
     ['Attack', withBreakdown(player.attack, player.baseAttackValue)],
     ['Defense', withBreakdown(player.defense, player.baseDefenseValue)],
     ['Hit Points', `${player.hp} / ${player.maxHp}`],
-    ['Mana', `${player.mana} / ${player.maxMana}`],
+    [manaName, `${player.mana} / ${player.maxMana}`],
     [xpName, `${player.xp} / ${player.xpToNextLevel} to Level ${player.level + 1}`],
     ['Action cost', `${actionCost} energy per action${actionCost === 100 ? ' (normal)' : actionCost > 100 ? ' (slowed)' : ' (hastened)'}`],
     ['Load', `${carriedKg.toFixed(1)} / ${capacityKg.toFixed(1)} kg — ${player.inventory.getEncumbrance(player.strength)}`],
@@ -244,6 +250,7 @@ export class CharacterTab implements MenuTab {
     const player = this.state.player;
     const worldState = this.state.worldState;
     const manifest = this.state.manifest ?? this.state.engine.manifest;
+    const mana = resolveManaTerms(manifest);
     const unspent = this.draft.remaining(player);
     const planned = this.draft.total;
     const canUndo = this.draft.canUndo;
@@ -252,7 +259,7 @@ export class CharacterTab implements MenuTab {
     const rowsHtml = ATTRIBUTES.map((meta) => {
       const sessionDelta = this.draft.get(meta.key);
       const currentVal = player[meta.key] + sessionDelta;
-      const preview = meta.derivedPreview(currentVal);
+      const preview = fillManaTerms(meta.derivedPreview(currentVal), mana);
       const canAllocate = unspent > 0;
       const canDeallocate = sessionDelta > 0;
 
@@ -274,7 +281,7 @@ export class CharacterTab implements MenuTab {
               ${sessionDelta > 0 ? `<span style="color: #4ade80; font-weight: bold; font-size: 12px;">(+${sessionDelta})</span>` : ''}
             </div>
             <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">
-              ${meta.description}
+              ${fillManaTerms(meta.description, mana)}
             </div>
             <div style="font-size: 11px; color: #a3e635; margin-top: 2px;">
               ${preview}
@@ -404,7 +411,7 @@ export class CharacterTab implements MenuTab {
             <span style="font-weight: bold; color: #ffffff; font-size: 15px;">${player.name}</span>
             <span style="color: #94a3b8; margin-left: 8px;">Level ${player.level}</span>
             <span style="color: #38bdf8; margin-left: 8px;">HP: ${player.hp}/${player.maxHp}</span>
-            <span style="color: #a855f7; margin-left: 8px;">MP: ${player.mana}/${player.maxMana}</span>
+            <span style="color: #a855f7; margin-left: 8px;">${mana.unit}: ${player.mana}/${player.maxMana}</span>
           </div>
           <div style="
             background: ${unspent > 0 ? '#ca8a04' : '#334155'};
@@ -418,7 +425,7 @@ export class CharacterTab implements MenuTab {
           </div>
         </div>
 
-        ${renderVitals(player, this.state.currentFloor, this.state.turnCount, manifest?.branding?.xpName ?? 'XP')}
+        ${renderVitals(player, this.state.currentFloor, this.state.turnCount, manifest?.branding?.xpName ?? 'XP', mana.name)}
 
         <div class="character-attributes-section">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">

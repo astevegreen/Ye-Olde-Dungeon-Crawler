@@ -1,3 +1,4 @@
+import { resolveManaTerms } from '../engine';
 import type { GameEngine } from '../engine';
 import type { SpellDefinition } from '../engine';
 import {
@@ -251,7 +252,7 @@ export class SpellbookModal implements UIModal {
         ${voidDebtNotice}
       </div>
       <div style="font-size: 12px; color: #67e8f9;">
-        Mana: <span style="font-weight: bold; color: #38bdf8;">${player.mana}</span> / ${player.maxMana} MP
+        ${resolveManaTerms(this.engine?.manifest).name}: <span style="font-weight: bold; color: #38bdf8;">${player.mana}</span> / ${player.maxMana} ${resolveManaTerms(this.engine?.manifest).unit}
       </div>
     `;
     dialog.appendChild(header);
@@ -359,7 +360,7 @@ export class SpellbookModal implements UIModal {
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 16px; margin-bottom: 16px; font-size: 12px;">
-          <div><span style="color: #64748b;">Mana Cost:</span> <span style="font-weight: bold; color: #facc15;">${changed(currentSpell.manaCost ?? 0, cast.manaCost ?? 0)} MP</span></div>
+          <div><span style="color: #64748b;">Cost:</span> <span style="font-weight: bold; color: #facc15;">${changed(currentSpell.manaCost ?? 0, cast.manaCost ?? 0)} ${resolveManaTerms(this.engine?.manifest).unit}</span></div>
           <div><span style="color: #64748b;">Element:</span> <span style="font-weight: bold; color: #38bdf8;">${currentSpell.element ?? 'Arcane'}</span></div>
           <div><span style="color: #64748b;">Range:</span> <span style="font-weight: bold; color: #e2e8f0;">${cast.range ? `${changed(currentSpell.range, cast.range)} tiles` : 'Self / Touch'}</span></div>
           <div><span style="color: #64748b;">Power:</span> <span style="font-weight: bold; color: #f87171;">${changed(spellPower(currentSpell), spellPower(cast))}</span></div>

@@ -1,5 +1,5 @@
 import type { GameEngine } from '../engine';
-import { getSpell } from '../engine';
+import { getSpell, resolveManaTerms } from '../engine';
 
 export interface QuickSpellsBarOptions {
   onTriggerSlot: (slotIndex: number) => void;
@@ -79,6 +79,7 @@ export class QuickSpellsBar {
     if (!engine || !engine.player) return;
 
     const player = engine.player;
+    const mana = resolveManaTerms(engine.manifest);
     const quickSpells = player.quickSpells ?? [];
     const slotLabels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
     let addSlotShown = false;
@@ -112,12 +113,12 @@ export class QuickSpellsBar {
         hasMana ? 'quick-spell-slot-assigned' : 'quick-spell-slot-nomana'
       }`;
       slotEl.title = hasMana
-        ? `[${slotKey}] ${spell.name} — ${manaCost} MP. Click or press ${slotKey} to cast.`
-        : `[${slotKey}] ${spell.name} — ${manaCost} MP (you have ${player.mana}).`;
+        ? `[${slotKey}] ${spell.name} — ${manaCost} ${mana.unit}. Click or press ${slotKey} to cast.`
+        : `[${slotKey}] ${spell.name} — ${manaCost} ${mana.unit} (you have ${player.mana}).`;
       slotEl.innerHTML = `
         <span class="slot-badge-digit">${slotKey}</span>
         <span class="slot-badge-name"></span>
-        <span class="${hasMana ? 'slot-badge-cost' : 'slot-badge-cost-nomana'}">${manaCost} MP</span>
+        <span class="${hasMana ? 'slot-badge-cost' : 'slot-badge-cost-nomana'}">${manaCost} ${mana.unit}</span>
       `;
       (slotEl.querySelector('.slot-badge-name') as HTMLElement).textContent = spell.name;
     }

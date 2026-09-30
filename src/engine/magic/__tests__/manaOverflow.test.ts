@@ -184,7 +184,7 @@ describe('Ginnungagap / Mana Overflow System', () => {
     player.mana = 4;
     const result = new CastSpellAction(player, testSpell.id, 5, 8).perform(wallEngine);
     expect(result.success).toBe(false);
-    expect(result.message).toContain('Not enough mana');
+    expect(result.message).toContain('Not enough Mana');
     expect(player.mana).toBe(4);
     expect(player.voidDebt).toBe(0);
   });

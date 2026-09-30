@@ -564,6 +564,25 @@ export interface PackBranding {
   manaGlyph?: string;
   /** The pack's name for the spell resource, shown under the mana orb. Defaults to "Mana". */
   manaName?: string;
+  /**
+   * The unit amounts of it are written in ("3 MP"). Defaults to "MP", or to
+   * `manaName` when the pack names the resource but not its unit.
+   */
+  manaUnit?: string;
+}
+
+export interface ManaTerms {
+  /** "Mana", or the pack's own word. */
+  name: string;
+  /** "MP", or the pack's own unit. */
+  unit: string;
+}
+
+/** The spell resource's name and unit for player-facing text (PackBranding.manaName/manaUnit). */
+export function resolveManaTerms(manifest?: { branding?: PackBranding }): ManaTerms {
+  const b = manifest?.branding;
+  const name = b?.manaName ?? 'Mana';
+  return { name, unit: b?.manaUnit ?? (b?.manaName ? b.manaName : 'MP') };
 }
 
 export interface GameContentManifest {

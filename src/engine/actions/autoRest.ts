@@ -1,3 +1,4 @@
+import { resolveManaTerms } from '../types/manifest';
 import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
 import { Monster } from '../entities/monster';
@@ -158,7 +159,7 @@ export class AutoRestManager {
     if (player.hp >= player.maxHp && player.mana >= player.maxMana) {
       // A full rest settles all debt, except what the pack lets linger until town.
       player.decayVoidDebt(player.voidDebt, lingeringDebtFloor(engine, player.voidDebt));
-      const msg = 'Fully rested (HP and Mana full).';
+      const msg = `Fully rested (HP and ${resolveManaTerms(engine.manifest).name} full).`;
       engine.log(msg);
       return {
         finished: true,

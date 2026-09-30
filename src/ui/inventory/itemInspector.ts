@@ -1,3 +1,4 @@
+import { resolveManaTerms } from '../../engine';
 import type { GameEngine } from '../../engine';
 import { Player } from '../../engine';
 import { Item, type EquipmentSlot } from '../../engine';
@@ -433,7 +434,7 @@ export class ItemInspector {
         return {
           label: 'casts the spell',
           enabled: false,
-          reason: `Not enough mana to cast Identify (Requires ${cost} MP, have ${player.mana})`,
+          reason: `Not enough ${resolveManaTerms(engine?.manifest).name} to cast Identify (Requires ${cost} ${resolveManaTerms(engine?.manifest).unit}, have ${player.mana})`,
           dispatch: () => {},
         };
       }
@@ -824,7 +825,7 @@ export class ItemInspector {
 
       ctx.font = `10px ${font}`;
       ctx.fillStyle = theme.textMuted;
-      ctx.fillText(`HP: ${stats.hp} / ${stats.maxHp}  |  MP: ${stats.mana} / ${stats.maxMana}`, innerX, curY);
+      ctx.fillText(`HP: ${stats.hp} / ${stats.maxHp}  |  ${resolveManaTerms(engine.manifest).unit}: ${stats.mana} / ${stats.maxMana}`, innerX, curY);
       curY += 20;
 
       // Divider

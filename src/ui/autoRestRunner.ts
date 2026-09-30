@@ -1,3 +1,4 @@
+import { resolveManaTerms } from '../engine';
 import type { GameEngine } from '../engine';
 import { AutoRestManager, type AutoRestStepResult } from '../engine';
 
@@ -34,7 +35,7 @@ export class AutoRestRunner {
 
     const player = this.engine.player;
     if (player.hp >= player.maxHp && player.mana >= player.maxMana) {
-      this.engine.log('You are already fully rested (HP and Mana full).');
+      this.engine.log(`You are already fully rested (HP and ${resolveManaTerms(this.engine.manifest).name} full).`);
       return () => {};
     }
 

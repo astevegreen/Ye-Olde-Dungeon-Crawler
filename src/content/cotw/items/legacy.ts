@@ -123,7 +123,7 @@ export const COTW_LEGACY_ITEMS: ItemDefinition[] = [
     weight: 250,
     bulk: 150,
     identified: true,
-    description: 'A shimmering sapphire vial that restores 20 Mana.',
+    description: 'A shimmering sapphire vial that restores 20 Seiðr.',
     value: 25,
     itemType: 'potion',
     potionConfig: {
@@ -405,7 +405,7 @@ export const COTW_LEGACY_ITEMS: ItemDefinition[] = [
     weight: 300,
     bulk: 160,
     identified: false,
-    description: 'A distilled magical philter restoring 40 Mana.',
+    description: 'A distilled magical philter restoring 40 Seiðr.',
     value: 55,
     itemType: 'potion',
     potionConfig: {

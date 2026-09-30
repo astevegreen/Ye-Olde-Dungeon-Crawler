@@ -682,6 +682,22 @@
   color: #38bdf8 !important;
 }
 
+/* Your blows land: warm, quieter than a highlight. */
+.log-line-hit {
+  color: #fdba74 !important;
+}
+
+/* A critical blow, from the damage_dealt event rather than the wording. */
+.log-line-crit {
+  color: #fb923c !important;
+  font-weight: bold;
+}
+
+/* Tone colors override the recency greys, so older toned lines fade instead. */
+.log-line-muted.log-line-toned {
+  opacity: 0.6;
+}
+
 @container game (max-width: 600px) {
   .gothic-orb {
     width: 58px;

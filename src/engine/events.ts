@@ -81,6 +81,8 @@ export interface DamageDealtEvent extends GameEventBase {
   amount: number;
   element?: string;
   killed: boolean;
+  /** The blow was a critical hit. */
+  critical?: boolean;
 }
 
 export interface EntityKilledEvent extends GameEventBase {

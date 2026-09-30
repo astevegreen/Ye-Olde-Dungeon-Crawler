@@ -315,9 +315,20 @@ export class MeleeAttackAction implements Action {
     const perkNote = isAnatomist
       ? (isCrit ? ' (Anatomist Critical!)' : ' (Anatomist Exploit)')
       : '';
-    const critPrefix = isCrit ? '*** CRITICAL HIT! *** ' : '';
+    const critPrefix = isCrit ? 'Critical hit! ' : '';
     let message = `${critPrefix}${this.attacker.name} attacks ${this.defender.name} for ${damageDealt} damage.${perkNote}`;
     engine.log(message);
+    // Emitted straight after its log line, so presentation can style that line and
+    // show the blow's numbers from data rather than by parsing the text.
+    engine.emitGameEvent({
+      type: 'damage_dealt',
+      turn: engine.turnCount,
+      actorId: this.attacker.id,
+      targetId: this.defender.id,
+      amount: damageDealt,
+      killed,
+      critical: isCrit,
+    });
 
     // Dispatch Hook Engine Events: onHit, onBlock, onDamageTaken
     const blockedDamage = Math.max(0, this.defender.defense);

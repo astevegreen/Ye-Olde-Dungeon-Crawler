@@ -105,7 +105,8 @@ describe('Feature Flags, CombatConfig, and ProgressionConfig Manifest Extensions
       engine.handlePlayerAction(action);
 
       expect(defender.hp).toBe(30);
-      expect(engine.messages.some((m) => m.includes('*** CRITICAL HIT! ***'))).toBe(true);
+      expect(engine.messages.some((m) => m.startsWith('Critical hit! '))).toBe(true);
+      expect(engine.recentGameEvents.some((e) => e.type === 'damage_dealt' && (e as { critical?: boolean }).critical)).toBe(true);
     });
 
     it('supports custom calculateDamage formulas on manifest', () => {

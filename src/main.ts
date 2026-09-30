@@ -94,6 +94,7 @@ import { WorldLedgerModule } from './ui/flanks/worldLedgerModule';
 import { JournalModule } from './ui/flanks/journalModule';
 import { QuickSpellsBar } from './ui/quickSpellsBar';
 import { PotionRow } from './ui/potionRow';
+import { classifyLogLine, CriticalLineTracker } from './ui/logClassifier';
 import { SpellbookModal } from './ui/spellbookModal';
 import { BottomStatusBar } from './ui/bottomStatusBar';
 import { SettingsManager } from './ui/settings/settingsManager';
@@ -576,6 +577,9 @@ window.addEventListener('DOMContentLoaded', () => {
   // Last seen HP and tile of each monster, so a killing blow (the monster is already off
   // the map by render time) can still show its number where the monster fell.
   const knownMonsters = new Map<string, { hp: number; x: number; y: number }>();
+  /** Entities that took a critical blow since the last floating-text pass (`damage_dealt`). */
+  const criticalTargets = new Set<string>();
+  const criticalLines = new CriticalLineTracker();
   // Coins are auto-picked up only on entering a tile, so coins the hero drops stay dropped.
   let lastCoinPickupTile: string | null = null;
 
@@ -614,14 +618,13 @@ window.addEventListener('DOMContentLoaded', () => {
           engine.player.x,
           engine.player.y,
           lastObservedPlayerHp - engine.player.hp,
-          { isPlayer: true }
+          { isPlayer: true, isCrit: criticalTargets.has(engine.player.id) }
         );
       }
     }
     lastObservedPlayerHp = engine.player.hp;
 
     // 2. Monster damage and crits (killing blows are shown from `entity_killed`)
-    const actionMessage = engine.lastActionResult?.message ?? '';
     const livingMonsterIds = new Set<string>();
     for (const entity of engine.map.getAllEntities()) {
       if (entity instanceof Monster) {
@@ -630,7 +633,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (prev && entity.hp < prev.hp) {
           renderer.floatingTextRunner.spawnDamage(entity.x, entity.y, prev.hp - entity.hp, {
             isPlayer: false,
-            isCrit: actionMessage.startsWith('*** CRITICAL HIT!') && actionMessage.includes(`attacks ${entity.name} `),
+            isCrit: criticalTargets.has(entity.id),
           });
         }
         knownMonsters.set(entity.id, { hp: entity.hp, x: entity.x, y: entity.y });
@@ -642,6 +645,7 @@ window.addEventListener('DOMContentLoaded', () => {
         knownMonsters.delete(id);
       }
     }
+    criticalTargets.clear();
   }
 
   function recordKnownMonsters(engine: GameEngine): void {
@@ -700,29 +704,9 @@ window.addEventListener('DOMContentLoaded', () => {
         lineEl.classList.add('log-line-muted');
       }
 
-      const lower = msg.toLowerCase();
-      if (
-        msg.includes('***') ||
-        msg.includes('CRITICAL') ||
-        msg.includes('FATAL') ||
-        lower.includes('slain') ||
-        lower.includes('level up')
-      ) {
-        lineEl.classList.add('log-line-highlight');
-      } else if (
-        lower.includes(`attacks ${engine.player.name.toLowerCase()}`) ||
-        (lower.includes('takes') && lower.includes('damage')) ||
-        lower.includes('perishes') ||
-        lower.includes('defeated')
-      ) {
-        lineEl.classList.add('log-line-danger');
-      } else if (lower.includes('heals') || lower.includes('restores') || lower.includes('recovered')) {
-        lineEl.classList.add('log-line-heal');
-      } else if (lower.includes('casts') || lower.includes('spark') || lower.includes('bolt') || lower.includes('rune')) {
-        lineEl.classList.add('log-line-arcane');
-      }
-
-      lineEl.textContent = msg;
+      const line = classifyLogLine(msg, engine.player.name, criticalLines.set);
+      if (line.tone !== 'plain') lineEl.classList.add(`log-line-${line.tone}`, 'log-line-toned');
+      lineEl.textContent = line.text;
       streamEl.appendChild(lineEl);
     }
     streamEl.scrollTop = streamEl.scrollHeight;
@@ -1254,10 +1238,18 @@ window.addEventListener('DOMContentLoaded', () => {
     updateMessageLog(engine);
 
     engine.onGameEvent = (event: GameEvent) => {
-      if (isGameEvent(event, 'entity_killed')) {
+      if (isGameEvent(event, 'damage_dealt')) {
+        if (event.critical) {
+          if (event.targetId) criticalTargets.add(event.targetId);
+          criticalLines.markNewest(engine.messages);
+        }
+      } else if (isGameEvent(event, 'entity_killed')) {
         const fallen = event.targetId ? knownMonsters.get(event.targetId) : undefined;
         if (fallen && event.targetId) {
-          renderer?.floatingTextRunner.spawnDamage(fallen.x, fallen.y, fallen.hp, { killed: true });
+          renderer?.floatingTextRunner.spawnDamage(fallen.x, fallen.y, fallen.hp, {
+            killed: true,
+            isCrit: criticalTargets.has(event.targetId),
+          });
           knownMonsters.delete(event.targetId);
         }
       } else if (event.type === 'player_leveled_up') {

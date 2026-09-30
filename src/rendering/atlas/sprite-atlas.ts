@@ -77,7 +77,6 @@ export const ATLAS_MAP: Record<SpriteKey, AtlasCoords> = {
   cursed_mace: { col: 10, row: 2 },
   chest: { col: 11, row: 2 },
   belt: { col: 12, row: 2 },
-  sun_stone: { col: 13, row: 2 },
   travel_bread: { col: 14, row: 2 },
 
   // Row 3: Monstrous & Beasts Archetypes
@@ -99,7 +98,6 @@ export const ATLAS_MAP: Record<SpriteKey, AtlasCoords> = {
   bone_horror: { col: 15, row: 3 },
 
   // Row 4: Undead, Spectral, Humanoids
-  draugr: { col: 0, row: 4 },
   wight: { col: 1, row: 4 },
   zombie: { col: 2, row: 4 },
   wraith: { col: 3, row: 4 },
@@ -130,28 +128,13 @@ export const ATLAS_MAP: Record<SpriteKey, AtlasCoords> = {
   key: { col: 14, row: 5 },
   torch: { col: 15, row: 5 },
 
-  // Row 6: Dungeon Zone Walls
-  wall_rime_hollows: { col: 0, row: 6 },
-  wall_dwarven_works: { col: 1, row: 6 },
-  wall_obsidian_siphon: { col: 2, row: 6 },
-  wall_tarnished_silver: { col: 3, row: 6 },
-  wall_world_bark: { col: 4, row: 6 },
-  wall_maw_of_malice: { col: 5, row: 6 },
-  wall_rotting_root: { col: 6, row: 6 },
-
-  // Row 7: Dungeon Zone Floors
-  floor_rime_hollows: { col: 0, row: 7 },
-  floor_dwarven_works: { col: 1, row: 7 },
-  floor_obsidian_siphon: { col: 2, row: 7 },
-  floor_tarnished_silver: { col: 3, row: 7 },
-  floor_world_bark: { col: 4, row: 7 },
-  floor_maw_of_malice: { col: 5, row: 7 },
-  floor_rotting_root: { col: 6, row: 7 },
+  // Rows 6-7 and the gaps elsewhere are free: pack-only art (dungeon zone terrain,
+  // pack creatures and relics) comes from pack recipes, appended after the built-ins.
 
   // Row 8: Town Themed Walls & Floors
   wall_town: { col: 0, row: 8 },
   floor_town: { col: 1, row: 8 },
-  floor_town_snow: { col: 2, row: 8 },
+  floor_town_outdoor: { col: 2, row: 8 },
   wall_town_temple: { col: 3, row: 8 },
   floor_town_temple: { col: 4, row: 8 },
   wall_town_smithy: { col: 5, row: 8 },
@@ -169,8 +152,6 @@ export const ATLAS_MAP: Record<SpriteKey, AtlasCoords> = {
   shadow: { col: 3, row: 9 },
   ghost: { col: 4, row: 9 },
   bound_spirit: { col: 5, row: 9 },
-  duergar: { col: 6, row: 9 },
-  troll_witch: { col: 7, row: 9 },
   dragon_elder: { col: 8, row: 9 },
   rune_stone: { col: 9, row: 9 },
 };

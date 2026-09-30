@@ -7,25 +7,10 @@ export type TerrainSpriteKey =
   | 'stairs_down'
   | 'trap'
   | 'secret_door'
-  // Zone terrain variants
-  | 'wall_rime_hollows'
-  | 'floor_rime_hollows'
-  | 'wall_dwarven_works'
-  | 'floor_dwarven_works'
-  | 'wall_obsidian_siphon'
-  | 'floor_obsidian_siphon'
-  | 'wall_tarnished_silver'
-  | 'floor_tarnished_silver'
-  | 'wall_world_bark'
-  | 'floor_world_bark'
-  | 'wall_maw_of_malice'
-  | 'floor_maw_of_malice'
-  | 'wall_rotting_root'
-  | 'floor_rotting_root'
   // Town terrain variants
   | 'wall_town'
   | 'floor_town'
-  | 'floor_town_snow'
+  | 'floor_town_outdoor'
   | 'wall_town_temple'
   | 'floor_town_temple'
   | 'wall_town_smithy'
@@ -56,7 +41,6 @@ export type EntitySpriteKey =
   | 'aberration'
   | 'fiend'
   | 'dragon_boss'
-  | 'draugr'
   | 'wight'
   | 'zombie'
   | 'wraith'
@@ -87,8 +71,6 @@ export type EntitySpriteKey =
   | 'shadow'
   | 'ghost'
   | 'bound_spirit'
-  | 'duergar'
-  | 'troll_witch'
   | 'dragon_elder';
 
 export type ItemSpriteKey =
@@ -105,7 +87,6 @@ export type ItemSpriteKey =
   | 'cursed_mace'
   | 'chest'
   | 'belt'
-  | 'sun_stone'
   | 'travel_bread'
   // Expanded Equipment & Consumables
   | 'iron_armor'

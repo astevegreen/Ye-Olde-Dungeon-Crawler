@@ -1376,7 +1376,11 @@ export class CanvasRenderer {
     const ctx = this.ctx;
     this.drawEntityShadow(px, py, cs);
 
-    const spriteKey = getEntitySpriteKey(monster, this.atlas.hasSprite.bind(this.atlas));
+    const spriteKey = getEntitySpriteKey(
+      monster,
+      this.atlas.hasSprite.bind(this.atlas),
+      this.engine.manifest?.atlas?.spriteTagRules
+    );
     this.atlas.drawSprite(ctx, spriteKey, px, py, cs, Visibility.Visible);
 
     // Monster mini HP bar if damaged

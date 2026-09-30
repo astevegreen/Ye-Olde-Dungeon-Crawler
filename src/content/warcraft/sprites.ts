@@ -165,7 +165,7 @@ export const WARCRAFT_SPRITE_RECIPES: Record<string, SpriteRecipe> = {
   },
 
   // Horde War Banner relic item
-  sun_stone: (ctx, ox, oy) => {
+  horde_war_banner: (ctx, ox, oy) => {
     // Red glowing war banner
     ctx.fillStyle = '#78350f'; // Pole
     ctx.fillRect(ox + 15, oy + 3, 3, 26);

@@ -460,6 +460,15 @@ export interface AtlasProceduralTheme<TContext = any> {
   tileZoneBands?: TileZoneBand[];
   /** Neighbour-aware terrain, lighting and memory styling. Absent = one recipe per tile type, as before. */
   terrain?: TerrainArtConfig;
+  /** Tag -> sprite rules for the pack's own creatures, checked in order before the
+   * renderer's generic archetype rules. `spriteKey` names a pack recipe. */
+  spriteTagRules?: SpriteTagRule[];
+}
+
+/** Maps a monster tag to a sprite key (ARCHITECTURE.md §3: sprite choice comes from the pack). */
+export interface SpriteTagRule {
+  tag: string;
+  spriteKey: string;
 }
 
 /**

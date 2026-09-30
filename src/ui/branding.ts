@@ -1,4 +1,4 @@
-import type { GameContentManifest } from '../engine';
+import { attunementNpcName, type GameContentManifest } from '../engine';
 
 /** Every pack-specific string shared screens show, resolved with neutral fallbacks (§3). */
 export interface ResolvedBranding {
@@ -38,15 +38,11 @@ export function resolveBranding(manifest?: GameContentManifest): ResolvedBrandin
     healthGlyph: b.healthGlyph ?? '♥',
     manaGlyph: b.manaGlyph ?? '✦',
     bankerTitle: manifest?.town?.services?.bankerTitle ?? 'the town banker',
-    runeSmithName: runeSmithOf(manifest) ?? 'the town smith',
+    runeSmithName: attunementNpcName(manifest),
     defaultHeroName: manifest?.presetNames?.[0] ?? 'Hero',
   };
 }
 
-function runeSmithOf(manifest?: GameContentManifest): string | undefined {
-  const npcId = manifest?.runeOfReturn?.attunementNpcId;
-  return npcId ? manifest?.town?.npcs?.find((npc) => npc.id === npcId)?.name : undefined;
-}
 
 /** The build's version, injected by vite.config.ts from package.json. */
 export const APP_VERSION = `v${import.meta.env.VITE_APP_VERSION ?? '0.0.0'}`;

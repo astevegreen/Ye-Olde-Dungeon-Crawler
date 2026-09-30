@@ -3,7 +3,7 @@ import type { Entity } from '../../engine';
 import { Player } from '../../engine';
 import { NPC } from '../../engine';
 import { Monster } from '../../engine';
-import type { Item } from '../../engine';
+import type { Item, SpriteTagRule } from '../../engine';
 import type { SpriteKey } from './types';
 import { ATLAS_MAP } from './sprite-atlas';
 
@@ -57,9 +57,9 @@ export function getTerrainSpriteKey(
     } else {
       // Exterior town ground / border walls
       if (baseKey === 'floor') {
-        const snowKey = 'floor_town_snow' as SpriteKey;
-        if (hasRecipe(snowKey)) {
-          return snowKey;
+        const outdoorKey: SpriteKey = 'floor_town_outdoor';
+        if (hasRecipe(outdoorKey)) {
+          return outdoorKey;
         }
       }
       const townBase = `${baseKey}_town` as SpriteKey;
@@ -92,6 +92,10 @@ export function getTerrainSpriteKey(
 }
 
 
+/**
+ * Built-in archetype rules, generic across packs. A pack's own creatures come first via
+ * `atlas.spriteTagRules` (see getEntitySpriteKey).
+ */
 export const DEFAULT_TAG_SPRITE_ORDER: Array<{ tag: string; spriteKey: SpriteKey }> = [
   // Bosses & Unique Legends
   { tag: 'boss', spriteKey: 'giant_boss' },
@@ -109,8 +113,6 @@ export const DEFAULT_TAG_SPRITE_ORDER: Array<{ tag: string; spriteKey: SpriteKey
   // Undead & Spectral Specifics — 'ghost' and 'bound_spirit' checked before the
   // broader 'spirit'/'undead' fallbacks they'd otherwise collapse into.
   { tag: 'wraith', spriteKey: 'wraith' },
-  { tag: 'draugr', spriteKey: 'draugr' },
-  { tag: 'duergar', spriteKey: 'duergar' },
   { tag: 'wight', spriteKey: 'wight' },
   { tag: 'zombie', spriteKey: 'zombie' },
   { tag: 'spectral', spriteKey: 'spectral' },
@@ -137,7 +139,6 @@ export const DEFAULT_TAG_SPRITE_ORDER: Array<{ tag: string; spriteKey: SpriteKey
   { tag: 'sorcerer', spriteKey: 'sorcerer' },
   { tag: 'zealot', spriteKey: 'zealot' },
   { tag: 'cultist', spriteKey: 'cultist' },
-  { tag: 'troll_witch', spriteKey: 'troll_witch' },
   { tag: 'troll', spriteKey: 'troll' },
   { tag: 'fire_giant', spriteKey: 'giant_fire' },
   { tag: 'giant', spriteKey: 'giant' },
@@ -156,9 +157,14 @@ type HasSprite = (key: string) => boolean;
 
 /**
  * A pack gives a monster its own art by keying a sprite recipe with the monster's
- * definition ID; otherwise tags and name heuristics pick a shared archetype sprite.
+ * definition ID; otherwise the pack's `spriteTagRules`, then the built-in tag rules and
+ * name heuristics, pick a shared archetype sprite.
  */
-export function getEntitySpriteKey(entity: Entity, hasSprite?: HasSprite): SpriteKey | string {
+export function getEntitySpriteKey(
+  entity: Entity,
+  hasSprite?: HasSprite,
+  packTagRules: readonly SpriteTagRule[] = []
+): SpriteKey | string {
   if (entity instanceof Player) {
     return entity.gender === 'female' ? 'player_female' : 'player';
   }
@@ -189,7 +195,7 @@ export function getEntitySpriteKey(entity: Entity, hasSprite?: HasSprite): Sprit
 
   // Tag-priority resolution (dragon > undead > construct > beast > humanoid)
   const tags: string[] = entity.tags ?? [];
-  for (const rule of DEFAULT_TAG_SPRITE_ORDER) {
+  for (const rule of [...packTagRules, ...DEFAULT_TAG_SPRITE_ORDER]) {
     if (tags.includes(rule.tag)) {
       return rule.spriteKey;
     }
@@ -240,9 +246,6 @@ export function getItemSpriteKey(item: Item, hasSprite?: HasSprite): SpriteKey |
   // Unique / Plot items
   if (name.includes('rune of return') || id.includes('rune_of_return') || name.includes('rune stone') || id.includes('rune_stone')) {
     return 'rune_stone';
-  }
-  if (name.includes('sun-stone') || name.includes('sun stone') || id.includes('sun_stone')) {
-    return 'sun_stone';
   }
   if (name.includes('bread') || id.includes('bread')) {
     return 'travel_bread';

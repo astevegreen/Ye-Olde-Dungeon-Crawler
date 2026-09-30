@@ -75,7 +75,7 @@ import { PactManager } from './pacts/pactManager';
 import { validateManifest, type GameContentManifest } from './types/manifest';
 import { EngineCommandBus, type GameCommandBus } from './commands/commandBus';
 import { IdentificationManager } from './items/identification';
-import { attuneRuneOfReturn, findRuneOfReturn, createRuneOfReturnActionHooks, RuneOfReturnItem } from './magic/runeOfReturn';
+import { attuneRuneOfReturn, attunementNpcName, findRuneOfReturn, createRuneOfReturnActionHooks, RuneOfReturnItem } from './magic/runeOfReturn';
 
 const DEFAULT_EMPTY_MANIFEST: GameContentManifest = {
   id: 'generic',
@@ -1105,7 +1105,7 @@ export class GameEngine {
       });
       this.emitDiscovery({
         type: 'quest_milestone',
-        text: 'Learned the secrets of the Rune of Return from Thrain! Spiritual recall awakened.',
+        text: `Learned the secrets of the Rune of Return from ${attunementNpcName(this.manifest)}! Spiritual recall awakened.`,
         icon: '🌀',
       });
     }

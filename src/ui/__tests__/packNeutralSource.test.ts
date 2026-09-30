@@ -80,6 +80,26 @@ describe('pack-neutral presentation source', () => {
     expect(leaks).toEqual([]);
   });
 
+  it("names no pack's dungeon zone (its tileZoneBands keys) in presentation source", () => {
+    const zoneKeys = [cotwManifest, warcraftManifest].flatMap((m) => (m.atlas.tileZoneBands ?? []).map((b) => b.zoneKey));
+    const pattern = new RegExp(`(${zoneKeys.join('|')})`);
+    const leaks = files.filter((file) => pattern.test(stripComments(readFileSync(file, 'utf-8')))).map((f) => relative(ROOT, f));
+    expect(leaks).toEqual([]);
+  });
+
+  it("keeps the packs' townsfolk out of engine messages", () => {
+    expect(nouns).toContain('Thrain');
+    const townsfolk = [cotwManifest, warcraftManifest]
+      .flatMap((m) => m.town.npcs.map((npc) => npc.name))
+      .flatMap((n) => n.split(/[\s'’-]+/))
+      .filter((w) => nouns.includes(w));
+    const pattern = new RegExp(`\\b(${townsfolk.join('|')})\\b`);
+    const leaks = sourceFiles('src/engine')
+      .filter((file) => pattern.test(stripComments(readFileSync(file, 'utf-8'))))
+      .map((f) => relative(ROOT, f));
+    expect(leaks).toEqual([]);
+  });
+
   it('carries no runic glyphs outside pack data', () => {
     const leaks = files.filter((file) => RUNIC.test(readFileSync(file, 'utf-8'))).map((f) => relative(ROOT, f));
     expect(leaks).toEqual([]);

@@ -145,10 +145,6 @@
       "reason": "Atlas entity sprite key for humanoid monster tag fallback; cotw declares monster with this ID."
     },
     {
-      "id": "draugr",
-      "reason": "Atlas entity sprite key; cotw declares monster with this ID."
-    },
-    {
       "id": "wolf",
       "reason": "Atlas entity sprite key for beast monster tag fallback; cotw declares monster with this ID."
     },

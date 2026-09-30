@@ -16,7 +16,7 @@ import type { MonsterScalingConfig } from '../types/monsterScaling';
 import { getMonsterDefinition, type MonsterDefinition } from '../bestiary/monsterDefinitions';
 import { Container } from '../items/container';
 import type { Item } from '../items/item';
-import { RuneOfReturnItem } from '../magic/runeOfReturn';
+import { RuneOfReturnItem, attunementNpcName } from '../magic/runeOfReturn';
 import type { EngineRegistries } from '../registries';
 export interface DungeonFloorResult {
   map: GameMap;
@@ -279,7 +279,7 @@ export class DungeonArc {
         identified: true,
         charges: 0,
         description:
-          'A palm-sized stone etched with a dormant rune. Bring it to Thrain the Rune-Smith in town so he can awaken its power.',
+          `A palm-sized stone etched with a dormant rune. Bring it to ${attunementNpcName(manifest)} in town, who can awaken its power.`,
       });
       const chest = map.getItemsAt(chestPos.x, chestPos.y).find((it) => it instanceof Container) as
         | Container

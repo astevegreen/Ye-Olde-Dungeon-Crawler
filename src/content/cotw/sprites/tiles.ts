@@ -366,7 +366,7 @@ export const COTW_TILE_SPRITES: Record<string, SpriteRecipe> = {
     }
   },
 
-  floor_town_snow: (ctx, ox, oy) => {
+  floor_town_outdoor: (ctx, ox, oy) => {
     // Packed snow-dusted cobblestone path. Deliberately low-contrast and sparse —
     // this tile repeats across the entire town square, so anything bolder than a
     // faint dusting turns into a loud grid pattern at that scale.

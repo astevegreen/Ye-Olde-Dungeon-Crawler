@@ -36,7 +36,7 @@ describe('pack branding', () => {
     expect(resolveBranding(warcraftManifest)).toMatchObject({
       healthGlyph: '♥',
       manaGlyph: '✦',
-      runeSmithName: 'the town smith',
+      runeSmithName: 'the smith',
       defaultHeroName: 'Lothar',
     });
   });

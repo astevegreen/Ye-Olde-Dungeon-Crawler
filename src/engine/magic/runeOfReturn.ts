@@ -1,4 +1,5 @@
 import type { GameEngine } from '../engine';
+import type { GameContentManifest } from '../types/manifest';
 import type { Entity } from '../entities/entity';
 import type { Player } from '../entities/player';
 import type { ActionResult } from '../types';
@@ -177,6 +178,13 @@ export function findRuneOfReturn(player: Player): RuneOfReturnItem | undefined {
   return undefined;
 }
 
+/** The pack's attunement NPC by name (`runeOfReturn.attunementNpcId` among `town.npcs`),
+ * so engine messages about awakening the rune never name a pack's NPC themselves. */
+export function attunementNpcName(manifest?: GameContentManifest): string {
+  const npcId = manifest?.runeOfReturn?.attunementNpcId;
+  return (npcId && manifest?.town?.npcs?.find((npc) => npc.id === npcId)?.name) || 'the smith';
+}
+
 function isChanneling(player: Player): boolean {
   return player.statusManager.hasStatus(RUNE_OF_RETURN_STATUS);
 }
@@ -201,7 +209,7 @@ export function startOrContinueChannel(
   if (!player.hasDiscoveredRune) {
     return {
       success: false,
-      message: 'The Rune of Return is dormant. Bring it to Thrain the Rune-Smith in town so he can teach you how to awaken and channel its recall magic.',
+      message: `The Rune of Return is dormant. Bring it to ${attunementNpcName(engine.manifest)} in town, who can teach you how to awaken and channel its recall magic.`,
     };
   }
 

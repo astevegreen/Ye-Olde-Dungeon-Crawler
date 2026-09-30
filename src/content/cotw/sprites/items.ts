@@ -236,7 +236,7 @@ export const COTW_ITEM_SPRITES: Record<string, SpriteRecipe> = {
     ctx.fillRect(ox + 15, oy + 14, 2, 4);
   },
 
-  sun_stone: (ctx, ox, oy) => {
+  sun_stone_freyr: (ctx, ox, oy) => {
     ctx.fillStyle = 'rgba(254, 240, 138, 0.4)';
     ctx.beginPath();
     ctx.arc(ox + 16, oy + 16, 12, 0, Math.PI * 2);

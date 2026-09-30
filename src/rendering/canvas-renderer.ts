@@ -1422,6 +1422,16 @@ export class CanvasRenderer {
    * grimoire), or null in normal play. Shown in the DOM ground-status bar through
    * `onModeHintChanged` rather than in a strip of canvas that sat empty most turns.
    */
+  /** Paints an item's atlas sprite to fill a small DOM canvas (the potion row's icons). */
+  public drawItemIcon(canvas: HTMLCanvasElement, item: Item): void {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.imageSmoothingEnabled = false;
+    const spriteKey = getItemSpriteKey(item, this.atlas.hasSprite.bind(this.atlas));
+    this.atlas.drawSprite(ctx, spriteKey, 0, 0, Math.min(canvas.width, canvas.height));
+  }
+
   public getModeHint(): ModeHint | null {
     if (this.mapOverlay.isOpen) {
       return { text: 'Map: [< > PgUp PgDn] change floor · [M / Esc] close', tone: 'mode' };

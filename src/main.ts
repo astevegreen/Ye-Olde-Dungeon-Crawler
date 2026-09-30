@@ -31,6 +31,8 @@ import {
   isGameEvent,
   Monster,
   parseCoinItem,
+  PotionItem,
+  DrinkPotionAction,
 } from './engine';
 import type {
   ActionResult,
@@ -91,6 +93,7 @@ import { FlankManager } from './ui/flanks/flankManager';
 import { WorldLedgerModule } from './ui/flanks/worldLedgerModule';
 import { JournalModule } from './ui/flanks/journalModule';
 import { QuickSpellsBar } from './ui/quickSpellsBar';
+import { PotionRow } from './ui/potionRow';
 import { SpellbookModal } from './ui/spellbookModal';
 import { BottomStatusBar } from './ui/bottomStatusBar';
 import { SettingsManager } from './ui/settings/settingsManager';
@@ -301,6 +304,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   let spellbookModal: SpellbookModal;
   let quickSpellsBar: QuickSpellsBar;
+  let potionRow: PotionRow;
   let bottomStatusBar: BottomStatusBar;
 
   function openSpellbook(): void {
@@ -450,6 +454,34 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     }
   }
+
+  /** "Shift+Digit1" -> "⇧1": the first key bound to a potion slot, as the row shows it. */
+  function formatPotionKey(slotIndex: number): string {
+    const code = settingsManager.getCodesForAction(`drink_potion_${slotIndex + 1}`)[0];
+    if (!code) return '';
+    return code.replace(/^Shift\+/, '⇧').replace(/Digit|Key/, '');
+  }
+
+  /** Drinks whatever potion the row shows in a slot. The caller renders afterwards. */
+  function drinkPotionSlot(slotIndex: number): void {
+    if (!activeEngine) return;
+    const entry = potionRow.entryAt(slotIndex);
+    const item = entry ? activeEngine.player.inventory.findItemById(entry.itemId) : undefined;
+    if (!(item instanceof PotionItem)) {
+      activeEngine.log('No potion in that slot.');
+      return;
+    }
+    activeEngine.handlePlayerAction(new DrinkPotionAction(activeEngine.player, item));
+  }
+
+  potionRow = new PotionRow({
+    onDrinkSlot: (slotIdx) => {
+      drinkPotionSlot(slotIdx);
+      void processVisualEffectsAndRender();
+    },
+    drawIcon: (canvas, item) => renderer?.drawItemIcon(canvas, item),
+    keyLabel: formatPotionKey,
+  });
 
   quickSpellsBar = new QuickSpellsBar({
     onTriggerSlot: (slotIdx) => triggerQuickSpell(slotIdx),
@@ -711,6 +743,7 @@ window.addEventListener('DOMContentLoaded', () => {
         updateGothicConsole(activeEngine);
         updateMessageLog(activeEngine);
         quickSpellsBar.update(activeEngine);
+        potionRow.update(activeEngine);
         bottomStatusBar.update(activeEngine);
         // Periodic background autosave every 50 turns
         if (activeProfile && autosaveManager.shouldAutosave(activeEngine.turnCount)) {
@@ -1611,6 +1644,7 @@ window.addEventListener('DOMContentLoaded', () => {
       runeTreeModal.setModalStack(inputHandler.modalStack);
       runeDiscoveryModal.setModalStack(inputHandler.modalStack);
       inputHandler.onCastSpellById = castSpellById;
+      inputHandler.onDrinkPotionSlot = drinkPotionSlot;
       diagnosticModal.setModalStack(inputHandler.modalStack);
       feedbackModal.setModalStack(inputHandler.modalStack);
       keybindModal.setModalStack(inputHandler.modalStack);
@@ -1667,6 +1701,7 @@ window.addEventListener('DOMContentLoaded', () => {
         runeDiscoveryModal.setModalStack(inputHandler.modalStack);
         inputHandler.onSaveAndExit = promptSaveAndQuit;
         inputHandler.onCastSpellById = castSpellById;
+        inputHandler.onDrinkPotionSlot = drinkPotionSlot;
         diagnosticModal.setModalStack(inputHandler.modalStack);
       }
     }
@@ -1708,8 +1743,11 @@ window.addEventListener('DOMContentLoaded', () => {
       gameContainer.style.display = 'flex';
       quickSpellsBar.mount(gameContainer);
       bottomStatusBar.mount(gameContainer);
+      const healthOrb = document.getElementById('hud-health-orb');
+      if (healthOrb?.parentElement) potionRow.mount(healthOrb.parentElement, healthOrb.nextElementSibling);
     }
     quickSpellsBar.update(engine);
+    potionRow.update(engine);
     bottomStatusBar.update(engine);
 
     flankManager.mount(leftFlank, rightFlank, engine.manifest ?? activeManifest);

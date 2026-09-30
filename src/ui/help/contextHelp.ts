@@ -167,6 +167,7 @@ export class ContextHelp {
             { key: 'Shift+G / Shift+,', label: 'Quick-Loot all items on ground tile' },
             { key: 'Z / C', label: 'Open Spellbook and cast known spells' },
             { key: 'I', label: 'Open Inventory, Paperdoll, and Containers' },
+            { key: 'Shift+1-4', label: 'Drink a potion from the row beside the health orb' },
             { key: 'B', label: 'Open Bestiary' },
             { key: 'Shift+? / Ctrl+K', label: 'Open Quick Command Palette' },
             { key: 'R / S', label: 'Rest until healed (R) / Search for hidden traps (S)' },

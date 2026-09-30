@@ -164,6 +164,8 @@ export class InputHandler {
   public onToggleDiagnostics?: () => void;
   public onToggleFeedback?: () => void;
   public onTriggerQuickSpell?: (slotIndex: number) => void;
+  /** Drinks the potion in a potion-row slot (0-based); wired from main.ts. */
+  public onDrinkPotionSlot?: (slotIndex: number) => void;
   public onOpenSpellbook?: () => void;
   /** Casts a spell by ID (as opposed to a QuickSpellsBar slot index) — wired from main.ts's castOrTargetSpell. */
   public onCastSpellById?: (spellId: string) => void;
@@ -803,6 +805,17 @@ export class InputHandler {
         return true;
       }
       this.targetingOverlay?.openSpellbook(this.engine);
+      this.onActionProcessed();
+      return true;
+    }
+
+    // Potion row (Shift+1..4 by default). Checked before the bare-digit spell keys
+    // below, which would otherwise take Shift+1 as spell slot 1.
+    const potionAction = this.settingsManager.getActionForCode(e.shiftKey ? `Shift+${code}` : code);
+    if (potionAction?.startsWith('drink_potion_') && this.onDrinkPotionSlot) {
+      const slotIdx = parseInt(potionAction.replace('drink_potion_', ''), 10) - 1;
+      if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
+      this.onDrinkPotionSlot(slotIdx);
       this.onActionProcessed();
       return true;
     }

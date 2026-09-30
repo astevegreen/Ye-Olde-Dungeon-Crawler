@@ -36,6 +36,10 @@ export const ACTION_METADATA: ActionMetadata[] = [
   { id: 'quick_spell_8', name: 'Quick Spell Slot 8', category: 'Combat & Magic', defaultCodes: ['Digit8'] },
   { id: 'quick_spell_9', name: 'Quick Spell Slot 9', category: 'Combat & Magic', defaultCodes: ['Digit9'] },
   { id: 'quick_spell_0', name: 'Quick Spell Slot 10', category: 'Combat & Magic', defaultCodes: ['Digit0'] },
+  { id: 'drink_potion_1', name: 'Drink Potion Slot 1', category: 'Combat & Magic', defaultCodes: ['Shift+Digit1'] },
+  { id: 'drink_potion_2', name: 'Drink Potion Slot 2', category: 'Combat & Magic', defaultCodes: ['Shift+Digit2'] },
+  { id: 'drink_potion_3', name: 'Drink Potion Slot 3', category: 'Combat & Magic', defaultCodes: ['Shift+Digit3'] },
+  { id: 'drink_potion_4', name: 'Drink Potion Slot 4', category: 'Combat & Magic', defaultCodes: ['Shift+Digit4'] },
   { id: 'channel_rune_of_return', name: 'Channel Rune of Return', category: 'Combat & Magic', defaultCodes: ['KeyT'] },
   { id: 'rune_of_return_tree', name: 'Rune of Return Mastery', category: 'Combat & Magic', defaultCodes: ['Shift+KeyT'] },
 

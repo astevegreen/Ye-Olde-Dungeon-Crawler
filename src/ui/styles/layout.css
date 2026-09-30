@@ -252,10 +252,17 @@
   color: #f8fafc;
 }
 
-.quick-spell-slot-unassigned {
+.quick-spell-slot-add {
   background: rgba(30, 41, 59, 0.35);
-  border: 1px dashed rgba(148, 163, 184, 0.3);
-  color: #64748b;
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+  color: #94a3b8;
+}
+.quick-spell-slot-add:hover {
+  border-color: var(--ui-accent, #f59e0b);
+  color: var(--ui-accent, #f59e0b);
+}
+.quick-spell-slot[hidden] {
+  display: none !important;
 }
 
 .quick-spell-slot-nomana {
@@ -498,17 +505,17 @@
   box-shadow: none;
 }
 
-/* Ten slots (keys 1-9, 0) share the cluster's width instead of a fixed 82px each. Each
-   slot is two lines, key and mana cost over the spell's short name, so all ten stay
-   legible in the ~560px the cluster has at common desktop sizes. */
+/* Only filled slots (plus one "+ Spell") are shown, so each takes the width its full
+   name needs, up to 150px, shrinking with an ellipsis if all ten are filled on a
+   narrow console. Each slot is two lines: key and mana cost over the name. */
 .action-belt-slots #quick-spells-bar {
   gap: 4px;
 }
 .action-belt-slots .quick-spell-slot {
-  flex: 1 1 0;
+  flex: 0 1 auto;
   width: auto;
-  min-width: 0;
-  max-width: 82px;
+  min-width: 56px;
+  max-width: 150px;
   height: 34px;
   padding: 2px 5px;
   display: grid;
@@ -537,6 +544,9 @@
   text-align: center;
   font-size: 11px;
   line-height: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Action verbs: icon, a small keycap, and the word. */

@@ -29,6 +29,51 @@ export interface DisplayItemGroup {
   displayName: string;
 }
 
+/**
+ * The short label a backpack cell has room for: the part of the name that tells
+ * items apart ("Potion of Healing (3x)" -> "Healing", quantity 3). The cell's
+ * sprite already shows it is a potion; the hover card has the full name.
+ */
+export function cellLabel(displayName: string): { name: string; quantity: number } {
+  const stack = /^(.*)\s\((\d+)x\)$/.exec(displayName);
+  const base = stack ? stack[1] : displayName;
+  const quantity = stack ? Number(stack[2]) : 1;
+  const ofIndex = base.indexOf(' of ');
+  const name = ofIndex > 0 ? base.slice(ofIndex + 4).replace(/^the\s+/i, '') : base;
+  return { name: name || base, quantity };
+}
+
+/**
+ * Splits a cell label over at most two lines, breaking at spaces or after hyphens;
+ * whatever still doesn't fit is truncated. The stack suffix (" ×3") stays whole
+ * on the last line.
+ */
+export function wrapCellLabel(
+  name: string,
+  suffix: string,
+  maxWidth: number,
+  measure: (text: string) => number,
+  truncate: (text: string, maxWidth: number) => string
+): string[] {
+  if (measure(name + suffix) <= maxWidth) return [name + suffix];
+  const words = name.split(/(?<=-)|\s+/).filter(Boolean);
+  let first = '';
+  let used = 0;
+  for (const word of words) {
+    const joiner = first && !first.endsWith('-') ? ' ' : '';
+    if (measure(first + joiner + word) > maxWidth) break;
+    first += joiner + word;
+    used++;
+  }
+  if (used === 0) {
+    // A single word too long for one line: truncate it rather than split mid-word.
+    return [truncate(name, maxWidth - measure(suffix)) + suffix];
+  }
+  const rest = words.slice(used).reduce((acc, w) => (acc && !acc.endsWith('-') ? `${acc} ${w}` : acc + w), '');
+  if (!rest) return suffix ? [first, suffix.trim()] : [first];
+  return [first, truncate(rest, maxWidth - measure(suffix)) + suffix];
+}
+
 export function groupItemsForDisplay(items: readonly Item[]): DisplayItemGroup[] {
   const groups: DisplayItemGroup[] = [];
   const keyToGroup = new Map<string, DisplayItemGroup>();
@@ -1443,28 +1488,34 @@ export class InventoryOverlay implements UIModal {
       // Sprite, sized to fill most of the cell (paperdoll-view.ts's square-slot
       // precedent) — this is the actual fix for "icons are small": 16px rows
       // become cells this large, icon included.
-      const nameplateH = 13;
-      const spriteArea = cellSize - nameplateH - 6;
+      // Two 10px lines of name under the sprite (see wrapCellLabel below).
+      const lineH = 11;
+      const nameplateH = lineH * 2 + 1;
+      const spriteArea = cellSize - nameplateH - 5;
       if (this.atlas) {
         const spriteKey = getItemSpriteKey(it, (k) => this.atlas?.hasSprite(k) ?? false);
         const spriteSize = Math.max(16, Math.min(spriteArea, cellSize - 8));
         const spriteX = cellX + Math.floor((cellSize - spriteSize) / 2);
-        const spriteY = cellY + 4;
+        const spriteY = cellY + 3;
         this.atlas.drawSprite(ctx, spriteKey, spriteX, spriteY, spriteSize);
       }
 
-      // Name, truncated to the cell's width rather than a fixed character count
-      // — still short, but the tooltip (see render()) carries the full name.
-      ctx.font = `9px ${font}`;
+      // Name: the part that tells items apart ("Identify", not "Scroll of …" —
+      // the sprite already says scroll), truncated to the cell's width. The hover
+      // card (see render()) carries the full name.
+      ctx.font = `10px ${font}`;
       ctx.fillStyle = getItemThematicColor(it, theme);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'alphabetic';
-      const label = truncate(group.displayName, cellSize - 4);
-      ctx.fillText(label, cellX + cellSize / 2, cellY + cellSize - 3);
+      const short = cellLabel(group.displayName);
+      const suffix = short.quantity > 1 ? ` ×${short.quantity}` : '';
+      const lines = wrapCellLabel(short.name, suffix, cellSize - 4, (t) => ctx.measureText(t).width, truncate);
+      const firstBaseline = cellY + cellSize - 3 - (lines.length - 1) * lineH;
+      lines.forEach((line, li) => ctx.fillText(line, cellX + cellSize / 2, firstBaseline + li * lineH));
 
       // Index shortcut tag (1-9), backpack only.
       if (opts.showIndexTag && i < 9) {
-        ctx.font = `bold 8px ${font}`;
+        ctx.font = `bold 9px ${font}`;
         ctx.fillStyle = theme.textMuted;
         ctx.textAlign = 'left';
         ctx.fillText(`${i + 1}`, cellX + 2, cellY + 9);
@@ -1769,7 +1820,7 @@ export class InventoryOverlay implements UIModal {
 
     ctx.fillStyle = theme.cardBorder;
     ctx.fillRect(sortBtnX, sortBtnY, sortBtnW, sortBtnH);
-    ctx.font = `bold 8px ${font}`;
+    ctx.font = `bold 10px ${font}`;
     ctx.fillStyle = theme.hudAccent;
     ctx.textAlign = 'center';
     const curModeShort = sortModes[this.sortModeIndex % sortModes.length].slice(0, 3);
@@ -1827,7 +1878,7 @@ export class InventoryOverlay implements UIModal {
       ctx.lineWidth = 1;
       ctx.strokeRect(px + 0.5, filterY + 0.5, pillW - 1, filterH - 1);
 
-      ctx.font = `${isActive ? 'bold' : 'normal'} 8px ${font}`;
+      ctx.font = `${isActive ? 'bold' : 'normal'} 10px ${font}`;
       ctx.fillStyle = isActive ? theme.hudAccent : theme.textMuted;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -1971,7 +2022,7 @@ export class InventoryOverlay implements UIModal {
       const isGround = this.column3View === 'ground';
       ctx.fillStyle = isGround ? theme.hudAccent : theme.cardBorder;
       ctx.fillRect(col3X + 6, tabY, tabW, tabH);
-      ctx.font = `bold 8px ${font}`;
+      ctx.font = `bold 10px ${font}`;
       ctx.fillStyle = isGround ? theme.modalBg : theme.textMuted;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -2011,7 +2062,7 @@ export class InventoryOverlay implements UIModal {
       const takeAllBtnX = col3X + col3W - takeAllBtnW - 8;
       ctx.fillStyle = '#15803d';
       ctx.fillRect(takeAllBtnX, sortBtnY, takeAllBtnW, sortBtnH);
-      ctx.font = `bold 9px ${font}`;
+      ctx.font = `bold 10px ${font}`;
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -2047,7 +2098,7 @@ export class InventoryOverlay implements UIModal {
     } else if (activeContainer) {
       // Interactive breadcrumbs
       let curX = col3X + (hasCompanion ? 106 : 6);
-      ctx.font = `bold 9px ${font}`;
+      ctx.font = `bold 10px ${font}`;
       ctx.textBaseline = 'middle';
 
       // Root crumb
@@ -2095,7 +2146,7 @@ export class InventoryOverlay implements UIModal {
       const backBtnX = col3X + col3W - backBtnW * 2 - 8;
       ctx.fillStyle = theme.cardBorder;
       ctx.fillRect(backBtnX, sortBtnY, backBtnW, sortBtnH);
-      ctx.font = `bold 8px ${font}`;
+      ctx.font = `bold 10px ${font}`;
       ctx.fillStyle = theme.hudAccent;
       ctx.textAlign = 'center';
       ctx.fillText('◀ Back', backBtnX + backBtnW / 2, sortBtnY + 8);
@@ -2170,7 +2221,7 @@ export class InventoryOverlay implements UIModal {
       const lootAllBtnX = col3X + col3W - lootAllBtnW - 8;
       ctx.fillStyle = '#15803d';
       ctx.fillRect(lootAllBtnX, sortBtnY, lootAllBtnW, sortBtnH);
-      ctx.font = `bold 9px ${font}`;
+      ctx.font = `bold 10px ${font}`;
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'center';
       ctx.fillText('Loot All', lootAllBtnX + lootAllBtnW / 2, sortBtnY + 8);
@@ -2281,7 +2332,7 @@ export class InventoryOverlay implements UIModal {
       const nx = col1X + Math.floor(barW * n.pct);
       ctx.fillStyle = n.color;
       ctx.fillRect(nx - 0.5, statsY + 42, 1.5, barH + 4);
-      ctx.font = `8px ${font}`;
+      ctx.font = `9px ${font}`;
       ctx.fillStyle = theme.textMuted;
       ctx.textAlign = 'center';
       ctx.fillText(n.label, nx, statsY + 56);
@@ -2305,15 +2356,20 @@ export class InventoryOverlay implements UIModal {
       ctx.fillRect(nx - 0.5, bulkBarY - 2, 1.5, barH + 4);
     }
 
-    // Controls footer
-    ctx.font = `10px ${font}`;
+    // Controls footer: shortened so it fits instead of running past the frame,
+    // and shrunk a step only if the frame is narrower still.
+    const footerText =
+      '[Tab] Panel · [↑↓] Move · [Enter] Act · [E] Equip · [U] Use · [D] Drop · [T] Take · [C] Coins · [O] Sort · [I/Esc] Close';
+    const footerMaxW = modalX + modalW - 12 - col1X;
+    let footerSize = 11;
+    ctx.font = `${footerSize}px ${font}`;
+    while (footerSize > 9 && ctx.measureText(footerText).width > footerMaxW) {
+      footerSize--;
+      ctx.font = `${footerSize}px ${font}`;
+    }
     ctx.fillStyle = theme.hudAccent;
     ctx.textAlign = 'left';
-    ctx.fillText(
-      'KEYBOARD: [Tab] Cycle Panels | [↑↓] Navigate | [Enter] Select/Act | [E] Equip/Unequip | [U] Use | [D] Drop | [T] Take | [C] Coins | [O] Sort | [I/ESC] Close',
-      col1X,
-      statsY + 96
-    );
+    ctx.fillText(footerText, col1X, statsY + 96);
 
     if (this.companionViewOpen) {
       this.renderCompanionPack(ctx, engine, modalX, modalY, modalW, modalH, font);

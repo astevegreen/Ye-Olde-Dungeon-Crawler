@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { InventoryOverlay } from '../inventory-overlay';
+import { InventoryOverlay, cellLabel, wrapCellLabel } from '../inventory-overlay';
 import { GameEngine, GameMap, Player, Item, PotionItem, Container, Companion } from '../../engine';
 
 function createMockContext(): CanvasRenderingContext2D {
@@ -279,5 +279,36 @@ describe('InventoryOverlay Enhanced UX Features', () => {
       overlay.richHoverCardsEnabled = false;
       expect(() => overlay.render(mockCtx, engine, 960, 600)).not.toThrow();
     });
+  });
+});
+
+describe('cellLabel', () => {
+  it('keeps the part of the name that tells items apart', () => {
+    expect(cellLabel('Scroll of Identify')).toEqual({ name: 'Identify', quantity: 1 });
+    expect(cellLabel('Potion of Healing (3x)')).toEqual({ name: 'Healing', quantity: 3 });
+    expect(cellLabel('Helm of the North Wind')).toEqual({ name: 'North Wind', quantity: 1 });
+  });
+
+  it('leaves names without an "of" alone', () => {
+    expect(cellLabel('Travel Bread (2x)')).toEqual({ name: 'Travel Bread', quantity: 2 });
+  });
+});
+
+describe('wrapCellLabel', () => {
+  // One unit per character, so widths are easy to reason about.
+  const measure = (t: string) => t.length;
+  const truncate = (t: string, w: number) => (t.length <= w ? t : t.slice(0, Math.max(1, w - 1)) + '…');
+
+  it('keeps a label that fits on one line', () => {
+    expect(wrapCellLabel('Identify', '', 10, measure, truncate)).toEqual(['Identify']);
+  });
+
+  it('breaks at spaces and after hyphens', () => {
+    expect(wrapCellLabel('Travel Bread', '', 8, measure, truncate)).toEqual(['Travel', 'Bread']);
+    expect(wrapCellLabel('Hearth-Brew Draught', '', 8, measure, truncate)).toEqual(['Hearth-', 'Brew Dr…']);
+  });
+
+  it('keeps the stack count whole on the last line', () => {
+    expect(wrapCellLabel('Travel Bread', ' ×3', 8, measure, truncate)).toEqual(['Travel', 'Bread ×3']);
   });
 });

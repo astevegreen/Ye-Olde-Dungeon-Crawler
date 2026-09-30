@@ -549,6 +549,10 @@ export interface PackBranding {
   fallenBanner?: string;
   /** The pack's name for experience points, e.g. "Megin". Defaults to "XP". */
   xpName?: string;
+  /** Glyph engraved on the HUD health orb, e.g. a rune. Defaults to a neutral heart. */
+  healthGlyph?: string;
+  /** Glyph engraved on the HUD mana orb. Defaults to a neutral star. */
+  manaGlyph?: string;
 }
 
 export interface GameContentManifest {
@@ -749,6 +753,9 @@ export interface RuneOfReturnManifestConfig {
   trackNames?: { celerity?: string; weave?: string; mobility?: string };
   /** Location where the Rune of Return is first acquired. */
   acquisition?: { floor: number; vaultId: string };
+  /** Where the attunement NPC says the rune lies, completing "<npc> speaks of ...",
+   * e.g. "an ancient ice vault on Floor 5". Defaults to a neutral line naming the floor. */
+  whereaboutsHint?: string;
 }
 
 export type {

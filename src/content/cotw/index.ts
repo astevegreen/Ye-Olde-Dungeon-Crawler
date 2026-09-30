@@ -59,6 +59,8 @@ export const cotwManifest: GameContentManifest = {
     victoryBanner: 'The Sun-Stone of Freyr is restored to Bjarnarhaven!',
     fallenBanner: 'Your soul departs Midgard for the eternal halls of Valhalla.',
     xpName: 'Megin',
+    healthGlyph: 'ᚦ',
+    manaGlyph: 'ᚨ',
   },
   tiles: COTW_TILES,
   monsters: COTW_MONSTERS,
@@ -204,6 +206,7 @@ export const cotwManifest: GameContentManifest = {
       floor: 5,
       vaultId: 'floor5_rune_vault',
     },
+    whereaboutsHint: 'an ancient ice vault on Floor 5 guarded by Gálmr the Frost-Warden',
   },
   scriptedVaultPlacements: [
     {

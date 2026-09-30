@@ -47,7 +47,7 @@
                 <div class="gothic-orb health-orb">
                   <div class="orb-liquid health-liquid" id="health-orb-fill"></div>
                   <div class="orb-glass-shine"></div>
-                  <div class="orb-rune-ring">ᚦ</div>
+                  <div class="orb-glyph" id="health-orb-glyph">♥</div>
                   <div class="orb-value" id="health-orb-text">50/50</div>
                 </div>
                 <div class="orb-label">HEALTH</div>
@@ -80,7 +80,7 @@
                 <div class="gothic-orb mana-orb">
                   <div class="orb-liquid mana-liquid" id="mana-orb-fill"></div>
                   <div class="orb-glass-shine"></div>
-                  <div class="orb-rune-ring">ᚨ</div>
+                  <div class="orb-glyph" id="mana-orb-glyph">✦</div>
                   <div class="orb-value" id="mana-orb-text">20/20</div>
                 </div>
                 <div class="orb-label">MANA</div>
@@ -140,14 +140,10 @@
                   <legend>Roll New Adventurer</legend>
                   <div style="display: flex; gap: 6px; align-items: center;">
                     <label class="retro-label" for="new-hero-name" style="white-space: nowrap;">Name:</label>
-                    <input type="text" id="new-hero-name" class="retro-input" placeholder="e.g. Sven, Astrid" maxlength="24" value="Sven" style="margin-top: 0;" />
+                    <input type="text" id="new-hero-name" class="retro-input" placeholder="Hero name" maxlength="24" value="Hero" style="margin-top: 0;" />
                   </div>
                   <div class="retro-hero-preset">
                     <span class="preset-label">Preset:</span>
-                    <button type="button" class="preset-tag" data-name="Sven">Sven</button>
-                    <button type="button" class="preset-tag" data-name="Astrid">Astrid</button>
-                    <button type="button" class="preset-tag" data-name="Bjorn">Bjorn</button>
-                    <button type="button" class="preset-tag" data-name="Freya">Freya</button>
                   </div>
 
                   <!-- Gender Toggle -->

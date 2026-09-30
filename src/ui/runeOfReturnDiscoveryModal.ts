@@ -1,5 +1,6 @@
 import type { GameEngine } from '../engine';
 import type { ModalStackManager, UIModal } from './modalStack';
+import { resolveBranding } from './branding';
 
 export interface RuneOfReturnDiscoveryModalConfig {
   onClose?: () => void;
@@ -148,7 +149,7 @@ export class RuneOfReturnDiscoveryModal implements UIModal {
 
           <div style="background: rgba(30, 41, 59, 0.6); padding: 10px 12px; border-radius: 6px; border-left: 3px solid #38bdf8;">
             <span style="font-weight: bold; color: #38bdf8;">Charges (3 Max):</span>
-            <span style="color: #cbd5e1;"> Only spends a charge on a <em>successful</em> teleport. Free, unlimited refills at <strong>Thrain the Rune-Smith</strong> in town.</span>
+            <span style="color: #cbd5e1;"> Only spends a charge on a <em>successful</em> teleport. Free, unlimited refills at <strong>${resolveBranding(this.engine.manifest).runeSmithName}</strong> in town.</span>
           </div>
 
           <div style="background: rgba(30, 41, 59, 0.6); padding: 10px 12px; border-radius: 6px; border-left: 3px solid #fde047;">

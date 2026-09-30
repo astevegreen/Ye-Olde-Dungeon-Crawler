@@ -1,5 +1,6 @@
 import type { GameEngine } from '../engine';
 import type { UIModal } from './modalStack';
+import { resolveBranding } from './branding';
 
 export class PactModal implements UIModal {
   public readonly id = 'pact-modal';
@@ -241,7 +242,7 @@ export class PactModal implements UIModal {
           <div style="background: #fefce8; border: 1px solid #facc15; padding: 8px 10px;">
             <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 11px; color: #854d0e; margin-bottom: 4px;">
               <span>ACTIVE PACTS: ${activePacts.length}</span>
-              <span>GOLD: ${goldMult}x | MEGIN: ${xpMult}x | MAGIC FIND: +${mfBonus}%</span>
+              <span>GOLD: ${goldMult}x | ${resolveBranding(this.engine.manifest).xpName.toUpperCase()}: ${xpMult}x | MAGIC FIND: +${mfBonus}%</span>
             </div>
             <div style="font-size: 11px; color: #713f12;">
               <strong>Active Mutators:</strong> ${penaltyText}

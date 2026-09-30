@@ -121,7 +121,7 @@ describe('RuneOfReturnDiscoveryModal & RuneOfReturnTreeModal', () => {
         monsters: [],
         items: [],
         spells: [],
-        town: { name: 'Bjarnarhaven' } as any,
+        town: { name: 'Bjarnarhaven', npcs: [{ id: 'npc-rune-smith', name: 'Thrain the Rune-Smith' }] } as any,
         quest: {} as any,
         atlas: {} as any,
         starterKit: {} as any,

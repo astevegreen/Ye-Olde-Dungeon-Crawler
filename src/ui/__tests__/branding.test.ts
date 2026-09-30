@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveBranding } from '../branding';
+import { applyDocumentBranding, resolveBranding } from '../branding';
 import { ContextHelp } from '../help/contextHelp';
 import { cotwManifest } from '../../content/cotw';
 import { warcraftManifest } from '../../content/warcraft';
@@ -21,7 +21,46 @@ describe('pack branding', () => {
 
   it('falls back to neutral wording without a manifest', () => {
     const neutral = JSON.stringify(resolveBranding());
-    expect(neutral).not.toMatch(/Valhalla|Midgard|Bjarnarhaven|Azeroth|Stormwind/);
+    expect(neutral).not.toMatch(/Valhalla|Midgard|Bjarnarhaven|Azeroth|Stormwind|Haakon|Thrain|Sven/);
+    expect(neutral).not.toMatch(/[ᚠ-᛿]/u);
+  });
+
+  it("takes orb glyphs, townsfolk, and the default hero from the pack", () => {
+    expect(resolveBranding(cotwManifest)).toMatchObject({
+      healthGlyph: 'ᚦ',
+      manaGlyph: 'ᚨ',
+      bankerTitle: 'Banker Haakon',
+      runeSmithName: 'Thrain the Rune-Smith',
+      defaultHeroName: 'Sven',
+    });
+    expect(resolveBranding(warcraftManifest)).toMatchObject({
+      healthGlyph: '♥',
+      manaGlyph: '✦',
+      runeSmithName: 'the town smith',
+      defaultHeroName: 'Lothar',
+    });
+  });
+
+  it('engraves the orbs with the active pack glyphs', () => {
+    const els: Record<string, { textContent: string }> = {
+      '#health-orb-glyph': { textContent: '' },
+      '#mana-orb-glyph': { textContent: '' },
+    };
+    const doc = { title: '', querySelectorAll: (sel: string) => (els[sel] ? [els[sel]] : []) } as unknown as Document;
+
+    applyDocumentBranding(doc, resolveBranding(cotwManifest));
+    expect(els['#health-orb-glyph'].textContent).toBe('ᚦ');
+    expect(els['#mana-orb-glyph'].textContent).toBe('ᚨ');
+
+    applyDocumentBranding(doc, resolveBranding(warcraftManifest));
+    expect(els['#health-orb-glyph'].textContent).toBe('♥');
+  });
+
+  it("names the active pack's banker in the shop help tip", () => {
+    const help = new ContextHelp();
+    expect(help.getHelpContent('shop', cotwManifest).tip).toContain('Banker Haakon');
+    expect(help.getHelpContent('shop', warcraftManifest).tip).not.toContain('Haakon');
+    expect(help.getHelpContent('shop').tip).toContain('the town banker');
   });
 
   it("lists the active pack's townsfolk in the town help card", () => {

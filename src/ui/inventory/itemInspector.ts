@@ -8,6 +8,7 @@ import { EncumbranceLevel } from '../../engine';
 import { CoinItem, COIN_COLORS, parseCoinItem, getSpell, getOverflowConfig } from '../../engine';
 import type { Paperdoll } from '../../engine';
 import type { ThemeTokens } from '../../engine';
+import { resolveBranding } from '../branding';
 
 /** Engine spell id both the Identify scroll and spell cast (`spellPipeline.ts`'s `identify` effect). */
 const IDENTIFY_SPELL_ID = 'identify';
@@ -646,7 +647,7 @@ export class ItemInspector {
           label: `Channel (${item.charges}/${item.maxCharges}) [T]`,
           shortcut: 'T',
           enabled: item.charges > 0,
-          reason: item.charges <= 0 ? 'No charges remaining (refill freely at Thrain in town).' : undefined,
+          reason: item.charges <= 0 ? `No charges remaining (refill freely at ${resolveBranding(engine.manifest).runeSmithName} in town).` : undefined,
           execute: (eng) => {
             eng.handlePlayerAction(new ChannelRuneOfReturnAction(eng.player));
             this.clearSelection();

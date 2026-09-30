@@ -157,6 +157,8 @@ export interface AltarDefinition {
   spentMessage: string;
   /** `gamble` only: spells it may teach, and its three outcome messages. */
   gamble?: {
+    /** Shown in the altar's preview before the rite, e.g. "Fate decides: ...". */
+    previewText?: string;
     spellPool: string[];
     debtPenalty: number;
     spellMessage: string;

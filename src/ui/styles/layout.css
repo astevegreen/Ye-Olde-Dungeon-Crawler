@@ -439,7 +439,7 @@
   z-index: 3;
 }
 
-.orb-rune-ring {
+.orb-glyph {
   position: absolute;
   top: 10px;
   left: 50%;
@@ -703,7 +703,7 @@
     width: 58px;
     height: 58px;
   }
-  .orb-rune-ring {
+  .orb-glyph {
     font-size: 15px;
     top: 6px;
   }

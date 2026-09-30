@@ -12,6 +12,14 @@ export interface ResolvedBranding {
   victoryBanner: string;
   fallenBanner: string;
   xpName: string;
+  healthGlyph: string;
+  manaGlyph: string;
+  /** Who compacts coin in town, e.g. "Banker Haakon". */
+  bankerTitle: string;
+  /** The townsperson who attunes and refills the Rune of Return. */
+  runeSmithName: string;
+  /** Name used when the player embarks with a blank name field. */
+  defaultHeroName: string;
 }
 
 export function resolveBranding(manifest?: GameContentManifest): ResolvedBranding {
@@ -27,7 +35,17 @@ export function resolveBranding(manifest?: GameContentManifest): ResolvedBrandin
     victoryBanner: b.victoryBanner ?? 'Your quest is complete.',
     fallenBanner: b.fallenBanner ?? 'Your journey ends here.',
     xpName: b.xpName ?? 'XP',
+    healthGlyph: b.healthGlyph ?? '♥',
+    manaGlyph: b.manaGlyph ?? '✦',
+    bankerTitle: manifest?.town?.services?.bankerTitle ?? 'the town banker',
+    runeSmithName: runeSmithOf(manifest) ?? 'the town smith',
+    defaultHeroName: manifest?.presetNames?.[0] ?? 'Hero',
   };
+}
+
+function runeSmithOf(manifest?: GameContentManifest): string | undefined {
+  const npcId = manifest?.runeOfReturn?.attunementNpcId;
+  return npcId ? manifest?.town?.npcs?.find((npc) => npc.id === npcId)?.name : undefined;
 }
 
 /** The build's version, injected by vite.config.ts from package.json. */
@@ -51,4 +69,6 @@ export function applyDocumentBranding(doc: Document, branding: ResolvedBranding)
   set('#valhalla-modal-sub', `Eternal honors of ${branding.worldName}'s champions`);
   set('#valhalla-status', `${branding.hallOfFameShortName} Leaderboard`);
   set('#error-dialog-title', `${branding.title} - Application Error`);
+  set('#health-orb-glyph', branding.healthGlyph);
+  set('#mana-orb-glyph', branding.manaGlyph);
 }

@@ -2,6 +2,7 @@ import type { GameEngine } from '../../engine';
 import type { NPC } from '../../engine';
 import { findRuneOfReturn } from '../../engine';
 import type { ShopPanelBounds, ShopPanelContext } from './types';
+import { resolveBranding } from '../../ui/branding';
 
 /** Callbacks renderTownspersonDialog needs from the owning ShopOverlay. */
 export interface TownspersonDialogActions {
@@ -26,6 +27,12 @@ export function renderTownspersonDialog(
     const attunementNpcId = _engine.manifest?.runeOfReturn?.attunementNpcId;
     if (attunementNpcId && data.activeNpc?.id === attunementNpcId) {
       const rune = findRuneOfReturn(_engine.player);
+      const smith = resolveBranding(_engine.manifest).runeSmithName;
+      const Smith = smith.charAt(0).toUpperCase() + smith.slice(1);
+      const runeConfig = _engine.manifest?.runeOfReturn;
+      const vaultFloor = runeConfig?.acquisition?.floor;
+      const whereabouts =
+        runeConfig?.whereaboutsHint ?? `an ancient vault ${vaultFloor ? `on Floor ${vaultFloor}` : 'in the depths'}`;
       const boxH = 140;
       ctx.fillStyle = theme.cardBg;
       ctx.fillRect(boxX, startY, boxW, boxH);
@@ -50,14 +57,14 @@ export function renderTownspersonDialog(
         }
       } else if (rune && !isAwakened) {
         ctx.fillStyle = '#fde047';
-        ctx.fillText('Dormant Rune Carried: Speak with Thrain to awaken its secrets.', boxX + 14, startY + 48);
+        ctx.fillText(`Dormant Rune Carried: Speak with ${smith} to awaken its secrets.`, boxX + 14, startY + 48);
         ctx.fillStyle = '#38bdf8';
-        ctx.fillText('Thrain will teach you the incantations to bind its recall magic to your spirit.', boxX + 14, startY + 68);
+        ctx.fillText(`${Smith} will teach you the incantations to bind its recall magic to your spirit.`, boxX + 14, startY + 68);
       } else {
         ctx.fillStyle = '#f87171';
         ctx.fillText('You have not yet discovered the Rune of Return.', boxX + 14, startY + 48);
         ctx.fillStyle = theme.hudText;
-        ctx.fillText('Thrain speaks of an ancient ice vault on Floor 5 guarded by Gálmr the Frost-Warden.', boxX + 14, startY + 68);
+        ctx.fillText(`${Smith} speaks of ${whereabouts}.`, boxX + 14, startY + 68);
       }
 
       // Upgrade tree button
@@ -72,7 +79,7 @@ export function renderTownspersonDialog(
       ctx.fillStyle = isAwakened ? '#38bdf8' : '#64748b';
       ctx.textAlign = 'center';
       ctx.fillText(
-        isAwakened ? '⚡ [U] Open Rune of Return Mastery Tree' : '🔒 Rune Mastery Locked (Awaken Rune with Thrain)',
+        isAwakened ? '⚡ [U] Open Rune of Return Mastery Tree' : `🔒 Rune Mastery Locked (Awaken Rune with ${smith})`,
         boxX + boxW / 2,
         btnY + 18
       );

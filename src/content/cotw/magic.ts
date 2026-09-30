@@ -213,6 +213,7 @@ export const COTW_MAGIC: MagicSystemConfig = {
       performedMessage: '✦ Loki takes {offering}.',
       spentMessage: '{altar} is only stones now; the trickster has moved on.',
       gamble: {
+        previewText: 'Loki decides: a spell, a doubled glyph, or a price.',
         spellPool: LOKI_SPELL_POOL,
         debtPenalty: 10,
         spellMessage: '✦ Loki takes {offering} and laughs, and the galdr of {spell} rings in your head!',

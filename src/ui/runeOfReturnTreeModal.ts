@@ -1,5 +1,6 @@
 import type { GameEngine } from '../engine';
 import type { ModalStackManager, UIModal } from './modalStack';
+import { resolveBranding } from './branding';
 import {
   RUNE_TRACK_MAX,
   RUNE_TOTAL_POINTS_CAP,
@@ -350,7 +351,7 @@ export class RuneOfReturnTreeModal implements UIModal {
         <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #1e293b; padding-top: 14px;">
           <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">
             Press <strong>[1]</strong>, <strong>[2]</strong>, or <strong>[3]</strong> to allocate point.<br />
-            Charges refill freely at <strong>Thrain the Rune-Smith</strong> in town.
+            Charges refill freely at <strong>${resolveBranding(this.engine.manifest).runeSmithName}</strong> in town.
           </div>
           <button id="rune-tree-close-btn" style="
             background: #334155;

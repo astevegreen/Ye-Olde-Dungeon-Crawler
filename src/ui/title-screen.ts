@@ -291,6 +291,9 @@ export class TitleScreen {
         if (this.nameInput) {
           this.nameInput.value = manifest.presetNames[0];
         }
+      } else {
+        const presetContainer = this.container.querySelector<HTMLElement>('.retro-hero-preset');
+        if (presetContainer) presetContainer.style.display = 'none';
       }
     }
 
@@ -375,7 +378,7 @@ export class TitleScreen {
   }
 
   private embarkNewHero(): void {
-    const name = this.nameInput?.value.trim() || 'Sven';
+    const name = this.nameInput?.value.trim() || resolveBranding(this.profileManager.manifest).defaultHeroName;
     this.onNewCharacterCallback(name, {
       attributes: { ...this.attributes },
       gender: this.selectedGender,

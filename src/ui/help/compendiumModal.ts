@@ -12,6 +12,7 @@ import {
   selectMasteryPerk,
 } from '../../engine';
 import type { UIModal } from '../modalStack';
+import { resolveBranding } from '../branding';
 
 export class CompendiumModal implements UIModal {
   public readonly id = 'compendium';
@@ -177,7 +178,7 @@ export class CompendiumModal implements UIModal {
           <div class="retro-banner" style="background: #1e1b4b; padding: 6px 12px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div>
-                <div class="retro-banner-title" style="color: #facc15; font-size: 13px;">THE SLAYER'S CODEX OF MIDGARD</div>
+                <div class="retro-banner-title" style="color: #facc15; font-size: 13px;">THE SLAYER'S CODEX OF ${resolveBranding(this.engine?.manifest).worldName.toUpperCase()}</div>
                 <div class="retro-banner-sub" style="font-size: 11px;">Encounter fiends to record their habits. Slain foes reveal vulnerabilities. ${SPECIES_MASTERY_KILLS} kills of one creature — or many across its family — earn a Mastery Perk.</div>
               </div>
               <div style="text-align: right; font-size: 11px; font-weight: bold; color: #e2e8f0; white-space: nowrap;">

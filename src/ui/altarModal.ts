@@ -135,7 +135,7 @@ export class AltarModal implements UIModal {
         return { text: `${target} becomes <b>${hybrid?.name ?? hybridId}</b>: ${hybrid?.description ?? ''}`, ok: true };
       }
       case 'gamble':
-        return { text: 'Loki decides: a spell, a doubled glyph, or a price.', ok: true };
+        return { text: this.altar?.gamble?.previewText ?? 'Fate decides: a spell, a doubled glyph, or a price.', ok: true };
     }
   }
 

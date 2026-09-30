@@ -4,6 +4,7 @@ import type { TargetingOverlay } from '../../rendering/targeting-overlay';
 import type { ShopOverlay } from '../../rendering/shop-overlay';
 import type { InspectOverlay } from '../../rendering/inspect-overlay';
 import type { MapOverlay } from '../../rendering/map-overlay';
+import { resolveBranding } from '../branding';
 
 export type GameHelpContext = 'exploration' | 'town' | 'inventory' | 'targeting' | 'inspect' | 'shop' | 'map';
 
@@ -86,7 +87,7 @@ export class ContextHelp {
             { key: 'I / A / B', label: 'Identify items, Seek Run Advisory, or Open Bestiary' },
             { key: 'Esc', label: 'Exit shop or return to town streets' },
           ],
-          tip: 'Tip: Always compact loose copper and silver at Banker Haakon before entering the dungeon!',
+          tip: `Tip: Always compact loose copper and silver at ${resolveBranding(manifest).bankerTitle} before entering the dungeon!`,
         };
 
       case 'inspect':

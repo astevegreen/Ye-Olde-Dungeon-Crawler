@@ -149,22 +149,18 @@ export class ViewportManager {
           // guessing two fixed constants — a header wrapping to a second line, or a
           // bar this list didn't know about, used to silently blow the height
           // budget and get clipped by `body { overflow: hidden }`.
+          // A bar nested inside another listed bar (the spell belt and verb row
+          // live inside the action console) is already in its parent's height,
+          // whichever order the list names them in.
           let overheadH = 0;
-          const measuredElements = new Set<Element>();
-          for (const id of SURROUNDING_BAR_IDS) {
-            const el = document.getElementById(id);
-            if (!el) continue;
-            let ancestorAlreadyMeasured = false;
-            for (const measured of measuredElements) {
-              if (typeof (measured as any).contains === 'function' && (measured as any).contains(el)) {
-                ancestorAlreadyMeasured = true;
-                break;
-              }
-            }
-            if (!ancestorAlreadyMeasured) {
-              overheadH += el.getBoundingClientRect().height;
-              measuredElements.add(el);
-            }
+          const mounted = SURROUNDING_BAR_IDS.map((id) => document.getElementById(id)).filter(
+            (el): el is HTMLElement => !!el
+          );
+          for (const el of mounted) {
+            const nested = mounted.some(
+              (other) => other !== el && typeof (other as any).contains === 'function' && (other as any).contains(el)
+            );
+            if (!nested) overheadH += el.getBoundingClientRect().height;
           }
           if (availH > overheadH + 120) {
             availH -= overheadH;

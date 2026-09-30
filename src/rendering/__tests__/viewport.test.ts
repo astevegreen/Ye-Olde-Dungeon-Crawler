@@ -152,6 +152,33 @@ describe('Responsive High-DPI ViewportManager', () => {
     delete (globalThis as any).window;
   });
 
+  it('counts a bar nested inside another listed bar once, even when the list names the child first', () => {
+    const { canvas, dummyCtx } = createMockCanvas();
+    // The real layout: the spell belt (listed before the console) lives inside it.
+    const belt = { getBoundingClientRect: () => ({ height: 34 }), contains: () => false };
+    const console_ = { getBoundingClientRect: () => ({ height: 107 }), contains: (el: unknown) => el === belt };
+    const header = { getBoundingClientRect: () => ({ height: 36 }), contains: () => false };
+    const bars: Record<string, unknown> = {
+      'game-header-bar': header,
+      'quick-spells-bar': belt,
+      'gothic-action-console': console_,
+    };
+    const centerViewport = { clientWidth: 2000, clientHeight: 900 };
+    (globalThis as any).document = {
+      getElementById: (id: string) => (id === 'center-viewport' ? centerViewport : bars[id] ?? null),
+    };
+    (globalThis as any).window = { devicePixelRatio: 1, innerWidth: 2000, innerHeight: 900 };
+
+    const vp = new ViewportManager(canvas, dummyCtx, { virtualWidth: 960, virtualHeight: 600 });
+    vp.recalculate();
+
+    // availH = 900 - (36 + 107) = 757, not 900 - (36 + 34 + 107) = 723.
+    expect(vp.displayHeight).toBe(Math.floor(600 * (757 / 600)));
+
+    delete (globalThis as any).document;
+    delete (globalThis as any).window;
+  });
+
   it('clamps to maxScale on very large displays instead of growing unbounded', () => {
     const { canvas, dummyCtx } = createMockCanvas();
     const vp = new ViewportManager(canvas, dummyCtx, {

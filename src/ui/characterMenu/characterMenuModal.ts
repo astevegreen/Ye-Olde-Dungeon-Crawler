@@ -210,15 +210,22 @@ export class CharacterMenuModal implements UIModal {
       header.style.alignItems = 'center';
       header.style.background = '#1e293b';
       header.style.borderBottom = '2px solid #ca8a04';
-      header.style.padding = '6px 10px';
+      header.style.padding = '3px 8px';
+      header.style.gap = '8px';
       header.style.userSelect = 'none';
 
       const nav = document.createElement('nav');
       nav.className = 'character-menu-tabs';
       nav.setAttribute('role', 'tablist');
       nav.style.display = 'flex';
-      nav.style.gap = '4px';
-      nav.style.flexWrap = 'wrap';
+      nav.style.gap = '3px';
+      // One row, always: the canvas inventory under this header reserves one row's height,
+      // so a wrapped second row of tabs covered the top of its panels.
+      nav.style.flexWrap = 'nowrap';
+      nav.style.flex = '1 1 auto';
+      nav.style.minWidth = '0';
+      nav.style.overflowX = 'auto';
+      nav.style.scrollbarWidth = 'none';
       header.appendChild(nav);
       this.navEl = nav;
 
@@ -226,11 +233,14 @@ export class CharacterMenuModal implements UIModal {
       controls.style.display = 'flex';
       controls.style.alignItems = 'center';
       controls.style.gap = '8px';
+      controls.style.flexShrink = '0';
 
       const hint = document.createElement('span');
-      hint.style.fontSize = '11px';
+      hint.style.fontSize = '10px';
+      hint.style.whiteSpace = 'nowrap';
       hint.style.color = '#94a3b8';
       hint.textContent = '[Tab] Cycle · [Esc] Close';
+      hint.title = 'Tab cycles tabs; Esc closes';
       controls.appendChild(hint);
 
       const closeBtn = document.createElement('button');
@@ -292,8 +302,10 @@ export class CharacterMenuModal implements UIModal {
       const hint = hotkeyHints[tab.id] ? ` ${hotkeyHints[tab.id]}` : '';
       btn.textContent = `${tab.label}${hint}`;
 
-      btn.style.padding = '5px 10px';
-      btn.style.fontSize = '12px';
+      btn.style.padding = '4px 6px';
+      btn.style.fontSize = '11px';
+      btn.style.whiteSpace = 'nowrap';
+      btn.style.flexShrink = '0';
       btn.style.fontWeight = 'bold';
       btn.style.cursor = 'pointer';
       btn.style.fontFamily = 'inherit';

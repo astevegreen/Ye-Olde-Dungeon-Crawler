@@ -52,7 +52,8 @@ export class QuickSpellsBar {
     this.container.innerHTML = '';
     this.slotElements = [];
 
-    for (let i = 0; i < 8; i++) {
+    // One slot per top-row key, 1-9 then 0, matching the ten quick_spell_* bindings.
+    for (let i = 0; i < 10; i++) {
       const slotEl = document.createElement('button');
       slotEl.type = 'button';
       slotEl.className = `quick-spell-slot quick-spell-slot-${i} quick-spell-slot-unassigned`;
@@ -98,7 +99,7 @@ export class QuickSpellsBar {
         slotEl.className = `quick-spell-slot quick-spell-slot-${i} quick-spell-slot-unassigned`;
         slotEl.title = `Slot [${slotKey}] - Unassigned (Click to open Spellbook)`;
         slotEl.innerHTML = `
-          <span class="slot-badge-digit">[${slotKey}]</span>
+          <span class="slot-badge-digit">${slotKey}</span>
           <span class="slot-badge-name" style="color: #64748b;">---</span>
           <span class="slot-badge-cost" style="color: #475569;">-</span>
         `;
@@ -108,7 +109,7 @@ export class QuickSpellsBar {
           slotEl.className = `quick-spell-slot quick-spell-slot-${i} quick-spell-slot-unassigned`;
           slotEl.title = `Slot [${slotKey}] - Unknown (${spellId})`;
           slotEl.innerHTML = `
-            <span class="slot-badge-digit">[${slotKey}]</span>
+            <span class="slot-badge-digit">${slotKey}</span>
             <span class="slot-badge-name">Unknown</span>
             <span class="slot-badge-cost">-</span>
           `;
@@ -122,7 +123,7 @@ export class QuickSpellsBar {
           }`;
           slotEl.title = `[${slotKey}] ${spell.name} (${manaCost} MP) — Click to Cast`;
           slotEl.innerHTML = `
-            <span class="slot-badge-digit">[${slotKey}]</span>
+            <span class="slot-badge-digit">${slotKey}</span>
             <span class="slot-badge-name" title="${spell.name}">${abbr}</span>
             <span class="${hasMana ? 'slot-badge-cost' : 'slot-badge-cost-nomana'}">${manaCost}m</span>
           `;

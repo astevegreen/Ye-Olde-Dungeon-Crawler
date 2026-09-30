@@ -2509,11 +2509,11 @@ export class InventoryOverlay implements UIModal {
 
     const useRich = this.richHoverCardsEnabled;
     if (!useRich) {
-      ctx.font = `bold 11px ${font}`;
+      ctx.font = `bold 13px ${font}`;
       const text = `${displayName} (${totalWeight}g)`;
       const textWidth = ctx.measureText(text).width;
-      const boxW = textWidth + 16;
-      const boxH = 22;
+      const boxW = textWidth + 20;
+      const boxH = 26;
 
       let boxX = this.lastMouseX + 14;
       let boxY = this.lastMouseY + 14;
@@ -2535,19 +2535,18 @@ export class InventoryOverlay implements UIModal {
 
     // Rich Hover Card
     const titleColor = getItemThematicColor(item, theme);
-    const boxW = 210;
     const lines: Array<{ text: string; color: string; font: string }> = [];
 
     // Line 1: Title
-    lines.push({ text: displayName, color: titleColor, font: `bold 11px ${font}` });
+    lines.push({ text: displayName, color: titleColor, font: `bold 13px ${font}` });
 
     // Line 2: Category / Unidentified / Quality
     if (!item.identified) {
-      lines.push({ text: 'Unidentified Item', color: theme.textMuted, font: `italic 9px ${font}` });
+      lines.push({ text: 'Unidentified Item', color: theme.textMuted, font: `italic 11px ${font}` });
     } else {
       const qual = item.quality !== 'normal' ? `[${item.quality.toUpperCase()}] ` : '';
       const cat = item.category.toUpperCase();
-      lines.push({ text: `${qual}${cat}`, color: theme.hudAccent, font: `9px ${font}` });
+      lines.push({ text: `${qual}${cat}`, color: theme.hudAccent, font: `11px ${font}` });
 
       // Stats
       const statParts: string[] = [];
@@ -2556,7 +2555,7 @@ export class InventoryOverlay implements UIModal {
       if (item.stats.speedBonus) statParts.push(`SPD ${item.stats.speedBonus > 0 ? '+' : ''}${item.stats.speedBonus}`);
       if (item.stats.strengthBonus) statParts.push(`STR ${item.stats.strengthBonus > 0 ? '+' : ''}${item.stats.strengthBonus}`);
       if (statParts.length > 0) {
-        lines.push({ text: statParts.join('  '), color: '#38bdf8', font: `bold 9px ${font}` });
+        lines.push({ text: statParts.join('  '), color: '#38bdf8', font: `bold 11px ${font}` });
       }
 
       // VS Equipped comparison diff
@@ -2566,23 +2565,23 @@ export class InventoryOverlay implements UIModal {
           const eqName = comp.equippedItem.displayName.length > 18
             ? comp.equippedItem.displayName.slice(0, 17) + '…'
             : comp.equippedItem.displayName;
-          lines.push({ text: `VS EQUIPPED (${comp.slotName}): ${eqName}`, color: '#fde047', font: `bold 9px ${font}` });
+          lines.push({ text: `VS EQUIPPED (${comp.slotName}): ${eqName}`, color: '#fde047', font: `bold 11px ${font}` });
 
           if (comp.attackDelta !== 0) {
             const isGood = comp.attackDelta > 0;
-            lines.push({ text: `  Attack: ${isGood ? '+' : ''}${comp.attackDelta}`, color: isGood ? '#4ade80' : '#f87171', font: `9px ${font}` });
+            lines.push({ text: `  Attack: ${isGood ? '+' : ''}${comp.attackDelta}`, color: isGood ? '#4ade80' : '#f87171', font: `11px ${font}` });
           }
           if (comp.defenseDelta !== 0) {
             const isGood = comp.defenseDelta > 0;
-            lines.push({ text: `  Defense: ${isGood ? '+' : ''}${comp.defenseDelta}`, color: isGood ? '#4ade80' : '#f87171', font: `9px ${font}` });
+            lines.push({ text: `  Defense: ${isGood ? '+' : ''}${comp.defenseDelta}`, color: isGood ? '#4ade80' : '#f87171', font: `11px ${font}` });
           }
           if (comp.strengthDelta !== 0) {
             const isGood = comp.strengthDelta > 0;
-            lines.push({ text: `  Strength: ${isGood ? '+' : ''}${comp.strengthDelta}`, color: isGood ? '#4ade80' : '#f87171', font: `9px ${font}` });
+            lines.push({ text: `  Strength: ${isGood ? '+' : ''}${comp.strengthDelta}`, color: isGood ? '#4ade80' : '#f87171', font: `11px ${font}` });
           }
           if (comp.speedDelta !== 0) {
             const isGood = comp.speedDelta > 0;
-            lines.push({ text: `  Speed: ${isGood ? '+' : ''}${comp.speedDelta}`, color: isGood ? '#4ade80' : '#f87171', font: `9px ${font}` });
+            lines.push({ text: `  Speed: ${isGood ? '+' : ''}${comp.speedDelta}`, color: isGood ? '#4ade80' : '#f87171', font: `11px ${font}` });
           }
         }
       }
@@ -2590,15 +2589,25 @@ export class InventoryOverlay implements UIModal {
 
     // Weight and Value
     const valText = item.identified ? `  |  Value: ${item.value * item.quantity}g` : '';
-    lines.push({ text: `Weight: ${totalWeight}g${valText}`, color: theme.textMuted, font: `9px ${font}` });
+    lines.push({ text: `Weight: ${totalWeight}g${valText}`, color: theme.textMuted, font: `11px ${font}` });
 
-    const lineH = 14;
+    // Sized to its widest line so nothing clips; kept on the canvas whichever side it flips to.
+    const lineH = 17;
+    const padX = 10;
+    let widest = 0;
+    for (const l of lines) {
+      ctx.font = l.font;
+      widest = Math.max(widest, ctx.measureText(l.text).width);
+    }
+    const boxW = Math.min(canvasW - 8, Math.max(220, Math.ceil(widest) + padX * 2));
     const boxH = lines.length * lineH + 12;
 
     let boxX = this.lastMouseX + 14;
     let boxY = this.lastMouseY + 14;
     if (boxX + boxW > canvasW) boxX = this.lastMouseX - boxW - 14;
     if (boxY + boxH > canvasH) boxY = this.lastMouseY - boxH - 14;
+    boxX = Math.max(4, Math.min(boxX, canvasW - boxW - 4));
+    boxY = Math.max(4, Math.min(boxY, canvasH - boxH - 4));
 
     ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
     ctx.fillRect(boxX, boxY, boxW, boxH);
@@ -2611,7 +2620,7 @@ export class InventoryOverlay implements UIModal {
       ctx.fillStyle = l.color;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(l.text, boxX + 8, boxY + 8 + idx * lineH + lineH / 2);
+      ctx.fillText(l.text, boxX + padX, boxY + 6 + idx * lineH + lineH / 2);
     });
   }
 

@@ -1,5 +1,5 @@
 {
-  "total": 662,
+  "total": 618,
   "files": {
     "index.html": 18,
     "src/main.ts": 4,
@@ -14,13 +14,6 @@
     "src/rendering/mouseVectorOverlay.ts": 8,
     "src/rendering/paperdoll-view.ts": 12,
     "src/rendering/radialMenu.ts": 2,
-    "src/rendering/shop-overlay.ts": 28,
-    "src/rendering/shop/bankerPanel.ts": 1,
-    "src/rendering/shop/footerPanel.ts": 1,
-    "src/rendering/shop/sagePanel.ts": 2,
-    "src/rendering/shop/templePanel.ts": 1,
-    "src/rendering/shop/townspersonPanel.ts": 10,
-    "src/rendering/shop/trainerPanel.ts": 1,
     "src/rendering/tacticalTargetOverlay.ts": 12,
     "src/rendering/targeting-overlay.ts": 15,
     "src/ui/console/consoleModel.ts": 1,

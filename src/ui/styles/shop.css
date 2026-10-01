@@ -1,0 +1,72 @@
+/*
+ * Shops and town services (src/ui/shop/): a wide dialog in the one frame (ADR-0011).
+ * Role tokens only; no color literals (check:ui-palette).
+ */
+
+/* Who you're talking to, what they say (never cut off), and what you can spend. */
+.shop-greet {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: var(--ui-space-3);
+  align-items: start;
+}
+.shop-portrait,
+.shop-icon,
+.shop-detail-icon { image-rendering: pixelated; }
+.shop-portrait { width: 40px; height: 40px; background: var(--ui-surface-2); border: 1px solid var(--ui-line); border-radius: var(--ui-radius); }
+.shop-npc { font: bold var(--ui-text-md) var(--ui-font-display); color: var(--ui-title); }
+.shop-quote { font-style: italic; color: var(--ui-text-soft); user-select: text; }
+.shop-purse {
+  min-width: 170px;
+  padding: var(--ui-space-2) var(--ui-space-3);
+  font-size: var(--ui-text-sm);
+  background: var(--ui-surface-2);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius);
+}
+.shop-purse-total, .shop-price { color: var(--ui-gold); font-weight: bold; }
+
+/* Merchant: the list and the selected item side by side; the list keeps its height
+   so switching Buy and Sell doesn't move the dialog. */
+.shop-trade { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: var(--ui-space-3); }
+.shop-list { height: 300px; padding: var(--ui-space-1); }
+.shop-row {
+  display: grid;
+  grid-template-columns: 22px 24px minmax(0, 1fr) auto 76px;
+  align-items: center;
+  gap: var(--ui-space-2);
+  font-size: var(--ui-text-md);
+}
+.shop-row .shop-price { text-align: right; }
+.shop-icon { width: 24px; height: 24px; }
+.shop-row-key .ui-key { min-width: 16px; }
+
+.shop-detail { display: flex; flex-direction: column; gap: var(--ui-space-3); }
+.shop-detail-head { display: flex; gap: var(--ui-space-3); align-items: center; }
+.shop-detail-icon { width: 48px; height: 48px; flex: none; background: var(--ui-surface-3); border: 1px solid var(--ui-line); border-radius: var(--ui-radius); }
+.shop-detail-name { font: bold var(--ui-text-lg) var(--ui-font-display); color: var(--ui-title); }
+.shop-detail-desc { font-size: var(--ui-text-sm); color: var(--ui-text-soft); user-select: text; }
+.shop-detail .ui-btn { justify-content: center; margin-top: auto; }
+
+/* Town services: one card of facts and offers. */
+.shop-offers { display: flex; flex-direction: column; margin-top: var(--ui-space-2); }
+.shop-offer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: var(--ui-space-3);
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--ui-line);
+}
+.shop-offer-label { font-weight: bold; }
+.shop-offer.is-disabled .shop-offer-label { color: var(--ui-text-muted); }
+.shop-offer .shop-price { min-width: 64px; text-align: right; }
+.shop-bullets { margin: var(--ui-space-1) 0 0; padding-left: 18px; font-size: var(--ui-text-sm); }
+.shop-coins { max-width: 280px; font-size: var(--ui-text-sm); }
+
+/* What the last trade or service said; holds its line so the dialog doesn't jump. */
+.shop-status { min-height: 1.45em; font-weight: bold; user-select: text; }
+.shop-status.is-good { color: var(--ui-good); }
+.shop-status.is-bad { color: var(--ui-bad); }
+.shop-status.is-warn { color: var(--ui-warn); }
+.shop-status.is-info { color: var(--ui-info); }

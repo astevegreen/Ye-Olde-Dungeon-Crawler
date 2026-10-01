@@ -24,7 +24,7 @@ import type { AutoRestRunner } from '../ui/autoRestRunner';
 import type { NavigationController } from '../ui/navigation';
 import type { InventoryOverlay } from './inventory-overlay';
 import type { TargetingOverlay } from './targeting-overlay';
-import type { ShopOverlay } from './shop-overlay';
+import type { ShopDialog } from '../ui/shop/shopDialog';
 import type { InspectOverlay } from './inspect-overlay';
 import type { MapOverlay } from './map-overlay';
 import type { ContextHelp } from '../ui/help/contextHelp';
@@ -135,11 +135,11 @@ export class InputHandler {
   public readonly chordBuffer: ChordBuffer;
   public inventoryOverlay?: InventoryOverlay;
   public targetingOverlay?: TargetingOverlay;
-  private _shopOverlay?: ShopOverlay;
-  public get shopOverlay(): ShopOverlay | undefined {
+  private _shopOverlay?: ShopDialog;
+  public get shopOverlay(): ShopDialog | undefined {
     return this._shopOverlay;
   }
-  public set shopOverlay(overlay: ShopOverlay | undefined) {
+  public set shopOverlay(overlay: ShopDialog | undefined) {
     this._shopOverlay = overlay;
     if (overlay) {
       this.bindShopOverlay(overlay);
@@ -183,7 +183,7 @@ export class InputHandler {
     inventoryOverlay?: InventoryOverlay,
     onSaveAndExit?: () => void,
     targetingOverlay?: TargetingOverlay,
-    shopOverlay?: ShopOverlay,
+    shopOverlay?: ShopDialog,
     onToggleDiagnostics?: () => void,
     inspectOverlay?: InspectOverlay,
     contextHelp?: ContextHelp,
@@ -233,7 +233,7 @@ export class InputHandler {
     this.engine = engine;
   }
 
-  private bindShopOverlay(overlay: ShopOverlay): void {
+  private bindShopOverlay(overlay: ShopDialog): void {
     const self = this;
     const origOpen = overlay.onOpen;
     overlay.onOpen = (npc) => {

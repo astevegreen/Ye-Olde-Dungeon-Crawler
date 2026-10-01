@@ -91,6 +91,7 @@ import './ui/styles/base.css';
 import './ui/styles/layout.css';
 import './ui/styles/menu.css';
 import './ui/styles/dialog.css';
+import './ui/styles/shop.css';
 import './ui/styles/title.css';
 import { QuickSpellsBar } from './ui/quickSpellsBar';
 import { PotionRow } from './ui/potionRow';

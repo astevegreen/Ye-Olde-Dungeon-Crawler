@@ -1,7 +1,7 @@
 import type { GameContentManifest, GameEngine } from '../../engine';
 import type { InventoryOverlay } from '../../rendering/inventory-overlay';
 import type { TargetingOverlay } from '../../rendering/targeting-overlay';
-import type { ShopOverlay } from '../../rendering/shop-overlay';
+import type { ShopDialog } from '../shop/shopDialog';
 import type { InspectOverlay } from '../../rendering/inspect-overlay';
 import type { MapOverlay } from '../../rendering/map-overlay';
 import { resolveBranding } from '../branding';
@@ -63,7 +63,7 @@ export class ContextHelp {
     engine: GameEngine,
     inventoryOverlay?: InventoryOverlay,
     targetingOverlay?: TargetingOverlay,
-    shopOverlay?: ShopOverlay,
+    shopOverlay?: ShopDialog,
     inspectOverlay?: InspectOverlay,
     mapOverlay?: MapOverlay
   ): GameHelpContext {
@@ -187,7 +187,7 @@ export class ContextHelp {
     engine: GameEngine,
     inventoryOverlay?: InventoryOverlay,
     targetingOverlay?: TargetingOverlay,
-    shopOverlay?: ShopOverlay,
+    shopOverlay?: ShopDialog,
     inspectOverlay?: InspectOverlay,
     mapOverlay?: MapOverlay,
     onDismiss?: () => void
@@ -283,7 +283,7 @@ export class ContextHelp {
     engine: GameEngine,
     inventoryOverlay?: InventoryOverlay,
     targetingOverlay?: TargetingOverlay,
-    shopOverlay?: ShopOverlay,
+    shopOverlay?: ShopDialog,
     inspectOverlay?: InspectOverlay,
     mapOverlay?: MapOverlay,
     onDismiss?: () => void

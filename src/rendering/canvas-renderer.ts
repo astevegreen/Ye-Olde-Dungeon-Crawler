@@ -7,7 +7,8 @@ import type { Item } from '../engine';
 import { Container } from '../engine';
 import { InventoryOverlay } from './inventory-overlay';
 import { TargetingOverlay } from './targeting-overlay';
-import { ShopOverlay } from './shop-overlay';
+import { ShopDialog } from '../ui/shop/shopDialog';
+import { getItemThematicColor } from '../ui/inventory/itemInspector';
 import { InspectOverlay } from './inspect-overlay';
 import { MapOverlay } from './map-overlay';
 import { IntentOverlay } from './intentOverlay';
@@ -54,7 +55,7 @@ export class CanvasRenderer {
   public readonly fxRunner: CanvasFXRunner;
   public readonly inventoryOverlay: InventoryOverlay;
   public readonly targetingOverlay: TargetingOverlay;
-  public readonly shopOverlay: ShopOverlay;
+  public readonly shopOverlay: ShopDialog;
   public readonly inspectOverlay: InspectOverlay;
   public readonly mapOverlay: MapOverlay;
   public readonly intentOverlay: IntentOverlay;
@@ -130,7 +131,12 @@ export class CanvasRenderer {
     this.fxRunner = new CanvasFXRunner({ onFrame: () => this.render() });
     this.inventoryOverlay = new InventoryOverlay(() => this.render(), this.atlas);
     this.targetingOverlay = new TargetingOverlay(() => this.render());
-    this.shopOverlay = new ShopOverlay(() => this.render(), this.atlas);
+    this.shopOverlay = new ShopDialog({
+      drawItemIcon: (canvas, item) => this.drawItemIcon(canvas, item),
+      drawEntityIcon: (canvas, entity) => this.drawEntityIcon(canvas, entity),
+      itemColor: (item) => getItemThematicColor(item, this.theme),
+      onStateChanged: () => this.render(),
+    });
     this.inspectOverlay = new InspectOverlay(() => this.render());
     this.mapOverlay = new MapOverlay(() => this.render());
     this.intentOverlay = new IntentOverlay();
@@ -146,11 +152,6 @@ export class CanvasRenderer {
 
       if (this.mapOverlay.isOpen) {
         this.mapOverlay.handleClick(clickX, clickY, this.engine);
-        return;
-      }
-
-      if (this.shopOverlay.isOpen) {
-        this.shopOverlay.handleClick(clickX, clickY, this.engine);
         return;
       }
 
@@ -330,13 +331,6 @@ export class CanvasRenderer {
     this.boundDoubleClickHandler = (e: MouseEvent) => {
       const { x: clickX, y: clickY } = this.viewport.clientToVirtual(e.clientX, e.clientY);
 
-      if (this.shopOverlay.isOpen) {
-        if (this.shopOverlay.handleDoubleClick(clickX, clickY, this.engine)) {
-          this.render();
-          return;
-        }
-      }
-
       if (this.inventoryOverlay.isOpen) {
         if (this.inventoryOverlay.handleDoubleClick(clickX, clickY, this.engine)) {
           this.render();
@@ -398,7 +392,7 @@ export class CanvasRenderer {
   private hookEngineEvents(): void {
     this.engine.onNpcInteract = (npc) => {
       const merchant = npc.shopId ? this.engine.merchants.get(npc.shopId) : undefined;
-      this.shopOverlay.open(npc, merchant);
+      this.shopOverlay.open(npc, merchant, this.engine);
       this.render();
     };
     this.engine.onFloorChanged = () => {
@@ -609,9 +603,6 @@ export class CanvasRenderer {
       this.offsetX,
       this.offsetY
     );
-
-    // Shopkeeper & Town Services Modal Overlay
-    this.shopOverlay.render(ctx, this.engine, virtualW, virtualH);
 
     // Look / Inspect Reticle & HUD Card Overlay
     this.inspectOverlay.render(

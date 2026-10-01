@@ -199,8 +199,8 @@ describe('ShopDialog', () => {
       expect(markup).toContain(greeting);
       expect(markup).not.toMatch(/\(MERCHANT\)|merchant\)/i);
       expect(markup).toContain('General Store');
-      expect(markup).toMatch(/\d GP</);
-      expect(markup).not.toMatch(/\b(SP|CP|PP)\b/);
+      expect(markup).toMatch(/\d CP</);
+      expect(markup).not.toMatch(/\b(SP|GP|PP)\b/);
       expect(markup).not.toContain('CP total');
     });
   });

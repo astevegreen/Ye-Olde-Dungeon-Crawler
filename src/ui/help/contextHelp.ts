@@ -1,14 +1,14 @@
-import type { GameContentManifest, GameEngine } from '../../engine';
+import { type GameContentManifest, type GameEngine, TempleService, formatCurrency } from '../../engine';
 import type { TargetingOverlay } from '../../rendering/targeting-overlay';
 import type { ShopDialog } from '../shop/shopDialog';
+import type { InspectOverlay } from '../../rendering/inspect-overlay';
+import type { MapOverlay } from '../../rendering/map-overlay';
+import { resolveBranding } from '../branding';
 
 /** Whether a screen is open; the inventory is a character-menu tab, so callers say so. */
 export interface OpenFlag {
   readonly isOpen: boolean;
 }
-import type { InspectOverlay } from '../../rendering/inspect-overlay';
-import type { MapOverlay } from '../../rendering/map-overlay';
-import { resolveBranding } from '../branding';
 
 export type GameHelpContext = 'exploration' | 'town' | 'inventory' | 'targeting' | 'inspect' | 'shop' | 'map';
 
@@ -87,9 +87,9 @@ export class ContextHelp {
           title: 'Town Merchant & Services',
           contextTag: 'COMMERCE & SANCTUARY',
           bullets: [
-            { key: 'Tab / S', label: 'Toggle Buy Stock vs Sell Items' },
-            { key: '1-9 / Space', label: 'Purchase or Sell selected merchandise' },
-            { key: 'C / H', label: 'Cleanse Curses (50 GP) or Heal & Vitality (25 GP)' },
+            { key: 'B / S / Tab', label: 'Buy list, sell list, or switch between them' },
+            { key: 'Enter / 1-9', label: 'Buy or sell the chosen item, or one by its number' },
+            { key: 'C / H', label: `Cleanse curses (${formatCurrency(TempleService.CURSE_CLEANSE_COST_CP)}) or heal and restore (${formatCurrency(TempleService.HEAL_RESTORE_COST_CP)})` },
             { key: 'I / A / B', label: 'Identify items, Seek Run Advisory, or Open Bestiary' },
             { key: 'Esc', label: 'Exit shop or return to town streets' },
           ],

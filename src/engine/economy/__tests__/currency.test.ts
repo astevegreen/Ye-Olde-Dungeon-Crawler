@@ -60,11 +60,11 @@ describe('Multi-Denomination Currency & Physical Coinage System', () => {
     });
 
     expect(breakdownToCp(breakdown)).toBe(1357);
-    expect(formatCurrency(1357)).toBe('13.57 GP');
-    expect(formatCurrency(5000)).toBe('50 GP');
-    expect(formatCurrency(5)).toBe('0.05 GP');
-    expect(formatCurrency(0)).toBe('0 GP');
-    expect(formatCurrency(123456789)).toBe('1,234,567.89 GP');
+    expect(formatCurrency(1357)).toBe('1,357 CP');
+    expect(formatCurrency(5000)).toBe('5,000 CP');
+    expect(formatCurrency(5)).toBe('5 CP');
+    expect(formatCurrency(0)).toBe('0 CP');
+    expect(formatCurrency(123456789)).toBe('123,456,789 CP');
   });
 
   it('automatically stacks coins into equipped coin purse', () => {

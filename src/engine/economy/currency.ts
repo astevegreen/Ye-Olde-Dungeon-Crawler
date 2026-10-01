@@ -109,16 +109,13 @@ export function breakdownToCp(breakdown: CurrencyBreakdown): number {
 }
 
 /**
- * Formats a copper amount as one figure in gold pieces: "50 GP", "2.50 GP", "0.05 GP",
- * "1,357.20 GP". Every price, fee and purse uses it, so the player compares one number
- * instead of a mix of coins (ADR-0011); the coins themselves stay physical items.
+ * Formats an amount as one figure in copper pieces: "5 CP", "350 CP", "5,000 CP". Every
+ * price, fee and purse uses it, so the player compares one number instead of a mix of
+ * coins (ADR-0011); the coins themselves stay physical items in four denominations.
  */
 export function formatCurrency(totalCp: number): string {
   const cp = Math.max(0, Math.floor(totalCp));
-  const whole = Math.floor(cp / COIN_VALUES.gold);
-  const cents = cp % COIN_VALUES.gold;
-  const wholeText = String(whole).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  return `${wholeText}${cents > 0 ? `.${String(cents).padStart(2, '0')}` : ''} ${COIN_ABBREV.gold}`;
+  return `${String(cp).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} ${COIN_ABBREV.copper}`;
 }
 
 /**

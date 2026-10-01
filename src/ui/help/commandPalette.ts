@@ -1,5 +1,6 @@
 import type { GameEngine } from '../../engine';
-import { iconHtml } from '../icons';
+import { createDialogScrim, dialogHtml } from '../dialog';
+import { escapeHtml, keyChip } from '../html';
 import type { ModalStackManager, UIModal } from '../modalStack';
 
 export interface CommandItem {
@@ -33,22 +34,9 @@ export class CommandPalette implements UIModal {
   }
 
   private createDom(): void {
-    if (typeof document === 'undefined') return;
-
-    let overlay = document.getElementById('command-palette-modal');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'command-palette-modal';
-      overlay.className = 'retro-window-overlay';
-      overlay.style.cssText = `
-        display: none;
-        align-items: flex-start;
-        padding-top: 10vh;
-        z-index: 140;
-      `;
-      document.getElementById('app')?.appendChild(overlay);
-    }
-    this.overlayEl = overlay;
+    // Near the top of the window, so the list grows downward as the filter narrows it.
+    this.overlayEl = createDialogScrim('command-palette-modal');
+    this.overlayEl?.classList.add('cp-scrim');
   }
 
   public get isOpen(): boolean {
@@ -176,47 +164,32 @@ export class CommandPalette implements UIModal {
   private render(): void {
     if (!this.overlayEl) return;
 
-    this.overlayEl.innerHTML = `
-      <div class="retro-window" style="width: 580px; box-shadow: 0 10px 30px rgba(0,0,0,0.9); border: 1px solid var(--ui-accent, #f59e0b);">
-        <div class="retro-titlebar" style="padding: 4px 8px; border-bottom-color: var(--ui-accent, #f59e0b);">
-          <div class="retro-titlebar-title" style="font-size: 12px;">
-            ${iconHtml('commands')}
-            <span>Quick Command Palette</span>
-          </div>
-          <button id="btn-cmd-palette-close" class="win-btn win-btn-sm" style="padding: 0 4px; font-weight: bold;">✕</button>
-        </div>
+    this.overlayEl.innerHTML = dialogHtml({
+      title: 'Commands',
+      icon: 'commands',
+      closeId: 'btn-cmd-palette-close',
+      body: `
+        <input
+          id="cmd-palette-input"
+          type="text"
+          class="ui-input"
+          placeholder="Type a command, key, or mechanic: Bestiary, Rest, Stairs…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <div id="cmd-palette-list" class="cp-list ui-inset" role="listbox"></div>`,
+      hints: [
+        { keys: ['↑', '↓'], label: 'choose' },
+        { keys: ['Enter'], label: 'run' },
+        { keys: ['Esc'], label: 'close' },
+      ],
+      footNote: `<span class="cp-open-keys">Open with ${keyChip('Shift+?')} or ${keyChip('Ctrl+K')}</span>`,
+    });
 
-        <div class="retro-window-body" style="padding: 8px; background: var(--ui-panel, #161a26); gap: 6px;">
-          <!-- Search input -->
-          <div style="position: relative;">
-            <input
-              id="cmd-palette-input"
-              type="text"
-              class="retro-input"
-              placeholder="Type a command, hotkey, or mechanic (e.g. 'Bestiary', 'Sort', 'Rest', 'Stairs')..."
-              style="font-size: 13px; font-family: monospace; padding: 6px 8px; margin: 0; background: var(--ui-bg, #0a0c14); color: var(--ui-text, #f1f5f9); border: 1px solid var(--ui-border-light, #3b455b); width: 100%;"
-              autocomplete="off"
-              spellcheck="false"
-            />
-          </div>
+    this.overlayEl.querySelector('#btn-cmd-palette-close')?.addEventListener('click', () => this.close());
 
-          <!-- Command Result List -->
-          <div id="cmd-palette-list" class="retro-inset-list" style="height: 260px; overflow-y: auto; background: #0f172a; padding: 4px;">
-            <!-- Rendered by updateList -->
-          </div>
-
-          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--ui-text, #f1f5f9); opacity: 0.7; padding-top: 2px;">
-            <span>Press <b>Enter</b> to execute, <b>↑/↓</b> to navigate, <b>Esc</b> to dismiss.</span>
-            <span style="font-weight: bold; color: var(--ui-accent, #f59e0b);">Shift+? / Ctrl+K</span>
-          </div>
-        </div>
-      </div>
-    `;
-
-    document.getElementById('btn-cmd-palette-close')?.addEventListener('click', () => this.close());
-
-    this.inputEl = document.getElementById('cmd-palette-input') as HTMLInputElement | null;
-    this.listEl = document.getElementById('cmd-palette-list');
+    this.inputEl = this.overlayEl.querySelector<HTMLInputElement>('#cmd-palette-input');
+    this.listEl = this.overlayEl.querySelector<HTMLElement>('#cmd-palette-list');
 
     this.inputEl?.addEventListener('input', (e) => {
       this.filter((e.target as HTMLInputElement).value);
@@ -236,63 +209,26 @@ export class CommandPalette implements UIModal {
     if (!this.listEl) return;
 
     if (this.filteredCommands.length === 0) {
-      this.listEl.innerHTML = `
-        <div style="padding: 24px; text-align: center; color: #64748b; font-size: 11px;">
-          No matching commands or mechanics found.
-        </div>
-      `;
+      this.listEl.innerHTML = '<div class="ui-note cp-empty">No command or mechanic matches.</div>';
       return;
     }
 
     this.listEl.innerHTML = this.filteredCommands
       .map((cmd, idx) => {
         const isSel = idx === this.selectedIndex;
-        const catColor =
-          cmd.category === 'Action'
-            ? '#38bdf8'
-            : cmd.category === 'Mode'
-            ? '#facc15'
-            : cmd.category === 'Help'
-            ? '#4ade80'
-            : '#c084fc';
-
         return `
-          <div
-            class="cmd-item ${isSel ? 'selected' : ''}"
-            data-index="${idx}"
-            style="
-              padding: 4px 8px;
-              cursor: pointer;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              background: ${isSel ? 'rgba(245, 158, 11, 0.16)' : 'transparent'};
-              box-shadow: ${isSel ? 'inset 3px 0 0 var(--ui-accent, #f59e0b)' : 'none'};
-              color: ${isSel ? '#ffffff' : '#e2e8f0'};
-              border-bottom: 1px solid #1e293b;
-              font-size: 11px;
-            "
-          >
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 9px; padding: 1px 4px; background: #020617; border: 1px solid ${catColor}; color: ${catColor}; font-weight: bold; width: 48px; text-align: center;">
-                ${cmd.category}
-              </span>
-              <div>
-                <div style="font-weight: bold;">${cmd.title}</div>
-                <div style="font-size: 9px; color: ${isSel ? '#fde68a' : '#94a3b8'};">${cmd.description}</div>
-              </div>
-            </div>
-            ${
-              cmd.shortcut
-                ? `<span style="font-family: monospace; font-size: 10px; padding: 2px 5px; background: ${isSel ? '#b45309' : '#1e293b'}; color: #ffffff; border-radius: 2px; white-space: nowrap;">${cmd.shortcut}</span>`
-                : ''
-            }
-          </div>
-        `;
+          <div class="cp-item${isSel ? ' is-focused' : ''}" data-index="${idx}" role="option" aria-selected="${isSel}">
+            <span class="cp-cat is-${cmd.category.toLowerCase()}">${escapeHtml(cmd.category)}</span>
+            <span class="cp-text">
+              <span class="cp-title">${escapeHtml(cmd.title)}</span>
+              <span class="cp-desc">${escapeHtml(cmd.description)}</span>
+            </span>
+            ${cmd.shortcut ? keyChip(cmd.shortcut) : ''}
+          </div>`;
       })
       .join('');
 
-    const items = this.listEl.querySelectorAll('.cmd-item');
+    const items = this.listEl.querySelectorAll('.cp-item');
     items.forEach((item) => {
       item.addEventListener('click', (e) => {
         const idx = parseInt((e.currentTarget as HTMLElement).getAttribute('data-index') ?? '0', 10);
@@ -302,7 +238,7 @@ export class CommandPalette implements UIModal {
     });
 
     // Auto-scroll into view if needed
-    const selectedItem = this.listEl.querySelector('.cmd-item.selected') as HTMLElement | null;
+    const selectedItem = this.listEl.querySelector('.cp-item.is-focused') as HTMLElement | null;
     if (selectedItem) {
       selectedItem.scrollIntoView({ block: 'nearest' });
     }

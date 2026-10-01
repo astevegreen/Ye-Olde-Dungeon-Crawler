@@ -26,6 +26,10 @@ const getEngineState = (page: Page) =>
 
 test.describe('Developer Diagnostics & Feedback Systems', () => {
   test('main menu feedback, in-game header button, F3 shortcut, mode switching, and keyboard trap work cleanly over file://', async ({ page }) => {
+    // Five phases in one journey: 2.7s alone in Firefox, about 9s in the parallel suite, and
+    // past the default 30s when local workers load the machine (2 of 8 parallel Firefox runs
+    // timed out, each at a different step, with no stall in the page). Triple the budget.
+    test.slow();
     expect(existsSync(BUNDLE), `${BUNDLE} is missing; run \`npm run build\` first`).toBe(true);
 
     const pageErrors: string[] = [];

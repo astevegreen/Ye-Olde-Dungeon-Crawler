@@ -46,6 +46,9 @@ export class DiagnosticModal implements UIModal {
 
   private activeTab: DiagnosticTabId = 'simulation';
   private pollIntervalId: number | null = null;
+  /** True between a press and its release inside the window: the refresh waits, or it
+   *  would replace the pressed button and the click would never arrive. */
+  private pointerHeld = false;
   private toastTimeout: number | null = null;
   public enableAutoPolling: boolean = true;
 
@@ -133,6 +136,18 @@ export class DiagnosticModal implements UIModal {
   }
 
   private bindEvents(): void {
+    this.modal?.addEventListener('pointerdown', () => {
+      this.pointerHeld = true;
+    });
+    const release = () => {
+      this.pointerHeld = false;
+    };
+    // A release anywhere counts: a press can be dragged out of the window before it lets go.
+    if (typeof window !== 'undefined') {
+      window.addEventListener('pointerup', release, true);
+      window.addEventListener('pointercancel', release, true);
+    }
+
     this.closeBtn?.addEventListener('click', () => this.close());
     this.closeTitleBtn?.addEventListener('click', () => this.close());
 
@@ -248,7 +263,7 @@ export class DiagnosticModal implements UIModal {
     if (!this.enableAutoPolling) return;
     if (typeof window !== 'undefined') {
       this.pollIntervalId = window.setInterval(() => {
-        if (this.isOpen) {
+        if (this.isOpen && !this.pointerHeld) {
           this.renderCurrentTab();
         }
       }, 500);

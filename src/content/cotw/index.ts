@@ -91,18 +91,18 @@ export const cotwManifest: GameContentManifest = {
     { type: 'alarm', name: 'Brass Alarm Trap', damage: 0, disarmDifficulty: 10 },
   ],
   // Each riddle stands in for its milestone in the Story until it is achieved.
-  // PLACEHOLDER wording, for the owner to rewrite.
+  // Riddles: DRAFT wording (Claude, at the owner's request), for the owner to edit.
   trackedMilestones: [
-    { flag: 'relic_recovered', label: 'Sun-Stone Claimed', description: 'Recovered the Sun-Stone of Freyr from the dungeon depths.', icon: '☀️', riddle: 'A stolen dawn sleeps in the dark. Bring it home.' },
-    { flag: 'boss_slain', label: 'Hrungnir Slain', description: 'Vanquished the Frost Giant Overlord in epic combat.', icon: '👑', riddle: 'The one who waits where the root ends has not yet fallen.' },
-    { flag: 'altar_cleansed', label: 'Altar of Tyr Cleansed', description: 'Purified the corrupted altar with solemn sacrifice.', icon: '⚖️', riddle: 'An oath-stone weeps where the one-handed god was wronged.' },
-    { flag: 'oath_resolved', label: "The Matriarch's Blood-Oath", description: 'Struck a lasting bargain with a troll-wife matriarch to sever the siphon on the village.', icon: '🩸', riddle: 'A mother of trolls keeps a bargain in blood.' },
-    { flag: 'nidhogg_root_sealed', label: 'The Root Sealed', description: 'Drove Níðhögg from the rotting root of Yggdrasil without ending it.', icon: '🌳', riddle: 'Something gnaws where the world-tree drinks.' },
-    { flag: 'savior_of_jarnvidr', label: 'Savior of Járnviðr', description: 'Rescued all four captive villagers from the sacrificial blood siphon.', icon: '🛡️', riddle: 'An iron wood waits for someone to answer it.' },
-    { flag: 'blood_tainted_hero', label: 'The Blood-Tainted', description: 'Embraced the forbidden Grimoire of Blood Magic while innocent captives bled.', icon: '🩸', riddle: 'Some doors open only for the tainted.' },
-    { flag: 'vidnir_slain', label: "The Wyrm's Fate Revealed", description: 'Learned from the dying herald Víðnir that slaying Níðhögg will split Yggdrasil and trigger Ragnarök, while driving it off will seal the root.', icon: '🐉', riddle: 'A wyrm coils in the tarnished deep.' },
-    { flag: 'dwarven_hearth_rested', label: 'Dwarven Hearth Respite', description: 'Found solace in the secluded thermal grotto behind the rushing cascade.', icon: '♨️', riddle: 'Old fires still burn in the halls of the smiths.' },
-    { flag: 'world_bark_hearth_rested', label: 'Heartwood Sanctuary', description: 'Rested in the peaceful hollow among the ancient roots of Yggdrasil.', icon: '🌳', riddle: 'There is shelter even inside the bark of the world.' },
+    { flag: 'relic_recovered', label: 'Sun-Stone Claimed', description: 'Recovered the Sun-Stone of Freyr from the dungeon depths.', icon: '☀️', riddle: 'A sun lies buried where no sun can reach. Carry it up into the morning.' },
+    { flag: 'boss_slain', label: 'Hrungnir Slain', description: 'Vanquished the Frost Giant Overlord in epic combat.', icon: '👑', riddle: 'At the root’s last ring the corpse-gnawer feeds. A blade can end it, if you will pay what ending costs.' },
+    { flag: 'altar_cleansed', label: 'Altar of Tyr Cleansed', description: 'Purified the corrupted altar with solemn sacrifice.', icon: '⚖️', riddle: 'Thrice below, the oath-god’s stone stands fouled. He gave a hand; it asks a gift of yours.' },
+    { flag: 'oath_resolved', label: "The Matriarch's Blood-Oath", description: 'Struck a lasting bargain with a troll-wife matriarch to sever the siphon on the village.', icon: '🩸', riddle: 'Among dead warlocks a troll-mother bargains in blood. Hot or cold, her price is kept forever.' },
+    { flag: 'nidhogg_root_sealed', label: 'The Root Sealed', description: 'Drove Níðhögg from the rotting root of Yggdrasil without ending it.', icon: '🌳', riddle: 'Not every wyrm need die. Hold fast at the gnawed root, and the gnawer may slink back to the dark.' },
+    { flag: 'savior_of_jarnvidr', label: 'Savior of Járnviðr', description: 'Rescued all four captive villagers from the sacrificial blood siphon.', icon: '🛡️', riddle: 'Four of the village bleed to feed an iron wood. Reach them all before the bowl runs full.' },
+    { flag: 'blood_tainted_hero', label: 'The Blood-Tainted', description: 'Embraced the forbidden Grimoire of Blood Magic while innocent captives bled.', icon: '🩸', riddle: 'A book of red letters opens only while the innocent bleed. To read it is to wear it.' },
+    { flag: 'vidnir_slain', label: "The Wyrm's Fate Revealed", description: 'Learned from the dying herald Víðnir that slaying Níðhögg will split Yggdrasil and trigger Ragnarök, while driving it off will seal the root.', icon: '🐉', riddle: 'In the tarnished deep a herald keeps the wyrm’s secret, and speaks it only dying.' },
+    { flag: 'dwarven_hearth_rested', label: 'Dwarven Hearth Respite', description: 'Found solace in the secluded thermal grotto behind the rushing cascade.', icon: '♨️', riddle: 'Behind falling water in the smiths’ halls, old coals still keep a warm place to sleep.' },
+    { flag: 'world_bark_hearth_rested', label: 'Heartwood Sanctuary', description: 'Rested in the peaceful hollow among the ancient roots of Yggdrasil.', icon: '🌳', riddle: 'Inside the world-tree’s bark an amber fire burns. Sit by it, and the roots keep watch.' },
   ],
   // The runestones' verses and rune-lore, kept in the Story's Carved Verses once read.
   loreEntries: SKALDIC_RUNESTONE_LORE,

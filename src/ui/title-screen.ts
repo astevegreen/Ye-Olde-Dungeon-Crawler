@@ -5,12 +5,13 @@ import { CharacterRoller } from '../engine';
 import { PRNG } from '../engine';
 import type { CharacterAttributes, Gender } from '../engine';
 import type { GameDifficulty } from '../engine';
-import { Leaderboard, type HallOfFameEntry } from '../engine';
+import { Leaderboard } from '../engine';
+import { HallOfLegendsDialog } from './hallOfLegendsDialog';
 import { getStoragePersistenceInfo, formatStorageStatus } from './persistenceInit';
 import { setupSaveDragAndDrop, importSaveWithValidation } from './saveImporter';
 import type { SaveCodeModal } from './saveCodeModal';
 import type { SagaShareModal } from './sagaShareModal';
-import { defaultPlatformAdapter, copyTextToClipboard, getBrowserStorage } from './platform';
+import { defaultPlatformAdapter, getBrowserStorage } from './platform';
 import { resolveBranding } from './branding';
 import type { AutosaveManager } from '../engine';
 import type { GameEngine } from '../engine';
@@ -85,16 +86,7 @@ export class TitleScreen {
 
   // Hall of Fame leaderboard
   public readonly leaderboard: Leaderboard = new Leaderboard(getBrowserStorage() ?? undefined);
-  private valhallaModalEl: HTMLElement | null = null;
-  private valhallaListEl: HTMLElement | null = null;
-  private valhallaEpitaphCardEl: HTMLElement | null = null;
-  private valhallaExportBtn: HTMLButtonElement | null = null;
-  private valhallaShareBtn: HTMLButtonElement | null = null;
-  private valhallaImportBtn: HTMLButtonElement | null = null;
-  private valhallaCloseBtn: HTMLButtonElement | null = null;
-  private valhallaCloseXBtn: HTMLButtonElement | null = null;
-  private valhallaStatusEl: HTMLElement | null = null;
-  private selectedChampion: HallOfFameEntry | null = null;
+  private readonly hall: HallOfLegendsDialog;
 
   private selectedProfileId: string | null = null;
 
@@ -108,6 +100,12 @@ export class TitleScreen {
     this.autosaveManager = options.autosaveManager;
     this.onLoadAutosaveCallback = options.onLoadAutosave;
     this.onBackToMenuCallback = options.onBackToMenu;
+    this.hall = new HallOfLegendsDialog({
+      leaderboard: this.leaderboard,
+      branding: resolveBranding(this.profileManager.manifest),
+      onShare: (entry) => this.sagaShareModal?.openShare(entry),
+      onImport: () => this.sagaShareModal?.openImport(),
+    });
 
     this.bindDomElements();
     this.rerollStats();
@@ -229,30 +227,7 @@ export class TitleScreen {
     document.getElementById('btn-dec-dex')?.addEventListener('click', () => this.adjustStat('dexterity', -1));
     document.getElementById('btn-inc-dex')?.addEventListener('click', () => this.adjustStat('dexterity', 1));
 
-    // Hall of Fame leaderboard modal elements
-    const valhallaOpenBtn = document.getElementById('btn-valhalla');
-    this.valhallaModalEl = document.getElementById('valhalla-modal');
-    this.valhallaListEl = document.getElementById('valhalla-list');
-    this.valhallaEpitaphCardEl = document.getElementById('valhalla-epitaph-card');
-    this.valhallaExportBtn = document.getElementById('btn-valhalla-export') as HTMLButtonElement | null;
-    this.valhallaShareBtn = document.getElementById('btn-valhalla-share') as HTMLButtonElement | null;
-    this.valhallaImportBtn = document.getElementById('btn-valhalla-import') as HTMLButtonElement | null;
-    this.valhallaCloseBtn = document.getElementById('btn-valhalla-close') as HTMLButtonElement | null;
-    this.valhallaCloseXBtn = document.getElementById('btn-valhalla-close-x') as HTMLButtonElement | null;
-    this.valhallaStatusEl = document.getElementById('valhalla-status');
-
-    valhallaOpenBtn?.addEventListener('click', () => this.openValhalla());
-    this.valhallaCloseBtn?.addEventListener('click', () => this.closeValhalla());
-    this.valhallaCloseXBtn?.addEventListener('click', () => this.closeValhalla());
-    this.valhallaExportBtn?.addEventListener('click', () => this.exportSelectedEpitaph());
-    this.valhallaShareBtn?.addEventListener('click', () => {
-      if (this.selectedChampion && this.sagaShareModal) {
-        this.sagaShareModal.openShare(this.selectedChampion);
-      }
-    });
-    this.valhallaImportBtn?.addEventListener('click', () => {
-      this.sagaShareModal?.openImport();
-    });
+    document.getElementById('btn-valhalla')?.addEventListener('click', () => this.openValhalla());
 
     // Create & Embark
     this.createBtn?.addEventListener('click', () => {
@@ -443,100 +418,12 @@ export class TitleScreen {
   }
 
   public openValhalla(): void {
-    if (this.valhallaModalEl) {
-      this.valhallaModalEl.style.display = 'flex';
-      this.refreshValhalla();
-    }
+    this.hall.open();
   }
 
-  public closeValhalla(): void {
-    if (this.valhallaModalEl) {
-      this.valhallaModalEl.style.display = 'none';
-    }
-  }
-
+  /** Redraws the hall if it is open, e.g. after a shared saga is inscribed. */
   public refreshValhalla(): void {
-    if (!this.valhallaListEl) return;
-    const champions = this.leaderboard.getChampions();
-    this.valhallaListEl.innerHTML = '';
-
-    if (champions.length === 0) {
-      const hall = resolveBranding(this.profileManager.manifest).hallOfFameName;
-      const empty = document.createElement('div');
-      empty.className = 'roster-empty-notice';
-      empty.textContent = `No champions have yet entered the ${hall}. Embark on a saga to be recorded!`;
-      this.valhallaListEl.appendChild(empty);
-      if (this.valhallaEpitaphCardEl) {
-        this.valhallaEpitaphCardEl.textContent = `No records in the ${hall}.`;
-      }
-      if (this.valhallaExportBtn) this.valhallaExportBtn.disabled = true;
-      if (this.valhallaShareBtn) this.valhallaShareBtn.disabled = true;
-      return;
-    }
-
-    champions.forEach((champ, idx) => {
-      const item = document.createElement('div');
-      item.className = 'valhalla-item' + (this.selectedChampion?.id === champ.id || (!this.selectedChampion && idx === 0) ? ' selected' : '');
-      item.dataset.id = champ.id;
-
-      const badgeClass = champ.status === 'victorious' ? 'valhalla-badge-win' : 'valhalla-badge-loss';
-      const badgeText = champ.status === 'victorious' ? 'VICTOR' : 'FALLEN';
-
-      item.innerHTML = `
-        <div style="display: flex; justify-content: space-between; font-weight: bold;">
-          <span>#${idx + 1} <b>${this.escapeHtml(champ.heroName)}</b> (${champ.gender === 'female' ? `${iconHtml('heroine')} Heroine` : `${iconHtml('hero')} Hero`})</span>
-          <span class="${badgeClass}">${badgeText}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 10px; opacity: 0.85; margin-top: 2px;">
-          <span>Lvl ${champ.level} • Floor ${champ.deepestFloor}</span>
-          <span style="font-weight: bold;">${champ.score.toLocaleString()} pts</span>
-        </div>
-      `;
-
-      item.addEventListener('click', () => {
-        this.selectChampion(champ);
-      });
-
-      this.valhallaListEl?.appendChild(item);
-    });
-
-    if (!this.selectedChampion && champions.length > 0) {
-      this.selectChampion(champions[0]);
-    } else if (this.selectedChampion) {
-      const found = champions.find((c) => c.id === this.selectedChampion?.id);
-      if (found) this.selectChampion(found);
-    }
-  }
-
-  private selectChampion(champ: HallOfFameEntry): void {
-    this.selectedChampion = champ;
-    const items = this.valhallaListEl?.querySelectorAll('.valhalla-item');
-    items?.forEach((el) => {
-      const isSelected = (el as HTMLElement).dataset.id === champ.id;
-      el.classList.toggle('selected', isSelected);
-    });
-
-    if (this.valhallaEpitaphCardEl) {
-      this.valhallaEpitaphCardEl.textContent = Leaderboard.formatEpitaph(champ, resolveBranding(this.profileManager.manifest).xpName);
-    }
-    if (this.valhallaExportBtn) {
-      this.valhallaExportBtn.disabled = false;
-    }
-    if (this.valhallaShareBtn) {
-      this.valhallaShareBtn.disabled = false;
-    }
-    if (this.valhallaStatusEl) {
-      this.valhallaStatusEl.textContent = `${champ.heroName}: ${champ.score.toLocaleString()} points`;
-    }
-  }
-
-  public async exportSelectedEpitaph(): Promise<void> {
-    if (!this.selectedChampion) return;
-    const epitaphText = Leaderboard.formatEpitaph(this.selectedChampion, resolveBranding(this.profileManager.manifest).xpName);
-    await copyTextToClipboard(epitaphText);
-    if (this.valhallaStatusEl) {
-      this.valhallaStatusEl.textContent = `Copied ${this.selectedChampion.heroName}'s epitaph to clipboard!`;
-    }
+    this.hall.refresh();
   }
 
   public checkForSharedSagaInUrl(): void {

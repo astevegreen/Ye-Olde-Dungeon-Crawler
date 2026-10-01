@@ -40,9 +40,8 @@
 .ts-summary { text-align: center; }
 .ts-foot { display: flex; justify-content: space-between; align-items: center; }
 
-/* The roster (index.html #title-screen) and the hall of fame fill the window. */
-#title-screen.retro-window-overlay,
-#valhalla-modal.retro-window-overlay {
+/* The roster (index.html #title-screen) fills the window. */
+#title-screen.retro-window-overlay {
   background: var(--ui-surface-0);
 }
 #title-screen > .retro-window {
@@ -57,4 +56,3 @@
 /* Actions that need a hero show once there is one, instead of sitting there disabled. */
 #title-screen .retro-btn-row button:disabled,
 #btn-title-savecode:disabled { display: none; }
-#valhalla-modal > .retro-window { width: min(900px, 100%); }

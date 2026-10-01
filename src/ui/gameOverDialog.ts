@@ -52,7 +52,7 @@ export class GameOverDialog {
       size: 'wide',
       body: `
         <div class="go-banner ${won ? 'is-won' : 'is-lost'}">${escapeHtml(view.banner)}</div>
-        <pre id="game-over-summary" class="go-epitaph ui-inset">${escapeHtml(view.epitaph)}</pre>
+        <pre id="game-over-summary" class="ui-epitaph ui-inset">${escapeHtml(view.epitaph)}</pre>
         <div id="game-over-status" class="ui-note" aria-live="polite"></div>`,
       footNote: view.score ? `<span id="game-over-score" class="go-score">${escapeHtml(view.score)}</span>` : '',
       actions: [

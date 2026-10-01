@@ -405,27 +405,6 @@
         border-color: var(--ui-accent);
         color: var(--ui-text);
       }
-      .valhalla-item {
-        padding: 4px 6px;
-        border-bottom: 1px solid var(--ui-line);
-        cursor: pointer;
-        font-size: var(--ui-text-sm);
-      }
-      .valhalla-item:hover:not(.selected) {
-        background: var(--ui-surface-2);
-      }
-      .valhalla-item.selected {
-        background: var(--ui-accent-soft);
-        box-shadow: inset 3px 0 0 var(--ui-accent);
-      }
-      .valhalla-badge-win {
-        color: var(--ui-good);
-        font-weight: bold;
-      }
-      .valhalla-badge-loss {
-        color: var(--ui-bad);
-        font-weight: bold;
-      }
       .save-drop-overlay {
         position: absolute;
         inset: 0;

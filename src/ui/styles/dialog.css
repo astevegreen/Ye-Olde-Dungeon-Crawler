@@ -198,7 +198,8 @@
 .keybind-badge:hover { border-color: var(--ui-bad); }
 .set-key-x { color: var(--ui-bad); }
 
-/* The end of a run: the pack's closing line, the epitaph, the score. */
+/* The end of a run: the pack's closing line, the epitaph, the score. The epitaph box
+   serves the hall of fame and the saga exchange too. */
 .go-banner {
   padding: var(--ui-space-3);
   font: var(--ui-text-lg) var(--ui-font-display);
@@ -209,7 +210,7 @@
 }
 .go-banner.is-won { background: color-mix(in srgb, var(--ui-good) 16%, var(--ui-surface-2)); border-color: color-mix(in srgb, var(--ui-good) 50%, transparent); }
 .go-banner.is-lost { background: color-mix(in srgb, var(--ui-bad) 16%, var(--ui-surface-2)); border-color: color-mix(in srgb, var(--ui-bad) 50%, transparent); }
-.go-epitaph {
+.ui-epitaph {
   max-height: 300px;
   margin: 0;
   padding: var(--ui-space-2) var(--ui-space-3);
@@ -220,6 +221,15 @@
   user-select: text;
 }
 .go-score { font: bold var(--ui-text-md) var(--ui-font-num); color: var(--ui-accent); }
+
+/* The hall of fame: champions on the left, the chosen one's epitaph on the right. */
+.hall-grid { display: grid; grid-template-columns: minmax(240px, 0.75fr) minmax(0, 1.25fr); gap: var(--ui-space-3); }
+.hall-list { max-height: 300px; overflow-y: auto; padding-right: 2px; }
+.hall-empty { padding: var(--ui-space-4) var(--ui-space-2); text-align: center; font-style: italic; }
+.hall-row .ui-option-mark { color: var(--ui-text-muted); }
+.hall-row .ui-option-label, .hall-row .ui-option-desc { display: block; }
+.hall-side { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: var(--ui-text-sm); }
+.hall-grid .ui-epitaph { height: 300px; }
 
 /* Body sections keep their height; the body scrolls instead of squashing them. */
 .ui-dialog-body > * { flex-shrink: 0; }

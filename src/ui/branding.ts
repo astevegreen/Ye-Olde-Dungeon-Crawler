@@ -69,10 +69,6 @@ export function applyDocumentBranding(doc: Document, branding: ResolvedBranding)
   doc.title = branding.title;
   set('.version-tag', APP_VERSION);
   set('#btn-valhalla', branding.hallOfFameShortName);
-  set('#valhalla-modal-title', `${branding.hallOfFameName} - Legends of ${branding.worldName}`);
-  set('#valhalla-modal-banner', branding.hallOfFameName.toUpperCase());
-  set('#valhalla-modal-sub', `Eternal honors of ${branding.worldName}'s champions`);
-  set('#valhalla-status', `${branding.hallOfFameShortName} Leaderboard`);
   set('#error-dialog-title', `${branding.title} - Application Error`);
   set('#health-orb-glyph', branding.healthGlyph);
   set('#mana-orb-glyph', branding.manaGlyph);

@@ -150,6 +150,35 @@ export interface TrackedMilestoneDefinition {
   label: string;
   description?: string;
   icon?: string;
+  /** What the Story shows while the milestone is still locked: a hint that doesn't name
+   *  it. Without one, a locked milestone shows as "? ? ?". */
+  riddle?: string;
+}
+
+/**
+ * Something the hero can learn and keep, e.g. a runestone's verse: shown in the Story's
+ * Carved Verses once `flag` is set. A display list over flags, like `trackedMilestones`.
+ */
+export interface LoreEntryDefinition {
+  flag: string;
+  title: string;
+  /** The words as found; line breaks are kept. */
+  verse: string;
+  /** What it teaches, in plain terms. */
+  lore: string;
+}
+
+/**
+ * How the Story names a faction in `WorldState.factions` and when the hero has met it.
+ * A faction shows once its standing moves from its starting value, once `metFlag` is
+ * set, or from the start with `metAtStart`; until then it stays hidden.
+ */
+export interface FactionDefinition {
+  id: string;
+  /** Display name; defaults to the id in title case. */
+  name?: string;
+  metFlag?: string;
+  metAtStart?: boolean;
 }
 
 /**
@@ -585,6 +614,8 @@ export interface PackBranding {
    * Ornament only: it never carries meaning. Defaults to none.
    */
   ornament?: string;
+  /** The Story's name for `loreEntries`, e.g. "Carved Verses". Defaults to "Lore". */
+  loreTitle?: string;
 }
 
 export interface ManaTerms {
@@ -635,6 +666,10 @@ export interface GameContentManifest {
    * `dungeon/spawner.ts`'s monster-scaling functions fall back to the flat per-floor curve. */
   monsterScaling?: MonsterScalingConfig;
   initialWorldState?: WorldState;
+  /** Names and "met" rules for the factions in `initialWorldState.factions` (`FactionDefinition`). */
+  factions?: FactionDefinition[];
+  /** World counter the pack keeps the deepest floor reached in, read by the Story's descent line. */
+  deepestFloorCounter?: string;
   choices?: Record<string, ChoiceDefinition>;
   /** Optional magic systems: mana overflow, grimoire grid, kill rites, altars (`magic/magicConfig.ts`). */
   magic?: import('../magic/magicConfig').MagicSystemConfig;
@@ -645,6 +680,8 @@ export interface GameContentManifest {
   surfaceTypes?: SurfaceTypeDefinition[];
   statusEffects?: StatusEffectDefinition[];
   trackedMilestones?: TrackedMilestoneDefinition[];
+  /** Verses and lore the hero keeps once found (`LoreEntryDefinition`). */
+  loreEntries?: LoreEntryDefinition[];
   renownMilestones?: RenownMilestoneDefinition[];
   renownTitles?: RenownTitleDefinition[];
   companions?: CompanionDefinition[];

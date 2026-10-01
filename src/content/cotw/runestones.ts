@@ -1,4 +1,4 @@
-import type { ChoiceDefinition, FixedTilePlacement, TileDefinition } from '../../engine';
+import type { ChoiceDefinition, FixedTilePlacement, LoreEntryDefinition, TileDefinition } from '../../engine';
 
 /**
  * Six Skaldic Runestones distributed across the descent (floors 8, 14, 20, 28, 38, 48).
@@ -82,6 +82,51 @@ export const SKALDIC_RUNESTONE_TILES: TileDefinition[] = [
   },
 ];
 
+/**
+ * What each runestone teaches, kept in the hero's Story (manifest.loreEntries, Carved Verses)
+ * once its flag is set, and announced in the log when the stone is read.
+ */
+export const SKALDIC_RUNESTONE_LORE: LoreEntryDefinition[] = [
+  {
+    flag: 'skaldic_runestone_1_resolved',
+    title: 'Lay of the Frost King',
+    verse: 'When the Aesir stole the Hammer, King Thrym’s frost turned to brittle stone.\nYet in his children’s veins, the winter never died—it waited.\nWoe to the crawler who walks the rime without respect for the cold!',
+    lore: 'Brim-Howlers felled by pure rune-force yield the Slow galdr, while a Winter Hag melted with flame yields Cold Ray. In your grimoire, the Isa glyph (from cold essence) causes all damaging spells to slow their targets!',
+  },
+  {
+    flag: 'skaldic_runestone_2_resolved',
+    title: 'The Smithy’s Accord',
+    verse: 'Here the sons of Ivaldi and the smiths of Jötunheim struck the treaty of steel.\nWhere fire meets ice, neither destroys the other—they fuse into scalding mist.\nThe Hanged God taught us: give what is dear at his Gallows-Stone, and a greater craft is born.',
+    lore: 'At Odin’s Gallows-Stone, offering Cold to Firebolt (or Fire to Cold Ray) reforges the spell into "Steam Lance"—dealing 10 fire and 10 cold damage to pierce single-element resistance!',
+  },
+  {
+    flag: 'skaldic_runestone_3_resolved',
+    title: 'Lay of the Stolen Dawn',
+    verse: 'In the high sky, Sól’s horses galloped, until iron nets dragged the golden chariot low.\nThe coven built the Siphon to harness the sun’s blinding wrath,\nheedless that the fires below would burn through the deep roots of the world.',
+    lore: 'At Odin’s Gallows-Stone, offering Lightning to Fire (or Fire to Lightning Bolt) fuses into "Surtr’s Brand"—a thunderbolt wreathed in fire that rebounds off stone walls for 12 lightning and 8 fire damage!',
+  },
+  {
+    flag: 'skaldic_runestone_4_resolved',
+    title: 'The Scorched Root’s Lament',
+    verse: 'Hear, traveler of the silver lode: the sun-chariot’s fire has done its work.\nThe permafrost wards that held the Root-Gnawer in torpor have boiled away.\nNíðhögg has awakened. Its jaws drip necrotic venom into Yggdrasil’s taproot.\nReclaiming the Hearth-Tear was only the prelude—the dying World Tree calls below!',
+    lore: 'At Odin’s Gallows-Stone, offering Arcane to Cold (or Cold to Arcane) creates "Rime Shard"—inflicting 6 arcane and 8 cold damage while slowing the target for 3 turns!',
+  },
+  {
+    flag: 'skaldic_runestone_5_resolved',
+    title: 'The Threads of Urðr',
+    verse: 'Urðr sees what was, Verðandi what is, and Skuld what must be.\nThey whisper: the blood of Thrym was not made to serve the Aesir nor the Wyrm.\nIt was made to stand between them when the world-pillars crack.\nUnfurl the tempest of hail before entering the dragon’s lair!',
+    lore: 'At Odin’s Gallows-Stone, fusing Cold and Lightning creates "Hagalaz Hail"—a devastating 3x3 blizzard tempest dealing 10 cold and 8 lightning damage and stunning targets for 1 turn!',
+  },
+  {
+    flag: 'skaldic_runestone_6_resolved',
+    title: 'The Twilight Prophecy',
+    verse: 'Beyond lies the Heartwood on Floor 50, where Níðhögg uncoils upon the shredded World Root.\nHe who slays the dragon with blind fury shall split the dying root and usher in Ragnarök.\nOnly the warrior who masters both wrath and restraint may preserve Midgard.\nArm yourself with the Thunderer’s wrath for the battle of your saga!',
+    lore: 'At Odin’s Gallows-Stone, fusing Lightning and Physical power creates "Thunder Maul"—striking with the force of Thor for 14 lightning and 8 physical damage with guaranteed stun!',
+  },
+];
+
+const runicHint = (n: number): string => `✦ RUNIC SPELL HINT: ${SKALDIC_RUNESTONE_LORE[n - 1].lore} ✦`;
+
 export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
   skaldic_runestone_1: {
     id: 'skaldic_runestone_1',
@@ -101,7 +146,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '✦ RUNIC SPELL HINT: Brim-Howlers felled by pure rune-force yield the Slow galdr, while a Winter Hag melted with flame yields Cold Ray. In your grimoire, the Isa glyph (from cold essence) causes all damaging spells to slow their targets! ✦',
+              runicHint(1),
           },
         ],
       },
@@ -117,7 +162,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '✦ RUNIC SPELL HINT: Brim-Howlers felled by pure rune-force yield the Slow galdr, while a Winter Hag melted with flame yields Cold Ray. In your grimoire, the Isa glyph (from cold essence) causes all damaging spells to slow their targets! ✦',
+              runicHint(1),
           },
         ],
       },
@@ -150,7 +195,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '✦ RUNIC SPELL HINT: At Odin’s Gallows-Stone, offering Cold to Firebolt (or Fire to Cold Ray) reforges the spell into "Steam Lance"—dealing 10 fire and 10 cold damage to pierce single-element resistance! ✦',
+              runicHint(2),
           },
         ],
       },
@@ -166,7 +211,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '✦ RUNIC SPELL HINT: At Odin’s Gallows-Stone, offering Cold to Firebolt (or Fire to Cold Ray) reforges the spell into "Steam Lance"—dealing 10 fire and 10 cold damage to pierce single-element resistance! ✦',
+              runicHint(2),
           },
         ],
       },
@@ -199,7 +244,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '✦ RUNIC SPELL HINT: At Odin’s Gallows-Stone, offering Lightning to Fire (or Fire to Lightning Bolt) fuses into "Surtr’s Brand"—a thunderbolt wreathed in fire that rebounds off stone walls for 12 lightning and 8 fire damage! ✦',
+              runicHint(3),
           },
         ],
       },
@@ -215,7 +260,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '✦ RUNIC SPELL HINT: At Odin’s Gallows-Stone, offering Lightning to Fire (or Fire to Lightning Bolt) fuses into "Surtr’s Brand"—a thunderbolt wreathed in fire that rebounds off stone walls for 12 lightning and 8 fire damage! ✦',
+              runicHint(3),
           },
         ],
       },
@@ -248,7 +293,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '✦ RUNIC SPELL HINT: At Odin’s Gallows-Stone, offering Arcane to Cold (or Cold to Arcane) creates "Rime Shard"—inflicting 6 arcane and 8 cold damage while slowing the target for 3 turns! ✦',
+              runicHint(4),
           },
         ],
       },
@@ -264,7 +309,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '✦ RUNIC SPELL HINT: At Odin’s Gallows-Stone, offering Arcane to Cold (or Cold to Arcane) creates "Rime Shard"—inflicting 6 arcane and 8 cold damage while slowing the target for 3 turns! ✦',
+              runicHint(4),
           },
         ],
       },
@@ -297,7 +342,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '✦ RUNIC SPELL HINT: At Odin’s Gallows-Stone, fusing Cold and Lightning creates "Hagalaz Hail"—a devastating 3x3 blizzard tempest dealing 10 cold and 8 lightning damage and stunning targets for 1 turn! ✦',
+              runicHint(5),
           },
         ],
       },
@@ -313,7 +358,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '✦ RUNIC SPELL HINT: At Odin’s Gallows-Stone, fusing Cold and Lightning creates "Hagalaz Hail"—a devastating 3x3 blizzard tempest dealing 10 cold and 8 lightning damage and stunning targets for 1 turn! ✦',
+              runicHint(5),
           },
         ],
       },
@@ -347,7 +392,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '✦ RUNIC SPELL HINT: At Odin’s Gallows-Stone, fusing Lightning and Physical power creates "Thunder Maul"—striking with the force of Thor for 14 lightning and 8 physical damage with guaranteed stun! ✦',
+              runicHint(6),
           },
         ],
       },
@@ -363,7 +408,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '✦ RUNIC SPELL HINT: At Odin’s Gallows-Stone, fusing Lightning and Physical power creates "Thunder Maul"—striking with the force of Thor for 14 lightning and 8 physical damage with guaranteed stun! ✦',
+              runicHint(6),
           },
         ],
       },

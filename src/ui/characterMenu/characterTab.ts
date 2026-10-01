@@ -1,4 +1,4 @@
-import type { GameState } from '../flanks/types';
+import type { GameState } from './gameState';
 import type { MenuFooter, MenuHost, MenuTab } from './menuTab';
 import type { AttributeMilestoneTrigger, ChoiceDefinition, Player } from '../../engine';
 import {

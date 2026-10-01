@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { CharacterMenuModal } from '../characterMenu/characterMenuModal';
-import { FlankModuleTab } from '../characterMenu/flankModuleTab';
 import { CharacterTab } from '../characterMenu/characterTab';
 import type { MenuTab } from '../characterMenu/menuTab';
-import type { FlankModule, GameState } from '../flanks/types';
+import type { GameState } from '../characterMenu/gameState';
 import { ModalStackManager } from '../modalStack';
 import { InputHandler } from '../../rendering/input-handler';
 import { GameEngine, Player, GameMap } from '../../engine';
@@ -557,53 +556,6 @@ describe('CharacterMenuModal & Consolidated Character Menu', () => {
     const handledZ = charMenu.handleKeyDown(keyZEvent);
     expect(handledZ).toBe(true);
     expect(charMenu.isOpen).toBe(false);
-  });
-});
-
-describe('FlankModuleTab & Story Tab Isolation', () => {
-  let originalDocument: any;
-
-  beforeEach(() => {
-    originalDocument = (globalThis as any).document;
-    (globalThis as any).document = new MockDocument();
-  });
-
-  afterEach(() => {
-    (globalThis as any).document = originalDocument;
-  });
-
-  it('activating the Story tab calls render(state) on its wrapped flank modules', () => {
-    const mockModule1: FlankModule = {
-      id: 'mod1',
-      title: 'Mod 1',
-      mount: vi.fn(),
-      render: vi.fn(),
-      destroy: vi.fn(),
-    };
-    const mockModule2: FlankModule = {
-      id: 'mod2',
-      title: 'Mod 2',
-      mount: vi.fn(),
-      render: vi.fn(),
-      destroy: vi.fn(),
-    };
-
-    const storyTab = new FlankModuleTab([mockModule1, mockModule2]);
-    const container = new MockElement() as unknown as HTMLElement;
-    storyTab.mount(container);
-
-    expect(mockModule1.mount).toHaveBeenCalled();
-    expect(mockModule2.mount).toHaveBeenCalled();
-
-    const state = createMockGameState();
-    storyTab.onActivate(state);
-
-    expect(mockModule1.render).toHaveBeenCalledWith(state);
-    expect(mockModule2.render).toHaveBeenCalledWith(state);
-
-    storyTab.unmount();
-    expect(mockModule1.destroy).toHaveBeenCalled();
-    expect(mockModule2.destroy).toHaveBeenCalled();
   });
 });
 

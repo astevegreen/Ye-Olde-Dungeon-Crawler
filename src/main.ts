@@ -82,7 +82,7 @@ import { applyDocumentBranding, resolveBranding } from './ui/branding';
 import {
   CharacterMenuModal,
   CharacterTab,
-  FlankModuleTab,
+  StoryTab,
   CompendiumTabAdapter,
   PactTabAdapter,
   SpellbookTabAdapter,
@@ -90,11 +90,8 @@ import {
 import { InventoryTabAdapter } from './rendering/inventoryTabAdapter';
 import './ui/styles/tokens.css';
 import './ui/styles/base.css';
-import './ui/styles/flanks.css';
 import './ui/styles/layout.css';
 import './ui/styles/menu.css';
-import { WorldLedgerModule } from './ui/flanks/worldLedgerModule';
-import { JournalModule } from './ui/flanks/journalModule';
 import { QuickSpellsBar } from './ui/quickSpellsBar';
 import { PotionRow } from './ui/potionRow';
 import { classifyLogLine, CriticalLineTracker } from './ui/logClassifier';
@@ -224,7 +221,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (activeEngine) combatSidebar.update(activeEngine);
     renderer?.render();
   };
-  const storyTab = new FlankModuleTab([new JournalModule(), new WorldLedgerModule()], 'story', 'Story', 'story');
+  const storyTab = new StoryTab();
   const bestiaryTab = new CompendiumTabAdapter(compendiumModal, () => characterMenuModal?.close());
   const pactsTab = new PactTabAdapter(pactModal, () => characterMenuModal?.close());
   let spellbookTab: SpellbookTabAdapter;

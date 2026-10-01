@@ -4,6 +4,16 @@ import { BASE_ACTION_COST } from '../types';
 import type { Player } from '../entities/player';
 import type { GameEngine } from '../engine';
 
+/** The deepest floor this run goes: the hero's difficulty depth when the quest scales
+ *  with difficulty, else the quest's own; 25 when neither says. */
+export function resolveLastFloor(engine: Pick<GameEngine, 'manifest' | 'player'>): number {
+  return (
+    (engine.manifest.quest?.allowsDifficultyScaling
+      ? (engine.player.maxFloor ?? engine.manifest.quest.maxFloor)
+      : (engine.manifest.quest?.maxFloor ?? engine.player.maxFloor)) ?? 25
+  );
+}
+
 export class ClimbStairsAction implements Action {
   public readonly entity: Player;
 
@@ -18,10 +28,7 @@ export class ClimbStairsAction implements Action {
     }
 
     if (tile.isStairsDown || tile.type === 'stairs_down') {
-      const maxFloor =
-        (engine.manifest.quest?.allowsDifficultyScaling
-          ? (engine.player.maxFloor ?? engine.manifest.quest.maxFloor)
-          : (engine.manifest.quest?.maxFloor ?? engine.player.maxFloor)) ?? 25;
+      const maxFloor = resolveLastFloor(engine);
       if (engine.currentFloor >= maxFloor) {
         return {
           success: false,

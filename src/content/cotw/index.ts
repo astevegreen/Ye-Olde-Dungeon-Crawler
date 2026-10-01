@@ -7,7 +7,7 @@ import { COTW_QUEST } from './quest';
 import { COTW_ATLAS_THEME } from './atlas';
 import { COTW_STARTER_KIT } from './character';
 import { COTW_MAGIC } from './magic';
-import { DEEPEST_FLOOR_HOOK } from './spellTablets';
+import { COTW_DEEPEST_FLOOR_COUNTER, DEEPEST_FLOOR_HOOK } from './spellTablets';
 import { COTW_AFFINITY_MATRIX } from './elements';
 import { COTW_EQUIPMENT_SLOTS } from './slots';
 import { COTW_THEME_TOKENS } from './theme';
@@ -33,7 +33,7 @@ import { COTW_TILES } from './tiles';
 import { COTW_FLOOR_HAZARDS, COTW_ROOM_DECORATION } from './floorBands';
 import { COTW_FLOOR_LAYOUTS, COTW_FLOOR_SIZE } from './floorLayouts';
 import { COTW_MONSTER_CATEGORIES } from './monsterCategories';
-import { SKALDIC_RUNESTONE_PLACEMENTS } from './runestones';
+import { SKALDIC_RUNESTONE_LORE, SKALDIC_RUNESTONE_PLACEMENTS } from './runestones';
 import {
   VIDNIR_DEFEATED_TRIGGER,
   COTW_ZONE_VIGNETTES_HOOK,
@@ -65,6 +65,7 @@ export const cotwManifest: GameContentManifest = {
     healthGlyph: 'ᚦ',
     manaGlyph: 'ᚨ',
     ornament: 'ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ',
+    loreTitle: 'Carved Verses',
   },
   tiles: COTW_TILES,
   monsters: COTW_MONSTERS,
@@ -89,20 +90,22 @@ export const cotwManifest: GameContentManifest = {
     { type: 'teleport', name: 'Teleportation Rune', damage: 0, disarmDifficulty: 15 },
     { type: 'alarm', name: 'Brass Alarm Trap', damage: 0, disarmDifficulty: 10 },
   ],
+  // Each riddle stands in for its milestone in the Story until it is achieved.
+  // PLACEHOLDER wording, for the owner to rewrite.
   trackedMilestones: [
-    { flag: 'relic_recovered', label: 'Sun-Stone Claimed', description: 'Recovered the Sun-Stone of Freyr from the dungeon depths.', icon: '☀️' },
-    { flag: 'boss_slain', label: 'Hrungnir Slain', description: 'Vanquished the Frost Giant Overlord in epic combat.', icon: '👑' },
-    { flag: 'altar_cleansed', label: 'Altar of Tyr Cleansed', description: 'Purified the corrupted altar with solemn sacrifice.', icon: '⚖️' },
-    { flag: 'oath_resolved', label: "The Matriarch's Blood-Oath", description: 'Struck a lasting bargain with a troll-wife matriarch to sever the siphon on the village.', icon: '🩸' },
-    { flag: 'nidhogg_root_sealed', label: 'The Root Sealed', description: 'Drove Níðhögg from the rotting root of Yggdrasil without ending it.', icon: '🌳' },
-    { flag: 'savior_of_jarnvidr', label: 'Savior of Járnviðr', description: 'Rescued all four captive villagers from the sacrificial blood siphon.', icon: '🛡️' },
-    { flag: 'blood_tainted_hero', label: 'The Blood-Tainted', description: 'Embraced the forbidden Grimoire of Blood Magic while innocent captives bled.', icon: '🩸' },
-    { flag: 'vidnir_slain', label: "The Wyrm's Fate Revealed", description: 'Learned from the dying herald Víðnir that slaying Níðhögg will split Yggdrasil and trigger Ragnarök, while driving it off will seal the root.', icon: '🐉' },
-    { flag: 'skaldic_runestone_1_resolved', label: 'Lay of the Frost King', description: 'Uncovered the ancient frost saga and claimed the Slow & Cold Ray runic spell hint.', icon: 'ᚱ' },
-    { flag: 'skaldic_runestone_4_resolved', label: 'The Scorched Root’s Lament', description: 'Learned how the stolen sun-chariot heat woke Níðhögg, and claimed the Rime Shard runic spell hint.', icon: '🌱' },
-    { flag: 'dwarven_hearth_rested', label: 'Dwarven Hearth Respite', description: 'Found solace in the secluded thermal grotto behind the rushing cascade.', icon: '♨️' },
-    { flag: 'world_bark_hearth_rested', label: 'Heartwood Sanctuary', description: 'Rested in the peaceful hollow among the ancient roots of Yggdrasil.', icon: '🌳' },
+    { flag: 'relic_recovered', label: 'Sun-Stone Claimed', description: 'Recovered the Sun-Stone of Freyr from the dungeon depths.', icon: '☀️', riddle: 'A stolen dawn sleeps in the dark. Bring it home.' },
+    { flag: 'boss_slain', label: 'Hrungnir Slain', description: 'Vanquished the Frost Giant Overlord in epic combat.', icon: '👑', riddle: 'The one who waits where the root ends has not yet fallen.' },
+    { flag: 'altar_cleansed', label: 'Altar of Tyr Cleansed', description: 'Purified the corrupted altar with solemn sacrifice.', icon: '⚖️', riddle: 'An oath-stone weeps where the one-handed god was wronged.' },
+    { flag: 'oath_resolved', label: "The Matriarch's Blood-Oath", description: 'Struck a lasting bargain with a troll-wife matriarch to sever the siphon on the village.', icon: '🩸', riddle: 'A mother of trolls keeps a bargain in blood.' },
+    { flag: 'nidhogg_root_sealed', label: 'The Root Sealed', description: 'Drove Níðhögg from the rotting root of Yggdrasil without ending it.', icon: '🌳', riddle: 'Something gnaws where the world-tree drinks.' },
+    { flag: 'savior_of_jarnvidr', label: 'Savior of Járnviðr', description: 'Rescued all four captive villagers from the sacrificial blood siphon.', icon: '🛡️', riddle: 'An iron wood waits for someone to answer it.' },
+    { flag: 'blood_tainted_hero', label: 'The Blood-Tainted', description: 'Embraced the forbidden Grimoire of Blood Magic while innocent captives bled.', icon: '🩸', riddle: 'Some doors open only for the tainted.' },
+    { flag: 'vidnir_slain', label: "The Wyrm's Fate Revealed", description: 'Learned from the dying herald Víðnir that slaying Níðhögg will split Yggdrasil and trigger Ragnarök, while driving it off will seal the root.', icon: '🐉', riddle: 'A wyrm coils in the tarnished deep.' },
+    { flag: 'dwarven_hearth_rested', label: 'Dwarven Hearth Respite', description: 'Found solace in the secluded thermal grotto behind the rushing cascade.', icon: '♨️', riddle: 'Old fires still burn in the halls of the smiths.' },
+    { flag: 'world_bark_hearth_rested', label: 'Heartwood Sanctuary', description: 'Rested in the peaceful hollow among the ancient roots of Yggdrasil.', icon: '🌳', riddle: 'There is shelter even inside the bark of the world.' },
   ],
+  // The runestones' verses and rune-lore, kept in the Story's Carved Verses once read.
+  loreEntries: SKALDIC_RUNESTONE_LORE,
   renownMilestones: COTW_RENOWN_MILESTONES,
   renownTitles: COTW_RENOWN_TITLES,
   objectives: COTW_OBJECTIVES,
@@ -132,6 +135,13 @@ export const cotwManifest: GameContentManifest = {
       iron_clans: -15,
     },
   },
+  // The hero starts among the townsfolk; the others appear once standing with them moves.
+  factions: [
+    { id: 'townsfolk', name: 'Townsfolk', metAtStart: true },
+    { id: 'temple_standing', name: 'The Temple' },
+    { id: 'iron_clans', name: 'Iron Clans' },
+  ],
+  deepestFloorCounter: COTW_DEEPEST_FLOOR_COUNTER,
   statusEffects: [
     {
       id: 'poison',

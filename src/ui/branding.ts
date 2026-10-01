@@ -24,6 +24,8 @@ export interface ResolvedBranding {
   defaultHeroName: string;
   /** Decorative rule for menu headings; empty when the pack has none. */
   ornament: string;
+  /** The Story's name for the lore the hero keeps. */
+  loreTitle: string;
 }
 
 export function resolveBranding(manifest?: GameContentManifest): ResolvedBranding {
@@ -46,6 +48,7 @@ export function resolveBranding(manifest?: GameContentManifest): ResolvedBrandin
     runeSmithName: attunementNpcName(manifest),
     defaultHeroName: manifest?.presetNames?.[0] ?? 'Hero',
     ornament: b.ornament ?? '',
+    loreTitle: b.loreTitle ?? 'Lore',
   };
 }
 

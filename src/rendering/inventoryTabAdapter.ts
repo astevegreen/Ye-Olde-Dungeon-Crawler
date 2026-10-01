@@ -1,4 +1,4 @@
-import type { GameState } from '../ui/flanks/types';
+import type { GameState } from '../ui/characterMenu/gameState';
 import type { MenuTab } from '../ui/characterMenu/menuTab';
 import type { InventoryOverlay } from './inventory-overlay';
 import type { CanvasRenderer } from './canvas-renderer';

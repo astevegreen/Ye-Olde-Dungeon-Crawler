@@ -2,6 +2,30 @@
    Viewport, Game Container, Ground Status Bar, and Quickbar Layout
    ========================================================================== */
 
+/* The game layout shell: the map column beside the combat sidebar. */
+#widescreen-layout {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--ui-bg);
+}
+
+#center-viewport {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  z-index: 10;
+}
+
 /* While the character menu is open, blur and darken the surrounding UI (sidebar and HUD bars)
    the same way on every tab. This is the only dimming: the menu overlay itself stays
    transparent on all tabs, and the map canvas stays crisp because the Inventory tab draws on it. */

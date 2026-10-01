@@ -1,4 +1,4 @@
-import type { GameState } from '../flanks/types';
+import type { GameState } from './gameState';
 
 /** One footer hint: the keys, then what they do ("S D C I" — "plan a point"). */
 export interface MenuKeyHint {

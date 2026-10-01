@@ -36,3 +36,11 @@ Worked example: the CotW Siphon Altar (`src/content/cotw/hostageRitual.ts`) comp
 
 ## Multiple Named Endings
 `QuestArcDefinition.endings`, `EndingDefinition`: generalizes the single flat `victoryDialogue`/`victoryEpitaph`/`championProclamation`/`victoryScoreBonus`/`relicItemId`/`victoryFloor` fields (which remain the sole, default `'default'`-id ending when `endings` is omitted — existing packs, including `warcraft`, are unaffected) into named, independently-conditioned endings, each gated by `relicItemId` (carried), `requiredFlag` (world-state flag set), and/or `requiredMonsterKillId` (compendium kill count ≥ 1). `GameStateManager.checkVictoryEligible(engine)` now returns the matching ending id (or `undefined`) instead of a boolean, checked in insertion order; `triggerVictory(engine, profileManager?, endingId?)` uses that ending's own text/bonus. Lets one boss encounter branch into different concluded sagas (e.g. slain vs. driven off) sharing the same fight.
+
+## Story Presentation
+The character menu's Story tab (ADR-0011) reads only manifest data, so its wording is the pack's:
+- **Descent:** floors 1 to the run's last floor (`resolveLastFloor`, the same rule the stairs use), labeled from `atlas.tileZoneBands`; a zone's name shows once the deepest floor reached gets there. The deepest floor is the larger of the engine's session count (`gameState.deepestFloor`, not saved) and the world counter a pack names in `deepestFloorCounter`.
+- **Saga:** the current `objectives` entry; achieved `trackedMilestones`; then up to six locked ones, each shown as its `riddle` (or "? ? ?" without one), the rest counted as untold. A milestone achieved since the tab was last seen glows once.
+- **Lore:** `loreEntries` (`LoreEntryDefinition`: `flag`, `title`, `verse`, `lore`) show once their flag is set, under `branding.loreTitle`. Like `trackedMilestones` they are a display list over existing flags, so the save format does not change.
+- **Standing:** `worldState.factions`, named and gated by `factions` (`FactionDefinition`): a faction appears once its standing moves from its `initialWorldState` value, once its `metFlag` is set, or from the start with `metAtStart`; the rest stay unnamed.
+- **Pacts:** the sealed pacts and their combined rewards.

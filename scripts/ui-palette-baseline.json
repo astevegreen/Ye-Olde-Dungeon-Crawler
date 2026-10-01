@@ -1,5 +1,5 @@
 {
-  "total": 1130,
+  "total": 1057,
   "files": {
     "index.html": 34,
     "src/main.ts": 4,
@@ -31,7 +31,6 @@
     "src/ui/diagnostic/simulationTab.ts": 48,
     "src/ui/diagnostic/triageTab.ts": 75,
     "src/ui/feedbackModal.ts": 9,
-    "src/ui/flanks/worldLedgerModule.ts": 5,
     "src/ui/help/commandPalette.ts": 23,
     "src/ui/help/compendiumModal.ts": 96,
     "src/ui/help/contextHelp.ts": 13,
@@ -49,7 +48,6 @@
     "src/ui/sidebar/sidebarModel.ts": 6,
     "src/ui/spellbookModal.ts": 75,
     "src/ui/styles/base.css": 33,
-    "src/ui/styles/flanks.css": 68,
     "src/ui/styles/layout.css": 21,
     "src/ui/title-screen.ts": 8
   }

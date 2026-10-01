@@ -1,5 +1,5 @@
 import type { UIModal, ModalStackManager } from '../modalStack';
-import type { GameState } from '../flanks/types';
+import type { GameState } from './gameState';
 import type { MenuFooter, MenuHost, MenuTab } from './menuTab';
 import type { ViewportManager } from '../../rendering/viewport';
 import { keyLabel } from '../keyLabel';

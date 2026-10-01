@@ -365,3 +365,127 @@
 .ch-rune-facts { margin: var(--ui-space-2) 0; padding-top: var(--ui-space-2); border-top: 1px solid var(--ui-line); }
 /* With nothing planned the line previews the next rank, unhighlighted. */
 .ch-track .is-next .ui-up { color: inherit; font-weight: normal; }
+
+/* ---- Story tab (descent · saga · lore, standing, pacts) -------------------- */
+
+.st-grid { grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(280px, 380px); }
+
+.st-descent { position: relative; flex: 1; min-height: 240px; padding: 0 var(--ui-space-3); }
+.st-track {
+  position: absolute;
+  left: 22px;
+  top: 8px;
+  bottom: 8px;
+  width: 4px;
+  background: var(--ui-surface-3);
+  border: 1px solid var(--ui-line);
+  border-radius: 2px;
+}
+.st-fill { position: absolute; left: 23px; top: 9px; width: 2px; background: var(--ui-accent); }
+.st-band {
+  position: absolute;
+  left: 4px;
+  right: var(--ui-space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  transform: translateY(-50%);
+  font-size: var(--ui-text-sm);
+  color: var(--ui-text-faint);
+}
+.st-band.is-known { color: var(--ui-text); }
+.st-band i { flex: none; width: 24px; height: 1px; background: var(--ui-line-strong); }
+.st-band-floor { flex: none; width: 18px; text-align: right; font-size: var(--ui-text-xs); color: var(--ui-text-faint); }
+.st-you {
+  position: absolute;
+  left: 14px;
+  width: 20px;
+  height: 20px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: var(--ui-accent);
+  box-shadow: 0 0 0 4px var(--ui-accent-soft);
+}
+.st-you-label {
+  position: absolute;
+  left: 44px;
+  transform: translateY(calc(-50% + 18px));
+  font: bold var(--ui-text-sm) var(--ui-font-display);
+  color: var(--ui-accent);
+  white-space: nowrap;
+}
+.st-deepest {
+  position: absolute;
+  left: 18px;
+  width: 12px;
+  height: 2px;
+  transform: translateY(-50%);
+  background: var(--ui-accent);
+}
+
+.st-now {
+  padding: var(--ui-space-2) var(--ui-space-3);
+  border-left: 3px solid var(--ui-accent);
+  background: var(--ui-accent-soft);
+}
+.st-now-label { font-size: var(--ui-text-sm); color: var(--ui-accent); }
+
+.st-deeds { padding: var(--ui-space-1) 14px; }
+.st-deed { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 2px 10px; align-items: start; padding: 9px 0; }
+.st-deed + .st-deed { border-top: 1px solid var(--ui-line); }
+.st-seal {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  font: bold var(--ui-text-md) var(--ui-font-num);
+  color: var(--ui-text-faint);
+  border: 1px solid var(--ui-line-strong);
+  border-radius: 50%;
+}
+.st-deed.is-done .st-seal { color: var(--ui-good); border-color: var(--ui-good); }
+.st-deed-title { font-weight: bold; }
+.st-deed.is-locked .st-deed-title { font-style: italic; font-weight: normal; color: var(--ui-text-muted); }
+.st-deed.ui-glow { border-radius: var(--ui-radius); }
+
+.st-chronicle { font-size: var(--ui-text-sm); }
+.st-entry { padding: 5px 0; border-top: 1px solid var(--ui-line); }
+
+.st-subtabs { display: flex; gap: 2px; }
+.st-subtab {
+  appearance: none;
+  padding: var(--ui-space-1) 10px;
+  font: bold var(--ui-text-sm) var(--ui-font-display);
+  color: var(--ui-text-muted);
+  background: transparent;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius);
+  cursor: pointer;
+}
+.st-subtab[aria-selected='true'] { color: var(--ui-text); border-color: var(--ui-accent); background: var(--ui-accent-soft); }
+
+.st-verse-title { font: bold var(--ui-text-md) var(--ui-font-display); color: var(--ui-title); }
+.st-verse-text { margin-top: var(--ui-space-1); font-size: var(--ui-text-sm); color: var(--ui-text-muted); white-space: pre-line; }
+.st-lore {
+  margin-top: var(--ui-space-2);
+  padding: 6px var(--ui-space-2);
+  font-size: var(--ui-text-sm);
+  border-left: 2px solid var(--ui-info);
+  background: color-mix(in srgb, var(--ui-info) 7%, transparent);
+}
+.st-blank { text-align: center; font-style: italic; color: var(--ui-text-faint); border-style: dashed; }
+
+.st-faction { display: flex; justify-content: space-between; gap: var(--ui-space-2); }
+.st-faction-bar { margin: var(--ui-space-1) 0 10px; }
+.st-tier.is-hostile, .st-faction-bar .is-hostile { color: var(--ui-bad); background-color: var(--ui-bad); }
+.st-tier.is-unfriendly, .st-faction-bar .is-unfriendly { color: var(--ui-warn); background-color: var(--ui-warn); }
+.st-tier.is-neutral, .st-faction-bar .is-neutral { color: var(--ui-text-muted); background-color: var(--ui-text-muted); }
+.st-tier.is-friendly, .st-faction-bar .is-friendly { color: var(--ui-good); background-color: var(--ui-good); }
+.st-tier.is-honored, .st-faction-bar .is-honored { color: var(--ui-title); background-color: var(--ui-title); }
+.st-tier { background-color: transparent !important; }
+
+.st-pills { display: flex; flex-wrap: wrap; gap: var(--ui-space-1); margin-bottom: var(--ui-space-2); }
+.st-pill { padding: 0 6px; font-size: var(--ui-text-xs); border: 1px solid var(--ui-line-strong); border-radius: var(--ui-radius); color: var(--ui-text-soft); }
+.st-pact + .st-pact { margin-top: var(--ui-space-2); padding-top: var(--ui-space-2); border-top: 1px solid var(--ui-line); }
+.st-cost { color: var(--ui-bad); }
+.st-gain { color: var(--ui-good); }

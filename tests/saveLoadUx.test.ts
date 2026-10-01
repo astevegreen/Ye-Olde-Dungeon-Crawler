@@ -300,7 +300,7 @@ describe('Menu Streamlining & Save/Load UX', () => {
     expect(modalEl?.innerHTML).toContain('Astrid');
     expect(modalEl?.innerHTML).toContain('Level 6');
     expect(modalEl?.innerHTML).toContain('Hard');
-    expect(modalEl?.innerHTML).toContain('AUTOSAVE');
+    expect(modalEl?.innerHTML).toContain('Autosave');
   });
 
   it('handles corrupted saves gracefully without throwing unhandled exceptions', async () => {

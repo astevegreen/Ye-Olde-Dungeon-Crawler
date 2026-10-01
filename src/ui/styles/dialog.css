@@ -238,5 +238,32 @@
 .saga-preview { height: 150px; }
 .saga-preview.is-bad { color: var(--ui-bad); }
 
+/* Load a saved game: a card per autosave and per character save. */
+.slot-list { display: flex; flex-direction: column; gap: var(--ui-space-2); }
+.slot-card { display: flex; align-items: center; gap: var(--ui-space-3); padding: 10px var(--ui-space-3); }
+.slot-card.is-autosave { border-color: var(--ui-info); box-shadow: inset 3px 0 0 var(--ui-info); }
+.slot-card.is-preserved { border-color: var(--ui-line-strong); box-shadow: inset 3px 0 0 var(--ui-text-muted); }
+.slot-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.slot-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-1) var(--ui-space-2); }
+.slot-name { font: bold var(--ui-text-lg) var(--ui-font-display); color: var(--ui-title); }
+.slot-level { font-weight: bold; color: var(--ui-accent); }
+.slot-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-1);
+  padding: 0 6px;
+  font: bold var(--ui-text-xs) var(--ui-font-body);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ui-text-muted);
+  border: 1px solid var(--ui-line-strong);
+  border-radius: var(--ui-radius);
+}
+.slot-tag.is-auto { color: var(--ui-info); border-color: var(--ui-info); }
+.slot-tag.is-won { color: var(--ui-good); border-color: var(--ui-good); }
+.slot-tag.is-lost { color: var(--ui-bad); border-color: var(--ui-bad); }
+.slot-actions { flex: none; display: flex; gap: var(--ui-space-1); }
+.slot-empty { padding: var(--ui-space-5) var(--ui-space-3); text-align: center; font-style: italic; }
+
 /* Body sections keep their height; the body scrolls instead of squashing them. */
 .ui-dialog-body > * { flex-shrink: 0; }

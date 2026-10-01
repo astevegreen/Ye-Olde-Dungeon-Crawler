@@ -1,5 +1,5 @@
 {
-  "total": 525,
+  "total": 488,
   "files": {
     "index.html": 12,
     "src/main.ts": 2,
@@ -23,7 +23,6 @@
     "src/ui/help/commandPalette.ts": 23,
     "src/ui/help/contextHelp.ts": 13,
     "src/ui/saveImporter.ts": 8,
-    "src/ui/saveSlotModal.ts": 37,
     "src/ui/sidebar/sidebarModel.ts": 6,
     "src/ui/styles/base.css": 6,
     "src/ui/styles/layout.css": 19,

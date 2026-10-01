@@ -1,4 +1,6 @@
-import type { ProfileManager, AutosaveManager, AutosaveSlot } from '../engine';
+import type { ProfileManager, AutosaveManager, AutosaveSlot, CharacterProfile } from '../engine';
+import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
+import { escapeHtml } from './html';
 import { iconHtml } from './icons';
 import type { UIModal } from './modalStack';
 import { showToast } from './toast';
@@ -23,18 +25,7 @@ export class SaveSlotModal implements UIModal {
   }
 
   private createDom(): void {
-    if (typeof document === 'undefined') return;
-
-    let overlay = document.getElementById('save-slot-modal');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'save-slot-modal';
-      overlay.className = 'retro-window-overlay';
-      overlay.style.display = 'none';
-      overlay.style.zIndex = '200';
-      document.body.appendChild(overlay);
-    }
-    this.overlayEl = overlay;
+    this.overlayEl = createDialogScrim('save-slot-modal');
   }
 
   public open(): void {
@@ -122,41 +113,48 @@ export class SaveSlotModal implements UIModal {
     const preserved = slot === 'preserved';
     const dateStr = new Date(meta.timestamp).toLocaleString();
     return `
-        <div class="save-slot-card autosave-card" style="
-          background: #1e293b;
-          border: 2px solid ${preserved ? '#a78bfa' : '#38bdf8'};
-          border-radius: 6px;
-          padding: 12px 14px;
-          margin-bottom: 12px;
-          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-        ">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="background: ${preserved ? '#7c3aed' : '#0284c7'}; color: #ffffff; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 3px;">
-                  ${preserved ? 'EARLIER AUTOSAVE' : 'AUTOSAVE'}
-                </span>
-                <span style="font-weight: bold; font-size: 15px; color: #f8fafc;">${meta.profileName}</span>
-                <span style="font-size: 12px; color: #94a3b8;">Floor ${meta.floor}</span>
-              </div>
-              <div style="font-size: 11px; color: #cbd5e1; margin-top: 4px;">
-                ${iconHtml('clock')} Last Saved: ${dateStr}
-              </div>
-              ${preserved ? '<div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Kept aside when a newer autosave would have overwritten it.</div>' : ''}
-            </div>
-            <div>
-              <button
-                type="button"
-                id="btn-load-autosave-${slot}"
-                class="win-btn primary-btn"
-                style="padding: 6px 14px; font-size: 12px; font-weight: bold; cursor: pointer;"
-              >
-                ${iconHtml('autosave')} Resume ${preserved ? 'Earlier ' : ''}Autosave
-              </button>
-            </div>
+      <div class="ui-card slot-card is-autosave${preserved ? ' is-preserved' : ''}">
+        <div class="slot-main">
+          <div class="slot-head">
+            <span class="slot-tag is-auto">${preserved ? 'Earlier autosave' : 'Autosave'}</span>
+            <span class="slot-name">${escapeHtml(meta.profileName)}</span>
+            <span class="ui-muted">Floor ${meta.floor}</span>
           </div>
+          <div class="ui-note">${iconHtml('clock')} Saved ${escapeHtml(dateStr)}</div>
+          ${preserved ? '<div class="ui-note">Kept aside when a newer autosave would have overwritten it.</div>' : ''}
         </div>
-      `;
+        ${dialogButton(`btn-load-autosave-${slot}`, preserved ? 'Resume earlier autosave' : 'Resume autosave', { icon: 'autosave', primary: !preserved })}
+      </div>`;
+  }
+
+  private profileCardHtml(prof: CharacterProfile): string {
+    const dateStr = new Date(prof.lastSaved).toLocaleString();
+    const badge =
+      prof.questStatus === 'victorious'
+        ? `<span class="slot-tag is-won">${iconHtml('trophy')} Victor</span>`
+        : prof.questStatus === 'fallen'
+          ? `<span class="slot-tag is-lost">${iconHtml('fallen')} Fallen</span>`
+          : '<span class="slot-tag">Active</span>';
+    const difficulty = prof.difficulty ? prof.difficulty.charAt(0).toUpperCase() + prof.difficulty.slice(1) : 'Normal';
+    const id = escapeHtml(prof.id);
+    const name = escapeHtml(prof.name);
+    return `
+      <div class="ui-card slot-card" data-profile-id="${id}">
+        <div class="slot-main">
+          <div class="slot-head">
+            <span class="slot-name">${name}</span>
+            <span class="slot-level">Level ${prof.level}</span>
+            <span class="ui-muted">Floor ${prof.floor}</span>
+            ${badge}
+          </div>
+          <div class="ui-note">Difficulty ${escapeHtml(difficulty)} · Health ${prof.hp}/${prof.maxHp} · Strength ${prof.strength}</div>
+          <div class="ui-note ui-faint">Saved ${escapeHtml(dateStr)}</div>
+        </div>
+        <div class="slot-actions">
+          <button type="button" class="ui-btn ui-btn--sm btn-load-profile" data-profile-id="${id}">${iconHtml('load')} Load</button>
+          <button type="button" class="ui-btn ui-btn--sm ui-btn--danger btn-delete-profile" data-profile-id="${id}" data-profile-name="${name}" title="Delete this save" aria-label="Delete ${name}'s save">${iconHtml('delete')}</button>
+        </div>
+      </div>`;
   }
 
   public render(): void {
@@ -166,153 +164,32 @@ export class SaveSlotModal implements UIModal {
     const preservedMeta = this.options.autosaveManager?.getAutosaveMetadata('preserved');
     const profiles = this.options.profileManager.listProfiles();
 
-    const autosaveCardHtml =
+    const autosaveCards =
       (autosaveMeta ? this.autosaveCardHtml('latest', autosaveMeta) : '') +
       (preservedMeta ? this.autosaveCardHtml('preserved', preservedMeta) : '');
 
-    let profileListHtml = '';
+    let profileList = '';
     if (profiles.length === 0 && !autosaveMeta && !preservedMeta) {
-      profileListHtml = `
-        <div style="text-align: center; padding: 30px 10px; color: #94a3b8; font-style: italic;">
-          No save files found on this machine.<br>
-          Select 'New Game' from the title screen to embark on an adventure!
-        </div>
-      `;
+      profileList = `<div class="ui-note slot-empty">No saves on this machine yet. Choose New game on the title screen to begin an adventure.</div>`;
     } else if (profiles.length > 0) {
-      const sortedProfiles = [...profiles].sort((a, b) => b.lastSaved - a.lastSaved);
-      profileListHtml = sortedProfiles.map((prof) => {
-        const dateStr = new Date(prof.lastSaved).toLocaleString();
-        const statusBadge = prof.questStatus === 'victorious'
-          ? '<span style="background: #15803d; color: #ffffff; font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: bold;">' + iconHtml('trophy') + ' VICTOR</span>'
-          : prof.questStatus === 'fallen'
-          ? '<span style="background: #991b1b; color: #ffffff; font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: bold;">' + iconHtml('fallen') + ' FALLEN</span>'
-          : '<span style="background: #334155; color: #cbd5e1; font-size: 10px; padding: 2px 6px; border-radius: 3px;">ACTIVE</span>';
-
-        return `
-          <div class="save-slot-card profile-card" data-profile-id="${prof.id}" style="
-            background: #1e293b;
-            border: 1px solid #475569;
-            border-radius: 6px;
-            padding: 10px 14px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-          ">
-            <div style="flex: 1; min-width: 0; padding-right: 12px;">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 3px;">
-                <span style="font-weight: bold; font-size: 14px; color: #f8fafc;">${prof.name}</span>
-                <span style="color: #ca8a04; font-size: 12px; font-weight: bold;">Level ${prof.level}</span>
-                <span style="color: #94a3b8; font-size: 12px;">(Floor ${prof.floor})</span>
-                ${statusBadge}
-              </div>
-              <div style="font-size: 11px; color: #94a3b8;">
-                Difficulty: <span style="color: #e2e8f0; text-transform: capitalize;">${prof.difficulty ? prof.difficulty.charAt(0).toUpperCase() + prof.difficulty.slice(1) : 'Normal'}</span> |
-                HP: <span style="color: #ef4444;">${prof.hp}/${prof.maxHp}</span> |
-                Strength: <span style="color: #e2e8f0;">${prof.strength}</span>
-              </div>
-              <div style="font-size: 10px; color: #64748b; margin-top: 2px;">
-                Saved: ${dateStr}
-              </div>
-            </div>
-            <div style="display: flex; gap: 6px;">
-              <button
-                type="button"
-                class="win-btn btn-load-profile"
-                data-profile-id="${prof.id}"
-                style="padding: 6px 12px; font-size: 12px; font-weight: bold; cursor: pointer;"
-              >
-                ${iconHtml('load')} Load
-              </button>
-              <button
-                type="button"
-                class="win-btn btn-delete-profile"
-                data-profile-id="${prof.id}"
-                data-profile-name="${prof.name}"
-                style="padding: 6px 8px; font-size: 12px; color: #f87171; cursor: pointer;"
-                title="Delete Save"
-              >
-                ${iconHtml('delete')}
-              </button>
-            </div>
-          </div>
-        `;
-      }).join('');
+      profileList = [...profiles]
+        .sort((a, b) => b.lastSaved - a.lastSaved)
+        .map((prof) => this.profileCardHtml(prof))
+        .join('');
     }
 
-    this.overlayEl.innerHTML = `
-      <div class="retro-window" style="
-        width: 580px;
-        max-width: 95vw;
-        max-height: 85vh;
-        background: var(--ui-panel, #161a26);
-        border: 1px solid var(--ui-accent, #f59e0b);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
-        border-radius: 6px;
-        display: flex;
-        flex-direction: column;
-        color: #e2e8f0;
-        font-family: 'Courier New', Courier, monospace;
-      ">
-        <!-- Title bar -->
-        <div style="
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 10px 14px;
-          background: linear-gradient(90deg, var(--ui-titlebar-start, #1e2433), var(--ui-titlebar-end, #0f1420));
-          border-bottom: 1px solid var(--ui-accent, #f59e0b);
-        ">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            ${iconHtml('save')}
-            <span style="font-weight: bold; font-size: 15px; color: var(--ui-titlebar-text, #fde047); letter-spacing: 1px;">
-              Load Saved Adventure
-            </span>
-          </div>
-          <button id="btn-close-saveslot-top" style="
-            background: none;
-            border: none;
-            color: #94a3b8;
-            font-size: 18px;
-            cursor: pointer;
-            padding: 0 4px;
-          ">✕</button>
-        </div>
-
-        <!-- Body -->
-        <div style="padding: 14px; overflow-y: auto; flex: 1;">
-          ${autosaveCardHtml}
-          <div style="margin-bottom: 8px; font-size: 12px; font-weight: bold; color: #94a3b8; text-transform: uppercase;">
-            Character Saves (${profiles.length})
-          </div>
-          <div class="profiles-list">
-            ${profileListHtml}
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <div style="
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 10px 14px;
-          border-top: 1px solid #334155;
-          background: #0f172a;
-        ">
-          <span style="font-size: 11px; color: #64748b;">
-            Corrupted saves are handled safely without crashing.
-          </span>
-          <button id="btn-close-saveslot-bottom" class="win-btn" style="
-            padding: 6px 16px;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-          ">
-            Back [Esc]
-          </button>
-        </div>
-      </div>
-    `;
+    this.overlayEl.innerHTML = dialogHtml({
+      title: 'Load a saved game',
+      icon: 'save',
+      closeId: 'btn-close-saveslot-top',
+      closeTitle: 'Back (Esc)',
+      body: `
+        ${autosaveCards ? `<div class="slot-list">${autosaveCards}</div>` : ''}
+        <div class="ui-dialog-label">Character saves (${profiles.length})</div>
+        <div class="slot-list profiles-list">${profileList}</div>`,
+      footNote: '<span>A damaged save is refused safely; it never stops the game.</span>',
+      actions: dialogButton('btn-close-saveslot-bottom', 'Back', { key: 'Esc' }),
+    });
 
     // Bind event listeners
     this.overlayEl.querySelector('#btn-close-saveslot-top')?.addEventListener('click', () => this.close());

@@ -2,8 +2,11 @@
 export interface ThemeFontFace {
   family: string;
   src: string;
+  /** A single weight ('700') or, for a variable font, a range ('400 900'). */
   weight?: string;
   style?: string;
+  /** CSS unicode-range: the browser loads this file only for text that needs it. */
+  unicodeRange?: string;
 }
 
 /**

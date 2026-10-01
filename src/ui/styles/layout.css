@@ -806,6 +806,7 @@
 }
 #header-name {
   font-weight: bold;
+  font-family: var(--ui-font-display);
   color: var(--ui-text);
   text-shadow: 1px 1px 0 #000;
 }

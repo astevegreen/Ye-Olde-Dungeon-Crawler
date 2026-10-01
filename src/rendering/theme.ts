@@ -207,12 +207,13 @@ function loadFontFaces(faces: ThemeFontFace[]): Promise<void> {
   if (faces.length === 0 || typeof FontFace === 'undefined' || !document.fonts) return Promise.resolve();
   const loads: Promise<unknown>[] = [];
   for (const face of faces) {
-    const key = `${face.family}|${face.weight ?? ''}|${face.style ?? ''}`;
+    const key = `${face.family}|${face.weight ?? ''}|${face.style ?? ''}|${face.unicodeRange ?? ''}`;
     if (loadedFaces.has(key)) continue;
     loadedFaces.add(key);
     const font = new FontFace(face.family, `url(${face.src})`, {
       weight: face.weight ?? 'normal',
       style: face.style ?? 'normal',
+      ...(face.unicodeRange ? { unicodeRange: face.unicodeRange } : {}),
     });
     document.fonts.add(font);
     loads.push(font.load().catch((err: unknown) => console.warn(`[theme] font ${face.family} failed to load`, err)));

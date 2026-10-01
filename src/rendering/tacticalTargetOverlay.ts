@@ -2,7 +2,7 @@ import type { GameEngine, TileDefinition } from '../engine';
 import { Monster, Container } from '../engine';
 import type { Camera } from './camera';
 import type { ThemeTokens } from '../engine';
-import { resolveThemeTokens } from './theme';
+import { resolveThemeTokens, uiFont } from './theme';
 
 export class TacticalTargetOverlay {
   private hoveredWorldX: number | null = null;
@@ -146,7 +146,7 @@ export class TacticalTargetOverlay {
     ctx.fillRect(cardX, cardY, 3, cardH);
 
     // Target Monster Name
-    ctx.font = `bold 12px ${font}`;
+    ctx.font = uiFont('sm', font, 'bold');
     ctx.fillStyle = '#f8fafc';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
@@ -171,7 +171,7 @@ export class TacticalTargetOverlay {
     ctx.strokeRect(barX + 0.5, barY + 0.5, barW - 1, barH - 1);
 
     // Numerical HP
-    ctx.font = `bold 9px ${font}`;
+    ctx.font = uiFont('xs', font, 'bold');
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -183,18 +183,18 @@ export class TacticalTargetOverlay {
     const infoY = cardY + 40;
 
     if (monster.intent?.type === 'windup') {
-      ctx.font = `bold 10px ${font}`;
+      ctx.font = uiFont('xs', font, 'bold');
       ctx.fillStyle = '#f87171';
       ctx.fillText('⚠️ Intent: Attack Winding Up!', barX, infoY);
     } else {
       const statuses = monster.statusManager?.getAll() ?? [];
       if (statuses.length > 0) {
-        ctx.font = `bold 10px ${font}`;
+        ctx.font = uiFont('xs', font, 'bold');
         ctx.fillStyle = '#38bdf8';
         const labels = statuses.map((s) => `[${s.type}]`).join(' ');
         ctx.fillText(labels.length > 26 ? labels.slice(0, 25) + '…' : labels, barX, infoY);
       } else {
-        ctx.font = `italic 10px ${font}`;
+        ctx.font = uiFont('xs', font, 'italic');
         ctx.fillStyle = '#94a3b8';
         ctx.fillText('Active Combat Target', barX, infoY);
       }
@@ -229,7 +229,7 @@ export class TacticalTargetOverlay {
       label = count > 1 ? `📦 ${firstItem.displayName} (+${count - 1} more)` : `📦 ${firstItem.displayName}`;
     }
 
-    ctx.font = `bold 10px ${font}`;
+    ctx.font = uiFont('xs', font, 'bold');
     const textW = ctx.measureText(label).width;
     const pillW = textW + 14;
     const pillH = 18;
@@ -275,7 +275,7 @@ export class TacticalTargetOverlay {
     if (!text) return;
 
     ctx.save();
-    ctx.font = `bold 10px ${font}`;
+    ctx.font = uiFont('xs', font, 'bold');
     const textW = ctx.measureText(text).width;
     const pillW = textW + 12;
     const pillH = 17;

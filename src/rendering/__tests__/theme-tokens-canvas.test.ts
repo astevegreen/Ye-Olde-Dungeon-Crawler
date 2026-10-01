@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { resolveThemeTokens, COTW_THEME_TOKENS } from '../theme';
+import { resolveThemeTokens, DEFAULT_THEME_TOKENS, setCanvasTextScale, uiFont } from '../theme';
 import { WARCRAFT_THEME_TOKENS } from '../../content/warcraft/theme';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../engine';
@@ -96,14 +96,14 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
   });
 
   describe('resolveThemeTokens()', () => {
-    it('returns canonical COTW tokens when given undefined or empty object', () => {
+    it('returns the default tokens when given undefined or empty object', () => {
       const tokensEmpty = resolveThemeTokens();
-      expect(tokensEmpty.canvasBg).toBe(COTW_THEME_TOKENS.canvasBg);
-      expect(tokensEmpty.hudBg).toBe(COTW_THEME_TOKENS.hudBg);
-      expect(tokensEmpty.modalBg).toBe(COTW_THEME_TOKENS.modalBg);
-      expect(tokensEmpty.healthBar).toBe(COTW_THEME_TOKENS.healthBar);
-      expect(tokensEmpty.manaBar).toBe(COTW_THEME_TOKENS.manaBar);
-      expect(tokensEmpty.accent).toBe(COTW_THEME_TOKENS.accent);
+      expect(tokensEmpty.canvasBg).toBe(DEFAULT_THEME_TOKENS.canvasBg);
+      expect(tokensEmpty.hudBg).toBe(DEFAULT_THEME_TOKENS.hudBg);
+      expect(tokensEmpty.modalBg).toBe(DEFAULT_THEME_TOKENS.modalBg);
+      expect(tokensEmpty.healthBar).toBe(DEFAULT_THEME_TOKENS.healthBar);
+      expect(tokensEmpty.manaBar).toBe(DEFAULT_THEME_TOKENS.manaBar);
+      expect(tokensEmpty.accent).toBe(DEFAULT_THEME_TOKENS.accent);
     });
 
     it('preserves complete custom theme tokens such as Warcraft Horde theme', () => {
@@ -127,33 +127,58 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
       expect(partial.accent).toBe('#ff00aa');
       expect(partial.modalBg).toBe('#112233');
       // Remaining unspecified tokens fall back to defaults
-      expect(partial.healthBar).toBe(COTW_THEME_TOKENS.healthBar);
+      expect(partial.healthBar).toBe(DEFAULT_THEME_TOKENS.healthBar);
     });
 
-    it('respects flat borderStyle fallbacks', () => {
-      const flat = resolveThemeTokens({
-        borderStyle: 'flat',
-        bg: '#0a0a0a',
-        panel: '#1a1a1a',
+    it('derives the older canvas names from the role tokens a pack sets', () => {
+      const roles = resolveThemeTokens({
+        surface0: '#010101',
+        surface1: '#020202',
+        surface2: '#030303',
+        line: '#040404',
+        lineStrong: '#050505',
         text: '#eaeaea',
+        accent: '#ff00aa',
+        title: '#fafa00',
       });
-      expect(flat.canvasBg).toBe('#0a0a0a');
-      expect(flat.hudBg).toBe('#0a0a0a');
-      expect(flat.modalBg).toBe('#1a1a1a');
-      expect(flat.hudText).toBe('#eaeaea');
+      expect(roles.bg).toBe('#010101');
+      expect(roles.hudBg).toBe('#020202');
+      expect(roles.modalBg).toBe('#020202');
+      expect(roles.cardBg).toBe('#030303');
+      expect(roles.cardBorder).toBe('#040404');
+      expect(roles.borderLight).toBe('#050505');
+      expect(roles.hudText).toBe('#eaeaea');
+      expect(roles.hudAccent).toBe('#ff00aa');
+      expect(roles.modalTitlebarText).toBe('#fafa00');
+    });
+
+    it('reads a pack that only sets the older names into the roles', () => {
+      const legacy = resolveThemeTokens({ bg: '#0a0a0a', panel: '#1a1a1a', borderLight: '#2a2a2a', healthBar: '#aa0000' });
+      expect(legacy.surface0).toBe('#0a0a0a');
+      expect(legacy.surface1).toBe('#1a1a1a');
+      expect(legacy.lineStrong).toBe('#2a2a2a');
+      expect(legacy.health).toBe('#aa0000');
+    });
+
+    it('sizes canvas text in CSS pixels, so it never drops under the 11px floor', () => {
+      setCanvasTextScale(814 / 960); // 1366×768: the board shown at 0.85×
+      expect(uiFont('xs', 'monospace')).toBe('13px monospace');
+      expect(uiFont('md', 'monospace', 'bold')).toBe('bold 15.3px monospace');
+      setCanvasTextScale(1);
+      expect(uiFont('xs', 'monospace')).toBe('11px monospace');
     });
   });
 
   describe('CanvasRenderer theme reactivity', () => {
-    it('initializes with default COTW theme tokens when engine has no custom theme', () => {
+    it('initializes with the default theme tokens when engine has no custom theme', () => {
       const ctx = createMockCanvasContext();
       const canvas = createMockCanvas(ctx);
       const engine = createTestEngine();
 
       const renderer = new CanvasRenderer(canvas, engine);
-      expect(renderer.theme.canvasBg).toBe(COTW_THEME_TOKENS.canvasBg);
-      expect(renderer.theme.hudBg).toBe(COTW_THEME_TOKENS.hudBg);
-      expect(renderer.theme.hudBorder).toBe(COTW_THEME_TOKENS.hudBorder);
+      expect(renderer.theme.canvasBg).toBe(DEFAULT_THEME_TOKENS.canvasBg);
+      expect(renderer.theme.hudBg).toBe(DEFAULT_THEME_TOKENS.hudBg);
+      expect(renderer.theme.hudBorder).toBe(DEFAULT_THEME_TOKENS.hudBorder);
     });
 
     it('reflects manifest theme tokens when engine is loaded with Warcraft theme', () => {

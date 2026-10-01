@@ -13,7 +13,7 @@ import {
   type Item,
 } from '../engine';
 import type { Camera } from './camera';
-import { resolveThemeTokens } from './theme';
+import { resolveThemeTokens, uiFont } from './theme';
 import type { UIModal } from '../ui/modalStack';
 
 export interface SpellbookEntry {
@@ -533,7 +533,7 @@ export class TargetingOverlay implements UIModal {
     ctx.fillRect(14, bannerY, 440, 48);
     ctx.strokeRect(14.5, bannerY + 0.5, 439, 47);
 
-    ctx.font = `bold 12px ${font}`;
+    ctx.font = uiFont('sm', font, 'bold');
     ctx.fillStyle = theme.hudAccent;
     ctx.textAlign = 'left';
     const costOrCharge = this.activeEntry.type === 'wand'
@@ -542,7 +542,7 @@ export class TargetingOverlay implements UIModal {
     const bounceNote = spell.reflects ? ' (Bounces off walls)' : '';
     ctx.fillText(`AIMING: ${spell.name} ${costOrCharge}${bounceNote}`, 22, bannerY + 18);
 
-    ctx.font = `11px ${font}`;
+    ctx.font = uiFont('xs', font);
     ctx.fillStyle = theme.textMuted;
     ctx.fillText(`TARGET: ${targetDesc} | [Enter] Fire | [Esc] Cancel`, 22, bannerY + 36);
     ctx.restore();
@@ -656,14 +656,14 @@ export class TargetingOverlay implements UIModal {
     ctx.fillStyle = theme.modalTitlebar;
     ctx.fillRect(dialogX + 3, dialogY + 3, dialogW - 6, 24);
 
-    ctx.font = `bold 12px ${font}`;
+    ctx.font = uiFont('sm', font, 'bold');
     ctx.fillStyle = theme.modalTitlebarText;
     ctx.textAlign = 'left';
     const gameTitle = engine.manifest?.name?.toUpperCase() ?? 'ADVENTURE';
     ctx.fillText(`📖 GRIMOIRE & WAND ACTIVATION (${gameTitle})`, dialogX + 8, dialogY + 19);
 
     // Dialog Header Info
-    ctx.font = `11px ${font}`;
+    ctx.font = uiFont('xs', font);
     ctx.fillStyle = theme.textMuted;
     ctx.fillText(
       `Caster: ${engine.player.name} | ${resolveManaTerms(engine.manifest).unit}: ${engine.player.mana}/${engine.player.maxMana} | Press [1-9] to Select & Aim | [Esc] Close`,
@@ -687,7 +687,7 @@ export class TargetingOverlay implements UIModal {
     // List entries
     let rowY = listY + 18;
     for (const entry of this.entries) {
-      ctx.font = `bold 12px ${font}`;
+      ctx.font = uiFont('sm', font, 'bold');
       ctx.fillStyle = theme.accent;
       ctx.fillText(`[${entry.key}]`, listX + 8, rowY);
 
@@ -701,7 +701,7 @@ export class TargetingOverlay implements UIModal {
         costStr = `${entry.charges}/${entry.maxCharges} chg (${entry.locationLabel})`;
       }
 
-      ctx.font = `11px ${font}`;
+      ctx.font = uiFont('xs', font);
       ctx.fillStyle = entry.type === 'wand' ? '#d97706' : theme.hudAccent;
       ctx.textAlign = 'right';
       ctx.fillText(costStr, listX + listW - 12, rowY);
@@ -713,7 +713,7 @@ export class TargetingOverlay implements UIModal {
 
     if (this.entries.length === 0) {
       ctx.fillStyle = theme.textMuted;
-      ctx.font = `italic 12px ${font}`;
+      ctx.font = uiFont('sm', font, 'italic');
       ctx.fillText('No spells or wands available.', listX + 16, listY + 30);
     }
     ctx.restore();

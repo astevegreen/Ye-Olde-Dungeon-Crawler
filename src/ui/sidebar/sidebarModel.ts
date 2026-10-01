@@ -106,10 +106,10 @@ export function getConditions(engine: GameEngine): Condition[] {
   for (const eff of p.statusManager.getAll()) {
     const def = engine.manifest?.statusEffects?.find((s) => s.id === eff.type);
     let label = def?.name ?? eff.type.replace(/_/g, ' ');
-    let color = def?.hudColor ?? BUILT_IN_STATUS_COLORS[eff.type] ?? '#38bdf8';
+    let color = def?.hudColor ?? BUILT_IN_STATUS_COLORS[eff.type] ?? 'var(--ui-info)';
     if (eff.type === 'rune_of_return_channel') {
       label = 'Channeling rune';
-      color = '#38bdf8';
+      color = 'var(--ui-info)';
     }
     conditions.push({
       key: `status:${eff.type}`,
@@ -121,17 +121,17 @@ export function getConditions(engine: GameEngine): Condition[] {
   }
 
   if (engine.detectMonstersTurns > 0) {
-    conditions.push({ key: 'sense:monsters', label: 'Sensing creatures', color: '#38bdf8', turns: engine.detectMonstersTurns });
+    conditions.push({ key: 'sense:monsters', label: 'Sensing creatures', color: 'var(--ui-info)', turns: engine.detectMonstersTurns });
   }
   if (engine.detectObjectsTurns > 0) {
-    conditions.push({ key: 'sense:objects', label: 'Sensing objects', color: '#fbbf24', turns: engine.detectObjectsTurns });
+    conditions.push({ key: 'sense:objects', label: 'Sensing objects', color: 'var(--ui-warn)', turns: engine.detectObjectsTurns });
   }
 
   for (const countdown of getTimedEventCountdowns(engine)) {
     conditions.push({
       key: `timer:${countdown.label}`,
       label: countdown.label,
-      color: countdown.turnsRemaining <= 20 ? '#ef4444' : '#f59e0b',
+      color: countdown.turnsRemaining <= 20 ? 'var(--ui-bad)' : 'var(--ui-warn)',
       turns: countdown.turnsRemaining,
     });
   }
@@ -141,7 +141,7 @@ export function getConditions(engine: GameEngine): Condition[] {
     conditions.push({
       key: 'encumbrance',
       label: enc,
-      color: enc === 'Burdened' ? '#f59e0b' : enc === 'Overburdened' ? '#f97316' : '#ef4444',
+      color: enc === 'Burdened' ? 'var(--ui-warn)' : enc === 'Overburdened' ? '#f97316' : 'var(--ui-bad)',
       turns: null,
       detail: enc === 'Immobilized' ? 'too heavy to move — drop something' : 'carrying too much slows you',
     });

@@ -1,3 +1,4 @@
+import { uiFont } from './theme';
 import type { GameEngine, Action } from '../engine';
 import { MovementAction, OpenDoorAction } from '../engine';
 import type { Camera } from './camera';
@@ -177,7 +178,7 @@ export class MouseVectorOverlay {
         ctx.strokeRect(screenX + 2.5, screenY + 2.5, cellSize - 5, cellSize - 5);
 
         // Directional Chevron
-        ctx.font = 'bold 12px "Courier New", monospace';
+        ctx.font = uiFont('sm', '"Courier New", monospace', 'bold');
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = isTargetMonster ? '#fca5a5' : '#bae6fd';
@@ -188,7 +189,7 @@ export class MouseVectorOverlay {
         ctx.strokeStyle = 'rgba(147, 197, 253, 0.22)';
         ctx.strokeRect(screenX + 3.5, screenY + 3.5, cellSize - 7, cellSize - 7);
 
-        ctx.font = '10px "Courier New", monospace';
+        ctx.font = uiFont('xs', '"Courier New", monospace');
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = 'rgba(147, 197, 253, 0.35)';

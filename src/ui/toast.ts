@@ -35,28 +35,27 @@ export function showToast(message: string, type: ToastType = 'info', durationMs 
   const toast = document.createElement('div');
   toast.className = `retro-toast retro-toast-${type}`;
 
-  let bg = '#1e293b';
-  let border = '#475569';
-  let color = '#f8fafc';
+  // A status toast tints the panel with its status color (ADR-0011 role tokens).
+  const tint = (role: string): string => `color-mix(in srgb, var(--ui-${role}) 22%, var(--ui-surface-1))`;
+  let bg = 'var(--ui-surface-2)';
+  let border = 'var(--ui-line-strong)';
+  const color = 'var(--ui-text)';
   let icon = 'ℹ️';
 
   switch (type) {
     case 'success':
-      bg = '#064e3b';
-      border = '#10b981';
-      color = '#ecfdf5';
+      bg = tint('good');
+      border = 'var(--ui-good)';
       icon = '✅';
       break;
     case 'warning':
-      bg = '#78350f';
-      border = '#f59e0b';
-      color = '#fef3c7';
+      bg = tint('warn');
+      border = 'var(--ui-warn)';
       icon = '⚠️';
       break;
     case 'error':
-      bg = '#7f1d1d';
-      border = '#ef4444';
-      color = '#fef2f2';
+      bg = tint('bad');
+      border = 'var(--ui-bad)';
       icon = '❌';
       break;
   }
@@ -67,7 +66,7 @@ export function showToast(message: string, type: ToastType = 'info', durationMs 
     color: color,
     padding: '10px 14px',
     borderRadius: '4px',
-    boxShadow: '0 4px 14px rgba(0, 0, 0, 0.7)',
+    boxShadow: 'var(--ui-shadow)',
     fontSize: '13px',
     lineHeight: '1.4',
     display: 'flex',

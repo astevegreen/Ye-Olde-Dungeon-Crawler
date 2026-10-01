@@ -1,18 +1,77 @@
-/** Visual theme tokens for manifest-driven UI theming. Engine-owned type. */
+/** A font a pack ships in its bundle (ADR-0011): `src` is a URL, usually an inlined data URL. */
+export interface ThemeFontFace {
+  family: string;
+  src: string;
+  weight?: string;
+  style?: string;
+}
+
+/**
+ * Visual theme tokens for manifest-driven UI theming. Engine-owned type.
+ *
+ * The semantic role tokens (ADR-0011) are the primary vocabulary: presentation code names
+ * roles — a surface level, a text level, the accent, a status — never hues, and a pack
+ * reskins every screen by supplying them. Every field is optional; `resolveThemeTokens()`
+ * (`src/rendering/theme.ts`) fills what a pack leaves out from a neutral default.
+ */
 export interface ThemeTokens {
-  bg: string;
-  panel: string;
-  borderLight: string;
-  borderDark: string;
-  text: string;
-  titlebarStart: string;
-  titlebarEnd: string;
-  titlebarText: string;
-  accent: string;
-  fontFamily?: string;
+  // Surfaces, darkest to raised: app background, window/panel body, card or raised row,
+  // inset field (bar tracks, key chips, minimap well).
+  surface0?: string;
+  surface1?: string;
+  surface2?: string;
+  surface3?: string;
+  /** Hairlines and card borders. */
+  line?: string;
+  /** Window frames and button borders. */
+  lineStrong?: string;
+  /** The pack's frame material: dialog borders and title bars. */
+  frame?: string;
+
+  // Text, strongest to weakest. `textMuted` holds 4.5:1 on surface1; `textFaint` is for
+  // decoration only.
+  text?: string;
+  textSoft?: string;
+  textMuted?: string;
+  textFaint?: string;
+  /** Headings and names. */
+  title?: string;
+
+  /** Selection, primary actions, focus. Never the same color as `bad`. */
+  accent?: string;
+  /** Text drawn on the accent. */
+  accentInk?: string;
+  good?: string;
+  warn?: string;
+  bad?: string;
+  info?: string;
+
+  // Resources.
+  health?: string;
+  mana?: string;
+  xp?: string;
+  gold?: string;
+
+  // Type and shape.
+  fontDisplay?: string;
+  fontBody?: string;
+  /** Always a monospace with lining, tabular figures, so numbers read in every pack. */
+  fontNum?: string;
+  /** Fonts the pack inlines into its bundle; loaded before the faces above are used. */
+  fontFaces?: ThemeFontFace[];
+  radius?: string;
   borderStyle?: 'bevel' | 'flat' | 'parchment';
 
-  // Extended / Canvas viewport & overlay tokens (optional, with intelligent fallbacks)
+  // Older names, derived from the roles above when a pack leaves them out. Canvas
+  // overlays still read them; new code uses the roles.
+  bg?: string;
+  panel?: string;
+  borderLight?: string;
+  borderDark?: string;
+  titlebarStart?: string;
+  titlebarEnd?: string;
+  titlebarText?: string;
+  fontFamily?: string;
   canvasBg?: string;
   hudBg?: string;
   hudBorder?: string;
@@ -25,7 +84,6 @@ export interface ThemeTokens {
   modalBackdrop?: string;
   cardBg?: string;
   cardBorder?: string;
-  textMuted?: string;
   healthBar?: string;
   manaBar?: string;
 }

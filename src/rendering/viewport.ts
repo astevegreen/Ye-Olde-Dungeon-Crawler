@@ -1,3 +1,5 @@
+import { setCanvasTextScale } from './theme';
+
 export interface ViewportConfig {
   virtualWidth?: number;
   virtualHeight?: number;
@@ -252,6 +254,8 @@ export class ViewportManager {
     const scaleY = (this.displayHeight * this.dpr) / this.virtualHeight;
 
     this.ctx.scale(scaleX, scaleY);
+    // Canvas text is sized in CSS pixels (uiFont), so it needs the CSS-per-virtual scale.
+    setCanvasTextScale(this.displayWidth / this.virtualWidth);
     this.ctx.imageSmoothingEnabled = false;
   }
 

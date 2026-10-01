@@ -18,7 +18,7 @@ One line each; the cited section holds the full rule and its enforcement. The li
 - **Imports (§2, §3):** the engine imports no other layer; `src/ui/`, `src/rendering/`, and `src/content/` reach the engine only through `src/engine/index.ts`; only `src/main.ts` imports content packs; `src/ui/` imports `src/rendering/` types only.
 - **No engine creep (§3):** campaign mechanics, names, and narrative live in `src/content/`; `src/engine/` gains only generic capabilities (primitive, hook point, registry, manifest field).
 - **WarCraft is parked (ADR-0010):** all work targets the Castle of the Winds sequel. Do not build, screenshot, design for or extend `src/content/warcraft/`; when a shared change breaks it, make only the smallest fix that restores `tsc` and the tests.
-- **Pack-neutral presentation (§3):** `src/ui/`, `src/rendering/`, and `src/main/**` name no pack; pack wording comes from the manifest (`name`, `description`, `town.name`, `branding`) and pack art from `spriteRecipes`.
+- **Pack-neutral presentation (§3):** `src/ui/`, `src/rendering/`, and `src/main/**` name no pack; pack wording comes from the manifest (`name`, `description`, `town.name`, `branding`) and pack art from `spriteRecipes`. Colors and fonts come from the role tokens (`var(--ui-*)` in CSS, the resolved theme and `uiFont()` on canvas), never new hex values: `check:ui-palette` fails on added color literals (ADR-0011).
 - **Determinism (§7.2):** simulation randomness and IDs come from `engine.prng`/`engine.rng`, never `Math.random()` or `Date.now()`.
 - **Encapsulation (§7.2):** outside `src/engine/`, change engine state through `GameEngine`/`Player`/`Entity` methods or `engine.commandBus`, never by writing engine fields; allowlist entries need a stated reason.
 - **Save format (§5):** a breaking save-format change bumps `CURRENT_SCHEMA_VERSION` with exactly one forward-only step in `migrator.ts`; a dead player's state is never saved.
@@ -38,7 +38,7 @@ You commit — and push when the owner asks — on your own; Claude Code reviews
 
 ## Verification Gates (§7.2)
 Before reporting a change complete, run these and report the real output:
-- `npm run lint` (type-check, `check:engine-purity`, `check:engine-encapsulation`, `check:engine-creep`, and `knip` dead-code analysis)
+- `npm run lint` (type-check, `check:engine-purity`, `check:engine-encapsulation`, `check:engine-creep`, `check:ui-palette`, and `knip` dead-code analysis)
 - `npm test`
 - `npm run sim`
 - `npm run validate:schema`

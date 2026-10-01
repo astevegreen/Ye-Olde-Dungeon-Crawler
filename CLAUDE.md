@@ -42,7 +42,7 @@ problem to flag and resolve, not to silently pick a side on.
 Before considering any task complete, actually run — don't just
 describe running — whichever of these are relevant: `npm run lint`
 (this already runs `tsc --noEmit`, `check:engine-purity`,
-`check:engine-encapsulation`, `check:engine-creep`, AND `knip` — don't
+`check:engine-encapsulation`, `check:engine-creep`, `check:ui-palette`, AND `knip` — don't
 invoke those separately), `npm test`, `npm run sim`, `npm run validate:schema`, `npm run build`. Paste real output. A change that "should" pass
 is not the same as a change that does.
 

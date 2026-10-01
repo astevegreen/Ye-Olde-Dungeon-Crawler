@@ -1,17 +1,17 @@
       :root {
-        --ui-bg: #0a0c14;
-        --ui-panel: #161a26;
-        --ui-border-light: #3b455b;
+        --ui-bg: var(--ui-surface-0);
+        --ui-panel: var(--ui-surface-1);
+        --ui-border-light: var(--ui-line-strong);
         --ui-border-dark: #0c0e17;
-        --ui-text: #f1f5f9;
+        --ui-text: var(--ui-text);
         --ui-titlebar-start: #1e2433;
         --ui-titlebar-end: #0f1420;
-        --ui-titlebar-text: #fde047;
-        --ui-accent: #f59e0b;
+        --ui-titlebar-text: var(--ui-title);
+        --ui-accent: var(--ui-accent);
         --ui-font-family: "Courier New", Courier, monospace;
         --ui-hud-bg: #101420;
-        --ui-hud-border: #2d3748;
-        --ui-hud-accent: #f59e0b;
+        --ui-hud-border: var(--ui-line);
+        --ui-hud-accent: var(--ui-accent);
       }
 
       *, *::before, *::after {
@@ -23,7 +23,7 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background-color: var(--ui-bg, #0a0b10);
+        background-color: var(--ui-bg);
         color: #d1d5db;
         font-family: var(--ui-font-family, "Courier New", Courier, "MS Sans Serif", monospace);
         user-select: none;
@@ -74,26 +74,26 @@
       .retro-window {
         width: 620px;
         max-width: 95vw;
-        background-color: var(--ui-panel, #c0c0c0);
-        color: var(--ui-text, #000000);
-        border: 2px solid var(--ui-border-light, #ffffff);
-        border-right-color: var(--ui-border-dark, #404040);
-        border-bottom-color: var(--ui-border-dark, #404040);
+        background-color: var(--ui-panel);
+        color: var(--ui-text);
+        border: 2px solid var(--ui-border-light);
+        border-right-color: var(--ui-border-dark);
+        border-bottom-color: var(--ui-border-dark);
         box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.85);
         display: flex;
         flex-direction: column;
       }
 
       .retro-titlebar {
-        background: linear-gradient(90deg, var(--ui-titlebar-start, #000080), var(--ui-titlebar-end, #1084d0));
-        color: var(--ui-titlebar-text, #ffffff);
+        background: linear-gradient(90deg, var(--ui-titlebar-start), var(--ui-titlebar-end));
+        color: var(--ui-titlebar-text);
         font-size: 13px;
         font-weight: bold;
         padding: 4px 8px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        border-bottom: 1px solid var(--ui-border-dark, #404040);
+        border-bottom: 1px solid var(--ui-border-dark);
       }
 
       .retro-titlebar-title {
@@ -112,9 +112,9 @@
 
       .retro-banner {
         text-align: center;
-        border: 1px solid var(--ui-accent, #f59e0b);
-        background: linear-gradient(180deg, var(--ui-titlebar-start, #1e2433), var(--ui-titlebar-end, #0f1420));
-        color: var(--ui-titlebar-text, #fde047);
+        border: 1px solid var(--ui-accent);
+        background: linear-gradient(180deg, var(--ui-titlebar-start), var(--ui-titlebar-end));
+        color: var(--ui-titlebar-text);
         padding: 8px 12px;
         box-shadow: inset 1px 1px 0 #000;
       }
@@ -128,7 +128,7 @@
 
       .retro-banner-sub {
         font-size: 11px;
-        color: var(--ui-text, #f1f5f9);
+        color: var(--ui-text);
         opacity: 0.75;
         margin-top: 2px;
       }
@@ -152,12 +152,12 @@
       }
 
       .retro-inset-list {
-        background-color: var(--ui-bg, #0a0c14);
-        border: 1px solid var(--ui-border-light, #3b455b);
+        background-color: var(--ui-bg);
+        border: 1px solid var(--ui-border-light);
         height: 200px;
         overflow-y: auto;
         font-size: 12px;
-        color: var(--ui-text, #f1f5f9);
+        color: var(--ui-text);
       }
 
       .roster-empty-notice {
@@ -169,7 +169,7 @@
 
       .roster-item {
         padding: 6px 8px;
-        border-bottom: 1px dotted var(--ui-border-light, #3b455b);
+        border-bottom: 1px dotted var(--ui-border-light);
         cursor: pointer;
         transition: background 0.1s;
       }
@@ -179,9 +179,9 @@
       }
 
       .roster-item.selected {
-        background-color: rgba(245, 158, 11, 0.16);
-        box-shadow: inset 3px 0 0 var(--ui-accent, #f59e0b);
-        color: var(--ui-titlebar-text, #fde047);
+        background-color: color-mix(in srgb, var(--ui-accent) 16%, transparent);
+        box-shadow: inset 3px 0 0 var(--ui-accent);
+        color: var(--ui-titlebar-text);
       }
 
       .roster-item-header {
@@ -215,12 +215,12 @@
 
       /* Beveled Classic / Norse Runic Buttons */
       .win-btn {
-        background-color: var(--ui-panel, #161a26);
-        color: var(--ui-text, #f1f5f9);
-        border-top: 2px solid var(--ui-border-light, #3b455b);
-        border-left: 2px solid var(--ui-border-light, #3b455b);
-        border-right: 2px solid var(--ui-border-dark, #0c0e17);
-        border-bottom: 2px solid var(--ui-border-dark, #0c0e17);
+        background-color: var(--ui-panel);
+        color: var(--ui-text);
+        border-top: 2px solid var(--ui-border-light);
+        border-left: 2px solid var(--ui-border-light);
+        border-right: 2px solid var(--ui-border-dark);
+        border-bottom: 2px solid var(--ui-border-dark);
         padding: 4px 10px;
         font-family: inherit;
         font-size: 12px;
@@ -231,21 +231,21 @@
       }
 
       .win-btn:hover:not(:disabled) {
-        border-top-color: var(--ui-accent, #f59e0b);
-        border-left-color: var(--ui-accent, #f59e0b);
+        border-top-color: var(--ui-accent);
+        border-left-color: var(--ui-accent);
       }
 
       .win-btn:active:not(:disabled) {
-        border-top: 2px solid var(--ui-border-dark, #0c0e17);
-        border-left: 2px solid var(--ui-border-dark, #0c0e17);
-        border-right: 2px solid var(--ui-border-light, #3b455b);
-        border-bottom: 2px solid var(--ui-border-light, #3b455b);
+        border-top: 2px solid var(--ui-border-dark);
+        border-left: 2px solid var(--ui-border-dark);
+        border-right: 2px solid var(--ui-border-light);
+        border-bottom: 2px solid var(--ui-border-light);
         padding: 5px 9px 3px 11px;
       }
 
       .win-btn:disabled {
-        color: #64748b;
-        text-shadow: 1px 1px 0 #0f172a;
+        color: var(--ui-text-faint);
+        text-shadow: 1px 1px 0 var(--ui-surface-0);
         cursor: not-allowed;
         opacity: 0.6;
       }
@@ -256,12 +256,12 @@
       }
 
       .primary-btn {
-        border-color: var(--ui-accent, #f59e0b) var(--ui-border-dark, #0c0e17) var(--ui-border-dark, #0c0e17) var(--ui-accent, #f59e0b);
+        border-color: var(--ui-accent) var(--ui-border-dark) var(--ui-border-dark) var(--ui-accent);
         color: #fef08a;
       }
 
       .danger-btn {
-        color: #ef4444;
+        color: var(--ui-health);
       }
 
       .create-btn {
@@ -272,9 +272,9 @@
 
       /* Fieldset Groups */
       .retro-group {
-        border: 2px groove var(--ui-border-light, #3b455b);
+        border: 2px groove var(--ui-border-light);
         padding: 8px 10px;
-        background: rgba(15, 23, 42, 0.6);
+        background: color-mix(in srgb, var(--ui-surface-0) 60%, transparent);
       }
 
       .retro-group legend {
@@ -287,10 +287,10 @@
       .retro-input {
         width: 100%;
         padding: 4px 6px;
-        background-color: #ffffff;
+        background-color: var(--ui-text);
         border: 2px solid #808080;
-        border-right-color: #ffffff;
-        border-bottom-color: #ffffff;
+        border-right-color: var(--ui-text);
+        border-bottom-color: var(--ui-text);
         color: #000000;
         font-family: inherit;
         font-size: 13px;
@@ -331,16 +331,16 @@
       }
 
       .retro-statusbar {
-        border-top: 2px solid var(--ui-border-dark, #0c0e17);
-        border-left: 2px solid var(--ui-border-dark, #0c0e17);
-        border-right: 2px solid var(--ui-border-light, #3b455b);
-        border-bottom: 2px solid var(--ui-border-light, #3b455b);
-        background: var(--ui-panel, #161a26);
+        border-top: 2px solid var(--ui-border-dark);
+        border-left: 2px solid var(--ui-border-dark);
+        border-right: 2px solid var(--ui-border-light);
+        border-bottom: 2px solid var(--ui-border-light);
+        background: var(--ui-panel);
         padding: 3px 8px;
         font-size: 11px;
         display: flex;
         justify-content: space-between;
-        color: var(--ui-text, #f1f5f9);
+        color: var(--ui-text);
       }
 
       .version-tag {
@@ -366,7 +366,7 @@
       .stat-name {
         font-size: 11px;
         font-weight: bold;
-        color: #1f2937;
+        color: var(--ui-surface-2);
         width: 30px;
       }
       .stat-value {
@@ -385,17 +385,17 @@
       .derived-preview-grid {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
-        background: #e2e8f0;
+        background: var(--ui-text);
         border: 1px inset #808080;
         padding: 4px;
         font-size: 10px;
         text-align: center;
-        color: #1e293b;
+        color: var(--ui-surface-2);
       }
       .gender-btn-group button.active,
       .difficulty-btn-group button.active {
         background: #000080 !important;
-        color: #ffffff !important;
+        color: var(--ui-text) !important;
       }
       .valhalla-item {
         padding: 4px 6px;
@@ -408,7 +408,7 @@
       }
       .valhalla-item.selected {
         background: #000080;
-        color: #ffffff;
+        color: var(--ui-text);
       }
       .valhalla-badge-win {
         color: #16a34a;
@@ -422,7 +422,7 @@
         color: #86efac;
       }
       .valhalla-item.selected .valhalla-badge-loss {
-        color: #fca5a5;
+        color: var(--ui-bad);
       }
       .save-drop-overlay {
         position: absolute;
@@ -436,26 +436,26 @@
         pointer-events: none;
       }
       .save-drop-box {
-        border: 3px dashed #38bdf8;
-        background: rgba(15, 23, 42, 0.95);
-        color: #f8fafc;
+        border: 3px dashed var(--ui-info);
+        background: color-mix(in srgb, var(--ui-surface-0) 95%, transparent);
+        color: var(--ui-text);
         padding: 30px 50px;
         text-align: center;
-        box-shadow: 0 0 24px rgba(56, 189, 248, 0.4);
+        box-shadow: 0 0 24px color-mix(in srgb, var(--ui-info) 40%, transparent);
       }
       .storage-badge-pill {
         font-size: 10px;
         font-weight: bold;
         padding: 2px 6px;
-        border: 1px solid #fbbf24;
-        color: #fbbf24;
+        border: 1px solid var(--ui-warn);
+        color: var(--ui-warn);
         background: rgba(251, 191, 36, 0.1);
         border-radius: 2px;
       }
 
       .storage-badge-pill.active {
-        border-color: #4ade80;
-        color: #4ade80;
+        border-color: var(--ui-good);
+        color: var(--ui-good);
         background: rgba(74, 222, 128, 0.1);
       }
 
@@ -517,10 +517,10 @@
         max-height: 92vh;
         display: flex;
         flex-direction: column;
-        background: var(--ui-panel, #161a26);
-        color: var(--ui-text, #f1f5f9);
-        border: 1px solid var(--ui-accent, #f59e0b);
-        box-shadow: 0 0 0 1px var(--ui-border-dark, #0c0e17), 0 12px 40px rgba(0, 0, 0, 0.85),
+        background: var(--ui-panel);
+        color: var(--ui-text);
+        border: 1px solid var(--ui-accent);
+        box-shadow: 0 0 0 1px var(--ui-border-dark), 0 12px 40px rgba(0, 0, 0, 0.85),
           inset 0 0 40px rgba(0, 0, 0, 0.35);
         font-family: var(--ui-font-family, "Courier New", Courier, monospace);
         user-select: none;
@@ -531,9 +531,9 @@
         align-items: center;
         gap: 12px;
         padding: 8px 14px;
-        background: linear-gradient(90deg, var(--ui-titlebar-start, #1e2433), var(--ui-titlebar-end, #0f1420));
-        color: var(--ui-titlebar-text, #fde047);
-        border-bottom: 1px solid var(--ui-accent, #f59e0b);
+        background: linear-gradient(90deg, var(--ui-titlebar-start), var(--ui-titlebar-end));
+        color: var(--ui-titlebar-text);
+        border-bottom: 1px solid var(--ui-accent);
         font-weight: bold;
         font-size: 14px;
         letter-spacing: 0.04em;
@@ -543,22 +543,22 @@
         width: 24px;
         height: 24px;
         background: transparent;
-        color: var(--ui-titlebar-text, #fde047);
-        border: 1px solid var(--ui-border-light, #3b455b);
+        color: var(--ui-titlebar-text);
+        border: 1px solid var(--ui-border-light);
         font-size: 12px;
         cursor: pointer;
       }
       .choice-dialog-close:hover {
-        border-color: var(--ui-accent, #f59e0b);
+        border-color: var(--ui-accent);
       }
       .choice-dialog-description {
         padding: 14px 18px;
         font-size: 13px;
         line-height: 1.55;
         white-space: pre-line;
-        color: var(--ui-text, #f1f5f9);
+        color: var(--ui-text);
         background: rgba(0, 0, 0, 0.25);
-        border-bottom: 1px solid var(--ui-border-light, #3b455b);
+        border-bottom: 1px solid var(--ui-border-light);
         overflow-y: auto;
         user-select: text;
       }
@@ -575,31 +575,31 @@
         gap: 12px;
         padding: 10px 12px;
         background: rgba(255, 255, 255, 0.03);
-        border: 1px solid var(--ui-border-light, #3b455b);
+        border: 1px solid var(--ui-border-light);
         cursor: pointer;
         transition: background 0.1s ease, border-color 0.1s ease;
       }
       .choice-option-row:hover {
-        border-color: var(--ui-accent, #f59e0b);
+        border-color: var(--ui-accent);
       }
       .choice-option-focused {
-        background: rgba(245, 158, 11, 0.12);
-        border-color: var(--ui-accent, #f59e0b);
-        box-shadow: inset 3px 0 0 var(--ui-accent, #f59e0b);
+        background: color-mix(in srgb, var(--ui-accent) 12%, transparent);
+        border-color: var(--ui-accent);
+        box-shadow: inset 3px 0 0 var(--ui-accent);
       }
       .choice-option-disabled {
         opacity: 0.55;
         cursor: not-allowed;
       }
       .choice-option-disabled:hover {
-        border-color: var(--ui-border-light, #3b455b);
+        border-color: var(--ui-border-light);
       }
       .choice-option-marker {
         min-width: 18px;
         font-size: 13px;
         line-height: 18px;
         text-align: center;
-        color: var(--ui-accent, #f59e0b);
+        color: var(--ui-accent);
       }
       .choice-option-body {
         flex: 1;
@@ -608,24 +608,24 @@
       .choice-option-label {
         font-weight: bold;
         font-size: 13px;
-        color: var(--ui-titlebar-text, #fde047);
+        color: var(--ui-titlebar-text);
       }
       .choice-option-disabled .choice-option-label {
-        color: var(--ui-text, #f1f5f9);
+        color: var(--ui-text);
         text-decoration: line-through;
       }
       .choice-option-desc {
         margin-top: 3px;
         font-size: 12px;
         line-height: 1.45;
-        color: var(--ui-text, #f1f5f9);
+        color: var(--ui-text);
         opacity: 0.8;
       }
       .choice-option-reason {
         margin-top: 4px;
         font-size: 11px;
         font-style: italic;
-        color: #f87171;
+        color: var(--ui-bad);
       }
       .choice-dialog-footer {
         display: flex;
@@ -634,12 +634,12 @@
         flex-wrap: wrap;
         gap: 10px;
         padding: 10px 18px;
-        border-top: 1px solid var(--ui-border-light, #3b455b);
+        border-top: 1px solid var(--ui-border-light);
         background: rgba(0, 0, 0, 0.3);
       }
       .choice-dialog-hint {
         font-size: 11px;
-        color: var(--ui-text, #f1f5f9);
+        color: var(--ui-text);
         opacity: 0.6;
       }
       .choice-dialog-buttons {
@@ -652,18 +652,18 @@
         font-family: inherit;
         font-weight: bold;
         font-size: 12px;
-        color: var(--ui-text, #f1f5f9);
+        color: var(--ui-text);
         background: transparent;
-        border: 1px solid var(--ui-border-light, #3b455b);
+        border: 1px solid var(--ui-border-light);
         cursor: pointer;
       }
       .choice-btn:hover:not(:disabled) {
-        border-color: var(--ui-accent, #f59e0b);
+        border-color: var(--ui-accent);
       }
       .choice-btn-primary {
-        color: #0a0c14;
-        background: var(--ui-accent, #f59e0b);
-        border-color: var(--ui-accent, #f59e0b);
+        color: var(--ui-accent-ink);
+        background: var(--ui-accent);
+        border-color: var(--ui-accent);
       }
       .choice-btn-primary:hover:not(:disabled) {
         filter: brightness(1.12);

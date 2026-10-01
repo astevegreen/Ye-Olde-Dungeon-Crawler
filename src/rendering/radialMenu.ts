@@ -1,7 +1,7 @@
 import type { GameEngine } from '../engine';
 import type { RadialMenuSlotConfig } from '../ui/settings/settingsManager';
 import { RADIAL_MENU_SLOT_COUNT } from '../ui/settings/settingsManager';
-import { resolveThemeTokens } from './theme';
+import { resolveThemeTokens, uiFont } from './theme';
 
 /**
  * Configurable Radial Action Menu (docs/architecture/simulation-and-input.md).
@@ -95,7 +95,7 @@ export class RadialMenuOverlay {
       const labelRadius = (innerRadius + outerRadius) / 2;
       const lx = cx + Math.cos(midAngle) * labelRadius;
       const ly = cy + Math.sin(midAngle) * labelRadius;
-      ctx.font = `bold 11px ${font}`;
+      ctx.font = uiFont('xs', font, 'bold');
       ctx.fillStyle = isHovered ? theme.titlebarText : slot ? theme.text : theme.textMuted;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';

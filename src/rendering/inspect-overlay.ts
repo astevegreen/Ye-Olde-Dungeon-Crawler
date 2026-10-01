@@ -2,7 +2,7 @@ import type { GameEngine } from '../engine';
 import type { Camera } from './camera';
 import { TileInspector } from '../engine';
 import type { TileInspection } from '../engine';
-import { resolveThemeTokens } from './theme';
+import { canvasUnit, resolveThemeTokens, uiFont } from './theme';
 import { formatWeight } from '../ui/units';
 import type { ThemeTokens } from '../engine';
 
@@ -143,20 +143,22 @@ export class InspectOverlay {
     const theme = this.theme ?? resolveThemeTokens();
     const font = theme.fontFamily ?? '"Courier New", Courier, monospace';
 
-    const cardW = 290;
+    // Laid out in CSS pixels (canvasUnit) so the card grows with its uiFont() text.
+    const u = canvasUnit();
+    const cardW = 300 * u;
     // Calculate card height based on contents
-    let cardH = 110;
-    if (data.entity) cardH += 85;
-    if (data.traps && data.traps.length > 0) cardH += 22;
-    if (data.items && data.items.length > 0) cardH += 24 + Math.min(data.items.length, 3) * 16;
+    let cardH = 110 * u;
+    if (data.entity) cardH += 85 * u;
+    if (data.traps && data.traps.length > 0) cardH += 22 * u;
+    if (data.items && data.items.length > 0) cardH += (24 + Math.min(data.items.length, 3) * 16) * u;
 
     // Smart docking: opposite side of reticle
-    const cardX = reticleScreenX > canvasW / 2 ? 14 : canvasW - cardW - 14;
-    const cardY = 54;
+    const cardX = reticleScreenX > canvasW / 2 ? 14 * u : canvasW - cardW - 14 * u;
+    const cardY = 54 * u;
 
     // Card shadow
     ctx.fillStyle = theme.modalBackdrop;
-    ctx.fillRect(cardX + 3, cardY + 3, cardW, cardH);
+    ctx.fillRect(cardX + 3 * u, cardY + 3 * u, cardW, cardH);
 
     // Card Body
     ctx.fillStyle = theme.modalBg;
@@ -165,55 +167,55 @@ export class InspectOverlay {
     // Border
     ctx.strokeStyle = theme.modalBorder;
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(cardX + 0.5, cardY + 0.5, cardW - 1, cardH - 1);
+    ctx.strokeRect(cardX + 0.5 * u, cardY + 0.5 * u, cardW - 1, cardH - 1);
 
     // Title Bar
     ctx.fillStyle = theme.modalTitlebar;
-    ctx.fillRect(cardX, cardY, cardW, 24);
+    ctx.fillRect(cardX, cardY, cardW, 24 * u);
     ctx.strokeStyle = theme.cardBorder;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(cardX, cardY + 24.5);
-    ctx.lineTo(cardX + cardW, cardY + 24.5);
+    ctx.moveTo(cardX, cardY + 24.5 * u);
+    ctx.lineTo(cardX + cardW, cardY + 24.5 * u);
     ctx.stroke();
 
-    ctx.font = `bold 11px ${font}`;
+    ctx.font = uiFont('xs', font, 'bold');
     ctx.fillStyle = theme.modalTitlebarText;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`LOOK / INSPECT [${data.x}, ${data.y}]`, cardX + 8, cardY + 12);
+    ctx.fillText(`LOOK / INSPECT [${data.x}, ${data.y}]`, cardX + 8 * u, cardY + 12 * u);
 
     const visLabel = data.visibility.toUpperCase();
     const visColor = data.visibility === 'visible' ? '#10b981' : theme.hudAccent;
     ctx.fillStyle = visColor;
     ctx.textAlign = 'right';
-    ctx.fillText(`[${visLabel}]`, cardX + cardW - 8, cardY + 12);
+    ctx.fillText(`[${visLabel}]`, cardX + cardW - 8 * u, cardY + 12 * u);
 
     // Content Lines
-    let curY = cardY + 38;
+    let curY = cardY + 38 * u;
     ctx.textAlign = 'left';
 
     // 1. Terrain section
     if (data.terrain) {
-      ctx.font = `bold 11px ${font}`;
+      ctx.font = uiFont('xs', font, 'bold');
       ctx.fillStyle = theme.hudText;
-      ctx.fillText(`Terrain: ${data.terrain.name}`, cardX + 8, curY);
+      ctx.fillText(`Terrain: ${data.terrain.name}`, cardX + 8 * u, curY);
 
       const passBadge = data.terrain.passable ? '[Passable]' : '[Blocked]';
       const passColor = data.terrain.passable ? '#10b981' : '#ef4444';
-      ctx.font = `10px ${font}`;
+      ctx.font = uiFont('xs', font);
       ctx.fillStyle = passColor;
-      ctx.fillText(passBadge, cardX + cardW - 74, curY);
-      curY += 18;
+      ctx.fillText(passBadge, cardX + cardW - 74 * u, curY);
+      curY += 18 * u;
     }
 
     // 2. Traps section
     if (data.traps && data.traps.length > 0) {
       for (const trap of data.traps) {
-        ctx.font = `bold 10px ${font}`;
+        ctx.font = uiFont('xs', font, 'bold');
         ctx.fillStyle = '#f97316';
-        ctx.fillText(`⚠️ Trap: ${trap.name}`, cardX + 8, curY);
-        curY += 16;
+        ctx.fillText(`⚠️ Trap: ${trap.name}`, cardX + 8 * u, curY);
+        curY += 16 * u;
       }
     }
 
@@ -222,29 +224,29 @@ export class InspectOverlay {
       const ent = data.entity;
       ctx.strokeStyle = theme.cardBorder;
       ctx.beginPath();
-      ctx.moveTo(cardX + 8, curY);
-      ctx.lineTo(cardX + cardW - 8, curY);
+      ctx.moveTo(cardX + 8 * u, curY);
+      ctx.lineTo(cardX + cardW - 8 * u, curY);
       ctx.stroke();
-      curY += 10;
+      curY += 10 * u;
 
-      ctx.font = `bold 11px ${font}`;
+      ctx.font = uiFont('xs', font, 'bold');
       ctx.fillStyle = ent.type === 'player' ? theme.hudAccent : '#f87171';
-      ctx.fillText(`Entity: ${ent.name}`, cardX + 8, curY);
-      curY += 16;
+      ctx.fillText(`Entity: ${ent.name}`, cardX + 8 * u, curY);
+      curY += 16 * u;
 
       // HP bar & values
-      ctx.font = `10px ${font}`;
+      ctx.font = uiFont('xs', font);
       ctx.fillStyle = theme.textMuted;
-      ctx.fillText(`HP: ${ent.hp}/${ent.maxHp}`, cardX + 8, curY);
+      ctx.fillText(`HP: ${ent.hp}/${ent.maxHp}`, cardX + 8 * u, curY);
 
-      ctx.fillText(`Speed: ${ent.speedTier} (${ent.speed})`, cardX + 110, curY);
-      curY += 16;
+      ctx.fillText(`Speed: ${ent.speedTier} (${ent.speed})`, cardX + 110 * u, curY);
+      curY += 16 * u;
 
       // Status
       const statusStr = (ent.statusEffects && ent.statusEffects.length > 0) ? ent.statusEffects.join(', ') : 'None';
       ctx.fillStyle = theme.textMuted;
-      ctx.fillText(`Afflictions: ${statusStr}`, cardX + 8, curY);
-      curY += 16;
+      ctx.fillText(`Afflictions: ${statusStr}`, cardX + 8 * u, curY);
+      curY += 16 * u;
 
       // Declared Intent
       if (ent.intent) {
@@ -265,10 +267,10 @@ export class InspectOverlay {
           intentColor = theme.textMuted;
         }
 
-        ctx.font = `bold 10px ${font}`;
+        ctx.font = uiFont('xs', font, 'bold');
         ctx.fillStyle = intentColor;
-        ctx.fillText(`Intent: ${intentLabel}`, cardX + 8, curY);
-        curY += 18;
+        ctx.fillText(`Intent: ${intentLabel}`, cardX + 8 * u, curY);
+        curY += 18 * u;
       }
     }
 
@@ -276,19 +278,19 @@ export class InspectOverlay {
     if (data.items && data.items.length > 0) {
       ctx.strokeStyle = theme.cardBorder;
       ctx.beginPath();
-      ctx.moveTo(cardX + 8, curY);
-      ctx.lineTo(cardX + cardW - 8, curY);
+      ctx.moveTo(cardX + 8 * u, curY);
+      ctx.lineTo(cardX + cardW - 8 * u, curY);
       ctx.stroke();
-      curY += 10;
+      curY += 10 * u;
 
-      ctx.font = `bold 10px ${font}`;
+      ctx.font = uiFont('xs', font, 'bold');
       ctx.fillStyle = theme.accent;
-      ctx.fillText(`Ground Items (${data.items.length}):`, cardX + 8, curY);
-      curY += 14;
+      ctx.fillText(`Ground Items (${data.items.length}):`, cardX + 8 * u, curY);
+      curY += 14 * u;
 
       for (let i = 0; i < Math.min(data.items.length, 3); i++) {
         const it = data.items[i];
-        ctx.font = `10px ${font}`;
+        ctx.font = uiFont('xs', font);
         const rawName = (it && it.name) ? it.name : 'Item';
 
         let statTag = '';
@@ -306,34 +308,34 @@ export class InspectOverlay {
         const fullName = `${rawName}${statTag}`;
         const maxNameLen = 22;
         const nameCut = fullName.length > maxNameLen ? fullName.slice(0, maxNameLen - 1) + '…' : fullName;
-        ctx.fillText(`• ${nameCut}`, cardX + 8, curY);
+        ctx.fillText(`• ${nameCut}`, cardX + 8 * u, curY);
 
         ctx.fillStyle = theme.textMuted;
         ctx.textAlign = 'right';
-        ctx.fillText(formatWeight(it.weight), cardX + cardW - 8, curY);
+        ctx.fillText(formatWeight(it.weight), cardX + cardW - 8 * u, curY);
         ctx.textAlign = 'left';
-        curY += 14;
+        curY += 14 * u;
       }
 
       if (data.items.length > 3) {
         ctx.fillStyle = theme.textMuted;
-        ctx.font = `italic 9px ${font}`;
-        ctx.fillText(`(+${data.items.length - 3} more items...)`, cardX + 16, curY);
-        curY += 12;
+        ctx.font = uiFont('xs', font, 'italic');
+        ctx.fillText(`(+${data.items.length - 3} more items...)`, cardX + 16 * u, curY);
+        curY += 12 * u;
       }
     }
 
     // Card Footer Hint
     ctx.strokeStyle = theme.cardBorder;
     ctx.beginPath();
-    ctx.moveTo(cardX + 8, cardY + cardH - 20);
-    ctx.lineTo(cardX + cardW - 8, cardY + cardH - 20);
+    ctx.moveTo(cardX + 8 * u, cardY + cardH - 20 * u);
+    ctx.lineTo(cardX + cardW - 8 * u, cardY + cardH - 20 * u);
     ctx.stroke();
 
-    ctx.font = `9px ${font}`;
+    ctx.font = uiFont('xs', font);
     ctx.fillStyle = theme.hudAccent;
     ctx.textAlign = 'center';
-    ctx.fillText('[Arrows/Numpad] Move | [X / L / ESC] Exit', cardX + cardW / 2, cardY + cardH - 9);
+    ctx.fillText('[Arrows/Numpad] Move | [X / L / ESC] Exit', cardX + cardW / 2, cardY + cardH - 9 * u);
 
     ctx.restore();
   }

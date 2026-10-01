@@ -1,6 +1,6 @@
 import type { GameEngine } from '../engine';
 import type { GameMap } from '../engine';
-import { resolveThemeTokens } from './theme';
+import { resolveThemeTokens, uiFont } from './theme';
 import type { ThemeTokens } from '../engine';
 import type { ClickZone } from './types';
 
@@ -150,20 +150,17 @@ export class MapOverlay {
     ctx.lineTo(modalX + modalW, modalY + 30.5);
     ctx.stroke();
 
-    ctx.font = `bold 12px ${font}`;
+    ctx.font = uiFont('sm', font, 'bold');
     ctx.fillStyle = theme.modalTitlebarText;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🗺️ EXPLORED DUNGEON MAP VIEWER', modalX + 10, modalY + 15);
-
-    // Current viewed floor header badge
-    const viewedFloorName = this.viewedFloor === 0 ? 'Town (Floor 0)' : `Floor ${this.viewedFloor}`;
-    const activeFloorName = engine.currentFloor === 0 ? 'Town' : `Floor ${engine.currentFloor}`;
-    const badgeText = `Viewing: ${viewedFloorName} (Current: ${activeFloorName})`;
-
-    ctx.fillStyle = theme.accent;
-    ctx.textAlign = 'center';
-    ctx.fillText(badgeText, modalX + Math.floor(modalW / 2), modalY + 15);
+    // One title: the floor on show, and where the hero is only when that differs.
+    const floorName = (f: number): string => (f === 0 ? 'Town' : `Floor ${f}`);
+    const title =
+      this.viewedFloor === engine.currentFloor
+        ? `🗺️ MAP · ${floorName(this.viewedFloor).toUpperCase()}`
+        : `🗺️ MAP · ${floorName(this.viewedFloor).toUpperCase()}  (you are on ${floorName(engine.currentFloor)})`;
+    ctx.fillText(title, modalX + 10, modalY + 15);
 
     // Close button [X]
     const closeBtnX = modalX + modalW - 26;
@@ -171,7 +168,7 @@ export class MapOverlay {
     ctx.fillStyle = '#ef4444';
     ctx.fillRect(closeBtnX, closeBtnY, 20, 20);
     ctx.fillStyle = '#ffffff';
-    ctx.font = `bold 12px ${font}`;
+    ctx.font = uiFont('sm', font, 'bold');
     ctx.textAlign = 'center';
     ctx.fillText('X', closeBtnX + 10, closeBtnY + 10);
 
@@ -192,14 +189,15 @@ export class MapOverlay {
       this.viewedFloor < Math.max(...visitedFloors);
 
     // Button [▲ Up Floor]
-    const upBtnW = 120;
+    ctx.font = uiFont('xs', font, 'bold');
+    const upBtnW = ctx.measureText('[▲ Up Floor (<)]').width + 16;
     const upBtnH = 22;
     const upBtnX = modalX + 14;
     ctx.fillStyle = canGoUp ? theme.cardBg : theme.modalBg;
     ctx.fillRect(upBtnX, navY, upBtnW, upBtnH);
     ctx.strokeStyle = canGoUp ? theme.accent : theme.cardBorder;
     ctx.strokeRect(upBtnX + 0.5, navY + 0.5, upBtnW - 1, upBtnH - 1);
-    ctx.font = `bold 11px ${font}`;
+    ctx.font = uiFont('xs', font, 'bold');
     ctx.fillStyle = canGoUp ? theme.hudAccent : theme.textMuted;
     ctx.textAlign = 'center';
     ctx.fillText('[▲ Up Floor (<)]', upBtnX + upBtnW / 2, navY + 11);
@@ -215,14 +213,14 @@ export class MapOverlay {
     }
 
     // Visited floors list chips
-    ctx.font = `bold 10px ${font}`;
+    ctx.font = uiFont('xs', font, 'bold');
     ctx.fillStyle = theme.textMuted;
     ctx.textAlign = 'center';
     const chipsText = `Visited Floors: [${visitedFloors.map((f) => (f === this.viewedFloor ? `*${f}*` : `${f}`)).join(', ')}]`;
     ctx.fillText(chipsText, modalX + Math.floor(modalW / 2), navY + 11);
 
     // Button [▼ Down Floor]
-    const downBtnW = 130;
+    const downBtnW = ctx.measureText('[▼ Down Floor (>)]').width + 16;
     const downBtnH = 22;
     const downBtnX = modalX + modalW - downBtnW - 14;
     ctx.fillStyle = canGoDown ? theme.cardBg : theme.modalBg;
@@ -258,7 +256,7 @@ export class MapOverlay {
     ctx.strokeRect(mapAreaX + 0.5, mapAreaY + 0.5, mapAreaW - 1, mapAreaH - 1);
 
     if (!targetMap) {
-      ctx.font = `12px ${font}`;
+      ctx.font = uiFont('sm', font);
       ctx.fillStyle = theme.textMuted;
       ctx.textAlign = 'center';
       ctx.fillText('This floor has not been visited yet.', mapAreaX + mapAreaW / 2, mapAreaY + mapAreaH / 2);
@@ -342,15 +340,12 @@ export class MapOverlay {
 
     // 6. Legend & Navigation Instructions Footer
     const footerY = modalY + modalH - 24;
-    ctx.font = `10px ${font}`;
+    ctx.font = uiFont('xs', font);
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
 
     ctx.fillStyle = theme.textMuted;
     ctx.fillText('LEGEND: [■ Wall]  [· Floor]  [▲ Stairs Up]  [▼ Stairs Down]  [🚪 Door]  [@ You]', modalX + 14, footerY + 8);
-
-    ctx.textAlign = 'right';
-    ctx.fillStyle = theme.hudAccent;
-    ctx.fillText('[< / >] Cycle Floor | [M / Esc / Space] Close', modalX + modalW - 14, footerY + 8);
+    // The keys are on the mode hint under the map; the footer keeps only the legend.
   }
 }

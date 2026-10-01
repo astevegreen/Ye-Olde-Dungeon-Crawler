@@ -1,85 +1,254 @@
-import type { ThemeTokens } from '../engine';
+import type { ThemeFontFace, ThemeTokens } from '../engine';
 export type { ThemeTokens };
 
-export const COTW_THEME_TOKENS: Required<ThemeTokens> = {
+/**
+ * The neutral defaults every pack starts from (ADR-0011): a slate surface ladder with an
+ * amber accent. A pack's `manifest.theme` overrides any of them; nothing here names a pack.
+ * This module and `src/ui/styles/tokens.css` are the only presentation files allowed to
+ * hold color literals (`check:ui-palette`).
+ */
+export const DEFAULT_THEME_TOKENS: Required<ThemeTokens> = {
+  surface0: '#0a0c14',
+  surface1: '#161a26',
+  surface2: '#1c2433',
+  surface3: '#05070c',
+  line: '#252e40',
+  lineStrong: '#3b455b',
+  frame: '#d97706',
+
+  text: '#f8fafc',
+  textSoft: '#cbd5e1',
+  textMuted: '#94a3b8',
+  textFaint: '#64748b',
+  title: '#fde047',
+
+  accent: '#f59e0b',
+  accentInk: '#0a0c14',
+  good: '#4ade80',
+  warn: '#fbbf24',
+  bad: '#f87171',
+  info: '#38bdf8',
+
+  health: '#ef4444',
+  mana: '#0ea5e9',
+  xp: '#c4b5fd',
+  gold: '#facc15',
+
+  fontDisplay: '"Courier New", Courier, monospace',
+  fontBody: '"Courier New", Courier, monospace',
+  fontNum: '"Courier New", Courier, monospace',
+  fontFaces: [],
+  radius: '2px',
+  borderStyle: 'bevel',
+
+  // Older names: derived from the roles in resolveThemeTokens(); listed so the object is
+  // complete as a Required<ThemeTokens>.
   bg: '#0a0c14',
   panel: '#161a26',
   borderLight: '#3b455b',
-  borderDark: '#0c0e17',
-  text: '#f1f5f9',
-  titlebarStart: '#1e2433',
-  titlebarEnd: '#0f1420',
+  borderDark: '#0a0c14',
+  titlebarStart: '#1c2433',
+  titlebarEnd: '#161a26',
   titlebarText: '#fde047',
-  accent: '#f59e0b',
   fontFamily: '"Courier New", Courier, monospace',
-  borderStyle: 'bevel',
-
-  // Canvas Viewport & Overlays Tokens
-  canvasBg: '#07080d',
-  hudBg: '#101420',
-  hudBorder: '#2d3748',
+  canvasBg: '#05070c',
+  hudBg: '#161a26',
+  hudBorder: '#252e40',
   hudText: '#f8fafc',
   hudAccent: '#f59e0b',
-  modalBg: '#0f131d',
+  modalBg: '#161a26',
   modalBorder: '#d97706',
-  modalTitlebar: '#1a202c',
+  modalTitlebar: '#1c2433',
   modalTitlebarText: '#fde047',
   modalBackdrop: 'rgba(4, 6, 12, 0.88)',
-  cardBg: '#181e2b',
-  cardBorder: '#2d3748',
-  textMuted: '#94a3b8',
+  cardBg: '#1c2433',
+  cardBorder: '#252e40',
   healthBar: '#ef4444',
   manaBar: '#0ea5e9',
 };
 
+/**
+ * Fills every token. Roles come from the pack, then from the pack's older names where it
+ * only set those, then from the defaults; the older names are derived from the roles.
+ */
 export function resolveThemeTokens(tokens?: Partial<ThemeTokens>): Required<ThemeTokens> {
-  const isFlat = tokens?.borderStyle === 'flat';
-  return {
-    bg: tokens?.bg ?? COTW_THEME_TOKENS.bg,
-    panel: tokens?.panel ?? COTW_THEME_TOKENS.panel,
-    borderLight: tokens?.borderLight ?? COTW_THEME_TOKENS.borderLight,
-    borderDark: tokens?.borderDark ?? COTW_THEME_TOKENS.borderDark,
-    text: tokens?.text ?? COTW_THEME_TOKENS.text,
-    titlebarStart: tokens?.titlebarStart ?? COTW_THEME_TOKENS.titlebarStart,
-    titlebarEnd: tokens?.titlebarEnd ?? COTW_THEME_TOKENS.titlebarEnd,
-    titlebarText: tokens?.titlebarText ?? COTW_THEME_TOKENS.titlebarText,
-    accent: tokens?.accent ?? COTW_THEME_TOKENS.accent,
-    fontFamily: tokens?.fontFamily ?? COTW_THEME_TOKENS.fontFamily,
-    borderStyle: tokens?.borderStyle ?? COTW_THEME_TOKENS.borderStyle,
+  const t = tokens ?? {};
+  const D = DEFAULT_THEME_TOKENS;
 
-    canvasBg: tokens?.canvasBg ?? tokens?.bg ?? COTW_THEME_TOKENS.canvasBg,
-    hudBg: tokens?.hudBg ?? (isFlat ? (tokens?.bg ?? '#1c1917') : COTW_THEME_TOKENS.hudBg),
-    hudBorder: tokens?.hudBorder ?? tokens?.borderDark ?? COTW_THEME_TOKENS.hudBorder,
-    hudText: tokens?.hudText ?? (isFlat ? (tokens?.text ?? '#f5f5f4') : COTW_THEME_TOKENS.hudText),
-    hudAccent: tokens?.hudAccent ?? tokens?.accent ?? COTW_THEME_TOKENS.hudAccent,
-    modalBg: tokens?.modalBg ?? (isFlat ? (tokens?.panel ?? '#292524') : COTW_THEME_TOKENS.modalBg),
-    modalBorder: tokens?.modalBorder ?? tokens?.accent ?? COTW_THEME_TOKENS.modalBorder,
-    modalTitlebar: tokens?.modalTitlebar ?? tokens?.titlebarStart ?? COTW_THEME_TOKENS.modalTitlebar,
-    modalTitlebarText: tokens?.modalTitlebarText ?? tokens?.titlebarText ?? COTW_THEME_TOKENS.modalTitlebarText,
-    modalBackdrop: tokens?.modalBackdrop ?? COTW_THEME_TOKENS.modalBackdrop,
-    cardBg: tokens?.cardBg ?? (isFlat ? (tokens?.bg ?? '#1c1917') : COTW_THEME_TOKENS.cardBg),
-    cardBorder: tokens?.cardBorder ?? tokens?.borderDark ?? COTW_THEME_TOKENS.cardBorder,
-    textMuted: tokens?.textMuted ?? COTW_THEME_TOKENS.textMuted,
-    healthBar: tokens?.healthBar ?? COTW_THEME_TOKENS.healthBar,
-    manaBar: tokens?.manaBar ?? COTW_THEME_TOKENS.manaBar,
+  const surface0 = t.surface0 ?? t.bg ?? D.surface0;
+  const surface1 = t.surface1 ?? t.panel ?? D.surface1;
+  const surface2 = t.surface2 ?? t.cardBg ?? D.surface2;
+  const surface3 = t.surface3 ?? t.canvasBg ?? D.surface3;
+  const line = t.line ?? t.cardBorder ?? t.hudBorder ?? D.line;
+  const lineStrong = t.lineStrong ?? t.borderLight ?? D.lineStrong;
+  const accent = t.accent ?? D.accent;
+  const frame = t.frame ?? t.modalBorder ?? D.frame;
+  const text = t.text ?? D.text;
+  const title = t.title ?? t.titlebarText ?? D.title;
+  const health = t.health ?? t.healthBar ?? D.health;
+  const mana = t.mana ?? t.manaBar ?? D.mana;
+  const fontBody = t.fontBody ?? t.fontFamily ?? D.fontBody;
+  const fontDisplay = t.fontDisplay ?? fontBody;
+
+  return {
+    surface0,
+    surface1,
+    surface2,
+    surface3,
+    line,
+    lineStrong,
+    frame,
+    text,
+    textSoft: t.textSoft ?? D.textSoft,
+    textMuted: t.textMuted ?? D.textMuted,
+    textFaint: t.textFaint ?? D.textFaint,
+    title,
+    accent,
+    accentInk: t.accentInk ?? D.accentInk,
+    good: t.good ?? D.good,
+    warn: t.warn ?? D.warn,
+    bad: t.bad ?? D.bad,
+    info: t.info ?? D.info,
+    health,
+    mana,
+    xp: t.xp ?? D.xp,
+    gold: t.gold ?? D.gold,
+    fontDisplay,
+    fontBody,
+    fontNum: t.fontNum ?? D.fontNum,
+    fontFaces: t.fontFaces ?? D.fontFaces,
+    radius: t.radius ?? D.radius,
+    borderStyle: t.borderStyle ?? D.borderStyle,
+
+    bg: t.bg ?? surface0,
+    panel: t.panel ?? surface1,
+    borderLight: t.borderLight ?? lineStrong,
+    borderDark: t.borderDark ?? surface0,
+    titlebarStart: t.titlebarStart ?? surface2,
+    titlebarEnd: t.titlebarEnd ?? surface1,
+    titlebarText: t.titlebarText ?? title,
+    fontFamily: t.fontFamily ?? fontBody,
+    canvasBg: t.canvasBg ?? surface3,
+    hudBg: t.hudBg ?? surface1,
+    hudBorder: t.hudBorder ?? line,
+    hudText: t.hudText ?? text,
+    hudAccent: t.hudAccent ?? accent,
+    modalBg: t.modalBg ?? surface1,
+    modalBorder: t.modalBorder ?? frame,
+    modalTitlebar: t.modalTitlebar ?? surface2,
+    modalTitlebarText: t.modalTitlebarText ?? title,
+    modalBackdrop: t.modalBackdrop ?? D.modalBackdrop,
+    cardBg: t.cardBg ?? surface2,
+    cardBorder: t.cardBorder ?? line,
+    healthBar: t.healthBar ?? health,
+    manaBar: t.manaBar ?? mana,
   };
 }
 
-export function applyThemeTokens(tokens?: Partial<ThemeTokens>): void {
-  if (typeof document === 'undefined') return;
+/**
+ * Every token CSS reads, as `--ui-*` custom properties. The static scales (type, space,
+ * layers, motion) that no pack changes live in `src/ui/styles/tokens.css`.
+ */
+export const THEME_CSS_VARIABLES: ReadonlyArray<readonly [string, keyof ThemeTokens]> = [
+  ['--ui-surface-0', 'surface0'],
+  ['--ui-surface-1', 'surface1'],
+  ['--ui-surface-2', 'surface2'],
+  ['--ui-surface-3', 'surface3'],
+  ['--ui-line', 'line'],
+  ['--ui-line-strong', 'lineStrong'],
+  ['--ui-frame', 'frame'],
+  ['--ui-text', 'text'],
+  ['--ui-text-soft', 'textSoft'],
+  ['--ui-text-muted', 'textMuted'],
+  ['--ui-text-faint', 'textFaint'],
+  ['--ui-title', 'title'],
+  ['--ui-accent', 'accent'],
+  ['--ui-accent-ink', 'accentInk'],
+  ['--ui-good', 'good'],
+  ['--ui-warn', 'warn'],
+  ['--ui-bad', 'bad'],
+  ['--ui-info', 'info'],
+  ['--ui-health', 'health'],
+  ['--ui-mana', 'mana'],
+  ['--ui-xp', 'xp'],
+  ['--ui-gold', 'gold'],
+  ['--ui-font-display', 'fontDisplay'],
+  ['--ui-font-body', 'fontBody'],
+  ['--ui-font-num', 'fontNum'],
+  ['--ui-radius', 'radius'],
+  // Older names still read by the Windows-era stylesheet (base.css).
+  ['--ui-bg', 'bg'],
+  ['--ui-panel', 'panel'],
+  ['--ui-border-light', 'borderLight'],
+  ['--ui-border-dark', 'borderDark'],
+  ['--ui-titlebar-start', 'titlebarStart'],
+  ['--ui-titlebar-end', 'titlebarEnd'],
+  ['--ui-titlebar-text', 'titlebarText'],
+  ['--ui-font-family', 'fontFamily'],
+];
+
+const loadedFaces = new Set<string>();
+
+/**
+ * Writes the pack's tokens onto the document root and loads the fonts it ships. Resolves
+ * once those fonts are ready, so a caller can redraw the canvas in them.
+ */
+export function applyThemeTokens(tokens?: Partial<ThemeTokens>): Promise<void> {
+  if (typeof document === 'undefined') return Promise.resolve();
   const root = document.documentElement;
   const merged = resolveThemeTokens(tokens);
-
-  root.style.setProperty('--ui-bg', merged.bg);
-  root.style.setProperty('--ui-panel', merged.panel);
-  root.style.setProperty('--ui-border-light', merged.borderLight);
-  root.style.setProperty('--ui-border-dark', merged.borderDark);
-  root.style.setProperty('--ui-text', merged.text);
-  root.style.setProperty('--ui-titlebar-start', merged.titlebarStart);
-  root.style.setProperty('--ui-titlebar-end', merged.titlebarEnd);
-  root.style.setProperty('--ui-titlebar-text', merged.titlebarText);
-  root.style.setProperty('--ui-accent', merged.accent);
-  if (merged.fontFamily) {
-    root.style.setProperty('--ui-font-family', merged.fontFamily);
+  for (const [cssName, key] of THEME_CSS_VARIABLES) {
+    root.style.setProperty(cssName, String(merged[key]));
   }
+  return loadFontFaces(merged.fontFaces);
+}
+
+function loadFontFaces(faces: ThemeFontFace[]): Promise<void> {
+  if (faces.length === 0 || typeof FontFace === 'undefined' || !document.fonts) return Promise.resolve();
+  const loads: Promise<unknown>[] = [];
+  for (const face of faces) {
+    const key = `${face.family}|${face.weight ?? ''}|${face.style ?? ''}`;
+    if (loadedFaces.has(key)) continue;
+    loadedFaces.add(key);
+    const font = new FontFace(face.family, `url(${face.src})`, {
+      weight: face.weight ?? 'normal',
+      style: face.style ?? 'normal',
+    });
+    document.fonts.add(font);
+    loads.push(font.load().catch((err: unknown) => console.warn(`[theme] font ${face.family} failed to load`, err)));
+  }
+  return Promise.all(loads).then(() => undefined);
+}
+
+/** The type scale in CSS pixels (ADR-0011). `xs` is the floor: nothing renders smaller. */
+export const UI_TEXT_PX = { xs: 11, sm: 12, md: 13, lg: 15, xl: 18, '2xl': 22 } as const;
+export type UiTextRole = keyof typeof UI_TEXT_PX;
+
+/** CSS pixels per virtual canvas pixel; the viewport keeps it current. */
+let canvasTextScale = 1;
+
+/** Virtual canvas pixels per CSS pixel: multiply a CSS length by it to lay a canvas panel
+ *  out at the same size as its uiFont() text. */
+export function canvasUnit(): number {
+  return 1 / canvasTextScale;
+}
+
+export function setCanvasTextScale(cssPerVirtualPx: number): void {
+  if (Number.isFinite(cssPerVirtualPx) && cssPerVirtualPx > 0) canvasTextScale = cssPerVirtualPx;
+}
+
+/**
+ * A canvas font string whose text renders at the role's size in CSS pixels whatever the
+ * window size, so canvas text matches DOM text and never drops under the 11px floor.
+ * Canvas draws in the 960×600 virtual space, which the viewport scales to the window.
+ */
+export function uiFont(
+  role: UiTextRole,
+  family: string,
+  style: 'normal' | 'bold' | 'italic' | 'bold italic' = 'normal'
+): string {
+  const px = Math.round((UI_TEXT_PX[role] / canvasTextScale) * 10) / 10;
+  // The canvas font shorthand puts the style before the weight.
+  const prefix = style === 'normal' ? '' : style === 'bold italic' ? 'italic bold ' : `${style} `;
+  return `${prefix}${px}px ${family}`;
 }

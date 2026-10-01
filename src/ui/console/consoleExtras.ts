@@ -184,7 +184,7 @@ export class ConsoleExtras {
         hp.className = 'sb-hp tray-companion-hp';
         const fill = document.createElement('i');
         fill.style.width = `${Math.round((card.hp / Math.max(1, card.maxHp)) * 100)}%`;
-        fill.style.background = 'linear-gradient(90deg, #15803d, #22c55e)';
+        fill.style.background = 'linear-gradient(90deg, color-mix(in srgb, var(--ui-good) 55%, black), var(--ui-good))';
         const hpText = document.createElement('b');
         hpText.textContent = `${card.hp}/${card.maxHp}`;
         hp.append(fill, hpText);

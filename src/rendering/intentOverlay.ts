@@ -1,3 +1,4 @@
+import { uiFont } from './theme';
 import type { GameEngine } from '../engine';
 import type { Camera } from './camera';
 import type { Monster } from '../engine';
@@ -102,7 +103,7 @@ export class IntentOverlay {
 
         // Warning Icon / Ability Banner
         const ability = intent.abilityName ?? 'Heavy Strike';
-        ctx.font = 'bold 10px "Courier New", Courier, monospace';
+        ctx.font = uiFont('xs', '"Courier New", Courier, monospace', 'bold');
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
 

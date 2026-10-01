@@ -16,7 +16,7 @@ import { SpriteAtlas } from './atlas/sprite-atlas';
 import { getTerrainSpriteKey, getEntitySpriteKey, getItemSpriteKey } from './atlas/sprite-mapper';
 import { terrainLayers, contactShadowSides, zoneForFloor, type TerrainView } from './atlas/terrain-layers';
 import { ViewportManager } from './viewport';
-import { resolveThemeTokens, type ThemeTokens } from './theme';
+import { resolveThemeTokens, type ThemeTokens, uiFont } from './theme';
 import { CanvasFXRunner } from './fxRunner';
 import type { NavigationController } from '../ui/navigation';
 import { CloseDoorAction } from '../engine';
@@ -1310,7 +1310,7 @@ export class CanvasRenderer {
       ctx.stroke();
 
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 10px "Courier New", Courier, monospace';
+      ctx.font = uiFont('xs', '"Courier New", Courier, monospace', 'bold');
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('!', glyphX, glyphY + 0.5);
@@ -1359,7 +1359,7 @@ export class CanvasRenderer {
     const ctx = this.ctx;
     const font = this.theme.fontFamily ?? '"Courier New", Courier, monospace';
     ctx.save();
-    ctx.font = `bold 12px ${font}`;
+    ctx.font = uiFont('sm', font, 'bold');
     const padX = 12;
     const w = Math.min(width - 24, ctx.measureText(hint.text).width + padX * 2);
     const h = 22;

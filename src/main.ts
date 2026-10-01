@@ -58,7 +58,7 @@ import { ContextHelp } from './ui/help/contextHelp';
 import { CompendiumModal } from './ui/help/compendiumModal';
 import { CommandPalette } from './ui/help/commandPalette';
 import type { SpellbookEntry } from './rendering/targeting-overlay';
-import { applyThemeTokens, COTW_THEME_TOKENS } from './rendering/theme';
+import { applyThemeTokens } from './rendering/theme';
 import { ChoiceModal } from './ui/choiceModal';
 import { AltarModal } from './ui/altarModal';
 import { PactModal } from './ui/pactModal';
@@ -70,7 +70,6 @@ import { AutoRestRunner } from './ui/autoRestRunner';
 import { NavigationController } from './ui/navigation';
 import { cotwManifest } from './content/cotw';
 import { warcraftManifest } from './content/warcraft';
-import { WARCRAFT_THEME_TOKENS } from './content/warcraft/theme';
 import { initStoragePersistence } from './ui/persistenceInit';
 import { SaveCodeModal } from './ui/saveCodeModal';
 import { SaveQuitModal } from './ui/saveQuitModal';
@@ -91,6 +90,7 @@ import {
   SpellbookTabAdapter,
 } from './ui/characterMenu';
 import { InventoryTabAdapter } from './rendering/inventoryTabAdapter';
+import './ui/styles/tokens.css';
 import './ui/styles/base.css';
 import './ui/styles/flanks.css';
 import './ui/styles/layout.css';
@@ -134,11 +134,11 @@ declare global {
 
 const targetTheme = import.meta.env.VITE_THEME || 'cotw';
 const activeManifest = targetTheme === 'warcraft' ? warcraftManifest : cotwManifest;
-const activeThemeTokens = targetTheme === 'warcraft' ? WARCRAFT_THEME_TOKENS : COTW_THEME_TOKENS;
 const brand = resolveBranding(activeManifest);
+// Tokens go on the root before the first paint (module scripts run before DOMContentLoaded).
+void applyThemeTokens(activeManifest.theme);
 
 window.addEventListener('DOMContentLoaded', () => {
-  applyThemeTokens(activeThemeTokens);
   applyDocumentBranding(document, brand);
   const canvas = document.getElementById('game-canvas') as HTMLCanvasElement | null;
   if (!canvas) {
@@ -1608,7 +1608,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     commandPalette.registerCommands(COMMAND_CATALOG.map((meta) => ({ ...meta, execute: commandExecutors[meta.id] })));
 
-    applyThemeTokens(engine.manifest?.theme ?? COTW_THEME_TOKENS);
+    // A pack font that finishes loading after the first frame redraws the canvas in it.
+    void applyThemeTokens(engine.manifest?.theme).then(() => renderer?.render());
 
     if (!renderer) {
       renderer = new CanvasRenderer(canvas!, engine);

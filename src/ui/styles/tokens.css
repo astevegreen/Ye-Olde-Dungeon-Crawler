@@ -1,0 +1,49 @@
+/*
+ * Static design tokens (ADR-0011). The pack's colors, fonts and radius are written onto
+ * :root as --ui-* variables by applyThemeTokens() (src/rendering/theme.ts); these are the
+ * scales no pack changes. Along with theme.ts, the only presentation file allowed to hold
+ * color literals (check:ui-palette).
+ */
+:root {
+  /* Type scale. --ui-text-xs is the floor: nothing renders smaller, DOM or canvas. */
+  --ui-text-xs: 11px;
+  --ui-text-sm: 12px;
+  --ui-text-md: 13px;
+  --ui-text-lg: 15px;
+  --ui-text-xl: 18px;
+  --ui-text-2xl: 22px;
+
+  /* Space: a 4px grid. */
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-5: 24px;
+  --ui-space-6: 32px;
+
+  /* Layers, lowest to highest. */
+  --ui-z-hud: 10;
+  --ui-z-menu: 140;
+  --ui-z-dialog: 200;
+  --ui-z-system: 250;
+  --ui-z-help: 280;
+  --ui-z-crash: 300;
+
+  /* Motion. */
+  --ui-dur-fast: 120ms;
+  --ui-dur-enter: 160ms;
+  --ui-dur-reward: 400ms;
+
+  /* Derived from the pack's tokens. */
+  --ui-accent-soft: color-mix(in srgb, var(--ui-accent) 13%, transparent);
+  --ui-scrim: rgba(4, 6, 12, 0.72);
+  --ui-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ui-dur-fast: 0ms;
+    --ui-dur-enter: 0ms;
+    --ui-dur-reward: 0ms;
+  }
+}

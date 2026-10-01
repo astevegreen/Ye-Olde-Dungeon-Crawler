@@ -133,17 +133,17 @@ export function getTrayChips(engine: GameEngine, smithName: string): TrayChip[] 
     const channel = p.statusManager.getStatus?.(RUNE_OF_RETURN_STATUS);
     if (channel) {
       chips.push({
-        id: 'rune', icon: '🌀', label: 'Recall', value: `${channel.duration} turns`, color: '#38bdf8',
+        id: 'rune', icon: '🌀', label: 'Recall', value: `${channel.duration} turns`, color: 'var(--ui-info)',
         title: 'Channeling the Rune of Return. Keep still (wait) to finish; most actions break it.',
       });
     } else if (!p.hasDiscoveredRune) {
       chips.push({
-        id: 'rune', icon: '🌀', label: 'Rune', value: 'dormant', color: '#64748b',
+        id: 'rune', icon: '🌀', label: 'Rune', value: 'dormant', color: 'var(--ui-text-faint)',
         title: `A dormant Rune of Return. Take it to ${smithName} to awaken it.`,
       });
     } else {
       chips.push({
-        id: 'rune', icon: '🌀', label: 'Recall', value: `${rune.charges}/${rune.maxCharges}`, color: '#38bdf8',
+        id: 'rune', icon: '🌀', label: 'Recall', value: `${rune.charges}/${rune.maxCharges}`, color: 'var(--ui-info)',
         pips: { filled: rune.charges, total: rune.maxCharges },
         title: `Rune of Return: ${rune.charges} of ${rune.maxCharges} charges. Click or press T to channel a recall.`,
         action: rune.charges > 0 ? 'channel_rune' : undefined,
@@ -163,12 +163,12 @@ export function getTrayChips(engine: GameEngine, smithName: string): TrayChip[] 
   const pacts = engine.pacts?.getActivePacts() ?? [];
   if (pacts.length === 1) {
     chips.push({
-      id: 'pacts', icon: '🩸', label: 'Pact', value: pacts[0].name, color: '#f87171',
+      id: 'pacts', icon: '🩸', label: 'Pact', value: pacts[0].name, color: 'var(--ui-bad)',
       title: `${pacts[0].name}: ${pacts[0].curseDescription} Reward: ${pacts[0].rewardDescription}`, action: 'open_pacts',
     });
   } else if (pacts.length > 1) {
     chips.push({
-      id: 'pacts', icon: '🩸', label: 'Pacts', value: `${pacts.length} sealed`, color: '#f87171',
+      id: 'pacts', icon: '🩸', label: 'Pacts', value: `${pacts.length} sealed`, color: 'var(--ui-bad)',
       title: pacts.map((pact) => `${pact.name}: ${pact.rewardDescription}`).join('\n'), action: 'open_pacts',
     });
   }

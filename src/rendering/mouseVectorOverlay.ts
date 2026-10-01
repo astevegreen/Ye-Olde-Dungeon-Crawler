@@ -1,4 +1,5 @@
 import { uiFont } from './theme';
+import { drawIconCentered } from './canvasIcons';
 import type { GameEngine, Action } from '../engine';
 import { MovementAction, OpenDoorAction } from '../engine';
 import type { Camera } from './camera';
@@ -182,7 +183,8 @@ export class MouseVectorOverlay {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = isTargetMonster ? '#fca5a5' : '#bae6fd';
-        ctx.fillText(isTargetMonster ? '⚔' : dir.symbol, screenX + cellSize / 2, screenY + cellSize / 2);
+        const drewIcon = isTargetMonster && drawIconCentered(ctx, 'attack', screenX + cellSize / 2, screenY + cellSize / 2, Math.round(cellSize * 0.6));
+        if (!drewIcon) ctx.fillText(isTargetMonster ? '×' : dir.symbol, screenX + cellSize / 2, screenY + cellSize / 2);
       } else {
         // Subtle ambient hover ring indicator (translucent corner pips)
         ctx.lineWidth = 1;

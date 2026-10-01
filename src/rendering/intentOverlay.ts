@@ -1,4 +1,5 @@
 import { uiFont } from './theme';
+import { fillIconText, measureIconText, type IconTextPart } from './canvasIcons';
 import type { GameEngine } from '../engine';
 import type { Camera } from './camera';
 import type { Monster } from '../engine';
@@ -107,8 +108,8 @@ export class IntentOverlay {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
 
-        const textMetrics = ctx.measureText(`⚠️ ${ability}`);
-        const bannerW = textMetrics.width + 8;
+        const banner: IconTextPart[] = [{ icon: 'warning' }, ` ${ability}`];
+        const bannerW = measureIconText(ctx, banner) + 8;
         const bannerH = 14;
         const bannerX = cx - bannerW / 2;
         const bannerY = primaryScreen.y - 4;
@@ -120,7 +121,7 @@ export class IntentOverlay {
         ctx.strokeRect(bannerX, bannerY - bannerH, bannerW, bannerH);
 
         ctx.fillStyle = '#fca5a5';
-        ctx.fillText(`⚠️ ${ability}`, cx, bannerY - 2);
+        fillIconText(ctx, banner, cx, bannerY - 2);
       }
     }
 

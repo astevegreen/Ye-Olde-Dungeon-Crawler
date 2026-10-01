@@ -1,4 +1,6 @@
 import type { GameEngine } from '../engine';
+import { fillIconText } from './canvasIcons';
+import type { UiIconName } from '../ui/icons';
 import type { Camera } from './camera';
 import { TileInspector } from '../engine';
 import type { TileInspection } from '../engine';
@@ -214,7 +216,7 @@ export class InspectOverlay {
       for (const trap of data.traps) {
         ctx.font = uiFont('xs', font, 'bold');
         ctx.fillStyle = '#f97316';
-        ctx.fillText(`⚠️ Trap: ${trap.name}`, cardX + 8 * u, curY);
+        fillIconText(ctx, [{ icon: 'warning' }, ` Trap: ${trap.name}`], cardX + 8 * u, curY);
         curY += 16 * u;
       }
     }
@@ -251,25 +253,30 @@ export class InspectOverlay {
       // Declared Intent
       if (ent.intent) {
         let intentLabel = 'None';
+        let intentIcon: UiIconName | null = null;
         let intentColor = theme.textMuted;
 
         if (ent.intent.type === 'windup') {
-          intentLabel = `⚠️ WIND-UP: ${ent.intent.abilityName ?? 'Strike'}`;
+          intentLabel = `WIND-UP: ${ent.intent.abilityName ?? 'Strike'}`;
+          intentIcon = 'warning';
           intentColor = '#f59e0b';
         } else if (ent.intent.type === 'attack') {
-          intentLabel = '⚔️ Engaging';
+          intentLabel = 'Engaging';
+          intentIcon = 'attack';
           intentColor = '#ef4444';
         } else if (ent.intent.type === 'fleeing') {
-          intentLabel = '💨 Retreating';
+          intentLabel = 'Retreating';
+          intentIcon = 'retreat';
           intentColor = '#a855f7';
         } else if (ent.intent.type === 'idle') {
-          intentLabel = '💤 Resting / Idle';
+          intentLabel = 'Resting / Idle';
+          intentIcon = 'rest';
           intentColor = theme.textMuted;
         }
 
         ctx.font = uiFont('xs', font, 'bold');
         ctx.fillStyle = intentColor;
-        ctx.fillText(`Intent: ${intentLabel}`, cardX + 8 * u, curY);
+        fillIconText(ctx, ['Intent: ', ...(intentIcon ? [{ icon: intentIcon }] : []), intentLabel], cardX + 8 * u, curY);
         curY += 18 * u;
       }
     }

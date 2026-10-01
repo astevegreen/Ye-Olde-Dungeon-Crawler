@@ -1,4 +1,5 @@
 import { GameEngine } from '../engine';
+import { setIconAtlas } from './canvasIcons';
 import { Visibility } from '../engine';
 import { Camera } from './camera';
 import type { Entity } from '../engine';
@@ -119,6 +120,7 @@ export class CanvasRenderer {
     this.engine = engine;
     this.camera = new Camera(26, 18);
     this.atlas = new SpriteAtlas(this.engine.manifest?.spriteRecipes, { memory: this.engine.manifest?.atlas?.terrain?.memory });
+    setIconAtlas(this.atlas);
     this.viewport = new ViewportManager(this.canvas, this.ctx, {
       virtualWidth: 960,
       virtualHeight: 600,

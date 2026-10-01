@@ -1,4 +1,5 @@
 import type { GameEngine } from '../engine';
+import { drawIconCentered } from './canvasIcons';
 import type { RadialMenuSlotConfig } from '../ui/settings/settingsManager';
 import { RADIAL_MENU_SLOT_COUNT } from '../ui/settings/settingsManager';
 import { resolveThemeTokens, uiFont } from './theme';
@@ -114,10 +115,7 @@ export class RadialMenuOverlay {
     if (drawPlayerCenter) {
       drawPlayerCenter(ctx, cx, cy, centerSize);
     } else {
-      ctx.font = `${Math.round(innerRadius * 0.9)}px sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('🛡️', cx, cy);
+      drawIconCentered(ctx, 'shield', cx, cy, centerSize);
     }
 
     ctx.restore();

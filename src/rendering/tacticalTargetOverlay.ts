@@ -1,4 +1,5 @@
 import type { GameEngine, TileDefinition } from '../engine';
+import { fillIconText, measureIconText, type IconTextPart } from './canvasIcons';
 import { Monster, Container } from '../engine';
 import type { Camera } from './camera';
 import type { ThemeTokens } from '../engine';
@@ -151,7 +152,7 @@ export class TacticalTargetOverlay {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     const displayName = monster.name.length > 20 ? monster.name.slice(0, 19) + '…' : monster.name;
-    ctx.fillText(`⚔️ ${displayName}`, cardX + 8, cardY + 7);
+    fillIconText(ctx, [{ icon: 'attack' }, ` ${displayName}`], cardX + 8, cardY + 7);
 
     // HP Bar
     const barX = cardX + 8;
@@ -185,7 +186,7 @@ export class TacticalTargetOverlay {
     if (monster.intent?.type === 'windup') {
       ctx.font = uiFont('xs', font, 'bold');
       ctx.fillStyle = '#f87171';
-      ctx.fillText('⚠️ Intent: Attack Winding Up!', barX, infoY);
+      fillIconText(ctx, [{ icon: 'warning' }, ' Intent: Attack Winding Up!'], barX, infoY);
     } else {
       const statuses = monster.statusManager?.getAll() ?? [];
       if (statuses.length > 0) {
@@ -220,17 +221,17 @@ export class TacticalTargetOverlay {
     if (!screenPos) return;
 
     ctx.save();
-    let label = '';
+    let label: IconTextPart[];
     const firstItem = items[0];
     if (firstItem instanceof Container) {
-      label = firstItem.wasOpened ? `🧰 ${firstItem.displayName}` : `★ ${firstItem.displayName} (Unopened)`;
+      label = firstItem.wasOpened ? [{ icon: 'chest' }, ` ${firstItem.displayName}`] : [`★ ${firstItem.displayName} (Unopened)`];
     } else {
       const count = items.length;
-      label = count > 1 ? `📦 ${firstItem.displayName} (+${count - 1} more)` : `📦 ${firstItem.displayName}`;
+      label = [{ icon: 'loot' }, count > 1 ? ` ${firstItem.displayName} (+${count - 1} more)` : ` ${firstItem.displayName}`];
     }
 
     ctx.font = uiFont('xs', font, 'bold');
-    const textW = ctx.measureText(label).width;
+    const textW = measureIconText(ctx, label);
     const pillW = textW + 14;
     const pillH = 18;
     const pillX = screenPos.x + cs / 2 - pillW / 2;
@@ -246,7 +247,7 @@ export class TacticalTargetOverlay {
     ctx.fillStyle = '#f8fafc';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, pillX + pillW / 2, pillY + pillH / 2 + 0.5);
+    fillIconText(ctx, label, pillX + pillW / 2, pillY + pillH / 2 + 0.5);
 
     ctx.restore();
   }
@@ -267,16 +268,16 @@ export class TacticalTargetOverlay {
     const screenPos = camera.worldToScreen(worldX, worldY, cs, offsetX, offsetY);
     if (!screenPos) return;
 
-    let text = '';
-    if (tile.type === 'stairs_down') text = '🪜 Stairs Down';
-    else if (tile.type === 'stairs_up') text = '🪜 Stairs Up';
-    else if (tile.type === 'door_closed') text = '🚪 Closed Door';
-    else if (tile.type === 'door_open') text = '🚪 Open Doorway';
+    let text: IconTextPart[] | null = null;
+    if (tile.type === 'stairs_down') text = [{ icon: 'stairs' }, ' Stairs Down'];
+    else if (tile.type === 'stairs_up') text = [{ icon: 'stairs' }, ' Stairs Up'];
+    else if (tile.type === 'door_closed') text = [{ icon: 'door' }, ' Closed Door'];
+    else if (tile.type === 'door_open') text = [{ icon: 'door' }, ' Open Doorway'];
     if (!text) return;
 
     ctx.save();
     ctx.font = uiFont('xs', font, 'bold');
-    const textW = ctx.measureText(text).width;
+    const textW = measureIconText(ctx, text);
     const pillW = textW + 12;
     const pillH = 17;
     const pillX = screenPos.x + cs / 2 - pillW / 2;
@@ -292,7 +293,7 @@ export class TacticalTargetOverlay {
     ctx.fillStyle = '#fde047';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, pillX + pillW / 2, pillY + pillH / 2 + 0.5);
+    fillIconText(ctx, text, pillX + pillW / 2, pillY + pillH / 2 + 0.5);
 
     ctx.restore();
   }

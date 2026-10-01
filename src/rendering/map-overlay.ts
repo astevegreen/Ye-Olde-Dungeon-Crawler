@@ -1,4 +1,5 @@
 import type { GameEngine } from '../engine';
+import { fillIconText } from './canvasIcons';
 import type { GameMap } from '../engine';
 import { resolveThemeTokens, uiFont } from './theme';
 import type { ThemeTokens } from '../engine';
@@ -158,9 +159,9 @@ export class MapOverlay {
     const floorName = (f: number): string => (f === 0 ? 'Town' : `Floor ${f}`);
     const title =
       this.viewedFloor === engine.currentFloor
-        ? `🗺️ MAP · ${floorName(this.viewedFloor).toUpperCase()}`
-        : `🗺️ MAP · ${floorName(this.viewedFloor).toUpperCase()}  (you are on ${floorName(engine.currentFloor)})`;
-    ctx.fillText(title, modalX + 10, modalY + 15);
+        ? `MAP · ${floorName(this.viewedFloor).toUpperCase()}`
+        : `MAP · ${floorName(this.viewedFloor).toUpperCase()}  (you are on ${floorName(engine.currentFloor)})`;
+    fillIconText(ctx, [{ icon: 'map' }, ` ${title}`], modalX + 10, modalY + 15);
 
     // Close button [X]
     const closeBtnX = modalX + modalW - 26;
@@ -345,7 +346,7 @@ export class MapOverlay {
     ctx.textBaseline = 'middle';
 
     ctx.fillStyle = theme.textMuted;
-    ctx.fillText('LEGEND: [■ Wall]  [· Floor]  [▲ Stairs Up]  [▼ Stairs Down]  [🚪 Door]  [@ You]', modalX + 14, footerY + 8);
+    fillIconText(ctx, ['LEGEND: [■ Wall]  [· Floor]  [▲ Stairs Up]  [▼ Stairs Down]  [', { icon: 'door' }, 'Door]  [@ You]'], modalX + 14, footerY + 8);
     // The keys are on the mode hint under the map; the footer keeps only the legend.
   }
 }

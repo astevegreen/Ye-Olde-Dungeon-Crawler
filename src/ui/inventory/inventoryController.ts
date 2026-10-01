@@ -881,7 +881,7 @@ export class InventoryController {
       case 'KeyC':
         this.consolidateCoins();
         return true;
-      case 'KeyO':
+      case 'KeyS':
         this.sortNext();
         return true;
     }

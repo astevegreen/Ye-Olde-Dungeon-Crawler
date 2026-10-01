@@ -124,7 +124,7 @@ export class ContextHelp {
             { key: '1-9', label: 'Quick-equip item from primary backpack' },
             { key: 'U', label: 'Unequip equipped main-hand or armor item' },
             { key: 'D', label: 'Drop top backpack item onto current ground tile' },
-            { key: 'O', label: 'Cycle backpack sorting (Category -> Weight -> Bulk)' },
+            { key: 'S', label: 'Cycle backpack sorting (Category -> Weight -> Bulk)' },
             { key: 'C', label: 'Consolidate loose backpack coins into coin purse' },
             { key: 'I / Esc', label: 'Close inventory panel' },
           ],

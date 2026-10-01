@@ -117,8 +117,9 @@ describe('InventoryController', () => {
       expect(log).toHaveBeenCalledWith(expect.stringMatching(/unidentified item/i));
     });
 
-    it('cycles the sort with O through all six orders', () => {
-      for (let i = 0; i < 6; i++) c.handleKeyDown(key('KeyO'));
+    it('cycles the sort with S through all six orders, and leaves O to the menu', () => {
+      expect(c.handleKeyDown(key('KeyO'))).toBe(false);
+      for (let i = 0; i < 6; i++) c.handleKeyDown(key('KeyS'));
       const modes = dispatch.mock.calls.map((call) => (call[0] as unknown as { payload: { mode: string } }).payload.mode);
       expect(modes).toEqual(['value', 'tier', 'weight', 'bulk', 'name', 'category']);
     });

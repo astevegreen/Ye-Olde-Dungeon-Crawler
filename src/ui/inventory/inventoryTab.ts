@@ -266,7 +266,7 @@ export class InventoryTab implements MenuTab {
         <div class="inv-head">
           <h3 class="ui-h">Backpack</h3>
           <div class="inv-tools">
-            <button type="button" class="ui-btn ui-btn--sm ui-btn--ghost" data-act="sort" title="Sort the pack by the next order">Sort: ${SORT_LABELS[c.sortMode] ?? c.sortMode} ${keyChip('O')}</button>
+            <button type="button" class="ui-btn ui-btn--sm ui-btn--ghost" data-act="sort" title="Sort the pack by the next order">Sort: ${SORT_LABELS[c.sortMode] ?? c.sortMode} ${keyChip('S')}</button>
             <button type="button" class="ui-btn ui-btn--sm ui-btn--ghost" data-act="coins" title="Move loose coins into the purse">Coins ${keyChip('C')}</button>
           </div>
         </div>

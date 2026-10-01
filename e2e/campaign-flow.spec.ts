@@ -135,7 +135,7 @@ test('objective-driven multi-floor progression and NPC interaction', { tag: '@ca
 
     // Confirm game canvas and HUD are mounted
     await expect(page.locator('#game-canvas')).toBeVisible();
-    await expect(page.locator('#ground-status-bar')).toBeAttached();
+    await expect(page.locator('#game-header-bar')).toBeAttached();
 
     // Seed PRNG state deterministically
     await page.evaluate((seed) => {

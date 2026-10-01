@@ -91,6 +91,7 @@ import './ui/styles/base.css';
 import './ui/styles/layout.css';
 import './ui/styles/menu.css';
 import './ui/styles/dialog.css';
+import './ui/styles/title.css';
 import { QuickSpellsBar } from './ui/quickSpellsBar';
 import { PotionRow } from './ui/potionRow';
 import { classifyLogLine, CriticalLineTracker } from './ui/logClassifier';
@@ -1149,7 +1150,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if (autosaveManager.hasAutosave()) {
         const meta = autosaveManager.getAutosaveMetadata();
         autosaveBtn.style.display = 'inline-block';
-        autosaveBtn.textContent = `⚡ Load Autosave (${meta?.profileName ?? 'Hero'} - F${meta?.floor ?? 1})`;
+        autosaveBtn.textContent = `Load the autosave (${meta?.profileName ?? 'Hero'}, F${meta?.floor ?? 1})`;
       } else {
         autosaveBtn.style.display = 'none';
       }

@@ -269,7 +269,7 @@ export class TitleScreen {
     if (manifest) {
       const titlebarSpan = this.container.querySelector('.retro-titlebar-title span:last-child');
       if (titlebarSpan && manifest.name) {
-        titlebarSpan.textContent = `${manifest.name} - Character Roster`;
+        titlebarSpan.textContent = `${manifest.name}: heroes`;
       }
       const bannerTitle = this.container.querySelector('.retro-banner-title');
       if (bannerTitle && manifest.name) {
@@ -665,7 +665,7 @@ export class TitleScreen {
 
     const selected = this.getSelectedProfile();
     const selectedFallen = selected?.questStatus === 'fallen';
-    if (this.resumeBtn) this.resumeBtn.textContent = selectedFallen ? 'Load Last Save' : 'Resume Quest';
+    if (this.resumeBtn) this.resumeBtn.textContent = selectedFallen ? 'Load last save' : 'Resume';
     if (selected && selectedFallen) {
       this.setStatus(`${selected.name} fell on Floor ${selected.floor}. Loading restores the last save made while alive, not the moment of death.`);
     } else if (selected) {
@@ -679,7 +679,7 @@ export class TitleScreen {
       if (this.loadAutosaveBtn) {
         this.loadAutosaveBtn.style.display = 'block';
         this.loadAutosaveBtn.disabled = false;
-        this.loadAutosaveBtn.textContent = `⚡ Load Autosave (${meta?.profileName ?? 'Hero'} - F${meta?.floor ?? 1})`;
+        this.loadAutosaveBtn.textContent = `Load the autosave (${meta?.profileName ?? 'Hero'}, F${meta?.floor ?? 1})`;
       }
     } else if (this.loadAutosaveBtn) {
       this.loadAutosaveBtn.style.display = 'none';
@@ -695,13 +695,9 @@ export class TitleScreen {
       this.storageStatusEl.textContent = formatted.badge;
       this.storageStatusEl.title = formatted.tooltip;
       if (formatted.isPersistent) {
-        this.storageStatusEl.style.color = '#15803d';
-        this.storageStatusEl.style.borderColor = '#15803d';
-        this.storageStatusEl.style.background = '#dcfce7';
+        this.storageStatusEl.className = 'storage-badge-pill active';
       } else {
-        this.storageStatusEl.style.color = '#b45309';
-        this.storageStatusEl.style.borderColor = '#b45309';
-        this.storageStatusEl.style.background = '#fef3c7';
+        this.storageStatusEl.className = 'storage-badge-pill';
       }
     }
   }

@@ -59,41 +59,48 @@
         gap: 8px;
       }
 
-      /* Windows 3.1 / DOS Retro UI Dialog */
+      /* The older window classes (retro-*, win-btn), restyled in the one visual language
+         (ADR-0011, direction C): flat surfaces, hairlines and the pack's role tokens instead
+         of Windows 3.1 bevels. New screens use menu.css and dialog.css directly. */
       .retro-window-overlay {
         position: absolute;
         inset: 0;
-        background-color: rgba(10, 11, 16, 0.82);
+        background: var(--ui-scrim);
         backdrop-filter: blur(2px);
         display: flex;
         align-items: center;
         justify-content: center;
+        padding: 20px;
         z-index: 100;
       }
 
       .retro-window {
         width: 620px;
-        max-width: 95vw;
-        background-color: var(--ui-panel);
+        max-width: 100%;
+        max-height: 100%;
+        background: var(--ui-surface-1);
         color: var(--ui-text);
-        border: 2px solid var(--ui-border-light);
-        border-right-color: var(--ui-border-dark);
-        border-bottom-color: var(--ui-border-dark);
-        box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.85);
+        border: 1px solid var(--ui-line-strong);
+        border-top: 2px solid var(--ui-frame);
+        border-radius: var(--ui-radius);
+        box-shadow: var(--ui-shadow);
         display: flex;
         flex-direction: column;
+        font-family: var(--ui-font-body);
+        font-size: var(--ui-text-md);
       }
 
       .retro-titlebar {
-        background: linear-gradient(90deg, var(--ui-titlebar-start), var(--ui-titlebar-end));
-        color: var(--ui-titlebar-text);
-        font-size: 13px;
+        flex: none;
+        background: var(--ui-surface-0);
+        color: var(--ui-title);
+        font-size: var(--ui-text-lg);
         font-weight: bold;
-        padding: 4px 8px;
+        padding: var(--ui-space-2) var(--ui-space-3);
         display: flex;
         align-items: center;
         justify-content: space-between;
-        border-bottom: 1px solid var(--ui-border-dark);
+        border-bottom: 1px solid var(--ui-line);
       }
 
       .retro-titlebar-title {
@@ -101,88 +108,92 @@
         font-family: var(--ui-font-display);
         align-items: center;
         gap: 6px;
-        letter-spacing: 0.5px;
       }
 
       .retro-window-body {
-        padding: 14px;
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: var(--ui-space-4);
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: var(--ui-space-3);
       }
 
       .retro-banner {
         text-align: center;
-        border: 1px solid var(--ui-accent);
-        background: linear-gradient(180deg, var(--ui-titlebar-start), var(--ui-titlebar-end));
-        color: var(--ui-titlebar-text);
-        padding: 8px 12px;
-        box-shadow: inset 1px 1px 0 #000;
+        padding: var(--ui-space-2) var(--ui-space-3);
+        background: var(--ui-surface-2);
+        border: 1px solid var(--ui-line);
+        border-radius: var(--ui-radius);
       }
 
       .retro-banner-title {
-        font-size: 18px;
-        font-weight: bold;
-        letter-spacing: 2px;
-        text-shadow: 2px 2px 0 #000000;
+        font: bold var(--ui-text-xl) var(--ui-font-display);
+        letter-spacing: 0.12em;
+        color: var(--ui-title);
       }
 
       .retro-banner-sub {
-        font-size: 11px;
-        color: var(--ui-text);
-        opacity: 0.75;
+        font-size: var(--ui-text-sm);
+        color: var(--ui-text-muted);
         margin-top: 2px;
       }
 
       .retro-columns {
         display: grid;
         grid-template-columns: 1.15fr 0.85fr;
-        gap: 12px;
+        gap: var(--ui-space-4);
+        min-height: 0;
       }
 
       .retro-col {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: var(--ui-space-2);
+        min-height: 0;
       }
 
       .retro-label {
-        font-size: 12px;
+        font-size: var(--ui-text-xs);
         font-weight: bold;
-        color: #a3aec2;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ui-text-muted);
       }
 
       .retro-inset-list {
-        background-color: var(--ui-bg);
-        border: 1px solid var(--ui-border-light);
+        background: var(--ui-surface-3);
+        border: 1px solid var(--ui-line);
+        border-radius: var(--ui-radius);
         height: 200px;
         overflow-y: auto;
-        font-size: 12px;
+        font-size: var(--ui-text-sm);
         color: var(--ui-text);
       }
 
       .roster-empty-notice {
-        padding: 24px 12px;
+        padding: var(--ui-space-5) var(--ui-space-3);
         text-align: center;
-        color: #6b7280;
+        color: var(--ui-text-faint);
         font-style: italic;
       }
 
       .roster-item {
-        padding: 6px 8px;
-        border-bottom: 1px dotted var(--ui-border-light);
+        padding: 6px var(--ui-space-2);
+        border-bottom: 1px solid var(--ui-line);
         cursor: pointer;
-        transition: background 0.1s;
+        transition: background var(--ui-dur-fast);
       }
 
       .roster-item:hover:not(.selected) {
-        background-color: rgba(255, 255, 255, 0.05);
+        background: var(--ui-surface-2);
       }
 
       .roster-item.selected {
-        background-color: color-mix(in srgb, var(--ui-accent) 16%, transparent);
+        background: var(--ui-accent-soft);
         box-shadow: inset 3px 0 0 var(--ui-accent);
-        color: var(--ui-titlebar-text);
+        color: var(--ui-text);
       }
 
       .roster-item-header {
@@ -192,20 +203,20 @@
       }
 
       .roster-name {
-        font-size: 13px;
+        font-size: var(--ui-text-md);
       }
 
       .roster-date {
-        font-size: 10px;
-        opacity: 0.85;
+        font-size: var(--ui-text-xs);
+        color: var(--ui-text-muted);
       }
 
       .roster-item-details {
-        font-size: 11px;
+        font-size: var(--ui-text-xs);
         margin-top: 3px;
         display: flex;
         gap: 5px;
-        opacity: 0.9;
+        color: var(--ui-text-muted);
       }
 
       .retro-btn-row {
@@ -214,88 +225,93 @@
         flex-wrap: wrap;
       }
 
-      /* Beveled Classic / Norse Runic Buttons */
+      /* Buttons: flat, a hairline frame, the accent for the main choice. */
       .win-btn {
-        background-color: var(--ui-panel);
+        background: var(--ui-surface-2);
         color: var(--ui-text);
-        border-top: 2px solid var(--ui-border-light);
-        border-left: 2px solid var(--ui-border-light);
-        border-right: 2px solid var(--ui-border-dark);
-        border-bottom: 2px solid var(--ui-border-dark);
-        padding: 4px 10px;
+        border: 1px solid var(--ui-line-strong);
+        border-radius: var(--ui-radius);
+        padding: 5px 10px;
         font-family: inherit;
-        font-size: 12px;
+        font-size: var(--ui-text-sm);
         font-weight: bold;
         cursor: pointer;
         text-align: center;
-        transition: background-color 0.1s, border-color 0.1s;
+        transition: background var(--ui-dur-fast), border-color var(--ui-dur-fast);
       }
 
       .win-btn:hover:not(:disabled) {
-        border-top-color: var(--ui-accent);
-        border-left-color: var(--ui-accent);
+        border-color: var(--ui-text-muted);
       }
 
       .win-btn:active:not(:disabled) {
-        border-top: 2px solid var(--ui-border-dark);
-        border-left: 2px solid var(--ui-border-dark);
-        border-right: 2px solid var(--ui-border-light);
-        border-bottom: 2px solid var(--ui-border-light);
-        padding: 5px 9px 3px 11px;
+        background: var(--ui-surface-3);
+      }
+
+      .win-btn:focus-visible {
+        outline: 2px solid var(--ui-accent);
+        outline-offset: 1px;
       }
 
       .win-btn:disabled {
         color: var(--ui-text-faint);
-        text-shadow: 1px 1px 0 var(--ui-surface-0);
         cursor: not-allowed;
         opacity: 0.6;
       }
 
       .win-btn-sm {
         padding: 2px 8px;
-        font-size: 11px;
+        font-size: var(--ui-text-xs);
       }
 
       .primary-btn {
-        border-color: var(--ui-accent) var(--ui-border-dark) var(--ui-border-dark) var(--ui-accent);
-        color: #fef08a;
+        color: var(--ui-accent-ink);
+        background: var(--ui-accent);
+        border-color: var(--ui-accent);
+      }
+      .primary-btn:hover:not(:disabled) {
+        border-color: var(--ui-title);
       }
 
       .danger-btn {
-        color: var(--ui-health);
+        color: var(--ui-bad);
       }
 
       .create-btn {
         width: 100%;
         margin-top: 6px;
-        padding: 6px;
+        padding: 8px;
       }
 
-      /* Fieldset Groups */
+      /* Groups */
       .retro-group {
-        border: 2px groove var(--ui-border-light);
-        padding: 8px 10px;
-        background: color-mix(in srgb, var(--ui-surface-0) 60%, transparent);
+        border: 1px solid var(--ui-line);
+        border-radius: var(--ui-radius);
+        padding: var(--ui-space-2) var(--ui-space-3) var(--ui-space-3);
+        background: var(--ui-surface-2);
       }
 
       .retro-group legend {
         padding: 0 4px;
-        font-size: 11px;
-        font-weight: bold;
-        color: var(--ui-accent);
+        font: bold var(--ui-text-sm) var(--ui-font-display);
+        color: var(--ui-title);
       }
 
       .retro-input {
         width: 100%;
-        padding: 4px 6px;
-        background-color: var(--ui-text);
-        border: 2px solid #808080;
-        border-right-color: var(--ui-text);
-        border-bottom-color: var(--ui-text);
-        color: #000000;
+        padding: 5px var(--ui-space-2);
+        background: var(--ui-surface-3);
+        border: 1px solid var(--ui-line-strong);
+        border-radius: var(--ui-radius);
+        color: var(--ui-text);
         font-family: inherit;
-        font-size: 13px;
+        font-size: var(--ui-text-md);
         margin-top: 4px;
+      }
+      .retro-input:focus {
+        outline: none;
+        border-color: var(--ui-accent);
+        box-shadow: 0 0 0 1px var(--ui-accent);
       }
 
       .retro-hero-preset {
@@ -307,49 +323,47 @@
       }
 
       .preset-label {
-        font-size: 10px;
-        color: #a3aec2;
+        font-size: var(--ui-text-xs);
+        color: var(--ui-text-muted);
       }
 
       .preset-tag {
-        font-size: 10px;
+        font-size: var(--ui-text-xs);
         padding: 1px 6px;
-        background: #e5e7eb;
-        border: 1px solid #9ca3af;
+        background: var(--ui-surface-3);
+        border: 1px solid var(--ui-line-strong);
+        border-radius: var(--ui-radius);
         cursor: pointer;
-        color: #111827;
+        color: var(--ui-text);
       }
 
       .preset-tag:hover {
-        background: #bfdbfe;
-        border-color: #3b82f6;
+        border-color: var(--ui-accent);
       }
 
       .retro-note {
-        font-size: 11px;
-        color: #a3aec2;
+        font-size: var(--ui-text-sm);
+        color: var(--ui-text-muted);
         margin-bottom: 6px;
       }
 
       .retro-statusbar {
-        border-top: 2px solid var(--ui-border-dark);
-        border-left: 2px solid var(--ui-border-dark);
-        border-right: 2px solid var(--ui-border-light);
-        border-bottom: 2px solid var(--ui-border-light);
-        background: var(--ui-panel);
-        padding: 3px 8px;
-        font-size: 11px;
+        border-top: 1px solid var(--ui-line);
+        background: var(--ui-surface-0);
+        padding: 6px var(--ui-space-3);
+        font-size: var(--ui-text-sm);
         display: flex;
         justify-content: space-between;
-        color: var(--ui-text);
+        color: var(--ui-text-muted);
+        border-radius: var(--ui-radius);
       }
 
       .version-tag {
         font-weight: bold;
-        color: #a3aec2;
+        color: var(--ui-text-muted);
       }
 
-      /* Stat Roller & Valhalla styling */
+      /* Stat Roller & Hall of Fame */
       .stat-roller-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -360,25 +374,25 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        background: #dfdfdf;
+        background: var(--ui-surface-3);
         padding: 2px 4px;
-        border: 1px solid #a0a0a0;
+        border: 1px solid var(--ui-line);
+        border-radius: var(--ui-radius);
       }
       .stat-name {
-        font-size: 11px;
+        font-size: var(--ui-text-xs);
         font-weight: bold;
-        color: var(--ui-surface-2);
+        color: var(--ui-text-muted);
         width: 30px;
       }
       .stat-value {
-        font-size: 12px;
-        font-weight: bold;
-        color: #000080;
+        font: bold var(--ui-text-md) var(--ui-font-num);
+        color: var(--ui-text);
         min-width: 20px;
         text-align: center;
       }
       .stat-adj-btn {
-        width: 20px;
+        width: 22px;
         padding: 1px 0;
         text-align: center;
         font-weight: bold;
@@ -386,49 +400,46 @@
       .derived-preview-grid {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
-        background: var(--ui-text);
-        border: 1px inset #808080;
+        background: var(--ui-surface-3);
+        border: 1px solid var(--ui-line);
+        border-radius: var(--ui-radius);
         padding: 4px;
-        font-size: 10px;
+        font-size: var(--ui-text-xs);
         text-align: center;
-        color: var(--ui-surface-2);
+        color: var(--ui-text-muted);
       }
+      .derived-preview-grid b { color: var(--ui-text); }
       .gender-btn-group button.active,
       .difficulty-btn-group button.active {
-        background: #000080 !important;
-        color: var(--ui-text) !important;
+        background: var(--ui-accent-soft);
+        border-color: var(--ui-accent);
+        color: var(--ui-text);
       }
       .valhalla-item {
         padding: 4px 6px;
-        border-bottom: 1px dotted #ccc;
+        border-bottom: 1px solid var(--ui-line);
         cursor: pointer;
-        font-size: 11px;
+        font-size: var(--ui-text-sm);
       }
       .valhalla-item:hover:not(.selected) {
-        background: #eff6ff;
+        background: var(--ui-surface-2);
       }
       .valhalla-item.selected {
-        background: #000080;
-        color: var(--ui-text);
+        background: var(--ui-accent-soft);
+        box-shadow: inset 3px 0 0 var(--ui-accent);
       }
       .valhalla-badge-win {
-        color: #16a34a;
+        color: var(--ui-good);
         font-weight: bold;
       }
       .valhalla-badge-loss {
-        color: #dc2626;
-        font-weight: bold;
-      }
-      .valhalla-item.selected .valhalla-badge-win {
-        color: #86efac;
-      }
-      .valhalla-item.selected .valhalla-badge-loss {
         color: var(--ui-bad);
+        font-weight: bold;
       }
       .save-drop-overlay {
         position: absolute;
         inset: 0;
-        background-color: rgba(10, 15, 30, 0.88);
+        background: var(--ui-scrim);
         backdrop-filter: blur(4px);
         display: none;
         align-items: center;
@@ -445,18 +456,18 @@
         box-shadow: 0 0 24px color-mix(in srgb, var(--ui-info) 40%, transparent);
       }
       .storage-badge-pill {
-        font-size: 10px;
+        font-size: var(--ui-text-xs);
         font-weight: bold;
         padding: 2px 6px;
         border: 1px solid var(--ui-warn);
         color: var(--ui-warn);
-        background: rgba(251, 191, 36, 0.1);
-        border-radius: 2px;
+        background: color-mix(in srgb, var(--ui-warn) 10%, transparent);
+        border-radius: var(--ui-radius);
       }
 
       .storage-badge-pill.active {
         border-color: var(--ui-good);
         color: var(--ui-good);
-        background: rgba(74, 222, 128, 0.1);
+        background: color-mix(in srgb, var(--ui-good) 10%, transparent);
       }
 

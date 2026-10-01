@@ -97,14 +97,13 @@
 
       <!-- Windows 3.1 / DOS Character Roster Dialog -->
       <div id="title-screen" class="retro-window-overlay">
-        <div class="retro-window" style="width: 700px;">
+        <div class="retro-window">
           <div class="retro-titlebar">
             <div class="retro-titlebar-title">
-              <span>🛡️</span>
-              <span>Character Roster</span>
+              <span>Heroes</span>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
-              <button id="btn-title-back-menu" class="win-btn win-btn-sm" style="padding: 1px 6px; font-size: 11px;">⮌ Main Menu</button>
+              <button id="btn-title-back-menu" class="win-btn win-btn-sm" style="padding: 1px 6px; font-size: 11px;">Main menu</button>
             </div>
           </div>
 
@@ -117,26 +116,26 @@
             <div class="retro-columns">
               <!-- Left: Saved Profiles -->
               <div class="retro-col roster-col">
-                <label class="retro-label">Saved Adventurers:</label>
+                <label class="retro-label">Saved heroes</label>
                 <div id="roster-list" class="retro-inset-list" tabindex="0">
                   <!-- Dynamic roster items inserted here -->
                 </div>
                 <div class="retro-btn-row">
-                  <button id="btn-resume" class="win-btn primary-btn" disabled>Resume Quest</button>
-                  <button id="btn-export" class="win-btn" disabled>💾 Export (.cotw)</button>
+                  <button id="btn-resume" class="win-btn primary-btn" disabled>Resume</button>
+                  <button id="btn-export" class="win-btn" disabled>Export (.cotw)</button>
                   <button id="btn-delete" class="win-btn danger-btn" disabled>Delete</button>
                 </div>
                 <div style="margin-top: 4px; display: flex; gap: 4px;">
-                  <button id="btn-title-savecode" class="win-btn" style="flex: 1;" disabled>📋 Save Code</button>
-                  <button id="btn-valhalla" class="win-btn" style="flex: 1;">🏆 Legends</button>
+                  <button id="btn-title-savecode" class="win-btn" style="flex: 1;" disabled>Save code</button>
+                  <button id="btn-valhalla" class="win-btn" style="flex: 1;">Legends</button>
                 </div>
-                <button id="btn-title-load-autosave" class="win-btn" style="width: 100%; margin-top: 4px; display: none; background: #064e3b; color: #a7f3d0; border-color: #34d399;">⚡ Load Autosave</button>
+                <button id="btn-title-load-autosave" class="win-btn primary-btn" style="width: 100%; margin-top: 4px; display: none;">Load the autosave</button>
               </div>
 
               <!-- Right: Roll New Hero & Import -->
               <div class="retro-col new-char-col">
                 <fieldset class="retro-group">
-                  <legend>Roll New Adventurer</legend>
+                  <legend>New hero</legend>
                   <div style="display: flex; gap: 6px; align-items: center;">
                     <label class="retro-label" for="new-hero-name" style="white-space: nowrap;">Name:</label>
                     <input type="text" id="new-hero-name" class="retro-input" placeholder="Hero name" maxlength="24" value="Hero" style="margin-top: 0;" />
@@ -147,16 +146,16 @@
 
                   <!-- Gender Toggle -->
                   <div style="margin-top: 6px; display: flex; align-items: center; justify-content: space-between;">
-                    <span class="retro-label">Hero Gender:</span>
+                    <span class="retro-label">Gender</span>
                     <div class="gender-btn-group" style="display: flex; gap: 4px;">
-                      <button type="button" id="btn-gender-male" class="win-btn win-btn-sm active">⚔️ Male</button>
-                      <button type="button" id="btn-gender-female" class="win-btn win-btn-sm">🛡️ Female</button>
+                      <button type="button" id="btn-gender-male" class="win-btn win-btn-sm active">Male</button>
+                      <button type="button" id="btn-gender-female" class="win-btn win-btn-sm">Female</button>
                     </div>
                   </div>
 
                   <!-- Difficulty Selection -->
                   <div style="margin-top: 6px; display: flex; align-items: center; justify-content: space-between;">
-                    <span class="retro-label">Difficulty:</span>
+                    <span class="retro-label">Difficulty</span>
                     <div class="difficulty-btn-group" style="display: flex; gap: 4px;">
                       <button type="button" id="btn-diff-easy" class="win-btn win-btn-sm" data-diff="easy" title="A forgiving start — still a fight at the big moments.">Easy</button>
                       <button type="button" id="btn-diff-medium" class="win-btn win-btn-sm active" data-diff="medium" title="A balanced saga, as the sagas intended.">Medium</button>
@@ -165,10 +164,10 @@
                   </div>
 
                   <!-- Stat Rolling & Adjustment -->
-                  <div style="margin-top: 8px; border-top: 1px dashed #9ca3af; padding-top: 6px;">
+                  <div style="margin-top: 8px; border-top: 1px solid var(--ui-line); padding-top: 6px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                      <button type="button" id="btn-roll-dice" class="win-btn win-btn-sm" title="Re-roll 3d6 heroic attributes">🎲 Roll 3d6</button>
-                      <span style="font-size: 11px; font-weight: bold; color: #a3aec2;">Pool: <span id="roller-pool-points">5</span> pts</span>
+                      <button type="button" id="btn-roll-dice" class="win-btn win-btn-sm" title="Re-roll 3d6 heroic attributes">Roll 3d6</button>
+                      <span class="retro-note" style="margin: 0;">Points to place: <b id="roller-pool-points">5</b></span>
                     </div>
 
                     <div class="stat-roller-grid">
@@ -210,13 +209,13 @@
                 </fieldset>
 
                 <fieldset class="retro-group" style="margin-top: 8px;">
-                  <legend>Import External Hero / Saga</legend>
-                  <p class="retro-note">Restore a .cotw backup file or import a shared saga:</p>
+                  <legend>Bring in a hero</legend>
+                  <p class="retro-note">From a .cotw backup file, a save code, or a shared saga.</p>
                   <input type="file" id="import-file-input" accept=".cotw,.sav,.json" style="display: none;" />
                   <div style="display: flex; gap: 4px;">
-                    <button type="button" id="btn-import-browse" class="win-btn" style="flex: 1;">Browse File...</button>
-                    <button type="button" id="btn-title-paste-code" class="win-btn" style="flex: 1;">📋 Paste Save</button>
-                    <button type="button" id="btn-title-import-saga" class="win-btn" style="flex: 1;">📜 Import Saga</button>
+                    <button type="button" id="btn-import-browse" class="win-btn" style="flex: 1;">Open file</button>
+                    <button type="button" id="btn-title-paste-code" class="win-btn" style="flex: 1;">Paste save code</button>
+                    <button type="button" id="btn-title-import-saga" class="win-btn" style="flex: 1;">Import saga</button>
                   </div>
                 </fieldset>
               </div>
@@ -235,32 +234,31 @@
 
       <!-- Windows 3.1 / Hall of Fame Leaderboard Modal (title text filled from the pack's branding) -->
       <div id="valhalla-modal" class="retro-window-overlay" style="display: none;">
-        <div class="retro-window" style="width: 720px;">
+        <div class="retro-window">
           <div class="retro-titlebar">
             <div class="retro-titlebar-title">
-              <span>🏆</span>
               <span id="valhalla-modal-title">Hall of Legends</span>
             </div>
             <button id="btn-valhalla-close-x" class="win-btn win-btn-sm" style="padding: 0 5px; font-weight: bold;">✕</button>
           </div>
 
           <div class="retro-window-body">
-            <div class="retro-banner" style="background: #1e1b4b;">
-              <div id="valhalla-modal-banner" class="retro-banner-title" style="color: #fde047;">HALL OF LEGENDS</div>
+            <div class="retro-banner">
+              <div id="valhalla-modal-banner" class="retro-banner-title">HALL OF LEGENDS</div>
               <div id="valhalla-modal-sub" class="retro-banner-sub">Eternal honors of the realm's champions</div>
             </div>
 
             <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px;">
               <div>
-                <label class="retro-label">Honored Champions:</label>
+                <label class="retro-label">Champions</label>
                 <div id="valhalla-list" class="retro-inset-list" style="height: 220px;">
                   <!-- dynamic valhalla entries -->
                 </div>
               </div>
 
               <div>
-                <label class="retro-label">Run Epitaph:</label>
-                <div id="valhalla-epitaph-card" class="retro-inset-list" style="height: 220px; padding: 6px; font-family: monospace; font-size: 11px; white-space: pre-wrap; overflow-y: auto; background: #0f172a; color: #f8fafc;">
+                <label class="retro-label">Epitaph</label>
+                <div id="valhalla-epitaph-card" class="retro-inset-list" style="height: 220px; padding: 6px; font-family: var(--ui-font-num); font-size: var(--ui-text-xs); white-space: pre-wrap; overflow-y: auto;">
                   Select a champion to inspect their saga.
                 </div>
               </div>
@@ -268,12 +266,12 @@
 
             <div class="retro-statusbar">
               <div class="retro-btn-row">
-                <button id="btn-valhalla-export" class="win-btn" disabled>📋 Export Epitaph</button>
-                <button id="btn-valhalla-share" class="win-btn" disabled>🔗 Share Saga</button>
-                <button id="btn-valhalla-import" class="win-btn">📥 Import Saga</button>
+                <button id="btn-valhalla-export" class="win-btn" disabled>Export epitaph</button>
+                <button id="btn-valhalla-share" class="win-btn" disabled>Share saga</button>
+                <button id="btn-valhalla-import" class="win-btn">Import saga</button>
                 <button id="btn-valhalla-close" class="win-btn primary-btn">Close</button>
               </div>
-              <span id="valhalla-status" style="font-size: 11px; color: #a3aec2; align-self: center;">Leaderboard</span>
+              <span id="valhalla-status" style="align-self: center;">Leaderboard</span>
             </div>
           </div>
         </div>

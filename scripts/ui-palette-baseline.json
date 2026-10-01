@@ -1,7 +1,7 @@
 {
-  "total": 741,
+  "total": 695,
   "files": {
-    "index.html": 28,
+    "index.html": 18,
     "src/main.ts": 4,
     "src/rendering/atlas/sprite-atlas.ts": 4,
     "src/rendering/canvas-renderer.ts": 76,
@@ -32,14 +32,13 @@
     "src/ui/help/commandPalette.ts": 23,
     "src/ui/help/contextHelp.ts": 13,
     "src/ui/inventory/itemInspector.ts": 27,
-    "src/ui/menus/mainMenu.ts": 3,
     "src/ui/sagaShareModal.ts": 8,
     "src/ui/saveImporter.ts": 8,
     "src/ui/saveSlotModal.ts": 37,
     "src/ui/settings/keybindModal.ts": 31,
     "src/ui/sidebar/sidebarModel.ts": 6,
-    "src/ui/styles/base.css": 33,
+    "src/ui/styles/base.css": 6,
     "src/ui/styles/layout.css": 21,
-    "src/ui/title-screen.ts": 8
+    "src/ui/title-screen.ts": 2
   }
 }

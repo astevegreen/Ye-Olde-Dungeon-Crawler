@@ -1,0 +1,60 @@
+/*
+ * The title flow (ADR-0011): a full-height title screen instead of a 700px window, and
+ * the roster and hall of fame stretched to the window. Tokens only (check:ui-palette).
+ */
+
+.ts-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 180;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+  font-family: var(--ui-font-body);
+  font-size: var(--ui-text-md);
+  color: var(--ui-text);
+  background: radial-gradient(ellipse at 50% 30%, var(--ui-surface-1), var(--ui-surface-0) 70%);
+}
+.ts-inner {
+  width: min(420px, 100%);
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-5);
+}
+.ts-brand { text-align: center; }
+.ts-title {
+  margin: 0;
+  font: bold calc(var(--ui-text-2xl) * 2) var(--ui-font-display);
+  line-height: 1.1;
+  letter-spacing: 0.06em;
+  color: var(--ui-title);
+}
+.ts-tagline { margin-top: var(--ui-space-2); color: var(--ui-text-muted); }
+.ts-ornament { margin-top: var(--ui-space-3); font-family: var(--ui-font-num); letter-spacing: 0.4em; color: var(--ui-line-strong); }
+.ts-menu { display: flex; flex-direction: column; gap: var(--ui-space-2); }
+.ts-btn { justify-content: center; padding: 10px var(--ui-space-4); font-size: var(--ui-text-lg); }
+.ui-btn[hidden] { display: none; }
+.ts-summary { text-align: center; }
+.ts-foot { display: flex; justify-content: space-between; align-items: center; }
+
+/* The roster (index.html #title-screen) and the hall of fame fill the window. */
+#title-screen.retro-window-overlay,
+#valhalla-modal.retro-window-overlay {
+  background: var(--ui-surface-0);
+}
+#title-screen > .retro-window {
+  width: min(1100px, 100%);
+  height: 100%;
+}
+#title-screen .retro-window-body { overflow: hidden; }
+#title-screen .retro-columns { flex: 1; min-height: 0; }
+#title-screen .roster-col { min-height: 0; }
+#title-screen #roster-list { flex: 1; height: auto; min-height: 160px; }
+#title-screen .new-char-col { overflow-y: auto; }
+/* Actions that need a hero show once there is one, instead of sitting there disabled. */
+#title-screen .retro-btn-row button:disabled,
+#btn-title-savecode:disabled { display: none; }
+#valhalla-modal > .retro-window { width: min(900px, 100%); }

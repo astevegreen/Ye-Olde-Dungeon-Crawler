@@ -2,6 +2,7 @@ import { resolveContinueTarget } from '../../engine';
 import type { AutosaveManager, ContinueTarget, ProfileManager } from '../../engine';
 import { formatStorageStatus, getStoragePersistenceInfo } from '../persistenceInit';
 import { APP_VERSION, resolveBranding } from '../branding';
+import { escapeHtml } from '../html';
 
 export interface MainMenuOptions {
   profileManager: ProfileManager;
@@ -52,15 +53,17 @@ export class MainMenu {
     if (!this.continueBtn) return;
 
     const target = resolveContinueTarget(this.options.profileManager, this.options.autosaveManager);
+    // Continue shows only when there is something to continue.
     this.continueBtn.disabled = !target;
-    this.continueBtn.textContent = target ? `⚡ Continue (${target.profileName} - F${target.floor})` : '⚡ Continue';
+    this.continueBtn.hidden = !target;
+    this.continueBtn.textContent = target ? `Continue (${target.profileName}, F${target.floor})` : 'Continue';
     if (!this.saveSummaryEl) return;
     if (target) {
-      this.saveSummaryEl.textContent = `${target.kind === 'autosave' ? 'Active autosave' : 'Saved hero'}: ${target.profileName} at Depth ${target.floor}.`;
+      this.saveSummaryEl.textContent = `${target.kind === 'autosave' ? 'Autosave' : 'Saved hero'}: ${target.profileName}, floor ${target.floor}.`;
     } else if (this.options.profileManager.listProfiles().length > 0) {
       this.saveSummaryEl.textContent = 'Your last hero has fallen. Load a saved game or roll a new hero.';
     } else {
-      this.saveSummaryEl.textContent = 'No saved adventurers found. Roll a new hero to begin!';
+      this.saveSummaryEl.textContent = 'No saved heroes yet. Start a new game to begin.';
     }
   }
 
@@ -90,64 +93,35 @@ export class MainMenu {
 
     const overlay = document.createElement('div');
     overlay.id = 'main-menu-screen';
-    overlay.className = 'retro-window-overlay';
+    overlay.className = 'ts-screen';
     overlay.style.display = 'none';
-    overlay.style.zIndex = '180';
 
+    // A full-height title screen (ADR-0011): the pack's name and tagline, one column of
+    // choices, and the save and storage status at the foot.
     const brand = resolveBranding(this.options.profileManager.manifest);
+    const btn = (id: string, label: string, primary = false) =>
+      `<button type="button" id="${id}" class="ui-btn ts-btn${primary ? ' ui-btn--primary' : ''}">${escapeHtml(label)}</button>`;
     overlay.innerHTML = `
-      <div class="retro-window" style="width: 520px; max-width: 95vw; box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);">
-        <div class="retro-titlebar">
-          <div class="retro-titlebar-title">
-            <span>🛡️</span>
-            <span>${brand.title} - Main Menu</span>
-          </div>
-          
-        </div>
-
-        <div class="retro-window-body" style="padding: 16px; gap: 14px;">
-          <!-- Banner -->
-          <div class="retro-banner" style="padding: 14px 12px;">
-            <div class="retro-banner-title" style="font-size: 22px; letter-spacing: 3px;">${brand.title.toUpperCase()}</div>
-            <div class="retro-banner-sub" style="font-size: 12px; margin-top: 4px;">${brand.tagline}</div>
-          </div>
-
-          <!-- Main Options List -->
-          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
-            <button type="button" id="btn-menu-continue" class="win-btn primary-btn" style="padding: 10px; font-size: 14px; font-weight: bold;">
-              ⚡ Continue
-            </button>
-            <button type="button" id="btn-menu-load" class="win-btn" style="padding: 10px; font-size: 14px; font-weight: bold;">
-              📂 Load Saved Game
-            </button>
-            <button type="button" id="btn-menu-new-game" class="win-btn" style="padding: 10px; font-size: 14px; font-weight: bold;">
-              ⚔️ New Game
-            </button>
-            <button type="button" id="btn-menu-settings" class="win-btn" style="padding: 9px; font-size: 13px;">
-              ⚙️ Settings &amp; Keybindings
-            </button>
-            <button type="button" id="btn-menu-help" class="win-btn" style="padding: 9px; font-size: 13px;">
-              📖 Help &amp; Controls Manual
-            </button>
-            <button type="button" id="btn-menu-feedback" class="win-btn" style="padding: 9px; font-size: 13px;">
-              💬 Send Feedback &amp; Bug Report
-            </button>
-            <button type="button" id="btn-menu-valhalla" class="win-btn" style="padding: 9px; font-size: 13px;">
-              🏆 ${brand.hallOfFameName} Leaderboard
-            </button>
-          </div>
-
-          <!-- Save File Summary Inset -->
-          <div id="main-menu-save-summary" style="background: var(--ui-bg, #0a0c14); border: 1px solid var(--ui-border-light, #3b455b); padding: 6px 10px; font-size: 11px; color: var(--ui-text, #f1f5f9); min-height: 24px;">
-            Checking save files...
-          </div>
-
-          <!-- Statusbar -->
-          <div class="retro-statusbar" style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-            <span id="main-menu-storage-status" class="storage-badge-pill">Storage: Checking...</span>
-            <span class="version-tag">${APP_VERSION}</span>
-          </div>
-        </div>
+      <div class="ts-inner">
+        <header class="ts-brand">
+          <h1 class="ts-title">${escapeHtml(brand.title)}</h1>
+          <div class="ts-tagline">${escapeHtml(brand.tagline)}</div>
+          ${brand.ornament ? `<div class="ts-ornament" aria-hidden="true">${escapeHtml(brand.ornament)}</div>` : ''}
+        </header>
+        <nav class="ts-menu" aria-label="Main menu">
+          ${btn('btn-menu-continue', 'Continue', true)}
+          ${btn('btn-menu-new-game', 'New game')}
+          ${btn('btn-menu-load', 'Load a saved game')}
+          ${btn('btn-menu-settings', 'Settings and keys')}
+          ${btn('btn-menu-help', 'Help')}
+          ${btn('btn-menu-valhalla', brand.hallOfFameName)}
+          ${btn('btn-menu-feedback', 'Send feedback')}
+        </nav>
+        <div id="main-menu-save-summary" class="ui-note ts-summary">Checking saves...</div>
+        <footer class="ts-foot">
+          <span id="main-menu-storage-status" class="storage-badge-pill">Storage: checking...</span>
+          <span class="version-tag">${APP_VERSION}</span>
+        </footer>
       </div>
     `;
 

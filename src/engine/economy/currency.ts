@@ -35,7 +35,7 @@ export class CoinItem extends Item {
       bulk: Math.max(1, Math.ceil(count * 0.5)),
       quality: 'normal',
       identified: true,
-      description: `Minted ${denom} coins of the realm. Each coin is worth ${COIN_VALUES[denom]} CP.`,
+      description: `Minted ${denom} coins of the realm. Each coin is worth ${formatCurrency(COIN_VALUES[denom])}.`,
       stats: {},
       parentId: config.parentId,
       ownerId: config.ownerId,
@@ -109,16 +109,16 @@ export function breakdownToCp(breakdown: CurrencyBreakdown): number {
 }
 
 /**
- * Formats a copper amount into readable string, e.g. "1 GP, 2 SP, 5 CP"
+ * Formats a copper amount as one figure in gold pieces: "50 GP", "2.50 GP", "0.05 GP",
+ * "1,357.20 GP". Every price, fee and purse uses it, so the player compares one number
+ * instead of a mix of coins (ADR-0011); the coins themselves stay physical items.
  */
 export function formatCurrency(totalCp: number): string {
-  const b = breakdownChange(totalCp);
-  const parts: string[] = [];
-  if (b.platinum > 0) parts.push(`${b.platinum} ${COIN_ABBREV.platinum}`);
-  if (b.gold > 0) parts.push(`${b.gold} ${COIN_ABBREV.gold}`);
-  if (b.silver > 0) parts.push(`${b.silver} ${COIN_ABBREV.silver}`);
-  if (b.copper > 0 || parts.length === 0) parts.push(`${b.copper} ${COIN_ABBREV.copper}`);
-  return parts.join(', ');
+  const cp = Math.max(0, Math.floor(totalCp));
+  const whole = Math.floor(cp / COIN_VALUES.gold);
+  const cents = cp % COIN_VALUES.gold;
+  const wholeText = String(whole).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return `${wholeText}${cents > 0 ? `.${String(cents).padStart(2, '0')}` : ''} ${COIN_ABBREV.gold}`;
 }
 
 /**

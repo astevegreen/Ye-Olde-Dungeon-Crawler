@@ -53,7 +53,7 @@ describe('Town Sage Run Advisory Heuristics', () => {
     const warn = RunAdvisor.checkLooseCurrency(player);
     expect(warn).not.toBeNull();
     expect(warn?.type).toBe('currency');
-    expect(warn?.message).toContain('6 PP');
+    expect(warn?.message).toContain('60 GP');
     expect(warn?.recommendation).toContain('town banker');
   });
 

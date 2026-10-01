@@ -70,6 +70,8 @@ Routine for every commit that touches presentation:
 - Inline styles (static markup in `index.html`, `el.style.x = …`) beat
   stylesheet rules. Remove the inline style; don't add `!important`.
 - knip fails on unused exports. Delete what a refactor orphans.
+- `git rm` stages at once, so a later `git add X && git commit` takes
+  the deletion with it. Delete with plain `rm` and stage per commit.
 - No Python on this machine. `test-results/` and `dist/` can't be read.
 
 ## Standing invariant, restated because it's easy to forget

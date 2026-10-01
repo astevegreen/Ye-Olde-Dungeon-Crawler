@@ -1,4 +1,4 @@
-import { CoinItem, type Item, parseCoinItem, type ThemeTokens } from '../../engine';
+import { CoinItem, type Item, parseCoinItem } from '../../engine';
 
 /**
  * What an item's name is colored by, as a role: one of eight alignments (three negative,
@@ -42,23 +42,6 @@ export function itemTone(item: Item | null | undefined): ItemTone | null {
   if (item.isBroken()) return 'broken';
   return null;
 }
-
-/** The theme token behind each tone, for canvas code. */
-export const ITEM_TONE_TOKEN: Record<ItemTone, keyof ThemeTokens> = {
-  cursed: 'rarityCursed',
-  hexed: 'rarityHexed',
-  unholy: 'rarityUnholy',
-  holy: 'rarityHoly',
-  enchanted: 'rarityEnchanted',
-  blessed: 'rarityBlessed',
-  chaotic: 'rarityChaotic',
-  artifact: 'rarityArtifact',
-  broken: 'rarityBroken',
-  copper: 'coinCopper',
-  silver: 'coinSilver',
-  gold: 'coinGold',
-  platinum: 'coinPlatinum',
-};
 
 /** ` it-tone-<tone>` for an element's class list (menu.css), or '' for a plain item. */
 export function itemToneClass(item: Item | null | undefined): string {

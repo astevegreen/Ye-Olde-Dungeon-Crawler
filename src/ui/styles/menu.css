@@ -6,22 +6,20 @@
 
 /* ---- Shell -------------------------------------------------------------- */
 
+/* Every tab fills the window less a 20px margin; the game behind it dims. */
 .cm-overlay {
   position: absolute;
   inset: 0;
   z-index: var(--ui-z-menu);
   display: none;
-}
-.cm-overlay.is-open { display: block; }
-/* Full-window tabs dim everything behind them; the canvas tab leaves the map crisp. */
-.cm-overlay.is-full {
   background: var(--ui-scrim);
   backdrop-filter: blur(2px);
 }
-.cm-overlay.is-canvas { pointer-events: none; }
+.cm-overlay.is-open { display: block; }
 
 .cm-window {
   position: absolute;
+  inset: 20px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -34,12 +32,6 @@
   border: 1px solid var(--ui-line-strong);
   border-radius: var(--ui-radius);
   box-shadow: var(--ui-shadow);
-}
-.cm-overlay.is-full .cm-window { inset: 20px; }
-.cm-overlay.is-canvas .cm-window {
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
 }
 .cm-window *, .cm-window *::before, .cm-window *::after { box-sizing: border-box; }
 
@@ -92,8 +84,6 @@
   outline-offset: -2px;
 }
 /* Over the canvas inventory the strip must fit that window's title bar. */
-.cm-overlay.is-canvas .cm-tab { padding-top: 0; padding-bottom: 0; }
-.cm-overlay.is-canvas .cm-close { width: 22px; height: 22px; }
 
 .cm-badge {
   font: bold var(--ui-text-xs) var(--ui-font-num);
@@ -127,8 +117,6 @@
   position: relative;
   overflow: hidden;
 }
-.cm-overlay.is-canvas .cm-body,
-.cm-overlay.is-canvas .cm-foot { display: none; }
 
 .cm-foot {
   flex: none;

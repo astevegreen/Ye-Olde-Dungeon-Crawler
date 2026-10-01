@@ -289,7 +289,7 @@ describe('KeybindModal input', () => {
       player: new Player({ position: { x: 5, y: 5 }, stats: { hp: 20, maxHp: 20, attack: 3, defense: 1 } }),
     });
     onToggleDiagnostics = vi.fn<() => void>();
-    input = new InputHandler(engine, vi.fn(), undefined, undefined, undefined, undefined, onToggleDiagnostics);
+    input = new InputHandler(engine, vi.fn(), undefined, undefined, undefined, onToggleDiagnostics);
 
     settingsManager = new SettingsManager(new MemoryStorage());
     onClose = vi.fn<() => void>();

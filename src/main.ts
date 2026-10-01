@@ -303,6 +303,11 @@ window.addEventListener('DOMContentLoaded', () => {
     characterMenuModal.open(tabId);
   }
 
+  /** Whether the character menu is open on the inventory, for the context help. */
+  function inventoryFlag(): { isOpen: boolean } {
+    return { isOpen: Boolean(characterMenuModal?.isOpen && characterMenuModal.activeTabId === 'inventory') };
+  }
+
   function openSpellbook(): void {
     openMenuTab('spellbook');
   }
@@ -343,7 +348,6 @@ window.addEventListener('DOMContentLoaded', () => {
         manaCost: spell.manaCost,
         spellDef: spell,
       };
-      renderer.inventoryOverlay.close();
       renderer.inspectOverlay.close();
       renderer.mapOverlay.close();
       renderer.targetingOverlay.startTargeting(entry, activeEngine);
@@ -929,7 +933,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
   mapBtn?.addEventListener('click', () => {
     if (activeEngine && renderer) {
-      renderer.inventoryOverlay.close();
       renderer.inspectOverlay.close();
       renderer.targetingOverlay.close();
       renderer.mapOverlay.toggle(activeEngine);
@@ -941,7 +944,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (activeEngine) {
       contextHelp.toggle(
         activeEngine,
-        renderer?.inventoryOverlay,
+        inventoryFlag(),
         renderer?.targetingOverlay,
         renderer?.shopOverlay,
         renderer?.inspectOverlay,
@@ -966,11 +969,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   hudInvBtn?.addEventListener('click', () => {
     if (activeEngine && renderer) {
-      if (inputHandler) {
-        inputHandler.toggleInventory();
-      } else {
-        renderer.inventoryOverlay.toggle(activeEngine);
-      }
+      inputHandler?.toggleInventory();
       updateHeaderInfo();
       renderer.render();
     }
@@ -984,7 +983,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
   hudLookBtn?.addEventListener('click', () => {
     if (activeEngine && renderer) {
-      renderer.inventoryOverlay.close();
       renderer.targetingOverlay.close();
       renderer.mapOverlay.close();
       renderer.inspectOverlay.open(activeEngine);
@@ -1348,7 +1346,6 @@ window.addEventListener('DOMContentLoaded', () => {
     const commandExecutors: Record<CommandId, (eng: GameEngine) => void> = {
       inspect: (eng) => {
         if (renderer) {
-          renderer.inventoryOverlay.close();
           renderer.targetingOverlay.close();
           renderer.inspectOverlay.open(eng);
           renderer.render();
@@ -1370,7 +1367,7 @@ window.addEventListener('DOMContentLoaded', () => {
         for (const w of rep.warnings) {
           eng.log(`[${w.severity.toUpperCase()}] ${w.title}: ${w.recommendation}`);
         }
-        contextHelp.open(eng, renderer?.inventoryOverlay, renderer?.targetingOverlay, renderer?.shopOverlay, renderer?.inspectOverlay);
+        contextHelp.open(eng, inventoryFlag(), renderer?.targetingOverlay, renderer?.shopOverlay, renderer?.inspectOverlay);
         renderer?.render();
       },
       help: () => {
@@ -1416,7 +1413,6 @@ window.addEventListener('DOMContentLoaded', () => {
       },
       map: (eng) => {
         if (renderer) {
-          renderer.inventoryOverlay.close();
           renderer.inspectOverlay.close();
           renderer.targetingOverlay.close();
           renderer.mapOverlay.open(eng);
@@ -1511,9 +1507,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }),
         () => {
           renderer?.render();
-        },
-        renderer.viewport,
-        canvas ?? undefined
+        }
       );
       characterMenuModal.setKeyResolver((actionId) => settingsManager.getCodesForAction(actionId));
       renderer.mouseVectoringEnabled = settingsManager.getSettings().mouseVectoringEnabled;
@@ -1543,7 +1537,6 @@ window.addEventListener('DOMContentLoaded', () => {
         () => {
           void processVisualEffectsAndRender();
         },
-        renderer.inventoryOverlay,
         promptSaveAndQuit,
         renderer.targetingOverlay,
         renderer.shopOverlay,
@@ -1589,8 +1582,6 @@ window.addEventListener('DOMContentLoaded', () => {
       if (inputHandler) {
         inputHandler.characterMenuModal = characterMenuModal;
         characterMenuModal.setModalStack(inputHandler.modalStack);
-        characterMenuModal.setViewport(renderer.viewport);
-        if (canvas) characterMenuModal.setCanvas(canvas);
         inputHandler.shopOverlay = renderer.shopOverlay;
         inputHandler.inspectOverlay = renderer.inspectOverlay;
         inputHandler.mapOverlay = renderer.mapOverlay;

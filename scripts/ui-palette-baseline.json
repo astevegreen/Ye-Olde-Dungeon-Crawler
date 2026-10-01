@@ -1,5 +1,5 @@
 {
-  "total": 609,
+  "total": 541,
   "files": {
     "index.html": 18,
     "src/main.ts": 4,
@@ -9,10 +9,8 @@
     "src/rendering/fxRunner.ts": 1,
     "src/rendering/inspect-overlay.ts": 9,
     "src/rendering/intentOverlay.ts": 20,
-    "src/rendering/inventory-overlay.ts": 38,
     "src/rendering/map-overlay.ts": 9,
     "src/rendering/mouseVectorOverlay.ts": 8,
-    "src/rendering/paperdoll-view.ts": 12,
     "src/rendering/radialMenu.ts": 2,
     "src/rendering/tacticalTargetOverlay.ts": 12,
     "src/rendering/targeting-overlay.ts": 15,
@@ -24,7 +22,6 @@
     "src/ui/diagnostic/triageTab.ts": 75,
     "src/ui/help/commandPalette.ts": 23,
     "src/ui/help/contextHelp.ts": 13,
-    "src/ui/inventory/itemInspector.ts": 18,
     "src/ui/sagaShareModal.ts": 8,
     "src/ui/saveImporter.ts": 8,
     "src/ui/saveSlotModal.ts": 37,

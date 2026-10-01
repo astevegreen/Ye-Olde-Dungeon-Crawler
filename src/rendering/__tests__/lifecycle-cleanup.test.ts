@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { InputHandler } from '../input-handler';
-import { InventoryOverlay } from '../inventory-overlay';
 import { CanvasRenderer } from '../canvas-renderer';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../engine';
@@ -168,37 +167,37 @@ describe('Scene & Listener Lifecycle Cleanup', () => {
     expect(engine.onFloorChanged).toBeUndefined();
   });
 
-  it('InputHandler modalStack synchronizes engine.isPaused with inventory overlay lifecycle', () => {
+  it('InputHandler modalStack pauses the engine while the menu is open on the inventory', () => {
     const map = new GameMap(10, 10, TILES.FLOOR);
     const player = new Player({ id: 'p1', name: 'Freya', position: { x: 3, y: 3 }, stats: { hp: 50, maxHp: 50, attack: 10, defense: 5 } });
     const engine = new GameEngine({ map, player });
-    const inventoryOverlay = new InventoryOverlay();
     let actionProcessed = false;
-    const inputHandler = new InputHandler(
-      engine,
-      () => { actionProcessed = true; },
-      inventoryOverlay
-    );
+    const inputHandler = new InputHandler(engine, () => { actionProcessed = true; });
+    // A stand-in for the character menu: the shell removes itself from the stack on close.
+    const menu = {
+      id: 'character-menu',
+      isOpen: false,
+      activeTabId: null as string | null,
+      open(tabId: string) { this.isOpen = true; this.activeTabId = tabId; },
+      close() { this.isOpen = false; inputHandler.modalStack.remove('character-menu'); },
+      handleKeyDown: () => true,
+    };
+    inputHandler.characterMenuModal = menu as unknown as typeof inputHandler.characterMenuModal;
 
     expect(engine.isPaused).toBe(false);
 
-    // Toggle inventory open via inputHandler
     inputHandler.toggleInventory();
-    expect(inventoryOverlay.isOpen).toBe(true);
+    expect(menu.activeTabId).toBe('inventory');
     expect(engine.isPaused).toBe(true);
 
-    // Toggle inventory closed via inputHandler
     inputHandler.toggleInventory();
-    expect(inventoryOverlay.isOpen).toBe(false);
+    expect(menu.isOpen).toBe(false);
     expect(engine.isPaused).toBe(false);
 
-    // Open again, then close via inventoryOverlay.close() directly (simulating canvas close button [X])
+    // Open again, then close from the menu itself (its close button).
     inputHandler.toggleInventory();
-    expect(inventoryOverlay.isOpen).toBe(true);
     expect(engine.isPaused).toBe(true);
-
-    inventoryOverlay.close();
-    expect(inventoryOverlay.isOpen).toBe(false);
+    menu.close();
     expect(engine.isPaused).toBe(false);
     expect(actionProcessed).toBe(true);
 

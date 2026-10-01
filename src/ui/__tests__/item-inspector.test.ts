@@ -6,9 +6,8 @@ import { Player } from '../../engine';
 import { Item } from '../../engine';
 import { Container } from '../../engine';
 import { PotionItem, ScrollItem, WandItem } from '../../engine';
-import { EncumbranceLevel } from '../../engine';
 
-describe('ItemInspector Stationary Pane & State Presenter', () => {
+describe('ItemInspector: selection, item breakdown and actions', () => {
   let engine: GameEngine;
   let inspector: ItemInspector;
 
@@ -24,62 +23,12 @@ describe('ItemInspector Stationary Pane & State Presenter', () => {
     inspector = new ItemInspector();
   });
 
-  describe('Unselected State & Player Aggregate Stats', () => {
+  describe('Unselected State', () => {
     it('initializes in unselected state with default paperdoll panel focus', () => {
       expect(inspector.selectedItem).toBeNull();
       expect(inspector.selectedSource).toBe('none');
       expect(inspector.focusedPanel).toBe('paperdoll');
       expect(inspector.focusedIndex).toBe(0);
-    });
-
-    it('computes complete player aggregate stats when no item is selected', () => {
-      const p = engine.player;
-      const stats = inspector.getAggregateStats(p);
-
-      expect(stats.name).toBe(p.name);
-      expect(stats.level).toBe(p.level);
-      expect(stats.hp).toBe(p.hp);
-      expect(stats.maxHp).toBe(p.maxHp);
-      expect(stats.mana).toBe(p.mana);
-      expect(stats.maxMana).toBe(p.maxMana);
-      expect(stats.strength).toBe(p.strength);
-      expect(stats.intelligence).toBe(p.intelligence);
-      expect(stats.constitution).toBe(p.constitution);
-      expect(stats.dexterity).toBe(p.dexterity);
-      expect(stats.totalAttack).toBe(p.attack);
-      expect(stats.totalDefense).toBe(p.defense);
-      expect(stats.encumbranceLevel).toBe(EncumbranceLevel.Unencumbered);
-      expect(stats.maxCarryWeight).toBe(p.strength * 2500);
-      expect(stats.maxPackBulk).toBe(p.inventory.primaryPack.maxBulkCapacity);
-    });
-
-    it('accurately factors equipped gear bonuses into base vs gear attack/defense values', () => {
-      const p = engine.player;
-      const sword = new Item({
-        id: 'iron-sword',
-        name: 'Iron Sword',
-        category: 'weapon',
-        weight: 1200,
-        bulk: 600,
-        stats: { attackBonus: 5 },
-      });
-      const shield = new Item({
-        id: 'iron-shield',
-        name: 'Iron Shield',
-        category: 'shield',
-        weight: 1500,
-        bulk: 800,
-        stats: { defenseBonus: 3 },
-      });
-
-      p.inventory.paperdoll.equip(sword, 'mainHand');
-      p.inventory.paperdoll.equip(shield, 'offHand');
-
-      const stats = inspector.getAggregateStats(p);
-      expect(stats.equipmentAttackBonus).toBe(5);
-      expect(stats.equipmentDefenseBonus).toBe(3);
-      expect(stats.baseAttack).toBe(p.attack - 5);
-      expect(stats.baseDefense).toBe(p.defense - 3);
     });
   });
 

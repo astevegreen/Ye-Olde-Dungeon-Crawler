@@ -1,7 +1,11 @@
 import type { GameContentManifest, GameEngine } from '../../engine';
-import type { InventoryOverlay } from '../../rendering/inventory-overlay';
 import type { TargetingOverlay } from '../../rendering/targeting-overlay';
 import type { ShopDialog } from '../shop/shopDialog';
+
+/** Whether a screen is open; the inventory is a character-menu tab, so callers say so. */
+export interface OpenFlag {
+  readonly isOpen: boolean;
+}
 import type { InspectOverlay } from '../../rendering/inspect-overlay';
 import type { MapOverlay } from '../../rendering/map-overlay';
 import { resolveBranding } from '../branding';
@@ -61,7 +65,7 @@ export class ContextHelp {
 
   public detectContext(
     engine: GameEngine,
-    inventoryOverlay?: InventoryOverlay,
+    inventory?: OpenFlag,
     targetingOverlay?: TargetingOverlay,
     shopOverlay?: ShopDialog,
     inspectOverlay?: InspectOverlay,
@@ -71,7 +75,7 @@ export class ContextHelp {
     if (shopOverlay?.isOpen) return 'shop';
     if (inspectOverlay?.isOpen) return 'inspect';
     if (targetingOverlay?.isOpen) return 'targeting';
-    if (inventoryOverlay?.isOpen) return 'inventory';
+    if (inventory?.isOpen) return 'inventory';
     if (engine.currentFloor === 0) return 'town';
     return 'exploration';
   }
@@ -185,7 +189,7 @@ export class ContextHelp {
 
   public open(
     engine: GameEngine,
-    inventoryOverlay?: InventoryOverlay,
+    inventory?: OpenFlag,
     targetingOverlay?: TargetingOverlay,
     shopOverlay?: ShopDialog,
     inspectOverlay?: InspectOverlay,
@@ -195,7 +199,7 @@ export class ContextHelp {
     if (!this.overlayEl) return;
     this.onDismissCallback = onDismiss;
 
-    const context = this.detectContext(engine, inventoryOverlay, targetingOverlay, shopOverlay, inspectOverlay, mapOverlay);
+    const context = this.detectContext(engine, inventory, targetingOverlay, shopOverlay, inspectOverlay, mapOverlay);
     this.render(this.getHelpContent(context, engine.manifest), engine.manifest?.name ?? '');
   }
 
@@ -281,7 +285,7 @@ export class ContextHelp {
 
   public toggle(
     engine: GameEngine,
-    inventoryOverlay?: InventoryOverlay,
+    inventory?: OpenFlag,
     targetingOverlay?: TargetingOverlay,
     shopOverlay?: ShopDialog,
     inspectOverlay?: InspectOverlay,
@@ -291,7 +295,7 @@ export class ContextHelp {
     if (this.isOpenState) {
       this.close();
     } else {
-      this.open(engine, inventoryOverlay, targetingOverlay, shopOverlay, inspectOverlay, mapOverlay, onDismiss);
+      this.open(engine, inventory, targetingOverlay, shopOverlay, inspectOverlay, mapOverlay, onDismiss);
     }
   }
 }

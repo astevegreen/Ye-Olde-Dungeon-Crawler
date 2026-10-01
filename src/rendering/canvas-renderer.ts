@@ -5,7 +5,6 @@ import type { Entity } from '../engine';
 import type { TileDefinition } from '../engine';
 import type { Item } from '../engine';
 import { Container } from '../engine';
-import { InventoryOverlay } from './inventory-overlay';
 import { TargetingOverlay } from './targeting-overlay';
 import { ShopDialog } from '../ui/shop/shopDialog';
 import { InspectOverlay } from './inspect-overlay';
@@ -52,7 +51,6 @@ export class CanvasRenderer {
   public readonly atlas: SpriteAtlas;
   public readonly viewport: ViewportManager;
   public readonly fxRunner: CanvasFXRunner;
-  public readonly inventoryOverlay: InventoryOverlay;
   public readonly targetingOverlay: TargetingOverlay;
   public readonly shopOverlay: ShopDialog;
   public readonly inspectOverlay: InspectOverlay;
@@ -81,11 +79,7 @@ export class CanvasRenderer {
   private boundClickHandler?: (e: MouseEvent) => void;
   private boundDoubleClickHandler?: (e: MouseEvent) => void;
   private boundMouseMoveHandler?: (e: MouseEvent) => void;
-  private boundMouseDownHandler?: (e: MouseEvent) => void;
-  private boundMouseUpHandler?: (e: MouseEvent) => void;
-  private boundContextMenuHandler?: (e: MouseEvent) => void;
   private boundMouseLeaveHandler?: () => void;
-  private boundWheelHandler?: (e: WheelEvent) => void;
   private static readonly DASH_PATTERN = Object.freeze([4, 2]);
   private cachedChasmGradVisible?: CanvasGradient;
   private cachedChasmGradDim?: CanvasGradient;
@@ -130,7 +124,6 @@ export class CanvasRenderer {
       virtualHeight: 600,
     });
     this.fxRunner = new CanvasFXRunner({ onFrame: () => this.render() });
-    this.inventoryOverlay = new InventoryOverlay(() => this.render(), this.atlas);
     this.targetingOverlay = new TargetingOverlay(() => this.render());
     this.shopOverlay = new ShopDialog({
       drawItemIcon: (canvas, item) => this.drawItemIcon(canvas, item),
@@ -155,10 +148,6 @@ export class CanvasRenderer {
         return;
       }
 
-      if (this.inventoryOverlay.isOpen) {
-        this.inventoryOverlay.handleClick(clickX, clickY, e.shiftKey || e.ctrlKey || e.metaKey);
-        return;
-      }
 
 
 
@@ -228,11 +217,6 @@ export class CanvasRenderer {
     this.boundMouseMoveHandler = (e: MouseEvent) => {
       const { x: mouseX, y: mouseY } = this.viewport.clientToVirtual(e.clientX, e.clientY);
 
-      if (this.inventoryOverlay.isOpen) {
-        this.inventoryOverlay.handleMouseMove(mouseX, mouseY);
-        this.render();
-      }
-
       const worldCoords = this.camera.screenToWorld(
         mouseX,
         mouseY,
@@ -242,7 +226,6 @@ export class CanvasRenderer {
       );
 
       if (
-        !this.inventoryOverlay.isOpen &&
         !this.shopOverlay.isOpen &&
         !this.inspectOverlay.isOpen &&
         !this.targetingOverlay.isOpen &&
@@ -258,7 +241,6 @@ export class CanvasRenderer {
 
       if (
         this.mouseVectoringEnabled &&
-        !this.inventoryOverlay.isOpen &&
         !this.shopOverlay.isOpen &&
         !this.inspectOverlay.isOpen &&
         !this.targetingOverlay.isOpen &&
@@ -288,55 +270,8 @@ export class CanvasRenderer {
     };
     this.canvas.addEventListener('mouseleave', this.boundMouseLeaveHandler);
 
-    this.boundMouseDownHandler = (e: MouseEvent) => {
-      if (this.inventoryOverlay.isOpen && e.button === 0) {
-        const { x, y } = this.viewport.clientToVirtual(e.clientX, e.clientY);
-        this.inventoryOverlay.handleMouseDown(x, y);
-      }
-    };
-    this.canvas.addEventListener('mousedown', this.boundMouseDownHandler);
-
-    this.boundMouseUpHandler = (e: MouseEvent) => {
-      if (this.inventoryOverlay.isOpen && e.button === 0) {
-        const { x, y } = this.viewport.clientToVirtual(e.clientX, e.clientY);
-        if (this.inventoryOverlay.handleMouseUp(x, y)) {
-          this.render();
-        }
-      }
-    };
-    this.canvas.addEventListener('mouseup', this.boundMouseUpHandler);
-
-    this.boundContextMenuHandler = (e: MouseEvent) => {
-      if (this.inventoryOverlay.isOpen) {
-        e.preventDefault();
-        const { x: clickX, y: clickY } = this.viewport.clientToVirtual(e.clientX, e.clientY);
-        if (this.inventoryOverlay.handleRightClick(clickX, clickY, this.engine)) {
-          this.render();
-        }
-      }
-    };
-    this.canvas.addEventListener('contextmenu', this.boundContextMenuHandler);
-
-    this.boundWheelHandler = (e: WheelEvent) => {
-      if (this.inventoryOverlay.isOpen) {
-        const { x, y } = this.viewport.clientToVirtual(e.clientX, e.clientY);
-        if (this.inventoryOverlay.handleWheel(x, y, e.deltaY)) {
-          e.preventDefault();
-          this.render();
-        }
-      }
-    };
-    this.canvas.addEventListener('wheel', this.boundWheelHandler, { passive: false });
-
     this.boundDoubleClickHandler = (e: MouseEvent) => {
       const { x: clickX, y: clickY } = this.viewport.clientToVirtual(e.clientX, e.clientY);
-
-      if (this.inventoryOverlay.isOpen) {
-        if (this.inventoryOverlay.handleDoubleClick(clickX, clickY, this.engine)) {
-          this.render();
-          return;
-        }
-      }
 
       // Universal double-click on canvas floor: ground loot pick-up
       if (
@@ -415,27 +350,14 @@ export class CanvasRenderer {
     if (this.canvas && this.boundMouseMoveHandler) {
       this.canvas.removeEventListener('mousemove', this.boundMouseMoveHandler);
     }
-    if (this.canvas && this.boundMouseDownHandler) {
-      this.canvas.removeEventListener('mousedown', this.boundMouseDownHandler);
-    }
-    if (this.canvas && this.boundMouseUpHandler) {
-      this.canvas.removeEventListener('mouseup', this.boundMouseUpHandler);
-    }
     if (this.canvas && this.boundMouseLeaveHandler) {
       this.canvas.removeEventListener('mouseleave', this.boundMouseLeaveHandler);
-    }
-    if (this.canvas && this.boundContextMenuHandler) {
-      this.canvas.removeEventListener('contextmenu', this.boundContextMenuHandler);
-    }
-    if (this.canvas && this.boundWheelHandler) {
-      this.canvas.removeEventListener('wheel', this.boundWheelHandler);
     }
     this.viewport.destroy();
     if (this.engine) {
       this.engine.onNpcInteract = undefined;
       this.engine.onFloorChanged = undefined;
     }
-    this.inventoryOverlay.close();
     this.targetingOverlay.close();
     this.shopOverlay.close();
     this.inspectOverlay.close();
@@ -570,7 +492,6 @@ export class CanvasRenderer {
     // Live On-Grid Tactical Target Card & Ground Item Tooltip (Zero-Click Inspect)
     if (
       !this.inspectOverlay.isOpen &&
-      !this.inventoryOverlay.isOpen &&
       !this.targetingOverlay.isOpen &&
       !this.shopOverlay.isOpen &&
       !this.mapOverlay.isOpen
@@ -587,9 +508,6 @@ export class CanvasRenderer {
         theme
       );
     }
-
-    // Inventory / Paperdoll Overlay (if open)
-    this.inventoryOverlay.render(ctx, this.engine, virtualW, virtualH);
 
     // Targeting / Spellbook Overlay
     this.targetingOverlay.render(

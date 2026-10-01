@@ -25,7 +25,7 @@ describe('console shortcuts: potion row and command palette', () => {
     engine = new GameEngine({ map: new GameMap(10, 10), player: new Player({ position: { x: 5, y: 5 } }) });
     const settingsManager = new SettingsManager(new MemoryStorage());
     inputHandler = new InputHandler(
-      engine, vi.fn(), undefined, undefined, undefined, undefined, undefined,
+      engine, vi.fn(), undefined, undefined, undefined, undefined,
       undefined, undefined, undefined, undefined, settingsManager
     );
     inputHandler.enabled = true;

@@ -17,7 +17,7 @@ describe('InputHandler leaves typing in text fields alone', () => {
   beforeEach(() => {
     engine = new GameEngine({ map: new GameMap(10, 10), player: new Player({ position: { x: 5, y: 5 } }) });
     onToggleDiagnostics = vi.fn<() => void>();
-    input = new InputHandler(engine, vi.fn(), undefined, undefined, undefined, undefined, onToggleDiagnostics);
+    input = new InputHandler(engine, vi.fn(), undefined, undefined, undefined, onToggleDiagnostics);
     input.enabled = true;
   });
   afterEach(() => input.destroy());

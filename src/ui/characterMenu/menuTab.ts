@@ -48,9 +48,6 @@ export interface MenuTab {
   /** The tab uses Tab itself (the inventory steps between its panels). The shell offers
    *  it Tab first and cycles tabs only when the tab declines, e.g. past its last panel. */
   claimsTabKey?: boolean;
-  /** The tab draws its own window on the canvas (the inventory), so the shell sits over
-   *  that window's title bar and draws no body or footer of its own. */
-  drawsOnCanvas?: boolean;
   /** Return true if the key was consumed; the shell handles only what you decline. */
   handleKeyDown(e: KeyboardEvent): boolean;
   /** Footer keys and actions while this tab is active. */

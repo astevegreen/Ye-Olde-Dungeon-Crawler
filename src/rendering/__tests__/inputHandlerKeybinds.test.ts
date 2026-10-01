@@ -41,7 +41,6 @@ describe('InputHandler Keybind Remapping & Movement Modes', () => {
     inputHandler = new InputHandler(
       engine,
       onActionProcessed,
-      undefined,
       onSaveAndExit,
       undefined,
       undefined,

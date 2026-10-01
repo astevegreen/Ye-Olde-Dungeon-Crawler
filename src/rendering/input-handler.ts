@@ -22,12 +22,11 @@ import {
 import { KeybindingManager } from '../ui/settings/keybindingManager';
 import type { AutoRestRunner } from '../ui/autoRestRunner';
 import type { NavigationController } from '../ui/navigation';
-import type { InventoryOverlay } from './inventory-overlay';
 import type { TargetingOverlay } from './targeting-overlay';
 import type { ShopDialog } from '../ui/shop/shopDialog';
 import type { InspectOverlay } from './inspect-overlay';
 import type { MapOverlay } from './map-overlay';
-import type { ContextHelp } from '../ui/help/contextHelp';
+import type { ContextHelp, OpenFlag } from '../ui/help/contextHelp';
 import type { CommandPalette } from '../ui/help/commandPalette';
 import type { RuneOfReturnDiscoveryModal } from '../ui/runeOfReturnDiscoveryModal';
 import type { CharacterMenuModal } from '../ui/characterMenu/characterMenuModal';
@@ -133,7 +132,6 @@ export class InputHandler {
   public readonly keybindings: KeybindingManager;
   public readonly settingsManager: SettingsManager;
   public readonly chordBuffer: ChordBuffer;
-  public inventoryOverlay?: InventoryOverlay;
   public targetingOverlay?: TargetingOverlay;
   private _shopOverlay?: ShopDialog;
   public get shopOverlay(): ShopDialog | undefined {
@@ -180,7 +178,6 @@ export class InputHandler {
   constructor(
     engine: GameEngine,
     onActionProcessed: () => void,
-    inventoryOverlay?: InventoryOverlay,
     onSaveAndExit?: () => void,
     targetingOverlay?: TargetingOverlay,
     shopOverlay?: ShopDialog,
@@ -203,21 +200,12 @@ export class InputHandler {
     this.chordBuffer = new ChordBuffer({
       onMove: (dx, dy) => {
         if (!this.enabled || this.isInputLocked) return;
-        if (this.inventoryOverlay?.isOpen) {
-          this.inventoryOverlay.close();
-        }
         this.engine.handlePlayerAction(new MovementAction(this.engine.player, dx, dy));
         this.onActionProcessed();
       },
       isEnabled: () => this.settingsManager.getSettings().arrowChordingEnabled,
       getBufferMs: () => this.settingsManager.getSettings().arrowChordBufferMs,
     });
-    this.inventoryOverlay = inventoryOverlay;
-    if (this.inventoryOverlay) {
-      this.inventoryOverlay.onClose = () => {
-        this.modalStack.remove('inventory');
-      };
-    }
     this.onSaveAndExit = onSaveAndExit;
     this.targetingOverlay = targetingOverlay;
     this.shopOverlay = shopOverlay;
@@ -317,7 +305,7 @@ export class InputHandler {
   public openContextHelp(): void {
     const help = this.contextHelp;
     if (!help || help.isOpen) return;
-    help.open(this.engine, this.inventoryOverlay, this.targetingOverlay, this.shopOverlay, this.inspectOverlay, this.mapOverlay);
+    help.open(this.engine, this.inventoryFlag, this.targetingOverlay, this.shopOverlay, this.inspectOverlay, this.mapOverlay);
     this.modalStack.push({
       id: 'context_help',
       get isOpen() { return help.isOpen; },
@@ -346,19 +334,14 @@ export class InputHandler {
     this.onActionProcessed();
   }
 
+  /** Whether the character menu is open on the inventory, for the context help. */
+  private get inventoryFlag(): OpenFlag {
+    return { isOpen: Boolean(this.characterMenuModal?.isOpen && this.characterMenuModal.activeTabId === 'inventory') };
+  }
+
+  /** The inventory is the character menu's first tab. */
   public toggleInventory(): void {
-    if (this.characterMenuModal) {
-      this.toggleCharacterMenu('inventory');
-      return;
-    }
-    if (!this.inventoryOverlay) return;
-    this.inventoryOverlay.toggle(this.engine);
-    if (this.inventoryOverlay.isOpen) {
-      this.modalStack.push(this.inventoryOverlay);
-    } else {
-      this.modalStack.remove('inventory');
-    }
-    this.onActionProcessed();
+    this.toggleCharacterMenu('inventory');
   }
 
   public clearInputLock(): void {
@@ -716,9 +699,6 @@ export class InputHandler {
       e.key === 'l' ||
       e.key === 'L'
     ) {
-      if (this.inventoryOverlay?.isOpen) {
-        this.inventoryOverlay.close();
-      }
       if (this.targetingOverlay?.isOpen) {
         this.targetingOverlay.close();
       }
@@ -735,7 +715,6 @@ export class InputHandler {
 
     // Context action (F by default): whatever the console's context button offers here.
     if (this.settingsManager.getActionForCode(e.shiftKey ? `Shift+${code}` : code) === 'context_action' && this.onContextAction) {
-      if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
       this.onContextAction();
       this.onActionProcessed();
       return true;
@@ -746,7 +725,6 @@ export class InputHandler {
     const potionAction = this.settingsManager.getActionForCode(e.shiftKey ? `Shift+${code}` : code);
     if (potionAction?.startsWith('drink_potion_') && this.onDrinkPotionSlot) {
       const slotIdx = parseInt(potionAction.replace('drink_potion_', ''), 10) - 1;
-      if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
       this.onDrinkPotionSlot(slotIdx);
       this.onActionProcessed();
       return true;
@@ -768,9 +746,6 @@ export class InputHandler {
 
     // Close Door Action: 'KeyC' (Smart-Close targeting)
     if (code === 'KeyC') {
-      if (this.inventoryOverlay?.isOpen) {
-        this.inventoryOverlay.close();
-      }
       const openDoors = getAdjacentOpenDoors(this.engine.map, p.x, p.y);
       if (openDoors.length === 0) {
         this.engine.log('No open door nearby.');
@@ -790,9 +765,6 @@ export class InputHandler {
 
     // Rest Action: 'KeyR'
     if (code === 'KeyR') {
-      if (this.inventoryOverlay?.isOpen) {
-        this.inventoryOverlay.close();
-      }
       const restAction = new RestAction(p);
       this.engine.handlePlayerAction(restAction);
       this.onActionProcessed();
@@ -801,9 +773,6 @@ export class InputHandler {
 
     // Search Action (detect traps and secret doors): 'KeyS'
     if (code === 'KeyS') {
-      if (this.inventoryOverlay?.isOpen) {
-        this.inventoryOverlay.close();
-      }
       const searchAction = new SearchAction(p, this.engine.rng);
       this.engine.handlePlayerAction(searchAction);
       this.onActionProcessed();
@@ -812,9 +781,6 @@ export class InputHandler {
 
     // Toggle Explored Map Overlay: 'KeyM'
     if (code === 'KeyM') {
-      if (this.inventoryOverlay?.isOpen) {
-        this.inventoryOverlay.close();
-      }
       if (this.targetingOverlay?.isOpen) {
         this.targetingOverlay.close();
       }
@@ -834,23 +800,14 @@ export class InputHandler {
       return true;
     }
 
-    // Close inventory with Escape or trigger Save & Exit
-    if (code === 'Escape') {
-      if (this.inventoryOverlay?.isOpen) {
-        this.inventoryOverlay.close();
-        this.onActionProcessed();
-        return true;
-      } else if (this.onSaveAndExit) {
-        this.onSaveAndExit();
-        return true;
-      }
+    // Escape in play opens Save & Exit.
+    if (code === 'Escape' && this.onSaveAndExit) {
+      this.onSaveAndExit();
+      return true;
     }
 
     // Save & Return to Title hotkey: 'KeyQ'
     if (code === 'KeyQ') {
-      if (this.inventoryOverlay?.isOpen) {
-        this.inventoryOverlay.close();
-      }
       if (this.onSaveAndExit) {
         this.onSaveAndExit();
         return true;
@@ -885,14 +842,6 @@ export class InputHandler {
       this.engine.handlePlayerAction(pickAction);
       this.onActionProcessed();
       return true;
-    }
-
-    // When inventory overlay is open, handle keyboard navigation and actions
-    if (this.inventoryOverlay?.isOpen) {
-      if (this.inventoryOverlay.handleKeyDown(code, this.engine)) {
-        this.onActionProcessed();
-        return true;
-      }
     }
 
     // Rest Hotkey (KeyR): Launch AutoRestRunner if available, else static RestAction
@@ -953,7 +902,6 @@ export class InputHandler {
       }
     }
     if (userAction === 'map') {
-      if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
       if (this.targetingOverlay?.isOpen) this.targetingOverlay.close();
       if (this.inspectOverlay?.isOpen) this.inspectOverlay.close();
       if (this.mapOverlay) {
@@ -963,7 +911,6 @@ export class InputHandler {
       }
     }
     if (userAction === 'inspect') {
-      if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
       if (this.targetingOverlay?.isOpen) this.targetingOverlay.close();
       this.inspectOverlay?.open(this.engine);
       this.onActionProcessed();
@@ -988,7 +935,6 @@ export class InputHandler {
       return true;
     }
     if (userAction === 'search') {
-      if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
       const searchAction = new SearchAction(p, this.engine.rng);
       this.engine.handlePlayerAction(searchAction);
       this.onActionProcessed();
@@ -996,7 +942,6 @@ export class InputHandler {
     }
     if (userAction === 'radial_menu' && !e.repeat && this.radialMenuOverlay) {
       const self = this;
-      if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
       this.radialHeldKeys.clear();
       this.radialMenuOverlay.open();
       this.modalStack.push({
@@ -1013,7 +958,6 @@ export class InputHandler {
       return true;
     }
     if (userAction === 'rest') {
-      if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
       if (this.autoRestRunner) {
         this.autoRestRunner.start({
           onStep: () => this.onActionProcessed(),
@@ -1027,14 +971,12 @@ export class InputHandler {
       return true;
     }
     if (userAction === 'channel_rune_of_return') {
-      if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
       const channelAction = new ChannelRuneOfReturnAction(p);
       this.engine.handlePlayerAction(channelAction);
       this.onActionProcessed();
       return true;
     }
     if (userAction === 'rune_of_return_tree') {
-      if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
       this.onOpenRuneTree?.();
       this.onActionProcessed();
       return true;
@@ -1042,9 +984,6 @@ export class InputHandler {
 
     // Arrow keys: routed through ChordBuffer (micro-debounce chording or immediate standard mode)
     if (ChordBuffer.isArrowKey(code)) {
-      if (this.inventoryOverlay?.isOpen) {
-        this.inventoryOverlay.close();
-      }
       this.chordBuffer.handleKeyDown(code, e.repeat);
       return true;
     }
@@ -1055,9 +994,6 @@ export class InputHandler {
     }
 
     // If movement action while inventory is open, close inventory
-    if (this.inventoryOverlay?.isOpen) {
-      this.inventoryOverlay.close();
-    }
 
     this.engine.handlePlayerAction(action);
     this.onActionProcessed();

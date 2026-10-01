@@ -1,7 +1,6 @@
 import type { UIModal, ModalStackManager } from '../modalStack';
 import type { GameState } from './gameState';
 import type { MenuFooter, MenuHost, MenuTab } from './menuTab';
-import type { ViewportManager } from '../../rendering/viewport';
 import { keyLabel } from '../keyLabel';
 import { resolveBranding } from '../branding';
 import { escapeHtml, keyChip as chip } from '../html';
@@ -16,20 +15,12 @@ const DEFAULT_TAB_CODES: Record<string, string[]> = {
   story: ['KeyO'],
 };
 
-/** Height, in virtual canvas pixels, of the title bar the canvas inventory draws: the
- *  tab strip sits exactly over it while that tab is active. */
-const CANVAS_TITLEBAR_H = 30;
-
-
 /**
  * The character menu (ARCHITECTURE.md §3, §6; ADR-0011): one shell for Inventory,
  * Character, Spellbook, Bestiary, Pacts and Story. It owns every piece of chrome — the
  * tab strip with key chips and badges, the one close button, and the footer of keys and
- * actions — so its tabs draw only their content.
- *
- * Tabs fill the window less a 20px margin. The inventory still draws its own window on
- * the canvas (until it moves to DOM), so on that tab the shell shrinks to that window and
- * lays its tab strip over the inventory's title bar.
+ * actions — so its tabs draw only their content. Every tab fills the window less a 20px
+ * margin (menu.css).
  */
 export class CharacterMenuModal implements UIModal {
   public readonly id = 'character-menu';
@@ -40,14 +31,10 @@ export class CharacterMenuModal implements UIModal {
   private stateSupplier?: () => GameState;
   private modalStack?: ModalStackManager;
   private onCloseCallback?: () => void;
-  private viewport?: ViewportManager;
-  private canvas?: HTMLCanvasElement;
-  private detachResizeListener?: () => void;
   private resolveCodes?: (actionId: string) => string[];
 
   private overlayEl: HTMLElement | null = null;
   private windowEl: HTMLElement | null = null;
-  private headerEl: HTMLElement | null = null;
   private navEl: HTMLElement | null = null;
   private contentEl: HTMLElement | null = null;
   private footerEl: HTMLElement | null = null;
@@ -60,20 +47,15 @@ export class CharacterMenuModal implements UIModal {
   constructor(
     tabs: MenuTab[] = [],
     stateSupplier?: () => GameState,
-    onClose?: () => void,
-    viewport?: ViewportManager,
-    canvas?: HTMLCanvasElement
+    onClose?: () => void
   ) {
     this.tabs = tabs;
     this.stateSupplier = stateSupplier;
     this.onCloseCallback = onClose;
-    this.viewport = viewport;
-    this.canvas = canvas;
     if (tabs.length > 0) {
       this.activeTabId = tabs[0].id;
     }
     for (const tab of tabs) tab.bindHost?.(this.host);
-    this.hookResize();
     this.createDom();
   }
 
@@ -96,38 +78,10 @@ export class CharacterMenuModal implements UIModal {
     this.renderTabsNav();
   }
 
-  public setViewport(viewport: ViewportManager): void {
-    if (this.viewport === viewport) return;
-    this.detachResizeListener?.();
-    this.viewport = viewport;
-    this.hookResize();
-    if (this.isOpen) {
-      this.updateLayout();
-    }
-  }
-
-  public setCanvas(canvas: HTMLCanvasElement): void {
-    this.canvas = canvas;
-    if (this.isOpen) {
-      this.updateLayout();
-    }
-  }
-
-  private hookResize(): void {
-    if (!this.viewport || typeof this.viewport.addResizeListener !== 'function') return;
-    this.detachResizeListener = this.viewport.addResizeListener(() => {
-      if (this.isOpen) {
-        this.updateLayout();
-      }
-    });
-  }
-
   public destroy(): void {
     if (typeof document !== 'undefined') {
       document.getElementById('widescreen-layout')?.classList.remove('character-menu-active');
     }
-    this.detachResizeListener?.();
-    this.detachResizeListener = undefined;
   }
 
   public registerTab(tab: MenuTab): void {
@@ -157,55 +111,6 @@ export class CharacterMenuModal implements UIModal {
     if (!tab.hotkeyActionId) return [];
     const bound = this.resolveCodes?.(tab.hotkeyActionId) ?? [];
     return bound.length > 0 ? bound : (DEFAULT_TAB_CODES[tab.hotkeyActionId] ?? []);
-  }
-
-  public updateLayout(): void {
-    if (!this.windowEl || typeof document === 'undefined') return;
-    const win = this.windowEl;
-
-    if (!this.getActiveTab()?.drawsOnCanvas) {
-      // Full window less the margin, from menu.css.
-      win.style.left = '';
-      win.style.top = '';
-      win.style.width = '';
-      win.style.height = '';
-      if (this.headerEl) this.headerEl.style.height = '';
-      return;
-    }
-
-    // Over the canvas inventory: match the window it draws (920×576 virtual, centered).
-    const virtualWidth = this.viewport?.virtualWidth ?? 960;
-    const virtualHeight = this.viewport?.virtualHeight ?? 600;
-    const modalVirtualW = Math.min(virtualWidth - 20, 920);
-    const modalVirtualH = Math.min(virtualHeight - 24, 576);
-    const modalVirtualX = Math.floor((virtualWidth - modalVirtualW) / 2);
-    const modalVirtualY = Math.floor((virtualHeight - modalVirtualH) / 2);
-
-    const canvas =
-      this.canvas ??
-      this.viewport?.canvasElement ??
-      (typeof document.getElementById === 'function'
-        ? (document.getElementById('game-canvas') as HTMLCanvasElement | null)
-        : null);
-
-    let scale = this.viewport?.scale ?? 1;
-    if (
-      canvas &&
-      typeof canvas.getBoundingClientRect === 'function' &&
-      this.overlayEl &&
-      typeof this.overlayEl.getBoundingClientRect === 'function'
-    ) {
-      const canvasRect = canvas.getBoundingClientRect();
-      const overlayRect = this.overlayEl.getBoundingClientRect();
-      scale =
-        this.viewport?.scale ??
-        (canvasRect.width > 0 && virtualWidth > 0 ? canvasRect.width / virtualWidth : 1);
-      win.style.left = `${Math.round(canvasRect.left - overlayRect.left + modalVirtualX * scale)}px`;
-      win.style.top = `${Math.round(canvasRect.top - overlayRect.top + modalVirtualY * scale)}px`;
-    }
-    win.style.width = `${Math.round(modalVirtualW * scale)}px`;
-    win.style.height = `${Math.round(modalVirtualH * scale)}px`;
-    if (this.headerEl) this.headerEl.style.height = `${Math.round(CANVAS_TITLEBAR_H * scale)}px`;
   }
 
   private createDom(): void {
@@ -257,13 +162,11 @@ export class CharacterMenuModal implements UIModal {
       win.appendChild(footer);
     }
     this.windowEl = win;
-    this.headerEl = win.querySelector<HTMLElement>('.character-menu-header');
     this.navEl = win.querySelector<HTMLElement>('.character-menu-tabs');
     this.contentEl = win.querySelector<HTMLElement>('.character-menu-tab-content');
     this.footerEl = win.querySelector<HTMLElement>('.cm-foot');
 
     this.renderTabsNav();
-    this.updateLayout();
   }
 
   private renderTabsNav(): void {
@@ -351,7 +254,7 @@ export class CharacterMenuModal implements UIModal {
 
     this.activeTabId = targetTab.id;
     if (this.overlayEl) {
-      this.overlayEl.className = `cm-overlay${this.isOpen ? ' is-open' : ''} ${targetTab.drawsOnCanvas ? 'is-canvas' : 'is-full'}`;
+      this.overlayEl.className = `cm-overlay${this.isOpen ? ' is-open' : ''}`;
     }
 
     if (this.contentEl) {
@@ -360,7 +263,6 @@ export class CharacterMenuModal implements UIModal {
       if (this.stateSupplier) {
         targetTab.onActivate(this.stateSupplier(), entry);
       }
-      this.updateLayout();
     }
     this.refreshChrome();
     return true;

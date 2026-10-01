@@ -8,7 +8,6 @@ import type { SpellDefinition } from '../../engine';
 import { CanvasRenderer } from '../canvas-renderer';
 import { InspectOverlay } from '../inspect-overlay';
 import { MapOverlay } from '../map-overlay';
-import { InventoryOverlay } from '../inventory-overlay';
 import { TargetingOverlay } from '../targeting-overlay';
 
 function createMockCanvasContext() {
@@ -223,20 +222,6 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
       targeting.startTargeting({ key: '', type: 'spell', id: spellDef.id, name: spellDef.name, spellDef }, engine);
       expect(targeting.mode).toBe('reticle');
       expect(() => targeting.render(ctx, 960, 600, engine, mockCamera, 32, 0, 0)).not.toThrow();
-      expect(ctx.fillRect).toHaveBeenCalled();
-    });
-
-    it('renders InventoryOverlay with themed colors without throwing', () => {
-      const ctx = createMockCanvasContext();
-      const engine = createTestEngine({
-        id: 'warcraft-orcs',
-        name: 'Warcraft',
-        theme: WARCRAFT_THEME_TOKENS,
-      });
-
-      const inventory = new InventoryOverlay();
-      inventory.open(engine);
-      expect(() => inventory.render(ctx, engine, 960, 600)).not.toThrow();
       expect(ctx.fillRect).toHaveBeenCalled();
     });
 

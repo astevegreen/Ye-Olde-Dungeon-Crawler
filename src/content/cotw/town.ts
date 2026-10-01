@@ -149,6 +149,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
       position: { x: 26, y: 14 },
       greeting: 'Halt! Keep your weapons sheathed in Bjarnarhaven, adventurer.',
       dialogText: 'The dungeon cellar to the north-east leads into the depths. Many go down; few return.',
+      advice: 'Bjarnarhaven is peaceful, but the cellar entrance north-east holds terrors from old myths. Buy torches and sturdy armor before you venture down.',
     },
     {
       id: 'npc-trainer',

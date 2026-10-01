@@ -223,17 +223,15 @@ function runeSmithPanel(engine: GameEngine): ServicePanel {
   };
 }
 
-function townspersonPanel(engine: GameEngine): ServicePanel {
-  const town = engine.manifest?.town?.name ?? 'The town';
-  return {
-    heading: 'Local advice',
-    facts: `<div class="ui-note">${escapeHtml(`${town} is peaceful, but the cellar entrance north-east holds terrors from old myths. Buy torches and sturdy armor before you venture down.`)}</div>`,
-    offers: [],
-  };
+/** A townsperson with no shop or service: the advice the pack gives them, if any. */
+function townspersonPanel(engine: GameEngine, npc: NPC): ServicePanel | null {
+  const advice = engine.manifest?.town?.npcs?.find((d) => d.id === npc.id)?.advice;
+  if (!advice) return null;
+  return { heading: 'Local advice', facts: `<div class="ui-note">${escapeHtml(advice)}</div>`, offers: [] };
 }
 
-/** The panel for a townsperson who isn't a merchant. */
-export function servicePanelFor(engine: GameEngine, npc: NPC): ServicePanel {
+/** The panel for a townsperson who isn't a merchant; null when they only greet. */
+export function servicePanelFor(engine: GameEngine, npc: NPC): ServicePanel | null {
   const attunementNpcId = engine.manifest?.runeOfReturn?.attunementNpcId;
   if (attunementNpcId && npc.id === attunementNpcId) return runeSmithPanel(engine);
   switch (npc.role) {
@@ -246,7 +244,7 @@ export function servicePanelFor(engine: GameEngine, npc: NPC): ServicePanel {
     case 'trainer':
       return trainerPanel(engine);
     default:
-      return townspersonPanel(engine);
+      return townspersonPanel(engine, npc);
   }
 }
 

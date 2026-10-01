@@ -252,6 +252,9 @@ export interface TownNpcDefinition {
   position: Position;
   greeting: string;
   dialogText?: string;
+  /** What a townsperson without a shop or service tells the hero beyond their greeting
+   *  (the town dialog's "Local advice"). Absent, they only greet. */
+  advice?: string;
   shopId?: string;
   merchantConfig?: MerchantConfig;
   isStationary?: boolean;

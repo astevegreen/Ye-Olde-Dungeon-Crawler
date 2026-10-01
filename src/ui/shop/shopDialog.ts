@@ -315,7 +315,7 @@ export class ShopDialog {
     const listScroll = scrim.querySelector?.('.shop-list')?.scrollTop ?? 0;
     const panel = this.panel(engine);
     const title = serviceTitle(engine, npc, this.merchant?.shopName);
-    const body = `${this.greetingHtml(engine, npc, title !== npc.name)}${this.merchant ? this.tradeHtml(engine) : servicePanelHtml(panel!)}
+    const body = `${this.greetingHtml(engine, npc, title !== npc.name)}${this.merchant ? this.tradeHtml(engine) : panel ? servicePanelHtml(panel) : ''}
       <div class="shop-status is-${this.statusTone}" role="status" aria-live="polite">${escapeHtml(this.statusMessage)}</div>`;
 
     const hints = this.merchant

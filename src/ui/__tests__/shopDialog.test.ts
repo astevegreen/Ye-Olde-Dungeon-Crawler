@@ -97,7 +97,7 @@ describe('ShopDialog', () => {
       const shop = new ShopDialog();
       const who = npc(role);
       shop.open(who, null, engine);
-      const offers = servicePanelFor(engine, who).offers.filter((o) => !o.disabled);
+      const offers = servicePanelFor(engine, who)!.offers.filter((o) => !o.disabled);
       expect(offers.length).toBeGreaterThan(0);
       for (const offer of offers) {
         dispatch.mockClear();
@@ -206,8 +206,18 @@ describe('ShopDialog', () => {
   });
 
   it('renders a disabled offer as a disabled button', () => {
-    const markup = servicePanelHtml(servicePanelFor(engine, npc('sage')));
+    const markup = servicePanelHtml(servicePanelFor(engine, npc('sage'))!);
     expect(markup).toMatch(/data-act="identify" disabled/);
     expect(markup).toMatch(/data-act="advise">/);
+  });
+
+  it("shows a townsperson's advice from the pack, and nothing but the greeting without it", () => {
+    const guard = npc('guard');
+    expect(servicePanelFor(engine, guard)).toBeNull();
+    (engine.manifest as { town: unknown }).town = {
+      name: 'Testford',
+      npcs: [{ id: guard.id, name: guard.name, role: 'guard', position: { x: 0, y: 0 }, greeting: 'Hail.', advice: 'Mind the well.' }],
+    };
+    expect(servicePanelHtml(servicePanelFor(engine, guard)!)).toContain('Mind the well.');
   });
 });

@@ -1,6 +1,8 @@
-# Normalize text files to LF in the repository; the working-tree ending follows
-# each checkout's core.autocrlf.
-* text=auto
+# Every text file is LF, in the repository AND in the working tree, whatever
+# the checkout's core.autocrlf says. Git for Windows defaults autocrlf=true,
+# which wrote CRLF on checkout while editors and agents wrote LF, leaving a
+# mixed tree where a script's "\n" pattern silently missed half the files.
+* text=auto eol=lf
 
 # Shell scripts and git hooks must keep LF endings: CRLF breaks the
 # `#!/bin/sh` interpreter line when they run under sh (ARCHITECTURE.md §7.2).

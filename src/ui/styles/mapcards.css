@@ -63,6 +63,7 @@
 .mc-intent.is-warn { color: var(--ui-warn); }
 .mc-intent.is-bad { color: var(--ui-bad); }
 .mc-intent.is-info { color: var(--ui-info); }
+.mc-intent.is-good { color: var(--ui-good); }
 .mc-status { color: var(--ui-info); font-size: var(--ui-text-xs); }
 
 /* The target card: the monster under the mouse. */

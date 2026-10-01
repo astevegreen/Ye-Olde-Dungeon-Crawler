@@ -1,5 +1,5 @@
 {
-  "total": 415,
+  "total": 412,
   "files": {
     "index.html": 12,
     "src/main.ts": 2,
@@ -11,7 +11,7 @@
     "src/rendering/map-overlay.ts": 9,
     "src/rendering/mouseVectorOverlay.ts": 8,
     "src/rendering/radialMenu.ts": 2,
-    "src/rendering/targeting-overlay.ts": 15,
+    "src/rendering/targeting-overlay.ts": 12,
     "src/ui/console/consoleModel.ts": 1,
     "src/ui/diagnostic-modal.ts": 7,
     "src/ui/diagnostic/actorTab.ts": 62,

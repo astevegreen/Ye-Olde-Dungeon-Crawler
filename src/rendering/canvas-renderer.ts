@@ -569,6 +569,7 @@ export class CanvasRenderer {
     cards.sync(this.viewport.displayWidth / virtualW);
     cards.set('look', this.inspectOverlay.card(this.engine, this.camera, this.cellSize, this.offsetX, this.offsetY, virtualW));
     const hoverShown = !this.inspectOverlay.isOpen && !this.targetingOverlay.isOpen && !this.shopOverlay.isOpen && !this.mapOverlay.isOpen;
+    cards.set('aim', this.targetingOverlay.card(this.engine, this.camera, this.cellSize, this.offsetX, this.offsetY, virtualW));
     cards.setGroup('windup', this.intentOverlay.cards(this.engine, this.camera, this.cellSize, this.offsetX, this.offsetY));
     cards.set('hover', hoverShown ? this.tacticalTargetOverlay.card(this.engine, this.camera, this.cellSize, this.offsetX, this.offsetY) : null);
   }

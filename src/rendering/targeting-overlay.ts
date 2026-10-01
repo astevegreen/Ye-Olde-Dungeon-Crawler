@@ -12,7 +12,10 @@ import {
   type Item,
 } from '../engine';
 import type { Camera } from './camera';
-import { resolveThemeTokens, uiFont } from './theme';
+import { resolveThemeTokens } from './theme';
+import { escapeHtml } from '../ui/html';
+import { iconHtml } from '../ui/icons';
+import type { MapCardSpec } from '../ui/mapCards/mapCardLayer';
 import type { UIModal } from '../ui/modalStack';
 
 export interface SpellbookEntry {
@@ -261,6 +264,14 @@ export class TargetingOverlay implements UIModal {
     return false;
   }
 
+  /** The aiming card, docked to the side of the map away from the reticle. */
+  public card(engine: GameEngine, camera: Camera, cellSize: number, offsetX: number, offsetY: number, canvasW: number): MapCardSpec | null {
+    if (this.mode !== 'reticle' || !this.activeEntry) return null;
+    const screen = camera.worldToScreen(this.reticleX, this.reticleY, cellSize, offsetX, offsetY);
+    const dock = (screen?.x ?? 0) > canvasW / 2 ? 'top-left' : 'top-right';
+    return { className: 'mc-panel mc-aim', place: { dock }, live: true, html: aimCardHtml(engine, this.activeEntry, this.reticleX, this.reticleY) };
+  }
+
   private notify(): void {
     if (this.onStateChanged) {
       this.onStateChanged();
@@ -352,18 +363,23 @@ export class TargetingOverlay implements UIModal {
     // Area of effect highlight
     if (spell.areaOfEffect > 0 && trace.impactTile && typeof trace.impactTile.x === 'number' && typeof trace.impactTile.y === 'number') {
       const aoeTiles = getAreaOfEffectTiles(engine.map, trace.impactTile.x, trace.impactTile.y, spell.areaOfEffect);
-      ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
-      ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)';
+      const danger = resolveThemeTokens(engine.manifest?.theme).bad;
+      ctx.save();
+      ctx.fillStyle = danger;
+      ctx.strokeStyle = danger;
       ctx.lineWidth = 1;
 
       for (const tile of aoeTiles) {
         if (!tile || typeof tile.x !== 'number' || typeof tile.y !== 'number') continue;
         const screen = camera.worldToScreen(tile.x, tile.y, cellSize, offsetX, offsetY);
         if (screen) {
+          ctx.globalAlpha = 0.25;
           ctx.fillRect(screen.x, screen.y, cellSize, cellSize);
+          ctx.globalAlpha = 0.7;
           ctx.strokeRect(screen.x + 0.5, screen.y + 0.5, cellSize - 1, cellSize - 1);
         }
       }
+      ctx.restore();
     }
 
     // Draw Reticle Brackets at (rx, ry)
@@ -374,7 +390,7 @@ export class TargetingOverlay implements UIModal {
       const bracketLen = 7;
 
       ctx.save();
-      ctx.strokeStyle = '#fde047'; // Bright gold
+      ctx.strokeStyle = resolveThemeTokens(engine.manifest?.theme).title;
       ctx.lineWidth = 2;
 
       // Top-Left corner
@@ -406,40 +422,6 @@ export class TargetingOverlay implements UIModal {
       ctx.stroke();
       ctx.restore();
     }
-
-    // Targeting Banner Information
-    const targetEntity = engine.map.getEntityAt(rx, ry);
-    let targetDesc = 'Empty space';
-    if (targetEntity && targetEntity.isAlive()) {
-      const aff = targetEntity.elementalResistances[spell.element] ?? 'neutral';
-      const affNote = aff !== 'neutral' ? ` [${aff.toUpperCase()} to ${spell.element}]` : '';
-      targetDesc = `${targetEntity.name} (HP: ${targetEntity.hp}/${targetEntity.maxHp})${affNote}`;
-    }
-
-    const bannerY = 52;
-    const theme = resolveThemeTokens(engine?.manifest?.theme);
-    const font = theme.fontFamily ?? '"Courier New", Courier, monospace';
-
-    ctx.save();
-    ctx.fillStyle = theme.modalBackdrop;
-    ctx.strokeStyle = theme.modalBorder;
-    ctx.lineWidth = 1;
-    ctx.fillRect(14, bannerY, 440, 48);
-    ctx.strokeRect(14.5, bannerY + 0.5, 439, 47);
-
-    ctx.font = uiFont('sm', font, 'bold');
-    ctx.fillStyle = theme.hudAccent;
-    ctx.textAlign = 'left';
-    const costOrCharge = this.activeEntry.type === 'wand'
-      ? `[Wand: ${this.activeEntry.charges}/${this.activeEntry.maxCharges} charges]`
-      : `[Cost: ${spell.manaCost} ${resolveManaTerms(engine.manifest).unit}]`;
-    const bounceNote = spell.reflects ? ' (Bounces off walls)' : '';
-    ctx.fillText(`AIMING: ${spell.name} ${costOrCharge}${bounceNote}`, 22, bannerY + 18);
-
-    ctx.font = uiFont('xs', font);
-    ctx.fillStyle = theme.textMuted;
-    ctx.fillText(`TARGET: ${targetDesc} | [Enter] Fire | [Esc] Cancel`, 22, bannerY + 36);
-    ctx.restore();
   }
 
   private renderProjectileEffect(
@@ -512,4 +494,37 @@ export class TargetingOverlay implements UIModal {
     }
     ctx.restore();
   }
+}
+
+const AFFINITY_NOTE: Record<string, { text: string; tone: string }> = {
+  weak: { text: 'Weak to', tone: 'is-good' },
+  resistant: { text: 'Resists', tone: 'is-bad' },
+  immune: { text: 'Immune to', tone: 'is-bad' },
+  absorbing: { text: 'Absorbs', tone: 'is-bad' },
+};
+
+/** The aiming card: what is aimed, what it costs, and what stands under the reticle. */
+export function aimCardHtml(engine: GameEngine, entry: SpellbookEntry, reticleX: number, reticleY: number): string {
+  const spell = entry.spellDef;
+  const cost =
+    entry.type === 'wand'
+      ? `${entry.charges ?? 0} / ${entry.maxCharges ?? 0} charges`
+      : `${spell.manaCost} ${resolveManaTerms(engine.manifest).unit}`;
+  const target = engine.map.getEntityAt(reticleX, reticleY);
+  let targetHtml = '<div class="mc-line ui-muted"><span>Empty space</span></div>';
+  if (target && target.isAlive()) {
+    const pct = target.maxHp > 0 ? Math.max(0, Math.min(100, Math.round((target.hp / target.maxHp) * 100))) : 0;
+    const aff = AFFINITY_NOTE[target.elementalResistances[spell.element] ?? 'neutral'];
+    targetHtml = `
+      <div class="mc-line"><b class="mc-foe">${escapeHtml(target.name)}</b><span class="ui-num">${target.hp} / ${target.maxHp}</span></div>
+      <div class="ui-bar mc-hp"><i style="width: ${pct}%"></i></div>
+      ${aff ? `<div class="mc-intent ${aff.tone}">${aff.text} ${escapeHtml(spell.element)}</div>` : ''}`;
+  }
+  return `
+    <div class="mc-head"><span class="mc-title">${iconHtml('cast')} <span>${escapeHtml(spell.name)}</span></span><span class="mc-tag ui-num">${escapeHtml(cost)}</span></div>
+    <div class="mc-body">
+      <div class="mc-sub">Target</div>
+      ${targetHtml}
+      ${spell.reflects ? '<div class="ui-note">Bounces off walls</div>' : ''}
+    </div>`;
 }

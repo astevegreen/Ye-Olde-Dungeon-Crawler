@@ -268,12 +268,6 @@ export type UiTextRole = keyof typeof UI_TEXT_PX;
 /** CSS pixels per virtual canvas pixel; the viewport keeps it current. */
 let canvasTextScale = 1;
 
-/** Virtual canvas pixels per CSS pixel: multiply a CSS length by it to lay a canvas panel
- *  out at the same size as its uiFont() text. */
-export function canvasUnit(): number {
-  return 1 / canvasTextScale;
-}
-
 export function setCanvasTextScale(cssPerVirtualPx: number): void {
   if (Number.isFinite(cssPerVirtualPx) && cssPerVirtualPx > 0) canvasTextScale = cssPerVirtualPx;
 }

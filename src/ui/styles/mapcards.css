@@ -1,0 +1,65 @@
+/*
+ * The cards over the map (src/ui/mapCards/mapCardLayer.ts; ADR-0011, Phase 7): a layer laid
+ * exactly over the game canvas, holding the Look card, the target card, the labels over a
+ * hovered tile, the wind-up banner, the aiming card and the mode hint. They never take the
+ * mouse: the canvas under them keeps its hover and clicks. Tokens only (check:ui-palette).
+ */
+
+.mc-layer {
+  position: absolute;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  font-family: var(--ui-font-body);
+  font-size: var(--ui-text-sm);
+  line-height: 1.4;
+  color: var(--ui-text);
+}
+
+.mc-card { position: absolute; box-sizing: border-box; }
+.mc-card *, .mc-card *::before, .mc-card *::after { box-sizing: border-box; }
+.mc-dock-top-left { top: var(--ui-space-3); left: var(--ui-space-3); }
+.mc-dock-top-right { top: var(--ui-space-3); right: var(--ui-space-3); }
+.mc-dock-bottom { bottom: var(--ui-space-3); left: 50%; transform: translateX(-50%); }
+/* Centered above a tile: the layer sets left and top to the tile's top-center. */
+.mc-above { transform: translate(-50%, calc(-100% - 4px)); }
+
+/* A panel: the Look, target and aiming cards. */
+.mc-panel {
+  width: 300px;
+  max-width: calc(100% - 2 * var(--ui-space-3));
+  background: color-mix(in srgb, var(--ui-surface-1) 94%, transparent);
+  border: 1px solid var(--ui-line-strong);
+  border-top: 2px solid var(--ui-frame);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+}
+.mc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-2);
+  padding: 6px 10px;
+  background: var(--ui-surface-0);
+  border-bottom: 1px solid var(--ui-line);
+}
+.mc-title { display: flex; align-items: center; gap: 6px; min-width: 0; font: bold var(--ui-text-md) var(--ui-font-display); color: var(--ui-title); }
+.mc-title > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mc-tag { flex: none; font-size: var(--ui-text-xs); color: var(--ui-text-muted); }
+.mc-tag.is-seen { color: var(--ui-good); }
+.mc-body { display: flex; flex-direction: column; gap: var(--ui-space-1); padding: var(--ui-space-2) 10px; }
+.mc-foot { padding: 5px 10px; font-size: var(--ui-text-xs); color: var(--ui-text-muted); border-top: 1px solid var(--ui-line); }
+.mc-foot .ui-key { font-size: var(--ui-text-xs); }
+.mc-sec { display: flex; flex-direction: column; gap: 3px; padding-top: var(--ui-space-1); border-top: 1px solid var(--ui-line); }
+.mc-sub { font-size: var(--ui-text-xs); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ui-text-muted); }
+.mc-line { display: flex; justify-content: space-between; align-items: baseline; gap: var(--ui-space-2); }
+.mc-line > :first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mc-line > :last-child:not(:first-child) { flex: none; }
+.mc-hero { color: var(--ui-accent); }
+.mc-foe { color: var(--ui-bad); }
+.mc-warn { color: var(--ui-warn); }
+.mc-hp > i { background: var(--ui-health); }
+.mc-intent { display: flex; align-items: center; gap: var(--ui-space-1); font-weight: bold; color: var(--ui-text-muted); }
+.mc-intent.is-warn { color: var(--ui-warn); }
+.mc-intent.is-bad { color: var(--ui-bad); }
+.mc-intent.is-info { color: var(--ui-info); }

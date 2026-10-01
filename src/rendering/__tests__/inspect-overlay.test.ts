@@ -55,3 +55,29 @@ describe('InspectOverlay UI Rendering & Input Interaction', () => {
     expect(overlay.isOpen).toBe(false);
   });
 });
+
+describe('Look card markup', () => {
+  it('describes the terrain, who stands there and what lies there, escaped and in roles', async () => {
+    const { lookCardHtml } = await import('../inspect-overlay');
+    const map = GameMap.createBoxRoom(12, 12);
+    const player = new Player({ id: 'hero', name: '<Ann>', position: { x: 5, y: 5 }, stats: { hp: 30, maxHp: 40, attack: 5, defense: 1 }, speed: 100 });
+    const engine = new GameEngine({ map, player, floor: 1, manifest: COTW_MANIFEST });
+    engine.updateFov();
+    const html = lookCardHtml(engine, {
+      x: 5,
+      y: 5,
+      visibility: 'visible',
+      terrain: { name: 'Stone Floor', type: 'floor', passable: true, transparent: true },
+      traps: [{ id: 't', name: 'Pit', type: 'pit', revealed: true }],
+      entity: { name: '<Ann>', type: 'player', hp: 30, maxHp: 40, speed: 100, speedTier: 'Normal', statusEffects: [] },
+      items: [{ id: 'i1', name: 'Rock', category: 'misc', weight: 800, bulk: 100 }],
+    });
+    expect(html).toContain('&lt;Ann&gt;');
+    expect(html).toContain('Passable');
+    expect(html).toContain('Trap: Pit');
+    expect(html).toContain('width: 75%');
+    expect(html).toContain('On the ground (1)');
+    expect(html).toContain('In sight');
+    expect(html).not.toMatch(/#[0-9a-f]{3,6}\b|rgba?\(/i);
+  });
+});

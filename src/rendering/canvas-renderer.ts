@@ -25,6 +25,7 @@ import { RadialMenuOverlay } from './radialMenu';
 import { FloatingTextRunner } from './floatingTextRunner';
 import { TacticalTargetOverlay } from './tacticalTargetOverlay';
 import type { RadialMenuSlotConfig } from '../ui/settings/settingsManager';
+import { MapCardLayer } from '../ui/mapCards/mapCardLayer';
 import { getAudibleEntitiesInRadius, getAudibleTilesInRadius, ECHOLOCATION_HEARING_RADIUS } from '../engine';
 
 function defaultRadialLabel(slot: RadialMenuSlotConfig): string {
@@ -61,6 +62,8 @@ export class CanvasRenderer {
   public readonly radialMenuOverlay: RadialMenuOverlay;
   public readonly floatingTextRunner: FloatingTextRunner;
   public readonly tacticalTargetOverlay: TacticalTargetOverlay;
+  /** The DOM cards over the map (Look, target, banners); null without a page (tests). */
+  private readonly cards: MapCardLayer | null;
   /** Resolves a display label for a radial-menu slot; wired from main.ts (spell/command/item lookups live there). */
   public onResolveRadialLabel?: (slot: RadialMenuSlotConfig) => string;
   public mouseVectoringEnabled = true;
@@ -139,6 +142,7 @@ export class CanvasRenderer {
     this.radialMenuOverlay = new RadialMenuOverlay();
     this.floatingTextRunner = new FloatingTextRunner({ onFrame: () => this.render() });
     this.tacticalTargetOverlay = new TacticalTargetOverlay();
+    this.cards = typeof document !== 'undefined' && canvas.parentElement ? new MapCardLayer(canvas) : null;
     this.hookEngineEvents();
 
     // Register click event on canvas using ViewportManager coordinate transform
@@ -366,6 +370,7 @@ export class CanvasRenderer {
     this.mapOverlay.close();
     this.fxRunner.destroy();
     this.floatingTextRunner.destroy();
+    this.cards?.remove();
   }
 
   public cleanup(): void {
@@ -554,6 +559,15 @@ export class CanvasRenderer {
 
     this.renderModeHintPill(virtualW, virtualH);
     this.notifyFocusEntity();
+    this.syncCards(virtualW);
+  }
+
+  /** Puts each overlay's DOM card over the map, matching this frame. */
+  private syncCards(virtualW: number): void {
+    const cards = this.cards;
+    if (!cards) return;
+    cards.sync(this.viewport.displayWidth / virtualW);
+    cards.set('look', this.inspectOverlay.card(this.engine, this.camera, this.cellSize, this.offsetX, this.offsetY, virtualW));
   }
 
   private renderTiles(): void {

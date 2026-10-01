@@ -1,5 +1,5 @@
 {
-  "total": 444,
+  "total": 435,
   "files": {
     "index.html": 12,
     "src/main.ts": 2,
@@ -7,7 +7,6 @@
     "src/rendering/canvas-renderer.ts": 76,
     "src/rendering/floatingTextRunner.ts": 11,
     "src/rendering/fxRunner.ts": 1,
-    "src/rendering/inspect-overlay.ts": 9,
     "src/rendering/intentOverlay.ts": 20,
     "src/rendering/map-overlay.ts": 9,
     "src/rendering/mouseVectorOverlay.ts": 8,

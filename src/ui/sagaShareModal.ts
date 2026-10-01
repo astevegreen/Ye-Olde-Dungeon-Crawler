@@ -3,6 +3,8 @@ import { iconHtml } from './icons';
 import { copyTextToClipboard } from './platform';
 import type { UIModal } from './modalStack';
 import { resolveBranding, type ResolvedBranding } from './branding';
+import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
+import { escapeHtml } from './html';
 
 export interface SagaShareModalOptions {
   leaderboard: Leaderboard;
@@ -28,6 +30,8 @@ export class SagaShareModal implements UIModal {
   private shareCopyCodeBtn: HTMLButtonElement | null = null;
   private shareCopyUrlBtn: HTMLButtonElement | null = null;
   private shareCopyEpitaphBtn: HTMLButtonElement | null = null;
+  private shareDoneBtn: HTMLButtonElement | null = null;
+  private importCloseBtn: HTMLButtonElement | null = null;
   private sharePreviewEl: HTMLElement | null = null;
 
   // Import controls
@@ -54,105 +58,56 @@ export class SagaShareModal implements UIModal {
   private createDom(): void {
     if (typeof document === 'undefined') return;
 
-    let existing = document.getElementById('saga-share-modal');
-    if (existing) {
-      existing.remove();
-    }
-
-    const modal = document.createElement('div');
-    modal.id = 'saga-share-modal';
-    modal.className = 'retro-window-overlay';
-    modal.style.display = 'none';
-    modal.style.zIndex = '270';
+    const modal = createDialogScrim('saga-share-modal', 'system');
+    if (!modal) return;
 
     const brand = this.options.branding ?? resolveBranding();
-    modal.innerHTML = `
-      <div class="retro-window" style="width: 640px; max-width: 95vw;">
-        <div class="retro-titlebar">
-          <div class="retro-titlebar-title">
-            ${iconHtml('epitaph')}
-            <span>Saga Exchange - ${brand.hallOfFameName} Run Sharing</span>
-          </div>
-          <button id="btn-saga-close-x" class="win-btn win-btn-sm" style="padding: 0 5px; font-weight: bold;">✕</button>
+    const hall = escapeHtml(brand.hallOfFameName);
+    modal.innerHTML = dialogHtml({
+      title: 'Saga exchange',
+      kicker: brand.hallOfFameName,
+      icon: 'epitaph',
+      closeId: 'btn-saga-close-x',
+      body: `
+        <div class="st-subtabs" role="tablist">
+          <button type="button" role="tab" id="tab-saga-share" class="st-subtab" aria-selected="true">${iconHtml('share')} Share a saga</button>
+          <button type="button" role="tab" id="tab-saga-import" class="st-subtab" aria-selected="false">${iconHtml('import')} Import a saga</button>
         </div>
 
-        <div class="retro-window-body" style="padding: 10px;">
-          <!-- Tab selector -->
-          <div style="display: flex; gap: 4px; margin-bottom: 10px; border-bottom: 2px groove #808080; padding-bottom: 6px;">
-            <button id="tab-saga-share" class="win-btn win-btn-sm active" style="flex: 1; font-weight: bold;">${iconHtml('share')} Share Saga</button>
-            <button id="tab-saga-import" class="win-btn win-btn-sm" style="flex: 1; font-weight: bold;">${iconHtml('import')} Import Saga</button>
-          </div>
-
-          <!-- Share Section -->
-          <div id="saga-share-section">
-            <p class="retro-note" style="margin-bottom: 6px;">
-              Share your champion's heroic saga across ${brand.worldName} via compact code or direct URL.
-            </p>
-
-            <div id="saga-share-preview" class="retro-inset-list" style="height: 120px; padding: 6px; font-family: monospace; font-size: 11px; white-space: pre-wrap; background: #0f172a; color: #f8fafc; overflow-y: auto; margin-bottom: 8px;">
-              No champion selected to share.
-            </div>
-
-            <div style="margin-bottom: 6px;">
-              <label class="retro-label" style="display: block; margin-bottom: 2px;">Saga Code (Base64 URL-Safe):</label>
-              <div style="display: flex; gap: 4px;">
-                <input type="text" id="saga-code-input" class="retro-input" readonly style="flex: 1; font-family: monospace; font-size: 11px;" />
-                <button id="btn-saga-copy-code" class="win-btn" style="white-space: nowrap;">${iconHtml('copy')} Copy Code</button>
-              </div>
-            </div>
-
-            <div style="margin-bottom: 8px;">
-              <label class="retro-label" style="display: block; margin-bottom: 2px;">Web Share Link:</label>
-              <div style="display: flex; gap: 4px;">
-                <input type="text" id="saga-url-input" class="retro-input" readonly style="flex: 1; font-family: monospace; font-size: 11px;" />
-                <button id="btn-saga-copy-url" class="win-btn" style="white-space: nowrap;">${iconHtml('share')} Copy Link</button>
-              </div>
-            </div>
-
-            <div style="display: flex; justify-content: flex-end; gap: 6px;">
-              <button id="btn-saga-copy-epitaph" class="win-btn">${iconHtml('epitaph')} Copy ASCII Epitaph</button>
-              <button id="btn-saga-share-close" class="win-btn primary-btn">Done</button>
-            </div>
-          </div>
-
-          <!-- Import Section -->
-          <div id="saga-import-section" style="display: none;">
-            <p class="retro-note" style="margin-bottom: 6px;">
-              Paste a saga run code (e.g. <code>SAGA1_...</code>) or full share link to inspect and inscribe into the ${brand.hallOfFameName}.
-            </p>
-
-            <textarea
-              id="saga-import-textarea"
-              class="retro-input"
-              rows="3"
-              placeholder="Paste SAGA1_... code or https://.../?saga=... link here"
-              style="width: 100%; box-sizing: border-box; font-family: monospace; font-size: 11px; resize: vertical; margin-bottom: 6px;"
-            ></textarea>
-
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <button id="btn-saga-inspect" class="win-btn" style="font-weight: bold;">${iconHtml('search')} Inspect Saga</button>
-              <button id="btn-saga-inscribe" class="win-btn primary-btn" disabled style="font-weight: bold;">${iconHtml('trophy')} Inscribe into ${brand.hallOfFameShortName}</button>
-            </div>
-
-            <label class="retro-label" style="display: block; margin-bottom: 2px;">Inspected Hero Saga:</label>
-            <div id="saga-import-preview" class="retro-inset-list" style="height: 120px; padding: 6px; font-family: monospace; font-size: 11px; white-space: pre-wrap; background: #0f172a; color: #f8fafc; overflow-y: auto; margin-bottom: 8px;">
-              Paste a saga code above and click 'Inspect Saga' to verify.
-            </div>
-
-            <div style="display: flex; justify-content: flex-end;">
-              <button id="btn-saga-import-close" class="win-btn">Close</button>
-            </div>
-          </div>
-
-          <!-- Status Bar -->
-          <div class="retro-statusbar" style="margin-top: 8px; font-size: 11px;">
-            <span id="saga-status-text" style="color: #a3aec2; font-weight: bold;">Saga Exchange Ready.</span>
-          </div>
+        <div id="saga-share-section" class="ui-col">
+          <div class="ui-note">Share your champion's saga across ${escapeHtml(brand.worldName)} as a code or a link.</div>
+          <pre id="saga-share-preview" class="ui-epitaph ui-inset saga-preview">No champion selected to share.</pre>
+          <label class="ui-field">
+            <span class="ui-dialog-label">Saga code</span>
+            <span class="saga-row">
+              <input type="text" id="saga-code-input" class="ui-input saga-code" readonly />
+              ${dialogButton('btn-saga-copy-code', 'Copy code', { icon: 'copy' })}
+            </span>
+          </label>
+          <label class="ui-field">
+            <span class="ui-dialog-label">Share link</span>
+            <span class="saga-row">
+              <input type="text" id="saga-url-input" class="ui-input saga-code" readonly />
+              ${dialogButton('btn-saga-copy-url', 'Copy link', { icon: 'share' })}
+            </span>
+          </label>
         </div>
-      </div>
-    `;
 
-    document.body.appendChild(modal);
+        <div id="saga-import-section" class="ui-col" style="display: none;">
+          <div class="ui-note">Paste a saga code (SAGA1_…) or a share link to check it, then inscribe it into the ${hall}.</div>
+          <textarea id="saga-import-textarea" class="ui-textarea saga-code" rows="3" placeholder="SAGA1_… or https://…/?saga=…"></textarea>
+          <div>${dialogButton('btn-saga-inspect', 'Check saga', { icon: 'search' })}</div>
+          <span class="ui-dialog-label">Saga found</span>
+          <pre id="saga-import-preview" class="ui-epitaph ui-inset saga-preview">Paste a saga code above and choose Check saga.</pre>
+        </div>`,
+      footNote: '<span id="saga-status-text">Saga exchange ready.</span>',
+      actions: [
+        dialogButton('btn-saga-copy-epitaph', 'Copy epitaph', { icon: 'epitaph' }),
+        dialogButton('btn-saga-share-close', 'Done', { primary: true }),
+        dialogButton('btn-saga-inscribe', `Inscribe into ${brand.hallOfFameShortName}`, { icon: 'trophy', primary: true, disabled: true }),
+        dialogButton('btn-saga-import-close', 'Close'),
+      ].join(''),
+    });
     this.modalEl = modal;
 
     // Element references
@@ -166,6 +121,8 @@ export class SagaShareModal implements UIModal {
     this.shareCopyCodeBtn = document.getElementById('btn-saga-copy-code') as HTMLButtonElement;
     this.shareCopyUrlBtn = document.getElementById('btn-saga-copy-url') as HTMLButtonElement;
     this.shareCopyEpitaphBtn = document.getElementById('btn-saga-copy-epitaph') as HTMLButtonElement;
+    this.shareDoneBtn = document.getElementById('btn-saga-share-close') as HTMLButtonElement;
+    this.importCloseBtn = document.getElementById('btn-saga-import-close') as HTMLButtonElement;
     this.sharePreviewEl = document.getElementById('saga-share-preview');
 
     this.importTextarea = document.getElementById('saga-import-textarea') as HTMLTextAreaElement;
@@ -183,14 +140,14 @@ export class SagaShareModal implements UIModal {
     this.shareCopyCodeBtn?.addEventListener('click', async () => {
       if (this.shareCodeInput?.value) {
         await copyTextToClipboard(this.shareCodeInput.value);
-        this.setStatus('Copied Saga Code to clipboard!');
+        this.setStatus('Copied the saga code.');
       }
     });
 
     this.shareCopyUrlBtn?.addEventListener('click', async () => {
       if (this.shareUrlInput?.value) {
         await copyTextToClipboard(this.shareUrlInput.value);
-        this.setStatus('Copied Web Share Link to clipboard!');
+        this.setStatus('Copied the share link.');
       }
     });
 
@@ -198,7 +155,7 @@ export class SagaShareModal implements UIModal {
       if (this.activeEntry) {
         const epitaph = Leaderboard.formatEpitaph(this.activeEntry, this.xpName);
         await copyTextToClipboard(epitaph);
-        this.setStatus('Copied ASCII Epitaph to clipboard!');
+        this.setStatus('Copied the epitaph.');
       }
     });
 
@@ -208,24 +165,20 @@ export class SagaShareModal implements UIModal {
 
     // Close buttons
     document.getElementById('btn-saga-close-x')?.addEventListener('click', () => this.close());
-    document.getElementById('btn-saga-share-close')?.addEventListener('click', () => this.close());
-    document.getElementById('btn-saga-import-close')?.addEventListener('click', () => this.close());
+    this.shareDoneBtn?.addEventListener('click', () => this.close());
+    this.importCloseBtn?.addEventListener('click', () => this.close());
   }
 
   public switchTab(tab: 'share' | 'import'): void {
-    if (tab === 'share') {
-      this.shareTabBtn?.classList.add('active');
-      this.importTabBtn?.classList.remove('active');
-      if (this.shareSectionEl) this.shareSectionEl.style.display = 'block';
-      if (this.importSectionEl) this.importSectionEl.style.display = 'none';
-      this.setStatus('Ready to share hero saga.');
-    } else {
-      this.importTabBtn?.classList.add('active');
-      this.shareTabBtn?.classList.remove('active');
-      if (this.shareSectionEl) this.shareSectionEl.style.display = 'none';
-      if (this.importSectionEl) this.importSectionEl.style.display = 'block';
-      this.setStatus('Paste a saga code or share link above.');
-    }
+    const share = tab === 'share';
+    this.shareTabBtn?.setAttribute('aria-selected', String(share));
+    this.importTabBtn?.setAttribute('aria-selected', String(!share));
+    if (this.shareSectionEl) this.shareSectionEl.style.display = share ? 'flex' : 'none';
+    if (this.importSectionEl) this.importSectionEl.style.display = share ? 'none' : 'flex';
+    // Each tab keeps its own footer buttons.
+    for (const btn of [this.shareCopyEpitaphBtn, this.shareDoneBtn]) if (btn) btn.hidden = !share;
+    for (const btn of [this.importInscribeBtn, this.importCloseBtn]) if (btn) btn.hidden = share;
+    this.setStatus(share ? 'Ready to share the saga.' : 'Paste a saga code or share link above.');
   }
 
   public openShare(entry: HallOfFameEntry): void {
@@ -282,8 +235,8 @@ export class SagaShareModal implements UIModal {
     const entry = Leaderboard.decodeRunShare(code);
     if (!entry) {
       if (this.importPreviewEl) {
-        this.importPreviewEl.textContent = 'Error: invalid, corrupted, or incompatible saga code.';
-        this.importPreviewEl.style.color = '#f87171';
+        this.importPreviewEl.textContent = 'This is not a saga code this game can read: it is damaged, incomplete, or from another version.';
+        this.importPreviewEl.classList.add('is-bad');
       }
       if (this.importInscribeBtn) this.importInscribeBtn.disabled = true;
       this.setStatus('Verification failed. Check the code and try again.');
@@ -293,7 +246,7 @@ export class SagaShareModal implements UIModal {
     this.inspectedEntry = entry;
     if (this.importPreviewEl) {
       this.importPreviewEl.textContent = Leaderboard.formatEpitaph(entry, this.xpName);
-      this.importPreviewEl.style.color = '#f8fafc';
+      this.importPreviewEl.classList.remove('is-bad');
     }
     if (this.importInscribeBtn) {
       this.importInscribeBtn.disabled = false;

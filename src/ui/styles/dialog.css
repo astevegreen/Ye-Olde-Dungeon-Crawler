@@ -231,5 +231,12 @@
 .hall-side { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: var(--ui-text-sm); }
 .hall-grid .ui-epitaph { height: 300px; }
 
+/* The saga exchange: a code or link to copy, or one to paste and check. */
+.saga-row { display: flex; gap: var(--ui-space-2); }
+.saga-row .ui-input { flex: 1; min-width: 0; }
+.saga-code { font: var(--ui-text-xs) var(--ui-font-num); }
+.saga-preview { height: 150px; }
+.saga-preview.is-bad { color: var(--ui-bad); }
+
 /* Body sections keep their height; the body scrolls instead of squashing them. */
 .ui-dialog-body > * { flex-shrink: 0; }

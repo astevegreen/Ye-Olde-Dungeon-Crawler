@@ -11,6 +11,11 @@ class MockElement {
   public value: string = '';
   public textContent: string = '';
   public disabled: boolean = false;
+  public hidden: boolean = false;
+  public attributes: Record<string, string> = {};
+  setAttribute(name: string, value: string) {
+    this.attributes[name] = value;
+  }
   public classList = {
     add: (c: string) => {
       if (!this.className.includes(c)) this.className += ` ${c}`;
@@ -110,6 +115,21 @@ describe('SagaShareModal (Headless)', () => {
 
     expect(codeInput.value.startsWith('SAGA1_')).toBe(true);
     expect(urlInput.value).toContain('?saga=SAGA1_');
+  });
+
+  it('each tab shows its own section and footer buttons', () => {
+    const modal = new SagaShareModal({ leaderboard });
+    const el = (id: string) => (globalThis as any).document.getElementById(id);
+    modal.openImport();
+    expect(el('tab-saga-import').attributes['aria-selected']).toBe('true');
+    expect(el('saga-import-section').style.display).toBe('flex');
+    expect(el('saga-share-section').style.display).toBe('none');
+    expect(el('btn-saga-inscribe').hidden).toBe(false);
+    expect(el('btn-saga-share-close').hidden).toBe(true);
+    modal.switchTab('share');
+    expect(el('tab-saga-share').attributes['aria-selected']).toBe('true');
+    expect(el('btn-saga-inscribe').hidden).toBe(true);
+    expect(el('btn-saga-copy-epitaph').hidden).toBe(false);
   });
 
   it('openImport prepares import tab and inspects prefilled query string', () => {

@@ -166,6 +166,14 @@ describe('Render & Engine Defensive Resilience Tests', () => {
       expect(() => {
         overlay.render(ctx, engine, camera, 32, 0, 0);
       }).not.toThrow();
+
+      // The banner card names the ability above the struck tile; a malformed target has none.
+      engine.updateFov();
+      const banner = overlay.cards(engine, camera, 32, 0, 0).kobold_test;
+      expect(banner?.html).toContain('Power Slash');
+      expect(banner?.className).toContain('is-danger');
+      monster.intent = { type: 'windup', targetTile: {} as any, targetTiles: [{} as any], turnsRemaining: 1 };
+      expect(overlay.cards(engine, camera, 32, 0, 0)).toEqual({});
     });
   });
 

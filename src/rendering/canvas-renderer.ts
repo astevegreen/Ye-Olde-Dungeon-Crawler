@@ -569,6 +569,7 @@ export class CanvasRenderer {
     cards.sync(this.viewport.displayWidth / virtualW);
     cards.set('look', this.inspectOverlay.card(this.engine, this.camera, this.cellSize, this.offsetX, this.offsetY, virtualW));
     const hoverShown = !this.inspectOverlay.isOpen && !this.targetingOverlay.isOpen && !this.shopOverlay.isOpen && !this.mapOverlay.isOpen;
+    cards.setGroup('windup', this.intentOverlay.cards(this.engine, this.camera, this.cellSize, this.offsetX, this.offsetY));
     cards.set('hover', hoverShown ? this.tacticalTargetOverlay.card(this.engine, this.camera, this.cellSize, this.offsetX, this.offsetY) : null);
   }
 
@@ -618,9 +619,11 @@ export class CanvasRenderer {
           const screenPos = this.camera.worldToScreen(tt.x, tt.y, cs, this.offsetX, this.offsetY);
           if (screenPos) {
             this.ctx.save();
-            this.ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
+            this.ctx.globalAlpha = 0.35;
+            this.ctx.fillStyle = this.theme.bad;
             this.ctx.fillRect(screenPos.x, screenPos.y, cs, cs);
-            this.ctx.strokeStyle = '#ef4444';
+            this.ctx.globalAlpha = 1;
+            this.ctx.strokeStyle = this.theme.bad;
             this.ctx.lineWidth = 2;
             this.ctx.setLineDash(CanvasRenderer.DASH_PATTERN as unknown as number[]);
             this.ctx.strokeRect(screenPos.x + 1, screenPos.y + 1, cs - 2, cs - 2);

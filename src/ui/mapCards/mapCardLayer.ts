@@ -88,6 +88,15 @@ export class MapCardLayer {
     if (!('dock' in spec.place)) this.keepInside(el);
   }
 
+  /** Sets a family of cards at once (ids `<group>:<key>`), removing the family's others. */
+  public setGroup(group: string, specs: Record<string, MapCardSpec>): void {
+    const prefix = `${group}:`;
+    for (const id of [...this.cards.keys()]) {
+      if (id.startsWith(prefix) && !(id.slice(prefix.length) in specs)) this.set(id, null);
+    }
+    for (const [key, spec] of Object.entries(specs)) this.set(prefix + key, spec);
+  }
+
   /** Takes the layer and its cards off the page (the renderer is going away). */
   public remove(): void {
     this.cards.clear();

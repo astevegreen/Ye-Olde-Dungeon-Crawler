@@ -1,6 +1,8 @@
-import { uiFont } from './theme';
-import { fillIconText, measureIconText, type IconTextPart } from './canvasIcons';
+import { resolveThemeTokens } from './theme';
 import type { GameEngine } from '../engine';
+import { escapeHtml } from '../ui/html';
+import { iconHtml } from '../ui/icons';
+import type { MapCardSpec } from '../ui/mapCards/mapCardLayer';
 import type { Camera } from './camera';
 import type { Monster } from '../engine';
 import { Visibility } from '../engine';
@@ -8,7 +10,8 @@ import type { Position } from '../engine';
 
 export class IntentOverlay {
   /**
-   * Renders telegraph danger tiles and visual reticles for monsters winding up heavy attacks.
+   * Draws the danger tiles and the pulsing reticle for every monster winding up a heavy
+   * attack, in the pack's danger color. The ability's name is a DOM card (cards(), below).
    */
   public render(
     ctx: CanvasRenderingContext2D,
@@ -18,13 +21,10 @@ export class IntentOverlay {
     offsetX: number,
     offsetY: number
   ): void {
-    const monsters = engine.map
-      .getAllEntities()
-      .filter((e) => e.type === 'monster' && e.isAlive()) as Monster[];
-
-    const windingMonsters = monsters.filter((m) => m.intent?.type === 'windup');
+    const windingMonsters = windingUp(engine);
     if (windingMonsters.length === 0) return;
 
+    const theme = resolveThemeTokens(engine.manifest?.theme);
     ctx.save();
 
     const now = Date.now();
@@ -32,17 +32,7 @@ export class IntentOverlay {
     const alpha = 0.25 + 0.25 * pulse; // 0.25 to 0.50
 
     for (const monster of windingMonsters) {
-      const intent = monster.intent;
-      if (!intent) continue;
-
-      const rawTiles = intent.targetTiles && intent.targetTiles.length > 0
-        ? intent.targetTiles
-        : (intent.targetTile ? [intent.targetTile] : []);
-
-      const targetTiles = rawTiles.filter(
-        (t): t is Position => Boolean(t && typeof t.x === 'number' && typeof t.y === 'number')
-      );
-
+      const targetTiles = dangerTiles(monster);
       if (targetTiles.length === 0) continue;
 
       // Draw danger zone tiles
@@ -57,11 +47,13 @@ export class IntentOverlay {
         const { x: px, y: py } = screenPos;
 
         // 1. Semi-transparent danger fill
-        ctx.fillStyle = `rgba(239, 68, 68, ${alpha})`;
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = theme.bad;
         ctx.fillRect(px, py, cellSize, cellSize);
 
-        // 2. Checkerboard / hazard hatch overlay
-        ctx.strokeStyle = `rgba(254, 202, 202, ${alpha * 0.7})`;
+        // 2. Hazard hatch
+        ctx.globalAlpha = alpha * 0.7;
+        ctx.strokeStyle = theme.text;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(px, py + cellSize);
@@ -69,26 +61,23 @@ export class IntentOverlay {
         ctx.stroke();
 
         // 3. Danger border
-        ctx.strokeStyle = `rgba(220, 38, 38, ${0.6 + 0.4 * pulse})`;
+        ctx.globalAlpha = 0.6 + 0.4 * pulse;
+        ctx.strokeStyle = theme.bad;
         ctx.lineWidth = 1.5;
         ctx.strokeRect(px + 0.5, py + 0.5, cellSize - 1, cellSize - 1);
       }
 
-      // Render primary reticle and ability banner on the primary target tile
-      const candidateTile = intent.targetTile ?? targetTiles[0];
-      if (!candidateTile || typeof candidateTile.x !== 'number' || typeof candidateTile.y !== 'number') {
-        continue;
-      }
-      const primaryTile = candidateTile;
+      // The pulsing reticle on the primary target tile
+      const primaryTile = monster.intent?.targetTile ?? targetTiles[0];
       const primaryScreen = camera.worldToScreen(primaryTile.x, primaryTile.y, cellSize, offsetX, offsetY);
 
       if (primaryScreen) {
         const cx = primaryScreen.x + cellSize / 2;
         const cy = primaryScreen.y + cellSize / 2;
 
-        // Draw animated target reticle
         const reticleRadius = (cellSize * 0.42) + (pulse * 2);
-        ctx.strokeStyle = `rgba(255, 255, 255, ${0.7 + 0.3 * pulse})`;
+        ctx.globalAlpha = 0.7 + 0.3 * pulse;
+        ctx.strokeStyle = theme.text;
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(cx, cy, reticleRadius, 0, Math.PI * 2);
@@ -101,31 +90,29 @@ export class IntentOverlay {
         ctx.moveTo(cx, cy - reticleRadius - 3);
         ctx.lineTo(cx, cy + reticleRadius + 3);
         ctx.stroke();
-
-        // Warning Icon / Ability Banner
-        const ability = intent.abilityName ?? 'Heavy Strike';
-        ctx.font = uiFont('xs', '"Courier New", Courier, monospace', 'bold');
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-
-        const banner: IconTextPart[] = [{ icon: 'warning' }, ` ${ability}`];
-        const bannerW = measureIconText(ctx, banner) + 8;
-        const bannerH = 14;
-        const bannerX = cx - bannerW / 2;
-        const bannerY = primaryScreen.y - 4;
-
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(bannerX, bannerY - bannerH, bannerW, bannerH);
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(bannerX, bannerY - bannerH, bannerW, bannerH);
-
-        ctx.fillStyle = '#fca5a5';
-        fillIconText(ctx, banner, cx, bannerY - 2);
       }
     }
 
     ctx.restore();
+  }
+
+  /** One banner per monster winding up, naming the ability above the tile it will strike. */
+  public cards(engine: GameEngine, camera: Camera, cellSize: number, offsetX: number, offsetY: number): Record<string, MapCardSpec> {
+    const cards: Record<string, MapCardSpec> = {};
+    for (const monster of windingUp(engine)) {
+      const tiles = dangerTiles(monster);
+      const primary = monster.intent?.targetTile ?? tiles[0];
+      if (!primary || typeof primary.x !== 'number' || typeof primary.y !== 'number') continue;
+      if (engine.fov.getVisibility(primary.x, primary.y) === Visibility.Unexplored) continue;
+      const screen = camera.worldToScreen(primary.x, primary.y, cellSize, offsetX, offsetY);
+      if (!screen) continue;
+      cards[monster.id] = {
+        className: 'mc-pill is-danger',
+        place: { tile: { x: screen.x, y: screen.y, size: cellSize } },
+        html: `${iconHtml('warning')} ${escapeHtml(monster.intent?.abilityName ?? 'Heavy strike')}`,
+      };
+    }
+    return cards;
   }
 
   /**
@@ -270,4 +257,19 @@ export class IntentOverlay {
 
     ctx.restore();
   }
+}
+
+/** Living monsters declaring a wind-up. */
+function windingUp(engine: GameEngine): Monster[] {
+  return (engine.map.getAllEntities().filter((e) => e.type === 'monster' && e.isAlive()) as Monster[]).filter(
+    (m) => m.intent?.type === 'windup'
+  );
+}
+
+/** The tiles a wind-up will strike, skipping malformed ones. */
+function dangerTiles(monster: Monster): Position[] {
+  const intent = monster.intent;
+  if (!intent) return [];
+  const raw = intent.targetTiles && intent.targetTiles.length > 0 ? intent.targetTiles : intent.targetTile ? [intent.targetTile] : [];
+  return raw.filter((t): t is Position => Boolean(t && typeof t.x === 'number' && typeof t.y === 'number'));
 }

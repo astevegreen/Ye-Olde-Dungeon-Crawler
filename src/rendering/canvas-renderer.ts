@@ -25,7 +25,8 @@ import { RadialMenuOverlay } from './radialMenu';
 import { FloatingTextRunner } from './floatingTextRunner';
 import { TacticalTargetOverlay } from './tacticalTargetOverlay';
 import type { RadialMenuSlotConfig } from '../ui/settings/settingsManager';
-import { MapCardLayer } from '../ui/mapCards/mapCardLayer';
+import { MapCardLayer, type MapCardSpec } from '../ui/mapCards/mapCardLayer';
+import { escapeHtml, keyChip } from '../ui/html';
 import { getAudibleEntitiesInRadius, getAudibleTilesInRadius, ECHOLOCATION_HEARING_RADIUS } from '../engine';
 
 function defaultRadialLabel(slot: RadialMenuSlotConfig): string {
@@ -40,7 +41,9 @@ function defaultRadialLabel(slot: RadialMenuSlotConfig): string {
 const LOOT_PILE_SPRITE_KEY = 'loot_pile';
 
 export interface ModeHint {
-  text: string;
+  /** The mode's name, e.g. "Look". */
+  mode: string;
+  hints: Array<{ keys: string[]; label: string }>;
   /** `aim` is the one mode where a key press spends a turn, so it reads louder. */
   tone: 'mode' | 'aim';
 }
@@ -557,7 +560,6 @@ export class CanvasRenderer {
       }
     );
 
-    this.renderModeHintPill(virtualW, virtualH);
     this.notifyFocusEntity();
     this.syncCards(virtualW);
   }
@@ -569,6 +571,7 @@ export class CanvasRenderer {
     cards.sync(this.viewport.displayWidth / virtualW);
     cards.set('look', this.inspectOverlay.card(this.engine, this.camera, this.cellSize, this.offsetX, this.offsetY, virtualW));
     const hoverShown = !this.inspectOverlay.isOpen && !this.targetingOverlay.isOpen && !this.shopOverlay.isOpen && !this.mapOverlay.isOpen;
+    cards.set('mode', this.modeHintCard());
     cards.set('aim', this.targetingOverlay.card(this.engine, this.camera, this.cellSize, this.offsetX, this.offsetY, virtualW));
     cards.setGroup('windup', this.intentOverlay.cards(this.engine, this.camera, this.cellSize, this.offsetX, this.offsetY));
     cards.set('hover', hoverShown ? this.tacticalTargetOverlay.card(this.engine, this.camera, this.cellSize, this.offsetX, this.offsetY) : null);
@@ -1248,11 +1251,6 @@ export class CanvasRenderer {
     }
   }
 
-  /**
-   * The controls for whichever map-side mode is open (map viewer, look, aiming,
-   * grimoire), or null in normal play. Shown in the DOM ground-status bar through
-   * `onModeHintChanged` rather than in a strip of canvas that sat empty most turns.
-   */
   /** Paints an item's atlas sprite to fill a small DOM canvas (the potion row's icons). */
   public drawItemIcon(canvas: HTMLCanvasElement, item: Item): void {
     const ctx = canvas.getContext('2d');
@@ -1265,43 +1263,23 @@ export class CanvasRenderer {
 
   public getModeHint(): ModeHint | null {
     if (this.mapOverlay.isOpen) {
-      return { text: 'Map: [< > PgUp PgDn] change floor · [M / Esc] close', tone: 'mode' };
+      return { mode: 'Map', tone: 'mode', hints: [{ keys: ['<', '>'], label: 'change floor' }, { keys: ['M', 'Esc'], label: 'close' }] };
     }
     if (this.inspectOverlay.isOpen) {
-      return { text: 'Look: [arrows] move the reticle · [L / Esc] exit', tone: 'mode' };
+      return { mode: 'Look', tone: 'mode', hints: [{ keys: ['Arrows'], label: 'move' }, { keys: ['L', 'Esc'], label: 'close' }] };
     }
     if (this.targetingOverlay.mode === 'reticle') {
-      return { text: 'Aim: [arrows] move · [Enter / Space] fire · [Esc] cancel', tone: 'aim' };
+      return { mode: 'Aim', tone: 'aim', hints: [{ keys: ['Arrows'], label: 'move' }, { keys: ['Enter', 'Space'], label: 'fire' }, { keys: ['Esc'], label: 'cancel' }] };
     }
     return null;
   }
 
-  /**
-   * The open mode's controls as a pill along the bottom of the map. It reserves no
-   * space: in normal play nothing is drawn.
-   */
-  private renderModeHintPill(width: number, height: number): void {
+  /** The open mode's keys as a pill along the bottom of the map; nothing in normal play. */
+  private modeHintCard(): MapCardSpec | null {
     const hint = this.getModeHint();
-    if (!hint) return;
-    const ctx = this.ctx;
-    const font = this.theme.fontFamily ?? '"Courier New", Courier, monospace';
-    ctx.save();
-    ctx.font = uiFont('sm', font, 'bold');
-    const padX = 12;
-    const w = Math.min(width - 24, ctx.measureText(hint.text).width + padX * 2);
-    const h = 22;
-    const x = Math.round((width - w) / 2);
-    const y = height - h - 8;
-    ctx.fillStyle = 'rgba(10, 14, 23, 0.88)';
-    ctx.fillRect(x, y, w, h);
-    ctx.strokeStyle = hint.tone === 'aim' ? '#fde047' : this.theme.hudAccent;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-    ctx.fillStyle = hint.tone === 'aim' ? '#fde047' : this.theme.hudAccent;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(hint.text, width / 2, y + h / 2 + 1);
-    ctx.restore();
+    if (!hint) return null;
+    const keys = hint.hints.map((h) => `<span>${h.keys.map(keyChip).join('')} ${escapeHtml(h.label)}</span>`).join('');
+    return { className: `mc-pill mc-mode${hint.tone === 'aim' ? ' is-aim' : ''}`, place: { dock: 'bottom' }, html: `<b>${escapeHtml(hint.mode)}</b>${keys}` };
   }
 
   /** The monster the player is pointing at: the look reticle's tile, else the mouse's. */

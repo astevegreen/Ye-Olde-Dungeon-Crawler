@@ -1,10 +1,10 @@
 {
-  "total": 412,
+  "total": 409,
   "files": {
     "index.html": 12,
     "src/main.ts": 2,
     "src/rendering/atlas/sprite-atlas.ts": 4,
-    "src/rendering/canvas-renderer.ts": 74,
+    "src/rendering/canvas-renderer.ts": 71,
     "src/rendering/floatingTextRunner.ts": 11,
     "src/rendering/fxRunner.ts": 1,
     "src/rendering/intentOverlay.ts": 14,

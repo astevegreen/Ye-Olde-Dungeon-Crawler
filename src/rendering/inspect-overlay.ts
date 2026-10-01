@@ -2,7 +2,7 @@ import type { GameEngine, InspectedItem, ThemeTokens, TileInspection } from '../
 import { TileInspector } from '../engine';
 import type { Camera } from './camera';
 import { resolveThemeTokens } from './theme';
-import { escapeHtml, keyChip } from '../ui/html';
+import { escapeHtml } from '../ui/html';
 import { iconHtml, type UiIconName } from '../ui/icons';
 import { itemToneClass } from '../ui/inventory/itemTone';
 import type { MapCardSpec } from '../ui/mapCards/mapCardLayer';
@@ -198,6 +198,5 @@ export function lookCardHtml(engine: GameEngine, data: TileInspection): string {
   const remembered = data.visibility !== 'visible';
   return `
     <div class="mc-head"><span class="mc-title">${iconHtml('look')} Look</span><span class="mc-tag${remembered ? '' : ' is-seen'}">${remembered ? 'Remembered' : 'In sight'}</span></div>
-    <div class="mc-body">${parts.join('')}</div>
-    <div class="mc-foot">${keyChip('Arrows')} move · ${keyChip('L')} or ${keyChip('Esc')} close</div>`;
+    <div class="mc-body">${parts.join('')}</div>`;
 }

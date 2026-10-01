@@ -48,8 +48,6 @@
 .mc-tag { flex: none; font-size: var(--ui-text-xs); color: var(--ui-text-muted); }
 .mc-tag.is-seen { color: var(--ui-good); }
 .mc-body { display: flex; flex-direction: column; gap: var(--ui-space-1); padding: var(--ui-space-2) 10px; }
-.mc-foot { padding: 5px 10px; font-size: var(--ui-text-xs); color: var(--ui-text-muted); border-top: 1px solid var(--ui-line); }
-.mc-foot .ui-key { font-size: var(--ui-text-xs); }
 .mc-sec { display: flex; flex-direction: column; gap: 3px; padding-top: var(--ui-space-1); border-top: 1px solid var(--ui-line); }
 .mc-sub { font-size: var(--ui-text-xs); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ui-text-muted); }
 .mc-line { display: flex; justify-content: space-between; align-items: baseline; gap: var(--ui-space-2); }
@@ -85,3 +83,10 @@
 .mc-pill.is-fixture { color: var(--ui-title); }
 /* The wind-up banner: the ability a monster is about to land, above the tile it will strike. */
 .mc-pill.is-danger { color: var(--ui-bad); border-color: var(--ui-bad); }
+
+/* The open mode's keys, under the map. Aiming reads louder: a key press there spends a turn. */
+.mc-mode { gap: var(--ui-space-3); padding: 3px var(--ui-space-3); font-size: var(--ui-text-sm); border-color: var(--ui-accent); }
+.mc-mode b { color: var(--ui-accent); }
+.mc-mode > span { display: inline-flex; align-items: center; gap: 3px; font-weight: normal; color: var(--ui-text-soft); }
+.mc-mode.is-aim { border-color: var(--ui-title); }
+.mc-mode.is-aim b { color: var(--ui-title); }

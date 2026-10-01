@@ -1,0 +1,219 @@
+/*
+ * The Inventory tab (src/ui/inventory/inventoryTab.ts): paperdoll, backpack, ground or
+ * container, and the selected item, in the menu's one anatomy (ADR-0011). Role tokens
+ * only; no color literals (check:ui-palette).
+ */
+
+.inv-root { position: relative; height: 100%; }
+.inv-grid { grid-template-columns: minmax(270px, 300px) minmax(0, 1fr) minmax(0, 1fr) minmax(250px, 300px); }
+
+.inv-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+  min-height: 0;
+  padding: var(--ui-space-3);
+  background: var(--ui-surface-1);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius);
+}
+.inv-panel .ui-h { margin: 0; }
+.inv-panel.is-focused { border-color: var(--ui-accent); box-shadow: inset 0 0 0 1px var(--ui-accent-soft); }
+.inv-panel.is-drop { border-color: var(--ui-info); background: color-mix(in srgb, var(--ui-info) 8%, var(--ui-surface-1)); }
+
+.inv-head { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-2); flex-wrap: wrap; }
+.inv-tools { display: flex; gap: var(--ui-space-1); }
+.inv-filters { flex-wrap: wrap; }
+.inv-filters .st-subtab { padding: 2px 7px; }
+
+/* The paperdoll: each slot with its name under it, laid out roughly as a body. A pack's
+   own slots, without a known area, flow in after these. */
+.inv-doll {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    'overgarment head neck'
+    'mainHand torso offHand'
+    'hands waist wrists'
+    'fingerLeft feet fingerRight'
+    'pack . purse';
+  gap: var(--ui-space-2);
+  overflow-y: auto;
+  min-height: 0;
+}
+.inv-doll [data-area='head'] { grid-area: head; }
+.inv-doll [data-area='neck'] { grid-area: neck; }
+.inv-doll [data-area='overgarment'] { grid-area: overgarment; }
+.inv-doll [data-area='torso'] { grid-area: torso; }
+.inv-doll [data-area='mainHand'] { grid-area: mainHand; }
+.inv-doll [data-area='offHand'] { grid-area: offHand; }
+.inv-doll [data-area='hands'] { grid-area: hands; }
+.inv-doll [data-area='wrists'] { grid-area: wrists; }
+.inv-doll [data-area='fingerLeft'] { grid-area: fingerLeft; }
+.inv-doll [data-area='fingerRight'] { grid-area: fingerRight; }
+.inv-doll [data-area='waist'] { grid-area: waist; }
+.inv-doll [data-area='feet'] { grid-area: feet; }
+.inv-doll [data-area='pack'] { grid-area: pack; }
+.inv-doll [data-area='purse'] { grid-area: purse; }
+
+.inv-slot,
+.inv-cell {
+  appearance: none;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  font: var(--ui-text-xs) var(--ui-font-body);
+  line-height: 1.2;
+  color: var(--ui-text);
+  background: var(--ui-surface-2);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius);
+  cursor: pointer;
+  transition: border-color var(--ui-dur-fast), background var(--ui-dur-fast);
+}
+.inv-slot { padding: 6px 2px 5px; }
+.inv-slot:hover, .inv-cell:hover { border-color: var(--ui-line-strong); }
+.inv-slot-well {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ui-surface-3);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius);
+}
+.inv-slot.is-empty .inv-slot-well { border-style: dashed; border-color: var(--ui-line-strong); }
+.inv-slot-name { max-width: 100%; color: var(--ui-text-muted); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inv-slot.is-blocked { opacity: 0.5; }
+.inv-plus { position: absolute; right: 2px; bottom: 1px; font-weight: bold; color: var(--ui-rarity-enchanted); }
+
+.inv-icon { width: 40px; height: 40px; image-rendering: pixelated; }
+
+/* Item grids: square-ish cells that wrap to the column's width. */
+.inv-cells {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: 6px;
+  padding: 6px;
+}
+.inv-cell { padding: 14px 4px 6px; min-height: 86px; }
+.inv-cell-name {
+  max-width: 100%;
+  text-align: center;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.inv-cell-key { position: absolute; top: 2px; left: 5px; font-weight: bold; color: var(--ui-text-faint); }
+.inv-cell-qty { position: absolute; top: 2px; right: 5px; font-weight: bold; color: var(--ui-text-soft); }
+.inv-cell-box { position: absolute; top: 2px; right: 5px; color: var(--ui-accent); }
+.inv-empty { grid-column: 1 / -1; padding: var(--ui-space-2); }
+
+.inv-slot.is-focused, .inv-cell.is-focused { border-color: var(--ui-accent); }
+.inv-slot.is-selected, .inv-cell.is-selected {
+  background: var(--ui-accent-soft);
+  border-color: var(--ui-accent);
+  box-shadow: inset 0 0 0 1px var(--ui-accent);
+}
+.inv-cell.is-multi { border-color: var(--ui-info); box-shadow: inset 0 0 0 1px var(--ui-info); }
+.inv-slot.is-cursed, .inv-cell.is-cursed { border-color: color-mix(in srgb, var(--ui-rarity-cursed) 70%, transparent); }
+.inv-slot.is-target { border-color: var(--ui-info); background: color-mix(in srgb, var(--ui-info) 12%, var(--ui-surface-2)); }
+
+/* What the gear weighs; the hero's stats are on the Character tab. */
+.inv-load { grid-template-columns: auto 1fr; font-size: var(--ui-text-sm); }
+.inv-load-bar { grid-column: 1 / -1; margin-top: -2px; }
+.inv-load-bar .ui-bar { display: block; }
+.ui-bar.is-good > i { background: var(--ui-good); }
+.ui-bar.is-warn > i { background: var(--ui-warn); }
+.ui-bar.is-bad > i { background: var(--ui-bad); }
+.ui-bar.is-info > i { background: var(--ui-info); }
+.inv-load-level.is-good { color: var(--ui-good); }
+.inv-load-level.is-warn { color: var(--ui-warn); }
+.inv-load-level.is-bad { color: var(--ui-bad); }
+
+.inv-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--ui-space-1); font-size: var(--ui-text-sm); }
+.inv-crumb { appearance: none; padding: 0; font: inherit; color: var(--ui-accent); background: none; border: 0; cursor: pointer; }
+.inv-crumb:hover { text-decoration: underline; }
+.inv-crumb.is-here { color: var(--ui-text); cursor: default; }
+.inv-crumb-sep { color: var(--ui-text-faint); }
+
+/* The selected item. */
+.inv-inspect-body { flex: 1; display: flex; flex-direction: column; gap: var(--ui-space-3); }
+.inv-detail-head { display: flex; align-items: center; gap: var(--ui-space-3); }
+.inv-detail-icon { width: 48px; height: 48px; flex: none; background: var(--ui-surface-3); border: 1px solid var(--ui-line); border-radius: var(--ui-radius); }
+.inv-detail-name { font: bold var(--ui-text-lg) var(--ui-font-display); color: var(--ui-title); }
+.inv-value { color: var(--ui-gold); }
+.inv-compare { padding-top: var(--ui-space-2); border-top: 1px solid var(--ui-line); display: flex; flex-direction: column; gap: var(--ui-space-1); }
+.inv-desc { font-size: var(--ui-text-sm); font-style: italic; color: var(--ui-text-soft); user-select: text; }
+.inv-actions { display: flex; flex-wrap: wrap; gap: var(--ui-space-1); }
+.inv-reason { font-style: italic; }
+
+/* Right-click menu and hover card, positioned inside the tab by inventoryTab.ts. */
+.inv-menu {
+  position: absolute;
+  z-index: 2;
+  min-width: 170px;
+  padding: var(--ui-space-1);
+  background: var(--ui-surface-2);
+  border: 1px solid var(--ui-line-strong);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+}
+.inv-menu-title { padding: 4px var(--ui-space-2) 6px; font-weight: bold; border-bottom: 1px solid var(--ui-line); margin-bottom: var(--ui-space-1); }
+.inv-menu-item {
+  appearance: none;
+  display: block;
+  width: 100%;
+  padding: 5px var(--ui-space-2);
+  font: var(--ui-text-sm) var(--ui-font-body);
+  text-align: left;
+  color: var(--ui-text);
+  background: none;
+  border: 0;
+  border-radius: var(--ui-radius);
+  cursor: pointer;
+}
+.inv-menu-item:hover { background: var(--ui-accent-soft); }
+
+.inv-hover {
+  position: absolute;
+  z-index: 3;
+  max-width: 300px;
+  padding: var(--ui-space-2) var(--ui-space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--ui-text-sm);
+  background: var(--ui-surface-2);
+  border: 1px solid var(--ui-line-strong);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+  pointer-events: none;
+}
+.inv-hover[hidden] { display: none; }
+.inv-hover-name { font-weight: bold; }
+
+/* Split stack: a small dialog over the tab. */
+.inv-split-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ui-scrim);
+}
+.inv-split { width: 340px; display: flex; flex-direction: column; gap: var(--ui-space-3); box-shadow: var(--ui-shadow); }
+.inv-split-row { display: flex; align-items: center; justify-content: center; gap: var(--ui-space-4); }
+.inv-split-amount { min-width: 3ch; text-align: center; font-size: var(--ui-text-2xl); color: var(--ui-accent); }
+.inv-split-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--ui-space-2); }
+.inv-split-actions .ui-note { margin-right: auto; white-space: nowrap; }

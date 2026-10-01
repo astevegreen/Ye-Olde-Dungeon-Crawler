@@ -16,7 +16,7 @@ import { ITEM_TONE_TOKEN, itemTone } from './itemTone';
 /** Engine spell id both the Identify scroll and spell cast (`spellPipeline.ts`'s `identify` effect). */
 const IDENTIFY_SPELL_ID = 'identify';
 
-export type InspectorSource = 'paperdoll' | 'backpack' | 'ground' | 'container' | 'none';
+export type InspectorSource = 'paperdoll' | 'backpack' | 'ground' | 'container' | 'companion' | 'none';
 export type FocusedPanel = 'paperdoll' | 'backpack' | 'ground' | 'inspector';
 export type ItemInspectorActionId = 'equip' | 'unequip' | 'use' | 'drop' | 'take' | 'put' | 'peek' | 'identify';
 
@@ -113,6 +113,14 @@ export class ItemInspector {
   public focusedPanel: FocusedPanel = 'paperdoll';
   public focusedIndex: number = 0;
   public selectedItemIds: Set<string> = new Set();
+  /** Opens a container an "Open" action names; without it the container is only remembered. */
+  public onPeek?: (container: Container) => void;
+
+  private peek(container: Container): void {
+    if (this.onPeek) this.onPeek(container);
+    else this.selectedContainer = container;
+    this.clearSelection();
+  }
 
   public toggleMultiSelect(item: Item): void {
     if (this.selectedItemIds.has(item.id)) {
@@ -471,8 +479,7 @@ export class ItemInspector {
           shortcut: 'Enter',
           enabled: true,
           execute: () => {
-            this.selectedContainer = item;
-            this.clearSelection();
+            this.peek(item);
           },
         });
       }
@@ -516,15 +523,18 @@ export class ItemInspector {
           shortcut: 'Enter',
           enabled: true,
           execute: () => {
-            this.selectedContainer = item;
-            this.clearSelection();
+            this.peek(item);
           },
         });
       }
 
       // Check if equippable
+      // Offer Equip for anything some slot accepts (disabled, with the reason, when it
+      // can't go on right now); never for a scroll or a potion.
       const canEquipResult = player.inventory.paperdoll.canEquip(item);
-      const isEquippable = canEquipResult.allowed || canEquipResult.reason !== 'Item cannot be equipped in that slot.';
+      const isEquippable = player.inventory.paperdoll
+        .getSlotDefinitions()
+        .some((def) => def.acceptedCategories.includes(item.category) || (item.slot !== undefined && def.id === item.slot));
       if (isEquippable) {
         actions.push({
           id: 'equip',
@@ -644,8 +654,7 @@ export class ItemInspector {
           shortcut: 'Enter',
           enabled: true,
           execute: () => {
-            this.selectedContainer = item;
-            this.clearSelection();
+            this.peek(item);
           },
         });
       }
@@ -663,7 +672,22 @@ export class ItemInspector {
       return actions;
     }
 
-    // 4. Ground container item actions
+    // 4. The companion's pack: take it back
+    if (source === 'companion') {
+      actions.push({
+        id: 'take',
+        label: 'Take back (T)',
+        shortcut: 'T',
+        enabled: true,
+        execute: (eng) => {
+          eng.commandBus.dispatch({ type: 'transfer_from_companion', payload: { itemId: item.id } });
+          this.clearSelection();
+        },
+      });
+      return actions;
+    }
+
+    // 5. Ground container item actions
     if (source === 'container' && this.selectedContainer) {
       actions.push({
         id: 'take',

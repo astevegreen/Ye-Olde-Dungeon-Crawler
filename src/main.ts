@@ -85,13 +85,14 @@ import {
   PactsTab,
   SpellbookTab,
 } from './ui/characterMenu';
-import { InventoryTabAdapter } from './rendering/inventoryTabAdapter';
+import { InventoryTab } from './ui/inventory/inventoryTab';
 import './ui/styles/tokens.css';
 import './ui/styles/base.css';
 import './ui/styles/layout.css';
 import './ui/styles/menu.css';
 import './ui/styles/dialog.css';
 import './ui/styles/shop.css';
+import './ui/styles/inventory.css';
 import './ui/styles/title.css';
 import { QuickSpellsBar } from './ui/quickSpellsBar';
 import { PotionRow } from './ui/potionRow';
@@ -222,7 +223,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const storyTab = new StoryTab();
   const bestiaryTab = new BestiaryTab();
   const pactsTab = new PactsTab();
-  let inventoryTab: InventoryTabAdapter;
+  let inventoryTab: InventoryTab;
 
   // Asynchronous bulk tier (ARCHITECTURE.md §5): IndexedDB in the browser, in-memory when
   // the browser has none, so callers never branch on availability.
@@ -1492,7 +1493,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
     if (!renderer) {
       renderer = new CanvasRenderer(canvas!, engine);
-      inventoryTab = new InventoryTabAdapter(renderer.inventoryOverlay, renderer, () => characterMenuModal.close());
+      inventoryTab = new InventoryTab({
+        drawItemIcon: (iconCanvas, item) => renderer?.drawItemIcon(iconCanvas, item),
+        richHoverCards: () => settingsManager.getSettings().inventoryRichHoverCards,
+      });
       characterMenuModal = new CharacterMenuModal(
         [inventoryTab, characterTab, spellbookTab, bestiaryTab, pactsTab, storyTab],
         () => ({
@@ -1515,7 +1519,6 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer.mouseVectoringEnabled = settingsManager.getSettings().mouseVectoringEnabled;
       renderer.torchlightEnabled = settingsManager.getSettings().torchlightEnabled;
       renderer.radialMenuOverlay.slots = settingsManager.getSettings().radialMenuSlots;
-      renderer.inventoryOverlay.richHoverCardsEnabled = settingsManager.getSettings().inventoryRichHoverCards;
       renderer.onResolveRadialLabel = resolveRadialMenuLabel;
       renderer.onFocusEntityChanged = (id) => combatSidebar.setFocusedEntity(id);
       settingsManager.subscribe((settings) => {
@@ -1523,7 +1526,6 @@ window.addEventListener('DOMContentLoaded', () => {
           renderer.mouseVectoringEnabled = settings.mouseVectoringEnabled;
           renderer.torchlightEnabled = settings.torchlightEnabled;
           renderer.radialMenuOverlay.slots = settings.radialMenuSlots;
-          renderer.inventoryOverlay.richHoverCardsEnabled = settings.inventoryRichHoverCards;
           renderer.render();
         }
       });
@@ -1532,6 +1534,10 @@ window.addEventListener('DOMContentLoaded', () => {
         openRuneTree();
       };
       renderer.onPactModalRequested = () => openMenuTab('pacts');
+      renderer.onOpenContainer = (container) => {
+        openMenuTab('inventory');
+        inventoryTab.showContainer(container);
+      };
       inputHandler = new InputHandler(
         engine,
         () => {
@@ -1575,6 +1581,10 @@ window.addEventListener('DOMContentLoaded', () => {
         openRuneTree();
       };
       renderer.onPactModalRequested = () => openMenuTab('pacts');
+      renderer.onOpenContainer = (container) => {
+        openMenuTab('inventory');
+        inventoryTab.showContainer(container);
+      };
       inputHandler?.setEngine(engine);
       if (inputHandler) {
         inputHandler.characterMenuModal = characterMenuModal;

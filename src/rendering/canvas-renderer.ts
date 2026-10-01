@@ -104,6 +104,8 @@ export class CanvasRenderer {
     };
   })();
   public onPactModalRequested?: () => void;
+  /** A double-click on a container on or beside the hero's tile: open it in the inventory. */
+  public onOpenContainer?: (container: Container) => void;
 
   public get canvasElement(): HTMLCanvasElement {
     return this.canvas;
@@ -359,9 +361,8 @@ export class CanvasRenderer {
           if (isAdjacent || isCurrent) {
             const tileItems = this.engine.map.getItemsAt(worldCoords.x, worldCoords.y);
             const container = tileItems.find((it) => it instanceof Container) as Container | undefined;
-            if (container) {
-              this.inventoryOverlay.open(this.engine);
-              this.inventoryOverlay.pushContainer(container, 'ground', container.displayName);
+            if (container && this.onOpenContainer) {
+              this.onOpenContainer(container);
               this.render();
               return;
             }

@@ -259,16 +259,16 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
     await page.waitForTimeout(250);
 
     const invOpened = await page.evaluate(() => {
-      const renderer = (window as any).__cotwRenderer;
-      return renderer.inventoryOverlay.isOpen;
+      const menu = (window as any).__cotwInputHandler?.characterMenuModal;
+      return Boolean(menu?.isOpen && menu.activeTabId === 'inventory' && document.querySelector('.inv-grid'));
     });
-    expect(invOpened, 'Inventory overlay must open on KeyI').toBe(true);
+    expect(invOpened, 'Inventory tab must open on KeyI').toBe(true);
 
     const inventoryActionsResult = await page.evaluate(() => {
       const engine = (window as any).__cotwEngine;
       const renderer = (window as any).__cotwRenderer;
       const p = engine.player;
-      const invOverlay = renderer.inventoryOverlay;
+      const inventory = (window as any).__cotwInputHandler.characterMenuModal.getTabs().find((t: any) => t.id === 'inventory').controller;
 
       const mainHandItem = p.inventory.paperdoll.getItem('mainHand') as any;
       const purse = p.inventory.paperdoll.getItem('purse') as any;
@@ -304,8 +304,8 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
       renderer.render();
 
       // Test gear comparison
-      invOverlay.inspector.select(superSword, 'backpack');
-      const comparison = invOverlay.inspector.getEquipmentComparison(superSword, p);
+      inventory.inspector.select(superSword, 'backpack');
+      const comparison = inventory.inspector.getEquipmentComparison(superSword, p);
 
       // Dispatch equip via command bus (what double click triggers)
       engine.commandBus.dispatch({ type: 'equip_item', payload: { itemId: superSword.id } });

@@ -243,6 +243,21 @@
 }
 .ui-bar > i { display: block; height: 100%; }
 
+/* An identified item's name, colored by its tone (src/ui/inventory/itemTone.ts). */
+.it-tone-cursed { color: var(--ui-rarity-cursed); }
+.it-tone-hexed { color: var(--ui-rarity-hexed); }
+.it-tone-unholy { color: var(--ui-rarity-unholy); }
+.it-tone-holy { color: var(--ui-rarity-holy); }
+.it-tone-enchanted { color: var(--ui-rarity-enchanted); }
+.it-tone-blessed { color: var(--ui-rarity-blessed); }
+.it-tone-chaotic { color: var(--ui-rarity-chaotic); }
+.it-tone-artifact { color: var(--ui-rarity-artifact); }
+.it-tone-broken { color: var(--ui-rarity-broken); }
+.it-tone-copper { color: var(--ui-coin-copper); }
+.it-tone-silver { color: var(--ui-coin-silver); }
+.it-tone-gold { color: var(--ui-coin-gold); }
+.it-tone-platinum { color: var(--ui-coin-platinum); }
+
 .ui-num { font-family: var(--ui-font-num); font-variant-numeric: tabular-nums lining-nums; }
 .ui-muted { color: var(--ui-text-muted); }
 .ui-faint { color: var(--ui-text-faint); }

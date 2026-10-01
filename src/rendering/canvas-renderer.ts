@@ -8,7 +8,6 @@ import { Container } from '../engine';
 import { InventoryOverlay } from './inventory-overlay';
 import { TargetingOverlay } from './targeting-overlay';
 import { ShopDialog } from '../ui/shop/shopDialog';
-import { getItemThematicColor } from '../ui/inventory/itemInspector';
 import { InspectOverlay } from './inspect-overlay';
 import { MapOverlay } from './map-overlay';
 import { IntentOverlay } from './intentOverlay';
@@ -134,7 +133,6 @@ export class CanvasRenderer {
     this.shopOverlay = new ShopDialog({
       drawItemIcon: (canvas, item) => this.drawItemIcon(canvas, item),
       drawEntityIcon: (canvas, entity) => this.drawEntityIcon(canvas, entity),
-      itemColor: (item) => getItemThematicColor(item, this.theme),
       onStateChanged: () => this.render(),
     });
     this.inspectOverlay = new InspectOverlay(() => this.render());

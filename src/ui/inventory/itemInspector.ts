@@ -6,11 +6,12 @@ import { Container } from '../../engine';
 import { PotionItem, ScrollItem, WandItem } from '../../engine';
 import { RuneOfReturnItem, ChannelRuneOfReturnAction } from '../../engine';
 import { EncumbranceLevel } from '../../engine';
-import { CoinItem, COIN_COLORS, parseCoinItem, getSpell, getOverflowConfig } from '../../engine';
+import { getSpell, getOverflowConfig } from '../../engine';
 import type { Paperdoll } from '../../engine';
 import type { ThemeTokens } from '../../engine';
 import { resolveBranding } from '../branding';
 import { formatLoad, formatWeight } from '../units';
+import { ITEM_TONE_TOKEN, itemTone } from './itemTone';
 
 /** Engine spell id both the Identify scroll and spell cast (`spellPipeline.ts`'s `identify` effect). */
 const IDENTIFY_SPELL_ID = 'identify';
@@ -20,90 +21,12 @@ export type FocusedPanel = 'paperdoll' | 'backpack' | 'ground' | 'inspector';
 export type ItemInspectorActionId = 'equip' | 'unequip' | 'use' | 'drop' | 'take' | 'put' | 'peek' | 'identify';
 
 /**
- * Assigns thematically-appropriate colors based on item alignment and quality.
- * If the item is still unidentified, it has NO special color (returns neutral theme text color).
- *
- * There are exactly eight alignment buckets, each with its own unique color: normal (no
- * glow), three positive (blessed, enchanted, holy), three negative (cursed, hexed, unholy),
- * and chaotic. Quality-tier cues (artifact, broken) are a separate axis from alignment and
- * fall back to their own color only once none of the eight apply.
- *
- * Checks within a polarity run most-specific first: `isBlessed()`/`isModifierBlessed` also
- * matches any positive-alignment modifier (a broader, pre-existing gameplay bucket used by
- * combat.ts and Item.displayName), so `isHoly()`/`isEnchanted()` — which check their exact
- * modifier category only — must be tested before `isBlessed()` or every holy/enchanted item
- * would render as plain blessed.
+ * An item's name color on the canvas: its tone's theme token (itemTone.ts), else plain
+ * text. DOM code uses `itemToneClass()` instead.
  */
 export function getItemThematicColor(item: Item | null | undefined, theme: Required<ThemeTokens>): string {
-  if (!item) return theme.hudText;
-
-  // Unidentified items have no special color at first (standard text color)
-  if (!item.identified) {
-    return theme.hudText;
-  }
-
-  // Currency
-  if (item instanceof CoinItem || item.category === 'currency') {
-    const parsed = parseCoinItem(item);
-    if (parsed && COIN_COLORS[parsed.denomination]) {
-      return COIN_COLORS[parsed.denomination];
-    }
-  }
-
-  // --- Negative (3): cursed, hexed, unholy ---
-
-  // Cursed (Crimson Red)
-  if (item.isCursed()) {
-    return '#ef4444';
-  }
-
-  // Hexed (Sickly Orange)
-  if (item.isHexed()) {
-    return '#f97316';
-  }
-
-  // Unholy (Profane Teal)
-  if (item.isUnholy()) {
-    return '#0d9488';
-  }
-
-  // --- Positive (3): holy, enchanted, blessed ---
-
-  // Holy (Radiant Gold)
-  if (item.isHoly()) {
-    return '#fbbf24';
-  }
-
-  // Enchanted / Elemental (Arcane Violet)
-  if (item.isEnchanted()) {
-    return '#c084fc';
-  }
-
-  // Blessed (Celestial Sky Blue)
-  if (item.isBlessed()) {
-    return '#38bdf8';
-  }
-
-  // --- Chaotic (1) ---
-
-  // Chaotic / Warped (Fuchsia / Magenta)
-  if (item.isChaotic()) {
-    return '#e879f9';
-  }
-
-  // --- Quality tier, orthogonal to alignment: only applies once none of the above match ---
-
-  // Artifact / Legendary (Bronze)
-  if (item.quality === 'artifact') {
-    return '#b45309';
-  }
-
-  if (item.isBroken()) {
-    return '#78716c';
-  }
-
-  // Normal: no special alignment, same neutral text color as an unidentified item.
-  return theme.hudText;
+  const tone = itemTone(item);
+  return tone ? String(theme[ITEM_TONE_TOKEN[tone]]) : theme.hudText;
 }
 
 export interface EquipmentComparison {

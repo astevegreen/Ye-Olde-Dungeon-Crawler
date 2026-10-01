@@ -12,6 +12,7 @@ import {
 import { createDialogScrim, dialogButton, dialogHtml } from '../dialog';
 import { escapeHtml, keyChip } from '../html';
 import { formatLoad, formatWeight } from '../units';
+import { itemToneClass } from '../inventory/itemTone';
 import {
   type ServicePanel,
   type ShopAction,
@@ -24,8 +25,6 @@ import {
 export interface ShopDialogOptions {
   drawItemIcon?: (canvas: HTMLCanvasElement, item: Item) => void;
   drawEntityIcon?: (canvas: HTMLCanvasElement, entity: Entity) => void;
-  /** The item's quality/curse color, as the inventory shows it. */
-  itemColor?: (item: Item) => string;
   /** Called after anything the shop changes, so the map and HUD redraw. */
   onStateChanged?: () => void;
 }
@@ -371,17 +370,16 @@ export class ShopDialog {
       `<button type="button" class="st-subtab" role="tab" aria-selected="${this.activeTab === id}" data-act="tab-${id}">${label} <span class="ui-faint">${count}</span> ${keyChip(k)}</button>`;
 
     const rows = items
-      .map((item, i) => {
-        const color = this.options.itemColor?.(item);
-        return `
+      .map(
+        (item, i) => `
         <button type="button" class="bs-row shop-row${i === selected ? ' is-selected' : ''}" role="option" aria-selected="${i === selected}" data-row="${i}">
           <span class="shop-row-key">${i < 9 ? keyChip(String(i + 1)) : ''}</span>
           <canvas class="shop-icon" width="24" height="24" data-item="${i}" aria-hidden="true"></canvas>
-          <span class="bs-name"${color ? ` style="color: ${escapeHtml(color)}"` : ''}>${escapeHtml(item.displayName)}</span>
+          <span class="bs-name${itemToneClass(item)}">${escapeHtml(item.displayName)}</span>
           <span class="ui-num ui-faint">${escapeHtml(formatWeight(item.weight))}</span>
           <span class="ui-num shop-price">${escapeHtml(formatCurrency(this.priceOf(item, engine)))}</span>
-        </button>`;
-      })
+        </button>`
+      )
       .join('');
     const empty = this.activeTab === 'buy' ? 'Sold out for now.' : 'Nothing in your pack to sell.';
 
@@ -401,13 +399,12 @@ export class ShopDialog {
     if (!item) return '<div class="ui-card shop-detail"><div class="ui-note">Choose an item to see it here.</div></div>';
     const price = formatCurrency(this.priceOf(item, engine));
     const verb = this.activeTab === 'buy' ? 'Buy' : 'Sell';
-    const color = this.options.itemColor?.(item);
     return `
       <div class="ui-card shop-detail">
         <div class="shop-detail-head">
           <canvas class="shop-detail-icon" width="48" height="48" data-detail aria-hidden="true"></canvas>
           <div>
-            <div class="shop-detail-name"${color ? ` style="color: ${escapeHtml(color)}"` : ''}>${escapeHtml(item.displayName)}</div>
+            <div class="shop-detail-name${itemToneClass(item)}">${escapeHtml(item.displayName)}</div>
             <div class="ui-note">${escapeHtml(item.category)}</div>
           </div>
         </div>

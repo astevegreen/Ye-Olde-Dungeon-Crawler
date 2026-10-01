@@ -883,8 +883,12 @@ window.addEventListener('DOMContentLoaded', () => {
     pushModal('save-code', { isOpen: () => saveCodeModal.isOpen(), close: () => saveCodeModal.close() });
   };
 
+  // The hall of fame in browser storage. The engine records a finished run only into its
+  // own in-memory board, so the run is inscribed here too (see launchGame).
+  const hallOfFame = new Leaderboard(getBrowserStorage() ?? undefined);
+
   const sagaShareModal = new SagaShareModal({
-    leaderboard: new Leaderboard(getBrowserStorage() ?? undefined),
+    leaderboard: hallOfFame,
     branding: brand,
     onSagaInscribed: (entry) => {
       titleScreen?.refreshValhalla();
@@ -1176,6 +1180,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Wire GameState victory/defeat listener
     engine.gameState.onStateChanged = (status, summary) => {
+      if (summary.entry) hallOfFame.recordRun(summary.entry);
       if (activeProfile) {
         activeProfile.questStatus = status;
         if (summary.entry?.epitaph) {

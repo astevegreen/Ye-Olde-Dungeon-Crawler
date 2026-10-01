@@ -154,3 +154,19 @@
 
 /* The altar's offering and spell lists stay short; the dialog body scrolls. */
 .altar-list { max-height: 150px; overflow-y: auto; padding: var(--ui-space-1); }
+
+/* The pause menu: one column of choices, Resume first. */
+.pause-actions { display: flex; flex-direction: column; gap: var(--ui-space-2); }
+.pause-actions .ui-btn { justify-content: center; }
+.pause-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-2); }
+
+.savecode-text { height: 140px; font-size: var(--ui-text-xs); word-break: break-all; }
+
+/* Feedback form rows. */
+.fb-row { display: flex; flex-wrap: wrap; gap: var(--ui-space-2) var(--ui-space-3); align-items: flex-end; }
+.fb-between { justify-content: space-between; align-items: center; }
+.fb-grow { flex: 1; min-width: 200px; }
+.fb-check { display: flex; align-items: center; gap: var(--ui-space-1); font-size: var(--ui-text-sm); cursor: pointer; }
+
+/* The crash dialog's error text. */
+.crash-text { height: 160px; margin: 0; padding: var(--ui-space-2); overflow: auto; white-space: pre-wrap; font: var(--ui-text-xs) var(--ui-font-num); color: var(--ui-bad); user-select: text; }

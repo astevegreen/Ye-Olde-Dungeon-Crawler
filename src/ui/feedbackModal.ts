@@ -12,6 +12,7 @@ import type { UIModal, ModalStackManager } from './modalStack';
 import { copyTextToClipboard, defaultPlatformAdapter, browserReportContext, downloadDataUrl } from './platform';
 import { showToast as showGlobalToast } from './toast';
 import { encodeReplayBlock } from './replayCodec';
+import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
 
 export type FeedbackType = 'bug' | 'feature';
 
@@ -183,99 +184,45 @@ export class FeedbackModal implements UIModal {
   private createDom(): void {
     if (typeof document === 'undefined') return;
 
-    let existing = document.getElementById('feedback-modal');
-    if (!existing) {
-      existing = document.createElement('div');
-      existing.id = 'feedback-modal';
-      existing.className = 'retro-window-overlay';
-      existing.style.display = 'none';
-      existing.style.zIndex = '220';
-      document.body.appendChild(existing);
-    }
-    this.modalEl = existing;
+    this.modalEl = createDialogScrim('feedback-modal', 'system');
+    if (!this.modalEl) return;
     // Focusable, so a click anywhere in the overlay (or on a button, which WebKit does not
     // focus) keeps keyboard focus — and keydown — inside the modal.
     this.modalEl.tabIndex = -1;
     this.modalEl.style.outline = 'none';
 
-    this.modalEl.innerHTML = `
-      <div class="retro-window" style="width: 620px; max-width: 95vw; box-shadow: 0 0 32px rgba(0, 0, 0, 0.9);">
-        <div class="retro-titlebar">
-          <div class="retro-titlebar-title">
-            <span>💬</span>
-            <span id="feedback-modal-title">Send Feedback &amp; Bug Report</span>
-          </div>
-          <button id="btn-feedback-close-x" class="win-btn win-btn-sm" style="padding: 0 5px; font-weight: bold;">✕</button>
+    this.modalEl.innerHTML = dialogHtml({
+      title: 'Send feedback',
+      titleId: 'feedback-modal-title',
+      closeId: 'btn-feedback-close-x',
+      body: `
+        <div class="st-subtabs" role="tablist">
+          <button type="button" id="btn-feedback-tab-bug" class="st-subtab" role="tab" aria-selected="true">Report a bug</button>
+          <button type="button" id="btn-feedback-tab-feature" class="st-subtab" role="tab" aria-selected="false">Suggest a feature</button>
         </div>
-
-        <div class="retro-window-body" style="padding: 12px; gap: 10px; display: flex; flex-direction: column;">
-          <!-- Mode Switcher Tabs -->
-          <div style="display: flex; gap: 6px; border-bottom: 2px solid #94a3b8; padding-bottom: 6px;">
-            <button id="btn-feedback-tab-bug" class="win-btn active-tab primary-btn" style="flex: 1; padding: 6px; font-weight: bold;">
-              🐞 Report a Bug
-            </button>
-            <button id="btn-feedback-tab-feature" class="win-btn" style="flex: 1; padding: 6px; font-weight: bold;">
-              💡 Suggest a Feature
-            </button>
-          </div>
-
-          <!-- Form Fields -->
-          <div style="display: flex; flex-direction: column; gap: 8px;">
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <div style="flex: 2; min-width: 200px;">
-                <label class="retro-label" for="feedback-input-title" style="display: block; margin-bottom: 2px;">Subject / Title:</label>
-                <input id="feedback-input-title" type="text" class="retro-input" style="width: 100%; box-sizing: border-box;" placeholder="Brief summary of the issue or idea..." />
-              </div>
-              <div style="flex: 1; min-width: 140px;">
-                <label class="retro-label" for="feedback-select-category" style="display: block; margin-bottom: 2px;">Category:</label>
-                <select id="feedback-select-category" class="retro-input" style="width: 100%; height: 26px; box-sizing: border-box; background: white; color: black;"></select>
-              </div>
-            </div>
-
-            <div>
-              <label class="retro-label" for="feedback-textarea-desc" id="feedback-desc-label" style="display: block; margin-bottom: 2px;">Details &amp; Observations:</label>
-              <textarea id="feedback-textarea-desc" class="retro-input" rows="5" style="width: 100%; height: 110px; resize: vertical; box-sizing: border-box; font-family: monospace; font-size: 12px;" placeholder="What happened? What were you doing when it occurred?"></textarea>
-            </div>
-          </div>
-
-          <!-- Diagnostic Telemetry Options Panel -->
-          <div id="feedback-telemetry-panel" style="background: #1e293b; color: #e2e8f0; padding: 8px 10px; border-radius: 4px; border: 1px solid #334155; font-size: 11px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <span style="font-weight: bold; color: #38bdf8;">📊 Diagnostic Package</span>
-              <span id="feedback-telemetry-preview" style="color: #94a3b8; font-family: monospace;">Floor 1 | Turn 0</span>
-            </div>
-            <div id="feedback-scope-desc" style="color: #38bdf8; font-size: 11px; margin-bottom: 6px;">
-              🎯 Includes: full action log, map around the hero, and replay data.
-            </div>
-            <div style="display: flex; gap: 14px; flex-wrap: wrap;">
-              <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
-                <input type="checkbox" id="feedback-check-log" checked />
-                <span>Include action log</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
-                <input type="checkbox" id="feedback-check-snapshot" checked />
-                <span>Include replay data (save + actions since)</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Action Buttons Bar -->
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; border-top: 1px solid #cbd5e1; padding-top: 8px; margin-top: 4px;">
-            <div style="display: flex; gap: 6px;">
-              <button id="btn-feedback-copy" class="win-btn primary-btn" style="background: #0284c7; color: white;" title="Copy formatted AI-ready markdown report to clipboard">📋 Copy Report for AI</button>
-              <button id="btn-feedback-download" class="win-btn" title="Download diagnostic package JSON">💾 Save .json</button>
-              <button id="btn-feedback-screenshot" class="win-btn" title="Save a picture of the game view, taken when this window opened, to attach to the issue">📸 Save Screenshot</button>
-            </div>
-            <div style="display: flex; gap: 6px;">
-              <button id="btn-feedback-cancel" class="win-btn" style="min-width: 70px;">Cancel</button>
-              <button id="btn-feedback-submit" class="win-btn" style="min-width: 140px; font-weight: bold;">
-                🚀 Submit to GitHub
-              </button>
-            </div>
+        <div class="fb-row">
+          <label class="ui-field fb-grow"><span class="ui-dialog-label">Title</span>
+            <input id="feedback-input-title" type="text" class="ui-input" placeholder="A short summary" /></label>
+          <label class="ui-field"><span class="ui-dialog-label">Category</span>
+            <select id="feedback-select-category" class="ui-select"></select></label>
+        </div>
+        <label class="ui-field"><span class="ui-dialog-label" id="feedback-desc-label">What happened</span>
+          <textarea id="feedback-textarea-desc" class="ui-textarea" rows="5" placeholder="What happened? What were you doing when it occurred?"></textarea></label>
+        <div id="feedback-telemetry-panel" class="ui-fact">
+          <div class="fb-row fb-between"><b>Diagnostic package</b><span id="feedback-telemetry-preview" class="ui-num ui-faint">Floor 1 | Turn 0</span></div>
+          <div id="feedback-scope-desc" class="ui-note">Includes: full action log, map around the hero, and replay data.</div>
+          <div class="fb-row">
+            <label class="fb-check"><input type="checkbox" id="feedback-check-log" checked /> Include the action log</label>
+            <label class="fb-check"><input type="checkbox" id="feedback-check-snapshot" checked /> Include replay data (save and actions since)</label>
           </div>
         </div>
-      </div>
-    `;
+        <div class="fb-row">
+          ${dialogButton('btn-feedback-copy', 'Copy report for AI', { attrs: 'title="Copy the report as markdown"' })}
+          ${dialogButton('btn-feedback-download', 'Save .json', { attrs: 'title="Download the diagnostic package"' })}
+          ${dialogButton('btn-feedback-screenshot', 'Save screenshot', { attrs: 'title="Save a picture of the game view, taken when this window opened"' })}
+        </div>`,
+      actions: dialogButton('btn-feedback-cancel', 'Cancel') + dialogButton('btn-feedback-submit', 'Submit', { primary: true }),
+    });
 
     this.titleInput = this.modalEl.querySelector('#feedback-input-title');
     this.categorySelect = this.modalEl.querySelector('#feedback-select-category');
@@ -359,7 +306,7 @@ export class FeedbackModal implements UIModal {
     this.shown = true;
     this.errorContext = opts.error;
     this.relayFailed = false;
-    this.setSubmitLabel(this.options.relayUrl ? '🚀 Send Report' : '🚀 Submit to GitHub', false);
+    this.setSubmitLabel(this.options.relayUrl ? 'Send report' : 'Submit on GitHub', false);
     this.screenshot = this.options.captureScreenshot?.() ?? null;
     const shotBtn = this.modalEl.querySelector<HTMLElement>('#btn-feedback-screenshot');
     if (shotBtn) shotBtn.style.display = this.screenshot ? '' : 'none';
@@ -433,11 +380,11 @@ export class FeedbackModal implements UIModal {
 
     if (this.btnBugTab && this.btnFeatureTab) {
       if (isBug) {
-        this.btnBugTab.classList.add('active-tab', 'primary-btn');
-        this.btnFeatureTab.classList.remove('active-tab', 'primary-btn');
+        this.btnBugTab.setAttribute('aria-selected', 'true');
+        this.btnFeatureTab.setAttribute('aria-selected', 'false');
       } else {
-        this.btnFeatureTab.classList.add('active-tab', 'primary-btn');
-        this.btnBugTab.classList.remove('active-tab', 'primary-btn');
+        this.btnFeatureTab.setAttribute('aria-selected', 'true');
+        this.btnBugTab.setAttribute('aria-selected', 'false');
       }
     }
 
@@ -715,7 +662,7 @@ export class FeedbackModal implements UIModal {
       report: isBug ? this.buildPasteText(pkg).text : undefined,
       screenshot: isBug && this.screenshot ? this.screenshot : undefined,
     };
-    this.setSubmitLabel('⏳ Sending…', true);
+    this.setSubmitLabel('Sending…', true);
     try {
       const res = await fetch(`${relayUrl.replace(/\/$/, '')}/report`, {
         method: 'POST',
@@ -731,7 +678,7 @@ export class FeedbackModal implements UIModal {
       // Nothing was filed. Opening GitHub now would be a popup outside the click, which
       // browsers block, so the next press of the same button goes there instead.
       this.relayFailed = true;
-      this.setSubmitLabel('🚀 Submit via GitHub instead', false);
+      this.setSubmitLabel('Submit on GitHub instead', false);
       this.notify(
         `Couldn't send the report (${(err as Error).message}). Press the button again to send it through GitHub instead.`,
         'warning'

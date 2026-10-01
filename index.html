@@ -354,33 +354,25 @@
         </div>
       </div>
 
-      <!-- Windows 3.1 / Feedback & Bug Report Modal -->
-      <div id="feedback-modal" class="retro-window-overlay" style="display: none; z-index: 220;"></div>
+      <!-- Feedback & bug report (src/ui/feedbackModal.ts fills it) -->
+      <div id="feedback-modal" class="ui-scrim is-system" style="display: none;"></div>
 
-      <!-- Windows 3.1 / Crash Fallback Modal -->
-      <div id="crash-modal" class="retro-window-overlay" style="display: none; z-index: 200;">
-        <div class="retro-window" style="width: 640px;">
-          <div class="retro-titlebar" style="background: linear-gradient(90deg, #991b1b, #ef4444);">
-            <div class="retro-titlebar-title">
-              <span>⚠️</span>
-              <span id="error-dialog-title">Application Error</span>
-            </div>
+      <!-- Crash dialog (src/ui/diagnostic-modal.ts shows it), in the one dialog frame -->
+      <div id="crash-modal" class="ui-scrim is-crash" style="display: none;">
+        <div class="ui-dialog" role="alertdialog" aria-modal="true" aria-labelledby="error-dialog-title">
+          <div class="ui-dialog-head">
+            <div><div class="ui-dialog-kicker">Something broke</div><div class="ui-dialog-title" id="error-dialog-title">Application Error</div></div>
           </div>
-
-          <div class="retro-window-body">
-            <div class="retro-banner" style="background: #7f1d1d;">
-              <div class="retro-banner-title">UNHANDLED RUNTIME ERROR</div>
-              <div class="retro-banner-sub">An unexpected error occurred. The flight log was archived for diagnosis; progress since your last save may be lost.</div>
-            </div>
-
-            <pre id="crash-error-text" class="retro-inset-list" style="height: 160px; padding: 8px; font-family: monospace; font-size: 11px; white-space: pre-wrap; background: #1e1b26; color: #f87171; overflow-y: auto;"></pre>
-
-            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 6px; flex-wrap: wrap; gap: 6px;">
-              <button id="btn-crash-submit" class="win-btn primary-btn" style="background: #0284c7; color: white; font-weight: bold;">🚀 Submit Crash to Developers</button>
-              <div style="display: flex; gap: 6px;">
-                <button id="btn-crash-copy" class="win-btn">📋 Copy Report</button>
-                <button id="btn-crash-reload" class="win-btn">Reload Game</button>
-              </div>
+          <div class="ui-dialog-body">
+            <div class="ui-fact is-warn">The game hit an error it could not recover from. The flight log was kept for diagnosis. Anything since your last save may be lost.</div>
+            <pre id="crash-error-text" class="ui-inset crash-text"></pre>
+          </div>
+          <div class="ui-dialog-foot">
+            <div class="ui-dialog-hint"></div>
+            <div class="ui-dialog-actions">
+              <button type="button" id="btn-crash-copy" class="ui-btn">Copy report</button>
+              <button type="button" id="btn-crash-reload" class="ui-btn">Reload the game</button>
+              <button type="button" id="btn-crash-submit" class="ui-btn ui-btn--primary">Send to the developers</button>
             </div>
           </div>
         </div>

@@ -4,6 +4,7 @@ import type { VersionedSaveEnvelope } from '../engine';
 import type { SaveData, CharacterProfile } from '../engine';
 import type { ProfileManager } from '../engine';
 import { showManifestMismatchDialog } from './saveImporter';
+import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
 
 export interface SaveCodeModalOptions {
   profileManager: ProfileManager;
@@ -34,65 +35,30 @@ export class SaveCodeModal {
   }
 
   private createDom(): void {
-    let existing = document.getElementById('save-code-modal');
-    if (existing) {
-      existing.remove();
-    }
-
-    const modal = document.createElement('div');
-    modal.id = 'save-code-modal';
-    modal.className = 'retro-window-overlay';
-    modal.style.display = 'none';
-    modal.style.zIndex = '260';
-
-    modal.innerHTML = `
-      <div class="retro-window" style="width: 580px; max-width: 95vw;">
-        <div class="retro-titlebar">
-          <div class="retro-titlebar-title">
-            <span>📋</span>
-            <span>Save Code Transfer - Base64 Backup</span>
-          </div>
-          <button id="btn-savecode-close-x" class="win-btn win-btn-sm" style="padding: 0 5px; font-weight: bold;">✕</button>
+    const modal = createDialogScrim('save-code-modal', 'system');
+    if (!modal) return;
+    modal.innerHTML = dialogHtml({
+      title: 'Save code',
+      kicker: 'Backup',
+      closeId: 'btn-savecode-close-x',
+      body: `
+        <div class="st-subtabs" role="tablist">
+          <button type="button" id="tab-savecode-copy" class="st-subtab" role="tab" aria-selected="true">Copy a code</button>
+          <button type="button" id="tab-savecode-paste" class="st-subtab" role="tab" aria-selected="false">Restore from a code</button>
         </div>
-
-        <div class="retro-window-body" style="padding: 10px;">
-          <!-- Tab selector -->
-          <div style="display: flex; gap: 4px; margin-bottom: 10px; border-bottom: 2px groove #808080; padding-bottom: 6px;">
-            <button id="tab-savecode-copy" class="win-btn win-btn-sm active" style="font-weight: bold;">📋 Copy Save Code</button>
-            <button id="tab-savecode-paste" class="win-btn win-btn-sm" style="font-weight: bold;">📥 Paste &amp; Restore</button>
-          </div>
-
-          <!-- Section: Copy -->
-          <div id="section-savecode-copy">
-            <p style="font-size: 11px; margin-bottom: 6px; color: #a3aec2;">
-              This Base64 text code encodes your complete character state. Save it in a text note or share it:
-            </p>
-            <textarea id="savecode-copy-text" readonly class="retro-input" style="width: 100%; height: 140px; font-family: 'Consolas', 'Courier New', monospace; font-size: 11px; user-select: text; resize: vertical; word-break: break-all; margin-bottom: 8px;"></textarea>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <button id="btn-savecode-copy-action" class="win-btn primary-btn" style="font-weight: bold; padding: 4px 12px;">📋 Copy Code to Clipboard</button>
-            </div>
-          </div>
-
-          <!-- Section: Paste -->
-          <div id="section-savecode-paste" style="display: none;">
-            <p style="font-size: 11px; margin-bottom: 6px; color: #a3aec2;">
-              Paste a previously exported Base64 save code below to restore your character:
-            </p>
-            <textarea id="savecode-paste-text" placeholder="Paste Base64 save code here..." class="retro-input" style="width: 100%; height: 140px; font-family: 'Consolas', 'Courier New', monospace; font-size: 11px; resize: vertical; word-break: break-all; margin-bottom: 8px;"></textarea>
-            <div style="display: flex; justify-content: flex-end; gap: 8px;">
-              <button id="btn-savecode-restore-action" class="win-btn primary-btn" style="font-weight: bold; padding: 4px 14px;">Restore Character</button>
-            </div>
-          </div>
-
-          <div class="retro-statusbar" style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
-            <span id="savecode-status" style="font-size: 11px; color: #a3aec2;">Ready.</span>
-            <button id="btn-savecode-close" class="win-btn" style="padding: 2px 10px;">Close</button>
-          </div>
+        <div id="section-savecode-copy" class="ui-field">
+          <div class="ui-note">This text holds your whole character. Keep it in a note, or send it to another device.</div>
+          <textarea id="savecode-copy-text" readonly class="ui-textarea savecode-text"></textarea>
+          <div>${dialogButton('btn-savecode-copy-action', 'Copy to clipboard', { primary: true })}</div>
         </div>
-      </div>
-    `;
-
-    document.body.appendChild(modal);
+        <div id="section-savecode-paste" class="ui-field" style="display: none;">
+          <div class="ui-note">Paste a save code to restore that character.</div>
+          <textarea id="savecode-paste-text" placeholder="Paste a save code here" class="ui-textarea savecode-text"></textarea>
+          <div>${dialogButton('btn-savecode-restore-action', 'Restore character', { primary: true })}</div>
+        </div>
+        <div id="savecode-status" class="ui-note"></div>`,
+      actions: dialogButton('btn-savecode-close', 'Close', { key: 'Esc' }),
+    });
     this.modalEl = modal;
 
     this.copyTabBtn = modal.querySelector('#tab-savecode-copy');
@@ -115,9 +81,9 @@ export class SaveCodeModal {
       if (this.copyTextarea?.value) {
         const ok = await copyTextToClipboard(this.copyTextarea.value);
         if (ok) {
-          this.setStatus('Save code copied to clipboard! 📋', '#4ade80');
+          this.setStatus('Copied.', 'good');
         } else {
-          this.setStatus('Failed to copy. Please manually select all and copy.', '#f87171');
+          this.setStatus('Could not copy. Select the text and copy it yourself.', 'bad');
         }
       }
     });
@@ -129,14 +95,14 @@ export class SaveCodeModal {
 
   public setMode(mode: 'copy' | 'paste'): void {
     if (mode === 'copy') {
-      this.copyTabBtn?.classList.add('active');
-      this.pasteTabBtn?.classList.remove('active');
+      this.copyTabBtn?.setAttribute('aria-selected', 'true');
+      this.pasteTabBtn?.setAttribute('aria-selected', 'false');
       if (this.copySectionEl) this.copySectionEl.style.display = 'block';
       if (this.pasteSectionEl) this.pasteSectionEl.style.display = 'none';
       this.refreshCopyCode();
     } else {
-      this.copyTabBtn?.classList.remove('active');
-      this.pasteTabBtn?.classList.add('active');
+      this.copyTabBtn?.setAttribute('aria-selected', 'false');
+      this.pasteTabBtn?.setAttribute('aria-selected', 'true');
       if (this.copySectionEl) this.copySectionEl.style.display = 'none';
       if (this.pasteSectionEl) this.pasteSectionEl.style.display = 'block';
       this.pasteTextarea?.focus();
@@ -157,18 +123,18 @@ export class SaveCodeModal {
         this.setStatus(`Save code ready (${envelope.data.profile.name}, Floor ${envelope.data.currentFloor ?? 0}).`);
       } catch (err) {
         this.copyTextarea.value = '';
-        this.setStatus(`Failed to encode save: ${(err as Error).message}`, '#f87171');
+        this.setStatus(`Failed to encode save: ${(err as Error).message}`, 'bad');
       }
     } else if (this.copyTextarea) {
       this.copyTextarea.value = 'No active character selected to export.';
-      this.setStatus('Select a character to generate save code.', '#a3aec2');
+      this.setStatus('Select a character to generate save code.', 'note');
     }
   }
 
   private handleRestore(): void {
     const raw = this.pasteTextarea?.value?.trim();
     if (!raw) {
-      this.setStatus('Please paste a save code first.', '#f87171');
+      this.setStatus('Please paste a save code first.', 'bad');
       return;
     }
 
@@ -179,13 +145,13 @@ export class SaveCodeModal {
       const proceedWithImport = () => {
         try {
           const profile = this.options.profileManager.importHero(jsonStr);
-          this.setStatus(`Restored character ${profile.name} successfully!`, '#4ade80');
+          this.setStatus(`Restored character ${profile.name} successfully!`, 'good');
           if (this.options.onRestored) {
             this.options.onRestored(profile);
           }
           setTimeout(() => this.close(), 750);
         } catch (err) {
-          this.setStatus(`Import failed: ${(err as Error).message}`, '#f87171');
+          this.setStatus(`Import failed: ${(err as Error).message}`, 'bad');
         }
       };
 
@@ -197,21 +163,21 @@ export class SaveCodeModal {
           heroName: envelope.data.profile.name,
           onConfirm: proceedWithImport,
           onCancel: () => {
-            this.setStatus('Restore cancelled due to manifest mismatch.', '#f87171');
+            this.setStatus('Restore cancelled due to manifest mismatch.', 'bad');
           },
         });
       } else {
         proceedWithImport();
       }
     } catch (err) {
-      this.setStatus(`Invalid save code: ${(err as Error).message}`, '#f87171');
+      this.setStatus(`Invalid save code: ${(err as Error).message}`, 'bad');
     }
   }
 
-  public setStatus(msg: string, color = '#a3aec2'): void {
+  public setStatus(msg: string, tone: 'note' | 'good' | 'bad' = 'note'): void {
     if (this.statusEl) {
       this.statusEl.textContent = msg;
-      this.statusEl.style.color = color;
+      this.statusEl.className = tone === 'note' ? 'ui-note' : `ui-note ${tone === 'good' ? 'ui-up' : 'ui-down'}`;
     }
   }
 

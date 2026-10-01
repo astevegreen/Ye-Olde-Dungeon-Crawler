@@ -1,8 +1,4 @@
 import {
-  getStoragePersistenceInfo,
-  formatStorageStatus,
-} from './persistenceInit';
-import {
   generateSaveFilename,
   createSavePackage,
 } from '../engine';
@@ -13,6 +9,7 @@ import type { GameEngine } from '../engine';
 import type { CharacterProfile, SaveData } from '../engine';
 import type { ProfileManager } from '../engine';
 import type { UIModal } from './modalStack';
+import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
 
 export interface SaveQuitModalOptions {
   profileManager: ProfileManager;
@@ -33,8 +30,6 @@ export class SaveQuitModal implements UIModal {
    *  `onResume` runs once however the modal closes. */
   private shown = false;
   private modalEl: HTMLElement | null = null;
-  private storageBadgeEl: HTMLElement | null = null;
-  private storageDetailsEl: HTMLElement | null = null;
   private heroSummaryEl: HTMLElement | null = null;
   private exportCotwBtn: HTMLButtonElement | null = null;
   private copyCodeBtn: HTMLButtonElement | null = null;
@@ -54,87 +49,33 @@ export class SaveQuitModal implements UIModal {
   }
 
   private createDom(): void {
-    let existing = document.getElementById('save-quit-modal');
-    if (existing) {
-      existing.remove();
-    }
-
-    const modal = document.createElement('div');
-    modal.id = 'save-quit-modal';
-    modal.className = 'retro-window-overlay';
-    modal.style.display = 'none';
-    modal.style.zIndex = '240';
-
-    modal.innerHTML = `
-      <div class="retro-window" style="width: 520px; max-width: 95vw;">
-        <div class="retro-titlebar">
-          <div class="retro-titlebar-title">
-            <span>💾</span>
-            <span>Game Paused &amp; System Menu</span>
+    const modal = createDialogScrim('save-quit-modal', 'system');
+    if (!modal) return;
+    // Resume first; the rest in the order players reach for them. Storage details live in
+    // Settings now. Save & Exit is an ordinary choice, not a warning: it saves.
+    modal.innerHTML = dialogHtml({
+      title: 'Paused',
+      titleId: 'savequit-hero-summary',
+      kicker: 'Menu',
+      closeId: 'btn-savequit-close-x',
+      closeTitle: 'Resume (Esc)',
+      size: 'narrow',
+      body: `
+        <div class="pause-actions">
+          ${dialogButton('btn-savequit-resume', 'Resume', { primary: true, key: 'Esc' })}
+          ${dialogButton('btn-savequit-settings', 'Settings and keys')}
+          ${dialogButton('btn-savequit-help', 'Help')}
+          <div class="pause-row">
+            ${dialogButton('btn-savequit-export-cotw', 'Export save (.cotw)')}
+            ${dialogButton('btn-savequit-copy-code', 'Save code')}
           </div>
-          <button id="btn-savequit-close-x" class="win-btn win-btn-sm" style="padding: 0 5px; font-weight: bold;">✕</button>
+          ${dialogButton('btn-savequit-save-exit', 'Save and exit to title')}
         </div>
-
-        <div class="retro-window-body" style="padding: 12px;">
-          <div id="savequit-hero-summary" style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: var(--ui-titlebar-text, #fde047);">
-            🛡️ Adventurer
-          </div>
-
-          <!-- Storage Persistence Banner -->
-          <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid var(--ui-border-light, #3b455b); padding: 8px 10px; margin-bottom: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <span style="font-size: 11px; font-weight: bold; color: var(--ui-text, #f1f5f9);">BROWSER STORAGE PERSISTENCE:</span>
-              <span id="savequit-storage-badge" style="font-size: 11px; font-weight: bold; padding: 2px 6px; border: 1px solid #64748b; background: transparent;">
-                Storage: Standard
-              </span>
-            </div>
-            <div id="savequit-storage-details" style="font-size: 11px; color: #94a3b8;">
-              Checking storage quota...
-            </div>
-          </div>
-
-          <!-- Action buttons list -->
-          <div style="display: flex; flex-direction: column; gap: 8px;">
-            <button id="btn-savequit-resume" class="win-btn primary-btn" style="padding: 8px 10px; font-weight: bold; font-size: 13px;">
-              ▶️ Resume Quest
-            </button>
-
-            <div style="display: flex; gap: 8px;">
-              <button id="btn-savequit-settings" class="win-btn" style="flex: 1; padding: 6px 10px; font-weight: bold;">
-                ⚙️ Settings &amp; Controls
-              </button>
-              <button id="btn-savequit-help" class="win-btn" style="flex: 1; padding: 6px 10px;">
-                📖 Help &amp; Manual
-              </button>
-            </div>
-
-            <div style="display: flex; gap: 8px;">
-              <button id="btn-savequit-export-cotw" class="win-btn" style="flex: 1; padding: 6px 10px;">
-                💾 Export Save (.cotw)
-              </button>
-              <button id="btn-savequit-copy-code" class="win-btn" style="flex: 1; padding: 6px 10px;">
-                📋 Save Code
-              </button>
-            </div>
-
-            <button id="btn-savequit-save-exit" class="win-btn" style="padding: 8px 10px; font-weight: bold; font-size: 13px; color: #fca5a5; border-color: #f87171;">
-              🚪 Save &amp; Exit to Title
-            </button>
-          </div>
-
-          <div class="retro-statusbar" style="margin-top: 12px;">
-            <span id="savequit-status">Press Esc or Resume Quest to return to dungeon.</span>
-          </div>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(modal);
+        <div id="savequit-status" class="ui-note"></div>`,
+    });
     this.modalEl = modal;
 
     this.heroSummaryEl = modal.querySelector('#savequit-hero-summary');
-    this.storageBadgeEl = modal.querySelector('#savequit-storage-badge');
-    this.storageDetailsEl = modal.querySelector('#savequit-storage-details');
     this.exportCotwBtn = modal.querySelector('#btn-savequit-export-cotw');
     this.copyCodeBtn = modal.querySelector('#btn-savequit-copy-code');
     this.saveExitBtn = modal.querySelector('#btn-savequit-save-exit');
@@ -185,7 +126,7 @@ export class SaveQuitModal implements UIModal {
   private handleExportCotw(): void {
     const envelope = this.getCurrentEnvelope();
     if (!envelope) {
-      this.setStatus('Error: No active game state to export.', '#f87171');
+      this.setStatus('There is no game to export.', 'bad');
       return;
     }
 
@@ -197,9 +138,9 @@ export class SaveQuitModal implements UIModal {
       const filename = generateSaveFilename(heroName, floor, manifestId, envelope.timestamp);
 
       triggerSaveDownload(filename, jsonContent);
-      this.setStatus(`Exported ${filename} successfully! 💾`, '#4ade80');
+      this.setStatus(`Saved ${filename}.`, 'good');
     } catch (err) {
-      this.setStatus(`Export failed: ${(err as Error).message}`, '#f87171');
+      this.setStatus(`Export failed: ${(err as Error).message}`, 'bad');
     }
   }
 
@@ -211,32 +152,10 @@ export class SaveQuitModal implements UIModal {
     }
   }
 
-  public refreshStorageInfo(): void {
-    const info = getStoragePersistenceInfo();
-    const formatted = formatStorageStatus(info);
-
-    if (this.storageBadgeEl) {
-      this.storageBadgeEl.textContent = formatted.badge;
-      if (formatted.isPersistent) {
-        this.storageBadgeEl.style.color = '#4ade80';
-        this.storageBadgeEl.style.borderColor = '#4ade80';
-        this.storageBadgeEl.style.background = 'rgba(74, 222, 128, 0.1)';
-      } else {
-        this.storageBadgeEl.style.color = '#fbbf24';
-        this.storageBadgeEl.style.borderColor = '#fbbf24';
-        this.storageBadgeEl.style.background = 'rgba(251, 191, 36, 0.1)';
-      }
-    }
-
-    if (this.storageDetailsEl) {
-      this.storageDetailsEl.textContent = formatted.tooltip;
-    }
-  }
-
-  public setStatus(msg: string, color = '#a3aec2'): void {
+  public setStatus(msg: string, tone: 'note' | 'good' | 'bad' = 'note'): void {
     if (this.statusEl) {
       this.statusEl.textContent = msg;
-      this.statusEl.style.color = color;
+      this.statusEl.className = tone === 'note' ? 'ui-note' : `ui-note ${tone === 'good' ? 'ui-up' : 'ui-down'}`;
     }
   }
 
@@ -251,11 +170,10 @@ export class SaveQuitModal implements UIModal {
       const floorText = engine.currentFloor === 0 ? 'Town' : `Floor ${engine.currentFloor}`;
       const level = engine.player.level;
       const hp = `${engine.player.hp}/${engine.player.maxHp}`;
-      this.heroSummaryEl.textContent = `🛡️ ${heroName} — Level ${level} (HP ${hp}) at ${floorText}`;
+      this.heroSummaryEl.textContent = `${heroName} · Level ${level} · ${floorText} · Health ${hp}`;
     }
 
-    this.refreshStorageInfo();
-    this.setStatus('Choose an option to save progress or adjust settings.');
+    this.setStatus('');
 
     // Keys arrive only through the modal stack: main.ts pushes this modal, and InputHandler's
     // window listener routes each key to the stack top. It opens only in game, where

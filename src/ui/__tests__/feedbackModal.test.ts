@@ -64,6 +64,14 @@ class MockElement {
 
   focus(): void {}
 
+  setAttribute(name: string, value: string): void {
+    this.attributes[name] = value;
+  }
+
+  getAttribute(name: string): string | null {
+    return this.attributes[name] ?? null;
+  }
+
   classList = {
     add: (...classes: string[]) => {
       for (const cls of classes) {

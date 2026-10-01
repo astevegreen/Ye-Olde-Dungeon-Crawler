@@ -151,14 +151,14 @@ describe('RuneOfReturnDiscoveryModal & the Rune of Return ranks', () => {
 
       const el = mockDoc.getElementById('rune-of-return-discovery-modal');
       expect(el?.style.display).toBe('flex');
-      expect(el?.innerHTML).toContain('ANCIENT RELIC DISCOVERED');
-      expect(el?.innerHTML).toContain('THE RUNE OF RETURN');
-      expect(el?.innerHTML).toContain('dissolves into a pulse of ethereal light');
-      expect(el?.innerHTML).toContain('Two-Way Dimensional Recall:');
+      expect(el?.innerHTML).toContain('Relic discovered');
+      expect(el?.innerHTML).toContain('The Rune of Return');
+      expect(el?.innerHTML).toContain('dissolves into light');
+      expect(el?.innerHTML).toContain('Two-way recall.');
       expect(el?.innerHTML).toContain('Thrain the Rune-Smith');
-      expect(el?.innerHTML).toContain('Channeling (T):');
-      expect(el?.innerHTML).toContain('Vulnerability & Concentration:');
-      expect(el?.innerHTML).toContain('Depth Scaling:');
+      expect(el?.innerHTML).toContain('Channeling (T).');
+      expect(el?.innerHTML).toContain('Concentration.');
+      expect(el?.innerHTML).toContain('Depth.');
     });
 
     it('closes on Escape or Space', () => {

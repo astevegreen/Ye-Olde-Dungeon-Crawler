@@ -1,5 +1,5 @@
 {
-  "total": 866,
+  "total": 787,
   "files": {
     "index.html": 34,
     "src/main.ts": 4,
@@ -23,7 +23,6 @@
     "src/rendering/shop/trainerPanel.ts": 1,
     "src/rendering/tacticalTargetOverlay.ts": 12,
     "src/rendering/targeting-overlay.ts": 15,
-    "src/ui/altarModal.ts": 31,
     "src/ui/console/consoleModel.ts": 1,
     "src/ui/diagnostic-modal.ts": 7,
     "src/ui/diagnostic/actorTab.ts": 62,
@@ -34,9 +33,7 @@
     "src/ui/help/commandPalette.ts": 23,
     "src/ui/help/contextHelp.ts": 13,
     "src/ui/inventory/itemInspector.ts": 27,
-    "src/ui/masteryChoiceModal.ts": 15,
     "src/ui/menus/mainMenu.ts": 3,
-    "src/ui/runeOfReturnDiscoveryModal.ts": 33,
     "src/ui/sagaShareModal.ts": 8,
     "src/ui/saveCodeModal.ts": 14,
     "src/ui/saveImporter.ts": 8,

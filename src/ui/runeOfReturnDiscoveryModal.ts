@@ -1,6 +1,8 @@
 import type { GameEngine } from '../engine';
 import type { ModalStackManager, UIModal } from './modalStack';
 import { resolveBranding } from './branding';
+import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
+import { escapeHtml } from './html';
 
 export interface RuneOfReturnDiscoveryModalConfig {
   onClose?: () => void;
@@ -23,18 +25,7 @@ export class RuneOfReturnDiscoveryModal implements UIModal {
   }
 
   private createDom(): void {
-    if (typeof document === 'undefined') return;
-
-    let overlay = document.getElementById(this.id);
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = this.id;
-      overlay.className = 'retro-window-overlay';
-      overlay.style.display = 'none';
-      overlay.style.zIndex = '200';
-      document.getElementById('app')?.appendChild(overlay);
-    }
-    this.overlayEl = overlay;
+    this.overlayEl = createDialogScrim(this.id);
   }
 
   public get isOpen(): boolean {
@@ -114,91 +105,28 @@ export class RuneOfReturnDiscoveryModal implements UIModal {
   public render(): void {
     if (!this.overlayEl || !this.engine) return;
 
-    this.overlayEl.innerHTML = `
-      <div class="retro-window" style="
-        max-width: 540px;
-        width: 90%;
-        background: #0f172a;
-        border: 2px solid #38bdf8;
-        border-radius: 8px;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8), 0 0 20px rgba(56, 189, 248, 0.25);
-        color: #f8fafc;
-        font-family: monospace, system-ui;
-        padding: 24px;
-        box-sizing: border-box;
-      ">
-        <div style="text-align: center; margin-bottom: 18px; border-bottom: 1px solid #1e293b; padding-bottom: 12px;">
-          <div style="font-size: 20px; font-weight: bold; color: #38bdf8; letter-spacing: 1px;">
-            ✦ ANCIENT RELIC DISCOVERED ✦
-          </div>
-          <div style="font-size: 15px; font-weight: bold; color: #fde047; margin-top: 4px;">
-            THE RUNE OF RETURN
-          </div>
-        </div>
-
-        <div style="font-size: 13px; line-height: 1.5; color: #cbd5e1; margin-bottom: 16px;">
-          You have recovered a legendary carved rune-stone. Upon touching your hands, it dissolves into a pulse of ethereal light, binding its translocational power directly to your soul! You no longer need to carry or manage it in your inventory.
-        </div>
-
-        <!-- Mechanics list -->
-        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
-          <div style="background: rgba(30, 41, 59, 0.6); padding: 10px 12px; border-radius: 6px; border-left: 3px solid #38bdf8;">
-            <span style="font-weight: bold; color: #38bdf8;">Two-Way Dimensional Recall:</span>
-            <span style="color: #cbd5e1;"> In the dungeon, channeling recalls you to town and anchors a rift to your departure point. In town, channeling steps back through the rift, returning you directly to that dungeon level!</span>
-          </div>
-
-          <div style="background: rgba(30, 41, 59, 0.6); padding: 10px 12px; border-radius: 6px; border-left: 3px solid #38bdf8;">
-            <span style="font-weight: bold; color: #38bdf8;">Charges (3 Max):</span>
-            <span style="color: #cbd5e1;"> Only spends a charge on a <em>successful</em> teleport. Free, unlimited refills at <strong>${resolveBranding(this.engine.manifest).runeSmithName}</strong> in town.</span>
-          </div>
-
-          <div style="background: rgba(30, 41, 59, 0.6); padding: 10px 12px; border-radius: 6px; border-left: 3px solid #fde047;">
-            <span style="font-weight: bold; color: #fde047;">Channeling (T):</span>
-            <span style="color: #cbd5e1;"> Press <strong>[T]</strong> to begin channeling. Press <strong>[.]</strong> (Wait) or <strong>[T]</strong> on subsequent turns to sustain concentration and advance the channel countdown.</span>
-          </div>
-
-          <div style="background: rgba(30, 41, 59, 0.6); padding: 10px 12px; border-radius: 6px; border-left: 3px solid #ef4444;">
-            <span style="font-weight: bold; color: #ef4444;">Vulnerability & Concentration:</span>
-            <span style="color: #cbd5e1;"> Taking <strong>any damage (&gt;0 HP)</strong> breaks your concentration and fizzles the channel! Attacking, spells, items, or moving (unless upgraded) also cancel the channel.</span>
-          </div>
-
-          <div style="background: rgba(30, 41, 59, 0.6); padding: 10px 12px; border-radius: 6px; border-left: 3px solid #a855f7;">
-            <span style="font-weight: bold; color: #a855f7;">Depth Scaling:</span>
-            <span style="color: #cbd5e1;"> The planar barrier thickens with depth: +1 turn of channel time per 5 dungeon levels descended.</span>
-          </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
-          <button id="rune-discovery-tree-btn" style="
-            background: #0284c7;
-            color: #ffffff;
-            border: 1px solid #38bdf8;
-            border-radius: 4px;
-            padding: 8px 16px;
-            font-size: 13px;
-            font-weight: bold;
-            cursor: pointer;
-            font-family: inherit;
-          ">
-            Open Upgrade Tree (U)
-          </button>
-          <button id="rune-discovery-continue-btn" style="
-            background: #334155;
-            color: #f8fafc;
-            border: 1px solid #64748b;
-            border-radius: 4px;
-            padding: 8px 16px;
-            font-size: 13px;
-            font-weight: bold;
-            cursor: pointer;
-            font-family: inherit;
-          ">
-            Continue (Enter)
-          </button>
-        </div>
-      </div>
-    `;
+    const smith = escapeHtml(resolveBranding(this.engine.manifest).runeSmithName);
+    const fact = (title: string, text: string, warn = false) => `<div class="ui-fact${warn ? ' is-warn' : ''}"><b>${title}</b> ${text}</div>`;
+    this.overlayEl.innerHTML = dialogHtml({
+      title: 'The Rune of Return',
+      kicker: 'Relic discovered',
+      closeId: 'rune-discovery-x',
+      body: `
+        <div class="ui-dialog-lede">You recover a carved rune-stone. At your touch it dissolves into light and binds its power to you, so there is nothing to carry.</div>
+        ${fact('Two-way recall.', 'In the dungeon, channeling takes you to town and anchors a rift where you stood. In town, channeling takes you back through it.')}
+        ${fact('Three charges.', `A charge is spent only on a successful return. ${smith} refills them free in town.`)}
+        ${fact('Channeling (T).', 'Press T to begin, then T or Wait (.) each turn to keep it going.')}
+        ${fact('Concentration.', 'Any damage breaks the channel. So do attacking, casting, using items, and moving, until you learn Unbound Casting.', true)}
+        ${fact('Depth.', 'The channel takes one turn longer for every five floors down.')}
+        <div class="ui-note">Its ranks spend your level points, on the Character tab.</div>`,
+      hints: [
+        { keys: ['U'], label: 'see the ranks' },
+        { keys: ['Enter'], label: 'continue' },
+      ],
+      actions:
+        dialogButton('rune-discovery-tree-btn', 'See the ranks', { key: 'U' }) +
+        dialogButton('rune-discovery-continue-btn', 'Continue', { primary: true, key: 'Enter' }),
+    });
 
     const treeBtn = this.overlayEl.querySelector('#rune-discovery-tree-btn') as HTMLButtonElement | null;
     treeBtn?.addEventListener('click', () => {
@@ -208,6 +136,7 @@ export class RuneOfReturnDiscoveryModal implements UIModal {
       }
     });
 
+    this.overlayEl.querySelector('#rune-discovery-x')?.addEventListener('click', () => this.close());
     const continueBtn = this.overlayEl.querySelector('#rune-discovery-continue-btn') as HTMLButtonElement | null;
     continueBtn?.addEventListener('click', () => {
       this.close();

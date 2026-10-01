@@ -8,6 +8,8 @@ import {
 } from '../engine';
 import { fillManaTerms } from './characterMenu/characterTab';
 import type { UIModal } from './modalStack';
+import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
+import { escapeHtml } from './html';
 
 /** One earned mastery waiting on a perk choice. */
 export interface MasteryChoiceRequest {
@@ -42,19 +44,7 @@ export class MasteryChoiceModal implements UIModal {
   }
 
   private createDom(): void {
-    if (typeof document === 'undefined') return;
-    let overlay = document.getElementById('mastery-choice-modal');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'mastery-choice-modal';
-      overlay.className = 'retro-window-overlay';
-      overlay.style.display = 'none';
-      // Above story choices (170) and pacts (180), below level-up (190): main.ts waits
-      // for an open level-up to close before showing this, so the stack order matches.
-      overlay.style.zIndex = '185';
-      document.getElementById('app')?.appendChild(overlay);
-    }
-    this.overlayEl = overlay;
+    this.overlayEl = createDialogScrim('mastery-choice-modal');
   }
 
   /** Queues a request; ignores one already queued for the same mastery. */
@@ -117,7 +107,7 @@ export class MasteryChoiceModal implements UIModal {
   public defer(): void {
     const request = this.queue[0];
     if (request && this.engine) {
-      this.engine.log(`Mastery perk for ${request.name} deferred — choose it any time in the Bestiary [B].`);
+      this.engine.log(`Mastery perk for ${request.name} deferred: choose it any time in the Bestiary (B).`);
     }
     this.advance();
   }
@@ -167,50 +157,42 @@ export class MasteryChoiceModal implements UIModal {
     const request = this.queue[0];
     if (!this.overlayEl || !request) return;
     const hasSelection = this.activeIndex >= 0;
-    const heading =
-      request.scope === 'category'
-        ? `Category Mastery: ${request.name}`
-        : `Mastery: ${request.name}`;
     const blurb =
       request.scope === 'category'
         ? `You have slain ${request.kills} of ${request.name}. Choose a perk that applies against every creature of this family.`
         : `You have slain ${request.kills} ${request.name}. Choose a perk that applies against this creature.`;
 
-    this.overlayEl.innerHTML = `
-      <div class="retro-window" style="width: 560px; max-width: 95vw;">
-        <div class="retro-titlebar">
-          <div class="retro-titlebar-title"><span>★</span><span>${heading}</span></div>
-        </div>
-        <div class="retro-window-body" style="gap: 8px; background: #090d16; color: #e2e8f0;">
-          <div style="font-size: 12px; color: #fef08a;">${blurb}</div>
-          <div style="font-size: 10px; color: #94a3b8;">You can change it later, but only while resting in Town.${this.queue.length > 1 ? ` (${this.queue.length - 1} more mastery choice${this.queue.length > 2 ? 's' : ''} waiting)` : ''}</div>
-          <div style="display: flex; flex-direction: column; gap: 5px;">
-            ${PERK_IDS.map((id, index) => {
-              const perk = MASTERY_PERKS[id];
-              const focused = index === this.activeIndex;
-              return `
-                <div class="mastery-perk-row" data-index="${index}" style="cursor: pointer; display: flex; gap: 8px; align-items: flex-start; padding: 6px 8px; border-radius: 2px; background: ${focused ? '#14532d' : '#0f172a'}; border: 1px solid ${focused ? '#22c55e' : '#334155'};">
-                  <span style="font-size: 12px; color: ${focused ? '#86efac' : '#64748b'};">${focused ? '●' : '○'}</span>
-                  <span style="font-size: 14px;">${perk.icon}</span>
-                  <div style="flex: 1;">
-                    <b style="color: ${focused ? '#86efac' : '#38bdf8'}; font-size: 12px;">${perk.name}</b>
-                    <span style="font-size: 10px; color: #94a3b8; font-style: italic;"> — ${perk.tagline}</span>
-                    <div style="font-size: 11px; color: #cbd5e1; margin-top: 2px;">${fillManaTerms(perk.description, resolveManaTerms(this.engine?.manifest))}</div>
-                  </div>
-                </div>
-              `;
-            }).join('')}
+    const mana = resolveManaTerms(this.engine?.manifest);
+    const waiting = this.queue.length - 1;
+    const perks = PERK_IDS.map((id, index) => {
+      const perk = MASTERY_PERKS[id];
+      const focused = index === this.activeIndex;
+      return `
+        <div class="ui-option mastery-perk-row${focused ? ' is-focused' : ''}" data-index="${index}">
+          <div class="ui-option-mark">${focused ? '▶' : '◇'}</div>
+          <div class="ui-option-body">
+            <div class="ui-option-label">${escapeHtml(perk.name)} <span class="ui-faint">— ${escapeHtml(perk.tagline)}</span></div>
+            <div class="ui-option-desc">${escapeHtml(fillManaTerms(perk.description, mana))}</div>
           </div>
-          <div class="retro-statusbar" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-top: 4px;">
-            <span style="font-size: 11px; color: #a3aec2;">Click or [↑/↓] to choose · [Enter] to lock in · [Esc] decide later</span>
-            <div style="display: flex; gap: 6px;">
-              <button id="btn-mastery-later" class="win-btn" style="padding: 3px 10px;">Decide Later</button>
-              <button id="btn-mastery-confirm" class="win-btn primary-btn" ${hasSelection ? '' : 'disabled'} style="padding: 3px 12px; font-weight: bold;">Confirm [Enter]</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
+        </div>`;
+    }).join('');
+
+    this.overlayEl.innerHTML = dialogHtml({
+      title: request.name,
+      kicker: request.scope === 'category' ? 'Category mastery' : 'Mastery',
+      body: `
+        <div class="ui-dialog-lede">${escapeHtml(blurb)}</div>
+        <div class="ui-note">You can change it later, but only in town.${waiting > 0 ? ` ${waiting} more mastery choice${waiting > 1 ? 's' : ''} waiting.` : ''}</div>
+        <div class="ui-options">${perks}</div>`,
+      hints: [
+        { keys: ['↑', '↓'], label: 'choose' },
+        { keys: ['Enter'], label: 'confirm' },
+        { keys: ['Esc'], label: 'decide later' },
+      ],
+      actions:
+        dialogButton('btn-mastery-later', 'Decide later') +
+        dialogButton('btn-mastery-confirm', 'Confirm', { primary: true, disabled: !hasSelection, key: 'Enter' }),
+    });
 
     this.overlayEl.querySelectorAll('.mastery-perk-row').forEach((row) => {
       row.addEventListener('click', () => {

@@ -1,0 +1,156 @@
+/*
+ * The one dialog frame (ADR-0011): every dialog that interrupts play (choice, altar,
+ * mastery, discovery, pause, save code, feedback, crash) sits on one scrim, in one frame
+ * modeled on the story-choice dialog. Built by src/ui/dialog.ts. No color literals here
+ * (check:ui-palette).
+ */
+
+.ui-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-z-dialog);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--ui-scrim);
+  backdrop-filter: blur(2px);
+}
+.ui-scrim.is-system { z-index: var(--ui-z-system); }
+.ui-scrim.is-crash { z-index: var(--ui-z-crash); }
+
+@keyframes ui-dialog-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.ui-dialog {
+  width: 640px;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--ui-font-body);
+  font-size: var(--ui-text-md);
+  line-height: 1.45;
+  color: var(--ui-text);
+  background: var(--ui-surface-1);
+  border: 1px solid var(--ui-line-strong);
+  border-top: 2px solid var(--ui-frame);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+  user-select: none;
+  animation: ui-dialog-enter var(--ui-dur-enter) ease-out;
+}
+.ui-dialog *, .ui-dialog *::before, .ui-dialog *::after { box-sizing: border-box; }
+.ui-dialog--narrow { width: 480px; }
+.ui-dialog--wide { width: 760px; }
+
+.ui-dialog-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-3) var(--ui-space-4);
+  background: var(--ui-surface-0);
+  border-bottom: 1px solid var(--ui-line);
+}
+.ui-dialog-kicker {
+  font: bold var(--ui-text-xs) var(--ui-font-body);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ui-text-muted);
+}
+.ui-dialog-title { font: bold var(--ui-text-lg) var(--ui-font-display); color: var(--ui-title); }
+
+.ui-dialog-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-4);
+}
+.ui-dialog-lede { white-space: pre-line; user-select: text; }
+.ui-dialog-label {
+  font-size: var(--ui-text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ui-text-muted);
+}
+
+.ui-dialog-foot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ui-space-3);
+  padding: 10px var(--ui-space-4);
+  font-size: var(--ui-text-sm);
+  color: var(--ui-text-muted);
+  background: var(--ui-surface-0);
+  border-top: 1px solid var(--ui-line);
+}
+.ui-dialog-hint { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: var(--ui-space-1) var(--ui-space-3); }
+.ui-dialog-actions { display: flex; gap: var(--ui-space-2); margin-left: auto; }
+
+/* A choosable row: an option, a perk, an offering. Clicking highlights; Enter commits. */
+.ui-option {
+  appearance: none;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-space-3);
+  padding: 10px var(--ui-space-3);
+  font: inherit;
+  text-align: left;
+  color: var(--ui-text);
+  background: var(--ui-surface-2);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius);
+  cursor: pointer;
+  transition: border-color var(--ui-dur-fast), background var(--ui-dur-fast);
+}
+.ui-option:hover { border-color: var(--ui-line-strong); }
+.ui-option.is-focused {
+  background: var(--ui-accent-soft);
+  border-color: var(--ui-accent);
+  box-shadow: inset 3px 0 0 var(--ui-accent);
+}
+.ui-option.is-disabled { opacity: 0.55; cursor: not-allowed; }
+.ui-option-mark { flex: none; min-width: 16px; font-family: var(--ui-font-num); color: var(--ui-accent); }
+.ui-option-body { flex: 1; min-width: 0; }
+.ui-option-label { font-weight: bold; color: var(--ui-text); }
+.ui-option.is-disabled .ui-option-label { text-decoration: line-through; }
+.ui-option-desc { margin-top: 2px; font-size: var(--ui-text-sm); color: var(--ui-text-muted); }
+.ui-option-reason { margin-top: var(--ui-space-1); font-size: var(--ui-text-xs); font-style: italic; color: var(--ui-bad); }
+.ui-options { display: flex; flex-direction: column; gap: var(--ui-space-2); }
+
+/* A fact box: a labeled rule or effect inside a dialog body. */
+.ui-fact { padding: var(--ui-space-2) var(--ui-space-3); background: var(--ui-surface-2); border-left: 3px solid var(--ui-info); border-radius: var(--ui-radius); }
+.ui-fact b { color: var(--ui-title); }
+.ui-fact.is-warn { border-left-color: var(--ui-bad); }
+
+.ui-input,
+.ui-textarea,
+.ui-select {
+  width: 100%;
+  padding: 6px var(--ui-space-2);
+  font: var(--ui-text-md) var(--ui-font-body);
+  color: var(--ui-text);
+  background: var(--ui-surface-3);
+  border: 1px solid var(--ui-line-strong);
+  border-radius: var(--ui-radius);
+  user-select: text;
+}
+.ui-textarea { resize: vertical; min-height: 80px; font-family: var(--ui-font-num); }
+.ui-input:focus, .ui-textarea:focus, .ui-select:focus { outline: none; border-color: var(--ui-accent); box-shadow: 0 0 0 1px var(--ui-accent); }
+.ui-input::placeholder, .ui-textarea::placeholder { color: var(--ui-text-faint); }
+.ui-field { display: flex; flex-direction: column; gap: var(--ui-space-1); }
+.ui-btn--danger { color: var(--ui-bad); border-color: color-mix(in srgb, var(--ui-bad) 60%, transparent); }
+.ui-btn--danger:hover:not(:disabled) { border-color: var(--ui-bad); }
+
+/* The altar's offering and spell lists stay short; the dialog body scrolls. */
+.altar-list { max-height: 150px; overflow-y: auto; padding: var(--ui-space-1); }

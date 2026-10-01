@@ -90,6 +90,7 @@ import './ui/styles/tokens.css';
 import './ui/styles/base.css';
 import './ui/styles/layout.css';
 import './ui/styles/menu.css';
+import './ui/styles/dialog.css';
 import { QuickSpellsBar } from './ui/quickSpellsBar';
 import { PotionRow } from './ui/potionRow';
 import { classifyLogLine, CriticalLineTracker } from './ui/logClassifier';

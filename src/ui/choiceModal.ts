@@ -2,6 +2,8 @@ import type { GameEngine } from '../engine';
 import type { ChoiceDefinition, ChoiceOption } from '../engine';
 import { evaluatePredicate } from '../engine';
 import type { UIModal } from './modalStack';
+import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
+import { escapeHtml } from './html';
 
 export class ChoiceModal implements UIModal {
   public readonly id = 'choice';
@@ -27,25 +29,7 @@ export class ChoiceModal implements UIModal {
   }
 
   private createDom(): void {
-    if (typeof document === 'undefined') return;
-
-    let overlay = document.getElementById('choice-modal-overlay');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'choice-modal-overlay';
-      overlay.style.cssText = `
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.75);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 170;
-        pointer-events: auto;
-      `;
-      document.body.appendChild(overlay);
-    }
-    this.overlayEl = overlay;
+    this.overlayEl = createDialogScrim('choice-modal-overlay');
   }
 
   public open(
@@ -170,53 +154,40 @@ export class ChoiceModal implements UIModal {
 
     const choice = this.choice;
     const cancelable = choice.cancelable ?? true;
-    const cancelLabel = choice.cancelLabel ?? 'Cancel / Step Away';
+    const cancelLabel = choice.cancelLabel ?? 'Step away';
     const hasSelection = Boolean(this.currentOptions[this.activeIndex]?.enabled);
 
-    // Styled by `.choice-dialog*` in styles/base.css, from the theme's --ui-* variables.
-    this.overlayEl.innerHTML = `
-      <div class="choice-dialog">
-        <div class="choice-dialog-titlebar">
-          <span id="choice-modal-title">◆ ${choice.title}</span>
-          ${cancelable ? '<button id="btn-choice-x" class="choice-dialog-close" title="Step away [Esc]">✕</button>' : ''}
-        </div>
+    const options = this.currentOptions
+      .map(({ option, enabled, index }) => {
+        const focused = index === this.activeIndex;
+        const state = !enabled ? ' is-disabled choice-option-disabled' : focused ? ' is-focused' : '';
+        return `
+          <div id="choice-opt-${option.id}" class="ui-option${state}" data-index="${index}">
+            <div class="ui-option-mark">${focused ? '▶' : '◇'}</div>
+            <div class="ui-option-body">
+              <div class="ui-option-label">${option.label}</div>
+              ${option.description ? `<div class="ui-option-desc">${option.description}</div>` : ''}
+              ${!enabled ? `<div class="ui-option-reason">${escapeHtml(option.disabledReason ?? 'Requirements not met')}</div>` : ''}
+            </div>
+          </div>`;
+      })
+      .join('');
 
-        <div class="choice-dialog-description">${choice.description}</div>
-
-        <div id="choice-options-list" class="choice-dialog-options">
-          ${this.currentOptions
-            .map(({ option, enabled, index }) => {
-              const isFocused = index === this.activeIndex;
-              const stateClass = !enabled ? ' choice-option-disabled' : isFocused ? ' choice-option-focused' : '';
-              return `
-                <div id="choice-opt-${option.id}" class="choice-option-row${stateClass}" data-index="${index}">
-                  <div class="choice-option-marker">${isFocused ? '▶' : '◇'}</div>
-                  <div class="choice-option-body">
-                    <div class="choice-option-label">${option.label}</div>
-                    ${option.description ? `<div class="choice-option-desc">${option.description}</div>` : ''}
-                    ${
-                      !enabled
-                        ? `<div class="choice-option-reason">⚠️ ${option.disabledReason ?? 'Requirements not met'}</div>`
-                        : ''
-                    }
-                  </div>
-                </div>
-              `;
-            })
-            .join('')}
-        </div>
-
-        <div class="choice-dialog-footer">
-          <div class="choice-dialog-hint">
-            ⌨ Click or [↑/↓] to choose, then [Enter] or Confirm to lock it in${cancelable ? ' · [Esc] to step away' : ''}
-          </div>
-          <div class="choice-dialog-buttons">
-            <button id="btn-choice-confirm" class="choice-btn choice-btn-primary" ${hasSelection ? '' : 'disabled'}>Confirm [Enter]</button>
-            ${cancelable ? `<button id="btn-choice-cancel" class="choice-btn">${cancelLabel}</button>` : ''}
-          </div>
-        </div>
-      </div>
-    `;
+    this.overlayEl.innerHTML = dialogHtml({
+      title: choice.title,
+      titleId: 'choice-modal-title',
+      closeId: cancelable ? 'btn-choice-x' : undefined,
+      closeTitle: 'Step away (Esc)',
+      body: `<div class="ui-dialog-lede">${choice.description}</div><div id="choice-options-list" class="ui-options">${options}</div>`,
+      hints: [
+        { keys: ['↑', '↓'], label: 'choose' },
+        { keys: ['Enter'], label: 'confirm' },
+        ...(cancelable ? [{ keys: ['Esc'], label: 'step away' }] : []),
+      ],
+      actions:
+        (cancelable ? dialogButton('btn-choice-cancel', cancelLabel) : '') +
+        dialogButton('btn-choice-confirm', 'Confirm', { primary: true, disabled: !hasSelection, key: 'Enter' }),
+    });
 
     // Clicking a row only highlights it; Confirm commits.
     for (const item of this.currentOptions) {

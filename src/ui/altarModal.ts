@@ -8,6 +8,8 @@ import {
   GRIMOIRE_SIZE,
 } from '../engine';
 import type { UIModal } from './modalStack';
+import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
+import { escapeHtml } from './html';
 
 /**
  * A spell altar's rite (engine `magic/altars.ts`): pick an offering to burn and, depending on
@@ -28,13 +30,7 @@ export class AltarModal implements UIModal {
   private onLeave?: () => void;
 
   constructor() {
-    if (typeof document === 'undefined') return;
-    const overlay = document.createElement('div');
-    overlay.id = 'altar-modal-overlay';
-    overlay.style.cssText =
-      'position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none; align-items: center; justify-content: center; z-index: 170;';
-    document.body.appendChild(overlay);
-    this.overlayEl = overlay;
+    this.overlayEl = createDialogScrim('altar-modal-overlay');
   }
 
   public open(
@@ -148,20 +144,18 @@ export class AltarModal implements UIModal {
     const preview = this.preview();
     const burnNote = offering
       ? offering.kind === 'spell'
-        ? `<span style="color:#f87171;">You will forget ${offering.name} for good.</span>`
-        : `One ${offering.name} will be consumed.`
+        ? `<span class="ui-down">You will forget ${escapeHtml(offering.name)} for good.</span>`
+        : `One ${escapeHtml(offering.name)} will be consumed.`
       : '';
 
     const offeringRows = this.offerings.length
       ? this.offerings
           .map(
             (o, i) =>
-              `<div data-offering="${i}" style="padding:4px 8px; cursor:pointer; border-radius:3px; ${
-                i === this.offeringIndex ? 'background:#1e3a8a; color:#fff;' : 'color:#cbd5e1;'
-              }">${o.kind === 'spell' ? '📜' : '✦'} ${o.name} <span style="color:#64748b;">(${o.element}${o.count ? ` ×${o.count}` : ''})</span></div>`
+              `<button type="button" class="bs-row${i === this.offeringIndex ? ' is-selected' : ''}" data-offering="${i}"><span class="bs-name">${escapeHtml(o.name)}</span><span class="ui-faint">${escapeHtml(o.kind === 'spell' ? 'spell' : 'item')} · ${escapeHtml(o.element)}${o.count ? ` ×${o.count}` : ''}</span></button>`
           )
           .join('')
-      : '<div style="color:#64748b; font-style:italic;">You carry nothing the altar will take.</div>';
+      : '<div class="ui-note bs-empty">You carry nothing the altar will take.</div>';
 
     let picker = '';
     if (altar.rite === 'inscribe' || altar.rite === 'ground') {
@@ -169,40 +163,43 @@ export class AltarModal implements UIModal {
       const cells = Array.from({ length: GRIMOIRE_SIZE }, (_, i) => {
         const open = player.isGrimoireSlotOpen(i);
         const pickable = wantSealed ? !open : open;
-        const label = !open ? '🔒' : spellName(engine, player.grimoire[i]?.spellId ?? '') || '—';
-        return `<div data-slot="${pickable ? i : ''}" style="padding:6px 4px; min-height:28px; text-align:center; font-size:10px; border-radius:3px; cursor:${pickable ? 'pointer' : 'default'};
-          border:1px solid ${i === this.slotIndex ? '#facc15' : pickable ? '#38bdf8' : '#1e293b'}; color:${pickable ? '#e2e8f0' : '#475569'};">${i + 1}. ${label}</div>`;
+        const label = !open ? 'Sealed' : spellName(engine, player.grimoire[i]?.spellId ?? '') || 'empty';
+        const cls = ['sb-cell', open ? 'is-filled' : 'is-sealed', i === this.slotIndex ? 'is-mine' : ''].filter(Boolean).join(' ');
+        return `<button type="button" class="${cls}" data-slot="${pickable ? i : ''}"${pickable ? '' : ' disabled'}><div class="sb-cell-head"><span class="ui-num">${i + 1}</span></div><div class="${open ? 'sb-cell-spell' : 'sb-sealed'}">${escapeHtml(label)}</div></button>`;
       }).join('');
-      picker = `<div style="font-size:11px; color:#94a3b8; margin:8px 0 4px;">${wantSealed ? 'Sealed slot to open:' : 'Slot to inscribe (active page):'}</div>
-        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:4px;">${cells}</div>`;
+      picker = `<div class="ui-dialog-label">${wantSealed ? 'Sealed slot to open' : 'Slot to inscribe (active page)'}</div>
+        <div class="ui-inset sb-matrix">${cells}</div>`;
     } else if (altar.rite === 'forge') {
       const rows = player.spellsKnown
         .map(
           (id) =>
-            `<div data-spell="${id}" style="padding:4px 8px; cursor:pointer; border-radius:3px; ${
-              id === this.targetSpellId ? 'background:#1e3a8a; color:#fff;' : 'color:#cbd5e1;'
-            }">${spellName(engine, id)} <span style="color:#64748b;">(${spellOf(engine, id)?.element ?? ''})</span></div>`
+            `<button type="button" class="bs-row${id === this.targetSpellId ? ' is-selected' : ''}" data-spell="${escapeHtml(id)}"><span class="bs-name">${escapeHtml(spellName(engine, id))}</span><span class="ui-faint">${escapeHtml(spellOf(engine, id)?.element ?? '')}</span></button>`
         )
         .join('');
-      picker = `<div style="font-size:11px; color:#94a3b8; margin:8px 0 4px;">Spell to transmute:</div>
-        <div style="max-height:120px; overflow-y:auto;">${rows}</div>`;
+      picker = `<div class="ui-dialog-label">Spell to transmute</div><div class="ui-inset bs-list altar-list">${rows}</div>`;
     }
 
     const ready = Boolean(this.request());
-    this.overlayEl.innerHTML = `
-      <div style="width:560px; max-width:94vw; max-height:90vh; overflow-y:auto; background:#0b1120; border:1px solid #eab308; border-radius:6px; padding:16px 18px; font-family:inherit; color:#e2e8f0;">
-        <div style="font-size:16px; font-weight:bold; color:#facc15; margin-bottom:4px;">${altar.name}</div>
-        <div style="font-size:12px; color:#cbd5e1; margin-bottom:12px; line-height:1.5;">${altar.description}</div>
-        <div style="font-size:11px; color:#94a3b8; margin-bottom:4px;">Offering to burn:</div>
-        <div style="max-height:140px; overflow-y:auto; border:1px solid #1e293b; border-radius:3px; padding:2px;">${offeringRows}</div>
+    this.overlayEl.innerHTML = dialogHtml({
+      title: altar.name,
+      kicker: 'Altar',
+      closeId: 'btn-altar-x',
+      closeTitle: 'Leave (Esc)',
+      body: `
+        <div class="ui-dialog-lede">${escapeHtml(altar.description)}</div>
+        <div class="ui-dialog-label">Offering to burn</div>
+        <div class="ui-inset bs-list altar-list">${offeringRows}</div>
         ${picker}
-        ${preview ? `<div style="margin-top:10px; font-size:12px; color:${preview.ok ? '#a7f3d0' : '#fca5a5'};">${preview.text}</div>` : ''}
-        ${burnNote ? `<div style="margin-top:4px; font-size:11px;">${burnNote} This cannot be undone.</div>` : ''}
-        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px;">
-          <button type="button" data-action="leave" style="padding:6px 12px; background:#1e293b; color:#cbd5e1; border:1px solid #334155; border-radius:3px; cursor:pointer;">Leave [Esc]</button>
-          <button type="button" data-action="confirm" ${ready ? '' : 'disabled'} style="padding:6px 12px; background:${ready ? '#b45309' : '#292524'}; color:${ready ? '#fff' : '#78716c'}; border:1px solid #eab308; border-radius:3px; cursor:${ready ? 'pointer' : 'not-allowed'};">Perform the rite [Enter]</button>
-        </div>
-      </div>`;
+        ${preview ? `<div class="ui-fact${preview.ok ? '' : ' is-warn'}">${preview.text}</div>` : ''}
+        ${burnNote ? `<div class="ui-note">${burnNote} This cannot be undone.</div>` : ''}`,
+      hints: [
+        { keys: ['Enter'], label: 'perform' },
+        { keys: ['Esc'], label: 'leave, the altar keeps' },
+      ],
+      actions:
+        dialogButton('btn-altar-leave', 'Leave', { attrs: 'data-action="leave"' }) +
+        dialogButton('btn-altar-confirm', 'Perform the rite', { primary: true, disabled: !ready, key: 'Enter', attrs: 'data-action="confirm"' }),
+    });
 
     this.overlayEl.querySelectorAll<HTMLElement>('[data-offering]').forEach((el) =>
       el.addEventListener('click', () => {
@@ -224,6 +221,7 @@ export class AltarModal implements UIModal {
       })
     );
     this.overlayEl.querySelector('[data-action="leave"]')?.addEventListener('click', () => this.leave());
+    this.overlayEl.querySelector('#btn-altar-x')?.addEventListener('click', () => this.leave());
     this.overlayEl.querySelector('[data-action="confirm"]')?.addEventListener('click', () => this.confirm());
   }
 }

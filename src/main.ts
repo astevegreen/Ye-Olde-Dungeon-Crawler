@@ -55,7 +55,6 @@ import { DiagnosticModal } from './ui/diagnostic-modal';
 import { FeedbackModal } from './ui/feedbackModal';
 import { SagaShareModal } from './ui/sagaShareModal';
 import { ContextHelp } from './ui/help/contextHelp';
-import { CompendiumModal } from './ui/help/compendiumModal';
 import { CommandPalette } from './ui/help/commandPalette';
 import type { SpellbookEntry } from './rendering/targeting-overlay';
 import { applyThemeTokens } from './rendering/theme';
@@ -82,7 +81,7 @@ import {
   CharacterMenuModal,
   CharacterTab,
   StoryTab,
-  CompendiumTabAdapter,
+  BestiaryTab,
   PactsTab,
   SpellbookTabAdapter,
 } from './ui/characterMenu';
@@ -172,7 +171,6 @@ window.addEventListener('DOMContentLoaded', () => {
   const hudStairsBtn = document.getElementById('btn-hud-stairs');
 
   const contextHelp = new ContextHelp();
-  const compendiumModal = new CompendiumModal();
   const commandPalette = new CommandPalette();
   const choiceModal = new ChoiceModal(() => {
     popModal('choice');
@@ -220,7 +218,7 @@ window.addEventListener('DOMContentLoaded', () => {
     renderer?.render();
   };
   const storyTab = new StoryTab();
-  const bestiaryTab = new CompendiumTabAdapter(compendiumModal, () => characterMenuModal?.close());
+  const bestiaryTab = new BestiaryTab();
   const pactsTab = new PactsTab();
   let spellbookTab: SpellbookTabAdapter;
   let inventoryTab: InventoryTabAdapter;

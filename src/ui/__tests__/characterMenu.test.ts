@@ -6,8 +6,7 @@ import type { GameState } from '../characterMenu/gameState';
 import { ModalStackManager } from '../modalStack';
 import { InputHandler } from '../../rendering/input-handler';
 import { GameEngine, Player, GameMap } from '../../engine';
-import { CompendiumTabAdapter, SpellbookTabAdapter } from '../characterMenu/tabAdapters';
-import { CompendiumModal } from '../help/compendiumModal';
+import { SpellbookTabAdapter } from '../characterMenu/tabAdapters';
 import { SpellbookModal } from '../spellbookModal';
 
 class MockElement {
@@ -458,56 +457,6 @@ describe('CharacterMenuModal & Consolidated Character Menu', () => {
 
     scaledMenu.close();
     scaledMenu.destroy();
-  });
-
-  it('CompendiumTabAdapter does not close parent shell on tab switch and toggles shell on KeyB', () => {
-    const engineWithMonster = createTestEngine({
-      id: 'test_manifest',
-      name: 'Test Manifest',
-      monsters: [
-        {
-          id: 'goblin',
-          name: 'Goblin',
-          symbol: 'g',
-          color: '#00ff00',
-          maxHp: 10,
-          hp: 10,
-          attack: 2,
-          defense: 1,
-          xp: 5,
-          ai: 'simple',
-        },
-      ],
-      items: [],
-      spells: [],
-    });
-    const compendiumModal = new CompendiumModal();
-    const bestiaryTab = new CompendiumTabAdapter(compendiumModal);
-    const otherTab = new MockTab('character', 'Character', 'character_menu');
-    const charMenu = new CharacterMenuModal([bestiaryTab, otherTab], () => createMockGameState(engineWithMonster));
-
-    charMenu.open('bestiary');
-    expect(charMenu.isOpen).toBe(true);
-    expect(charMenu.activeTabId).toBe('bestiary');
-    expect(compendiumModal.isOpen).toBe(true);
-
-    // Switching tabs unmounts bestiaryTab without closing charMenu
-    charMenu.activateTab('character');
-    expect(charMenu.isOpen).toBe(true);
-    expect(charMenu.activeTabId).toBe('character');
-    expect(compendiumModal.isOpen).toBe(false);
-
-    // Switch back to bestiary
-    charMenu.activateTab('bestiary');
-    expect(charMenu.isOpen).toBe(true);
-    expect(charMenu.activeTabId).toBe('bestiary');
-    expect(compendiumModal.isOpen).toBe(true);
-
-    // Re-pressing KeyB toggles the whole shell closed
-    const keyBEvent = makeKey('b', 'KeyB');
-    const handledB = charMenu.handleKeyDown(keyBEvent);
-    expect(handledB).toBe(true);
-    expect(charMenu.isOpen).toBe(false);
   });
 
   it('SpellbookTabAdapter toggles shell on KeyZ', () => {

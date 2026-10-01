@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { CompendiumTabAdapter, SpellbookTabAdapter } from '../characterMenu/tabAdapters';
-import type { CompendiumModal } from '../help/compendiumModal';
+import { SpellbookTabAdapter } from '../characterMenu/tabAdapters';
 import type { SpellbookModal } from '../spellbookModal';
 
 class FakeEl {
@@ -49,7 +48,6 @@ function fakeModal(root: FakeEl) {
 }
 
 const ADAPTERS = [
-  ['Bestiary', (m: unknown, onDismiss?: () => void) => new CompendiumTabAdapter(m as CompendiumModal, onDismiss)],
   ['Spellbook', (m: unknown, onDismiss?: () => void) => new SpellbookTabAdapter(m as SpellbookModal, onDismiss)],
 ] as const;
 

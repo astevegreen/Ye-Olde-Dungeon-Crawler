@@ -1,5 +1,5 @@
 {
-  "total": 1037,
+  "total": 941,
   "files": {
     "index.html": 34,
     "src/main.ts": 4,
@@ -32,7 +32,6 @@
     "src/ui/diagnostic/triageTab.ts": 75,
     "src/ui/feedbackModal.ts": 9,
     "src/ui/help/commandPalette.ts": 23,
-    "src/ui/help/compendiumModal.ts": 96,
     "src/ui/help/contextHelp.ts": 13,
     "src/ui/inventory/itemInspector.ts": 27,
     "src/ui/masteryChoiceModal.ts": 15,

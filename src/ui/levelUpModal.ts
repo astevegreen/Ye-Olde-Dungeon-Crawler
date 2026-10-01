@@ -1,6 +1,6 @@
 import type { GameEngine } from '../engine';
 import type { ModalStackManager, UIModal } from './modalStack';
-import { resolveManaTerms } from '../engine';
+import { getMaxCarryWeight, resolveManaTerms } from '../engine';
 import { fillManaTerms } from './characterMenu/characterTab';
 import { AttributeAllocationDraft, type AttributeKey } from './attributeAllocationDraft';
 
@@ -20,7 +20,7 @@ const ATTRIBUTES: AttributeMeta[] = [
     label: 'Strength',
     hotkeyLetter: 'S',
     description: 'Increases melee physical damage and inventory carry capacity.',
-    derivedPreview: (val) => `Carry: ${val * 10} lbs | Melee Atk: +${Math.floor(val / 2)}`,
+    derivedPreview: (val) => `Carry: ${(getMaxCarryWeight(val) / 1000).toFixed(1)} kg | Melee Atk: +${Math.floor(val / 2)}`,
   },
   {
     key: 'dexterity',

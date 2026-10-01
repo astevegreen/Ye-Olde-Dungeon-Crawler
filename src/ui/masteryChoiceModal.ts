@@ -3,8 +3,10 @@ import {
   type MasteryPerkId,
   type MasteryScope,
   MASTERY_PERKS,
+  resolveManaTerms,
   selectMasteryPerk,
 } from '../engine';
+import { fillManaTerms } from './characterMenu/characterTab';
 import type { UIModal } from './modalStack';
 
 /** One earned mastery waiting on a perk choice. */
@@ -193,14 +195,14 @@ export class MasteryChoiceModal implements UIModal {
                   <div style="flex: 1;">
                     <b style="color: ${focused ? '#86efac' : '#38bdf8'}; font-size: 12px;">${perk.name}</b>
                     <span style="font-size: 10px; color: #94a3b8; font-style: italic;"> — ${perk.tagline}</span>
-                    <div style="font-size: 11px; color: #cbd5e1; margin-top: 2px;">${perk.description}</div>
+                    <div style="font-size: 11px; color: #cbd5e1; margin-top: 2px;">${fillManaTerms(perk.description, resolveManaTerms(this.engine?.manifest))}</div>
                   </div>
                 </div>
               `;
             }).join('')}
           </div>
           <div class="retro-statusbar" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-top: 4px;">
-            <span style="font-size: 11px; color: #374151;">Click or [↑/↓] to choose · [Enter] to lock in · [Esc] decide later</span>
+            <span style="font-size: 11px; color: #a3aec2;">Click or [↑/↓] to choose · [Enter] to lock in · [Esc] decide later</span>
             <div style="display: flex; gap: 6px;">
               <button id="btn-mastery-later" class="win-btn" style="padding: 3px 10px;">Decide Later</button>
               <button id="btn-mastery-confirm" class="win-btn primary-btn" ${hasSelection ? '' : 'disabled'} style="padding: 3px 12px; font-weight: bold;">Confirm [Enter]</button>

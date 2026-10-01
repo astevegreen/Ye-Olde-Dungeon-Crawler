@@ -10,7 +10,9 @@ import {
   getMonsterCategory,
   type KillRiteDefinition,
   selectMasteryPerk,
+  resolveManaTerms,
 } from '../../engine';
+import { fillManaTerms } from '../characterMenu/characterTab';
 import type { UIModal } from '../modalStack';
 import { resolveBranding } from '../branding';
 
@@ -241,7 +243,7 @@ export class CompendiumModal implements UIModal {
           </div>
 
           <div class="retro-statusbar" style="display: flex; justify-content: space-between; align-items: center; padding-top: 4px;">
-            <span style="font-size: 11px; color: #374151;">Use Arrow Keys to select, Tab to cycle filters, Esc or B to close.</span>
+            <span style="font-size: 11px; color: #a3aec2;">Use Arrow Keys to select, Tab to cycle filters, Esc or B to close.</span>
             <button id="btn-compendium-close" class="win-btn primary-btn" style="padding: 3px 12px;">Close</button>
           </div>
         </div>
@@ -338,7 +340,7 @@ export class CompendiumModal implements UIModal {
                       <span style="font-size: 9px; color: #94a3b8; font-style: italic;">— ${perk.tagline}</span>
                     </div>
                     <div style="font-size: 10px; color: ${isSelected ? '#dcfce7' : '#cbd5e1'}; margin-top: 2px;">
-                      ${perk.description}
+                      ${fillManaTerms(perk.description, resolveManaTerms(this.engine?.manifest))}
                     </div>
                     ${redundant ? `<div style="font-size: 9px; color: #fbbf24; margin-top: 2px;">Already active through your other mastery — it would not stack.</div>` : ''}
                   </div>

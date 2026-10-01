@@ -3,6 +3,7 @@ import type { Camera } from './camera';
 import { TileInspector } from '../engine';
 import type { TileInspection } from '../engine';
 import { resolveThemeTokens } from './theme';
+import { formatWeight } from '../ui/units';
 import type { ThemeTokens } from '../engine';
 
 export class InspectOverlay {
@@ -309,7 +310,7 @@ export class InspectOverlay {
 
         ctx.fillStyle = theme.textMuted;
         ctx.textAlign = 'right';
-        ctx.fillText(`${it.weight}g`, cardX + cardW - 8, curY);
+        ctx.fillText(formatWeight(it.weight), cardX + cardW - 8, curY);
         ctx.textAlign = 'left';
         curY += 14;
       }

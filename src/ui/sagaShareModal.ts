@@ -145,7 +145,7 @@ export class SagaShareModal implements UIModal {
 
           <!-- Status Bar -->
           <div class="retro-statusbar" style="margin-top: 8px; font-size: 11px;">
-            <span id="saga-status-text" style="color: #1e3a8a; font-weight: bold;">Saga Exchange Ready.</span>
+            <span id="saga-status-text" style="color: #a3aec2; font-weight: bold;">Saga Exchange Ready.</span>
           </div>
         </div>
       </div>

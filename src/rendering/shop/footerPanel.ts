@@ -1,5 +1,6 @@
 import type { GameEngine } from '../../engine';
 import type { ShopPanelBounds, ShopPanelContext } from './types';
+import { formatLoad, formatWeight } from '../../ui/units';
 
 /** Callbacks renderFooter needs from the owning ShopOverlay. */
 export interface FooterActions {
@@ -43,7 +44,7 @@ export function renderFooter(
     ctx.fillStyle = theme.textMuted;
     ctx.textAlign = 'right';
     ctx.fillText(
-      `Coin Weight: ${coinWeightGrams}g | Pack: ${pack.totalWeight()}g/${pack.maxWeightCapacity}g`,
+      `Coin weight: ${formatWeight(coinWeightGrams)} | Pack: ${formatLoad(pack.totalWeight(), pack.maxWeightCapacity)}`,
       modalX + modalW - 18,
       footerY + 16
     );

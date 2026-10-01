@@ -24,6 +24,7 @@ export class CharacterMenuModal implements UIModal {
   private windowEl: HTMLElement | null = null;
   private navEl: HTMLElement | null = null;
   private contentEl: HTMLElement | null = null;
+  private hintEl: HTMLElement | null = null;
 
   constructor(
     tabs: MenuTab[] = [],
@@ -239,9 +240,8 @@ export class CharacterMenuModal implements UIModal {
       hint.style.fontSize = '10px';
       hint.style.whiteSpace = 'nowrap';
       hint.style.color = '#94a3b8';
-      hint.textContent = '[Tab] Cycle · [Esc] Close';
-      hint.title = 'Tab cycles tabs; Esc closes';
       controls.appendChild(hint);
+      this.hintEl = hint;
 
       const closeBtn = document.createElement('button');
       closeBtn.className = 'character-menu-close-btn win-btn win-btn-sm';
@@ -335,6 +335,12 @@ export class CharacterMenuModal implements UIModal {
 
     this.activeTabId = targetTab.id;
     this.renderTabsNav();
+    if (this.hintEl) {
+      this.hintEl.textContent = targetTab.claimsTabKey ? '[Tab] Next panel · [Esc] Close' : '[Tab] Cycle · [Esc] Close';
+      this.hintEl.title = targetTab.claimsTabKey
+        ? 'Tab steps through the panels, then on to the next tab; Esc closes'
+        : 'Tab cycles tabs; Esc closes';
+    }
 
     if (this.overlayEl && this.windowEl && this.contentEl) {
       if (targetTab.id === 'inventory') {
@@ -422,7 +428,12 @@ export class CharacterMenuModal implements UIModal {
     const key = e.key;
     const code = e.code;
 
-    // 1. Tab / Shift+Tab cycle tabs with wrap-around
+    // 1. Tab / Shift+Tab cycle tabs with wrap-around, unless the active tab uses Tab itself.
+    if (key === 'Tab' && this.getActiveTab()?.claimsTabKey && this.getActiveTab()?.handleKeyDown(e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      return true;
+    }
     if (key === 'Tab') {
       e.preventDefault();
       e.stopPropagation();

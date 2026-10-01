@@ -281,9 +281,11 @@ export class CommandPalette implements UIModal {
                 <div style="font-size: 9px; color: ${isSel ? '#fde68a' : '#94a3b8'};">${cmd.description}</div>
               </div>
             </div>
-            <span style="font-family: monospace; font-size: 10px; padding: 2px 5px; background: ${isSel ? '#b45309' : '#1e293b'}; color: #ffffff; border-radius: 2px; white-space: nowrap;">
-              ${cmd.shortcut}
-            </span>
+            ${
+              cmd.shortcut
+                ? `<span style="font-family: monospace; font-size: 10px; padding: 2px 5px; background: ${isSel ? '#b45309' : '#1e293b'}; color: #ffffff; border-radius: 2px; white-space: nowrap;">${cmd.shortcut}</span>`
+                : ''
+            }
           </div>
         `;
       })

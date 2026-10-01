@@ -10,6 +10,7 @@ import { CoinItem, COIN_COLORS, parseCoinItem, getSpell, getOverflowConfig } fro
 import type { Paperdoll } from '../../engine';
 import type { ThemeTokens } from '../../engine';
 import { resolveBranding } from '../branding';
+import { formatLoad, formatWeight } from '../units';
 
 /** Engine spell id both the Identify scroll and spell cast (`spellPipeline.ts`'s `identify` effect). */
 const IDENTIFY_SPELL_ID = 'identify';
@@ -244,6 +245,14 @@ export class ItemInspector {
   /**
    * Cycles focus through panels: paperdoll -> backpack -> ground -> inspector -> paperdoll.
    */
+  /** True when one more step in this direction would wrap: the last panel going
+   *  forward, the first going back. */
+  public atPanelEdge(forward: boolean): boolean {
+    const panels: FocusedPanel[] = ['paperdoll', 'backpack', 'ground', 'inspector'];
+    const curIdx = panels.indexOf(this.focusedPanel);
+    return forward ? curIdx === panels.length - 1 : curIdx === 0;
+  }
+
   public cyclePanel(forward: boolean = true): FocusedPanel {
     const panels: FocusedPanel[] = ['paperdoll', 'backpack', 'ground', 'inspector'];
     const curIdx = panels.indexOf(this.focusedPanel);
@@ -907,7 +916,7 @@ export class ItemInspector {
 
       ctx.font = `9px ${font}`;
       ctx.fillStyle = theme.textMuted;
-      ctx.fillText(`Weight: ${stats.carryWeight} / ${stats.maxCarryWeight}g`, innerX, curY);
+      ctx.fillText(`Weight: ${formatLoad(stats.carryWeight, stats.maxCarryWeight)}`, innerX, curY);
       curY += 12;
 
       // Weight bar
@@ -1020,7 +1029,7 @@ export class ItemInspector {
       // Weight, Bulk, Value
       ctx.font = `9px ${font}`;
       ctx.fillStyle = theme.textMuted;
-      ctx.fillText(`Weight: ${breakdown.weight}g  |  Volume: ${breakdown.bulk}cm³`, innerX, curY);
+      ctx.fillText(`Weight: ${formatWeight(breakdown.weight)}  |  Volume: ${breakdown.bulk}cm³`, innerX, curY);
       curY += 14;
 
       if (breakdown.value > 0) {

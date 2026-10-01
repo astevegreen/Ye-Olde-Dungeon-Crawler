@@ -44,7 +44,9 @@ export class ContextHelp {
         position: absolute;
         top: 48px;
         right: 16px;
-        z-index: 110;
+        /* Above every menu and dialog (the character menu is 140, settings 250), so F1
+           help is readable wherever it opens. */
+        z-index: 280;
         pointer-events: auto;
         display: none;
       `;
@@ -161,12 +163,12 @@ export class ContextHelp {
           title: 'Dungeon Exploration',
           contextTag: 'DUNGEON DESCENT',
           bullets: [
-            { key: 'Arrows / Numpad / Vi', label: '8-way movement, bump attack, or open doors' },
+            { key: 'Arrows / Numpad', label: 'Move 8 ways, bump to attack or open doors (W A D and H J K Y N move too)' },
             { key: 'Space / .', label: 'Wait a single turn (regenerates energy)' },
             { key: 'M', label: 'Explored Dungeon Map Viewer (0 turns)' },
             { key: 'X / L', label: 'Look / Inspect tiles and monster intents' },
             { key: 'Shift+G / Shift+,', label: 'Quick-Loot all items on ground tile' },
-            { key: 'Z / C', label: 'Open Spellbook and cast known spells' },
+            { key: 'Z', label: 'Open Spellbook and cast known spells' },
             { key: 'I', label: 'Open Inventory, Paperdoll, and Containers' },
             { key: 'F', label: 'Context action: stairs, loot, doors, talk, or rest, as the console button shows' },
             { key: 'Shift+1-4', label: 'Drink a potion from the row beside the health orb' },
@@ -194,8 +196,32 @@ export class ContextHelp {
     this.onDismissCallback = onDismiss;
 
     const context = this.detectContext(engine, inventoryOverlay, targetingOverlay, shopOverlay, inspectOverlay, mapOverlay);
-    const content = this.getHelpContent(context, engine.manifest);
+    this.render(this.getHelpContent(context, engine.manifest), engine.manifest?.name ?? '');
+  }
 
+  /**
+   * The exploration guide outside a run (the title screen's Help), where no InputHandler
+   * owns the keyboard: the card takes focus and closes itself on Esc or F1.
+   */
+  public openGuide(manifest?: GameContentManifest, onDismiss?: () => void): void {
+    if (!this.overlayEl) return;
+    this.onDismissCallback = onDismiss;
+    this.render(this.getHelpContent('exploration', manifest), manifest?.name ?? '');
+    const overlay = this.overlayEl;
+    overlay.tabIndex = -1;
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.code !== 'Escape' && e.code !== 'F1') return;
+      e.preventDefault();
+      e.stopPropagation();
+      overlay.removeEventListener('keydown', onKey);
+      this.close();
+    };
+    overlay.addEventListener('keydown', onKey);
+    overlay.focus();
+  }
+
+  private render(content: HelpCardContent, packName: string): void {
+    if (!this.overlayEl) return;
     this.overlayEl.innerHTML = `
       <div class="retro-window" style="width: 380px; box-shadow: 0 8px 24px rgba(0,0,0,0.85); border: 1px solid var(--ui-accent, #f59e0b);">
         <div class="retro-titlebar" style="padding: 3px 6px; border-bottom-color: var(--ui-accent, #f59e0b);">
@@ -226,7 +252,7 @@ export class ContextHelp {
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; font-size: 9px; opacity: 0.7; border-top: 1px solid var(--ui-border-light, #3b455b); padding-top: 4px;">
             <span>Move, Esc, or F1 to dismiss</span>
-            <span style="color: var(--ui-accent, #f59e0b); font-weight: bold;">${engine.manifest?.name ?? ''}</span>
+            <span style="color: var(--ui-accent, #f59e0b); font-weight: bold;">${packName}</span>
           </div>
         </div>
       </div>

@@ -11,6 +11,7 @@ export class InventoryTabAdapter implements MenuTab {
   public readonly id = 'inventory';
   public readonly label = 'Inventory';
   public readonly hotkeyActionId = 'inventory';
+  public readonly claimsTabKey = true;
   private overlay: InventoryOverlay;
   private renderer?: CanvasRenderer;
   private unmounting = false;

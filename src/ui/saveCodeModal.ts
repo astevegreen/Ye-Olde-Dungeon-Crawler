@@ -64,7 +64,7 @@ export class SaveCodeModal {
 
           <!-- Section: Copy -->
           <div id="section-savecode-copy">
-            <p style="font-size: 11px; margin-bottom: 6px; color: #374151;">
+            <p style="font-size: 11px; margin-bottom: 6px; color: #a3aec2;">
               This Base64 text code encodes your complete character state. Save it in a text note or share it:
             </p>
             <textarea id="savecode-copy-text" readonly class="retro-input" style="width: 100%; height: 140px; font-family: 'Consolas', 'Courier New', monospace; font-size: 11px; user-select: text; resize: vertical; word-break: break-all; margin-bottom: 8px;"></textarea>
@@ -75,7 +75,7 @@ export class SaveCodeModal {
 
           <!-- Section: Paste -->
           <div id="section-savecode-paste" style="display: none;">
-            <p style="font-size: 11px; margin-bottom: 6px; color: #374151;">
+            <p style="font-size: 11px; margin-bottom: 6px; color: #a3aec2;">
               Paste a previously exported Base64 save code below to restore your character:
             </p>
             <textarea id="savecode-paste-text" placeholder="Paste Base64 save code here..." class="retro-input" style="width: 100%; height: 140px; font-family: 'Consolas', 'Courier New', monospace; font-size: 11px; resize: vertical; word-break: break-all; margin-bottom: 8px;"></textarea>
@@ -85,7 +85,7 @@ export class SaveCodeModal {
           </div>
 
           <div class="retro-statusbar" style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
-            <span id="savecode-status" style="font-size: 11px; color: #1e3a8a;">Ready.</span>
+            <span id="savecode-status" style="font-size: 11px; color: #a3aec2;">Ready.</span>
             <button id="btn-savecode-close" class="win-btn" style="padding: 2px 10px;">Close</button>
           </div>
         </div>
@@ -115,9 +115,9 @@ export class SaveCodeModal {
       if (this.copyTextarea?.value) {
         const ok = await copyTextToClipboard(this.copyTextarea.value);
         if (ok) {
-          this.setStatus('Save code copied to clipboard! 📋', '#15803d');
+          this.setStatus('Save code copied to clipboard! 📋', '#4ade80');
         } else {
-          this.setStatus('Failed to copy. Please manually select all and copy.', '#b91c1c');
+          this.setStatus('Failed to copy. Please manually select all and copy.', '#f87171');
         }
       }
     });
@@ -157,18 +157,18 @@ export class SaveCodeModal {
         this.setStatus(`Save code ready (${envelope.data.profile.name}, Floor ${envelope.data.currentFloor ?? 0}).`);
       } catch (err) {
         this.copyTextarea.value = '';
-        this.setStatus(`Failed to encode save: ${(err as Error).message}`, '#b91c1c');
+        this.setStatus(`Failed to encode save: ${(err as Error).message}`, '#f87171');
       }
     } else if (this.copyTextarea) {
       this.copyTextarea.value = 'No active character selected to export.';
-      this.setStatus('Select a character to generate save code.', '#6b7280');
+      this.setStatus('Select a character to generate save code.', '#a3aec2');
     }
   }
 
   private handleRestore(): void {
     const raw = this.pasteTextarea?.value?.trim();
     if (!raw) {
-      this.setStatus('Please paste a save code first.', '#b91c1c');
+      this.setStatus('Please paste a save code first.', '#f87171');
       return;
     }
 
@@ -179,13 +179,13 @@ export class SaveCodeModal {
       const proceedWithImport = () => {
         try {
           const profile = this.options.profileManager.importHero(jsonStr);
-          this.setStatus(`Restored character ${profile.name} successfully!`, '#15803d');
+          this.setStatus(`Restored character ${profile.name} successfully!`, '#4ade80');
           if (this.options.onRestored) {
             this.options.onRestored(profile);
           }
           setTimeout(() => this.close(), 750);
         } catch (err) {
-          this.setStatus(`Import failed: ${(err as Error).message}`, '#b91c1c');
+          this.setStatus(`Import failed: ${(err as Error).message}`, '#f87171');
         }
       };
 
@@ -197,18 +197,18 @@ export class SaveCodeModal {
           heroName: envelope.data.profile.name,
           onConfirm: proceedWithImport,
           onCancel: () => {
-            this.setStatus('Restore cancelled due to manifest mismatch.', '#b91c1c');
+            this.setStatus('Restore cancelled due to manifest mismatch.', '#f87171');
           },
         });
       } else {
         proceedWithImport();
       }
     } catch (err) {
-      this.setStatus(`Invalid save code: ${(err as Error).message}`, '#b91c1c');
+      this.setStatus(`Invalid save code: ${(err as Error).message}`, '#f87171');
     }
   }
 
-  public setStatus(msg: string, color = '#1e3a8a'): void {
+  public setStatus(msg: string, color = '#a3aec2'): void {
     if (this.statusEl) {
       this.statusEl.textContent = msg;
       this.statusEl.style.color = color;

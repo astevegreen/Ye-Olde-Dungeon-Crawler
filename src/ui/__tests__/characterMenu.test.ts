@@ -131,6 +131,7 @@ class MockTab implements MenuTab {
   public activatedState: GameState | null = null;
   public unmounted = false;
   public handledKeys: string[] = [];
+  public claimsTabKey?: boolean;
 
   constructor(id: string, label: string, hotkeyActionId?: string) {
     this.id = id;
@@ -286,6 +287,23 @@ describe('CharacterMenuModal & Consolidated Character Menu', () => {
 
     menu.handleKeyDown(tabBackward);
     expect(menu.activeTabId).toBe('character');
+  });
+
+  it('a tab that claims Tab keeps it until it declines, then Tab moves on to the next tab', () => {
+    tab1.claimsTabKey = true;
+    tab1.handledKeys = ['Tab']; // still panels to step through
+    menu.open('inventory');
+
+    expect(menu.handleKeyDown(makeKey('Tab', 'Tab', false))).toBe(true);
+    expect(menu.activeTabId).toBe('inventory');
+
+    tab1.handledKeys = []; // on its last panel, it declines
+    menu.handleKeyDown(makeKey('Tab', 'Tab', false));
+    expect(menu.activeTabId).toBe('character');
+
+    // Tabs that do not claim it cycle as before.
+    menu.handleKeyDown(makeKey('Tab', 'Tab', false));
+    expect(menu.activeTabId).toBe('spellbook');
   });
 
   it('active tab gets first refusal; unhandled keys do not leak through to simulation', () => {

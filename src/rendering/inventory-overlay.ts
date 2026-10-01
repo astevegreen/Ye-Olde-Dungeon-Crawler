@@ -10,6 +10,8 @@ import { resolveThemeTokens } from './theme';
 import type { ThemeTokens } from '../engine';
 import { PaperdollView } from './paperdoll-view';
 import { ItemInspector, getItemThematicColor } from '../ui/inventory/itemInspector';
+import { formatLoad, formatWeight } from '../ui/units';
+import { formatCurrency } from '../engine';
 import { type GameCommand, type GameCommandBus } from '../engine';
 import { COIN_COLORS, parseCoinItem, type ContainerSortMode } from '../engine';
 import type { UIModal } from '../ui/modalStack';
@@ -998,9 +1000,14 @@ export class InventoryOverlay implements UIModal {
       return true;
     }
 
-    // 2. Tab: cycle panels
+    // 2. Tab / Shift+Tab: step through panels. Inside the character menu (a KeyboardEvent
+    //    from its tab adapter), stepping past the last panel, or before the first, is left
+    //    to the menu, which moves on to the neighbouring tab.
     if (code === 'Tab') {
-      this.inspector.cyclePanel(true);
+      const inMenu = typeof eOrCode !== 'string';
+      const forward = !(inMenu && eOrCode.shiftKey);
+      if (inMenu && this.inspector.atPanelEdge(forward)) return false;
+      this.inspector.cyclePanel(forward);
       const panel = this.inspector.focusedPanel;
       if (panel === 'paperdoll') {
         const slots = doll.getSlotDefinitions();
@@ -2305,7 +2312,7 @@ export class InventoryOverlay implements UIModal {
 
     // Weight Meter
     ctx.fillStyle = theme.textMuted;
-    ctx.fillText(`CARRY WEIGHT: ${totalWeight} / ${maxWeight}g`, col1X, statsY + 36);
+    ctx.fillText(`CARRY WEIGHT: ${formatLoad(totalWeight, maxWeight)}`, col1X, statsY + 36);
 
     ctx.fillStyle = encColor;
     ctx.fillText(
@@ -2566,7 +2573,7 @@ export class InventoryOverlay implements UIModal {
     const useRich = this.richHoverCardsEnabled;
     if (!useRich) {
       ctx.font = `bold 13px ${font}`;
-      const text = `${displayName} (${totalWeight}g)`;
+      const text = `${displayName} (${formatWeight(totalWeight)})`;
       const textWidth = ctx.measureText(text).width;
       const boxW = textWidth + 20;
       const boxH = 26;
@@ -2644,8 +2651,8 @@ export class InventoryOverlay implements UIModal {
     }
 
     // Weight and Value
-    const valText = item.identified ? `  |  Value: ${item.value * item.quantity}g` : '';
-    lines.push({ text: `Weight: ${totalWeight}g${valText}`, color: theme.textMuted, font: `11px ${font}` });
+    const valText = item.identified ? `  |  Value: ${formatCurrency(item.value * item.quantity)}` : '';
+    lines.push({ text: `Weight: ${formatWeight(totalWeight)}${valText}`, color: theme.textMuted, font: `11px ${font}` });
 
     // Sized to its widest line so nothing clips; kept on the canvas whichever side it flips to.
     const lineH = 17;

@@ -193,7 +193,7 @@ describe('KeybindModal', () => {
 
     const html = modalEl!.innerHTML;
     // Exact user requirement text check
-    expect(html).toContain('Standard (NumPad &amp; Vi-Keys)');
+    expect(html).toContain('Standard (Arrows, NumPad, WASD, H J K Y N)');
     expect(html).toContain('Micro-Debounce Buffer (Arrow-Key Chording)');
     expect(html).toContain('The \'Hover Ring\' (Mouse Vectoring)');
   });

@@ -322,6 +322,27 @@ export class InputHandler {
     this.destroy();
   }
 
+  /** Opens the F1 help card for the current context, on the modal stack (§6). */
+  public openContextHelp(): void {
+    const help = this.contextHelp;
+    if (!help || help.isOpen) return;
+    help.open(this.engine, this.inventoryOverlay, this.targetingOverlay, this.shopOverlay, this.inspectOverlay, this.mapOverlay);
+    this.modalStack.push({
+      id: 'context_help',
+      get isOpen() { return help.isOpen; },
+      set isOpen(val: boolean) { if (!val) help.close(); },
+      handleKeyDown: (ke: KeyboardEvent) => {
+        if (ke.code === 'F1' || ke.code === 'Escape' || (ke.code === 'Slash' && !ke.shiftKey)) {
+          help.close();
+          this.modalStack.remove('context_help');
+          return true;
+        }
+        return false;
+      },
+      close: () => { help.close(); },
+    });
+  }
+
   public toggleCharacterMenu(tabId: string = 'character'): void {
     if (!this.characterMenuModal) return;
     if (this.characterMenuModal.isOpen && this.characterMenuModal.activeTabId === tabId) {
@@ -553,32 +574,11 @@ export class InputHandler {
     // Hotkey: Smart F1 Context Help (F1 or Slash) - can be opened globally over any active modal
     if (code === 'F1' || (code === 'Slash' && !e.shiftKey)) {
       if (this.contextHelp) {
-        this.contextHelp.toggle(
-          this.engine,
-          this.inventoryOverlay,
-          this.targetingOverlay,
-          this.shopOverlay,
-          this.inspectOverlay,
-          this.mapOverlay
-        );
         if (this.contextHelp.isOpen) {
-          const self = this;
-          this.modalStack.push({
-            id: 'context_help',
-            get isOpen() { return self.contextHelp?.isOpen ?? false; },
-            set isOpen(val: boolean) { if (!val) self.contextHelp?.close(); },
-            handleKeyDown: (ke: KeyboardEvent) => {
-              if (ke.code === 'F1' || ke.code === 'Escape' || (ke.code === 'Slash' && !ke.shiftKey)) {
-                self.contextHelp?.close();
-                self.modalStack.remove('context_help');
-                return true;
-              }
-              return false;
-            },
-            close: () => { self.contextHelp?.close(); },
-          });
-        } else {
+          this.contextHelp.close();
           this.modalStack.remove('context_help');
+        } else {
+          this.openContextHelp();
         }
         return true;
       }

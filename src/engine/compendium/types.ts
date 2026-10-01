@@ -48,7 +48,8 @@ export const MASTERY_PERKS: Record<MasteryPerkId, MasteryPerkInfo> = {
     name: 'Essence Siphon',
     icon: '✨',
     tagline: 'Draw vitality from the dying breath.',
-    description: 'Each kill restores 10% Max HP and 10% Max Mana, and refunds half a turn of energy.',
+    // {mana} is the pack's spell-resource name, filled in where the text is shown.
+    description: 'Each kill restores 10% Max HP and 10% Max {mana}, and refunds half a turn of energy.',
   },
   plunderer: {
     id: 'plunderer',

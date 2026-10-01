@@ -167,17 +167,17 @@ export class KeybindModal implements UIModal {
         <div class="retro-window-body" style="padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto;">
           <!-- 1. Movement Systems & Guide Panel -->
           <fieldset class="retro-group" style="padding: 10px 12px;">
-            <legend style="font-weight: bold; color: #1e3a8a;">🧭 Movement Modes &amp; Ergonomics</legend>
+            <legend style="font-weight: bold; color: var(--ui-accent);">🧭 Movement Modes &amp; Ergonomics</legend>
 
             <div style="display: flex; flex-direction: column; gap: 10px;">
               <!-- Standard Movement -->
               <div class="movement-mode-card" style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 10px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-size: 13px; font-weight: bold; color: #0f172a;">1. Standard (NumPad &amp; Vi-Keys)</span>
+                  <span style="font-size: 13px; font-weight: bold; color: #0f172a;">1. Standard (Arrows, NumPad, WASD, H J K Y N)</span>
                   <span id="badge-standard-mode" class="storage-badge-pill" style="font-size: 10px; padding: 2px 6px;">0ms Latency</span>
                 </div>
                 <p style="font-size: 11px; color: #475569; margin-top: 4px; line-height: 1.4;">
-                  Instant cardinal arrow keys &amp; 8-directional Numpad (0ms input latency). Best for desktop keyboards with a full number pad. <b>You can also just click a tile</b> — click adjacent to step or attack, or click farther away to auto-pathfind there. This already works; it isn't limited to the Hover Ring toggle below.
+                  Instant cardinal arrow keys &amp; 8-directional Numpad (0ms input latency). W A D and H J K Y N also move; S, L, U and B stay Search, Look, Level-up and Bestiary. Rebind any of them below. <b>You can also just click a tile</b> — click adjacent to step or attack, or click farther away to auto-pathfind there. This already works; it isn't limited to the Hover Ring toggle below.
                 </p>
               </div>
 
@@ -239,7 +239,7 @@ export class KeybindModal implements UIModal {
 
           <!-- 2. Keybinding Remapper Panel -->
           <fieldset class="retro-group" style="padding: 10px 12px; flex: 1;">
-            <legend style="font-weight: bold; color: #1e3a8a;">⌨️ Keybinding Remapper</legend>
+            <legend style="font-weight: bold; color: var(--ui-accent);">⌨️ Keybinding Remapper</legend>
 
             <!-- Category Filter Tabs -->
             <div style="display: flex; gap: 4px; margin-bottom: 8px;">

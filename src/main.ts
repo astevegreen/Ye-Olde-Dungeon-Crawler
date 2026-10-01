@@ -961,11 +961,7 @@ window.addEventListener('DOMContentLoaded', () => {
       keybindModal.open();
     },
     onOpenHelp: () => {
-      // The codex is the character menu's Bestiary tab in game, as on every other path to it.
-      if (activeEngine && characterMenuModal) {
-        if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-        characterMenuModal.open('bestiary');
-      }
+      inputHandler?.openContextHelp();
     },
     onOpenSaveCode: openSaveCode,
   });
@@ -1497,8 +1493,8 @@ window.addEventListener('DOMContentLoaded', () => {
         contextHelp.open(eng, renderer?.inventoryOverlay, renderer?.targetingOverlay, renderer?.shopOverlay, renderer?.inspectOverlay);
         renderer?.render();
       },
-      help: (eng) => {
-        contextHelp.open(eng, renderer?.inventoryOverlay, renderer?.targetingOverlay, renderer?.shopOverlay, renderer?.inspectOverlay);
+      help: () => {
+        inputHandler?.openContextHelp();
       },
       'quick-loot': (eng) => {
         const act = new QuickLootAction(eng.player);
@@ -1937,11 +1933,7 @@ window.addEventListener('DOMContentLoaded', () => {
       keybindModal.open();
     },
     onOpenHelp: () => {
-      if (activeEngine) {
-        compendiumModal.open(activeEngine);
-      } else {
-        keybindModal.open();
-      }
+      contextHelp.openGuide(activeManifest);
     },
     onOpenFeedback: () => {
       toggleFeedback();

@@ -148,7 +148,7 @@
       .retro-label {
         font-size: 12px;
         font-weight: bold;
-        color: #1f2937;
+        color: #a3aec2;
       }
 
       .retro-inset-list {
@@ -281,7 +281,7 @@
         padding: 0 4px;
         font-size: 11px;
         font-weight: bold;
-        color: #1e3a8a;
+        color: var(--ui-accent);
       }
 
       .retro-input {
@@ -307,7 +307,7 @@
 
       .preset-label {
         font-size: 10px;
-        color: #4b5563;
+        color: #a3aec2;
       }
 
       .preset-tag {
@@ -326,7 +326,7 @@
 
       .retro-note {
         font-size: 11px;
-        color: #374151;
+        color: #a3aec2;
         margin-bottom: 6px;
       }
 
@@ -345,7 +345,7 @@
 
       .version-tag {
         font-weight: bold;
-        color: #4b5563;
+        color: #a3aec2;
       }
 
       /* Stat Roller & Valhalla styling */

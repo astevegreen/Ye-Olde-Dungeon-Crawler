@@ -117,7 +117,7 @@ export class SaveQuitModal implements UIModal {
               </button>
             </div>
 
-            <button id="btn-savequit-save-exit" class="win-btn" style="padding: 8px 10px; font-weight: bold; font-size: 13px; color: #7f1d1d; border-color: #f87171;">
+            <button id="btn-savequit-save-exit" class="win-btn" style="padding: 8px 10px; font-weight: bold; font-size: 13px; color: #fca5a5; border-color: #f87171;">
               🚪 Save &amp; Exit to Title
             </button>
           </div>
@@ -185,7 +185,7 @@ export class SaveQuitModal implements UIModal {
   private handleExportCotw(): void {
     const envelope = this.getCurrentEnvelope();
     if (!envelope) {
-      this.setStatus('Error: No active game state to export.', '#b91c1c');
+      this.setStatus('Error: No active game state to export.', '#f87171');
       return;
     }
 
@@ -197,9 +197,9 @@ export class SaveQuitModal implements UIModal {
       const filename = generateSaveFilename(heroName, floor, manifestId, envelope.timestamp);
 
       triggerSaveDownload(filename, jsonContent);
-      this.setStatus(`Exported ${filename} successfully! 💾`, '#15803d');
+      this.setStatus(`Exported ${filename} successfully! 💾`, '#4ade80');
     } catch (err) {
-      this.setStatus(`Export failed: ${(err as Error).message}`, '#b91c1c');
+      this.setStatus(`Export failed: ${(err as Error).message}`, '#f87171');
     }
   }
 
@@ -233,7 +233,7 @@ export class SaveQuitModal implements UIModal {
     }
   }
 
-  public setStatus(msg: string, color = '#334155'): void {
+  public setStatus(msg: string, color = '#a3aec2'): void {
     if (this.statusEl) {
       this.statusEl.textContent = msg;
       this.statusEl.style.color = color;

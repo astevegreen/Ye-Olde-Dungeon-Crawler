@@ -13,6 +13,7 @@ import type { SpriteAtlas } from './atlas/sprite-atlas';
 import { getItemSpriteKey, getEntitySpriteKey } from './atlas/sprite-mapper';
 import { resolveThemeTokens, type ThemeTokens } from './theme';
 import { getItemThematicColor } from '../ui/inventory/itemInspector';
+import { formatWeight } from '../ui/units';
 import type { ClickZone, ShopPanelBounds, ShopPanelContext } from './shop/types';
 import {
   renderTempleServices,
@@ -670,7 +671,7 @@ export class ShopOverlay {
       // Weight & Bulk
       ctx.font = `10px ${font}`;
       ctx.fillStyle = isSelected ? theme.titlebarText : theme.textMuted;
-      ctx.fillText(`${item.weight}g / ${item.bulk}cm³`, modalX + 320, rowY + 12);
+      ctx.fillText(`${formatWeight(item.weight)} / ${item.bulk}cm³`, modalX + 320, rowY + 12);
 
       // Price
       ctx.font = `bold 11px ${font}`;
@@ -709,7 +710,7 @@ export class ShopOverlay {
       ctx.font = `bold 11px ${font}`;
       ctx.fillStyle = getItemThematicColor(activeItem, theme);
       ctx.textAlign = 'left';
-      ctx.fillText(`${activeItem.displayName} [${activeItem.category}] - ${activeItem.weight}g / ${activeItem.bulk}cm³`, modalX + 18, inspectY + 14);
+      ctx.fillText(`${activeItem.displayName} [${activeItem.category}] - ${formatWeight(activeItem.weight)} / ${activeItem.bulk}cm³`, modalX + 18, inspectY + 14);
 
       ctx.font = `10px ${font}`;
       ctx.fillStyle = theme.textMuted;

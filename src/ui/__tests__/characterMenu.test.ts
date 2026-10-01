@@ -650,11 +650,13 @@ describe('CharacterTab stat allocation and attribute milestone surfacing', () =>
 
     expect(container.innerHTML).toContain('Strength');
     expect(container.innerHTML).toContain('Dexterity');
-    expect(container.innerHTML).toContain('2 Point(s) Available');
-    // DEX 15 is at threshold -> Ready to Unlock
-    expect(container.innerHTML).toContain('[Ready to Unlock]');
+    expect(container.innerHTML).toContain('points left to spend');
+    // Previews come from the engine's formulas: 2.5 kg of carry per Strength
+    expect(container.innerHTML).toContain('Carry 35 kg');
+    // DEX 15 is at threshold -> Ready
+    expect(container.innerHTML).toContain('<span class="ch-tag">Ready</span>');
     // STR 14 is below threshold -> Locked
-    expect(container.innerHTML).toContain('[Locked]');
+    expect(container.innerHTML).toContain('<span class="ch-tag">Locked</span>');
     expect(container.innerHTML).toContain('Progress: 14 / 15');
 
     // Number keys do not allocate attributes (prevents accidental movement allocations)
@@ -669,7 +671,8 @@ describe('CharacterTab stat allocation and attribute milestone surfacing', () =>
     expect(handled).toBe(true);
     expect(engine.player.strength).toBe(14);
     expect(engine.player.unspentStatPoints).toBe(2);
-    expect(container.innerHTML).toContain('Planned: +1 STR');
+    expect(container.innerHTML).toContain('Carry 35 → <span class="ui-up">37.5 kg</span>');
+    expect(container.innerHTML).toContain('If you accept');
 
     // Enter locks the planned point in
     expect(charTab.handleKeyDown(makeKey('Enter', 'Enter'))).toBe(true);
@@ -693,7 +696,7 @@ describe('CharacterTab stat allocation and attribute milestone surfacing', () =>
     charTab.mount(container);
     charTab.onActivate(createMockGameState(engine));
 
-    expect(container.innerHTML).toContain('0 Points Available');
+    expect(container.innerHTML).toContain('You earn more each time you level up.');
 
     // Pressing allocation hotkey does nothing when 0 points available
     const keyS = makeKey('S', 'KeyS');

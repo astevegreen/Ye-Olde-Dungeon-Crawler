@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { RuneOfReturnDiscoveryModal } from '../runeOfReturnDiscoveryModal';
-import { RuneOfReturnTreeModal } from '../runeOfReturnTreeModal';
+import { CharacterTab } from '../characterMenu/characterTab';
 import { GameEngine, GameMap, Player } from '../../engine';
 import { RuneOfReturnItem } from '../../engine';
-import { ModalStackManager } from '../modalStack';
 
 class MockElement {
   public id: string = '';
@@ -95,7 +94,7 @@ function makeKey(key: string, code?: string): KeyboardEvent {
   } as unknown as KeyboardEvent;
 }
 
-describe('RuneOfReturnDiscoveryModal & RuneOfReturnTreeModal', () => {
+describe('RuneOfReturnDiscoveryModal & the Rune of Return ranks', () => {
   let mockDoc: MockDocument;
   let originalDocument: any;
   let engine: GameEngine;
@@ -185,94 +184,104 @@ describe('RuneOfReturnDiscoveryModal & RuneOfReturnTreeModal', () => {
     });
   });
 
-  describe('RuneOfReturnTreeModal', () => {
-    it('initializes in closed state and creates overlay DOM', () => {
-      const modal = new RuneOfReturnTreeModal();
-      expect(modal.isOpen).toBe(false);
-      const el = mockDoc.getElementById('rune-of-return-tree-modal');
-      expect(el).not.toBeNull();
-      expect(el?.style.display).toBe('none');
+  describe('Rune of Return ranks on the Character tab', () => {
+    const openTab = (): { tab: CharacterTab; container: MockElement } => {
+      const tab = new CharacterTab();
+      const container = new MockElement();
+      tab.mount(container as unknown as HTMLElement);
+      tab.onActivate({
+        engine,
+        worldState: engine.worldState,
+        player: engine.player,
+        map: engine.map,
+        currentFloor: engine.currentFloor,
+        turnCount: engine.turnCount,
+        manifest: engine.manifest,
+      });
+      return { tab, container };
+    };
+
+    beforeEach(() => {
+      engine.player.hasDiscoveredRune = true;
     });
 
-    it('opens and renders all 3 mastery tracks with unspent points', () => {
-      const modal = new RuneOfReturnTreeModal();
-      modal.open(engine);
-      expect(modal.isOpen).toBe(true);
-
-      const el = mockDoc.getElementById('rune-of-return-tree-modal');
-      expect(el?.style.display).toBe('flex');
-      expect(el?.innerHTML).toContain('Channel Celerity');
-      expect(el?.innerHTML).toContain('Steadfast Weave');
-      expect(el?.innerHTML).toContain('Unbound Casting');
-      expect(el?.innerHTML).toContain('Unspent Stat Points:');
-      expect(el?.innerHTML).toContain('Return Anchor:');
-      expect(el?.innerHTML).toContain('3/3');
+    it('shows all three tracks beside the attributes that spend the same points', () => {
+      const { container } = openTab();
+      expect(container.innerHTML).toContain('Also spends points');
+      expect(container.innerHTML).toContain('Channel Celerity');
+      expect(container.innerHTML).toContain('Steadfast Weave');
+      expect(container.innerHTML).toContain('Unbound Casting');
+      expect(container.innerHTML).toContain('Recalls to');
+      expect(container.innerHTML).toContain('Ranks learned');
+      expect(container.innerHTML).toContain('3 / 3');
+      expect(container.innerHTML).toContain('Thrain the Rune-Smith');
     });
 
-    it('allocates points into tracks via number keys 1, 2, 3', () => {
-      const modal = new RuneOfReturnTreeModal();
-      modal.open(engine);
+    it('stays hidden until the rune is discovered, and 1-3 then fall through', () => {
+      engine.player.hasDiscoveredRune = false;
+      const { tab, container } = openTab();
+      expect(container.innerHTML).not.toContain('Channel Celerity');
+      expect(tab.handleKeyDown(makeKey('1', 'Digit1'))).toBe(false);
+    });
 
-      // Allocate Celerity (1)
-      expect(engine.player.runeMastery.celerityPoints).toBe(0);
-      modal.handleKeyDown(makeKey('1', 'Digit1'));
-      expect(engine.player.runeMastery.celerityPoints).toBe(1);
-      expect(engine.player.unspentStatPoints).toBe(4);
+    it('plans ranks on 1, 2, 3 and spends them through allocateRuneMastery on accept', () => {
+      const { tab } = openTab();
+      tab.handleKeyDown(makeKey('1', 'Digit1'));
+      tab.handleKeyDown(makeKey('2', 'Digit2'));
+      tab.handleKeyDown(makeKey('3', 'Digit3'));
+      // Unbound Casting has one rank: a second can't be planned
+      expect(tab.handleKeyDown(makeKey('3', 'Digit3'))).toBe(false);
 
-      // Allocate Weave (2)
-      expect(engine.player.runeMastery.weavePoints).toBe(0);
-      modal.handleKeyDown(makeKey('2', 'Digit2'));
-      expect(engine.player.runeMastery.weavePoints).toBe(1);
-      expect(engine.player.unspentStatPoints).toBe(3);
+      // Nothing is spent until accept
+      expect(engine.player.runeMastery).toEqual({ celerityPoints: 0, weavePoints: 0, mobilityPoints: 0 });
+      expect(engine.player.unspentStatPoints).toBe(5);
 
-      // Allocate Mobility (3)
-      expect(engine.player.runeMastery.mobilityPoints).toBe(0);
-      modal.handleKeyDown(makeKey('3', 'Digit3'));
-      expect(engine.player.runeMastery.mobilityPoints).toBe(1);
+      expect(tab.accept()).toBe(true);
+      expect(engine.player.runeMastery).toEqual({ celerityPoints: 1, weavePoints: 1, mobilityPoints: 1 });
       expect(engine.player.unspentStatPoints).toBe(2);
-
-      // Mobility is capped at 1 point max (binary)
-      modal.handleKeyDown(makeKey('3', 'Digit3'));
-      expect(engine.player.runeMastery.mobilityPoints).toBe(1);
-      expect(engine.player.unspentStatPoints).toBe(2);
     });
 
-    it('respects track caps and does not allocate without points', () => {
+    it('plans nothing without points', () => {
       engine.player.unspentStatPoints = 0;
-      const modal = new RuneOfReturnTreeModal();
-      modal.open(engine);
-
-      const allocated = modal.allocate('celerity');
-      expect(allocated).toBe(false);
+      const { tab } = openTab();
+      expect(tab.allocate('celerity')).toBe(false);
       expect(engine.player.runeMastery.celerityPoints).toBe(0);
     });
 
-    it('enforces total 7-point cap across all tracks', () => {
+    it('enforces the 7-rank cap across all tracks', () => {
       engine.player.unspentStatPoints = 10;
-      engine.player.runeMastery = {
-        celerityPoints: 3,
-        weavePoints: 3,
-        mobilityPoints: 1,
-      };
-      const modal = new RuneOfReturnTreeModal();
-      modal.open(engine);
-
-      const allocated = modal.allocate('celerity');
-      expect(allocated).toBe(false);
-      expect(engine.player.unspentStatPoints).toBe(10);
+      engine.player.runeMastery = { celerityPoints: 3, weavePoints: 2, mobilityPoints: 1 };
+      const { tab } = openTab();
+      expect(tab.allocate('weave')).toBe(true);
+      expect(tab.allocate('weave')).toBe(false); // weave is at 3
+      expect(tab.allocate('celerity')).toBe(false); // celerity is at 3, and the tree at 7
+      tab.accept();
+      expect(engine.player.unspentStatPoints).toBe(9);
     });
 
-    it('closes on Escape and updates modalStack', () => {
-      const modalStack = new ModalStackManager();
-      const modal = new RuneOfReturnTreeModal();
-      modal.setModalStack(modalStack);
-      modal.open(engine);
-      modalStack.push(modal);
-
-      expect(modalStack.isEmpty()).toBe(false);
-      modal.handleKeyDown(makeKey('Escape'));
-      expect(modal.isOpen).toBe(false);
-      expect(modalStack.isEmpty()).toBe(true);
+    it('marks the ranks when opened from a "rune tree" entry point', () => {
+      const tab = new CharacterTab();
+      tab.focusRuneSection();
+      const container = new MockElement();
+      const marked: string[] = [];
+      container.querySelector = (selector: string) => {
+        const el = new MockElement();
+        el.className = selector.slice(1);
+        marked.push(selector);
+        Object.defineProperty(el, 'className', { set: (v: string) => marked.push(v), get: () => 'ch-rune' });
+        return el;
+      };
+      tab.mount(container as unknown as HTMLElement);
+      tab.onActivate({
+        engine,
+        worldState: engine.worldState,
+        player: engine.player,
+        map: engine.map,
+        currentFloor: engine.currentFloor,
+        turnCount: engine.turnCount,
+        manifest: engine.manifest,
+      });
+      expect(marked).toEqual(['.ch-rune', 'ch-rune ui-glow']);
     });
   });
 });

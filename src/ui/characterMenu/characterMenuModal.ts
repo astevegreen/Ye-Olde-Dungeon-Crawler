@@ -4,6 +4,7 @@ import type { MenuFooter, MenuHost, MenuTab } from './menuTab';
 import type { ViewportManager } from '../../rendering/viewport';
 import { keyLabel } from '../keyLabel';
 import { resolveBranding } from '../branding';
+import { escapeHtml, keyChip as chip } from '../html';
 
 /** Default keys per ACTION_METADATA id, for shells built without a key resolver (tests). */
 const DEFAULT_TAB_CODES: Record<string, string[]> = {
@@ -19,10 +20,6 @@ const DEFAULT_TAB_CODES: Record<string, string[]> = {
  *  tab strip sits exactly over it while that tab is active. */
 const CANVAS_TITLEBAR_H = 30;
 
-const escapeHtml = (s: string): string =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-const chip = (key: string): string => `<span class="ui-key">${escapeHtml(key)}</span>`;
 
 /**
  * The character menu (ARCHITECTURE.md §3, §6; ADR-0011): one shell for Inventory,

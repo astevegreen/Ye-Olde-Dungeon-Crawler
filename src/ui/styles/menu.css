@@ -267,3 +267,101 @@
   to { box-shadow: 0 0 0 0 transparent, 0 0 0 transparent; }
 }
 .ui-glow { animation: ui-glow var(--ui-dur-reward) ease-out 1; }
+
+/* ---- Character tab (identity · allocation · what changes) ------------------ */
+
+.ch-grid { grid-template-columns: minmax(240px, 300px) minmax(0, 1fr) minmax(260px, 340px); }
+.ch-name { font: bold var(--ui-text-xl) var(--ui-font-display); color: var(--ui-title); }
+.ch-xp { display: flex; justify-content: space-between; margin: var(--ui-space-3) 0 var(--ui-space-1); }
+.ch-subh { margin-top: var(--ui-space-3); }
+
+.ch-points {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-3);
+  padding: 10px 14px;
+  background: var(--ui-accent-soft);
+  border: 1px solid var(--ui-accent);
+  border-radius: var(--ui-radius);
+}
+.ch-points > b { font: bold var(--ui-text-2xl) var(--ui-font-num); color: var(--ui-accent); min-width: 1.2em; text-align: center; }
+.ch-points-title { font-weight: bold; }
+.ch-points.is-empty { background: var(--ui-surface-2); border-color: var(--ui-line); }
+.ch-points.is-empty > b { color: var(--ui-text-faint); }
+
+.ch-attrs { padding: 0; }
+.ch-attr {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: var(--ui-space-1) 14px;
+  align-items: center;
+  padding: var(--ui-space-3) 14px;
+}
+.ch-attr + .ch-attr { border-top: 1px solid var(--ui-line); }
+.ch-attr-key {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  font: bold var(--ui-text-lg) var(--ui-font-num);
+  color: var(--ui-accent);
+  border: 1px solid var(--ui-accent);
+  border-radius: var(--ui-radius);
+}
+.ch-attr-name { font: bold var(--ui-text-lg) var(--ui-font-display); }
+.ch-attr-val { font: bold var(--ui-text-xl) var(--ui-font-num); }
+.ch-attr-prev { font-size: var(--ui-text-sm); color: var(--ui-text); }
+
+.ch-ctl { display: flex; align-items: center; gap: var(--ui-space-2); }
+.ch-pm {
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font: bold var(--ui-text-lg) var(--ui-font-num);
+  color: var(--ui-text-muted);
+  background: var(--ui-surface-3);
+  border: 1px solid var(--ui-line-strong);
+  border-radius: var(--ui-radius);
+  cursor: pointer;
+}
+.ch-pm.is-add { color: var(--ui-accent-ink); background: var(--ui-accent); border-color: var(--ui-accent); }
+.ch-pm:disabled { opacity: 0.35; cursor: default; }
+.ch-pm:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 1px; }
+.ch-planned { min-width: 30px; text-align: center; font-weight: bold; color: var(--ui-good); }
+
+.ch-milestone { padding: var(--ui-space-2) 0; }
+.ch-milestone + .ch-milestone { border-top: 1px solid var(--ui-line); }
+.ch-milestone-head { display: flex; justify-content: space-between; gap: var(--ui-space-2); font-weight: bold; }
+.ch-tag {
+  flex: none;
+  font: bold var(--ui-text-xs) var(--ui-font-num);
+  padding: 0 6px;
+  border: 1px solid var(--ui-line-strong);
+  border-radius: var(--ui-radius);
+  color: var(--ui-text-muted);
+}
+.ch-milestone.is-ready .ch-tag { color: var(--ui-accent); border-color: var(--ui-accent); }
+.ch-milestone.is-done .ch-tag { color: var(--ui-good); border-color: var(--ui-good); }
+
+.ch-diff dd .ui-faint { margin-right: var(--ui-space-1); }
+
+.ch-track {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: var(--ui-space-1) 10px;
+  align-items: center;
+  padding: var(--ui-space-2) 0;
+}
+.ch-track + .ch-track { border-top: 1px solid var(--ui-line); }
+.ch-track-name { font-weight: bold; display: flex; align-items: center; gap: var(--ui-space-2); }
+.ch-pips { display: flex; gap: 3px; }
+.ch-pips i { width: 10px; height: 10px; border: 1px solid var(--ui-info); border-radius: 50%; }
+.ch-pips i.on { background: var(--ui-info); }
+.ch-pips i.plan { background: var(--ui-good); border-color: var(--ui-good); }
+.ch-rune .ch-pm { width: 26px; height: 26px; }
+.ch-rune-facts { margin: var(--ui-space-2) 0; padding-top: var(--ui-space-2); border-top: 1px solid var(--ui-line); }
+/* With nothing planned the line previews the next rank, unhighlighted. */
+.ch-track .is-next .ui-up { color: inherit; font-weight: normal; }

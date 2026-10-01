@@ -643,13 +643,11 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
         engine.compendium.recordKill('miniboss_maw_herald', 'Víðnir, Herald of the Wyrm');
       }
 
-      // Dismiss Level Up modal if kill triggered level up, so movement is accepted
+      // A level-up from the kill opens the Character tab; close the menu so movement is accepted.
       const handler = (window as any).__cotwInputHandler;
-      if (handler?.modalStack?.has('level-up-modal')) {
-        handler.modalStack.remove('level-up-modal');
+      if (handler?.modalStack?.has('character-menu')) {
+        handler.modalStack.remove('character-menu');
       }
-      const lvlEl = document.getElementById('level-up-modal');
-      if (lvlEl) lvlEl.style.display = 'none';
 
       window.focus();
 

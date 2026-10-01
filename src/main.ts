@@ -62,10 +62,8 @@ import { applyThemeTokens } from './rendering/theme';
 import { ChoiceModal } from './ui/choiceModal';
 import { AltarModal } from './ui/altarModal';
 import { PactModal } from './ui/pactModal';
-import { LevelUpModal } from './ui/levelUpModal';
 import { MasteryChoiceModal } from './ui/masteryChoiceModal';
 import { RuneOfReturnDiscoveryModal } from './ui/runeOfReturnDiscoveryModal';
-import { RuneOfReturnTreeModal } from './ui/runeOfReturnTreeModal';
 import { AutoRestRunner } from './ui/autoRestRunner';
 import { NavigationController } from './ui/navigation';
 import { cotwManifest } from './content/cotw';
@@ -186,15 +184,6 @@ window.addEventListener('DOMContentLoaded', () => {
   });
   const altarModal = new AltarModal();
   const pactModal = new PactModal();
-  const levelUpModal = new LevelUpModal(() => {
-    popModal(levelUpModal.id);
-    renderer?.render();
-    showPendingMastery();
-  });
-  const runeTreeModal = new RuneOfReturnTreeModal(() => {
-    popModal(runeTreeModal.id);
-    renderer?.render();
-  });
   const runeDiscoveryModal = new RuneOfReturnDiscoveryModal({
     onClose: () => {
       popModal(runeDiscoveryModal.id);
@@ -209,11 +198,12 @@ window.addEventListener('DOMContentLoaded', () => {
     popModal(masteryModal.id);
     renderer?.render();
   });
-  /** Shows queued mastery-perk choices once no modal drawn above them (level-up, rune
-   *  discovery) is open, so the visible window is always the one taking keys. */
+  /** Shows queued mastery-perk choices once no dialog drawn above them (rune discovery) is
+   *  open, so the visible window is always the one taking keys. The mastery dialog draws
+   *  over the character menu, so a level-up opening it doesn't hold the choice back. */
   const showPendingMastery = (): void => {
     if (!activeEngine || masteryModal.isOpen || !masteryModal.hasPending) return;
-    if (levelUpModal.isOpen || runeDiscoveryModal.isOpen) return;
+    if (runeDiscoveryModal.isOpen) return;
     if (masteryModal.open(activeEngine)) {
       inputHandler?.modalStack.push(masteryModal);
       renderer?.render();
@@ -231,6 +221,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const characterTab = new CharacterTab();
   characterTab.onAllocateCallback = () => {
     updateHeaderInfo();
+    if (activeEngine) combatSidebar.update(activeEngine);
     renderer?.render();
   };
   const storyTab = new FlankModuleTab([new JournalModule(), new WorldLedgerModule()], 'story', 'Story', 'story');
@@ -322,24 +313,11 @@ window.addEventListener('DOMContentLoaded', () => {
     openMenuTab('spellbook');
   }
 
+  /** The Rune of Return ranks live on the Character tab, beside the attributes that spend
+   *  the same points: every way into "the rune tree" opens that tab at them. */
   function openRuneTree(): void {
-    if (!activeEngine) return;
-    if (renderer) {
-      renderer.inventoryOverlay.close();
-      renderer.inspectOverlay.close();
-      renderer.targetingOverlay.close();
-    }
-    if (inputHandler) {
-      runeTreeModal.setModalStack(inputHandler.modalStack);
-      runeTreeModal.open(activeEngine, () => {
-        popModal(runeTreeModal.id);
-        renderer?.render();
-      });
-      pushModal(runeTreeModal.id, runeTreeModal);
-    } else {
-      runeTreeModal.open(activeEngine);
-    }
-    renderer?.render();
+    characterTab.focusRuneSection();
+    openMenuTab('character');
   }
 
   window.addEventListener('open_rune_of_return_tree', () => {
@@ -1272,11 +1250,6 @@ window.addEventListener('DOMContentLoaded', () => {
       showGameOverModal(status, summary);
     };
 
-    // Wire Player Level Up and Game Events
-    levelUpModal.setOnAllocate(() => {
-      if (activeEngine) combatSidebar.update(activeEngine);
-      renderer?.render();
-    });
 
     lastObservedPlayerHp = engine.player.hp;
     lastCoinPickupTile = `${engine.currentFloor}:${engine.player.x},${engine.player.y}`;
@@ -1306,13 +1279,10 @@ window.addEventListener('DOMContentLoaded', () => {
           isCrit: true,
           fontSize: 14,
         });
-        if (inputHandler) {
-          levelUpModal.setModalStack(inputHandler.modalStack);
-          levelUpModal.open(engine);
-          inputHandler.modalStack.push(levelUpModal);
-        } else {
-          levelUpModal.open(engine);
-        }
+        // Leveling opens the Character tab, where the points are spent. Keys still in
+        // flight from the move that leveled are dropped for a moment.
+        characterTab.guardInput(200);
+        openMenuTab('character');
         renderer?.render();
       } else if (event.type === 'rune_of_return_discovered') {
         if (inputHandler) {
@@ -1609,11 +1579,8 @@ window.addEventListener('DOMContentLoaded', () => {
         if (activeEngine) sessionGuard.noteInput(activeEngine, code);
       };
       characterMenuModal.setModalStack(inputHandler.modalStack);
-      inputHandler.levelUpModal = levelUpModal;
-      inputHandler.runeOfReturnTreeModal = runeTreeModal;
+      inputHandler.onOpenRuneTree = openRuneTree;
       inputHandler.runeOfReturnDiscoveryModal = runeDiscoveryModal;
-      levelUpModal.setModalStack(inputHandler.modalStack);
-      runeTreeModal.setModalStack(inputHandler.modalStack);
       runeDiscoveryModal.setModalStack(inputHandler.modalStack);
       inputHandler.onCastSpellById = castSpellById;
       inputHandler.onDrinkPotionSlot = drinkPotionSlot;
@@ -1649,11 +1616,8 @@ window.addEventListener('DOMContentLoaded', () => {
         keybindModal.setModalStack(inputHandler.modalStack);
         inputHandler.contextHelp = contextHelp;
         inputHandler.commandPalette = commandPalette;
-        inputHandler.levelUpModal = levelUpModal;
-        inputHandler.runeOfReturnTreeModal = runeTreeModal;
+        inputHandler.onOpenRuneTree = openRuneTree;
         inputHandler.runeOfReturnDiscoveryModal = runeDiscoveryModal;
-        levelUpModal.setModalStack(inputHandler.modalStack);
-        runeTreeModal.setModalStack(inputHandler.modalStack);
         runeDiscoveryModal.setModalStack(inputHandler.modalStack);
         inputHandler.onSaveAndExit = promptSaveAndQuit;
         inputHandler.onCastSpellById = castSpellById;

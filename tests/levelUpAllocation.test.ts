@@ -2,8 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GameEngine, GameMap, Player, TILES, serializeGame, deserializeGame, type GameEvent, isGameEvent, type CharacterProfile } from '../src/engine';
 import { DeathResolver } from '../src/engine/combat/deathResolver';
 import { Monster } from '../src/engine/entities/monster';
-import { LevelUpModal } from '../src/ui/levelUpModal';
-import { ModalStackManager } from '../src/ui/modalStack';
+import { CharacterTab } from '../src/ui/characterMenu/characterTab';
 
 describe('Level-Up Attribute / Skill Allocation System', () => {
   let engine: GameEngine;
@@ -131,103 +130,111 @@ describe('Level-Up Attribute / Skill Allocation System', () => {
     expect(reloaded.profile.unspentStatPoints).toBe(5);
   });
 
-  const key = (k: string, code: string) =>
-    ({ key: k, code, shiftKey: false, preventDefault: () => {} }) as unknown as KeyboardEvent;
+  const key = (k: string, code: string, shiftKey = false) =>
+    ({ key: k, code, shiftKey, preventDefault: () => {} }) as unknown as KeyboardEvent;
 
-  it('integrates LevelUpModal with ModalStackManager: letters plan points, Enter locks them in', () => {
+  /** The Character tab, where leveling now spends its points (ADR-0011), on a stub container. */
+  const openCharacterTab = (tab = new CharacterTab()): CharacterTab => {
+    tab.mount({ innerHTML: '', querySelector: () => null, querySelectorAll: () => [] } as unknown as HTMLElement);
+    tab.onActivate({
+      engine,
+      worldState: engine.worldState,
+      player,
+      map,
+      currentFloor: engine.currentFloor,
+      turnCount: engine.turnCount,
+      manifest: engine.manifest,
+    });
+    return tab;
+  };
+
+  it('the Character tab plans points on letters and locks them in on Enter, after a short guard', () => {
     player.unspentStatPoints = 2;
-    const modal = new LevelUpModal();
-    const modalStack = new ModalStackManager();
+    const tab = openCharacterTab();
+    expect(tab.badge({ player } as never)).toBe('+2');
 
-    modal.open(engine);
-    modalStack.push(modal);
-
-    expect(modal.isOpen).toBe(true);
-    expect(modalStack.top()?.id).toBe('level-up-modal');
-
-    // Debounce safety: keys within 200ms of opening are dropped — Enter included
-    expect(modalStack.handleKeyDown(key('s', 'KeyS'))).toBe(true);
-    expect(modalStack.handleKeyDown(key('Enter', 'Enter'))).toBe(true);
-    expect(modal.isOpen).toBe(true);
+    // A level-up guards the first moment: keys still in flight from the move are dropped,
+    // Enter included, while Tab and Escape still reach the menu.
+    tab.guardInput(200);
+    expect(tab.handleKeyDown(key('s', 'KeyS'))).toBe(true);
+    expect(tab.handleKeyDown(key('Enter', 'Enter'))).toBe(true);
+    expect(tab.handleKeyDown(key('Escape', 'Escape'))).toBe(false);
     expect(player.strength).toBe(14);
     expect(player.unspentStatPoints).toBe(2);
 
-    (modal as any).openedAt = 0;
+    tab.guardInput(0);
 
-    // Number keys (e.g. Digit1, Numpad1) must NOT allocate attributes
-    expect(modalStack.handleKeyDown(key('1', 'Digit1'))).toBe(true);
-    expect(modalStack.handleKeyDown(key('1', 'Numpad1'))).toBe(true);
+    // Number keys (e.g. Digit1, Numpad1) never plan attributes
+    expect(tab.handleKeyDown(key('1', 'Digit1'))).toBe(false);
+    expect(tab.handleKeyDown(key('1', 'Numpad1'))).toBe(false);
 
     // Letters only plan points — the player is untouched until accepted
-    modalStack.handleKeyDown(key('s', 'KeyS'));
-    modalStack.handleKeyDown(key('c', 'KeyC'));
-    modalStack.handleKeyDown(key('c', 'KeyC')); // no third point to plan
+    tab.handleKeyDown(key('s', 'KeyS'));
+    tab.handleKeyDown(key('c', 'KeyC'));
+    expect(tab.handleKeyDown(key('c', 'KeyC'))).toBe(false); // no third point: the key falls to the menu
     expect(player.strength).toBe(14);
     expect(player.constitution).toBe(13);
     expect(player.unspentStatPoints).toBe(2);
+    expect(tab.footer().actions?.find((a) => a.id === 'accept')?.label).toBe('Accept 2 points');
 
-    // Enter locks them in and returns to the game
-    modalStack.handleKeyDown(key('Enter', 'Enter'));
+    // Enter locks them in
+    expect(tab.handleKeyDown(key('Enter', 'Enter'))).toBe(true);
     expect(player.strength).toBe(15);
     expect(player.constitution).toBe(14);
+    expect(player.maxHp).toBeGreaterThan(0);
     expect(player.unspentStatPoints).toBe(0);
-    expect(modal.isOpen).toBe(false);
-    expect(modalStack.isEmpty()).toBe(true);
+    expect(tab.badge({ player } as never)).toBeNull();
   });
 
-  it('Escape closes without spending planned points', () => {
+  it('Escape is left to the menu, and leaving spends nothing', () => {
     player.unspentStatPoints = 3;
-    const modal = new LevelUpModal();
-    modal.open(engine);
-    (modal as any).openedAt = 0;
+    const tab = openCharacterTab();
 
-    modal.allocate('strength');
-    modal.allocate('strength');
-    modal.handleKeyDown(key('Escape', 'Escape'));
-
-    expect(modal.isOpen).toBe(false);
+    tab.allocate('strength');
+    tab.allocate('strength');
+    expect(tab.handleKeyDown(key('Escape', 'Escape'))).toBe(false);
+    expect(tab.footer().escLabel).toBe('close, keep points');
     expect(player.strength).toBe(14);
     expect(player.unspentStatPoints).toBe(3);
 
     // Reopening starts from a clean plan
-    modal.open(engine);
-    (modal as any).openedAt = 0;
-    expect(modal.deallocate('strength')).toBe(false);
+    openCharacterTab(tab);
+    expect(tab.deallocate('strength')).toBe(false);
   });
 
-  it('undo, redo, reset and -1 only move points planned this session', () => {
+  it('undo, redo, reset, Shift+letter and − only move points planned this session', () => {
     player.unspentStatPoints = 3;
-    const modal = new LevelUpModal();
-    modal.open(engine);
-    (modal as any).openedAt = 0;
+    const tab = openCharacterTab();
 
     // Previously locked-in points can never be taken back
-    expect(modal.deallocate('strength')).toBe(false);
+    expect(tab.deallocate('strength')).toBe(false);
 
-    expect(modal.allocate('strength')).toBe(true);
-    expect(modal.allocate('strength')).toBe(true);
-    expect(modal.allocate('strength')).toBe(true);
-    expect(modal.allocate('dexterity')).toBe(false); // all 3 planned
+    expect(tab.allocate('strength')).toBe(true);
+    expect(tab.allocate('strength')).toBe(true);
+    expect(tab.allocate('strength')).toBe(true);
+    expect(tab.allocate('dexterity')).toBe(false); // all 3 planned
 
-    // -1 removes a planned point, freeing it for another attribute
-    expect(modal.deallocate('strength')).toBe(true);
-    expect(modal.allocate('dexterity')).toBe(true);
+    // Shift+S removes a planned point, freeing it for another attribute
+    expect(tab.handleKeyDown(key('S', 'KeyS', true))).toBe(true);
+    expect(tab.allocate('dexterity')).toBe(true);
 
     // Undo via Z reverses the dexterity plan, Y redoes it
-    modal.handleKeyDown(key('z', 'KeyZ'));
-    expect((modal as any).draft.get('dexterity')).toBe(0);
-    modal.handleKeyDown(key('y', 'KeyY'));
-    expect((modal as any).draft.get('dexterity')).toBe(1);
+    tab.handleKeyDown(key('z', 'KeyZ'));
+    expect((tab as any).draft.get('dexterity')).toBe(0);
+    tab.handleKeyDown(key('y', 'KeyY'));
+    expect((tab as any).draft.get('dexterity')).toBe(1);
 
     // Reset clears the whole plan
-    modal.handleKeyDown(key('r', 'KeyR'));
-    expect((modal as any).draft.total).toBe(0);
+    tab.handleKeyDown(key('r', 'KeyR'));
+    expect((tab as any).draft.total).toBe(0);
+    // With nothing to undo, Z falls through to the menu (the Spellbook tab's key)
+    expect(tab.handleKeyDown(key('z', 'KeyZ'))).toBe(false);
 
     // Re-plan all three into intelligence and accept
-    modal.allocate('intelligence');
-    modal.allocate('intelligence');
-    modal.allocate('intelligence');
-    modal.accept();
+    tab.allocate('intelligence');
+    tab.allocate('intelligence');
+    tab.allocate('intelligence');
+    tab.accept();
     expect(player.intelligence).toBe(13);
     expect(player.strength).toBe(14);
     expect(player.unspentStatPoints).toBe(0);
@@ -235,22 +242,19 @@ describe('Level-Up Attribute / Skill Allocation System', () => {
 
   it('a new level-up cannot remove points locked in by an earlier one', () => {
     player.unspentStatPoints = 3;
-    const modal = new LevelUpModal();
-    modal.open(engine);
-    (modal as any).openedAt = 0;
-    modal.allocate('strength');
-    modal.allocate('strength');
-    modal.allocate('strength');
-    modal.accept();
+    const tab = openCharacterTab();
+    tab.allocate('strength');
+    tab.allocate('strength');
+    tab.allocate('strength');
+    tab.accept();
     expect(player.strength).toBe(17);
 
     player.unspentStatPoints = 3;
-    modal.open(engine);
-    (modal as any).openedAt = 0;
-    expect(modal.deallocate('strength')).toBe(false);
-    modal.handleKeyDown(key('z', 'KeyZ'));
-    modal.handleKeyDown(key('r', 'KeyR'));
-    modal.accept();
+    openCharacterTab(tab);
+    expect(tab.deallocate('strength')).toBe(false);
+    tab.handleKeyDown(key('z', 'KeyZ'));
+    tab.handleKeyDown(key('r', 'KeyR'));
+    tab.accept();
     expect(player.strength).toBe(17);
     expect(player.unspentStatPoints).toBe(3);
   });

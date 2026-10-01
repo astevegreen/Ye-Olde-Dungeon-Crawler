@@ -9,6 +9,12 @@ import { traceProjectile } from '../magic/targeting';
 import { DeathResolver } from '../combat/deathResolver';
 import { flightRecorder } from '../debug/flightRecorder';
 
+/** What a shooter's Dexterity adds to a ranged attack: percentage points of hit chance
+ *  (before the target's defense and the 20–95% clamp) and flat damage. */
+export function rangedDexterityBonus(dexterity: number): { hitPct: number; damage: number } {
+  return { hitPct: (dexterity - 10) * 2, damage: Math.max(0, Math.floor((dexterity - 10) / 2)) };
+}
+
 export interface RangedAttackConfig {
   attacker: Entity;
   targetX: number;
@@ -126,14 +132,14 @@ export class RangedAttackAction implements Action {
         const targetDefense = target.defense;
 
         // Hit roll: 75% base + DEX modifier - target defense
-        const hitChance = Math.max(20, Math.min(95, 75 + (attackerDex - 10) * 2 - targetDefense * 2));
+        const dexBonus = rangedDexterityBonus(attackerDex);
+        const hitChance = Math.max(20, Math.min(95, 75 + dexBonus.hitPct - targetDefense * 2));
         const roll = engine.rng() * 100;
 
         if (roll <= hitChance) {
           const baseDmg = rangedConfig.baseDamage ?? (weapon.stats?.attackBonus ?? 4);
           const enchantBonus = weapon.enchantmentLevel ?? 0;
-          const dexBonus = Math.max(0, Math.floor((attackerDex - 10) / 2));
-          let damage = Math.max(1, baseDmg + enchantBonus + dexBonus - Math.floor(targetDefense / 2));
+          let damage = Math.max(1, baseDmg + enchantBonus + dexBonus.damage - Math.floor(targetDefense / 2));
 
           target.takeDamage(damage);
 

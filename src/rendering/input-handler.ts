@@ -29,8 +29,6 @@ import type { InspectOverlay } from './inspect-overlay';
 import type { MapOverlay } from './map-overlay';
 import type { ContextHelp } from '../ui/help/contextHelp';
 import type { CommandPalette } from '../ui/help/commandPalette';
-import type { LevelUpModal } from '../ui/levelUpModal';
-import type { RuneOfReturnTreeModal } from '../ui/runeOfReturnTreeModal';
 import type { RuneOfReturnDiscoveryModal } from '../ui/runeOfReturnDiscoveryModal';
 import type { CharacterMenuModal } from '../ui/characterMenu/characterMenuModal';
 import { ModalStackManager } from '../ui/modalStack';
@@ -151,8 +149,8 @@ export class InputHandler {
   public mapOverlay?: MapOverlay;
   public contextHelp?: ContextHelp;
   public commandPalette?: CommandPalette;
-  public levelUpModal?: LevelUpModal;
-  public runeOfReturnTreeModal?: RuneOfReturnTreeModal;
+  /** Opens the Rune of Return ranks (on the Character tab); wired from main.ts. */
+  public onOpenRuneTree?: () => void;
   public runeOfReturnDiscoveryModal?: RuneOfReturnDiscoveryModal;
   public characterMenuModal?: CharacterMenuModal;
   public radialMenuOverlay?: RadialMenuOverlay;
@@ -366,18 +364,6 @@ export class InputHandler {
   public clearInputLock(): void {
     this.isInputLocked = false;
     this.chordBuffer.clearAllKeys();
-  }
-
-  /** Opens/closes Rune of Return Mastery Tree modal, registering it on the modal stack. */
-  public toggleRuneOfReturnTreeModal(): void {
-    if (!this.runeOfReturnTreeModal) return;
-    this.runeOfReturnTreeModal.setModalStack(this.modalStack);
-    this.runeOfReturnTreeModal.toggle(this.engine);
-    if (this.runeOfReturnTreeModal.isOpen) {
-      this.modalStack.push(this.runeOfReturnTreeModal);
-    } else {
-      this.modalStack.remove(this.runeOfReturnTreeModal.id);
-    }
   }
 
   /** Resolves the currently-hovered radial-menu slot, executes it, and closes the menu. */
@@ -609,19 +595,10 @@ export class InputHandler {
       return true;
     }
 
-    // Hotkey: Level-Up Attribute Allocation (KeyU when not inspecting)
-    if ((code === 'KeyU' || e.key === 'u' || e.key === 'U') && !this.inspectOverlay?.isOpen) {
-      if (this.levelUpModal) {
-        this.levelUpModal.setModalStack(this.modalStack);
-        this.levelUpModal.toggle(this.engine);
-        if (this.levelUpModal.isOpen) {
-          this.modalStack.push(this.levelUpModal);
-        } else {
-          this.modalStack.remove(this.levelUpModal.id);
-        }
-        this.onActionProcessed();
-        return true;
-      }
+    // Hotkey: U spends level points, which happens on the Character tab (ADR-0011).
+    if ((code === 'KeyU' || e.key === 'u' || e.key === 'U') && !this.inspectOverlay?.isOpen && this.characterMenuModal) {
+      this.toggleCharacterMenu('character');
+      return true;
     }
 
     // 0.3. Handle Shop / Town Service modal if open
@@ -1058,7 +1035,7 @@ export class InputHandler {
     }
     if (userAction === 'rune_of_return_tree') {
       if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
-      this.toggleRuneOfReturnTreeModal();
+      this.onOpenRuneTree?.();
       this.onActionProcessed();
       return true;
     }

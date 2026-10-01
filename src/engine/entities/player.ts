@@ -22,6 +22,11 @@ import {
   GRIMOIRE_SIZE,
 } from '../magic/grimoireMatrix';
 
+/** Maximum hit points one allocated point of Constitution adds. */
+export const HP_PER_CONSTITUTION = 2;
+/** Maximum mana one allocated point of Intelligence adds. */
+export const MANA_PER_INTELLIGENCE = 2;
+
 export interface PlayerConfig {
   id?: string;
   name?: string;
@@ -317,13 +322,13 @@ export class Player extends Actor {
         break;
       case 'constitution':
         this.constitution += amount;
-        this._maxHp += amount * 2;
-        this.hp = Math.min(this.maxHp, this.hp + amount * 2);
+        this._maxHp += amount * HP_PER_CONSTITUTION;
+        this.hp = Math.min(this.maxHp, this.hp + amount * HP_PER_CONSTITUTION);
         break;
       case 'intelligence':
         this.intelligence += amount;
-        this.maxMana += amount * 2;
-        this.mana = Math.min(this.maxMana, this.mana + amount * 2);
+        this.maxMana += amount * MANA_PER_INTELLIGENCE;
+        this.mana = Math.min(this.maxMana, this.mana + amount * MANA_PER_INTELLIGENCE);
         break;
       default:
         this.unspentStatPoints += amount;

@@ -1,15 +1,15 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../engine';
 import { Player } from '../../engine';
 import { TILES, registerTileDefinition } from '../../engine';
 import { Item } from '../../engine';
 import { formatGroundStatus } from '../sidebar/sidebarModel';
-import { SpellbookModal } from '../spellbookModal';
+import { SpellbookTab } from '../characterMenu/spellbookTab';
 import { TargetingOverlay } from '../../rendering/targeting-overlay';
 import { ModalStackManager } from '../modalStack';
 import { registerSpells } from '../../engine';
-import type { GameContentManifest } from '../../engine';
+import type { GameContentManifest, SpellDefinition } from '../../engine';
 
 class MockElement {
   public id: string = '';
@@ -258,70 +258,41 @@ describe('Modal Stack Lifecycle & UI Ground Status Polish', () => {
     });
   });
 
-  describe('SpellbookModal input handling & focus isolation', () => {
-    it('leaves Escape to the menu shell and closes cleanly when the shell closes it', () => {
-      let closed = false;
-      const modal = new SpellbookModal({
-        onCastSpell: vi.fn(),
-        onQuickSpellsChanged: vi.fn(),
-        onClose: () => {
-          closed = true;
-          modalStack.remove(modal.id);
-        },
-      });
+  describe('Spellbook tab input handling', () => {
+    /** The tab on a stub container, as the character menu shows it. */
+    const openSpellbook = (options: ConstructorParameters<typeof SpellbookTab>[0] = {}): SpellbookTab => {
+      const tab = new SpellbookTab(options);
+      tab.mount({ innerHTML: '', querySelector: () => null, querySelectorAll: () => [] } as unknown as HTMLElement);
+      tab.onActivate({ engine, worldState: engine.worldState, player, map: engine.map, currentFloor: engine.currentFloor, turnCount: engine.turnCount, manifest: engine.manifest });
+      return tab;
+    };
 
-      modal.open(engine);
-      modalStack.push(modal);
-      expect(modal.isOpen).toBe(true);
-      expect(modalStack.isEmpty()).toBe(false);
-      expect(modalStack.top()?.id).toBe('spellbook');
-
-      // Escape and the menu's tab keys are the shell's: the spellbook declines them.
-      expect(modal.handleKeyDown(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }))).toBe(false);
-      expect(modal.handleKeyDown(new KeyboardEvent('keydown', { code: 'KeyI', key: 'i' }))).toBe(false);
-      expect(modal.isOpen).toBe(true);
-
-      modal.close();
-      expect(modal.isOpen).toBe(false);
-      expect(closed).toBe(true);
-      expect(modalStack.isEmpty()).toBe(true);
+    it('leaves Escape, Tab and the menu tab keys to the shell', () => {
+      const tab = openSpellbook();
+      for (const code of ['Escape', 'Tab', 'KeyI', 'KeyZ', 'KeyB']) {
+        expect(tab.handleKeyDown(new KeyboardEvent('keydown', { code }))).toBe(false);
+      }
     });
 
     it('assigns spells to quickbar slots on Digit1-0 without freezing or locking input', () => {
       let quickSpellsChanged = false;
-      const modal = new SpellbookModal({
-        onCastSpell: vi.fn(),
-        onQuickSpellsChanged: () => {
-          quickSpellsChanged = true;
-        },
-      });
-
-      modal.open(engine);
+      const tab = openSpellbook({ onQuickSpellsChanged: () => { quickSpellsChanged = true; } });
       expect(player.quickSpells[0]).toBeNull();
 
       // Press Digit1 to assign selected spell (magic_arrow) to slot 0
       const d1Event = new KeyboardEvent('keydown', { code: 'Digit1', key: '1' });
-      const handled = modal.handleKeyDown(d1Event);
-      expect(handled).toBe(true);
+      expect(tab.handleKeyDown(d1Event)).toBe(true);
       expect(quickSpellsChanged).toBe(true);
       expect(player.quickSpells[0]).toBe('magic_arrow');
 
       // Toggle off when pressing Digit1 again
-      modal.handleKeyDown(d1Event);
+      tab.handleKeyDown(d1Event);
       expect(player.quickSpells[0]).toBeNull();
     });
 
-    it('does not intercept directional numpad keys (Numpad1-9)', () => {
-      const modal = new SpellbookModal({
-        onCastSpell: vi.fn(),
-        onQuickSpellsChanged: vi.fn(),
-      });
-      modal.open(engine);
-
-      // Numpad8 is up navigation, not slot assignment
-      const np8Event = new KeyboardEvent('keydown', { code: 'Numpad8', key: '8' });
-      modal.handleKeyDown(np8Event);
-      // Slots should remain untouched
+    it('does not intercept directional numpad keys as slots (Numpad1-9)', () => {
+      const tab = openSpellbook();
+      tab.handleKeyDown(new KeyboardEvent('keydown', { code: 'Numpad8', key: '8' }));
       expect(player.quickSpells.every((s) => s === null)).toBe(true);
     });
   });
@@ -376,39 +347,23 @@ describe('Modal Stack Lifecycle & UI Ground Status Polish', () => {
       expect(modalStack.isEmpty()).toBe(true);
     });
 
-    it('transitions cleanly from SpellbookModal to TargetingOverlay', () => {
+    it('hands off cleanly from the Spellbook tab to the TargetingOverlay', () => {
       const targetingOverlay = new TargetingOverlay();
+      const menu = { id: 'character-menu', isOpen: true, handleKeyDown: () => true, close: () => {} };
+      modalStack.push(menu);
 
-      let targetingStarted = false;
-      const spellbookModal = new SpellbookModal({
-        onCastSpell: (spell) => {
-          modalStack.remove('spellbook');
-          targetingOverlay.startTargeting(
-            {
-              key: '1',
-              type: 'spell',
-              id: spell.id,
-              name: spell.name,
-              spellDef: spell,
-            },
-            engine
-          );
+      const tab = new SpellbookTab({
+        onCastSpell: (spell: SpellDefinition) => {
+          modalStack.remove('character-menu');
+          targetingOverlay.startTargeting({ key: '1', type: 'spell', id: spell.id, name: spell.name, spellDef: spell }, engine);
           modalStack.push(targetingOverlay);
-          targetingStarted = true;
         },
-        onQuickSpellsChanged: vi.fn(),
       });
+      tab.mount({ innerHTML: '', querySelector: () => null, querySelectorAll: () => [] } as unknown as HTMLElement);
+      tab.onActivate({ engine, worldState: engine.worldState, player, map: engine.map, currentFloor: engine.currentFloor, turnCount: engine.turnCount, manifest: engine.manifest });
 
-      spellbookModal.open(engine);
-      modalStack.push(spellbookModal);
-      expect(modalStack.top()?.id).toBe('spellbook');
-
-      // Press Enter to cast
-      const enterEvent = new KeyboardEvent('keydown', { code: 'Enter', key: 'Enter' });
-      spellbookModal.handleKeyDown(enterEvent);
-
-      expect(targetingStarted).toBe(true);
-      expect(spellbookModal.isOpen).toBe(false);
+      // Enter casts
+      expect(tab.handleKeyDown(new KeyboardEvent('keydown', { code: 'Enter', key: 'Enter' }))).toBe(true);
       expect(targetingOverlay.isOpen).toBe(true);
       expect(modalStack.top()?.id).toBe('targeting');
       expect(modalStack.size).toBe(1);

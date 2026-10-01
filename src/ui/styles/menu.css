@@ -593,3 +593,64 @@
 .bs-rite.is-done { border-color: var(--ui-good); }
 .bs-verse { margin: var(--ui-space-1) 0 var(--ui-space-2); padding: 6px 10px; font-style: italic; white-space: pre-line; border-left: 3px solid var(--ui-title); color: var(--ui-text-soft); }
 .bs-cond { margin-left: var(--ui-space-2); }
+
+/* ---- Spellbook tab ----------------------------------------------------------------- */
+
+.sb-grid { grid-template-columns: minmax(220px, 280px) minmax(0, 1fr); }
+.sb-grid.has-grimoire { grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(300px, 380px); }
+.sb-mana { color: var(--ui-mana); }
+.sb-debt { color: var(--ui-warn); }
+.sb-row .ui-key { margin-right: var(--ui-space-1); }
+.sb-stats { margin: var(--ui-space-2) 0; }
+.sb-notes { margin-bottom: var(--ui-space-2); }
+.sb-desc {
+  padding: var(--ui-space-2) 10px;
+  font-size: var(--ui-text-sm);
+  color: var(--ui-text-soft);
+  background: var(--ui-surface-3);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius);
+}
+.sb-slots { display: flex; flex-wrap: wrap; gap: var(--ui-space-1); margin-bottom: var(--ui-space-2); }
+.sb-slot {
+  appearance: none;
+  min-width: 32px;
+  padding: 5px 0;
+  font: bold var(--ui-text-sm) var(--ui-font-num);
+  color: var(--ui-text-faint);
+  background: var(--ui-surface-3);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius);
+  cursor: pointer;
+}
+.sb-slot.is-taken { color: var(--ui-text-muted); border-color: var(--ui-line-strong); }
+.sb-slot.is-mine { color: var(--ui-accent-ink); background: var(--ui-accent); border-color: var(--ui-accent); }
+
+.sb-attune { color: var(--ui-warn); }
+.sb-matrix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 6px; }
+.sb-cell {
+  appearance: none;
+  min-height: 58px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2px;
+  padding: 5px 6px;
+  font: var(--ui-text-xs) var(--ui-font-body);
+  text-align: left;
+  color: var(--ui-text);
+  background: var(--ui-surface-2);
+  border: 1px dashed var(--ui-line-strong);
+  border-radius: var(--ui-radius);
+  cursor: pointer;
+}
+.sb-cell.is-filled { border-style: solid; border-color: var(--ui-info); }
+.sb-cell.is-center { border-color: var(--ui-title); }
+.sb-cell.is-mine { box-shadow: inset 0 0 0 1px var(--ui-accent); border-color: var(--ui-accent); }
+.sb-cell.is-sealed { cursor: default; background: var(--ui-surface-3); border-style: solid; border-color: var(--ui-line); }
+.sb-cell-head { display: flex; justify-content: space-between; gap: var(--ui-space-1); color: var(--ui-text-faint); }
+.sb-cell.is-center .sb-cell-head { color: var(--ui-title); }
+.sb-cell-spell { font-size: var(--ui-text-sm); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-cell-empty, .sb-sealed { font-style: italic; color: var(--ui-text-faint); }
+.sb-glyphs { color: var(--ui-xp); }
+.sb-unseal { padding-left: var(--ui-space-2); border-left: 2px solid var(--ui-info); }

@@ -6,8 +6,7 @@ import type { GameState } from '../characterMenu/gameState';
 import { ModalStackManager } from '../modalStack';
 import { InputHandler } from '../../rendering/input-handler';
 import { GameEngine, Player, GameMap } from '../../engine';
-import { SpellbookTabAdapter } from '../characterMenu/tabAdapters';
-import { SpellbookModal } from '../spellbookModal';
+import { SpellbookTab } from '../characterMenu/spellbookTab';
 
 class MockElement {
   public id: string = '';
@@ -459,9 +458,8 @@ describe('CharacterMenuModal & Consolidated Character Menu', () => {
     scaledMenu.destroy();
   });
 
-  it('SpellbookTabAdapter toggles shell on KeyZ', () => {
-    const spellbookModal = new SpellbookModal();
-    const spellbookTab = new SpellbookTabAdapter(spellbookModal);
+  it('the Spellbook tab leaves Z to the shell, which closes the menu on its own tab key', () => {
+    const spellbookTab = new SpellbookTab();
     const otherTab = new MockTab('character', 'Character', 'character_menu');
     const charMenu = new CharacterMenuModal([spellbookTab, otherTab], () => createMockGameState(engine));
 

@@ -116,7 +116,7 @@ export const COTW_MAGIC: MagicSystemConfig = {
     killsPerRevealedCondition: 2,
   },
   grimoire: {
-    title: 'Grimoire Spatial Matrix',
+    title: 'Grimoire',
     pageNames: ['Page I: Sol', 'Page II: Máni', 'Page III: Yggdrasil'],
     centerSlotLabel: 'Midgard',
     centerCostPerNeighbor: 0.15,

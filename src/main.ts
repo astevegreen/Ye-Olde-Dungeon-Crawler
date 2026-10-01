@@ -83,7 +83,7 @@ import {
   StoryTab,
   BestiaryTab,
   PactsTab,
-  SpellbookTabAdapter,
+  SpellbookTab,
 } from './ui/characterMenu';
 import { InventoryTabAdapter } from './rendering/inventoryTabAdapter';
 import './ui/styles/tokens.css';
@@ -93,7 +93,6 @@ import './ui/styles/menu.css';
 import { QuickSpellsBar } from './ui/quickSpellsBar';
 import { PotionRow } from './ui/potionRow';
 import { classifyLogLine, CriticalLineTracker } from './ui/logClassifier';
-import { SpellbookModal } from './ui/spellbookModal';
 import { CombatSidebar } from './ui/sidebar/combatSidebar';
 import { ConsoleExtras } from './ui/console/consoleExtras';
 import type { ContextAction } from './ui/console/consoleModel';
@@ -220,7 +219,6 @@ window.addEventListener('DOMContentLoaded', () => {
   const storyTab = new StoryTab();
   const bestiaryTab = new BestiaryTab();
   const pactsTab = new PactsTab();
-  let spellbookTab: SpellbookTabAdapter;
   let inventoryTab: InventoryTabAdapter;
 
   // Asynchronous bulk tier (ARCHITECTURE.md §5): IndexedDB in the browser, in-memory when
@@ -288,7 +286,6 @@ window.addEventListener('DOMContentLoaded', () => {
     return null;
   };
 
-  let spellbookModal: SpellbookModal;
   let quickSpellsBar: QuickSpellsBar;
   let potionRow: PotionRow;
   let combatSidebar: CombatSidebar;
@@ -456,15 +453,9 @@ window.addEventListener('DOMContentLoaded', () => {
     onOpenSpellbook: () => openSpellbook(),
   });
 
-  spellbookModal = new SpellbookModal({
+  const spellbookTab = new SpellbookTab({
     onCastSpell: (spell) => {
-      if (characterMenuModal?.isOpen) {
-        characterMenuModal.close();
-      }
-      if (inputHandler) {
-        inputHandler.modalStack.remove('spellbook');
-        inputHandler.isInputLocked = false;
-      }
+      characterMenuModal?.close();
       castOrTargetSpell(spell);
     },
     onQuickSpellsChanged: () => {
@@ -477,19 +468,7 @@ window.addEventListener('DOMContentLoaded', () => {
       combatSidebar.update(activeEngine);
       void processVisualEffectsAndRender();
     },
-    onClose: () => {
-      if (inputHandler) {
-        inputHandler.modalStack.remove('spellbook');
-        inputHandler.isInputLocked = false;
-      }
-      if (typeof document !== 'undefined') {
-        document.getElementById('game-canvas')?.focus();
-      }
-      renderer?.render();
-    },
   });
-  spellbookTab = new SpellbookTabAdapter(spellbookModal, () => characterMenuModal?.close());
-  spellbookModal.mount(document.body);
 
   /** Runs the console's context action through the same engine actions its keys use. */
   function runContextAction(action: ContextAction): void {

@@ -1,5 +1,5 @@
 {
-  "total": 941,
+  "total": 866,
   "files": {
     "index.html": 34,
     "src/main.ts": 4,
@@ -44,7 +44,6 @@
     "src/ui/saveSlotModal.ts": 37,
     "src/ui/settings/keybindModal.ts": 31,
     "src/ui/sidebar/sidebarModel.ts": 6,
-    "src/ui/spellbookModal.ts": 75,
     "src/ui/styles/base.css": 33,
     "src/ui/styles/layout.css": 21,
     "src/ui/title-screen.ts": 8

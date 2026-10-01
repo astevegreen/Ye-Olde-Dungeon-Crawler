@@ -46,6 +46,32 @@ describe running — whichever of these are relevant: `npm run lint`
 invoke those separately), `npm test`, `npm run sim`, `npm run validate:schema`, `npm run build`. Paste real output. A change that "should" pass
 is not the same as a change that does.
 
+Routine for every commit that touches presentation:
+1. `npm run gates`: all of the above, then `npx playwright test`. The
+   pre-commit hook runs only lint and tests, and Playwright normally
+   runs only at the owner's push, yet it has caught regressions the
+   unit tests missed.
+2. CSS or layout changed: capture the HUD before and after with the dev
+   server running (`OUT=.prompts/<dir> node .prompts/menus-audit.mjs
+   1366 g00`). Menu screenshots don't show it, because the scrim hides
+   the HUD.
+3. A visible label changed: grep `e2e/` and `.prompts/` for the old
+   text. Capture scripts click through `.prompts/play.mjs` (`startRun`,
+   `button`, case-insensitive); use those, not new hard-coded matches.
+
+## Tooling gotchas
+- Line endings: `.gitattributes` pins LF, but files checked out before
+  that are still CRLF until renormalized. For scripted multi-edits use
+  `.prompts/edit.mjs` (`\n` in a pattern matches either ending; it
+  throws on a miss), or the Edit tool.
+- Escaping: bash heredocs, `node -e` and template literals nested in an
+  edit script mangle backticks and `${…}`. Write code to its own file
+  with the Write tool, or use the Edit tool.
+- Inline styles (static markup in `index.html`, `el.style.x = …`) beat
+  stylesheet rules. Remove the inline style; don't add `!important`.
+- knip fails on unused exports. Delete what a refactor orphans.
+- No Python on this machine. `test-results/` and `dist/` can't be read.
+
 ## Standing invariant, restated because it's easy to forget
 `src/engine/actions/actionPipeline.ts`, `src/engine/engine.ts`, and
 `src/engine/storage/migrator.ts` change only under an ARCHITECTURE.md

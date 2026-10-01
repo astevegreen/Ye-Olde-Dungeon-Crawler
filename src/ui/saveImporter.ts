@@ -1,5 +1,7 @@
 import { SAVE_FILE_EXTENSION, validateSavePayload, type SaveValidationResult } from '../engine';
 import { iconHtml } from './icons';
+import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
+import { escapeHtml } from './html';
 import type { ProfileManager } from '../engine';
 import type { CharacterProfile } from '../engine';
 
@@ -40,19 +42,12 @@ export function setupSaveDragAndDrop(options: DragAndDropOptions): () => void {
     overlay.innerHTML = `
       <div class="save-drop-box">
         <div class="save-drop-icon">${iconHtml('import')}</div>
-        <div style="font-size: 16px; font-weight: bold; margin-bottom: 4px;">DROP SAVE FILE HERE</div>
-        <div style="font-size: 12px; color: #94a3b8;">Restores ${SAVE_FILE_EXTENSION}, .sav, or .json adventurer</div>
+        <div class="save-drop-title">Drop a save file here</div>
+        <div class="ui-note">A ${SAVE_FILE_EXTENSION}, .sav or .json save restores its hero.</div>
       </div>
     `;
-    overlay.style.position = 'absolute';
-    overlay.style.inset = '0';
-    overlay.style.backgroundColor = 'rgba(10, 15, 30, 0.88)';
-    overlay.style.backdropFilter = 'blur(4px)';
+    // Hidden until a drag enters; styled by .save-drop-overlay (base.css).
     overlay.style.display = 'none';
-    overlay.style.alignItems = 'center';
-    overlay.style.justifyContent = 'center';
-    overlay.style.zIndex = '250';
-    overlay.style.pointerEvents = 'none';
 
     // Only establish a containing block when there isn't one: forcing `relative` onto an
     // already-positioned overlay (the title screen is `position: absolute; inset: 0`)
@@ -141,63 +136,36 @@ export interface ManifestMismatchDialogOptions {
 }
 
 /**
- * Displays a non-destructive warning dialog when an imported save was created
- * with a different manifest (e.g. Warcraft vs CotW).
+ * Asks before importing a save made with another pack's rules: non-destructive, in the
+ * one dialog frame. It sits on the crash layer, above the save-code window it can open
+ * from.
  */
 export function showManifestMismatchDialog(options: ManifestMismatchDialogOptions): void {
   const { detectedManifestId, activeManifestId, heroName, onConfirm, onCancel } = options;
 
-  let existingModal = document.getElementById('manifest-mismatch-modal');
-  if (existingModal) {
-    existingModal.remove();
-  }
+  const scrim = createDialogScrim('manifest-mismatch-modal', 'crash');
+  if (!scrim) return;
+  scrim.innerHTML = dialogHtml({
+    title: 'A save from another game',
+    kicker: 'Import',
+    icon: 'warning',
+    size: 'narrow',
+    body: `
+      <div class="ui-dialog-lede">The save for <b>${escapeHtml(heroName)}</b> was made with the <b>${escapeHtml(detectedManifestId)}</b> rules; this game runs <b>${escapeHtml(activeManifestId)}</b>.</div>
+      <div class="ui-fact is-warn">Importing a save across games may bring unfamiliar abilities, missing item art, or changed balance.</div>`,
+    actions: dialogButton('btn-mismatch-cancel', 'Cancel') + dialogButton('btn-mismatch-import', 'Import anyway', { primary: true }),
+  });
+  scrim.style.display = 'flex';
 
-  const modal = document.createElement('div');
-  modal.id = 'manifest-mismatch-modal';
-  modal.className = 'retro-window-overlay';
-  modal.style.zIndex = '300';
-  modal.style.display = 'flex';
-
-  modal.innerHTML = `
-    <div class="retro-window" style="width: 480px; max-width: 90vw;">
-      <div class="retro-titlebar" style="background: linear-gradient(90deg, #9a3412, #ea580c);">
-        <div class="retro-titlebar-title">
-          ${iconHtml('warning')}
-          <span>Manifest Compatibility Warning</span>
-        </div>
-      </div>
-      <div class="retro-window-body" style="padding: 12px;">
-        <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #9a3412;">
-          Cross-Theme Save Detected
-        </div>
-        <p style="font-size: 12px; margin-bottom: 8px; line-height: 1.4;">
-          The save file for <b>${heroName}</b> was created under the <b>${detectedManifestId}</b> game rules,
-          but your active session is running <b>${activeManifestId}</b>.
-        </p>
-        <p style="font-size: 11px; color: #4b5563; margin-bottom: 14px; background: #fef3c7; padding: 6px; border: 1px solid #f59e0b;">
-          Importing across different game themes may cause unfamiliar abilities, missing item graphics, or altered balance.
-        </p>
-        <div style="display: flex; justify-content: flex-end; gap: 8px;">
-          <button id="btn-mismatch-cancel" class="win-btn" style="padding: 4px 12px;">Cancel</button>
-          <button id="btn-mismatch-import" class="win-btn primary-btn" style="padding: 4px 12px; font-weight: bold;">Import Anyway</button>
-        </div>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  const cleanup = () => {
-    modal.remove();
+  const hide = () => {
+    scrim.style.display = 'none';
   };
-
-  modal.querySelector('#btn-mismatch-cancel')?.addEventListener('click', () => {
-    cleanup();
+  scrim.querySelector('#btn-mismatch-cancel')?.addEventListener('click', () => {
+    hide();
     if (onCancel) onCancel();
   });
-
-  modal.querySelector('#btn-mismatch-import')?.addEventListener('click', () => {
-    cleanup();
+  scrim.querySelector('#btn-mismatch-import')?.addEventListener('click', () => {
+    hide();
     onConfirm();
   });
 }

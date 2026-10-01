@@ -413,16 +413,23 @@
         display: none;
         align-items: center;
         justify-content: center;
-        z-index: 250;
+        z-index: var(--ui-z-system);
         pointer-events: none;
       }
       .save-drop-box {
         border: 3px dashed var(--ui-info);
+        border-radius: var(--ui-radius);
+        font-family: var(--ui-font-body);
         background: color-mix(in srgb, var(--ui-surface-0) 95%, transparent);
         color: var(--ui-text);
         padding: 30px 50px;
         text-align: center;
         box-shadow: 0 0 24px color-mix(in srgb, var(--ui-info) 40%, transparent);
+      }
+      .save-drop-title {
+        margin-bottom: var(--ui-space-1);
+        font: bold var(--ui-text-lg) var(--ui-font-display);
+        color: var(--ui-title);
       }
       .storage-badge-pill {
         font-size: var(--ui-text-xs);

@@ -2,7 +2,7 @@
 
 > Sub-document of [`ARCHITECTURE.md`](../../ARCHITECTURE.md) §7.2 stub. This file is **explanatory**: what each gate script actually checks and how. Every **binding** rule — the requirement to pass all gates, the exact gate command list, the PRNG-discipline invariant, the encapsulation invariant — is restated in the core document's §7.2 stub. If this file and the core document (or the scripts themselves) ever disagree, the scripts and the core document win; flag the conflict rather than resolving it here (`ARCHITECTURE.md` §8.2).
 
-- **Requirement:** every change must pass the gates below before merging. Coding agents run the relevant gates locally and report real output.
+- **Requirement:** every change must pass the gates below before merging. Coding agents run the relevant gates locally and report real output. `npm run gates` runs all of them in order — lint, tests, sim, schema, build, then Playwright (which needs the build) — stopping at the first failure. Agents commit but rarely push, so without it the pre-push gates (Playwright above all) would first run at the owner's push.
 - **Current CI:**
   - `.github/workflows/ci.yml` (*Quality Gates*) runs on every pull request to `main` and on manual dispatch: `npm run lint`, `npm test`, `npm run sim`, `npm run validate:schema`, then `npm run build` (cotw only; WarCraft is parked, [ADR-0010](../decisions/0010-warcraft-pack-parked.md)).
   - `.github/workflows/deploy.yml` runs the same gates on push to `main` (and manual dispatch), then deploys `dist/` to GitHub Pages.

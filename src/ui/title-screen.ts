@@ -1,4 +1,4 @@
-import { ProfileManager } from '../engine';
+import { ProfileManager, SAVE_FILE_EXTENSION } from '../engine';
 import { iconHtml } from './icons';
 import type { CharacterProfile } from '../engine';
 import { CharacterRoller } from '../engine';
@@ -134,6 +134,7 @@ export class TitleScreen {
     this.statusEl = document.getElementById('title-status');
     this.storageStatusEl = document.getElementById('title-storage-status');
     this.fileInput = document.getElementById('import-file-input') as HTMLInputElement | null;
+    if (this.fileInput) this.fileInput.accept = `${SAVE_FILE_EXTENSION},.sav,.json`;
 
     // Load Autosave button
     this.loadAutosaveBtn?.addEventListener('click', () => {
@@ -154,7 +155,7 @@ export class TitleScreen {
       }
     });
 
-    // Export .cotw button
+    // Export the selected hero's save file
     this.exportBtn?.addEventListener('click', () => {
       if (this.selectedProfileId) {
         try {

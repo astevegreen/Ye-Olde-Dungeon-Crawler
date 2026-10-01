@@ -55,6 +55,10 @@ export function base64ToUtf8(base64: string): string {
   return new TextDecoder().decode(bytes);
 }
 
+/** The exported save file's extension, the same for every pack. Presentation names it
+ *  from here rather than spelling it out (§3). */
+export const SAVE_FILE_EXTENSION = '.cotw';
+
 /**
  * Generates a standardized, sanitized file name for exported saves.
  * Format: `${characterName}_Floor${currentFloor}_${manifestId}_${timestamp}.cotw`
@@ -77,7 +81,7 @@ export function generateSaveFilename(
       .replace(/[^a-zA-Z0-9_-]/g, '_')
       .replace(/^_+|_+$/g, '') || 'cotw';
   const floorTag = floor === 0 ? 'Town' : `Floor${floor}`;
-  return `${safeName}_${floorTag}_${safeManifest}_${timestamp}.cotw`;
+  return `${safeName}_${floorTag}_${safeManifest}_${timestamp}${SAVE_FILE_EXTENSION}`;
 }
 
 /**

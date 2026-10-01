@@ -1,6 +1,7 @@
 import {
   generateSaveFilename,
   createSavePackage,
+  SAVE_FILE_EXTENSION,
 } from '../engine';
 import { triggerSaveDownload } from './saveImporter';
 import { serializeGame } from '../engine';
@@ -66,7 +67,7 @@ export class SaveQuitModal implements UIModal {
           ${dialogButton('btn-savequit-settings', 'Settings and keys')}
           ${dialogButton('btn-savequit-help', 'Help')}
           <div class="pause-row">
-            ${dialogButton('btn-savequit-export-cotw', 'Export save (.cotw)')}
+            ${dialogButton('btn-savequit-export-cotw', `Export save (${SAVE_FILE_EXTENSION})`)}
             ${dialogButton('btn-savequit-copy-code', 'Save code')}
           </div>
           ${dialogButton('btn-savequit-save-exit', 'Save and exit to title')}

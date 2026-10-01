@@ -1,10 +1,10 @@
-import { validateSavePayload, type SaveValidationResult } from '../engine';
+import { SAVE_FILE_EXTENSION, validateSavePayload, type SaveValidationResult } from '../engine';
 import { iconHtml } from './icons';
 import type { ProfileManager } from '../engine';
 import type { CharacterProfile } from '../engine';
 
 /**
- * Triggers a browser file download of text content (e.g. .cotw save files).
+ * Triggers a browser file download of text content (e.g. exported save files).
  */
 export function triggerSaveDownload(filename: string, content: string): void {
   const blob = new Blob([content], { type: 'application/json' });
@@ -41,7 +41,7 @@ export function setupSaveDragAndDrop(options: DragAndDropOptions): () => void {
       <div class="save-drop-box">
         <div class="save-drop-icon">${iconHtml('import')}</div>
         <div style="font-size: 16px; font-weight: bold; margin-bottom: 4px;">DROP SAVE FILE HERE</div>
-        <div style="font-size: 12px; color: #94a3b8;">Restores .cotw, .sav, or .json adventurer</div>
+        <div style="font-size: 12px; color: #94a3b8;">Restores ${SAVE_FILE_EXTENSION}, .sav, or .json adventurer</div>
       </div>
     `;
     overlay.style.position = 'absolute';

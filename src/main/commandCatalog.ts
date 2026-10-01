@@ -33,7 +33,7 @@ export const COMMAND_CATALOG = [
   { id: 'diagnostics', title: 'Developer Diagnostics & Triage', category: 'System', shortcut: 'F2 / `', description: 'Inspect active actor state, combat roll logs, and flight recorder' },
   { id: 'feedback', title: 'Send Feedback & Bug Report', category: 'Help', shortcut: 'F3', description: 'Submit an issue, bug report, or feature request to the developers' },
   { id: 'save-quit', title: 'Save and Return to Title', category: 'System', shortcut: 'Esc', description: 'Save progress and exit to character roster' },
-  { id: 'export-save', title: 'Export Save File (.cotw)', category: 'System', shortcut: '', description: 'Download current character file for backup or transfer' },
+  { id: 'export-save', title: 'Export Save File', category: 'System', shortcut: '', description: 'Download current character file for backup or transfer' },
   { id: 'save-code', title: 'Generate Save Code', category: 'System', shortcut: '', description: 'Generate a shareable text-based save code' },
   { id: 'settings', title: 'Settings & Keybindings', category: 'System', shortcut: '', description: 'Configure 8-directional movement modes and customize keyboard bindings' },
   { id: 'summon_companion', title: 'Summon Companion', category: 'Action', shortcut: '', description: 'Call your bonded companion to your side (Companions & Pet Progression)' },

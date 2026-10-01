@@ -1,5 +1,9 @@
 import type { UIModal, ModalStackManager } from '../modalStack';
-import { SettingsManager, ACTION_METADATA, type ActionMetadata } from './settingsManager';
+import { SettingsManager, ACTION_METADATA, hardWiredConflict, type ActionMetadata } from './settingsManager';
+import { createDialogScrim, dialogButton, dialogHtml } from '../dialog';
+import { escapeHtml } from '../html';
+import { keyLabel } from '../keyLabel';
+import { formatStorageStatus, getStoragePersistenceInfo } from '../persistenceInit';
 
 export interface KeybindModalOptions {
   settingsManager: SettingsManager;
@@ -90,18 +94,26 @@ export class KeybindModal implements UIModal {
         }
 
         const actionId = this.listeningActionId;
+        const actionMeta = ACTION_METADATA.find((m) => m.id === actionId);
+        const actionName = actionMeta?.name ?? actionId;
+        const key = keyLabel(e.code);
+
+        // A key the game answers before it reads bindings would never reach this action.
+        const taken = hardWiredConflict(actionId, e.code);
+        if (taken) {
+          this.setStatus(`${key} ${taken}, so it can't be "${actionName}". Press another key (Esc to cancel).`);
+          this.renderContent();
+          return true;
+        }
         this.listeningActionId = null;
 
         const result = this.settingsManager.bindKey(actionId, e.code);
-        const actionMeta = ACTION_METADATA.find((m) => m.id === actionId);
-        const actionName = actionMeta?.name ?? actionId;
-
         if (result.conflictWith) {
           const conflictMeta = ACTION_METADATA.find((m) => m.id === result.conflictWith);
           const conflictName = conflictMeta?.name ?? result.conflictWith;
-          this.setStatus(`Reassigned [${e.code}] from "${conflictName}" to "${actionName}".`);
+          this.setStatus(`Moved ${key} from "${conflictName}" to "${actionName}".`);
         } else {
-          this.setStatus(`Bound [${e.code}] to "${actionName}".`);
+          this.setStatus(`Bound ${key} to "${actionName}".`);
         }
 
         this.renderContent();
@@ -137,7 +149,7 @@ export class KeybindModal implements UIModal {
   private updateStatusBar(): void {
     const statusEl = this.modalEl?.querySelector('#settings-status');
     if (statusEl) {
-      statusEl.textContent = this.statusMessage || 'Click any key badge to rebind, or click [✕] to remove.';
+      statusEl.textContent = this.statusMessage || 'Click + to add a key; click a key to remove it.';
     }
   }
 
@@ -148,130 +160,51 @@ export class KeybindModal implements UIModal {
       existing.remove();
     }
 
-    const modal = document.createElement('div');
-    modal.id = 'settings-keybind-modal';
-    modal.className = 'retro-window-overlay';
-    modal.style.display = 'none';
-    modal.style.zIndex = '250';
+    const modal = createDialogScrim('settings-keybind-modal', 'system');
+    if (!modal) return;
 
-    modal.innerHTML = `
-      <div class="retro-window" style="width: 740px; max-width: 96vw; max-height: 92vh; display: flex; flex-direction: column;">
-        <div class="retro-titlebar">
-          <div class="retro-titlebar-title">
-            <span>⚙️</span>
-            <span>Game Settings &amp; Input Configuration</span>
-          </div>
-          <button id="btn-settings-close-x" class="win-btn win-btn-sm" style="padding: 0 6px; font-weight: bold;">✕</button>
+    const option = (id: string | null, title: string, text: string, extra = ''): string => `
+      <div class="set-option">
+        <div class="set-option-head">
+          ${id ? `<label class="set-check"><input type="checkbox" id="${id}" /> ${escapeHtml(title)}</label>` : `<span class="set-check">${escapeHtml(title)}</span>`}
+          ${extra}
         </div>
+        <div class="ui-note">${text}</div>
+      </div>`;
+    const chordRange =
+      '<span class="set-range"><label for="rng-chord-buffer">Window</label><input type="range" id="rng-chord-buffer" min="25" max="75" step="5" value="40" /><span id="lbl-chord-buffer-ms" class="ui-num">40ms</span></span>';
 
-        <div class="retro-window-body" style="padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto;">
-          <!-- 1. Movement Systems & Guide Panel -->
-          <fieldset class="retro-group" style="padding: 10px 12px;">
-            <legend style="font-weight: bold; color: var(--ui-accent);">🧭 Movement Modes &amp; Ergonomics</legend>
+    // Done and Reset sit in the frame's footer, so they stay in view however far the body scrolls.
+    modal.innerHTML = dialogHtml({
+      title: 'Settings',
+      kicker: 'Game',
+      closeId: 'btn-settings-close-x',
+      size: 'wide',
+      body: `
+        <div class="ui-h">Movement and display</div>
+        ${option(null, 'Standard (Arrows, NumPad, WASD, H J K Y N)', 'Arrow keys and the number pad move at once, diagonals on the pad. W A D and H J K Y N also move; S, L, U and B stay Search, Look, the Character tab and the Bestiary. You can also click a tile: next to you to step or attack, farther away to walk there.', '<span id="badge-standard-mode" class="storage-badge-pill">Standard input</span>')}
+        ${option('chk-arrow-chording', 'Micro-Debounce Buffer (Arrow-Key Chording)', 'Press two arrow keys together to step diagonally (Up and Right goes northeast). Handy on keyboards without a number pad.', chordRange)}
+        ${option('chk-mouse-vectoring', "The 'Hover Ring' (Mouse Vectoring)", 'Shows a ring of eight directions around your hero under the mouse. Click a neighboring tile to step or attack, or a distant one to walk there.')}
+        ${option('chk-torchlight', 'Torchlight', 'What you can see darkens toward the edge of your sight, with warm light around your hero. Off gives flat, even lighting.')}
+        ${option('chk-inventory-hover-cards', 'Rich inventory hover cards', 'Shows full stat cards when you hover items in your inventory. Off shows the name only.')}
 
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-              <!-- Standard Movement -->
-              <div class="movement-mode-card" style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 10px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-size: 13px; font-weight: bold; color: #0f172a;">1. Standard (Arrows, NumPad, WASD, H J K Y N)</span>
-                  <span id="badge-standard-mode" class="storage-badge-pill" style="font-size: 10px; padding: 2px 6px;">0ms Latency</span>
-                </div>
-                <p style="font-size: 11px; color: #475569; margin-top: 4px; line-height: 1.4;">
-                  Instant cardinal arrow keys &amp; 8-directional Numpad (0ms input latency). W A D and H J K Y N also move; S, L, U and B stay Search, Look, Level-up and Bestiary. Rebind any of them below. <b>You can also just click a tile</b> — click adjacent to step or attack, or click farther away to auto-pathfind there. This already works; it isn't limited to the Hover Ring toggle below.
-                </p>
-              </div>
-
-              <!-- Micro-Debounce Buffer (Arrow-Key Chording) -->
-              <div class="movement-mode-card" style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 10px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: bold; color: #0f172a;">
-                    <input type="checkbox" id="chk-arrow-chording" style="width: 15px; height: 15px; cursor: pointer;" />
-                    <span>2. Micro-Debounce Buffer (Arrow-Key Chording)</span>
-                  </label>
-                  <div style="display: flex; align-items: center; gap: 6px;">
-                    <label for="rng-chord-buffer" style="font-size: 11px; color: #334155; font-weight: bold;">Buffer:</label>
-                    <input type="range" id="rng-chord-buffer" min="25" max="75" step="5" value="40" style="width: 80px; cursor: pointer;" />
-                    <span id="lbl-chord-buffer-ms" style="font-size: 11px; font-weight: bold; color: #1e40af; width: 34px;">40ms</span>
-                  </div>
-                </div>
-                <p style="font-size: 11px; color: #475569; margin-top: 4px; line-height: 1.4;">
-                  Press two adjacent arrow keys together within 40ms to step diagonally (e.g., Up + Right = Northeast). Ideal for laptops and compact keyboards without a numpad.
-                </p>
-              </div>
-
-              <!-- The Hover Ring (Mouse Vectoring) -->
-              <div class="movement-mode-card" style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 10px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: bold; color: #0f172a;">
-                    <input type="checkbox" id="chk-mouse-vectoring" style="width: 15px; height: 15px; cursor: pointer;" />
-                    <span>3. The 'Hover Ring' (Mouse Vectoring)</span>
-                  </label>
-                  <span class="storage-badge-pill" style="font-size: 10px; padding: 2px 6px;">Tactical Overlay</span>
-                </div>
-                <p style="font-size: 11px; color: #475569; margin-top: 4px; line-height: 1.4;">
-                  Displays a subtle 8-directional ring around your character when hovering the mouse. Click any adjacent tile to step or attack, or click a distant tile to auto-pathfind.
-                </p>
-              </div>
-
-              <!-- Torchlight -->
-              <div class="movement-mode-card" style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 10px;">
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: bold; color: #0f172a;">
-                  <input type="checkbox" id="chk-torchlight" style="width: 15px; height: 15px; cursor: pointer;" />
-                  <span>Torchlight</span>
-                </label>
-                <p style="font-size: 11px; color: #475569; margin-top: 4px; line-height: 1.4;">
-                  What you can see darkens toward the edge of your sight, with warm light around your hero. Turn off for flat, even lighting.
-                </p>
-              </div>
-
-              <!-- Inventory Rich Hover Cards -->
-              <div class="movement-mode-card" style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 10px;">
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: bold; color: #0f172a;">
-                  <input type="checkbox" id="chk-inventory-hover-cards" style="width: 15px; height: 15px; cursor: pointer;" />
-                  <span>Rich Inventory Hover Cards</span>
-                </label>
-                <p style="font-size: 11px; color: #475569; margin-top: 4px; line-height: 1.4;">
-                  Displays rich stat cards, alignment colors, and lore when hovering items in your inventory. Turn off for compact single-line name tooltips.
-                </p>
-              </div>
-            </div>
-          </fieldset>
-
-          <!-- 2. Keybinding Remapper Panel -->
-          <fieldset class="retro-group" style="padding: 10px 12px; flex: 1;">
-            <legend style="font-weight: bold; color: var(--ui-accent);">⌨️ Keybinding Remapper</legend>
-
-            <!-- Category Filter Tabs -->
-            <div style="display: flex; gap: 4px; margin-bottom: 8px;">
-              <button type="button" class="win-btn win-btn-sm tab-btn active" data-cat="Locomotion">🏃 Locomotion</button>
-              <button type="button" class="win-btn win-btn-sm tab-btn" data-cat="Combat & Magic">⚔️ Combat &amp; Magic</button>
-              <button type="button" class="win-btn win-btn-sm tab-btn" data-cat="Interaction & Inventory">🎒 Interaction &amp; Inventory</button>
-            </div>
-
-            <!-- Keybind list container -->
-            <div id="settings-keybind-list" style="background: #ffffff; border: 2px inset #ffffff; max-height: 220px; overflow-y: auto; padding: 6px;">
-              <!-- Dynamic rows rendered here -->
-            </div>
-          </fieldset>
-
-          <!-- Footer button row -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-            <button type="button" id="btn-settings-reset" class="win-btn" style="padding: 5px 12px; font-size: 12px;">
-              🔄 Reset to Defaults
-            </button>
-            <button type="button" id="btn-settings-done" class="win-btn primary-btn" style="padding: 6px 18px; font-size: 13px; font-weight: bold;">
-              ✓ Done / Close
-            </button>
-          </div>
-
-          <div class="retro-statusbar" style="margin-top: 4px;">
-            <span id="settings-status">Click any key badge to rebind, or click [✕] to remove.</span>
-          </div>
+        <div class="ui-h">Keys</div>
+        <div class="st-subtabs" role="tablist">
+          <button type="button" class="st-subtab tab-btn active" role="tab" aria-selected="true" data-cat="Locomotion">Movement</button>
+          <button type="button" class="st-subtab tab-btn" role="tab" aria-selected="false" data-cat="Combat & Magic">Combat and magic</button>
+          <button type="button" class="st-subtab tab-btn" role="tab" aria-selected="false" data-cat="Interaction & Inventory">Interaction and inventory</button>
         </div>
-      </div>
-    `;
+        <div id="settings-keybind-list" class="ui-inset set-keys"></div>
 
-    document.body.appendChild(modal);
+        <div class="ui-h">Storage</div>
+        <div class="set-option">
+          <div class="set-option-head"><span class="set-check">Saved games in this browser</span><span id="settings-storage-badge" class="storage-badge-pill">Storage: checking...</span></div>
+          <div id="settings-storage-details" class="ui-note"></div>
+        </div>`,
+      footNote: '<span id="settings-status"></span>',
+      actions: dialogButton('btn-settings-reset', 'Reset to defaults') + dialogButton('btn-settings-done', 'Done', { primary: true, key: 'Esc' }),
+    });
+
     this.modalEl = modal;
     // Focusable, so a click anywhere in the overlay (or on a button, which WebKit does not
     // focus) keeps keyboard focus — and keydown — inside the modal.
@@ -332,8 +265,12 @@ export class KeybindModal implements UIModal {
     const tabs = modal.querySelectorAll('.tab-btn');
     tabs.forEach((tab) => {
       tab.addEventListener('click', () => {
-        tabs.forEach((t) => t.classList.remove('active'));
+        tabs.forEach((t) => {
+          t.classList.remove('active');
+          t.setAttribute('aria-selected', 'false');
+        });
         tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
         const cat = tab.getAttribute('data-cat') as ActionMetadata['category'];
         this.renderKeybindList(cat);
       });
@@ -342,6 +279,7 @@ export class KeybindModal implements UIModal {
 
   private renderContent(): void {
     this.renderMovementToggles();
+    this.renderStorage();
     const activeTab = this.modalEl?.querySelector('.tab-btn.active') as HTMLElement | null;
     const cat = (activeTab?.getAttribute('data-cat') as ActionMetadata['category']) || 'Locomotion';
     this.renderKeybindList(cat);
@@ -384,12 +322,27 @@ export class KeybindModal implements UIModal {
     const standardBadge = this.modalEl.querySelector('#badge-standard-mode');
     if (standardBadge) {
       if (!settings.arrowChordingEnabled) {
-        standardBadge.textContent = 'ACTIVE (0ms Latency)';
+        standardBadge.textContent = 'In use';
         standardBadge.classList.add('active');
       } else {
-        standardBadge.textContent = 'Standard Input';
+        standardBadge.textContent = 'Standard input';
         standardBadge.classList.remove('active');
       }
+    }
+  }
+
+  /** Whether the browser may clear saved games under storage pressure (moved here from the pause menu). */
+  private renderStorage(): void {
+    const badge = this.modalEl?.querySelector('#settings-storage-badge');
+    const details = this.modalEl?.querySelector('#settings-storage-details');
+    if (!badge || !details) return;
+    try {
+      const formatted = formatStorageStatus(getStoragePersistenceInfo());
+      badge.textContent = formatted.badge;
+      badge.className = formatted.isPersistent ? 'storage-badge-pill active' : 'storage-badge-pill';
+      details.textContent = formatted.tooltip;
+    } catch {
+      badge.textContent = 'Storage: standard';
     }
   }
 
@@ -402,68 +355,45 @@ export class KeybindModal implements UIModal {
 
     for (const meta of actions) {
       const row = document.createElement('div');
-      row.style.display = 'flex';
-      row.style.justifyContent = 'space-between';
-      row.style.alignItems = 'center';
-      row.style.padding = '5px 8px';
-      row.style.borderBottom = '1px solid #e2e8f0';
-      row.style.fontSize = '12px';
+      row.className = 'set-key-row';
 
       const label = document.createElement('div');
-      label.style.fontWeight = 'bold';
-      label.style.color = '#1e293b';
+      label.className = 'set-key-name';
       label.textContent = meta.name;
       row.appendChild(label);
 
       const badgesCol = document.createElement('div');
-      badgesCol.style.display = 'flex';
-      badgesCol.style.alignItems = 'center';
-      badgesCol.style.gap = '4px';
+      badgesCol.className = 'set-key-chips';
 
       const boundCodes = this.settingsManager.getCodesForAction(meta.id);
 
       for (const code of boundCodes) {
         const badge = document.createElement('span');
         badge.className = 'keybind-badge';
-        badge.style.display = 'inline-flex';
-        badge.style.alignItems = 'center';
-        badge.style.gap = '4px';
-        badge.style.background = '#e2e8f0';
-        badge.style.border = '1px solid #94a3b8';
-        badge.style.padding = '2px 6px';
-        badge.style.fontSize = '11px';
-        badge.style.fontFamily = '"Courier New", monospace';
-        badge.style.fontWeight = 'bold';
-        badge.style.color = '#0f172a';
-        badge.style.cursor = 'pointer';
+        badge.title = `Remove ${keyLabel(code)}`;
+        badge.innerHTML = `<span>${escapeHtml(keyLabel(code))}</span><span class="set-key-x" aria-hidden="true">✕</span>`;
 
-        badge.innerHTML = `<span>${code}</span><span style="color: #ef4444; font-weight: bold; margin-left: 2px;" title="Unbind key">✕</span>`;
-
-        // Click X to unbind
+        // Click to unbind
         badge.addEventListener('click', (e) => {
           e.stopPropagation();
           this.settingsManager.unbindKey(code);
-          this.setStatus(`Unbound [${code}] from "${meta.name}".`);
+          this.setStatus(`Removed ${keyLabel(code)} from "${meta.name}".`);
           this.renderContent();
         });
 
         badgesCol.appendChild(badge);
       }
 
-      // "Add Binding" / "Press any key..." badge button
+      // "+" adds a key; while listening it says so
       const addBtn = document.createElement('button');
       addBtn.type = 'button';
-      addBtn.className = 'win-btn win-btn-sm';
-      addBtn.style.padding = '2px 8px';
-      addBtn.style.fontSize = '11px';
 
       if (this.listeningActionId === meta.id) {
-        addBtn.textContent = '⌨ Press any key...';
-        addBtn.style.background = '#fef08a';
-        addBtn.style.color = '#854d0e';
-        addBtn.style.borderColor = '#ca8a04';
+        addBtn.textContent = 'Press a key...';
+        addBtn.className = 'ui-btn ui-btn--sm ui-btn--primary';
       } else {
-        addBtn.textContent = boundCodes.length === 0 ? '+ Bind Key' : '+';
+        addBtn.className = 'ui-btn ui-btn--sm';
+        addBtn.textContent = boundCodes.length === 0 ? '+ Add a key' : '+';
         addBtn.title = `Add alternative keybinding for ${meta.name}`;
       }
 
@@ -474,7 +404,7 @@ export class KeybindModal implements UIModal {
           this.setStatus('Keybinding cancelled.');
         } else {
           this.listeningActionId = meta.id;
-          this.setStatus(`Press any key to bind to "${meta.name}" (Esc to cancel)...`);
+          this.setStatus(`Press a key for "${meta.name}" (Esc to cancel).`);
         }
         this.renderContent();
       });

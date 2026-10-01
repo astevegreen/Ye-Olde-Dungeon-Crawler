@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ACTION_METADATA } from '../settings/settingsManager';
+import { ACTION_METADATA, hardWiredConflict } from '../settings/settingsManager';
 
 // Keys InputHandler handles before consulting bindings: U opens attribute allocation and
 // E the character menu, so no default binding may claim them.
@@ -13,6 +13,13 @@ describe('default keybindings', () => {
     }
     const shared = [...owners].filter(([, ids]) => ids.length > 1);
     expect(shared).toEqual([]);
+  });
+
+  it('never bind a key the game answers first to some other action', () => {
+    const misbound = ACTION_METADATA.flatMap((a) =>
+      a.defaultCodes.filter((code) => hardWiredConflict(a.id, code)).map((code) => `${a.id}:${code}`)
+    );
+    expect(misbound).toEqual([]);
   });
 
   it('leave hard-wired command keys to their commands', () => {

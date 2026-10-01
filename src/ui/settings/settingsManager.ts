@@ -62,6 +62,45 @@ export const ACTION_METADATA: ActionMetadata[] = [
 ];
 
 /**
+ * Keys InputHandler answers before it reads the bindings (src/rendering/input-handler.ts),
+ * each with what it does and, when it has one, the action that owns it. Bound to anything
+ * else, such a key would never reach that action, so Settings refuses it (ADR-0011: the
+ * hotkeys keep their keys, and movement isn't offered them).
+ */
+export const HARD_WIRED_KEYS: Readonly<Record<string, { does: string; actionId?: string }>> = {
+  Escape: { does: 'opens the menu' },
+  F1: { does: 'opens Help' },
+  Slash: { does: 'opens Help' },
+  F2: { does: 'opens Diagnostics' },
+  Backquote: { does: 'opens Diagnostics' },
+  F3: { does: 'opens Feedback' },
+  KeyB: { does: 'opens the Bestiary', actionId: 'compendium' },
+  KeyP: { does: 'opens Pacts', actionId: 'pact' },
+  KeyU: { does: 'opens the Character tab' },
+  KeyE: { does: 'opens the Character tab', actionId: 'character_menu' },
+  KeyI: { does: 'opens the Inventory', actionId: 'inventory' },
+  KeyZ: { does: 'opens the Spellbook', actionId: 'cast_spell' },
+  KeyX: { does: 'starts Look', actionId: 'inspect' },
+  KeyL: { does: 'starts Look', actionId: 'inspect' },
+  KeyC: { does: 'closes a door', actionId: 'close_door' },
+  KeyR: { does: 'rests', actionId: 'rest' },
+  KeyS: { does: 'searches', actionId: 'search' },
+  KeyM: { does: 'opens the map', actionId: 'map' },
+  KeyQ: { does: 'saves and quits' },
+  KeyG: { does: 'picks up', actionId: 'pickup' },
+  Comma: { does: 'picks up', actionId: 'pickup' },
+  ...Object.fromEntries(
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((n) => [`Digit${n}`, { does: `casts quick spell ${n}`, actionId: `quick_spell_${n}` }])
+  ),
+};
+
+/** What a hard-wired key does, when binding it to `actionId` would never work; else null. */
+export function hardWiredConflict(actionId: string, code: string): string | null {
+  const wired = HARD_WIRED_KEYS[code];
+  return wired && wired.actionId !== actionId ? wired.does : null;
+}
+
+/**
  * Configurable Radial Action Menu (docs/architecture/simulation-and-input.md). A slot bound to a spell,
  * a registered CommandPalette command, or a directly-usable consumable item (potion
  * or self-targeted scroll). Indexed by compass direction — see radialMenu.ts's

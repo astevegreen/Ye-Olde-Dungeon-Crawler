@@ -258,41 +258,6 @@
   font-family: var(--ui-font-family, monospace);
 }
 
-/* Settings & Keybinding Modal Styling */
-.keybind-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--ui-text);
-  border: 1px solid var(--ui-text-muted);
-  border-radius: 2px;
-  padding: 2px 6px;
-  font-size: 11px;
-  font-family: "Courier New", monospace;
-  font-weight: bold;
-  color: var(--ui-surface-0);
-  box-shadow: 1px 1px 0px var(--ui-text-soft);
-}
-
-.keybind-badge:hover {
-  background: var(--ui-text-soft);
-}
-
-.movement-mode-card {
-  border-radius: 2px;
-  transition: border-color 0.15s ease;
-}
-
-.movement-mode-card:hover {
-  border-color: var(--ui-info) !important;
-}
-
-.tab-btn.active {
-  background: #1e40af !important;
-  color: var(--ui-text) !important;
-  border-color: #3b82f6 !important;
-  font-weight: bold;
-}
 
 /* ==========================================================================
    Paradigm B: The Gothic Action Console & Norse Runic HUD

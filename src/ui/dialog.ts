@@ -34,6 +34,8 @@ export interface DialogFrame {
   hints?: Array<{ keys: string[]; label: string }>;
   /** Footer buttons, from `dialogButton`. */
   actions?: string;
+  /** Raw HTML for the footer's left side, after the hints, e.g. a status line. */
+  footNote?: string;
   size?: 'narrow' | 'wide';
 }
 
@@ -42,8 +44,8 @@ export function dialogHtml(f: DialogFrame): string {
     .map((h) => `<span class="cm-hint">${h.keys.map(keyChip).join('')} ${escapeHtml(h.label)}</span>`)
     .join('');
   const foot =
-    hints || f.actions
-      ? `<div class="ui-dialog-foot"><div class="ui-dialog-hint">${hints}</div>${f.actions ? `<div class="ui-dialog-actions">${f.actions}</div>` : ''}</div>`
+    hints || f.actions || f.footNote
+      ? `<div class="ui-dialog-foot"><div class="ui-dialog-hint">${hints}${f.footNote ?? ''}</div>${f.actions ? `<div class="ui-dialog-actions">${f.actions}</div>` : ''}</div>`
       : '';
   return `
     <div class="ui-dialog${f.size ? ` ui-dialog--${f.size}` : ''}" role="dialog" aria-modal="true"${f.titleId ? ` aria-labelledby="${f.titleId}"` : ''}>

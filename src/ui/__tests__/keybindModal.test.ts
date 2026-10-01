@@ -349,10 +349,29 @@ describe('KeybindModal input', () => {
     addButton.dispatchEvent({ type: 'click', stopPropagation: vi.fn() } as any);
     expect(mockDoc.activeElement).toBe(overlay());
 
-    press(overlay(), win, 'F2');
+    // V opens the radial menu in play; here it binds, moving off that action.
+    press(overlay(), win, 'KeyV');
 
-    expect(settingsManager.getCodesForAction(action.id)).toContain('F2');
+    expect(settingsManager.getCodesForAction(action.id)).toContain('KeyV');
+    expect(input.radialMenuOverlay?.isOpen ?? false).toBe(false);
+  });
+
+  it('refuses a key the game answers before its bindings, and keeps listening', () => {
+    modal.open();
+    const action = ACTION_METADATA.find((m) => m.category === 'Locomotion')!;
+    const list = mockDoc.getElementById('settings-keybind-list')!;
+    const addButton = list.children[0].children[1].children.at(-1)!;
+    addButton.dispatchEvent({ type: 'click', stopPropagation: vi.fn() } as any);
+
+    // F2 opens Diagnostics before anything reads the bindings: movement can't have it.
+    press(overlay(), win, 'F2');
+    expect(settingsManager.getCodesForAction(action.id)).not.toContain('F2');
     expect(onToggleDiagnostics).not.toHaveBeenCalled();
+    expect(mockDoc.getElementById('settings-status')?.textContent).toContain('F2 opens Diagnostics');
+
+    // Still listening: the next key binds.
+    press(overlay(), win, 'KeyV');
+    expect(settingsManager.getCodesForAction(action.id)).toContain('KeyV');
   });
 
   it('closes on Escape once: hidden, off the stack, onClose once', () => {

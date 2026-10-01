@@ -154,9 +154,14 @@ test('windows opened from save & quit each hold one stack entry and keep keys fr
   expect(await stackIds(page)).toEqual(['settings']);
   await heldBack();
   await settings.locator('#settings-keybind-list button').first().click();
-  await expect(page.locator('#settings-status')).toContainText('Press any key');
+  await expect(page.locator('#settings-status')).toContainText('Press a key for');
+  // F2 opens Diagnostics before the game reads bindings: Settings refuses it, and it
+  // doesn't leak to the game either. Then V, which the game would also claim, binds.
   await page.keyboard.press('F2');
-  await expect(page.locator('#settings-status')).toContainText('Bound [F2]');
+  await expect(page.locator('#settings-status')).toContainText('F2 opens Diagnostics');
+  expect(await stackIds(page)).toEqual(['settings']);
+  await page.keyboard.press('KeyV');
+  await expect(page.locator('#settings-status')).toContainText('Moved V from "Open Radial Action Menu" to "Move North"');
   expect(await stackIds(page)).toEqual(['settings']);
   await page.keyboard.press('Escape');
   await expect(settings).toBeHidden();
@@ -199,8 +204,11 @@ test('settings on the main menu rebinds and closes by keyboard', async ({ page }
   await page.locator('#btn-menu-settings').click();
   await expect(settings).toBeVisible();
   await settings.locator('#settings-keybind-list button').first().click();
+  // G picks up, which the game answers before bindings: Settings refuses it, then takes ;.
   await page.keyboard.press('KeyG');
-  await expect(page.locator('#settings-status')).toContainText(/\[KeyG\].* to "Move North"/);
+  await expect(page.locator('#settings-status')).toContainText('G picks up');
+  await page.keyboard.press('Semicolon');
+  await expect(page.locator('#settings-status')).toContainText('Bound ; to "Move North"');
   await page.keyboard.press('Escape');
   await expect(settings).toBeHidden();
 

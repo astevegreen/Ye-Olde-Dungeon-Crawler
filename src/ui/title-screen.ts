@@ -1,4 +1,5 @@
 import { ProfileManager } from '../engine';
+import { iconHtml } from './icons';
 import type { CharacterProfile } from '../engine';
 import { CharacterRoller } from '../engine';
 import { PRNG } from '../engine';
@@ -158,7 +159,7 @@ export class TitleScreen {
       if (this.selectedProfileId) {
         try {
           const fileName = this.profileManager.triggerCotwDownload(this.selectedProfileId, defaultPlatformAdapter);
-          this.setStatus(`Exported ${fileName} successfully. 💾`);
+          this.setStatus(`Exported ${fileName} successfully.`);
         } catch (err) {
           this.setStatus(`Export error: ${(err as Error).message}`);
         }
@@ -332,7 +333,7 @@ export class TitleScreen {
             onSuccess: (p) => {
               this.refresh();
               this.onImportCallback(content);
-              this.setStatus(`Restored character ${p.name} successfully! 📥`);
+              this.setStatus(`Restored character ${p.name} successfully!`);
             },
             onError: (err) => {
               this.setStatus(`Import error: ${err}`);
@@ -359,7 +360,7 @@ export class TitleScreen {
             onSuccess: (p) => {
               this.refresh();
               this.onImportCallback(content);
-              this.setStatus(`Restored character ${p.name} from ${filename}! 📥`);
+              this.setStatus(`Restored character ${p.name} from ${filename}!`);
             },
             onError: (err) => {
               this.setStatus(`Import failed: ${err}`);
@@ -482,7 +483,7 @@ export class TitleScreen {
 
       item.innerHTML = `
         <div style="display: flex; justify-content: space-between; font-weight: bold;">
-          <span>#${idx + 1} <b>${this.escapeHtml(champ.heroName)}</b> (${champ.gender === 'female' ? '🛡️ Heroine' : '⚔️ Hero'})</span>
+          <span>#${idx + 1} <b>${this.escapeHtml(champ.heroName)}</b> (${champ.gender === 'female' ? `${iconHtml('heroine')} Heroine` : `${iconHtml('hero')} Hero`})</span>
           <span class="${badgeClass}">${badgeText}</span>
         </div>
         <div style="display: flex; justify-content: space-between; font-size: 10px; opacity: 0.85; margin-top: 2px;">
@@ -618,7 +619,7 @@ export class TitleScreen {
         const fallen = profile.questStatus === 'fallen';
         item.innerHTML = `
           <div class="roster-item-header">
-            <span class="roster-name">${fallen ? '☠️' : '⚔️'} ${this.escapeHtml(profile.name)}${fallen ? ' <span style="color: #f87171;">(Fallen)</span>' : ''}</span>
+            <span class="roster-name">${iconHtml(fallen ? 'fallen' : profile.gender === 'female' ? 'heroine' : 'hero')} ${this.escapeHtml(profile.name)}${fallen ? ' <span style="color: #f87171;">(Fallen)</span>' : ''}</span>
             <span class="roster-date">${dateStr}</span>
           </div>
           <div class="roster-item-details">

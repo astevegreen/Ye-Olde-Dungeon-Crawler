@@ -58,6 +58,11 @@ export type UiIconName = (typeof UI_ICON_NAMES)[number];
 /** Sprite-recipe key prefix for UI icons. */
 export const UI_ICON_PREFIX = 'ui~';
 
+/** An icon as markup, for strings built into `innerHTML`. */
+export function iconHtml(name: UiIconName): string {
+  return `<i class="ui-icon" data-icon="${name}" aria-hidden="true"></i>`;
+}
+
 /** An icon as an element, for views built with `createElement`. */
 export function iconElement(name: UiIconName): HTMLElement {
   const el = document.createElement('i');

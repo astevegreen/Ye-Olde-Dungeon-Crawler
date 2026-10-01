@@ -1,4 +1,5 @@
 import { Leaderboard, type HallOfFameEntry } from '../engine';
+import { iconHtml } from './icons';
 import { copyTextToClipboard } from './platform';
 import type { UIModal } from './modalStack';
 import { resolveBranding, type ResolvedBranding } from './branding';
@@ -69,7 +70,7 @@ export class SagaShareModal implements UIModal {
       <div class="retro-window" style="width: 640px; max-width: 95vw;">
         <div class="retro-titlebar">
           <div class="retro-titlebar-title">
-            <span>📜</span>
+            ${iconHtml('epitaph')}
             <span>Saga Exchange - ${brand.hallOfFameName} Run Sharing</span>
           </div>
           <button id="btn-saga-close-x" class="win-btn win-btn-sm" style="padding: 0 5px; font-weight: bold;">✕</button>
@@ -78,8 +79,8 @@ export class SagaShareModal implements UIModal {
         <div class="retro-window-body" style="padding: 10px;">
           <!-- Tab selector -->
           <div style="display: flex; gap: 4px; margin-bottom: 10px; border-bottom: 2px groove #808080; padding-bottom: 6px;">
-            <button id="tab-saga-share" class="win-btn win-btn-sm active" style="flex: 1; font-weight: bold;">🔗 Share Saga</button>
-            <button id="tab-saga-import" class="win-btn win-btn-sm" style="flex: 1; font-weight: bold;">📥 Import Saga</button>
+            <button id="tab-saga-share" class="win-btn win-btn-sm active" style="flex: 1; font-weight: bold;">${iconHtml('share')} Share Saga</button>
+            <button id="tab-saga-import" class="win-btn win-btn-sm" style="flex: 1; font-weight: bold;">${iconHtml('import')} Import Saga</button>
           </div>
 
           <!-- Share Section -->
@@ -96,7 +97,7 @@ export class SagaShareModal implements UIModal {
               <label class="retro-label" style="display: block; margin-bottom: 2px;">Saga Code (Base64 URL-Safe):</label>
               <div style="display: flex; gap: 4px;">
                 <input type="text" id="saga-code-input" class="retro-input" readonly style="flex: 1; font-family: monospace; font-size: 11px;" />
-                <button id="btn-saga-copy-code" class="win-btn" style="white-space: nowrap;">📋 Copy Code</button>
+                <button id="btn-saga-copy-code" class="win-btn" style="white-space: nowrap;">${iconHtml('copy')} Copy Code</button>
               </div>
             </div>
 
@@ -104,12 +105,12 @@ export class SagaShareModal implements UIModal {
               <label class="retro-label" style="display: block; margin-bottom: 2px;">Web Share Link:</label>
               <div style="display: flex; gap: 4px;">
                 <input type="text" id="saga-url-input" class="retro-input" readonly style="flex: 1; font-family: monospace; font-size: 11px;" />
-                <button id="btn-saga-copy-url" class="win-btn" style="white-space: nowrap;">🔗 Copy Link</button>
+                <button id="btn-saga-copy-url" class="win-btn" style="white-space: nowrap;">${iconHtml('share')} Copy Link</button>
               </div>
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 6px;">
-              <button id="btn-saga-copy-epitaph" class="win-btn">📜 Copy ASCII Epitaph</button>
+              <button id="btn-saga-copy-epitaph" class="win-btn">${iconHtml('epitaph')} Copy ASCII Epitaph</button>
               <button id="btn-saga-share-close" class="win-btn primary-btn">Done</button>
             </div>
           </div>
@@ -129,8 +130,8 @@ export class SagaShareModal implements UIModal {
             ></textarea>
 
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <button id="btn-saga-inspect" class="win-btn" style="font-weight: bold;">🔍 Inspect Saga</button>
-              <button id="btn-saga-inscribe" class="win-btn primary-btn" disabled style="font-weight: bold;">🏆 Inscribe into ${brand.hallOfFameShortName}</button>
+              <button id="btn-saga-inspect" class="win-btn" style="font-weight: bold;">${iconHtml('search')} Inspect Saga</button>
+              <button id="btn-saga-inscribe" class="win-btn primary-btn" disabled style="font-weight: bold;">${iconHtml('trophy')} Inscribe into ${brand.hallOfFameShortName}</button>
             </div>
 
             <label class="retro-label" style="display: block; margin-bottom: 2px;">Inspected Hero Saga:</label>
@@ -182,14 +183,14 @@ export class SagaShareModal implements UIModal {
     this.shareCopyCodeBtn?.addEventListener('click', async () => {
       if (this.shareCodeInput?.value) {
         await copyTextToClipboard(this.shareCodeInput.value);
-        this.setStatus('Copied Saga Code to clipboard! 📋');
+        this.setStatus('Copied Saga Code to clipboard!');
       }
     });
 
     this.shareCopyUrlBtn?.addEventListener('click', async () => {
       if (this.shareUrlInput?.value) {
         await copyTextToClipboard(this.shareUrlInput.value);
-        this.setStatus('Copied Web Share Link to clipboard! 🔗');
+        this.setStatus('Copied Web Share Link to clipboard!');
       }
     });
 
@@ -197,7 +198,7 @@ export class SagaShareModal implements UIModal {
       if (this.activeEntry) {
         const epitaph = Leaderboard.formatEpitaph(this.activeEntry, this.xpName);
         await copyTextToClipboard(epitaph);
-        this.setStatus('Copied ASCII Epitaph to clipboard! 📜');
+        this.setStatus('Copied ASCII Epitaph to clipboard!');
       }
     });
 
@@ -281,7 +282,7 @@ export class SagaShareModal implements UIModal {
     const entry = Leaderboard.decodeRunShare(code);
     if (!entry) {
       if (this.importPreviewEl) {
-        this.importPreviewEl.textContent = '❌ ERROR: Invalid, corrupted, or incompatible saga code.';
+        this.importPreviewEl.textContent = 'Error: invalid, corrupted, or incompatible saga code.';
         this.importPreviewEl.style.color = '#f87171';
       }
       if (this.importInscribeBtn) this.importInscribeBtn.disabled = true;

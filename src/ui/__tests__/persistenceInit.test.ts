@@ -21,7 +21,7 @@ describe('Storage Persistence Negotiation (Headless)', () => {
       timestamp: Date.now(),
     });
     expect(formatted.isPersistent).toBe(true);
-    expect(formatted.badge).toContain('Persistent 🛡️');
+    expect(formatted.badge).toContain('Persistent');
     expect(formatted.badge).toContain('12.5MB / 500MB');
   });
 });

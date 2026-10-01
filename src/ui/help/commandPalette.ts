@@ -1,4 +1,5 @@
 import type { GameEngine } from '../../engine';
+import { iconHtml } from '../icons';
 import type { ModalStackManager, UIModal } from '../modalStack';
 
 export interface CommandItem {
@@ -179,7 +180,7 @@ export class CommandPalette implements UIModal {
       <div class="retro-window" style="width: 580px; box-shadow: 0 10px 30px rgba(0,0,0,0.9); border: 1px solid var(--ui-accent, #f59e0b);">
         <div class="retro-titlebar" style="padding: 4px 8px; border-bottom-color: var(--ui-accent, #f59e0b);">
           <div class="retro-titlebar-title" style="font-size: 12px;">
-            <span>⌨️</span>
+            ${iconHtml('commands')}
             <span>Quick Command Palette</span>
           </div>
           <button id="btn-cmd-palette-close" class="win-btn win-btn-sm" style="padding: 0 4px; font-weight: bold;">✕</button>

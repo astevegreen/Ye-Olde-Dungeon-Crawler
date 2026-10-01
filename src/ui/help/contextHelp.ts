@@ -1,4 +1,5 @@
 import { type GameContentManifest, type GameEngine, TempleService, formatCurrency } from '../../engine';
+import { iconHtml } from '../icons';
 import type { TargetingOverlay } from '../../rendering/targeting-overlay';
 import type { ShopDialog } from '../shop/shopDialog';
 import type { InspectOverlay } from '../../rendering/inspect-overlay';
@@ -230,7 +231,7 @@ export class ContextHelp {
       <div class="retro-window" style="width: 380px; box-shadow: 0 8px 24px rgba(0,0,0,0.85); border: 1px solid var(--ui-accent, #f59e0b);">
         <div class="retro-titlebar" style="padding: 3px 6px; border-bottom-color: var(--ui-accent, #f59e0b);">
           <div class="retro-titlebar-title" style="font-size: 11px;">
-            <span>💡</span>
+            ${iconHtml('help')}
             <span>${content.title} (F1)</span>
           </div>
           <button id="btn-context-help-close" class="win-btn win-btn-sm" style="padding: 0 4px; font-weight: bold; line-height: 1;">✕</button>

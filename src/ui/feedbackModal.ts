@@ -426,11 +426,11 @@ export class FeedbackModal implements UIModal {
   private updateScopeDescription(): void {
     if (!this.scopeDescEl) return;
     if (this.currentType !== 'bug') {
-      this.scopeDescEl.textContent = '💡 Suggestion: Help us expand and balance the realm!';
+      this.scopeDescEl.textContent = 'Suggestion: help us expand and balance the realm!';
       return;
     }
     const cat = this.currentBugCategory();
-    this.scopeDescEl.textContent = `🎯 Includes: ${cat.contents}`;
+    this.scopeDescEl.textContent = `Includes: ${cat.contents}`;
     if (this.checkIncludeLog) this.checkIncludeLog.checked = cat.includeLog;
     if (this.checkIncludeSnapshot) this.checkIncludeSnapshot.checked = cat.includeReplay;
   }
@@ -597,8 +597,8 @@ export class FeedbackModal implements UIModal {
     if (success) {
       this.notify(
         format === 'json'
-          ? 'Copied full diagnostic JSON to clipboard! 📋'
-          : 'Copied AI-Ready bug report to clipboard! 📋',
+          ? 'Copied full diagnostic JSON to clipboard!'
+          : 'Copied AI-Ready bug report to clipboard!',
         'success'
       );
     } else {
@@ -706,8 +706,8 @@ export class FeedbackModal implements UIModal {
       void copyTextToClipboard(paste.text);
       this.notify(
         paste.trimmed
-          ? 'Opening GitHub. Report copied without replay data (too large): paste it into the issue, and attach the file from Save .json. 📋'
-          : 'Opening GitHub. Report copied: paste it into the issue before submitting. 📋',
+          ? 'Opening GitHub. Report copied without replay data (too large): paste it into the issue, and attach the file from Save .json.'
+          : 'Opening GitHub. Report copied: paste it into the issue before submitting.',
         'success'
       );
     } else {

@@ -1,3 +1,5 @@
+import { iconHtml, type UiIconName } from './icons';
+
 export type ToastType = 'info' | 'success' | 'warning' | 'error';
 
 let toastContainer: HTMLElement | null = null;
@@ -40,23 +42,23 @@ export function showToast(message: string, type: ToastType = 'info', durationMs 
   let bg = 'var(--ui-surface-2)';
   let border = 'var(--ui-line-strong)';
   const color = 'var(--ui-text)';
-  let icon = 'ℹ️';
+  let icon: UiIconName = 'info';
 
   switch (type) {
     case 'success':
       bg = tint('good');
       border = 'var(--ui-good)';
-      icon = '✅';
+      icon = 'success';
       break;
     case 'warning':
       bg = tint('warn');
       border = 'var(--ui-warn)';
-      icon = '⚠️';
+      icon = 'warning';
       break;
     case 'error':
       bg = tint('bad');
       border = 'var(--ui-bad)';
-      icon = '❌';
+      icon = 'error';
       break;
   }
 
@@ -80,7 +82,7 @@ export function showToast(message: string, type: ToastType = 'info', durationMs 
   });
 
   toast.innerHTML = `
-    <span style="font-size: 16px;">${icon}</span>
+    ${iconHtml(icon)}
     <span style="flex: 1; word-break: break-word;">${message}</span>
     <span style="font-size: 12px; opacity: 0.6; margin-left: 6px;">✕</span>
   `;

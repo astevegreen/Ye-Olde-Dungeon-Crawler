@@ -886,7 +886,7 @@ window.addEventListener('DOMContentLoaded', () => {
     branding: brand,
     onSagaInscribed: (entry) => {
       titleScreen?.refreshValhalla();
-      titleScreen?.setStatus(`Inscribed ${entry.heroName}'s saga into the ${brand.hallOfFameName}! 🏆`);
+      titleScreen?.setStatus(`Inscribed ${entry.heroName}'s saga into the ${brand.hallOfFameName}!`);
     },
     onClose: () => {
       if (inputHandler && activeEngine && gameContainer && gameContainer.style.display !== 'none') {
@@ -1131,13 +1131,13 @@ window.addEventListener('DOMContentLoaded', () => {
     currentGameOverEntry = summary.entry ?? null;
 
     if (status === 'victorious') {
-      if (icon) icon.textContent = '🏆';
+      icon?.setAttribute('data-icon', 'trophy');
       if (title) title.textContent = brand.victoryTitle;
       if (banner) banner.style.background = '#15803d';
       if (bannerTitle) bannerTitle.textContent = 'VICTORIOUS';
       if (bannerSub) bannerSub.textContent = brand.victoryBanner;
     } else {
-      if (icon) icon.textContent = '✝';
+      icon?.setAttribute('data-icon', 'fallen');
       if (title) title.textContent = 'Fallen in Battle';
       if (banner) banner.style.background = '#7f1d1d';
       if (bannerTitle) bannerTitle.textContent = 'FALLEN IN BATTLE';
@@ -1193,7 +1193,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const fileName = profileManager.triggerCotwDownload(activeProfile.id, defaultPlatformAdapter);
         const pre = document.getElementById('game-over-summary');
         if (pre) {
-          pre.textContent += `\n\n[ARCHIVED] Character save exported to ${fileName} 💾`;
+          pre.textContent += `\n\n[ARCHIVED] Character save exported to ${fileName}.`;
         }
       } catch (err) {
         alert(`Export failed: ${(err as Error).message}`);
@@ -1435,7 +1435,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (activeProfile) {
           try {
             const fileName = profileManager.triggerCotwDownload(activeProfile.id, defaultPlatformAdapter);
-            eng.log(`Exported character save to ${fileName} 💾`);
+            eng.log(`Exported character save to ${fileName}.`);
             renderer?.render();
           } catch (err) {
             eng.log(`Export failed: ${(err as Error).message}`);
@@ -1696,7 +1696,7 @@ window.addEventListener('DOMContentLoaded', () => {
         activeManifestId: activeManifest.id,
         onSuccess: (p) => {
           titleScreen.refresh();
-          titleScreen.setStatus(`Successfully imported hero: ${p.name} 📥`);
+          titleScreen.setStatus(`Successfully imported hero: ${p.name}.`);
         },
         onError: (err) => {
           titleScreen.setStatus(`Import error: ${err}`);

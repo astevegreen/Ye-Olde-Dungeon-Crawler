@@ -125,7 +125,7 @@ export function formatStorageStatus(info: StoragePersistenceInfo | null): {
   if (info.persisted || info.mode === 'persistent') {
     const quotaText = info.quotaMB ? ` (${info.usageMB ?? 0}MB / ${info.quotaMB}MB)` : '';
     return {
-      badge: `Storage: Persistent 🛡️${quotaText}`,
+      badge: `Storage: Persistent${quotaText}`,
       badgeClass: 'storage-persistent',
       tooltip: `Storage is protected against browser cache clearing.${quotaText}`,
       isPersistent: true,
@@ -134,7 +134,7 @@ export function formatStorageStatus(info: StoragePersistenceInfo | null): {
 
   const quotaText = info.quotaMB ? ` (${info.usageMB ?? 0}MB / ${info.quotaMB}MB)` : '';
   return {
-    badge: `Storage: Standard ⚠️${quotaText}`,
+    badge: `Storage: Standard${quotaText}`,
     badgeClass: 'storage-standard',
     tooltip: 'Storage may be evicted if browser runs low on disk space. Export save file recommended.',
     isPersistent: false,

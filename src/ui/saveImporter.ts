@@ -1,4 +1,5 @@
 import { validateSavePayload, type SaveValidationResult } from '../engine';
+import { iconHtml } from './icons';
 import type { ProfileManager } from '../engine';
 import type { CharacterProfile } from '../engine';
 
@@ -38,7 +39,7 @@ export function setupSaveDragAndDrop(options: DragAndDropOptions): () => void {
     overlay.className = 'save-drop-overlay';
     overlay.innerHTML = `
       <div class="save-drop-box">
-        <div style="font-size: 36px; margin-bottom: 8px;">📥</div>
+        <div class="save-drop-icon">${iconHtml('import')}</div>
         <div style="font-size: 16px; font-weight: bold; margin-bottom: 4px;">DROP SAVE FILE HERE</div>
         <div style="font-size: 12px; color: #94a3b8;">Restores .cotw, .sav, or .json adventurer</div>
       </div>
@@ -161,7 +162,7 @@ export function showManifestMismatchDialog(options: ManifestMismatchDialogOption
     <div class="retro-window" style="width: 480px; max-width: 90vw;">
       <div class="retro-titlebar" style="background: linear-gradient(90deg, #9a3412, #ea580c);">
         <div class="retro-titlebar-title">
-          <span>⚠️</span>
+          ${iconHtml('warning')}
           <span>Manifest Compatibility Warning</span>
         </div>
       </div>

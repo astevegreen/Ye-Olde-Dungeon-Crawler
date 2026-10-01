@@ -12,3 +12,7 @@
   background: center / contain no-repeat;
   font-style: normal;
 }
+
+/* The save importer's drop target: one large icon. */
+.save-drop-icon { margin-bottom: 8px; }
+.save-drop-icon .ui-icon { width: 48px; height: 48px; }

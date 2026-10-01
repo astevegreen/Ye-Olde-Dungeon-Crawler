@@ -1,4 +1,5 @@
 import type { ProfileManager, AutosaveManager, AutosaveSlot } from '../engine';
+import { iconHtml } from './icons';
 import type { UIModal } from './modalStack';
 import { showToast } from './toast';
 
@@ -139,7 +140,7 @@ export class SaveSlotModal implements UIModal {
                 <span style="font-size: 12px; color: #94a3b8;">Floor ${meta.floor}</span>
               </div>
               <div style="font-size: 11px; color: #cbd5e1; margin-top: 4px;">
-                🕒 Last Saved: ${dateStr}
+                ${iconHtml('clock')} Last Saved: ${dateStr}
               </div>
               ${preserved ? '<div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Kept aside when a newer autosave would have overwritten it.</div>' : ''}
             </div>
@@ -150,7 +151,7 @@ export class SaveSlotModal implements UIModal {
                 class="win-btn primary-btn"
                 style="padding: 6px 14px; font-size: 12px; font-weight: bold; cursor: pointer;"
               >
-                ⚡ Resume ${preserved ? 'Earlier ' : ''}Autosave
+                ${iconHtml('autosave')} Resume ${preserved ? 'Earlier ' : ''}Autosave
               </button>
             </div>
           </div>
@@ -182,9 +183,9 @@ export class SaveSlotModal implements UIModal {
       profileListHtml = sortedProfiles.map((prof) => {
         const dateStr = new Date(prof.lastSaved).toLocaleString();
         const statusBadge = prof.questStatus === 'victorious'
-          ? '<span style="background: #15803d; color: #ffffff; font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: bold;">🏆 VICTOR</span>'
+          ? '<span style="background: #15803d; color: #ffffff; font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: bold;">' + iconHtml('trophy') + ' VICTOR</span>'
           : prof.questStatus === 'fallen'
-          ? '<span style="background: #991b1b; color: #ffffff; font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: bold;">✝ FALLEN</span>'
+          ? '<span style="background: #991b1b; color: #ffffff; font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: bold;">' + iconHtml('fallen') + ' FALLEN</span>'
           : '<span style="background: #334155; color: #cbd5e1; font-size: 10px; padding: 2px 6px; border-radius: 3px;">ACTIVE</span>';
 
         return `
@@ -221,7 +222,7 @@ export class SaveSlotModal implements UIModal {
                 data-profile-id="${prof.id}"
                 style="padding: 6px 12px; font-size: 12px; font-weight: bold; cursor: pointer;"
               >
-                📂 Load
+                ${iconHtml('load')} Load
               </button>
               <button
                 type="button"
@@ -231,7 +232,7 @@ export class SaveSlotModal implements UIModal {
                 style="padding: 6px 8px; font-size: 12px; color: #f87171; cursor: pointer;"
                 title="Delete Save"
               >
-                🗑️
+                ${iconHtml('delete')}
               </button>
             </div>
           </div>
@@ -263,7 +264,7 @@ export class SaveSlotModal implements UIModal {
           border-bottom: 1px solid var(--ui-accent, #f59e0b);
         ">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 16px;">💾</span>
+            ${iconHtml('save')}
             <span style="font-weight: bold; font-size: 15px; color: var(--ui-titlebar-text, #fde047); letter-spacing: 1px;">
               Load Saved Adventure
             </span>

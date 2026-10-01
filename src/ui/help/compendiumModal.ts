@@ -84,11 +84,6 @@ export class CompendiumModal implements UIModal {
   public handleKeyDown(e: KeyboardEvent): boolean {
     if (!this.isOpen) return false;
 
-    if (e.key === 'Escape' || e.code === 'KeyB') {
-      this.close();
-      return true;
-    }
-
     const monsters = this.getFilteredMonsters();
     const currentIndex = monsters.findIndex((m) => m.id === this.selectedMonsterId);
 
@@ -110,11 +105,13 @@ export class CompendiumModal implements UIModal {
       return true;
     }
 
-    if (e.key === 'Tab') {
+    // Left / Right step through the filters (Tab is the menu's).
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault();
       const filters: Array<'all' | 'discovered' | 'mastered'> = ['all', 'discovered', 'mastered'];
       const curIdx = filters.indexOf(this.activeFilter);
-      this.activeFilter = filters[(curIdx + 1) % filters.length];
+      const step = e.key === 'ArrowRight' ? 1 : filters.length - 1;
+      this.activeFilter = filters[(curIdx + step) % filters.length];
       const newFiltered = this.getFilteredMonsters();
       if (newFiltered.length > 0) {
         this.selectedMonsterId = newFiltered[0].id;
@@ -123,7 +120,8 @@ export class CompendiumModal implements UIModal {
       return true;
     }
 
-    return true;
+    // Everything else (Escape, Tab, the menu's tab keys) is the shell's.
+    return false;
   }
 
   private getFilteredMonsters(): MonsterDefinition[] {
@@ -168,14 +166,6 @@ export class CompendiumModal implements UIModal {
 
     this.overlayEl.innerHTML = `
       <div class="retro-window" style="width: 780px; max-height: 88vh;">
-        <div class="retro-titlebar">
-          <div class="retro-titlebar-title">
-            <span>📖</span>
-            <span>Bestiary</span>
-          </div>
-          <button id="btn-compendium-close-x" class="win-btn win-btn-sm" style="padding: 0 5px; font-weight: bold;">✕</button>
-        </div>
-
         <div class="retro-window-body" style="gap: 8px;">
           <div class="retro-banner" style="background: #1e1b4b; padding: 6px 12px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -242,17 +232,11 @@ export class CompendiumModal implements UIModal {
             </div>
           </div>
 
-          <div class="retro-statusbar" style="display: flex; justify-content: space-between; align-items: center; padding-top: 4px;">
-            <span style="font-size: 11px; color: #a3aec2;">Use Arrow Keys to select, Tab to cycle filters, Esc or B to close.</span>
-            <button id="btn-compendium-close" class="win-btn primary-btn" style="padding: 3px 12px;">Close</button>
-          </div>
         </div>
       </div>
     `;
 
     // Hook listeners
-    document.getElementById('btn-compendium-close-x')?.addEventListener('click', () => this.close());
-    document.getElementById('btn-compendium-close')?.addEventListener('click', () => this.close());
 
     document.getElementById('tab-comp-all')?.addEventListener('click', () => {
       this.activeFilter = 'all';

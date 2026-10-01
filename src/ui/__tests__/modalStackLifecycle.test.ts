@@ -259,7 +259,7 @@ describe('Modal Stack Lifecycle & UI Ground Status Polish', () => {
   });
 
   describe('SpellbookModal input handling & focus isolation', () => {
-    it('opens and closes cleanly, popping from modalStack and restoring state', () => {
+    it('leaves Escape to the menu shell and closes cleanly when the shell closes it', () => {
       let closed = false;
       const modal = new SpellbookModal({
         onCastSpell: vi.fn(),
@@ -276,10 +276,12 @@ describe('Modal Stack Lifecycle & UI Ground Status Polish', () => {
       expect(modalStack.isEmpty()).toBe(false);
       expect(modalStack.top()?.id).toBe('spellbook');
 
-      // Press Escape to close
-      const escEvent = new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' });
-      const handled = modal.handleKeyDown(escEvent);
-      expect(handled).toBe(true);
+      // Escape and the menu's tab keys are the shell's: the spellbook declines them.
+      expect(modal.handleKeyDown(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }))).toBe(false);
+      expect(modal.handleKeyDown(new KeyboardEvent('keydown', { code: 'KeyI', key: 'i' }))).toBe(false);
+      expect(modal.isOpen).toBe(true);
+
+      modal.close();
       expect(modal.isOpen).toBe(false);
       expect(closed).toBe(true);
       expect(modalStack.isEmpty()).toBe(true);

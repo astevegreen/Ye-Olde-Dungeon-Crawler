@@ -132,6 +132,8 @@ class MockTab implements MenuTab {
   public unmounted = false;
   public handledKeys: string[] = [];
   public claimsTabKey?: boolean;
+  public drawsOnCanvas?: boolean;
+  public lastEntry?: 'forward' | 'backward';
 
   constructor(id: string, label: string, hotkeyActionId?: string) {
     this.id = id;
@@ -144,8 +146,9 @@ class MockTab implements MenuTab {
     this.unmounted = false;
   }
 
-  onActivate(state: GameState): void {
+  onActivate(state: GameState, entry?: 'forward' | 'backward'): void {
     this.activatedState = state;
+    this.lastEntry = entry;
   }
 
   unmount(): void {
@@ -332,28 +335,73 @@ describe('CharacterMenuModal & Consolidated Character Menu', () => {
     expect(menu.isOpen).toBe(false);
   });
 
-  it('configures DOM window with 920x576px dimensions and preserves 2px border on inventory tab', () => {
+  it('fills the window for DOM tabs and matches the canvas window for a canvas tab', () => {
+    tab1.drawsOnCanvas = true;
     const doc = (globalThis as any).document;
     const overlay = doc.getElementById('character-menu-modal');
     const win = overlay?.querySelector('.character-menu-window');
 
+    // A DOM tab: the stylesheet sizes the window (full window less the margin).
+    menu.open('character');
+    expect(overlay?.className).toContain('is-full');
+    expect(win?.style.width).toBe('');
+    expect(win?.style.height).toBe('');
+
+    // The canvas inventory: the shell shrinks to the 920×576 window it draws.
+    menu.activateTab('inventory');
+    expect(overlay?.className).toContain('is-canvas');
     expect(win?.style.width).toBe('920px');
     expect(win?.style.height).toBe('576px');
 
-    // On non-inventory tab, border is golden
-    menu.open('character');
-    expect(win?.style.border).toBe('2px solid #ca8a04');
-
-    // On inventory tab, border is 2px transparent so layout does not jitter
-    menu.activateTab('inventory');
-    expect(win?.style.border).toBe('2px solid transparent');
-
-    // Switching back restores the golden border
     menu.activateTab('character');
-    expect(win?.style.border).toBe('2px solid #ca8a04');
+    expect(overlay?.className).toContain('is-full');
+    expect(win?.style.width).toBe('');
   });
 
-  it('scales DOM window according to ViewportManager scale and anchors to canvas rect', () => {
+  it('owns the chrome: key chips, a badge, and a footer with the tab\'s keys and actions', () => {
+    const run = vi.fn();
+    (tab2 as MenuTab).badge = () => '+9';
+    (tab2 as MenuTab).footer = () => ({
+      keys: [{ keys: ['S', 'D'], label: 'plan a point' }],
+      escLabel: 'close, keep points',
+      actions: [{ id: 'accept', label: 'Accept 3 points', key: 'Enter', primary: true, run }],
+    });
+    menu.open('character');
+
+    const doc = (globalThis as any).document;
+    const win = doc.getElementById('character-menu-modal')?.querySelector('.character-menu-window');
+    const nav = win?.querySelector('.character-menu-tabs');
+    const footer = win?.querySelector('.cm-foot');
+    const tabHtml = nav?.children.map((c: MockElement) => c.innerHTML).join('');
+    expect(tabHtml).toContain('<span class="ui-key">E</span><span>Character</span><span class="cm-badge">+9</span>');
+    expect(tabHtml).toContain('<span class="ui-key">I</span><span>Inventory</span>');
+    expect(footer?.innerHTML).toContain('plan a point');
+    expect(footer?.innerHTML).toContain('next tab');
+    expect(footer?.innerHTML).toContain('close, keep points');
+    expect(footer?.innerHTML).toContain('Accept 3 points');
+  });
+
+  it('Shift+Tab tells the tab it arrived backwards, so a tab with panels starts on its last', () => {
+    menu.open('character');
+    menu.handleKeyDown(makeKey('Tab', 'Tab', true));
+    expect(menu.activeTabId).toBe('inventory');
+    expect(tab1.lastEntry).toBe('backward');
+    menu.handleKeyDown(makeKey('Tab', 'Tab', false));
+    expect(tab2.lastEntry).toBe('forward');
+  });
+
+  it('follows rebound keys for its tab hotkeys', () => {
+    menu.setKeyResolver((id) => (id === 'cast_spell' ? ['KeyQ'] : []));
+    menu.open('inventory');
+    menu.handleKeyDown(makeKey('q', 'KeyQ'));
+    expect(menu.activeTabId).toBe('spellbook');
+    // Unbound actions keep their default keys.
+    menu.handleKeyDown(makeKey('e', 'KeyE'));
+    expect(menu.activeTabId).toBe('character');
+  });
+
+  it('anchors a canvas tab to the canvas rect at the viewport scale, and follows resizes', () => {
+    tab1.drawsOnCanvas = true;
     const doc = (globalThis as any).document;
     const canvas = new MockElement();
     canvas.id = 'game-canvas';
@@ -387,7 +435,7 @@ describe('CharacterMenuModal & Consolidated Character Menu', () => {
     overlay.mockRect = { left: 0, top: 0, width: 1920, height: 1080 };
     const win = overlay?.querySelector('.character-menu-window');
 
-    scaledMenu.open('character');
+    scaledMenu.open('inventory');
 
     // modalVirtualW = 920, modalVirtualH = 576
     // scaled by 1.5 => 1380 x 864
@@ -674,8 +722,9 @@ describe('InputHandler legacy keybind routing to Consolidated Character Menu', (
     const spellTab = new MockTab('spellbook', 'Spellbook');
     const bestiaryTab = new MockTab('bestiary', 'Bestiary');
     const pactsTab = new MockTab('pacts', 'Pacts');
+    const storyTab = new MockTab('story', 'Story', 'story');
 
-    const charMenu = new CharacterMenuModal([inventoryTab, charTab, spellTab, bestiaryTab, pactsTab]);
+    const charMenu = new CharacterMenuModal([inventoryTab, charTab, spellTab, bestiaryTab, pactsTab, storyTab]);
     charMenu.setModalStack(inputHandler.modalStack);
     inputHandler.characterMenuModal = charMenu;
 
@@ -712,5 +761,12 @@ describe('InputHandler legacy keybind routing to Consolidated Character Menu', (
     inputHandler.handleKeyDown(makeKey('p', 'KeyP'));
     expect(charMenu.isOpen).toBe(true);
     expect(charMenu.activeTabId).toBe('pacts');
+
+    charMenu.close();
+
+    // KeyO -> opens story tab
+    inputHandler.handleKeyDown(makeKey('o', 'KeyO'));
+    expect(charMenu.isOpen).toBe(true);
+    expect(charMenu.activeTabId).toBe('story');
   });
 });

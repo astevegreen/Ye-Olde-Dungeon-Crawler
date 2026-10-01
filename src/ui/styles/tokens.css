@@ -36,6 +36,8 @@
 
   /* Derived from the pack's tokens. */
   --ui-accent-soft: color-mix(in srgb, var(--ui-accent) 13%, transparent);
+  /* The pack's heading ornament (branding.ornament); the menu shell sets it. */
+  --ui-ornament: '';
   --ui-scrim: rgba(4, 6, 12, 0.72);
   --ui-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
 }

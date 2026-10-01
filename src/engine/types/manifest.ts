@@ -580,6 +580,11 @@ export interface PackBranding {
    * `manaName` when the pack names the resource but not its unit.
    */
   manaUnit?: string;
+  /**
+   * A decorative rule drawn at the end of menu section headings, e.g. a row of runes.
+   * Ornament only: it never carries meaning. Defaults to none.
+   */
+  ornament?: string;
 }
 
 export interface ManaTerms {

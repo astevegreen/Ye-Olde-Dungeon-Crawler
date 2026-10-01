@@ -64,6 +64,7 @@ export const cotwManifest: GameContentManifest = {
     manaName: 'Seiðr',
     healthGlyph: 'ᚦ',
     manaGlyph: 'ᚨ',
+    ornament: 'ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ',
   },
   tiles: COTW_TILES,
   monsters: COTW_MONSTERS,

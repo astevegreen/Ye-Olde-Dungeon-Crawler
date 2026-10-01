@@ -954,6 +954,10 @@ export class InputHandler {
         return true;
       }
     }
+    if (userAction === 'story' && this.characterMenuModal) {
+      this.toggleCharacterMenu('story');
+      return true;
+    }
     if (userAction === 'inventory') {
       this.toggleInventory();
       return true;

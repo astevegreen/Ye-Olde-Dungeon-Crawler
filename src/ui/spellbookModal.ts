@@ -116,15 +116,13 @@ export class SpellbookModal implements UIModal {
   public handleKeyDown(e: KeyboardEvent): boolean {
     if (!this.isOpen) return false;
 
-    // Preserve browser modifier combinations (e.g. Ctrl+W, Ctrl+R, Ctrl+T) and Tab focus traversal
-    if (e.ctrlKey || e.metaKey || e.altKey || e.code === 'Tab') {
+    // Browser chords, Tab, Escape and the menu's tab keys belong to the shell.
+    if (e.ctrlKey || e.metaKey || e.altKey || e.code === 'Tab' || e.code === 'Escape') {
       return false;
     }
 
     const code = e.code;
     const isHandledKey =
-      code === 'Escape' ||
-      code === 'KeyZ' ||
       code === 'ArrowUp' ||
       code === 'KeyW' ||
       code === 'KeyK' ||
@@ -140,11 +138,6 @@ export class SpellbookModal implements UIModal {
     if (isHandledKey) {
       e.preventDefault();
       e.stopPropagation();
-    }
-
-    if (code === 'Escape' || code === 'KeyZ') {
-      this.close();
-      return true;
     }
 
     if (code === 'ArrowUp' || code === 'KeyW' || code === 'KeyK' || code === 'Numpad8') {
@@ -178,8 +171,16 @@ export class SpellbookModal implements UIModal {
       return true;
     }
 
-    // Absorb all other keys while spellbook modal is open
-    return true;
+    return false;
+  }
+
+  /** The spell under the cursor, for the shell's Cast button. */
+  public get selectedSpell(): SpellDefinition | undefined {
+    return this.spells[this.selectedIndex];
+  }
+
+  public castSelected(): void {
+    this.castCurrentSpell();
   }
 
   private assignCurrentSpellToSlot(slotIndex: number): void {
@@ -213,49 +214,14 @@ export class SpellbookModal implements UIModal {
 
     const dialog = document.createElement('div');
     Object.assign(dialog.style, {
-      width: '780px',
-      maxWidth: '94vw',
-      height: '600px',
-      maxHeight: '92vh',
+      width: '100%',
+      height: '100%',
       backgroundColor: '#0f172a',
-      border: '2px solid #38bdf8',
-      borderRadius: '8px',
-      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.7)',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
     });
-
-    // Header
-    const header = document.createElement('div');
-    Object.assign(header.style, {
-      padding: '12px 18px',
-      background: 'linear-gradient(90deg, #1e3a8a 0%, #0f172a 100%)',
-      borderBottom: '1px solid #38bdf8',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    });
-    const overflow = getOverflowConfig(this.engine!);
-    const debtTier = getOverflowTier(overflow, player.voidDebt);
-    const voidDebtNotice = overflow && player.voidDebt > 0
-      ? `<span style="margin-left: 12px; font-weight: bold; color: ${debtTier?.tier.color ?? '#38bdf8'}; font-size: 11px;">
-           ⚡ ${overflow.debtName}: ${player.voidDebt}${debtTier ? ` (${debtTier.tier.label})` : ''}
-         </span>`
-      : '';
     const grimoireConfig = getGrimoireConfig(this.engine!);
-    const title = grimoireConfig ? `ARCANE SPELLBOOK &amp; ${grimoireConfig.title.toUpperCase()}` : 'ARCANE SPELLBOOK &amp; QUICKBAR ASSIGNMENT';
-
-    header.innerHTML = `
-      <div style="font-weight: bold; font-size: 15px; color: #f8fafc; letter-spacing: 0.05em; display: flex; align-items: center;">
-        <span>📜 ${title}</span>
-        ${voidDebtNotice}
-      </div>
-      <div style="font-size: 12px; color: #67e8f9;">
-        ${resolveManaTerms(this.engine?.manifest).name}: <span style="font-weight: bold; color: #38bdf8;">${player.mana}</span> / ${player.maxMana} ${resolveManaTerms(this.engine?.manifest).unit}
-      </div>
-    `;
-    dialog.appendChild(header);
 
     // Body content (2-column layout)
     const body = document.createElement('div');
@@ -276,8 +242,20 @@ export class SpellbookModal implements UIModal {
       padding: '8px 0',
     });
 
+    const overflow = getOverflowConfig(this.engine!);
+    const debtTier = getOverflowTier(overflow, player.voidDebt);
+    const mana = resolveManaTerms(this.engine?.manifest);
+    const status = document.createElement('div');
+    Object.assign(status.style, { padding: '4px 14px 8px', fontSize: '12px', color: '#94a3b8', borderBottom: '1px solid #1e293b', marginBottom: '4px' });
+    status.innerHTML =
+      `${mana.name}: <b style="color: #38bdf8;">${player.mana}</b> / ${player.maxMana}` +
+      (overflow && player.voidDebt > 0
+        ? `<div style="color: ${debtTier?.tier.color ?? '#38bdf8'};">${overflow.debtName}: ${player.voidDebt}${debtTier ? ` (${debtTier.tier.label})` : ''}</div>`
+        : '');
+    leftCol.appendChild(status);
+
     if (this.spells.length === 0) {
-      leftCol.innerHTML = `<div style="padding: 16px; color: #64748b; font-style: italic; text-align: center;">No spells known yet.</div>`;
+      leftCol.innerHTML += `<div style="padding: 16px; color: #64748b; font-style: italic; text-align: center;">No spells known yet.</div>`;
     } else {
       this.spells.forEach((spell, idx) => {
         const isSelected = idx === this.selectedIndex;
@@ -420,66 +398,6 @@ export class SpellbookModal implements UIModal {
 
     body.appendChild(rightCol);
     dialog.appendChild(body);
-
-    // Footer
-    const footer = document.createElement('div');
-    Object.assign(footer.style, {
-      padding: '10px 18px',
-      background: '#090d16',
-      borderTop: '1px solid #1e293b',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    });
-
-    const hints = document.createElement('div');
-    hints.style.fontSize = '11px';
-    hints.style.color = '#64748b';
-    hints.innerHTML = `[↑↓] Select Spell | [1-0] Assign Slot | [Enter] Cast | [Esc/Z] Close`;
-
-    const btnGroup = document.createElement('div');
-    btnGroup.style.display = 'flex';
-    btnGroup.style.gap = '8px';
-
-    if (currentSpell) {
-      const castBtn = document.createElement('button');
-      castBtn.type = 'button';
-      Object.assign(castBtn.style, {
-        padding: '6px 14px',
-        backgroundColor: '#0284c7',
-        color: '#f8fafc',
-        border: '1px solid #38bdf8',
-        borderRadius: '4px',
-        fontWeight: 'bold',
-        fontSize: '11px',
-        fontFamily: 'inherit',
-        cursor: 'pointer',
-      });
-      castBtn.textContent = '⚡ Cast Spell [Enter]';
-      castBtn.addEventListener('click', () => this.castCurrentSpell());
-      btnGroup.appendChild(castBtn);
-    }
-
-    const closeBtn = document.createElement('button');
-    closeBtn.type = 'button';
-    Object.assign(closeBtn.style, {
-      padding: '6px 14px',
-      backgroundColor: '#1e293b',
-      color: '#e2e8f0',
-      border: '1px solid #475569',
-      borderRadius: '4px',
-      fontWeight: 'bold',
-      fontSize: '11px',
-      fontFamily: 'inherit',
-      cursor: 'pointer',
-    });
-    closeBtn.textContent = 'Close [Esc]';
-    closeBtn.addEventListener('click', () => this.close());
-    btnGroup.appendChild(closeBtn);
-
-    footer.appendChild(hints);
-    footer.appendChild(btnGroup);
-    dialog.appendChild(footer);
 
     this.container.innerHTML = '';
     this.container.appendChild(dialog);

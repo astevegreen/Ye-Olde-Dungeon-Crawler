@@ -1,5 +1,5 @@
 import type { GameState } from '../flanks/types';
-import type { MenuTab } from './menuTab';
+import type { MenuHost, MenuTab } from './menuTab';
 import type { AttributeMilestoneTrigger, ChoiceDefinition, Player } from '../../engine';
 import { formatCurrency, getMaxCarryWeight, getPlayerTotalCp, resolveManaTerms, type ManaTerms } from '../../engine';
 import { AttributeAllocationDraft, type AttributeKey } from '../attributeAllocationDraft';
@@ -116,6 +116,17 @@ export class CharacterTab implements MenuTab {
   public onAllocateCallback?: (attr: AttributeKey) => void;
   /** This session's planned points; nothing reaches the player until `accept()`. */
   private readonly draft = new AttributeAllocationDraft();
+  private host?: MenuHost;
+
+  public bindHost(host: MenuHost): void {
+    this.host = host;
+  }
+
+  /** "+N" on the tab while points wait to be spent. */
+  public badge(state: GameState): string | null {
+    const points = state.player.unspentStatPoints;
+    return points > 0 ? `+${points}` : null;
+  }
 
   public mount(container: HTMLElement): void {
     this.container = container;
@@ -179,6 +190,7 @@ export class CharacterTab implements MenuTab {
       this.onAllocateCallback?.('strength');
     }
     this.render();
+    this.host?.refreshChrome();
     return true;
   }
 

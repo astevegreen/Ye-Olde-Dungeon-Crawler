@@ -79,13 +79,8 @@ export class PactModal implements UIModal {
   public handleKeyDown(e: KeyboardEvent): boolean {
     if (!this.isOpenState) return false;
 
-    if (e.key === 'Escape' || e.code === 'KeyP') {
-      this.close();
-      return true;
-    }
-
     const pacts = this.engine?.pacts?.getAllPacts() ?? [];
-    if (pacts.length === 0) return true;
+    if (pacts.length === 0) return false;
 
     const currentIndex = pacts.findIndex((p) => p.id === this.selectedPactId);
 
@@ -107,15 +102,31 @@ export class PactModal implements UIModal {
 
     if (e.key === ' ' || e.key === 'Enter') {
       e.preventDefault();
-      if (this.selectedPactId && this.engine) {
-        this.engine.pacts.togglePact(this.selectedPactId);
-        this.render();
-      }
+      this.toggleSelected();
       return true;
     }
 
-    return true;
+    // Everything else (Escape, Tab, the menu's tab keys) is the shell's.
+    return false;
   }
+
+  /** The highlighted pact and whether it is sealed, for the shell's footer button. */
+  public get selection(): { name: string; sealed: boolean } | undefined {
+    const pact = this.engine?.pacts?.getAllPacts().find((p) => p.id === this.selectedPactId);
+    return pact && this.engine ? { name: pact.name, sealed: this.engine.pacts.isPactActive(pact.id) } : undefined;
+  }
+
+  /** Seals or renounces the highlighted pact. */
+  public toggleSelected(): void {
+    if (this.selectedPactId && this.engine) {
+      this.engine.pacts.togglePact(this.selectedPactId);
+      this.render();
+      this.onChange?.();
+    }
+  }
+
+  /** Called after a pact is sealed or renounced, so the shell can relabel its button. */
+  public onChange?: () => void;
 
   public render(): void {
     if (!this.overlayEl || !this.engine) return;
@@ -210,14 +221,6 @@ export class PactModal implements UIModal {
 
     this.overlayEl.innerHTML = `
       <div class="retro-window" style="width: 640px; max-width: 95vw; box-shadow: 6px 6px 18px rgba(0,0,0,0.85);">
-        <div class="retro-titlebar">
-          <div class="retro-titlebar-title">
-            <span>📜</span>
-            <span>Ancient Run Pacts &amp; Bounties</span>
-          </div>
-          <button id="btn-pact-close-x" class="win-btn win-btn-sm" style="padding: 0 5px; font-weight: bold;">✕</button>
-        </div>
-
         <div class="retro-window-body" style="padding: 10px; gap: 8px;">
           <div style="font-size: 11px; color: #334155; line-height: 1.4; background: #f8fafc; border: 1px solid #cbd5e1; padding: 6px 8px;">
             Seal ancient pacts to mutate dungeon difficulty and receive magnified rewards.
@@ -249,22 +252,9 @@ export class PactModal implements UIModal {
             </div>
           </div>
 
-          <!-- Controls & Dismiss Button -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-            <span style="font-size: 10px; color: #64748b;">
-              Keys: [↑ / ↓] Select | [Space/Enter] Toggle | [Esc / P] Close
-            </span>
-            <button id="btn-pact-done" class="win-btn" style="padding: 4px 16px; font-weight: bold;">
-              Done / Close
-            </button>
-          </div>
         </div>
       </div>
     `;
-
-    // Attach event listeners
-    this.overlayEl.querySelector('#btn-pact-close-x')?.addEventListener('click', () => this.close());
-    this.overlayEl.querySelector('#btn-pact-done')?.addEventListener('click', () => this.close());
 
     // Row selection and toggle buttons
     const rows = this.overlayEl.querySelectorAll('.pact-row');
@@ -274,13 +264,12 @@ export class PactModal implements UIModal {
         const pactId = row.getAttribute('data-pact-id');
         if (!pactId) return;
 
+        this.selectedPactId = pactId;
         if (target.classList.contains('win-btn-toggle') || target.getAttribute('data-toggle-id')) {
-          this.engine!.pacts.togglePact(pactId);
-          this.selectedPactId = pactId;
-          this.render();
+          this.toggleSelected();
         } else {
-          this.selectedPactId = pactId;
           this.render();
+          this.onChange?.();
         }
       });
     });

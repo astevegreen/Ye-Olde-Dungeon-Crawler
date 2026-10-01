@@ -1,11 +1,38 @@
 import type { UIModal, ModalStackManager } from '../modalStack';
 import type { GameState } from '../flanks/types';
-import type { MenuTab } from './menuTab';
+import type { MenuFooter, MenuHost, MenuTab } from './menuTab';
 import type { ViewportManager } from '../../rendering/viewport';
+import { keyLabel } from '../keyLabel';
+import { resolveBranding } from '../branding';
+
+/** Default keys per ACTION_METADATA id, for shells built without a key resolver (tests). */
+const DEFAULT_TAB_CODES: Record<string, string[]> = {
+  inventory: ['KeyI'],
+  character_menu: ['KeyE'],
+  cast_spell: ['KeyZ'],
+  compendium: ['KeyB'],
+  pact: ['KeyP'],
+  story: ['KeyO'],
+};
+
+/** Height, in virtual canvas pixels, of the title bar the canvas inventory draws: the
+ *  tab strip sits exactly over it while that tab is active. */
+const CANVAS_TITLEBAR_H = 30;
+
+const escapeHtml = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+const chip = (key: string): string => `<span class="ui-key">${escapeHtml(key)}</span>`;
 
 /**
- * Consolidated Character Menu Shell (ARCHITECTURE.md §3, §6).
- * Unifies Inventory, Character Sheet, Spellbook, Bestiary, Pacts, and Story under a single tabbed UIModal.
+ * The character menu (ARCHITECTURE.md §3, §6; ADR-0011): one shell for Inventory,
+ * Character, Spellbook, Bestiary, Pacts and Story. It owns every piece of chrome — the
+ * tab strip with key chips and badges, the one close button, and the footer of keys and
+ * actions — so its tabs draw only their content.
+ *
+ * Tabs fill the window less a 20px margin. The inventory still draws its own window on
+ * the canvas (until it moves to DOM), so on that tab the shell shrinks to that window and
+ * lays its tab strip over the inventory's title bar.
  */
 export class CharacterMenuModal implements UIModal {
   public readonly id = 'character-menu';
@@ -19,12 +46,19 @@ export class CharacterMenuModal implements UIModal {
   private viewport?: ViewportManager;
   private canvas?: HTMLCanvasElement;
   private detachResizeListener?: () => void;
+  private resolveCodes?: (actionId: string) => string[];
 
   private overlayEl: HTMLElement | null = null;
   private windowEl: HTMLElement | null = null;
+  private headerEl: HTMLElement | null = null;
   private navEl: HTMLElement | null = null;
   private contentEl: HTMLElement | null = null;
-  private hintEl: HTMLElement | null = null;
+  private footerEl: HTMLElement | null = null;
+
+  private readonly host: MenuHost = {
+    refreshChrome: () => this.refreshChrome(),
+    close: () => this.close(),
+  };
 
   constructor(
     tabs: MenuTab[] = [],
@@ -41,6 +75,7 @@ export class CharacterMenuModal implements UIModal {
     if (tabs.length > 0) {
       this.activeTabId = tabs[0].id;
     }
+    for (const tab of tabs) tab.bindHost?.(this.host);
     this.hookResize();
     this.createDom();
   }
@@ -55,6 +90,13 @@ export class CharacterMenuModal implements UIModal {
 
   public setOnClose(cb: () => void): void {
     this.onCloseCallback = cb;
+  }
+
+  /** Where the shell reads each tab's keys (the player's keybindings), so chips and
+   *  in-menu hotkeys follow rebinding. */
+  public setKeyResolver(resolve: (actionId: string) => string[]): void {
+    this.resolveCodes = resolve;
+    this.renderTabsNav();
   }
 
   public setViewport(viewport: ViewportManager): void {
@@ -98,6 +140,7 @@ export class CharacterMenuModal implements UIModal {
     } else {
       this.tabs.push(tab);
     }
+    tab.bindHost?.(this.host);
     if (!this.activeTabId && this.tabs.length > 0) {
       this.activeTabId = this.tabs[0].id;
     }
@@ -112,9 +155,28 @@ export class CharacterMenuModal implements UIModal {
     return this.tabs.find((t) => t.id === this.activeTabId);
   }
 
+  /** The keys that open a tab: the player's bindings for its action, else the defaults. */
+  private codesFor(tab: MenuTab): string[] {
+    if (!tab.hotkeyActionId) return [];
+    const bound = this.resolveCodes?.(tab.hotkeyActionId) ?? [];
+    return bound.length > 0 ? bound : (DEFAULT_TAB_CODES[tab.hotkeyActionId] ?? []);
+  }
+
   public updateLayout(): void {
     if (!this.windowEl || typeof document === 'undefined') return;
+    const win = this.windowEl;
 
+    if (!this.getActiveTab()?.drawsOnCanvas) {
+      // Full window less the margin, from menu.css.
+      win.style.left = '';
+      win.style.top = '';
+      win.style.width = '';
+      win.style.height = '';
+      if (this.headerEl) this.headerEl.style.height = '';
+      return;
+    }
+
+    // Over the canvas inventory: match the window it draws (920×576 virtual, centered).
     const virtualWidth = this.viewport?.virtualWidth ?? 960;
     const virtualHeight = this.viewport?.virtualHeight ?? 600;
     const modalVirtualW = Math.min(virtualWidth - 20, 920);
@@ -129,6 +191,7 @@ export class CharacterMenuModal implements UIModal {
         ? (document.getElementById('game-canvas') as HTMLCanvasElement | null)
         : null);
 
+    let scale = this.viewport?.scale ?? 1;
     if (
       canvas &&
       typeof canvas.getBoundingClientRect === 'function' &&
@@ -137,29 +200,15 @@ export class CharacterMenuModal implements UIModal {
     ) {
       const canvasRect = canvas.getBoundingClientRect();
       const overlayRect = this.overlayEl.getBoundingClientRect();
-
-      const scale =
+      scale =
         this.viewport?.scale ??
         (canvasRect.width > 0 && virtualWidth > 0 ? canvasRect.width / virtualWidth : 1);
-
-      const cssW = Math.round(modalVirtualW * scale);
-      const cssH = Math.round(modalVirtualH * scale);
-      const cssLeft = Math.round(canvasRect.left - overlayRect.left + modalVirtualX * scale);
-      const cssTop = Math.round(canvasRect.top - overlayRect.top + modalVirtualY * scale);
-
-      this.windowEl.style.position = 'absolute';
-      this.windowEl.style.margin = '0';
-      this.windowEl.style.left = `${cssLeft}px`;
-      this.windowEl.style.top = `${cssTop}px`;
-      this.windowEl.style.width = `${cssW}px`;
-      this.windowEl.style.height = `${cssH}px`;
-    } else {
-      const scale = this.viewport?.scale ?? 1;
-      this.windowEl.style.position = 'absolute';
-      this.windowEl.style.margin = '0';
-      this.windowEl.style.width = `${Math.round(modalVirtualW * scale)}px`;
-      this.windowEl.style.height = `${Math.round(modalVirtualH * scale)}px`;
+      win.style.left = `${Math.round(canvasRect.left - overlayRect.left + modalVirtualX * scale)}px`;
+      win.style.top = `${Math.round(canvasRect.top - overlayRect.top + modalVirtualY * scale)}px`;
     }
+    win.style.width = `${Math.round(modalVirtualW * scale)}px`;
+    win.style.height = `${Math.round(modalVirtualH * scale)}px`;
+    if (this.headerEl) this.headerEl.style.height = `${Math.round(CANVAS_TITLEBAR_H * scale)}px`;
   }
 
   private createDom(): void {
@@ -169,206 +218,154 @@ export class CharacterMenuModal implements UIModal {
     if (!overlay) {
       overlay = document.createElement('div');
       overlay.id = 'character-menu-modal';
-      overlay.className = 'retro-window-overlay';
-      overlay.style.display = 'none';
-      overlay.style.zIndex = '140';
-      overlay.style.position = 'absolute';
-      overlay.style.inset = '0';
       document.getElementById('app')?.appendChild(overlay);
     }
+    overlay.className = 'cm-overlay';
     this.overlayEl = overlay;
-    // The class's dark backdrop would dim the sidebar and bars a second time and differ per tab; the
-    // surrounding UI is dimmed by `.character-menu-active` (layout.css), identically for all tabs.
-    overlay.style.backgroundColor = 'transparent';
-    overlay.style.backdropFilter = 'none';
 
-    // Window Shell
     let win = overlay.querySelector<HTMLElement>('.character-menu-window');
     if (!win) {
       win = document.createElement('div');
-      win.className = 'retro-window character-menu-window';
-      win.style.position = 'absolute';
-      win.style.margin = '0';
-      win.style.display = 'flex';
-      win.style.flexDirection = 'column';
-      win.style.fontFamily = '"Courier New", Courier, monospace';
-      win.style.color = '#e2e8f0';
-      win.style.borderRadius = '6px';
-      win.style.overflow = 'hidden';
-      win.style.boxSizing = 'border-box';
+      win.className = 'cm-window character-menu-window';
+      win.setAttribute('role', 'dialog');
+      win.setAttribute('aria-modal', 'true');
       overlay.appendChild(win);
-    }
-    this.windowEl = win;
-    this.updateLayout();
 
-    // Header with Tabs
-    let header = win.querySelector<HTMLElement>('.character-menu-header');
-    if (!header) {
-      header = document.createElement('div');
-      header.className = 'character-menu-header';
-      header.style.display = 'flex';
-      header.style.justifyContent = 'space-between';
-      header.style.alignItems = 'center';
-      header.style.background = '#1e293b';
-      header.style.borderBottom = '2px solid #ca8a04';
-      header.style.padding = '3px 8px';
-      header.style.gap = '8px';
-      header.style.userSelect = 'none';
-
+      const header = document.createElement('div');
+      header.className = 'cm-tabs character-menu-header';
       const nav = document.createElement('nav');
-      nav.className = 'character-menu-tabs';
+      nav.className = 'cm-tablist character-menu-tabs';
       nav.setAttribute('role', 'tablist');
-      nav.style.display = 'flex';
-      nav.style.gap = '3px';
-      // One row, always: the canvas inventory under this header reserves one row's height,
-      // so a wrapped second row of tabs covered the top of its panels.
-      nav.style.flexWrap = 'nowrap';
-      nav.style.flex = '1 1 auto';
-      nav.style.minWidth = '0';
-      nav.style.overflowX = 'auto';
-      nav.style.scrollbarWidth = 'none';
       header.appendChild(nav);
-      this.navEl = nav;
-
-      const controls = document.createElement('div');
-      controls.style.display = 'flex';
-      controls.style.alignItems = 'center';
-      controls.style.gap = '8px';
-      controls.style.flexShrink = '0';
-
-      const hint = document.createElement('span');
-      hint.style.fontSize = '10px';
-      hint.style.whiteSpace = 'nowrap';
-      hint.style.color = '#94a3b8';
-      controls.appendChild(hint);
-      this.hintEl = hint;
-
       const closeBtn = document.createElement('button');
-      closeBtn.className = 'character-menu-close-btn win-btn win-btn-sm';
+      closeBtn.className = 'cm-close character-menu-close-btn';
+      closeBtn.setAttribute('aria-label', 'Close');
+      closeBtn.setAttribute('title', 'Close (Esc)');
       closeBtn.textContent = '✕';
-      closeBtn.style.padding = '0 6px';
-      closeBtn.style.fontWeight = 'bold';
-      closeBtn.style.cursor = 'pointer';
       closeBtn.addEventListener('click', (e) => {
         e.preventDefault();
         this.close();
       });
-      controls.appendChild(closeBtn);
-
-      header.appendChild(controls);
+      header.appendChild(closeBtn);
       win.appendChild(header);
-    } else {
-      this.navEl = header.querySelector('.character-menu-tabs');
-    }
 
-    // Tab Content Container
-    let content = win.querySelector<HTMLElement>('.character-menu-tab-content');
-    if (!content) {
-      content = document.createElement('div');
-      content.className = 'character-menu-tab-content';
+      const content = document.createElement('div');
+      content.className = 'cm-body character-menu-tab-content';
       content.id = 'character-menu-tab-content';
-      content.style.flex = '1';
-      content.style.minHeight = '0';
-      content.style.position = 'relative';
-      content.style.overflow = 'hidden';
-      content.style.boxSizing = 'border-box';
+      content.setAttribute('role', 'tabpanel');
       win.appendChild(content);
+
+      const footer = document.createElement('div');
+      footer.className = 'cm-foot';
+      win.appendChild(footer);
     }
-    this.contentEl = content;
+    this.windowEl = win;
+    this.headerEl = win.querySelector<HTMLElement>('.character-menu-header');
+    this.navEl = win.querySelector<HTMLElement>('.character-menu-tabs');
+    this.contentEl = win.querySelector<HTMLElement>('.character-menu-tab-content');
+    this.footerEl = win.querySelector<HTMLElement>('.cm-foot');
 
     this.renderTabsNav();
+    this.updateLayout();
   }
 
   private renderTabsNav(): void {
     if (!this.navEl) return;
     this.navEl.innerHTML = '';
-
-    const hotkeyHints: Record<string, string> = {
-      inventory: '[I]',
-      character: '[E]',
-      spellbook: '[Z]',
-      bestiary: '[B]',
-      pacts: '[P]',
-    };
+    const state = this.isOpen && this.stateSupplier ? this.stateSupplier() : undefined;
 
     for (const tab of this.tabs) {
       const btn = document.createElement('button');
       const isActive = tab.id === this.activeTabId;
-      btn.className = `character-menu-tab-btn win-btn win-btn-sm ${isActive ? 'active' : ''}`;
+      btn.className = 'cm-tab character-menu-tab-btn';
       btn.setAttribute('role', 'tab');
       btn.setAttribute('data-tab-id', tab.id);
       btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
-
-      const hint = hotkeyHints[tab.id] ? ` ${hotkeyHints[tab.id]}` : '';
-      btn.textContent = `${tab.label}${hint}`;
-
-      btn.style.padding = '4px 6px';
-      btn.style.fontSize = '11px';
-      btn.style.whiteSpace = 'nowrap';
-      btn.style.flexShrink = '0';
-      btn.style.fontWeight = 'bold';
-      btn.style.cursor = 'pointer';
-      btn.style.fontFamily = 'inherit';
-      btn.style.background = isActive ? '#ca8a04' : '#334155';
-      btn.style.color = isActive ? '#000000' : '#e2e8f0';
-      btn.style.border = isActive ? '1px solid #facc15' : '1px solid #475569';
-      btn.style.borderRadius = '3px';
-
+      const code = this.codesFor(tab)[0];
+      const badge = state ? tab.badge?.(state) : null;
+      btn.innerHTML =
+        (code ? chip(keyLabel(code)) : '') +
+        `<span>${escapeHtml(tab.label)}</span>` +
+        (badge ? `<span class="cm-badge">${escapeHtml(badge)}</span>` : '');
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         this.activateTab(tab.id);
       });
-
       this.navEl.appendChild(btn);
     }
   }
 
-  public activateTab(tabId: string): boolean {
+  private renderFooter(): void {
+    if (!this.footerEl) return;
+    const tab = this.getActiveTab();
+    const footer: MenuFooter = tab?.footer?.() ?? {};
+    const hints = [
+      ...(footer.keys ?? []),
+      { keys: ['Tab'], label: tab?.claimsTabKey ? 'next panel' : 'next tab' },
+      { keys: ['Esc'], label: footer.escLabel ?? 'close' },
+    ];
+    const keysHtml = hints
+      .map((h) => `<span class="cm-hint">${h.keys.map(chip).join('')} ${escapeHtml(h.label)}</span>`)
+      .join('');
+    const actions = footer.actions ?? [];
+    const actionsHtml = actions
+      .map(
+        (a, i) =>
+          `<button type="button" class="ui-btn ${a.primary ? 'ui-btn--primary' : 'ui-btn--ghost'}" data-action-index="${i}"${a.disabled ? ' disabled' : ''}>` +
+          `${escapeHtml(a.label)}${a.key ? ` ${chip(a.key)}` : ''}</button>`
+      )
+      .join('');
+    this.footerEl.innerHTML =
+      `<div class="cm-foot-keys">${keysHtml}</div>` +
+      (footer.note ? `<div class="cm-foot-note">${escapeHtml(footer.note)}</div>` : '') +
+      (actionsHtml ? `<div class="cm-foot-actions">${actionsHtml}</div>` : '');
+    if (typeof this.footerEl.querySelectorAll !== 'function') return;
+    this.footerEl.querySelectorAll<HTMLButtonElement>('button[data-action-index]').forEach((btn) => {
+      const action = actions[Number(btn.getAttribute('data-action-index'))];
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (action && !action.disabled) action.run();
+      });
+    });
+  }
+
+  /** Redraws the badges and the footer; tabs call it (through MenuHost) when their state changes. */
+  public refreshChrome(): void {
+    this.renderTabsNav();
+    this.renderFooter();
+  }
+
+  /** The pack's ornament rule for section headings (branding), as a CSS string. */
+  private applyOrnament(): void {
+    const style = this.windowEl?.style;
+    if (!style || typeof style.setProperty !== 'function' || !this.stateSupplier) return;
+    const ornament = resolveBranding(this.stateSupplier().manifest).ornament;
+    style.setProperty('--ui-ornament', JSON.stringify(ornament));
+  }
+
+  public activateTab(tabId: string, entry: 'forward' | 'backward' = 'forward'): boolean {
     const targetTab = this.tabs.find((t) => t.id === tabId);
     if (!targetTab) return false;
 
-    // Unmount current active tab
     const previousTab = this.getActiveTab();
     if (previousTab && previousTab.id !== targetTab.id) {
       previousTab.unmount();
     }
 
     this.activeTabId = targetTab.id;
-    this.renderTabsNav();
-    if (this.hintEl) {
-      this.hintEl.textContent = targetTab.claimsTabKey ? '[Tab] Next panel · [Esc] Close' : '[Tab] Cycle · [Esc] Close';
-      this.hintEl.title = targetTab.claimsTabKey
-        ? 'Tab steps through the panels, then on to the next tab; Esc closes'
-        : 'Tab cycles tabs; Esc closes';
+    if (this.overlayEl) {
+      this.overlayEl.className = `cm-overlay${this.isOpen ? ' is-open' : ''} ${targetTab.drawsOnCanvas ? 'is-canvas' : 'is-full'}`;
     }
 
-    if (this.overlayEl && this.windowEl && this.contentEl) {
-      if (targetTab.id === 'inventory') {
-        // Inventory overlay renders onto the HTML5 Canvas underneath, so clicks must pass through.
-        this.overlayEl.style.pointerEvents = 'none';
-        this.windowEl.style.backgroundColor = 'transparent';
-        this.windowEl.style.border = '2px solid transparent';
-        this.windowEl.style.boxShadow = 'none';
-        if (this.navEl?.parentElement) {
-          this.navEl.parentElement.style.pointerEvents = 'auto';
-        }
-        this.contentEl.style.display = 'none';
-      } else {
-        this.overlayEl.style.pointerEvents = 'auto';
-        this.windowEl.style.backgroundColor = '#0f172a';
-        this.windowEl.style.border = '2px solid #ca8a04';
-        this.windowEl.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(202, 138, 4, 0.3)';
-        this.contentEl.style.display = 'block';
-      }
-
+    if (this.contentEl) {
       this.contentEl.innerHTML = '';
       targetTab.mount(this.contentEl);
       if (this.stateSupplier) {
-        targetTab.onActivate(this.stateSupplier());
+        targetTab.onActivate(this.stateSupplier(), entry);
       }
       this.updateLayout();
     }
-
+    this.refreshChrome();
     return true;
   }
 
@@ -380,10 +377,7 @@ export class CharacterMenuModal implements UIModal {
     if (!this.overlayEl) {
       this.createDom();
     }
-    if (this.overlayEl) {
-      this.overlayEl.style.display = 'block';
-    }
-    this.updateLayout();
+    this.applyOrnament();
 
     const targetTabId =
       tabId && this.tabs.some((t) => t.id === tabId)
@@ -410,7 +404,7 @@ export class CharacterMenuModal implements UIModal {
     }
 
     if (this.overlayEl) {
-      this.overlayEl.style.display = 'none';
+      this.overlayEl.className = 'cm-overlay';
     }
     if (this.modalStack) {
       this.modalStack.remove(this.id);
@@ -442,7 +436,7 @@ export class CharacterMenuModal implements UIModal {
         const nextIdx = e.shiftKey
           ? (curIdx - 1 + this.tabs.length) % this.tabs.length
           : (curIdx + 1) % this.tabs.length;
-        this.activateTab(this.tabs[nextIdx].id);
+        this.activateTab(this.tabs[nextIdx].id, e.shiftKey ? 'backward' : 'forward');
       }
       return true;
     }
@@ -461,31 +455,20 @@ export class CharacterMenuModal implements UIModal {
 
     // 3. Active tab gets first refusal on every other key
     const activeTab = this.getActiveTab();
-    if (activeTab) {
-      const handled = activeTab.handleKeyDown(e);
-      if (handled) {
-        return true;
-      }
+    if (activeTab?.handleKeyDown(e)) {
+      return true;
     }
 
-    // 4. Hotkeys to switch to or toggle specific tabs
-    const hotkeyMap: Record<string, string> = {
-      KeyI: 'inventory',
-      KeyE: 'character',
-      KeyZ: 'spellbook',
-      KeyB: 'bestiary',
-      KeyP: 'pacts',
-    };
-
-    const targetTabId = hotkeyMap[code];
-    if (targetTabId && this.tabs.some((t) => t.id === targetTabId)) {
+    // 4. A tab's key switches to it; the active tab's own key closes the menu.
+    const pressed = e.shiftKey ? `Shift+${code}` : code;
+    const target = this.tabs.find((t) => this.codesFor(t).includes(pressed));
+    if (target) {
       e.preventDefault();
       e.stopPropagation();
-      if (this.activeTabId === targetTabId) {
-        // Toggle close when pressing the active tab's hotkey
+      if (this.activeTabId === target.id) {
         this.close();
       } else {
-        this.activateTab(targetTabId);
+        this.activateTab(target.id);
       }
       return true;
     }

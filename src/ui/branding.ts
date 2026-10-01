@@ -22,6 +22,8 @@ export interface ResolvedBranding {
   runeSmithName: string;
   /** Name used when the player embarks with a blank name field. */
   defaultHeroName: string;
+  /** Decorative rule for menu headings; empty when the pack has none. */
+  ornament: string;
 }
 
 export function resolveBranding(manifest?: GameContentManifest): ResolvedBranding {
@@ -43,6 +45,7 @@ export function resolveBranding(manifest?: GameContentManifest): ResolvedBrandin
     bankerTitle: manifest?.town?.services?.bankerTitle ?? 'the town banker',
     runeSmithName: attunementNpcName(manifest),
     defaultHeroName: manifest?.presetNames?.[0] ?? 'Hero',
+    ornament: b.ornament ?? '',
   };
 }
 

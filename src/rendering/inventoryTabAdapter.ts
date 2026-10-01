@@ -12,6 +12,7 @@ export class InventoryTabAdapter implements MenuTab {
   public readonly label = 'Inventory';
   public readonly hotkeyActionId = 'inventory';
   public readonly claimsTabKey = true;
+  public readonly drawsOnCanvas = true;
   private overlay: InventoryOverlay;
   private renderer?: CanvasRenderer;
   private unmounting = false;
@@ -31,8 +32,10 @@ export class InventoryTabAdapter implements MenuTab {
     container.innerHTML = '';
   }
 
-  public onActivate(state: GameState): void {
+  public onActivate(state: GameState, entry?: 'forward' | 'backward'): void {
     this.overlay.open(state.engine);
+    // Arriving by Shift+Tab starts on the last panel, so the next Shift+Tab steps back through them.
+    if (entry === 'backward') this.overlay.focusLastPanel();
     this.renderer?.render();
   }
 

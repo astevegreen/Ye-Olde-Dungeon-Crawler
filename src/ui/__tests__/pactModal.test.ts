@@ -188,12 +188,14 @@ describe('PactModal UI Surface', () => {
     expect(overlay?.innerHTML).toContain('ACTIVE PACTS: 0');
   });
 
-  it('closes on Escape or KeyP key press', () => {
+  it('leaves Escape and P to the menu shell, and closes when told to', () => {
     const onClose = vi.fn();
     modal.open(engine, onClose);
 
-    modal.handleKeyDown(makeKey('Escape'));
+    expect(modal.handleKeyDown(makeKey('Escape'))).toBe(false);
+    expect(modal.isOpen).toBe(true);
 
+    modal.close();
     expect(modal.isOpen).toBe(false);
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(mockDoc.getElementById('pact-modal')?.style.display).toBe('none');

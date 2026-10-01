@@ -94,6 +94,7 @@ import './ui/styles/tokens.css';
 import './ui/styles/base.css';
 import './ui/styles/flanks.css';
 import './ui/styles/layout.css';
+import './ui/styles/menu.css';
 import { WorldLedgerModule } from './ui/flanks/worldLedgerModule';
 import { JournalModule } from './ui/flanks/journalModule';
 import { QuickSpellsBar } from './ui/quickSpellsBar';
@@ -232,7 +233,7 @@ window.addEventListener('DOMContentLoaded', () => {
     updateHeaderInfo();
     renderer?.render();
   };
-  const storyTab = new FlankModuleTab([new JournalModule(), new WorldLedgerModule()]);
+  const storyTab = new FlankModuleTab([new JournalModule(), new WorldLedgerModule()], 'story', 'Story', 'story');
   const bestiaryTab = new CompendiumTabAdapter(compendiumModal, () => characterMenuModal?.close());
   const pactsTab = new PactTabAdapter(pactModal, () => characterMenuModal?.close());
   let spellbookTab: SpellbookTabAdapter;
@@ -1565,6 +1566,7 @@ window.addEventListener('DOMContentLoaded', () => {
         renderer.viewport,
         canvas ?? undefined
       );
+      characterMenuModal.setKeyResolver((actionId) => settingsManager.getCodesForAction(actionId));
       renderer.mouseVectoringEnabled = settingsManager.getSettings().mouseVectoringEnabled;
       renderer.torchlightEnabled = settingsManager.getSettings().torchlightEnabled;
       renderer.radialMenuOverlay.slots = settingsManager.getSettings().radialMenuSlots;

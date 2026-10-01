@@ -430,6 +430,12 @@ export class InventoryOverlay implements UIModal {
     }
   }
 
+  /** Puts keyboard focus on the last panel (the item inspector). */
+  public focusLastPanel(): void {
+    this.inspector.setFocus('inspector', 0);
+    this.onStateChanged?.();
+  }
+
   public close(): void {
     this.companionViewOpen = false;
     this.isOpen = false;

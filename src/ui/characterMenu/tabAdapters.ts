@@ -1,5 +1,5 @@
 import type { GameState } from '../flanks/types';
-import type { MenuTab } from './menuTab';
+import type { MenuFooter, MenuHost, MenuTab } from './menuTab';
 import type { CompendiumModal } from '../help/compendiumModal';
 import type { PactModal } from '../pactModal';
 import type { SpellbookModal } from '../spellbookModal';
@@ -112,11 +112,16 @@ export class CompendiumTabAdapter implements MenuTab {
   }
 
   public handleKeyDown(e: KeyboardEvent): boolean {
-    // Suppress wrapped modal's internal close-on-hotkey/Escape so CharacterMenuModal owns shell lifecycle
-    if (e.key === 'Escape' || e.code === 'KeyB') {
-      return false;
-    }
     return this.modal.handleKeyDown(e);
+  }
+
+  public footer(): MenuFooter {
+    return {
+      keys: [
+        { keys: ['↑', '↓'], label: 'choose' },
+        { keys: ['←', '→'], label: 'filter' },
+      ],
+    };
   }
 }
 
@@ -202,11 +207,21 @@ export class PactTabAdapter implements MenuTab {
   }
 
   public handleKeyDown(e: KeyboardEvent): boolean {
-    // Suppress wrapped modal's internal close-on-hotkey/Escape so CharacterMenuModal owns shell lifecycle
-    if (e.key === 'Escape' || e.code === 'KeyP') {
-      return false;
-    }
     return this.modal.handleKeyDown(e);
+  }
+
+  public bindHost(host: MenuHost): void {
+    this.modal.onChange = () => host.refreshChrome();
+  }
+
+  public footer(): MenuFooter {
+    const sel = this.modal.selection;
+    return {
+      keys: [{ keys: ['↑', '↓'], label: 'choose' }],
+      actions: sel
+        ? [{ id: 'toggle-pact', label: sel.sealed ? 'Renounce' : 'Seal pact', key: 'Enter', primary: true, run: () => this.modal.toggleSelected() }]
+        : [],
+    };
   }
 }
 
@@ -284,10 +299,18 @@ export class SpellbookTabAdapter implements MenuTab {
   }
 
   public handleKeyDown(e: KeyboardEvent): boolean {
-    // Suppress wrapped modal's internal close-on-hotkey/Escape so CharacterMenuModal owns shell lifecycle
-    if (e.key === 'Escape' || e.code === 'KeyZ') {
-      return false;
-    }
     return this.modal.handleKeyDown(e);
+  }
+
+  public footer(): MenuFooter {
+    return {
+      keys: [
+        { keys: ['↑', '↓'], label: 'choose' },
+        { keys: ['1', '–', '0'], label: 'put on the quickbar' },
+      ],
+      actions: [
+        { id: 'cast', label: 'Cast', key: 'Enter', primary: true, disabled: !this.modal.selectedSpell, run: () => this.modal.castSelected() },
+      ],
+    };
   }
 }

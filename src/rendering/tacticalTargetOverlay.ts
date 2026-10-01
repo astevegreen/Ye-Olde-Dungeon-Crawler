@@ -1,10 +1,17 @@
-import type { GameEngine, TileDefinition } from '../engine';
-import { fillIconText, measureIconText, type IconTextPart } from './canvasIcons';
+import type { GameEngine, Item, TileDefinition } from '../engine';
 import { Monster, Container } from '../engine';
 import type { Camera } from './camera';
 import type { ThemeTokens } from '../engine';
-import { resolveThemeTokens, uiFont } from './theme';
+import { resolveThemeTokens } from './theme';
+import { escapeHtml } from '../ui/html';
+import { iconHtml, type UiIconName } from '../ui/icons';
+import type { MapCardSpec } from '../ui/mapCards/mapCardLayer';
 
+/**
+ * Zero-click inspect: pointing at a tile (the mouse, or a sidebar row) brackets a monster
+ * on the map and shows its target card, or labels a pile, door or stairs. The brackets
+ * are canvas; the card and the labels are DOM cards over the map (card(), below).
+ */
 export class TacticalTargetOverlay {
   private hoveredWorldX: number | null = null;
   private hoveredWorldY: number | null = null;
@@ -24,6 +31,18 @@ export class TacticalTargetOverlay {
     return { x: this.hoveredWorldX, y: this.hoveredWorldY };
   }
 
+  /** The hovered tile when it is on the map and in sight. */
+  private visibleHover(engine: GameEngine): { x: number; y: number } | null {
+    const t = this.hoveredTile;
+    if (!t || !engine.map?.inBounds(t.x, t.y) || !engine.fov.isVisible(t.x, t.y)) return null;
+    return t;
+  }
+
+  private hoveredMonster(engine: GameEngine, t: { x: number; y: number }): Monster | null {
+    const entity = engine.map.getEntityAt(t.x, t.y);
+    return entity instanceof Monster && entity.isAlive() ? entity : null;
+  }
+
   public render(
     ctx: CanvasRenderingContext2D,
     engine: GameEngine,
@@ -31,40 +50,33 @@ export class TacticalTargetOverlay {
     cellSize: number,
     offsetX: number,
     offsetY: number,
-    virtualWidth: number,
+    _virtualWidth: number,
     _virtualHeight: number,
     themeTokens?: ThemeTokens
   ): void {
     if (this.hoveredWorldX === null || this.hoveredWorldY === null) return;
-    const hx = this.hoveredWorldX;
-    const hy = this.hoveredWorldY;
+    const t = this.visibleHover(engine);
+    if (!t || !this.hoveredMonster(engine, t)) return;
+    this.renderTargetBrackets(ctx, camera, t.x, t.y, cellSize, offsetX, offsetY, resolveThemeTokens(themeTokens));
+  }
 
-    if (!engine.map.inBounds(hx, hy)) return;
-    if (!engine.fov.isVisible(hx, hy)) return;
+  /** The monster's target card, docked top-right, or a label above a pile, door or stairs. */
+  public card(engine: GameEngine, camera: Camera, cellSize: number, offsetX: number, offsetY: number): MapCardSpec | null {
+    const t = this.visibleHover(engine);
+    if (!t) return null;
 
-    const theme = resolveThemeTokens(themeTokens);
-    const font = theme.fontFamily ?? '"Courier New", Courier, monospace';
+    const monster = this.hoveredMonster(engine, t);
+    if (monster) return { className: 'mc-panel mc-target', place: { dock: 'top-right' }, html: targetCardHtml(monster) };
 
-    // 1. Check if hovering an active monster
-    const entity = engine.map.getEntityAt(hx, hy);
-    if (entity instanceof Monster && entity.isAlive()) {
-      this.renderTargetBrackets(ctx, camera, hx, hy, cellSize, offsetX, offsetY, theme);
-      this.renderTargetCard(ctx, entity, virtualWidth, theme, font);
-      return;
-    }
+    const screen = camera.worldToScreen(t.x, t.y, cellSize, offsetX, offsetY);
+    if (!screen) return null;
+    const place = { tile: { x: screen.x, y: screen.y, size: cellSize } };
 
-    // 2. Check if hovering ground items or containers
-    const items = engine.map.getItemsAt(hx, hy);
-    if (items && items.length > 0) {
-      this.renderGroundPill(ctx, camera, hx, hy, items, cellSize, offsetX, offsetY, theme, font);
-      return;
-    }
+    const items = engine.map.getItemsAt(t.x, t.y);
+    if (items && items.length > 0) return { className: 'mc-pill is-loot', place, html: pileLabelHtml(items) };
 
-    // 3. Check if hovering stairs or doors
-    const tile = engine.map.getTile(hx, hy);
-    if (tile && (tile.type.startsWith('stairs') || tile.type.startsWith('door'))) {
-      this.renderFixturePill(ctx, camera, hx, hy, tile, cellSize, offsetX, offsetY, theme, font);
-    }
+    const label = fixtureLabel(engine.map.getTile(t.x, t.y));
+    return label ? { className: 'mc-pill is-fixture', place, html: `${iconHtml(label.icon)} ${escapeHtml(label.text)}` } : null;
   }
 
   /** Draws targeting brackets around the hovered monster's tile */
@@ -119,182 +131,44 @@ export class TacticalTargetOverlay {
 
     ctx.restore();
   }
+}
 
-  /** Renders the Active Target Card in the top-right viewport HUD corner */
-  private renderTargetCard(
-    ctx: CanvasRenderingContext2D,
-    monster: Monster,
-    virtualWidth: number,
-    theme: Required<ThemeTokens>,
-    font: string
-  ): void {
-    ctx.save();
-    const cardW = 210;
-    const cardH = 62;
-    const cardX = virtualWidth - cardW - 14;
-    const cardY = 54; // Pinned directly beneath the top canvas bar
-
-    // Background panel with dark slate & gold/amber border
-    ctx.fillStyle = theme.cardBg;
-    ctx.fillRect(cardX, cardY, cardW, cardH);
-
-    ctx.strokeStyle = theme.accent;
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(cardX + 0.5, cardY + 0.5, cardW - 1, cardH - 1);
-
-    // Subtle header accent line
-    ctx.fillStyle = theme.accent;
-    ctx.fillRect(cardX, cardY, 3, cardH);
-
-    // Target Monster Name
-    ctx.font = uiFont('sm', font, 'bold');
-    ctx.fillStyle = '#f8fafc';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    const displayName = monster.name.length > 20 ? monster.name.slice(0, 19) + '…' : monster.name;
-    fillIconText(ctx, [{ icon: 'attack' }, ` ${displayName}`], cardX + 8, cardY + 7);
-
-    // HP Bar
-    const barX = cardX + 8;
-    const barY = cardY + 24;
-    const barW = cardW - 16;
-    const barH = 10;
-    const ratio = Math.max(0, Math.min(1, monster.hp / monster.maxHp));
-
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-    ctx.fillRect(barX, barY, barW, barH);
-
-    ctx.fillStyle = ratio > 0.5 ? '#10b981' : ratio > 0.25 ? '#f59e0b' : '#ef4444';
-    ctx.fillRect(barX, barY, Math.floor(barW * ratio), barH);
-
-    ctx.strokeStyle = '#334155';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(barX + 0.5, barY + 0.5, barW - 1, barH - 1);
-
-    // Numerical HP
-    ctx.font = uiFont('xs', font, 'bold');
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(`${monster.hp} / ${monster.maxHp} HP`, barX + barW / 2, barY + barH / 2 + 0.5);
-
-    // Bottom info line: Threat windup or status effects
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    const infoY = cardY + 40;
-
-    if (monster.intent?.type === 'windup') {
-      ctx.font = uiFont('xs', font, 'bold');
-      ctx.fillStyle = '#f87171';
-      fillIconText(ctx, [{ icon: 'warning' }, ' Intent: Attack Winding Up!'], barX, infoY);
-    } else {
-      const statuses = monster.statusManager?.getAll() ?? [];
-      if (statuses.length > 0) {
-        ctx.font = uiFont('xs', font, 'bold');
-        ctx.fillStyle = '#38bdf8';
-        const labels = statuses.map((s) => `[${s.type}]`).join(' ');
-        ctx.fillText(labels.length > 26 ? labels.slice(0, 25) + '…' : labels, barX, infoY);
-      } else {
-        ctx.font = uiFont('xs', font, 'italic');
-        ctx.fillStyle = '#94a3b8';
-        ctx.fillText('Active Combat Target', barX, infoY);
-      }
-    }
-
-    ctx.restore();
+/** The target card: name, health, and a wind-up warning or the monster's conditions. */
+export function targetCardHtml(monster: Monster): string {
+  const pct = monster.maxHp > 0 ? Math.max(0, Math.min(100, Math.round((monster.hp / monster.maxHp) * 100))) : 0;
+  let note = '';
+  if (monster.intent?.type === 'windup') {
+    note = `<div class="mc-intent is-warn">${iconHtml('warning')} Winding up an attack</div>`;
+  } else {
+    const statuses = monster.statusManager?.getAll() ?? [];
+    if (statuses.length > 0) note = `<div class="mc-line mc-status"><span>${escapeHtml(statuses.map((s) => s.type).join(', '))}</span></div>`;
   }
+  return `
+    <div class="mc-head"><span class="mc-title">${iconHtml('attack')} <span>${escapeHtml(monster.name)}</span></span><span class="mc-tag ui-num">${monster.hp} / ${monster.maxHp}</span></div>
+    <div class="mc-body"><div class="ui-bar mc-hp"><i style="width: ${pct}%"></i></div>${note}</div>`;
+}
 
-  /** Renders a floating tooltip pill above ground items */
-  private renderGroundPill(
-    ctx: CanvasRenderingContext2D,
-    camera: Camera,
-    worldX: number,
-    worldY: number,
-    items: readonly import('../engine').Item[],
-    cs: number,
-    offsetX: number,
-    offsetY: number,
-    theme: Required<ThemeTokens>,
-    font: string
-  ): void {
-    const screenPos = camera.worldToScreen(worldX, worldY, cs, offsetX, offsetY);
-    if (!screenPos) return;
-
-    ctx.save();
-    let label: IconTextPart[];
-    const firstItem = items[0];
-    if (firstItem instanceof Container) {
-      label = firstItem.wasOpened ? [{ icon: 'chest' }, ` ${firstItem.displayName}`] : [`★ ${firstItem.displayName} (Unopened)`];
-    } else {
-      const count = items.length;
-      label = [{ icon: 'loot' }, count > 1 ? ` ${firstItem.displayName} (+${count - 1} more)` : ` ${firstItem.displayName}`];
-    }
-
-    ctx.font = uiFont('xs', font, 'bold');
-    const textW = measureIconText(ctx, label);
-    const pillW = textW + 14;
-    const pillH = 18;
-    const pillX = screenPos.x + cs / 2 - pillW / 2;
-    const pillY = screenPos.y - pillH - 4;
-
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-    ctx.fillRect(pillX, pillY, pillW, pillH);
-
-    ctx.strokeStyle = theme.hudAccent;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(pillX + 0.5, pillY + 0.5, pillW - 1, pillH - 1);
-
-    ctx.fillStyle = '#f8fafc';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    fillIconText(ctx, label, pillX + pillW / 2, pillY + pillH / 2 + 0.5);
-
-    ctx.restore();
+/** A pile's label: the container, or the top item and how many more lie under it. */
+export function pileLabelHtml(items: readonly Item[]): string {
+  const first = items[0];
+  if (first instanceof Container) {
+    return `${iconHtml('chest')} ${escapeHtml(first.displayName)}${first.wasOpened ? '' : ' (unopened)'}`;
   }
+  const more = items.length > 1 ? ` (+${items.length - 1} more)` : '';
+  return `${iconHtml('loot')} ${escapeHtml(first.displayName)}${more}`;
+}
 
-  /** Renders a tooltip pill above interactive fixtures (stairs/doors) */
-  private renderFixturePill(
-    ctx: CanvasRenderingContext2D,
-    camera: Camera,
-    worldX: number,
-    worldY: number,
-    tile: TileDefinition,
-    cs: number,
-    offsetX: number,
-    offsetY: number,
-    theme: Required<ThemeTokens>,
-    font: string
-  ): void {
-    const screenPos = camera.worldToScreen(worldX, worldY, cs, offsetX, offsetY);
-    if (!screenPos) return;
-
-    let text: IconTextPart[] | null = null;
-    if (tile.type === 'stairs_down') text = [{ icon: 'stairs' }, ' Stairs Down'];
-    else if (tile.type === 'stairs_up') text = [{ icon: 'stairs' }, ' Stairs Up'];
-    else if (tile.type === 'door_closed') text = [{ icon: 'door' }, ' Closed Door'];
-    else if (tile.type === 'door_open') text = [{ icon: 'door' }, ' Open Doorway'];
-    if (!text) return;
-
-    ctx.save();
-    ctx.font = uiFont('xs', font, 'bold');
-    const textW = measureIconText(ctx, text);
-    const pillW = textW + 12;
-    const pillH = 17;
-    const pillX = screenPos.x + cs / 2 - pillW / 2;
-    const pillY = screenPos.y - pillH - 4;
-
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-    ctx.fillRect(pillX, pillY, pillW, pillH);
-
-    ctx.strokeStyle = theme.borderLight;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(pillX + 0.5, pillY + 0.5, pillW - 1, pillH - 1);
-
-    ctx.fillStyle = '#fde047';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    fillIconText(ctx, text, pillX + pillW / 2, pillY + pillH / 2 + 0.5);
-
-    ctx.restore();
+function fixtureLabel(tile: TileDefinition | null | undefined): { icon: UiIconName; text: string } | null {
+  switch (tile?.type) {
+    case 'stairs_down':
+      return { icon: 'stairs', text: 'Stairs down' };
+    case 'stairs_up':
+      return { icon: 'stairs', text: 'Stairs up' };
+    case 'door_closed':
+      return { icon: 'door', text: 'Closed door' };
+    case 'door_open':
+      return { icon: 'door', text: 'Open doorway' };
+    default:
+      return null;
   }
 }

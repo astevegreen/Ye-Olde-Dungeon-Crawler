@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TacticalTargetOverlay } from '../tacticalTargetOverlay';
+import { TacticalTargetOverlay, pileLabelHtml, targetCardHtml } from '../tacticalTargetOverlay';
 import { Camera } from '../camera';
-import { GameEngine } from '../../engine';
+import { GameEngine, Item, Monster } from '../../engine';
 
 describe('TacticalTargetOverlay', () => {
   let overlay: TacticalTargetOverlay;
@@ -33,5 +33,28 @@ describe('TacticalTargetOverlay', () => {
     expect(() => {
       overlay.render(mockCtx, {} as GameEngine, camera, 32, 0, 0, 960, 600);
     }).not.toThrow();
+  });
+
+  it('has no card while nothing is hovered', () => {
+    expect(overlay.card({} as GameEngine, new Camera(20, 15), 32, 0, 0)).toBeNull();
+  });
+
+  it('builds the target card from the monster, escaped, with a wind-up warning', () => {
+    const ogre = new Monster({ id: 'o', name: '<Ogre>', position: { x: 1, y: 1 }, stats: { hp: 25, maxHp: 50, attack: 5, defense: 1 } });
+    let html = targetCardHtml(ogre);
+    expect(html).toContain('&lt;Ogre&gt;');
+    expect(html).toContain('25 / 50');
+    expect(html).toContain('width: 50%');
+    expect(html).not.toContain('Winding up');
+    ogre.intent = { type: 'windup', abilityName: 'Smash' } as Monster['intent'];
+    html = targetCardHtml(ogre);
+    expect(html).toContain('Winding up an attack');
+    expect(html).not.toMatch(/#[0-9a-f]{3,6}\b|rgba?\(/i);
+  });
+
+  it('labels a pile by its top item and how many more lie under it', () => {
+    const ware = (id: string, name: string) => new Item({ id, name, category: 'misc', weight: 100, bulk: 100, quality: 'normal', identified: true, value: 1 });
+    expect(pileLabelHtml([ware('a', 'Rock')])).toMatch(/Rock$/);
+    expect(pileLabelHtml([ware('a', 'Rock'), ware('b', 'Stick'), ware('c', 'Bone')])).toContain('Rock (+2 more)');
   });
 });

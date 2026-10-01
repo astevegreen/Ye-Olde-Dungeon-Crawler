@@ -63,3 +63,22 @@
 .mc-intent.is-warn { color: var(--ui-warn); }
 .mc-intent.is-bad { color: var(--ui-bad); }
 .mc-intent.is-info { color: var(--ui-info); }
+.mc-status { color: var(--ui-info); font-size: var(--ui-text-xs); }
+
+/* The target card: the monster under the mouse. */
+.mc-target { width: 240px; }
+
+/* A label above a hovered tile: a pile, a door, the stairs. */
+.mc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-1);
+  padding: 1px var(--ui-space-2);
+  white-space: nowrap;
+  font: bold var(--ui-text-xs) var(--ui-font-body);
+  background: color-mix(in srgb, var(--ui-surface-0) 92%, transparent);
+  border: 1px solid var(--ui-line-strong);
+  border-radius: var(--ui-radius);
+}
+.mc-pill.is-loot { border-color: var(--ui-accent); }
+.mc-pill.is-fixture { color: var(--ui-title); }

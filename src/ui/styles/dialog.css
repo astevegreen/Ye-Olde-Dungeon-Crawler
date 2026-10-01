@@ -62,7 +62,7 @@
   text-transform: uppercase;
   color: var(--ui-text-muted);
 }
-.ui-dialog-title { font: bold var(--ui-text-lg) var(--ui-font-display); color: var(--ui-title); }
+.ui-dialog-title { display: flex; align-items: center; gap: var(--ui-space-2); font: bold var(--ui-text-lg) var(--ui-font-display); color: var(--ui-title); }
 
 .ui-dialog-body {
   flex: 1;
@@ -94,7 +94,7 @@
   border-top: 1px solid var(--ui-line);
 }
 .ui-dialog-hint { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: var(--ui-space-1) var(--ui-space-3); }
-.ui-dialog-actions { display: flex; gap: var(--ui-space-2); margin-left: auto; }
+.ui-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--ui-space-2); margin-left: auto; }
 
 /* A choosable row: an option, a perk, an offering. Clicking highlights; Enter commits. */
 .ui-option {
@@ -197,6 +197,29 @@
 }
 .keybind-badge:hover { border-color: var(--ui-bad); }
 .set-key-x { color: var(--ui-bad); }
+
+/* The end of a run: the pack's closing line, the epitaph, the score. */
+.go-banner {
+  padding: var(--ui-space-3);
+  font: var(--ui-text-lg) var(--ui-font-display);
+  text-align: center;
+  color: var(--ui-title);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius);
+}
+.go-banner.is-won { background: color-mix(in srgb, var(--ui-good) 16%, var(--ui-surface-2)); border-color: color-mix(in srgb, var(--ui-good) 50%, transparent); }
+.go-banner.is-lost { background: color-mix(in srgb, var(--ui-bad) 16%, var(--ui-surface-2)); border-color: color-mix(in srgb, var(--ui-bad) 50%, transparent); }
+.go-epitaph {
+  max-height: 300px;
+  margin: 0;
+  padding: var(--ui-space-2) var(--ui-space-3);
+  overflow: auto;
+  white-space: pre-wrap;
+  font: var(--ui-text-xs) / 1.35 var(--ui-font-num);
+  color: var(--ui-text);
+  user-select: text;
+}
+.go-score { font: bold var(--ui-text-md) var(--ui-font-num); color: var(--ui-accent); }
 
 /* Body sections keep their height; the body scrolls instead of squashing them. */
 .ui-dialog-body > * { flex-shrink: 0; }

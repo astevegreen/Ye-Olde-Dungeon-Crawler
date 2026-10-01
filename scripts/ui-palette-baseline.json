@@ -1,8 +1,8 @@
 {
-  "total": 541,
+  "total": 533,
   "files": {
-    "index.html": 18,
-    "src/main.ts": 4,
+    "index.html": 12,
+    "src/main.ts": 2,
     "src/rendering/atlas/sprite-atlas.ts": 4,
     "src/rendering/canvas-renderer.ts": 76,
     "src/rendering/floatingTextRunner.ts": 11,

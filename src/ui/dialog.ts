@@ -1,4 +1,5 @@
 import { escapeHtml, keyChip } from './html';
+import { iconHtml, type UiIconName } from './icons';
 
 /**
  * The one dialog frame (ADR-0011): a scrim and a frame modeled on the story-choice dialog,
@@ -24,6 +25,8 @@ export interface DialogFrame {
   /** Plain text. */
   title: string;
   titleId?: string;
+  /** A pack icon before the title. */
+  icon?: UiIconName;
   /** A small line above the title, e.g. "Mastery". */
   kicker?: string;
   /** Id for a ✕ in the head; omit for dialogs that can't be dismissed. */
@@ -50,7 +53,7 @@ export function dialogHtml(f: DialogFrame): string {
   return `
     <div class="ui-dialog${f.size ? ` ui-dialog--${f.size}` : ''}" role="dialog" aria-modal="true"${f.titleId ? ` aria-labelledby="${f.titleId}"` : ''}>
       <div class="ui-dialog-head">
-        <div>${f.kicker ? `<div class="ui-dialog-kicker">${escapeHtml(f.kicker)}</div>` : ''}<div class="ui-dialog-title"${f.titleId ? ` id="${f.titleId}"` : ''}>${escapeHtml(f.title)}</div></div>
+        <div>${f.kicker ? `<div class="ui-dialog-kicker">${escapeHtml(f.kicker)}</div>` : ''}<div class="ui-dialog-title"${f.titleId ? ` id="${f.titleId}"` : ''}>${f.icon ? iconHtml(f.icon) : ''}${escapeHtml(f.title)}</div></div>
         ${f.closeId ? `<button type="button" id="${f.closeId}" class="cm-close" aria-label="Close" title="${escapeHtml(f.closeTitle ?? 'Close (Esc)')}">✕</button>` : ''}
       </div>
       <div class="ui-dialog-body">${f.body}</div>
@@ -62,8 +65,8 @@ export function dialogHtml(f: DialogFrame): string {
 export function dialogButton(
   id: string,
   label: string,
-  opts: { primary?: boolean; danger?: boolean; disabled?: boolean; key?: string; attrs?: string } = {}
+  opts: { primary?: boolean; danger?: boolean; disabled?: boolean; key?: string; icon?: UiIconName; attrs?: string } = {}
 ): string {
   const variant = opts.primary ? ' ui-btn--primary' : opts.danger ? ' ui-btn--danger' : '';
-  return `<button type="button" id="${id}" class="ui-btn${variant}"${opts.disabled ? ' disabled' : ''}${opts.attrs ? ` ${opts.attrs}` : ''}>${escapeHtml(label)}${opts.key ? ` ${keyChip(opts.key)}` : ''}</button>`;
+  return `<button type="button" id="${id}" class="ui-btn${variant}"${opts.disabled ? ' disabled' : ''}${opts.attrs ? ` ${opts.attrs}` : ''}>${opts.icon ? iconHtml(opts.icon) : ''}${escapeHtml(label)}${opts.key ? ` ${keyChip(opts.key)}` : ''}</button>`;
 }

@@ -38,6 +38,7 @@ import {
   MovementAction,
   PickUpAction,
   CloseDoorAction,
+  SAVE_FILE_EXTENSION,
 } from './engine';
 import type {
   ActionResult,
@@ -54,6 +55,7 @@ import { TitleScreen } from './ui/title-screen';
 import { DiagnosticModal } from './ui/diagnostic-modal';
 import { FeedbackModal } from './ui/feedbackModal';
 import { SagaShareModal } from './ui/sagaShareModal';
+import { GameOverDialog } from './ui/gameOverDialog';
 import { ContextHelp } from './ui/help/contextHelp';
 import { CommandPalette } from './ui/help/commandPalette';
 import type { SpellbookEntry } from './rendering/targeting-overlay';
@@ -1111,95 +1113,52 @@ window.addEventListener('DOMContentLoaded', () => {
 
   let currentGameOverEntry: HallOfFameEntry | null = null;
 
+  const gameOverDialog = new GameOverDialog({
+    onLoadAutosave: () => {
+      const loaded = loadAutosaveOrNotify();
+      if (loaded) {
+        gameOverDialog.hide();
+        launchGame(loaded.engine, loaded.profile);
+      }
+    },
+    onShare: () => {
+      if (currentGameOverEntry) sagaShareModal.openShare(currentGameOverEntry);
+    },
+    onExport: () => {
+      if (!activeProfile) return;
+      try {
+        const fileName = profileManager.triggerCotwDownload(activeProfile.id, defaultPlatformAdapter);
+        gameOverDialog.setStatus(`Saved ${fileName}.`, 'good');
+      } catch (err) {
+        gameOverDialog.setStatus(`Export failed: ${(err as Error).message}`, 'bad');
+      }
+    },
+    onReturn: () => {
+      gameOverDialog.hide();
+      saveAndReturnToTitle();
+    },
+  });
+
   function showGameOverModal(status: 'victorious' | 'fallen' | 'active', summary: any): void {
-    const modal = document.getElementById('game-over-modal');
-    const icon = document.getElementById('game-over-icon');
-    const title = document.getElementById('game-over-title');
-    const banner = document.getElementById('game-over-banner');
-    const bannerTitle = document.getElementById('game-over-banner-title');
-    const bannerSub = document.getElementById('game-over-banner-sub');
-    const pre = document.getElementById('game-over-summary');
-    const scoreBadge = document.getElementById('game-over-score-badge');
-    const autosaveBtn = document.getElementById('btn-game-over-autosave') as HTMLButtonElement | null;
-
-    if (!modal) return;
-
     if (inputHandler) {
       inputHandler.enabled = false;
     }
 
-    currentGameOverEntry = summary.entry ?? null;
-
-    if (status === 'victorious') {
-      icon?.setAttribute('data-icon', 'trophy');
-      if (title) title.textContent = brand.victoryTitle;
-      if (banner) banner.style.background = '#15803d';
-      if (bannerTitle) bannerTitle.textContent = 'VICTORIOUS';
-      if (bannerSub) bannerSub.textContent = brand.victoryBanner;
-    } else {
-      icon?.setAttribute('data-icon', 'fallen');
-      if (title) title.textContent = 'Fallen in Battle';
-      if (banner) banner.style.background = '#7f1d1d';
-      if (bannerTitle) bannerTitle.textContent = 'FALLEN IN BATTLE';
-      if (bannerSub) bannerSub.textContent = brand.fallenBanner;
-    }
-
-    if (summary.entry) {
-      if (pre) pre.textContent = Leaderboard.formatEpitaph(summary.entry, brand.xpName);
-      if (scoreBadge) scoreBadge.textContent = `${brand.hallOfFameShortName} Score: ${summary.entry.score.toLocaleString()} PTS`;
-    }
-
-    if (autosaveBtn) {
-      if (autosaveManager.hasAutosave()) {
-        const meta = autosaveManager.getAutosaveMetadata();
-        autosaveBtn.style.display = 'inline-block';
-        autosaveBtn.textContent = `Load the autosave (${meta?.profileName ?? 'Hero'}, F${meta?.floor ?? 1})`;
-      } else {
-        autosaveBtn.style.display = 'none';
-      }
-    }
-
-    modal.style.display = 'flex';
+    const entry: HallOfFameEntry | null = summary.entry ?? null;
+    currentGameOverEntry = entry;
+    const won = status === 'victorious';
+    const autosave = autosaveManager.hasAutosave() ? autosaveManager.getAutosaveMetadata() : null;
+    gameOverDialog.show({
+      status: won ? 'victorious' : 'fallen',
+      title: won ? brand.victoryTitle : 'Fallen in Battle',
+      kicker: entry ? `${entry.heroName} · Level ${entry.level}` : undefined,
+      banner: won ? brand.victoryBanner : brand.fallenBanner,
+      epitaph: entry ? Leaderboard.formatEpitaph(entry, brand.xpName) : '',
+      score: entry ? `${brand.hallOfFameShortName} score: ${entry.score.toLocaleString()}` : undefined,
+      autosaveLabel: autosave ? `Load the autosave (${autosave.profileName ?? 'Hero'}, F${autosave.floor ?? 1})` : undefined,
+      exportLabel: `Export save (${SAVE_FILE_EXTENSION})`,
+    });
   }
-
-  const gameOverAutosaveBtn = document.getElementById('btn-game-over-autosave');
-  gameOverAutosaveBtn?.addEventListener('click', () => {
-    const loaded = loadAutosaveOrNotify();
-    if (loaded) {
-      const modal = document.getElementById('game-over-modal');
-      if (modal) modal.style.display = 'none';
-      launchGame(loaded.engine, loaded.profile);
-    }
-  });
-
-  const gameOverReturnBtn = document.getElementById('btn-game-over-return');
-  gameOverReturnBtn?.addEventListener('click', () => {
-    const modal = document.getElementById('game-over-modal');
-    if (modal) modal.style.display = 'none';
-    saveAndReturnToTitle();
-  });
-
-  const gameOverShareBtn = document.getElementById('btn-game-over-share');
-  gameOverShareBtn?.addEventListener('click', () => {
-    if (currentGameOverEntry) {
-      sagaShareModal.openShare(currentGameOverEntry);
-    }
-  });
-
-  const gameOverExportBtn = document.getElementById('btn-game-over-export');
-  gameOverExportBtn?.addEventListener('click', () => {
-    if (activeProfile) {
-      try {
-        const fileName = profileManager.triggerCotwDownload(activeProfile.id, defaultPlatformAdapter);
-        const pre = document.getElementById('game-over-summary');
-        if (pre) {
-          pre.textContent += `\n\n[ARCHIVED] Character save exported to ${fileName}.`;
-        }
-      } catch (err) {
-        alert(`Export failed: ${(err as Error).message}`);
-      }
-    }
-  });
 
   function launchGame(engine: GameEngine, profile: CharacterProfile): void {
     if (characterMenuModal?.isOpen) {

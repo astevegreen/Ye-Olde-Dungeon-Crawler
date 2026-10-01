@@ -162,16 +162,15 @@ test('windows opened from save & quit each hold one stack entry and keep keys fr
   await expect(settings).toBeHidden();
   expect(await stackIds(page)).toEqual([]);
 
-  // Help: the codex, as the character menu's Bestiary tab, as on every other path to it.
-  const characterMenu = page.locator('#character-menu-modal');
+  // Help: the F1 help card, as on every other path to it.
+  const helpCard = page.locator('#context-help-overlay');
   await page.keyboard.press('Escape');
   await page.locator('#btn-savequit-help').click();
-  await expect(characterMenu).toBeVisible();
-  expect(await stackIds(page)).toEqual(['character-menu']);
-  expect(await page.evaluate(() => window.__cotwInputHandler!.characterMenuModal!.activeTabId)).toBe('bestiary');
+  await expect(helpCard).toBeVisible();
+  expect(await stackIds(page)).toEqual(['context_help']);
   await heldBack();
   await page.keyboard.press('Escape');
-  await expect(characterMenu).toBeHidden();
+  await expect(helpCard).toBeHidden();
   expect(await stackIds(page)).toEqual([]);
 
   // Save code.

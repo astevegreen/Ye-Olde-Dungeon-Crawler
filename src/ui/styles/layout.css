@@ -248,17 +248,6 @@
   color: var(--ui-bad);
 }
 
-/* Header Telemetry Container */
-#header-telemetry-col {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  font-weight: bold;
-  font-family: var(--ui-font-family, monospace);
-}
-
-
 /* ==========================================================================
    Paradigm B: The Gothic Action Console & Norse Runic HUD
    ========================================================================== */

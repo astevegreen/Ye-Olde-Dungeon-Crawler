@@ -49,16 +49,6 @@
         image-rendering: crisp-edges;
       }
 
-      /* In-game Floating HUD Bar Controls */
-      #game-overlay-controls {
-        position: absolute;
-        top: 8px;
-        right: 14px;
-        z-index: 40;
-        display: flex;
-        gap: 8px;
-      }
-
       /* The older window classes (retro-*, win-btn), restyled in the one visual language
          (ADR-0011, direction C): flat surfaces, hairlines and the pack's role tokens instead
          of Windows 3.1 bevels. New screens use menu.css and dialog.css directly. */

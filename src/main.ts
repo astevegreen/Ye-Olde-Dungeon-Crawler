@@ -895,7 +895,8 @@ window.addEventListener('DOMContentLoaded', () => {
       titleScreen?.setStatus(`Inscribed ${entry.heroName}'s saga into the ${brand.hallOfFameName}!`);
     },
     onClose: () => {
-      if (inputHandler && activeEngine && gameContainer && gameContainer.style.display !== 'none') {
+      // Over the game-over screen the run is over: its input stays off.
+      if (inputHandler && activeEngine && gameContainer && gameContainer.style.display !== 'none' && !gameOverDialog.isOpen) {
         inputHandler.enabled = true;
       }
     },

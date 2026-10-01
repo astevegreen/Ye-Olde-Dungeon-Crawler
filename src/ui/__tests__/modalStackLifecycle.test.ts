@@ -215,7 +215,8 @@ describe('Modal Stack Lifecycle & UI Ground Status Polish', () => {
       map.setTile(5, 5, woodenPlanks);
       // (5, 5) is inside Olaf's General Store (3, 2 to 16, 9)
       const status = formatGroundStatus(engine, 5, 5);
-      expect(status.standingText).toBe("📍 Olaf's General Store");
+      expect(status.standingText).toBe("Olaf's General Store");
+      expect(status.standingIcon).toBe('location');
     });
 
     it('formats actionable stair prompts for stairs down and up', () => {

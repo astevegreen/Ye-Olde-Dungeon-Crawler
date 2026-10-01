@@ -1,4 +1,5 @@
 import type { Entity, GameEngine, Item } from '../../engine';
+import { iconElement, type UiIconName } from '../icons';
 import {
   formatGroundStatus,
   getConditions,
@@ -165,7 +166,7 @@ export class CombatSidebar {
         const warn = document.createElement('div');
         warn.className = 'sb-intent';
         const turns = Math.max(1, t.windup.turnsRemaining);
-        warn.textContent = `⚠ Winding up ${t.windup.ability} · lands ${turns === 1 ? 'next turn' : `in ${turns} turns`}`;
+        warn.append(iconElement('warning'), ` Winding up ${t.windup.ability} · lands ${turns === 1 ? 'next turn' : `in ${turns} turns`}`);
         row.appendChild(warn);
       }
       this.threatsList.appendChild(row);
@@ -224,10 +225,19 @@ export class CombatSidebar {
 
   private renderGround(engine: GameEngine): void {
     const here = formatGroundStatus(engine, engine.player.x, engine.player.y);
-    const hereText = [here.standingText, here.promptText].filter(Boolean).join(' · ');
-    this.hereLine.textContent = hereText;
-    this.hereLine.hidden = !hereText;
-    this.hereLine.classList.toggle('sb-here-warn', here.detailText.includes('⚠'));
+    // "[icon] Where you stand · [icon] what you can do here"
+    this.hereLine.replaceChildren();
+    const parts: Array<[string, UiIconName | undefined]> = [
+      [here.standingText, here.standingIcon],
+      [here.promptText, here.promptIcon],
+    ];
+    for (const [text, icon] of parts.filter(([text]) => text)) {
+      if (this.hereLine.childNodes.length > 0) this.hereLine.append(' · ');
+      if (icon) this.hereLine.append(iconElement(icon), ' ');
+      this.hereLine.append(text);
+    }
+    this.hereLine.hidden = this.hereLine.childNodes.length === 0;
+    this.hereLine.classList.toggle('sb-here-warn', Boolean(here.hazard));
 
     const piles = getGroundPiles(engine);
     this.groundList.replaceChildren();

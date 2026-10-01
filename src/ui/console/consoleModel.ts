@@ -8,6 +8,7 @@ import {
   getOverflowConfig,
   type GameEngine,
 } from '../../engine';
+import type { UiIconName } from '../icons';
 import { getNearbyThreats } from '../sidebar/sidebarModel';
 
 /**
@@ -36,7 +37,8 @@ export interface ContextAction {
   verb: string;
   /** What it acts on, if anything: an item, a monster, an NPC. */
   target?: string;
-  icon: string;
+  /** The pixel icon beside the verb; none when there is nothing to do. */
+  icon: UiIconName | null;
   /** The key that does the same thing without the button, for the tooltip. */
   nativeKey?: string;
   /** The step a bump-style action takes (attack, talk, open a door). */
@@ -62,45 +64,45 @@ export function resolveContextAction(engine: GameEngine): ContextAction {
   const threats = getNearbyThreats(engine).filter((t) => t.distance === 1);
   if (threats.length > 0) {
     const target = threats.reduce((a, b) => (b.hp < a.hp ? b : a));
-    return { kind: 'attack', verb: 'Attack', target: target.name, icon: '⚔️', nativeKey: 'move into it', dx: target.x - p.x, dy: target.y - p.y };
+    return { kind: 'attack', verb: 'Attack', target: target.name, icon: 'attack', nativeKey: 'move into it', dx: target.x - p.x, dy: target.y - p.y };
   }
 
   const items = engine.map.getItemsAt(p.x, p.y) ?? [];
   if (items.length > 1) {
-    return { kind: 'take_all', verb: 'Take all', target: `${items.length} items`, icon: '📦', nativeKey: 'Shift+G' };
+    return { kind: 'take_all', verb: 'Take all', target: `${items.length} items`, icon: 'loot', nativeKey: 'Shift+G' };
   }
   if (items.length === 1) {
-    return { kind: 'pickup', verb: 'Pick up', target: items[0].displayName, icon: '📦', nativeKey: 'G' };
+    return { kind: 'pickup', verb: 'Pick up', target: items[0].displayName, icon: 'loot', nativeKey: 'G' };
   }
 
   const here = engine.map.getTile(p.x, p.y);
-  if (here?.type === 'stairs_down') return { kind: 'descend', verb: 'Descend', target: 'the stairs', icon: '🪜', nativeKey: '>' };
-  if (here?.type === 'stairs_up') return { kind: 'ascend', verb: 'Ascend', target: 'the stairs', icon: '🪜', nativeKey: '<' };
+  if (here?.type === 'stairs_down') return { kind: 'descend', verb: 'Descend', target: 'the stairs', icon: 'stairs', nativeKey: '>' };
+  if (here?.type === 'stairs_up') return { kind: 'ascend', verb: 'Ascend', target: 'the stairs', icon: 'stairs', nativeKey: '<' };
 
   for (const [dx, dy] of NEIGHBOURS) {
     const entity = engine.map.getEntityAt(p.x + dx, p.y + dy);
-    if (entity instanceof NPC) return { kind: 'talk', verb: 'Talk', target: entity.name, icon: '💬', nativeKey: 'move into them', dx, dy };
+    if (entity instanceof NPC) return { kind: 'talk', verb: 'Talk', target: entity.name, icon: 'talk', nativeKey: 'move into them', dx, dy };
   }
   for (const [dx, dy] of NEIGHBOURS) {
     if (engine.map.getTile(p.x + dx, p.y + dy)?.type === 'door_closed') {
-      return { kind: 'open_door', verb: 'Open', target: 'the door', icon: '🚪', nativeKey: 'move into it', dx, dy };
+      return { kind: 'open_door', verb: 'Open', target: 'the door', icon: 'door', nativeKey: 'move into it', dx, dy };
     }
   }
 
   const hurt = p.hp < p.maxHp || p.mana < p.maxMana;
   if (hurt && getNearbyThreats(engine).length === 0) {
-    return { kind: 'rest', verb: 'Rest', target: 'until recovered', icon: '💤', nativeKey: 'R' };
+    return { kind: 'rest', verb: 'Rest', target: 'until recovered', icon: 'rest', nativeKey: 'R' };
   }
 
   for (const [dx, dy] of NEIGHBOURS) {
     const x = p.x + dx;
     const y = p.y + dy;
     if (engine.map.getTile(x, y)?.type === 'door_open' && !engine.map.getEntityAt(x, y) && !(engine.map.getItemsAt(x, y)?.length)) {
-      return { kind: 'close_door', verb: 'Close', target: 'the door', icon: '🚪', nativeKey: 'C', x, y };
+      return { kind: 'close_door', verb: 'Close', target: 'the door', icon: 'door', nativeKey: 'C', x, y };
     }
   }
 
-  return { kind: 'none', verb: 'Nothing to do here', icon: '·' };
+  return { kind: 'none', verb: 'Nothing to do here', icon: null };
 }
 
 // ── Situational chips ───────────────────────────────────────────────────────
@@ -109,7 +111,7 @@ export type TrayChipAction = 'channel_rune' | 'open_pacts';
 
 export interface TrayChip {
   id: string;
-  icon: string;
+  icon: UiIconName;
   label: string;
   value: string;
   color: string;
@@ -133,17 +135,17 @@ export function getTrayChips(engine: GameEngine, smithName: string): TrayChip[] 
     const channel = p.statusManager.getStatus?.(RUNE_OF_RETURN_STATUS);
     if (channel) {
       chips.push({
-        id: 'rune', icon: '🌀', label: 'Recall', value: `${channel.duration} turns`, color: 'var(--ui-info)',
+        id: 'rune', icon: 'rune', label: 'Recall', value: `${channel.duration} turns`, color: 'var(--ui-info)',
         title: 'Channeling the Rune of Return. Keep still (wait) to finish; most actions break it.',
       });
     } else if (!p.hasDiscoveredRune) {
       chips.push({
-        id: 'rune', icon: '🌀', label: 'Rune', value: 'dormant', color: 'var(--ui-text-faint)',
+        id: 'rune', icon: 'rune', label: 'Rune', value: 'dormant', color: 'var(--ui-text-faint)',
         title: `A dormant Rune of Return. Take it to ${smithName} to awaken it.`,
       });
     } else {
       chips.push({
-        id: 'rune', icon: '🌀', label: 'Recall', value: `${rune.charges}/${rune.maxCharges}`, color: 'var(--ui-info)',
+        id: 'rune', icon: 'rune', label: 'Recall', value: `${rune.charges}/${rune.maxCharges}`, color: 'var(--ui-info)',
         pips: { filled: rune.charges, total: rune.maxCharges },
         title: `Rune of Return: ${rune.charges} of ${rune.maxCharges} charges. Click or press T to channel a recall.`,
         action: rune.charges > 0 ? 'channel_rune' : undefined,
@@ -155,7 +157,7 @@ export function getTrayChips(engine: GameEngine, smithName: string): TrayChip[] 
   if (overflow && p.voidDebt > 0) {
     const tier = [...overflow.tiers].reverse().find((t) => p.voidDebt >= t.minDebt);
     chips.push({
-      id: 'debt', icon: '⚠', label: overflow.debtName, value: `${p.voidDebt}`, color: tier?.color ?? '#a855f7',
+      id: 'debt', icon: 'debt', label: overflow.debtName, value: `${p.voidDebt}`, color: tier?.color ?? '#a855f7',
       title: `${overflow.debtName} ${p.voidDebt}${tier ? ` — ${tier.label}` : ''}. Resting lowers it.`,
     });
   }
@@ -163,12 +165,12 @@ export function getTrayChips(engine: GameEngine, smithName: string): TrayChip[] 
   const pacts = engine.pacts?.getActivePacts() ?? [];
   if (pacts.length === 1) {
     chips.push({
-      id: 'pacts', icon: '🩸', label: 'Pact', value: pacts[0].name, color: 'var(--ui-bad)',
+      id: 'pacts', icon: 'pact', label: 'Pact', value: pacts[0].name, color: 'var(--ui-bad)',
       title: `${pacts[0].name}: ${pacts[0].curseDescription} Reward: ${pacts[0].rewardDescription}`, action: 'open_pacts',
     });
   } else if (pacts.length > 1) {
     chips.push({
-      id: 'pacts', icon: '🩸', label: 'Pacts', value: `${pacts.length} sealed`, color: 'var(--ui-bad)',
+      id: 'pacts', icon: 'pact', label: 'Pacts', value: `${pacts.length} sealed`, color: 'var(--ui-bad)',
       title: pacts.map((pact) => `${pact.name}: ${pact.rewardDescription}`).join('\n'), action: 'open_pacts',
     });
   }

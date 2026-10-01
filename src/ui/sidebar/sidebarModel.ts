@@ -7,6 +7,7 @@ import {
   type GameEngine,
   type Item,
 } from '../../engine';
+import type { UiIconName } from '../icons';
 
 /**
  * What the combat sidebar shows, computed from the engine with no DOM: nearby
@@ -186,6 +187,11 @@ export interface GroundStatusInfo {
   standingText: string;
   detailText: string;
   promptText: string;
+  /** Icons drawn before the standing and prompt text. */
+  standingIcon?: UiIconName;
+  promptIcon?: UiIconName;
+  /** A revealed trap underfoot. */
+  hazard?: boolean;
 }
 
 /** What the hero stands on and what they can do there: stairs, doors, loot, traps. */
@@ -212,26 +218,35 @@ export function formatGroundStatus(engine: GameEngine, x: number, y: number): Gr
 
   let detailText = '';
   let promptText = '';
+  let promptIcon: UiIconName | undefined;
 
   if (tile.type === 'stairs_down') {
-    promptText = '🪜 Stairs Down — Press [>] or [Enter] to descend';
+    promptText = 'Stairs Down — Press [>] or [Enter] to descend';
+    promptIcon = 'stairs';
   } else if (tile.type === 'stairs_up') {
-    promptText = '🪜 Stairs Up — Press [<] or [Enter] to ascend';
+    promptText = 'Stairs Up — Press [<] or [Enter] to ascend';
+    promptIcon = 'stairs';
   } else if (tile.type === 'door_closed') {
-    promptText = '🚪 Closed Door — Bump or press [C] to open';
+    promptText = 'Closed Door — Bump or press [C] to open';
+    promptIcon = 'door';
   } else if (tile.type === 'door_open') {
-    promptText = '🚪 Open Doorway — Press [C] to close';
+    promptText = 'Open Doorway — Press [C] to close';
+    promptIcon = 'door';
   }
 
   const groundItems = engine.map.getItemsAt(x, y);
   if (groundItems && groundItems.length > 0) {
     detailText = `Floor: ${groundItems.map((item) => item.displayName).join(', ')}`;
-    if (!promptText) promptText = '📦 [G] Pickup | [Shift+G] Quick-Loot | [I] Inventory';
+    if (!promptText) {
+      promptText = '[G] Pickup | [Shift+G] Quick-Loot | [I] Inventory';
+      promptIcon = 'loot';
+    }
   }
 
   const trap = engine.map.getTrapAt ? engine.map.getTrapAt(x, y) : undefined;
+  const hazard = Boolean(trap && trap.revealed);
   if (trap && trap.revealed) {
-    const hazardMsg = `⚠️ Hazard: ${trap.type.replace('_', ' ').toUpperCase()} TRAP`;
+    const hazardMsg = `Hazard: ${trap.type.replace('_', ' ').toUpperCase()} TRAP`;
     detailText = detailText ? `${detailText} | ${hazardMsg}` : hazardMsg;
   }
 
@@ -239,10 +254,10 @@ export function formatGroundStatus(engine: GameEngine, x: number, y: number): Gr
   // or ground that isn't ordinary walkable floor (streets and floors of every kind
   // are not worth a line) and that no prompt already names.
   let standingText = '';
-  if (buildingName) standingText = `📍 ${buildingName}`;
+  if (buildingName) standingText = buildingName;
   else if (!tile.passable && !promptText) standingText = `Standing on: ${tileDef.name}`;
 
-  return { standingText, detailText, promptText };
+  return { standingText, detailText, promptText, standingIcon: buildingName ? 'location' : undefined, promptIcon, hazard };
 }
 
 /** Share of the floor's walkable tiles the hero has seen, 0-100. */

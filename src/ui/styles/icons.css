@@ -1,0 +1,14 @@
+/*
+ * Pixel UI icons (src/ui/icons.ts). Each icon's image comes from the pack's `ui~<name>`
+ * sprite recipe, installed at startup as a generated stylesheet (src/rendering/uiIcons.ts)
+ * that also makes it visible; an icon the pack doesn't draw stays hidden.
+ */
+.ui-icon {
+  display: none;
+  flex: none;
+  width: 1.35em;
+  height: 1.35em;
+  vertical-align: -0.3em;
+  background: center / contain no-repeat;
+  font-style: normal;
+}

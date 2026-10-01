@@ -1,4 +1,5 @@
 import type { Entity, GameEngine } from '../../engine';
+import { iconElement } from '../icons';
 import {
   getCompanionCard,
   getObjectiveLine,
@@ -32,7 +33,7 @@ export class ConsoleExtras {
   private readonly chipsRow: HTMLElement;
   private readonly companionSlot: HTMLElement;
   private readonly objective: HTMLElement;
-  private action: ContextAction = { kind: 'none', verb: '', icon: '' };
+  private action: ContextAction = { kind: 'none', verb: '', icon: null };
 
   constructor(private readonly options: ConsoleExtrasOptions) {
     this.contextBtn = document.createElement('button');
@@ -89,7 +90,7 @@ export class ConsoleExtras {
 
     const icon = document.createElement('span');
     icon.className = 'context-icon';
-    icon.textContent = action.icon;
+    if (action.icon) icon.appendChild(iconElement(action.icon));
     const text = document.createElement('span');
     text.className = 'context-text';
     const verb = document.createElement('span');
@@ -132,7 +133,7 @@ export class ConsoleExtras {
       el.title = chip.title;
       const icon = document.createElement('span');
       icon.className = 'tray-chip-icon';
-      icon.textContent = chip.icon;
+      icon.appendChild(iconElement(chip.icon));
       const label = document.createElement('span');
       label.className = 'tray-chip-label';
       label.textContent = chip.label;

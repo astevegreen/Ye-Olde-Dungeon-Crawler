@@ -58,6 +58,7 @@ import { ContextHelp } from './ui/help/contextHelp';
 import { CommandPalette } from './ui/help/commandPalette';
 import type { SpellbookEntry } from './rendering/targeting-overlay';
 import { applyThemeTokens } from './rendering/theme';
+import { installUiIcons } from './rendering/uiIcons';
 import { ChoiceModal } from './ui/choiceModal';
 import { AltarModal } from './ui/altarModal';
 import { MasteryChoiceModal } from './ui/masteryChoiceModal';
@@ -93,6 +94,7 @@ import './ui/styles/menu.css';
 import './ui/styles/dialog.css';
 import './ui/styles/shop.css';
 import './ui/styles/inventory.css';
+import './ui/styles/icons.css';
 import './ui/styles/title.css';
 import { QuickSpellsBar } from './ui/quickSpellsBar';
 import { PotionRow } from './ui/potionRow';
@@ -134,6 +136,7 @@ const activeManifest = targetTheme === 'warcraft' ? warcraftManifest : cotwManif
 const brand = resolveBranding(activeManifest);
 // Tokens go on the root before the first paint (module scripts run before DOMContentLoaded).
 void applyThemeTokens(activeManifest.theme);
+installUiIcons(activeManifest.spriteRecipes);
 
 window.addEventListener('DOMContentLoaded', () => {
   applyDocumentBranding(document, brand);

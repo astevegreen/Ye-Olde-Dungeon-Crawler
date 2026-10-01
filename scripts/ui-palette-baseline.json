@@ -1,5 +1,5 @@
 {
-  "total": 457,
+  "total": 444,
   "files": {
     "index.html": 12,
     "src/main.ts": 2,
@@ -20,7 +20,6 @@
     "src/ui/diagnostic/pipelineTab.ts": 37,
     "src/ui/diagnostic/simulationTab.ts": 48,
     "src/ui/diagnostic/triageTab.ts": 75,
-    "src/ui/help/contextHelp.ts": 13,
     "src/ui/sidebar/sidebarModel.ts": 6,
     "src/ui/styles/base.css": 6,
     "src/ui/styles/layout.css": 19,

@@ -1,5 +1,6 @@
 import { type GameContentManifest, type GameEngine, TempleService, formatCurrency } from '../../engine';
-import { iconHtml } from '../icons';
+import { dialogHtml } from '../dialog';
+import { escapeHtml } from '../html';
 import type { TargetingOverlay } from '../../rendering/targeting-overlay';
 import type { ShopDialog } from '../shop/shopDialog';
 import type { InspectOverlay } from '../../rendering/inspect-overlay';
@@ -45,16 +46,10 @@ export class ContextHelp {
     if (!overlay) {
       overlay = document.createElement('div');
       overlay.id = 'context-help-overlay';
-      overlay.style.cssText = `
-        position: absolute;
-        top: 48px;
-        right: 16px;
-        /* Above every menu and dialog (the character menu is 140, settings 250), so F1
-           help is readable wherever it opens. */
-        z-index: 280;
-        pointer-events: auto;
-        display: none;
-      `;
+      // A card in the top-right corner, above every menu and dialog (dialog.css .fh-overlay),
+      // so F1 help is readable wherever it opens; play goes on beside it.
+      overlay.className = 'fh-overlay';
+      overlay.style.display = 'none';
       document.getElementById('app')?.appendChild(overlay);
     }
     this.overlayEl = overlay;
@@ -145,7 +140,7 @@ export class ContextHelp {
           bullets: [
             ...npcs.map((npc) => ({ key: npc.name, label: TOWN_ROLE_HELP[npc.role] ?? 'Talk by bumping into them' })),
             { key: 'B', label: 'Open Bestiary' },
-            { key: 'Shift+? / Ctrl+K', label: 'Open Quick Command Palette' },
+            { key: 'Shift+? / Ctrl+K', label: 'Open the command palette' },
           ],
           tip: 'Tip: Stock up on supplies and bank your coins before taking the stairs down!',
         };
@@ -178,7 +173,7 @@ export class ContextHelp {
             { key: 'F', label: 'Context action: stairs, loot, doors, talk, or rest, as the console button shows' },
             { key: 'Shift+1-4', label: 'Drink a potion from the row beside the health orb' },
             { key: 'B', label: 'Open Bestiary' },
-            { key: 'Shift+? / Ctrl+K', label: 'Open Quick Command Palette' },
+            { key: 'Shift+? / Ctrl+K', label: 'Open the command palette' },
             { key: 'R / S', label: 'Rest until healed (R) / Search for hidden traps (S)' },
             { key: '> / <', label: 'Climb stairs down (>) or climb stairs up (<)' },
             { key: 'Q', label: 'Save progress and return to character roster' },
@@ -201,7 +196,7 @@ export class ContextHelp {
     this.onDismissCallback = onDismiss;
 
     const context = this.detectContext(engine, inventory, targetingOverlay, shopOverlay, inspectOverlay, mapOverlay);
-    this.render(this.getHelpContent(context, engine.manifest), engine.manifest?.name ?? '');
+    this.render(this.getHelpContent(context, engine.manifest));
   }
 
   /**
@@ -211,7 +206,7 @@ export class ContextHelp {
   public openGuide(manifest?: GameContentManifest, onDismiss?: () => void): void {
     if (!this.overlayEl) return;
     this.onDismissCallback = onDismiss;
-    this.render(this.getHelpContent('exploration', manifest), manifest?.name ?? '');
+    this.render(this.getHelpContent('exploration', manifest));
     const overlay = this.overlayEl;
     overlay.tabIndex = -1;
     const onKey = (e: KeyboardEvent): void => {
@@ -225,45 +220,25 @@ export class ContextHelp {
     overlay.focus();
   }
 
-  private render(content: HelpCardContent, packName: string): void {
+  private render(content: HelpCardContent): void {
     if (!this.overlayEl) return;
-    this.overlayEl.innerHTML = `
-      <div class="retro-window" style="width: 380px; box-shadow: 0 8px 24px rgba(0,0,0,0.85); border: 1px solid var(--ui-accent, #f59e0b);">
-        <div class="retro-titlebar" style="padding: 3px 6px; border-bottom-color: var(--ui-accent, #f59e0b);">
-          <div class="retro-titlebar-title" style="font-size: 11px;">
-            ${iconHtml('help')}
-            <span>${content.title} (F1)</span>
-          </div>
-          <button id="btn-context-help-close" class="win-btn win-btn-sm" style="padding: 0 4px; font-weight: bold; line-height: 1;">✕</button>
+    this.overlayEl.innerHTML = dialogHtml({
+      title: content.title,
+      kicker: content.contextTag,
+      icon: 'help',
+      closeId: 'btn-context-help-close',
+      closeTitle: 'Close (F1)',
+      body: `
+        <div class="fh-keys">
+          ${content.bullets
+            .map((b) => `<div class="fh-row"><span class="fh-key">${escapeHtml(b.key)}</span><span class="fh-label">${escapeHtml(b.label)}</span></div>`)
+            .join('')}
         </div>
-        <div class="retro-window-body" style="padding: 8px; font-size: 11px; background: var(--ui-panel, #161a26); color: var(--ui-text, #f1f5f9);">
-          <div style="font-weight: bold; color: var(--ui-accent, #f59e0b); font-size: 10px; letter-spacing: 0.5px; margin-bottom: 6px; border-bottom: 1px solid var(--ui-border-light, #3b455b); padding-bottom: 2px;">
-            ${content.contextTag}
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px;">
-            ${content.bullets
-              .map(
-                (b) => `
-              <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; background: rgba(255, 255, 255, 0.04); padding: 2px 4px; border: 1px solid var(--ui-border-light, #3b455b);">
-                <span style="font-family: monospace; font-weight: bold; color: var(--ui-titlebar-text, #fde047); white-space: nowrap;">[${b.key}]</span>
-                <span style="opacity: 0.8; text-align: right; font-size: 10px;">${b.label}</span>
-              </div>
-            `
-              )
-              .join('')}
-          </div>
-          <div style="font-size: 10px; color: #86efac; font-style: italic; background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(134, 239, 172, 0.4); padding: 4px; margin-bottom: 6px;">
-            ${content.tip}
-          </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 9px; opacity: 0.7; border-top: 1px solid var(--ui-border-light, #3b455b); padding-top: 4px;">
-            <span>Move, Esc, or F1 to dismiss</span>
-            <span style="color: var(--ui-accent, #f59e0b); font-weight: bold;">${packName}</span>
-          </div>
-        </div>
-      </div>
-    `;
+        <div class="ui-fact">${escapeHtml(content.tip)}</div>`,
+      footNote: '<span>Move, Esc or F1 to close</span>',
+    });
 
-    document.getElementById('btn-context-help-close')?.addEventListener('click', () => {
+    this.overlayEl.querySelector('#btn-context-help-close')?.addEventListener('click', () => {
       this.close();
     });
 

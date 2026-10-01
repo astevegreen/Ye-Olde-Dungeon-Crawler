@@ -264,6 +264,15 @@
 .cp-empty { padding: var(--ui-space-5); text-align: center; }
 .cp-open-keys { margin-left: auto; }
 
+/* F1 help: a card in the top-right corner, above every menu and dialog. */
+.fh-overlay { position: absolute; top: 48px; right: 16px; z-index: var(--ui-z-help); }
+.fh-overlay .ui-dialog { width: 420px; max-height: calc(100vh - 64px); }
+.fh-keys { display: flex; flex-direction: column; }
+.fh-row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--ui-space-3); padding: 4px 0; border-bottom: 1px solid var(--ui-line); }
+.fh-row:last-child { border-bottom: 0; }
+.fh-key { flex: none; max-width: 55%; font: bold var(--ui-text-sm) var(--ui-font-num); color: var(--ui-title); }
+.fh-label { text-align: right; font-size: var(--ui-text-sm); color: var(--ui-text-muted); }
+
 /* Load a saved game: a card per autosave and per character save. */
 .slot-list { display: flex; flex-direction: column; gap: var(--ui-space-2); }
 .slot-card { display: flex; align-items: center; gap: var(--ui-space-3); padding: 10px var(--ui-space-3); }

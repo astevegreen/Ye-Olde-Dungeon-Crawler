@@ -463,7 +463,6 @@
       /* Embedded Character Menu Tab Scaling (Bestiary, Pacts, Spellbook) */
       /* Only the embedded modal roots — a blanket "> div" also forced the Story tab's
          side-by-side columns into a single overflowing column. */
-      .character-menu-tab-content > #pact-modal,
       .character-menu-tab-content > #compendium-modal,
       .character-menu-tab-content > #spellbook-modal {
         width: 100% !important;
@@ -501,12 +500,6 @@
         display: none !important;
       }
 
-      /* Allow pacts list to expand to full available tab height instead of clamping at 280px */
-      .character-menu-tab-content #pact-list-container {
-        max-height: none !important;
-        flex: 1 !important;
-        min-height: 0 !important;
-      }
 
 
       /* Story / choice dialog (ui/choiceModal.ts). Colours come from the pack theme's

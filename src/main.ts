@@ -61,7 +61,6 @@ import type { SpellbookEntry } from './rendering/targeting-overlay';
 import { applyThemeTokens } from './rendering/theme';
 import { ChoiceModal } from './ui/choiceModal';
 import { AltarModal } from './ui/altarModal';
-import { PactModal } from './ui/pactModal';
 import { MasteryChoiceModal } from './ui/masteryChoiceModal';
 import { RuneOfReturnDiscoveryModal } from './ui/runeOfReturnDiscoveryModal';
 import { AutoRestRunner } from './ui/autoRestRunner';
@@ -84,7 +83,7 @@ import {
   CharacterTab,
   StoryTab,
   CompendiumTabAdapter,
-  PactTabAdapter,
+  PactsTab,
   SpellbookTabAdapter,
 } from './ui/characterMenu';
 import { InventoryTabAdapter } from './rendering/inventoryTabAdapter';
@@ -180,7 +179,6 @@ window.addEventListener('DOMContentLoaded', () => {
     renderer?.render();
   });
   const altarModal = new AltarModal();
-  const pactModal = new PactModal();
   const runeDiscoveryModal = new RuneOfReturnDiscoveryModal({
     onClose: () => {
       popModal(runeDiscoveryModal.id);
@@ -223,7 +221,7 @@ window.addEventListener('DOMContentLoaded', () => {
   };
   const storyTab = new StoryTab();
   const bestiaryTab = new CompendiumTabAdapter(compendiumModal, () => characterMenuModal?.close());
-  const pactsTab = new PactTabAdapter(pactModal, () => characterMenuModal?.close());
+  const pactsTab = new PactsTab();
   let spellbookTab: SpellbookTabAdapter;
   let inventoryTab: InventoryTabAdapter;
 

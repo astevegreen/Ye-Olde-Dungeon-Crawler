@@ -1,7 +1,6 @@
 import type { GameState } from './gameState';
-import type { MenuFooter, MenuHost, MenuTab } from './menuTab';
+import type { MenuFooter, MenuTab } from './menuTab';
 import type { CompendiumModal } from '../help/compendiumModal';
-import type { PactModal } from '../pactModal';
 import type { SpellbookModal } from '../spellbookModal';
 
 /**
@@ -121,106 +120,6 @@ export class CompendiumTabAdapter implements MenuTab {
         { keys: ['↑', '↓'], label: 'choose' },
         { keys: ['←', '→'], label: 'filter' },
       ],
-    };
-  }
-}
-
-/**
- * Wraps PactModal as a MenuTab.
- */
-export class PactTabAdapter implements MenuTab {
-  public readonly id = 'pacts';
-  public readonly label = 'Pacts';
-  public readonly hotkeyActionId = 'pact';
-  private modal: PactModal;
-  private container: HTMLElement | null = null;
-  private onDismiss?: () => void;
-  private unmounting = false;
-
-  constructor(modal: PactModal, onDismiss?: () => void) {
-    this.modal = modal;
-    this.onDismiss = onDismiss;
-  }
-
-  public mount(container: HTMLElement): void {
-    this.container = container;
-    const overlayEl = this.modal.rootElement;
-    if (overlayEl) {
-      overlayEl.style.position = 'relative';
-      overlayEl.style.inset = 'auto';
-      overlayEl.style.width = '100%';
-      overlayEl.style.height = '100%';
-      overlayEl.style.backgroundColor = 'transparent';
-      overlayEl.style.backdropFilter = 'none';
-      overlayEl.style.zIndex = 'auto';
-      overlayEl.style.display = 'flex';
-      overlayEl.style.flexDirection = 'column';
-      overlayEl.style.alignItems = 'stretch';
-      overlayEl.style.justifyContent = 'stretch';
-      overlayEl.style.boxSizing = 'border-box';
-      if (overlayEl.parentElement !== container) {
-        container.appendChild(overlayEl);
-      }
-    }
-  }
-
-  public onActivate(state: GameState): void {
-    this.modal.open(state.engine, () => {
-      if (!this.unmounting) {
-        this.onDismiss?.();
-      }
-    });
-    this.scaleToFit();
-  }
-
-  private scaleToFit(): void {
-    const overlayEl = this.modal.rootElement;
-    if (!overlayEl) return;
-    const win = overlayEl.querySelector<HTMLElement>('.retro-window');
-    if (win) {
-      win.style.width = '100%';
-      win.style.height = '100%';
-      win.style.maxWidth = '100%';
-      win.style.maxHeight = '100%';
-      win.style.boxShadow = 'none';
-      win.style.borderRadius = '0';
-      win.style.border = 'none';
-      win.style.flex = '1';
-    }
-    const body = overlayEl.querySelector<HTMLElement>('.retro-window-body');
-    if (body) {
-      body.style.flex = '1';
-      body.style.minHeight = '0';
-      body.style.overflowY = 'auto';
-    }
-  }
-
-  public unmount(): void {
-    this.unmounting = true;
-    try {
-      releaseEmbeddedRoot(this.modal.rootElement, this.container);
-      this.modal.close();
-    } finally {
-      this.unmounting = false;
-      this.container = null;
-    }
-  }
-
-  public handleKeyDown(e: KeyboardEvent): boolean {
-    return this.modal.handleKeyDown(e);
-  }
-
-  public bindHost(host: MenuHost): void {
-    this.modal.onChange = () => host.refreshChrome();
-  }
-
-  public footer(): MenuFooter {
-    const sel = this.modal.selection;
-    return {
-      keys: [{ keys: ['↑', '↓'], label: 'choose' }],
-      actions: sel
-        ? [{ id: 'toggle-pact', label: sel.sealed ? 'Renounce' : 'Seal pact', key: 'Enter', primary: true, run: () => this.modal.toggleSelected() }]
-        : [],
     };
   }
 }

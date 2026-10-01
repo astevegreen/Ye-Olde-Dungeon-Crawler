@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { PactTabAdapter, CompendiumTabAdapter, SpellbookTabAdapter } from '../characterMenu/tabAdapters';
-import type { PactModal } from '../pactModal';
+import { CompendiumTabAdapter, SpellbookTabAdapter } from '../characterMenu/tabAdapters';
 import type { CompendiumModal } from '../help/compendiumModal';
 import type { SpellbookModal } from '../spellbookModal';
 
@@ -50,7 +49,6 @@ function fakeModal(root: FakeEl) {
 }
 
 const ADAPTERS = [
-  ['Pacts', (m: unknown, onDismiss?: () => void) => new PactTabAdapter(m as PactModal, onDismiss)],
   ['Bestiary', (m: unknown, onDismiss?: () => void) => new CompendiumTabAdapter(m as CompendiumModal, onDismiss)],
   ['Spellbook', (m: unknown, onDismiss?: () => void) => new SpellbookTabAdapter(m as SpellbookModal, onDismiss)],
 ] as const;
@@ -68,7 +66,7 @@ describe('embedded tab adapters leave their window hidden after unmount', () => 
     (globalThis as { document?: unknown }).document = original;
   });
 
-  it.each(ADAPTERS.slice(0, 2))('%s: switching away hides the window instead of stranding it over the game', (_name, make) => {
+  it.each(ADAPTERS.slice(0, 1))('%s: switching away hides the window instead of stranding it over the game', (_name, make) => {
     const root = new FakeEl();
     const tab = make(fakeModal(root));
     const content = new FakeEl();

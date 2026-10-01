@@ -489,3 +489,32 @@
 .st-pact + .st-pact { margin-top: var(--ui-space-2); padding-top: var(--ui-space-2); border-top: 1px solid var(--ui-line); }
 .st-cost { color: var(--ui-bad); }
 .st-gain { color: var(--ui-good); }
+
+/* ---- Pacts tab ---------------------------------------------------------------- */
+
+.pc-grid { grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); }
+.pc-card { cursor: pointer; transition: border-color var(--ui-dur-fast); }
+.pc-card:hover { border-color: var(--ui-line-strong); }
+.pc-card.is-selected { border-color: var(--ui-accent); box-shadow: inset 3px 0 0 var(--ui-accent); }
+.pc-head { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-2); margin-bottom: var(--ui-space-1); }
+.pc-name { font: bold var(--ui-text-lg) var(--ui-font-display); }
+.pc-tag {
+  font: bold var(--ui-text-xs) var(--ui-font-num);
+  padding: 1px 6px;
+  color: var(--ui-accent);
+  border: 1px solid var(--ui-accent);
+  border-radius: var(--ui-radius);
+  text-transform: uppercase;
+}
+.pc-line { font-size: var(--ui-text-sm); }
+.pc-label {
+  display: inline-block;
+  min-width: 52px;
+  font-size: var(--ui-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ui-text-faint);
+}
+.pc-cost { color: var(--ui-bad); }
+.pc-gain { color: var(--ui-good); }
+.pc-subh { margin-top: var(--ui-space-3); }

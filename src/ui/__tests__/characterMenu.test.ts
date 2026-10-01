@@ -6,9 +6,8 @@ import type { GameState } from '../characterMenu/gameState';
 import { ModalStackManager } from '../modalStack';
 import { InputHandler } from '../../rendering/input-handler';
 import { GameEngine, Player, GameMap } from '../../engine';
-import { CompendiumTabAdapter, PactTabAdapter, SpellbookTabAdapter } from '../characterMenu/tabAdapters';
+import { CompendiumTabAdapter, SpellbookTabAdapter } from '../characterMenu/tabAdapters';
 import { CompendiumModal } from '../help/compendiumModal';
-import { PactModal } from '../pactModal';
 import { SpellbookModal } from '../spellbookModal';
 
 class MockElement {
@@ -459,36 +458,6 @@ describe('CharacterMenuModal & Consolidated Character Menu', () => {
 
     scaledMenu.close();
     scaledMenu.destroy();
-  });
-
-  it('PactTabAdapter does not close parent shell on tab switch and toggles shell on KeyP', () => {
-    const pactModal = new PactModal();
-    const pactTab = new PactTabAdapter(pactModal);
-    const otherTab = new MockTab('character', 'Character', 'character_menu');
-    const charMenu = new CharacterMenuModal([pactTab, otherTab], () => createMockGameState(engine));
-
-    charMenu.open('pacts');
-    expect(charMenu.isOpen).toBe(true);
-    expect(charMenu.activeTabId).toBe('pacts');
-    expect(pactModal.isOpen).toBe(true);
-
-    // Switching tabs unmounts pactTab without closing charMenu
-    charMenu.activateTab('character');
-    expect(charMenu.isOpen).toBe(true);
-    expect(charMenu.activeTabId).toBe('character');
-    expect(pactModal.isOpen).toBe(false);
-
-    // Switch back to pacts
-    charMenu.activateTab('pacts');
-    expect(charMenu.isOpen).toBe(true);
-    expect(charMenu.activeTabId).toBe('pacts');
-    expect(pactModal.isOpen).toBe(true);
-
-    // Re-pressing KeyP toggles the whole shell closed
-    const keyPEvent = makeKey('p', 'KeyP');
-    const handledP = charMenu.handleKeyDown(keyPEvent);
-    expect(handledP).toBe(true);
-    expect(charMenu.isOpen).toBe(false);
   });
 
   it('CompendiumTabAdapter does not close parent shell on tab switch and toggles shell on KeyB', () => {

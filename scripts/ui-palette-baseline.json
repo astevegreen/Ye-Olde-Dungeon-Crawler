@@ -1,5 +1,5 @@
 {
-  "total": 1057,
+  "total": 1037,
   "files": {
     "index.html": 34,
     "src/main.ts": 4,
@@ -37,7 +37,6 @@
     "src/ui/inventory/itemInspector.ts": 27,
     "src/ui/masteryChoiceModal.ts": 15,
     "src/ui/menus/mainMenu.ts": 3,
-    "src/ui/pactModal.ts": 20,
     "src/ui/runeOfReturnDiscoveryModal.ts": 33,
     "src/ui/sagaShareModal.ts": 8,
     "src/ui/saveCodeModal.ts": 14,

@@ -28,9 +28,7 @@ import type { ShopOverlay } from './shop-overlay';
 import type { InspectOverlay } from './inspect-overlay';
 import type { MapOverlay } from './map-overlay';
 import type { ContextHelp } from '../ui/help/contextHelp';
-import type { CompendiumModal } from '../ui/help/compendiumModal';
 import type { CommandPalette } from '../ui/help/commandPalette';
-import type { PactModal } from '../ui/pactModal';
 import type { LevelUpModal } from '../ui/levelUpModal';
 import type { RuneOfReturnTreeModal } from '../ui/runeOfReturnTreeModal';
 import type { RuneOfReturnDiscoveryModal } from '../ui/runeOfReturnDiscoveryModal';
@@ -152,9 +150,7 @@ export class InputHandler {
   public inspectOverlay?: InspectOverlay;
   public mapOverlay?: MapOverlay;
   public contextHelp?: ContextHelp;
-  public compendiumModal?: CompendiumModal;
   public commandPalette?: CommandPalette;
-  public pactModal?: PactModal;
   public levelUpModal?: LevelUpModal;
   public runeOfReturnTreeModal?: RuneOfReturnTreeModal;
   public runeOfReturnDiscoveryModal?: RuneOfReturnDiscoveryModal;
@@ -170,7 +166,6 @@ export class InputHandler {
   public onContextAction?: () => void;
   /** Drinks the potion in a potion-row slot (0-based); wired from main.ts. */
   public onDrinkPotionSlot?: (slotIndex: number) => void;
-  public onOpenSpellbook?: () => void;
   /** Casts a spell by ID (as opposed to a QuickSpellsBar slot index) — wired from main.ts's castOrTargetSpell. */
   public onCastSpellById?: (spellId: string) => void;
   public enabled = true;
@@ -194,7 +189,6 @@ export class InputHandler {
     onToggleDiagnostics?: () => void,
     inspectOverlay?: InspectOverlay,
     contextHelp?: ContextHelp,
-    compendiumModal?: CompendiumModal,
     commandPalette?: CommandPalette,
     mapOverlay?: MapOverlay,
     settingsManager?: SettingsManager,
@@ -232,7 +226,6 @@ export class InputHandler {
     this.onToggleDiagnostics = onToggleDiagnostics;
     this.inspectOverlay = inspectOverlay;
     this.contextHelp = contextHelp;
-    this.compendiumModal = compendiumModal;
     this.commandPalette = commandPalette;
     this.mapOverlay = mapOverlay;
     this.init();
@@ -373,36 +366,6 @@ export class InputHandler {
   public clearInputLock(): void {
     this.isInputLocked = false;
     this.chordBuffer.clearAllKeys();
-  }
-
-  /** Opens/closes Ancient Run Pacts & Bounties, registering it on the modal stack the
-   * same way `toggleInventory()` does — shared by the `[P]` keybind and the bottom-bar
-   * button so both stay in sync with the modal stack. */
-  public togglePactModal(): void {
-    if (this.characterMenuModal) {
-      this.toggleCharacterMenu('pacts');
-      return;
-    }
-    if (!this.pactModal) return;
-    this.pactModal.toggle(this.engine);
-    if (this.pactModal.isOpen) {
-      const self = this;
-      this.modalStack.push({
-        id: 'pact-modal',
-        get isOpen() { return self.pactModal?.isOpen ?? false; },
-        set isOpen(val: boolean) { if (!val) self.pactModal?.close(); },
-        handleKeyDown: (ke: KeyboardEvent) => {
-          const h = self.pactModal?.handleKeyDown(ke) ?? false;
-          if (!self.pactModal?.isOpen) {
-            self.modalStack.remove('pact-modal');
-          }
-          return h;
-        },
-        close: () => { self.pactModal?.close(); },
-      });
-    } else {
-      this.modalStack.remove('pact-modal');
-    }
   }
 
   /** Opens/closes Rune of Return Mastery Tree modal, registering it on the modal stack. */
@@ -635,33 +598,15 @@ export class InputHandler {
     }
 
     // Hotkey: Slayer's Compendium / Bestiary (KeyB when not inspecting)
-    if (code === 'KeyB' && !this.inspectOverlay?.isOpen) {
-      if (this.characterMenuModal) {
-        this.toggleCharacterMenu('bestiary');
-        return true;
-      }
-      if (this.compendiumModal) {
-        this.compendiumModal.toggle(this.engine);
-        if (this.compendiumModal.isOpen) {
-          this.modalStack.push(this.compendiumModal);
-        } else {
-          this.modalStack.remove('compendium');
-        }
-        return true;
-      }
+    if (code === 'KeyB' && !this.inspectOverlay?.isOpen && this.characterMenuModal) {
+      this.toggleCharacterMenu('bestiary');
+      return true;
     }
 
     // Hotkey: Ancient Run Pacts & Bounties (KeyP when not inspecting)
-    if ((code === 'KeyP' || e.key === 'p' || e.key === 'P') && !this.inspectOverlay?.isOpen) {
-      if (this.characterMenuModal) {
-        this.toggleCharacterMenu('pacts');
-        return true;
-      }
-      if (this.pactModal) {
-        this.togglePactModal();
-        this.onActionProcessed();
-        return true;
-      }
+    if ((code === 'KeyP' || e.key === 'p' || e.key === 'P') && !this.inspectOverlay?.isOpen && this.characterMenuModal) {
+      this.toggleCharacterMenu('pacts');
+      return true;
     }
 
     // Hotkey: Level-Up Attribute Allocation (KeyU when not inspecting)
@@ -806,21 +751,8 @@ export class InputHandler {
     }
 
     // Toggle Spellbook / Cast Spell Mode: 'KeyZ'
-    if (code === 'KeyZ') {
-      if (this.characterMenuModal) {
-        this.toggleCharacterMenu('spellbook');
-        return true;
-      }
-      if (this.inventoryOverlay?.isOpen) {
-        this.inventoryOverlay.close();
-      }
-      if (this.onOpenSpellbook) {
-        this.onOpenSpellbook();
-        this.onActionProcessed();
-        return true;
-      }
-      this.targetingOverlay?.openSpellbook(this.engine);
-      this.onActionProcessed();
+    if (code === 'KeyZ' && this.characterMenuModal) {
+      this.toggleCharacterMenu('spellbook');
       return true;
     }
 
@@ -1026,19 +958,8 @@ export class InputHandler {
       this.toggleInventory();
       return true;
     }
-    if (userAction === 'cast_spell') {
-      if (this.characterMenuModal) {
-        this.toggleCharacterMenu('spellbook');
-        return true;
-      }
-      if (this.inventoryOverlay?.isOpen) this.inventoryOverlay.close();
-      if (this.onOpenSpellbook) {
-        this.onOpenSpellbook();
-        this.onActionProcessed();
-        return true;
-      }
-      this.targetingOverlay?.openSpellbook(this.engine);
-      this.onActionProcessed();
+    if (userAction === 'cast_spell' && this.characterMenuModal) {
+      this.toggleCharacterMenu('spellbook');
       return true;
     }
     if (userAction?.startsWith('quick_spell_')) {

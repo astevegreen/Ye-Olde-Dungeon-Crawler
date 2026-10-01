@@ -5,6 +5,7 @@ import { GameEngine } from '../../engine';
 import { GameMap } from '../../engine';
 import { Player } from '../../engine';
 import { NPC } from '../../engine';
+import type { SpellDefinition } from '../../engine';
 import { CanvasRenderer } from '../canvas-renderer';
 import { InspectOverlay } from '../inspect-overlay';
 import { MapOverlay } from '../map-overlay';
@@ -40,6 +41,7 @@ function createMockCanvasContext() {
     resetTransform: vi.fn(),
     scale: vi.fn(),
     drawImage: vi.fn(),
+    setLineDash: vi.fn(),
     fillStyle: '#000000',
     strokeStyle: '#000000',
     lineWidth: 1,
@@ -216,7 +218,12 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
       } as any;
 
       const targeting = new TargetingOverlay();
-      targeting.openSpellbook(engine);
+      const spellDef = {
+        id: 'test_bolt', name: 'Test Bolt', manaCost: 3, targetType: 'ray', range: 6,
+        element: 'fire', areaOfEffect: 1, reflects: false,
+      } as unknown as SpellDefinition;
+      targeting.startTargeting({ key: '', type: 'spell', id: spellDef.id, name: spellDef.name, spellDef }, engine);
+      expect(targeting.mode).toBe('reticle');
       expect(() => targeting.render(ctx, 960, 600, engine, mockCamera, 32, 0, 0)).not.toThrow();
       expect(ctx.fillRect).toHaveBeenCalled();
     });

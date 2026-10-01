@@ -23,7 +23,7 @@ describe('InputHandler routes keys to an open map overlay', () => {
     onSaveAndExit = vi.fn<() => void>();
     inputHandler = new InputHandler(
       engine, vi.fn(), undefined, onSaveAndExit, undefined, undefined, undefined,
-      undefined, undefined, undefined, undefined, mapOverlay
+      undefined, undefined, undefined, mapOverlay
     );
     inputHandler.enabled = true;
     mapOverlay.open(engine);

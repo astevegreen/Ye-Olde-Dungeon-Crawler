@@ -1343,9 +1343,6 @@ export class CanvasRenderer {
     if (this.targetingOverlay.mode === 'reticle') {
       return { text: 'Aim: [arrows] move · [Enter / Space] fire · [Esc] cancel', tone: 'aim' };
     }
-    if (this.targetingOverlay.mode === 'spellbook') {
-      return { text: 'Grimoire: [1-9] pick a spell or wand to aim · [Esc] close', tone: 'mode' };
-    }
     return null;
   }
 

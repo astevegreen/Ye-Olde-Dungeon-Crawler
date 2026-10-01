@@ -1,5 +1,5 @@
 {
-  "total": 1349,
+  "total": 1348,
   "files": {
     "index.html": 34,
     "src/main.ts": 4,
@@ -22,7 +22,7 @@
     "src/rendering/shop/townspersonPanel.ts": 10,
     "src/rendering/shop/trainerPanel.ts": 1,
     "src/rendering/tacticalTargetOverlay.ts": 12,
-    "src/rendering/targeting-overlay.ts": 16,
+    "src/rendering/targeting-overlay.ts": 15,
     "src/ui/altarModal.ts": 31,
     "src/ui/characterMenu/characterMenuModal.ts": 12,
     "src/ui/characterMenu/characterTab.ts": 68,

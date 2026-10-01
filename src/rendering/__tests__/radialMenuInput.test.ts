@@ -44,7 +44,6 @@ describe('InputHandler <-> RadialMenuOverlay wiring', () => {
       undefined,
       undefined,
       undefined,
-      undefined,
       settingsManager,
       radialMenuOverlay
     );

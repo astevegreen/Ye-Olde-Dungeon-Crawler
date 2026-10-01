@@ -4,7 +4,6 @@ import {
   type Position,
   type ActionResult,
   type SpellDefinition,
-  getSpell,
   traceProjectile,
   getAreaOfEffectTiles,
   type ElementType,
@@ -31,11 +30,10 @@ export interface SpellbookEntry {
 
 export class TargetingOverlay implements UIModal {
   public readonly id = 'targeting';
-  public mode: 'closed' | 'spellbook' | 'reticle' = 'closed';
+  public mode: 'closed' | 'reticle' = 'closed';
   public activeEntry?: SpellbookEntry;
   public reticleX = 0;
   public reticleY = 0;
-  public entries: SpellbookEntry[] = [];
   public lastFired?: {
     path: Array<{ x: number; y: number; isReflection?: boolean }>;
     element: ElementType;
@@ -59,87 +57,6 @@ export class TargetingOverlay implements UIModal {
     if (!val) {
       this.mode = 'closed';
     }
-  }
-
-  public openSpellbook(engine: GameEngine): void {
-    this.engine = engine;
-    this.refreshEntries(engine);
-    this.mode = 'spellbook';
-    this.notify();
-  }
-
-  public refreshEntries(engine: GameEngine): void {
-    const player = engine.player;
-    this.entries = [];
-    let keyIdx = 1;
-
-    // 1. Spells Known
-    for (const spellId of player.spellsKnown) {
-      const spell = engine.manifest?.spells?.find((s) => s.id === spellId) ?? getSpell(spellId);
-      if (spell) {
-        this.entries.push({
-          key: String(keyIdx++),
-          type: 'spell',
-          id: spell.id,
-          name: spell.name,
-          manaCost: spell.manaCost,
-          spellDef: spell,
-          locationLabel: 'Innate Spell',
-        });
-      }
-    }
-
-    // 2. Equipped or Belt Wands
-    const wands: Array<{ wand: WandItem; location: string }> = [];
-
-    // Main Hand & Off Hand
-    const mainHand = player.inventory.paperdoll.getItem('mainHand');
-    if (mainHand instanceof WandItem) wands.push({ wand: mainHand, location: 'Main Hand' });
-
-    const offHand = player.inventory.paperdoll.getItem('offHand');
-    if (offHand instanceof WandItem) wands.push({ wand: offHand, location: 'Off Hand' });
-
-    // Quick-Draw Utility Belt (Waist slot)
-    const waist = player.inventory.paperdoll.getItem('waist');
-    if (waist && 'getItems' in waist) {
-      const beltItems = (waist as { getItems: () => Item[] }).getItems();
-      for (const item of beltItems) {
-        if (item instanceof WandItem) {
-          wands.push({ wand: item, location: 'Belt Pocket' });
-        }
-      }
-    }
-
-    // Primary Pack wands
-    for (const item of player.inventory.primaryPack.getItems()) {
-      if (item instanceof WandItem && !wands.some((w) => w.wand.id === item.id)) {
-        wands.push({ wand: item, location: 'Backpack' });
-      }
-    }
-
-    for (const { wand, location } of wands) {
-      const spell = engine.manifest?.spells?.find((s) => s.id === wand.spellId) ?? getSpell(wand.spellId);
-      if (spell) {
-        this.entries.push({
-          key: String(keyIdx++),
-          type: 'wand',
-          id: wand.id,
-          name: wand.name,
-          charges: wand.charges,
-          maxCharges: wand.maxCharges,
-          sourceItem: wand,
-          spellDef: spell,
-          locationLabel: location,
-        });
-      }
-    }
-  }
-
-  public selectEntryByKey(key: string, engine: GameEngine): boolean {
-    const entry = this.entries.find((e) => e.key === key);
-    if (!entry) return false;
-    this.startTargeting(entry, engine);
-    return true;
   }
 
   public startTargeting(entry: SpellbookEntry, engine: GameEngine): void {
@@ -259,24 +176,6 @@ export class TargetingOverlay implements UIModal {
       return true;
     }
 
-    if (this.mode === 'spellbook') {
-      if (code.startsWith('Digit')) {
-        e.preventDefault();
-        e.stopPropagation();
-        const digit = code.replace('Digit', '');
-        if (eng) this.selectEntryByKey(digit, eng);
-        return true;
-      }
-      if (code === 'KeyZ') {
-        e.preventDefault();
-        e.stopPropagation();
-        this.close();
-        return true;
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      return true;
-    }
 
     if (this.mode === 'reticle') {
       // Confirmation: Enter, Space, KeyF fires spell
@@ -370,8 +269,8 @@ export class TargetingOverlay implements UIModal {
 
   public render(
     ctx: CanvasRenderingContext2D,
-    width: number,
-    height: number,
+    _width: number,
+    _height: number,
     engine: GameEngine,
     camera: Camera,
     cellSize: number,
@@ -386,11 +285,6 @@ export class TargetingOverlay implements UIModal {
     // 2. Render Targeting Reticle & Aim Line
     if (this.mode === 'reticle' && this.activeEntry) {
       this.renderReticleAndRay(ctx, engine, camera, cellSize, offsetX, offsetY);
-    }
-
-    // 3. Render Spellbook Dialog
-    if (this.mode === 'spellbook') {
-      this.renderSpellbookDialog(ctx, width, height, engine);
     }
   }
 
@@ -615,106 +509,6 @@ export class TargetingOverlay implements UIModal {
         ctx.arc(ix, iy, cellSize * 0.7, 0, Math.PI * 2);
         ctx.fill();
       }
-    }
-    ctx.restore();
-  }
-
-  private renderSpellbookDialog(
-    ctx: CanvasRenderingContext2D,
-    width: number,
-    height: number,
-    engine: GameEngine
-  ): void {
-    const dialogW = 540;
-    const dialogH = 340;
-    const dialogX = Math.floor((width - dialogW) / 2);
-    const dialogY = Math.floor((height - dialogH) / 2);
-    const theme = resolveThemeTokens(engine?.manifest?.theme);
-    const font = theme.fontFamily ?? '"Courier New", Courier, monospace';
-
-    ctx.save();
-    // Modal backdrop
-    ctx.fillStyle = theme.modalBackdrop;
-    ctx.fillRect(0, 0, width, height);
-
-    // Dialog Frame
-    ctx.fillStyle = theme.modalBg;
-    ctx.fillRect(dialogX, dialogY, dialogW, dialogH);
-
-    ctx.strokeStyle = theme.borderLight;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(dialogX + 1, dialogY + 1, dialogW - 2, dialogH - 2);
-
-    ctx.strokeStyle = theme.borderDark;
-    ctx.beginPath();
-    ctx.moveTo(dialogX + dialogW - 1, dialogY);
-    ctx.lineTo(dialogX + dialogW - 1, dialogY + dialogH - 1);
-    ctx.lineTo(dialogX, dialogY + dialogH - 1);
-    ctx.stroke();
-
-    // Title Bar
-    ctx.fillStyle = theme.modalTitlebar;
-    ctx.fillRect(dialogX + 3, dialogY + 3, dialogW - 6, 24);
-
-    ctx.font = uiFont('sm', font, 'bold');
-    ctx.fillStyle = theme.modalTitlebarText;
-    ctx.textAlign = 'left';
-    const gameTitle = engine.manifest?.name?.toUpperCase() ?? 'ADVENTURE';
-    ctx.fillText(`📖 GRIMOIRE & WAND ACTIVATION (${gameTitle})`, dialogX + 8, dialogY + 19);
-
-    // Dialog Header Info
-    ctx.font = uiFont('xs', font);
-    ctx.fillStyle = theme.textMuted;
-    ctx.fillText(
-      `Caster: ${engine.player.name} | ${resolveManaTerms(engine.manifest).unit}: ${engine.player.mana}/${engine.player.maxMana} | Press [1-9] to Select & Aim | [Esc] Close`,
-      dialogX + 12,
-      dialogY + 45
-    );
-
-    // Inset listbox
-    const listX = dialogX + 12;
-    const listY = dialogY + 54;
-    const listW = dialogW - 24;
-    const listH = dialogH - 74;
-
-    ctx.fillStyle = theme.cardBg;
-    ctx.fillRect(listX, listY, listW, listH);
-
-    ctx.strokeStyle = theme.cardBorder;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(listX, listY, listW, listH);
-
-    // List entries
-    let rowY = listY + 18;
-    for (const entry of this.entries) {
-      ctx.font = uiFont('sm', font, 'bold');
-      ctx.fillStyle = theme.accent;
-      ctx.fillText(`[${entry.key}]`, listX + 8, rowY);
-
-      ctx.fillStyle = theme.hudText;
-      ctx.fillText(entry.name, listX + 38, rowY);
-
-      let costStr = '';
-      if (entry.type === 'spell') {
-        costStr = `${entry.manaCost} ${resolveManaTerms(engine.manifest).unit}`;
-      } else if (entry.type === 'wand') {
-        costStr = `${entry.charges}/${entry.maxCharges} chg (${entry.locationLabel})`;
-      }
-
-      ctx.font = uiFont('xs', font);
-      ctx.fillStyle = entry.type === 'wand' ? '#d97706' : theme.hudAccent;
-      ctx.textAlign = 'right';
-      ctx.fillText(costStr, listX + listW - 12, rowY);
-      ctx.textAlign = 'left';
-
-      rowY += 22;
-      if (rowY > listY + listH - 10) break;
-    }
-
-    if (this.entries.length === 0) {
-      ctx.fillStyle = theme.textMuted;
-      ctx.font = uiFont('sm', font, 'italic');
-      ctx.fillText('No spells or wands available.', listX + 16, listY + 30);
     }
     ctx.restore();
   }

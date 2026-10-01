@@ -309,27 +309,16 @@ window.addEventListener('DOMContentLoaded', () => {
   let combatSidebar: CombatSidebar;
   let consoleExtras: ConsoleExtras;
 
+  /** Opens the character menu on one tab. The menu is the only home for Spellbook, Bestiary,
+   *  Pacts, Story and the allocation UI; none of them opens on its own. */
+  function openMenuTab(tabId: string): void {
+    if (!activeEngine || !characterMenuModal) return;
+    inputHandler?.modalStack.push(characterMenuModal);
+    characterMenuModal.open(tabId);
+  }
+
   function openSpellbook(): void {
-    if (!activeEngine) return;
-    if (characterMenuModal) {
-      if (inputHandler) {
-        inputHandler.modalStack.push(characterMenuModal);
-      }
-      characterMenuModal.open('spellbook');
-      return;
-    }
-    if (renderer) {
-      renderer.inventoryOverlay.close();
-      renderer.inspectOverlay.close();
-      renderer.targetingOverlay.close();
-      if (inputHandler) {
-        inputHandler.modalStack.remove('targeting');
-      }
-    }
-    spellbookModal.open(activeEngine);
-    if (inputHandler) {
-      inputHandler.modalStack.push(spellbookModal);
-    }
+    openMenuTab('spellbook');
   }
 
   function openRuneTree(): void {
@@ -1007,14 +996,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   compendiumBtn?.addEventListener('click', () => {
-    if (activeEngine) {
-      if (characterMenuModal) {
-        if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-        characterMenuModal.open('bestiary');
-      } else {
-        compendiumModal.toggle(activeEngine);
-      }
-    }
+    openMenuTab('bestiary');
   });
 
   function toggleCommandPalette(): void {
@@ -1057,7 +1039,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   hudPactsBtn?.addEventListener('click', () => {
     if (activeEngine && renderer && inputHandler) {
-      inputHandler.togglePactModal();
+      inputHandler.toggleCharacterMenu('pacts');
       renderer.render();
     }
   });
@@ -1425,65 +1407,16 @@ window.addEventListener('DOMContentLoaded', () => {
           renderer.render();
         }
       },
-      spellbook: (eng) => {
-        if (characterMenuModal) {
-          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-          characterMenuModal.open('spellbook');
-        } else if (renderer) {
-          renderer.inventoryOverlay.close();
-          renderer.inspectOverlay.close();
-          renderer.targetingOverlay.openSpellbook(eng);
-          renderer.render();
-        }
+      spellbook: () => openMenuTab('spellbook'),
+      inventory: () => {
+        openMenuTab('inventory');
+        renderer?.render();
       },
-      inventory: (eng) => {
-        if (characterMenuModal) {
-          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-          characterMenuModal.open('inventory');
-          renderer?.render();
-        } else if (renderer) {
-          renderer.inventoryOverlay.toggle(eng);
-          renderer.render();
-        }
-      },
-      compendium: (eng) => {
-        if (characterMenuModal) {
-          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-          characterMenuModal.open('bestiary');
-        } else {
-          compendiumModal.open(eng);
-        }
-      },
-      'allocate-stats': (eng) => {
-        if (characterMenuModal) {
-          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-          characterMenuModal.open('character');
-        } else if (inputHandler) {
-          levelUpModal.setModalStack(inputHandler.modalStack);
-          levelUpModal.open(eng);
-          inputHandler.modalStack.push(levelUpModal);
-        } else {
-          levelUpModal.open(eng);
-        }
-      },
-      character_menu: () => {
-        if (characterMenuModal) {
-          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-          characterMenuModal.open('character');
-        }
-      },
-      pacts: () => {
-        if (characterMenuModal) {
-          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-          characterMenuModal.open('pacts');
-        }
-      },
-      story: () => {
-        if (characterMenuModal) {
-          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-          characterMenuModal.open('story');
-        }
-      },
+      compendium: () => openMenuTab('bestiary'),
+      'allocate-stats': () => openMenuTab('character'),
+      character_menu: () => openMenuTab('character'),
+      pacts: () => openMenuTab('pacts'),
+      story: () => openMenuTab('story'),
       'run-advisory': (eng) => {
         const rep = SageService.getRunAdvisory(eng);
         eng.log(`*** SAGE ADVISORY (Floor ${rep.targetFloor}): ${rep.summary} ***`);
@@ -1647,29 +1580,11 @@ window.addEventListener('DOMContentLoaded', () => {
           renderer.render();
         }
       });
-      renderer.shopOverlay.onOpenCompendium = () => {
-        if (characterMenuModal) {
-          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-          characterMenuModal.open('bestiary');
-        } else {
-          compendiumModal.open(engine);
-        }
-      };
+      renderer.shopOverlay.onOpenCompendium = () => openMenuTab('bestiary');
       renderer.shopOverlay.onOpenRuneTree = () => {
         openRuneTree();
       };
-      renderer.onPactModalRequested = () => {
-        if (characterMenuModal) {
-          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-          characterMenuModal.open('pacts');
-        } else {
-          pactModal.open(engine, () => {
-            popModal(pactModal.id);
-            renderer?.render();
-          });
-          pushModal(pactModal.id, pactModal);
-        }
-      };
+      renderer.onPactModalRequested = () => openMenuTab('pacts');
       inputHandler = new InputHandler(
         engine,
         () => {
@@ -1682,7 +1597,6 @@ window.addEventListener('DOMContentLoaded', () => {
         toggleDiagnostics,
         renderer.inspectOverlay,
         contextHelp,
-        compendiumModal,
         commandPalette,
         renderer.mapOverlay,
         settingsManager,
@@ -1693,7 +1607,6 @@ window.addEventListener('DOMContentLoaded', () => {
         if (activeEngine) sessionGuard.noteInput(activeEngine, code);
       };
       characterMenuModal.setModalStack(inputHandler.modalStack);
-      inputHandler.pactModal = pactModal;
       inputHandler.levelUpModal = levelUpModal;
       inputHandler.runeOfReturnTreeModal = runeTreeModal;
       inputHandler.runeOfReturnDiscoveryModal = runeDiscoveryModal;
@@ -1713,29 +1626,11 @@ window.addEventListener('DOMContentLoaded', () => {
     } else {
       renderer.setEngine(engine);
       renderer.onResolveRadialLabel = resolveRadialMenuLabel;
-      renderer.shopOverlay.onOpenCompendium = () => {
-        if (characterMenuModal) {
-          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-          characterMenuModal.open('bestiary');
-        } else {
-          compendiumModal.open(engine);
-        }
-      };
+      renderer.shopOverlay.onOpenCompendium = () => openMenuTab('bestiary');
       renderer.shopOverlay.onOpenRuneTree = () => {
         openRuneTree();
       };
-      renderer.onPactModalRequested = () => {
-        if (characterMenuModal) {
-          if (inputHandler) inputHandler.modalStack.push(characterMenuModal);
-          characterMenuModal.open('pacts');
-        } else {
-          pactModal.open(engine, () => {
-            popModal(pactModal.id);
-            renderer?.render();
-          });
-          pushModal(pactModal.id, pactModal);
-        }
-      };
+      renderer.onPactModalRequested = () => openMenuTab('pacts');
       inputHandler?.setEngine(engine);
       if (inputHandler) {
         inputHandler.characterMenuModal = characterMenuModal;
@@ -1751,9 +1646,7 @@ window.addEventListener('DOMContentLoaded', () => {
         feedbackModal.setModalStack(inputHandler.modalStack);
         keybindModal.setModalStack(inputHandler.modalStack);
         inputHandler.contextHelp = contextHelp;
-        inputHandler.compendiumModal = compendiumModal;
         inputHandler.commandPalette = commandPalette;
-        inputHandler.pactModal = pactModal;
         inputHandler.levelUpModal = levelUpModal;
         inputHandler.runeOfReturnTreeModal = runeTreeModal;
         inputHandler.runeOfReturnDiscoveryModal = runeDiscoveryModal;
@@ -1785,7 +1678,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if (inputHandler) {
       inputHandler.enabled = true;
       inputHandler.onTriggerQuickSpell = (slot) => triggerQuickSpell(slot);
-      inputHandler.onOpenSpellbook = () => openSpellbook();
     }
 
     const origOnFloorChanged = engine.onFloorChanged;

@@ -50,7 +50,6 @@ describe('InputHandler Keybind Remapping & Movement Modes', () => {
       undefined,
       undefined,
       undefined,
-      undefined,
       settingsManager
     );
     inputHandler.enabled = true;

@@ -26,7 +26,7 @@ describe('console shortcuts: potion row and command palette', () => {
     const settingsManager = new SettingsManager(new MemoryStorage());
     inputHandler = new InputHandler(
       engine, vi.fn(), undefined, undefined, undefined, undefined, undefined,
-      undefined, undefined, undefined, undefined, undefined, settingsManager
+      undefined, undefined, undefined, undefined, settingsManager
     );
     inputHandler.enabled = true;
   });

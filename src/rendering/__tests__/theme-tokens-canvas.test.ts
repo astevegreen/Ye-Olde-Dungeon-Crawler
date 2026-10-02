@@ -259,7 +259,8 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
       drawFloorMap(canvas, engine.map, engine.fov, theme, { live: true, hero: { x: engine.player.x, y: engine.player.y } });
       expect(fills.length).toBeGreaterThan(0);
       expect(fills.every((c) => Object.values(theme).includes(c))).toBe(true);
-      expect(fills.at(-1)).toBe(theme.accent);
+      expect(fills.at(-1)).toBe(theme.info);
+      expect(theme.info).not.toBe(theme.frame);
     });
   });
 });

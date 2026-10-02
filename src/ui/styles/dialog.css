@@ -299,7 +299,7 @@
 .mv-sw.is-stairs { background: var(--ui-gold); }
 .mv-sw.is-door { background: var(--ui-frame); }
 .mv-sw.is-danger { background: var(--ui-bad); }
-.mv-sw.is-you { background: var(--ui-accent); }
+.mv-sw.is-you { background: var(--ui-info); }
 
 /* Load a saved game: a card per autosave and per character save. */
 .slot-list { display: flex; flex-direction: column; gap: var(--ui-space-2); }

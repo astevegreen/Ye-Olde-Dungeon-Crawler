@@ -21,7 +21,8 @@ export interface FloorMapOptions {
  * sidebar's minimap and the map viewer. Colors are the pack's roles (ADR-0011): floor in
  * the strong line color (the line color once out of sight), walls in a raised surface,
  * stairs in gold, doors in the frame color, traps and monsters in the danger color, the
- * hero in the accent.
+ * hero in the info color (the accent sits too close to the frame for doors and the hero
+ * to tell apart).
  */
 export function drawFloorMap(
   canvas: HTMLCanvasElement,
@@ -64,7 +65,7 @@ export function drawFloorMap(
   }
 
   if (opts.hero) {
-    ctx.fillStyle = theme.accent;
+    ctx.fillStyle = theme.info;
     ctx.fillRect(ox + opts.hero.x * cell - 2, oy + opts.hero.y * cell - 2, cell + 4, cell + 4);
   }
 }

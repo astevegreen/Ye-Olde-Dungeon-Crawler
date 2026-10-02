@@ -43,7 +43,10 @@ export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  /* Locally, a quarter of the logical cores (5 on the owner's 20). Playwright's default,
+     half, timed out a Firefox test in 1 of 3 full runs on an idle machine; 25% passed 4 of 4,
+     and faster (38-40 s against 46-53 s). */
+  workers: process.env.CI ? 1 : '25%',
   /* `open: 'never'` keeps a local failure from blocking on the HTML report server. */
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {

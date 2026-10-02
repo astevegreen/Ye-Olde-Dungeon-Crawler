@@ -5,6 +5,7 @@ import type { UIModal } from './modalStack';
 import { resolveBranding, type ResolvedBranding } from './branding';
 import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
 import { escapeHtml } from './html';
+import { epitaphHtml, epitaphText } from './epitaph';
 
 export interface SagaShareModalOptions {
   leaderboard: Leaderboard;
@@ -86,7 +87,7 @@ export class SagaShareModal implements UIModal {
 
         <div id="saga-share-section" class="ui-col">
           <div class="ui-note">Share your champion's saga across ${escapeHtml(brand.worldName)} as a code or a link.</div>
-          <pre id="saga-share-preview" class="ui-epitaph ui-inset saga-preview">No champion selected to share.</pre>
+          <div id="saga-share-preview" class="ui-epitaph ui-inset saga-preview">No champion selected to share.</div>
           <label class="ui-field">
             <span class="ui-dialog-label">Saga code</span>
             <span class="saga-row">
@@ -108,7 +109,7 @@ export class SagaShareModal implements UIModal {
           <textarea id="saga-import-textarea" class="ui-textarea saga-code" rows="3" placeholder="SAGA1_… or https://…/?saga=…"></textarea>
           <div>${dialogButton('btn-saga-inspect', 'Check saga', { icon: 'search' })}</div>
           <span class="ui-dialog-label">Saga found</span>
-          <pre id="saga-import-preview" class="ui-epitaph ui-inset saga-preview">Paste a saga code above and choose Check saga.</pre>
+          <div id="saga-import-preview" class="ui-epitaph ui-inset saga-preview">Paste a saga code above and choose Check saga.</div>
         </div>`,
       footNote: '<span id="saga-status-text">Saga exchange ready.</span>',
       actions: [
@@ -163,7 +164,7 @@ export class SagaShareModal implements UIModal {
 
     this.shareCopyEpitaphBtn?.addEventListener('click', async () => {
       if (this.activeEntry) {
-        const epitaph = Leaderboard.formatEpitaph(this.activeEntry, this.xpName);
+        const epitaph = epitaphText(this.activeEntry, this.xpName);
         await copyTextToClipboard(epitaph);
         this.setStatus('Copied the epitaph.');
       }
@@ -200,7 +201,7 @@ export class SagaShareModal implements UIModal {
     const url = Leaderboard.generateShareUrl(entry, baseUrl);
     if (this.shareCodeInput) this.shareCodeInput.value = code;
     if (this.shareUrlInput) this.shareUrlInput.value = url;
-    if (this.sharePreviewEl) this.sharePreviewEl.textContent = Leaderboard.formatEpitaph(entry, this.xpName);
+    if (this.sharePreviewEl) this.sharePreviewEl.innerHTML = epitaphHtml(entry, this.xpName);
 
     this.switchTab('share');
     this.setStatus(`Sharing ${entry.heroName}'s saga (${entry.score.toLocaleString()} pts).`);
@@ -255,7 +256,7 @@ export class SagaShareModal implements UIModal {
 
     this.inspectedEntry = entry;
     if (this.importPreviewEl) {
-      this.importPreviewEl.textContent = Leaderboard.formatEpitaph(entry, this.xpName);
+      this.importPreviewEl.innerHTML = epitaphHtml(entry, this.xpName);
       this.importPreviewEl.classList.remove('is-bad');
     }
     if (this.importInscribeBtn) {

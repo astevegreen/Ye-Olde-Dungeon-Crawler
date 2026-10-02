@@ -57,6 +57,7 @@ import { FeedbackModal } from './ui/feedbackModal';
 import { SagaShareModal } from './ui/sagaShareModal';
 import { GameOverDialog } from './ui/gameOverDialog';
 import { EndingDialog } from './ui/endingDialog';
+import { epitaphHtml } from './ui/epitaph';
 import { ContextHelp } from './ui/help/contextHelp';
 import { CommandPalette } from './ui/help/commandPalette';
 import type { SpellbookEntry } from './rendering/targeting-overlay';
@@ -1176,7 +1177,7 @@ window.addEventListener('DOMContentLoaded', () => {
       title: won ? brand.victoryTitle : 'Fallen in Battle',
       kicker,
       banner: won ? endingBanner ?? brand.victoryBanner : brand.fallenBanner,
-      epitaph: entry ? Leaderboard.formatEpitaph(entry, brand.xpName) : '',
+      factsHtml: entry ? epitaphHtml(entry, brand.xpName) : '',
       score: entry ? `${brand.hallOfFameShortName} score: ${entry.score.toLocaleString()}` : undefined,
       autosaveLabel: autosave ? `Load the autosave (${autosave.profileName ?? 'Hero'}, F${autosave.floor ?? 1})` : undefined,
       exportLabel: `Export save (${SAVE_FILE_EXTENSION})`,

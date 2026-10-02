@@ -10,7 +10,8 @@ export interface GameOverView {
   kicker?: string;
   /** The pack's closing line under the title. */
   banner: string;
-  epitaph: string;
+  /** The run's record, as pre-escaped HTML (`epitaphHtml`). */
+  factsHtml: string;
   /** The final score line, when the run was inscribed. */
   score?: string;
   /** The autosave button's label, when an autosave exists. */
@@ -52,7 +53,7 @@ export class GameOverDialog {
       size: 'wide',
       body: `
         <div class="go-banner ${won ? 'is-won' : 'is-lost'}">${escapeHtml(view.banner)}</div>
-        <pre id="game-over-summary" class="ui-epitaph ui-inset">${escapeHtml(view.epitaph)}</pre>
+        <div id="game-over-summary" class="ui-epitaph ui-inset">${view.factsHtml}</div>
         <div id="game-over-status" class="ui-note" aria-live="polite"></div>`,
       footNote: view.score ? `<span id="game-over-score" class="go-score">${escapeHtml(view.score)}</span>` : '',
       actions: [

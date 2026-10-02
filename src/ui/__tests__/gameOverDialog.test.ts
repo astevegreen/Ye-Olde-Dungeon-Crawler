@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { GameOverDialog, type GameOverView } from '../gameOverDialog';
+import { epitaphHtml } from '../epitaph';
+import type { HallOfFameEntry } from '../../engine';
+
+const ann: HallOfFameEntry = {
+  id: 'ann', heroName: '<Ann>', gender: 'female', status: 'fallen', epitaph: 'Slain by Ogre on Floor 3', level: 4,
+  deepestFloor: 3, turns: 1234, xp: 900, goldCp: 350, score: 1200, date: Date.UTC(2026, 9, 2),
+};
 
 // The tests run under node, so the dialog renders into a stand-in scrim whose innerHTML
 // is the dialog's markup, as in the shop dialog's test.
@@ -36,7 +43,7 @@ const view = (over: Partial<GameOverView> = {}): GameOverView => ({
   status: 'fallen',
   title: 'Fallen in Battle',
   banner: 'Your journey ends here.',
-  epitaph: 'Hero: <Ann>',
+  factsHtml: epitaphHtml(ann, 'Megin'),
   exportLabel: 'Export save (.sav)',
   ...over,
 });
@@ -83,7 +90,9 @@ describe('GameOverDialog', () => {
 
   it('escapes the epitaph and labels, and offers the autosave only when there is one', () => {
     const plain = open(view()).html;
-    expect(plain).toContain('Hero: &lt;Ann&gt;');
+    expect(plain).toContain('<dt>Hero</dt><dd>&lt;Ann&gt;</dd>');
+    expect(plain).toContain('<dt>Wealth</dt><dd>350 CP</dd>');
+    expect(plain).not.toMatch(/[╔║═]/);
     expect(plain).toContain('Export save (.sav)');
     expect(plain).not.toContain('btn-game-over-autosave');
     const withSave = open(view({ autosaveLabel: 'Load the autosave (Ann, F3)', score: 'Legends score: 1,200' })).html;

@@ -93,43 +93,6 @@ export class Leaderboard {
   }
 
   /**
-   * Formats a glorious ASCII memorial epitaph for clipboard export.
-   */
-  public static formatEpitaph(entry: HallOfFameEntry, xpName = 'XP'): string {
-    const dateStr = new Date(entry.date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-
-    const statusBanner =
-      entry.status === 'victorious'
-        ? '✦ ✦ ✦ VICTOR OF THE NORTH ✦ ✦ ✦'
-        : '✝ ✝ ✝ FALLEN IN BATTLE ✝ ✝ ✝';
-
-    const goldGp = Math.floor(entry.goldCp / 100);
-
-    return [
-      '╔════════════════════════════════════════════════════════════╗',
-      '║                   HALL OF FAME MEMORIAL                    ║',
-      '╠════════════════════════════════════════════════════════════╣',
-      `║ ${statusBanner.padEnd(58)} ║`,
-      '╠════════════════════════════════════════════════════════════╣',
-      `║ Hero:         ${entry.heroName.padEnd(43)} ║`,
-      `║ Rank / Level: Level ${entry.level.toString().padEnd(37)} ║`,
-      `║ Fate:         ${entry.epitaph.slice(0, 43).padEnd(43)} ║`,
-      `║ Depth:        Floor ${entry.deepestFloor.toString().padEnd(37)} ║`,
-      `║ Turns Taken:  ${entry.turns.toString().padEnd(43)} ║`,
-      `║ ${`${xpName}:`.padEnd(14)}${entry.xp.toString()}`.padEnd(59) + '║',
-      `║ Wealth:       ${goldGp.toString()} GP (${entry.goldCp.toString()} CP)`.padEnd(59) + '║',
-      '╠════════════════════════════════════════════════════════════╣',
-      `║ FINAL SCORE:  ${entry.score.toLocaleString()} POINTS`.padEnd(59) + '║',
-      `║ Date of Saga: ${dateStr.padEnd(43)} ║`,
-      '╚════════════════════════════════════════════════════════════╝',
-    ].join('\n');
-  }
-
-  /**
    * Encodes a hall-of-fame entry into a compact, URL-safe Base64 string with checksum.
    */
   public static encodeRunShare(entry: HallOfFameEntry): string {

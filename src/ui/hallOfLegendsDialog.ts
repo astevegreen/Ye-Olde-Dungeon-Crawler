@@ -1,7 +1,8 @@
-import { Leaderboard, type HallOfFameEntry } from '../engine';
+import type { HallOfFameEntry, Leaderboard } from '../engine';
 import type { ResolvedBranding } from './branding';
 import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
 import { escapeHtml } from './html';
+import { epitaphHtml, epitaphText } from './epitaph';
 import { iconHtml } from './icons';
 import { copyTextToClipboard } from './platform';
 
@@ -73,7 +74,9 @@ export class HallOfLegendsDialog {
     const rows = champions.length
       ? champions.map((c, i) => this.rowHtml(c, i, c.id === chosen?.id)).join('')
       : `<div class="ui-note hall-empty">No champions have yet entered the ${escapeHtml(brand.hallOfFameName)}. Embark on a saga to be recorded!</div>`;
-    const epitaph = chosen ? Leaderboard.formatEpitaph(chosen, brand.xpName) : `No records in the ${brand.hallOfFameName}.`;
+    const epitaph = chosen
+      ? epitaphHtml(chosen, brand.xpName)
+      : `<div class="ui-note">No records in the ${escapeHtml(brand.hallOfFameName)}.</div>`;
     const status = this.status || (chosen ? `${chosen.heroName}: ${chosen.score.toLocaleString()} points` : '');
 
     scrim.innerHTML = dialogHtml({
@@ -92,7 +95,7 @@ export class HallOfLegendsDialog {
           </div>
           <div class="ui-col">
             <div class="ui-dialog-label">Epitaph</div>
-            <pre id="valhalla-epitaph-card" class="ui-epitaph ui-inset">${escapeHtml(epitaph)}</pre>
+            <div id="valhalla-epitaph-card" class="ui-epitaph ui-inset">${epitaph}</div>
           </div>
         </div>`,
       footNote: `<span id="valhalla-status">${escapeHtml(status)}</span>`,
@@ -117,7 +120,7 @@ export class HallOfLegendsDialog {
     on('btn-valhalla-import', () => this.options.onImport());
     if (chosen) {
       on('btn-valhalla-share', () => this.options.onShare(chosen));
-      on('btn-valhalla-copy', () => void this.copyEpitaph(chosen, epitaph));
+      on('btn-valhalla-copy', () => void this.copyEpitaph(chosen, epitaphText(chosen, brand.xpName)));
     }
   }
 

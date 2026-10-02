@@ -82,27 +82,4 @@ describe('Leaderboard & Hall of Valhalla High Score System', () => {
     expect(champions[1].heroName).toBe('Sven');
     expect(champions[2].heroName).toBe('Torvald');
   });
-
-  it('generates a formatted ASCII memorial scroll for epitaph export', () => {
-    const entry: HallOfFameEntry = {
-      id: 'hero-export',
-      heroName: 'Freya the Bold',
-      gender: 'female',
-      status: 'victorious',
-      epitaph: 'Hero of Bjarnarhaven - Recovered The Sun-Stone',
-      level: 4,
-      deepestFloor: 5,
-      turns: 642,
-      xp: 3200,
-      goldCp: 18400,
-      score: 10792,
-      date: Date.now(),
-    };
-
-    const epitaph = Leaderboard.formatEpitaph(entry);
-    expect(epitaph).toContain('HALL OF FAME MEMORIAL');
-    expect(epitaph).toContain('VICTOR OF THE NORTH');
-    expect(epitaph).toContain('Freya the Bold');
-    expect(epitaph).toContain('10,792 POINTS');
-  });
 });

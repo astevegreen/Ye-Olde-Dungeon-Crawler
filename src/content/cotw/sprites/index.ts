@@ -22,4 +22,6 @@ export const COTW_SPRITE_RECIPES: Record<string, SpriteRecipe> = {
   ...COTW_UI_ICONS,
   // Níðhögg wears the elder-dragon boss art rather than the generic boss giant.
   nidhogg: COTW_MONSTER_SPRITES.dragon_boss,
+  // Ivalda (ironClans.ts), the living duergar smith, wears the dwarf art by her NPC id.
+  'npc-ivalda': COTW_MONSTER_SPRITES.dwarf,
 };

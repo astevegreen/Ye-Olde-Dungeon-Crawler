@@ -35,6 +35,7 @@ import { COTW_FLOOR_LAYOUTS, COTW_FLOOR_SIZE } from './floorLayouts';
 import { COTW_MONSTER_CATEGORIES } from './monsterCategories';
 import { COTW_FACTIONS, COTW_TEMPLE_MET_HOOK } from './factions';
 import { COTW_RELIC_HOOK } from './relic';
+import { IRON_CLANS_BARROW_PLACEMENTS, IRON_CLANS_HOOKS, IVALDA } from './ironClans';
 import { SKALDIC_RUNESTONE_LORE, SKALDIC_RUNESTONE_PLACEMENTS } from './runestones';
 import {
   VIDNIR_DEFEATED_TRIGGER,
@@ -122,6 +123,7 @@ export const cotwManifest: GameContentManifest = {
     COTW_TOWN_REACTIVE_HOOK,
     COTW_TEMPLE_MET_HOOK,
     COTW_RELIC_HOOK,
+    ...IRON_CLANS_HOOKS,
   ],
   storyChoiceTriggers: [OATH_TRIGGER, VIDNIR_DEFEATED_TRIGGER],
   attributeMilestones: COTW_ATTRIBUTE_MILESTONES,
@@ -190,6 +192,7 @@ export const cotwManifest: GameContentManifest = {
       requiresChoiceId: 'altar_tyr',
     },
     ...SKALDIC_RUNESTONE_PLACEMENTS,
+    ...IRON_CLANS_BARROW_PLACEMENTS,
     // Runic spell altars (COTW_MAGIC.altars): one every few floors; four are Hel's, one per sealed corner
     { floor: 4, tileId: 'galdr_altar_tyr', placement: 'middle_room_center' },
     { floor: 7, tileId: 'galdr_altar_hel', placement: 'middle_room_center' },
@@ -228,7 +231,8 @@ export const cotwManifest: GameContentManifest = {
     // Víðnir and the shed fang: guaranteed on floor 45, not a chance draw from the vault pool.
     { floor: 45, vaultId: 'floor45_fang_vault' },
     // Act 1 Campfire Grotto: The Dwarven Hearth Grotto on floor 13
-    { floor: DWARVEN_HEARTH_FLOOR, vaultId: DWARVEN_HEARTH_VAULT_ID },
+    // Ivalda, the last forge-keeper of the Iron Clans (ironClans.ts), keeps its coals.
+    { floor: DWARVEN_HEARTH_FLOOR, vaultId: DWARVEN_HEARTH_VAULT_ID, npcs: [IVALDA] },
     // Act 2 Campfire Grotto: The Heartwood Knothole on floor 37
     { floor: WORLD_BARK_FLOOR, vaultId: WORLD_BARK_VAULT_ID },
   ],

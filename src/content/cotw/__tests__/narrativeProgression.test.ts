@@ -106,6 +106,7 @@ describe('CotW Narrative Progression & Skaldic Runestones', () => {
       },
       currentFloor: 1,
       removeEntity: () => true,
+      compendium: null as never,
     };
 
     // Test floor 1 entry
@@ -169,6 +170,7 @@ describe('CotW Narrative Progression & Skaldic Runestones', () => {
       },
       currentFloor: 0,
       removeEntity: () => true,
+      compendium: null as never,
     };
 
     // Deepest floor 15 (Dwarven Works reached)
@@ -214,6 +216,7 @@ describe('CotW Narrative Progression & Skaldic Runestones', () => {
       setWorldFlag: (f: string, v: boolean) => setFlag(worldState, f, v),
       currentFloor: 36,
       removeEntity: () => true,
+      compendium: null as never,
     };
     const tick = () =>
       COTW_SVART_TAUNT_HOOK.execute({ action: null as any, actionType: 'wait', actor: player, engine: engineContext });

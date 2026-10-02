@@ -127,6 +127,10 @@ export function applyConsequences(
         engine.summonCompanion(c.companionId);
         break;
       }
+      case 'learnSpell': {
+        player.learnSpell(c.spellId);
+        break;
+      }
     }
   }
 }

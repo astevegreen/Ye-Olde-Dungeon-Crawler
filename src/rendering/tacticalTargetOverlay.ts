@@ -145,20 +145,21 @@ function isAlly(monster: Monster): boolean {
 /**
  * The target card: name, health, and a wind-up warning or the monster's conditions. An
  * ally's card has the shield, not the attack icon, says it is at your side, and never
- * warns of its wind-ups.
+ * warns of its wind-ups; a neutral monster's says it stands aside.
  */
 export function targetCardHtml(monster: Monster): string {
   const ally = isAlly(monster);
   const pct = monster.maxHp > 0 ? Math.max(0, Math.min(100, Math.round((monster.hp / monster.maxHp) * 100))) : 0;
-  let note = ally ? `<div class="mc-intent is-good">At your side</div>` : '';
-  if (!ally && monster.intent?.type === 'windup') {
+  const neutral = monster.faction === 'neutral';
+  let note = ally ? `<div class="mc-intent is-good">At your side</div>` : neutral ? `<div class="mc-intent is-info">Stands aside</div>` : '';
+  if (!ally && !neutral && monster.intent?.type === 'windup') {
     note = `<div class="mc-intent is-warn">${iconHtml('warning')} Winding up an attack</div>`;
   } else {
     const statuses = monster.statusManager?.getAll() ?? [];
     if (statuses.length > 0) note += `<div class="mc-line mc-status"><span>${escapeHtml(statuses.map((s) => s.type).join(', '))}</span></div>`;
   }
   return `
-    <div class="mc-head"><span class="mc-title">${iconHtml(ally ? 'shield' : 'attack')} <span>${escapeHtml(monster.name)}</span></span><span class="mc-tag ui-num">${monster.hp} / ${monster.maxHp}</span></div>
+    <div class="mc-head"><span class="mc-title">${iconHtml(ally ? 'shield' : neutral ? 'info' : 'attack')} <span>${escapeHtml(monster.name)}</span></span><span class="mc-tag ui-num">${monster.hp} / ${monster.maxHp}</span></div>
     <div class="mc-body"><div class="ui-bar mc-hp"><i style="width: ${pct}%"></i></div>${note}</div>`;
 }
 

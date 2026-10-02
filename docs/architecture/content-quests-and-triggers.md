@@ -5,6 +5,12 @@
 ## Generic Tile-Triggered Choice
 `actions/movement.ts`: any tile whose `interactionHandlerId` matches a `manifest.choices` key becomes an interactive decision point, resolving at most once (a `<handlerId>_resolved` flag, set only once an option is actually chosen, so cancelling leaves it re-triggerable). Supports `ChoiceDefinition.resolvedStates` (`{ flag, message }[]`), allowing content to preserve persistent resolution messages (e.g. purified/desecrated altars) without hardcoded engine branches. The previous `altar_tyr` branch in `movement.ts` was deleted and folded into this generic mechanism.
 
+## NPC Choices
+`NpcConfig.choiceId` (`entities/npc.ts`, set from `ScriptedVaultNpc.choiceId`, saved with the NPC): talking to the NPC opens that `manifest.choices` entry instead of its greeting, at no turn cost (`actions/movement.ts`). Unlike a tile choice it never resolves, so the NPC can be spoken to again; its options gate themselves with predicates (e.g. `minFaction`) and their own flags, and a disabled option shows its `disabledReason`. cotw's Ivalda (`ironClans.ts`) is one.
+
+## Monsters That Stand Aside
+`Entity.setFaction` lets content move an entity between sides. A `neutral` monster takes no action (`MonsterAI.decideAction` waits), since the default target is the player whatever the faction, and the player cannot bump-attack it. cotw's Iron Clans hook sets the Haugbui neutral for a hero the clans trust, and hostile again once one is hurt or trust is lost.
+
 ## Fixed Tile Placements & Acquisition Configuration
 `types/manifest.ts`, `dungeonArc.ts`: `manifest.fixedTilePlacements` (`FixedTilePlacement[]`) declares floor-specific tile placement patterns (e.g. `'middle_room_center'`) gated by optional choice prerequisites (`requiresChoiceId`), replacing hardcoded campaign floor-3 altar stamps. Similarly, `manifest.runeOfReturn.acquisition` (`{ floor, vaultId }`) specifies where the Rune of Return appears, removing `FLOOR5_RUNE_VAULT_ID` from the engine.
 

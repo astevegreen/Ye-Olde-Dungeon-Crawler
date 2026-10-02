@@ -613,6 +613,7 @@ export function serializeMapObject(map: GameMap): SerializedMap {
         greeting: npc.greeting,
         dialogText: npc.dialogText,
         isStationary: npc.isStationary,
+        choiceId: npc.choiceId,
       };
     });
 
@@ -765,6 +766,7 @@ export function deserializeMapObject(mapData: SerializedMap, customTiles?: TileD
         greeting: nData.greeting,
         dialogText: nData.dialogText,
         isStationary: nData.isStationary,
+        choiceId: nData.choiceId,
       });
       map.addEntity(npc);
     }

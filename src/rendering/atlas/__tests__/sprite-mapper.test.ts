@@ -52,6 +52,12 @@ describe('sprite-mapper — Tag-Priority Monster, Item, and Zone-Themed Terrain 
       expect(getEntitySpriteKey(guard)).toBe('guard');
     });
 
+    it('draws an NPC from a pack recipe keyed by its id, ahead of its role', () => {
+      const smith = new NPC({ id: 'npc-smith', name: 'Smith', role: 'villager', position: { x: 0, y: 0 } });
+      expect(getEntitySpriteKey(smith, (k) => k === 'npc-smith')).toBe('npc-smith');
+      expect(getEntitySpriteKey(smith, () => false)).toBe('townsperson');
+    });
+
     it('resolves monsters using tag specificity order (boss > dragon > undead > beast > humanoid)', () => {
       const dragon = new Monster({
         id: 'm1',

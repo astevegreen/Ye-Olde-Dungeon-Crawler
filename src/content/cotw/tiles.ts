@@ -1,5 +1,6 @@
 import type { TileDefinition } from '../../engine';
 import { SKALDIC_RUNESTONE_TILES } from './runestones';
+import { IRON_CLANS_BARROW_TILES } from './ironClans';
 
 /** Bjarnarhaven's lanes and street furniture (townLayout.ts). */
 const townThing = (type: string, name: string, glyph: string, description: string): TileDefinition => ({
@@ -125,6 +126,7 @@ export const COTW_TILES: TileDefinition[] = [
     landmarkLabel: "Loki's Cairn ᛚ",
   },
   ...SKALDIC_RUNESTONE_TILES,
+  ...IRON_CLANS_BARROW_TILES,
 
   // --- Act 1 Campfire Grotto: The Dwarven Hearth Grotto (Floor 13) ---
   {

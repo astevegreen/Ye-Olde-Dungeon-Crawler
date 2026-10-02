@@ -309,6 +309,7 @@ export class DungeonArc {
           greeting: npcDef.greeting,
           dialogText: npcDef.dialogText,
           isStationary: true,
+          choiceId: npcDef.choiceId,
         })
       );
     }

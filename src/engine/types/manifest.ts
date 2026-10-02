@@ -799,6 +799,8 @@ export interface ScriptedVaultNpc {
   role?: NpcRole;
   greeting?: string;
   dialogText?: string;
+  /** Talking to the NPC opens this `manifest.choices` key (`NpcConfig.choiceId`). */
+  choiceId?: string;
 }
 
 /** See `GameContentManifest.scriptedVaultPlacements`. */

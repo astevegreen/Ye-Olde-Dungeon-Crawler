@@ -300,6 +300,7 @@ export interface SerializedNpc {
   greeting: string;
   dialogText: string;
   isStationary?: boolean;
+  choiceId?: string;
 }
 
 export interface SerializedGroundTile {

@@ -1,4 +1,5 @@
 import type { ChoiceDefinition, FixedTilePlacement, LoreEntryDefinition, TileDefinition } from '../../engine';
+import { IRON_CLANS_MET_FLAG } from './ironClans';
 
 /**
  * Six Skaldic Runestones distributed across the descent (floors 8, 14, 20, 28, 38, 48).
@@ -181,7 +182,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
     id: 'skaldic_runestone_2',
     title: 'Skaldic Runestone: The Smithy’s Accord',
     description:
-      'Duergar chisel-marks score the blackened iron slab:\n\n“Here the sons of Ivaldi and the smiths of Jötunheim struck the treaty of steel.\nWhere fire meets ice, neither destroys the other—they fuse into scalding mist.\nThe Hanged God taught us: give what is dear at his Gallows-Stone, and a greater craft is born.”\n\nRunic diagrams illustrate elemental fusion at Odin’s Gallows-Stone.',
+      'Duergar chisel-marks score the blackened iron slab:\n\n“Here the sons of Ivaldi and the smiths of Jötunheim struck the treaty of steel.\nWhere fire meets ice, neither destroys the other—they fuse into scalding mist.\nThe Hanged God taught us: give what is dear at his Gallows-Stone, and a greater craft is born.”\n\nRunic diagrams illustrate elemental fusion at Odin’s Gallows-Stone.\n\nBelow the treaty, newer marks are gouged deep: Thrym’s rune, struck through with a broken hammer. The Iron Clans have not forgotten who broke the Accord, and the blood in your veins is his.',
     options: [
       {
         id: 'absorb_forge',
@@ -190,6 +191,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           'Channel the forge’s martial discipline. Permanently increases base Attack by +1, earns +10 Exploration Renown, and commits the Runic Spell Hint to memory.',
         consequences: [
           { type: 'setFlag', flag: 'skaldic_runestone_2_resolved', value: true },
+          { type: 'setFlag', flag: IRON_CLANS_MET_FLAG, value: true },
           { type: 'modifyCounter', counter: 'renown:exploration', delta: 10 },
           { type: 'modifyPermanentStat', stat: 'attack', delta: 1 },
           {
@@ -206,6 +208,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           'Apply duergar whetting techniques. Earns +10 Exploration Renown, grants a Bog-Iron Whetstone, and commits the Runic Spell Hint to memory.',
         consequences: [
           { type: 'setFlag', flag: 'skaldic_runestone_2_resolved', value: true },
+          { type: 'setFlag', flag: IRON_CLANS_MET_FLAG, value: true },
           { type: 'modifyCounter', counter: 'renown:exploration', delta: 10 },
           { type: 'grantItem', itemId: 'bog_iron_whetstone', toInventory: true },
           {

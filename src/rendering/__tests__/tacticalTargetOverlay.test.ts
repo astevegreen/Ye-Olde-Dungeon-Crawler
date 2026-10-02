@@ -66,6 +66,14 @@ describe('TacticalTargetOverlay', () => {
     expect(targetCardHtml(ogre)).not.toContain('At your side');
   });
 
+  it('cards a neutral monster as standing aside, without the attack icon', () => {
+    const wight = new Monster({ id: 'w', name: 'Wight', position: { x: 1, y: 1 }, stats: { hp: 10, maxHp: 10, attack: 3, defense: 1 } });
+    wight.setFaction('neutral');
+    const html = targetCardHtml(wight);
+    expect(html).toContain('Stands aside');
+    expect(html).not.toContain('data-icon="attack"');
+  });
+
   it('labels a pile by its top item and how many more lie under it', () => {
     const ware = (id: string, name: string) => new Item({ id, name, category: 'misc', weight: 100, bulk: 100, quality: 'normal', identified: true, value: 1 });
     expect(pileLabelHtml([ware('a', 'Rock')])).toMatch(/Rock$/);

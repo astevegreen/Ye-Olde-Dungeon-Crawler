@@ -22,7 +22,9 @@ export type ChoiceConsequence =
    * Progression). Sets the acquisition-gate flag first if the player hasn't already
    * bonded with one, so a story-granted companion doesn't require a trainer visit.
    */
-  | { type: 'grantCompanion'; companionId: string };
+  | { type: 'grantCompanion'; companionId: string }
+  /** Teaches a spell by manifest id; a spell already known is left as it is. */
+  | { type: 'learnSpell'; spellId: string };
 
 export interface ChoiceOption {
   id: string;

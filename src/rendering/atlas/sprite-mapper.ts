@@ -170,6 +170,8 @@ export function getEntitySpriteKey(
   }
 
   if (entity instanceof NPC) {
+    // A pack recipe keyed by the NPC's id is that NPC's art, as a definition id is a monster's.
+    if (hasSprite?.(entity.id)) return entity.id;
     const role = entity.role;
     switch (role) {
       case 'merchant':

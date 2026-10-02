@@ -78,7 +78,15 @@ export class MovementAction implements Action {
         return attackAction.perform(engine);
       } else {
         if (this.entity.type === 'player' && targetEntity instanceof NPC) {
-          engine.interactWithNpc(targetEntity);
+          // An NPC with a choice opens it (NpcConfig.choiceId); it never resolves.
+          const npcChoice = targetEntity.choiceId ? engine.manifest?.choices?.[targetEntity.choiceId] : undefined;
+          if (npcChoice && engine.onChoiceInteract) {
+            engine.onChoiceInteract(npcChoice, (optionId: string) => {
+              engine.handlePlayerAction(new ExecuteChoiceAction(this.entity as Player, npcChoice, optionId));
+            });
+          } else {
+            engine.interactWithNpc(targetEntity);
+          }
           return {
             success: true,
             cost: 0,

@@ -265,7 +265,9 @@ export class MonsterAI {
   }
 
   public static decideAction(monster: Monster, engine: GameEngine): Action {
-    if (!monster.isAlive()) {
+    // A neutral monster (Entity.setFaction) holds its place: the default target is the
+    // player whatever the faction, so without this it would still close in.
+    if (!monster.isAlive() || monster.faction === 'neutral') {
       return new WaitAction(monster);
     }
 

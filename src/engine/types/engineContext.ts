@@ -3,6 +3,7 @@ import type { Player } from '../entities/player';
 import type { GameMap } from '../grid/map';
 import type { SurfaceGrid } from '../surfaces/surfaceGrid';
 import type { WorldState } from '../state/worldState';
+import type { CompendiumManager } from '../compendium/compendiumManager';
 
 /**
  * The engine surface handlers are given (ARCHITECTURE.md §3).
@@ -34,4 +35,7 @@ export interface EngineContext {
   readonly currentFloor: number;
   /** Removes an entity from the active floor's map and the turn scheduler. */
   removeEntity(entity: Entity): boolean;
+  /** Read-only kill tallies by monster definition id, whatever did the killing (a blow,
+   *  a spell, a companion, a burning floor), for content that answers a kind of death. */
+  readonly compendium: Pick<CompendiumManager, 'getEntry'>;
 }

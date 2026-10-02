@@ -208,6 +208,12 @@ export class Entity {
     return this.hp - previousHp;
   }
 
+  /** Changes the side this entity is on, e.g. a guardian that stands aside for a trusted
+   *  hero. A neutral monster takes no action against anyone (MonsterAI.decideAction). */
+  public setFaction(faction: Faction): void {
+    this.faction = faction;
+  }
+
   public isHostileTo(other: Entity): boolean {
     if (this.faction === 'player') {
       return other.faction === 'hostile';

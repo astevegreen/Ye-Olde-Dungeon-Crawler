@@ -124,7 +124,9 @@ describe('StoryTab', () => {
     expect(el.innerHTML).toContain('Found a &lt;secret&gt;');
     expect(el.innerHTML).toContain('Carved Verses <span class="ui-num">1/1</span>');
     expect(el.innerHTML).toContain('Fire beats ice.');
-    expect(tab.footer().keys?.[0].label).toBe('Carved Verses · Standing · Pacts');
+    expect(tab.footer().keys?.[0].label).toBe('Carved Verses · Standing');
+    // Sealed pacts are the Pacts tab's, not repeated here.
+    expect(el.innerHTML).not.toContain('data-panel="pacts"');
 
     const arrow = { code: 'ArrowRight', preventDefault: () => {} } as unknown as KeyboardEvent;
     expect(tab.handleKeyDown(arrow)).toBe(true);

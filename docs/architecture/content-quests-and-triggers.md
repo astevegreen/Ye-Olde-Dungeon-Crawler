@@ -52,4 +52,4 @@ The character menu's Story tab (ADR-0011) reads only manifest data, so its wordi
 - **Saga:** the current `objectives` entry; achieved `trackedMilestones`; then up to six locked ones, each shown as its `riddle` (or "? ? ?" without one), the rest counted as untold. A milestone achieved since the tab was last seen glows once.
 - **Lore:** `loreEntries` (`LoreEntryDefinition`: `flag`, `title`, `verse`, `lore`) show once their flag is set, under `branding.loreTitle`. Like `trackedMilestones` they are a display list over existing flags, so the save format does not change.
 - **Standing:** `worldState.factions`, named and gated by `factions` (`FactionDefinition`): a faction appears once its standing moves from its `initialWorldState` value, once its `metFlag` is set, or from the start with `metAtStart`; the rest stay unnamed.
-- **Pacts:** the sealed pacts and their combined rewards.
+Sealed pacts and their combined rewards are shown on the Pacts tab only, not repeated here.

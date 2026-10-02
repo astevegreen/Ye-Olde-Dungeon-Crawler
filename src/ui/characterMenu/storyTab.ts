@@ -4,7 +4,7 @@ import { buildDescent, buildSaga, buildStanding, buildVerses, type Descent } fro
 import { resolveBranding } from '../branding';
 import { escapeHtml } from '../html';
 
-type StoryPanel = 'lore' | 'standing' | 'pacts';
+type StoryPanel = 'lore' | 'standing';
 
 /** The Chronicle shows this many of the latest discoveries. */
 const CHRONICLE_SHOWN = 30;
@@ -12,8 +12,8 @@ const CHRONICLE_SHOWN = 30;
 /**
  * The Story tab (ADR-0011, mockup m2): the Descent line down the run's floors, the Saga
  * (objective, deeds done, locked deeds as riddles, the Chronicle), and a side panel of
- * lore, standing with the factions met, and sealed pacts. All names and flavor come from
- * the pack's manifest and branding.
+ * lore and standing with the factions met. Sealed pacts are the Pacts tab's alone. All
+ * names and flavor come from the pack's manifest and branding.
  */
 export class StoryTab implements MenuTab {
   public readonly id = 'story';
@@ -44,12 +44,13 @@ export class StoryTab implements MenuTab {
 
   /** The side panels: lore only when the pack has any. */
   private panels(): StoryPanel[] {
-    return this.manifest()?.loreEntries?.length ? ['lore', 'standing', 'pacts'] : ['standing', 'pacts'];
+    return this.manifest()?.loreEntries?.length ? ['lore', 'standing'] : ['standing'];
   }
 
   public handleKeyDown(e: KeyboardEvent): boolean {
     if (e.code !== 'ArrowLeft' && e.code !== 'ArrowRight') return false;
     const panels = this.panels();
+    if (panels.length < 2) return false;
     const step = e.code === 'ArrowRight' ? 1 : panels.length - 1;
     this.panel = panels[(Math.max(0, panels.indexOf(this.panel)) + step) % panels.length];
     e.preventDefault();
@@ -61,7 +62,7 @@ export class StoryTab implements MenuTab {
     const hasLore = this.panels().includes('lore');
     const loreTitle = resolveBranding(this.manifest()).loreTitle;
     return {
-      keys: [{ keys: ['←', '→'], label: hasLore ? `${loreTitle} · Standing · Pacts` : 'Standing · Pacts' }],
+      keys: hasLore ? [{ keys: ['←', '→'], label: `${loreTitle} · Standing` }] : [],
       note: hasLore ? `What you learn is kept under ${loreTitle}.` : undefined,
     };
   }
@@ -186,7 +187,6 @@ export class StoryTab implements MenuTab {
     const labels: Record<StoryPanel, string> = {
       lore: `${escapeHtml(branding.loreTitle)} <span class="ui-num">${verses.read.length}/${verses.total}</span>`,
       standing: 'Standing',
-      pacts: 'Pacts',
     };
     const tabs = panels.map((id) => [id, labels[id]] as const);
     const subtabs = `<div class="st-subtabs" role="tablist">${tabs
@@ -209,7 +209,7 @@ export class StoryTab implements MenuTab {
         (verses.read.length < verses.total
           ? `<div class="ui-card st-blank">${verses.total - verses.read.length} more wait${verses.total - verses.read.length === 1 ? 's' : ''} somewhere below, unread.</div>`
           : '');
-    } else if (this.panel === 'standing') {
+    } else {
       const standing = buildStanding(worldState, manifest);
       body = `<div class="ui-card">${
         standing.met
@@ -229,30 +229,6 @@ export class StoryTab implements MenuTab {
           ? '<div class="ui-note">No one has taken your measure yet.</div>'
           : ''
       }</div>`;
-    } else {
-      const pacts = this.state!.pacts ?? this.state!.engine.pacts;
-      const active = pacts?.getActivePacts() ?? [];
-      const rewards = pacts?.getAggregatedRewards();
-      const pills = rewards
-        ? [
-            rewards.xpMultiplier !== 1 ? `${escapeHtml(branding.xpName)} ${rewards.xpMultiplier.toFixed(2)}×` : '',
-            rewards.goldMultiplier !== 1 ? `Gold ${rewards.goldMultiplier.toFixed(1)}×` : '',
-            rewards.magicFindBonus > 0 ? `Find +${Math.round(rewards.magicFindBonus * 100)}%` : '',
-          ].filter(Boolean)
-        : [];
-      body =
-        active.length === 0
-          ? '<div class="ui-card"><div class="ui-note">No pacts sealed. The Pacts tab lists what you could take on.</div></div>'
-          : `<div class="ui-card">
-              ${pills.length ? `<div class="st-pills">${pills.map((p) => `<span class="st-pill ui-num">${p}</span>`).join('')}</div>` : ''}
-              ${active
-                .map(
-                  (p) => `<div class="st-pact"><div class="st-deed-title">${escapeHtml(p.name)}</div>
-                    <div class="ui-note st-cost">${escapeHtml(p.curseDescription)}</div>
-                    <div class="ui-note st-gain">${escapeHtml(p.rewardDescription)}</div></div>`
-                )
-                .join('')}
-            </div>`;
     }
     return subtabs + body;
   }

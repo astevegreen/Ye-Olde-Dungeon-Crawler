@@ -101,7 +101,8 @@ export function resolveMonsterPowerMultiplier(
  *    depth/progression formula (`calculateHybridScaleFactor`).
  *
  * "Veteran <Name>" affix: `(currentFloor - minFloor) >= 10`, or a scale/multiplier
- * of at least 1.8, in every branch. MonsterDefinition templates remain immutable.
+ * of at least 1.8, in every branch, for ordinary monsters only (`scaledName`).
+ * MonsterDefinition templates remain immutable.
  */
 export function scaleMonsterStats(
   def: MonsterDefinition,
@@ -123,8 +124,7 @@ export function scaleMonsterStats(
     const defense = Math.max(def.stats.defense, Math.round(def.stats.defense * scale));
     const xpValue = Math.max(def.xpValue, Math.round(def.xpValue * scale));
 
-    const isVeteran = currentFloor - minFloor >= 10 || scale >= 1.8;
-    const name = isVeteran ? `Veteran ${def.name}` : def.name;
+    const name = scaledName(def, currentFloor - minFloor >= 10 || scale >= 1.8, bossTags);
 
     return { hp, maxHp: hp, attack, defense, xpValue, name };
   }
@@ -136,8 +136,7 @@ export function scaleMonsterStats(
     const defense = def.stats.defense + Math.floor(0.4 * floorOffset);
     const xpValue = Math.round(def.xpValue * (1 + 0.1 * floorOffset));
 
-    const isVeteran = currentFloor - minFloor >= 10;
-    const name = isVeteran ? `Veteran ${def.name}` : def.name;
+    const name = scaledName(def, currentFloor - minFloor >= 10);
 
     return {
       hp,
@@ -155,8 +154,7 @@ export function scaleMonsterStats(
   const defense = Math.max(def.stats.defense, Math.round(def.stats.defense * scale));
   const xpValue = Math.max(def.xpValue, Math.round(def.xpValue * scale));
 
-  const isVeteran = currentFloor - minFloor >= 10 || scale >= 1.8;
-  const name = isVeteran ? `Veteran ${def.name}` : def.name;
+  const name = scaledName(def, currentFloor - minFloor >= 10 || scale >= 1.8);
 
   return {
     hp,
@@ -166,6 +164,16 @@ export function scaleMonsterStats(
     xpValue,
     name,
   };
+}
+
+/**
+ * A scaled monster's name: "Veteran <Name>" for an ordinary monster met well past where it
+ * first appears, never for a unique one (`placedOnly`, or tagged as a boss), whose name
+ * is its own.
+ */
+function scaledName(def: MonsterDefinition, veteran: boolean, bossTags: readonly string[] = DEFAULT_BOSS_TAGS): string {
+  const unique = def.placedOnly || (def.tags ?? []).some((t) => bossTags.includes(t));
+  return veteran && !unique ? `Veteran ${def.name}` : def.name;
 }
 
 /**

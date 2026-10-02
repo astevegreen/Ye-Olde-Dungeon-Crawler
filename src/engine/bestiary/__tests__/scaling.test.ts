@@ -61,6 +61,17 @@ describe('Monster Stat Scaling & Bestiary Immutability', () => {
     expect(scaleMonsterStats(ogre, 22).name).toBe('Veteran Ogre');
   });
 
+  it('never calls a unique monster a veteran: placedOnly, or tagged as a boss', () => {
+    const tagged = { ...BESTIARY.ogre, tags: ['miniboss'] };
+    const placed = { ...BESTIARY.ogre, placedOnly: true };
+    for (const def of [tagged, placed]) {
+      expect(scaleMonsterStats(def, 40).name).toBe('Ogre');
+      expect(scaleMonsterStats(def, 40, 40, 30).name).toBe('Ogre');
+      expect(scaleMonsterStats(def, 40, undefined, undefined, COTW_MONSTER_SCALING, 'hard').name).toBe('Ogre');
+    }
+    expect(scaleMonsterStats(BESTIARY.ogre, 40, undefined, undefined, COTW_MONSTER_SCALING, 'hard').name).toBe('Veteran Ogre');
+  });
+
   it('guarantees MonsterDefinition templates remain strictly immutable after scaling', () => {
     const kobold = BESTIARY.kobold;
     const baseStatsSnapshot = { ...kobold.stats };
@@ -114,7 +125,8 @@ describe('Monster Stat Scaling & Bestiary Immutability', () => {
       expect(scaled.attack).toBe(47); // round(22 * 2.1275)
       expect(scaled.defense).toBe(19); // round(9 * 2.1275)
       expect(scaled.xpValue).toBe(2553); // round(1200 * 2.1275)
-      expect(scaled.name).toBe('Veteran The Sun-Chariot Warden'); // multiplier >= 1.8
+      // Multiplier >= 1.8, but a unique keeps its own name.
+      expect(scaled.name).toBe('The Sun-Chariot Warden');
       // Still a real fight, nowhere near a one-shot: HP more than doubled vs. base.
       expect(scaled.hp).toBeGreaterThan(boss.stats.hp * 2);
     });

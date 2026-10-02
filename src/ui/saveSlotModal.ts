@@ -1,4 +1,5 @@
 import type { ProfileManager, AutosaveManager, AutosaveSlot, CharacterProfile } from '../engine';
+import { showConfirmDialog } from './confirmDialog';
 import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
 import { escapeHtml } from './html';
 import { iconHtml } from './icons';
@@ -26,6 +27,14 @@ export class SaveSlotModal implements UIModal {
 
   private createDom(): void {
     this.overlayEl = createDialogScrim('save-slot-modal');
+    if (!this.overlayEl) return;
+    // It opens from the main menu, where InputHandler is off and the modal stack routes
+    // nothing: the overlay holds focus and takes its own keys.
+    this.overlayEl.tabIndex = -1;
+    this.overlayEl.style.outline = 'none';
+    this.overlayEl.addEventListener('keydown', (e) => {
+      if (this.handleKeyDown(e)) e.stopPropagation();
+    });
   }
 
   public open(): void {
@@ -36,6 +45,7 @@ export class SaveSlotModal implements UIModal {
     this.render();
     if (this.overlayEl) {
       this.overlayEl.style.display = 'flex';
+      this.overlayEl.focus();
     }
   }
 
@@ -95,15 +105,22 @@ export class SaveSlotModal implements UIModal {
   }
 
   private handleDeleteProfile(profileId: string, profileName: string): void {
-    if (typeof window !== 'undefined' && window.confirm(`Permanently delete save data for ${profileName}?`)) {
-      try {
-        this.options.profileManager.deleteCharacter(profileId);
-        showToast(`Deleted save for ${profileName}.`, 'info');
-        this.render();
-      } catch (err) {
-        showToast(`Failed to delete profile: ${(err as Error).message}`, 'error');
-      }
-    }
+    showConfirmDialog({
+      title: `Delete ${profileName}?`,
+      icon: 'delete',
+      message: `${profileName}'s save will be gone for good. This cannot be undone.`,
+      confirmLabel: 'Delete save',
+      cancelLabel: 'Keep',
+      onConfirm: () => {
+        try {
+          this.options.profileManager.deleteCharacter(profileId);
+          showToast(`Deleted save for ${profileName}.`, 'info');
+          this.render();
+        } catch (err) {
+          showToast(`Failed to delete profile: ${(err as Error).message}`, 'error');
+        }
+      },
+    });
   }
 
   private autosaveCardHtml(
@@ -221,5 +238,8 @@ export class SaveSlotModal implements UIModal {
         }
       });
     });
+
+    // A redraw drops whichever button had focus; the overlay takes it back so Escape still lands.
+    if (this.isOpen) this.overlayEl.focus();
   }
 }

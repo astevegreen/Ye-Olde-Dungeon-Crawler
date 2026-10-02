@@ -14,6 +14,9 @@ class MockElement {
   public children: MockElement[] = [];
   public parentElement: MockElement | null = null;
   public attributes: Map<string, string> = new Map();
+  public tabIndex = 0;
+
+  focus(): void {}
 
   setAttribute(name: string, value: string) {
     this.attributes.set(name, value);

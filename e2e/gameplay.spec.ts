@@ -303,3 +303,49 @@ test('the hall of fame and the saga exchange close on Escape from the menu', asy
 
   expect(pageErrors).toEqual([]);
 });
+
+// Load a saved game opens from the main menu, with InputHandler off: it takes its own keys,
+// and deleting a save asks in the dialog frame, never with the browser's confirm().
+test('load a saved game closes on Escape, and its delete asks in the dialog frame', async ({ page }) => {
+  const pageErrors: string[] = [];
+  const alerts: string[] = [];
+  page.on('pageerror', (err) => pageErrors.push(err.message));
+  page.on('dialog', (d) => {
+    alerts.push(d.message());
+    void d.dismiss();
+  });
+  await embarkNewHero(page);
+  await page.keyboard.press('Escape');
+  await page.locator('#btn-savequit-save-exit').click();
+
+  const slots = page.locator('#save-slot-modal');
+  const confirmBox = page.locator('#confirm-dialog');
+  await page.locator('#btn-menu-load').click();
+  await expect(slots).toBeVisible();
+  await expect(slots.locator('.btn-delete-profile')).toHaveCount(1);
+
+  // Escape on the question keeps the save and leaves the list open.
+  await slots.locator('.btn-delete-profile').click();
+  await expect(confirmBox).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(confirmBox).toBeHidden();
+  await expect(slots).toBeVisible();
+  await expect(slots.locator('.btn-delete-profile')).toHaveCount(1);
+
+  // Escape closes the list, back to the main menu.
+  await page.keyboard.press('Escape');
+  await expect(slots).toBeHidden();
+  await expect(page.locator('#btn-menu-load')).toBeVisible();
+
+  // Confirming deletes the save, and the list still closes on Escape after its redraw.
+  await page.locator('#btn-menu-load').click();
+  await slots.locator('.btn-delete-profile').click();
+  await confirmBox.locator('#btn-confirm-ok').click();
+  await expect(confirmBox).toBeHidden();
+  await expect(slots.locator('.btn-delete-profile')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(slots).toBeHidden();
+
+  expect(alerts).toEqual([]);
+  expect(pageErrors).toEqual([]);
+});

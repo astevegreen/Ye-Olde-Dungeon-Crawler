@@ -9,6 +9,7 @@ import { Leaderboard } from '../engine';
 import { HallOfLegendsDialog } from './hallOfLegendsDialog';
 import { getStoragePersistenceInfo, formatStorageStatus } from './persistenceInit';
 import { setupSaveDragAndDrop, importSaveWithValidation } from './saveImporter';
+import { showConfirmDialog } from './confirmDialog';
 import type { SaveCodeModal } from './saveCodeModal';
 import type { SagaShareModal } from './sagaShareModal';
 import { defaultPlatformAdapter, getBrowserStorage } from './platform';
@@ -194,12 +195,20 @@ export class TitleScreen {
       if (!this.selectedProfileId) return;
       const profile = this.getSelectedProfile();
       const heroName = profile?.name ?? 'this character';
-      if (confirm(`Are you sure you want to delete ${heroName}? This cannot be undone.`)) {
-        this.profileManager.deleteCharacter(this.selectedProfileId);
-        this.selectedProfileId = null;
-        this.refresh();
-        this.setStatus(`Deleted character ${heroName}.`);
-      }
+      const profileId = this.selectedProfileId;
+      showConfirmDialog({
+        title: `Delete ${heroName}?`,
+        icon: 'delete',
+        message: `${heroName}'s save will be gone for good. This cannot be undone.`,
+        confirmLabel: 'Delete save',
+        cancelLabel: 'Keep',
+        onConfirm: () => {
+          this.profileManager.deleteCharacter(profileId);
+          this.selectedProfileId = null;
+          this.refresh();
+          this.setStatus(`Deleted character ${heroName}.`);
+        },
+      });
     });
 
     // Gender selection

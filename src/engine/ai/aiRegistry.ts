@@ -273,7 +273,8 @@ export class KitingRangedStrategy implements AIStrategy {
           targetTiles: dangerTiles,
           pattern: 'line',
           turnsRemaining: 1,
-          multiplier: 2.8,
+          // Was 2.8: a third of a level-6 hero's HP from range (owner asked it softened).
+          multiplier: 1.8,
         }
       );
     }

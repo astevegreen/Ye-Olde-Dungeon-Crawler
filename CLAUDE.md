@@ -66,7 +66,10 @@ Routine for every commit that touches presentation:
   throws on a miss), or the Edit tool.
 - Escaping: bash heredocs, `node -e` and template literals nested in an
   edit script mangle backticks and `${…}`. Write code to its own file
-  with the Write tool, or use the Edit tool.
+  with the Write tool, or use the Edit tool. `edit.mjs` reads every `\n`
+  in a pattern as a line break, so it can't match or write the two
+  characters `\` `n` inside a source string (dialog text, say): edit
+  those lines with the Edit tool.
 - Inline styles (static markup in `index.html`, `el.style.x = …`) beat
   stylesheet rules. Remove the inline style; don't add `!important`.
 - knip fails on unused exports. Delete what a refactor orphans.

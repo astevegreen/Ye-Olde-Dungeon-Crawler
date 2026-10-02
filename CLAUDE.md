@@ -60,8 +60,8 @@ Routine for every commit that touches presentation:
    `button`, case-insensitive); use those, not new hard-coded matches.
 
 ## Tooling gotchas
-- Line endings: `.gitattributes` pins LF, but files checked out before
-  that are still CRLF until renormalized. For scripted multi-edits use
+- Line endings: `.gitattributes` pins LF, and the working tree was
+  rewritten to LF on 2026-10-02. For scripted multi-edits use
   `.prompts/edit.mjs` (`\n` in a pattern matches either ending; it
   throws on a miss), or the Edit tool.
 - Escaping: bash heredocs, `node -e` and template literals nested in an

@@ -120,6 +120,9 @@ export class TitleScreen {
       this.onBackToMenuCallback?.();
     });
 
+    const manaLabel = document.getElementById('preview-mana-label');
+    if (manaLabel) manaLabel.textContent = resolveBranding(this.profileManager.manifest).manaName;
+
     this.rosterListEl = document.getElementById('roster-list');
     this.resumeBtn = document.getElementById('btn-resume') as HTMLButtonElement | null;
     this.loadAutosaveBtn = document.getElementById('btn-title-load-autosave') as HTMLButtonElement | null;

@@ -199,6 +199,24 @@ describe('ShopDialog', () => {
       expect(ids).toEqual(['bread', 'rope']);
     });
 
+    it('stacks identical goods into one row with a count, and a trade takes one of them', () => {
+      const shop = new ShopDialog();
+      const stocked = new Merchant('shop', 'Trader', 'General Store', 'general', 'Welcome!', [
+        ware('torch-1', 'Wooden Torch'),
+        ware('torch-2', 'Wooden Torch'),
+        ware('torch-3', 'Wooden Torch'),
+        ware('bread', 'Travel Bread'),
+      ]);
+      shop.open(npc('merchant'), stocked, engine);
+      const markup = html();
+      expect(markup.match(/data-row=/g)).toHaveLength(2);
+      expect(markup).toContain('×3');
+      shop.handleKeyDown(key('2'), engine);
+      shop.handleKeyDown(key('1'), engine);
+      const ids = dispatch.mock.calls.map((c) => (c[0] as unknown as { payload: { itemIndex: string } }).payload.itemIndex);
+      expect(ids).toEqual(['bread', 'torch-1']);
+    });
+
     it('keeps the selection inside the list', () => {
       const shop = new ShopDialog();
       shop.open(npc('merchant'), merchant(), engine);

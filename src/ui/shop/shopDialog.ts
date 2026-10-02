@@ -1,4 +1,5 @@
 import {
+  Container,
   type Entity,
   type GameEngine,
   type Item,
@@ -160,8 +161,20 @@ export class ShopDialog {
     return this.activeTab === 'buy' ? this.selectedBuyIndex : this.selectedSellIndex;
   }
 
-  private listFor(engine: GameEngine): Item[] {
-    return this.activeTab === 'buy' ? this.getBuyableItems(engine) : this.getSellableItems(engine);
+  /** The open list as rows: identical goods (same kind, name, state and price) share one
+   *  row, so five torches are one line, "×5". A trade takes the row's first item. */
+  private rowsFor(engine: GameEngine, tab = this.activeTab): Item[][] {
+    const items = tab === 'buy' ? this.getBuyableItems(engine) : this.getSellableItems(engine);
+    const rows = new Map<string, Item[]>();
+    for (const item of items) {
+      const price = tab === 'buy' ? getItemBuyPrice(item, engine.worldState, engine.manifest.merchantPricing) : getItemSellPrice(item);
+      // A container holds its own things: it never stacks.
+      const key = item instanceof Container ? `#${item.id}` : [item.definitionId ?? item.name, item.displayName, item.quality, item.identified, price].join('|');
+      const row = rows.get(key);
+      if (row) row.push(item);
+      else rows.set(key, [item]);
+    }
+    return [...rows.values()];
   }
 
   private priceOf(item: Item, engine: GameEngine): number {
@@ -184,7 +197,7 @@ export class ShopDialog {
   }
 
   private moveSelection(step: number, engine: GameEngine): void {
-    const count = this.listFor(engine).length;
+    const count = this.rowsFor(engine).length;
     if (count === 0) return;
     this.select(Math.max(0, Math.min(count - 1, this.selectedIndex + step)));
   }
@@ -197,7 +210,7 @@ export class ShopDialog {
 
   public executeBuy(engine: GameEngine, displayIndex: number): void {
     if (!this.merchant) return;
-    const item = this.getBuyableItems(engine)[displayIndex];
+    const item = this.rowsFor(engine, 'buy')[displayIndex]?.[0];
     if (!item) {
       this.report({ success: false, message: 'That item is no longer available.' });
       return;
@@ -208,20 +221,19 @@ export class ShopDialog {
       type: 'buy_item',
       payload: { merchant: this.merchant, itemIndex: item.id },
     });
-    this.selectedBuyIndex = Math.max(0, Math.min(this.selectedBuyIndex, this.getBuyableItems(engine).length - 1));
+    this.selectedBuyIndex = Math.max(0, Math.min(this.selectedBuyIndex, this.rowsFor(engine, 'buy').length - 1));
     this.report(result);
   }
 
   public executeSell(engine: GameEngine, itemIndex: number): void {
     if (!this.merchant) return;
-    const sellable = this.getSellableItems(engine);
-    const item = sellable[itemIndex];
+    const item = this.rowsFor(engine, 'sell')[itemIndex]?.[0];
     if (!item) return;
     const result = engine.commandBus.dispatch({
       type: 'sell_item',
-      payload: { merchant: this.merchant, itemIndex, item },
+      payload: { merchant: this.merchant, itemIndex: this.getSellableItems(engine).indexOf(item), item },
     });
-    this.selectedSellIndex = Math.max(0, Math.min(this.selectedSellIndex, this.getSellableItems(engine).length - 1));
+    this.selectedSellIndex = Math.max(0, Math.min(this.selectedSellIndex, this.rowsFor(engine, 'sell').length - 1));
     this.report(result);
   }
 
@@ -367,18 +379,18 @@ export class ShopDialog {
   private tradeHtml(engine: GameEngine): string {
     const buyCount = this.getBuyableItems(engine).length;
     const sellCount = this.getSellableItems(engine).length;
-    const items = this.listFor(engine);
+    const rowItems = this.rowsFor(engine);
     const selected = this.selectedIndex;
     const tab = (id: 'buy' | 'sell', label: string, k: string, count: number) =>
       `<button type="button" class="st-subtab" role="tab" aria-selected="${this.activeTab === id}" data-act="tab-${id}">${label} <span class="ui-faint">${count}</span> ${keyChip(k)}</button>`;
 
-    const rows = items
+    const rows = rowItems
       .map(
-        (item, i) => `
+        ([item, ...more], i) => `
         <button type="button" class="bs-row shop-row${i === selected ? ' is-selected' : ''}" role="option" aria-selected="${i === selected}" data-row="${i}">
           <span class="shop-row-key">${i < 9 ? keyChip(String(i + 1)) : ''}</span>
           <canvas class="shop-icon" width="24" height="24" data-item="${i}" aria-hidden="true"></canvas>
-          <span class="bs-name${itemToneClass(item)}">${escapeHtml(item.displayName)}</span>
+          <span class="bs-name${itemToneClass(item)}">${escapeHtml(item.displayName)}${more.length ? ` <span class="ui-faint shop-count">×${more.length + 1}</span>` : ''}</span>
           <span class="ui-num ui-faint">${escapeHtml(formatWeight(item.weight))}</span>
           <span class="ui-num shop-price">${escapeHtml(formatCurrency(this.priceOf(item, engine)))}</span>
         </button>`
@@ -394,7 +406,7 @@ export class ShopDialog {
             ${rows || `<div class="ui-note bs-empty">${empty}</div>`}
           </div>
         </div>
-        ${this.detailHtml(engine, items[selected])}
+        ${this.detailHtml(engine, rowItems[selected]?.[0])}
       </div>`;
   }
 
@@ -426,13 +438,13 @@ export class ShopDialog {
     const portrait = scrim.querySelector<HTMLCanvasElement>('.shop-portrait');
     if (portrait) this.options.drawEntityIcon?.(portrait, npc);
     if (!this.merchant || !this.options.drawItemIcon) return;
-    const items = this.listFor(engine);
+    const rows = this.rowsFor(engine);
     scrim.querySelectorAll<HTMLCanvasElement>('canvas[data-item]').forEach((canvas) => {
-      const item = items[Number(canvas.dataset.item)];
+      const item = rows[Number(canvas.dataset.item)]?.[0];
       if (item) this.options.drawItemIcon!(canvas, item);
     });
     const detail = scrim.querySelector<HTMLCanvasElement>('canvas[data-detail]');
-    const selected = items[this.selectedIndex];
+    const selected = rows[this.selectedIndex]?.[0];
     if (detail && selected) this.options.drawItemIcon(detail, selected);
   }
 

@@ -116,7 +116,20 @@ const usedAllowlist = new Set<string>();
 const engineViolations: { file: string; line: number; id: string; pack: string; text: string }[] = [];
 const presentationViolations: { file: string; line: number; id: string; pack: string; text: string }[] = [];
 
-const engineFiles = sourceFiles(ENGINE_DIR);
+/**
+ * `--engine-file <path>` / `--presentation-file <path>` (repeatable) add a file outside
+ * the tree to the scan as engine or presentation source: the gate's own regression test
+ * plants its violations in a temp directory rather than under src/, where other tests walk.
+ */
+function extraFiles(flag: string): string[] {
+  const out: string[] = [];
+  process.argv.forEach((arg, i) => {
+    if (arg === flag && process.argv[i + 1]) out.push(path.resolve(process.argv[i + 1]));
+  });
+  return out;
+}
+
+const engineFiles = [...sourceFiles(ENGINE_DIR), ...extraFiles('--engine-file')];
 for (const file of engineFiles) {
   const rel = path.relative(ROOT, file).split(path.sep).join('/');
   fs.readFileSync(file, 'utf-8')
@@ -141,7 +154,7 @@ const PRESENTATION_DIRS = [
   path.join(ROOT, 'src', 'rendering'),
   path.join(ROOT, 'src', 'main'),
 ];
-const presentationFiles = PRESENTATION_DIRS.flatMap(sourceFiles);
+const presentationFiles = [...PRESENTATION_DIRS.flatMap(sourceFiles), ...extraFiles('--presentation-file')];
 for (const file of presentationFiles) {
   const rel = path.relative(ROOT, file).split(path.sep).join('/');
   fs.readFileSync(file, 'utf-8')

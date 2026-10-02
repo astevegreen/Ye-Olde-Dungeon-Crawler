@@ -1,23 +1,30 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
 /**
  * Regression test for ARCHITECTURE.md §3 No Engine Creep: check-engine-creep must fail
  * on campaign logic pasted into src/engine/, the pattern dc5de31 slipped past every
  * import-topology gate with (cotw spell IDs and story flags inside GameEngine).
  *
- * Plants a scratch file under src/engine/, asserts the gate fails on it, and always
- * removes it so nothing here is ever committed.
+ * The violations are planted in a temp directory and handed to the gate with
+ * `--engine-file` / `--presentation-file`, never under src/: other tests walk src/engine
+ * (campaignSeparation.test.ts) and would race a file appearing and vanishing there.
  */
 
 const ROOT = process.cwd();
-const SCRATCH_FILE = path.resolve(ROOT, 'src/engine/__scratch_creep_violation__.ts');
+let scratchDir: string;
 
-function runGate(): { status: number; output: string } {
+function runGate(...args: string[]): { status: number; output: string } {
   try {
-    const output = execSync('npx tsx scripts/check-engine-creep.ts', { cwd: ROOT, encoding: 'utf-8', stdio: 'pipe' });
+    const output = execFileSync('npx', ['tsx', 'scripts/check-engine-creep.ts', ...args], {
+      cwd: ROOT,
+      encoding: 'utf-8',
+      stdio: 'pipe',
+      shell: process.platform === 'win32',
+    });
     return { status: 0, output };
   } catch (err) {
     const e = err as { status?: number; stdout?: string; stderr?: string };
@@ -25,24 +32,31 @@ function runGate(): { status: number; output: string } {
   }
 }
 
+function scratch(name: string, lines: string[]): string {
+  const file = path.join(scratchDir, name);
+  fs.writeFileSync(file, lines.join('\n'));
+  return file;
+}
+
 describe('check-engine-creep (ARCHITECTURE.md §3, §7.2)', () => {
-  afterEach(() => {
-    if (fs.existsSync(SCRATCH_FILE)) fs.unlinkSync(SCRATCH_FILE);
+  beforeAll(() => {
+    scratchDir = fs.mkdtempSync(path.join(os.tmpdir(), 'creep-gate-'));
+  });
+
+  afterAll(() => {
+    fs.rmSync(scratchDir, { recursive: true, force: true });
   });
 
   it('fails on a content-pack spell ID in engine source, but not on one named in a comment', () => {
-    fs.writeFileSync(
-      SCRATCH_FILE,
-      [
-        "// Prose may mention 'crimson_ward' without tripping the gate.",
-        'export function scratchCreep(learn: (id: string) => void): void {',
-        "  learn('blood_tap');",
-        '}',
-        '',
-      ].join('\n')
-    );
+    const file = scratch('engineScratch.ts', [
+      "// Prose may mention 'crimson_ward' without tripping the gate.",
+      'export function scratchCreep(learn: (id: string) => void): void {',
+      "  learn('blood_tap');",
+      '}',
+      '',
+    ]);
 
-    const { status, output } = runGate();
+    const { status, output } = runGate('--engine-file', file);
 
     expect(status).not.toBe(0);
     expect(output).toContain("'blood_tap' (declared by cotw)");
@@ -50,18 +64,20 @@ describe('check-engine-creep (ARCHITECTURE.md §3, §7.2)', () => {
   }, 60_000);
 
   it('fails on a content-pack identifier or namespaced literal in presentation source', () => {
-    const scratchUi = path.resolve(ROOT, 'src/ui/__scratch_creep_violation__.ts');
-    try {
-      fs.writeFileSync(
-        scratchUi,
-        "export const testVal = 'cotw:giant_blood';\n"
-      );
-      const { status, output } = runGate();
-      expect(status).not.toBe(0);
-      expect(output).toContain('Found 1 content-pack identifier(s) in presentation source');
-      expect(output).toContain("'cotw:giant_blood'");
-    } finally {
-      if (fs.existsSync(scratchUi)) fs.unlinkSync(scratchUi);
-    }
+    const file = scratch('uiScratch.ts', ["export const testVal = 'cotw:giant_blood';", '']);
+
+    const { status, output } = runGate('--presentation-file', file);
+
+    expect(status).not.toBe(0);
+    expect(output).toContain('Found 1 content-pack identifier(s) in presentation source');
+    expect(output).toContain("'cotw:giant_blood'");
+  }, 60_000);
+
+  it('passes on the tree as it is, scanning the real engine and presentation sources', () => {
+    const { status, output } = runGate();
+
+    expect(status).toBe(0);
+    expect(Number(/Engine source files inspected: (\d+)/.exec(output)?.[1])).toBeGreaterThan(100);
+    expect(Number(/Presentation source files inspected: (\d+)/.exec(output)?.[1])).toBeGreaterThan(50);
   }, 60_000);
 });

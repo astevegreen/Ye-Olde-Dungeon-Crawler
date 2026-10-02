@@ -568,6 +568,7 @@ export class CanvasRenderer {
     cards.set('mode', this.modeHintCard());
     cards.set('aim', this.targetingOverlay.card(this.engine, this.camera, this.cellSize, this.offsetX, this.offsetY, virtualW));
     cards.setGroup('windup', this.intentOverlay.cards(this.engine, this.camera, this.cellSize, this.offsetX, this.offsetY));
+    cards.setGroup('portal', this.portalCards());
     cards.set('hover', hoverShown ? this.tacticalTargetOverlay.card(this.engine, this.camera, this.cellSize, this.offsetX, this.offsetY) : null);
   }
 
@@ -1266,6 +1267,26 @@ export class CanvasRenderer {
   }
 
   /** The open mode's keys as a pill along the bottom of the map; nothing in normal play. */
+  /** A standing label over every portal in sight, so a way out of the run is never missed. */
+  private portalCards(): Record<string, MapCardSpec> {
+    const cards: Record<string, MapCardSpec> = {};
+    const { startX, startY, viewWidthTiles, viewHeightTiles } = this.camera;
+    for (let y = startY; y < startY + viewHeightTiles; y++) {
+      for (let x = startX; x < startX + viewWidthTiles; x++) {
+        const tile = this.engine.map.inBounds(x, y) ? this.engine.map.getTile(x, y) : null;
+        if (tile?.visual !== 'portal' || !this.engine.fov.isVisible(x, y)) continue;
+        const screen = this.camera.worldToScreen(x, y, this.cellSize, this.offsetX, this.offsetY);
+        if (!screen) continue;
+        cards[`${x},${y}`] = {
+          className: 'mc-pill is-portal',
+          place: { tile: { x: screen.x, y: screen.y, size: this.cellSize } },
+          html: `${escapeHtml(tile.name)} <span>· step in</span>`,
+        };
+      }
+    }
+    return cards;
+  }
+
   private modeHintCard(): MapCardSpec | null {
     const hint = this.getModeHint();
     if (!hint) return null;

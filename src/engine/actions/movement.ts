@@ -10,7 +10,7 @@ import { ExecuteChoiceAction } from './choiceAction';
 import type { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
 import { HookDispatcher } from '../hooks/hookDispatcher';
-import { TILES } from '../grid/tile';
+import { TILES, getTileDefinition } from '../grid/tile';
 import { getAltarDefinition, isAltarSpent } from '../magic/altars';
 import { formatMagicMessage } from '../magic/magicConfig';
 
@@ -251,7 +251,9 @@ export class MovementAction implements Action {
         engine.log("You stand upon stairs leading up. Press '<' or [Enter] to ascend.");
       } else if (handlerId === 'quest_victory_portal') {
         engine.log('*** You step into the shimmering victory portal! ***');
-        engine.gameState?.triggerVictory(engine);
+        // The portal ends the run the way the fight did: whichever ending is eligible here.
+        const endingId = engine.gameState?.checkVictoryEligible(engine);
+        engine.gameState?.triggerVictory(engine, undefined, endingId === 'default' ? undefined : endingId);
         const returnPos =
           engine.manifest?.quest?.townReturnPosition ??
           engine.manifest?.town?.playerSpawn ??
@@ -306,10 +308,13 @@ export class MovementAction implements Action {
         }
       }
 
+      // A run that just ended (the victory portal) offers no more choices.
+      const runOver = !!engine.gameState && engine.gameState.runStatus !== 'active';
+
       // Kill-count-gated choice unlocks (ARCHITECTURE.md §3, StoryChoiceTrigger):
       // checked every player move rather than only on a specific tile, since the
       // trigger condition is progress (kills), not location.
-      for (const trigger of engine.manifest?.storyChoiceTriggers ?? []) {
+      for (const trigger of runOver ? [] : engine.manifest?.storyChoiceTriggers ?? []) {
         const kills = engine.compendium.getEntry(trigger.monsterDefinitionId).kills;
         if (trigger.progressStartFlag && kills >= 1 && !engine.getWorldFlag(trigger.progressStartFlag)) {
           engine.setWorldFlag(trigger.progressStartFlag, true);
@@ -338,7 +343,7 @@ export class MovementAction implements Action {
       // (1) matches StoryChoiceTrigger: the condition is progress (attributes), not location;
       // (2) allocateAttribute is a pure mutator with no engine handle and must not gain one;
       // (3) avoids opening a choice modal on top of the still-open level-up modal.
-      if (!choiceTriggered) {
+      if (!choiceTriggered && !runOver) {
         for (const milestone of engine.manifest?.attributeMilestones ?? []) {
           const playerAttr = (this.entity as Player)[milestone.attribute];
           if (typeof playerAttr !== 'number' || playerAttr < milestone.threshold) continue;
@@ -375,6 +380,11 @@ export class MovementAction implements Action {
           const turnsFled = engine.modifyWorldCounter(fleeCounterKey, 1);
           if (turnsFled >= watcher.fleeTurnsRequired) {
             engine.setWorldFlag(watcher.sealedFlag, true);
+            const portal = watcher.portalTileId ? getTileDefinition(watcher.portalTileId) : undefined;
+            if (portal) {
+              engine.map.setTile(boss.x, boss.y, portal);
+              if (watcher.portalMessage) engine.log(watcher.portalMessage);
+            }
             engine.removeEntity(boss);
             engine.log(`${boss.name} flees into the dark, driven off for good!`);
           }

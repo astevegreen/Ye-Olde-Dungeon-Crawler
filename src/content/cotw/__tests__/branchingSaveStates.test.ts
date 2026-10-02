@@ -120,10 +120,9 @@ describe('Branching save-states — Níðhögg’s two endings (real cotwManifes
     engine.handlePlayerAction(new MeleeAttackAction(engine.player, nidhogg));
     expect(engine.compendium.getEntry('nidhogg').kills).toBe(1);
 
-    // Return to town, matching the base game's existing relic-return flow.
-    engine.changeFloor(0);
+    // The ending is taken on floor 50, through the portal where Níðhögg fell.
     const restored = roundTrip(engine);
-    expect(restored.engine.currentFloor).toBe(0);
+    expect(restored.engine.currentFloor).toBe(50);
 
     const eligibleEnding = restored.engine.gameState.checkVictoryEligible(restored.engine);
     expect(eligibleEnding).toBe('ragnarok');
@@ -152,7 +151,6 @@ describe('Branching save-states — Níðhögg’s two endings (real cotwManifes
     expect(engine.getWorldFlag('nidhogg_root_sealed')).toBe(true);
     expect(engine.compendium.getEntry('nidhogg').kills).toBe(0); // never actually killed
 
-    engine.changeFloor(0);
     const restored = roundTrip(engine);
 
     const eligibleEnding = restored.engine.gameState.checkVictoryEligible(restored.engine);
@@ -182,6 +180,67 @@ describe('Branching save-states — Níðhögg’s two endings (real cotwManifes
     expect(engine.scheduler.getEntities()).not.toContain(nidhogg);
   });
 
+  /** Walks the hero onto (x, y) from beside it, and returns the ending the run reached. */
+  function stepIntoPortal(engine: GameEngine, x: number, y: number): string | undefined {
+    let reached: string | undefined;
+    engine.gameState.onStateChanged = (status, summary) => {
+      if (status === 'victorious') reached = summary.endingId;
+    };
+    engine.player.setPosition(x - 1, y);
+    engine.handlePlayerAction(new MovementAction(engine.player, 1, 0));
+    return reached;
+  }
+
+  it('slain: a portal opens where Níðhögg fell, and stepping in reaches Ragnarök', () => {
+    const { engine, player, map } = buildRealEngine(50);
+    const nidhogg = new Monster({
+      id: 'nidhogg-5',
+      name: 'Níðhögg, the Root-Gnawer',
+      definitionId: 'nidhogg',
+      position: { x: player.x + 1, y: player.y },
+      stats: { hp: 1, maxHp: 400, attack: 30, defense: 14 },
+    });
+    map.addEntity(nidhogg);
+    const at = { x: nidhogg.x, y: nidhogg.y };
+    engine.handlePlayerAction(new MeleeAttackAction(player, nidhogg));
+
+    expect(map.getTile(at.x, at.y)?.type).toBe('gateway_valhalla');
+    expect(engine.messages.some((m) => m.includes('Hearth-Tear'))).toBe(false); // no shard here
+
+    // A milestone earned in the last fight waits: the portal ends the run, not a choice.
+    player.intelligence = 20;
+    let offered = false;
+    engine.onChoiceInteract = () => {
+      offered = true;
+    };
+    expect(stepIntoPortal(engine, at.x, at.y)).toBe('ragnarok');
+    expect(engine.gameState.runStatus).toBe('victorious');
+    expect(offered).toBe(false);
+  });
+
+  it('driven off: a path home opens where Níðhögg fled, and stepping in reaches the sealed ending', () => {
+    const { engine, player } = buildRealEngine(50);
+    const nidhogg = new Monster({
+      id: 'nidhogg-6',
+      name: 'Níðhögg, the Root-Gnawer',
+      definitionId: 'nidhogg',
+      position: { x: player.x + 3, y: player.y },
+      stats: { hp: 100, maxHp: 400, attack: 30, defense: 14 },
+      fleeHealthPercent: 0.9,
+      aiState: 'fleeing',
+    });
+    engine.addEntity(nidhogg);
+    let toggle = 1;
+    for (let i = 0; i < 6 && !engine.getWorldFlag('nidhogg_root_sealed'); i++) {
+      engine.handlePlayerAction(new MovementAction(player, 0, toggle));
+      toggle = -toggle;
+    }
+    const at = { x: nidhogg.x, y: nidhogg.y };
+
+    expect(engine.map.getTile(at.x, at.y)?.type).toBe('gateway_home');
+    expect(stepIntoPortal(engine, at.x, at.y)).toBe('sealed');
+  });
+
   it('the two endings are mutually exclusive: sealed does not also satisfy ragnarok', () => {
     const { engine, player, map } = buildRealEngine(50);
     const nidhogg = new Monster({
@@ -197,7 +256,6 @@ describe('Branching save-states — Níðhögg’s two endings (real cotwManifes
     for (let i = 0; i < 6; i++) {
       engine.handlePlayerAction(new MovementAction(player, 0, i % 2 === 0 ? 1 : -1));
     }
-    engine.changeFloor(0);
 
     expect(engine.gameState.checkVictoryEligible(engine)).toBe('sealed');
     expect(engine.getWorldFlag('nidhogg_slain')).toBe(false);

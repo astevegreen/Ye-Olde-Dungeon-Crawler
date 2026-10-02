@@ -56,6 +56,7 @@ import { DiagnosticModal } from './ui/diagnostic-modal';
 import { FeedbackModal } from './ui/feedbackModal';
 import { SagaShareModal } from './ui/sagaShareModal';
 import { GameOverDialog } from './ui/gameOverDialog';
+import { EndingDialog } from './ui/endingDialog';
 import { ContextHelp } from './ui/help/contextHelp';
 import { CommandPalette } from './ui/help/commandPalette';
 import type { SpellbookEntry } from './rendering/targeting-overlay';
@@ -1147,6 +1148,8 @@ window.addEventListener('DOMContentLoaded', () => {
     },
   });
 
+  const endingDialog = new EndingDialog();
+
   function showGameOverModal(status: 'victorious' | 'fallen' | 'active', summary: any): void {
     if (inputHandler) {
       inputHandler.enabled = false;
@@ -1155,12 +1158,24 @@ window.addEventListener('DOMContentLoaded', () => {
     const entry: HallOfFameEntry | null = summary.entry ?? null;
     currentGameOverEntry = entry;
     const won = status === 'victorious';
+    // A named ending is told first, on its own screen; the score screen follows.
+    const ending = won && summary.endingId ? activeEngine?.manifest?.quest?.endings?.[summary.endingId] : undefined;
+    const kicker = entry ? `${entry.heroName} · Level ${entry.level}` : undefined;
+    const showScore = () => showRunSummary(won, entry, ending?.banner, kicker);
+    if (ending?.narrative?.length) {
+      endingDialog.show({ title: ending.title ?? brand.victoryTitle, kicker, paragraphs: ending.narrative }, showScore);
+    } else {
+      showScore();
+    }
+  }
+
+  function showRunSummary(won: boolean, entry: HallOfFameEntry | null, endingBanner: string | undefined, kicker: string | undefined): void {
     const autosave = autosaveManager.hasAutosave() ? autosaveManager.getAutosaveMetadata() : null;
     gameOverDialog.show({
       status: won ? 'victorious' : 'fallen',
       title: won ? brand.victoryTitle : 'Fallen in Battle',
-      kicker: entry ? `${entry.heroName} · Level ${entry.level}` : undefined,
-      banner: won ? brand.victoryBanner : brand.fallenBanner,
+      kicker,
+      banner: won ? endingBanner ?? brand.victoryBanner : brand.fallenBanner,
       epitaph: entry ? Leaderboard.formatEpitaph(entry, brand.xpName) : '',
       score: entry ? `${brand.hallOfFameShortName} score: ${entry.score.toLocaleString()}` : undefined,
       autosaveLabel: autosave ? `Load the autosave (${autosave.profileName ?? 'Hero'}, F${autosave.floor ?? 1})` : undefined,

@@ -9,6 +9,17 @@ import { HEARTH_TEAR_RETURNED_FLAG, RELIC_RECOVERED_FLAG } from './relic';
  * has spoken.
  */
 export const COTW_OBJECTIVES: ObjectiveDefinition[] = [
+  // The run's last step comes first, so it wins over any line still open behind it.
+  {
+    id: 'cotw_objective_portal_ragnarok',
+    text: 'Níðhögg is dead. Step into the split root where it fell.',
+    availableWhenFlag: 'nidhogg_slain',
+  },
+  {
+    id: 'cotw_objective_portal_home',
+    text: 'Níðhögg is driven off. Step onto the path of light where it fled.',
+    availableWhenFlag: 'nidhogg_root_sealed',
+  },
   {
     id: 'cotw_objective_descend',
     text: "Gear up in Bjarnarhaven's shops, then take the stairs down.",

@@ -133,7 +133,13 @@ export const cotwManifest: GameContentManifest = {
   monsterCategories: COTW_MONSTER_CATEGORIES,
   timedEvents: [OATH_TIMED_EVENT, SIPHON_TIMED_EVENT],
   bossFleeResolutions: [
-    { monsterDefinitionId: 'nidhogg', fleeTurnsRequired: 5, sealedFlag: 'nidhogg_root_sealed' },
+    {
+      monsterDefinitionId: 'nidhogg',
+      fleeTurnsRequired: 5,
+      sealedFlag: 'nidhogg_root_sealed',
+      portalTileId: 'gateway_home',
+      portalMessage: 'Where Níðhögg fled, the gnawed root knits closed and a path of light opens toward home. Step onto it to go back to Bjarnarhaven.',
+    },
   ],
   initialWorldState: {
     flags: {},

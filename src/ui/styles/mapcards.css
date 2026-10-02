@@ -81,6 +81,9 @@
 }
 .mc-pill.is-loot { border-color: var(--ui-accent); }
 .mc-pill.is-fixture { color: var(--ui-title); }
+/* A portal's standing label: a way out of the run, never missed. */
+.mc-pill.is-portal { color: var(--ui-title); border-color: var(--ui-accent); box-shadow: 0 0 10px color-mix(in srgb, var(--ui-accent) 60%, transparent); }
+.mc-pill.is-portal span { font-weight: normal; color: var(--ui-text-soft); }
 /* The wind-up banner: the ability a monster is about to land, above the tile it will strike. */
 .mc-pill.is-danger { color: var(--ui-bad); border-color: var(--ui-bad); }
 

@@ -222,6 +222,16 @@
 }
 .go-score { font: bold var(--ui-text-md) var(--ui-font-num); color: var(--ui-accent); }
 
+/* A won run's ending, told before the score screen. */
+.ending-story { max-width: 62ch; margin: 0 auto; }
+.ending-story p {
+  margin: 0 0 var(--ui-space-3);
+  font: var(--ui-text-md) / 1.6 var(--ui-font-body);
+  color: var(--ui-text);
+}
+.ending-story p:first-child::first-letter { font: var(--ui-text-xl) var(--ui-font-display); color: var(--ui-title); }
+.ending-story p:last-child { margin-bottom: 0; }
+
 /* The hall of fame: champions on the left, the chosen one's epitaph on the right. */
 .hall-grid { display: grid; grid-template-columns: minmax(240px, 0.75fr) minmax(0, 1.25fr); gap: var(--ui-space-3); }
 .hall-list { max-height: 300px; overflow-y: auto; padding-right: 2px; }

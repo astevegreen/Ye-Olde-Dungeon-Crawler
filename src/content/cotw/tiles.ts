@@ -37,16 +37,28 @@ export const COTW_TILES: TileDefinition[] = [
   townThing('town_woodpile', 'Woodpile', 'L', 'Split logs stacked for the hearths.'),
   townThing('town_market_stall', 'Market Stall', 'M', 'A market stall under a faded striped awning.'),
   {
+    // Opens where Níðhögg falls: the way into Ragnarök (quest.ts, ending 'ragnarok').
     type: 'gateway_valhalla',
-    name: 'Gateway to Valhalla',
+    name: 'The Split Root',
     passable: true,
     walkable: true,
     transparent: true,
     glyph: '▲',
-    description: 'A divine golden vortex radiating celestial light. Step through to claim eternal victory!',
+    description: 'Where Níðhögg fell, the World Root has split open onto fire and storm. Step through, and the age of the gods ends.',
     interactionHandlerId: 'quest_victory_portal',
     visual: 'portal',
-    landmarkLabel: 'Valhalla Gateway ✨',
+  },
+  {
+    // Opens where Níðhögg is driven off: the way home (index.ts bossFleeResolutions, ending 'sealed').
+    type: 'gateway_home',
+    name: 'The Path of Light',
+    passable: true,
+    walkable: true,
+    transparent: true,
+    glyph: '▲',
+    description: 'The gnawed root has knit closed, and a path of warm light runs up toward Bjarnarhaven. Step through to go home.',
+    interactionHandlerId: 'quest_victory_portal',
+    visual: 'portal',
   },
   {
     type: 'altar_tyr',

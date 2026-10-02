@@ -12,6 +12,8 @@ export interface GameStateSummary {
   entry?: HallOfFameEntry;
   causeOfDeath?: string;
   killerName?: string;
+  /** The quest ending reached, when the run was won through a named ending. */
+  endingId?: string;
 }
 
 export class GameStateManager {
@@ -141,7 +143,7 @@ export class GameStateManager {
     );
 
     if (this.onStateChanged) {
-      this.onStateChanged('victorious', { status: 'victorious', entry });
+      this.onStateChanged('victorious', { status: 'victorious', entry, endingId: ending ? endingId : undefined });
     }
 
     return entry;

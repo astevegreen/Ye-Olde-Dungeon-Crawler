@@ -319,12 +319,15 @@ export interface QuestArcDefinition {
   victoryFloor: number;
   victoryDialogue: string;
   victoryScoreBonus: number;
+  /** Logged when the boss dies, if set (e.g. a relic it drops). */
   relicDropMessage?: string;
   victoryEpitaph?: string;
   championProclamation?: string;
   bossLairTitle?: string;
   bossEntryMessage?: string;
   victoryPortalTileId?: string;
+  /** Logged when the victory portal opens where the boss fell. */
+  victoryPortalMessage?: string;
   townReturnPosition?: Position;
   bossFloorLayout: BossFloorLayoutDefinition;
   floorEncounters: Record<number, FloorEncounterConfig>;
@@ -360,6 +363,12 @@ export interface EndingDefinition {
   victoryEpitaph: string;
   championProclamation?: string;
   victoryScoreBonus?: number;
+  /** Title of the ending's narrative screen, shown before the final score screen. */
+  title?: string;
+  /** The ending told as paragraphs on its narrative screen. No narrative, no screen. */
+  narrative?: string[];
+  /** The final score screen's banner for this ending (defaults to the pack's victory banner). */
+  banner?: string;
 }
 
 /**
@@ -376,6 +385,10 @@ export interface BossFleeResolution {
   monsterDefinitionId: string;
   fleeTurnsRequired: number;
   sealedFlag: string;
+  /** A tile (e.g. a portal) opened where the boss stood when it was driven off. */
+  portalTileId?: string;
+  /** Logged when that tile opens. */
+  portalMessage?: string;
 }
 
 /**

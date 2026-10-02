@@ -129,8 +129,8 @@ export class DeathResolver {
         engine.log(bossDeathMsg);
         const bossSlainFlag = engine.manifest?.quest?.bossSlainFlag;
         if (bossSlainFlag) engine.setWorldFlag(bossSlainFlag, true);
-        const relicMsg = engine.manifest?.quest?.relicDropMessage ?? 'The ancient relic glows brightly amidst the dust! Retrieve it and return to town!';
-        engine.log(relicMsg);
+        const relicMsg = engine.manifest?.quest?.relicDropMessage;
+        if (relicMsg) engine.log(relicMsg);
 
         // Spawn victory portal at boss death coordinate
         const victoryPortalTileId = engine.manifest?.quest?.victoryPortalTileId;
@@ -138,7 +138,10 @@ export class DeathResolver {
           const portalDef = getTileDefinition(victoryPortalTileId);
           if (portalDef) {
             engine.map.setTile(victim.x, victim.y, portalDef);
-            engine.log('*** A shimmering VICTORY PORTAL opens where the boss fell! Step through to claim victory! ***');
+            engine.log(
+              engine.manifest?.quest?.victoryPortalMessage ??
+                '*** A shimmering VICTORY PORTAL opens where the boss fell! Step through to claim victory! ***'
+            );
           }
         }
 

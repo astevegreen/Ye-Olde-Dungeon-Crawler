@@ -45,11 +45,11 @@ export const COTW_QUEST: QuestArcDefinition = {
   victoryNpcId: 'npc-olaf',
   victoryFloor: 0,
   victoryPortalTileId: 'gateway_valhalla',
+  victoryPortalMessage: 'Where Níðhögg fell, the World Root splits open onto fire and storm. Step into the split root to end the age.',
   townReturnPosition: TOWN_RETURN_POSITION,
   victoryDialogue:
     '✦✦✦ The saga is told and retold in Bjarnarhaven’s halls: the Hearth-Tear reclaimed, and Níðhögg’s root answered at last. ✦✦✦',
   victoryScoreBonus: 8000,
-  relicDropMessage: 'A shard of the Hearth-Tear glows amidst the dust! It hums with the memory of a stolen sun.',
   victoryEpitaph: 'Hero of Járnviðr - Ended the Root-Gnawer',
   championProclamation: 'Elder Olaf proclaims you Champion of Bjarnarhaven, blood of Thrym and slayer of legend!',
   bossLairTitle: '*** FLOOR 50: THE ROTTING ROOT OF YGGDRASIL ***',
@@ -88,27 +88,42 @@ export const COTW_QUEST: QuestArcDefinition = {
     45: { monsterIds: ['jotun_champion', 'shadow_fiend', 'bark_husk_miner'], minMonsters: 8, maxMonsters: 13 },
   },
   /**
-   * Two named endings sharing the same Níðhögg encounter (ARCHITECTURE.md §3).
-   * Both require returning to town and speaking with the victory NPC, exactly like
-   * the legacy single-ending flow — only the underlying condition and text differ.
+   * Two named endings sharing the same Níðhögg encounter (ARCHITECTURE.md §3). The fight
+   * decides the ending: slain, a portal to Ragnarök opens where it fell; driven off, a
+   * path home opens where it fled (index.ts `bossFleeResolutions`). Stepping into either
+   * on floor 50 ends the run with its narrative screen, then the score screen.
    */
   endings: {
     ragnarok: {
       id: 'ragnarok',
       requiredMonsterKillId: 'nidhogg',
-      victoryDialogue:
-        '✦✦✦ RAGNARÖK STIRS! Níðhögg falls, and the World Root splits. Fate is no longer patient — you have set it in motion. ✦✦✦',
+      victoryFloor: 50,
+      title: 'Ragnarök',
+      narrative: [
+        'You step through the split root, and the world beyond it is already burning. Níðhögg is dead, and the tree it gnawed for an age gives way all at once: Yggdrasil groans, and the nine worlds feel it.',
+        'In Midgard the winter that was promised comes early. Heimdall’s horn sounds over the mountains, the wolf slips its chain, and the gods ride out to a battle the skalds always said would come. Fate was patient. You were not.',
+        'Bjarnarhaven remembers you as the hero who ended the Root-Gnawer, and the one who ended the age with it. Whether that is praise, no one living can yet say.',
+      ],
+      banner: 'The wyrm is dead, and the age of the gods is ending.',
+      victoryDialogue: 'Níðhögg falls, and the World Root splits. Fate is no longer patient: you have set Ragnarök in motion.',
       victoryEpitaph: 'Ended Níðhögg, and with it, an age of Midgard.',
-      championProclamation: 'Elder Olaf falls silent at your saga’s weight, then proclaims you Champion — and harbinger.',
+      championProclamation: 'Far above, Elder Olaf feels the ground shudder and names you Champion, and harbinger.',
       victoryScoreBonus: 9000,
     },
     sealed: {
       id: 'sealed',
       requiredFlag: 'nidhogg_root_sealed',
-      victoryDialogue:
-        '✦✦✦ The root is sealed, not severed. Níðhögg withdraws, wounded but alive — the World Tree holds, and Ragnarök waits a little longer. ✦✦✦',
+      victoryFloor: 50,
+      title: 'The Root Sealed',
+      narrative: [
+        'You follow the path of light up out of the Heartwood. Behind you the gnawed root knits closed, and somewhere below Níðhögg licks its wounds in the dark, alive and beaten.',
+        'Bjarnarhaven’s hearths burn warm again. The snow comes in its season and goes in its season, and the children who were born this year will grow old under a tree that still stands.',
+        'Ragnarök waits, as it always has. But it waits a little longer because of you, and in the long hall the skalds begin a saga that ends with a hero coming home.',
+      ],
+      banner: 'The root holds, and Bjarnarhaven sleeps warm.',
+      victoryDialogue: 'The root is sealed, not severed. Níðhögg withdraws, wounded but alive: the World Tree holds, and Ragnarök waits a little longer.',
       victoryEpitaph: 'Drove Níðhögg from the root of Yggdrasil.',
-      championProclamation: 'Elder Olaf proclaims you Champion of Bjarnarhaven — and the world’s quiet reprieve.',
+      championProclamation: 'Elder Olaf proclaims you Champion of Bjarnarhaven, and the world’s quiet reprieve.',
       victoryScoreBonus: 7000,
     },
   },

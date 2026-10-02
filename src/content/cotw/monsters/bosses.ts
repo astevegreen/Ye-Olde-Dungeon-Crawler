@@ -31,6 +31,8 @@ export const BOSS_MONSTERS: MonsterDefinition[] = [
       { spellId: 'lightning_bolt' },
       { spellId: 'firebolt' },
     ],
+    // Placed once, in the Chariot Forge on floor 25 (vaults.ts); the only Hearth-Tear.
+    placedOnly: true,
     fleeHealthPercent: 0.0,
     xpValue: 1200,
     tags: ['construct', 'boss', 'miniboss'],

@@ -40,6 +40,12 @@ describe('Dungeon Spawner - Tiering & Population', () => {
       expect(selected).toBeNull();
     });
 
+    it('never draws a placedOnly definition', () => {
+      const guardian: MonsterDefinition = { ...BESTIARY.ogre, id: 'forge_guardian', minFloor: 1, placedOnly: true };
+
+      expect(selectDungeonMonsterDefinition([guardian], 30, () => 0.5)).toBeNull();
+    });
+
     it('filters candidates to only those with minFloor <= currentFloor', () => {
       const prng = new Mulberry32(777);
       // On floor 1, only Tier 1 monsters (giant_rat, kobold) should be eligible

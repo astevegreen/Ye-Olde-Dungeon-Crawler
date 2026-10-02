@@ -170,11 +170,12 @@ export function scaleMonsterStats(
 
 /**
  * Whether a definition may be drawn by selectDungeonMonsterDefinition on the given floor:
- * non-boss and unlocked (minFloor <= currentFloor).
+ * non-boss, not `placedOnly`, and unlocked (minFloor <= currentFloor).
  */
 export function isEligibleDungeonMonster(def: MonsterDefinition, currentFloor: number): boolean {
   return (
     !def.id.toLowerCase().includes('boss') &&
+    !def.placedOnly &&
     (def.minFloor ?? 1) <= currentFloor
   );
 }

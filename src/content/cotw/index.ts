@@ -15,6 +15,8 @@ import {
   COTW_VAULTS,
   DWARVEN_HEARTH_FLOOR,
   DWARVEN_HEARTH_VAULT_ID,
+  CHARIOT_FORGE_VAULT_ID,
+  CHARIOT_FORGE_FLOOR,
   WORLD_BARK_FLOOR,
   WORLD_BARK_VAULT_ID,
 } from './vaults';
@@ -228,6 +230,8 @@ export const cotwManifest: GameContentManifest = {
     },
     // Svartr, the Taproot Matriarch: guaranteed on floor 36 (her fall draws Víðnir's taunt, narrative.ts).
     { floor: 36, vaultId: 'floor36_matriarch_hollow' },
+    // The Sun-Chariot Warden and the Hearth-Tear: the end of Act 1, once, on floor 25.
+    { floor: CHARIOT_FORGE_FLOOR, vaultId: CHARIOT_FORGE_VAULT_ID },
     // Víðnir and the shed fang: guaranteed on floor 45, not a chance draw from the vault pool.
     { floor: 45, vaultId: 'floor45_fang_vault' },
     // Act 1 Campfire Grotto: The Dwarven Hearth Grotto on floor 13

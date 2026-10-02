@@ -7,6 +7,9 @@ export const DWARVEN_HEARTH_FLOOR = 13;
 export const WORLD_BARK_VAULT_ID = 'world_bark_grotto';
 export const WORLD_BARK_FLOOR = 37;
 
+export const CHARIOT_FORGE_VAULT_ID = 'floor25_chariot_forge';
+export const CHARIOT_FORGE_FLOOR = 25;
+
 export const COTW_VAULTS: VaultBlueprint[] = [
   // Zone landmarks (floorLayouts.ts `landmarkVaultIds`): one stamps on every floor of its zone.
   {
@@ -197,6 +200,29 @@ export const COTW_VAULTS: VaultBlueprint[] = [
       '#############',
     ],
     preferredMonsters: ['rotwood_crawler', 'yggdrasil_parasite', 'amber_sap_weeper'],
+  },
+  {
+    // The end of Act 1: the coven's forge, where the Sun-Chariot Warden keeps the stolen
+    // solar core and the Hearth-Tear it was cut from. Placed once, on floor 25 only.
+    id: CHARIOT_FORGE_VAULT_ID,
+    name: 'The Chariot Forge',
+    description:
+      'A forge hall built around the stolen solar core, its anvils glowing with the sun-chariot’s fire, where the Sun-Chariot Warden stands over the Hearth-Tear.',
+    minFloor: CHARIOT_FORGE_FLOOR,
+    maxFloor: CHARIOT_FORGE_FLOOR,
+    scriptedOnly: true,
+    minibossId: 'sun_chariot_warden',
+    layout: [
+      '#############',
+      '#P.~~...~~.P#',
+      '@....P.P....@',
+      '#.~...K...~.#',
+      '#.~.M.C.M.~.#',
+      '@....P.P....@',
+      '#P.~~...~~.P#',
+      '#############',
+    ],
+    preferredMonsters: ['sol_brand_zealot', 'ironwood_troll_wife', 'slag_amorphous'],
   },
   {
     id: 'floor45_fang_vault',

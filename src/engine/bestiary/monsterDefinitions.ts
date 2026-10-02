@@ -77,6 +77,11 @@ export interface MonsterDefinition {
    */
   telegraphedAbility?: MonsterTelegraphedAbility;
   spellCooldown?: number;
+  /**
+   * Never drawn at random (floor population, vault fill, wandering spawns): the
+   * monster appears only where content places it, e.g. a vault's `minibossId`.
+   */
+  placedOnly?: boolean;
   fleeHealthPercent: number;
   xpValue: number;
   lootTable: LootDropRule[];

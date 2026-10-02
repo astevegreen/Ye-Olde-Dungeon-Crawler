@@ -144,6 +144,27 @@ describe('cotw zone layouts', () => {
     }
   });
 
+  it('floor 25 holds exactly one Sun-Chariot Warden, in its forge, reachable from the stairs', () => {
+    for (let seed = 1; seed <= 15; seed++) {
+      const r = DungeonArc.generateFloor(25, seed * 7919, QUEST, cotwManifest);
+      const wardens = r.map
+        .getAllEntities()
+        .filter((e) => e instanceof Monster && e.definitionId === 'sun_chariot_warden');
+      expect(wardens, `seed ${seed}`).toHaveLength(1);
+      expect(path(r.map, r.playerSpawn, { x: wardens[0].x, y: wardens[0].y }), `seed ${seed}`).toBe(true);
+    }
+  });
+
+  it('the Sun-Chariot Warden never turns up at random below its forge', () => {
+    for (const floor of [26, 30, 40, 49]) {
+      for (let seed = 1; seed <= 5; seed++) {
+        const r = DungeonArc.generateFloor(floor, seed * 7919, QUEST, cotwManifest);
+        const warden = r.map.getAllEntities().some((e) => e instanceof Monster && e.definitionId === 'sun_chariot_warden');
+        expect(warden, `floor ${floor} seed ${seed}`).toBe(false);
+      }
+    }
+  });
+
   it('the Heartwood lair: boss on the dais, reachable from the stairs', () => {
     const r = DungeonArc.generateFloor(50, 1, QUEST, cotwManifest);
     expect(r.map.width).toBe(57);

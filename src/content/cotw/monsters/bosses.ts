@@ -51,6 +51,8 @@ export const BOSS_MONSTERS: MonsterDefinition[] = [
     id: 'nidhogg',
     name: 'Níðhögg, the Root-Gnawer',
     minFloor: 50,
+    // The lair holds it (quest.ts bossFloorLayout); never a random draw.
+    placedOnly: true,
     stats: { hp: 400, maxHp: 400, attack: 30, defense: 14 },
     speed: 95,
     aiType: 'caster',

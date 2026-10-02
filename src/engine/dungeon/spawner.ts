@@ -170,21 +170,31 @@ export function scaleMonsterStats(
 
 /**
  * Whether a definition may be drawn by selectDungeonMonsterDefinition on the given floor:
- * non-boss, not `placedOnly`, and unlocked (minFloor <= currentFloor).
+ * not `placedOnly` (bosses, minibosses and other uniques appear only where content places
+ * them), and unlocked (minFloor <= currentFloor).
  */
 export function isEligibleDungeonMonster(def: MonsterDefinition, currentFloor: number): boolean {
-  return (
-    !def.id.toLowerCase().includes('boss') &&
-    !def.placedOnly &&
-    (def.minFloor ?? 1) <= currentFloor
-  );
+  return !def.placedOnly && (def.minFloor ?? 1) <= currentFloor;
+}
+
+/** Floors after unlocking at which a monster's draw weight has fallen to half. */
+const SPAWN_FRESHNESS_FLOORS = 6;
+
+/**
+ * How likely a monster is to be drawn on a floor: 1 the floor it unlocks, easing off over
+ * the next few floors and falling away steeply after (half at SPAWN_FRESHNESS_FLOORS, about
+ * a tenth at twice that). A floor's mix is led by the monsters of its own stretch of the
+ * dungeon, with older ones thinning out, and no one monster takes most of the draws however
+ * few unlock nearby.
+ */
+export function dungeonSpawnWeight(def: MonsterDefinition, currentFloor: number): number {
+  const age = Math.max(0, currentFloor - (def.minFloor ?? 1)) / SPAWN_FRESHNESS_FLOORS;
+  return 1 / (1 + age * age * age);
 }
 
 /**
- * Selects a monster definition from candidates based on floor depth and tiering:
- * - Filters to non-boss candidates where minFloor <= currentFloor
- * - Separates candidates into "recently unlocked" (highest minFloor) and "lower-tier" groups
- * - 75% chance to draw from recently unlocked group, 25% from lower-tier group
+ * Draws a monster definition for a floor from the eligible candidates, weighted by
+ * `dungeonSpawnWeight`. One rng draw per pick.
  */
 export function selectDungeonMonsterDefinition(
   candidates: MonsterDefinition[],
@@ -192,25 +202,15 @@ export function selectDungeonMonsterDefinition(
   rng: () => number
 ): MonsterDefinition | null {
   const eligible = candidates.filter((m) => isEligibleDungeonMonster(m, currentFloor));
+  if (eligible.length === 0) return null;
 
-  if (eligible.length === 0) {
-    return null;
+  const weights = eligible.map((m) => dungeonSpawnWeight(m, currentFloor));
+  let roll = rng() * weights.reduce((sum, w) => sum + w, 0);
+  for (let i = 0; i < eligible.length; i++) {
+    roll -= weights[i];
+    if (roll < 0) return eligible[i];
   }
-
-  const maxMinFloor = Math.max(...eligible.map((m) => m.minFloor ?? 1));
-  const recentGroup = eligible.filter((m) => (m.minFloor ?? 1) === maxMinFloor);
-  const lowerGroup = eligible.filter((m) => (m.minFloor ?? 1) < maxMinFloor);
-
-  if (lowerGroup.length > 0) {
-    // 75% recently unlocked, 25% lower tier
-    if (rng() < 0.75) {
-      return recentGroup[Math.floor(rng() * recentGroup.length)];
-    } else {
-      return lowerGroup[Math.floor(rng() * lowerGroup.length)];
-    }
-  }
-
-  return recentGroup[Math.floor(rng() * recentGroup.length)];
+  return eligible[eligible.length - 1];
 }
 
 /**

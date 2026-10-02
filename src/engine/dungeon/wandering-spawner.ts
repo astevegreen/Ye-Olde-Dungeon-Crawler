@@ -147,11 +147,9 @@ export class WanderingMonsterSpawner {
     const selected = selectDungeonMonsterDefinition(engine.manifest.monsters, engine.currentFloor, rng);
     if (selected) return selected;
 
-    // Fallback: pick any non-boss monster from manifest
+    // Fallback: any monster the manifest doesn't keep for placement, other than the boss
     const bossMonsterId = engine.manifest.quest?.bossMonsterId;
-    const nonBoss = engine.manifest.monsters.filter(
-      (m) => !m.id.toLowerCase().includes('boss') && m.id !== bossMonsterId
-    );
+    const nonBoss = engine.manifest.monsters.filter((m) => !m.placedOnly && m.id !== bossMonsterId);
     if (nonBoss.length > 0) {
       return nonBoss[Math.floor(rng() * nonBoss.length)];
     }

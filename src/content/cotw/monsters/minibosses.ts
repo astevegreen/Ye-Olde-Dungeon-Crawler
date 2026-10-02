@@ -8,6 +8,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
     id: 'miniboss_frost_warden',
     name: 'Gálmr the Frost-Warden',
     minFloor: 5,
+    placedOnly: true, // floor5_rune_vault (vaults.ts)
     stats: { hp: 68, maxHp: 68, attack: 12, defense: 5 },
     speed: 95,
     aiType: 'caster',
@@ -58,6 +59,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
     id: 'miniboss_rot_matriarch',
     name: 'Svartr, the Taproot Matriarch',
     minFloor: 36,
+    placedOnly: true, // floor36_matriarch_hollow (vaults.ts)
     stats: { hp: 180, maxHp: 180, attack: 22, defense: 10 },
     speed: 90,
     aiType: 'caster',
@@ -84,6 +86,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
     id: 'miniboss_tar_abomination',
     name: 'Gloom-Tarr, the Bile-Drinker',
     minFloor: 44,
+    placedOnly: true,
     stats: { hp: 250, maxHp: 250, attack: 25, defense: 14 },
     speed: 85,
     aiType: 'brute',
@@ -108,6 +111,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
     id: 'miniboss_maw_herald',
     name: 'Víðnir, Herald of the Wyrm',
     minFloor: 45,
+    placedOnly: true, // floor45_fang_vault (vaults.ts)
     stats: { hp: 280, maxHp: 280, attack: 26, defense: 12 },
     speed: 100,
     aiType: 'caster',
@@ -151,6 +155,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
     id: 'miniboss_marrow_eater',
     name: 'Sköll of the Void Bone',
     minFloor: 47,
+    placedOnly: true,
     stats: { hp: 290, maxHp: 290, attack: 28, defense: 13 },
     speed: 105,
     aiType: 'melee',

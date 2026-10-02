@@ -5,6 +5,7 @@ import type { MonsterDefinition } from '../../bestiary/monsterDefinitions';
 import { COTW_BESTIARY as BESTIARY, COTW_MONSTERS } from '../../../content/cotw/monsters';
 import {
   selectDungeonMonsterDefinition,
+  dungeonSpawnWeight,
   createScaledMonster,
   populateDungeonFloor,
   scaleMonsterStats,
@@ -33,11 +34,16 @@ describe('Dungeon Spawner - Tiering & Population', () => {
       expect(selected).toBeNull();
     });
 
-    it('filters out boss definitions', () => {
-      const boss: MonsterDefinition = { ...BESTIARY.ogre, id: 'boss_ogre', minFloor: 1 };
+    it('goes by placedOnly, not by what the id says', () => {
+      const named: MonsterDefinition = { ...BESTIARY.ogre, id: 'boss_ogre', minFloor: 1 };
 
-      const selected = selectDungeonMonsterDefinition([boss], 30, () => 0.5);
-      expect(selected).toBeNull();
+      expect(selectDungeonMonsterDefinition([named], 30, () => 0.5)?.id).toBe('boss_ogre');
+    });
+
+    it("never draws cotw's bosses or minibosses: content places them", () => {
+      const bosses = allCandidates.filter((m) => m.tags?.includes('boss'));
+      expect(bosses.length).toBeGreaterThan(5);
+      expect(bosses.every((m) => m.placedOnly)).toBe(true);
     });
 
     it('never draws a placedOnly definition', () => {
@@ -56,29 +62,38 @@ describe('Dungeon Spawner - Tiering & Population', () => {
       }
     });
 
-    it('selects from recently unlocked tier when rng < 0.75, and lower tier when rng >= 0.75', () => {
-      // On floor 6, unlocked monsters include:
-      // minFloor 1: giant_rat, kobold
-      // minFloor 2: goblin
-      // minFloor 5: skeleton
-      // minFloor 6: kobold_shaman (maxMinFloor = 6)
-      const deterministicRecentRng = () => 0.1; // < 0.75 -> recent group (minFloor 6)
-      const selectedRecent = selectDungeonMonsterDefinition(allCandidates, 6, deterministicRecentRng);
-      expect(selectedRecent).not.toBeNull();
-      expect(selectedRecent!.minFloor).toBe(6);
-      expect(selectedRecent!.id).toBe('kobold_shaman');
-
-      const deterministicLowerRng = () => 0.8; // >= 0.75 -> lower tier group (minFloor < 6)
-      const selectedLower = selectDungeonMonsterDefinition(allCandidates, 6, deterministicLowerRng);
-      expect(selectedLower).not.toBeNull();
-      expect(selectedLower!.minFloor).toBeLessThan(6);
+    it('weighs a monster most on the floor it unlocks, half six floors on, and little after', () => {
+      const at = (minFloor: number, floor: number) => dungeonSpawnWeight({ ...BESTIARY.ogre, minFloor }, floor);
+      expect(at(10, 10)).toBe(1);
+      expect(at(10, 16)).toBeCloseTo(0.5);
+      expect(at(10, 22)).toBeLessThan(0.12);
+      expect(at(10, 13)).toBeGreaterThan(at(10, 16));
     });
 
-    it('selects from recent group if no lower tier exists', () => {
-      const tier1Only = allCandidates.filter((m) => (m.minFloor ?? 1) === 1);
-      const selected = selectDungeonMonsterDefinition(tier1Only, 1, () => 0.99);
-      expect(selected).not.toBeNull();
-      expect(selected!.minFloor ?? 1).toBe(1);
+    it('walks the weights with one draw: the low end of the roll takes the first eligible', () => {
+      const [a, b] = [{ ...BESTIARY.ogre, id: 'a', minFloor: 1 }, { ...BESTIARY.ogre, id: 'b', minFloor: 1 }];
+      expect(selectDungeonMonsterDefinition([a, b], 1, () => 0.1)?.id).toBe('a');
+      expect(selectDungeonMonsterDefinition([a, b], 1, () => 0.9)?.id).toBe('b');
+    });
+
+    // The old draw gave 75% of picks to whichever monsters unlocked last, so a floor where
+    // one monster unlocked alone (22-24, 30-33, 40-42, 46-49) was mostly that monster.
+    it('lets no one monster take a quarter of the draws on any floor past 4', () => {
+      for (let floor = 5; floor <= 49; floor++) {
+        const eligible = allCandidates.filter((m) => !m.placedOnly && (m.minFloor ?? 1) <= floor);
+        const weights = eligible.map((m) => dungeonSpawnWeight(m, floor));
+        const total = weights.reduce((s, w) => s + w, 0);
+        const top = Math.max(...weights) / total;
+        expect(top, `floor ${floor}`).toBeLessThan(0.25);
+      }
+    });
+
+    it("draws mostly from the floor's own stretch: on floor 46, three in four unlocked from 40 on", () => {
+      const floor = 46;
+      const eligible = allCandidates.filter((m) => !m.placedOnly && (m.minFloor ?? 1) <= floor);
+      const total = eligible.reduce((s, m) => s + dungeonSpawnWeight(m, floor), 0);
+      const fresh = eligible.filter((m) => (m.minFloor ?? 1) >= 40).reduce((s, m) => s + dungeonSpawnWeight(m, floor), 0);
+      expect(fresh / total).toBeGreaterThan(0.75);
     });
   });
 

@@ -293,12 +293,14 @@ export interface BossFloorLayoutDefinition {
   stairsUp: Position;
   bossSpawn: Position;
   pillars?: Position[];
+  /** The boss's guards: the pack's monsters, scaled for the floor, each on its own free
+   *  walkable tile. Absent or empty = the engine's four placeholder bodyguards. */
   guards?: Array<{ definitionId: string; position: Position }>;
   /**
    * The lair's tiles, one string per row (`width` x `height`): '#' rock, '.' floor, '~'
    * shallow water, 'X' chasm, 'P' pillar, 'B' iron bars, '+'/"'" doors; `legend` maps other
-   * characters to tile types. Absent = the engine's built-in hall. The boss, its guards and
-   * its hoard are placed around `bossSpawn` either way.
+   * characters to tile types. Absent = the engine's built-in hall. The boss and its hoard
+   * are placed at `bossSpawn` either way.
    */
   layout?: string[];
   legend?: Record<string, string>;

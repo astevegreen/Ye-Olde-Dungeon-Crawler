@@ -9,7 +9,7 @@ import { NPC } from '../entities/npc';
 import type { Player } from '../entities/player';
 import { QUEST_RELIC_ID, MAX_DUNGEON_FLOOR } from './types';
 import { ItemFactory } from '../items/factory';
-import { populateDungeonFloor, scaleMonsterStats } from '../dungeon/spawner';
+import { createScaledMonster, populateDungeonFloor, scaleMonsterStats } from '../dungeon/spawner';
 import { populateDungeonLoot } from '../dungeon/lootSpawner';
 import type { GameContentManifest, QuestArcDefinition, ItemDefinition } from '../types/manifest';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
@@ -397,7 +397,12 @@ export class DungeonArc {
     const boss = this.createBoss(22, 7, floorNumber, bossDef, bossId, manifest?.monsterScaling, difficulty);
     map.addEntity(boss);
 
-    // Spawn Bodyguard Minions flanking the throne
+    if (this.placeDeclaredGuards(map, floorNumber, questArc, manifest, difficulty)) {
+      this.placeHoard(map, 22, 7);
+      return { map, playerSpawn, stairsUp, boss };
+    }
+
+    // No guards declared: the built-in bodyguards flank the throne
     const ogreLeft = new Monster({
       id: 'guard-ogre-1',
       name: 'Boss Guard',
@@ -463,10 +468,7 @@ export class DungeonArc {
     });
     map.addEntity(shamanRight);
 
-    // Boss treasure chest behind the throne
-    map.addItemAt(22, 5, ItemFactory.createIronChest('boss-chest-1'));
-    map.addItemAt(21, 5, ItemFactory.createPlatinumCoins('boss-plat-1', 10)); // 10,000 CP
-    map.addItemAt(23, 5, ItemFactory.createHealthPotion('boss-pot-1'));
+    this.placeHoard(map, 22, 7);
 
     return {
       map,
@@ -477,9 +479,10 @@ export class DungeonArc {
   }
 
   /**
-   * A lair drawn from the quest's `bossFloorLayout.layout`. The boss, its four guards and
-   * its hoard keep the built-in hall's arrangement around `bossSpawn`: brutes five tiles to
-   * either side, casters four across and five below, the hoard two rows above.
+   * A lair drawn from the quest's `bossFloorLayout.layout`. The boss stands at `bossSpawn`
+   * with its hoard two rows above. Its guards are `bossFloorLayout.guards`; with none
+   * declared, the built-in hall's four keep their arrangement around `bossSpawn`: brutes
+   * five tiles to either side, casters four across and five below.
    */
   private static generateAuthoredLair(
     floorNumber: number,
@@ -525,6 +528,11 @@ export class DungeonArc {
     const boss = this.createBoss(bx, by, floorNumber, bossDef, bossId, manifest?.monsterScaling, difficulty);
     map.addEntity(boss);
 
+    if (this.placeDeclaredGuards(map, floorNumber, questArc, manifest, difficulty)) {
+      this.placeHoard(map, bx, by);
+      return { map, playerSpawn, stairsUp, boss };
+    }
+
     const place = (x: number, y: number) => map.inBounds(x, y) && map.isPassable(x, y) && !map.getEntityAt(x, y);
     const guard = (id: string, x: number, y: number, caster: boolean, drop: (itemId: string) => Item) => {
       if (!place(x, y)) return;
@@ -549,11 +557,44 @@ export class DungeonArc {
     guard('guard-shaman-1', bx - 4, by + 5, true, (id) => ItemFactory.createManaPotion(id));
     guard('guard-shaman-2', bx + 4, by + 5, true, (id) => ItemFactory.createHealthPotion(id));
 
-    if (place(bx, by - 2)) map.addItemAt(bx, by - 2, ItemFactory.createIronChest('boss-chest-1'));
-    if (place(bx - 1, by - 2)) map.addItemAt(bx - 1, by - 2, ItemFactory.createPlatinumCoins('boss-plat-1', 10));
-    if (place(bx + 1, by - 2)) map.addItemAt(bx + 1, by - 2, ItemFactory.createHealthPotion('boss-pot-1'));
+    this.placeHoard(map, bx, by);
 
     return { map, playerSpawn, stairsUp, boss };
+  }
+
+  /**
+   * The quest's own lair guards (`bossFloorLayout.guards`), each the pack's monster scaled
+   * for the floor like any other, on a free walkable tile (a guard whose spot is rock,
+   * chasm or taken is left out). False when the quest declares none, so the caller places
+   * the built-in bodyguards instead.
+   */
+  private static placeDeclaredGuards(
+    map: GameMap,
+    floorNumber: number,
+    questArc?: QuestArcDefinition,
+    manifest?: GameContentManifest,
+    difficulty?: GameDifficulty
+  ): boolean {
+    const guards = questArc?.bossFloorLayout?.guards;
+    if (!guards || guards.length === 0) return false;
+    const catalog = Array.isArray(manifest?.monsters) ? manifest.monsters : [];
+    guards.forEach((g, i) => {
+      const def = catalog.find((m) => m.id === g.definitionId) ?? getMonsterDefinition(g.definitionId);
+      const { x, y } = g.position;
+      if (!def || !map.inBounds(x, y) || !map.isPassable(x, y) || map.getEntityAt(x, y)) return;
+      map.addEntity(
+        createScaledMonster(def, `lair-guard-${i + 1}`, { x, y }, floorNumber, undefined, undefined, manifest?.monsterScaling, difficulty)
+      );
+    });
+    return true;
+  }
+
+  /** The boss's hoard, two rows above it: an iron chest between platinum and a potion. */
+  private static placeHoard(map: GameMap, bx: number, by: number): void {
+    const free = (x: number, y: number) => map.inBounds(x, y) && map.isPassable(x, y);
+    if (free(bx, by - 2)) map.addItemAt(bx, by - 2, ItemFactory.createIronChest('boss-chest-1'));
+    if (free(bx - 1, by - 2)) map.addItemAt(bx - 1, by - 2, ItemFactory.createPlatinumCoins('boss-plat-1', 10)); // 10,000 CP
+    if (free(bx + 1, by - 2)) map.addItemAt(bx + 1, by - 2, ItemFactory.createHealthPotion('boss-pot-1'));
   }
 
   /**

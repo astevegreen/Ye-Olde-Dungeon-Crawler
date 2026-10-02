@@ -191,7 +191,12 @@ describe('cotw zone layouts', () => {
     expect(r.map.getTile(r.stairsUp!.x, r.stairsUp!.y)?.type).toBe('stairs_up');
     expect(r.boss).toBeDefined();
     expect(path(r.map, r.playerSpawn, { x: r.boss!.x, y: r.boss!.y })).toBe(true);
-    const guards = r.map.getAllEntities().filter((e) => e instanceof Monster && e !== r.boss);
+    const guards = r.map.getAllEntities().filter((e): e is Monster => e instanceof Monster && e !== r.boss);
     expect(guards).toHaveLength(4);
+    // The quest's own guards, not the engine's placeholders, scaled for floor 50.
+    expect(guards.map((g) => g.definitionId).sort()).toEqual(['bark_husk_miner', 'bark_husk_miner', 'root_wraith', 'root_wraith']);
+    expect(guards.some((g) => /Boss (Guard|Caster)/.test(g.name))).toBe(false);
+    const wraith = cotwManifest.monsters.find((m) => m.id === 'root_wraith')!;
+    expect(guards.find((g) => g.definitionId === 'root_wraith')!.maxHp).toBeGreaterThan(wraith.stats.maxHp);
   });
 });

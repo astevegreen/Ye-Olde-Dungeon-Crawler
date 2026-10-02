@@ -70,11 +70,13 @@ export const COTW_QUEST: QuestArcDefinition = {
       { x: 35, y: 20 },
       { x: 35, y: 26 },
     ],
+    // Root-Wraiths flank Níðhögg on the dais; the Bark-Husk Miners keep the hollow, clear
+    // of the pit their Battering Charge could throw a hero into.
     guards: [
-      { definitionId: 'root_wraith', position: { x: 19, y: 9 } },
-      { definitionId: 'root_wraith', position: { x: 31, y: 9 } },
-      { definitionId: 'bark_husk_miner', position: { x: 17, y: 16 } },
-      { definitionId: 'bark_husk_miner', position: { x: 33, y: 16 } },
+      { definitionId: 'root_wraith', position: { x: 24, y: 4 } },
+      { definitionId: 'root_wraith', position: { x: 32, y: 4 } },
+      { definitionId: 'bark_husk_miner', position: { x: 20, y: 19 } },
+      { definitionId: 'bark_husk_miner', position: { x: 36, y: 19 } },
     ],
   },
   floorEncounters: {

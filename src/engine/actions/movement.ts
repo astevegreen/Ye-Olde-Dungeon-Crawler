@@ -375,7 +375,7 @@ export class MovementAction implements Action {
           const turnsFled = engine.modifyWorldCounter(fleeCounterKey, 1);
           if (turnsFled >= watcher.fleeTurnsRequired) {
             engine.setWorldFlag(watcher.sealedFlag, true);
-            engine.map.removeEntity(boss);
+            engine.removeEntity(boss);
             engine.log(`${boss.name} flees into the dark, driven off for good!`);
           }
         }

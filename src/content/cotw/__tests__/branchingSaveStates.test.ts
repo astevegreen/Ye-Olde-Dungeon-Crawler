@@ -159,6 +159,29 @@ describe('Branching save-states — Níðhögg’s two endings (real cotwManifes
     expect(eligibleEnding).toBe('sealed');
   });
 
+  it('a driven-off Níðhögg leaves the turn order too, so it acts no more', () => {
+    const { engine, player } = buildRealEngine(50);
+    const nidhogg = new Monster({
+      id: 'nidhogg-4',
+      name: 'Níðhögg, the Root-Gnawer',
+      definitionId: 'nidhogg',
+      position: { x: player.x + 3, y: player.y },
+      stats: { hp: 100, maxHp: 400, attack: 30, defense: 14 },
+      fleeHealthPercent: 0.9,
+      aiState: 'fleeing',
+    });
+    engine.addEntity(nidhogg);
+
+    let toggle = 1;
+    for (let i = 0; i < 6; i++) {
+      engine.handlePlayerAction(new MovementAction(player, 0, toggle));
+      toggle = -toggle;
+    }
+    expect(engine.getWorldFlag('nidhogg_root_sealed')).toBe(true);
+    expect(engine.map.getAllEntities()).not.toContain(nidhogg);
+    expect(engine.scheduler.getEntities()).not.toContain(nidhogg);
+  });
+
   it('the two endings are mutually exclusive: sealed does not also satisfy ragnarok', () => {
     const { engine, player, map } = buildRealEngine(50);
     const nidhogg = new Monster({

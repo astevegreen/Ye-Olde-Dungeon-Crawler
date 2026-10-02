@@ -56,7 +56,8 @@ export class GameOverDialog {
         <div id="game-over-status" class="ui-note" aria-live="polite"></div>`,
       footNote: view.score ? `<span id="game-over-score" class="go-score">${escapeHtml(view.score)}</span>` : '',
       actions: [
-        view.autosaveLabel ? dialogButton('btn-game-over-autosave', view.autosaveLabel, { icon: 'autosave' }) : '',
+        // A death may be undone from the autosave; a victory is final.
+        view.autosaveLabel && view.status !== 'victorious' ? dialogButton('btn-game-over-autosave', view.autosaveLabel, { icon: 'autosave' }) : '',
         dialogButton('btn-game-over-share', 'Share saga', { icon: 'share' }),
         dialogButton('btn-game-over-export', view.exportLabel, { icon: 'save' }),
         dialogButton('btn-game-over-return', 'Return to title', { primary: true }),

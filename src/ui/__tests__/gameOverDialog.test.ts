@@ -90,4 +90,9 @@ describe('GameOverDialog', () => {
     expect(withSave).toContain('btn-game-over-autosave');
     expect(withSave).toContain('Legends score: 1,200');
   });
+
+  it('never offers the autosave after a victory', () => {
+    const won = open(view({ status: 'victorious', autosaveLabel: 'Load the autosave (Ann, F50)' })).html;
+    expect(won).not.toContain('btn-game-over-autosave');
+  });
 });

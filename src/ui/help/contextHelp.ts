@@ -138,7 +138,10 @@ export class ContextHelp {
           title: `${manifest?.town?.name ?? 'Town'} (Floor 0)`,
           contextTag: 'SAFE HAVEN',
           bullets: [
-            ...npcs.map((npc) => ({ key: npc.name, label: TOWN_ROLE_HELP[npc.role] ?? 'Talk by bumping into them' })),
+            ...npcs.map((npc) => {
+              const label = TOWN_ROLE_HELP[npc.role] ?? 'Talk by bumping into them';
+              return { key: npc.name, label: npc.id === manifest?.pactKeeperNpcId ? `${label}; seal or renounce pacts` : label };
+            }),
             { key: 'B', label: 'Open Bestiary' },
             { key: 'Shift+? / Ctrl+K', label: 'Open the command palette' },
           ],

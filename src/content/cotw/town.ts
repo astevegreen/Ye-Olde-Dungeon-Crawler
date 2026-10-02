@@ -132,7 +132,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
       role: 'sage',
       position: { x: 42, y: 25 },
       greeting: 'Greetings, young hero. The ancient runes hold no secrets from me.',
-      dialogText: 'Bring me mysterious items from the dungeon. For a small fee, I shall unveil their true power and runic enchantments.',
+      dialogText: 'Bring me mysterious items from the dungeon. For a small fee, I shall unveil their true power and runic enchantments. And if you would bargain with the deep, swear your pacts here, as the Allfather once pledged at my well.',
     },
     {
       id: 'npc-banker',

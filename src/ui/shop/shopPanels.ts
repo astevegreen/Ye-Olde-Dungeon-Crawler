@@ -39,6 +39,7 @@ export type ShopAction =
   | 'skirmisher'
   | 'teach'
   | 'rune-ranks'
+  | 'pact'
   | 'leave';
 
 /** One service a townsperson offers: its button, its key, and what it costs. */
@@ -51,6 +52,8 @@ export interface ServiceOffer {
   /** Base price in copper: 0 is free; absent means it isn't something you pay for. */
   priceCp?: number;
   disabled?: boolean;
+  /** What the action applies to, e.g. a pact's id. */
+  arg?: string;
 }
 
 /** A town service's panel: a few facts, then its offers. */
@@ -230,8 +233,38 @@ function townspersonPanel(engine: GameEngine, npc: NPC): ServicePanel | null {
   return { heading: 'Local advice', facts: `<div class="ui-note">${escapeHtml(advice)}</div>`, offers: [] };
 }
 
+/**
+ * The pact keeper's offers: seal or renounce each pact, numbered 1-9. A pact holds until
+ * the hero comes back here (`manifest.pactKeeperNpcId`).
+ */
+function pactOffers(engine: GameEngine): ServiceOffer[] {
+  return engine.pacts.getAllPacts().slice(0, 9).map((pact, i) => {
+    const sealed = engine.pacts.isPactActive(pact.id);
+    return {
+      act: 'pact' as const,
+      arg: pact.id,
+      key: String(i + 1),
+      label: `${sealed ? 'Renounce' : 'Seal'} the ${pact.name}`,
+      detail: sealed ? `Sealed. You pay ${pact.curseDescription}; you gain ${pact.rewardDescription}.` : `Cost: ${pact.curseDescription}. Reward: ${pact.rewardDescription}.`,
+    };
+  });
+}
+
+const PACT_NOTE =
+  '<div class="ui-note">A pact makes the dungeon harder and pays more for it. It holds until you come back here to renounce it.</div>';
+
 /** The panel for a townsperson who isn't a merchant; null when they only greet. */
 export function servicePanelFor(engine: GameEngine, npc: NPC): ServicePanel | null {
+  const panel = basePanelFor(engine, npc);
+  if (!engine.manifest?.pactKeeperNpcId || npc.id !== engine.manifest.pactKeeperNpcId) return panel;
+  const offers = pactOffers(engine);
+  if (offers.length === 0) return panel;
+  return panel
+    ? { ...panel, facts: `${panel.facts ?? ''}${PACT_NOTE}`, offers: [...panel.offers, ...offers] }
+    : { heading: 'Pacts', facts: PACT_NOTE, offers };
+}
+
+function basePanelFor(engine: GameEngine, npc: NPC): ServicePanel | null {
   const attunementNpcId = engine.manifest?.runeOfReturn?.attunementNpcId;
   if (attunementNpcId && npc.id === attunementNpcId) return runeSmithPanel(engine);
   switch (npc.role) {
@@ -264,7 +297,7 @@ export function servicePanelHtml(panel: ServicePanel): string {
           <div class="ui-note">${escapeHtml(o.detail)}</div>
         </div>
         <div class="shop-price ui-num">${escapeHtml(priceText(o.priceCp))}</div>
-        <button type="button" class="ui-btn ui-btn--sm" data-act="${o.act}"${o.disabled ? ' disabled' : ''}>${escapeHtml(o.disabled ? 'Unavailable' : 'Choose')} ${keyChip(o.key)}</button>
+        <button type="button" class="ui-btn ui-btn--sm" data-act="${o.act}"${o.arg ? ` data-arg="${escapeHtml(o.arg)}"` : ''}${o.disabled ? ' disabled' : ''}>${escapeHtml(o.disabled ? 'Unavailable' : 'Choose')} ${keyChip(o.key)}</button>
       </div>`
     )
     .join('');

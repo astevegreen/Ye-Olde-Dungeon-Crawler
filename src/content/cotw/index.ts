@@ -89,6 +89,8 @@ export const cotwManifest: GameContentManifest = {
   choices: COTW_CHOICES,
   magic: COTW_MAGIC,
   pacts: COTW_PACTS,
+  // Pacts are sworn with Sage Mimir, as Odin pledged an eye at Mímir's well for wisdom.
+  pactKeeperNpcId: 'npc-sage',
   traps: [
     { type: 'pit', name: 'Hidden Pit', damage: 10, disarmDifficulty: 12 },
     { type: 'arrow', name: 'Tripwire Dart Trap', damage: 8, disarmDifficulty: 14 },

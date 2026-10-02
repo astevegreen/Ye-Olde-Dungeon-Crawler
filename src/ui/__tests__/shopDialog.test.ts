@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type MockInstance } from 'vitest';
-import { GameEngine, GameMap, Item, Merchant, NPC, Player, addCoinsToContainer, type NpcRole } from '../../engine';
+import { GameEngine, GameMap, Item, Merchant, NPC, Player, addCoinsToContainer, type GameContentManifest, type NpcRole } from '../../engine';
+import { COTW_PACTS } from '../../content/cotw/pacts';
 import { ShopDialog } from '../shop/shopDialog';
 import { servicePanelFor, servicePanelHtml, type ShopAction } from '../shop/shopPanels';
 
@@ -123,6 +124,38 @@ describe('ShopDialog', () => {
     expect(dispatch).not.toHaveBeenCalled();
     shop.handleKeyDown(key('a'), engine);
     expect(commandTypes()).toEqual(['sage_advisory']);
+  });
+
+  it('lets only the pact keeper seal and renounce pacts, one number key each', () => {
+    const keeperEngine = new GameEngine({
+      map: new GameMap(20, 20),
+      player: new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } }),
+      floor: 0,
+      manifest: { ...testEngine().manifest, pacts: COTW_PACTS, pactKeeperNpcId: 'npc_sage' } as GameContentManifest,
+    });
+    const keeperDispatch = vi.spyOn(keeperEngine.commandBus, 'dispatch').mockReturnValue({ success: true, message: 'Sealed.' });
+    expect(servicePanelFor(engine, npc('sage'))!.offers.some((o) => o.act === 'pact')).toBe(false);
+
+    const shop = new ShopDialog();
+    shop.open(npc('sage'), null, keeperEngine);
+    expect(html()).toContain('Seal the Pact of the Blood Moon');
+    shop.handleKeyDown(key('2'), keeperEngine);
+    expect(keeperDispatch.mock.calls.map((c) => c[0])).toEqual([{ type: 'pact_toggle', payload: { pactId: COTW_PACTS[1].id } }]);
+  });
+
+  it('seals a pact through the command bus, and renounces it the second time', () => {
+    const keeperEngine = new GameEngine({
+      map: new GameMap(20, 20),
+      player: new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } }),
+      floor: 0,
+      manifest: { ...testEngine().manifest, pacts: COTW_PACTS } as GameContentManifest,
+    });
+    const id = COTW_PACTS[0].id;
+    expect(keeperEngine.commandBus.dispatch({ type: 'pact_toggle', payload: { pactId: id } }).message).toBe(`Sealed: ${COTW_PACTS[0].name}.`);
+    expect(keeperEngine.pacts.isPactActive(id)).toBe(true);
+    expect(keeperEngine.commandBus.dispatch({ type: 'pact_toggle', payload: { pactId: id } }).message).toBe(`Renounced: ${COTW_PACTS[0].name}.`);
+    expect(keeperEngine.pacts.isPactActive(id)).toBe(false);
+    expect(keeperEngine.commandBus.dispatch({ type: 'pact_toggle', payload: { pactId: 'nope' } }).success).toBe(false);
   });
 
   it("opens the bestiary from the sage's B, which the canvas shop read as its Buy tab", () => {

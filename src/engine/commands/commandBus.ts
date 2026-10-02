@@ -332,6 +332,15 @@ export class EngineCommandBus implements GameCommandBus {
         };
       }
 
+      case 'pact_toggle': {
+        const pactId = p.pactId as string;
+        const pact = this.engine.pacts.getPact(pactId);
+        if (!pact) return { success: false, message: 'There is no such pact.' };
+        this.engine.pacts.togglePact(pactId);
+        const sealed = this.engine.pacts.isPactActive(pactId);
+        return { success: true, message: sealed ? `Sealed: ${pact.name}.` : `Renounced: ${pact.name}.` };
+      }
+
       case 'bank_compact': {
         const res = BankService.compactCurrency(this.engine.player, this.engine.manifest.town?.services);
         this.engine.log(res.message);

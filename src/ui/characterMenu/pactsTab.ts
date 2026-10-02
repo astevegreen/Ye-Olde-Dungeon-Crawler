@@ -6,7 +6,9 @@ import { escapeHtml } from '../html';
 
 /**
  * The Pacts tab (ADR-0011): each pact as a card with its cost and its reward, and what the
- * sealed ones add up to. Enter seals or renounces the highlighted pact.
+ * sealed ones add up to. Enter seals or renounces the highlighted pact, unless the pack
+ * names a pact keeper in town (`manifest.pactKeeperNpcId`): then the tab only reports, and
+ * says whom to visit.
  */
 export class PactsTab implements MenuTab {
   public readonly id = 'pacts';
@@ -47,10 +49,19 @@ export class PactsTab implements MenuTab {
     return pacts.find((p) => p.id === this.selectedId) ?? pacts[0];
   }
 
+  /** The town NPC who seals pacts, when the pack names one: then this tab only reports. */
+  private keeper(): { name: string; town?: string } | null {
+    const manifest = this.state?.engine.manifest;
+    const id = manifest?.pactKeeperNpcId;
+    if (!id) return null;
+    const npc = manifest?.town?.npcs?.find((n) => n.id === id);
+    return { name: npc?.name ?? 'the pact keeper', town: manifest?.town?.name };
+  }
+
   /** Seals or renounces the highlighted pact. */
   public toggleSelected(): boolean {
     const pact = this.selected();
-    if (!pact || !this.state) return false;
+    if (!pact || !this.state || this.keeper()) return false;
     this.state.engine.pacts.togglePact(pact.id);
     this.render();
     return true;
@@ -79,7 +90,7 @@ export class PactsTab implements MenuTab {
     const sealed = pact ? this.state!.engine.pacts.isPactActive(pact.id) : false;
     return {
       keys: [{ keys: ['↑', '↓'], label: 'choose' }],
-      actions: pact
+      actions: pact && !this.keeper()
         ? [{ id: 'toggle-pact', label: sealed ? 'Renounce' : 'Seal pact', key: 'Enter', primary: true, run: () => this.toggleSelected() }]
         : [],
     };
@@ -107,7 +118,7 @@ export class PactsTab implements MenuTab {
     this.container.innerHTML = `
       <div class="ui-tabgrid pc-grid">
         <div class="ui-col ui-scroll">
-          <div class="ui-note">A pact makes the dungeon harder and pays more for it. Seal or renounce one at any time.</div>
+          <div class="ui-note">${this.introNote()}</div>
           ${cards || '<div class="ui-card ui-note">There are no pacts to make.</div>'}
         </div>
         <div class="ui-col">${this.renderSummary()}</div>
@@ -127,6 +138,13 @@ export class PactsTab implements MenuTab {
       });
     }
     this.host?.refreshChrome();
+  }
+
+  private introNote(): string {
+    const keeper = this.keeper();
+    if (!keeper) return 'A pact makes the dungeon harder and pays more for it. Seal or renounce one at any time.';
+    const where = keeper.town ? ` in ${escapeHtml(keeper.town)}` : '';
+    return `A pact makes the dungeon harder and pays more for it. Seal or renounce one with <b>${escapeHtml(keeper.name)}</b>${where}; a sealed pact holds until you go back.`;
   }
 
   private renderSummary(): string {

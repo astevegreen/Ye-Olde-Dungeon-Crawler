@@ -136,7 +136,7 @@ export class ShopDialog {
     }
 
     const offer = this.panel(engine)?.offers.find((o) => o.key === letter);
-    if (offer && !offer.disabled) this.run(offer.act, engine);
+    if (offer && !offer.disabled) this.run(offer.act, engine, offer.arg);
     // Every other key is swallowed while the dialog is open.
     return true;
   }
@@ -232,7 +232,7 @@ export class ShopDialog {
   }
 
   /** Runs a button's or key's action. */
-  public run(act: ShopAction, engine: GameEngine): void {
+  public run(act: ShopAction, engine: GameEngine, arg?: string): void {
     const bus = engine.commandBus;
     switch (act) {
       case 'trade':
@@ -282,6 +282,9 @@ export class ShopDialog {
           this.close();
           this.onOpenCompendium();
         }
+        return;
+      case 'pact':
+        if (arg) this.report(bus.dispatch({ type: 'pact_toggle', payload: { pactId: arg } }));
         return;
       case 'rune-ranks':
         if (engine.player?.hasDiscoveredRune && this.onOpenRuneTree) {
@@ -438,7 +441,7 @@ export class ShopDialog {
     scrim.querySelector('#shop-close')?.addEventListener('click', () => this.close());
     scrim.querySelector('#shop-leave')?.addEventListener('click', () => this.close());
     scrim.querySelectorAll<HTMLElement>('[data-act]').forEach((el) => {
-      el.addEventListener('click', () => this.run(el.dataset.act as ShopAction, engine));
+      el.addEventListener('click', () => this.run(el.dataset.act as ShopAction, engine, el.dataset.arg));
     });
     scrim.querySelectorAll<HTMLElement>('[data-row]').forEach((el) => {
       const index = Number(el.dataset.row);

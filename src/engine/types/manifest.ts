@@ -693,6 +693,12 @@ export interface GameContentManifest {
   /** Optional magic systems: mana overflow, grimoire grid, kill rites, altars (`magic/magicConfig.ts`). */
   magic?: import('../magic/magicConfig').MagicSystemConfig;
   pacts?: RunPactDefinition[];
+  /**
+   * The town NPC (by id) who seals and renounces pacts. When set, pacts change only in
+   * that NPC's dialog (the `pact_toggle` command) and the Pacts tab only reports them;
+   * without it the Pacts tab seals and renounces them itself.
+   */
+  pactKeeperNpcId?: string;
   traps?: TrapDefinition[];
   tiles?: TileDefinition[];
   itemAliasPools?: ItemAliasPools;

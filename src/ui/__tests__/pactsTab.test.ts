@@ -58,4 +58,29 @@ describe('PactsTab', () => {
   it('leaves Escape, Tab and the menu keys to the shell', () => {
     for (const code of ['Escape', 'Tab', 'KeyP', 'KeyI']) expect(tab.handleKeyDown(key(code))).toBe(false);
   });
+
+  it('only reports, and names whom to visit, when the pack has a pact keeper in town', () => {
+    const kept = new GameEngine({
+      map: new GameMap(10, 10),
+      player: new Player({ position: { x: 5, y: 5 } }),
+      manifest: {
+        id: 'test', name: 'Test', monsters: [], items: [], spells: [], pacts: COTW_PACTS,
+        pactKeeperNpcId: 'npc-sage',
+        town: { name: 'Bjarnarhaven', npcs: [{ id: 'npc-sage', name: 'Sage Mimir', role: 'sage', position: { x: 1, y: 1 } }] },
+      } as unknown as GameContentManifest,
+    });
+    tab.onActivate({
+      engine: kept,
+      worldState: kept.worldState,
+      player: kept.player,
+      map: kept.map,
+      currentFloor: kept.currentFloor,
+      turnCount: kept.turnCount,
+      manifest: kept.manifest,
+    });
+    expect(el.innerHTML).toContain('with <b>Sage Mimir</b> in Bjarnarhaven');
+    tab.handleKeyDown(key('Enter'));
+    expect(kept.pacts.isPactActive('pact_blood')).toBe(false);
+    expect(tab.footer().actions).toEqual([]);
+  });
 });

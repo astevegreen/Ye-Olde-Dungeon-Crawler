@@ -113,7 +113,7 @@ export class DiagnosticModal implements UIModal {
       document.body.appendChild(this.modal);
 
       const body = document.createElement('div');
-      body.className = 'retro-window-body';
+      body.className = 'ui-dialog-body';
       this.modal.appendChild(body);
 
       this.tabStrip = document.createElement('div');
@@ -302,18 +302,7 @@ export class DiagnosticModal implements UIModal {
     if (!this.tabStrip) return;
     const buttons = this.tabStrip.querySelectorAll<HTMLButtonElement>('[data-tab]');
     buttons.forEach((btn) => {
-      const tab = btn.getAttribute('data-tab');
-      if (tab === this.activeTab) {
-        btn.classList.add('active-tab');
-        btn.style.background = '#e2e8f0';
-        btn.style.color = '#0f172a';
-        btn.style.border = '2px solid #0284c7';
-      } else {
-        btn.classList.remove('active-tab');
-        btn.style.background = '#cbd5e1';
-        btn.style.color = '#334155';
-        btn.style.border = '2px solid #94a3b8';
-      }
+      btn.setAttribute('aria-selected', String(btn.getAttribute('data-tab') === this.activeTab));
     });
   }
 
@@ -324,11 +313,7 @@ export class DiagnosticModal implements UIModal {
     const engine = this.getEngine();
 
     if (!engine) {
-      this.tabContent.innerHTML = `
-        <div style="padding: 20px; text-align: center; color: #94a3b8; font-family: monospace;">
-          <p>⚠️ No active simulation engine loaded.</p>
-        </div>
-      `;
+      this.tabContent.innerHTML = `<div class="diag-empty">No game is running.</div>`;
       return;
     }
 
@@ -368,7 +353,7 @@ export class DiagnosticModal implements UIModal {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `cotw-diagnostics-${Date.now()}.md`;
+    a.download = `diagnostics-${Date.now()}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

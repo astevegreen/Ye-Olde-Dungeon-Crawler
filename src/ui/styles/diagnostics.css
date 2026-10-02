@@ -1,0 +1,90 @@
+/*
+ * The F2 developer diagnostics (src/ui/diagnostic-modal.ts, src/ui/diagnostic/*), in the
+ * one dialog frame: the character menu's tab strip under the head, each tab a column of
+ * cards in a monospace body. Role tokens only (check:ui-palette).
+ */
+
+.diag-dialog { width: 880px; height: min(720px, 100%); }
+.diag-tabs { flex: none; padding: 0 var(--ui-space-3); background: var(--ui-surface-0); border-bottom: 1px solid var(--ui-line-strong); }
+.diag-body { font: var(--ui-text-sm) var(--ui-font-num); }
+.diag-body .ui-card { padding: var(--ui-space-2) var(--ui-space-3); }
+.diag-body .ui-h { margin-bottom: var(--ui-space-2); }
+.diag-body .ui-kv { gap: 3px 12px; }
+.diag-toast { color: var(--ui-good); font-weight: bold; }
+.diag-label { margin: var(--ui-space-2) 0 var(--ui-space-1); }
+
+/* A tab's header line: what it is about, and its state on the right. */
+.diag-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-2) var(--ui-space-3);
+  background: var(--ui-surface-2);
+  border-left: 3px solid var(--ui-info);
+  border-radius: var(--ui-radius);
+}
+.diag-banner.is-good { border-left-color: var(--ui-good); }
+.diag-banner.is-bad { border-left-color: var(--ui-bad); }
+.diag-banner.is-warn { border-left-color: var(--ui-warn); }
+.diag-banner.is-accent { border-left-color: var(--ui-accent); }
+.diag-banner-title { font: bold var(--ui-text-md) var(--ui-font-display); color: var(--ui-title); }
+
+.diag-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--ui-space-3); }
+.diag-row-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-2); }
+
+/* A value colored by what it says. */
+.diag-v.is-good { color: var(--ui-good); }
+.diag-v.is-warn { color: var(--ui-warn); }
+.diag-v.is-bad { color: var(--ui-bad); }
+.diag-v.is-info { color: var(--ui-info); }
+.diag-v.is-mana { color: var(--ui-mana); }
+
+/* A state tag: the floor cleared, an action's result, god mode. */
+.diag-tag {
+  display: inline-block;
+  padding: 0 6px;
+  font: bold var(--ui-text-xs) var(--ui-font-num);
+  line-height: 18px;
+  border: 1px solid var(--ui-line-strong);
+  border-radius: 3px;
+  color: var(--ui-text-muted);
+}
+.diag-tag.is-good { color: var(--ui-good); border-color: var(--ui-good); }
+.diag-tag.is-bad { color: var(--ui-bad); border-color: var(--ui-bad); }
+.diag-tag.is-warn { color: var(--ui-warn); border-color: var(--ui-warn); }
+.diag-tag.is-info { color: var(--ui-info); border-color: var(--ui-info); }
+.diag-tag.is-accent { color: var(--ui-accent); border-color: var(--ui-accent); }
+
+/* A listed thing: a status, a piece of gear, a nearby monster, a domain event. */
+.diag-list { display: flex; flex-direction: column; gap: 3px; }
+.diag-list.is-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--ui-space-1); }
+.diag-list.is-scroll { max-height: 180px; overflow-y: auto; }
+.diag-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--ui-space-2);
+  padding: 3px var(--ui-space-2);
+  background: var(--ui-surface-3);
+  border-left: 2px solid var(--ui-line-strong);
+  border-radius: 2px;
+  overflow-wrap: anywhere;
+}
+.diag-item > * { min-width: 0; }
+.diag-item > .diag-tag { flex: none; }
+.diag-item.is-stack { flex-direction: column; align-items: stretch; }
+.diag-item.is-info { border-left-color: var(--ui-info); }
+.diag-item.is-bad { border-left-color: var(--ui-bad); }
+.diag-item-line { display: flex; justify-content: space-between; gap: var(--ui-space-2); }
+.diag-empty { color: var(--ui-text-faint); font-style: italic; }
+
+/* Spawn pickers: a filter, then every match as a button. */
+.diag-picker { max-height: 130px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: var(--ui-space-1); padding: var(--ui-space-1); }
+.diag-body .ui-input.is-short { width: 64px; }
+.diag-body .ui-input.is-mid { width: 120px; }
+.diag-body .ui-input,
+.diag-body .ui-textarea { padding: 3px var(--ui-space-2); font: var(--ui-text-sm) var(--ui-font-num); }
+.diag-body .ui-textarea { min-height: 54px; }
+.diag-check { display: flex; align-items: center; gap: var(--ui-space-1); cursor: pointer; }

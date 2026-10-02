@@ -99,6 +99,7 @@ import './ui/styles/inventory.css';
 import './ui/styles/icons.css';
 import './ui/styles/mapcards.css';
 import './ui/styles/title.css';
+import './ui/styles/diagnostics.css';
 import { QuickSpellsBar } from './ui/quickSpellsBar';
 import { PotionRow } from './ui/potionRow';
 import { classifyLogLine, CriticalLineTracker } from './ui/logClassifier';

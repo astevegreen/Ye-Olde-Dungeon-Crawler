@@ -458,10 +458,10 @@ describe('DiagnosticModal - Categorized Sub-Menus & Triage Tool', () => {
       modal.setActiveTab('simulation');
 
       const content = mockDoc.getElementById('diagnostic-tab-content')?.textContent ?? '';
-      expect(content).toContain('FLOOR 3');
+      expect(content).toContain('Floor 3');
       expect(content).toContain('30 × 30');
-      expect(content).toContain('Sleeping: 💤 1');
-      expect(content).toContain('Monsters: 1');
+      expect(content).toContain('Sleeping 1');
+      expect(content).toContain('Monsters 1');
     });
 
     it('accurately renders Actor & Combat tab and reflects equipment & status changes', () => {
@@ -471,7 +471,7 @@ describe('DiagnosticModal - Categorized Sub-Menus & Triage Tool', () => {
       let content = mockDoc.getElementById('diagnostic-tab-content')?.textContent ?? '';
       expect(content).toContain('Ragnar');
       expect(content).toContain('50 / 50');
-      expect(content).toContain('Strength (STR): 14');
+      expect(content).toContain('Strength (STR) 14');
 
       // Add a blessed weapon
       const sword = ItemFactory.createBroadsword('hero-blade');

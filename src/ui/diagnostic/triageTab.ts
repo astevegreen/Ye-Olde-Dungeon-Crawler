@@ -11,6 +11,7 @@ import {
 } from '../../engine';
 import type { DiagnosticTabContext } from './types';
 import { copyTextToClipboard } from '../platform';
+import { escapeHtml } from '../html';
 
 type ItemCategory = 'weapon' | 'armor' | 'consumable' | 'magic' | 'misc';
 
@@ -25,10 +26,6 @@ let itemSearchQuery = '';
 let itemCategoryFilter: 'all' | ItemCategory = 'all';
 let monsterSearchQuery = '';
 let stepTurnsVal = 5;
-
-function escapeHtml(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
 
 function categorize(item: Item): ItemCategory {
   if (item instanceof WandItem || item instanceof ScrollItem) return 'magic';
@@ -234,153 +231,92 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
     ? `Checkpoint at turn ${replay.checkpoint.turn} (${escapeHtml(replay.checkpoint.reason)}), ${replay.trail.length} action(s) since`
     : 'No checkpoint yet (taken at the next action)';
 
+  const btn = (id: string, label: string, variant = ''): string =>
+    `<button type="button" id="${id}" class="ui-btn ui-btn--sm${variant ? ` ui-btn--${variant}` : ''}">${label}</button>`;
+
   container.innerHTML = `
-      <div style="display: flex; flex-direction: column; gap: 10px; padding: 10px; font-family: 'Consolas', 'Courier New', monospace; font-size: 11px; background: #090d16; color: #e2e8f0; border: 2px inset #ffffff; flex: 1;">
-
-        <!-- Emergency Correction & Hero Triage -->
-        <div style="background: #1e293b; padding: 8px 10px; border-radius: 4px; border-left: 4px solid #f59e0b;">
-          <div style="color: #fbbf24; font-weight: bold; font-size: 11px; margin-bottom: 6px;">
-            🛠️ Hero Triage &amp; Emergency State-Correction
-          </div>
-          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <button id="btn-triage-clear-lock" class="win-btn ${isLocked ? 'danger-btn' : ''}" style="font-weight: bold; padding: 3px 8px;">
-              🔓 Force Clear Lock ${isLocked ? '(ACTIVE)' : ''}
-            </button>
-            <button id="btn-triage-toggle-god" class="win-btn ${isGodMode ? 'primary-btn' : ''}" style="font-weight: bold; padding: 3px 8px;">
-              🛡️ ${isGodMode ? 'Disable God Mode' : 'Enable God Mode (Invulnerable)'}
-            </button>
-            <button id="btn-triage-heal-mana" class="win-btn" style="font-weight: bold; padding: 3px 8px;">💖 Full Heal &amp; Mana</button>
-            <button id="btn-triage-clear-status" class="win-btn" style="padding: 3px 8px;">✨ Clear Status Afflictions</button>
-            <button id="btn-triage-reveal-map" class="win-btn" style="padding: 3px 8px;">👁️ Reveal Current Floor Map</button>
-            <button id="btn-triage-reveal-secrets" class="win-btn" style="padding: 3px 8px;">🚪 Reveal Traps &amp; Secret Doors</button>
-            <button id="btn-triage-kill-visible" class="win-btn" style="padding: 3px 8px;">💀 Kill Visible Monsters</button>
-            <button id="btn-triage-grant-level" class="win-btn" style="padding: 3px 8px;">⭐ Grant Level (Lv ${p.level})</button>
-            <button id="btn-triage-identify-all" class="win-btn" style="padding: 3px 8px;">🔍 Identify All Carried</button>
-          </div>
-        </div>
-
-        <!-- Simulation Stepper & Floor Teleportation Row -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px;">
-
-          <!-- Simulation Turn Stepper -->
-          <div style="background: #1e293b; padding: 8px 10px; border-radius: 4px; border-left: 4px solid #a855f7; display: flex; flex-direction: column; gap: 6px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-              <div style="color: #c084fc; font-weight: bold; font-size: 11px;">⏱️ Simulation Turn Stepper</div>
-              <div style="color: #94a3b8; font-size: 10px;">Turn: <strong style="color: #f8fafc;">#${engine.turnCount}</strong></div>
-            </div>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-              <button id="btn-triage-step-tick" class="win-btn" style="font-weight: bold; padding: 3px 8px;">⏭️ Step 1 Turn</button>
-              <button id="btn-triage-step-10" class="win-btn" style="padding: 3px 8px;">⏩ Step 10</button>
-              <button id="btn-triage-step-50" class="win-btn" style="padding: 3px 8px;">⏩ Step 50</button>
-              <div style="display: flex; align-items: center; gap: 4px; background: #0f172a; padding: 2px 6px; border: 1px solid #334155; border-radius: 3px;">
-                <span style="color: #94a3b8; font-size: 10px;">Turns:</span>
-                <input id="input-triage-step-turns" type="number" min="1" max="500" value="${stepTurnsVal}" style="width: 38px; background: #1e293b; color: #e2e8f0; border: 1px solid #475569; padding: 1px 4px; font-size: 10px; font-family: monospace;" />
-                <button id="btn-triage-step-custom" class="win-btn" style="padding: 1px 6px; font-size: 10px; font-weight: bold;">Run</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Floor Navigation & Stair Teleportation -->
-          <div style="background: #1e293b; padding: 8px 10px; border-radius: 4px; border-left: 4px solid #38bdf8; display: flex; flex-direction: column; gap: 6px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-              <div style="color: #38bdf8; font-weight: bold; font-size: 11px;">🗺️ Floor Navigation &amp; Stairs</div>
-              <div style="color: #94a3b8; font-size: 10px;">Current: <strong style="color: #f8fafc;">Floor ${currentFloorLabel}</strong></div>
-            </div>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-              <button id="btn-triage-prev-floor" class="win-btn" style="padding: 3px 8px; font-weight: bold;">⏮️ Floor -1</button>
-              <button id="btn-triage-next-floor" class="win-btn" style="padding: 3px 8px; font-weight: bold;">⏭️ Floor +1</button>
-              <div style="display: flex; align-items: center; gap: 4px; background: #0f172a; padding: 2px 6px; border: 1px solid #334155; border-radius: 3px;">
-                <span style="color: #94a3b8; font-size: 10px;">Jump:</span>
-                <input id="input-triage-jump-floor" type="number" min="0" max="50" value="${nextFloorCandidate}" style="width: 38px; background: #1e293b; color: #e2e8f0; border: 1px solid #475569; padding: 1px 4px; font-size: 10px; font-family: monospace;" />
-                <button id="btn-triage-jump-floor" class="win-btn" style="padding: 1px 6px; font-size: 10px; font-weight: bold;">Go</button>
-              </div>
-              <button id="btn-triage-stairs-down" class="win-btn" style="padding: 3px 8px;">⬇️ Stairs Down (&gt;)</button>
-              <button id="btn-triage-stairs-up" class="win-btn" style="padding: 3px 8px;">⬆️ Stairs Up (&lt;)</button>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Reproduction: RNG state and loading a reported game -->
-        <div style="background: #1e293b; padding: 8px 10px; border-radius: 4px; border-left: 4px solid #22c55e; display: flex; flex-direction: column; gap: 6px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-            <div style="color: #4ade80; font-weight: bold; font-size: 11px;">🔁 Reproduction</div>
-            <div id="triage-replay-status" style="color: #94a3b8; font-size: 10px;">${replayStatus}</div>
-          </div>
-          <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-            <span style="color: #94a3b8; font-size: 10px;">PRNG state:</span>
-            <input id="input-triage-prng" type="number" value="${engine.prng.getState()}" style="width: 110px; background: #0f172a; color: #e2e8f0; border: 1px solid #475569; padding: 1px 4px; font-size: 10px; font-family: monospace;" />
-            <button id="btn-triage-set-prng" class="win-btn" style="padding: 1px 6px; font-size: 10px; font-weight: bold;">Set</button>
-          </div>
-          <textarea id="input-triage-report" placeholder="Paste a bug report (copied Markdown or .json), a replay block, or a save file..." style="width: 100%; box-sizing: border-box; height: 54px; background: #0f172a; color: #e2e8f0; border: 1px solid #475569; font-size: 10px; font-family: monospace;"></textarea>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; color: #cbd5e1; font-size: 10px;">
-              <input type="checkbox" id="check-triage-replay" checked /> Replay recorded actions after loading
-            </label>
-            <button id="btn-triage-load-report" class="win-btn primary-btn" style="padding: 2px 8px; font-size: 10px; font-weight: bold;">📥 Load State From Report</button>
-          </div>
-        </div>
-
-        <!-- Searchable Entity & Item Spawner -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px;">
-
-          <!-- Item Spawns -->
-          <div style="background: #0f172a; padding: 8px 10px; border: 1px solid #334155; border-radius: 4px; display: flex; flex-direction: column; gap: 6px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 4px;">
-              <span style="color: #38bdf8; font-weight: bold;">🧪 Spawn Items &amp; Equipment</span>
-              <span id="badge-item-count" style="color: #94a3b8; font-size: 10px;"></span>
-            </div>
-            <div style="display: flex; gap: 4px; align-items: center;">
-              <input id="input-item-search" placeholder="Filter items..." value="${escapeHtml(itemSearchQuery)}" style="flex: 1; background: #1e293b; color: #e2e8f0; border: 1px solid #475569; padding: 2px 6px; font-size: 10px; font-family: monospace; border-radius: 2px;" />
-            </div>
-            <div id="item-category-pills" style="display: flex; gap: 3px; flex-wrap: wrap;">
-              <!-- Rendered via updateItemPills -->
-            </div>
-            <div id="container-item-list" style="max-height: 120px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: #090d16; border: 1px inset #334155; border-radius: 2px;">
-              <!-- Populated by updateItemList -->
-            </div>
-          </div>
-
-          <!-- Monster Spawns -->
-          <div style="background: #0f172a; padding: 8px 10px; border: 1px solid #334155; border-radius: 4px; display: flex; flex-direction: column; gap: 6px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 4px;">
-              <span style="color: #38bdf8; font-weight: bold;">👾 Spawn Monsters (Adjacent)</span>
-              <span id="badge-monster-count" style="color: #94a3b8; font-size: 10px;"></span>
-            </div>
-            <div style="display: flex; gap: 4px; align-items: center;">
-              <input id="input-monster-search" placeholder="Filter monsters..." value="${escapeHtml(monsterSearchQuery)}" style="flex: 1; background: #1e293b; color: #e2e8f0; border: 1px solid #475569; padding: 2px 6px; font-size: 10px; font-family: monospace; border-radius: 2px;" />
-            </div>
-            <div id="container-monster-list" style="max-height: 140px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: #090d16; border: 1px inset #334155; border-radius: 2px;">
-              <!-- Populated by updateMonsterList -->
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Telemetry Export & Feedback Tools -->
-        <div style="background: #0f172a; padding: 10px; border: 1px solid #334155; border-radius: 4px;">
-          <div style="color: #38bdf8; font-weight: bold; margin-bottom: 6px; border-bottom: 1px solid #1e293b; padding-bottom: 2px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-            <span>📋 Telemetry Report &amp; Feedback Tools</span>
-            <button id="btn-diag-open-feedback" class="win-btn primary-btn" style="padding: 2px 8px; font-size: 10px; font-weight: bold; background: #0284c7; color: white;">
-              💬 Open Feedback / Bug Reporter
-            </button>
-          </div>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-            <button id="btn-diag-copy" class="win-btn primary-btn" style="font-weight: bold; padding: 4px 10px;">📋 Copy Diagnostics</button>
-            <button id="btn-diag-download" class="win-btn" style="padding: 4px 10px;">💾 Download .md</button>
-            <button id="btn-diag-clear" class="win-btn danger-btn" style="padding: 4px 10px;">Clear Log Buffer</button>
-            <button id="btn-diag-refresh" class="win-btn" style="padding: 4px 10px;">🔄 Refresh Telemetry</button>
-          </div>
-
-          <!-- Archived Logs Sub-section -->
-          <div id="diag-crash-logs-container" style="margin-top: 8px; border-top: 1px dashed #334155; padding-top: 6px; display: none;">
-            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: bold;">📜 Archived Crash Logs in Local Storage:</div>
-            <div id="diag-crash-logs-list" style="display: flex; flex-direction: column; gap: 4px; max-height: 90px; overflow-y: auto;"></div>
-          </div>
-        </div>
-
+    <div class="ui-card">
+      <div class="ui-h">Hero triage</div>
+      <div class="diag-row-wrap">
+        ${btn('btn-triage-clear-lock', `Force clear lock${isLocked ? ' (locked)' : ''}`, isLocked ? 'danger' : '')}
+        ${btn('btn-triage-toggle-god', isGodMode ? 'Disable god mode' : 'Enable god mode', isGodMode ? 'primary' : '')}
+        ${btn('btn-triage-heal-mana', 'Full heal and mana')}
+        ${btn('btn-triage-clear-status', 'Clear conditions')}
+        ${btn('btn-triage-reveal-map', 'Reveal floor map')}
+        ${btn('btn-triage-reveal-secrets', 'Reveal traps and secret doors')}
+        ${btn('btn-triage-kill-visible', 'Kill visible monsters')}
+        ${btn('btn-triage-grant-level', `Grant a level (now ${p.level})`)}
+        ${btn('btn-triage-identify-all', 'Identify everything carried')}
       </div>
-    `;
+    </div>
+
+    <div class="diag-grid">
+      <div class="ui-card">
+        <div class="ui-h">Turns <small>turn ${engine.turnCount}</small></div>
+        <div class="diag-row-wrap">
+          ${btn('btn-triage-step-tick', 'Step 1')}
+          ${btn('btn-triage-step-10', 'Step 10')}
+          ${btn('btn-triage-step-50', 'Step 50')}
+          <input id="input-triage-step-turns" class="ui-input is-short" type="number" min="1" max="500" value="${stepTurnsVal}" aria-label="Turns to step" />
+          ${btn('btn-triage-step-custom', 'Run')}
+        </div>
+      </div>
+      <div class="ui-card">
+        <div class="ui-h">Floors <small>on floor ${currentFloorLabel}</small></div>
+        <div class="diag-row-wrap">
+          ${btn('btn-triage-prev-floor', 'Floor −1')}
+          ${btn('btn-triage-next-floor', 'Floor +1')}
+          <input id="input-triage-jump-floor" class="ui-input is-short" type="number" min="0" max="50" value="${nextFloorCandidate}" aria-label="Floor to jump to" />
+          ${btn('btn-triage-jump-floor', 'Go')}
+          ${btn('btn-triage-stairs-down', 'To stairs down')}
+          ${btn('btn-triage-stairs-up', 'To stairs up')}
+        </div>
+      </div>
+    </div>
+
+    <div class="ui-card">
+      <div class="ui-h">Reproduction <small id="triage-replay-status">${replayStatus}</small></div>
+      <div class="diag-row-wrap">
+        <span class="ui-muted">PRNG state</span>
+        <input id="input-triage-prng" class="ui-input is-mid" type="number" value="${engine.prng.getState()}" aria-label="PRNG state" />
+        ${btn('btn-triage-set-prng', 'Set')}
+      </div>
+      <textarea id="input-triage-report" class="ui-textarea" placeholder="Paste a bug report (copied Markdown or .json), a replay block, or a save file..."></textarea>
+      <div class="diag-row-wrap">
+        <label class="diag-check"><input type="checkbox" id="check-triage-replay" checked /> Replay the recorded actions after loading</label>
+        ${btn('btn-triage-load-report', 'Load state from report', 'primary')}
+      </div>
+    </div>
+
+    <div class="diag-grid">
+      <div class="ui-card">
+        <div class="ui-h">Spawn items <small id="badge-item-count"></small></div>
+        <input id="input-item-search" class="ui-input" placeholder="Filter items..." value="${escapeHtml(itemSearchQuery)}" />
+        <div id="item-category-pills" class="diag-row-wrap"></div>
+        <div id="container-item-list" class="ui-inset diag-picker"></div>
+      </div>
+      <div class="ui-card">
+        <div class="ui-h">Spawn monsters <small id="badge-monster-count"></small></div>
+        <input id="input-monster-search" class="ui-input" placeholder="Filter monsters..." value="${escapeHtml(monsterSearchQuery)}" />
+        <div id="container-monster-list" class="ui-inset diag-picker"></div>
+      </div>
+    </div>
+
+    <div class="ui-card">
+      <div class="ui-h">Report and feedback</div>
+      <div class="diag-row-wrap">
+        ${btn('btn-diag-copy', 'Copy diagnostics', 'primary')}
+        ${btn('btn-diag-download', 'Download .md')}
+        ${btn('btn-diag-clear', 'Clear log buffer', 'danger')}
+        ${btn('btn-diag-refresh', 'Refresh')}
+        ${btn('btn-diag-open-feedback', 'Open feedback and bug report')}
+      </div>
+      <div id="diag-crash-logs-container" hidden>
+        <div class="ui-dialog-label diag-label">Archived crash logs in local storage</div>
+        <div id="diag-crash-logs-list" class="diag-list is-scroll"></div>
+      </div>
+    </div>`;
+
 
   // --- Dynamic Item Catalog & Filtering ---
   const itemPillsContainer = container.querySelector<HTMLElement>('#item-category-pills');
@@ -402,10 +338,7 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
     itemPillsContainer.innerHTML = categories
       .map((c) => {
         const active = itemCategoryFilter === c.id;
-        const style = active
-          ? 'background: #0284c7; color: white; font-weight: bold; border: 1px solid #38bdf8;'
-          : 'background: #1e293b; color: #94a3b8; border: 1px solid #334155;';
-        return `<button class="win-btn btn-item-filter-pill" data-cat="${c.id}" style="padding: 1px 6px; font-size: 9px; ${style}">${c.label}</button>`;
+        return `<button type="button" class="ui-btn ui-btn--sm${active ? ' ui-btn--primary' : ''} btn-item-filter-pill" data-cat="${c.id}" aria-pressed="${active}">${c.label}</button>`;
       })
       .join('');
 
@@ -435,14 +368,14 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
     }
 
     if (filtered.length === 0) {
-      itemListContainer.innerHTML = '<div style="color: #64748b; font-size: 10px; padding: 4px;">No matching items found.</div>';
+      itemListContainer.innerHTML = '<div class="diag-empty">No matching items.</div>';
       return;
     }
 
     itemListContainer.innerHTML = filtered
       .map(
         (it) =>
-          `<button class="win-btn btn-spawn-item" data-item-id="${escapeHtml(it.id)}" style="padding: 2px 6px; font-size: 10px;">+ ${escapeHtml(it.name)}</button>`
+          `<button type="button" class="ui-btn ui-btn--sm btn-spawn-item" data-item-id="${escapeHtml(it.id)}">+ ${escapeHtml(it.name)}</button>`
       )
       .join('');
 
@@ -483,14 +416,14 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
     }
 
     if (filtered.length === 0) {
-      monsterListContainer.innerHTML = '<div style="color: #64748b; font-size: 10px; padding: 4px;">No matching monsters found.</div>';
+      monsterListContainer.innerHTML = '<div class="diag-empty">No matching monsters.</div>';
       return;
     }
 
     monsterListContainer.innerHTML = filtered
       .map(
         (m) =>
-          `<button class="win-btn btn-spawn-monster" data-mob="${escapeHtml(m.id)}" style="padding: 2px 6px; font-size: 10px;">+ ${escapeHtml(m.name)}</button>`
+          `<button type="button" class="ui-btn ui-btn--sm btn-spawn-monster" data-mob="${escapeHtml(m.id)}">+ ${escapeHtml(m.name)}</button>`
       )
       .join('');
 
@@ -677,13 +610,13 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
       .listFlightLogs()
       .then((logs) => {
         if (logs.length > 0 && logsContainer && logsList) {
-          logsContainer.style.display = 'block';
+          logsContainer.hidden = false;
           logsList.innerHTML = logs
             .map(
               (log) => `
-            <div style="display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 2px 6px; border-radius: 2px;">
-              <span style="color: #f87171; font-family: monospace; font-size: 10px;">${escapeHtml(log)}</span>
-              <button class="win-btn btn-copy-archived-log" data-log="${escapeHtml(log)}" style="padding: 1px 6px; font-size: 9px;">📋 Copy</button>
+            <div class="diag-item is-bad">
+              <span class="diag-v is-bad">${escapeHtml(log)}</span>
+              <button type="button" class="ui-btn ui-btn--sm btn-copy-archived-log" data-log="${escapeHtml(log)}">Copy</button>
             </div>
           `
             )

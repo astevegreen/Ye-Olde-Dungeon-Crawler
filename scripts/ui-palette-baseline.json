@@ -1,7 +1,6 @@
 {
-  "total": 393,
+  "total": 152,
   "files": {
-    "index.html": 12,
     "src/main.ts": 2,
     "src/rendering/atlas/sprite-atlas.ts": 4,
     "src/rendering/canvas-renderer.ts": 64,
@@ -12,11 +11,6 @@
     "src/rendering/radialMenu.ts": 2,
     "src/rendering/targeting-overlay.ts": 12,
     "src/ui/console/consoleModel.ts": 1,
-    "src/ui/diagnostic-modal.ts": 7,
-    "src/ui/diagnostic/actorTab.ts": 62,
-    "src/ui/diagnostic/pipelineTab.ts": 37,
-    "src/ui/diagnostic/simulationTab.ts": 48,
-    "src/ui/diagnostic/triageTab.ts": 75,
     "src/ui/sidebar/sidebarModel.ts": 6,
     "src/ui/styles/base.css": 6,
     "src/ui/styles/layout.css": 19,

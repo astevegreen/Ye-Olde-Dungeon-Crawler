@@ -232,43 +232,29 @@
         </div>
       </div>
 
-      <!-- Windows 3.1 / Developer Diagnostic Flight Recorder Modal -->
-      <div id="diagnostic-modal" class="retro-window-overlay" style="display: none; z-index: 150;">
-        <div class="retro-window" style="width: 860px; max-height: 92vh; display: flex; flex-direction: column;">
-          <div class="retro-titlebar">
-            <div class="retro-titlebar-title">
-              <span>🛠️</span>
-              <span>Developer Diagnostic Sub-Menus</span>
-            </div>
-            <button id="btn-diag-close-title" class="win-btn win-btn-sm" style="padding: 0 5px; font-weight: bold;">✕</button>
+      <!-- Developer diagnostics (F2; src/ui/diagnostic-modal.ts fills the tabs), in the one dialog frame -->
+      <div id="diagnostic-modal" class="ui-scrim is-system" style="display: none;">
+        <div class="ui-dialog diag-dialog" role="dialog" aria-modal="true" aria-labelledby="diagnostic-title">
+          <div class="ui-dialog-head">
+            <div><div class="ui-dialog-kicker">Developer</div><div class="ui-dialog-title" id="diagnostic-title"><i class="ui-icon" data-icon="tools" aria-hidden="true"></i>Diagnostics</div></div>
+            <button type="button" id="btn-diag-close-title" class="cm-close" aria-label="Close" title="Close (Esc)">✕</button>
           </div>
-
-          <div class="retro-window-body" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
-            <!-- Category Tabs -->
-            <div id="diagnostic-tab-strip" style="display: flex; gap: 4px; margin-bottom: 6px; border-bottom: 2px solid #94a3b8; padding-bottom: 4px; flex-wrap: wrap;">
-              <button id="tab-btn-simulation" class="win-btn diag-tab-btn active-tab" data-tab="simulation" style="font-weight: bold; font-size: 11px; padding: 4px 10px;">[1] 🌍 World &amp; Sim</button>
-              <button id="tab-btn-actor" class="win-btn diag-tab-btn" data-tab="actor" style="font-weight: bold; font-size: 11px; padding: 4px 10px;">[2] ⚔️ Actor &amp; Combat</button>
-              <button id="tab-btn-pipeline" class="win-btn diag-tab-btn" data-tab="pipeline" style="font-weight: bold; font-size: 11px; padding: 4px 10px;">[3] ⚡ Pipeline &amp; Input</button>
-              <button id="tab-btn-triage" class="win-btn diag-tab-btn" data-tab="triage" style="font-weight: bold; font-size: 11px; padding: 4px 10px;">[4] 🛠️ Triage &amp; Overrides</button>
+          <div id="diagnostic-tab-strip" class="cm-tablist diag-tabs" role="tablist">
+            <button type="button" id="tab-btn-simulation" class="cm-tab" role="tab" data-tab="simulation"><span class="ui-key">1</span> World</button>
+            <button type="button" id="tab-btn-actor" class="cm-tab" role="tab" data-tab="actor"><span class="ui-key">2</span> Hero</button>
+            <button type="button" id="tab-btn-pipeline" class="cm-tab" role="tab" data-tab="pipeline"><span class="ui-key">3</span> Pipeline</button>
+            <button type="button" id="tab-btn-triage" class="cm-tab" role="tab" data-tab="triage"><span class="ui-key">4</span> Triage</button>
+          </div>
+          <div id="diagnostic-tab-content" class="ui-dialog-body diag-body"></div>
+          <div class="ui-dialog-foot">
+            <div class="ui-dialog-hint">
+              <span class="cm-hint"><span class="ui-key">1–4</span> tabs</span>
+              <span class="cm-hint"><span class="ui-key">Tab</span> next tab</span>
+              <span class="cm-hint"><span class="ui-key">Esc</span><span class="ui-key">F2</span> close</span>
             </div>
-
-            <!-- Dynamic Tab Content Pane -->
-            <div id="diagnostic-tab-content" style="flex: 1; min-height: 320px; max-height: 56vh; display: flex; flex-direction: column; overflow-y: auto;">
-              <!-- Tab content populated by DiagnosticModal -->
-            </div>
-
-            <!-- Hidden / Expandable Raw Pre Report for backwards compatibility & downloads -->
-            <pre id="diagnostic-report-text" style="display: none;"></pre>
-
-            <!-- Bottom Navigation Bar & Actions -->
-            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; flex-wrap: wrap; gap: 8px; border-top: 1px solid #cbd5e1; margin-top: 4px;">
-              <div style="font-size: 11px; color: #64748b; font-family: monospace;">
-                Shortcuts: <kbd style="background:#e2e8f0; padding:1px 4px; border:1px solid #94a3b8;">1-4</kbd> Tabs | <kbd style="background:#e2e8f0; padding:1px 4px; border:1px solid #94a3b8;">Tab</kbd> Cycle | <kbd style="background:#e2e8f0; padding:1px 4px; border:1px solid #94a3b8;">Esc</kbd> / <kbd style="background:#e2e8f0; padding:1px 4px; border:1px solid #94a3b8;">F2</kbd> Close
-              </div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span id="diagnostic-toast" style="font-size: 11px; color: #15803d; font-weight: bold; display: none;">Action completed</span>
-                <button id="btn-diag-close" class="win-btn" style="min-width: 70px;">Close</button>
-              </div>
+            <div class="ui-dialog-actions">
+              <span id="diagnostic-toast" class="diag-toast" style="display: none;"></span>
+              <button type="button" id="btn-diag-close" class="ui-btn">Close</button>
             </div>
           </div>
         </div>

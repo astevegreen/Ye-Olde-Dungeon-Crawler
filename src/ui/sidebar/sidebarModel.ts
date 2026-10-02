@@ -4,6 +4,7 @@ import {
   getTileDefinition,
   getTimedEventCountdowns,
   parseCoinItem,
+  statusDisplayName,
   type GameEngine,
   type Item,
 } from '../../engine';
@@ -106,15 +107,10 @@ export function getConditions(engine: GameEngine): Condition[] {
 
   for (const eff of p.statusManager.getAll()) {
     const def = engine.manifest?.statusEffects?.find((s) => s.id === eff.type);
-    let label = def?.name ?? eff.type.replace(/_/g, ' ');
-    let color = def?.hudColor ?? BUILT_IN_STATUS_COLORS[eff.type] ?? 'var(--ui-info)';
-    if (eff.type === 'rune_of_return_channel') {
-      label = 'Channeling rune';
-      color = 'var(--ui-info)';
-    }
+    const color = eff.type === 'rune_of_return_channel' ? 'var(--ui-info)' : def?.hudColor ?? BUILT_IN_STATUS_COLORS[eff.type] ?? 'var(--ui-info)';
     conditions.push({
       key: `status:${eff.type}`,
-      label: label.charAt(0).toUpperCase() + label.slice(1),
+      label: statusDisplayName(engine.manifest, eff.type),
       color,
       turns: isAmbientDuration(eff.duration) ? null : eff.duration,
       detail: def?.damagePerTick ? `−${def.damagePerTick} HP each turn` : undefined,

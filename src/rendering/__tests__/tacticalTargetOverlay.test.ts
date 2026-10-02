@@ -52,6 +52,15 @@ describe('TacticalTargetOverlay', () => {
     expect(html).not.toMatch(/#[0-9a-f]{3,6}\b|rgba?\(/i);
   });
 
+  it("names the monster's conditions as the pack does, not by id", () => {
+    const ogre = new Monster({ id: 'o', name: 'Ogre', position: { x: 1, y: 1 }, stats: { hp: 25, maxHp: 50, attack: 5, defense: 1 } });
+    ogre.statusManager.applyStatus('giant_blood', 5);
+    ogre.statusManager.applyStatus('sensory_masked', 5);
+    const html = targetCardHtml(ogre, { statusEffects: [{ id: 'giant_blood', name: "Giant's Blood" }] } as GameEngine['manifest']);
+    expect(html).toContain("Giant's Blood, Sensory masked");
+    expect(html).not.toContain('giant_blood');
+  });
+
   it('cards an ally as one: the shield, not the attack icon, and no wind-up warning', () => {
     const hound = new Monster({ id: 'h', name: 'Hound', position: { x: 1, y: 1 }, stats: { hp: 10, maxHp: 20, attack: 3, defense: 1 }, faction: 'player' });
     hound.intent = { type: 'windup', abilityName: 'Lunge' } as Monster['intent'];

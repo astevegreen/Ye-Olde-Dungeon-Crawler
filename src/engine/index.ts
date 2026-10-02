@@ -129,6 +129,7 @@ export * from './inspect/inspector';
 export * from './status/types';
 export * from './status/statusManager';
 export * from './status/statusHandlers';
+export * from './status/statusName';
 
 // Bestiary
 export * from './bestiary/monsterDefinitions';

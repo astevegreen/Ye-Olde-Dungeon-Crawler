@@ -85,7 +85,7 @@ describe('Look / Inspect Mode & Tile Inspector', () => {
     expect(inspection.entity?.hp).toBe(35);
     expect(inspection.entity?.maxHp).toBe(50);
     expect(inspection.entity?.speedTier).toBe('Slow'); // 75 speed
-    expect(inspection.entity?.statusEffects).toContain('slow (3t)');
+    expect(inspection.entity?.statusEffects).toContain('Slow (3 turns)');
     expect(inspection.entity?.intent?.type).toBe('windup');
     expect(inspection.entity?.intent?.abilityName).toBe('Crushing Club Slam');
   });

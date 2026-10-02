@@ -16,6 +16,7 @@ import {
   getTotalRuneMasteryPoints,
   rangedDexterityBonus,
   resolveManaTerms,
+  statusDisplayName,
   type ManaTerms,
   type RuneOfReturnTrack,
 } from '../../engine';
@@ -27,6 +28,7 @@ import {
   type PlanKey,
 } from '../attributeAllocationDraft';
 import { resolveBranding } from '../branding';
+import { isAmbientDuration } from '../sidebar/sidebarModel';
 import { escapeHtml, keyChip } from '../html';
 import { formatKg } from '../units';
 
@@ -345,7 +347,10 @@ export class CharacterTab implements MenuTab {
       .map(([element, affinity]) => `${escapeHtml(element)} ${escapeHtml(String(affinity))}`);
     const conditions = player.statusManager
       .getAll()
-      .map((eff) => escapeHtml(eff.duration >= 9999 ? eff.type : `${eff.type} (${eff.duration} turns)`));
+      .map((eff) => {
+        const name = statusDisplayName(this.manifest(), eff.type);
+        return escapeHtml(isAmbientDuration(eff.duration) ? name : `${name} (${eff.duration} turns)`);
+      });
 
     return `
       <div class="ui-card">

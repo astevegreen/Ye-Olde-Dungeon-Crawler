@@ -1,6 +1,7 @@
 import type { GameEngine } from '../engine';
 import { Visibility } from '../fov/types';
 import { Monster } from '../entities/monster';
+import { statusDisplayName } from '../status/statusName';
 import type { TileInspection, InspectedTerrain, InspectedTrap, InspectedEntity, InspectedItem } from './types';
 
 export class TileInspector {
@@ -77,7 +78,11 @@ export class TileInspector {
           ent.statusManager && typeof ent.statusManager.getAll === 'function'
             ? ent.statusManager.getAll()
             : [];
-        const statusEffects = activeEffects.map((s) => `${s.type} (${s.duration}t)`);
+        // Ambient statuses carry a 9999-turn sentinel: not a countdown worth showing.
+        const statusEffects = activeEffects.map((s) => {
+          const name = statusDisplayName(engine.manifest, s.type);
+          return s.duration >= 9000 ? name : `${name} (${s.duration} turns)`;
+        });
 
         entity = {
           name: ent.name,

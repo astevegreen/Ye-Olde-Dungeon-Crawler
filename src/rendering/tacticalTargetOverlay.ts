@@ -1,5 +1,5 @@
 import type { GameEngine, Item, TileDefinition } from '../engine';
-import { Monster, Container } from '../engine';
+import { Monster, Container, statusDisplayName } from '../engine';
 import type { Camera } from './camera';
 import type { ThemeTokens } from '../engine';
 import { resolveThemeTokens } from './theme';
@@ -70,7 +70,7 @@ export class TacticalTargetOverlay {
     if (!t) return null;
 
     const monster = this.hoveredMonster(engine, t);
-    if (monster) return { className: 'mc-panel mc-target', place: { dock: 'top-right' }, html: targetCardHtml(monster) };
+    if (monster) return { className: 'mc-panel mc-target', place: { dock: 'top-right' }, html: targetCardHtml(monster, engine.manifest) };
 
     const screen = camera.worldToScreen(t.x, t.y, cellSize, offsetX, offsetY);
     if (!screen) return null;
@@ -147,7 +147,7 @@ function isAlly(monster: Monster): boolean {
  * ally's card has the shield, not the attack icon, says it is at your side, and never
  * warns of its wind-ups; a neutral monster's says it stands aside.
  */
-export function targetCardHtml(monster: Monster): string {
+export function targetCardHtml(monster: Monster, manifest?: GameEngine['manifest']): string {
   const ally = isAlly(monster);
   const pct = monster.maxHp > 0 ? Math.max(0, Math.min(100, Math.round((monster.hp / monster.maxHp) * 100))) : 0;
   const neutral = monster.faction === 'neutral';
@@ -156,7 +156,7 @@ export function targetCardHtml(monster: Monster): string {
     note = `<div class="mc-intent is-warn">${iconHtml('warning')} Winding up an attack</div>`;
   } else {
     const statuses = monster.statusManager?.getAll() ?? [];
-    if (statuses.length > 0) note += `<div class="mc-line mc-status"><span>${escapeHtml(statuses.map((s) => s.type).join(', '))}</span></div>`;
+    if (statuses.length > 0) note += `<div class="mc-line mc-status"><span>${escapeHtml(statuses.map((s) => statusDisplayName(manifest, s.type)).join(', '))}</span></div>`;
   }
   return `
     <div class="mc-head"><span class="mc-title">${iconHtml(ally ? 'shield' : neutral ? 'info' : 'attack')} <span>${escapeHtml(monster.name)}</span></span><span class="mc-tag ui-num">${monster.hp} / ${monster.maxHp}</span></div>

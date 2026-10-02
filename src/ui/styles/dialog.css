@@ -273,6 +273,23 @@
 .fh-key { flex: none; max-width: 55%; font: bold var(--ui-text-sm) var(--ui-font-num); color: var(--ui-title); }
 .fh-label { text-align: right; font-size: var(--ui-text-sm); color: var(--ui-text-muted); }
 
+/* The map viewer: floor buttons over the explored floor, drawn into a canvas, and a legend
+   whose swatches are the colors src/rendering/floorMap.ts draws in. */
+.mv-nav { display: flex; align-items: center; gap: var(--ui-space-2); }
+.mv-nav .ui-btn { padding: 3px 10px; font-size: var(--ui-text-sm); }
+.mv-floors { flex: 1; min-width: 0; flex-wrap: wrap; justify-content: center; }
+.mv-canvas { display: block; width: 100%; height: min(420px, 52vh); background: var(--ui-surface-3); image-rendering: pixelated; }
+.mv-unvisited { margin-top: -40px; text-align: center; }
+.mv-legend { display: flex; flex-wrap: wrap; gap: var(--ui-space-1) var(--ui-space-4); font-size: var(--ui-text-xs); color: var(--ui-text-muted); }
+.mv-legend > span { display: inline-flex; align-items: center; gap: var(--ui-space-1); }
+.mv-sw { display: inline-block; width: 10px; height: 10px; border-radius: 1px; }
+.mv-sw.is-floor { background: var(--ui-line-strong); }
+.mv-sw.is-wall { background: var(--ui-surface-2); outline: 1px solid var(--ui-line); }
+.mv-sw.is-stairs { background: var(--ui-gold); }
+.mv-sw.is-door { background: var(--ui-frame); }
+.mv-sw.is-danger { background: var(--ui-bad); }
+.mv-sw.is-you { background: var(--ui-accent); }
+
 /* Load a saved game: a card per autosave and per character save. */
 .slot-list { display: flex; flex-direction: column; gap: var(--ui-space-2); }
 .slot-card { display: flex; align-items: center; gap: var(--ui-space-3); padding: 10px var(--ui-space-3); }

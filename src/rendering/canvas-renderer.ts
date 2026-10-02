@@ -10,6 +10,7 @@ import { TargetingOverlay } from './targeting-overlay';
 import { ShopDialog } from '../ui/shop/shopDialog';
 import { InspectOverlay } from './inspect-overlay';
 import { MapOverlay } from './map-overlay';
+import { drawFloorMap } from './floorMap';
 import { IntentOverlay } from './intentOverlay';
 import { Monster } from '../engine';
 import { SpriteAtlas } from './atlas/sprite-atlas';
@@ -152,10 +153,6 @@ export class CanvasRenderer {
     this.boundClickHandler = (e: MouseEvent) => {
       const { x: clickX, y: clickY } = this.viewport.clientToVirtual(e.clientX, e.clientY);
 
-      if (this.mapOverlay.isOpen) {
-        this.mapOverlay.handleClick(clickX, clickY, this.engine);
-        return;
-      }
 
 
 
@@ -542,9 +539,6 @@ export class CanvasRenderer {
       this.offsetX,
       this.offsetY
     );
-
-    // Explored Dungeon Map Overlay
-    this.mapOverlay.render(ctx, this.engine, virtualW, virtualH);
 
     // Configurable Radial Action Menu
     this.radialMenuOverlay.render(
@@ -1262,9 +1256,6 @@ export class CanvasRenderer {
   }
 
   public getModeHint(): ModeHint | null {
-    if (this.mapOverlay.isOpen) {
-      return { mode: 'Map', tone: 'mode', hints: [{ keys: ['<', '>'], label: 'change floor' }, { keys: ['M', 'Esc'], label: 'close' }] };
-    }
     if (this.inspectOverlay.isOpen) {
       return { mode: 'Look', tone: 'mode', hints: [{ keys: ['Arrows'], label: 'move' }, { keys: ['L', 'Esc'], label: 'close' }] };
     }
@@ -1322,37 +1313,8 @@ export class CanvasRenderer {
    * stairs, visible monsters, and the hero. Sized to the map, one block per tile.
    */
   public drawMinimap(canvas: HTMLCanvasElement): void {
-    const map = this.engine.map;
-    const fov = this.engine.fov;
-    const cell = Math.max(1, Math.floor(Math.min(canvas.width / map.width, canvas.height / map.height)));
-    const ox = Math.floor((canvas.width - map.width * cell) / 2);
-    const oy = Math.floor((canvas.height - map.height * cell) / 2);
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (let y = 0; y < map.height; y++) {
-      for (let x = 0; x < map.width; x++) {
-        if (!fov.isExplored(x, y)) continue;
-        const tile = map.getTile(x, y);
-        if (!tile) continue;
-        const visible = fov.isVisible(x, y);
-        let color: string;
-        if (tile.type === 'stairs_down' || tile.type === 'stairs_up') color = '#facc15';
-        else if (tile.type.startsWith('door')) color = '#b45309';
-        else if (tile.passable) color = visible ? '#56627a' : '#323b4d';
-        else color = visible ? '#1c2230' : '#141925';
-        ctx.fillStyle = color;
-        ctx.fillRect(ox + x * cell, oy + y * cell, cell, cell);
-      }
-    }
-    for (const entity of map.getAllEntities()) {
-      if (!(entity instanceof Monster) || !entity.isAlive() || !fov.isVisible(entity.x, entity.y)) continue;
-      ctx.fillStyle = '#ef4444';
-      ctx.fillRect(ox + entity.x * cell - 1, oy + entity.y * cell - 1, cell + 2, cell + 2);
-    }
-    const p = this.engine.player;
-    ctx.fillStyle = this.theme.hudAccent;
-    ctx.fillRect(ox + p.x * cell - 2, oy + p.y * cell - 2, cell + 4, cell + 4);
+    const { map, fov, player } = this.engine;
+    drawFloorMap(canvas, map, fov, this.theme, { live: true, hero: { x: player.x, y: player.y } });
   }
 
   private renderGroundItems(): void {

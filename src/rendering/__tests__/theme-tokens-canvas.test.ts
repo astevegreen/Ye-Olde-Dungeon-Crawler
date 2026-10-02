@@ -7,7 +7,7 @@ import { Player } from '../../engine';
 import type { SpellDefinition } from '../../engine';
 import { CanvasRenderer } from '../canvas-renderer';
 import { InspectOverlay } from '../inspect-overlay';
-import { MapOverlay } from '../map-overlay';
+import { drawFloorMap } from '../floorMap';
 import { TargetingOverlay } from '../targeting-overlay';
 
 function createMockCanvasContext() {
@@ -243,18 +243,23 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
       expect(ctx.fillRect).toHaveBeenCalled();
     });
 
-    it('renders MapOverlay with themed colors without throwing', () => {
+    it('draws the explored floor (map viewer and minimap) in the pack roles', () => {
       const ctx = createMockCanvasContext();
       const engine = createTestEngine({
         id: 'warcraft-orcs',
         name: 'Warcraft',
         theme: WARCRAFT_THEME_TOKENS,
       });
+      engine.updateFov();
+      const theme = resolveThemeTokens(WARCRAFT_THEME_TOKENS);
+      const canvas = { width: 240, height: 150, getContext: () => ctx } as unknown as HTMLCanvasElement;
+      const fills: string[] = [];
+      (ctx.fillRect as ReturnType<typeof vi.fn>).mockImplementation(() => fills.push(String(ctx.fillStyle)));
 
-      const mapViewer = new MapOverlay();
-      mapViewer.open(engine);
-      expect(() => mapViewer.render(ctx, engine, 960, 600)).not.toThrow();
-      expect(ctx.fillRect).toHaveBeenCalled();
+      drawFloorMap(canvas, engine.map, engine.fov, theme, { live: true, hero: { x: engine.player.x, y: engine.player.y } });
+      expect(fills.length).toBeGreaterThan(0);
+      expect(fills.every((c) => Object.values(theme).includes(c))).toBe(true);
+      expect(fills.at(-1)).toBe(theme.accent);
     });
   });
 });

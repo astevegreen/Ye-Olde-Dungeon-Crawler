@@ -1,22 +1,31 @@
 import type { GameEngine } from '../engine';
-import { fillIconText } from './canvasIcons';
-import type { GameMap } from '../engine';
-import { resolveThemeTokens, uiFont } from './theme';
-import type { ThemeTokens } from '../engine';
-import type { ClickZone } from './types';
+import { resolveThemeTokens } from './theme';
+import { drawFloorMap } from './floorMap';
+import { createDialogScrim, dialogButton, dialogHtml } from '../ui/dialog';
+import { escapeHtml } from '../ui/html';
 
+/** Floor 0 is the pack's town, named as the sidebar names it. */
+const floorName = (engine: GameEngine, f: number): string => (f === 0 ? engine.manifest?.town?.name ?? 'Town' : `Floor ${f}`);
+
+/**
+ * The map viewer (M): every floor the hero has explored, one at a time, in the one dialog
+ * frame (ADR-0011, Phase 7). The floor is drawn into a canvas inside the dialog by
+ * drawFloorMap, the minimap's drawer. While it is open it owns the keyboard: InputHandler
+ * hands it every key (handleKeyDown), so nothing reaches the simulation.
+ */
 export class MapOverlay {
   public isOpen = false;
   public viewedFloor = 1;
-  private clickZones: ClickZone[] = [];
   private onStateChanged?: () => void;
-  private theme?: Required<ThemeTokens>;
+  private engine?: GameEngine;
+  private scrim: HTMLElement | null = null;
 
   constructor(onStateChanged?: () => void) {
     this.onStateChanged = onStateChanged;
   }
 
   public open(engine: GameEngine): void {
+    this.engine = engine;
     this.isOpen = true;
     this.viewedFloor = engine.currentFloor;
     this.notifyStateChanged();
@@ -85,268 +94,83 @@ export class MapOverlay {
     return true;
   }
 
-  public handleClick(clickX: number, clickY: number, _engine: GameEngine): boolean {
-    if (!this.isOpen) return false;
-
-    for (const zone of this.clickZones) {
-      if (
-        clickX >= zone.x &&
-        clickX <= zone.x + zone.width &&
-        clickY >= zone.y &&
-        clickY <= zone.y + zone.height
-      ) {
-        zone.action();
-        return true;
-      }
-    }
-    return false;
-  }
-
   private notifyStateChanged(): void {
+    this.sync();
     if (this.onStateChanged) {
       this.onStateChanged();
     }
   }
 
-  public render(
-    ctx: CanvasRenderingContext2D,
-    engine: GameEngine,
-    canvasW: number,
-    canvasH: number
-  ): void {
-    if (!this.isOpen) return;
+  /** Shows the dialog for the floor on view, or hides it when the map is closed. */
+  private sync(): void {
+    if (typeof document === 'undefined') return;
+    if (!this.isOpen || !this.engine) {
+      if (this.scrim) this.scrim.style.display = 'none';
+      return;
+    }
+    this.scrim ??= createDialogScrim('map-viewer');
+    const scrim = this.scrim;
+    if (!scrim) return;
+    const engine = this.engine;
+    const visited = engine.getVisitedFloors();
+    const idx = visited.indexOf(this.viewedFloor);
+    const canGoUp = idx > 0 || this.viewedFloor > 0;
+    const canGoDown = (idx >= 0 && idx < visited.length - 1) || this.viewedFloor < Math.max(...visited);
+    const here = this.viewedFloor === engine.currentFloor;
+    const map = engine.getFloorMap(this.viewedFloor);
 
-    this.theme = resolveThemeTokens(engine.manifest?.theme);
-    const theme = this.theme;
-    const font = theme.fontFamily ?? '"Courier New", Courier, monospace';
-
-    this.clickZones = [];
-
-    // 1. Semi-transparent backdrop
-    ctx.fillStyle = theme.modalBackdrop;
-    ctx.fillRect(0, 0, canvasW, canvasH);
-
-    // 2. Modal Dimensions
-    const modalW = Math.min(canvasW - 32, 780);
-    const modalH = Math.min(canvasH - 36, 520);
-    const modalX = Math.floor((canvasW - modalW) / 2);
-    const modalY = Math.floor((canvasH - modalH) / 2);
-
-    // Modal Background
-    ctx.fillStyle = theme.modalBg;
-    ctx.fillRect(modalX, modalY, modalW, modalH);
-
-    // Border
-    ctx.strokeStyle = theme.modalBorder;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(modalX + 0.5, modalY + 0.5, modalW - 1, modalH - 1);
-
-    // 3. Titlebar
-    ctx.fillStyle = theme.modalTitlebar;
-    ctx.fillRect(modalX, modalY, modalW, 30);
-    ctx.strokeStyle = theme.cardBorder;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(modalX, modalY + 30.5);
-    ctx.lineTo(modalX + modalW, modalY + 30.5);
-    ctx.stroke();
-
-    ctx.font = uiFont('sm', font, 'bold');
-    ctx.fillStyle = theme.modalTitlebarText;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    // One title: the floor on show, and where the hero is only when that differs.
-    const floorName = (f: number): string => (f === 0 ? 'Town' : `Floor ${f}`);
-    const title =
-      this.viewedFloor === engine.currentFloor
-        ? `MAP · ${floorName(this.viewedFloor).toUpperCase()}`
-        : `MAP · ${floorName(this.viewedFloor).toUpperCase()}  (you are on ${floorName(engine.currentFloor)})`;
-    fillIconText(ctx, [{ icon: 'map' }, ` ${title}`], modalX + 10, modalY + 15);
-
-    // Close button [X]
-    const closeBtnX = modalX + modalW - 26;
-    const closeBtnY = modalY + 5;
-    ctx.fillStyle = '#ef4444';
-    ctx.fillRect(closeBtnX, closeBtnY, 20, 20);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = uiFont('sm', font, 'bold');
-    ctx.textAlign = 'center';
-    ctx.fillText('X', closeBtnX + 10, closeBtnY + 10);
-
-    this.clickZones.push({
-      x: closeBtnX,
-      y: closeBtnY,
-      width: 20,
-      height: 20,
-      action: () => this.close(),
+    const chips = visited
+      .map((f) => `<button type="button" class="st-subtab" data-floor="${f}" aria-selected="${f === this.viewedFloor}">${f === 0 ? escapeHtml(floorName(engine, 0)) : f}</button>`)
+      .join('');
+    scrim.innerHTML = dialogHtml({
+      title: floorName(engine, this.viewedFloor),
+      kicker: here ? 'Map · you are here' : `Map · you are on ${floorName(engine, engine.currentFloor)}`,
+      icon: 'map',
+      closeId: 'btn-map-close',
+      closeTitle: 'Close (M or Esc)',
+      size: 'wide',
+      body: `
+        <div class="mv-nav">
+          ${dialogButton('btn-map-up', 'Up', { key: '<', disabled: !canGoUp })}
+          <div class="st-subtabs mv-floors" role="tablist" aria-label="Visited floors">${chips}</div>
+          ${dialogButton('btn-map-down', 'Down', { key: '>', disabled: !canGoDown })}
+        </div>
+        <canvas id="map-viewer-canvas" class="mv-canvas ui-inset"></canvas>
+        ${map ? '' : '<div class="ui-note mv-unvisited">This floor has not been visited yet.</div>'}
+        <div class="mv-legend">
+          <span><i class="mv-sw is-floor"></i>Floor</span><span><i class="mv-sw is-wall"></i>Wall</span>
+          <span><i class="mv-sw is-stairs"></i>Stairs</span><span><i class="mv-sw is-door"></i>Door</span>
+          <span><i class="mv-sw is-danger"></i>Trap${here ? ', monster' : ''}</span><span><i class="mv-sw is-you"></i>You</span>
+        </div>`,
+      hints: [
+        { keys: ['<', '>'], label: 'change floor' },
+        { keys: ['M', 'Esc'], label: 'close' },
+      ],
     });
+    scrim.style.display = 'flex';
 
-    // 4. Floor Navigation Bar
-    const navY = modalY + 36;
-    const visitedFloors = engine.getVisitedFloors();
-    const canGoUp = visitedFloors.indexOf(this.viewedFloor) > 0 || this.viewedFloor > 0;
-    const canGoDown =
-      visitedFloors.indexOf(this.viewedFloor) < visitedFloors.length - 1 ||
-      this.viewedFloor < Math.max(...visitedFloors);
+    scrim.querySelector('#btn-map-close')?.addEventListener('click', () => this.close());
+    scrim.querySelector('#btn-map-up')?.addEventListener('click', () => this.prevFloor(engine));
+    scrim.querySelector('#btn-map-down')?.addEventListener('click', () => this.nextFloor(engine));
+    scrim.querySelectorAll<HTMLElement>('[data-floor]').forEach((chip) =>
+      chip.addEventListener('click', () => {
+        this.viewedFloor = Number(chip.dataset.floor);
+        this.notifyStateChanged();
+      })
+    );
 
-    // Button [▲ Up Floor]
-    ctx.font = uiFont('xs', font, 'bold');
-    const upBtnW = ctx.measureText('[▲ Up Floor (<)]').width + 16;
-    const upBtnH = 22;
-    const upBtnX = modalX + 14;
-    ctx.fillStyle = canGoUp ? theme.cardBg : theme.modalBg;
-    ctx.fillRect(upBtnX, navY, upBtnW, upBtnH);
-    ctx.strokeStyle = canGoUp ? theme.accent : theme.cardBorder;
-    ctx.strokeRect(upBtnX + 0.5, navY + 0.5, upBtnW - 1, upBtnH - 1);
-    ctx.font = uiFont('xs', font, 'bold');
-    ctx.fillStyle = canGoUp ? theme.hudAccent : theme.textMuted;
-    ctx.textAlign = 'center';
-    ctx.fillText('[▲ Up Floor (<)]', upBtnX + upBtnW / 2, navY + 11);
-
-    if (canGoUp) {
-      this.clickZones.push({
-        x: upBtnX,
-        y: navY,
-        width: upBtnW,
-        height: upBtnH,
-        action: () => this.prevFloor(engine),
+    const canvas = scrim.querySelector<HTMLCanvasElement>('#map-viewer-canvas');
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
+    canvas.height = Math.max(1, Math.floor(canvas.clientHeight * dpr));
+    if (map) {
+      drawFloorMap(canvas, map, engine.getFloorFov(this.viewedFloor), resolveThemeTokens(engine.manifest?.theme), {
+        live: here,
+        traps: true,
+        hero: here ? { x: engine.player.x, y: engine.player.y } : null,
+        maxCell: Math.round(18 * dpr),
       });
     }
-
-    // Visited floors list chips
-    ctx.font = uiFont('xs', font, 'bold');
-    ctx.fillStyle = theme.textMuted;
-    ctx.textAlign = 'center';
-    const chipsText = `Visited Floors: [${visitedFloors.map((f) => (f === this.viewedFloor ? `*${f}*` : `${f}`)).join(', ')}]`;
-    ctx.fillText(chipsText, modalX + Math.floor(modalW / 2), navY + 11);
-
-    // Button [▼ Down Floor]
-    const downBtnW = ctx.measureText('[▼ Down Floor (>)]').width + 16;
-    const downBtnH = 22;
-    const downBtnX = modalX + modalW - downBtnW - 14;
-    ctx.fillStyle = canGoDown ? theme.cardBg : theme.modalBg;
-    ctx.fillRect(downBtnX, navY, downBtnW, downBtnH);
-    ctx.strokeStyle = canGoDown ? theme.accent : theme.cardBorder;
-    ctx.strokeRect(downBtnX + 0.5, navY + 0.5, downBtnW - 1, downBtnH - 1);
-    ctx.fillStyle = canGoDown ? theme.hudAccent : theme.textMuted;
-    ctx.fillText('[▼ Down Floor (>)]', downBtnX + downBtnW / 2, navY + 11);
-
-    if (canGoDown) {
-      this.clickZones.push({
-        x: downBtnX,
-        y: navY,
-        width: downBtnW,
-        height: downBtnH,
-        action: () => this.nextFloor(engine),
-      });
-    }
-
-    // 5. Explored Map Tile Viewport
-    const targetMap: GameMap | undefined = engine.getFloorMap(this.viewedFloor);
-    const targetFov = engine.getFloorFov(this.viewedFloor);
-
-    const mapAreaX = modalX + 14;
-    const mapAreaY = navY + 28;
-    const mapAreaW = modalW - 28;
-    const mapAreaH = modalH - 100;
-
-    // Map canvas viewport backdrop
-    ctx.fillStyle = theme.canvasBg;
-    ctx.fillRect(mapAreaX, mapAreaY, mapAreaW, mapAreaH);
-    ctx.strokeStyle = theme.cardBorder;
-    ctx.strokeRect(mapAreaX + 0.5, mapAreaY + 0.5, mapAreaW - 1, mapAreaH - 1);
-
-    if (!targetMap) {
-      ctx.font = uiFont('sm', font);
-      ctx.fillStyle = theme.textMuted;
-      ctx.textAlign = 'center';
-      ctx.fillText('This floor has not been visited yet.', mapAreaX + mapAreaW / 2, mapAreaY + mapAreaH / 2);
-    } else {
-      const tileSize = Math.max(
-        4,
-        Math.min(
-          18,
-          Math.min(
-            Math.floor((mapAreaW - 16) / targetMap.width),
-            Math.floor((mapAreaH - 16) / targetMap.height)
-          )
-        )
-      );
-
-      const gridPixelW = targetMap.width * tileSize;
-      const gridPixelH = targetMap.height * tileSize;
-      const gridX = mapAreaX + Math.floor((mapAreaW - gridPixelW) / 2);
-      const gridY = mapAreaY + Math.floor((mapAreaH - gridPixelH) / 2);
-
-      // Canvas background base
-      ctx.fillStyle = theme.canvasBg;
-      ctx.fillRect(gridX, gridY, gridPixelW, gridPixelH);
-
-      // Render explored tiles
-      for (let ty = 0; ty < targetMap.height; ty++) {
-        for (let tx = 0; tx < targetMap.width; tx++) {
-          const isExplored = targetFov ? targetFov.isExplored(tx, ty) : false;
-          if (!isExplored) continue;
-
-          const tile = targetMap.getTile(tx, ty);
-          if (!tile) continue;
-
-          let color = '#1e293b';
-          if (tile.type === 'wall') {
-            color = '#475569';
-          } else if (tile.type === 'floor') {
-            color = '#172033';
-          } else if (tile.type === 'door_closed') {
-            color = '#b45309';
-          } else if (tile.type === 'door_open') {
-            color = '#78350f';
-          } else if (tile.type === 'stairs_up') {
-            color = '#facc15';
-          } else if (tile.type === 'stairs_down') {
-            color = '#38bdf8';
-          }
-
-          const trap = targetMap.getTrapAt(tx, ty);
-          if (trap && trap.revealed) {
-            color = '#ef4444';
-          }
-
-          ctx.fillStyle = color;
-          ctx.fillRect(gridX + tx * tileSize, gridY + ty * tileSize, tileSize, tileSize);
-        }
-      }
-
-      // Player current position indicator (if viewing active floor)
-      if (this.viewedFloor === engine.currentFloor) {
-        const px = gridX + engine.player.x * tileSize + tileSize / 2;
-        const py = gridY + engine.player.y * tileSize + tileSize / 2;
-        const radius = Math.max(3, tileSize * 0.75);
-
-        ctx.fillStyle = theme.accent;
-        ctx.beginPath();
-        ctx.arc(px, py, radius, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
-        ctx.fillStyle = '#000000';
-        ctx.font = `bold ${Math.max(8, tileSize - 2)}px monospace`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('@', px, py + 0.5);
-      }
-    }
-
-    // 6. Legend & Navigation Instructions Footer
-    const footerY = modalY + modalH - 24;
-    ctx.font = uiFont('xs', font);
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-
-    ctx.fillStyle = theme.textMuted;
-    fillIconText(ctx, ['LEGEND: [■ Wall]  [· Floor]  [▲ Stairs Up]  [▼ Stairs Down]  [', { icon: 'door' }, 'Door]  [@ You]'], modalX + 14, footerY + 8);
-    // The keys are on the mode hint under the map; the footer keeps only the legend.
   }
 }

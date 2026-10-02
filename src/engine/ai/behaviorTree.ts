@@ -161,7 +161,7 @@ class BruteBehavior implements AiBehaviorStrategy {
           monster,
           { x: player.x, y: player.y },
           'Seismic Ground Slam',
-          `The ${monster.name} lifts its massive arms high, winding up a Seismic Ground Slam!`,
+          `${monster.name} lifts its massive arms high, winding up a Seismic Ground Slam!`,
           {
             targetTiles: dangerTiles,
             pattern: 'cross',
@@ -184,7 +184,7 @@ class BruteBehavior implements AiBehaviorStrategy {
           monster,
           { x: player.x, y: player.y },
           'Battering Charge',
-          `The ${monster.name} lowers its massive shoulders and prepares a Battering Charge!`,
+          `${monster.name} lowers its massive shoulders and prepares a Battering Charge!`,
           {
             targetTiles: dangerTiles,
             pattern: 'line',

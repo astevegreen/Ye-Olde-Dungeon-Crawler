@@ -125,7 +125,7 @@ export class AggressiveMeleeStrategy implements AIStrategy {
           monster,
           { x: player.x, y: player.y },
           'Seismic Ground Slam',
-          `The ${actor.name} lifts its massive arms high, winding up a Seismic Ground Slam!`,
+          `${actor.name} lifts its massive arms high, winding up a Seismic Ground Slam!`,
           {
             targetTiles: dangerTiles,
             pattern: 'cross',
@@ -154,7 +154,7 @@ export class AggressiveMeleeStrategy implements AIStrategy {
         monster,
         { x: player.x, y: player.y },
         'Battering Charge',
-        `The ${actor.name} lowers its massive shoulders and prepares a Battering Charge!`,
+        `${actor.name} lowers its massive shoulders and prepares a Battering Charge!`,
         {
           targetTiles: dangerTiles,
           pattern: 'line',
@@ -268,7 +268,7 @@ export class KitingRangedStrategy implements AIStrategy {
         monster,
         { x: player.x, y: player.y },
         'Piercing Snipe',
-        `The ${actor.name} draws an immense bowstring taut, aiming a Piercing Snipe!`,
+        `${actor.name} draws an immense bowstring taut, aiming a Piercing Snipe!`,
         {
           targetTiles: dangerTiles,
           pattern: 'line',

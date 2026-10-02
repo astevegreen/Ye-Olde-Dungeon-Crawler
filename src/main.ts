@@ -4,6 +4,7 @@ import {
   type AutosaveSlot,
   canOvercast,
   getAltarDefinition,
+  RUNE_OF_RETURN_STATUS,
   PerformAltarRiteAction,
   CastSpellAction,
   ClimbStairsAction,
@@ -226,6 +227,24 @@ window.addEventListener('DOMContentLoaded', () => {
   const unfinishedSession = sessionGuard.takeUnfinished();
 
   let characterMenuModal: CharacterMenuModal;
+
+  // F1 on screens ContextHelp can't see: an altar's rite (or an altar beside the hero), the
+  // Story tab, the Rune of Return (its discovery, or a channel under way).
+  contextHelp.setScreenContext(() => {
+    if (altarModal.isOpen) return 'altar';
+    if (runeDiscoveryModal.isOpen) return 'rune';
+    if (characterMenuModal?.isOpen && characterMenuModal.activeTabId === 'story') return 'story';
+    const eng = activeEngine;
+    if (!eng?.player) return null;
+    if (eng.player.statusManager.getStatus(RUNE_OF_RETURN_STATUS)) return 'rune';
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const handler = eng.map.getTile(eng.player.x + dx, eng.player.y + dy)?.interactionHandlerId;
+        if (handler && getAltarDefinition(eng, handler)) return 'altar';
+      }
+    }
+    return null;
+  });
   const characterTab = new CharacterTab();
   characterTab.onAllocateCallback = () => {
     updateHeaderInfo();

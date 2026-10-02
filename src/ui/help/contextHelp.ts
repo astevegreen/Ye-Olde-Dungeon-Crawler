@@ -12,7 +12,17 @@ export interface OpenFlag {
   readonly isOpen: boolean;
 }
 
-export type GameHelpContext = 'exploration' | 'town' | 'inventory' | 'targeting' | 'inspect' | 'shop' | 'map';
+export type GameHelpContext =
+  | 'exploration'
+  | 'town'
+  | 'inventory'
+  | 'targeting'
+  | 'inspect'
+  | 'shop'
+  | 'map'
+  | 'altar'
+  | 'story'
+  | 'rune';
 
 export interface HelpCardContent {
   title: string;
@@ -34,6 +44,7 @@ export class ContextHelp {
   private overlayEl: HTMLElement | null = null;
   private isOpenState = false;
   private onDismissCallback?: () => void;
+  private screenContext?: () => GameHelpContext | null;
 
   constructor() {
     this.createDom();
@@ -59,6 +70,14 @@ export class ContextHelp {
     return this.isOpenState;
   }
 
+  /**
+   * The composition root's say on what the player is looking at, for screens this module
+   * can't see (an altar's rite, the Story tab, the Rune of Return): checked first.
+   */
+  public setScreenContext(fn: () => GameHelpContext | null): void {
+    this.screenContext = fn;
+  }
+
   public detectContext(
     engine: GameEngine,
     inventory?: OpenFlag,
@@ -67,6 +86,8 @@ export class ContextHelp {
     inspectOverlay?: InspectOverlay,
     mapOverlay?: MapOverlay
   ): GameHelpContext {
+    const screen = this.screenContext?.();
+    if (screen) return screen;
     if (mapOverlay?.isOpen) return 'map';
     if (shopOverlay?.isOpen) return 'shop';
     if (inspectOverlay?.isOpen) return 'inspect';
@@ -78,6 +99,44 @@ export class ContextHelp {
 
   public getHelpContent(context: GameHelpContext, manifest?: GameContentManifest): HelpCardContent {
     switch (context) {
+      case 'altar':
+        return {
+          title: 'Altars & Glyphs',
+          contextTag: 'RITES OF THE GRIMOIRE',
+          bullets: [
+            { key: 'Step onto it', label: 'Begin the altar\'s rite; each altar works one, once' },
+            { key: 'Click', label: 'Choose the offering to burn, then the slot or spell' },
+            { key: 'Enter', label: 'Perform the rite (the offering is gone)' },
+            { key: 'Esc', label: 'Step away; the altar waits for you' },
+          ],
+          tip: 'Tip: An inscribe rite turns the offering into a glyph on a grimoire slot, and the glyph shapes every spell cast from that slot. A ground rite opens a sealed slot instead; a forge rite transmutes a spell.',
+        };
+
+      case 'story':
+        return {
+          title: 'Story',
+          contextTag: 'THE SAGA',
+          bullets: [
+            { key: 'Left / Right', label: 'The saga, or lore and standing' },
+            { key: 'Tab', label: 'The next tab of the character menu' },
+            { key: 'O / Esc', label: 'Close the Story' },
+          ],
+          tip: 'Tip: Deeds still to come show as riddles, and a deed done since you last looked glows once. Standing shows how each faction you have met regards you.',
+        };
+
+      case 'rune':
+        return {
+          title: 'Rune of Return',
+          contextTag: 'THE WAY HOME',
+          bullets: [
+            { key: 'T', label: 'Channel the rune: keep still and it carries you to town' },
+            { key: 'Moving, attacking', label: 'Breaks the channel; waiting keeps it going' },
+            { key: 'Shift+T', label: 'Rune mastery: spend points on its ranks' },
+            { key: resolveBranding(manifest).runeSmithName, label: 'Awakens a dormant rune and refills its charges' },
+          ],
+          tip: 'Tip: Channel before a fight turns bad, not during it: any wound you take while channeling breaks it.',
+        };
+
       case 'shop':
         return {
           title: 'Town Merchant & Services',

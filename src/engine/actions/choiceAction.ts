@@ -8,6 +8,7 @@ import { evaluatePredicate } from '../predicates/predicateEvaluator';
 import { setFlag, incrementCounter, modifyFaction } from '../state/worldState';
 import { createScaledItem } from '../dungeon/lootSpawner';
 import { Item } from '../items/item';
+import { recordMilestone } from '../renown/renownLedger';
 
 /**
  * Applies a list of `ChoiceConsequence`s to `player`/`engine`. Factored out of
@@ -76,6 +77,10 @@ export function applyConsequences(
           duration: c.duration,
           potency: c.potency,
         });
+        break;
+      }
+      case 'recordMilestone': {
+        recordMilestone(engine, c.milestoneId);
         break;
       }
       case 'cureStatus': {

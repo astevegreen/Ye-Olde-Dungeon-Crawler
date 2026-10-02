@@ -50,7 +50,7 @@
     },
     {
       "id": "item_uncursed",
-      "reason": "Engine-owned renown trigger name (UncurseAction calls recordMilestone); packs opt in by declaring a milestone with this ID."
+      "reason": "Engine-owned renown trigger name (UncurseAction and the temple_cleanse command call recordMilestone); packs opt in by declaring a milestone with this ID."
     },
     {
       "id": "secret_door_found",

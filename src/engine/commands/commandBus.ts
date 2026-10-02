@@ -25,6 +25,7 @@ import { TempleService, SageService, BankService, TrainerService } from '../econ
 import type { Merchant } from '../economy/merchant';
 import type { CompanionArchetype } from '../entities/companion';
 import { ChannelRuneOfReturnAction, RuneOfReturnItem, cancelChannel } from '../magic/runeOfReturn';
+import { recordMilestone } from '../renown/renownLedger';
 
 /**
  * GameCommand — encapsulates a player/UI intent into a decoupled command message.
@@ -283,6 +284,8 @@ export class EngineCommandBus implements GameCommandBus {
       case 'temple_cleanse': {
         const res = TempleService.cleanseCurses(this.engine.player, undefined, undefined, this.engine);
         this.engine.log(res.message);
+        // The temple is where curses are really broken (UncurseAction is a scroll's path).
+        if (res.success) recordMilestone(this.engine, 'item_uncursed');
         return { success: res.success, message: res.message };
       }
 

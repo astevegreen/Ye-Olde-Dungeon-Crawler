@@ -26,7 +26,9 @@ export type ChoiceConsequence =
   /** Teaches a spell by manifest id; a spell already known is left as it is. */
   | { type: 'learnSpell'; spellId: string }
   /** Ends these statuses on the hero, if any are in effect. */
-  | { type: 'cureStatus'; statusTypes: string[] };
+  | { type: 'cureStatus'; statusTypes: string[] }
+  /** Records a renown milestone by id (`manifest.renownMilestones`), as engine deeds do. */
+  | { type: 'recordMilestone'; milestoneId: string };
 
 export interface ChoiceOption {
   id: string;

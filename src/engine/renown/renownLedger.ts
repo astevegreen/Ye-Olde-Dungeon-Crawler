@@ -1,4 +1,6 @@
 import type { GameEngine } from '../engine';
+import type { EngineContext } from '../types/engineContext';
+import type { RenownMilestoneDefinition } from '../types/manifest';
 import { incrementCounter, getCounter, setFlag, getFlag } from '../state/worldState';
 
 /**
@@ -40,7 +42,18 @@ export function recordMilestone(engine: GameEngine, milestoneId: string): Record
   if (!def) {
     return { awarded: false, reason: 'unknown_milestone' };
   }
+  return awardMilestone(engine, def);
+}
 
+/**
+ * Awards a milestone the caller already holds: content code, which reaches the engine
+ * through `EngineContext` (no manifest), awards its own definitions this way. Same rules
+ * as `recordMilestone`: a non-repeatable milestone counts once per character.
+ */
+export function awardMilestone(
+  engine: Pick<EngineContext, 'worldState' | 'log'>,
+  def: RenownMilestoneDefinition
+): RecordMilestoneResult {
   if (!def.repeatable) {
     if (getFlag(engine.worldState, earnedFlagKey(def.id))) {
       return { awarded: false, reason: 'already_earned' };

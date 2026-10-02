@@ -115,6 +115,27 @@ describe('Responsive High-DPI ViewportManager', () => {
     delete (globalThis as any).document;
   });
 
+  it('keeps #game-container at least 1024px wide when a short window letterboxes the canvas narrower', () => {
+    const { canvas, dummyCtx } = createMockCanvas();
+    const mockContainer = { style: { width: '' } };
+    (globalThis as any).document = {
+      getElementById: (id: string) => (id === 'game-container' ? mockContainer : null),
+    };
+
+    const vp = new ViewportManager(canvas, dummyCtx, { virtualWidth: 960, virtualHeight: 600 });
+    // 1366x768 less the sidebar and the HUD bars: the canvas fits the height, 814px wide.
+    vp.recalculate(1102, 509);
+    expect(vp.displayWidth).toBe(814);
+    expect(canvas.style.width).toBe('814px');
+    expect(mockContainer.style.width).toBe('1024px');
+
+    // A window narrower than that gives the column all it has, and no more.
+    vp.recalculate(900, 509);
+    expect(mockContainer.style.width).toBe('900px');
+
+    delete (globalThis as any).document;
+  });
+
   it('subtracts every surrounding bar\'s real measured height, not just header+footer', () => {
     const { canvas, dummyCtx } = createMockCanvas();
     const barHeight = (h: number) => ({ getBoundingClientRect: () => ({ height: h }) });

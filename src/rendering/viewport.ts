@@ -26,6 +26,13 @@ const SURROUNDING_BAR_IDS = [
 /** Columns laid out beside the map column, whose width the canvas must leave free. */
 const SIDE_COLUMN_IDS = ['combat-sidebar'] as const;
 
+/**
+ * The narrowest the map column gets when the window allows it, whatever the canvas's
+ * letterboxed width: the width at which the action console shows its context button,
+ * tray and objective without cutting their text (checked at 1366x768).
+ */
+const MIN_COLUMN_WIDTH = 1024;
+
 export class ViewportManager {
   public readonly virtualWidth: number;
   public readonly virtualHeight: number;
@@ -220,11 +227,15 @@ export class ViewportManager {
     this.canvas.style.width = `${this.displayWidth}px`;
     this.canvas.style.height = `${this.displayHeight}px`;
 
-    // Constrain parent game container width to match letterboxed canvas width
+    // The map column (header, canvas, console, log) is as wide as the canvas, but never
+    // narrower than MIN_COLUMN_WIDTH while the window has the room: on a short window the
+    // letterboxed canvas is narrow, and the console's text needs the width the side
+    // margins would otherwise waste. The canvas is centred in the wider column.
     if (typeof document !== 'undefined' && typeof document.getElementById === 'function') {
       const container = document.getElementById('game-container');
       if (container) {
-        container.style.width = `${this.displayWidth}px`;
+        const columnWidth = Math.max(this.displayWidth, Math.min(Math.floor(targetW), MIN_COLUMN_WIDTH));
+        container.style.width = `${columnWidth}px`;
       }
     }
 

@@ -67,6 +67,12 @@
   container: game / inline-size;
 }
 
+/* The column can be wider than the letterboxed canvas (see viewport.ts); the canvas
+   sits centred in it. */
+#game-container > #game-canvas {
+  align-self: center;
+}
+
 /* ==========================================================================
    HUD Bars (Header & Bottom Action Bar): fixed-height rows that never wrap.
    Buttons collapse their text label at narrow widths instead — an unpredictable
@@ -466,6 +472,9 @@
   background: var(--hud-surface-low);
   border-top: 1px solid var(--hud-hairline);
   border-bottom: none;
+  /* The padding is here, not on the scrolling stream, where an older line would show
+     through it: 77px inside the hairline less 7px leaves exactly five 14px lines. */
+  padding: 3px 0 4px;
   box-sizing: border-box;
   overflow: hidden;
   position: relative;
@@ -478,7 +487,7 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: 4px 14px;
+  padding: 0 14px;
   box-sizing: border-box;
   overflow-y: auto;
   scrollbar-width: thin;
@@ -505,7 +514,8 @@
      they do the tail of the message (the damage number, the reward) stays readable. */
   white-space: normal;
   overflow-wrap: anywhere;
-  padding: 1px 0;
+  /* Whole 14px lines only (5 fill the 78px log), so the top one is never cut in half. */
+  padding: 0;
   transition: color 0.15s ease;
 }
 
@@ -996,10 +1006,10 @@
   color: var(--ui-text);
   font-weight: bold;
 }
+/* A long monster or item name wraps beside its bearing instead of losing its end. */
 .sb-name > span:first-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .sb-item .sb-name {
   font-weight: normal;
@@ -1085,6 +1095,9 @@
   background: rgba(113, 63, 18, 0.3);
   border-left: 2px solid var(--ui-gold);
 }
+.sb-here-seg {
+  white-space: nowrap;
+}
 .sb-here[hidden] {
   display: none;
 }
@@ -1155,12 +1168,16 @@
   font-weight: normal;
   white-space: normal;
 }
+/* A long name takes a second line rather than losing its end. */
 .context-target {
   font-size: 11px;
+  line-height: 13px;
   color: var(--ui-title);
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 .context-key {
   min-width: 16px;
@@ -1182,10 +1199,13 @@
   line-height: 14px;
   color: var(--ui-text-muted);
   font-style: italic;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   text-align: center;
+  text-wrap: balance;
+  /* Up to two lines under the belt. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 #console-objective[hidden] {
   display: none;
@@ -1203,7 +1223,8 @@
 
 #console-tray {
   flex: 0 0 auto;
-  width: 176px;
+  /* Fits the longest pact or companion name on one line beside the companion card. */
+  width: 208px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1232,6 +1253,11 @@
 }
 button.tray-chip {
   cursor: pointer;
+  text-align: left;
+}
+/* No companion: no slot, and no gap for it in the tray's height. */
+.tray-companion-slot:empty {
+  display: none;
 }
 button.tray-chip:hover {
   box-shadow: 0 0 8px var(--chip-color, var(--ui-line-strong));
@@ -1241,11 +1267,8 @@ button.tray-chip:hover {
   font-weight: bold;
 }
 .tray-chip-value {
+  min-width: 0;
   color: var(--ui-text-soft);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 96px;
 }
 .tray-pips {
   display: inline-flex;
@@ -1294,9 +1317,7 @@ button.tray-chip:hover {
 .tray-companion-name {
   font: bold 11px/13px var(--ui-font-family, monospace);
   color: var(--ui-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 .tray-companion-note {
   font-size: 10px;
@@ -1322,10 +1343,6 @@ button.tray-chip:hover {
 #console-tray:has(.tray-companion) .tray-chip-label {
   display: none;
 }
-#console-tray:has(.tray-companion) .tray-chips {
-  max-height: 42px;
-  overflow: hidden;
-}
 
 /* A narrow console with the context button and tray both showing leaves the spell
    belt little room; give it back some: smaller orbs, a tighter button, and a "+"
@@ -1350,6 +1367,15 @@ button.tray-chip:hover {
   }
   #console-tray {
     width: 128px;
+  }
+  /* Too narrow for wrapped names in the orbs' height (a window under ~1100px): one
+     line each, the full name in the tooltip. From 1366x768 up the column is wider
+     than this (viewport.ts) and nothing is cut. */
+  .tray-chip-value,
+  .tray-companion-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .action-belt-slots .quick-spell-slot-add {
     flex: 0 0 auto;

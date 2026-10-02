@@ -234,7 +234,15 @@ export class CombatSidebar {
     for (const [text, icon] of parts.filter(([text]) => text)) {
       if (this.hereLine.childNodes.length > 0) this.hereLine.append(' · ');
       if (icon) this.hereLine.append(iconElement(icon), ' ');
-      this.hereLine.append(text);
+      // "[G] Pickup | [Shift+G] Quick-Loot | …": the line breaks between commands, never
+      // inside one.
+      text.split(' | ').forEach((command, i) => {
+        if (i > 0) this.hereLine.append(' | ');
+        const seg = document.createElement('span');
+        seg.className = 'sb-here-seg';
+        seg.textContent = command;
+        this.hereLine.append(seg);
+      });
     }
     this.hereLine.hidden = this.hereLine.childNodes.length === 0;
     this.hereLine.classList.toggle('sb-here-warn', Boolean(here.hazard));

@@ -16,6 +16,7 @@ import { COTW_TILES } from '../tiles';
 import { COTW_CHOICES } from '../choices';
 import { TILES } from '../../../engine/grid/tile';
 import { MovementAction } from '../../../engine/actions/movement';
+import { ExecuteChoiceAction } from '../../../engine/actions/choiceAction';
 import { getCounter } from '../../../engine/state/worldState';
 
 const QUEST = { ...COTW_QUEST, maxFloor: 50, bossFloor: 50 };
@@ -241,6 +242,20 @@ describe('Campfire Grottos: Secluded Peaceful Sanctuaries', () => {
         });
       }
     }
+  });
+
+  it('meditating at the Amber Root Fire clears blindness and slowness, as it says', () => {
+    const map = new GameMap(12, 8, TILES.FLOOR);
+    const player = new Player({ id: 'hero', name: 'Sven', position: { x: 4, y: 3 }, stats: { hp: 30, maxHp: 30, attack: 5, defense: 2 } });
+    const engine = new GameEngine({ map, player, floor: 37, manifest: cotwManifest });
+    player.statusManager.applyStatus('blindness', 20);
+    player.statusManager.applyStatus('slow', 20);
+    player.statusManager.applyStatus('poison', 20);
+    engine.handlePlayerAction(new ExecuteChoiceAction(player, COTW_CHOICES.choice_world_bark_hearth, 'meditate'));
+    expect(player.statusManager.hasStatus('blindness')).toBe(false);
+    expect(player.statusManager.hasStatus('slow')).toBe(false);
+    expect(player.statusManager.hasStatus('poison')).toBe(true); // it promises nothing for poison
+    expect(COTW_CHOICES.choice_world_bark_hearth.options[0].description).toContain('blindness and slowness');
   });
 
   it('provides immersive respite and lore choices without stat inflation', () => {

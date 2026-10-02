@@ -78,6 +78,10 @@ export function applyConsequences(
         });
         break;
       }
+      case 'cureStatus': {
+        for (const type of c.statusTypes) player.statusManager.removeStatus(type);
+        break;
+      }
       case 'damagePlayer': {
         player.takeDamage(c.amount);
         break;

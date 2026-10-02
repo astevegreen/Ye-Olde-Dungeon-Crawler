@@ -24,7 +24,9 @@ export type ChoiceConsequence =
    */
   | { type: 'grantCompanion'; companionId: string }
   /** Teaches a spell by manifest id; a spell already known is left as it is. */
-  | { type: 'learnSpell'; spellId: string };
+  | { type: 'learnSpell'; spellId: string }
+  /** Ends these statuses on the hero, if any are in effect. */
+  | { type: 'cureStatus'; statusTypes: string[] };
 
 export interface ChoiceOption {
   id: string;

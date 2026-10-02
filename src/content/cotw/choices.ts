@@ -393,13 +393,14 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         id: 'meditate',
         label: 'Meditate in the Heartwood Warmth',
         description:
-          'Close your eyes and breathe the sweet resin smoke. Dispels blindness and confusion, and adds +10 Exploration Renown.',
+          'Close your eyes and breathe the sweet resin smoke. Clears blindness and slowness, and adds +10 Exploration Renown.',
         // Either may come first: the hollow stays open until both are done.
         keepsOpen: true,
         predicate: { type: 'not', predicate: { type: 'hasFlag', flag: 'world_bark_hearth_rested' } },
         disabledReason: 'You have meditated here.',
         consequences: [
           { type: 'setFlag', flag: 'world_bark_hearth_rested', value: true },
+          { type: 'cureStatus', statusTypes: ['blindness', 'slow'] },
           { type: 'modifyCounter', counter: 'renown:exploration', delta: 10 },
           {
             type: 'logMessage',

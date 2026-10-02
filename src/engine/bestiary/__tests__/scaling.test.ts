@@ -61,6 +61,13 @@ describe('Monster Stat Scaling & Bestiary Immutability', () => {
     expect(scaleMonsterStats(ogre, 22).name).toBe('Veteran Ogre');
   });
 
+  it('names by how far past its debut a monster is met, not by how hard it is scaled', () => {
+    const fireGiant = BESTIARY.fire_giant; // minFloor 20
+    expect(scaleMonsterStats(fireGiant, 20, undefined, undefined, COTW_MONSTER_SCALING, 'hard').name).toBe('Fire Giant');
+    expect(scaleMonsterStats(fireGiant, 20, 20, 25).name).toBe('Fire Giant');
+    expect(scaleMonsterStats(fireGiant, 30, undefined, undefined, COTW_MONSTER_SCALING, 'hard').name).toBe('Veteran Fire Giant');
+  });
+
   it('never calls a unique monster a veteran: placedOnly, or tagged as a boss', () => {
     const tagged = { ...BESTIARY.ogre, tags: ['miniboss'] };
     const placed = { ...BESTIARY.ogre, placedOnly: true };

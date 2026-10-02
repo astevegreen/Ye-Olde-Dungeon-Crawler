@@ -100,8 +100,9 @@ export function resolveMonsterPowerMultiplier(
  * 3. `deepestFloor`/`playerLevel` given, no `scalingConfig`: the pre-existing hybrid
  *    depth/progression formula (`calculateHybridScaleFactor`).
  *
- * "Veteran <Name>" affix: `(currentFloor - minFloor) >= 10`, or a scale/multiplier
- * of at least 1.8, in every branch, for ordinary monsters only (`scaledName`).
+ * "Veteran <Name>" affix: `(currentFloor - minFloor) >= 10`, in every branch, for
+ * ordinary monsters only (`scaledName`). Scale alone doesn't earn it: every monster on a
+ * deep floor is scaled well past 1.8x, so that rule named nearly all of them.
  * MonsterDefinition templates remain immutable.
  */
 export function scaleMonsterStats(
@@ -124,7 +125,7 @@ export function scaleMonsterStats(
     const defense = Math.max(def.stats.defense, Math.round(def.stats.defense * scale));
     const xpValue = Math.max(def.xpValue, Math.round(def.xpValue * scale));
 
-    const name = scaledName(def, currentFloor - minFloor >= 10 || scale >= 1.8, bossTags);
+    const name = scaledName(def, currentFloor - minFloor >= 10, bossTags);
 
     return { hp, maxHp: hp, attack, defense, xpValue, name };
   }
@@ -154,7 +155,7 @@ export function scaleMonsterStats(
   const defense = Math.max(def.stats.defense, Math.round(def.stats.defense * scale));
   const xpValue = Math.max(def.xpValue, Math.round(def.xpValue * scale));
 
-  const name = scaledName(def, currentFloor - minFloor >= 10 || scale >= 1.8);
+  const name = scaledName(def, currentFloor - minFloor >= 10);
 
   return {
     hp,

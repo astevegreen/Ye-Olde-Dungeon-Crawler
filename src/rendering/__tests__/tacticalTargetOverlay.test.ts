@@ -52,6 +52,20 @@ describe('TacticalTargetOverlay', () => {
     expect(html).not.toMatch(/#[0-9a-f]{3,6}\b|rgba?\(/i);
   });
 
+  it('cards an ally as one: the shield, not the attack icon, and no wind-up warning', () => {
+    const hound = new Monster({ id: 'h', name: 'Hound', position: { x: 1, y: 1 }, stats: { hp: 10, maxHp: 20, attack: 3, defense: 1 }, faction: 'player' });
+    hound.intent = { type: 'windup', abilityName: 'Lunge' } as Monster['intent'];
+    const html = targetCardHtml(hound);
+    expect(html).toContain('At your side');
+    expect(html).not.toContain('Winding up');
+    expect(html).toContain('data-icon="shield"');
+    expect(html).not.toContain('data-icon="attack"');
+
+    const ogre = new Monster({ id: 'o', name: 'Ogre', position: { x: 1, y: 1 }, stats: { hp: 10, maxHp: 20, attack: 3, defense: 1 } });
+    expect(targetCardHtml(ogre)).toContain('data-icon="attack"');
+    expect(targetCardHtml(ogre)).not.toContain('At your side');
+  });
+
   it('labels a pile by its top item and how many more lie under it', () => {
     const ware = (id: string, name: string) => new Item({ id, name, category: 'misc', weight: 100, bulk: 100, quality: 'normal', identified: true, value: 1 });
     expect(pileLabelHtml([ware('a', 'Rock')])).toMatch(/Rock$/);

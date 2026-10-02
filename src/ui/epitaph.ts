@@ -20,8 +20,10 @@ export function epitaphFacts(entry: HallOfFameEntry, xpName: string): Array<[str
   ];
 }
 
-export function epitaphHtml(entry: HallOfFameEntry, xpName: string): string {
+/** `withScore: false` leaves the score out, for a screen that shows it on its own. */
+export function epitaphHtml(entry: HallOfFameEntry, xpName: string, { withScore = true } = {}): string {
   const rows = epitaphFacts(entry, xpName)
+    .filter(([label]) => withScore || label !== 'Score')
     .map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd>`)
     .join('');
   return `<dl class="ui-kv ui-epitaph-facts">${rows}</dl>`;

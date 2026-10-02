@@ -1177,7 +1177,8 @@ window.addEventListener('DOMContentLoaded', () => {
       title: won ? brand.victoryTitle : 'Fallen in Battle',
       kicker,
       banner: won ? endingBanner ?? brand.victoryBanner : brand.fallenBanner,
-      factsHtml: entry ? epitaphHtml(entry, brand.xpName) : '',
+      // The score stands on its own in the footer, so the record leaves it out.
+      factsHtml: entry ? epitaphHtml(entry, brand.xpName, { withScore: false }) : '',
       score: entry ? `${brand.hallOfFameShortName} score: ${entry.score.toLocaleString()}` : undefined,
       autosaveLabel: autosave ? `Load the autosave (${autosave.profileName ?? 'Hero'}, F${autosave.floor ?? 1})` : undefined,
       exportLabel: `Export save (${SAVE_FILE_EXTENSION})`,

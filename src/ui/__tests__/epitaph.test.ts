@@ -38,4 +38,11 @@ describe('epitaph', () => {
     expect(text.split('\n')[0]).toBe('Hero: Freya <the Bold>');
     expect(text).not.toMatch(/[╔║═]/);
   });
+
+  it('leaves the score out for a screen that shows it on its own', () => {
+    expect(epitaphHtml(freya, 'XP')).toContain('<dt>Score</dt>');
+    const html = epitaphHtml(freya, 'XP', { withScore: false });
+    expect(html).not.toContain('<dt>Score</dt>');
+    expect(html).toContain('<dt>Wealth</dt>');
+  });
 });

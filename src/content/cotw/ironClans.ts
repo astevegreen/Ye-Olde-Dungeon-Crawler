@@ -15,8 +15,8 @@ import { Monster, NPC, MovementAction, getCounter, getFaction, getFlag, incremen
  *
  * The hero meets them by reading the Accord or by speaking with Ivalda, the last
  * forge-keeper, by the banked coals of the Dwarven Hearth (Floor 13). Standing is earned
- * by honouring the clan barrows (+5 each, plundering costs 10), laying the
- * Cinder-Gilded Duergar to rest (+2 each, the first five), and breaking the coven's hold
+ * by honouring the clan barrows (+5 each, plundering costs 5), laying the
+ * Cinder-Gilded Duergar to rest (+2 each, the first six), and breaking the coven's hold
  * on the stolen sun (+10, once). Once trusted (0), Ivalda tempers the hero's blade and
  * the Haugbui barrow-guardians stand aside; at 10 she teaches the Accord's Steam Lance.
  *
@@ -41,7 +41,7 @@ const DWARVEN_HEARTH_FLOOR = 13;
 export const IVALDA_TOWN_POSITION = { x: 40, y: 6 };
 
 const LAID_TO_REST_COUNTER = 'iron_clans:laid_to_rest';
-const LAID_TO_REST_MAX = 5;
+const LAID_TO_REST_MAX = 6;
 const LAID_TO_REST_STANDING = 2;
 const SIPHON_CREDIT_FLAG = 'iron_clans_siphon_broken';
 const SIPHON_BROKEN_FLAGS = ['oath_resolved', 'savior_of_jarnvidr'];
@@ -155,15 +155,15 @@ export const IRON_CLANS_BARROW_CHOICES: Record<string, ChoiceDefinition> = Objec
         {
           id: 'plunder',
           label: 'Plunder the barrow',
-          description: 'Break the bands and take the grave-goods. -10 Iron Clans standing, and the dead stir.',
+          description: 'Break the bands and take the grave-goods. -5 Iron Clans standing, and the dead stir.',
           consequences: [
             { type: 'setFlag', flag: `${id}_plundered`, value: true },
-            { type: 'modifyFaction', faction: IRON_CLANS_FACTION, delta: -10 },
+            { type: 'modifyFaction', faction: IRON_CLANS_FACTION, delta: -5 },
             { type: 'grantItem', itemId: 'broadsword', toInventory: true },
             { type: 'alertMonsters', radius: 14 },
             {
               type: 'logMessage',
-              message: '☠ You break the iron bands and drag a broadsword from the dead. A cold wind answers from the barrows. (-10 Iron Clans standing) ☠',
+              message: '☠ You break the iron bands and drag a broadsword from the dead. A cold wind answers from the barrows. (-5 Iron Clans standing) ☠',
             },
           ],
         },

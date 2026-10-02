@@ -92,11 +92,11 @@ describe('The Iron Clans', () => {
     loot.map.setTile(5, 5, COTW_TILES.find((t) => t.type === 'duergar_barrow_2')!);
     answer(loot.engine, 'duergar_barrow_2', 'plunder');
     loot.engine.handlePlayerAction(new MovementAction(loot.player, 1, 0));
-    expect(standing(loot.engine)).toBe(-25);
+    expect(standing(loot.engine)).toBe(-20);
     expect(loot.player.inventory.primaryPack.getItems().some((i) => i.definitionId === 'broadsword')).toBe(true);
   });
 
-  it('rises for the first five Cinder-Gilded laid to rest, and once for the broken siphon', () => {
+  it('rises for the first six Cinder-Gilded laid to rest, and once for the broken siphon', () => {
     const { engine, player, map } = engineOn(12);
     for (let i = 0; i < 7; i++) {
       const ash = new Monster({ id: `ash-${i}`, name: 'Cinder-Gilded Duergar', definitionId: 'cinder_gilded_duergar', position: { x: 8, y: 1 + i }, stats: { hp: 1, maxHp: 1, attack: 1, defense: 0 } });
@@ -104,13 +104,13 @@ describe('The Iron Clans', () => {
       DeathResolver.resolveDeath(engine, player, ash);
       engine.handlePlayerAction(new WaitAction(player));
     }
-    expect(standing(engine)).toBe(-5);
+    expect(standing(engine)).toBe(-3);
 
     engine.setWorldFlag('oath_resolved', true);
     engine.handlePlayerAction(new WaitAction(player));
     engine.setWorldFlag('savior_of_jarnvidr', true);
     engine.handlePlayerAction(new WaitAction(player));
-    expect(standing(engine)).toBe(5);
+    expect(standing(engine)).toBe(7);
   });
 
   it('opens Ivalda’s rewards with trust: the tempering at 0, the Steam Lance at 10', () => {

@@ -14,6 +14,9 @@ import {
 } from '../vaults';
 import { COTW_TILES } from '../tiles';
 import { COTW_CHOICES } from '../choices';
+import { TILES } from '../../../engine/grid/tile';
+import { MovementAction } from '../../../engine/actions/movement';
+import { getCounter } from '../../../engine/state/worldState';
 
 const QUEST = { ...COTW_QUEST, maxFloor: 50, bossFloor: 50 };
 
@@ -198,6 +201,45 @@ describe('Campfire Grottos: Secluded Peaceful Sanctuaries', () => {
         Math.hypot(floorData.playerSpawn.x - campfirePos.x, floorData.playerSpawn.y - campfirePos.y),
         `seed ${seed} spawned player inside the grotto`
       ).toBeGreaterThan(4);
+    }
+  });
+
+  // Taking the lore option first used to close the hearth for good: the rest, its renown
+  // and its Story milestone were lost.
+  describe('each hearth stays open until both of its options are taken, in either order', () => {
+    const cases = [
+      { handler: 'choice_dwarven_hearth', rest: 'warmth', lore: 'read_notes', rested: 'dwarven_hearth_rested', loreFlag: 'dwarven_hearth_notes_read' },
+      { handler: 'choice_world_bark_hearth', rest: 'meditate', lore: 'listen_chimes', rested: 'world_bark_hearth_rested', loreFlag: 'world_bark_chimes_listened' },
+    ];
+    for (const c of cases) {
+      for (const order of [[c.lore, c.rest], [c.rest, c.lore]]) {
+        it(`${c.handler}: ${order.join(' then ')}`, () => {
+          const map = new GameMap(12, 8, TILES.FLOOR);
+          const player = new Player({ id: 'hero', name: 'Sven', position: { x: 4, y: 3 }, stats: { hp: 30, maxHp: 30, attack: 5, defense: 2 } });
+          const engine = new GameEngine({ map, player, floor: 13, manifest: cotwManifest });
+          map.setTile(5, 3, COTW_TILES.find((t) => t.interactionHandlerId === c.handler)!);
+          const visit = (optionId?: string): boolean => {
+            let offered = false;
+            engine.onChoiceInteract = (choice, choose) => {
+              if (choice.id !== c.handler) return; // e.g. an attribute milestone
+              offered = true;
+              if (optionId) choose(optionId);
+            };
+            map.moveEntity(player, 4, 3);
+            engine.handlePlayerAction(new MovementAction(player, 1, 0));
+            return offered;
+          };
+
+          expect(visit(order[0])).toBe(true);
+          expect(visit(order[1])).toBe(true);
+          expect(engine.getWorldFlag(c.rested)).toBe(true);
+          expect(engine.getWorldFlag(c.loreFlag)).toBe(true);
+          expect(getCounter(engine.worldState, 'renown:exploration')).toBe(15);
+          // Both done: the hearth says it is spent instead of asking again.
+          expect(visit()).toBe(false);
+          expect(engine.messages.at(-1)).toBe(COTW_CHOICES[c.handler].resolvedStates![0].message);
+        });
+      }
     }
   });
 

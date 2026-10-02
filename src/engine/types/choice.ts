@@ -33,10 +33,21 @@ export interface ChoiceOption {
   predicate?: Predicate;
   disabledReason?: string;
   consequences: ChoiceConsequence[];
+  /**
+   * A tile choice closes for good once any option is taken. An option that `keepsOpen`
+   * leaves it open to come back to, e.g. reading a hearth's notes before resting there;
+   * give it a `predicate` so it can't be taken twice.
+   */
+  keepsOpen?: boolean;
 }
 
+/**
+ * Said instead of offering the choice, once `flag` is set or `when` holds (give one).
+ * The first that applies wins.
+ */
 export interface ChoiceResolvedState {
-  flag: string;
+  flag?: string;
+  when?: Predicate;
   message: string;
 }
 

@@ -7,6 +7,7 @@ import { MeleeAttackAction } from './combat';
 import { OpenDoorAction } from './door';
 import { NPC } from '../entities/npc';
 import { ExecuteChoiceAction } from './choiceAction';
+import { evaluatePredicate } from '../predicates/predicateEvaluator';
 import type { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
 import { HookDispatcher } from '../hooks/hookDispatcher';
@@ -281,7 +282,8 @@ export class MovementAction implements Action {
         let resolvedMsg: string | undefined;
         if (choiceDef.resolvedStates) {
           for (const state of choiceDef.resolvedStates) {
-            if (engine.getWorldFlag(state.flag)) {
+            const applies = state.flag !== undefined ? engine.getWorldFlag(state.flag) : !!state.when && evaluatePredicate(state.when, engine.worldState);
+            if (applies) {
               resolvedMsg = state.message;
               break;
             }
@@ -295,7 +297,9 @@ export class MovementAction implements Action {
             engine.onChoiceInteract(
               choiceDef,
               (optionId: string) => {
-                engine.setWorldFlag(`${handlerId}_resolved`, true);
+                if (!choiceDef.options.find((o) => o.id === optionId)?.keepsOpen) {
+                  engine.setWorldFlag(`${handlerId}_resolved`, true);
+                }
                 engine.handlePlayerAction(new ExecuteChoiceAction(this.entity as Player, choiceDef, optionId));
               },
               () => {

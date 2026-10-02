@@ -305,6 +305,10 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         label: 'Rest by the Coals',
         description:
           'Warm your hands over the embers and listen to the water. Grants a moment of deep peace and adds +10 Exploration Renown.',
+        // Either may come first: the hearth stays open until both are done.
+        keepsOpen: true,
+        predicate: { type: 'not', predicate: { type: 'hasFlag', flag: 'dwarven_hearth_rested' } },
+        disabledReason: 'You have rested here.',
         consequences: [
           { type: 'setFlag', flag: 'dwarven_hearth_rested', value: true },
           { type: 'modifyCounter', counter: 'renown:exploration', delta: 10 },
@@ -319,6 +323,9 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         id: 'read_notes',
         label: 'Read the Wayfarer’s Scratched Notes',
         description: 'Examine the runes carved into the mantle by previous travelers.',
+        keepsOpen: true,
+        predicate: { type: 'not', predicate: { type: 'hasFlag', flag: 'dwarven_hearth_notes_read' } },
+        disabledReason: 'You have read them.',
         consequences: [
           { type: 'setFlag', flag: 'dwarven_hearth_notes_read', value: true },
           { type: 'modifyCounter', counter: 'renown:exploration', delta: 5 },
@@ -334,7 +341,13 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
     cancelLabel: 'Step Away from the Hearth',
     resolvedStates: [
       {
-        flag: 'dwarven_hearth_rested',
+        when: {
+          type: 'and',
+          predicates: [
+            { type: 'hasFlag', flag: 'dwarven_hearth_rested' },
+            { type: 'hasFlag', flag: 'dwarven_hearth_notes_read' },
+          ],
+        },
         message: 'The banked coals of the Dwarven Hearth still glow with tranquil warmth.',
       },
     ],
@@ -381,6 +394,10 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         label: 'Meditate in the Heartwood Warmth',
         description:
           'Close your eyes and breathe the sweet resin smoke. Dispels blindness and confusion, and adds +10 Exploration Renown.',
+        // Either may come first: the hollow stays open until both are done.
+        keepsOpen: true,
+        predicate: { type: 'not', predicate: { type: 'hasFlag', flag: 'world_bark_hearth_rested' } },
+        disabledReason: 'You have meditated here.',
         consequences: [
           { type: 'setFlag', flag: 'world_bark_hearth_rested', value: true },
           { type: 'modifyCounter', counter: 'renown:exploration', delta: 10 },
@@ -395,6 +412,9 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         id: 'listen_chimes',
         label: 'Listen to the Swaying Talismans',
         description: 'Interpret the rhythmic clicks of the carved alder charms.',
+        keepsOpen: true,
+        predicate: { type: 'not', predicate: { type: 'hasFlag', flag: 'world_bark_chimes_listened' } },
+        disabledReason: 'You have heard their song.',
         consequences: [
           { type: 'setFlag', flag: 'world_bark_chimes_listened', value: true },
           { type: 'modifyCounter', counter: 'renown:exploration', delta: 5 },
@@ -410,7 +430,13 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
     cancelLabel: 'Leave the Hollow Quiet',
     resolvedStates: [
       {
-        flag: 'world_bark_hearth_rested',
+        when: {
+          type: 'and',
+          predicates: [
+            { type: 'hasFlag', flag: 'world_bark_hearth_rested' },
+            { type: 'hasFlag', flag: 'world_bark_chimes_listened' },
+          ],
+        },
         message: 'The amber peat fire burns with quiet, fragrant dignity.',
       },
     ],

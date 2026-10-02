@@ -35,4 +35,7 @@ export interface MonsterScalingConfig {
   difficulty: Record<GameDifficulty, DifficultyPowerConfig>;
   /** `MonsterDefinition.tags` that trigger the boss guard. Defaults to `['boss', 'miniboss']`. */
   bossTags?: string[];
+  /** The word put before an ordinary monster's name when it is met ten or more floors past
+   *  its `minFloor`, e.g. "Grim Ogre". Defaults to "Veteran". */
+  veteranPrefix?: string;
 }

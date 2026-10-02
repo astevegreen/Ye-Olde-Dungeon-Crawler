@@ -25,6 +25,9 @@ import type { MonsterScalingConfig } from '../../engine';
  *   in `monsters/bosses.ts` — from ever dropping below a real fight, even on Easy.
  */
 export const COTW_MONSTER_SCALING: MonsterScalingConfig = {
+  // A creature met ten floors or more below its own haunts: grim (Old Norse grímr, a
+  // name of Odin's), not a soldier's "veteran".
+  veteranPrefix: 'Grim',
   tiers: [
     { floor: 1, multiplier: 1.0, label: 'Rime Hollows' },
     { floor: 10, multiplier: 1.35, label: 'Abandoned Dwarven Works' },

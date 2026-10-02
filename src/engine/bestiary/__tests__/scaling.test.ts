@@ -65,7 +65,9 @@ describe('Monster Stat Scaling & Bestiary Immutability', () => {
     const fireGiant = BESTIARY.fire_giant; // minFloor 20
     expect(scaleMonsterStats(fireGiant, 20, undefined, undefined, COTW_MONSTER_SCALING, 'hard').name).toBe('Fire Giant');
     expect(scaleMonsterStats(fireGiant, 20, 20, 25).name).toBe('Fire Giant');
-    expect(scaleMonsterStats(fireGiant, 30, undefined, undefined, COTW_MONSTER_SCALING, 'hard').name).toBe('Veteran Fire Giant');
+    expect(scaleMonsterStats(fireGiant, 30, undefined, undefined, COTW_MONSTER_SCALING, 'hard').name).toBe('Grim Fire Giant');
+    // Without a pack word, the engine's default.
+    expect(scaleMonsterStats(fireGiant, 30).name).toBe('Veteran Fire Giant');
   });
 
   it('never calls a unique monster a veteran: placedOnly, or tagged as a boss', () => {
@@ -76,7 +78,7 @@ describe('Monster Stat Scaling & Bestiary Immutability', () => {
       expect(scaleMonsterStats(def, 40, 40, 30).name).toBe('Ogre');
       expect(scaleMonsterStats(def, 40, undefined, undefined, COTW_MONSTER_SCALING, 'hard').name).toBe('Ogre');
     }
-    expect(scaleMonsterStats(BESTIARY.ogre, 40, undefined, undefined, COTW_MONSTER_SCALING, 'hard').name).toBe('Veteran Ogre');
+    expect(scaleMonsterStats(BESTIARY.ogre, 40, undefined, undefined, COTW_MONSTER_SCALING, 'hard').name).toBe('Grim Ogre');
   });
 
   it('guarantees MonsterDefinition templates remain strictly immutable after scaling', () => {
@@ -118,7 +120,7 @@ describe('Monster Stat Scaling & Bestiary Immutability', () => {
       expect(scaled.attack).toBe(20); // round(3 * 6.5) = round(19.5)
       expect(scaled.defense).toBe(7); // round(1 * 6.5) = round(6.5)
       expect(scaled.xpValue).toBe(98); // round(15 * 6.5) = round(97.5)
-      expect(scaled.name).toBe('Veteran Kobold'); // 43 - 1 >= 10
+      expect(scaled.name).toBe('Grim Kobold'); // 43 - 1 >= 10, cotw's veteranPrefix
     });
 
     it('guards the Act 1 climax boss on Easy — the boss floor dominates the plain curve', () => {

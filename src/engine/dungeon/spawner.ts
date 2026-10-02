@@ -100,7 +100,8 @@ export function resolveMonsterPowerMultiplier(
  * 3. `deepestFloor`/`playerLevel` given, no `scalingConfig`: the pre-existing hybrid
  *    depth/progression formula (`calculateHybridScaleFactor`).
  *
- * "Veteran <Name>" affix: `(currentFloor - minFloor) >= 10`, in every branch, for
+ * "Veteran <Name>" affix (the pack's `veteranPrefix` word with a scaling config):
+ * `(currentFloor - minFloor) >= 10`, in every branch, for
  * ordinary monsters only (`scaledName`). Scale alone doesn't earn it: every monster on a
  * deep floor is scaled well past 1.8x, so that rule named nearly all of them.
  * MonsterDefinition templates remain immutable.
@@ -125,7 +126,7 @@ export function scaleMonsterStats(
     const defense = Math.max(def.stats.defense, Math.round(def.stats.defense * scale));
     const xpValue = Math.max(def.xpValue, Math.round(def.xpValue * scale));
 
-    const name = scaledName(def, currentFloor - minFloor >= 10, bossTags);
+    const name = scaledName(def, currentFloor - minFloor >= 10, bossTags, scalingConfig.veteranPrefix);
 
     return { hp, maxHp: hp, attack, defense, xpValue, name };
   }
@@ -168,13 +169,18 @@ export function scaleMonsterStats(
 }
 
 /**
- * A scaled monster's name: "Veteran <Name>" for an ordinary monster met well past where it
- * first appears, never for a unique one (`placedOnly`, or tagged as a boss), whose name
- * is its own.
+ * A scaled monster's name: "<prefix> <Name>" (the pack's `veteranPrefix`, else "Veteran")
+ * for an ordinary monster met well past where it first appears, never for a unique one
+ * (`placedOnly`, or tagged as a boss), whose name is its own.
  */
-function scaledName(def: MonsterDefinition, veteran: boolean, bossTags: readonly string[] = DEFAULT_BOSS_TAGS): string {
+function scaledName(
+  def: MonsterDefinition,
+  veteran: boolean,
+  bossTags: readonly string[] = DEFAULT_BOSS_TAGS,
+  prefix = 'Veteran'
+): string {
   const unique = def.placedOnly || (def.tags ?? []).some((t) => bossTags.includes(t));
-  return veteran && !unique ? `Veteran ${def.name}` : def.name;
+  return veteran && !unique ? `${prefix} ${def.name}` : def.name;
 }
 
 /**

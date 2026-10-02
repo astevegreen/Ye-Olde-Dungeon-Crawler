@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { resolveThemeTokens, DEFAULT_THEME_TOKENS, setCanvasTextScale, uiFont } from '../theme';
+import { resolveThemeTokens, DEFAULT_THEME_TOKENS, setCanvasTextScale, uiFont, withAlpha } from '../theme';
 import { WARCRAFT_THEME_TOKENS } from '../../content/warcraft/theme';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../engine';
@@ -262,5 +262,17 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
       expect(fills.at(-1)).toBe(theme.info);
       expect(theme.info).not.toBe(theme.frame);
     });
+  });
+});
+
+describe('withAlpha', () => {
+  it('turns a hex token into rgba at the given opacity', () => {
+    expect(withAlpha('#ef4444', 0.25)).toBe('rgba(239, 68, 68, 0.25)');
+    expect(withAlpha('#0af', 1)).toBe('rgba(0, 170, 255, 1)');
+    expect(withAlpha('#0a0c14cc', 0.5)).toBe('rgba(10, 12, 20, 0.5)');
+  });
+
+  it('returns a color it cannot parse unchanged', () => {
+    expect(withAlpha('rebeccapurple', 0.5)).toBe('rebeccapurple');
   });
 });

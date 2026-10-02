@@ -2,7 +2,7 @@ import type { GameEngine } from '../engine';
 import { drawIconCentered } from './canvasIcons';
 import type { RadialMenuSlotConfig } from '../ui/settings/settingsManager';
 import { RADIAL_MENU_SLOT_COUNT } from '../ui/settings/settingsManager';
-import { resolveThemeTokens, uiFont } from './theme';
+import { resolveThemeTokens, uiFont, withAlpha } from './theme';
 
 /**
  * Configurable Radial Action Menu (docs/architecture/simulation-and-input.md).
@@ -85,7 +85,7 @@ export class RadialMenuOverlay {
       ctx.arc(cx, cy, outerRadius, startAngle, endAngle);
       ctx.arc(cx, cy, innerRadius, endAngle, startAngle, true);
       ctx.closePath();
-      ctx.fillStyle = isHovered ? theme.accent : slot ? theme.cardBg : 'rgba(60, 60, 70, 0.55)';
+      ctx.fillStyle = isHovered ? theme.accent : slot ? theme.cardBg : withAlpha(theme.surface2, 0.55);
       ctx.fill();
       ctx.strokeStyle = theme.cardBorder;
       ctx.lineWidth = 1;
@@ -107,7 +107,7 @@ export class RadialMenuOverlay {
     // Center Hub: open boundary ring with player sprite or icon centered in the middle
     ctx.beginPath();
     ctx.arc(cx, cy, innerRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = theme.accent ?? '#38bdf8';
+    ctx.strokeStyle = theme.accent;
     ctx.lineWidth = 2;
     ctx.stroke();
 

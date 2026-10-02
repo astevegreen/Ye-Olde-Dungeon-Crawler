@@ -288,6 +288,19 @@ export function uiFont(
   return `${prefix}${px}px ${family}`;
 }
 
+/**
+ * A color at the given opacity, for canvas drawing: canvas has no `color-mix`, so the
+ * translucent shades CSS mixes from a role are made here. Hex colors (#rgb, #rrggbb,
+ * #rrggbbaa, whose own alpha is replaced) become rgba(); any other color is returned as is.
+ */
+export function withAlpha(color: string, alpha: number): string {
+  const hex = color.trim().replace(/^#/, '');
+  if (!/^(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(hex)) return color;
+  const rgb = hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex.slice(0, 6);
+  const n = parseInt(rgb, 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
+
 /** The size `uiFont` gives a role, in virtual canvas pixels: for boxes drawn around text. */
 export function uiFontPx(role: UiTextRole): number {
   return Math.round((UI_TEXT_PX[role] / canvasTextScale) * 10) / 10;

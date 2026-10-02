@@ -17,7 +17,7 @@ import { SpriteAtlas } from './atlas/sprite-atlas';
 import { getTerrainSpriteKey, getEntitySpriteKey, getItemSpriteKey } from './atlas/sprite-mapper';
 import { terrainLayers, contactShadowSides, zoneForFloor, type TerrainView } from './atlas/terrain-layers';
 import { ViewportManager } from './viewport';
-import { resolveThemeTokens, type ThemeTokens, uiFont, uiFontPx } from './theme';
+import { resolveThemeTokens, type ThemeTokens, uiFont, uiFontPx, withAlpha } from './theme';
 import { CanvasFXRunner } from './fxRunner';
 import type { NavigationController } from '../ui/navigation';
 import { CloseDoorAction } from '../engine';
@@ -789,11 +789,12 @@ export class CanvasRenderer {
       }
     }
     if (visible.length === 0) return;
+    const dark = this.theme.canvasBg;
     for (const v of visible) {
       const t = Math.min(1, Math.hypot(v.x - player.x, v.y - player.y) / torch.radius);
       const a = torch.falloff * Math.pow(t, 1.35);
       if (a > 0.005) {
-        ctx.fillStyle = `rgba(4,6,10,${a.toFixed(3)})`;
+        ctx.fillStyle = withAlpha(dark, +a.toFixed(3));
         ctx.fillRect(v.px, v.py, cs, cs);
       }
     }
@@ -806,8 +807,8 @@ export class CanvasRenderer {
       const cx = playerPos.x + cs / 2;
       const cy = playerPos.y + cs / 2;
       const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, cs * torch.radius * 0.65);
-      glow.addColorStop(0, hexToRgba(torch.color, torch.warmth));
-      glow.addColorStop(1, hexToRgba(torch.color, 0));
+      glow.addColorStop(0, withAlpha(torch.color, torch.warmth));
+      glow.addColorStop(1, withAlpha(torch.color, 0));
       ctx.globalCompositeOperation = 'soft-light';
       ctx.fillStyle = glow;
       ctx.fillRect(cx - cs * torch.radius, cy - cs * torch.radius, cs * torch.radius * 2, cs * torch.radius * 2);
@@ -824,8 +825,8 @@ export class CanvasRenderer {
         const cy = v.py + cs / 2;
         const rad = cs * light.radius;
         const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
-        g.addColorStop(0, hexToRgba(light.color, light.strength));
-        g.addColorStop(1, hexToRgba(light.color, 0));
+        g.addColorStop(0, withAlpha(light.color, light.strength));
+        g.addColorStop(1, withAlpha(light.color, 0));
         ctx.fillStyle = g;
         ctx.fillRect(cx - rad, cy - rad, rad * 2, rad * 2);
       }
@@ -1038,7 +1039,7 @@ export class CanvasRenderer {
       if (!screenPos) continue;
       ctx.save();
       const pulse = (Math.sin(Date.now() / 220) + 1) / 2;
-      ctx.strokeStyle = `rgba(56, 189, 248, ${0.35 + 0.3 * pulse})`;
+      ctx.strokeStyle = withAlpha(this.theme.info, 0.35 + 0.3 * pulse);
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(screenPos.x + cs / 2, screenPos.y + cs / 2, cs * 0.3, 0, Math.PI * 2);
@@ -1103,12 +1104,12 @@ export class CanvasRenderer {
 
     ctx.save();
     const pulse = (Math.sin(Date.now() / 180) + 1) / 2;
-    ctx.fillStyle = `rgba(239, 68, 68, ${0.45 + 0.3 * pulse})`;
+    ctx.fillStyle = withAlpha(this.theme.health, 0.45 + 0.3 * pulse);
     ctx.beginPath();
     ctx.arc(cx, cy, cs * 0.32, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.strokeStyle = '#fca5a5';
+    ctx.strokeStyle = this.theme.bad;
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
@@ -1139,13 +1140,13 @@ export class CanvasRenderer {
       const isTarget = i === path.length - 1;
 
       // Glow dot
-      ctx.fillStyle = isTarget ? 'rgba(56, 189, 248, 0.9)' : 'rgba(56, 189, 248, 0.45)';
+      ctx.fillStyle = withAlpha(this.theme.info, isTarget ? 0.9 : 0.45);
       ctx.beginPath();
       ctx.arc(cx, cy, isTarget ? 5 : 3, 0, Math.PI * 2);
       ctx.fill();
 
       if (isTarget) {
-        ctx.strokeStyle = '#38bdf8';
+        ctx.strokeStyle = this.theme.info;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.arc(cx, cy, 8, 0, Math.PI * 2);
@@ -1185,8 +1186,9 @@ export class CanvasRenderer {
       py + cs / 2,
       cs * 0.75
     );
-    gradient.addColorStop(0, 'rgba(245, 158, 11, 0.45)');
-    gradient.addColorStop(1, 'rgba(245, 158, 11, 0)');
+    const glow = this.theme.accent;
+    gradient.addColorStop(0, withAlpha(glow, 0.45));
+    gradient.addColorStop(1, withAlpha(glow, 0));
     ctx.fillStyle = gradient;
     ctx.beginPath();
     ctx.arc(px + cs / 2, py + cs / 2, cs * 0.75, 0, Math.PI * 2);
@@ -1219,7 +1221,7 @@ export class CanvasRenderer {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
       ctx.fillRect(barX, barY, barW, barH);
 
-      ctx.fillStyle = '#ef4444';
+      ctx.fillStyle = this.theme.health;
       ctx.fillRect(barX, barY, Math.floor(barW * ratio), barH);
     }
 
@@ -1229,7 +1231,7 @@ export class CanvasRenderer {
       const glyphY = py - 3;
 
       ctx.save();
-      ctx.fillStyle = '#ef4444';
+      ctx.fillStyle = this.theme.health;
       ctx.beginPath();
       ctx.arc(glyphX, glyphY, 7, 0, Math.PI * 2);
       ctx.fill();
@@ -1382,7 +1384,7 @@ export class CanvasRenderer {
     const pulse = (Math.sin(Date.now() / 200) + 1) / 2;
 
     ctx.save();
-    ctx.fillStyle = `rgba(251, 191, 36, ${0.5 + 0.35 * pulse})`;
+    ctx.fillStyle = withAlpha(this.theme.warn, 0.5 + 0.35 * pulse);
     const size = cs * 0.28;
     ctx.beginPath();
     ctx.moveTo(cx, cy - size);
@@ -1392,7 +1394,7 @@ export class CanvasRenderer {
     ctx.closePath();
     ctx.fill();
 
-    ctx.strokeStyle = '#fef08a';
+    ctx.strokeStyle = this.theme.title;
     ctx.lineWidth = 1.5;
     ctx.stroke();
     ctx.restore();
@@ -1467,9 +1469,9 @@ export class CanvasRenderer {
     ctx.save();
     ctx.font = uiFont('xs', this.theme.fontFamily ?? 'monospace', 'bold');
     const w = ctx.measureText(label).width + 4;
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fillStyle = withAlpha(this.theme.surface0, 0.85);
     ctx.fillRect(px + cs - w - 1, py + cs - fontPx - 2, w, fontPx + 1);
-    ctx.fillStyle = '#f8fafc';
+    ctx.fillStyle = this.theme.text;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
     ctx.fillText(label, px + cs - 3, py + cs - 1);
@@ -1502,7 +1504,7 @@ export class CanvasRenderer {
     const cx = px + cs - r - 1;
     const cy = py + r + 1;
     ctx.save();
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fillStyle = withAlpha(this.theme.surface0, 0.85);
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.fill();
@@ -1510,20 +1512,16 @@ export class CanvasRenderer {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     if (state === 'unopened') {
-      ctx.fillStyle = '#facc15';
+      ctx.fillStyle = this.theme.gold;
       ctx.fillText('★', cx, cy + 0.5);
     } else if (state === 'has_items') {
-      ctx.fillStyle = '#f59e0b';
+      ctx.fillStyle = this.theme.accent;
       ctx.fillText('•', cx, cy + 0.5);
     } else {
-      ctx.fillStyle = '#94a3b8';
+      ctx.fillStyle = this.theme.textMuted;
       ctx.fillText('✓', cx, cy + 0.5);
     }
     ctx.restore();
   }
 }
 
-function hexToRgba(hex: string, alpha: number): string {
-  const n = parseInt(hex.replace('#', '').slice(0, 6), 16);
-  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
-}

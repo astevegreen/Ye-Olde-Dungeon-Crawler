@@ -1,4 +1,4 @@
-import { uiFont } from './theme';
+import { resolveThemeTokens, uiFont, withAlpha } from './theme';
 import { drawIconCentered } from './canvasIcons';
 import type { GameEngine, Action } from '../engine';
 import { MovementAction, OpenDoorAction } from '../engine';
@@ -139,6 +139,8 @@ export class MouseVectorOverlay {
 
     ctx.save();
 
+    const theme = resolveThemeTokens(engine.manifest?.theme);
+    const font = theme.fontFamily;
     const p = engine.player;
     for (const dir of MouseVectorOverlay.DIRECTIONS) {
       const wx = p.x + dir.dx;
@@ -167,34 +169,30 @@ export class MouseVectorOverlay {
       if (isHovered) {
         // Active Hover Ring Highlight on adjacent tile
         ctx.lineWidth = 2;
-        if (isTargetMonster) {
-          ctx.strokeStyle = '#ef4444';
-          ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
-        } else {
-          ctx.strokeStyle = '#38bdf8';
-          ctx.fillStyle = 'rgba(56, 189, 248, 0.20)';
-        }
+        const ring = isTargetMonster ? theme.health : theme.info;
+        ctx.strokeStyle = ring;
+        ctx.fillStyle = withAlpha(ring, isTargetMonster ? 0.25 : 0.2);
 
         ctx.fillRect(screenX + 2, screenY + 2, cellSize - 4, cellSize - 4);
         ctx.strokeRect(screenX + 2.5, screenY + 2.5, cellSize - 5, cellSize - 5);
 
         // Directional Chevron
-        ctx.font = uiFont('sm', '"Courier New", monospace', 'bold');
+        ctx.font = uiFont('sm', font, 'bold');
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = isTargetMonster ? '#fca5a5' : '#bae6fd';
+        ctx.fillStyle = isTargetMonster ? theme.bad : theme.info;
         const drewIcon = isTargetMonster && drawIconCentered(ctx, 'attack', screenX + cellSize / 2, screenY + cellSize / 2, Math.round(cellSize * 0.6));
         if (!drewIcon) ctx.fillText(isTargetMonster ? '×' : dir.symbol, screenX + cellSize / 2, screenY + cellSize / 2);
       } else {
         // Subtle ambient hover ring indicator (translucent corner pips)
         ctx.lineWidth = 1;
-        ctx.strokeStyle = 'rgba(147, 197, 253, 0.22)';
+        ctx.strokeStyle = withAlpha(theme.info, 0.22);
         ctx.strokeRect(screenX + 3.5, screenY + 3.5, cellSize - 7, cellSize - 7);
 
-        ctx.font = uiFont('xs', '"Courier New", monospace');
+        ctx.font = uiFont('xs', font);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = 'rgba(147, 197, 253, 0.35)';
+        ctx.fillStyle = withAlpha(theme.info, 0.35);
         ctx.fillText(dir.symbol, screenX + cellSize / 2, screenY + cellSize / 2);
       }
     }

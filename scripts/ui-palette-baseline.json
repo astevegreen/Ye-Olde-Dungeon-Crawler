@@ -1,14 +1,12 @@
 {
-  "total": 127,
+  "total": 97,
   "files": {
     "src/main.ts": 2,
     "src/rendering/atlas/sprite-atlas.ts": 4,
-    "src/rendering/canvas-renderer.ts": 64,
+    "src/rendering/canvas-renderer.ts": 44,
     "src/rendering/floatingTextRunner.ts": 11,
     "src/rendering/fxRunner.ts": 1,
     "src/rendering/intentOverlay.ts": 14,
-    "src/rendering/mouseVectorOverlay.ts": 8,
-    "src/rendering/radialMenu.ts": 2,
     "src/rendering/targeting-overlay.ts": 12,
     "src/ui/console/consoleModel.ts": 1,
     "src/ui/sidebar/sidebarModel.ts": 6,

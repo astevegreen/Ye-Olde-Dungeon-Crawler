@@ -2,16 +2,11 @@
         --ui-bg: var(--ui-surface-0);
         --ui-panel: var(--ui-surface-1);
         --ui-border-light: var(--ui-line-strong);
-        --ui-border-dark: #0c0e17;
-        --ui-text: var(--ui-text);
-        --ui-titlebar-start: #1e2433;
-        --ui-titlebar-end: #0f1420;
+        --ui-border-dark: var(--ui-surface-0);
+        --ui-titlebar-start: var(--ui-surface-2);
+        --ui-titlebar-end: var(--ui-surface-1);
         --ui-titlebar-text: var(--ui-title);
-        --ui-accent: var(--ui-accent);
         --ui-font-family: "Courier New", Courier, monospace;
-        --ui-hud-bg: #101420;
-        --ui-hud-border: var(--ui-line);
-        --ui-hud-accent: var(--ui-accent);
       }
 
       *, *::before, *::after {
@@ -24,7 +19,7 @@
         height: 100%;
         overflow: hidden;
         background-color: var(--ui-bg);
-        color: #d1d5db;
+        color: var(--ui-text-soft);
         font-family: var(--ui-font-family, "Courier New", Courier, "MS Sans Serif", monospace);
         user-select: none;
         -webkit-user-select: none;
@@ -43,7 +38,7 @@
       }
       #game-canvas {
         display: block;
-        background-color: #0d0e15;
+        background-color: var(--ui-surface-3);
         box-shadow: 0 0 32px rgba(0, 0, 0, 0.9), inset 0 0 2px rgba(255, 255, 255, 0.05);
         image-rendering: pixelated;
         image-rendering: crisp-edges;

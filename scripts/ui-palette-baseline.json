@@ -1,5 +1,5 @@
 {
-  "total": 152,
+  "total": 127,
   "files": {
     "src/main.ts": 2,
     "src/rendering/atlas/sprite-atlas.ts": 4,
@@ -12,8 +12,6 @@
     "src/rendering/targeting-overlay.ts": 12,
     "src/ui/console/consoleModel.ts": 1,
     "src/ui/sidebar/sidebarModel.ts": 6,
-    "src/ui/styles/base.css": 6,
-    "src/ui/styles/layout.css": 19,
     "src/ui/title-screen.ts": 2
   }
 }

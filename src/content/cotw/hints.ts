@@ -7,7 +7,7 @@ import type { FirstTimeHintDefinition, FirstTimeHintId } from '../../engine';
 export const COTW_FIRST_TIME_HINTS: Partial<Record<FirstTimeHintId, FirstTimeHintDefinition>> = {
   altar: {
     title: 'Altars',
-    text: 'An altar works a rite on your grimoire for an offering burnt on it: it inscribes a spell, opens a sealed slot, or transmutes one. Walking away costs nothing.',
+    text: 'Each altar works one rite on your grimoire for an offering burnt on it: a glyph inscribed on a slot, a sealed slot opened, a spell transmuted, or a gamble with fate. Step away and it waits for you.',
   },
   killRite: {
     title: 'Kill rites',

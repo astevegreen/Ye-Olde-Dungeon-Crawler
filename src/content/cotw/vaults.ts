@@ -10,6 +10,9 @@ export const WORLD_BARK_FLOOR = 37;
 export const CHARIOT_FORGE_VAULT_ID = 'floor25_chariot_forge';
 export const CHARIOT_FORGE_FLOOR = 25;
 
+export const BILE_SUMP_VAULT_ID = 'floor44_bile_sump';
+export const MARROW_OSSUARY_VAULT_ID = 'floor47_marrow_ossuary';
+
 export const COTW_VAULTS: VaultBlueprint[] = [
   // Zone landmarks (floorLayouts.ts `landmarkVaultIds`): one stamps on every floor of its zone.
   {
@@ -243,7 +246,54 @@ export const COTW_VAULTS: VaultBlueprint[] = [
       '#P.~~.....~~.P#',
       '###############',
     ],
-    preferredMonsters: ['primordial_drake', 'root_rot_abomination', 'void_gazer'],
+    // Níðhögg's brood and the hounds of the Maw keep the herald's sanctum.
+    preferredMonsters: ['grave_wyrmling', 'garmling', 'nastrond_feaster'],
+  },
+  {
+    // Gloom-Tarr, placed once on floor 44 (index.ts scriptedVaultPlacements).
+    id: BILE_SUMP_VAULT_ID,
+    name: 'The Bile-Sump',
+    description:
+      'A sump at the foot of the Maw where the bile of Náströnd pools black and warm, and Gloom-Tarr wallows in it and drinks.',
+    minFloor: 44,
+    maxFloor: 44,
+    scriptedOnly: true,
+    minibossId: 'miniboss_tar_abomination',
+    layout: [
+      '###############',
+      '#P.~~~...~~~.P#',
+      '@...~~~.~~~...@',
+      '#.M...~K~...M.#',
+      '#....~~~~~....#',
+      '#.C.........C.#',
+      '@.....M.M.....@',
+      '#P...........P#',
+      '###############',
+    ],
+    preferredMonsters: ['nastrond_feaster', 'garmling', 'grave_wyrmling'],
+  },
+  {
+    // Sköll, placed once on floor 47 (index.ts scriptedVaultPlacements).
+    id: MARROW_OSSUARY_VAULT_ID,
+    name: 'The Marrow Ossuary',
+    description:
+      'A bone-hall behind iron bars, its floor a drift of split marrow-bones, where Sköll gnaws the void-bone and Hel’s wardens keep watch.',
+    minFloor: 47,
+    maxFloor: 47,
+    scriptedOnly: true,
+    minibossId: 'miniboss_marrow_eater',
+    layout: [
+      '#############',
+      '#P.B.....B.P#',
+      '@...........@',
+      '#.M.P.K.P.M.#',
+      '#...........#',
+      '#.C.P...P.C.#',
+      '@.....M.....@',
+      '#P.........P#',
+      '#############',
+    ],
+    preferredMonsters: ['hel_warden', 'shadow_fiend', 'nastrond_feaster'],
   },
   {
     id: SIPHON_VAULT_ID,

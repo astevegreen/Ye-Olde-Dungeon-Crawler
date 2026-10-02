@@ -8,6 +8,7 @@ import { cotwManifest } from '../index';
 import { COTW_QUEST } from '../quest';
 import { COTW_FLOOR_SIZE, COTW_FLOOR_LAYOUTS } from '../floorLayouts';
 import { SIPHON_ALTAR_TILE } from '../hostageRitual';
+import { COTW_VAULTS } from '../vaults';
 
 /**
  * Every zone's layout, through the real generation path (DungeonArc + cotw manifest):
@@ -130,6 +131,25 @@ describe('cotw zone layouts', () => {
       const r = DungeonArc.generateFloor(45, seed * 7919, QUEST, cotwManifest);
       const herald = r.map.getAllEntities().some((e) => e instanceof Monster && e.definitionId === 'miniboss_maw_herald');
       expect(herald, `seed ${seed}`).toBe(true);
+    }
+  });
+
+  it('floors 44 and 47 always stamp Gloom-Tarr and Sköll, each once', () => {
+    for (const [floor, id] of [[44, 'miniboss_tar_abomination'], [47, 'miniboss_marrow_eater']] as const) {
+      for (let seed = 1; seed <= 15; seed++) {
+        const r = DungeonArc.generateFloor(floor, seed * 7919, QUEST, cotwManifest);
+        const found = r.map.getAllEntities().filter((e) => e instanceof Monster && e.definitionId === id);
+        expect(found.length, `floor ${floor} seed ${seed}`).toBe(1);
+      }
+    }
+  });
+
+  it("every vault's guards are monsters the pack defines", () => {
+    const ids = new Set(cotwManifest.monsters.map((m) => m.id));
+    for (const v of COTW_VAULTS) {
+      for (const id of [...(v.preferredMonsters ?? []), ...(v.minibossId ? [v.minibossId] : [])]) {
+        expect(ids.has(id), `${v.id}: ${id}`).toBe(true);
+      }
     }
   });
 

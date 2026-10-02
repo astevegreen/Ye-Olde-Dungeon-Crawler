@@ -86,7 +86,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
     id: 'miniboss_tar_abomination',
     name: 'Gloom-Tarr, the Bile-Drinker',
     minFloor: 44,
-    placedOnly: true,
+    placedOnly: true, // floor44_bile_sump (vaults.ts)
     stats: { hp: 250, maxHp: 250, attack: 25, defense: 14 },
     speed: 85,
     aiType: 'brute',
@@ -155,7 +155,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
     id: 'miniboss_marrow_eater',
     name: 'Sköll of the Void Bone',
     minFloor: 47,
-    placedOnly: true,
+    placedOnly: true, // floor47_marrow_ossuary (vaults.ts)
     stats: { hp: 290, maxHp: 290, attack: 28, defense: 13 },
     speed: 105,
     aiType: 'melee',

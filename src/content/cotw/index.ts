@@ -16,6 +16,8 @@ import {
   DWARVEN_HEARTH_FLOOR,
   DWARVEN_HEARTH_VAULT_ID,
   CHARIOT_FORGE_VAULT_ID,
+  BILE_SUMP_VAULT_ID,
+  MARROW_OSSUARY_VAULT_ID,
   CHARIOT_FORGE_FLOOR,
   WORLD_BARK_FLOOR,
   WORLD_BARK_VAULT_ID,
@@ -243,6 +245,9 @@ export const cotwManifest: GameContentManifest = {
     { floor: CHARIOT_FORGE_FLOOR, vaultId: CHARIOT_FORGE_VAULT_ID },
     // Víðnir and the shed fang: guaranteed on floor 45, not a chance draw from the vault pool.
     { floor: 45, vaultId: 'floor45_fang_vault' },
+    // Gloom-Tarr in the Bile-Sump, and Sköll in the Marrow Ossuary: the Maw's other two.
+    { floor: 44, vaultId: BILE_SUMP_VAULT_ID },
+    { floor: 47, vaultId: MARROW_OSSUARY_VAULT_ID },
     // Act 1 Campfire Grotto: The Dwarven Hearth Grotto on floor 13
     // Ivalda, the last forge-keeper of the Iron Clans (ironClans.ts), keeps its coals.
     { floor: DWARVEN_HEARTH_FLOOR, vaultId: DWARVEN_HEARTH_VAULT_ID, npcs: [IVALDA] },

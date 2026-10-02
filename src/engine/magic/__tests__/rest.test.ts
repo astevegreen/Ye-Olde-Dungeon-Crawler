@@ -78,4 +78,22 @@ describe('Resting Engine and FOV Interruption', () => {
     expect(player.hp).toBeLessThan(30);
     expect(result.message).toContain('Rest interrupted');
   });
+  it('says nothing of a peaceful rest when the hero dies during it', () => {
+    const map = new GameMap(10, 10, TILES.FLOOR);
+    const player = new Player({
+      id: 'hero',
+      position: { x: 5, y: 5 },
+      stats: { hp: 1, maxHp: 30, attack: 5, defense: 2 },
+      mana: 5,
+      maxMana: 25,
+    });
+    const engine = new GameEngine({ map, player });
+    player.statusManager.applyStatus({ type: 'poison', duration: 10, potency: 5 });
+
+    const result = new RestAction(player, 50).perform(engine);
+
+    expect(player.isAlive()).toBe(false);
+    expect(result.message ?? '').not.toContain('fully restored');
+    expect(engine.messages.join('\n')).not.toMatch(/rest peacefully|fully restored/);
+  });
 });

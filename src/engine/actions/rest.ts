@@ -86,6 +86,12 @@ export class RestAction implements Action {
       }
     }
 
+    // Killed during the rest (a status tick, or a monster unseen until it struck): the
+    // death has been told; there is no rest to report.
+    if (!this.player.isAlive()) {
+      return { success: true, cost: 0 };
+    }
+
     const hpGained = this.player.hp - initialHp;
     const manaGained = this.player.mana - initialMana;
 

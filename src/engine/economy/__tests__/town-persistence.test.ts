@@ -106,4 +106,32 @@ describe('Town Hub Generation & Multi-Floor Persistence', () => {
     const gunther = restored.engine.map.getAllEntities().find((e) => e.name === 'Gunther the Smith');
     expect(gunther).toBeDefined();
   });
+
+  it('keeps what the hero bought gone and what they sold on the shelf across a reload', () => {
+    const { profile, engine } = manager.createCharacter('Hilda');
+    const olaf = engine.merchants.get('merchant-olaf')!;
+    const before = olaf.stock.length;
+    const torch = olaf.stock.find((i) => i.id === 'olaf-torch-1')!;
+    expect(olaf.buyItem(engine.player, torch.id).success).toBe(true);
+    const dagger = ItemFactory.createDagger('hilda-old-dagger');
+    engine.player.inventory.primaryPack.addItem(dagger);
+    expect(olaf.sellItem(engine.player, dagger.id).success).toBe(true);
+    manager.saveCharacter(engine, profile);
+
+    const restored = manager.loadCharacter(profile.id)!.engine.merchants.get('merchant-olaf')!;
+    const ids = restored.stock.map((i) => i.id);
+    expect(ids).not.toContain('olaf-torch-1');
+    expect(ids).toContain('hilda-old-dagger');
+    expect(restored.stock).toHaveLength(before);
+    expect(restored.stock.find((i) => i.id === 'hilda-old-dagger')!.identified).toBe(true);
+  });
+
+  it("keeps a shop item's availability rule across a reload (Astrid's tablets unlock by depth)", () => {
+    const { profile, engine } = manager.createCharacter('Hilda');
+    const gated = engine.merchants.get('merchant-astrid')!.stock.filter((i) => i.predicate);
+    expect(gated.length).toBeGreaterThan(0);
+    manager.saveCharacter(engine, profile);
+    const restored = manager.loadCharacter(profile.id)!.engine.merchants.get('merchant-astrid')!;
+    for (const item of gated) expect(restored.stock.find((i) => i.id === item.id)?.predicate).toEqual(item.predicate);
+  });
 });

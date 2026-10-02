@@ -376,6 +376,12 @@ export interface SaveData {
     timestamp: number;
     icon?: string;
   }>;
+  /**
+   * Each town merchant's stock as it stood (merchant id -> items), so what the hero bought
+   * stays gone and what they sold stays on the shelf. Absent (older saves) = the manifest's
+   * initial stock.
+   */
+  merchantStock?: Record<string, SerializedItemNode[]>;
 }
 
 export interface StorageAdapter {

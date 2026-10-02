@@ -541,6 +541,9 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     prngState: engine.prng ? engine.prng.getState() : undefined,
     companion: engine.companion ? serializeCompanion(engine.companion) : undefined,
     discoveryEvents: engine.discoveryEvents?.length ? engine.discoveryEvents.slice(-100) : undefined,
+    merchantStock: engine.merchants.size
+      ? Object.fromEntries([...engine.merchants].map(([id, m]) => [id, m.stock.map(serializeItem)]))
+      : undefined,
   };
 }
 
@@ -783,6 +786,17 @@ export function deserializeMapObject(mapData: SerializedMap, customTiles?: TileD
   return map;
 }
 
+/**
+ * A merchant's stock from the save: an item the shop was authored with comes back as the
+ * manifest's own (its availability `predicate` isn't saved), anything else, such as what
+ * the hero sold, from its saved form. No saved stock = the authored stock.
+ */
+function restoreMerchantStock(authored: Item[], saved: SerializedItemNode[] | undefined): Item[] {
+  if (!saved) return [...authored];
+  const byId = new Map(authored.map((item) => [item.id, item]));
+  return saved.map((node) => byId.get(node.id) ?? deserializeItem(node));
+}
+
 function restoreMonsterDefinitionFields(map: GameMap, registries: EngineRegistries): void {
   for (const entity of map.getAllEntities()) {
     if (!(entity instanceof Monster)) continue;
@@ -994,7 +1008,7 @@ export function deserializeGame(
             cfg.name,
             'general',
             cfg.greeting,
-            [...cfg.initialInventory]
+            restoreMerchantStock(cfg.initialInventory, saveData.merchantStock?.[cfg.id])
           );
           engine.merchants.set(merchant.id, merchant);
         }

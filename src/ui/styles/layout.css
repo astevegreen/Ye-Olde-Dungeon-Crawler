@@ -771,10 +771,13 @@
 }
 
 /* The hero's square: name, depth, level (with its experience bar) and renown. */
+/* Square at least, wider for a long hero or place name ("Bjarnarhaven") rather than
+   cutting it; the bars beside it give up the width. */
 #hud-portrait {
   position: relative;
-  flex: 0 0 var(--hud-square);
-  width: var(--hud-square);
+  flex: 0 0 auto;
+  min-width: var(--hud-square);
+  max-width: 160px;
   height: var(--hud-square);
   box-sizing: border-box;
   padding: 6px 7px;

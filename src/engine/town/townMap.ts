@@ -50,6 +50,7 @@ export class TownMapGenerator {
 
   public generate(): TownResult {
     const map = new GameMap(this.width, this.height, TILES.WALL);
+    map.lit = this.layout?.lit ?? false;
     const npcs: NPC[] = [];
     const merchants = new Map<string, Merchant>();
     const rows = this.layout?.layout;

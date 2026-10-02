@@ -278,6 +278,12 @@ export interface TownLayoutDefinition {
    */
   layout?: string[];
   legend?: Record<string, string>;
+  /**
+   * The town lies in daylight (`GameMap.lit`): sight there reaches as far as line of sight
+   * goes rather than the hero's own radius, and the renderer draws no torchlight. Absent,
+   * the town is lit like a dungeon floor.
+   */
+  lit?: boolean;
 }
 
 export interface FloorEncounterConfig {

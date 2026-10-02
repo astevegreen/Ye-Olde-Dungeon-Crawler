@@ -143,7 +143,7 @@
 *Details: [simulation-and-input.md](docs/architecture/simulation-and-input.md). History: [ADR-0001](docs/decisions/0001-scheduler-partitioning-evaluated-not-adopted.md) (scheduler partitioning), [ADR-0004](docs/decisions/0004-hud-overhaul-retrospective.md) (HUD overhaul).*
 
 **Binding rules:**
-- **Bounded Simulation Scoping:** only the active floor is simulated; other visited floors are stored, not simulated. Per-actor work (AI, pathfinding, combat, awakening/bestiary checks) is bounded via dormant-actor short-circuiting and bounded FOV. `EnergyScheduler` turn selection deliberately stays linear in the active floor's actor count — read ADR-0001 before proposing a partition; rejected on measured evidence.
+- **Bounded Simulation Scoping:** only the active floor is simulated; other visited floors are stored, not simulated. Per-actor work (AI, pathfinding, combat, awakening/bestiary checks) is bounded via dormant-actor short-circuiting and bounded FOV. A lit floor (`GameMap.lit`, the town by day) is seen as far as line of sight goes, but its awakening and bestiary checks stay within the hero's own radius. `EnergyScheduler` turn selection deliberately stays linear in the active floor's actor count — read ADR-0001 before proposing a partition; rejected on measured evidence.
 - **Focus & Modal Isolation:** every open modal registers on the LIFO `ModalStackManager`. The top modal gets all keystrokes; unhandled `Escape` pops it; every other key is trapped before reaching the simulation.
 - **Input ownership:** `InputHandler` owns the `window` `keydown`/`keyup`/`blur` listeners, `ModalStackManager`, and `ChordBuffer`.
 

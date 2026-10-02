@@ -659,6 +659,14 @@ export function serializeMapObject(map: GameMap): SerializedMap {
   };
 }
 
+/**
+ * A lit town (`TownLayoutDefinition.lit`, `GameMap.lit`) isn't saved with its map: floor 0
+ * takes it from the manifest, as the town generator does, so older saves light up too.
+ */
+export function restoreFloorLight(map: GameMap, floor: number, manifest: GameContentManifest | undefined): void {
+  if (floor === 0) map.lit = manifest?.town?.lit ?? false;
+}
+
 export function deserializeMapObject(mapData: SerializedMap, customTiles?: TileDefinition[]): GameMap {
   const map = new GameMap(mapData.width, mapData.height, TILES.WALL);
   map.lastVisitedTick = mapData.lastVisitedTick ?? 0;
@@ -997,6 +1005,8 @@ export function deserializeGame(
       engine.storedFloors.set(fNum, deserializeMapObject(sMap, manifest?.tiles));
     }
   }
+  restoreFloorLight(engine.map, engine.currentFloor, manifest);
+  for (const [fNum, floorMap] of engine.storedFloors) restoreFloorLight(floorMap, fNum, manifest);
 
   // Loot tables hold generator functions, so the save leaves them (and the other
   // definition-only fields) out; restore them from each monster's definition, or a

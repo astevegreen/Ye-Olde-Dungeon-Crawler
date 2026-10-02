@@ -61,6 +61,11 @@ export class FovManager {
     return v === Visibility.Explored || v === Visibility.Visible;
   }
 
+  /**
+   * Recomputes sight from the origin. On a lit map (`GameMap.lit`) it reaches as far as line
+   * of sight goes; a radius under 2 is a limit on the senses (blindness), which daylight
+   * doesn't lift, and is kept. The hero's own sight radius is never under 2.
+   */
   public update(map: GameMap, originX: number, originY: number, radius = 8): void {
     // 1. Demote what was visible to explored (Fog of War). Only the tiles the previous
     //    pass lit are touched, so the cost tracks the FOV area, not the map area (§6).
@@ -89,7 +94,8 @@ export class FovManager {
     this.visibleTiles = [];
 
     // 2. Compute newly visible tiles using recursive shadowcasting
-    computeFov(originX, originY, radius, map, (x, y) => {
+    const reach = map.lit && radius >= 2 ? Math.max(this.width, this.height) : radius;
+    computeFov(originX, originY, reach, map, (x, y) => {
       if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
         this.visibility[y][x] = Visibility.Visible;
         this.visibleTiles.push(y * this.width + x);

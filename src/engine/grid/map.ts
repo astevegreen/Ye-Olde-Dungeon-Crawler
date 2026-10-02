@@ -21,6 +21,12 @@ export class GameMap {
   public lastVisitedTick: number = 0;
   public floorTurnCount: number = 0;
   public isCleared: boolean = false;
+  /**
+   * Lit throughout (a town by day): the hero sees as far as line of sight goes, not just
+   * their own sight radius (`FovManager.update`). Not saved: the town generator sets it
+   * from the manifest, and a load re-derives it the same way (`restoreFloorLight`).
+   */
+  public lit = false;
   public lastRespawnTurn: number = 0;
 
   constructor(width: number, height: number, defaultTile: TileDefinition = TILES.WALL) {

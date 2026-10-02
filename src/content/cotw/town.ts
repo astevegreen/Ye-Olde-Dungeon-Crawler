@@ -12,6 +12,8 @@ export const COTW_TOWN: TownLayoutDefinition = {
   height: TOWN_HEIGHT,
   layout: TOWN_ROWS,
   legend: TOWN_LEGEND,
+  // A village by day: the lanes and plaza are seen as far as the eye reaches, not by torch.
+  lit: true,
   playerSpawn: TOWN_PLAYER_SPAWN,
   stairsDown: TOWN_STAIRS_DOWN,
   buildings: TOWN_BUILDINGS,

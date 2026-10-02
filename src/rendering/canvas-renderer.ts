@@ -771,7 +771,8 @@ export class CanvasRenderer {
   /**
    * Torchlight (atlas.terrain.torch): visible cells darken toward the edge of sight, a warm
    * soft-light pool sits on the player, and emissive tiles add their own glow. Remembered
-   * cells get no light.
+   * cells get no light. A lit floor (a town by day, `GameMap.lit`) keeps only the emissive
+   * glow.
    */
   private renderTorchlight(startX: number, startY: number, cols: number, rows: number): void {
     const art = this.engine.manifest?.atlas?.terrain;
@@ -790,8 +791,9 @@ export class CanvasRenderer {
       }
     }
     if (visible.length === 0) return;
+    const lit = this.engine.map.lit;
     const dark = this.theme.canvasBg;
-    for (const v of visible) {
+    for (const v of lit ? [] : visible) {
       const t = Math.min(1, Math.hypot(v.x - player.x, v.y - player.y) / torch.radius);
       const a = torch.falloff * Math.pow(t, 1.35);
       if (a > 0.005) {
@@ -804,7 +806,7 @@ export class CanvasRenderer {
     ctx.beginPath();
     for (const v of visible) ctx.rect(v.px, v.py, cs, cs);
     ctx.clip();
-    if (playerPos) {
+    if (playerPos && !lit) {
       const cx = playerPos.x + cs / 2;
       const cy = playerPos.y + cs / 2;
       const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, cs * torch.radius * 0.65);

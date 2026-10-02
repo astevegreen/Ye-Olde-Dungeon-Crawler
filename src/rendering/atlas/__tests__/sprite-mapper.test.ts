@@ -226,8 +226,8 @@ describe('sprite-mapper — Tag-Priority Monster, Item, and Zone-Themed Terrain 
     });
 
     it('draws quest relics from recipes keyed by their definition IDs', () => {
-      const sunStone = { id: 'q-1', definitionId: 'sun_stone_freyr', name: 'The Sun-Stone of Freyr', category: 'quest' } as Item;
-      expect(getItemSpriteKey(sunStone, hasSprite)).toBe('sun_stone_freyr');
+      const hearthTear = { id: 'q-1', definitionId: 'hearth_tear_fragment', name: 'Shard of the Hearth-Tear', category: 'quest' } as Item;
+      expect(getItemSpriteKey(hearthTear, hasSprite)).toBe('hearth_tear_fragment');
 
       const banner = { id: 'q-2', definitionId: 'horde_war_banner', name: 'Horde War Banner', category: 'misc' } as Item;
       expect(getItemSpriteKey(banner, (key) => key in WARCRAFT_SPRITE_RECIPES)).toBe('horde_war_banner');

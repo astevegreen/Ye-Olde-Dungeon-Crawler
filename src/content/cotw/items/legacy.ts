@@ -643,20 +643,6 @@ export const COTW_LEGACY_ITEMS: ItemDefinition[] = [
   // QUEST RELICS
   // ==========================================
   {
-    id: 'sun_stone_freyr',
-    name: 'The Sun-Stone of Freyr',
-    unidentifiedName: 'Radiant Sun Gem',
-    category: 'quest',
-    tier: 1,
-    minFloor: 1,
-    weight: 500,
-    bulk: 300,
-    quality: 'artifact',
-    identified: true,
-    description: 'The sacred solar relic of Freyr. Restore it to Bjarnarhaven to save the realm.',
-    value: 1000,
-  },
-  {
     id: 'hearth_tear_fragment',
     name: 'Shard of the Hearth-Tear',
     unidentifiedName: 'Warm Splinter of Glass',

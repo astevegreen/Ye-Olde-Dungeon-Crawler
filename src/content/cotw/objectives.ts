@@ -1,5 +1,6 @@
 import type { ObjectiveDefinition } from '../../engine';
 import { COTW_DEEPEST_FLOOR_COUNTER } from './spellTablets';
+import { HEARTH_TEAR_RETURNED_FLAG, RELIC_RECOVERED_FLAG } from './relic';
 
 /**
  * The running objective the HUD shows under the spell belt (`manifest.objectives`),
@@ -20,6 +21,13 @@ export const COTW_OBJECTIVES: ObjectiveDefinition[] = [
     doneWhenCounterAtLeast: { counter: COTW_DEEPEST_FLOOR_COUNTER, value: 26 },
   },
   {
+    // Ahead of Act 2's line, so the errand shows as soon as the shard is in hand.
+    id: 'cotw_objective_return',
+    text: 'Carry the Hearth-Tear home to Bjarnarhaven.',
+    availableWhenFlag: RELIC_RECOVERED_FLAG,
+    doneWhenAnyFlag: [HEARTH_TEAR_RETURNED_FLAG],
+  },
+  {
     id: 'cotw_objective_act2',
     text: "Rot seeps up from a gnawed root of Yggdrasil. Follow it down.",
     doneWhenAnyFlag: ['vidnir_slain'],
@@ -29,10 +37,5 @@ export const COTW_OBJECTIVES: ObjectiveDefinition[] = [
     text: "Níðhögg waits at the root's end. Slay it, or drive it off.",
     availableWhenFlag: 'vidnir_slain',
     doneWhenAnyFlag: ['nidhogg_slain', 'nidhogg_root_sealed'],
-  },
-  {
-    id: 'cotw_objective_return',
-    text: 'Carry the Sun-Stone of Freyr home to Bjarnarhaven.',
-    availableWhenFlag: 'relic_recovered',
   },
 ];

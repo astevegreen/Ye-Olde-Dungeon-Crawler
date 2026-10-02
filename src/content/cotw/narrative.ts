@@ -1,6 +1,7 @@
 import type { ActionHook, ChoiceDefinition, NPC, StoryChoiceTrigger } from '../../engine';
 import { Monster, getCounter, getFlag, setFlag } from '../../engine';
 import { COTW_DEEPEST_FLOOR_COUNTER } from './spellTablets';
+import { HEARTH_TEAR_RETURNED_FLAG, RELIC_RECOVERED_FLAG } from './relic';
 
 /**
  * Story Choice Trigger: fires when Víðnir, Herald of the Wyrm (miniboss on floor 45)
@@ -172,14 +173,14 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
     if (actor !== engine.player || engine.currentFloor !== 0) return;
 
     const deepest = getCounter(engine.worldState, COTW_DEEPEST_FLOOR_COUNTER);
-    const hasRelic = getFlag(engine.worldState, 'relic_recovered');
+    const hasRelic = getFlag(engine.worldState, RELIC_RECOVERED_FLAG);
     const isSavior = getFlag(engine.worldState, 'savior_of_jarnvidr');
     const isTainted = getFlag(engine.worldState, 'blood_tainted_hero');
     const vidnirSlain = getFlag(engine.worldState, 'vidnir_slain');
 
     // Announce the Great Thaw once upon first entering town with the relic
-    if (hasRelic && !getFlag(engine.worldState, 'cotw_town_thawed_logged')) {
-      setFlag(engine.worldState, 'cotw_town_thawed_logged', true);
+    if (hasRelic && !getFlag(engine.worldState, HEARTH_TEAR_RETURNED_FLAG)) {
+      setFlag(engine.worldState, HEARTH_TEAR_RETURNED_FLAG, true);
       engine.log(
         '✦ THE GREAT THAW! Sól’s warmth returns to Bjarnarhaven! The plaza fountain flows freely, but ominous subterranean tremors shake the village longhouses... ✦'
       );

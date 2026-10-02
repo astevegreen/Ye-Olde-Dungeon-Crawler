@@ -104,7 +104,6 @@ describe('CotW 83-Item Catalog Spec', () => {
       'utility_belt',
       'chest',
       'broadsword',
-      'sun_stone_freyr',
       'hearth_tear_fragment',
     ];
 

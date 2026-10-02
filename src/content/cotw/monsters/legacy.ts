@@ -524,10 +524,6 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
         chance: 0.25,
         generate: (id, rng) => makeLootItem('frost_blade', id, rng),
       },
-      {
-        chance: 0.5,
-        generate: (id, rng) => makeLootItem('hearth_tear_fragment', id, rng),
-      },
     ],
   },
   root_wraith: {

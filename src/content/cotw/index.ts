@@ -34,6 +34,7 @@ import { COTW_FLOOR_HAZARDS, COTW_ROOM_DECORATION } from './floorBands';
 import { COTW_FLOOR_LAYOUTS, COTW_FLOOR_SIZE } from './floorLayouts';
 import { COTW_MONSTER_CATEGORIES } from './monsterCategories';
 import { COTW_FACTIONS, COTW_TEMPLE_MET_HOOK } from './factions';
+import { COTW_RELIC_HOOK } from './relic';
 import { SKALDIC_RUNESTONE_LORE, SKALDIC_RUNESTONE_PLACEMENTS } from './runestones';
 import {
   VIDNIR_DEFEATED_TRIGGER,
@@ -58,7 +59,7 @@ export const cotwManifest: GameContentManifest = {
     hallOfFameShortName: 'Valhalla',
     worldName: 'Midgard',
     victoryTitle: 'Victory in Midgard!',
-    victoryBanner: 'The Sun-Stone of Freyr is restored to Bjarnarhaven!',
+    victoryBanner: 'The Hearth-Tear is home, and the root is answered!',
     fallenBanner: 'Your soul departs Midgard for the eternal halls of Valhalla.',
     xpName: 'Megin',
     // Seiðr: the Norse practice of magic, the spell resource under the blue orb.
@@ -94,7 +95,7 @@ export const cotwManifest: GameContentManifest = {
   // Each riddle stands in for its milestone in the Story until it is achieved.
   // Riddles: DRAFT wording (Claude, at the owner's request), for the owner to edit.
   trackedMilestones: [
-    { flag: 'relic_recovered', label: 'Sun-Stone Claimed', description: 'Recovered the Sun-Stone of Freyr from the dungeon depths.', icon: '☀️', riddle: 'A sun lies buried where no sun can reach. Carry it up into the morning.' },
+    { flag: 'relic_recovered', label: 'Hearth-Tear Reclaimed', description: 'Took back the stolen shard of Sól’s sun-chariot from the Sun-Chariot Warden.', icon: '☀️', riddle: 'A sun lies buried where no sun can reach. Carry it up into the morning.' },
     { flag: 'nidhogg_slain', label: 'Níðhögg Slain', description: 'Struck down Níðhögg at the root of Yggdrasil, and split the World Tree.', icon: '👑', riddle: 'At the root’s last ring the corpse-gnawer feeds. A blade can end it, if you will pay what ending costs.' },
     { flag: 'tyr_purified', label: 'Altar of Tyr Cleansed', description: 'Purified the defiled altar on Floor 3 with an oath and a solemn sacrifice.', icon: '⚖️', riddle: 'Thrice below, the oath-god’s stone stands fouled. He gave a hand; it asks a gift of yours.' },
     { flag: 'oath_resolved', label: "The Matriarch's Blood-Oath", description: 'Struck a lasting bargain with a troll-wife matriarch to sever the siphon on the village.', icon: '🩸', riddle: 'Among dead warlocks a troll-mother bargains in blood. Hot or cold, her price is kept forever.' },
@@ -120,6 +121,7 @@ export const cotwManifest: GameContentManifest = {
     COTW_SVART_TAUNT_HOOK,
     COTW_TOWN_REACTIVE_HOOK,
     COTW_TEMPLE_MET_HOOK,
+    COTW_RELIC_HOOK,
   ],
   storyChoiceTriggers: [OATH_TRIGGER, VIDNIR_DEFEATED_TRIGGER],
   attributeMilestones: COTW_ATTRIBUTE_MILESTONES,

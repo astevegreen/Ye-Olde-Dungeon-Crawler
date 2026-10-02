@@ -73,10 +73,6 @@ export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
         chance: 0.3,
         generate: (id, rng) => makeLootItem('frost_blade', id, rng),
       },
-      {
-        chance: 0.5,
-        generate: (id, rng) => makeLootItem('hearth_tear_fragment', id, rng),
-      },
     ],
   },
   {

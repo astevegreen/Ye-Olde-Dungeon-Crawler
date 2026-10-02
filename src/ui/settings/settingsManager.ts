@@ -56,7 +56,7 @@ export const ACTION_METADATA: ActionMetadata[] = [
   { id: 'map', name: 'Explored Dungeon Map', category: 'Interaction & Inventory', defaultCodes: ['KeyM'] },
   { id: 'inspect', name: 'Inspect / Look Mode', category: 'Interaction & Inventory', defaultCodes: ['KeyX', 'KeyL'] },
   { id: 'compendium', name: 'Bestiary', category: 'Interaction & Inventory', defaultCodes: ['KeyB'] },
-  { id: 'pact', name: 'Run Pacts & Bounties', category: 'Interaction & Inventory', defaultCodes: ['KeyP'] },
+  { id: 'pact', name: 'Pacts', category: 'Interaction & Inventory', defaultCodes: ['KeyP'] },
   { id: 'story', name: 'Story', category: 'Interaction & Inventory', defaultCodes: ['KeyO'] },
   { id: 'radial_menu', name: 'Open Radial Action Menu', category: 'Interaction & Inventory', defaultCodes: ['KeyV'] },
 ];

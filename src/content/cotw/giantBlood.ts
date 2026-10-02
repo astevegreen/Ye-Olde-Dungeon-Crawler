@@ -74,6 +74,11 @@ function isItemEquipped(entity: Entity, itemId: string): boolean {
   return items.some((item) => item.id === itemId || item.definitionId === itemId);
 }
 
+/** The floor where the buff ends for this wearer: later with the Brim-Wolf Pelt Hood. */
+function fadeFloorFor(entity: Entity): number {
+  return isItemEquipped(entity, 'brim_wolf_pelt_hood') ? 34 : FADE_FLOOR;
+}
+
 export const giantBloodHandler: StatusHandler = {
   // No onApply: action hooks (`ActionHook.execute`) receive the narrower
   // `EngineContext`, not a full `GameEngine` (ARCHITECTURE.md §3), so the
@@ -90,9 +95,8 @@ export const giantBloodHandler: StatusHandler = {
     const floor = engine.currentFloor;
     const hasHood = isItemEquipped(entity, 'brim_wolf_pelt_hood');
     const hasFocus = isItemEquipped(entity, 'sol_shard_focus');
-    const effectiveFadeFloor = hasHood ? 34 : FADE_FLOOR;
 
-    if (floor >= effectiveFadeFloor) {
+    if (floor >= fadeFloorFor(entity)) {
       // Self-removal from inside onTick, the same documented pattern the Rune of
       // Return's interrupt-fizzle uses (statusManager.ts) — no engine change needed
       // for a status to end itself mid-tick instead of expiring naturally.
@@ -126,9 +130,10 @@ export const giantBloodHandler: StatusHandler = {
 };
 
 /**
- * Applies the buff to the player on their very first action and never again
+ * Applies the buff to the player on their first action above the fade floor
  * (guarded by `hasStatus`) — content's own bootstrap, same shape as the hazard it
- * replaced.
+ * replaced. Never at or below the fade floor: `onTick` removes it there, and
+ * re-applying it would log the removal line again on every turn.
  */
 export const GIANT_BLOOD_BOOTSTRAP_HOOK: ActionHook = {
   id: 'giant-blood-bootstrap',
@@ -136,7 +141,11 @@ export const GIANT_BLOOD_BOOTSTRAP_HOOK: ActionHook = {
   actionType: '*',
   execute: ({ actor, engine }) => {
     const player = engine.player;
-    if (actor === player && !player.statusManager.hasStatus(GIANT_BLOOD_STATUS)) {
+    if (
+      actor === player &&
+      engine.currentFloor < fadeFloorFor(player) &&
+      !player.statusManager.hasStatus(GIANT_BLOOD_STATUS)
+    ) {
       player.statusManager.applyStatus({ type: GIANT_BLOOD_STATUS, duration: 9999 });
     }
   },

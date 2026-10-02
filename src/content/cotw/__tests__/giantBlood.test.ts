@@ -80,6 +80,18 @@ describe("Giant's Blood heritage buff (Act 1, replaces the old permafrost/obsidi
     expect(player.defense).toBe(baseDefense);
   });
 
+  it('says it is gone once past floor 26, not on every turn after', () => {
+    const { engine, player } = buildEngine(27);
+    player.statusManager.applyStatus({ type: GIANT_BLOOD_STATUS, duration: 9999 });
+
+    for (let i = 0; i < 10; i++) {
+      engine.handlePlayerAction(new WaitAction(player));
+    }
+
+    expect(engine.messages.filter((m) => m.includes('gutters out'))).toHaveLength(1);
+    expect(player.statusManager.hasStatus(GIANT_BLOOD_STATUS)).toBe(false);
+  });
+
   it('never deals damage on any floor — the old damage-over-time hazard is gone', () => {
     const { engine, player } = buildEngine(3);
     const startHp = player.hp;

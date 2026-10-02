@@ -70,6 +70,22 @@ describe('Vault / Prefab Stamp Injector', () => {
     }
   });
 
+  it("keeps a vault's own guards near their depth, and draws from the floor once they're stale", () => {
+    const cistern = COTW_VAULTS.find((v) => v.id === 'sunken_cistern')!; // giant rats and kobolds
+    const guards = (floor: number) => {
+      const prng = new Mulberry32(99);
+      const map = new GameMap(30, 25, TILES.WALL);
+      VaultStamper.stamp(map, cistern, 2, 2, floor, COTW_MONSTERS, [], () => prng.next());
+      return map.getAllEntities().map((e) => (e as { definitionId?: string }).definitionId);
+    };
+    const shallow = guards(4);
+    expect(shallow.length).toBeGreaterThan(0);
+    expect(shallow.every((id) => id === 'giant_rat' || id === 'kobold')).toBe(true);
+    const deep = guards(44);
+    expect(deep.length).toBe(shallow.length);
+    expect(deep.some((id) => id === 'giant_rat' || id === 'kobold')).toBe(false);
+  });
+
   it('injects vaults into procedural dungeon generator on floors >= 3', () => {
     let vaultsEncountered = 0;
 

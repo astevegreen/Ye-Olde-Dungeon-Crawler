@@ -5,12 +5,15 @@ import type { TileDefinition } from '../types';
 import { getMonsterDefinition, type MonsterDefinition } from '../bestiary/monsterDefinitions';
 import type { ItemDefinition } from '../types/manifest';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
-import { createScaledMonster, selectDungeonMonsterDefinition } from './spawner';
+import { createScaledMonster, dungeonSpawnWeight, selectDungeonMonsterDefinition } from './spawner';
 import { createDungeonChest } from './lootSpawner';
 import type { EngineRegistries } from '../registries';
 
 
 import type { Predicate } from '../predicates/types';
+
+/** Below this `dungeonSpawnWeight`, a vault's listed guard no longer belongs to the floor. */
+const VAULT_GUARD_MIN_WEIGHT = 0.1;
 
 export interface VaultBlueprint {
   id: string;
@@ -19,6 +22,11 @@ export interface VaultBlueprint {
   minFloor: number;
   maxFloor?: number;
   layout: string[];
+  /**
+   * The vault's own guards, one drawn per `M` spot while it still belongs to the floor
+   * (`dungeonSpawnWeight` at least VAULT_GUARD_MIN_WEIGHT, about twelve floors past its
+   * unlock). Past that, or when none is listed, the spot draws from the floor's monsters.
+   */
   preferredMonsters?: string[];
   minibossId?: string;
   predicate?: Predicate;
@@ -160,6 +168,8 @@ export class VaultStamper {
             def =
               monsterCandidates.find((m) => m.id === prefId) ??
               (registries ? registries.monsters.get(prefId) : getMonsterDefinition(prefId));
+            // A shallow vault met deep keeps its shape, not its rats.
+            if (def && dungeonSpawnWeight(def, currentFloor) < VAULT_GUARD_MIN_WEIGHT) def = undefined;
           }
           if (!def) {
             def = selectDungeonMonsterDefinition(monsterCandidates, currentFloor, rng);

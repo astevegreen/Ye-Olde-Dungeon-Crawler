@@ -44,6 +44,8 @@ Before reporting a change complete, run these and report the real output:
 - `npm run validate:schema`
 - `npm run build` (the cotw bundle).
 
+`npm run gates` runs all five, then the Playwright suite, which the pre-commit hook skips (it runs only at push). Run it before committing any change the player can see; Playwright has caught regressions the unit tests missed.
+
 ## Personas & Skills
 Persona rules live in `.agents/rules/persona-*.md`; skills in `.agents/skills/<name>/SKILL.md`. When a prompt starts with a tag, adopt that file. Neither ever overrides the invariants above.
 - `[Auditor]` -> skill `adversarial-audit`: adversarial critique, a prioritized plan, and approval before modifying code.

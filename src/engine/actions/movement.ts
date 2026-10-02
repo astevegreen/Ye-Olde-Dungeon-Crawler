@@ -69,10 +69,10 @@ export class MovementAction implements Action {
       };
     }
 
-    // A neutral monster the hero walks into (Entity.setFaction) stands aside: it is lifted
-    // off the map for the step and put back where the hero stood, so the two trade places
-    // and one standing in a one-tile corridor never walls it off. Every exit below puts it
-    // back.
+    // A monster on the hero's side (the companion) or a neutral one (Entity.setFaction)
+    // that the hero walks into is lifted off the map for the step and put back where the
+    // hero stood, so the two trade places and neither walls off a one-tile corridor. Every
+    // exit below puts it back.
     const fromX = this.entity.x;
     const fromY = this.entity.y;
     let steppedAside: Monster | null = null;
@@ -90,7 +90,11 @@ export class MovementAction implements Action {
         // Automatically trigger bump-attack
         const attackAction = new MeleeAttackAction(this.entity, targetEntity);
         return attackAction.perform(engine);
-      } else if (this.entity.type === 'player' && targetEntity instanceof Monster && targetEntity.faction === 'neutral') {
+      } else if (
+        this.entity.type === 'player' &&
+        targetEntity instanceof Monster &&
+        (targetEntity.faction === 'neutral' || targetEntity.faction === 'player')
+      ) {
         steppedAside = targetEntity;
         engine.map.removeEntity(targetEntity);
       } else {
@@ -160,7 +164,8 @@ export class MovementAction implements Action {
     }
 
     if (steppedAside) {
-      engine.log(`${(steppedAside as Monster).name} stands aside and lets you pass.`);
+      const passed = steppedAside as Monster;
+      engine.log(passed.faction === 'player' ? `You trade places with ${passed.name}.` : `${passed.name} stands aside and lets you pass.`);
       putBack(fromX, fromY);
     }
 

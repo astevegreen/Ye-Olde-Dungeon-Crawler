@@ -102,6 +102,16 @@ describe('A neutral monster', () => {
     expect(map.getEntityAt(3, 5)).toBe(wight);
     expect(engine.messages.some((m) => m.includes('stands aside'))).toBe(true);
 
+    // The hero's companion trades places too.
+    const hound = new Monster({ id: 'h', name: 'Hound', position: { x: 5, y: 5 }, stats: { hp: 10, maxHp: 10, attack: 3, defense: 1 }, faction: 'player' });
+    map.addEntity(hound);
+    engine.handlePlayerAction(new MovementAction(player, 1, 0));
+    expect([player.x, hound.x]).toEqual([5, 4]);
+    expect(hound.hp).toBe(10);
+    expect(engine.messages.some((m) => m.includes('You trade places with Hound'))).toBe(true);
+    engine.handlePlayerAction(new MovementAction(player, -1, 0));
+    expect([player.x, hound.x]).toEqual([4, 5]);
+
     // Hostile again, it is a fight, not a swap.
     wight.setFaction('hostile');
     engine.handlePlayerAction(new MovementAction(player, -1, 0));

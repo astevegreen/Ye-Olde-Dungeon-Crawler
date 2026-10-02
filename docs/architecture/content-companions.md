@@ -10,6 +10,9 @@
 ## AI-Targeting Generalization
 `selectAttackTarget(engine, actor)` (`ai/targetSelection.ts`) resolves a monster's attack/pathing target, defaulting to `engine.player` — behaviorally identical to the old hardcoded behavior — unless `Monster.targetingMode === 'nearest_hostile'` (`MonsterDefinition.targetingMode`, opt-in per monster, bounded-radius nearest-hostile search). No shipped monster's difficulty changes unless its content definition opts in; in `cotw`, `wolf`, `garmling`, and `brim_howler` do today. This is the prerequisite that lets a companion actually draw aggro and "tank."
 
+## Passing in a Corridor
+Walking into the companion trades places with it (`actions/movement.ts`, the same rule that lets the hero past a neutral monster), so a companion in a one-tile corridor never walls the hero in. Its follow AI takes it from there.
+
 ## Archetypes
 `Companion.archetype` (`'balanced' | 'bodyguard' | 'skirmisher'`) selects one of three `AIStrategy` implementations (`ai/aiRegistry.ts`): `companion_follow` (balanced, follow distance 2 — Phase 1's original behavior), `companion_bodyguard` (follow distance 1, stays tight to the player), `companion_skirmisher` (follow distance 5, proactively paths to a hostile within a 6-tile seek radius even before it's adjacent). `Companion.setArchetype()` switches both the archetype and its backing `aiRoutineId` together; `TrainerService.switchArchetype()` is the paid, trainer-gated entry point.
 

@@ -2,7 +2,7 @@ import type { ChoiceDefinition } from '../../engine';
 import { BLOOD_ALTAR_CHOICE } from './hostageRitual';
 import { SKALDIC_RUNESTONE_CHOICES } from './runestones';
 import { VIDNIR_REVELATION_CHOICE } from './narrative';
-import { IRON_CLANS_BARROW_CHOICES, IVALDA_CHOICE } from './ironClans';
+import { IRON_CLANS_BARROW_CHOICES, IVALDA_CHOICE, IVALDA_TOWN_CHOICE } from './ironClans';
 
 export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
   /**
@@ -292,6 +292,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
   ...SKALDIC_RUNESTONE_CHOICES,
   ...IRON_CLANS_BARROW_CHOICES,
   [IVALDA_CHOICE.id]: IVALDA_CHOICE,
+  [IVALDA_TOWN_CHOICE.id]: IVALDA_TOWN_CHOICE,
 
   choice_dwarven_hearth: {
     id: 'choice_dwarven_hearth',

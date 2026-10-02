@@ -19,6 +19,11 @@ import { Monster, NPC, MovementAction, getCounter, getFaction, getFlag, incremen
  * Cinder-Gilded Duergar to rest (+2 each, the first five), and breaking the coven's hold
  * on the stolen sun (+10, once). Once trusted (0), Ivalda tempers the hero's blade and
  * the Haugbui barrow-guardians stand aside; at 10 she teaches the Accord's Steam Lance.
+ *
+ * Once trusted, and once the hero is off Floor 13, Ivalda carries her coals up to
+ * Bjarnarhaven and works beside Gunther in the armory, so her forge never asks for a climb
+ * back: the Rune of Return always reaches town. A hero who never found the hidden grotto
+ * meets her there.
  */
 
 export const IRON_CLANS_FACTION = 'iron_clans';
@@ -29,6 +34,11 @@ const STEAM_LANCE_STANDING = 10;
 
 export const IVALDA_ID = 'npc-ivalda';
 const IVALDA_CHOICE_ID = 'ivalda_forge';
+const IVALDA_TOWN_CHOICE_ID = 'ivalda_forge_town';
+export const IVALDA_IN_TOWN_FLAG = 'ivalda_in_town';
+const DWARVEN_HEARTH_FLOOR = 13;
+/** Inside Gunther's Armory (townLayout.ts), beside him. */
+export const IVALDA_TOWN_POSITION = { x: 40, y: 6 };
 
 const LAID_TO_REST_COUNTER = 'iron_clans:laid_to_rest';
 const LAID_TO_REST_MAX = 5;
@@ -89,6 +99,15 @@ export const IVALDA_CHOICE: ChoiceDefinition = {
   ],
   cancelable: true,
   cancelLabel: 'Leave her to her coals',
+};
+
+/** The same forge at Gunther's armory, where she works once the clans trust the hero. */
+export const IVALDA_TOWN_CHOICE: ChoiceDefinition = {
+  ...IVALDA_CHOICE,
+  id: IVALDA_TOWN_CHOICE_ID,
+  description:
+    'Ivalda has set her own anvil at the back of Gunther’s armory, and the two of them argue about quench-water in two languages. She looks up as you come in.\n\n“You kept faith with our dead, Thrym’s blood or no. The forges below are warming; mine came up to meet the trade your grandfathers kept. Now: steel.”',
+  cancelLabel: 'Leave her to her anvil',
 };
 
 /** The clan barrows: one per floor, each its own choice, so each settles on its own. */
@@ -203,8 +222,10 @@ const IRON_CLANS_STANDING_HOOK: ActionHook = {
       engine.log('Far above, in the Dwarven Works, a cold forge ticks as warmth returns to its stones. (+10 Iron Clans standing)');
     }
 
-    if (engine.currentFloor < 10 || engine.currentFloor > 17) return;
     const isTrusted = getFaction(ws, IRON_CLANS_FACTION) >= IRON_CLANS_TRUSTED;
+    moveIvaldaToTown(engine, isTrusted);
+
+    if (engine.currentFloor < 10 || engine.currentFloor > 17) return;
     for (const entity of engine.map.getAllEntities()) {
       if (!(entity instanceof Monster) || entity.definitionId !== 'haugbui' || !entity.isAlive()) continue;
       const standsAside = isTrusted && entity.hp >= entity.maxHp;
@@ -213,5 +234,27 @@ const IRON_CLANS_STANDING_HOOK: ActionHook = {
     }
   },
 };
+
+/**
+ * Once trusted and off her floor, Ivalda leaves the hearth for town: she is added to the
+ * stored town map on the hero's next turn there, and taken off Floor 13 on the next turn
+ * there. Not while the hero stands on Floor 13, so she never vanishes mid-visit.
+ */
+function moveIvaldaToTown(engine: Parameters<ActionHook['execute']>[0]['engine'], isTrusted: boolean): void {
+  const ws = engine.worldState;
+  if (!getFlag(ws, IVALDA_IN_TOWN_FLAG)) {
+    if (!isTrusted || engine.currentFloor === DWARVEN_HEARTH_FLOOR) return;
+    setFlag(ws, IVALDA_IN_TOWN_FLAG, true);
+    engine.log('Word comes up the mine-shafts: Ivalda, the last forge-keeper of the Iron Clans, has carried her coals to Bjarnarhaven to work beside Gunther in the armory.');
+  }
+  const here = engine.map.getEntityById(IVALDA_ID);
+  if (engine.currentFloor === DWARVEN_HEARTH_FLOOR && here) {
+    engine.removeEntity(here);
+  } else if (engine.currentFloor === 0 && !here) {
+    const { x, y } = IVALDA_TOWN_POSITION;
+    if (engine.map.getEntityAt(x, y)) return; // someone is in her spot; next turn
+    engine.map.addEntity(new NPC({ ...IVALDA, role: 'villager', position: { x, y }, choiceId: IVALDA_TOWN_CHOICE_ID }));
+  }
+}
 
 export const IRON_CLANS_HOOKS: ActionHook[] = [IVALDA_MET_HOOK, IRON_CLANS_STANDING_HOOK];

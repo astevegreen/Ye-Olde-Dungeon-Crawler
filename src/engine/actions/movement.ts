@@ -69,6 +69,20 @@ export class MovementAction implements Action {
       };
     }
 
+    // A neutral monster the hero walks into (Entity.setFaction) stands aside: it is lifted
+    // off the map for the step and put back where the hero stood, so the two trade places
+    // and one standing in a one-tile corridor never walls it off. Every exit below puts it
+    // back.
+    const fromX = this.entity.x;
+    const fromY = this.entity.y;
+    let steppedAside: Monster | null = null;
+    const putBack = (x: number, y: number): void => {
+      if (!steppedAside) return;
+      steppedAside.setPosition(x, y);
+      engine.map.addEntity(steppedAside);
+      steppedAside = null;
+    };
+
     // 2. Entity Collision Check (Bump-Attack vs Hostile, or Talk to NPC)
     const targetEntity = engine.map.getEntityAt(targetX, targetY, this.entity.planeId);
     if (targetEntity) {
@@ -76,6 +90,9 @@ export class MovementAction implements Action {
         // Automatically trigger bump-attack
         const attackAction = new MeleeAttackAction(this.entity, targetEntity);
         return attackAction.perform(engine);
+      } else if (this.entity.type === 'player' && targetEntity instanceof Monster && targetEntity.faction === 'neutral') {
+        steppedAside = targetEntity;
+        engine.map.removeEntity(targetEntity);
       } else {
         if (this.entity.type === 'player' && targetEntity instanceof NPC) {
           // An NPC with a choice opens it (NpcConfig.choiceId); it never resolves.
@@ -108,6 +125,7 @@ export class MovementAction implements Action {
     const isWalkable = tile ? (tile.walkable ?? tile.passable) : false;
     if (!tile || !isWalkable) {
       // Auto-resolve OpenDoorAction on bump into closed doors (orthogonal & diagonal)
+      putBack(targetX, targetY);
       if (tile && (tile.isClosedDoor || tile.type === 'door_closed')) {
         const openAction = new OpenDoorAction(this.entity, targetX, targetY);
         return openAction.perform(engine);
@@ -133,11 +151,17 @@ export class MovementAction implements Action {
     // 4. Valid Movement
     const moved = engine.map.moveEntity(this.entity, targetX, targetY);
     if (!moved) {
+      putBack(targetX, targetY);
       return {
         success: false,
         cost: 0,
         message: `Failed to move ${this.entity.name}.`,
       };
+    }
+
+    if (steppedAside) {
+      engine.log(`${(steppedAside as Monster).name} stands aside and lets you pass.`);
+      putBack(fromX, fromY);
     }
 
     const destTile = engine.map.getTile(targetX, targetY);

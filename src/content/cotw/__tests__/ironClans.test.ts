@@ -14,7 +14,7 @@ import { cotwManifest } from '../index';
 import { COTW_QUEST } from '../quest';
 import { COTW_TILES } from '../tiles';
 import { DWARVEN_HEARTH_FLOOR } from '../vaults';
-import { IRON_CLANS_FACTION, IRON_CLANS_MET_FLAG, IVALDA, IVALDA_ID } from '../ironClans';
+import { IRON_CLANS_FACTION, IRON_CLANS_MET_FLAG, IVALDA, IVALDA_ID, IVALDA_IN_TOWN_FLAG, IVALDA_TOWN_POSITION } from '../ironClans';
 
 const standing = (e: GameEngine) => e.getFactionStanding(IRON_CLANS_FACTION);
 
@@ -134,6 +134,36 @@ describe('The Iron Clans', () => {
     engine.worldState.factions[IRON_CLANS_FACTION] = 10;
     engine.handlePlayerAction(new MovementAction(player, 1, 0));
     expect(player.spellsKnown).toContain('steam_lance');
+  });
+
+  it('sends Ivalda up to Gunther’s armory once trusted, never mid-visit, and off the hearth', () => {
+    const { engine, player } = engineOn(1);
+    engine.changeFloor(DWARVEN_HEARTH_FLOOR);
+    expect(engine.map.getEntityById(IVALDA_ID)).not.toBeNull();
+
+    // Trusted while on her floor: she stays for now.
+    engine.worldState.factions[IRON_CLANS_FACTION] = 0;
+    engine.handlePlayerAction(new WaitAction(player));
+    expect(engine.getWorldFlag(IVALDA_IN_TOWN_FLAG)).toBe(false);
+    expect(engine.map.getEntityById(IVALDA_ID)).not.toBeNull();
+
+    // Off it, word comes that she has gone; in town she is at the armory, with the town forge.
+    engine.changeFloor(0);
+    engine.handlePlayerAction(new WaitAction(player));
+    expect(engine.getWorldFlag(IVALDA_IN_TOWN_FLAG)).toBe(true);
+    expect(engine.messages.some((m) => m.includes('carried her coals to Bjarnarhaven'))).toBe(true);
+    engine.handlePlayerAction(new WaitAction(player));
+    const inTown = engine.map.getEntityById(IVALDA_ID) as NPC;
+    expect([inTown.x, inTown.y]).toEqual([IVALDA_TOWN_POSITION.x, IVALDA_TOWN_POSITION.y]);
+    expect(inTown.choiceId).toBe('ivalda_forge_town');
+    expect(engine.map.getTile(inTown.x, inTown.y)?.walkable ?? engine.map.getTile(inTown.x, inTown.y)?.passable).toBe(true);
+    engine.handlePlayerAction(new WaitAction(player));
+    expect(engine.map.getAllEntities().filter((e) => e.id === IVALDA_ID)).toHaveLength(1);
+
+    // Back at the hearth, she is gone from it.
+    engine.changeFloor(DWARVEN_HEARTH_FLOOR);
+    engine.handlePlayerAction(new WaitAction(player));
+    expect(engine.map.getEntityById(IVALDA_ID)).toBeNull();
   });
 
   it('has the Haugbui stand aside for a trusted hero, until one is hurt or trust is lost', () => {

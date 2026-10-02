@@ -84,4 +84,27 @@ describe('A neutral monster', () => {
     wight.setFaction('hostile');
     expect(MonsterAI.decideAction(wight, engine).constructor.name).not.toBe('WaitAction');
   });
+
+  it('trades places with the hero in a one-tile corridor, so it never walls it off', () => {
+    // A corridor along y = 5: walls everywhere else.
+    const map = new GameMap(10, 10, TILES.WALL);
+    for (let x = 1; x < 9; x++) map.setTile(x, 5, TILES.FLOOR);
+    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 3, y: 5 } });
+    const engine = new GameEngine({ map, player, floor: 3 });
+    const wight = new Monster({ id: 'w', name: 'Wight', position: { x: 4, y: 5 }, stats: { hp: 10, maxHp: 10, attack: 3, defense: 1 } });
+    map.addEntity(wight);
+    wight.setFaction('neutral');
+
+    const result = engine.handlePlayerAction(new MovementAction(player, 1, 0));
+    expect(result.success).toBe(true);
+    expect([player.x, player.y]).toEqual([4, 5]);
+    expect([wight.x, wight.y]).toEqual([3, 5]);
+    expect(map.getEntityAt(3, 5)).toBe(wight);
+    expect(engine.messages.some((m) => m.includes('stands aside'))).toBe(true);
+
+    // Hostile again, it is a fight, not a swap.
+    wight.setFaction('hostile');
+    engine.handlePlayerAction(new MovementAction(player, -1, 0));
+    expect([player.x, wight.x]).toEqual([4, 3]);
+  });
 });

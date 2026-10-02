@@ -130,7 +130,8 @@ export function setupSaveDragAndDrop(options: DragAndDropOptions): () => void {
 
 export interface ManifestMismatchDialogOptions {
   detectedManifestId: string;
-  activeManifestId: string;
+  /** What the player knows this game as: the pack's name. */
+  activeGameName: string;
   heroName: string;
   onConfirm: () => void;
   onCancel?: () => void;
@@ -147,7 +148,7 @@ const MISMATCH_MODAL_ID = 'manifest-mismatch';
  * from, and on `modalStack` when given one.
  */
 export function showManifestMismatchDialog(options: ManifestMismatchDialogOptions): void {
-  const { detectedManifestId, activeManifestId, heroName, onConfirm, onCancel, modalStack } = options;
+  const { detectedManifestId, activeGameName, heroName, onConfirm, onCancel, modalStack } = options;
 
   const scrim = createDialogScrim('manifest-mismatch-modal', 'crash');
   if (!scrim) return;
@@ -157,8 +158,8 @@ export function showManifestMismatchDialog(options: ManifestMismatchDialogOption
     icon: 'warning',
     size: 'narrow',
     body: `
-      <div class="ui-dialog-lede">The save for <b>${escapeHtml(heroName)}</b> was made with the <b>${escapeHtml(detectedManifestId)}</b> rules; this game runs <b>${escapeHtml(activeManifestId)}</b>.</div>
-      <div class="ui-fact is-warn">Importing a save across games may bring unfamiliar abilities, missing item art, or changed balance.</div>`,
+      <div class="ui-dialog-lede"><b>${escapeHtml(heroName)}</b> comes from another game (its save says “${escapeHtml(detectedManifestId)}”), not <b>${escapeHtml(activeGameName)}</b>.</div>
+      <div class="ui-fact is-warn">The hero may arrive with abilities this game doesn't know, items without art, and different balance.</div>`,
     actions: dialogButton('btn-mismatch-cancel', 'Cancel') + dialogButton('btn-mismatch-import', 'Import anyway', { primary: true }),
   });
   scrim.style.display = 'flex';
@@ -221,10 +222,10 @@ export function importSaveWithValidation(options: {
   if (validation.manifestMismatch && validation.detectedManifestId) {
     showManifestMismatchDialog({
       detectedManifestId: validation.detectedManifestId,
-      activeManifestId,
+      activeGameName: profileManager.manifest?.name ?? activeManifestId,
       heroName: validation.envelope.data.profile.name,
       onConfirm: executeImport,
-      onCancel: onCancel ?? (() => onError('Import cancelled by user due to manifest mismatch.')),
+      onCancel: onCancel ?? (() => onError('the save is from another game, so nothing was imported.')),
       modalStack,
     });
   } else {

@@ -163,11 +163,11 @@ export class SaveCodeModal {
       if (detected !== this.options.activeManifestId && !(this.options.activeManifestId === 'cotw' && detected === 'headless_default')) {
         showManifestMismatchDialog({
           detectedManifestId: detected,
-          activeManifestId: this.options.activeManifestId,
+          activeGameName: this.options.profileManager.manifest?.name ?? this.options.activeManifestId,
           heroName: envelope.data.profile.name,
           onConfirm: proceedWithImport,
           onCancel: () => {
-            this.setStatus('Restore cancelled due to manifest mismatch.', 'bad');
+            this.setStatus('Not restored: the save is from another game.', 'bad');
           },
           modalStack: this.options.getModalStack?.(),
         });

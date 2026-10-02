@@ -148,21 +148,10 @@ describe('Level-Up Attribute / Skill Allocation System', () => {
     return tab;
   };
 
-  it('the Character tab plans points on letters and locks them in on Enter, after a short guard', () => {
+  it('the Character tab plans points on letters and locks them in on Enter', () => {
     player.unspentStatPoints = 2;
     const tab = openCharacterTab();
     expect(tab.badge({ player } as never)).toBe('+2');
-
-    // A level-up guards the first moment: keys still in flight from the move are dropped,
-    // Enter included, while Tab and Escape still reach the menu.
-    tab.guardInput(200);
-    expect(tab.handleKeyDown(key('s', 'KeyS'))).toBe(true);
-    expect(tab.handleKeyDown(key('Enter', 'Enter'))).toBe(true);
-    expect(tab.handleKeyDown(key('Escape', 'Escape'))).toBe(false);
-    expect(player.strength).toBe(14);
-    expect(player.unspentStatPoints).toBe(2);
-
-    tab.guardInput(0);
 
     // Number keys (e.g. Digit1, Numpad1) never plan attributes
     expect(tab.handleKeyDown(key('1', 'Digit1'))).toBe(false);

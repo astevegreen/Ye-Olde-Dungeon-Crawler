@@ -643,7 +643,7 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
         engine.compendium.recordKill('miniboss_maw_herald', 'Víðnir, Herald of the Wyrm');
       }
 
-      // A level-up from the kill opens the Character tab; close the menu so movement is accepted.
+      // Close the character menu if anything left it open, so movement is accepted.
       const handler = (window as any).__cotwInputHandler;
       if (handler?.modalStack?.has('character-menu')) {
         handler.modalStack.remove('character-menu');

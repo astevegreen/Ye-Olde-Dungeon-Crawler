@@ -76,6 +76,7 @@ import { SaveCodeModal } from './ui/saveCodeModal';
 import { SaveQuitModal } from './ui/saveQuitModal';
 import { SaveSlotModal } from './ui/saveSlotModal';
 import { showToast } from './ui/toast';
+import { keyLabel } from './ui/keyLabel';
 import { expandCompressedReplay } from './ui/replayCodec';
 import { SessionGuard } from './ui/sessionGuard';
 import { getBrowserAsyncStore } from './ui/indexedDbStore';
@@ -310,6 +311,17 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!activeEngine || !characterMenuModal) return;
     inputHandler?.modalStack.push(characterMenuModal);
     characterMenuModal.open(tabId);
+  }
+
+  /** The level-up toast this turn, replaced (not stacked) if more levels arrive in it. */
+  let levelUpToast: { turn: number; el: HTMLElement | null } | null = null;
+
+  function showLevelUpToast(engine: GameEngine): void {
+    if (levelUpToast?.turn === engine.turnCount) levelUpToast.el?.remove();
+    const code = settingsManager.getCodesForAction('character_menu')[0];
+    const points = engine.player.unspentStatPoints ?? 0;
+    const spend = points > 0 ? ` ${points} point${points === 1 ? '' : 's'} to spend${code ? `: ${keyLabel(code)} opens the Character tab` : ''}.` : '';
+    levelUpToast = { turn: engine.turnCount, el: showToast(`Level ${engine.player.level}!${spend}`, 'success', 6000) };
   }
 
   /** Whether the character menu is open on the inventory, for the context help. */
@@ -1241,10 +1253,10 @@ window.addEventListener('DOMContentLoaded', () => {
           isCrit: true,
           fontSize: 14,
         });
-        // Leveling opens the Character tab, where the points are spent. Keys still in
-        // flight from the move that leveled are dropped for a moment.
-        characterTab.guardInput(200);
-        openMenuTab('character');
+        // A level-up never takes the screen mid-fight: the header's points badge pulses,
+        // and one toast per turn (a big kill can bring many levels at once) says how many
+        // points wait and which key opens the Character tab to spend them.
+        showLevelUpToast(engine);
         renderer?.render();
       } else if (event.type === 'rune_of_return_discovered') {
         if (inputHandler) {

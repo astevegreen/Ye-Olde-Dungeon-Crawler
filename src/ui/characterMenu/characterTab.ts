@@ -147,17 +147,10 @@ export class CharacterTab implements MenuTab {
   /** This session's planned points; nothing reaches the player until `accept()`. */
   private readonly draft = new AttributeAllocationDraft();
   /** Keys typed just before the tab opened (leveling mid-move) are dropped until then. */
-  private guardUntil = 0;
   private focusRuneOnActivate = false;
 
   public bindHost(host: MenuHost): void {
     this.host = host;
-  }
-
-  /** Drops keys for `ms`, so movement keys still in flight when a level-up opens the
-   *  tab can't plan points. */
-  public guardInput(ms: number): void {
-    this.guardUntil = Date.now() + ms;
   }
 
   /** The next activation scrolls the Rune of Return ranks into view and marks them. */
@@ -248,13 +241,6 @@ export class CharacterTab implements MenuTab {
     const player = this.state?.player;
     if (!player) return false;
     const code = e.code;
-
-    if (Date.now() < this.guardUntil) {
-      // Tab and Escape still reach the shell.
-      if (code === 'Tab' || code === 'Escape') return false;
-      e.preventDefault();
-      return true;
-    }
 
     const consumed = (done: boolean): boolean => {
       if (done) e.preventDefault();

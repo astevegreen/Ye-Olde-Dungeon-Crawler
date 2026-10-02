@@ -25,3 +25,6 @@ Story-as-UI (approved earlier): locked milestones shown as riddles from a manife
 - A lint ratchet on hex literals and inline colors in `src/ui` and `src/rendering` keeps the old palette from creeping back.
 - U and the level-up path change meaning; tests that open the level-up modal move to the Character tab.
 - The design record with screenshots and mockups is the owner's doc "Menus and art direction: audit and proposal"; the capture and mockup scripts are `.prompts/menus-audit.mjs` and `.prompts/menus-mockup.mjs` (gitignored).
+
+## Amendment (2026-10-02)
+Decision 2's "leveling opens the Character tab" is withdrawn at the owner's plan ("level-up does not force the Character tab open mid-fight (a badge/toast instead)"). Opening it took the keyboard in the middle of a fight, and a kill worth many levels (Níðhögg's, about thirty) opened it with every point at once and swallowed the next key. A level-up now pulses the header's points badge and shows one toast naming the points and the key; the Character tab stays the only allocation UI, opened by the player.

@@ -14,9 +14,9 @@ import type { PlaneState } from '../spatial/planeTypes';
 import type { SerializedSurfaceCell } from '../surfaces/surfaceGrid';
 import type { SerializedSubstanceCell } from '../environment/substanceGrid';
 
-// Reserved for future one-time tutorial-tip flags (ARCHITECTURE.md §3 No Engine Creep:
-// content packs may populate this without engine changes). Empty since the town-return
-// fixtures that previously used it were removed.
+// One-time tutorial flags, saved with the hero. Presentation's first-time hints record
+// each hint shown as `hint:<FirstTimeHintId>` (`src/ui/hints/`); the keys are open, so a
+// pack or a later feature can add its own without engine changes.
 export interface TutorialFlags {
   [flag: string]: boolean | undefined;
 }

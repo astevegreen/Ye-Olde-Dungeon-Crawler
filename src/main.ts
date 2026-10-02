@@ -108,6 +108,8 @@ import { PotionRow } from './ui/potionRow';
 import { classifyLogLine, CriticalLineTracker } from './ui/logClassifier';
 import { CombatSidebar } from './ui/sidebar/combatSidebar';
 import { ConsoleExtras } from './ui/console/consoleExtras';
+import { FirstTimeHints } from './ui/hints/firstTimeHints';
+import { hintsMetByEvent, hintsMetByState } from './ui/hints/hintModel';
 import type { ContextAction } from './ui/console/consoleModel';
 import { SettingsManager } from './ui/settings/settingsManager';
 import type { RadialMenuSlotConfig } from './ui/settings/settingsManager';
@@ -556,6 +558,19 @@ window.addEventListener('DOMContentLoaded', () => {
     onOpenMap: () => document.getElementById('btn-map')?.click(),
   });
 
+  // The pack's first-time hints, a card at the foot of the sidebar (never modal).
+  const firstTimeHints = new FirstTimeHints({
+    keyFor: (action) => {
+      const code = settingsManager.getCodesForAction(action)[0];
+      return code ? keyLabel(code) : undefined;
+    },
+    enabled: () => settingsManager.getSettings().hintsEnabled,
+  });
+  combatSidebar.element.appendChild(firstTimeHints.element);
+  settingsManager.subscribe((settings) => {
+    if (!settings.hintsEnabled) firstTimeHints.clear();
+  });
+
   /**
    * The hero's square above the map: name, depth, level with experience, renown,
    * and a badge when attribute points wait to be spent. Stats and conditions live
@@ -757,6 +772,7 @@ window.addEventListener('DOMContentLoaded', () => {
         potionRow.update(activeEngine);
         combatSidebar.update(activeEngine);
         consoleExtras.update(activeEngine);
+        if (firstTimeHints.hasUnseen(activeEngine)) firstTimeHints.offer(activeEngine, hintsMetByState(activeEngine));
         // Periodic background autosave every 50 turns
         if (activeProfile && autosaveManager.shouldAutosave(activeEngine.turnCount)) {
           autosaveManager.autosave(activeEngine, activeProfile);
@@ -1225,6 +1241,7 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 
 
+    firstTimeHints.clear();
     lastObservedPlayerHp = engine.player.hp;
     lastCoinPickupTile = `${engine.currentFloor}:${engine.player.x},${engine.player.y}`;
     recordKnownMonsters(engine);
@@ -1232,6 +1249,7 @@ window.addEventListener('DOMContentLoaded', () => {
     updateMessageLog(engine);
 
     engine.onGameEvent = (event: GameEvent) => {
+      firstTimeHints.offer(engine, hintsMetByEvent(event));
       if (isGameEvent(event, 'damage_dealt')) {
         if (event.critical) {
           if (event.targetId) criticalTargets.add(event.targetId);
@@ -1530,6 +1548,9 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer.shopOverlay.onOpenCompendium = () => openMenuTab('bestiary');
       renderer.shopOverlay.onOpenRuneTree = () => {
         openRuneTree();
+      };
+      renderer.shopOverlay.onGreet = (npc, eng) => {
+        if (npc.id === eng.manifest.pactKeeperNpcId) firstTimeHints.offer(eng, ['pactKeeper']);
       };
       renderer.onPactModalRequested = () => openMenuTab('pacts');
       renderer.onOpenContainer = (container) => {

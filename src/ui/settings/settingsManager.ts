@@ -121,6 +121,8 @@ export interface GameSettings {
   torchlightEnabled: boolean;
   /** Whether to render rich breakdown hover cards in inventory overlay rather than simple single-line names. */
   inventoryRichHoverCards: boolean;
+  /** The pack's first-time hints: a short note in the sidebar the first time each system is met. */
+  hintsEnabled: boolean;
   keybinds: Record<string, string[]>;
   radialMenuSlots: (RadialMenuSlotConfig | null)[];
 }
@@ -156,6 +158,7 @@ export function getDefaultSettings(): GameSettings {
     mouseVectoringEnabled: true,
     torchlightEnabled: true,
     inventoryRichHoverCards: true,
+    hintsEnabled: true,
     keybinds: getDefaultKeybinds(),
     radialMenuSlots: new Array(RADIAL_MENU_SLOT_COUNT).fill(null),
   };
@@ -289,6 +292,7 @@ export class SettingsManager {
         mouseVectoringEnabled: typeof parsed.mouseVectoringEnabled === 'boolean' ? parsed.mouseVectoringEnabled : defaults.mouseVectoringEnabled,
         torchlightEnabled: typeof parsed.torchlightEnabled === 'boolean' ? parsed.torchlightEnabled : defaults.torchlightEnabled,
         inventoryRichHoverCards: typeof parsed.inventoryRichHoverCards === 'boolean' ? parsed.inventoryRichHoverCards : defaults.inventoryRichHoverCards,
+        hintsEnabled: typeof parsed.hintsEnabled === 'boolean' ? parsed.hintsEnabled : defaults.hintsEnabled,
         keybinds: typeof parsed.keybinds === 'object' && parsed.keybinds !== null ? { ...defaults.keybinds, ...parsed.keybinds } : defaults.keybinds,
         radialMenuSlots: sanitizeRadialMenuSlots(parsed.radialMenuSlots),
       };

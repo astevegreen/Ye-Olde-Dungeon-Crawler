@@ -55,6 +55,8 @@ export class ShopDialog {
   public onOpenCompendium?: () => void;
   public onOpenRuneTree?: () => void;
   public onOpen?: (npc: NPC) => void;
+  /** The hero greets an NPC (every time the dialog opens), e.g. for first-time hints. */
+  public onGreet?: (npc: NPC, engine: GameEngine) => void;
   public onClose?: () => void;
 
   private engine?: GameEngine;
@@ -76,6 +78,7 @@ export class ShopDialog {
     this.statusMessage = '';
     this.statusTone = 'info';
     this.onOpen?.(npc);
+    this.onGreet?.(npc, engine);
     this.scrim ??= createDialogScrim('shop-dialog');
     this.render();
     if (this.scrim) this.scrim.style.display = 'flex';

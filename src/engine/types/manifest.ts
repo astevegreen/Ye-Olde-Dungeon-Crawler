@@ -659,6 +659,28 @@ export function resolveManaTerms(manifest?: { branding?: PackBranding }): ManaTe
   return { name, unit: b?.manaUnit ?? (b?.manaName ? b.manaName : 'MP') };
 }
 
+/**
+ * The systems a first-time hint introduces. Presentation decides when each is first met
+ * (an altar reached, a creature with a kill rite seen, the pact keeper greeted, a companion
+ * at the hero's side, the first renown, a Rune of Return carried, a faction standing moved,
+ * the first saga deed) and shows the pack's hint once per hero (`Player.tutorialFlags`).
+ */
+export type FirstTimeHintId =
+  | 'altar'
+  | 'killRite'
+  | 'pactKeeper'
+  | 'companion'
+  | 'renown'
+  | 'runeOfReturn'
+  | 'factionStanding'
+  | 'story';
+
+export interface FirstTimeHintDefinition {
+  title: string;
+  /** One or two sentences. `{key:<action>}` names the key bound to that command, e.g. `{key:story}`. */
+  text: string;
+}
+
 export interface GameContentManifest {
   id: string;
   name: string;
@@ -707,6 +729,8 @@ export interface GameContentManifest {
    * without it the Pacts tab seals and renounces them itself.
    */
   pactKeeperNpcId?: string;
+  /** A short, dismissible hint the first time each system is met; a system without one shows none. */
+  firstTimeHints?: Partial<Record<FirstTimeHintId, FirstTimeHintDefinition>>;
   traps?: TrapDefinition[];
   tiles?: TileDefinition[];
   itemAliasPools?: ItemAliasPools;

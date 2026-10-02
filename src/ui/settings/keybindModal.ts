@@ -187,6 +187,7 @@ export class KeybindModal implements UIModal {
         ${option('chk-mouse-vectoring', "The 'Hover Ring' (Mouse Vectoring)", 'Shows a ring of eight directions around your hero under the mouse. Click a neighboring tile to step or attack, or a distant one to walk there.')}
         ${option('chk-torchlight', 'Torchlight', 'What you can see darkens toward the edge of your sight, with warm light around your hero. Off gives flat, even lighting.')}
         ${option('chk-inventory-hover-cards', 'Rich inventory hover cards', 'Shows full stat cards when you hover items in your inventory. Off shows the name only.')}
+        ${option('chk-hints', 'First-time hints', 'The first time you meet an altar, a pact keeper, a companion and the like, a short note about it appears under the sidebar. Each shows once per hero.')}
 
         <div class="ui-h">Keys</div>
         <div class="st-subtabs" role="tablist">
@@ -254,6 +255,11 @@ export class KeybindModal implements UIModal {
       this.settingsManager.updateSettings({ inventoryRichHoverCards: hoverCardsChk.checked });
     });
 
+    const hintsChk = modal.querySelector('#chk-hints') as HTMLInputElement | null;
+    hintsChk?.addEventListener('change', () => {
+      this.settingsManager.updateSettings({ hintsEnabled: hintsChk.checked });
+    });
+
     // Mouse Vectoring Checkbox
     const mouseChk = modal.querySelector('#chk-mouse-vectoring') as HTMLInputElement | null;
     mouseChk?.addEventListener('change', () => {
@@ -318,6 +324,8 @@ export class KeybindModal implements UIModal {
     if (torchChk) torchChk.checked = settings.torchlightEnabled;
     const hoverCardsChk = this.modalEl.querySelector('#chk-inventory-hover-cards') as HTMLInputElement | null;
     if (hoverCardsChk) hoverCardsChk.checked = settings.inventoryRichHoverCards;
+    const hintsChk = this.modalEl.querySelector('#chk-hints') as HTMLInputElement | null;
+    if (hintsChk) hintsChk.checked = settings.hintsEnabled;
 
     const standardBadge = this.modalEl.querySelector('#badge-standard-mode');
     if (standardBadge) {

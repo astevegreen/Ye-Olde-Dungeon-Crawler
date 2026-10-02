@@ -38,6 +38,7 @@ import { COTW_FLOOR_HAZARDS, COTW_ROOM_DECORATION } from './floorBands';
 import { COTW_FLOOR_LAYOUTS, COTW_FLOOR_SIZE } from './floorLayouts';
 import { COTW_MONSTER_CATEGORIES } from './monsterCategories';
 import { COTW_FACTIONS, COTW_TEMPLE_MET_HOOK } from './factions';
+import { COTW_FIRST_TIME_HINTS } from './hints';
 import { COTW_RELIC_HOOK } from './relic';
 import { IRON_CLANS_BARROW_PLACEMENTS, IRON_CLANS_HOOKS, IVALDA } from './ironClans';
 import { SKALDIC_RUNESTONE_LORE, SKALDIC_RUNESTONE_PLACEMENTS } from './runestones';
@@ -93,6 +94,7 @@ export const cotwManifest: GameContentManifest = {
   pacts: COTW_PACTS,
   // Pacts are sworn with Sage Mimir, as Odin pledged an eye at Mímir's well for wisdom.
   pactKeeperNpcId: 'npc-sage',
+  firstTimeHints: COTW_FIRST_TIME_HINTS,
   traps: [
     { type: 'pit', name: 'Hidden Pit', damage: 10, disarmDifficulty: 12 },
     { type: 'arrow', name: 'Tripwire Dart Trap', damage: 8, disarmDifficulty: 14 },

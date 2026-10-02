@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { FloatingTextRunner } from '../floatingTextRunner';
 import { Camera } from '../camera';
-import { setCanvasTextScale } from '../theme';
+import { DEFAULT_THEME_TOKENS, setCanvasTextScale } from '../theme';
 
 describe('FloatingTextRunner', () => {
   let runner: FloatingTextRunner;
@@ -95,5 +95,23 @@ describe('FloatingTextRunner', () => {
       const virtualPx = parseFloat(font.replace(/^bold /, ''));
       expect(virtualPx * (814 / 960)).toBeGreaterThanOrEqual(11);
     }
+  });
+  it('draws damage in the pack element color when it has one, and in a theme role otherwise', () => {
+    const fills: string[] = [];
+    const mockCtx = {
+      save: vi.fn(), restore: vi.fn(), translate: vi.fn(), scale: vi.fn(), strokeText: vi.fn(), fillText: vi.fn(),
+      set fillStyle(c: string) { fills.push(c); },
+    } as unknown as CanvasRenderingContext2D;
+    const camera = new Camera(20, 15);
+    camera.update({ x: 5, y: 5 }, 40, 40);
+    const theme = { ...DEFAULT_THEME_TOKENS, text: '#111111', health: '#222222', good: '#333333' };
+
+    runner.spawnDamage(5, 5, 4, { element: 'fire' });
+    runner.spawnDamage(6, 6, 4, { element: 'physical' });
+    runner.spawnDamage(7, 7, 4, { isPlayer: true, element: 'fire' });
+    runner.spawnHeal(8, 8, 2);
+    runner.render(mockCtx, camera, 32, 0, 0, theme, (el) => (el === 'fire' ? '#ff5500' : undefined));
+
+    expect(fills).toEqual(['#ff5500', '#111111', '#222222', '#333333']);
   });
 });

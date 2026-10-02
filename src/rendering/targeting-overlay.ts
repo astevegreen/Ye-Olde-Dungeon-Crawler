@@ -12,7 +12,7 @@ import {
   type Item,
 } from '../engine';
 import type { Camera } from './camera';
-import { resolveThemeTokens } from './theme';
+import { elementColor, resolveThemeTokens } from './theme';
 import { escapeHtml } from '../ui/html';
 import { iconHtml } from '../ui/icons';
 import type { MapCardSpec } from '../ui/mapCards/mapCardLayer';
@@ -40,6 +40,8 @@ export class TargetingOverlay implements UIModal {
   public lastFired?: {
     path: Array<{ x: number; y: number; isReflection?: boolean }>;
     element: ElementType;
+    /** The element's color in the pack, resolved when the spell fired. */
+    color: string;
     isAoE: boolean;
     impactTile: Position;
     timestamp: number;
@@ -145,6 +147,7 @@ export class TargetingOverlay implements UIModal {
       this.lastFired = {
         path: trace.path,
         element: entry.spellDef.element,
+        color: spellColor(engine, entry.spellDef.element),
         isAoE: entry.spellDef.areaOfEffect > 0,
         impactTile: trace.impactTile,
         timestamp: Date.now(),
@@ -330,17 +333,12 @@ export class TargetingOverlay implements UIModal {
     // Draw projected ray line
     ctx.save();
     ctx.lineWidth = 2;
-    if (spell.element === 'lightning') {
-      ctx.strokeStyle = '#38bdf8'; // Electric cyan
-      ctx.setLineDash([4, 4]);
-    } else if (spell.element === 'fire') {
-      ctx.strokeStyle = '#f97316'; // Fiery orange
+    ctx.strokeStyle = spellColor(engine, spell.element);
+    if (spell.element === 'fire') {
       ctx.setLineDash([6, 3]);
     } else if (spell.element === 'cold') {
-      ctx.strokeStyle = '#a5f3fc'; // Icy frost
       ctx.setLineDash([3, 3]);
     } else {
-      ctx.strokeStyle = '#c084fc'; // Arcane purple
       ctx.setLineDash([4, 4]);
     }
 
@@ -438,21 +436,17 @@ export class TargetingOverlay implements UIModal {
     ctx.save();
     ctx.globalAlpha = alpha;
 
+    ctx.strokeStyle = this.lastFired.color;
+    ctx.shadowColor = this.lastFired.color;
     if (this.lastFired.element === 'lightning') {
       // Lightning bolt jagged electric zigzag
-      ctx.strokeStyle = '#38bdf8';
       ctx.lineWidth = 3;
-      ctx.shadowColor = '#0284c7';
       ctx.shadowBlur = 8;
     } else if (this.lastFired.element === 'fire') {
-      ctx.strokeStyle = '#ea580c';
       ctx.lineWidth = 4;
-      ctx.shadowColor = '#f97316';
       ctx.shadowBlur = 10;
     } else {
-      ctx.strokeStyle = '#a855f7';
       ctx.lineWidth = 3;
-      ctx.shadowColor = '#c084fc';
       ctx.shadowBlur = 6;
     }
 
@@ -486,7 +480,7 @@ export class TargetingOverlay implements UIModal {
       if (impactScreen) {
         const ix = impactScreen.x + cellSize / 2;
         const iy = impactScreen.y + cellSize / 2;
-        ctx.fillStyle = this.lastFired.element === 'lightning' ? '#fde047' : '#f97316';
+        ctx.fillStyle = this.lastFired.color;
         ctx.beginPath();
         ctx.arc(ix, iy, cellSize * 0.7, 0, Math.PI * 2);
         ctx.fill();
@@ -527,4 +521,9 @@ export function aimCardHtml(engine: GameEngine, entry: SpellbookEntry, reticleX:
       ${targetHtml}
       ${spell.reflects ? '<div class="ui-note">Bounces off walls</div>' : ''}
     </div>`;
+}
+
+/** A spell's color on the map: its element's color in the pack, else the info role. */
+function spellColor(engine: GameEngine, element: ElementType): string {
+  return elementColor(engine.manifest, element) ?? resolveThemeTokens(engine.manifest?.theme).info;
 }

@@ -1,4 +1,4 @@
-import type { ThemeFontFace, ThemeTokens } from '../engine';
+import type { GameContentManifest, ThemeFontFace, ThemeTokens } from '../engine';
 export type { ThemeTokens };
 
 /**
@@ -299,6 +299,15 @@ export function withAlpha(color: string, alpha: number): string {
   const rgb = hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex.slice(0, 6);
   const n = parseInt(rgb, 16);
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
+
+/**
+ * The pack's color for a damage element (`manifest.affinityMatrix.elements[].color`), or
+ * undefined when the pack gives none: element colors are pack data, like the roles.
+ */
+export function elementColor(manifest: GameContentManifest | undefined, element: string | undefined): string | undefined {
+  if (!element) return undefined;
+  return manifest?.affinityMatrix?.elements?.find((e) => e.id === element)?.color;
 }
 
 /** The size `uiFont` gives a role, in virtual canvas pixels: for boxes drawn around text. */

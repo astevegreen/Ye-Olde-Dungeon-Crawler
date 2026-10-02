@@ -89,12 +89,13 @@ export function isAmbientDuration(duration: number): boolean {
   return duration >= 9000;
 }
 
+/** Fallbacks for the engine's own statuses; a pack's `hudColor` wins. */
 const BUILT_IN_STATUS_COLORS: Record<string, string> = {
-  poison: '#22c55e',
-  paralysis: '#eab308',
-  slow: '#0ea5e9',
-  haste: '#f97316',
-  blindness: '#a855f7',
+  poison: 'var(--ui-good)',
+  paralysis: 'var(--ui-warn)',
+  slow: 'var(--ui-info)',
+  haste: 'var(--ui-accent)',
+  blindness: 'var(--ui-xp)',
 };
 
 /**
@@ -138,7 +139,7 @@ export function getConditions(engine: GameEngine): Condition[] {
     conditions.push({
       key: 'encumbrance',
       label: enc,
-      color: enc === 'Burdened' ? 'var(--ui-warn)' : enc === 'Overburdened' ? '#f97316' : 'var(--ui-bad)',
+      color: enc === 'Burdened' ? 'var(--ui-warn)' : enc === 'Overburdened' ? 'color-mix(in srgb, var(--ui-warn) 50%, var(--ui-bad))' : 'var(--ui-bad)',
       turns: null,
       detail: enc === 'Immobilized' ? 'too heavy to move — drop something' : 'carrying too much slows you',
     });

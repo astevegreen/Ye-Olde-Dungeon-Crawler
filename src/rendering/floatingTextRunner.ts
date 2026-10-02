@@ -1,14 +1,18 @@
 import type { Camera } from './camera';
 import type { ThemeTokens } from '../engine';
-import { uiFont, type UiTextRole } from './theme';
+import { resolveThemeTokens, uiFont, type UiTextRole } from './theme';
+
+/** The theme role a floating text is drawn in, resolved when drawn so it follows the pack. */
+export type FloatRole = 'text' | 'health' | 'title' | 'gold' | 'good';
 
 export interface FloatingText {
   id: number;
   worldX: number;
   worldY: number;
   text: string;
-  color: string;
-  strokeColor: string;
+  role: FloatRole;
+  /** A damage element: drawn in the pack's color for it instead of `role`, when it has one. */
+  element?: string;
   /** Type-scale role: drawn through uiFont, so it never drops under the 11px floor. */
   textRole: UiTextRole;
   startTime: number;
@@ -53,29 +57,24 @@ export class FloatingTextRunner {
   ): void {
     const isPlayer = options.isPlayer ?? false;
     const isCrit = options.isCrit ?? false;
-    let color = isPlayer ? '#ef4444' : '#f8fafc';
-    const stroke = '#000000';
+    // Damage to the hero in health; to a monster in text, or in its element's color.
+    let role: FloatRole = isPlayer ? 'health' : 'text';
+    let element = isPlayer ? undefined : options.element;
     let text = `-${amount}`;
 
     if (options.killed && !isPlayer) {
       text = `-${amount} FATAL!`;
-      color = '#fde047';
+      role = 'title';
+      element = undefined;
     } else if (isCrit) {
       text = `-${amount} CRIT!`;
-      color = '#facc15';
-    } else if (options.element === 'cold' || options.element === 'frost') {
-      color = '#38bdf8';
-    } else if (options.element === 'fire') {
-      color = '#fb923c';
-    } else if (options.element === 'poison' || options.element === 'acid') {
-      color = '#4ade80';
-    } else if (options.element === 'lightning') {
-      color = '#c084fc';
+      role = 'gold';
+      element = undefined;
     }
 
     this.spawnText(worldX, worldY, text, {
-      color,
-      strokeColor: stroke,
+      role,
+      element,
       isCrit,
       durationMs: isCrit ? 1100 : 850,
       textRole: isCrit ? 'lg' : 'sm',
@@ -84,8 +83,7 @@ export class FloatingTextRunner {
 
   public spawnHeal(worldX: number, worldY: number, amount: number): void {
     this.spawnText(worldX, worldY, `+${amount}`, {
-      color: '#22c55e',
-      strokeColor: '#052e16',
+      role: 'good',
       durationMs: 900,
       textRole: 'sm',
     });
@@ -96,8 +94,8 @@ export class FloatingTextRunner {
     worldY: number,
     text: string,
     options: {
-      color?: string;
-      strokeColor?: string;
+      role?: FloatRole;
+      element?: string;
       textRole?: UiTextRole;
       durationMs?: number;
       isCrit?: boolean;
@@ -116,8 +114,8 @@ export class FloatingTextRunner {
       worldX,
       worldY,
       text,
-      color: options.color ?? '#f8fafc',
-      strokeColor: options.strokeColor ?? '#000000',
+      role: options.role ?? 'text',
+      element: options.element,
       textRole: options.textRole ?? 'sm',
       startTime: now,
       durationMs: options.durationMs ?? 850,
@@ -158,11 +156,14 @@ export class FloatingTextRunner {
     cellSize: number,
     offsetX: number,
     offsetY: number,
-    theme?: ThemeTokens
+    theme?: ThemeTokens,
+    /** The pack's color for a damage element, when it has one (theme.elementColor). */
+    elementColor?: (element: string) => string | undefined
   ): void {
     if (this.activeTexts.length === 0) return;
     const now = typeof performance !== 'undefined' ? performance.now() : 0;
-    const font = theme?.fontFamily ?? '"Courier New", Courier, monospace';
+    const roles = resolveThemeTokens(theme);
+    const font = roles.fontFamily;
 
     ctx.save();
     ctx.textAlign = 'center';
@@ -208,13 +209,13 @@ export class FloatingTextRunner {
       ctx.font = uiFont(item.textRole, font, 'bold');
 
       // Thick high-contrast dark stroke for readability over any background
-      ctx.strokeStyle = item.strokeColor;
+      ctx.strokeStyle = '#000000';
       ctx.lineWidth = 3;
       ctx.lineJoin = 'round';
       ctx.strokeText(item.text, 0, 0);
 
       // Bright colored fill
-      ctx.fillStyle = item.color;
+      ctx.fillStyle = (item.element && elementColor?.(item.element)) || roles[item.role];
       ctx.fillText(item.text, 0, 0);
 
       ctx.restore();

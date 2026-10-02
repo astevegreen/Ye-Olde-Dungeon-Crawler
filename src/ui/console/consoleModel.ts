@@ -157,7 +157,7 @@ export function getTrayChips(engine: GameEngine, smithName: string): TrayChip[] 
   if (overflow && p.voidDebt > 0) {
     const tier = [...overflow.tiers].reverse().find((t) => p.voidDebt >= t.minDebt);
     chips.push({
-      id: 'debt', icon: 'debt', label: overflow.debtName, value: `${p.voidDebt}`, color: tier?.color ?? '#a855f7',
+      id: 'debt', icon: 'debt', label: overflow.debtName, value: `${p.voidDebt}`, color: tier?.color ?? 'var(--ui-xp)',
       title: `${overflow.debtName} ${p.voidDebt}${tier ? ` — ${tier.label}` : ''}. Resting lowers it.`,
     });
   }

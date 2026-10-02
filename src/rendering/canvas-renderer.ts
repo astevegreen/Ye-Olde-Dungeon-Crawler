@@ -17,7 +17,7 @@ import { SpriteAtlas } from './atlas/sprite-atlas';
 import { getTerrainSpriteKey, getEntitySpriteKey, getItemSpriteKey } from './atlas/sprite-mapper';
 import { terrainLayers, contactShadowSides, zoneForFloor, type TerrainView } from './atlas/terrain-layers';
 import { ViewportManager } from './viewport';
-import { resolveThemeTokens, type ThemeTokens, uiFont, uiFontPx, withAlpha } from './theme';
+import { elementColor, resolveThemeTokens, type ThemeTokens, uiFont, uiFontPx, withAlpha } from './theme';
 import { CanvasFXRunner } from './fxRunner';
 import type { NavigationController } from '../ui/navigation';
 import { CloseDoorAction } from '../engine';
@@ -493,7 +493,8 @@ export class CanvasRenderer {
       this.cellSize,
       this.offsetX,
       this.offsetY,
-      theme
+      theme,
+      (element) => elementColor(this.engine.manifest, element)
     );
 
     // Live On-Grid Tactical Target Card & Ground Item Tooltip (Zero-Click Inspect)

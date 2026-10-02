@@ -1248,8 +1248,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
       } else if (event.type === 'player_leveled_up') {
         renderer?.floatingTextRunner.spawnText(engine.player.x, engine.player.y, 'LEVEL UP! ★', {
-          color: '#facc15',
-          strokeColor: '#78350f',
+          role: 'gold',
           isCrit: true,
           textRole: 'lg',
         });

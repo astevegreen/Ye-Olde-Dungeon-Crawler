@@ -34,8 +34,7 @@ describe('Dungeon Spawner - Tiering & Population', () => {
     });
 
     it('filters out boss definitions', () => {
-      const boss = BESTIARY.boss_hrungnir;
-      expect(boss).toBeDefined();
+      const boss: MonsterDefinition = { ...BESTIARY.ogre, id: 'boss_ogre', minFloor: 1 };
 
       const selected = selectDungeonMonsterDefinition([boss], 30, () => 0.5);
       expect(selected).toBeNull();

@@ -155,7 +155,6 @@ describe('Castle of the Winds Monster Roster (37 entries)', () => {
     expect(COTW_BESTIARY.ogre.stats.hp).toBe(50);
     expect(COTW_BESTIARY.kobold).toBeDefined();
     expect(COTW_BESTIARY.giant_rat).toBeDefined();
-    expect(COTW_BESTIARY.boss_hrungnir).toBeDefined();
     expect(COTW_BESTIARY.troll_wife_warlock).toBeDefined();
     expect(COTW_BESTIARY.huldra).toBeDefined();
   });

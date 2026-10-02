@@ -213,7 +213,7 @@ describe('Full Content Manifest Swapping (Eldoria Lore Agnosticism)', () => {
     engine.changeFloor(3);
     expect(engine.messages.some((m) => m.includes('*** FLOOR 3: THE VOIDWEAVER SANCTUM ***'))).toBe(true);
     expect(engine.messages.some((m) => m.includes('Malakor turns his gaze upon you!'))).toBe(true);
-    expect(engine.messages.some((m) => m.includes('Hrungnir'))).toBe(false);
+    expect(engine.messages.some((m) => m.includes('Níðhögg'))).toBe(false);
   });
 
   it('executes custom victory arc with custom victory NPC dialogue and champion proclamation', () => {

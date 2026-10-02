@@ -28,7 +28,7 @@ export const COTW_OBJECTIVES: ObjectiveDefinition[] = [
     id: 'cotw_objective_nidhogg',
     text: "Níðhögg waits at the root's end. Slay it, or drive it off.",
     availableWhenFlag: 'vidnir_slain',
-    doneWhenAnyFlag: ['boss_slain', 'nidhogg_root_sealed'],
+    doneWhenAnyFlag: ['nidhogg_slain', 'nidhogg_root_sealed'],
   },
   {
     id: 'cotw_objective_return',

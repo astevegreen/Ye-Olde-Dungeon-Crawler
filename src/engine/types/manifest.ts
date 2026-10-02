@@ -311,6 +311,9 @@ export interface QuestArcDefinition {
   bossFloor: number;
   allowsDifficultyScaling?: boolean;
   bossMonsterId: string;
+  /** World-state flag set when `bossMonsterId` dies, so an objective or a
+   *  `trackedMilestones` entry can follow the kill (they read flags only). */
+  bossSlainFlag?: string;
   relicItemId: string;
   victoryNpcId: string;
   victoryFloor: number;

@@ -61,25 +61,47 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
     cancelable: false,
   },
 
+  /**
+   * Floor 3's defiled altar (`fixedTilePlacements`). Every option settles it for good.
+   * The "Altar of Tyr Cleansed" milestone (`tyr_purified`) asks what Tyr gave, a
+   * measure of the sword hand, so the oath costs Attack for its Defense and standing;
+   * washing is the safe, lesser rite, and leaves the runes dark.
+   */
   altar_tyr: {
     id: 'altar_tyr',
-    title: 'Ancient Altar of Tyr',
+    title: 'The Defiled Altar of Tyr',
     description:
-      'You stand before a weather-worn stone altar dedicated to Tyr, god of justice and martial honor. Crude dried blood and foul desecration crust over the sacred runes. You sense potent divine currents waiting to be swayed.',
+      'A weather-worn altar to Tyr, god of oaths and justice. Its carving shows him with his hand in the wolf Fenrir’s jaws: the hand he gave so the gods could bind the wolf. Someone has fouled it with dried blood and gnawed wolf bones, and the runes beneath are dark. Water would lift the filth. Only an oath, sealed with something of your own, will wake the runes.',
     options: [
       {
         id: 'purify',
-        label: 'Purify the Altar with Sacred Waters',
+        label: 'Swear an Oath on Your Sword Hand',
         description:
-          'Cleanse the defilement with holy ritual. Grants divine haste and +10 Temple of Thor standing.',
+          'Lay your sword hand on the stone and give Tyr what he gave: a measure of its strength. Cleanses the altar. Permanently -1 Attack and +2 Defense, +15 Temple standing, and haste.',
         consequences: [
           { type: 'setFlag', flag: 'tyr_purified', value: true },
-          { type: 'modifyFaction', faction: 'temple_standing', delta: 10 },
+          { type: 'modifyPermanentStat', stat: 'attack', delta: -1 },
+          { type: 'modifyPermanentStat', stat: 'defense', delta: 2 },
+          { type: 'modifyFaction', faction: 'temple_standing', delta: 15 },
           { type: 'applyBuff', statusType: 'haste', duration: 30 },
           {
             type: 'logMessage',
             message:
-              '✦ A golden light blazes across the altar! Tyr’s righteous favor fills your spirit (+10 Temple Standing, Haste)! ✦',
+              '✦ You swear on your sword hand, and the stone drinks a measure of its strength. The runes wake gold and burn the defilement away. Tyr holds your oath (-1 Attack, +2 Defense, +15 Temple standing, Haste). ✦',
+          },
+        ],
+      },
+      {
+        id: 'wash',
+        label: 'Wash the Stone with Water',
+        description: 'Scrub away the blood and bones and swear nothing. The runes stay dark for good, but the Temple will hear of it. +5 Temple standing.',
+        consequences: [
+          { type: 'setFlag', flag: 'tyr_washed', value: true },
+          { type: 'modifyFaction', faction: 'temple_standing', delta: 5 },
+          {
+            type: 'logMessage',
+            message:
+              'You scrub the altar clean of blood and bones. The runes stay dark: water was never what Tyr asked for (+5 Temple standing).',
           },
         ],
       },
@@ -107,7 +129,11 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
     resolvedStates: [
       {
         flag: 'tyr_purified',
-        message: 'The purified Altar of Tyr radiates peace. The runes remain holy and silent.',
+        message: 'The cleansed Altar of Tyr glows faintly gold. Your oath is kept here.',
+      },
+      {
+        flag: 'tyr_washed',
+        message: 'The washed Altar of Tyr is clean, but its runes stay dark.',
       },
       {
         flag: 'tyr_desecrated',
@@ -156,7 +182,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
     id: 'milestone_str_15',
     title: 'Strength Milestone: Might of the Mountain Giant',
     description:
-      'Your muscles surge with the brute vigor of Hrungnir’s kin. Stone breaks beneath your grip. Will you pour this colossal might into shattering offenses, or turn your frame into an impenetrable fortress?',
+      'Your muscles surge with the brute vigor of the hill giants. Stone breaks beneath your grip. Will you pour this colossal might into shattering offenses, or turn your frame into an impenetrable fortress?',
     options: [
       {
         id: 'raw_power',

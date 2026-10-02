@@ -40,6 +40,7 @@ export const COTW_QUEST: QuestArcDefinition = {
   bossFloor: 50,
   allowsDifficultyScaling: false,
   bossMonsterId: 'nidhogg',
+  bossSlainFlag: 'nidhogg_slain',
   relicItemId: 'hearth_tear_fragment',
   victoryNpcId: 'npc-olaf',
   victoryFloor: 0,

@@ -80,7 +80,6 @@ export const COTW_MONSTER_CATEGORIES: MonsterCategoryDefinition[] = [
       'cave_troll',
       'fire_giant',
       'jotun_champion',
-      'boss_hrungnir',
       'troll_wife_warlock',
       'ironwood_troll_wife',
       'ividja',

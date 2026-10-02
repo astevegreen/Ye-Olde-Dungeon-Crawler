@@ -241,11 +241,6 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     requiredDamageElement: 'fire',
     hintVerse: 'The rime-worm yields only to flame.',
   },
-  boss_hrungnir: {
-    essenceElement: 'physical',
-    requiredDamageElement: 'lightning',
-    hintVerse: "Hrungnir's heart of stone broke once before, beneath Thor's hammer.\nBreak it again with lightning.",
-  },
   sun_chariot_warden: {
     teachesSpellId: 'fireball',
     essenceElement: 'fire',

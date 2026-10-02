@@ -436,7 +436,7 @@ describe('Persistence & Serialization of WorldState', () => {
   });
 });
 
-describe('Floor 3 Ancient Altar of Tyr Encounter & Temple Healer Reaction', () => {
+describe('Floor 3 Altar of Tyr Encounter & Temple Healer Reaction', () => {
   it('stamps the Altar of Tyr on Floor 3 generation in CotW', () => {
     const floor3 = DungeonArc.generateFloor(3, 12345, cotwManifest.quest, cotwManifest);
     let foundAltar = false;
@@ -453,7 +453,7 @@ describe('Floor 3 Ancient Altar of Tyr Encounter & Temple Healer Reaction', () =
     expect(foundAltar).toBe(true);
   });
 
-  it('triggers onChoiceInteract when stepping onto the Altar of Tyr and executes Purify', () => {
+  it('triggers onChoiceInteract when stepping onto the Altar of Tyr and swears the oath', () => {
     const map = new GameMap(10, 10, TILES.FLOOR);
     const altarTyr = COTW_TILES.find((t) => t.type === 'altar_tyr')!;
     map.setTile(5, 5, altarTyr);
@@ -491,7 +491,7 @@ describe('Floor 3 Ancient Altar of Tyr Encounter & Temple Healer Reaction', () =
     engine.onChoiceInteract = (choice, onSelect) => {
       choiceOpened = true;
       receivedChoiceId = choice.id;
-      // Player selects 'purify'
+      // Player swears the oath (the 'purify' option)
       onSelect('purify');
     };
 
@@ -501,8 +501,11 @@ describe('Floor 3 Ancient Altar of Tyr Encounter & Temple Healer Reaction', () =
     expect(choiceOpened).toBe(true);
     expect(receivedChoiceId).toBe('altar_tyr');
     expect(engine.getWorldFlag('tyr_purified')).toBe(true);
-    expect(engine.getFactionStanding('temple_standing')).toBe(10);
+    expect(engine.getFactionStanding('temple_standing')).toBe(15);
     expect(player.statusManager.hasStatus('haste')).toBe(true);
+    // The sacrifice: a measure of the sword hand's strength, for Tyr's steadiness
+    expect(player.baseAttackValue).toBe(9);
+    expect(player.baseDefenseValue).toBe(7);
 
     // Healer reaction: TempleService offers 50% discount to pious champion
     player.inventory.primaryPack.addItem(new CoinItem({ id: 'coin-gold', denomination: 'gold', count: 50 })); // 5000 CP
@@ -565,5 +568,38 @@ describe('Floor 3 Ancient Altar of Tyr Encounter & Temple Healer Reaction', () =
     const cleanseResult = TempleService.cleanseCurses(player, undefined, undefined, engine);
     expect(cleanseResult.success).toBe(false);
     expect(cleanseResult.message).toContain('Desecrator of sacred altars');
+  });
+
+  it('washing is a lesser, final rite that does not cleanse the altar', () => {
+    const map = new GameMap(10, 10, TILES.FLOOR);
+    const altarTyr = COTW_TILES.find((t) => t.type === 'altar_tyr')!;
+    map.setTile(5, 5, altarTyr);
+    const player = new Player({
+      id: 'player-1',
+      name: 'Sven',
+      position: { x: 4, y: 5 },
+      stats: { hp: 30, maxHp: 30, attack: 10, defense: 5 },
+    });
+    const engine = new GameEngine({ map, player, floor: 3, manifest: cotwManifest });
+
+    const offered: string[] = [];
+    engine.onChoiceInteract = (choice, onSelect) => {
+      if (choice.id !== 'altar_tyr') return; // a default hero also meets attribute milestones
+      offered.push(choice.id);
+      onSelect('wash');
+    };
+
+    engine.handlePlayerAction(new MovementAction(player, 1, 0));
+    expect(engine.getWorldFlag('tyr_washed')).toBe(true);
+    expect(engine.getFactionStanding('temple_standing')).toBe(5);
+    expect(player.baseAttackValue).toBe(10);
+
+    // Washing settles the altar: no second offer, and no milestone
+    engine.handlePlayerAction(new MovementAction(player, -1, 0));
+    engine.handlePlayerAction(new MovementAction(player, 1, 0));
+    expect(offered).toEqual(['altar_tyr']);
+    expect(engine.messages.some((m) => m.includes('its runes stay dark'))).toBe(true);
+    expect(engine.getWorldFlag('tyr_purified')).toBe(false);
+    expect(engine.getFactionStanding('temple_standing')).toBe(5);
   });
 });

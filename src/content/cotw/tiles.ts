@@ -53,7 +53,9 @@ export const COTW_TILES: TileDefinition[] = [
     passable: true,
     walkable: true,
     transparent: true,
-    glyph: '⛩',
+    // Drawn as an altar fixture, like the rune altars below; the glyph is Tyr's rune.
+    visual: 'altar',
+    glyph: 'ᛏ',
     description: 'A weathered runic altar consecrated to Tyr, god of justice. Blood-stained defilement clings to the ancient runes.',
     interactionHandlerId: 'altar_tyr',
     landmarkLabel: 'Altar of Tyr ⚖️',

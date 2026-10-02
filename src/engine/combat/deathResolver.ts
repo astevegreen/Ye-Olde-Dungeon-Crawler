@@ -127,6 +127,8 @@ export class DeathResolver {
           ? `*** ${victim.name.toUpperCase()} HAS FALLEN! ***`
           : `*** ${victim.name.toUpperCase()} HAS FALLEN! The mighty foe collapses! ***`;
         engine.log(bossDeathMsg);
+        const bossSlainFlag = engine.manifest?.quest?.bossSlainFlag;
+        if (bossSlainFlag) engine.setWorldFlag(bossSlainFlag, true);
         const relicMsg = engine.manifest?.quest?.relicDropMessage ?? 'The ancient relic glows brightly amidst the dust! Retrieve it and return to town!';
         engine.log(relicMsg);
 

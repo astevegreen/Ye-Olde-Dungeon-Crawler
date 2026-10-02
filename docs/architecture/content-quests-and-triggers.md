@@ -34,6 +34,8 @@ Worked example: the CotW Siphon Altar (`src/content/cotw/hostageRitual.ts`) comp
 ## "Driven Off" Boss Resolution
 `BossFleeResolution`, `manifest.bossFleeResolutions`: converts sustained fleeing (the existing `fleeHealthPercent` mechanic already makes a monster flee below a HP threshold) into a concluded encounter — while the named monster is alive, on the active floor, and `aiState === 'fleeing'`, a turn counter accrues; once it reaches `fleeTurnsRequired`, `sealedFlag` is set once and the monster is removed from the map, so the fight can't simply resume.
 
+Its counterpart for the kill is `QuestArcDefinition.bossSlainFlag`: `DeathResolver` sets it when `bossMonsterId` dies, so an objective or a `trackedMilestones` entry (both read flags only) can follow the slain branch as they follow `sealedFlag`.
+
 ## Multiple Named Endings
 `QuestArcDefinition.endings`, `EndingDefinition`: generalizes the single flat `victoryDialogue`/`victoryEpitaph`/`championProclamation`/`victoryScoreBonus`/`relicItemId`/`victoryFloor` fields (which remain the sole, default `'default'`-id ending when `endings` is omitted — existing packs, including `warcraft`, are unaffected) into named, independently-conditioned endings, each gated by `relicItemId` (carried), `requiredFlag` (world-state flag set), and/or `requiredMonsterKillId` (compendium kill count ≥ 1). `GameStateManager.checkVictoryEligible(engine)` now returns the matching ending id (or `undefined`) instead of a boolean, checked in insertion order; `triggerVictory(engine, profileManager?, endingId?)` uses that ending's own text/bonus. Lets one boss encounter branch into different concluded sagas (e.g. slain vs. driven off) sharing the same fight.
 

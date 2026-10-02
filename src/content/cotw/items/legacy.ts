@@ -653,7 +653,7 @@ export const COTW_LEGACY_ITEMS: ItemDefinition[] = [
     bulk: 300,
     quality: 'artifact',
     identified: true,
-    description: 'The sacred solar relic stolen by Hrungnir. Restore it to Bjarnarhaven to save the realm.',
+    description: 'The sacred solar relic of Freyr. Restore it to Bjarnarhaven to save the realm.',
     value: 1000,
   },
   {

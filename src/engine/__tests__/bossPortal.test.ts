@@ -14,7 +14,8 @@ describe('Final Boss Ascent Portal & Victory Trigger', () => {
     const questArc: any = {
       id: 'test-quest',
       name: 'Test Quest',
-      bossMonsterId: 'boss_hrungnir',
+      bossMonsterId: 'nidhogg',
+      bossSlainFlag: 'boss_down',
       victoryPortalTileId: 'gateway_valhalla',
       townReturnPosition: { x: 25, y: 23 },
     };
@@ -45,7 +46,9 @@ describe('Final Boss Ascent Portal & Victory Trigger', () => {
     const bossY = boss.y;
 
     // Slay the boss
+    expect(engine.getWorldFlag('boss_down')).toBe(false);
     DeathResolver.resolveDeath(engine, player, boss);
+    expect(engine.getWorldFlag('boss_down')).toBe(true);
 
     // Verify tile at boss coordinates became GATEWAY_VALHALLA
     const portalTile = engine.map.getTile(bossX, bossY);

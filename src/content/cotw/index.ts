@@ -33,6 +33,7 @@ import { COTW_TILES } from './tiles';
 import { COTW_FLOOR_HAZARDS, COTW_ROOM_DECORATION } from './floorBands';
 import { COTW_FLOOR_LAYOUTS, COTW_FLOOR_SIZE } from './floorLayouts';
 import { COTW_MONSTER_CATEGORIES } from './monsterCategories';
+import { COTW_FACTIONS, COTW_TEMPLE_MET_HOOK } from './factions';
 import { SKALDIC_RUNESTONE_LORE, SKALDIC_RUNESTONE_PLACEMENTS } from './runestones';
 import {
   VIDNIR_DEFEATED_TRIGGER,
@@ -118,6 +119,7 @@ export const cotwManifest: GameContentManifest = {
     COTW_ZONE_VIGNETTES_HOOK,
     COTW_SVART_TAUNT_HOOK,
     COTW_TOWN_REACTIVE_HOOK,
+    COTW_TEMPLE_MET_HOOK,
   ],
   storyChoiceTriggers: [OATH_TRIGGER, VIDNIR_DEFEATED_TRIGGER],
   attributeMilestones: COTW_ATTRIBUTE_MILESTONES,
@@ -135,12 +137,7 @@ export const cotwManifest: GameContentManifest = {
       iron_clans: -15,
     },
   },
-  // The hero starts among the townsfolk; the others appear once standing with them moves.
-  factions: [
-    { id: 'townsfolk', name: 'Townsfolk', metAtStart: true },
-    { id: 'temple_standing', name: 'The Temple' },
-    { id: 'iron_clans', name: 'Iron Clans' },
-  ],
+  factions: COTW_FACTIONS,
   deepestFloorCounter: COTW_DEEPEST_FLOOR_COUNTER,
   statusEffects: [
     {

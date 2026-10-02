@@ -88,6 +88,21 @@ describe('Positional Impulse Physics & Wall Splats', () => {
     expect(map.getEntityAt(7, 5)).toBeNull();
   });
 
+  // Reproduction: a Battering Charge threw a god-mode hero into the Heartwood's pit, and
+  // the plunge removed and killed them though takeDamage dealt nothing.
+  it('leaves an invulnerable victim alive on the brink instead of plunging it', () => {
+    map.setTile(7, 5, TILES.CHASM);
+    target.isInvulnerable = true;
+
+    const result = applyImpulse(engine, player, target, 1, 0, 2);
+
+    expect(result.fellInChasm).toBe(false);
+    expect(result.killed).toBe(false);
+    expect(target.isAlive()).toBe(true);
+    expect(map.getEntityAt(6, 5)).toBe(target);
+    expect(engine.messages.some((m) => m.includes('on the brink'))).toBe(true);
+  });
+
   it('triggers trap when shoved onto a trap tile', () => {
     // Place trap at (7,5)
     map.setTile(7, 5, TILES.TRAP);

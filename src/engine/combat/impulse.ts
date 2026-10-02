@@ -37,7 +37,8 @@ export interface ImpulseResult {
  * 2. Wall Splat: Colliding with an impassable obstacle (Wall, Closed Door, Pillar, or Entity)
  *    halts movement, inflicts bonus kinetic impact damage scaled to remaining shove distance + STR,
  *    and applies a 1-turn 'stunned' status effect.
- * 3. Chasm Hazard: Pushing onto a 'chasm' tile triggers an instant fatal plunge (or heavy fall damage for bosses).
+ * 3. Chasm Hazard: Pushing onto a 'chasm' tile triggers an instant fatal plunge (or heavy fall damage for bosses);
+ *    an invulnerable target stops on the brink.
  * 4. Trap Hazard: Pushing onto a trap tile triggers immediate trap activation.
  */
 export function applyImpulse(
@@ -100,6 +101,21 @@ export function applyImpulse(
 
     // 1. Chasm Check: Fatal plunge (or heavy damage for massive bosses)
     if (nextTile.type === 'chasm') {
+      // Nothing can harm an invulnerable target (god mode), so the plunge can't take it either.
+      if (target.isInvulnerable) {
+        engine.log(`${target.name} stops on the brink of the chasm!`);
+        return {
+          pushed: distanceTraveled > 0,
+          distanceTraveled,
+          wallSplat: false,
+          fellInChasm: false,
+          triggeredTrap: triggeredTrapType,
+          impactDamageDealt: 0,
+          stunned: false,
+          killed: false,
+          newPosition: { x: currX, y: currY },
+        };
+      }
       const bossId = engine.manifest?.quest?.bossMonsterId;
       const isBoss =
         (bossId && target instanceof Monster && target.definitionId === bossId) ||

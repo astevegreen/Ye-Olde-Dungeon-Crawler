@@ -7,6 +7,7 @@ import type {
 } from '../../engine';
 import {
   ExecuteChoiceAction,
+  awardMilestone,
   MovementAction,
   NPC,
   getCounter,
@@ -15,6 +16,7 @@ import {
   modifyFaction,
   setFlag,
 } from '../../engine';
+import { cotwMilestone } from './renown';
 
 /**
  * The Siphon Altar of Járnviðr (floor 22). Four captive villagers are bound around a
@@ -167,6 +169,7 @@ export function resolveHostageRitual(engine: EngineContext): void {
     engine.log(
       'SAVIOR OF JÁRNVIÐR! All four innocent captives were rescued alive. Bjarnarhaven praises your name! (+30 Townsfolk Standing, +15 Temple Standing, 25% Town Shop Discount)'
     );
+    awardMilestone(engine, cotwMilestone('captives_saved'));
   } else if (rescued === 3) {
     // Tier 2: Righteous Leaning (3 Rescued, 1 Sacrificed)
     modifyFaction(engine.worldState, 'townsfolk', 15);

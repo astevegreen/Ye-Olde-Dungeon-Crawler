@@ -88,6 +88,7 @@ export const IVALDA_CHOICE: ChoiceDefinition = {
       disabledReason: 'The Accord’s craft is for a friend of the clans, not one they merely tolerate.',
       consequences: [
         { type: 'setFlag', flag: 'ivalda_taught', value: true },
+        { type: 'recordMilestone', milestoneId: 'forge_friend' },
         { type: 'learnSpell', spellId: 'steam_lance' },
         {
           type: 'logMessage',
@@ -145,7 +146,7 @@ export const IRON_CLANS_BARROW_CHOICES: Record<string, ChoiceDefinition> = Objec
           consequences: [
             { type: 'setFlag', flag: `${id}_honoured`, value: true },
             { type: 'modifyFaction', faction: IRON_CLANS_FACTION, delta: 5 },
-            { type: 'modifyCounter', counter: 'renown:exploration', delta: 5 },
+            { type: 'recordMilestone', milestoneId: 'barrow_honoured' },
             {
               type: 'logMessage',
               message: 'You speak the rites over the barrow and leave its silver where it lies. Somewhere in the halls, an anvil rings once. (+5 Iron Clans standing)',

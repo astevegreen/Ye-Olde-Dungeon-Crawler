@@ -30,6 +30,7 @@ export const VIDNIR_REVELATION_CHOICE: ChoiceDefinition = {
         'Resolve to show restraint on Floor 50: weaken Níðhögg below 15% HP and let it flee for 5 turns to seal the root and avert Ragnarök. (+1 Defense)',
       consequences: [
         { type: 'setFlag', flag: 'vidnir_slain', value: true },
+        { type: 'recordMilestone', milestoneId: 'herald_slain' },
         { type: 'setFlag', flag: 'vidnir_warning_heeded', value: true },
         { type: 'modifyPermanentStat', stat: 'defense', delta: 1 },
         {
@@ -46,6 +47,7 @@ export const VIDNIR_REVELATION_CHOICE: ChoiceDefinition = {
         'Refuse to spare the beast: vow to strike Níðhögg dead on Floor 50 regardless of the consequences for the World Root. (+1 Attack)',
       consequences: [
         { type: 'setFlag', flag: 'vidnir_slain', value: true },
+        { type: 'recordMilestone', milestoneId: 'herald_slain' },
         { type: 'setFlag', flag: 'vidnir_warning_defied', value: true },
         { type: 'modifyPermanentStat', stat: 'attack', delta: 1 },
         {

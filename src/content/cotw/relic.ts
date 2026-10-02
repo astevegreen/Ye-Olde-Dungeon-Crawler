@@ -1,5 +1,6 @@
 import type { ActionHook, Item } from '../../engine';
-import { Container } from '../../engine';
+import { Container, awardMilestone } from '../../engine';
+import { cotwMilestone } from './renown';
 
 /** Act 1's plot device: the stolen shard of Sól's sun-chariot (quest.ts). */
 export const HEARTH_TEAR_ID = 'hearth_tear_fragment';
@@ -28,6 +29,7 @@ export const COTW_RELIC_HOOK: ActionHook = {
     if (holds(carried, HEARTH_TEAR_ID)) {
       engine.setWorldFlag(RELIC_RECOVERED_FLAG, true);
       engine.log('The Hearth-Tear is yours. Carry it home, and Bjarnarhaven will be warm again.');
+      awardMilestone(engine, cotwMilestone('hearth_tear_reclaimed'));
     }
   },
 };

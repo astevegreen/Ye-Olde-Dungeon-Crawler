@@ -29,6 +29,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           { type: 'setFlag', flag: 'blood_oath', value: true },
           { type: 'setFlag', flag: 'blood_oath_honored', value: true },
           { type: 'setFlag', flag: 'oath_resolved', value: true },
+          { type: 'recordMilestone', milestoneId: 'matriarch_bargain' },
           { type: 'modifyPermanentStat', stat: 'attack', delta: -2 },
           { type: 'modifyPermanentStat', stat: 'defense', delta: 3 },
           { type: 'grantCompanion', companionId: 'hearth_frost_hound' },
@@ -48,6 +49,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           { type: 'setFlag', flag: 'blood_oath', value: true },
           { type: 'setFlag', flag: 'blood_oath_broken', value: true },
           { type: 'setFlag', flag: 'oath_resolved', value: true },
+          { type: 'recordMilestone', milestoneId: 'matriarch_bargain' },
           { type: 'modifyPermanentStat', stat: 'attack', delta: 3 },
           { type: 'modifyPermanentStat', stat: 'defense', delta: -2 },
           { type: 'grantCompanion', companionId: 'ember_fang_wolf' },
@@ -81,6 +83,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           'Lay your sword hand on the stone and give Tyr what he gave: a measure of its strength. Cleanses the altar. Permanently -1 Attack and +2 Defense, +15 Temple standing, and haste.',
         consequences: [
           { type: 'setFlag', flag: 'tyr_purified', value: true },
+          { type: 'recordMilestone', milestoneId: 'tyr_oath_kept' },
           { type: 'modifyPermanentStat', stat: 'attack', delta: -1 },
           { type: 'modifyPermanentStat', stat: 'defense', delta: 2 },
           { type: 'modifyFaction', faction: 'temple_standing', delta: 15 },
@@ -311,7 +314,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         disabledReason: 'You have rested here.',
         consequences: [
           { type: 'setFlag', flag: 'dwarven_hearth_rested', value: true },
-          { type: 'modifyCounter', counter: 'renown:exploration', delta: 10 },
+          { type: 'recordMilestone', milestoneId: 'dwarven_hearth_rest' },
           {
             type: 'logMessage',
             message:
@@ -328,7 +331,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         disabledReason: 'You have read them.',
         consequences: [
           { type: 'setFlag', flag: 'dwarven_hearth_notes_read', value: true },
-          { type: 'modifyCounter', counter: 'renown:exploration', delta: 5 },
+          { type: 'recordMilestone', milestoneId: 'wayfarer_lore' },
           {
             type: 'logMessage',
             message:
@@ -401,7 +404,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         consequences: [
           { type: 'setFlag', flag: 'world_bark_hearth_rested', value: true },
           { type: 'cureStatus', statusTypes: ['blindness', 'slow'] },
-          { type: 'modifyCounter', counter: 'renown:exploration', delta: 10 },
+          { type: 'recordMilestone', milestoneId: 'heartwood_rest' },
           {
             type: 'logMessage',
             message:
@@ -418,7 +421,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         disabledReason: 'You have heard their song.',
         consequences: [
           { type: 'setFlag', flag: 'world_bark_chimes_listened', value: true },
-          { type: 'modifyCounter', counter: 'renown:exploration', delta: 5 },
+          { type: 'recordMilestone', milestoneId: 'wayfarer_lore' },
           {
             type: 'logMessage',
             message:

@@ -8,6 +8,7 @@ import { addCurrencyToPlayer } from '../../../engine/economy/currency';
 import { ExecuteChoiceAction } from '../../../engine/actions/choiceAction';
 import { awardMilestone, getRenownTotal, hasEarnedMilestone } from '../../../engine/renown/renownLedger';
 import { cotwManifest } from '../index';
+import { COTW_RENOWN_MILESTONES } from '../renown';
 
 function buildEngine(): GameEngine {
   const map = new GameMap(12, 8, TILES.FLOOR);
@@ -22,12 +23,12 @@ describe('cotw renown: deeds reach the ledger', () => {
     const engine = buildEngine();
     engine.player.inventory.paperdoll.equip(ItemFactory.createCursedMace('cursed-1'), 'mainHand');
     addCurrencyToPlayer(engine.player, 50000);
-    const before = getRenownTotal(engine, 'combat');
+    const before = getRenownTotal(engine, 'piety');
     expect(engine.commandBus.dispatch({ type: 'temple_cleanse' }).success).toBe(true);
-    expect(getRenownTotal(engine, 'combat')).toBe(before + 15);
+    expect(getRenownTotal(engine, 'piety')).toBe(before + 15);
     // Nothing cursed: no cleanse, no renown.
     engine.commandBus.dispatch({ type: 'temple_cleanse' });
-    expect(getRenownTotal(engine, 'combat')).toBe(before + 15);
+    expect(getRenownTotal(engine, 'piety')).toBe(before + 15);
   });
 
   it('a choice consequence records a milestone by id, totals and all', () => {
@@ -39,6 +40,30 @@ describe('cotw renown: deeds reach the ledger', () => {
     engine.handlePlayerAction(new ExecuteChoiceAction(engine.player, choice, 'o'));
     expect(getRenownTotal(engine, 'exploration')).toBe(5);
     expect(getRenownTotal(engine)).toBe(5);
+  });
+
+  it('every milestone a cotw choice records is one the pack defines', () => {
+    const ids = new Set(COTW_RENOWN_MILESTONES.map((m) => m.id));
+    const named: string[] = [];
+    for (const choice of Object.values(cotwManifest.choices ?? {})) {
+      for (const option of choice.options) {
+        for (const c of option.consequences) if (c.type === 'recordMilestone') named.push(c.milestoneId);
+      }
+    }
+    expect(named.length).toBeGreaterThan(15);
+    for (const id of named) expect(ids.has(id), id).toBe(true);
+    // No deed bypasses the ledger with a bare renown counter any more.
+    const bare = Object.values(cotwManifest.choices ?? {}).flatMap((ch) =>
+      ch.options.flatMap((o) => o.consequences.filter((c) => c.type === 'modifyCounter' && c.counter.startsWith('renown:')))
+    );
+    expect(bare).toEqual([]);
+  });
+
+  it('a runestone read now counts toward the renown the HUD shows', () => {
+    const engine = buildEngine();
+    engine.handlePlayerAction(new ExecuteChoiceAction(engine.player, cotwManifest.choices!.skaldic_runestone_1, 'study_frost'));
+    expect(getRenownTotal(engine, 'exploration')).toBe(10);
+    expect(getRenownTotal(engine)).toBe(10);
   });
 
   it('content code awards its own definitions through awardMilestone, once unless repeatable', () => {

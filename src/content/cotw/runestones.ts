@@ -142,7 +142,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           'Absorb ancestral fortitude. Permanently increases base Defense by +1, earns +10 Exploration Renown, and commits the Runic Spell Hint to memory.',
         consequences: [
           { type: 'setFlag', flag: 'skaldic_runestone_1_resolved', value: true },
-          { type: 'modifyCounter', counter: 'renown:exploration', delta: 10 },
+          { type: 'recordMilestone', milestoneId: 'runestone_read' },
           { type: 'modifyPermanentStat', stat: 'defense', delta: 1 },
           {
             type: 'logMessage',
@@ -158,7 +158,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           'Study the inscription carefully. Earns +10 Exploration Renown, grants a Scroll of Identify, and commits the Runic Spell Hint to memory.',
         consequences: [
           { type: 'setFlag', flag: 'skaldic_runestone_1_resolved', value: true },
-          { type: 'modifyCounter', counter: 'renown:exploration', delta: 10 },
+          { type: 'recordMilestone', milestoneId: 'runestone_read' },
           { type: 'grantItem', itemId: 'scroll_identify', toInventory: true },
           {
             type: 'logMessage',
@@ -192,7 +192,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
         consequences: [
           { type: 'setFlag', flag: 'skaldic_runestone_2_resolved', value: true },
           { type: 'setFlag', flag: IRON_CLANS_MET_FLAG, value: true },
-          { type: 'modifyCounter', counter: 'renown:exploration', delta: 10 },
+          { type: 'recordMilestone', milestoneId: 'runestone_read' },
           { type: 'modifyPermanentStat', stat: 'attack', delta: 1 },
           {
             type: 'logMessage',
@@ -209,7 +209,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
         consequences: [
           { type: 'setFlag', flag: 'skaldic_runestone_2_resolved', value: true },
           { type: 'setFlag', flag: IRON_CLANS_MET_FLAG, value: true },
-          { type: 'modifyCounter', counter: 'renown:exploration', delta: 10 },
+          { type: 'recordMilestone', milestoneId: 'runestone_read' },
           { type: 'grantItem', itemId: 'bog_iron_whetstone', toInventory: true },
           {
             type: 'logMessage',
@@ -242,7 +242,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           'Invigorate your stride with radiant chariot heat. Grants divine Haste for 35 turns, earns +10 Exploration Renown, and commits the Runic Spell Hint to memory.',
         consequences: [
           { type: 'setFlag', flag: 'skaldic_runestone_3_resolved', value: true },
-          { type: 'modifyCounter', counter: 'renown:exploration', delta: 10 },
+          { type: 'recordMilestone', milestoneId: 'runestone_read' },
           { type: 'applyBuff', statusType: 'haste', duration: 35 },
           {
             type: 'logMessage',
@@ -258,7 +258,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           'Siphon ambient heat into permanent striking might. Permanently increases base Attack by +1, earns +10 Exploration Renown, and commits the Runic Spell Hint to memory.',
         consequences: [
           { type: 'setFlag', flag: 'skaldic_runestone_3_resolved', value: true },
-          { type: 'modifyCounter', counter: 'renown:exploration', delta: 10 },
+          { type: 'recordMilestone', milestoneId: 'runestone_read' },
           { type: 'modifyPermanentStat', stat: 'attack', delta: 1 },
           {
             type: 'logMessage',
@@ -291,7 +291,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           'Absorb the resilience of petrified wood. Permanently increases base Defense by +1, earns +10 Exploration Renown, and commits the Runic Spell Hint to memory.',
         consequences: [
           { type: 'setFlag', flag: 'skaldic_runestone_4_resolved', value: true },
-          { type: 'modifyCounter', counter: 'renown:exploration', delta: 10 },
+          { type: 'recordMilestone', milestoneId: 'runestone_read' },
           { type: 'modifyPermanentStat', stat: 'defense', delta: 1 },
           {
             type: 'logMessage',
@@ -307,7 +307,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           'Collect an invigorating elixir of warm broth and root sap. Grants a Hearth-Broth Flask, earns +10 Exploration Renown, and commits the Runic Spell Hint to memory.',
         consequences: [
           { type: 'setFlag', flag: 'skaldic_runestone_4_resolved', value: true },
-          { type: 'modifyCounter', counter: 'renown:exploration', delta: 10 },
+          { type: 'recordMilestone', milestoneId: 'runestone_read' },
           { type: 'grantItem', itemId: 'hearth_broth_flask', toInventory: true },
           {
             type: 'logMessage',
@@ -340,7 +340,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           'Channel the wrath of the heavens. Permanently increases base Attack by +1, earns +10 Exploration Renown, and commits the Runic Spell Hint to memory.',
         consequences: [
           { type: 'setFlag', flag: 'skaldic_runestone_5_resolved', value: true },
-          { type: 'modifyCounter', counter: 'renown:exploration', delta: 10 },
+          { type: 'recordMilestone', milestoneId: 'runestone_read' },
           { type: 'modifyPermanentStat', stat: 'attack', delta: 1 },
           {
             type: 'logMessage',
@@ -356,7 +356,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           'Root your spirit to withstand the abyssal corruption. Permanently increases base Defense by +1, earns +10 Exploration Renown, and commits the Runic Spell Hint to memory.',
         consequences: [
           { type: 'setFlag', flag: 'skaldic_runestone_5_resolved', value: true },
-          { type: 'modifyCounter', counter: 'renown:exploration', delta: 10 },
+          { type: 'recordMilestone', milestoneId: 'runestone_read' },
           { type: 'modifyPermanentStat', stat: 'defense', delta: 1 },
           {
             type: 'logMessage',
@@ -389,7 +389,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           'Claim the Thunderer’s crushing strike. Permanently increases base Attack by +1 and base Defense by +1, earns +15 Exploration Renown, and commits the Runic Spell Hint to memory.',
         consequences: [
           { type: 'setFlag', flag: 'skaldic_runestone_6_resolved', value: true },
-          { type: 'modifyCounter', counter: 'renown:exploration', delta: 15 },
+          { type: 'recordMilestone', milestoneId: 'twilight_prophecy_read' },
           { type: 'modifyPermanentStat', stat: 'attack', delta: 1 },
           { type: 'modifyPermanentStat', stat: 'defense', delta: 1 },
           {
@@ -406,7 +406,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
           'Channel celestial swiftness for the final confrontation. Grants divine Haste for 50 turns, earns +15 Exploration Renown, and commits the Runic Spell Hint to memory.',
         consequences: [
           { type: 'setFlag', flag: 'skaldic_runestone_6_resolved', value: true },
-          { type: 'modifyCounter', counter: 'renown:exploration', delta: 15 },
+          { type: 'recordMilestone', milestoneId: 'twilight_prophecy_read' },
           { type: 'applyBuff', statusType: 'haste', duration: 50 },
           {
             type: 'logMessage',

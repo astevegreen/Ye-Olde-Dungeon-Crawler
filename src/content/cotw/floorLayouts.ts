@@ -10,8 +10,10 @@ export const COTW_FLOOR_SIZE = { width: 57, height: 40 };
  * zone's first floor opens in its threshold room (`thresholds.ts`).
  */
 export const COTW_FLOOR_LAYOUTS: FloorLayoutBand[] = [
-  // Rime Hollows: frozen caverns around a walkable black-ice mere; a draugr barrow in the rock.
-  { minFloor: 1, maxFloor: 9, strategy: 'caverns', params: { lake: true, landmarkVaultIds: ['draugr_barrow'] }, threshold: COTW_THRESHOLDS.rime_hollows },
+  // Rime Hollows: frozen caverns around a walkable black-ice mere; from floor 6 a draugr
+  // barrow in the rock (its Ancient Draugr is a floor-14 monster, too much for floors 1-5).
+  { minFloor: 1, maxFloor: 5, strategy: 'caverns', params: { lake: true }, threshold: COTW_THRESHOLDS.rime_hollows },
+  { minFloor: 6, maxFloor: 9, strategy: 'caverns', params: { lake: true, landmarkVaultIds: ['draugr_barrow'] } },
   // Dwarven Works: a symmetric hall plan, ring road and workshops, with the great forge pit.
   { minFloor: 10, maxFloor: 17, strategy: 'halls', params: { centralPit: true, randomVaults: false }, threshold: COTW_THRESHOLDS.dwarven_works },
   // Obsidian Siphon: a magma rift crossed by bridges; the siphon pylon stands on one bank.

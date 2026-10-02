@@ -61,11 +61,14 @@ describe('cotw zone layouts', () => {
   }
 
   // Each zone's first floor opens in its threshold room: stamped whole, the hero on its '@'.
-  // The Rotting Root's only floor is the boss lair, so its band has none.
+  // The Rotting Root's only floor is the boss lair, so its band has none; nor does a band
+  // that only continues the zone before it (Rime Hollows 6-9, split off for the barrow).
   const TILE_OF: Record<string, string> = { '#': 'wall', '.': 'floor', '@': 'stairs_up', P: 'pillar', B: 'iron_bars', '+': 'door_closed', "'": 'door_open', '~': 'shallow_water', X: 'chasm' };
-  for (const band of COTW_FLOOR_LAYOUTS) {
+  for (const [i, band] of COTW_FLOOR_LAYOUTS.entries()) {
     const layout = band.threshold?.layout;
     if (band.minFloor >= QUEST.bossFloor) continue;
+    const prev = COTW_FLOOR_LAYOUTS[i - 1];
+    if (prev && prev.maxFloor === band.minFloor - 1 && prev.strategy === band.strategy) continue;
     it(`floor ${band.minFloor}: the zone opens in a sound threshold room`, () => {
       expect(layout, `the band from floor ${band.minFloor} has no threshold`).toBeDefined();
       if (!layout) return;

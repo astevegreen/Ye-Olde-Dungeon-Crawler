@@ -19,7 +19,8 @@ export const COTW_VAULTS: VaultBlueprint[] = [
     id: 'draugr_barrow',
     name: 'The Draugr Barrow',
     description: 'A burial chamber cut into the permafrost, its dead laid out between frost-cracked pillars.',
-    minFloor: 1,
+    // Floors 6-9 only (floorLayouts.ts): its Ancient Draugr is too much for floors 1-5.
+    minFloor: 6,
     maxFloor: 9,
     layout: [
       '###########',

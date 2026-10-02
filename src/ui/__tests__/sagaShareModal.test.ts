@@ -34,6 +34,10 @@ class MockElement {
 
   remove() {}
 
+  focus() {
+    (globalThis as any).document.activeElement = this;
+  }
+
   addEventListener(type: string, listener: (e?: any) => void) {
     if (!this.eventListeners.has(type)) {
       this.eventListeners.set(type, new Set());
@@ -102,6 +106,22 @@ describe('SagaShareModal (Headless)', () => {
     const modal = new SagaShareModal({ leaderboard });
     expect(modal.isOpen).toBe(false);
     expect(modal.id).toBe('saga-share-modal');
+  });
+
+  it('takes its own Escape, and hands focus back to what opened it', () => {
+    const doc = (globalThis as any).document;
+    const hall = new MockElement();
+    hall.focus();
+    const modal = new SagaShareModal({ leaderboard });
+    modal.openImport();
+    const scrim = doc.getElementById('saga-share-modal');
+    expect(doc.activeElement).toBe(scrim);
+
+    const e = { key: 'Escape', preventDefault: vi.fn(), stopPropagation: vi.fn() };
+    for (const fn of scrim.eventListeners.get('keydown')) fn(e);
+    expect(e.stopPropagation).toHaveBeenCalled();
+    expect(modal.isOpen).toBe(false);
+    expect(doc.activeElement).toBe(hall);
   });
 
   it('openShare populates share code, web share link, and preview', () => {
@@ -173,7 +193,7 @@ describe('SagaShareModal (Headless)', () => {
     modal.openShare(testEntry);
     expect(modal.isOpen).toBe(true);
 
-    const handled = modal.handleKeyDown({ key: 'Escape' } as KeyboardEvent);
+    const handled = modal.handleKeyDown({ key: 'Escape', preventDefault: vi.fn() } as unknown as KeyboardEvent);
     expect(handled).toBe(true);
     expect(modal.isOpen).toBe(false);
     expect(closeSpy).toHaveBeenCalled();

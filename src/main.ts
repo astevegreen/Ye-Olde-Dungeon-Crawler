@@ -877,6 +877,7 @@ window.addEventListener('DOMContentLoaded', () => {
     onClose: () => {
       popModal('save-code');
     },
+    getModalStack: () => (inputHandler?.modalStack.has('save-code') ? inputHandler.modalStack : undefined),
   });
 
   /** Opens the save-code window over the game, with its one modal-stack entry. */
@@ -1767,8 +1768,10 @@ window.addEventListener('DOMContentLoaded', () => {
             }
           },
           onError: (err) => {
-            alert(`Save import error: ${err}`);
+            showToast(`Save import error: ${err}`, 'error', 6000);
           },
+          // Turned down in the warning: nothing to report.
+          onCancel: () => undefined,
           modalStack: inputHandler?.modalStack,
         });
       },

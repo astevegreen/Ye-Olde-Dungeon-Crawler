@@ -222,13 +222,37 @@ test('the other-pack save warning holds the keys until answered', async ({ page 
   await page.keyboard.press('ArrowRight');
   expect(await state(page)).toMatchObject({ turn: start.turn, x: start.x });
 
-  // Escape cancels the import, as the Cancel button does (its notice is an alert).
-  page.once('dialog', (d) => void d.dismiss());
+  // Escape cancels the import, as the Cancel button does, with no browser alert.
+  const alerts: string[] = [];
+  page.on('dialog', (d) => {
+    alerts.push(d.message());
+    void d.dismiss();
+  });
   await page.keyboard.press('Escape');
   await expect(warning).toBeHidden();
   expect(await stackIds(page)).toEqual([]);
   await page.keyboard.press('ArrowRight');
   await expect.poll(async () => (await state(page)).x).toBe(start.x + 1);
+  expect(alerts).toEqual([]);
+
+  // The same warning from the save-code window joins the stack above it: Escape turns
+  // down the import and leaves the save-code window open.
+  const saveCode = page.locator('#save-code-modal');
+  await page.keyboard.press('Escape');
+  await page.locator('#btn-savequit-copy-code').click();
+  await expect(saveCode).toBeVisible();
+  await page.locator('#tab-savecode-paste').click();
+  await page.locator('#savecode-paste-text').fill(Buffer.from(save).toString('base64'));
+  await page.locator('#btn-savecode-restore-action').click();
+  await expect(warning).toBeVisible();
+  expect(await stackIds(page)).toEqual(['save-code', 'manifest-mismatch']);
+  await page.keyboard.press('Escape');
+  await expect(warning).toBeHidden();
+  await expect(saveCode).toBeVisible();
+  expect(await stackIds(page)).toEqual(['save-code']);
+  await page.keyboard.press('Escape');
+  await expect(saveCode).toBeHidden();
+  expect(await stackIds(page)).toEqual([]);
 
   expect(pageErrors).toEqual([]);
 });
@@ -252,6 +276,30 @@ test('settings on the main menu rebinds and closes by keyboard', async ({ page }
   await expect(page.locator('#settings-status')).toContainText('Bound ; to "Move North"');
   await page.keyboard.press('Escape');
   await expect(settings).toBeHidden();
+
+  expect(pageErrors).toEqual([]);
+});
+
+// No game runs on the menus, so the hall of fame and the saga exchange take their own
+// keys: Escape closes the saga exchange over the hall, then the hall.
+test('the hall of fame and the saga exchange close on Escape from the menu', async ({ page }) => {
+  expect(existsSync(BUNDLE), `${BUNDLE} is missing; run \`npm run build\` first`).toBe(true);
+  const pageErrors: string[] = [];
+  page.on('pageerror', (err) => pageErrors.push(err.message));
+  await page.goto(pathToFileURL(BUNDLE).href);
+
+  const hall = page.locator('#valhalla-modal');
+  const saga = page.locator('#saga-share-modal');
+  await page.locator('#btn-menu-valhalla').click();
+  await expect(hall).toBeVisible();
+  await page.locator('#btn-valhalla-import').click();
+  await expect(saga).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(saga).toBeHidden();
+  await expect(hall).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(hall).toBeHidden();
 
   expect(pageErrors).toEqual([]);
 });

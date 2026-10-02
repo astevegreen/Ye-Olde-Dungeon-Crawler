@@ -41,6 +41,8 @@ export class SagaShareModal implements UIModal {
   private importPreviewEl: HTMLElement | null = null;
 
   private statusEl: HTMLElement | null = null;
+  /** What had focus when it opened (the hall, say), so its Escape works again after. */
+  private returnFocus: HTMLElement | null = null;
 
   private activeEntry: HallOfFameEntry | null = null;
   private inspectedEntry: HallOfFameEntry | null = null;
@@ -60,6 +62,14 @@ export class SagaShareModal implements UIModal {
 
     const modal = createDialogScrim('saga-share-modal', 'system');
     if (!modal) return;
+    // The overlay holds focus and takes its own keys: on the title screen no game runs and
+    // the modal stack routes nothing, and at the end of a run the game must not see them.
+    modal.tabIndex = -1;
+    modal.style.outline = 'none';
+    modal.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      this.handleKeyDown(e as KeyboardEvent);
+    });
 
     const brand = this.options.branding ?? resolveBranding();
     const hall = escapeHtml(brand.hallOfFameName);
@@ -276,8 +286,10 @@ export class SagaShareModal implements UIModal {
 
   public show(): void {
     if (this.modalEl) {
+      if (!this.isOpen && typeof document !== 'undefined') this.returnFocus = document.activeElement as HTMLElement | null;
       this.modalEl.style.display = 'flex';
       this.isOpen = true;
+      this.modalEl.focus();
     }
   }
 
@@ -286,6 +298,8 @@ export class SagaShareModal implements UIModal {
       this.modalEl.style.display = 'none';
       this.isOpen = false;
     }
+    this.returnFocus?.focus();
+    this.returnFocus = null;
     if (this.options.onClose) {
       this.options.onClose();
     }
@@ -294,6 +308,7 @@ export class SagaShareModal implements UIModal {
   public handleKeyDown(e: KeyboardEvent): boolean {
     if (!this.isOpen) return false;
     if (e.key === 'Escape') {
+      e.preventDefault();
       this.close();
       return true;
     }

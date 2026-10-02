@@ -10,7 +10,16 @@ class MockElement {
   public className = '';
   public style: Record<string, string> = {};
   public innerHTML = '';
+  public tabIndex = 0;
+  public focused = false;
+  public listeners: Record<string, (e: unknown) => void> = {};
   appendChild(): void {}
+  addEventListener(type: string, fn: (e: unknown) => void): void {
+    this.listeners[type] = fn;
+  }
+  focus(): void {
+    this.focused = true;
+  }
   querySelector(): null {
     return null;
   }
@@ -81,6 +90,20 @@ describe('HallOfLegendsDialog', () => {
     expect(html).toContain(resolveBranding().hallOfFameName);
     expect(hall.isOpen).toBe(true);
     hall.close();
+    expect(hall.isOpen).toBe(false);
+  });
+
+  it('holds focus and closes on Escape, which goes no further', () => {
+    const { hall } = open([]);
+    expect(doc.scrim?.focused).toBe(true);
+    const key = (k: string) => {
+      const e = { key: k, stopped: false, preventDefault() {}, stopPropagation() { this.stopped = true; } };
+      doc.scrim?.listeners.keydown(e);
+      return e;
+    };
+    expect(key('a').stopped).toBe(false);
+    expect(hall.isOpen).toBe(true);
+    expect(key('Escape').stopped).toBe(true);
     expect(hall.isOpen).toBe(false);
   });
 

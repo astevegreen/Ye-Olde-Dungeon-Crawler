@@ -15,7 +15,9 @@ export interface HallOfLegendsOptions {
 /**
  * The hall of fame (the pack names it, e.g. "Hall of Legends"): every inscribed run, best
  * first, with the selected one's epitaph. Opened from the title screen, in the one dialog
- * frame (ADR-0011). Like the title screen under it, a screen rather than a modal.
+ * frame (ADR-0011). Like the title screen under it, a screen rather than a modal: no game
+ * runs there and the modal stack routes nothing, so the overlay holds focus and takes its
+ * own Escape, as the feedback and settings dialogs do on the menus.
  */
 export class HallOfLegendsDialog {
   private scrim: HTMLElement | null = null;
@@ -29,11 +31,22 @@ export class HallOfLegendsDialog {
   }
 
   public open(): void {
-    this.scrim ??= createDialogScrim('valhalla-modal');
-    if (!this.scrim) return;
+    if (!this.scrim) {
+      this.scrim = createDialogScrim('valhalla-modal');
+      if (!this.scrim) return;
+      this.scrim.tabIndex = -1;
+      this.scrim.style.outline = 'none';
+      this.scrim.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        e.preventDefault();
+        e.stopPropagation();
+        this.close();
+      });
+    }
     this.status = '';
     this.render();
     this.scrim.style.display = 'flex';
+    this.scrim.focus();
   }
 
   public close(): void {

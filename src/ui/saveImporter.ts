@@ -194,9 +194,11 @@ export function importSaveWithValidation(options: {
   activeManifestId: string;
   onSuccess: (profile: CharacterProfile) => void;
   onError: (errorMessage: string) => void;
+  /** The player turned down another pack's save; without this, `onError` hears of it. */
+  onCancel?: () => void;
   modalStack?: ModalStackManager;
 }): void {
-  const { content, profileManager, activeManifestId, onSuccess, onError, modalStack } = options;
+  const { content, profileManager, activeManifestId, onSuccess, onError, onCancel, modalStack } = options;
 
   const validation: SaveValidationResult = validateSavePayload(content, {
     expectedManifestId: activeManifestId,
@@ -222,9 +224,7 @@ export function importSaveWithValidation(options: {
       activeManifestId,
       heroName: validation.envelope.data.profile.name,
       onConfirm: executeImport,
-      onCancel: () => {
-        onError('Import cancelled by user due to manifest mismatch.');
-      },
+      onCancel: onCancel ?? (() => onError('Import cancelled by user due to manifest mismatch.')),
       modalStack,
     });
   } else {

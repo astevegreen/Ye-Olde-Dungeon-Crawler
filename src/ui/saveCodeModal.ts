@@ -5,6 +5,7 @@ import type { SaveData, CharacterProfile } from '../engine';
 import type { ProfileManager } from '../engine';
 import { showManifestMismatchDialog } from './saveImporter';
 import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
+import type { ModalStackManager } from './modalStack';
 
 export interface SaveCodeModalOptions {
   profileManager: ProfileManager;
@@ -12,6 +13,9 @@ export interface SaveCodeModalOptions {
   getActiveEnvelope?: () => VersionedSaveEnvelope<SaveData> | null;
   onRestored?: (profile: CharacterProfile) => void;
   onClose?: () => void;
+  /** The stack this window is on, if any: the other-pack warning it opens joins it, so
+   *  the warning takes the keys (and Escape) rather than this window under it. */
+  getModalStack?: () => ModalStackManager | undefined;
 }
 
 export class SaveCodeModal {
@@ -165,6 +169,7 @@ export class SaveCodeModal {
           onCancel: () => {
             this.setStatus('Restore cancelled due to manifest mismatch.', 'bad');
           },
+          modalStack: this.options.getModalStack?.(),
         });
       } else {
         proceedWithImport();

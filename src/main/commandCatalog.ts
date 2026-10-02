@@ -36,9 +36,9 @@ export const COMMAND_CATALOG = [
   { id: 'export-save', title: 'Export Save File', category: 'System', shortcut: '', description: 'Download current character file for backup or transfer' },
   { id: 'save-code', title: 'Generate Save Code', category: 'System', shortcut: '', description: 'Generate a shareable text-based save code' },
   { id: 'settings', title: 'Settings & Keybindings', category: 'System', shortcut: '', description: 'Display options, and the keys for every action' },
-  { id: 'summon_companion', title: 'Summon Companion', category: 'Action', shortcut: '', description: 'Call your bonded companion to your side (Companions & Pet Progression)' },
-  { id: 'dismiss_companion', title: 'Dismiss Companion', category: 'Action', shortcut: '', description: 'Send your companion away until next summoned' },
-  { id: 'use_companion_skill_rally_howl', title: 'Companion Skill: Rally Howl', category: 'Action', shortcut: '', description: 'Command your companion to use its Rally Howl, if it has learned one (Companions & Pet Progression)' },
+  { id: 'summon_companion', title: 'Summon Companion', category: 'Action', shortcut: 'Shift+C', description: 'Call your bonded companion to your side (Companions & Pet Progression)' },
+  { id: 'dismiss_companion', title: 'Dismiss Companion', category: 'Action', shortcut: 'Shift+C', description: 'Send your companion away until next summoned' },
+  { id: 'use_companion_skill_rally_howl', title: 'Companion Skill: Rally Howl', category: 'Action', shortcut: 'Shift+R', description: 'Command your companion to use its Rally Howl, if it has learned one (Companions & Pet Progression)' },
   { id: 'rune_of_return_tree', title: 'Rune of Return Mastery Tree', category: 'Action', shortcut: 'Shift+T', description: 'Upgrade Channel Celerity, Steadfast Weave, and Unbound Casting using unspent points' },
   { id: 'channel_rune_of_return', title: 'Channel Rune of Return', category: 'Action', shortcut: 'T', description: 'Begin channeled recall ritual to escape dungeon and return to town' },
 ] as const satisfies readonly CommandMetadata[];

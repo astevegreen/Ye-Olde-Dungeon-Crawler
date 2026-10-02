@@ -72,4 +72,17 @@ describe('console shortcuts: potion row and command palette', () => {
     palette.close();
     expect(inputHandler.modalStack.isEmpty()).toBe(true);
   });
+  it('Shift+C calls the companion and Shift+R uses its skill; bare C and R still close and rest', () => {
+    const companion = vi.fn();
+    inputHandler.onCompanionCommand = companion;
+
+    inputHandler.handleKeyDown(key('KeyC', { shiftKey: true }));
+    inputHandler.handleKeyDown(key('KeyR', { shiftKey: true }));
+    expect(companion.mock.calls).toEqual([['call'], ['skill']]);
+
+    const act = vi.spyOn(engine, 'handlePlayerAction');
+    inputHandler.handleKeyDown(key('KeyR'));
+    expect(companion).toHaveBeenCalledTimes(2);
+    expect(act).toHaveBeenCalled();
+  });
 });

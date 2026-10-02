@@ -162,6 +162,8 @@ export class InputHandler {
   public onContextAction?: () => void;
   /** Drinks the potion in a potion-row slot (0-based); wired from main.ts. */
   public onDrinkPotionSlot?: (slotIndex: number) => void;
+  /** The companion keys: call it (or send it away), or have it use its skill. */
+  public onCompanionCommand?: (command: 'call' | 'skill') => void;
   /** Casts a spell by ID (as opposed to a QuickSpellsBar slot index) — wired from main.ts's castOrTargetSpell. */
   public onCastSpellById?: (spellId: string) => void;
   public enabled = true;
@@ -722,10 +724,18 @@ export class InputHandler {
 
     // Potion row (Shift+1..4 by default). Checked before the bare-digit spell keys
     // below, which would otherwise take Shift+1 as spell slot 1.
-    const potionAction = this.settingsManager.getActionForCode(e.shiftKey ? `Shift+${code}` : code);
-    if (potionAction?.startsWith('drink_potion_') && this.onDrinkPotionSlot) {
-      const slotIdx = parseInt(potionAction.replace('drink_potion_', ''), 10) - 1;
+    const boundAction = this.settingsManager.getActionForCode(e.shiftKey ? `Shift+${code}` : code);
+    if (boundAction?.startsWith('drink_potion_') && this.onDrinkPotionSlot) {
+      const slotIdx = parseInt(boundAction.replace('drink_potion_', ''), 10) - 1;
       this.onDrinkPotionSlot(slotIdx);
+      this.onActionProcessed();
+      return true;
+    }
+
+    // Companion (Shift+C calls or sends it away, Shift+R its skill, by default). Checked
+    // before the hard-wired C and R below, which would otherwise take the shifted keys.
+    if ((boundAction === 'companion_call' || boundAction === 'companion_skill') && this.onCompanionCommand) {
+      this.onCompanionCommand(boundAction === 'companion_call' ? 'call' : 'skill');
       this.onActionProcessed();
       return true;
     }

@@ -42,6 +42,7 @@ export const ACTION_METADATA: ActionMetadata[] = [
   { id: 'drink_potion_4', name: 'Drink Potion Slot 4', category: 'Combat & Magic', defaultCodes: ['Shift+Digit4'] },
   { id: 'channel_rune_of_return', name: 'Channel Rune of Return', category: 'Combat & Magic', defaultCodes: ['KeyT'] },
   { id: 'rune_of_return_tree', name: 'Rune of Return Mastery', category: 'Combat & Magic', defaultCodes: ['Shift+KeyT'] },
+  { id: 'companion_skill', name: "Companion's Skill", category: 'Combat & Magic', defaultCodes: ['Shift+KeyR'] },
 
   // Interaction & Inventory
   { id: 'character_menu', name: 'Character Menu', category: 'Interaction & Inventory', defaultCodes: ['KeyE'] },
@@ -59,6 +60,7 @@ export const ACTION_METADATA: ActionMetadata[] = [
   { id: 'pact', name: 'Pacts', category: 'Interaction & Inventory', defaultCodes: ['KeyP'] },
   { id: 'story', name: 'Story', category: 'Interaction & Inventory', defaultCodes: ['KeyO'] },
   { id: 'radial_menu', name: 'Open Radial Action Menu', category: 'Interaction & Inventory', defaultCodes: ['KeyV'] },
+  { id: 'companion_call', name: 'Call / Send Away Companion', category: 'Interaction & Inventory', defaultCodes: ['Shift+KeyC'] },
 ];
 
 /**

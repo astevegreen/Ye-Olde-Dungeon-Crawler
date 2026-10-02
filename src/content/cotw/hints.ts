@@ -19,7 +19,7 @@ export const COTW_FIRST_TIME_HINTS: Partial<Record<FirstTimeHintId, FirstTimeHin
   },
   companion: {
     title: 'Your companion',
-    text: 'Your companion follows you and fights at your side. Summon it, send it away, or call on a skill it has learned from the command list (Ctrl+K).',
+    text: 'Your companion follows you and fights at your side. {key:companion_call} calls it or sends it away, and {key:companion_skill} has it use a skill it has learned.',
   },
   renown: {
     title: 'Renown',

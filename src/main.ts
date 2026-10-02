@@ -1506,6 +1506,25 @@ window.addEventListener('DOMContentLoaded', () => {
 
     commandPalette.registerCommands(COMMAND_CATALOG.map((meta) => ({ ...meta, execute: commandExecutors[meta.id] })));
 
+    /** The companion keys (Shift+C, Shift+R by default): call or send away; its skill. */
+    const runCompanionKey = (command: 'call' | 'skill'): void => {
+      const eng = activeEngine;
+      if (!eng) return;
+      const companion = eng.companion?.isAlive() ? eng.companion : undefined;
+      if (command === 'call') {
+        commandExecutors[companion ? 'dismiss_companion' : 'summon_companion'](eng);
+        return;
+      }
+      // Its first learned skill (a companion learns one at the trainer).
+      const skillId = companion?.unlockedSkills[0];
+      if (!skillId) {
+        eng.log(companion ? `${companion.name} has learned no skill yet.` : 'No companion is at your side.');
+        return;
+      }
+      const res = eng.commandBus.dispatch({ type: 'use_companion_skill', payload: { skillId } });
+      if (!res.success && res.message) eng.log(res.message);
+    };
+
     // A pack font that finishes loading after the first frame redraws the canvas in it.
     void applyThemeTokens(engine.manifest?.theme).then(() => renderer?.render());
 
@@ -1585,6 +1604,7 @@ window.addEventListener('DOMContentLoaded', () => {
       inputHandler.onDrinkPotionSlot = drinkPotionSlot;
       inputHandler.onToggleCommandPalette = toggleCommandPalette;
       inputHandler.onContextAction = () => runContextAction(consoleExtras.currentAction);
+      inputHandler.onCompanionCommand = runCompanionKey;
       commandPalette.setModalStack(inputHandler.modalStack);
       potionRow.setModalStack(inputHandler.modalStack);
       diagnosticModal.setModalStack(inputHandler.modalStack);
@@ -1625,6 +1645,7 @@ window.addEventListener('DOMContentLoaded', () => {
         inputHandler.onDrinkPotionSlot = drinkPotionSlot;
         inputHandler.onToggleCommandPalette = toggleCommandPalette;
       inputHandler.onContextAction = () => runContextAction(consoleExtras.currentAction);
+      inputHandler.onCompanionCommand = runCompanionKey;
         commandPalette.setModalStack(inputHandler.modalStack);
       potionRow.setModalStack(inputHandler.modalStack);
         diagnosticModal.setModalStack(inputHandler.modalStack);

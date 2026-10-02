@@ -96,16 +96,17 @@ export const cotwManifest: GameContentManifest = {
     { type: 'alarm', name: 'Brass Alarm Trap', damage: 0, disarmDifficulty: 10 },
   ],
   // Each riddle stands in for its milestone in the Story until it is achieved.
-  // Riddles: DRAFT wording (Claude, at the owner's request), for the owner to edit.
+  // Riddles: Claude's wording at the owner's request, checked against what each milestone
+  // actually takes (2026-10-02). The owner may still reword any of them.
   trackedMilestones: [
-    { flag: 'relic_recovered', label: 'Hearth-Tear Reclaimed', description: 'Took back the stolen shard of Sól’s sun-chariot from the Sun-Chariot Warden.', icon: '☀️', riddle: 'A sun lies buried where no sun can reach. Carry it up into the morning.' },
+    { flag: 'relic_recovered', label: 'Hearth-Tear Reclaimed', description: 'Took back the stolen shard of Sól’s sun-chariot from the Sun-Chariot Warden.', icon: '☀️', riddle: 'Where the coven forges stolen sunfire, a burning keeper holds a shard of the sun. Take it back.' },
     { flag: 'nidhogg_slain', label: 'Níðhögg Slain', description: 'Struck down Níðhögg at the root of Yggdrasil, and split the World Tree.', icon: '👑', riddle: 'At the root’s last ring the corpse-gnawer feeds. A blade can end it, if you will pay what ending costs.' },
     { flag: 'tyr_purified', label: 'Altar of Tyr Cleansed', description: 'Purified the defiled altar on Floor 3 with an oath and a solemn sacrifice.', icon: '⚖️', riddle: 'Thrice below, the oath-god’s stone stands fouled. He gave a hand; it asks a gift of yours.' },
     { flag: 'oath_resolved', label: "The Matriarch's Blood-Oath", description: 'Struck a lasting bargain with a troll-wife matriarch to sever the siphon on the village.', icon: '🩸', riddle: 'Among dead warlocks a troll-mother bargains in blood. Hot or cold, her price is kept forever.' },
-    { flag: 'nidhogg_root_sealed', label: 'The Root Sealed', description: 'Drove Níðhögg from the rotting root of Yggdrasil without ending it.', icon: '🌳', riddle: 'Not every wyrm need die. Hold fast at the gnawed root, and the gnawer may slink back to the dark.' },
+    { flag: 'nidhogg_root_sealed', label: 'The Root Sealed', description: 'Drove Níðhögg from the rotting root of Yggdrasil without ending it.', icon: '🌳', riddle: 'Not every wyrm need die. Wound the gnawer until it turns tail, then give chase, and it may slink back to the dark.' },
     { flag: 'savior_of_jarnvidr', label: 'Savior of Járnviðr', description: 'Rescued all four captive villagers from the sacrificial blood siphon.', icon: '🛡️', riddle: 'Four of the village bleed to feed an iron wood. Reach them all before the bowl runs full.' },
     { flag: 'blood_tainted_hero', label: 'The Blood-Tainted', description: 'Embraced the forbidden Grimoire of Blood Magic while innocent captives bled.', icon: '🩸', riddle: 'A book of red letters opens only while the innocent bleed. To read it is to wear it.' },
-    { flag: 'vidnir_slain', label: "The Wyrm's Fate Revealed", description: 'Learned from the dying herald Víðnir that slaying Níðhögg will split Yggdrasil and trigger Ragnarök, while driving it off will seal the root.', icon: '🐉', riddle: 'In the tarnished deep a herald keeps the wyrm’s secret, and speaks it only dying.' },
+    { flag: 'vidnir_slain', label: "The Wyrm's Fate Revealed", description: 'Learned from the dying herald Víðnir that slaying Níðhögg will split Yggdrasil and trigger Ragnarök, while driving it off will seal the root.', icon: '🐉', riddle: 'At the wyrm’s maw a herald keeps its master’s secret, and speaks it only dying.' },
     { flag: 'dwarven_hearth_rested', label: 'Dwarven Hearth Respite', description: 'Found solace in the secluded thermal grotto behind the rushing cascade.', icon: '♨️', riddle: 'Behind falling water in the smiths’ halls, old coals still keep a warm place to sleep.' },
     { flag: 'world_bark_hearth_rested', label: 'Heartwood Sanctuary', description: 'Rested in the peaceful hollow among the ancient roots of Yggdrasil.', icon: '🌳', riddle: 'Inside the world-tree’s bark an amber fire burns. Sit by it, and the roots keep watch.' },
   ],

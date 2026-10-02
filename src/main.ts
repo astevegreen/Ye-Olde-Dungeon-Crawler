@@ -1768,6 +1768,7 @@ window.addEventListener('DOMContentLoaded', () => {
           onError: (err) => {
             alert(`Save import error: ${err}`);
           },
+          modalStack: inputHandler?.modalStack,
         });
       },
     });

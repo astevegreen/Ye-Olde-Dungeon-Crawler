@@ -4,6 +4,7 @@ import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
 import { escapeHtml } from './html';
 import type { ProfileManager } from '../engine';
 import type { CharacterProfile } from '../engine';
+import type { ModalStackManager } from './modalStack';
 
 /**
  * Triggers a browser file download of text content (e.g. exported save files).
@@ -133,15 +134,20 @@ export interface ManifestMismatchDialogOptions {
   heroName: string;
   onConfirm: () => void;
   onCancel?: () => void;
+  /** In play, the dialog takes every key while it is open (Escape cancels), so none
+   *  reaches the game behind it. */
+  modalStack?: ModalStackManager;
 }
+
+const MISMATCH_MODAL_ID = 'manifest-mismatch';
 
 /**
  * Asks before importing a save made with another pack's rules: non-destructive, in the
  * one dialog frame. It sits on the crash layer, above the save-code window it can open
- * from.
+ * from, and on `modalStack` when given one.
  */
 export function showManifestMismatchDialog(options: ManifestMismatchDialogOptions): void {
-  const { detectedManifestId, activeManifestId, heroName, onConfirm, onCancel } = options;
+  const { detectedManifestId, activeManifestId, heroName, onConfirm, onCancel, modalStack } = options;
 
   const scrim = createDialogScrim('manifest-mismatch-modal', 'crash');
   if (!scrim) return;
@@ -157,16 +163,24 @@ export function showManifestMismatchDialog(options: ManifestMismatchDialogOption
   });
   scrim.style.display = 'flex';
 
-  const hide = () => {
+  // Settles once, however the dialog closes: a button, or the stack's Escape.
+  let settled = false;
+  const settle = (confirmed: boolean) => {
+    if (settled) return;
+    settled = true;
     scrim.style.display = 'none';
+    modalStack?.remove(MISMATCH_MODAL_ID);
+    if (confirmed) onConfirm();
+    else onCancel?.();
   };
-  scrim.querySelector('#btn-mismatch-cancel')?.addEventListener('click', () => {
-    hide();
-    if (onCancel) onCancel();
-  });
-  scrim.querySelector('#btn-mismatch-import')?.addEventListener('click', () => {
-    hide();
-    onConfirm();
+  scrim.querySelector('#btn-mismatch-cancel')?.addEventListener('click', () => settle(false));
+  scrim.querySelector('#btn-mismatch-import')?.addEventListener('click', () => settle(true));
+  modalStack?.push({
+    id: MISMATCH_MODAL_ID,
+    isOpen: false,
+    // Unhandled: the stack traps every key, and closes the dialog (cancels) on Escape.
+    handleKeyDown: () => false,
+    close: () => settle(false),
   });
 }
 
@@ -180,8 +194,9 @@ export function importSaveWithValidation(options: {
   activeManifestId: string;
   onSuccess: (profile: CharacterProfile) => void;
   onError: (errorMessage: string) => void;
+  modalStack?: ModalStackManager;
 }): void {
-  const { content, profileManager, activeManifestId, onSuccess, onError } = options;
+  const { content, profileManager, activeManifestId, onSuccess, onError, modalStack } = options;
 
   const validation: SaveValidationResult = validateSavePayload(content, {
     expectedManifestId: activeManifestId,
@@ -210,6 +225,7 @@ export function importSaveWithValidation(options: {
       onCancel: () => {
         onError('Import cancelled by user due to manifest mismatch.');
       },
+      modalStack,
     });
   } else {
     executeImport();

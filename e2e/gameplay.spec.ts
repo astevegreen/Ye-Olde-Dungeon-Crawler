@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -188,6 +188,47 @@ test('windows opened from save & quit each hold one stack entry and keep keys fr
   await page.keyboard.press('Escape');
   await expect(saveCode).toBeHidden();
   expect(await stackIds(page)).toEqual([]);
+
+  expect(pageErrors).toEqual([]);
+});
+
+// A save from another pack dropped onto the game in play asks first; until it is
+// answered, the warning holds the keyboard, so the hero doesn't move behind it.
+test('the other-pack save warning holds the keys until answered', async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on('pageerror', (err) => pageErrors.push(err.message));
+  await embarkNewHero(page);
+  const start = await state(page);
+
+  const migrator = readFileSync(resolve(process.cwd(), 'src', 'engine', 'storage', 'migrator.ts'), 'utf8');
+  const schemaVersion = Number(/CURRENT_SCHEMA_VERSION = (\d+)/.exec(migrator)![1]);
+  const save = JSON.stringify({
+    schemaVersion,
+    contentManifestId: 'other_pack',
+    timestamp: 0,
+    data: { profile: { name: 'Stranger' }, player: {}, map: {} },
+  });
+  await page.evaluate((content) => {
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([content], 'stranger.json', { type: 'application/json' }));
+    document.getElementById('game-container')!.dispatchEvent(
+      new DragEvent('drop', { dataTransfer: transfer, bubbles: true, cancelable: true })
+    );
+  }, save);
+
+  const warning = page.locator('#manifest-mismatch-modal');
+  await expect(warning).toBeVisible();
+  expect(await stackIds(page)).toEqual(['manifest-mismatch']);
+  await page.keyboard.press('ArrowRight');
+  expect(await state(page)).toMatchObject({ turn: start.turn, x: start.x });
+
+  // Escape cancels the import, as the Cancel button does (its notice is an alert).
+  page.once('dialog', (d) => void d.dismiss());
+  await page.keyboard.press('Escape');
+  await expect(warning).toBeHidden();
+  expect(await stackIds(page)).toEqual([]);
+  await page.keyboard.press('ArrowRight');
+  await expect.poll(async () => (await state(page)).x).toBe(start.x + 1);
 
   expect(pageErrors).toEqual([]);
 });

@@ -1251,7 +1251,7 @@ window.addEventListener('DOMContentLoaded', () => {
           color: '#facc15',
           strokeColor: '#78350f',
           isCrit: true,
-          fontSize: 14,
+          textRole: 'lg',
         });
         // A level-up never takes the screen mid-fight: the header's points badge pulses,
         // and one toast per turn (a big kill can bring many levels at once) says how many

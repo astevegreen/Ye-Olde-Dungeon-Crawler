@@ -245,12 +245,12 @@
 }
 
 .slot-badge-cost {
-  font-size: 10px;
+  font-size: var(--ui-text-xs);
   color: var(--ui-info);
 }
 
 .slot-badge-cost-nomana {
-  font-size: 10px;
+  font-size: var(--ui-text-xs);
   color: var(--ui-bad);
 }
 
@@ -384,7 +384,7 @@
 
 .orb-label {
   font-family: var(--ui-font-family, "Courier New", Courier, monospace);
-  font-size: 10px;
+  font-size: var(--ui-text-xs);
   font-weight: 700;
   letter-spacing: 0.1em;
   color: var(--ui-accent);
@@ -441,7 +441,7 @@
 .action-belt-slots .slot-badge-digit {
   grid-column: 1;
   grid-row: 1;
-  font-size: 10px;
+  font-size: var(--ui-text-xs);
   line-height: 12px;
 }
 .action-belt-slots .slot-badge-cost,
@@ -449,7 +449,7 @@
   grid-column: 2;
   grid-row: 1;
   justify-self: end;
-  font-size: 9px;
+  font-size: var(--ui-text-xs);
   line-height: 12px;
 }
 .action-belt-slots .slot-badge-name {
@@ -576,7 +576,7 @@
     top: 6px;
   }
   .orb-value {
-    font-size: 9px;
+    font-size: var(--ui-text-xs);
   }
 }
 
@@ -634,7 +634,7 @@
 .potion-slot-key,
 .potion-slot-count {
   position: absolute;
-  font-size: 10px;
+  font-size: var(--ui-text-xs);
   line-height: 11px;
   font-weight: bold;
   text-shadow: 1px 1px 0 #000, -1px -1px 0 #000;
@@ -681,7 +681,7 @@
 .potion-tooltip-hint {
   margin-top: 2px;
   color: var(--ui-text-faint);
-  font-size: 10px;
+  font-size: var(--ui-text-xs);
 }
 
 /* Pin picker, opening upward from the slot. */
@@ -821,14 +821,14 @@
 }
 #header-renown {
   color: var(--ui-text-muted);
-  font-size: 10px;
+  font-size: var(--ui-text-xs);
 }
 #btn-alloc-points {
   position: absolute;
   top: 5px;
   right: 4px;
   padding: 0 4px;
-  font: bold 10px/13px var(--ui-font-family, monospace);
+  font: bold var(--ui-text-xs)/13px var(--ui-font-family, monospace);
   color: var(--ui-accent-ink);
   background: var(--ui-gold);
   border: none;
@@ -880,7 +880,7 @@
   display: inline-block;
   min-width: 14px;
   padding: 0 3px;
-  font-size: 9px;
+  font-size: var(--ui-text-xs);
   line-height: 13px;
   text-align: center;
   color: var(--ui-accent);
@@ -941,7 +941,7 @@
   color: var(--ui-accent);
 }
 #combat-sidebar .sb-title small {
-  font-size: 10px;
+  font-size: var(--ui-text-xs);
   font-weight: normal;
   letter-spacing: 0;
   text-transform: none;
@@ -1020,12 +1020,13 @@
 .sb-where {
   flex: 0 0 auto;
   color: var(--ui-text-faint);
-  font-size: 10px;
+  font-size: var(--ui-text-xs);
   font-weight: normal;
 }
 .sb-hp {
   position: relative;
-  height: 9px;
+  /* Tall enough for its 11px number inside it. */
+  height: 12px;
   background: var(--ui-surface-2);
   border: 1px solid var(--ui-line-strong);
   border-radius: 2px;
@@ -1038,8 +1039,9 @@
 .sb-hp > b {
   position: absolute;
   right: 3px;
-  top: -3px;
-  font-size: 10px;
+  top: 0;
+  line-height: 12px;
+  font-size: var(--ui-text-xs);
   color: var(--ui-text);
   text-shadow: 1px 1px 0 #000;
 }
@@ -1074,7 +1076,7 @@
 }
 .sb-cond-detail {
   grid-column: 2 / span 2;
-  font-size: 10px;
+  font-size: var(--ui-text-xs);
   color: var(--ui-text-faint);
 }
 .sb-cond-bar {
@@ -1320,7 +1322,7 @@ button.tray-chip:hover {
   overflow-wrap: anywhere;
 }
 .tray-companion-note {
-  font-size: 10px;
+  font-size: var(--ui-text-xs);
   color: var(--ui-text-muted);
 }
 

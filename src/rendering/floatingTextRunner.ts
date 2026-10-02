@@ -1,5 +1,6 @@
 import type { Camera } from './camera';
 import type { ThemeTokens } from '../engine';
+import { uiFont, type UiTextRole } from './theme';
 
 export interface FloatingText {
   id: number;
@@ -8,7 +9,8 @@ export interface FloatingText {
   text: string;
   color: string;
   strokeColor: string;
-  fontSize: number;
+  /** Type-scale role: drawn through uiFont, so it never drops under the 11px floor. */
+  textRole: UiTextRole;
   startTime: number;
   durationMs: number;
   driftX: number;
@@ -76,7 +78,7 @@ export class FloatingTextRunner {
       strokeColor: stroke,
       isCrit,
       durationMs: isCrit ? 1100 : 850,
-      fontSize: isCrit ? 14 : 12,
+      textRole: isCrit ? 'lg' : 'sm',
     });
   }
 
@@ -85,7 +87,7 @@ export class FloatingTextRunner {
       color: '#22c55e',
       strokeColor: '#052e16',
       durationMs: 900,
-      fontSize: 12,
+      textRole: 'sm',
     });
   }
 
@@ -96,7 +98,7 @@ export class FloatingTextRunner {
     options: {
       color?: string;
       strokeColor?: string;
-      fontSize?: number;
+      textRole?: UiTextRole;
       durationMs?: number;
       isCrit?: boolean;
     } = {}
@@ -116,7 +118,7 @@ export class FloatingTextRunner {
       text,
       color: options.color ?? '#f8fafc',
       strokeColor: options.strokeColor ?? '#000000',
-      fontSize: options.fontSize ?? 12,
+      textRole: options.textRole ?? 'sm',
       startTime: now,
       durationMs: options.durationMs ?? 850,
       driftX,
@@ -203,7 +205,7 @@ export class FloatingTextRunner {
       }
       ctx.globalAlpha = alpha;
 
-      ctx.font = `bold ${item.fontSize}px ${font}`;
+      ctx.font = uiFont(item.textRole, font, 'bold');
 
       // Thick high-contrast dark stroke for readability over any background
       ctx.strokeStyle = item.strokeColor;

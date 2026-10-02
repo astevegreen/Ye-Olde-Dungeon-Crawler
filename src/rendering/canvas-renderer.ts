@@ -17,7 +17,7 @@ import { SpriteAtlas } from './atlas/sprite-atlas';
 import { getTerrainSpriteKey, getEntitySpriteKey, getItemSpriteKey } from './atlas/sprite-mapper';
 import { terrainLayers, contactShadowSides, zoneForFloor, type TerrainView } from './atlas/terrain-layers';
 import { ViewportManager } from './viewport';
-import { resolveThemeTokens, type ThemeTokens, uiFont } from './theme';
+import { resolveThemeTokens, type ThemeTokens, uiFont, uiFontPx } from './theme';
 import { CanvasFXRunner } from './fxRunner';
 import type { NavigationController } from '../ui/navigation';
 import { CloseDoorAction } from '../engine';
@@ -1462,9 +1462,10 @@ export class CanvasRenderer {
 
     // Count badge (bottom-right)
     const label = items.length > 9 ? '9+' : `${items.length}`;
-    const fontPx = Math.max(8, Math.floor(cs * 0.3));
+    // Text on the map holds the 11px floor like the DOM (uiFont), whatever the zoom.
+    const fontPx = uiFontPx('xs');
     ctx.save();
-    ctx.font = `bold ${fontPx}px ${this.theme.fontFamily ?? 'monospace'}`;
+    ctx.font = uiFont('xs', this.theme.fontFamily ?? 'monospace', 'bold');
     const w = ctx.measureText(label).width + 4;
     ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
     ctx.fillRect(px + cs - w - 1, py + cs - fontPx - 2, w, fontPx + 1);

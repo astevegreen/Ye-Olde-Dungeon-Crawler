@@ -282,8 +282,13 @@ export function uiFont(
   family: string,
   style: 'normal' | 'bold' | 'italic' | 'bold italic' = 'normal'
 ): string {
-  const px = Math.round((UI_TEXT_PX[role] / canvasTextScale) * 10) / 10;
+  const px = uiFontPx(role);
   // The canvas font shorthand puts the style before the weight.
   const prefix = style === 'normal' ? '' : style === 'bold italic' ? 'italic bold ' : `${style} `;
   return `${prefix}${px}px ${family}`;
+}
+
+/** The size `uiFont` gives a role, in virtual canvas pixels: for boxes drawn around text. */
+export function uiFontPx(role: UiTextRole): number {
+  return Math.round((UI_TEXT_PX[role] / canvasTextScale) * 10) / 10;
 }

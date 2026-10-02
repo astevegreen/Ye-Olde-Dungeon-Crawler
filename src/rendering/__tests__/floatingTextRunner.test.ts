@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { FloatingTextRunner } from '../floatingTextRunner';
 import { Camera } from '../camera';
+import { setCanvasTextScale } from '../theme';
 
 describe('FloatingTextRunner', () => {
   let runner: FloatingTextRunner;
@@ -69,5 +70,30 @@ describe('FloatingTextRunner', () => {
     expect(() => {
       runner.render(mockCtx, camera, 32, 0, 0);
     }).not.toThrow();
+  });
+
+  it('sizes its text in CSS pixels, never under the 11px floor however small the canvas is drawn', () => {
+    const fonts: string[] = [];
+    const mockCtx = {
+      save: vi.fn(), restore: vi.fn(), translate: vi.fn(), scale: vi.fn(), strokeText: vi.fn(), fillText: vi.fn(),
+      set font(f: string) { fonts.push(f); },
+    } as unknown as CanvasRenderingContext2D;
+    const camera = new Camera(20, 15);
+    camera.update({ x: 5, y: 5 }, 40, 40);
+
+    // 1366x768: the 960-wide virtual canvas is drawn 814px wide.
+    setCanvasTextScale(814 / 960);
+    try {
+      runner.spawnDamage(5, 5, 14);
+      runner.spawnHeal(5, 5, 3);
+      runner.render(mockCtx, camera, 32, 0, 0);
+    } finally {
+      setCanvasTextScale(1);
+    }
+    expect(fonts).toHaveLength(2);
+    for (const font of fonts) {
+      const virtualPx = parseFloat(font.replace(/^bold /, ''));
+      expect(virtualPx * (814 / 960)).toBeGreaterThanOrEqual(11);
+    }
   });
 });

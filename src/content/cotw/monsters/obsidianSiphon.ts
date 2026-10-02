@@ -161,7 +161,7 @@ export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
         event: 'onMove',
         chance: 1.0,
         action: { type: 'spawnSurface', surfaceType: 'fire', radius: 1, duration: 3 },
-        description: '✦ Glóð leaves scorching ember-tracks in its wake!',
+        description: 'Glóð leaves scorching ember-tracks in its wake!',
       },
     ],
     fleeHealthPercent: 0.0,

@@ -199,7 +199,7 @@ export class Leaderboard {
     this.recordRun(entry);
     return {
       success: true,
-      message: `Inscribed ${entry.heroName} (${entry.score.toLocaleString()} pts) into the Hall of Fame! 🏆`,
+      message: `Inscribed ${entry.heroName} (${entry.score.toLocaleString()} pts) into the Hall of Fame!`,
       champion: entry,
     };
   }

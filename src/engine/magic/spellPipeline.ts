@@ -732,7 +732,7 @@ export class SpellPipeline {
       const decayFactor = Math.max(0.1, 1 - hop * effect.damageDecay);
       const hopDamage = Math.max(1, Math.floor(baseDamage * decayFactor));
 
-      engine.log(`⚡ The ${spell.name} arcs from ${current.name} to ${nextTarget.name} for hop ${hop}!`);
+      engine.log(`The ${spell.name} arcs from ${current.name} to ${nextTarget.name} for hop ${hop}!`);
 
       const terrain = engine.map.getTile(nextTarget.x, nextTarget.y)?.type;
       const result = nextTarget.takeElementalDamage(hopDamage, element, engine.affinityMatrix, terrain);

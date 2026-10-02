@@ -27,7 +27,7 @@ export const COTW_RELIC_HOOK: ActionHook = {
     const carried = [...inv.primaryPack.getItems(), ...inv.paperdoll.getAllEquipped().map((e) => e.item)];
     if (holds(carried, HEARTH_TEAR_ID)) {
       engine.setWorldFlag(RELIC_RECOVERED_FLAG, true);
-      engine.log('✦ The Hearth-Tear is yours. Carry it home, and Bjarnarhaven will be warm again. ✦');
+      engine.log('The Hearth-Tear is yours. Carry it home, and Bjarnarhaven will be warm again.');
     }
   },
 };

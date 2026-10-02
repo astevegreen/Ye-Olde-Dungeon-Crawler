@@ -114,7 +114,7 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
         event: 'onTurnStart',
         chance: 0.4,
         action: { type: 'applyStatus', status: 'slow', duration: 4, target: 'target' },
-        description: "✦ Näcken's mournful fiddle echoes across the ice, mesmerizing you!",
+        description: "Näcken's mournful fiddle echoes across the ice, mesmerizing you!",
       },
     ],
     fleeHealthPercent: 0.2,

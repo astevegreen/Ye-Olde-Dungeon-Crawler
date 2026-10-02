@@ -76,7 +76,7 @@ export const IVALDA_CHOICE: ChoiceDefinition = {
         { type: 'modifyPermanentStat', stat: 'attack', delta: 2 },
         {
           type: 'logMessage',
-          message: '⚒ Ivalda heats your blade in the old coals and works it with three hard blows. “Now it will bite stone.” (+2 Attack) ⚒',
+          message: 'Ivalda heats your blade in the old coals and works it with three hard blows. “Now it will bite stone.” (+2 Attack)',
         },
       ],
     },
@@ -92,7 +92,7 @@ export const IVALDA_CHOICE: ChoiceDefinition = {
         {
           type: 'logMessage',
           message:
-            '✦ Ivalda holds a coal in one hand and rime in the other until the air between them screams. “That is what the Accord was. Keep it better than your kin did.” (Steam Lance) ✦',
+            'Ivalda holds a coal in one hand and rime in the other until the air between them screams. “That is what the Accord was. Keep it better than your kin did.” (Steam Lance)',
         },
       ],
     },
@@ -163,7 +163,7 @@ export const IRON_CLANS_BARROW_CHOICES: Record<string, ChoiceDefinition> = Objec
             { type: 'alertMonsters', radius: 14 },
             {
               type: 'logMessage',
-              message: '☠ You break the iron bands and drag a broadsword from the dead. A cold wind answers from the barrows. (-5 Iron Clans standing) ☠',
+              message: 'You break the iron bands and drag a broadsword from the dead. A cold wind answers from the barrows. (-5 Iron Clans standing)',
             },
           ],
         },

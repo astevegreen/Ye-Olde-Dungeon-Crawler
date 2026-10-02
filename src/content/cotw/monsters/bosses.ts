@@ -80,7 +80,7 @@ export const BOSS_MONSTERS: MonsterDefinition[] = [
         event: 'onDamageTaken',
         chance: 0.35,
         action: { type: 'spawnSurface', surfaceType: 'acid_pool', radius: 1, duration: 5 },
-        description: '✦ Necrotic venom seeps from Níðhögg’s wounds onto the floor!',
+        description: 'Necrotic venom seeps from Níðhögg’s wounds onto the floor!',
       },
     ],
     fleeHealthPercent: 0.15,

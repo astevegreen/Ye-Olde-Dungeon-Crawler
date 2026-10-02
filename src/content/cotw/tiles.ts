@@ -71,7 +71,7 @@ export const COTW_TILES: TileDefinition[] = [
     glyph: 'ᛏ',
     description: 'A weathered runic altar consecrated to Tyr, god of justice. Blood-stained defilement clings to the ancient runes.',
     interactionHandlerId: 'altar_tyr',
-    landmarkLabel: 'Altar of Tyr ⚖️',
+    landmarkLabel: 'Altar of Tyr',
   },
   {
     // Stamped by the floor-22 siphon vault's layout legend (hostageRitual.ts).
@@ -83,7 +83,7 @@ export const COTW_TILES: TileDefinition[] = [
     glyph: '_',
     description: 'An ancient obsidian altar marked with blood runes, its grooves pooled with dark vitriol.',
     interactionHandlerId: 'blood_altar_ritual',
-    landmarkLabel: 'Siphon Altar 🩸',
+    landmarkLabel: 'Siphon Altar',
   },
   {
     // Spell altar (COTW_MAGIC.altars): one rite, then spent.
@@ -158,7 +158,7 @@ export const COTW_TILES: TileDefinition[] = [
     walkable: true,
     transparent: true,
     glyph: '♨',
-    landmarkLabel: 'Dwarven Hearth 🔥',
+    landmarkLabel: 'Dwarven Hearth',
     description:
       'An ancient iron-banded stone hearth glowing with banked geothermal embers. The radiating warmth soothes tired bones and dispels the dungeon chill.',
     interactionHandlerId: 'choice_dwarven_hearth',
@@ -213,7 +213,7 @@ export const COTW_TILES: TileDefinition[] = [
     walkable: true,
     transparent: true,
     glyph: '♨',
-    landmarkLabel: 'Amber Hearth 🔥',
+    landmarkLabel: 'Amber Hearth',
     description:
       'A low campfire of fragrant dried peat and pine resin glowing within a ring of smooth river stones. It crackles softly, driving away the creeping blight.',
     interactionHandlerId: 'choice_world_bark_hearth',

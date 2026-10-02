@@ -126,7 +126,7 @@ export const SKALDIC_RUNESTONE_LORE: LoreEntryDefinition[] = [
   },
 ];
 
-const runicHint = (n: number): string => `✦ RUNIC SPELL HINT: ${SKALDIC_RUNESTONE_LORE[n - 1].lore} ✦`;
+const runicHint = (n: number): string => `RUNIC SPELL HINT: ${SKALDIC_RUNESTONE_LORE[n - 1].lore}`;
 
 export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
   skaldic_runestone_1: {

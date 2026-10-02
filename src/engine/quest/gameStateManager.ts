@@ -136,7 +136,7 @@ export class GameStateManager {
     }
 
     engine.log(
-      ending?.victoryDialogue ?? quest?.victoryDialogue ?? '✦✦✦ VICTORY! You have returned with the quest relic! ✦✦✦'
+      ending?.victoryDialogue ?? quest?.victoryDialogue ?? 'VICTORY! You have returned with the quest relic!'
     );
     engine.log(
       `${ending?.championProclamation ?? quest?.championProclamation ?? 'You are proclaimed Champion!'} Final Score: ${score} Points.`

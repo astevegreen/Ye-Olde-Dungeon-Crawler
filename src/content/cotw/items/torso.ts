@@ -99,7 +99,7 @@ export const COTW_TORSO: ItemDefinition[] = [
           amount: 6,
           element: 'acid',
         },
-        description: '✦ Níð-Dripping Hauberk retaliates with burning corrosive dragon bile!',
+        description: 'Níð-Dripping Hauberk retaliates with burning corrosive dragon bile!',
       },
     ],
     identified: false,

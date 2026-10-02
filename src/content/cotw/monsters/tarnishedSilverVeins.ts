@@ -46,7 +46,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
         event: 'onDamageTaken',
         chance: 0.35,
         action: { type: 'spawnGas', gasType: 'poison_cloud', radius: 1, duration: 4 },
-        description: '✦ Choke-Damp Phantasm ruptures, discharging noxious mine gas!',
+        description: 'Choke-Damp Phantasm ruptures, discharging noxious mine gas!',
       },
     ],
     fleeHealthPercent: 0.0,

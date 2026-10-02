@@ -48,7 +48,7 @@ export const COTW_QUEST: QuestArcDefinition = {
   victoryPortalMessage: 'Where Níðhögg fell, the World Root splits open onto fire and storm. Step into the split root to end the age.',
   townReturnPosition: TOWN_RETURN_POSITION,
   victoryDialogue:
-    '✦✦✦ The saga is told and retold in Bjarnarhaven’s halls: the Hearth-Tear reclaimed, and Níðhögg’s root answered at last. ✦✦✦',
+    'The saga is told and retold in Bjarnarhaven’s halls: the Hearth-Tear reclaimed, and Níðhögg’s root answered at last.',
   victoryScoreBonus: 8000,
   victoryEpitaph: 'Hero of Járnviðr - Ended the Root-Gnawer',
   championProclamation: 'Elder Olaf proclaims you Champion of Bjarnarhaven, blood of Thrym and slayer of legend!',

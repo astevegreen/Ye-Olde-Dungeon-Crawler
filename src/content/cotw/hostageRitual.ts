@@ -118,7 +118,7 @@ export function rescueCaptiveVillager(engine: EngineContext, captiveId: string):
   setFlag(engine.worldState, `${captiveId}_rescued`, true);
   incrementCounter(engine.worldState, COUNTER_RESCUED, 1);
   removeCaptiveEntity(engine, captiveId);
-  engine.log(`✨ You cut ${name}'s bonds! They trigger an emergency recall charm and vanish to town! (+1 Rescued)`);
+  engine.log(`You cut ${name}'s bonds! They trigger an emergency recall charm and vanish to town! (+1 Rescued)`);
 
   checkAndResolveHostageRitual(engine);
   return true;
@@ -136,7 +136,7 @@ export function sacrificeCaptiveVillager(engine: EngineContext, captiveId: strin
   setFlag(engine.worldState, `${captiveId}_sacrificed`, true);
   incrementCounter(engine.worldState, COUNTER_SACRIFICED, 1);
   removeCaptiveEntity(engine, captiveId);
-  engine.log(`☠ A blood-curse erupts! The warlocks sacrifice ${name} upon the dark stones! (+1 Sacrificed)`);
+  engine.log(`A blood-curse erupts! The warlocks sacrifice ${name} upon the dark stones! (+1 Sacrificed)`);
 
   checkAndResolveHostageRitual(engine);
   return true;
@@ -165,7 +165,7 @@ export function resolveHostageRitual(engine: EngineContext): void {
     modifyFaction(engine.worldState, 'temple_standing', 15);
     setFlag(engine.worldState, 'savior_of_jarnvidr', true);
     engine.log(
-      '✦✦✦ SAVIOR OF JÁRNVIÐR! All four innocent captives were rescued alive. Bjarnarhaven praises your name! (+30 Townsfolk Standing, +15 Temple Standing, 25% Town Shop Discount) ✦✦✦'
+      'SAVIOR OF JÁRNVIÐR! All four innocent captives were rescued alive. Bjarnarhaven praises your name! (+30 Townsfolk Standing, +15 Temple Standing, 25% Town Shop Discount)'
     );
   } else if (rescued === 3) {
     // Tier 2: Righteous Leaning (3 Rescued, 1 Sacrificed)
@@ -175,7 +175,7 @@ export function resolveHostageRitual(engine: EngineContext): void {
     player.learnSpell('blood_reap');
     player.learnSpell('blood_tap');
     engine.log(
-      '✦ Three captives escaped to safety. From the single fallen soul, you gleaned the dark rites of Blood Reap and Blood Tap. (+15 Townsfolk Standing) ✦'
+      'Three captives escaped to safety. From the single fallen soul, you gleaned the dark rites of Blood Reap and Blood Tap. (+15 Townsfolk Standing)'
     );
   } else if (rescued === 2) {
     // Tier 3: The Halfway Path (2 Rescued, 2 Sacrificed) — no faction change.
@@ -184,7 +184,7 @@ export function resolveHostageRitual(engine: EngineContext): void {
     player.learnSpell('blood_tap');
     player.learnSpell('crimson_ward');
     engine.log(
-      '⚖ A bitter compromise. Two souls escaped, and two fed the dark altar. You unlock Blood Reap, Blood Tap and Crimson Ward with negligible consequence from town. ⚖'
+      'A bitter compromise. Two souls escaped, and two fed the dark altar. You unlock Blood Reap, Blood Tap and Crimson Ward with negligible consequence from town.'
     );
   } else if (rescued === 1) {
     // Tier 4: Dark Leaning (1 Rescued, 3 Sacrificed)
@@ -196,7 +196,7 @@ export function resolveHostageRitual(engine: EngineContext): void {
     player.learnSpell('crimson_ward');
     player.learnSpell('blood_spear');
     engine.log(
-      '☠ A grim harvest. Three innocents perished. You unlock Blood Reap, Blood Tap, Crimson Ward, and Blood Spear. Word of your cold apathy spreads to town. (-15 Townsfolk Standing, -10 Temple Standing, 15% Price Markup) ☠'
+      'A grim harvest. Three innocents perished. You unlock Blood Reap, Blood Tap, Crimson Ward, and Blood Spear. Word of your cold apathy spreads to town. (-15 Townsfolk Standing, -10 Temple Standing, 15% Price Markup)'
     );
   } else {
     // Tier 5: Complete Dark Harvest (0 Rescued, 4 Sacrificed)
@@ -210,7 +210,7 @@ export function resolveHostageRitual(engine: EngineContext): void {
     player.learnSpell('blood_spear');
     player.learnSpell('exsanguinate');
     engine.log(
-      '☠☠☠ THE BLOOD SIPHON IS COMPLETE! All captives were sacrificed, awakening the full Grimoire of Blood Magic in your soul! Bjarnarhaven recoils in horror. (-30 Townsfolk Standing, -25 Temple Standing, 30% Price Markup) ☠☠☠'
+      'THE BLOOD SIPHON IS COMPLETE! All captives were sacrificed, awakening the full Grimoire of Blood Magic in your soul! Bjarnarhaven recoils in horror. (-30 Townsfolk Standing, -25 Temple Standing, 30% Price Markup)'
     );
   }
 }
@@ -244,7 +244,7 @@ export const BLOOD_ALTAR_CHOICE: ChoiceDefinition = {
       description:
         'Sunder the bindings and teleport every remaining captive to safety. Earns town favor and discounts, but forfeits dark magic.',
       consequences: [
-        { type: 'logMessage', message: '✦ You smash the warded runes of the siphon! The warlocks scream in frustration! ✦' },
+        { type: 'logMessage', message: 'You smash the warded runes of the siphon! The warlocks scream in frustration!' },
       ],
     },
     {
@@ -253,7 +253,7 @@ export const BLOOD_ALTAR_CHOICE: ChoiceDefinition = {
       description:
         'Free two of the remaining captives while the altar claims the rest, and absorb the dark overflow of their sacrifice.',
       consequences: [
-        { type: 'logMessage', message: '⚖ You break half the seals, and let the blood currents take the rest. ⚖' },
+        { type: 'logMessage', message: 'You break half the seals, and let the blood currents take the rest.' },
       ],
     },
     {
@@ -262,7 +262,7 @@ export const BLOOD_ALTAR_CHOICE: ChoiceDefinition = {
       description:
         'Let the siphon claim every remaining captive to seize the Grimoire of Blood Magic. Bjarnarhaven will not forgive it.',
       consequences: [
-        { type: 'logMessage', message: '☠ You channel the full sacrificial torrent! Unholy vitality floods your veins! ☠' },
+        { type: 'logMessage', message: 'You channel the full sacrificial torrent! Unholy vitality floods your veins!' },
       ],
     },
   ],
@@ -300,7 +300,7 @@ function startRitualCountdown(engine: EngineContext): void {
   }
   setFlag(engine.worldState, FLAG_STARTED, true);
   engine.log(
-    '☠ Chanting echoes from the obsidian chamber — the warlocks have begun the blood siphon! Free the captives before the ritual completes!'
+    'Chanting echoes from the obsidian chamber — the warlocks have begun the blood siphon! Free the captives before the ritual completes!'
   );
 }
 

@@ -55,7 +55,7 @@ export function recordMilestone(engine: GameEngine, milestoneId: string): Record
   const totalForCategory = incrementCounter(engine.worldState, categoryCounterKey(def.category), def.renownValue);
   const totalRenown = incrementCounter(engine.worldState, RENOWN_TOTAL_COUNTER, def.renownValue);
 
-  engine.log(`✦ Renown milestone: ${def.label} (+${def.renownValue} ${def.category} renown)`);
+  engine.log(`Renown milestone: ${def.label} (+${def.renownValue} ${def.category} renown)`);
 
   return {
     awarded: true,

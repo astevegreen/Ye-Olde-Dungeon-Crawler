@@ -53,7 +53,7 @@ export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
         event: 'onHit',
         chance: 0.8,
         action: { type: 'heal', amount: 8, target: 'self' },
-        description: '✦ Náströnd Feaster gorges on flesh, revitalizing its rotting frame!',
+        description: 'Náströnd Feaster gorges on flesh, revitalizing its rotting frame!',
       },
     ],
     fleeHealthPercent: 0.0,

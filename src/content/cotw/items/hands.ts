@@ -68,7 +68,7 @@ export const COTW_HANDS: ItemDefinition[] = [
           amount: 2,
           target: 'self',
         },
-        description: '✦ Leech-Skin Gloves siphon fresh life-blood from the struck foe!',
+        description: 'Leech-Skin Gloves siphon fresh life-blood from the struck foe!',
       },
     ],
     identified: false,

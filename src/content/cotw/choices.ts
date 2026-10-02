@@ -35,7 +35,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '❄ You grip the matriarch’s frost-rimed hand. The siphon shatters like winter glass — the cold in you deepens, steady and sure. A Frost-Ward Hound pads to your side. ❄',
+              'You grip the matriarch’s frost-rimed hand. The siphon shatters like winter glass — the cold in you deepens, steady and sure. A Frost-Ward Hound pads to your side.',
           },
         ],
       },
@@ -88,7 +88,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '✦ You swear on your sword hand, and the stone drinks a measure of its strength. The runes wake gold and burn the defilement away. Tyr holds your oath (-1 Attack, +2 Defense, +15 Temple standing, Haste). ✦',
+              'You swear on your sword hand, and the stone drinks a measure of its strength. The runes wake gold and burn the defilement away. Tyr holds your oath (-1 Attack, +2 Defense, +15 Temple standing, Haste).',
           },
         ],
       },
@@ -120,7 +120,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '☠ You smash Tyr’s sacred runes! Arcane backlash wounds you (-5 HP), a dagger is wrenched free, and an unholy wail alerts the crypts (-10 Temple Standing)! ☠',
+              'You smash Tyr’s sacred runes! Arcane backlash wounds you (-5 HP), a dagger is wrenched free, and an unholy wail alerts the crypts (-10 Temple Standing)!',
           },
         ],
       },
@@ -158,7 +158,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           { type: 'modifyPermanentStat', stat: 'attack', delta: 2 },
           {
             type: 'logMessage',
-            message: '✦ Your strikes pierce through the smallest gaps in enemy armor! Permanently +2 Attack. ✦',
+            message: 'Your strikes pierce through the smallest gaps in enemy armor! Permanently +2 Attack.',
           },
         ],
       },
@@ -171,7 +171,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           { type: 'modifyPermanentStat', stat: 'defense', delta: 2 },
           {
             type: 'logMessage',
-            message: '✦ You dance aside incoming blows like falling snow on the wind! Permanently +2 Defense. ✦',
+            message: 'You dance aside incoming blows like falling snow on the wind! Permanently +2 Defense.',
           },
         ],
       },
@@ -194,7 +194,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           { type: 'modifyPermanentStat', stat: 'attack', delta: 3 },
           {
             type: 'logMessage',
-            message: '⚒ Your ferocious blow shakes the bedrock! Permanently +3 Attack. ⚒',
+            message: 'Your ferocious blow shakes the bedrock! Permanently +3 Attack.',
           },
         ],
       },
@@ -207,7 +207,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           { type: 'modifyPermanentStat', stat: 'defense', delta: 3 },
           {
             type: 'logMessage',
-            message: '🛡 You brace like a monolith of granite! Permanently +3 Defense. 🛡',
+            message: 'You brace like a monolith of granite! Permanently +3 Defense.',
           },
         ],
       },
@@ -230,7 +230,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           { type: 'modifyPermanentStat', stat: 'defense', delta: 3 },
           {
             type: 'logMessage',
-            message: '🛡 Your hide turns aside blades and claws alike! Permanently +3 Defense. 🛡',
+            message: 'Your hide turns aside blades and claws alike! Permanently +3 Defense.',
           },
         ],
       },
@@ -244,7 +244,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           { type: 'modifyPermanentStat', stat: 'defense', delta: 1 },
           {
             type: 'logMessage',
-            message: '⚔ Pain only stokes your relentless momentum! Permanently +2 Attack and +1 Defense. ⚔',
+            message: 'Pain only stokes your relentless momentum! Permanently +2 Attack and +1 Defense.',
           },
         ],
       },
@@ -267,7 +267,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           { type: 'modifyPermanentStat', stat: 'attack', delta: 3 },
           {
             type: 'logMessage',
-            message: '⚡ Eldritch runes flare bright upon your weapons! Permanently +3 Attack. ⚡',
+            message: 'Eldritch runes flare bright upon your weapons! Permanently +3 Attack.',
           },
         ],
       },
@@ -280,7 +280,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           { type: 'modifyPermanentStat', stat: 'defense', delta: 3 },
           {
             type: 'logMessage',
-            message: '✨ Glowing runes deflect incoming sorcery and blades! Permanently +3 Defense. ✨',
+            message: 'Glowing runes deflect incoming sorcery and blades! Permanently +3 Defense.',
           },
         ],
       },
@@ -311,7 +311,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '♨ You sit by the steady embers, letting the warmth soak into cold bones. The oppressive weight of the abandoned works recedes.',
+              'You sit by the steady embers, letting the warmth soak into cold bones. The oppressive weight of the abandoned works recedes.',
           },
         ],
       },
@@ -325,7 +325,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '✦ WAYFARER’S RUNES: “Beyond the works, where the rock turns black as glass, fire and cold war continuously. Do not cast frost upon the magma hounds; strike them with blunt iron instead, or let the steam drown their fires.” ✦',
+              'WAYFARER’S RUNES: “Beyond the works, where the rock turns black as glass, fire and cold war continuously. Do not cast frost upon the magma hounds; strike them with blunt iron instead, or let the steam drown their fires.”',
           },
         ],
       },
@@ -355,7 +355,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '💧 The water tastes of sweet rain and deep mountain stone. A refreshing calm settles over your senses.',
+              'The water tastes of sweet rain and deep mountain stone. A refreshing calm settles over your senses.',
           },
         ],
       },
@@ -387,7 +387,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '🌳 The sweet resin incense steadies your breath. You feel the slow, colossal pulse of the World Tree under your feet, ancient and enduring.',
+              'The sweet resin incense steadies your breath. You feel the slow, colossal pulse of the World Tree under your feet, ancient and enduring.',
           },
         ],
       },
@@ -401,7 +401,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '✦ SONG OF THE ROOTS: “Where the Maw begins, the ancient wyrms sleep lightly. If you do not disturb their hoard, they will often let a quiet traveler pass without rising to strike.” ✦',
+              'SONG OF THE ROOTS: “Where the Maw begins, the ancient wyrms sleep lightly. If you do not disturb their hoard, they will often let a quiet traveler pass without rising to strike.”',
           },
         ],
       },
@@ -431,7 +431,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '✨ A taste like wild clover honey and sunlit leaves. The creeping dread of the abyss fades from your heart.',
+              'A taste like wild clover honey and sunlit leaves. The creeping dread of the abyss fades from your heart.',
           },
         ],
       },

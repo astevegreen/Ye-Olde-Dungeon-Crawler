@@ -178,7 +178,7 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
           amount: 25,
           element: 'fire',
         },
-        description: "✦ Zealot's Sun-Flare detonates in scorching radiant fire!",
+        description: "Zealot's Sun-Flare detonates in scorching radiant fire!",
       },
     ],
   },

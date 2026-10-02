@@ -46,7 +46,7 @@ describe('Campfire Grottos: Secluded Peaceful Sanctuaries', () => {
     const dwarvenHearth = COTW_TILES.find((t) => t.type === 'grotto_hearth');
     expect(dwarvenHearth).toBeDefined();
     expect(dwarvenHearth!.interactionHandlerId).toBe('choice_dwarven_hearth');
-    expect(dwarvenHearth!.landmarkLabel).toBe('Dwarven Hearth 🔥');
+    expect(dwarvenHearth!.landmarkLabel).toBe('Dwarven Hearth');
 
     const thermalSpring = COTW_TILES.find((t) => t.type === 'grotto_mineral_spring');
     expect(thermalSpring).toBeDefined();
@@ -55,7 +55,7 @@ describe('Campfire Grottos: Secluded Peaceful Sanctuaries', () => {
     const amberFire = COTW_TILES.find((t) => t.type === 'world_bark_campfire');
     expect(amberFire).toBeDefined();
     expect(amberFire!.interactionHandlerId).toBe('choice_world_bark_hearth');
-    expect(amberFire!.landmarkLabel).toBe('Amber Hearth 🔥');
+    expect(amberFire!.landmarkLabel).toBe('Amber Hearth');
 
     const sapFont = COTW_TILES.find((t) => t.type === 'world_bark_sap_pool');
     expect(sapFont).toBeDefined();

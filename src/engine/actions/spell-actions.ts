@@ -179,7 +179,7 @@ export class CastSpellAction implements Action {
           energyModel.volatileEnergy = 0;
           pendingCorruption += (spell.corruptionGain ?? volatileCost) + emergencyHpBurn;
           engine.log(
-            `🩸 Volatile Energy depleted! You burn ${emergencyHpBurn} permanent Max HP as emergency power to cast ${spell.name}! (Max HP: ${player.maxHp})`
+            `Volatile Energy depleted! You burn ${emergencyHpBurn} permanent Max HP as emergency power to cast ${spell.name}! (Max HP: ${player.maxHp})`
           );
         } else {
           energyModel.volatileEnergy -= volatileCost;
@@ -191,7 +191,7 @@ export class CastSpellAction implements Action {
         const energyModel = player.energyModel ?? player.initEnergyModel();
         energyModel.burnVitalityTender(player, vitalityCost, 0);
         pendingCorruption += spell.corruptionGain ?? vitalityCost;
-        engine.log(`🩸 You burn ${vitalityCost} permanent Max HP to fuel ${spell.name}! (Max HP: ${player.maxHp})`);
+        engine.log(`You burn ${vitalityCost} permanent Max HP to fuel ${spell.name}! (Max HP: ${player.maxHp})`);
       }
 
       if (spell.volatileEnergyGain && spell.volatileEnergyGain > 0 && !spell.requiresKillForEnergy) {
@@ -245,7 +245,7 @@ export class CastSpellAction implements Action {
           pendingCorruption += spell.corruptionGain;
         }
         engine.log(
-          `🩸 ${player.name} finishes off ${targetEntity?.name ?? 'the victim'} from close range, reaping their vital essence into +${spell.volatileEnergyGain} Volatile Energy (${player.energyModel.volatileEnergy}/${player.energyModel.maxVolatileEnergy})!`
+          `${player.name} finishes off ${targetEntity?.name ?? 'the victim'} from close range, reaping their vital essence into +${spell.volatileEnergyGain} Volatile Energy (${player.energyModel.volatileEnergy}/${player.energyModel.maxVolatileEnergy})!`
         );
       } else if (targetEntity) {
         engine.log(
@@ -256,7 +256,7 @@ export class CastSpellAction implements Action {
 
     if (player && player.energyModel && pendingCorruption > 0) {
       player.energyModel.addCorruption(player, pendingCorruption);
-      engine.log(`☠ Casting ${spell.name} surges with dark power (+${pendingCorruption} Corruption, Total: ${player.corruptionScore})!`);
+      engine.log(`Casting ${spell.name} surges with dark power (+${pendingCorruption} Corruption, Total: ${player.corruptionScore})!`);
     }
 
     const retreatSteps = matrixEffective?.retreatSteps ?? 0;
@@ -276,7 +276,7 @@ export class CastSpellAction implements Action {
       if (destX !== player.x || destY !== player.y) {
         engine.map.moveEntity(player, destX, destY);
         engine.updateFov();
-        engine.log(`💨 ${player.name} steps back from the blast!`);
+        engine.log(`${player.name} steps back from the blast!`);
       }
     }
 

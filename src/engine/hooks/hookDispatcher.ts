@@ -287,7 +287,7 @@ function executeApplyStatus(
       engine
     );
     if (applied) {
-      const msg = description ?? `✦ [PROC: ${sourceName}] ${dest.name} is afflicted with ${action.status}!`;
+      const msg = description ?? `[PROC: ${sourceName}] ${dest.name} is afflicted with ${action.status}!`;
       engine.log(msg);
       summary.messages.push(msg);
     }
@@ -311,7 +311,7 @@ function executePushImpulse(
     const dy = dest.y - owner.y !== 0 ? Math.sign(dest.y - owner.y) : (context.dy ?? 0);
     const res = applyImpulse(engine, owner, dest, dx, dy, action.distance);
     if (res.pushed || res.wallSplat) {
-      const msg = description ?? `✦ [PROC: ${sourceName}] Kinetic shockwave hurls ${dest.name} backward!`;
+      const msg = description ?? `[PROC: ${sourceName}] Kinetic shockwave hurls ${dest.name} backward!`;
       engine.log(msg);
       summary.messages.push(msg);
     }
@@ -340,7 +340,7 @@ function executeSpawnSurface(
       }
     }
   }
-  const msg = description ?? `✦ [PROC: ${sourceName}] A pool of ${action.surfaceType} spreads across the floor!`;
+  const msg = description ?? `[PROC: ${sourceName}] A pool of ${action.surfaceType} spreads across the floor!`;
   engine.log(msg);
   summary.messages.push(msg);
 }
@@ -367,7 +367,7 @@ function executeSpawnGas(
       }
     }
   }
-  const msg = description ?? `✦ [PROC: ${sourceName}] A billowing cloud of ${action.gasType} erupts!`;
+  const msg = description ?? `[PROC: ${sourceName}] A billowing cloud of ${action.gasType} erupts!`;
   engine.log(msg);
   summary.messages.push(msg);
 }
@@ -385,7 +385,7 @@ function executeHeal(
   const dest = target ?? owner;
   if (dest && dest.isAlive()) {
     const healed = dest.heal(action.amount);
-    const msg = description ?? `✦ [PROC: ${sourceName}] ${dest.name} is revitalized for +${healed} HP!`;
+    const msg = description ?? `[PROC: ${sourceName}] ${dest.name} is revitalized for +${healed} HP!`;
     engine.log(msg);
     summary.messages.push(msg);
   }
@@ -406,7 +406,7 @@ function executeBonusDamage(
   if (dest && dest.isAlive() && action.amount > 0) {
     const { damageDealt, killed } = dest.takeDamage(action.amount);
     const elem = action.element ? ` ${action.element}` : '';
-    const msg = description ?? `✦ [PROC: ${sourceName}] Striking with extra fury for ${damageDealt}${elem} bonus damage!`;
+    const msg = description ?? `[PROC: ${sourceName}] Striking with extra fury for ${damageDealt}${elem} bonus damage!`;
     engine.log(msg);
     summary.messages.push(msg);
     if (killed) {
@@ -429,7 +429,7 @@ function executeCastSpell(
   if (dest) {
     const castAction = new CastSpellAction(owner, action.spellId, dest.x, dest.y, undefined, true);
     castAction.perform(engine);
-    const msg = description ?? `✦ [PROC: ${sourceName}] Automatically triggered spell ${action.spellId}!`;
+    const msg = description ?? `[PROC: ${sourceName}] Automatically triggered spell ${action.spellId}!`;
     summary.messages.push(msg);
   }
 }
@@ -455,7 +455,7 @@ function executeRadialAuraFilter(
     HookDispatcher.executePrimitive(action.apply, context, owner, matched, summary, sourceName);
   }
 
-  const msg = description ?? `✦ [PROC: ${sourceName}] A radial aura washes over ${matches.length} ${action.tags.join('/')} creature(s)!`;
+  const msg = description ?? `[PROC: ${sourceName}] A radial aura washes over ${matches.length} ${action.tags.join('/')} creature(s)!`;
   engine.log(msg);
   summary.messages.push(msg);
 }

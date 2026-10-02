@@ -16,7 +16,7 @@ export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
         event: 'onMove',
         chance: 0.8,
         action: { type: 'spawnSurface', surfaceType: 'mud', radius: 1, duration: 4 },
-        description: '✦ Amber Sap-Weeper leaves a trail of thick sticky resin!',
+        description: 'Amber Sap-Weeper leaves a trail of thick sticky resin!',
       },
     ],
     fleeHealthPercent: 0.0,

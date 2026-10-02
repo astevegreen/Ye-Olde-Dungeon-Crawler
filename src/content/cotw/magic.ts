@@ -17,7 +17,7 @@ export const COTW_MAGIC: MagicSystemConfig = {
     debtName: 'Void Debt',
     lingeringDebt: 16,
     lingeringRestMessage:
-      '☠ Your primordial void scar (Tier 3 Void Debt) throbs with abyssal energy — it lingers indefinitely until cleansed in Town!',
+      'Your primordial void scar (Tier 3 Void Debt) throbs with abyssal energy — it lingers indefinitely until cleansed in Town!',
     tiers: [
       {
         minDebt: 1,
@@ -30,13 +30,13 @@ export const COTW_MAGIC: MagicSystemConfig = {
             kind: 'spill',
             weight: 60,
             spills: [
-              { gas: 'dense_steam', duration: 4, potency: 1, message: '🌀 Aetheric overflow! A pocket of dense steam billows from the floor! (Void Debt: {debt})' },
-              { surface: 'ice_sheet', duration: 5, potency: 1, message: '🌀 Aetheric overflow! Frost condenses into a slick sheet of ice! (Void Debt: {debt})' },
-              { gas: 'fire_storm', duration: 3, potency: 4, message: '🌀 Aetheric overflow! A brief fiery rift flares on the stone! (Void Debt: {debt})' },
+              { gas: 'dense_steam', duration: 4, potency: 1, message: 'Aetheric overflow! A pocket of dense steam billows from the floor! (Void Debt: {debt})' },
+              { surface: 'ice_sheet', duration: 5, potency: 1, message: 'Aetheric overflow! Frost condenses into a slick sheet of ice! (Void Debt: {debt})' },
+              { gas: 'fire_storm', duration: 3, potency: 4, message: 'Aetheric overflow! A brief fiery rift flares on the stone! (Void Debt: {debt})' },
             ],
-            blockedMessage: '🌀 Aetheric overflow ripples harmlessly through the stone! (Void Debt: {debt})',
+            blockedMessage: 'Aetheric overflow ripples harmlessly through the stone! (Void Debt: {debt})',
           },
-          { kind: 'message', weight: 40, message: '🌀 Seiðr depleted! An eerie rift crackles around {caster}! (Void Debt: {debt})' },
+          { kind: 'message', weight: 40, message: 'Seiðr depleted! An eerie rift crackles around {caster}! (Void Debt: {debt})' },
         ],
       },
       {
@@ -52,14 +52,14 @@ export const COTW_MAGIC: MagicSystemConfig = {
             deficitMultiplier: 0.75,
             minDamage: 3,
             flashColor: '#9333ea',
-            message: '⚡ Primordial tremor! The uncontained ether recoils into {caster} for {damage} backlash damage! (Void Debt: {debt})',
+            message: 'Primordial tremor! The uncontained ether recoils into {caster} for {damage} backlash damage! (Void Debt: {debt})',
           },
           {
             kind: 'status',
             weight: 35,
             statusId: 'stunned',
             duration: 1,
-            message: '⚡ Primordial tremor! The dimensional shockwave stuns {caster} for 1 turn! (Void Debt: {debt})',
+            message: 'Primordial tremor! The dimensional shockwave stuns {caster} for 1 turn! (Void Debt: {debt})',
           },
           {
             kind: 'surface_under_caster',
@@ -67,7 +67,7 @@ export const COTW_MAGIC: MagicSystemConfig = {
             surface: 'acid_pool',
             duration: 4,
             potency: 1,
-            message: '⚡ Primordial tremor! Caustic aether pools beneath {caster}! (Void Debt: {debt})',
+            message: 'Primordial tremor! Caustic aether pools beneath {caster}! (Void Debt: {debt})',
           },
         ],
       },
@@ -84,7 +84,7 @@ export const COTW_MAGIC: MagicSystemConfig = {
             deficitMultiplier: 1.2,
             minDamage: 10,
             flashColor: '#581c87',
-            message: "☠ YMIR'S WRATH! Catastrophic void backlash tears into {caster} for {damage} damage! (Void Debt: {debt})",
+            message: "YMIR'S WRATH! Catastrophic void backlash tears into {caster} for {damage} damage! (Void Debt: {debt})",
           },
           {
             kind: 'max_hp_burn',
@@ -92,15 +92,15 @@ export const COTW_MAGIC: MagicSystemConfig = {
             amount: 1,
             minMaxHp: 5,
             fallbackDamage: 12,
-            message: "☠ YMIR'S WRATH! The abyssal conduit burns away 1 permanent Max HP! (Max HP: {maxHp}, Void Debt: {debt})",
-            fallbackMessage: "☠ YMIR'S WRATH! The cosmic conduit ravages {caster} for {damage} damage! (Void Debt: {debt})",
+            message: "YMIR'S WRATH! The abyssal conduit burns away 1 permanent Max HP! (Max HP: {maxHp}, Void Debt: {debt})",
+            fallbackMessage: "YMIR'S WRATH! The cosmic conduit ravages {caster} for {damage} damage! (Void Debt: {debt})",
           },
           {
             kind: 'displace',
             weight: 30,
             radius: 4,
-            message: "☠ YMIR'S WRATH! A spatial rupture violently displaces {caster}! (Void Debt: {debt})",
-            blockedMessage: "☠ YMIR'S WRATH shatters the surrounding reality! (Void Debt: {debt})",
+            message: "YMIR'S WRATH! A spatial rupture violently displaces {caster}! (Void Debt: {debt})",
+            blockedMessage: "YMIR'S WRATH shatters the surrounding reality! (Void Debt: {debt})",
           },
         ],
       },
@@ -111,7 +111,7 @@ export const COTW_MAGIC: MagicSystemConfig = {
     prophecyLabel: 'Skaldic Prophecy',
     reapedLabel: 'Reaped',
     learnMessage: "*** GALDR OF THE SLAIN! You sever {monster}'s spirit thread and claim {spell}! ***",
-    essenceMessage: "✦ Galdr resonance! {monster}'s spirit leaves behind a {essence}. ✦",
+    essenceMessage: "Galdr resonance! {monster}'s spirit leaves behind a {essence}.",
     essenceItems: COTW_ESSENCE_BY_ELEMENT,
     killsPerRevealedCondition: 2,
   },
@@ -184,7 +184,7 @@ export const COTW_MAGIC: MagicSystemConfig = {
       description:
         'Týr gave his hand to bind the wolf. Burn an offering here, and its essence is bound into a slot of your open grimoire page as a glyph.',
       rite: 'inscribe',
-      performedMessage: '⚖ Týr accepts {offering}. The {glyph} glyph is bound into slot {slot} of your grimoire.',
+      performedMessage: 'Týr accepts {offering}. The {glyph} glyph is bound into slot {slot} of your grimoire.',
       spentMessage: '{altar} stands cold; its oath is already sworn.',
     },
     {
@@ -193,7 +193,7 @@ export const COTW_MAGIC: MagicSystemConfig = {
       description:
         'Odin hung nine nights to win the runes. Give up an offering here to fuse one of your spells with its element, forging a new spell in its place.',
       rite: 'forge',
-      performedMessage: '✦ Odin takes {offering}. {spell} is reforged as {hybrid}.',
+      performedMessage: 'Odin takes {offering}. {spell} is reforged as {hybrid}.',
       spentMessage: '{altar} is silent; the Hanged One has taken his due.',
     },
     {
@@ -202,7 +202,7 @@ export const COTW_MAGIC: MagicSystemConfig = {
       description:
         'Hel keeps what is owed. Burn an offering to unseal a corner of your grimoire, grounded in its element (spells of that element cost less and strike harder there), and she takes your Void Debt with it.',
       rite: 'ground',
-      performedMessage: '☠ Hel takes {offering}. Slot {slot} of your grimoire opens, grounded in {element}, and your debts are paid.',
+      performedMessage: 'Hel takes {offering}. Slot {slot} of your grimoire opens, grounded in {element}, and your debts are paid.',
       spentMessage: '{altar} is sated.',
     },
     {
@@ -210,15 +210,15 @@ export const COTW_MAGIC: MagicSystemConfig = {
       name: "Loki's Cairn",
       description: 'The trickster takes what you offer and gives back whatever amuses him: a spell, a doubled glyph, or a price.',
       rite: 'gamble',
-      performedMessage: '✦ Loki takes {offering}.',
+      performedMessage: 'Loki takes {offering}.',
       spentMessage: '{altar} is only stones now; the trickster has moved on.',
       gamble: {
         previewText: 'Loki decides: a spell, a doubled glyph, or a price.',
         spellPool: LOKI_SPELL_POOL,
         debtPenalty: 10,
-        spellMessage: '✦ Loki takes {offering} and laughs, and the galdr of {spell} rings in your head!',
-        glyphMessage: '✦ Loki takes {offering} and scratches a doubled {glyph} glyph into slot {slot}!',
-        debtMessage: '✦ Loki takes {offering}, and the price is yours: the Void comes to collect. (Void Debt: {debt})',
+        spellMessage: 'Loki takes {offering} and laughs, and the galdr of {spell} rings in your head!',
+        glyphMessage: 'Loki takes {offering} and scratches a doubled {glyph} glyph into slot {slot}!',
+        debtMessage: 'Loki takes {offering}, and the price is yours: the Void comes to collect. (Void Debt: {debt})',
       },
     },
   ],

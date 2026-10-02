@@ -37,7 +37,7 @@ export const COTW_RINGS: ItemDefinition[] = [
           status: 'slow',
           duration: 2,
         },
-        description: '✦ Rime-Signet of the Hollows saps the foe’s warmth, numbing their limbs!',
+        description: 'Rime-Signet of the Hollows saps the foe’s warmth, numbing their limbs!',
       },
     ],
     identified: false,

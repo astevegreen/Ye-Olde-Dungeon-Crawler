@@ -35,7 +35,7 @@ export const VIDNIR_REVELATION_CHOICE: ChoiceDefinition = {
         {
           type: 'logMessage',
           message:
-            '✦ You steel your resolve: on Floor 50, you will weaken Níðhögg below 15% HP and allow it to flee for 5 turns to SEAL the World Root and protect Midgard! (+1 Defense) ✦',
+            'You steel your resolve: on Floor 50, you will weaken Níðhögg below 15% HP and allow it to flee for 5 turns to SEAL the World Root and protect Midgard! (+1 Defense)',
         },
       ],
     },
@@ -51,7 +51,7 @@ export const VIDNIR_REVELATION_CHOICE: ChoiceDefinition = {
         {
           type: 'logMessage',
           message:
-            '✦ You reject the herald’s warning: Níðhögg shall pay with its blood on Floor 50, even if the root splits and Ragnarök stirs! (+1 Attack) ✦',
+            'You reject the herald’s warning: Níðhögg shall pay with its blood on Floor 50, even if the root splits and Ragnarök stirs! (+1 Attack)',
         },
       ],
     },
@@ -74,43 +74,43 @@ const ZONE_VIGNETTES: ZoneVignette[] = [
     floor: 1,
     flag: 'cotw_vignette_f1',
     message:
-      '❄ RIME HOLLOWS — The permafrost crypts bite with unnatural chill, but the blood of Thrym stirs warm in your veins—a dormant giant ember resisting the freeze.',
+      'RIME HOLLOWS — The permafrost crypts bite with unnatural chill, but the blood of Thrym stirs warm in your veins—a dormant giant ember resisting the freeze.',
   },
   {
     floor: 10,
     flag: 'cotw_vignette_f10',
     message:
-      '⚒ ABANDONED DWARVEN WORKS — Cold frost gives way to soot and rust. The clang of long-dead forge hammers still echoes through grand duergar halls as your ancestral chill begins to ebb.',
+      'ABANDONED DWARVEN WORKS — Cold frost gives way to soot and rust. The clang of long-dead forge hammers still echoes through grand duergar halls as your ancestral chill begins to ebb.',
   },
   {
     floor: 18,
     flag: 'cotw_vignette_f18',
     message:
-      '🔥 OBSIDIAN SIPHON — Searing heat blasts through volcanic fissures. Glass conduits pulse with radiant sun-chariot fire diverted by the coven into the forge.',
+      'OBSIDIAN SIPHON — Searing heat blasts through volcanic fissures. Glass conduits pulse with radiant sun-chariot fire diverted by the coven into the forge.',
   },
   {
     floor: 26,
     flag: 'cotw_vignette_f26',
     message:
-      '🌱 TARNISHED SILVER VEINS — The forge heat vanishes. Rotting timber and caustic mercury pool underfoot. Decades of stolen solar fire have scorched the frost-wards of Yggdrasil—the World Tree is bleeding!',
+      'TARNISHED SILVER VEINS — The forge heat vanishes. Rotting timber and caustic mercury pool underfoot. Decades of stolen solar fire have scorched the frost-wards of Yggdrasil—the World Tree is bleeding!',
   },
   {
     floor: 34,
     flag: 'cotw_vignette_f34',
     message:
-      '🌳 WORLD-BARK DESCENT — Stone masonry ends completely. You tread upon colossal taproots weeping black sap. Níðhögg’s gnawing shakes the subterranean bedrock.',
+      'WORLD-BARK DESCENT — Stone masonry ends completely. You tread upon colossal taproots weeping black sap. Níðhögg’s gnawing shakes the subterranean bedrock.',
   },
   {
     floor: 43,
     flag: 'cotw_vignette_f43',
     message:
-      '☠ MAW OF MALICE — You stand at the precipice of Náströnd. Sinuous dragon scales litter the yawning abyss. The Root-Gnawer awaits in the Heartwood below.',
+      'MAW OF MALICE — You stand at the precipice of Náströnd. Sinuous dragon scales litter the yawning abyss. The Root-Gnawer awaits in the Heartwood below.',
   },
   {
     floor: 50,
     flag: 'cotw_vignette_f50',
     message:
-      '⚔ THE HEARTWOOD — Floor 50. The wounded World Tree taproot uncoils before you. Here your saga ends: slay the dragon and unleash Ragnarök, or drive it off to seal the root.',
+      'THE HEARTWOOD — Floor 50. The wounded World Tree taproot uncoils before you. Here your saga ends: slay the dragon and unleash Ragnarök, or drive it off to seal the root.',
   },
 ];
 
@@ -182,7 +182,7 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
     if (hasRelic && !getFlag(engine.worldState, HEARTH_TEAR_RETURNED_FLAG)) {
       setFlag(engine.worldState, HEARTH_TEAR_RETURNED_FLAG, true);
       engine.log(
-        '✦ THE GREAT THAW! Sól’s warmth returns to Bjarnarhaven! The plaza fountain flows freely, but ominous subterranean tremors shake the village longhouses... ✦'
+        'THE GREAT THAW! Sól’s warmth returns to Bjarnarhaven! The plaza fountain flows freely, but ominous subterranean tremors shake the village longhouses...'
       );
     }
 

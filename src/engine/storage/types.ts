@@ -7,6 +7,7 @@ import type { CharacterAttributes, Gender } from '../character/types';
 import type { ElementType, ElementalAffinity } from '../magic/elements';
 import type { AiBehaviorType } from '../bestiary/monsterDefinitions';
 import type { AiState, MonsterIntent } from '../entities/monster';
+import type { CompanionArchetype } from '../entities/companion';
 import type { Position } from '../types';
 import type { WorldState } from '../state/worldState';
 import type { PlaneState } from '../spatial/planeTypes';
@@ -288,6 +289,10 @@ export interface SerializedCompanion {
   energy: number;
   statusEffects?: SerializedStatusEffect[];
   primaryPack: SerializedContainer;
+  /** Trainer-taught AI archetype; absent = 'balanced'. */
+  archetype?: CompanionArchetype;
+  /** Trainer-taught skills; absent = none. */
+  unlockedSkills?: string[];
 }
 
 export interface SerializedNpc {
@@ -367,6 +372,10 @@ export interface SaveData {
   prngState?: number;
   /** Companions & Pet Progression, Phase 1 (docs/architecture/content-companions.md). Null/absent = no companion summoned. */
   companion?: SerializedCompanion | null;
+  /** The companion last dismissed, kept to be summoned back (`GameEngine.dismissedCompanion`). */
+  dismissedCompanion?: SerializedCompanion;
+  /** A fallen companion awaiting a trainer's revival (`GameEngine.deadCompanionRecord`). */
+  deadCompanion?: SerializedCompanion;
   /** Chronicle of Discoveries rolling event log (ARCHITECTURE.md §5). */
   discoveryEvents?: Array<{
     type: 'floor_transition' | 'secret_door' | 'trap_disarmed' | 'boss_slain' | 'close_call' | 'pact_sealed' | 'quest_milestone' | 'general';

@@ -1442,7 +1442,12 @@ window.addEventListener('DOMContentLoaded', () => {
         keybindModal.open();
       },
       summon_companion: (eng) => {
-        const defId = eng.manifest?.companions?.[0]?.id;
+        // The hero's own companion: the one dismissed or fallen (the engine refuses a
+        // fallen one), else the pack's first for a hero bonded at a trainer.
+        const defId =
+          eng.dismissedCompanion?.companionDefinitionId ??
+          eng.deadCompanionRecord?.companionDefinitionId ??
+          eng.manifest?.companions?.[0]?.id;
         if (eng.companion) {
           eng.log(`${eng.companion.name} is already at your side.`);
         } else if (defId) {

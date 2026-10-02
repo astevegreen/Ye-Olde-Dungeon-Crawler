@@ -161,11 +161,13 @@ export class GameEngine {
   /**
    * A companion that died in combat, kept (not discarded) so a trainer can revive
    * it — heal + reattach the same instance, pack contents intact (ARCHITECTURE.md
-   * P-14 Phase 2, see `DeathResolver.resolveDeath`). Session-only: not persisted
-   * across save/load — a save made while a companion awaits revival loses that
-   * opportunity on reload, same as Phase 1 treats "no companion" as the baseline.
+   * P-14 Phase 2, see `DeathResolver.resolveDeath`). Saved (`SaveData.deadCompanion`), and
+   * while it is set no other companion can be summoned: only a trainer's revival returns it.
    */
   public deadCompanionRecord: Companion | null = null;
+  /** The companion last dismissed, kept with its pack so a summon brings the same one back
+   *  (saved as `SaveData.dismissedCompanion`). */
+  public dismissedCompanion: Companion | null = null;
   public readonly scheduler: EnergyScheduler;
   public fov: FovManager;
   public readonly messages: string[];
@@ -642,9 +644,19 @@ export class GameEngine {
       this.log('You have not yet bonded with a companion. Seek out a trainer in town.');
       return null;
     }
+    if (this.deadCompanionRecord) {
+      this.log(`${this.deadCompanionRecord.name} has fallen. A trainer in town can revive it.`);
+      return null;
+    }
     const spawn = findSafeSpawnPosition(this.map, { x: this.player.x, y: this.player.y }, 5);
-    const companion = Companion.fromDefinition(definitionId, this.nextSimulationId(`companion-${definitionId}`), spawn);
+    const kept = this.dismissedCompanion?.companionDefinitionId === definitionId ? this.dismissedCompanion : null;
+    const companion = kept ?? Companion.fromDefinition(definitionId, this.nextSimulationId(`companion-${definitionId}`), spawn);
     if (!companion) return null;
+    if (kept) {
+      kept.x = spawn.x;
+      kept.y = spawn.y;
+      this.dismissedCompanion = null;
+    }
     this.attachCompanion(companion);
     this.log(`${companion.name} answers your call!`);
     return companion;
@@ -656,6 +668,7 @@ export class GameEngine {
     this.map.removeEntity(this.companion);
     this.scheduler.removeEntity(this.companion);
     this.log(`${this.companion.name} is dismissed.`);
+    this.dismissedCompanion = this.companion;
     this.companion = null;
   }
 

@@ -315,6 +315,8 @@ function serializeCompanion(companion: Companion): SerializedCompanion {
     energy: companion.energy,
     statusEffects: companion.statusManager.serialize(),
     primaryPack: serializeItem(companion.inventory.primaryPack) as SerializedContainer,
+    archetype: companion.archetype === 'balanced' ? undefined : companion.archetype,
+    unlockedSkills: companion.unlockedSkills.length ? [...companion.unlockedSkills] : undefined,
   };
 }
 
@@ -343,6 +345,8 @@ function deserializeCompanion(data: SerializedCompanion, registries?: EngineRegi
   if (data.statusEffects) {
     companion.statusManager.deserialize(data.statusEffects);
   }
+  if (data.archetype) companion.setArchetype(data.archetype);
+  if (data.unlockedSkills) companion.unlockedSkills = [...data.unlockedSkills];
   return companion;
 }
 
@@ -540,6 +544,8 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     planes: engine.planeManager ? engine.planeManager.serialize() : undefined,
     prngState: engine.prng ? engine.prng.getState() : undefined,
     companion: engine.companion ? serializeCompanion(engine.companion) : undefined,
+    dismissedCompanion: engine.dismissedCompanion ? serializeCompanion(engine.dismissedCompanion) : undefined,
+    deadCompanion: engine.deadCompanionRecord ? serializeCompanion(engine.deadCompanionRecord) : undefined,
     discoveryEvents: engine.discoveryEvents?.length ? engine.discoveryEvents.slice(-100) : undefined,
     merchantStock: engine.merchants.size
       ? Object.fromEntries([...engine.merchants].map(([id, m]) => [id, m.stock.map(serializeItem)]))
@@ -969,6 +975,9 @@ export function deserializeGame(
   if (saveData.companion) {
     engine.attachCompanion(deserializeCompanion(saveData.companion, engine.registries));
   }
+  // Off the map: summoned back, or revived by a trainer.
+  if (saveData.dismissedCompanion) engine.dismissedCompanion = deserializeCompanion(saveData.dismissedCompanion, engine.registries);
+  if (saveData.deadCompanion) engine.deadCompanionRecord = deserializeCompanion(saveData.deadCompanion, engine.registries);
 
   // 6. Restore Turn Count & Messages & Discovery Events
   engine.turnCount = saveData.turnCount;

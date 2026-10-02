@@ -262,4 +262,47 @@ describe('Companion engine integration (docs/architecture/content-companions.md,
       expect(engine.map.getAllEntities()).toContain(companion);
     });
   });
+
+  // Reproductions (2026-10-02 review): dismissing threw the companion and its pack away, a
+  // fallen companion could be summoned again for free, and neither, nor a trainer's
+  // archetype and skills, survived a reload.
+  describe('the same companion, kept across dismissal, death and a reload', () => {
+    it('summons back the companion it dismissed, pack and wounds intact', () => {
+      const { engine } = buildEngine();
+      const first = engine.summonCompanion(TEST_DEF_ID)!;
+      first.hp = 9;
+      engine.dismissCompanion();
+      expect(engine.dismissedCompanion).toBe(first);
+      expect(engine.summonCompanion(TEST_DEF_ID)).toBe(first);
+      expect(engine.companion!.hp).toBe(9);
+      expect(engine.dismissedCompanion).toBeNull();
+    });
+
+    it('will not summon a fresh companion while the bonded one lies fallen', () => {
+      const { engine } = buildEngine();
+      const companion = engine.summonCompanion(TEST_DEF_ID)!;
+      DeathResolver.resolveDeath(engine, undefined, companion);
+      expect(engine.summonCompanion(TEST_DEF_ID)).toBeNull();
+      expect(engine.companion).toBeNull();
+      expect(engine.messages.at(-1)).toContain('has fallen');
+    });
+
+    it('keeps a dismissed or fallen companion, and its archetype and skills, in the save', () => {
+      const { engine } = buildEngine();
+      const companion = engine.summonCompanion(TEST_DEF_ID)!;
+      companion.setArchetype('skirmisher');
+      companion.unlockedSkills.push('rally_howl');
+      engine.dismissCompanion();
+      const resting = deserializeGame(JSON.parse(JSON.stringify(serializeGame(engine)))).engine;
+      expect(resting.dismissedCompanion?.companionDefinitionId).toBe(TEST_DEF_ID);
+      expect(resting.dismissedCompanion?.archetype).toBe('skirmisher');
+      expect(resting.dismissedCompanion?.unlockedSkills).toEqual(['rally_howl']);
+
+      const back = resting.summonCompanion(TEST_DEF_ID)!;
+      DeathResolver.resolveDeath(resting, undefined, back);
+      const fallen = deserializeGame(JSON.parse(JSON.stringify(serializeGame(resting)))).engine;
+      expect(fallen.deadCompanionRecord?.companionDefinitionId).toBe(TEST_DEF_ID);
+      expect(fallen.summonCompanion(TEST_DEF_ID)).toBeNull();
+    });
+  });
 });

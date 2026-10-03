@@ -224,6 +224,7 @@ export interface TownBuildingDefinition {
 export interface TownServicesDefinition {
   templeName?: string;
   priestTitle?: string;
+  /** `{items}` names what was cleansed; the engine appends where the items went (pack or still worn). */
   cleanseMessageTemplate?: string;
   noCursesMessage?: string;
   donationRequiredTemplate?: string;

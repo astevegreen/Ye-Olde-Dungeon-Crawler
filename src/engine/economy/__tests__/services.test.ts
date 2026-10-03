@@ -43,6 +43,26 @@ describe('Town Services (Temple, Sage, Bank)', () => {
       expect(player.inventory.primaryPack.getItem('curse-armor')).toBeDefined();
     });
 
+    it('leaves a cleansed item worn, free of its curse, when the pack has no room for it', () => {
+      const cursedArmor = ItemFactory.createLeatherArmor('curse-armor');
+      cursedArmor.quality = 'cursed';
+      player.inventory.primaryPack.addItem(cursedArmor);
+      player.inventory.equipFromPack('curse-armor');
+      for (let i = 0; i < 500; i++) {
+        if (!player.inventory.primaryPack.addItem(ItemFactory.createLeatherArmor(`filler-${i}`))) break;
+      }
+      expect(player.inventory.primaryPack.canContain(cursedArmor).allowed).toBe(false);
+      addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 50, platinum: 0 });
+
+      const result = TempleService.cleanseCurses(player);
+
+      expect(result.success).toBe(true);
+      expect(cursedArmor.quality).toBe('normal');
+      expect(player.inventory.paperdoll.getItem('torso')).toBe(cursedArmor);
+      expect(result.message).not.toContain('stored in your pack');
+      expect(result.message).toContain('Leather Armor');
+    });
+
     it('heals and restores HP/Mana and removes negative status effects for 25 GP', () => {
       // Apply poison and slow
       player.statusManager.applyStatus({ type: 'poison', duration: 5, potency: 2 });

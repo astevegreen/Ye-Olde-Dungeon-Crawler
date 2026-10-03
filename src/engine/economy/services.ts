@@ -130,24 +130,31 @@ export class TempleService {
       return deduction;
     }
 
-    // Unbind and normalize cursed items
+    // Unbind and normalize cursed items; each goes to the pack if it fits, else stays worn.
     const cleansedNames: string[] = [];
+    const stillWorn: string[] = [];
     for (const entry of cursedItems) {
       // Cast away cursed flag
       (entry.item as { quality: string }).quality = 'normal';
       (entry.item as { identified: boolean }).identified = true;
       cleansedNames.push(entry.item.name);
-      // Safely unequip to pack if space allows
-      player.inventory.paperdoll.unequip(entry.slot);
-      player.inventory.primaryPack.addItem(entry.item);
+      if (player.inventory.primaryPack.canContain(entry.item).allowed) {
+        player.inventory.paperdoll.unequip(entry.slot);
+        player.inventory.primaryPack.addItem(entry.item);
+      } else {
+        stillWorn.push(entry.item.name);
+      }
     }
 
-    const defaultSuccess = `Divine power shatters the foul bindings on: ${cleansedNames.join(', ')}! The items are now safely stored in your pack.`;
+    const placement =
+      stillWorn.length === 0
+        ? 'The items are now safely stored in your pack.'
+        : `Your pack has no room, so you still wear ${stillWorn.join(', ')}, free of the curse.`;
     const message = services?.cleanseMessageTemplate
-      ? services.cleanseMessageTemplate
+      ? `${services.cleanseMessageTemplate
           .replace('{items}', cleansedNames.join(', '))
-          .replace('{item}', cleansedNames.join(', '))
-      : defaultSuccess;
+          .replace('{item}', cleansedNames.join(', '))} ${placement}`
+      : `Divine power shatters the foul bindings on: ${cleansedNames.join(', ')}! ${placement}`;
 
     return {
       success: true,

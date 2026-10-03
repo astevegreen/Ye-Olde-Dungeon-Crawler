@@ -176,7 +176,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
   services: {
     templeName: 'Temple of Thor',
     priestTitle: 'The High Priest of Thor',
-    cleanseMessageTemplate: "Thor's divine lightning shatters the foul bindings on: {items}! The items are now safely stored in your pack.",
+    cleanseMessageTemplate: "Thor's divine lightning shatters the foul bindings on: {items}!",
     noCursesMessage: 'The High Priest of Thor senses no foul curses binding your body.',
     donationRequiredTemplate: 'A donation of {cost} is required to call upon Thor\'s cleansing thunder. You have {funds}.',
     healMessageTemplate: 'The Priest of Thor bathes you in golden light! All afflictions are cured, and your HP and Seiðr are fully restored!',

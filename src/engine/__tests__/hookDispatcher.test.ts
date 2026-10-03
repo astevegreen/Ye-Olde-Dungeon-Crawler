@@ -8,6 +8,8 @@ import { MeleeAttackAction } from '../actions/combat';
 import { MovementAction } from '../actions/movement';
 import { Item } from '../items/item';
 import { TILES } from '../grid/tile';
+import { createScaledItem } from '../dungeon/lootSpawner';
+import type { ItemDefinition } from '../types/manifest';
 
 describe('Event-Driven Hook Engine', () => {
   let engine: GameEngine;
@@ -207,5 +209,23 @@ describe('Event-Driven Hook Engine', () => {
 
     expect(fired).toBe(1);
     expect(summary.executedHooks).toBe(1);
+  });
+
+  it('fires the hooks of a weapon made from its definition, as loot and shops make it', () => {
+    const def: ItemDefinition = {
+      id: 'frost_blade',
+      name: 'Frost Blade',
+      category: 'weapon',
+      slot: 'mainHand',
+      weight: 1000,
+      bulk: 500,
+      identified: true,
+      hooks: [{ event: 'onHit', chance: 1.0, action: { type: 'applyStatus', status: 'slow', duration: 3 } }],
+    };
+    player.inventory.paperdoll.equip(createScaledItem(def, 'frost-1', 1, () => 0.5), 'mainHand');
+
+    new MeleeAttackAction(player, monster).perform(engine);
+
+    expect(monster.statusManager.hasStatus('slow')).toBe(true);
   });
 });

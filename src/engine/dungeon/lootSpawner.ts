@@ -89,6 +89,7 @@ export function createScaledItem(
     return new WandItem({
       id,
       definitionId: def.id,
+      hooks: def.hooks,
       name: def.name,
       unidentifiedName: def.unidentifiedName,
       spellId: def.wandConfig.spellId,
@@ -109,6 +110,7 @@ export function createScaledItem(
     return new ScrollItem({
       id,
       definitionId: def.id,
+      hooks: def.hooks,
       name: def.name,
       unidentifiedName: def.unidentifiedName,
       spellId: def.scrollConfig.spellId,
@@ -127,6 +129,7 @@ export function createScaledItem(
     return new PotionItem({
       id,
       definitionId: def.id,
+      hooks: def.hooks,
       name: def.name,
       unidentifiedName: def.unidentifiedName,
       potionType: def.potionConfig.potionType,
@@ -147,6 +150,7 @@ export function createScaledItem(
     return new Container({
       id,
       definitionId: def.id,
+      hooks: def.hooks,
       name: def.name,
       unidentifiedName: def.unidentifiedName,
       category: def.category,
@@ -172,6 +176,7 @@ export function createScaledItem(
   return new Item({
     id,
     definitionId: def.id,
+    hooks: def.hooks,
     name: def.name,
     unidentifiedName: def.unidentifiedName,
     category: def.category,

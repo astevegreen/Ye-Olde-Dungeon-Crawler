@@ -144,6 +144,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
     const container = new Container({
       id: node.id,
       definitionId,
+      hooks: def?.hooks,
       predicate: def?.predicate,
       name: node.name,
       unidentifiedName: node.unidentifiedName,
@@ -196,6 +197,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
     return new WandItem({
       id: node.id,
       definitionId,
+      hooks: def?.hooks,
       quantity,
       name: node.name,
       unidentifiedName: node.unidentifiedName,
@@ -227,6 +229,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
     return new ScrollItem({
       id: node.id,
       definitionId,
+      hooks: def?.hooks,
       quantity,
       name: node.name,
       unidentifiedName: node.unidentifiedName,
@@ -256,6 +259,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
     return new PotionItem({
       id: node.id,
       definitionId,
+      hooks: def?.hooks,
       quantity,
       name: node.name,
       unidentifiedName: node.unidentifiedName,
@@ -287,6 +291,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
     return new RuneOfReturnItem({
       id: node.id,
       definitionId,
+      hooks: def?.hooks,
       quantity,
       name: node.name,
       unidentifiedName: node.unidentifiedName,
@@ -315,6 +320,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
   return new Item({
     id: node.id,
     definitionId,
+    hooks: def?.hooks,
     quantity,
     twoHanded: def?.twoHanded,
     blocksSlot: def?.blocksSlot,

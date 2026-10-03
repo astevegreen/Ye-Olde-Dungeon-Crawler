@@ -65,6 +65,8 @@ describe('carried items across save/load', () => {
     // Two-handed, with reach: lying underfoot, so the pack's capacity doesn't matter.
     const spear = createScaledItem(def('skraeling_ice_spear'), 'spear-1', 1, () => 0.5);
     engine.map.addItemAt(engine.player.x, engine.player.y, spear);
+    const signet = createScaledItem(def('rime_signet_of_the_hollows'), 'signet-1', 1, () => 0.5);
+    engine.map.addItemAt(engine.player.x, engine.player.y, signet);
 
     const loaded = load(serializeGame(engine, profile));
 
@@ -76,6 +78,9 @@ describe('carried items across save/load', () => {
     const loadedSpear = loaded.map.getItemsAt(engine.player.x, engine.player.y).find((i) => i.id === 'spear-1')!;
     expect(loadedSpear.twoHanded).toBe(true);
     expect(loadedSpear.rangedConfig).toEqual(spear.rangedConfig);
+
+    const loadedSignet = loaded.map.getItemsAt(engine.player.x, engine.player.y).find((i) => i.id === 'signet-1')!;
+    expect(loadedSignet.hooks).toEqual(def('rime_signet_of_the_hollows').hooks);
   });
 
   it('gives an item from an older save, written without definitionId, its definition by name', () => {

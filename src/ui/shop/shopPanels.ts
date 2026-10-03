@@ -62,6 +62,11 @@ export interface ServicePanel {
   /** Pre-escaped HTML shown above the offers. */
   facts?: string;
   offers: ServiceOffer[];
+  /** Pre-escaped rows the hero picks from with the arrow keys or a click; the sage's
+   *  identify acts on the picked one. */
+  choices?: string[];
+  /** The picked row, kept within `choices`. */
+  selected?: number;
 }
 
 const DENOMINATIONS: CoinDenomination[] = ['platinum', 'gold', 'silver', 'copper'];
@@ -75,12 +80,15 @@ export function serviceTitle(engine: GameEngine, npc: NPC, shopName?: string): s
   return npc.name;
 }
 
-function unidentifiedItems(engine: GameEngine): Item[] {
+/** What the sage can identify, in the order the panel lists it: the pack, the belt, then
+ *  what the hero wears. */
+export function identifiableItems(engine: GameEngine): Item[] {
   const inventory = engine.player.inventory;
   return [
-    ...inventory.primaryPack.getItems().filter((i) => !i.identified),
-    ...inventory.paperdoll.getAllEquipped().map((e) => e.item).filter((i) => !i.identified),
-  ];
+    ...inventory.primaryPack.getItems(),
+    ...(inventory.belt?.getItems() ?? []),
+    ...inventory.paperdoll.getAllEquipped().map((e) => e.item),
+  ].filter((i) => !i.identified && i.canBeIdentified());
 }
 
 function templePanel(engine: GameEngine): ServicePanel {
@@ -107,24 +115,27 @@ function templePanel(engine: GameEngine): ServicePanel {
   };
 }
 
-function sagePanel(engine: GameEngine): ServicePanel {
-  const unknown = unidentifiedItems(engine);
-  const shown = unknown.slice(0, 6);
-  const more = unknown.length - shown.length;
+function sagePanel(engine: GameEngine, selected: number): ServicePanel {
+  const unknown = identifiableItems(engine);
+  const worn = new Set(engine.player.inventory.paperdoll.getAllEquipped().map((e) => e.item));
   const facts =
     unknown.length === 0
       ? '<div class="ui-note">You carry nothing unidentified.</div>'
-      : `<div class="ui-note">Unidentified items you carry: <b class="ui-num">${unknown.length}</b></div>
-         <ul class="shop-bullets">${shown.map((i) => `<li>${escapeHtml(i.displayName)} <span class="ui-faint">${escapeHtml(i.category)}</span></li>`).join('')}${more > 0 ? `<li class="ui-faint">and ${more} more</li>` : ''}</ul>`;
+      : `<div class="ui-note">Unidentified items you carry: <b class="ui-num">${unknown.length}</b>. Choose one to identify.</div>`;
+  const choices = unknown.map(
+    (i) => `<span class="bs-name">${escapeHtml(i.displayName)}</span><span class="ui-faint">${worn.has(i) ? 'worn' : escapeHtml(i.category)}</span>`
+  );
   return {
     heading: 'Services',
     facts,
+    choices,
+    selected: Math.max(0, Math.min(selected, choices.length - 1)),
     offers: [
       {
         act: 'identify',
         key: 'I',
-        label: 'Identify an item',
-        detail: 'Reveals the first unidentified item in your pack, then the ones you wear.',
+        label: 'Identify the chosen item',
+        detail: 'Reveals what the item you chose above truly is.',
         priceCp: SageService.IDENTIFY_FEE_CP,
         disabled: unknown.length === 0,
       },
@@ -254,8 +265,8 @@ const PACT_NOTE =
   '<div class="ui-note">A pact makes the dungeon harder and pays more for it. It holds until you come back here to renounce it.</div>';
 
 /** The panel for a townsperson who isn't a merchant; null when they only greet. */
-export function servicePanelFor(engine: GameEngine, npc: NPC): ServicePanel | null {
-  const panel = basePanelFor(engine, npc);
+export function servicePanelFor(engine: GameEngine, npc: NPC, selected = 0): ServicePanel | null {
+  const panel = basePanelFor(engine, npc, selected);
   if (!engine.manifest?.pactKeeperNpcId || npc.id !== engine.manifest.pactKeeperNpcId) return panel;
   const offers = pactOffers(engine);
   if (offers.length === 0) return panel;
@@ -264,14 +275,14 @@ export function servicePanelFor(engine: GameEngine, npc: NPC): ServicePanel | nu
     : { heading: 'Pacts', facts: PACT_NOTE, offers };
 }
 
-function basePanelFor(engine: GameEngine, npc: NPC): ServicePanel | null {
+function basePanelFor(engine: GameEngine, npc: NPC, selected: number): ServicePanel | null {
   const attunementNpcId = engine.manifest?.runeOfReturn?.attunementNpcId;
   if (attunementNpcId && npc.id === attunementNpcId) return runeSmithPanel(engine);
   switch (npc.role) {
     case 'priest':
       return templePanel(engine);
     case 'sage':
-      return sagePanel(engine);
+      return sagePanel(engine, selected);
     case 'banker':
       return bankerPanel(engine);
     case 'trainer':
@@ -301,10 +312,17 @@ export function servicePanelHtml(panel: ServicePanel): string {
       </div>`
     )
     .join('');
+  const choices = (panel.choices ?? [])
+    .map((row, i) => {
+      const on = i === panel.selected;
+      return `<button type="button" class="bs-row shop-choice${on ? ' is-selected' : ''}" role="option" aria-selected="${on}" data-choice="${i}">${row}</button>`;
+    })
+    .join('');
   return `
     <section class="ui-card shop-service">
       <h3 class="ui-h">${escapeHtml(panel.heading)}</h3>
       ${panel.facts ?? ''}
+      ${choices ? `<div class="ui-inset ui-scroll shop-choices" role="listbox" aria-label="Choose one">${choices}</div>` : ''}
       ${offers ? `<div class="shop-offers">${offers}</div>` : ''}
     </section>`;
 }

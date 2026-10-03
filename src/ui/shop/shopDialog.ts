@@ -17,6 +17,7 @@ import { itemToneClass } from '../inventory/itemTone';
 import {
   type ServicePanel,
   type ShopAction,
+  identifiableItems,
   serviceTitle,
   servicePanelFor,
   servicePanelHtml,
@@ -49,6 +50,8 @@ export class ShopDialog {
   public activeTab: 'buy' | 'sell' = 'buy';
   public selectedBuyIndex = 0;
   public selectedSellIndex = 0;
+  /** The picked row of a service's choices (the sage's unidentified items). */
+  public selectedChoiceIndex = 0;
   public statusMessage = '';
   public statusTone: Tone = 'info';
 
@@ -75,6 +78,7 @@ export class ShopDialog {
     this.activeTab = 'buy';
     this.selectedBuyIndex = 0;
     this.selectedSellIndex = 0;
+    this.selectedChoiceIndex = 0;
     this.statusMessage = '';
     this.statusTone = 'info';
     this.onOpen?.(npc);
@@ -139,7 +143,13 @@ export class ShopDialog {
       return true;
     }
 
-    const offer = this.panel(engine)?.offers.find((o) => o.key === letter);
+    const panel = this.panel(engine);
+    if ((key === 'ArrowUp' || key === 'ArrowDown') && panel?.choices?.length) {
+      event.preventDefault();
+      this.selectChoice((panel.selected ?? 0) + (key === 'ArrowDown' ? 1 : -1), panel.choices.length);
+      return true;
+    }
+    const offer = panel?.offers.find((o) => o.key === letter);
     if (offer && !offer.disabled) this.run(offer.act, engine, offer.arg);
     // Every other key is swallowed while the dialog is open.
     return true;
@@ -243,7 +253,15 @@ export class ShopDialog {
   // ---- Town services -------------------------------------------------------------
 
   private panel(engine: GameEngine): ServicePanel | null {
-    return this.activeNpc && !this.merchant ? servicePanelFor(engine, this.activeNpc) : null;
+    return this.activeNpc && !this.merchant ? servicePanelFor(engine, this.activeNpc, this.selectedChoiceIndex) : null;
+  }
+
+  private selectChoice(index: number, count: number): void {
+    const next = Math.max(0, Math.min(count - 1, index));
+    if (next === this.selectedChoiceIndex) return;
+    this.selectedChoiceIndex = next;
+    this.changed();
+    this.scrim?.querySelector?.('.shop-choice.is-selected')?.scrollIntoView?.({ block: 'nearest' });
   }
 
   /** Runs a button's or key's action. */
@@ -268,9 +286,11 @@ export class ShopDialog {
       case 'heal':
         this.report(bus.dispatch({ type: 'temple_heal' }));
         return;
-      case 'identify':
-        this.report(bus.dispatch({ type: 'sage_identify' }), 'warn');
+      case 'identify': {
+        const item = identifiableItems(engine)[this.selectedChoiceIndex];
+        if (item) this.report(bus.dispatch({ type: 'sage_identify', payload: { item } }), 'warn');
         return;
+      }
       case 'advise':
         this.report({ success: true, message: bus.dispatch({ type: 'sage_advisory' }).message }, 'warn', 'info');
         return;
@@ -343,7 +363,9 @@ export class ShopDialog {
           { keys: ['1–9'], label: 'at once' },
           { keys: ['B', 'S'], label: 'buy or sell list' },
         ]
-      : [];
+      : panel?.choices?.length
+        ? [{ keys: ['↑', '↓'], label: 'choose' }]
+        : [];
     scrim.innerHTML = dialogHtml({
       title,
       titleId: 'shop-dialog-title',
@@ -457,6 +479,12 @@ export class ShopDialog {
     scrim.querySelector('#shop-leave')?.addEventListener('click', () => this.close());
     scrim.querySelectorAll<HTMLElement>('[data-act]').forEach((el) => {
       el.addEventListener('click', () => this.run(el.dataset.act as ShopAction, engine, el.dataset.arg));
+    });
+    scrim.querySelectorAll<HTMLElement>('[data-choice]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const count = this.panel(engine)?.choices?.length ?? 0;
+        this.selectChoice(Number(el.dataset.choice), count);
+      });
     });
     scrim.querySelectorAll<HTMLElement>('[data-row]').forEach((el) => {
       const index = Number(el.dataset.row);

@@ -126,6 +126,27 @@ describe('ShopDialog', () => {
     expect(commandTypes()).toEqual(['sage_advisory']);
   });
 
+  it('identifies the item the hero chooses, not the first one in the pack (N25)', () => {
+    const unknown = (id: string, category: 'weapon' | 'boots' | 'ring') =>
+      new Item({ id, name: id, category, weight: 500, bulk: 300, quality: 'normal', identified: false, value: 50 });
+    const pack = engine.player.inventory.primaryPack;
+    for (const item of [unknown('spear', 'weapon'), unknown('boots', 'boots'), unknown('ring', 'ring')]) pack.addItem(item);
+    // A container is never identified, so the sage doesn't offer it (or charge for it).
+    pack.addItem(new Item({ id: 'frame', name: 'Tool-Frame', category: 'container', weight: 900, bulk: 900, quality: 'normal', identified: false, value: 50 }));
+
+    const shop = new ShopDialog();
+    shop.open(npc('sage'), null, engine);
+    expect(html().match(/data-choice=/g)).toHaveLength(3);
+    expect(html()).not.toContain('Tool-Frame');
+    shop.handleKeyDown(key('ArrowDown'), engine);
+    shop.handleKeyDown(key('ArrowDown'), engine);
+    shop.handleKeyDown(key('ArrowDown'), engine); // stays on the last row
+    expect(html()).toMatch(/is-selected[^>]*data-choice="2"/);
+    shop.handleKeyDown(key('i'), engine);
+    const sent = dispatch.mock.calls.map((c) => c[0] as { type: string; payload?: { item?: Item } });
+    expect(sent.map((c) => [c.type, c.payload?.item?.id])).toEqual([['sage_identify', 'ring']]);
+  });
+
   it('lets only the pact keeper seal and renounce pacts, one number key each', () => {
     const keeperEngine = new GameEngine({
       map: new GameMap(20, 20),

@@ -61,7 +61,7 @@
 .shop-offer-label { font-weight: bold; }
 .shop-offer.is-disabled .shop-offer-label { color: var(--ui-text-muted); }
 .shop-offer .shop-price { min-width: 64px; text-align: right; }
-.shop-bullets { margin: var(--ui-space-1) 0 0; padding-left: 18px; font-size: var(--ui-text-sm); }
+.shop-choices { max-height: 180px; margin-top: var(--ui-space-2); padding: var(--ui-space-1); }
 .shop-coins { max-width: 280px; font-size: var(--ui-text-sm); }
 
 /* What the last trade or service said; holds its line so the dialog doesn't jump. */

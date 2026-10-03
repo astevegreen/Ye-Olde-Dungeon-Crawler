@@ -32,6 +32,7 @@ import { GIANT_BLOOD_STATUS, giantBloodHandler, GIANT_BLOOD_BOOTSTRAP_HOOK } fro
 import { COTW_MONSTER_SCALING } from './monsterScaling';
 import { OATH_TRIGGER, OATH_TIMED_EVENT } from './oath';
 import { HOSTAGE_VILLAGERS, SIPHON_RITUAL_FLOOR, SIPHON_RITUAL_HOOKS, SIPHON_TIMED_EVENT, SIPHON_VAULT_ID } from './hostageRitual';
+import { COTW_PROLOGUE, PROLOGUE_HOOKS, PROLOGUE_TIMED_EVENT } from './prologue';
 import { COTW_BLOOD_SPELLS } from './bloodMagic';
 import { COTW_TILES } from './tiles';
 import { COTW_FLOOR_HAZARDS, COTW_ROOM_DECORATION } from './floorBands';
@@ -125,6 +126,7 @@ export const cotwManifest: GameContentManifest = {
   monsterScaling: COTW_MONSTER_SCALING,
   actionHooks: [
     GIANT_BLOOD_BOOTSTRAP_HOOK,
+    ...PROLOGUE_HOOKS,
     ...SIPHON_RITUAL_HOOKS,
     DEEPEST_FLOOR_HOOK,
     COTW_ZONE_VIGNETTES_HOOK,
@@ -137,7 +139,9 @@ export const cotwManifest: GameContentManifest = {
   storyChoiceTriggers: [OATH_TRIGGER, VIDNIR_DEFEATED_TRIGGER],
   attributeMilestones: COTW_ATTRIBUTE_MILESTONES,
   monsterCategories: COTW_MONSTER_CATEGORIES,
-  timedEvents: [OATH_TIMED_EVENT, SIPHON_TIMED_EVENT],
+  timedEvents: [PROLOGUE_TIMED_EVENT, OATH_TIMED_EVENT, SIPHON_TIMED_EVENT],
+  // The night raid a new hero begins with (prologue.ts).
+  prologue: COTW_PROLOGUE,
   bossFleeResolutions: [
     {
       monsterDefinitionId: 'nidhogg',

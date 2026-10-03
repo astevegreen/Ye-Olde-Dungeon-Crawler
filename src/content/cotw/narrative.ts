@@ -2,6 +2,7 @@ import type { ActionHook, ChoiceDefinition, NPC, StoryChoiceTrigger } from '../.
 import { Monster, getCounter, getFlag, setFlag } from '../../engine';
 import { COTW_DEEPEST_FLOOR_COUNTER } from './spellTablets';
 import { HEARTH_TEAR_RETURNED_FLAG, RELIC_RECOVERED_FLAG } from './relic';
+import { prologueVillagerSaved } from './prologue';
 
 /**
  * Story Choice Trigger: fires when Víðnir, Herald of the Wyrm (miniboss on floor 45)
@@ -228,6 +229,10 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
         o.greeting = 'You carry the Rune of Return! Hope returns to Bjarnarhaven!';
         o.dialogText =
           'With the rune, you can always retreat to our hearth when the depths turn lethal. Stay vigilant, hero.';
+      } else if (prologueVillagerSaved(engine, 'prologue-sigrun')) {
+        o.greeting = 'You brought my Sigrun home. I barred the door with her outside, gods forgive me.';
+        o.dialogText =
+          'Whatever you need for the cellar, ask. A father does not forget a night like that one.';
       }
     }
 
@@ -245,6 +250,10 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
         g.greeting = 'If you find duergar slag-tongs or forge-tongue hammers, use them well!';
         g.dialogText =
           'Duergar metalcraft was tempered in volcanic ash. It cuts deeper into stone than surface iron ever could.';
+      } else if (prologueVillagerSaved(engine, 'prologue-brandr')) {
+        g.greeting = 'Brandr tells me you pulled him out from under a thrall. The boy still has all his fingers.';
+        g.dialogText =
+          'Keep the chisel he gave you. My forge is open to the one who kept my apprentice.';
       }
     }
 
@@ -292,6 +301,10 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
         t.greeting = 'Thor’s lightning cleared the blizzard skies, yet the chapel bells ring of their own accord from subterranean quakes.';
         t.dialogText =
           'A primordial dragon walks the roots of Midgard. May holy light guide your steel in the dark below.';
+      } else if (prologueVillagerSaved(engine, 'prologue-eir')) {
+        t.greeting = 'Eir lit a candle for you at dawn. Thor marks those who stand between the weak and the dark.';
+        t.dialogText =
+          'The cellar leads where the troll-wives went. Come back to this hall when the dark gets into your wounds.';
       }
     }
   },

@@ -10,6 +10,7 @@ import { MAW_OF_MALICE_MONSTERS } from './mawOfMalice';
 import { BOSS_MONSTERS } from './bosses';
 import { MINIBOSS_MONSTERS } from './minibosses';
 import { LEGACY_COTW_MONSTERS } from './legacy';
+import { PROLOGUE_MONSTERS } from './prologue';
 import { COTW_KILL_RITES } from '../killRites';
 
 export * from './rimeHollows';
@@ -22,6 +23,7 @@ export * from './mawOfMalice';
 export * from './bosses';
 export * from './minibosses';
 export * from './legacy';
+export * from './prologue';
 
 /**
  * The canonical 37-entry monster roster specified for Castle of the Winds:
@@ -52,6 +54,7 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
   ...LEGACY_COTW_MONSTERS,
   ...COTW_ROSTER_BESTIARY,
   ...Object.fromEntries(MINIBOSS_MONSTERS.map((m) => [m.id, m])),
+  ...Object.fromEntries(PROLOGUE_MONSTERS.map((m) => [m.id, m])),
 };
 
 // Aliases for quest continuity and backward compatibility
@@ -84,7 +87,7 @@ for (const m of COTW_ROSTER_37) {
   }
 }
 
-for (const m of MINIBOSS_MONSTERS) {
+for (const m of [...MINIBOSS_MONSTERS, ...PROLOGUE_MONSTERS]) {
   if (!seenIds.has(m.id)) {
     seenIds.add(m.id);
     allMonsters.push(m);

@@ -17,6 +17,7 @@ export const COTW_MONSTER_CATEGORIES: MonsterCategoryDefinition[] = [
       'skeleton',
       'draugr_warrior',
       'draugr',
+      'prologue_coven_thrall',
       'deep_lode_pit_draugr',
       'haugbui',
       'cinder_gilded_duergar',
@@ -41,6 +42,7 @@ export const COTW_MONSTER_CATEGORIES: MonsterCategoryDefinition[] = [
     members: [
       'giant_rat',
       'wolf',
+      'prologue_rime_wolf',
       'brim_howler',
       'garmling',
       'glacier_borer',
@@ -81,6 +83,7 @@ export const COTW_MONSTER_CATEGORIES: MonsterCategoryDefinition[] = [
       'fire_giant',
       'jotun_champion',
       'troll_wife_warlock',
+      'prologue_coven_warlock',
       'ironwood_troll_wife',
       'ividja',
       'miniboss_frost_warden',

@@ -1,6 +1,7 @@
 import type { ObjectiveDefinition } from '../../engine';
 import { COTW_DEEPEST_FLOOR_COUNTER } from './spellTablets';
 import { HEARTH_TEAR_RETURNED_FLAG, RELIC_RECOVERED_FLAG } from './relic';
+import { PROLOGUE_OBJECTIVES } from './prologue';
 
 /**
  * The running objective the HUD shows under the spell belt (`manifest.objectives`),
@@ -20,6 +21,8 @@ export const COTW_OBJECTIVES: ObjectiveDefinition[] = [
     text: 'Níðhögg is driven off. Step onto the path of light where it fled.',
     availableWhenFlag: 'nidhogg_root_sealed',
   },
+  // The night raid and its aftermath, ahead of the run's first errand.
+  ...PROLOGUE_OBJECTIVES,
   {
     id: 'cotw_objective_descend',
     text: "Gear up in Bjarnarhaven's shops, then take the stairs down.",

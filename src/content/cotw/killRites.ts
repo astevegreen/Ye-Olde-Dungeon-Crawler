@@ -23,6 +23,23 @@ import type { KillRiteDefinition } from '../../engine';
  * of its element instead: offerings for the runic altars.
  */
 export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
+  // ─── The night raid (prologue.ts) ─────────────────────────────────────
+  prologue_rime_wolf: {
+    essenceElement: 'cold',
+    requiredDamageElement: 'arcane',
+    hintVerse: 'A rime-wolf that runs is a wolf that lives.\nSend a rune-bolt after it.',
+  },
+  prologue_coven_thrall: {
+    essenceElement: 'shadow',
+    requiredDamageElement: 'physical',
+    hintVerse: 'The bound dead go back to the snow\nunder plain iron.',
+  },
+  prologue_coven_warlock: {
+    essenceElement: 'arcane',
+    requiredDamageElement: 'arcane',
+    hintVerse: 'She stands lost in her rite at the fountain.\nBreak it with a rune-bolt.',
+  },
+
   // ─── Rime Hollows (1-9) ────────────────────────────────────────────────
   giant_rat: {
     essenceElement: 'physical',

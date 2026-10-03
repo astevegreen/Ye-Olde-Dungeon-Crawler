@@ -16,6 +16,20 @@ const state = (page: Page) =>
 
 const stackIds = (page: Page) => page.evaluate(() => window.__cotwInputHandler!.modalStack.getStackIds());
 
+/** Names of the CSS animations running on `selector` or inside it. */
+const runningAnimations = (page: Page, selector: string) =>
+  page.evaluate((sel) => {
+    const root = document.querySelector(sel);
+    return document
+      .getAnimations()
+      .filter((a) => a.playState === 'running')
+      .filter((a) => {
+        const target = (a.effect as KeyframeEffect | null)?.target;
+        return !!root && !!target && root.contains(target);
+      })
+      .map((a) => (a as CSSAnimation).animationName ?? 'animation');
+  }, selector);
+
 async function embarkNewHero(page: Page): Promise<void> {
   expect(existsSync(BUNDLE), `${BUNDLE} is missing; run \`npm run build\` first`).toBe(true);
   await page.goto(pathToFileURL(BUNDLE).href);
@@ -115,6 +129,9 @@ test('save & quit and choices take each key once, through one modal-stack entry'
   await expect(choiceOverlay).toBeVisible();
   expect(await outcome()).toEqual({ picked: [], cancelled: 0 });
   await page.keyboard.press('ArrowDown');
+  // A highlight redraws the frame in place: the entrance fade, long finished, doesn't
+  // replay (it blanked the window on every highlight, N9).
+  expect(await runningAnimations(page, '#choice-modal-overlay')).toEqual([]);
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
   await expect(choiceOverlay).toBeHidden();

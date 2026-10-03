@@ -19,10 +19,14 @@
 .ui-scrim.is-system { z-index: var(--ui-z-system); }
 .ui-scrim.is-crash { z-index: var(--ui-z-crash); }
 
+/* The entrance fade belongs to the scrim and the help card, which are shown once per
+   opening. Dialogs redraw their frame on every highlight; on the frame, the fade
+   replayed each time and blanked the window (N9). */
 @keyframes ui-dialog-enter {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: none; }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
+.ui-scrim, .fh-overlay { animation: ui-dialog-enter var(--ui-dur-enter) ease-out; }
 
 .ui-dialog {
   width: 640px;
@@ -40,7 +44,6 @@
   border-radius: var(--ui-radius);
   box-shadow: var(--ui-shadow);
   user-select: none;
-  animation: ui-dialog-enter var(--ui-dur-enter) ease-out;
 }
 .ui-dialog *, .ui-dialog *::before, .ui-dialog *::after { box-sizing: border-box; }
 .ui-dialog--narrow { width: 480px; }

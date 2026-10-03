@@ -328,16 +328,20 @@ export async function runOracles(
   const newMessages = live.messages.slice(Math.max(0, live.messages.length - (live.messageCount - ctx.messagesSeenCount)));
 
   // --- Modal isolation ---------------------------------------------------------------
-  // A map key (move or wait) pressed inside a dialog must never spend a turn. Keys a dialog
-  // acts on (Enter on "drink", Space on a focused button, a target confirmed) may: they are
-  // the player's choice.
-  if (key && key !== 'Space' && inDialogBefore && state.boundKeys.map.has(key) && live.turn !== ctx.turnBefore) {
+  // An arrow, number-pad or Period key pressed inside a dialog must never spend a turn.
+  // Keys a dialog acts on may: Enter on "drink", Space on a focused button, a confirmed
+  // target, and letters, which double as dialog shortcuts (D moves east on the map and
+  // drops in the inventory).
+  const nonLetterMapKey = key !== undefined && state.boundKeys.map.has(key) && /^(Arrow|Numpad)|^Period$/.test(key);
+  if (key && nonLetterMapKey && inDialogBefore && live.turn !== ctx.turnBefore) {
     addFinding('bug', 'S2', `map key ${key} spent a turn under <${[...ctx.stackBefore, ...ctx.modesBefore].join(',')}> (${ctx.turnBefore} -> ${live.turn})`, 'input-handler.ts');
   }
   if (live.stack.length > 0 && !live.topOnCanvas && live.surfaceIds.length === 0) {
     addFinding('bug', 'S2', `modal stack has [${live.stack.join(',')}] but nothing is shown`, 'modalStack.ts');
-  } else if (live.stack.length === 0 && live.surfaceIds.length > 0 && !modesAfter.some((m) => m === 'shop' || m === 'help' || m === 'map')) {
-    addFinding('bug', 'S2', `a dialog is shown (${live.surfaceIds.join(',')}) with an empty modal stack`, 'modalStack.ts');
+  } else if (live.stack.length === 0 && !modesAfter.some((m) => m === 'shop' || m === 'help' || m === 'map')) {
+    // The game-over screen is a screen, not a modal: input is off when it shows (gameOverDialog.ts).
+    const strays = live.surfaceIds.filter((id) => id !== 'game-over-modal');
+    if (strays.length > 0) addFinding('bug', 'S2', `a dialog is shown (${strays.join(',')}) with an empty modal stack`, 'modalStack.ts');
   }
   if (live.focusEscaped) {
     // Keys go to the window's handler whatever has focus, so this is S3: it matters when

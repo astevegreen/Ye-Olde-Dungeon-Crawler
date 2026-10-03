@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ItemFactory } from '../items/factory';
 import { Container } from '../items/container';
-import { ScrollItem } from '../items/consumables';
+import { PotionItem, ScrollItem } from '../items/consumables';
 import { isStackable, canStack, mergeItemStacks, splitItemStack } from '../items/stacking';
 import { CoinItem } from '../economy/currency';
 
@@ -110,6 +110,14 @@ describe('Item Stacking & Multi-Selection Engine', () => {
     // Splitting 0 or invalid amount throws
     expect(() => splitItemStack(pot, 0, Math.random)).toThrow();
     expect(() => splitItemStack(pot, 10, Math.random)).toThrow();
+  });
+
+  it('keeps the definitionId on a split potion or scroll, so it stays the same kind', () => {
+    const pot = new PotionItem({ id: 'p-1', definitionId: 'minor_health', name: 'Minor Health Potion', potionType: 'health', quantity: 3 });
+    const scroll = new ScrollItem({ id: 's-1', definitionId: 'scroll_phase_door', name: 'Scroll of Phase Door', spellId: 'phase_door', quantity: 3 });
+
+    expect(splitItemStack(pot, 1, Math.random).definitionId).toBe('minor_health');
+    expect(splitItemStack(scroll, 1, Math.random).definitionId).toBe('scroll_phase_door');
   });
 
   describe('coins', () => {

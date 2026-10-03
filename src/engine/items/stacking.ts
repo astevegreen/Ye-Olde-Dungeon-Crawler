@@ -86,6 +86,7 @@ export function splitItemStack(item: Item, amount: number, rng: () => number): I
   if (item instanceof PotionItem) {
     cloned = new PotionItem({
       id: splitId,
+      definitionId: item.definitionId,
       name: item.name,
       potionType: item.potionType,
       value: item.value,
@@ -99,6 +100,7 @@ export function splitItemStack(item: Item, amount: number, rng: () => number): I
   } else if (item instanceof ScrollItem) {
     cloned = new ScrollItem({
       id: splitId,
+      definitionId: item.definitionId,
       name: item.name,
       spellId: item.spellId,
       value: item.value,

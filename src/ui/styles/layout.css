@@ -47,11 +47,10 @@
 
 #game-container {
   width: 100%;
-  /* A generous safety net only — `ViewportManager` (rendering/viewport.ts) owns the
-     real ceiling via its `maxScale` clamp and sets this element's width inline on
-     every recalculation. This used to be a hard 960px cap that fought the JS-computed
-     width on large/high-res displays, clipping the header/footer bars. */
-  max-width: 2400px;
+  /* No max-width: `ViewportManager` (rendering/viewport.ts) owns the ceiling through its
+     `maxScale` clamp and sets this element's width inline on every recalculation. A CSS
+     cap fights it: 960px clipped the header and footer bars, and 2400px let the canvas
+     run out of the column and under the sidebar above ~2700px wide. */
   margin: 0 auto;
   display: flex;
   flex-direction: column;

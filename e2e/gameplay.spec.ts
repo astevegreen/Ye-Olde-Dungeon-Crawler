@@ -105,6 +105,27 @@ test('a full spell belt keeps clear of the context button and the tray', async (
   expect(clashes).toEqual([]);
 });
 
+// On a very wide window the map stays inside its column: a 2400px CSS cap on the column
+// fought the width ViewportManager sets, and at 3840x2160 the canvas ran 320px past
+// the header and under the sidebar (tracker 0.19).
+test('the map stays inside its column on a very wide window', async ({ page }) => {
+  await page.setViewportSize({ width: 3840, height: 2160 });
+  await embarkNewHero(page);
+  await page.keyboard.press('Space');
+  const fit = await page.evaluate(() => {
+    const box = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
+    const canvas = box('#game-canvas');
+    const column = box('#game-container');
+    const sidebar = document.querySelector('#combat-sidebar');
+    const side = sidebar ? sidebar.getBoundingClientRect() : null;
+    return {
+      inColumn: canvas.left >= column.left - 0.5 && canvas.right <= column.right + 0.5,
+      clearOfSidebar: !side || side.width === 0 || canvas.right <= side.left + 0.5,
+    };
+  });
+  expect(fit).toEqual({ inColumn: true, clearOfSidebar: true });
+});
+
 // Save & quit and choices take keys only through the modal stack, as one entry each: a
 // second window listener delivered every key twice, and the choice's stack entry let
 // Escape dismiss a choice that cannot be cancelled.

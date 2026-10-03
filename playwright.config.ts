@@ -27,6 +27,10 @@ const isCampaignRun =
   process.argv.some((arg) => arg.includes('campaign-flow') || arg.includes('@campaign')) ||
   !!process.env.CAMPAIGN_RUN;
 
+const isSoakRun =
+  process.argv.some((arg) => arg.includes('soak') || arg.includes('@soak')) ||
+  process.env.SOAK === '1';
+
 /**
  * End-to-end smoke tests for the shipped single-file bundle (ARCHITECTURE.md §2, §7.1).
  * Specs load the built `dist/` output over file://, so run `npm run build` first;
@@ -38,6 +42,7 @@ export default defineConfig({
   testIgnore: [
     ...(isRecordingRun ? [] : ['**/gameplay-record.spec.ts']),
     ...(isCampaignRun ? [] : ['**/campaign-flow.spec.ts']),
+    ...(isSoakRun ? [] : ['**/soak.spec.ts']),
   ],
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */

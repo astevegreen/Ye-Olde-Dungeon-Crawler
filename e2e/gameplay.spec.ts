@@ -76,6 +76,35 @@ test('a new hero moves, the map owns the keyboard, and save & continue restores 
   expect(pageErrors).toEqual([]);
 });
 
+// A full spell belt stays inside its column: at 1366x768 seven spells ran over the
+// context button and the pact chip (tracker 0.18). Playwright's 1280x720 is narrower.
+test('a full spell belt keeps clear of the context button and the tray', async ({ page }) => {
+  await embarkNewHero(page);
+  await page.evaluate(() => {
+    const e = window.__cotwEngine!;
+    for (const id of ['firebolt', 'cold_ray', 'lightning_bolt', 'fireball', 'slow', 'phase_door', 'detect_monsters', 'light']) {
+      e.player.learnSpell(id);
+    }
+  });
+  await page.keyboard.press('Space'); // a turn, so the HUD redraws
+  await expect.poll(() => page.locator('#quick-spells-bar .quick-spell-slot:not([hidden])').count()).toBe(10);
+  const clashes = await page.evaluate(() => {
+    const box = (el: Element) => el.getBoundingClientRect();
+    const meets = (a: DOMRect, b: DOMRect) => a.right > b.left && a.left < b.right && a.bottom > b.top && a.top < b.bottom;
+    const slots = [...document.querySelectorAll('#quick-spells-bar .quick-spell-slot')].filter((s) => !(s as HTMLElement).hidden);
+    const cluster = box(document.querySelector('.console-center-cluster')!);
+    const neighbours = ['#context-action', '#console-tray', '#hud-health-orb', '#hud-mana-orb']
+      .map((sel) => document.querySelector(sel))
+      .filter((el): el is HTMLElement => !!el && el.offsetParent !== null);
+    return slots.flatMap((s, i) => {
+      const b = box(s);
+      const out = b.left < cluster.left - 0.5 || b.right > cluster.right + 0.5 ? [`slot ${i} outside the centre column`] : [];
+      return [...out, ...neighbours.filter((n) => meets(b, box(n))).map((n) => `slot ${i} over #${n.id}`)];
+    });
+  });
+  expect(clashes).toEqual([]);
+});
+
 // Save & quit and choices take keys only through the modal stack, as one entry each: a
 // second window listener delivered every key twice, and the choice's stack entry let
 // Escape dismiss a choice that cannot be cancelled.

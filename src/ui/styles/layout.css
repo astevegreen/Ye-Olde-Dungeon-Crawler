@@ -421,15 +421,40 @@
 }
 
 /* Only filled slots (plus one "+ Spell") are shown, so each takes the width its full
-   name needs, up to 150px, shrinking with an ellipsis if all ten are filled on a
-   narrow console. Each slot is two lines: key and mana cost over the name. */
+   name needs, up to 150px, shrinking with an ellipsis. Each slot is two lines: key and
+   mana cost over the name. When even the shrunk slots don't fit (7 or more on a
+   1366px window), the belt becomes two even rows inside the console rather than
+   running over the context button and the tray, and the objective line makes room
+   (quickSpellsBar.ts sets is-wrapped and --belt-cols). */
 .action-belt-slots #quick-spells-bar {
+  --belt-slot-min: 56px;
   gap: 4px;
+}
+.action-belt-slots #quick-spells-bar.is-wrapped {
+  display: grid;
+  grid-template-columns: repeat(var(--belt-cols, 5), minmax(0, 1fr));
+}
+.action-belt-slots #quick-spells-bar.is-wrapped .quick-spell-slot {
+  min-width: 0;
+  max-width: none;
+  /* The grid sets a wrapped slot's width, so it can be a query container (an unwrapped
+     slot takes its width from its name, which containment would break). */
+  container: belt-slot / inline-size;
+  column-gap: 3px;
+}
+/* Too narrow for "12 Seiðr" beside the key: the number alone (the tooltip says more). */
+@container belt-slot (max-width: 76px) {
+  .slot-badge-unit {
+    display: none;
+  }
+}
+.console-center-cluster:has(#quick-spells-bar.is-wrapped) #console-objective {
+  display: none;
 }
 .action-belt-slots .quick-spell-slot {
   flex: 0 1 auto;
   width: auto;
-  min-width: 56px;
+  min-width: var(--belt-slot-min);
   max-width: 150px;
   height: 34px;
   padding: 2px 5px;
@@ -451,6 +476,7 @@
   justify-self: end;
   font-size: var(--ui-text-xs);
   line-height: 12px;
+  white-space: nowrap;
 }
 .action-belt-slots .slot-badge-name {
   grid-column: 1 / span 2;

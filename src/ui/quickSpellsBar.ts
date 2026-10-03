@@ -23,6 +23,36 @@ export class QuickSpellsBar {
     this.container.id = 'quick-spells-bar';
     this.container.setAttribute('aria-label', 'Quick-Access Spells Bar');
     this.createSlots();
+    this.watchWrap();
+  }
+
+  /** Re-checks the belt's rows whenever its column changes width. */
+  private watchWrap(): void {
+    if (typeof ResizeObserver === 'undefined') return;
+    new ResizeObserver(() => this.fitRows()).observe(this.container);
+  }
+
+  /**
+   * When the shown slots don't fit in one row even at their minimum width (7 or more
+   * on a 1366px window), the belt becomes two even rows (`is-wrapped`, layout.css)
+   * instead of running over its neighbours, and the objective line under it makes
+   * room. Decided from the column's width and the slot count, never the bar's height,
+   * so setting the class can't feed back into the next check.
+   */
+  private fitRows(): void {
+    if (typeof getComputedStyle !== 'function') return;
+    const shown = this.slotElements.filter((s) => !s.hidden);
+    const width = this.container.clientWidth;
+    let wrapped = false;
+    if (shown.length > 1 && width > 0) {
+      // The slot minimum from the variable: a wrapped slot's own min-width is 0.
+      const style = getComputedStyle(this.container);
+      const minSlot = parseFloat(style.getPropertyValue('--belt-slot-min')) || 0;
+      const gap = parseFloat(style.columnGap) || 0;
+      wrapped = shown.length * minSlot + (shown.length - 1) * gap > width;
+    }
+    this.container.classList.toggle('is-wrapped', wrapped);
+    this.container.style.setProperty('--belt-cols', String(Math.ceil(shown.length / 2)));
   }
 
   public mount(parent: HTMLElement): void {
@@ -51,7 +81,8 @@ export class QuickSpellsBar {
   }
 
   public setVisible(visible: boolean): void {
-    this.container.style.display = visible ? 'flex' : 'none';
+    // '' rather than 'flex': an inline display would beat the stylesheet's two-row grid.
+    this.container.style.display = visible ? '' : 'none';
   }
 
   private createSlots(): void {
@@ -123,10 +154,11 @@ export class QuickSpellsBar {
       slotEl.innerHTML = `
         <span class="slot-badge-digit">${slotKey}</span>
         <span class="slot-badge-name"></span>
-        <span class="${hasMana ? 'slot-badge-cost' : 'slot-badge-cost-nomana'}">${manaCost} ${mana.unit}</span>
+        <span class="${hasMana ? 'slot-badge-cost' : 'slot-badge-cost-nomana'}">${manaCost}<span class="slot-badge-unit"> ${mana.unit}</span></span>
       `;
       (slotEl.querySelector('.slot-badge-name') as HTMLElement).textContent = spell.name;
     }
+    this.fitRows();
     this.renderCue();
   }
 

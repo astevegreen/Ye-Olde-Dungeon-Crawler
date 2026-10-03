@@ -1,4 +1,6 @@
 import type { Page } from '@playwright/test';
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import type { SoakPrng } from './prng';
 import type { BoundKeys } from './oracles';
 import type { DispatchedAction } from './policies';
@@ -19,6 +21,33 @@ export interface PlayerBotState {
   lastRestAttemptTurn: number;
   lastPickupTurn: number;
   lastPickupPos: string;
+  droppedTiles: Record<string, boolean>;
+  droppedItemsCount: number;
+  overburdenedEpisodes: number;
+  wasOverburdened: boolean;
+}
+
+function saveOverburdenStats(seed: string | undefined, episodes: number, dropped: number, tiles: string[]) {
+  if (!seed) return;
+  const outDir = process.env.SOAK_OUT ?? '.prompts/soak-review-player';
+  const dir = join(outDir, seed);
+  try {
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, 'overburden.json'),
+      JSON.stringify(
+        {
+          overburdenedEpisodes: episodes,
+          droppedItemsCount: dropped,
+          droppedTiles: tiles,
+        },
+        null,
+        2
+      )
+    );
+  } catch {
+    // Ignore fs errors in soak
+  }
 }
 
 export function getBotState(page: Page, actionIndex: number): PlayerBotState {
@@ -36,7 +65,12 @@ export function getBotState(page: Page, actionIndex: number): PlayerBotState {
       lastRestAttemptTurn: -1,
       lastPickupTurn: -1,
       lastPickupPos: '',
+      droppedTiles: {},
+      droppedItemsCount: 0,
+      overburdenedEpisodes: 0,
+      wasOverburdened: false,
     };
+    saveOverburdenStats(process.env.SOAK_SEED, 0, 0, []);
   }
   return p.__playerBotState;
 }
@@ -72,6 +106,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       lastRestAttemptTurn: number;
       lastPickupPos: string;
       lastPickupTurn: number;
+      droppedTiles: Record<string, boolean>;
     }) => {
       const w = window as any;
       const e = w.__cotwEngine;
@@ -190,6 +225,69 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           return { action: { type: 'key' as const, key: 'ArrowDown', secondaryKey: 'Enter' }, curPos, curTurn, curFloor };
         }
         return { action: { type: 'key' as const, key: 'Enter' }, curPos, curTurn, curFloor };
+      }
+
+      // Character menu handling (for overburden recovery and general dismissal)
+      const characterMenuOpen = stack.includes('character-menu') || Boolean(h?.characterMenuModal?.isOpen);
+      if (characterMenuOpen) {
+        const modal = h?.characterMenuModal;
+        const isOverburdened = !p.canMove?.() || p.inventory?.getEncumbrance?.(p.strength) === 'Immobilized';
+
+        if (!isOverburdened) {
+          return { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor };
+        }
+
+        if (modal && modal.activeTabId !== 'inventory') {
+          return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor, isOverburdened: true };
+        }
+
+        const invTab = modal?.getActiveTab?.()?.id === 'inventory'
+          ? modal.getActiveTab()
+          : modal?.tabs?.find((t: any) => t.id === 'inventory');
+        const c = invTab?.controller;
+
+        if (!c) {
+          return { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor, isOverburdened: true };
+        }
+
+        const groups = c.groups?.('backpack') ?? [];
+        if (groups.length === 0) {
+          return { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor, isOverburdened: true };
+        }
+
+        let heaviestIdx = 0;
+        let maxWt = -1;
+        for (let i = 0; i < groups.length; i++) {
+          const g = groups[i];
+          const wt = g.totalWeight ?? (typeof g.leadItem?.totalWeight === 'function' ? g.leadItem.totalWeight() : g.leadItem?.weight) ?? 0;
+          if (wt > maxWt || (wt === maxWt && String(g.displayName).localeCompare(String(groups[heaviestIdx]?.displayName)) < 0)) {
+            maxWt = wt;
+            heaviestIdx = i;
+          }
+        }
+
+        if (c.inspector?.focusedPanel !== 'backpack') {
+          return { action: { type: 'key' as const, key: 'Tab' }, curPos, curTurn, curFloor, isOverburdened: true };
+        }
+
+        const curIdx = c.inspector.focusedIndex ?? 0;
+        if (curIdx < heaviestIdx) {
+          return { action: { type: 'key' as const, key: 'ArrowRight' }, curPos, curTurn, curFloor, isOverburdened: true };
+        }
+        if (curIdx > heaviestIdx) {
+          return { action: { type: 'key' as const, key: 'ArrowLeft' }, curPos, curTurn, curFloor, isOverburdened: true };
+        }
+
+        return {
+          action: { type: 'key' as const, key: 'KeyD' },
+          curPos,
+          curTurn,
+          curFloor,
+          isOverburdened: true,
+          itemDropped: true,
+          droppedPos: curPos,
+          droppedFloor: curFloor,
+        };
       }
 
       if (stack.includes('shop') || openModes.includes('shop') || h?.shopOverlay?.isOpen) {
@@ -414,6 +512,11 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           if (potKey) return { action: { type: 'key' as const, key: potKey }, curPos, curTurn, curFloor };
         }
 
+        const isOverburdened = !p.canMove?.() || p.inventory?.getEncumbrance?.(p.strength) === 'Immobilized';
+        if (isOverburdened) {
+          return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor, isOverburdened: true };
+        }
+
         if (adjHostiles.length > 0) {
           const m = adjHostiles[0];
           return { action: { type: 'key' as const, key: stepToKey(m.x - p.x, m.y - p.y) }, curPos, curTurn, curFloor };
@@ -463,6 +566,11 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       // --- 3. The town after the raid ------------------------------------------
       const isTown = curFloor === 0 && Boolean(e.getWorldFlag('cotw_prologue_ended'));
       if (isTown) {
+        const isOverburdened = !p.canMove?.() || p.inventory?.getEncumbrance?.(p.strength) === 'Immobilized';
+        if (isOverburdened) {
+          return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor, isOverburdened: true };
+        }
+
         const hallvardHeard = Boolean(e.getWorldFlag('cotw_prologue_gateward_heard'));
         if (!hallvardHeard) {
           const hallvard = e.map.getEntityById('prologue-hallvard') ?? { x: 31, y: 9 };
@@ -507,6 +615,11 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           if (potKey) return { action: { type: 'key' as const, key: potKey }, curPos, curTurn, curFloor };
         }
 
+        const isOverburdened = !p.canMove?.() || p.inventory?.getEncumbrance?.(p.strength) === 'Immobilized';
+        if (isOverburdened) {
+          return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor, isOverburdened: true };
+        }
+
         if (adjHostiles.length > 0) {
           const m = adjHostiles[0];
           return { action: { type: 'key' as const, key: stepToKey(m.x - p.x, m.y - p.y) }, curPos, curTurn, curFloor };
@@ -525,8 +638,69 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
 
         const itemsHere = e.map.getItemsAt(p.x, p.y);
         if (itemsHere.length > 0) {
-          if (args.lastPickupPos !== curPos || args.lastPickupTurn !== curTurn) {
-            return { action: { type: 'key' as const, key: 'KeyG' }, curPos, curTurn, curFloor, pickupAttempted: true };
+          const tileKey = `${curFloor}:${curPos}`;
+          const droppedHere = Boolean(args.droppedTiles && args.droppedTiles[tileKey]);
+          const topItem = itemsHere[itemsHere.length - 1];
+          const isContainer = Boolean(
+            topItem && (
+              topItem.category === 'container' ||
+              topItem.containerType !== undefined ||
+              typeof topItem.getItems === 'function'
+            )
+          );
+
+          const currentWeight = p.inventory?.totalWeight?.() ?? 0;
+          const itemWeight = topItem ? (typeof topItem.totalWeight === 'function' ? topItem.totalWeight() : (topItem.weight ?? 0)) : 0;
+          const maxCarryWeight = Math.max(1, p.strength ?? 10) * 2500;
+
+          const isHealthPotion = Boolean(
+            topItem && (
+              topItem.potionType === 'health' ||
+              topItem.effects?.some((f: any) => f.type === 'restore_hp') ||
+              topItem.name?.toLowerCase().includes('health potion')
+            )
+          );
+          const isPotion = Boolean(
+            topItem && (
+              topItem.category === 'consumable' ||
+              topItem.potionType !== undefined ||
+              topItem.name?.toLowerCase().includes('potion')
+            )
+          );
+          const isScroll = Boolean(
+            topItem && (
+              topItem.category === 'scroll' ||
+              topItem.name?.toLowerCase().includes('scroll')
+            )
+          );
+          const isCoin = Boolean(topItem && topItem.category === 'currency');
+          const isGemOrJewel = Boolean(
+            topItem && (
+              topItem.category === 'gem' ||
+              topItem.category === 'ring' ||
+              topItem.category === 'amulet'
+            )
+          );
+          const isWandOrBook = Boolean(
+            topItem && (
+              topItem.category === 'wand' ||
+              topItem.category === 'book'
+            )
+          );
+          const isLight = itemWeight <= 1000;
+
+          const isPreferred = isPotion || isScroll || isCoin || isGemOrJewel || isWandOrBook || isLight;
+
+          const wouldOverburden = isHealthPotion || isCoin
+            ? (currentWeight + itemWeight > maxCarryWeight)
+            : (currentWeight + itemWeight > maxCarryWeight * 0.85);
+
+          const canPick = !droppedHere && !isContainer && isPreferred && !wouldOverburden;
+
+          if (canPick) {
+            if (args.lastPickupPos !== curPos || args.lastPickupTurn !== curTurn) {
+              return { action: { type: 'key' as const, key: 'KeyG' }, curPos, curTurn, curFloor, pickupAttempted: true };
+            }
           }
         }
 
@@ -580,6 +754,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       lastRestAttemptTurn: state.lastRestAttemptTurn,
       lastPickupPos: state.lastPickupPos,
       lastPickupTurn: state.lastPickupTurn,
+      droppedTiles: state.droppedTiles,
     }
   );
 
@@ -599,13 +774,46 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
     state.lastPickupTurn = curTurn;
   }
 
+  if (evalResult.itemDropped) {
+    const tileKey = `${evalResult.droppedFloor ?? curFloor}:${evalResult.droppedPos ?? curPos}`;
+    state.droppedTiles[tileKey] = true;
+    state.droppedItemsCount++;
+    console.log(`[soak:player] Dropped item #${state.droppedItemsCount} at ${tileKey}`);
+    saveOverburdenStats(
+      process.env.SOAK_SEED,
+      state.overburdenedEpisodes,
+      state.droppedItemsCount,
+      Object.keys(state.droppedTiles)
+    );
+  }
+
+  if (evalResult.isOverburdened) {
+    if (!state.wasOverburdened) {
+      state.wasOverburdened = true;
+      state.overburdenedEpisodes++;
+      console.log(
+        `[soak:player] Overburdened episode #${state.overburdenedEpisodes} at ${curPos}, floor ${curFloor}, turn ${curTurn}`
+      );
+      saveOverburdenStats(
+        process.env.SOAK_SEED,
+        state.overburdenedEpisodes,
+        state.droppedItemsCount,
+        Object.keys(state.droppedTiles)
+      );
+    }
+    state.stuckDecisions = 0;
+    state.unstickStepsRemaining = 0;
+  } else {
+    state.wasOverburdened = false;
+  }
+
   // --- 5. Stuck handling ----------------------------------------------------
   const sameState = curPos === state.lastPos && curTurn === state.lastTurn && curFloor === state.lastFloor;
   state.lastPos = curPos;
   state.lastTurn = curTurn;
   state.lastFloor = curFloor;
 
-  if (sameState) {
+  if (sameState && !evalResult.isOverburdened) {
     state.stuckDecisions++;
     if (state.stuckDecisions >= 15) {
       state.stuckEpisodes++;
@@ -620,6 +828,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
   }
 
   (page as any).__playerStuckEpisodes = state.stuckEpisodes;
+  (page as any).__playerOverburdenedCount = state.overburdenedEpisodes;
+  (page as any).__playerItemsDropped = state.droppedItemsCount;
 
   return action;
 }

@@ -31,7 +31,7 @@ import { COTW_COMPANIONS } from './companions';
 import { GIANT_BLOOD_STATUS, giantBloodHandler, GIANT_BLOOD_BOOTSTRAP_HOOK } from './giantBlood';
 import { BURNING_STATUS, burningHandler } from './burning';
 import { COTW_MONSTER_SCALING } from './monsterScaling';
-import { OATH_TRIGGER, OATH_TIMED_EVENT } from './oath';
+import { OATH_HOLD_HOOK, OATH_TRIGGER } from './oath';
 import { HOSTAGE_VILLAGERS, SIPHON_RITUAL_FLOOR, SIPHON_RITUAL_HOOKS, SIPHON_TIMED_EVENT, SIPHON_VAULT_ID } from './hostageRitual';
 import { COTW_PROLOGUE, COVEN_CHANNELER_STRATEGY, PROLOGUE_HOOKS, PROLOGUE_TIMED_EVENT } from './prologue';
 import { COTW_BLOOD_SPELLS } from './bloodMagic';
@@ -110,7 +110,7 @@ export const cotwManifest: GameContentManifest = {
     { flag: 'relic_recovered', label: 'Hearth-Tear Reclaimed', description: 'Took back the stolen shard of Sól’s sun-chariot from the Sun-Chariot Warden.', icon: '☀️', riddle: 'Where the coven forges stolen sunfire, a burning keeper holds a shard of the sun. Take it back.' },
     { flag: 'nidhogg_slain', label: 'Níðhögg Slain', description: 'Struck down Níðhögg at the root of Yggdrasil, and split the World Tree.', icon: '👑', riddle: 'At the root’s last ring the corpse-gnawer feeds. A blade can end it, if you will pay what ending costs.' },
     { flag: 'tyr_purified', label: 'Altar of Tyr Cleansed', description: 'Purified the defiled altar on Floor 3 with an oath and a solemn sacrifice.', icon: '⚖️', riddle: 'Thrice below, the oath-god’s stone stands fouled. He gave a hand; it asks a gift of yours.' },
-    { flag: 'oath_resolved', label: "The Matriarch's Blood-Oath", description: 'Struck a lasting bargain with a troll-wife matriarch to sever the siphon on the village.', icon: '🩸', riddle: 'Among dead warlocks a troll-mother bargains in blood. Hot or cold, her price is kept forever.' },
+    { flag: 'oath_resolved', label: "The Matriarch's Blood-Oath", description: 'Struck a lasting bargain with a troll-wife matriarch to sever the siphon on the village.', icon: '🩸', riddle: 'With the sun-shard won back, a troll-mother bargains in blood. Hot or cold, her price is kept forever.' },
     { flag: 'nidhogg_root_sealed', label: 'The Root Sealed', description: 'Drove Níðhögg from the rotting root of Yggdrasil without ending it.', icon: '🌳', riddle: 'Not every wyrm need die. Wound the gnawer until it turns tail, then give chase, and it may slink back to the dark.' },
     { flag: 'savior_of_jarnvidr', label: 'Savior of Járnviðr', description: 'Rescued all four captive villagers from the sacrificial blood siphon.', icon: '🛡️', riddle: 'Four of the village bleed to feed an iron wood. Reach them all before the bowl runs full.' },
     { flag: 'blood_tainted_hero', label: 'The Blood-Tainted', description: 'Embraced the forbidden Grimoire of Blood Magic while innocent captives bled.', icon: '🩸', riddle: 'A book of red letters opens only while the innocent bleed. To read it is to wear it.' },
@@ -135,12 +135,13 @@ export const cotwManifest: GameContentManifest = {
     COTW_TOWN_REACTIVE_HOOK,
     COTW_TEMPLE_MET_HOOK,
     COTW_RELIC_HOOK,
+    OATH_HOLD_HOOK,
     ...IRON_CLANS_HOOKS,
   ],
   storyChoiceTriggers: [OATH_TRIGGER, VIDNIR_DEFEATED_TRIGGER],
   attributeMilestones: COTW_ATTRIBUTE_MILESTONES,
   monsterCategories: COTW_MONSTER_CATEGORIES,
-  timedEvents: [PROLOGUE_TIMED_EVENT, OATH_TIMED_EVENT, SIPHON_TIMED_EVENT],
+  timedEvents: [PROLOGUE_TIMED_EVENT, SIPHON_TIMED_EVENT],
   // The night raid a new hero begins with (prologue.ts).
   prologue: COTW_PROLOGUE,
   aiStrategies: { [COVEN_CHANNELER_STRATEGY.id]: COVEN_CHANNELER_STRATEGY },

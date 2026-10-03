@@ -1,49 +1,63 @@
-import type { StoryChoiceTrigger, TimedEventDefinition } from '../../engine';
+import type { ActionHook, StoryChoiceTrigger } from '../../engine';
+import { RELIC_RECOVERED_FLAG } from './relic';
 
 /**
- * The Oath's climax (ARCHITECTURE.md §3): a time-pressured story choice, not a calm
- * dialogue menu. It is unlocked by *progress* — clearing enough of the troll-wife
- * warlock coven (`StoryChoiceTrigger`, checked against `GameEngine.compendium`'s
- * cross-floor-safe kill count in `movement.ts`) — rather than by a placed room, because
- * the coven spans several floors; a fixed encounter would use `scriptedVaultPlacements`
- * instead (see the Siphon Altar in hostageRitual.ts).
+ * The Matriarch's Blood-Oath (`choices.ts`'s `oath_hearth`) closes Act 1. Once the
+ * Sun-Chariot Warden is dead and the hero holds the Hearth-Tear, the coven's matriarch
+ * steps out of the forge-smoke with her bargain: it opens on the hero's first move after
+ * taking the shard, and `OATH_HOLD_HOOK` keeps the hero on that floor until she has
+ * spoken, so the encounter always comes before the road home.
  *
- * That progress is itself the time pressure: `OATH_TIMED_EVENT` starts counting
- * down the moment the first warlock falls (`progressStartFlag`), and if the coven
- * isn't broken in time, the ritual completes and the choice is taken out of the
- * player's hands entirely — a worse outcome than either deliberate branch (see
- * `expireConsequences`).
+ * It was a 250-turn countdown from the first troll-wife warlock's death, lost with its
+ * companion when three warlocks weren't found in time. The owner removed it: losing the
+ * companion to bad luck felt terrible, and the race pulled players past everything else
+ * on their floors.
  */
+export const OATH_GUARDIAN_ID = 'sun_chariot_warden';
 
-export const OATH_WARLOCKS_REQUIRED = 3;
+/** Set when the matriarch's bargain is struck, by either option. */
+const OATH_RESOLVED_FLAG = 'oath_resolved';
 
+/** The id stays `oath_hearth`: a save that was already offered the Oath carries `oath_hearth_offered`. */
 export const OATH_TRIGGER: StoryChoiceTrigger = {
   id: 'oath_hearth',
   choiceId: 'oath_hearth',
-  monsterDefinitionId: 'troll_wife_warlock',
-  killsRequired: OATH_WARLOCKS_REQUIRED,
-  progressStartFlag: 'oath_climax_started',
-  progressStartMessage:
-    "*** The warlock's death-cry carries through the stone, and the coven answers: their siphon ritual has begun. Break the troll-wife coven before it completes! ***",
+  monsterDefinitionId: OATH_GUARDIAN_ID,
+  killsRequired: 1,
+  when: {
+    type: 'and',
+    predicates: [
+      { type: 'hasFlag', flag: RELIC_RECOVERED_FLAG },
+      // A save whose old countdown ran out has already settled the Oath.
+      { type: 'not', predicate: { type: 'hasFlag', flag: OATH_RESOLVED_FLAG } },
+    ],
+  },
 };
 
-export const OATH_TIMED_EVENT: TimedEventDefinition = {
-  id: 'oath_climax',
-  label: 'Coven Ritual',
-  startFlag: 'oath_climax_started',
-  // The coven spans several floors; 40 turns expired before most players had even
-  // noticed the ritual. The HUD now shows the countdown (TimedEventDefinition.label).
-  turnLimit: 250,
-  resolvedFlag: 'oath_resolved',
-  expireConsequences: [
-    { type: 'setFlag', flag: 'oath_defaulted', value: true },
-    { type: 'modifyPermanentStat', stat: 'attack', delta: -1 },
-    { type: 'modifyPermanentStat', stat: 'defense', delta: -1 },
-    { type: 'damagePlayer', amount: 12 },
-    {
-      type: 'logMessage',
-      message:
-        "*** Hesitation costs you: the warlocks complete their ritual before the matriarch can intervene. The siphon's backlash sears you, and neither path was chosen. ***",
-    },
-  ],
+const OATH_OFFERED_FLAG = `${OATH_TRIGGER.id}_offered`;
+
+/** The ways off a floor that don't take a step: a step opens the matriarch's choice itself. */
+const LEAVING_ACTIONS = new Set(['ClimbStairsAction', 'ChannelRuneOfReturnAction']);
+
+/**
+ * Keeps the hero on the Warden's floor until the matriarch has made her offer. It holds
+ * only until she is offered, not until she is answered, so a closed dialog can never
+ * strand the hero.
+ */
+export const OATH_HOLD_HOOK: ActionHook = {
+  id: 'cotw-oath-hold',
+  phase: 'pre',
+  actionType: '*',
+  execute: ({ actor, engine, actionType }) => {
+    const waiting =
+      actor === engine.player &&
+      LEAVING_ACTIONS.has(actionType) &&
+      engine.getWorldFlag(RELIC_RECOVERED_FLAG) &&
+      !engine.getWorldFlag(OATH_OFFERED_FLAG) &&
+      !engine.getWorldFlag(OATH_RESOLVED_FLAG);
+    if (!waiting) return { proceed: true };
+    const message = 'Footsteps stir in the forge-smoke behind you. Someone has waited a long time to speak with you.';
+    engine.log(message);
+    return { proceed: false, result: { success: false, cost: 0, message } };
+  },
 };

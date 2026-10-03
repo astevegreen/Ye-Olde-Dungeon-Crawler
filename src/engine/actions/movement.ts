@@ -328,6 +328,7 @@ export class MovementAction implements Action {
           if (trigger.progressStartMessage) engine.log(trigger.progressStartMessage);
         }
         if (kills < trigger.killsRequired) continue;
+        if (trigger.when && !evaluatePredicate(trigger.when, engine.worldState)) continue;
         const offeredFlag = `${trigger.id}_offered`;
         if (engine.getWorldFlag(offeredFlag)) continue;
         const choiceDef = engine.manifest?.choices?.[trigger.choiceId];

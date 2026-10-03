@@ -6,9 +6,12 @@ import { Player } from '../../../engine/entities/player';
 import { Monster } from '../../../engine/entities/monster';
 import { MovementAction } from '../../../engine/actions/movement';
 import { MeleeAttackAction } from '../../../engine/actions/combat';
+import { WaitAction } from '../../../engine/actions/wait';
 import { serializeGame, deserializeGame } from '../../../engine/storage/serializer';
 import { cotwManifest } from '../index';
-import { OATH_WARLOCKS_REQUIRED } from '../oath';
+import { OATH_GUARDIAN_ID } from '../oath';
+import { HEARTH_TEAR_ID } from '../relic';
+import { makeLootItem } from '../items/makeItem';
 import type { CharacterProfile } from '../../../engine/storage/types';
 
 /**
@@ -52,25 +55,24 @@ function roundTrip(engine: GameEngine) {
   return deserializeGame(json, cotwManifest);
 }
 
-function slayWarlocks(engine: GameEngine, map: GameMap, optionId: 'honor' | 'break') {
+/** The Warden falls, the hero takes the Hearth-Tear, and the matriarch steps out (oath.ts). */
+function swearTheOath(engine: GameEngine, map: GameMap, optionId: 'honor' | 'break') {
   let onOptionSelected: ((id: string) => void) | undefined;
   engine.onChoiceInteract = (_choice, cb) => {
     onOptionSelected = cb;
   };
-  let toggle = 1;
-  for (let i = 0; i < OATH_WARLOCKS_REQUIRED; i++) {
-    const warlock = new Monster({
-      id: `warlock-${i}`,
-      name: 'Troll-Wife Warlock',
-      definitionId: 'troll_wife_warlock',
-      position: { x: engine.player.x + 1, y: engine.player.y },
-      stats: { hp: 1, maxHp: 1, attack: 1, defense: 0 },
-    });
-    map.addEntity(warlock);
-    engine.handlePlayerAction(new MeleeAttackAction(engine.player, warlock));
-    engine.handlePlayerAction(new MovementAction(engine.player, 0, toggle));
-    toggle = -toggle;
-  }
+  const warden = new Monster({
+    id: 'warden',
+    name: 'The Sun-Chariot Warden',
+    definitionId: OATH_GUARDIAN_ID,
+    position: { x: engine.player.x + 1, y: engine.player.y },
+    stats: { hp: 1, maxHp: 1, attack: 1, defense: 0 },
+  });
+  map.addEntity(warden);
+  engine.handlePlayerAction(new MeleeAttackAction(engine.player, warden));
+  engine.player.inventory.primaryPack.addItem(makeLootItem(HEARTH_TEAR_ID, 'shard', () => 0.5));
+  engine.handlePlayerAction(new WaitAction(engine.player)); // the relic hook marks it recovered
+  engine.handlePlayerAction(new MovementAction(engine.player, 0, 1));
   expect(onOptionSelected).toBeDefined();
   onOptionSelected!(optionId);
 }
@@ -81,7 +83,7 @@ describe('Branching save-states — the Oath (real cotwManifest)', () => {
     const baseAttack = player.baseAttackValue;
     const baseDefense = player.baseDefenseValue;
 
-    slayWarlocks(engine, map, 'honor');
+    swearTheOath(engine, map, 'honor');
     expect(engine.getWorldFlag('blood_oath_honored')).toBe(true);
 
     const restored = roundTrip(engine);
@@ -96,7 +98,7 @@ describe('Branching save-states — the Oath (real cotwManifest)', () => {
     const baseAttack = player.baseAttackValue;
     const baseDefense = player.baseDefenseValue;
 
-    slayWarlocks(engine, map, 'break');
+    swearTheOath(engine, map, 'break');
     expect(engine.getWorldFlag('blood_oath_broken')).toBe(true);
 
     const restored = roundTrip(engine);

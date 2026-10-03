@@ -7,19 +7,16 @@ import { GATEWARD_CHOICE } from './prologue';
 
 export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
   /**
-   * The Oath's climax (ARCHITECTURE.md §3, `oath.ts`): triggered when enough
-   * troll-wife warlocks have fallen, not by finding a specific tile — see
-   * `oath.ts`'s `OATH_HOOK` for why. `cancelable: false` because the moment this
-   * fires, the matriarch's offer and the village's fate are already in motion; there
-   * is no "ask me later" — hesitating is what the `oath_climax` timed event's
-   * `expireConsequences` model, and this choice pre-empts that timer entirely by
-   * firing before it can expire.
+   * The Matriarch's Blood-Oath (`oath.ts`): offered on the hero's first move after the
+   * Sun-Chariot Warden falls and the Hearth-Tear is in hand, before they can leave the
+   * floor. `cancelable: false`: she has waited for this moment, and there is no "ask me
+   * later".
    */
   oath_hearth: {
     id: 'oath_hearth',
     title: "The Matriarch's Blood-Oath",
     description:
-      "Amid the ruin of fallen warlocks, an ancient troll-wife matriarch rises from the shadows of the forge. “Your blood runs with Thrym's own,” she rasps, “as does mine, once. I can sever the siphon binding your village — but the choice of how will cost you something lasting. Hot, and you strike harder, your own flesh straining against everything you are. Cold, and you stand firm, as your blood always has.” The forge groans. There is no third door.",
+      "The Sun-Chariot Warden lies still, and the Hearth-Tear burns warm in your hand. From the forge-smoke steps an ancient troll-wife: the coven's matriarch. “Your blood runs with Thrym's own,” she rasps, “as does mine, once. My daughters bound your village to that shard's stolen fire. I can sever the siphon that binds it still — but the choice of how will cost you something lasting. Hot, and you strike harder, your own flesh straining against everything you are. Cold, and you stand firm, as your blood always has.” The forge groans. There is no third door.",
     options: [
       {
         id: 'honor',

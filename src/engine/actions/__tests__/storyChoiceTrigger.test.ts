@@ -98,4 +98,24 @@ describe('StoryChoiceTrigger', () => {
     engine.handlePlayerAction(new MovementAction(player, 0, 1));
     expect(offerCount).toBe(1);
   });
+
+  it('waits for its `when` condition after the kills, then offers on the next move', () => {
+    const { engine, player, map } = buildEngine();
+    (engine.manifest as any).storyChoiceTriggers = [
+      { ...TRIGGER, killsRequired: 1, when: { type: 'hasFlag', flag: 'relic_in_hand' } } satisfies StoryChoiceTrigger,
+    ];
+    let offered = 0;
+    engine.onChoiceInteract = () => {
+      offered++;
+    };
+
+    killTestMonster(engine, map, { x: 4, y: 3 });
+    engine.handlePlayerAction(new MovementAction(player, 0, 1));
+    expect(offered).toBe(0);
+    expect(engine.getWorldFlag('test_trigger_offered')).toBe(false);
+
+    engine.setWorldFlag('relic_in_hand', true);
+    engine.handlePlayerAction(new MovementAction(player, 0, -1));
+    expect(offered).toBe(1);
+  });
 });

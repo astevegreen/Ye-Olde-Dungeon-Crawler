@@ -31,7 +31,7 @@ export const COTW_OBJECTIVES: ObjectiveDefinition[] = [
   {
     id: 'cotw_objective_act1',
     text: "Something below is stealing the village's warmth. Descend and find it.",
-    doneWhenAnyFlag: ['oath_resolved', 'oath_defaulted', 'savior_of_jarnvidr', 'blood_tainted_hero'],
+    doneWhenAnyFlag: ['oath_resolved', 'savior_of_jarnvidr', 'blood_tainted_hero'],
     doneWhenCounterAtLeast: { counter: COTW_DEEPEST_FLOOR_COUNTER, value: 26 },
   },
   {

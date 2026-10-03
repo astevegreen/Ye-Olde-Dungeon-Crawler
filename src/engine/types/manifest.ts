@@ -424,6 +424,9 @@ export interface StoryChoiceTrigger {
   /** Logged once, the moment `progressStartFlag` is set — tells the player a countdown
    *  just started, since a silent timer can expire before they know it exists. */
   progressStartMessage?: string;
+  /** Must also hold before the choice is offered, for a story beat that waits on more
+   *  than a kill (e.g. a relic carried). Evaluated against world state each move. */
+  when?: Predicate;
 }
 
 /** Attribute-threshold-gated choice unlocks (ARCHITECTURE.md §3). Sibling of `StoryChoiceTrigger`:

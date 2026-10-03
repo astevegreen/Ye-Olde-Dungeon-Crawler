@@ -344,8 +344,12 @@ export class MonsterAI {
       }
     }
 
-    // 2. Fleeing / Morale check
+    const requestedRoutineId = monster.aiRoutineId ?? monster.aiType;
+    const routine = AIRegistry.get(requestedRoutineId);
+
+    // 2. Fleeing / Morale check. A monster whose routine never moves (a turret) never flees.
     if (
+      !routine?.holdsGround &&
       monster.fleeHealthPercent > 0 &&
       monster.hp <= Math.floor(monster.maxHp * monster.fleeHealthPercent)
     ) {
@@ -371,8 +375,6 @@ export class MonsterAI {
     }
 
     // Check if monster has an aiRoutineId registered in AIRegistry
-    const requestedRoutineId = monster.aiRoutineId ?? monster.aiType;
-    const routine = AIRegistry.get(requestedRoutineId);
     if (routine) {
       const res = routine.decideAction(monster, engine);
       return 'action' in res ? res.action : res;

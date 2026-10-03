@@ -35,6 +35,8 @@ export interface QueuedAction {
 export interface AIStrategy {
   readonly id: string;
   readonly name: string;
+  /** A routine that never moves (a turret): a monster running it never flees either. */
+  readonly holdsGround?: boolean;
   decideAction(actor: Actor, engine: GameEngine): Action | QueuedAction;
 }
 
@@ -206,41 +208,8 @@ export class KitingRangedStrategy implements AIStrategy {
 
     // 2. Ranged spell casting at optimal range (2 - 5 tiles)
     if (chebyshevDist >= 2 && chebyshevDist <= 5 && hasLos) {
-      // Telegraphed ability declared by content on the monster definition (§3, No Engine
-      // Creep). The engine supplies the wind-up mechanism; the name, flavour, and shape
-      // are data, so no campaign spell id appears here.
-      const ability = getMonsterDefinition(monster.definitionId)?.telegraphedAbility;
-      if (
-        ability &&
-        monster.spells?.includes(ability.requiresSpellId) &&
-        monster.spellCooldown <= 0 &&
-        chebyshevDist <= ability.range &&
-        engine.rng() < ability.chance
-      ) {
-        monster.spellCooldown = ability.cooldown;
-        const dangerTiles = computeDangerTiles(
-          actor.position,
-          player.position,
-          ability.pattern,
-          engine.map,
-          ability.range,
-          ability.radius
-        );
-        return new WindUpDeclareAction(
-          monster,
-          { x: player.x, y: player.y },
-          ability.name,
-          ability.message.replace('{monster}', actor.name),
-          {
-            targetTiles: dangerTiles,
-            pattern: ability.pattern,
-            turnsRemaining: 1,
-            multiplier: ability.multiplier,
-            element: ability.element,
-            spawnSurface: ability.spawnSurface,
-          }
-        );
-      }
+      const windUp = telegraphedAbilityAction(engine, monster, player, chebyshevDist);
+      if (windUp) return windUp;
 
       if (monster.spells && monster.spells.length > 0 && monster.spellCooldown <= 0) {
         // Content declares the preference order; the engine only applies the rules.
@@ -289,6 +258,7 @@ export class KitingRangedStrategy implements AIStrategy {
 export class ImmobileTurretStrategy implements AIStrategy {
   public readonly id = 'immobile_turret';
   public readonly name = 'Immobile Turret';
+  public readonly holdsGround = true;
 
   public decideAction(actor: Actor, engine: GameEngine): Action {
     const monster = actor as Monster;
@@ -300,6 +270,11 @@ export class ImmobileTurretStrategy implements AIStrategy {
     if (chebyshevDist <= 1) {
       monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
       return new MeleeAttackAction(actor, player);
+    }
+
+    if (hasLineOfSight(engine, actor.x, actor.y, player.x, player.y)) {
+      const windUp = telegraphedAbilityAction(engine, monster, player, chebyshevDist);
+      if (windUp) return windUp;
     }
 
     if (dist <= 6) {
@@ -356,6 +331,34 @@ export class FleeingCowardStrategy implements AIStrategy {
     monster.intent = { type: 'idle', turnsRemaining: 0 };
     return new WaitAction(actor);
   }
+}
+
+/**
+ * The wind-up of the telegraphed ability content declares on the monster's definition, when it
+ * is ready, in range and its chance comes up (§3, No Engine Creep: the engine supplies the
+ * wind-up mechanism; the name, flavour and shape are data). Line of sight is the caller's check.
+ */
+function telegraphedAbilityAction(engine: GameEngine, monster: Monster, target: Entity, chebyshevDist: number): Action | null {
+  const ability = getMonsterDefinition(monster.definitionId)?.telegraphedAbility;
+  if (
+    !ability ||
+    !monster.spells?.includes(ability.requiresSpellId) ||
+    monster.spellCooldown > 0 ||
+    chebyshevDist > ability.range ||
+    engine.rng() >= ability.chance
+  ) {
+    return null;
+  }
+  monster.spellCooldown = ability.cooldown;
+  const dangerTiles = computeDangerTiles(monster.position, target.position, ability.pattern, engine.map, ability.range, ability.radius);
+  return new WindUpDeclareAction(monster, { x: target.x, y: target.y }, ability.name, ability.message.replace('{monster}', monster.name), {
+    targetTiles: dangerTiles,
+    pattern: ability.pattern,
+    turnsRemaining: 1,
+    multiplier: ability.multiplier,
+    element: ability.element,
+    spawnSurface: ability.spawnSurface,
+  });
 }
 
 /**

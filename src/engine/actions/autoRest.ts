@@ -58,7 +58,7 @@ export class AutoRestManager {
   /**
    * Performs a single rest turn. Advances world simulation and checks for interruption triggers:
    * 1. Hostile monster appears in FOV
-   * 2. Player takes damage (combat or status effects)
+   * 2. Player takes damage (status effects, or anything during the monsters' turns, seen or not)
    * 3. Player reaches 100% HP and Mana
    */
   public static stepRestTurn(
@@ -139,6 +139,7 @@ export class AutoRestManager {
     }
 
     // Advance world simulation (monsters take actions)
+    const hpBeforeWorld = player.hp;
     engine.surfaces?.tick(engine);
     engine.wanderingSpawner?.checkAndSpawn(engine);
 
@@ -151,6 +152,20 @@ export class AutoRestManager {
         finished: true,
         interrupted: true,
         reason: 'You perished during rest.',
+        hpGained: player.hp - initialHp,
+        manaGained: player.mana - initialMana,
+        turn: currentTurn + 1,
+      };
+    }
+
+    // A hit while the world moved, from anything, seen or not
+    if (player.hp < hpBeforeWorld) {
+      const msg = `Rest interrupted! You took ${hpBeforeWorld - player.hp} damage!`;
+      engine.log(msg);
+      return {
+        finished: true,
+        interrupted: true,
+        reason: msg,
         hpGained: player.hp - initialHp,
         manaGained: player.mana - initialMana,
         turn: currentTurn + 1,

@@ -62,7 +62,8 @@ test.describe('the opening', () => {
     expect(await stackIds(page)).toEqual([]);
 
     // The raid: its objective and its countdown.
-    await expect(page.locator('#console-objective')).toContainText('Free the villagers');
+    await expect(page.locator('#console-objective')).toContainText('Free them before the coven is done');
+    await expect(page.locator('#console-objective')).toContainText('held villager');
     await expect(page.locator('.sb-cond-name', { hasText: 'Coven’s rite' })).toBeVisible();
     await page.evaluate(() => {
       const e = window.__cotwEngine!;

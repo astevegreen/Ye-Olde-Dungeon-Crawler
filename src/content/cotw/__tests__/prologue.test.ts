@@ -3,6 +3,7 @@ import {
   ExecuteChoiceAction,
   Monster,
   MovementAction,
+  OpenDoorAction,
   NPC,
   ProfileManager,
   MemoryStorage,
@@ -13,6 +14,7 @@ import {
   type GameEngine,
 } from '../../../engine';
 import { ClimbStairsAction } from '../../../engine/actions/stairs';
+import { DeathResolver } from '../../../engine/combat/deathResolver';
 import { COTW_MANIFEST } from '../index';
 import { COTW_PROLOGUE, GATEWARD_CHOICE, GATEWARD_HEARD_FLAG, PROLOGUE_VILLAGERS } from '../prologue';
 import { TOWN_STAIRS_DOWN } from '../townLayout';
@@ -82,10 +84,40 @@ describe('cotw prologue: the night raid', () => {
     engine.map.moveEntity(engine.player, 12, 12);
     expect(step(engine, 0, -1).message).toMatch(/barred/);
     expect(engine.player.y).toBe(12);
+    expect(engine.handlePlayerAction(new OpenDoorAction(engine.player, 12, 11)).message).toMatch(/barred/);
+    expect(engine.map.getTile(12, 11)?.isClosedDoor).toBe(true);
 
     engine.map.moveEntity(engine.player, TOWN_STAIRS_DOWN.x, TOWN_STAIRS_DOWN.y);
     engine.handlePlayerAction(new ClimbStairsAction(engine.player));
     expect(engine.currentFloor).toBe(0);
+  });
+
+  it('ends at once when every villager is free and the coven slain, the matriarch taking the shard', () => {
+    const engine = newRun();
+    for (const e of engine.map.getAllEntities()) {
+      if (!(e instanceof Monster)) continue;
+      if (e.definitionId === 'prologue_coven_warlock') DeathResolver.resolveDeath(engine, engine.player, e);
+      else engine.removeEntity(e);
+    }
+    for (const v of PROLOGUE_VILLAGERS) {
+      standBeside(engine, villager(engine, v.id));
+      step(engine, 1, 0);
+    }
+    expect(isPrologueRunning(engine.worldState, COTW_PROLOGUE)).toBe(false);
+    expect(engine.messages.some((m) => m.includes('a third troll-wife, older and taller'))).toBe(true);
+    for (const v of PROLOGUE_VILLAGERS) expect(engine.getWorldFlag(`${v.id}_saved`)).toBe(true);
+  });
+
+  it('holds attribute milestones until the raid is over, so none breaks into it', () => {
+    const engine = newRun(); // every attribute 15: each milestone is due
+    const offered: string[] = [];
+    engine.onChoiceInteract = (choice) => offered.push(choice.id);
+    step(engine, 0, -1);
+    expect(offered).toEqual([]);
+
+    engine.diagnostics.endPrologue();
+    step(engine, 0, -1);
+    expect(offered).toHaveLength(1);
   });
 
   it('stops the countdown when the raid is ended from the F2 triage menu', () => {
@@ -112,7 +144,7 @@ describe('cotw prologue: the night raid', () => {
     step(engine, 1, 0);
     // Out of every monster's way, then let the rite finish.
     for (const e of engine.map.getAllEntities()) if (e instanceof Monster) engine.removeEntity(e);
-    for (let i = 0; i < 70 && isPrologueRunning(engine.worldState, COTW_PROLOGUE); i++) wait(engine);
+    for (let i = 0; i < 100 && isPrologueRunning(engine.worldState, COTW_PROLOGUE); i++) wait(engine);
 
     expect(isPrologueRunning(engine.worldState, COTW_PROLOGUE)).toBe(false);
     expect(engine.getWorldFlag('prologue-sigrun_saved')).toBe(true);

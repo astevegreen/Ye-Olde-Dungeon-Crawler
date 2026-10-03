@@ -5,7 +5,9 @@ import {
   type StatusTickOutput,
   type ActionHook,
   type Entity,
+  isPrologueRunning,
 } from '../../engine';
+import { COTW_PROLOGUE } from './prologue';
 
 /**
  * The Hearth-Tear of Járnviðr, felt as a bonus instead of a debuff (ARCHITECTURE.md
@@ -144,7 +146,9 @@ export const GIANT_BLOOD_BOOTSTRAP_HOOK: ActionHook = {
     if (
       actor === player &&
       engine.currentFloor < fadeFloorFor(player) &&
-      !player.statusManager.hasStatus(GIANT_BLOOD_STATUS)
+      !player.statusManager.hasStatus(GIANT_BLOOD_STATUS) &&
+      // Not during the night raid: the permafrost its line speaks of comes with the theft.
+      !isPrologueRunning(engine.worldState, COTW_PROLOGUE)
     ) {
       player.statusManager.applyStatus({ type: GIANT_BLOOD_STATUS, duration: 9999 });
     }

@@ -1,5 +1,10 @@
 import type {
+  Action,
   ActionHook,
+  ActionResult,
+  Actor,
+  AIStrategy,
+  GameEngine,
   ChoiceDefinition,
   EngineContext,
   ObjectiveDefinition,
@@ -8,7 +13,9 @@ import type {
   TimedEventDefinition,
 } from '../../engine';
 import {
+  BASE_ACTION_COST,
   ExecuteChoiceAction,
+  MeleeAttackAction,
   ItemFactory,
   Monster,
   MovementAction,
@@ -19,6 +26,7 @@ import {
   incrementCounter,
   isPrologueRunning,
   modifyFaction,
+  prologueMonsterId,
   setFlag,
 } from '../../engine';
 import { makeLootItem } from './items/makeItem';
@@ -48,20 +56,23 @@ const FLAG_COVEN_FLED = 'cotw_prologue_coven_fled';
 const FLAG_COUNTDOWN_STOPPED = 'cotw_prologue_countdown_stopped';
 const FLAG_STRUCK_DOWN = 'cotw_prologue_struck_down';
 const FLAG_SAW_COVEN = 'cotw_prologue_saw_coven';
+const FLAG_ALL_SAVED = 'cotw_prologue_all_saved';
 export const GATEWARD_HEARD_FLAG = 'cotw_prologue_gateward_heard';
 const COUNTER_SAVED = 'cotw_prologue_villagers_saved';
 const GATEWARD_CHOICE_ID = 'cotw_prologue_last_words';
 const GATEWARD_ID = 'prologue-hallvard';
+const WARLOCK_ID = 'prologue_coven_warlock';
 
 /** Townsfolk standing for each villager freed: all three take it from 10 to the 20 discount tier. */
 const STANDING_PER_VILLAGER = 4;
 /** Turns the coven needs to pry the Hearth-Tear loose: enough to free all three with no wasted step. */
-const RAID_TURNS = 60;
+const RAID_TURNS = 72;
 const FOUNTAIN = { x: 28, y: 18 };
 const FOUNTAIN_NOTICE_RADIUS = 7;
 
 interface Villager extends PrologueNpc {
-  /** Whose kin they are, for the line logged when they are taken. */
+  /** Who they are, for the line logged when they are taken ("Eir, the temple’s acolyte"). */
+  shortName: string;
   kin: string;
   /** Logged as they run free; they drop `gift` where they stood. */
   freedMessage: string;
@@ -72,7 +83,8 @@ export const PROLOGUE_VILLAGERS: Villager[] = [
   {
     id: 'prologue-eir',
     name: 'Eir the Acolyte',
-    kin: "the temple's acolyte",
+    shortName: 'Eir',
+    kin: 'the temple’s acolyte',
     position: { x: 27, y: 24 },
     greeting: 'The thrall has me by the hair! Get it off me!',
     freedMessage: 'Eir scrambles up and runs for the longhouse. "Take it, it is all I have!" Her broth-flask lies in the snow.',
@@ -81,7 +93,8 @@ export const PROLOGUE_VILLAGERS: Villager[] = [
   {
     id: 'prologue-sigrun',
     name: 'Sigrun, Olaf’s Daughter',
-    kin: "Olaf's daughter",
+    shortName: 'Sigrun',
+    kin: 'Olaf’s daughter',
     position: { x: 12, y: 13 },
     greeting: 'Father barred the door with me still outside! Help me!',
     freedMessage: 'Sigrun bolts for the longhouse, flinging back her purse: "Father would want you to have it!"',
@@ -90,7 +103,8 @@ export const PROLOGUE_VILLAGERS: Villager[] = [
   {
     id: 'prologue-brandr',
     name: 'Brandr the Apprentice',
-    kin: "Gunther's apprentice",
+    shortName: 'Brandr',
+    kin: 'Gunther’s apprentice',
     position: { x: 42, y: 12 },
     greeting: 'I only came out for the forge chisel. Now look at me.',
     freedMessage: 'Brandr runs for the longhouse and drops his forge chisel at your feet. "Keep it. Gunther will forge me another."',
@@ -123,7 +137,7 @@ export const COTW_PROLOGUE: PrologueDefinition = {
   dark: true,
   heroHpFloor: 1,
   openingMessage:
-    'Night, and the wind off the pines carries smoke. You are home from the hunt at last, but Bjarnarhaven is screaming. Shapes move between the houses, and in the plaza something cold is chanting.',
+    'Night, and the wind off the pines carries smoke. You are home from the hunt at last, but Bjarnarhaven is screaming: cries from the temple steps, from Olaf’s store, from the armory. In the plaza something cold is chanting.',
   closingMessage:
     'Grey dawn comes up over a village gone silent. The fountain is ice, and every hearth burns low and blue. Hallvard the gate-ward lies by the cellar stairs.',
   monsters: [
@@ -134,8 +148,8 @@ export const COTW_PROLOGUE: PrologueDefinition = {
     { definitionId: 'prologue_coven_thrall', position: { x: 43, y: 13 } },
     { definitionId: 'prologue_rime_wolf', position: { x: 41, y: 14 } },
     // The coven at the fountain, and one thrall keeping the plaza.
-    { definitionId: 'prologue_coven_warlock', position: { x: 27, y: 18 } },
-    { definitionId: 'prologue_coven_warlock', position: { x: 30, y: 19 } },
+    { definitionId: WARLOCK_ID, position: { x: 27, y: 18 }, awake: true },
+    { definitionId: WARLOCK_ID, position: { x: 30, y: 19 }, awake: true },
     { definitionId: 'prologue_coven_thrall', position: { x: 25, y: 20 } },
   ],
   npcs: PROLOGUE_VILLAGERS.map(({ id, name, position, greeting }) => ({ id, name, position, greeting })),
@@ -181,8 +195,20 @@ export const GATEWARD_CHOICE: ChoiceDefinition = {
 /** The prologue's lines in the HUD objective, ahead of the run's own (objectives.ts). */
 export const PROLOGUE_OBJECTIVES: ObjectiveDefinition[] = [
   {
+    // Time left once all are free: the coven itself, for a hero who wants a parting blow.
+    id: 'cotw_objective_prologue_coven',
+    text: 'The villagers are safe. The troll-wives still work at the fountain: strike them before they finish.',
+    availableWhenFlag: FLAG_ALL_SAVED,
+    doneWhenAnyFlag: [PROLOGUE_ENDED_FLAG],
+    pointTo: {
+      entityIds: (COTW_PROLOGUE.monsters ?? []).flatMap((m, i) => (m.definitionId === WARLOCK_ID ? [prologueMonsterId(i)] : [])),
+      label: 'troll-wife',
+    },
+  },
+  {
     id: 'cotw_objective_prologue_raid',
-    text: 'Raiders in Bjarnarhaven! Free the villagers their thralls hold before the coven is done.',
+    text: 'Thralls hold villagers by the temple, Olaf’s store and the armory. Free them before the coven is done.',
+    pointTo: { entityIds: PROLOGUE_VILLAGERS.map((v) => v.id), label: 'held villager' },
     availableWhenFlag: PROLOGUE_STARTED_FLAG,
     doneWhenAnyFlag: [PROLOGUE_ENDED_FLAG],
   },
@@ -191,6 +217,7 @@ export const PROLOGUE_OBJECTIVES: ObjectiveDefinition[] = [
     text: 'Hallvard the gate-ward lies by the cellar stairs. Go to him.',
     availableWhenFlag: PROLOGUE_ENDED_FLAG,
     doneWhenAnyFlag: [GATEWARD_HEARD_FLAG],
+    pointTo: { entityIds: [GATEWARD_ID], label: 'Hallvard' },
   },
 ];
 
@@ -212,6 +239,18 @@ function freeVillager(ctx: EngineContext, npc: NPC): void {
   ctx.removeEntity(npc);
   dropGift(ctx, villager, x, y);
   ctx.log(villager.freedMessage);
+  if (getCounter(ctx.worldState, COUNTER_SAVED) === PROLOGUE_VILLAGERS.length) {
+    setFlag(ctx.worldState, FLAG_ALL_SAVED, true);
+    // A rescue short-circuits the move, so the raid hook won't see this turn: end it here.
+    if (covenSlain(ctx)) endRaid(ctx);
+    else ctx.log('Every villager the thralls held is free. At the fountain the troll-wives work on, faster now.');
+  }
+}
+
+/** Whether every warlock the raid placed at the fountain has been killed. */
+function covenSlain(ctx: EngineContext): boolean {
+  const warlocks = (COTW_PROLOGUE.monsters ?? []).filter((m) => m.definitionId === WARLOCK_ID).length;
+  return ctx.compendium.getEntry(WARLOCK_ID).kills >= warlocks;
 }
 
 /** Their thrall still at their side, if any: it has to be dealt with first. */
@@ -238,14 +277,17 @@ function endRaid(ctx: EngineContext): void {
   ctx.log(
     struckDown
       ? 'A blow takes you off your feet. The snow is very cold, and then there is nothing.'
-      : 'The chant breaks off. The troll-wives sink down the cellar stairs with the Hearth-Tear blazing between them, and their thralls melt into the dark after them.'
+      : covenSlain(ctx)
+        ? // The matriarch the Oath later bargains with (choices.ts), seen once here.
+          'Over her sisters’ bodies a third troll-wife, older and taller, steps out of the fountain’s shadow. She tears the Hearth-Tear loose with her bare hands, looks at you once, and sinks down the cellar stairs with it. The thralls melt into the dark after her.'
+        : 'The chant breaks off. The troll-wives sink down the cellar stairs with the Hearth-Tear blazing between them, and their thralls melt into the dark after them.'
   );
   for (const villager of PROLOGUE_VILLAGERS) {
     if (isAccountedFor(ctx, villager.id)) continue;
     setFlag(ctx.worldState, takenFlag(villager.id), true);
     const npc = ctx.map.getEntityById(villager.id);
     if (npc) ctx.removeEntity(npc);
-    ctx.log(`They drag ${villager.name.split(',')[0]}, ${villager.kin}, down into the dark.`);
+    ctx.log(`They drag ${villager.shortName}, ${villager.kin}, down into the dark.`);
   }
   concludePrologue(ctx, COTW_PROLOGUE, true);
   ctx.player.heal(ctx.player.maxHp);
@@ -333,7 +375,9 @@ const PROLOGUE_RAID_HOOK: ActionHook = {
       endRaid(engine);
       return;
     }
-    if (getFlag(engine.worldState, FLAG_COVEN_FLED)) {
+    // The countdown run out; or nothing is left to fight for, every villager free and the
+    // coven at the fountain slain, so the night ends now rather than on the clock.
+    if (getFlag(engine.worldState, FLAG_COVEN_FLED) || (getFlag(engine.worldState, FLAG_ALL_SAVED) && covenSlain(engine))) {
       endRaid(engine);
       return;
     }
@@ -346,4 +390,46 @@ const PROLOGUE_RAID_HOOK: ActionHook = {
   },
 };
 
-export const PROLOGUE_HOOKS: ActionHook[] = [PROLOGUE_MOVE_HOOK, PROLOGUE_STAIRS_HOOK, PROLOGUE_RAID_HOOK];
+/** A door opened or bashed straight (a key, not a bump) is as barred as one walked into. */
+const barredDoorHook = (actionType: 'OpenDoorAction' | 'BashDoorAction'): ActionHook => ({
+  id: `cotw-prologue-${actionType}`,
+  phase: 'pre',
+  actionType,
+  execute: ({ actor, engine }) => {
+    if (actor !== engine.player || engine.currentFloor !== 0 || !isPrologueRunning(engine.worldState, COTW_PROLOGUE)) return;
+    return { proceed: false, result: { success: false, cost: 0, message: 'The door is barred from within.' } };
+  },
+});
+
+export const PROLOGUE_HOOKS: ActionHook[] = [
+  PROLOGUE_MOVE_HOOK,
+  PROLOGUE_STAIRS_HOOK,
+  barredDoorHook('OpenDoorAction'),
+  barredDoorHook('BashDoorAction'),
+  PROLOGUE_RAID_HOOK,
+];
+
+/** A warlock's turn at the rite: spent, and too quiet to log. */
+class ChannelRiteAction implements Action {
+  constructor(public readonly entity: Actor) {}
+
+  public perform(_engine: GameEngine): ActionResult {
+    this.entity.consumeEnergy(BASE_ACTION_COST);
+    return { success: true, cost: BASE_ACTION_COST };
+  }
+}
+
+/**
+ * The warlocks at the fountain (`aiType: 'cotw_coven_channeler'`): lost in the rite, they
+ * never move and never cast, and claw only at a hero who stands beside them. The built-in
+ * stationary AI waits instead, and a visible monster's wait is logged every turn.
+ */
+export const COVEN_CHANNELER_STRATEGY: AIStrategy = {
+  id: 'cotw_coven_channeler',
+  name: 'Coven Channeler',
+  decideAction: (actor, engine) => {
+    const p = engine.player;
+    if (p.isAlive() && Math.max(Math.abs(actor.x - p.x), Math.abs(actor.y - p.y)) <= 1) return new MeleeAttackAction(actor, p);
+    return new ChannelRiteAction(actor);
+  },
+};

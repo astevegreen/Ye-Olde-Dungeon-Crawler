@@ -151,6 +151,25 @@ test('planning a point keeps the Character tab where it was scrolled', async ({ 
   expect(after).toEqual(before);
 });
 
+// The open map (M) redraws when the window changes size: its backing store was set once
+// per floor shown, so the floor stayed squashed until reopened (tracker 0.22).
+test('the open map redraws to fit when the window is resized', async ({ page }) => {
+  await embarkNewHero(page);
+  await page.keyboard.press('KeyM');
+  const canvas = page.locator('#map-viewer-canvas');
+  await expect(canvas).toBeVisible();
+  const fit = () =>
+    canvas.evaluate((c: HTMLCanvasElement) => {
+      const dpr = window.devicePixelRatio || 1;
+      return { backing: [c.width, c.height], css: [Math.floor(c.clientWidth * dpr), Math.floor(c.clientHeight * dpr)] };
+    });
+  await page.setViewportSize({ width: 1280, height: 560 });
+  await expect.poll(async () => {
+    const f = await fit();
+    return f.backing.join('x') === f.css.join('x');
+  }).toBe(true);
+});
+
 // Save & quit and choices take keys only through the modal stack, as one entry each: a
 // second window listener delivered every key twice, and the choice's stack entry let
 // Escape dismiss a choice that cannot be cancelled.

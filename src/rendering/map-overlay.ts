@@ -19,6 +19,8 @@ export class MapOverlay {
   private onStateChanged?: () => void;
   private engine?: GameEngine;
   private scrim: HTMLElement | null = null;
+  /** Watches the open floor's canvas for size changes. */
+  private resizeWatch?: ResizeObserver;
 
   constructor(onStateChanged?: () => void) {
     this.onStateChanged = onStateChanged;
@@ -105,6 +107,8 @@ export class MapOverlay {
   private sync(): void {
     if (typeof document === 'undefined') return;
     if (!this.isOpen || !this.engine) {
+      this.resizeWatch?.disconnect();
+      this.resizeWatch = undefined;
       if (this.scrim) this.scrim.style.display = 'none';
       return;
     }
@@ -160,7 +164,24 @@ export class MapOverlay {
     );
 
     const canvas = scrim.querySelector<HTMLCanvasElement>('#map-viewer-canvas');
+    this.resizeWatch?.disconnect();
+    this.resizeWatch = undefined;
     if (!canvas) return;
+    this.drawFloor(canvas);
+    // The canvas's CSS box follows the window (dialog.css); redraw when it changes, or the
+    // floor stays squashed until the map is reopened. Its CSS sets both width and height,
+    // so the backing store this writes can't resize the box and loop.
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeWatch = new ResizeObserver(() => this.drawFloor(canvas));
+      this.resizeWatch.observe(canvas);
+    }
+  }
+
+  private drawFloor(canvas: HTMLCanvasElement): void {
+    const engine = this.engine;
+    if (!this.isOpen || !engine) return;
+    const here = this.viewedFloor === engine.currentFloor;
+    const map = engine.getFloorMap(this.viewedFloor);
     const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
     canvas.height = Math.max(1, Math.floor(canvas.clientHeight * dpr));

@@ -2,6 +2,7 @@ import {
   Monster,
   findRuneOfReturn,
   getKillRiteConfig,
+  isPrologueRunning,
   getMonsterDefinition,
   getRenownTotal,
   isGameEvent,
@@ -35,7 +36,8 @@ export function hintsMetByState(engine: GameEngine): FirstTimeHintId[] {
 
   if (buildSaga(engine).achieved.length > 0) met.push('story');
 
-  if (getKillRiteConfig(engine)) {
+  // Not in the prologue's fight, whose cues say what to do; the hint waits for the dungeon.
+  if (getKillRiteConfig(engine) && !isPrologueRunning(engine.worldState, engine.manifest.prologue)) {
     const riteInSight = engine.map
       .getAllEntities()
       .some(

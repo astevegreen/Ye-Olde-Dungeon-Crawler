@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { pastTheOpening } from './newHero';
 
 /**
  * A whole run, played fast through the shipped bundle's own keys and clicks: a shop buy,
@@ -56,7 +57,7 @@ async function embark(page: Page): Promise<void> {
     for (let i = 0; i < 6; i++) await page.locator(`#btn-dec-${attr}`).click();
   }
   await page.locator('#btn-create-embark').click();
-  await expect.poll(() => page.evaluate(() => Boolean(window.__cotwEngine?.player))).toBe(true);
+  await pastTheOpening(page);
 }
 
 /**

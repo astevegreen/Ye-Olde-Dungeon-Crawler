@@ -1,5 +1,9 @@
 import type { GameEngine } from '../engine';
 import { getSpell, resolveManaTerms } from '../engine';
+import { markCue } from './hints/cueMark';
+
+/** Each slot's key, 1-9 then 0, matching the ten quick_spell_* bindings. */
+const SLOT_LABELS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 
 export interface QuickSpellsBarOptions {
   onTriggerSlot: (slotIndex: number) => void;
@@ -10,6 +14,8 @@ export class QuickSpellsBar {
   private container: HTMLElement;
   private options: QuickSpellsBarOptions;
   private slotElements: HTMLElement[] = [];
+  /** The slot an action cue points at (`hints/actionCues.ts`), or null. */
+  private cueSlot: number | null = null;
 
   constructor(options: QuickSpellsBarOptions) {
     this.options = options;
@@ -81,13 +87,12 @@ export class QuickSpellsBar {
     const player = engine.player;
     const mana = resolveManaTerms(engine.manifest);
     const quickSpells = player.quickSpells ?? [];
-    const slotLabels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
     let addSlotShown = false;
 
     for (let i = 0; i < this.slotElements.length; i++) {
       const slotEl = this.slotElements[i];
       const spellId = quickSpells[i];
-      const slotKey = slotLabels[i];
+      const slotKey = SLOT_LABELS[i];
       const spell = spellId ? (engine.manifest?.spells?.find((s) => s.id === spellId) ?? getSpell(spellId)) : undefined;
 
       if (!spell) {
@@ -122,5 +127,16 @@ export class QuickSpellsBar {
       `;
       (slotEl.querySelector('.slot-badge-name') as HTMLElement).textContent = spell.name;
     }
+    this.renderCue();
+  }
+
+  /** Points the cast cue at a slot (null clears it). */
+  public setCue(slotIndex: number | null): void {
+    this.cueSlot = slotIndex;
+    this.renderCue();
+  }
+
+  private renderCue(): void {
+    this.slotElements.forEach((slotEl, i) => markCue(slotEl, i === this.cueSlot ? `${SLOT_LABELS[i]} Cast` : null));
   }
 }

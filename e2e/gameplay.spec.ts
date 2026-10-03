@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { pastTheOpening } from './newHero';
 
 // Plays the shipped bundle, not the source: minification and bundling have broken
 // behavior that every unit test passed (class names hooks match on, input routing).
@@ -25,7 +26,7 @@ async function embarkNewHero(page: Page): Promise<void> {
     for (let i = 0; i < 6; i++) await page.locator(`#btn-dec-${attr}`).click();
   }
   await page.locator('#btn-create-embark').click();
-  await expect.poll(() => page.evaluate(() => Boolean(window.__cotwEngine))).toBe(true);
+  await pastTheOpening(page);
 }
 
 test('a new hero moves, the map owns the keyboard, and save & continue restores the run', async ({ page }) => {

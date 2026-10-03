@@ -12,6 +12,14 @@ class FakeSlot {
   dataset: Record<string, string> = {};
   style: Record<string, string> = {};
   readonly nameEl = { textContent: '' };
+  readonly classList = {
+    toggle: (name: string, on: boolean) => {
+      const names = new Set(this.className.split(' ').filter(Boolean));
+      if (on) names.add(name);
+      else names.delete(name);
+      this.className = [...names].join(' ');
+    },
+  };
   type = '';
   addEventListener(): void {}
   setAttribute(): void {}
@@ -94,5 +102,21 @@ describe('QuickSpellsBar', () => {
     expect(s[1].hidden).toBe(true);
     expect(s[4].hidden).toBe(false);
     expect(s[4].title).toContain('[5] Magic Arrow');
+  });
+
+  it('marks the cued slot with its key and verb, through redraws, until the cue clears', () => {
+    const bar = new QuickSpellsBar({ onTriggerSlot: () => {}, onOpenSpellbook: () => {} });
+    const engine = buildEngine(['test:arrow', 'test:nova']);
+    bar.setCue(0);
+    bar.update(engine);
+
+    const s = slots();
+    expect(s[0].className).toContain('hud-cue');
+    expect(s[0].dataset.cue).toBe('1 Cast');
+    expect(s[1].className).not.toContain('hud-cue');
+
+    bar.setCue(null);
+    expect(s[0].className).not.toContain('hud-cue');
+    expect(s[0].dataset.cue).toBeUndefined();
   });
 });

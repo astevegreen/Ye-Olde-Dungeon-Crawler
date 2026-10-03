@@ -1,5 +1,6 @@
 import { PotionItem, type GameEngine, type Item } from '../engine';
 import type { ModalStackManager, UIModal } from './modalStack';
+import { markCue } from './hints/cueMark';
 
 /** How many potion slots the row has; each has its own key (Shift+1..4 by default). */
 export const POTION_ROW_SLOT_COUNT = 4;
@@ -92,6 +93,8 @@ export class PotionRow {
   private readonly picker: PotionPicker;
   /** The last bottle seen of each pinned kind, so an out-of-stock slot keeps its icon and name. */
   private readonly lastSeen = new Map<string, { item: Item; name: string }>();
+  /** The slot an action cue points at (`hints/actionCues.ts`), or null. */
+  private cueSlot: number | null = null;
 
   constructor(private readonly options: PotionRowOptions) {
     this.container = document.createElement('div');
@@ -191,6 +194,20 @@ export class PotionRow {
         slot.appendChild(keyEl);
       }
       slot.setAttribute('aria-label', this.describe(i));
+    });
+    this.renderCue();
+  }
+
+  /** Points the drink cue at a slot (null clears it). */
+  public setCue(slotIndex: number | null): void {
+    this.cueSlot = slotIndex;
+    this.renderCue();
+  }
+
+  private renderCue(): void {
+    this.slots.forEach((slot, i) => {
+      const key = this.options.keyLabel(i);
+      markCue(slot, i === this.cueSlot ? `${key ? `${key} ` : ''}Drink` : null);
     });
   }
 

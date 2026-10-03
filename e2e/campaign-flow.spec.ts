@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { pastTheOpening } from './newHero';
 
 /**
  * Objective-Driven Playwright E2E Suite for Multi-Floor Progression and NPC Interaction.
@@ -132,6 +133,7 @@ test('objective-driven multi-floor progression and NPC interaction', { tag: '@ca
     // Roll stats and embark into town
     await page.locator('#btn-roll-dice').click();
     await page.locator('#btn-create-embark').click();
+    await pastTheOpening(page);
 
     // Confirm game canvas and HUD are mounted
     await expect(page.locator('#game-canvas')).toBeVisible();

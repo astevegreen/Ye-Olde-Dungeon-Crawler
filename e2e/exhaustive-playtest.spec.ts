@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { pastTheOpening } from './newHero';
 
 const BUNDLE = resolve(process.cwd(), 'dist', 'index.html');
 
@@ -13,7 +14,7 @@ async function embarkNewHero(page: Page): Promise<void> {
     for (let i = 0; i < 6; i++) await page.locator(`#btn-dec-${attr}`).click();
   }
   await page.locator('#btn-create-embark').click();
-  await expect.poll(() => page.evaluate(() => Boolean((window as any).__cotwEngine))).toBe(true);
+  await pastTheOpening(page);
 }
 
 /**

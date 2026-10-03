@@ -111,6 +111,8 @@ import { CombatSidebar } from './ui/sidebar/combatSidebar';
 import { ConsoleExtras } from './ui/console/consoleExtras';
 import { FirstTimeHints } from './ui/hints/firstTimeHints';
 import { hintsMetByEvent, hintsMetByState } from './ui/hints/hintModel';
+import { findActionCues } from './ui/hints/actionCues';
+import { ControlsPrimer } from './ui/controlsPrimer';
 import type { ContextAction } from './ui/console/consoleModel';
 import { SettingsManager } from './ui/settings/settingsManager';
 import type { RadialMenuSlotConfig } from './ui/settings/settingsManager';
@@ -789,6 +791,10 @@ window.addEventListener('DOMContentLoaded', () => {
         updateMessageLog(activeEngine);
         quickSpellsBar.update(activeEngine);
         potionRow.update(activeEngine);
+        // The prologue's action cues: the slot for the move the moment calls for glows.
+        const cues = settingsManager.getSettings().hintsEnabled ? findActionCues(activeEngine) : null;
+        potionRow.setCue(cues?.drinkSlot ?? null);
+        quickSpellsBar.setCue(cues?.castSlot ?? null);
         combatSidebar.update(activeEngine);
         consoleExtras.update(activeEngine);
         if (firstTimeHints.hasUnseen(activeEngine)) firstTimeHints.offer(activeEngine, hintsMetByState(activeEngine));
@@ -957,6 +963,20 @@ window.addEventListener('DOMContentLoaded', () => {
   // Like FeedbackModal, KeybindModal registers and removes its own modal-stack entry
   // (setModalStack below): it also opens from the main menu, before any stack exists.
   const keybindModal = new KeybindModal({ settingsManager });
+
+  // The one dialog before a new hero's first step: moving, diagonals, where the keys are.
+  const controlsPrimer = new ControlsPrimer({
+    keyFor: (action) => {
+      const code = settingsManager.getCodesForAction(action)[0];
+      return code ? keyLabel(code) : undefined;
+    },
+    onOpenControls: () => keybindModal.open(),
+    onHideForGood: () => settingsManager.updateSettings({ controlsPrimerEnabled: false }),
+    onClose: () => {
+      popModal(controlsPrimer.id);
+      renderer?.render();
+    },
+  });
 
   const saveQuitModal = new SaveQuitModal({
     profileManager,
@@ -1748,8 +1768,13 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     },
     onNewCharacter: (name: string, options) => {
-      const created = profileManager.createCharacter(name, { ...options, manifest: activeManifest });
+      // A new hero begins with the pack's prologue, when it has one.
+      const created = profileManager.createCharacter(name, { ...options, manifest: activeManifest, prologue: true });
       launchGame(created.engine, created.profile);
+      if (settingsManager.getSettings().controlsPrimerEnabled) {
+        controlsPrimer.open();
+        pushModal(controlsPrimer.id, controlsPrimer);
+      }
     },
     onImport: (fileContent: string) => {
       importSaveWithValidation({

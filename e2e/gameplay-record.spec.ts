@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { pastTheOpening } from './newHero';
 
 /**
  * Sustained Gameplay E2E Demo Test for Visual Verification.
@@ -42,6 +43,7 @@ test('continuous active gameplay loop for visual verification', { tag: '@record'
   // Roll stats for good starting values and embark
   await page.locator('#btn-roll-dice').click();
   await page.locator('#btn-create-embark').click();
+  await pastTheOpening(page);
 
   // 3. Confirm Canvas and HUD are mounted
   const canvas = page.locator('#game-canvas');

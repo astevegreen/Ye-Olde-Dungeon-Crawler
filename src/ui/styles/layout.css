@@ -652,6 +652,37 @@
   color: var(--ui-text);
 }
 
+/* Action cues (src/ui/hints/actionCues.ts): the slot for the move the moment calls for
+   glows, with its key and verb in a chip above it. Outline, not border, so the slot's own
+   state classes keep their borders. */
+.hud-cue {
+  position: relative;
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 1px;
+  animation: hud-cue-pulse 1.4s ease-in-out infinite;
+}
+.hud-cue::after {
+  content: attr(data-cue);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 5px);
+  transform: translateX(-50%);
+  z-index: 61;
+  padding: 1px 5px;
+  white-space: nowrap;
+  font: bold var(--ui-text-xs)/1.4 var(--ui-font-family, monospace);
+  color: var(--ui-accent-ink);
+  background: var(--ui-accent);
+  border-radius: 3px;
+  pointer-events: none;
+}
+@keyframes hud-cue-pulse {
+  50% { box-shadow: 0 0 10px color-mix(in srgb, var(--ui-accent) 80%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud-cue { animation: none; }
+}
+
 /* Hover card above a slot: the full name, how many, and what a click does. */
 .potion-tooltip {
   position: absolute;

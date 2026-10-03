@@ -9,6 +9,8 @@ import { Monster } from '../../entities/monster';
 import { GameEngine } from '../../engine';
 import { MeleeAttackAction } from '../../actions/combat';
 import { DeathResolver } from '../../combat/deathResolver';
+import { ItemFactory } from '../../items/factory';
+import { CoinItem } from '../../economy/currency';
 import { serializeGame, deserializeGame } from '../../storage/serializer';
 
 describe('Slayer Compendium & Progressive Monster Mastery', () => {
@@ -267,18 +269,7 @@ describe('Slayer Compendium & Progressive Monster Mastery', () => {
       lootTable: [
         {
           chance: 1.0,
-          generate: (id) => ({
-            id,
-            name: 'Gold Coins',
-            displayName: 'Gold Coins',
-            category: 'coin',
-            value: 20,
-            weight: 10,
-            bulk: 5,
-            quality: 'normal',
-            identified: true,
-            isBroken: () => false,
-          } as any),
+          generate: (id) => ItemFactory.createGoldCoins(id, 20),
         },
       ],
     });
@@ -295,10 +286,10 @@ describe('Slayer Compendium & Progressive Monster Mastery', () => {
     DeathResolver.resolveDeath(engine, player, monster);
 
     const items = engine.map.getItemsAt(1, 2);
-    const coin = items.find((i) => i.category === 'coin');
+    const coin = items.find((i): i is CoinItem => i instanceof CoinItem);
     expect(coin).toBeDefined();
     // 20 base doubled by Plunderer = 40
-    expect(coin?.value).toBe(40);
+    expect(coin?.count).toBe(40);
   });
 
   it('serializes and deserializes compendium state and chosenPerk across save/load cycles', () => {

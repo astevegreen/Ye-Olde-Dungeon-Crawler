@@ -10,6 +10,8 @@ import { TILES } from '../grid/tile';
 import { ProfileManager, MemoryStorage } from '../storage/profile-manager';
 import { serializeGame, deserializeGame } from '../storage/serializer';
 import { cotwManifest } from '../../content/cotw';
+import { ItemFactory } from '../items/factory';
+import { CoinItem } from '../economy/currency';
 
 describe('Data-Driven Bounties & Run Pacts System', () => {
   let engine: GameEngine;
@@ -111,6 +113,24 @@ describe('Data-Driven Bounties & Run Pacts System', () => {
 
     expect(player.xp).toBe(35); // 20 * 1.75 = 35!
     expect(engine.messages.some((m) => m.includes('(+35 XP)'))).toBe(true);
+  });
+
+  it('multiplies the coins a monster drops when a gold pact is active', () => {
+    const target = new Monster({
+      id: 'target',
+      name: 'Test Monster',
+      position: { x: 5, y: 6 },
+      stats: { hp: 10, maxHp: 10, attack: 1, defense: 0 },
+      xpValue: 1,
+      lootTable: [{ chance: 1.0, generate: (id) => ItemFactory.createGoldCoins(id, 10) }],
+    });
+    map.addEntity(target);
+    engine.pacts.activatePact('pact_blood'); // 2.0x gold
+
+    DeathResolver.resolveDeath(engine, player, target);
+
+    const coins = map.getItemsAt(5, 6).find((i): i is CoinItem => i instanceof CoinItem)!;
+    expect(coins.count).toBe(20);
   });
 
   it('scales monster density when populating dungeon floor with density multiplier', () => {

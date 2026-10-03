@@ -18,6 +18,15 @@ import { createMonsterTrophy } from '../compendium/trophies';
 import { hasMasteryPerk, recordMasteryKill } from '../compendium/compendiumManager';
 import { DeathEnvelopeTracker } from '../analytics/deathEnvelope';
 import { KillRiteManager, type KillContext } from '../magic/killRites';
+import { CoinItem } from '../economy/currency';
+import type { Item } from '../items/item';
+
+/** Pact and Plunderer gold multipliers: a coin pile's worth is its count. */
+function applyGoldMultiplier(item: Item, goldMult: number): void {
+  if (item instanceof CoinItem && goldMult !== 1.0) {
+    item.setCount(Math.round(item.count * goldMult));
+  }
+}
 
 /** Duck-typed check avoiding a value import of Companion (see import comment above). */
 function isCompanion(entity: Entity): entity is Companion {
@@ -172,9 +181,7 @@ export class DeathResolver {
             const randSuffix = engine.prng.nextInt(1000, 9999).toString();
             const lootId = `drop-${engine.turnCount}-${randSuffix}`;
             const item = rule.generate(lootId, engine.rng);
-            if (item.category === 'coin' && goldMult !== 1.0) {
-              item.value = Math.round(item.value * goldMult);
-            }
+            applyGoldMultiplier(item, goldMult);
             engine.map.addItemAt(victim.x, victim.y, item);
             engine.log(`${victim.name} dropped ${item.displayName}!`);
             dropCount += 1;
@@ -187,9 +194,7 @@ export class DeathResolver {
           const randSuffix = engine.prng.nextInt(1000, 9999).toString();
           const lootId = `plunder-${engine.turnCount}-${randSuffix}`;
           const item = pickRule.generate(lootId, engine.rng);
-          if (item.category === 'coin') {
-            item.value = Math.round(item.value * goldMult);
-          }
+          applyGoldMultiplier(item, goldMult);
           engine.map.addItemAt(victim.x, victim.y, item);
           engine.log(`*** PLUNDERER'S LUCK! You uncover hidden spoils: ${victim.name} dropped ${item.displayName}! ***`);
         } else if (isPlunderer && dropCount > 0) {

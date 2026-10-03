@@ -435,7 +435,9 @@ export async function runOracles(
     if (/^[a-z]/.test(msg.trim())) addFinding('text', 'S3', `log line starts lowercase: "${msg}"`);
     if (/\b[a-z]{2,}_[a-z0-9_]+\b/.test(msg)) addFinding('text', 'S3', `raw snake_case id in log line: "${msg}"`);
   }
-  for (const [msg, n] of counts) if (n >= 3) addFinding('text', 'S3', `one action logged the same line ${n} times: "${msg}"`);
+  // Four goblins hitting for 3 each write four identical lines: the game working, but a
+  // log a player has to read, so a player-experience note rather than a text bug.
+  for (const [msg, n] of counts) if (n >= 3) addFinding('ux', 'S4', `one action logged the same line ${n} times: "${msg}"`);
   // Spam while the hero only waits: something logs every turn on its own (a monster's
   // "waits a moment", a status ticking). A hero walking into walls is the bot, not spam.
   if (key && state.boundKeys.wait.has(key) && newMessages.length > 0) {

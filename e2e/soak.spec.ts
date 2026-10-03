@@ -173,9 +173,11 @@ test.describe('soak @soak', () => {
     await page.goto(URL);
 
     await page.locator('#btn-menu-new-game').click();
-    // The player bot keeps every attribute under 15 so no milestone waits for the raid to
-    // end; chaos keeps the roll half the time, so held milestones get exercised too.
-    const keepRoll = policy === 'chaos' && prng.next() < 0.5;
+    // The player bot keeps its roll, as a player would: lowering every stat by 6 left it a
+    // hero the raid struck down by turn 15 in 19 of 20 runs. Milestones from a 15 wait for
+    // the raid to end (d74cbf5). Chaos keeps the roll half the time and plays the weak hero
+    // the other half.
+    const keepRoll = policy === 'player' || (policy === 'chaos' && prng.next() < 0.5);
     if (!keepRoll) {
       for (const attr of ['str', 'dex', 'con', 'int']) {
         for (let i = 0; i < 6; i++) await page.locator(`#btn-dec-${attr}`).click();
@@ -211,6 +213,8 @@ test.describe('soak @soak', () => {
     let messagesSeen = await page.evaluate(() => (window as any).__soakLogTotal ?? 0);
     let causeOfDeath: string | null = null;
     let endedBy = 'action cap';
+    let lastHere = '';
+    let stillStreak = 0;
     let lastTop: string | null = null;
     let topStreak = 0;
 
@@ -360,6 +364,17 @@ test.describe('soak @soak', () => {
         if (topStreak >= 100) {
           await record(harnessFinding(i, pre.turn, pre.floor, 'softlock', 'S1', `100 inputs could not leave <${top}>`, 'modalStack.ts'));
           endedBy = 'softlock';
+          break;
+        }
+        // No progress on the open map: position and turn unchanged for 100 inputs, whatever
+        // the log says. Each keypress logging "overburdened and cannot move" hid this from
+        // the 25-input check, and a hero stood still for the last 943 actions of a run.
+        const here = `${pre.floor}:${pre.x},${pre.y}:${pre.turn}`;
+        stillStreak = pre.stack.length === 0 && here === lastHere ? stillStreak + 1 : 0;
+        lastHere = here;
+        if (stillStreak >= 100) {
+          await record(harnessFinding(i, pre.turn, pre.floor, 'softlock', 'S2', `no progress in 100 inputs on the open map; the log says: "${pre.lastLines[pre.lastLines.length - 1] ?? ''}"`));
+          endedBy = 'no progress';
           break;
         }
         if (pre.crashed) {

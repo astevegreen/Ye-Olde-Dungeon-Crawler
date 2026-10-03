@@ -38,31 +38,36 @@ export interface SoakSummary {
   lens: string;
   opening: SoakOpening;
   sha: string;
+  /** True for the snapshot written every 100 actions; false once the run is over. */
+  partial: boolean;
+  endedBy: string;
   turnsPlayed: number;
   deepestFloor: number;
   causeOfDeath: string | null;
   wallTimeMs: number;
   actionsPlayed: number;
+  /** Keypress to the game answering, for map keys pressed on the open map. */
   latency: {
+    samples: number;
     p50: number;
     p95: number;
     max: number;
   };
-  findingCounts: {
-    bug: number;
-    softlock: number;
-    text: number;
-    ux: number;
-  };
-  raid?: {
-    ending?: string;
+  /** Distinct signatures per category in this run. */
+  findingCounts: Record<FindingCategory, number>;
+  /** Every signature seen in this run, with how many times it fired. */
+  findings: Record<string, number>;
+  raid: {
+    ending: string;
     villagersFreed: number;
     villagerTurns: Record<string, number>;
-    turnsUsed: number;
+    /** The turn the raid ended on (it starts on turn 0); null while it runs. */
+    turnsUsed: number | null;
     drinkCueShowed: boolean;
     potionDrunk: boolean;
-    raidLogLines: number;
+    raidLogLines: number | null;
   };
   deadKeys: number;
-  unexpectedInterruptions: number;
+  /** Dialogs that opened on a move or wait key, by stack id. */
+  interruptions: Record<string, number>;
 }

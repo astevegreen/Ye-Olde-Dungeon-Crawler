@@ -8,56 +8,141 @@ export interface ActionContext {
   opening: SoakOpening;
   sha: string;
   dispatchedInput: { key?: string; click?: { x: number; y: number } };
-  latencyMs: number;
   stackBefore: string[];
+  /** Open modes (see `openModes`) before the input. */
+  modesBefore: string[];
   turnBefore: number;
   hpBefore: number;
   manaBefore: number;
   posBefore: { x: number; y: number };
-  carriedBefore: number;
   messagesSeenCount: number;
 }
 
-export interface OracleState {
-  lastCountdown: number | null;
-  consecutiveNoOps: number;
-  lastNoOpState: { pos: string; turn: number; log: string; stack: string } | null;
-  raidEndedObserved: boolean;
-  firstMoveAfterRaidDone: boolean;
-  heldMilestonesOpened: number;
-  villagersFreed: Record<string, number>;
-  raidEndedReason?: string;
-  drinkCueShowed: boolean;
-  potionDrunk: boolean;
-  turnsOnCurrentFloor: number;
-  currentFloor: number;
-  stairsFoundOnFloor: boolean;
-  spontaneousModalCount: number;
-  deadKeyCount: number;
-  lastRaidSaveRoundtripDone: boolean;
-  seenSignatures: Set<string>;
+/**
+ * Modes that own the keyboard without a modal-stack entry: look mode (L/X), the explored
+ * map (M), a shop, F1 help. Arrows move a cursor in them, so they are judged like dialogs.
+ */
+export const openModes = (page: Page): Promise<string[]> =>
+  page.evaluate(() => {
+    const h = window.__cotwInputHandler as any;
+    if (!h) return [];
+    const modes: Array<[string, unknown]> = [
+      ['inspect', h.inspectOverlay?.isOpen],
+      ['map', h.mapOverlay?.isOpen],
+      ['shop', h.shopOverlay?.isOpen],
+      ['help', h.contextHelp?.isOpen],
+    ];
+    return modes.filter(([, open]) => open === true).map(([name]) => name);
+  });
+
+/** Keys the game binds, read from the page's settings once the hero exists. */
+export interface BoundKeys {
+  /** Every bound key, in the settings' own `Shift+Digit1` form, which is also Playwright's. */
+  all: Set<string>;
+  /** Keys that act on the map: movement and wait. Inside a dialog they must never spend a turn. */
+  map: Set<string>;
+  /** Keys bound to wait, for the passive-spam check. */
+  wait: Set<string>;
 }
 
-export function createInitialOracleState(): OracleState {
+export async function readBoundKeys(page: Page): Promise<BoundKeys> {
+  const binds = await page.evaluate(
+    () => (window.__cotwInputHandler as any)?.settingsManager?.getSettings?.().keybinds ?? {}
+  ) as Record<string, string[]>;
+  const all = new Set<string>();
+  const map = new Set<string>();
+  const wait = new Set<string>();
+  for (const [actionId, codes] of Object.entries(binds)) {
+    for (const code of codes) {
+      all.add(code);
+      if (actionId.startsWith('move_') || actionId === 'wait') map.add(code);
+      if (actionId === 'wait') wait.add(code);
+    }
+  }
+  return { all, map, wait };
+}
+
+/**
+ * Counts every line the engine logs. `engine.messages` keeps only the last 150, so its
+ * length stops moving; this tap wraps `engine.log` (reading, never changing, what it
+ * logs) and is re-installed whenever Continue builds a new engine.
+ */
+export async function tapEngineLog(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const w = window as any;
+    const e = w.__cotwEngine;
+    if (!e || e.__soakTapped) return;
+    w.__soakLogTotal ??= 0;
+    w.__soakLogTail ??= [];
+    const original = e.log.bind(e);
+    e.log = (message: string) => {
+      const result = original(message);
+      // What the engine stored, which is what the player reads.
+      w.__soakLogTotal++;
+      w.__soakLogTail.push(e.messages[e.messages.length - 1] ?? message);
+      if (w.__soakLogTail.length > 200) w.__soakLogTail.shift();
+      return result;
+    };
+    e.__soakTapped = true;
+  });
+}
+
+export interface OracleState {
+  boundKeys: BoundKeys;
+  lastCountdown: number | null;
+  /** The turn `lastCountdown` was read on. Click-to-move keeps stepping between reads. */
+  lastCountdownTurn: number;
+  consecutiveNoOps: number;
+  lastNoOpState: { pos: string; turn: number; log: string } | null;
+  raidEndedObserved: boolean;
+  raidEndedReason?: string;
+  raidEndTurn: number | null;
+  raidEndChecked: boolean;
+  raidLogLines: number | null;
+  villagersFreed: Record<string, number>;
+  drinkCueShowed: boolean;
+  potionDrunk: boolean;
+  currentFloor: number;
+  turnsOnCurrentFloor: number;
+  stairsFoundOnFloor: boolean;
+  interruptions: Record<string, number>;
+  deadKeyCount: number;
+  passiveSpam: { line: string; count: number } | null;
+  lastRaidSaveRoundtripDone: boolean;
+}
+
+export function createInitialOracleState(boundKeys: BoundKeys): OracleState {
   return {
+    boundKeys,
     lastCountdown: null,
+    lastCountdownTurn: 0,
     consecutiveNoOps: 0,
     lastNoOpState: null,
     raidEndedObserved: false,
-    firstMoveAfterRaidDone: false,
-    heldMilestonesOpened: 0,
+    raidEndTurn: null,
+    raidEndChecked: false,
+    raidLogLines: null,
     villagersFreed: {},
     drinkCueShowed: false,
     potionDrunk: false,
-    turnsOnCurrentFloor: 0,
     currentFloor: 0,
+    turnsOnCurrentFloor: 0,
     stairsFoundOnFloor: false,
-    spontaneousModalCount: 0,
+    interruptions: {},
     deadKeyCount: 0,
+    passiveSpam: null,
     lastRaidSaveRoundtripDone: false,
-    seenSignatures: new Set<string>(),
   };
 }
+
+/** The three held villagers (`PROLOGUE_VILLAGERS` in src/content/cotw/prologue.ts). */
+const VILLAGERS = ['prologue-eir', 'prologue-sigrun', 'prologue-brandr'] as const;
+
+/** Stack entries drawn on the canvas, with no DOM element of their own. */
+const CANVAS_OVERLAYS = ['targeting', 'radial-menu'];
+
+/** Dialogs the game opens on its own and the prompt expects: not interruptions. */
+const EXPECTED_OPENERS = ['controls-primer'];
 
 export function normalizeSignature(category: FindingCategory, message: string, topFrame?: string): string {
   const norm = message
@@ -70,24 +155,27 @@ export function normalizeSignature(category: FindingCategory, message: string, t
   return `${category}|${norm}|${frame}`;
 }
 
+/** The first frame under src/ in a stack trace, for the signature. */
+function srcFrame(stack?: string): string | undefined {
+  return stack?.split('\n').find((l) => /[\\/]src[\\/]/.test(l))?.trim();
+}
+
 export async function runOracles(
   page: Page,
   ctx: ActionContext,
   state: OracleState,
   consoleErrors: Array<{ type: string; text: string; stack?: string }>,
-  pageErrors: string[]
+  pageErrors: Array<{ message: string; stack?: string }>
 ): Promise<Finding[]> {
   const findings: Finding[] = [];
+  const modesAfter = await openModes(page);
+  const inDialogBefore = ctx.stackBefore.length > 0 || ctx.modesBefore.length > 0;
+  let curTurn = ctx.turnBefore;
+  let curFloor = state.currentFloor;
 
-  const addFinding = (
-    category: FindingCategory,
-    severity: FindingSeverity,
-    detail: string,
-    topFrame?: string
-  ) => {
-    const sig = normalizeSignature(category, detail, topFrame);
-    const finding: Finding = {
-      sig,
+  const addFinding = (category: FindingCategory, severity: FindingSeverity, detail: string, topFrame?: string) => {
+    findings.push({
+      sig: normalizeSignature(category, detail, topFrame),
       category,
       severity,
       lens: ctx.policy,
@@ -95,441 +183,301 @@ export async function runOracles(
       opening: ctx.opening,
       sha: ctx.sha,
       action: ctx.actionIndex,
-      turn: ctx.turnBefore, // updated below once state fetched
-      floor: ctx.currentFloor ?? 0,
+      turn: curTurn,
+      floor: curFloor,
       detail,
-      lastActions: `${ctx.seed}/actions.jsonl#L${Math.max(1, ctx.actionIndex - 12)}-${ctx.actionIndex}`,
+      lastActions: `${ctx.seed}/actions.jsonl#L${Math.max(1, ctx.actionIndex - 12)}-${ctx.actionIndex + 1}`,
       screenshot: `${ctx.seed}/f${ctx.actionIndex}.png`,
       trace: `${ctx.seed}/f${ctx.actionIndex}.zip`,
-      save: `${ctx.seed}/save-${Math.max(0, Math.floor(ctx.actionIndex / 100) * 100)}.txt`,
+      save: `${ctx.seed}/save-${Math.floor(ctx.actionIndex / 100) * 100}.txt`,
       repro: `SOAK=1 SOAK_SEED=${ctx.seed} SOAK_POLICY=${ctx.policy} SOAK_OPENING=${ctx.opening} SOAK_ACTIONS=${ctx.actionIndex + 1} npx playwright test e2e/soak.spec.ts --project=chromium --workers=1`,
-    };
-    findings.push(finding);
-    state.seenSignatures.add(sig);
+    });
   };
 
-  // 1. Crash & Console Errors / Warnings
-  for (const pErr of pageErrors) {
-    addFinding('bug', 'S1', `pageerror: ${pErr}`);
-  }
-  for (const cErr of consoleErrors) {
-    if (cErr.type === 'error') {
-      addFinding('bug', 'S1', `console.error: ${cErr.text}`, cErr.stack);
-    } else if (cErr.type === 'warn') {
-      addFinding('bug', 'S3', `console.warn: ${cErr.text}`, cErr.stack);
-    }
-  }
+  const live = await page.evaluate(
+    ({ canvasOverlays, villagers }) => {
+      const w = window as any;
+      const e = w.__cotwEngine;
+      const h = w.__cotwInputHandler;
+      if (!e || !e.player) return null;
+      const p = e.player;
+      const stack: string[] = h?.modalStack?.getStackIds?.() ?? [];
 
-  // 2. Fetch live state from page in single evaluate
-  const live = await page.evaluate(() => {
-    const w = window as any;
-    const e = w.__cotwEngine;
-    const h = w.__cotwInputHandler;
-    if (!e || !e.player) return null;
+      const shown = (el: Element | null): boolean => {
+        if (!el) return false;
+        const s = window.getComputedStyle(el);
+        const r = (el as HTMLElement).getBoundingClientRect();
+        return s.display !== 'none' && s.visibility !== 'hidden' && r.width > 0 && r.height > 0;
+      };
+      // Every DOM surface a stack entry can own: dialog scrims, the character menu and the
+      // potion picker (a popover over the potion row).
+      const surfaces = [
+        ...document.querySelectorAll('.ui-scrim, #character-menu-modal, .potion-picker, #context-help-overlay'),
+      ].filter(shown);
+      const surfaceIds = surfaces.map((el) => el.id || `.${(el as HTMLElement).className.split(' ')[0]}`);
 
-    const p = e.player;
-    const stack = h?.modalStack?.getStackIds?.() ?? [];
+      const top = stack[stack.length - 1];
+      const topOnCanvas = top !== undefined && canvasOverlays.includes(top);
+      const activeEl = document.activeElement;
+      const focusInert = !activeEl || activeEl === document.body || activeEl === document.documentElement;
+      const focusEscaped =
+        stack.length > 0 && !topOnCanvas && surfaces.length > 0 && !focusInert && !surfaces.some((s) => s.contains(activeEl));
+      const activeElTag = activeEl
+        ? `${activeEl.tagName}${activeEl.id ? '#' + activeEl.id : ''} "${(activeEl.textContent ?? '').trim().slice(0, 24)}"`
+        : 'null';
 
-    // Check visible dialogs and canvas overlays
-    const isTargetingOpen = Boolean(w.__cotwRenderer?.targetingOverlay?.isOpen);
-    const isRadialOpen = Boolean(w.__cotwRenderer?.radialMenuOverlay?.isOpen);
-
-    const dialogSelectors = [
-      '.ui-dialog',
-      '#game-over-modal',
-      '#choice-modal-overlay',
-      '#save-quit-modal',
-      '#save-code-modal',
-      '#character-menu-modal',
-      '#controls-primer',
-      '#shop-modal',
-      '#shop-dialog',
-      '#diagnostics-modal',
-      '#feedback-modal',
-      '#altar-modal',
-      '#mastery-choice-modal',
-      '#command-palette-overlay',
-      '#rune-discovery-modal',
-    ];
-    const visibleDialogs: string[] = [];
-    if (isTargetingOpen) visibleDialogs.push('targeting');
-    if (isRadialOpen) visibleDialogs.push('radial-menu');
-
-    for (const sel of dialogSelectors) {
-      const el = document.querySelector(sel);
-      if (el) {
-        const style = window.getComputedStyle(el);
-        if (style.display !== 'none' && style.visibility !== 'hidden' && (el as HTMLElement).offsetWidth > 0) {
-          visibleDialogs.push(sel);
-        }
+      const allEntities = e.map.getAllEntities();
+      const posCounts = new Map<string, string[]>();
+      for (const ent of allEntities) {
+        if (ent.isAlive && !ent.isAlive()) continue;
+        const key = `${ent.planeId ?? 'physical'}:${ent.x},${ent.y}`;
+        posCounts.set(key, [...(posCounts.get(key) ?? []), ent.id]);
       }
-    }
+      const overlappingTiles = [...posCounts.entries()].filter(([, ids]) => ids.length > 1).map(([pos, ids]) => ({ pos, ids }));
 
-    // Active element focus check
-    const activeEl = document.activeElement;
-    const activeElTag = activeEl ? `${activeEl.tagName}#${activeEl.id}.${activeEl.className}` : 'null';
-    let focusEscaped = false;
-    if (stack.length > 0) {
-      const topId = stack[stack.length - 1];
-      if (topId === 'targeting' || topId === 'radial-menu') {
-        // Canvas overlays don't have DOM modals; focus should remain on body or canvas
-        if (activeEl && activeEl !== document.body && activeEl !== document.documentElement && activeEl.id !== 'game-canvas') {
-          focusEscaped = true;
-        }
+      let clippedText: string | null = null;
+      if (document.documentElement.scrollWidth > window.innerWidth + 1) {
+        clippedText = `document scrolls horizontally (scrollWidth ${document.documentElement.scrollWidth} > innerWidth ${window.innerWidth})`;
       } else {
-        const modalEl =
-          document.getElementById(topId) ??
-          document.getElementById(`${topId}-modal`) ??
-          document.querySelector(`[id*="${topId}"]`) ??
-          document.querySelector('.ui-dialog');
-        if (activeEl && activeEl !== document.body && activeEl !== document.documentElement) {
-          if (modalEl && !modalEl.contains(activeEl)) {
-            focusEscaped = true;
-          }
-        }
-      }
-    }
-
-    // Two entities share a tile check
-    const allEntities = e.map.getAllEntities();
-    const posCounts = new Map<string, string[]>();
-    for (const ent of allEntities) {
-      if (ent.isAlive ? ent.isAlive() : true) {
-        const key = `${ent.x},${ent.y}`;
-        const existing = posCounts.get(key) ?? [];
-        existing.push(ent.id);
-        posCounts.set(key, existing);
-      }
-    }
-    const overlappingTiles: Array<{ pos: string; entities: string[] }> = [];
-    for (const [pos, ents] of posCounts.entries()) {
-      if (ents.length > 1) overlappingTiles.push({ pos, entities: ents });
-    }
-
-    // Check clipped text
-    let clippedText: string | null = null;
-    if (document.documentElement.scrollWidth > window.innerWidth + 1) {
-      clippedText = `Document scrollWidth (${document.documentElement.scrollWidth}) > innerWidth (${window.innerWidth})`;
-    } else {
-      const textEls = document.querySelectorAll('.ui-dialog-title, .ui-dialog-body, .sb-cond-name, .hud-key, .ui-note');
-      for (const el of Array.from(textEls)) {
-        if ((el as HTMLElement).offsetWidth > 0 && el.scrollWidth > el.clientWidth + 1) {
-          const style = window.getComputedStyle(el);
-          if (style.overflowX !== 'auto' && style.overflowX !== 'scroll') {
-            clippedText = `Clipped text in ${el.className || el.tagName}: scrollWidth ${el.scrollWidth} > clientWidth ${el.clientWidth}`;
-            break;
-          }
-        }
-      }
-    }
-
-    // Check raid countdown
-    let countdownVal: number | null = null;
-    if (e.manifest?.timedEvents) {
-      for (const def of e.manifest.timedEvents) {
-        if (e.getWorldFlag(def.startFlag) && (!def.resolvedFlag || !e.getWorldFlag(def.resolvedFlag))) {
-          const start = e.getWorldCounter(`timed_event_start:${def.id}`);
-          countdownVal = Math.max(0, def.turnLimit - (e.turnCount - start));
+        for (const el of document.querySelectorAll('.ui-dialog-title, .ui-dialog-body, .ui-fact, .sb-cond-name, .hud-key, .ui-note, #console-objective')) {
+          if (!shown(el) || el.scrollWidth <= el.clientWidth + 1) continue;
+          const ox = window.getComputedStyle(el).overflowX;
+          if (ox === 'auto' || ox === 'scroll') continue;
+          clippedText = `clipped text in ${el.id ? '#' + el.id : '.' + (el as HTMLElement).className.split(' ')[0]}`;
           break;
         }
       }
-    }
 
-    // Check raid entities
-    const raidMonstersLeft = allEntities.filter(
-      (m: any) => typeof m.id === 'string' && m.id.startsWith('prologue-monster-')
-    ).length;
-    const raidNpcsLeft = allEntities.filter(
-      (n: any) => typeof n.id === 'string' && ['prologue-eir', 'prologue-dagr', 'prologue-alva'].includes(n.id)
-    ).length;
+      let countdownVal: number | null = null;
+      for (const def of e.manifest?.timedEvents ?? []) {
+        if (!e.getWorldFlag(def.startFlag) || (def.resolvedFlag && e.getWorldFlag(def.resolvedFlag))) continue;
+        const ticked = e.getWorldFlag(`timed_event_started:${def.id}`);
+        const start = ticked ? e.getWorldCounter(`timed_event_start:${def.id}`) : e.turnCount;
+        countdownVal = Math.max(0, def.turnLimit - (e.turnCount - start));
+        break;
+      }
 
-    // Check potion cue
-    const potionCue = document.querySelector('.potion-slot.hud-cue') !== null;
+      const prologueNpcIds: string[] = (e.manifest?.prologue?.npcs ?? []).map((n: any) => n.id).filter(Boolean);
+      const raidMonstersLeft = allEntities.filter((m: any) => String(m.id).startsWith('prologue-monster-') && (!m.isAlive || m.isAlive())).length;
+      const raidNpcsLeft = allEntities.filter((n: any) => [...villagers, ...prologueNpcIds].includes(n.id)).length;
 
-    // Current tile passable
-    const currentTile = e.map.getTile(p.x, p.y);
-    const tilePassable = currentTile ? currentTile.passable : true;
+      // Stairs down seen on this floor (the FOV grid's Unexplored is what an out-of-range read returns).
+      let stairsSeen = false;
+      if (e.currentFloor > 0) {
+        const unexplored = e.fov.getVisibility(-1, -1);
+        for (let y = 0; y < e.map.height && !stairsSeen; y++) {
+          for (let x = 0; x < e.map.width; x++) {
+            if (e.map.getTile(x, y)?.type === 'stairs_down' && e.fov.getVisibility(x, y) !== unexplored) {
+              stairsSeen = true;
+              break;
+            }
+          }
+        }
+      }
 
-    return {
-      turn: e.turnCount,
-      floor: e.currentFloor,
-      x: p.x,
-      y: p.y,
-      hp: p.hp,
-      maxHp: p.maxHp,
-      hpFloor: p.hpFloor ?? 0,
-      mana: p.mana,
-      maxMana: p.maxMana,
-      gold: p.gold ?? 0,
-      isAlive: p.isAlive(),
-      stack,
-      visibleDialogs,
-      focusEscaped,
-      activeElTag,
-      overlappingTiles,
-      clippedText,
-      prologueEnded: Boolean(e.getWorldFlag('cotw_prologue_ended')),
-      townLit: Boolean(e.map.lit),
-      countdownVal,
-      raidMonstersLeft,
-      raidNpcsLeft,
-      potionCue,
-      tilePassable,
-      messages: e.messages,
-      eirSaved: Boolean(e.getWorldFlag('prologue-eir_saved')),
-      dagrSaved: Boolean(e.getWorldFlag('prologue-dagr_saved')),
-      alvaSaved: Boolean(e.getWorldFlag('prologue-alva_saved')),
-    };
-  });
+      return {
+        turn: e.turnCount,
+        floor: e.currentFloor,
+        x: p.x,
+        y: p.y,
+        hp: p.hp,
+        maxHp: p.maxHp,
+        hpFloor: p.hpFloor ?? 0,
+        mana: p.mana,
+        maxMana: p.maxMana,
+        gold: p.gold ?? 0,
+        isAlive: p.isAlive(),
+        stack,
+        surfaceIds,
+        topOnCanvas,
+        focusEscaped,
+        activeElTag,
+        overlappingTiles,
+        clippedText,
+        prologueRunning: Boolean(e.getWorldFlag('cotw_prologue_started')) && !e.getWorldFlag('cotw_prologue_ended'),
+        prologueEnded: Boolean(e.getWorldFlag('cotw_prologue_ended')),
+        struckDown: Boolean(e.getWorldFlag('cotw_prologue_struck_down')),
+        covenFled: Boolean(e.getWorldFlag('cotw_prologue_coven_fled')),
+        townLit: Boolean(e.map.lit),
+        countdownVal,
+        raidMonstersLeft,
+        raidNpcsLeft,
+        potionCue: document.querySelector('.potion-slot.hud-cue') !== null,
+        tilePassable: e.map.getTile(p.x, p.y)?.passable ?? true,
+        messageCount: (w.__soakLogTotal ?? 0) as number,
+        messages: ((w.__soakLogTail ?? []) as string[]).slice(-40),
+        saved: Object.fromEntries(villagers.map((id) => [id, Boolean(e.getWorldFlag(`${id}_saved`))])) as Record<string, boolean>,
+        stairsSeen,
+      };
+    },
+    { canvasOverlays: CANVAS_OVERLAYS, villagers: [...VILLAGERS] }
+  );
+
+  for (const err of pageErrors) addFinding('bug', 'S1', `pageerror: ${err.message}`, srcFrame(err.stack));
+  for (const c of consoleErrors) {
+    addFinding('bug', c.type === 'error' ? 'S2' : 'S3', `console.${c.type}: ${c.text}`, srcFrame(c.stack));
+  }
 
   if (!live) {
-    addFinding('bug', 'S1', 'window.__cotwEngine or player missing during oracle evaluation');
+    addFinding('bug', 'S1', 'window.__cotwEngine or its player is missing');
     return findings;
   }
+  curTurn = live.turn;
+  curFloor = live.floor;
+  const key = ctx.dispatchedInput.key;
+  const newMessages = live.messages.slice(Math.max(0, live.messages.length - (live.messageCount - ctx.messagesSeenCount)));
 
-  // Update context floor and turn
-  for (const f of findings) {
-    f.turn = live.turn;
-    f.floor = live.floor;
+  // --- Modal isolation ---------------------------------------------------------------
+  // A map key (move or wait) pressed inside a dialog must never spend a turn. Keys a dialog
+  // acts on (Enter on "drink", Space on a focused button, a target confirmed) may: they are
+  // the player's choice.
+  if (key && key !== 'Space' && inDialogBefore && state.boundKeys.map.has(key) && live.turn !== ctx.turnBefore) {
+    addFinding('bug', 'S2', `map key ${key} spent a turn under <${[...ctx.stackBefore, ...ctx.modesBefore].join(',')}> (${ctx.turnBefore} -> ${live.turn})`, 'input-handler.ts');
   }
-
-  // Check 1: Turn count moved while modal stack was non-empty before input
-  if (ctx.stackBefore.length > 0 && live.turn !== ctx.turnBefore) {
-    addFinding(
-      'bug',
-      'S2',
-      `turn advanced under modal <${ctx.stackBefore.join(',')}> from ${ctx.turnBefore} to ${live.turn}`,
-      'inputHandler.ts'
-    );
+  if (live.stack.length > 0 && !live.topOnCanvas && live.surfaceIds.length === 0) {
+    addFinding('bug', 'S2', `modal stack has [${live.stack.join(',')}] but nothing is shown`, 'modalStack.ts');
+  } else if (live.stack.length === 0 && live.surfaceIds.length > 0 && !modesAfter.some((m) => m === 'shop' || m === 'help' || m === 'map')) {
+    addFinding('bug', 'S2', `a dialog is shown (${live.surfaceIds.join(',')}) with an empty modal stack`, 'modalStack.ts');
   }
-
-  // Check 2: Modal stack disagrees with DOM
-  if (live.stack.length > 0 && live.visibleDialogs.length === 0) {
-    addFinding(
-      'bug',
-      'S2',
-      `modal stack has [${live.stack.join(',')}] but no visible dialog in DOM`,
-      'modalStack.ts'
-    );
-  } else if (live.stack.length === 0 && live.visibleDialogs.some((d) => d.includes('.ui-dialog') || d.includes('game-over'))) {
-    addFinding(
-      'bug',
-      'S2',
-      `empty modal stack but visible dialog in DOM: ${live.visibleDialogs.join(',')}`,
-      'modalStack.ts'
-    );
-  }
-
-  // Check 3: Focus escaped modal
   if (live.focusEscaped) {
-    addFinding(
-      'bug',
-      'S2',
-      `focus escaped modal; active element is ${live.activeElTag}`,
-      'modalStack.ts'
-    );
+    // Keys go to the window's handler whatever has focus, so this is S3: it matters when
+    // Enter or Space reaches a button behind the dialog, and for keyboard-only players.
+    addFinding('bug', 'S3', `focus left modal <${live.stack[live.stack.length - 1]}> for ${live.activeElTag}`, 'modalStack.ts');
   }
-
-  // Check 4: Escape pressed with non-empty stack
-  if (ctx.dispatchedInput.key === 'Escape' && ctx.stackBefore.length > 0) {
-    const topModalBefore = ctx.stackBefore[ctx.stackBefore.length - 1];
-    // Known exceptions: choice modal when non-cancelable or in 200ms debounce
-    const isSpecialModal = topModalBefore.includes('choice') || topModalBefore.includes('game-over');
-    if (!isSpecialModal && live.stack.length !== ctx.stackBefore.length - 1) {
-      addFinding(
-        'bug',
-        'S2',
-        `Escape was pressed on modal <${topModalBefore}> but stack went from ${ctx.stackBefore.length} to ${live.stack.length}`,
-        'modalStack.ts'
-      );
+  if (key === 'Escape' && ctx.stackBefore.length > 0) {
+    const topBefore = ctx.stackBefore[ctx.stackBefore.length - 1];
+    // Choices and the game-over screen swallow Escape on purpose.
+    const swallows = ['choice', 'mastery-choice', 'game-over'].some((id) => topBefore.includes(id));
+    if (!swallows && live.stack.length !== ctx.stackBefore.length - 1) {
+      addFinding('bug', 'S2', `Escape on <${topBefore}> took the stack from ${ctx.stackBefore.length} to ${live.stack.length}`, 'modalStack.ts');
     }
   }
+  if (key && !inDialogBefore && live.stack.length > 0 && state.boundKeys.map.has(key)) {
+    const opened = live.stack[live.stack.length - 1];
+    if (!EXPECTED_OPENERS.includes(opened)) state.interruptions[opened] = (state.interruptions[opened] ?? 0) + 1;
+  }
 
-  // Check 5: Player state range
-  if (Number.isNaN(live.hp) || (live.isAlive && live.hp < 0) || live.hp > live.maxHp) {
+  // --- Player state ---------------------------------------------------------------------
+  if (Number.isNaN(live.hp) || (live.isAlive && live.hp <= 0) || live.hp > live.maxHp) {
     addFinding('bug', 'S2', `player HP out of range: ${live.hp}/${live.maxHp}`);
   }
   if (Number.isNaN(live.mana) || live.mana < 0 || live.mana > live.maxMana) {
     addFinding('bug', 'S2', `player mana out of range: ${live.mana}/${live.maxMana}`);
   }
-  if (live.gold < 0) {
-    addFinding('bug', 'S2', `player gold is negative: ${live.gold}`);
-  }
-  if (!live.tilePassable) {
-    addFinding('bug', 'S2', `hero stands on impassable tile at ${live.x},${live.y}`);
-  }
-  if (live.overlappingTiles.length > 0) {
-    for (const ov of live.overlappingTiles) {
-      addFinding('bug', 'S2', `two entities share tile at ${ov.pos}: [${ov.entities.join(',')}]`);
-    }
-  }
+  if (live.gold < 0) addFinding('bug', 'S2', `player gold is negative: ${live.gold}`);
+  if (!live.tilePassable) addFinding('bug', 'S2', `hero stands on an impassable tile at ${live.x},${live.y}`);
+  for (const ov of live.overlappingTiles) addFinding('bug', 'S2', `two entities share tile ${ov.pos}: [${ov.ids.join(',')}]`);
 
-  // Check 6: The Opening Oracles
-  if (!live.prologueEnded && live.floor === 0) {
-    // Raid is running
+  // --- The opening ----------------------------------------------------------------------
+  if (live.prologueRunning) {
     if (live.countdownVal !== null) {
       if (state.lastCountdown !== null) {
         if (live.countdownVal > state.lastCountdown) {
-          addFinding('bug', 'S2', `raid countdown increased from ${state.lastCountdown} to ${live.countdownVal}`);
-        } else if (state.lastCountdown - live.countdownVal > Math.max(1, live.turn - ctx.turnBefore)) {
-          addFinding(
-            'bug',
-            'S2',
-            `raid countdown decreased too fast: was ${state.lastCountdown}, now ${live.countdownVal}`
-          );
+          addFinding('bug', 'S2', `raid countdown rose from ${state.lastCountdown} to ${live.countdownVal}`);
+        } else if (state.lastCountdown - live.countdownVal > Math.max(0, live.turn - state.lastCountdownTurn)) {
+          addFinding('bug', 'S2', `raid countdown fell faster than turns passed: ${state.lastCountdown} -> ${live.countdownVal} over ${live.turn - state.lastCountdownTurn} turns`);
         }
       }
       state.lastCountdown = live.countdownVal;
+      state.lastCountdownTurn = live.turn;
     }
-    if (live.hp < 1) {
-      addFinding('bug', 'S1', `hero HP dropped below 1 during raid: ${live.hp}`);
+    if (live.hp < 1) addFinding('bug', 'S1', `hero HP fell below 1 during the raid: ${live.hp}`);
+    if (live.stack.some((id) => id === 'choice' || id === 'mastery-choice') && !ctx.stackBefore.includes('choice')) {
+      // Milestones are held until the raid is over (d74cbf5). A choice opening now is either
+      // a milestone breaking in or a raid scene's own; the triage replay tells which.
+      addFinding('bug', 'S3', `a choice dialog opened during the raid: <${live.stack.join(',')}>`);
     }
-    if (ctx.dispatchedInput.key === 'KeyR' && live.turn > ctx.turnBefore && live.hp > ctx.hpBefore) {
-      addFinding('bug', 'S2', 'rest succeeded during active raid countdown');
-    }
-    if (live.potionCue) {
-      state.drinkCueShowed = true;
-    }
-    if (state.drinkCueShowed && ctx.dispatchedInput.key?.includes('Digit') && live.hp > ctx.hpBefore) {
-      state.potionDrunk = true;
-    }
-    // Villagers freed
-    if (live.eirSaved && !state.villagersFreed.eir) state.villagersFreed.eir = live.turn;
-    if (live.dagrSaved && !state.villagersFreed.dagr) state.villagersFreed.dagr = live.turn;
-    if (live.alvaSaved && !state.villagersFreed.alva) state.villagersFreed.alva = live.turn;
-  } else {
-    // Raid has ended
-    if (!state.raidEndedObserved) {
-      state.raidEndedObserved = true;
-      if (live.hpFloor > 0) {
-        addFinding('bug', 'S1', `HP floor (${live.hpFloor}) not lifted after raid ended`);
-      }
-      if (live.floor === 0 && !live.townLit) {
-        addFinding('bug', 'S2', 'town is dark after raid ended');
-      }
-      if (live.raidMonstersLeft > 0) {
-        addFinding('bug', 'S2', `${live.raidMonstersLeft} raid monsters remain after raid ended`);
-      }
-      if (live.raidNpcsLeft > 0) {
-        addFinding('bug', 'S2', `${live.raidNpcsLeft} raid captive NPCs remain after raid ended`);
-      }
-      if (live.countdownVal !== null && live.countdownVal > 0) {
-        addFinding('bug', 'S2', 'countdown badge still active after raid ended');
-      }
-    }
-
-    if (live.floor > 0 && live.hpFloor > 0) {
-      addFinding('bug', 'S1', `HP floor followed hero into dungeon on floor ${live.floor}`);
-    }
+    if (live.potionCue) state.drinkCueShowed = true;
+    if (state.drinkCueShowed && key?.startsWith('Shift+Digit') && live.hp > ctx.hpBefore) state.potionDrunk = true;
+    for (const id of VILLAGERS) if (live.saved[id] && state.villagersFreed[id] === undefined) state.villagersFreed[id] = live.turn;
+  } else if (!state.raidEndedObserved && (live.prologueEnded || ctx.opening === 'skip')) {
+    state.raidEndedObserved = true;
+    state.raidEndTurn = live.turn;
+    state.raidLogLines = live.messageCount;
+    state.raidEndedReason =
+      ctx.opening === 'skip' ? 'skipped (triage)' : live.struckDown ? 'struck down' : live.covenFled ? 'countdown' : 'warlocks slain';
+  } else if (state.raidEndedObserved && !state.raidEndChecked && state.raidEndTurn !== null && live.turn > state.raidEndTurn) {
+    // One turn after the end: the pack's own hooks (the countdown's stop flag among them)
+    // run on the step after the raid ends, so checking on the ending action itself is early.
+    state.raidEndChecked = true;
+    if (live.hpFloor > 0) addFinding('bug', 'S1', `HP floor (${live.hpFloor}) still set after the raid ended`);
+    if (live.floor === 0 && !live.townLit) addFinding('bug', 'S2', 'town still dark after the raid ended');
+    if (live.raidMonstersLeft > 0) addFinding('bug', 'S2', `${live.raidMonstersLeft} raid monsters remain after the raid ended`);
+    if (live.raidNpcsLeft > 0) addFinding('bug', 'S2', `${live.raidNpcsLeft} raid NPCs remain after the raid ended`);
+    if (live.countdownVal !== null && live.countdownVal > 0) addFinding('bug', 'S2', 'raid countdown still running after the raid ended');
   }
+  if (live.floor > 0 && live.hpFloor > 0) addFinding('bug', 'S1', `HP floor followed the hero to floor ${live.floor}`);
 
-  // Check 7: Softlocks
-  if (live.stack.length === 0) {
-    const currentStateKey = {
-      pos: `${live.x},${live.y}`,
-      turn: live.turn,
-      log: live.messages.slice(-1)[0] ?? '',
-      stack: live.stack.join(','),
-    };
-    if (
-      state.lastNoOpState &&
-      state.lastNoOpState.pos === currentStateKey.pos &&
-      state.lastNoOpState.turn === currentStateKey.turn &&
-      state.lastNoOpState.log === currentStateKey.log &&
-      state.lastNoOpState.stack === currentStateKey.stack
-    ) {
+  // --- Softlocks ------------------------------------------------------------------------
+  if (live.stack.length === 0 && modesAfter.length === 0) {
+    const now = { pos: `${live.x},${live.y}`, turn: live.turn, log: live.messages[live.messages.length - 1] ?? '' };
+    const prev = state.lastNoOpState;
+    if (prev && prev.pos === now.pos && prev.turn === now.turn && prev.log === now.log && live.messageCount === ctx.messagesSeenCount) {
       state.consecutiveNoOps++;
-      if (state.consecutiveNoOps >= 25) {
-        addFinding(
-          'softlock',
-          'S1',
-          '25 consecutive inputs with no modal open left position, turn, log, and stack all unchanged'
-        );
+      if (state.consecutiveNoOps === 25) {
+        addFinding('softlock', 'S1', '25 inputs in a row with no dialog open changed nothing (position, turn, log)');
       }
     } else {
       state.consecutiveNoOps = 0;
-      state.lastNoOpState = currentStateKey;
+      state.lastNoOpState = now;
     }
   } else {
     state.consecutiveNoOps = 0;
   }
 
-  // Check 8: Text Oracles
-  const newMessages = live.messages.slice(ctx.messagesSeenCount);
-  for (let mIdx = 0; mIdx < newMessages.length; mIdx++) {
-    const msg = newMessages[mIdx];
-    // Forbidden debug tokens
-    if (msg.includes('undefined') || msg.includes('NaN') || msg.includes('[object') || msg.includes('${') || msg.includes('{{')) {
-      addFinding('text', 'S3', `raw token in log line: "${msg}"`);
-    }
-    // Doubled word
-    if (/\b([A-Za-z]+)\s+\1\b/i.test(msg)) {
-      addFinding('text', 'S3', `doubled word in log line: "${msg}"`);
-    }
-    // Leading lowercase letter
-    if (/^[a-z]/.test(msg.trim())) {
-      addFinding('text', 'S3', `leading lowercase letter in log line: "${msg}"`);
-    }
-    // "The " before proper name
-    if (/\bThe\s+(Hallvard|Eir|Dagr|Alva|Bjarnarhaven|Níðhögg|Víðnir|Gálmr|Svartr|Sköll|Týr|Odin|Thor|Freya|Loki|Ivalda|Haugbui)\b/.test(msg)) {
-      addFinding('text', 'S3', `sentence starts "The " before proper name: "${msg}"`);
-    }
-    // Raw content ID (snake_case)
-    if (/\b[a-z]{2,}_[a-z0-9_]+\b/.test(msg)) {
-      addFinding('text', 'S3', `raw snake_case content id in log line: "${msg}"`);
-    }
-    // Spam (same log line emitted > 3 times in a row)
-    const history = live.messages.slice(Math.max(0, ctx.messagesSeenCount + mIdx - 3), ctx.messagesSeenCount + mIdx + 1);
-    if (history.length >= 4 && history.every((line: string) => line === msg)) {
-      addFinding('text', 'S3', `spam: same log line emitted > 3 times in a row: "${msg}"`);
-    }
+  // --- Text -----------------------------------------------------------------------------
+  const counts = new Map<string, number>();
+  for (const msg of newMessages) {
+    counts.set(msg, (counts.get(msg) ?? 0) + 1);
+    if (/undefined|NaN|\[object|\$\{|\{\{/.test(msg)) addFinding('text', 'S3', `raw token in log line: "${msg}"`);
+    const doubled = /\b([A-Za-z]{2,})\s+\1\b/i.exec(msg);
+    if (doubled) addFinding('text', 'S3', `doubled word "${doubled[0]}" in log line: "${msg}"`);
+    if (/^[a-z]/.test(msg.trim())) addFinding('text', 'S3', `log line starts lowercase: "${msg}"`);
+    if (/\b[a-z]{2,}_[a-z0-9_]+\b/.test(msg)) addFinding('text', 'S3', `raw snake_case id in log line: "${msg}"`);
   }
-
-  // Clipped text or horizontal scroll
-  if (live.clippedText) {
-    addFinding('text', 'S3', live.clippedText);
+  for (const [msg, n] of counts) if (n >= 3) addFinding('text', 'S3', `one action logged the same line ${n} times: "${msg}"`);
+  // Spam while the hero only waits: something logs every turn on its own (a monster's
+  // "waits a moment", a status ticking). A hero walking into walls is the bot, not spam.
+  if (key && state.boundKeys.wait.has(key) && newMessages.length > 0) {
+    const line = newMessages[newMessages.length - 1];
+    state.passiveSpam = state.passiveSpam?.line === line ? { line, count: state.passiveSpam.count + 1 } : { line, count: 1 };
+    if (state.passiveSpam.count === 4) addFinding('text', 'S3', `the same line on 4 waits in a row: "${line}"`);
+  } else if (key && !state.boundKeys.wait.has(key)) {
+    state.passiveSpam = null;
   }
+  if (live.clippedText) addFinding('text', 'S3', live.clippedText);
 
-  // Check 9: UX / Player experience
-  // Dead key check
-  const stateChanged =
+  // --- Player experience ----------------------------------------------------------------
+  // A bound key pressed on the open map that changed nothing and said nothing. Unbound keys
+  // and clicks are excluded: a neighbouring-tile click with the Hover Ring off is intended.
+  const changed =
     live.x !== ctx.posBefore.x ||
     live.y !== ctx.posBefore.y ||
     live.hp !== ctx.hpBefore ||
     live.mana !== ctx.manaBefore ||
     live.turn !== ctx.turnBefore ||
-    newMessages.length > 0 ||
-    live.stack.length > 0;
-
-  if (!stateChanged && ctx.dispatchedInput.key) {
-    const isRestRefusal = ctx.dispatchedInput.key === 'KeyR' && newMessages.some((m: string) => m.toLowerCase().includes('cannot rest') || m.toLowerCase().includes('refuse'));
-    if (!isRestRefusal) {
-      state.deadKeyCount++;
-      addFinding('ux', 'S4', `dead key "${ctx.dispatchedInput.key}" produced no feedback or state change`);
-    }
+    live.messageCount !== ctx.messagesSeenCount ||
+    live.stack.length > 0 ||
+    modesAfter.length > 0;
+  if (key && !inDialogBefore && state.boundKeys.all.has(key) && !changed) {
+    state.deadKeyCount++;
+    addFinding('ux', 'S4', `bound key ${key} on the open map gave no feedback and changed nothing`);
   }
 
-  // Latency > 250ms
-  if (ctx.latencyMs > 250) {
-    addFinding('ux', 'S4', `action latency ${ctx.latencyMs}ms exceeded 250ms threshold`);
-  }
-
-  // Floor progression tracking
   if (live.floor !== state.currentFloor) {
     state.currentFloor = live.floor;
     state.turnsOnCurrentFloor = 0;
     state.stairsFoundOnFloor = false;
   } else {
     state.turnsOnCurrentFloor += Math.max(0, live.turn - ctx.turnBefore);
-    if (state.turnsOnCurrentFloor > 300 && !state.stairsFoundOnFloor) {
-      addFinding('ux', 'S4', `spent > 300 turns on floor ${live.floor} without finding stairs`);
-    }
+  }
+  if (live.stairsSeen) state.stairsFoundOnFloor = true;
+  if (live.floor > 0 && state.turnsOnCurrentFloor > 300 && !state.stairsFoundOnFloor) {
+    addFinding('ux', 'S4', `more than 300 turns on floor ${live.floor} without seeing the stairs down`);
   }
 
-  // Death in first 200 turns after raid
-  if (!live.isAlive && live.prologueEnded && live.turn < 200) {
-    const last20 = live.messages.slice(-20).join(' | ');
-    addFinding('ux', 'S4', `death in first 200 turns after raid (turn ${live.turn}): ${last20}`);
+  if (!live.isAlive && state.raidEndTurn !== null && live.turn - state.raidEndTurn < 200) {
+    addFinding('ux', 'S4', `died ${live.turn - state.raidEndTurn} turns after the raid: ${live.messages.slice(-20).join(' | ')}`);
   }
 
   return findings;

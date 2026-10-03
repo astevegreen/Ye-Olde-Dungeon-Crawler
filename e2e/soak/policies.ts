@@ -1,100 +1,85 @@
 import type { Page } from '@playwright/test';
 import type { SoakPrng } from './prng';
+import type { BoundKeys } from './oracles';
 
 export type DispatchedAction =
   | { type: 'key'; key: string; secondaryKey?: string }
-  | { type: 'click'; x: number; y: number; selector?: string };
+  | { type: 'click'; x: number; y: number };
 
 export interface PolicyContext {
   page: Page;
   prng: SoakPrng;
   actionIndex: number;
+  boundKeys: BoundKeys;
+  /** The game canvas's box in page pixels, read once when the run starts. */
+  canvas: { x: number; y: number; width: number; height: number } | null;
+  /** A dialog or a keyboard-owning mode (look, map, shop, help) is open. */
+  inDialog: boolean;
 }
 
+const ARROWS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+
 export async function decideChaosAction(ctx: PolicyContext): Promise<DispatchedAction> {
-  const { page, prng } = ctx;
+  const { prng } = ctx;
 
-  const stack = await page.evaluate(() => window.__cotwInputHandler?.modalStack?.getStackIds() ?? []);
-
-  // 1. If a modal is open, navigate or confirm/dismiss it
-  if (stack.length > 0) {
+  // In a dialog or mode: move through it, confirm, back out, or tab (Tab is how focus escapes).
+  if (ctx.inDialog) {
     const key = prng.weightedPick([
-      { item: 'ArrowDown', weight: 25 },
-      { item: 'ArrowUp', weight: 15 },
-      { item: 'Enter', weight: 35 },
+      { item: 'ArrowDown', weight: 22 },
+      { item: 'ArrowUp', weight: 12 },
+      { item: 'ArrowRight', weight: 6 },
+      { item: 'Enter', weight: 30 },
       { item: 'Escape', weight: 15 },
       { item: 'Tab', weight: 5 },
       { item: 'Space', weight: 5 },
+      { item: 'Digit1', weight: 5 },
     ]);
     return { type: 'key', key };
   }
 
-  // 2. Check targeting overlay
-  const isTargeting = await page.evaluate(() => Boolean(window.__cotwRenderer?.targetingOverlay?.isOpen));
-  if (isTargeting) {
-    const key = prng.weightedPick([
-      { item: 'ArrowRight', weight: 20 },
-      { item: 'ArrowLeft', weight: 20 },
-      { item: 'ArrowUp', weight: 20 },
-      { item: 'ArrowDown', weight: 20 },
-      { item: 'Enter', weight: 15 },
-      { item: 'Escape', weight: 5 },
-    ]);
-    return { type: 'key', key };
-  }
-
-  // 3. Regular gameplay action
   const actionType = prng.weightedPick([
-    { item: 'move', weight: 50 },
+    { item: 'move', weight: 45 },
     { item: 'diag_move', weight: 10 },
-    { item: 'wait', weight: 8 },
-    { item: 'rest', weight: 5 },
-    { item: 'search', weight: 5 },
+    { item: 'wait', weight: 6 },
+    { item: 'bound', weight: 18 },
     { item: 'stairs', weight: 4 },
-    { item: 'quickslot', weight: 6 },
-    { item: 'potion', weight: 6 },
-    { item: 'menu', weight: 6 },
+    { item: 'click', weight: 7 },
+    { item: 'unbound', weight: 2 },
   ]);
 
-  let primaryKey = 'Space';
+  if (actionType === 'click' && ctx.canvas) {
+    const { x, y, width, height } = ctx.canvas;
+    return { type: 'click', x: Math.round(x + prng.next() * width), y: Math.round(y + prng.next() * height) };
+  }
 
+  let key: string;
   switch (actionType) {
     case 'move':
-      primaryKey = prng.pick(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+      key = prng.pick(ARROWS);
       break;
     case 'diag_move':
-      primaryKey = prng.pick(['Home', 'End', 'PageUp', 'PageDown', 'Numpad7', 'Numpad1', 'Numpad9', 'Numpad3']);
+      key = prng.pick(['Numpad7', 'Numpad9', 'Numpad1', 'Numpad3']);
       break;
     case 'wait':
-      primaryKey = 'Space';
-      break;
-    case 'rest':
-      primaryKey = 'KeyR';
-      break;
-    case 'search':
-      primaryKey = 'KeyS';
+      key = 'Space';
       break;
     case 'stairs':
-      primaryKey = prng.pick(['Shift+Period', 'Shift+Comma']);
+      key = prng.pick(['Enter', 'KeyF']); // `stairs` and `context_action`
       break;
-    case 'quickslot':
-      primaryKey = prng.pick(['Digit1', 'Digit2', 'Digit3', 'Digit4']);
+    case 'unbound':
+      // Keys a player might try that the game doesn't bind; never counted as dead keys.
+      key = prng.pick(['Home', 'End', 'PageUp', 'PageDown', 'Shift+Period', 'Backquote']);
       break;
-    case 'potion':
-      primaryKey = prng.pick(['Shift+Digit1', 'Shift+Digit2', 'Shift+Digit3', 'Shift+Digit4']);
-      break;
-    case 'menu':
-      primaryKey = prng.pick(['KeyC', 'KeyI', 'KeyP', 'KeyM', 'Escape']);
-      break;
+    default: {
+      // Any bound key, so menus, spells, potions, search and rest all get pressed.
+      const bound = [...ctx.boundKeys.all];
+      key = bound.length > 0 ? prng.pick(bound) : 'Space';
+    }
   }
 
-  // Switch keys mid-animation (~10% chance)
-  let secondaryKey: string | undefined;
-  if (prng.next() < 0.1) {
-    secondaryKey = prng.pick(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space']);
-  }
-
-  return { type: 'key', key: primaryKey, secondaryKey };
+  // Now and then a second key straight after, while the first one's effect may still play.
+  const secondaryKey = prng.next() < 0.1 ? prng.pick([...ARROWS, 'Space']) : undefined;
+  return { type: 'key', key, secondaryKey };
 }
 
 export async function decidePlayerAction(ctx: PolicyContext): Promise<DispatchedAction> {
@@ -106,41 +91,24 @@ export async function decidePlayerAction(ctx: PolicyContext): Promise<Dispatched
     if (!e || !e.player) return null;
     const p = e.player;
     const stack = w.__cotwInputHandler?.modalStack?.getStackIds() ?? [];
+    const isRaid = Boolean(e.getWorldFlag('cotw_prologue_started')) && !e.getWorldFlag('cotw_prologue_ended');
 
-    const isRaid = e.currentFloor === 0 && !e.getWorldFlag('cotw_prologue_ended');
     const cued = document.querySelector('.potion-slot.hud-cue');
-    let cuedSlot: number | null = null;
-    if (cued && cued.parentElement) {
-      cuedSlot = [...cued.parentElement.children].indexOf(cued) + 1;
-    }
+    const cuedSlot = cued?.parentElement ? [...cued.parentElement.children].indexOf(cued) + 1 : null;
 
-    const allEntities = e.map.getAllEntities();
-    const adjacentDirs: Array<{ key: string; dx: number; dy: number; entity?: string; passable: boolean }> = [
-      { key: 'ArrowUp', dx: 0, dy: -1, passable: false },
-      { key: 'ArrowDown', dx: 0, dy: 1, passable: false },
-      { key: 'ArrowLeft', dx: -1, dy: 0, passable: false },
-      { key: 'ArrowRight', dx: 1, dy: 0, passable: false },
-    ];
-
-    for (const d of adjacentDirs) {
-      const tx = p.x + d.dx;
-      const ty = p.y + d.dy;
-      const t = e.map.getTile(tx, ty);
-      d.passable = t ? t.passable : false;
-      const ent = e.map.getEntityAt(tx, ty);
-      if (ent) {
-        d.entity = ent.id;
-      }
-    }
-
-    // Check for visible hostiles
-    const visibleMonsters = allEntities.filter(
-      (m: any) => m.isAlive && m.isAlive() && m.faction === 'monster' && e.map.isInFov(m.x, m.y)
-    );
-
-    // Check if on stairs
-    const currentTile = e.map.getTile(p.x, p.y);
-    const isOnStairsDown = currentTile && (currentTile.type === 'stairs_down' || currentTile.type === 'staircase_down');
+    const hostile = (ent: any) => ent && ent.isAlive?.() && ent !== p && ent.faction !== 'player' && ent.faction !== 'neutral' && typeof ent.attack === 'number';
+    const dirs = [
+      { key: 'ArrowUp', dx: 0, dy: -1 },
+      { key: 'ArrowDown', dx: 0, dy: 1 },
+      { key: 'ArrowLeft', dx: -1, dy: 0 },
+      { key: 'ArrowRight', dx: 1, dy: 0 },
+    ].map((d) => {
+      const ent = e.map.getEntityAt(p.x + d.dx, p.y + d.dy);
+      return { ...d, passable: Boolean(e.map.getTile(p.x + d.dx, p.y + d.dy)?.passable), entity: ent?.id as string | undefined, hostile: hostile(ent) };
+    });
+    const visibleHostiles = e.map
+      .getAllEntities()
+      .filter((m: any) => hostile(m) && e.fov.getVisibility(m.x, m.y) === 2).length;
 
     return {
       hp: p.hp,
@@ -148,52 +116,26 @@ export async function decidePlayerAction(ctx: PolicyContext): Promise<Dispatched
       stack,
       isRaid,
       cuedSlot,
-      adjacentDirs,
-      visibleMonstersCount: visibleMonsters.length,
-      isOnStairsDown,
-      currentFloor: e.currentFloor,
+      dirs,
+      visibleHostiles,
+      onStairsDown: e.map.getTile(p.x, p.y)?.type === 'stairs_down',
     };
   });
 
   if (!info) return { type: 'key', key: 'Space' };
+  if (info.stack.length > 0) return { type: 'key', key: 'Enter' };
+  if (info.isRaid && info.cuedSlot !== null) return { type: 'key', key: `Shift+Digit${info.cuedSlot}` };
 
-  // 1. Modals
-  if (info.stack.length > 0) {
-    return { type: 'key', key: 'Enter' };
-  }
+  const attack = info.dirs.find((d) => d.hostile);
+  if (attack) return { type: 'key', key: attack.key };
+  // Bump a held villager to free them.
+  const villager = info.dirs.find((d) => d.entity && ['prologue-eir', 'prologue-sigrun', 'prologue-brandr'].includes(d.entity));
+  if (villager) return { type: 'key', key: villager.key };
 
-  // 2. Raid drink cue
-  if (info.isRaid && info.cuedSlot !== null) {
-    return { type: 'key', key: `Shift+Digit${info.cuedSlot}` };
-  }
+  if (info.onStairsDown && !info.isRaid) return { type: 'key', key: 'Enter' };
+  if (!info.isRaid && info.hp < info.maxHp * 0.5 && info.visibleHostiles === 0) return { type: 'key', key: 'KeyR' };
 
-  // 3. Attack adjacent hostile
-  const adjAttack = info.adjacentDirs.find((d) => d.entity && (d.entity.startsWith('prologue-monster') || d.entity.startsWith('monster')));
-  if (adjAttack) {
-    return { type: 'key', key: adjAttack.key };
-  }
-
-  // 4. Walk into adjacent NPC (e.g. freeing villager or talking to Hallvard)
-  const adjNpc = info.adjacentDirs.find((d) => d.entity && d.entity.startsWith('prologue-'));
-  if (adjNpc) {
-    return { type: 'key', key: adjNpc.key };
-  }
-
-  // 5. On stairs down in dungeon
-  if (info.isOnStairsDown && !info.isRaid) {
-    return { type: 'key', key: 'Shift+Period' };
-  }
-
-  // 6. Rest when hurt and safe
-  if (!info.isRaid && info.hp < info.maxHp * 0.5 && info.visibleMonstersCount === 0) {
-    return { type: 'key', key: 'KeyR' };
-  }
-
-  // 7. Walk passable direction
-  const passable = info.adjacentDirs.filter((d) => d.passable && !d.entity);
-  if (passable.length > 0) {
-    return { type: 'key', key: prng.pick(passable).key };
-  }
-
-  return { type: 'key', key: prng.pick(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space']) };
+  // A-player replaces this wander with goal-seeking (see .prompts/raidbot.ts).
+  const open = info.dirs.filter((d) => d.passable && !d.entity);
+  return { type: 'key', key: open.length > 0 ? prng.pick(open).key : prng.pick([...ARROWS, 'Space']) };
 }

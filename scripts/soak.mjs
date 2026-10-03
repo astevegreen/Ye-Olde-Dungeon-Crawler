@@ -146,6 +146,7 @@ for (let seed = fromSeed; seed < fromSeed + count; seed++) {
     exitCode,
     status: exitCode === 0 ? 'passed' : 'failed',
     durationMs,
+    endedBy: summary?.endedBy ?? null,
     turnsPlayed: summary?.turnsPlayed ?? null,
     deepestFloor: summary?.deepestFloor ?? null,
     causeOfDeath: summary?.causeOfDeath ?? null,

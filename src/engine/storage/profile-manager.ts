@@ -10,6 +10,7 @@ import { ItemFactory } from '../items/factory';
 import type { Merchant } from '../economy/merchant';
 import type { GameMap } from '../grid/map';
 import { serializeGame, deserializeGame } from './serializer';
+import { beginPrologue } from '../quest/prologue';
 import type { CharacterProfile, RosterManifest, SaveData, StorageAdapter } from './types';
 import { CharacterRoller } from '../character/characterRoller';
 import type { CharacterAttributes, Gender } from '../character/types';
@@ -180,6 +181,8 @@ export class ProfileManager {
       hp?: number;
       seed?: number;
       startInTown?: boolean;
+      /** Begin with the pack's prologue (`manifest.prologue`), when it has one and the hero starts in town. */
+      prologue?: boolean;
       manifest?: GameContentManifest;
     }
   ): { profile: CharacterProfile; engine: GameEngine } {
@@ -217,7 +220,7 @@ export class ProfileManager {
       const townGen = new TownMapGenerator(50, 30, manifest.town, manifest.tiles ?? []);
       const town = townGen.generate();
       map = town.map;
-      playerSpawn = town.playerSpawn;
+      playerSpawn = options?.prologue && manifest.prologue ? manifest.prologue.playerSpawn : town.playerSpawn;
       for (const [k, m] of town.merchants) {
         initialMerchants.set(k, m);
       }
@@ -295,9 +298,11 @@ export class ProfileManager {
       engine.merchants.set(k, m);
     }
 
-    if (startInTown) {
+    // A prologue logs its own opening in place of the town's welcome.
+    const inPrologue = startInTown && !!options?.prologue && beginPrologue(engine);
+    if (startInTown && !inPrologue) {
       engine.log(`Welcome to ${manifest.town?.name ?? 'the town'}, ${trimmedName}! Visit the shops to gear up before braving the cellar.`);
-    } else {
+    } else if (!startInTown) {
       engine.log(`Welcome, ${trimmedName}! Press [I] for Inventory, [G] to pick up items.`);
     }
 

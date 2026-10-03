@@ -244,6 +244,7 @@ export class Actor extends Entity implements IItemContainer, IEquipmentBearer {
     if (this.isInvulnerable) {
       return { damageDealt: 0, killed: false };
     }
+    rawAmount = this.limitDamageToHpFloor(rawAmount);
     if (this.morphEnvelope) {
       if (rawAmount >= this.hp) {
         const excess = rawAmount - this.hp;

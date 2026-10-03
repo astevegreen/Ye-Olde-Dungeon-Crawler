@@ -24,6 +24,7 @@ import type { GameContentManifest } from '../types/manifest';
 import { cloneWorldState, createWorldState, type WorldState } from '../state/worldState';
 import { compactTilesWithDictionary, decompactTiles, compactFov, decompactFov } from './compaction';
 import { EnergyModel } from '../actors/energyModel';
+import { applyPrologueState } from '../quest/prologue';
 import type {
   CharacterProfile,
   SaveData,
@@ -1007,6 +1008,8 @@ export function deserializeGame(
   }
   restoreFloorLight(engine.map, engine.currentFloor, manifest);
   for (const [fNum, floorMap] of engine.storedFloors) restoreFloorLight(floorMap, fNum, manifest);
+  // A prologue under way darkens the town and wards the hero, neither of which is saved.
+  applyPrologueState(engine);
 
   // Loot tables hold generator functions, so the save leaves them (and the other
   // definition-only fields) out; restore them from each monster's definition, or a

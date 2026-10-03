@@ -766,6 +766,8 @@ export interface GameContentManifest {
   fixedTilePlacements?: FixedTilePlacement[];
   /** Vault blueprints guaranteed to stamp at specific floors, optionally populated with NPCs. */
   scriptedVaultPlacements?: ScriptedVaultPlacement[];
+  /** A scene on the town map before the run proper (`PrologueDefinition`). */
+  prologue?: PrologueDefinition;
   /**
    * Faction-standing price tiers applied to merchant buy prices. Absent = flat prices.
    * The first matching tier wins, so list the most extreme tiers first.
@@ -852,6 +854,42 @@ export interface ScriptedVaultNpc {
   dialogText?: string;
   /** Talking to the NPC opens this `manifest.choices` key (`NpcConfig.choiceId`). */
   choiceId?: string;
+}
+
+/** An NPC a prologue stands on the town map at a fixed tile. */
+export interface PrologueNpc extends ScriptedVaultNpc {
+  position: Position;
+}
+
+/**
+ * A short scene played on the town map before the run proper (`GameContentManifest.prologue`,
+ * `quest/prologue.ts`). A new run begins with it when its creator asks
+ * (`ProfileManager.createCharacter`'s `prologue` option). It runs while `startFlag` is set
+ * and `endFlag` is not; the pack's own hooks decide when it is over and call
+ * `concludePrologue`, which sets `endFlag`.
+ */
+export interface PrologueDefinition {
+  /** Where the hero stands when the run begins. */
+  playerSpawn: Position;
+  /** Set when a run begins with the prologue. */
+  startFlag: string;
+  /** Set by `concludePrologue` when it ends. */
+  endFlag: string;
+  /** Logged when the run begins, in place of the town's welcome. */
+  openingMessage?: string;
+  /** Logged when it ends. */
+  closingMessage?: string;
+  /** While it runs, the town is unlit (seen by the hero's own sight), whatever `town.lit` says. */
+  dark?: boolean;
+  /** While it runs, damage cannot take the hero below this HP. Absent or 0: they can die. */
+  heroHpFloor?: number;
+  /** Monsters placed when it begins, each at floor-1 strength, with ids `prologue-monster-<n>`.
+   *  Those still on the map when it ends leave with it. */
+  monsters?: { definitionId: string; position: Position }[];
+  /** NPCs placed when it begins. */
+  npcs?: PrologueNpc[];
+  /** NPCs placed when it ends, on their tile or the nearest free one. */
+  aftermathNpcs?: PrologueNpc[];
 }
 
 /** See `GameContentManifest.scriptedVaultPlacements`. */

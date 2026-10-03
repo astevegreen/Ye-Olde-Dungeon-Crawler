@@ -61,6 +61,11 @@ export class Entity {
   /** Innate alignment aspect (e.g. 'aspect_corrupt'), used when no armor carries one. */
   public aspectState?: string;
   public isInvulnerable: boolean = false;
+  /** The least HP damage can leave this entity at; 0 lets it die. Not saved: whatever sets it
+   *  sets it again on load (the prologue's ward, `quest/prologue.ts`). */
+  private hpFloor = 0;
+  /** Set when the floor held back damage that would have taken this entity below it. */
+  private heldAtFloor = false;
 
   constructor(config: EntityConfig) {
     this.id = config.id;
@@ -163,10 +168,32 @@ export class Entity {
     this.energy = Math.max(0, this.energy - amount);
   }
 
+  /** Sets the least HP damage can leave this entity at (0 removes the floor), and clears
+   *  any blow it has held back. */
+  public setHpFloor(floor: number): void {
+    this.hpFloor = Math.max(0, floor);
+    this.heldAtFloor = false;
+  }
+
+  /** Whether the HP floor has held back a blow since it was set. */
+  public get wasHeldAtHpFloor(): boolean {
+    return this.heldAtFloor;
+  }
+
+  /** `rawAmount`, cut to what the HP floor allows; records the hold when it cuts. */
+  protected limitDamageToHpFloor(rawAmount: number): number {
+    if (this.hpFloor <= 0) return rawAmount;
+    const allowed = Math.max(0, this.hp - this.hpFloor);
+    if (rawAmount <= allowed) return rawAmount;
+    this.heldAtFloor = true;
+    return allowed;
+  }
+
   public takeDamage(rawAmount: number): { damageDealt: number; killed: boolean } {
     if (this.isInvulnerable) {
       return { damageDealt: 0, killed: false };
     }
+    rawAmount = this.limitDamageToHpFloor(rawAmount);
     const damageDealt = Math.max(0, Math.min(this.hp, rawAmount));
     this.hp -= damageDealt;
     const killed = this.hp <= 0;

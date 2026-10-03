@@ -68,6 +68,8 @@ export function serializeItem(item: Item): SerializedItemNode {
     modifiers: item.modifiers.length > 0 ? item.modifiers.map((m) => ({ ...m })) : undefined,
     parentId: item.parentId ?? undefined,
     ownerId: item.ownerId ?? undefined,
+    definitionId: item.definitionId,
+    quantity: item.quantity > 1 ? item.quantity : undefined,
   };
 
   if (item instanceof Container) {
@@ -108,10 +110,29 @@ export function serializeItem(item: Item): SerializedItemNode {
   return base;
 }
 
-export function deserializeItem(node: SerializedItemNode): Item {
+/**
+ * Saves written before items kept their definitionId: each manifest item's id by its name.
+ * A name two definitions share is left out rather than guessed.
+ */
+export function itemDefinitionIdsByName(manifest: GameContentManifest | undefined): Map<string, string> {
+  const ids = new Map<string, string>();
+  const shared = new Set<string>();
+  for (const def of manifest?.items ?? []) {
+    if (ids.has(def.name) && ids.get(def.name) !== def.id) shared.add(def.name);
+    ids.set(def.name, def.id);
+  }
+  for (const name of shared) ids.delete(name);
+  return ids;
+}
+
+export function deserializeItem(node: SerializedItemNode, definitionIdsByName?: ReadonlyMap<string, string>): Item {
+  const definitionId = node.definitionId ?? definitionIdsByName?.get(node.name);
+  const quantity = node.quantity;
+
   if (node.isContainer) {
     const container = new Container({
       id: node.id,
+      definitionId,
       name: node.name,
       unidentifiedName: node.unidentifiedName,
       category: node.category,
@@ -140,8 +161,9 @@ export function deserializeItem(node: SerializedItemNode): Item {
       ownerId: node.ownerId ?? null,
     });
 
+    // No merging: two stacks saved apart come back apart.
     for (const childNode of node.items) {
-      container.addItem(deserializeItem(childNode));
+      container.addItem(deserializeItem(childNode, definitionIdsByName), false);
     }
     if (node.opened) container.markOpened();
 
@@ -161,6 +183,8 @@ export function deserializeItem(node: SerializedItemNode): Item {
   if (node.wandData) {
     return new WandItem({
       id: node.id,
+      definitionId,
+      quantity,
       name: node.name,
       unidentifiedName: node.unidentifiedName,
       slot: node.slot,
@@ -190,6 +214,8 @@ export function deserializeItem(node: SerializedItemNode): Item {
   if (node.scrollSpellId) {
     return new ScrollItem({
       id: node.id,
+      definitionId,
+      quantity,
       name: node.name,
       unidentifiedName: node.unidentifiedName,
       slot: node.slot,
@@ -217,6 +243,8 @@ export function deserializeItem(node: SerializedItemNode): Item {
   if (node.potionType) {
     return new PotionItem({
       id: node.id,
+      definitionId,
+      quantity,
       name: node.name,
       unidentifiedName: node.unidentifiedName,
       slot: node.slot,
@@ -245,6 +273,8 @@ export function deserializeItem(node: SerializedItemNode): Item {
   if (node.runeOfReturnData) {
     return new RuneOfReturnItem({
       id: node.id,
+      definitionId,
+      quantity,
       name: node.name,
       unidentifiedName: node.unidentifiedName,
       slot: node.slot,
@@ -271,6 +301,8 @@ export function deserializeItem(node: SerializedItemNode): Item {
 
   return new Item({
     id: node.id,
+    definitionId,
+    quantity,
     name: node.name,
     unidentifiedName: node.unidentifiedName,
     category: node.category,
@@ -321,8 +353,12 @@ function serializeCompanion(companion: Companion): SerializedCompanion {
   };
 }
 
-function deserializeCompanion(data: SerializedCompanion, registries?: EngineRegistries): Companion {
-  const primaryPack = deserializeItem(data.primaryPack) as Container;
+function deserializeCompanion(
+  data: SerializedCompanion,
+  registries?: EngineRegistries,
+  definitionIdsByName?: ReadonlyMap<string, string>
+): Companion {
+  const primaryPack = deserializeItem(data.primaryPack, definitionIdsByName) as Container;
   const inventory = new InventoryManager({ primaryPack, ownerId: data.id });
 
   const def = registries ? registries.companions.get(data.companionDefinitionId) : CompanionRegistry.get(data.companionDefinitionId);
@@ -668,7 +704,11 @@ export function restoreFloorLight(map: GameMap, floor: number, manifest: GameCon
   if (floor === 0) map.lit = manifest?.town?.lit ?? false;
 }
 
-export function deserializeMapObject(mapData: SerializedMap, customTiles?: TileDefinition[]): GameMap {
+export function deserializeMapObject(
+  mapData: SerializedMap,
+  customTiles?: TileDefinition[],
+  definitionIdsByName?: ReadonlyMap<string, string>
+): GameMap {
   const map = new GameMap(mapData.width, mapData.height, TILES.WALL);
   map.lastVisitedTick = mapData.lastVisitedTick ?? 0;
   map.floorTurnCount = mapData.floorTurnCount ?? 0;
@@ -731,7 +771,7 @@ export function deserializeMapObject(mapData: SerializedMap, customTiles?: TileD
       if (!pile || !Array.isArray(pile.items)) continue;
       for (const itemNode of pile.items) {
         if (!itemNode) continue;
-        map.addItemAt(pile.x, pile.y, deserializeItem(itemNode));
+        map.addItemAt(pile.x, pile.y, deserializeItem(itemNode, definitionIdsByName));
       }
     }
   }
@@ -806,10 +846,14 @@ export function deserializeMapObject(mapData: SerializedMap, customTiles?: TileD
  * manifest's own (its availability `predicate` isn't saved), anything else, such as what
  * the hero sold, from its saved form. No saved stock = the authored stock.
  */
-function restoreMerchantStock(authored: Item[], saved: SerializedItemNode[] | undefined): Item[] {
+function restoreMerchantStock(
+  authored: Item[],
+  saved: SerializedItemNode[] | undefined,
+  definitionIdsByName: ReadonlyMap<string, string>
+): Item[] {
   if (!saved) return [...authored];
   const byId = new Map(authored.map((item) => [item.id, item]));
-  return saved.map((node) => byId.get(node.id) ?? deserializeItem(node));
+  return saved.map((node) => byId.get(node.id) ?? deserializeItem(node, definitionIdsByName));
 }
 
 function restoreMonsterDefinitionFields(map: GameMap, registries: EngineRegistries): void {
@@ -845,11 +889,13 @@ export function deserializeGame(
     throw new Error('Save file is structurally invalid: missing player or inventory definition.');
   }
 
+  const definitionIds = itemDefinitionIdsByName(manifest);
+
   // 1. Reconstruct Active Map
-  const map = deserializeMapObject(saveData.map, manifest?.tiles);
+  const map = deserializeMapObject(saveData.map, manifest?.tiles, definitionIds);
 
   // 2. Reconstruct Primary Pack & Inventory Manager
-  const primaryPack = deserializeItem(saveData.player.inventory.primaryPack) as Container;
+  const primaryPack = deserializeItem(saveData.player.inventory.primaryPack, definitionIds) as Container;
   const inventory = new InventoryManager({
     primaryPack,
     slots: manifest?.equipmentSlots,
@@ -862,7 +908,7 @@ export function deserializeGame(
       // InventoryManager already equipped that one; a second copy here would displace it
       // with a ghost pack whose contents count twice toward carried weight.
       if ((itemNode as SerializedItemNode).id === primaryPack.id) continue;
-      const item = deserializeItem(itemNode as SerializedItemNode);
+      const item = deserializeItem(itemNode as SerializedItemNode, definitionIds);
       inventory.paperdoll.equip(item, slot);
     } else {
       inventory.paperdoll.unequip(slot);
@@ -957,7 +1003,7 @@ export function deserializeGame(
     if (savedVaults) {
       worldState.remoteVaults = {};
       for (const [k, items] of Object.entries(savedVaults)) {
-        worldState.remoteVaults[k] = items.map(deserializeItem);
+        worldState.remoteVaults[k] = items.map((node) => deserializeItem(node, definitionIds));
       }
     }
   }
@@ -982,11 +1028,11 @@ export function deserializeGame(
 
   // 5b. Restore Companion (docs/architecture/content-companions.md) — top-level, not part of map.monsters
   if (saveData.companion) {
-    engine.attachCompanion(deserializeCompanion(saveData.companion, engine.registries));
+    engine.attachCompanion(deserializeCompanion(saveData.companion, engine.registries, definitionIds));
   }
   // Off the map: summoned back, or revived by a trainer.
-  if (saveData.dismissedCompanion) engine.dismissedCompanion = deserializeCompanion(saveData.dismissedCompanion, engine.registries);
-  if (saveData.deadCompanion) engine.deadCompanionRecord = deserializeCompanion(saveData.deadCompanion, engine.registries);
+  if (saveData.dismissedCompanion) engine.dismissedCompanion = deserializeCompanion(saveData.dismissedCompanion, engine.registries, definitionIds);
+  if (saveData.deadCompanion) engine.deadCompanionRecord = deserializeCompanion(saveData.deadCompanion, engine.registries, definitionIds);
 
   // 6. Restore Turn Count & Messages & Discovery Events
   engine.turnCount = saveData.turnCount;
@@ -1003,7 +1049,7 @@ export function deserializeGame(
   if (saveData.storedMaps) {
     for (const [fStr, sMap] of Object.entries(saveData.storedMaps)) {
       const fNum = parseInt(fStr, 10);
-      engine.storedFloors.set(fNum, deserializeMapObject(sMap, manifest?.tiles));
+      engine.storedFloors.set(fNum, deserializeMapObject(sMap, manifest?.tiles, definitionIds));
     }
   }
   restoreFloorLight(engine.map, engine.currentFloor, manifest);
@@ -1030,7 +1076,7 @@ export function deserializeGame(
             cfg.name,
             'general',
             cfg.greeting,
-            restoreMerchantStock(cfg.initialInventory, saveData.merchantStock?.[cfg.id])
+            restoreMerchantStock(cfg.initialInventory, saveData.merchantStock?.[cfg.id], definitionIds)
           );
           engine.merchants.set(merchant.id, merchant);
         }

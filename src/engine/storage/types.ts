@@ -138,6 +138,10 @@ export interface SerializedItemBase {
   modifiers?: SerializedItemModifier[];
   parentId?: string | null;
   ownerId?: string | null;
+  /** Absent in older saves, which take it from the manifest item of the same name, if exactly one. */
+  definitionId?: string;
+  /** Stack size; absent when 1, and in older saves, which lost their stack sizes. */
+  quantity?: number;
 }
 
 export interface SerializedMorphEnvelope {

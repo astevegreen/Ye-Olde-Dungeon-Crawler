@@ -89,6 +89,26 @@ describe('Dynamic Wandering Monster Spawner', () => {
     expect(engine.messages.some((m) => m.includes('skittering footsteps'))).toBe(true);
   });
 
+  it("draws a floor's listed wanderers only once the floor is deep enough for them", () => {
+    // cotw lists wolf (minFloor 7) for floor 5, and root_wraith (27) and bark_husk_miner (30)
+    // for floor 26. Every roll on those floors must give a monster of that depth.
+    const pick = (floor: number, roll: number) => {
+      engine.currentFloor = floor;
+      const select = (spawner as unknown as { selectMonsterDefinition: (e: GameEngine, r: () => number) => { id: string; minFloor?: number } | null })
+        .selectMonsterDefinition.bind(spawner);
+      return select(engine, () => roll);
+    };
+    for (const floor of [5, 26]) {
+      const drawn = new Set<string>();
+      for (let i = 0; i < 100; i++) {
+        const def = pick(floor, i / 100)!;
+        expect(def.minFloor ?? 1, `${def.id} on floor ${floor}`).toBeLessThanOrEqual(floor);
+        drawn.add(def.id);
+      }
+      expect(drawn.size).toBeGreaterThan(0);
+    }
+  });
+
   it('spawns wandering monster seamlessly via GameEngine.handlePlayerAction on turn 50', () => {
     // Configure engine spawner for 100% spawn chance
     engine.wanderingSpawner.intervalTurns = 50;

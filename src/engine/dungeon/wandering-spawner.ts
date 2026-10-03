@@ -3,7 +3,7 @@ import { Monster } from '../entities/monster';
 import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
 import { getMonsterDefinition } from '../bestiary/monsterDefinitions';
 import type { Position } from '../types';
-import { selectDungeonMonsterDefinition, createScaledMonster } from './spawner';
+import { selectDungeonMonsterDefinition, createScaledMonster, isEligibleDungeonMonster } from './spawner';
 
 /**
  * Creates a runtime Monster instance from an immutable MonsterDefinition,
@@ -135,14 +135,12 @@ export class WanderingMonsterSpawner {
 
   private selectMonsterDefinition(engine: GameEngine, rng: () => number): MonsterDefinition | null {
     const encounterConfig = engine.manifest.quest?.floorEncounters?.[engine.currentFloor];
-    const monsterIds = encounterConfig?.monsterIds;
-    if (monsterIds && monsterIds.length > 0) {
-      const chosenId = monsterIds[Math.floor(rng() * monsterIds.length)];
-      const fromManifest = engine.manifest.monsters.find((m) => m.id === chosenId);
-      if (fromManifest) return fromManifest;
-      const fromBestiary = getMonsterDefinition(chosenId);
-      if (fromBestiary) return fromBestiary;
-    }
+    // The floor's own list, less any monster the floor isn't deep enough for (a list
+    // once put wolves on floor 5, two floors before they unlock).
+    const listed = (encounterConfig?.monsterIds ?? [])
+      .map((id) => engine.manifest.monsters.find((m) => m.id === id) ?? getMonsterDefinition(id))
+      .filter((def): def is MonsterDefinition => !!def && isEligibleDungeonMonster(def, engine.currentFloor));
+    if (listed.length > 0) return listed[Math.floor(rng() * listed.length)];
 
     // Dynamic tiered selection from manifest monsters
     const selected = selectDungeonMonsterDefinition(engine.manifest.monsters, engine.currentFloor, rng);

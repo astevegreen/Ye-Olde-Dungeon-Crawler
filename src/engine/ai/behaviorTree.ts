@@ -372,6 +372,9 @@ export class MonsterAI {
       if (chebyshevDist <= 1) {
         return new MeleeAttackAction(monster, player);
       }
+      // Cornered at a distance: stand at bay. Handing over to the routine stepped it toward
+      // the hero, where a flee step opened again, so it jittered back and forth.
+      return new WaitAction(monster);
     }
 
     // Check if monster has an aiRoutineId registered in AIRegistry

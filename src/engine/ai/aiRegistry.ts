@@ -314,9 +314,13 @@ export class FleeingCowardStrategy implements AIStrategy {
           monster.intent = { type: 'fleeing', turnsRemaining: 0 };
           return new MovementAction(actor, fleeStep.x - actor.x, fleeStep.y - actor.y);
         }
-        // Trapped / cornered
-        monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
-        return new MeleeAttackAction(actor, player);
+        // Trapped / cornered: fight back if the hero is in reach, else stand at bay
+        if (chebyshevDist <= 1) {
+          monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
+          return new MeleeAttackAction(actor, player);
+        }
+        monster.intent = { type: 'fleeing', turnsRemaining: 0 };
+        return new WaitAction(actor);
       }
     } else {
       // Healthy coward: attack if adjacent, else advance

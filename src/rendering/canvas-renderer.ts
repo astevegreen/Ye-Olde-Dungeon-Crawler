@@ -1206,12 +1206,7 @@ export class CanvasRenderer {
     const ctx = this.ctx;
     this.drawEntityShadow(px, py, cs);
 
-    const spriteKey = getEntitySpriteKey(
-      monster,
-      this.atlas.hasSprite.bind(this.atlas),
-      this.engine.manifest?.atlas?.spriteTagRules
-    );
-    this.atlas.drawSprite(ctx, spriteKey, px, py, cs, Visibility.Visible);
+    this.atlas.drawSprite(ctx, this.monsterSpriteKey(monster), px, py, cs, Visibility.Visible);
 
     // Monster mini HP bar if damaged
     if (monster.hp < monster.maxHp && monster.hp > 0) {
@@ -1330,8 +1325,13 @@ export class CanvasRenderer {
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.imageSmoothingEnabled = false;
-    const key = getEntitySpriteKey(entity, this.atlas.hasSprite.bind(this.atlas));
-    this.atlas.drawSprite(ctx, key, 0, 0, Math.min(canvas.width, canvas.height));
+    this.atlas.drawSprite(ctx, this.monsterSpriteKey(entity), 0, 0, Math.min(canvas.width, canvas.height));
+  }
+
+  /** A creature's sprite, the same on the map and in every DOM icon: the pack's tag
+   *  rules apply to both (the icons once skipped them and drew 9 monsters differently). */
+  private monsterSpriteKey(entity: Entity): string {
+    return getEntitySpriteKey(entity, this.atlas.hasSprite.bind(this.atlas), this.engine.manifest?.atlas?.spriteTagRules);
   }
 
   /**

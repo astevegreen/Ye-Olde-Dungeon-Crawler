@@ -216,3 +216,14 @@ describe('Dungeon Spawner - Tiering & Population', () => {
     });
   });
 });
+
+describe('createScaledMonster hooks', () => {
+  it('gives every monster its definition hooks', () => {
+    const withHooks = COTW_MONSTERS.filter((def) => def.hooks?.length);
+    // Eight cotw monsters declare hooks: guard against a vacuous pass.
+    expect(withHooks.length).toBeGreaterThan(5);
+    for (const def of withHooks) {
+      expect(createScaledMonster(def, `m-${def.id}`, { x: 0, y: 0 }, def.minFloor ?? 1).hooks).toEqual(def.hooks);
+    }
+  });
+});

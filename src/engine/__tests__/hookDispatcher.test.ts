@@ -229,3 +229,69 @@ describe('Event-Driven Hook Engine', () => {
     expect(monster.statusManager.hasStatus('slow')).toBe(true);
   });
 });
+
+describe('onTurnStart monster hooks', () => {
+  function setup(hooks: HookDescriptor[], monsterAt = { x: 3, y: 2 }) {
+    const map = new GameMap(12, 12);
+    map.fill(TILES.FLOOR);
+    const player = new Player({ position: { x: 2, y: 2 }, stats: { hp: 50, maxHp: 50, attack: 1, defense: 50 } });
+    const monster = new Monster({
+      id: 'hooked',
+      name: 'Hooked',
+      position: monsterAt,
+      stats: { hp: 10, maxHp: 30, attack: 1, defense: 1 },
+      speed: 100,
+      definitionId: 'goblin',
+      aiType: 'immobile_turret',
+      aiState: 'hunting',
+      xpValue: 1,
+      hooks,
+    });
+    map.addEntity(player);
+    map.addEntity(monster);
+    const engine = new GameEngine({ map, player });
+    return { engine, player, monster };
+  }
+
+  it('fires at the start of an awake monster\'s turn', () => {
+    const { engine, monster } = setup([{ event: 'onTurnStart', action: { type: 'heal', amount: 4, target: 'self' } }]);
+
+    monster.takeTurn(engine);
+
+    expect(monster.hp).toBe(14);
+  });
+
+  it('does not fire for a sleeping monster', () => {
+    const { engine, monster } = setup([{ event: 'onTurnStart', action: { type: 'heal', amount: 4, target: 'self' } }]);
+    monster.aiState = 'sleeping';
+
+    monster.takeTurn(engine);
+
+    expect(monster.hp).toBe(10);
+  });
+
+  it('aims a "target" hook at the hero the monster can see', () => {
+    const { engine, player, monster } = setup(
+      [{ event: 'onTurnStart', action: { type: 'applyStatus', status: 'slow', duration: 4, target: 'target' } }],
+      { x: 6, y: 2 }
+    );
+
+    monster.takeTurn(engine);
+
+    expect(player.statusManager.hasStatus('slow')).toBe(true);
+    expect(monster.statusManager.hasStatus('slow')).toBe(false);
+  });
+
+  it('skips a "target" hook when the monster sees no one, rather than turning it on itself', () => {
+    const { engine, player, monster } = setup(
+      [{ event: 'onTurnStart', action: { type: 'applyStatus', status: 'slow', duration: 4, target: 'target' } }],
+      { x: 11, y: 11 }
+    );
+    for (let x = 0; x < 12; x++) engine.map.setTile(x, 6, TILES.WALL);
+
+    monster.takeTurn(engine);
+
+    expect(player.statusManager.hasStatus('slow')).toBe(false);
+    expect(monster.statusManager.hasStatus('slow')).toBe(false);
+  });
+});

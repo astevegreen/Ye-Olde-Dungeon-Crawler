@@ -887,6 +887,7 @@ function restoreMonsterDefinitionFields(map: GameMap, registries: EngineRegistri
     entity.lootTable = def.lootTable ? [...def.lootTable] : [];
     entity.statusImmunities = def.statusImmunities ? [...def.statusImmunities] : entity.statusImmunities;
     entity.onHitAffliction = def.onHitAffliction;
+    entity.hooks = def.hooks ? [...def.hooks] : [];
     entity.tags = def.tags ? [...def.tags] : entity.tags;
     entity.targetingMode = def.targetingMode ?? entity.targetingMode;
   }

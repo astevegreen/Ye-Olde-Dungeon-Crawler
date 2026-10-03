@@ -30,6 +30,7 @@ export function createMonsterFromDefinition(
     fleeHealthPercent: def.fleeHealthPercent,
     xpValue: def.xpValue,
     lootTable: def.lootTable,
+    hooks: def.hooks,
   });
 }
 

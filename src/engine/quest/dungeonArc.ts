@@ -90,9 +90,13 @@ export class DungeonArc {
       statusImmunities: def.statusImmunities,
       spells: def.spells ? [...def.spells] : [],
       spellCooldown: def.spellCooldown ?? 3,
+      onHitAffliction: def.onHitAffliction,
       fleeHealthPercent: def.fleeHealthPercent,
       xpValue,
       lootTable: def.lootTable ? [...def.lootTable] : [],
+      hooks: def.hooks,
+      tags: def.tags ? [...def.tags] : undefined,
+      targetingMode: def.targetingMode,
     });
     return boss;
   }

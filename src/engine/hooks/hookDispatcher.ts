@@ -208,6 +208,10 @@ export class HookDispatcher {
         const targetEntity = 'target' in hook.action && hook.action.target === 'self'
           ? owner
           : (owner === context.attacker ? context.defender : context.attacker);
+        // Aimed at "the target" with no one there: nothing to aim at, so it doesn't land on the owner.
+        if (!targetEntity && 'target' in hook.action && hook.action.target === 'target') {
+          continue;
+        }
 
         this.executePrimitive(hook.action, context, owner, targetEntity, summary, sourceName, hook.description);
         summary.executedHooks += 1;

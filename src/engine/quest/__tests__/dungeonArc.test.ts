@@ -4,6 +4,7 @@ import { Player } from '../../entities/player';
 import { createTestSunStone } from '../../__fixtures__/testHelpers';
 import { QUEST_RELIC_ID } from '../types';
 import type { QuestArcDefinition } from '../../types/manifest';
+import { COTW_MONSTERS } from '../../../content/cotw/monsters';
 
 describe('DungeonArc & Floor 5 Chieftain Encounter', () => {
   it('identifies Floor 5 as the Boss Floor', () => {
@@ -102,5 +103,16 @@ describe('DungeonArc & Floor 5 Chieftain Encounter', () => {
       expect(floor1.map).toBeDefined();
       expect(floor1.stairsDown).toBeDefined();
     });
+  });
+});
+
+describe('DungeonArc.createBoss', () => {
+  it('keeps the definition hooks, tags and targeting mode', () => {
+    const def = COTW_MONSTERS.find((d) => d.hooks?.length && d.tags?.length)!;
+    const boss = DungeonArc.createBoss(1, 1, 10, { ...def, targetingMode: 'nearest_hostile' }, 'boss-x');
+
+    expect(boss.hooks).toEqual(def.hooks);
+    expect(boss.tags).toEqual(def.tags);
+    expect(boss.targetingMode).toBe('nearest_hostile');
   });
 });

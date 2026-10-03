@@ -2,8 +2,10 @@ import type { CombatStats, Position, ActionResult, Faction } from '../types';
 import { BASE_ACTION_COST } from '../types';
 import type { ElementType, ElementalAffinity } from '../magic/elements';
 import type { StatusType } from '../status/types';
-import type { HookDescriptor } from '../hooks/hookDispatcher';
+import { HookDispatcher, type HookDescriptor } from '../hooks/hookDispatcher';
 import { Actor } from './actor';
+import type { Entity } from './entity';
+import { selectAttackTarget } from '../ai/targetSelection';
 import { calculateAttribute } from '../stats/attributeCalculator';
 import { type AiBehaviorType, type LootDropRule, getMonsterDefinition } from '../bestiary/monsterDefinitions';
 import type { GameEngine } from '../engine';
@@ -14,6 +16,9 @@ import { WaitAction } from '../actions/wait';
 import { flightRecorder } from '../debug/flightRecorder';
 
 export type AiState = 'sleeping' | 'hunting' | 'combat' | 'fleeing';
+
+/** How far a monster sees the hero, as the AI's wake-up check (`MonsterAI.decideAction`) has it. */
+const MONSTER_SIGHT_RADIUS = 8;
 
 export type MonsterIntentType = 'idle' | 'attack' | 'windup' | 'fleeing';
 
@@ -205,6 +210,13 @@ export class Monster extends Actor {
       return { success: true, cost: BASE_ACTION_COST, message: `${this.name} is ${reason} and cannot act.` };
     }
 
+    // 2.5. Turn-start hooks, for awake monsters only (a sleeper is a dormant actor, §6). A hook
+    // aimed at its target needs one in sight; the dispatcher skips it otherwise.
+    if (this.aiState !== 'sleeping' && this.hooks.some((h) => h.event === 'onTurnStart')) {
+      HookDispatcher.dispatch('onTurnStart', { engine, attacker: this, defender: this.visibleTarget(engine) });
+      if (!this.isAlive()) return { success: false, cost: 0 };
+    }
+
     // 3. AI decision and execution. Monster actions run through the same pipeline as the
     // player's, so action hooks fire for every actor (ARCHITECTURE.md §4).
     const action = MonsterAI.decideAction(this, engine);
@@ -220,6 +232,14 @@ export class Monster extends Actor {
     }
 
     return result;
+  }
+
+  /** The entity this monster engages, when it is within sight radius and line of sight. */
+  private visibleTarget(engine: GameEngine): Entity | undefined {
+    const target = selectAttackTarget(engine, this);
+    if (!target?.isAlive()) return undefined;
+    const inRange = Math.hypot(target.x - this.x, target.y - this.y) <= MONSTER_SIGHT_RADIUS;
+    return inRange && MonsterAI.hasLineOfSight(engine, this.x, this.y, target.x, target.y) ? target : undefined;
   }
 
   public static createFromDefinition(

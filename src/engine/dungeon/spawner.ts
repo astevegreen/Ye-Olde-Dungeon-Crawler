@@ -267,6 +267,7 @@ export function createScaledMonster(
     fleeHealthPercent: def.fleeHealthPercent,
     xpValue: scaled.xpValue,
     lootTable: def.lootTable ? [...def.lootTable] : [],
+    hooks: def.hooks,
     tags: def.tags ? [...def.tags] : undefined,
     targetingMode: def.targetingMode,
   });

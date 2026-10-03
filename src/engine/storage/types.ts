@@ -351,6 +351,8 @@ export interface SerializedMap {
   lastVisitedTick?: number;
   floorTurnCount?: number;
   isCleared?: boolean;
+  /** `GameMap.lastRespawnTurn`: the floor turn the cleared-floor respawn interval counts from. */
+  lastRespawnTurn?: number;
 }
 
 export interface SaveData {

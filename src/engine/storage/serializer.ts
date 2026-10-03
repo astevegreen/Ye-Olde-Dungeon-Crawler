@@ -717,6 +717,7 @@ export function serializeMapObject(map: GameMap): SerializedMap {
     lastVisitedTick: map.lastVisitedTick ?? 0,
     floorTurnCount: map.floorTurnCount ?? 0,
     isCleared: map.isCleared ?? false,
+    lastRespawnTurn: map.lastRespawnTurn,
   };
 }
 
@@ -737,6 +738,8 @@ export function deserializeMapObject(
   map.lastVisitedTick = mapData.lastVisitedTick ?? 0;
   map.floorTurnCount = mapData.floorTurnCount ?? 0;
   map.isCleared = mapData.isCleared ?? false;
+  // An older save lacks it: start the respawn interval afresh rather than from turn 0.
+  map.lastRespawnTurn = mapData.lastRespawnTurn ?? map.floorTurnCount;
 
   // Run-length tile data is meaningless without the dictionary its tokens index into;
   // decoding anyway would turn the whole floor into walls without saying so.

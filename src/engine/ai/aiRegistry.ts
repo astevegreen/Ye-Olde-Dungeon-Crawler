@@ -14,6 +14,7 @@ import { stepAlongDistanceField } from './distanceField';
 import { computeDangerTiles } from './intent';
 import { getBresenhamLine } from '../magic/targeting';
 import { selectAttackTarget } from './targetSelection';
+import type { SpellDefinition } from '../magic/types';
 
 function hasLineOfSight(engine: GameEngine, startX: number, startY: number, endX: number, endY: number): boolean {
   const line = getBresenhamLine(startX, startY, endX, endY);
@@ -186,14 +187,19 @@ export class KitingRangedStrategy implements AIStrategy {
     const dist = Math.hypot(actor.x - player.x, actor.y - player.y);
     const hasLos = dist <= 8 && hasLineOfSight(engine, actor.x, actor.y, player.x, player.y);
 
-    // 1. If adjacent, try to kite/retreat first
+    const hasSpells = Boolean(monster.spells && monster.spells.length > 0);
+
+    // 1. If adjacent, step back to shoot, or to cast a damaging spell that is ready. A caster
+    // between casts, or whose spells only hinder, stands and fights instead.
     if (chebyshevDist <= 1) {
-      const backStep = findFleeStep(engine.map, actor.position, player.position);
+      const castsDamage = (monster.spells ?? []).some((id) => dealsDamage(engine.registries.spells.get(id)));
+      const wantsRange = !hasSpells || (castsDamage && monster.spellCooldown <= 0);
+      const backStep = wantsRange ? findFleeStep(engine.map, actor.position, player.position) : null;
       if (backStep) {
         monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
         return new MovementAction(actor, backStep.x - actor.x, backStep.y - actor.y);
       }
-      // Cornered: melee attack
+      // Cornered, or between casts: melee attack
       monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
       return new MeleeAttackAction(actor, player);
     }
@@ -238,7 +244,7 @@ export class KitingRangedStrategy implements AIStrategy {
 
       if (monster.spells && monster.spells.length > 0 && monster.spellCooldown <= 0) {
         // Content declares the preference order; the engine only applies the rules.
-        let chosenSpell = monster.spells[0];
+        let chosenSpell = defaultSpellChoice(monster.spells, player, engine);
         for (const pref of getMonsterDefinition(monster.definitionId)?.spellPreferences ?? []) {
           if (!monster.spells.includes(pref.spellId)) continue;
           if (pref.skipIfTargetHasStatus && player.statusManager.hasStatus(pref.skipIfTargetHasStatus)) continue;
@@ -252,8 +258,9 @@ export class KitingRangedStrategy implements AIStrategy {
       }
     }
 
-    // 3. Piercing Snipe (range 3-7 with LOS) for ranged attacks when no spells available or spells on cooldown
-    if (chebyshevDist >= 3 && chebyshevDist <= 7 && hasLos && (!monster.spells || monster.spells.length === 0 || monster.spellCooldown > 0)) {
+    // 3. Piercing Snipe (range 3-7 with LOS): the shot of a ranged monster with no spells, an
+    // archer. A caster on cooldown never draws a bowstring; it closes in to fight (step 4).
+    if (chebyshevDist >= 3 && chebyshevDist <= 7 && hasLos && !hasSpells) {
       const dangerTiles = computeDangerTiles(actor.position, player.position, 'line', engine.map, 7);
       return new WindUpDeclareAction(
         monster,
@@ -270,7 +277,7 @@ export class KitingRangedStrategy implements AIStrategy {
       );
     }
 
-    // 3. Move into ideal casting range if too far
+    // 4. Close in: into casting range, or to fight while the spells cool down
     const approach = approachAction(engine, monster, player, dist);
     if (approach) return approach;
 
@@ -349,6 +356,32 @@ export class FleeingCowardStrategy implements AIStrategy {
     monster.intent = { type: 'idle', turnsRemaining: 0 };
     return new WaitAction(actor);
   }
+}
+
+/**
+ * Whether a spell hurts its target, rather than only hindering it (a slow, a paralysis). A spell
+ * the registry doesn't know is assumed to hurt, as every caster spell once was.
+ */
+function dealsDamage(spell: SpellDefinition | undefined): boolean {
+  if (!spell) return true;
+  return spell.effects ? spell.effects.some((effect) => effect.type === 'damage') : spell.basePower > 0;
+}
+
+/** The status a spell inflicts, if it is a hindering spell. */
+function spellStatus(spell: SpellDefinition | undefined): string | undefined {
+  return spell?.statusAffliction?.type;
+}
+
+/**
+ * The spell a caster casts when its content preferences pick none: the first that does
+ * something, skipping one whose status the target already suffers.
+ */
+function defaultSpellChoice(spells: string[], target: Entity, engine: GameEngine): string {
+  const useful = spells.find((id) => {
+    const status = spellStatus(engine.registries.spells.get(id));
+    return !status || !target.statusManager.hasStatus(status);
+  });
+  return useful ?? spells[0];
 }
 
 /** How far a monster plans a path of its own toward its target. */

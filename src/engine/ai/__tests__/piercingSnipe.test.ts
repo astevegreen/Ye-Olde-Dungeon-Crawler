@@ -39,3 +39,30 @@ describe('Piercing Snipe', () => {
     expect(snipe.options?.multiplier).toBe(1.8);
   });
 });
+
+describe('Piercing Snipe is an archer\'s shot', () => {
+  it('a caster whose spells are on cooldown does not draw a bowstring', () => {
+    const map = new GameMap(20, 20, TILES.FLOOR);
+    const player = new Player({ id: 'hero', position: { x: 5, y: 5 }, stats: { hp: 80, maxHp: 80, attack: 1, defense: 0 } });
+    const engine = new GameEngine({ map, player, seed: 7 });
+    const howler = new Monster({
+      id: 'howler-1',
+      name: 'Howler',
+      position: { x: 9, y: 5 },
+      stats: { hp: 20, maxHp: 20, attack: 12, defense: 0 },
+      aiType: 'caster',
+      aiState: 'hunting',
+      spells: ['slow'],
+      fleeHealthPercent: 0,
+      xpValue: 5,
+      lootTable: [],
+    });
+    howler.spellCooldown = 2;
+    engine.addEntity(howler);
+    engine.updateFov();
+
+    const action = new KitingRangedStrategy().decideAction(howler, engine);
+
+    expect(action instanceof WindUpDeclareAction && action.abilityName === 'Piercing Snipe').toBe(false);
+  });
+});

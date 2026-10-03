@@ -14,6 +14,7 @@ import type { SaveCodeModal } from './saveCodeModal';
 import type { SagaShareModal } from './sagaShareModal';
 import { defaultPlatformAdapter, getBrowserStorage } from './platform';
 import { resolveBranding } from './branding';
+import { formatWeight } from './units';
 import type { AutosaveManager } from '../engine';
 import type { GameEngine } from '../engine';
 
@@ -426,7 +427,7 @@ export class TitleScreen {
 
     if (hpEl) hpEl.textContent = derived.maxHp.toString();
     if (manaEl) manaEl.textContent = derived.maxMana.toString();
-    if (weightEl) weightEl.textContent = `${(derived.maxCarryWeight / 1000).toFixed(0)} kg`;
+    if (weightEl) weightEl.textContent = formatWeight(derived.maxCarryWeight);
   }
 
   public openValhalla(): void {

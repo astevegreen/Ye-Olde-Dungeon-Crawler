@@ -40,8 +40,8 @@ describe('CharacterRoller & Attribute Engine', () => {
     expect(derived.maxHp).toBe(40);
     // maxMana = floor(INT * 2 + 5) = 14 * 2 + 5 = 33
     expect(derived.maxMana).toBe(33);
-    // maxCarryWeight = floor(15000 + STR * 1000) = 15000 + 16000 = 31000g
-    expect(derived.maxCarryWeight).toBe(31000);
+    // maxCarryWeight is the game's own limit, STR x 2.5 kg (encumbrance.ts) = 40 kg
+    expect(derived.maxCarryWeight).toBe(40000);
     // baseAttack = floor(16 * 0.4 + 12 * 0.2) = floor(6.4 + 2.4) = 8
     expect(derived.baseAttack).toBe(8);
     // baseDefense = floor(12 * 0.25) = 3

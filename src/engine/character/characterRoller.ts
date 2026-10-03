@@ -6,6 +6,7 @@ import { Container } from '../items/container';
 import { createScaledItem } from '../dungeon/lootSpawner';
 import type { StarterKitDefinition, ItemDefinition } from '../types/manifest';
 import { RuneOfReturnItem } from '../magic/runeOfReturn';
+import { getMaxCarryWeight } from '../inventory/encumbrance';
 
 export const MIN_ATTRIBUTE = 8;
 export const MAX_ATTRIBUTE = 18;
@@ -52,7 +53,8 @@ export class CharacterRoller {
   public static calculateDerivedStats(attrs: CharacterAttributes): DerivedStats {
     const maxHp = Math.floor(attrs.constitution * 2 + 10);
     const maxMana = Math.floor(attrs.intelligence * 2 + 5);
-    const maxCarryWeight = Math.floor(15000 + attrs.strength * 1000);
+    // The game's own limit (encumbrance.ts), so creation previews what the hero will carry.
+    const maxCarryWeight = getMaxCarryWeight(attrs.strength);
     const baseAttack = Math.floor(attrs.strength * 0.4 + attrs.dexterity * 0.2);
     const baseDefense = Math.floor(attrs.dexterity * 0.25);
     const speed = 100 + Math.max(-10, Math.min(15, (attrs.dexterity - 10) * 2));

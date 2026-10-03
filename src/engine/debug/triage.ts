@@ -4,6 +4,7 @@ import { Monster } from '../entities/monster';
 import { DeathResolver } from '../combat/deathResolver';
 import { TILES } from '../grid/tile';
 import { flightRecorder } from './flightRecorder';
+import { concludePrologue, isPrologueRunning } from '../quest/prologue';
 
 /**
  * Developer triage operations behind the F2 menu (ARCHITECTURE.md §2: triage methods
@@ -20,8 +21,12 @@ export interface TriageAPI {
   revealSecrets(): { doors: number; traps: number };
   /** Moves the hero onto (or, if it can't be stood on, next to) the floor's stairs. */
   teleportToStairs(direction: 'up' | 'down'): Position | null;
-  /** Changes floor (0 is town); returns the floor reached. */
+  /** Changes floor (0 is town), ending any prologue under way first; returns the floor reached. */
   jumpToFloor(floor: number): number;
+  /** Ends the pack's prologue if one is under way, as the engine's own ending does (its
+   *  monsters and NPCs leave, the town is lit, the HP floor lifts); whether one was. The pack's
+   *  own ending (who was saved, who taken) does not run. */
+  endPrologue(): boolean;
   /** Kills every hostile monster in view, awarding XP and loot as a kill would. */
   killVisibleMonsters(): number;
   /** Awards exactly the XP to reach the next level; returns the new level. */
@@ -50,6 +55,14 @@ function standableAt(engine: GameEngine, x: number, y: number): boolean {
 }
 
 function createTriageApi(engine: GameEngine): TriageAPI {
+  const endPrologue = (): boolean => {
+    const prologue = engine.manifest.prologue;
+    if (!prologue || !isPrologueRunning(engine.worldState, prologue)) return false;
+    concludePrologue(engine, prologue, engine.manifest.town?.lit ?? false);
+    engine.updateFov();
+    return true;
+  };
+
   return {
     restoreVitals: () => {
       const p = engine.player;
@@ -106,10 +119,14 @@ function createTriageApi(engine: GameEngine): TriageAPI {
     },
 
     jumpToFloor: (floor) => {
+      // Left running, a prologue would keep its HP floor in the dungeon.
+      endPrologue();
       const target = Math.max(0, Math.floor(floor));
       engine.changeFloor(target);
       return engine.currentFloor;
     },
+
+    endPrologue,
 
     killVisibleMonsters: () => {
       const targets = engine.map

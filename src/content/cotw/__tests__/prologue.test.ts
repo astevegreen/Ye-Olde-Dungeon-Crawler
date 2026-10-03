@@ -8,6 +8,7 @@ import {
   MemoryStorage,
   WaitAction,
   getFaction,
+  getTimedEventCountdowns,
   isPrologueRunning,
   type GameEngine,
 } from '../../../engine';
@@ -85,6 +86,22 @@ describe('cotw prologue: the night raid', () => {
     engine.map.moveEntity(engine.player, TOWN_STAIRS_DOWN.x, TOWN_STAIRS_DOWN.y);
     engine.handlePlayerAction(new ClimbStairsAction(engine.player));
     expect(engine.currentFloor).toBe(0);
+  });
+
+  it('stops the countdown when the raid is ended from the F2 triage menu', () => {
+    const engine = newRun();
+    wait(engine);
+    expect(getTimedEventCountdowns(engine)).toHaveLength(1);
+    engine.diagnostics.endPrologue();
+    wait(engine);
+    expect(getTimedEventCountdowns(engine)).toHaveLength(0);
+  });
+
+  it('gives the townsfolk out in the lanes a line for the raid instead of their trade', () => {
+    const engine = newRun();
+    const bjorn = engine.map.getEntityById('npc-guard') as NPC;
+    standBeside(engine, bjorn);
+    expect(step(engine, 1, 0).message).toMatch(/Bjorn leans on his spear/);
   });
 
   it('ends when the countdown runs out: the held are taken, dawn comes, Hallvard waits', () => {

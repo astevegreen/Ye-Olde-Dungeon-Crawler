@@ -247,6 +247,7 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
         ${btn('btn-triage-kill-visible', 'Kill visible monsters')}
         ${btn('btn-triage-grant-level', `Grant a level (now ${p.level})`)}
         ${btn('btn-triage-identify-all', 'Identify everything carried')}
+        ${btn('btn-triage-end-prologue', 'End the opening scene')}
       </div>
     </div>
 
@@ -494,6 +495,12 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
   on('#btn-triage-grant-level', () => {
     const level = engine.diagnostics.grantLevel();
     ctx.showToast(`Hero is now level ${level}.`);
+    ctx.refresh();
+  });
+
+  on('#btn-triage-end-prologue', () => {
+    const ended = engine.diagnostics.endPrologue();
+    ctx.showToast(ended ? 'The opening scene is over.' : 'No opening scene is under way.');
     ctx.refresh();
   });
 

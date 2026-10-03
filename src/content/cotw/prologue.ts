@@ -98,6 +98,13 @@ export const PROLOGUE_VILLAGERS: Villager[] = [
   },
 ];
 
+/** The townsfolk out in the lanes that night, who have no time for trade or talk. */
+const RAID_LINES: Record<string, string> = {
+  'npc-guard': 'Bjorn leans on his spear, bleeding through his mail. “I can’t hold them alone. Get the folk clear!”',
+  'npc-trainer': 'Ranvild has her hounds by the scruff. “They’d run straight at the witches. Go, I’ll keep them back!”',
+};
+const RAID_LINE_DEFAULT = 'There is no time to talk. The coven is at the fountain.';
+
 const villagerFor = (id: string) => PROLOGUE_VILLAGERS.find((v) => v.id === id);
 const savedFlag = (id: string) => `${id}_saved`;
 const takenFlag = (id: string) => `${id}_taken`;
@@ -143,7 +150,7 @@ export const PROLOGUE_TIMED_EVENT: TimedEventDefinition = {
   startFlag: PROLOGUE_STARTED_FLAG,
   turnLimit: RAID_TURNS,
   resolvedFlag: FLAG_COUNTDOWN_STOPPED,
-  label: 'COVEN',
+  label: 'Coven’s rite',
   expireConsequences: [{ type: 'setFlag', flag: FLAG_COVEN_FLED, value: true }],
 };
 
@@ -257,8 +264,8 @@ function endRaid(ctx: EngineContext): void {
 
 /**
  * Bumping a held villager frees them, unless their thrall still stands beside them. While
- * the raid lasts the houses are barred and the cellar sealed by the coven's rite, so the
- * night plays out in the lanes.
+ * the raid lasts the houses are barred, the cellar sealed by the coven's rite, and the folk
+ * out in the lanes have no time for trade, so the night plays out in the lanes.
  */
 const PROLOGUE_MOVE_HOOK: ActionHook = {
   id: 'cotw-prologue-move',
@@ -278,6 +285,9 @@ const PROLOGUE_MOVE_HOOK: ActionHook = {
       }
       freeVillager(engine, target);
       return { proceed: false, result: { success: true, cost: 0, message: `You free ${target.name}.` } };
+    }
+    if (target instanceof NPC) {
+      return { proceed: false, result: { success: false, cost: 0, message: RAID_LINES[target.id] ?? RAID_LINE_DEFAULT } };
     }
 
     const tile = engine.map.getTile(x, y);
@@ -312,7 +322,11 @@ const PROLOGUE_RAID_HOOK: ActionHook = {
       if (hallvard) engine.removeEntity(hallvard);
       return;
     }
-    if (!isPrologueRunning(engine.worldState, COTW_PROLOGUE)) return;
+    if (!isPrologueRunning(engine.worldState, COTW_PROLOGUE)) {
+      // Ended some other way (the F2 triage menu): the countdown stops with it.
+      if (getFlag(engine.worldState, PROLOGUE_ENDED_FLAG)) setFlag(engine.worldState, FLAG_COUNTDOWN_STOPPED, true);
+      return;
+    }
 
     if (engine.player.wasHeldAtHpFloor) {
       setFlag(engine.worldState, FLAG_STRUCK_DOWN, true);

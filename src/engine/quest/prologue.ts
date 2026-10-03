@@ -92,7 +92,7 @@ export function beginPrologue(engine: GameEngine): boolean {
 }
 
 /**
- * Ends a running prologue: the prologue's monsters still on the map leave, the town takes
+ * Ends a running prologue: the prologue's monsters and NPCs still on the map leave, the town takes
  * back its own light (`townLit`, the pack's `town.lit`), the hero can die again, the
  * aftermath NPCs take their places, and `endFlag` is set. Does nothing when none is running.
  */
@@ -101,6 +101,10 @@ export function concludePrologue(ctx: EngineContext, prologue: PrologueDefinitio
 
   for (const entity of ctx.map.getAllEntities()) {
     if (entity instanceof Monster && entity.id.startsWith(PROLOGUE_MONSTER_PREFIX)) ctx.removeEntity(entity);
+  }
+  for (const npc of prologue.npcs ?? []) {
+    const entity = ctx.map.getEntityById(npc.id);
+    if (entity) ctx.removeEntity(entity);
   }
   if (ctx.currentFloor === 0) ctx.map.lit = townLit;
   ctx.player.setHpFloor(0);

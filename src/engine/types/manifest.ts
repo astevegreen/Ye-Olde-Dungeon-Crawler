@@ -886,7 +886,7 @@ export interface PrologueDefinition {
   /** Monsters placed when it begins, each at floor-1 strength, with ids `prologue-monster-<n>`.
    *  Those still on the map when it ends leave with it. */
   monsters?: { definitionId: string; position: Position }[];
-  /** NPCs placed when it begins. */
+  /** NPCs placed when it begins. Those still on the map when it ends leave with it. */
   npcs?: PrologueNpc[];
   /** NPCs placed when it ends, on their tile or the nearest free one. */
   aftermathNpcs?: PrologueNpc[];

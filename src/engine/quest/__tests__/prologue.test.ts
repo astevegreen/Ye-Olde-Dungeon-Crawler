@@ -74,12 +74,26 @@ describe('Prologue (manifest.prologue)', () => {
     expect(getFlag(engine.worldState, PROLOGUE.endFlag)).toBe(true);
     expect(isPrologueRunning(engine.worldState, PROLOGUE)).toBe(false);
     expect(engine.map.getEntityAt(22, 30)).toBeFalsy();
+    expect(engine.map.getEntityById('test-villager')).toBeFalsy();
     expect(engine.map.lit).toBe(true);
     expect(engine.map.getEntityById('test-warden')).toBeInstanceOf(NPC);
     expect(engine.messages).toContain('Dawn.');
 
     engine.player.takeDamage(engine.player.hp + 50);
     expect(engine.player.isAlive()).toBe(false);
+  });
+
+  it('can be ended from the F2 triage menu, and a floor jump ends it first', () => {
+    const engine = begin();
+    expect(engine.diagnostics.endPrologue()).toBe(true);
+    expect(isPrologueRunning(engine.worldState, PROLOGUE)).toBe(false);
+    expect(engine.diagnostics.endPrologue()).toBe(false);
+
+    const jumper = begin();
+    jumper.diagnostics.jumpToFloor(1);
+    expect(isPrologueRunning(jumper.worldState, PROLOGUE)).toBe(false);
+    jumper.player.takeDamage(jumper.player.hp + 50);
+    expect(jumper.player.isAlive()).toBe(false);
   });
 
   it('stays ended after a load, and ending twice does nothing more', () => {

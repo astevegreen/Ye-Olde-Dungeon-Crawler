@@ -448,7 +448,7 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     x: p.x,
     y: p.y,
     hp: p.hp,
-    maxHp: p.maxHp,
+    maxHp: p.baseMaxHpValue,
     baseAttack: p.baseAttackValue,
     baseDefense: p.baseDefenseValue,
     strength: p.strength,

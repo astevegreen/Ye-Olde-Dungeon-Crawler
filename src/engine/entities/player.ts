@@ -268,7 +268,8 @@ export class Player extends Actor {
             baseDefense: 1,
           });
 
-      this.maxHp += gains.maxHp ?? 5;
+      // From the base, not the getter: a pact's or item's modifier must not be written into it.
+      this.maxHp = this.baseMaxHpValue + (gains.maxHp ?? 5);
       this.hp = this.maxHp;
       this.maxMana += gains.maxMana ?? 4;
       this.mana = this.maxMana;

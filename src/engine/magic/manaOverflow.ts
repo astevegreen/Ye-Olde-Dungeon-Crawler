@@ -150,7 +150,7 @@ function applyOutcome(
     }
     case 'max_hp_burn': {
       if (player && player.maxHp - outcome.amount >= outcome.minMaxHp) {
-        player.maxHp -= outcome.amount;
+        player.maxHp = player.baseMaxHpValue - outcome.amount;
         player.hp = Math.min(player.hp, player.maxHp);
         values.maxHp = player.maxHp;
         if (outcome.flashColor) effects.push({ type: 'screen_flash', color: outcome.flashColor, durationMs: 300 });

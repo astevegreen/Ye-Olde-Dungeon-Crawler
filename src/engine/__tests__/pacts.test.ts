@@ -7,6 +7,9 @@ import { COTW_PACTS } from '../../content/cotw/pacts';
 import { DeathResolver } from '../combat/deathResolver';
 import { populateDungeonFloor } from '../dungeon/spawner';
 import { TILES } from '../grid/tile';
+import { ProfileManager, MemoryStorage } from '../storage/profile-manager';
+import { serializeGame, deserializeGame } from '../storage/serializer';
+import { cotwManifest } from '../../content/cotw';
 
 describe('Data-Driven Bounties & Run Pacts System', () => {
   let engine: GameEngine;
@@ -146,5 +149,40 @@ describe('Data-Driven Bounties & Run Pacts System', () => {
     const countDense = mapDense.getAllEntities().length;
 
     expect(countDense).toBeGreaterThan(countNormal);
+  });
+});
+
+describe('Pact of the Blood Moon and max HP', () => {
+  it('a level-up adds to max HP under the pact, never lowers it', () => {
+    const { engine } = new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Bloody', { seed: 3 });
+    const p = engine.player;
+    engine.pacts.activatePact('pact_blood');
+    const before = p.maxHp;
+
+    p.gainXp(p.xpToNextLevel);
+
+    expect(p.maxHp).toBeGreaterThan(before);
+  });
+
+  it('a save and load under the pact keeps max HP', () => {
+    const pm = new ProfileManager(new MemoryStorage(), cotwManifest);
+    const { engine, profile } = pm.createCharacter('Bloody', { seed: 3 });
+    engine.pacts.activatePact('pact_blood');
+    const before = engine.player.maxHp;
+
+    const loaded = deserializeGame(JSON.parse(JSON.stringify(serializeGame(engine, profile))), cotwManifest).engine;
+
+    expect(loaded.player.maxHp).toBe(before);
+  });
+
+  it('sealing the pact brings HP down to the new maximum', () => {
+    const { engine } = new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Bloody', { seed: 3 });
+    const p = engine.player;
+    p.hp = p.maxHp;
+
+    engine.commandBus.dispatch({ type: 'pact_toggle', payload: { pactId: 'pact_blood' } });
+
+    expect(engine.pacts.isPactActive('pact_blood')).toBe(true);
+    expect(p.hp).toBe(p.maxHp);
   });
 });

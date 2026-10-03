@@ -71,7 +71,7 @@ export class EnergyModel {
       return false; // Cannot burn all remaining maximum life
     }
 
-    actor.maxHp = actor.maxHp - burnAmount;
+    actor.maxHp = actor.baseMaxHpValue - burnAmount;
     if (actor.hp > actor.maxHp) {
       actor.hp = actor.maxHp;
     }

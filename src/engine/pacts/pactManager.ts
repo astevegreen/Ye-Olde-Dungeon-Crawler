@@ -65,6 +65,9 @@ export class PactManager {
     if (!pact) return false;
     if (this.engine?.worldState) {
       setFlag(this.engine.worldState, `pact_active_${id}`, true);
+      // A pact that lowers max HP takes the excess with it.
+      const player = this.engine.player;
+      if (player && player.hp > player.maxHp) player.hp = player.maxHp;
       this.engine.log(`[Pact Sealed] ${pact.name}: ${pact.curseDescription}`);
       this.engine.emitDiscovery({
         type: 'pact_sealed',

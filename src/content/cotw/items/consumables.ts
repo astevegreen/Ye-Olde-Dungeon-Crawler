@@ -161,7 +161,7 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
     weight: 300,
     bulk: 200,
     identified: false,
-    description: 'A radiant incendiary projectile that explodes in a burst of scorching holy fire, illuminating dark corridors and awakening dormant beasts.',
+    description: 'A radiant incendiary spindle that bursts in scorching holy fire, setting every beast within three paces ablaze. The flames are quiet: sleeping beasts burn without waking.',
     value: 120,
     itemType: 'potion',
     potionConfig: {

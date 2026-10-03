@@ -126,6 +126,31 @@ test('the map stays inside its column on a very wide window', async ({ page }) =
   expect(fit).toEqual({ inColumn: true, clearOfSidebar: true });
 });
 
+// Planning a point redraws the Character tab; its scrolled columns stay where they were
+// (each + jumped them back to the top, tracker 0.21).
+test('planning a point keeps the Character tab where it was scrolled', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 600 });
+  await embarkNewHero(page);
+  await page.evaluate(() => {
+    const e = window.__cotwEngine!;
+    e.diagnostics.grantLevel();
+    e.diagnostics.grantLevel();
+  });
+  await page.keyboard.press('e');
+  const add = page.locator('#character-menu-tab-content .ch-pm.is-add[data-plan="dexterity"]');
+  await expect(add).toBeVisible();
+  const cols = '#character-menu-tab-content .ch-grid > .ui-col';
+  const before = await page.evaluate((sel) => {
+    const all = [...document.querySelectorAll<HTMLElement>(sel)];
+    all.forEach((c) => (c.scrollTop = 60));
+    return all.map((c) => c.scrollTop);
+  }, cols);
+  expect(before.some((t) => t > 0), 'a column must scroll at this height').toBe(true);
+  await add.evaluate((b: HTMLElement) => b.click());
+  const after = await page.evaluate((sel) => [...document.querySelectorAll<HTMLElement>(sel)].map((c) => c.scrollTop), cols);
+  expect(after).toEqual(before);
+});
+
 // Save & quit and choices take keys only through the modal stack, as one entry each: a
 // second window listener delivered every key twice, and the choice's stack entry let
 // Escape dismiss a choice that cannot be cancelled.

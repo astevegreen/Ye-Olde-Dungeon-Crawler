@@ -293,6 +293,11 @@ export class CharacterTab implements MenuTab {
     const manifest = this.state.manifest ?? this.state.engine.manifest;
     const mana = resolveManaTerms(manifest);
 
+    // Each plan redraws the tab; its columns keep their scroll (they jumped to the top).
+    const columns = (): HTMLElement[] =>
+      typeof this.container?.querySelectorAll === 'function' ? [...this.container.querySelectorAll<HTMLElement>('.ch-grid > .ui-col')] : [];
+    const scrolled = columns().map((c) => c.scrollTop);
+
     this.container.innerHTML = `
       <div class="ui-tabgrid ch-grid">
         <div class="ui-col ui-scroll">${this.renderIdentity(player, mana)}</div>
@@ -300,6 +305,9 @@ export class CharacterTab implements MenuTab {
         <div class="ui-col ui-scroll">${this.renderDiff(player, mana)}${this.renderRune(player)}</div>
       </div>
     `;
+    columns().forEach((c, i) => {
+      if (scrolled[i]) c.scrollTop = scrolled[i];
+    });
 
     if (typeof this.container.querySelectorAll === 'function') {
       this.container.querySelectorAll<HTMLButtonElement>('button[data-plan]').forEach((btn) => {

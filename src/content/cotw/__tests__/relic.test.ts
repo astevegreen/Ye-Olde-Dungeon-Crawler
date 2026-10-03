@@ -45,6 +45,22 @@ describe('The Hearth-Tear: reclaimed, carried home, the thaw', () => {
     expect(ctx.logs.some((l) => l.includes('Carry it home'))).toBe(true);
   });
 
+  it("keeps Act 1's line up until the Hearth-Tear is found, whatever happened at the siphon", () => {
+    const deep = context(22);
+    const view = {
+      manifest: { objectives: COTW_OBJECTIVES },
+      getWorldFlag: (f: string) => deep.engine.getWorldFlag(f),
+      getWorldCounter: (c: string) => deep.engine.worldState.counters[c] ?? 0,
+    };
+    deep.engine.worldState.counters[COTW_DEEPEST_FLOOR_COUNTER] = 22;
+    setFlag(deep.engine.worldState, 'savior_of_jarnvidr', true);
+    setFlag(deep.engine.worldState, 'blood_tainted_hero', true);
+    expect(getCurrentObjective(view as never)?.id).toBe('cotw_objective_act1');
+
+    setFlag(deep.engine.worldState, RELIC_RECOVERED_FLAG, true);
+    expect(getCurrentObjective(view as never)?.id).toBe('cotw_objective_return');
+  });
+
   it('asks to be carried home, and the errand ends with the thaw in town', () => {
     const view = (ctx: ReturnType<typeof context>) => ({
       manifest: { objectives: COTW_OBJECTIVES },

@@ -31,7 +31,8 @@ export const COTW_OBJECTIVES: ObjectiveDefinition[] = [
   {
     id: 'cotw_objective_act1',
     text: "Something below is stealing the village's warmth. Descend and find it.",
-    doneWhenAnyFlag: ['oath_resolved', 'savior_of_jarnvidr', 'blood_tainted_hero'],
+    // Found when the Hearth-Tear is: the siphon's outcomes on floor 22 come before it.
+    doneWhenAnyFlag: [RELIC_RECOVERED_FLAG],
     doneWhenCounterAtLeast: { counter: COTW_DEEPEST_FLOOR_COUNTER, value: 26 },
   },
   {

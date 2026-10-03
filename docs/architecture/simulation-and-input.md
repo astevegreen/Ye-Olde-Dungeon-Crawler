@@ -6,6 +6,7 @@
   - **Dormant Actor Scheduling:** Every living actor on the active floor stays in `EnergyScheduler` and accrues energy. On a monster's turn, `Monster.takeTurn()` does the following, in order:
     1. Resolves status-effect ticks (`statusManager.tick()`), always, sleeping or not.
     2. Checks paralysis/stun.
+    - Then, for an awake monster with `onTurnStart` hooks, dispatches them (`HookDispatcher`); a sleeper skips this.
     3. Calls `MonsterAI.decideAction()`. Inside it, any pending wind-up and the spell-cooldown decrement resolve first. A monster with `aiState === 'sleeping'` then wakes if it has line of sight to the player within Euclidean distance 8 or stands on a tile visible in the player's FOV. Otherwise it returns a `WaitAction` without pathfinding, item use, or combat resolution.
     - `GameEngine.updateFov()` also wakes sleeping monsters on visible tiles.
     - Companions (§3) never sleep (`aiState: 'hunting'` always) and are registered on `EnergyScheduler` like any other active-floor actor — no new scoping exception to this bounded-simulation model.

@@ -18,7 +18,7 @@ describe('SettingsManager', () => {
     const settings = manager.getSettings();
     expect(settings.arrowChordingEnabled).toBe(true);
     expect(settings.arrowChordBufferMs).toBe(40);
-    expect(settings.mouseVectoringEnabled).toBe(true);
+    expect(settings.mouseVectoringEnabled).toBe(false);
     expect(settings.keybinds.move_n).toContain('ArrowUp');
     expect(settings.keybinds.cast_spell).toContain('KeyZ');
     expect(settings.keybinds.radial_menu).toContain('KeyV');
@@ -65,7 +65,7 @@ describe('SettingsManager', () => {
     manager.updateSettings({
       arrowChordingEnabled: false,
       arrowChordBufferMs: 60,
-      mouseVectoringEnabled: false,
+      mouseVectoringEnabled: true,
     });
 
     const storedJson = storage.getItem(SETTINGS_STORAGE_KEY);
@@ -73,14 +73,14 @@ describe('SettingsManager', () => {
     const parsed = JSON.parse(storedJson!);
     expect(parsed.arrowChordingEnabled).toBe(false);
     expect(parsed.arrowChordBufferMs).toBe(60);
-    expect(parsed.mouseVectoringEnabled).toBe(false);
+    expect(parsed.mouseVectoringEnabled).toBe(true);
 
     // Re-instantiating manager loads persisted values
     const newManager = new SettingsManager(storage);
     const loaded = newManager.getSettings();
     expect(loaded.arrowChordingEnabled).toBe(false);
     expect(loaded.arrowChordBufferMs).toBe(60);
-    expect(loaded.mouseVectoringEnabled).toBe(false);
+    expect(loaded.mouseVectoringEnabled).toBe(true);
   });
 
   it('clamps arrowChordBufferMs between 25ms and 75ms', () => {
@@ -113,7 +113,7 @@ describe('SettingsManager', () => {
     manager.updateSettings({
       arrowChordingEnabled: false,
       arrowChordBufferMs: 65,
-      mouseVectoringEnabled: false,
+      mouseVectoringEnabled: true,
     });
     manager.unbindKey('ArrowUp');
     manager.unbindKey('KeyZ');
@@ -122,7 +122,7 @@ describe('SettingsManager', () => {
     const settings = manager.getSettings();
     expect(settings.arrowChordingEnabled).toBe(true);
     expect(settings.arrowChordBufferMs).toBe(40);
-    expect(settings.mouseVectoringEnabled).toBe(true);
+    expect(settings.mouseVectoringEnabled).toBe(false);
     expect(settings.keybinds.move_n).toContain('ArrowUp');
     expect(settings.keybinds.cast_spell).toContain('KeyZ');
   });

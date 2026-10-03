@@ -182,7 +182,7 @@ export class KeybindModal implements UIModal {
       size: 'wide',
       body: `
         <div class="ui-h">Movement and display</div>
-        ${option(null, 'Standard (Arrows, NumPad, WASD, H J K Y N)', 'Arrow keys and the number pad move at once, diagonals on the pad. W A D and H J K Y N also move; S, L, U and B stay Search, Look, the Character tab and the Bestiary. You can also click a tile: next to you to step or attack, farther away to walk there.', '<span id="badge-standard-mode" class="storage-badge-pill">Standard input</span>')}
+        ${option(null, 'Standard (Arrows, NumPad, WASD, H J K Y N)', 'Arrow keys and the number pad move at once, diagonals on the pad. W A D and H J K Y N also move; S, L, U and B stay Search, Look, the Character tab and the Bestiary. You can also click a distant tile to walk there; the Hover Ring below adds clicking next to you to step or attack.', '<span id="badge-standard-mode" class="storage-badge-pill">Standard input</span>')}
         ${option('chk-arrow-chording', 'Micro-Debounce Buffer (Arrow-Key Chording)', 'Press two arrow keys together to step diagonally (Up and Right goes northeast). Handy on keyboards without a number pad.', chordRange)}
         ${option('chk-mouse-vectoring', "The 'Hover Ring' (Mouse Vectoring)", 'Shows a ring of eight directions around your hero under the mouse. Click a neighboring tile to step or attack, or a distant one to walk there.')}
         ${option('chk-torchlight', 'Torchlight', 'What you can see darkens toward the edge of your sight, with warm light around your hero. Off gives flat, even lighting.')}

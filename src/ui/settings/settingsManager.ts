@@ -157,7 +157,8 @@ export function getDefaultSettings(): GameSettings {
   return {
     arrowChordingEnabled: true,
     arrowChordBufferMs: 40,
-    mouseVectoringEnabled: true,
+    // Off until the player turns it on: a new player learns the keyboard first.
+    mouseVectoringEnabled: false,
     torchlightEnabled: true,
     inventoryRichHoverCards: true,
     hintsEnabled: true,

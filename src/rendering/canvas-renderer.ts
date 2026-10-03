@@ -70,7 +70,7 @@ export class CanvasRenderer {
   private readonly cards: MapCardLayer | null;
   /** Resolves a display label for a radial-menu slot; wired from main.ts (spell/command/item lookups live there). */
   public onResolveRadialLabel?: (slot: RadialMenuSlotConfig) => string;
-  public mouseVectoringEnabled = true;
+  public mouseVectoringEnabled = false;
   /** Player setting: the pack's torchlight pass (`atlas.terrain.torch`). */
   public torchlightEnabled = true;
   public navigationController?: NavigationController;

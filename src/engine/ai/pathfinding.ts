@@ -18,22 +18,24 @@ const DIRECTIONS = [
   { dx: 1, dy: 1 },
 ];
 
+/** Breadth-first path; gives up (returns []) after `maxVisited` tiles, so a blocked search stays bounded. */
 export function findPath(
   map: GameMap,
   start: Position,
   target: Position,
-  canOpenDoors = true
+  canOpenDoors = true,
+  maxVisited = Number.POSITIVE_INFINITY
 ): Position[] {
   if (start.x === target.x && start.y === target.y) {
     return [];
   }
 
   const queue: PathNode[] = [{ x: start.x, y: start.y, parent: null }];
-  const visited = new Set<string>();
-  visited.add(`${start.x},${start.y}`);
+  const visited = new Set<number>();
+  visited.add(start.y * map.width + start.x);
 
-  while (queue.length > 0) {
-    const current = queue.shift()!;
+  for (let head = 0; head < queue.length; head++) {
+    const current = queue[head];
 
     if (current.x === target.x && current.y === target.y) {
       // Reconstruct path (excluding start)
@@ -49,10 +51,9 @@ export function findPath(
     for (const dir of DIRECTIONS) {
       const nx = current.x + dir.dx;
       const ny = current.y + dir.dy;
-      const key = `${nx},${ny}`;
-
-      if (visited.has(key)) continue;
       if (!map.inBounds(nx, ny)) continue;
+      const key = ny * map.width + nx;
+      if (visited.has(key)) continue;
 
       // Allow reaching the target even if target tile has an entity (the target itself)
       const isTarget = nx === target.x && ny === target.y;
@@ -82,6 +83,7 @@ export function findPath(
       }
 
       visited.add(key);
+      if (visited.size > maxVisited) return [];
       queue.push({ x: nx, y: ny, parent: current });
     }
   }

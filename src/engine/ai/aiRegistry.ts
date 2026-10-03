@@ -10,6 +10,7 @@ import { WaitAction } from '../actions/wait';
 import { OpenDoorAction } from '../actions/door';
 import { CastSpellAction } from '../actions/spell-actions';
 import { findPath, findFleeStep } from './pathfinding';
+import { stepAlongDistanceField } from './distanceField';
 import { computeDangerTiles } from './intent';
 import { getBresenhamLine } from '../magic/targeting';
 import { selectAttackTarget } from './targetSelection';
@@ -166,18 +167,8 @@ export class AggressiveMeleeStrategy implements AIStrategy {
     }
 
     // 3. Out of range -> pathfind
-    if (dist <= 10) {
-      const path = findPath(engine.map, actor.position, player.position);
-      if (path && path.length > 0) {
-        const next = path[0];
-        const tile = engine.map.getTile(next.x, next.y);
-        if (tile?.type === 'door_closed') {
-          return new OpenDoorAction(actor, next.x, next.y);
-        }
-        monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
-        return new MovementAction(actor, next.x - actor.x, next.y - actor.y);
-      }
-    }
+    const approach = approachAction(engine, monster, player, dist);
+    if (approach) return approach;
 
     monster.intent = { type: 'idle', turnsRemaining: 0 };
     return new WaitAction(actor);
@@ -280,18 +271,8 @@ export class KitingRangedStrategy implements AIStrategy {
     }
 
     // 3. Move into ideal casting range if too far
-    if (dist <= 10) {
-      const path = findPath(engine.map, actor.position, player.position);
-      if (path && path.length > 0) {
-        const next = path[0];
-        const tile = engine.map.getTile(next.x, next.y);
-        if (tile?.type === 'door_closed') {
-          return new OpenDoorAction(actor, next.x, next.y);
-        }
-        monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
-        return new MovementAction(actor, next.x - actor.x, next.y - actor.y);
-      }
-    }
+    const approach = approachAction(engine, monster, player, dist);
+    if (approach) return approach;
 
     monster.intent = { type: 'idle', turnsRemaining: 0 };
     return new WaitAction(actor);
@@ -361,23 +342,36 @@ export class FleeingCowardStrategy implements AIStrategy {
         monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
         return new MeleeAttackAction(actor, player);
       }
-      if (dist <= 10) {
-        const path = findPath(engine.map, actor.position, player.position, true);
-        if (path && path.length > 0) {
-          const next = path[0];
-          const tile = engine.map.getTile(next.x, next.y);
-          if (tile?.type === 'door_closed') {
-            return new OpenDoorAction(actor, next.x, next.y);
-          }
-          monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
-          return new MovementAction(actor, next.x - actor.x, next.y - actor.y);
-        }
-      }
+      const approach = approachAction(engine, monster, player, dist);
+      if (approach) return approach;
     }
 
     monster.intent = { type: 'idle', turnsRemaining: 0 };
     return new WaitAction(actor);
   }
+}
+
+/** How far a monster plans a path of its own toward its target. */
+const PURSUIT_RADIUS = 10;
+/** The tiles a monster's own path search may visit: the square around it, PURSUIT_RADIUS out. */
+const PURSUIT_SEARCH_BUDGET = (2 * PURSUIT_RADIUS + 1) ** 2;
+
+/**
+ * A monster's step toward its target: a bounded path search of its own within PURSUIT_RADIUS
+ * (it routes around other monsters), else the floor's shared distance field (one search per
+ * turn for every such monster, §6). Null when there is no way.
+ */
+function approachAction(engine: GameEngine, monster: Monster, target: Entity, dist: number): Action | null {
+  const ownPath =
+    dist <= PURSUIT_RADIUS ? findPath(engine.map, monster.position, target.position, true, PURSUIT_SEARCH_BUDGET)[0] : undefined;
+  const next = ownPath ?? stepAlongDistanceField(engine.map, monster.position, target.position, engine.turnCount);
+  if (!next) return null;
+  const tile = engine.map.getTile(next.x, next.y);
+  if (tile?.type === 'door_closed') {
+    return new OpenDoorAction(monster, next.x, next.y);
+  }
+  monster.intent = { type: 'attack', targetTile: { x: target.x, y: target.y }, turnsRemaining: 0 };
+  return new MovementAction(monster, next.x - monster.x, next.y - monster.y);
 }
 
 /** Shared by all companion AI strategies below. */

@@ -41,4 +41,16 @@ describe('monster definition fields across save/load', () => {
     const monster = loaded.map.getAllEntities().find((e) => e.id === 'hooked-1') as Monster;
     expect(monster.hooks).toEqual(def.hooks);
   });
+
+  it('keeps how far floor catch-up has scaled a monster, so a reload cannot compound it', () => {
+    const pm = new ProfileManager(new MemoryStorage(), cotwManifest);
+    const { engine, profile } = pm.createCharacter('Returner', { manifest: cotwManifest });
+    const veteran = createScaledMonster(cotwManifest.monsters[0], 'veteran-1', { x: engine.player.x + 1, y: engine.player.y }, 1);
+    veteran.catchUpScale = 1.25;
+    engine.addEntity(veteran);
+
+    const loaded = deserializeGame(JSON.parse(JSON.stringify(serializeGame(engine, profile))), cotwManifest).engine;
+
+    expect((loaded.map.getAllEntities().find((e) => e.id === 'veteran-1') as Monster).catchUpScale).toBe(1.25);
+  });
 });

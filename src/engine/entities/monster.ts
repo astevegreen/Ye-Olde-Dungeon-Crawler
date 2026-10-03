@@ -93,6 +93,8 @@ export class Monster extends Actor {
    * instead, via `ai/targetSelection.ts`'s `selectAttackTarget()`.
    */
   public targetingMode: 'player' | 'nearest_hostile';
+  /** The total stat multiplier floor catch-up has applied (`FloorManager.simulateCatchUp`); 1 = none. */
+  public catchUpScale = 1;
 
   constructor(config: MonsterConfig) {
     super({

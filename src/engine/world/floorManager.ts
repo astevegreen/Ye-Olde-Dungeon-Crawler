@@ -117,17 +117,20 @@ export class FloorManager {
     // Stat scale multiplier: capped between 1.0 and 1.5
     const multiplier = Math.min(1.5, 1.0 + batches * this.statScaleFactor);
 
-    // 1. Scale living existing monsters (if any) bounded by multiplier
+    // 1. Raise living monsters to this visit's multiplier, in total: a survivor already scaled
+    // that far by an earlier return is left alone, so repeated returns never compound. Its XP
+    // rises with it.
     const livingMonsters = map.getAllEntities().filter((e) => e instanceof Monster && e.isAlive()) as Monster[];
     for (const monster of livingMonsters) {
-      const baseHp = monster.maxHp;
-      const targetHp = Math.round(baseHp * multiplier);
-      if (targetHp > monster.maxHp) {
-        monster.maxHp = targetHp;
-        monster.hp = Math.min(targetHp, Math.round(monster.hp * multiplier));
-        monster.attack = Math.round(monster.attack * multiplier);
-        scaledMonsters++;
-      }
+      if (multiplier <= monster.catchUpScale) continue;
+      const ratio = multiplier / monster.catchUpScale;
+      const targetHp = Math.round(monster.baseMaxHpValue * ratio);
+      monster.hp = Math.min(targetHp, Math.round(monster.hp * ratio));
+      monster.maxHp = targetHp;
+      monster.attack = Math.round(monster.baseAttackValue * ratio);
+      monster.xpValue = Math.round(monster.xpValue * ratio);
+      monster.catchUpScale = multiplier;
+      scaledMonsters++;
     }
 
     // 2. Batch respawn monsters outside player FOV up to density limit
@@ -183,6 +186,8 @@ export class FloorManager {
           monster.maxHp = Math.round(monster.maxHp * multiplier);
           monster.hp = monster.maxHp;
           monster.attack = Math.round(monster.attack * multiplier);
+          monster.xpValue = Math.round(monster.xpValue * multiplier);
+          monster.catchUpScale = multiplier;
           map.addEntity(monster);
           spawnedCount++;
           continue;

@@ -116,6 +116,27 @@ describe('Inactive Floor Simulation & Temporal Catch-Up (floorManager.ts)', () =
       expect(existingOrc.attack).toBe(Math.round(10 * 1.1));
     });
 
+    it('does not compound a survivor\'s scaling over repeated returns, and raises its XP with it', () => {
+      const orc = new Monster({
+        id: 'veteran-orc',
+        name: 'Veteran Orc',
+        position: { x: 12, y: 12 },
+        stats: { hp: 40, maxHp: 40, attack: 10, defense: 4 },
+        xpValue: 20,
+      });
+      mapFloor1.addEntity(orc);
+
+      // Each return is 100 ticks later: 2 batches, a 1.10x multiplier every time.
+      for (let visit = 0; visit < 6; visit++) {
+        floorManager.recordDeparture(1, mapFloor1, undefined, visit * 1000);
+        floorManager.simulateCatchUp(1, visit * 1000 + 100, engine);
+      }
+
+      expect(orc.maxHp).toBe(44);
+      expect(orc.attack).toBe(11);
+      expect(orc.xpValue).toBe(22);
+    });
+
     it('respects densityLimit and does not over-spawn beyond floor capacity', () => {
       // Pre-fill map with 10 living monsters (densityLimit is 12)
       for (let i = 0; i < 10; i++) {

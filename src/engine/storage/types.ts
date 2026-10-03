@@ -276,6 +276,8 @@ export interface SerializedMonster {
   inventory?: SerializedInventory;
   morphEnvelope?: SerializedMorphEnvelope;
   planeId?: string;
+  /** `Monster.catchUpScale`, written only above 1. */
+  catchUpScale?: number;
 }
 
 /** Companions & Pet Progression, Phase 1 (docs/architecture/content-companions.md). Top-level in SaveData, not per-floor. */

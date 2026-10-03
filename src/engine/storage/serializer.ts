@@ -664,6 +664,7 @@ export function serializeMapObject(map: GameMap): SerializedMap {
         intent: mon.intent ? { ...mon.intent } : undefined,
         statusEffects: mon.statusManager.serialize(),
         planeId: mon.planeId ?? 'physical',
+        catchUpScale: mon.catchUpScale > 1 ? mon.catchUpScale : undefined,
       };
     });
 
@@ -831,6 +832,9 @@ export function deserializeMapObject(
       }
       if (mData.planeId) {
         monster.planeId = mData.planeId;
+      }
+      if (mData.catchUpScale) {
+        monster.catchUpScale = mData.catchUpScale;
       }
       map.addEntity(monster);
     }

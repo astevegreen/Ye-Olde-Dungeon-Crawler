@@ -96,7 +96,7 @@ describe('Dungeon Loot Spawner & Currency Scaling', () => {
 describe('createScaledItem hooks', () => {
   it('gives every item a definition hooks, whatever its type', () => {
     const withHooks = COTW_ITEMS.filter((def) => def.hooks?.length);
-    // Weapons, armor, a ring, a shield and a potion carry hooks: guard against a vacuous pass.
+    // Weapons, armor, a ring and shields carry hooks: guard against a vacuous pass.
     expect(withHooks.length).toBeGreaterThan(5);
     for (const def of withHooks) {
       expect(createScaledItem(def, `item-${def.id}`, 1, () => 0.5).hooks).toEqual(def.hooks);

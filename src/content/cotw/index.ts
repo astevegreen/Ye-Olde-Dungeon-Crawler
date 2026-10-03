@@ -29,6 +29,7 @@ import { COTW_RENOWN_MILESTONES, COTW_RENOWN_TITLES } from './renown';
 import { COTW_OBJECTIVES } from './objectives';
 import { COTW_COMPANIONS } from './companions';
 import { GIANT_BLOOD_STATUS, giantBloodHandler, GIANT_BLOOD_BOOTSTRAP_HOOK } from './giantBlood';
+import { BURNING_STATUS, burningHandler } from './burning';
 import { COTW_MONSTER_SCALING } from './monsterScaling';
 import { OATH_TRIGGER, OATH_TIMED_EVENT } from './oath';
 import { HOSTAGE_VILLAGERS, SIPHON_RITUAL_FLOOR, SIPHON_RITUAL_HOOKS, SIPHON_TIMED_EVENT, SIPHON_VAULT_ID } from './hostageRitual';
@@ -200,9 +201,14 @@ export const cotwManifest: GameContentManifest = {
       name: "Giant's Blood",
       hudColor: '#38bdf8',
     },
+    {
+      id: BURNING_STATUS,
+      name: 'Burning',
+    },
   ],
   statusHandlers: {
     [GIANT_BLOOD_STATUS]: giantBloodHandler,
+    [BURNING_STATUS]: burningHandler,
   },
   fixedTilePlacements: [
     {

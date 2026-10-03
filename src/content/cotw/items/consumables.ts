@@ -166,21 +166,10 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
     itemType: 'potion',
     potionConfig: {
       effects: [
-        { type: 'radial_status', radius: 3, tags: ['monster'], status: 'burning', duration: 4 },
+        // 6 fire a turn for 4 turns to every monster within 3 tiles (burning.ts).
+        { type: 'radial_status', radius: 3, tags: ['monster'], status: 'burning', duration: 4, potency: 6 },
       ],
     },
-    hooks: [
-      {
-        event: 'onHit',
-        chance: 1.0,
-        action: {
-          type: 'bonusDamage',
-          amount: 25,
-          element: 'fire',
-        },
-        description: "Zealot's Sun-Flare detonates in scorching radiant fire!",
-      },
-    ],
   },
   {
     id: 'vial_of_choke_damp',

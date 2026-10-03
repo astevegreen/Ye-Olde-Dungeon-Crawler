@@ -170,6 +170,25 @@ test('the open map redraws to fit when the window is resized', async ({ page }) 
   }).toBe(true);
 });
 
+// The sidebar's "here" line shows all of a long prompt: on the stairs it was cut off at
+// "…to a" with no ellipsis (tracker 0.23).
+test("the sidebar's ground line shows the whole stairs prompt", async ({ page }) => {
+  await embarkNewHero(page);
+  await page.evaluate(async () => {
+    const e = window.__cotwEngine!;
+    e.diagnostics.jumpToFloor(2);
+    await new Promise((r) => setTimeout(r, 300));
+    e.diagnostics.teleportToStairs('up');
+  });
+  await page.keyboard.press('Space');
+  const here = page.locator('#combat-sidebar .sb-here');
+  await expect(here).toContainText('to ascend');
+  const fits = await here.evaluate((el) =>
+    [el, ...el.querySelectorAll('*')].every((n) => n.scrollWidth <= Math.ceil(n.getBoundingClientRect().width) + 1)
+  );
+  expect(fits).toBe(true);
+});
+
 // Save & quit and choices take keys only through the modal stack, as one entry each: a
 // second window listener delivered every key twice, and the choice's stack entry let
 // Escape dismiss a choice that cannot be cancelled.

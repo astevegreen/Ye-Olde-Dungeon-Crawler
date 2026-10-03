@@ -1157,8 +1157,13 @@
   background: color-mix(in srgb, var(--ui-gold) 14%, transparent);
   border-left: 2px solid var(--ui-gold);
 }
+/* Each command is one box, so the line breaks between commands; a command longer than
+   the sidebar ("Stairs Up — Press [<] or [Enter] to ascend") wraps inside its box
+   rather than running out of the card. */
 .sb-here-seg {
-  white-space: nowrap;
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: top;
 }
 .sb-here[hidden] {
   display: none;

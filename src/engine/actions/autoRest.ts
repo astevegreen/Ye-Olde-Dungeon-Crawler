@@ -6,6 +6,7 @@ import { DeathResolver } from '../combat/deathResolver';
 import { lingeringDebtFloor } from '../magic/manaOverflow';
 import { BASE_ACTION_COST } from '../types';
 import { isPrologueRunning } from '../quest/prologue';
+import { getRunningTimedEvents } from '../quest/timedEvents';
 
 export interface AutoRestStepResult {
   finished: boolean;
@@ -21,11 +22,19 @@ export interface AutoRestStepResult {
  * 100% headless: strictly no DOM, browser timing, or window API calls.
  */
 export class AutoRestManager {
-  /** Why the hero can't rest at all just now, or null: a prologue's scene is under way, and its
-   *  clock (a turn-count countdown) would run out while they slept. Hostiles in sight are
-   *  checked separately, since they also interrupt a rest under way. */
+  /**
+   * Why the hero can't rest at all just now, or null. A timed event is counting down
+   * (`manifest.timedEvents`), or a prologue's scene is under way: their clocks count turns,
+   * and resting advances turns outside the action pipeline, so a rest would spend the
+   * countdown unseen and let it expire on the next step. Hostiles in sight are checked
+   * separately, since they also interrupt a rest under way.
+   */
   public static restRefusal(engine: GameEngine): string | null {
-    return isPrologueRunning(engine.worldState, engine.manifest?.prologue) ? 'There is no time to rest now.' : null;
+    const running = getRunningTimedEvents(engine);
+    const shown = running.find((e) => e.label);
+    if (shown) return `There is no time to rest with the ${shown.label} under way (${shown.turnsRemaining} turns left).`;
+    if (running.length > 0 || isPrologueRunning(engine.worldState, engine.manifest?.prologue)) return 'There is no time to rest now.';
+    return null;
   }
 
   /**

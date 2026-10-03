@@ -105,7 +105,7 @@ export class GameStateManager {
 
     const totalGoldCp = getPlayerTotalCp(p);
     const bonus = ending?.victoryScoreBonus ?? quest?.victoryScoreBonus ?? 5000;
-    const score = Leaderboard.calculateScore(p.xp, totalGoldCp, this.deepestFloor, true, bonus);
+    const score = Leaderboard.calculateScore(p.totalXp, totalGoldCp, this.deepestFloor, true, bonus);
     const epitaph = ending?.victoryEpitaph ?? quest?.victoryEpitaph ?? `Champion - Recovered the Quest Relic`;
 
     const entry: HallOfFameEntry = {
@@ -117,7 +117,7 @@ export class GameStateManager {
       level: p.level,
       deepestFloor: this.deepestFloor,
       turns: engine.turnCount,
-      xp: p.xp,
+      xp: p.totalXp,
       goldCp: totalGoldCp,
       score,
       date: Date.now(),
@@ -159,7 +159,7 @@ export class GameStateManager {
     this.killerName = killer?.name ?? 'Mortal Wounds';
     this.causeOfDeath = `Slain by ${this.killerName} on Floor ${engine.currentFloor}`;
     const totalGoldCp = getPlayerTotalCp(p);
-    const score = Leaderboard.calculateScore(p.xp, totalGoldCp, this.deepestFloor, false);
+    const score = Leaderboard.calculateScore(p.totalXp, totalGoldCp, this.deepestFloor, false);
 
     const entry: HallOfFameEntry = {
       id: p.id,
@@ -170,7 +170,7 @@ export class GameStateManager {
       level: p.level,
       deepestFloor: this.deepestFloor,
       turns: engine.turnCount,
-      xp: p.xp,
+      xp: p.totalXp,
       goldCp: totalGoldCp,
       score,
       date: Date.now(),

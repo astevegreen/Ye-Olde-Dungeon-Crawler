@@ -227,4 +227,16 @@ describe('GameStateManager & Win/Loss Sequences', () => {
     expect(champions[0].status).toBe('fallen');
     expect(champions[0].epitaph).toContain('Ogre Brute');
   });
+
+  it('scores the XP earned over the whole run, not what is left in the current level', () => {
+    // 450 XP on the default curve: 50 + 125 + 200 spent reaching level 4, 75 into it.
+    player.gainXp(450);
+    expect(player.level).toBe(4);
+    expect(player.xp).toBe(75);
+    expect(player.totalXp).toBe(450);
+
+    const entry = gameState.triggerDeath(engine);
+    expect(entry.xp).toBe(450);
+    expect(entry.score).toBe(Leaderboard.calculateScore(450, entry.goldCp, gameState.deepestFloor, false));
+  });
 });

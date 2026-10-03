@@ -226,6 +226,14 @@ export class Player extends Actor {
     return this.getXpRequirement(this.level);
   }
 
+  /** XP earned over the whole run: what each level reached cost, plus `xp`, which is
+   *  only the progress into the current level (it resets at every level-up). */
+  public get totalXp(): number {
+    let total = this.xp;
+    for (let level = 1; level < this.level; level++) total += this.getXpRequirement(level);
+    return total;
+  }
+
   public gainXp(
     amount: number,
     config?: ProgressionConfig

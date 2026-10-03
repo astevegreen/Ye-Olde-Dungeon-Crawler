@@ -14,6 +14,7 @@ export interface HallOfFameEntry {
   level: number;
   deepestFloor: number;
   turns: number;
+  /** XP earned over the whole run (Player.totalXp). */
   xp: number;
   goldCp: number;
   score: number;

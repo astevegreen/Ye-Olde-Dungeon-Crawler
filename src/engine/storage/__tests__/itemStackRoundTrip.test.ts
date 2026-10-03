@@ -4,6 +4,8 @@ import { serializeGame, deserializeGame } from '../serializer';
 import type { SaveData, SerializedItemNode } from '../types';
 import { cotwManifest } from '../../../content/cotw';
 import type { GameEngine } from '../../engine';
+import { createScaledItem } from '../../dungeon/lootSpawner';
+import { PotionItem } from '../../items/consumables';
 
 /**
  * Found by the soak harness: Save and exit -> Continue brought every carried item back
@@ -55,6 +57,25 @@ describe('carried items across save/load', () => {
         .sort();
     expect(flasksIn(engine)).toEqual([1, 3]);
     expect(flasksIn(load(serializeGame(engine, profile)))).toEqual([1, 3]);
+  });
+
+  it('gives back the definition fields a save leaves out, as a new item has them', () => {
+    const { engine, profile } = newHero();
+    const def = (id: string) => cotwManifest.items.find((d) => d.id === id)!;
+    // Two-handed, with reach: lying underfoot, so the pack's capacity doesn't matter.
+    const spear = createScaledItem(def('skraeling_ice_spear'), 'spear-1', 1, () => 0.5);
+    engine.map.addItemAt(engine.player.x, engine.player.y, spear);
+
+    const loaded = load(serializeGame(engine, profile));
+
+    // The kit's poultice has no potionType: rebuilt from that alone, it cured nothing.
+    const poultice = loaded.player.inventory.getAllCarriedItems().find((i) => i.definitionId === 'birch_tar_poultice');
+    expect(poultice).toBeInstanceOf(PotionItem);
+    expect((poultice as PotionItem).effects).toEqual(def('birch_tar_poultice').potionConfig!.effects);
+
+    const loadedSpear = loaded.map.getItemsAt(engine.player.x, engine.player.y).find((i) => i.id === 'spear-1')!;
+    expect(loadedSpear.twoHanded).toBe(true);
+    expect(loadedSpear.rangedConfig).toEqual(spear.rangedConfig);
   });
 
   it('gives an item from an older save, written without definitionId, its definition by name', () => {

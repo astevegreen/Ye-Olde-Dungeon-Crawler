@@ -1,7 +1,7 @@
 import type { GameEngine } from '../engine';
 import type { BulkArchive } from './bulkArchive';
 import type { SaveData, SerializedMap } from './types';
-import { deserializeMapObject, itemDefinitionIdsByName, restoreFloorLight } from './serializer';
+import { deserializeMapObject, itemDefinitionLookup, restoreFloorLight } from './serializer';
 
 /**
  * Bounded save payloads (ARCHITECTURE.md §5).
@@ -65,14 +65,14 @@ export async function hydrateArchivedFloors(
   archivedFloors?: number[]
 ): Promise<number> {
   const wanted = archivedFloors ?? (await archive.listFloors(profileId));
-  const definitionIds = itemDefinitionIdsByName(engine.manifest);
+  const definitions = itemDefinitionLookup(engine.manifest);
   let hydrated = 0;
 
   for (const floorNumber of wanted) {
     if (floorNumber === engine.currentFloor || engine.storedFloors.has(floorNumber)) continue;
     const serialized = await archive.getFloor(profileId, floorNumber);
     if (!serialized) continue;
-    const map = deserializeMapObject(serialized, undefined, definitionIds);
+    const map = deserializeMapObject(serialized, undefined, definitions);
     restoreFloorLight(map, floorNumber, engine.manifest);
     engine.storedFloors.set(floorNumber, map);
     hydrated++;

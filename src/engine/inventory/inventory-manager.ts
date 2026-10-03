@@ -158,6 +158,10 @@ export class InventoryManager {
       return { success: false, reason: check.reason };
     }
 
+    if (check.slot === 'pack' && item instanceof Container && this.paperdoll.getItem('pack') === this.primaryPack) {
+      return this.switchPrimaryPack(item);
+    }
+
     // Pre-flight check: Ensure the pack can hold any displaced items
     const blockedSlot = (item.blocksSlot ?? (item.twoHanded && check.slot === 'mainHand' ? 'offHand' : undefined)) as EquipmentSlot | undefined;
     const displacedItems: Item[] = [];
@@ -209,6 +213,44 @@ export class InventoryManager {
       this.primaryPack.addItem(equipResult.unequippedItem);
     }
 
+    return { success: true };
+  }
+
+  /**
+   * Wears `newPack`, which the current pack holds, as the pack: it takes everything the old
+   * pack held, then the emptied old pack itself, and becomes the pack pickups and purchases go
+   * to. All or nothing: if anything doesn't fit, everything goes back where it was.
+   */
+  private switchPrimaryPack(newPack: Container): { success: boolean; reason?: string } {
+    const oldPack = this.primaryPack;
+    oldPack.removeItem(newPack.id);
+
+    const moved: Item[] = [];
+    const rollBack = (reason: string) => {
+      for (const item of moved) {
+        newPack.removeItem(item.id);
+        oldPack.addItem(item, false);
+      }
+      oldPack.addItem(newPack, false);
+      return { success: false, reason };
+    };
+
+    for (const item of [...oldPack.getItems()]) {
+      if (!newPack.canContain(item, false).allowed) {
+        return rollBack(`The ${newPack.name} cannot hold everything in your ${oldPack.name}.`);
+      }
+      oldPack.removeItem(item.id);
+      newPack.addItem(item, false);
+      moved.push(item);
+    }
+    if (!newPack.canContain(oldPack, false).allowed) {
+      return rollBack(`The ${newPack.name} cannot hold your ${oldPack.name} as well.`);
+    }
+
+    this.paperdoll.equip(newPack, 'pack');
+    newPack.addItem(oldPack, false);
+    this.primaryPack = newPack;
+    this.setOwnerId(this.ownerId);
     return { success: true };
   }
 

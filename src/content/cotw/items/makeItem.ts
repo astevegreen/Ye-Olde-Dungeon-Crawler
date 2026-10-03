@@ -1,4 +1,4 @@
-import { createScaledItem } from '../../../engine';
+import { createDungeonChest, createScaledItem } from '../../../engine';
 import type { Item, ItemDefinition, Predicate } from '../../../engine';
 import { COTW_ITEMS } from './index';
 import { COTW_SPELL_TABLETS } from '../spellTablets';
@@ -82,6 +82,11 @@ function definitionFor(itemId: string): ItemDefinition {
 export function makeShopItem(itemId: string, instanceId: string, predicate?: Predicate): Item {
   const def = definitionFor(itemId);
   return createScaledItem(predicate ? { ...def, predicate } : def, instanceId, 1, () => 0.5);
+}
+
+/** A monster's chest drop: filled as a dungeon chest on `floor` would be. */
+export function makeLootChest(instanceId: string, rng: () => number, floor: number): Item {
+  return createDungeonChest(instanceId, floor, COTW_ITEMS, rng);
 }
 
 /** Monster loot: floor-1 stats rolled from the loot table's seeded rng. */

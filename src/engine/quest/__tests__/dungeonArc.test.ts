@@ -5,6 +5,8 @@ import { createTestSunStone } from '../../__fixtures__/testHelpers';
 import { QUEST_RELIC_ID } from '../types';
 import type { QuestArcDefinition } from '../../types/manifest';
 import { COTW_MONSTERS } from '../../../content/cotw/monsters';
+import { COTW_ITEMS } from '../../../content/cotw/items';
+import { Container } from '../../items/container';
 
 describe('DungeonArc & Floor 5 Chieftain Encounter', () => {
   it('identifies Floor 5 as the Boss Floor', () => {
@@ -114,5 +116,15 @@ describe('DungeonArc.createBoss', () => {
     expect(boss.hooks).toEqual(def.hooks);
     expect(boss.tags).toEqual(def.tags);
     expect(boss.targetingMode).toBe('nearest_hostile');
+  });
+});
+
+describe('the boss hoard', () => {
+  it('fills the hoard chest', () => {
+    const result = DungeonArc.generateBossLair(5, undefined, { items: COTW_ITEMS } as any);
+
+    const chest = result.map.getItemsAt(22, 5).find((i) => i.id === 'boss-chest-1') as Container;
+    expect(chest).toBeInstanceOf(Container);
+    expect(chest.getItems().length).toBeGreaterThan(0);
   });
 });

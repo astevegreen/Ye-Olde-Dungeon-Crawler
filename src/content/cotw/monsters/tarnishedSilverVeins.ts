@@ -1,6 +1,6 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
-import { makeLootItem } from '../items/makeItem';
+import { makeLootChest, makeLootItem } from '../items/makeItem';
 
 export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
   {
@@ -87,7 +87,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.35,
-        generate: (id, rng) => makeLootItem('chest', id, rng),
+        generate: (id, rng) => makeLootChest(id, rng, 28),
       },
     ],
   },

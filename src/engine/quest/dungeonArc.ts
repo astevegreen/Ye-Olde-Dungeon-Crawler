@@ -10,7 +10,7 @@ import type { Player } from '../entities/player';
 import { QUEST_RELIC_ID, MAX_DUNGEON_FLOOR } from './types';
 import { ItemFactory } from '../items/factory';
 import { createScaledMonster, populateDungeonFloor, scaleMonsterStats } from '../dungeon/spawner';
-import { populateDungeonLoot } from '../dungeon/lootSpawner';
+import { createDungeonChest, populateDungeonLoot } from '../dungeon/lootSpawner';
 import type { GameContentManifest, QuestArcDefinition, ItemDefinition } from '../types/manifest';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
 import { getMonsterDefinition, type MonsterDefinition } from '../bestiary/monsterDefinitions';
@@ -402,7 +402,7 @@ export class DungeonArc {
     map.addEntity(boss);
 
     if (this.placeDeclaredGuards(map, floorNumber, questArc, manifest, difficulty)) {
-      this.placeHoard(map, 22, 7);
+      this.placeHoard(map, 22, 7, floorNumber, manifest);
       return { map, playerSpawn, stairsUp, boss };
     }
 
@@ -472,7 +472,7 @@ export class DungeonArc {
     });
     map.addEntity(shamanRight);
 
-    this.placeHoard(map, 22, 7);
+    this.placeHoard(map, 22, 7, floorNumber, manifest);
 
     return {
       map,
@@ -533,7 +533,7 @@ export class DungeonArc {
     map.addEntity(boss);
 
     if (this.placeDeclaredGuards(map, floorNumber, questArc, manifest, difficulty)) {
-      this.placeHoard(map, bx, by);
+      this.placeHoard(map, bx, by, floorNumber, manifest);
       return { map, playerSpawn, stairsUp, boss };
     }
 
@@ -561,7 +561,7 @@ export class DungeonArc {
     guard('guard-shaman-1', bx - 4, by + 5, true, (id) => ItemFactory.createManaPotion(id));
     guard('guard-shaman-2', bx + 4, by + 5, true, (id) => ItemFactory.createHealthPotion(id));
 
-    this.placeHoard(map, bx, by);
+    this.placeHoard(map, bx, by, floorNumber, manifest);
 
     return { map, playerSpawn, stairsUp, boss };
   }
@@ -593,10 +593,14 @@ export class DungeonArc {
     return true;
   }
 
-  /** The boss's hoard, two rows above it: an iron chest between platinum and a potion. */
-  private static placeHoard(map: GameMap, bx: number, by: number): void {
+  /** The boss's hoard, two rows above it: a chest of floor-level loot between platinum and a potion. */
+  private static placeHoard(map: GameMap, bx: number, by: number, floorNumber: number, manifest?: GameContentManifest): void {
     const free = (x: number, y: number) => map.inBounds(x, y) && map.isPassable(x, y);
-    if (free(bx, by - 2)) map.addItemAt(bx, by - 2, ItemFactory.createIronChest('boss-chest-1'));
+    const prng = new PRNG(floorNumber * 7919 + 17);
+    const candidates = Array.isArray(manifest?.items) ? manifest.items : [];
+    if (free(bx, by - 2)) {
+      map.addItemAt(bx, by - 2, createDungeonChest('boss-chest-1', floorNumber, candidates, () => prng.next()));
+    }
     if (free(bx - 1, by - 2)) map.addItemAt(bx - 1, by - 2, ItemFactory.createPlatinumCoins('boss-plat-1', 10)); // 10,000 CP
     if (free(bx + 1, by - 2)) map.addItemAt(bx + 1, by - 2, ItemFactory.createHealthPotion('boss-pot-1'));
   }

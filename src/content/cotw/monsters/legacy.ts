@@ -1,6 +1,6 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
-import { makeLootItem } from '../items/makeItem';
+import { makeLootChest, makeLootItem } from '../items/makeItem';
 
 /**
  * Legacy monster templates preserved for backward compatibility with existing unit tests
@@ -193,7 +193,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.5,
-        generate: (id, rng) => makeLootItem('chest', id, rng),
+        generate: (id, rng) => makeLootChest(id, rng, 12),
       },
       {
         chance: 0.4,
@@ -451,7 +451,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.6,
-        generate: (id, rng) => makeLootItem('chest', id, rng),
+        generate: (id, rng) => makeLootChest(id, rng, 40),
       },
       {
         chance: 0.4,
@@ -573,7 +573,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.3,
-        generate: (id, rng) => makeLootItem('chest', id, rng),
+        generate: (id, rng) => makeLootChest(id, rng, 30),
       },
     ],
   },

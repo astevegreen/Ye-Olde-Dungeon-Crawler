@@ -10,6 +10,7 @@ import { CharacterRoller } from '../../../engine/character/characterRoller';
 import { getItemBuyPrice, getItemSellPrice } from '../../../engine/economy/merchant';
 import { COIN_VALUES } from '../../../engine/economy/types';
 import { CoinItem } from '../../../engine/economy/currency';
+import { Container } from '../../../engine/items/container';
 
 describe('CotW Item Distribution & Economic Integration', () => {
   it('equips authentic CotW starter items on new character roll', () => {
@@ -194,17 +195,21 @@ describe('CotW Item Distribution & Economic Integration', () => {
     const cotwItemMap = new Map(COTW_ITEMS.map((i) => [i.id, i]));
     for (const monster of COTW_MONSTERS) {
       for (const rule of monster.lootTable ?? []) {
-        const item = rule.generate('probe', () => 0.5);
-        if (item instanceof CoinItem) continue;
-        expect(
-          item.definitionId,
-          `${monster.name} (${monster.id}) generated item without definitionId: ${item.name}`
-        ).toBeDefined();
-        const def = cotwItemMap.get(item.definitionId!);
-        expect(def, `${monster.id} generated unknown definition ${item.definitionId}`).toBeDefined();
-        // A merchant's unidentified-windfall appraisal (Item is blessed/enchanted/artifact) can pay
-        // up to the item's own buy price, but never more than a merchant could resell it for.
-        expect(getItemSellPrice(item), `${monster.id}: ${item.name}`).toBeLessThanOrEqual(getItemBuyPrice(item));
+        const generated = rule.generate('probe', () => 0.5);
+        // A dropped chest is built like a floor chest, so its contents carry the definitions.
+        const items = generated instanceof Container && generated.containerType === 'chest' ? generated.getItems() : [generated];
+        for (const item of items) {
+          if (item instanceof CoinItem) continue;
+          expect(
+            item.definitionId,
+            `${monster.name} (${monster.id}) generated item without definitionId: ${item.name}`
+          ).toBeDefined();
+          const def = cotwItemMap.get(item.definitionId!);
+          expect(def, `${monster.id} generated unknown definition ${item.definitionId}`).toBeDefined();
+          // A merchant's unidentified-windfall appraisal (Item is blessed/enchanted/artifact) can pay
+          // up to the item's own buy price, but never more than a merchant could resell it for.
+          expect(getItemSellPrice(item), `${monster.id}: ${item.name}`).toBeLessThanOrEqual(getItemBuyPrice(item));
+        }
       }
     }
   });

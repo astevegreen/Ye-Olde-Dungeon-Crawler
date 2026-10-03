@@ -5,7 +5,10 @@ import {
   createDungeonChest,
   createScaledItem,
   populateDungeonLoot,
+  selectFloorItemDefinition,
 } from '../lootSpawner';
+import { Container } from '../../items/container';
+import { COTW_MONSTERS } from '../../../content/cotw/monsters';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { flightRecorder } from '../../debug/flightRecorder';
@@ -101,5 +104,34 @@ describe('createScaledItem hooks', () => {
     for (const def of withHooks) {
       expect(createScaledItem(def, `item-${def.id}`, 1, () => 0.5).hooks).toEqual(def.hooks);
     }
+  });
+});
+
+describe('chests as loot', () => {
+  it('never rolls a chest as a loose floor item', () => {
+    const chestDefs = COTW_ITEMS.filter((d) => d.containerConfig?.containerType === 'chest');
+    expect(chestDefs.length).toBeGreaterThan(0);
+    const rng = new Mulberry32(11);
+    for (let i = 0; i < 4000; i++) {
+      const def = selectFloorItemDefinition(chestDefs.concat(COTW_ITEMS.slice(0, 3)), 1 + (i % 50), () => rng.next());
+      expect(def?.containerConfig?.containerType).not.toBe('chest');
+    }
+  });
+
+  it('every chest a cotw monster drops holds something', () => {
+    const rng = new Mulberry32(5);
+    let chests = 0;
+    for (const def of COTW_MONSTERS) {
+      for (const rule of def.lootTable ?? []) {
+        for (let i = 0; i < 5; i++) {
+          const item = rule.generate(`drop-${def.id}-${i}`, () => rng.next());
+          if (item instanceof Container && item.containerType === 'chest') {
+            chests++;
+            expect(item.getItems().length).toBeGreaterThan(0);
+          }
+        }
+      }
+    }
+    expect(chests).toBeGreaterThan(0);
   });
 });

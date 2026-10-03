@@ -1,6 +1,6 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
-import { makeLootItem } from '../items/makeItem';
+import { makeLootChest, makeLootItem } from '../items/makeItem';
 
 export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
   {
@@ -62,7 +62,7 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.3,
-        generate: (id, rng) => makeLootItem('chest', id, rng),
+        generate: (id, rng) => makeLootChest(id, rng, 12),
       },
     ],
   },

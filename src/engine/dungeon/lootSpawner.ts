@@ -210,8 +210,10 @@ export function selectFloorItemDefinition(
   currentFloor: number,
   rng: () => number
 ): ItemDefinition | null {
+  // A chest is placed by the room chest roll, filled (createDungeonChest); as a loose item
+  // it would arrive empty, and too bulky to lift.
   const eligible = candidates.filter(
-    (i) => i.category !== 'quest' && (i.minFloor ?? 1) <= currentFloor
+    (i) => i.category !== 'quest' && i.containerConfig?.containerType !== 'chest' && (i.minFloor ?? 1) <= currentFloor
   );
 
   if (eligible.length === 0) {

@@ -179,7 +179,7 @@ describe('Warcraft Content Pack: Manifest & Data Validation', () => {
       const warcraftItemMap = new Map(WARCRAFT_ITEMS.map((i) => [i.id, i]));
       for (const monster of WARCRAFT_MONSTERS) {
         for (const rule of monster.lootTable ?? []) {
-          const item = rule.generate('probe', () => 0.5);
+          const item = rule.generate('probe', () => 0.5)!;
           if (item instanceof CoinItem) continue;
           expect(item.definitionId, `${monster.id} generated item without definitionId`).toBeDefined();
           const def = warcraftItemMap.get(item.definitionId!);

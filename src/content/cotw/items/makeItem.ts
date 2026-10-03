@@ -89,7 +89,13 @@ export function makeLootChest(instanceId: string, rng: () => number, floor: numb
   return createDungeonChest(instanceId, floor, COTW_ITEMS, rng);
 }
 
-/** Monster loot: floor-1 stats rolled from the loot table's seeded rng. */
-export function makeLootItem(itemId: string, instanceId: string, rng: () => number): Item {
-  return createScaledItem(definitionFor(itemId), instanceId, 1, rng);
+/** Loot scaled to `floor` (the floor a monster died on), rolled from the loot table's seeded rng. */
+export function makeLootItem(itemId: string, instanceId: string, rng: () => number, floor = 1): Item {
+  return createScaledItem(definitionFor(itemId), instanceId, Math.max(1, floor), rng);
+}
+
+/** A monster's ordinary drop: as makeLootItem, but nothing above the floor the item unlocks on. */
+export function dropLootItem(itemId: string, instanceId: string, rng: () => number, floor = 1): Item | null {
+  const def = definitionFor(itemId);
+  return floor < (def.minFloor ?? 1) ? null : createScaledItem(def, instanceId, floor, rng);
 }

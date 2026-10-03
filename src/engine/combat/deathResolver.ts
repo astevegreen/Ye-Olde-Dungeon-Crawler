@@ -180,7 +180,8 @@ export class DeathResolver {
           if (roll < effectiveChance) {
             const randSuffix = engine.prng.nextInt(1000, 9999).toString();
             const lootId = `drop-${engine.turnCount}-${randSuffix}`;
-            const item = rule.generate(lootId, engine.rng);
+            const item = rule.generate(lootId, engine.rng, engine.currentFloor);
+            if (!item) continue;
             applyGoldMultiplier(item, goldMult);
             engine.map.addItemAt(victim.x, victim.y, item);
             engine.log(`${victim.name} dropped ${item.displayName}!`);
@@ -193,10 +194,12 @@ export class DeathResolver {
           const pickRule = victim.lootTable[engine.prng.nextInt(0, victim.lootTable.length - 1)];
           const randSuffix = engine.prng.nextInt(1000, 9999).toString();
           const lootId = `plunder-${engine.turnCount}-${randSuffix}`;
-          const item = pickRule.generate(lootId, engine.rng);
-          applyGoldMultiplier(item, goldMult);
-          engine.map.addItemAt(victim.x, victim.y, item);
-          engine.log(`*** PLUNDERER'S LUCK! You uncover hidden spoils: ${victim.name} dropped ${item.displayName}! ***`);
+          const item = pickRule.generate(lootId, engine.rng, engine.currentFloor);
+          if (item) {
+            applyGoldMultiplier(item, goldMult);
+            engine.map.addItemAt(victim.x, victim.y, item);
+            engine.log(`*** PLUNDERER'S LUCK! You uncover hidden spoils: ${victim.name} dropped ${item.displayName}! ***`);
+          }
         } else if (isPlunderer && dropCount > 0) {
           engine.log(`*** PLUNDERER'S BOUNTY! Gold and spoils from ${victim.name} were doubled! ***`);
         }

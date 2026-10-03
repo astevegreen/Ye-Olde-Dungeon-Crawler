@@ -39,7 +39,7 @@ export const BOSS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) => makeLootItem('hearth_tear_fragment', id, rng),
+        generate: (id, rng, floor) => makeLootItem('hearth_tear_fragment', id, rng, floor),
       },
       {
         chance: 1.0,

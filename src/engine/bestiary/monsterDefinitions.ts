@@ -16,8 +16,11 @@ export const BUILTIN_AI_TYPES = {
 
 export interface LootDropRule {
   chance: number; // 0.0 - 1.0 probability
-  /** Receives the engine's seeded PRNG delegate; never use Math.random here (ARCHITECTURE.md §7.2). */
-  generate: (uniqueId: string, rng: () => number) => Item;
+  /**
+   * Receives the engine's seeded PRNG delegate; never use Math.random here (ARCHITECTURE.md §7.2).
+   * `floor` is the floor the monster died on. Returning null drops nothing this time.
+   */
+  generate: (uniqueId: string, rng: () => number, floor?: number) => Item | null;
 }
 
 /** One entry in a monster's ordered spell preference (ARCHITECTURE.md §3). */

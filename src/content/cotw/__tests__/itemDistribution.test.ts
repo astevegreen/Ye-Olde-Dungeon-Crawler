@@ -138,7 +138,7 @@ describe('CotW Item Distribution & Economic Integration', () => {
     expect(herald!.tags).toContain('miniboss');
 
     const fangRule = herald!.lootTable?.find((r) => {
-      const item = r.generate('test-drop', () => 0.5);
+      const item = r.generate('test-drop', () => 0.5)!;
       return item.id === 'nidhogg_fang' || item.definitionId === 'nidhogg_fang';
     });
     expect(fangRule).toBeDefined();
@@ -158,7 +158,7 @@ describe('CotW Item Distribution & Economic Integration', () => {
     // 1. Gálmr (Floor 5) -> Brim-Wolf Pelt Hood
     const galmr = MINIBOSS_MONSTERS.find((m) => m.id === 'miniboss_frost_warden')!;
     const hoodDrop = galmr.lootTable?.some((r) => {
-      const item = r.generate('test-hood', () => 0.5);
+      const item = r.generate('test-hood', () => 0.5)!;
       return item.id === 'brim_wolf_pelt_hood' || item.definitionId === 'brim_wolf_pelt_hood';
     });
     expect(hoodDrop).toBe(true);
@@ -167,7 +167,7 @@ describe('CotW Item Distribution & Economic Integration', () => {
     const rotMatriarch = MINIBOSS_MONSTERS.find((m) => m.id === 'miniboss_rot_matriarch')!;
     expect(rotMatriarch.minFloor).toBe(36);
     const cleaverDrop = rotMatriarch.lootTable?.some((r) => {
-      const item = r.generate('test-cleaver', () => 0.5);
+      const item = r.generate('test-cleaver', () => 0.5)!;
       return (item.id === 'rot_porous_cleaver' || item.definitionId === 'rot_porous_cleaver') && item.quality === 'cursed';
     });
     expect(cleaverDrop).toBe(true);
@@ -176,7 +176,7 @@ describe('CotW Item Distribution & Economic Integration', () => {
     const tarAbomination = MINIBOSS_MONSTERS.find((m) => m.id === 'miniboss_tar_abomination')!;
     expect(tarAbomination.minFloor).toBe(44);
     const hauberkDrop = tarAbomination.lootTable?.some((r) => {
-      const item = r.generate('test-hauberk', () => 0.5);
+      const item = r.generate('test-hauberk', () => 0.5)!;
       return (item.id === 'nid_dripping_hauberk' || item.definitionId === 'nid_dripping_hauberk') && item.quality === 'cursed';
     });
     expect(hauberkDrop).toBe(true);
@@ -185,7 +185,7 @@ describe('CotW Item Distribution & Economic Integration', () => {
     const marrowEater = MINIBOSS_MONSTERS.find((m) => m.id === 'miniboss_marrow_eater')!;
     expect(marrowEater.minFloor).toBe(47);
     const ringDrop = marrowEater.lootTable?.some((r) => {
-      const item = r.generate('test-ring', () => 0.5);
+      const item = r.generate('test-ring', () => 0.5)!;
       return (item.id === 'marrow_gnawed_ring' || item.definitionId === 'marrow_gnawed_ring') && item.quality === 'cursed';
     });
     expect(ringDrop).toBe(true);
@@ -195,7 +195,9 @@ describe('CotW Item Distribution & Economic Integration', () => {
     const cotwItemMap = new Map(COTW_ITEMS.map((i) => [i.id, i]));
     for (const monster of COTW_MONSTERS) {
       for (const rule of monster.lootTable ?? []) {
-        const generated = rule.generate('probe', () => 0.5);
+        // On the monster's own floor, where an ordinary drop is always eligible.
+        const generated = rule.generate('probe', () => 0.5, monster.minFloor ?? 1);
+        if (!generated) continue;
         // A dropped chest is built like a floor chest, so its contents carry the definitions.
         const items = generated instanceof Container && generated.containerType === 'chest' ? generated.getItems() : [generated];
         for (const item of items) {

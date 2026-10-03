@@ -75,8 +75,8 @@ describe('Castle of the Winds Monster Roster (37 entries)', () => {
       for (const rule of monster.lootTable) {
         expect(rule.chance).toBeGreaterThan(0);
         expect(rule.chance).toBeLessThanOrEqual(1);
-        const item = rule.generate(`test-loot-${monster.id}`, mockRng);
-        expect(item).toBeDefined();
+        const item = rule.generate(`test-loot-${monster.id}`, mockRng, 50)!;
+        expect(item).toBeTruthy();
         expect(item.id).toBe(`test-loot-${monster.id}`);
         expect(item.name).toBeTruthy();
       }

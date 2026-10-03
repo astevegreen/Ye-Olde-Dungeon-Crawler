@@ -43,11 +43,11 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 1.0,
-        generate: (id, rng) => makeLootItem('health_potion', id, rng),
+        generate: (id, rng, floor) => makeLootItem('health_potion', id, rng, floor),
       },
       {
         chance: 1.0,
-        generate: (id, rng) => makeLootItem('mana_potion', id, rng),
+        generate: (id, rng, floor) => makeLootItem('mana_potion', id, rng, floor),
       },
       {
         chance: 1.0,

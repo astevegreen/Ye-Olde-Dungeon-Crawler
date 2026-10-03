@@ -1,6 +1,6 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
-import { makeLootChest, makeLootItem } from '../items/makeItem';
+import { makeLootChest, dropLootItem } from '../items/makeItem';
 
 export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
   {
@@ -28,7 +28,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.35,
-        generate: (id, rng) => makeLootItem('cure_poison_potion', id, rng),
+        generate: (id, rng, floor) => dropLootItem('cure_poison_potion', id, rng, floor),
       },
     ],
   },
@@ -59,7 +59,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.35,
-        generate: (id, rng) => makeLootItem('mana_potion', id, rng),
+        generate: (id, rng, floor) => dropLootItem('mana_potion', id, rng, floor),
       },
     ],
   },
@@ -87,7 +87,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.35,
-        generate: (id, rng) => makeLootChest(id, rng, 28),
+        generate: (id, rng, floor) => makeLootChest(id, rng, floor ?? 28),
       },
     ],
   },
@@ -110,7 +110,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.3,
-        generate: (id, rng) => makeLootItem('frost_blade', id, rng),
+        generate: (id, rng, floor) => dropLootItem('frost_blade', id, rng, floor),
       },
     ],
   },

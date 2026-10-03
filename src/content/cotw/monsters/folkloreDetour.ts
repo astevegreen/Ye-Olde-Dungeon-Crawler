@@ -1,6 +1,6 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
-import { makeLootItem } from '../items/makeItem';
+import { dropLootItem } from '../items/makeItem';
 
 export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
   {
@@ -28,7 +28,7 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.3,
-        generate: (id, rng) => makeLootItem('health_potion', id, rng),
+        generate: (id, rng, floor) => dropLootItem('health_potion', id, rng, floor),
       },
     ],
   },
@@ -51,7 +51,7 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.25,
-        generate: (id, rng) => makeLootItem('cursed_mace', id, rng),
+        generate: (id, rng, floor) => dropLootItem('cursed_mace', id, rng, floor),
       },
     ],
   },
@@ -92,7 +92,7 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.5,
-        generate: (id, rng) => makeLootItem('scroll_identify', id, rng),
+        generate: (id, rng, floor) => dropLootItem('scroll_identify', id, rng, floor),
       },
       {
         chance: 0.5,
@@ -127,7 +127,7 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.3,
-        generate: (id, rng) => makeLootItem('mana_potion', id, rng),
+        generate: (id, rng, floor) => dropLootItem('mana_potion', id, rng, floor),
       },
     ],
   },

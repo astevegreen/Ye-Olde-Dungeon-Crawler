@@ -46,7 +46,7 @@ describe('DungeonArc & Floor 5 Chieftain Encounter', () => {
 
     // Guaranteed relic loot drop rule
     const relicRule = boss.lootTable.find((r) => {
-      const itm = r.generate('test-check', () => 0.5);
+      const itm = r.generate('test-check', () => 0.5)!;
       return itm.name === 'Ancient Relic';
     });
     expect(relicRule).toBeDefined();

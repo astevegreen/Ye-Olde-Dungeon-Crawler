@@ -1,6 +1,6 @@
 import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
-import { makeLootItem } from '../items/makeItem';
+import { dropLootItem } from '../items/makeItem';
 
 export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
   {
@@ -66,7 +66,7 @@ export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.35,
-        generate: (id, rng) => makeLootItem('chainmail', id, rng),
+        generate: (id, rng, floor) => dropLootItem('chainmail', id, rng, floor),
       },
     ],
   },
@@ -94,7 +94,7 @@ export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.3,
-        generate: (id, rng) => makeLootItem('cure_poison_potion', id, rng),
+        generate: (id, rng, floor) => dropLootItem('cure_poison_potion', id, rng, floor),
       },
     ],
   },
@@ -135,7 +135,7 @@ export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.5,
-        generate: (id, rng) => makeLootItem('mana_potion', id, rng),
+        generate: (id, rng, floor) => dropLootItem('mana_potion', id, rng, floor),
       },
       {
         chance: 0.4,

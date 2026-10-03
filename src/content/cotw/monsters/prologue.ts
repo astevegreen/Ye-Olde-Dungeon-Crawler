@@ -40,7 +40,7 @@ export const PROLOGUE_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.35,
-        generate: (id, rng) => makeLootItem('hearth_broth_flask', id, rng),
+        generate: (id, rng, floor) => makeLootItem('hearth_broth_flask', id, rng, floor),
       },
     ],
   },

@@ -33,6 +33,12 @@ export class AutoRestRunner {
       this.cancel('Cancelled previous rest.');
     }
 
+    const refusal = AutoRestManager.restRefusal(this.engine);
+    if (refusal) {
+      this.engine.log(refusal);
+      return () => {};
+    }
+
     const player = this.engine.player;
     if (player.hp >= player.maxHp && player.mana >= player.maxMana) {
       this.engine.log(`You are already fully rested (HP and ${resolveManaTerms(this.engine.manifest).name} full).`);

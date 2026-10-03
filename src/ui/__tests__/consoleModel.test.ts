@@ -83,7 +83,25 @@ describe('getObjectiveLine', () => {
     const engine = buildEngine({ id: 'test_pack', name: 'Test', objectives: [{ id: 'go', text: 'Go down.' }] });
     engine.map.setTile(13, 7, TILES.STAIRS_DOWN);
     engine.fov.update(engine.map, 10, 10, 8);
-    expect(getObjectiveLine(engine)).toEqual({ text: 'Go down.', stairs: 'stairs down 3 NE' });
+    expect(getObjectiveLine(engine)).toEqual({ text: 'Go down.', bearing: 'stairs down 3 NE' });
+  });
+
+  it('points at the nearest entity the objective names, while one is on the floor', () => {
+    const engine = buildEngine({
+      id: 'test_pack',
+      name: 'Test',
+      objectives: [{ id: 'free', text: 'Free them.', pointTo: { entityIds: ['far', 'near'], label: 'held villager' } }],
+    });
+    engine.map.setTile(13, 7, TILES.STAIRS_DOWN);
+    engine.fov.update(engine.map, 10, 10, 8);
+    const near = new NPC({ id: 'near', name: 'Near', role: 'villager', position: { x: 6, y: 12 } });
+    engine.addEntity(new NPC({ id: 'far', name: 'Far', role: 'villager', position: { x: 2, y: 2 } }));
+    engine.addEntity(near);
+    expect(getObjectiveLine(engine)?.bearing).toBe('held villager 4 SW');
+
+    engine.removeEntity(near);
+    engine.removeEntity(engine.map.getEntityById('far')!);
+    expect(getObjectiveLine(engine)?.bearing).toBe('stairs down 3 NE');
   });
 
   it('is undefined for a pack with no objectives', () => {

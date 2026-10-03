@@ -14,6 +14,7 @@ import { HookDispatcher } from '../hooks/hookDispatcher';
 import { TILES, getTileDefinition } from '../grid/tile';
 import { getAltarDefinition, isAltarSpent } from '../magic/altars';
 import { formatMagicMessage } from '../magic/magicConfig';
+import { isPrologueRunning } from '../quest/prologue';
 
 /** Tile type identifier for shallow water terrain that imposes a movement energy penalty. */
 const SHALLOW_WATER_TILE = 'shallow_water';
@@ -312,13 +313,15 @@ export class MovementAction implements Action {
         }
       }
 
-      // A run that just ended (the victory portal) offers no more choices.
+      // A run that just ended (the victory portal) offers no more choices; a prologue's scene
+      // holds its progress choices until it is over, so a milestone never breaks into it.
       const runOver = !!engine.gameState && engine.gameState.runStatus !== 'active';
+      const progressChoicesHeld = runOver || isPrologueRunning(engine.worldState, engine.manifest?.prologue);
 
       // Kill-count-gated choice unlocks (ARCHITECTURE.md §3, StoryChoiceTrigger):
       // checked every player move rather than only on a specific tile, since the
       // trigger condition is progress (kills), not location.
-      for (const trigger of runOver ? [] : engine.manifest?.storyChoiceTriggers ?? []) {
+      for (const trigger of progressChoicesHeld ? [] : engine.manifest?.storyChoiceTriggers ?? []) {
         const kills = engine.compendium.getEntry(trigger.monsterDefinitionId).kills;
         if (trigger.progressStartFlag && kills >= 1 && !engine.getWorldFlag(trigger.progressStartFlag)) {
           engine.setWorldFlag(trigger.progressStartFlag, true);
@@ -347,7 +350,7 @@ export class MovementAction implements Action {
       // (1) matches StoryChoiceTrigger: the condition is progress (attributes), not location;
       // (2) allocateAttribute is a pure mutator with no engine handle and must not gain one;
       // (3) avoids opening a choice modal on top of the still-open level-up modal.
-      if (!choiceTriggered && !runOver) {
+      if (!choiceTriggered && !progressChoicesHeld) {
         for (const milestone of engine.manifest?.attributeMilestones ?? []) {
           const playerAttr = (this.entity as Player)[milestone.attribute];
           if (typeof playerAttr !== 'number' || playerAttr < milestone.threshold) continue;

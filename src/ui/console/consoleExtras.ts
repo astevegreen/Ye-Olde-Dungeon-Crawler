@@ -211,12 +211,12 @@ export class ConsoleExtras {
     text.className = 'objective-text';
     text.textContent = line.text;
     this.objective.appendChild(text);
-    if (line.stairs) {
-      const stairs = document.createElement('span');
-      stairs.className = 'objective-stairs';
-      stairs.textContent = ` · ${line.stairs}`;
-      this.objective.appendChild(stairs);
+    if (line.bearing) {
+      const bearing = document.createElement('span');
+      bearing.className = 'objective-bearing';
+      bearing.textContent = ` · ${line.bearing}`;
+      this.objective.appendChild(bearing);
     }
-    this.objective.title = line.stairs ? `${line.text} (${line.stairs})` : line.text;
+    this.objective.title = line.bearing ? `${line.text} (${line.bearing})` : line.text;
   }
 }

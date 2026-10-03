@@ -19,6 +19,11 @@ import { MonsterRegistry } from '../bestiary/monsterDefinitions';
 /** The id prefix of the monsters a prologue places; those left when it ends leave with it. */
 const PROLOGUE_MONSTER_PREFIX = 'prologue-monster-';
 
+/** The id of the monster a prologue places from its `monsters[index]`. */
+export function prologueMonsterId(index: number): string {
+  return `${PROLOGUE_MONSTER_PREFIX}${index + 1}`;
+}
+
 /** Whether a prologue is under way: begun and not yet concluded. */
 export function isPrologueRunning(worldState: WorldState, prologue: PrologueDefinition | undefined): boolean {
   return !!prologue && getFlag(worldState, prologue.startFlag) && !getFlag(worldState, prologue.endFlag);
@@ -77,9 +82,9 @@ export function beginPrologue(engine: GameEngine): boolean {
     const def = engine.registries.monsters.get(placement.definitionId) ?? MonsterRegistry.get(placement.definitionId);
     const { x, y } = placement.position;
     if (!def || !engine.map.inBounds(x, y) || !engine.map.isPassable(x, y) || engine.map.getEntityAt(x, y)) return;
-    engine.addEntity(
-      createScaledMonster(def, `${PROLOGUE_MONSTER_PREFIX}${i + 1}`, { x, y }, 1, undefined, undefined, engine.manifest.monsterScaling, engine.player.difficulty)
-    );
+    const monster = createScaledMonster(def, prologueMonsterId(i), { x, y }, 1, undefined, undefined, engine.manifest.monsterScaling, engine.player.difficulty);
+    if (placement.awake) monster.aiState = 'hunting';
+    engine.addEntity(monster);
   });
   for (const npc of prologue.npcs ?? []) {
     const at = freeTileNear(engine.map, npc.position);

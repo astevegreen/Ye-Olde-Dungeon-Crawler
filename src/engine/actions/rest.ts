@@ -6,6 +6,7 @@ import type { Player } from '../entities/player';
 import type { Entity } from '../entities/entity';
 import { DeathResolver } from '../combat/deathResolver';
 import { getOverflowConfig, lingeringDebtFloor } from '../magic/manaOverflow';
+import { AutoRestManager } from './autoRest';
 
 export class RestAction implements Action {
   public readonly player: Player;
@@ -19,6 +20,12 @@ export class RestAction implements Action {
   public perform(engine: GameEngine): ActionResult {
     if (!this.player.isAlive()) {
       return { success: false, cost: 0, message: 'Dead heroes cannot rest.' };
+    }
+
+    const refusal = AutoRestManager.restRefusal(engine);
+    if (refusal) {
+      engine.log(refusal);
+      return { success: false, cost: 0, message: refusal };
     }
 
     // Check if monster is ALREADY visible in line of sight:

@@ -1,4 +1,5 @@
 import {
+  AutoRestManager,
   Companion,
   Monster,
   NPC,
@@ -90,7 +91,7 @@ export function resolveContextAction(engine: GameEngine): ContextAction {
   }
 
   const hurt = p.hp < p.maxHp || p.mana < p.maxMana;
-  if (hurt && getNearbyThreats(engine).length === 0) {
+  if (hurt && getNearbyThreats(engine).length === 0 && !AutoRestManager.restRefusal(engine)) {
     return { kind: 'rest', verb: 'Rest', target: 'until recovered', icon: 'rest', nativeKey: 'R' };
   }
 
@@ -212,14 +213,27 @@ export function getCompanionCard(engine: GameEngine): CompanionCard | undefined 
 // ── Objective line ──────────────────────────────────────────────────────────
 
 /**
- * The pack's current objective, plus a bearing to the nearest stairs down the
- * hero has seen on this floor, e.g. "stairs 12 NE".
+ * The pack's current objective, plus a bearing: to the nearest entity the objective points
+ * at (`pointTo`) while any is on the floor, else to the nearest stairs down the hero has seen
+ * on this floor, e.g. "stairs down 12 NE".
  */
-export function getObjectiveLine(engine: GameEngine): { text: string; stairs?: string } | undefined {
+export function getObjectiveLine(engine: GameEngine): { text: string; bearing?: string } | undefined {
   const objective = getCurrentObjective(engine);
   if (!objective) return undefined;
 
   const p = engine.player;
+  const compass = (x: number, y: number) => (y < p.y ? 'N' : y > p.y ? 'S' : '') + (x > p.x ? 'E' : x < p.x ? 'W' : '');
+  if (objective.pointTo) {
+    let target: { d: number; x: number; y: number } | undefined;
+    for (const id of objective.pointTo.entityIds) {
+      const e = engine.map.getEntityById(id);
+      if (!e) continue;
+      const d = Math.max(Math.abs(e.x - p.x), Math.abs(e.y - p.y));
+      if (!target || d < target.d) target = { d, x: e.x, y: e.y };
+    }
+    if (target) return { text: objective.text, bearing: `${objective.pointTo.label} ${target.d} ${compass(target.x, target.y)}`.trimEnd() };
+  }
+
   let best: { d: number; x: number; y: number } | undefined;
   for (let y = 0; y < engine.map.height; y++) {
     for (let x = 0; x < engine.map.width; x++) {
@@ -228,12 +242,8 @@ export function getObjectiveLine(engine: GameEngine): { text: string; stairs?: s
       if (!best || d < best.d) best = { d, x, y };
     }
   }
-  let stairs: string | undefined;
-  if (best && best.d > 0) {
-    const dir = (best.y < p.y ? 'N' : best.y > p.y ? 'S' : '') + (best.x > p.x ? 'E' : best.x < p.x ? 'W' : '');
-    stairs = `stairs down ${best.d} ${dir}`;
-  } else if (best) {
-    stairs = 'stairs down here';
-  }
-  return { text: objective.text, stairs };
+  let bearing: string | undefined;
+  if (best && best.d > 0) bearing = `stairs down ${best.d} ${compass(best.x, best.y)}`;
+  else if (best) bearing = 'stairs down here';
+  return { text: objective.text, bearing };
 }

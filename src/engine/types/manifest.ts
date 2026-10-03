@@ -478,6 +478,9 @@ export interface ObjectiveDefinition {
   doneWhenAnyFlag?: string[];
   /** Done once this world counter reaches the value (e.g. a deepest-floor counter). */
   doneWhenCounterAtLeast?: { counter: string; value: number };
+  /** The HUD's bearing beside the line points at the nearest of these entities still on the
+   *  floor, under `label` ("held villager 9 NW"), in place of the nearest stairs down. */
+  pointTo?: { entityIds: string[]; label: string };
 }
 
 export interface TimedEventDefinition {
@@ -885,7 +888,7 @@ export interface PrologueDefinition {
   heroHpFloor?: number;
   /** Monsters placed when it begins, each at floor-1 strength, with ids `prologue-monster-<n>`.
    *  Those still on the map when it ends leave with it. */
-  monsters?: { definitionId: string; position: Position }[];
+  monsters?: { definitionId: string; position: Position; /** Already alert when placed: no waking-up line. */ awake?: boolean }[];
   /** NPCs placed when it begins. Those still on the map when it ends leave with it. */
   npcs?: PrologueNpc[];
   /** NPCs placed when it ends, on their tile or the nearest free one. */

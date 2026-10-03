@@ -7,6 +7,8 @@ import { Monster } from '../../entities/monster';
 import { NPC } from '../../entities/npc';
 import { getFlag } from '../../state/worldState';
 import { concludePrologue, isPrologueRunning } from '../prologue';
+import { RestAction } from '../../actions/rest';
+import { AutoRestManager } from '../../actions/autoRest';
 import { cotwManifest } from '../../../content/cotw';
 
 /** A test prologue on cotw's town, apart from cotw's own: an orc, a villager, a ward. */
@@ -81,6 +83,20 @@ describe('Prologue (manifest.prologue)', () => {
 
     engine.player.takeDamage(engine.player.hp + 50);
     expect(engine.player.isAlive()).toBe(false);
+  });
+
+  it('refuses rest while it runs, since its clock would run out in the sleep', () => {
+    const engine = begin();
+    for (const e of engine.map.getAllEntities()) if (e.id.startsWith('prologue-monster-')) engine.removeEntity(e);
+    engine.player.takeDamage(5);
+    const before = engine.turnCount;
+    const result = engine.handlePlayerAction(new RestAction(engine.player));
+    expect(result.success).toBe(false);
+    expect(engine.turnCount).toBe(before);
+    expect(AutoRestManager.restRefusal(engine)).toBeTruthy();
+
+    concludePrologue(engine, PROLOGUE, true);
+    expect(AutoRestManager.restRefusal(engine)).toBeNull();
   });
 
   it('can be ended from the F2 triage menu, and a floor jump ends it first', () => {

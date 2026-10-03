@@ -344,7 +344,9 @@ export class SpellPipeline {
         }
       } else {
         const bounceNote = rayResult.reflectionsCount > 0 ? ` after ${rayResult.reflectionsCount} bounce(s)` : '';
-        hitDescription = `${caster.name} casts ${spell.name}, impacting a wall at (${impactTile.x}, ${impactTile.y})${bounceNote}.`;
+        hitDescription = rayResult.hitWall
+          ? `${caster.name} casts ${spell.name}, impacting a wall at (${impactTile.x}, ${impactTile.y})${bounceNote}.`
+          : `${caster.name} casts ${spell.name}, but it strikes nothing and fades at (${impactTile.x}, ${impactTile.y})${bounceNote}.`;
         engine.log(hitDescription);
       }
 

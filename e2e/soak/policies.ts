@@ -82,60 +82,9 @@ export async function decideChaosAction(ctx: PolicyContext): Promise<DispatchedA
   return { type: 'key', key, secondaryKey };
 }
 
+import { decidePlayerAction as decidePlayerActionImpl } from './playerBot';
+
 export async function decidePlayerAction(ctx: PolicyContext): Promise<DispatchedAction> {
-  const { page, prng } = ctx;
-
-  const info = await page.evaluate(() => {
-    const w = window as any;
-    const e = w.__cotwEngine;
-    if (!e || !e.player) return null;
-    const p = e.player;
-    const stack = w.__cotwInputHandler?.modalStack?.getStackIds() ?? [];
-    const isRaid = Boolean(e.getWorldFlag('cotw_prologue_started')) && !e.getWorldFlag('cotw_prologue_ended');
-
-    const cued = document.querySelector('.potion-slot.hud-cue');
-    const cuedSlot = cued?.parentElement ? [...cued.parentElement.children].indexOf(cued) + 1 : null;
-
-    const hostile = (ent: any) => ent && ent.isAlive?.() && ent !== p && ent.faction !== 'player' && ent.faction !== 'neutral' && typeof ent.attack === 'number';
-    const dirs = [
-      { key: 'ArrowUp', dx: 0, dy: -1 },
-      { key: 'ArrowDown', dx: 0, dy: 1 },
-      { key: 'ArrowLeft', dx: -1, dy: 0 },
-      { key: 'ArrowRight', dx: 1, dy: 0 },
-    ].map((d) => {
-      const ent = e.map.getEntityAt(p.x + d.dx, p.y + d.dy);
-      return { ...d, passable: Boolean(e.map.getTile(p.x + d.dx, p.y + d.dy)?.passable), entity: ent?.id as string | undefined, hostile: hostile(ent) };
-    });
-    const visibleHostiles = e.map
-      .getAllEntities()
-      .filter((m: any) => hostile(m) && e.fov.getVisibility(m.x, m.y) === 2).length;
-
-    return {
-      hp: p.hp,
-      maxHp: p.maxHp,
-      stack,
-      isRaid,
-      cuedSlot,
-      dirs,
-      visibleHostiles,
-      onStairsDown: e.map.getTile(p.x, p.y)?.type === 'stairs_down',
-    };
-  });
-
-  if (!info) return { type: 'key', key: 'Space' };
-  if (info.stack.length > 0) return { type: 'key', key: 'Enter' };
-  if (info.isRaid && info.cuedSlot !== null) return { type: 'key', key: `Shift+Digit${info.cuedSlot}` };
-
-  const attack = info.dirs.find((d) => d.hostile);
-  if (attack) return { type: 'key', key: attack.key };
-  // Bump a held villager to free them.
-  const villager = info.dirs.find((d) => d.entity && ['prologue-eir', 'prologue-sigrun', 'prologue-brandr'].includes(d.entity));
-  if (villager) return { type: 'key', key: villager.key };
-
-  if (info.onStairsDown && !info.isRaid) return { type: 'key', key: 'Enter' };
-  if (!info.isRaid && info.hp < info.maxHp * 0.5 && info.visibleHostiles === 0) return { type: 'key', key: 'KeyR' };
-
-  // A-player replaces this wander with goal-seeking (see .prompts/raidbot.ts).
-  const open = info.dirs.filter((d) => d.passable && !d.entity);
-  return { type: 'key', key: open.length > 0 ? prng.pick(open).key : prng.pick([...ARROWS, 'Space']) };
+  return decidePlayerActionImpl(ctx);
 }
+

@@ -70,4 +70,6 @@ export interface SoakSummary {
   deadKeys: number;
   /** Dialogs that opened on a move or wait key, by stack id. */
   interruptions: Record<string, number>;
+  stuckEpisodes?: number;
 }
+

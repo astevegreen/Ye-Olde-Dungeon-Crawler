@@ -302,6 +302,7 @@ test.describe('soak @soak', () => {
         },
         deadKeys: oracleState.deadKeyCount,
         interruptions: oracleState.interruptions,
+        stuckEpisodes: (page as any).__playerStuckEpisodes ?? 0,
       };
       writeFileSync(join(seedDir, 'summary.json'), JSON.stringify(summary, null, 2));
     };

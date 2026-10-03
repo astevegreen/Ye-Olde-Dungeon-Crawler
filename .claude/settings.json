@@ -8,5 +8,19 @@
       "Read(test-results/**)",
       "Read(*.log)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/typecheck.mjs",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
   }
 }

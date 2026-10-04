@@ -1,6 +1,6 @@
 import type { GameState } from './gameState';
 import type { MenuFooter, MenuHost, MenuTab } from './menuTab';
-import type { AttributeMilestoneTrigger, AttributeScalingConfig, ChoiceDefinition, Player, ProgressionConfig } from '../../engine';
+import type { AttributeMilestoneTrigger, AttributeScalingConfig, ChoiceDefinition, PerkDefinition, Player, ProgressionConfig } from '../../engine';
 import {
   HP_PER_CONSTITUTION,
   MANA_PER_INTELLIGENCE,
@@ -358,7 +358,7 @@ export class CharacterTab implements MenuTab {
     this.container.innerHTML = `
       <div class="ui-tabgrid ch-grid">
         <div class="ui-col ui-scroll">${this.renderIdentity(player, mana)}</div>
-        <div class="ui-col ui-scroll">${this.renderAllocation(player, mana)}${this.renderMilestones(player)}</div>
+        <div class="ui-col ui-scroll">${this.renderAllocation(player, mana)}${this.renderMilestones(player)}${this.renderPerks(player, mana)}</div>
         <div class="ui-col ui-scroll">${this.renderDiff(player, mana)}${this.renderRune(player)}</div>
       </div>
     `;
@@ -470,8 +470,25 @@ export class CharacterTab implements MenuTab {
   private renderMilestones(player: Player): string {
     const manifest = this.manifest();
     const milestones: AttributeMilestoneTrigger[] = manifest?.attributeMilestones ?? [];
-    if (milestones.length === 0) return '';
+    const levels = manifest?.levelMilestones ?? [];
+    if (milestones.length === 0 && levels.length === 0) return '';
     const flags = this.state!.worldState?.flags ?? {};
+    const sagas = levels
+      .map((m) => {
+        const offered = Boolean(flags[`${m.id}_offered`]);
+        const ready = !offered && player.level >= m.level;
+        const [cls, tag] = offered ? ['is-done', 'Chosen'] : ready ? ['is-ready', 'Ready'] : ['', 'Locked'];
+        const choice: ChoiceDefinition | undefined = manifest?.choices?.[m.choiceId];
+        const title = choice ? choice.title : m.id.replace(/_/g, ' ');
+        const detail = offered ? `Reached level ${m.level}.` : ready ? 'Ready: the choice comes on your next step.' : `Level ${player.level} / ${m.level}`;
+        return `
+          <div class="ch-milestone ${cls}">
+            <div class="ch-milestone-head"><span>Level ${m.level}: ${escapeHtml(title)}</span><span class="ch-tag">${tag}</span></div>
+            <div class="ui-note">${detail}</div>
+            ${choice && !offered ? `<div class="ui-note ui-faint">Choices: ${choice.options.map((o) => escapeHtml(o.label)).join(' · ')}</div>` : ''}
+          </div>`;
+      })
+      .join('');
     const items = milestones
       .map((m) => {
         const offered = Boolean(flags[`${m.id}_offered`]);
@@ -494,7 +511,24 @@ export class CharacterTab implements MenuTab {
           </div>`;
       })
       .join('');
-    return `<div class="ui-card"><div class="ui-h">Milestones</div>${items}</div>`;
+    return `<div class="ui-card"><div class="ui-h">Milestones</div>${sagas}${items}</div>`;
+  }
+
+  /** The perks held, by source (`PerkDefinition`, tracker 3.6). */
+  private renderPerks(player: Player, mana: ManaTerms): string {
+    const perks: readonly PerkDefinition[] = player.heldPerks;
+    if (perks.length === 0) return '';
+    const sourceName: Record<PerkDefinition['source'], string> = { saga: 'Saga', milestone: 'Milestone', family: 'Family mastery' };
+    const rows = perks
+      .map(
+        (p) => `
+          <div class="ch-milestone is-done">
+            <div class="ch-milestone-head"><span>${escapeHtml(p.name)}</span><span class="ch-tag">${sourceName[p.source]}</span></div>
+            <div class="ui-note">${escapeHtml(fillManaTerms(p.description, mana))}</div>
+          </div>`
+      )
+      .join('');
+    return `<div class="ui-card"><div class="ui-h">Perks <small>${perks.length}</small></div>${rows}</div>`;
   }
 
   /** The pack's rules the previews read. */

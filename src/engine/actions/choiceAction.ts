@@ -140,6 +140,15 @@ export function applyConsequences(
         player.learnSpell(c.spellId);
         break;
       }
+      case 'grantPerk': {
+        const perk = engine.manifest?.perks?.find((p) => p.id === c.perkId);
+        if (perk) player.grantPerk(perk);
+        break;
+      }
+      case 'modifyAttribute': {
+        player.modifyAttribute(c.attribute, c.delta);
+        break;
+      }
     }
   }
 }

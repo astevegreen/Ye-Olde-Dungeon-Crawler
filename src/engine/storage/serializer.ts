@@ -516,6 +516,7 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     runeMaxCharges: p.runeMaxCharges,
     voidDebt: p.voidDebt ?? 0,
     maxHpPercentBonus: p.maxHpPercentBonus || undefined,
+    perks: p.perkIds.length > 0 ? p.perkIds : undefined,
     activeGrimoireIndex: p.activeGrimoireIndex ?? 0,
     grimoireOpenSlots: p.grimoireOpenSlots ? [...p.grimoireOpenSlots] : undefined,
     grimoireGrounds: Object.keys(p.grimoireGrounds).length > 0 ? { ...p.grimoireGrounds } : undefined,
@@ -1037,6 +1038,10 @@ export function deserializeGame(
     activeGrimoireIndex: pData.activeGrimoireIndex !== undefined ? Number(pData.activeGrimoireIndex) : undefined,
     grimoireOpenSlots: Array.isArray(pData.grimoireOpenSlots) ? pData.grimoireOpenSlots.map(Number) : undefined,
     grimoireGrounds: pData.grimoireGrounds ? { ...pData.grimoireGrounds } : undefined,
+    // A perk the pack no longer declares is dropped; the rest come back with their effects.
+    perks: Array.isArray(pData.perks)
+      ? pData.perks.map((id: string) => manifest?.perks?.find((perk) => perk.id === id)).filter((perk): perk is NonNullable<typeof perk> => Boolean(perk))
+      : undefined,
   });
   player.energy = Number(pData.energy) || 0;
   // Before HP is clamped to max HP, which the blessing raises.

@@ -126,16 +126,8 @@ export class CastSpellAction implements Action {
       }
     }
 
-    let manaDiscount = 0;
-    if (player?.inventory?.paperdoll) {
-      for (const item of player.inventory.paperdoll.getEquippedItems()) {
-        for (const mod of item.modifiers) {
-          if (mod.manaCostDiscount) {
-            manaDiscount += mod.manaCostDiscount;
-          }
-        }
-      }
-    }
+    // What the caster wears, and a hero's perks (`wornModifiers`).
+    const manaDiscount = player ? sumWorn(player, 'manaCostDiscount') : 0;
     const effectiveManaCost = Math.max(0, spell.manaCost - manaDiscount);
 
     // Validate every cost (mana, volatile energy, vitality) before paying any of them,

@@ -4,7 +4,8 @@ import { Actor } from './actor';
 import { InventoryManager } from '../inventory/inventory-manager';
 import { EncumbranceLevel } from '../inventory/encumbrance';
 import type { CharacterAttributes, Gender } from '../character/types';
-import type { ProgressionConfig, LevelUpBonus } from '../types/manifest';
+import type { ProgressionConfig, LevelUpBonus, PerkDefinition } from '../types/manifest';
+import type { ItemModifier } from '../items/modifiers';
 import type { TutorialFlags } from '../storage/types';
 import { calculateAttribute } from '../stats/attributeCalculator';
 import {
@@ -67,6 +68,8 @@ export interface PlayerConfig {
   grimoireOpenSlots?: number[];
   /** Element each grounded slot was opened with, by slot index. */
   grimoireGrounds?: Record<number, string>;
+  /** Perks held (`manifest.perks`), resolved by the loader from their saved ids. */
+  perks?: PerkDefinition[];
 }
 
 /** The share of each bar a level-up restores (`ProgressionConfig.levelUpHeal`); 1 without the config. */
@@ -125,6 +128,10 @@ export class Player extends Actor {
   public voidDebt: number;
   /** A lasting share added to max HP (0.1 is +10%), from a temple blessing (`TempleBlessingEffect`). */
   public maxHpPercentBonus = 0;
+  /** The perks held, in the order granted (tracker 3.6). Saved by id; see `perkIds`. */
+  private readonly perks: PerkDefinition[] = [];
+  /** The perks' effects as modifiers, read beside what the hero wears (`wornModifiers`). */
+  public perkModifiers: ItemModifier[] = [];
   public grimoirePages: GrimoirePage[];
   public activeGrimoireIndex: number;
   /** Slots open to spells on every page; undefined means all nine (saves from before sealing). */
@@ -198,6 +205,7 @@ export class Player extends Actor {
     this.level = config.level ?? 1;
     this.xp = config.xp ?? 0;
     this.unspentStatPoints = config.unspentStatPoints ?? 0;
+    for (const perk of config.perks ?? []) this.grantPerk(perk);
     this.progressionConfig = config.progressionConfig;
     this.tutorialFlags = config.tutorialFlags ? { ...config.tutorialFlags } : {};
     this.deepestRecallFloor = config.deepestRecallFloor;
@@ -373,6 +381,44 @@ export class Player extends Actor {
         return false;
     }
     return true;
+  }
+
+  /** Raises (or lowers) an attribute for good outside the point pool: a perk's or a story's gift. */
+  public modifyAttribute(attribute: 'strength' | 'dexterity' | 'constitution' | 'intelligence', delta: number): void {
+    if (delta === 0) return;
+    this[attribute] += delta;
+    if (attribute === 'constitution') {
+      this._maxHp += delta * HP_PER_CONSTITUTION;
+      this.hp = Math.max(1, Math.min(this.maxHp, this.hp + Math.max(0, delta) * HP_PER_CONSTITUTION));
+    }
+    if (attribute === 'intelligence') {
+      this.maxMana = Math.max(0, this.maxMana + delta * MANA_PER_INTELLIGENCE);
+      this.mana = Math.min(this.maxMana, this.mana + Math.max(0, delta) * MANA_PER_INTELLIGENCE);
+    }
+  }
+
+  /** Grants a perk; one already held is left alone. Its effects join `perkModifiers` at once. */
+  public grantPerk(perk: PerkDefinition): boolean {
+    if (this.perks.some((p) => p.id === perk.id)) return false;
+    this.perks.push(perk);
+    if (perk.effects) {
+      this.perkModifiers.push({ id: `perk:${perk.id}`, name: perk.name, alignment: 'positive', category: 'blessed', ...perk.effects });
+    }
+    return true;
+  }
+
+  public hasPerk(perkId: string): boolean {
+    return this.perks.some((p) => p.id === perkId);
+  }
+
+  /** The perks held, in the order granted. */
+  public get heldPerks(): readonly PerkDefinition[] {
+    return this.perks;
+  }
+
+  /** What the save keeps: the ids, resolved against the pack on load. */
+  public get perkIds(): string[] {
+    return this.perks.map((p) => p.id);
   }
 
   /** Spends unspent mastery points on a Rune of Return track, from the same pool as

@@ -2,11 +2,17 @@ import type { Entity } from '../entities/entity';
 import { Actor } from '../entities/actor';
 import type { ItemModifier } from './modifiers';
 
-/** Every modifier on what the entity wears; a plain entity (a prop) wears nothing. */
+/**
+ * Every modifier on what the entity wears, and the perks a hero holds (`Player.perkModifiers`,
+ * tracker 3.6: a perk's effects use the item-modifier vocabulary); a plain entity (a prop)
+ * wears nothing.
+ */
 export function wornModifiers(entity: Entity): ItemModifier[] {
   if (!(entity instanceof Actor)) return [];
   const mods: ItemModifier[] = [];
   for (const item of entity.inventory.paperdoll.getEquippedItems()) mods.push(...item.modifiers);
+  const perks = (entity as { perkModifiers?: ItemModifier[] }).perkModifiers;
+  if (perks) mods.push(...perks);
   return mods;
 }
 

@@ -28,7 +28,11 @@ export type ChoiceConsequence =
   /** Ends these statuses on the hero, if any are in effect. */
   | { type: 'cureStatus'; statusTypes: string[] }
   /** Records a renown milestone by id (`manifest.renownMilestones`), as engine deeds do. */
-  | { type: 'recordMilestone'; milestoneId: string };
+  | { type: 'recordMilestone'; milestoneId: string }
+  /** Grants a perk by id (`manifest.perks`); one already held is left alone. */
+  | { type: 'grantPerk'; perkId: string }
+  /** Raises (or lowers) an attribute for good, as a level's point would. */
+  | { type: 'modifyAttribute'; attribute: 'strength' | 'dexterity' | 'constitution' | 'intelligence'; delta: number };
 
 export interface ChoiceOption {
   id: string;

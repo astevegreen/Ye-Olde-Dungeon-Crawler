@@ -235,6 +235,8 @@ export interface SerializedPlayer {
   voidDebt?: number;
   /** A temple blessing's lasting max HP share; absent when none. */
   maxHpPercentBonus?: number;
+  /** Perks held, by `manifest.perks` id, in the order granted; absent when none. */
+  perks?: string[];
   grimoire?: import('../magic/grimoireMatrix').GrimoireSlot[];
   grimoirePages?: import('../magic/grimoireMatrix').GrimoirePage[];
   activeGrimoireIndex?: number;

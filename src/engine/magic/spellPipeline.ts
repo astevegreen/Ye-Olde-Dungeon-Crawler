@@ -1,5 +1,6 @@
 import type { ActionResult, Position, VisualEffectDescriptor } from '../types';
 import { attributeScalingOf, spellPowerMultiplier } from '../combat/attributeScaling';
+import { wornModifiers } from '../items/wornModifiers';
 import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
 import { Player } from '../entities/player';
@@ -476,14 +477,8 @@ export class SpellPipeline {
     // The caster's Intelligence (the pack's attribute scaling) and the Enchanted
     // spellDamageMultiplier of what it wears.
     let spellMultiplier = spellPowerMultiplier(caster, attributeScalingOf(engine.manifest));
-    if (caster.inventory) {
-      for (const item of caster.inventory.paperdoll.getEquippedItems()) {
-        for (const mod of item.modifiers) {
-          if (mod.spellDamageMultiplier) {
-            spellMultiplier *= mod.spellDamageMultiplier;
-          }
-        }
-      }
+    for (const mod of wornModifiers(caster)) {
+      if (mod.spellDamageMultiplier) spellMultiplier *= mod.spellDamageMultiplier;
     }
     if (spellMultiplier !== 1.0) {
       rawDamage = Math.max(1, Math.round(rawDamage * spellMultiplier));

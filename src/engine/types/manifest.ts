@@ -16,6 +16,7 @@ import type { StatusHandler } from '../status/statusHandlers';
 import type { ActionHook } from '../actions/actionPipeline';
 import type { AiBehaviorStrategy } from '../ai/aiBehaviorRegistry';
 import type { CombatConfig, ProgressionConfig, LevelUpBonus, AttributeScalingConfig, LevelUpHealConfig } from './config';
+import type { PerkDefinition, PerkEffects, LevelMilestoneTrigger } from './perks';
 import type { WorldState } from '../state/worldState';
 import type { Predicate } from '../predicates/types';
 import type { ChoiceDefinition, ChoiceOption, ChoiceConsequence } from './choice';
@@ -907,6 +908,10 @@ export interface GameContentManifest {
   storyChoiceTriggers?: StoryChoiceTrigger[];
   /** Attribute-threshold-gated choice unlocks (ARCHITECTURE.md §3, `AttributeMilestoneTrigger`). */
   attributeMilestones?: AttributeMilestoneTrigger[];
+  /** Level-gated choice unlocks (`LevelMilestoneTrigger`): cotw's Saga perks. */
+  levelMilestones?: LevelMilestoneTrigger[];
+  /** The perks a choice may grant (`PerkDefinition`, docs/architecture/content-progression-scaling.md). */
+  perks?: PerkDefinition[];
   /** "Driven off" boss resolutions (ARCHITECTURE.md §3, `BossFleeResolution`). */
   bossFleeResolutions?: BossFleeResolution[];
   /** Monster families for compendium category mastery (`MonsterCategoryDefinition`). */
@@ -1104,6 +1109,9 @@ export type {
   ProgressionConfig,
   AttributeScalingConfig,
   LevelUpHealConfig,
+  PerkDefinition,
+  PerkEffects,
+  LevelMilestoneTrigger,
   LevelUpBonus,
   EquipmentSlotDefinition,
   EquipmentSlotLayout,

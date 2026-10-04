@@ -384,6 +384,27 @@ export class MovementAction implements Action {
       // (1) matches StoryChoiceTrigger: the condition is progress (attributes), not location;
       // (2) allocateAttribute is a pure mutator with no engine handle and must not gain one;
       // (3) avoids opening a choice modal on top of the still-open level-up modal.
+      // Level-gated choices (`LevelMilestoneTrigger`, cotw's Saga perks) first, then attributes.
+      if (!choiceTriggered && !progressChoicesHeld) {
+        for (const milestone of engine.manifest?.levelMilestones ?? []) {
+          if ((this.entity as Player).level < milestone.level) continue;
+          const offeredFlag = `${milestone.id}_offered`;
+          if (engine.getWorldFlag(offeredFlag)) continue;
+          const choiceDef = engine.manifest?.choices?.[milestone.choiceId];
+          if (!choiceDef) continue;
+          engine.setWorldFlag(offeredFlag, true);
+          if (engine.onChoiceInteract) {
+            choiceTriggered = true;
+            engine.onChoiceInteract(choiceDef, (optionId: string) => {
+              engine.handlePlayerAction(new ExecuteChoiceAction(this.entity as Player, choiceDef, optionId));
+            });
+            break;
+          } else {
+            engine.log(`You stand before ${choiceDef.title}. It awaits your decision.`);
+            break;
+          }
+        }
+      }
       if (!choiceTriggered && !progressChoicesHeld) {
         for (const milestone of engine.manifest?.attributeMilestones ?? []) {
           const playerAttr = (this.entity as Player)[milestone.attribute];

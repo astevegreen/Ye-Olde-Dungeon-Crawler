@@ -3,7 +3,6 @@ import { BASE_ACTION_COST } from '../types';
 import type { Entity } from '../entities/entity';
 import { Monster } from '../entities/monster';
 import { Player } from '../entities/player';
-import { Actor } from '../entities/actor';
 import { calculateElementalDamage } from '../magic/elements';
 import type { GameEngine } from '../engine';
 import type { Action } from './action';
@@ -15,16 +14,9 @@ import { ANATOMIST_CRIT_CHANCE } from '../compendium/types';
 import { applyImpulse } from '../combat/impulse';
 import { resolveCombatMitigation } from '../combat/mitigationPipeline';
 import { burnOnSacredGround } from '../combat/sacredGround';
-import type { Item } from '../items/item';
 import type { ItemModifier } from '../items/modifiers';
-import { sumWorn } from '../items/wornModifiers';
+import { sumWorn, wornModifiers } from '../items/wornModifiers';
 import { attributeScalingOf, dexterityEvasion, meleeHitPercent, strengthMeleeBonus } from '../combat/attributeScaling';
-
-function getActorEquippedItems(actor: Entity): Item[] {
-  // Every Actor owns an inventory (a default one if none was configured); plain
-  // entities (e.g. destructible props) carry no equipment.
-  return actor instanceof Actor ? actor.inventory.paperdoll.getEquippedItems() : [];
-}
 
 const DEFAULT_MIN_DAMAGE = 1;
 const DEFAULT_CRIT_MULTIPLIER = 1.5;
@@ -137,12 +129,8 @@ export class MeleeAttackAction implements Action {
       rawDamage = base;
     }
 
-    // Evaluate attacker equipped item modifiers
-    const attackerItems = getActorEquippedItems(this.attacker);
-    const attackerModifiers: ItemModifier[] = [];
-    for (const it of attackerItems) {
-      attackerModifiers.push(...it.modifiers);
-    }
+    // What the attacker wears, and a hero's perks (`wornModifiers`).
+    const attackerModifiers: ItemModifier[] = wornModifiers(this.attacker);
 
     // 1. Melee scaling, by data: any modifier that carries it (Blessed and Chaotic do).
     for (const mod of attackerModifiers) {

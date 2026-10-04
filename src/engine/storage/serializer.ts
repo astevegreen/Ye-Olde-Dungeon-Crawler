@@ -517,6 +517,7 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     voidDebt: p.voidDebt ?? 0,
     maxHpPercentBonus: p.maxHpPercentBonus || undefined,
     perks: p.perkIds.length > 0 ? p.perkIds : undefined,
+    carriedAtStairs: p.carriedAtStairs.length > 0 ? [...p.carriedAtStairs] : undefined,
     activeGrimoireIndex: p.activeGrimoireIndex ?? 0,
     grimoireOpenSlots: p.grimoireOpenSlots ? [...p.grimoireOpenSlots] : undefined,
     grimoireGrounds: Object.keys(p.grimoireGrounds).length > 0 ? { ...p.grimoireGrounds } : undefined,
@@ -1044,6 +1045,7 @@ export function deserializeGame(
       : undefined,
   });
   player.energy = Number(pData.energy) || 0;
+  if (Array.isArray(pData.carriedAtStairs)) player.carriedAtStairs = pData.carriedAtStairs.map(String);
   // Before HP is clamped to max HP, which the blessing raises.
   player.maxHpPercentBonus = Number(pData.maxHpPercentBonus) || 0;
   player.hp = Math.min(Number(pData.hp) || 1, player.maxHp);

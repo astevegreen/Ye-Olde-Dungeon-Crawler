@@ -1,5 +1,5 @@
 import type { GameEngine } from '../engine';
-import { wearsFlag } from '../items/wornModifiers';
+import { sumWorn, wearsFlag } from '../items/wornModifiers';
 import type { Entity } from '../entities/entity';
 import { Monster } from '../entities/monster';
 import type { Position } from '../types';
@@ -63,6 +63,9 @@ export function applyImpulse(
       newPosition: { x: target.x, y: target.y },
     };
   }
+
+  // What the pusher wears throws farther (Ox-Shoulders, `knockbackBonus`).
+  if (source) distance += sumWorn(source, 'knockbackBonus');
 
   const stepX = Math.sign(dx);
   const stepY = Math.sign(dy);

@@ -6,6 +6,7 @@ import { EncumbranceLevel } from '../inventory/encumbrance';
 import type { CharacterAttributes, Gender } from '../character/types';
 import type { ProgressionConfig, LevelUpBonus, PerkDefinition } from '../types/manifest';
 import type { ItemModifier } from '../items/modifiers';
+import { productWorn } from '../items/wornModifiers';
 import type { TutorialFlags } from '../storage/types';
 import { calculateAttribute } from '../stats/attributeCalculator';
 import {
@@ -132,6 +133,8 @@ export class Player extends Actor {
   private readonly perks: PerkDefinition[] = [];
   /** The perks' effects as modifiers, read beside what the hero wears (`wornModifiers`). */
   public perkModifiers: ItemModifier[] = [];
+  /** Ids of the items carried when the stairs were last taken (Lore-Keeper, `identifiesCarriedOnStairs`). */
+  public carriedAtStairs: string[] = [];
   public grimoirePages: GrimoirePage[];
   public activeGrimoireIndex: number;
   /** Slots open to spells on every page; undefined means all nine (saves from before sealing). */
@@ -383,6 +386,11 @@ export class Player extends Actor {
     return true;
   }
 
+  /** The Strength the hero carries with: Strength scaled by what it wears (`carryMultiplier`). */
+  public get carryStrength(): number {
+    return Math.round(this.strength * productWorn(this, 'carryMultiplier'));
+  }
+
   /** Raises (or lowers) an attribute for good outside the point pool: a perk's or a story's gift. */
   public modifyAttribute(attribute: 'strength' | 'dexterity' | 'constitution' | 'intelligence', delta: number): void {
     if (delta === 0) return;
@@ -583,7 +591,7 @@ export class Player extends Actor {
 
   public override canMove(): boolean {
     if (!super.canMove()) return false;
-    return this.inventory.getEncumbrance(this.strength) !== EncumbranceLevel.Immobilized;
+    return this.inventory.getEncumbrance(this.carryStrength) !== EncumbranceLevel.Immobilized;
   }
 
   public override getActionCost(baseCost: number): number {

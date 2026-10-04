@@ -237,6 +237,8 @@ export interface SerializedPlayer {
   maxHpPercentBonus?: number;
   /** Perks held, by `manifest.perks` id, in the order granted; absent when none. */
   perks?: string[];
+  /** Ids of the items carried when the stairs were last taken (Lore-Keeper); absent when none. */
+  carriedAtStairs?: string[];
   grimoire?: import('../magic/grimoireMatrix').GrimoireSlot[];
   grimoirePages?: import('../magic/grimoireMatrix').GrimoirePage[];
   activeGrimoireIndex?: number;

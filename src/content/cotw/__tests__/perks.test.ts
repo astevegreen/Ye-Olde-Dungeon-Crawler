@@ -3,12 +3,12 @@ import { ProfileManager, MemoryStorage } from '../../../engine/storage/profile-m
 import { ExecuteChoiceAction } from '../../../engine/actions/choiceAction';
 import { RestAction } from '../../../engine/actions/rest';
 import { cotwManifest } from '../index';
-import { COTW_LEVEL_MILESTONES, COTW_PERKS, COTW_SAGA_CHOICES } from '../perks';
+import { COTW_LEVEL_MILESTONES, COTW_MILESTONE_CHOICES, COTW_MILESTONE_PERKS, COTW_PERKS, COTW_SAGA_CHOICES } from '../perks';
 
 /** Q27 "Separate sources.", Q51–Q53 approved (tracker 3.6): the Saga perks, as far as built. */
 describe('cotw perks', () => {
   it('declares every perk a Saga choice grants, and a Saga choice at levels 10 and 20', () => {
-    expect(cotwManifest.perks).toBe(COTW_PERKS);
+    expect(cotwManifest.perks).toEqual([...COTW_PERKS, ...COTW_MILESTONE_PERKS]);
     expect(cotwManifest.levelMilestones).toBe(COTW_LEVEL_MILESTONES);
     expect(COTW_LEVEL_MILESTONES.map((m) => m.level)).toEqual([10, 20]);
     for (const trigger of COTW_LEVEL_MILESTONES) {
@@ -21,7 +21,23 @@ describe('cotw perks', () => {
         expect(COTW_PERKS.some((p) => p.id === (grant as { perkId: string }).perkId), option.id).toBe(true);
       }
     }
-    expect(new Set(COTW_PERKS.map((p) => p.id)).size).toBe(COTW_PERKS.length);
+    expect(new Set(cotwManifest.perks!.map((p) => p.id)).size).toBe(cotwManifest.perks!.length);
+  });
+
+  it('each attribute’s 20 milestone offers two perks of its own instead of +2/+3 Attack or Defense (Q52 "A")', () => {
+    for (const attr of ['str', 'dex', 'con', 'int']) {
+      const choice = cotwManifest.choices![`milestone_${attr}_20`];
+      expect(choice, attr).toBe(COTW_MILESTONE_CHOICES[`milestone_${attr}_20`]);
+      expect(choice.options).toHaveLength(2);
+      for (const option of choice.options) {
+        const grant = option.consequences.find((c) => c.type === 'grantPerk') as { perkId: string } | undefined;
+        expect(grant, option.id).toBeDefined();
+        expect(COTW_MILESTONE_PERKS.find((p) => p.id === grant!.perkId)?.source).toBe('milestone');
+        expect(option.consequences.some((c) => c.type === 'modifyPermanentStat' && (c.stat === 'attack' || c.stat === 'defense'))).toBe(false);
+      }
+    }
+    const fleet = COTW_MILESTONE_CHOICES.milestone_dex_20.options.find((o) => o.id === 'milestone_fleet_foot')!;
+    expect(fleet.consequences).toContainEqual({ type: 'modifyPermanentStat', stat: 'speed', delta: 10 });
   });
 
   it('a Saga choice grants its perk once and logs the saga’s line', () => {

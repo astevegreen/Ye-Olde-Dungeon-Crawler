@@ -120,6 +120,8 @@ export function applyConsequences(
         // permanent base, double-counting it on every future equip/unequip.
         if (c.stat === 'attack') {
           player.attack = player.baseAttackValue + c.delta;
+        } else if (c.stat === 'speed') {
+          player.speed += c.delta;
         } else {
           player.defense = player.baseDefenseValue + c.delta;
         }

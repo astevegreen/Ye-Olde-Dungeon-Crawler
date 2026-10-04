@@ -15,7 +15,7 @@ import { applyImpulse } from '../combat/impulse';
 import { resolveCombatMitigation } from '../combat/mitigationPipeline';
 import { burnOnSacredGround } from '../combat/sacredGround';
 import type { ItemModifier } from '../items/modifiers';
-import { productWorn, sumWorn, wornModifiers } from '../items/wornModifiers';
+import { afflictionDuration, productWorn, sumWorn, wornModifiers } from '../items/wornModifiers';
 import { attributeScalingOf, dexterityEvasion, meleeHitPercent, strengthMeleeBonus } from '../combat/attributeScaling';
 
 const DEFAULT_MIN_DAMAGE = 1;
@@ -265,8 +265,8 @@ export class MeleeAttackAction implements Action {
       if (isSurvivor && engine.rng() < 0.25) {
         engine.log(`${this.defender.name}'s Survivor instincts shrug off ${this.attacker.name}'s ${aff.type}!`);
       } else if (engine.rng() < aff.chance) {
-        // Survivor: halve the duration of debuffs
-        const effectiveDuration = isSurvivor ? Math.max(1, Math.floor(aff.duration * 0.5)) : aff.duration;
+        // Survivor: halve the duration of debuffs; what the defender wears may shorten it too (Iron Stomach).
+        const effectiveDuration = afflictionDuration(this.defender, aff.type, isSurvivor ? Math.max(1, Math.floor(aff.duration * 0.5)) : aff.duration);
         const applied = this.defender.statusManager.applyStatus(
           {
             type: aff.type,
@@ -283,6 +283,21 @@ export class MeleeAttackAction implements Action {
           const affMsg = `${this.attacker.name}'s bite infects ${this.defender.name} with ${aff.type}!${survivorNote}`;
           engine.log(affMsg);
         }
+      }
+    }
+
+    // A status the attacker's blows leave behind (Bone-Breaker's slow), by what it wears.
+    if (!killed && damageDealt > 0) {
+      for (const mod of attackerModifiers) {
+        const on = mod.onHitStatus;
+        if (!on || engine.rng() >= on.chance) continue;
+        const applied = this.defender.statusManager.applyStatus(
+          { type: on.status, duration: afflictionDuration(this.defender, on.status, on.duration), potency: on.potency, sourceEntityId: this.attacker.id },
+          this.defender.statusImmunities,
+          this.defender,
+          engine
+        );
+        if (applied) engine.log(`${this.attacker.name}'s blow leaves ${this.defender.name} ${on.status}!`);
       }
     }
 

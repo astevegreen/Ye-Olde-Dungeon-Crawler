@@ -10,6 +10,10 @@ import { SearchAction } from '../actions/search';
 import { MovementAction } from '../actions/movement';
 import { applyImpulse } from '../combat/impulse';
 import { DeathResolver } from '../combat/deathResolver';
+import { RangedAttackAction } from '../actions/rangedAttack';
+import { ExecuteChoiceAction } from '../actions/choiceAction';
+import { identifyCarriedSinceStairs } from '../actions/stairs';
+import { Item } from '../items/item';
 import type { PerkDefinition } from '../types/manifest';
 import type { GameContentManifest } from '../types/manifest';
 import type { SpellDefinition } from '../magic/types';
@@ -113,5 +117,69 @@ describe('perk effects', () => {
     player.grantPerk(perk('thief', { overflowDebtDecayMultiplier: 2 }));
     player.decayVoidDebt(2, 0); // the rest action's per-turn call multiplies: this models two turns
     expect(player.voidDebt).toBe(4);
+  });
+
+  it('carryMultiplier scales the Strength the hero carries with, and knockbackBonus throws farther', () => {
+    const { engine, player, foe } = build();
+    expect(player.carryStrength).toBe(player.strength);
+    player.grantPerk(perk('ox', { carryMultiplier: 1.5, knockbackBonus: 1 }));
+    expect(player.carryStrength).toBe(Math.round(player.strength * 1.5));
+    const pushed = applyImpulse(engine, player, foe, 1, 0, 1);
+    expect(pushed.distanceTraveled).toBe(2);
+  });
+
+  it('onHitStatus leaves its status on the foe after a landed blow', () => {
+    const { engine, player, foe } = build();
+    player.grantPerk(perk('breaker', { onHitStatus: { status: 'slow', chance: 1, duration: 1 } }));
+    new MeleeAttackAction(player, foe).perform(engine);
+    expect(foe.statusManager.hasStatus('slow')).toBe(true);
+  });
+
+  it('rangedHitBonus and rangedDamageBonus join the shooter’s roll', () => {
+    const { engine, player, foe } = build();
+    const bow = new Item({ id: 'bow', name: 'Bow', category: 'weapon', slot: 'mainHand', weight: 1000, bulk: 500, identified: true, rangedConfig: { range: 6, baseDamage: 5 } });
+    player.inventory.paperdoll.equip(bow, 'mainHand');
+    engine.rng = () => 0.5;
+    new RangedAttackAction(player, foe.x, foe.y).perform(engine);
+    const plain = 1000 - foe.hp; // 5 + the Dexterity bonus
+    player.grantPerk(perk('sure', { rangedHitBonus: 15, rangedDamageBonus: 2 }));
+    player.gainEnergy(100);
+    new RangedAttackAction(player, foe.x, foe.y).perform(engine);
+    expect(1000 - foe.hp).toBe(plain * 2 + 2);
+  });
+
+  it('shortenedAfflictions halves a bite’s poison on the bearer', () => {
+    const { engine, player, map } = build();
+    const viper = new Monster({ id: 'viper', name: 'Viper', position: { x: 9, y: 10 }, stats: { hp: 10, maxHp: 10, attack: 5, defense: 0 }, speed: 100, definitionId: 'viper', aiType: 'melee', xpValue: 1, onHitAffliction: { type: 'poison', chance: 1, duration: 4 } });
+    map.addEntity(viper);
+    viper.gainEnergy(100);
+    player.grantPerk(perk('stomach', { shortenedAfflictions: { types: ['poison', 'burning'], multiplier: 0.5 } }));
+    engine.rng = () => 0.5;
+    new MeleeAttackAction(viper, player).perform(engine);
+    expect(player.statusManager.getAll().find((s) => s.type === 'poison')?.duration).toBe(2);
+  });
+
+  it('identifiesCarriedOnStairs identifies what was carried since the last stairs, not what was picked up after', () => {
+    const { engine, player } = build();
+    player.grantPerk(perk('lore', { identifiesCarriedOnStairs: true }));
+    const old = new Item({ id: 'old', name: 'Ring', unidentifiedName: 'Plain Band', category: 'ring', weight: 10, bulk: 5, identified: false });
+    player.inventory.primaryPack.addItem(old);
+    identifyCarriedSinceStairs(engine, player); // the first stairs: remembered, not yet known
+    expect(old.identified).toBe(false);
+    const fresh = new Item({ id: 'fresh', name: 'Amulet', unidentifiedName: 'Dull Pendant', category: 'amulet', weight: 10, bulk: 5, identified: false });
+    player.inventory.primaryPack.addItem(fresh);
+    identifyCarriedSinceStairs(engine, player); // the next stairs
+    expect(old.identified).toBe(true);
+    expect(fresh.identified).toBe(false);
+    expect(player.carriedAtStairs).toContain('fresh');
+  });
+
+  it('modifyPermanentStat can raise speed for good (Fleet-Foot)', () => {
+    const { engine, player } = build();
+    const speed = player.speed;
+    engine.handlePlayerAction(
+      new ExecuteChoiceAction(player, { id: 'c', title: 'c', description: 'c', options: [{ id: 'fleet', label: 'Fleet', consequences: [{ type: 'modifyPermanentStat', stat: 'speed', delta: 10 }] }] }, 'fleet')
+    );
+    expect(player.speed).toBe(speed + 10);
   });
 });

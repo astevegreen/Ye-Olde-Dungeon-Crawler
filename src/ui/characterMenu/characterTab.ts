@@ -18,6 +18,7 @@ import {
   getTotalRuneMasteryPoints,
   levelUpHealShare,
   meleeHitPercent,
+  productWorn,
   rangedDexterityBonus,
   resolveManaTerms,
   spellPowerMultiplier,
@@ -81,7 +82,8 @@ const ATTRIBUTES: AttributeMeta[] = [
       if (scaling.meleeDamagePerStrength) {
         parts.push(`Melee damage ${fromTo(signed(strengthMeleeBonus(at(p, 'strength', v - n), scaling)), signed(strengthMeleeBonus(at(p, 'strength', v), scaling)))}`);
       }
-      parts.push(`Carry ${fromTo(formatKg(getMaxCarryWeight(v - n)), formatKg(getMaxCarryWeight(v)), ' kg')}`);
+      const carryWith = (strength: number) => formatKg(getMaxCarryWeight(Math.round(strength * productWorn(p, 'carryMultiplier'))));
+      parts.push(`Carry ${fromTo(carryWith(v - n), carryWith(v), ' kg')}`);
       return parts.join(' · ');
     },
   },
@@ -417,7 +419,7 @@ export class CharacterTab implements MenuTab {
           <dt>${escapeHtml(mana.name)}</dt><dd class="ui-num">${player.mana} / ${player.maxMana}</dd>
           <dt>Attack</dt><dd class="ui-num">${gear(player.attack, player.baseAttackValue)}</dd>
           <dt>Defense</dt><dd class="ui-num">${gear(player.defense, player.baseDefenseValue)}</dd>
-          <dt>Load</dt><dd class="ui-num">${formatKg(player.inventory.totalWeight())} / ${formatKg(getMaxCarryWeight(player.strength))} kg</dd>
+          <dt>Load</dt><dd class="ui-num">${formatKg(player.inventory.totalWeight())} / ${formatKg(getMaxCarryWeight(player.carryStrength))} kg</dd>
           <dt>Speed</dt><dd>${speed}</dd>
           <dt>Purse</dt><dd class="ui-num">${escapeHtml(formatCurrency(getPlayerTotalCp(player)))}</dd>
           <dt>Depth</dt><dd>${floor === 0 ? escapeHtml(branding.townName) : `Floor <span class="ui-num">${floor}</span>`}</dd>
@@ -562,7 +564,8 @@ export class CharacterTab implements MenuTab {
       if (scaling.meleeDamagePerStrength) {
         rows.push(['Melee damage', signed(strengthMeleeBonus(player, scaling)), signed(strengthMeleeBonus(at(player, 'strength', player.strength + str), scaling))]);
       }
-      rows.push(['Carry limit', formatKg(getMaxCarryWeight(player.strength)), formatKg(getMaxCarryWeight(player.strength + str)), ' kg']);
+      const carryWith = (strength: number) => formatKg(getMaxCarryWeight(Math.round(strength * productWorn(player, 'carryMultiplier'))));
+      rows.push(['Carry limit', carryWith(player.strength), carryWith(player.strength + str), ' kg']);
     }
     const dex = this.draft.get('dexterity');
     if (dex > 0) {

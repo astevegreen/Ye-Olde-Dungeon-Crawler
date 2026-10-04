@@ -84,6 +84,20 @@ export interface ItemModifier {
   killManaPercent?: number;
   /** Scales how much overflow debt a rest turn clears (Spell-Thief: 2). */
   overflowDebtDecayMultiplier?: number;
+  /** Scales the Strength the bearer carries with (Ox-Shoulders: 1.5; `Player.carryStrength`). */
+  carryMultiplier?: number;
+  /** Extra tiles the bearer's knock-backs throw a foe (Ox-Shoulders: 1; `applyImpulse`). */
+  knockbackBonus?: number;
+  /** A status the bearer's melee hits may leave on the foe (Bone-Breaker: slow, a turn, one hit in four). */
+  onHitStatus?: { status: string; chance: number; duration: number; potency?: number };
+  /** Percentage points added to the bearer's ranged hit chance (Sure Shot: 15). */
+  rangedHitBonus?: number;
+  /** Flat damage added to the bearer's ranged hits (Sure Shot: 2). */
+  rangedDamageBonus?: number;
+  /** These afflictions last the bearer a share of their length (Iron Stomach: poison and burning, half). */
+  shortenedAfflictions?: { types: string[]; multiplier: number };
+  /** Taking the stairs identifies every unidentified item the bearer has carried since the last stairs (Lore-Keeper). */
+  identifiesCarriedOnStairs?: boolean;
   description?: string;
 }
 

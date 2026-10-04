@@ -16,7 +16,7 @@ export type ChoiceConsequence =
    * pact bonuses on top (`calculateAttribute`), so this changes the permanent base
    * only, not the effective total directly.
    */
-  | { type: 'modifyPermanentStat'; stat: 'attack' | 'defense'; delta: number }
+  | { type: 'modifyPermanentStat'; stat: 'attack' | 'defense' | 'speed'; delta: number }
   /**
    * Grants a companion by manifest-declared ID (ARCHITECTURE.md §3, Companions & Pet
    * Progression). Sets the acquisition-gate flag first if the player hasn't already

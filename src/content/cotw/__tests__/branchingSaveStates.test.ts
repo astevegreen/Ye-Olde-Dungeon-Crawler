@@ -275,7 +275,8 @@ describe('Branching save-states — Níðhögg’s two endings (real cotwManifes
         expect(choice!.options.length, `Choice ${milestone.choiceId} must have exactly two options`).toBe(2);
         for (const opt of choice!.options) {
           expect(opt.consequences.length).toBeGreaterThan(0);
-          expect(opt.consequences.some((c) => c.type === 'setFlag')).toBe(true);
+          // Since 3.6 the perk held is the record of the choice (`Player.hasPerk`), not a flag.
+          expect(opt.consequences.some((c) => c.type === 'grantPerk')).toBe(true);
         }
       }
     });

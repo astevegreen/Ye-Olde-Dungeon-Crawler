@@ -45,6 +45,15 @@ export function lowestWorn(entity: Entity, field: NumericField): number | undefi
   return lowest;
 }
 
+/** How long an affliction lasts the entity, after what it wears shortens it (`shortenedAfflictions`); never below a turn. */
+export function afflictionDuration(entity: Entity, statusType: string, duration: number): number {
+  let factor = 1;
+  for (const mod of wornModifiers(entity)) {
+    if (mod.shortenedAfflictions?.types.includes(statusType)) factor *= mod.shortenedAfflictions.multiplier;
+  }
+  return factor === 1 ? duration : Math.max(1, Math.round(duration * factor));
+}
+
 /** True when anything worn carries the flag. */
 export function wearsFlag(entity: Entity, field: keyof ItemModifier): boolean {
   return wornModifiers(entity).some((mod) => Boolean(mod[field]));

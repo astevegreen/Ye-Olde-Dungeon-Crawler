@@ -1,4 +1,5 @@
 import type { ActionResult } from '../types';
+import { sumWorn } from '../items/wornModifiers';
 import { BASE_ACTION_COST } from '../types';
 import type { Entity } from '../entities/entity';
 import { Player } from '../entities/player';
@@ -133,13 +134,14 @@ export class RangedAttackAction implements Action {
 
         // Hit roll: 75% base + DEX modifier - target defense
         const dexBonus = rangedDexterityBonus(attackerDex);
-        const hitChance = Math.max(20, Math.min(95, 75 + dexBonus.hitPct - targetDefense * 2));
+        // What the shooter wears (Sure Shot).
+        const hitChance = Math.max(20, Math.min(95, 75 + dexBonus.hitPct + sumWorn(this.attacker, 'rangedHitBonus') - targetDefense * 2));
         const roll = engine.rng() * 100;
 
         if (roll <= hitChance) {
           const baseDmg = rangedConfig.baseDamage ?? (weapon.stats?.attackBonus ?? 4);
           const enchantBonus = weapon.enchantmentLevel ?? 0;
-          let damage = Math.max(1, baseDmg + enchantBonus + dexBonus.damage - Math.floor(targetDefense / 2));
+          let damage = Math.max(1, baseDmg + enchantBonus + dexBonus.damage + sumWorn(this.attacker, 'rangedDamageBonus') - Math.floor(targetDefense / 2));
 
           target.takeDamage(damage);
 

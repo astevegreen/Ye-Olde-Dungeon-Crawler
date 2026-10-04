@@ -1,4 +1,5 @@
 import type { GameEngine } from '../engine';
+import { afflictionDuration } from '../items/wornModifiers';
 import type { EngineContext } from '../types/engineContext';
 import type { Entity } from '../entities/entity';
 import type { Item } from '../items/item';
@@ -285,7 +286,7 @@ function executeApplyStatus(
   const dest = target ?? owner;
   if (dest && dest.isAlive()) {
     const applied = dest.statusManager.applyStatus(
-      { type: action.status, duration: action.duration, potency: action.potency },
+      { type: action.status, duration: afflictionDuration(dest, action.status, action.duration), potency: action.potency },
       dest.statusImmunities,
       dest,
       engine

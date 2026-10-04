@@ -177,7 +177,8 @@ export function calculateAttribute(
   } else if (attributeKey === 'actionCost') {
     // Encumbrance cost adjustment first if available on inventory
     if (actor.inventory) {
-      value = actor.inventory.calculateActionCost(value, actor.strength);
+      // A hero's carrying Strength may be scaled by what it wears (`Player.carryStrength`).
+      value = actor.inventory.calculateActionCost(value, (actor as { carryStrength?: number }).carryStrength ?? actor.strength);
     }
     // Status effects
     if (actor.statusManager?.hasStatus('slow')) {

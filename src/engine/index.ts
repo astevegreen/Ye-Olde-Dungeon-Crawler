@@ -29,6 +29,7 @@ export * from './actions/actionPipeline';
 export * from './actions/movement';
 export * from './actions/combat';
 export * from './combat/attributeScaling';
+export * from './items/wornModifiers';
 export * from './actions/door';
 export * from './actions/wait';
 export * from './actions/rest';

@@ -66,6 +66,21 @@ export const COTW_PERKS: PerkDefinition[] = [
   },
 ];
 
+export const COTW_MILESTONE_PERKS: PerkDefinition[] = [
+  // ── Strength 20 ──
+  { id: 'milestone_ox_shoulders', name: 'Ox-Shoulders', source: 'milestone', tagline: 'A yoke sits light on you.', description: 'You carry half again as much, and your knock-backs throw a foe a tile farther.', effects: { carryMultiplier: 1.5, knockbackBonus: 1 } },
+  { id: 'milestone_bone_breaker', name: 'Bone-Breaker', source: 'milestone', tagline: 'Where you strike, something gives.', description: 'One melee hit in four slows the foe for a turn.', effects: { onHitStatus: { status: 'slow', chance: 0.25, duration: 1 } } },
+  // ── Dexterity 20 ──
+  { id: 'milestone_fleet_foot', name: 'Fleet-Foot', source: 'milestone', tagline: 'The frost never quite catches you.', description: 'Speed +10, for good.' },
+  { id: 'milestone_sure_shot', name: 'Sure Shot', source: 'milestone', tagline: 'The arrow knows the way.', description: 'Ranged hit chance +15% and ranged damage +2.', effects: { rangedHitBonus: 15, rangedDamageBonus: 2 } },
+  // ── Constitution 20 ──
+  { id: 'milestone_thick_hide', name: 'Thick Hide', source: 'milestone', tagline: 'Blows land, and slide off.', description: 'All damage taken −10%.', effects: { damageTakenMultiplier: 0.9 } },
+  { id: 'milestone_iron_stomach', name: 'Iron Stomach', source: 'milestone', tagline: 'Venom and flame find little purchase.', description: 'Poison and burning last half as long on you.', effects: { shortenedAfflictions: { types: ['poison', 'burning'], multiplier: 0.5 } } },
+  // ── Intelligence 20 ──
+  { id: 'milestone_rune_thrift', name: 'Rune-Thrift', source: 'milestone', tagline: 'No rune drawn larger than it must be.', description: 'Spells cost 15% less {mana}.', effects: { manaCostMultiplier: 0.85 } },
+  { id: 'milestone_lore_keeper', name: 'Lore-Keeper', source: 'milestone', tagline: 'Handle a thing a while and it tells you its name.', description: 'Taking the stairs identifies every unidentified item you have carried since the last stairs.', effects: { identifiesCarriedOnStairs: true } },
+];
+
 const grant = (perkId: string) => ({ type: 'grantPerk' as const, perkId });
 const option = (perk: PerkDefinition) => ({
   id: perk.id,
@@ -73,7 +88,49 @@ const option = (perk: PerkDefinition) => ({
   description: perk.description,
   consequences: [grant(perk.id), { type: 'logMessage' as const, message: `${perk.tagline ?? perk.name} The saga names you: ${perk.name}.` }],
 });
-const perk = (id: string): PerkDefinition => COTW_PERKS.find((p) => p.id === id)!;
+const perk = (id: string): PerkDefinition => [...COTW_PERKS, ...COTW_MILESTONE_PERKS].find((p) => p.id === id)!;
+const milestoneOption = (perk: PerkDefinition, extra: ChoiceDefinition['options'][number]['consequences'] = []) => ({
+  id: perk.id,
+  label: perk.name,
+  description: perk.description,
+  consequences: [grant(perk.id), ...extra, { type: 'logMessage' as const, message: `${perk.tagline ?? perk.name} You take up ${perk.name}.` }],
+});
+
+/** The attribute milestones' perk choices (Q52 "A"; tier 20 so far, 25 and 30 to follow). */
+export const COTW_MILESTONE_CHOICES: Record<string, ChoiceDefinition> = {
+  milestone_str_20: {
+    id: 'milestone_str_20',
+    title: 'Strength Milestone: Might of the Mountain Giant',
+    description:
+      'Your muscles surge with the brute vigor of the hill giants. Stone breaks beneath your grip. Will you bear the weight of a wagon, or break what you strike?',
+    options: [milestoneOption(perk('milestone_ox_shoulders')), milestoneOption(perk('milestone_bone_breaker'))],
+    cancelable: false,
+  },
+  milestone_dex_20: {
+    id: 'milestone_dex_20',
+    title: 'Dexterity Milestone: Mastery of the Swift Wind',
+    description:
+      'Your hands move with uncanny swiftness and your step makes no sound upon the frost. The spirits of the hunt take note of your nimble blood. Will you outrun the cold, or never miss a mark?',
+    options: [milestoneOption(perk('milestone_fleet_foot'), [{ type: 'modifyPermanentStat', stat: 'speed', delta: 10 }]), milestoneOption(perk('milestone_sure_shot'))],
+    cancelable: false,
+  },
+  milestone_con_20: {
+    id: 'milestone_con_20',
+    title: 'Constitution Milestone: Vigor of the Ancient Oak',
+    description:
+      'The bitter cold of the deep north cannot chill your veins. Your flesh is hard as bog iron and your heart beats with unyielding endurance. Will you turn aside the blow, or shrug off the venom?',
+    options: [milestoneOption(perk('milestone_thick_hide')), milestoneOption(perk('milestone_iron_stomach'))],
+    cancelable: false,
+  },
+  milestone_int_20: {
+    id: 'milestone_int_20',
+    title: 'Intelligence Milestone: Runic Illumination',
+    description:
+      'The whispered wisdom of Mimir and the secrets of the Elder Futhark burn into your consciousness. Will you draw your runes smaller, or read the ones on everything you carry?',
+    options: [milestoneOption(perk('milestone_rune_thrift')), milestoneOption(perk('milestone_lore_keeper'))],
+    cancelable: false,
+  },
+};
 
 export const COTW_SAGA_CHOICES: Record<string, ChoiceDefinition> = {
   saga_10: {

@@ -1,4 +1,4 @@
-import type { GameContentManifest, AttributeMilestoneTrigger } from '../../engine';
+import type { GameContentManifest } from '../../engine';
 import { COTW_MONSTERS, COTW_BESTIARY } from './monsters';
 import { COTW_ITEMS } from './items';
 import { COTW_SPELLS } from './spells';
@@ -33,6 +33,7 @@ import { BURNING_STATUS, burningHandler } from './burning';
 import { COTW_MONSTER_SCALING } from './monsterScaling';
 import { COTW_PROGRESSION } from './progression';
 import { COTW_COMBAT } from './combat';
+import { COTW_ATTRIBUTE_MILESTONES } from './milestones';
 import { COTW_COINAGE } from './coinage';
 import { COTW_ITEM_FAMILIES } from './itemFamilies';
 import { COTW_LOOT_RATES } from './loot';
@@ -55,13 +56,6 @@ import {
   COTW_SVART_TAUNT_HOOK,
   COTW_TOWN_REACTIVE_HOOK,
 } from './narrative';
-
-export const COTW_ATTRIBUTE_MILESTONES: AttributeMilestoneTrigger[] = [
-  { id: 'milestone_dex_15', attribute: 'dexterity', threshold: 15, choiceId: 'milestone_dex_15' },
-  { id: 'milestone_str_15', attribute: 'strength', threshold: 15, choiceId: 'milestone_str_15' },
-  { id: 'milestone_con_15', attribute: 'constitution', threshold: 15, choiceId: 'milestone_con_15' },
-  { id: 'milestone_int_15', attribute: 'intelligence', threshold: 15, choiceId: 'milestone_int_15' },
-];
 
 export const cotwManifest: GameContentManifest = {
   id: 'cotw',

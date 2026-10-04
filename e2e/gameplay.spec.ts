@@ -34,11 +34,8 @@ async function embarkNewHero(page: Page): Promise<void> {
   expect(existsSync(BUNDLE), `${BUNDLE} is missing; run \`npm run build\` first`).toBe(true);
   await page.goto(pathToFileURL(BUNDLE).href);
   await page.locator('#btn-menu-new-game').click();
-  // Keep every rolled attribute under 15: the first step would otherwise offer that
-  // attribute's milestone choice, whose modal takes the keyboard (flaky on high rolls).
-  for (const attr of ['str', 'dex', 'con', 'int']) {
-    for (let i = 0; i < 6; i++) await page.locator(`#btn-dec-${attr}`).click();
-  }
+  // No roll reaches an attribute milestone (the cap is 16, the first tier 20), so the
+  // first step never opens a choice modal over the keyboard.
   await page.locator('#btn-create-embark').click();
   await pastTheOpening(page);
 }

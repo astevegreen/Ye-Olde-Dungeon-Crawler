@@ -7,6 +7,9 @@ import { createScaledItem, type PotionItem } from '../../../engine';
 import { cotwManifest } from '../index';
 import { COTW_LEVEL_CAP, COTW_PROGRESSION } from '../progression';
 import { COTW_COMBAT } from '../combat';
+import { COTW_ATTRIBUTE_MILESTONES, COTW_MILESTONE_TIERS, attributeMilestones, milestoneChoiceId } from '../milestones';
+import { COTW_CHOICES } from '../choices';
+import { MAX_ATTRIBUTE } from '../../../engine/character/characterRoller';
 
 /**
  * Q4 "B", Q25 "approved" (tracker 3.1): levels cap at 50; a full clear reaches about 47 on
@@ -82,6 +85,32 @@ describe('cotw progression (Q4 "B", Q25)', () => {
     expect(mean, levels.join(', ')).toBeGreaterThanOrEqual(46);
     expect(mean, levels.join(', ')).toBeLessThanOrEqual(48);
   }, 60_000);
+
+  describe('attribute milestones (Q6 "starting at 20", Q26 "tiers 20, 25 and 30, cap 16")', () => {
+    it('offers a choice at 20, 25 and 30 for each attribute, as far as the choices are written', () => {
+      expect([...COTW_MILESTONE_TIERS]).toEqual([20, 25, 30]);
+      expect(cotwManifest.attributeMilestones).toBe(COTW_ATTRIBUTE_MILESTONES);
+      for (const trigger of COTW_ATTRIBUTE_MILESTONES) {
+        expect(COTW_MILESTONE_TIERS).toContain(trigger.threshold);
+        expect(trigger.choiceId).toBe(milestoneChoiceId(trigger.attribute, trigger.threshold));
+        expect(COTW_CHOICES[trigger.choiceId]).toBeDefined();
+      }
+      // The first tier is built for all four; 25 and 30 wait for the owner's perk lists (3.4, 3.6).
+      for (const attribute of ['strength', 'dexterity', 'constitution', 'intelligence'] as const) {
+        expect(COTW_ATTRIBUTE_MILESTONES.some((t) => t.attribute === attribute && t.threshold === 20)).toBe(true);
+      }
+      expect(COTW_ATTRIBUTE_MILESTONES.some((t) => t.threshold < 20)).toBe(false);
+    });
+
+    it('opens a tier as soon as its choice exists', () => {
+      const withTier25 = { ...COTW_CHOICES, [milestoneChoiceId('strength', 25)]: COTW_CHOICES[milestoneChoiceId('strength', 20)] };
+      expect(attributeMilestones(withTier25).filter((t) => t.threshold === 25).map((t) => t.attribute)).toEqual(['strength']);
+    });
+
+    it('is never reached by a fresh roll: the starting cap sits below the first tier', () => {
+      expect(MAX_ATTRIBUTE).toBeLessThan(COTW_MILESTONE_TIERS[0]);
+    });
+  });
 
   describe('the Mead of Suttungr (Q25: a rare level potion)', () => {
     const def = cotwManifest.items.find((d) => d.id === 'mead_of_suttungr')!;

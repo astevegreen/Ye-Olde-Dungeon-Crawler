@@ -4,6 +4,17 @@ import { Player } from '../../entities/player';
 import { Mulberry32 } from '../../dungeon/prng';
 
 describe('CharacterRoller & Attribute Engine', () => {
+  it('never rolls a starting attribute past the cap, over many rolls', () => {
+    const prng = new Mulberry32(7);
+    for (let i = 0; i < 500; i++) {
+      const roll = CharacterRoller.generateRoll(() => prng.next());
+      for (const value of Object.values(roll.attributes)) {
+        expect(value).toBeGreaterThanOrEqual(MIN_ATTRIBUTE);
+        expect(value).toBeLessThanOrEqual(MAX_ATTRIBUTE);
+      }
+    }
+  });
+
   it('rolls 3d6 within range 3 to 18', () => {
     const prng = new Mulberry32(42);
     for (let i = 0; i < 50; i++) {
@@ -64,11 +75,12 @@ describe('CharacterRoller & Attribute Engine', () => {
     expect(res1.attributes.strength).toBe(16);
     expect(res1.availablePoints).toBe(2);
 
-    // 2. Increase capped at 18
-    const maxAttrs = { ...attrs, strength: 18 };
+    // 2. Increase capped at 16 (Q26)
+    expect(MAX_ATTRIBUTE).toBe(16);
+    const maxAttrs = { ...attrs, strength: 16 };
     const resMax = CharacterRoller.adjustAttribute(maxAttrs, 'strength', 1, 2);
     expect(resMax.success).toBe(false);
-    expect(resMax.attributes.strength).toBe(18);
+    expect(resMax.attributes.strength).toBe(16);
 
     // 3. Fail increase when 0 points left
     const resNoPoints = CharacterRoller.adjustAttribute(attrs, 'intelligence', 1, 0);

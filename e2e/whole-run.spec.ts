@@ -52,10 +52,7 @@ async function embark(page: Page): Promise<void> {
   if (!process.env.WHOLE_RUN_URL) expect(existsSync(BUNDLE), `${BUNDLE} is missing; run \`npm run build\` first`).toBe(true);
   await page.goto(URL);
   await page.locator('#btn-menu-new-game').click();
-  // Every rolled attribute under 15, so no attribute milestone takes the keyboard mid-run.
-  for (const attr of ['str', 'dex', 'con', 'int']) {
-    for (let i = 0; i < 6; i++) await page.locator(`#btn-dec-${attr}`).click();
-  }
+  // No roll reaches an attribute milestone (cap 16, first tier 20), so none takes the keyboard mid-run.
   await page.locator('#btn-create-embark').click();
   await pastTheOpening(page);
 }

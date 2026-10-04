@@ -9,7 +9,9 @@ import { RuneOfReturnItem } from '../magic/runeOfReturn';
 import { getMaxCarryWeight } from '../inventory/encumbrance';
 
 export const MIN_ATTRIBUTE = 8;
-export const MAX_ATTRIBUTE = 18;
+/** A starting attribute's ceiling, rolled or bought (Q26 "cap 16", 2026-10-03): the first
+ *  attribute milestone, at 20, is always earned with a level's points. */
+export const MAX_ATTRIBUTE = 16;
 const DEFAULT_POOL_POINTS = 5;
 
 export class CharacterRoller {

@@ -44,10 +44,7 @@ test.describe('the opening', () => {
     page.on('pageerror', (err) => pageErrors.push(err.message));
     await page.goto(pathToFileURL(BUNDLE).href);
     await page.locator('#btn-menu-new-game').click();
-    // Every rolled attribute under 15, so no attribute milestone takes the keyboard.
-    for (const attr of ['str', 'dex', 'con', 'int']) {
-      for (let i = 0; i < 6; i++) await page.locator(`#btn-dec-${attr}`).click();
-    }
+    // No roll reaches an attribute milestone (cap 16, first tier 20), so none takes the keyboard.
     await page.locator('#btn-create-embark').click();
     await expect.poll(() => page.evaluate(() => Boolean(window.__cotwEngine?.player))).toBe(true);
 

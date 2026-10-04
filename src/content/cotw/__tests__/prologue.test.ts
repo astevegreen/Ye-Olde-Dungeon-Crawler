@@ -23,9 +23,12 @@ import { TOWN_STAIRS_DOWN } from '../townLayout';
  * The night raid a new cotw hero begins with: staged by `manifest.prologue` on the town,
  * run by `prologue.ts`'s hooks.
  */
-function newRun(): GameEngine {
-  return new ProfileManager(new MemoryStorage(), COTW_MANIFEST).createCharacter('Hild', { manifest: COTW_MANIFEST, prologue: true }).engine;
+function newRun(attributes?: { strength: number; dexterity: number; constitution: number; intelligence: number }): GameEngine {
+  return new ProfileManager(new MemoryStorage(), COTW_MANIFEST).createCharacter('Hild', { manifest: COTW_MANIFEST, prologue: true, attributes }).engine;
 }
+
+/** A hero born at the first attribute milestone (Strength 20, tracker 3.3), so its choice is due at once. */
+const AT_A_MILESTONE = { strength: 20, dexterity: 15, constitution: 15, intelligence: 15 };
 
 const villager = (engine: GameEngine, id: string) => engine.map.getEntityById(id) as NPC;
 const step = (engine: GameEngine, dx: number, dy: number) => engine.handlePlayerAction(new MovementAction(engine.player, dx, dy));
@@ -109,7 +112,7 @@ describe('cotw prologue: the night raid', () => {
   });
 
   it('holds attribute milestones until the raid is over, so none breaks into it', () => {
-    const engine = newRun(); // every attribute 15: each milestone is due
+    const engine = newRun(AT_A_MILESTONE);
     const offered: string[] = [];
     engine.onChoiceInteract = (choice) => offered.push(choice.id);
     step(engine, 0, -1);
@@ -125,7 +128,7 @@ describe('cotw prologue: the night raid', () => {
   });
 
   it('opens the held milestones below ground for a hero who walks past Hallvard', () => {
-    const engine = newRun();
+    const engine = newRun(AT_A_MILESTONE);
     const offered: string[] = [];
     engine.onChoiceInteract = (choice) => offered.push(choice.id);
     engine.diagnostics.endPrologue();

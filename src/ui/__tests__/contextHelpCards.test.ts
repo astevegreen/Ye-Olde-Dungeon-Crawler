@@ -57,5 +57,20 @@ describe('F1 cards for altars, the Story and the Rune of Return', () => {
     expect(pacts.bullets.map((b) => b.key)).toContain('Sage Mimir');
     expect(help.getHelpContent('pacts', { ...cotwManifest, pactKeeperNpcId: undefined }).bullets.map((b) => b.key)).toContain('Enter');
   });
+
+  it("shows the opening's card during the prologue, not the town's shops, which it bars", () => {
+    const card = new ContextHelp().getHelpContent('opening', cotwManifest);
+    expect(card.title).toBe(cotwManifest.town!.name);
+    const keys = card.bullets.map((b) => b.key).join(' ');
+    for (const npc of cotwManifest.town!.npcs ?? []) expect(keys).not.toContain(npc.name);
+    expect(keys).toContain('Arrows / Numpad');
+
+    // Chosen while the prologue runs, after the map, look, aim and inventory cards.
+    const e = new GameEngine({ map: new GameMap(10, 10), player: new Player({ position: { x: 5, y: 5 } }), floor: 0, manifest: cotwManifest });
+    e.setWorldFlag(cotwManifest.prologue!.startFlag, true);
+    const help = new ContextHelp();
+    expect(help.detectContext(e)).toBe('opening');
+    expect(help.detectContext(e, { isOpen: true })).toBe('inventory');
+  });
 });
 

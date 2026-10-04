@@ -1,4 +1,4 @@
-import { type GameContentManifest, type GameEngine, TempleService, formatCurrency } from '../../engine';
+import { type GameContentManifest, type GameEngine, TempleService, formatCurrency, isPrologueRunning } from '../../engine';
 import { dialogHtml } from '../dialog';
 import { escapeHtml } from '../html';
 import type { TargetingOverlay } from '../../rendering/targeting-overlay';
@@ -26,7 +26,8 @@ export type GameHelpContext =
   | 'spellbook'
   | 'bestiary'
   | 'character'
-  | 'pacts';
+  | 'pacts'
+  | 'opening';
 
 export interface HelpCardContent {
   title: string;
@@ -97,6 +98,8 @@ export class ContextHelp {
     if (inspectOverlay?.isOpen) return 'inspect';
     if (targetingOverlay?.isOpen) return 'targeting';
     if (inventory?.isOpen) return 'inventory';
+    // The prologue bars the town's services: not the town card's shop list.
+    if (isPrologueRunning(engine.worldState, engine.manifest?.prologue)) return 'opening';
     if (engine.currentFloor === 0) return 'town';
     return 'exploration';
   }
@@ -262,6 +265,24 @@ export class ContextHelp {
             { key: 'I / Esc', label: 'Close the inventory' },
           ],
           tip: 'Tip: Click items to examine stats, enchanted +X bonuses, and elemental burst affixes.',
+        };
+
+      case 'opening':
+        // The pack's prologue: the town's services are barred, so the card has the keys
+        // that matter in a fight instead of its shops.
+        return {
+          title: manifest?.town?.name ?? 'Town',
+          contextTag: 'THE OPENING',
+          bullets: [
+            { key: 'Arrows / Numpad', label: 'Move 8 ways; bump to attack' },
+            { key: 'Space / .', label: 'Wait a turn' },
+            { key: '1-0', label: 'Cast the spell in that quick slot' },
+            { key: 'Shift+1-4', label: 'Drink from the potion row' },
+            { key: 'F', label: 'The action on the console button' },
+            { key: 'X / L', label: 'Look at tiles and monster intents' },
+            { key: 'Esc', label: 'Menu: settings, save, exit' },
+          ],
+          tip: 'Tip: The doors are barred and the townsfolk hidden until this is over. The line under your spells says where to go, and a glowing slot is the move the moment calls for.',
         };
 
       case 'town': {

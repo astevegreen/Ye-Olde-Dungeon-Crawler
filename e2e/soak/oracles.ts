@@ -350,9 +350,12 @@ export async function runOracles(
   }
   if (key === 'Escape' && ctx.stackBefore.length > 0) {
     const topBefore = ctx.stackBefore[ctx.stackBefore.length - 1];
-    // Choices and the game-over screen swallow Escape on purpose.
+    // Choices and the game-over screen swallow Escape on purpose. The character menu's tab
+    // may use it first to back out of a selection (characterMenuModal.ts handleKeyDown), so
+    // there it may close nothing, but never more than itself.
     const swallows = ['choice', 'mastery-choice', 'game-over'].some((id) => topBefore.includes(id));
-    if (!swallows && live.stack.length !== ctx.stackBefore.length - 1) {
+    const backsOut = topBefore.includes('character-menu') && live.stack.length === ctx.stackBefore.length;
+    if (!swallows && !backsOut && live.stack.length !== ctx.stackBefore.length - 1) {
       addFinding('bug', 'S2', `Escape on <${topBefore}> took the stack from ${ctx.stackBefore.length} to ${live.stack.length}`, 'modalStack.ts');
     }
   }

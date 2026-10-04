@@ -468,7 +468,23 @@ test.describe('soak @soak', () => {
         const raidTrip = inRaid && !oracleState.lastRaidSaveRoundtripDone && i >= 10;
         if (raidTrip || (i > 0 && i % 250 === 0)) {
           if (raidTrip) oracleState.lastRaidSaveRoundtripDone = true;
-          if (await page.evaluate(() => (window.__cotwInputHandler?.modalStack?.size ?? 0) === 0)) {
+          // Only from the bare map: the explored map (M) and look mode cover the header's
+          // Save button without a modal-stack entry.
+          const bare =
+            (await page.evaluate(() => (window.__cotwInputHandler?.modalStack?.size ?? 0) === 0)) && (await openModes(page)).length === 0;
+          if (bare) {
+            // A rest or click-travel runs on timers; the digest is taken before Save is
+            // clicked, so let it finish first, or the save holds later turns than the digest.
+            await page
+              .waitForFunction(
+                () => {
+                  const h = window.__cotwInputHandler as any;
+                  return !h?.autoRestRunner?.active && !h?.navigationController?.isNavigating;
+                },
+                null,
+                { timeout: 8000 }
+              )
+              .catch(() => undefined);
             const mismatch = await saveRoundTrip(page, inRaid);
             if (mismatch) await record(harnessFinding(i, pre.turn, pre.floor, 'bug', 'S1', `save and continue changed the game: ${mismatch}`, 'serializer.ts'));
             messagesSeen = await page.evaluate(() => (window as any).__soakLogTotal ?? 0);

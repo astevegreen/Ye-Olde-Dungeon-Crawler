@@ -688,6 +688,17 @@ export class InventoryController {
   }
 
   /** How many cursor positions the focused panel has. */
+  /**
+   * After a key acts on the selected item (E, D), select whatever the focus ring now sits
+   * on, stepping back onto the last cell if the item left the end: the ring and the
+   * selection stay one thing, and the key works again on the next item.
+   */
+  private reselectFocused(): void {
+    const count = this.focusCount();
+    if (count > 0) this.inspector.focusedIndex = Math.min(this.inspector.focusedIndex, count - 1);
+    this.selectFocused();
+  }
+
   private focusCount(): number {
     const panel = this.inspector.focusedPanel;
     if (panel === 'paperdoll') return this.engine?.player.inventory.paperdoll.getSlotDefinitions().length ?? 0;
@@ -805,10 +816,10 @@ export class InventoryController {
         // Equip from the pack, take off from the paperdoll.
         if (source === 'paperdoll' && this.inspector.selectedSlot) {
           this.dispatch({ type: 'unequip_item', payload: { slot: this.inspector.selectedSlot } });
-          this.inspector.clearSelection();
+          this.reselectFocused();
         } else if (source === 'backpack' && selected) {
           this.dispatch({ type: 'equip_item', payload: { itemId: selected.id } });
-          this.inspector.clearSelection();
+          this.reselectFocused();
         } else {
           return false;
         }
@@ -842,7 +853,7 @@ export class InventoryController {
           type: 'drop_item',
           payload: { item: selected, source: worn ? 'paperdoll' : 'pack', slot: worn ? this.inspector.selectedSlot : undefined },
         });
-        this.inspector.clearSelection();
+        this.reselectFocused();
         return done();
       }
       case 'KeyT': {

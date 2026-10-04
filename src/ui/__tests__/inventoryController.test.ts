@@ -103,6 +103,22 @@ describe('InventoryController', () => {
       expect(sent()).toEqual(['equip_item', 'drop_item']);
     });
 
+    it('keeps the focused cell selected after D or E, so the key works again on the next item', () => {
+      // The soak bot pressed D a hundred times after one drop: the focus ring stayed on a
+      // cell while the selection was cleared, and D needs a selection.
+      fillPack(3);
+      c.handleKeyDown(key('Tab'));
+      c.handleKeyDown(key('ArrowRight'));
+      expect(c.handleKeyDown(key('KeyD'))).toBe(true);
+      expect(c.inspector.selectedItem?.id).toBe('w2');
+      expect(c.handleKeyDown(key('KeyD'))).toBe(true);
+      expect(sent()).toEqual(['drop_item', 'drop_item']);
+      expect(player.inventory.primaryPack.getItems().map((i) => i.id)).toEqual(['w0']);
+      // Off the end, the focus steps back onto the last cell.
+      expect(c.inspector.focusedIndex).toBe(0);
+      expect(c.inspector.selectedItem?.id).toBe('w0');
+    });
+
     it('equips the numbered cell with a digit, counting cells as shown', () => {
       player.inventory.primaryPack.addItem(ware('a1', 'Apple'));
       player.inventory.primaryPack.addItem(ware('a2', 'Apple'));

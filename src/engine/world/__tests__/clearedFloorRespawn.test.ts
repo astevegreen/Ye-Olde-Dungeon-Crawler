@@ -5,6 +5,7 @@ import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import type { MonsterDefinition } from '../../bestiary/monsterDefinitions';
+import { Monster } from '../../entities/monster';
 
 const MAP_SIZE = 30;
 const INTERVAL = 10;
@@ -24,7 +25,10 @@ function makeDef(overrides: Partial<MonsterDefinition> = {}): MonsterDefinition 
   };
 }
 
-function makeEngine(monsters?: MonsterDefinition[]): { engine: GameEngine; floorManager: FloorManager } {
+function makeEngine(
+  monsters?: MonsterDefinition[],
+  progressionConfig?: GameEngine['manifest']['progressionConfig']
+): { engine: GameEngine; floorManager: FloorManager } {
   const floorManager = new FloorManager({ clearedRespawnInterval: INTERVAL, maxBatchSpawns: 3 });
   const build = (manifest?: GameEngine['manifest']) =>
     new GameEngine({
@@ -36,7 +40,7 @@ function makeEngine(monsters?: MonsterDefinition[]): { engine: GameEngine; floor
     });
 
   const base = build();
-  const engine = monsters ? build({ ...base.manifest, monsters }) : base;
+  const engine = monsters ? build({ ...base.manifest, monsters, progressionConfig }) : base;
   return { engine, floorManager };
 }
 
@@ -114,5 +118,20 @@ describe('FloorManager.checkClearedFloorRespawn backoff', () => {
     expect(engine.map.lastRespawnTurn).toBe(INTERVAL);
     expect(engine.map.isCleared).toBe(false);
     expect(log).toHaveBeenCalledWith('You sense hostile presence returning to the shadowy halls...');
+  });
+
+  it('pays respawns the pack’s share of XP (Q25: a quarter), and the full value without one', () => {
+    const respawnBatch = (share?: number) => {
+      const { engine, floorManager } = makeEngine([makeDef({ xpValue: 40 })], share === undefined ? undefined : { respawnXpShare: share });
+      floorManager.checkClearedFloorRespawn(engine);
+      advanceTurns(engine, floorManager, INTERVAL);
+      return engine.map.getAllEntities().filter((e): e is Monster => e instanceof Monster);
+    };
+    const full = respawnBatch();
+    expect(full.length).toBeGreaterThan(0);
+    expect(full.every((m) => m.xpValue === 40)).toBe(true);
+    const quarter = respawnBatch(0.25);
+    expect(quarter.length).toBeGreaterThan(0);
+    expect(quarter.every((m) => m.xpValue === 10)).toBe(true);
   });
 });

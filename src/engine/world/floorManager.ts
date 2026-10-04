@@ -34,6 +34,11 @@ export interface CatchUpSimulationResult {
  * FloorManager coordinates floor transitions, stores floor records,
  * and runs bounded O(K) temporal catch-up simulations when re-entering inactive floors.
  */
+/** What a monster refilling a visited floor is worth, as a share of its XP (`ProgressionConfig.respawnXpShare`). */
+function respawnXpShare(engine: GameEngine): number {
+  return engine.manifest?.progressionConfig?.respawnXpShare ?? 1;
+}
+
 export class FloorManager {
   private floors = new Map<number, DungeonFloorRecord>();
   public readonly respawnInterval: number;
@@ -186,7 +191,7 @@ export class FloorManager {
           monster.maxHp = Math.round(monster.maxHp * multiplier);
           monster.hp = monster.maxHp;
           monster.attack = Math.round(monster.attack * multiplier);
-          monster.xpValue = Math.round(monster.xpValue * multiplier);
+          monster.xpValue = Math.round(monster.xpValue * multiplier * respawnXpShare(engine));
           monster.catchUpScale = multiplier;
           map.addEntity(monster);
           spawnedCount++;
@@ -209,7 +214,7 @@ export class FloorManager {
           speed: 100,
           aiType: 'melee',
           aiState: 'sleeping',
-          xpValue: Math.round(15 * multiplier),
+          xpValue: Math.round(15 * multiplier * respawnXpShare(engine)),
         });
 
         map.addEntity(newMonster);
@@ -318,6 +323,7 @@ export class FloorManager {
         engine.registries
       );
       monster.aiState = 'sleeping';
+      monster.xpValue = Math.round(monster.xpValue * respawnXpShare(engine));
 
       const added = engine.addEntity(monster);
       if (added) {

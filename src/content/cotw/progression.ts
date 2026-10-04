@@ -16,4 +16,5 @@ export const COTW_LEVEL_CAP = 50;
 export const COTW_PROGRESSION: ProgressionConfig = {
   maxLevel: COTW_LEVEL_CAP,
   getXpForNextLevel: (level) => Math.round(90 * Math.pow(level, 1.5)),
+  respawnXpShare: 0.25,
 };

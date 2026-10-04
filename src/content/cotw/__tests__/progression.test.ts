@@ -48,6 +48,7 @@ describe('cotw progression (Q4 "B", Q25)', () => {
     expect(need(2)).toBe(255);
     expect(need(10)).toBe(2846);
     expect(need(47)).toBe(28999);
+    expect(COTW_PROGRESSION.respawnXpShare).toBe(0.25);
   });
 
   it('stops at level 50 however much XP comes after', () => {

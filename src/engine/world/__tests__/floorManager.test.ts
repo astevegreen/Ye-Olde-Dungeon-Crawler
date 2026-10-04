@@ -161,6 +161,31 @@ describe('Inactive Floor Simulation & Temporal Catch-Up (floorManager.ts)', () =
     });
   });
 
+  describe('Catch-up spawns pay the pack’s respawn XP share (Q25)', () => {
+    it('spawns a returning floor’s monsters at a quarter of their XP when the pack asks', () => {
+      const rat: MonsterDefinition = {
+        id: 'cave_rat',
+        name: 'Cave Rat',
+        minFloor: 1,
+        stats: { hp: 6, maxHp: 6, attack: 2, defense: 0 },
+        speed: 100,
+        xpValue: 40,
+        aiType: 'melee',
+        fleeHealthPercent: 0,
+        lootTable: [],
+      };
+      const manifest: GameContentManifest = { ...engine.manifest, monsters: [rat], progressionConfig: { respawnXpShare: 0.25 } };
+      const quarterEngine = new GameEngine({ map: mapFloor1, player, floor: 1, floorManager, manifest });
+      floorManager.recordDeparture(1, mapFloor1, undefined, 100);
+
+      // 100 ticks = 2 batches: multiplier 1.1, so a fresh rat is worth round(40 * 1.1 * 0.25) = 11.
+      const result = floorManager.simulateCatchUp(1, 200, quarterEngine);
+      expect(result.spawnedCount).toBe(2);
+      const spawned = mapFloor1.getAllEntities().filter((e): e is Monster => e instanceof Monster);
+      expect(spawned.map((m) => m.xpValue)).toEqual([11, 11]);
+    });
+  });
+
   describe('Catch-up spawns respect floor depth', () => {
     it('never draws a boss or a deeper-floor monster onto a shallow floor', () => {
       const def = (id: string, minFloor: number): MonsterDefinition => ({

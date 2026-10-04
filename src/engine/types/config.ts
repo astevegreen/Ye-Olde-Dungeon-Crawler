@@ -43,6 +43,12 @@ export interface ProgressionConfig {
   /** Max attainable level */
   maxLevel?: number;
   /**
+   * The share of its XP a monster is worth when it refills a floor the hero has already
+   * visited: cleared-floor respawns and catch-up spawns on re-entry (`FloorManager`).
+   * Default 1. Wandering spawns and a floor's first population pay in full.
+   */
+  respawnXpShare?: number;
+  /**
    * Level-scaled elemental resistance curves (ARCHITECTURE.md §3, `stats/
    * levelScaledResistance.ts`). Not consulted by combat's categorical
    * `elementalResistances`/`takeElementalDamage` — a content-defined mechanic (e.g.

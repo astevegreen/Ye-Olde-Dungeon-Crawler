@@ -62,6 +62,7 @@ export const COTW_TILES: TileDefinition[] = [
   },
   {
     type: 'altar_tyr',
+    sacred: true,
     name: 'Ancient Altar of Tyr',
     passable: true,
     walkable: true,
@@ -88,6 +89,7 @@ export const COTW_TILES: TileDefinition[] = [
   {
     // Spell altar (COTW_MAGIC.altars): one rite, then spent.
     type: 'galdr_altar_tyr',
+    sacred: true,
     name: "Týr's Oath-Stone",
     passable: true,
     walkable: true,
@@ -101,6 +103,7 @@ export const COTW_TILES: TileDefinition[] = [
   {
     // Spell altar (COTW_MAGIC.altars): one rite, then spent.
     type: 'galdr_altar_odin',
+    sacred: true,
     name: "Odin's Gallows-Stone",
     passable: true,
     walkable: true,

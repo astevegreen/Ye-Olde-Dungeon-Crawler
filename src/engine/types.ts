@@ -69,6 +69,8 @@ export interface TileDefinition {
   trapId?: string;
   visual?: string;
   landmarkLabel?: string;
+  /** Holy ground: burns the bearer of a modifier with `sacredGroundBurn` (an altar of a god). */
+  sacred?: boolean;
 }
 
 export type EntityType = 'player' | 'monster' | 'npc';

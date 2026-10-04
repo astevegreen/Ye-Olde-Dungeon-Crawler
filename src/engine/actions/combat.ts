@@ -13,6 +13,7 @@ import { HookDispatcher } from '../hooks/hookDispatcher';
 import { getMonsterCategory, hasMasteryPerk } from '../compendium/compendiumManager';
 import { applyImpulse } from '../combat/impulse';
 import { resolveCombatMitigation } from '../combat/mitigationPipeline';
+import { burnOnSacredGround } from '../combat/sacredGround';
 import type { Item } from '../items/item';
 import type { ItemModifier } from '../items/modifiers';
 import { isModifierChaotic } from '../items/modifiers';
@@ -126,79 +127,32 @@ export class MeleeAttackAction implements Action {
       }
     }
 
-    // 2. Tag-based bonuses: Holy (vs undead/demon) and Unholy (vs clergy/innocents)
+    // 2. Tag-based bonuses, by data: Holy against the undead, Hel-touched against the living.
+    //    A bonus may also heal the attacker a share of the blow (applied once it has landed).
+    let lifestealPercent = 0;
     for (const mod of attackerModifiers) {
-      if (mod.tagBonuses && mod.tagBonuses.length > 0) {
-        for (const bonus of mod.tagBonuses) {
-          if (this.defender.hasTag(bonus.tag)) {
-            rawDamage = Math.round(rawDamage * bonus.multiplier) + bonus.flatBonus;
-            if (bonus.message) {
-              engine.log(bonus.message);
-            } else if (mod.category === 'holy') {
-              engine.log(`Holy radiance blazes against ${this.defender.name}! (+${Math.round((bonus.multiplier - 1) * 100)}% / +${bonus.flatBonus} Holy damage)`);
-            } else if (mod.category === 'unholy') {
-              engine.log(`Unholy malice tears into ${this.defender.name}! (+${Math.round((bonus.multiplier - 1) * 100)}% / +${bonus.flatBonus} Unholy damage)`);
-            }
-
-            if (bonus.renownCategory) {
-              const renownCategory = bonus.renownCategory;
-              const amount = bonus.renownAmount ?? 1;
-              const totalRenown = engine.modifyWorldCounter(renownCategory, amount);
-              engine.emitGameEvent({
-                type: 'alignment_renown',
-                turn: engine.turnCount,
-                actorId: this.attacker.id,
-                targetId: this.defender.id,
-                renownCategory,
-                amount,
-                totalRenown,
-                sourceModifierId: mod.id,
-              });
-              engine.log(`Your unholy deed echoes in the dark (+${amount} ${renownCategory})!`);
-            }
-            break;
-          }
+      for (const bonus of mod.tagBonuses ?? []) {
+        if (!this.defender.hasTag(bonus.tag)) continue;
+        rawDamage = Math.round(rawDamage * bonus.multiplier) + bonus.flatBonus;
+        lifestealPercent += bonus.healPercentOfDamage ?? 0;
+        if (bonus.message) {
+          engine.log(bonus.message);
+        } else if (mod.category === 'holy') {
+          engine.log(`Holy radiance blazes against ${this.defender.name}! (+${Math.round((bonus.multiplier - 1) * 100)}% / +${bonus.flatBonus} Holy damage)`);
+        } else {
+          engine.log(`${mod.name} bites deep into ${this.defender.name}! (+${Math.round((bonus.multiplier - 1) * 100)}%${bonus.flatBonus ? ` / +${bonus.flatBonus}` : ''})`);
         }
+        break;
       }
+    }
 
-      // 3. Unholy consecrated ground penalty
-      if (mod.consecratedGroundPenalty) {
-        const surface = engine.surfaces?.getSurface(this.attacker.x, this.attacker.y);
-        const tile = engine.map?.getTile(this.attacker.x, this.attacker.y);
-        const isConsecrated =
-          surface === 'consecrated_ground' ||
-          surface === 'blessed_ground' ||
-          tile?.type === 'consecrated_ground' ||
-          tile?.type === 'blessed_ground' ||
-          tile?.name?.toLowerCase().includes('consecrated') ||
-          tile?.name?.toLowerCase().includes('altar');
-
-        if (isConsecrated) {
-          rawDamage = Math.max(1, Math.round(rawDamage * (1 - mod.consecratedGroundPenalty.damagePenalty)));
-          const selfDmg = mod.consecratedGroundPenalty.selfDamagePerAttack;
-          if (selfDmg > 0) {
-            this.attacker.takeDamage(selfDmg);
-            engine.log(`*** Consecrated ground rejects the unholy presence! ${this.attacker.name} suffers ${selfDmg} radiant retribution damage! ***`);
-            engine.recordVisualEffects([
-              {
-                type: 'burst',
-                epicenter: { x: this.attacker.x, y: this.attacker.y },
-                radius: 1,
-                color: '#facc15',
-                durationMs: 200,
-              },
-            ]);
-            if (!this.attacker.isAlive()) {
-              DeathResolver.resolveDeath(engine, undefined, this.attacker);
-              return {
-                success: true,
-                cost: this.attacker.getActionCost(BASE_ACTION_COST),
-                message: `${this.attacker.name} was incinerated by consecrated ground!`,
-              };
-            }
-          }
-        }
-      }
+    // 3. Sacred ground burns a bearer who strikes from it (Hel-touched).
+    if (burnOnSacredGround(engine, this.attacker).killed) {
+      return {
+        success: true,
+        cost: this.attacker.getActionCost(BASE_ACTION_COST),
+        message: `${this.attacker.name} was consumed by holy ground!`,
+      };
     }
 
     // 4. Defender Hexed damage amplification
@@ -300,6 +254,11 @@ export class MeleeAttackAction implements Action {
     this.attacker.consumeEnergy(cost);
 
     flightRecorder.recordCombat(this.attacker.name, this.defender.name, damageDealt, killed);
+
+    if (lifestealPercent > 0 && damageDealt > 0) {
+      const drawn = this.attacker.heal(Math.round(damageDealt * lifestealPercent));
+      if (drawn > 0) engine.log(`${this.attacker.name} draws ${drawn} HP from the wound.`);
+    }
 
     const perkNote = isAnatomist
       ? (isCrit ? ' (Anatomist Critical!)' : ' (Anatomist Exploit)')

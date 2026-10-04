@@ -71,8 +71,14 @@ export class TempleService {
     return { costCp };
   }
 
+  /** True while the hero wears something the temple will not serve past a cleansing (`ItemModifier.templeShunned`). */
+  private static wearsShunned(player: Player): boolean {
+    return player.inventory.paperdoll.getEquippedItems().some((item) => item.modifiers.some((m) => m.templeShunned));
+  }
+
   /**
-   * Cleanses and unbinds all cursed items equipped on the player's paperdoll.
+   * Cleanses and unbinds all cursed items equipped on the player's paperdoll. A shunned
+   * item (Hel-touched) is cleansed too, at double the price.
    */
   public static cleanseCurses(
     player: Player,
@@ -95,6 +101,7 @@ export class TempleService {
       return gate.refusal;
     }
     costCp = gate.costCp;
+    if (TempleService.wearsShunned(player)) costCp *= 2;
 
     const equipped = player.inventory.paperdoll.getAllEquipped();
     const cursedItems = equipped.filter((e) => e.item.isBound());
@@ -186,6 +193,15 @@ export class TempleService {
       return gate.refusal;
     }
     costCp = gate.costCp;
+    if (TempleService.wearsShunned(player)) {
+      return {
+        success: false,
+        costInCp: 0,
+        message:
+          services?.templeShunnedMessage ??
+          `${services?.priestTitle ?? 'The priest'} will not lay hands on you while you wear that. Only a cleansing, at double the price.`,
+      };
+    }
 
     const isFullHp = player.hp >= player.maxHp;
     const isFullMana = player.mana >= player.maxMana;

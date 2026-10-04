@@ -175,6 +175,8 @@ export const COTW_TOWN: TownLayoutDefinition = {
     compactionMessageTemplate: 'Banker Haakon exchanged your {oldCount} coins for {newCount}, worth the same {coins}.',
     templeRefusalMessage:
       "The High Priest of Thor scowls with righteous fury: 'Desecrator of sacred altars! You have betrayed the gods and are unwelcome in Thor's sacred hall!'",
+    templeShunnedMessage:
+      "The High Priest of Thor recoils from what you wear: 'Hel's mark is on you. I will burn it from you for twice the donation, and lay no other hand on you until then.'",
     // Blood-magic corruption: doubled donations from 25, refused outright from 75.
     corruptionSurchargeThreshold: 25,
     corruptionRefusalThreshold: 75,

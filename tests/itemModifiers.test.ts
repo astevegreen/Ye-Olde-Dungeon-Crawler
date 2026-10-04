@@ -11,11 +11,13 @@ import { MeleeAttackAction } from '../src/engine/actions/combat';
 import { CastSpellAction } from '../src/engine/actions/spell-actions';
 import { UncurseAction } from '../src/engine/actions/uncurseAction';
 import { EquipAction } from '../src/engine/actions/inventory-actions';
+import { MovementAction } from '../src/engine/actions/movement';
+import { TILES } from '../src/engine/grid/tile';
 import { TempleService } from '../src/engine/economy/services';
 import { ItemFactory } from '../src/engine/items/factory';
 import { addCurrencyToPlayer } from '../src/engine/economy/currency';
 import { serializeItem, deserializeItem } from '../src/engine/storage/serializer';
-import type { GameEvent, AlignmentRenownEvent, ChaoticProcEvent, UncurseEvent } from '../src/engine/events';
+import type { GameEvent, ChaoticProcEvent, UncurseEvent } from '../src/engine/events';
 import type { SpellDefinition } from '../src/engine/magic/types';
 
 /** The cotw family's modifier for an item found on `floor` (tier 1 on floor 1, tier 2 on floor 10/15, tier 3 on 25). */
@@ -294,82 +296,75 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
     });
   });
 
-  describe('Unholy Scaling, Renown Generation, and Consecrated Ground Penalty', () => {
-    it('inflicts bonus damage against clergy, awards dark_renown, and emits AlignmentRenownEvent', () => {
-      const unholyDagger = new Item({
-        id: 'dag1',
-        name: 'Sacrificial Dagger',
-        category: 'weapon',
-        slot: 'mainHand',
-        weight: 800,
-        bulk: 900,
-        identified: true,
-      });
-      unholyDagger.addModifier(mod('unholy', 1)); // +40% dmg, +3 flat vs clergy/innocents, +1 dark_renown
-      player.inventory.paperdoll.equip(unholyDagger, 'mainHand');
+  describe('Hel-touched Unholy (Q23, Q34)', () => {
+    const helTouchedDagger = () => {
+      const dagger = new Item({ id: 'hel-dagger', name: 'Seax', category: 'weapon', slot: 'mainHand', weight: 800, bulk: 600, identified: true });
+      dagger.addModifier(mod('unholy', 10));
+      return dagger;
+    };
+    const foe = (id: string, x: number, tags: string[] = []) => {
+      const m = new Monster({ id, name: id, position: { x, y: 5 }, stats: { hp: 100, maxHp: 100, attack: 2, defense: 0 }, tags });
+      map.addEntity(m);
+      return m;
+    };
 
-      const priest = new Monster({
-        id: 'priest1',
-        name: 'High Priest',
-        position: { x: 6, y: 5 },
-        stats: { hp: 100, maxHp: 100, attack: 2, defense: 0 },
-        tags: ['clergy'],
-      });
-      map.addEntity(priest);
+    it('adds 30% against the living and heals the bearer a fifth of it; the undead are immune', () => {
+      player.inventory.paperdoll.equip(helTouchedDagger(), 'mainHand');
+      player.attack = 20;
+      player.hp = 50;
+      const wolf = foe('wolf', 6);
+      new MeleeAttackAction(player, wolf).perform(engine);
+      expect(100 - wolf.hp).toBe(26); // 20 × 1.3
+      expect(player.hp).toBe(55); // + a fifth of 26, rounded
 
-      player.attack = 10;
-      const attack = new MeleeAttackAction(player, priest);
-      attack.perform(engine);
-
-      // 10 * 1.4 = 14 + 3 = 17 damage. 100 - 17 = 83 HP
-      expect(priest.hp).toBe(83);
-
-      // Verify dark_renown in world state
-      expect(engine.getWorldCounter('dark_renown')).toBe(1);
-
-      // Verify AlignmentRenownEvent was emitted
-      const renownEvent = emittedEvents.find((e) => e.type === 'alignment_renown') as AlignmentRenownEvent;
-      expect(renownEvent).toBeDefined();
-      expect(renownEvent.renownCategory).toBe('dark_renown');
-      expect(renownEvent.amount).toBe(1);
-      expect(renownEvent.totalRenown).toBe(1);
+      player.gainEnergy(100);
+      const draugr = foe('draugr', 4, ['undead']);
+      new MeleeAttackAction(player, draugr).perform(engine);
+      expect(100 - draugr.hp).toBe(20);
+      expect(player.hp).toBe(55);
     });
 
-    it('inflicts damage penalty and self-damage when wielding unholy weapon on consecrated ground', () => {
-      const unholyAxe = new Item({
-        id: 'axe1',
-        name: 'Profane Greataxe',
-        category: 'weapon',
-        slot: 'mainHand',
-        weight: 3000,
-        bulk: 3500,
-        identified: true,
-      });
-      unholyAxe.addModifier(mod('unholy', 1)); // consecrated penalty: 50% reduction, 3 self-damage
-      player.inventory.paperdoll.equip(unholyAxe, 'mainHand');
+    it('binds, and while it is worn the temple serves only the cleanse, at double the price', () => {
+      const dagger = helTouchedDagger();
+      expect(dagger.isBound()).toBe(true);
+      player.inventory.paperdoll.equip(ItemFactory.createCoinPurse('purse'), 'purse');
+      player.inventory.paperdoll.equip(dagger, 'mainHand');
+      addCurrencyToPlayer(player, 2000);
+      player.hp = 10;
 
-      // Place player on consecrated ground surface
-      engine.surfaces.setSurface(player.x, player.y, 'consecrated_ground', 10);
+      const heal = TempleService.healAndRestore(player, undefined, undefined, engine);
+      expect(heal.success).toBe(false);
+      expect(heal.message).toMatch(/cleans/i);
+      expect(player.hp).toBe(10);
 
-      const target = new Monster({
-        id: 'mon1',
-        name: 'Goblin',
-        position: { x: player.x + 1, y: player.y },
-        stats: { hp: 100, maxHp: 100, attack: 0, defense: 0 },
-      });
-      map.addEntity(target);
+      const cleanse = TempleService.cleanseCurses(player, undefined, undefined, engine);
+      expect(cleanse.success).toBe(true);
+      expect(cleanse.costInCp).toBe(TempleService.CURSE_CLEANSE_COST_CP * 2);
+      expect(dagger.modifiers).toEqual([]);
+      expect(TempleService.healAndRestore(player, undefined, undefined, engine).success).toBe(true);
+    });
 
-      player.hp = 30;
-      player.attack = 20;
+    it('burns the bearer on sacred ground: stepping onto it, and striking from it', () => {
+      player.inventory.paperdoll.equip(helTouchedDagger(), 'mainHand');
+      player.hp = 50;
+      map.setTile(6, 5, { ...TILES.FLOOR, type: 'shrine_floor', name: 'Shrine Floor', sacred: true });
+      map.setTile(4, 5, { ...TILES.FLOOR });
 
-      const attack = new MeleeAttackAction(player, target);
-      attack.perform(engine);
+      expect(new MovementAction(player, 1, 0).perform(engine).success).toBe(true);
+      expect(player.position).toEqual({ x: 6, y: 5 });
+      expect(player.hp).toBe(45);
 
-      // Target takes penalized damage: 20 * (1 - 0.5) = 10 damage
-      expect(target.hp).toBe(90);
+      player.gainEnergy(100);
+      const wolf = foe('wolf', 7, ['undead']); // undead: no lifesteal to muddy the burn
+      new MeleeAttackAction(player, wolf).perform(engine);
+      expect(player.hp).toBe(40);
+      expect(wolf.hp).toBeLessThan(100);
 
-      // Player took 3 retribution self-damage from consecrated ground
-      expect(player.hp).toBe(27);
+      // Plain ground does not burn.
+      player.gainEnergy(100);
+      new MovementAction(player, -1, 0).perform(engine);
+      new MovementAction(player, -1, 0).perform(engine);
+      expect(player.hp).toBe(40);
     });
   });
 

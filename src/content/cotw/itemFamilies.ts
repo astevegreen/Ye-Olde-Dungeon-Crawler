@@ -165,6 +165,8 @@ export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
       ],
     },
     {
+      // Q23 + Q34: Hel-touched. Binds; the temple serves the bearer only to cleanse it, at
+      // double the price; true holy ground (the temple, the gods' altars) burns the bearer.
       category: 'unholy',
       alignment: 'negative',
       perGame: 10,
@@ -173,25 +175,13 @@ export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
       tiers: [
         {
           minFloor: 1,
-          name: 'Unholy',
-          prefix: 'Unholy',
-          tagBonuses: [
-            { tag: 'clergy', multiplier: 1.4, flatBonus: 3, renownCategory: 'dark_renown', renownAmount: 1 },
-            { tag: 'innocent', multiplier: 1.4, flatBonus: 3, renownCategory: 'dark_renown', renownAmount: 1 },
-          ],
-          consecratedGroundPenalty: { damagePenalty: 0.5, selfDamagePerAttack: 3 },
-          description: 'Dark blasphemy: +40% damage against the righteous, and holy ground burns the bearer.',
-        },
-        {
-          minFloor: 15,
-          name: 'Profane',
-          prefix: 'Profane',
-          tagBonuses: [
-            { tag: 'clergy', multiplier: 1.7, flatBonus: 6, renownCategory: 'dark_renown', renownAmount: 2 },
-            { tag: 'innocent', multiplier: 1.7, flatBonus: 6, renownCategory: 'dark_renown', renownAmount: 2 },
-          ],
-          consecratedGroundPenalty: { damagePenalty: 0.7, selfDamagePerAttack: 6 },
-          description: 'Dread sacrilege: +70% damage against the righteous, and holy ground burns the bearer badly.',
+          name: 'Hel-touched',
+          prefix: 'Hel-touched',
+          tagBonuses: [{ tag: 'living', multiplier: 1.3, flatBonus: 0, healPercentOfDamage: 0.2 }],
+          sacredGroundBurn: 5,
+          templeShunned: true,
+          description:
+            "Hel's hunger: +30% damage against the living, and the bearer drinks a fifth of it; the undead are immune. It binds, holy ground burns the bearer for 5 a step, and the temple will only cleanse it, at double the price.",
         },
       ],
     },

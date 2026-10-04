@@ -15,6 +15,7 @@ import { TILES, getTileDefinition } from '../grid/tile';
 import { getAltarDefinition, isAltarSpent } from '../magic/altars';
 import { formatMagicMessage } from '../magic/magicConfig';
 import { isPrologueHoldingChoices } from '../quest/prologue';
+import { burnOnSacredGround } from '../combat/sacredGround';
 
 /** Tile type identifier for shallow water terrain that imposes a movement energy penalty. */
 const SHALLOW_WATER_TILE = 'shallow_water';
@@ -198,6 +199,11 @@ export class MovementAction implements Action {
       if (energyPenalty > 0) {
         this.entity.consumeEnergy(energyPenalty);
       }
+    }
+
+    // 5b2. Holy ground burns a bearer of a `sacredGroundBurn` item (Hel-touched) on arrival.
+    if (burnOnSacredGround(engine, this.entity).killed) {
+      return { success: true, cost, message: `${this.entity.name} was consumed by holy ground!` };
     }
 
     // 5c. Dispatch onMove Hook Event

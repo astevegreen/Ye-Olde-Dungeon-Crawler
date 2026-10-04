@@ -25,6 +25,8 @@ export const TOWN_LEGEND: Record<string, string> = {
 export interface TownBuildingPlan {
   name: string;
   buildingType: 'temple' | 'bank' | 'shop' | 'smithy' | 'house';
+  /** Holy ground (ADR-0012): a Hel-touched bearer burns inside. */
+  sacred?: boolean;
   bounds: { x1: number; y1: number; x2: number; y2: number };
   door: { x: number; y: number; isOpen?: boolean };
 }
@@ -34,7 +36,7 @@ export const TOWN_BUILDINGS: TownBuildingPlan[] = [
   { name: 'Longhouse', buildingType: 'house', bounds: { x1: 21, y1: 3, x2: 27, y2: 8 }, door: { x: 24, y: 8 } },
   { name: "Gunther's Armory", buildingType: 'smithy', bounds: { x1: 37, y1: 4, x2: 48, y2: 10 }, door: { x: 42, y: 10 } },
   { name: "Astrid's Alchemy", buildingType: 'shop', bounds: { x1: 5, y1: 23, x2: 14, y2: 30 }, door: { x: 10, y: 23 } },
-  { name: 'Temple of Thor', buildingType: 'temple', bounds: { x1: 23, y1: 26, x2: 33, y2: 33 }, door: { x: 28, y: 26, isOpen: true } },
+  { name: 'Temple of Thor', buildingType: 'temple', sacred: true, bounds: { x1: 23, y1: 26, x2: 33, y2: 33 }, door: { x: 28, y: 26, isOpen: true } },
   { name: 'Sage Study & Vault', buildingType: 'bank', bounds: { x1: 39, y1: 22, x2: 50, y2: 29 }, door: { x: 44, y: 22 } },
 ];
 

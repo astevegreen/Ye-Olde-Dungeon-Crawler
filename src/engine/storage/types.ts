@@ -72,14 +72,8 @@ export interface SerializedTagCombatBonus {
   tag: string;
   multiplier: number;
   flatBonus: number;
-  renownCategory?: string;
-  renownAmount?: number;
+  healPercentOfDamage?: number;
   message?: string;
-}
-
-export interface SerializedConsecratedGroundPenalty {
-  damagePenalty: number;
-  selfDamagePerAttack: number;
 }
 
 export interface SerializedItemModifier {
@@ -98,7 +92,8 @@ export interface SerializedItemModifier {
   damageTakenMultiplier?: number;
   damageTakenFlatBonus?: number;
   tagBonuses?: SerializedTagCombatBonus[];
-  consecratedGroundPenalty?: SerializedConsecratedGroundPenalty;
+  sacredGroundBurn?: number;
+  templeShunned?: boolean;
   chaoticProc?: SerializedChaoticProcConfig;
   description?: string;
 }

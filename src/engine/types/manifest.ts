@@ -228,6 +228,8 @@ export interface TownBuildingDefinition {
   bounds: { x1: number; y1: number; x2: number; y2: number };
   door: { x: number; y: number; isOpen?: boolean };
   buildingType?: 'temple' | 'bank' | 'shop' | 'smithy' | 'house' | 'generic';
+  /** Holy ground within its bounds (the temple): burns the bearer of a `sacredGroundBurn` modifier. */
+  sacred?: boolean;
 }
 
 
@@ -249,6 +251,8 @@ export interface TownServicesDefinition {
   templeStandingFaction?: string;
   /** Shown when the temple refuses service (negative standing or corruption refusal). */
   templeRefusalMessage?: string;
+  /** Shown when the hero wears a `templeShunned` item and asks for anything but the cleanse. */
+  templeShunnedMessage?: string;
   /** Player `corruptionScore` at or above which the temple refuses service. Absent = never. */
   corruptionRefusalThreshold?: number;
   /** Player `corruptionScore` at or above which temple prices are multiplied. Absent = never. */

@@ -32,7 +32,6 @@ export interface GameEventBase {
 
 export type BuiltInGameEventType =
   | 'player_leveled_up'
-  | 'alignment_renown'
   | 'chaotic_proc'
   | 'uncurse'
   | 'damage_dealt'
@@ -53,14 +52,6 @@ export interface PlayerLeveledUpEvent extends GameEventBase {
   statPointsAwarded: number;
   unspentStatPoints: number;
   statGains?: LevelUpBonus;
-}
-
-export interface AlignmentRenownEvent extends GameEventBase {
-  type: 'alignment_renown';
-  renownCategory: string; // e.g. 'dark_renown', 'holy_renown'
-  amount: number;
-  totalRenown: number;
-  sourceModifierId?: string;
 }
 
 export interface ChaoticProcEvent extends GameEventBase {
@@ -124,7 +115,6 @@ export interface MasteryPerkSelectedEvent extends GameEventBase {
  */
 export type GameEvent =
   | PlayerLeveledUpEvent
-  | AlignmentRenownEvent
   | ChaoticProcEvent
   | UncurseEvent
   | DamageDealtEvent

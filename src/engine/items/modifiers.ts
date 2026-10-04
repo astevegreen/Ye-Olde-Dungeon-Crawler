@@ -20,18 +20,14 @@ export interface ChaoticProcConfig {
   description: string;
 }
 
+/** Extra melee damage against a defender that answers to `tag` (`Entity.hasTag`). */
 export interface TagCombatBonus {
   tag: string;
   multiplier: number;
   flatBonus: number;
-  renownCategory?: string;
-  renownAmount?: number;
+  /** The attacker heals this share of the damage dealt (Hel-touched: a fifth). */
+  healPercentOfDamage?: number;
   message?: string;
-}
-
-export interface ConsecratedGroundPenalty {
-  damagePenalty: number; // 0.0 to 1.0 (e.g. 0.5 = 50% damage reduction)
-  selfDamagePerAttack: number;
 }
 
 export interface ItemModifier {
@@ -51,7 +47,10 @@ export interface ItemModifier {
   damageTakenMultiplier?: number;
   damageTakenFlatBonus?: number;
   tagBonuses?: TagCombatBonus[];
-  consecratedGroundPenalty?: ConsecratedGroundPenalty;
+  /** Damage the bearer takes on stepping onto, or striking from, sacred ground (`isSacredGround`). */
+  sacredGroundBurn?: number;
+  /** While worn, the temple serves the bearer only to cleanse, at double the price. */
+  templeShunned?: boolean;
   chaoticProc?: ChaoticProcConfig;
   description?: string;
 }

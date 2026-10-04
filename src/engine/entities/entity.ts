@@ -265,11 +265,8 @@ export class Entity {
     }
 
     // Semantic aliases for game archetypes
-    if (lower === 'clergy') {
-      return this.role === 'priest' || this.role === 'cleric';
-    }
-    if (lower === 'innocent') {
-      return this.role === 'villager' || this.role === 'merchant' || this.type === 'npc';
+    if (lower === 'living') {
+      return !this.hasTag('undead');
     }
     if (lower === 'undead') {
       return this.vulnerabilityTags.includes('radiant');

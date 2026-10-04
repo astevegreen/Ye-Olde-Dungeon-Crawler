@@ -14,7 +14,7 @@ import { HookDispatcher } from '../hooks/hookDispatcher';
 import { TILES, getTileDefinition } from '../grid/tile';
 import { getAltarDefinition, isAltarSpent } from '../magic/altars';
 import { formatMagicMessage } from '../magic/magicConfig';
-import { isPrologueRunning } from '../quest/prologue';
+import { isPrologueHoldingChoices } from '../quest/prologue';
 
 /** Tile type identifier for shallow water terrain that imposes a movement energy penalty. */
 const SHALLOW_WATER_TILE = 'shallow_water';
@@ -314,9 +314,9 @@ export class MovementAction implements Action {
       }
 
       // A run that just ended (the victory portal) offers no more choices; a prologue's scene
-      // holds its progress choices until it is over, so a milestone never breaks into it.
+      // and its aftermath hold progress choices until they are over, so a milestone never breaks into them.
       const runOver = !!engine.gameState && engine.gameState.runStatus !== 'active';
-      const progressChoicesHeld = runOver || isPrologueRunning(engine.worldState, engine.manifest?.prologue);
+      const progressChoicesHeld = runOver || isPrologueHoldingChoices(engine.worldState, engine.manifest?.prologue, engine.currentFloor);
 
       // Kill-count-gated choice unlocks (ARCHITECTURE.md §3, StoryChoiceTrigger):
       // checked every player move rather than only on a specific tile, since the

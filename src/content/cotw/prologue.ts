@@ -156,6 +156,7 @@ export const COTW_PROLOGUE: PrologueDefinition = {
   aftermathNpcs: [
     { id: GATEWARD_ID, name: 'Hallvard the Gate-Ward', role: 'guard', position: { x: 31, y: 9 }, choiceId: GATEWARD_CHOICE_ID },
   ],
+  aftermathFlag: GATEWARD_HEARD_FLAG,
 };
 
 /** The coven's rite: when it runs out they flee with the shard, taking whoever is still held. */

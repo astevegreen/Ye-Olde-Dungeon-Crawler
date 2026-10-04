@@ -117,6 +117,25 @@ describe('cotw prologue: the night raid', () => {
 
     engine.diagnostics.endPrologue();
     step(engine, 0, -1);
+    expect(offered).toEqual([]); // Hallvard speaks first
+
+    engine.handlePlayerAction(new ExecuteChoiceAction(engine.player, GATEWARD_CHOICE, 'close_his_eyes'));
+    step(engine, 0, 1);
+    expect(offered).toHaveLength(1);
+  });
+
+  it('opens the held milestones below ground for a hero who walks past Hallvard', () => {
+    const engine = newRun();
+    const offered: string[] = [];
+    engine.onChoiceInteract = (choice) => offered.push(choice.id);
+    engine.diagnostics.endPrologue();
+    engine.map.moveEntity(engine.player, TOWN_STAIRS_DOWN.x, TOWN_STAIRS_DOWN.y);
+    engine.handlePlayerAction(new ClimbStairsAction(engine.player));
+    expect(engine.currentFloor).toBe(1);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      if (offered.length) break;
+      step(engine, dx, dy);
+    }
     expect(offered).toHaveLength(1);
   });
 

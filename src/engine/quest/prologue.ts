@@ -29,6 +29,17 @@ export function isPrologueRunning(worldState: WorldState, prologue: PrologueDefi
   return !!prologue && getFlag(worldState, prologue.startFlag) && !getFlag(worldState, prologue.endFlag);
 }
 
+/**
+ * Whether progress choices (story and attribute-milestone triggers) wait: while the prologue
+ * runs, and after it in town until its `aftermathFlag` is set. Below ground they never wait
+ * on the aftermath, so a hero who walks past it is not held for good.
+ */
+export function isPrologueHoldingChoices(worldState: WorldState, prologue: PrologueDefinition | undefined, currentFloor: number): boolean {
+  if (!prologue || !getFlag(worldState, prologue.startFlag)) return false;
+  if (!getFlag(worldState, prologue.endFlag)) return true;
+  return !!prologue.aftermathFlag && currentFloor === 0 && !getFlag(worldState, prologue.aftermathFlag);
+}
+
 function npcFrom(def: PrologueNpc, position: Position): NPC {
   return new NPC({
     id: def.id,

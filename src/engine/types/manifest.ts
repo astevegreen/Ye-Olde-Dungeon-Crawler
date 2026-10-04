@@ -905,6 +905,9 @@ export interface PrologueDefinition {
   npcs?: PrologueNpc[];
   /** NPCs placed when it ends, on their tile or the nearest free one. */
   aftermathNpcs?: PrologueNpc[];
+  /** Set by the pack once the aftermath's own beat is over (cotw: Hallvard's last words). Until
+   *  then, progress choices stay held while the hero is in town, as they are during the scene. */
+  aftermathFlag?: string;
 }
 
 /** See `GameContentManifest.scriptedVaultPlacements`. */

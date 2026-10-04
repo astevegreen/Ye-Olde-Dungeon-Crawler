@@ -55,6 +55,7 @@ export const ACTION_METADATA: ActionMetadata[] = [
   { id: 'rest', name: 'Rest Until Healed', category: 'Interaction & Inventory', defaultCodes: ['KeyR'] },
   { id: 'stairs', name: 'Climb Stairs Up / Down', category: 'Interaction & Inventory', defaultCodes: ['Enter'] },
   { id: 'map', name: 'Explored Dungeon Map', category: 'Interaction & Inventory', defaultCodes: ['KeyM'] },
+  { id: 'message_log', name: 'Message Log History', category: 'Interaction & Inventory', defaultCodes: ['Shift+KeyM'] },
   { id: 'inspect', name: 'Inspect / Look Mode', category: 'Interaction & Inventory', defaultCodes: ['KeyX', 'KeyL'] },
   { id: 'compendium', name: 'Bestiary', category: 'Interaction & Inventory', defaultCodes: ['KeyB'] },
   { id: 'pact', name: 'Pacts', category: 'Interaction & Inventory', defaultCodes: ['KeyP'] },

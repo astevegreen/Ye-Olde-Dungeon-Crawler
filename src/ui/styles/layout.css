@@ -512,7 +512,8 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: 0 14px;
+  /* Clear of the history label at the top right. */
+  padding: 0 84px 0 14px;
   box-sizing: border-box;
   overflow-y: auto;
   scrollbar-width: thin;
@@ -521,6 +522,49 @@
   font-size: 11px;
   line-height: 14px;
   user-select: text;
+}
+
+/* The strip's label, top right, over the oldest line's end: it opens the log's history.
+   The stream keeps clear of it with its right padding. */
+.log-history-btn {
+  position: absolute;
+  top: 3px;
+  right: 10px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-1);
+  padding: 0 var(--ui-space-1);
+  background: var(--hud-surface-low);
+  border: none;
+  color: var(--ui-text-faint);
+  font: inherit;
+  font-size: 11px;
+  line-height: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.log-history-btn:hover,
+.log-history-btn:focus-visible {
+  color: var(--ui-text);
+}
+
+.message-log-history {
+  max-height: min(60vh, 520px);
+  overflow-y: auto;
+  padding: var(--ui-space-2) var(--ui-space-3);
+  background: var(--ui-surface-0);
+  border: 1px solid var(--ui-line);
+  font-family: var(--ui-font-family, "Courier New", Courier, monospace);
+  font-size: 12px;
+  line-height: 14px;
+  color: var(--ui-text-soft);
+  user-select: text;
+}
+.message-log-history:focus {
+  outline: none;
+  border-color: var(--ui-line-strong);
 }
 
 .log-messages-stream::-webkit-scrollbar {

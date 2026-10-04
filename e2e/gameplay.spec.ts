@@ -480,3 +480,29 @@ test('load a saved game closes on Escape, and its delete asks in the dialog fram
   expect(alerts).toEqual([]);
   expect(pageErrors).toEqual([]);
 });
+
+// The log's history (tracker 1.2, Q31): Shift+M or the strip's label opens every line the
+// game holds, reading it takes no turn, and the key or Escape closes it.
+test("the log's history opens by key or label and spends no turn", async ({ page }) => {
+  await embarkNewHero(page);
+  await page.keyboard.press('ArrowRight');
+  const before = await state(page);
+  const held = await page.evaluate(() => window.__cotwEngine!.messages.length);
+
+  await page.keyboard.press('Shift+KeyM');
+  await expect(page.locator('#message-log-history')).toBeVisible();
+  expect(await stackIds(page)).toEqual(['message-log']);
+  await expect(page.locator('#message-log-history .log-line')).toHaveCount(held);
+  await page.keyboard.press('Space');
+  await page.keyboard.press('ArrowLeft');
+  expect(await state(page)).toMatchObject({ turn: before.turn, x: before.x });
+  await page.keyboard.press('Shift+KeyM');
+  await expect(page.locator('#message-log-history')).toBeHidden();
+  expect(await stackIds(page)).toEqual([]);
+
+  await page.locator('#btn-log-history').click();
+  await expect(page.locator('#message-log-history')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#message-log-history')).toBeHidden();
+  expect(await stackIds(page)).toEqual([]);
+});

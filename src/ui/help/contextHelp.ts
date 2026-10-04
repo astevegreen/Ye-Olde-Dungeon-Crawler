@@ -229,6 +229,7 @@ export class ContextHelp {
             { key: 'Space / .', label: 'Wait a turn' },
             { key: '1-0', label: 'Cast the spell in that quick slot' },
             { key: 'M', label: 'Map of explored floors (free)' },
+            { key: 'Shift+M', label: "The log's history: every recent line (free)" },
             { key: 'X / L', label: 'Look at tiles and monster intents' },
             { key: 'Z', label: 'Spellbook: choose and cast' },
             { key: 'I', label: 'Inventory and equipment' },

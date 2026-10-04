@@ -164,6 +164,8 @@ export class InputHandler {
   public onDrinkPotionSlot?: (slotIndex: number) => void;
   /** The companion keys: call it (or send it away), or have it use its skill. */
   public onCompanionCommand?: (command: 'call' | 'skill') => void;
+  /** Opens the log's history (Shift+M by default). */
+  public onOpenMessageLog?: () => void;
   /** Casts a spell by ID (as opposed to a QuickSpellsBar slot index) — wired from main.ts's castOrTargetSpell. */
   public onCastSpellById?: (spellId: string) => void;
   public enabled = true;
@@ -737,6 +739,12 @@ export class InputHandler {
     if ((boundAction === 'companion_call' || boundAction === 'companion_skill') && this.onCompanionCommand) {
       this.onCompanionCommand(boundAction === 'companion_call' ? 'call' : 'skill');
       this.onActionProcessed();
+      return true;
+    }
+
+    // The log's history (Shift+M by default), checked before the hard-wired M below.
+    if (boundAction === 'message_log' && this.onOpenMessageLog) {
+      this.onOpenMessageLog();
       return true;
     }
 

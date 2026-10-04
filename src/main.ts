@@ -113,6 +113,7 @@ import { FirstTimeHints } from './ui/hints/firstTimeHints';
 import { hintsMetByEvent, hintsMetByState } from './ui/hints/hintModel';
 import { findActionCues } from './ui/hints/actionCues';
 import { ControlsPrimer } from './ui/controlsPrimer';
+import { MessageLogModal } from './ui/messageLogModal';
 import type { ContextAction } from './ui/console/consoleModel';
 import { SettingsManager } from './ui/settings/settingsManager';
 import type { RadialMenuSlotConfig } from './ui/settings/settingsManager';
@@ -747,6 +748,13 @@ window.addEventListener('DOMContentLoaded', () => {
     const streamEl = document.getElementById('log-messages-stream');
     if (!streamEl) return;
 
+    const historyKey = document.getElementById('log-history-key');
+    const label = messageLogKey() ?? '';
+    if (historyKey && historyKey.textContent !== label) {
+      historyKey.textContent = label;
+      historyKey.style.display = label ? '' : 'none';
+    }
+
     const msgs = engine.messages.slice(-6);
     if (msgs.length === 0) {
       streamEl.innerHTML = '<div class="log-line log-line-muted">Explore the dungeon.</div>';
@@ -977,6 +985,27 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer?.render();
     },
   });
+
+  // The log's history (Shift+M, or a click on the log strip's label). Reading takes no turn.
+  const messageLogKey = (): string | undefined => {
+    const code = settingsManager.getCodesForAction('message_log')[0];
+    return code ? keyLabel(code) : undefined;
+  };
+  const messageLogModal = new MessageLogModal({
+    openKey: messageLogKey,
+    isOpenKey: (e) => settingsManager.getActionForCode(e.shiftKey ? `Shift+${e.code}` : e.code) === 'message_log',
+    onClose: () => {
+      popModal(messageLogModal.id);
+      renderer?.render();
+    },
+  });
+  function openMessageLog(): void {
+    if (!activeEngine || !inputHandler || messageLogModal.isOpen) return;
+    if (inputHandler.modalStack.size > 0) return;
+    messageLogModal.open(activeEngine.messages, activeEngine.player.name, criticalLines.set);
+    pushModal(messageLogModal.id, messageLogModal);
+  }
+  document.getElementById('btn-log-history')?.addEventListener('click', () => openMessageLog());
 
   const saveQuitModal = new SaveQuitModal({
     profileManager,
@@ -1478,6 +1507,9 @@ window.addEventListener('DOMContentLoaded', () => {
       diagnostics: () => {
         toggleDiagnostics();
       },
+      'message-log': () => {
+        openMessageLog();
+      },
       feedback: () => {
         toggleFeedback();
       },
@@ -1644,6 +1676,7 @@ window.addEventListener('DOMContentLoaded', () => {
       inputHandler.onToggleCommandPalette = toggleCommandPalette;
       inputHandler.onContextAction = () => runContextAction(consoleExtras.currentAction);
       inputHandler.onCompanionCommand = runCompanionKey;
+      inputHandler.onOpenMessageLog = openMessageLog;
       commandPalette.setModalStack(inputHandler.modalStack);
       potionRow.setModalStack(inputHandler.modalStack);
       diagnosticModal.setModalStack(inputHandler.modalStack);
@@ -1685,6 +1718,7 @@ window.addEventListener('DOMContentLoaded', () => {
         inputHandler.onToggleCommandPalette = toggleCommandPalette;
       inputHandler.onContextAction = () => runContextAction(consoleExtras.currentAction);
       inputHandler.onCompanionCommand = runCompanionKey;
+      inputHandler.onOpenMessageLog = openMessageLog;
         commandPalette.setModalStack(inputHandler.modalStack);
       potionRow.setModalStack(inputHandler.modalStack);
         diagnosticModal.setModalStack(inputHandler.modalStack);

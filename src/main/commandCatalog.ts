@@ -29,6 +29,7 @@ export const COMMAND_CATALOG = [
   { id: 'rest', title: 'Rest Until Healed', category: 'Action', shortcut: 'R', description: 'Rest safely until fully recovered' },
   { id: 'search', title: 'Search for Secrets & Traps', category: 'Action', shortcut: 'S', description: 'Examine adjacent walls and floors for hidden traps or doors' },
   { id: 'stairs', title: 'Use Stairs Up / Down', category: 'Action', shortcut: '< / >', description: 'Descend deeper into the dungeon or return to the floor above' },
+  { id: 'message-log', title: 'Message Log History', category: 'Help', shortcut: 'Shift+M', description: 'Read back the recent lines of the log' },
   { id: 'map', title: 'View Explored Dungeon Map', category: 'Action', shortcut: 'M', description: 'Pan and inspect the complete surveyed floor map' },
   { id: 'diagnostics', title: 'Developer Diagnostics & Triage', category: 'System', shortcut: 'F2 / `', description: 'Inspect active actor state, combat roll logs, and flight recorder' },
   { id: 'feedback', title: 'Send Feedback & Bug Report', category: 'Help', shortcut: 'F3', description: 'Submit an issue, bug report, or feature request to the developers' },

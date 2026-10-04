@@ -200,7 +200,7 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
     weight: 300,
     bulk: 200,
     identified: false,
-    description: 'Blessed warding salt scattered in an arc across floor stones, preventing draugr and restless shades from crossing the barrier.',
+    description: 'A barrow-keeper’s pouch of blessed warding salt. Whatever it warded is long gone, but a merchant will pay for it.',
     value: 160,
   },
 
@@ -218,7 +218,7 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
     bulk: 100,
     quality: 'enchanted',
     identified: false,
-    description: 'A corpse-fat candle that burns with an eerie pale blue light, exposing secret doors and hidden barrow illusions while luring restless dead.',
+    description: 'A corpse-fat candle from the barrows that burns with an eerie pale blue flame. It does nothing for the living, but a merchant will pay for a barrow-relic.',
     value: 95,
   },
   {
@@ -268,7 +268,7 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
     weight: 200,
     bulk: 150,
     identified: false,
-    description: 'An attuned lodestone that turns irresistibly toward subterranean drafts and descending staircases before dissolving into dust.',
+    description: 'A duergar lodestone, its attunement long faded. A merchant will still pay for the iron.',
     value: 110,
   },
   {

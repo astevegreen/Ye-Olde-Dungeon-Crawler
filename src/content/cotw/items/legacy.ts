@@ -352,7 +352,7 @@ export const COTW_LEGACY_ITEMS: ItemDefinition[] = [
     weight: 400,
     bulk: 200,
     identified: false,
-    description: 'A brand blessed at the Temple of Thor. Igniting it sears the undead with holy light.',
+    description: 'A brand blessed at the Temple of Thor. Lit, its holy light blinds the undead around you for a few turns.',
     value: 70,
     itemType: 'potion',
     potionConfig: {

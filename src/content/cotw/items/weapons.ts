@@ -60,7 +60,7 @@ export const COTW_WEAPONS: ItemDefinition[] = [
     bulk: 2000,
     stats: { attackBonus: 9, speedBonus: -4 },
     identified: false,
-    description: 'Dwarven smith hammer that rings with resonant fire. Deals heavy damage to constructs and armored foes, though its swing is slow.',
+    description: 'Dwarven smith hammer that rings with resonant fire. It strikes very hard, though its swing is slow.',
     value: 65,
   },
   {
@@ -76,7 +76,7 @@ export const COTW_WEAPONS: ItemDefinition[] = [
     stats: { attackBonus: 7 },
     rangedConfig: { range: 2 },
     identified: false,
-    description: 'Long soot-forged tongs with reach 2. Grips incandescent metal safely and can disarm humanoid foes.',
+    description: 'Long soot-forged tongs with reach 2, made to grip incandescent metal. Heavy in the hand.',
     value: 70,
   },
   {
@@ -133,7 +133,7 @@ export const COTW_WEAPONS: ItemDefinition[] = [
       },
     ],
     identified: false,
-    description: 'Forged from alloy bathed in sun-chariot fire. Inflicts heavy fire damage and casts radiant illumination in subterranean corridors.',
+    description: 'Forged from alloy bathed in sun-chariot fire. Its blows often flare with extra fire damage.',
     value: 150,
   },
   {

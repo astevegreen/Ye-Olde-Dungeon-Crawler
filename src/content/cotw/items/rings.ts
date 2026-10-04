@@ -73,7 +73,7 @@ export const COTW_RINGS: ItemDefinition[] = [
     stats: { defenseBonus: 2 },
     quality: 'enchanted',
     identified: false,
-    description: 'Bearing the secret cipher of dwarven lock-masters, this ring heightens perception of hollow walls, hidden caches, and secret doors.',
+    description: 'An engraved brass ring bearing the cipher of the duergar vault-keepers. Its ward turns aside blows.',
     value: 150,
   },
   {

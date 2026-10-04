@@ -57,7 +57,7 @@ export const COTW_OFFHAND: ItemDefinition[] = [
     stats: { defenseBonus: 3, attackBonus: 2 },
     quality: 'enchanted',
     identified: false,
-    description: 'A brilliant focus prism capturing radiant sun-chariot glare. Illuminates depths and pierces illusions, but completely suppresses ancestral giant-blood power while held.',
+    description: 'A brilliant focus prism capturing radiant sun-chariot glare. It guards and strikes well, but completely suppresses ancestral giant-blood power while held.',
     value: 160,
   },
   {

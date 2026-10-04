@@ -54,7 +54,7 @@ export const COTW_CONTAINERS: ItemDefinition[] = [
     bulk: 2200,
     quality: 'artifact',
     identified: false,
-    description: 'A miraculous field satchel grown from living hollowed Yggdrasil bark. Holds vast supplies and insulates rations and gear from acidic decay.',
+    description: 'A miraculous field satchel grown from living hollowed Yggdrasil bark. It holds far more than any pack of hide or iron.',
     value: 450,
     itemType: 'container',
     containerConfig: {
@@ -96,7 +96,7 @@ export const COTW_CONTAINERS: ItemDefinition[] = [
     bulk: 250,
     quality: 'enchanted',
     identified: false,
-    description: 'Reinforced with liquid-tight quicksilver seams that lock securely when severed, safeguarding carried fortunes.',
+    description: 'Reinforced with liquid-tight quicksilver seams, it holds a far larger fortune than a common pouch.',
     value: 220,
     itemType: 'container',
     containerConfig: {

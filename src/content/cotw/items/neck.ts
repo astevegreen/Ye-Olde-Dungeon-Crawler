@@ -61,7 +61,7 @@ export const COTW_NECK: ItemDefinition[] = [
     stats: { attackBonus: 3 },
     quality: 'enchanted',
     identified: false,
-    description: 'A suspended molten splinter of Sól’s sun-chariot. Imbues strikes with scorching fire and casts permanent warm light into dark depths.',
+    description: 'A suspended molten splinter of Sól’s sun-chariot, still hot to the touch. Its fire lends force to your strikes.',
     value: 220,
   },
   {

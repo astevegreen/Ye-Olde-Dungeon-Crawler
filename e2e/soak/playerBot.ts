@@ -25,7 +25,7 @@ export interface PlayerBotState {
   droppedItemsCount: number;
   overburdenedEpisodes: number;
   wasOverburdened: boolean;
-  /** Pack items the bot has tried to put on (each once: a failed equip isn't retried). */
+  /** Pack items the bot has tried to put on or drop (each once: a failed try isn't repeated). */
   equipTried: string[];
   /** Town merchants (NPC ids) visited this time in town. */
   shopDone: string[];
@@ -106,6 +106,7 @@ interface DecisionResult {
   droppedPos?: string;
   droppedFloor?: number;
   equipTried?: string;
+  shedTried?: string;
   inShop?: boolean;
   shopFinished?: string;
   bought?: boolean;
@@ -237,7 +238,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       const shedCandidate =
         carried > maxCarry * 0.5
           ? packItems
-              .filter((it) => isGear(it) && gainOf(it) <= 0)
+              .filter((it) => isGear(it) && gainOf(it) <= 0 && !args.equipTried.includes(it.id))
               .sort((a, b) => weightOf(b) - weightOf(a) || String(a.id).localeCompare(String(b.id)))[0]
           : undefined;
       const isHealing = (it: any): boolean =>
@@ -366,7 +367,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           if (equipCandidate) {
             return { action: { type: 'key' as const, key: 'KeyE' }, curPos, curTurn, curFloor, equipTried: equipCandidate.id as string };
           }
-          return { action: { type: 'key' as const, key: 'KeyD' }, curPos, curTurn, curFloor, itemDropped: true, droppedPos: curPos, droppedFloor: curFloor };
+          // Each piece is tried once, so a refused drop can't hold the bot in the menu.
+          return { action: { type: 'key' as const, key: 'KeyD' }, curPos, curTurn, curFloor, itemDropped: true, droppedPos: curPos, droppedFloor: curFloor, shedTried: want.id as string };
         }
 
         if (modal && modal.activeTabId !== 'inventory') {
@@ -1016,6 +1018,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
     state.equipTried.push(evalResult.equipTried);
     state.equips++;
   }
+  if (evalResult.shedTried) state.equipTried.push(evalResult.shedTried);
   if (evalResult.inShop) state.shopDecisions++;
   if (evalResult.shopFinished && !state.shopDone.includes(evalResult.shopFinished)) state.shopDone.push(evalResult.shopFinished);
   if (evalResult.bought) state.purchases++;

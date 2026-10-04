@@ -44,7 +44,6 @@ export class DepositToVaultAction implements Action {
           id: engine.nextSimulationId(`${this.item.id}_vault`),
           quantity: this.quantity,
           stats: { ...this.item.stats },
-          durability: this.item.durability ? { ...this.item.durability } : undefined,
         };
         // Use item constructor from prototype
         const ItemCtor = Object.getPrototypeOf(this.item).constructor;

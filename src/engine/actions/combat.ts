@@ -303,7 +303,7 @@ export class MeleeAttackAction implements Action {
       }
     }
 
-    // Resolve combat mitigation pipeline (aspect alignment & item durability wear)
+    // Resolve combat mitigation pipeline (aspect alignment)
     const mitigation = resolveCombatMitigation(this.attacker, this.defender, rawDamage, engine);
     const { damageDealt, killed } = this.defender.takeDamage(mitigation.finalDamage);
 

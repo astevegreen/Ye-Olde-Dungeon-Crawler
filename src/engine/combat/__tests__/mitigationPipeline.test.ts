@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  applyItemWear,
-  calculateAspectModifier,
-  resolveCombatMitigation,
-} from '../mitigationPipeline';
+import { calculateAspectModifier, resolveCombatMitigation } from '../mitigationPipeline';
 import { Item } from '../../items/item';
 import { Actor } from '../../entities/actor';
 import { Player } from '../../entities/player';
@@ -11,50 +7,15 @@ import { GameEngine } from '../../engine';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 
-describe('Mitigation Pipeline, Item Integrity & Aspect Alignment', () => {
-  it('decrements item durability on combat wear and breaks at 0', () => {
-    const sword = new Item({
-      id: 'test-sword',
-      name: 'Training Sword',
-      category: 'weapon',
-      weight: 1000,
-      bulk: 500,
-      durability: { current: 2, max: 2 },
-      stats: { attackBonus: 5 },
-    });
-
-    const actor = new Actor({
-      id: 'warrior',
-      name: 'Warrior',
-      type: 'player',
-      faction: 'player',
-      position: { x: 1, y: 1 },
-      stats: { hp: 30, maxHp: 30, attack: 10, defense: 5 },
-    });
-
-    // Wear roll with 100% chance
-    const roll1 = applyItemWear(sword, actor, 1.0, () => 0.5);
-    expect(roll1.degraded).toBe(true);
-    expect(roll1.broken).toBe(false);
-    expect(sword.durability?.current).toBe(1);
+describe('Mitigation Pipeline & Aspect Alignment', () => {
+  it('leaves gear as it was: nothing wears out', () => {
+    const player = new Player({ id: 'p1', name: 'Hero', position: { x: 5, y: 5 } });
+    const sword = new Item({ id: 'sword', name: 'Sword', category: 'weapon', slot: 'mainHand', weight: 1000, bulk: 500, stats: { attackBonus: 5 } });
+    player.inventory.paperdoll.equip(sword, 'mainHand');
+    const foe = new Actor({ id: 'foe', name: 'Foe', type: 'monster', faction: 'hostile', position: { x: 6, y: 5 }, stats: { hp: 30, maxHp: 30, attack: 4, defense: 0 } });
+    const engine = new GameEngine({ map: new GameMap(12, 12, TILES.FLOOR), player: new Player({ id: 'seed-holder', name: 'Seed', position: { x: 1, y: 1 } }), seed: 7 });
+    for (let i = 0; i < 50; i++) resolveCombatMitigation(player, foe, 10, engine);
     expect(sword.isBroken()).toBe(false);
-    expect(sword.effectiveStats.attackBonus).toBe(5);
-
-    // Second wear roll brings durability to 0 -> breaks
-    const roll2 = applyItemWear(sword, actor, 1.0, () => 0.5);
-    expect(roll2.degraded).toBe(true);
-    expect(roll2.broken).toBe(true);
-    expect(sword.durability?.current).toBe(0);
-    expect(sword.isBroken()).toBe(true);
-    expect(sword.quality).toBe('broken');
-
-    // Effective stats must be 0 when broken
-    expect(sword.effectiveStats.attackBonus).toBe(0);
-
-    // Repair restores full durability and clears broken quality
-    sword.repair();
-    expect(sword.isBroken()).toBe(false);
-    expect(sword.durability?.current).toBe(2);
     expect(sword.effectiveStats.attackBonus).toBe(5);
   });
 
@@ -96,7 +57,6 @@ describe('Mitigation Pipeline, Item Integrity & Aspect Alignment', () => {
       weight: 1200,
       bulk: 600,
       aspectState: 'aspect_radiant',
-      durability: { current: 10, max: 10 },
       stats: { attackBonus: 4 },
     });
     player.inventory.paperdoll.equip(radiantBlade, 'mainHand');
@@ -116,10 +76,8 @@ describe('Mitigation Pipeline, Item Integrity & Aspect Alignment', () => {
       player: new Player({ id: 'seed-holder', name: 'Seed', position: { x: 1, y: 1 } }),
       seed: 7,
     });
-    const result = resolveCombatMitigation(player, corruptZombie, 10, engine, 1.0);
+    const result = resolveCombatMitigation(player, corruptZombie, 10, engine);
     // 10 base * 1.5 + 3 = 18 damage
     expect(result.finalDamage).toBe(18);
-    expect(radiantBlade.durability?.current).toBe(9);
-    expect(result.wornItems.length).toBe(1);
   });
 });

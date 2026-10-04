@@ -129,10 +129,6 @@ export interface SerializedItemBase {
     denomination: CoinDenomination;
     count: number;
   };
-  durability?: {
-    current: number;
-    max: number;
-  };
   aspectState?: string;
   unitWeight?: number;
   modifiers?: SerializedItemModifier[];

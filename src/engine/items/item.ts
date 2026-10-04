@@ -94,7 +94,6 @@ export interface ItemConfig {
   hooks?: HookDescriptor[];
   definitionId?: string;
   quantity?: number;
-  durability?: { current: number; max: number };
   aspectState?: string;
   unitWeight?: number;
   modifiers?: ItemModifier[];
@@ -129,7 +128,6 @@ export class Item {
   public readonly hooks?: HookDescriptor[];
   public parentId: string | null = null;
   public ownerId: string | null = null;
-  public durability?: { current: number; max: number };
   public aspectState?: string;
   public modifiers: ItemModifier[] = [];
 
@@ -160,7 +158,6 @@ export class Item {
     this.rangedConfig = config.rangedConfig;
     this.predicate = config.predicate;
     this.hooks = config.hooks ? [...config.hooks] : undefined;
-    this.durability = config.durability ? { ...config.durability } : undefined;
     this.aspectState = config.aspectState;
     this.modifiers = config.modifiers ? [...config.modifiers] : [];
   }
@@ -353,16 +350,7 @@ export class Item {
   }
 
   public isBroken(): boolean {
-    return this.quality === 'broken' || (this.durability !== undefined && this.durability.current <= 0);
-  }
-
-  public repair(): void {
-    if (this.durability) {
-      this.durability.current = this.durability.max;
-    }
-    if (this.quality === 'broken') {
-      this.quality = 'normal';
-    }
+    return this.quality === 'broken';
   }
 
   public totalWeight(): number {

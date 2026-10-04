@@ -75,7 +75,9 @@ Routine for every commit that touches presentation:
 - knip fails on unused exports. Delete what a refactor orphans.
 - `git rm` stages at once, so a later `git add X && git commit` takes
   the deletion with it. Delete with plain `rm` and stage per commit.
-- No Python on this machine. `test-results/` and `dist/` can't be read.
+- Python is installed: call `python` or `py` (`py -0p` lists the
+  versions). `python3` is the Microsoft Store stub and fails.
+- `.claude/settings.json` denies reading `test-results/` and `dist/`.
 
 ## Standing invariant, restated because it's easy to forget
 `src/engine/actions/actionPipeline.ts`, `src/engine/engine.ts`, and

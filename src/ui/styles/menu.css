@@ -625,7 +625,13 @@
 .sb-slot.is-mine { color: var(--ui-accent-ink); background: var(--ui-accent); border-color: var(--ui-accent); }
 
 .sb-attune { color: var(--ui-warn); }
-.sb-matrix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 6px; }
+/* 5x5: three slots a side, with a link cell between each two that lights when they interact. */
+.sb-matrix { display: grid; grid-template-columns: 1fr 10px 1fr 10px 1fr; grid-template-rows: auto 10px auto 10px auto; padding: 6px; }
+.sb-link { position: relative; display: block; }
+.sb-link.is-on::before { content: ''; position: absolute; background: var(--ui-accent); border-radius: 1px; }
+.sb-link.is-h.is-on::before { left: -3px; right: -3px; top: calc(50% - 1px); height: 3px; }
+.sb-link.is-v.is-on::before { top: -3px; bottom: -3px; left: calc(50% - 1px); width: 3px; }
+.sb-slot-info { min-height: 3.6em; }
 .sb-cell {
   appearance: none;
   min-height: 58px;
@@ -645,7 +651,7 @@
 .sb-cell.is-filled { border-style: solid; border-color: var(--ui-info); }
 .sb-cell.is-center { border-color: var(--ui-title); }
 .sb-cell.is-mine { box-shadow: inset 0 0 0 1px var(--ui-accent); border-color: var(--ui-accent); }
-.sb-cell.is-sealed { cursor: default; background: var(--ui-surface-3); border-style: solid; border-color: var(--ui-line); }
+.sb-cell.is-sealed { cursor: help; background: var(--ui-surface-3); border-style: solid; border-color: var(--ui-line); }
 .sb-cell-head { display: flex; justify-content: space-between; gap: var(--ui-space-1); color: var(--ui-text-faint); }
 .sb-cell.is-center .sb-cell-head { color: var(--ui-title); }
 .sb-cell-spell { font-size: var(--ui-text-sm); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -11,6 +11,7 @@ import {
   type GameEngine,
   type Player,
   type SpellDefinition,
+  type SpellModifier,
 } from '../../engine';
 import type { GameState } from './gameState';
 import type { MenuFooter, MenuTab } from './menuTab';
@@ -28,6 +29,18 @@ export interface SpellbookTabOptions {
 
 const SLOT_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 
+const SLOT_INFO_DEFAULT = 'Point at a slot to see what it does. Click one to put the chosen spell there, or take it out.';
+
+/** A slot modifier in words: "costs 1 less and gains ×1.1 power". */
+function describeModifier(m: SpellModifier): string {
+  const parts: string[] = [];
+  if (m.manaCostDelta) parts.push(`costs ${Math.abs(m.manaCostDelta)} ${m.manaCostDelta < 0 ? 'less' : 'more'}`);
+  if (m.powerMultiplier) parts.push(`gains ×${m.powerMultiplier} power`);
+  if (m.rangeDelta) parts.push(`reaches ${m.rangeDelta > 0 ? '+' : ''}${m.rangeDelta} tiles`);
+  if (m.areaDelta) parts.push(`bursts ${m.areaDelta > 0 ? '+' : ''}${m.areaDelta} wider`);
+  return parts.join(' and ') || 'draws on it';
+}
+
 /**
  * The Spellbook tab (ADR-0011): the spells you know, the selected one's details and
  * quickbar slot, and the grimoire grid for packs that have one. Enter casts.
@@ -42,6 +55,8 @@ export class SpellbookTab implements MenuTab {
   private engine?: GameEngine;
   private spells: SpellDefinition[] = [];
   private selectedIndex = 0;
+  /** Each slot's description, built with the grid, shown under it on hover or focus. */
+  private slotInfo: string[] = [];
 
   constructor(options: Partial<SpellbookTabOptions> = {}) {
     this.options = {
@@ -166,7 +181,18 @@ export class SpellbookTab implements MenuTab {
         this.render();
       });
     });
+    const info = root.querySelector<HTMLElement>('#sb-slot-info');
     root.querySelectorAll<HTMLElement>('[data-grimoire-slot]').forEach((cell) => {
+      const show = () => {
+        if (info) info.innerHTML = this.slotInfo[Number(cell.getAttribute('data-grimoire-slot'))] ?? SLOT_INFO_DEFAULT;
+      };
+      const hide = () => {
+        if (info) info.innerHTML = SLOT_INFO_DEFAULT;
+      };
+      cell.addEventListener('mouseenter', show);
+      cell.addEventListener('focus', show);
+      cell.addEventListener('mouseleave', hide);
+      cell.addEventListener('blur', hide);
       cell.addEventListener('click', () => {
         const player = this.engine?.player;
         const spell = this.selectedSpell;
@@ -273,24 +299,92 @@ export class SpellbookTab implements MenuTab {
       const cls = ['sb-cell', open ? '' : 'is-sealed', center ? 'is-center' : '', slotted ? 'is-filled' : '', spell && slot?.spellId === spell.id ? 'is-mine' : '']
         .filter(Boolean)
         .join(' ');
-      return `<button type="button" class="${cls}" data-grimoire-slot="${i}"${open ? '' : ' disabled'}>
+      return `<button type="button" class="${cls}" data-grimoire-slot="${i}"${open ? '' : ' aria-disabled="true"'}>
           <div class="sb-cell-head"><span class="ui-num">${i + 1}</span>${tag ? `<span>${escapeHtml(tag)}</span>` : ''}</div>${body}${glyphs}</button>`;
-    }).join('');
+    });
 
     // How a sealed slot opens: at an altar whose rite grounds a slot (pack data).
     const groundAltars = (engine.manifest?.magic?.altars ?? []).filter((a) => a.rite === 'ground').map((a) => a.name);
+    const unsealText = groundAltars.length > 0 ? `${sealedLabel} slots open at ${groundAltars.join(' or ')}: burn an offering there to unseal one.` : '';
     const sealedCount = Array.from({ length: GRIMOIRE_SIZE }, (_, i) => i).filter((i) => !player.isGrimoireSlotOpen(i)).length;
-    const unseal =
-      sealedCount > 0 && groundAltars.length > 0
-        ? `<div class="ui-note sb-unseal">${escapeHtml(sealedLabel)} slots open at ${escapeHtml(groundAltars.join(' or '))}: burn an offering there to unseal one.</div>`
-        : '';
+    const unseal = sealedCount > 0 && unsealText ? `<div class="ui-note sb-unseal">${escapeHtml(unsealText)}</div>` : '';
+
+    // The grid is 5x5: slots on the even rows and columns, and between two slots a link
+    // that lights when their spells shape each other.
+    const links = new Map(GrimoireMatrixManager.slotInteractions(engine, player).map((p) => [`${p.a}-${p.b}`, p.reasons]));
+    const link = (a: number, b: number, axis: 'h' | 'v'): string => {
+      const reasons = links.get(`${a}-${b}`);
+      return reasons
+        ? `<i class="sb-link is-${axis} is-on" title="${escapeHtml(`Slots ${a + 1} and ${b + 1}: ${reasons.join('; ')}`)}"></i>`
+        : `<i class="sb-link is-${axis}"></i>`;
+    };
+    const grid: string[] = [];
+    for (let row = 0; row < 3; row++) {
+      for (let col = 0; col < 3; col++) {
+        const i = row * 3 + col;
+        grid.push(cells[i]);
+        if (col < 2) grid.push(link(i, i + 1, 'h'));
+      }
+      if (row < 2) {
+        for (let col = 0; col < 3; col++) {
+          grid.push(link(row * 3 + col, row * 3 + col + 3, 'v'));
+          if (col < 2) grid.push('<i class="sb-link"></i>');
+        }
+      }
+    }
+    this.slotInfo = Array.from({ length: GRIMOIRE_SIZE }, (_, i) => this.describeSlot(player, i, unsealText));
 
     return `
       <div class="ui-h">${escapeHtml(config.title)}</div>
       <div class="st-subtabs">${pages}</div>
       ${attuning ? `<div class="ui-note sb-attune">Attuning to this page: <span class="ui-num">${attuning.duration ?? 1}</span> turn left.</div>` : ''}
-      <div class="ui-inset sb-matrix">${cells}</div>
-      <div class="ui-note">Click a slot to put the chosen spell there, or take it out.</div>
+      <div class="ui-inset sb-matrix">${grid.join('')}</div>
+      <div class="ui-note sb-slot-info" id="sb-slot-info" aria-live="polite">${SLOT_INFO_DEFAULT}</div>
       ${unseal}`;
+  }
+
+  /** What one slot does, for the line under the grid while it is pointed at or focused. */
+  private describeSlot(player: Player, i: number, unsealText: string): string {
+    const engine = this.engine!;
+    const config = getGrimoireConfig(engine)!;
+    const unit = resolveManaTerms(engine.manifest).unit;
+    const lines: string[] = [];
+    if (!player.isGrimoireSlotOpen(i)) {
+      return `<b>Slot ${i + 1}: ${escapeHtml(config.lockedSlotLabel ?? 'Sealed')}.</b> ${escapeHtml(unsealText)}`;
+    }
+    const pct = (n: number | undefined) => Math.round((n ?? 0) * 100);
+    if (i === CENTER_SLOT_INDEX && (config.centerCostPerNeighbor || config.centerPowerPerNeighbor)) {
+      lines.push(
+        `${escapeHtml(config.centerSlotLabel ?? 'Center')}: a spell here costs +${pct(config.centerCostPerNeighbor)}% and gains +${pct(config.centerPowerPerNeighbor)}% power for each filled slot beside it.`
+      );
+    }
+    const ground = player.grimoireGrounds[i];
+    if (ground && config.groundedModifier) {
+      lines.push(`Grounded in ${escapeHtml(ground)}: a ${escapeHtml(ground)} spell here ${escapeHtml(describeModifier(config.groundedModifier))}.`);
+    }
+    for (const glyph of player.grimoire[i]?.infusedGlyphs ?? []) {
+      const def = config.glyphs?.find((g) => g.id === glyph.glyphId);
+      if (def) lines.push(`✦${escapeHtml(def.name)}${glyph.potency > 1 ? ` ×${glyph.potency}` : ''}: ${escapeHtml(def.description)}.`);
+    }
+    const spellId = player.grimoire[i]?.spellId;
+    const effective = spellId ? GrimoireMatrixManager.resolveEffectiveSpellDetailed(engine, player, i) : undefined;
+    if (effective) {
+      const power = spellPower(effective.spell);
+      lines.push(
+        `${escapeHtml(effective.spell.name)} cast from here: ${effective.spell.manaCost} ${escapeHtml(unit)}${power ? `, power ${power}` : ''}${
+          effective.notes.length ? ` (${effective.notes.map(escapeHtml).join('; ')})` : ''
+        }.`
+      );
+    }
+    const chosen = this.selectedSpell;
+    if (chosen) {
+      lines.push(
+        spellId === chosen.id
+          ? `Click to take ${escapeHtml(chosen.name)} out.`
+          : `Click to ${player.grimoire.some((s) => s.spellId === chosen.id) ? 'move' : 'put'} ${escapeHtml(chosen.name)} here.`
+      );
+    }
+    if (lines.length === 0) lines.push('An empty slot.');
+    return `<b>Slot ${i + 1}.</b> ${lines.join(' ')}`;
   }
 }

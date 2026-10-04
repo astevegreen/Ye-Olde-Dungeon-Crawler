@@ -161,6 +161,41 @@ export class GrimoireMatrixManager {
   }
 
   /**
+   * Pairs of orthogonal open slots on the active page whose spells shape each other, by the
+   * rules `resolveEffectiveSpellDetailed` applies: the center slot drawing on a filled
+   * neighbor, opposed elements side by side, a ray beside a burst. For the Spellbook's
+   * lines between slots; `a` is always the lower index.
+   */
+  public static slotInteractions(engine: GameEngine, player: Player): Array<{ a: number; b: number; reasons: string[] }> {
+    const config = getGrimoireConfig(engine);
+    if (!config) return [];
+    const spellAt = (i: number): SpellDefinition | undefined => {
+      const id = player.isGrimoireSlotOpen(i) ? player.grimoire[i]?.spellId : null;
+      return id ? lookupSpell(engine, id) : undefined;
+    };
+    const centerShapes = Boolean(config.centerCostPerNeighbor || config.centerPowerPerNeighbor);
+    const pairs: Array<{ a: number; b: number; reasons: string[] }> = [];
+    for (let a = 0; a < GRIMOIRE_SIZE; a++) {
+      for (const b of this.getOrthogonalNeighbors(a)) {
+        if (b < a) continue;
+        const sa = spellAt(a);
+        const sb = spellAt(b);
+        if (!sa || !sb) continue;
+        const reasons: string[] = [];
+        if (centerShapes && (a === CENTER_SLOT_INDEX || b === CENTER_SLOT_INDEX)) {
+          reasons.push(`${config.centerSlotLabel ?? 'Center'} draws on its neighbor`);
+        }
+        if (ELEMENT_OPPOSITES[sa.element as ElementType] === sb.element) reasons.push(`${sa.element} beside ${sb.element}: more power`);
+        const ray = (s: SpellDefinition) => s.targetingMode === 'ray';
+        const burst = (s: SpellDefinition) => s.targetingMode === 'area_burst';
+        if ((ray(sa) && burst(sb)) || (ray(sb) && burst(sa))) reasons.push('a ray beside a burst bursts on impact');
+        if (reasons.length > 0) pairs.push({ a, b, reasons });
+      }
+    }
+    return pairs;
+  }
+
+  /**
    * The player's spell as a cast of it resolves right now, for what the HUD shows: through
    * its slot on the active page (as `CastSpellAction` does), else unmodified. Undefined for
    * an unknown spell id.

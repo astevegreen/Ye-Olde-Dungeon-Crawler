@@ -414,6 +414,23 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     expect(GrimoireMatrixManager.resolveCast(engine, player, 'no_such_spell')).toBeUndefined();
   });
 
+  it('lists the neighboring slots whose spells shape each other, and why', () => {
+    player.learnSpell('blink_self');
+    player.setGrimoireSlot(2, 'blink_self');
+    // fire_ray (0) beside cold_burst (1): opposed elements, and a ray beside a burst.
+    expect(GrimoireMatrixManager.slotInteractions(engine, player)).toEqual([
+      { a: 0, b: 1, reasons: ['fire beside cold: more power', 'a ray beside a burst bursts on impact'] },
+    ]);
+
+    // In the center, the fire ray draws on its neighbor too.
+    player.setGrimoireSlot(4, 'fire_ray');
+    const pairs = GrimoireMatrixManager.slotInteractions(engine, player);
+    expect(pairs).toHaveLength(1);
+    expect(pairs[0]).toMatchObject({ a: 1, b: 4 });
+    expect(pairs[0].reasons[0]).toContain('Midgard');
+    expect(pairs[0].reasons).toHaveLength(3);
+  });
+
   it('applies grid synergies to a normal cast that names no slot', () => {
     // fire_lance auto-slots into slot 2, orthogonally next to cold_burst in slot 1
     player.learnSpell('fire_lance');

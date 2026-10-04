@@ -4,7 +4,7 @@ import { serializeGame, deserializeGame } from '../../storage/serializer';
 import type { SaveData, SerializedContainer, SerializedItemNode } from '../../storage/types';
 import { cotwManifest } from '../../../content/cotw';
 import type { GameEngine } from '../../engine';
-import type { Container } from '../../items/container';
+import { Container } from '../../items/container';
 import { CoinItem, addCurrencyToPlayer, getPlayerTotalCp } from '../currency';
 import { BankService } from '../services';
 import { PickUpAction } from '../../actions/inventory-actions';
@@ -122,6 +122,49 @@ describe('coins take space, not weight', () => {
     expect(new Set(metals)).toEqual(new Set(['gold']));
     expect(purseCoins(loaded)).toBe(300);
     expect(packCoins(loaded)).toBe(130);
+  });
+
+  it('wearing a bigger purse moves the coins into it, and the emptied old purse goes to the pack', () => {
+    const { engine } = newHero();
+    addCurrencyToPlayer(engine.player, { copper: 500, silver: 0, gold: 0 });
+    const value = getPlayerTotalCp(engine.player);
+    const oldPurse = engine.player.inventory.purse!;
+    const bigger = new Container({
+      id: 'bigger-purse',
+      name: 'Bigger Purse',
+      category: 'container',
+      slot: 'purse',
+      containerType: 'purse',
+      weight: 100,
+      bulk: 150,
+      maxWeightCapacity: 5000,
+      maxBulkCapacity: 1500 * COIN_BULK_CM3,
+      acceptedCategories: ['currency'],
+      identified: true,
+    });
+    engine.player.inventory.primaryPack.addItem(bigger);
+
+    const result = engine.player.inventory.equipFromPack('bigger-purse');
+
+    expect(result.success).toBe(true);
+    expect(engine.player.inventory.purse).toBe(bigger);
+    expect(getPlayerTotalCp(engine.player)).toBe(value);
+    expect(coinsIn(bigger)).toBe(562);
+    expect(packCoins(engine)).toBe(0);
+    expect(oldPurse.getItems()).toHaveLength(0);
+    expect(engine.player.inventory.primaryPack.getItem(oldPurse.id)).toBe(oldPurse);
+  });
+
+  it('taking the purse off leaves its coins loose in the pack, where they still count', () => {
+    const { engine } = newHero();
+    const value = getPlayerTotalCp(engine.player);
+    const inPurse = purseCoins(engine);
+
+    expect(engine.player.inventory.unequipToPack('purse').success).toBe(true);
+
+    expect(engine.player.inventory.purse).toBeNull();
+    expect(packCoins(engine)).toBe(inPurse);
+    expect(getPlayerTotalCp(engine.player)).toBe(value);
   });
 
   it('the Banker trades copper and silver for gold, for free, and the coins fit the purse again', () => {

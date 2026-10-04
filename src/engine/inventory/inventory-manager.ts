@@ -212,16 +212,32 @@ export class InventoryManager {
     this.primaryPack.removeItem(itemId);
 
     const equipResult = this.paperdoll.equip(item, check.slot);
-    if (equipResult.unequippedItems && equipResult.unequippedItems.length > 0) {
-      for (const unequipped of equipResult.unequippedItems) {
-        this.primaryPack.addItem(unequipped);
-      }
-    } else if (equipResult.unequippedItem) {
+    const displaced = equipResult.unequippedItems?.length
+      ? equipResult.unequippedItems
+      : equipResult.unequippedItem
+        ? [equipResult.unequippedItem]
+        : [];
+    for (const unequipped of displaced) {
+      if (check.slot === 'purse' && unequipped instanceof Container) this.spillPurse(unequipped);
       // Put previously equipped item back into pack
-      this.primaryPack.addItem(equipResult.unequippedItem);
+      this.primaryPack.addItem(unequipped);
     }
+    // A new purse takes in the coins loose in the pack too, as far as it has room.
+    if (check.slot === 'purse') this.consolidateCoins();
 
     return { success: true };
+  }
+
+  /**
+   * A purse leaving the purse slot hands its coins back to the hero, into the purse now worn
+   * or else the pack: a coin inside a purse in the pack is one nothing counts or spends.
+   */
+  private spillPurse(purse: Container): void {
+    for (const coins of [...purse.getItems()]) {
+      if (!(coins instanceof CoinItem)) continue;
+      purse.removeItem(coins.id);
+      if (!this.storeItem(coins).success) stowCoins(this.primaryPack, coins);
+    }
   }
 
   /**
@@ -285,6 +301,7 @@ export class InventoryManager {
     }
 
     this.paperdoll.unequip(slot);
+    if (slot === 'purse' && item instanceof Container) this.spillPurse(item);
     this.primaryPack.addItem(item);
     return { success: true };
   }

@@ -84,7 +84,7 @@ describe('coins take space, not weight', () => {
   it('coins paid to the hero fill the purse first, then the pack', () => {
     const { engine } = newHero();
     const inPurse = purseCoins(engine);
-    addCurrencyToPlayer(engine.player, { copper: 500, silver: 0, gold: 0, platinum: 0 });
+    addCurrencyToPlayer(engine.player, { copper: 500, silver: 0, gold: 0 });
     expect(purseCoins(engine)).toBe(300);
     expect(packCoins(engine)).toBe(inPurse + 500 - 300);
   });
@@ -106,9 +106,27 @@ describe('coins take space, not weight', () => {
     expect(packCoins(loaded)).toBe(150);
   });
 
+  it('a save holding platinum loads each platinum coin as 10 gold, overflow to the pack (Q42)', () => {
+    const { engine, profile } = newHero();
+    const save: SaveData = JSON.parse(JSON.stringify(serializeGame(engine, profile)));
+    const purse = Object.values(save.player.inventory.paperdoll).find(
+      (n): n is SerializedContainer => !!n && (n as SerializedItemNode & { containerType?: string }).containerType === 'purse'
+    )!;
+    purse.items = [{ ...purse.items[0], id: 'old-plat', name: '40 Platinum Coins', coinData: { denomination: 'platinum', count: 40 } }];
+    save.player.inventory.primaryPack.items.push({ ...purse.items[0], id: 'pack-plat', name: '3 Platinum Coins', coinData: { denomination: 'platinum', count: 3 } });
+
+    const loaded = deserializeGame(save, cotwManifest).engine;
+
+    expect(getPlayerTotalCp(loaded.player)).toBe(43_000);
+    const metals = loaded.player.inventory.getAllCarriedItems().filter((i): i is CoinItem => i instanceof CoinItem).map((c) => c.denomination);
+    expect(new Set(metals)).toEqual(new Set(['gold']));
+    expect(purseCoins(loaded)).toBe(300);
+    expect(packCoins(loaded)).toBe(130);
+  });
+
   it('the Banker trades copper and silver for gold, for free, and the coins fit the purse again', () => {
     const { engine } = newHero();
-    addCurrencyToPlayer(engine.player, { copper: 500, silver: 60, gold: 0, platinum: 0 });
+    addCurrencyToPlayer(engine.player, { copper: 500, silver: 60, gold: 0 });
     const value = getPlayerTotalCp(engine.player);
     const coinsBefore = purseCoins(engine) + packCoins(engine);
     expect(packCoins(engine)).toBeGreaterThan(0);

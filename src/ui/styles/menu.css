@@ -244,7 +244,6 @@
 .it-tone-copper { color: var(--ui-coin-copper); }
 .it-tone-silver { color: var(--ui-coin-silver); }
 .it-tone-gold { color: var(--ui-coin-gold); }
-.it-tone-platinum { color: var(--ui-coin-platinum); }
 
 .ui-num { font-family: var(--ui-font-num); font-variant-numeric: tabular-nums lining-nums; }
 .ui-muted { color: var(--ui-text-muted); }

@@ -35,7 +35,7 @@ export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.4,
-        generate: (id) => ItemFactory.createPlatinumCoins(id, 2),
+        generate: (id) => ItemFactory.createGoldCoins(id, 20),
       },
     ],
   },
@@ -66,7 +66,7 @@ export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.45,
-        generate: (id) => ItemFactory.createPlatinumCoins(id, 3),
+        generate: (id) => ItemFactory.createGoldCoins(id, 30),
       },
     ],
   },
@@ -111,7 +111,7 @@ export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.5,
-        generate: (id) => ItemFactory.createPlatinumCoins(id, 3),
+        generate: (id) => ItemFactory.createGoldCoins(id, 30),
       },
     ],
   },
@@ -158,7 +158,7 @@ export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.6,
-        generate: (id) => ItemFactory.createPlatinumCoins(id, 5),
+        generate: (id) => ItemFactory.createGoldCoins(id, 50),
       },
     ],
   },

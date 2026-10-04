@@ -78,13 +78,10 @@ export class CoinItem extends Item {
 
 /**
  * Converts a raw copper total into optimal physical denominations:
- * Platinum (1000 CP), Gold (100 CP), Silver (10 CP), Copper (1 CP).
+ * Gold (100 CP), Silver (10 CP), Copper (1 CP).
  */
 export function breakdownChange(totalCp: number): CurrencyBreakdown {
   let remaining = Math.max(0, Math.floor(totalCp));
-  const platinum = Math.floor(remaining / COIN_VALUES.platinum);
-  remaining %= COIN_VALUES.platinum;
-
   const gold = Math.floor(remaining / COIN_VALUES.gold);
   remaining %= COIN_VALUES.gold;
 
@@ -93,7 +90,7 @@ export function breakdownChange(totalCp: number): CurrencyBreakdown {
 
   const copper = remaining;
 
-  return { copper, silver, gold, platinum };
+  return { copper, silver, gold };
 }
 
 /**
@@ -103,15 +100,14 @@ export function breakdownToCp(breakdown: CurrencyBreakdown): number {
   return (
     breakdown.copper * COIN_VALUES.copper +
     breakdown.silver * COIN_VALUES.silver +
-    breakdown.gold * COIN_VALUES.gold +
-    breakdown.platinum * COIN_VALUES.platinum
+    breakdown.gold * COIN_VALUES.gold
   );
 }
 
 /**
  * Formats an amount as one figure in copper pieces: "5 CP", "350 CP", "5,000 CP". Every
  * price, fee and purse uses it, so the player compares one number instead of a mix of
- * coins (ADR-0011); the coins themselves stay physical items in four denominations.
+ * coins (ADR-0011); the coins themselves stay physical items in three denominations.
  */
 export function formatCurrency(totalCp: number): string {
   const cp = Math.max(0, Math.floor(totalCp));
@@ -131,7 +127,8 @@ export function parseCoinItem(item: Item): { denomination: CoinDenomination; cou
     const match = lower.match(/(\d+)/);
     if (match) count = parseInt(match[1], 10);
 
-    if (lower.includes('platinum') || lower.includes('pp')) return { denomination: 'platinum', count };
+    // Platinum is gone (Q24): an older platinum item counts as ten gold apiece.
+    if (lower.includes('platinum') || lower.includes('pp')) return { denomination: 'gold', count: count * 10 };
     if (lower.includes('silver') || lower.includes('sp')) return { denomination: 'silver', count };
     if (lower.includes('copper') || lower.includes('bronze') || lower.includes('cp')) return { denomination: 'copper', count };
     return { denomination: 'gold', count }; // default gold
@@ -165,7 +162,7 @@ export function getPlayerCoinItems(player: Player): Array<{ container: Container
  * Calculates current total currency breakdown held by player.
  */
 export function getPlayerCurrencyBreakdown(player: Player): CurrencyBreakdown {
-  const breakdown: CurrencyBreakdown = { copper: 0, silver: 0, gold: 0, platinum: 0 };
+  const breakdown: CurrencyBreakdown = { copper: 0, silver: 0, gold: 0 };
   const coins = getPlayerCoinItems(player);
   for (const { parsed } of coins) {
     breakdown[parsed.denomination] += parsed.count;
@@ -242,7 +239,7 @@ export function stowCoins(container: Container, coins: CoinItem): void {
  */
 export function addCurrencyToPlayer(player: Player, amount: CurrencyBreakdown | number): boolean {
   const breakdown = typeof amount === 'number' ? breakdownChange(amount) : amount;
-  const denoms: CoinDenomination[] = ['platinum', 'gold', 'silver', 'copper'];
+  const denoms: CoinDenomination[] = ['gold', 'silver', 'copper'];
   let allStored = true;
 
   for (const denom of denoms) {

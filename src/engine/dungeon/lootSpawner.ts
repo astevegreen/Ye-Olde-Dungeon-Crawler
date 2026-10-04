@@ -239,7 +239,7 @@ export function selectFloorItemDefinition(
  * Spawns depth-scaled currency denominations:
  * - Floors 1–9: Copper Pieces (CP) and Silver Pieces (SP).
  * - Floors 10–24: Silver Pieces (SP) and Gold Pieces (GP).
- * - Floors 25–50: Gold Pieces (GP) and Platinum Pieces (PP).
+ * - Floors 25–50: Gold Pieces (GP).
  */
 export function spawnFloorCurrency(
   currentFloor: number,
@@ -268,13 +268,12 @@ export function spawnFloorCurrency(
       count = Math.floor(rng() * 15) + 5;  // 5–20 GP (500–2000 CP)
     }
   } else {
-    // Floors 25–50: GP (65%) or PP (35%)
+    // Floors 25–50: GP, a small pile (65%) or a large one (35%)
+    denomination = 'gold';
     if (rng() < 0.65) {
-      denomination = 'gold';
       count = Math.floor(rng() * 40) + 20; // 20–60 GP (2000–6000 CP)
     } else {
-      denomination = 'platinum';
-      count = Math.floor(rng() * 10) + 3;  // 3–13 PP (3000–13000 CP)
+      count = (Math.floor(rng() * 10) + 3) * 10; // 30–130 GP (3000–13000 CP)
     }
   }
 

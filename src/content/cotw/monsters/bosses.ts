@@ -43,7 +43,7 @@ export const BOSS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createPlatinumCoins(id, Math.floor(rng() * 10) + 10),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, (Math.floor(rng() * 10) + 10) * 10),
       },
     ],
   },
@@ -91,7 +91,7 @@ export const BOSS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createPlatinumCoins(id, Math.floor(rng() * 20) + 20),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, (Math.floor(rng() * 20) + 20) * 10),
       },
     ],
   },

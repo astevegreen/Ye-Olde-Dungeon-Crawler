@@ -57,7 +57,7 @@ describe('Merchant Economy & Trading Engine', () => {
   it('allows player to purchase items if they have sufficient currency and pack capacity', () => {
     const olaf = createOlafGeneralStore();
     // Give player 5 Gold (500 CP)
-    addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 5, platinum: 0 });
+    addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 5 });
 
     const brothItem = olaf.stock.find((i) => i.id === 'olaf-broth-1');
     expect(brothItem).toBeDefined();
@@ -85,7 +85,7 @@ describe('Merchant Economy & Trading Engine', () => {
   it('rejects purchase if player does not have enough funds', () => {
     const gunther = createGuntherArmory();
     // Player has 10 CP
-    addCurrencyToPlayer(player, { copper: 10, silver: 0, gold: 0, platinum: 0 });
+    addCurrencyToPlayer(player, { copper: 10, silver: 0, gold: 0 });
 
     const swordItem = gunther.stock.find((i) => i.name.includes('Broadsword'));
     expect(swordItem).toBeDefined();

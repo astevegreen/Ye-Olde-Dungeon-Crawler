@@ -139,7 +139,7 @@ export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.4,
-        generate: (id) => ItemFactory.createPlatinumCoins(id, 2),
+        generate: (id) => ItemFactory.createGoldCoins(id, 20),
       },
     ],
   },

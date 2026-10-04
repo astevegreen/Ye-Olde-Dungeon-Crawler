@@ -484,13 +484,7 @@ export class ItemFactory {
     });
   }
 
-  public static createPlatinumCoins(id = 'coins-pp-1', amount = 10): Item {
-    return new CoinItem({
-      id,
-      denomination: 'platinum',
-      count: amount,
-    });
-  }
+
 
   public static createTravelBread(id = 'bread-1'): Item {
     return new Item({

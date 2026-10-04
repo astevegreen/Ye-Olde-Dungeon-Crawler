@@ -70,7 +70,7 @@ export interface ServicePanel {
   selected?: number;
 }
 
-const DENOMINATIONS: CoinDenomination[] = ['platinum', 'gold', 'silver', 'copper'];
+const DENOMINATIONS: CoinDenomination[] = ['gold', 'silver', 'copper'];
 
 /** The dialog title: the shop's or service's name where the pack gives one. */
 export function serviceTitle(engine: GameEngine, npc: NPC, shopName?: string): string {

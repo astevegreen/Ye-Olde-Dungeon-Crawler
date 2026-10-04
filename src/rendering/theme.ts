@@ -46,7 +46,6 @@ export const DEFAULT_THEME_TOKENS: Required<ThemeTokens> = {
   coinCopper: '#cd7f32',
   coinSilver: '#e2e8f0',
   coinGold: '#ffd700',
-  coinPlatinum: '#7dd3fc',
 
   fontDisplay: '"Courier New", Courier, monospace',
   fontBody: '"Courier New", Courier, monospace',
@@ -139,7 +138,6 @@ export function resolveThemeTokens(tokens?: Partial<ThemeTokens>): Required<Them
     coinCopper: t.coinCopper ?? D.coinCopper,
     coinSilver: t.coinSilver ?? D.coinSilver,
     coinGold: t.coinGold ?? D.coinGold,
-    coinPlatinum: t.coinPlatinum ?? D.coinPlatinum,
     fontDisplay,
     fontBody,
     fontNum: t.fontNum ?? D.fontNum,
@@ -211,7 +209,6 @@ export const THEME_CSS_VARIABLES: ReadonlyArray<readonly [string, keyof ThemeTok
   ['--ui-coin-copper', 'coinCopper'],
   ['--ui-coin-silver', 'coinSilver'],
   ['--ui-coin-gold', 'coinGold'],
-  ['--ui-coin-platinum', 'coinPlatinum'],
   ['--ui-font-display', 'fontDisplay'],
   ['--ui-font-body', 'fontBody'],
   ['--ui-font-num', 'fontNum'],

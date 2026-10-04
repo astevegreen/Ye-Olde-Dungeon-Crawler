@@ -184,10 +184,12 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
   }
 
   if (node.coinData) {
+    // Platinum is gone (Q24, Q42): an older save's platinum coin is worth ten gold.
+    const { denomination, count } = node.coinData;
     return new CoinItem({
       id: node.id,
-      denomination: node.coinData.denomination,
-      count: node.coinData.count,
+      denomination: denomination === 'platinum' ? 'gold' : denomination,
+      count: denomination === 'platinum' ? count * 10 : count,
       parentId: node.parentId ?? null,
       ownerId: node.ownerId ?? null,
     });

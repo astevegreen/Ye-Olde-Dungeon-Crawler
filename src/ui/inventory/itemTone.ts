@@ -22,8 +22,7 @@ export type ItemTone =
   | 'broken'
   | 'copper'
   | 'silver'
-  | 'gold'
-  | 'platinum';
+  | 'gold';
 
 export function itemTone(item: Item | null | undefined): ItemTone | null {
   if (!item || !item.identified) return null;

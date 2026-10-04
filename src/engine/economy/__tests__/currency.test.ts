@@ -48,11 +48,10 @@ describe('Multi-Denomination Currency & Physical Coinage System', () => {
   });
 
   it('calculates optimal change breakdown across denominations', () => {
-    // 1357 CP -> 1 PP (1000), 3 GP (300), 5 SP (50), 7 CP (7)
+    // 1357 CP -> 13 GP (1300), 5 SP (50), 7 CP (7)
     const breakdown = breakdownChange(1357);
     expect(breakdown).toEqual({
-      platinum: 1,
-      gold: 3,
+      gold: 13,
       silver: 5,
       copper: 7,
     });
@@ -87,24 +86,22 @@ describe('Multi-Denomination Currency & Physical Coinage System', () => {
     const added = addCurrencyToPlayer(player, {
       copper: 25,
       silver: 10,
-      gold: 5,
-      platinum: 1,
+      gold: 15,
     });
 
     expect(added).toBe(true);
     const breakdown = getPlayerCurrencyBreakdown(player);
     expect(breakdown.copper).toBe(25);
     expect(breakdown.silver).toBe(10);
-    expect(breakdown.gold).toBe(5);
-    expect(breakdown.platinum).toBe(1);
+    expect(breakdown.gold).toBe(15);
 
-    // Total CP: 25 + 100 + 500 + 1000 = 1625 CP
+    // Total CP: 25 + 100 + 1500 = 1625 CP
     expect(getPlayerTotalCp(player)).toBe(1625);
   });
 
   it('deducts currency from player and provides optimal physical change', () => {
     // Give player 2 Gold (200 CP)
-    addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 2, platinum: 0 });
+    addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 2 });
     expect(getPlayerTotalCp(player)).toBe(200);
 
     // Deduct 45 CP (e.g., purchasing a Torch for 25 CP and Rations for 20 CP)
@@ -115,7 +112,6 @@ describe('Multi-Denomination Currency & Physical Coinage System', () => {
     // Change given: 155 CP -> 1 GP (100), 5 SP (50), 5 CP (5)
     const breakdown = getPlayerCurrencyBreakdown(player);
     expect(breakdown).toEqual({
-      platinum: 0,
       gold: 1,
       silver: 5,
       copper: 5,
@@ -123,7 +119,7 @@ describe('Multi-Denomination Currency & Physical Coinage System', () => {
   });
 
   it('rejects deduction and keeps funds intact when balance is insufficient', () => {
-    addCurrencyToPlayer(player, { copper: 50, silver: 0, gold: 0, platinum: 0 });
+    addCurrencyToPlayer(player, { copper: 50, silver: 0, gold: 0 });
     expect(getPlayerTotalCp(player)).toBe(50);
 
     const result = deductCurrencyFromPlayer(player, 100);

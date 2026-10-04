@@ -243,14 +243,14 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           : undefined;
       const isHealing = (it: any): boolean =>
         Boolean(it && (it.potionType === 'health' || it.effects?.some?.((f: any) => f.type === 'restore_hp')));
-      const COIN: Record<string, number> = { copper: 1, silver: 10, gold: 100, platinum: 1000 };
+      const COIN: Record<string, number> = { copper: 1, silver: 10, gold: 100 };
       const funds = (): number => {
         let cp = 0;
         for (const c of [p.inventory?.purse, p.inventory?.primaryPack]) {
           for (const it of c?.getItems?.() ?? []) {
             if (it.category !== 'currency') continue;
             const name = String(it.name).toLowerCase();
-            const denom = it.denomination ?? (['platinum', 'silver', 'copper'].find((d) => name.includes(d)) ?? 'gold');
+            const denom = it.denomination ?? (['silver', 'copper'].find((d) => name.includes(d)) ?? 'gold');
             const count = it.count ?? Number(name.match(/(\d+)/)?.[1] ?? 1);
             cp += (COIN[denom] ?? 1) * count;
           }

@@ -70,7 +70,6 @@ export interface ThemeTokens {
   coinCopper?: string;
   coinSilver?: string;
   coinGold?: string;
-  coinPlatinum?: string;
 
   // Type and shape.
   fontDisplay?: string;

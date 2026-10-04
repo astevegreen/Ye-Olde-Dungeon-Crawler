@@ -126,7 +126,8 @@ export interface SerializedItemBase {
   potionPotency?: number;
   runeOfReturnData?: { charges: number };
   coinData?: {
-    denomination: CoinDenomination;
+    /** 'platinum' only in saves from before it was dropped (Q24); it loads as ten gold apiece. */
+    denomination: CoinDenomination | 'platinum';
     count: number;
   };
   aspectState?: string;

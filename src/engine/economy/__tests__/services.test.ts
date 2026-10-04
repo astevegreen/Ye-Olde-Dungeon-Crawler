@@ -30,7 +30,7 @@ describe('Town Services (Temple, Sage, Bank)', () => {
       player.inventory.equipFromPack('curse-armor');
 
       // Player funds: 50 GP (5,000 CP)
-      addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 50, platinum: 0 });
+      addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 50 });
 
       const result = TempleService.cleanseCurses(player);
       expect(result.success).toBe(true);
@@ -52,7 +52,7 @@ describe('Town Services (Temple, Sage, Bank)', () => {
         if (!player.inventory.primaryPack.addItem(ItemFactory.createLeatherArmor(`filler-${i}`))) break;
       }
       expect(player.inventory.primaryPack.canContain(cursedArmor).allowed).toBe(false);
-      addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 50, platinum: 0 });
+      addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 50 });
 
       const result = TempleService.cleanseCurses(player);
 
@@ -69,7 +69,7 @@ describe('Town Services (Temple, Sage, Bank)', () => {
       player.statusManager.applyStatus({ type: 'slow', duration: 4 });
 
       // Player funds: 30 GP
-      addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 30, platinum: 0 });
+      addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 30 });
 
       const result = TempleService.healAndRestore(player);
       expect(result.success).toBe(true);
@@ -93,7 +93,7 @@ describe('Town Services (Temple, Sage, Bank)', () => {
       player.inventory.primaryPack.addItem(mysteriousWand);
 
       // Player funds: 20 GP (2000 CP)
-      addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 20, platinum: 0 });
+      addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 20 });
 
       const result = SageService.identifyItem(player, mysteriousWand.id);
       expect(result.success).toBe(true);
@@ -107,7 +107,7 @@ describe('Town Services (Temple, Sage, Bank)', () => {
       knownDagger.identified = true;
       player.inventory.primaryPack.addItem(knownDagger);
 
-      addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 20, platinum: 0 });
+      addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 20 });
 
       const result = SageService.identifyItem(player, knownDagger.id);
       expect(result.success).toBe(false);
@@ -119,28 +119,27 @@ describe('Town Services (Temple, Sage, Bank)', () => {
   describe('Bank of Bjarnarhaven (Coin Compaction)', () => {
     it('exchanges many low-value coins for the fewest of the same worth, at zero fee', () => {
       // Player carries 500 Copper and 60 Silver: 560 coins
-      addCurrencyToPlayer(player, { copper: 500, silver: 60, gold: 0, platinum: 0 });
+      addCurrencyToPlayer(player, { copper: 500, silver: 60, gold: 0 });
       // Total value: 500 CP + 600 CP = 1100 CP
       expect(getPlayerTotalCp(player)).toBe(1100);
 
       const result = BankService.compactCurrency(player);
       expect(result.success).toBe(true);
-      expect(result.message).toContain('560 coins for 2');
+      expect(result.message).toContain('560 coins for 11');
 
       // Value strictly preserved
       expect(getPlayerTotalCp(player)).toBe(1100);
 
-      // Optimal denomination: 1 Platinum (1000 CP), 1 Gold (100 CP) = 2 coins total!
+      // Optimal denomination: 11 Gold (1,100 CP) = 11 coins
       const breakdown = getPlayerCurrencyBreakdown(player);
       expect(breakdown).toEqual({
-        platinum: 1,
-        gold: 1,
+        gold: 11,
         silver: 0,
         copper: 0,
       });
 
-      // 560 coins become 2.
-      expect(result.coinsSaved).toBe(558);
+      // 560 coins become 11.
+      expect(result.coinsSaved).toBe(549);
     });
   });
 });

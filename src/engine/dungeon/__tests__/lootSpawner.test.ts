@@ -31,10 +31,10 @@ describe('Dungeon Loot Spawner & Currency Scaling', () => {
       expect(coin.count).toBeGreaterThan(0);
     }
 
-    // Floors 25-50: Gold (GP) and Platinum (PP)
+    // Floors 25-50: Gold (GP)
     for (let f = 25; f <= 50; f += 5) {
       const coin = spawnFloorCurrency(f, `coin-${f}`, () => prng.next());
-      expect(['gold', 'platinum']).toContain(coin.denomination);
+      expect(coin.denomination).toBe('gold');
       expect(coin.count).toBeGreaterThan(0);
     }
   });

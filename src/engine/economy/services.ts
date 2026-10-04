@@ -321,7 +321,7 @@ export class BankService {
     const coinsBefore = getPlayerCoinItems(player);
     const countBefore = coinsBefore.reduce((sum, c) => sum + c.parsed.count, 0);
     const compacted = breakdownChange(totalCp);
-    const countAfter = compacted.platinum + compacted.gold + compacted.silver + compacted.copper;
+    const countAfter = compacted.gold + compacted.silver + compacted.copper;
 
     if (countAfter >= countBefore) {
       return {

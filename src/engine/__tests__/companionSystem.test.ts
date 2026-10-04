@@ -251,7 +251,7 @@ describe('Companion engine integration (docs/architecture/content-companions.md,
 
       const { addCurrencyToPlayer } = await import('../economy/currency');
       const { TrainerService } = await import('../economy/services');
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100, platinum: 0 });
+      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100 });
 
       const result = TrainerService.reviveCompanion(engine);
 

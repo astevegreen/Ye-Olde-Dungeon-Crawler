@@ -31,7 +31,7 @@ describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () 
   describe('bondCompanion', () => {
     it('sets the bonded flag and deducts the bonding cost when funded', () => {
       const engine = buildEngine();
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100, platinum: 0 });
+      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100 });
 
       const result = TrainerService.bondCompanion(engine);
 
@@ -42,7 +42,7 @@ describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () 
 
     it('refuses when the player cannot afford the cost', () => {
       const engine = buildEngine();
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 10, platinum: 0 });
+      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 10 });
 
       const result = TrainerService.bondCompanion(engine);
 
@@ -52,7 +52,7 @@ describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () 
 
     it('refuses to bond twice', () => {
       const engine = buildEngine();
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 300, platinum: 0 });
+      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 300 });
       TrainerService.bondCompanion(engine);
       const fundsAfterFirstBond = getPlayerTotalCp(engine.player);
 
@@ -66,7 +66,7 @@ describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () 
       const engine = buildEngine();
       expect(engine.summonCompanion(TEST_DEF_ID)).toBeNull();
 
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100, platinum: 0 });
+      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100 });
       TrainerService.bondCompanion(engine);
 
       expect(engine.summonCompanion(TEST_DEF_ID)).not.toBeNull();
@@ -76,7 +76,7 @@ describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () 
   describe('reviveCompanion', () => {
     it('refuses when there is no fallen companion on record', () => {
       const engine = buildEngine();
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 200, platinum: 0 });
+      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 200 });
 
       const result = TrainerService.reviveCompanion(engine);
 
@@ -89,7 +89,7 @@ describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () 
       const companion = Companion.fromDefinition(TEST_DEF_ID, 'live-comp', { x: 11, y: 10 })!;
       engine.attachCompanion(companion);
       engine.deadCompanionRecord = Companion.fromDefinition(TEST_DEF_ID, 'other-dead', { x: 0, y: 0 })!;
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 200, platinum: 0 });
+      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 200 });
 
       const result = TrainerService.reviveCompanion(engine);
 
@@ -101,7 +101,7 @@ describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () 
       const dead = Companion.fromDefinition(TEST_DEF_ID, 'dead-comp', { x: 5, y: 5 })!;
       dead.hp = 0;
       engine.deadCompanionRecord = dead;
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 200, platinum: 0 });
+      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 200 });
 
       const result = TrainerService.reviveCompanion(engine);
 
@@ -116,7 +116,7 @@ describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () 
       const engine = buildEngine();
       const dead = Companion.fromDefinition(TEST_DEF_ID, 'dead-comp-2', { x: 5, y: 5 })!;
       engine.deadCompanionRecord = dead;
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 1, platinum: 0 });
+      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 1 });
 
       const result = TrainerService.reviveCompanion(engine);
 
@@ -129,7 +129,7 @@ describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () 
   describe('switchArchetype', () => {
     it('refuses when there is no active companion', () => {
       const engine = buildEngine();
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100, platinum: 0 });
+      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100 });
 
       const result = TrainerService.switchArchetype(engine, 'bodyguard');
 
@@ -140,7 +140,7 @@ describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () 
       const engine = buildEngine();
       const companion = Companion.fromDefinition(TEST_DEF_ID, 'arch-comp', { x: 11, y: 10 })!;
       engine.attachCompanion(companion);
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100, platinum: 0 });
+      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100 });
 
       const result = TrainerService.switchArchetype(engine, 'bodyguard');
 
@@ -153,7 +153,7 @@ describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () 
       const engine = buildEngine();
       const companion = Companion.fromDefinition(TEST_DEF_ID, 'arch-comp-2', { x: 11, y: 10 })!;
       engine.attachCompanion(companion);
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100, platinum: 0 });
+      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100 });
 
       const result = TrainerService.switchArchetype(engine, 'balanced');
 
@@ -164,7 +164,7 @@ describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () 
   describe('teachSkill', () => {
     it('refuses when there is no active companion', () => {
       const engine = buildEngine();
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100, platinum: 0 });
+      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100 });
 
       const result = TrainerService.teachSkill(engine, 'rally_howl');
 
@@ -175,7 +175,7 @@ describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () 
       const engine = buildEngine();
       const companion = Companion.fromDefinition(TEST_DEF_ID, 'skill-comp', { x: 11, y: 10 })!;
       engine.attachCompanion(companion);
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100, platinum: 0 });
+      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100 });
 
       const result = TrainerService.teachSkill(engine, 'rally_howl', 'Rally Howl');
 
@@ -188,7 +188,7 @@ describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () 
       const companion = Companion.fromDefinition(TEST_DEF_ID, 'skill-comp-2', { x: 11, y: 10 })!;
       companion.unlockSkill('rally_howl');
       engine.attachCompanion(companion);
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100, platinum: 0 });
+      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100 });
 
       const result = TrainerService.teachSkill(engine, 'rally_howl');
 

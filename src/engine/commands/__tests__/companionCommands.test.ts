@@ -33,7 +33,7 @@ describe('Companion commands via EngineCommandBus (docs/architecture/content-com
     it('bonds, then allows summon, revival, archetype switch, and skill teaching end-to-end', () => {
       const engine = buildEngine();
       const bus = new EngineCommandBus(engine);
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 500, platinum: 0 });
+      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 500 });
 
       const bondResult = bus.dispatch({ type: 'trainer_bond_companion' });
       expect(bondResult.success).toBe(true);

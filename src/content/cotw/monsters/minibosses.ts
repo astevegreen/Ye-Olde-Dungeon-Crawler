@@ -103,7 +103,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createPlatinumCoins(id, Math.floor(rng() * 5) + 5),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, (Math.floor(rng() * 5) + 5) * 10),
       },
     ],
   },
@@ -147,7 +147,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createPlatinumCoins(id, Math.floor(rng() * 12) + 8),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, (Math.floor(rng() * 12) + 8) * 10),
       },
     ],
   },
@@ -172,7 +172,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createPlatinumCoins(id, Math.floor(rng() * 15) + 10),
+        generate: (id, rng) => ItemFactory.createGoldCoins(id, (Math.floor(rng() * 15) + 10) * 10),
       },
     ],
   },

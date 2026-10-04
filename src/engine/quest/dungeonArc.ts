@@ -593,7 +593,7 @@ export class DungeonArc {
     return true;
   }
 
-  /** The boss's hoard, two rows above it: a chest of floor-level loot between platinum and a potion. */
+  /** The boss's hoard, two rows above it: a chest of floor-level loot between gold and a potion. */
   private static placeHoard(map: GameMap, bx: number, by: number, floorNumber: number, manifest?: GameContentManifest): void {
     const free = (x: number, y: number) => map.inBounds(x, y) && map.isPassable(x, y);
     const prng = new PRNG(floorNumber * 7919 + 17);
@@ -601,7 +601,7 @@ export class DungeonArc {
     if (free(bx, by - 2)) {
       map.addItemAt(bx, by - 2, createDungeonChest('boss-chest-1', floorNumber, candidates, () => prng.next()));
     }
-    if (free(bx - 1, by - 2)) map.addItemAt(bx - 1, by - 2, ItemFactory.createPlatinumCoins('boss-plat-1', 10)); // 10,000 CP
+    if (free(bx - 1, by - 2)) map.addItemAt(bx - 1, by - 2, ItemFactory.createGoldCoins('boss-gold-1', 100)); // 10,000 CP
     if (free(bx + 1, by - 2)) map.addItemAt(bx + 1, by - 2, ItemFactory.createHealthPotion('boss-pot-1'));
   }
 

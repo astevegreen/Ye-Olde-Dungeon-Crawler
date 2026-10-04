@@ -25,6 +25,16 @@ export function sumWorn(entity: Entity, field: NumericField): number {
   return total;
 }
 
+/** The product of one numeric modifier field over everything worn (1 when nothing carries it). */
+export function productWorn(entity: Entity, field: NumericField): number {
+  let product = 1;
+  for (const mod of wornModifiers(entity)) {
+    const value = mod[field] as number | undefined;
+    if (value !== undefined) product *= value;
+  }
+  return product;
+}
+
 /** The lowest value of one numeric modifier field over everything worn; undefined when nothing carries it. */
 export function lowestWorn(entity: Entity, field: NumericField): number | undefined {
   let lowest: number | undefined;

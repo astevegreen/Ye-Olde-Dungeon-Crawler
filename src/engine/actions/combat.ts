@@ -15,7 +15,7 @@ import { applyImpulse } from '../combat/impulse';
 import { resolveCombatMitigation } from '../combat/mitigationPipeline';
 import { burnOnSacredGround } from '../combat/sacredGround';
 import type { ItemModifier } from '../items/modifiers';
-import { sumWorn, wornModifiers } from '../items/wornModifiers';
+import { productWorn, sumWorn, wornModifiers } from '../items/wornModifiers';
 import { attributeScalingOf, dexterityEvasion, meleeHitPercent, strengthMeleeBonus } from '../combat/attributeScaling';
 
 const DEFAULT_MIN_DAMAGE = 1;
@@ -132,10 +132,14 @@ export class MeleeAttackAction implements Action {
     // What the attacker wears, and a hero's perks (`wornModifiers`).
     const attackerModifiers: ItemModifier[] = wornModifiers(this.attacker);
 
-    // 1. Melee scaling, by data: any modifier that carries it (Blessed and Chaotic do).
+    // 1. Melee scaling, by data: any modifier that carries it (Blessed and Chaotic do). A
+    //    modifier with a below-half-health multiplier (Berserkergang) uses that one instead
+    //    while the attacker is at or below half.
+    const belowHalf = this.attacker.hp * 2 <= this.attacker.maxHp;
     for (const mod of attackerModifiers) {
-      if (mod.meleeDamageMultiplier) {
-        rawDamage = Math.round(rawDamage * mod.meleeDamageMultiplier);
+      const multiplier = belowHalf && mod.belowHalfHpMeleeMultiplier ? mod.belowHalfHpMeleeMultiplier : mod.meleeDamageMultiplier;
+      if (multiplier) {
+        rawDamage = Math.round(rawDamage * multiplier);
       }
       if (mod.meleeDamageFlatBonus) {
         rawDamage += mod.meleeDamageFlatBonus;
@@ -178,7 +182,11 @@ export class MeleeAttackAction implements Action {
 
     // Resolve combat mitigation pipeline (aspect alignment)
     const mitigation = resolveCombatMitigation(this.attacker, this.defender, rawDamage, engine);
-    const { damageDealt, killed } = this.defender.takeDamage(mitigation.finalDamage);
+    // What the defender wears against melee in particular (Shield-Wall); the general
+    // damageTakenMultiplier applies inside takeDamage.
+    const meleeTaken = productWorn(this.defender, 'meleeDamageTakenMultiplier');
+    const finalDamage = meleeTaken === 1 ? mitigation.finalDamage : Math.max(mitigation.finalDamage > 0 ? 1 : 0, Math.round(mitigation.finalDamage * meleeTaken));
+    const { damageDealt, killed } = this.defender.takeDamage(finalDamage);
 
     const cost = this.followUp ? 0 : this.attacker.getActionCost(BASE_ACTION_COST);
     this.attacker.consumeEnergy(cost);

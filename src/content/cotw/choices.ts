@@ -4,6 +4,7 @@ import { SKALDIC_RUNESTONE_CHOICES } from './runestones';
 import { VIDNIR_REVELATION_CHOICE } from './narrative';
 import { IRON_CLANS_BARROW_CHOICES, IVALDA_CHOICE, IVALDA_TOWN_CHOICE } from './ironClans';
 import { GATEWARD_CHOICE } from './prologue';
+import { COTW_SAGA_CHOICES } from './perks';
 
 export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
   /**
@@ -291,6 +292,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
   blood_altar_ritual: BLOOD_ALTAR_CHOICE,
   vidnir_revelation: VIDNIR_REVELATION_CHOICE,
   ...SKALDIC_RUNESTONE_CHOICES,
+  ...COTW_SAGA_CHOICES,
   ...IRON_CLANS_BARROW_CHOICES,
   [IVALDA_CHOICE.id]: IVALDA_CHOICE,
   [IVALDA_TOWN_CHOICE.id]: IVALDA_TOWN_CHOICE,

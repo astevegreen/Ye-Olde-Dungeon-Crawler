@@ -98,12 +98,18 @@ export class DeathResolver {
       // Kill rites: a death that meets the victim's rite yields its magic
       KillRiteManager.evaluate(engine, killer, victim, context);
 
-      // Bloodthirst: each kill heals the killer a share of max HP.
+      // Bloodthirst and Blood-Drinker: each kill heals the killer a share of max HP;
+      // Spell-Thief: a share of max mana.
       if (killer instanceof Actor && killer.isAlive()) {
         const share = sumWorn(killer, 'killHealPercent');
         if (share > 0) {
           const drawn = killer.heal(Math.round(killer.maxHp * share));
           if (drawn > 0) engine.log(`${killer.name} drinks the kill: +${drawn} HP.`);
+        }
+        const manaShare = sumWorn(killer, 'killManaPercent');
+        if (manaShare > 0 && killer instanceof Player) {
+          const restored = killer.restoreMana(Math.round(killer.maxMana * manaShare));
+          if (restored > 0) engine.log(`${killer.name} steals the dying breath: +${restored} ${resolveManaTerms(engine.manifest).name}.`);
         }
       }
 

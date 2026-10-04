@@ -69,6 +69,21 @@ export interface ItemModifier {
   reflectMeleePercent?: number;
   /** Healing the bearer receives is scaled by this (`Actor.heal`). */
   healingReceivedMultiplier?: number;
+  // ── Perk effects (tracker 3.6), in the same vocabulary; each read in one place. ──
+  /** Replaces `meleeDamageMultiplier` while the attacker is at or below half health (Berserkergang). */
+  belowHalfHpMeleeMultiplier?: number;
+  /** Scales a spell's mana cost before any flat discount (Seiðr-Woven: 0.8). */
+  manaCostMultiplier?: number;
+  /** Scales how far a search and a step's passive perception reach (Wayfarer: 2). */
+  perceptionRadiusMultiplier?: number;
+  /** Scales melee damage the bearer takes, after mitigation (Shield-Wall: 0.85). */
+  meleeDamageTakenMultiplier?: number;
+  /** The bearer is never knocked back (Shield-Wall). */
+  impulseImmune?: boolean;
+  /** Each kill restores this share of the killer's max mana (Spell-Thief: 0.1). */
+  killManaPercent?: number;
+  /** Scales how much overflow debt a rest turn clears (Spell-Thief: 2). */
+  overflowDebtDecayMultiplier?: number;
   description?: string;
 }
 

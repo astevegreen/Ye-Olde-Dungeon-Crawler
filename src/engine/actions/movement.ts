@@ -16,7 +16,7 @@ import { getAltarDefinition, isAltarSpent } from '../magic/altars';
 import { formatMagicMessage } from '../magic/magicConfig';
 import { isPrologueHoldingChoices } from '../quest/prologue';
 import { burnOnSacredGround } from '../combat/sacredGround';
-import { wornModifiers } from '../items/wornModifiers';
+import { productWorn, wornModifiers } from '../items/wornModifiers';
 
 /** Tile type identifier for shallow water terrain that imposes a movement energy penalty. */
 const SHALLOW_WATER_TILE = 'shallow_water';
@@ -246,8 +246,10 @@ export class MovementAction implements Action {
     if (this.entity.type === 'player') {
       const player = this.entity as Player;
       const passivePerception = 10 + Math.floor((player.intelligence + player.dexterity + player.level) / 4);
-      for (let pdy = -1; pdy <= 1; pdy++) {
-        for (let pdx = -1; pdx <= 1; pdx++) {
+      // The tiles beside the step, farther for a Wayfarer (`perceptionRadiusMultiplier`).
+      const reach = Math.max(1, Math.round(productWorn(player, 'perceptionRadiusMultiplier')));
+      for (let pdy = -reach; pdy <= reach; pdy++) {
+        for (let pdx = -reach; pdx <= reach; pdx++) {
           if (pdx === 0 && pdy === 0) continue;
           const nx = targetX + pdx;
           const ny = targetY + pdy;

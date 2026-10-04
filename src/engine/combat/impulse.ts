@@ -1,4 +1,5 @@
 import type { GameEngine } from '../engine';
+import { wearsFlag } from '../items/wornModifiers';
 import type { Entity } from '../entities/entity';
 import { Monster } from '../entities/monster';
 import type { Position } from '../types';
@@ -49,7 +50,8 @@ export function applyImpulse(
   dy: number,
   distance = 1
 ): ImpulseResult {
-  if (!target.isAlive() || distance <= 0) {
+  // A target that nothing can move (Shield-Wall, `impulseImmune`) stands where it is.
+  if (!target.isAlive() || distance <= 0 || wearsFlag(target, 'impulseImmune')) {
     return {
       pushed: false,
       distanceTraveled: 0,

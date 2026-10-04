@@ -1,4 +1,5 @@
 import type { Action } from './action';
+import { productWorn } from '../items/wornModifiers';
 import type { ActionResult } from '../types';
 import { BASE_ACTION_COST } from '../types';
 import type { GameEngine } from '../engine';
@@ -33,7 +34,8 @@ export class SearchAction implements Action {
     let discoveredCount = 0;
     const px = this.player.x;
     const py = this.player.y;
-    const r = this.radius;
+    // Wayfarer and its like reach farther (`perceptionRadiusMultiplier`).
+    const r = Math.round(this.radius * productWorn(this.player, 'perceptionRadiusMultiplier'));
 
     // Search (2r + 1) x (2r + 1) region centered on player (default 5x5 for r=2)
     for (let dy = -r; dy <= r; dy++) {

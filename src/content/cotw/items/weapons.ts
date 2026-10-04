@@ -206,6 +206,8 @@ export const COTW_WEAPONS: ItemDefinition[] = [
     bulk: 4000,
     twoHanded: true,
     family: 'cursed',
+    // A relic is rare: a quarter as likely as another item in its draw (2.4, Q2 "C").
+    lootWeight: 0.25,
     stats: { attackBonus: 25 },
     hooks: [
       {

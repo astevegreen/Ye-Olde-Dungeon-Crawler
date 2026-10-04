@@ -1,5 +1,5 @@
 import type { MonsterDefinition } from '../../../engine';
-import { dropLootItem } from '../items/makeItem';
+import { itemDrop } from '../items/makeItem';
 import { coinDrop } from '../coinage';
 
 export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
@@ -26,10 +26,7 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
         chance: 0.6,
         generate: coinDrop(2),
       },
-      {
-        chance: 0.3,
-        generate: (id, rng, floor) => dropLootItem('health_potion', id, rng, floor),
-      },
+      itemDrop(0.3, 'health_potion'),
     ],
   },
   {
@@ -49,10 +46,7 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
         chance: 0.7,
         generate: coinDrop(1),
       },
-      {
-        chance: 0.25,
-        generate: (id, rng, floor) => dropLootItem('cursed_mace', id, rng, floor),
-      },
+      itemDrop(0.1, 'cursed_mace'),
     ],
   },
   {
@@ -90,10 +84,7 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
     xpValue: 80,
     tags: ['spirit', 'neutral', 'hazard'],
     lootTable: [
-      {
-        chance: 0.5,
-        generate: (id, rng, floor) => dropLootItem('scroll_identify', id, rng, floor),
-      },
+      itemDrop(0.5, 'scroll_identify'),
       {
         chance: 0.5,
         generate: coinDrop(0.75),
@@ -125,10 +116,7 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
         chance: 0.65,
         generate: coinDrop(1),
       },
-      {
-        chance: 0.3,
-        generate: (id, rng, floor) => dropLootItem('mana_potion', id, rng, floor),
-      },
+      itemDrop(0.3, 'mana_potion'),
     ],
   },
 ];

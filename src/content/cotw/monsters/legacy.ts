@@ -1,5 +1,5 @@
 import type { MonsterDefinition } from '../../../engine';
-import { makeLootChest, dropLootItem } from '../items/makeItem';
+import { makeLootChest, itemDrop } from '../items/makeItem';
 import { coinDrop } from '../coinage';
 
 /**
@@ -28,10 +28,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
         chance: 0.4,
         generate: coinDrop(0.5),
       },
-      {
-        chance: 0.15,
-        generate: (id, rng, floor) => dropLootItem('health_potion', id, rng, floor),
-      },
+      itemDrop(0.15, 'health_potion'),
     ],
   },
   kobold: {
@@ -49,10 +46,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
         chance: 0.7,
         generate: coinDrop(0.75),
       },
-      {
-        chance: 0.35,
-        generate: (id, rng, floor) => dropLootItem('dagger', id, rng, floor),
-      },
+      itemDrop(0.35, 'dagger'),
     ],
   },
   goblin: {
@@ -70,14 +64,8 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
         chance: 0.65,
         generate: coinDrop(1),
       },
-      {
-        chance: 0.35,
-        generate: (id, rng, floor) => dropLootItem('wooden_shield', id, rng, floor),
-      },
-      {
-        chance: 0.25,
-        generate: (id, rng, floor) => dropLootItem('dagger', id, rng, floor),
-      },
+      itemDrop(0.35, 'wooden_shield'),
+      itemDrop(0.25, 'dagger'),
     ],
   },
   skeleton: {
@@ -93,14 +81,8 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     xpValue: 35,
     tags: ['undead'],
     lootTable: [
-      {
-        chance: 0.5,
-        generate: (id, rng, floor) => dropLootItem('broadsword', id, rng, floor),
-      },
-      {
-        chance: 0.4,
-        generate: (id, rng, floor) => dropLootItem('wooden_shield', id, rng, floor),
-      },
+      itemDrop(0.5, 'broadsword'),
+      itemDrop(0.4, 'wooden_shield'),
       {
         chance: 0.3,
         generate: coinDrop(1),
@@ -136,22 +118,10 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     fleeHealthPercent: 0.3,
     xpValue: 50,
     lootTable: [
-      {
-        chance: 0.55,
-        generate: (id, rng, floor) => dropLootItem('mana_potion', id, rng, floor),
-      },
-      {
-        chance: 0.45,
-        generate: (id, rng, floor) => dropLootItem('scroll_teleport', id, rng, floor),
-      },
-      {
-        chance: 0.35,
-        generate: (id, rng, floor) => dropLootItem('wand_fireballs', id, rng, floor),
-      },
-      {
-        chance: 0.3,
-        generate: (id, rng, floor) => dropLootItem('scroll_identify', id, rng, floor),
-      },
+      itemDrop(0.55, 'mana_potion'),
+      itemDrop(0.45, 'scroll_teleport'),
+      itemDrop(0.35, 'wand_fireballs'),
+      itemDrop(0.3, 'scroll_identify'),
     ],
   },
   wolf: {
@@ -170,10 +140,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
         chance: 0.5,
         generate: coinDrop(0.5),
       },
-      {
-        chance: 0.2,
-        generate: (id, rng, floor) => dropLootItem('leather_armor', id, rng, floor),
-      },
+      itemDrop(0.2, 'leather_armor'),
     ],
   },
   ogre: {
@@ -195,14 +162,8 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
         chance: 0.5,
         generate: (id, rng, floor) => makeLootChest(id, rng, floor ?? 12),
       },
-      {
-        chance: 0.4,
-        generate: (id, rng, floor) => dropLootItem('chainmail', id, rng, floor),
-      },
-      {
-        chance: 0.3,
-        generate: (id, rng, floor) => dropLootItem('frost_blade', id, rng, floor),
-      },
+      itemDrop(0.4, 'chainmail'),
+      itemDrop(0.3, 'frost_blade'),
     ],
   },
   draugr_warrior: {
@@ -227,14 +188,8 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
         chance: 0.6,
         generate: coinDrop(1),
       },
-      {
-        chance: 0.3,
-        generate: (id, rng, floor) => dropLootItem('cursed_mace', id, rng, floor),
-      },
-      {
-        chance: 0.25,
-        generate: (id, rng, floor) => dropLootItem('iron_shield', id, rng, floor),
-      },
+      itemDrop(0.12, 'cursed_mace'),
+      itemDrop(0.25, 'iron_shield'),
     ],
   },
   draugr: {
@@ -259,10 +214,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
         chance: 0.6,
         generate: coinDrop(1),
       },
-      {
-        chance: 0.3,
-        generate: (id, rng, floor) => dropLootItem('cursed_mace', id, rng, floor),
-      },
+      itemDrop(0.12, 'cursed_mace'),
     ],
   },
   cave_troll: {
@@ -280,14 +232,8 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
         chance: 0.8,
         generate: coinDrop(1.5),
       },
-      {
-        chance: 0.4,
-        generate: (id, rng, floor) => dropLootItem('chainmail', id, rng, floor),
-      },
-      {
-        chance: 0.3,
-        generate: (id, rng, floor) => dropLootItem('helmet', id, rng, floor),
-      },
+      itemDrop(0.4, 'chainmail'),
+      itemDrop(0.3, 'helmet'),
     ],
   },
   fire_giant: {
@@ -307,10 +253,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
         chance: 0.9,
         generate: coinDrop(1.5),
       },
-      {
-        chance: 0.3,
-        generate: (id, rng, floor) => dropLootItem('broadsword', id, rng, floor),
-      },
+      itemDrop(0.3, 'broadsword'),
     ],
   },
   frost_drake: {
@@ -331,14 +274,8 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
         chance: 0.8,
         generate: coinDrop(1.5),
       },
-      {
-        chance: 0.4,
-        generate: (id, rng, floor) => dropLootItem('frost_blade', id, rng, floor),
-      },
-      {
-        chance: 0.3,
-        generate: (id, rng, floor) => dropLootItem('health_potion', id, rng, floor),
-      },
+      itemDrop(0.4, 'frost_blade'),
+      itemDrop(0.3, 'health_potion'),
     ],
   },
   dark_sorcerer: {
@@ -372,18 +309,9 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     xpValue: 350,
     tags: ['sorcerer'],
     lootTable: [
-      {
-        chance: 0.6,
-        generate: (id, rng, floor) => dropLootItem('wand_fireballs', id, rng, floor),
-      },
-      {
-        chance: 0.5,
-        generate: (id, rng, floor) => dropLootItem('mana_potion', id, rng, floor),
-      },
-      {
-        chance: 0.4,
-        generate: (id, rng, floor) => dropLootItem('scroll_teleport', id, rng, floor),
-      },
+      itemDrop(0.6, 'wand_fireballs'),
+      itemDrop(0.5, 'mana_potion'),
+      itemDrop(0.4, 'scroll_teleport'),
     ],
   },
   ancient_wyrm: {
@@ -422,14 +350,8 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
         chance: 1.0,
         generate: coinDrop(1.5),
       },
-      {
-        chance: 0.6,
-        generate: (id, rng, floor) => dropLootItem('frost_blade', id, rng, floor),
-      },
-      {
-        chance: 0.5,
-        generate: (id, rng, floor) => dropLootItem('health_potion', id, rng, floor),
-      },
+      itemDrop(0.6, 'frost_blade'),
+      itemDrop(0.5, 'health_potion'),
     ],
   },
   jotun_champion: {
@@ -453,10 +375,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
         chance: 0.6,
         generate: (id, rng, floor) => makeLootChest(id, rng, floor ?? 40),
       },
-      {
-        chance: 0.4,
-        generate: (id, rng, floor) => dropLootItem('chainmail', id, rng, floor),
-      },
+      itemDrop(0.4, 'chainmail'),
     ],
   },
   shadow_fiend: {
@@ -483,14 +402,8 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
         chance: 1.0,
         generate: coinDrop(1.5),
       },
-      {
-        chance: 0.6,
-        generate: (id, rng, floor) => dropLootItem('scroll_teleport', id, rng, floor),
-      },
-      {
-        chance: 0.5,
-        generate: (id, rng, floor) => dropLootItem('mana_potion', id, rng, floor),
-      },
+      itemDrop(0.6, 'scroll_teleport'),
+      itemDrop(0.5, 'mana_potion'),
     ],
   },
   troll_wife_warlock: {
@@ -516,14 +429,8 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
         chance: 0.7,
         generate: coinDrop(1.5),
       },
-      {
-        chance: 0.4,
-        generate: (id, rng, floor) => dropLootItem('mana_potion', id, rng, floor),
-      },
-      {
-        chance: 0.25,
-        generate: (id, rng, floor) => dropLootItem('frost_blade', id, rng, floor),
-      },
+      itemDrop(0.4, 'mana_potion'),
+      itemDrop(0.25, 'frost_blade'),
     ],
   },
   root_wraith: {
@@ -549,10 +456,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
         chance: 0.8,
         generate: coinDrop(1.5),
       },
-      {
-        chance: 0.35,
-        generate: (id, rng, floor) => dropLootItem('cure_poison_potion', id, rng, floor),
-      },
+      itemDrop(0.35, 'cure_poison_potion'),
     ],
   },
   bark_husk_miner: {
@@ -600,10 +504,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
         chance: 0.6,
         generate: coinDrop(2),
       },
-      {
-        chance: 0.3,
-        generate: (id, rng, floor) => dropLootItem('health_potion', id, rng, floor),
-      },
+      itemDrop(0.3, 'health_potion'),
     ],
   },
   nisse: {
@@ -634,14 +535,8 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     fleeHealthPercent: 0.15,
     xpValue: 45,
     lootTable: [
-      {
-        chance: 0.35,
-        generate: (id, rng, floor) => dropLootItem('broadsword', id, rng, floor),
-      },
-      {
-        chance: 0.25,
-        generate: (id, rng, floor) => dropLootItem('wooden_shield', id, rng, floor),
-      },
+      itemDrop(0.35, 'broadsword'),
+      itemDrop(0.25, 'wooden_shield'),
       {
         chance: 0.4,
         generate: coinDrop(1.25),

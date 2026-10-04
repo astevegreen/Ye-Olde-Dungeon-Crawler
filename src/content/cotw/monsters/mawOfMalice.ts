@@ -1,5 +1,5 @@
 import type { MonsterDefinition } from '../../../engine';
-import { dropLootItem } from '../items/makeItem';
+import { itemDrop } from '../items/makeItem';
 import { coinDrop } from '../coinage';
 
 export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
@@ -105,10 +105,7 @@ export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
         chance: 1.0,
         generate: coinDrop(1.25),
       },
-      {
-        chance: 0.6,
-        generate: (id, rng, floor) => dropLootItem('scroll_teleport', id, rng, floor),
-      },
+      itemDrop(0.6, 'scroll_teleport'),
       {
         chance: 0.5,
         generate: coinDrop(0.5),

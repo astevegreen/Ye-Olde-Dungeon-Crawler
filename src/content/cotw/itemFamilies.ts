@@ -6,13 +6,15 @@ import type { ItemFamilyConfig } from '../../engine';
  * (Q20 + Q33 "B": 60 Positive, 45 Negative, 10 Chaotic a game; no curses before floor 3).
  * +N is a separate roll (`calculateEnchantmentLevel`), so a Blessed Broadsword +2 happens.
  *
- * `itemsPerGame` is the measured count of eligible items a full clear offers at the current
- * loot volume (`npm run balance`, 20 seeds, medium); tracker item 2.4 changes the volume and
- * re-measures it. Chaotic's eight Loki-touched effects and Hel-touched Unholy arrive in 2.3.
+ * `itemsPerGame` is the measured count of eligible items a full clear offers at the loot
+ * volume of `loot.ts` (`npm run balance`, 20 seeds, medium: 238, relics not counted). Cursed
+ * rolls 15 a game because the four cursed relics (`family: 'cursed'`, `lootWeight` 0.25) add
+ * about 8 more, and the negative families lose a tenth of their share to floors 1–2, so
+ * Negative comes to 45. `lootVolume.test.ts` pins the measured counts.
  */
 export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
   categories: ['weapon', 'armor', 'shield', 'helmet', 'boots', 'gauntlets', 'bracers', 'cloak', 'amulet', 'ring'],
-  itemsPerGame: 650,
+  itemsPerGame: 240,
   families: [
     {
       category: 'blessed',
@@ -119,7 +121,7 @@ export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
     {
       category: 'cursed',
       alignment: 'negative',
-      perGame: 20,
+      perGame: 15,
       minFloor: 3,
       binds: true,
       tiers: [

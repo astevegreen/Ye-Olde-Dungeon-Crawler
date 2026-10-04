@@ -1,9 +1,10 @@
 import { createDungeonChest, createScaledItem } from '../../../engine';
-import { COIN_BULK_CM3, type Item, type ItemDefinition, type Predicate } from '../../../engine';
+import { COIN_BULK_CM3, type Item, type ItemDefinition, type LootDropRule, type Predicate } from '../../../engine';
 import { COTW_ITEMS } from './index';
 import { COTW_SPELL_TABLETS } from '../spellTablets';
 import { COTW_COINAGE } from '../coinage';
 import { COTW_ITEM_FAMILIES } from '../itemFamilies';
+import { COTW_LOOT_RATES, COTW_MONSTER_DROP_SCALE } from '../loot';
 
 /**
  * Items outside COTW_ITEMS, so never rolled as random floor loot: sold in town and
@@ -85,7 +86,7 @@ export function makeShopItem(itemId: string, instanceId: string, predicate?: Pre
 
 /** A monster's chest drop: filled as a dungeon chest on `floor` would be. */
 export function makeLootChest(instanceId: string, rng: () => number, floor: number): Item {
-  return createDungeonChest(instanceId, floor, COTW_ITEMS, rng, COTW_COINAGE, COTW_ITEM_FAMILIES);
+  return createDungeonChest(instanceId, floor, COTW_ITEMS, rng, COTW_COINAGE, COTW_ITEM_FAMILIES, COTW_LOOT_RATES);
 }
 
 /** Loot scaled to `floor` (the floor a monster died on), rolled from the loot table's seeded rng. */
@@ -97,4 +98,13 @@ export function makeLootItem(itemId: string, instanceId: string, rng: () => numb
 export function dropLootItem(itemId: string, instanceId: string, rng: () => number, floor = 1): Item | null {
   const def = definitionFor(itemId);
   return floor < (def.minFloor ?? 1) ? null : createScaledItem(def, instanceId, floor, rng, COTW_ITEM_FAMILIES);
+}
+
+/**
+ * A monster's ordinary item drop (`dropLootItem`): `weight` is the table's chance before the
+ * pack's loot volume, scaled by `COTW_MONSTER_DROP_SCALE` for gear or consumables (Q2 "C").
+ */
+export function itemDrop(weight: number, itemId: string): LootDropRule {
+  const scale = definitionFor(itemId).category === 'consumable' ? COTW_MONSTER_DROP_SCALE.consumable : COTW_MONSTER_DROP_SCALE.gear;
+  return { chance: weight * scale, generate: (id, rng, floor) => dropLootItem(itemId, id, rng, floor) };
 }

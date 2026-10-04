@@ -1,5 +1,5 @@
 import type { MonsterDefinition } from '../../../engine';
-import { makeLootChest, dropLootItem } from '../items/makeItem';
+import { makeLootChest, itemDrop } from '../items/makeItem';
 import { coinDrop } from '../coinage';
 
 export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
@@ -26,10 +26,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
         chance: 0.75,
         generate: coinDrop(0.75),
       },
-      {
-        chance: 0.35,
-        generate: (id, rng, floor) => dropLootItem('cure_poison_potion', id, rng, floor),
-      },
+      itemDrop(0.35, 'cure_poison_potion'),
     ],
   },
   {
@@ -57,10 +54,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
         chance: 0.7,
         generate: coinDrop(0.75),
       },
-      {
-        chance: 0.35,
-        generate: (id, rng, floor) => dropLootItem('mana_potion', id, rng, floor),
-      },
+      itemDrop(0.35, 'mana_potion'),
     ],
   },
   {
@@ -108,10 +102,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
         chance: 0.8,
         generate: coinDrop(1),
       },
-      {
-        chance: 0.3,
-        generate: (id, rng, floor) => dropLootItem('frost_blade', id, rng, floor),
-      },
+      itemDrop(0.3, 'frost_blade'),
     ],
   },
   {

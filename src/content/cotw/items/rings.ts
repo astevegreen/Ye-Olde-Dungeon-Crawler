@@ -114,6 +114,8 @@ export const COTW_RINGS: ItemDefinition[] = [
     weight: 50,
     bulk: 40,
     family: 'cursed',
+    // A relic is rare: a quarter as likely as another item in its draw (2.4, Q2 "C").
+    lootWeight: 0.25,
     stats: { attackBonus: 15 },
     identified: false,
     description: 'Gnawed from ancient dragon bone steeped in world-root corruption. It lends a monstrous strength of arm while its blight gnaws at the wearer in turn, and it will not come off the finger until a cleansing.',

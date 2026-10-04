@@ -1,5 +1,5 @@
 import type { MonsterDefinition } from '../../../engine';
-import { dropLootItem } from '../items/makeItem';
+import { itemDrop } from '../items/makeItem';
 import { coinDrop } from '../coinage';
 
 export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
@@ -19,14 +19,8 @@ export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
         chance: 0.6,
         generate: coinDrop(0.75),
       },
-      {
-        chance: 0.25,
-        generate: (id, rng, floor) => dropLootItem('dagger', id, rng, floor),
-      },
-      {
-        chance: 0.15,
-        generate: (id, rng, floor) => dropLootItem('wooden_shield', id, rng, floor),
-      },
+      itemDrop(0.25, 'dagger'),
+      itemDrop(0.15, 'wooden_shield'),
     ],
   },
   {
@@ -62,10 +56,7 @@ export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
         chance: 0.5,
         generate: coinDrop(1),
       },
-      {
-        chance: 0.2,
-        generate: (id, rng, floor) => dropLootItem('leather_armor', id, rng, floor),
-      },
+      itemDrop(0.2, 'leather_armor'),
     ],
   },
   {
@@ -99,14 +90,8 @@ export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
     xpValue: 12,
     tags: ['imp', 'fae', 'fodder'],
     lootTable: [
-      {
-        chance: 0.35,
-        generate: (id, rng, floor) => dropLootItem('health_potion', id, rng, floor),
-      },
-      {
-        chance: 0.35,
-        generate: (id, rng, floor) => dropLootItem('mana_potion', id, rng, floor),
-      },
+      itemDrop(0.35, 'health_potion'),
+      itemDrop(0.35, 'mana_potion'),
       {
         chance: 0.4,
         generate: coinDrop(0.5),
@@ -135,14 +120,8 @@ export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
     xpValue: 60,
     tags: ['hag', 'humanoid', 'caster'],
     lootTable: [
-      {
-        chance: 0.5,
-        generate: (id, rng, floor) => dropLootItem('mana_potion', id, rng, floor),
-      },
-      {
-        chance: 0.4,
-        generate: (id, rng, floor) => dropLootItem('scroll_identify', id, rng, floor),
-      },
+      itemDrop(0.5, 'mana_potion'),
+      itemDrop(0.4, 'scroll_identify'),
       {
         chance: 0.6,
         generate: coinDrop(1.5),

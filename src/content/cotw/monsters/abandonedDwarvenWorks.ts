@@ -1,5 +1,5 @@
 import type { MonsterDefinition } from '../../../engine';
-import { makeLootChest, dropLootItem } from '../items/makeItem';
+import { makeLootChest, itemDrop } from '../items/makeItem';
 import { coinDrop } from '../coinage';
 
 export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
@@ -25,14 +25,8 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
         chance: 0.7,
         generate: coinDrop(1),
       },
-      {
-        chance: 0.25,
-        generate: (id, rng, floor) => dropLootItem('cursed_mace', id, rng, floor),
-      },
-      {
-        chance: 0.2,
-        generate: (id, rng, floor) => dropLootItem('iron_shield', id, rng, floor),
-      },
+      itemDrop(0.1, 'cursed_mace'),
+      itemDrop(0.2, 'iron_shield'),
     ],
   },
   {
@@ -110,14 +104,8 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
         chance: 0.8,
         generate: coinDrop(1.25),
       },
-      {
-        chance: 0.35,
-        generate: (id, rng, floor) => dropLootItem('iron_shield', id, rng, floor),
-      },
-      {
-        chance: 0.25,
-        generate: (id, rng, floor) => dropLootItem('broadsword', id, rng, floor),
-      },
+      itemDrop(0.35, 'iron_shield'),
+      itemDrop(0.25, 'broadsword'),
     ],
   },
   {
@@ -136,10 +124,7 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
         chance: 0.5,
         generate: coinDrop(0.5),
       },
-      {
-        chance: 0.2,
-        generate: (id, rng, floor) => dropLootItem('dagger', id, rng, floor),
-      },
+      itemDrop(0.2, 'dagger'),
     ],
   },
 ];

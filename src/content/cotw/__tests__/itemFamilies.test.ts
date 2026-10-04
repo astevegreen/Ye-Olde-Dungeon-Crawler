@@ -21,10 +21,14 @@ describe('cotw item families (Q1 A, Q20 + Q33 B)', () => {
   const byAlignment = (alignment: string) =>
     COTW_ITEM_FAMILIES.families.filter((f) => f.alignment === alignment).reduce((sum, f) => sum + f.perGame, 0);
 
-  it('offers 60 Positive, 45 Negative and 10 Chaotic items a game', () => {
+  it('rolls 60 Positive, 40 Negative and 10 Chaotic items a game; the cursed relics bring Negative to 45', () => {
+    // The measured counts, relics and the shallow floors included, are pinned in lootVolume.test.ts.
     expect(byAlignment('positive')).toBe(60);
-    expect(byAlignment('negative')).toBe(45);
+    expect(byAlignment('negative')).toBe(40);
     expect(byAlignment('chaotic')).toBe(10);
+    const relics = COTW_ITEMS.filter((d) => d.family === 'cursed');
+    expect(relics.map((d) => d.id).sort()).toEqual(['cursed_mace', 'marrow_gnawed_ring', 'nid_dripping_hauberk', 'rot_porous_cleaver']);
+    for (const relic of relics) expect(relic.lootWeight, relic.id).toBe(0.25);
   });
 
   it('rolls no negative family before floor 3', () => {

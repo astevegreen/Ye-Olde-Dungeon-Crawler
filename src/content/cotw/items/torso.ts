@@ -87,6 +87,8 @@ export const COTW_TORSO: ItemDefinition[] = [
     weight: 19000,
     bulk: 12000,
     family: 'cursed',
+    // A relic is rare: a quarter as likely as another item in its draw (2.4, Q2 "C").
+    lootWeight: 0.25,
     stats: { defenseBonus: 18 },
     hooks: [
       {

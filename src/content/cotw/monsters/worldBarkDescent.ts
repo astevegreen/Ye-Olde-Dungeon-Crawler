@@ -1,5 +1,5 @@
 import type { MonsterDefinition } from '../../../engine';
-import { dropLootItem } from '../items/makeItem';
+import { itemDrop } from '../items/makeItem';
 import { coinDrop } from '../coinage';
 
 export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
@@ -64,10 +64,7 @@ export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
         chance: 0.85,
         generate: coinDrop(1.25),
       },
-      {
-        chance: 0.35,
-        generate: (id, rng, floor) => dropLootItem('chainmail', id, rng, floor),
-      },
+      itemDrop(0.35, 'chainmail'),
     ],
   },
   {
@@ -92,10 +89,7 @@ export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
         chance: 0.75,
         generate: coinDrop(0.75),
       },
-      {
-        chance: 0.3,
-        generate: (id, rng, floor) => dropLootItem('cure_poison_potion', id, rng, floor),
-      },
+      itemDrop(0.3, 'cure_poison_potion'),
     ],
   },
   {
@@ -133,10 +127,7 @@ export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
         chance: 1.0,
         generate: coinDrop(1.25),
       },
-      {
-        chance: 0.5,
-        generate: (id, rng, floor) => dropLootItem('mana_potion', id, rng, floor),
-      },
+      itemDrop(0.5, 'mana_potion'),
       {
         chance: 0.4,
         generate: coinDrop(0.5),

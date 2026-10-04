@@ -293,6 +293,8 @@ export const COTW_LEGACY_ITEMS: ItemDefinition[] = [
     weight: 4000,
     bulk: 2500,
     family: 'cursed',
+    // A relic is rare: a quarter as likely as another item in its draw (2.4, Q2 "C").
+    lootWeight: 0.25,
     stats: { attackBonus: 2 },
     identified: false,
     description: 'A heavy mace bearing foul demonic runes. Its curse binds it to the hand that lifts it until a priest breaks it.',

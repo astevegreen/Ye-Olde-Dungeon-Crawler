@@ -90,10 +90,12 @@ export interface ItemModifier {
   knockbackBonus?: number;
   /** A status the bearer's melee hits may leave on the foe (Bone-Breaker: slow, a turn, one hit in four). */
   onHitStatus?: { status: string; chance: number; duration: number; potency?: number };
-  /** Percentage points added to the bearer's ranged hit chance (Sure Shot: 15). */
+  /** Percentage points added to the bearer's ranged hit chance (`RangedAttackAction`). */
   rangedHitBonus?: number;
-  /** Flat damage added to the bearer's ranged hits (Sure Shot: 2). */
+  /** Flat damage added to the bearer's ranged hits (`RangedAttackAction`). */
   rangedDamageBonus?: number;
+  /** Percentage points added to the bearer's melee hit chance (Sure Shot: 10; `MeleeAttackAction`). */
+  meleeHitBonus?: number;
   /** These afflictions last the bearer a share of their length (Iron Stomach: poison and burning, half). */
   shortenedAfflictions?: { types: string[]; multiplier: number };
   /** Taking the stairs identifies every unidentified item the bearer has carried since the last stairs (Lore-Keeper). */

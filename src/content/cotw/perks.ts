@@ -12,7 +12,8 @@ import type { ChoiceDefinition, LevelMilestoneTrigger, PerkDefinition } from '..
  * The Third Verse's Elementalist chooses its element in a second choice, offered on the next
  * move (`saga_30_element`, waiting on its flag).
  *
- * Waiting on the owner: Odin's Eye's ranged range (Q59; no ranged attack can be made in play).
+ * Q59 "as recommended": no ranged attack can be made in play, so Sure Shot is a melee perk and
+ * Odin's Eye reaches farther with spells only; reach weapons wait for phase 5.
  */
 /** The elements an Elementalist may choose (cotw's damaging elements), with their names. */
 const ELEMENTALIST_ELEMENTS: Array<[string, string]> = [
@@ -161,7 +162,7 @@ export const COTW_MILESTONE_PERKS: PerkDefinition[] = [
   { id: 'milestone_bone_breaker', name: 'Bone-Breaker', source: 'milestone', tagline: 'Where you strike, something gives.', description: 'One melee hit in four slows the foe for a turn.', effects: { onHitStatus: { status: 'slow', chance: 0.25, duration: 1 } } },
   // ── Dexterity 20 ──
   { id: 'milestone_fleet_foot', name: 'Fleet-Foot', source: 'milestone', tagline: 'The frost never quite catches you.', description: 'Speed +10, for good.' },
-  { id: 'milestone_sure_shot', name: 'Sure Shot', source: 'milestone', tagline: 'The arrow knows the way.', description: 'Ranged hit chance +15% and ranged damage +2.', effects: { rangedHitBonus: 15, rangedDamageBonus: 2 } },
+  { id: 'milestone_sure_shot', name: 'Sure Shot', source: 'milestone', tagline: 'Your blade knows the way.', description: 'Melee hit chance +10% and melee damage +2.', effects: { meleeHitBonus: 10, meleeDamageFlatBonus: 2 } },
   // ── Constitution 20 ──
   { id: 'milestone_thick_hide', name: 'Thick Hide', source: 'milestone', tagline: 'Blows land, and slide off.', description: 'All damage taken −10%.', effects: { damageTakenMultiplier: 0.9 } },
   { id: 'milestone_iron_stomach', name: 'Iron Stomach', source: 'milestone', tagline: 'Venom and flame find little purchase.', description: 'Poison and burning last half as long on you.', effects: { shortenedAfflictions: { types: ['poison', 'burning'], multiplier: 0.5 } } },

@@ -328,6 +328,17 @@ describe('perk effects', () => {
     expect(Math.max(Math.abs(player.x - 10), Math.abs(player.y - 10))).toBe(1);
   });
 
+  it('meleeHitBonus adds points to the melee hit roll, and meleeDamageFlatBonus to the blow (Sure Shot, Q59)', () => {
+    const { engine, player, foe } = build({ combatConfig: { attributeScaling: { baseline: 10, meleeBaseHitPercent: 80 } } });
+    engine.rng = () => 0.85; // misses at 80, lands at 90
+    new MeleeAttackAction(player, foe).perform(engine);
+    expect(foe.hp).toBe(1000);
+    player.grantPerk(perk('sure', { meleeHitBonus: 10, meleeDamageFlatBonus: 2 }));
+    player.gainEnergy(100);
+    new MeleeAttackAction(player, foe).perform(engine);
+    expect(1000 - foe.hp).toBe(12);
+  });
+
   it('evasionPerIntelligence adds Intelligence above the baseline to evasion (Mind over Matter)', () => {
     const { engine, player, foe } = build({ combatConfig: { attributeScaling: { baseline: 10 } } });
     player.intelligence = 30;

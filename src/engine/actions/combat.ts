@@ -98,12 +98,13 @@ export class MeleeAttackAction implements Action {
       };
     }
 
-    // The attacker's hit roll (the pack's base chance, moved by Dexterity; 100 means no roll),
-    // then the defender's evasion: its Dexterity, the Survivor perk (+10% for the player against a
-    // mastered species) and what it wears (Trickster's Step). Either way the blow is spent and
-    // costs the attacker what it wears (Twinstrike).
+    // The attacker's hit roll (the pack's base chance, moved by Dexterity and by what it wears
+    // and holds, Sure Shot; 100 means no roll), then the defender's evasion: its Dexterity, the
+    // Survivor perk (+10% for the player against a mastered species) and what it wears
+    // (Trickster's Step). Either way the blow is spent and costs the attacker what it wears
+    // (Twinstrike).
     const scaling = attributeScalingOf(engine.manifest);
-    const hitPercent = meleeHitPercent(this.attacker, scaling);
+    const hitPercent = Math.min(100, meleeHitPercent(this.attacker, scaling) + sumWorn(this.attacker, 'meleeHitBonus'));
     if (hitPercent < 100 && engine.rng() * 100 >= hitPercent) {
       return this.missed(engine, `${this.attacker.name} misses ${this.defender.name}.`);
     }

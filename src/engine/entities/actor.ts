@@ -4,6 +4,7 @@ import type { GameEngine } from '../engine';
 import { InventoryManager } from '../inventory/inventory-manager';
 import type { Item, EquipmentSlot } from '../items/item';
 import type { ElementType, ElementalAffinity } from '../magic/elements';
+import { wornModifiers } from '../items/wornModifiers';
 
 export interface IItemContainer {
   addItem(item: Item): boolean;
@@ -247,13 +248,11 @@ export class Actor extends Entity implements IItemContainer, IEquipmentBearer {
     if (this.isInvulnerable || !this.capabilities.isDestructible) {
       return { damageDealt: 0, killed: false };
     }
-    // Worn items that make every blow worse (Hexed, Glass Fury), whatever dealt it.
+    // What it wears and the perks it holds scale every blow (Hexed, Glass Fury, Thick Hide), whatever dealt it.
     if (rawAmount > 0) {
-      for (const item of this.inventory.paperdoll.getEquippedItems()) {
-        for (const mod of item.modifiers) {
-          if (mod.damageTakenMultiplier) rawAmount = Math.round(rawAmount * mod.damageTakenMultiplier);
-          if (mod.damageTakenFlatBonus) rawAmount += mod.damageTakenFlatBonus;
-        }
+      for (const mod of wornModifiers(this)) {
+        if (mod.damageTakenMultiplier) rawAmount = Math.round(rawAmount * mod.damageTakenMultiplier);
+        if (mod.damageTakenFlatBonus) rawAmount += mod.damageTakenFlatBonus;
       }
     }
     rawAmount = this.limitDamageToHpFloor(rawAmount);
@@ -277,10 +276,8 @@ export class Actor extends Entity implements IItemContainer, IEquipmentBearer {
 
   public override heal(amount: number): number {
     let multiplier = 1;
-    for (const item of this.inventory.paperdoll.getEquippedItems()) {
-      for (const mod of item.modifiers) {
-        if (mod.healingReceivedMultiplier !== undefined) multiplier *= mod.healingReceivedMultiplier;
-      }
+    for (const mod of wornModifiers(this)) {
+      if (mod.healingReceivedMultiplier !== undefined) multiplier *= mod.healingReceivedMultiplier;
     }
     if (multiplier === 1 || amount <= 0) return super.heal(amount);
     const scaled = amount * multiplier + this.healCarry;

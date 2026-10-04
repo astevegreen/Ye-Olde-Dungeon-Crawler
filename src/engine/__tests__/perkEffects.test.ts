@@ -183,6 +183,13 @@ describe('perk effects', () => {
     expect(player.speed).toBe(speed + 10);
   });
 
+  it('a perk’s damageTakenMultiplier and healingReceivedMultiplier reach Actor.takeDamage and Actor.heal (Thick Hide)', () => {
+    const { player } = build();
+    player.grantPerk(perk('hide', { damageTakenMultiplier: 0.9, healingReceivedMultiplier: 0.5 }));
+    expect(player.takeDamage(20).damageDealt).toBe(18);
+    expect(player.heal(10)).toBe(5);
+  });
+
   it('sightBonus widens the hero’s sight radius beside the pacts’ modifier (Wayfarer, Q56)', () => {
     const { engine, player } = build();
     engine.fovRadius = 4;

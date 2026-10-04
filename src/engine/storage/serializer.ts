@@ -21,6 +21,9 @@ import { rebuildItemRegistries } from '../items/rebuildItemRegistries';
 import { registerSerializeGameFn, flightRecorder } from '../debug/flightRecorder';
 import { CompendiumManager } from '../compendium/compendiumManager';
 import type { GameContentManifest, ItemDefinition } from '../types/manifest';
+import type { ItemQuality } from '../items/item';
+import type { ItemModifier } from '../items/modifiers';
+import { familyModifier, type ItemFamilyConfig } from '../items/modifierRoller';
 import { cloneWorldState, createWorldState, type WorldState } from '../state/worldState';
 import { compactTilesWithDictionary, decompactTiles, compactFov, decompactFov } from './compaction';
 import { EnergyModel } from '../actors/energyModel';
@@ -30,6 +33,7 @@ import type {
   SaveData,
   SerializedContainer,
   SerializedItem,
+  SerializedItemBase,
   SerializedItemNode,
   SerializedPlayer,
   SerializedMonster,
@@ -117,6 +121,8 @@ interface ItemDefinitionLookup {
    * share is left out rather than guessed.
    */
   idByName: ReadonlyMap<string, string>;
+  /** The pack's item families, for a relic saved with the old `cursed` label. */
+  families?: ItemFamilyConfig;
 }
 
 export function itemDefinitionLookup(manifest: GameContentManifest | undefined): ItemDefinitionLookup {
@@ -129,7 +135,29 @@ export function itemDefinitionLookup(manifest: GameContentManifest | undefined):
     idByName.set(def.name, def.id);
   }
   for (const name of shared) idByName.delete(name);
-  return { byId, idByName };
+  return { byId, idByName, families: manifest?.itemFamilies };
+}
+
+/** The `enchanted`/`cursed`/`broken` labels are gone (ADR-0012): an older save's loads as normal. */
+function legacyQuality(quality: SerializedItemBase['quality']): ItemQuality {
+  return quality === 'artifact' ? 'artifact' : 'normal';
+}
+
+/**
+ * An item's saved modifiers; a relic saved with the old `cursed` label and none gets its
+ * definition's family (the Cursed tier of its own floor), so it stays bound.
+ */
+function restoredModifiers(
+  node: SerializedItemBase,
+  def: ItemDefinition | undefined,
+  definitions: ItemDefinitionLookup | undefined
+): ItemModifier[] | undefined {
+  if (node.modifiers && node.modifiers.length > 0) return [...node.modifiers];
+  if (node.quality === 'cursed' && def?.family && definitions?.families) {
+    const relic = familyModifier(definitions.families, def.family, node.minFloor ?? def.minFloor ?? 1, node.id);
+    if (relic) return [relic];
+  }
+  return undefined;
 }
 
 export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefinitionLookup): Item {
@@ -152,7 +180,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
       weight: node.weight,
       unitWeight: node.unitWeight,
       bulk: node.bulk,
-      quality: node.quality,
+      quality: legacyQuality(node.quality),
       identified: node.identified,
       stats: node.stats,
       description: node.description,
@@ -168,7 +196,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
       maxSlots: node.maxSlots,
       acceptedCategories: node.acceptedCategories,
       aspectState: node.aspectState,
-      modifiers: node.modifiers ? [...node.modifiers] : undefined,
+      modifiers: restoredModifiers(node, def, definitions),
       parentId: node.parentId ?? null,
       ownerId: node.ownerId ?? null,
     });
@@ -207,7 +235,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
       weight: node.weight,
       unitWeight: node.unitWeight,
       bulk: node.bulk,
-      quality: node.quality,
+      quality: legacyQuality(node.quality),
       identified: node.identified,
       stats: node.stats,
       description: node.description,
@@ -220,7 +248,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
       charges: node.wandData.charges,
       maxCharges: node.wandData.maxCharges,
       aspectState: node.aspectState,
-      modifiers: node.modifiers ? [...node.modifiers] : undefined,
+      modifiers: restoredModifiers(node, def, definitions),
       parentId: node.parentId ?? null,
       ownerId: node.ownerId ?? null,
     });
@@ -238,7 +266,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
       weight: node.weight,
       unitWeight: node.unitWeight,
       bulk: node.bulk,
-      quality: node.quality,
+      quality: legacyQuality(node.quality),
       identified: node.identified,
       stats: node.stats,
       description: node.description,
@@ -249,7 +277,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
       elementalAffix: node.elementalAffix,
       spellId: node.scrollSpellId,
       aspectState: node.aspectState,
-      modifiers: node.modifiers ? [...node.modifiers] : undefined,
+      modifiers: restoredModifiers(node, def, definitions),
       parentId: node.parentId ?? null,
       ownerId: node.ownerId ?? null,
     });
@@ -267,7 +295,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
       weight: node.weight,
       unitWeight: node.unitWeight,
       bulk: node.bulk,
-      quality: node.quality,
+      quality: legacyQuality(node.quality),
       identified: node.identified,
       stats: node.stats,
       description: node.description,
@@ -280,7 +308,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
       potency: node.potionPotency ?? 20,
       effects: def?.potionConfig?.effects,
       aspectState: node.aspectState,
-      modifiers: node.modifiers ? [...node.modifiers] : undefined,
+      modifiers: restoredModifiers(node, def, definitions),
       parentId: node.parentId ?? null,
       ownerId: node.ownerId ?? null,
     });
@@ -298,7 +326,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
       weight: node.weight,
       unitWeight: node.unitWeight,
       bulk: node.bulk,
-      quality: node.quality,
+      quality: legacyQuality(node.quality),
       identified: node.identified,
       stats: node.stats,
       description: node.description,
@@ -309,7 +337,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
       elementalAffix: node.elementalAffix,
       charges: node.runeOfReturnData.charges,
       aspectState: node.aspectState,
-      modifiers: node.modifiers ? [...node.modifiers] : undefined,
+      modifiers: restoredModifiers(node, def, definitions),
       parentId: node.parentId ?? null,
       ownerId: node.ownerId ?? null,
     });
@@ -331,7 +359,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
     weight: node.weight,
     unitWeight: node.unitWeight,
     bulk: node.bulk,
-    quality: node.quality,
+    quality: legacyQuality(node.quality),
     identified: node.identified,
     stats: node.stats,
     description: node.description,
@@ -341,7 +369,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
     enchantmentLevel: node.enchantmentLevel,
     elementalAffix: node.elementalAffix,
     aspectState: node.aspectState,
-    modifiers: node.modifiers ? [...node.modifiers] : undefined,
+    modifiers: restoredModifiers(node, def, definitions),
     parentId: node.parentId ?? null,
     ownerId: node.ownerId ?? null,
   });

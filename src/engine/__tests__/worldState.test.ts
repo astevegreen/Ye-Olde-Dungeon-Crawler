@@ -311,7 +311,6 @@ describe('Merchant Predicate Stock Filtering', () => {
       category: 'weapon',
       weight: 2000,
       bulk: 500,
-      quality: 'enchanted',
       identified: true,
       predicate: { type: 'minFaction', faction: 'temple_standing', value: 10 },
     });

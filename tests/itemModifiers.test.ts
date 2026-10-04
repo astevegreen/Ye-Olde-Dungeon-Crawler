@@ -108,21 +108,6 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       expect(helm.effectiveStats.defenseBonus).toBe(5);
       expect(helm.effectiveStats.strengthBonus).toBe(1);
     });
-
-    it('zeroes effectiveStats when item is broken regardless of positive modifiers', () => {
-      const sword = new Item({
-        id: 'sw1',
-        name: 'Broadsword',
-        category: 'weapon',
-        slot: 'mainHand',
-        weight: 1500,
-        bulk: 2000,
-        quality: 'broken',
-        stats: { attackBonus: 5 },
-      });
-      sword.addModifier(mod('blessed', 10));
-      expect(sword.effectiveStats.attackBonus).toBe(0);
-    });
   });
 
   describe('Combat Pipeline: Physical & Magical Invariant Separation', () => {

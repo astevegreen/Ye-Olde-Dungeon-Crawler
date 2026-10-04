@@ -16,12 +16,14 @@ function makeItem(overrides: Partial<Item> = {}): Item {
 
 describe('itemTone: the eight alignment buckets', () => {
   it('gives an unidentified item no special color, even one that would otherwise be enchanted', () => {
-    const item = makeItem({ identified: false, quality: 'enchanted' });
+    const item = makeItem({ identified: false, enchantmentLevel: 2 });
+    item.modifiers = [{ id: 'blessed', name: 'Blessed', alignment: 'positive', category: 'blessed' }];
     expect(itemTone(item)).toBe(null);
   });
 
   it('colors a cursed identified item crimson red', () => {
-    const item = makeItem({ identified: true, quality: 'cursed' });
+    const item = makeItem({ identified: true });
+    item.modifiers = [{ id: 'cursed', name: 'Cursed', alignment: 'negative', category: 'cursed', binds: true }];
     expect(itemTone(item)).toBe('cursed');
   });
 
@@ -50,7 +52,8 @@ describe('itemTone: the eight alignment buckets', () => {
   });
 
   it('colors an enchanted identified item arcane violet, distinct from blessed and holy', () => {
-    const item = makeItem({ identified: true, quality: 'enchanted' });
+    const item = makeItem({ identified: true });
+    item.modifiers = [{ id: 'enchanted', name: 'Enchanted', alignment: 'positive', category: 'enchanted' }];
     expect(itemTone(item)).toBe('enchanted');
   });
 
@@ -70,10 +73,12 @@ describe('itemTone: the eight alignment buckets', () => {
     const identifiedNormal = makeItem({ identified: true });
     const blessed = makeItem({ identified: true });
     blessed.modifiers = [{ id: 'blessed', name: 'Blessed', alignment: 'positive', category: 'blessed' }];
-    const enchanted = makeItem({ identified: true, quality: 'enchanted' });
+    const enchanted = makeItem({ identified: true });
+    enchanted.modifiers = [{ id: 'enchanted', name: 'Enchanted', alignment: 'positive', category: 'enchanted' }];
     const holy = makeItem({ identified: true });
     holy.modifiers = [{ id: 'holy', name: 'of Dawn', alignment: 'positive', category: 'holy' }];
-    const cursed = makeItem({ identified: true, quality: 'cursed' });
+    const cursed = makeItem({ identified: true });
+    cursed.modifiers = [{ id: 'cursed', name: 'Cursed', alignment: 'negative', category: 'cursed', binds: true }];
     const hexed = makeItem({ identified: true });
     hexed.modifiers = [{ id: 'hexed', name: 'Hexed', alignment: 'negative', category: 'hexed' }];
     const unholy = makeItem({ identified: true });

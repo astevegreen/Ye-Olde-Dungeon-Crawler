@@ -280,10 +280,8 @@ export class ItemInspector {
       let manaDiscount = 0;
       if (player.inventory?.paperdoll) {
         for (const it of player.inventory.paperdoll.getEquippedItems()) {
-          if (!it.isBroken() && it.modifiers) {
-            for (const mod of it.modifiers) {
-              if (mod.manaCostDiscount) manaDiscount += mod.manaCostDiscount;
-            }
+          for (const mod of it.modifiers) {
+            if (mod.manaCostDiscount) manaDiscount += mod.manaCostDiscount;
           }
         }
       }

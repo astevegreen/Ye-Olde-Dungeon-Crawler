@@ -166,7 +166,7 @@ describe('CotW Item Distribution & Economic Integration', () => {
     expect(rotMatriarch.minFloor).toBe(36);
     const cleaverDrop = rotMatriarch.lootTable?.some((r) => {
       const item = r.generate('test-cleaver', () => 0.5)!;
-      return (item.id === 'rot_porous_cleaver' || item.definitionId === 'rot_porous_cleaver') && item.quality === 'cursed';
+      return (item.id === 'rot_porous_cleaver' || item.definitionId === 'rot_porous_cleaver') && item.modifiers[0]?.category === 'cursed' && item.isBound();
     });
     expect(cleaverDrop).toBe(true);
 
@@ -175,7 +175,7 @@ describe('CotW Item Distribution & Economic Integration', () => {
     expect(tarAbomination.minFloor).toBe(44);
     const hauberkDrop = tarAbomination.lootTable?.some((r) => {
       const item = r.generate('test-hauberk', () => 0.5)!;
-      return (item.id === 'nid_dripping_hauberk' || item.definitionId === 'nid_dripping_hauberk') && item.quality === 'cursed';
+      return (item.id === 'nid_dripping_hauberk' || item.definitionId === 'nid_dripping_hauberk') && item.modifiers[0]?.category === 'cursed' && item.isBound();
     });
     expect(hauberkDrop).toBe(true);
 
@@ -184,7 +184,7 @@ describe('CotW Item Distribution & Economic Integration', () => {
     expect(marrowEater.minFloor).toBe(47);
     const ringDrop = marrowEater.lootTable?.some((r) => {
       const item = r.generate('test-ring', () => 0.5)!;
-      return (item.id === 'marrow_gnawed_ring' || item.definitionId === 'marrow_gnawed_ring') && item.quality === 'cursed';
+      return (item.id === 'marrow_gnawed_ring' || item.definitionId === 'marrow_gnawed_ring') && item.modifiers[0]?.category === 'cursed' && item.isBound();
     });
     expect(ringDrop).toBe(true);
   });

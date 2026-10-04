@@ -42,7 +42,7 @@ export class IdentifyAction implements Action {
     if (targetItem.elementalAffix) {
       details += ` [${targetItem.elementalAffix.name} +${targetItem.elementalAffix.bonusDamage} ${targetItem.elementalAffix.element.toUpperCase()}]`;
     }
-    if (targetItem.quality === 'cursed') {
+    if (targetItem.isBound()) {
       details += ' (CURSED!)';
     }
 

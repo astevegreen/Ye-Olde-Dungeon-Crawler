@@ -240,7 +240,6 @@
 .it-tone-blessed { color: var(--ui-rarity-blessed); }
 .it-tone-chaotic { color: var(--ui-rarity-chaotic); }
 .it-tone-artifact { color: var(--ui-rarity-artifact); }
-.it-tone-broken { color: var(--ui-rarity-broken); }
 .it-tone-copper { color: var(--ui-coin-copper); }
 .it-tone-silver { color: var(--ui-coin-silver); }
 .it-tone-gold { color: var(--ui-coin-gold); }

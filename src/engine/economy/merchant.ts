@@ -65,24 +65,25 @@ export function getMerchantPriceMultiplier(worldState: WorldState, pricing: Merc
   return tier?.multiplier ?? 1;
 }
 
-/** True if the item carries a beneficial identity: blessed, artifact-tier, or enchanted/elemental. */
+/** A positive family (Blessed, Enchanted, Holy), a +N or affix, or an artifact. */
 function hasPositiveAttribute(item: Item): boolean {
-  return item.isBlessed() || item.isHoly() || item.isEnchanted() || item.quality === 'artifact';
+  return item.modifiers.some((m) => m.alignment === 'positive') || item.isEnchanted() || item.quality === 'artifact';
 }
 
-/** True if the item carries a harmful identity: cursed, hexed, unholy, or chaotic. */
+/** A negative family: Cursed, Hexed or Unholy. Chaotic is neither bonus nor scrap. */
 function hasNegativeAttribute(item: Item): boolean {
-  return item.isCursed() || item.isHexed() || item.isUnholy() || item.isChaotic();
+  return item.modifiers.some((m) => m.alignment === 'negative');
 }
 
 /**
  * Calculates sell valuation for an item offered by the player:
  * - Base sell rate is 50% of buy value.
  * - A merchant appraises anything crossing the counter, whether or not the seller ever
- *   paid to identify it. An unidentified item that turns out blessed/enchanted/artifact
- *   fetches a windfall price; one that turns out cursed/hexed/unholy/chaotic fetches scrap;
- *   a plain unidentified item still suffers the ordinary mystery-goods penalty.
- * - Once identified, enchanted items receive a +50% bonus and cursed items sell for 10%.
+ *   paid to identify it. An unidentified item that turns out positive fetches a windfall
+ *   price; one that turns out negative fetches scrap; a plain unidentified item still
+ *   suffers the ordinary mystery-goods penalty.
+ * - Once identified, a positive family pays +50% (the +N is already in the value) and a
+ *   negative one sells for 10%.
  */
 export function getItemSellPrice(item: Item): number {
   const buyPrice = getItemBuyPrice(item);
@@ -97,10 +98,10 @@ export function getItemSellPrice(item: Item): number {
     } else {
       sellPrice = Math.floor(sellPrice * 0.25);
     }
-  } else if (item.quality === 'enchanted') {
-    sellPrice = Math.floor(sellPrice * 1.5);
-  } else if (item.quality === 'cursed') {
+  } else if (hasNegativeAttribute(item)) {
     sellPrice = Math.floor(sellPrice * 0.1);
+  } else if (item.modifiers.some((m) => m.alignment === 'positive')) {
+    sellPrice = Math.floor(sellPrice * 1.5);
   }
 
   return Math.max(1, sellPrice);

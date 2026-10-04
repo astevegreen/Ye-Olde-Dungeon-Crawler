@@ -57,7 +57,6 @@ export const COTW_HEAD: ItemDefinition[] = [
     weight: 1100,
     bulk: 900,
     stats: { defenseBonus: 4, attackBonus: 3 },
-    quality: 'enchanted',
     identified: false,
     description: 'Brand-scorched iron coronet consecrated to Sól. Empowers spellcasting heat and wards against flame, though its radiant aura alerts resting subterranean foes.',
     value: 180,

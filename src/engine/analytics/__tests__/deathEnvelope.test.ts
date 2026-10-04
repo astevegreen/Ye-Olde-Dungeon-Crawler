@@ -46,7 +46,6 @@ describe('DeathEnvelope & Run-Failure Telemetry', () => {
       category: 'weapon',
       weight: 1000,
       bulk: 500,
-      quality: 'enchanted',
       identified: true,
       stats: { attackBonus: 5 },
       elementalAffix: { name: 'Flaming', element: 'fire', bonusDamage: 4 },

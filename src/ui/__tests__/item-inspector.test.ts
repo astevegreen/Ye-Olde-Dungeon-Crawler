@@ -63,7 +63,6 @@ describe('ItemInspector: selection, item breakdown and actions', () => {
         weight: 1100,
         bulk: 400,
         tier: 3,
-        quality: 'enchanted',
         enchantmentLevel: 2,
         elementalAffix: { element: 'fire', bonusDamage: 6, name: 'of Embers' },
         stats: { attackBonus: 8 },
@@ -85,7 +84,7 @@ describe('ItemInspector: selection, item breakdown and actions', () => {
         category: 'ring',
         weight: 50,
         bulk: 20,
-        quality: 'cursed',
+        modifiers: [{ id: 'cursed-mod', name: 'Cursed', alignment: 'negative', category: 'cursed', prefix: 'Cursed', binds: true }],
         identified: true,
       });
 
@@ -142,7 +141,7 @@ describe('ItemInspector: selection, item breakdown and actions', () => {
         category: 'weapon',
         weight: 1200,
         bulk: 500,
-        quality: 'cursed',
+        modifiers: [{ id: 'cursed-mod', name: 'Cursed', alignment: 'negative', category: 'cursed', prefix: 'Cursed', binds: true }],
       });
       engine.player.inventory.paperdoll.equip(cursedSword, 'mainHand');
 

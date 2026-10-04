@@ -74,7 +74,6 @@ export const COTW_CONTAINERS: ItemDefinition[] = [
     minFloor: 27,
     weight: 200,
     bulk: 250,
-    quality: 'enchanted',
     // Olaf sells it too (Q44), and a purse has nothing to hide.
     identified: true,
     description: 'Reinforced with liquid-tight quicksilver seams, it holds 1,500 coins, a far larger fortune than a common pouch.',

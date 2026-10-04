@@ -14,7 +14,12 @@ import {
 } from './modifiers';
 import { getRegisteredContainer } from './containerRegistry';
 
-export type ItemQuality = 'broken' | 'normal' | 'enchanted' | 'cursed' | 'artifact';
+/**
+ * What an item is beyond its family and +N: `artifact` marks the pack's unique named pieces
+ * (never identified, never rolled a family). The old `enchanted`/`cursed`/`broken` labels are
+ * gone (Q1 "A"): a family says what an item is, and a save's old label loads as normal.
+ */
+export type ItemQuality = 'normal' | 'artifact';
 
 export type ItemCategory =
   | 'weapon'
@@ -164,9 +169,6 @@ export class Item {
   }
 
   public get effectiveStats(): ItemStatModifiers {
-    if (this.isBroken()) {
-      return { attackBonus: 0, defenseBonus: 0, speedBonus: 0, strengthBonus: 0 };
-    }
     const combined: ItemStatModifiers = { ...this.stats };
     for (const mod of this.modifiers) {
       if (mod.statDeltas) {
@@ -202,8 +204,7 @@ export class Item {
       'wand',
     ];
     if (identifiableCategories.includes(this.category)) return true;
-    if (this.modifiers && this.modifiers.length > 0) return true;
-    return this.quality === 'enchanted' || this.quality === 'cursed';
+    return this.modifiers.length > 0;
   }
 
   public get displayName(): string {
@@ -218,19 +219,11 @@ export class Item {
       }
       return `${unId}${qtyTag}`;
     }
-    if (this.isBroken()) {
-      const brokenName = `Broken ${this.name}`;
-      return `${brokenName}${qtyTag}`;
-    }
-
     let base = this.name;
     if (this.enchantmentLevel > 0 || this.elementalAffix) {
       const enchStr = this.enchantmentLevel > 0 ? ` +${this.enchantmentLevel}` : '';
       const affixStr = this.elementalAffix ? ` ${this.elementalAffix.name}` : '';
       base = `${this.name}${enchStr}${affixStr}`;
-    } else if (this.quality === 'enchanted' && (this.stats.attackBonus || this.stats.defenseBonus)) {
-      const bonus = (this.stats.attackBonus ?? 0) + (this.stats.defenseBonus ?? 0);
-      base = bonus > 0 ? `+${bonus} ${this.name}` : `${bonus} ${this.name}`;
     }
 
     // A family names the item through its own prefix or suffix, nothing is inferred: a
@@ -240,8 +233,6 @@ export class Item {
 
     if (prefixes.length > 0) {
       base = `${prefixes.join(' ')} ${base}`;
-    } else if (this.quality === 'cursed' && !base.startsWith('Cursed')) {
-      base = `Cursed ${base}`;
     }
 
     if (suffixes.length > 0) {
@@ -251,20 +242,17 @@ export class Item {
     return `${base}${qtyTag}`;
   }
 
+  /** The Cursed family (the four cursed relics are pinned to it). */
   public isCursed(): boolean {
-    return (
-      this.quality === 'cursed' ||
-      this.aspectState === 'aspect_corrupt' ||
-      this.modifiers.some(isModifierCursed)
-    );
+    return this.aspectState === 'aspect_corrupt' || this.modifiers.some(isModifierCursed);
   }
 
   /**
    * Worn, it stays on until a cleansing takes the binding family off it: Cursed, Hexed
-   * and Unholy in cotw (`ItemFamilyDefinition.binds`). A cursed-quality relic binds too.
+   * and Unholy in cotw (`ItemFamilyDefinition.binds`).
    */
   public isBound(): boolean {
-    return this.quality === 'cursed' || this.modifiers.some(isModifierBinding);
+    return this.modifiers.some(isModifierBinding);
   }
 
   public isBlessed(): boolean {
@@ -287,14 +275,9 @@ export class Item {
     return this.modifiers.some(isModifierHoly);
   }
 
-  /** Distinct from `isBlessed()`: only the 'enchanted' modifier category or quality/enchantment-level tier. */
+  /** The Enchanted family, a +N or an elemental affix. */
   public isEnchanted(): boolean {
-    return (
-      this.quality === 'enchanted' ||
-      this.enchantmentLevel > 0 ||
-      !!this.elementalAffix ||
-      this.modifiers.some(isModifierEnchantedCategory)
-    );
+    return this.enchantmentLevel > 0 || !!this.elementalAffix || this.modifiers.some(isModifierEnchantedCategory);
   }
 
   /** A cleansing: takes off every binding family (and any Cursed one), keeps the rest. */
@@ -310,15 +293,9 @@ export class Item {
       }
     }
 
-    const hadCurse =
-      removed.length > 0 ||
-      this.quality === 'cursed' ||
-      this.aspectState === 'aspect_corrupt';
+    const hadCurse = removed.length > 0 || this.aspectState === 'aspect_corrupt';
 
     this.modifiers = kept;
-    if (this.quality === 'cursed') {
-      this.quality = 'normal';
-    }
     if (this.aspectState === 'aspect_corrupt') {
       this.aspectState = undefined;
     }
@@ -340,10 +317,6 @@ export class Item {
       return true;
     }
     return false;
-  }
-
-  public isBroken(): boolean {
-    return this.quality === 'broken';
   }
 
   public totalWeight(): number {

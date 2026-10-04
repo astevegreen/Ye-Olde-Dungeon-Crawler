@@ -141,7 +141,7 @@ function matchesFilter(item: Item, filter: BackpackFilter): boolean {
         item instanceof ScrollItem ||
         item instanceof WandItem ||
         item instanceof RuneOfReturnItem ||
-        item.quality === 'enchanted' ||
+        item.modifiers.length > 0 ||
         item.quality === 'artifact' ||
         (item.enchantmentLevel ?? 0) > 0
       );

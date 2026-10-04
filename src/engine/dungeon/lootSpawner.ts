@@ -86,9 +86,7 @@ export function createScaledItem(
     stats.defenseBonus = baseDef + (enchantmentLevel * 1);
   }
 
-  const quality = (def.quality && def.quality !== 'normal')
-    ? def.quality
-    : (enchantmentLevel > 0 || elementalAffix) ? 'enchanted' : 'normal';
+  const quality = def.quality ?? 'normal';
   const baseValue = def.value ?? 20;
   const scaledValue = Math.round(baseValue * (1 + enchantmentLevel * 0.4) + (elementalAffix ? 150 : 0));
 

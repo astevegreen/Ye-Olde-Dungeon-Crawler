@@ -83,7 +83,6 @@ describe('Multi-Character Profile Save Manager', () => {
       category: 'misc',
       weight: 75,
       bulk: 50,
-      quality: 'enchanted',
       identified: true,
       stats: { attackBonus: 5 },
     });

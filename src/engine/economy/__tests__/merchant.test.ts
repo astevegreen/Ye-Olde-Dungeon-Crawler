@@ -39,17 +39,17 @@ describe('Merchant Economy & Trading Engine', () => {
     // 7500 * 0.25 = 1875 CP
     expect(getItemSellPrice(unIdSword)).toBe(1875);
 
-    // Enchanted item receives 50% valuation bonus
+    // A positive family receives a 50% valuation bonus
     const enchantedSword = ItemFactory.createBroadsword('ench-sword');
     enchantedSword.identified = true;
-    enchantedSword.quality = 'enchanted';
+    enchantedSword.modifiers = [{ id: 'e', name: 'Enchanted', alignment: 'positive', category: 'enchanted' }];
     // 7500 * 1.5 = 11250 CP
     expect(getItemSellPrice(enchantedSword)).toBe(11250);
 
-    // Cursed item suffers 90% valuation penalty
+    // A negative family suffers a 90% valuation penalty
     const cursedSword = ItemFactory.createBroadsword('cursed-sword');
     cursedSword.identified = true;
-    cursedSword.quality = 'cursed';
+    cursedSword.modifiers = [{ id: 'c', name: 'Cursed', alignment: 'negative', category: 'cursed', binds: true }];
     // 7500 * 0.10 = 750 CP
     expect(getItemSellPrice(cursedSword)).toBe(750);
   });
@@ -169,7 +169,7 @@ describe('Merchant Economy & Trading Engine', () => {
   it('rejects selling cursed equipment that is currently bound to player paperdoll', () => {
     const gunther = createGuntherArmory();
     const cursedSword = ItemFactory.createBroadsword('cursed-sword');
-    cursedSword.quality = 'cursed';
+    cursedSword.modifiers = [{ id: 'c', name: 'Cursed', alignment: 'negative', category: 'cursed', binds: true }];
     cursedSword.identified = true;
 
     player.inventory.primaryPack.addItem(cursedSword);

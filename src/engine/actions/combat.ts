@@ -113,9 +113,7 @@ export class MeleeAttackAction implements Action {
     const attackerItems = getActorEquippedItems(this.attacker);
     const attackerModifiers: ItemModifier[] = [];
     for (const it of attackerItems) {
-      if (!it.isBroken() && it.modifiers) {
-        attackerModifiers.push(...it.modifiers);
-      }
+      attackerModifiers.push(...it.modifiers);
     }
 
     // 1. Melee scaling, by data: any modifier that carries it (Blessed and Chaotic do).
@@ -206,7 +204,7 @@ export class MeleeAttackAction implements Action {
     // 4. Defender Hexed damage amplification
     const defenderItems = getActorEquippedItems(this.defender);
     for (const it of defenderItems) {
-      if (!it.isBroken() && it.modifiers) {
+      {
         for (const mod of it.modifiers) {
           if (mod.damageTakenMultiplier || mod.damageTakenFlatBonus || mod.category === 'hexed') {
             if (mod.damageTakenMultiplier) {

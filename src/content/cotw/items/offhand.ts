@@ -27,7 +27,6 @@ export const COTW_OFFHAND: ItemDefinition[] = [
     weight: 4500,
     bulk: 4000,
     stats: { defenseBonus: 5 },
-    quality: 'enchanted',
     hooks: [
       {
         event: 'onHit',
@@ -55,7 +54,6 @@ export const COTW_OFFHAND: ItemDefinition[] = [
     weight: 800,
     bulk: 600,
     stats: { defenseBonus: 3, attackBonus: 2 },
-    quality: 'enchanted',
     identified: false,
     description: 'A brilliant focus prism capturing radiant sun-chariot glare. It guards and strikes well, but completely suppresses ancestral giant-blood power while held.',
     value: 160,
@@ -71,7 +69,6 @@ export const COTW_OFFHAND: ItemDefinition[] = [
     weight: 2200,
     bulk: 1800,
     stats: { defenseBonus: 4 },
-    quality: 'enchanted',
     hooks: [
       {
         event: 'onHit',
@@ -99,7 +96,6 @@ export const COTW_OFFHAND: ItemDefinition[] = [
     weight: 7500,
     bulk: 6500,
     stats: { defenseBonus: 11, speedBonus: -2 },
-    quality: 'enchanted',
     identified: false,
     description: 'An impenetrable slab of fossilized Yggdrasil taproot. Unsurpassed kinetic defense, though remaining stationary can cause living roots to anchor to the stone beneath.',
     value: 380,
@@ -115,7 +111,6 @@ export const COTW_OFFHAND: ItemDefinition[] = [
     weight: 3800,
     bulk: 3500,
     stats: { defenseBonus: 14 },
-    quality: 'enchanted',
     identified: false,
     description: 'Interlocked ancient barrow ribs bound in black sinew. Radiates deathly cold and terrifying dread warding against necrotic horrors.',
     value: 550,

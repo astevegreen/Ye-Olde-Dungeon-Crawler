@@ -111,7 +111,8 @@ export interface SerializedItemBase {
   slot?: EquipmentSlot;
   weight: number;
   bulk: number;
-  quality: ItemQuality;
+  /** A label an older save may still carry; it loads as `normal` (`legacyQuality`). */
+  quality: ItemQuality | 'enchanted' | 'cursed' | 'broken';
   identified: boolean;
   stats: ItemStatModifiers;
   description: string;

@@ -42,7 +42,6 @@ export const COTW_HANDS: ItemDefinition[] = [
     weight: 600,
     bulk: 500,
     stats: { defenseBonus: 2, attackBonus: 3 },
-    quality: 'enchanted',
     identified: false,
     description: 'Heat-resistant woven quartz gloves used by dwarven siphon-smiths. Greatly enhances the resonance and focus of magical implements.',
     value: 160,
@@ -58,7 +57,6 @@ export const COTW_HANDS: ItemDefinition[] = [
     weight: 700,
     bulk: 600,
     stats: { defenseBonus: 4 },
-    quality: 'enchanted',
     hooks: [
       {
         event: 'onHit',
@@ -86,7 +84,6 @@ export const COTW_HANDS: ItemDefinition[] = [
     weight: 1200,
     bulk: 1000,
     stats: { defenseBonus: 5 },
-    quality: 'enchanted',
     identified: false,
     description: 'Living taproots of the world-tree woven around the forearms, feeding life into the wearer’s veins over time while rejecting artificial alchemy.',
     value: 390,

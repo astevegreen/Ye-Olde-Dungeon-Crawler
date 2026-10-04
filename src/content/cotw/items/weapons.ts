@@ -90,7 +90,6 @@ export const COTW_WEAPONS: ItemDefinition[] = [
     weight: 1200,
     bulk: 800,
     stats: { attackBonus: 8 },
-    quality: 'enchanted',
     hooks: [
       {
         event: 'onHit',
@@ -119,7 +118,6 @@ export const COTW_WEAPONS: ItemDefinition[] = [
     bulk: 2800,
     twoHanded: true,
     stats: { attackBonus: 12 },
-    quality: 'enchanted',
     hooks: [
       {
         event: 'onHit',
@@ -147,7 +145,6 @@ export const COTW_WEAPONS: ItemDefinition[] = [
     weight: 1800,
     bulk: 2000,
     stats: { attackBonus: 6, defenseBonus: 2 },
-    quality: 'enchanted',
     identified: false,
     description: 'Petrified black bough carved by troll-wife sorceresses. Channeling conduit that empowers spell damage and weaves mana.',
     value: 175,
@@ -163,7 +160,6 @@ export const COTW_WEAPONS: ItemDefinition[] = [
     weight: 450,
     bulk: 250,
     stats: { attackBonus: 14, speedBonus: 5 },
-    quality: 'enchanted',
     identified: false,
     description: 'Veined with raw mercury from deep cavern lodes. Pierces straight through dense armor, though reckless wielders risk mild toxicity.',
     value: 220,
@@ -194,7 +190,6 @@ export const COTW_WEAPONS: ItemDefinition[] = [
     weight: 1500,
     bulk: 1200,
     stats: { attackBonus: 18, defenseBonus: 2 },
-    quality: 'enchanted',
     identified: false,
     description: 'Hewn from uncorrupted Yggdrasil heartwood. Incredibly resilient, warding off necrotic rot and retaining pristine razor sharpness.',
     value: 350,
@@ -210,7 +205,7 @@ export const COTW_WEAPONS: ItemDefinition[] = [
     weight: 5200,
     bulk: 4000,
     twoHanded: true,
-    quality: 'cursed',
+    family: 'cursed',
     stats: { attackBonus: 25 },
     hooks: [
       {
@@ -226,7 +221,7 @@ export const COTW_WEAPONS: ItemDefinition[] = [
       },
     ],
     identified: false,
-    description: 'Corrupted great axe saturated in root rot. Delivers devastating armor-cleaving blows, but cursed rot inhibits natural healing.',
+    description: 'Corrupted great axe saturated in root rot. It cleaves armor like bark, but the rot in its haft saps the strength and sureness of whoever takes it up, and it will not leave their hands until a cleansing.',
     value: 400,
   },
   {

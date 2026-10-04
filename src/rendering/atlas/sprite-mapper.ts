@@ -253,11 +253,6 @@ export function getItemSpriteKey(item: Item, hasSprite?: HasSprite): SpriteKey |
     return 'travel_bread';
   }
 
-  // Quality-driven overrides
-  if (item.quality === 'cursed' && item.category === 'weapon') {
-    return 'cursed_mace';
-  }
-
   // Category and affix resolution
   switch (item.category) {
     case 'weapon': {

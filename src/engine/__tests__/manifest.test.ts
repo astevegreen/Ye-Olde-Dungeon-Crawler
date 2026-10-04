@@ -56,7 +56,6 @@ describe('GameContentManifest Decoupling', () => {
           category: 'weapon',
           weight: 4000,
           bulk: 2500,
-          quality: 'enchanted',
           stats: { attackBonus: 12 },
           description: 'A military-grade energy rifle.',
         },

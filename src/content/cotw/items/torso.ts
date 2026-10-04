@@ -57,7 +57,6 @@ export const COTW_TORSO: ItemDefinition[] = [
     weight: 16000,
     bulk: 10000,
     stats: { defenseBonus: 13 },
-    quality: 'enchanted',
     identified: false,
     description: 'Meticulously knapped scales of volcanic glass wired over boiled leather. Unyielding against searing flame and sharp blades.',
     value: 280,
@@ -73,7 +72,6 @@ export const COTW_TORSO: ItemDefinition[] = [
     weight: 4000,
     bulk: 3000,
     stats: { defenseBonus: 10, speedBonus: 3 },
-    quality: 'enchanted',
     identified: false,
     description: 'Woven from cold liquid-mercury filaments that shift with the wearer’s body, granting remarkable agility at the subtle expense of toxic exposure.',
     value: 350,
@@ -88,7 +86,7 @@ export const COTW_TORSO: ItemDefinition[] = [
     minFloor: 45,
     weight: 19000,
     bulk: 12000,
-    quality: 'cursed',
+    family: 'cursed',
     stats: { defenseBonus: 18 },
     hooks: [
       {
@@ -103,7 +101,7 @@ export const COTW_TORSO: ItemDefinition[] = [
       },
     ],
     identified: false,
-    description: 'Heavy plate mail encrusted in boiling venom from the roots of Níðhögg. Retaliates against attackers with acidic tar, but fouls potions and healing draughts.',
+    description: 'Heavy plate mail encrusted in boiling venom from the roots of Níðhögg. It spits corrosive tar at whoever strikes its wearer, and its blight drags at their limbs; once donned, only a cleansing takes it off.',
     value: 600,
   },
 ];

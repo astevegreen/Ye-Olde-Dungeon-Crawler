@@ -100,4 +100,33 @@ describe('carried items across save/load', () => {
     expect(after.map((i) => i.definitionId)).toEqual(before.map((i) => i.definitionId));
     expect(after.some((i) => i.definitionId === 'hearth_broth_flask')).toBe(true);
   });
+
+  it("loads an older save's quality labels as normal, and a cursed relic bound by its family", () => {
+    const { engine, profile } = newHero();
+    const def = (id: string) => cotwManifest.items.find((d) => d.id === id)!;
+    // Underfoot: the cleaver is too heavy for the pack, and the ground is saved the same way.
+    const cleaver = createScaledItem(def('rot_porous_cleaver'), 'cleaver-1', 36, () => 0.5);
+    cleaver.modifiers = [];
+    const spear = createScaledItem(def('skraeling_ice_spear'), 'spear-legacy', 1, () => 0.5);
+    engine.map.addItemAt(engine.player.x, engine.player.y, cleaver);
+    engine.map.addItemAt(engine.player.x, engine.player.y, spear);
+    const save = serializeGame(engine, profile);
+    const underfoot = save.map.groundItems.flatMap((tile) => tile.items);
+    for (const node of underfoot) {
+      if (node.id === 'cleaver-1') {
+        node.quality = 'cursed';
+        delete node.modifiers;
+      }
+      if (node.id === 'spear-legacy') node.quality = 'enchanted';
+    }
+
+    const loaded = load(save);
+    const after = loaded.map.getItemsAt(loaded.player.x, loaded.player.y);
+    const loadedCleaver = after.find((i) => i.id === 'cleaver-1')!;
+    const loadedSpear = after.find((i) => i.id === 'spear-legacy')!;
+    expect(loadedSpear.quality).toBe('normal');
+    expect(loadedCleaver.quality).toBe('normal');
+    expect(loadedCleaver.modifiers.map((m) => m.name)).toEqual(['Blighted']);
+    expect(loadedCleaver.isBound()).toBe(true);
+  });
 });

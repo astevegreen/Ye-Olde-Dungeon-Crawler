@@ -15,7 +15,6 @@ describe('Mitigation Pipeline & Aspect Alignment', () => {
     const foe = new Actor({ id: 'foe', name: 'Foe', type: 'monster', faction: 'hostile', position: { x: 6, y: 5 }, stats: { hp: 30, maxHp: 30, attack: 4, defense: 0 } });
     const engine = new GameEngine({ map: new GameMap(12, 12, TILES.FLOOR), player: new Player({ id: 'seed-holder', name: 'Seed', position: { x: 1, y: 1 } }), seed: 7 });
     for (let i = 0; i < 50; i++) resolveCombatMitigation(player, foe, 10, engine);
-    expect(sword.isBroken()).toBe(false);
     expect(sword.effectiveStats.attackBonus).toBe(5);
   });
 

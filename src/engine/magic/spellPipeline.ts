@@ -476,11 +476,9 @@ export class SpellPipeline {
     let spellMultiplier = 1.0;
     if (caster.inventory) {
       for (const item of caster.inventory.paperdoll.getEquippedItems()) {
-        if (!item.isBroken() && item.modifiers) {
-          for (const mod of item.modifiers) {
-            if (mod.spellDamageMultiplier) {
-              spellMultiplier *= mod.spellDamageMultiplier;
-            }
+        for (const mod of item.modifiers) {
+          if (mod.spellDamageMultiplier) {
+            spellMultiplier *= mod.spellDamageMultiplier;
           }
         }
       }

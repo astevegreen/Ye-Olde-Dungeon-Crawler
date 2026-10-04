@@ -55,8 +55,8 @@ export interface ThemeTokens {
   xp?: string;
   gold?: string;
 
-  // Item tones: what an identified item's name is colored by, alignment first, then
-  // quality tier (`itemTone()` in src/ui/inventory/itemTone.ts picks one).
+  // Item tones: what an identified item's name is colored by, its family first, then
+  // artifact (`itemTone()` in src/ui/inventory/itemTone.ts picks one).
   rarityCursed?: string;
   rarityHexed?: string;
   rarityUnholy?: string;
@@ -65,7 +65,6 @@ export interface ThemeTokens {
   rarityBlessed?: string;
   rarityChaotic?: string;
   rarityArtifact?: string;
-  rarityBroken?: string;
   // Coin stacks, by denomination.
   coinCopper?: string;
   coinSilver?: string;

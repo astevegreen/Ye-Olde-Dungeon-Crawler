@@ -75,7 +75,7 @@ describe('Town Sage Run Advisory Heuristics', () => {
       slot: 'mainHand',
       weight: 1500,
       bulk: 10,
-      quality: 'cursed',
+      modifiers: [{ id: 'cursed-mod', name: 'Cursed', alignment: 'negative', category: 'cursed', prefix: 'Cursed', binds: true }],
     });
     player.inventory.paperdoll.equip(cursedSword, 'mainHand');
 
@@ -159,7 +159,7 @@ describe('Town Sage Run Advisory Heuristics', () => {
       slot: 'head',
       weight: 1000,
       bulk: 5,
-      quality: 'cursed',
+      modifiers: [{ id: 'cursed-mod', name: 'Cursed', alignment: 'negative', category: 'cursed', prefix: 'Cursed', binds: true }],
     });
     player.inventory.paperdoll.equip(cursedArmor, 'head');
 

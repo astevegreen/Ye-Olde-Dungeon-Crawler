@@ -25,7 +25,7 @@ describe('Town Services (Temple, Sage, Bank)', () => {
     it('cleanses curses from equipped equipment for 300 CP', () => {
       // Equip cursed armor
       const cursedArmor = ItemFactory.createLeatherArmor('curse-armor');
-      cursedArmor.quality = 'cursed';
+      cursedArmor.modifiers = [{ id: 'c', name: 'Cursed', alignment: 'negative', category: 'cursed', prefix: 'Cursed', binds: true }];
       player.inventory.primaryPack.addItem(cursedArmor);
       player.inventory.equipFromPack('curse-armor');
 
@@ -35,7 +35,7 @@ describe('Town Services (Temple, Sage, Bank)', () => {
       const result = TempleService.cleanseCurses(player);
       expect(result.success).toBe(true);
       expect(result.message).toContain('shatters the foul bindings');
-      expect(cursedArmor.quality).toBe('normal');
+      expect(cursedArmor.isBound()).toBe(false);
       expect(getPlayerTotalCp(player)).toBe(0);
 
       // Armor was cleansed and placed safely in pack
@@ -45,7 +45,7 @@ describe('Town Services (Temple, Sage, Bank)', () => {
 
     it('leaves a cleansed item worn, free of its curse, when the pack has no room for it', () => {
       const cursedArmor = ItemFactory.createLeatherArmor('curse-armor');
-      cursedArmor.quality = 'cursed';
+      cursedArmor.modifiers = [{ id: 'c', name: 'Cursed', alignment: 'negative', category: 'cursed', prefix: 'Cursed', binds: true }];
       player.inventory.primaryPack.addItem(cursedArmor);
       player.inventory.equipFromPack('curse-armor');
       for (let i = 0; i < 500; i++) {
@@ -57,7 +57,7 @@ describe('Town Services (Temple, Sage, Bank)', () => {
       const result = TempleService.cleanseCurses(player);
 
       expect(result.success).toBe(true);
-      expect(cursedArmor.quality).toBe('normal');
+      expect(cursedArmor.isBound()).toBe(false);
       expect(player.inventory.paperdoll.getItem('torso')).toBe(cursedArmor);
       expect(result.message).not.toContain('stored in your pack');
       expect(result.message).toContain('Leather Armor');

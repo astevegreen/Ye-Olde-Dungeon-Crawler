@@ -103,7 +103,7 @@ function familyOf(item: Item): Family {
   for (const modifier of item.modifiers) {
     if ((FAMILIES as readonly string[]).includes(modifier.category)) return modifier.category as Family;
   }
-  return item.quality === 'cursed' ? 'cursed' : 'normal';
+  return 'normal';
 }
 
 /** Sums for one floor of one seed. Monster drops arrive weighted by 1/TRIALS. */

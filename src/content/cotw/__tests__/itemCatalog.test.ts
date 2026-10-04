@@ -78,12 +78,15 @@ describe('CotW item catalog', () => {
     }
   });
 
-  it('marks corrupted items with cursed quality', () => {
-    const corruptedIds = ['rot_porous_cleaver', 'nid_dripping_hauberk', 'marrow_gnawed_ring'];
-    for (const id of corruptedIds) {
-      const item = COTW_CATALOG_RECORD[id];
-      expect(item).toBeDefined();
-      expect(item.quality).toBe('cursed');
+  it('pins the four cursed relics to the Cursed family, with no quality label left on any item', () => {
+    const relicIds = ['cursed_mace', 'rot_porous_cleaver', 'nid_dripping_hauberk', 'marrow_gnawed_ring'];
+    for (const id of relicIds) {
+      const item = COTW_ITEMS.find((i) => i.id === id);
+      expect(item, id).toBeDefined();
+      expect(item!.family).toBe('cursed');
+    }
+    for (const item of COTW_ITEMS) {
+      expect(item.quality === undefined || item.quality === 'artifact', item.id).toBe(true);
     }
   });
 

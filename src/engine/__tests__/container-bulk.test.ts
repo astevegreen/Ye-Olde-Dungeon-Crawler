@@ -95,7 +95,6 @@ describe('Container Bulk Bubbling & Ancestry Capacity', () => {
       category: 'misc',
       weight: 1000,
       bulk: 1400,
-      quality: 'enchanted',
     });
 
     expect(pouch.canContain(largeStatue).allowed).toBe(false);

@@ -73,7 +73,6 @@ describe('Dungeon Exploration & Tactical Crawler Subsystems', () => {
         bulk: 100,
         identified: false,
         stats: { attackBonus: 5 },
-        quality: 'cursed',
       });
 
       // Display name is obfuscated alias
@@ -99,7 +98,7 @@ describe('Dungeon Exploration & Tactical Crawler Subsystems', () => {
         slot: 'mainHand',
         weight: 1500,
         bulk: 500,
-        quality: 'cursed',
+        modifiers: [{ id: 'cursed-mod', name: 'Cursed', alignment: 'negative', category: 'cursed', prefix: 'Cursed', binds: true }],
         identified: true,
       });
 

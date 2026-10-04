@@ -117,11 +117,9 @@ export class CastSpellAction implements Action {
     let manaDiscount = 0;
     if (player?.inventory?.paperdoll) {
       for (const item of player.inventory.paperdoll.getEquippedItems()) {
-        if (!item.isBroken() && item.modifiers) {
-          for (const mod of item.modifiers) {
-            if (mod.manaCostDiscount) {
-              manaDiscount += mod.manaCostDiscount;
-            }
+        for (const mod of item.modifiers) {
+          if (mod.manaCostDiscount) {
+            manaDiscount += mod.manaCostDiscount;
           }
         }
       }

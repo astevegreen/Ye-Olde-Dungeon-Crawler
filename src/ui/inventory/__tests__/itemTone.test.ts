@@ -10,8 +10,9 @@ function makeItem(overrides: Partial<Item> = {}): Item {
 
 describe('itemTone', () => {
   it('names the role a DOM element colors by, and nothing for a plain or unknown item', () => {
-    expect(itemToneClass(makeItem({ identified: true, quality: 'cursed' }))).toBe(' it-tone-cursed');
-    expect(itemToneClass(makeItem({ identified: false, quality: 'cursed' }))).toBe('');
+    const cursed = [{ id: 'c', name: 'Cursed', alignment: 'negative' as const, category: 'cursed' as const, binds: true }];
+    expect(itemToneClass(makeItem({ identified: true, modifiers: cursed }))).toBe(' it-tone-cursed');
+    expect(itemToneClass(makeItem({ identified: false, modifiers: cursed }))).toBe('');
     expect(itemToneClass(makeItem({ identified: true }))).toBe('');
     expect(itemToneClass(null)).toBe('');
   });

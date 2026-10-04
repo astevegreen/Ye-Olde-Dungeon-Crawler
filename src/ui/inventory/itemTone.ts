@@ -1,8 +1,8 @@
 import { CoinItem, type Item, parseCoinItem } from '../../engine';
 
 /**
- * What an item's name is colored by, as a role: one of eight alignments (three negative,
- * three positive, chaotic), else a quality tier, else a coin's denomination; null when
+ * What an item's name is colored by, as a role: one of seven families (three negative,
+ * three positive, chaotic), else an artifact, else a coin's denomination; null when
  * nothing applies or the item is unidentified (it looks plain until you know it).
  *
  * Each check is its own family; `isEnchanted()` also counts a +N or elemental affix, so
@@ -17,7 +17,6 @@ export type ItemTone =
   | 'blessed'
   | 'chaotic'
   | 'artifact'
-  | 'broken'
   | 'copper'
   | 'silver'
   | 'gold';
@@ -36,7 +35,6 @@ export function itemTone(item: Item | null | undefined): ItemTone | null {
   if (item.isChaotic()) return 'chaotic';
   if (item.isEnchanted()) return 'enchanted';
   if (item.quality === 'artifact') return 'artifact';
-  if (item.isBroken()) return 'broken';
   return null;
 }
 

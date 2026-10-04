@@ -316,7 +316,8 @@ export class MonsterAI {
     // 1. Sleeping state check
     const isVisibleInFov = Boolean(engine.fov && engine.fov.isVisible(monster.x, monster.y));
     if (monster.aiState === 'sleeping') {
-      if (hasLos || isVisibleInFov) {
+      // The hero's wake radius may keep it asleep though it sees (Shadow-Walker, Reaver; ADR-0014).
+      if ((hasLos || isVisibleInFov) && monster.wakesOnSight(engine)) {
         monster.aiState = 'hunting';
       } else {
         monster.intent = { type: 'idle', turnsRemaining: 0 };

@@ -14,6 +14,7 @@ import { DeathResolver } from '../combat/deathResolver';
 import { MonsterAI } from '../ai/behaviorTree';
 import { WaitAction } from '../actions/wait';
 import { flightRecorder } from '../debug/flightRecorder';
+import { wakesOnSight } from '../ai/stealth';
 
 export type AiState = 'sleeping' | 'hunting' | 'combat' | 'fleeing';
 
@@ -136,6 +137,11 @@ export class Monster extends Actor {
     this.lootTable = config.lootTable ? [...config.lootTable] : [];
     this.hooks = config.hooks ? [...config.hooks] : [];
     this.targetingMode = config.targetingMode ?? 'player';
+  }
+
+  /** Whether, asleep, it wakes on seeing the hero: the hero's wake radius may keep it asleep (`wakesOnSight`, ADR-0014). */
+  public wakesOnSight(engine: GameEngine): boolean {
+    return wakesOnSight(engine, this);
   }
 
   public interruptWindUp(_reason?: string): boolean {

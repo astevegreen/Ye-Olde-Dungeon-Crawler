@@ -12,9 +12,7 @@ import type { ChoiceDefinition, LevelMilestoneTrigger, PerkDefinition } from '..
  * The Third Verse's Elementalist chooses its element in a second choice, offered on the next
  * move (`saga_30_element`, waiting on its flag).
  *
- * Waiting on the owner: Shadow-Walker's "a monster that cannot see you does not wake" (Q57;
- * sleepers wake in the hero's sight, computed in a protected file) and Odin's Eye's ranged
- * range (Q59; no ranged attack can be made in play).
+ * Waiting on the owner: Odin's Eye's ranged range (Q59; no ranged attack can be made in play).
  */
 /** The elements an Elementalist may choose (cotw's damaging elements), with their names. */
 const ELEMENTALIST_ELEMENTS: Array<[string, string]> = [
@@ -128,8 +126,8 @@ export const COTW_PERKS: PerkDefinition[] = [
     name: 'Shadow-Walker',
     source: 'saga',
     tagline: 'Where the torchlight ends, so do you.',
-    description: 'Evasion +20%.',
-    effects: { evasionBonus: 0.2 },
+    description: 'Evasion +20%, and a sleeping monster that sees you wakes only within 4 tiles.',
+    effects: { evasionBonus: 0.2, wakeRadius: 4 },
   },
   // ── Saga, level 50: the summit ──
   {
@@ -199,14 +197,14 @@ export const COTW_MILESTONE_PERKS: PerkDefinition[] = [
 /**
  * The family perks (Q53 "A"): one of each monster family's own, offered beside the shared five
  * when that family is mastered and counting only against its members (`PerkDefinition.category`,
- * `familyModifiers`). Waiting on the owner: Reaver's "wake slower to your step" (Q57), and
- * Grave-Warden's "never drain or frighten", Spirit-Ward's "see the unseen ones", Iron Will's
- * immunity and Wyrm-Bane's breath resistance, which have nothing in the game to act on (Q58).
+ * `familyModifiers`). Waiting on the owner (Q58): Grave-Warden's "never drain or frighten",
+ * Spirit-Ward's "see the unseen ones", Iron Will's immunity and Wyrm-Bane's breath resistance,
+ * which have nothing in the game to act on as written.
  */
 export const COTW_FAMILY_PERKS: PerkDefinition[] = [
   { id: 'family_grave_warden', name: 'Grave-Warden', source: 'family', category: 'cotw_undead', tagline: 'The dead know a warden when they see one.', description: 'The Restless Dead deal you 20% less damage.', effects: { damageTakenMultiplier: 0.8 } },
   { id: 'family_pack_sense', name: 'Pack-Sense', source: 'family', category: 'cotw_beasts', tagline: 'You hear the pack before it hears you.', description: 'Beasts & Vermin within ten tiles are shown through walls.', effects: { sensesWithin: 10 } },
-  { id: 'family_reaver', name: 'Reaver', source: 'family', category: 'cotw_folk', tagline: 'You know where they hide their silver.', description: 'Kin of Men & Goblins drop half again as many coins.', effects: { coinMultiplier: 1.5 } },
+  { id: 'family_reaver', name: 'Reaver', source: 'family', category: 'cotw_folk', tagline: 'You know where they hide their silver.', description: 'Kin of Men & Goblins drop half again as many coins, and sleeping folk wake to you only within 5 tiles.', effects: { coinMultiplier: 1.5, wakeRadius: 5 } },
   { id: 'family_giant_bane', name: 'Giant-Bane', source: 'family', category: 'cotw_jotnar', tagline: 'The bigger they are, the farther they stagger.', description: 'Your melee blows knock Jötnar & Trolls back a tile.', effects: { meleeKnockback: 1 } },
   { id: 'family_spirit_ward', name: 'Spirit-Ward', source: 'family', category: 'cotw_vaettir', tagline: 'Iron and salt, and a word they cannot cross.', description: 'Half the time, you shrug off the afflictions of Vættir & Spirits.', effects: { afflictionShrugChance: 0.5 } },
   { id: 'family_rust_touch', name: 'Rust-Touch', source: 'family', category: 'cotw_constructs', tagline: 'Every rivet has a weakness.', description: 'Your melee ignores half the defense of the Forged & Formless.', effects: { defensePenetration: 0.5 } },

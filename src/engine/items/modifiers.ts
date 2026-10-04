@@ -159,6 +159,8 @@ export interface ItemModifier {
   afflictionShrugChance?: number;
   /** Turns of warning added to a foe's wind-up (Wyrm-Bane: 1; `WindUpDeclareAction`). */
   windUpWarningBonus?: number;
+  /** A sleeping monster farther than this many tiles does not wake on seeing the hero (Shadow-Walker: 4; Reaver against folk: 5; `wakesOnSight`). */
+  wakeRadius?: number;
   description?: string;
 }
 

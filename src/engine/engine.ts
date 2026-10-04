@@ -592,7 +592,7 @@ export class GameEngine {
                 this.log(`*** Bestiary Updated: You encountered ${entity.name}! ***`);
               }
 
-              if (entity.aiState === 'sleeping') {
+              if (entity.aiState === 'sleeping' && entity.wakesOnSight(this)) {
                 entity.aiState = 'hunting';
                 this.log(`${entity.name} stirs awake and begins hunting you!`);
               }

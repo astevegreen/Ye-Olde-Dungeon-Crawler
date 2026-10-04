@@ -405,6 +405,22 @@ describe('perk effects', () => {
     player.gainXp(player.xpToNextLevel);
     expect(player.hp).toBe(player.maxHp);
   });
+  it('wakeRadius keeps a sleeper farther off asleep when it sees the hero, in the hero’s sight and on its own turn (Shadow-Walker, Q57)', () => {
+    const { engine, player, map } = build();
+    const sleeper = new Monster({ id: 'sl', name: 'Sleeper', position: { x: 16, y: 10 }, stats: { hp: 50, maxHp: 50, attack: 5, defense: 0 }, speed: 100, definitionId: 'foe', aiType: 'melee', xpValue: 1 });
+    map.addEntity(sleeper);
+    sleeper.aiState = 'sleeping';
+    player.grantPerk(perk('shadow', { wakeRadius: 4 }));
+    engine.updateFov();
+    expect(engine.fov.isVisible(16, 10)).toBe(true);
+    expect(sleeper.aiState).toBe('sleeping');
+    MonsterAI.decideAction(sleeper, engine);
+    expect(sleeper.aiState).toBe('sleeping');
+    map.moveEntity(sleeper, 14, 10);
+    engine.updateFov();
+    expect(sleeper.aiState).toBe('hunting');
+  });
+
   // ── Family perks (tracker 3.6, Q53 "A"): pack perks chosen in the compendium, counting against one family ──
   describe('a family perk', () => {
     function withFamilyPerk(effects: PerkDefinition['effects']) {
@@ -448,6 +464,17 @@ describe('perk effects', () => {
       expect(player.totalXp - before).toBe(15);
       DeathResolver.resolveDeath(engine, player, stranger);
       expect(player.totalXp - before).toBe(25);
+    });
+
+    it('keeps the family asleep beyond its wake radius, and no other (Reaver, Q57)', () => {
+      const { engine, map, foe, stranger } = withFamilyPerk({ wakeRadius: 5 });
+      map.moveEntity(foe, 17, 10);
+      map.moveEntity(stranger, 17, 12);
+      foe.aiState = 'sleeping';
+      stranger.aiState = 'sleeping';
+      engine.updateFov();
+      expect(foe.aiState).toBe('sleeping');
+      expect(stranger.aiState).toBe('hunting');
     });
 
     it('lengthens the family’s wind-up warning (Wyrm-Bane), and senses it through walls nearby (Pack-Sense)', () => {

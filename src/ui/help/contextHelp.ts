@@ -150,8 +150,8 @@ export class ContextHelp {
           contextTag: 'KNOW YOUR FOE',
           bullets: [
             { key: 'Up / Down', label: 'Choose a creature' },
-            { key: 'Left / Right', label: 'All, discovered, or mastered' },
-            { key: '? / Seen / Slain / Mastered', label: 'How much you know of it' },
+            { key: 'Left / Right', label: 'All, known, or studied' },
+            { key: '? / Seen / Slain / Studied', label: 'How much you know of it' },
             { key: 'Tab / B / Esc', label: 'The next tab, or close' },
           ],
           tip: manifest?.magic?.killRites
@@ -347,7 +347,7 @@ export class ContextHelp {
             { key: 'Mouse', label: 'Click a distant tile to walk there; point at anything to see it' },
             { key: 'F3', label: 'Report a bug or suggest an idea' },
           ],
-          tip: 'Tip: Slay 15 of one creature, or many of its whole family, to earn a Mastery Perk against them. Review and change perks in the Bestiary [B].',
+          tip: 'Tip: Slay 15 of one creature to complete its page; slay many of its whole family to earn a Mastery Perk against them all. Review and change perks in the Bestiary [B].',
         };
     }
   }

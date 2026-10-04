@@ -9,7 +9,9 @@ function checkCategories(manifest: GameContentManifest): void {
   const owner = new Map<string, string>();
 
   for (const category of categories) {
-    expect(category.masteryKills, category.id).toBeGreaterThan(15);
+    // A family's perk is never cheaper than one creature's complete page (SPECIES_MASTERY_KILLS);
+    // every family must also be reachable in a full clear (`.prompts/phase3/family-kills.ts`).
+    expect(category.masteryKills, category.id).toBeGreaterThanOrEqual(15);
     for (const id of category.members) {
       expect(monsterIds.has(id), `${category.id} lists unknown monster ${id}`).toBe(true);
       expect(owner.get(id), `${id} is in both ${owner.get(id)} and ${category.id}`).toBeUndefined();

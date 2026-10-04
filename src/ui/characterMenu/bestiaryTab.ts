@@ -31,8 +31,8 @@ const BEHAVIOR_WORDS: Record<string, string> = {
 };
 const FILTERS: BestiaryFilter[] = ['all', 'discovered', 'mastered'];
 
-/** What each mastery tier is called on its tag. */
-const TIER_TAG: Record<MonsterMasteryTier, string> = { 0: '?', 1: 'Seen', 2: 'Slain', 3: 'Mastered' };
+/** What each knowledge rank is called on its tag. */
+const TIER_TAG: Record<MonsterMasteryTier, string> = { 0: '?', 1: 'Seen', 2: 'Slain', 3: 'Studied' };
 
 /**
  * The Bestiary tab (ADR-0011): every creature, known ones first, with a legend for the
@@ -124,7 +124,7 @@ export class BestiaryTab implements MenuTab {
     const discovered = all.filter((m) => compendium.getTier(m.id) >= 1).length;
     const mastered = all.filter((m) => compendium.getTier(m.id) === 3).length;
     const counts: Record<BestiaryFilter, number> = { all: all.length, discovered, mastered };
-    const labels: Record<BestiaryFilter, string> = { all: 'All', discovered: 'Known', mastered: 'Mastered' };
+    const labels: Record<BestiaryFilter, string> = { all: 'All', discovered: 'Known', mastered: 'Studied' };
 
     const rows = list
       .map((m) => {
@@ -142,13 +142,13 @@ export class BestiaryTab implements MenuTab {
       <div class="ui-tabgrid bs-grid">
         <div class="ui-col">
           <div class="ui-h">Bestiary <small>${escapeHtml(resolveBranding(this.engine.manifest).worldName)}</small></div>
-          <div class="bs-counts ui-note">Known <b class="ui-num">${discovered}/${all.length}</b> · Mastered <b class="ui-num">${mastered}/${all.length}</b></div>
+          <div class="bs-counts ui-note">Known <b class="ui-num">${discovered}/${all.length}</b> · Studied <b class="ui-num">${mastered}/${all.length}</b></div>
           <div class="st-subtabs" role="tablist">${FILTERS.map(
             (f) => `<button type="button" role="tab" class="st-subtab" data-filter="${f}" aria-selected="${this.filter === f}">${labels[f]} <span class="ui-num">${counts[f]}</span></button>`
           ).join('')}</div>
           <div class="ui-inset bs-list ui-scroll" role="listbox">${rows || '<div class="ui-note bs-empty">Nothing here yet.</div>'}</div>
           <div class="bs-legend ui-note">
-            ${this.tierTag(1, 0)} you have seen it · ${this.tierTag(2, 3)} kills so far · ${this.tierTag(3, SPECIES_MASTERY_KILLS)} ${SPECIES_MASTERY_KILLS} kills: choose a perk
+            ${this.tierTag(1, 0)} you have seen it · ${this.tierTag(2, 3)} kills so far · ${this.tierTag(3, SPECIES_MASTERY_KILLS)} ${SPECIES_MASTERY_KILLS} kills: its page is complete. Perks come from mastering a whole family.
           </div>
         </div>
         <div class="ui-col ui-scroll bs-detail">${selected ? this.renderDetail(selected) : ''}</div>
@@ -195,7 +195,20 @@ export class BestiaryTab implements MenuTab {
     });
   }
 
-  /** Progress bar plus the perk picker for one mastery (a monster type or its category). */
+  /** What is known of one creature: kills toward the complete page (knowledge rank 3). */
+  private renderKnowledgePanel(def: MonsterDefinition, kills: number): string {
+    const needed = SPECIES_MASTERY_KILLS;
+    const complete = kills >= needed;
+    const pct = Math.round((Math.min(kills, needed) / needed) * 100);
+    return `
+      <div class="ui-card bs-mastery${complete ? ' is-unlocked' : ''}">
+        <div class="bs-mastery-head"><b>${complete ? '★ ' : ''}${escapeHtml(def.name)}: knowledge</b><span class="ui-num">${kills}/${needed} Kills (${pct}%)</span></div>
+        <div class="ui-bar bs-bar"><i style="width: ${pct}%"></i></div>
+        <div class="ui-note">${complete ? 'Studied: its page shows everything.' : `Slay ${needed - kills} more to complete its page: exact health, attack and defense, spells, drops and worth.`}</div>
+      </div>`;
+  }
+
+  /** Progress bar plus the perk picker for a family's mastery. */
   private renderMasteryPanel(opts: {
     scope: MasteryScope;
     masteryId: string;
@@ -204,8 +217,6 @@ export class BestiaryTab implements MenuTab {
     kills: number;
     needed: number;
     perk?: MasteryPerkId;
-    /** The perk already active through the other mastery; picking it again adds nothing. */
-    otherPerk?: MasteryPerkId;
     note?: string;
   }): string {
     const unlocked = opts.kills >= opts.needed;
@@ -226,13 +237,11 @@ export class BestiaryTab implements MenuTab {
           .map((perk) => {
             const active = opts.perk === perk.id;
             const canSelect = inTown || !opts.perk;
-            const redundant = !active && opts.otherPerk === perk.id;
             return `
               <div class="bs-perk${active ? ' is-active' : ''}">
                 <div>
                   <div><b>${escapeHtml(perk.name)}</b> <span class="ui-faint">— ${escapeHtml(perk.tagline)}</span></div>
                   <div class="ui-note">${escapeHtml(fillManaTerms(perk.description, mana))}</div>
-                  ${redundant ? '<div class="ui-note bs-warn">Already active through your other mastery: it would not stack.</div>' : ''}
                 </div>
                 ${
                   active
@@ -303,27 +312,17 @@ export class BestiaryTab implements MenuTab {
         <div class="bs-head"><span class="bs-title">${escapeHtml(def.name)}</span>${this.tierTag(tier, entry.kills)}</div>
         <div class="ui-note">From floor <span class="ui-num">${def.minFloor ?? 1}</span>${BEHAVIOR_WORDS[def.aiType] ? ` · ${BEHAVIOR_WORDS[def.aiType]}` : ''}</div>
       </div>
-      ${this.renderMasteryPanel({
-        scope: 'species',
-        masteryId: def.id,
-        title: `${def.name} Mastery`,
-        subject: 'this creature',
-        kills: entry.kills,
-        needed: SPECIES_MASTERY_KILLS,
-        perk: compendium.getPerk(def.id),
-        otherPerk: category ? compendium.getCategoryPerk(category.id) : undefined,
-      })}
+      ${this.renderKnowledgePanel(def, entry.kills)}
       ${
         category
           ? this.renderMasteryPanel({
               scope: 'category',
               masteryId: category.id,
-              title: `${category.name} (Category)`,
+              title: `${category.name} (Family)`,
               subject: `every creature of ${category.name}`,
               kills: compendium.getCategoryKills(category),
               needed: category.masteryKills,
               perk: compendium.getCategoryPerk(category.id),
-              otherPerk: compendium.getPerk(def.id),
               note: category.description,
             })
           : ''

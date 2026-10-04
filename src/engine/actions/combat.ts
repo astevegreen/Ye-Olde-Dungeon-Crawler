@@ -11,6 +11,7 @@ import { DeathResolver } from '../combat/deathResolver';
 import { flightRecorder } from '../debug/flightRecorder';
 import { HookDispatcher } from '../hooks/hookDispatcher';
 import { getMonsterCategory, hasMasteryPerk } from '../compendium/compendiumManager';
+import { ANATOMIST_CRIT_CHANCE } from '../compendium/types';
 import { applyImpulse } from '../combat/impulse';
 import { resolveCombatMitigation } from '../combat/mitigationPipeline';
 import { burnOnSacredGround } from '../combat/sacredGround';
@@ -117,10 +118,12 @@ export class MeleeAttackAction implements Action {
       // Strength adds to the blow before the foe's defense is taken off (tracker 3.2).
       let base = Math.max(minDmg, this.attacker.attack + strengthMeleeBonus(this.attacker, scaling) - effectiveDefense);
 
-      // Critical strike calculation
-      if (combatConfig?.critChance && engine.rng() < combatConfig.critChance) {
+      // Critical strike: the pack's chance, or Anatomist's own against a mastered family (a
+      // pack with no base crit, cotw, would otherwise give the perk nothing to raise).
+      const critChance = combatConfig?.critChance || (isAnatomist ? ANATOMIST_CRIT_CHANCE : 0);
+      if (critChance > 0 && engine.rng() < critChance) {
         isCrit = true;
-        const mult = (combatConfig.critMultiplier ?? DEFAULT_CRIT_MULTIPLIER) + (isAnatomist ? 0.25 : 0);
+        const mult = (combatConfig?.critMultiplier ?? DEFAULT_CRIT_MULTIPLIER) + (isAnatomist ? 0.25 : 0);
         base = Math.max(minDmg, Math.round(base * mult));
       }
 

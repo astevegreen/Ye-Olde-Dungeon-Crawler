@@ -22,9 +22,8 @@ export interface MasteryChoiceRequest {
 const PERK_IDS = Object.keys(MASTERY_PERKS) as MasteryPerkId[];
 
 /**
- * Offers a mastery perk when a species or category mastery is earned. Requests queue
- * up (one kill can complete both a species and a category mastery) and are shown one
- * at a time. Like the level-up and choice modals, number keys do nothing; clicking or
+ * Offers a mastery perk when a monster family's mastery is earned (Q7 "A": species kills
+ * only fill the bestiary page). Requests queue up and are shown one at a time. Like the level-up and choice modals, number keys do nothing; clicking or
  * the arrows only highlight a perk, and Enter or Confirm locks it in. Escape defers the
  * choice to the Slayer's Compendium, where the mastery stays waiting.
  */

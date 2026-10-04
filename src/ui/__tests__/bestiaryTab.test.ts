@@ -19,8 +19,20 @@ function openBestiary(engine: GameEngine): { tab: BestiaryTab; el: { innerHTML: 
   return { tab, el };
 }
 
-describe('Bestiary tab: mastery and perks', () => {
-  it('renders progress toward mastery for unmastered monster', () => {
+/** A manifest with `monsters` and one family holding them all, mastered at `masteryKills`. */
+function familyManifest(monsters: Array<{ id: string; name: string }>, familyName: string, masteryKills: number) {
+  return {
+    id: 'test',
+    name: 'Test',
+    items: [],
+    spells: [],
+    monsters: monsters.map((m) => ({ ...m, stats: { hp: 10, maxHp: 10, attack: 3, defense: 0 }, speed: 100, aiType: 'melee', fleeHealthPercent: 0, xpValue: 5, lootTable: [] })),
+    monsterCategories: [{ id: 'family', name: familyName, members: monsters.map((m) => m.id), masteryKills }],
+  } as any;
+}
+
+describe('Bestiary tab: knowledge ranks and family perks (Q7 "A")', () => {
+  it('renders progress toward a complete page for a creature slain twice, and no perks of its own', () => {
     const map = new GameMap(10, 10);
     const player = new Player({ id: 'p1', name: 'Hero', position: { x: 1, y: 1 } });
     const engine = new GameEngine({ map, player });
@@ -41,98 +53,70 @@ describe('Bestiary tab: mastery and perks', () => {
 
     const { el: overlay } = openBestiary(engine);
     expect(overlay.innerHTML).toContain('2/15 Kills');
-    expect(overlay.innerHTML).toContain('Kobold Slinker Mastery');
-    expect(overlay.innerHTML).toContain('Slay 13 more');
-    expect(overlay.innerHTML).toContain('Anatomist');
-    expect(overlay.innerHTML).toContain('Survivor');
-    expect(overlay.innerHTML).toContain('Trophy Hunter');
-    expect(overlay.innerHTML).toContain('Essence Siphon');
-    expect(overlay.innerHTML).toContain('Plunderer');
+    expect(overlay.innerHTML).toContain('Kobold Slinker: knowledge');
+    expect(overlay.innerHTML).toContain('Slay 13 more to complete its page');
+    expect(overlay.innerHTML).not.toContain('Anatomist');
+    expect(overlay.innerHTML).not.toContain('data-scope="species"');
   });
 
-  it('renders all 5 specializations and allows selection in town', () => {
+  it('marks a creature slain 15 times as Studied, with its page complete', () => {
     const map = new GameMap(10, 10);
     const player = new Player({ id: 'p1', name: 'Hero', position: { x: 1, y: 1 } });
-    // Floor 0 = Town
     const engine = new GameEngine({ map, player, floor: 0 });
+    MonsterRegistry.register({ id: 'giant_rat', name: 'Giant Rat', stats: { hp: 10, maxHp: 10, attack: 3, defense: 0 }, speed: 100, aiType: 'melee', fleeHealthPercent: 0, xpValue: 5, lootTable: [] });
+    for (let i = 0; i < 15; i++) engine.compendium.recordKill('giant_rat', 'Giant Rat');
 
-    MonsterRegistry.register({
-      id: 'giant_rat',
-      name: 'Giant Rat',
-      stats: { hp: 10, maxHp: 10, attack: 3, defense: 0 },
-      speed: 100,
-      aiType: 'melee',
-      fleeHealthPercent: 0,
-      xpValue: 5,
-      lootTable: [],
-    });
+    const { el: overlay } = openBestiary(engine);
+    expect(overlay.innerHTML).toContain('★ Giant Rat: knowledge');
+    expect(overlay.innerHTML).toContain('Studied: its page shows everything');
+    expect(overlay.innerHTML).toContain('Studied');
+    expect(overlay.innerHTML).not.toContain('Mastered');
+  });
 
-    for (let i = 0; i < 15; i++) {
-      engine.compendium.recordKill('giant_rat', 'Giant Rat');
-    }
+  it('renders all 5 perks for a mastered family and allows selection and respec in town', () => {
+    const map = new GameMap(10, 10);
+    const player = new Player({ id: 'p1', name: 'Hero', position: { x: 1, y: 1 } });
+    const manifest = familyManifest([{ id: 'giant_rat', name: 'Giant Rat' }], 'Vermin', 15);
+    // Floor 0 = Town
+    const engine = new GameEngine({ map, player, floor: 0, manifest });
+    for (let i = 0; i < 15; i++) engine.compendium.recordKill('giant_rat', 'Giant Rat');
+    const family = manifest.monsterCategories[0];
 
     const { tab, el: overlay } = openBestiary(engine);
-    expect(overlay.innerHTML).toContain('★ Giant Rat Mastery');
+    expect(overlay.innerHTML).toContain('★ Vermin (Family)');
     expect(overlay.innerHTML).toContain('In town: you may freely choose or switch perks');
-    expect(overlay.innerHTML).toContain('Anatomist');
-    expect(overlay.innerHTML).toContain('Survivor');
-    expect(overlay.innerHTML).toContain('Trophy Hunter');
-    expect(overlay.innerHTML).toContain('Essence Siphon');
-    expect(overlay.innerHTML).toContain('Plunderer');
+    for (const perk of ['Anatomist', 'Survivor', 'Trophy Hunter', 'Essence Siphon', 'Plunderer']) expect(overlay.innerHTML).toContain(perk);
 
-    // Select Anatomist
-    const selectRes = engine.compendium.selectPerk('giant_rat', 'anatomist', true);
+    const selectRes = engine.compendium.selectCategoryPerk(family, 'anatomist', true);
     expect(selectRes.success).toBe(true);
-    expect(engine.compendium.getPerk('giant_rat')).toBe('anatomist');
-
     tab.render();
     expect(overlay.innerHTML).toContain('<span class="bs-tag is-t3">Active</span>');
 
-    // Respec in town to Essence Siphon
-    const respecRes = engine.compendium.selectPerk('giant_rat', 'essence_siphon', true);
+    const respecRes = engine.compendium.selectCategoryPerk(family, 'essence_siphon', true);
     expect(respecRes.success).toBe(true);
-    expect(engine.compendium.getPerk('giant_rat')).toBe('essence_siphon');
-
-    tab.render();
-    expect(engine.compendium.getPerk('giant_rat')).toBe('essence_siphon');
+    expect(engine.compendium.getCategoryPerk('family')).toBe('essence_siphon');
   });
 
-  it('locks respec while in dungeon after perk is chosen', () => {
+  it('locks respec while in dungeon after a family perk is chosen', () => {
     const map = new GameMap(10, 10);
     const player = new Player({ id: 'p1', name: 'Hero', position: { x: 1, y: 1 } });
+    const manifest = familyManifest([{ id: 'giant_rat', name: 'Giant Rat' }], 'Vermin', 15);
     // Floor 1 = Dungeon
-    const engine = new GameEngine({ map, player, floor: 1 });
-
-    MonsterRegistry.register({
-      id: 'giant_rat',
-      name: 'Giant Rat',
-      stats: { hp: 15, maxHp: 15, attack: 5, defense: 2 },
-      speed: 100,
-      aiType: 'melee',
-      fleeHealthPercent: 0,
-      xpValue: 15,
-      lootTable: [],
-    });
-
-    for (let i = 0; i < 15; i++) {
-      engine.compendium.recordKill('giant_rat', 'Giant Rat');
-    }
+    const engine = new GameEngine({ map, player, floor: 1, manifest });
+    for (let i = 0; i < 15; i++) engine.compendium.recordKill('giant_rat', 'Giant Rat');
+    const family = manifest.monsterCategories[0];
 
     // In dungeon, initial perk selection is allowed
-    const initialPick = engine.compendium.selectPerk('giant_rat', 'survivor', false);
-    expect(initialPick.success).toBe(true);
-    expect(engine.compendium.getPerk('giant_rat')).toBe('survivor');
+    expect(engine.compendium.selectCategoryPerk(family, 'survivor', false).success).toBe(true);
 
     const { el: overlay } = openBestiary(engine);
-    // Once survivor is chosen, switching in dungeon is locked
     expect(overlay.innerHTML).toContain('Return to Town to change it');
     expect(overlay.innerHTML).toContain('Locked in the dungeon');
 
-    // Trying to respec in dungeon fails
-    const invalidRespec = engine.compendium.selectPerk('giant_rat', 'anatomist', false);
+    const invalidRespec = engine.compendium.selectCategoryPerk(family, 'anatomist', false);
     expect(invalidRespec.success).toBe(false);
     expect(invalidRespec.reason).toContain('Town');
-    expect(engine.compendium.getPerk('giant_rat')).toBe('survivor');
+    expect(engine.compendium.getCategoryPerk('family')).toBe('survivor');
   });
 
   it('shows the category mastery panel for a monster in a category', () => {
@@ -160,8 +144,8 @@ describe('Bestiary tab: mastery and perks', () => {
     tab.render();
 
     const html = (tab as any).container.innerHTML as string;
-    expect(html).toContain('12/15 Kills'); // species not yet mastered
-    expect(html).toContain('The Restless Dead (Category)');
+    expect(html).toContain('12/15 Kills'); // the creature's page is not complete yet
+    expect(html).toContain('The Restless Dead (Family)');
     expect(html).toContain('42/40 Kills');
     expect(html).toContain('data-scope="category"');
     expect(html).not.toContain('data-scope="species"');

@@ -42,10 +42,23 @@ describe('MasteryChoiceModal', () => {
   beforeEach(() => {
     originalDocument = (globalThis as any).document;
     (globalThis as any).document = new MockDocument();
+    // Since Q7 "A" only a monster family's mastery offers a perk: two one-member families.
+    const manifest = {
+      id: 'test',
+      name: 'Test',
+      monsters: [],
+      items: [],
+      spells: [],
+      monsterCategories: [
+        { id: 'wolf', name: 'Wolves', members: ['wolf'], masteryKills: 15 },
+        { id: 'rat', name: 'Rats', members: ['rat'], masteryKills: 15 },
+      ],
+    } as any;
     engine = new GameEngine({
       map: new GameMap(10, 10),
       player: new Player({ id: 'p', name: 'Hero', position: { x: 1, y: 1 } }),
       floor: 2,
+      manifest,
     });
     for (let i = 0; i < 15; i++) engine.compendium.recordKill('wolf', 'Wolf');
     for (let i = 0; i < 15; i++) engine.compendium.recordKill('rat', 'Rat');
@@ -57,7 +70,7 @@ describe('MasteryChoiceModal', () => {
 
   const openWith = (...ids: string[]) => {
     const modal = new MasteryChoiceModal();
-    for (const id of ids) modal.enqueue({ scope: 'species', masteryId: id, name: id, kills: 15 });
+    for (const id of ids) modal.enqueue({ scope: 'category', masteryId: id, name: id, kills: 15 });
     modal.open(engine);
     (modal as any).openedAt = 0;
     return modal;
@@ -68,32 +81,32 @@ describe('MasteryChoiceModal', () => {
     modal.handleKeyDown(key('1', 'Digit1'));
     modal.handleKeyDown(key('3', 'Numpad3'));
     modal.handleKeyDown(key('Enter'));
-    expect(engine.compendium.getPerk('wolf')).toBeUndefined();
+    expect(engine.compendium.getCategoryPerk('wolf')).toBeUndefined();
     expect(modal.isOpen).toBe(true);
   });
 
   it('swallows keys in flight when it opens', () => {
     const modal = new MasteryChoiceModal();
-    modal.enqueue({ scope: 'species', masteryId: 'wolf', name: 'Wolf', kills: 15 });
+    modal.enqueue({ scope: 'category', masteryId: 'wolf', name: 'Wolf', kills: 15 });
     modal.open(engine);
     modal.handleKeyDown(key('ArrowDown'));
     modal.handleKeyDown(key('Enter'));
-    expect(engine.compendium.getPerk('wolf')).toBeUndefined();
+    expect(engine.compendium.getCategoryPerk('wolf')).toBeUndefined();
   });
 
   it('highlights with arrows and locks in on Enter, then shows the next queued mastery', () => {
     const modal = openWith('wolf', 'rat');
     modal.handleKeyDown(key('ArrowDown')); // anatomist
     modal.handleKeyDown(key('ArrowDown')); // survivor
-    expect(engine.compendium.getPerk('wolf')).toBeUndefined();
+    expect(engine.compendium.getCategoryPerk('wolf')).toBeUndefined();
     modal.handleKeyDown(key('Enter'));
-    expect(engine.compendium.getPerk('wolf')).toBe('survivor');
+    expect(engine.compendium.getCategoryPerk('wolf')).toBe('survivor');
     expect(modal.isOpen).toBe(true); // rat is next
 
     (modal as any).openedAt = 0;
     modal.highlight(4);
     expect(modal.confirm()).toBe(true);
-    expect(engine.compendium.getPerk('rat')).toBe('plunderer');
+    expect(engine.compendium.getCategoryPerk('rat')).toBe('plunderer');
     expect(modal.isOpen).toBe(false);
   });
 
@@ -102,14 +115,14 @@ describe('MasteryChoiceModal', () => {
     modal.handleKeyDown(key('ArrowDown'));
     modal.handleKeyDown(key('Escape'));
     expect(modal.isOpen).toBe(false);
-    expect(engine.compendium.getPerk('wolf')).toBeUndefined();
+    expect(engine.compendium.getCategoryPerk('wolf')).toBeUndefined();
   });
 
   it('does not queue the same mastery twice', () => {
     const modal = new MasteryChoiceModal();
-    modal.enqueue({ scope: 'species', masteryId: 'wolf', name: 'Wolf', kills: 15 });
-    modal.enqueue({ scope: 'species', masteryId: 'wolf', name: 'Wolf', kills: 15 });
-    modal.enqueue({ scope: 'category', masteryId: 'wolf', name: 'Wolves', kills: 50 });
+    modal.enqueue({ scope: 'category', masteryId: 'wolf', name: 'Wolf', kills: 15 });
+    modal.enqueue({ scope: 'category', masteryId: 'wolf', name: 'Wolf', kills: 15 });
+    modal.enqueue({ scope: 'category', masteryId: 'rat', name: 'Rats', kills: 50 });
     expect((modal as any).queue).toHaveLength(2);
   });
 });

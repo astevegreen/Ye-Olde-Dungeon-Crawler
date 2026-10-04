@@ -1,9 +1,16 @@
 export type MonsterMasteryTier = 0 | 1 | 2 | 3;
 
-/** Kills of one monster type that unlock its species mastery (tier 3) and a perk choice. */
+/** Kills of one monster type that complete its bestiary page: knowledge rank 3, "Studied" (Q7 "A"). */
 export const SPECIES_MASTERY_KILLS = 15;
 
-/** Which mastery a perk was chosen for: one monster type, or a whole monster category. */
+/** Anatomist's own critical chance: cotw sets no base crit, so the perk carries one (tracker 3.5). */
+export const ANATOMIST_CRIT_CHANCE = 0.1;
+
+/**
+ * Which mastery a perk was chosen for. Since Q7 "A" (tracker 3.5) only a monster category
+ * (family) grants perks; species kills unlock knowledge ranks. 'species' remains in the type
+ * for old saves and events, and is refused by `selectMasteryPerk`.
+ */
 export type MasteryScope = 'species' | 'category';
 
 export type MasteryPerkId =
@@ -27,7 +34,7 @@ export const MASTERY_PERKS: Record<MasteryPerkId, MasteryPerkInfo> = {
     name: 'Anatomist',
     icon: '🗡️',
     tagline: 'Strike where the bone is thin.',
-    description: 'Ignores 50% of the foe\'s defense, and critical hits against it deal +25% more damage.',
+    description: 'Ignores 50% of the foe\'s defense, and one blow in ten lands as a critical for half again as much.',
   },
   survivor: {
     id: 'survivor',
@@ -66,7 +73,6 @@ export interface CompendiumEntry {
   kills: number;
   tier: MonsterMasteryTier;
   firstEncounterFloor?: number;
-  chosenPerk?: MasteryPerkId;
   /** The player has performed this monster's kill rite at least once. */
   ritePerformed?: boolean;
 }
@@ -75,6 +81,7 @@ export interface SerializedCompendiumRecord {
   kills: number;
   tier: MonsterMasteryTier;
   firstEncounterFloor?: number;
+  /** Read only: a species perk from before Q7 "A", moved to its family on load (`convertSpeciesPerks`). */
   chosenPerk?: MasteryPerkId;
   ritePerformed?: boolean;
   /** Read only: this flag's name before the kill-rite rename. */

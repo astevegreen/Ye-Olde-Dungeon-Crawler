@@ -21,6 +21,8 @@ function tierForKills(kills: number): MonsterMasteryTier {
 export class CompendiumManager {
   private entries: Map<string, CompendiumEntry> = new Map();
   private categoryPerks: Map<string, MasteryPerkId> = new Map();
+  /** Species perks read from an older save, waiting for `convertSpeciesPerks`. */
+  private legacySpeciesPerks: Map<string, MasteryPerkId> = new Map();
 
   constructor(initialData?: SerializedCompendium, categoryPerks?: SerializedCategoryPerks) {
     if (initialData) {
@@ -73,7 +75,7 @@ export class CompendiumManager {
    * Records a kill for a monster type.
    * Increments kill count and updates mastery tier:
    * - 1st kill: Advances to Tier 2 (First Slain).
-   * - `SPECIES_MASTERY_KILLS`th kill: Advances to Tier 3 (Mastered).
+   * - `SPECIES_MASTERY_KILLS`th kill: Advances to Tier 3 (Studied: the page is complete).
    */
   public recordKill(
     definitionId: string,
@@ -138,13 +140,9 @@ export class CompendiumManager {
     return this.entries.get(definitionId)?.tier ?? 0;
   }
 
+  /** Knowledge rank 3: the creature's bestiary page is complete. */
   public hasMastery(definitionId: string): boolean {
     return this.getTier(definitionId) === 3;
-  }
-
-  /** The perk chosen for this monster type's own (species) mastery. */
-  public getPerk(definitionId: string): MasteryPerkId | undefined {
-    return this.entries.get(definitionId)?.chosenPerk;
   }
 
   /** The perk chosen for a monster category's mastery. */
@@ -166,30 +164,6 @@ export class CompendiumManager {
   }
 
   /** Initial selection is allowed anywhere; changing an existing choice only in town. */
-  public selectPerk(
-    definitionId: string,
-    perkId: MasteryPerkId,
-    inTown: boolean
-  ): { success: boolean; reason?: string } {
-    const entry = this.entries.get(definitionId);
-    if (!entry || entry.tier < 3) {
-      return {
-        success: false,
-        reason: `Slay this creature ${SPECIES_MASTERY_KILLS} times to master it and choose a perk.`,
-      };
-    }
-
-    if (entry.chosenPerk && entry.chosenPerk !== perkId && !inTown) {
-      return {
-        success: false,
-        reason: 'Mastery perks can only be changed while safely resting in Town.',
-      };
-    }
-
-    entry.chosenPerk = perkId;
-    return { success: true };
-  }
-
   public selectCategoryPerk(
     category: MonsterCategoryDefinition,
     perkId: MasteryPerkId,
@@ -214,15 +188,27 @@ export class CompendiumManager {
     return { success: true };
   }
 
-  /** +10% evasion against a monster whose species or category mastery chose Survivor. */
+  /** +10% evasion against a monster whose category mastery chose Survivor. */
   public getMasteryEvasionBonus(definitionId: string, categoryId?: string): number {
     return this.hasPerk(definitionId, 'survivor', categoryId) ? 0.10 : 0;
   }
 
-  /** Whether `perkId` is active against a monster, via its species or its category mastery. */
-  public hasPerk(definitionId: string, perkId: MasteryPerkId, categoryId?: string): boolean {
-    if (this.getPerk(definitionId) === perkId) return true;
+  /** Whether `perkId` is active against a monster, through its category's mastery. */
+  public hasPerk(_definitionId: string, perkId: MasteryPerkId, categoryId?: string): boolean {
     return categoryId !== undefined && this.categoryPerks.get(categoryId) === perkId;
+  }
+
+  /**
+   * One-time conversion of a save from before Q7 "A": a perk chosen for a species becomes its
+   * family's perk when the family has none yet, else it is dropped. Call once after
+   * construction with the pack's categories; it is a no-op afterwards.
+   */
+  public convertSpeciesPerks(categories: readonly MonsterCategoryDefinition[]): void {
+    for (const [definitionId, perkId] of this.legacySpeciesPerks) {
+      const category = categories.find((c) => c.members.includes(definitionId));
+      if (category && !this.categoryPerks.has(category.id)) this.categoryPerks.set(category.id, perkId);
+    }
+    this.legacySpeciesPerks.clear();
   }
 
   public serialize(): SerializedCompendium {
@@ -232,7 +218,6 @@ export class CompendiumManager {
         kills: entry.kills,
         tier: entry.tier,
         firstEncounterFloor: entry.firstEncounterFloor,
-        chosenPerk: entry.chosenPerk,
         ritePerformed: entry.ritePerformed,
       };
     }
@@ -250,13 +235,13 @@ export class CompendiumManager {
       // drops back to tier 2 (and loses its perk) until the player earns it again.
       const tier: MonsterMasteryTier =
         record.tier === 3 && record.kills < SPECIES_MASTERY_KILLS ? tierForKills(record.kills) : record.tier;
-      const chosenPerk = tier === 3 ? record.chosenPerk : undefined;
+      // A species perk from before Q7 "A" (tracker 3.5) is kept aside for `convertSpeciesPerks`.
+      if (tier === 3 && record.chosenPerk) this.legacySpeciesPerks.set(id, record.chosenPerk);
       const existing = this.entries.get(id);
       if (existing) {
         existing.kills = record.kills;
         existing.tier = tier;
         existing.firstEncounterFloor = record.firstEncounterFloor ?? existing.firstEncounterFloor;
-        existing.chosenPerk = chosenPerk ?? existing.chosenPerk;
         existing.ritePerformed = record.ritePerformed ?? record.galdrHarvested ?? existing.ritePerformed;
       } else {
         this.entries.set(id, {
@@ -265,7 +250,6 @@ export class CompendiumManager {
           kills: record.kills,
           tier,
           firstEncounterFloor: record.firstEncounterFloor,
-          chosenPerk,
           ritePerformed: record.ritePerformed ?? record.galdrHarvested,
         });
       }
@@ -308,7 +292,7 @@ export function getMonsterCategory(
   return engine.manifest?.monsterCategories?.find((c) => c.members.includes(definitionId));
 }
 
-/** Whether `perkId` is active against this monster type, via species or category mastery. */
+/** Whether `perkId` is active against this monster type, through its family's mastery. */
 export function hasMasteryPerk(engine: GameEngine, definitionId: string, perkId: MasteryPerkId): boolean {
   if (!engine.compendium) return false;
   return engine.compendium.hasPerk(definitionId, perkId, getMonsterCategory(engine, definitionId)?.id);
@@ -321,16 +305,11 @@ export interface PendingMasteryChoice {
   name: string;
 }
 
-/** Every earned mastery still waiting on a perk choice, species first. */
+/** Every earned family mastery still waiting on a perk choice. */
 export function getPendingMasteryChoices(engine: GameEngine): PendingMasteryChoice[] {
   const compendium = engine.compendium;
   if (!compendium) return [];
   const pending: PendingMasteryChoice[] = [];
-  for (const entry of compendium.getAllEntries()) {
-    if (entry.tier === 3 && !entry.chosenPerk) {
-      pending.push({ scope: 'species', masteryId: entry.definitionId, name: entry.name });
-    }
-  }
   for (const category of engine.manifest?.monsterCategories ?? []) {
     if (compendium.hasCategoryMastery(category) && !compendium.getCategoryPerk(category.id)) {
       pending.push({ scope: 'category', masteryId: category.id, name: category.name });
@@ -340,8 +319,9 @@ export function getPendingMasteryChoices(engine: GameEngine): PendingMasteryChoi
 }
 
 /**
- * Records a kill toward species and category mastery, logging and emitting
- * `mastery_unlocked` for each mastery the kill completes.
+ * Records a kill toward the creature's knowledge rank and its family's mastery: a species
+ * kill count only fills the bestiary page (Q7 "A"); the family's mastery logs and emits
+ * `mastery_unlocked`, which offers a perk.
  */
 export function recordMasteryKill(engine: GameEngine, definitionId: string, name: string): void {
   const compendium = engine.compendium;
@@ -351,15 +331,7 @@ export function recordMasteryKill(engine: GameEngine, definitionId: string, name
   if (killRes.tierAdvanced && killRes.tier === 2) {
     engine.log(`*** Bestiary: You uncovered the affinities and weaknesses of ${name}! ***`);
   } else if (killRes.tierAdvanced && killRes.tier === 3) {
-    engine.log(`*** MASTERED! You have slain ${killRes.kills} ${name} — choose a Mastery Perk against them! ***`);
-    engine.emitGameEvent({
-      type: 'mastery_unlocked',
-      turn: engine.turnCount,
-      scope: 'species',
-      masteryId: definitionId,
-      name,
-      kills: killRes.kills,
-    });
+    engine.log(`*** Bestiary: ${killRes.kills} ${name} slain. You have studied it: its page is complete. ***`);
   }
 
   const category = getMonsterCategory(engine, definitionId);
@@ -367,7 +339,7 @@ export function recordMasteryKill(engine: GameEngine, definitionId: string, name
   const categoryKills = compendium.getCategoryKills(category);
   // Only the kill that crosses the threshold announces it.
   if (categoryKills === category.masteryKills && !compendium.getCategoryPerk(category.id)) {
-    engine.log(`*** CATEGORY MASTERED! ${categoryKills} of ${category.name} slain — choose a Mastery Perk against all of them! ***`);
+    engine.log(`*** FAMILY MASTERED! ${categoryKills} of ${category.name} slain — choose a Mastery Perk against all of them! ***`);
     engine.emitGameEvent({
       type: 'mastery_unlocked',
       turn: engine.turnCount,
@@ -395,17 +367,13 @@ export function selectMasteryPerk(
   }
 
   const inTown = engine.currentFloor === 0;
-  let targetName: string;
-  let result: { success: boolean; reason?: string };
-  if (scope === 'category') {
-    const category = engine.manifest?.monsterCategories?.find((c) => c.id === masteryId);
-    if (!category) return { success: false, reason: 'Unknown monster category.' };
-    targetName = category.name;
-    result = compendium.selectCategoryPerk(category, perkId, inTown);
-  } else {
-    targetName = compendium.getEntry(masteryId).name;
-    result = compendium.selectPerk(masteryId, perkId, inTown);
+  if (scope !== 'category') {
+    return { success: false, reason: 'Slaying one kind of creature fills its bestiary page; perks come from mastering its whole family.' };
   }
+  const category = engine.manifest?.monsterCategories?.find((c) => c.id === masteryId);
+  if (!category) return { success: false, reason: 'Unknown monster category.' };
+  const targetName = category.name;
+  const result = compendium.selectCategoryPerk(category, perkId, inTown);
 
   if (result.success) {
     engine.log(`*** Mastery Perk: ${MASTERY_PERKS[perkId].name} against ${targetName}! ***`);

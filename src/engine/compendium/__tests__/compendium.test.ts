@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CompendiumManager, selectMasteryPerk, getPendingMasteryChoices } from '../compendiumManager';
+import { CompendiumManager, selectMasteryPerk, getPendingMasteryChoices, hasMasteryPerk } from '../compendiumManager';
 import { SPECIES_MASTERY_KILLS } from '../types';
 import type { GameContentManifest } from '../../types/manifest';
 import type { GameEvent } from '../../events';
@@ -12,6 +12,19 @@ import { DeathResolver } from '../../combat/deathResolver';
 import { ItemFactory } from '../../items/factory';
 import { CoinItem } from '../../economy/currency';
 import { serializeGame, deserializeGame } from '../../storage/serializer';
+
+/**
+ * Since Q7 "A" (tracker 3.5) a perk is held by a monster family, never a species: a
+ * one-member family mastered at a kill, with `perkId` chosen, is the smallest way to hold one.
+ */
+function familyWithPerk(definitionId: string, perkId: Parameters<CompendiumManager['selectCategoryPerk']>[1], choose = true) {
+  const category = { id: `fam_${definitionId}`, name: `${definitionId} kin`, members: [definitionId], masteryKills: 1 };
+  const manifest = { id: 'test', name: 'Test', monsters: [], items: [], spells: [], monsterCategories: [category] } as unknown as GameContentManifest;
+  const compendium = new CompendiumManager();
+  compendium.recordKill(definitionId, definitionId);
+  if (choose) expect(compendium.selectCategoryPerk(category, perkId, true).success).toBe(true);
+  return { manifest, compendium, category };
+}
 
 describe('Slayer Compendium & Progressive Monster Mastery', () => {
   it('starts at Tier 0 (Undiscovered) and advances to Tier 1 upon encounter', () => {
@@ -30,7 +43,7 @@ describe('Slayer Compendium & Progressive Monster Mastery', () => {
     expect(manager.getTier('giant_rat')).toBe(1);
   });
 
-  it('progresses to Tier 2 on 1st kill, and Tier 3 (Mastered) on the 15th kill', () => {
+  it('progresses to Tier 2 on 1st kill, and Tier 3 (Studied: the page is complete) on the 15th kill', () => {
     expect(SPECIES_MASTERY_KILLS).toBe(15);
     const manager = new CompendiumManager();
     manager.recordEncounter('kobold', 'Kobold', 1);
@@ -53,9 +66,8 @@ describe('Slayer Compendium & Progressive Monster Mastery', () => {
     expect(manager.getEntry('kobold').kills).toBe(14);
     expect(manager.getTier('kobold')).toBe(2);
     expect(manager.hasMastery('kobold')).toBe(false);
-    expect(manager.selectPerk('kobold', 'anatomist', true).success).toBe(false);
 
-    // Kill 15 -> Tier 3 (Mastered!)
+    // Kill 15 -> Tier 3 (Studied)
     const k15 = manager.recordKill('kobold');
     expect(k15.kills).toBe(15);
     expect(k15.tier).toBe(3);
@@ -63,45 +75,43 @@ describe('Slayer Compendium & Progressive Monster Mastery', () => {
     expect(manager.hasMastery('kobold')).toBe(true);
   });
 
-  it('selectMasteryPerk dispatches game event and logs selection', () => {
+  it('refuses a species-scoped perk: studying one creature fills its page, the family grants the perk (Q7 "A")', () => {
     const map = new GameMap(10, 10);
     const player = new Player({ id: 'p1', name: 'Hero', position: { x: 1, y: 1 } });
     const engine = new GameEngine({ map, player, floor: 0 });
     for (let i = 0; i < SPECIES_MASTERY_KILLS; i++) {
       engine.compendium.recordKill('ogre', 'Ogre');
     }
+    expect(engine.compendium.hasMastery('ogre')).toBe(true);
 
     const res = selectMasteryPerk(engine, 'species', 'ogre', 'trophy_hunter');
-    expect(res.success).toBe(true);
-    expect(engine.compendium.getPerk('ogre')).toBe('trophy_hunter');
+    expect(res.success).toBe(false);
+    expect(res.reason).toMatch(/family/);
+    expect(hasMasteryPerk(engine, 'ogre', 'trophy_hunter')).toBe(false);
   });
 
-  it('enforces town-only respec for mastery specializations', () => {
-    const manager = new CompendiumManager();
-    for (let i = 0; i < SPECIES_MASTERY_KILLS; i++) {
-      manager.recordKill('troll', 'Troll');
-    }
-    expect(manager.hasMastery('troll')).toBe(true);
+  it('enforces town-only respec for a family perk', () => {
+    const { compendium: manager, category } = familyWithPerk('troll', 'anatomist', false);
 
     // Initial selection can happen anywhere (even in dungeon)
-    const initialPick = manager.selectPerk('troll', 'anatomist', false);
+    const initialPick = manager.selectCategoryPerk(category, 'anatomist', false);
     expect(initialPick.success).toBe(true);
-    expect(manager.getPerk('troll')).toBe('anatomist');
+    expect(manager.getCategoryPerk(category.id)).toBe('anatomist');
 
     // Trying to change perk while not in town fails
-    const dungeonRespec = manager.selectPerk('troll', 'survivor', false);
+    const dungeonRespec = manager.selectCategoryPerk(category, 'survivor', false);
     expect(dungeonRespec.success).toBe(false);
     expect(dungeonRespec.reason).toContain('Town');
-    expect(manager.getPerk('troll')).toBe('anatomist');
+    expect(manager.getCategoryPerk(category.id)).toBe('anatomist');
 
     // Respec in town (inTown = true) succeeds
-    const townRespec = manager.selectPerk('troll', 'survivor', true);
+    const townRespec = manager.selectCategoryPerk(category, 'survivor', true);
     expect(townRespec.success).toBe(true);
-    expect(manager.getPerk('troll')).toBe('survivor');
+    expect(manager.getCategoryPerk(category.id)).toBe('survivor');
   });
 
 
-  it('applies Anatomist perk: ignores 50% defense and increases critical damage', () => {
+  it('applies Anatomist perk: ignores 50% defense, and lands its own critical one blow in ten', () => {
     const map = new GameMap(10, 10);
     const player = new Player({
       id: 'player',
@@ -117,9 +127,10 @@ describe('Slayer Compendium & Progressive Monster Mastery', () => {
       stats: { hp: 50, maxHp: 50, attack: 5, defense: 4 },
     });
 
-    const compendium = new CompendiumManager();
-    const engine = new GameEngine({ map, player, compendium });
+    const { manifest, compendium, category } = familyWithPerk('goblin', 'anatomist', false);
+    const engine = new GameEngine({ map, player, compendium, manifest });
     engine.addEntity(monster);
+    engine.rng = () => 0.5; // no critical
 
     // Without mastery: Attack 10 - Defense 4 = 6 damage
     const action1 = new MeleeAttackAction(player, monster);
@@ -127,19 +138,24 @@ describe('Slayer Compendium & Progressive Monster Mastery', () => {
     expect(res1.success).toBe(true);
     expect(monster.hp).toBe(50 - 6); // 44
 
-    // Unlock Tier 3 mastery and select Anatomist perk
-    for (let i = 0; i < SPECIES_MASTERY_KILLS; i++) {
-      compendium.recordKill('goblin', 'Goblin');
-    }
-    compendium.selectPerk('goblin', 'anatomist', true);
-    expect(compendium.getPerk('goblin')).toBe('anatomist');
+    // The family's mastery takes Anatomist
+    expect(compendium.selectCategoryPerk(category, 'anatomist', true).success).toBe(true);
+    expect(hasMasteryPerk(engine, 'goblin', 'anatomist')).toBe(true);
 
     // With Anatomist: Defense 4 halved to 2. Attack 10 - 2 = 8 damage
+    player.gainEnergy(100);
     const action2 = new MeleeAttackAction(player, monster);
     const res2 = action2.perform(engine);
     expect(res2.success).toBe(true);
     expect(monster.hp).toBe(44 - 8); // 36
     expect(res2.message).toContain('Anatomist');
+
+    // The perk's own critical (one in ten; the pack sets no base crit): 8 × (1.5 + 0.25) = 14
+    engine.rng = () => 0.05;
+    player.gainEnergy(100);
+    const res3 = new MeleeAttackAction(player, monster).perform(engine);
+    expect(monster.hp).toBe(36 - 14); // 22
+    expect(res3.message).toContain('Anatomist Critical');
   });
 
   it('evades attacks and resists debuffs with Survivor perk', () => {
@@ -158,13 +174,8 @@ describe('Slayer Compendium & Progressive Monster Mastery', () => {
       stats: { hp: 50, maxHp: 50, attack: 15, defense: 3 },
     });
 
-    const compendium = new CompendiumManager();
-    for (let i = 0; i < SPECIES_MASTERY_KILLS; i++) {
-      compendium.recordKill('ogre', 'Ogre Brute');
-    }
-    compendium.selectPerk('ogre', 'survivor', true);
-
-    const engine = new GameEngine({ map, player, compendium });
+    const { manifest, compendium } = familyWithPerk('ogre', 'survivor');
+    const engine = new GameEngine({ map, player, compendium, manifest });
     engine.addEntity(monster);
 
     // Mock engine.rng to return 0.05 (< 0.10 Survivor evasion threshold)
@@ -188,11 +199,7 @@ describe('Slayer Compendium & Progressive Monster Mastery', () => {
       mana: 5,
       maxMana: 30,
     });
-    const compendium = new CompendiumManager();
-    for (let i = 0; i < SPECIES_MASTERY_KILLS; i++) {
-      compendium.recordKill('wraith', 'Wraith');
-    }
-    compendium.selectPerk('wraith', 'essence_siphon', true);
+    const { manifest, compendium } = familyWithPerk('wraith', 'essence_siphon');
 
     const monster = new Monster({
       id: 'm-siphon',
@@ -201,7 +208,7 @@ describe('Slayer Compendium & Progressive Monster Mastery', () => {
       position: { x: 1, y: 2 },
       stats: { hp: 5, maxHp: 10, attack: 2, defense: 0 },
     });
-    const engine = new GameEngine({ map, player, compendium });
+    const engine = new GameEngine({ map, player, compendium, manifest });
     engine.addEntity(monster);
 
     player.energy = 50;
@@ -231,13 +238,9 @@ describe('Slayer Compendium & Progressive Monster Mastery', () => {
       onHitAffliction: { type: 'poison', chance: 1, duration: 4 },
     });
 
-    const compendium = new CompendiumManager();
-    for (let i = 0; i < SPECIES_MASTERY_KILLS; i++) {
-      compendium.recordKill('viper', 'Cave Viper');
-    }
-    compendium.selectPerk('viper', 'trophy_hunter', true);
+    const { manifest, compendium } = familyWithPerk('viper', 'trophy_hunter');
 
-    const engine = new GameEngine({ map, player, compendium });
+    const engine = new GameEngine({ map, player, compendium, manifest });
     engine.addEntity(monster);
 
     // Force trophy roll to succeed (< 0.35)
@@ -274,13 +277,9 @@ describe('Slayer Compendium & Progressive Monster Mastery', () => {
       ],
     });
 
-    const compendium = new CompendiumManager();
-    for (let i = 0; i < SPECIES_MASTERY_KILLS; i++) {
-      compendium.recordKill('kobold_thief', 'Kobold Thief');
-    }
-    compendium.selectPerk('kobold_thief', 'plunderer', true);
+    const { manifest, compendium } = familyWithPerk('kobold_thief', 'plunderer');
 
-    const engine = new GameEngine({ map, player, compendium });
+    const engine = new GameEngine({ map, player, compendium, manifest });
     engine.addEntity(monster);
 
     DeathResolver.resolveDeath(engine, player, monster);
@@ -292,65 +291,51 @@ describe('Slayer Compendium & Progressive Monster Mastery', () => {
     expect(coin?.count).toBe(40);
   });
 
-  it('serializes and deserializes compendium state and chosenPerk across save/load cycles', () => {
-    const manager = new CompendiumManager();
-    manager.recordEncounter('giant_rat', 'Giant Rat', 1);
-    for (let i = 0; i < SPECIES_MASTERY_KILLS; i++) {
-      manager.recordKill('kobold', 'Kobold');
-    }
-    manager.selectPerk('kobold', 'anatomist', true);
+  it('moves a species perk from an older save to its family on load, once (Q7 "A")', () => {
+    const folk = { id: 'folk', name: 'Folk', members: ['kobold', 'goblin'], masteryKills: 40 };
+    const manifest = { id: 'test', name: 'Test', monsters: [], items: [], spells: [], monsterCategories: [folk] } as unknown as GameContentManifest;
 
-    const serialized = manager.serialize();
-    expect(serialized['giant_rat'].tier).toBe(1);
-    expect(serialized['kobold'].tier).toBe(3);
-    expect(serialized['kobold'].kills).toBe(15);
-    expect(serialized['kobold'].chosenPerk).toBe('anatomist');
+    // A species perk, no family perk yet: the family takes it, and the record no longer carries it.
+    const manager = new CompendiumManager({ kobold: { kills: 15, tier: 3, chosenPerk: 'anatomist' }, giant_rat: { kills: 0, tier: 1 } });
+    manager.convertSpeciesPerks([folk]);
+    expect(manager.getCategoryPerk('folk')).toBe('anatomist');
+    expect(manager.getTier('kobold')).toBe(3);
+    expect(manager.serialize().kobold.chosenPerk).toBeUndefined();
+    expect(manager.getTier('giant_rat')).toBe(1);
 
-    const newManager = new CompendiumManager(serialized);
-    expect(newManager.getTier('giant_rat')).toBe(1);
-    expect(newManager.hasMastery('kobold')).toBe(true);
-    expect(newManager.getPerk('kobold')).toBe('anatomist');
+    // A family perk already chosen wins; the species perk is dropped.
+    const kept = new CompendiumManager({ kobold: { kills: 15, tier: 3, chosenPerk: 'anatomist' } }, { folk: 'survivor' });
+    kept.convertSpeciesPerks([folk]);
+    expect(kept.getCategoryPerk('folk')).toBe('survivor');
 
-    // Test full engine save/load roundtrip
+    // Through the real load path: a save written before the change.
     const map = new GameMap(10, 10);
-    const player = new Player({
-      id: 'p1',
-      name: 'Thorvald',
-      position: { x: 2, y: 2 },
-      stats: { hp: 30, maxHp: 30, attack: 5, defense: 2 },
-    });
-    const engine = new GameEngine({ map, player, compendium: manager });
-    const profile = {
-      id: 'prof-1',
-      name: 'Thorvald',
-      level: 1,
-      floor: 1,
-      lastSaved: Date.now(),
-      hp: 30,
-      maxHp: 30,
-      strength: 15,
-    };
-
+    const player = new Player({ id: 'p1', name: 'Thorvald', position: { x: 2, y: 2 }, stats: { hp: 30, maxHp: 30, attack: 5, defense: 2 } });
+    const engine = new GameEngine({ map, player, compendium: new CompendiumManager({ kobold: { kills: 15, tier: 3 } }), manifest });
+    const profile = { id: 'prof-1', name: 'Thorvald', level: 1, floor: 1, lastSaved: Date.now(), hp: 30, maxHp: 30, strength: 15 };
     const saveData = serializeGame(engine, profile);
-    expect(saveData.compendium).toBeDefined();
     expect(saveData.compendium?.['kobold'].tier).toBe(3);
-    expect(saveData.compendium?.['kobold'].chosenPerk).toBe('anatomist');
+    saveData.compendium!['kobold'].chosenPerk = 'plunderer'; // as an older save wrote it
 
-    const loaded = deserializeGame(saveData);
-    expect(loaded.engine.compendium.hasMastery('kobold')).toBe(true);
-    expect(loaded.engine.compendium.getPerk('kobold')).toBe('anatomist');
-    expect(loaded.engine.compendium.getTier('giant_rat')).toBe(1);
+    const loaded = deserializeGame(saveData, manifest);
+    expect(loaded.engine.compendium.getTier('kobold')).toBe(3);
+    expect(loaded.engine.compendium.getCategoryPerk('folk')).toBe('plunderer');
+    expect(loaded.engine.compendium.serialize().kobold.chosenPerk).toBeUndefined();
   });
 
-  it('drops a pre-15-kill mastery from an older save back to tier 2 without its perk', () => {
+  it('drops a pre-15-kill mastery from an older save back to tier 2, and converts only a kept one', () => {
     const manager = new CompendiumManager({
       kobold: { kills: 6, tier: 3, chosenPerk: 'anatomist' },
       goblin: { kills: 20, tier: 3, chosenPerk: 'survivor' },
     });
     expect(manager.getTier('kobold')).toBe(2);
-    expect(manager.getPerk('kobold')).toBeUndefined();
     expect(manager.getTier('goblin')).toBe(3);
-    expect(manager.getPerk('goblin')).toBe('survivor');
+    manager.convertSpeciesPerks([
+      { id: 'kobolds', name: 'Kobolds', members: ['kobold'], masteryKills: 40 },
+      { id: 'goblins', name: 'Goblins', members: ['goblin'], masteryKills: 40 },
+    ]);
+    expect(manager.getCategoryPerk('kobolds')).toBeUndefined();
+    expect(manager.getCategoryPerk('goblins')).toBe('survivor');
   });
 });
 
@@ -398,16 +383,15 @@ describe('Category mastery', () => {
   const unlocks = (events: GameEvent[]) =>
     events.filter((e) => e.type === 'mastery_unlocked') as Array<GameEvent & { scope: string; masteryId: string; kills: number }>;
 
-  it('emits a species mastery_unlocked on exactly the 15th kill of one type', () => {
+  it('the 15th kill of one type completes its page and offers nothing: no species mastery_unlocked (Q7 "A")', () => {
     const { engine, player, events } = makeEngine();
     kill(engine, player, 'skeleton', 14);
     expect(unlocks(events)).toHaveLength(0);
     kill(engine, player, 'skeleton');
-    expect(unlocks(events)).toEqual([
-      expect.objectContaining({ scope: 'species', masteryId: 'skeleton', kills: 15 }),
-    ]);
-    kill(engine, player, 'skeleton', 3);
-    expect(unlocks(events)).toHaveLength(1);
+    expect(unlocks(events)).toHaveLength(0);
+    expect(engine.compendium.hasMastery('skeleton')).toBe(true);
+    expect(engine.messages.some((m) => m.includes('studied it: its page is complete'))).toBe(true);
+    expect(getPendingMasteryChoices(engine)).toEqual([]);
   });
 
   it('counts kills across every member and emits a category mastery_unlocked at the threshold', () => {
@@ -478,14 +462,10 @@ describe('Category mastery', () => {
     const { engine, player } = makeEngine(0);
     kill(engine, player, 'skeleton', 25);
     kill(engine, player, 'draugr', 15);
-    expect(getPendingMasteryChoices(engine).map((p) => `${p.scope}:${p.masteryId}`).sort()).toEqual([
-      'category:undead',
-      'species:draugr',
-      'species:skeleton',
-    ]);
-    selectMasteryPerk(engine, 'species', 'skeleton', 'plunderer');
+    expect(getPendingMasteryChoices(engine).map((p) => `${p.scope}:${p.masteryId}`)).toEqual(['category:undead']);
+    expect(selectMasteryPerk(engine, 'species', 'skeleton', 'plunderer').success).toBe(false);
     selectMasteryPerk(engine, 'category', 'undead', 'survivor');
-    expect(getPendingMasteryChoices(engine).map((p) => p.masteryId)).toEqual(['draugr']);
+    expect(getPendingMasteryChoices(engine)).toEqual([]);
   });
 
   it('persists category perks through a save/load round trip', () => {

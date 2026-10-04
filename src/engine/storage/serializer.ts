@@ -1066,6 +1066,8 @@ export function deserializeGame(
     saveData.compendium ?? saveData.profile?.compendium,
     saveData.compendiumCategoryPerks ?? saveData.profile?.compendiumCategoryPerks
   );
+  // A save from before Q7 "A" (tracker 3.5): each species perk becomes its family's, once.
+  compendium.convertSpeciesPerks(manifest?.monsterCategories ?? []);
 
   // 5. Rebuild world state (remote-vault items are serialized trees) before the engine
   // sees it, so it is never handed plain JSON where live Items belong.

@@ -331,7 +331,7 @@ export class CharacterTab implements MenuTab {
     const branding = resolveBranding(this.manifest());
     const floor = this.state!.currentFloor;
     const difficulty = player.difficulty ?? 'medium';
-    const xpPct = Math.min(100, (100 * player.xp) / Math.max(1, player.xpToNextLevel));
+    const xpPct = player.isAtLevelCap ? 100 : Math.min(100, (100 * player.xp) / Math.max(1, player.xpToNextLevel));
     const actionCost = player.getActionCost(100);
     const speed = actionCost === 100 ? 'normal' : actionCost > 100 ? 'slowed' : 'hastened';
     const gear = (total: number, base: number): string =>
@@ -350,7 +350,7 @@ export class CharacterTab implements MenuTab {
       <div class="ui-card">
         <div class="ch-name">${escapeHtml(player.name)}</div>
         <div class="ui-muted">Level <span class="ui-num">${player.level}</span> · ${escapeHtml(difficulty.charAt(0).toUpperCase() + difficulty.slice(1))}</div>
-        <div class="ch-xp ui-note"><span>${escapeHtml(branding.xpName)}</span><span class="ui-num">${player.xp} / ${player.xpToNextLevel}</span></div>
+        <div class="ch-xp ui-note"><span>${escapeHtml(branding.xpName)}</span><span class="ui-num">${player.isAtLevelCap ? 'at its height' : `${player.xp} / ${player.xpToNextLevel}`}</span></div>
         <div class="ui-bar"><i style="width: ${xpPct.toFixed(1)}%; background: var(--ui-xp)"></i></div>
       </div>
       <div class="ui-card">

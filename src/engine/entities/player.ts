@@ -228,6 +228,12 @@ export class Player extends Actor {
     return this.getXpRequirement(this.level);
   }
 
+  /** The pack's `maxLevel` is reached: no more levels, though `totalXp` still counts. */
+  public get isAtLevelCap(): boolean {
+    const cap = this.progressionConfig?.maxLevel;
+    return cap !== undefined && this.level >= cap;
+  }
+
   /** XP earned over the whole run: what each level reached cost, plus `xp`, which is
    *  only the progress into the current level (it resets at every level-up). */
   public get totalXp(): number {

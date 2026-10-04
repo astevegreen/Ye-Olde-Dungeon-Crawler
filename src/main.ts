@@ -629,7 +629,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const heroName = activeProfile?.name || p.name || 'Hero';
     const title = getActiveTitle(activeEngine);
     const renown = getRenownTotal(activeEngine);
-    const xpText = `${p.xp}/${p.xpToNextLevel} ${brand.xpName}`;
+    const xpText = p.isAtLevelCap ? `${brand.xpName} at its height` : `${p.xp}/${p.xpToNextLevel} ${brand.xpName}`;
     const where = activeEngine.currentFloor === 0 ? brand.townName : `Floor ${activeEngine.currentFloor}`;
 
     const setText = (id: string, text: string) => {
@@ -641,14 +641,14 @@ window.addEventListener('DOMContentLoaded', () => {
     setText('header-level', `Lvl ${p.level}`);
     setText('header-renown', title ? title : `Renown ${renown}`);
     const fill = document.getElementById('header-xp-fill');
-    if (fill) fill.style.width = `${Math.round((p.xp / Math.max(1, p.xpToNextLevel)) * 100)}%`;
+    if (fill) fill.style.width = p.isAtLevelCap ? '100%' : `${Math.min(100, Math.round((p.xp / Math.max(1, p.xpToNextLevel)) * 100))}%`;
 
     const portrait = document.getElementById('hud-portrait');
     if (portrait) {
       portrait.title = [
         title ? `${heroName}, ${title}` : heroName,
         activeEngine.currentFloor === 0 ? `Town: ${brand.townName}` : `Floor ${activeEngine.currentFloor}`,
-        `Level ${p.level} — ${xpText} to level ${p.level + 1}`,
+        p.isAtLevelCap ? `Level ${p.level} — ${xpText}` : `Level ${p.level} — ${xpText} to level ${p.level + 1}`,
         `Renown ${renown}`,
       ].join('\n');
     }

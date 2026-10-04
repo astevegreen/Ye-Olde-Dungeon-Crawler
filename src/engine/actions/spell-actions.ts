@@ -15,6 +15,10 @@ import { traceProjectile } from '../magic/targeting';
 import { ManaOverflowManager, canOvercast } from '../magic/manaOverflow';
 import { GrimoireMatrixManager } from '../magic/grimoireMatrix';
 
+/** World counter of casts whose grid shaping the log has explained, and how many it explains. */
+const GRID_NOTE_COUNTER = 'grimoire_cast_notes';
+const GRID_NOTE_TIMES = 3;
+
 export class CastSpellAction implements Action {
   public readonly caster: Entity;
   public readonly spellId: string;
@@ -224,6 +228,13 @@ export class CastSpellAction implements Action {
       this.itemTargetId,
       actionCost
     );
+
+    // The first few casts the grid shapes say how in the log, so a player learns the grid
+    // from playing; later ones keep the log quiet (the Spellbook keeps the notes).
+    if (player && matrixEffective && matrixEffective.notes.length > 0 && engine.getWorldCounter(GRID_NOTE_COUNTER) < GRID_NOTE_TIMES) {
+      engine.modifyWorldCounter(GRID_NOTE_COUNTER, 1);
+      engine.log(`Your grimoire shapes the spell: ${matrixEffective.notes.join('; ')}.`);
+    }
 
     // A cast paid partly from debt rolls a surge from the pack's overflow table
     if (player && paysCosts && manaDeficit > 0) {

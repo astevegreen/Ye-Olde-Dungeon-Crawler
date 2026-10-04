@@ -455,6 +455,26 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     expect(target.hp).toBe(75); // Thermal Shock: 20 * 1.25
   });
 
+  it('says in the log how the grid shaped a cast, the first three times only', () => {
+    player.learnSpell('fire_lance'); // slot 2, beside cold_burst in slot 1
+    engine.map.addEntity(
+      new Monster({ id: 'dummy', name: 'Dummy', position: { x: 5, y: 8 }, stats: { hp: 999, maxHp: 999, attack: 0, defense: 0 }, faction: 'hostile' })
+    );
+    const notes = () => engine.messages.filter((m) => m.startsWith('Your grimoire shapes the spell')).length;
+    for (let i = 0; i < 5; i++) {
+      player.mana = 50;
+      expect(new CastSpellAction(player, 'fire_lance', 5, 8).perform(engine).success).toBe(true);
+    }
+    expect(notes()).toBe(3);
+    expect(engine.messages.find((m) => m.startsWith('Your grimoire shapes the spell'))).toContain('Beside Cold Burst (cold)');
+
+    // An unslotted spell says nothing.
+    player.setGrimoireSlot(2, null);
+    player.mana = 50;
+    new CastSpellAction(player, 'fire_lance', 5, 8).perform(engine);
+    expect(notes()).toBe(3);
+  });
+
   it('never carries a retreating caster through a wall', () => {
     player.grimoire[0].infusedGlyphs = [{ glyphId: 'raido', potency: 1, sourceName: 'test' }];
     engine.map.setTile(5, 4, TILES.WALL);

@@ -245,6 +245,8 @@ export class ContextHelp {
             { key: 'R / S / C', label: 'Rest / Search for secrets / Close door' },
             { key: '> / <', label: 'Take the stairs down / up' },
             { key: 'Esc / Q', label: 'Menu: settings, save, exit' },
+            { key: 'Mouse', label: 'Click a distant tile to walk there; point at anything to see it' },
+            { key: 'F3', label: 'Report a bug or suggest an idea' },
           ],
           tip: 'Tip: Slay 15 of one creature, or many of its whole family, to earn a Mastery Perk against them. Review and change perks in the Bestiary [B].',
         };

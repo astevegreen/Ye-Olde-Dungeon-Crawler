@@ -135,6 +135,7 @@
 .ui-fact { padding: var(--ui-space-2) var(--ui-space-3); background: var(--ui-surface-2); border-left: 3px solid var(--ui-info); border-radius: var(--ui-radius); }
 .ui-fact b { color: var(--ui-title); }
 .ui-fact.is-warn { border-left-color: var(--ui-bad); }
+.controls-primer-more { display: grid; gap: 2px; border-left-color: var(--ui-line-strong); font-size: var(--ui-text-sm); }
 
 .ui-input,
 .ui-textarea,

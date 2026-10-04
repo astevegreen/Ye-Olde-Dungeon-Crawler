@@ -171,6 +171,7 @@ export * from './economy/types';
 export * from './economy/currency';
 export * from './economy/merchant';
 export * from './economy/services';
+export * from './economy/smith';
 
 // Town
 export * from './town/townMap';

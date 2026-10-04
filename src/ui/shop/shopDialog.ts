@@ -9,6 +9,7 @@ import {
   getItemBuyPrice,
   getItemSellPrice,
   getPlayerTotalCp,
+  SmithService,
 } from '../../engine';
 import { createDialogScrim, dialogButton, dialogHtml } from '../dialog';
 import { escapeHtml, keyChip } from '../html';
@@ -36,6 +37,7 @@ export interface ShopDialogOptions {
 }
 
 type Tone = 'good' | 'bad' | 'warn' | 'info';
+type ShopTab = 'buy' | 'sell' | 'forge';
 
 /**
  * A town service as a dialog in the one frame (ADR-0011): walking into a merchant or
@@ -51,9 +53,11 @@ export class ShopDialog {
   public isOpen = false;
   public activeNpc: NPC | null = null;
   public merchant: Merchant | null = null;
-  public activeTab: 'buy' | 'sell' = 'buy';
+  public activeTab: ShopTab = 'buy';
   public selectedBuyIndex = 0;
   public selectedSellIndex = 0;
+  /** The picked row of a smith's Forge list (tracker 2.7). */
+  public selectedForgeIndex = 0;
   /** The picked row of a service's choices (the sage's unidentified items). */
   public selectedChoiceIndex = 0;
   public statusMessage = '';
@@ -84,6 +88,7 @@ export class ShopDialog {
     this.activeTab = 'buy';
     this.selectedBuyIndex = 0;
     this.selectedSellIndex = 0;
+    this.selectedForgeIndex = 0;
     this.selectedChoiceIndex = 0;
     this.statusMessage = '';
     this.statusTone = 'info';
@@ -125,11 +130,20 @@ export class ShopDialog {
     if (this.merchant) {
       if (key === 'Tab') {
         event.preventDefault();
-        this.setTab(this.activeTab === 'buy' ? 'sell' : 'buy');
+        const tabs = this.tabs(engine);
+        this.setTab(tabs[(tabs.indexOf(this.activeTab) + 1) % tabs.length]);
         return true;
       }
       if (letter === 'B' || letter === 'S') {
         this.setTab(letter === 'B' ? 'buy' : 'sell');
+        return true;
+      }
+      if (letter === 'F' && this.smithId(engine)) {
+        this.setTab('forge');
+        return true;
+      }
+      if (letter === 'M' && this.smithId(engine)) {
+        this.executeMasterwork(engine);
         return true;
       }
       if (letter === 'J') {
@@ -181,12 +195,37 @@ export class ShopDialog {
   }
 
   private get selectedIndex(): number {
+    if (this.activeTab === 'forge') return this.selectedForgeIndex;
     return this.activeTab === 'buy' ? this.selectedBuyIndex : this.selectedSellIndex;
   }
 
+  /** The merchant's NPC id when they keep a forge (`TownServicesDefinition.smiths`). */
+  private smithId(engine: GameEngine): string | undefined {
+    const id = this.activeNpc?.id;
+    return id && SmithService.smithFor(engine, id) ? id : undefined;
+  }
+
+  private tabs(engine: GameEngine): ShopTab[] {
+    return this.smithId(engine) ? ['buy', 'sell', 'forge'] : ['buy', 'sell'];
+  }
+
+  /** What the forge lists: gear a step can raise, and, while it is on offer, gear the
+   *  masterwork can (past the smith's own last step, say). */
+  public getForgeItems(engine: GameEngine): Item[] {
+    const id = this.smithId(engine);
+    if (!id) return [];
+    const items = SmithService.workableItems(engine, id);
+    if (SmithService.masterworkAvailable(engine, id)) {
+      for (const item of SmithService.masterworkItems(engine, id)) if (!items.includes(item)) items.push(item);
+    }
+    return items;
+  }
+
   /** The open list as rows: identical goods (same kind, name, state and price) share one
-   *  row, so five torches are one line, "×5". A trade takes the row's first item. */
+   *  row, so five torches are one line, "×5". A trade takes the row's first item. The
+   *  forge lists each piece on its own. */
   private rowsFor(engine: GameEngine, tab = this.activeTab): Item[][] {
+    if (tab === 'forge') return this.getForgeItems(engine).map((item) => [item]);
     const items = tab === 'buy' ? this.getBuyableItems(engine) : this.getSellableItems(engine);
     const rows = new Map<string, Item[]>();
     for (const item of items) {
@@ -201,19 +240,21 @@ export class ShopDialog {
   }
 
   private priceOf(item: Item, engine: GameEngine): number {
+    if (this.activeTab === 'forge') return SmithService.nextStepPrice(engine, this.smithId(engine) ?? '', item) ?? 0;
     return this.activeTab === 'buy'
       ? getItemBuyPrice(item, engine.worldState, engine.manifest.merchantPricing)
       : getItemSellPrice(item);
   }
 
-  private setTab(tab: 'buy' | 'sell'): void {
+  private setTab(tab: ShopTab): void {
     this.activeTab = tab;
     this.changed();
   }
 
   private select(index: number): void {
     if (index === this.selectedIndex) return;
-    if (this.activeTab === 'buy') this.selectedBuyIndex = index;
+    if (this.activeTab === 'forge') this.selectedForgeIndex = index;
+    else if (this.activeTab === 'buy') this.selectedBuyIndex = index;
     else this.selectedSellIndex = index;
     this.changed();
     this.scrim?.querySelector?.('.shop-row.is-selected')?.scrollIntoView?.({ block: 'nearest' });
@@ -225,10 +266,36 @@ export class ShopDialog {
     this.select(Math.max(0, Math.min(count - 1, this.selectedIndex + step)));
   }
 
-  /** Buys or sells the item at `index` of the open list. */
+  /** Buys, sells or raises the item at `index` of the open list. */
   public trade(engine: GameEngine, index: number): void {
-    if (this.activeTab === 'buy') this.executeBuy(engine, index);
+    if (this.activeTab === 'forge') this.executeUpgrade(engine, index);
+    else if (this.activeTab === 'buy') this.executeBuy(engine, index);
     else this.executeSell(engine, index);
+  }
+
+  /** The forge's step on the item at `index` (tracker 2.7). */
+  public executeUpgrade(engine: GameEngine, index: number): void {
+    const npcId = this.smithId(engine);
+    const item = this.getForgeItems(engine)[index];
+    if (!npcId || !item) return;
+    const result = engine.commandBus.dispatch({ type: 'smith_upgrade', payload: { npcId, item } });
+    this.selectedForgeIndex = Math.max(0, Math.min(this.selectedForgeIndex, this.getForgeItems(engine).length - 1));
+    this.report(result);
+  }
+
+  /** The smith's one-time masterwork on the chosen forge item. */
+  public executeMasterwork(engine: GameEngine): void {
+    const npcId = this.smithId(engine);
+    if (!npcId) return;
+    this.activeTab = 'forge';
+    const item = this.getForgeItems(engine)[this.selectedForgeIndex];
+    if (!item || !SmithService.masterworkAvailable(engine, npcId)) {
+      this.report({ success: false, message: 'That work is not on offer.' }, 'info');
+      return;
+    }
+    const result = engine.commandBus.dispatch({ type: 'smith_masterwork', payload: { npcId, item } });
+    this.selectedForgeIndex = Math.max(0, Math.min(this.selectedForgeIndex, this.getForgeItems(engine).length - 1));
+    this.report(result);
   }
 
   public executeBuy(engine: GameEngine, displayIndex: number): void {
@@ -304,6 +371,12 @@ export class ShopDialog {
         return;
       case 'tab-sell':
         this.setTab('sell');
+        return;
+      case 'tab-forge':
+        this.setTab('forge');
+        return;
+      case 'masterwork':
+        this.executeMasterwork(engine);
         return;
       case 'leave':
         this.close();
@@ -404,13 +477,16 @@ export class ShopDialog {
     const body = `${this.greetingHtml(engine, npc, title !== npc.name)}${this.merchant ? this.tradeHtml(engine) : panel ? servicePanelHtml(panel) : ''}
       <div class="shop-status is-${this.statusTone}" role="status" aria-live="polite">${escapeHtml(this.statusMessage)}</div>`;
 
+    const smith = this.smithId(engine);
     const hints = this.merchant
       ? [
           { keys: ['↑', '↓'], label: 'choose' },
-          { keys: ['Enter'], label: this.activeTab === 'buy' ? 'buy' : 'sell' },
+          { keys: ['Enter'], label: this.activeTab === 'forge' ? 'raise a step' : this.activeTab === 'buy' ? 'buy' : 'sell' },
           { keys: ['1–9'], label: 'at once' },
-          { keys: ['B', 'S'], label: 'buy or sell list' },
-          { keys: ['J'], label: 'sell all junk' },
+          smith ? { keys: ['B', 'S', 'F'], label: 'buy, sell or forge' } : { keys: ['B', 'S'], label: 'buy or sell list' },
+          ...(this.activeTab === 'forge' && smith && SmithService.masterworkAvailable(engine, smith)
+            ? [{ keys: ['M'], label: SmithService.smithFor(engine, smith)!.masterwork!.name }]
+            : [{ keys: ['J'], label: 'sell all junk' }]),
         ]
       : panel?.choices?.length
         ? [{ keys: ['↑', '↓'], label: 'choose' }]
@@ -453,10 +529,21 @@ export class ShopDialog {
   private tradeHtml(engine: GameEngine): string {
     const buyCount = this.getBuyableItems(engine).length;
     const sellCount = this.getSellableItems(engine).length;
+    const smith = this.smithId(engine);
+    const forge = this.activeTab === 'forge';
     const rowItems = this.rowsFor(engine);
     const selected = this.selectedIndex;
-    const tab = (id: 'buy' | 'sell', label: string, k: string, count: number) =>
+    const tab = (id: ShopTab, label: string, k: string, count: number) =>
       `<button type="button" class="st-subtab" role="tab" aria-selected="${this.activeTab === id}" data-act="tab-${id}">${label} <span class="ui-faint">${count}</span> ${keyChip(k)}</button>`;
+    // The forge shows the step each piece would take, and its price; past the smith's last
+    // step only the masterwork is left for it.
+    const stepCell = (item: Item) =>
+      forge ? `+${item.enchantmentLevel} → +${item.enchantmentLevel + 1}` : formatWeight(item.weight);
+    const priceCell = (item: Item) => {
+      if (!forge) return formatCurrency(this.priceOf(item, engine));
+      const price = SmithService.nextStepPrice(engine, smith ?? '', item);
+      return price === undefined ? '—' : formatCurrency(price);
+    };
 
     const rows = rowItems
       .map(
@@ -465,12 +552,17 @@ export class ShopDialog {
           <span class="shop-row-key">${i < 9 ? keyChip(String(i + 1)) : ''}</span>
           <canvas class="shop-icon" width="24" height="24" data-item="${i}" aria-hidden="true"></canvas>
           <span class="bs-name${itemToneClass(item)}">${escapeHtml(item.displayName)}${more.length ? ` <span class="ui-faint shop-count">×${more.length + 1}</span>` : ''}${item.junk ? ' <span class="ui-faint shop-junk">junk</span>' : ''}</span>
-          <span class="ui-num ui-faint">${escapeHtml(formatWeight(item.weight))}</span>
-          <span class="ui-num shop-price">${escapeHtml(formatCurrency(this.priceOf(item, engine)))}</span>
+          <span class="ui-num ui-faint">${escapeHtml(stepCell(item))}</span>
+          <span class="ui-num shop-price">${escapeHtml(priceCell(item))}</span>
         </button>`
       )
       .join('');
-    const empty = this.activeTab === 'buy' ? 'Sold out for now.' : 'Nothing in your pack to sell.';
+    const empty =
+      this.activeTab === 'buy'
+        ? 'Sold out for now.'
+        : forge
+          ? 'Nothing you carry or wear for the forge: it works known, uncursed weapons and armor.'
+          : 'Nothing in your pack to sell.';
     const junk = this.activeTab === 'sell' ? this.junkItems(engine) : [];
     const junkWorth = junk.reduce((sum, item) => sum + getItemSellPrice(item), 0);
     const sellJunk = junk.length
@@ -480,9 +572,9 @@ export class ShopDialog {
     return `
       <div class="shop-trade">
         <div class="ui-col">
-          <div class="st-subtabs" role="tablist">${tab('buy', 'Buy', 'B', buyCount)}${tab('sell', 'Sell', 'S', sellCount)}</div>
+          <div class="st-subtabs" role="tablist">${tab('buy', 'Buy', 'B', buyCount)}${tab('sell', 'Sell', 'S', sellCount)}${smith ? tab('forge', 'Forge', 'F', this.getForgeItems(engine).length) : ''}</div>
           ${sellJunk}
-          <div class="ui-inset ui-scroll shop-list" role="listbox" aria-label="${this.activeTab === 'buy' ? 'For sale' : 'Your pack'}">
+          <div class="ui-inset ui-scroll shop-list" role="listbox" aria-label="${this.activeTab === 'buy' ? 'For sale' : forge ? 'Your gear' : 'Your pack'}">
             ${rows || `<div class="ui-note bs-empty">${empty}</div>`}
           </div>
         </div>
@@ -492,6 +584,7 @@ export class ShopDialog {
 
   private detailHtml(engine: GameEngine, item: Item | undefined): string {
     if (!item) return '<div class="ui-card shop-detail"><div class="ui-note">Choose an item to see it here.</div></div>';
+    if (this.activeTab === 'forge') return this.forgeDetailHtml(engine, item);
     const price = formatCurrency(this.priceOf(item, engine));
     const verb = this.activeTab === 'buy' ? 'Buy' : 'Sell';
     // The inventory's own item panel (N20): stats, slot, comparison, and an unidentified
@@ -508,6 +601,35 @@ export class ShopDialog {
           <dt>${this.activeTab === 'buy' ? 'Price' : 'They pay'}</dt><dd class="ui-num shop-price">${escapeHtml(price)}</dd>
         </dl>
         ${dialogButton('shop-trade', `${verb} for ${price}`, { primary: true, key: 'Enter', attrs: 'data-act="trade"' })}
+      </div>`;
+  }
+
+  /** The forge's detail: the item, its next step and price, and the masterwork when on offer. */
+  private forgeDetailHtml(engine: GameEngine, item: Item): string {
+    const smithId = this.smithId(engine) ?? '';
+    const smith = SmithService.smithFor(engine, smithId);
+    const price = SmithService.nextStepPrice(engine, smithId, item);
+    const work = smith?.masterwork;
+    const workOpen = !!work && SmithService.masterworkAvailable(engine, smithId) && SmithService.masterworkItems(engine, smithId).includes(item);
+    const step =
+      price === undefined
+        ? `<div class="ui-note">The forge's own steps end at +${smith?.stepPricesCp.length ?? 0}.</div>`
+        : `<dl class="ui-kv"><dt>Next step</dt><dd class="ui-num">+${item.enchantmentLevel + 1}</dd><dt>Price</dt><dd class="ui-num shop-price">${escapeHtml(formatCurrency(price))}</dd></dl>
+           ${dialogButton('shop-trade', `Raise to +${item.enchantmentLevel + 1}`, { primary: true, key: 'Enter', attrs: 'data-act="trade"' })}`;
+    const masterwork = workOpen
+      ? `<div class="ui-note shop-masterwork">${escapeHtml(work!.description)}</div>
+         ${dialogButton('shop-masterwork', `${work!.name} (+${work!.toLevel})`, { key: 'M', attrs: 'data-act="masterwork"' })}`
+      : '';
+    return `
+      <div class="ui-card shop-detail">
+        ${itemDetailHtml(engine, item, this.inspector, {
+          source: 'backpack',
+          iconHtml: '<canvas class="shop-detail-icon" width="48" height="48" data-detail aria-hidden="true"></canvas>',
+          compare: false,
+          showValue: false,
+        })}
+        ${step}
+        ${masterwork}
       </div>`;
   }
 

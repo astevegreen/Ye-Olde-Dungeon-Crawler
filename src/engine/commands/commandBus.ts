@@ -22,6 +22,7 @@ import {
   DrinkPotionAction,
 } from '../actions/spell-actions';
 import { TempleService, SageService, BankService, TrainerService } from '../economy/services';
+import { SmithService } from '../economy/smith';
 import { type Merchant, getItemSellPrice } from '../economy/merchant';
 import { formatCurrency } from '../economy/currency';
 import type { CompanionArchetype } from '../entities/companion';
@@ -332,6 +333,17 @@ export class EngineCommandBus implements GameCommandBus {
       case 'temple_bless': {
         const item = (p.item as Item | undefined) ?? (p.itemId ? this.engine.player.inventory.findItemById(p.itemId as string) ?? undefined : undefined);
         const res = TempleService.receiveBlessing(this.engine, p.blessingId as string, item);
+        this.engine.log(res.message);
+        return { success: res.success, message: res.message };
+      }
+
+      // The smith's forge (tracker 2.7): a step up, or the one-time masterwork.
+      case 'smith_upgrade':
+      case 'smith_masterwork': {
+        const item = (p.item as Item) ?? this.engine.player.inventory.findItemById(p.itemId as string);
+        const npcId = p.npcId as string;
+        if (!item || !npcId) return { success: false, message: 'Nothing chosen for the forge.' };
+        const res = command.type === 'smith_upgrade' ? SmithService.upgrade(this.engine, npcId, item) : SmithService.masterwork(this.engine, npcId, item);
         this.engine.log(res.message);
         return { success: res.success, message: res.message };
       }

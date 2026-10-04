@@ -44,6 +44,8 @@ export type ShopAction =
   | 'rune-ranks'
   | 'pact'
   | 'sell-junk'
+  | 'tab-forge'
+  | 'masterwork'
   | 'offer'
   | 'bless'
   | 'leave';

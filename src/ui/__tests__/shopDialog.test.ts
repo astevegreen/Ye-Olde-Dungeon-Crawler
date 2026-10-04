@@ -392,6 +392,71 @@ describe('ShopDialog', () => {
     });
   });
 
+  describe("Gunther's forge (2.7)", () => {
+    const gunther = new NPC({ id: 'npc-gunther', name: 'Gunther', position: { x: 6, y: 5 }, role: 'merchant', dialogText: 'Steel?' });
+    const armory = () => new Merchant('merchant-gunther', 'Gunther', "Gunther's Armory", 'armory', 'Steel?', [ware('nail', 'Nail')]);
+    const blade = (id: string, extra: Partial<ConstructorParameters<typeof Item>[0]> = {}) =>
+      new Item({ id, name: 'Broadsword', category: 'weapon', slot: 'mainHand', weight: 2000, bulk: 900, identified: true, stats: { attackBonus: 4 }, ...extra });
+    const forgeEngine = () => {
+      const e = new GameEngine({ map: new GameMap(20, 20), player: new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } }), floor: 0, manifest: cotwManifest });
+      dispatch = vi.spyOn(e.commandBus, 'dispatch').mockReturnValue({ success: true, message: 'Done.' });
+      return e;
+    };
+    const sent = () => dispatch.mock.calls.map((c) => c[0] as { type: string; payload?: Record<string, unknown> });
+
+    it('opens the Forge with F, cycles three lists with Tab, and raises the chosen piece with Enter', () => {
+      const e = forgeEngine();
+      const first = blade('a');
+      const second = blade('b', { enchantmentLevel: 2, stats: { attackBonus: 8 } });
+      e.player.inventory.primaryPack.addItem(first);
+      e.player.inventory.primaryPack.addItem(second);
+      const shop = new ShopDialog();
+      shop.open(gunther, armory(), e);
+      expect(html()).toContain('data-act="tab-forge"');
+      shop.handleKeyDown(key('Tab'), e);
+      shop.handleKeyDown(key('Tab'), e);
+      expect(shop.activeTab).toBe('forge');
+      shop.handleKeyDown(key('b'), e);
+      shop.handleKeyDown(key('f'), e);
+      expect(shop.activeTab).toBe('forge');
+      // A +2 sword's next step is the 2,000 CP one.
+      expect(html()).toContain('+2 → +3');
+      shop.handleKeyDown(key('ArrowDown'), e);
+      shop.handleKeyDown(key('Enter'), e);
+      expect(sent()).toEqual([{ type: 'smith_upgrade', payload: { npcId: 'npc-gunther', item: second } }]);
+    });
+
+    it("offers Ivalda's masterwork with M once she works in town, even on a +3", () => {
+      const e = forgeEngine();
+      const top = blade('top', { enchantmentLevel: 3, stats: { attackBonus: 10 } });
+      e.player.inventory.primaryPack.addItem(top);
+      const shop = new ShopDialog();
+      shop.open(gunther, armory(), e);
+      shop.handleKeyDown(key('f'), e);
+      expect(shop.getForgeItems(e)).toEqual([]);
+      shop.handleKeyDown(key('m'), e);
+      expect(sent()).toEqual([]);
+      e.worldState.factions.iron_clans = 0;
+      e.setWorldFlag('ivalda_in_town', true);
+      shop.close();
+      shop.open(gunther, armory(), e);
+      shop.handleKeyDown(key('f'), e);
+      expect(shop.getForgeItems(e)).toEqual([top]);
+      expect(html()).toContain('data-act="masterwork"');
+      shop.handleKeyDown(key('m'), e);
+      expect(sent()).toEqual([{ type: 'smith_masterwork', payload: { npcId: 'npc-gunther', item: top } }]);
+    });
+
+    it('gives a merchant without a forge no Forge list', () => {
+      const e = forgeEngine();
+      const shop = new ShopDialog();
+      shop.open(npc('merchant'), armory(), e);
+      expect(html()).not.toContain('data-act="tab-forge"');
+      shop.handleKeyDown(key('f'), e);
+      expect(shop.activeTab).toBe('buy');
+    });
+  });
+
   it("shows a townsperson's advice from the pack, and nothing but the greeting without it", () => {
     const guard = npc('guard');
     expect(servicePanelFor(engine, guard)).toBeNull();

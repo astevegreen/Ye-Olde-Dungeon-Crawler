@@ -14,7 +14,8 @@ import { cotwManifest } from '../index';
 import { COTW_QUEST } from '../quest';
 import { COTW_TILES } from '../tiles';
 import { DWARVEN_HEARTH_FLOOR } from '../vaults';
-import { IRON_CLANS_FACTION, IRON_CLANS_MET_FLAG, IVALDA, IVALDA_ID, IVALDA_IN_TOWN_FLAG, IVALDA_TOWN_POSITION } from '../ironClans';
+import { IRON_CLANS_FACTION, IRON_CLANS_MET_FLAG, IVALDA, IVALDA_ID, IVALDA_IN_TOWN_FLAG, IVALDA_TOWN_CHOICE, IVALDA_TOWN_POSITION } from '../ironClans';
+import { SmithService } from '../../../engine/economy/smith';
 
 const standing = (e: GameEngine) => e.getFactionStanding(IRON_CLANS_FACTION);
 
@@ -115,20 +116,19 @@ describe('The Iron Clans', () => {
     expect(standing(engine)).toBe(7);
   });
 
-  it('opens Ivalda’s rewards with trust: the tempering at 0, the Steam Lance at 10', () => {
+  it('opens Ivalda’s rewards with trust: her masterwork at Gunther’s forge at 0, the Steam Lance at 10', () => {
     const { engine, player, map } = engineOn(13);
     map.addEntity(new NPC({ ...IVALDA, role: 'villager', position: { x: 5, y: 5 } }));
     const baseAttack = player.baseAttackValue;
 
+    // Her old +2 Attack is gone (Q29): at the grotto she sends the hero to her anvil in town.
+    engine.worldState.factions[IRON_CLANS_FACTION] = 0;
     answer(engine, 'ivalda_forge', 'temper');
     engine.handlePlayerAction(new MovementAction(player, 1, 0));
-    expect(player.baseAttackValue).toBe(baseAttack); // still distrusted
-
-    engine.worldState.factions[IRON_CLANS_FACTION] = 0;
-    engine.handlePlayerAction(new MovementAction(player, 1, 0));
-    expect(player.baseAttackValue).toBe(baseAttack + 2);
-    engine.handlePlayerAction(new MovementAction(player, 1, 0));
-    expect(player.baseAttackValue).toBe(baseAttack + 2); // only once
+    expect(player.baseAttackValue).toBe(baseAttack);
+    expect(IVALDA_TOWN_CHOICE.options.map((o) => o.id)).toEqual(['steam_lance']);
+    expect(SmithService.masterworkAvailable(engine, 'npc-gunther')).toBe(false); // not in town yet
+    engine.worldState.factions[IRON_CLANS_FACTION] = -15;
 
     answer(engine, 'ivalda_forge', 'steam_lance');
     engine.handlePlayerAction(new MovementAction(player, 1, 0));
@@ -136,6 +136,10 @@ describe('The Iron Clans', () => {
     engine.worldState.factions[IRON_CLANS_FACTION] = 10;
     engine.handlePlayerAction(new MovementAction(player, 1, 0));
     expect(player.spellsKnown).toContain('steam_lance');
+
+    // With her anvil in town, the masterwork is on Gunther's Forge list.
+    engine.setWorldFlag(IVALDA_IN_TOWN_FLAG, true);
+    expect(SmithService.masterworkAvailable(engine, 'npc-gunther')).toBe(true);
   });
 
   it('sends Ivalda up to Gunther’s armory once trusted, never mid-visit, and off the hearth', () => {

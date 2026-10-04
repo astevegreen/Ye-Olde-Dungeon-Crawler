@@ -222,6 +222,7 @@ export class ContextHelp {
             { key: 'B / S / Tab', label: 'Buy list, sell list, or switch between them' },
             { key: 'Enter / 1-9', label: 'Buy or sell the chosen item, or one by its number' },
             { key: 'J', label: 'Sell everything you marked as junk at once' },
+            { key: 'F / M', label: 'At the armory: the forge raises a weapon or armor a step; M is a master smith’s once-only work' },
             { key: 'C / H', label: `Cleanse curses (${formatCurrency(TempleService.CURSE_CLEANSE_COST_CP)}) or heal and restore (${formatCurrency(TempleService.HEAL_RESTORE_COST_CP)})` },
             { key: 'O / R', label: 'At the temple: offer a cursed item for piety, or receive a blessing' },
             { key: 'I / A / B', label: 'Identify items, Seek Run Advisory, or Open Bestiary' },

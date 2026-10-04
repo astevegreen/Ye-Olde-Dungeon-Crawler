@@ -3,6 +3,7 @@ import type {
   ChoiceDefinition,
   FixedTilePlacement,
   ScriptedVaultNpc,
+  SmithDefinition,
   TileDefinition,
 } from '../../engine';
 import { Monster, NPC, MovementAction, getCounter, getFaction, getFlag, incrementCounter, modifyFaction, setFlag } from '../../engine';
@@ -17,8 +18,9 @@ import { Monster, NPC, MovementAction, getCounter, getFaction, getFlag, incremen
  * forge-keeper, by the banked coals of the Dwarven Hearth (Floor 13). Standing is earned
  * by honouring the clan barrows (+5 each, plundering costs 5), laying the
  * Cinder-Gilded Duergar to rest (+2 each, the first six), and breaking the coven's hold
- * on the stolen sun (+10, once). Once trusted (0), Ivalda tempers the hero's blade and
- * the Haugbui barrow-guardians stand aside; at 10 she teaches the Accord's Steam Lance.
+ * on the stolen sun (+10, once). Once trusted (0), the Haugbui barrow-guardians stand aside
+ * and Ivalda's masterwork opens at Gunther's forge (one item to +5, once, free:
+ * `IVALDA_MASTERWORK`, Q29 + Q48 "A"); at 10 she teaches the Accord's Steam Lance.
  *
  * Once trusted, and once the hero is off Floor 13, Ivalda carries her coals up to
  * Bjarnarhaven and works beside Gunther in the armory, so her forge never asks for a climb
@@ -36,6 +38,7 @@ export const IVALDA_ID = 'npc-ivalda';
 const IVALDA_CHOICE_ID = 'ivalda_forge';
 const IVALDA_TOWN_CHOICE_ID = 'ivalda_forge_town';
 export const IVALDA_IN_TOWN_FLAG = 'ivalda_in_town';
+const IVALDA_TEMPERED_FLAG = 'ivalda_tempered';
 const DWARVEN_HEARTH_FLOOR = 13;
 /** Inside Gunther's Armory (townLayout.ts), beside him. */
 export const IVALDA_TOWN_POSITION = { x: 40, y: 6 };
@@ -66,17 +69,16 @@ export const IVALDA_CHOICE: ChoiceDefinition = {
     'A white-braided duergar smith sits by the banked coals, a forge-hammer across her knees. Her eyes go to your hands, then to the frost in your veins.\n\n“Thrym’s blood. Your kin swore the Accord with my fathers, and your kin broke it: the troll-wives that drink the stolen sun are giant-get like you, and our forges went cold for their thirst. My clan lies in the barrows of these halls, and the Cinder-Gilded still walk them in their ash.\n\nHonour the barrows; leave their silver. Lay the Cinder-Gilded to rest. Break the siphon. Then we will speak of steel.”',
   options: [
     {
+      // Her +5 is worked at Gunther's forge (`IVALDA_MASTERWORK`), where she takes her anvil.
       id: 'temper',
-      label: 'Ask her to temper your blade',
-      description: 'Duergar steel, tempered in volcanic ash. Permanently +2 Attack.',
-      predicate: { type: 'and', predicates: [trusted(IRON_CLANS_TRUSTED), notYet('ivalda_tempered')] },
+      label: 'Ask her to work your steel',
+      description: 'She takes one piece of your steel to +5, once, for nothing: at her anvil in Gunther’s armory.',
+      predicate: { type: 'and', predicates: [trusted(IRON_CLANS_TRUSTED), notYet(IVALDA_TEMPERED_FLAG)] },
       disabledReason: 'She puts a hammer to the steel of Thrym’s kin only once the clans trust you, and only once.',
       consequences: [
-        { type: 'setFlag', flag: 'ivalda_tempered', value: true },
-        { type: 'modifyPermanentStat', stat: 'attack', delta: 2 },
         {
           type: 'logMessage',
-          message: 'Ivalda heats your blade in the old coals and works it with three hard blows. “Now it will bite stone.” (+2 Attack)',
+          message: 'Ivalda shakes her head at the banked coals. “Not on these. When you go, I carry them up to Gunther’s armory. Bring me one piece there, at his forge, and I will make it bite stone.”',
         },
       ],
     },
@@ -102,13 +104,29 @@ export const IVALDA_CHOICE: ChoiceDefinition = {
   cancelLabel: 'Leave her to her coals',
 };
 
-/** The same forge at Gunther's armory, where she works once the clans trust the hero. */
+/** The same forge at Gunther's armory, where she works once the clans trust the hero: her
+ *  masterwork is on his Forge list there, so her own choice keeps only the Accord's craft. */
 export const IVALDA_TOWN_CHOICE: ChoiceDefinition = {
   ...IVALDA_CHOICE,
   id: IVALDA_TOWN_CHOICE_ID,
   description:
-    'Ivalda has set her own anvil at the back of Gunther’s armory, and the two of them argue about quench-water in two languages. She looks up as you come in.\n\n“You kept faith with our dead, Thrym’s blood or no. The forges below are warming; mine came up to meet the trade your grandfathers kept. Now: steel.”',
+    'Ivalda has set her own anvil at the back of Gunther’s armory, and the two of them argue about quench-water in two languages. She looks up as you come in.\n\n“You kept faith with our dead, Thrym’s blood or no. The forges below are warming; mine came up to meet the trade your grandfathers kept. Now: steel. Show me the piece across Gunther’s counter, at his forge.”',
+  options: IVALDA_CHOICE.options.filter((o) => o.id !== 'temper'),
   cancelLabel: 'Leave her to her anvil',
+};
+
+/**
+ * Ivalda's masterwork (Q29 "approved", Q48 "A"): one item to +5, once, free, on the Forge list
+ * of Gunther's armory once the clans trust the hero and she has brought her anvil up. It
+ * replaces her old +2 Attack, and shares its flag: a hero who took that has had their once.
+ */
+export const IVALDA_MASTERWORK: NonNullable<SmithDefinition['masterwork']> = {
+  name: 'Ivalda’s masterwork',
+  description: 'One piece of your steel straight to +5, once, for nothing: the clans’ thanks.',
+  toLevel: 5,
+  predicate: { type: 'and', predicates: [trusted(IRON_CLANS_TRUSTED), { type: 'hasFlag', flag: IVALDA_IN_TOWN_FLAG }] },
+  flag: IVALDA_TEMPERED_FLAG,
+  message: 'Ivalda heats the steel in her own coals and works it with three hard blows. “Now it will bite stone.” ({item})',
 };
 
 /** The clan barrows: one per floor, each its own choice, so each settles on its own. */

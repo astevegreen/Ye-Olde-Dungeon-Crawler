@@ -270,6 +270,36 @@ export interface TownServicesDefinition {
   templeBlessings?: TempleBlessingDefinition[];
   /** The renown category the hero's piety is counted in. Default `'piety'`. */
   pietyCategory?: string;
+  /** Smiths who raise an item's +N (`SmithService`): each adds a Forge list to its merchant's shop. */
+  smiths?: SmithDefinition[];
+}
+
+/**
+ * A smith (tracker 2.7): raises a carried or worn item's +N one step at a time, for
+ * `stepPricesCp[level]` (the price of reaching level + 1), up to `stepPricesCp.length`. Only
+ * identified, unbound items of `categories`. A step is worth what a dungeon +N is: +2 attack on a
+ * weapon, +1 defense on anything else.
+ */
+export interface SmithDefinition {
+  /** The merchant whose shop gains the Forge list. */
+  npcId: string;
+  categories: ItemCategory[];
+  stepPricesCp: number[];
+  /** Logged on a step; `{item}` names the item, as it now is. */
+  messageTemplate?: string;
+  /**
+   * A one-time piece of work, free: one item straight to `toLevel`. Offered while `predicate`
+   * holds and `flag` is unset; the flag records it.
+   */
+  masterwork?: {
+    name: string;
+    description: string;
+    toLevel: number;
+    predicate?: Predicate;
+    flag: string;
+    /** Logged when done; `{item}` names the item. */
+    message: string;
+  };
 }
 
 /**

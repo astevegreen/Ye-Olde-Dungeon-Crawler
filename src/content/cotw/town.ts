@@ -3,6 +3,7 @@ import type { TownLayoutDefinition } from '../../engine';
 import { makeShopItem } from './items/makeItem';
 import { COTW_TABLET_STOCK } from './spellTablets';
 import { TOWN_ROWS, TOWN_LEGEND, TOWN_WIDTH, TOWN_HEIGHT, TOWN_BUILDINGS, TOWN_PLAYER_SPAWN, TOWN_STAIRS_DOWN } from './townLayout';
+import { IVALDA_MASTERWORK } from './ironClans';
 
 export const COTW_TOWN: TownLayoutDefinition = {
   name: 'Bjarnarhaven',
@@ -190,6 +191,17 @@ export const COTW_TOWN: TownLayoutDefinition = {
       standingDelta: 1,
       messageTemplate: 'The High Priest of Thor takes {item} from you and casts it into the sacred fire. The gods mark the gift.',
     },
+    // Q10 "A" + Q47 "A": Gunther raises +N a step at a time to +3 (250, 750, 2,000 CP); Ivalda's
+    // +5 is on his Forge list once she works beside him (Q29, Q48 "A").
+    smiths: [
+      {
+        npcId: 'npc-gunther',
+        categories: ['weapon', 'armor', 'shield', 'helmet', 'boots'],
+        stepPricesCp: [250, 750, 2000],
+        messageTemplate: 'Gunther heats the steel and hammers it true on his anvil: {item}.',
+        masterwork: IVALDA_MASTERWORK,
+      },
+    ],
     templeBlessings: [
       {
         id: 'eirs_mercy',

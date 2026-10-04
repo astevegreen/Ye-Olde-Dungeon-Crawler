@@ -27,6 +27,9 @@ export function canStack(a: Item, b: Item): boolean {
     return a instanceof CoinItem && b instanceof CoinItem && a.denomination === b.denomination;
   }
 
+  // Junk is a mark on one pile: marking it never takes in the hero's good ones.
+  if (a.junk !== b.junk) return false;
+
   // Containers and equipped items cannot stack
   if (a.slot !== undefined && b.slot !== undefined && a.slot !== b.slot) return false;
 
@@ -141,6 +144,7 @@ export function splitItemStack(item: Item, amount: number, rng: () => number): I
       quantity: amount,
     });
   }
+  cloned.junk = item.junk;
 
   return cloned;
 }

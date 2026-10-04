@@ -116,6 +116,18 @@
 .inv-cell-key { position: absolute; top: 2px; left: 5px; font-weight: bold; color: var(--ui-text-faint); }
 .inv-cell-qty { position: absolute; top: 2px; right: 5px; font-weight: bold; color: var(--ui-text-soft); }
 .inv-cell-box { position: absolute; top: 2px; right: 5px; color: var(--ui-accent); }
+/* Junk (J): a faint tag over the cell, the item itself dimmed. */
+.inv-cell-junk {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: var(--ui-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ui-text-faint);
+}
+.inv-cell.is-junk .inv-icon, .inv-cell.is-junk .inv-cell-name { opacity: 0.55; }
 .inv-empty { grid-column: 1 / -1; padding: var(--ui-space-2); }
 
 .inv-slot.is-focused, .inv-cell.is-focused { border-color: var(--ui-accent); }

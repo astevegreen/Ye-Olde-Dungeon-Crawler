@@ -41,6 +41,7 @@ export type ShopAction =
   | 'teach'
   | 'rune-ranks'
   | 'pact'
+  | 'sell-junk'
   | 'leave';
 
 /** One service a townsperson offers: its button, its key, and what it costs. */

@@ -221,6 +221,7 @@ export class ContextHelp {
           bullets: [
             { key: 'B / S / Tab', label: 'Buy list, sell list, or switch between them' },
             { key: 'Enter / 1-9', label: 'Buy or sell the chosen item, or one by its number' },
+            { key: 'J', label: 'Sell everything you marked as junk at once' },
             { key: 'C / H', label: `Cleanse curses (${formatCurrency(TempleService.CURSE_CLEANSE_COST_CP)}) or heal and restore (${formatCurrency(TempleService.HEAL_RESTORE_COST_CP)})` },
             { key: 'I / A / B', label: 'Identify items, Seek Run Advisory, or Open Bestiary' },
             { key: 'Esc', label: 'Exit shop or return to town streets' },
@@ -260,6 +261,7 @@ export class ContextHelp {
             { key: 'Enter', label: 'Use the chosen item (drink, read, open)' },
             { key: 'E', label: 'Equip or take off the chosen item' },
             { key: 'D / T', label: 'Drop it, or take it from the ground' },
+            { key: 'J', label: 'Mark it as junk: a shop sells all your junk at once' },
             { key: 'S', label: 'Sort the pack by the next order' },
             { key: 'C', label: 'Move loose coins into the purse' },
             { key: 'I / Esc', label: 'Close the inventory' },

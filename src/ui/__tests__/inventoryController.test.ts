@@ -103,6 +103,18 @@ describe('InventoryController', () => {
       expect(sent()).toEqual(['equip_item', 'drop_item']);
     });
 
+    it('marks the selected pack item as junk with J, and keeps it apart from its unmarked twin (2.5)', () => {
+      player.inventory.primaryPack.addItem(ware('a', 'Old Boot', { identified: true }));
+      player.inventory.primaryPack.addItem(ware('b', 'Old Boot', { identified: true }));
+      expect(c.groups('backpack')).toHaveLength(1);
+      expect(c.handleKeyDown(key('KeyJ'))).toBe(false); // nothing selected
+      c.selectCell('backpack', 0);
+      dispatch.mockRestore();
+      expect(c.handleKeyDown(key('KeyJ'))).toBe(true);
+      expect(player.inventory.primaryPack.getItem('a')!.junk).toBe(true);
+      expect(c.groups('backpack')).toHaveLength(2);
+    });
+
     it('keeps the focused cell selected after D or E, so the key works again on the next item', () => {
       // The soak bot pressed D a hundred times after one drop: the focus ring stayed on a
       // cell while the selection was cleared, and D needs a selection.

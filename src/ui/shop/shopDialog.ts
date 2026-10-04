@@ -130,6 +130,10 @@ export class ShopDialog {
         this.setTab(letter === 'B' ? 'buy' : 'sell');
         return true;
       }
+      if (letter === 'J') {
+        this.sellJunk(engine);
+        return true;
+      }
       if (key === 'ArrowUp' || key === 'ArrowDown') {
         event.preventDefault();
         this.moveSelection(key === 'ArrowDown' ? 1 : -1, engine);
@@ -186,7 +190,7 @@ export class ShopDialog {
     for (const item of items) {
       const price = tab === 'buy' ? getItemBuyPrice(item, engine.worldState, engine.manifest.merchantPricing) : getItemSellPrice(item);
       // A container holds its own things: it never stacks.
-      const key = item instanceof Container ? `#${item.id}` : [item.definitionId ?? item.name, item.displayName, item.quality, item.identified, price].join('|');
+      const key = item instanceof Container ? `#${item.id}` : [item.definitionId ?? item.name, item.displayName, item.quality, item.identified, item.junk, price].join('|');
       const row = rows.get(key);
       if (row) row.push(item);
       else rows.set(key, [item]);
@@ -254,6 +258,24 @@ export class ShopDialog {
     this.report(result);
   }
 
+  /** Items in the pack the hero marked as junk (J in the inventory). */
+  private junkItems(engine: GameEngine): Item[] {
+    return this.getSellableItems(engine).filter((item) => item.junk);
+  }
+
+  /** Sells everything marked as junk in one go (tracker 2.5, Q2 "C"). */
+  public sellJunk(engine: GameEngine): void {
+    if (!this.merchant) return;
+    this.activeTab = 'sell';
+    if (this.junkItems(engine).length === 0) {
+      this.report({ success: false, message: 'Nothing in your pack is marked as junk. Mark it with J in your inventory.' }, 'info');
+      return;
+    }
+    const result = engine.commandBus.dispatch({ type: 'sell_junk', payload: { merchant: this.merchant } });
+    this.selectedSellIndex = Math.max(0, Math.min(this.selectedSellIndex, this.rowsFor(engine, 'sell').length - 1));
+    this.report(result);
+  }
+
   // ---- Town services -------------------------------------------------------------
 
   private panel(engine: GameEngine): ServicePanel | null {
@@ -283,6 +305,9 @@ export class ShopDialog {
         return;
       case 'leave':
         this.close();
+        return;
+      case 'sell-junk':
+        this.sellJunk(engine);
         return;
       case 'cleanse':
         this.report(bus.dispatch({ type: 'temple_cleanse' }));
@@ -366,6 +391,7 @@ export class ShopDialog {
           { keys: ['Enter'], label: this.activeTab === 'buy' ? 'buy' : 'sell' },
           { keys: ['1–9'], label: 'at once' },
           { keys: ['B', 'S'], label: 'buy or sell list' },
+          { keys: ['J'], label: 'sell all junk' },
         ]
       : panel?.choices?.length
         ? [{ keys: ['↑', '↓'], label: 'choose' }]
@@ -419,18 +445,24 @@ export class ShopDialog {
         <button type="button" class="bs-row shop-row${i === selected ? ' is-selected' : ''}" role="option" aria-selected="${i === selected}" data-row="${i}">
           <span class="shop-row-key">${i < 9 ? keyChip(String(i + 1)) : ''}</span>
           <canvas class="shop-icon" width="24" height="24" data-item="${i}" aria-hidden="true"></canvas>
-          <span class="bs-name${itemToneClass(item)}">${escapeHtml(item.displayName)}${more.length ? ` <span class="ui-faint shop-count">×${more.length + 1}</span>` : ''}</span>
+          <span class="bs-name${itemToneClass(item)}">${escapeHtml(item.displayName)}${more.length ? ` <span class="ui-faint shop-count">×${more.length + 1}</span>` : ''}${item.junk ? ' <span class="ui-faint shop-junk">junk</span>' : ''}</span>
           <span class="ui-num ui-faint">${escapeHtml(formatWeight(item.weight))}</span>
           <span class="ui-num shop-price">${escapeHtml(formatCurrency(this.priceOf(item, engine)))}</span>
         </button>`
       )
       .join('');
     const empty = this.activeTab === 'buy' ? 'Sold out for now.' : 'Nothing in your pack to sell.';
+    const junk = this.activeTab === 'sell' ? this.junkItems(engine) : [];
+    const junkWorth = junk.reduce((sum, item) => sum + getItemSellPrice(item), 0);
+    const sellJunk = junk.length
+      ? `<div class="shop-junk-bar">${dialogButton('shop-sell-junk', `Sell all junk (${junk.length}) for ${formatCurrency(junkWorth)}`, { key: 'J', attrs: 'data-act="sell-junk"' })}</div>`
+      : '';
 
     return `
       <div class="shop-trade">
         <div class="ui-col">
           <div class="st-subtabs" role="tablist">${tab('buy', 'Buy', 'B', buyCount)}${tab('sell', 'Sell', 'S', sellCount)}</div>
+          ${sellJunk}
           <div class="ui-inset ui-scroll shop-list" role="listbox" aria-label="${this.activeTab === 'buy' ? 'For sale' : 'Your pack'}">
             ${rows || `<div class="ui-note bs-empty">${empty}</div>`}
           </div>

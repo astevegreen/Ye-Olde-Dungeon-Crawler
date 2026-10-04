@@ -86,6 +86,7 @@ export interface ItemConfig {
   bulk: number; // in cubic centimeters (cm³)
   quality?: ItemQuality;
   identified?: boolean;
+  junk?: boolean;
   stats?: ItemStatModifiers;
   description?: string;
   value?: number;
@@ -122,6 +123,8 @@ export class Item {
   public quantity: number;
   public quality: ItemQuality;
   public identified: boolean;
+  /** The hero marked it junk: a shop's "sell all junk" sells it. */
+  public junk: boolean;
   public readonly stats: ItemStatModifiers;
   public readonly description: string;
   public value: number;
@@ -154,6 +157,7 @@ export class Item {
     this.quantity = config.quantity ?? 1;
     this.quality = config.quality ?? 'normal';
     this.identified = config.identified ?? false;
+    this.junk = config.junk ?? false;
     this.parentId = config.parentId ?? null;
     this.ownerId = config.ownerId ?? null;
     this.stats = config.stats ?? {};

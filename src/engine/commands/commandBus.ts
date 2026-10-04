@@ -22,7 +22,8 @@ import {
   DrinkPotionAction,
 } from '../actions/spell-actions';
 import { TempleService, SageService, BankService, TrainerService } from '../economy/services';
-import type { Merchant } from '../economy/merchant';
+import { type Merchant, getItemSellPrice } from '../economy/merchant';
+import { formatCurrency } from '../economy/currency';
 import type { CompanionArchetype } from '../entities/companion';
 import { ChannelRuneOfReturnAction, RuneOfReturnItem, cancelChannel } from '../magic/runeOfReturn';
 import { recordMilestone } from '../renown/renownLedger';
@@ -279,6 +280,36 @@ export class EngineCommandBus implements GameCommandBus {
         const res = merchant.sellItem(this.engine.player, item);
         this.engine.log(res.message);
         return { success: res.success, message: res.message };
+      }
+
+      // A mark the hero keeps on a carried item: bookkeeping outside the turn order, like a trade.
+      case 'mark_junk': {
+        const item = this.engine.player.inventory.findItemById(p.itemId as string);
+        if (!item || item.category === 'currency') return { success: false, message: 'Nothing to mark as junk.' };
+        item.junk = p.junk === undefined ? !item.junk : Boolean(p.junk);
+        const message = item.junk ? `${item.displayName} is marked as junk.` : `${item.displayName} is no longer junk.`;
+        this.engine.log(message);
+        return { success: true, message };
+      }
+
+      // Sells everything in the pack marked as junk, one sale at a time.
+      case 'sell_junk': {
+        const merchant = (p.merchant as Merchant) ?? this.engine.merchants.get(p.merchantId as string);
+        if (!merchant) return { success: false, message: 'Invalid sell request' };
+        const junk = this.engine.player.inventory.primaryPack.getItems().filter((i) => i.junk && i.category !== 'currency');
+        if (junk.length === 0) return { success: false, message: 'Nothing in your pack is marked as junk.' };
+        let sold = 0;
+        let paid = 0;
+        for (const item of junk) {
+          const price = getItemSellPrice(item);
+          if (merchant.sellItem(this.engine.player, item).success) {
+            sold += 1;
+            paid += price;
+          }
+        }
+        const message = `Sold ${sold} junk item${sold === 1 ? '' : 's'} for ${formatCurrency(paid)}.`;
+        this.engine.log(message);
+        return { success: sold > 0, message };
       }
 
       case 'temple_cleanse': {

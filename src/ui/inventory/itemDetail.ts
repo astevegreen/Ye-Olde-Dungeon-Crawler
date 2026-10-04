@@ -68,7 +68,7 @@ export function itemDetailHtml(engine: GameEngine, item: Item, inspector: ItemIn
       ${opts.iconHtml}
       <div>
         <div class="inv-detail-name${itemToneClass(item)}">${escapeHtml(b.displayName)}</div>
-        <div class="ui-note">${escapeHtml(kind)}${b.isCursed ? ' · <span class="ui-down">cursed</span>' : ''}${b.identified ? '' : ' · unidentified'}</div>
+        <div class="ui-note">${escapeHtml(kind)}${b.isCursed ? ' · <span class="ui-down">cursed</span>' : ''}${b.identified ? '' : ' · unidentified'}${item.junk ? ' · junk' : ''}</div>
       </div>
     </div>
     ${b.slotCompatibility.length > 0 ? `<div class="ui-note">Goes on: ${escapeHtml(b.slotCompatibility.join(', '))}</div>` : ''}

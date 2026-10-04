@@ -129,6 +129,7 @@ export class InventoryTab implements MenuTab {
         { keys: ['Enter'], label: 'use' },
         { keys: ['E'], label: 'equip' },
         { keys: ['D'], label: 'drop' },
+        { keys: ['J'], label: 'junk' },
         { keys: ['T'], label: 'take' },
       ],
       escLabel: canBack ? 'back' : 'close',
@@ -235,6 +236,7 @@ export class InventoryTab implements MenuTab {
           focused && ins.focusedIndex === i ? 'is-focused' : '',
           g.items.some((x) => ins.isMultiSelected(x.id)) ? 'is-multi' : '',
           item.identified && item.isBound() ? 'is-cursed' : '',
+          item.junk ? 'is-junk' : '',
         ]
           .filter(Boolean)
           .join(' ');
@@ -244,6 +246,7 @@ export class InventoryTab implements MenuTab {
             ${numbered ? `<span class="inv-cell-key ui-num">${i + 1}</span>` : ''}
             ${item instanceof Container ? '<span class="inv-cell-box" title="Container: opens with Enter">▣</span>' : ''}
             ${short.quantity > 1 ? `<span class="inv-cell-qty ui-num">×${short.quantity}</span>` : ''}
+            ${item.junk ? '<span class="inv-cell-junk" title="Junk: any shop sells all of it at once (J)">junk</span>' : ''}
             <canvas class="inv-icon" width="40" height="40" data-icon="${panel}:${i}" aria-hidden="true"></canvas>
             <span class="inv-cell-name${itemToneClass(item)}">${escapeHtml(short.name)}</span>
           </button>`;

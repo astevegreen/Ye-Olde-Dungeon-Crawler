@@ -227,8 +227,10 @@ export class Merchant {
     const sellPriceCp = getItemSellPrice(item);
     addCurrencyToPlayer(player, sellPriceCp);
 
-    // 4. On the shelf the merchant knows what they bought: it is stocked identified.
+    // 4. On the shelf the merchant knows what they bought: it is stocked identified, and
+    //    it is no longer anyone's junk.
     item.identified = true;
+    item.junk = false;
     this.stock.push(item);
 
     return {

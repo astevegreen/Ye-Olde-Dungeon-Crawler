@@ -262,6 +262,35 @@ describe('ShopDialog', () => {
       expect(shop.activeTab).toBe('buy');
     });
 
+    it('sells all junk with J and its button, and shows junk apart in the Sell list (2.5)', () => {
+      const pack = engine.player.inventory.primaryPack;
+      const marked = ware('junk-boot', 'Old Boot');
+      marked.junk = true;
+      pack.addItem(marked);
+      pack.addItem(ware('good-boot', 'Old Boot'));
+      const shop = new ShopDialog();
+      shop.open(npc('merchant'), merchant(), engine);
+      shop.handleKeyDown(key('s'), engine);
+      const markup = html();
+      // The junk boot is its own row, tagged, and the button names how many and what they fetch.
+      expect(markup.match(/data-row=/g)).toHaveLength(2);
+      expect(markup).toContain('shop-junk');
+      expect(markup).toContain('data-act="sell-junk"');
+      expect(markup).toMatch(/Sell all junk \(1\)/);
+      shop.handleKeyDown(key('j'), engine);
+      expect(commandTypes()).toEqual(['sell_junk']);
+    });
+
+    it('offers no junk sale when nothing is marked', () => {
+      engine.player.inventory.primaryPack.addItem(ware('good-boot', 'Old Boot'));
+      const shop = new ShopDialog();
+      shop.open(npc('merchant'), merchant(), engine);
+      shop.handleKeyDown(key('s'), engine);
+      expect(html()).not.toContain('data-act="sell-junk"');
+      shop.handleKeyDown(key('j'), engine);
+      expect(commandTypes()).toEqual([]);
+    });
+
     it("shows a ware's stats, its slot and how it compares with what is worn (N20)", () => {
       const worn = new Item({ id: 'old-sword', name: 'Old Sword', category: 'weapon', slot: 'mainHand', weight: 1500, bulk: 900, identified: true, stats: { attackBonus: 2 } });
       engine.player.inventory.paperdoll.equip(worn);

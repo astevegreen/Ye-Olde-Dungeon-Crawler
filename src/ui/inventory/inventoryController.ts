@@ -96,10 +96,10 @@ export function groupItemsForDisplay(items: readonly Item[]): DisplayItemGroup[]
     let key: string;
     if (!item.identified) {
       const baseName = item.canBeIdentified() ? (item.unidentifiedName || item.name) : item.displayName;
-      key = `unidentified_${item.category}_${baseName}`;
+      key = `unidentified_${item.category}_${baseName}_${item.junk ? 'junk' : ''}`;
     } else {
       const cleanName = item.displayName.replace(/\s\(\d+x\)$/, '');
-      key = `identified_${item.category}_${cleanName}_${item.quality}_${item.enchantmentLevel}`;
+      key = `identified_${item.category}_${cleanName}_${item.quality}_${item.enchantmentLevel}_${item.junk ? 'junk' : ''}`;
     }
 
     const existing = keyToGroup.get(key);
@@ -471,6 +471,7 @@ export class InventoryController {
     if (container) {
       options.push({ label: 'Put in container', run: () => { this.dispatch({ type: 'store_container', payload: { container, item } }); done(); } });
     }
+    options.push({ label: item.junk ? 'Not junk' : 'Mark as junk', run: () => { this.dispatch({ type: 'mark_junk', payload: { itemId: item.id } }); done(); } });
     options.push({ label: 'Drop', run: () => { this.dispatch({ type: 'drop_item', payload: { item, source: 'pack' } }); done(); } });
     options.push({ label: 'Inspect', run: () => { this.inspector.setFocus('backpack'); this.inspector.select(item, 'backpack', undefined, container); } });
     return options;
@@ -853,6 +854,13 @@ export class InventoryController {
           type: 'drop_item',
           payload: { item: selected, source: worn ? 'paperdoll' : 'pack', slot: worn ? this.inspector.selectedSlot : undefined },
         });
+        this.reselectFocused();
+        return done();
+      }
+      case 'KeyJ': {
+        // Junk: any shop's Sell list sells every marked item at once.
+        if (!selected || source !== 'backpack' || selected.category === 'currency') return false;
+        this.dispatch({ type: 'mark_junk', payload: { itemId: selected.id } });
         this.reselectFocused();
         return done();
       }

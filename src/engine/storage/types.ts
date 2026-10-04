@@ -115,6 +115,8 @@ export interface SerializedItemBase {
   /** A label an older save may still carry; it loads as `normal` (`legacyQuality`). */
   quality: ItemQuality | 'enchanted' | 'cursed' | 'broken';
   identified: boolean;
+  /** Marked junk by the hero (absent when not). */
+  junk?: boolean;
   stats: ItemStatModifiers;
   description: string;
   value?: number;

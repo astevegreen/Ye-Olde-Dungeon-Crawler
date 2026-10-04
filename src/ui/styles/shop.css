@@ -30,6 +30,10 @@
    so switching Buy and Sell doesn't move the dialog. */
 .shop-trade { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: var(--ui-space-3); }
 .shop-list { height: 300px; padding: var(--ui-space-1); }
+/* Sell all junk (J) sits over the Sell list and takes its height from it, so the dialog stays put. */
+.shop-junk-bar { height: 36px; margin-bottom: var(--ui-space-1); display: flex; align-items: center; }
+.shop-junk-bar + .shop-list { height: calc(300px - 36px - var(--ui-space-1)); }
+.shop-junk { font-size: var(--ui-text-xs); text-transform: uppercase; letter-spacing: 0.05em; }
 .shop-row {
   display: grid;
   grid-template-columns: 22px 24px minmax(0, 1fr) auto 76px;

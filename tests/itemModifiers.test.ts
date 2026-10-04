@@ -4,18 +4,18 @@ import { GameMap } from '../src/engine/grid/map';
 import { Player } from '../src/engine/entities/player';
 import { Monster } from '../src/engine/entities/monster';
 import { Item } from '../src/engine/items/item';
-import {
-  createModifier,
-  rollItemModifiers,
-  applyProceduralModifiers,
-} from '../src/engine/items/modifierRoller';
+import { familyModifier } from '../src/engine/items/modifierRoller';
+import type { ModifierCategory } from '../src/engine/items/modifiers';
+import { COTW_ITEM_FAMILIES } from '../src/content/cotw/itemFamilies';
 import { MeleeAttackAction } from '../src/engine/actions/combat';
 import { CastSpellAction } from '../src/engine/actions/spell-actions';
 import { UncurseAction } from '../src/engine/actions/uncurseAction';
-import { Mulberry32 } from '../src/engine/dungeon/prng';
 import { serializeItem, deserializeItem } from '../src/engine/storage/serializer';
 import type { GameEvent, AlignmentRenownEvent, ChaoticProcEvent, UncurseEvent } from '../src/engine/events';
 import type { SpellDefinition } from '../src/engine/magic/types';
+
+/** The cotw family's modifier for an item found on `floor` (tier 1 on floor 1, tier 2 on floor 10/15, tier 3 on 25). */
+const mod = (category: ModifierCategory, floor: number) => familyModifier(COTW_ITEM_FAMILIES, category, floor, 'test')!;
 
 describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System', () => {
   let engine: GameEngine;
@@ -38,87 +38,6 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
     engine.onGameEvent = (ev) => emittedEvents.push(ev);
   });
 
-  describe('PRNG Determinism & Modifier Rolling', () => {
-    it('produces bit-for-bit identical modifiers given identical PRNG seeds', () => {
-      const prng1 = new Mulberry32(1337);
-      const prng2 = new Mulberry32(1337);
-
-      const weapon1 = new Item({
-        id: 'w1',
-        name: 'Broadsword',
-        category: 'weapon',
-        slot: 'mainHand',
-        weight: 1500,
-        bulk: 2000,
-      });
-      const weapon2 = new Item({
-        id: 'w2',
-        name: 'Broadsword',
-        category: 'weapon',
-        slot: 'mainHand',
-        weight: 1500,
-        bulk: 2000,
-      });
-
-      const mods1 = rollItemModifiers(weapon1, 15, () => prng1.next());
-      const mods2 = rollItemModifiers(weapon2, 15, () => prng2.next());
-
-      expect(mods1.length).toBe(1);
-      expect(mods2.length).toBe(1);
-      expect(mods1[0].name).toBe(mods2[0].name);
-      expect(mods1[0].category).toBe(mods2[0].category);
-      expect(mods1[0].alignment).toBe(mods2[0].alignment);
-      expect(mods1[0].meleeDamageMultiplier).toBe(mods2[0].meleeDamageMultiplier);
-    });
-
-    it('scales modifier tiers with dungeon depth', () => {
-      const weapon = new Item({
-        id: 'w1',
-        name: 'Longsword',
-        category: 'weapon',
-        slot: 'mainHand',
-        weight: 1500,
-        bulk: 2000,
-      });
-
-      // Shallow floor (depth 1)
-      const shallowMods = rollItemModifiers(weapon, 1, () => 0.0); // selects blessed t1
-      expect(shallowMods[0].name).toBe('Blessed');
-      expect(shallowMods[0].meleeDamageMultiplier).toBe(1.15);
-
-      // Deep floor (depth 30)
-      const deepMods = rollItemModifiers(weapon, 30, () => 0.0); // selects blessed t3
-      expect(deepMods[0].name).toBe('Celestial');
-      expect(deepMods[0].meleeDamageMultiplier).toBe(1.4);
-    });
-
-    it('attaches modifiers to item instance via applyProceduralModifiers', () => {
-      const prng = new Mulberry32(999);
-      const dagger = new Item({
-        id: 'd1',
-        name: 'Dagger',
-        category: 'weapon',
-        slot: 'mainHand',
-        weight: 500,
-        bulk: 500,
-      });
-      applyProceduralModifiers(dagger, 15, () => prng.next());
-      expect(dagger.modifiers.length).toBe(1);
-    });
-
-    it('returns no modifiers for non-equipment categories (consumables, currency)', () => {
-      const potion = new Item({
-        id: 'pot1',
-        name: 'Minor Health Potion',
-        category: 'consumable',
-        weight: 200,
-        bulk: 200,
-      });
-      const mods = rollItemModifiers(potion, 20, () => new Mulberry32(42).next());
-      expect(mods).toEqual([]);
-    });
-  });
-
   describe('Item Affix Display & Effective Stats Aggregation', () => {
     it('applies prefixes and suffixes to identified item display name', () => {
       const sword = new Item({
@@ -131,8 +50,8 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         identified: true,
       });
 
-      sword.addModifier(createModifier('blessed', 1)); // prefix: 'Blessed'
-      sword.addModifier(createModifier('holy', 2)); // suffix: 'of Dawn'
+      sword.addModifier(mod('blessed', 1)); // prefix: 'Blessed'
+      sword.addModifier(mod('holy', 10)); // suffix: 'of Dawn'
 
       expect(sword.displayName).toBe('Blessed Claymore of Dawn');
     });
@@ -148,7 +67,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         bulk: 3000,
         identified: false,
       });
-      sword.addModifier(createModifier('blessed', 1));
+      sword.addModifier(mod('blessed', 1));
       expect(sword.displayName).toBe('Unidentified Heavy Blade');
     });
 
@@ -186,7 +105,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         quality: 'broken',
         stats: { attackBonus: 5 },
       });
-      sword.addModifier(createModifier('blessed', 2));
+      sword.addModifier(mod('blessed', 10));
       expect(sword.effectiveStats.attackBonus).toBe(0);
     });
   });
@@ -202,7 +121,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         bulk: 2000,
         identified: true,
       });
-      blessedSword.addModifier(createModifier('blessed', 1)); // +15% melee, +1 flat, +2 ATK
+      blessedSword.addModifier(mod('blessed', 1)); // +15% melee, +1 flat, +2 ATK
 
       player.inventory.paperdoll.equip(blessedSword, 'mainHand');
 
@@ -253,7 +172,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         bulk: 1800,
         identified: true,
       });
-      enchantedStaff.addModifier(createModifier('enchanted', 1)); // +20% spell damage, -2 mana discount
+      enchantedStaff.addModifier(mod('enchanted', 1)); // +20% spell damage, -2 mana discount
 
       player.inventory.paperdoll.equip(enchantedStaff, 'mainHand');
 
@@ -310,7 +229,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         bulk: 2200,
         identified: true,
       });
-      holyMace.addModifier(createModifier('holy', 1)); // +30% dmg, +2 flat vs Undead/Demon
+      holyMace.addModifier(mod('holy', 1)); // +30% dmg, +2 flat vs Undead/Demon
       player.inventory.paperdoll.equip(holyMace, 'mainHand');
 
       const skeleton = new Monster({
@@ -340,7 +259,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         bulk: 2200,
         identified: true,
       });
-      holyMace.addModifier(createModifier('holy', 1));
+      holyMace.addModifier(mod('holy', 1));
       player.inventory.paperdoll.equip(holyMace, 'mainHand');
 
       const beast = new Monster({
@@ -372,7 +291,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         bulk: 900,
         identified: true,
       });
-      unholyDagger.addModifier(createModifier('unholy', 1)); // +40% dmg, +3 flat vs clergy/innocents, +1 dark_renown
+      unholyDagger.addModifier(mod('unholy', 1)); // +40% dmg, +3 flat vs clergy/innocents, +1 dark_renown
       player.inventory.paperdoll.equip(unholyDagger, 'mainHand');
 
       const priest = new Monster({
@@ -412,7 +331,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         bulk: 3500,
         identified: true,
       });
-      unholyAxe.addModifier(createModifier('unholy', 1)); // consecrated penalty: 50% reduction, 3 self-damage
+      unholyAxe.addModifier(mod('unholy', 1)); // consecrated penalty: 50% reduction, 3 self-damage
       player.inventory.paperdoll.equip(unholyAxe, 'mainHand');
 
       // Place player on consecrated ground surface
@@ -458,7 +377,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         weight: 50,
         bulk: 50,
       });
-      hexedRing.addModifier(createModifier('hexed', 1)); // takes +25% + 2 flat damage
+      hexedRing.addModifier(mod('hexed', 1)); // takes +25% + 2 flat damage
       target.inventory.paperdoll.equip(hexedRing, 'fingerLeft');
       map.addEntity(target);
 
@@ -575,7 +494,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         weight: 50,
         bulk: 50,
       });
-      cursedRing.addModifier(createModifier('cursed', 1)); // cursed: true
+      cursedRing.addModifier(mod('cursed', 1)); // cursed: true
 
       expect(cursedRing.isCursed()).toBe(true);
 
@@ -595,8 +514,8 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         weight: 1500,
         bulk: 1800,
       });
-      cursedHelm.addModifier(createModifier('cursed', 1));
-      cursedHelm.addModifier(createModifier('blessed', 1)); // keep non-cursed modifier!
+      cursedHelm.addModifier(mod('cursed', 1));
+      cursedHelm.addModifier(mod('blessed', 1)); // keep non-cursed modifier!
 
       player.inventory.paperdoll.equip(cursedHelm, 'head');
       expect(cursedHelm.isCursed()).toBe(true);
@@ -635,8 +554,8 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         identified: true,
       });
 
-      weapon.addModifier(createModifier('blessed', 2));
-      weapon.addModifier(createModifier('holy', 1));
+      weapon.addModifier(mod('blessed', 10));
+      weapon.addModifier(mod('holy', 1));
 
       const serialized = serializeItem(weapon);
       expect(serialized.modifiers).toBeDefined();

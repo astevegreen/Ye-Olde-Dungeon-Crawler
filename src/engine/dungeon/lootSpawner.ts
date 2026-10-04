@@ -6,6 +6,7 @@ import { WandItem, ScrollItem, PotionItem } from '../items/consumables';
 import { CoinItem, mintCoinPile } from '../economy/currency';
 import type { CoinDenomination } from '../economy/types';
 import { flightRecorder } from '../debug/flightRecorder';
+import { rollItemFamily, type ItemFamilyConfig } from '../items/modifierRoller';
 
 /**
  * Calculates a procedural enchantment level (+0 to +5) based on floor depth with variance:
@@ -51,12 +52,17 @@ export function rollElementalAffix(
 /**
  * Creates an Item instance from an ItemDefinition with depth-scaled stats and affixes.
  * The ItemDefinition template remains strictly immutable.
+ *
+ * With `families` (the pack's `itemFamilies`), equipment also rolls a family after its +N
+ * (ADR-0012): loot paths pass it; shop stock, starting gear and rewards don't, so they
+ * stay Normal.
  */
 export function createScaledItem(
   def: ItemDefinition,
   id: string,
   currentFloor: number,
-  rng: () => number
+  rng: () => number,
+  families?: ItemFamilyConfig
 ): Item {
   const isEquipment =
     def.category === 'weapon' ||
@@ -67,6 +73,8 @@ export function createScaledItem(
 
   const enchantmentLevel = isEquipment ? calculateEnchantmentLevel(currentFloor, rng) : 0;
   const elementalAffix = isEquipment ? rollElementalAffix(currentFloor, def.category, rng) : undefined;
+  const family = rollItemFamily(def, currentFloor, rng, families, id);
+  const modifiers = family ? [family] : undefined;
 
   // Calculate scaled attack and defense modifiers
   const stats = { ...(def.stats ?? {}) };
@@ -192,6 +200,7 @@ export function createScaledItem(
     tier: def.tier,
     enchantmentLevel,
     elementalAffix,
+    modifiers,
     twoHanded: def.twoHanded,
     blocksSlot: def.blocksSlot,
     rangedConfig: def.rangedConfig,
@@ -295,7 +304,8 @@ export function createDungeonChest(
   currentFloor: number,
   candidates: ItemDefinition[],
   rng: () => number,
-  coinage?: CoinageDefinition
+  coinage?: CoinageDefinition,
+  families?: ItemFamilyConfig
 ): Container {
   const chest = new Container({
     id,
@@ -326,7 +336,7 @@ export function createDungeonChest(
       let added = false;
       if (def) {
         const itemId = `${id}-item-${idx}-${Math.floor(rng() * 1000000)}-${attempts}`;
-        added = chest.addItem(createScaledItem(def, itemId, currentFloor, rng));
+        added = chest.addItem(createScaledItem(def, itemId, currentFloor, rng, families));
       }
       if (!added) {
         // Fall back to currency if item didn't fit or definition wasn't found
@@ -348,7 +358,8 @@ export function populateDungeonLoot(
   currentFloor: number,
   candidates: ItemDefinition[],
   rng: () => number,
-  coinage?: CoinageDefinition
+  coinage?: CoinageDefinition,
+  families?: ItemFamilyConfig
 ): Item[] {
   const spawnedItems: Item[] = [];
 
@@ -372,7 +383,7 @@ export function populateDungeonLoot(
           const def = selectFloorItemDefinition(candidates, currentFloor, rng);
           if (def) {
             const itemId = `loot-item-${currentFloor}-${i}-${Math.floor(rng() * 1000000)}`;
-            const item = createScaledItem(def, itemId, currentFloor, rng);
+            const item = createScaledItem(def, itemId, currentFloor, rng, families);
             map.addItemAt(lx, ly, item);
             spawnedItems.push(item);
           }
@@ -387,7 +398,7 @@ export function populateDungeonLoot(
 
       if (map.isPassable(cx, cy) && !map.getEntityAt(cx, cy)) {
         const chestId = `loot-chest-${currentFloor}-${i}-${Math.floor(rng() * 1000000)}`;
-        const chest = createDungeonChest(chestId, currentFloor, candidates, rng, coinage);
+        const chest = createDungeonChest(chestId, currentFloor, candidates, rng, coinage, families);
         map.addItemAt(cx, cy, chest);
         spawnedItems.push(chest);
       }

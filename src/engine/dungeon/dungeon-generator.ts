@@ -10,6 +10,7 @@ import { VaultStamper, type VaultBlueprint } from './vaultStamp';
 import { MonsterRegistry, type MonsterDefinition } from '../bestiary/monsterDefinitions';
 import { selectDungeonMonsterDefinition } from './spawner';
 import type { CoinageDefinition, ItemDefinition, RoomDecorationBand } from '../types/manifest';
+import type { ItemFamilyConfig } from '../items/modifierRoller';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
 import type { GameDifficulty } from '../types';
 import type { EngineRegistries } from '../registries';
@@ -37,6 +38,8 @@ export interface DungeonConfig {
   itemCandidates?: ItemDefinition[];
   /** The pack's coin scale, for vault chests' coins. */
   coinage?: CoinageDefinition;
+  /** The pack's item families, for vault chests' items. */
+  itemFamilies?: ItemFamilyConfig;
   enableBraiding?: boolean;
   enableDecoration?: boolean;
   scalingConfig?: MonsterScalingConfig;
@@ -79,6 +82,7 @@ export class DungeonGenerator {
   public monsterCandidates: MonsterDefinition[];
   public itemCandidates: ItemDefinition[];
   public coinage?: CoinageDefinition;
+  public itemFamilies?: ItemFamilyConfig;
   public enableBraiding: boolean;
   public enableDecoration: boolean;
   public scalingConfig?: MonsterScalingConfig;
@@ -100,6 +104,7 @@ export class DungeonGenerator {
     this.monsterCandidates = config.monsterCandidates ?? [];
     this.itemCandidates = config.itemCandidates ?? [];
     this.coinage = config.coinage;
+    this.itemFamilies = config.itemFamilies;
     this.enableBraiding = config.enableBraiding ?? true;
     this.enableDecoration = config.enableDecoration ?? true;
     this.scalingConfig = config.scalingConfig;
@@ -191,7 +196,8 @@ export class DungeonGenerator {
           this.scalingConfig,
           this.difficulty,
           this.registries,
-          this.coinage
+          this.coinage,
+          this.itemFamilies
         );
         vaultRoomIndices.add(rooms.length);
         rooms.push(vRoom);

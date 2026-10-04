@@ -3,6 +3,7 @@ import { COIN_BULK_CM3, type Item, type ItemDefinition, type Predicate } from '.
 import { COTW_ITEMS } from './index';
 import { COTW_SPELL_TABLETS } from '../spellTablets';
 import { COTW_COINAGE } from '../coinage';
+import { COTW_ITEM_FAMILIES } from '../itemFamilies';
 
 /**
  * Items outside COTW_ITEMS, so never rolled as random floor loot: sold in town and
@@ -76,7 +77,7 @@ function definitionFor(itemId: string): ItemDefinition {
   return def;
 }
 
-/** Merchant stock: floor-1 stats at a fixed mid roll, optionally gated by a predicate. */
+/** Merchant stock: floor-1 stats at a fixed mid roll, no family, optionally gated by a predicate. */
 export function makeShopItem(itemId: string, instanceId: string, predicate?: Predicate): Item {
   const def = definitionFor(itemId);
   return createScaledItem(predicate ? { ...def, predicate } : def, instanceId, 1, () => 0.5);
@@ -84,16 +85,16 @@ export function makeShopItem(itemId: string, instanceId: string, predicate?: Pre
 
 /** A monster's chest drop: filled as a dungeon chest on `floor` would be. */
 export function makeLootChest(instanceId: string, rng: () => number, floor: number): Item {
-  return createDungeonChest(instanceId, floor, COTW_ITEMS, rng, COTW_COINAGE);
+  return createDungeonChest(instanceId, floor, COTW_ITEMS, rng, COTW_COINAGE, COTW_ITEM_FAMILIES);
 }
 
 /** Loot scaled to `floor` (the floor a monster died on), rolled from the loot table's seeded rng. */
 export function makeLootItem(itemId: string, instanceId: string, rng: () => number, floor = 1): Item {
-  return createScaledItem(definitionFor(itemId), instanceId, Math.max(1, floor), rng);
+  return createScaledItem(definitionFor(itemId), instanceId, Math.max(1, floor), rng, COTW_ITEM_FAMILIES);
 }
 
 /** A monster's ordinary drop: as makeLootItem, but nothing above the floor the item unlocks on. */
 export function dropLootItem(itemId: string, instanceId: string, rng: () => number, floor = 1): Item | null {
   const def = definitionFor(itemId);
-  return floor < (def.minFloor ?? 1) ? null : createScaledItem(def, instanceId, floor, rng);
+  return floor < (def.minFloor ?? 1) ? null : createScaledItem(def, instanceId, floor, rng, COTW_ITEM_FAMILIES);
 }

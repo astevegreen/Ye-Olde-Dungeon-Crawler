@@ -161,7 +161,8 @@ function getAllCatalogItems(engine: GameEngine): CatalogItemEntry[] {
       id: `pack-${def.id}`,
       name: def.name,
       category: cat,
-      create: (eng: GameEngine) => createScaledItem(def, eng.nextSimulationId(`item-${def.id}`), eng.currentFloor, eng.rng),
+      create: (eng: GameEngine) =>
+        createScaledItem(def, eng.nextSimulationId(`item-${def.id}`), eng.currentFloor, eng.rng, eng.manifest.itemFamilies),
     });
   }
   return items;

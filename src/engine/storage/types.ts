@@ -89,7 +89,7 @@ export interface SerializedItemModifier {
   category: 'blessed' | 'enchanted' | 'holy' | 'cursed' | 'hexed' | 'unholy' | 'chaotic';
   prefix?: string;
   suffix?: string;
-  cursed?: boolean;
+  binds?: boolean;
   statDeltas?: ItemStatModifiers;
   meleeDamageMultiplier?: number;
   meleeDamageFlatBonus?: number;

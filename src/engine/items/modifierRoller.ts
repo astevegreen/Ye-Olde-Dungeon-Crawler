@@ -1,363 +1,112 @@
-import type { Item, ItemCategory } from './item';
-import type { ItemModifier, ModifierCategory } from './modifiers';
+import type { ItemCategory, ItemQuality } from './item';
+import type { ItemModifier, ModifierAlignment, ModifierCategory } from './modifiers';
 
-export interface ModifierTemplate extends Omit<ItemModifier, 'id'> {
-  minFloor?: number;
-  tier: number;
-  allowedCategories?: ItemCategory[];
+/**
+ * Item families as pack data (ADR-0012). The engine knows seven family ids and three
+ * alignments, and what each modifier *field* does in combat; a pack supplies the rest:
+ * each family's tiers (names, numbers, the floor each tier starts on), how many of the
+ * family a game should offer, the first floor it rolls on, and whether it binds.
+ */
+
+/** One tier of a family: the modifier it puts on an item, from `minFloor` down. */
+export interface ItemFamilyTier extends Omit<ItemModifier, 'id' | 'category' | 'alignment' | 'binds'> {
+  /** The first floor this tier rolls on; the deepest tier the floor reaches wins. */
+  minFloor: number;
 }
 
-const MODIFIER_TEMPLATES: Record<ModifierCategory, ModifierTemplate[]> = {
-  blessed: [
-    {
-      tier: 1,
-      minFloor: 1,
-      name: 'Blessed',
-      alignment: 'positive',
-      category: 'blessed',
-      prefix: 'Blessed',
-      statDeltas: { attackBonus: 2 },
-      meleeDamageMultiplier: 1.15,
-      meleeDamageFlatBonus: 1,
-      description: 'Consecrated physical empowerment (+15% melee damage, +1 flat, +2 ATK).',
-    },
-    {
-      tier: 2,
-      minFloor: 10,
-      name: 'Sanctified',
-      alignment: 'positive',
-      category: 'blessed',
-      prefix: 'Sanctified',
-      statDeltas: { attackBonus: 4, strengthBonus: 1 },
-      meleeDamageMultiplier: 1.25,
-      meleeDamageFlatBonus: 2,
-      description: 'Righteous physical force (+25% melee damage, +2 flat, +4 ATK, +1 STR).',
-    },
-    {
-      tier: 3,
-      minFloor: 25,
-      name: 'Celestial',
-      alignment: 'positive',
-      category: 'blessed',
-      prefix: 'Celestial',
-      statDeltas: { attackBonus: 6, strengthBonus: 2 },
-      meleeDamageMultiplier: 1.4,
-      meleeDamageFlatBonus: 4,
-      description: 'Divine warrior puissance (+40% melee damage, +4 flat, +6 ATK, +2 STR).',
-    },
-  ],
-  enchanted: [
-    {
-      tier: 1,
-      minFloor: 1,
-      name: 'Enchanted',
-      alignment: 'positive',
-      category: 'enchanted',
-      prefix: 'Enchanted',
-      spellDamageMultiplier: 1.2,
-      manaCostDiscount: 2,
-      description: 'Arcane conductivity (+20% spell damage, -2 mana cost).',
-    },
-    {
-      tier: 2,
-      minFloor: 10,
-      name: 'Arcane',
-      alignment: 'positive',
-      category: 'enchanted',
-      prefix: 'Arcane',
-      spellDamageMultiplier: 1.35,
-      manaCostDiscount: 4,
-      description: 'Potent mana resonance (+35% spell damage, -4 mana cost).',
-    },
-    {
-      tier: 3,
-      minFloor: 25,
-      name: "Archmage's",
-      alignment: 'positive',
-      category: 'enchanted',
-      prefix: "Archmage's",
-      spellDamageMultiplier: 1.5,
-      manaCostDiscount: 6,
-      description: 'Supreme mystic mastery (+50% spell damage, -6 mana cost).',
-    },
-  ],
-  holy: [
-    {
-      tier: 1,
-      minFloor: 1,
-      name: 'of the Templar',
-      alignment: 'positive',
-      category: 'holy',
-      suffix: 'of the Templar',
-      tagBonuses: [
-        { tag: 'undead', multiplier: 1.3, flatBonus: 2 },
-        { tag: 'demon', multiplier: 1.3, flatBonus: 2 },
-      ],
-      description: 'Radiant warding against the unholy (+30% dmg, +2 flat vs Undead/Demons).',
-    },
-    {
-      tier: 2,
-      minFloor: 10,
-      name: 'of Dawn',
-      alignment: 'positive',
-      category: 'holy',
-      suffix: 'of Dawn',
-      tagBonuses: [
-        { tag: 'undead', multiplier: 1.5, flatBonus: 4 },
-        { tag: 'demon', multiplier: 1.5, flatBonus: 4 },
-      ],
-      description: 'Blazing sunlight purging corruption (+50% dmg, +4 flat vs Undead/Demons).',
-    },
-    {
-      tier: 3,
-      minFloor: 25,
-      name: 'of Radiant Glory',
-      alignment: 'positive',
-      category: 'holy',
-      suffix: 'of Radiant Glory',
-      tagBonuses: [
-        { tag: 'undead', multiplier: 1.8, flatBonus: 8 },
-        { tag: 'demon', multiplier: 1.8, flatBonus: 8 },
-      ],
-      description: 'Archon radiance eradicating fiends (+80% dmg, +8 flat vs Undead/Demons).',
-    },
-  ],
-  cursed: [
-    {
-      tier: 1,
-      minFloor: 1,
-      name: 'Cursed',
-      alignment: 'negative',
-      category: 'cursed',
-      prefix: 'Cursed',
-      cursed: true,
-      statDeltas: { attackBonus: -2, defenseBonus: -1 },
-      description: 'Foul binding curse (Equip-locked, -2 ATK, -1 DEF).',
-    },
-    {
-      tier: 2,
-      minFloor: 15,
-      name: 'Blighted',
-      alignment: 'negative',
-      category: 'cursed',
-      prefix: 'Blighted',
-      cursed: true,
-      statDeltas: { attackBonus: -4, defenseBonus: -3, speedBonus: -10 },
-      description: 'Crippling malignant binding (Equip-locked, -4 ATK, -3 DEF, -10 SPD).',
-    },
-  ],
-  hexed: [
-    {
-      tier: 1,
-      minFloor: 1,
-      name: 'Hexed',
-      alignment: 'negative',
-      category: 'hexed',
-      prefix: 'Hexed',
-      damageTakenMultiplier: 1.25,
-      damageTakenFlatBonus: 2,
-      description: 'Hex of vulnerability (Bearer takes +25% + 2 damage from all attacks).',
-    },
-    {
-      tier: 2,
-      minFloor: 15,
-      name: 'Doom-touched',
-      alignment: 'negative',
-      category: 'hexed',
-      prefix: 'Doom-touched',
-      damageTakenMultiplier: 1.5,
-      damageTakenFlatBonus: 4,
-      description: 'Fatal vulnerability (Bearer takes +50% + 4 damage from all attacks).',
-    },
-  ],
-  unholy: [
-    {
-      tier: 1,
-      minFloor: 1,
-      name: 'Unholy',
-      alignment: 'negative',
-      category: 'unholy',
-      prefix: 'Unholy',
-      tagBonuses: [
-        {
-          tag: 'clergy',
-          multiplier: 1.4,
-          flatBonus: 3,
-          renownCategory: 'dark_renown',
-          renownAmount: 1,
-        },
-        {
-          tag: 'innocent',
-          multiplier: 1.4,
-          flatBonus: 3,
-          renownCategory: 'dark_renown',
-          renownAmount: 1,
-        },
-      ],
-      consecratedGroundPenalty: {
-        damagePenalty: 0.5,
-        selfDamagePerAttack: 3,
-      },
-      description: 'Dark blasphemy (+40% dmg vs clergy/innocents, +1 dark renown, suffers on holy ground).',
-    },
-    {
-      tier: 2,
-      minFloor: 15,
-      name: 'Profane',
-      alignment: 'negative',
-      category: 'unholy',
-      prefix: 'Profane',
-      tagBonuses: [
-        {
-          tag: 'clergy',
-          multiplier: 1.7,
-          flatBonus: 6,
-          renownCategory: 'dark_renown',
-          renownAmount: 2,
-        },
-        {
-          tag: 'innocent',
-          multiplier: 1.7,
-          flatBonus: 6,
-          renownCategory: 'dark_renown',
-          renownAmount: 2,
-        },
-      ],
-      consecratedGroundPenalty: {
-        damagePenalty: 0.7,
-        selfDamagePerAttack: 6,
-      },
-      description: 'Dread sacrilege (+70% dmg vs clergy/innocents, +2 dark renown, severe consecrated ground penalty).',
-    },
-  ],
-  chaotic: [
-    {
-      tier: 1,
-      minFloor: 1,
-      name: 'Frenetic',
-      alignment: 'chaotic',
-      category: 'chaotic',
-      prefix: 'Frenetic',
-      statDeltas: { attackBonus: 5 },
-      meleeDamageMultiplier: 1.35,
-      chaoticProc: {
-        procChance: 0.2,
-        type: 'backlash',
-        param: 4,
-        description: 'Volatile recoil backlash',
-      },
-      description: 'Frantic power (+35% melee dmg, +5 ATK, 20% chance of 4 backlash self-damage).',
-    },
-    {
-      tier: 2,
-      minFloor: 12,
-      name: 'Warping',
-      alignment: 'chaotic',
-      category: 'chaotic',
-      prefix: 'Warping',
-      statDeltas: { speedBonus: 15 },
-      meleeDamageMultiplier: 1.25,
-      chaoticProc: {
-        procChance: 0.15,
-        type: 'teleport',
-        param: 3,
-        description: 'Erratic spatial jump',
-      },
-      description: 'Spatial instability (+25% melee dmg, +15 SPD, 15% chance of random tactical teleport).',
-    },
-    {
-      tier: 3,
-      minFloor: 25,
-      name: 'Cataclysmic',
-      alignment: 'chaotic',
-      category: 'chaotic',
-      prefix: 'Cataclysmic',
-      statDeltas: { attackBonus: 8 },
-      meleeDamageMultiplier: 1.6,
-      chaoticProc: {
-        procChance: 0.25,
-        type: 'backlash',
-        param: 8,
-        description: 'Cataclysmic detonation backlash',
-      },
-      description: 'Unbridled havoc (+60% melee dmg, +8 ATK, 25% chance of 8 recoil self-damage).',
-    },
-  ],
-};
+export interface ItemFamilyDefinition {
+  category: ModifierCategory;
+  alignment: ModifierAlignment;
+  /**
+   * How many items of this family a full game is expected to offer. With
+   * `ItemFamilyConfig.itemsPerGame` it gives the chance per eligible item.
+   */
+  perGame: number;
+  /** The first floor the family rolls on at all (its share goes to Normal before that). */
+  minFloor?: number;
+  /** A worn item of this family stays on until a cleansing takes the family off it. */
+  binds?: boolean;
+  /** Deepest tier last is conventional, not required: the roller picks by `minFloor`. */
+  tiers: ItemFamilyTier[];
+}
 
-let modifierCounter = 0;
+export interface ItemFamilyConfig {
+  /** Equipment categories that may roll a family; anything else is always Normal. */
+  categories: ItemCategory[];
+  /**
+   * About how many eligible items a full game offers (floors 1–50, ground, chests and
+   * monster drops): `perGame / itemsPerGame` is a family's chance per eligible item.
+   * Re-measure it with `npm run balance` when loot volume changes.
+   */
+  itemsPerGame: number;
+  families: ItemFamilyDefinition[];
+}
 
-export function createModifier(category: ModifierCategory, tier = 1): ItemModifier {
-  const templates = MODIFIER_TEMPLATES[category];
-  if (!templates || templates.length === 0) {
-    throw new Error(`Unknown modifier category: ${category}`);
+/** What the roller needs to know about an item definition. */
+export interface FamilyRollSubject {
+  category: ItemCategory;
+  quality?: ItemQuality;
+  /** Always this family, never another and never Normal (a cursed relic, say). */
+  family?: ModifierCategory;
+}
+
+function tierFor(family: ItemFamilyDefinition, floor: number): ItemFamilyTier | undefined {
+  let chosen: ItemFamilyTier | undefined;
+  for (const tier of family.tiers) {
+    if (tier.minFloor <= floor && (!chosen || tier.minFloor >= chosen.minFloor)) chosen = tier;
   }
-  const matching = templates.find((t) => t.tier === tier) ?? templates[templates.length - 1];
-  const id = `mod_${category}_t${matching.tier}_${++modifierCounter}`;
+  // A fixed-family item below the family's first floor still gets its shallowest tier.
+  return chosen ?? [...family.tiers].sort((a, b) => a.minFloor - b.minFloor)[0];
+}
+
+/**
+ * The modifier a family puts on an item found on `floor`, or undefined when the pack has
+ * no such family. The id is derived from the item's, so a reroll from the same seed is
+ * the same modifier.
+ */
+export function familyModifier(
+  config: ItemFamilyConfig,
+  category: ModifierCategory,
+  floor: number,
+  itemId: string
+): ItemModifier | undefined {
+  const family = config.families.find((f) => f.category === category);
+  const tier = family ? tierFor(family, floor) : undefined;
+  if (!family || !tier) return undefined;
+  const { minFloor: _minFloor, ...fields } = tier;
   return {
-    ...matching,
-    id,
+    ...fields,
+    id: `${itemId}:${category}`,
+    category,
+    alignment: family.alignment,
+    binds: family.binds || undefined,
   };
 }
 
 /**
- * Procedurally rolls modifiers for an item using deterministic seeded PRNG.
+ * Rolls an item's family: Normal first, with the remaining chance split among the
+ * families by `perGame`, then the family's tier for the floor. Consumes one `rng()`
+ * for an eligible item and none for anything else, so a pack without families leaves
+ * the loot stream untouched. A family not yet rolling on this floor (`minFloor`) gives
+ * its share to Normal; an artifact or a non-equipment item is never rolled.
  */
-export function rollItemModifiers(
-  item: Item,
-  currentFloor: number,
-  rng: () => number
-): ItemModifier[] {
-  const isEquipment =
-    item.category === 'weapon' ||
-    item.category === 'armor' ||
-    item.category === 'shield' ||
-    item.category === 'helmet' ||
-    item.category === 'boots' ||
-    item.category === 'gauntlets' ||
-    item.category === 'amulet' ||
-    item.category === 'ring';
+export function rollItemFamily(
+  subject: FamilyRollSubject,
+  floor: number,
+  rng: () => number,
+  config: ItemFamilyConfig | undefined,
+  itemId: string
+): ItemModifier | undefined {
+  if (!config) return undefined;
+  if (subject.family) return familyModifier(config, subject.family, floor, itemId);
+  if (subject.quality === 'artifact' || !config.categories.includes(subject.category)) return undefined;
 
-  if (!isEquipment) {
-    return [];
+  const roll = rng();
+  let cumulative = 0;
+  for (const family of config.families) {
+    if ((family.minFloor ?? 1) > floor) continue;
+    cumulative += family.perGame / config.itemsPerGame;
+    if (roll < cumulative) return familyModifier(config, family.category, floor, itemId);
   }
-
-  // Determine tier based on floor depth
-  let tier = 1;
-  if (currentFloor >= 25) {
-    tier = 3;
-  } else if (currentFloor >= 10) {
-    tier = 2;
-  }
-
-  const categories: ModifierCategory[] = [
-    'blessed',
-    'enchanted',
-    'holy',
-    'cursed',
-    'hexed',
-    'unholy',
-    'chaotic',
-  ];
-
-  const catIdx = Math.floor(rng() * categories.length);
-  const chosenCat = categories[catIdx];
-
-  const modifier = createModifier(chosenCat, tier);
-  return [modifier];
-}
-
-/**
- * Rolls and attaches procedural modifiers to the item instance.
- */
-export function applyProceduralModifiers(
-  item: Item,
-  currentFloor: number,
-  rng: () => number
-): Item {
-  const mods = rollItemModifiers(item, currentFloor, rng);
-  for (const m of mods) {
-    item.addModifier(m);
-  }
-  return item;
+  return undefined;
 }

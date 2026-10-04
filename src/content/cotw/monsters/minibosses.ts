@@ -1,6 +1,4 @@
-import { createScaledItem } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
-import { COTW_CATALOG_RECORD } from '../items';
 import { makeLootItem } from '../items/makeItem';
 import { coinDrop } from '../coinage';
 
@@ -39,8 +37,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) =>
-          createScaledItem(COTW_CATALOG_RECORD['brim_wolf_pelt_hood'], id, 5, rng),
+        generate: (id, rng) => makeLootItem('brim_wolf_pelt_hood', id, rng, 5),
       },
       {
         chance: 1.0,
@@ -74,8 +71,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) =>
-          createScaledItem(COTW_CATALOG_RECORD['rot_porous_cleaver'], id, 36, rng),
+        generate: (id, rng) => makeLootItem('rot_porous_cleaver', id, rng, 36),
       },
       {
         chance: 1.0,
@@ -99,8 +95,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) =>
-          createScaledItem(COTW_CATALOG_RECORD['nid_dripping_hauberk'], id, 44, rng),
+        generate: (id, rng) => makeLootItem('nid_dripping_hauberk', id, rng, 44),
       },
       {
         chance: 1.0,
@@ -143,8 +138,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) =>
-          createScaledItem(COTW_CATALOG_RECORD['nidhogg_fang'], id, 45, rng),
+        generate: (id, rng) => makeLootItem('nidhogg_fang', id, rng, 45),
       },
       {
         chance: 1.0,
@@ -168,8 +162,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) =>
-          createScaledItem(COTW_CATALOG_RECORD['marrow_gnawed_ring'], id, 47, rng),
+        generate: (id, rng) => makeLootItem('marrow_gnawed_ring', id, rng, 47),
       },
       {
         chance: 1.0,

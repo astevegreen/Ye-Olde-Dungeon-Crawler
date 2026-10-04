@@ -4,6 +4,7 @@ import { TILES, getTileDefinition, hasTileDefinition } from '../grid/tile';
 import type { TileDefinition } from '../types';
 import { getMonsterDefinition, type MonsterDefinition } from '../bestiary/monsterDefinitions';
 import type { CoinageDefinition, ItemDefinition } from '../types/manifest';
+import type { ItemFamilyConfig } from '../items/modifierRoller';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
 import { createScaledMonster, dungeonSpawnWeight, selectDungeonMonsterDefinition } from './spawner';
 import { createDungeonChest } from './lootSpawner';
@@ -119,7 +120,8 @@ export class VaultStamper {
     scalingConfig?: MonsterScalingConfig,
     difficulty?: GameDifficulty,
     registries?: EngineRegistries,
-    coinage?: CoinageDefinition
+    coinage?: CoinageDefinition,
+    families?: ItemFamilyConfig
   ): StampedVaultResult {
     const layout = blueprint.layout;
     const height = layout.length;
@@ -153,7 +155,7 @@ export class VaultStamper {
         if (parsed.isChest) {
           chestSpawns.push({ x: worldX, y: worldY });
           const chestId = `vault-chest-${blueprint.id}-${worldX}-${worldY}-${Math.floor(rng() * 1000000)}`;
-          const chest = createDungeonChest(chestId, currentFloor, itemCandidates, rng, coinage);
+          const chest = createDungeonChest(chestId, currentFloor, itemCandidates, rng, coinage, families);
           map.addItemAt(worldX, worldY, chest);
         }
 

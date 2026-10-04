@@ -41,7 +41,8 @@ export interface ItemModifier {
   category: ModifierCategory;
   prefix?: string;
   suffix?: string;
-  cursed?: boolean;
+  /** While worn, the item stays on until a cleansing takes this modifier off it. */
+  binds?: boolean;
   statDeltas?: ItemStatModifiers;
   meleeDamageMultiplier?: number;
   meleeDamageFlatBonus?: number;
@@ -56,7 +57,12 @@ export interface ItemModifier {
 }
 
 export function isModifierCursed(mod: ItemModifier): boolean {
-  return mod.cursed === true || mod.category === 'cursed';
+  return mod.category === 'cursed';
+}
+
+/** A worn item with a binding modifier cannot be taken off until it is cleansed. */
+export function isModifierBinding(mod: ItemModifier): boolean {
+  return mod.binds === true;
 }
 
 export function isModifierBlessed(mod: ItemModifier): boolean {

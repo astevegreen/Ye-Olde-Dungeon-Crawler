@@ -2,6 +2,8 @@ import type { Position, TileDefinition } from '../types';
 import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
 import type { SpellDefinition } from '../magic/types';
 import type { ItemCategory, ItemQuality, EquipmentSlot, ItemStatModifiers, Item, RangedWeaponConfig } from '../items/item';
+import type { ModifierCategory } from '../items/modifiers';
+import type { ItemFamilyConfig } from '../items/modifierRoller';
 import type { ContainerType } from '../items/container';
 import type { PotionType } from '../items/consumables';
 import type { CoinDenomination } from '../economy/types';
@@ -68,6 +70,8 @@ export interface ItemDefinition {
   weight: number;
   bulk: number;
   quality?: ItemQuality;
+  /** Always this family (`manifest.itemFamilies`), its tier by floor: a cursed relic, say. */
+  family?: ModifierCategory;
   stats?: Partial<ItemStatModifiers>;
   identified?: boolean;
   description?: string;
@@ -751,6 +755,11 @@ export interface GameContentManifest {
   /** How coin piles are minted, by floor: ground piles, chest coins and the boss hoard
    * (`mintCoinPile`). When omitted, `spawnFloorCurrency`'s built-in table applies. */
   coinage?: CoinageDefinition;
+  /**
+   * The item families (Blessed, Cursed, …) floor and monster loot roll, with their tiers and
+   * per-game counts (`rollItemFamily`, ADR-0012). When omitted, every item is Normal.
+   */
+  itemFamilies?: ItemFamilyConfig;
   initialWorldState?: WorldState;
   /** Names and "met" rules for the factions in `initialWorldState.factions` (`FactionDefinition`). */
   factions?: FactionDefinition[];

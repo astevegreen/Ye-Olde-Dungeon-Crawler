@@ -39,7 +39,7 @@ import { COTW_TILES } from './tiles';
 import { COTW_FLOOR_HAZARDS, COTW_ROOM_DECORATION } from './floorBands';
 import { COTW_FLOOR_LAYOUTS, COTW_FLOOR_SIZE } from './floorLayouts';
 import { COTW_MONSTER_CATEGORIES } from './monsterCategories';
-import { COTW_FACTIONS, COTW_TEMPLE_MET_HOOK } from './factions';
+import { COTW_FACTIONS, COTW_MERCHANT_PRICING, COTW_TEMPLE_MET_HOOK } from './factions';
 import { COTW_FIRST_TIME_HINTS } from './hints';
 import { COTW_RELIC_HOOK } from './relic';
 import { IRON_CLANS_BARROW_PLACEMENTS, IRON_CLANS_HOOKS, IVALDA } from './ironClans';
@@ -275,15 +275,7 @@ export const cotwManifest: GameContentManifest = {
   floorHazards: COTW_FLOOR_HAZARDS,
   floorLayouts: COTW_FLOOR_LAYOUTS,
   floorSize: COTW_FLOOR_SIZE,
-  merchantPricing: {
-    faction: 'townsfolk',
-    tiers: [
-      { minStanding: 30, multiplier: 0.75 },
-      { minStanding: 20, multiplier: 0.9 },
-      { maxStanding: -20, multiplier: 1.3 },
-      { maxStanding: -10, multiplier: 1.15 },
-    ],
-  },
+  merchantPricing: COTW_MERCHANT_PRICING,
 };
 
 export const COTW_MANIFEST = cotwManifest;

@@ -1,4 +1,4 @@
-import type { ActionHook, FactionDefinition } from '../../engine';
+import type { ActionHook, FactionDefinition, MerchantPricingRules } from '../../engine';
 import { TOWN_BUILDINGS } from './townLayout';
 import { IRON_CLANS_MET_FLAG } from './ironClans';
 
@@ -10,6 +10,17 @@ export const TEMPLE_MET_FLAG = 'temple_met';
  * townsfolk from the start; the temple on the first visit to it, or once an altar
  * choice moves its standing; the Iron Clans through the Accord or their forge-keeper.
  */
+/** Townsfolk standing sets the shops' buy prices; the first matching tier wins. */
+export const COTW_MERCHANT_PRICING: MerchantPricingRules = {
+  faction: 'townsfolk',
+  tiers: [
+    { minStanding: 30, multiplier: 0.75 },
+    { minStanding: 20, multiplier: 0.9 },
+    { maxStanding: -20, multiplier: 1.3 },
+    { maxStanding: -10, multiplier: 1.15 },
+  ],
+};
+
 export const COTW_FACTIONS: FactionDefinition[] = [
   { id: 'townsfolk', name: 'Townsfolk', metAtStart: true },
   // One name over Thor's temple in town and the altars of Tyr and the other gods below.

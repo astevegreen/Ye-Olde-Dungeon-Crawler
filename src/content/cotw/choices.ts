@@ -334,7 +334,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              'WAYFARER’S RUNES: “Beyond the works, where the rock turns black as glass, fire and cold war continuously. Do not cast frost upon the magma hounds; strike them with blunt iron instead, or let the steam drown their fires.”',
+              'WAYFARER’S RUNES: “Beyond the works, where the rock turns black as glass, fire and cold war continuously. The sun-zealots shrug off flame but crack in the frost; the troll-wives laugh at the cold but burn. Carry both.”',
           },
         ],
       },

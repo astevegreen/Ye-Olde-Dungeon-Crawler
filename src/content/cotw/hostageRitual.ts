@@ -12,11 +12,13 @@ import {
   NPC,
   getCounter,
   getFlag,
+  getMerchantPriceMultiplier,
   incrementCounter,
   modifyFaction,
   setFlag,
 } from '../../engine';
 import { cotwMilestone } from './renown';
+import { COTW_MERCHANT_PRICING } from './factions';
 import { PROLOGUE_VILLAGERS, prologueVillagerTaken, type RaidVillagerId } from './prologue';
 
 /**
@@ -167,6 +169,14 @@ function seatRaidCaptives(engine: EngineContext): void {
   if (found) setFlag(engine.worldState, FLAG_CAPTIVES_SEATED, true);
 }
 
+/** What the town's shops charge now that standing has moved: "town prices: 15% dearer". */
+function townPricesNote(engine: EngineContext): string {
+  const multiplier = getMerchantPriceMultiplier(engine.worldState, COTW_MERCHANT_PRICING);
+  const percent = Math.round(Math.abs(1 - multiplier) * 100);
+  if (percent === 0) return 'town prices: unchanged';
+  return multiplier < 1 ? `town prices: ${percent}% off` : `town prices: ${percent}% dearer`;
+}
+
 function isCaptive(id: string): boolean {
   return HOSTAGE_VILLAGERS.some((v) => v.id === id);
 }
@@ -266,7 +276,7 @@ export function resolveHostageRitual(engine: EngineContext): void {
     modifyFaction(engine.worldState, 'temple_standing', 15);
     setFlag(engine.worldState, 'savior_of_jarnvidr', true);
     engine.log(
-      'SAVIOR OF JÁRNVIÐR! All four innocent captives were rescued alive. Bjarnarhaven praises your name! (+30 Townsfolk Standing, +15 Temple Standing, 25% Town Shop Discount)'
+      `SAVIOR OF JÁRNVIÐR! All four innocent captives were rescued alive. Bjarnarhaven praises your name! (+30 Townsfolk Standing, +15 Temple Standing; ${townPricesNote(engine)})`
     );
     awardMilestone(engine, cotwMilestone('captives_saved'));
   } else if (rescued === 3) {
@@ -277,7 +287,7 @@ export function resolveHostageRitual(engine: EngineContext): void {
     player.learnSpell('blood_reap');
     player.learnSpell('blood_tap');
     engine.log(
-      'Three captives escaped to safety. From the single fallen soul, you gleaned the dark rites of Blood Reap and Blood Tap. (+15 Townsfolk Standing)'
+      `Three captives escaped to safety. From the single fallen soul, you gleaned the dark rites of Blood Reap and Blood Tap. (+15 Townsfolk Standing, +5 Temple Standing; ${townPricesNote(engine)})`
     );
   } else if (rescued === 2) {
     // Tier 3: The Halfway Path (2 Rescued, 2 Sacrificed) — no faction change.
@@ -286,7 +296,7 @@ export function resolveHostageRitual(engine: EngineContext): void {
     player.learnSpell('blood_tap');
     player.learnSpell('crimson_ward');
     engine.log(
-      'A bitter compromise. Two souls escaped, and two fed the dark altar. You unlock Blood Reap, Blood Tap and Crimson Ward with negligible consequence from town.'
+      `A bitter compromise. Two souls escaped, and two fed the dark altar. You unlock Blood Reap, Blood Tap and Crimson Ward with no change in the town's regard. (${townPricesNote(engine)})`
     );
   } else if (rescued === 1) {
     // Tier 4: Dark Leaning (1 Rescued, 3 Sacrificed)
@@ -298,7 +308,7 @@ export function resolveHostageRitual(engine: EngineContext): void {
     player.learnSpell('crimson_ward');
     player.learnSpell('blood_spear');
     engine.log(
-      'A grim harvest. Three innocents perished. You unlock Blood Reap, Blood Tap, Crimson Ward, and Blood Spear. Word of your cold apathy spreads to town. (-15 Townsfolk Standing, -10 Temple Standing, 15% Price Markup)'
+      `A grim harvest. Three innocents perished. You unlock Blood Reap, Blood Tap, Crimson Ward, and Blood Spear. Word of your cold apathy spreads to town. (-15 Townsfolk Standing, -10 Temple Standing; ${townPricesNote(engine)})`
     );
   } else {
     // Tier 5: Complete Dark Harvest (0 Rescued, 4 Sacrificed)
@@ -312,7 +322,7 @@ export function resolveHostageRitual(engine: EngineContext): void {
     player.learnSpell('blood_spear');
     player.learnSpell('exsanguinate');
     engine.log(
-      'THE BLOOD SIPHON IS COMPLETE! All captives were sacrificed, awakening the full Grimoire of Blood Magic in your soul! Bjarnarhaven recoils in horror. (-30 Townsfolk Standing, -25 Temple Standing, 30% Price Markup)'
+      `THE BLOOD SIPHON IS COMPLETE! All captives were sacrificed, awakening the full Grimoire of Blood Magic in your soul! Bjarnarhaven recoils in horror. (-30 Townsfolk Standing, -25 Temple Standing; ${townPricesNote(engine)})`
     );
   }
 }

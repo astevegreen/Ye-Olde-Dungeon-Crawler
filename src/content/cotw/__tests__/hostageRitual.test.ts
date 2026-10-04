@@ -80,6 +80,18 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
       expect(engine.getWorldFlag('siphon_ritual_resolved')).toBe(false);
     });
 
+    it('states the town prices the outcome really leaves, not a fixed markup', () => {
+      settle(1); // townsfolk 0 → -15
+      expect(engine.messages.some((m) => m.includes('town prices: 15% dearer'))).toBe(true);
+    });
+
+    it('says prices are unchanged when the raid’s goodwill absorbs the loss', () => {
+      engine.worldState.factions.townsfolk = 22; // three villagers freed in the raid
+      settle(1); // → 7
+      expect(engine.messages.some((m) => m.includes('town prices: unchanged'))).toBe(true);
+      expect(engine.messages.some((m) => m.includes('Markup'))).toBe(false);
+    });
+
     it('ignores a captive already accounted for', () => {
       expect(rescueCaptiveVillager(engine, HOSTAGE_VILLAGERS[0].id)).toBe(true);
       expect(sacrificeCaptiveVillager(engine, HOSTAGE_VILLAGERS[0].id)).toBe(false);

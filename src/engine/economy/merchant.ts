@@ -45,18 +45,24 @@ export function getItemBuyPrice(item: Item, worldState?: WorldState, pricing?: M
   }
 
   if (worldState && pricing) {
-    const standing = getFaction(worldState, pricing.faction);
-    const tier = pricing.tiers.find(
-      (t) =>
-        (t.minStanding === undefined || standing >= t.minStanding) &&
-        (t.maxStanding === undefined || standing <= t.maxStanding)
-    );
-    if (tier) {
-      return Math.max(1, Math.floor(basePrice * tier.multiplier));
+    const multiplier = getMerchantPriceMultiplier(worldState, pricing);
+    if (multiplier !== 1) {
+      return Math.max(1, Math.floor(basePrice * multiplier));
     }
   }
 
   return basePrice;
+}
+
+/** The buy-price multiplier the faction's standing earns now: the first matching tier, else 1. */
+export function getMerchantPriceMultiplier(worldState: WorldState, pricing: MerchantPricingRules): number {
+  const standing = getFaction(worldState, pricing.faction);
+  const tier = pricing.tiers.find(
+    (t) =>
+      (t.minStanding === undefined || standing >= t.minStanding) &&
+      (t.maxStanding === undefined || standing <= t.maxStanding)
+  );
+  return tier?.multiplier ?? 1;
 }
 
 /** True if the item carries a beneficial identity: blessed, artifact-tier, or enchanted/elemental. */

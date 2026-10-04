@@ -169,7 +169,12 @@ export class ItemInspector {
     const isCursed = isIdentified && item.isCursed();
 
     const compatibleSlots: string[] = [];
-    if (doll) {
+    // An item that names its slot goes there and nowhere else (Paperdoll.canEquip);
+    // only one that doesn't fits any slot taking its category.
+    const ownSlot = item.slot && doll ? doll.getSlotDefinition(item.slot) : undefined;
+    if (ownSlot) {
+      compatibleSlots.push(ownSlot.name);
+    } else if (doll) {
       for (const slotDef of doll.getSlotDefinitions()) {
         if (slotDef.acceptedCategories.includes(item.category)) {
           compatibleSlots.push(slotDef.name);

@@ -262,6 +262,31 @@ describe('ShopDialog', () => {
       expect(shop.activeTab).toBe('buy');
     });
 
+    it("shows a ware's stats, its slot and how it compares with what is worn (N20)", () => {
+      const worn = new Item({ id: 'old-sword', name: 'Old Sword', category: 'weapon', slot: 'mainHand', weight: 1500, bulk: 900, identified: true, stats: { attackBonus: 2 } });
+      engine.player.inventory.paperdoll.equip(worn);
+      const sword = new Item({ id: 'sword', name: 'Fine Sword', category: 'weapon', slot: 'mainHand', weight: 1600, bulk: 900, identified: true, value: 90, stats: { attackBonus: 5 }, description: 'A fine blade.' });
+      const shop = new ShopDialog();
+      shop.open(npc('merchant'), new Merchant('arm', 'Smith', 'Armory', 'armory', 'Hi', [sword]), engine);
+      const markup = html();
+      expect(markup).toContain('<dt>Attack</dt><dd class="ui-num">+5</dd>');
+      expect(markup).toMatch(/Goes on: Main Hand</i);
+      expect(markup).toContain('Against your');
+      expect(markup).toContain('Old Sword');
+      expect(markup).toMatch(/<dt>Attack<\/dt><dd class="ui-num ui-up">\+3<\/dd>/);
+      expect(markup).toContain('A fine blade.');
+    });
+
+    it("keeps an unidentified ware's description and stats to itself (N20)", () => {
+      const blade = new Item({ id: 'blade', name: 'Cursed Cleaver', unidentifiedName: 'Heavy Blade', category: 'weapon', slot: 'mainHand', weight: 1600, bulk: 900, identified: false, value: 90, stats: { attackBonus: 7 }, description: 'Its cursed rot inhibits natural healing.' });
+      const shop = new ShopDialog();
+      shop.open(npc('merchant'), new Merchant('arm', 'Smith', 'Armory', 'armory', 'Hi', [blade]), engine);
+      const markup = html();
+      expect(markup).not.toContain('cursed rot');
+      expect(markup).not.toContain('+7');
+      expect(markup).toContain('unidentified');
+    });
+
     it('shows one price format, the whole greeting, and no internal role label', () => {
       const greeting =
         'Stock up on torches and rations, traveler. The depths do not forgive the unprepared, and neither do I.';

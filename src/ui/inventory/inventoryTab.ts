@@ -4,6 +4,7 @@ import type { MenuFooter, MenuHost, MenuTab } from '../characterMenu/menuTab';
 import { escapeHtml, keyChip } from '../html';
 import { formatLoad, formatWeight } from '../units';
 import { itemToneClass } from './itemTone';
+import { itemDetailHtml } from './itemDetail';
 import {
   BACKPACK_FILTERS,
   type BackpackFilter,
@@ -364,59 +365,13 @@ export class InventoryTab implements MenuTab {
 
   private itemDetailHtml(engine: GameEngine, item: Item): string {
     const ins = this.controller.inspector;
-    const b = ins.getItemBreakdown(item, ins.selectedSource, ins.selectedSlot, engine.player.inventory.paperdoll);
-    const kind = [b.tier ? `Tier ${b.tier}` : '', b.category].filter(Boolean).join(' ');
-    const stats: Array<[string, number | undefined]> = [
-      ['Attack', b.stats.attackBonus],
-      ['Defense', b.stats.defenseBonus],
-      ['Strength', b.stats.strengthBonus],
-      ['Speed', b.stats.speedBonus],
-    ];
-    const statRows = stats
-      .filter(([, v]) => v)
-      .map(([k, v]) => `<dt>${k}</dt><dd class="ui-num">${signed(v!)}</dd>`)
-      .join('');
-    const affix = b.elementalAffix
-      ? `<dt>${escapeHtml(b.elementalAffix.name)}</dt><dd class="ui-num">+${b.elementalAffix.bonusDamage} ${escapeHtml(b.elementalAffix.element)}</dd>`
-      : '';
-
-    let compare = '';
-    if (ins.selectedSource !== 'paperdoll') {
-      const cmp = ins.getEquipmentComparison(item, engine.player);
-      if (cmp) {
-        const row = (label: string, delta: number, upIsGood = true, fmt: (n: number) => string = signed) =>
-          delta === 0 ? '' : `<dt>${label}</dt><dd class="ui-num ${(delta > 0) === upIsGood ? 'ui-up' : 'ui-down'}">${fmt(delta)}</dd>`;
-        const rows =
-          row('Attack', cmp.attackDelta) +
-          row('Defense', cmp.defenseDelta) +
-          row('Speed', cmp.speedDelta) +
-          row('Strength', cmp.strengthDelta) +
-          row('Weight', cmp.weightDelta, false, (n) => `${n > 0 ? '+' : '−'}${formatWeight(Math.abs(n))}`);
-        compare = `
-          <div class="inv-compare">
-            <div class="ui-note">Against your ${escapeHtml(cmp.slotName.toLowerCase())}: <span class="${itemToneClass(cmp.equippedItem).trim()}">${escapeHtml(cmp.equippedItem.displayName)}</span></div>
-            ${rows ? `<dl class="ui-kv">${rows}</dl>` : '<div class="ui-note">No difference.</div>'}
-          </div>`;
-      }
-    }
-
-    return `
-      <div class="inv-detail-head">
-        <canvas class="inv-icon inv-detail-icon" width="48" height="48" data-icon="detail" aria-hidden="true"></canvas>
-        <div>
-          <div class="inv-detail-name${itemToneClass(item)}">${escapeHtml(b.displayName)}</div>
-          <div class="ui-note">${escapeHtml(kind)}${b.isCursed ? ' · <span class="ui-down">cursed</span>' : ''}${b.identified ? '' : ' · unidentified'}</div>
-        </div>
-      </div>
-      ${b.slotCompatibility.length > 0 ? `<div class="ui-note">Goes on: ${escapeHtml(b.slotCompatibility.join(', '))}</div>` : ''}
-      ${statRows || affix ? `<dl class="ui-kv">${statRows}${affix}</dl>` : ''}
-      <dl class="ui-kv">
-        <dt>Weight</dt><dd class="ui-num">${escapeHtml(formatWeight(b.weight))}</dd>
-        <dt>Space</dt><dd class="ui-num">${b.bulk} cm³</dd>
-        ${b.value > 0 ? `<dt>Value${b.identified ? '' : ' (guess)'}</dt><dd class="ui-num inv-value">${escapeHtml(formatCurrency(b.value))}</dd>` : ''}
-      </dl>
-      ${compare}
-      <div class="inv-desc">${escapeHtml(b.description)}</div>`;
+    return itemDetailHtml(engine, item, ins, {
+      source: ins.selectedSource,
+      slotId: ins.selectedSlot,
+      iconHtml: '<canvas class="inv-icon inv-detail-icon" width="48" height="48" data-icon="detail" aria-hidden="true"></canvas>',
+      compare: ins.selectedSource !== 'paperdoll',
+      showValue: true,
+    });
   }
 
   private menuHtml(): string {

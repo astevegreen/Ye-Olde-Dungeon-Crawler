@@ -14,6 +14,8 @@ import { createDialogScrim, dialogButton, dialogHtml } from '../dialog';
 import { escapeHtml, keyChip } from '../html';
 import { formatLoad, formatWeight } from '../units';
 import { itemToneClass } from '../inventory/itemTone';
+import { itemDetailHtml } from '../inventory/itemDetail';
+import { ItemInspector } from '../inventory/itemInspector';
 import {
   type ServicePanel,
   type ShopAction,
@@ -65,6 +67,8 @@ export class ShopDialog {
   private engine?: GameEngine;
   private readonly options: ShopDialogOptions;
   private scrim: HTMLElement | null = null;
+  /** Reads items the way the inventory does, for the detail panel. */
+  private readonly inspector = new ItemInspector();
 
   constructor(options: ShopDialogOptions = {}) {
     this.options = options;
@@ -439,19 +443,17 @@ export class ShopDialog {
     if (!item) return '<div class="ui-card shop-detail"><div class="ui-note">Choose an item to see it here.</div></div>';
     const price = formatCurrency(this.priceOf(item, engine));
     const verb = this.activeTab === 'buy' ? 'Buy' : 'Sell';
+    // The inventory's own item panel (N20): stats, slot, comparison, and an unidentified
+    // item's description kept hidden.
     return `
       <div class="ui-card shop-detail">
-        <div class="shop-detail-head">
-          <canvas class="shop-detail-icon" width="48" height="48" data-detail aria-hidden="true"></canvas>
-          <div>
-            <div class="shop-detail-name${itemToneClass(item)}">${escapeHtml(item.displayName)}</div>
-            <div class="ui-note">${escapeHtml(item.category)}</div>
-          </div>
-        </div>
-        ${item.description ? `<div class="shop-detail-desc">${escapeHtml(item.description)}</div>` : ''}
+        ${itemDetailHtml(engine, item, this.inspector, {
+          source: this.activeTab === 'buy' ? 'ground' : 'backpack',
+          iconHtml: '<canvas class="shop-detail-icon" width="48" height="48" data-detail aria-hidden="true"></canvas>',
+          compare: true,
+          showValue: false,
+        })}
         <dl class="ui-kv">
-          <dt>Weight</dt><dd class="ui-num">${escapeHtml(formatWeight(item.weight))}</dd>
-          <dt>Bulk</dt><dd class="ui-num">${item.bulk} cm³</dd>
           <dt>${this.activeTab === 'buy' ? 'Price' : 'They pay'}</dt><dd class="ui-num shop-price">${escapeHtml(price)}</dd>
         </dl>
         ${dialogButton('shop-trade', `${verb} for ${price}`, { primary: true, key: 'Enter', attrs: 'data-act="trade"' })}

@@ -42,10 +42,7 @@
 .shop-row-key .ui-key { min-width: 16px; }
 
 .shop-detail { display: flex; flex-direction: column; gap: var(--ui-space-3); }
-.shop-detail-head { display: flex; gap: var(--ui-space-3); align-items: center; }
 .shop-detail-icon { width: 48px; height: 48px; flex: none; background: var(--ui-surface-3); border: 1px solid var(--ui-line); border-radius: var(--ui-radius); }
-.shop-detail-name { font: bold var(--ui-text-lg) var(--ui-font-display); color: var(--ui-title); }
-.shop-detail-desc { font-size: var(--ui-text-sm); color: var(--ui-text-soft); user-select: text; }
 .shop-detail .ui-btn { justify-content: center; margin-top: auto; }
 
 /* Town services: one card of facts and offers. */

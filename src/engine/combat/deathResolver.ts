@@ -255,14 +255,24 @@ export function awardPlayerXp(engine: GameEngine, xp: number): void {
   const levelUpRes = engine.player.gainXp(xp, engine.manifest?.progressionConfig);
   if (levelUpRes.leveledUp) {
     engine.log(`*** LEVEL UP! Welcome to Level ${levelUpRes.newLevel}! ***`);
-    const g = levelUpRes.statGains;
-    if (g) {
-      engine.log(
-        `Vitality surge: +${g.maxHp ?? 5} Max HP, +${g.maxMana ?? 4} Max ${resolveManaTerms(engine.manifest).name}${g.strength ? `, +${g.strength} Strength` : ''}, +${g.baseAttack ?? 1} Attack, +${g.baseDefense ?? 1} Defense!`
-      );
-    } else {
-      engine.log(`Vitality surge: +5 Max HP, +4 Max ${resolveManaTerms(engine.manifest).name}, +1 Attack, +1 Defense!`);
-    }
+    const mana = resolveManaTerms(engine.manifest).name;
+    const g = levelUpRes.statGains ?? { maxHp: 5, maxMana: 4, baseAttack: 1, baseDefense: 1 };
+    // Only what the pack's level actually gives: no "+0 Attack".
+    const gains = [
+      g.maxHp ? `+${g.maxHp} Max HP` : '',
+      g.maxMana ? `+${g.maxMana} Max ${mana}` : '',
+      g.strength ? `+${g.strength} Strength` : '',
+      g.dexterity ? `+${g.dexterity} Dexterity` : '',
+      g.constitution ? `+${g.constitution} Constitution` : '',
+      g.intelligence ? `+${g.intelligence} Intelligence` : '',
+      g.baseAttack ? `+${g.baseAttack} Attack` : '',
+      g.baseDefense ? `+${g.baseDefense} Defense` : '',
+    ].filter(Boolean);
+    const restored = [
+      levelUpRes.healed ? `${levelUpRes.healed} HP` : '',
+      levelUpRes.manaRestored ? `${levelUpRes.manaRestored} ${mana}` : '',
+    ].filter(Boolean);
+    engine.log(`Vitality surge: ${gains.join(', ')}${restored.length ? `; you recover ${restored.join(' and ')}` : ''}!`);
     if (levelUpRes.statPointsAwarded && levelUpRes.statPointsAwarded > 0) {
       engine.log(`You have gained ${levelUpRes.statPointsAwarded} attribute point${levelUpRes.statPointsAwarded > 1 ? 's' : ''}! (${engine.player.unspentStatPoints} total unspent)`);
     }

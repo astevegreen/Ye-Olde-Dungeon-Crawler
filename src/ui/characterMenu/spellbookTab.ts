@@ -253,7 +253,7 @@ export class SpellbookTab implements MenuTab {
           <dt>Cost</dt><dd class="ui-num">${changed(spell.manaCost ?? 0, cast.manaCost ?? 0)} ${escapeHtml(unit)}</dd>
           <dt>Element</dt><dd>${escapeHtml(spell.element ?? 'arcane')}</dd>
           <dt>Range</dt><dd class="ui-num">${cast.range ? `${changed(spell.range, cast.range)} tiles` : 'self or touch'}</dd>
-          <dt>Power</dt><dd class="ui-num">${changed(spellPower(spell), spellPower(cast))}</dd>
+          <dt>Power</dt><dd class="ui-num">${changed(spellPower(spell), spellPower(cast, { engine, player }))}</dd>
           <dt>Area</dt><dd class="ui-num">${cast.areaOfEffect ? `${changed(spell.areaOfEffect, cast.areaOfEffect)} radius` : 'one target'}</dd>
           <dt>Bounces off walls</dt><dd>${spell.reflects ? 'yes' : 'no'}</dd>
         </dl>
@@ -400,7 +400,7 @@ export class SpellbookTab implements MenuTab {
     const spellId = player.grimoire[i]?.spellId;
     const effective = spellId ? GrimoireMatrixManager.resolveEffectiveSpellDetailed(engine, player, i) : undefined;
     if (effective) {
-      const power = spellPower(effective.spell);
+      const power = spellPower(effective.spell, { engine, player });
       lines.push(
         `${escapeHtml(effective.spell.name)} cast from here: ${effective.spell.manaCost} ${escapeHtml(unit)}${power ? `, power ${power}` : ''}${
           effective.notes.length ? ` (${effective.notes.map(escapeHtml).join('; ')})` : ''

@@ -1,4 +1,5 @@
 import type { ActionResult, Position, VisualEffectDescriptor } from '../types';
+import { attributeScalingOf, spellPowerMultiplier } from '../combat/attributeScaling';
 import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
 import { Player } from '../entities/player';
@@ -472,8 +473,9 @@ export class SpellPipeline {
     let rawDamage = parseAndRollDice(effect.amount, engine.rng);
     if (rawDamage <= 0) return;
 
-    // Apply Enchanted spellDamageMultiplier from caster's equipped items
-    let spellMultiplier = 1.0;
+    // The caster's Intelligence (the pack's attribute scaling) and the Enchanted
+    // spellDamageMultiplier of what it wears.
+    let spellMultiplier = spellPowerMultiplier(caster, attributeScalingOf(engine.manifest));
     if (caster.inventory) {
       for (const item of caster.inventory.paperdoll.getEquippedItems()) {
         for (const mod of item.modifiers) {
@@ -573,6 +575,8 @@ export class SpellPipeline {
   ): void {
     if (!target.isAlive()) return;
     let amount = parseAndRollDice(effect.amount, engine.rng);
+    const intelligence = spellPowerMultiplier(_caster, attributeScalingOf(engine.manifest));
+    if (intelligence !== 1.0) amount = Math.max(1, Math.round(amount * intelligence));
     if (target instanceof Actor) {
       const eff = EnergyModel.calculateHealingEfficiency(target);
       if (eff < 1.0) {
@@ -693,9 +697,8 @@ export class SpellPipeline {
 
     const visitedIds = new Set<string>([caster.id, ...initialTargets.map((t) => t.id)]);
     let current = initialTargets[0];
-    const baseDamage = damageContext
-      ? parseAndRollDice(damageContext.amount, engine.rng)
-      : (spell.basePower || 16);
+    const rolled = damageContext ? parseAndRollDice(damageContext.amount, engine.rng) : (spell.basePower || 16);
+    const baseDamage = Math.max(1, Math.round(rolled * spellPowerMultiplier(caster, attributeScalingOf(engine.manifest))));
     const element = damageContext?.element || spell.element || 'lightning';
 
     for (let hop = 1; hop <= effect.maxHops; hop++) {

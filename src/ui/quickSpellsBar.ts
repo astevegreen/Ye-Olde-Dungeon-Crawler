@@ -146,7 +146,7 @@ export class QuickSpellsBar {
       // What the cast costs and does from its grimoire slot, not the base spell.
       const cast = GrimoireMatrixManager.resolveCast(engine, player, spell.id);
       const manaCost = cast?.spell.manaCost ?? spell.manaCost ?? 0;
-      const power = spellPower(cast?.spell ?? spell);
+      const power = spellPower(cast?.spell ?? spell, { engine, player });
       const grid = cast && cast.notes.length > 0 ? ` From the grid: ${cast.notes.join('; ')}.` : '';
       const hasMana = player.mana >= manaCost;
       slotEl.hidden = false;

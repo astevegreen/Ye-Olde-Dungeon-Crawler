@@ -17,6 +17,7 @@ import { burnOnSacredGround } from '../combat/sacredGround';
 import type { Item } from '../items/item';
 import type { ItemModifier } from '../items/modifiers';
 import { sumWorn } from '../items/wornModifiers';
+import { attributeScalingOf, dexterityEvasion, meleeHitPercent, strengthMeleeBonus } from '../combat/attributeScaling';
 
 function getActorEquippedItems(actor: Entity): Item[] {
   // Every Actor owns an inventory (a default one if none was configured); plain
@@ -39,6 +40,20 @@ export class MeleeAttackAction implements Action {
     this.followUp = options?.followUp ?? false;
   }
 
+  /** A blow that did not land: the turn is spent, logged, and a Twinstrike bearer bleeds for it. */
+  private missed(engine: GameEngine, message: string): ActionResult {
+    const cost = this.followUp ? 0 : this.attacker.getActionCost(BASE_ACTION_COST);
+    this.attacker.consumeEnergy(cost);
+    engine.log(message);
+    const missCost = sumWorn(this.attacker, 'missSelfDamage');
+    if (missCost > 0) {
+      const { damageDealt, killed } = this.attacker.takeDamage(missCost);
+      engine.log(`${this.attacker.name} overreaches and takes ${damageDealt} for the miss!`);
+      if (killed) DeathResolver.resolveDeath(engine, undefined, this.attacker);
+    }
+    return { success: true, cost, message };
+  }
+
   public perform(engine: GameEngine): ActionResult {
     if (!this.attacker.isAlive()) {
       return {
@@ -56,29 +71,28 @@ export class MeleeAttackAction implements Action {
       };
     }
 
-    // Evasion: the Survivor perk (+10% for the player against a mastered species) and what the
-    // defender wears (Trickster's Step). A miss costs the attacker what it wears (Twinstrike).
+    // The attacker's hit roll (the pack's base chance, moved by Dexterity; 100 means no roll),
+    // then the defender's evasion: its Dexterity, the Survivor perk (+10% for the player against a
+    // mastered species) and what it wears (Trickster's Step). Either way the blow is spent and
+    // costs the attacker what it wears (Twinstrike).
+    const scaling = attributeScalingOf(engine.manifest);
+    const hitPercent = meleeHitPercent(this.attacker, scaling);
+    if (hitPercent < 100 && engine.rng() * 100 >= hitPercent) {
+      return this.missed(engine, `${this.attacker.name} misses ${this.defender.name}.`);
+    }
     const wornEvasion = sumWorn(this.defender, 'evasionBonus');
     const perkEvasion =
       this.attacker instanceof Monster && this.defender instanceof Player && engine.compendium
         ? engine.compendium.getMasteryEvasionBonus(this.attacker.definitionId, getMonsterCategory(engine, this.attacker.definitionId)?.id)
         : 0;
-    const evasion = wornEvasion + perkEvasion;
+    const evasion = wornEvasion + perkEvasion + dexterityEvasion(this.defender, scaling);
     if (evasion > 0 && engine.rng() < evasion) {
-      const cost = this.followUp ? 0 : this.attacker.getActionCost(BASE_ACTION_COST);
-      this.attacker.consumeEnergy(cost);
-      const evadeMsg =
+      return this.missed(
+        engine,
         perkEvasion > 0
           ? `${this.defender.name} anticipates ${this.attacker.name}'s attack and evades cleanly! (Survivor Perk)`
-          : `${this.defender.name} evades ${this.attacker.name}'s attack!`;
-      engine.log(evadeMsg);
-      const missCost = sumWorn(this.attacker, 'missSelfDamage');
-      if (missCost > 0) {
-        const { damageDealt, killed } = this.attacker.takeDamage(missCost);
-        engine.log(`${this.attacker.name} overreaches and takes ${damageDealt} for the miss!`);
-        if (killed) DeathResolver.resolveDeath(engine, undefined, this.attacker);
-      }
-      return { success: true, cost, message: evadeMsg };
+          : `${this.defender.name} evades ${this.attacker.name}'s attack!`
+      );
     }
 
     // Slayer's Compendium Offensive Mastery (Anatomist: ignore 50% defense, +25% crit dmg)
@@ -100,7 +114,8 @@ export class MeleeAttackAction implements Action {
       const effectiveDefense = isAnatomist
         ? Math.floor(this.defender.defense * 0.5)
         : this.defender.defense;
-      let base = Math.max(minDmg, this.attacker.attack - effectiveDefense);
+      // Strength adds to the blow before the foe's defense is taken off (tracker 3.2).
+      let base = Math.max(minDmg, this.attacker.attack + strengthMeleeBonus(this.attacker, scaling) - effectiveDefense);
 
       // Critical strike calculation
       if (combatConfig?.critChance && engine.rng() < combatConfig.critChance) {

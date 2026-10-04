@@ -15,7 +15,7 @@ import type { VaultBlueprint } from '../dungeon/vaultStamp';
 import type { StatusHandler } from '../status/statusHandlers';
 import type { ActionHook } from '../actions/actionPipeline';
 import type { AiBehaviorStrategy } from '../ai/aiBehaviorRegistry';
-import type { CombatConfig, ProgressionConfig, LevelUpBonus } from './config';
+import type { CombatConfig, ProgressionConfig, LevelUpBonus, AttributeScalingConfig, LevelUpHealConfig } from './config';
 import type { WorldState } from '../state/worldState';
 import type { Predicate } from '../predicates/types';
 import type { ChoiceDefinition, ChoiceOption, ChoiceConsequence } from './choice';
@@ -1102,6 +1102,8 @@ export interface RuneOfReturnManifestConfig {
 export type {
   CombatConfig,
   ProgressionConfig,
+  AttributeScalingConfig,
+  LevelUpHealConfig,
   LevelUpBonus,
   EquipmentSlotDefinition,
   EquipmentSlotLayout,

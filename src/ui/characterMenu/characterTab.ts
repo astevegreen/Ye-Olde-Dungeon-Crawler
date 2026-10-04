@@ -1,22 +1,28 @@
 import type { GameState } from './gameState';
 import type { MenuFooter, MenuHost, MenuTab } from './menuTab';
-import type { AttributeMilestoneTrigger, ChoiceDefinition, Player } from '../../engine';
+import type { AttributeMilestoneTrigger, AttributeScalingConfig, ChoiceDefinition, Player, ProgressionConfig } from '../../engine';
 import {
   HP_PER_CONSTITUTION,
   MANA_PER_INTELLIGENCE,
   RUNE_TOTAL_POINTS_CAP,
   RUNE_TRACK_MAX,
+  attributeScalingOf,
   computeChannelTime,
   computeDepthBonus,
+  dexterityEvasion,
   findRuneOfReturn,
   formatCurrency,
   getBankingRetentionPct,
   getMaxCarryWeight,
   getPlayerTotalCp,
   getTotalRuneMasteryPoints,
+  levelUpHealShare,
+  meleeHitPercent,
   rangedDexterityBonus,
   resolveManaTerms,
+  spellPowerMultiplier,
   statusDisplayName,
+  strengthMeleeBonus,
   type ManaTerms,
   type RuneOfReturnTrack,
 } from '../../engine';
@@ -32,16 +38,27 @@ import { isAmbientDuration } from '../sidebar/sidebarModel';
 import { escapeHtml, keyChip } from '../html';
 import { formatKg } from '../units';
 
+/** The pack's rules the previews read: what attributes do in combat, and what a level heals. */
+interface AttributeRules {
+  scaling: AttributeScalingConfig;
+  progression: ProgressionConfig | undefined;
+}
+
 interface AttributeMeta {
   key: AttributeKey;
   label: string;
   letter: string;
   code: string;
   /** {mana} is filled from the pack's terms where the text is shown. */
-  description: string;
+  description: (rules: AttributeRules) => string;
   /** What the attribute does at `value`, against `value - planned` when points are planned. */
-  preview: (player: Player, value: number, planned: number, mana: ManaTerms) => string;
+  preview: (player: Player, value: number, planned: number, mana: ManaTerms, rules: AttributeRules) => string;
 }
+
+/** A stand-in actor at one attribute value, for the engine's own formulas. */
+const at = (player: Player, key: AttributeKey, value: number): Player => Object.assign(Object.create(Object.getPrototypeOf(player)), player, { [key]: value });
+const pct = (fraction: number): string => `${Math.round(fraction * 100)}%`;
+const signedPct = (fraction: number): string => `${fraction >= 0 ? '+' : ''}${Math.round(fraction * 100)}%`;
 
 const up = (text: string | number): string => `<span class="ui-up">${text}</span>`;
 const fromTo = (from: string | number, to: string | number, unit = ''): string =>
@@ -55,19 +72,40 @@ const ATTRIBUTES: AttributeMeta[] = [
     label: 'Strength',
     letter: 'S',
     code: 'KeyS',
-    description: 'How much you can carry, and how hard a knock-back slams foes into walls.',
-    preview: (_p, v, n) => `Carry ${fromTo(formatKg(getMaxCarryWeight(v - n)), formatKg(getMaxCarryWeight(v)), ' kg')}`,
+    description: ({ scaling }) =>
+      scaling.meleeDamagePerStrength
+        ? `Melee damage, ${scaling.meleeDamagePerStrength} per point above ${scaling.baseline ?? 10}; how much you can carry; how hard a knock-back slams foes into walls.`
+        : 'How much you can carry, and how hard a knock-back slams foes into walls.',
+    preview: (p, v, n, _mana, { scaling }) => {
+      const parts = [];
+      if (scaling.meleeDamagePerStrength) {
+        parts.push(`Melee damage ${fromTo(signed(strengthMeleeBonus(at(p, 'strength', v - n), scaling)), signed(strengthMeleeBonus(at(p, 'strength', v), scaling)))}`);
+      }
+      parts.push(`Carry ${fromTo(formatKg(getMaxCarryWeight(v - n)), formatKg(getMaxCarryWeight(v)), ' kg')}`);
+      return parts.join(' · ');
+    },
   },
   {
     key: 'dexterity',
     label: 'Dexterity',
     letter: 'D',
     code: 'KeyD',
-    description: 'Ranged hit chance and damage, picking locks, and spotting traps.',
-    preview: (_p, v, n) => {
+    description: ({ scaling }) =>
+      scaling.meleeHitPercentPerDexterity || scaling.evasionPerDexterity
+        ? `Hitting in melee and at range, and evading blows (per point above ${scaling.baseline ?? 10}: ${scaling.meleeHitPercentPerDexterity ?? 0}% to hit, ${Math.round((scaling.evasionPerDexterity ?? 0) * 100)}% evasion); picking locks and spotting traps.`
+        : 'Ranged hit chance and damage, picking locks, and spotting traps.',
+    preview: (p, v, n, _mana, { scaling }) => {
+      const parts = [];
+      if (scaling.meleeHitPercentPerDexterity) {
+        parts.push(`Melee hit ${fromTo(meleeHitPercent(at(p, 'dexterity', v - n), scaling), meleeHitPercent(at(p, 'dexterity', v), scaling), '%')}`);
+      }
+      if (scaling.evasionPerDexterity) {
+        parts.push(`evasion ${fromTo(pct(dexterityEvasion(at(p, 'dexterity', v - n), scaling)), pct(dexterityEvasion(at(p, 'dexterity', v), scaling)))}`);
+      }
       const before = rangedDexterityBonus(v - n);
       const after = rangedDexterityBonus(v);
-      return `Ranged hit ${fromTo(signed(before.hitPct), signed(after.hitPct), '%')} · damage ${fromTo(signed(before.damage), signed(after.damage))}`;
+      parts.push(`ranged hit ${fromTo(signed(before.hitPct), signed(after.hitPct), '%')}`);
+      return parts.join(' · ');
     },
   },
   {
@@ -75,16 +113,35 @@ const ATTRIBUTES: AttributeMeta[] = [
     label: 'Constitution',
     letter: 'C',
     code: 'KeyC',
-    description: `Maximum health, ${HP_PER_CONSTITUTION} per point.`,
-    preview: (p, _v, n) => `Health ${fromTo(p.maxHp, p.maxHp + n * HP_PER_CONSTITUTION)}`,
+    description: ({ progression }) =>
+      progression?.levelUpHeal
+        ? `Maximum health, ${HP_PER_CONSTITUTION} per point, and how much of it a level-up restores.`
+        : `Maximum health, ${HP_PER_CONSTITUTION} per point.`,
+    preview: (p, v, n, _mana, { progression }) => {
+      const parts = [`Health ${fromTo(p.maxHp, p.maxHp + n * HP_PER_CONSTITUTION)}`];
+      if (progression?.levelUpHeal) {
+        parts.push(`level-up heal ${fromTo(pct(levelUpHealShare(progression, v - n)), pct(levelUpHealShare(progression, v)))}`);
+      }
+      return parts.join(' · ');
+    },
   },
   {
     key: 'intelligence',
     label: 'Intelligence',
     letter: 'I',
     code: 'KeyI',
-    description: `Maximum {mana}, ${MANA_PER_INTELLIGENCE} per point, and spotting traps and secret doors.`,
-    preview: (p, _v, n, mana) => `${mana.name} ${fromTo(p.maxMana, p.maxMana + n * MANA_PER_INTELLIGENCE)}`,
+    description: ({ scaling }) =>
+      scaling.spellPowerPerIntelligence
+        ? `Spell power, ${Math.round(scaling.spellPowerPerIntelligence * 100)}% per point above ${scaling.baseline ?? 10}; maximum {mana}, ${MANA_PER_INTELLIGENCE} per point; spotting traps and secret doors.`
+        : `Maximum {mana}, ${MANA_PER_INTELLIGENCE} per point, and spotting traps and secret doors.`,
+    preview: (p, v, n, mana, { scaling }) => {
+      const parts = [];
+      if (scaling.spellPowerPerIntelligence) {
+        parts.push(`Spell power ${fromTo(signedPct(spellPowerMultiplier(at(p, 'intelligence', v - n), scaling) - 1), signedPct(spellPowerMultiplier(at(p, 'intelligence', v), scaling) - 1))}`);
+      }
+      parts.push(`${mana.name} ${fromTo(p.maxMana, p.maxMana + n * MANA_PER_INTELLIGENCE)}`);
+      return parts.join(' · ');
+    },
   },
 ];
 
@@ -384,6 +441,7 @@ export class CharacterTab implements MenuTab {
         : `<div class="ch-points is-empty"><b class="ui-num">0</b><div><div class="ch-points-title">points to spend</div>
              <div class="ui-note">You earn more each time you level up.</div></div></div>`;
 
+    const rules = this.rules();
     const rows = ATTRIBUTES.map((meta) => {
       const n = this.draft.get(meta.key);
       const value = player[meta.key] + n;
@@ -392,8 +450,8 @@ export class CharacterTab implements MenuTab {
           <span class="ch-attr-key">${meta.letter}</span>
           <div class="ch-attr-main">
             <div><span class="ch-attr-name">${meta.label}</span> <span class="ch-attr-val ui-num">${player[meta.key]}</span>${n > 0 ? ` ${up(`+${n}`)}` : ''}</div>
-            <div class="ui-note">${escapeHtml(fillManaTerms(meta.description, mana))}</div>
-            <div class="ch-attr-prev ui-num">${meta.preview(player, value, n, mana)}</div>
+            <div class="ui-note">${escapeHtml(fillManaTerms(meta.description(rules), mana))}</div>
+            <div class="ch-attr-prev ui-num">${meta.preview(player, value, n, mana, rules)}</div>
           </div>
           <div class="ch-ctl">${this.renderStepper(meta.key, n, this.draft.canAdd(meta.key, player), meta.label)}</div>
         </div>`;
@@ -439,23 +497,44 @@ export class CharacterTab implements MenuTab {
     return `<div class="ui-card"><div class="ui-h">Milestones</div>${items}</div>`;
   }
 
+  /** The pack's rules the previews read. */
+  private rules(): AttributeRules {
+    const manifest = this.manifest();
+    return { scaling: attributeScalingOf(manifest), progression: manifest?.progressionConfig };
+  }
+
   /** "If you accept": before → after for everything the plan changes. */
   private renderDiff(player: Player, mana: ManaTerms): string {
+    const { scaling, progression } = this.rules();
     const rows: Array<[string, string | number, string | number, string?]> = [];
     for (const key of ATTRIBUTE_KEYS) {
       const n = this.draft.get(key);
       if (n > 0) rows.push([ATTRIBUTES.find((a) => a.key === key)!.label, player[key], player[key] + n]);
     }
     const con = this.draft.get('constitution');
-    if (con > 0) rows.push(['Max health', player.maxHp, player.maxHp + con * HP_PER_CONSTITUTION]);
+    if (con > 0) {
+      rows.push(['Max health', player.maxHp, player.maxHp + con * HP_PER_CONSTITUTION]);
+      if (progression?.levelUpHeal) rows.push(['Level-up heal', pct(levelUpHealShare(progression, player.constitution)), pct(levelUpHealShare(progression, player.constitution + con))]);
+    }
     const int = this.draft.get('intelligence');
-    if (int > 0) rows.push([`Max ${mana.name}`, player.maxMana, player.maxMana + int * MANA_PER_INTELLIGENCE]);
+    if (int > 0) {
+      rows.push([`Max ${mana.name}`, player.maxMana, player.maxMana + int * MANA_PER_INTELLIGENCE]);
+      if (scaling.spellPowerPerIntelligence) {
+        rows.push(['Spell power', signedPct(spellPowerMultiplier(player, scaling) - 1), signedPct(spellPowerMultiplier(at(player, 'intelligence', player.intelligence + int), scaling) - 1)]);
+      }
+    }
     const str = this.draft.get('strength');
     if (str > 0) {
+      if (scaling.meleeDamagePerStrength) {
+        rows.push(['Melee damage', signed(strengthMeleeBonus(player, scaling)), signed(strengthMeleeBonus(at(player, 'strength', player.strength + str), scaling))]);
+      }
       rows.push(['Carry limit', formatKg(getMaxCarryWeight(player.strength)), formatKg(getMaxCarryWeight(player.strength + str)), ' kg']);
     }
     const dex = this.draft.get('dexterity');
     if (dex > 0) {
+      const later = at(player, 'dexterity', player.dexterity + dex);
+      if (scaling.meleeHitPercentPerDexterity) rows.push(['Melee hit', meleeHitPercent(player, scaling), meleeHitPercent(later, scaling), '%']);
+      if (scaling.evasionPerDexterity) rows.push(['Evasion', pct(dexterityEvasion(player, scaling)), pct(dexterityEvasion(later, scaling))]);
       const hit = (d: number) => signed(rangedDexterityBonus(d).hitPct);
       rows.push(['Ranged hit', hit(player.dexterity), hit(player.dexterity + dex), '%']);
     }

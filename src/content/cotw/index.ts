@@ -32,6 +32,7 @@ import { GIANT_BLOOD_STATUS, giantBloodHandler, GIANT_BLOOD_BOOTSTRAP_HOOK } fro
 import { BURNING_STATUS, burningHandler } from './burning';
 import { COTW_MONSTER_SCALING } from './monsterScaling';
 import { COTW_PROGRESSION } from './progression';
+import { COTW_COMBAT } from './combat';
 import { COTW_COINAGE } from './coinage';
 import { COTW_ITEM_FAMILIES } from './itemFamilies';
 import { COTW_LOOT_RATES } from './loot';
@@ -132,6 +133,7 @@ export const cotwManifest: GameContentManifest = {
   companions: COTW_COMPANIONS,
   monsterScaling: COTW_MONSTER_SCALING,
   progressionConfig: COTW_PROGRESSION,
+  combatConfig: COTW_COMBAT,
   coinage: COTW_COINAGE,
   itemFamilies: COTW_ITEM_FAMILIES,
   loot: COTW_LOOT_RATES,

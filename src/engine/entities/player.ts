@@ -69,6 +69,14 @@ export interface PlayerConfig {
   grimoireGrounds?: Record<number, string>;
 }
 
+/** The share of each bar a level-up restores (`ProgressionConfig.levelUpHeal`); 1 without the config. */
+export function levelUpHealShare(config: ProgressionConfig | undefined, constitution: number): number {
+  const heal = config?.levelUpHeal;
+  if (!heal) return 1;
+  const above = Math.max(0, constitution - (heal.baseline ?? 10));
+  return Math.max(0, Math.min(heal.cap ?? 1, heal.percent + above * (heal.perConstitutionAbove ?? 0)));
+}
+
 const DEFAULT_PLAYER_STATS: CombatStats = {
   hp: 30,
   maxHp: 30,
@@ -251,12 +259,17 @@ export class Player extends Actor {
     statPointsAwarded?: number;
     unspentStatPoints?: number;
     statGains?: LevelUpBonus;
+    /** HP and mana the level-ups restored (`ProgressionConfig.levelUpHeal`; in full without it). */
+    healed?: number;
+    manaRestored?: number;
   } {
     const progression = config ?? this.progressionConfig;
     this.xp += amount;
     let leveledUp = false;
     let totalPointsAwarded = 0;
     let accumulatedGains: LevelUpBonus = {};
+    let healed = 0;
+    let manaRestored = 0;
 
     while (true) {
       if (progression?.maxLevel && this.level >= progression.maxLevel) {
@@ -286,9 +299,15 @@ export class Player extends Actor {
 
       // From the base, not the getter: a pact's or item's modifier must not be written into it.
       this.maxHp = this.baseMaxHpValue + (gains.maxHp ?? 5);
-      this.hp = this.maxHp;
       this.maxMana += gains.maxMana ?? 4;
-      this.mana = this.maxMana;
+      // The level's heal: the pack's share of each bar (rising with Constitution), else all of it.
+      const share = levelUpHealShare(progression, this.constitution);
+      const hpBefore = this.hp;
+      const manaBefore = this.mana;
+      this.hp = Math.min(this.maxHp, this.hp + Math.round(this.maxHp * share));
+      this.mana = Math.min(this.maxMana, this.mana + Math.round(this.maxMana * share));
+      healed += this.hp - hpBefore;
+      manaRestored += this.mana - manaBefore;
 
       if (hasCustomGains) {
         if (gains.strength) this.strength += gains.strength;
@@ -319,6 +338,8 @@ export class Player extends Actor {
       statPointsAwarded: leveledUp ? totalPointsAwarded : 0,
       unspentStatPoints: this.unspentStatPoints,
       statGains: leveledUp ? accumulatedGains : undefined,
+      healed: leveledUp ? healed : undefined,
+      manaRestored: leveledUp ? manaRestored : undefined,
     };
   }
 

@@ -6,6 +6,7 @@ import { DrinkPotionAction } from '../../../engine/actions/spell-actions';
 import { createScaledItem, type PotionItem } from '../../../engine';
 import { cotwManifest } from '../index';
 import { COTW_LEVEL_CAP, COTW_PROGRESSION } from '../progression';
+import { COTW_COMBAT } from '../combat';
 
 /**
  * Q4 "B", Q25 "approved" (tracker 3.1): levels cap at 50; a full clear reaches about 47 on
@@ -51,6 +52,21 @@ describe('cotw progression (Q4 "B", Q25)', () => {
     expect(need(10)).toBe(2846);
     expect(need(47)).toBe(28999);
     expect(COTW_PROGRESSION.respawnXpShare).toBe(0.25);
+  });
+
+  it('gives a level one point, +5 HP and +4 Seiðr, no Attack or Defense, and a heal that grows with Constitution (Q5, Q26, Q28)', () => {
+    expect(COTW_PROGRESSION.statPointsPerLevel).toBe(1);
+    expect(COTW_PROGRESSION.statGains).toEqual({ maxHp: 5, maxMana: 4, baseAttack: 0, baseDefense: 0 });
+    expect(COTW_PROGRESSION.levelUpHeal).toEqual({ percent: 0.3, perConstitutionAbove: 0.03, baseline: 10, cap: 0.9 });
+    expect(cotwManifest.combatConfig).toBe(COTW_COMBAT);
+    expect(COTW_COMBAT.attributeScaling).toEqual({
+      baseline: 10,
+      meleeDamagePerStrength: 1,
+      meleeBaseHitPercent: 80,
+      meleeHitPercentPerDexterity: 2,
+      evasionPerDexterity: 0.01,
+      spellPowerPerIntelligence: 0.03,
+    });
   });
 
   it('stops at level 50 however much XP comes after', () => {

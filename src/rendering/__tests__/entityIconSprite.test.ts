@@ -58,5 +58,7 @@ describe('drawEntityIcon', () => {
     }
     expect(keys).toEqual({ draugr_warrior: 'draugr', ividja: 'troll_witch', haugbui: 'duergar' });
     renderer.destroy();
-  });
+    // Baking the pack's atlas through the mocked context takes ~1 s alone and 11–16 s while
+    // the whole suite runs in parallel, past the 5 s default.
+  }, 30_000);
 });

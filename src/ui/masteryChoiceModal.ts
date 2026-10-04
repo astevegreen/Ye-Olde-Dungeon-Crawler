@@ -1,8 +1,8 @@
 import {
   type GameEngine,
-  type MasteryPerkId,
+  type MasteryPerkOption,
   type MasteryScope,
-  MASTERY_PERKS,
+  masteryPerkOptions,
   resolveManaTerms,
   selectMasteryPerk,
 } from '../engine';
@@ -18,8 +18,6 @@ export interface MasteryChoiceRequest {
   name: string;
   kills: number;
 }
-
-const PERK_IDS = Object.keys(MASTERY_PERKS) as MasteryPerkId[];
 
 /**
  * Offers a mastery perk when a monster family's mastery is earned (Q7 "A": species kills
@@ -85,8 +83,14 @@ export class MasteryChoiceModal implements UIModal {
     this.onClosedCallback?.();
   }
 
+  /** The perks the request's family offers: the shared five and the pack's own (tracker 3.6). */
+  private options(): MasteryPerkOption[] {
+    const request = this.queue[0];
+    return request ? masteryPerkOptions(this.engine?.manifest, request.masteryId) : [];
+  }
+
   public highlight(index: number): void {
-    if (index < 0 || index >= PERK_IDS.length) return;
+    if (index < 0 || index >= this.options().length) return;
     this.activeIndex = index;
     this.render();
   }
@@ -94,7 +98,7 @@ export class MasteryChoiceModal implements UIModal {
   /** Locks in the highlighted perk, then shows the next queued request or closes. */
   public confirm(): boolean {
     const request = this.queue[0];
-    const perkId = PERK_IDS[this.activeIndex];
+    const perkId = this.options()[this.activeIndex]?.id;
     if (!this.engine || !request || !perkId) return false;
     const result = selectMasteryPerk(this.engine, request.scope, request.masteryId, perkId);
     if (!result.success) return false;
@@ -140,7 +144,8 @@ export class MasteryChoiceModal implements UIModal {
       e.preventDefault();
       const step = e.key === 'ArrowDown' ? 1 : -1;
       const start = this.activeIndex < 0 ? (step > 0 ? -1 : 0) : this.activeIndex;
-      this.highlight((start + step + PERK_IDS.length) % PERK_IDS.length);
+      const count = this.options().length;
+      this.highlight((start + step + count) % count);
       return true;
     }
     if (e.key === 'Enter') {
@@ -163,14 +168,13 @@ export class MasteryChoiceModal implements UIModal {
 
     const mana = resolveManaTerms(this.engine?.manifest);
     const waiting = this.queue.length - 1;
-    const perks = PERK_IDS.map((id, index) => {
-      const perk = MASTERY_PERKS[id];
+    const perks = this.options().map((perk, index) => {
       const focused = index === this.activeIndex;
       return `
         <div class="ui-option mastery-perk-row${focused ? ' is-focused' : ''}" data-index="${index}">
           <div class="ui-option-mark">${focused ? '▶' : '◇'}</div>
           <div class="ui-option-body">
-            <div class="ui-option-label">${escapeHtml(perk.name)} <span class="ui-faint">— ${escapeHtml(perk.tagline)}</span></div>
+            <div class="ui-option-label">${escapeHtml(perk.name)}${perk.tagline ? ` <span class="ui-faint">— ${escapeHtml(perk.tagline)}</span>` : ''}</div>
             <div class="ui-option-desc">${escapeHtml(fillManaTerms(perk.description, mana))}</div>
           </div>
         </div>`;

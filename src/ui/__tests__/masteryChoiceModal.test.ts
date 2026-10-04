@@ -53,6 +53,8 @@ describe('MasteryChoiceModal', () => {
         { id: 'wolf', name: 'Wolves', members: ['wolf'], masteryKills: 15 },
         { id: 'rat', name: 'Rats', members: ['rat'], masteryKills: 15 },
       ],
+      // The wolves' own perk, offered beside the shared five (tracker 3.6).
+      perks: [{ id: 'pack_sense', name: 'Pack-Sense', description: 'Wolves show through walls.', source: 'family', category: 'wolf', effects: { sensesWithin: 10 } }],
     } as any;
     engine = new GameEngine({
       map: new GameMap(10, 10),
@@ -108,6 +110,17 @@ describe('MasteryChoiceModal', () => {
     expect(modal.confirm()).toBe(true);
     expect(engine.compendium.getCategoryPerk('rat')).toBe('plunderer');
     expect(modal.isOpen).toBe(false);
+  });
+
+  it('offers a family its own perk after the shared five, and only that family', () => {
+    const modal = openWith('wolf', 'rat');
+    expect((modal as any).overlayEl.innerHTML).toContain('Pack-Sense');
+    modal.highlight(5);
+    expect(modal.confirm()).toBe(true);
+    expect(engine.compendium.getCategoryPerk('wolf')).toBe('pack_sense');
+    expect((modal as any).overlayEl.innerHTML).not.toContain('Pack-Sense'); // the rats are next
+    modal.highlight(5);
+    expect(modal.confirm()).toBe(false);
   });
 
   it('Escape defers the choice, leaving the mastery pending', () => {

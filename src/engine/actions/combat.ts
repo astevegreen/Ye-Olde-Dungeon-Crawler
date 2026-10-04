@@ -10,6 +10,7 @@ import { DeathResolver } from '../combat/deathResolver';
 import { flightRecorder } from '../debug/flightRecorder';
 import { HookDispatcher } from '../hooks/hookDispatcher';
 import { getMonsterCategory, hasMasteryPerk } from '../compendium/compendiumManager';
+import { productAgainst, sumAgainst } from '../compendium/familyPerks';
 import { ANATOMIST_CRIT_CHANCE } from '../compendium/types';
 import { applyImpulse } from '../combat/impulse';
 import { resolveCombatMitigation } from '../combat/mitigationPipeline';
@@ -141,7 +142,10 @@ export class MeleeAttackAction implements Action {
     } else {
       const minDmg = combatConfig?.minDamage ?? DEFAULT_MIN_DAMAGE;
       // Anatomist ignores half the foe's defense; what the attacker wears and holds, more (Sunder).
-      const penetration = Math.min(1, (isAnatomist ? 0.5 : 0) + sumWorn(this.attacker, 'defensePenetration'));
+      const penetration = Math.min(
+        1,
+        (isAnatomist ? 0.5 : 0) + sumWorn(this.attacker, 'defensePenetration') + sumAgainst(engine, this.attacker, this.defender, 'defensePenetration')
+      );
       const effectiveDefense = penetration > 0 ? Math.floor(this.defender.defense * (1 - penetration)) : this.defender.defense;
       // Strength adds to the blow before the foe's defense is taken off (tracker 3.2).
       let base = Math.max(minDmg, this.attacker.attack + strengthMeleeBonus(this.attacker, scaling) - effectiveDefense);
@@ -224,7 +228,8 @@ export class MeleeAttackAction implements Action {
     const mitigation = resolveCombatMitigation(this.attacker, this.defender, rawDamage, engine);
     // What the defender wears against melee in particular (Shield-Wall); the general
     // damageTakenMultiplier applies inside takeDamage.
-    const meleeTaken = productWorn(this.defender, 'meleeDamageTakenMultiplier');
+    // ... and the defender's family perk against the attacker's family (Grave-Warden).
+    const meleeTaken = productWorn(this.defender, 'meleeDamageTakenMultiplier') * productAgainst(engine, this.defender, this.attacker, 'damageTakenMultiplier');
     const finalDamage = meleeTaken === 1 ? mitigation.finalDamage : Math.max(mitigation.finalDamage > 0 ? 1 : 0, Math.round(mitigation.finalDamage * meleeTaken));
     const { damageDealt, killed } = this.defender.takeDamage(finalDamage);
 
@@ -301,9 +306,12 @@ export class MeleeAttackAction implements Action {
       const isSurvivor = this.defender instanceof Player &&
         hasMasteryPerk(engine, this.attacker.definitionId, 'survivor');
 
-      // Survivor: 25% chance to shrug off affliction entirely
+      // Survivor: 25% chance to shrug off affliction entirely; a family perk may add its own (Spirit-Ward).
+      const familyShrug = sumAgainst(engine, this.defender, this.attacker, 'afflictionShrugChance');
       if (isSurvivor && engine.rng() < 0.25) {
         engine.log(`${this.defender.name}'s Survivor instincts shrug off ${this.attacker.name}'s ${aff.type}!`);
+      } else if (familyShrug > 0 && engine.rng() < familyShrug) {
+        engine.log(`${this.defender.name} shrugs off ${this.attacker.name}'s ${aff.type}!`);
       } else if (engine.rng() < aff.chance) {
         // Survivor: halve the duration of debuffs; what the defender wears may shorten it too (Iron Stomach).
         const effectiveDuration = afflictionDuration(this.defender, aff.type, isSurvivor ? Math.max(1, Math.floor(aff.duration * 0.5)) : aff.duration);
@@ -339,6 +347,13 @@ export class MeleeAttackAction implements Action {
         );
         if (applied) engine.log(`${this.attacker.name}'s blow leaves ${this.defender.name} ${on.status}!`);
       }
+    }
+
+    // A blow that knocks the foe back, by what the attacker wears and holds, and its family
+    // perk against the foe's family (Giant-Bane).
+    const knockback = sumWorn(this.attacker, 'meleeKnockback') + sumAgainst(engine, this.attacker, this.defender, 'meleeKnockback');
+    if (knockback > 0 && !killed && damageDealt > 0 && this.defender.isAlive()) {
+      applyImpulse(engine, this.attacker, this.defender, Math.sign(this.defender.x - this.attacker.x), Math.sign(this.defender.y - this.attacker.y), knockback);
     }
 
     let isFatal = killed;
@@ -439,7 +454,8 @@ export class WindUpDeclareAction implements Action {
       pattern: this.options?.pattern ?? 'single',
       abilityName: this.abilityName,
       warningMessage: this.warningMessage,
-      turnsRemaining: this.options?.turnsRemaining ?? 1,
+      // A family perk against this monster's family may warn the hero longer (Wyrm-Bane).
+      turnsRemaining: (this.options?.turnsRemaining ?? 1) + sumAgainst(engine, engine.player, this.monster, 'windUpWarningBonus'),
       multiplier: this.options?.multiplier ?? 2.2,
       element: this.options?.element,
       spawnSurface: this.options?.spawnSurface,
@@ -520,7 +536,7 @@ export class WindUpExecuteAction implements Action {
       for (const targetEntity of hitEntities) {
         const rawDamage = Math.max(
           2,
-          Math.round(this.monster.attack * this.multiplier) - targetEntity.defense
+          Math.round((Math.round(this.monster.attack * this.multiplier) - targetEntity.defense) * productAgainst(engine, targetEntity, this.monster, 'damageTakenMultiplier'))
         );
         const { damageDealt, killed } = targetEntity.takeDamage(rawDamage);
 

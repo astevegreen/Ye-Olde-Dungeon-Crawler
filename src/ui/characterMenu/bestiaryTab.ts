@@ -3,9 +3,8 @@ import {
   MonsterRegistry,
   type MonsterDefinition,
   type MonsterMasteryTier,
-  type MasteryPerkId,
+  masteryPerkOptions,
   type MasteryScope,
-  MASTERY_PERKS,
   SPECIES_MASTERY_KILLS,
   getMonsterCategory,
   type KillRiteDefinition,
@@ -184,7 +183,7 @@ export class BestiaryTab implements MenuTab {
     });
     root.querySelectorAll<HTMLElement>('.btn-select-perk').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const perkId = btn.getAttribute('data-perk') as MasteryPerkId | null;
+        const perkId = btn.getAttribute('data-perk');
         const scope = btn.getAttribute('data-scope') as MasteryScope | null;
         const masteryId = btn.getAttribute('data-mastery');
         if (perkId && scope && masteryId && this.engine) {
@@ -216,9 +215,11 @@ export class BestiaryTab implements MenuTab {
     subject: string;
     kills: number;
     needed: number;
-    perk?: MasteryPerkId;
+    perk?: string;
     note?: string;
   }): string {
+    // The shared five and the family's own (tracker 3.6).
+    const options = masteryPerkOptions(this.engine?.manifest, opts.masteryId);
     const unlocked = opts.kills >= opts.needed;
     const pct = Math.round((Math.min(opts.kills, opts.needed) / opts.needed) * 100);
     const inTown = (this.engine?.currentFloor ?? 1) === 0;
@@ -233,14 +234,14 @@ export class BestiaryTab implements MenuTab {
             ? 'In the dungeon your perk is locked. Return to Town to change it.'
             : 'Mastery earned: pick your perk below.'
         }</div>
-        ${Object.values(MASTERY_PERKS)
+        ${options
           .map((perk) => {
             const active = opts.perk === perk.id;
             const canSelect = inTown || !opts.perk;
             return `
               <div class="bs-perk${active ? ' is-active' : ''}">
                 <div>
-                  <div><b>${escapeHtml(perk.name)}</b> <span class="ui-faint">— ${escapeHtml(perk.tagline)}</span></div>
+                  <div><b>${escapeHtml(perk.name)}</b>${perk.tagline ? ` <span class="ui-faint">— ${escapeHtml(perk.tagline)}</span>` : ''}</div>
                   <div class="ui-note">${escapeHtml(fillManaTerms(perk.description, mana))}</div>
                 </div>
                 ${
@@ -253,7 +254,7 @@ export class BestiaryTab implements MenuTab {
               </div>`;
           })
           .join('')}`
-      : `<div class="ui-note">Slay ${opts.needed - opts.kills} more to master ${escapeHtml(opts.subject)} and choose a perk: ${Object.values(MASTERY_PERKS)
+      : `<div class="ui-note">Slay ${opts.needed - opts.kills} more to master ${escapeHtml(opts.subject)} and choose a perk: ${options
           .map((p) => `<b>${escapeHtml(p.name)}</b>`)
           .join(', ')}.</div>`;
 

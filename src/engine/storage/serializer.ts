@@ -19,7 +19,7 @@ import { GameEngine } from '../engine';
 import { activateRegistries, type EngineRegistries } from '../registries';
 import { rebuildItemRegistries } from '../items/rebuildItemRegistries';
 import { registerSerializeGameFn, flightRecorder } from '../debug/flightRecorder';
-import { CompendiumManager } from '../compendium/compendiumManager';
+import { CompendiumManager, masteryPerkOptions } from '../compendium/compendiumManager';
 import type { GameContentManifest, ItemDefinition } from '../types/manifest';
 import type { ItemQuality } from '../items/item';
 import type { ItemModifier } from '../items/modifiers';
@@ -1077,6 +1077,8 @@ export function deserializeGame(
   );
   // A save from before Q7 "A" (tracker 3.5): each species perk becomes its family's, once.
   compendium.convertSpeciesPerks(manifest?.monsterCategories ?? []);
+  // A family choice the pack no longer offers is forgotten, so that mastery asks again.
+  if (manifest) compendium.forgetUnofferedPerks((categoryId) => masteryPerkOptions(manifest, categoryId).map((p) => p.id));
 
   // 5. Rebuild world state (remote-vault items are serialized trees) before the engine
   // sees it, so it is never handed plain JSON where live Items belong.

@@ -22,6 +22,7 @@ import { CoinItem } from '../economy/currency';
 import type { Item } from '../items/item';
 import { sumWorn } from '../items/wornModifiers';
 import { refusesDeath } from './lastStand';
+import { productAgainst } from '../compendium/familyPerks';
 
 /** Pact and Plunderer gold multipliers: a coin pile's worth is its count. */
 function applyGoldMultiplier(item: Item, goldMult: number): void {
@@ -81,7 +82,8 @@ export class DeathResolver {
       if (isPlayerKill && engine.player.isAlive()) {
         const xpBase = victim.xpValue ?? 15;
         const rewards = engine.pacts?.getAggregatedRewards();
-        const xp = Math.round(xpBase * (rewards?.xpMultiplier ?? 1.0));
+        // The hero's family perk against the victim's family may pay more (Iron Will).
+        const xp = Math.round(xpBase * (rewards?.xpMultiplier ?? 1.0) * productAgainst(engine, engine.player, victim, 'xpMultiplier'));
         engine.log(`${victim.name} is slain! (+${xp} ${engine.manifest?.branding?.xpName ?? 'XP'})`);
         awardPlayerXp(engine, xp);
       } else {
@@ -191,7 +193,7 @@ export class DeathResolver {
         const isPlunderer = killer instanceof Player && hasMasteryPerk(engine, victim.definitionId, 'plunderer');
         const rewards = engine.pacts?.getAggregatedRewards();
         const mf = rewards?.magicFindBonus ?? 0;
-        const goldMult = (rewards?.goldMultiplier ?? 1.0) * (isPlunderer ? 2.0 : 1.0);
+        const goldMult = (rewards?.goldMultiplier ?? 1.0) * (isPlunderer ? 2.0 : 1.0) * (killer instanceof Player ? productAgainst(engine, killer, victim, 'coinMultiplier') : 1);
         let dropCount = 0;
         for (const rule of victim.lootTable) {
           const effectiveChance = Math.min(1.0, rule.chance + (rule.chance * mf));

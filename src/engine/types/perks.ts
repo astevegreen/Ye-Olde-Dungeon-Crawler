@@ -22,6 +22,12 @@ export interface PerkDefinition {
   description: string;
   /** Where it comes from, for the Character tab's grouping. */
   source: 'saga' | 'milestone' | 'family';
+  /**
+   * A family perk's monster family (`MonsterCategoryDefinition.id`): offered beside the shared
+   * five when that family is mastered, and its effects count only against that family's
+   * members (`familyModifiers`). Chosen in the compendium, not granted to the hero.
+   */
+  category?: string;
   effects?: PerkEffects;
 }
 

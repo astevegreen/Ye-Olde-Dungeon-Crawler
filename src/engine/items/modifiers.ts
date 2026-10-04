@@ -146,6 +146,19 @@ export interface ItemModifier {
   maxHpPercent?: number;
   /** A level-up heals HP and mana in full (Undying). */
   levelUpFullHeal?: boolean;
+  // ── Effects of the family perks (tracker 3.6); scoped to a family by `familyModifiers`. ──
+  /** A landed melee blow knocks the foe back this many tiles (Giant-Bane: 1). */
+  meleeKnockback?: number;
+  /** The hero senses monsters within this many tiles through walls (Pack-Sense: 10; `sensesThroughWalls`). */
+  sensesWithin?: number;
+  /** Scales the coins a kill drops (Reaver: 1.5). */
+  coinMultiplier?: number;
+  /** Scales the XP a kill gives (Iron Will: 1.5). */
+  xpMultiplier?: number;
+  /** The chance a foe's affliction on the hero is shrugged off (Spirit-Ward: 0.5). */
+  afflictionShrugChance?: number;
+  /** Turns of warning added to a foe's wind-up (Wyrm-Bane: 1; `WindUpDeclareAction`). */
+  windUpWarningBonus?: number;
   description?: string;
 }
 

@@ -4,7 +4,8 @@ import { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
 import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
-import { MeleeAttackAction } from '../actions/combat';
+import { MeleeAttackAction, WindUpDeclareAction } from '../actions/combat';
+import { selectMasteryPerk } from '../compendium/compendiumManager';
 import { CastSpellAction } from '../actions/spell-actions';
 import { SearchAction } from '../actions/search';
 import { AutoRestManager } from '../actions/autoRest';
@@ -403,5 +404,62 @@ describe('perk effects', () => {
     player.hp = 10;
     player.gainXp(player.xpToNextLevel);
     expect(player.hp).toBe(player.maxHp);
+  });
+  // ── Family perks (tracker 3.6, Q53 "A"): pack perks chosen in the compendium, counting against one family ──
+  describe('a family perk', () => {
+    function withFamilyPerk(effects: PerkDefinition['effects']) {
+      const familyPerk: PerkDefinition = { id: 'fp', name: 'Family Perk', description: 'fp', source: 'family', category: 'fam', effects };
+      const built = build({ monsterCategories: [{ id: 'fam', name: 'Fam', members: ['foe'], masteryKills: 1 }], perks: [familyPerk] });
+      built.engine.compendium.recordKill('foe', 'Foe');
+      expect(selectMasteryPerk(built.engine, 'category', 'fam', 'fp').success).toBe(true);
+      const stranger = new Monster({ id: 'other', name: 'Other', position: { x: 9, y: 10 }, stats: { hp: 1000, maxHp: 1000, attack: 20, defense: 8 }, speed: 100, definitionId: 'other', aiType: 'melee', xpValue: 10 });
+      built.map.addEntity(stranger);
+      return { ...built, stranger };
+    }
+
+    it('scales damage from its family only (Grave-Warden)', () => {
+      const { engine, player, foe, stranger } = withFamilyPerk({ damageTakenMultiplier: 0.8 });
+      new MeleeAttackAction(foe, player).perform(engine);
+      expect(100 - player.hp).toBe(16);
+      new MeleeAttackAction(stranger, player).perform(engine);
+      expect(100 - player.hp).toBe(16 + 20);
+    });
+
+    it('ignores its share of the family’s defense (Rust-Touch), and knocks the family back (Giant-Bane)', () => {
+      const { engine, player, foe } = withFamilyPerk({ defensePenetration: 0.5, meleeKnockback: 1 });
+      foe.defense = 8;
+      new MeleeAttackAction(player, foe).perform(engine);
+      expect(1000 - foe.hp).toBe(10 - 4);
+      expect(foe.x).toBe(12);
+    });
+
+    it('shrugs off the family’s afflictions (Spirit-Ward)', () => {
+      const { engine, player, foe } = withFamilyPerk({ afflictionShrugChance: 1 });
+      foe.onHitAffliction = { type: 'poison', chance: 1, duration: 3 };
+      new MeleeAttackAction(foe, player).perform(engine);
+      expect(player.statusManager.hasStatus('poison')).toBe(false);
+    });
+
+    it('pays more XP for the family (Iron Will)', () => {
+      const { engine, player, foe, stranger } = withFamilyPerk({ xpMultiplier: 1.5 });
+      foe.xpValue = 10;
+      const before = player.totalXp;
+      DeathResolver.resolveDeath(engine, player, foe);
+      expect(player.totalXp - before).toBe(15);
+      DeathResolver.resolveDeath(engine, player, stranger);
+      expect(player.totalXp - before).toBe(25);
+    });
+
+    it('lengthens the family’s wind-up warning (Wyrm-Bane), and senses it through walls nearby (Pack-Sense)', () => {
+      const { engine, foe, stranger } = withFamilyPerk({ windUpWarningBonus: 1, sensesWithin: 10 });
+      new WindUpDeclareAction(foe, { x: 10, y: 10 }, 'Breath', 'The foe draws breath!').perform(engine);
+      expect(foe.intent.turnsRemaining).toBe(2);
+      new WindUpDeclareAction(stranger, { x: 10, y: 10 }, 'Slam', 'The other winds up!').perform(engine);
+      expect(stranger.intent.turnsRemaining).toBe(1);
+      expect(sensesThroughWalls(engine, foe)).toBe(true);
+      expect(sensesThroughWalls(engine, stranger)).toBe(false);
+      engine.map.moveEntity(foe, 25, 10);
+      expect(sensesThroughWalls(engine, foe)).toBe(false);
+    });
   });
 });

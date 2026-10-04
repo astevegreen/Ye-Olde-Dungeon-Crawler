@@ -7,10 +7,13 @@ import type {
 } from './types';
 import { MASTERY_PERKS, SPECIES_MASTERY_KILLS } from './types';
 import type { GameEngine } from '../engine';
-import type { MonsterCategoryDefinition } from '../types/manifest';
+import type { GameContentManifest, MonsterCategoryDefinition } from '../types/manifest';
 
-/** Chosen category-mastery perks, keyed by `MonsterCategoryDefinition.id`. */
-export type SerializedCategoryPerks = Record<string, MasteryPerkId>;
+/**
+ * Chosen category-mastery perks, keyed by `MonsterCategoryDefinition.id`: one of the shared
+ * five (`MasteryPerkId`) or a pack family perk's id (`PerkDefinition.category`, tracker 3.6).
+ */
+export type SerializedCategoryPerks = Record<string, string>;
 
 function tierForKills(kills: number): MonsterMasteryTier {
   if (kills >= SPECIES_MASTERY_KILLS) return 3;
@@ -20,7 +23,7 @@ function tierForKills(kills: number): MonsterMasteryTier {
 
 export class CompendiumManager {
   private entries: Map<string, CompendiumEntry> = new Map();
-  private categoryPerks: Map<string, MasteryPerkId> = new Map();
+  private categoryPerks: Map<string, string> = new Map();
   /** Species perks read from an older save, waiting for `convertSpeciesPerks`. */
   private legacySpeciesPerks: Map<string, MasteryPerkId> = new Map();
 
@@ -146,7 +149,7 @@ export class CompendiumManager {
   }
 
   /** The perk chosen for a monster category's mastery. */
-  public getCategoryPerk(categoryId: string): MasteryPerkId | undefined {
+  public getCategoryPerk(categoryId: string): string | undefined {
     return this.categoryPerks.get(categoryId);
   }
 
@@ -166,7 +169,7 @@ export class CompendiumManager {
   /** Initial selection is allowed anywhere; changing an existing choice only in town. */
   public selectCategoryPerk(
     category: MonsterCategoryDefinition,
-    perkId: MasteryPerkId,
+    perkId: string,
     inTown: boolean
   ): { success: boolean; reason?: string } {
     if (!this.hasCategoryMastery(category)) {
@@ -194,7 +197,7 @@ export class CompendiumManager {
   }
 
   /** Whether `perkId` is active against a monster, through its category's mastery. */
-  public hasPerk(_definitionId: string, perkId: MasteryPerkId, categoryId?: string): boolean {
+  public hasPerk(_definitionId: string, perkId: string, categoryId?: string): boolean {
     return categoryId !== undefined && this.categoryPerks.get(categoryId) === perkId;
   }
 
@@ -209,6 +212,13 @@ export class CompendiumManager {
       if (category && !this.categoryPerks.has(category.id)) this.categoryPerks.set(category.id, perkId);
     }
     this.legacySpeciesPerks.clear();
+  }
+
+  /** Drops a saved family choice the pack no longer offers that family (a renamed perk), so its mastery asks again. */
+  public forgetUnofferedPerks(offered: (categoryId: string) => readonly string[]): void {
+    for (const [categoryId, perkId] of [...this.categoryPerks]) {
+      if (!offered(categoryId).includes(perkId)) this.categoryPerks.delete(categoryId);
+    }
   }
 
   public serialize(): SerializedCompendium {
@@ -277,9 +287,7 @@ export class CompendiumManager {
 
   private deserializeCategoryPerks(data: SerializedCategoryPerks): void {
     for (const [categoryId, perkId] of Object.entries(data)) {
-      if (perkId in MASTERY_PERKS) {
-        this.categoryPerks.set(categoryId, perkId);
-      }
+      if (typeof perkId === 'string' && perkId) this.categoryPerks.set(categoryId, perkId);
     }
   }
 }
@@ -290,6 +298,23 @@ export function getMonsterCategory(
   definitionId: string
 ): MonsterCategoryDefinition | undefined {
   return engine.manifest?.monsterCategories?.find((c) => c.members.includes(definitionId));
+}
+
+/** One perk a family's mastery can grant: one of the shared five, or the pack's own for that family. */
+export interface MasteryPerkOption {
+  id: string;
+  name: string;
+  tagline?: string;
+  description: string;
+}
+
+/**
+ * The perks a family's mastery offers (Q53 "A"): the shared five, then the pack's own for that
+ * family (`manifest.perks` with `source: 'family'` and that `category`; tracker 3.6).
+ */
+export function masteryPerkOptions(manifest: GameContentManifest | undefined, categoryId: string): MasteryPerkOption[] {
+  const own = (manifest?.perks ?? []).filter((p) => p.source === 'family' && p.category === categoryId);
+  return [...Object.values(MASTERY_PERKS), ...own.map((p) => ({ id: p.id, name: p.name, tagline: p.tagline, description: p.description }))];
 }
 
 /** Whether `perkId` is active against this monster type, through its family's mastery. */
@@ -359,7 +384,7 @@ export function selectMasteryPerk(
   engine: GameEngine,
   scope: MasteryScope,
   masteryId: string,
-  perkId: MasteryPerkId
+  perkId: string
 ): { success: boolean; reason?: string } {
   const compendium = engine.compendium;
   if (!compendium) {
@@ -373,10 +398,12 @@ export function selectMasteryPerk(
   const category = engine.manifest?.monsterCategories?.find((c) => c.id === masteryId);
   if (!category) return { success: false, reason: 'Unknown monster category.' };
   const targetName = category.name;
+  const perk = masteryPerkOptions(engine.manifest, category.id).find((p) => p.id === perkId);
+  if (!perk) return { success: false, reason: `${targetName} offers no such perk.` };
   const result = compendium.selectCategoryPerk(category, perkId, inTown);
 
   if (result.success) {
-    engine.log(`*** Mastery Perk: ${MASTERY_PERKS[perkId].name} against ${targetName}! ***`);
+    engine.log(`*** Mastery Perk: ${perk.name} against ${targetName}! ***`);
     engine.emitGameEvent({
       type: 'mastery_perk_selected',
       turn: engine.turnCount,

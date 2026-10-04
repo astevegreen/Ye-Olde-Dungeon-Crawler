@@ -34,7 +34,7 @@ import { COTW_MONSTER_SCALING } from './monsterScaling';
 import { COTW_PROGRESSION } from './progression';
 import { COTW_COMBAT } from './combat';
 import { COTW_ATTRIBUTE_MILESTONES } from './milestones';
-import { COTW_LEVEL_MILESTONES, COTW_MILESTONE_PERKS, COTW_PERKS } from './perks';
+import { COTW_FAMILY_PERKS, COTW_LEVEL_MILESTONES, COTW_MILESTONE_PERKS, COTW_PERKS } from './perks';
 import { COTW_COINAGE } from './coinage';
 import { COTW_ITEM_FAMILIES } from './itemFamilies';
 import { COTW_LOOT_RATES } from './loot';
@@ -148,7 +148,7 @@ export const cotwManifest: GameContentManifest = {
   storyChoiceTriggers: [OATH_TRIGGER, VIDNIR_DEFEATED_TRIGGER],
   attributeMilestones: COTW_ATTRIBUTE_MILESTONES,
   levelMilestones: COTW_LEVEL_MILESTONES,
-  perks: [...COTW_PERKS, ...COTW_MILESTONE_PERKS],
+  perks: [...COTW_PERKS, ...COTW_MILESTONE_PERKS, ...COTW_FAMILY_PERKS],
   monsterCategories: COTW_MONSTER_CATEGORIES,
   timedEvents: [PROLOGUE_TIMED_EVENT, SIPHON_TIMED_EVENT],
   // The night raid a new hero begins with (prologue.ts).

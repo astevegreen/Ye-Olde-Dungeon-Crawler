@@ -5,13 +5,17 @@ import { RestAction } from '../../../engine/actions/rest';
 import { MovementAction } from '../../../engine/actions/movement';
 import { serializeGame, deserializeGame } from '../../../engine/storage/serializer';
 import { createScaledItem } from '../../../engine/dungeon/lootSpawner';
+import { MASTERY_PERKS } from '../../../engine/compendium/types';
+import { masteryPerkOptions, selectMasteryPerk } from '../../../engine/compendium/compendiumManager';
+import { familyModifiers } from '../../../engine/compendium/familyPerks';
+import { Monster } from '../../../engine/entities/monster';
 import { cotwManifest } from '../index';
-import { COTW_LEVEL_MILESTONES, COTW_MILESTONE_CHOICES, COTW_MILESTONE_PERKS, COTW_PERKS, COTW_SAGA_CHOICES } from '../perks';
+import { COTW_FAMILY_PERKS, COTW_LEVEL_MILESTONES, COTW_MILESTONE_CHOICES, COTW_MILESTONE_PERKS, COTW_PERKS, COTW_SAGA_CHOICES } from '../perks';
 
 /** Q27 "Separate sources.", Q51–Q53 approved (tracker 3.6): the Saga perks, as far as built. */
 describe('cotw perks', () => {
   it('declares every perk a Saga choice grants, and a Saga choice of three at levels 10, 20, 30, 40 and 50 (Q51 "A")', () => {
-    expect(cotwManifest.perks).toEqual([...COTW_PERKS, ...COTW_MILESTONE_PERKS]);
+    expect(cotwManifest.perks).toEqual([...COTW_PERKS, ...COTW_MILESTONE_PERKS, ...COTW_FAMILY_PERKS]);
     expect(cotwManifest.levelMilestones).toBe(COTW_LEVEL_MILESTONES);
     expect(COTW_LEVEL_MILESTONES.filter((m) => !m.when).map((m) => m.level)).toEqual([10, 20, 30, 40, 50]);
     for (const trigger of COTW_LEVEL_MILESTONES) {
@@ -90,6 +94,32 @@ describe('cotw perks', () => {
     engine.handlePlayerAction(new ExecuteChoiceAction(p, COTW_SAGA_CHOICES.saga_50, 'saga_jarl_of_the_deep'));
     expect([p.strength, p.dexterity, p.constitution, p.intelligence]).toEqual(before.map((v) => v + 2));
     expect(p.hasPerk('saga_jarl_of_the_deep')).toBe(true);
+  });
+
+  it('each monster family offers one perk of its own beside the shared five (Q53 "A")', () => {
+    const families = cotwManifest.monsterCategories!;
+    expect(families).toHaveLength(8);
+    for (const family of families) {
+      const own = COTW_FAMILY_PERKS.filter((p) => p.category === family.id);
+      expect(own, family.id).toHaveLength(1);
+      const offered = masteryPerkOptions(cotwManifest, family.id).map((p) => p.id);
+      expect(offered).toEqual([...Object.keys(MASTERY_PERKS), own[0].id]);
+    }
+    expect(COTW_FAMILY_PERKS.every((p) => p.source === 'family')).toBe(true);
+  });
+
+  it('a chosen family perk counts against its family only, and survives a save and load', () => {
+    const { engine } = new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Warden', { seed: 3 });
+    const undead = cotwManifest.monsterCategories!.find((c) => c.id === 'cotw_undead')!;
+    for (const id of undead.members.slice(0, 1)) for (let i = 0; i < undead.masteryKills; i++) engine.compendium.recordKill(id, id);
+    expect(selectMasteryPerk(engine, 'category', 'cotw_undead', 'family_reaver').success).toBe(false); // another family's
+    expect(selectMasteryPerk(engine, 'category', 'cotw_undead', 'family_grave_warden').success).toBe(true);
+    const draugr = Monster.createFromDefinition(undead.members[0], 'd1', { x: 1, y: 1 }, engine.registries);
+    const wolf = Monster.createFromDefinition('wolf', 'w1', { x: 1, y: 1 }, engine.registries);
+    expect(familyModifiers(engine, engine.player, draugr).map((m) => m.damageTakenMultiplier)).toEqual([0.8]);
+    expect(familyModifiers(engine, engine.player, wolf)).toEqual([]);
+    const { engine: reloaded } = deserializeGame(JSON.parse(JSON.stringify(serializeGame(engine))), cotwManifest);
+    expect(reloaded.compendium.getCategoryPerk('cotw_undead')).toBe('family_grave_warden');
   });
 
   it('Giant’s Grip keeps a shield beside a two-hander, through a save and load', () => {

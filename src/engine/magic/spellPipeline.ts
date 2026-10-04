@@ -2,6 +2,7 @@ import type { ActionResult, Position, VisualEffectDescriptor } from '../types';
 import { attributeScalingOf, spellPowerMultiplier } from '../combat/attributeScaling';
 import { lowestWorn, sumWorn, wornModifiers } from '../items/wornModifiers';
 import { spendOncePerFloor } from '../combat/lastStand';
+import { productAgainst, sumAgainst } from '../compendium/familyPerks';
 import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
 import { Player } from '../entities/player';
@@ -510,6 +511,9 @@ export class SpellPipeline {
       }
     }
 
+    // The target's family perk against the caster's family (Grave-Warden).
+    const familyTaken = productAgainst(engine, target, caster, 'damageTakenMultiplier');
+    if (familyTaken !== 1) rawDamage = Math.max(1, Math.round(rawDamage * familyTaken));
     rawDamage = wardFirstSpell(engine, caster, target, rawDamage);
     const terrain = engine.map.getTile(target.x, target.y)?.type;
     const result = target.takeElementalDamage(rawDamage, effect.element, engine.affinityMatrix, terrain);
@@ -557,6 +561,12 @@ export class SpellPipeline {
     effect: StatusEffectPrimitive
   ): void {
     if (!target.isAlive()) return;
+    // The target's family perk against the caster's family may shrug it off (Spirit-Ward).
+    const shrug = sumAgainst(engine, target, caster, 'afflictionShrugChance');
+    if (shrug > 0 && engine.rng() < shrug) {
+      engine.log(`${target.name} shrugs off ${caster.name}'s ${effect.statusId}!`);
+      return;
+    }
     const applied = target.statusManager.applyStatus(
       {
         type: effect.statusId as StatusType,

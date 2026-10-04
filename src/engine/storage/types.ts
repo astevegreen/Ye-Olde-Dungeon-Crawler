@@ -43,7 +43,7 @@ export interface CharacterProfile {
   xpToNextLevel?: number;
   compendium?: Record<string, { kills: number; tier: 0 | 1 | 2 | 3; firstEncounterFloor?: number; chosenPerk?: import('../compendium/types').MasteryPerkId }>;
   /** Chosen category-mastery perks by monster category ID. Optional; absent = none chosen. */
-  compendiumCategoryPerks?: Record<string, import('../compendium/types').MasteryPerkId>;
+  compendiumCategoryPerks?: Record<string, string>;
   tutorialFlags?: TutorialFlags;
   deepestRecallFloor?: number;
   recallPosition?: Position;
@@ -381,7 +381,7 @@ export interface SaveData {
   storedFovRle?: Record<number, string>;
   compendium?: Record<string, { kills: number; tier: 0 | 1 | 2 | 3; firstEncounterFloor?: number; chosenPerk?: import('../compendium/types').MasteryPerkId }>;
   /** Chosen category-mastery perks by monster category ID. Optional; absent = none chosen. */
-  compendiumCategoryPerks?: Record<string, import('../compendium/types').MasteryPerkId>;
+  compendiumCategoryPerks?: Record<string, string>;
   worldState?: SerializedWorldState;
   planes?: Record<string, PlaneState>;
   prngState?: number;

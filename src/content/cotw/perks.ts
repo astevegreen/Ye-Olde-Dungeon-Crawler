@@ -14,8 +14,7 @@ import type { ChoiceDefinition, LevelMilestoneTrigger, PerkDefinition } from '..
  *
  * Waiting on the owner: Shadow-Walker's "a monster that cannot see you does not wake" (Q57;
  * sleepers wake in the hero's sight, computed in a protected file) and Odin's Eye's ranged
- * range (Q59; no ranged attack can be made in play). Not yet built from the approved list: the
- * eight family perks.
+ * range (Q59; no ranged attack can be made in play).
  */
 /** The elements an Elementalist may choose (cotw's damaging elements), with their names. */
 const ELEMENTALIST_ELEMENTS: Array<[string, string]> = [
@@ -195,6 +194,24 @@ export const COTW_MILESTONE_PERKS: PerkDefinition[] = [
   // ── Intelligence 30 ──
   { id: 'milestone_arch_seidkona', name: 'Arch-Seiðkona', source: 'milestone', tagline: 'The void obeys before it bites.', description: 'Overflow surges come a tier milder; the mildest never comes at all.', effects: { overflowTierShift: -1 } },
   { id: 'milestone_mind_over_matter', name: 'Mind over Matter', source: 'milestone', tagline: 'You see the blow before it is thought of.', description: 'Intelligence also adds to evasion, 1% a point above 10.', effects: { evasionPerIntelligence: 0.01 } },
+];
+
+/**
+ * The family perks (Q53 "A"): one of each monster family's own, offered beside the shared five
+ * when that family is mastered and counting only against its members (`PerkDefinition.category`,
+ * `familyModifiers`). Waiting on the owner: Reaver's "wake slower to your step" (Q57), and
+ * Grave-Warden's "never drain or frighten", Spirit-Ward's "see the unseen ones", Iron Will's
+ * immunity and Wyrm-Bane's breath resistance, which have nothing in the game to act on (Q58).
+ */
+export const COTW_FAMILY_PERKS: PerkDefinition[] = [
+  { id: 'family_grave_warden', name: 'Grave-Warden', source: 'family', category: 'cotw_undead', tagline: 'The dead know a warden when they see one.', description: 'The Restless Dead deal you 20% less damage.', effects: { damageTakenMultiplier: 0.8 } },
+  { id: 'family_pack_sense', name: 'Pack-Sense', source: 'family', category: 'cotw_beasts', tagline: 'You hear the pack before it hears you.', description: 'Beasts & Vermin within ten tiles are shown through walls.', effects: { sensesWithin: 10 } },
+  { id: 'family_reaver', name: 'Reaver', source: 'family', category: 'cotw_folk', tagline: 'You know where they hide their silver.', description: 'Kin of Men & Goblins drop half again as many coins.', effects: { coinMultiplier: 1.5 } },
+  { id: 'family_giant_bane', name: 'Giant-Bane', source: 'family', category: 'cotw_jotnar', tagline: 'The bigger they are, the farther they stagger.', description: 'Your melee blows knock Jötnar & Trolls back a tile.', effects: { meleeKnockback: 1 } },
+  { id: 'family_spirit_ward', name: 'Spirit-Ward', source: 'family', category: 'cotw_vaettir', tagline: 'Iron and salt, and a word they cannot cross.', description: 'Half the time, you shrug off the afflictions of Vættir & Spirits.', effects: { afflictionShrugChance: 0.5 } },
+  { id: 'family_rust_touch', name: 'Rust-Touch', source: 'family', category: 'cotw_constructs', tagline: 'Every rivet has a weakness.', description: 'Your melee ignores half the defense of the Forged & Formless.', effects: { defensePenetration: 0.5 } },
+  { id: 'family_iron_will', name: 'Iron Will', source: 'family', category: 'cotw_horrors', tagline: 'You have looked into worse and walked away.', description: 'Fiends & Horrors give half again as much XP.', effects: { xpMultiplier: 1.5 } },
+  { id: 'family_wyrm_bane', name: 'Wyrm-Bane', source: 'family', category: 'cotw_wyrms', tagline: 'You hear the breath drawn before it is loosed.', description: 'Wyrms & Dragonkind give you a turn more warning of their wind-ups.', effects: { windUpWarningBonus: 1 } },
 ];
 
 const grant = (perkId: string) => ({ type: 'grantPerk' as const, perkId });

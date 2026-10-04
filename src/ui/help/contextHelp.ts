@@ -223,6 +223,7 @@ export class ContextHelp {
             { key: 'Enter / 1-9', label: 'Buy or sell the chosen item, or one by its number' },
             { key: 'J', label: 'Sell everything you marked as junk at once' },
             { key: 'C / H', label: `Cleanse curses (${formatCurrency(TempleService.CURSE_CLEANSE_COST_CP)}) or heal and restore (${formatCurrency(TempleService.HEAL_RESTORE_COST_CP)})` },
+            { key: 'O / R', label: 'At the temple: offer a cursed item for piety, or receive a blessing' },
             { key: 'I / A / B', label: 'Identify items, Seek Run Advisory, or Open Bestiary' },
             { key: 'Esc', label: 'Exit shop or return to town streets' },
           ],

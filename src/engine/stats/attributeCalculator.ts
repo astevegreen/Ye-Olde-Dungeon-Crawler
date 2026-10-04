@@ -170,10 +170,10 @@ export function calculateAttribute(
   // PHASE 3: Multipliers
   // ─────────────────────────────────────────────────────────────
   if (attributeKey === 'maxHp') {
-    if (actor.pactMutatorsSupplier) {
-      const pct = actor.pactMutatorsSupplier().playerMaxHpPercent ?? 0;
-      value = value * (1 + pct);
-    }
+    const pact = actor.pactMutatorsSupplier?.().playerMaxHpPercent ?? 0;
+    // A blessing's lasting share (`Player.maxHpPercentBonus`); other actors have none.
+    const blessing = (actor as { maxHpPercentBonus?: number }).maxHpPercentBonus ?? 0;
+    value = value * (1 + pact + blessing);
   } else if (attributeKey === 'actionCost') {
     // Encumbrance cost adjustment first if available on inventory
     if (actor.inventory) {

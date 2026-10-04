@@ -2,7 +2,7 @@ import type { Position, TileDefinition } from '../types';
 import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
 import type { SpellDefinition } from '../magic/types';
 import type { ItemCategory, ItemQuality, EquipmentSlot, ItemStatModifiers, Item, RangedWeaponConfig } from '../items/item';
-import type { ModifierCategory } from '../items/modifiers';
+import type { ModifierAlignment, ModifierCategory } from '../items/modifiers';
 import type { ItemFamilyConfig } from '../items/modifierRoller';
 import type { ContainerType } from '../items/container';
 import type { PotionType } from '../items/consumables';
@@ -264,6 +264,47 @@ export interface TownServicesDefinition {
   corruptionSurchargeThreshold?: number;
   /** Price multiplier past `corruptionSurchargeThreshold`. Default 2. */
   corruptionSurchargeMultiplier?: number;
+  /** What the temple takes from the pack as offerings (`TempleService.makeOffering`); absent, none. */
+  templeOfferings?: TempleOfferingsDefinition;
+  /** Blessings the priests grant once each, free, at a piety threshold (`TempleService.receiveBlessing`). */
+  templeBlessings?: TempleBlessingDefinition[];
+  /** The renown category the hero's piety is counted in. Default `'piety'`. */
+  pietyCategory?: string;
+}
+
+/**
+ * Temple offerings: an identified item from the pack carrying a family of one of these
+ * alignments is taken, for no coin. Each records `milestoneId` (repeatable, so its renown is the
+ * piety an offering earns) and adds `standingDelta` to the temple's standing. Accepted at any
+ * standing; refused, like every service but the cleanse, while the hero wears a `templeShunned` item.
+ */
+export interface TempleOfferingsDefinition {
+  alignments: ModifierAlignment[];
+  milestoneId: string;
+  standingDelta?: number;
+  /** Logged on an offering; `{item}` names it. */
+  messageTemplate?: string;
+}
+
+/** What a temple blessing does; each is granted once, and remembered as a world flag. */
+export type TempleBlessingEffect =
+  /** Temple healing costs nothing from then on. */
+  | { type: 'freeHealing' }
+  /** One carried item of these categories, identified and with no family, gains `family` at the
+   *  tier the hero's deepest floor (`deepestFloorCounter`) has reached. */
+  | { type: 'hallowItem'; family: ModifierCategory; categories: ItemCategory[] }
+  /** Max HP rises by this share for good (`Player.maxHpPercentBonus`); 0.1 is +10%. */
+  | { type: 'maxHpPercent'; percent: number };
+
+export interface TempleBlessingDefinition {
+  id: string;
+  name: string;
+  description: string;
+  /** The piety (renown in `pietyCategory`) at which it becomes available. */
+  minPiety: number;
+  effect: TempleBlessingEffect;
+  /** Logged when granted; `{item}` names a hallowed item. */
+  message?: string;
 }
 
 export interface TownNpcDefinition {

@@ -115,6 +115,8 @@ export class Player extends Actor {
   declare public pactMutatorsSupplier?: () => import('../pacts/pactManager').RunPactMutatorRules;
   public energyModel?: EnergyModel;
   public voidDebt: number;
+  /** A lasting share added to max HP (0.1 is +10%), from a temple blessing (`TempleBlessingEffect`). */
+  public maxHpPercentBonus = 0;
   public grimoirePages: GrimoirePage[];
   public activeGrimoireIndex: number;
   /** Slots open to spells on every page; undefined means all nine (saves from before sealing). */

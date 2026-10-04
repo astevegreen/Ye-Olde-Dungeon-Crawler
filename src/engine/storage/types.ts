@@ -233,6 +233,8 @@ export interface SerializedPlayer {
   runeMaxCharges?: number;
   energyModel?: SerializedEnergyModel;
   voidDebt?: number;
+  /** A temple blessing's lasting max HP share; absent when none. */
+  maxHpPercentBonus?: number;
   grimoire?: import('../magic/grimoireMatrix').GrimoireSlot[];
   grimoirePages?: import('../magic/grimoireMatrix').GrimoirePage[];
   activeGrimoireIndex?: number;

@@ -177,9 +177,45 @@ export const COTW_TOWN: TownLayoutDefinition = {
       "The High Priest of Thor scowls with righteous fury: 'Desecrator of sacred altars! You have betrayed the gods and are unwelcome in Thor's sacred hall!'",
     templeShunnedMessage:
       "The High Priest of Thor recoils from what you wear: 'Hel's mark is on you. I will burn it from you for twice the donation, and lay no other hand on you until then.'",
-    // Blood-magic corruption: doubled donations from 25, refused outright from 75.
+    // Blood-magic corruption: doubled donations from 25, refused outright from 75 (all but
+    // the cleanse, which is never refused: Q50).
     corruptionSurchargeThreshold: 25,
     corruptionRefusalThreshold: 75,
+    // Q9 "A", Q49 "A", Q50 "A": cursed, hexed and Hel-touched things from the pack, for
+    // piety (5 each) and a step back toward the temple's favor; three blessings, once each.
+    pietyCategory: 'piety',
+    templeOfferings: {
+      alignments: ['negative'],
+      milestoneId: 'temple_offering',
+      standingDelta: 1,
+      messageTemplate: 'The High Priest of Thor takes {item} from you and casts it into the sacred fire. The gods mark the gift.',
+    },
+    templeBlessings: [
+      {
+        id: 'eirs_mercy',
+        name: "Eir's Mercy",
+        description: 'Eir, healer of the gods, keeps you: the temple heals you without a donation from now on.',
+        minPiety: 30,
+        effect: { type: 'freeHealing' },
+        message: 'The High Priest of Thor calls on Eir, healer of the gods. From now on the temple heals you without a donation.',
+      },
+      {
+        id: 'thors_hallowing',
+        name: "Thor's Hallowing",
+        description: 'The priest hallows one plain weapon or armor piece you carry: it becomes Holy, bane of the undead and demons, as strong as your deepest floor allows.',
+        minPiety: 60,
+        effect: { type: 'hallowItem', family: 'holy', categories: ['weapon', 'armor', 'shield', 'helmet', 'boots', 'gauntlets', 'bracers', 'cloak'] },
+        message: "The High Priest of Thor lays the hammer-sign on your gear. Thor's light settles in it: {item}.",
+      },
+      {
+        id: 'baldrs_grace',
+        name: "Baldr's Grace",
+        description: "Baldr's light settles in you: your max HP rises by a tenth, for good.",
+        minPiety: 100,
+        effect: { type: 'maxHpPercent', percent: 0.1 },
+        message: "The High Priest of Thor speaks Baldr's name over you, and warmth runs through your veins (+10% max HP, for good).",
+      },
+    ],
   },
 };
 

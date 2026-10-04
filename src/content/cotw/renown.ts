@@ -40,6 +40,15 @@ export const COTW_RENOWN_MILESTONES: RenownMilestoneDefinition[] = [
   { id: 'barrow_honoured', category: 'exploration', label: 'Barrow-Warden', description: 'Said the rites over an Iron Clans barrow and left its silver.', renownValue: 5, repeatable: true },
   { id: 'forge_friend', category: 'exploration', label: 'Friend of the Forge', description: 'Learned the craft of the Accord from Ivalda, the last forge-keeper.', renownValue: 15 },
   // Piety.
+  {
+    // Q9 "A" + Q49 "A": each cursed thing given to the temple's fire.
+    id: 'temple_offering',
+    category: 'piety',
+    label: 'Offering-Bearer',
+    description: "Gave a cursed thing to the fire of Thor's temple.",
+    renownValue: 5,
+    repeatable: true,
+  },
   { id: 'tyr_oath_kept', category: 'piety', label: 'Oath-Keeper', description: "Cleansed Tyr's altar with an oath on the sword hand.", renownValue: 15 },
   // Combat: the saga's deeds.
   { id: 'matriarch_bargain', category: 'combat', label: "The Matriarch's Blood-Oath", description: 'Ended the siphon on the village by a bargain with the troll-wife matriarch.', renownValue: 15 },

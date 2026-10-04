@@ -515,6 +515,7 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     runeCharges: p.runeCharges,
     runeMaxCharges: p.runeMaxCharges,
     voidDebt: p.voidDebt ?? 0,
+    maxHpPercentBonus: p.maxHpPercentBonus || undefined,
     activeGrimoireIndex: p.activeGrimoireIndex ?? 0,
     grimoireOpenSlots: p.grimoireOpenSlots ? [...p.grimoireOpenSlots] : undefined,
     grimoireGrounds: Object.keys(p.grimoireGrounds).length > 0 ? { ...p.grimoireGrounds } : undefined,
@@ -1038,6 +1039,8 @@ export function deserializeGame(
     grimoireGrounds: pData.grimoireGrounds ? { ...pData.grimoireGrounds } : undefined,
   });
   player.energy = Number(pData.energy) || 0;
+  // Before HP is clamped to max HP, which the blessing raises.
+  player.maxHpPercentBonus = Number(pData.maxHpPercentBonus) || 0;
   player.hp = Math.min(Number(pData.hp) || 1, player.maxHp);
   if (pData.statusEffects) {
     player.statusManager.deserialize(pData.statusEffects);

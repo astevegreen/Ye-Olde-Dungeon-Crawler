@@ -20,7 +20,9 @@ import {
   type ServicePanel,
   type ShopAction,
   identifiableItems,
+  nextBlessing,
   serviceTitle,
+  templeChoices,
   servicePanelFor,
   servicePanelHtml,
 } from './shopPanels';
@@ -315,6 +317,23 @@ export class ShopDialog {
       case 'heal':
         this.report(bus.dispatch({ type: 'temple_heal' }));
         return;
+      case 'offer': {
+        const item = templeChoices(engine)[this.selectedChoiceIndex];
+        if (!item) return;
+        const result = bus.dispatch({ type: 'temple_offer', payload: { item } });
+        this.selectedChoiceIndex = Math.max(0, Math.min(this.selectedChoiceIndex, templeChoices(engine).length - 1));
+        this.report(result);
+        return;
+      }
+      case 'bless': {
+        const blessing = nextBlessing(engine);
+        if (!blessing) return;
+        const item = blessing.effect.type === 'hallowItem' ? templeChoices(engine)[this.selectedChoiceIndex] : undefined;
+        const result = bus.dispatch({ type: 'temple_bless', payload: { blessingId: blessing.id, item } });
+        this.selectedChoiceIndex = 0;
+        this.report(result);
+        return;
+      }
       case 'identify': {
         const item = identifiableItems(engine)[this.selectedChoiceIndex];
         if (item) this.report(bus.dispatch({ type: 'sage_identify', payload: { item } }), 'warn');

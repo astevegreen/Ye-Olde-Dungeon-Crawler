@@ -320,6 +320,22 @@ export class EngineCommandBus implements GameCommandBus {
         return { success: res.success, message: res.message };
       }
 
+      // Offerings and blessings (tracker 2.6): outside the turn order, like every town service.
+      case 'temple_offer': {
+        const item = (p.item as Item) ?? this.engine.player.inventory.findItemById(p.itemId as string);
+        if (!item) return { success: false, message: 'Nothing chosen to offer.' };
+        const res = TempleService.makeOffering(this.engine, item);
+        this.engine.log(res.message);
+        return { success: res.success, message: res.message };
+      }
+
+      case 'temple_bless': {
+        const item = (p.item as Item | undefined) ?? (p.itemId ? this.engine.player.inventory.findItemById(p.itemId as string) ?? undefined : undefined);
+        const res = TempleService.receiveBlessing(this.engine, p.blessingId as string, item);
+        this.engine.log(res.message);
+        return { success: res.success, message: res.message };
+      }
+
       case 'temple_heal': {
         const res = TempleService.healAndRestore(this.engine.player, undefined, undefined, this.engine);
         this.engine.log(res.message);

@@ -1,6 +1,6 @@
 import type { Player } from '../entities/player';
 import type { Item } from '../items/item';
-import type { TownServicesDefinition } from '../types/manifest';
+import type { TempleBlessingDefinition, TownServicesDefinition } from '../types/manifest';
 import {
   type ServiceResult,
 } from './types';
@@ -13,7 +13,9 @@ import {
   breakdownChange,
 } from './currency';
 import type { GameEngine } from '../engine';
-import type { WorldState } from '../state/worldState';
+import { getFaction, getFlag, modifyFaction, type WorldState } from '../state/worldState';
+import { getRenownTotal, recordMilestone } from '../renown/renownLedger';
+import { familyModifier } from '../items/modifierRoller';
 import { RunAdvisor, type AdvisoryReport } from '../advisory/runAdvisor';
 import type { CompanionArchetype } from '../entities/companion';
 
@@ -202,6 +204,8 @@ export class TempleService {
       };
     }
 
+    if (TempleService.healingIsFree(services, worldStateOf(engineOrWorldState))) costCp = 0;
+
     const isFullHp = player.hp >= player.maxHp;
     const isFullMana = player.mana >= player.maxMana;
     const hasStatus = player.statusManager.getAll().length > 0;
@@ -224,9 +228,11 @@ export class TempleService {
     }
 
     // Deduct donation fee
-    const deduction = deductCurrencyFromPlayer(player, costCp);
-    if (!deduction.success) {
-      return deduction;
+    if (costCp > 0) {
+      const deduction = deductCurrencyFromPlayer(player, costCp);
+      if (!deduction.success) {
+        return deduction;
+      }
     }
 
     // Clear all status effects
@@ -244,6 +250,118 @@ export class TempleService {
       costInCp: costCp,
     };
   }
+
+  // ---- Offerings and blessings (tracker 2.6: Q9, Q34, Q49, Q50) ----------------------------
+
+  /** The world flag a granted blessing leaves. */
+  private static blessingFlag(id: string): string {
+    return `temple_blessing:${id}`;
+  }
+
+  /** True once a `freeHealing` blessing has been granted. */
+  private static healingIsFree(services: TownServicesDefinition | undefined, worldState: WorldState | undefined): boolean {
+    if (!worldState) return false;
+    return (services?.templeBlessings ?? []).some((b) => b.effect.type === 'freeHealing' && getFlag(worldState, TempleService.blessingFlag(b.id)));
+  }
+
+  private static standingOf(engine: GameEngine): number {
+    return getFaction(engine.worldState, engine.manifest.town?.services?.templeStandingFaction ?? 'temple_standing');
+  }
+
+  /** The hero's piety: renown in the pack's piety category. */
+  public static piety(engine: GameEngine): number {
+    return getRenownTotal(engine, engine.manifest.town?.services?.pietyCategory ?? 'piety');
+  }
+
+  /** What the hero may offer: identified items in the pack carrying an accepted family. */
+  public static offerableItems(engine: GameEngine): Item[] {
+    const offerings = engine.manifest.town?.services?.templeOfferings;
+    if (!offerings) return [];
+    return engine.player.inventory.primaryPack
+      .getItems()
+      .filter((item) => item.identified && item.modifiers.some((m) => offerings.alignments.includes(m.alignment)));
+  }
+
+  /** Takes an item from the pack as an offering: no coin, piety (its milestone) and standing. */
+  public static makeOffering(engine: GameEngine, item: Item): ServiceResult {
+    const services = engine.manifest.town?.services;
+    const offerings = services?.templeOfferings;
+    const priest = services?.priestTitle ?? 'The priest';
+    if (!offerings) return { success: false, costInCp: 0, message: `${priest} takes no offerings.` };
+    if (TempleService.wearsShunned(engine.player)) {
+      return { success: false, costInCp: 0, message: services?.templeShunnedMessage ?? `${priest} will take nothing from you while you wear that.` };
+    }
+    if (!TempleService.offerableItems(engine).includes(item)) {
+      return { success: false, costInCp: 0, message: `${priest} takes only cursed things you know for what they are, from your pack.` };
+    }
+    engine.player.inventory.primaryPack.removeItem(item.id);
+    recordMilestone(engine, offerings.milestoneId);
+    if (offerings.standingDelta) {
+      modifyFaction(engine.worldState, services?.templeStandingFaction ?? 'temple_standing', offerings.standingDelta);
+    }
+    const message = (offerings.messageTemplate ?? `${priest} takes {item} from you and gives it to the fire.`).replace('{item}', item.displayName);
+    return { success: true, costInCp: 0, message };
+  }
+
+  /** Blessings the hero may receive now: not yet granted, and the piety reached. */
+  public static availableBlessings(engine: GameEngine): TempleBlessingDefinition[] {
+    const piety = TempleService.piety(engine);
+    return (engine.manifest.town?.services?.templeBlessings ?? []).filter(
+      (b) => piety >= b.minPiety && !engine.getWorldFlag(TempleService.blessingFlag(b.id))
+    );
+  }
+
+  /** What a `hallowItem` blessing may take: carried or worn, identified, of its categories, with no family. */
+  public static hallowableItems(engine: GameEngine, blessingId: string): Item[] {
+    const blessing = engine.manifest.town?.services?.templeBlessings?.find((b) => b.id === blessingId);
+    if (blessing?.effect.type !== 'hallowItem') return [];
+    const { categories } = blessing.effect;
+    const inventory = engine.player.inventory;
+    return [...inventory.primaryPack.getItems(), ...inventory.paperdoll.getAllEquipped().map((e) => e.item)].filter(
+      (item) => item.identified && item.quality !== 'artifact' && item.modifiers.length === 0 && categories.includes(item.category)
+    );
+  }
+
+  /** Grants a blessing once, free; `item` is the one a `hallowItem` blessing acts on. */
+  public static receiveBlessing(engine: GameEngine, blessingId: string, item?: Item): ServiceResult {
+    const services = engine.manifest.town?.services;
+    const priest = services?.priestTitle ?? 'The priest';
+    const blessing = TempleService.availableBlessings(engine).find((b) => b.id === blessingId);
+    if (!blessing) return { success: false, costInCp: 0, message: 'That blessing is not yours to receive.' };
+    if (TempleService.standingOf(engine) < 0) {
+      return { success: false, costInCp: 0, message: services?.templeRefusalMessage ?? `${priest} refuses to serve you.` };
+    }
+    if (TempleService.wearsShunned(engine.player)) {
+      return { success: false, costInCp: 0, message: services?.templeShunnedMessage ?? `${priest} will not lay hands on you while you wear that.` };
+    }
+
+    const effect = blessing.effect;
+    let itemName = '';
+    if (effect.type === 'hallowItem') {
+      const families = engine.manifest.itemFamilies;
+      if (!item || !families || !TempleService.hallowableItems(engine, blessing.id).includes(item)) {
+        return { success: false, costInCp: 0, message: `Choose a plain piece of gear for ${blessing.name}.` };
+      }
+      const counter = engine.manifest.deepestFloorCounter;
+      const depth = Math.max(1, counter ? engine.getWorldCounter(counter) : engine.currentFloor);
+      const modifier = familyModifier(families, effect.family, depth, item.id);
+      if (!modifier) return { success: false, costInCp: 0, message: `${priest} cannot hallow that.` };
+      item.addModifier(modifier);
+      itemName = item.displayName;
+    } else if (effect.type === 'maxHpPercent') {
+      const before = engine.player.maxHp;
+      engine.player.maxHpPercentBonus += effect.percent;
+      engine.player.hp += engine.player.maxHp - before;
+    }
+    engine.setWorldFlag(TempleService.blessingFlag(blessing.id), true);
+    const message = (blessing.message ?? `${priest} grants you ${blessing.name}.`).replace('{item}', itemName);
+    return { success: true, costInCp: 0, message };
+  }
+}
+
+/** The world state behind a service call's engine-or-state argument. */
+function worldStateOf(engineOrWorldState?: GameEngine | WorldState): WorldState | undefined {
+  return engineOrWorldState && 'worldState' in engineOrWorldState ? engineOrWorldState.worldState : (engineOrWorldState as WorldState | undefined);
 }
 
 export class SageService {

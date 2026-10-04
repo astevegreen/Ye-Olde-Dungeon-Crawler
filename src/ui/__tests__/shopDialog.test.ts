@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type MockInstance } from 'vitest';
 import { GameEngine, GameMap, Item, Merchant, NPC, Player, addCoinsToContainer, type GameContentManifest, type NpcRole } from '../../engine';
 import { COTW_PACTS } from '../../content/cotw/pacts';
+import { cotwManifest } from '../../content/cotw';
 import { ShopDialog } from '../shop/shopDialog';
 import { servicePanelFor, servicePanelHtml, type ShopAction } from '../shop/shopPanels';
 
@@ -335,6 +336,60 @@ describe('ShopDialog', () => {
     const markup = servicePanelHtml(servicePanelFor(engine, npc('sage'))!);
     expect(markup).toMatch(/data-act="identify" disabled/);
     expect(markup).toMatch(/data-act="advise">/);
+  });
+
+  describe('the temple (2.6)', () => {
+    const cotwEngine = () => {
+      const e = new GameEngine({ map: new GameMap(20, 20), player: new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } }), floor: 0, manifest: cotwManifest });
+      dispatch = vi.spyOn(e.commandBus, 'dispatch').mockReturnValue({ success: true, message: 'Done.' });
+      return e;
+    };
+    const cursedRing = (id: string) => {
+      const ring = new Item({ id, name: 'Iron Band', category: 'ring', slot: 'fingerLeft', weight: 50, bulk: 40, identified: true });
+      ring.addModifier({ id: `${id}-m`, name: 'Cursed', alignment: 'negative', category: 'cursed', prefix: 'Cursed', binds: true });
+      return ring;
+    };
+    const payloads = () => dispatch.mock.calls.map((c) => c[0] as { type: string; payload?: Record<string, unknown> });
+
+    it('offers the chosen cursed item with O, and shows the piety the blessings need', () => {
+      const e = cotwEngine();
+      e.player.inventory.primaryPack.addItem(cursedRing('a'));
+      const second = cursedRing('b');
+      e.player.inventory.primaryPack.addItem(second);
+      const shop = new ShopDialog();
+      shop.open(npc('priest'), null, e);
+      expect(html()).toContain('Piety');
+      expect(html()).toContain("Eir's Mercy");
+      shop.handleKeyDown(key('ArrowDown'), e);
+      shop.handleKeyDown(key('o'), e);
+      expect(payloads()).toEqual([{ type: 'temple_offer', payload: { item: second } }]);
+    });
+
+    it('receives the next blessing with R, on the chosen gear for a hallowing', () => {
+      const e = cotwEngine();
+      dispatch.mockRestore();
+      for (let i = 0; i < 12; i++) {
+        const ring = cursedRing(`o${i}`);
+        e.player.inventory.primaryPack.addItem(ring);
+        e.commandBus.dispatch({ type: 'temple_offer', payload: { item: ring } });
+      }
+      dispatch = vi.spyOn(e.commandBus, 'dispatch').mockReturnValue({ success: true, message: 'Done.' });
+      const shop = new ShopDialog();
+      shop.open(npc('priest'), null, e);
+      shop.handleKeyDown(key('r'), e);
+      expect(payloads()[0]).toEqual({ type: 'temple_bless', payload: { blessingId: 'eirs_mercy', item: undefined } });
+      // With Eir's Mercy granted, Thor's Hallowing is next: R takes the chosen plain gear.
+      dispatch.mockRestore();
+      e.commandBus.dispatch({ type: 'temple_bless', payload: { blessingId: 'eirs_mercy' } });
+      const sword = new Item({ id: 'sword', name: 'Sword', category: 'weapon', slot: 'mainHand', weight: 1000, bulk: 500, identified: true });
+      e.player.inventory.primaryPack.addItem(sword);
+      dispatch = vi.spyOn(e.commandBus, 'dispatch').mockReturnValue({ success: true, message: 'Done.' });
+      shop.close();
+      shop.open(npc('priest'), null, e);
+      expect(html()).toContain('to hallow');
+      shop.handleKeyDown(key('r'), e);
+      expect(payloads()).toEqual([{ type: 'temple_bless', payload: { blessingId: 'thors_hallowing', item: sword } }]);
+    });
   });
 
   it("shows a townsperson's advice from the pack, and nothing but the greeting without it", () => {

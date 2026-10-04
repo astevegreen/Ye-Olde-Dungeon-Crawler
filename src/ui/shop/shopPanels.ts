@@ -6,6 +6,7 @@ import {
   type GameEngine,
   type Item,
   type NPC,
+  type TempleBlessingDefinition,
   SageService,
   TempleService,
   TrainerService,
@@ -17,6 +18,7 @@ import {
 } from '../../engine';
 import { resolveBranding } from '../branding';
 import { escapeHtml, keyChip } from '../html';
+import { itemToneClass } from '../inventory/itemTone';
 
 /**
  * What the shop dialog shows for each town service, as data and HTML. The dialog
@@ -42,6 +44,8 @@ export type ShopAction =
   | 'rune-ranks'
   | 'pact'
   | 'sell-junk'
+  | 'offer'
+  | 'bless'
   | 'leave';
 
 /** One service a townsperson offers: its button, its key, and what it costs. */
@@ -93,27 +97,81 @@ export function identifiableItems(engine: GameEngine): Item[] {
   ].filter((i) => !i.identified && i.canBeIdentified());
 }
 
-function templePanel(engine: GameEngine): ServicePanel {
+/** The blessing the temple would grant next, if the hero's piety has reached one. */
+export function nextBlessing(engine: GameEngine): TempleBlessingDefinition | undefined {
+  return TempleService.availableBlessings(engine)[0];
+}
+
+/** The temple's list to choose from: what can be offered, then, while a hallowing is next,
+ *  the plain gear it could take. */
+export function templeChoices(engine: GameEngine): Item[] {
+  const next = nextBlessing(engine);
+  return [...TempleService.offerableItems(engine), ...(next?.effect.type === 'hallowItem' ? TempleService.hallowableItems(engine, next.id) : [])];
+}
+
+function templePanel(engine: GameEngine, selected: number): ServicePanel {
   const mana = resolveManaTerms(engine.manifest).name;
+  const services = engine.manifest.town?.services;
+  const offerable = TempleService.offerableItems(engine);
+  const choices = templeChoices(engine);
+  const index = Math.max(0, Math.min(selected, choices.length - 1));
+  const chosen = choices[index];
+  const next = nextBlessing(engine);
+  const blessings = services?.templeBlessings ?? [];
+  const healFree = blessings.some((b) => b.effect.type === 'freeHealing' && engine.getWorldFlag(`temple_blessing:${b.id}`));
+
+  const pietyNote = blessings.length
+    ? `<div class="ui-note">Piety <b class="ui-num">${TempleService.piety(engine)}</b>. Blessings at ${blessings.map((b) => `${b.minPiety} (${escapeHtml(b.name)})`).join(', ')}.</div>`
+    : '';
+  const offeringNote = services?.templeOfferings
+    ? '<div class="ui-note">The priests take cursed things from your pack as offerings, for piety, once you know them for what they are.</div>'
+    : '';
+  const offers: ServiceOffer[] = [
+    {
+      act: 'cleanse',
+      key: 'C',
+      label: 'Cleanse curses',
+      detail: 'Breaks every curse on the gear you wear. The freed items go to your pack.',
+      priceCp: TempleService.CURSE_CLEANSE_COST_CP,
+    },
+    {
+      act: 'heal',
+      key: 'H',
+      label: 'Heal and restore',
+      detail: `Cures poison, paralysis and slowness, and restores all your health and ${mana}.`,
+      priceCp: healFree ? 0 : TempleService.HEAL_RESTORE_COST_CP,
+    },
+  ];
+  if (services?.templeOfferings) {
+    offers.push({
+      act: 'offer',
+      key: 'O',
+      label: 'Offer the chosen item',
+      detail: 'Gives a cursed thing from your pack to the fire. No coin; the gods remember.',
+      priceCp: 0,
+      disabled: !chosen || !offerable.includes(chosen),
+    });
+  }
+  if (next) {
+    const hallow = next.effect.type === 'hallowItem';
+    offers.push({
+      act: 'bless',
+      key: 'R',
+      label: `Receive ${next.name}${hallow && chosen && !offerable.includes(chosen) ? ` on ${chosen.displayName}` : ''}`,
+      detail: next.description,
+      priceCp: 0,
+      disabled: hallow && (!chosen || offerable.includes(chosen)),
+    });
+  }
   return {
     heading: 'Services',
-    facts: '<div class="ui-note">Your standing with the temple can raise or lower these prices.</div>',
-    offers: [
-      {
-        act: 'cleanse',
-        key: 'C',
-        label: 'Cleanse curses',
-        detail: 'Breaks every curse on the gear you wear. The freed items go to your pack.',
-        priceCp: TempleService.CURSE_CLEANSE_COST_CP,
-      },
-      {
-        act: 'heal',
-        key: 'H',
-        label: 'Heal and restore',
-        detail: `Cures poison, paralysis and slowness, and restores all your health and ${mana}.`,
-        priceCp: TempleService.HEAL_RESTORE_COST_CP,
-      },
-    ],
+    facts: `<div class="ui-note">Your standing with the temple can raise or lower these prices.</div>${pietyNote}${offeringNote}`,
+    choices: choices.map(
+      (i) =>
+        `<span class="bs-name${itemToneClass(i)}">${escapeHtml(i.displayName)}</span><span class="ui-faint">${offerable.includes(i) ? 'offering' : 'to hallow'}</span>`
+    ),
+    selected: index,
+    offers,
   };
 }
 
@@ -293,7 +351,7 @@ function basePanelFor(engine: GameEngine, npc: NPC, selected: number): ServicePa
   if (attunementNpcId && npc.id === attunementNpcId) return runeSmithPanel(engine);
   switch (npc.role) {
     case 'priest':
-      return templePanel(engine);
+      return templePanel(engine, selected);
     case 'sage':
       return sagePanel(engine, selected);
     case 'banker':

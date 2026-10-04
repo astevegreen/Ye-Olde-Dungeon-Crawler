@@ -18,6 +18,7 @@ import { getTerrainSpriteKey, getEntitySpriteKey, getItemSpriteKey } from './atl
 import { terrainLayers, contactShadowSides, zoneForFloor, type TerrainView } from './atlas/terrain-layers';
 import { ViewportManager } from './viewport';
 import { elementColor, resolveThemeTokens, type ThemeTokens, uiFont, uiFontPx, withAlpha } from './theme';
+import { itemFrameColor } from './itemFrame';
 import { CanvasFXRunner } from './fxRunner';
 import type { NavigationController } from '../ui/navigation';
 import { CloseDoorAction } from '../engine';
@@ -1403,17 +1404,24 @@ export class CanvasRenderer {
     ctx.restore();
   }
 
-  private drawGroundHighlight(px: number, py: number, cs: number): void {
+  /** The square under ground loot; a known item of a family is framed in its color (N29). */
+  private drawGroundHighlight(px: number, py: number, cs: number, frame: string | null = null): void {
     const ctx = this.ctx;
     ctx.save();
     ctx.globalAlpha = 0.2;
-    ctx.fillStyle = this.theme.accent;
+    ctx.fillStyle = frame ?? this.theme.accent;
     ctx.fillRect(px + 2, py + 2, cs - 4, cs - 4);
+    if (frame) {
+      ctx.globalAlpha = 0.9;
+      ctx.strokeStyle = frame;
+      ctx.lineWidth = Math.max(1.5, cs / 20);
+      ctx.strokeRect(px + 2.5, py + 2.5, cs - 5, cs - 5);
+    }
     ctx.restore();
   }
 
   private drawGroundItem(px: number, py: number, cs: number, item: Item): void {
-    this.drawGroundHighlight(px, py, cs);
+    this.drawGroundHighlight(px, py, cs, itemFrameColor(this.theme, item));
     const spriteKey = getItemSpriteKey(item, this.atlas.hasSprite.bind(this.atlas));
     this.atlas.drawSprite(this.ctx, spriteKey, px + 2, py + 2, cs - 4, Visibility.Visible);
     if (item instanceof Container) {

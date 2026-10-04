@@ -14,7 +14,7 @@ import {
 import { createDialogScrim, dialogButton, dialogHtml } from '../dialog';
 import { escapeHtml, keyChip } from '../html';
 import { formatLoad, formatWeight } from '../units';
-import { itemToneClass } from '../inventory/itemTone';
+import { itemFrameClass, itemToneClass } from '../inventory/itemTone';
 import { itemDetailHtml } from '../inventory/itemDetail';
 import { ItemInspector } from '../inventory/itemInspector';
 import {
@@ -550,7 +550,7 @@ export class ShopDialog {
         ([item, ...more], i) => `
         <button type="button" class="bs-row shop-row${i === selected ? ' is-selected' : ''}" role="option" aria-selected="${i === selected}" data-row="${i}">
           <span class="shop-row-key">${i < 9 ? keyChip(String(i + 1)) : ''}</span>
-          <canvas class="shop-icon" width="24" height="24" data-item="${i}" aria-hidden="true"></canvas>
+          <canvas class="shop-icon${itemFrameClass(item)}" width="24" height="24" data-item="${i}" aria-hidden="true"></canvas>
           <span class="bs-name${itemToneClass(item)}">${escapeHtml(item.displayName)}${more.length ? ` <span class="ui-faint shop-count">×${more.length + 1}</span>` : ''}${item.junk ? ' <span class="ui-faint shop-junk">junk</span>' : ''}</span>
           <span class="ui-num ui-faint">${escapeHtml(stepCell(item))}</span>
           <span class="ui-num shop-price">${escapeHtml(priceCell(item))}</span>
@@ -593,7 +593,7 @@ export class ShopDialog {
       <div class="ui-card shop-detail">
         ${itemDetailHtml(engine, item, this.inspector, {
           source: this.activeTab === 'buy' ? 'ground' : 'backpack',
-          iconHtml: '<canvas class="shop-detail-icon" width="48" height="48" data-detail aria-hidden="true"></canvas>',
+          iconHtml: `<canvas class="shop-detail-icon${itemFrameClass(item)}" width="48" height="48" data-detail aria-hidden="true"></canvas>`,
           compare: true,
           showValue: false,
         })}
@@ -624,7 +624,7 @@ export class ShopDialog {
       <div class="ui-card shop-detail">
         ${itemDetailHtml(engine, item, this.inspector, {
           source: 'backpack',
-          iconHtml: '<canvas class="shop-detail-icon" width="48" height="48" data-detail aria-hidden="true"></canvas>',
+          iconHtml: `<canvas class="shop-detail-icon${itemFrameClass(item)}" width="48" height="48" data-detail aria-hidden="true"></canvas>`,
           compare: false,
           showValue: false,
         })}

@@ -244,6 +244,19 @@
 .it-tone-silver { color: var(--ui-coin-silver); }
 .it-tone-gold { color: var(--ui-coin-gold); }
 
+/* Icon frames (N29): an identified item's icon, cell or slot in its name's color
+   (itemFrameClass). A cell or slot takes it on its border (inventory.css); a lone icon
+   takes a ring. */
+.it-frame-cursed { --it-frame: var(--ui-rarity-cursed); }
+.it-frame-hexed { --it-frame: var(--ui-rarity-hexed); }
+.it-frame-unholy { --it-frame: var(--ui-rarity-unholy); }
+.it-frame-holy { --it-frame: var(--ui-rarity-holy); }
+.it-frame-enchanted { --it-frame: var(--ui-rarity-enchanted); }
+.it-frame-blessed { --it-frame: var(--ui-rarity-blessed); }
+.it-frame-chaotic { --it-frame: var(--ui-rarity-chaotic); }
+.it-frame-artifact { --it-frame: var(--ui-rarity-artifact); }
+canvas.it-frame { box-shadow: 0 0 0 2px var(--it-frame); border-radius: 3px; }
+
 .ui-num { font-family: var(--ui-font-num); font-variant-numeric: tabular-nums lining-nums; }
 .ui-muted { color: var(--ui-text-muted); }
 .ui-faint { color: var(--ui-text-faint); }

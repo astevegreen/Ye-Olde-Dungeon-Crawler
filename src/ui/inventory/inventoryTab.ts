@@ -3,7 +3,7 @@ import type { GameState } from '../characterMenu/gameState';
 import type { MenuFooter, MenuHost, MenuTab } from '../characterMenu/menuTab';
 import { escapeHtml, keyChip } from '../html';
 import { formatLoad, formatWeight } from '../units';
-import { itemToneClass } from './itemTone';
+import { FRAME_LEGEND, itemFrameClass, itemToneClass } from './itemTone';
 import { itemDetailHtml } from './itemDetail';
 import {
   BACKPACK_FILTERS,
@@ -54,6 +54,14 @@ function bareLabel(label: string, shortcut?: string): string {
 
 function signed(n: number): string {
   return n > 0 ? `+${n}` : `${n}`;
+}
+
+/** What the icon frames' colors mean (N29), under the paperdoll where there is room. */
+function legendHtml(): string {
+  const entries = FRAME_LEGEND.map(
+    ({ tone, label }) => `<li class="inv-legend-entry"><span class="inv-legend-swatch it-frame it-frame-${tone}" aria-hidden="true"></span>${escapeHtml(label)}</li>`
+  ).join('');
+  return `<div class="inv-legend"><div class="ui-note">Frames, once an item is known:</div><ul class="inv-legend-list">${entries}</ul></div>`;
 }
 
 /**
@@ -197,7 +205,7 @@ export class InventoryTab implements MenuTab {
           ins.selectedSource === 'paperdoll' && ins.selectedSlot === def.id ? 'is-selected' : '',
           focused && ins.focusedIndex === i ? 'is-focused' : '',
           targets.has(def.id) ? 'is-target' : '',
-          item?.identified && item.isBound() ? 'is-cursed' : '',
+          itemFrameClass(item).trim(),
           doll.isSlotBlocked(def.id) ? 'is-blocked' : '',
         ]
           .filter(Boolean)
@@ -216,6 +224,7 @@ export class InventoryTab implements MenuTab {
       <section class="inv-panel${focused ? ' is-focused' : ''}" data-panel="paperdoll" data-drop="paperdoll" aria-label="Equipment">
         <h3 class="ui-h">Equipment</h3>
         <div class="inv-doll">${slots}</div>
+        ${legendHtml()}
       </section>`;
   }
 
@@ -235,7 +244,7 @@ export class InventoryTab implements MenuTab {
           selectedHere && g.items.some((x) => x.id === ins.selectedItem?.id) ? 'is-selected' : '',
           focused && ins.focusedIndex === i ? 'is-focused' : '',
           g.items.some((x) => ins.isMultiSelected(x.id)) ? 'is-multi' : '',
-          item.identified && item.isBound() ? 'is-cursed' : '',
+          itemFrameClass(item).trim(),
           item.junk ? 'is-junk' : '',
         ]
           .filter(Boolean)
@@ -371,7 +380,7 @@ export class InventoryTab implements MenuTab {
     return itemDetailHtml(engine, item, ins, {
       source: ins.selectedSource,
       slotId: ins.selectedSlot,
-      iconHtml: '<canvas class="inv-icon inv-detail-icon" width="48" height="48" data-icon="detail" aria-hidden="true"></canvas>',
+      iconHtml: `<canvas class="inv-icon inv-detail-icon${itemFrameClass(item)}" width="48" height="48" data-icon="detail" aria-hidden="true"></canvas>`,
       compare: ins.selectedSource !== 'paperdoll',
       showValue: true,
     });

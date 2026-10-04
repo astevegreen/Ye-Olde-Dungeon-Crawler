@@ -43,3 +43,31 @@ export function itemToneClass(item: Item | null | undefined): string {
   const tone = itemTone(item);
   return tone ? ` it-tone-${tone}` : '';
 }
+
+/** The tones an icon frame shows (N29): an item's family tone, never a coin's metal. */
+export type FrameTone = Exclude<ItemTone, 'copper' | 'silver' | 'gold'>;
+
+/** The frame an item's icon gets: its name's tone once identified; null for plain items and coins. */
+export function itemFrameTone(item: Item | null | undefined): FrameTone | null {
+  const tone = itemTone(item);
+  return tone === null || tone === 'copper' || tone === 'silver' || tone === 'gold' ? null : tone;
+}
+
+/** ` it-frame it-frame-<tone>` for an icon's (or its cell's) class list (menu.css), or ''. */
+export function itemFrameClass(item: Item | null | undefined): string {
+  const tone = itemFrameTone(item);
+  return tone ? ` it-frame it-frame-${tone}` : '';
+}
+
+/** What each frame color means, in the inventory's legend: in two columns, the positive
+ *  families and artifacts, then the negative ones and chaotic. */
+export const FRAME_LEGEND: ReadonlyArray<{ tone: FrameTone; label: string }> = [
+  { tone: 'blessed', label: 'Blessed' },
+  { tone: 'enchanted', label: 'Enchanted or +N' },
+  { tone: 'holy', label: 'Holy' },
+  { tone: 'artifact', label: 'Artifact' },
+  { tone: 'cursed', label: 'Cursed' },
+  { tone: 'hexed', label: 'Hexed' },
+  { tone: 'unholy', label: 'Unholy' },
+  { tone: 'chaotic', label: 'Chaotic' },
+];

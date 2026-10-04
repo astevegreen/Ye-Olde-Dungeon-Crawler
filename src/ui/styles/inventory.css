@@ -137,7 +137,24 @@
   box-shadow: inset 0 0 0 1px var(--ui-accent);
 }
 .inv-cell.is-multi { border-color: var(--ui-info); box-shadow: inset 0 0 0 1px var(--ui-info); }
-.inv-slot.is-cursed, .inv-cell.is-cursed { border-color: color-mix(in srgb, var(--ui-rarity-cursed) 70%, transparent); }
+.inv-slot.it-frame, .inv-cell.it-frame { border-color: color-mix(in srgb, var(--it-frame) 75%, transparent); }
+
+/* The frames' legend, under the paperdoll. */
+.inv-legend { margin-top: var(--ui-space-3); }
+.inv-legend-list {
+  list-style: none;
+  margin: var(--ui-space-1) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(4, auto);
+  grid-auto-flow: column;
+  gap: 2px var(--ui-space-2);
+  font-size: var(--ui-text-xs);
+  color: var(--ui-text-soft);
+}
+.inv-legend-entry { display: flex; align-items: center; gap: var(--ui-space-1); }
+.inv-legend-swatch { flex: none; width: 10px; height: 10px; border-radius: 2px; border: 2px solid var(--it-frame); }
 .inv-slot.is-target { border-color: var(--ui-info); background: color-mix(in srgb, var(--ui-info) 12%, var(--ui-surface-2)); }
 
 /* What the gear weighs; the hero's stats are on the Character tab. */

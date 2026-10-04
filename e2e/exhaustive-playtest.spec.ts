@@ -229,15 +229,19 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
     expect(combatSetup.monsterSpawned).toBe(true);
     expect(combatSetup.hoveredTile).toEqual({ x: afterCoinStep.playerPos.x + 2, y: afterCoinStep.playerPos.y });
 
-    // Attack the monster (step right into monster)
-    await page.keyboard.press('ArrowRight');
-    await page.waitForTimeout(200);
+    // Attack the monster (step right into it) until a blow lands: since tracker 3.2 a melee
+    // blow has a hit roll (80% + 2% a Dexterity point above 10), and only a hit spawns the text.
+    let floatingCount = 0;
+    for (let swing = 0; swing < 12 && floatingCount === 0; swing++) {
+      await page.keyboard.press('ArrowRight');
+      await page.waitForTimeout(150);
+      floatingCount = await page.evaluate(() => (window as any).__cotwRenderer.floatingTextRunner.getActiveCount());
+    }
 
-    const combatResult = await page.evaluate(() => {
+    const combatResult = await page.evaluate((floatingCount: number) => {
       const engine = (window as any).__cotwEngine;
       const renderer = (window as any).__cotwRenderer;
       const lastMsg = engine.messages[engine.messages.length - 1];
-      const floatingCount = renderer.floatingTextRunner.getActiveCount();
 
       // Trigger heal to test healing floating numbers
       renderer.floatingTextRunner.spawnHeal(engine.player.x, engine.player.y, 10);
@@ -247,7 +251,7 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
         floatingCountAfterAttack: floatingCount,
         floatingCountAfterHeal: renderer.floatingTextRunner.getActiveCount(),
       };
-    });
+    }, floatingCount);
 
     expect(combatResult.floatingCountAfterAttack, 'Floating combat text must spawn on attack').toBeGreaterThanOrEqual(1);
     expect(combatResult.floatingCountAfterHeal, 'Floating heal text must spawn on heal').toBeGreaterThan(combatResult.floatingCountAfterAttack);

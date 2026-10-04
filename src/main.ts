@@ -234,11 +234,12 @@ window.addEventListener('DOMContentLoaded', () => {
   let characterMenuModal: CharacterMenuModal;
 
   // F1 on screens ContextHelp can't see: an altar's rite (or an altar beside the hero), the
-  // Story tab, the Rune of Return (its discovery, or a channel under way).
+  // Story and Spellbook tabs, the Rune of Return (its discovery, or a channel under way).
   contextHelp.setScreenContext(() => {
     if (altarModal.isOpen) return 'altar';
     if (runeDiscoveryModal.isOpen) return 'rune';
     if (characterMenuModal?.isOpen && characterMenuModal.activeTabId === 'story') return 'story';
+    if (characterMenuModal?.isOpen && characterMenuModal.activeTabId === 'spellbook') return 'spellbook';
     const eng = activeEngine;
     if (!eng?.player) return null;
     if (eng.player.statusManager.getStatus(RUNE_OF_RETURN_STATUS)) return 'rune';

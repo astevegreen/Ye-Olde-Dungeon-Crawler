@@ -46,6 +46,17 @@ describe('first-time hints', () => {
     expect(hintsMetByState(engine)).toContain('story');
   });
 
+  it('meets the grimoire hint in the dungeon once the hero knows two spells, not in town', () => {
+    const engine = buildEngine({ magic: { grimoire: { title: 'Grimoire', pageNames: ['I'] } } });
+    engine.player.learnSpell('a');
+    engine.player.learnSpell('b');
+    engine.currentFloor = 0;
+    expect(hintsMetByState(engine)).not.toContain('grimoire');
+    engine.currentFloor = 1;
+    expect(hintsMetByState(engine)).toContain('grimoire');
+    expect(hintsMetByState(buildEngine())).not.toContain('grimoire');
+  });
+
   it('names the bound key in the text, or the action when nothing is bound', () => {
     expect(resolveHintText(HINTS.story, (a) => (a === 'story' ? 'O' : undefined)).text).toBe('The Story tab (O) keeps it.');
     expect(resolveHintText({ title: 't', text: 'Press {key:channel_rune}.' }, () => undefined).text).toBe('Press channel rune.');

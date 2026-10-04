@@ -35,4 +35,14 @@ describe('F1 cards for altars, the Story and the Rune of Return', () => {
     expect(help.getHelpContent('altar', cotwManifest).title).toBe('Altars & Glyphs');
     expect(help.getHelpContent('story', cotwManifest).title).toBe('Story');
   });
+
+  it("has a Spellbook card that explains the grimoire in the pack's own words", () => {
+    const card = new ContextHelp().getHelpContent('spellbook', cotwManifest);
+    expect(card.title).toBe('Spellbook & Grimoire');
+    expect(card.bullets.map((b) => b.label).join(' ')).toContain('placing it again moves it');
+    expect(card.tip).toContain(cotwManifest.magic!.grimoire!.centerSlotLabel!);
+    // Without a grid, the card says nothing about one.
+    expect(new ContextHelp().getHelpContent('spellbook', { ...cotwManifest, magic: {} }).tip).not.toContain('slot');
+  });
 });
+

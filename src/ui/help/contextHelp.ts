@@ -22,7 +22,8 @@ export type GameHelpContext =
   | 'map'
   | 'altar'
   | 'story'
-  | 'rune';
+  | 'rune'
+  | 'spellbook';
 
 export interface HelpCardContent {
   title: string;
@@ -111,6 +112,31 @@ export class ContextHelp {
           ],
           tip: 'Tip: An inscribe rite turns the offering into a glyph on a grimoire slot, and the glyph shapes every spell cast from that slot. A ground rite opens a sealed slot instead; a forge rite transmutes a spell.',
         };
+
+      case 'spellbook': {
+        const grid = manifest?.magic?.grimoire;
+        const center = grid?.centerSlotLabel ?? 'center';
+        return {
+          title: 'Spellbook & Grimoire',
+          contextTag: 'THE GRIMOIRE',
+          bullets: [
+            { key: 'Up / Down', label: 'Choose a spell' },
+            { key: 'Enter', label: 'Cast it' },
+            { key: '1-0', label: 'Put it on the quick-cast belt; again to take it off' },
+            ...(grid
+              ? [
+                  { key: 'Click a slot', label: 'Put the chosen spell there; a page holds one copy, so placing it again moves it' },
+                  { key: 'Point at a slot', label: 'See what it does; a lit line joins slots that shape each other' },
+                  { key: 'Page tabs', label: 'Turn the page: free with no foe in view, a 2-turn focus with one' },
+                ]
+              : []),
+            { key: 'Tab / Z / Esc', label: 'The next tab, or close' },
+          ],
+          tip: grid
+            ? `Tip: A spell casts from its slot on the open page. The ${center} slot makes it dearer and stronger for each filled slot beside it; opposed elements side by side, and a ray beside a burst, strengthen each other. With a foe in view, rewriting a slot takes a turn.`
+            : 'Tip: The belt casts by key; the Spellbook shows what each spell costs and does.',
+        };
+      }
 
       case 'story':
         return {

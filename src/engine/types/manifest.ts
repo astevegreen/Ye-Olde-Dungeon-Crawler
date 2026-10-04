@@ -680,7 +680,8 @@ export type FirstTimeHintId =
   | 'renown'
   | 'runeOfReturn'
   | 'factionStanding'
-  | 'story';
+  | 'story'
+  | 'grimoire';
 
 export interface FirstTimeHintDefinition {
   title: string;

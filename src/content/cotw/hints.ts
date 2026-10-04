@@ -37,4 +37,8 @@ export const COTW_FIRST_TIME_HINTS: Partial<Record<FirstTimeHintId, FirstTimeHin
     title: 'Your saga',
     text: 'A deed of your saga is done. The Story tab ({key:story}) keeps the saga: the goal ahead, the deeds behind you, and riddles for those still to come.',
   },
+  grimoire: {
+    title: 'Your grimoire',
+    text: 'Where a spell sits in your grimoire shapes it: Midgard, the center slot, makes a spell dearer and stronger for each spell beside it. Open the Spellbook ({key:cast_spell}) and point at a slot to see what it does.',
+  },
 };

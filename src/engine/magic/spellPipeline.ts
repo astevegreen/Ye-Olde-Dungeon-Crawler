@@ -474,11 +474,12 @@ export class SpellPipeline {
     let rawDamage = parseAndRollDice(effect.amount, engine.rng);
     if (rawDamage <= 0) return;
 
-    // The caster's Intelligence (the pack's attribute scaling) and the Enchanted
-    // spellDamageMultiplier of what it wears.
+    // The caster's Intelligence (the pack's attribute scaling), the Enchanted
+    // spellDamageMultiplier of what it wears, and its bonus for this element (Elementalist).
     let spellMultiplier = spellPowerMultiplier(caster, attributeScalingOf(engine.manifest));
     for (const mod of wornModifiers(caster)) {
       if (mod.spellDamageMultiplier) spellMultiplier *= mod.spellDamageMultiplier;
+      if (mod.elementSpellMultiplier && mod.elementSpellMultiplier.element === effect.element) spellMultiplier *= mod.elementSpellMultiplier.multiplier;
     }
     if (spellMultiplier !== 1.0) {
       rawDamage = Math.max(1, Math.round(rawDamage * spellMultiplier));

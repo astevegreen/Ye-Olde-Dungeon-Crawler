@@ -8,6 +8,10 @@ import { MeleeAttackAction } from '../actions/combat';
 import { CastSpellAction } from '../actions/spell-actions';
 import { SearchAction } from '../actions/search';
 import { AutoRestManager } from '../actions/autoRest';
+import { Companion } from '../entities/companion';
+import { MonsterAI } from '../ai/behaviorTree';
+import { sensesThroughWalls } from '../fov/sensing';
+import { withSpellRangeBonus } from '../magic/grimoireMatrix';
 import { MovementAction } from '../actions/movement';
 import { applyImpulse } from '../combat/impulse';
 import { DeathResolver } from '../combat/deathResolver';
@@ -202,5 +206,86 @@ describe('perk effects', () => {
     engine.updateFov();
     expect(engine.fov.isVisible(player.x + 5, player.y)).toBe(true);
     expect(engine.fov.isVisible(player.x + 6, player.y)).toBe(false);
+  });
+  // ── Saga tiers 30–50 (tracker 3.6) ──
+  it('followUpStrikeShare strikes once more for its share of a blow (Twin Fangs)', () => {
+    const { engine, player, foe } = build();
+    player.grantPerk(perk('fangs', { followUpStrikeShare: 0.5 }));
+    new MeleeAttackAction(player, foe).perform(engine);
+    expect(1000 - foe.hp).toBe(10 + 5);
+  });
+
+  it('elementSpellMultiplier scales spells of its element only, and resistsElements halves that element on the bearer (Elementalist)', () => {
+    const { engine, player, foe } = build();
+    new CastSpellAction(player, 'bolt', foe.x, foe.y).perform(engine);
+    const plain = 1000 - foe.hp;
+    player.grantPerk(perk('kin', { elementSpellMultiplier: { element: 'fire', multiplier: 1.3 }, resistsElements: ['fire'] }));
+    player.gainEnergy(100);
+    new CastSpellAction(player, 'bolt', foe.x, foe.y).perform(engine);
+    expect(1000 - foe.hp - plain).toBe(Math.round(plain * 1.3));
+    expect(player.takeElementalDamage(20, 'fire').damageDealt).toBe(10);
+    expect(player.takeElementalDamage(20, 'cold').damageDealt).toBe(20);
+    expect(player.affinityTo('fire')).toBe('resistant');
+  });
+
+  it('critChanceBonus and critMultiplier make a critical in a pack with no base crit (Thor’s Wrath)', () => {
+    const { engine, player, foe } = build();
+    player.grantPerk(perk('wrath', { critChanceBonus: 0.25, critMultiplier: 2 }));
+    engine.rng = () => 0.1;
+    new MeleeAttackAction(player, foe).perform(engine);
+    expect(1000 - foe.hp).toBe(20);
+    engine.rng = () => 0.5;
+    player.gainEnergy(100);
+    new MeleeAttackAction(player, foe).perform(engine);
+    expect(1000 - foe.hp).toBe(30);
+  });
+
+  it('lastStandPerFloor leaves the hero at 1 HP once each floor visit (Einherjar)', () => {
+    const { engine, player, foe } = build();
+    player.grantPerk(perk('einherjar', { lastStandPerFloor: true }));
+    player.hp = 5;
+    new MeleeAttackAction(foe, player).perform(engine);
+    expect(player.hp).toBe(1);
+    expect(player.isAlive()).toBe(true);
+    foe.gainEnergy(100);
+    new MeleeAttackAction(foe, player).perform(engine);
+    expect(player.isAlive()).toBe(false);
+    // A new visit to the floor (the hero left it at another tick) arms it again.
+    player.hp = 5;
+    engine.map.lastVisitedTick = 500;
+    foe.gainEnergy(100);
+    new MeleeAttackAction(foe, player).perform(engine);
+    expect(player.hp).toBe(1);
+  });
+
+  it('companionStatMultiplier raises the companion once, and companionRisesPerFloor raises a fallen one once a floor visit (Beast-Friend)', () => {
+    const { engine, player, map, foe } = build();
+    const hound = new Companion({ id: 'hound', name: 'Hound', position: { x: 9, y: 10 }, stats: { hp: 30, maxHp: 30, attack: 6, defense: 0 }, speed: 100, companionDefinitionId: 'hound', packWeightCapacity: 1000, packBulkCapacity: 1000 });
+    map.addEntity(hound);
+    engine.companion = hound;
+    player.grantPerk(perk('friend', { companionStatMultiplier: 1.5, companionRisesPerFloor: true }));
+    MonsterAI.decideAction(hound, engine);
+    MonsterAI.decideAction(hound, engine);
+    expect(hound.maxHp).toBe(45);
+    expect(hound.hp).toBe(45);
+    expect(hound.attack).toBe(9);
+    hound.takeDamage(45);
+    DeathResolver.resolveDeath(engine, foe, hound);
+    expect(hound.hp).toBe(45);
+    expect(engine.companion).toBe(hound);
+    hound.takeDamage(45);
+    DeathResolver.resolveDeath(engine, foe, hound);
+    expect(engine.companion).toBeNull();
+    expect(engine.deadCompanionRecord).toBe(hound);
+  });
+
+  it('sensesAllMonsters senses every living monster through walls (Odin’s Eye), and spellRangeBonus lengthens a cast', () => {
+    const { engine, player, foe } = build();
+    expect(sensesThroughWalls(engine, foe)).toBe(false);
+    player.grantPerk(perk('eye', { sensesAllMonsters: true, spellRangeBonus: 2 }));
+    expect(sensesThroughWalls(engine, foe)).toBe(true);
+    expect(sensesThroughWalls(engine, player)).toBe(false);
+    expect(withSpellRangeBonus(player, BOLT).range).toBe(8);
+    expect(withSpellRangeBonus(player, { ...BOLT, range: 0 }).range).toBe(0);
   });
 });

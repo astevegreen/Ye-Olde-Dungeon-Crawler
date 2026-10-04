@@ -241,6 +241,17 @@ export class Actor extends Entity implements IItemContainer, IEquipmentBearer {
     }
   }
 
+  /**
+   * Its own resistances, and what it wears and the perks it holds (`resistsElements`,
+   * Elementalist): a neutral element becomes resisted, a weakness neutral.
+   */
+  public override affinityTo(element: ElementType): ElementalAffinity {
+    const own = super.affinityTo(element);
+    if (own !== 'neutral' && own !== 'weak') return own;
+    if (!wornModifiers(this).some((mod) => mod.resistsElements?.includes(element))) return own;
+    return own === 'weak' ? 'neutral' : 'resistant';
+  }
+
   /** Healing scaled below a whole point carries over, so a halved rest still heals every other tick. */
   private healCarry = 0;
 

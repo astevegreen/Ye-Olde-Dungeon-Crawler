@@ -15,6 +15,7 @@ import { AIRegistry } from './aiRegistry';
 import { BUILTIN_AI_TYPES } from '../bestiary/monsterDefinitions';
 import { computeDangerTiles } from './intent';
 import { selectAttackTarget } from './targetSelection';
+import { bondCompanion } from '../combat/lastStand';
 import { flightRecorder } from '../debug/flightRecorder';
 
 class CasterBehavior implements AiBehaviorStrategy {
@@ -270,6 +271,9 @@ export class MonsterAI {
     if (!monster.isAlive() || monster.faction === 'neutral') {
       return new WaitAction(monster);
     }
+
+    // The hero's bond with its companion (Beast-Friend) takes hold on the companion's turn.
+    if (monster === engine.companion) bondCompanion(engine, monster);
 
     const player = selectAttackTarget(engine, monster);
     if (!player.isAlive()) {

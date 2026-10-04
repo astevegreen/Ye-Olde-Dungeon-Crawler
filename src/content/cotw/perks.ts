@@ -9,9 +9,26 @@ import type { ChoiceDefinition, LevelMilestoneTrigger, PerkDefinition } from '..
  * (`COTW_LEVEL_MILESTONES`); the tiers below are those built so far. Numbers are first
  * guesses, tuned by measurement.
  *
- * Not yet built from the approved list: Saga tiers 30–50, the milestone 25 and 30 tiers, and
- * the eight family perks.
+ * The Third Verse's Elementalist chooses its element in a second choice, offered on the next
+ * move (`saga_30_element`, waiting on its flag).
+ *
+ * Waiting on the owner: Shadow-Walker's "a monster that cannot see you does not wake" (Q57;
+ * sleepers wake in the hero's sight, computed in a protected file) and Odin's Eye's ranged
+ * range (Q59; no ranged attack can be made in play). Not yet built from the approved list: the
+ * milestone 25 and 30 tiers, and the eight family perks.
  */
+/** The elements an Elementalist may choose (cotw's damaging elements), with their names. */
+const ELEMENTALIST_ELEMENTS: Array<[string, string]> = [
+  ['fire', 'Fire'],
+  ['cold', 'Cold'],
+  ['lightning', 'Lightning'],
+  ['poison', 'Poison'],
+  ['arcane', 'Arcane'],
+];
+
+/** Set by the Third Verse's Elementalist; the element choice waits on it. */
+const ELEMENTALIST_FLAG = 'saga_elementalist';
+
 export const COTW_PERKS: PerkDefinition[] = [
   // ── Saga, level 10: the first path ──
   {
@@ -63,6 +80,82 @@ export const COTW_PERKS: PerkDefinition[] = [
     description: 'Each kill restores 10% of your max {mana}, and overflow debt clears twice as fast when you rest.',
     effects: { killManaPercent: 0.1, overflowDebtDecayMultiplier: 2 },
   },
+  // ── Saga, level 30 ──
+  {
+    id: 'saga_twin_fangs',
+    name: 'Twin Fangs',
+    source: 'saga',
+    tagline: 'The second blade follows the first like a wolf its mate.',
+    description: 'Each melee attack strikes a second time, for half damage.',
+    effects: { followUpStrikeShare: 0.5 },
+  },
+  ...ELEMENTALIST_ELEMENTS.map(
+    ([element, name]): PerkDefinition => ({
+      id: `saga_elementalist_${element}`,
+      name: `Elementalist (${name})`,
+      source: 'saga',
+      tagline: `${name} answers you as kin.`,
+      description: `Your ${element} spells hit 30% harder, and you resist ${element}.`,
+      effects: { elementSpellMultiplier: { element, multiplier: 1.3 }, resistsElements: [element] },
+    })
+  ),
+  {
+    id: 'saga_beast_friend',
+    name: 'Beast-Friend',
+    source: 'saga',
+    tagline: 'What runs beside you runs stronger.',
+    description: 'Your companion has half again its health and attack, and once each floor a fallen companion rises again.',
+    effects: { companionStatMultiplier: 1.5, companionRisesPerFloor: true },
+  },
+  // ── Saga, level 40 ──
+  {
+    id: 'saga_einherjar',
+    name: 'Einherjar',
+    source: 'saga',
+    tagline: 'Odin has a bench kept for you, and is in no hurry to fill it.',
+    description: 'Once on each floor, a blow that would kill you leaves you at 1 HP.',
+    effects: { lastStandPerFloor: true },
+  },
+  {
+    id: 'saga_galdr_master',
+    name: 'Galdr-Master',
+    source: 'saga',
+    tagline: 'Every rune you set sings with its neighbours.',
+    description: 'Every spell hits 20% harder, and each grimoire synergy between neighbouring slots counts twice.',
+    effects: { spellDamageMultiplier: 1.2, grimoireSynergyRepeats: 1 },
+  },
+  {
+    id: 'saga_shadow_walker',
+    name: 'Shadow-Walker',
+    source: 'saga',
+    tagline: 'Where the torchlight ends, so do you.',
+    description: 'Evasion +20%.',
+    effects: { evasionBonus: 0.2 },
+  },
+  // ── Saga, level 50: the summit ──
+  {
+    id: 'saga_jarl_of_the_deep',
+    name: 'Jarl of the Deep',
+    source: 'saga',
+    tagline: 'The roots of the world answer to you now.',
+    description: '+2 to every attribute, for good.',
+  },
+  {
+    id: 'saga_odins_eye',
+    name: 'Odin’s Eye',
+    source: 'saga',
+    tagline: 'One eye in the well, one on everything else.',
+    description: 'Every monster on the floor is shown on the map, through walls, and your spells reach 2 tiles farther.',
+    effects: { sensesAllMonsters: true, spellRangeBonus: 2 },
+  },
+  {
+    id: 'saga_thors_wrath',
+    name: 'Thor’s Wrath',
+    source: 'saga',
+    tagline: 'Every fourth blow falls like Mjölnir.',
+    description: 'One melee blow in four is a critical, for double damage.',
+    effects: { critChanceBonus: 0.25, critMultiplier: 2 },
+  },
 ];
 
 export const COTW_MILESTONE_PERKS: PerkDefinition[] = [
@@ -81,11 +174,11 @@ export const COTW_MILESTONE_PERKS: PerkDefinition[] = [
 ];
 
 const grant = (perkId: string) => ({ type: 'grantPerk' as const, perkId });
-const option = (perk: PerkDefinition) => ({
+const option = (perk: PerkDefinition, extra: ChoiceDefinition['options'][number]['consequences'] = []) => ({
   id: perk.id,
   label: perk.name,
   description: perk.description,
-  consequences: [grant(perk.id), { type: 'logMessage' as const, message: `${perk.tagline ?? perk.name} The saga names you: ${perk.name}.` }],
+  consequences: [grant(perk.id), ...extra, { type: 'logMessage' as const, message: `${perk.tagline ?? perk.name} The saga names you: ${perk.name}.` }],
 });
 const perk = (id: string): PerkDefinition => [...COTW_PERKS, ...COTW_MILESTONE_PERKS].find((p) => p.id === id)!;
 const milestoneOption = (perk: PerkDefinition, extra: ChoiceDefinition['options'][number]['consequences'] = []) => ({
@@ -148,9 +241,66 @@ export const COTW_SAGA_CHOICES: Record<string, ChoiceDefinition> = {
     options: [option(perk('saga_shield_wall')), option(perk('saga_blood_drinker')), option(perk('saga_spell_thief'))],
     cancelable: false,
   },
+  saga_30: {
+    id: 'saga_30',
+    title: 'The Third Verse',
+    description:
+      'Thirty levels, and the silver deeps have learned to fear your name. The third verse asks what kind of terror you will be. This cannot be unchosen.',
+    options: [
+      option(perk('saga_twin_fangs')),
+      {
+        id: 'saga_elementalist',
+        label: 'Elementalist',
+        description: 'Choose an element: your spells of it hit 30% harder, and you resist it.',
+        consequences: [
+          { type: 'setFlag', flag: ELEMENTALIST_FLAG, value: true },
+          { type: 'logMessage', message: 'The elements stir and wait to learn which of them you will call kin.' },
+        ],
+      },
+      option(perk('saga_beast_friend')),
+    ],
+    cancelable: false,
+  },
+  saga_30_element: {
+    id: 'saga_30_element',
+    title: 'The Elementalist’s Kin',
+    description: 'One element will answer you as kin: its spells strike harder from your hand, and it bites you less. Which?',
+    options: ELEMENTALIST_ELEMENTS.map(([element]) => option(perk(`saga_elementalist_${element}`))),
+    cancelable: false,
+  },
+  saga_40: {
+    id: 'saga_40',
+    title: 'The Fourth Verse',
+    description:
+      'Forty levels, and the Valkyries have begun to argue over you. The fourth verse is the one the skalds will sing loudest. This cannot be unchosen.',
+    options: [option(perk('saga_einherjar')), option(perk('saga_galdr_master')), option(perk('saga_shadow_walker'))],
+    cancelable: false,
+  },
+  saga_50: {
+    id: 'saga_50',
+    title: 'The Summit of the Saga',
+    description:
+      'Fifty levels. There is no verse after this one; there is only how it ends. Choose the shape of the last line. This cannot be unchosen.',
+    options: [
+      option(perk('saga_jarl_of_the_deep'), [
+        { type: 'modifyAttribute', attribute: 'strength', delta: 2 },
+        { type: 'modifyAttribute', attribute: 'dexterity', delta: 2 },
+        { type: 'modifyAttribute', attribute: 'constitution', delta: 2 },
+        { type: 'modifyAttribute', attribute: 'intelligence', delta: 2 },
+      ]),
+      option(perk('saga_odins_eye')),
+      option(perk('saga_thors_wrath')),
+    ],
+    cancelable: false,
+  },
 };
+
 
 export const COTW_LEVEL_MILESTONES: LevelMilestoneTrigger[] = [
   { id: 'saga_10', level: 10, choiceId: 'saga_10' },
   { id: 'saga_20', level: 20, choiceId: 'saga_20' },
+  { id: 'saga_30', level: 30, choiceId: 'saga_30' },
+  { id: 'saga_30_element', level: 30, choiceId: 'saga_30_element', when: { type: 'hasFlag', flag: ELEMENTALIST_FLAG } },
+  { id: 'saga_40', level: 40, choiceId: 'saga_40' },
+  { id: 'saga_50', level: 50, choiceId: 'saga_50' },
 ];

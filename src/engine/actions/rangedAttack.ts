@@ -147,7 +147,7 @@ export class RangedAttackAction implements Action {
 
           let affixMsg = '';
           if (weapon.elementalAffix) {
-            const affinity = target.elementalResistances[weapon.elementalAffix.element] ?? 'neutral';
+            const affinity = target.affinityTo(weapon.elementalAffix.element);
             const elResult = engine.affinityMatrix.calculateDamage(
               weapon.elementalAffix.bonusDamage,
               weapon.elementalAffix.element,

@@ -45,6 +45,16 @@ export function lowestWorn(entity: Entity, field: NumericField): number | undefi
   return lowest;
 }
 
+/** The highest value of one numeric modifier field over everything worn; undefined when nothing carries it. */
+export function highestWorn(entity: Entity, field: NumericField): number | undefined {
+  let highest: number | undefined;
+  for (const mod of wornModifiers(entity)) {
+    const value = mod[field] as number | undefined;
+    if (value !== undefined && (highest === undefined || value > highest)) highest = value;
+  }
+  return highest;
+}
+
 /** How long an affliction lasts the entity, after what it wears shortens it (`shortenedAfflictions`); never below a turn. */
 export function afflictionDuration(entity: Entity, statusType: string, duration: number): number {
   let factor = 1;

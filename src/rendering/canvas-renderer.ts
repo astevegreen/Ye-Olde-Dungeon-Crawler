@@ -1,6 +1,7 @@
 import { GameEngine } from '../engine';
 import { setIconAtlas } from './canvasIcons';
 import { Visibility } from '../engine';
+import { sensesThroughWalls } from '../engine';
 import { Camera } from './camera';
 import type { Entity } from '../engine';
 import type { TileDefinition } from '../engine';
@@ -1072,7 +1073,7 @@ export class CanvasRenderer {
         continue;
       }
       const isVisible = this.engine.fov.isVisible(entity.x, entity.y);
-      const isEspDetected = !isVisible && this.engine.detectMonstersTurns > 0 && entity.type !== 'player';
+      const isEspDetected = !isVisible && entity.type !== 'player' && sensesThroughWalls(this.engine, entity);
 
       // In Fog of War, entities are ONLY rendered if directly in line of sight or detected via ESP!
       if (!isVisible && !isEspDetected) {

@@ -156,7 +156,7 @@ export class RunAdvisor {
     if (!hazard) {
       return null;
     }
-    const res = player.elementalResistances[hazard.element];
+    const res = player.affinityTo(hazard.element);
     if (res && res !== 'neutral' && res !== 'weak') {
       return null;
     }

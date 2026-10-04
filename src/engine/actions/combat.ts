@@ -15,7 +15,7 @@ import { applyImpulse } from '../combat/impulse';
 import { resolveCombatMitigation } from '../combat/mitigationPipeline';
 import { burnOnSacredGround } from '../combat/sacredGround';
 import type { ItemModifier } from '../items/modifiers';
-import { afflictionDuration, productWorn, sumWorn, wornModifiers } from '../items/wornModifiers';
+import { afflictionDuration, highestWorn, productWorn, sumWorn, wornModifiers } from '../items/wornModifiers';
 import { attributeScalingOf, dexterityEvasion, meleeHitPercent, strengthMeleeBonus } from '../combat/attributeScaling';
 
 const DEFAULT_MIN_DAMAGE = 1;
@@ -26,11 +26,14 @@ export class MeleeAttackAction implements Action {
   public readonly defender: Entity;
   /** A Twinstrike's second blow: part of the first action, so it costs no energy and strikes no further. */
   private readonly followUp: boolean;
+  /** The share of a blow a follow-up deals (Twin Fangs: half); 1 for a whole blow. */
+  private readonly damageShare: number;
 
-  constructor(attacker: Entity, defender: Entity, options?: { followUp?: boolean }) {
+  constructor(attacker: Entity, defender: Entity, options?: { followUp?: boolean; damageShare?: number }) {
     this.attacker = attacker;
     this.defender = defender;
     this.followUp = options?.followUp ?? false;
+    this.damageShare = options?.damageShare ?? 1;
   }
 
   /** A blow that did not land: the turn is spent, logged, and a Twinstrike bearer bleeds for it. */
@@ -111,11 +114,12 @@ export class MeleeAttackAction implements Action {
       let base = Math.max(minDmg, this.attacker.attack + strengthMeleeBonus(this.attacker, scaling) - effectiveDefense);
 
       // Critical strike: the pack's chance, or Anatomist's own against a mastered family (a
-      // pack with no base crit, cotw, would otherwise give the perk nothing to raise).
-      const critChance = combatConfig?.critChance || (isAnatomist ? ANATOMIST_CRIT_CHANCE : 0);
+      // pack with no base crit, cotw, would otherwise give the perk nothing to raise), plus
+      // what the attacker wears and holds (Thor's Wrath); the highest multiplier counts.
+      const critChance = (combatConfig?.critChance || (isAnatomist ? ANATOMIST_CRIT_CHANCE : 0)) + sumWorn(this.attacker, 'critChanceBonus');
       if (critChance > 0 && engine.rng() < critChance) {
         isCrit = true;
-        const mult = (combatConfig?.critMultiplier ?? DEFAULT_CRIT_MULTIPLIER) + (isAnatomist ? 0.25 : 0);
+        const mult = Math.max(combatConfig?.critMultiplier ?? DEFAULT_CRIT_MULTIPLIER, highestWorn(this.attacker, 'critMultiplier') ?? 0) + (isAnatomist ? 0.25 : 0);
         base = Math.max(minDmg, Math.round(base * mult));
       }
 
@@ -149,6 +153,9 @@ export class MeleeAttackAction implements Action {
         rawDamage = Math.round(rawDamage * (lo + engine.rng() * (hi - lo)));
       }
     }
+
+    // A follow-up that strikes for a share of a blow (Twin Fangs).
+    if (this.damageShare !== 1) rawDamage = Math.max(1, Math.round(rawDamage * this.damageShare));
 
     // 2. Tag-based bonuses, by data: Holy against the undead, Hel-touched against the living.
     //    A bonus may also heal the attacker a share of the blow (applied once it has landed).
@@ -309,7 +316,7 @@ export class MeleeAttackAction implements Action {
       const weapon = this.attacker.inventory.paperdoll.getItem('mainHand');
       if (weapon?.elementalAffix) {
         const affix = weapon.elementalAffix;
-        const affinity = this.defender.elementalResistances[affix.element] ?? 'neutral';
+        const affinity = this.defender.affinityTo(affix.element);
         const elemResult = calculateElementalDamage(affix.bonusDamage, affix.element, affinity);
         if (elemResult.finalDamage > 0) {
           const elemDmgRes = this.defender.takeDamage(elemResult.finalDamage);
@@ -332,10 +339,14 @@ export class MeleeAttackAction implements Action {
       DeathResolver.resolveDeath(engine, this.attacker, this.defender, { damageElement: killingElement });
     }
 
-    // Twinstrike: the blow lands again, as part of this action.
+    // Twinstrike: the blow lands again, as part of this action; Twin Fangs strikes once more
+    // for its share of a blow.
     const extraStrikes = this.followUp ? 0 : sumWorn(this.attacker, 'extraMeleeStrikes');
-    for (let i = 0; i < extraStrikes && this.attacker.isAlive() && this.defender.isAlive(); i++) {
-      const again = new MeleeAttackAction(this.attacker, this.defender, { followUp: true }).perform(engine);
+    const shares = this.followUp ? [] : attackerModifiers.flatMap((mod) => (mod.followUpStrikeShare ? [mod.followUpStrikeShare] : []));
+    const strikes = [...Array<number>(extraStrikes).fill(1), ...shares];
+    for (const damageShare of strikes) {
+      if (!this.attacker.isAlive() || !this.defender.isAlive()) break;
+      const again = new MeleeAttackAction(this.attacker, this.defender, { followUp: true, damageShare }).perform(engine);
       if (again.message) message += ` ${again.message}`;
     }
 

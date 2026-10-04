@@ -81,6 +81,7 @@ export * from './fov/types';
 export * from './fov/shadowcasting';
 export * from './fov/fov-manager';
 export * from './fov/echolocation';
+export * from './fov/sensing';
 
 // Combat, Death, & Physics
 export * from './combat/impulse';

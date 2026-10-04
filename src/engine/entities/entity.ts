@@ -200,13 +200,18 @@ export class Entity {
     return { damageDealt, killed };
   }
 
+  /** How this entity takes an element: its own resistances (an Actor adds what it wears). */
+  public affinityTo(element: ElementType): ElementalAffinity {
+    return this.elementalResistances[element] ?? 'neutral';
+  }
+
   public takeElementalDamage(
     amount: number,
     element: ElementType,
     matrix?: AffinityMatrix,
     terrainType?: TileType
   ): { damageDealt: number; finalDamage: number; isHeal: boolean; healed: number; killed: boolean; affinity: ElementalAffinity; message?: string } {
-    const affinity = this.elementalResistances[element] ?? 'neutral';
+    const affinity = this.affinityTo(element);
     const calc = calculateElementalDamage(amount, element, affinity, matrix, terrainType);
 
     if (calc.isHeal) {

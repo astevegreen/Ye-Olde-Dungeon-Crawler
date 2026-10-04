@@ -131,6 +131,21 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     expect(effectiveFire!.areaOfEffect).toBe(1);
   });
 
+  it('counts each neighbor synergy once more for a hero holding grimoireSynergyRepeats (Galdr-Master)', () => {
+    player.grantPerk({ id: 'galdr', name: 'Galdr', description: 'galdr', source: 'saga', effects: { grimoireSynergyRepeats: 1 } });
+    const effectiveFire = GrimoireMatrixManager.resolveEffectiveSpell(engine, player, 0);
+    // Opposed elements twice (20 × 1.25²), and the ray beside a burst bursts two wider.
+    expect(effectiveFire!.basePower).toBe(31);
+    expect(effectiveFire!.areaOfEffect).toBe(2);
+    player.setGrimoireSlot(0, null);
+    player.setGrimoireSlot(4, 'fire_ray');
+    player.setGrimoireSlot(1, 'cold_burst');
+    // The center's +20% a neighbor counts twice; its cost does not (10 × 1.15).
+    const nexusSpell = GrimoireMatrixManager.resolveEffectiveSpell(engine, player, 4);
+    expect(nexusSpell!.manaCost).toBe(12);
+    expect(nexusSpell!.basePower).toBe(Math.round(Math.round(20 * 1.4) * 1.5625));
+  });
+
   it('applies Nexus multi-element resonance to Midgard center slot (4)', () => {
     // Place fireRay in slot 4 (Midgard), and coldBurst in slot 1 (North)
     player.setGrimoireSlot(0, null);

@@ -15,7 +15,7 @@ import { findTaggedEntitiesInRadius } from '../combat/radialAuraFilter';
 import { traceProjectile } from '../magic/targeting';
 import { ManaOverflowManager, canOvercast } from '../magic/manaOverflow';
 import { lowestWorn, productWorn, sumWorn, wearsFlag } from '../items/wornModifiers';
-import { GrimoireMatrixManager } from '../magic/grimoireMatrix';
+import { GrimoireMatrixManager, withSpellRangeBonus } from '../magic/grimoireMatrix';
 
 /** World counter of casts whose grid shaping the log has explained, and how many it explains. */
 const GRID_NOTE_COUNTER = 'grimoire_cast_notes';
@@ -77,6 +77,8 @@ export class CastSpellAction implements Action {
     if (!spell) {
       return { success: false, cost: 0, message: `Unknown spell: ${this.spellId}` };
     }
+    // Reach the caster wears and holds (Odin's Eye), as `resolveCast` shows it.
+    spell = withSpellRangeBonus(this.caster, spell);
 
     // Wildfire: a damaging spell takes a random element of the pack's.
     if (wearsFlag(this.caster, 'randomSpellElement') && spell.element && spell.effects?.some((e) => e.type === 'damage')) {

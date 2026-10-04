@@ -1,4 +1,5 @@
 import type { ItemModifier } from '../items/modifiers';
+import type { Predicate } from '../predicates/types';
 
 /**
  * Perks (tracker 3.6; Q27 "Separate sources."): lasting rules a hero earns from a Saga level,
@@ -33,4 +34,6 @@ export interface LevelMilestoneTrigger {
   id: string;
   level: number;
   choiceId: string;
+  /** Offered only once this holds too: a follow-up to an earlier choice (cotw: Elementalist's element). */
+  when?: Predicate;
 }

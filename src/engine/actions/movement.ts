@@ -390,6 +390,7 @@ export class MovementAction implements Action {
       if (!choiceTriggered && !progressChoicesHeld) {
         for (const milestone of engine.manifest?.levelMilestones ?? []) {
           if ((this.entity as Player).level < milestone.level) continue;
+          if (milestone.when && !evaluatePredicate(milestone.when, engine.worldState)) continue;
           const offeredFlag = `${milestone.id}_offered`;
           if (engine.getWorldFlag(offeredFlag)) continue;
           const choiceDef = engine.manifest?.choices?.[milestone.choiceId];

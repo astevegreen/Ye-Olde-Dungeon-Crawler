@@ -100,6 +100,28 @@ export interface ItemModifier {
   identifiesCarriedOnStairs?: boolean;
   /** Tiles added to the hero's sight radius (Wayfarer: 1; `Player.sightBonus`, read by `GameEngine.updateFov`; ADR-0013). */
   sightBonus?: number;
+  /** Each melee attack strikes once more for this share of a blow (Twin Fangs: 0.5; `MeleeAttackAction`). */
+  followUpStrikeShare?: number;
+  /** Spells' damage of this element is scaled (Elementalist: +30%; `SpellPipeline.applyDamageEffect`). */
+  elementSpellMultiplier?: { element: string; multiplier: number };
+  /** The bearer resists these elements: neutral becomes resisted, a weakness neutral (Elementalist; `Actor.affinityTo`). */
+  resistsElements?: string[];
+  /** Each grimoire neighbor synergy counts this many more times (Galdr-Master: 1; `resolveEffectiveSpellDetailed`). */
+  grimoireSynergyRepeats?: number;
+  /** Added to the chance a melee blow is a critical (Thor's Wrath: 0.25; `MeleeAttackAction`). */
+  critChanceBonus?: number;
+  /** A critical's multiplier, when higher than the pack's (Thor's Wrath: 2). */
+  critMultiplier?: number;
+  /** The hero's companion has this much more max HP and attack, once, for good (Beast-Friend: 1.5; `bondCompanion`). */
+  companionStatMultiplier?: number;
+  /** Once each floor visit, the hero's fallen companion rises at full health (Beast-Friend; `refusesDeath`). */
+  companionRisesPerFloor?: boolean;
+  /** Once each floor visit, a blow that would kill the hero leaves it at 1 HP (Einherjar; `refusesDeath`). */
+  lastStandPerFloor?: boolean;
+  /** The hero senses every monster on the floor through walls (Odin's Eye; `sensesThroughWalls`). */
+  sensesAllMonsters?: boolean;
+  /** Tiles added to the range of the hero's spells (Odin's Eye: 2; `withSpellRangeBonus`). */
+  spellRangeBonus?: number;
   description?: string;
 }
 

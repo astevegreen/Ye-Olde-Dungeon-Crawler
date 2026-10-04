@@ -21,6 +21,7 @@ import { KillRiteManager, type KillContext } from '../magic/killRites';
 import { CoinItem } from '../economy/currency';
 import type { Item } from '../items/item';
 import { sumWorn } from '../items/wornModifiers';
+import { refusesDeath } from './lastStand';
 
 /** Pact and Plunderer gold multipliers: a coin pile's worth is its count. */
 function applyGoldMultiplier(item: Item, goldMult: number): void {
@@ -41,6 +42,8 @@ export class DeathResolver {
     victim: Entity,
     context?: KillContext
   ): void {
+    // A last stand (Einherjar) or a companion's bond (Beast-Friend) may refuse this death.
+    if (refusesDeath(engine, victim)) return;
     victim.hp = 0;
 
     if (killer && killer.isAlive()) {

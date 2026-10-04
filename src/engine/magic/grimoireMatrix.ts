@@ -6,6 +6,7 @@ import { getSpell } from './spellRegistry';
 import { ELEMENT_OPPOSITES, type ElementType } from './elements';
 import type { GlyphDefinition, GrimoireConfig, SpellModifier } from './magicConfig';
 import { StatusHandlerRegistry } from '../status/statusHandlers';
+import { sumWorn } from '../items/wornModifiers';
 import type { StatusHandler, StatusTickOutput } from '../status/statusHandlers';
 import type { StatusEffect } from '../status/types';
 
@@ -91,6 +92,12 @@ export function glyphForOffering(
     (school ? glyphs.find((g) => g.fromSchools?.includes(school)) : undefined) ??
     glyphs.find((g) => g.fromElements?.includes(element))
   );
+}
+
+/** The spell with the range what the caster wears and holds adds (`spellRangeBonus`, Odin's Eye); a spell with no range keeps none. */
+export function withSpellRangeBonus(caster: Entity, spell: SpellDefinition): SpellDefinition {
+  const bonus = sumWorn(caster, 'spellRangeBonus');
+  return bonus !== 0 && spell.range > 0 ? { ...spell, range: spell.range + bonus } : spell;
 }
 
 /** Multiplies a spell's power: basePower and every numeric damage or heal amount. */
@@ -205,7 +212,8 @@ export class GrimoireMatrixManager {
     if (!base) return undefined;
     const slot = getGrimoireConfig(engine) ? this.findSlotForSpell(player, spellId) : undefined;
     const slotted = slot !== undefined ? this.resolveEffectiveSpellDetailed(engine, player, slot) : undefined;
-    return slotted ?? { spell: base, notes: [], retreatSteps: 0 };
+    const cast = slotted ?? { spell: base, notes: [], retreatSteps: 0 };
+    return { ...cast, spell: withSpellRangeBonus(player, cast.spell) };
   }
 
   /** The spell cast from `slotIndex` after grid synergies, or undefined if the slot is empty or the grid is off. */
@@ -238,6 +246,8 @@ export class GrimoireMatrixManager {
     };
     const notes: string[] = [];
     let retreatSteps = 0;
+    // Each neighbor synergy counts this many times (Galdr-Master: once more, `grimoireSynergyRepeats`).
+    const times = 1 + sumWorn(player, 'grimoireSynergyRepeats');
 
     const neighbors = this.getOrthogonalNeighbors(slotIndex)
       .filter((idx) => player.isGrimoireSlotOpen(idx))
@@ -249,7 +259,7 @@ export class GrimoireMatrixManager {
     // Center slot: more mana and more power per occupied neighbor
     if (slotIndex === CENTER_SLOT_INDEX && neighbors.length > 0) {
       const cost = (config.centerCostPerNeighbor ?? 0) * neighbors.length;
-      const power = (config.centerPowerPerNeighbor ?? 0) * neighbors.length;
+      const power = (config.centerPowerPerNeighbor ?? 0) * neighbors.length * times;
       if (cost) spell.manaCost = Math.round(spell.manaCost * (1 + cost));
       if (power) scaleSpellPower(spell, 1 + power);
       if (cost || power) {
@@ -262,14 +272,14 @@ export class GrimoireMatrixManager {
     for (const neighbor of neighbors) {
       // Next to its opposing element (e.g. fire beside cold): more power
       if (opposed && neighbor.element === opposed) {
-        const mult = config.opposedElementPowerMultiplier ?? DEFAULT_OPPOSED_ELEMENT_POWER;
+        const mult = Math.pow(config.opposedElementPowerMultiplier ?? DEFAULT_OPPOSED_ELEMENT_POWER, times);
         scaleSpellPower(spell, mult);
-        notes.push(`Beside ${neighbor.name} (${neighbor.element}): ×${mult} power`);
+        notes.push(`Beside ${neighbor.name} (${neighbor.element}): ×${Math.round(mult * 100) / 100} power`);
       }
 
       // Ray adjacent to Burst -> Expands AoE
       if (spell.targetingMode === 'ray' && neighbor.targetingMode === 'area_burst') {
-        spell.areaOfEffect = Math.max(1, (spell.areaOfEffect ?? 0) + 1);
+        spell.areaOfEffect = Math.max(times, (spell.areaOfEffect ?? 0) + times);
         notes.push(`Beside ${neighbor.name} (burst): bursts on impact`);
       }
     }

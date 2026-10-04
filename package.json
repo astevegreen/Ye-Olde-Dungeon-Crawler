@@ -25,6 +25,7 @@
     "check:engine-creep": "tsx scripts/check-engine-creep.ts",
     "check:ui-palette": "tsx scripts/check-ui-palette.ts",
     "sim": "npx tsx scripts/headless-sim.ts",
+    "balance": "npx tsx scripts/balance-report.ts",
     "validate:schema": "npx tsx scripts/validate-schema.ts",
     "replay:report": "npx tsx scripts/replay-report.ts",
     "map:stack": "npx tsx scripts/map-stack.ts",

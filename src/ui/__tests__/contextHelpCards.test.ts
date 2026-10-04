@@ -44,5 +44,18 @@ describe('F1 cards for altars, the Story and the Rune of Return', () => {
     // Without a grid, the card says nothing about one.
     expect(new ContextHelp().getHelpContent('spellbook', { ...cotwManifest, magic: {} }).tip).not.toContain('slot');
   });
+
+  it('has a card for the Bestiary, Character and Pacts tabs, each from its own keys', () => {
+    const help = new ContextHelp();
+    const bestiary = help.getHelpContent('bestiary', cotwManifest);
+    expect(bestiary.title).toBe('Bestiary');
+    expect(bestiary.bullets.map((b) => b.key)).toContain('Left / Right');
+    const character = help.getHelpContent('character', cotwManifest);
+    expect(character.bullets.map((b) => b.key)).toEqual(expect.arrayContaining(['S / D / C / I', 'Enter']));
+    const pacts = help.getHelpContent('pacts', cotwManifest);
+    // cotw's pacts are sealed with the keeper in town, named from the pack.
+    expect(pacts.bullets.map((b) => b.key)).toContain('Sage Mimir');
+    expect(help.getHelpContent('pacts', { ...cotwManifest, pactKeeperNpcId: undefined }).bullets.map((b) => b.key)).toContain('Enter');
+  });
 });
 

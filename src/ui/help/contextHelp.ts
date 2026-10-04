@@ -23,7 +23,10 @@ export type GameHelpContext =
   | 'altar'
   | 'story'
   | 'rune'
-  | 'spellbook';
+  | 'spellbook'
+  | 'bestiary'
+  | 'character'
+  | 'pacts';
 
 export interface HelpCardContent {
   title: string;
@@ -135,6 +138,51 @@ export class ContextHelp {
           tip: grid
             ? `Tip: A spell casts from its slot on the open page. The ${center} slot makes it dearer and stronger for each filled slot beside it; opposed elements side by side, and a ray beside a burst, strengthen each other. With a foe in view, rewriting a slot takes a turn.`
             : 'Tip: The belt casts by key; the Spellbook shows what each spell costs and does.',
+        };
+      }
+
+      case 'bestiary':
+        return {
+          title: 'Bestiary',
+          contextTag: 'KNOW YOUR FOE',
+          bullets: [
+            { key: 'Up / Down', label: 'Choose a creature' },
+            { key: 'Left / Right', label: 'All, discovered, or mastered' },
+            { key: '? / Seen / Slain / Mastered', label: 'How much you know of it' },
+            { key: 'Tab / B / Esc', label: 'The next tab, or close' },
+          ],
+          tip: manifest?.magic?.killRites
+            ? 'Tip: Each one you slay teaches you more of its kind, and enough earns a mastery perk against it. Some give up their magic only when slain a certain way: the entry\'s verse hints how.'
+            : 'Tip: Each one you slay teaches you more of its kind, and enough earns a mastery perk against it.',
+        };
+
+      case 'character':
+        return {
+          title: 'Character',
+          contextTag: 'THE HERO',
+          bullets: [
+            { key: 'S / D / C / I', label: 'Plan a point in Strength, Dexterity, Constitution or Intelligence' },
+            { key: 'Shift+S / D / C / I', label: 'Take a planned point back' },
+            { key: 'Z / Shift+Z', label: 'Undo, redo' },
+            { key: 'R', label: 'Clear the plan' },
+            { key: 'Enter', label: 'Spend the planned points' },
+            { key: '1 / 2 / 3', label: 'Rune of Return ranks, once you carry one' },
+          ],
+          tip: 'Tip: Points are spent only when you accept the plan; closing keeps them for later.',
+        };
+
+      case 'pacts': {
+        const keeperId = manifest?.pactKeeperNpcId;
+        const keeper = keeperId ? manifest?.town?.npcs?.find((n) => n.id === keeperId)?.name ?? 'The pact keeper' : null;
+        return {
+          title: 'Pacts',
+          contextTag: 'BARGAINS',
+          bullets: [
+            { key: 'Up / Down', label: 'Choose a pact: its curse and its reward' },
+            keeper ? { key: keeper, label: 'Seals and renounces pacts, in town' } : { key: 'Enter', label: 'Seal the pact, or renounce it' },
+            { key: 'Tab / P / Esc', label: 'The next tab, or close' },
+          ],
+          tip: 'Tip: A pact is a curse you carry for a reward. It holds until you renounce it.',
         };
       }
 

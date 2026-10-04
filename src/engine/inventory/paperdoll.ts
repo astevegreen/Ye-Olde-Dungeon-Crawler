@@ -91,17 +91,51 @@ export class Paperdoll {
     return this.getAllEquipped().map((e) => e.item);
   }
 
-  public isSlotBlocked(slotId: EquipmentSlot): boolean {
+  /**
+   * Whether the bearer may hold a shield in the off hand beside a two-handed weapon (Giant's
+   * Grip, `shieldWithTwoHanded`); the owner installs the rule (`Player`), a bare paperdoll
+   * has none.
+   */
+  public shieldBesideTwoHanded: () => boolean = () => false;
+
+  /** A two-hander in the main hand leaves this off-hand item be (a shield, under Giant's Grip). */
+  private sitsBesideTwoHanded(offHand: Item | null | undefined): boolean {
+    return Boolean(offHand && offHand.category === 'shield' && this.shieldBesideTwoHanded());
+  }
+
+  /**
+   * Whether an equipped item keeps `slotId` empty for `incoming` (for any item when none is
+   * given): its own `blocksSlot`, or a two-hander in the main hand over the off hand, which a
+   * shield may share under Giant's Grip.
+   */
+  public isSlotBlocked(slotId: EquipmentSlot, incoming?: Item): boolean {
     for (const [equippedSlot, item] of this.slots.entries()) {
       if (!item) continue;
       if (item.blocksSlot === slotId) {
         return true;
       }
       if (item.twoHanded && equippedSlot === 'mainHand' && slotId === 'offHand') {
+        if (this.shieldBesideTwoHanded() && (!incoming || incoming.category === 'shield')) continue;
         return true;
       }
     }
     return false;
+  }
+
+  /** The item, other than the slot's own, that equipping `item` in `slot` would push out of its slot. */
+  public displacedBy(item: Item, slot: EquipmentSlot): { slot: EquipmentSlot; item: Item } | null {
+    const blocked = (item.blocksSlot ?? (item.twoHanded && slot === 'mainHand' ? 'offHand' : undefined)) as EquipmentSlot | undefined;
+    if (!blocked || !this.slots.has(blocked)) return null;
+    const other = this.getItem(blocked);
+    if (!other) return null;
+    if (!item.blocksSlot && this.sitsBesideTwoHanded(other)) return null;
+    return { slot: blocked, item: other };
+  }
+
+  /** Puts a saved item back in its slot as it was worn, without the equip rules (a load). */
+  public restore(item: Item, slot: EquipmentSlot): void {
+    this.slots.set(slot, item);
+    itemIndex.register(item, { kind: 'equipped', ownerId: item.ownerId ?? 'unknown', slot });
   }
 
   public canEquip(item: Item, targetSlot?: EquipmentSlot): { allowed: boolean; slot?: EquipmentSlot; reason?: string } {
@@ -122,7 +156,7 @@ export class Paperdoll {
     }
 
     // Check if slot is blocked by another equipped item (e.g. 2H weapon)
-    if (this.isSlotBlocked(slot)) {
+    if (this.isSlotBlocked(slot, item)) {
       const slotDef = this.slotDefinitions.get(slot);
       return {
         allowed: false,
@@ -142,15 +176,12 @@ export class Paperdoll {
     }
 
     // If item blocks another slot (e.g. 2H weapon blocking offHand), check if that slot has a cursed item
-    const blockedSlot = (item.blocksSlot ?? (item.twoHanded && slot === 'mainHand' ? 'offHand' : undefined)) as EquipmentSlot | undefined;
-    if (blockedSlot && this.slots.has(blockedSlot)) {
-      const blockedItem = this.getItem(blockedSlot);
-      if (blockedItem && blockedItem.isBound()) {
-        return {
-          allowed: false,
-          reason: `Cannot equip ${item.name} because the cursed item ${blockedItem.name} in ${blockedSlot} cannot be removed!`,
-        };
-      }
+    const displaced = this.displacedBy(item, slot);
+    if (displaced && displaced.item.isBound()) {
+      return {
+        allowed: false,
+        reason: `Cannot equip ${item.name} because the cursed item ${displaced.item.name} in ${displaced.slot} cannot be removed!`,
+      };
     }
 
     // A bound item in the slot (a negative family, worn) cannot be replaced or taken off.
@@ -180,13 +211,10 @@ export class Paperdoll {
     }
 
     // If this item blocks another slot (e.g. twoHanded weapon in mainHand blocking offHand)
-    const blockedSlot = (item.blocksSlot ?? (item.twoHanded && slot === 'mainHand' ? 'offHand' : undefined)) as EquipmentSlot | undefined;
-    if (blockedSlot && this.slots.has(blockedSlot)) {
-      const blockedItem = this.getItem(blockedSlot);
-      if (blockedItem) {
-        this.slots.set(blockedSlot, null);
-        unequippedItems.push(blockedItem);
-      }
+    const displaced = this.displacedBy(item, slot);
+    if (displaced) {
+      this.slots.set(displaced.slot, null);
+      unequippedItems.push(displaced.item);
     }
 
     this.slots.set(slot, item);

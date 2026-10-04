@@ -95,16 +95,19 @@ describe('cotw progression (Q4 "B", Q25)', () => {
         expect(trigger.choiceId).toBe(milestoneChoiceId(trigger.attribute, trigger.threshold));
         expect(COTW_CHOICES[trigger.choiceId]).toBeDefined();
       }
-      // The first tier is built for all four; 25 and 30 wait for the owner's perk lists (3.4, 3.6).
+      // Every tier is built for all four (Q52 "A", tracker 3.6).
       for (const attribute of ['strength', 'dexterity', 'constitution', 'intelligence'] as const) {
-        expect(COTW_ATTRIBUTE_MILESTONES.some((t) => t.attribute === attribute && t.threshold === 20)).toBe(true);
+        for (const tier of COTW_MILESTONE_TIERS) {
+          expect(COTW_ATTRIBUTE_MILESTONES.some((t) => t.attribute === attribute && t.threshold === tier), `${attribute} ${tier}`).toBe(true);
+        }
       }
       expect(COTW_ATTRIBUTE_MILESTONES.some((t) => t.threshold < 20)).toBe(false);
     });
 
-    it('opens a tier as soon as its choice exists', () => {
-      const withTier25 = { ...COTW_CHOICES, [milestoneChoiceId('strength', 25)]: COTW_CHOICES[milestoneChoiceId('strength', 20)] };
-      expect(attributeMilestones(withTier25).filter((t) => t.threshold === 25).map((t) => t.attribute)).toEqual(['strength']);
+    it('leaves a tier out while its choice is not written', () => {
+      const withoutStrength25 = { ...COTW_CHOICES };
+      delete withoutStrength25[milestoneChoiceId('strength', 25)];
+      expect(attributeMilestones(withoutStrength25).filter((t) => t.threshold === 25).map((t) => t.attribute)).toEqual(['dexterity', 'constitution', 'intelligence']);
     });
 
     it('is never reached by a fresh roll: the starting cap sits below the first tier', () => {

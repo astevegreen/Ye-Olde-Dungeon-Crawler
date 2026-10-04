@@ -39,6 +39,11 @@ export function dexterityEvasion(defender: Entity, config: AttributeScalingConfi
   return Math.max(0, above(defender.dexterity, config) * (config.evasionPerDexterity ?? 0));
 }
 
+/** The evasion the defender's Intelligence gives at `perPoint` a point above the baseline (Mind over Matter); never below 0. */
+export function intelligenceEvasion(defender: Entity, config: AttributeScalingConfig, perPoint: number): number {
+  return perPoint > 0 ? Math.max(0, above(defender.intelligence, config) * perPoint) : 0;
+}
+
 /** What the caster's Intelligence multiplies a spell's damage and healing by. */
 export function spellPowerMultiplier(caster: Entity, config: AttributeScalingConfig): number {
   return Math.max(0.1, 1 + above(caster.intelligence, config) * (config.spellPowerPerIntelligence ?? 0));

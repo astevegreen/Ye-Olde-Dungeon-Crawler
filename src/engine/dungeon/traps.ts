@@ -5,6 +5,7 @@ import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
 import { DeathResolver } from '../combat/deathResolver';
 import { TILES } from '../grid/tile';
+import { wearsFlag } from '../items/wornModifiers';
 
 export interface TrapOptions {
   id: string;
@@ -73,6 +74,14 @@ export class TrapInstance {
   public trigger(entity: Entity, engine: GameEngine): string {
     if (this.disarmed) {
       return `The disabled ${this.type} trap clicks harmlessly under ${entity.name}.`;
+    }
+    // Trap-Dancer: the trap never springs under the bearer, which sees it for what it is.
+    if (wearsFlag(entity, 'trapImmune')) {
+      this.revealed = true;
+      if (engine.map.getTile(this.x, this.y)?.type !== 'trap') engine.map.setTile(this.x, this.y, TILES.TRAP);
+      const message = `${entity.name} dances lightly over a ${this.type} trap.`;
+      engine.log(message);
+      return message;
     }
 
     this.triggered = true;

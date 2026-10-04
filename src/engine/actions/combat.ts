@@ -15,8 +15,8 @@ import { applyImpulse } from '../combat/impulse';
 import { resolveCombatMitigation } from '../combat/mitigationPipeline';
 import { burnOnSacredGround } from '../combat/sacredGround';
 import type { ItemModifier } from '../items/modifiers';
-import { afflictionDuration, highestWorn, productWorn, sumWorn, wornModifiers } from '../items/wornModifiers';
-import { attributeScalingOf, dexterityEvasion, meleeHitPercent, strengthMeleeBonus } from '../combat/attributeScaling';
+import { afflictionDuration, highestWorn, productWorn, sumWorn, wearsFlag, wornModifiers } from '../items/wornModifiers';
+import { attributeScalingOf, dexterityEvasion, intelligenceEvasion, meleeHitPercent, strengthMeleeBonus } from '../combat/attributeScaling';
 
 const DEFAULT_MIN_DAMAGE = 1;
 const DEFAULT_CRIT_MULTIPLIER = 1.5;
@@ -50,6 +50,36 @@ export class MeleeAttackAction implements Action {
     return { success: true, cost, message };
   }
 
+  /**
+   * What the defender does with a blow it evaded, by what it wears and holds: strikes back
+   * (Riposte, never in answer to a follow-up, so two riposters do not trade forever), then
+   * slips aside (Shadow-Step).
+   */
+  private afterEvade(engine: GameEngine): void {
+    const defender = this.defender;
+    if (!this.followUp && wearsFlag(defender, 'ripostesOnEvade') && defender.isAlive() && this.attacker.isAlive()) {
+      engine.log(`${defender.name} turns the blow and strikes back!`);
+      new MeleeAttackAction(defender, this.attacker, { followUp: true }).perform(engine);
+    }
+    const range = sumWorn(defender, 'evadeBlinkRange');
+    if (range > 0 && defender.isAlive()) {
+      const spots: Position[] = [];
+      for (let dy = -range; dy <= range; dy++) {
+        for (let dx = -range; dx <= range; dx++) {
+          const x = defender.x + dx;
+          const y = defender.y + dy;
+          if ((dx || dy) && engine.map.inBounds(x, y) && engine.map.isPassable(x, y) && !engine.map.getEntityAt(x, y)) spots.push({ x, y });
+        }
+      }
+      if (spots.length > 0) {
+        const dest = spots[Math.floor(engine.rng() * spots.length)];
+        engine.map.moveEntity(defender, dest.x, dest.y);
+        if (defender === engine.player) engine.updateFov();
+        engine.log(`${defender.name} slips aside into the shadows.`);
+      }
+    }
+  }
+
   public perform(engine: GameEngine): ActionResult {
     if (!this.attacker.isAlive()) {
       return {
@@ -81,14 +111,17 @@ export class MeleeAttackAction implements Action {
       this.attacker instanceof Monster && this.defender instanceof Player && engine.compendium
         ? engine.compendium.getMasteryEvasionBonus(this.attacker.definitionId, getMonsterCategory(engine, this.attacker.definitionId)?.id)
         : 0;
-    const evasion = wornEvasion + perkEvasion + dexterityEvasion(this.defender, scaling);
+    const evasion =
+      wornEvasion + perkEvasion + dexterityEvasion(this.defender, scaling) + intelligenceEvasion(this.defender, scaling, sumWorn(this.defender, 'evasionPerIntelligence'));
     if (evasion > 0 && engine.rng() < evasion) {
-      return this.missed(
+      const result = this.missed(
         engine,
         perkEvasion > 0
           ? `${this.defender.name} anticipates ${this.attacker.name}'s attack and evades cleanly! (Survivor Perk)`
           : `${this.defender.name} evades ${this.attacker.name}'s attack!`
       );
+      this.afterEvade(engine);
+      return result;
     }
 
     // Slayer's Compendium Offensive Mastery (Anatomist: ignore 50% defense, +25% crit dmg)
@@ -107,9 +140,9 @@ export class MeleeAttackAction implements Action {
       isCrit = custom.isCrit ?? false;
     } else {
       const minDmg = combatConfig?.minDamage ?? DEFAULT_MIN_DAMAGE;
-      const effectiveDefense = isAnatomist
-        ? Math.floor(this.defender.defense * 0.5)
-        : this.defender.defense;
+      // Anatomist ignores half the foe's defense; what the attacker wears and holds, more (Sunder).
+      const penetration = Math.min(1, (isAnatomist ? 0.5 : 0) + sumWorn(this.attacker, 'defensePenetration'));
+      const effectiveDefense = penetration > 0 ? Math.floor(this.defender.defense * (1 - penetration)) : this.defender.defense;
       // Strength adds to the blow before the foe's defense is taken off (tracker 3.2).
       let base = Math.max(minDmg, this.attacker.attack + strengthMeleeBonus(this.attacker, scaling) - effectiveDefense);
 

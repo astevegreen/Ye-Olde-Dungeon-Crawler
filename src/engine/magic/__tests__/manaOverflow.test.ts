@@ -99,6 +99,16 @@ describe('Ginnungagap / Mana Overflow System', () => {
     expect(player.voidDebt).toBe(18);
   });
 
+  it('a negative tier shift makes a surge a tier milder, and the mildest none (Arch-Seiðkona)', () => {
+    player.voidDebt = 0;
+    const none = ManaOverflowManager.evaluateOverflow(engine, player, 3, { tierShift: -1 });
+    expect(none.occurred).toBe(false);
+    expect(player.voidDebt).toBe(3); // the debt is still owed
+    const milder = ManaOverflowManager.evaluateOverflow(engine, player, 15, { tierShift: -1 });
+    expect(milder.occurred).toBe(true);
+    expect(milder.tier).toBe(2);
+  });
+
   it('decays and clears void debt upon resting', () => {
     player.voidDebt = 5;
     player.decayVoidDebt(2);

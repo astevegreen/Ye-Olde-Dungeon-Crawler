@@ -171,14 +171,11 @@ export class InventoryManager {
     }
 
     // Pre-flight check: Ensure the pack can hold any displaced items
-    const blockedSlot = (item.blocksSlot ?? (item.twoHanded && check.slot === 'mainHand' ? 'offHand' : undefined)) as EquipmentSlot | undefined;
     const displacedItems: Item[] = [];
     const currentInSlot = this.paperdoll.getItem(check.slot);
     if (currentInSlot) displacedItems.push(currentInSlot);
-    if (blockedSlot) {
-      const currentInBlocked = this.paperdoll.getItem(blockedSlot);
-      if (currentInBlocked) displacedItems.push(currentInBlocked);
-    }
+    const pushedOut = this.paperdoll.displacedBy(item, check.slot);
+    if (pushedOut) displacedItems.push(pushedOut.item);
 
     if (displacedItems.length > 0) {
       const itemWeight = item.unitWeight ?? item.weight;

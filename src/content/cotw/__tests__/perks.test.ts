@@ -3,6 +3,8 @@ import { ProfileManager, MemoryStorage } from '../../../engine/storage/profile-m
 import { ExecuteChoiceAction } from '../../../engine/actions/choiceAction';
 import { RestAction } from '../../../engine/actions/rest';
 import { MovementAction } from '../../../engine/actions/movement';
+import { serializeGame, deserializeGame } from '../../../engine/storage/serializer';
+import { createScaledItem } from '../../../engine/dungeon/lootSpawner';
 import { cotwManifest } from '../index';
 import { COTW_LEVEL_MILESTONES, COTW_MILESTONE_CHOICES, COTW_MILESTONE_PERKS, COTW_PERKS, COTW_SAGA_CHOICES } from '../perks';
 
@@ -29,10 +31,12 @@ describe('cotw perks', () => {
     expect(new Set(cotwManifest.perks!.map((p) => p.id)).size).toBe(cotwManifest.perks!.length);
   });
 
-  it('each attribute’s 20 milestone offers two perks of its own instead of +2/+3 Attack or Defense (Q52 "A")', () => {
-    for (const attr of ['str', 'dex', 'con', 'int']) {
-      const choice = cotwManifest.choices![`milestone_${attr}_20`];
-      expect(choice, attr).toBe(COTW_MILESTONE_CHOICES[`milestone_${attr}_20`]);
+  it('each attribute’s milestone at 20, 25 and 30 offers two perks of its own; none gives +2/+3 Attack or Defense (Q52 "A")', () => {
+    const offered = new Set<string>();
+    for (const id of ['str', 'dex', 'con', 'int'].flatMap((attr) => [20, 25, 30].map((tier) => `milestone_${attr}_${tier}`))) {
+      const choice = cotwManifest.choices![id];
+      expect(choice, id).toBe(COTW_MILESTONE_CHOICES[id]);
+      for (const option of choice.options) offered.add(option.id);
       expect(choice.options).toHaveLength(2);
       for (const option of choice.options) {
         const grant = option.consequences.find((c) => c.type === 'grantPerk') as { perkId: string } | undefined;
@@ -41,6 +45,7 @@ describe('cotw perks', () => {
         expect(option.consequences.some((c) => c.type === 'modifyPermanentStat' && (c.stat === 'attack' || c.stat === 'defense'))).toBe(false);
       }
     }
+    expect([...offered].sort()).toEqual(COTW_MILESTONE_PERKS.map((p) => p.id).sort());
     const fleet = COTW_MILESTONE_CHOICES.milestone_dex_20.options.find((o) => o.id === 'milestone_fleet_foot')!;
     expect(fleet.consequences).toContainEqual({ type: 'modifyPermanentStat', stat: 'speed', delta: 10 });
   });
@@ -85,6 +90,20 @@ describe('cotw perks', () => {
     engine.handlePlayerAction(new ExecuteChoiceAction(p, COTW_SAGA_CHOICES.saga_50, 'saga_jarl_of_the_deep'));
     expect([p.strength, p.dexterity, p.constitution, p.intelligence]).toEqual(before.map((v) => v + 2));
     expect(p.hasPerk('saga_jarl_of_the_deep')).toBe(true);
+  });
+
+  it('Giant’s Grip keeps a shield beside a two-hander, through a save and load', () => {
+    const { engine } = new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Grip', { seed: 3 });
+    const p = engine.player;
+    engine.handlePlayerAction(new ExecuteChoiceAction(p, COTW_MILESTONE_CHOICES.milestone_str_25, 'milestone_giants_grip'));
+    const def = (id: string) => cotwManifest.items.find((d) => d.id === id)!;
+    const spear = createScaledItem(def('skraeling_ice_spear'), 'spear', 1, () => 0.5);
+    const shield = createScaledItem(def('iron_shield'), 'shield', 1, () => 0.5);
+    expect(p.inventory.paperdoll.equip(spear, 'mainHand').success).toBe(true);
+    expect(p.inventory.paperdoll.equip(shield, 'offHand').success).toBe(true);
+    const { engine: reloaded } = deserializeGame(JSON.parse(JSON.stringify(serializeGame(engine))), cotwManifest);
+    expect(reloaded.player.inventory.paperdoll.getItem('mainHand')?.id).toBe('spear');
+    expect(reloaded.player.inventory.paperdoll.getItem('offHand')?.id).toBe('shield');
   });
 
   it('Spell-Thief clears two points of overflow debt a rest turn', () => {

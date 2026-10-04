@@ -122,6 +122,30 @@ export interface ItemModifier {
   sensesAllMonsters?: boolean;
   /** Tiles added to the range of the hero's spells (Odin's Eye: 2; `withSpellRangeBonus`). */
   spellRangeBonus?: number;
+  /** A share of the defender's defense the bearer's melee ignores, beside Anatomist's half (Sunder: 0.25). */
+  defensePenetration?: number;
+  /** The bearer may hold a shield beside a two-handed weapon (Giant's Grip; `Paperdoll.shieldBesideTwoHanded`). */
+  shieldWithTwoHanded?: boolean;
+  /** Evading a melee blow strikes the attacker back, free (Riposte). */
+  ripostesOnEvade?: boolean;
+  /** Evading a melee blow blinks the bearer up to this many tiles, if there is room (Shadow-Step: 1). */
+  evadeBlinkRange?: number;
+  /** Evasion per point of Intelligence above the baseline (Mind over Matter: 0.01). */
+  evasionPerIntelligence?: number;
+  /** Traps never trigger under the bearer (Trap-Dancer; `TrapInstance.trigger`). */
+  trapImmune?: boolean;
+  /** Scales the HP a rest turn heals (Second Wind: 2; `AutoRestManager.recoverRestTurn`). */
+  restHealMultiplier?: number;
+  /** Statuses that never take hold on the hero; added to `statusImmunities` when a perk is granted (Stalwart). */
+  grantsStatusImmunities?: string[];
+  /** Hops added to the bearer's chain spells (Chain-Weaver: 1). */
+  chainExtraHops?: number;
+  /** Scales the first spell damage to hit the hero on each floor visit (Warding Glyph: 0.5). */
+  firstSpellPerFloorMultiplier?: number;
+  /** A share added to the hero's max HP (Mountain's Root: 0.15, Juggernaut: 0.25; `Player.wornMaxHpPercent`). */
+  maxHpPercent?: number;
+  /** A level-up heals HP and mana in full (Undying). */
+  levelUpFullHeal?: boolean;
   description?: string;
 }
 

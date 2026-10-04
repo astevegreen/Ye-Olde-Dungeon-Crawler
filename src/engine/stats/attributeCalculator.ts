@@ -173,7 +173,9 @@ export function calculateAttribute(
     const pact = actor.pactMutatorsSupplier?.().playerMaxHpPercent ?? 0;
     // A blessing's lasting share (`Player.maxHpPercentBonus`); other actors have none.
     const blessing = (actor as { maxHpPercentBonus?: number }).maxHpPercentBonus ?? 0;
-    value = value * (1 + pact + blessing);
+    // What a hero wears and holds (Juggernaut, `Player.wornMaxHpPercent`).
+    const worn = (actor as { wornMaxHpPercent?: number }).wornMaxHpPercent ?? 0;
+    value = value * (1 + pact + blessing + worn);
   } else if (attributeKey === 'actionCost') {
     // Encumbrance cost adjustment first if available on inventory
     if (actor.inventory) {

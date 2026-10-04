@@ -33,11 +33,11 @@ export class AutoRestManager {
    */
   /**
    * One rest turn's recovery, for both rest paths (`RestAction` and the R key's
-   * `stepRestTurn`): a point of HP and of mana, and a point of overflow debt, more for a
-   * Spell-Thief (`overflowDebtDecayMultiplier`).
+   * `stepRestTurn`): a point of HP, more with Second Wind (`restHealMultiplier`), a point of
+   * mana, and a point of overflow debt, more for a Spell-Thief (`overflowDebtDecayMultiplier`).
    */
   public static recoverRestTurn(engine: GameEngine, player: Player): void {
-    player.heal(1);
+    player.heal(Math.max(1, Math.round(productWorn(player, 'restHealMultiplier'))));
     player.restoreMana(1);
     player.decayVoidDebt(Math.max(1, Math.round(productWorn(player, 'overflowDebtDecayMultiplier'))), lingeringDebtFloor(engine, player.voidDebt));
   }

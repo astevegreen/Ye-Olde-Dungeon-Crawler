@@ -144,7 +144,9 @@ export function applyConsequences(
       }
       case 'grantPerk': {
         const perk = engine.manifest?.perks?.find((p) => p.id === c.perkId);
-        if (perk) player.grantPerk(perk);
+        // A perk that raises max HP raises HP with it, as the temple's blessing does.
+        const maxHpBefore = player.maxHp;
+        if (perk && player.grantPerk(perk)) player.hp += Math.max(0, player.maxHp - maxHpBefore);
         break;
       }
       case 'modifyAttribute': {

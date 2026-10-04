@@ -6,7 +6,7 @@ import { EncumbranceLevel } from '../inventory/encumbrance';
 import type { CharacterAttributes, Gender } from '../character/types';
 import type { ProgressionConfig, LevelUpBonus, PerkDefinition } from '../types/manifest';
 import type { ItemModifier } from '../items/modifiers';
-import { productWorn, sumWorn } from '../items/wornModifiers';
+import { productWorn, sumWorn, wearsFlag } from '../items/wornModifiers';
 import type { TutorialFlags } from '../storage/types';
 import { calculateAttribute } from '../stats/attributeCalculator';
 import {
@@ -209,6 +209,8 @@ export class Player extends Actor {
     this.xp = config.xp ?? 0;
     this.unspentStatPoints = config.unspentStatPoints ?? 0;
     for (const perk of config.perks ?? []) this.grantPerk(perk);
+    // A shield beside a two-hander, for a hero whose perks allow it (Giant's Grip).
+    this.inventory.paperdoll.shieldBesideTwoHanded = () => wearsFlag(this, 'shieldWithTwoHanded');
     this.progressionConfig = config.progressionConfig;
     this.tutorialFlags = config.tutorialFlags ? { ...config.tutorialFlags } : {};
     this.deepestRecallFloor = config.deepestRecallFloor;
@@ -312,7 +314,7 @@ export class Player extends Actor {
       this.maxHp = this.baseMaxHpValue + (gains.maxHp ?? 5);
       this.maxMana += gains.maxMana ?? 4;
       // The level's heal: the pack's share of each bar (rising with Constitution), else all of it.
-      const share = levelUpHealShare(progression, this.constitution);
+      const share = wearsFlag(this, 'levelUpFullHeal') ? 1 : levelUpHealShare(progression, this.constitution);
       const hpBefore = this.hp;
       const manaBefore = this.mana;
       this.hp = Math.min(this.maxHp, this.hp + Math.round(this.maxHp * share));
@@ -391,6 +393,11 @@ export class Player extends Actor {
     return Math.round(this.strength * productWorn(this, 'carryMultiplier'));
   }
 
+  /** The share of max HP what the hero wears and holds adds (`maxHpPercent`; read by `calculateAttribute`). */
+  public get wornMaxHpPercent(): number {
+    return sumWorn(this, 'maxHpPercent');
+  }
+
   /** Tiles what the hero wears and the perks it holds add to its sight radius (`sightBonus`; ADR-0013). */
   public get sightBonus(): number {
     return sumWorn(this, 'sightBonus');
@@ -416,6 +423,9 @@ export class Player extends Actor {
     this.perks.push(perk);
     if (perk.effects) {
       this.perkModifiers.push({ id: `perk:${perk.id}`, name: perk.name, alignment: 'positive', category: 'blessed', ...perk.effects });
+      for (const status of perk.effects.grantsStatusImmunities ?? []) {
+        if (!this.statusImmunities.includes(status)) this.statusImmunities.push(status);
+      }
     }
     return true;
   }

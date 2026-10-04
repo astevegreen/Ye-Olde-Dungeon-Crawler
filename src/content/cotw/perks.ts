@@ -15,7 +15,7 @@ import type { ChoiceDefinition, LevelMilestoneTrigger, PerkDefinition } from '..
  * Waiting on the owner: Shadow-Walker's "a monster that cannot see you does not wake" (Q57;
  * sleepers wake in the hero's sight, computed in a protected file) and Odin's Eye's ranged
  * range (Q59; no ranged attack can be made in play). Not yet built from the approved list: the
- * milestone 25 and 30 tiers, and the eight family perks.
+ * eight family perks.
  */
 /** The elements an Elementalist may choose (cotw's damaging elements), with their names. */
 const ELEMENTALIST_ELEMENTS: Array<[string, string]> = [
@@ -171,6 +171,30 @@ export const COTW_MILESTONE_PERKS: PerkDefinition[] = [
   // ── Intelligence 20 ──
   { id: 'milestone_rune_thrift', name: 'Rune-Thrift', source: 'milestone', tagline: 'No rune drawn larger than it must be.', description: 'Spells cost 15% less {mana}.', effects: { manaCostMultiplier: 0.85 } },
   { id: 'milestone_lore_keeper', name: 'Lore-Keeper', source: 'milestone', tagline: 'Handle a thing a while and it tells you its name.', description: 'Taking the stairs identifies every unidentified item you have carried since the last stairs.', effects: { identifiesCarriedOnStairs: true } },
+  // ── Strength 25 ──
+  { id: 'milestone_sunder', name: 'Sunder', source: 'milestone', tagline: 'Mail parts like linen.', description: 'Your melee ignores a quarter of the foe’s defense.', effects: { defensePenetration: 0.25 } },
+  { id: 'milestone_giants_grip', name: 'Giant’s Grip', source: 'milestone', tagline: 'One hand is enough for what others need two for.', description: 'You may carry a shield beside a two-handed weapon.', effects: { shieldWithTwoHanded: true } },
+  // ── Dexterity 25 ──
+  { id: 'milestone_riposte', name: 'Riposte', source: 'milestone', tagline: 'Every miss is an opening.', description: 'Each time you evade a melee blow, you strike back, free.', effects: { ripostesOnEvade: true } },
+  { id: 'milestone_trap_dancer', name: 'Trap-Dancer', source: 'milestone', tagline: 'Your feet find the safe stones first.', description: 'Traps never trigger under you.', effects: { trapImmune: true } },
+  // ── Constitution 25 ──
+  { id: 'milestone_second_wind', name: 'Second Wind', source: 'milestone', tagline: 'A breath, and you are whole again.', description: 'Resting heals twice as fast.', effects: { restHealMultiplier: 2 } },
+  { id: 'milestone_stalwart', name: 'Stalwart', source: 'milestone', tagline: 'Nothing slows the oak.', description: 'You cannot be slowed or stunned.', effects: { grantsStatusImmunities: ['slow', 'stunned'] } },
+  // ── Intelligence 25 ──
+  { id: 'milestone_chain_weaver', name: 'Chain-Weaver', source: 'milestone', tagline: 'The lightning knows one more name.', description: 'Your chain spells reach one more foe.', effects: { chainExtraHops: 1 } },
+  { id: 'milestone_warding_glyph', name: 'Warding Glyph', source: 'milestone', tagline: 'A rune under the skin, waiting.', description: 'On each floor, the first spell to hit you is halved.', effects: { firstSpellPerFloorMultiplier: 0.5 } },
+  // ── Strength 30 ──
+  { id: 'milestone_mountains_root', name: 'Mountain’s Root', source: 'milestone', tagline: 'You stand as the mountains stand.', description: 'Max health +15%, and no blow can knock you back.', effects: { maxHpPercent: 0.15, impulseImmune: true } },
+  { id: 'milestone_hammer_of_thor', name: 'Hammer of Thor', source: 'milestone', tagline: 'Every blow lands like thunder.', description: 'Melee damage +25%.', effects: { meleeDamageMultiplier: 1.25 } },
+  // ── Dexterity 30 ──
+  { id: 'milestone_shadow_step', name: 'Shadow-Step', source: 'milestone', tagline: 'Where the blade fell, you were.', description: 'Evasion +10%, and each blow you evade lets you slip a tile aside.', effects: { evasionBonus: 0.1, evadeBlinkRange: 1 } },
+  { id: 'milestone_deadly_precision', name: 'Deadly Precision', source: 'milestone', tagline: 'You strike where the armour isn’t.', description: 'One melee blow in five is a critical, for half again the damage.', effects: { critChanceBonus: 0.2, critMultiplier: 1.5 } },
+  // ── Constitution 30 ──
+  { id: 'milestone_undying', name: 'Undying', source: 'milestone', tagline: 'Every step down makes you whole.', description: 'A level-up heals you in full.', effects: { levelUpFullHeal: true } },
+  { id: 'milestone_juggernaut', name: 'Juggernaut', source: 'milestone', tagline: 'More of you than any blade can reach.', description: 'Max health +25%.', effects: { maxHpPercent: 0.25 } },
+  // ── Intelligence 30 ──
+  { id: 'milestone_arch_seidkona', name: 'Arch-Seiðkona', source: 'milestone', tagline: 'The void obeys before it bites.', description: 'Overflow surges come a tier milder; the mildest never comes at all.', effects: { overflowTierShift: -1 } },
+  { id: 'milestone_mind_over_matter', name: 'Mind over Matter', source: 'milestone', tagline: 'You see the blow before it is thought of.', description: 'Intelligence also adds to evasion, 1% a point above 10.', effects: { evasionPerIntelligence: 0.01 } },
 ];
 
 const grant = (perkId: string) => ({ type: 'grantPerk' as const, perkId });
@@ -188,7 +212,15 @@ const milestoneOption = (perk: PerkDefinition, extra: ChoiceDefinition['options'
   consequences: [grant(perk.id), ...extra, { type: 'logMessage' as const, message: `${perk.tagline ?? perk.name} You take up ${perk.name}.` }],
 });
 
-/** The attribute milestones' perk choices (Q52 "A"; tier 20 so far, 25 and 30 to follow). */
+const milestoneChoice = (id: string, title: string, description: string, a: string, b: string): ChoiceDefinition => ({
+  id,
+  title,
+  description,
+  options: [milestoneOption(perk(a)), milestoneOption(perk(b))],
+  cancelable: false,
+});
+
+/** The attribute milestones' perk choices at 20, 25 and 30 (Q52 "A"). */
 export const COTW_MILESTONE_CHOICES: Record<string, ChoiceDefinition> = {
   milestone_str_20: {
     id: 'milestone_str_20',
@@ -222,6 +254,62 @@ export const COTW_MILESTONE_CHOICES: Record<string, ChoiceDefinition> = {
     options: [milestoneOption(perk('milestone_rune_thrift')), milestoneOption(perk('milestone_lore_keeper'))],
     cancelable: false,
   },
+  milestone_str_25: milestoneChoice(
+    'milestone_str_25',
+    'Strength Milestone: The Jötunn’s Reach',
+    'Iron bends where you close your hand, and the troll-wives would envy your shoulders. Will you break through what armours them, or carry a giant’s blade in one hand?',
+    'milestone_sunder',
+    'milestone_giants_grip'
+  ),
+  milestone_dex_25: milestoneChoice(
+    'milestone_dex_25',
+    'Dexterity Milestone: The Dancer on the Ice',
+    'You move the way the north wind moves over a frozen lake: never where the blow is aimed. Will you answer every miss with steel, or never set off a trap again?',
+    'milestone_riposte',
+    'milestone_trap_dancer'
+  ),
+  milestone_con_25: milestoneChoice(
+    'milestone_con_25',
+    'Constitution Milestone: The Unbowed Pine',
+    'Snow loads your branches and slides off them. Will you mend faster when you rest, or never be slowed or staggered?',
+    'milestone_second_wind',
+    'milestone_stalwart'
+  ),
+  milestone_int_25: milestoneChoice(
+    'milestone_int_25',
+    'Intelligence Milestone: The Woven Runes',
+    'The runes you draw have begun to draw each other. Will your chains reach one more foe, or will a glyph under your skin blunt the first spell cast at you on each floor?',
+    'milestone_chain_weaver',
+    'milestone_warding_glyph'
+  ),
+  milestone_str_30: milestoneChoice(
+    'milestone_str_30',
+    'Strength Milestone: The Mountain’s Heart',
+    'The roots of the mountain run in your arms now. Will you stand where no blow can move you, or strike like the Thunderer himself?',
+    'milestone_mountains_root',
+    'milestone_hammer_of_thor'
+  ),
+  milestone_dex_30: milestoneChoice(
+    'milestone_dex_30',
+    'Dexterity Milestone: The Shadow Between Blows',
+    'You are never quite where the eye says you are. Will you melt aside from every blow you dodge, or strike through the gaps in every guard?',
+    'milestone_shadow_step',
+    'milestone_deadly_precision'
+  ),
+  milestone_con_30: milestoneChoice(
+    'milestone_con_30',
+    'Constitution Milestone: The World-Ash’s Sap',
+    'Yggdrasil’s sap runs in you as it runs in the roots you walk among. Will every level make you whole again, or will there simply be more of you to cut?',
+    'milestone_undying',
+    'milestone_juggernaut'
+  ),
+  milestone_int_30: milestoneChoice(
+    'milestone_int_30',
+    'Intelligence Milestone: Mimir’s Well',
+    'You have drunk from deeper than the runes go. Will the void’s surges bow to you, or will your mind turn aside the blows your body cannot?',
+    'milestone_arch_seidkona',
+    'milestone_mind_over_matter'
+  ),
 };
 
 export const COTW_SAGA_CHOICES: Record<string, ChoiceDefinition> = {

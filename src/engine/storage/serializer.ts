@@ -977,7 +977,9 @@ export function deserializeGame(
       // with a ghost pack whose contents count twice toward carried weight.
       if ((itemNode as SerializedItemNode).id === primaryPack.id) continue;
       const item = deserializeItem(itemNode as SerializedItemNode, definitions);
-      inventory.paperdoll.equip(item, slot);
+      // As it was worn: the equip rules can drop an item here (a shield beside a two-hander
+      // under Giant's Grip, whose rule the hero brings only once it exists).
+      inventory.paperdoll.restore(item, slot);
     } else {
       inventory.paperdoll.unequip(slot);
     }

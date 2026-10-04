@@ -1,6 +1,7 @@
 import type { ActionResult, Position, VisualEffectDescriptor } from '../types';
 import { attributeScalingOf, spellPowerMultiplier } from '../combat/attributeScaling';
-import { wornModifiers } from '../items/wornModifiers';
+import { lowestWorn, sumWorn, wornModifiers } from '../items/wornModifiers';
+import { spendOncePerFloor } from '../combat/lastStand';
 import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
 import { Player } from '../entities/player';
@@ -43,6 +44,18 @@ function getElementDefaultColor(element?: string): string {
     default:
       return '#818cf8';
   }
+}
+
+/**
+ * Spell damage after the hero's ward (Warding Glyph, `firstSpellPerFloorMultiplier`): the
+ * first spell another caster lands on the hero each floor visit is scaled.
+ */
+function wardFirstSpell(engine: GameEngine, caster: Entity, target: Entity, damage: number): number {
+  if (target !== engine.player || caster === target || damage <= 0) return damage;
+  const ward = lowestWorn(target, 'firstSpellPerFloorMultiplier');
+  if (ward === undefined || !spendOncePerFloor(engine, 'spell_ward')) return damage;
+  engine.log(`A glyph flares on ${target.name}'s skin and takes the edge off the spell!`);
+  return Math.max(1, Math.round(damage * ward));
 }
 
 export function parseAndRollDice(amount: string | number, rng: () => number): number {
@@ -497,6 +510,7 @@ export class SpellPipeline {
       }
     }
 
+    rawDamage = wardFirstSpell(engine, caster, target, rawDamage);
     const terrain = engine.map.getTile(target.x, target.y)?.type;
     const result = target.takeElementalDamage(rawDamage, effect.element, engine.affinityMatrix, terrain);
 
@@ -697,7 +711,9 @@ export class SpellPipeline {
     const baseDamage = Math.max(1, Math.round(rolled * spellPowerMultiplier(caster, attributeScalingOf(engine.manifest))));
     const element = damageContext?.element || spell.element || 'lightning';
 
-    for (let hop = 1; hop <= effect.maxHops; hop++) {
+    // Chain-Weaver: the caster's chains reach further foes.
+    const maxHops = effect.maxHops + sumWorn(caster, 'chainExtraHops');
+    for (let hop = 1; hop <= maxHops; hop++) {
       // Find candidate living entities hostile to caster within hopRange of current
       const candidates = engine.map.getAllEntities().filter((e) => {
         if (!e.isAlive() || visitedIds.has(e.id)) return false;
@@ -734,7 +750,7 @@ export class SpellPipeline {
       engine.log(`The ${spell.name} arcs from ${current.name} to ${nextTarget.name} for hop ${hop}!`);
 
       const terrain = engine.map.getTile(nextTarget.x, nextTarget.y)?.type;
-      const result = nextTarget.takeElementalDamage(hopDamage, element, engine.affinityMatrix, terrain);
+      const result = nextTarget.takeElementalDamage(wardFirstSpell(engine, caster, nextTarget, hopDamage), element, engine.affinityMatrix, terrain);
 
       if (result.killed) {
         DeathResolver.resolveDeath(engine, caster, nextTarget, {
@@ -836,7 +852,7 @@ export class SpellPipeline {
   ): void {
     if (spell.basePower > 0) {
       const terrain = engine.map.getTile(target.x, target.y)?.type;
-      const result = target.takeElementalDamage(spell.basePower, spell.element, engine.affinityMatrix, terrain);
+      const result = target.takeElementalDamage(wardFirstSpell(engine, caster, target, spell.basePower), spell.element, engine.affinityMatrix, terrain);
 
       if (result.affinity === 'absorbing') {
         engine.log(`${target.name} absorbs the ${spell.element} energy, healing ${result.healed} HP!`);

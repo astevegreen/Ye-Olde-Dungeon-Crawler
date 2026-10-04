@@ -12,6 +12,8 @@ import { Companion } from '../entities/companion';
 import { MonsterAI } from '../ai/behaviorTree';
 import { sensesThroughWalls } from '../fov/sensing';
 import { withSpellRangeBonus } from '../magic/grimoireMatrix';
+import { TrapInstance } from '../dungeon/traps';
+import { SpellPipeline } from '../magic/spellPipeline';
 import { MovementAction } from '../actions/movement';
 import { applyImpulse } from '../combat/impulse';
 import { DeathResolver } from '../combat/deathResolver';
@@ -43,13 +45,13 @@ function perk(id: string, effects: PerkDefinition['effects']): PerkDefinition {
   return { id, name: id, description: id, source: 'saga', effects };
 }
 
-function build() {
+function build(extra: Partial<GameContentManifest> = {}) {
   const map = new GameMap(30, 30, TILES.FLOOR);
   const player = new Player({ id: 'hero', name: 'Hero', position: { x: 10, y: 10 }, stats: { hp: 100, maxHp: 100, attack: 10, defense: 0 }, mana: 50, maxMana: 50, spellsKnown: ['bolt'] });
   const foe = new Monster({ id: 'foe', name: 'Foe', position: { x: 11, y: 10 }, stats: { hp: 1000, maxHp: 1000, attack: 20, defense: 0 }, speed: 100, definitionId: 'foe', aiType: 'melee', xpValue: 1 });
   map.addEntity(player);
   map.addEntity(foe);
-  const manifest = { id: 'test', name: 'Test', monsters: [], items: [], spells: [BOLT] } as unknown as GameContentManifest;
+  const manifest = { id: 'test', name: 'Test', monsters: [], items: [], spells: [BOLT], ...extra } as unknown as GameContentManifest;
   const engine = new GameEngine({ map, player, manifest });
   player.gainEnergy(100);
   foe.gainEnergy(100);
@@ -287,5 +289,119 @@ describe('perk effects', () => {
     expect(sensesThroughWalls(engine, player)).toBe(false);
     expect(withSpellRangeBonus(player, BOLT).range).toBe(8);
     expect(withSpellRangeBonus(player, { ...BOLT, range: 0 }).range).toBe(0);
+  });
+  // ── Milestone tiers 25 and 30 (tracker 3.6) ──
+  it('defensePenetration ignores its share of the foe’s defense (Sunder)', () => {
+    const { engine, player, foe } = build();
+    foe.defense = 8;
+    player.grantPerk(perk('sunder', { defensePenetration: 0.25 }));
+    new MeleeAttackAction(player, foe).perform(engine);
+    expect(1000 - foe.hp).toBe(10 - 6);
+  });
+
+  it('shieldWithTwoHanded lets a shield sit beside a two-hander, not an off-hand weapon (Giant’s Grip)', () => {
+    const { player } = build();
+    const greatsword = new Item({ id: 'gs', name: 'Greatsword', category: 'weapon', slot: 'mainHand', twoHanded: true, weight: 10, bulk: 5, identified: true });
+    const shield = new Item({ id: 'sh', name: 'Shield', category: 'shield', slot: 'offHand', weight: 10, bulk: 5, identified: true });
+    const dagger = new Item({ id: 'dg', name: 'Dagger', category: 'weapon', slot: 'mainHand', weight: 10, bulk: 5, identified: true });
+    const doll = player.inventory.paperdoll;
+    expect(doll.equip(shield, 'offHand').success).toBe(true);
+    doll.equip(greatsword, 'mainHand');
+    expect(doll.getItem('offHand')).toBeNull(); // the two-hander pushed the shield off
+    player.grantPerk(perk('grip', { shieldWithTwoHanded: true }));
+    expect(doll.equip(shield, 'offHand').success).toBe(true);
+    expect(doll.getItem('mainHand')).toBe(greatsword);
+    expect(doll.isSlotBlocked('offHand', dagger)).toBe(true);
+  });
+
+  it('ripostesOnEvade strikes back after an evaded blow, and evadeBlinkRange slips the evader aside (Riposte, Shadow-Step)', () => {
+    const { engine, player, foe } = build();
+    player.grantPerk(perk('riposte', { evasionBonus: 1, ripostesOnEvade: true }));
+    new MeleeAttackAction(foe, player).perform(engine);
+    expect(player.hp).toBe(100);
+    expect(1000 - foe.hp).toBe(10);
+    player.grantPerk(perk('step', { evadeBlinkRange: 1 }));
+    foe.gainEnergy(100);
+    new MeleeAttackAction(foe, player).perform(engine);
+    expect(Math.max(Math.abs(player.x - 10), Math.abs(player.y - 10))).toBe(1);
+  });
+
+  it('evasionPerIntelligence adds Intelligence above the baseline to evasion (Mind over Matter)', () => {
+    const { engine, player, foe } = build({ combatConfig: { attributeScaling: { baseline: 10 } } });
+    player.intelligence = 30;
+    player.grantPerk(perk('mind', { evasionPerIntelligence: 0.01 }));
+    engine.rng = () => 0.15; // under 20 points of evasion
+    new MeleeAttackAction(foe, player).perform(engine);
+    expect(player.hp).toBe(100);
+  });
+
+  it('trapImmune never springs a trap under the bearer, and shows it (Trap-Dancer)', () => {
+    const { engine, player } = build();
+    const pit = new TrapInstance({ id: 'pit', type: 'pit', x: 10, y: 10, damage: 8 });
+    player.grantPerk(perk('dancer', { trapImmune: true }));
+    pit.trigger(player, engine);
+    expect(player.hp).toBe(100);
+    expect(pit.revealed).toBe(true);
+    expect(pit.triggered).toBe(false);
+  });
+
+  it('restHealMultiplier doubles a rest turn’s healing (Second Wind)', () => {
+    const { engine, player, foe } = build();
+    engine.removeEntity(foe);
+    player.grantPerk(perk('wind', { restHealMultiplier: 2 }));
+    player.hp = 50;
+    AutoRestManager.stepRestTurn(engine, player.hp, player.mana, 0, 100);
+    expect(player.hp).toBe(52);
+  });
+
+  it('grantsStatusImmunities keeps those statuses off the hero, after a reload too (Stalwart)', () => {
+    const { engine, player } = build();
+    const stalwart = perk('stalwart', { grantsStatusImmunities: ['slow', 'stunned'] });
+    player.grantPerk(stalwart);
+    expect(player.statusManager.applyStatus({ type: 'slow', duration: 3 }, player.statusImmunities, player, engine)).toBe(false);
+    const reloaded = new Player({ id: 'hero', name: 'Hero', position: { x: 1, y: 1 }, stats: { hp: 100, maxHp: 100, attack: 10, defense: 0 }, perks: [stalwart] });
+    expect(reloaded.statusImmunities).toEqual(['slow', 'stunned']);
+  });
+
+  it('chainExtraHops lets the caster’s chains reach one more foe (Chain-Weaver)', () => {
+    const { engine, player, foe, map } = build();
+    const second = new Monster({ id: 'f2', name: 'F2', position: { x: 12, y: 10 }, stats: { hp: 100, maxHp: 100, attack: 1, defense: 0 }, speed: 100, definitionId: 'foe', aiType: 'melee', xpValue: 1 });
+    map.addEntity(second);
+    const chain = { type: 'chain' as const, maxHops: 0, hopRange: 4, damageDecay: 0 };
+    SpellPipeline.executeChainEffect(engine, BOLT, player, [foe], chain, { type: 'damage', amount: 10, element: 'lightning' });
+    expect(second.hp).toBe(100);
+    player.grantPerk(perk('weaver', { chainExtraHops: 1 }));
+    SpellPipeline.executeChainEffect(engine, BOLT, player, [foe], chain, { type: 'damage', amount: 10, element: 'lightning' });
+    expect(second.hp).toBe(90);
+  });
+
+  it('firstSpellPerFloorMultiplier halves the first spell to hit the hero on each floor visit (Warding Glyph)', () => {
+    const { engine, player, foe } = build();
+    player.grantPerk(perk('ward', { firstSpellPerFloorMultiplier: 0.5 }));
+    const hit = { type: 'damage' as const, amount: 20, element: 'arcane' };
+    SpellPipeline.applyDamageEffect(engine, BOLT, foe, player, hit);
+    expect(player.hp).toBe(90);
+    SpellPipeline.applyDamageEffect(engine, BOLT, foe, player, hit);
+    expect(player.hp).toBe(70);
+    engine.map.lastVisitedTick = 77; // a new visit
+    SpellPipeline.applyDamageEffect(engine, BOLT, foe, player, hit);
+    expect(player.hp).toBe(60);
+  });
+
+  it('maxHpPercent raises max HP, and a choice granting it raises HP with it (Juggernaut)', () => {
+    const juggernaut = perk('juggernaut', { maxHpPercent: 0.25 });
+    const { engine, player } = build({ perks: [juggernaut] });
+    player.hp = 80;
+    new ExecuteChoiceAction(player, { id: 'c', title: 'c', description: 'c', options: [{ id: 'j', label: 'J', consequences: [{ type: 'grantPerk', perkId: 'juggernaut' }] }] }, 'j').perform(engine);
+    expect(player.maxHp).toBe(125);
+    expect(player.hp).toBe(105);
+  });
+
+  it('levelUpFullHeal makes a level-up heal in full (Undying)', () => {
+    const { player } = build();
+    player.grantPerk(perk('undying', { levelUpFullHeal: true }));
+    player.hp = 10;
+    player.gainXp(player.xpToNextLevel);
+    expect(player.hp).toBe(player.maxHp);
   });
 });

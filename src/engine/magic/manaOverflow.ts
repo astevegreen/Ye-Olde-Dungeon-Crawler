@@ -78,6 +78,10 @@ export class ManaOverflowManager {
       const ceiling = Math.min(config.tiers.length, options?.tierShiftCap ?? config.tiers.length);
       const index = Math.max(reached.index, Math.min(ceiling, reached.index + shift));
       reached = { tier: config.tiers[index - 1], index };
+    } else if (reached && shift < 0 && config) {
+      // A milder surge (Arch-Seiðkona); below the first tier there is none.
+      const index = reached.index + shift;
+      reached = index >= 1 ? { tier: config.tiers[index - 1], index } : undefined;
     }
     if (!reached || reached.tier.outcomes.length === 0) {
       return { occurred: false, tier: 0, deficit, totalDebt, effects, damageToCaster: 0 };

@@ -194,7 +194,7 @@ export function applyImpulse(
           newPosition: { x: currX, y: currY },
         };
       }
-    } else if (nextTile.type === 'trap') {
+    } else if (nextTile.type === 'trap' && !wearsFlag(target, 'trapImmune')) {
       triggeredTrapType = DEFAULT_IMPULSE_TRAP_TYPE;
       engine.log(`*** ${target.name} triggers a hidden trap upon landing! ***`);
       const { damageDealt, killed } = target.takeDamage(10);

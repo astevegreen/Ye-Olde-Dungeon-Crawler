@@ -1,5 +1,5 @@
 import { createDungeonChest, createScaledItem } from '../../../engine';
-import type { Item, ItemDefinition, Predicate } from '../../../engine';
+import { COIN_BULK_CM3, type Item, type ItemDefinition, type Predicate } from '../../../engine';
 import { COTW_ITEMS } from './index';
 import { COTW_SPELL_TABLETS } from '../spellTablets';
 import { COTW_COINAGE } from '../coinage';
@@ -39,6 +39,27 @@ const NON_CATALOG_ITEMS: ItemDefinition[] = [
     description:
       "Astrid sets this aside only for adventurers whose reputation for uncovering the dungeon's secrets precedes them.",
     value: 150,
+  },
+  {
+    // Q44 (2026-10-04): the first bigger purse, sold at Olaf's.
+    id: 'ironclasp_purse',
+    name: 'Ironclasp Purse',
+    unidentifiedName: 'Iron-Clasped Purse',
+    category: 'container',
+    slot: 'purse',
+    tier: 2,
+    weight: 140,
+    bulk: 180,
+    identified: true,
+    description: 'A stiff purse of oiled hide shut with an iron clasp. It holds 600 coins of any metal.',
+    value: 120,
+    itemType: 'container',
+    containerConfig: {
+      containerType: 'purse',
+      maxWeightCapacity: 10000,
+      maxBulkCapacity: 600 * COIN_BULK_CM3,
+      acceptedCategories: ['currency'],
+    },
   },
   ...COTW_SPELL_TABLETS,
 ];

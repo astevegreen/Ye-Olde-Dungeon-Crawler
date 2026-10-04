@@ -25,7 +25,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
       shopId: 'merchant-olaf',
       position: { x: 11, y: 8 },
       greeting: 'Welcome to Olaf’s General Goods! Broth, poultices, and a warm wrap for hearty souls!',
-      dialogText: 'Stock up on broth and poultices, traveler. The depths do not forgive an empty pack.',
+      dialogText: 'Stock up on broth and poultices, traveler. And if your purse is bursting, I sell bigger ones.',
       merchantConfig: {
         id: 'merchant-olaf',
         name: "Olaf's General Store",
@@ -36,6 +36,9 @@ export const COTW_TOWN: TownLayoutDefinition = {
           makeShopItem('tattered_travelers_wrap', 'olaf-wrap-1'),
           makeShopItem('hearth_broth_flask', 'olaf-broth-1'),
           makeShopItem('birch_tar_poultice', 'olaf-poultice-1'),
+          // Bigger purses (Q44): the coins in the old one move into the new one.
+          makeShopItem('ironclasp_purse', 'olaf-purse-1'),
+          makeShopItem('quicksilver_lined_purse', 'olaf-purse-2'),
         ],
       },
     },

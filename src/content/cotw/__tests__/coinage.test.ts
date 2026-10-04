@@ -7,6 +7,9 @@ import { PRNG } from '../../../engine/dungeon/prng';
 import type { Item } from '../../../engine/items/item';
 import { cotwManifest } from '../index';
 import { COTW_COINAGE, coinDrop } from '../coinage';
+import { COTW_TOWN } from '../town';
+import { COIN_BULK_CM3 } from '../../../engine/economy/types';
+import { getItemBuyPrice } from '../../../engine/economy/merchant';
 
 /**
  * Q43 "A" (2026-10-04): coin income on the shop's copper scale, rising with depth (about 400
@@ -96,5 +99,19 @@ describe('mintCoinPile', () => {
     const pile = mintCoinPile('p', 1, () => 0.5, flat('copper', 500));
     expect(pile.denomination).toBe('silver');
     expect(pile.count).toBe(50);
+  });
+});
+
+describe('purses for sale (Q44)', () => {
+  it("Olaf sells a 600-coin purse for about 120 CP and a 1,500-coin purse for about 600 CP", () => {
+    const olaf = COTW_TOWN.npcs.find((npc) => npc.id === 'npc-olaf')!;
+    const purses = (olaf.merchantConfig?.initialInventory ?? []).filter(
+      (item): item is Container => item instanceof Container && item.containerType === 'purse'
+    );
+    const offer = purses.map((p) => [p.maxBulkCapacity / COIN_BULK_CM3, getItemBuyPrice(p)]);
+    expect(offer).toEqual([
+      [600, 120],
+      [1500, 600],
+    ]);
   });
 });

@@ -116,14 +116,15 @@ describe('CotW Item Distribution & Economic Integration', () => {
 
   it('prices every town item on the same copper scale as the starting purse', () => {
     // Engine ItemFactory builders carry legacy prices ~100x the pack's scale; a
-    // playtest found 20 GP bread against a 3.5 GP starting purse.
+    // playtest found 20 GP bread against a 3.5 GP starting purse. The dearest town item is
+    // the Quicksilver-Lined Purse at 600 CP (Q44), under three starting purses.
     const startingPurseCp = COTW_STARTER_KIT.coins!.reduce(
       (sum, c) => sum + c.count * COIN_VALUES[c.denomination],
       0
     );
     for (const npc of COTW_TOWN.npcs) {
       for (const item of npc.merchantConfig?.initialInventory ?? []) {
-        expect(getItemBuyPrice(item), `${npc.name}: ${item.name}`).toBeLessThanOrEqual(startingPurseCp);
+        expect(getItemBuyPrice(item), `${npc.name}: ${item.name}`).toBeLessThanOrEqual(3 * startingPurseCp);
       }
     }
   });

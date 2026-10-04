@@ -116,6 +116,7 @@ import { hintsMetByEvent, hintsMetByState } from './ui/hints/hintModel';
 import { findActionCues } from './ui/hints/actionCues';
 import { ControlsPrimer } from './ui/controlsPrimer';
 import { MessageLogModal } from './ui/messageLogModal';
+import { OverflowWarning } from './ui/overflowWarning';
 import type { ContextAction } from './ui/console/consoleModel';
 import { SettingsManager } from './ui/settings/settingsManager';
 import type { RadialMenuSlotConfig } from './ui/settings/settingsManager';
@@ -371,6 +372,7 @@ window.addEventListener('DOMContentLoaded', () => {
     openRuneTree();
   });
 
+  const overflowWarnings = new OverflowWarning();
   function castOrTargetSpell(spell: SpellDefinition): void {
     if (!activeEngine || !renderer) return;
     // As the cast resolves: its grimoire slot's synergies change the cost, range and area.
@@ -381,6 +383,13 @@ window.addEventListener('DOMContentLoaded', () => {
       const mana = resolveManaTerms(activeEngine.manifest);
       activeEngine.log(`Not enough ${mana.name} to cast ${spell.name} (${activeEngine.player.mana}/${cast.manaCost} ${mana.unit}).`);
       renderer.render();
+      return;
+    }
+    // The first cast into overflow on a floor waits for a second press (N38).
+    const overflowWarning = overflowWarnings.check(activeEngine, cast.manaCost ?? 0);
+    if (overflowWarning) {
+      activeEngine.log(overflowWarning);
+      void processVisualEffectsAndRender();
       return;
     }
     if (spell.targetingMode === 'self' || spell.targetType === 'self') {
@@ -1295,6 +1304,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   function launchGame(engine: GameEngine, profile: CharacterProfile): void {
+    overflowWarnings.reset();
     if (characterMenuModal?.isOpen) {
       characterMenuModal.close();
     }

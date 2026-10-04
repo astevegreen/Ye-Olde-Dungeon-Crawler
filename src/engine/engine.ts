@@ -559,7 +559,7 @@ export class GameEngine {
 
   public updateFov(): void {
     const pactFovMod = this.pacts?.getAggregatedMutators().fovRadiusModifier ?? 0;
-    const baseRadius = Math.max(2, this.fovRadius + pactFovMod);
+    const baseRadius = Math.max(2, this.fovRadius + pactFovMod + this.player.sightBonus);
     // Generic perception-radius override (ARCHITECTURE.md P-26): any active status whose
     // handler declares `perceptionRadius` forces that radius; the most restrictive wins.
     // Generalizes what was previously a blindness-only hardcoded case.

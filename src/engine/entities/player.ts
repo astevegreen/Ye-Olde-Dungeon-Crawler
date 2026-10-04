@@ -6,7 +6,7 @@ import { EncumbranceLevel } from '../inventory/encumbrance';
 import type { CharacterAttributes, Gender } from '../character/types';
 import type { ProgressionConfig, LevelUpBonus, PerkDefinition } from '../types/manifest';
 import type { ItemModifier } from '../items/modifiers';
-import { productWorn } from '../items/wornModifiers';
+import { productWorn, sumWorn } from '../items/wornModifiers';
 import type { TutorialFlags } from '../storage/types';
 import { calculateAttribute } from '../stats/attributeCalculator';
 import {
@@ -389,6 +389,11 @@ export class Player extends Actor {
   /** The Strength the hero carries with: Strength scaled by what it wears (`carryMultiplier`). */
   public get carryStrength(): number {
     return Math.round(this.strength * productWorn(this, 'carryMultiplier'));
+  }
+
+  /** Tiles what the hero wears and the perks it holds add to its sight radius (`sightBonus`; ADR-0013). */
+  public get sightBonus(): number {
+    return sumWorn(this, 'sightBonus');
   }
 
   /** Raises (or lowers) an attribute for good outside the point pool: a perk's or a story's gift. */

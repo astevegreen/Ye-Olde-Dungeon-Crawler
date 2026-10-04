@@ -98,6 +98,8 @@ export interface ItemModifier {
   shortenedAfflictions?: { types: string[]; multiplier: number };
   /** Taking the stairs identifies every unidentified item the bearer has carried since the last stairs (Lore-Keeper). */
   identifiesCarriedOnStairs?: boolean;
+  /** Tiles added to the hero's sight radius (Wayfarer: 1; `Player.sightBonus`, read by `GameEngine.updateFov`; ADR-0013). */
+  sightBonus?: number;
   description?: string;
 }
 

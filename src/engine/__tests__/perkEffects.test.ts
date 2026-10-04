@@ -182,4 +182,15 @@ describe('perk effects', () => {
     );
     expect(player.speed).toBe(speed + 10);
   });
+
+  it('sightBonus widens the hero’s sight radius beside the pacts’ modifier (Wayfarer, Q56)', () => {
+    const { engine, player } = build();
+    engine.fovRadius = 4;
+    engine.updateFov();
+    expect(engine.fov.isVisible(player.x + 5, player.y)).toBe(false);
+    player.grantPerk(perk('wayfarer', { sightBonus: 1 }));
+    engine.updateFov();
+    expect(engine.fov.isVisible(player.x + 5, player.y)).toBe(true);
+    expect(engine.fov.isVisible(player.x + 6, player.y)).toBe(false);
+  });
 });

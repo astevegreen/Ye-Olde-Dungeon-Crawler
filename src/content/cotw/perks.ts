@@ -9,9 +9,8 @@ import type { ChoiceDefinition, LevelMilestoneTrigger, PerkDefinition } from '..
  * (`COTW_LEVEL_MILESTONES`); the tiers below are those built so far. Numbers are first
  * guesses, tuned by measurement.
  *
- * Not yet built from the approved list: Wayfarer's "sight +1" (the sight radius is computed in
- * a protected file, ARCHITECTURE.md §8.1; asked of the owner), Saga tiers 30–50, the milestone
- * 25 and 30 tiers, and the eight family perks.
+ * Not yet built from the approved list: Saga tiers 30–50, the milestone 25 and 30 tiers, and
+ * the eight family perks.
  */
 export const COTW_PERKS: PerkDefinition[] = [
   // ── Saga, level 10: the first path ──
@@ -36,8 +35,8 @@ export const COTW_PERKS: PerkDefinition[] = [
     name: 'Wayfarer',
     source: 'saga',
     tagline: 'Every road has told you its secrets.',
-    description: 'Evasion +10%; traps and secret doors are found from twice as far.',
-    effects: { evasionBonus: 0.1, perceptionRadiusMultiplier: 2 },
+    description: 'Sight +1, evasion +10%; traps and secret doors are found from twice as far.',
+    effects: { sightBonus: 1, evasionBonus: 0.1, perceptionRadiusMultiplier: 2 },
   },
   // ── Saga, level 20 ──
   {

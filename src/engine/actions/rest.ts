@@ -1,5 +1,4 @@
 import { resolveManaTerms } from '../types/manifest';
-import { productWorn } from '../items/wornModifiers';
 import type { Action } from './action';
 import type { ActionResult } from '../types';
 import type { GameEngine } from '../engine';
@@ -52,11 +51,7 @@ export class RestAction implements Action {
     while (ticksElapsed < this.maxTicks) {
       ticksElapsed++;
 
-      // Natural recovery per rest tick
-      this.player.heal(1);
-      this.player.restoreMana(1);
-      // Overflow debt clears a point a turn, more for a Spell-Thief (`overflowDebtDecayMultiplier`).
-      this.player.decayVoidDebt(Math.max(1, Math.round(productWorn(this.player, 'overflowDebtDecayMultiplier'))), lingeringDebtFloor(engine, this.player.voidDebt));
+      AutoRestManager.recoverRestTurn(engine, this.player);
 
       // Simulate turn passage for monsters
       this.player.consumeEnergy(100);

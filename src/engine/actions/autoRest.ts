@@ -4,6 +4,8 @@ import type { Entity } from '../entities/entity';
 import { Monster } from '../entities/monster';
 import { DeathResolver } from '../combat/deathResolver';
 import { lingeringDebtFloor } from '../magic/manaOverflow';
+import { productWorn } from '../items/wornModifiers';
+import type { Player } from '../entities/player';
 import { BASE_ACTION_COST } from '../types';
 import { isPrologueRunning } from '../quest/prologue';
 import { getRunningTimedEvents } from '../quest/timedEvents';
@@ -29,6 +31,17 @@ export class AutoRestManager {
    * countdown unseen and let it expire on the next step. Hostiles in sight are checked
    * separately, since they also interrupt a rest under way.
    */
+  /**
+   * One rest turn's recovery, for both rest paths (`RestAction` and the R key's
+   * `stepRestTurn`): a point of HP and of mana, and a point of overflow debt, more for a
+   * Spell-Thief (`overflowDebtDecayMultiplier`).
+   */
+  public static recoverRestTurn(engine: GameEngine, player: Player): void {
+    player.heal(1);
+    player.restoreMana(1);
+    player.decayVoidDebt(Math.max(1, Math.round(productWorn(player, 'overflowDebtDecayMultiplier'))), lingeringDebtFloor(engine, player.voidDebt));
+  }
+
   public static restRefusal(engine: GameEngine): string | null {
     const running = getRunningTimedEvents(engine);
     const shown = running.find((e) => e.label);
@@ -102,10 +115,7 @@ export class AutoRestManager {
 
     const hpBefore = player.hp;
 
-    // Natural recovery per rest tick
-    player.heal(1);
-    player.restoreMana(1);
-    player.decayVoidDebt(1, lingeringDebtFloor(engine, player.voidDebt));
+    AutoRestManager.recoverRestTurn(engine, player);
 
     // Consume player turn energy
     player.consumeEnergy(BASE_ACTION_COST);

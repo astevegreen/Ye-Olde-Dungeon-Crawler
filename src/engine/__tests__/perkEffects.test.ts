@@ -7,6 +7,7 @@ import { Monster } from '../entities/monster';
 import { MeleeAttackAction } from '../actions/combat';
 import { CastSpellAction } from '../actions/spell-actions';
 import { SearchAction } from '../actions/search';
+import { AutoRestManager } from '../actions/autoRest';
 import { MovementAction } from '../actions/movement';
 import { applyImpulse } from '../combat/impulse';
 import { DeathResolver } from '../combat/deathResolver';
@@ -111,11 +112,13 @@ describe('perk effects', () => {
     expect(player.mana).toBe(25);
   });
 
-  it('overflowDebtDecayMultiplier clears debt faster while resting', () => {
-    const { player } = build();
-    player.accrueVoidDebt(6);
+  it('overflowDebtDecayMultiplier clears debt faster on a rest turn, the R key’s auto-rest included', () => {
+    const { engine, player, foe } = build();
+    engine.removeEntity(foe);
     player.grantPerk(perk('thief', { overflowDebtDecayMultiplier: 2 }));
-    player.decayVoidDebt(2, 0); // the rest action's per-turn call multiplies: this models two turns
+    player.hp = 50;
+    player.accrueVoidDebt(6);
+    AutoRestManager.stepRestTurn(engine, player.hp, player.mana, 0, 100);
     expect(player.voidDebt).toBe(4);
   });
 

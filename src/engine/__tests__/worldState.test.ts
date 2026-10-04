@@ -508,11 +508,11 @@ describe('Floor 3 Altar of Tyr Encounter & Temple Healer Reaction', () => {
     expect(player.baseDefenseValue).toBe(7);
 
     // Healer reaction: TempleService offers 50% discount to pious champion
-    player.inventory.primaryPack.addItem(new CoinItem({ id: 'coin-gold', denomination: 'gold', count: 50 })); // 5000 CP
+    player.inventory.primaryPack.addItem(new CoinItem({ id: 'coin-gold', denomination: 'gold', count: 50 })); // 5,000 CP
     player.takeDamage(10); // HP now 20/30
     const healResult = TempleService.healAndRestore(player, undefined, undefined, engine);
     expect(healResult.success).toBe(true);
-    expect(healResult.costInCp).toBe(1250); // 50% of 2500 CP
+    expect(healResult.costInCp).toBe(50); // 50% of 100 CP
   });
 
   it('triggers Desecrate choice and causes temple priest to refuse services', () => {

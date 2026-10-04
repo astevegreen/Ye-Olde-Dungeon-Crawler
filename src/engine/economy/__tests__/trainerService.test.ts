@@ -31,7 +31,7 @@ describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () 
   describe('bondCompanion', () => {
     it('sets the bonded flag and deducts the bonding cost when funded', () => {
       const engine = buildEngine();
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100 });
+      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 10 });
 
       const result = TrainerService.bondCompanion(engine);
 
@@ -42,7 +42,7 @@ describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () 
 
     it('refuses when the player cannot afford the cost', () => {
       const engine = buildEngine();
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 10 });
+      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 5 });
 
       const result = TrainerService.bondCompanion(engine);
 

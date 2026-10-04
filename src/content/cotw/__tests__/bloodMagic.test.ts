@@ -139,18 +139,18 @@ describe('BloodMagicIntegration: EnergyModel, Casting, Corruption & Scaling', ()
     // Give player enough gold (50,000 CP)
     addCurrencyToPlayer(player, 50000);
 
-    // At low corruption (0) and neutral standing (0): standard cost 5,000 CP
+    // At low corruption (0) and neutral standing (0): standard cost 300 CP
     const resNormal = TempleService.cleanseCurses(player, COTW_TOWN.services, undefined, engine);
     expect(resNormal.success).toBe(true);
-    expect(resNormal.costInCp).toBe(5000);
+    expect(resNormal.costInCp).toBe(300);
 
-    // Re-equip cursed item and set corruption to 30 (>= 25): doubles donation cost to 10,000 CP
+    // Re-equip cursed item and set corruption to 30 (>= 25): doubles donation cost to 600 CP
     (cursedWeapon as any).quality = 'cursed';
     player.inventory.paperdoll.equip(cursedWeapon, 'mainHand');
     player.corruptionScore = 30;
     const resTainted = TempleService.cleanseCurses(player, COTW_TOWN.services, undefined, engine);
     expect(resTainted.success).toBe(true);
-    expect(resTainted.costInCp).toBe(10000);
+    expect(resTainted.costInCp).toBe(600);
 
     // At corruption >= 75: High Priest refuses services outright
     (cursedWeapon as any).quality = 'cursed';

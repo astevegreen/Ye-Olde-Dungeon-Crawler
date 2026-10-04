@@ -2,7 +2,6 @@ import type { Player } from '../entities/player';
 import type { Item } from '../items/item';
 import type { TownServicesDefinition } from '../types/manifest';
 import {
-  COIN_VALUES,
   type ServiceResult,
 } from './types';
 import {
@@ -19,8 +18,9 @@ import { RunAdvisor, type AdvisoryReport } from '../advisory/runAdvisor';
 import type { CompanionArchetype } from '../entities/companion';
 
 export class TempleService {
-  public static readonly CURSE_CLEANSE_COST_CP = 50 * COIN_VALUES.gold; // 50 GP = 5,000 CP
-  public static readonly HEAL_RESTORE_COST_CP = 25 * COIN_VALUES.gold;  // 25 GP = 2,500 CP
+  // On the shop's copper scale (Q45, 2026-10-04): a floor-1 full clear pays about 400 CP.
+  public static readonly CURSE_CLEANSE_COST_CP = 300;
+  public static readonly HEAL_RESTORE_COST_CP = 100;
 
   /** Town services from the engine manifest, when the caller passed an engine. */
   private static manifestServices(engineOrWorldState?: GameEngine | WorldState): TownServicesDefinition | undefined {
@@ -233,7 +233,8 @@ export class TempleService {
 }
 
 export class SageService {
-  public static readonly IDENTIFY_FEE_CP = 20 * COIN_VALUES.gold; // 20 GP = 2,000 CP
+  /** About an Identify scroll's price (40 CP) (Q45). */
+  public static readonly IDENTIFY_FEE_CP = 50;
 
   /**
    * Identifies an unknown item, revealing its real name and stats.
@@ -365,10 +366,11 @@ export class BankService {
  * either changes.
  */
 export class TrainerService {
-  public static readonly BOND_COST_CP = 100 * COIN_VALUES.gold; // 100 GP — one-time acquisition gate
-  public static readonly REVIVE_COST_CP = 60 * COIN_VALUES.gold; // 60 GP
-  public static readonly ARCHETYPE_SWITCH_COST_CP = 15 * COIN_VALUES.gold; // 15 GP
-  public static readonly TEACH_SKILL_COST_CP = 40 * COIN_VALUES.gold; // 40 GP
+  // On the shop's copper scale (Q45, 2026-10-04).
+  public static readonly BOND_COST_CP = 1000; // one-time acquisition gate
+  public static readonly REVIVE_COST_CP = 500;
+  public static readonly ARCHETYPE_SWITCH_COST_CP = 150;
+  public static readonly TEACH_SKILL_COST_CP = 400;
 
   /** One-time purchase enabling `engine.summonCompanion()` going forward. */
   public static bondCompanion(engine: GameEngine, customCostCp?: number): ServiceResult {

@@ -22,15 +22,15 @@ describe('Town Services (Temple, Sage, Bank)', () => {
   });
 
   describe('Temple of Thor', () => {
-    it('cleanses curses from equipped equipment for 50 GP', () => {
+    it('cleanses curses from equipped equipment for 300 CP', () => {
       // Equip cursed armor
       const cursedArmor = ItemFactory.createLeatherArmor('curse-armor');
       cursedArmor.quality = 'cursed';
       player.inventory.primaryPack.addItem(cursedArmor);
       player.inventory.equipFromPack('curse-armor');
 
-      // Player funds: 50 GP (5,000 CP)
-      addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 50 });
+      // Player funds: 3 GP (300 CP)
+      addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 3 });
 
       const result = TempleService.cleanseCurses(player);
       expect(result.success).toBe(true);
@@ -63,13 +63,13 @@ describe('Town Services (Temple, Sage, Bank)', () => {
       expect(result.message).toContain('Leather Armor');
     });
 
-    it('heals and restores HP/Mana and removes negative status effects for 25 GP', () => {
+    it('heals and restores HP/Mana and removes negative status effects for 100 CP', () => {
       // Apply poison and slow
       player.statusManager.applyStatus({ type: 'poison', duration: 5, potency: 2 });
       player.statusManager.applyStatus({ type: 'slow', duration: 4 });
 
-      // Player funds: 30 GP
-      addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 30 });
+      // Player funds: 150 CP
+      addCurrencyToPlayer(player, { copper: 0, silver: 5, gold: 1 });
 
       const result = TempleService.healAndRestore(player);
       expect(result.success).toBe(true);
@@ -81,19 +81,19 @@ describe('Town Services (Temple, Sage, Bank)', () => {
       expect(player.statusManager.hasStatus('poison')).toBe(false);
       expect(player.statusManager.hasStatus('slow')).toBe(false);
 
-      // Remaining funds: 30 - 25 = 5 GP (500 CP)
-      expect(getPlayerTotalCp(player)).toBe(500);
+      // Remaining funds: 150 - 100 = 50 CP
+      expect(getPlayerTotalCp(player)).toBe(50);
     });
   });
 
   describe('Sage Mimir (Identification)', () => {
-    it('identifies unknown magical items for 20 GP', () => {
+    it('identifies unknown magical items for 50 CP', () => {
       const mysteriousWand = ItemFactory.createWandOfLightning('mystery-wand');
       mysteriousWand.identified = false;
       player.inventory.primaryPack.addItem(mysteriousWand);
 
-      // Player funds: 20 GP (2000 CP)
-      addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 20 });
+      // Player funds: 5 SP (50 CP)
+      addCurrencyToPlayer(player, { copper: 0, silver: 5, gold: 0 });
 
       const result = SageService.identifyItem(player, mysteriousWand.id);
       expect(result.success).toBe(true);

@@ -13,6 +13,7 @@ import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { flightRecorder } from '../../debug/flightRecorder';
 import { Mulberry32 } from '../prng';
+import type { ItemDefinition } from '../../types/manifest';
 
 describe('Dungeon Loot Spawner & Currency Scaling', () => {
   it('scales currency denominations according to floor depth', () => {
@@ -133,5 +134,95 @@ describe('chests as loot', () => {
       }
     }
     expect(chests).toBeGreaterThan(0);
+  });
+});
+
+describe('loot rates as pack data (manifest.loot, Q2 "C")', () => {
+  const def = (id: string, minFloor: number): ItemDefinition => ({
+    id,
+    name: id,
+    category: 'weapon',
+    weight: 1000,
+    bulk: 1000,
+    minFloor,
+  });
+
+  it('spreads the newest share over the newest definitions, not the one that unlocked last', () => {
+    const candidates = [def('old-a', 1), def('old-b', 1), def('two', 2), def('three', 3), def('four', 4), def('five', 5)];
+    const rng = new Mulberry32(3);
+    const counts: Record<string, number> = {};
+    for (let i = 0; i < 8000; i++) {
+      const picked = selectFloorItemDefinition(candidates, 5, () => rng.next(), { newestShare: 0.8, newestDefinitions: 4 })!;
+      counts[picked.id] = (counts[picked.id] ?? 0) + 1;
+    }
+    // 80% over the four newest (20% each), 20% over the two older ones (10% each).
+    for (const id of ['two', 'three', 'four', 'five']) expect(counts[id] / 8000, id).toBeCloseTo(0.2, 1);
+    for (const id of ['old-a', 'old-b']) expect(counts[id] / 8000, id).toBeCloseTo(0.1, 1);
+  });
+
+  it('keeps definitions that share a floor together in the newest group', () => {
+    const candidates = [def('old', 1), def('mid-a', 3), def('mid-b', 3), def('mid-c', 3), def('new', 4)];
+    const rng = new Mulberry32(8);
+    const counts: Record<string, number> = {};
+    for (let i = 0; i < 8000; i++) {
+      const picked = selectFloorItemDefinition(candidates, 4, () => rng.next(), { newestShare: 1, newestDefinitions: 2 })!;
+      counts[picked.id] = (counts[picked.id] ?? 0) + 1;
+    }
+    expect(counts.old ?? 0).toBe(0);
+    for (const id of ['mid-a', 'mid-b', 'mid-c', 'new']) expect(counts[id] / 8000, id).toBeCloseTo(0.25, 1);
+  });
+
+  it('without rates, draws as before: 75% from the definitions of the newest floor alone', () => {
+    const candidates = [def('old-a', 1), def('old-b', 1), def('two', 2), def('five', 5)];
+    const rng = new Mulberry32(21);
+    let five = 0;
+    for (let i = 0; i < 8000; i++) if (selectFloorItemDefinition(candidates, 5, () => rng.next())!.id === 'five') five++;
+    expect(five / 8000).toBeCloseTo(0.75, 1);
+  });
+
+  it('fills a chest with the pack’s number of entries', () => {
+    const rng = new Mulberry32(4);
+    for (let i = 0; i < 200; i++) {
+      const chest = createDungeonChest(`c-${i}`, 10, COTW_ITEMS, () => rng.next(), undefined, undefined, { chestEntries: [1, 1] });
+      expect(chest.getItems()).toHaveLength(1);
+    }
+  });
+
+  it('rolls each room with the pack’s drop, coin and chest chances', () => {
+    const map = new GameMap(60, 60, TILES.FLOOR);
+    const rooms = Array.from({ length: 30 }, (_, i) => ({ x1: (i % 6) * 10, y1: Math.floor(i / 6) * 10, x2: (i % 6) * 10 + 8, y2: Math.floor(i / 6) * 10 + 8 }));
+    const rng = new Mulberry32(6);
+    const spawned = populateDungeonLoot(map, rooms, 10, COTW_ITEMS, () => rng.next(), undefined, undefined, {
+      roomDropChance: 1,
+      roomCoinShare: 1,
+      roomChestChance: 0,
+    });
+    // One coin pile in every room but the arrival room, and nothing else.
+    expect(spawned).toHaveLength(29);
+    expect(spawned.every((item) => item.category === 'currency')).toBe(true);
+  });
+});
+
+describe('loot weight (ItemDefinition.lootWeight)', () => {
+  it('draws a definition by its weight against the others in its group', () => {
+    const candidates: ItemDefinition[] = [
+      { id: 'common', name: 'common', category: 'weapon', weight: 1, bulk: 1, minFloor: 5 },
+      { id: 'relic', name: 'relic', category: 'weapon', weight: 1, bulk: 1, minFloor: 5, lootWeight: 0.25 },
+    ];
+    const rng = new Mulberry32(12);
+    let relic = 0;
+    for (let i = 0; i < 10000; i++) if (selectFloorItemDefinition(candidates, 5, () => rng.next())!.id === 'relic') relic++;
+    // 0.25 against 1: a fifth of the draws.
+    expect(relic / 10000).toBeCloseTo(0.2, 1);
+  });
+
+  it('with every weight at 1, picks the same definition the uniform draw did', () => {
+    const candidates = COTW_ITEMS.filter((d) => d.lootWeight === undefined);
+    for (let i = 0; i < 200; i++) {
+      const r = (i + 0.5) / 200;
+      const eligible = candidates.filter((d) => d.category !== 'quest' && d.containerConfig?.containerType !== 'chest' && (d.minFloor ?? 1) <= 1);
+      const picked = selectFloorItemDefinition(candidates, 1, () => r);
+      expect(picked).toBe(eligible[Math.floor(r * eligible.length)]);
+    }
   });
 });

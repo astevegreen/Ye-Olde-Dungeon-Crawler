@@ -72,6 +72,11 @@ export interface ItemDefinition {
   quality?: ItemQuality;
   /** Always this family (`manifest.itemFamilies`), its tier by floor: a cursed relic, say. */
   family?: ModifierCategory;
+  /**
+   * How likely floor and chest loot is to draw this definition against the others in its group
+   * (`selectFloorItemDefinition`). Default 1; a rarer item, a relic say, is below 1.
+   */
+  lootWeight?: number;
   stats?: Partial<ItemStatModifiers>;
   identified?: boolean;
   description?: string;
@@ -723,6 +728,33 @@ export interface CoinageDefinition {
   maxPileCoins?: number;
 }
 
+/**
+ * How much loot a floor holds (`GameContentManifest.loot`): the per-room rolls of
+ * `populateDungeonLoot`, how many entries a chest holds (`createDungeonChest`: room, vault
+ * and monster chests and the boss hoard), and the newest-item rule (`selectFloorItemDefinition`).
+ * A field left out keeps the built-in rate. Monster drops are the pack's own loot tables.
+ */
+export interface LootRatesDefinition {
+  /** Per room past the arrival room: the chance of one loose drop. Default 0.6. */
+  roomDropChance?: number;
+  /** The share of loose drops that are coin piles rather than items. Default 0.4. */
+  roomCoinShare?: number;
+  /** Per room past the arrival room: the chance of a chest. Default 0.25. */
+  roomChestChance?: number;
+  /** How many entries a chest holds, both ends included. Default [2, 4]. */
+  chestEntries?: readonly [number, number];
+  /** The share of chest entries that are coin piles. Default 0.35. */
+  chestCoinShare?: number;
+  /** The share of item draws taken from the newest definitions the floor has unlocked. Default 0.75. */
+  newestShare?: number;
+  /**
+   * How many of the newest definitions (by `minFloor`) that share is spread over; definitions
+   * sharing a `minFloor` stay together, so the group can be larger. Default 1: only the
+   * definitions with the highest `minFloor`, which lets one item fill a floor.
+   */
+  newestDefinitions?: number;
+}
+
 export interface GameContentManifest {
   id: string;
   name: string;
@@ -764,6 +796,8 @@ export interface GameContentManifest {
    * per-game counts (`rollItemFamily`, ADR-0012). When omitted, every item is Normal.
    */
   itemFamilies?: ItemFamilyConfig;
+  /** Floor loot volume: per-room drop and chest chances, chest size, the newest-item rule. */
+  loot?: LootRatesDefinition;
   initialWorldState?: WorldState;
   /** Names and "met" rules for the factions in `initialWorldState.factions` (`FactionDefinition`). */
   factions?: FactionDefinition[];

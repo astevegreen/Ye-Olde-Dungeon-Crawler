@@ -429,7 +429,8 @@ function finishDraft(draft: LayoutDraft, ctx: DraftContext): GeneratedFloorData 
       gen.difficulty,
       gen.registries,
       gen.coinage,
-      gen.itemFamilies
+      gen.itemFamilies,
+      gen.lootRates
     );
     if (plan.forced) {
       forcedVaultChestSpawns = stamped.chestSpawns;

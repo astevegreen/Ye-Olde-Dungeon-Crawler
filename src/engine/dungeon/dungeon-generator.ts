@@ -9,7 +9,7 @@ import { RoomDecorator } from './roomDecorator';
 import { VaultStamper, type VaultBlueprint } from './vaultStamp';
 import { MonsterRegistry, type MonsterDefinition } from '../bestiary/monsterDefinitions';
 import { selectDungeonMonsterDefinition } from './spawner';
-import type { CoinageDefinition, ItemDefinition, RoomDecorationBand } from '../types/manifest';
+import type { CoinageDefinition, ItemDefinition, LootRatesDefinition, RoomDecorationBand } from '../types/manifest';
 import type { ItemFamilyConfig } from '../items/modifierRoller';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
 import type { GameDifficulty } from '../types';
@@ -40,6 +40,8 @@ export interface DungeonConfig {
   coinage?: CoinageDefinition;
   /** The pack's item families, for vault chests' items. */
   itemFamilies?: ItemFamilyConfig;
+  /** The pack's loot rates, for vault chests' size and items. */
+  lootRates?: LootRatesDefinition;
   enableBraiding?: boolean;
   enableDecoration?: boolean;
   scalingConfig?: MonsterScalingConfig;
@@ -83,6 +85,7 @@ export class DungeonGenerator {
   public itemCandidates: ItemDefinition[];
   public coinage?: CoinageDefinition;
   public itemFamilies?: ItemFamilyConfig;
+  public lootRates?: LootRatesDefinition;
   public enableBraiding: boolean;
   public enableDecoration: boolean;
   public scalingConfig?: MonsterScalingConfig;
@@ -105,6 +108,7 @@ export class DungeonGenerator {
     this.itemCandidates = config.itemCandidates ?? [];
     this.coinage = config.coinage;
     this.itemFamilies = config.itemFamilies;
+    this.lootRates = config.lootRates;
     this.enableBraiding = config.enableBraiding ?? true;
     this.enableDecoration = config.enableDecoration ?? true;
     this.scalingConfig = config.scalingConfig;
@@ -197,7 +201,8 @@ export class DungeonGenerator {
           this.difficulty,
           this.registries,
           this.coinage,
-          this.itemFamilies
+          this.itemFamilies,
+          this.lootRates
         );
         vaultRoomIndices.add(rooms.length);
         rooms.push(vRoom);

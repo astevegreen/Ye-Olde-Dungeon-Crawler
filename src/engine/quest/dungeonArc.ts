@@ -197,6 +197,7 @@ export class DungeonArc {
       itemCandidates: itemCatalog,
       coinage: manifest?.coinage,
       itemFamilies: manifest?.itemFamilies,
+      lootRates: manifest?.loot,
       scalingConfig: manifest?.monsterScaling,
       difficulty,
       registries,
@@ -239,7 +240,7 @@ export class DungeonArc {
     );
 
     // 4. Spawn Floor-scaled loot and chests
-    populateDungeonLoot(map, dungeon.rooms, floorNumber, itemCatalog, populationRng, manifest?.coinage, manifest?.itemFamilies);
+    populateDungeonLoot(map, dungeon.rooms, floorNumber, itemCatalog, populationRng, manifest?.coinage, manifest?.itemFamilies, manifest?.loot);
 
     // 5. Fixed tile placements declared in manifest (docs/architecture/content-quests-and-triggers.md)
     if (manifest?.fixedTilePlacements?.length) {
@@ -603,7 +604,7 @@ export class DungeonArc {
     const candidates = Array.isArray(manifest?.items) ? manifest.items : [];
     const coinage = manifest?.coinage;
     if (free(bx, by - 2)) {
-      map.addItemAt(bx, by - 2, createDungeonChest('boss-chest-1', floorNumber, candidates, () => prng.next(), coinage, manifest?.itemFamilies));
+      map.addItemAt(bx, by - 2, createDungeonChest('boss-chest-1', floorNumber, candidates, () => prng.next(), coinage, manifest?.itemFamilies, manifest?.loot));
     }
     // The hoard's gold: ten of the floor's piles on the pack's coin scale, or 10,000 CP.
     const gold = coinage

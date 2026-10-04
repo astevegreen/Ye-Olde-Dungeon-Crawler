@@ -1,5 +1,5 @@
 import type { GameMap } from '../grid/map';
-import type { CoinageDefinition, ItemDefinition } from '../types/manifest';
+import type { CoinageDefinition, ItemDefinition, LootRatesDefinition } from '../types/manifest';
 import { Item, type ItemCategory, type ElementalAffix } from '../items/item';
 import { Container } from '../items/container';
 import { WandItem, ScrollItem, PotionItem } from '../items/consumables';
@@ -7,6 +7,19 @@ import { CoinItem, mintCoinPile } from '../economy/currency';
 import type { CoinDenomination } from '../economy/types';
 import { flightRecorder } from '../debug/flightRecorder';
 import { rollItemFamily, type ItemFamilyConfig } from '../items/modifierRoller';
+
+/** The built-in loot rates, for a pack without `manifest.loot` (each field documented there). */
+const DEFAULT_LOOT_RATES: Required<LootRatesDefinition> = {
+  roomDropChance: 0.6,
+  roomCoinShare: 0.4,
+  roomChestChance: 0.25,
+  chestEntries: [2, 4],
+  chestCoinShare: 0.35,
+  newestShare: 0.75,
+  newestDefinitions: 1,
+};
+
+const ratesOf = (rates?: LootRatesDefinition): Required<LootRatesDefinition> => ({ ...DEFAULT_LOOT_RATES, ...rates });
 
 /**
  * Calculates a procedural enchantment level (+0 to +5) based on floor depth with variance:
@@ -211,13 +224,16 @@ export function createScaledItem(
  * Selects an item definition from candidates filtered by floor depth and tiering:
  * - Candidates must satisfy (minFloor ?? 1) <= currentFloor
  * - Excludes quest relics
- * - 75% chance to draw from highest recently unlocked tier, 25% from lower tiers
+ * - The newest-item rule: `newestShare` (75%) of draws come from the `newestDefinitions` newest
+ *   definitions by `minFloor` (ties kept together), the rest from the older ones (`manifest.loot`)
  */
 export function selectFloorItemDefinition(
   candidates: ItemDefinition[],
   currentFloor: number,
-  rng: () => number
+  rng: () => number,
+  rates?: LootRatesDefinition
 ): ItemDefinition | null {
+  const { newestShare, newestDefinitions } = ratesOf(rates);
   // A chest is placed by the room chest roll, filled (createDungeonChest); as a loose item
   // it would arrive empty, and too bulky to lift.
   const eligible = candidates.filter(
@@ -228,19 +244,32 @@ export function selectFloorItemDefinition(
     return null;
   }
 
-  const maxMinFloor = Math.max(...eligible.map((i) => i.minFloor ?? 1));
-  const recentGroup = eligible.filter((i) => (i.minFloor ?? 1) === maxMinFloor);
-  const lowerGroup = eligible.filter((i) => (i.minFloor ?? 1) < maxMinFloor);
+  // The `minFloor` of the Nth newest definition: everything at or above it is the newest group.
+  const floorsNewestFirst = eligible.map((i) => i.minFloor ?? 1).sort((a, b) => b - a);
+  const newestFloor = floorsNewestFirst[Math.min(Math.max(1, newestDefinitions), floorsNewestFirst.length) - 1];
+  const recentGroup = eligible.filter((i) => (i.minFloor ?? 1) >= newestFloor);
+  const lowerGroup = eligible.filter((i) => (i.minFloor ?? 1) < newestFloor);
 
   if (lowerGroup.length > 0) {
-    if (rng() < 0.75) {
-      return recentGroup[Math.floor(rng() * recentGroup.length)];
+    if (rng() < newestShare) {
+      return pickByLootWeight(recentGroup, rng());
     } else {
-      return lowerGroup[Math.floor(rng() * lowerGroup.length)];
+      return pickByLootWeight(lowerGroup, rng());
     }
   }
 
-  return recentGroup[Math.floor(rng() * recentGroup.length)];
+  return pickByLootWeight(recentGroup, rng());
+}
+
+/** One definition from `group`, each as likely as its `lootWeight` (default 1); `roll` in [0, 1). */
+function pickByLootWeight(group: ItemDefinition[], roll: number): ItemDefinition {
+  const weightOf = (def: ItemDefinition) => def.lootWeight ?? 1;
+  let target = roll * group.reduce((sum, def) => sum + weightOf(def), 0);
+  for (const def of group) {
+    target -= weightOf(def);
+    if (target < 0) return def;
+  }
+  return group[group.length - 1];
 }
 
 /**
@@ -296,7 +325,8 @@ export function spawnFloorCurrency(
 }
 
 /**
- * Creates an Ironbound Wooden Chest populated with 2–4 scaled items and currency.
+ * Creates an Ironbound Wooden Chest populated with scaled items and currency: 2–4 entries,
+ * 35% of them coin piles, unless the pack's `manifest.loot` says otherwise.
  */
 export function createDungeonChest(
   id: string,
@@ -304,8 +334,10 @@ export function createDungeonChest(
   candidates: ItemDefinition[],
   rng: () => number,
   coinage?: CoinageDefinition,
-  families?: ItemFamilyConfig
+  families?: ItemFamilyConfig,
+  rates?: LootRatesDefinition
 ): Container {
+  const { chestEntries, chestCoinShare } = ratesOf(rates);
   const chest = new Container({
     id,
     name: 'Ironbound Wooden Chest',
@@ -321,17 +353,17 @@ export function createDungeonChest(
     maxBulkCapacity: 35000,
   });
 
-  const targetCount = Math.floor(rng() * 3) + 2; // 2 to 4 items inside
+  const [fewest, most] = chestEntries;
+  const targetCount = fewest + Math.floor(rng() * (most - fewest + 1));
   let attempts = 0;
   while (chest.getItems().length < targetCount && attempts < 15) {
     attempts++;
     const idx = chest.getItems().length;
-    // 35% chance currency, 65% chance item
-    if (rng() < 0.35) {
+    if (rng() < chestCoinShare) {
       const coinId = `${id}-coin-${idx}-${attempts}`;
       chest.addItem(spawnFloorCurrency(currentFloor, coinId, rng, coinage));
     } else {
-      const def = selectFloorItemDefinition(candidates, currentFloor, rng);
+      const def = selectFloorItemDefinition(candidates, currentFloor, rng, rates);
       let added = false;
       if (def) {
         const itemId = `${id}-item-${idx}-${Math.floor(rng() * 1000000)}-${attempts}`;
@@ -349,7 +381,9 @@ export function createDungeonChest(
 }
 
 /**
- * Populates procedural dungeon rooms with depth-scaled loot and chests.
+ * Populates procedural dungeon rooms with depth-scaled loot and chests: per room past the
+ * arrival room, a loose drop (an item or a coin pile) and a chest, each by its chance in the
+ * pack's `manifest.loot`.
  */
 export function populateDungeonLoot(
   map: GameMap,
@@ -358,28 +392,28 @@ export function populateDungeonLoot(
   candidates: ItemDefinition[],
   rng: () => number,
   coinage?: CoinageDefinition,
-  families?: ItemFamilyConfig
+  families?: ItemFamilyConfig,
+  rates?: LootRatesDefinition
 ): Item[] {
+  const { roomDropChance, roomCoinShare, roomChestChance } = ratesOf(rates);
   const spawnedItems: Item[] = [];
 
   // Iterate rooms 1..N (skipping room 0 which is player entry)
   for (let i = 1; i < rooms.length; i++) {
     const room = rooms[i];
 
-    // 60% chance to spawn ground loot (item or currency)
-    if (rng() < 0.60) {
+    if (rng() < roomDropChance) {
       const lx = room.x1 + 1 + Math.floor(rng() * (room.x2 - room.x1 - 1));
       const ly = room.y1 + 1 + Math.floor(rng() * (room.y2 - room.y1 - 1));
 
       if (map.isPassable(lx, ly) && !map.getEntityAt(lx, ly)) {
-        // 40% currency pile, 60% equipment/consumable
-        if (rng() < 0.40) {
+        if (rng() < roomCoinShare) {
           const coinId = `loot-coin-${currentFloor}-${i}-${Math.floor(rng() * 1000000)}`;
           const coins = spawnFloorCurrency(currentFloor, coinId, rng, coinage);
           map.addItemAt(lx, ly, coins);
           spawnedItems.push(coins);
         } else {
-          const def = selectFloorItemDefinition(candidates, currentFloor, rng);
+          const def = selectFloorItemDefinition(candidates, currentFloor, rng, rates);
           if (def) {
             const itemId = `loot-item-${currentFloor}-${i}-${Math.floor(rng() * 1000000)}`;
             const item = createScaledItem(def, itemId, currentFloor, rng, families);
@@ -390,14 +424,13 @@ export function populateDungeonLoot(
       }
     }
 
-    // 25% chance to spawn an ironbound chest
-    if (rng() < 0.25) {
+    if (rng() < roomChestChance) {
       const cx = room.x1 + 1 + Math.floor(rng() * (room.x2 - room.x1 - 1));
       const cy = room.y1 + 1 + Math.floor(rng() * (room.y2 - room.y1 - 1));
 
       if (map.isPassable(cx, cy) && !map.getEntityAt(cx, cy)) {
         const chestId = `loot-chest-${currentFloor}-${i}-${Math.floor(rng() * 1000000)}`;
-        const chest = createDungeonChest(chestId, currentFloor, candidates, rng, coinage, families);
+        const chest = createDungeonChest(chestId, currentFloor, candidates, rng, coinage, families, rates);
         map.addItemAt(cx, cy, chest);
         spawnedItems.push(chest);
       }

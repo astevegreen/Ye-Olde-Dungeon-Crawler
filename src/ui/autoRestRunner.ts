@@ -59,6 +59,12 @@ export class AutoRestRunner {
 
     const step = () => {
       if (!this.isRunning) return;
+      // A dialog opened with the mouse presses no key to interrupt the rest: the modal
+      // stack pauses the engine instead, and the rest stops there.
+      if (this.engine.isPaused) {
+        this.cancel('Rest interrupted.');
+        return;
+      }
 
       const result = AutoRestManager.stepRestTurn(
         this.engine,

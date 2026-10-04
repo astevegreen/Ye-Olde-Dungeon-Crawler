@@ -57,6 +57,11 @@ export class NavigationController {
 
     const step = () => {
       if (!this.isNavigating) return;
+      // A dialog opened with the mouse pauses the engine without a key press: stop there.
+      if (this.engine.isPaused) {
+        this.cancel('Travel halted.');
+        return;
+      }
 
       if (this.currentPath.length === 0) {
         this.isNavigating = false;

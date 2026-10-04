@@ -26,8 +26,8 @@ import {
 import { StatusHandlerRegistry } from '../../../engine/status/statusHandlers';
 
 describe('CotW item catalog', () => {
-  it('holds the 83 specified items less the four pulled as useless', () => {
-    expect(COTW_CATALOG).toHaveLength(79);
+  it('holds the 83 specified items less the four pulled as useless, plus the Mead of Suttungr', () => {
+    expect(COTW_CATALOG).toHaveLength(80);
   });
 
   it('has exact category counts according to spec', () => {
@@ -42,7 +42,7 @@ describe('CotW item catalog', () => {
     expect(COTW_NECK).toHaveLength(5);
     expect(COTW_RINGS).toHaveLength(7);
     expect(COTW_CONTAINERS).toHaveLength(4);
-    expect(COTW_CONSUMABLES).toHaveLength(13);
+    expect(COTW_CONSUMABLES).toHaveLength(14);
 
     const sum =
       COTW_WEAPONS.length +
@@ -57,13 +57,13 @@ describe('CotW item catalog', () => {
       COTW_RINGS.length +
       COTW_CONTAINERS.length +
       COTW_CONSUMABLES.length;
-    expect(sum).toBe(79);
+    expect(sum).toBe(80);
   });
 
   it('ensures every item has a unique ID', () => {
     const ids = COTW_CATALOG.map((i) => i.id);
     const uniqueIds = new Set(ids);
-    expect(uniqueIds.size).toBe(79);
+    expect(uniqueIds.size).toBe(80);
   });
 
   it('validates schema correctness of every catalog item', () => {

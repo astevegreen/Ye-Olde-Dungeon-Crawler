@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { ProfileManager, MemoryStorage } from '../../../engine/storage/profile-manager';
 import { Monster } from '../../../engine/entities/monster';
 import type { GameDifficulty } from '../../../engine/types';
+import { DrinkPotionAction } from '../../../engine/actions/spell-actions';
+import { createScaledItem, type PotionItem } from '../../../engine';
 import { cotwManifest } from '../index';
 import { COTW_LEVEL_CAP, COTW_PROGRESSION } from '../progression';
 
@@ -64,4 +66,50 @@ describe('cotw progression (Q4 "B", Q25)', () => {
     expect(mean, levels.join(', ')).toBeGreaterThanOrEqual(46);
     expect(mean, levels.join(', ')).toBeLessThanOrEqual(48);
   }, 60_000);
+
+  describe('the Mead of Suttungr (Q25: a rare level potion)', () => {
+    const def = cotwManifest.items.find((d) => d.id === 'mead_of_suttungr')!;
+    const brew = (seed = 1) => {
+      const { engine } = new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Saga', { seed });
+      const mead = createScaledItem(def, 'mead-1', 30, () => 0.5) as PotionItem;
+      engine.player.inventory.primaryPack.addItem(mead);
+      return { engine, mead };
+    };
+
+    it('is a rare Act 2 find that is never sold: from floor 20, at a fraction of an ordinary item’s weight', () => {
+      expect(def.minFloor).toBe(20);
+      expect(def.lootWeight).toBeLessThanOrEqual(0.5);
+      expect(def.potionConfig?.effects).toEqual([{ type: 'gain_level' }]);
+      expect(def.identified).toBe(false);
+    });
+
+    it('raises the drinker exactly one level, with the level-up log line and event', () => {
+      const { engine, mead } = brew();
+      engine.player.gainXp(1_000); // mid-level, so the draught must pay the remainder exactly
+      const before = engine.player.level;
+      const events: string[] = [];
+      engine.onGameEvent = (e) => void events.push(e.type);
+
+      const result = new DrinkPotionAction(engine.player, mead).perform(engine);
+
+      expect(result.success).toBe(true);
+      expect(engine.player.level).toBe(before + 1);
+      expect(engine.player.xp).toBe(0);
+      expect(events).toContain('player_leveled_up');
+      expect(engine.messages.some((line) => line.includes(`Welcome to Level ${before + 1}`))).toBe(true);
+      expect(engine.player.inventory.primaryPack.getItems()).not.toContain(mead);
+    });
+
+    it('is refused, and kept, at the level cap', () => {
+      const { engine, mead } = brew();
+      engine.player.gainXp(10_000_000);
+      expect(engine.player.level).toBe(COTW_LEVEL_CAP);
+
+      const result = new DrinkPotionAction(engine.player, mead).perform(engine);
+
+      expect(result.success).toBe(false);
+      expect(result.cost).toBe(0);
+      expect(engine.player.inventory.primaryPack.getItems()).toContain(mead);
+    });
+  });
 });

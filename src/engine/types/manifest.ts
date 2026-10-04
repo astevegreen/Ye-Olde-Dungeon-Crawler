@@ -40,6 +40,8 @@ export type ConsumableEffectDescriptor =
   | { type: 'cure_status'; status: string }
   | { type: 'apply_status'; status: string; duration: number; potency?: number }
   | { type: 'gain_xp'; amount: number }
+  /** Raises the drinker `levels` (default 1) whole levels, paying each level's remaining XP. */
+  | { type: 'gain_level'; levels?: number }
   | { type: 'gain_stat'; stat: 'strength' | 'intelligence' | 'constitution' | 'dexterity'; amount: number }
   | { type: 'teleport'; range?: number; random?: boolean }
   | { type: 'restore_volatile_energy'; amount?: number | 'full' }

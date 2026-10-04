@@ -10,6 +10,7 @@ import { getSpell } from '../magic/spellRegistry';
 import { SpellPipeline } from '../magic/spellPipeline';
 import { WandItem, ScrollItem, PotionItem } from '../items/consumables';
 import { flightRecorder } from '../debug/flightRecorder';
+import { awardPlayerXp } from '../combat/deathResolver';
 import { findTaggedEntitiesInRadius } from '../combat/radialAuraFilter';
 import { traceProjectile } from '../magic/targeting';
 import { ManaOverflowManager, canOvercast } from '../magic/manaOverflow';
@@ -420,6 +421,16 @@ export class DrinkPotionAction implements Action {
   }
 
   public perform(engine: GameEngine): ActionResult {
+    // A draught that can only grant levels is refused, and kept, once there are none to grant.
+    if (
+      this.user instanceof Player &&
+      this.user.isAtLevelCap &&
+      this.potion.effects.length > 0 &&
+      this.potion.effects.every((effect) => effect.type === 'gain_level')
+    ) {
+      return { success: false, cost: 0, message: `${this.user.name} is already at the height of their power; the draught would be wasted.` };
+    }
+
     this.potion.identified = true;
     engine.identification?.identifyDefinition(this.potion.id);
 
@@ -460,8 +471,20 @@ export class DrinkPotionAction implements Action {
         }
         case 'gain_xp': {
           if (this.user instanceof Player) {
-            this.user.gainXp(effect.amount);
+            // Through the one award path, so a level-up logs, toasts and emits like a kill's.
+            awardPlayerXp(engine, effect.amount);
             messages.push(`gaining ${effect.amount} ${engine.manifest?.branding?.xpName ?? 'XP'}`);
+          }
+          break;
+        }
+        case 'gain_level': {
+          if (this.user instanceof Player) {
+            const from = this.user.level;
+            for (let i = 0; i < (effect.levels ?? 1) && !this.user.isAtLevelCap; i++) {
+              awardPlayerXp(engine, Math.max(1, this.user.xpToNextLevel - this.user.xp));
+            }
+            const gained = this.user.level - from;
+            messages.push(gained > 0 ? `rising to level ${this.user.level}` : 'finding nothing left to rise to');
           }
           break;
         }

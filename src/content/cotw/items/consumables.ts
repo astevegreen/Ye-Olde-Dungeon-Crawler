@@ -125,6 +125,28 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
     },
   },
   {
+    // Q25 (tracker 3.1): the rare level potion. Odin stole the mead of poetry from the
+    // giant Suttungr; a mouthful is a level, and levels 48–50 are meant to come this way
+    // or from revisiting floors. About one turns up in a full clear, on floors 20–24 while
+    // it is among the newest definitions (`.prompts/phase3/mead-count.ts`); it is never sold.
+    id: 'mead_of_suttungr',
+    name: 'Mead of Suttungr',
+    unidentifiedName: 'Honey-Gold Draught',
+    category: 'consumable',
+    tier: 3,
+    minFloor: 20,
+    weight: 300,
+    bulk: 150,
+    identified: false,
+    lootWeight: 0.5,
+    description: 'A mouthful of the mead of poetry that Odin stole from the giant Suttungr. One draught, and the drinker rises a whole level.',
+    value: 400,
+    itemType: 'potion',
+    potionConfig: {
+      effects: [{ type: 'gain_level' }],
+    },
+  },
+  {
     id: 'zealots_sun_flare',
     name: "Zealot's Sun-Flare",
     unidentifiedName: 'Wrapped Solar Spindle',

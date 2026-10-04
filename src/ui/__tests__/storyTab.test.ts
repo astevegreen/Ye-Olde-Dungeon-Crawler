@@ -28,6 +28,20 @@ describe('Story model', () => {
     expect(saga.untold).toBe(8 - MAX_RIDDLES);
   });
 
+  it('keeps a riddle untold until the beat that reveals it', () => {
+    const engine = makeEngine({
+      trackedMilestones: [milestone(1, 'Plain riddle'), { ...milestone(2, 'An ending'), riddleAfterFlag: 'herald_spoke' }],
+    });
+    let saga = buildSaga(engine);
+    expect(saga.riddles).toEqual(['Plain riddle']);
+    expect(saga.untold).toBe(1);
+
+    engine.worldState.flags.herald_spoke = true;
+    saga = buildSaga(engine);
+    expect(saga.riddles).toEqual(['Plain riddle', 'An ending']);
+    expect(saga.untold).toBe(0);
+  });
+
   it('hides factions until met: standing moved, a met flag, or met at the start', () => {
     const engine = makeEngine({
       initialWorldState: { flags: {}, counters: {}, factions: { town: 10, temple: 0, clans: -15, guild: 0 } },

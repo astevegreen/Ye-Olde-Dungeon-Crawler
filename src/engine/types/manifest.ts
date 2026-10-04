@@ -153,6 +153,9 @@ export interface TrackedMilestoneDefinition {
   /** What the Story shows while the milestone is still locked: a hint that doesn't name
    *  it. Without one, a locked milestone shows as "? ? ?". */
   riddle?: string;
+  /** The riddle itself stays untold until this flag is set: for a milestone whose very
+   *  existence is a beat the game reveals later (cotw: the two Níðhögg endings, after Víðnir). */
+  riddleAfterFlag?: string;
 }
 
 /**

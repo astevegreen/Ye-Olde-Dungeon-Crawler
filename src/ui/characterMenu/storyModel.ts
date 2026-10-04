@@ -65,7 +65,7 @@ export interface Saga {
   achieved: TrackedMilestoneDefinition[];
   /** The first locked milestones, each its riddle or null ("? ? ?"). */
   riddles: Array<string | null>;
-  /** Locked milestones beyond the riddles shown. */
+  /** Locked milestones not shown: beyond the riddles shown, or waiting on their `riddleAfterFlag`. */
   untold: number;
 }
 
@@ -73,11 +73,13 @@ export function buildSaga(engine: GameEngine): Saga {
   const flags = engine.worldState.flags;
   const milestones = engine.manifest.trackedMilestones ?? [];
   const locked = milestones.filter((m) => !flags[m.flag]);
+  // A milestone whose riddle waits on a later beat is counted as untold, not shown.
+  const shown = locked.filter((m) => !m.riddleAfterFlag || flags[m.riddleAfterFlag]).slice(0, MAX_RIDDLES);
   return {
     objective: getCurrentObjective(engine)?.text ?? null,
     achieved: milestones.filter((m) => flags[m.flag]),
-    riddles: locked.slice(0, MAX_RIDDLES).map((m) => m.riddle ?? null),
-    untold: Math.max(0, locked.length - MAX_RIDDLES),
+    riddles: shown.map((m) => m.riddle ?? null),
+    untold: locked.length - shown.length,
   };
 }
 

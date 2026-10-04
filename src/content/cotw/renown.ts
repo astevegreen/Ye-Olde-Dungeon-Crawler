@@ -26,7 +26,7 @@ export const COTW_RENOWN_MILESTONES: RenownMilestoneDefinition[] = [
     id: 'item_uncursed',
     category: 'piety',
     label: 'Purifier',
-    description: "Had a curse broken at Tyr's temple.",
+    description: "Had a curse broken at Thor's temple.",
     icon: '✨',
     renownValue: 15,
     repeatable: true,

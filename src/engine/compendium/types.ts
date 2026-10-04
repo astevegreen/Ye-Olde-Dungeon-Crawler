@@ -55,7 +55,7 @@ export const MASTERY_PERKS: Record<MasteryPerkId, MasteryPerkInfo> = {
     id: 'plunderer',
     name: 'Plunderer',
     icon: '💰',
-    tagline: 'Leave nothing behind; uncover hidden caches.',
+    tagline: 'Leave nothing behind: twice the coin, and never empty-handed.',
     description: 'Doubles coin dropped and guarantees at least one loot drop from creatures that carry loot.',
   },
 };

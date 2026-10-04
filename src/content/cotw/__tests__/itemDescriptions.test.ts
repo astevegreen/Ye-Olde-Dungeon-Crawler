@@ -16,4 +16,10 @@ describe('cotw item descriptions', () => {
     );
     expect(liars).toEqual([]);
   });
+
+  it('promise no cure for a curse: only the temple lifts one', () => {
+    const LIFTS_CURSES = /(purg|lift|break|remov|cleans|dispel)\w*[^.]*\bcurses?\b/i;
+    const liars = COTW_ITEMS.filter((d) => LIFTS_CURSES.test(d.description ?? '')).map((d) => `${d.id}: ${d.description}`);
+    expect(liars).toEqual([]);
+  });
 });

@@ -89,7 +89,7 @@ export class RunAdvisor {
         severity: 'danger',
         title: 'Cursed Equipment Bound to Hero',
         message: `Malevolent dark magic binds cursed equipment to your limbs: ${names}.`,
-        recommendation: `Seek ${priest} or read a Scroll of Remove Curse to cleanse the affliction.`,
+        recommendation: `Seek ${priest} to cleanse the affliction.`,
       };
     }
 

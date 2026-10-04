@@ -92,7 +92,7 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
     bulk: 180,
     quality: 'enchanted',
     identified: false,
-    description: 'A steaming primordial draft that purges all afflictions, curses, and debilitating venoms from the bloodstream.',
+    description: 'A steaming primordial draft that purges every affliction and debilitating venom from the bloodstream.',
     value: 180,
     itemType: 'potion',
     potionConfig: {

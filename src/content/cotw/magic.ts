@@ -111,7 +111,7 @@ export const COTW_MAGIC: MagicSystemConfig = {
     prophecyLabel: 'Skaldic Prophecy',
     reapedLabel: 'Reaped',
     learnMessage: "*** GALDR OF THE SLAIN! You sever {monster}'s spirit thread and claim {spell}! ***",
-    essenceMessage: "Galdr resonance! {monster}'s spirit leaves behind a {essence}.",
+    essenceMessage: "Galdr resonance! {monster}'s spirit hardens into rune-stone: {essence}.",
     essenceItems: COTW_ESSENCE_BY_ELEMENT,
     killsPerRevealedCondition: 2,
   },

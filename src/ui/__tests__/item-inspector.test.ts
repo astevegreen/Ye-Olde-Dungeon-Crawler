@@ -77,6 +77,14 @@ describe('ItemInspector: selection, item breakdown and actions', () => {
       expect(breakdown.elementalAffix?.bonusDamage).toBe(6);
     });
 
+    it('lists what each family on an identified item does, and nothing on an unidentified one', () => {
+      const ring = new Item({ id: 'loki-ring', name: 'Band', category: 'ring', weight: 20, bulk: 10, identified: false });
+      ring.addModifier({ id: 'tw', name: 'Twinstrike', alignment: 'chaotic', category: 'chaotic', prefix: 'Twinstrike', extraMeleeStrikes: 1, missSelfDamage: 3, description: 'Twinstrike: every melee attack strikes twice; each blow that misses costs you 3 HP.' });
+      expect(inspector.getItemBreakdown(ring, 'backpack').effects).toEqual([]);
+      ring.identified = true;
+      expect(inspector.getItemBreakdown(ring, 'backpack').effects).toEqual(['Twinstrike: every melee attack strikes twice; each blow that misses costs you 3 HP.']);
+    });
+
     it('identifies cursed items properly when identified', () => {
       const cursedRing = new Item({
         id: 'cursed-band',

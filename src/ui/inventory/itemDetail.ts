@@ -79,5 +79,6 @@ export function itemDetailHtml(engine: GameEngine, item: Item, inspector: ItemIn
       ${opts.showValue && b.value > 0 ? `<dt>Value${b.identified ? '' : ' (guess)'}</dt><dd class="ui-num inv-value">${escapeHtml(formatCurrency(b.value))}</dd>` : ''}
     </dl>
     ${compare}
+    ${b.effects.map((e) => `<div class="ui-note inv-effect">${escapeHtml(e)}</div>`).join('')}
     <div class="inv-desc">${escapeHtml(b.description)}</div>`;
 }

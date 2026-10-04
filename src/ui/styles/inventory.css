@@ -154,6 +154,7 @@
 .inv-value { color: var(--ui-gold); }
 .inv-compare { padding-top: var(--ui-space-2); border-top: 1px solid var(--ui-line); display: flex; flex-direction: column; gap: var(--ui-space-1); }
 .inv-desc { font-size: var(--ui-text-sm); font-style: italic; color: var(--ui-text-soft); user-select: text; }
+.inv-effect { color: var(--ui-text); user-select: text; }
 .inv-actions { display: flex; flex-wrap: wrap; gap: var(--ui-space-1); }
 .inv-reason { font-style: italic; }
 

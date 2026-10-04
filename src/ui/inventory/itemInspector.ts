@@ -43,6 +43,8 @@ export interface ItemBreakdown {
   quality: string;
   isEnchanted: boolean;
   isCursed: boolean;
+  /** What each family on the item does, in the pack's words; empty until identified. */
+  effects: string[];
   enchantmentLevel: number;
   slotCompatibility: string[];
   stats: {
@@ -192,6 +194,7 @@ export class ItemInspector {
       quality: isIdentified ? item.quality : 'normal',
       isEnchanted: Boolean(isEnchanted),
       isCursed,
+      effects: isIdentified ? item.modifiers.map((m) => m.description).filter((d): d is string => Boolean(d)) : [],
       enchantmentLevel: isIdentified ? (item.enchantmentLevel ?? 0) : 0,
       slotCompatibility: compatibleSlots,
       stats: isIdentified

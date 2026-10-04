@@ -9,7 +9,7 @@ import { RoomDecorator } from './roomDecorator';
 import { VaultStamper, type VaultBlueprint } from './vaultStamp';
 import { MonsterRegistry, type MonsterDefinition } from '../bestiary/monsterDefinitions';
 import { selectDungeonMonsterDefinition } from './spawner';
-import type { ItemDefinition, RoomDecorationBand } from '../types/manifest';
+import type { CoinageDefinition, ItemDefinition, RoomDecorationBand } from '../types/manifest';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
 import type { GameDifficulty } from '../types';
 import type { EngineRegistries } from '../registries';
@@ -35,6 +35,8 @@ export interface DungeonConfig {
   vaults?: VaultBlueprint[];
   monsterCandidates?: MonsterDefinition[];
   itemCandidates?: ItemDefinition[];
+  /** The pack's coin scale, for vault chests' coins. */
+  coinage?: CoinageDefinition;
   enableBraiding?: boolean;
   enableDecoration?: boolean;
   scalingConfig?: MonsterScalingConfig;
@@ -76,6 +78,7 @@ export class DungeonGenerator {
   public vaults: VaultBlueprint[];
   public monsterCandidates: MonsterDefinition[];
   public itemCandidates: ItemDefinition[];
+  public coinage?: CoinageDefinition;
   public enableBraiding: boolean;
   public enableDecoration: boolean;
   public scalingConfig?: MonsterScalingConfig;
@@ -96,6 +99,7 @@ export class DungeonGenerator {
     this.vaults = config.vaults ?? [];
     this.monsterCandidates = config.monsterCandidates ?? [];
     this.itemCandidates = config.itemCandidates ?? [];
+    this.coinage = config.coinage;
     this.enableBraiding = config.enableBraiding ?? true;
     this.enableDecoration = config.enableDecoration ?? true;
     this.scalingConfig = config.scalingConfig;
@@ -186,7 +190,8 @@ export class DungeonGenerator {
           () => this.prng.next(),
           this.scalingConfig,
           this.difficulty,
-          this.registries
+          this.registries,
+          this.coinage
         );
         vaultRoomIndices.add(rooms.length);
         rooms.push(vRoom);

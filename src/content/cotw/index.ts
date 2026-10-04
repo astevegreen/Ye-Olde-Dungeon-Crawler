@@ -31,6 +31,7 @@ import { COTW_COMPANIONS } from './companions';
 import { GIANT_BLOOD_STATUS, giantBloodHandler, GIANT_BLOOD_BOOTSTRAP_HOOK } from './giantBlood';
 import { BURNING_STATUS, burningHandler } from './burning';
 import { COTW_MONSTER_SCALING } from './monsterScaling';
+import { COTW_COINAGE } from './coinage';
 import { OATH_HOLD_HOOK, OATH_TRIGGER } from './oath';
 import { HOSTAGE_VILLAGERS, SIPHON_RITUAL_FLOOR, SIPHON_RITUAL_HOOKS, SIPHON_TIMED_EVENT, SIPHON_VAULT_ID } from './hostageRitual';
 import { COTW_PROLOGUE, COVEN_CHANNELER_STRATEGY, PROLOGUE_HOOKS, PROLOGUE_TIMED_EVENT } from './prologue';
@@ -127,6 +128,7 @@ export const cotwManifest: GameContentManifest = {
   objectives: COTW_OBJECTIVES,
   companions: COTW_COMPANIONS,
   monsterScaling: COTW_MONSTER_SCALING,
+  coinage: COTW_COINAGE,
   actionHooks: [
     GIANT_BLOOD_BOOTSTRAP_HOOK,
     ...PROLOGUE_HOOKS,

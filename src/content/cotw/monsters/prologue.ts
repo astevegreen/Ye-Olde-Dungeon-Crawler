@@ -1,6 +1,6 @@
-import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
 import { makeLootItem } from '../items/makeItem';
+import { coinDrop } from '../coinage';
 
 /**
  * The night raid's creatures (`prologue.ts`): placed by the prologue only, never drawn at
@@ -59,7 +59,7 @@ export const PROLOGUE_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 1,
-        generate: (id) => ItemFactory.createGoldCoins(id, 15),
+        generate: coinDrop(4),
       },
     ],
   },

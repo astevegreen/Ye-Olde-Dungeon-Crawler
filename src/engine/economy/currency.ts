@@ -1,6 +1,7 @@
 import { Item, type ItemConfig } from '../items/item';
 import type { Player } from '../entities/player';
 import type { Container } from '../items/container';
+import type { CoinageDefinition } from '../types/manifest';
 import {
   type CoinDenomination,
   COIN_VALUES,
@@ -74,6 +75,40 @@ export class CoinItem extends Item {
     this.setCount(this.count - removed);
     return removed;
   }
+}
+
+const METALS: readonly CoinDenomination[] = ['copper', 'silver', 'gold'];
+
+/**
+ * Mints one coin pile from a pack's coinage: worth half to one and a half times the floor's
+ * pile value, times `richness`, in a metal drawn from the floor's weights. A pile of fewer
+ * than two coins of a dear metal steps down a metal, and a heap of more than `maxPileCoins`
+ * steps up one, so piles stay a handful of coins of a sensible metal.
+ */
+export function mintCoinPile(
+  id: string,
+  floor: number,
+  rng: () => number,
+  coinage: CoinageDefinition,
+  richness = 1
+): CoinItem {
+  const valueCp = Math.max(1, coinage.pileValueCp(floor) * richness * (0.5 + rng()));
+  const weights = coinage.metalWeights(floor);
+  const total = METALS.reduce((sum, m) => sum + Math.max(0, weights[m]), 0);
+  let roll = rng() * total;
+  let metal = 0;
+  for (let i = 0; i < METALS.length; i++) {
+    roll -= Math.max(0, weights[METALS[i]]);
+    if (roll < 0) {
+      metal = i;
+      break;
+    }
+  }
+  const maxCoins = coinage.maxPileCoins ?? 60;
+  while (metal > 0 && valueCp / COIN_VALUES[METALS[metal]] < 2) metal--;
+  while (metal < METALS.length - 1 && valueCp / COIN_VALUES[METALS[metal]] > maxCoins) metal++;
+  const denomination = METALS[metal];
+  return new CoinItem({ id, denomination, count: Math.max(1, Math.round(valueCp / COIN_VALUES[denomination])) });
 }
 
 /**

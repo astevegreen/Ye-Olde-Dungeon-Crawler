@@ -76,7 +76,7 @@ interface Villager extends PrologueNpc {
   kin: string;
   /** Logged as they run free; they drop `gift` where they stood. */
   freedMessage: string;
-  gift: { itemId: string } | { gold: number };
+  gift: { itemId: string } | { silver: number };
 }
 
 export const PROLOGUE_VILLAGERS: Villager[] = [
@@ -98,7 +98,7 @@ export const PROLOGUE_VILLAGERS: Villager[] = [
     position: { x: 12, y: 13 },
     greeting: 'Father barred the door with me still outside! Help me!',
     freedMessage: 'Sigrun bolts for the longhouse, flinging back her purse: "Father would want you to have it!"',
-    gift: { gold: 20 },
+    gift: { silver: 12 },
   },
   {
     id: 'prologue-brandr',
@@ -231,8 +231,8 @@ export const PROLOGUE_OBJECTIVES: ObjectiveDefinition[] = [
 
 function dropGift(ctx: EngineContext, villager: Villager, x: number, y: number): void {
   const id = `${villager.id}-gift`;
-  const item = 'gold' in villager.gift
-    ? ItemFactory.createGoldCoins(id, villager.gift.gold)
+  const item = 'silver' in villager.gift
+    ? ItemFactory.createSilverCoins(id, villager.gift.silver)
     : makeLootItem(villager.gift.itemId, id, ctx.rng);
   ctx.map.addItemAt(x, y, item);
 }

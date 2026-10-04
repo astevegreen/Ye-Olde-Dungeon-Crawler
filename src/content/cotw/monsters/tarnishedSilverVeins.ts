@@ -1,6 +1,6 @@
-import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
 import { makeLootChest, dropLootItem } from '../items/makeItem';
+import { coinDrop } from '../coinage';
 
 export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
   {
@@ -24,7 +24,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.75,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 70) + 30),
+        generate: coinDrop(0.75),
       },
       {
         chance: 0.35,
@@ -55,7 +55,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.7,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 80) + 40),
+        generate: coinDrop(0.75),
       },
       {
         chance: 0.35,
@@ -83,7 +83,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.85,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 90) + 45),
+        generate: coinDrop(1),
       },
       {
         chance: 0.35,
@@ -106,7 +106,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.8,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 100) + 50),
+        generate: coinDrop(1),
       },
       {
         chance: 0.3,
@@ -129,7 +129,7 @@ export const SILVER_VEINS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.6,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 30) + 10),
+        generate: coinDrop(0.5),
       },
     ],
   },

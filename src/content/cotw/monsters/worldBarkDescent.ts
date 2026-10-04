@@ -1,6 +1,6 @@
-import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
 import { dropLootItem } from '../items/makeItem';
+import { coinDrop } from '../coinage';
 
 export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
   {
@@ -25,7 +25,7 @@ export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.8,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 120) + 60),
+        generate: coinDrop(1),
       },
     ],
   },
@@ -43,7 +43,7 @@ export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.6,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 40) + 15),
+        generate: coinDrop(0.5),
       },
     ],
   },
@@ -62,7 +62,7 @@ export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.85,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 150) + 80),
+        generate: coinDrop(1.25),
       },
       {
         chance: 0.35,
@@ -90,7 +90,7 @@ export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.75,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 110) + 50),
+        generate: coinDrop(0.75),
       },
       {
         chance: 0.3,
@@ -131,7 +131,7 @@ export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 200) + 100),
+        generate: coinDrop(1.25),
       },
       {
         chance: 0.5,
@@ -139,7 +139,7 @@ export const WORLD_BARK_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.4,
-        generate: (id) => ItemFactory.createGoldCoins(id, 20),
+        generate: coinDrop(0.5),
       },
     ],
   },

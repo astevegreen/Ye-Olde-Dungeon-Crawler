@@ -1,9 +1,9 @@
 import type { GameMap } from '../grid/map';
-import type { ItemDefinition } from '../types/manifest';
+import type { CoinageDefinition, ItemDefinition } from '../types/manifest';
 import { Item, type ItemCategory, type ElementalAffix } from '../items/item';
 import { Container } from '../items/container';
 import { WandItem, ScrollItem, PotionItem } from '../items/consumables';
-import { CoinItem } from '../economy/currency';
+import { CoinItem, mintCoinPile } from '../economy/currency';
 import type { CoinDenomination } from '../economy/types';
 import { flightRecorder } from '../debug/flightRecorder';
 
@@ -236,7 +236,8 @@ export function selectFloorItemDefinition(
 }
 
 /**
- * Spawns depth-scaled currency denominations:
+ * Spawns a coin pile for a floor: from the pack's coinage when it has one (`mintCoinPile`),
+ * else from this built-in table of depth-scaled denominations:
  * - Floors 1–9: Copper Pieces (CP) and Silver Pieces (SP).
  * - Floors 10–24: Silver Pieces (SP) and Gold Pieces (GP).
  * - Floors 25–50: Gold Pieces (GP).
@@ -244,8 +245,10 @@ export function selectFloorItemDefinition(
 export function spawnFloorCurrency(
   currentFloor: number,
   id: string,
-  rng: () => number
+  rng: () => number,
+  coinage?: CoinageDefinition
 ): CoinItem {
+  if (coinage) return mintCoinPile(id, currentFloor, rng, coinage);
   let denomination: CoinDenomination;
   let count: number;
 
@@ -291,7 +294,8 @@ export function createDungeonChest(
   id: string,
   currentFloor: number,
   candidates: ItemDefinition[],
-  rng: () => number
+  rng: () => number,
+  coinage?: CoinageDefinition
 ): Container {
   const chest = new Container({
     id,
@@ -316,7 +320,7 @@ export function createDungeonChest(
     // 35% chance currency, 65% chance item
     if (rng() < 0.35) {
       const coinId = `${id}-coin-${idx}-${attempts}`;
-      chest.addItem(spawnFloorCurrency(currentFloor, coinId, rng));
+      chest.addItem(spawnFloorCurrency(currentFloor, coinId, rng, coinage));
     } else {
       const def = selectFloorItemDefinition(candidates, currentFloor, rng);
       let added = false;
@@ -327,7 +331,7 @@ export function createDungeonChest(
       if (!added) {
         // Fall back to currency if item didn't fit or definition wasn't found
         const coinId = `${id}-coin-${idx}-${attempts}`;
-        chest.addItem(spawnFloorCurrency(currentFloor, coinId, rng));
+        chest.addItem(spawnFloorCurrency(currentFloor, coinId, rng, coinage));
       }
     }
   }
@@ -343,7 +347,8 @@ export function populateDungeonLoot(
   rooms: Array<{ x1: number; y1: number; x2: number; y2: number }>,
   currentFloor: number,
   candidates: ItemDefinition[],
-  rng: () => number
+  rng: () => number,
+  coinage?: CoinageDefinition
 ): Item[] {
   const spawnedItems: Item[] = [];
 
@@ -360,7 +365,7 @@ export function populateDungeonLoot(
         // 40% currency pile, 60% equipment/consumable
         if (rng() < 0.40) {
           const coinId = `loot-coin-${currentFloor}-${i}-${Math.floor(rng() * 1000000)}`;
-          const coins = spawnFloorCurrency(currentFloor, coinId, rng);
+          const coins = spawnFloorCurrency(currentFloor, coinId, rng, coinage);
           map.addItemAt(lx, ly, coins);
           spawnedItems.push(coins);
         } else {
@@ -382,7 +387,7 @@ export function populateDungeonLoot(
 
       if (map.isPassable(cx, cy) && !map.getEntityAt(cx, cy)) {
         const chestId = `loot-chest-${currentFloor}-${i}-${Math.floor(rng() * 1000000)}`;
-        const chest = createDungeonChest(chestId, currentFloor, candidates, rng);
+        const chest = createDungeonChest(chestId, currentFloor, candidates, rng, coinage);
         map.addItemAt(cx, cy, chest);
         spawnedItems.push(chest);
       }

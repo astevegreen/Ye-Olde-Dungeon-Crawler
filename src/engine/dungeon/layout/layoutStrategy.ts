@@ -427,7 +427,8 @@ function finishDraft(draft: LayoutDraft, ctx: DraftContext): GeneratedFloorData 
       ctx.rand,
       gen.scalingConfig,
       gen.difficulty,
-      gen.registries
+      gen.registries,
+      gen.coinage
     );
     if (plan.forced) {
       forcedVaultChestSpawns = stamped.chestSpawns;

@@ -1,6 +1,6 @@
-import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
 import { dropLootItem } from '../items/makeItem';
+import { coinDrop } from '../coinage';
 
 export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
   {
@@ -17,7 +17,7 @@ export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.6,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 12) + 6),
+        generate: coinDrop(0.75),
       },
       {
         chance: 0.25,
@@ -60,7 +60,7 @@ export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.5,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 16) + 8),
+        generate: coinDrop(1),
       },
       {
         chance: 0.2,
@@ -83,7 +83,7 @@ export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.6,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 20) + 10),
+        generate: coinDrop(1),
       },
     ],
   },
@@ -109,7 +109,7 @@ export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.4,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 8) + 4),
+        generate: coinDrop(0.5),
       },
     ],
   },
@@ -145,7 +145,7 @@ export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.6,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 25) + 15),
+        generate: coinDrop(1.5),
       },
     ],
   },

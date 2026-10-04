@@ -1,7 +1,8 @@
-import { ItemFactory, createScaledItem } from '../../../engine';
+import { createScaledItem } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
 import { COTW_CATALOG_RECORD } from '../items';
 import { makeLootItem } from '../items/makeItem';
+import { coinDrop } from '../coinage';
 
 export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
   {
@@ -51,7 +52,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 30) + 30),
+        generate: coinDrop(6),
       },
     ],
   },
@@ -78,7 +79,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 50) + 50),
+        generate: coinDrop(5),
       },
     ],
   },
@@ -103,7 +104,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, (Math.floor(rng() * 5) + 5) * 10),
+        generate: coinDrop(5),
       },
     ],
   },
@@ -147,7 +148,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, (Math.floor(rng() * 12) + 8) * 10),
+        generate: coinDrop(5),
       },
     ],
   },
@@ -172,7 +173,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, (Math.floor(rng() * 15) + 10) * 10),
+        generate: coinDrop(5),
       },
     ],
   },

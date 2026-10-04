@@ -11,6 +11,7 @@ import { QUEST_RELIC_ID, MAX_DUNGEON_FLOOR } from './types';
 import { ItemFactory } from '../items/factory';
 import { createScaledMonster, populateDungeonFloor, scaleMonsterStats } from '../dungeon/spawner';
 import { createDungeonChest, populateDungeonLoot } from '../dungeon/lootSpawner';
+import { mintCoinPile } from '../economy/currency';
 import type { GameContentManifest, QuestArcDefinition, ItemDefinition } from '../types/manifest';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
 import { getMonsterDefinition, type MonsterDefinition } from '../bestiary/monsterDefinitions';
@@ -194,6 +195,7 @@ export class DungeonArc {
       vaults: manifest?.vaults ?? [],
       monsterCandidates: monsterCatalog,
       itemCandidates: itemCatalog,
+      coinage: manifest?.coinage,
       scalingConfig: manifest?.monsterScaling,
       difficulty,
       registries,
@@ -236,7 +238,7 @@ export class DungeonArc {
     );
 
     // 4. Spawn Floor-scaled loot and chests
-    populateDungeonLoot(map, dungeon.rooms, floorNumber, itemCatalog, populationRng);
+    populateDungeonLoot(map, dungeon.rooms, floorNumber, itemCatalog, populationRng, manifest?.coinage);
 
     // 5. Fixed tile placements declared in manifest (docs/architecture/content-quests-and-triggers.md)
     if (manifest?.fixedTilePlacements?.length) {
@@ -598,10 +600,15 @@ export class DungeonArc {
     const free = (x: number, y: number) => map.inBounds(x, y) && map.isPassable(x, y);
     const prng = new PRNG(floorNumber * 7919 + 17);
     const candidates = Array.isArray(manifest?.items) ? manifest.items : [];
+    const coinage = manifest?.coinage;
     if (free(bx, by - 2)) {
-      map.addItemAt(bx, by - 2, createDungeonChest('boss-chest-1', floorNumber, candidates, () => prng.next()));
+      map.addItemAt(bx, by - 2, createDungeonChest('boss-chest-1', floorNumber, candidates, () => prng.next(), coinage));
     }
-    if (free(bx - 1, by - 2)) map.addItemAt(bx - 1, by - 2, ItemFactory.createGoldCoins('boss-gold-1', 100)); // 10,000 CP
+    // The hoard's gold: ten of the floor's piles on the pack's coin scale, or 10,000 CP.
+    const gold = coinage
+      ? mintCoinPile('boss-gold-1', floorNumber, () => prng.next(), coinage, 10)
+      : ItemFactory.createGoldCoins('boss-gold-1', 100);
+    if (free(bx - 1, by - 2)) map.addItemAt(bx - 1, by - 2, gold);
     if (free(bx + 1, by - 2)) map.addItemAt(bx + 1, by - 2, ItemFactory.createHealthPotion('boss-pot-1'));
   }
 

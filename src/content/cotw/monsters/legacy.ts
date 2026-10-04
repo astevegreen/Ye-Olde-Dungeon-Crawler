@@ -1,6 +1,6 @@
-import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
 import { makeLootChest, dropLootItem } from '../items/makeItem';
+import { coinDrop } from '../coinage';
 
 /**
  * Legacy monster templates preserved for backward compatibility with existing unit tests
@@ -26,7 +26,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.4,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 6) + 1),
+        generate: coinDrop(0.5),
       },
       {
         chance: 0.15,
@@ -47,7 +47,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.7,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 10) + 5),
+        generate: coinDrop(0.75),
       },
       {
         chance: 0.35,
@@ -68,7 +68,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.65,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 15) + 10),
+        generate: coinDrop(1),
       },
       {
         chance: 0.35,
@@ -103,7 +103,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.3,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 20) + 10),
+        generate: coinDrop(1),
       },
     ],
   },
@@ -168,7 +168,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.5,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 15) + 5),
+        generate: coinDrop(0.5),
       },
       {
         chance: 0.2,
@@ -189,7 +189,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 50) + 40),
+        generate: coinDrop(1.5),
       },
       {
         chance: 0.5,
@@ -225,7 +225,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.6,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 35) + 20),
+        generate: coinDrop(1),
       },
       {
         chance: 0.3,
@@ -257,7 +257,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.6,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 35) + 20),
+        generate: coinDrop(1),
       },
       {
         chance: 0.3,
@@ -278,7 +278,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.8,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 60) + 40),
+        generate: coinDrop(1.5),
       },
       {
         chance: 0.4,
@@ -305,7 +305,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.9,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 100) + 50),
+        generate: coinDrop(1.5),
       },
       {
         chance: 0.3,
@@ -329,7 +329,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.8,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 120) + 60),
+        generate: coinDrop(1.5),
       },
       {
         chance: 0.4,
@@ -420,7 +420,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 200) + 100),
+        generate: coinDrop(1.5),
       },
       {
         chance: 0.6,
@@ -447,7 +447,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 250) + 150),
+        generate: coinDrop(1.5),
       },
       {
         chance: 0.6,
@@ -481,7 +481,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 300) + 200),
+        generate: coinDrop(1.5),
       },
       {
         chance: 0.6,
@@ -514,7 +514,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.7,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 70) + 30),
+        generate: coinDrop(1.5),
       },
       {
         chance: 0.4,
@@ -547,7 +547,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.8,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 140) + 80),
+        generate: coinDrop(1.5),
       },
       {
         chance: 0.35,
@@ -569,7 +569,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.85,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 160) + 90),
+        generate: coinDrop(1.5),
       },
       {
         chance: 0.3,
@@ -598,7 +598,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.6,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 50) + 20),
+        generate: coinDrop(2),
       },
       {
         chance: 0.3,
@@ -619,7 +619,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     lootTable: [
       {
         chance: 0.5,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 30) + 10),
+        generate: coinDrop(1.25),
       },
     ],
   },
@@ -644,7 +644,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
       },
       {
         chance: 0.4,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 20) + 10),
+        generate: coinDrop(1.25),
       },
     ],
   },

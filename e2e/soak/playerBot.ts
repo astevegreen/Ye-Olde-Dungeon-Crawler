@@ -131,7 +131,7 @@ export interface PlayerDecisionContext {
  * hand, defense for the rest), picks up a heavy piece only when it is an upgrade, and
  * drops spare gear once over half its carry limit. In town after Hallvard it sells spare
  * gear and buys upgrades it can afford and carry at the smith, then healing at the
- * alchemist. Once, on finishing floor SOAK_SHOP_FLOOR (default 4) with 1,500 CP or
+ * alchemist. Once, on finishing floor SOAK_SHOP_FLOOR (default 4) with 800 CP or
  * more, it climbs back to town to spend its dungeon gold, then goes straight back down.
  * It reads true item stats, unidentified or not: a stand-in for a player who tries
  * things on. Every move is a real key press.
@@ -947,7 +947,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
 
         if ((!frontierStep || timeout) && seenStairsDown) {
           // Done with this floor: at the shopping floor, with money to spend, go home first.
-          if (args.trip === 'none' && curFloor === args.shopFloor && funds() >= 1500) {
+          if (args.trip === 'none' && curFloor === args.shopFloor && funds() >= 800) {
             return { action: { type: 'key' as const, key: 'Space' }, curPos, curTurn, curFloor, tripUp: true };
           }
           if (p.x === seenStairsDown.x && p.y === seenStairsDown.y) {

@@ -700,6 +700,21 @@ export interface FirstTimeHintDefinition {
   text: string;
 }
 
+/**
+ * A pack's coin scale (`GameContentManifest.coinage`): what one coin pile is worth on a floor
+ * and which metal it comes in. `mintCoinPile` mints from it; a pack's monsters can mint their
+ * purses from it too, so ground and monster coin follow one curve.
+ */
+export interface CoinageDefinition {
+  /** Mean value, in copper, of one ordinary pile on this floor. A pile is worth from half to
+   * one and a half times this, times its richness. */
+  pileValueCp: (floor: number) => number;
+  /** Relative chance of each metal for a pile on this floor. */
+  metalWeights: (floor: number) => Readonly<Record<CoinDenomination, number>>;
+  /** A pile of more coins than this steps up to the next metal. Default 60. */
+  maxPileCoins?: number;
+}
+
 export interface GameContentManifest {
   id: string;
   name: string;
@@ -733,6 +748,9 @@ export interface GameContentManifest {
   /** Zone-tiered, difficulty-scaled monster power (ARCHITECTURE.md §3). When omitted,
    * `dungeon/spawner.ts`'s monster-scaling functions fall back to the flat per-floor curve. */
   monsterScaling?: MonsterScalingConfig;
+  /** How coin piles are minted, by floor: ground piles, chest coins and the boss hoard
+   * (`mintCoinPile`). When omitted, `spawnFloorCurrency`'s built-in table applies. */
+  coinage?: CoinageDefinition;
   initialWorldState?: WorldState;
   /** Names and "met" rules for the factions in `initialWorldState.factions` (`FactionDefinition`). */
   factions?: FactionDefinition[];

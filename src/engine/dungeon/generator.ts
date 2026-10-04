@@ -6,7 +6,7 @@ import { PRNG } from './prng';
 import { DungeonGenerator, type RectRoom } from './dungeon-generator';
 import type { VaultBlueprint } from './vaultStamp';
 import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
-import type { ItemDefinition, RoomDecorationBand, ThresholdRoomDefinition } from '../types/manifest';
+import type { CoinageDefinition, ItemDefinition, RoomDecorationBand, ThresholdRoomDefinition } from '../types/manifest';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
 import type { GameDifficulty } from '../types';
 import type { EngineRegistries } from '../registries';
@@ -25,6 +25,8 @@ export interface DungeonGenParams {
   vaults?: VaultBlueprint[];
   monsterCandidates?: MonsterDefinition[];
   itemCandidates?: ItemDefinition[];
+  /** The pack's coin scale, for vault chests' coins. */
+  coinage?: CoinageDefinition;
   scalingConfig?: MonsterScalingConfig;
   difficulty?: GameDifficulty;
   forcedVaultId?: string;
@@ -78,6 +80,7 @@ export class BspDungeonGenerator implements DungeonGeneratorStrategy {
       vaults: params.vaults,
       monsterCandidates: params.monsterCandidates,
       itemCandidates: params.itemCandidates,
+      coinage: params.coinage,
       scalingConfig: params.scalingConfig,
       difficulty: params.difficulty,
       forcedVaultId: params.forcedVaultId,

@@ -1,6 +1,6 @@
-import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
 import { makeLootItem } from '../items/makeItem';
+import { coinDrop } from '../coinage';
 
 export const BOSS_MONSTERS: MonsterDefinition[] = [
   {
@@ -43,7 +43,7 @@ export const BOSS_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, (Math.floor(rng() * 10) + 10) * 10),
+        generate: coinDrop(6),
       },
     ],
   },
@@ -91,7 +91,7 @@ export const BOSS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, (Math.floor(rng() * 20) + 20) * 10),
+        generate: coinDrop(8),
       },
     ],
   },

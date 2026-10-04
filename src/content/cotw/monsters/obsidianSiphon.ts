@@ -1,6 +1,6 @@
-import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
 import { dropLootItem } from '../items/makeItem';
+import { coinDrop } from '../coinage';
 
 export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
   {
@@ -17,7 +17,7 @@ export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.75,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 50) + 25),
+        generate: coinDrop(0.75),
       },
       {
         chance: 0.25,
@@ -63,7 +63,7 @@ export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.8,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 70) + 35),
+        generate: coinDrop(1),
       },
       {
         chance: 0.4,
@@ -103,7 +103,7 @@ export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.7,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 60) + 30),
+        generate: coinDrop(0.75),
       },
       {
         chance: 0.35,
@@ -139,11 +139,11 @@ export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 100) + 50),
+        generate: coinDrop(1),
       },
       {
         chance: 0.5,
-        generate: (id) => ItemFactory.createGoldCoins(id, 20),
+        generate: coinDrop(0.5),
       },
     ],
   },
@@ -170,7 +170,7 @@ export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.85,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 80) + 40),
+        generate: coinDrop(1),
       },
       {
         chance: 0.4,

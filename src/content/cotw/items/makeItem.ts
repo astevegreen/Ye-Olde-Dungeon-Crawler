@@ -2,6 +2,7 @@ import { createDungeonChest, createScaledItem } from '../../../engine';
 import type { Item, ItemDefinition, Predicate } from '../../../engine';
 import { COTW_ITEMS } from './index';
 import { COTW_SPELL_TABLETS } from '../spellTablets';
+import { COTW_COINAGE } from '../coinage';
 
 /**
  * Items outside COTW_ITEMS, so never rolled as random floor loot: sold in town and
@@ -62,7 +63,7 @@ export function makeShopItem(itemId: string, instanceId: string, predicate?: Pre
 
 /** A monster's chest drop: filled as a dungeon chest on `floor` would be. */
 export function makeLootChest(instanceId: string, rng: () => number, floor: number): Item {
-  return createDungeonChest(instanceId, floor, COTW_ITEMS, rng);
+  return createDungeonChest(instanceId, floor, COTW_ITEMS, rng, COTW_COINAGE);
 }
 
 /** Loot scaled to `floor` (the floor a monster died on), rolled from the loot table's seeded rng. */

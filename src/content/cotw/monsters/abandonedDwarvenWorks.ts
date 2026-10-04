@@ -1,6 +1,6 @@
-import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
 import { makeLootChest, dropLootItem } from '../items/makeItem';
+import { coinDrop } from '../coinage';
 
 export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
   {
@@ -23,7 +23,7 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.7,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 25) + 15),
+        generate: coinDrop(1),
       },
       {
         chance: 0.25,
@@ -58,7 +58,7 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.8,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 40) + 20),
+        generate: coinDrop(1),
       },
       {
         chance: 0.3,
@@ -89,7 +89,7 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.6,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 25) + 10),
+        generate: coinDrop(0.5),
       },
     ],
   },
@@ -108,7 +108,7 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.8,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 45) + 25),
+        generate: coinDrop(1.25),
       },
       {
         chance: 0.35,
@@ -134,7 +134,7 @@ export const DWARVEN_WORKS_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.5,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 10) + 5),
+        generate: coinDrop(0.5),
       },
       {
         chance: 0.2,

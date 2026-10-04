@@ -1,6 +1,6 @@
-import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
 import { dropLootItem } from '../items/makeItem';
+import { coinDrop } from '../coinage';
 
 export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
   {
@@ -31,11 +31,11 @@ export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 220) + 120),
+        generate: coinDrop(1),
       },
       {
         chance: 0.4,
-        generate: (id) => ItemFactory.createGoldCoins(id, 20),
+        generate: coinDrop(0.5),
       },
     ],
   },
@@ -62,11 +62,11 @@ export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 240) + 130),
+        generate: coinDrop(1.25),
       },
       {
         chance: 0.45,
-        generate: (id) => ItemFactory.createGoldCoins(id, 30),
+        generate: coinDrop(0.5),
       },
     ],
   },
@@ -103,7 +103,7 @@ export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 280) + 150),
+        generate: coinDrop(1.25),
       },
       {
         chance: 0.6,
@@ -111,7 +111,7 @@ export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.5,
-        generate: (id) => ItemFactory.createGoldCoins(id, 30),
+        generate: coinDrop(0.5),
       },
     ],
   },
@@ -130,7 +130,7 @@ export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.7,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 60) + 20),
+        generate: coinDrop(0.5),
       },
     ],
   },
@@ -154,11 +154,11 @@ export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 350) + 200),
+        generate: coinDrop(1.5),
       },
       {
         chance: 0.6,
-        generate: (id) => ItemFactory.createGoldCoins(id, 50),
+        generate: coinDrop(0.5),
       },
     ],
   },

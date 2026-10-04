@@ -1,6 +1,6 @@
-import { ItemFactory } from '../../../engine';
 import type { MonsterDefinition } from '../../../engine';
 import { dropLootItem } from '../items/makeItem';
+import { coinDrop } from '../coinage';
 
 export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
   {
@@ -24,7 +24,7 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.6,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 50) + 20),
+        generate: coinDrop(2),
       },
       {
         chance: 0.3,
@@ -47,7 +47,7 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.7,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 40) + 20),
+        generate: coinDrop(1),
       },
       {
         chance: 0.25,
@@ -74,7 +74,7 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.4,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 15) + 5),
+        generate: coinDrop(0.5),
       },
     ],
   },
@@ -96,7 +96,7 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
       },
       {
         chance: 0.5,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 30) + 15),
+        generate: coinDrop(0.75),
       },
     ],
   },
@@ -123,7 +123,7 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
     lootTable: [
       {
         chance: 0.65,
-        generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 45) + 20),
+        generate: coinDrop(1),
       },
       {
         chance: 0.3,

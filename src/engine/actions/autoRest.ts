@@ -34,6 +34,10 @@ export class AutoRestManager {
     const shown = running.find((e) => e.label);
     if (shown) return `There is no time to rest with the ${shown.label} under way (${shown.turnsRemaining} turns left).`;
     if (running.length > 0 || isPrologueRunning(engine.worldState, engine.manifest?.prologue)) return 'There is no time to rest now.';
+    for (const item of engine.player.inventory.paperdoll.getEquippedItems()) {
+      const restless = item.modifiers.find((m) => m.forbidsRest);
+      if (restless) return `${item.displayName} will not let you rest.`;
+    }
     return null;
   }
 

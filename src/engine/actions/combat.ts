@@ -16,7 +16,7 @@ import { resolveCombatMitigation } from '../combat/mitigationPipeline';
 import { burnOnSacredGround } from '../combat/sacredGround';
 import type { Item } from '../items/item';
 import type { ItemModifier } from '../items/modifiers';
-import { isModifierChaotic } from '../items/modifiers';
+import { sumWorn } from '../items/wornModifiers';
 
 function getActorEquippedItems(actor: Entity): Item[] {
   // Every Actor owns an inventory (a default one if none was configured); plain
@@ -30,10 +30,13 @@ const DEFAULT_CRIT_MULTIPLIER = 1.5;
 export class MeleeAttackAction implements Action {
   public readonly attacker: Entity;
   public readonly defender: Entity;
+  /** A Twinstrike's second blow: part of the first action, so it costs no energy and strikes no further. */
+  private readonly followUp: boolean;
 
-  constructor(attacker: Entity, defender: Entity) {
+  constructor(attacker: Entity, defender: Entity, options?: { followUp?: boolean }) {
     this.attacker = attacker;
     this.defender = defender;
+    this.followUp = options?.followUp ?? false;
   }
 
   public perform(engine: GameEngine): ActionResult {
@@ -53,23 +56,29 @@ export class MeleeAttackAction implements Action {
       };
     }
 
-    // Slayer's Compendium Defensive Mastery Evasion Check (Survivor: +10% evasion)
-    if (this.attacker instanceof Monster && this.defender instanceof Player && engine.compendium) {
-      const evasionBonus = engine.compendium.getMasteryEvasionBonus(
-        this.attacker.definitionId,
-        getMonsterCategory(engine, this.attacker.definitionId)?.id
-      );
-      if (evasionBonus > 0 && engine.rng() < evasionBonus) {
-        const cost = this.attacker.getActionCost(BASE_ACTION_COST);
-        this.attacker.consumeEnergy(cost);
-        const evadeMsg = `${this.defender.name} anticipates ${this.attacker.name}'s attack and evades cleanly! (Survivor Perk)`;
-        engine.log(evadeMsg);
-        return {
-          success: true,
-          cost,
-          message: evadeMsg,
-        };
+    // Evasion: the Survivor perk (+10% for the player against a mastered species) and what the
+    // defender wears (Trickster's Step). A miss costs the attacker what it wears (Twinstrike).
+    const wornEvasion = sumWorn(this.defender, 'evasionBonus');
+    const perkEvasion =
+      this.attacker instanceof Monster && this.defender instanceof Player && engine.compendium
+        ? engine.compendium.getMasteryEvasionBonus(this.attacker.definitionId, getMonsterCategory(engine, this.attacker.definitionId)?.id)
+        : 0;
+    const evasion = wornEvasion + perkEvasion;
+    if (evasion > 0 && engine.rng() < evasion) {
+      const cost = this.followUp ? 0 : this.attacker.getActionCost(BASE_ACTION_COST);
+      this.attacker.consumeEnergy(cost);
+      const evadeMsg =
+        perkEvasion > 0
+          ? `${this.defender.name} anticipates ${this.attacker.name}'s attack and evades cleanly! (Survivor Perk)`
+          : `${this.defender.name} evades ${this.attacker.name}'s attack!`;
+      engine.log(evadeMsg);
+      const missCost = sumWorn(this.attacker, 'missSelfDamage');
+      if (missCost > 0) {
+        const { damageDealt, killed } = this.attacker.takeDamage(missCost);
+        engine.log(`${this.attacker.name} overreaches and takes ${damageDealt} for the miss!`);
+        if (killed) DeathResolver.resolveDeath(engine, undefined, this.attacker);
       }
+      return { success: true, cost, message: evadeMsg };
     }
 
     // Slayer's Compendium Offensive Mastery (Anatomist: ignore 50% defense, +25% crit dmg)
@@ -125,6 +134,10 @@ export class MeleeAttackAction implements Action {
       if (mod.meleeDamageFlatBonus) {
         rawDamage += mod.meleeDamageFlatBonus;
       }
+      if (mod.meleeDamageRoll) {
+        const [lo, hi] = mod.meleeDamageRoll;
+        rawDamage = Math.round(rawDamage * (lo + engine.rng() * (hi - lo)));
+      }
     }
 
     // 2. Tag-based bonuses, by data: Holy against the undead, Hel-touched against the living.
@@ -155,105 +168,24 @@ export class MeleeAttackAction implements Action {
       };
     }
 
-    // 4. Defender Hexed damage amplification
-    const defenderItems = getActorEquippedItems(this.defender);
-    for (const it of defenderItems) {
-      {
-        for (const mod of it.modifiers) {
-          if (mod.damageTakenMultiplier || mod.damageTakenFlatBonus || mod.category === 'hexed') {
-            if (mod.damageTakenMultiplier) {
-              rawDamage = Math.round(rawDamage * mod.damageTakenMultiplier);
-            }
-            if (mod.damageTakenFlatBonus) {
-              rawDamage += mod.damageTakenFlatBonus;
-            }
-            engine.log(`Hexed affliction amplifies the blow against ${this.defender.name}!`);
-          }
-        }
-      }
-    }
-
-    // 5. Chaotic procs (backlash & teleport); the melee scaling was applied in step 1.
-    for (const mod of attackerModifiers) {
-      if (isModifierChaotic(mod)) {
-        if (mod.chaoticProc && engine.rng() < mod.chaoticProc.procChance) {
-          const proc = mod.chaoticProc;
-          if (proc.type === 'backlash') {
-            const backlashDmg = proc.param;
-            this.attacker.takeDamage(backlashDmg);
-            engine.log(`*** CHAOTIC BACKLASH! Volatile recoil sears ${this.attacker.name} for ${backlashDmg} damage! ***`);
-            engine.emitGameEvent({
-              type: 'chaotic_proc',
-              turn: engine.turnCount,
-              actorId: this.attacker.id,
-              targetId: this.defender.id,
-              procType: 'backlash',
-              description: proc.description,
-              damageDealt: backlashDmg,
-            });
-            engine.recordVisualEffects([
-              {
-                type: 'burst',
-                epicenter: { x: this.attacker.x, y: this.attacker.y },
-                radius: 1,
-                color: '#c084fc',
-                durationMs: 200,
-              },
-            ]);
-            if (!this.attacker.isAlive()) {
-              DeathResolver.resolveDeath(engine, undefined, this.attacker);
-            }
-          } else if (proc.type === 'teleport') {
-            const range = proc.param;
-            const candidates: Position[] = [];
-            for (let dy = -range; dy <= range; dy++) {
-              for (let dx = -range; dx <= range; dx++) {
-                if (dx === 0 && dy === 0) continue;
-                const tx = this.attacker.x + dx;
-                const ty = this.attacker.y + dy;
-                if (
-                  engine.map.inBounds(tx, ty) &&
-                  engine.map.isPassable(tx, ty) &&
-                  !engine.map.getEntityAt(tx, ty)
-                ) {
-                  candidates.push({ x: tx, y: ty });
-                }
-              }
-            }
-            if (candidates.length > 0) {
-              const dest = candidates[Math.floor(engine.rng() * candidates.length)];
-              this.attacker.setPosition(dest.x, dest.y);
-              engine.log(`*** CHAOTIC WARP! Spatial instability scatters ${this.attacker.name} across the chamber! ***`);
-              engine.emitGameEvent({
-                type: 'chaotic_proc',
-                turn: engine.turnCount,
-                actorId: this.attacker.id,
-                targetId: this.defender.id,
-                procType: 'teleport',
-                description: proc.description,
-                teleportDestination: dest,
-              });
-              engine.recordVisualEffects([
-                {
-                  type: 'screen_flash',
-                  color: '#c084fc',
-                  durationMs: 150,
-                },
-              ]);
-            }
-          }
-        }
-      }
-    }
+    // Damage the defender takes is scaled by what it wears (Hexed, Glass Fury) in Actor.takeDamage.
 
     // Resolve combat mitigation pipeline (aspect alignment)
     const mitigation = resolveCombatMitigation(this.attacker, this.defender, rawDamage, engine);
     const { damageDealt, killed } = this.defender.takeDamage(mitigation.finalDamage);
 
-    const cost = this.attacker.getActionCost(BASE_ACTION_COST);
+    const cost = this.followUp ? 0 : this.attacker.getActionCost(BASE_ACTION_COST);
     this.attacker.consumeEnergy(cost);
 
     flightRecorder.recordCombat(this.attacker.name, this.defender.name, damageDealt, killed);
+
+    // Mirror Hide: a share of the blow comes back at the attacker.
+    const reflectPercent = sumWorn(this.defender, 'reflectMeleePercent');
+    if (reflectPercent > 0 && damageDealt > 0) {
+      const reflected = this.attacker.takeDamage(Math.round(damageDealt * reflectPercent));
+      if (reflected.damageDealt > 0) engine.log(`${this.defender.name}'s hide turns ${reflected.damageDealt} of the blow back on ${this.attacker.name}!`);
+      if (reflected.killed) DeathResolver.resolveDeath(engine, this.defender, this.attacker);
+    }
 
     if (lifestealPercent > 0 && damageDealt > 0) {
       const drawn = this.attacker.heal(Math.round(damageDealt * lifestealPercent));
@@ -369,6 +301,13 @@ export class MeleeAttackAction implements Action {
     if (isFatal) {
       message += ` ${this.defender.name} is slain!`;
       DeathResolver.resolveDeath(engine, this.attacker, this.defender, { damageElement: killingElement });
+    }
+
+    // Twinstrike: the blow lands again, as part of this action.
+    const extraStrikes = this.followUp ? 0 : sumWorn(this.attacker, 'extraMeleeStrikes');
+    for (let i = 0; i < extraStrikes && this.attacker.isAlive() && this.defender.isAlive(); i++) {
+      const again = new MeleeAttackAction(this.attacker, this.defender, { followUp: true }).perform(engine);
+      if (again.message) message += ` ${again.message}`;
     }
 
     return {

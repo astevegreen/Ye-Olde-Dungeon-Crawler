@@ -20,6 +20,7 @@ import { DeathEnvelopeTracker } from '../analytics/deathEnvelope';
 import { KillRiteManager, type KillContext } from '../magic/killRites';
 import { CoinItem } from '../economy/currency';
 import type { Item } from '../items/item';
+import { sumWorn } from '../items/wornModifiers';
 
 /** Pact and Plunderer gold multipliers: a coin pile's worth is its count. */
 function applyGoldMultiplier(item: Item, goldMult: number): void {
@@ -96,6 +97,15 @@ export class DeathResolver {
 
       // Kill rites: a death that meets the victim's rite yields its magic
       KillRiteManager.evaluate(engine, killer, victim, context);
+
+      // Bloodthirst: each kill heals the killer a share of max HP.
+      if (killer instanceof Actor && killer.isAlive()) {
+        const share = sumWorn(killer, 'killHealPercent');
+        if (share > 0) {
+          const drawn = killer.heal(Math.round(killer.maxHp * share));
+          if (drawn > 0) engine.log(`${killer.name} drinks the kill: +${drawn} HP.`);
+        }
+      }
 
       // Slayer's Compendium Slay Perks (Essence Siphon & Trophy Hunter), from species or category mastery
       if (killer instanceof Player && victim instanceof Monster && engine.compendium) {

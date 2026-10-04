@@ -16,6 +16,7 @@ import { getAltarDefinition, isAltarSpent } from '../magic/altars';
 import { formatMagicMessage } from '../magic/magicConfig';
 import { isPrologueHoldingChoices } from '../quest/prologue';
 import { burnOnSacredGround } from '../combat/sacredGround';
+import { wornModifiers } from '../items/wornModifiers';
 
 /** Tile type identifier for shallow water terrain that imposes a movement energy penalty. */
 const SHALLOW_WATER_TILE = 'shallow_water';
@@ -204,6 +205,32 @@ export class MovementAction implements Action {
     // 5b2. Holy ground burns a bearer of a `sacredGroundBurn` item (Hel-touched) on arrival.
     if (burnOnSacredGround(engine, this.entity).killed) {
       return { success: true, cost, message: `${this.entity.name} was consumed by holy ground!` };
+    }
+
+    // 5b3. Trickster's Step: every Nth step blinks the bearer 2–4 tiles. The count lives in a
+    // world counter keyed by the modifier, so it survives a save.
+    for (const mod of wornModifiers(this.entity)) {
+      if (!mod.blinkEverySteps || !mod.blinkRange) continue;
+      const key = `steps:${mod.id}`;
+      if (engine.modifyWorldCounter(key, 1) < mod.blinkEverySteps) continue;
+      engine.modifyWorldCounter(key, -engine.getWorldCounter(key));
+      const [lo, hi] = mod.blinkRange;
+      const spots: Array<{ x: number; y: number }> = [];
+      for (let dy = -hi; dy <= hi; dy++) {
+        for (let dx = -hi; dx <= hi; dx++) {
+          const d = Math.max(Math.abs(dx), Math.abs(dy));
+          const bx = this.entity.x + dx;
+          const by = this.entity.y + dy;
+          if (d < lo || d > hi || !engine.map.inBounds(bx, by) || !engine.map.isPassable(bx, by) || engine.map.getEntityAt(bx, by)) continue;
+          spots.push({ x: bx, y: by });
+        }
+      }
+      if (spots.length === 0) continue;
+      const dest = spots[Math.floor(engine.rng() * spots.length)];
+      engine.map.moveEntity(this.entity, dest.x, dest.y);
+      engine.log(`${mod.name} flings ${this.entity.name} across the floor!`);
+      engine.emitGameEvent({ type: 'chaotic_proc', turn: engine.turnCount, actorId: this.entity.id, procType: 'trickster_step', description: mod.name, teleportDestination: dest });
+      engine.recordVisualEffects([{ type: 'screen_flash', color: '#c084fc', durationMs: 150 }]);
     }
 
     // 5c. Dispatch onMove Hook Event

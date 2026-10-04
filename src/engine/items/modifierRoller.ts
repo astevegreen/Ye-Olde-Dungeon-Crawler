@@ -50,13 +50,18 @@ export interface FamilyRollSubject {
   family?: ModifierCategory;
 }
 
-function tierFor(family: ItemFamilyDefinition, floor: number): ItemFamilyTier | undefined {
-  let chosen: ItemFamilyTier | undefined;
-  for (const tier of family.tiers) {
-    if (tier.minFloor <= floor && (!chosen || tier.minFloor >= chosen.minFloor)) chosen = tier;
-  }
-  // A fixed-family item below the family's first floor still gets its shallowest tier.
-  return chosen ?? [...family.tiers].sort((a, b) => a.minFloor - b.minFloor)[0];
+/**
+ * The deepest tier the floor has reached; tiers sharing that floor are variants (the eight
+ * Chaotic effects), one picked by `rng`, the first without it. A fixed-family item below the
+ * family's first floor still gets its shallowest tier.
+ */
+function tierFor(family: ItemFamilyDefinition, floor: number, rng?: () => number): ItemFamilyTier | undefined {
+  const reached = family.tiers.filter((t) => t.minFloor <= floor);
+  const pool = reached.length > 0 ? reached : family.tiers;
+  if (pool.length === 0) return undefined;
+  const depth = reached.length > 0 ? Math.max(...pool.map((t) => t.minFloor)) : Math.min(...pool.map((t) => t.minFloor));
+  const variants = pool.filter((t) => t.minFloor === depth);
+  return variants.length > 1 && rng ? variants[Math.floor(rng() * variants.length)] : variants[0];
 }
 
 /**
@@ -68,10 +73,11 @@ export function familyModifier(
   config: ItemFamilyConfig,
   category: ModifierCategory,
   floor: number,
-  itemId: string
+  itemId: string,
+  rng?: () => number
 ): ItemModifier | undefined {
   const family = config.families.find((f) => f.category === category);
-  const tier = family ? tierFor(family, floor) : undefined;
+  const tier = family ? tierFor(family, floor, rng) : undefined;
   if (!family || !tier) return undefined;
   const { minFloor: _minFloor, ...fields } = tier;
   return {
@@ -98,7 +104,7 @@ export function rollItemFamily(
   itemId: string
 ): ItemModifier | undefined {
   if (!config) return undefined;
-  if (subject.family) return familyModifier(config, subject.family, floor, itemId);
+  if (subject.family) return familyModifier(config, subject.family, floor, itemId, rng);
   if (subject.quality === 'artifact' || !config.categories.includes(subject.category)) return undefined;
 
   const roll = rng();
@@ -106,7 +112,7 @@ export function rollItemFamily(
   for (const family of config.families) {
     if ((family.minFloor ?? 1) > floor) continue;
     cumulative += family.perGame / config.itemsPerGame;
-    if (roll < cumulative) return familyModifier(config, family.category, floor, itemId);
+    if (roll < cumulative) return familyModifier(config, family.category, floor, itemId, rng);
   }
   return undefined;
 }

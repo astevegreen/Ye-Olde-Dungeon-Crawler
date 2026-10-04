@@ -11,15 +11,6 @@ export type ModifierCategory =
   | 'unholy'
   | 'chaotic';
 
-export type ChaoticProcType = 'backlash' | 'teleport' | 'confuse' | 'wild_magic';
-
-export interface ChaoticProcConfig {
-  procChance: number; // 0.0 to 1.0
-  type: ChaoticProcType;
-  param: number; // e.g. damage amount for backlash, range for teleport
-  description: string;
-}
-
 /** Extra melee damage against a defender that answers to `tag` (`Entity.hasTag`). */
 export interface TagCombatBonus {
   tag: string;
@@ -51,7 +42,31 @@ export interface ItemModifier {
   sacredGroundBurn?: number;
   /** While worn, the temple serves the bearer only to cleanse, at double the price. */
   templeShunned?: boolean;
-  chaoticProc?: ChaoticProcConfig;
+
+  // ── Rule-benders (the Chaotic family, Q22). Each is read in one place. ──
+  /** A damaging spell the bearer casts takes a random element of the pack's (`CastSpellAction`). */
+  randomSpellElement?: boolean;
+  /** Each kill heals the bearer this share of max HP (`DeathResolver`). */
+  killHealPercent?: number;
+  /** The bearer cannot rest while this is worn (`AutoRestManager.restRefusal`). */
+  forbidsRest?: boolean;
+  /** Melee attacks strike this many more times; each strike that misses costs `missSelfDamage` HP. */
+  extraMeleeStrikes?: number;
+  missSelfDamage?: number;
+  /** Chance a melee blow against the bearer misses outright (0–1). */
+  evasionBonus?: number;
+  /** Every Nth step the bearer takes blinks it `blinkRange` tiles away (`MovementAction`). */
+  blinkEverySteps?: number;
+  blinkRange?: [number, number];
+  /** Each melee blow the bearer lands is scaled by a uniform roll in this range (Fickle Fortune: 0–2.5). */
+  meleeDamageRoll?: [number, number];
+  /** A cast short of mana accrues no debt, and rolls its surge this many tiers up (`ManaOverflowManager`). */
+  overflowNoDebt?: boolean;
+  overflowTierShift?: number;
+  /** This share of a melee blow the bearer takes is dealt back to the attacker. */
+  reflectMeleePercent?: number;
+  /** Healing the bearer receives is scaled by this (`Actor.heal`). */
+  healingReceivedMultiplier?: number;
   description?: string;
 }
 

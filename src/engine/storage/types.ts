@@ -61,13 +61,6 @@ export interface SerializedWandData {
   maxCharges: number;
 }
 
-export interface SerializedChaoticProcConfig {
-  procChance: number;
-  type: 'backlash' | 'teleport' | 'confuse' | 'wild_magic';
-  param: number;
-  description: string;
-}
-
 export interface SerializedTagCombatBonus {
   tag: string;
   multiplier: number;
@@ -94,7 +87,19 @@ export interface SerializedItemModifier {
   tagBonuses?: SerializedTagCombatBonus[];
   sacredGroundBurn?: number;
   templeShunned?: boolean;
-  chaoticProc?: SerializedChaoticProcConfig;
+  randomSpellElement?: boolean;
+  killHealPercent?: number;
+  forbidsRest?: boolean;
+  extraMeleeStrikes?: number;
+  missSelfDamage?: number;
+  evasionBonus?: number;
+  blinkEverySteps?: number;
+  blinkRange?: [number, number];
+  meleeDamageRoll?: [number, number];
+  overflowNoDebt?: boolean;
+  overflowTierShift?: number;
+  reflectMeleePercent?: number;
+  healingReceivedMultiplier?: number;
   description?: string;
 }
 

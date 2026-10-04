@@ -240,9 +240,21 @@ export class Actor extends Entity implements IItemContainer, IEquipmentBearer {
     }
   }
 
+  /** Healing scaled below a whole point carries over, so a halved rest still heals every other tick. */
+  private healCarry = 0;
+
   public override takeDamage(rawAmount: number): { damageDealt: number; killed: boolean } {
     if (this.isInvulnerable || !this.capabilities.isDestructible) {
       return { damageDealt: 0, killed: false };
+    }
+    // Worn items that make every blow worse (Hexed, Glass Fury), whatever dealt it.
+    if (rawAmount > 0) {
+      for (const item of this.inventory.paperdoll.getEquippedItems()) {
+        for (const mod of item.modifiers) {
+          if (mod.damageTakenMultiplier) rawAmount = Math.round(rawAmount * mod.damageTakenMultiplier);
+          if (mod.damageTakenFlatBonus) rawAmount += mod.damageTakenFlatBonus;
+        }
+      }
     }
     rawAmount = this.limitDamageToHpFloor(rawAmount);
     if (this.morphEnvelope) {
@@ -261,6 +273,20 @@ export class Actor extends Entity implements IItemContainer, IEquipmentBearer {
       }
     }
     return super.takeDamage(rawAmount);
+  }
+
+  public override heal(amount: number): number {
+    let multiplier = 1;
+    for (const item of this.inventory.paperdoll.getEquippedItems()) {
+      for (const mod of item.modifiers) {
+        if (mod.healingReceivedMultiplier !== undefined) multiplier *= mod.healingReceivedMultiplier;
+      }
+    }
+    if (multiplier === 1 || amount <= 0) return super.heal(amount);
+    const scaled = amount * multiplier + this.healCarry;
+    const whole = Math.floor(scaled);
+    this.healCarry = scaled - whole;
+    return super.heal(whole);
   }
 
   /**

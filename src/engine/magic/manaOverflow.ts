@@ -54,12 +54,29 @@ export function lingeringDebtFloor(engine: GameEngine, debt: number): number {
  * surge from the pack's tier table. Deterministic: draws only from `engine.prng`.
  */
 export class ManaOverflowManager {
-  public static evaluateOverflow(engine: GameEngine, caster: Entity, deficit: number): ManaOverflowResolution {
+  /**
+   * `options` are what the caster wears (Void-Kissed): `accrueDebt: false` rolls the surge as
+   * if the deficit were owed but leaves the debt alone; `tierShift` rolls it that many tiers
+   * up the pack's table (clamped to the last).
+   */
+  public static evaluateOverflow(
+    engine: GameEngine,
+    caster: Entity,
+    deficit: number,
+    options?: { accrueDebt?: boolean; tierShift?: number }
+  ): ManaOverflowResolution {
     const player = caster instanceof Player ? caster : undefined;
-    const totalDebt = player ? player.accrueVoidDebt(deficit) : deficit;
+    const accrue = options?.accrueDebt ?? true;
+    const totalDebt = player ? (accrue ? player.accrueVoidDebt(deficit) : player.voidDebt + deficit) : deficit;
     const effects: VisualEffectDescriptor[] = [];
 
-    const reached = getOverflowTier(getOverflowConfig(engine), totalDebt);
+    const config = getOverflowConfig(engine);
+    let reached = getOverflowTier(config, totalDebt);
+    const shift = options?.tierShift ?? 0;
+    if (reached && shift > 0 && config) {
+      const index = Math.min(config.tiers.length, reached.index + shift);
+      reached = { tier: config.tiers[index - 1], index };
+    }
     if (!reached || reached.tier.outcomes.length === 0) {
       return { occurred: false, tier: 0, deficit, totalDebt, effects, damageToCaster: 0 };
     }

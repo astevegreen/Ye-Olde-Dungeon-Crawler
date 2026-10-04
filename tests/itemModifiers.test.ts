@@ -5,7 +5,7 @@ import { Player } from '../src/engine/entities/player';
 import { Monster } from '../src/engine/entities/monster';
 import { Item } from '../src/engine/items/item';
 import { familyModifier } from '../src/engine/items/modifierRoller';
-import type { ModifierCategory } from '../src/engine/items/modifiers';
+import type { ItemModifier, ModifierCategory } from '../src/engine/items/modifiers';
 import { COTW_ITEM_FAMILIES } from '../src/content/cotw/itemFamilies';
 import { MeleeAttackAction } from '../src/engine/actions/combat';
 import { CastSpellAction } from '../src/engine/actions/spell-actions';
@@ -13,11 +13,15 @@ import { UncurseAction } from '../src/engine/actions/uncurseAction';
 import { EquipAction } from '../src/engine/actions/inventory-actions';
 import { MovementAction } from '../src/engine/actions/movement';
 import { TILES } from '../src/engine/grid/tile';
+import { RestAction } from '../src/engine/actions/rest';
+import { AutoRestManager } from '../src/engine/actions/autoRest';
+import { ManaOverflowManager } from '../src/engine/magic/manaOverflow';
+import { cotwManifest } from '../src/content/cotw';
 import { TempleService } from '../src/engine/economy/services';
 import { ItemFactory } from '../src/engine/items/factory';
 import { addCurrencyToPlayer } from '../src/engine/economy/currency';
 import { serializeItem, deserializeItem } from '../src/engine/storage/serializer';
-import type { GameEvent, ChaoticProcEvent, UncurseEvent } from '../src/engine/events';
+import type { GameEvent, UncurseEvent } from '../src/engine/events';
 import type { SpellDefinition } from '../src/engine/magic/types';
 
 /** The cotw family's modifier for an item found on `floor` (tier 1 on floor 1, tier 2 on floor 10/15, tier 3 on 25). */
@@ -399,97 +403,146 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
     });
   });
 
-  describe('Chaotic Procs: Backlash & Spatial Teleportation', () => {
-    it('triggers backlash self-damage and emits ChaoticProcEvent on proc', () => {
-      const chaoticBlade = new Item({
-        id: 'cb1',
-        name: 'Frenetic Blade',
-        category: 'weapon',
-        slot: 'mainHand',
-        weight: 1500,
-        bulk: 2000,
-        identified: true,
-      });
-      // 100% chance to proc 5 backlash damage
-      chaoticBlade.addModifier({
-        id: 'mod_backlash_test',
-        name: 'Frenetic',
-        alignment: 'chaotic',
-        category: 'chaotic',
-        meleeDamageMultiplier: 1.3,
-        chaoticProc: {
-          procChance: 1.0,
-          type: 'backlash',
-          param: 5,
-          description: 'Volatile recoil',
-        },
-      });
+  describe('Loki-touched Chaotic (Q22): eight rule-benders that do not bind', () => {
+    const chaotic = (name: string, fields: Partial<ItemModifier>): ItemModifier => ({ id: `c-${name}`, name, alignment: 'chaotic', category: 'chaotic', ...fields });
+    const wear = (actor: Player | Monster, slot: 'mainHand' | 'fingerLeft' | 'head', modifier: ItemModifier) => {
+      const item = new Item({ id: `${actor.id}-${slot}`, name: 'Thing', category: slot === 'mainHand' ? 'weapon' : slot === 'head' ? 'helmet' : 'ring', slot, weight: 100, bulk: 100, identified: true });
+      item.addModifier(modifier);
+      actor.inventory.paperdoll.equip(item, slot);
+      return item;
+    };
+    const dummy = (id: string, x: number, y = 5, attack = 10) => {
+      const m = new Monster({ id, name: id, position: { x, y }, stats: { hp: 100, maxHp: 100, attack, defense: 0 } });
+      map.addEntity(m);
+      return m;
+    };
 
-      player.inventory.paperdoll.equip(chaoticBlade, 'mainHand');
-      player.hp = 30;
-
-      const target = new Monster({
-        id: 'mon1',
-        name: 'Target Dummy',
-        position: { x: 5, y: 5 },
-        stats: { hp: 100, maxHp: 100, attack: 0, defense: 0 },
-      });
-
-      const attack = new MeleeAttackAction(player, target);
-      attack.perform(engine);
-
-      // Player took 5 backlash damage
-      expect(player.hp).toBe(25);
-
-      const procEvent = emittedEvents.find((e) => e.type === 'chaotic_proc') as ChaoticProcEvent;
-      expect(procEvent).toBeDefined();
-      expect(procEvent.procType).toBe('backlash');
-      expect(procEvent.damageDealt).toBe(5);
+    it('none of the eight binds', () => {
+      const family = COTW_ITEM_FAMILIES.families.find((f) => f.category === 'chaotic')!;
+      expect(family.binds).toBeFalsy();
+      expect(family.tiers.map((t) => t.name)).toEqual([
+        'Wildfire', 'Bloodthirst', 'Twinstrike', 'Glass Fury', "Trickster's Step", 'Fickle Fortune', 'Void-Kissed', 'Mirror Hide',
+      ]);
     });
 
-    it('triggers tactical teleportation and emits ChaoticProcEvent on spatial warp proc', () => {
-      const warpingStaff = new Item({
-        id: 'ws1',
-        name: 'Warping Staff',
-        category: 'weapon',
-        slot: 'mainHand',
-        weight: 1500,
-        bulk: 2000,
-        identified: true,
-      });
-      // 100% chance to teleport within range 3
-      warpingStaff.addModifier({
-        id: 'mod_warp_test',
-        name: 'Warping',
-        alignment: 'chaotic',
-        category: 'chaotic',
-        chaoticProc: {
-          procChance: 1.0,
-          type: 'teleport',
-          param: 3,
-          description: 'Spatial dislocation',
-        },
-      });
+    it('Twinstrike strikes twice in one action, and a miss costs 3 HP', () => {
+      wear(player, 'mainHand', chaotic('Twinstrike', { extraMeleeStrikes: 1, missSelfDamage: 3 }));
+      player.attack = 10;
+      player.hp = 50;
+      const foe = dummy('foe', 6);
+      const res = new MeleeAttackAction(player, foe).perform(engine);
+      expect(100 - foe.hp).toBe(20);
+      expect(res.cost).toBeGreaterThan(0);
+      expect(emittedEvents.filter((e) => e.type === 'damage_dealt').length).toBe(2);
 
-      player.inventory.paperdoll.equip(warpingStaff, 'mainHand');
-      const startX = player.x;
-      const startY = player.y;
+      // Against a defender nothing can hit, the first blow misses and the second never comes.
+      const slippery = dummy('slippery', 4);
+      wear(slippery, 'fingerLeft', chaotic("Trickster's Step", { evasionBonus: 1 }));
+      player.gainEnergy(100);
+      new MeleeAttackAction(player, slippery).perform(engine);
+      expect(slippery.hp).toBe(100);
+      expect(player.hp).toBe(47);
+    });
 
-      const target = new Monster({
-        id: 'mon1',
-        name: 'Target Dummy',
-        position: { x: startX + 1, y: startY },
-        stats: { hp: 100, maxHp: 100, attack: 0, defense: 0 },
-      });
+    it('Glass Fury adds half again to what the bearer deals and to what it takes', () => {
+      wear(player, 'head', chaotic('Glass Fury', { meleeDamageMultiplier: 1.5, spellDamageMultiplier: 1.5, damageTakenMultiplier: 1.5 }));
+      player.attack = 10;
+      player.hp = 100;
+      const foe = dummy('foe', 6, 5, 10);
+      new MeleeAttackAction(player, foe).perform(engine);
+      expect(100 - foe.hp).toBe(15);
+      foe.gainEnergy(100);
+      new MeleeAttackAction(foe, player).perform(engine);
+      expect(100 - player.hp).toBe(15);
+    });
 
-      const attack = new MeleeAttackAction(player, target);
-      attack.perform(engine);
+    it('Fickle Fortune rolls each blow between nothing and two and a half times', () => {
+      wear(player, 'mainHand', chaotic('Fickle Fortune', { meleeDamageRoll: [0, 2.5] }));
+      player.attack = 10;
+      const foe = dummy('foe', 6);
+      engine.rng = () => 0.999; // the top of the roll: ×2.4975
+      new MeleeAttackAction(player, foe).perform(engine);
+      const top = 100 - foe.hp;
+      expect(top).toBe(Math.round(player.attack * 0.999 * 2.5));
+      expect(top).toBeGreaterThan(player.attack * 2);
+      engine.rng = () => 0; // the bottom: a scratch (the mitigation floor is 1)
+      player.gainEnergy(100);
+      new MeleeAttackAction(player, foe).perform(engine);
+      expect(100 - foe.hp).toBe(top + 1);
+    });
 
-      const procEvent = emittedEvents.find((e) => e.type === 'chaotic_proc') as ChaoticProcEvent;
-      expect(procEvent).toBeDefined();
-      expect(procEvent.procType).toBe('teleport');
-      expect(procEvent.teleportDestination).toBeDefined();
-      expect(player.position).toEqual(procEvent.teleportDestination);
+    it('Mirror Hide turns a quarter of each blow back, and halves healing on the bearer', () => {
+      wear(player, 'head', chaotic('Mirror Hide', { reflectMeleePercent: 0.25, healingReceivedMultiplier: 0.5 }));
+      player.hp = 50;
+      const foe = dummy('foe', 6, 5, 20);
+      new MeleeAttackAction(foe, player).perform(engine);
+      expect(player.hp).toBe(30);
+      expect(foe.hp).toBe(95);
+      expect(player.heal(10)).toBe(5);
+      // Halving a rest's one point a tick still heals every other tick.
+      expect(player.heal(1) + player.heal(1)).toBe(1);
+    });
+
+    it('Bloodthirst heals 15% of max HP on a kill and forbids rest', () => {
+      wear(player, 'mainHand', chaotic('Bloodthirst', { killHealPercent: 0.15, forbidsRest: true }));
+      player.maxHp = 100;
+      player.hp = 50;
+      player.attack = 200;
+      const foe = dummy('foe', 6);
+      new MeleeAttackAction(player, foe).perform(engine);
+      expect(foe.isAlive()).toBe(false);
+      expect(player.hp).toBe(65);
+      expect(AutoRestManager.restRefusal(engine)).toMatch(/will not let you rest/);
+      expect(new RestAction(player).perform(engine).success).toBe(false);
+    });
+
+    it("Trickster's Step flings the bearer 2–4 tiles on every tenth step, and the count survives in the world state", () => {
+      wear(player, 'fingerLeft', chaotic("Trickster's Step", { evasionBonus: 0.25, blinkEverySteps: 10, blinkRange: [2, 4] }));
+      const start = { x: player.x, y: player.y };
+      for (let i = 0; i < 9; i++) {
+        player.gainEnergy(100);
+        expect(new MovementAction(player, i % 2 === 0 ? 1 : -1, 0).perform(engine).success).toBe(true);
+      }
+      expect(engine.getWorldCounter('steps:c-Trickster\'s Step')).toBe(9);
+      expect(Math.abs(player.x - start.x) + Math.abs(player.y - start.y)).toBeLessThanOrEqual(1);
+      player.gainEnergy(100);
+      const before = { x: player.x, y: player.y };
+      new MovementAction(player, 1, 0).perform(engine);
+      const stepped = { x: before.x + 1, y: before.y };
+      const d = Math.max(Math.abs(player.x - stepped.x), Math.abs(player.y - stepped.y));
+      expect(d).toBeGreaterThanOrEqual(2);
+      expect(d).toBeLessThanOrEqual(4);
+      expect(engine.getWorldCounter('steps:c-Trickster\'s Step')).toBe(0);
+      expect(emittedEvents.some((e) => e.type === 'chaotic_proc')).toBe(true);
+    });
+
+    it('Wildfire gives a damaging spell a random element of the pack, at +40% power', () => {
+      const fire = new GameEngine({ map: GameMap.createBoxRoom(20, 20), player: new Player({ id: 'p2', name: 'Caster', position: { x: 5, y: 5 }, stats: { hp: 100, maxHp: 100, attack: 10, defense: 0 } }), manifest: cotwManifest });
+      fire.player.gainEnergy(100);
+      fire.player.mana = 50;
+      fire.player.spellsKnown.push('firebolt');
+      wear(fire.player, 'fingerLeft', chaotic('Wildfire', { randomSpellElement: true, spellDamageMultiplier: 1.4 }));
+      const foe = new Monster({ id: 'f', name: 'f', position: { x: 7, y: 5 }, stats: { hp: 500, maxHp: 500, attack: 1, defense: 0 } });
+      fire.map.addEntity(foe);
+      fire.rng = () => 0.999; // the last element of the pack's list, which is not firebolt's own
+      const elements = fire.affinityMatrix.getAllElements().map((e) => e.id).filter((e) => e !== 'healing' && e !== 'physical');
+      const res = new CastSpellAction(fire.player, 'firebolt', 7, 5).perform(fire);
+      expect(res.success).toBe(true);
+      const logged = fire.messages.join('\n');
+      expect(logged).toContain(`Wildfire turns Firebolt to ${elements[elements.length - 1]}`);
+      expect(logged).toContain(`${elements[elements.length - 1]} damage`);
+    });
+
+    it('Void-Kissed casts past empty leave no debt and surge a tier worse', () => {
+      const void_ = new GameEngine({ map: GameMap.createBoxRoom(20, 20), player: new Player({ id: 'p3', name: 'Caster', position: { x: 5, y: 5 }, stats: { hp: 100, maxHp: 100, attack: 10, defense: 0 } }), manifest: cotwManifest });
+      void_.player.voidDebt = 0;
+      const plain = ManaOverflowManager.evaluateOverflow(void_, void_.player, 3, { accrueDebt: true, tierShift: 0 });
+      expect(void_.player.voidDebt).toBe(3);
+      expect(plain.tier).toBe(1);
+      void_.player.voidDebt = 0;
+      const kissed = ManaOverflowManager.evaluateOverflow(void_, void_.player, 3, { accrueDebt: false, tierShift: 1 });
+      expect(void_.player.voidDebt).toBe(0);
+      expect(kissed.tier).toBe(2);
     });
   });
 

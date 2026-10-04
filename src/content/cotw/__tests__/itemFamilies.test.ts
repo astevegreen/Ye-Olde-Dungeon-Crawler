@@ -60,6 +60,16 @@ describe('cotw item families (Q1 A, Q20 + Q33 B)', () => {
     expect([blessed(1).name, blessed(10).name, blessed(25).name]).toEqual(['Blessed', 'Sanctified', 'Celestial']);
   });
 
+  it('rolls each of the eight Chaotic variants, at any depth', () => {
+    const prng = new PRNG(31);
+    const seen = new Set<string>();
+    for (let i = 0; i < 400; i++) {
+      const mod = rollItemFamily({ ...sword, family: 'chaotic' }, 1 + (i % 50), () => prng.next(), COTW_ITEM_FAMILIES, `c-${i}`);
+      seen.add(mod!.name);
+    }
+    expect([...seen].sort()).toEqual(['Bloodthirst', 'Fickle Fortune', 'Glass Fury', 'Mirror Hide', "Trickster's Step", 'Twinstrike', 'Void-Kissed', 'Wildfire']);
+  });
+
   it('is deterministic: the same seed rolls the same family with the same id', () => {
     const a = new PRNG(4242);
     const b = new PRNG(4242);

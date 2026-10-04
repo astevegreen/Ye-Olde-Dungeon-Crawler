@@ -13,6 +13,7 @@ import { flightRecorder } from '../debug/flightRecorder';
 import { findTaggedEntitiesInRadius } from '../combat/radialAuraFilter';
 import { traceProjectile } from '../magic/targeting';
 import { ManaOverflowManager, canOvercast } from '../magic/manaOverflow';
+import { sumWorn, wearsFlag } from '../items/wornModifiers';
 import { GrimoireMatrixManager } from '../magic/grimoireMatrix';
 
 /** World counter of casts whose grid shaping the log has explained, and how many it explains. */
@@ -69,11 +70,21 @@ export class CastSpellAction implements Action {
         ? GrimoireMatrixManager.resolveEffectiveSpellDetailed(engine, player, slotIndex)
         : undefined;
 
-    const spell =
+    let spell =
       matrixEffective?.spell ??
       (engine.manifest?.spells?.find((s) => s.id === this.spellId) ?? getSpell(this.spellId));
     if (!spell) {
       return { success: false, cost: 0, message: `Unknown spell: ${this.spellId}` };
+    }
+
+    // Wildfire: a damaging spell takes a random element of the pack's.
+    if (wearsFlag(this.caster, 'randomSpellElement') && spell.element && spell.effects?.some((e) => e.type === 'damage')) {
+      const elements = engine.affinityMatrix.getAllElements().map((e) => e.id).filter((e) => e !== 'healing' && e !== 'physical');
+      if (elements.length > 0) {
+        const element = elements[Math.floor(engine.rng() * elements.length)];
+        spell = { ...spell, element, effects: spell.effects.map((e) => ('element' in e && e.element ? { ...e, element } : e)) };
+        engine.log(`Wildfire turns ${spell.name} to ${element}!`);
+      }
     }
 
     // Find targeted entity if applicable
@@ -236,7 +247,10 @@ export class CastSpellAction implements Action {
 
     // A cast paid partly from debt rolls a surge from the pack's overflow table
     if (player && paysCosts && manaDeficit > 0) {
-      const overflowRes = ManaOverflowManager.evaluateOverflow(engine, this.caster, manaDeficit);
+      const overflowRes = ManaOverflowManager.evaluateOverflow(engine, this.caster, manaDeficit, {
+        accrueDebt: !wearsFlag(player, 'overflowNoDebt'),
+        tierShift: sumWorn(player, 'overflowTierShift'),
+      });
       if (overflowRes.effects.length > 0) {
         result.effects = [...(result.effects ?? []), ...overflowRes.effects];
       }

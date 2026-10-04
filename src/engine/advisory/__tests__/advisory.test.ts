@@ -36,7 +36,7 @@ describe('Town Sage Run Advisory Heuristics', () => {
     expect(warn?.message).toContain('Backpack is currently at 83% capacity');
   });
 
-  it('detects excessive loose currency (> 5,000 CP or > 2,000g coin weight)', () => {
+  it('flags coins riding loose in the pack, outside the purse', () => {
     const player = new Player({
       id: 'p1',
       name: 'Hero',
@@ -53,7 +53,7 @@ describe('Town Sage Run Advisory Heuristics', () => {
     const warn = RunAdvisor.checkLooseCurrency(player);
     expect(warn).not.toBeNull();
     expect(warn?.type).toBe('currency');
-    expect(warn?.message).toContain('6,000 CP');
+    expect(warn?.message).toContain('60 coins worth 6,000 CP');
     expect(warn?.recommendation).toContain('town banker');
   });
 

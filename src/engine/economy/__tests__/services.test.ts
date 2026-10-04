@@ -117,15 +117,15 @@ describe('Town Services (Temple, Sage, Bank)', () => {
   });
 
   describe('Bank of Bjarnarhaven (Coin Compaction)', () => {
-    it('compacts heavy low-value coins into high-denomination platinum and gold at zero fee', () => {
-      // Player carries 500 Copper (5,000g) and 60 Silver (600g) = 5,600g total coins
+    it('exchanges many low-value coins for the fewest of the same worth, at zero fee', () => {
+      // Player carries 500 Copper and 60 Silver: 560 coins
       addCurrencyToPlayer(player, { copper: 500, silver: 60, gold: 0, platinum: 0 });
       // Total value: 500 CP + 600 CP = 1100 CP
       expect(getPlayerTotalCp(player)).toBe(1100);
 
       const result = BankService.compactCurrency(player);
       expect(result.success).toBe(true);
-      expect(result.message).toContain('Carry weight reduced');
+      expect(result.message).toContain('560 coins for 2');
 
       // Value strictly preserved
       expect(getPlayerTotalCp(player)).toBe(1100);
@@ -139,8 +139,8 @@ describe('Town Services (Temple, Sage, Bank)', () => {
         copper: 0,
       });
 
-      // Total new coin weight: 2 * 10g = 20g (down from 5,600g!)
-      expect(result.weightSavedGrams).toBe(5580);
+      // 560 coins become 2.
+      expect(result.coinsSaved).toBe(558);
     });
   });
 });

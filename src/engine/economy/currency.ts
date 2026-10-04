@@ -4,7 +4,7 @@ import type { Container } from '../items/container';
 import {
   type CoinDenomination,
   COIN_VALUES,
-  COIN_WEIGHT_GRAMS,
+  COIN_BULK_CM3,
   COIN_NAMES,
   COIN_ABBREV,
   type CurrencyBreakdown,
@@ -31,8 +31,8 @@ export class CoinItem extends Item {
       name: `${count} ${singularOrPlural}`,
       unidentifiedName: 'Pile of Coins',
       category: 'currency',
-      weight: count * COIN_WEIGHT_GRAMS,
-      bulk: Math.max(1, Math.ceil(count * 0.5)),
+      weight: 0,
+      bulk: count * COIN_BULK_CM3,
       quality: 'normal',
       identified: true,
       description: `Minted ${denom} coins of the realm. Each coin is worth ${formatCurrency(COIN_VALUES[denom])}.`,
@@ -49,20 +49,20 @@ export class CoinItem extends Item {
     return this.count * COIN_VALUES[this.denomination];
   }
 
+  /** Coins weigh nothing; they take space instead (`COIN_BULK_CM3` each). */
   public override totalWeight(): number {
-    return this.count * COIN_WEIGHT_GRAMS;
+    return 0;
   }
 
   public override totalBulk(): number {
-    return Math.max(1, Math.ceil(this.count * 0.5));
+    return this.count * COIN_BULK_CM3;
   }
 
   public setCount(newCount: number): void {
     this.count = Math.max(0, newCount);
     const singularOrPlural = this.count === 1 ? COIN_NAMES[this.denomination].singular : COIN_NAMES[this.denomination].plural;
     (this as { name: string }).name = `${this.count} ${singularOrPlural}`;
-    (this as { weight: number }).weight = this.count * COIN_WEIGHT_GRAMS;
-    (this as { bulk: number }).bulk = Math.max(1, Math.ceil(this.count * 0.5));
+    (this as { bulk: number }).bulk = this.count * COIN_BULK_CM3;
   }
 
   public add(amount: number): void {
@@ -211,31 +211,51 @@ export function addCoinsToContainer(
   return container.addItem(newCoin);
 }
 
+/** How many more coins of one metal `container` can take, by its room and its ancestors'. */
+export function coinRoom(container: Container, denomination: CoinDenomination): number {
+  const fits = (count: number) => container.canContain(new CoinItem({ id: 'coin-room-probe', denomination, count })).allowed;
+  let high = Math.max(0, Math.floor((container.maxBulkCapacity - container.containedBulk()) / COIN_BULK_CM3));
+  if (high === 0 || !fits(1)) return 0;
+  if (fits(high)) return high;
+  let low = 1;
+  while (high - low > 1) {
+    const mid = Math.floor((low + high) / 2);
+    if (fits(mid)) low = mid;
+    else high = mid;
+  }
+  return low;
+}
+
 /**
- * Deposits currency to player, prioritizing purse before primaryPack.
+ * Puts coins in `container` even past its room, onto a pile of the same metal when it has
+ * one: money paid to a hero is never destroyed, even when nothing has room for it.
+ */
+export function stowCoins(container: Container, coins: CoinItem): void {
+  const pile = container.getItems().find((i): i is CoinItem => i instanceof CoinItem && i.denomination === coins.denomination);
+  if (pile) pile.add(coins.count);
+  else container.placeItem(coins);
+}
+
+/**
+ * Pays coins to the hero: the purse while it has room, then the pack (`storeItem`). Coins
+ * neither can hold go to the pack anyway, past its room, so a sale or a reward is never lost.
  */
 export function addCurrencyToPlayer(player: Player, amount: CurrencyBreakdown | number): boolean {
   const breakdown = typeof amount === 'number' ? breakdownChange(amount) : amount;
-  const targetContainer = player.inventory.purse ?? player.inventory.primaryPack;
-  const overflowContainer = player.inventory.primaryPack;
-
   const denoms: CoinDenomination[] = ['platinum', 'gold', 'silver', 'copper'];
-  let allSuccess = true;
+  let allStored = true;
 
   for (const denom of denoms) {
     const count = breakdown[denom];
-    if (count > 0) {
-      const added = addCoinsToContainer(targetContainer, denom, count, `${player.id}-c`);
-      if (!added && targetContainer !== overflowContainer) {
-        const overflowAdded = addCoinsToContainer(overflowContainer, denom, count, `${player.id}-c-overflow`);
-        if (!overflowAdded) allSuccess = false;
-      } else if (!added) {
-        allSuccess = false;
-      }
+    if (count <= 0) continue;
+    const coins = new CoinItem({ id: `${player.id}-c-${denom}-0`, denomination: denom, count });
+    if (!player.inventory.storeItem(coins).success) {
+      stowCoins(player.inventory.primaryPack, coins);
+      allStored = false;
     }
   }
 
-  return allSuccess;
+  return allStored;
 }
 
 /**

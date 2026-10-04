@@ -1,4 +1,4 @@
-import type { ItemDefinition } from '../../../engine';
+import { COIN_BULK_CM3, type ItemDefinition } from '../../../engine';
 
 export const COTW_CONTAINERS: ItemDefinition[] = [
   {
@@ -54,13 +54,13 @@ export const COTW_CONTAINERS: ItemDefinition[] = [
     weight: 80,
     bulk: 120,
     identified: true,
-    description: 'A modest drawstring pouch of soft doe-skin suited for keeping silver and gold coins organized.',
+    description: 'A modest drawstring pouch of soft doe-skin. It holds 300 coins of any metal.',
     value: 15,
     itemType: 'container',
     containerConfig: {
       containerType: 'purse',
       maxWeightCapacity: 5000,
-      maxBulkCapacity: 800,
+      maxBulkCapacity: 300 * COIN_BULK_CM3,
       acceptedCategories: ['currency'],
     },
   },
@@ -76,13 +76,13 @@ export const COTW_CONTAINERS: ItemDefinition[] = [
     bulk: 250,
     quality: 'enchanted',
     identified: false,
-    description: 'Reinforced with liquid-tight quicksilver seams, it holds a far larger fortune than a common pouch.',
+    description: 'Reinforced with liquid-tight quicksilver seams, it holds 1,500 coins, a far larger fortune than a common pouch.',
     value: 220,
     itemType: 'container',
     containerConfig: {
       containerType: 'purse',
       maxWeightCapacity: 15000,
-      maxBulkCapacity: 2500,
+      maxBulkCapacity: 1500 * COIN_BULK_CM3,
       acceptedCategories: ['currency'],
     },
   },

@@ -40,7 +40,7 @@ const TOWN_ROLE_HELP: Partial<Record<string, string>> = {
   merchant: 'Buy and sell goods',
   priest: 'Lift curses and restore vitality',
   sage: 'Identify items and seek run advice',
-  banker: 'Compact heavy coins into lighter ones',
+  banker: 'Exchange coins for fewer of the same worth',
   trainer: 'Bond with and train a companion',
   guard: 'Local news and warnings',
 };
@@ -225,7 +225,7 @@ export class ContextHelp {
             { key: 'I / A / B', label: 'Identify items, Seek Run Advisory, or Open Bestiary' },
             { key: 'Esc', label: 'Exit shop or return to town streets' },
           ],
-          tip: `Tip: Always compact loose copper and silver at ${resolveBranding(manifest).bankerTitle} before entering the dungeon!`,
+          tip: `Tip: When your purse fills, exchange copper and silver for gold at ${resolveBranding(manifest).bankerTitle}: fewer coins, the same worth.`,
         };
 
       case 'inspect':

@@ -3,6 +3,7 @@ import type { ItemStatModifiers } from './item';
 import { Container } from './container';
 import { WandItem, ScrollItem, PotionItem } from './consumables';
 import { CoinItem } from '../economy/currency';
+import { COIN_BULK_CM3 } from '../economy/types';
 import type { Predicate } from '../predicates/types';
 
 export class ItemFactory {
@@ -196,7 +197,7 @@ export class ItemFactory {
       weight: 150,
       bulk: 300,
       maxWeightCapacity: 4000,
-      maxBulkCapacity: 1500,
+      maxBulkCapacity: 300 * COIN_BULK_CM3,
       acceptedCategories: ['currency'],
       identified: true,
       description: 'A soft velvet drawstring pouch dedicated to holding coins.',
@@ -213,7 +214,7 @@ export class ItemFactory {
       weight: 180,
       bulk: 350,
       maxWeightCapacity: 5000,
-      maxBulkCapacity: 2000,
+      maxBulkCapacity: 300 * COIN_BULK_CM3,
       acceptedCategories: ['currency'],
       identified: true,
       description: 'A sturdy leather coin pouch with a secure leather cinch.',

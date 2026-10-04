@@ -7,7 +7,12 @@ export const COIN_VALUES: Record<CoinDenomination, number> = {
   platinum: 1000,
 };
 
-export const COIN_WEIGHT_GRAMS = 10; // Every coin weighs exactly 10 grams
+/**
+ * Coins weigh nothing but take space: every coin, whatever its metal, takes this many cm³ of a
+ * purse's or pack's volume. A purse's capacity in coins is its `maxBulkCapacity` divided by
+ * this, so trading copper for gold (the banker) is how a hero carries more value.
+ */
+export const COIN_BULK_CM3 = 10;
 
 export const COIN_NAMES: Record<CoinDenomination, { singular: string; plural: string }> = {
   copper: { singular: 'Copper Coin', plural: 'Copper Coins' },
@@ -48,5 +53,6 @@ export interface ServiceResult {
   success: boolean;
   message: string;
   costInCp?: number;
-  weightSavedGrams?: number;
+  /** The banker's exchange: how many fewer coins the hero carries afterwards. */
+  coinsSaved?: number;
 }

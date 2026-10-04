@@ -214,6 +214,16 @@ export class Container extends Item {
       }
     }
 
+    this.placeItem(item);
+    return true;
+  }
+
+  /**
+   * Puts an item in with no capacity check and no merging. A load uses it, since the save
+   * already held the item and a capacity that shrank since must not lose it; so do coins
+   * paid to a hero with no room left, since money is never destroyed.
+   */
+  public placeItem(item: Item): void {
     this.items.push(item);
     item.parentId = this.id;
     itemIndex.register(item, { kind: 'container', containerId: this.id });
@@ -223,7 +233,6 @@ export class Container extends Item {
         item.setOwnerId(this.ownerId);
       }
     }
-    return true;
   }
 
   public removeItem(itemId: string): Item | null {

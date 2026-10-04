@@ -162,8 +162,9 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
       enchantmentLevel: node.enchantmentLevel,
       elementalAffix: node.elementalAffix,
       containerType: node.containerType,
-      maxWeightCapacity: node.maxWeightCapacity,
-      maxBulkCapacity: node.maxBulkCapacity,
+      // Capacity is the definition's, like hooks: nothing in a run changes it.
+      maxWeightCapacity: def?.containerConfig?.maxWeightCapacity ?? node.maxWeightCapacity,
+      maxBulkCapacity: def?.containerConfig?.maxBulkCapacity ?? node.maxBulkCapacity,
       maxSlots: node.maxSlots,
       acceptedCategories: node.acceptedCategories,
       aspectState: node.aspectState,
@@ -172,9 +173,10 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
       ownerId: node.ownerId ?? null,
     });
 
-    // No merging: two stacks saved apart come back apart.
+    // Put back exactly what was saved: no merging, so two stacks saved apart come back
+    // apart, and no capacity check, so a capacity that shrank since loses nothing.
     for (const childNode of node.items) {
-      container.addItem(deserializeItem(childNode, definitions), false);
+      container.placeItem(deserializeItem(childNode, definitions));
     }
     if (node.opened) container.markOpened();
 
@@ -938,6 +940,8 @@ export function deserializeGame(
       inventory.paperdoll.unequip(slot);
     }
   }
+  // An older save's purse may hold more coins than it has room for now.
+  inventory.settlePurse();
 
   // 3. Reconstruct Player
   const pData = saveData.player;

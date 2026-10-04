@@ -1,6 +1,8 @@
 import { Paperdoll, type EquipmentStats, type EquipmentSlotDefinition } from './paperdoll';
 import { Container } from '../items/container';
 import type { Item, EquipmentSlot } from '../items/item';
+import { CoinItem, coinRoom, stowCoins } from '../economy/currency';
+import { COIN_BULK_CM3, COIN_VALUES } from '../economy/types';
 import {
   getEncumbranceLevel,
   getEncumbranceMultiplier,
@@ -106,7 +108,13 @@ export class InventoryManager {
    * First tries utility belt (if quick-draw slot available), then primary pack.
    */
   public storeItem(item: Item): { success: boolean; destination: string; reason?: string } {
-    // 1. Currency goes to the purse (if equipped), then the pack. Container.addItem
+    // 1. Coins fill the purse, and what it has no room for goes to the pack.
+    if (item instanceof CoinItem) {
+      const stored = this.storeCoins(item);
+      if (stored.success && this.ownerId) item.ownerId = this.ownerId;
+      return stored;
+    }
+    //    Other currency goes to the purse (if equipped), then the pack. Container.addItem
     //    merges it into a same-denomination pile there; the absorbed pile's id retires.
     if (item.category === 'currency') {
       const targets: Array<{ container: Container | null; dest: string }> = [
@@ -356,29 +364,89 @@ export class InventoryManager {
   }
 
   /**
+   * Coins fill the purse while it has room and the rest go to the pack, so a pile that only
+   * partly fits is split. All or nothing overall: a pile the two can't hold between them
+   * stays whole where it was.
+   */
+  private storeCoins(coins: CoinItem): { success: boolean; destination: string; reason?: string } {
+    const purse = this.purse;
+    const toPurse = purse ? Math.min(coins.count, coinRoom(purse, coins.denomination)) : 0;
+    const rest = coins.count - toPurse;
+    if (rest > 0 && rest > coinRoom(this.primaryPack, coins.denomination)) {
+      return { success: false, destination: 'none', reason: 'Your purse and pack have no room for that many coins.' };
+    }
+    if (purse && rest === 0) {
+      purse.addItem(coins);
+      return { success: true, destination: 'purse' };
+    }
+    if (purse && toPurse > 0) {
+      purse.addItem(new CoinItem({ id: `${coins.id}-purse`, denomination: coins.denomination, count: toPurse }));
+      coins.setCount(rest);
+      this.primaryPack.addItem(coins);
+      return { success: true, destination: 'purse and pack' };
+    }
+    this.primaryPack.addItem(coins);
+    return { success: true, destination: 'pack' };
+  }
+
+  /**
+   * A load puts back what the save held, and an older save's purse may hold more coins than
+   * it has room for now: the excess goes to the pack, cheapest coins first.
+   */
+  public settlePurse(): void {
+    const purse = this.purse;
+    if (!purse) return;
+    let excess = Math.ceil((purse.containedBulk() - purse.maxBulkCapacity) / COIN_BULK_CM3);
+    const piles = purse
+      .getItems()
+      .filter((i): i is CoinItem => i instanceof CoinItem)
+      .sort((a, b) => COIN_VALUES[a.denomination] - COIN_VALUES[b.denomination]);
+    for (const pile of piles) {
+      if (excess <= 0) break;
+      const moved = Math.min(pile.count, excess);
+      excess -= moved;
+      if (moved === pile.count) {
+        purse.removeItem(pile.id);
+        stowCoins(this.primaryPack, pile);
+      } else {
+        pile.setCount(pile.count - moved);
+        stowCoins(this.primaryPack, new CoinItem({ id: `${pile.id}-spill`, denomination: pile.denomination, count: moved }));
+      }
+    }
+  }
+
+  /**
    * Fast Purse Consolidation:
    * Automatically sweeps loose coins from general pack containers (and sub-containers)
    * directly into the equipped coin purse.
    */
   public consolidateCoins(): { count: number; value: number } {
-    if (!this.purse) {
+    const purse = this.purse;
+    if (!purse) {
       return { count: 0, value: 0 };
     }
 
     let movedCount = 0;
     let movedValue = 0;
 
+    // As many coins as the purse has room for: a pile that only partly fits is split.
     const sweepContainer = (c: Container) => {
       const items = [...c.getItems()];
       for (const item of items) {
-        if (item.category === 'currency') {
-          if (this.purse && this.purse.canContain(item).allowed) {
+        if (item instanceof CoinItem) {
+          const room = coinRoom(purse, item.denomination);
+          if (room <= 0) continue;
+          let moving = item;
+          if (room >= item.count) {
             c.removeItem(item.id);
-            this.purse.addItem(item);
-            movedCount += 1;
-            movedValue += item.value ?? 0;
+          } else {
+            item.setCount(item.count - room);
+            moving = new CoinItem({ id: `${item.id}-purse`, denomination: item.denomination, count: room });
           }
-        } else if (item instanceof Container && item !== this.purse) {
+          purse.addItem(moving);
+          movedCount += 1;
+          movedValue += moving.valueInCp;
+        } else if (item instanceof Container && item !== purse) {
           sweepContainer(item);
         }
       }

@@ -302,8 +302,8 @@ export class SageService {
 
 export class BankService {
   /**
-   * Exchanges and compacts all loose coins in player's possession into
-   * highest denomination coinage (Platinum and Gold), drastically reducing encumbrance weight.
+   * Exchanges all the hero's coins for the fewest coins of the same value, free. Coins take
+   * space, not weight, so this is how a hero fits more value in the purse.
    */
   public static compactCurrency(
     player: Player,
@@ -318,47 +318,39 @@ export class BankService {
       };
     }
 
-    // Measure weight before compaction
     const coinsBefore = getPlayerCoinItems(player);
-    const weightBefore = coinsBefore.reduce((sum, c) => sum + c.item.totalWeight(), 0);
-
-    // Calculate canonical highest-denomination breakdown
+    const countBefore = coinsBefore.reduce((sum, c) => sum + c.parsed.count, 0);
     const compacted = breakdownChange(totalCp);
-    const weightAfter =
-      (compacted.platinum + compacted.gold + compacted.silver + compacted.copper) * 10;
+    const countAfter = compacted.platinum + compacted.gold + compacted.silver + compacted.copper;
 
-    if (weightAfter >= weightBefore) {
+    if (countAfter >= countBefore) {
       return {
         success: false,
-        message: `Your coinage is already compacted into optimal denominations (${formatCurrency(totalCp)}).`,
+        message: `Your coins are already the fewest that make ${formatCurrency(totalCp)}.`,
         costInCp: 0,
       };
     }
 
-    // Remove all existing coins
     for (const { container, item } of coinsBefore) {
       container.removeItem(item.id);
     }
-
-    // Deposit compacted coins
+    // The purse first, then the pack.
     addCurrencyToPlayer(player, compacted);
 
-    const savedGrams = weightBefore - weightAfter;
     const bankerTitle = services?.bankerTitle ?? 'The banker';
-    const defaultMsg = `${bankerTitle} exchanged your currency into ${formatCurrency(totalCp)}! Carry weight reduced by ${savedGrams}g (from ${weightBefore}g to ${weightAfter}g).`;
+    const defaultMsg = `${bankerTitle} exchanged your ${countBefore} coins for ${countAfter} worth the same ${formatCurrency(totalCp)}.`;
     const message = services?.compactionMessageTemplate
       ? services.compactionMessageTemplate
           .replace('{coins}', formatCurrency(totalCp))
-          .replace('{savedWeight}', savedGrams.toString())
-          .replace('{oldWeight}', weightBefore.toString())
-          .replace('{newWeight}', weightAfter.toString())
+          .replace('{oldCount}', countBefore.toString())
+          .replace('{newCount}', countAfter.toString())
       : defaultMsg;
 
     return {
       success: true,
       message,
       costInCp: 0,
-      weightSavedGrams: savedGrams,
+      coinsSaved: countBefore - countAfter,
     };
   }
 }

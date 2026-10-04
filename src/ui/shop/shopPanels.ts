@@ -1,5 +1,7 @@
 import {
+  COIN_BULK_CM3,
   COIN_NAMES,
+  COIN_VALUES,
   type CoinDenomination,
   type GameEngine,
   type Item,
@@ -15,7 +17,6 @@ import {
 } from '../../engine';
 import { resolveBranding } from '../branding';
 import { escapeHtml, keyChip } from '../html';
-import { formatWeight } from '../units';
 
 /**
  * What the shop dialog shows for each town service, as data and HTML. The dialog
@@ -158,21 +159,32 @@ function sagePanel(engine: GameEngine, selected: number): ServicePanel {
 
 function bankerPanel(engine: GameEngine): ServicePanel {
   const coins = getPlayerCurrencyBreakdown(engine.player);
-  const grams = getPlayerCoinItems(engine.player).reduce((sum, c) => sum + c.item.totalWeight(), 0);
+  const purse = engine.player.inventory.purse;
+  const held = getPlayerCoinItems(engine.player);
+  const count = (inPurse: boolean) =>
+    held.filter((c) => (c.container === purse) === inPurse).reduce((sum, c) => sum + c.parsed.count, 0);
   const rows = DENOMINATIONS.filter((d) => coins[d] > 0)
     .map((d) => `<dt>${escapeHtml(COIN_NAMES[d].plural)}</dt><dd class="ui-num">${coins[d]}</dd>`)
     .join('');
+  const room = purse ? `<dt>In your purse</dt><dd class="ui-num">${count(true)} of ${Math.floor(purse.maxBulkCapacity / COIN_BULK_CM3)}</dd>` : '';
+  const loose = count(false);
+  const spilled = loose > 0 ? `<dt>Loose in your pack</dt><dd class="ui-num">${loose}</dd>` : '';
+  const rate = DENOMINATIONS.filter((d) => d !== 'copper')
+    .map((d) => `1 ${COIN_NAMES[d].singular.toLowerCase()} = ${formatCurrency(COIN_VALUES[d])}`)
+    .join(', ');
   return {
     heading: 'Your coins',
-    facts: `<dl class="ui-kv shop-coins">${rows || '<dt>No coins</dt><dd></dd>'}<dt>They weigh</dt><dd class="ui-num">${escapeHtml(formatWeight(grams))}</dd></dl>`,
+    facts:
+      `<dl class="ui-kv shop-coins">${rows || '<dt>No coins</dt><dd></dd>'}${room}${spilled}</dl>` +
+      `<div class="ui-note">${escapeHtml(rate)}.</div>`,
     offers: [
       {
         act: 'compact',
         key: 'E',
         label: 'Exchange coins',
-        detail: 'Trades loose copper and silver for gold and platinum of the same value, which weigh far less.',
+        detail: 'Trades copper and silver for gold of the same worth: fewer coins, so your purse holds more.',
         priceCp: 0,
-        disabled: grams === 0,
+        disabled: held.length === 0,
       },
     ],
   };

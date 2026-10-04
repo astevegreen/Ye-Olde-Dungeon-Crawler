@@ -1,6 +1,5 @@
 import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
-import type { Item } from '../items/item';
 import type { Position } from '../types';
 
 export class CombatLogger {
@@ -44,8 +43,8 @@ export class CombatLogger {
   /**
    * Formats a verbose pickup log message for an item including quantity and destination container.
    */
-  public static formatPickupMessage(item: Item, destination?: string): string {
-    const base = item.displayName;
+  public static formatPickupMessage(name: string, destination?: string): string {
+    const base = name;
     const destStr = destination ? ` (stored in ${destination})` : '';
     return `You pick up ${base}${destStr}.`;
   }

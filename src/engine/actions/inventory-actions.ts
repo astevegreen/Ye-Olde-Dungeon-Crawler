@@ -38,6 +38,8 @@ export class PickUpAction implements Action {
       return { success: false, cost: 0, message: 'Specified item was not found on the ground.' };
     }
 
+    // Named before storing: coins the purse can't all hold are split between purse and pack.
+    const pickedName = itemToPick.displayName;
     // Try storing in player inventory (purse, belt, or pack)
     const storeResult = this.player.inventory.storeItem(itemToPick);
     if (!storeResult.success) {
@@ -47,11 +49,12 @@ export class PickUpAction implements Action {
         const contained = itemToPick.getItems()[0];
         const removed = itemToPick.removeItem(contained.id);
         if (removed) {
+          const removedName = removed.displayName;
           const subStore = this.player.inventory.storeItem(removed);
           if (subStore.success) {
             const cost = this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);
             this.player.consumeEnergy(cost);
-            const msg = `Took ${removed.displayName} from ${itemToPick.displayName} (stored in ${subStore.destination}).`;
+            const msg = `Took ${removedName} from ${itemToPick.displayName} (stored in ${subStore.destination}).`;
             engine.log(msg);
             return { success: true, cost, message: msg };
           } else {
@@ -76,7 +79,7 @@ export class PickUpAction implements Action {
       this.player.consumeEnergy(cost);
     }
 
-    const msg = CombatLogger.formatPickupMessage(itemToPick, storeResult.destination);
+    const msg = CombatLogger.formatPickupMessage(pickedName, storeResult.destination);
     engine.log(msg);
 
     return { success: true, cost, message: msg };
@@ -231,7 +234,8 @@ export class QuickLootAction implements Action {
       return { success: false, cost: 0, message: msg };
     }
 
-    const lootedItems: Item[] = [];
+    // Names, taken before storing: coins the purse can't all hold are split with the pack.
+    const lootedItems: string[] = [];
     let failureReason: string | undefined;
 
     for (const item of groundItems) {
@@ -242,9 +246,10 @@ export class QuickLootAction implements Action {
         for (const subItem of containedItems) {
           const removed = item.removeItem(subItem.id);
           if (!removed) continue;
+          const removedName = removed.displayName;
           const subStore = this.player.inventory.storeItem(removed);
           if (subStore.success) {
-            lootedItems.push(removed);
+            lootedItems.push(removedName);
           } else {
             item.addItem(removed);
             failureReason = subStore.reason;
@@ -256,10 +261,11 @@ export class QuickLootAction implements Action {
         }
       }
 
+      const itemName = item.displayName;
       const storeResult = this.player.inventory.storeItem(item);
       if (storeResult.success) {
         engine.map.removeItemAt(this.player.x, this.player.y, item.id);
-        lootedItems.push(item);
+        lootedItems.push(itemName);
       } else {
         // If it was a container whose contents were looted, leaving the heavy empty container on the floor is expected
         if (item instanceof Container && lootedItems.length > 0) {
@@ -280,7 +286,7 @@ export class QuickLootAction implements Action {
     const cost = this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);
     this.player.consumeEnergy(cost);
 
-    const names = lootedItems.map((i) => i.displayName).join(', ');
+    const names = lootedItems.join(', ');
     let msg = `Quick-looted ${lootedItems.length} item${lootedItems.length > 1 ? 's' : ''}: ${names}.`;
     if (failureReason) {
       msg += ` (Remaining items left on ground: ${failureReason})`;
@@ -313,6 +319,7 @@ export class LootFromContainerAction implements Action {
       return { success: false, cost: 0, message: 'Item is no longer inside the container.' };
     }
 
+    const takenName = removed.displayName;
     const storeResult = this.player.inventory.storeItem(removed);
     if (!storeResult.success) {
       this.container.addItem(removed);
@@ -324,7 +331,7 @@ export class LootFromContainerAction implements Action {
     const cost = this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);
     this.player.consumeEnergy(cost);
 
-    const msg = `Took ${this.item.displayName} from ${this.container.displayName} (stored in ${storeResult.destination}).`;
+    const msg = `Took ${takenName} from ${this.container.displayName} (stored in ${storeResult.destination}).`;
     engine.log(msg);
 
     return { success: true, cost, message: msg };
@@ -394,15 +401,16 @@ export class LootAllFromContainerAction implements Action {
       return { success: false, cost: 0, message: msg };
     }
 
-    const looted: Item[] = [];
+    const looted: string[] = [];
     let failureReason: string | undefined;
 
     for (const item of items) {
       const removed = this.container.removeItem(item.id);
       if (!removed) continue;
+      const removedName = removed.displayName;
       const res = this.player.inventory.storeItem(removed);
       if (res.success) {
-        looted.push(removed);
+        looted.push(removedName);
       } else {
         this.container.addItem(removed);
         failureReason = res.reason;
@@ -419,7 +427,7 @@ export class LootAllFromContainerAction implements Action {
     const cost = this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);
     this.player.consumeEnergy(cost);
 
-    const names = looted.map((i) => i.displayName).join(', ');
+    const names = looted.join(', ');
     let msg = `Looted ${looted.length} item${looted.length > 1 ? 's' : ''} from ${this.container.displayName}: ${names}.`;
     if (failureReason) {
       msg += ` (${failureReason})`;

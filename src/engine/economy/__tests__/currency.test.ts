@@ -13,7 +13,7 @@ import {
   getPlayerTotalCp,
   getPlayerCurrencyBreakdown,
 } from '../currency';
-import { COIN_WEIGHT_GRAMS } from '../types';
+import { COIN_BULK_CM3 } from '../types';
 
 describe('Multi-Denomination Currency & Physical Coinage System', () => {
   let player: Player;
@@ -30,23 +30,21 @@ describe('Multi-Denomination Currency & Physical Coinage System', () => {
     player.inventory.paperdoll.equip(purse, 'purse');
   });
 
-  it('correctly calculates physical weight at 10 grams per coin and dynamic bulk', () => {
+  it('coins weigh nothing and take COIN_BULK_CM3 each', () => {
     const copperStack = new CoinItem({
       id: 'c1',
       denomination: 'copper',
       count: 100,
     });
 
-    // 100 coins * 10g = 1000g (1 kg)
-    expect(copperStack.totalWeight()).toBe(100 * COIN_WEIGHT_GRAMS);
-    expect(copperStack.weight).toBe(1000);
-    expect(copperStack.totalBulk()).toBe(50); // ceil(100 * 0.5)
+    expect(copperStack.totalWeight()).toBe(0);
+    expect(copperStack.totalBulk()).toBe(100 * COIN_BULK_CM3);
 
-    // Updating count dynamically updates name, weight, and bulk
+    // Updating count dynamically updates name and bulk
     copperStack.setCount(250);
     expect(copperStack.name).toBe('250 Copper Coins');
-    expect(copperStack.totalWeight()).toBe(2500);
-    expect(copperStack.totalBulk()).toBe(125);
+    expect(copperStack.totalWeight()).toBe(0);
+    expect(copperStack.totalBulk()).toBe(250 * COIN_BULK_CM3);
   });
 
   it('calculates optimal change breakdown across denominations', () => {
@@ -73,7 +71,8 @@ describe('Multi-Denomination Currency & Physical Coinage System', () => {
 
     addCoinsToContainer(purse, 'copper', 50);
     expect(purse.itemCount).toBe(1);
-    expect(purse.totalWeight()).toBe(50 * COIN_WEIGHT_GRAMS + purse.weight);
+    expect(purse.totalWeight()).toBe(purse.weight);
+    expect(purse.containedBulk()).toBe(50 * COIN_BULK_CM3);
 
     // Adding more copper stacks onto the same CoinItem
     addCoinsToContainer(purse, 'copper', 30);
@@ -133,14 +132,10 @@ describe('Multi-Denomination Currency & Physical Coinage System', () => {
     expect(getPlayerTotalCp(player)).toBe(50);
   });
 
-  it('demonstrates strategic encumbrance reduction by exchanging copper into platinum', () => {
-    // 1000 Copper = 10,000 grams (10 kg)
-    const heavyCopper = new CoinItem({ id: 'c-heavy', denomination: 'copper', count: 1000 });
-    expect(heavyCopper.totalWeight()).toBe(10000);
-
-    // Equivalent value in Platinum: 1 Platinum Coin = 1000 CP = 10 grams!
-    const lightPlat = new CoinItem({ id: 'p-light', denomination: 'platinum', count: 1 });
-    expect(lightPlat.valueInCp).toBe(heavyCopper.valueInCp);
-    expect(lightPlat.totalWeight()).toBe(10); // 9,990g weight saved!
+  it('the same value in a higher metal takes a fraction of the space', () => {
+    const copper = new CoinItem({ id: 'c-many', denomination: 'copper', count: 1000 });
+    const gold = new CoinItem({ id: 'g-few', denomination: 'gold', count: 10 });
+    expect(gold.valueInCp).toBe(copper.valueInCp);
+    expect(gold.totalBulk()).toBe(copper.totalBulk() / 100);
   });
 });

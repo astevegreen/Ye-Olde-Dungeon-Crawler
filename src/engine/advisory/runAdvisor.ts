@@ -1,6 +1,7 @@
 import type { GameEngine } from '../engine';
 import { Player } from '../entities/player';
-import { getPlayerCoinItems, getPlayerTotalCp, formatCurrency } from '../economy/currency';
+import { getPlayerCoinItems, formatCurrency } from '../economy/currency';
+import { COIN_VALUES } from '../economy/types';
 import { PotionItem, ScrollItem } from '../items/consumables';
 import type { FloorHazardAdvisory, TownServicesDefinition } from '../types/manifest';
 
@@ -50,26 +51,26 @@ export class RunAdvisor {
   }
 
   /**
-   * Evaluates loose currency burden.
-   * Carrying over 5,000 CP worth of coins or heavy coin weight causes encumbrance risks.
+   * Evaluates coins the purse has no room for: they ride loose in the pack and take its room.
    */
   public static checkLooseCurrency(player: Player, services?: TownServicesDefinition): AdvisoryWarning | null {
-    const totalCp = getPlayerTotalCp(player);
-    const coinItems = getPlayerCoinItems(player);
-    const totalWeightGrams = coinItems.reduce((sum, c) => sum + (typeof c.item.totalWeight === 'function' ? c.item.totalWeight() : c.item.weight), 0);
+    const purse = player.inventory.purse;
+    const pack = player.inventory.primaryPack;
+    const loose = getPlayerCoinItems(player).filter((c) => c.container !== purse);
+    if (loose.length === 0) return null;
 
-    if (totalCp >= 5000 || totalWeightGrams >= 2000) {
-      const banker = services?.bankerTitle ?? (services?.bankName ? `the ${services.bankName}` : 'the town banker');
-      return {
-        type: 'currency',
-        severity: totalWeightGrams >= 4000 ? 'danger' : 'warning',
-        title: 'Excessive Coin Burden',
-        message: `You are carrying ${formatCurrency(totalCp)} in loose currency, weighing ${(totalWeightGrams / 1000).toFixed(2)}kg across ${coinItems.length} coin stacks.`,
-        recommendation: `Visit ${banker} to exchange heavy copper and silver for compact gold and platinum pieces.`,
-      };
-    }
-
-    return null;
+    const count = loose.reduce((sum, c) => sum + c.parsed.count, 0);
+    const valueCp = loose.reduce((sum, c) => sum + c.parsed.count * COIN_VALUES[c.parsed.denomination], 0);
+    const bulk = loose.reduce((sum, c) => sum + c.item.totalBulk(), 0);
+    const share = pack.maxBulkCapacity > 0 ? Math.round((100 * bulk) / pack.maxBulkCapacity) : 0;
+    const banker = services?.bankerTitle ?? (services?.bankName ? `the ${services.bankName}` : 'the town banker');
+    return {
+      type: 'currency',
+      severity: share >= 20 ? 'danger' : 'warning',
+      title: purse ? 'Purse Full' : 'Loose Coins',
+      message: `${count} coins worth ${formatCurrency(valueCp)} ride loose in your pack, taking ${share}% of its room.`,
+      recommendation: `Visit ${banker} to exchange copper and silver for gold: fewer coins, the same worth.`,
+    };
   }
 
   /**

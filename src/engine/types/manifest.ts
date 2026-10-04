@@ -239,6 +239,7 @@ export interface TownServicesDefinition {
   sageTitle?: string;
   bankName?: string;
   bankerTitle?: string;
+  /** The banker's exchange. Placeholders: {coins} (the value), {oldCount}, {newCount} (coins before and after). */
   compactionMessageTemplate?: string;
   /** Faction whose standing gates temple services. Default `'temple_standing'`. */
   templeStandingFaction?: string;

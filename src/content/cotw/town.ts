@@ -127,7 +127,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
       role: 'banker',
       position: { x: 47, y: 25 },
       greeting: 'Welcome to the First Bank of Bjarnarhaven.',
-      dialogText: 'Carrying thousands of copper coins will crush your back! Let me exchange your heavy copper and silver into lightweight gold and platinum.',
+      dialogText: 'A purse stuffed with copper has no room left for silver. Let me exchange your copper and silver for gold of the same worth, and your purse will hold far more. No fee.',
     },
     {
       id: 'npc-guard',
@@ -169,7 +169,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
     sageTitle: 'Sage Mimir',
     bankName: 'First Bank of Bjarnarhaven',
     bankerTitle: 'Banker Haakon',
-    compactionMessageTemplate: 'Banker Haakon exchanged your currency into {coins}! Carry weight reduced by {savedWeight}g (from {oldWeight}g to {newWeight}g).',
+    compactionMessageTemplate: 'Banker Haakon exchanged your {oldCount} coins for {newCount}, worth the same {coins}.',
     templeRefusalMessage:
       "The High Priest of Thor scowls with righteous fury: 'Desecrator of sacred altars! You have betrayed the gods and are unwelcome in Thor's sacred hall!'",
     // Blood-magic corruption: doubled donations from 25, refused outright from 75.

@@ -152,11 +152,16 @@ describe('BloodMagicIntegration: EnergyModel, Casting, Corruption & Scaling', ()
     expect(resTainted.success).toBe(true);
     expect(resTainted.costInCp).toBe(600);
 
-    // At corruption >= 75: High Priest refuses services outright
+    // At corruption >= 75 the High Priest refuses every service but the cleanse (Q50),
+    // which costs double.
     cursedWeapon.addModifier(ItemFactory.createCursedMace('again').modifiers[0]);
     player.inventory.paperdoll.equip(cursedWeapon, 'mainHand');
     player.corruptionScore = 80;
-    const resRefused = TempleService.cleanseCurses(player, COTW_TOWN.services, undefined, engine);
+    const resOutcast = TempleService.cleanseCurses(player, COTW_TOWN.services, undefined, engine);
+    expect(resOutcast.success).toBe(true);
+    expect(resOutcast.costInCp).toBe(600);
+    player.hp = 1;
+    const resRefused = TempleService.healAndRestore(player, COTW_TOWN.services, undefined, engine);
     expect(resRefused.success).toBe(false);
     expect(resRefused.message).toContain('Desecrator of sacred altars');
   });

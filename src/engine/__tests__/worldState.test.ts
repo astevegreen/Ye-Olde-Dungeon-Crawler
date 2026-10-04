@@ -563,10 +563,9 @@ describe('Floor 3 Altar of Tyr Encounter & Temple Healer Reaction', () => {
     expect(healResult.success).toBe(false);
     expect(healResult.message).toContain('Desecrator of sacred altars');
 
-    // Temple priest refuses curse cleansing service
+    // ...but never the cleanse (Q50): a desecrator pays double for it.
     const cleanseResult = TempleService.cleanseCurses(player, undefined, undefined, engine);
-    expect(cleanseResult.success).toBe(false);
-    expect(cleanseResult.message).toContain('Desecrator of sacred altars');
+    expect(cleanseResult.message).not.toContain('Desecrator of sacred altars');
   });
 
   it('washing is a lesser, final rite that does not cleanse the altar', () => {

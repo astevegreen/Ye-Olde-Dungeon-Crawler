@@ -96,12 +96,11 @@ export class TempleService {
     }
 
     services ??= TempleService.manifestServices(engineOrWorldState);
+    // The cleanse is never refused (Q50): a hero the temple would turn away, like one wearing
+    // Hel's mark, pays double for it; the two don't stack.
     const gate = TempleService.applyTempleStanding(player, costCp, services, engineOrWorldState);
-    if (gate.refusal) {
-      return gate.refusal;
-    }
-    costCp = gate.costCp;
-    if (TempleService.wearsShunned(player)) costCp *= 2;
+    if (!gate.refusal) costCp = gate.costCp;
+    if (gate.refusal || TempleService.wearsShunned(player)) costCp *= 2;
 
     const equipped = player.inventory.paperdoll.getAllEquipped();
     const cursedItems = equipped.filter((e) => e.item.isBound());

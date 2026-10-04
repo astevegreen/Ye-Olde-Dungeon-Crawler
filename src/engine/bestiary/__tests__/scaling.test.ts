@@ -119,7 +119,7 @@ describe('Monster Stat Scaling & Bestiary Immutability', () => {
       expect(scaled.hp).toBe(65); // round(10 * 6.5)
       expect(scaled.attack).toBe(20); // round(3 * 6.5) = round(19.5)
       expect(scaled.defense).toBe(7); // round(1 * 6.5) = round(6.5)
-      expect(scaled.xpValue).toBe(98); // round(15 * 6.5) = round(97.5)
+      expect(scaled.xpValue).toBe(63); // round(15 * 4.2): XP follows the tier alone, not the difficulty
       expect(scaled.name).toBe('Grim Kobold'); // 43 - 1 >= 10, cotw's veteranPrefix
     });
 
@@ -133,7 +133,7 @@ describe('Monster Stat Scaling & Bestiary Immutability', () => {
       expect(scaled.hp).toBe(468); // round(220 * 2.1275)
       expect(scaled.attack).toBe(47); // round(22 * 2.1275)
       expect(scaled.defense).toBe(19); // round(9 * 2.1275)
-      expect(scaled.xpValue).toBe(2553); // round(1200 * 2.1275)
+      expect(scaled.xpValue).toBe(2220); // round(1200 * 1.85): the boss guard raises the fight, not the XP
       // Multiplier >= 1.8, but a unique keeps its own name.
       expect(scaled.name).toBe('The Sun-Chariot Warden');
       // Still a real fight, nowhere near a one-shot: HP more than doubled vs. base.

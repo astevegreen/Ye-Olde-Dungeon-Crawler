@@ -124,7 +124,9 @@ export function scaleMonsterStats(
     const hp = Math.max(def.stats.hp, Math.round(def.stats.maxHp * scale));
     const attack = Math.max(def.stats.attack, Math.round(def.stats.attack * scale));
     const defense = Math.max(def.stats.defense, Math.round(def.stats.defense * scale));
-    const xpValue = Math.max(def.xpValue, Math.round(def.xpValue * scale));
+    // XP follows the zone tier alone (Q4 "B", Q25): a kill is worth the same on every
+    // difficulty and the boss guard raises a fight, not its reward.
+    const xpValue = Math.max(def.xpValue, Math.round(def.xpValue * tierMultiplier(scalingConfig.tiers, currentFloor)));
 
     const name = scaledName(def, currentFloor - minFloor >= 10, bossTags, scalingConfig.veteranPrefix);
 

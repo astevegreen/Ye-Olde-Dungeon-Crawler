@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { resolveMonsterPowerMultiplier } from '../spawner';
+import { resolveMonsterPowerMultiplier, scaleMonsterStats } from '../spawner';
+import type { MonsterDefinition } from '../../bestiary/monsterDefinitions';
 import type { MonsterScalingConfig } from '../../types/monsterScaling';
 import { COTW_MONSTER_SCALING } from '../../../content/cotw/monsterScaling';
 
@@ -95,5 +96,34 @@ describe('resolveMonsterPowerMultiplier', () => {
         expect(medium).toBeLessThan(hard);
       }
     });
+  });
+});
+
+describe('scaleMonsterStats XP under a scaling config (Q4 "B", Q25)', () => {
+  const brute: MonsterDefinition = {
+    id: 'brute',
+    name: 'Brute',
+    minFloor: 1,
+    stats: { hp: 20, maxHp: 20, attack: 5, defense: 2 },
+    speed: 100,
+    xpValue: 100,
+    aiType: 'melee',
+    fleeHealthPercent: 0,
+    lootTable: [],
+    tags: ['boss'],
+  };
+
+  it('follows the zone tier alone: the same XP on every difficulty, bosses included', () => {
+    for (const floor of [1, 10]) {
+      const easy = scaleMonsterStats(brute, floor, undefined, undefined, SYNTHETIC_CONFIG, 'easy');
+      const medium = scaleMonsterStats(brute, floor, undefined, undefined, SYNTHETIC_CONFIG, 'medium');
+      const hard = scaleMonsterStats(brute, floor, undefined, undefined, SYNTHETIC_CONFIG, 'hard');
+      expect(easy.xpValue).toBe(medium.xpValue);
+      expect(hard.xpValue).toBe(medium.xpValue);
+      // Power still differs by difficulty: only the XP is held to the tier.
+      expect(hard.attack).toBeGreaterThan(easy.attack);
+    }
+    expect(scaleMonsterStats(brute, 1, undefined, undefined, SYNTHETIC_CONFIG, 'hard').xpValue).toBe(100);
+    expect(scaleMonsterStats(brute, 10, undefined, undefined, SYNTHETIC_CONFIG, 'easy').xpValue).toBe(200);
   });
 });

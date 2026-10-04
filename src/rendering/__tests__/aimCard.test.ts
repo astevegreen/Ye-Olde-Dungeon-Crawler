@@ -31,4 +31,13 @@ describe('aiming card markup', () => {
     expect(html).toContain('Empty space');
     expect(html).toContain('2 / 5 charges');
   });
+
+  it('shows the power the cast will have and what the grid did to it', () => {
+    const shaped = { ...spell, manaCost: 5, effects: [{ type: 'damage', amount: 14 }] } as unknown as SpellDefinition;
+    const html = aimCardHtml(engineWithTarget(), { ...entry, manaCost: 5, spellDef: shaped, gridNotes: ['Hub: 4 neighbors, +60% mana, +80% power'] }, 5, 2);
+    expect(html).toMatch(/5 \S+/);
+    expect(html).toContain('Power');
+    expect(html).toContain('14');
+    expect(html).toContain('From the grid: Hub: 4 neighbors');
+  });
 });

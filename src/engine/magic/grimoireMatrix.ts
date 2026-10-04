@@ -160,6 +160,19 @@ export class GrimoireMatrixManager {
     return index >= 0 ? index : undefined;
   }
 
+  /**
+   * The player's spell as a cast of it resolves right now, for what the HUD shows: through
+   * its slot on the active page (as `CastSpellAction` does), else unmodified. Undefined for
+   * an unknown spell id.
+   */
+  public static resolveCast(engine: GameEngine, player: Player, spellId: string): EffectiveSpell | undefined {
+    const base = lookupSpell(engine, spellId);
+    if (!base) return undefined;
+    const slot = getGrimoireConfig(engine) ? this.findSlotForSpell(player, spellId) : undefined;
+    const slotted = slot !== undefined ? this.resolveEffectiveSpellDetailed(engine, player, slot) : undefined;
+    return slotted ?? { spell: base, notes: [], retreatSteps: 0 };
+  }
+
   /** The spell cast from `slotIndex` after grid synergies, or undefined if the slot is empty or the grid is off. */
   public static resolveEffectiveSpell(engine: GameEngine, player: Player, slotIndex: number): SpellDefinition | undefined {
     return this.resolveEffectiveSpellDetailed(engine, player, slotIndex)?.spell;

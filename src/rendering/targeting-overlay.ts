@@ -15,6 +15,7 @@ import type { Camera } from './camera';
 import { elementColor, resolveThemeTokens } from './theme';
 import { escapeHtml } from '../ui/html';
 import { iconHtml } from '../ui/icons';
+import { spellPower } from '../ui/spellPower';
 import type { MapCardSpec } from '../ui/mapCards/mapCardLayer';
 import type { UIModal } from '../ui/modalStack';
 
@@ -27,7 +28,10 @@ export interface SpellbookEntry {
   charges?: number;
   maxCharges?: number;
   sourceItem?: Item;
+  /** The spell as this cast resolves (a grimoire slot's synergies applied). */
   spellDef: SpellDefinition;
+  /** One note per grimoire synergy that shaped `spellDef`. */
+  gridNotes?: string[];
   locationLabel?: string;
 }
 
@@ -514,9 +518,13 @@ export function aimCardHtml(engine: GameEngine, entry: SpellbookEntry, reticleX:
       <div class="ui-bar mc-hp"><i style="width: ${pct}%"></i></div>
       ${aff ? `<div class="mc-intent ${aff.tone}">${aff.text} ${escapeHtml(spell.element)}</div>` : ''}`;
   }
+  const power = entry.type === 'spell' ? spellPower(spell) : 0;
+  const grid = entry.gridNotes?.length ? `<div class="ui-note">From the grid: ${entry.gridNotes.map(escapeHtml).join(' · ')}</div>` : '';
   return `
     <div class="mc-head"><span class="mc-title">${iconHtml('cast')} <span>${escapeHtml(spell.name)}</span></span><span class="mc-tag ui-num">${escapeHtml(cost)}</span></div>
     <div class="mc-body">
+      ${power ? `<div class="mc-line"><span>Power</span><span class="ui-num">${power}</span></div>` : ''}
+      ${grid}
       <div class="mc-sub">Target</div>
       ${targetHtml}
       ${spell.reflects ? '<div class="ui-note">Bounces off walls</div>' : ''}

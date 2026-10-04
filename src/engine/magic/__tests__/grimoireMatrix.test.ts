@@ -401,6 +401,19 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     expect(player.grimoire[4].spellId).toBeNull();
   });
 
+  it('resolves a cast for the HUD as CastSpellAction will: through its slot, else unmodified', () => {
+    player.learnSpell('fire_lance');
+    player.setGrimoireSlot(4, 'fire_ray');
+    player.setGrimoireSlot(1, 'cold_burst');
+    const ray = GrimoireMatrixManager.resolveCast(engine, player, 'fire_ray')!;
+    expect(ray.spell.manaCost).toBe(12);
+    expect(ray.notes.some((n) => n.includes('Midgard'))).toBe(true);
+
+    for (const slot of player.grimoire) if (slot.spellId === 'fire_lance') player.setGrimoireSlot(slot.slotIndex, null);
+    expect(GrimoireMatrixManager.resolveCast(engine, player, 'fire_lance')).toMatchObject({ spell: { manaCost: 6 }, notes: [] });
+    expect(GrimoireMatrixManager.resolveCast(engine, player, 'no_such_spell')).toBeUndefined();
+  });
+
   it('applies grid synergies to a normal cast that names no slot', () => {
     // fire_lance auto-slots into slot 2, orthogonally next to cold_burst in slot 1
     player.learnSpell('fire_lance');

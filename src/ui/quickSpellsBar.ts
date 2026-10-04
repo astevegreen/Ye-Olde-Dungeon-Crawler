@@ -1,6 +1,7 @@
 import type { GameEngine } from '../engine';
-import { getSpell, resolveManaTerms } from '../engine';
+import { GrimoireMatrixManager, getSpell, resolveManaTerms } from '../engine';
 import { markCue } from './hints/cueMark';
+import { spellPower } from './spellPower';
 
 /** Each slot's key, 1-9 then 0, matching the ten quick_spell_* bindings. */
 const SLOT_LABELS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
@@ -142,15 +143,19 @@ export class QuickSpellsBar {
         continue;
       }
 
-      const manaCost = spell.manaCost ?? 0;
+      // What the cast costs and does from its grimoire slot, not the base spell.
+      const cast = GrimoireMatrixManager.resolveCast(engine, player, spell.id);
+      const manaCost = cast?.spell.manaCost ?? spell.manaCost ?? 0;
+      const power = spellPower(cast?.spell ?? spell);
+      const grid = cast && cast.notes.length > 0 ? ` From the grid: ${cast.notes.join('; ')}.` : '';
       const hasMana = player.mana >= manaCost;
       slotEl.hidden = false;
       slotEl.className = `quick-spell-slot quick-spell-slot-${i} ${
         hasMana ? 'quick-spell-slot-assigned' : 'quick-spell-slot-nomana'
       }`;
       slotEl.title = hasMana
-        ? `[${slotKey}] ${spell.name} — ${manaCost} ${mana.unit}. Click or press ${slotKey} to cast.`
-        : `[${slotKey}] ${spell.name} — ${manaCost} ${mana.unit} (you have ${player.mana}).`;
+        ? `[${slotKey}] ${spell.name} — ${manaCost} ${mana.unit}${power ? `, power ${power}` : ''}.${grid} Click or press ${slotKey} to cast.`
+        : `[${slotKey}] ${spell.name} — ${manaCost} ${mana.unit}${power ? `, power ${power}` : ''} (you have ${player.mana}).${grid}`;
       slotEl.innerHTML = `
         <span class="slot-badge-digit">${slotKey}</span>
         <span class="slot-badge-name"></span>

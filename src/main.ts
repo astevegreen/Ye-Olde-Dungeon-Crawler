@@ -1,6 +1,7 @@
 import {
   AttuneGrimoirePageAction,
   ArrangeGrimoireSlotAction,
+  GrimoireMatrixManager,
   AutosaveManager,
   type AutosaveSlot,
   canOvercast,
@@ -371,10 +372,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
   function castOrTargetSpell(spell: SpellDefinition): void {
     if (!activeEngine || !renderer) return;
+    // As the cast resolves: its grimoire slot's synergies change the cost, range and area.
+    const resolved = GrimoireMatrixManager.resolveCast(activeEngine, activeEngine.player, spell.id);
+    const cast = resolved?.spell ?? spell;
     // Packs with mana overflow let a short cast go off into debt (ManaOverflowManager).
-    if (!canOvercast(activeEngine) && activeEngine.player.mana < (spell.manaCost ?? 0)) {
+    if (!canOvercast(activeEngine) && activeEngine.player.mana < (cast.manaCost ?? 0)) {
       const mana = resolveManaTerms(activeEngine.manifest);
-      activeEngine.log(`Not enough ${mana.name} to cast ${spell.name} (${activeEngine.player.mana}/${spell.manaCost} ${mana.unit}).`);
+      activeEngine.log(`Not enough ${mana.name} to cast ${spell.name} (${activeEngine.player.mana}/${cast.manaCost} ${mana.unit}).`);
       renderer.render();
       return;
     }
@@ -391,8 +395,9 @@ window.addEventListener('DOMContentLoaded', () => {
         type: 'spell',
         id: spell.id,
         name: spell.name,
-        manaCost: spell.manaCost,
-        spellDef: spell,
+        manaCost: cast.manaCost,
+        spellDef: cast,
+        gridNotes: resolved?.notes,
       };
       renderer.inspectOverlay.close();
       renderer.mapOverlay.close();

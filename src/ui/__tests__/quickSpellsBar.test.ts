@@ -104,6 +104,44 @@ describe('QuickSpellsBar', () => {
     expect(s[4].title).toContain('[5] Magic Arrow');
   });
 
+  it('shows what a cast from its grimoire slot costs, with the power, not the base numbers', () => {
+    const map = new GameMap(10, 10, TILES.FLOOR);
+    const player = new Player({
+      id: 'hero',
+      name: 'Hero',
+      position: { x: 3, y: 3 },
+      stats: { hp: 10, maxHp: 10, attack: 1, defense: 1 },
+      spellsKnown: ['test:arrow', 'test:ward', 'test:spark'],
+    });
+    player.mana = 20;
+    player.maxMana = 20;
+    const manifest = {
+      id: 'test_pack',
+      name: 'Test Pack',
+      spells: [
+        { id: 'test:arrow', name: 'Magic Arrow', manaCost: 10, element: 'arcane', range: 6, effects: [{ type: 'damage', amount: 10 }] },
+        { id: 'test:ward', name: 'Ward', manaCost: 2, element: 'arcane', range: 0 },
+        { id: 'test:spark', name: 'Spark', manaCost: 2, element: 'lightning', range: 4 },
+      ],
+      magic: { grimoire: { title: 'Grimoire', pageNames: ['I', 'II', 'III'], centerSlotLabel: 'Hub', centerCostPerNeighbor: 0.2, centerPowerPerNeighbor: 0.5 } },
+    } as any;
+    const engine = new GameEngine({ map, player, manifest });
+    // The arrow in the center with two neighbors: cost 10 x 1.4 = 14, power 10 x 2 = 20.
+    player.setGrimoireSlot(4, 'test:arrow');
+    player.setGrimoireSlot(1, 'test:ward');
+    player.setGrimoireSlot(3, 'test:spark');
+    player.quickSpells[0] = 'test:arrow';
+
+    const bar = new QuickSpellsBar({ onTriggerSlot: () => {}, onOpenSpellbook: () => {} });
+    bar.update(engine);
+    const arrow = slots()[0];
+    expect(arrow.innerHTML).toContain('14');
+    expect(arrow.innerHTML).not.toMatch(/>10</);
+    expect(arrow.title).toContain('14 MP');
+    expect(arrow.title).toContain('power 20');
+    expect(arrow.title).toContain('Hub');
+  });
+
   it('marks the cued slot with its key and verb, through redraws, until the cue clears', () => {
     const bar = new QuickSpellsBar({ onTriggerSlot: () => {}, onOpenSpellbook: () => {} });
     const engine = buildEngine(['test:arrow', 'test:nova']);

@@ -15,6 +15,7 @@ import {
 import type { GameState } from './gameState';
 import type { MenuFooter, MenuTab } from './menuTab';
 import { escapeHtml, keyChip } from '../html';
+import { spellPower } from '../spellPower';
 
 export interface SpellbookTabOptions {
   onCastSpell: (spell: SpellDefinition) => void;
@@ -26,14 +27,6 @@ export interface SpellbookTabOptions {
 }
 
 const SLOT_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
-
-/** A spell's headline power: its first numeric damage or heal amount, else basePower. */
-function spellPower(spell: SpellDefinition): number {
-  for (const e of spell.effects ?? []) {
-    if ((e.type === 'damage' || e.type === 'heal') && typeof e.amount === 'number') return e.amount;
-  }
-  return spell.basePower ?? 0;
-}
 
 /**
  * The Spellbook tab (ADR-0011): the spells you know, the selected one's details and
@@ -192,10 +185,11 @@ export class SpellbookTab implements MenuTab {
     const rows = this.spells
       .map((spell, i) => {
         const slot = player.quickSpells.indexOf(spell.id);
+        const cost = GrimoireMatrixManager.resolveCast(this.engine!, player, spell.id)?.spell.manaCost ?? spell.manaCost ?? 0;
         return `
           <button type="button" class="bs-row sb-row${i === this.selectedIndex ? ' is-selected' : ''}" data-spell-index="${i}">
             <span class="bs-name">${slot >= 0 ? `${keyChip(SLOT_KEYS[slot])} ` : ''}${escapeHtml(spell.name)}</span>
-            <span class="ui-num ui-faint">${spell.manaCost ?? 0}</span>
+            <span class="ui-num ui-faint">${cost}</span>
           </button>`;
       })
       .join('');

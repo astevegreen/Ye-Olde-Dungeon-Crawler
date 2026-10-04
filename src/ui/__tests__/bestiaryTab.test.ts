@@ -190,6 +190,32 @@ describe('Bestiary tab: list', () => {
     expect(el.innerHTML).not.toContain('[SILVER');
   });
 
+  it('names behaviors and spells in words, never their ids', () => {
+    const caster = { ...monster('w', 'Warlock'), aiType: 'caster', spells: ['shadow_bolt'] };
+    const odd = { ...monster('x', 'Channeler'), aiType: 'pack_channeler' };
+    const engine = new GameEngine({
+      map: new GameMap(10, 10),
+      player: new Player({ id: 'p1', name: 'Hero', position: { x: 1, y: 1 } }),
+      manifest: {
+        id: 'test', name: 'Test', monsters: [caster, odd], items: [],
+        spells: [{ id: 'shadow_bolt', name: 'Shadow Bolt' }],
+      } as any,
+    });
+    for (let i = 0; i < 15; i++) engine.compendium.recordKill('w', 'Warlock');
+    engine.compendium.recordKill('x', 'Channeler');
+    const { tab } = openBestiary(engine);
+    const html = () => (tab as any).container.innerHTML as string;
+    (tab as any).selectedId = 'w';
+    tab.render();
+    expect(html()).toContain('casts from afar');
+    expect(html()).toContain('Shadow Bolt');
+    expect(html()).not.toMatch(/shadow_bolt|caster behavior/);
+
+    (tab as any).selectedId = 'x';
+    tab.render();
+    expect(html()).not.toMatch(/pack_channeler|behavior/);
+  });
+
   it('pages filters with Left/Right and leaves Escape, Tab and B to the menu', () => {
     const engine = makeEngine();
     const { tab, el } = openBestiary(engine);

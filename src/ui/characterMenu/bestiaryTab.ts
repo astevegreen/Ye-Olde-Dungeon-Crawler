@@ -11,6 +11,7 @@ import {
   type KillRiteDefinition,
   selectMasteryPerk,
   resolveManaTerms,
+  getSpell,
 } from '../../engine';
 import type { GameState } from './gameState';
 import type { MenuFooter, MenuTab } from './menuTab';
@@ -19,6 +20,15 @@ import { resolveBranding } from '../branding';
 import { escapeHtml } from '../html';
 
 type BestiaryFilter = 'all' | 'discovered' | 'mastered';
+
+/** How each of the engine's own AI behaviors reads to a player; a pack's own behavior is left unsaid. */
+const BEHAVIOR_WORDS: Record<string, string> = {
+  melee: 'fights up close',
+  brute: 'charges in',
+  caster: 'casts from afar',
+  coward: 'flees when hurt',
+  immobile_turret: 'holds its ground',
+};
 const FILTERS: BestiaryFilter[] = ['all', 'discovered', 'mastered'];
 
 /** What each mastery tier is called on its tag. */
@@ -145,6 +155,11 @@ export class BestiaryTab implements MenuTab {
       </div>`;
 
     this.bind();
+  }
+
+  /** A spell's name, never its id. */
+  private spellName(id: string): string {
+    return (this.engine!.manifest?.spells?.find((s) => s.id === id) ?? getSpell(id))?.name ?? id.replace(/_/g, ' ');
   }
 
   private tierTag(tier: MonsterMasteryTier, kills: number): string {
@@ -275,7 +290,7 @@ export class BestiaryTab implements MenuTab {
 
     const abilities =
       tier >= 3
-        ? `<dt>Spells</dt><dd>${def.spells && def.spells.length > 0 ? escapeHtml(def.spells.join(', ')) : 'melee only'}</dd>
+        ? `<dt>Spells</dt><dd>${def.spells && def.spells.length > 0 ? escapeHtml(def.spells.map((id) => this.spellName(id)).join(', ')) : 'melee only'}</dd>
            <dt>On hit</dt><dd>${def.onHitAffliction ? `${escapeHtml(def.onHitAffliction.type)} (${Math.round(def.onHitAffliction.chance * 100)}%)` : 'nothing'}</dd>
            <dt>Drops</dt><dd class="ui-num">${def.lootTable.length} possible items</dd>
            <dt>${escapeHtml(xpName)}</dt><dd class="ui-num">${def.xpValue}</dd>`
@@ -286,7 +301,7 @@ export class BestiaryTab implements MenuTab {
     return `
       <div class="ui-card">
         <div class="bs-head"><span class="bs-title">${escapeHtml(def.name)}</span>${this.tierTag(tier, entry.kills)}</div>
-        <div class="ui-note">From floor <span class="ui-num">${def.minFloor ?? 1}</span> · ${escapeHtml(def.aiType)} behavior</div>
+        <div class="ui-note">From floor <span class="ui-num">${def.minFloor ?? 1}</span>${BEHAVIOR_WORDS[def.aiType] ? ` · ${BEHAVIOR_WORDS[def.aiType]}` : ''}</div>
       </div>
       ${this.renderMasteryPanel({
         scope: 'species',
@@ -343,9 +358,7 @@ export class BestiaryTab implements MenuTab {
     const performed = Boolean(compendium.isKillRitePerformed(def.id));
     const conditions = this.riteConditions(rite);
     const known = this.engine!.player.spellsKnown ?? [];
-    const spellName = rite.teachesSpellId
-      ? (this.engine!.manifest?.spells?.find((s) => s.id === rite.teachesSpellId)?.name ?? rite.teachesSpellId)
-      : undefined;
+    const spellName = rite.teachesSpellId ? this.spellName(rite.teachesSpellId) : undefined;
     const essenceId = config.essenceItems[rite.essenceElement];
     const essenceName = this.engine!.manifest?.items?.find((i) => i.id === essenceId)?.name ?? `${rite.essenceElement} essence`;
     const yields =

@@ -344,6 +344,25 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     expect(reloadedPlayer.grimoirePages[2].slots[0].spellId).toBe('cold_burst');
   });
 
+  it('keeps one copy of a spell per page: placing it again moves it', () => {
+    expect(player.grimoire[0].spellId).toBe('fire_ray');
+    expect(player.setGrimoireSlot(4, 'fire_ray')).toBe(true);
+    expect(player.grimoire.filter((s) => s.spellId === 'fire_ray').map((s) => s.slotIndex)).toEqual([4]);
+
+    // Each page keeps its own copy.
+    player.switchGrimoirePage(1);
+    player.setGrimoireSlot(2, 'fire_ray');
+    expect(player.grimoirePages[0].slots[4].spellId).toBe('fire_ray');
+    expect(player.grimoirePages[1].slots[2].spellId).toBe('fire_ray');
+  });
+
+  it('loads a page holding copies as the one copy that casts', () => {
+    // A save made before one-copy-per-page: the first slot holding a spell is the one that casts.
+    player.grimoire[4].spellId = 'fire_ray';
+    const reloaded = deserializeGame(JSON.parse(JSON.stringify(serializeGame(engine)))).engine.player;
+    expect(reloaded.grimoirePages[0].slots.filter((s) => s.spellId === 'fire_ray').map((s) => s.slotIndex)).toEqual([0]);
+  });
+
   it('applies grid synergies to a normal cast that names no slot', () => {
     // fire_lance auto-slots into slot 2, orthogonally next to cold_burst in slot 1
     player.learnSpell('fire_lance');

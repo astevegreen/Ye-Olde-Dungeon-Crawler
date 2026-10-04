@@ -985,11 +985,14 @@ export function deserializeGame(
     runeMaxCharges: pData.runeMaxCharges !== undefined ? Number(pData.runeMaxCharges) : undefined,
     // Single-page `grimoire` is only read, for saves made before grimoirePages existed.
     grimoire: pData.grimoire ? [...pData.grimoire.map((s) => ({ ...s, infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined }))] : undefined,
+    // A page holds one copy of a spell (Player.setGrimoireSlot). An older save may hold
+    // more; the first one is the copy that casts, so later ones load empty.
     grimoirePages: pData.grimoirePages
       ? pData.grimoirePages.map((page) => ({
           ...page,
-          slots: page.slots.map((s) => ({
+          slots: page.slots.map((s, i) => ({
             ...s,
+            spellId: s.spellId && page.slots.findIndex((o) => o.spellId === s.spellId) < i ? null : s.spellId,
             infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined,
           })),
         }))

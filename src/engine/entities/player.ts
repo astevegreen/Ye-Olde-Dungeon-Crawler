@@ -445,12 +445,19 @@ export class Player extends Actor {
     this.quickPotions = pins;
   }
 
-  /** Assigns a known spell to a 3x3 grimoire slot (0..8) on the active page (or target page), or clears it with `null`. */
+  /**
+   * Assigns a known spell to a 3x3 grimoire slot (0..8) on the active page (or target page),
+   * or clears it with `null`. A page holds one copy of a spell, since a cast draws on only
+   * one slot: placing it again moves it.
+   */
   public setGrimoireSlot(slotIndex: number, spellId: string | null, pageIndex?: number): boolean {
     if (slotIndex < 0 || slotIndex >= GRIMOIRE_SIZE) return false;
     if (spellId && (!this.spellsKnown.includes(spellId) || !this.isGrimoireSlotOpen(slotIndex))) return false;
     const page = pageIndex !== undefined ? this.grimoirePages[pageIndex] : this.grimoirePages[this.activeGrimoireIndex];
     if (!page || !page.slots[slotIndex]) return false;
+    if (spellId) {
+      for (const slot of page.slots) if (slot.spellId === spellId) slot.spellId = null;
+    }
     page.slots[slotIndex].spellId = spellId;
     return true;
   }

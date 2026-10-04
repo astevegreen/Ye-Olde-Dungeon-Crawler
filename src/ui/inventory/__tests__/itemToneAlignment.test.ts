@@ -44,7 +44,8 @@ describe('itemTone: the eight alignment buckets', () => {
   });
 
   it('colors a blessed identified item sky blue', () => {
-    const item = makeItem({ identified: true, quality: 'blessed' as Item['quality'] });
+    const item = makeItem({ identified: true });
+    item.modifiers = [{ id: 'blessed', name: 'Blessed', alignment: 'positive', category: 'blessed' }];
     expect(itemTone(item)).toBe('blessed');
   });
 
@@ -53,14 +54,22 @@ describe('itemTone: the eight alignment buckets', () => {
     expect(itemTone(item)).toBe('enchanted');
   });
 
+  it('colors a Blessed Broadsword +1 by its family, not by its +N', () => {
+    const item = makeItem({ identified: true, enchantmentLevel: 1 });
+    item.modifiers = [{ id: 'blessed', name: 'Blessed', alignment: 'positive', category: 'blessed' }];
+    expect(itemTone(item)).toBe('blessed');
+  });
+
   it('colors a chaotic identified item magenta, distinct from every other bucket', () => {
-    const item = makeItem({ identified: true, quality: 'chaotic' as Item['quality'] });
+    const item = makeItem({ identified: true });
+    item.modifiers = [{ id: 'chaotic', name: 'Frenetic', alignment: 'chaotic', category: 'chaotic' }];
     expect(itemTone(item)).toBe('chaotic');
   });
 
   it('gives every one of the eight alignment buckets (normal + 3 positive + 3 negative + chaotic) its own tone', () => {
     const identifiedNormal = makeItem({ identified: true });
-    const blessed = makeItem({ identified: true, quality: 'blessed' as Item['quality'] });
+    const blessed = makeItem({ identified: true });
+    blessed.modifiers = [{ id: 'blessed', name: 'Blessed', alignment: 'positive', category: 'blessed' }];
     const enchanted = makeItem({ identified: true, quality: 'enchanted' });
     const holy = makeItem({ identified: true });
     holy.modifiers = [{ id: 'holy', name: 'of Dawn', alignment: 'positive', category: 'holy' }];
@@ -69,7 +78,8 @@ describe('itemTone: the eight alignment buckets', () => {
     hexed.modifiers = [{ id: 'hexed', name: 'Hexed', alignment: 'negative', category: 'hexed' }];
     const unholy = makeItem({ identified: true });
     unholy.modifiers = [{ id: 'unholy', name: 'Unholy', alignment: 'negative', category: 'unholy' }];
-    const chaotic = makeItem({ identified: true, quality: 'chaotic' as Item['quality'] });
+    const chaotic = makeItem({ identified: true });
+    chaotic.modifiers = [{ id: 'chaotic', name: 'Frenetic', alignment: 'chaotic', category: 'chaotic' }];
 
     const colors = [identifiedNormal, blessed, enchanted, holy, cursed, hexed, unholy, chaotic].map((i) =>
       itemTone(i)

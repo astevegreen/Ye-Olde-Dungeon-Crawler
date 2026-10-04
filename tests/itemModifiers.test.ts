@@ -56,6 +56,17 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       expect(sword.displayName).toBe('Blessed Claymore of Dawn');
     });
 
+    it('names a Holy item by its suffix alone, with no inferred "Blessed" prefix (the Holy name bug)', () => {
+      const mace = new Item({ id: 'm1', name: 'Broadsword', category: 'weapon', slot: 'mainHand', weight: 1500, bulk: 1200, identified: true });
+      mace.addModifier(mod('holy', 1));
+      expect(mace.displayName).toBe('Broadsword of the Templar');
+      const wand = new Item({ id: 'w1', name: 'Rod', category: 'weapon', slot: 'mainHand', weight: 500, bulk: 400, identified: true });
+      wand.addModifier(mod('enchanted', 1));
+      expect(wand.displayName).toBe('Enchanted Rod');
+      expect(mace.isBlessed()).toBe(false);
+      expect(mace.isHoly()).toBe(true);
+    });
+
     it('formats unidentified name with Unidentified prefix when item is not identified', () => {
       const sword = new Item({
         id: 'sw1',
@@ -215,6 +226,20 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       expect(player.mana).toBe(12);
       // Target damage: 20 * 1.20 = 24 damage dealt. 90 - 24 = 66 HP remaining
       expect(target.hp).toBe(66);
+    });
+  });
+
+  describe('Melee fields apply by data, whatever the family', () => {
+    it('applies a melee multiplier carried by a non-Blessed modifier', () => {
+      const axe = new Item({ id: 'ax1', name: 'Axe', category: 'weapon', slot: 'mainHand', weight: 2000, bulk: 1500, identified: true });
+      axe.addModifier({ id: 'x', name: 'Keen', alignment: 'positive', category: 'holy', meleeDamageMultiplier: 2, meleeDamageFlatBonus: 3 });
+      player.inventory.paperdoll.equip(axe, 'mainHand');
+      const target = new Monster({ id: 'mon-k', name: 'Dummy', position: { x: 5, y: 6 }, stats: { hp: 100, maxHp: 100, attack: 5, defense: 0 } });
+      map.addEntity(target);
+      player.attack = 10;
+      new MeleeAttackAction(player, target).perform(engine);
+      // 10 raw -> x2 + 3 = 23 (no variance or crits in this engine's default combat config)
+      expect(100 - target.hp).toBe(23);
     });
   });
 

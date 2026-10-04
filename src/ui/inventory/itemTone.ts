@@ -5,10 +5,8 @@ import { CoinItem, type Item, parseCoinItem } from '../../engine';
  * three positive, chaotic), else a quality tier, else a coin's denomination; null when
  * nothing applies or the item is unidentified (it looks plain until you know it).
  *
- * Within a polarity the most specific check runs first: `isBlessed()` also matches any
- * positive-alignment modifier (a broader gameplay bucket used by combat.ts and
- * Item.displayName), so `isHoly()`/`isEnchanted()` must be tested before it, or every
- * holy or enchanted item would read as plain blessed.
+ * Each check is its own family; `isEnchanted()` also counts a +N or elemental affix, so
+ * it runs after the families that name themselves, and a "Blessed Broadsword +1" is blue.
  */
 export type ItemTone =
   | 'cursed'
@@ -34,9 +32,9 @@ export function itemTone(item: Item | null | undefined): ItemTone | null {
   if (item.isHexed()) return 'hexed';
   if (item.isUnholy()) return 'unholy';
   if (item.isHoly()) return 'holy';
-  if (item.isEnchanted()) return 'enchanted';
   if (item.isBlessed()) return 'blessed';
   if (item.isChaotic()) return 'chaotic';
+  if (item.isEnchanted()) return 'enchanted';
   if (item.quality === 'artifact') return 'artifact';
   if (item.isBroken()) return 'broken';
   return null;

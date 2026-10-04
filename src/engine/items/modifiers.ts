@@ -66,11 +66,11 @@ export function isModifierBinding(mod: ItemModifier): boolean {
 }
 
 export function isModifierBlessed(mod: ItemModifier): boolean {
-  return mod.category === 'blessed' || mod.alignment === 'positive';
+  return mod.category === 'blessed';
 }
 
 export function isModifierChaotic(mod: ItemModifier): boolean {
-  return mod.category === 'chaotic' || mod.alignment === 'chaotic';
+  return mod.category === 'chaotic';
 }
 
 export function isModifierHexed(mod: ItemModifier): boolean {
@@ -85,7 +85,7 @@ export function isModifierHoly(mod: ItemModifier): boolean {
   return mod.category === 'holy';
 }
 
-/** Exact-category check, unlike `isModifierBlessed`'s broader "any positive modifier" catch. */
+/** The Enchanted family only: `Item.isEnchanted()` also counts +N and elemental affixes. */
 export function isModifierEnchantedCategory(mod: ItemModifier): boolean {
   return mod.category === 'enchanted';
 }

@@ -202,15 +202,7 @@ export class Item {
     ];
     if (identifiableCategories.includes(this.category)) return true;
     if (this.modifiers && this.modifiers.length > 0) return true;
-    if (
-      this.quality === 'enchanted' ||
-      this.quality === 'cursed' ||
-      (this.quality as string) === 'blessed' ||
-      (this.quality as string) === 'chaotic'
-    ) {
-      return true;
-    }
-    return false;
+    return this.quality === 'enchanted' || this.quality === 'cursed';
   }
 
   public get displayName(): string {
@@ -240,24 +232,15 @@ export class Item {
       base = bonus > 0 ? `+${bonus} ${this.name}` : `${bonus} ${this.name}`;
     }
 
-    // Affixes from declarative modifiers (prefixes and suffixes)
+    // A family names the item through its own prefix or suffix, nothing is inferred: a
+    // Holy item is "Broadsword of the Templar", not "Blessed Broadsword of the Templar".
     const prefixes = this.modifiers.map((m) => m.prefix).filter(Boolean) as string[];
     const suffixes = this.modifiers.map((m) => m.suffix).filter(Boolean) as string[];
 
     if (prefixes.length > 0) {
       base = `${prefixes.join(' ')} ${base}`;
-    } else if (this.isBlessed()) {
-      if (!base.startsWith('Blessed') && !base.startsWith('Sanctified') && !base.startsWith('Celestial')) {
-        base = `Blessed ${base}`;
-      }
-    } else if (this.isCursed()) {
-      if (!base.startsWith('Cursed') && !base.startsWith('Blighted') && !base.startsWith('Hexed')) {
-        base = `Cursed ${base}`;
-      }
-    } else if (this.isChaotic()) {
-      if (!base.startsWith('Chaotic') && !base.startsWith('Frenetic') && !base.startsWith('Warped')) {
-        base = `Chaotic ${base}`;
-      }
+    } else if (this.quality === 'cursed' && !base.startsWith('Cursed')) {
+      base = `Cursed ${base}`;
     }
 
     if (suffixes.length > 0) {
@@ -276,11 +259,11 @@ export class Item {
   }
 
   public isBlessed(): boolean {
-    return (this.quality as string) === 'blessed' || this.modifiers.some(isModifierBlessed);
+    return this.modifiers.some(isModifierBlessed);
   }
 
   public isChaotic(): boolean {
-    return (this.quality as string) === 'chaotic' || this.modifiers.some(isModifierChaotic);
+    return this.modifiers.some(isModifierChaotic);
   }
 
   public isHexed(): boolean {

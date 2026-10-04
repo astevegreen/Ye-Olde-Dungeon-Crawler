@@ -15,7 +15,7 @@ import { applyImpulse } from '../combat/impulse';
 import { resolveCombatMitigation } from '../combat/mitigationPipeline';
 import type { Item } from '../items/item';
 import type { ItemModifier } from '../items/modifiers';
-import { isModifierBlessed, isModifierChaotic } from '../items/modifiers';
+import { isModifierChaotic } from '../items/modifiers';
 
 function getActorEquippedItems(actor: Entity): Item[] {
   // Every Actor owns an inventory (a default one if none was configured); plain
@@ -118,15 +118,13 @@ export class MeleeAttackAction implements Action {
       }
     }
 
-    // 1. Blessed modifiers (physical/melee scaling)
+    // 1. Melee scaling, by data: any modifier that carries it (Blessed and Chaotic do).
     for (const mod of attackerModifiers) {
-      if (isModifierBlessed(mod)) {
-        if (mod.meleeDamageMultiplier) {
-          rawDamage = Math.round(rawDamage * mod.meleeDamageMultiplier);
-        }
-        if (mod.meleeDamageFlatBonus) {
-          rawDamage += mod.meleeDamageFlatBonus;
-        }
+      if (mod.meleeDamageMultiplier) {
+        rawDamage = Math.round(rawDamage * mod.meleeDamageMultiplier);
+      }
+      if (mod.meleeDamageFlatBonus) {
+        rawDamage += mod.meleeDamageFlatBonus;
       }
     }
 
@@ -223,16 +221,9 @@ export class MeleeAttackAction implements Action {
       }
     }
 
-    // 5. Chaotic modifiers (proc checks: backlash & teleport)
+    // 5. Chaotic procs (backlash & teleport); the melee scaling was applied in step 1.
     for (const mod of attackerModifiers) {
       if (isModifierChaotic(mod)) {
-        if (mod.meleeDamageMultiplier) {
-          rawDamage = Math.round(rawDamage * mod.meleeDamageMultiplier);
-        }
-        if (mod.meleeDamageFlatBonus) {
-          rawDamage += mod.meleeDamageFlatBonus;
-        }
-
         if (mod.chaoticProc && engine.rng() < mod.chaoticProc.procChance) {
           const proc = mod.chaoticProc;
           if (proc.type === 'backlash') {

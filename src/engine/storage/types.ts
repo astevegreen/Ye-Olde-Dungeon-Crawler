@@ -98,6 +98,7 @@ export interface SerializedItemModifier {
   meleeDamageRoll?: [number, number];
   overflowNoDebt?: boolean;
   overflowTierShift?: number;
+  overflowTierShiftCap?: number;
   reflectMeleePercent?: number;
   healingReceivedMultiplier?: number;
   description?: string;

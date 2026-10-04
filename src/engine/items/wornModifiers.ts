@@ -19,6 +19,16 @@ export function sumWorn(entity: Entity, field: NumericField): number {
   return total;
 }
 
+/** The lowest value of one numeric modifier field over everything worn; undefined when nothing carries it. */
+export function lowestWorn(entity: Entity, field: NumericField): number | undefined {
+  let lowest: number | undefined;
+  for (const mod of wornModifiers(entity)) {
+    const value = mod[field] as number | undefined;
+    if (value !== undefined && (lowest === undefined || value < lowest)) lowest = value;
+  }
+  return lowest;
+}
+
 /** True when anything worn carries the flag. */
 export function wearsFlag(entity: Entity, field: keyof ItemModifier): boolean {
   return wornModifiers(entity).some((mod) => Boolean(mod[field]));

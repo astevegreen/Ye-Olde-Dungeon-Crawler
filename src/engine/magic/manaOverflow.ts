@@ -57,13 +57,14 @@ export class ManaOverflowManager {
   /**
    * `options` are what the caster wears (Void-Kissed): `accrueDebt: false` rolls the surge as
    * if the deficit were owed but leaves the debt alone; `tierShift` rolls it that many tiers
-   * up the pack's table (clamped to the last).
+   * up the pack's table (clamped to the last), but no higher than `tierShiftCap` when one is
+   * worn; a surge already above the cap stays where it is.
    */
   public static evaluateOverflow(
     engine: GameEngine,
     caster: Entity,
     deficit: number,
-    options?: { accrueDebt?: boolean; tierShift?: number }
+    options?: { accrueDebt?: boolean; tierShift?: number; tierShiftCap?: number }
   ): ManaOverflowResolution {
     const player = caster instanceof Player ? caster : undefined;
     const accrue = options?.accrueDebt ?? true;
@@ -74,7 +75,8 @@ export class ManaOverflowManager {
     let reached = getOverflowTier(config, totalDebt);
     const shift = options?.tierShift ?? 0;
     if (reached && shift > 0 && config) {
-      const index = Math.min(config.tiers.length, reached.index + shift);
+      const ceiling = Math.min(config.tiers.length, options?.tierShiftCap ?? config.tiers.length);
+      const index = Math.max(reached.index, Math.min(ceiling, reached.index + shift));
       reached = { tier: config.tiers[index - 1], index };
     }
     if (!reached || reached.tier.outcomes.length === 0) {

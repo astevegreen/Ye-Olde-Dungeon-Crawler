@@ -250,7 +250,9 @@ export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
           prefix: 'Void-Kissed',
           overflowNoDebt: true,
           overflowTierShift: 1,
-          description: 'Void-Kissed: casting past your mana leaves no debt, but every surge comes a tier worse.',
+          // Q46: never past the second tier; the tier-3 surge it caused killed at depth.
+          overflowTierShiftCap: 2,
+          description: 'Void-Kissed: casting past your mana leaves no debt, but every surge comes a tier worse, up to the second.',
         },
         {
           minFloor: 1,

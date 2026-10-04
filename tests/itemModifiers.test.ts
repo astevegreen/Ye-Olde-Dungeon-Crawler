@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { GameEngine } from '../src/engine/engine';
 import { GameMap } from '../src/engine/grid/map';
 import { Player } from '../src/engine/entities/player';
@@ -543,6 +543,33 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       const kissed = ManaOverflowManager.evaluateOverflow(void_, void_.player, 3, { accrueDebt: false, tierShift: 1 });
       expect(void_.player.voidDebt).toBe(0);
       expect(kissed.tier).toBe(2);
+    });
+
+    it("Void-Kissed lifts a surge no higher than the pack's second tier (Q46)", () => {
+      const tier = COTW_ITEM_FAMILIES.families.find((f) => f.category === 'chaotic')!.tiers.find((t) => t.name === 'Void-Kissed')!;
+      expect(tier.overflowTierShiftCap).toBe(2);
+      const e = new GameEngine({ map: GameMap.createBoxRoom(20, 20), player: new Player({ id: 'p4', name: 'Caster', position: { x: 5, y: 5 }, stats: { hp: 500, maxHp: 500, attack: 10, defense: 0 } }), manifest: cotwManifest });
+      const surge = (deficit: number) => {
+        e.player.voidDebt = 0;
+        return ManaOverflowManager.evaluateOverflow(e, e.player, deficit, { accrueDebt: false, tierShift: 1, tierShiftCap: 2 }).tier;
+      };
+      expect(surge(3)).toBe(2); // tier 1 rises to 2
+      expect(surge(8)).toBe(2); // tier 2 would rise to 3: held at 2
+      expect(surge(20)).toBe(3); // a surge already at tier 3 stays there
+    });
+
+    it('a cast short of mana passes the worn cap to the surge', () => {
+      const e = new GameEngine({ map: GameMap.createBoxRoom(20, 20), player: new Player({ id: 'p5', name: 'Caster', position: { x: 5, y: 5 }, stats: { hp: 500, maxHp: 500, attack: 10, defense: 0 } }), manifest: cotwManifest });
+      e.player.gainEnergy(100);
+      e.player.mana = 0;
+      e.player.spellsKnown.push('firebolt');
+      wear(e.player, 'fingerLeft', chaotic('Void-Kissed', { overflowNoDebt: true, overflowTierShift: 1, overflowTierShiftCap: 2 }));
+      e.map.addEntity(new Monster({ id: 'vk-foe', name: 'foe', position: { x: 7, y: 5 }, stats: { hp: 500, maxHp: 500, attack: 1, defense: 0 } }));
+      const spy = vi.spyOn(ManaOverflowManager, 'evaluateOverflow');
+      new CastSpellAction(e.player, 'firebolt', 7, 5).perform(e);
+      expect(spy).toHaveBeenCalled();
+      expect(spy.mock.calls[0][3]).toMatchObject({ accrueDebt: false, tierShift: 1, tierShiftCap: 2 });
+      spy.mockRestore();
     });
   });
 

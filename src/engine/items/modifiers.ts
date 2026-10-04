@@ -63,6 +63,8 @@ export interface ItemModifier {
   /** A cast short of mana accrues no debt, and rolls its surge this many tiers up (`ManaOverflowManager`). */
   overflowNoDebt?: boolean;
   overflowTierShift?: number;
+  /** The highest tier `overflowTierShift` lifts a surge to; a surge already above it stays where it is. */
+  overflowTierShiftCap?: number;
   /** This share of a melee blow the bearer takes is dealt back to the attacker. */
   reflectMeleePercent?: number;
   /** Healing the bearer receives is scaled by this (`Actor.heal`). */

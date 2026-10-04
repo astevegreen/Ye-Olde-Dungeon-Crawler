@@ -13,7 +13,7 @@ import { flightRecorder } from '../debug/flightRecorder';
 import { findTaggedEntitiesInRadius } from '../combat/radialAuraFilter';
 import { traceProjectile } from '../magic/targeting';
 import { ManaOverflowManager, canOvercast } from '../magic/manaOverflow';
-import { sumWorn, wearsFlag } from '../items/wornModifiers';
+import { lowestWorn, sumWorn, wearsFlag } from '../items/wornModifiers';
 import { GrimoireMatrixManager } from '../magic/grimoireMatrix';
 
 /** World counter of casts whose grid shaping the log has explained, and how many it explains. */
@@ -250,6 +250,7 @@ export class CastSpellAction implements Action {
       const overflowRes = ManaOverflowManager.evaluateOverflow(engine, this.caster, manaDeficit, {
         accrueDebt: !wearsFlag(player, 'overflowNoDebt'),
         tierShift: sumWorn(player, 'overflowTierShift'),
+        tierShiftCap: lowestWorn(player, 'overflowTierShiftCap'),
       });
       if (overflowRes.effects.length > 0) {
         result.effects = [...(result.effects ?? []), ...overflowRes.effects];

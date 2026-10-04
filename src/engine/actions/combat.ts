@@ -10,7 +10,7 @@ import { DeathResolver } from '../combat/deathResolver';
 import { flightRecorder } from '../debug/flightRecorder';
 import { HookDispatcher } from '../hooks/hookDispatcher';
 import { getMonsterCategory, hasMasteryPerk } from '../compendium/compendiumManager';
-import { productAgainst, sumAgainst } from '../compendium/familyPerks';
+import { productAgainst, shrugsAffliction, sumAgainst } from '../compendium/familyPerks';
 import { ANATOMIST_CRIT_CHANCE } from '../compendium/types';
 import { applyImpulse } from '../combat/impulse';
 import { resolveCombatMitigation } from '../combat/mitigationPipeline';
@@ -307,11 +307,10 @@ export class MeleeAttackAction implements Action {
         hasMasteryPerk(engine, this.attacker.definitionId, 'survivor');
 
       // Survivor: 25% chance to shrug off affliction entirely; a family perk may add its own (Spirit-Ward).
-      const familyShrug = sumAgainst(engine, this.defender, this.attacker, 'afflictionShrugChance');
       if (isSurvivor && engine.rng() < 0.25) {
         engine.log(`${this.defender.name}'s Survivor instincts shrug off ${this.attacker.name}'s ${aff.type}!`);
-      } else if (familyShrug > 0 && engine.rng() < familyShrug) {
-        engine.log(`${this.defender.name} shrugs off ${this.attacker.name}'s ${aff.type}!`);
+      } else if (shrugsAffliction(engine, this.defender, this.attacker, aff.type)) {
+        // logged by shrugsAffliction
       } else if (engine.rng() < aff.chance) {
         // Survivor: halve the duration of debuffs; what the defender wears may shorten it too (Iron Stomach).
         const effectiveDuration = afflictionDuration(this.defender, aff.type, isSurvivor ? Math.max(1, Math.floor(aff.duration * 0.5)) : aff.duration);
@@ -536,7 +535,11 @@ export class WindUpExecuteAction implements Action {
       for (const targetEntity of hitEntities) {
         const rawDamage = Math.max(
           2,
-          Math.round((Math.round(this.monster.attack * this.multiplier) - targetEntity.defense) * productAgainst(engine, targetEntity, this.monster, 'damageTakenMultiplier'))
+          Math.round(
+            (Math.round(this.monster.attack * this.multiplier) - targetEntity.defense) *
+              productAgainst(engine, targetEntity, this.monster, 'damageTakenMultiplier') *
+              productAgainst(engine, targetEntity, this.monster, 'windUpDamageTakenMultiplier')
+          )
         );
         const { damageDealt, killed } = targetEntity.takeDamage(rawDamage);
 

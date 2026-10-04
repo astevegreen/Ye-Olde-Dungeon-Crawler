@@ -4,8 +4,9 @@ import { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
 import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
-import { MeleeAttackAction, WindUpDeclareAction } from '../actions/combat';
+import { MeleeAttackAction, WindUpDeclareAction, WindUpExecuteAction } from '../actions/combat';
 import { selectMasteryPerk } from '../compendium/compendiumManager';
+import { HookDispatcher } from '../hooks/hookDispatcher';
 import { CastSpellAction } from '../actions/spell-actions';
 import { SearchAction } from '../actions/search';
 import { AutoRestManager } from '../actions/autoRest';
@@ -464,6 +465,32 @@ describe('perk effects', () => {
       expect(player.totalXp - before).toBe(15);
       DeathResolver.resolveDeath(engine, player, stranger);
       expect(player.totalXp - before).toBe(25);
+    });
+
+    it('halves only the family’s wind-up (breath) damage, not its blows (Wyrm-Bane, Q58)', () => {
+      const { engine, player, foe, stranger } = withFamilyPerk({ windUpDamageTakenMultiplier: 0.5 });
+      new WindUpExecuteAction(foe, { x: 10, y: 10 }, 'Breath', 2).perform(engine);
+      expect(100 - player.hp).toBe(20); // 20 × 2 = 40, halved
+      player.hp = 100;
+      new WindUpExecuteAction(stranger, { x: 10, y: 10 }, 'Slam', 2).perform(engine);
+      expect(100 - player.hp).toBe(40);
+      player.hp = 100;
+      new MeleeAttackAction(foe, player).perform(engine);
+      expect(100 - player.hp).toBe(20);
+    });
+
+    it('shrugs off the family’s afflictions from its spells and its hooks too (Grave-Warden, Iron Will, Q58)', () => {
+      const { engine, player, foe, stranger } = withFamilyPerk({ afflictionShrugChance: 1 });
+      const hex = { ...BOLT, id: 'hex', effects: [], basePower: 0, statusAffliction: { type: 'slow', duration: 3 } } as SpellDefinition;
+      SpellPipeline.applyStatusEffect(engine, foe, player, { type: 'applyStatus', statusId: 'slow', duration: 3 });
+      (SpellPipeline as unknown as { applyLegacySpellDamageAndStatus: (...a: unknown[]) => void }).applyLegacySpellDamageAndStatus(engine, hex, foe, player);
+      expect(player.statusManager.hasStatus('slow')).toBe(false);
+      foe.hooks = [{ event: 'onHit', chance: 1, action: { type: 'applyStatus', status: 'poison', duration: 3, target: 'target' } }];
+      HookDispatcher.dispatch('onHit', { engine, attacker: foe, defender: player, damage: 1, blockedDamage: 0 });
+      expect(player.statusManager.hasStatus('poison')).toBe(false);
+      stranger.hooks = foe.hooks;
+      HookDispatcher.dispatch('onHit', { engine, attacker: stranger, defender: player, damage: 1, blockedDamage: 0 });
+      expect(player.statusManager.hasStatus('poison')).toBe(true);
     });
 
     it('keeps the family asleep beyond its wake radius, and no other (Reaver, Q57)', () => {

@@ -108,6 +108,16 @@ describe('cotw perks', () => {
     expect(COTW_FAMILY_PERKS.every((p) => p.source === 'family')).toBe(true);
   });
 
+  it('the family perks as settled (Q58 "as recommended"): what each family really does, and Rust-Touch past Anatomist', () => {
+    const effects = (id: string) => COTW_FAMILY_PERKS.find((p) => p.id === id)!.effects!;
+    expect(effects('family_grave_warden')).toEqual({ damageTakenMultiplier: 0.8, afflictionShrugChance: 1 });
+    expect(effects('family_spirit_ward')).toEqual({ afflictionShrugChance: 0.5, sensesWithin: 10 });
+    expect(effects('family_iron_will')).toEqual({ xpMultiplier: 1.5, afflictionShrugChance: 1 });
+    expect(effects('family_wyrm_bane')).toEqual({ windUpWarningBonus: 1, windUpDamageTakenMultiplier: 0.5 });
+    // Anatomist ignores half; a family's own perk against armour must do more than that.
+    expect(effects('family_rust_touch').defensePenetration).toBeGreaterThan(0.5);
+  });
+
   it('a chosen family perk counts against its family only, and survives a save and load', () => {
     const { engine } = new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Warden', { seed: 3 });
     const undead = cotwManifest.monsterCategories!.find((c) => c.id === 'cotw_undead')!;

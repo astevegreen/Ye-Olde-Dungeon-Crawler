@@ -197,19 +197,20 @@ export const COTW_MILESTONE_PERKS: PerkDefinition[] = [
 /**
  * The family perks (Q53 "A"): one of each monster family's own, offered beside the shared five
  * when that family is mastered and counting only against its members (`PerkDefinition.category`,
- * `familyModifiers`). Waiting on the owner (Q58): Grave-Warden's "never drain or frighten",
- * Spirit-Ward's "see the unseen ones", Iron Will's immunity and Wyrm-Bane's breath resistance,
- * which have nothing in the game to act on as written.
+ * `familyModifiers`). Q58 "as recommended": the halves the draft promised that had nothing in
+ * the game to act on became what those families really do (their afflictions, their breath, the
+ * hidden folk unseen behind walls), and Rust-Touch ignores 75% of defense, since at 50% Anatomist
+ * gave the same and crits besides.
  */
 export const COTW_FAMILY_PERKS: PerkDefinition[] = [
-  { id: 'family_grave_warden', name: 'Grave-Warden', source: 'family', category: 'cotw_undead', tagline: 'The dead know a warden when they see one.', description: 'The Restless Dead deal you 20% less damage.', effects: { damageTakenMultiplier: 0.8 } },
+  { id: 'family_grave_warden', name: 'Grave-Warden', source: 'family', category: 'cotw_undead', tagline: 'The dead know a warden when they see one.', description: 'The Restless Dead deal you 20% less damage, and their afflictions never take hold on you.', effects: { damageTakenMultiplier: 0.8, afflictionShrugChance: 1 } },
   { id: 'family_pack_sense', name: 'Pack-Sense', source: 'family', category: 'cotw_beasts', tagline: 'You hear the pack before it hears you.', description: 'Beasts & Vermin within ten tiles are shown through walls.', effects: { sensesWithin: 10 } },
   { id: 'family_reaver', name: 'Reaver', source: 'family', category: 'cotw_folk', tagline: 'You know where they hide their silver.', description: 'Kin of Men & Goblins drop half again as many coins, and sleeping folk wake to you only within 5 tiles.', effects: { coinMultiplier: 1.5, wakeRadius: 5 } },
   { id: 'family_giant_bane', name: 'Giant-Bane', source: 'family', category: 'cotw_jotnar', tagline: 'The bigger they are, the farther they stagger.', description: 'Your melee blows knock Jötnar & Trolls back a tile.', effects: { meleeKnockback: 1 } },
-  { id: 'family_spirit_ward', name: 'Spirit-Ward', source: 'family', category: 'cotw_vaettir', tagline: 'Iron and salt, and a word they cannot cross.', description: 'Half the time, you shrug off the afflictions of Vættir & Spirits.', effects: { afflictionShrugChance: 0.5 } },
-  { id: 'family_rust_touch', name: 'Rust-Touch', source: 'family', category: 'cotw_constructs', tagline: 'Every rivet has a weakness.', description: 'Your melee ignores half the defense of the Forged & Formless.', effects: { defensePenetration: 0.5 } },
-  { id: 'family_iron_will', name: 'Iron Will', source: 'family', category: 'cotw_horrors', tagline: 'You have looked into worse and walked away.', description: 'Fiends & Horrors give half again as much XP.', effects: { xpMultiplier: 1.5 } },
-  { id: 'family_wyrm_bane', name: 'Wyrm-Bane', source: 'family', category: 'cotw_wyrms', tagline: 'You hear the breath drawn before it is loosed.', description: 'Wyrms & Dragonkind give you a turn more warning of their wind-ups.', effects: { windUpWarningBonus: 1 } },
+  { id: 'family_spirit_ward', name: 'Spirit-Ward', source: 'family', category: 'cotw_vaettir', tagline: 'Iron and salt, and a word they cannot cross.', description: 'Half the time, you shrug off the afflictions of Vættir & Spirits, and you see the hidden folk through walls within ten tiles.', effects: { afflictionShrugChance: 0.5, sensesWithin: 10 } },
+  { id: 'family_rust_touch', name: 'Rust-Touch', source: 'family', category: 'cotw_constructs', tagline: 'Every rivet has a weakness.', description: 'Your melee ignores three quarters of the defense of the Forged & Formless.', effects: { defensePenetration: 0.75 } },
+  { id: 'family_iron_will', name: 'Iron Will', source: 'family', category: 'cotw_horrors', tagline: 'You have looked into worse and walked away.', description: 'Fiends & Horrors give half again as much XP, and their afflictions never take hold on you.', effects: { xpMultiplier: 1.5, afflictionShrugChance: 1 } },
+  { id: 'family_wyrm_bane', name: 'Wyrm-Bane', source: 'family', category: 'cotw_wyrms', tagline: 'You hear the breath drawn before it is loosed.', description: 'The breath of Wyrms & Dragonkind deals you half damage, and their wind-ups give you a turn more warning.', effects: { windUpWarningBonus: 1, windUpDamageTakenMultiplier: 0.5 } },
 ];
 
 const grant = (perkId: string) => ({ type: 'grantPerk' as const, perkId });

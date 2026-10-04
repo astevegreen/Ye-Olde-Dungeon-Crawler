@@ -30,6 +30,19 @@ export function sumAgainst(engine: GameEngine, holder: Entity, foe: Entity, fiel
   return total;
 }
 
+/**
+ * Whether the hero shrugs off an affliction this foe is laying on it, by its family perk against
+ * the foe's family (`afflictionShrugChance`: Spirit-Ward half the time, Grave-Warden and Iron
+ * Will always); logs the shrug. Asked on every path a monster afflicts by: a melee bite, a spell's
+ * status, a spell's own affliction, and a hook.
+ */
+export function shrugsAffliction(engine: GameEngine, target: Entity, source: Entity, status: string): boolean {
+  const chance = sumAgainst(engine, target, source, 'afflictionShrugChance');
+  if (chance <= 0 || (chance < 1 && engine.rng() >= chance)) return false;
+  engine.log(`${target.name} shrugs off ${source.name}'s ${status}!`);
+  return true;
+}
+
 /** The product of one numeric field over the holder's family perk against this foe (1 when none). */
 export function productAgainst(engine: GameEngine, holder: Entity, foe: Entity, field: NumericField): number {
   let product = 1;

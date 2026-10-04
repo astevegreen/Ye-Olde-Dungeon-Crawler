@@ -14,6 +14,7 @@ import { applyImpulse } from '../combat/impulse';
 import { DeathResolver } from '../combat/deathResolver';
 import { CastSpellAction } from '../actions/spell-actions';
 import { findTaggedEntitiesInRadius } from '../combat/radialAuraFilter';
+import { shrugsAffliction } from '../compendium/familyPerks';
 
 export type HookEvent =
   | 'onHit'
@@ -284,6 +285,8 @@ function executeApplyStatus(
 ): void {
   const engine = asGameEngine(context.engine);
   const dest = target ?? owner;
+  // A family perk may shrug off a status another's hook lays on the hero (Grave-Warden, Spirit-Ward).
+  if (dest && dest !== owner && shrugsAffliction(engine, dest, owner, action.status)) return;
   if (dest && dest.isAlive()) {
     const applied = dest.statusManager.applyStatus(
       { type: action.status, duration: afflictionDuration(dest, action.status, action.duration), potency: action.potency },

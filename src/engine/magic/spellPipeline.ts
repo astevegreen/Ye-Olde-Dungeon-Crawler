@@ -2,7 +2,7 @@ import type { ActionResult, Position, VisualEffectDescriptor } from '../types';
 import { attributeScalingOf, spellPowerMultiplier } from '../combat/attributeScaling';
 import { lowestWorn, sumWorn, wornModifiers } from '../items/wornModifiers';
 import { spendOncePerFloor } from '../combat/lastStand';
-import { productAgainst, sumAgainst } from '../compendium/familyPerks';
+import { productAgainst, shrugsAffliction } from '../compendium/familyPerks';
 import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
 import { Player } from '../entities/player';
@@ -562,11 +562,7 @@ export class SpellPipeline {
   ): void {
     if (!target.isAlive()) return;
     // The target's family perk against the caster's family may shrug it off (Spirit-Ward).
-    const shrug = sumAgainst(engine, target, caster, 'afflictionShrugChance');
-    if (shrug > 0 && engine.rng() < shrug) {
-      engine.log(`${target.name} shrugs off ${caster.name}'s ${effect.statusId}!`);
-      return;
-    }
+    if (shrugsAffliction(engine, target, caster, effect.statusId)) return;
     const applied = target.statusManager.applyStatus(
       {
         type: effect.statusId as StatusType,
@@ -897,7 +893,7 @@ export class SpellPipeline {
       }
     }
 
-    if (spell.statusAffliction && target.isAlive()) {
+    if (spell.statusAffliction && target.isAlive() && !shrugsAffliction(engine, target, caster, spell.statusAffliction.type)) {
       const applied = target.statusManager.applyStatus(
         {
           type: spell.statusAffliction.type,

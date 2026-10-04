@@ -17,6 +17,7 @@ import {
   setFlag,
 } from '../../engine';
 import { cotwMilestone } from './renown';
+import { PROLOGUE_VILLAGERS, prologueVillagerTaken, type RaidVillagerId } from './prologue';
 
 /**
  * The Siphon Altar of Járnviðr (floor 22). Four captive villagers are bound around a
@@ -39,6 +40,7 @@ const FLAG_STARTED = 'siphon_ritual_started';
 const FLAG_EXPIRED = 'siphon_ritual_expired';
 const FLAG_TIMER_STOPPED = 'siphon_ritual_timer_stopped';
 const FLAG_RESOLVED = 'siphon_ritual_resolved';
+const FLAG_CAPTIVES_SEATED = 'siphon_raid_captives_seated';
 const COUNTER_RESCUED = 'hostages_rescued';
 const COUNTER_SACRIFICED = 'hostages_sacrificed';
 
@@ -48,7 +50,7 @@ const RITUAL_NOTICE_RADIUS = 8;
 export const HOSTAGE_VILLAGERS: ScriptedVaultNpc[] = [
   {
     id: 'captive_villager_1',
-    name: 'Astrid of the Mill',
+    name: 'Ingrid of the Mill',
     greeting: 'Please, cut my ropes before they light the pyres!',
     dialogText: 'Thank the gods! I have an emergency town recall ward! Run!',
   },
@@ -71,6 +73,99 @@ export const HOSTAGE_VILLAGERS: ScriptedVaultNpc[] = [
     dialogText: 'Thank the gods! I have an emergency town recall ward! Run!',
   },
 ];
+
+/** How Olaf names each captive, in roster order. */
+const CAPTIVE_SHORT_NAMES = ['Ingrid', 'Torstein', 'Sigrid', 'Leif'];
+
+/**
+ * A villager the coven dragged down at the end of the raid (prologue.ts) is bound here in a
+ * captive's place, so the people taken that night come back into the story. The fourth
+ * captive is nobody's stand-in.
+ */
+const RAID_STAND_INS: Record<string, { villagerId: RaidVillagerId; greeting: string; rescued: string }> = {
+  captive_villager_1: {
+    villagerId: 'prologue-eir',
+    greeting: 'You came all this way down? Cut my ropes, before they light the pyres!',
+    rescued: '“Thor keep you,” Eir breathes, and her recall ward takes her home.',
+  },
+  captive_villager_2: {
+    villagerId: 'prologue-sigrun',
+    greeting: 'Is Father alive? Cut me loose, please, cut me loose!',
+    rescued: '“Tell Father I am coming,” Sigrun gasps, and her recall ward takes her home.',
+  },
+  captive_villager_3: {
+    villagerId: 'prologue-brandr',
+    greeting: 'They dragged me down from the plaza that night. Get me out of here!',
+    rescued: '“Gunther still owes me a chisel,” Brandr laughs, half sobbing, and his recall ward takes him home.',
+  },
+};
+
+interface CaptiveIdentity {
+  name: string;
+  shortName: string;
+  standIn?: (typeof RAID_STAND_INS)[string];
+}
+
+/** Who is bound in a captive's place this run: a villager taken in the raid, or the captive. */
+function captiveIdentity(engine: EngineContext, captiveId: string): CaptiveIdentity {
+  const index = HOSTAGE_VILLAGERS.findIndex((v) => v.id === captiveId);
+  const standIn = RAID_STAND_INS[captiveId];
+  const villager = standIn && prologueVillagerTaken(engine, standIn.villagerId)
+    ? PROLOGUE_VILLAGERS.find((v) => v.id === standIn.villagerId)
+    : undefined;
+  if (villager) return { name: villager.name, shortName: villager.shortName, standIn };
+  return { name: HOSTAGE_VILLAGERS[index]?.name ?? 'The captive', shortName: CAPTIVE_SHORT_NAMES[index] ?? 'a captive' };
+}
+
+/** "Eir", "Eir and Brandr", "Eir, Sigrun, and Brandr". */
+export function listNames(names: string[]): string {
+  if (names.length <= 2) return names.join(' and ');
+  return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`;
+}
+
+/** The four captives as Olaf names them ("Eir, Torstein, Sigrid, and Leif"). */
+export function captiveNamesForThanks(engine: EngineContext): string {
+  return listNames(HOSTAGE_VILLAGERS.map((v) => captiveIdentity(engine, v.id).shortName));
+}
+
+/** The villagers the raid took who still wait at the altar, by short name. */
+export function raidVillagersStillCaptive(engine: EngineContext): string[] {
+  return HOSTAGE_VILLAGERS.filter((v) => !isAccountedFor(engine, v.id))
+    .map((v) => captiveIdentity(engine, v.id))
+    .filter((identity) => identity.standIn)
+    .map((identity) => identity.shortName);
+}
+
+/**
+ * Puts the raid's taken villagers in their captives' places, once, on the ritual floor. The
+ * vault is stamped before the floor knows the run's story, so they are seated on the first
+ * action there; the stand-in keeps the captive's id, so every flag and count works unchanged.
+ */
+function seatRaidCaptives(engine: EngineContext): void {
+  if (getFlag(engine.worldState, FLAG_CAPTIVES_SEATED)) return;
+  let found = false;
+  for (const captive of HOSTAGE_VILLAGERS) {
+    const entity = engine.map.getEntityById(captive.id);
+    if (!entity) continue;
+    found = true;
+    const identity = captiveIdentity(engine, captive.id);
+    if (!identity.standIn) continue;
+    const { x, y } = entity;
+    engine.removeEntity(entity);
+    engine.map.addEntity(
+      new NPC({
+        id: captive.id,
+        name: identity.name,
+        role: 'villager',
+        position: { x, y },
+        greeting: identity.standIn.greeting,
+        dialogText: captive.dialogText,
+        isStationary: true,
+      })
+    );
+  }
+  if (found) setFlag(engine.worldState, FLAG_CAPTIVES_SEATED, true);
+}
 
 function isCaptive(id: string): boolean {
   return HOSTAGE_VILLAGERS.some((v) => v.id === id);
@@ -115,12 +210,16 @@ export function rescueCaptiveVillager(engine: EngineContext, captiveId: string):
   if (!isCaptive(captiveId) || isAccountedFor(engine, captiveId)) {
     return false;
   }
-  const name = HOSTAGE_VILLAGERS.find((v) => v.id === captiveId)?.name ?? 'The captive';
+  const { name, standIn } = captiveIdentity(engine, captiveId);
 
   setFlag(engine.worldState, `${captiveId}_rescued`, true);
   incrementCounter(engine.worldState, COUNTER_RESCUED, 1);
   removeCaptiveEntity(engine, captiveId);
-  engine.log(`You cut ${name}'s bonds! They trigger an emergency recall charm and vanish to town! (+1 Rescued)`);
+  engine.log(
+    standIn
+      ? `You cut ${name}'s bonds! ${standIn.rescued} (+1 Rescued)`
+      : `You cut ${name}'s bonds! They trigger an emergency recall charm and vanish to town! (+1 Rescued)`
+  );
 
   checkAndResolveHostageRitual(engine);
   return true;
@@ -133,7 +232,7 @@ export function sacrificeCaptiveVillager(engine: EngineContext, captiveId: strin
   if (!isCaptive(captiveId) || isAccountedFor(engine, captiveId)) {
     return false;
   }
-  const name = HOSTAGE_VILLAGERS.find((v) => v.id === captiveId)?.name ?? 'A captive';
+  const { name } = captiveIdentity(engine, captiveId);
 
   setFlag(engine.worldState, `${captiveId}_sacrificed`, true);
   incrementCounter(engine.worldState, COUNTER_SACRIFICED, 1);
@@ -356,6 +455,7 @@ const SIPHON_RITUAL_HOOK: ActionHook = {
     }
 
     if (engine.currentFloor === SIPHON_RITUAL_FLOOR) {
+      seatRaidCaptives(engine);
       const player = engine.player;
       const inSight = remainingCaptives(engine).some((captive) => {
         const entity = engine.map.getEntityById(captive.id);

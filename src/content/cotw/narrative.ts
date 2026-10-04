@@ -3,6 +3,7 @@ import { Monster, getCounter, getFlag, setFlag } from '../../engine';
 import { COTW_DEEPEST_FLOOR_COUNTER } from './spellTablets';
 import { HEARTH_TEAR_RETURNED_FLAG, RELIC_RECOVERED_FLAG } from './relic';
 import { prologueVillagerSaved } from './prologue';
+import { captiveNamesForThanks, listNames, raidVillagersStillCaptive } from './hostageRitual';
 
 /**
  * Story Choice Trigger: fires when Víðnir, Herald of the Wyrm (miniboss on floor 45)
@@ -212,13 +213,19 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
       } else if (isSavior) {
         o.greeting = 'Savior of Járnviðr! Every family in Bjarnarhaven sings your praise!';
         o.dialogText =
-          'You rescued Astrid, Torstein, Sigrid, and Leif from the sacrificial pyres! Our stores are forever discounted in your honor.';
+          `You rescued ${captiveNamesForThanks(engine)} from the sacrificial pyres! Our stores are forever discounted in your honor.`;
       } else if (isTainted) {
         o.greeting = 'You... you returned. The dark stench of the blood-siphon clings to you.';
         o.dialogText =
           'Our folk look upon you in dread. Your gold is accepted in our shops, but no skald in Bjarnarhaven will sing of your deeds.';
+      } else if (engine.getWorldFlag('siphon_ritual_resolved')) {
+        o.greeting = 'Some of our folk came home from the siphon altar. Not all of them.';
+        o.dialogText = 'We light a candle for the ones who did not. Whatever you need for the road, ask.';
       } else if (deepest >= 18) {
-        o.greeting = 'Our villagers were dragged into the obsidian depths! Save them, champion!';
+        const taken = raidVillagersStillCaptive(engine);
+        o.greeting = taken.length
+          ? `${listNames(taken)} ${taken.length > 1 ? 'are' : 'is'} still down there in the obsidian depths! Save them, champion!`
+          : 'The troll-wives took folk from the outlying farms as well! Save them, champion!';
         o.dialogText =
           'The troll-wives have bound four of our kin at the siphon altar. Cut their bonds before the dark chanting completes!';
       } else if (deepest >= 10) {

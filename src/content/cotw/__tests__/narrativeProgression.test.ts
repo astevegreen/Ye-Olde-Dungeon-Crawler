@@ -192,6 +192,45 @@ describe('CotW Narrative Progression & Skaldic Runestones', () => {
     expect(olaf.greeting).toContain('You broke the Herald Víðnir');
     expect(mimir.dialogText).toContain('Slaying Níðhögg in fury will shatter the dying root');
   });
+  it('has Olaf name the villagers the raid took, at the altar and in his thanks', () => {
+    const worldState = createWorldState();
+    const player = new Player({ name: 'Sven', position: { x: 0, y: 0 } });
+    const map = new GameMap(30, 30);
+    const olaf = new NPC({ id: 'npc-olaf', name: 'Olaf the Chandler', role: 'merchant', position: { x: 5, y: 5 } });
+    map.addEntity(olaf);
+    const engineContext = {
+      player,
+      map,
+      surfaces: null as any,
+      worldState,
+      rng: () => 0.5,
+      log: () => {},
+      getWorldFlag: (f: string) => Boolean(worldState.flags[f]),
+      setWorldFlag: (f: string, v: boolean) => setFlag(worldState, f, v),
+      currentFloor: 0,
+      removeEntity: () => true,
+      compendium: null as never,
+    };
+    const visit = () => COTW_TOWN_REACTIVE_HOOK.execute({ action: null as any, actionType: 'wait', actor: player, engine: engineContext });
+    worldState.counters[COTW_DEEPEST_FLOOR_COUNTER] = 18;
+
+    visit();
+    expect(olaf.greeting).not.toMatch(/dragged|still down there/);
+
+    setFlag(worldState, 'prologue-sigrun_taken', true);
+    setFlag(worldState, 'prologue-brandr_taken', true);
+    visit();
+    expect(olaf.greeting).toContain('Sigrun and Brandr are still down there');
+
+    setFlag(worldState, 'siphon_ritual_resolved', true);
+    visit();
+    expect(olaf.greeting).toContain('Not all of them');
+
+    setFlag(worldState, 'savior_of_jarnvidr', true);
+    visit();
+    expect(olaf.dialogText).toContain('You rescued Ingrid, Sigrun, Brandr, and Leif');
+  });
+
   it("has Víðnir taunt the hero once Svartr falls on floor 36, and not before", () => {
     const logs: string[] = [];
     const worldState = createWorldState();

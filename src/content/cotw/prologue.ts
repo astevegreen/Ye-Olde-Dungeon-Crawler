@@ -125,9 +125,16 @@ const takenFlag = (id: string) => `${id}_taken`;
 const isAccountedFor = (ctx: EngineContext, id: string) =>
   getFlag(ctx.worldState, savedFlag(id)) || getFlag(ctx.worldState, takenFlag(id));
 
+export type RaidVillagerId = 'prologue-eir' | 'prologue-sigrun' | 'prologue-brandr';
+
 /** Whether the villager was freed in this run's prologue. */
-export function prologueVillagerSaved(ctx: EngineContext, id: 'prologue-eir' | 'prologue-sigrun' | 'prologue-brandr'): boolean {
+export function prologueVillagerSaved(ctx: EngineContext, id: RaidVillagerId): boolean {
   return getFlag(ctx.worldState, savedFlag(id));
+}
+
+/** Whether the coven dragged the villager down when the raid ended (they wait on floor 22). */
+export function prologueVillagerTaken(ctx: EngineContext, id: RaidVillagerId): boolean {
+  return getFlag(ctx.worldState, takenFlag(id));
 }
 
 export const COTW_PROLOGUE: PrologueDefinition = {

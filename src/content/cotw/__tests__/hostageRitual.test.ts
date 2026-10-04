@@ -222,6 +222,35 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
     });
   });
 
+  describe('the raid’s taken villagers', () => {
+    it('are among the captives: whoever the coven dragged down in the raid is bound at the altar', () => {
+      engine.setWorldFlag('prologue-eir_taken', true);
+      engine.setWorldFlag('prologue-brandr_taken', true);
+      placeCaptives();
+      engine.handlePlayerAction(new WaitAction(player));
+
+      const names = HOSTAGE_VILLAGERS.map((v) => map.getEntityById(v.id)!.name);
+      expect(names).toEqual(['Eir the Acolyte', 'Torstein the Cooper', 'Brandr the Apprentice', 'Young Leif']);
+    });
+
+    it('are named when rescued', () => {
+      engine.setWorldFlag('prologue-sigrun_taken', true);
+      const captives = placeCaptives();
+      engine.handlePlayerAction(new WaitAction(player));
+      player.setPosition(captives[1].x - 1, captives[1].y);
+      engine.handlePlayerAction(new MovementAction(player, 1, 0));
+      expect(engine.messages.some((m) => m.includes('Sigrun'))).toBe(true);
+    });
+
+    it('leave the four strangers in their places when the raid took no one, none of them a second Astrid', () => {
+      placeCaptives();
+      engine.handlePlayerAction(new WaitAction(player));
+      const names = HOSTAGE_VILLAGERS.map((v) => map.getEntityById(v.id)!.name);
+      expect(names).toEqual(HOSTAGE_VILLAGERS.map((v) => v.name));
+      expect(names.join()).not.toMatch(/Astrid/);
+    });
+  });
+
   describe('floor generation', () => {
     function tilesOfType(floorMap: GameMap, type: string): number {
       let count = 0;

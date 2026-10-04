@@ -196,7 +196,7 @@ export class InventoryTab implements MenuTab {
           ins.selectedSource === 'paperdoll' && ins.selectedSlot === def.id ? 'is-selected' : '',
           focused && ins.focusedIndex === i ? 'is-focused' : '',
           targets.has(def.id) ? 'is-target' : '',
-          item?.identified && item.isCursed() ? 'is-cursed' : '',
+          item?.identified && item.isBound() ? 'is-cursed' : '',
           doll.isSlotBlocked(def.id) ? 'is-blocked' : '',
         ]
           .filter(Boolean)
@@ -234,7 +234,7 @@ export class InventoryTab implements MenuTab {
           selectedHere && g.items.some((x) => x.id === ins.selectedItem?.id) ? 'is-selected' : '',
           focused && ins.focusedIndex === i ? 'is-focused' : '',
           g.items.some((x) => ins.isMultiSelected(x.id)) ? 'is-multi' : '',
-          item.identified && item.isCursed() ? 'is-cursed' : '',
+          item.identified && item.isBound() ? 'is-cursed' : '',
         ]
           .filter(Boolean)
           .join(' ');

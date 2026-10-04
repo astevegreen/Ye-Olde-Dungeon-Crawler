@@ -29,7 +29,7 @@ export class UncurseAction implements Action {
 
     const tryUncurse = (item: Item | null): boolean => {
       if (!item) return false;
-      if (item.isCursed()) {
+      if (item.isBound() || item.isCursed()) {
         const res = item.uncurse();
         if (res.uncursed) {
           uncursedItems.push(item);

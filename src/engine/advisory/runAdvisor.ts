@@ -78,9 +78,7 @@ export class RunAdvisor {
    */
   public static checkCursedGear(player: Player, services?: TownServicesDefinition): AdvisoryWarning | null {
     const equipped = player.inventory.paperdoll.getAllEquipped();
-    const cursed = equipped.filter(
-      (e) => e.item.quality === 'cursed' || (typeof e.item.isCursed === 'function' && e.item.isCursed())
-    );
+    const cursed = equipped.filter((e) => e.item.isBound());
 
     if (cursed.length > 0) {
       const names = cursed.map((e) => e.item.name).join(', ');

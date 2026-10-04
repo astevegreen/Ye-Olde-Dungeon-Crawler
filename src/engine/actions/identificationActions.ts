@@ -85,15 +85,14 @@ export class RemoveCurseAction implements Action {
       return { success: false, cost: 0, message: 'No item found to cleanse.' };
     }
 
-    if (targetItem.quality !== 'cursed') {
+    if (!targetItem.isBound()) {
       return { success: false, cost: 0, message: `${targetItem.displayName} is not cursed.` };
     }
 
     const cost = this.player.getActionCost(BASE_ACTION_COST);
     this.player.consumeEnergy(cost);
 
-    targetItem.quality = 'normal';
-    targetItem.identified = true;
+    targetItem.uncurse();
     engine.identification.identifyItem(targetItem);
 
     const message = `A holy radiance washes over ${targetItem.name}! The sinister curse is permanently dissolved.`;

@@ -10,6 +10,10 @@ import { COTW_ITEM_FAMILIES } from '../src/content/cotw/itemFamilies';
 import { MeleeAttackAction } from '../src/engine/actions/combat';
 import { CastSpellAction } from '../src/engine/actions/spell-actions';
 import { UncurseAction } from '../src/engine/actions/uncurseAction';
+import { EquipAction } from '../src/engine/actions/inventory-actions';
+import { TempleService } from '../src/engine/economy/services';
+import { ItemFactory } from '../src/engine/items/factory';
+import { addCurrencyToPlayer } from '../src/engine/economy/currency';
 import { serializeItem, deserializeItem } from '../src/engine/storage/serializer';
 import type { GameEvent, AlignmentRenownEvent, ChaoticProcEvent, UncurseEvent } from '../src/engine/events';
 import type { SpellDefinition } from '../src/engine/magic/types';
@@ -506,6 +510,57 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       expect(procEvent.procType).toBe('teleport');
       expect(procEvent.teleportDestination).toBeDefined();
       expect(player.position).toEqual(procEvent.teleportDestination);
+    });
+  });
+
+  describe('Reveal on wearing; negative families bind until cleansed (Q21)', () => {
+    const ring = (id: string, category: ModifierCategory) => {
+      const item = new Item({ id, name: 'Iron Band', unidentifiedName: 'Dull Band', category: 'ring', slot: 'fingerLeft', weight: 50, bulk: 40 });
+      item.addModifier(mod(category, 20));
+      return item;
+    };
+
+    it('identifies any item the moment it is worn, cursed or not', () => {
+      const plain = ring('r-holy', 'holy');
+      player.inventory.primaryPack.addItem(plain);
+      expect(plain.identified).toBe(false);
+      expect(new EquipAction(player, plain.id).perform(engine).success).toBe(true);
+      expect(plain.identified).toBe(true);
+    });
+
+    it('binds Cursed, Hexed and Unholy items, and no positive or chaotic one', () => {
+      for (const category of ['cursed', 'hexed', 'unholy'] as ModifierCategory[]) {
+        expect(ring(`b-${category}`, category).isBound(), category).toBe(true);
+      }
+      for (const category of ['blessed', 'enchanted', 'holy', 'chaotic'] as ModifierCategory[]) {
+        expect(ring(`f-${category}`, category).isBound(), category).toBe(false);
+      }
+      const hexed = ring('worn-hexed', 'hexed');
+      player.inventory.primaryPack.addItem(hexed);
+      const res = new EquipAction(player, hexed.id).perform(engine);
+      expect(res.success).toBe(true);
+      expect(res.message).toContain('binds');
+      expect(player.inventory.paperdoll.canUnequip('fingerLeft').allowed).toBe(false);
+    });
+
+    it('the temple cleanse takes a worn Hexed item off, its hex gone, and leaves a Blessed one alone', () => {
+      const hexed = ring('t-hexed', 'hexed');
+      const blessed = new Item({ id: 't-blessed', name: 'Cap', category: 'helmet', slot: 'head', weight: 500, bulk: 400, identified: true });
+      blessed.addModifier(mod('blessed', 1));
+      player.inventory.paperdoll.equip(ItemFactory.createCoinPurse('purse'), 'purse');
+      player.inventory.paperdoll.equip(hexed, 'fingerLeft');
+      player.inventory.paperdoll.equip(blessed, 'head');
+      addCurrencyToPlayer(player, 5000);
+
+      const res = TempleService.cleanseCurses(player);
+      expect(res.success).toBe(true);
+      expect(hexed.modifiers).toEqual([]);
+      expect(hexed.isBound()).toBe(false);
+      expect(hexed.identified).toBe(true);
+      expect(player.inventory.paperdoll.getItem('fingerLeft')).toBeNull();
+      expect(player.inventory.primaryPack.getItem('t-hexed')).toBeDefined();
+      expect(blessed.modifiers.length).toBe(1);
+      expect(player.inventory.paperdoll.getItem('head')).toBe(blessed);
     });
   });
 

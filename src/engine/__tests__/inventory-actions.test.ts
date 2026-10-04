@@ -96,7 +96,7 @@ describe('Inventory Actions', () => {
 
     expect(equipResult.success).toBe(true);
     expect(cursedMace.identified).toBe(true);
-    expect(equipResult.message).toContain('cursed and binds tightly');
+    expect(equipResult.message).toContain('binds tightly');
 
     // Attempting to unequip fails
     const unequipAction = new UnequipAction(player, 'mainHand');

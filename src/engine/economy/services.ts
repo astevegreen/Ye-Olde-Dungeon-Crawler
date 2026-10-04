@@ -97,7 +97,7 @@ export class TempleService {
     costCp = gate.costCp;
 
     const equipped = player.inventory.paperdoll.getAllEquipped();
-    const cursedItems = equipped.filter((e) => e.item.quality === 'cursed');
+    const cursedItems = equipped.filter((e) => e.item.isBound());
 
     if (cursedItems.length === 0) {
       return {
@@ -130,13 +130,12 @@ export class TempleService {
       return deduction;
     }
 
-    // Unbind and normalize cursed items; each goes to the pack if it fits, else stays worn.
+    // Take the binding family off each item; it goes to the pack if it fits, else stays worn.
     const cleansedNames: string[] = [];
     const stillWorn: string[] = [];
     for (const entry of cursedItems) {
-      // Cast away cursed flag
-      (entry.item as { quality: string }).quality = 'normal';
-      (entry.item as { identified: boolean }).identified = true;
+      entry.item.uncurse();
+      entry.item.identified = true;
       cleansedNames.push(entry.item.name);
       if (player.inventory.primaryPack.canContain(entry.item).allowed) {
         player.inventory.paperdoll.unequip(entry.slot);

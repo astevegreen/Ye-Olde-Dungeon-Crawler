@@ -162,17 +162,15 @@ export class EquipAction implements Action {
       return { success: false, cost: 0, message: result.reason };
     }
 
-    // Auto-identify upon equipping (or reveal curses)
-    if (item.isCursed()) {
-      item.identified = true;
-    }
+    // Wearing reveals everything at once (Q21): the family, the +N, the affix.
+    item.identified = true;
 
     const cost = this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);
     this.player.consumeEnergy(cost);
 
     let msg = `Equipped ${item.displayName}.`;
-    if (item.isCursed()) {
-      msg += ' Oh no! The item is cursed and binds tightly to you!';
+    if (item.isBound()) {
+      msg += ' Oh no! It binds tightly to you; only a cleansing will take it off.';
     }
     engine.log(msg);
 

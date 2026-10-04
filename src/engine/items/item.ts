@@ -4,6 +4,7 @@ import type { HookDescriptor } from '../hooks/hookDispatcher';
 import {
   type ItemModifier,
   isModifierCursed,
+  isModifierBinding,
   isModifierBlessed,
   isModifierChaotic,
   isModifierHexed,
@@ -258,6 +259,14 @@ export class Item {
     );
   }
 
+  /**
+   * Worn, it stays on until a cleansing takes the binding family off it: Cursed, Hexed
+   * and Unholy in cotw (`ItemFamilyDefinition.binds`). A cursed-quality relic binds too.
+   */
+  public isBound(): boolean {
+    return this.quality === 'cursed' || this.modifiers.some(isModifierBinding);
+  }
+
   public isBlessed(): boolean {
     return this.modifiers.some(isModifierBlessed);
   }
@@ -288,12 +297,13 @@ export class Item {
     );
   }
 
+  /** A cleansing: takes off every binding family (and any Cursed one), keeps the rest. */
   public uncurse(): { uncursed: boolean; removedModifiers: string[] } {
     const removed: string[] = [];
     const kept: ItemModifier[] = [];
 
     for (const mod of this.modifiers) {
-      if (isModifierCursed(mod)) {
+      if (isModifierCursed(mod) || isModifierBinding(mod)) {
         removed.push(mod.name);
       } else {
         kept.push(mod);

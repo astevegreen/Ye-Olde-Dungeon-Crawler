@@ -145,7 +145,7 @@ export class Paperdoll {
     const blockedSlot = (item.blocksSlot ?? (item.twoHanded && slot === 'mainHand' ? 'offHand' : undefined)) as EquipmentSlot | undefined;
     if (blockedSlot && this.slots.has(blockedSlot)) {
       const blockedItem = this.getItem(blockedSlot);
-      if (blockedItem && blockedItem.isCursed()) {
+      if (blockedItem && blockedItem.isBound()) {
         return {
           allowed: false,
           reason: `Cannot equip ${item.name} because the cursed item ${blockedItem.name} in ${blockedSlot} cannot be removed!`,
@@ -153,9 +153,9 @@ export class Paperdoll {
       }
     }
 
-    // Check if existing item in slot is cursed (cannot be replaced/unequipped)
+    // A bound item in the slot (a negative family, worn) cannot be replaced or taken off.
     const currentItem = this.getItem(slot);
-    if (currentItem && currentItem.isCursed()) {
+    if (currentItem && currentItem.isBound()) {
       return {
         allowed: false,
         reason: `Cannot replace ${currentItem.name} because it is cursed and bound to you!`,
@@ -204,7 +204,7 @@ export class Paperdoll {
       return { allowed: false, reason: `No item equipped in ${slot} slot.` };
     }
 
-    if (item.isCursed()) {
+    if (item.isBound()) {
       return {
         allowed: false,
         reason: `${item.name} is cursed and bound to your flesh! You cannot remove it.`,

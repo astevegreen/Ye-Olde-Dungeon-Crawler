@@ -166,7 +166,7 @@ export class ItemInspector {
   ): ItemBreakdown {
     const isIdentified = item.identified;
     const isEnchanted = isIdentified && ((item.enchantmentLevel && item.enchantmentLevel > 0) || !!item.elementalAffix);
-    const isCursed = isIdentified && item.isCursed();
+    const isCursed = isIdentified && item.isBound();
 
     const compatibleSlots: string[] = [];
     // An item that names its slot goes there and nowhere else (Paperdoll.canEquip);

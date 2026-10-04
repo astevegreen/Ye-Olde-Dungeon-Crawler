@@ -217,8 +217,8 @@ export class Merchant {
       item = itemOrId;
     }
 
-    // 1. Validate item is not equipped cursed gear
-    if (item.quality === 'cursed') {
+    // 1. A worn, bound item (a negative family) is not for sale until cleansed.
+    if (item.isBound()) {
       const isEquipped = player.inventory.paperdoll.getAllEquipped().some((e) => e.item.id === item!.id);
       if (isEquipped) {
         return {

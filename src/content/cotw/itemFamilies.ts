@@ -144,6 +144,7 @@ export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
       alignment: 'negative',
       perGame: 15,
       minFloor: 3,
+      binds: true,
       tiers: [
         {
           minFloor: 1,
@@ -151,7 +152,7 @@ export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
           prefix: 'Hexed',
           damageTakenMultiplier: 1.25,
           damageTakenFlatBonus: 2,
-          description: 'A hex of vulnerability: the bearer takes +25% and +2 from every blow.',
+          description: 'A hex of vulnerability: the bearer takes +25% and +2 from every blow, and it will not come off until cleansed.',
         },
         {
           minFloor: 15,
@@ -159,7 +160,7 @@ export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
           prefix: 'Doom-touched',
           damageTakenMultiplier: 1.5,
           damageTakenFlatBonus: 4,
-          description: 'A fatal vulnerability: the bearer takes +50% and +4 from every blow.',
+          description: 'A fatal vulnerability: the bearer takes +50% and +4 from every blow, and it will not come off until cleansed.',
         },
       ],
     },
@@ -168,6 +169,7 @@ export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
       alignment: 'negative',
       perGame: 10,
       minFloor: 3,
+      binds: true,
       tiers: [
         {
           minFloor: 1,

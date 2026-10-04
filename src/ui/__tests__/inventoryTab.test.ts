@@ -43,6 +43,18 @@ describe('InventoryTab', () => {
     expect(html).toContain('Coil of Rope');
   });
 
+  it('shows the +N badge on a worn item only once it is identified', () => {
+    player.inventory.paperdoll.equip(
+      new Item({ id: 'ring', name: 'Band', category: 'ring', slot: 'fingerLeft', weight: 20, bulk: 10, enchantmentLevel: 3, identified: false }),
+      'fingerLeft'
+    );
+    tab.onActivate(state());
+    expect(el.innerHTML).not.toContain('inv-plus');
+    player.inventory.paperdoll.getItem('fingerLeft')!.identified = true;
+    tab.onActivate(state());
+    expect(el.innerHTML).toContain('>+3</span>');
+  });
+
   it('shows the selected item beside the lists, and says Esc backs out of it', () => {
     expect(tab.footer().escLabel).toBe('close');
     tab.controller.selectCell('backpack', 0);

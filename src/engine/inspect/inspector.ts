@@ -99,15 +99,16 @@ export class TileInspector {
 
     // 4. Ground items (visible if explored or visible)
     const groundItemsList = engine.map.getItemsAt(x, y);
+    // An unidentified item shows its weight and bulk, nothing of what it hides.
     const items: InspectedItem[] = groundItemsList.map((i) => ({
       id: i.id,
       name: i.displayName || i.name || i.unidentifiedName || 'Item',
       category: i.category,
       weight: typeof i.totalWeight === 'function' ? i.totalWeight() : (i.weight ?? 0),
       bulk: typeof i.totalBulk === 'function' ? i.totalBulk() : (i.bulk ?? 0),
-      stats: i.stats,
-      enchantmentLevel: i.enchantmentLevel,
-      elementalAffix: i.elementalAffix,
+      stats: i.identified ? i.stats : undefined,
+      enchantmentLevel: i.identified ? i.enchantmentLevel : undefined,
+      elementalAffix: i.identified ? i.elementalAffix : undefined,
     }));
 
     return {

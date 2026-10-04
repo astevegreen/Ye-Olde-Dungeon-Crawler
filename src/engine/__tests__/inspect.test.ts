@@ -67,6 +67,26 @@ describe('Look / Inspect Mode & Tile Inspector', () => {
     expect(daggerInspection?.bulk).toBe(dagger.bulk);
   });
 
+  it('keeps an unidentified ground item\'s stats, +N and affix to itself until it is identified', () => {
+    const sword = ItemFactory.createBroadsword('look-sword');
+    sword.enchantmentLevel = 3;
+    sword.elementalAffix = { element: 'fire', bonusDamage: 5, name: 'of Fire' };
+    engine.map.addItemAt(5, 5, sword);
+
+    const hidden = TileInspector.inspectTile(engine, 5, 5).items.find((i) => i.id === sword.id)!;
+    expect(hidden.name).toBe('Unidentified Heavy Sword');
+    expect(hidden.stats).toBeUndefined();
+    expect(hidden.enchantmentLevel).toBeUndefined();
+    expect(hidden.elementalAffix).toBeUndefined();
+
+    sword.identified = true;
+    const shown = TileInspector.inspectTile(engine, 5, 5).items.find((i) => i.id === sword.id)!;
+    expect(shown.name).toBe('Steel Broadsword +3 of Fire');
+    expect(shown.stats?.attackBonus).toBe(8);
+    expect(shown.enchantmentLevel).toBe(3);
+    expect(shown.elementalAffix?.element).toBe('fire');
+  });
+
   it('inspects living entities with exact HP, speed tier, status effects, and intent', () => {
     const ogre = createTestOgre('test-ogre-inspect', { x: 5, y: 6 });
     ogre.takeDamage(15); // Damaged HP

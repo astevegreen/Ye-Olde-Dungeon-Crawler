@@ -89,6 +89,8 @@ export interface ItemConfig {
   stats?: ItemStatModifiers;
   description?: string;
   value?: number;
+  /** The definition's value, before the +N and affix scaled it; `value` when absent. */
+  baseValue?: number;
   minFloor?: number;
   tier?: number;
   enchantmentLevel?: number;
@@ -123,6 +125,8 @@ export class Item {
   public readonly stats: ItemStatModifiers;
   public readonly description: string;
   public value: number;
+  /** What the plain item is worth: an unidentified one is appraised by this, so a hidden +N or family never shows in a price. */
+  public readonly baseValue: number;
   public readonly minFloor?: number;
   public readonly tier?: number;
   public enchantmentLevel: number;
@@ -155,6 +159,7 @@ export class Item {
     this.stats = config.stats ?? {};
     this.description = config.description ?? '';
     this.value = config.value ?? 0;
+    this.baseValue = config.baseValue ?? this.value;
     this.minFloor = config.minFloor;
     this.tier = config.tier;
     this.enchantmentLevel = config.enchantmentLevel ?? 0;

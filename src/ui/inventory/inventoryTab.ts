@@ -205,7 +205,7 @@ export class InventoryTab implements MenuTab {
         return `
           <button type="button" class="${cls}" data-slot="${i}" data-slot-id="${escapeHtml(def.id)}"${area}${item ? ' draggable="true"' : ''} title="${escapeHtml(title)}">
             <span class="inv-slot-well">${item ? `<canvas class="inv-icon" width="40" height="40" data-icon="slot:${i}" aria-hidden="true"></canvas>` : ''}${
-              item && item.enchantmentLevel > 0 ? `<span class="inv-plus ui-num">+${item.enchantmentLevel}</span>` : ''
+              item && item.identified && item.enchantmentLevel > 0 ? `<span class="inv-plus ui-num">+${item.enchantmentLevel}</span>` : ''
             }</span>
             <span class="inv-slot-name">${escapeHtml(def.name)}</span>
           </button>`;

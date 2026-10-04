@@ -17,32 +17,7 @@ export type ShopType = 'general' | 'armory' | 'alchemist';
  * Calculates purchase price for an item in a merchant shop.
  */
 export function getItemBuyPrice(item: Item, worldState?: WorldState, pricing?: MerchantPricingRules): number {
-  let basePrice = 0;
-  if (item.value && item.value > 0) {
-    basePrice = item.value;
-  } else {
-    // Default based on category
-    switch (item.category) {
-      case 'weapon':
-        basePrice = 10000;
-        break;
-      case 'armor':
-        basePrice = 15000;
-        break;
-      case 'shield':
-        basePrice = 5000;
-        break;
-      case 'consumable':
-        basePrice = 4000;
-        break;
-      case 'container':
-        basePrice = 5000;
-        break;
-      default:
-        basePrice = 2000;
-        break;
-    }
-  }
+  const basePrice = valueOrDefault(item, item.value);
 
   if (worldState && pricing) {
     const multiplier = getMerchantPriceMultiplier(worldState, pricing);
@@ -65,40 +40,42 @@ export function getMerchantPriceMultiplier(worldState: WorldState, pricing: Merc
   return tier?.multiplier ?? 1;
 }
 
-/** A positive family (Blessed, Enchanted, Holy), a +N or affix, or an artifact. */
-function hasPositiveAttribute(item: Item): boolean {
-  return item.modifiers.some((m) => m.alignment === 'positive') || item.isEnchanted() || item.quality === 'artifact';
-}
-
-/** A negative family: Cursed, Hexed or Unholy. Chaotic is neither bonus nor scrap. */
-function hasNegativeAttribute(item: Item): boolean {
-  return item.modifiers.some((m) => m.alignment === 'negative');
+/** An item's price from `value`, or a category default when it has none. */
+function valueOrDefault(item: Item, value: number): number {
+  if (value > 0) return value;
+  switch (item.category) {
+    case 'weapon':
+      return 10000;
+    case 'armor':
+      return 15000;
+    case 'shield':
+      return 5000;
+    case 'consumable':
+      return 4000;
+    case 'container':
+      return 5000;
+    default:
+      return 2000;
+  }
 }
 
 /**
  * Calculates sell valuation for an item offered by the player:
  * - Base sell rate is 50% of buy value.
- * - A merchant appraises anything crossing the counter, whether or not the seller ever
- *   paid to identify it. An unidentified item that turns out positive fetches a windfall
- *   price; one that turns out negative fetches scrap; a plain unidentified item still
- *   suffers the ordinary mystery-goods penalty.
- * - Once identified, a positive family pays +50% (the +N is already in the value) and a
- *   negative one sells for 10%.
+ * - An unidentified item is mystery goods: a quarter of the plain item's rate, whatever
+ *   it hides (Q21). Two unidentified items that look alike are offered the same price, so
+ *   the counter is no longer a free appraisal; the +N and the family show up in the price
+ *   only once the item is identified.
+ * - Identified, a positive family pays +50% (the +N is already in the value) and a
+ *   negative one sells for 10%. Chaotic is neither bonus nor scrap.
  */
 export function getItemSellPrice(item: Item): number {
-  const buyPrice = getItemBuyPrice(item);
-  let sellPrice = Math.floor(buyPrice * 0.5);
-
   if (!item.identified) {
-    // Negative takes priority: a cursed blade stays scrap even if it also rolled a stat bonus.
-    if (hasNegativeAttribute(item)) {
-      sellPrice = Math.floor(sellPrice * 0.1);
-    } else if (hasPositiveAttribute(item)) {
-      sellPrice = Math.floor(sellPrice * 2.0);
-    } else {
-      sellPrice = Math.floor(sellPrice * 0.25);
-    }
-  } else if (hasNegativeAttribute(item)) {
+    return Math.max(1, Math.floor(Math.floor(valueOrDefault(item, item.baseValue) * 0.5) * 0.25));
+  }
+
+  let sellPrice = Math.floor(getItemBuyPrice(item) * 0.5);
+  if (item.modifiers.some((m) => m.alignment === 'negative')) {
     sellPrice = Math.floor(sellPrice * 0.1);
   } else if (item.modifiers.some((m) => m.alignment === 'positive')) {
     sellPrice = Math.floor(sellPrice * 1.5);
@@ -245,13 +222,12 @@ export class Merchant {
       return { success: false, message: `Could not locate ${item.name} in your inventory.` };
     }
 
-    // 3. Calculate sell price (appraising the item's true nature, identified or not)
-    //    before revealing it, then deposit coins into the player's purse.
+    // 3. The price is settled before the merchant looks the item over: an unidentified
+    //    one sells as mystery goods.
     const sellPriceCp = getItemSellPrice(item);
     addCurrencyToPlayer(player, sellPriceCp);
 
-    // 4. The merchant's appraisal identifies the item; it now shows its true color
-    //    scheme and is added to stock as a known good.
+    // 4. On the shelf the merchant knows what they bought: it is stocked identified.
     item.identified = true;
     this.stock.push(item);
 

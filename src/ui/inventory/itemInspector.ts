@@ -212,7 +212,8 @@ export class ItemInspector {
           : undefined,
       weight: item.weight,
       bulk: item.bulk,
-      value: isIdentified ? (item.value ?? 0) : Math.floor((item.value ?? 0) * 0.25),
+      // The guess is of the plain item: a hidden +N must not show in it.
+      value: isIdentified ? (item.value ?? 0) : Math.floor(item.baseValue * 0.25),
       description: isIdentified
         ? item.description || 'No lore description available.'
         : 'An unidentified item. Its magical properties, enchantments, and curses remain shrouded in mystery until inspected or used.',

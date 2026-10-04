@@ -116,37 +116,36 @@ describe('Merchant Economy & Trading Engine', () => {
     expect(getPlayerTotalCp(player)).toBe(1000);
   });
 
-  it('pays a windfall for an unidentified item that turns out blessed, and scrap for one that turns out cursed', () => {
-    const blessedSword = ItemFactory.createBroadsword('blessed-sword');
-    blessedSword.identified = false;
-    blessedSword.modifiers = [
-      {
-        id: 'blessed-test',
-        name: 'Blessed',
-        alignment: 'positive',
-        category: 'blessed',
-      },
-    ];
-    // Base sell 7500 CP * 2.0 windfall = 15000 CP
-    expect(getItemSellPrice(blessedSword)).toBe(15000);
-
-    const hexedSword = ItemFactory.createBroadsword('hexed-sword');
-    hexedSword.identified = false;
-    hexedSword.modifiers = [
-      {
-        id: 'hexed-test',
-        name: 'Hexed',
-        alignment: 'negative',
-        category: 'hexed',
-      },
-    ];
-    // Base sell 7500 CP * 0.1 scrap = 750 CP
-    expect(getItemSellPrice(hexedSword)).toBe(750);
-
-    // A plain unidentified item (no hidden attribute either way) keeps the ordinary penalty
+  it('offers the same mystery price for every unidentified item that looks alike, whatever it hides (Q21)', () => {
+    // Base sell 7500 CP * 0.25 = 1875 CP, for the plain, the blessed and the hexed alike.
     const plainSword = ItemFactory.createBroadsword('plain-sword');
     plainSword.identified = false;
     expect(getItemSellPrice(plainSword)).toBe(1875);
+
+    const blessedSword = ItemFactory.createBroadsword('blessed-sword');
+    blessedSword.identified = false;
+    blessedSword.modifiers = [{ id: 'blessed-test', name: 'Blessed', alignment: 'positive', category: 'blessed' }];
+    expect(getItemSellPrice(blessedSword)).toBe(1875);
+
+    const hexedSword = ItemFactory.createBroadsword('hexed-sword');
+    hexedSword.identified = false;
+    hexedSword.modifiers = [{ id: 'hexed-test', name: 'Hexed', alignment: 'negative', category: 'hexed', binds: true }];
+    expect(getItemSellPrice(hexedSword)).toBe(1875);
+
+    // Nor does a hidden +N show in the price: the appraisal is of the plain item.
+    const plusThree = ItemFactory.createBroadsword('plus-sword');
+    plusThree.identified = false;
+    plusThree.enchantmentLevel = 3;
+    plusThree.value = Math.round(15000 * 2.2);
+    expect(getItemSellPrice(plusThree)).toBe(1875);
+
+    // Identified, the family and the +N both count.
+    blessedSword.identified = true;
+    expect(getItemSellPrice(blessedSword)).toBe(11250);
+    hexedSword.identified = true;
+    expect(getItemSellPrice(hexedSword)).toBe(750);
+    plusThree.identified = true;
+    expect(getItemSellPrice(plusThree)).toBe(16500);
   });
 
   it('identifies an item once it is sold, so it shows its true color scheme in shop stock', () => {

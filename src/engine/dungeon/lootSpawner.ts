@@ -194,6 +194,7 @@ export function createScaledItem(
     stats,
     description: def.description,
     value: scaledValue,
+    baseValue,
     minFloor: def.minFloor,
     tier: def.tier,
     enchantmentLevel,

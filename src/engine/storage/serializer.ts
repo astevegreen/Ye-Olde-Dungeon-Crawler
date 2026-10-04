@@ -364,6 +364,8 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
     stats: node.stats,
     description: node.description,
     value: node.value,
+    // The plain item's worth is the definition's, like its hooks.
+    baseValue: def?.value ?? node.value,
     minFloor: node.minFloor,
     tier: node.tier,
     enchantmentLevel: node.enchantmentLevel,

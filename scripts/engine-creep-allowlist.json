@@ -69,10 +69,6 @@
       "reason": "Engine built-in item (an ItemFactory constructor) in the default starter kit used by the headless manifest and CharacterRoller's fallback; cotw re-declares an item with the same ID."
     },
     {
-      "id": "travel_bread",
-      "reason": "Engine built-in item (an ItemFactory constructor) in the default starter kit used by the headless manifest and CharacterRoller's fallback; cotw re-declares an item with the same ID."
-    },
-    {
       "id": "wand_lightning",
       "reason": "Engine built-in item (an ItemFactory constructor) in the default starter kit used by the headless manifest and CharacterRoller's fallback; cotw re-declares an item with the same ID."
     },

@@ -11,30 +11,6 @@ import { COTW_SPELL_TABLETS } from '../spellTablets';
  */
 const NON_CATALOG_ITEMS: ItemDefinition[] = [
   {
-    id: 'wooden_torch',
-    name: 'Wooden Torch',
-    unidentifiedName: 'Torch',
-    category: 'misc',
-    tier: 1,
-    weight: 800,
-    bulk: 600,
-    identified: true,
-    description: 'Pitch-soaked wooden branch providing essential light in subterranean depths.',
-    value: 5,
-  },
-  {
-    id: 'thief_lockpicks',
-    name: 'Thief Lockpicks',
-    unidentifiedName: 'Slender Metal Picks',
-    category: 'misc',
-    tier: 1,
-    weight: 200,
-    bulk: 100,
-    identified: true,
-    description: 'Delicate tempered steel tension tools for bypassing locked chests and gates.',
-    value: 40,
-  },
-  {
     id: 'scroll_identify',
     name: 'Scroll of Identify',
     unidentifiedName: 'Parchment Scroll',

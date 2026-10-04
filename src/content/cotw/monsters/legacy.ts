@@ -621,10 +621,6 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
         chance: 0.5,
         generate: (id, rng) => ItemFactory.createGoldCoins(id, Math.floor(rng() * 30) + 10),
       },
-      {
-        chance: 0.2,
-        generate: (id, rng, floor) => dropLootItem('thief_lockpicks', id, rng, floor),
-      },
     ],
   },
   orc: {

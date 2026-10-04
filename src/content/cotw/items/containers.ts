@@ -2,26 +2,6 @@ import type { ItemDefinition } from '../../../engine';
 
 export const COTW_CONTAINERS: ItemDefinition[] = [
   {
-    id: 'sealskin_rucksack',
-    name: 'Sealskin Rucksack',
-    unidentifiedName: 'Fur-Trimmed Pack',
-    category: 'container',
-    slot: 'pack',
-    tier: 1,
-    minFloor: 2,
-    weight: 1200,
-    bulk: 1800,
-    identified: true,
-    description: 'A durable water-repellent rucksack stitched from cured seal hide. Standard adventurer carrying capacity.',
-    value: 30,
-    itemType: 'container',
-    containerConfig: {
-      containerType: 'pack',
-      maxWeightCapacity: 25000,
-      maxBulkCapacity: 20000,
-    },
-  },
-  {
     id: 'dwarven_tool_frame',
     name: 'Dwarven Tool-Frame',
     unidentifiedName: 'Rigid Iron Pack Frame',

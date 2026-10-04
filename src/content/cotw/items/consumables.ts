@@ -107,19 +107,6 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
   // COMBAT & TACTICAL (6)
   // ==========================================
   {
-    id: 'bog_iron_whetstone',
-    name: 'Bog-Iron Whetstone',
-    unidentifiedName: 'Rough Brown Whetstone',
-    category: 'consumable',
-    tier: 1,
-    minFloor: 3,
-    weight: 350,
-    bulk: 200,
-    identified: false,
-    description: 'Restores keen sharpness to a melee weapon and coats the edge with oxidizing mineral grit that causes bleeding wounds.',
-    value: 35,
-  },
-  {
     id: 'bellows_skin_canteen',
     name: 'Bellows-Skin Canteen',
     unidentifiedName: 'Black Leather Bellows',
@@ -137,19 +124,6 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
         { type: 'radial_status', radius: 3, tags: ['monster'], status: 'blindness', duration: 3 },
       ],
     },
-  },
-  {
-    id: 'ice_stave_rune_tablet',
-    name: 'Ice-Stave Rune Tablet',
-    unidentifiedName: 'Inscribed Ice Tablet',
-    category: 'consumable',
-    tier: 2,
-    minFloor: 14,
-    weight: 400,
-    bulk: 300,
-    identified: false,
-    description: 'Smashed upon the dungeon floor, instantly flash-freezing liquid pools and fluids into impassable glacial rime.',
-    value: 80,
   },
   {
     id: 'zealots_sun_flare',
@@ -239,23 +213,6 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
       effects: [
         { type: 'apply_status', status: 'sensory_masked', duration: 10 },
       ],
-    },
-  },
-  {
-    id: 'rune_scratched_bark_map',
-    name: 'Rune-Scratched Bark Map',
-    unidentifiedName: 'Scratched Birch Bark',
-    category: 'consumable',
-    tier: 2,
-    minFloor: 13,
-    weight: 50,
-    bulk: 40,
-    identified: false,
-    description: 'Ancient surveyor markings on birch bark that project the architectural layout of the current dungeon floor into the mind.',
-    value: 75,
-    itemType: 'scroll',
-    scrollConfig: {
-      spellId: 'magic_mapping',
     },
   },
   {

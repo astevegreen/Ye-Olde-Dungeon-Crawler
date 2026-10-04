@@ -59,24 +59,24 @@ describe('Merchant Economy & Trading Engine', () => {
     // Give player 5 Gold (500 CP)
     addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 5, platinum: 0 });
 
-    const torchItem = olaf.stock.find((i) => i.name === 'Wooden Torch');
-    expect(torchItem).toBeDefined();
-    if (!torchItem) return;
+    const brothItem = olaf.stock.find((i) => i.id === 'olaf-broth-1');
+    expect(brothItem).toBeDefined();
+    if (!brothItem) return;
 
     const initialStockCount = olaf.stock.length;
-    const price = getItemBuyPrice(torchItem);
+    const price = getItemBuyPrice(brothItem);
 
-    const result = olaf.buyItem(player, torchItem.id);
+    const result = olaf.buyItem(player, brothItem.id);
     expect(result.success).toBe(true);
-    expect(result.message).toContain('Purchased Wooden Torch');
+    expect(result.message).toContain('Purchased Hearth-Broth Flask');
 
     // Player funds deducted by exactly the listed price
     expect(getPlayerTotalCp(player)).toBe(500 - price);
 
     // Item placed in player primary pack
-    const purchasedItem = player.inventory.primaryPack.getItem(torchItem.id);
+    const purchasedItem = player.inventory.primaryPack.getItem(brothItem.id);
     expect(purchasedItem).toBeDefined();
-    expect(purchasedItem?.name).toBe('Wooden Torch');
+    expect(purchasedItem?.name).toBe('Hearth-Broth Flask');
 
     // Merchant stock decremented
     expect(olaf.stock.length).toBe(initialStockCount - 1);

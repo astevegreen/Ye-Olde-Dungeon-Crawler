@@ -210,12 +210,12 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
         id: 'sharpen_forge',
         label: 'Hone Weapons with Smithing Lore',
         description:
-          'Apply duergar whetting techniques. Earns +10 Exploration Renown, grants a Bog-Iron Whetstone, and commits the Runic Spell Hint to memory.',
+          'Apply duergar whetting techniques, as the Iron Clans taught them. Earns +10 Exploration Renown and +5 Iron Clans standing, and commits the Runic Spell Hint to memory.',
         consequences: [
           { type: 'setFlag', flag: 'skaldic_runestone_2_resolved', value: true },
           { type: 'setFlag', flag: IRON_CLANS_MET_FLAG, value: true },
           { type: 'recordMilestone', milestoneId: 'runestone_read' },
-          { type: 'grantItem', itemId: 'bog_iron_whetstone', toInventory: true },
+          { type: 'modifyFaction', faction: 'iron_clans', delta: 5 },
           {
             type: 'logMessage',
             message:

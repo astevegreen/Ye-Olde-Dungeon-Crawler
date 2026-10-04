@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import {
-  COTW_CATALOG_83,
+  COTW_CATALOG,
   COTW_CATALOG_RECORD,
   COTW_ITEMS,
   COTW_WEAPONS,
@@ -25,9 +25,9 @@ import {
 } from '../giantBlood';
 import { StatusHandlerRegistry } from '../../../engine/status/statusHandlers';
 
-describe('CotW 83-Item Catalog Spec', () => {
-  it('contains exactly 83 items in COTW_CATALOG_83', () => {
-    expect(COTW_CATALOG_83).toHaveLength(83);
+describe('CotW item catalog', () => {
+  it('holds the 83 specified items less the four pulled as useless', () => {
+    expect(COTW_CATALOG).toHaveLength(79);
   });
 
   it('has exact category counts according to spec', () => {
@@ -41,8 +41,8 @@ describe('CotW 83-Item Catalog Spec', () => {
     expect(COTW_BELTS).toHaveLength(5);
     expect(COTW_NECK).toHaveLength(5);
     expect(COTW_RINGS).toHaveLength(7);
-    expect(COTW_CONTAINERS).toHaveLength(5);
-    expect(COTW_CONSUMABLES).toHaveLength(16);
+    expect(COTW_CONTAINERS).toHaveLength(4);
+    expect(COTW_CONSUMABLES).toHaveLength(13);
 
     const sum =
       COTW_WEAPONS.length +
@@ -57,17 +57,17 @@ describe('CotW 83-Item Catalog Spec', () => {
       COTW_RINGS.length +
       COTW_CONTAINERS.length +
       COTW_CONSUMABLES.length;
-    expect(sum).toBe(83);
+    expect(sum).toBe(79);
   });
 
   it('ensures every item has a unique ID', () => {
-    const ids = COTW_CATALOG_83.map((i) => i.id);
+    const ids = COTW_CATALOG.map((i) => i.id);
     const uniqueIds = new Set(ids);
-    expect(uniqueIds.size).toBe(83);
+    expect(uniqueIds.size).toBe(79);
   });
 
-  it('validates schema correctness of all 83 items', () => {
-    for (const item of COTW_CATALOG_83) {
+  it('validates schema correctness of every catalog item', () => {
+    for (const item of COTW_CATALOG) {
       expect(item.id).toBeTruthy();
       expect(item.name).toBeTruthy();
       expect(item.category).toBeTruthy();
@@ -98,7 +98,6 @@ describe('CotW 83-Item Catalog Spec', () => {
       'health_potion',
       'mana_potion',
       'scroll_phase_door',
-      'travel_bread',
       'backpack',
       'coin_purse',
       'utility_belt',

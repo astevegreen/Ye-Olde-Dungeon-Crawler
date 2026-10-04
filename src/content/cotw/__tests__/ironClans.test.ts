@@ -73,12 +73,14 @@ describe('The Iron Clans', () => {
     expect(engine.player.x).toBe(4); // she stands her ground
   });
 
-  it('meets the hero through the Smithy’s Accord too', () => {
+  it('meets the hero through the Smithy’s Accord too, and honing by their lore earns +5 standing', () => {
     const { engine, map } = engineOn(14);
     map.setTile(5, 5, COTW_TILES.find((t) => t.type === 'skaldic_runestone_2')!);
     answer(engine, 'skaldic_runestone_2', 'sharpen_forge');
     engine.handlePlayerAction(new MovementAction(engine.player, 1, 0));
     expect(engine.getWorldFlag(IRON_CLANS_MET_FLAG)).toBe(true);
+    expect(standing(engine)).toBe(-10);
+    expect(engine.player.inventory.primaryPack.getItems().some((i) => i.definitionId === 'bog_iron_whetstone')).toBe(false);
   });
 
   it('rises for honoured barrows and falls for plundered ones', () => {

@@ -30,9 +30,10 @@ export * from './legacy';
 export * from './essences';
 
 /**
- * The complete 83-item CotW catalog specified in CotW-Content-Pack.md.
+ * The CotW item catalog: the 83 items specified in CotW-Content-Pack.md, less the four
+ * pulled as useless in tracker 1.9 (whetstone, ice-stave tablet, bark map, sealskin rucksack).
  */
-export const COTW_CATALOG_83: ItemDefinition[] = [
+export const COTW_CATALOG: ItemDefinition[] = [
   ...COTW_WEAPONS,
   ...COTW_OFFHAND,
   ...COTW_HEAD,
@@ -48,17 +49,17 @@ export const COTW_CATALOG_83: ItemDefinition[] = [
 ];
 
 /**
- * Record map of the 83 items indexed by id.
+ * Record map of the catalog items indexed by id.
  */
 export const COTW_CATALOG_RECORD: Record<string, ItemDefinition> = Object.fromEntries(
-  COTW_CATALOG_83.map((item) => [item.id, item]),
+  COTW_CATALOG.map((item) => [item.id, item]),
 );
 
 /**
- * Combined item pool including the 83 catalog items and legacy items for backward compatibility.
+ * Combined item pool including the catalog items and legacy items for backward compatibility.
  */
 export const COTW_ITEMS: ItemDefinition[] = [
-  ...COTW_CATALOG_83,
+  ...COTW_CATALOG,
   ...COTW_LEGACY_ITEMS.filter((legacy) => !COTW_CATALOG_RECORD[legacy.id]),
   ...COTW_ESSENCE_RUNES,
 ];

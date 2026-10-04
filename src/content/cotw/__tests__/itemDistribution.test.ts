@@ -57,27 +57,29 @@ describe('CotW Item Distribution & Economic Integration', () => {
     // Pack consumables
     const packItems = player.inventory.primaryPack.getItems();
     const packItemKeys = packItems.map((i) => i.definitionId ?? i.id);
-    expect(packItemKeys.some((id) => id.includes('travel_bread'))).toBe(true);
     expect(packItemKeys.some((id) => id.includes('hearth_broth_flask'))).toBe(true);
     expect(packItemKeys.some((id) => id.includes('birch_tar_poultice'))).toBe(true);
     expect(packItemKeys.some((id) => id.includes('scroll_phase_door'))).toBe(true);
   });
 
-  it('populates Olaf the Chandler with packs, cords, wraps, and sustenance', () => {
+  it('populates Olaf the Chandler with wraps and sustenance', () => {
     const olaf = COTW_TOWN.npcs.find((n) => n.id === 'npc-olaf');
     expect(olaf?.merchantConfig).toBeDefined();
     const stock = olaf!.merchantConfig!.initialInventory;
     const stockKeys = stock.map((i) => i.definitionId ?? i.id);
 
-    expect(stockKeys.some((id) => id.includes('sealskin_rucksack'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('leather_coin_pouch'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('braided_sinew_cord'))).toBe(true);
     expect(stockKeys.some((id) => id.includes('tattered_travelers_wrap'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('bound_hide_wrappings'))).toBe(true);
     expect(stockKeys.some((id) => id.includes('hearth_broth_flask'))).toBe(true);
     expect(stockKeys.some((id) => id.includes('birch_tar_poultice'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('bread'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('torch'))).toBe(true);
+  });
+
+  it('sells none of the useless items pulled in 1.9, nor copies of the starting kit', () => {
+    const pulled = ['wooden_torch', 'thief_lockpicks', 'travel_bread', 'bog_iron_whetstone', 'ice_stave_rune_tablet', 'sealskin_rucksack', 'rune_scratched_bark_map'];
+    const starterKit = [COTW_STARTER_KIT.weaponItemId, COTW_STARTER_KIT.armorItemId, COTW_STARTER_KIT.bootsItemId, COTW_STARTER_KIT.purseItemId, COTW_STARTER_KIT.beltItemId];
+    const sold = COTW_TOWN.npcs.flatMap((n) => n.merchantConfig?.initialInventory ?? []).map((i) => i.definitionId ?? i.id);
+    for (const id of [...pulled, ...starterKit]) expect(sold).not.toContain(id);
+    for (const id of pulled) expect(COTW_ITEMS.some((d) => d.id === id)).toBe(false);
+    expect(COTW_STARTER_KIT.packItemIds).not.toContain('travel_bread');
   });
 
   it('populates Gunther the Smith with Norse arms, armor, and forge implements', () => {
@@ -86,13 +88,11 @@ describe('CotW Item Distribution & Economic Integration', () => {
     const stock = gunther!.merchantConfig!.initialInventory;
     const stockKeys = stock.map((i) => i.definitionId ?? i.id);
 
-    expect(stockKeys.some((id) => id.includes('mammut_bone_cudgel'))).toBe(true);
     expect(stockKeys.some((id) => id.includes('rime_bit_chisel'))).toBe(true);
     expect(stockKeys.some((id) => id.includes('cinder_edge_shortsword'))).toBe(true);
     expect(stockKeys.some((id) => id.includes('forge_tongue_hammer'))).toBe(true);
     expect(stockKeys.some((id) => id.includes('lashed_driftwood_buckler'))).toBe(true);
     expect(stockKeys.some((id) => id.includes('bellows_plate_shield'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('layered_fur_jerkin'))).toBe(true);
     expect(stockKeys.some((id) => id.includes('mammut_hide_brigandine'))).toBe(true);
     expect(stockKeys.some((id) => id.includes('cinder_quenched_hauberk'))).toBe(true);
     expect(stockKeys.some((id) => id.includes('skraeling_bone_circlet'))).toBe(true);
@@ -110,10 +110,7 @@ describe('CotW Item Distribution & Economic Integration', () => {
     expect(stockKeys.some((id) => id.includes('hearth_broth_flask'))).toBe(true);
     expect(stockKeys.some((id) => id.includes('birch_tar_poultice'))).toBe(true);
     expect(stockKeys.some((id) => id.includes('bog_myrtle_tonic'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('bog_iron_whetstone'))).toBe(true);
     expect(stockKeys.some((id) => id.includes('bellows_skin_canteen'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('ice_stave_rune_tablet'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('rune_scratched_bark_map'))).toBe(true);
     expect(stockKeys.some((id) => id.includes('charm_watchful_eye'))).toBe(true);
   });
 

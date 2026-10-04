@@ -111,8 +111,8 @@ describe('Town Hub Generation & Multi-Floor Persistence', () => {
     const { profile, engine } = manager.createCharacter('Hilda');
     const olaf = engine.merchants.get('merchant-olaf')!;
     const before = olaf.stock.length;
-    const torch = olaf.stock.find((i) => i.id === 'olaf-torch-1')!;
-    expect(olaf.buyItem(engine.player, torch.id).success).toBe(true);
+    const broth = olaf.stock.find((i) => i.id === 'olaf-broth-1')!;
+    expect(olaf.buyItem(engine.player, broth.id).success).toBe(true);
     const dagger = ItemFactory.createDagger('hilda-old-dagger');
     engine.player.inventory.primaryPack.addItem(dagger);
     expect(olaf.sellItem(engine.player, dagger.id).success).toBe(true);
@@ -120,7 +120,7 @@ describe('Town Hub Generation & Multi-Floor Persistence', () => {
 
     const restored = manager.loadCharacter(profile.id)!.engine.merchants.get('merchant-olaf')!;
     const ids = restored.stock.map((i) => i.id);
-    expect(ids).not.toContain('olaf-torch-1');
+    expect(ids).not.toContain('olaf-broth-1');
     expect(ids).toContain('hilda-old-dagger');
     expect(restored.stock).toHaveLength(before);
     expect(restored.stock.find((i) => i.id === 'hilda-old-dagger')!.identified).toBe(true);

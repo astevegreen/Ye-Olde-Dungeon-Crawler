@@ -71,5 +71,8 @@ export interface SoakSummary {
   /** Dialogs that opened on a move or wait key, by stack id. */
   interruptions: Record<string, number>;
   stuckEpisodes?: number;
+  /** The player bot's gear (Q40): pieces put on, bought and sold, the trip home, and the
+   *  hero's attack and defense when the run ended. */
+  gear?: { equips: number; purchases: number; sales: number; townTrip: string; attack: number; defense: number };
 }
 

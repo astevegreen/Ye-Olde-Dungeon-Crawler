@@ -276,8 +276,11 @@ test.describe('soak @soak', () => {
       const sorted = [...latencies].sort((a, b) => a - b);
       const pct = (q: number) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))] ?? 0;
       const state = await page
-        .evaluate(() => ({ turn: window.__cotwEngine?.turnCount ?? 0, floor: (window.__cotwEngine as any)?.currentFloor ?? 0 }))
-        .catch(() => ({ turn: -1, floor: -1 }));
+        .evaluate(() => {
+          const e = window.__cotwEngine as any;
+          return { turn: e?.turnCount ?? 0, floor: e?.currentFloor ?? 0, attack: e?.player?.attack ?? 0, defense: e?.player?.defense ?? 0 };
+        })
+        .catch(() => ({ turn: -1, floor: -1, attack: 0, defense: 0 }));
       const findingCounts = { bug: 0, softlock: 0, text: 0, ux: 0 };
       for (const s of runSigs.values()) findingCounts[s.category]++;
       const summary: SoakSummary = {
@@ -307,6 +310,9 @@ test.describe('soak @soak', () => {
         deadKeys: oracleState.deadKeyCount,
         interruptions: oracleState.interruptions,
         stuckEpisodes: (page as any).__playerStuckEpisodes ?? 0,
+        ...(policy === 'player'
+          ? { gear: { ...((page as any).__playerGear ?? { equips: 0, purchases: 0, sales: 0, townTrip: 'none' }), attack: state.attack, defense: state.defense } }
+          : {}),
       };
       writeFileSync(join(seedDir, 'summary.json'), JSON.stringify(summary, null, 2));
     };

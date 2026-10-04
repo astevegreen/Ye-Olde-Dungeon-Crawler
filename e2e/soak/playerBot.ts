@@ -25,6 +25,17 @@ export interface PlayerBotState {
   droppedItemsCount: number;
   overburdenedEpisodes: number;
   wasOverburdened: boolean;
+  /** Pack items the bot has tried to put on (each once: a failed equip isn't retried). */
+  equipTried: string[];
+  /** Town merchants (NPC ids) visited this time in town. */
+  shopDone: string[];
+  /** Decisions spent inside the open shop this visit (a cap against loops). */
+  shopDecisions: number;
+  /** The one trip back to town to spend dungeon gold (SOAK_SHOP_FLOOR, default 4). */
+  trip: 'none' | 'up' | 'down' | 'done';
+  equips: number;
+  purchases: number;
+  sales: number;
 }
 
 function saveOverburdenStats(seed: string | undefined, episodes: number, dropped: number, tiles: string[]) {
@@ -69,10 +80,37 @@ export function getBotState(page: Page, actionIndex: number): PlayerBotState {
       droppedItemsCount: 0,
       overburdenedEpisodes: 0,
       wasOverburdened: false,
+      equipTried: [],
+      shopDone: [],
+      shopDecisions: 0,
+      trip: 'none',
+      equips: 0,
+      purchases: 0,
+      sales: 0,
     };
     saveOverburdenStats(process.env.SOAK_SEED, 0, 0, []);
   }
   return p.__playerBotState;
+}
+
+/** One decision from the page: the action, where the hero stood, and what the bot noted. */
+interface DecisionResult {
+  action: DispatchedAction;
+  curPos: string;
+  curTurn: number;
+  curFloor: number;
+  restAttempted?: boolean;
+  pickupAttempted?: boolean;
+  isOverburdened?: boolean;
+  itemDropped?: boolean;
+  droppedPos?: string;
+  droppedFloor?: number;
+  equipTried?: string;
+  inShop?: boolean;
+  shopFinished?: string;
+  bought?: boolean;
+  sold?: boolean;
+  tripUp?: boolean;
 }
 
 export interface PlayerDecisionContext {
@@ -87,6 +125,15 @@ export interface PlayerDecisionContext {
 /**
  * Decides the next action for the goal-seeking player bot.
  * Performs exactly one page.evaluate call per decision to inspect state and plan paths.
+ *
+ * Gear (Q40): it wears the best piece it carries for each slot (by attack for the weapon
+ * hand, defense for the rest), picks up a heavy piece only when it is an upgrade, and
+ * drops spare gear once over half its carry limit. In town after Hallvard it sells spare
+ * gear and buys upgrades it can afford and carry at the smith, then healing at the
+ * alchemist. Once, on finishing floor SOAK_SHOP_FLOOR (default 4) with 1,500 CP or
+ * more, it climbs back to town to spend its dungeon gold, then goes straight back down.
+ * It reads true item stats, unidentified or not: a stand-in for a player who tries
+ * things on. Every move is a real key press.
  */
 export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<DispatchedAction> {
   const { page, prng, actionIndex, inDialog } = ctx;
@@ -99,7 +146,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
     return { type: 'key', key };
   }
 
-  const evalResult = await page.evaluate(
+  const evalResult: DecisionResult = await page.evaluate(
     (args: {
       inDialog: boolean;
       floorEnteredTurn: number;
@@ -107,6 +154,11 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       lastPickupPos: string;
       lastPickupTurn: number;
       droppedTiles: Record<string, boolean>;
+      equipTried: string[];
+      shopDone: string[];
+      shopDecisions: number;
+      trip: 'none' | 'up' | 'down' | 'done';
+      shopFloor: number;
     }) => {
       const w = window as any;
       const e = w.__cotwEngine;
@@ -158,6 +210,62 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
             m.isAlive?.() &&
             p.isHostileTo?.(m)
         );
+
+      // --- Gear: what a decent player would wear, buy and sell ------------------
+      // Wearable pieces judged by the one number that matters for their slot: attack for
+      // the weapon hand, defense (plus any attack) for the rest. Two-handers and jewelry
+      // are left alone.
+      const GEAR = ['weapon', 'armor', 'shield', 'helmet', 'boots', 'gauntlets', 'cloak'];
+      const isGear = (it: any): boolean => Boolean(it && GEAR.includes(it.category) && it.slot && !it.twoHanded);
+      const scoreOf = (it: any): number => {
+        const st = it?.effectiveStats ?? it?.stats ?? {};
+        return it?.slot === 'mainHand' ? (st.attackBonus ?? 0) : (st.defenseBonus ?? 0) + (st.attackBonus ?? 0);
+      };
+      const wornIn = (slot: string): any => p.inventory?.paperdoll?.getItem?.(slot) ?? null;
+      const gainOf = (it: any): number => (isGear(it) ? scoreOf(it) - (wornIn(it.slot) ? scoreOf(wornIn(it.slot)) : 0) : 0);
+      const packItems: any[] = p.inventory?.primaryPack?.getItems?.() ?? [];
+      const equipCandidate = packItems
+        .filter((it) => isGear(it) && gainOf(it) > 0 && !args.equipTried.includes(it.id))
+        .sort((a, b) => gainOf(b) - gainOf(a) || String(a.id).localeCompare(String(b.id)))[0];
+      // Load: a player keeps under half the carry limit (unencumbered), and goes up to
+      // three quarters (burdened, 25% slower) only for a real upgrade.
+      const maxCarry = Math.max(1, p.strength ?? 10) * 2500;
+      const carried: number = p.inventory?.totalWeight?.() ?? 0;
+      const weightOf = (it: any): number => (typeof it?.totalWeight === 'function' ? it.totalWeight() : (it?.weight ?? 0));
+      const fitsLoad = (addGrams: number, gain: number): boolean =>
+        carried + addGrams <= maxCarry * 0.5 || (gain >= 3 && carried + addGrams <= maxCarry * 0.75);
+      const shedCandidate =
+        carried > maxCarry * 0.5
+          ? packItems
+              .filter((it) => isGear(it) && gainOf(it) <= 0)
+              .sort((a, b) => weightOf(b) - weightOf(a) || String(a.id).localeCompare(String(b.id)))[0]
+          : undefined;
+      const isHealing = (it: any): boolean =>
+        Boolean(it && (it.potionType === 'health' || it.effects?.some?.((f: any) => f.type === 'restore_hp')));
+      const COIN: Record<string, number> = { copper: 1, silver: 10, gold: 100, platinum: 1000 };
+      const funds = (): number => {
+        let cp = 0;
+        for (const c of [p.inventory?.purse, p.inventory?.primaryPack]) {
+          for (const it of c?.getItems?.() ?? []) {
+            if (it.category !== 'currency') continue;
+            const name = String(it.name).toLowerCase();
+            const denom = it.denomination ?? (['platinum', 'silver', 'copper'].find((d) => name.includes(d)) ?? 'gold');
+            const count = it.count ?? Number(name.match(/(\d+)/)?.[1] ?? 1);
+            cp += (COIN[denom] ?? 1) * count;
+          }
+        }
+        return cp;
+      };
+      const findStairs = (dir: 'up' | 'down'): { x: number; y: number } | null => {
+        for (let y = 0; y < e.map.height; y++) {
+          for (let x = 0; x < e.map.width; x++) {
+            const t = e.map.getTile(x, y);
+            const hit = dir === 'up' ? t && (t.isStairsUp || t.type === 'stairs_up') : t && (t.isStairsDown || t.type === 'stairs_down');
+            if (hit && e.fov.isExplored(x, y)) return { x, y };
+          }
+        }
+        return null;
+      };
 
       // --- 1. Dialogs and modes first -----------------------------------------
       const picker = document.querySelector('.potion-picker');
@@ -234,7 +342,31 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         const isOverburdened = !p.canMove?.() || p.inventory?.getEncumbrance?.(p.strength) === 'Immobilized';
 
         if (!isOverburdened) {
-          return { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor };
+          // Put on the better piece: the backpack panel, its cell, then E.
+          const invTabE = modal?.tabs?.find?.((t: any) => t.id === 'inventory');
+          const ce = invTabE?.controller;
+          const groupsE: any[] = ce?.groups?.('backpack') ?? [];
+          // In the dungeon a spare piece is dropped when the load is heavy; in town it is sold.
+          const shed = curFloor > 0 ? shedCandidate : undefined;
+          const want = equipCandidate ?? shed;
+          const targetIdx = want ? groupsE.findIndex((g: any) => g.leadItem?.id === want.id) : -1;
+          if (targetIdx < 0) {
+            return { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor };
+          }
+          if (modal && modal.activeTabId !== 'inventory') {
+            return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor };
+          }
+          if (ce.inspector?.focusedPanel !== 'backpack') {
+            return { action: { type: 'key' as const, key: 'Tab' }, curPos, curTurn, curFloor };
+          }
+          const at = ce.inspector.focusedIndex ?? 0;
+          if (at !== targetIdx) {
+            return { action: { type: 'key' as const, key: at < targetIdx ? 'ArrowRight' : 'ArrowLeft' }, curPos, curTurn, curFloor };
+          }
+          if (equipCandidate) {
+            return { action: { type: 'key' as const, key: 'KeyE' }, curPos, curTurn, curFloor, equipTried: equipCandidate.id as string };
+          }
+          return { action: { type: 'key' as const, key: 'KeyD' }, curPos, curTurn, curFloor, itemDropped: true, droppedPos: curPos, droppedFloor: curFloor };
         }
 
         if (modal && modal.activeTabId !== 'inventory') {
@@ -291,7 +423,58 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       }
 
       if (stack.includes('shop') || openModes.includes('shop') || h?.shopOverlay?.isOpen) {
-        return { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor };
+        // A merchant: sell the spare gear, then buy the best upgrade per slot that the purse
+        // covers, and healing potions. Everything by keys: B/S for the tab, arrows, Enter.
+        const so = h?.shopOverlay;
+        const npcId: string = so?.activeNpc?.id ?? 'npc';
+        const leave = { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor, shopFinished: npcId };
+        if (!so?.merchant || args.shopDecisions >= 80) return leave;
+        const toRow = (tab: 'buy' | 'sell', index: number, extra: Record<string, unknown>) => {
+          if (so.activeTab !== tab) return { action: { type: 'key' as const, key: tab === 'buy' ? 'KeyB' : 'KeyS' }, curPos, curTurn, curFloor, inShop: true };
+          const at = tab === 'buy' ? so.selectedBuyIndex : so.selectedSellIndex;
+          if (at !== index) return { action: { type: 'key' as const, key: at < index ? 'ArrowDown' : 'ArrowUp' }, curPos, curTurn, curFloor, inShop: true };
+          return { action: { type: 'key' as const, key: 'Enter' }, curPos, curTurn, curFloor, inShop: true, ...extra };
+        };
+        const buyRows: any[][] = so.rowsFor(e, 'buy');
+        const sellRows: any[][] = so.rowsFor(e, 'sell');
+        const dealsInGear = buyRows.some((row) => isGear(row[0]));
+
+        if (dealsInGear) {
+          const spare = sellRows.findIndex((row) => isGear(row[0]) && gainOf(row[0]) <= 0);
+          if (spare >= 0) return toRow('sell', spare, { sold: true });
+        }
+
+        // Buy prices, read the way the dialog reads them on its Buy tab.
+        const tabNow = so.activeTab;
+        so.activeTab = 'buy';
+        const prices = new Map<any, number>(buyRows.map((row) => [row[0], so.priceOf(row[0], e) as number]));
+        so.activeTab = tabNow;
+        const cash = funds();
+        const bestHeld = (slot: string): number =>
+          Math.max(wornIn(slot) ? scoreOf(wornIn(slot)) : 0, ...packItems.filter((it) => isGear(it) && it.slot === slot).map(scoreOf));
+        let pick = -1;
+        let pickGain = 0;
+        buyRows.forEach((row, i) => {
+          const it = row[0];
+          if (!isGear(it) || (prices.get(it) ?? Infinity) > cash) return;
+          const g = scoreOf(it) - bestHeld(it.slot);
+          // Worn in place of the old piece, which is then sold: count only the difference.
+          const old = wornIn(it.slot);
+          if (!fitsLoad(weightOf(it) - (old ? weightOf(old) : 0), g)) return;
+          if (g > pickGain) {
+            pick = i;
+            pickGain = g;
+          }
+        });
+        if (pick >= 0) return toRow('buy', pick, { bought: true });
+
+        const healingCarried = (p.inventory?.getAllCarriedItems?.() ?? [])
+          .filter(isHealing)
+          .reduce((n: number, it: any) => n + (it.quantity ?? 1), 0);
+        const potion = buyRows.findIndex((row) => isHealing(row[0]) && (prices.get(row[0]) ?? Infinity) <= cash);
+        if (potion >= 0 && healingCarried < 8) return toRow('buy', potion, { bought: true });
+
+        return leave;
       }
 
       if (stack.length > 0 || (args.inDialog && openModes.length > 0)) {
@@ -408,6 +591,9 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
                     tile.type === 'door_closed' ||
                     tile.type === 'door_open');
                 if (!passable) continue;
+                // Walking into a townsperson talks to them: path around.
+                const npcHere = e.map.getEntityAt(nx, ny);
+                if (npcHere && npcHere.type === 'npc') continue;
               } else {
                 if (!tile || !tile.passable || tile.isClosedDoor || tile.isOpenDoor) continue;
                 const ent = e.map.getEntityAt(nx, ny);
@@ -581,6 +767,20 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           if (step) {
             return { action: { type: 'key' as const, key: stepToKey(step.x - p.x, step.y - p.y) }, curPos, curTurn, curFloor };
           }
+        } else if (equipCandidate) {
+          return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor };
+        } else if (['npc-gunther', 'npc-astrid'].some((id) => !args.shopDone.includes(id) && e.map.getEntityById(id))) {
+          // The smith, then the alchemist: walk up and bump to trade.
+          const id = ['npc-gunther', 'npc-astrid'].find((n) => !args.shopDone.includes(n) && e.map.getEntityById(n))!;
+          const npc = e.map.getEntityById(id);
+          if (cheb(p, npc) === 1) {
+            return { action: { type: 'key' as const, key: stepToKey(npc.x - p.x, npc.y - p.y) }, curPos, curTurn, curFloor };
+          }
+          const step = bfsStepToGoal(p, npc, true);
+          if (step) {
+            return { action: { type: 'key' as const, key: stepToKey(step.x - p.x, step.y - p.y) }, curPos, curTurn, curFloor };
+          }
+          return { action: { type: 'key' as const, key: 'Space' }, curPos, curTurn, curFloor, shopFinished: id };
         } else {
           // Walk to cellar stairs at (31, 7) or tile with isStairsDown
           let stairs = { x: 31, y: 7 };
@@ -600,7 +800,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           if (cheb(p, stairs) === 1) {
             return { action: { type: 'key' as const, key: stepToKey(stairs.x - p.x, stairs.y - p.y) }, curPos, curTurn, curFloor };
           }
-          const step = bfsStepToGoal(p, stairs, false);
+          const step = bfsStepToGoal(p, stairs, true);
           if (step) {
             return { action: { type: 'key' as const, key: stepToKey(step.x - p.x, step.y - p.y) }, curPos, curTurn, curFloor };
           }
@@ -633,6 +833,29 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         if (p.hp < p.maxHp * 0.6 && visibleHostiles.length === 0) {
           if (args.lastRestAttemptTurn !== curTurn) {
             return { action: { type: 'key' as const, key: 'KeyR' }, curPos, curTurn, curFloor, restAttempted: true };
+          }
+        }
+
+        // Put on a better piece found on the way, once nothing is in sight.
+        if (visibleHostiles.length === 0 && (equipCandidate || shedCandidate)) {
+          return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor };
+        }
+
+        // The trip back to town: up every floor's stairs, then straight back down.
+        if (args.trip === 'up') {
+          const up = findStairs('up');
+          if (up) {
+            if (p.x === up.x && p.y === up.y) return { action: { type: 'key' as const, key: 'Enter' }, curPos, curTurn, curFloor };
+            const step = bfsStepToGoal(p, up, true);
+            if (step) return { action: { type: 'key' as const, key: stepToKey(step.x - p.x, step.y - p.y) }, curPos, curTurn, curFloor };
+          }
+        }
+        if (args.trip === 'down' && curFloor <= args.shopFloor) {
+          const down = findStairs('down');
+          if (down) {
+            if (p.x === down.x && p.y === down.y) return { action: { type: 'key' as const, key: 'Enter' }, curPos, curTurn, curFloor };
+            const step = bfsStepToGoal(p, down, true);
+            if (step) return { action: { type: 'key' as const, key: stepToKey(step.x - p.x, step.y - p.y) }, curPos, curTurn, curFloor };
           }
         }
 
@@ -695,7 +918,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
             ? (currentWeight + itemWeight > maxCarryWeight)
             : (currentWeight + itemWeight > maxCarryWeight * 0.85);
 
-          const canPick = !droppedHere && !isContainer && isPreferred && !wouldOverburden;
+          const isUpgrade = isGear(topItem) && gainOf(topItem) > 0 && fitsLoad(itemWeight, gainOf(topItem));
+          const canPick = !droppedHere && !isContainer && ((isPreferred && !wouldOverburden) || isUpgrade);
 
           if (canPick) {
             if (args.lastPickupPos !== curPos || args.lastPickupTurn !== curTurn) {
@@ -720,6 +944,10 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         const frontierStep = bfsStepToFrontier(p);
 
         if ((!frontierStep || timeout) && seenStairsDown) {
+          // Done with this floor: at the shopping floor, with money to spend, go home first.
+          if (args.trip === 'none' && curFloor === args.shopFloor && funds() >= 1500) {
+            return { action: { type: 'key' as const, key: 'Space' }, curPos, curTurn, curFloor, tripUp: true };
+          }
           if (p.x === seenStairsDown.x && p.y === seenStairsDown.y) {
             return { action: { type: 'key' as const, key: 'Enter' }, curPos, curTurn, curFloor };
           }
@@ -755,6 +983,11 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       lastPickupPos: state.lastPickupPos,
       lastPickupTurn: state.lastPickupTurn,
       droppedTiles: state.droppedTiles,
+      equipTried: state.equipTried,
+      shopDone: state.shopDone,
+      shopDecisions: state.shopDecisions,
+      trip: state.trip,
+      shopFloor: Number(process.env.SOAK_SHOP_FLOOR ?? 4),
     }
   );
 
@@ -764,7 +997,29 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
   if (curFloor !== state.lastFloorSeen) {
     state.lastFloorSeen = curFloor;
     state.floorEnteredTurn = curTurn;
+    if (curFloor === 0) {
+      // A new stay in town: every merchant again.
+      state.shopDone = [];
+      state.shopDecisions = 0;
+      if (state.trip === 'up') {
+        state.trip = 'down';
+        console.log(`[soak:player] Back in town to shop, turn ${curTurn}`);
+      }
+    }
+    if (state.trip === 'down' && curFloor > Number(process.env.SOAK_SHOP_FLOOR ?? 4)) state.trip = 'done';
   }
+  if (evalResult.tripUp && state.trip === 'none') {
+    state.trip = 'up';
+    console.log(`[soak:player] Heading back to town to shop from floor ${curFloor}, turn ${curTurn}`);
+  }
+  if (evalResult.equipTried) {
+    state.equipTried.push(evalResult.equipTried);
+    state.equips++;
+  }
+  if (evalResult.inShop) state.shopDecisions++;
+  if (evalResult.shopFinished && !state.shopDone.includes(evalResult.shopFinished)) state.shopDone.push(evalResult.shopFinished);
+  if (evalResult.bought) state.purchases++;
+  if (evalResult.sold) state.sales++;
 
   if (restAttempted) {
     state.lastRestAttemptTurn = curTurn;
@@ -813,7 +1068,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
   state.lastTurn = curTurn;
   state.lastFloor = curFloor;
 
-  if (sameState && !evalResult.isOverburdened) {
+  // Trading and the inventory take no turns: only a stall on the map counts as stuck.
+  if (sameState && !evalResult.isOverburdened && !inDialog) {
     state.stuckDecisions++;
     if (state.stuckDecisions >= 15) {
       state.stuckEpisodes++;
@@ -830,6 +1086,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
   (page as any).__playerStuckEpisodes = state.stuckEpisodes;
   (page as any).__playerOverburdenedCount = state.overburdenedEpisodes;
   (page as any).__playerItemsDropped = state.droppedItemsCount;
+  (page as any).__playerGear = { equips: state.equips, purchases: state.purchases, sales: state.sales, townTrip: state.trip };
 
   return action;
 }

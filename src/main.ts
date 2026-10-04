@@ -1,5 +1,6 @@
 import {
   AttuneGrimoirePageAction,
+  ArrangeGrimoireSlotAction,
   AutosaveManager,
   type AutosaveSlot,
   canOvercast,
@@ -519,6 +520,12 @@ window.addEventListener('DOMContentLoaded', () => {
       activeEngine.handlePlayerAction(new AttuneGrimoirePageAction(activeEngine.player, pageIndex));
       quickSpellsBar.update(activeEngine);
       combatSidebar.update(activeEngine);
+      void processVisualEffectsAndRender();
+    },
+    onArrangeGrimoireSlot: (slotIndex, spellId) => {
+      if (!activeEngine) return;
+      activeEngine.handlePlayerAction(new ArrangeGrimoireSlotAction(activeEngine.player, slotIndex, spellId));
+      quickSpellsBar.update(activeEngine);
       void processVisualEffectsAndRender();
     },
   });

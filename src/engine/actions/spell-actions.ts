@@ -506,6 +506,45 @@ export class DrinkPotionAction implements Action {
   }
 }
 
+/**
+ * Puts a known spell in a grimoire slot on the active page, or clears the slot with `null`
+ * (`Player.setGrimoireSlot`: one copy per page, so placing it again moves it). A player
+ * action, so the replay trail records it. Like a page switch, it is free in town or with
+ * no foe in view, and takes a turn otherwise.
+ */
+export class ArrangeGrimoireSlotAction implements Action {
+  public readonly player: Player;
+  public readonly slotIndex: number;
+  public readonly spellId: string | null;
+
+  get actor(): Entity {
+    return this.player;
+  }
+
+  constructor(player: Player, slotIndex: number, spellId: string | null) {
+    this.player = player;
+    this.slotIndex = slotIndex;
+    this.spellId = spellId;
+  }
+
+  public perform(engine: GameEngine): ActionResult {
+    if (!this.player.isAlive()) {
+      return { success: false, cost: 0, message: 'The dead write nothing in their grimoire.' };
+    }
+    if (!this.player.setGrimoireSlot(this.slotIndex, this.spellId)) {
+      return { success: false, cost: 0, message: 'That slot cannot take that spell.' };
+    }
+    if (GrimoireMatrixManager.canSwitchPageInstantly(engine, this.player)) {
+      return { success: true, cost: 0 };
+    }
+    const cost = this.player.getActionCost(BASE_ACTION_COST);
+    this.player.consumeEnergy(cost);
+    const message = 'With foes in sight, rewriting your grimoire takes a turn.';
+    engine.log(message);
+    return { success: true, cost, message };
+  }
+}
+
 export class AttuneGrimoirePageAction implements Action {
   public readonly player: Player;
   public readonly targetPageIndex: number;

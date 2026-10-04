@@ -3,7 +3,9 @@ import { GameEngine } from '../../engine';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
-import { CastSpellAction, AttuneGrimoirePageAction } from '../../actions/spell-actions';
+import { CastSpellAction, AttuneGrimoirePageAction, ArrangeGrimoireSlotAction } from '../../actions/spell-actions';
+import { describeAction } from '../../debug/actionTrail';
+import { rebuildAction } from '../../debug/replay';
 import { GrimoireMatrixManager, GRIMOIRE_ATTUNE_STATUS } from '../grimoireMatrix';
 import { Monster } from '../../entities/monster';
 import type { SpellDefinition } from '../types';
@@ -361,6 +363,42 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     player.grimoire[4].spellId = 'fire_ray';
     const reloaded = deserializeGame(JSON.parse(JSON.stringify(serializeGame(engine)))).engine.player;
     expect(reloaded.grimoirePages[0].slots.filter((s) => s.spellId === 'fire_ray').map((s) => s.slotIndex)).toEqual([0]);
+  });
+
+  it('rewrites a slot as a player action: free out of sight of foes, a turn with one in view', () => {
+    const turn = engine.turnCount;
+    const calm = engine.handlePlayerAction(new ArrangeGrimoireSlotAction(player, 4, 'fire_ray'));
+    expect(calm).toMatchObject({ success: true, cost: 0 });
+    expect(player.grimoire[4].spellId).toBe('fire_ray');
+    expect(engine.turnCount).toBe(turn);
+
+    engine.currentFloor = 1;
+    engine.map.addEntity(
+      new Monster({ id: 'watcher', name: 'Watcher', position: { x: 5, y: 7 }, stats: { hp: 20, maxHp: 20, attack: 1, defense: 0 }, faction: 'hostile' })
+    );
+    engine.updateFov();
+    const tense = engine.handlePlayerAction(new ArrangeGrimoireSlotAction(player, 4, null));
+    expect(tense).toMatchObject({ success: true, cost: 100 });
+    expect(player.grimoire[4].spellId).toBeNull();
+    expect(engine.turnCount).toBe(turn + 1);
+
+    // A sealed slot or an unknown spell is refused, and costs nothing.
+    player.grimoireOpenSlots = [0, 1, 4];
+    expect(new ArrangeGrimoireSlotAction(player, 8, 'fire_ray').perform(engine)).toMatchObject({ success: false, cost: 0 });
+    expect(new ArrangeGrimoireSlotAction(player, 4, 'no_such_spell').perform(engine)).toMatchObject({ success: false, cost: 0 });
+  });
+
+  it('records a grid edit in the replay trail and rebuilds it', () => {
+    const entry = describeAction(new ArrangeGrimoireSlotAction(player, 4, 'cold_burst'));
+    expect(entry).toEqual({ action: 'ArrangeGrimoireSlotAction', params: { slotIndex: 4, spellId: 'cold_burst' } });
+    const rebuilt = rebuildAction(engine, { seq: 0, turn: 0, floor: 0, ...entry });
+    expect(rebuilt).toBeInstanceOf(ArrangeGrimoireSlotAction);
+    engine.handlePlayerAction(rebuilt!);
+    expect(player.grimoire[4].spellId).toBe('cold_burst');
+
+    const clear = describeAction(new ArrangeGrimoireSlotAction(player, 4, null));
+    engine.handlePlayerAction(rebuildAction(engine, { seq: 1, turn: 0, floor: 0, ...clear })!);
+    expect(player.grimoire[4].spellId).toBeNull();
   });
 
   it('applies grid synergies to a normal cast that names no slot', () => {

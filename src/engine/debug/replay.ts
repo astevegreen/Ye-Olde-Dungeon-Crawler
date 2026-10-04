@@ -34,6 +34,7 @@ import {
   ReadScrollAction,
   DrinkPotionAction,
   AttuneGrimoirePageAction,
+  ArrangeGrimoireSlotAction,
 } from '../actions/spell-actions';
 import { IdentifyAction } from '../actions/identificationActions';
 import { PerformAltarRiteAction } from '../magic/altars';
@@ -123,6 +124,10 @@ const BUILDERS: Record<string, Builder> = {
       : null;
   },
   AttuneGrimoirePageAction: (e, p) => new AttuneGrimoirePageAction(e.player, num(p, 'targetPageIndex') ?? 0),
+  ArrangeGrimoireSlotAction: (e, p) => {
+    const slot = num(p, 'slotIndex');
+    return slot === undefined ? null : new ArrangeGrimoireSlotAction(e.player, slot, str(p, 'spellId') ?? null);
+  },
   PerformAltarRiteAction: (e, p) => {
     const altarId = str(p, 'altarId');
     const offeringId = str(p, 'offeringId');

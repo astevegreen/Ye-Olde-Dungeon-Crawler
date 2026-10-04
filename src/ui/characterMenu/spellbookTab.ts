@@ -21,6 +21,8 @@ export interface SpellbookTabOptions {
   onQuickSpellsChanged: () => void;
   /** Switch grimoire page; runs as a player action, since it can cost a turn in combat. */
   onSwitchGrimoirePage: (pageIndex: number) => void;
+  /** Put a spell in a grimoire slot, or clear it with null; a player action, since it can cost a turn in combat. */
+  onArrangeGrimoireSlot: (slotIndex: number, spellId: string | null) => void;
 }
 
 const SLOT_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
@@ -49,7 +51,13 @@ export class SpellbookTab implements MenuTab {
   private selectedIndex = 0;
 
   constructor(options: Partial<SpellbookTabOptions> = {}) {
-    this.options = { onCastSpell: () => {}, onQuickSpellsChanged: () => {}, onSwitchGrimoirePage: () => {}, ...options };
+    this.options = {
+      onCastSpell: () => {},
+      onQuickSpellsChanged: () => {},
+      onSwitchGrimoirePage: () => {},
+      onArrangeGrimoireSlot: () => {},
+      ...options,
+    };
   }
 
   public mount(container: HTMLElement): void {
@@ -171,7 +179,7 @@ export class SpellbookTab implements MenuTab {
         const spell = this.selectedSpell;
         const slotIndex = Number(cell.getAttribute('data-grimoire-slot'));
         if (!player || !spell || !player.isGrimoireSlotOpen(slotIndex)) return;
-        player.setGrimoireSlot(slotIndex, player.grimoire[slotIndex]?.spellId === spell.id ? null : spell.id);
+        this.options.onArrangeGrimoireSlot(slotIndex, player.grimoire[slotIndex]?.spellId === spell.id ? null : spell.id);
         this.render();
       });
     });

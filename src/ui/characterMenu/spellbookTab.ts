@@ -17,6 +17,7 @@ import type { GameState } from './gameState';
 import type { MenuFooter, MenuTab } from './menuTab';
 import { escapeHtml, keyChip } from '../html';
 import { spellPower } from '../spellPower';
+import { resolveBranding } from '../branding';
 
 export interface SpellbookTabOptions {
   onCastSpell: (spell: SpellDefinition) => void;
@@ -156,7 +157,7 @@ export class SpellbookTab implements MenuTab {
     this.container.innerHTML = `
       <div class="ui-tabgrid sb-grid${grimoire ? ' has-grimoire' : ''}">
         <div class="ui-col">${this.renderList(player)}</div>
-        <div class="ui-col ui-scroll">${this.renderDetail(player)}</div>
+        <div class="ui-col ui-scroll">${this.renderDetail(player)}${this.renderFusions(player)}</div>
         ${grimoire ? `<div class="ui-col ui-scroll">${this.renderGrimoire(player)}</div>` : ''}
       </div>`;
     this.bind();
@@ -263,6 +264,36 @@ export class SpellbookTab implements MenuTab {
         <div class="ui-h">Quickbar</div>
         <div class="sb-slots">${slots}</div>
         <div class="ui-note">Press 1–0 to put it on a slot; press again to take it off.</div>
+      </div>`;
+  }
+
+  /**
+   * The fusions the hero knows (Q19, Q32): the pack's `magic.hybrids` whose spell is known
+   * (forged, or won), or told by a lore entry already read (`fusionSpellId`). Unknown ones
+   * stay off the list; the count says how many remain.
+   */
+  private renderFusions(player: Player): string {
+    const engine = this.engine!;
+    const hybrids = engine.manifest?.magic?.hybrids ?? [];
+    if (hybrids.length === 0) return '';
+    const flags = engine.worldState.flags ?? {};
+    const told = new Set((engine.manifest?.loreEntries ?? []).filter((l) => l.fusionSpellId && flags[l.flag]).map((l) => l.fusionSpellId!));
+    const rows = hybrids
+      .map((h) => {
+        const forged = player.spellsKnown.includes(h.spellId);
+        if (!forged && !told.has(h.spellId)) return '';
+        const name = (engine.manifest?.spells?.find((s) => s.id === h.spellId) ?? getSpell(h.spellId))?.name ?? h.spellId;
+        return `<div class="sb-fusion"><span class="sb-fusion-name">${escapeHtml(name)}</span> <span class="ui-faint">${escapeHtml(h.elements.join(' + '))}</span><span class="ui-note sb-fusion-src">${forged ? 'known' : 'told'}</span></div>`;
+      })
+      .filter(Boolean);
+    const forges = (engine.manifest?.magic?.altars ?? []).filter((a) => a.rite === 'forge').map((a) => a.name);
+    const where = forges.length ? `Forged at ${forges.join(' or ')}: a spell of one element, and an offering of the other.` : '';
+    const lore = resolveBranding(engine.manifest).loreTitle;
+    return `
+      <div class="ui-card">
+        <div class="ui-h">Fusions <small>${rows.length} of ${hybrids.length} known</small></div>
+        ${rows.join('') || `<div class="ui-note">None known yet. ${escapeHtml(lore)} tell of some; others wait to be found.</div>`}
+        ${where ? `<div class="ui-note">${escapeHtml(where)}</div>` : ''}
       </div>`;
   }
 

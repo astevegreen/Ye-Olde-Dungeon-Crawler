@@ -659,4 +659,7 @@
 .sb-cell-spell { font-size: var(--ui-text-sm); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sb-cell-empty, .sb-sealed { font-style: italic; color: var(--ui-text-faint); }
 .sb-glyphs { color: var(--ui-xp); }
+.sb-fusion { display: flex; align-items: baseline; gap: var(--ui-space-2); padding: 2px 0; }
+.sb-fusion-name { font-weight: bold; }
+.sb-fusion-src { margin-left: auto; }
 .sb-unseal { padding-left: var(--ui-space-2); border-left: 2px solid var(--ui-info); }

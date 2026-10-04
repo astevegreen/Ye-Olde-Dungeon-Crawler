@@ -166,6 +166,9 @@ export interface LoreEntryDefinition {
   verse: string;
   /** What it teaches, in plain terms. */
   lore: string;
+  /** A fusion (a `magic.hybrids` spell) this lore tells how to forge: once read, the
+   *  Spellbook lists it among the fusions the hero knows. */
+  fusionSpellId?: string;
 }
 
 /**

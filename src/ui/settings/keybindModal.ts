@@ -4,6 +4,7 @@ import { createDialogScrim, dialogButton, dialogHtml } from '../dialog';
 import { escapeHtml } from '../html';
 import { keyLabel } from '../keyLabel';
 import { formatStorageStatus, getStoragePersistenceInfo } from '../persistenceInit';
+import { AUTO_PICKUP_GROUPS, type AutoPickupGroup } from '../autoPickup';
 
 export interface KeybindModalOptions {
   settingsManager: SettingsManager;
@@ -190,6 +191,13 @@ export class KeybindModal implements UIModal {
         ${option('chk-hints', 'First-time hints', 'The first time you meet an altar, a pact keeper, a companion and the like, a short note about it appears under the sidebar. Each shows once per hero. In the opening scene, the slot for the move the moment calls for also glows.')}
         ${option('chk-controls-primer', 'Controls reminder', 'Before a new hero takes their first step, a short note on moving, fighting and where to change the keys.')}
 
+        <div class="ui-h">Picking up</div>
+        <div class="set-option">
+          <div class="set-option-head"><span class="set-check">Pick up when you step on them</span></div>
+          <div class="set-pickups">${AUTO_PICKUP_GROUPS.map((g) => `<label class="set-check"><input type="checkbox" data-pickup="${g.id}" /> ${escapeHtml(g.label)}</label>`).join('')}</div>
+          <div class="ui-note">Coins are always picked up. What you marked as junk, or what will not fit, stays on the ground.</div>
+        </div>
+
         <div class="ui-h">Keys</div>
         <div class="st-subtabs" role="tablist">
           <button type="button" class="st-subtab tab-btn active" role="tab" aria-selected="true" data-cat="Locomotion">Movement</button>
@@ -266,6 +274,13 @@ export class KeybindModal implements UIModal {
       this.settingsManager.updateSettings({ controlsPrimerEnabled: primerChk.checked });
     });
 
+    modal.querySelectorAll<HTMLInputElement>('[data-pickup]').forEach((box) => {
+      box.addEventListener('change', () => {
+        const group = box.dataset.pickup as AutoPickupGroup;
+        this.settingsManager.updateSettings({ autoPickup: { ...this.settingsManager.getSettings().autoPickup, [group]: box.checked } });
+      });
+    });
+
     // Mouse Vectoring Checkbox
     const mouseChk = modal.querySelector('#chk-mouse-vectoring') as HTMLInputElement | null;
     mouseChk?.addEventListener('change', () => {
@@ -334,6 +349,9 @@ export class KeybindModal implements UIModal {
     if (hintsChk) hintsChk.checked = settings.hintsEnabled;
     const primerChk = this.modalEl.querySelector('#chk-controls-primer') as HTMLInputElement | null;
     if (primerChk) primerChk.checked = settings.controlsPrimerEnabled;
+    this.modalEl.querySelectorAll<HTMLInputElement>('[data-pickup]').forEach((box) => {
+      box.checked = settings.autoPickup[box.dataset.pickup as AutoPickupGroup] ?? false;
+    });
 
     const standardBadge = this.modalEl.querySelector('#badge-standard-mode');
     if (standardBadge) {

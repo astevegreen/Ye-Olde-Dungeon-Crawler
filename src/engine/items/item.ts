@@ -123,7 +123,7 @@ export class Item {
   public quantity: number;
   public quality: ItemQuality;
   public identified: boolean;
-  /** The hero marked it junk: a shop's "sell all junk" sells it. */
+  /** The hero marked it junk: a shop's "sell all junk" sells it, and auto-pickup leaves it. */
   public junk: boolean;
   public readonly stats: ItemStatModifiers;
   public readonly description: string;

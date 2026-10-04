@@ -180,6 +180,8 @@
 .set-option-head { display: flex; justify-content: space-between; align-items: center; gap: var(--ui-space-3); margin-bottom: 2px; }
 .set-check { display: flex; align-items: center; gap: var(--ui-space-2); font-weight: bold; cursor: pointer; }
 .set-check input { width: 15px; height: 15px; accent-color: var(--ui-accent); }
+.set-pickups { display: flex; flex-wrap: wrap; gap: var(--ui-space-1) var(--ui-space-4); margin: var(--ui-space-1) 0; }
+.set-pickups .set-check { font-weight: normal; }
 .set-range { display: flex; align-items: center; gap: var(--ui-space-2); font-size: var(--ui-text-sm); color: var(--ui-text-muted); }
 .set-range input { width: 90px; accent-color: var(--ui-accent); }
 .set-keys { max-height: 260px; overflow-y: auto; padding: var(--ui-space-1) var(--ui-space-2); }

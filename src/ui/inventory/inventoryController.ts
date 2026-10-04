@@ -858,7 +858,7 @@ export class InventoryController {
         return done();
       }
       case 'KeyJ': {
-        // Junk: any shop's Sell list sells every marked item at once.
+        // Junk: any shop's Sell list sells every marked item at once, and auto-pickup leaves it.
         if (!selected || source !== 'backpack' || selected.category === 'currency') return false;
         this.dispatch({ type: 'mark_junk', payload: { itemId: selected.id } });
         this.reselectFocused();

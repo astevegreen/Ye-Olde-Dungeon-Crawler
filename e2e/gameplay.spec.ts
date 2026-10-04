@@ -189,6 +189,32 @@ test("the sidebar's ground line shows the whole stairs prompt", async ({ page })
   expect(fits).toBe(true);
 });
 
+// Auto-pickup (tracker 2.5): stepping onto a scroll picks it up by default, a potion marked
+// junk stays on the ground.
+test('stepping onto a scroll picks it up, and junk stays where it lies', async ({ page }) => {
+  await embarkNewHero(page);
+  const placed = await page.evaluate(() => {
+    const e = window.__cotwEngine!;
+    const pack = e.player.inventory.primaryPack;
+    const scroll = pack.getItems().find((i) => i.constructor.name === 'ScrollItem');
+    const potion = pack.getItems().find((i) => i.constructor.name === 'PotionItem');
+    if (!scroll || !potion) return null;
+    pack.removeItem(scroll.id);
+    pack.removeItem(potion.id);
+    potion.junk = true;
+    e.map.addItemAt(e.player.x + 1, e.player.y, scroll);
+    e.map.addItemAt(e.player.x + 1, e.player.y, potion);
+    return { scroll: scroll.id, potion: potion.id, x: e.player.x + 1, y: e.player.y };
+  });
+  expect(placed).not.toBeNull();
+  await page.keyboard.press('ArrowRight');
+  await expect
+    .poll(() => page.evaluate((id) => !!window.__cotwEngine!.player.inventory.findItemById(id), placed!.scroll))
+    .toBe(true);
+  const ground = await page.evaluate(({ x, y }) => window.__cotwEngine!.map.getItemsAt(x, y).map((i) => i.id), placed!);
+  expect(ground).toEqual([placed!.potion]);
+});
+
 // Save & quit and choices take keys only through the modal stack, as one entry each: a
 // second window listener delivered every key twice, and the choice's stack entry let
 // Escape dismiss a choice that cannot be cancelled.

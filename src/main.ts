@@ -35,7 +35,6 @@ import {
   replayActionTrail,
   isGameEvent,
   Monster,
-  parseCoinItem,
   PotionItem,
   DrinkPotionAction,
   MovementAction,
@@ -59,6 +58,7 @@ import { DiagnosticModal } from './ui/diagnostic-modal';
 import { FeedbackModal } from './ui/feedbackModal';
 import { SagaShareModal } from './ui/sagaShareModal';
 import { GameOverDialog } from './ui/gameOverDialog';
+import { autoPickupTargets } from './ui/autoPickup';
 import { EndingDialog } from './ui/endingDialog';
 import { epitaphHtml } from './ui/epitaph';
 import { ContextHelp } from './ui/help/contextHelp';
@@ -670,25 +670,20 @@ window.addEventListener('DOMContentLoaded', () => {
   /** Entities that took a critical blow since the last floating-text pass (`damage_dealt`). */
   const criticalTargets = new Set<string>();
   const criticalLines = new CriticalLineTracker();
-  // Coins are auto-picked up only on entering a tile, so coins the hero drops stay dropped.
-  let lastCoinPickupTile: string | null = null;
+  // Auto-pickup happens only on entering a tile, so what the hero drops stays dropped: coins
+  // always, other items by the kinds ticked in the settings (`autoPickup.ts`, tracker 2.5).
+  let lastAutoPickupTile: string | null = null;
 
-  function checkCoinAutoPickup(engine: GameEngine): void {
+  function checkAutoPickup(engine: GameEngine): void {
     if (!engine.player.isAlive()) return;
     const tileKey = `${engine.currentFloor}:${engine.player.x},${engine.player.y}`;
-    if (tileKey === lastCoinPickupTile) return;
-    lastCoinPickupTile = tileKey;
-    const items = engine.map.getItemsAt(engine.player.x, engine.player.y);
-    if (!items || items.length === 0) return;
-
-    for (const item of [...items]) {
-      const coinInfo = parseCoinItem(item);
-      if (coinInfo) {
-        engine.commandBus.dispatch({
-          type: 'pickup_item',
-          payload: { itemId: item.id, freeAction: true },
-        });
-      }
+    if (tileKey === lastAutoPickupTile) return;
+    lastAutoPickupTile = tileKey;
+    for (const item of autoPickupTargets(engine, settingsManager.getSettings().autoPickup)) {
+      engine.commandBus.dispatch({
+        type: 'pickup_item',
+        payload: { itemId: item.id, freeAction: true },
+      });
     }
   }
 
@@ -818,7 +813,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       updateHeaderInfo();
       if (activeEngine) {
-        checkCoinAutoPickup(activeEngine);
+        checkAutoPickup(activeEngine);
         updateCombatFloatingText(activeEngine);
         updateGothicConsole(activeEngine);
         updateMessageLog(activeEngine);
@@ -1337,7 +1332,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     firstTimeHints.clear();
     lastObservedPlayerHp = engine.player.hp;
-    lastCoinPickupTile = `${engine.currentFloor}:${engine.player.x},${engine.player.y}`;
+    lastAutoPickupTile = `${engine.currentFloor}:${engine.player.x},${engine.player.y}`;
     recordKnownMonsters(engine);
     updateGothicConsole(engine);
     updateMessageLog(engine);

@@ -1,6 +1,7 @@
 import type { StorageAdapter } from '../../engine';
 import { MemoryStorage } from '../../engine';
 import { getBrowserStorage } from '../platform';
+import { AUTO_PICKUP_GROUPS, DEFAULT_AUTO_PICKUP, type AutoPickupGroup } from '../autoPickup';
 
 export interface ActionMetadata {
   id: string;
@@ -129,6 +130,8 @@ export interface GameSettings {
   hintsEnabled: boolean;
   /** The note on moving and the keys shown before a new hero's first step (`ControlsPrimer`). */
   controlsPrimerEnabled: boolean;
+  /** Which kinds of item the hero picks up on stepping onto them (`autoPickup.ts`); coins always. */
+  autoPickup: Record<AutoPickupGroup, boolean>;
   keybinds: Record<string, string[]>;
   radialMenuSlots: (RadialMenuSlotConfig | null)[];
 }
@@ -145,6 +148,17 @@ function sanitizeRadialMenuSlots(raw: unknown): (RadialMenuSlotConfig | null)[] 
     if (slot.type === 'item' && typeof slot.itemId === 'string') return { type: 'item', itemId: slot.itemId };
     return null;
   });
+}
+
+/** A saved auto-pickup choice, each group a boolean; a group missing or malformed takes its default. */
+function sanitizeAutoPickup(raw: unknown): Record<AutoPickupGroup, boolean> {
+  const result = { ...DEFAULT_AUTO_PICKUP };
+  if (!raw || typeof raw !== 'object') return result;
+  for (const { id } of AUTO_PICKUP_GROUPS) {
+    const value = (raw as Record<string, unknown>)[id];
+    if (typeof value === 'boolean') result[id] = value;
+  }
+  return result;
 }
 
 export const SETTINGS_STORAGE_KEY = 'yodc_settings';
@@ -167,6 +181,7 @@ export function getDefaultSettings(): GameSettings {
     inventoryRichHoverCards: true,
     hintsEnabled: true,
     controlsPrimerEnabled: true,
+    autoPickup: { ...DEFAULT_AUTO_PICKUP },
     keybinds: getDefaultKeybinds(),
     radialMenuSlots: new Array(RADIAL_MENU_SLOT_COUNT).fill(null),
   };
@@ -302,6 +317,7 @@ export class SettingsManager {
         inventoryRichHoverCards: typeof parsed.inventoryRichHoverCards === 'boolean' ? parsed.inventoryRichHoverCards : defaults.inventoryRichHoverCards,
         hintsEnabled: typeof parsed.hintsEnabled === 'boolean' ? parsed.hintsEnabled : defaults.hintsEnabled,
         controlsPrimerEnabled: typeof parsed.controlsPrimerEnabled === 'boolean' ? parsed.controlsPrimerEnabled : defaults.controlsPrimerEnabled,
+        autoPickup: sanitizeAutoPickup(parsed.autoPickup),
         keybinds: typeof parsed.keybinds === 'object' && parsed.keybinds !== null ? { ...defaults.keybinds, ...parsed.keybinds } : defaults.keybinds,
         radialMenuSlots: sanitizeRadialMenuSlots(parsed.radialMenuSlots),
       };

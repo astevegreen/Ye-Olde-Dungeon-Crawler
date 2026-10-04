@@ -76,6 +76,8 @@ export const cotwManifest: GameContentManifest = {
     manaGlyph: 'ᚨ',
     ornament: 'ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ',
     loreTitle: 'Carved Verses',
+    loreVerseLabel: 'Saga',
+    loreNoteLabel: 'Rune-lore',
   },
   tiles: COTW_TILES,
   monsters: COTW_MONSTERS,

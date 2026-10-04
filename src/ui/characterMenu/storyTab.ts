@@ -201,8 +201,9 @@ export class StoryTab implements MenuTab {
             (v) => `
           <div class="ui-card st-verse">
             <div class="st-verse-title">${escapeHtml(v.title)}</div>
+            <div class="st-verse-label">${escapeHtml(branding.loreVerseLabel)}</div>
             <div class="st-verse-text">“${escapeHtml(v.verse)}”</div>
-            <div class="st-lore">${escapeHtml(v.lore)}</div>
+            <div class="st-lore"><div class="st-verse-label">${escapeHtml(branding.loreNoteLabel)}</div>${escapeHtml(v.lore)}</div>
           </div>`
           )
           .join('') +

@@ -468,7 +468,9 @@
 .st-subtab[aria-selected='true'] { color: var(--ui-text); border-color: var(--ui-accent); background: var(--ui-accent-soft); }
 
 .st-verse-title { font: bold var(--ui-text-md) var(--ui-font-display); color: var(--ui-title); }
-.st-verse-text { margin-top: var(--ui-space-1); font-size: var(--ui-text-sm); color: var(--ui-text-muted); white-space: pre-line; }
+.st-verse-label { margin-top: var(--ui-space-1); font-size: var(--ui-text-xs); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ui-text-faint); }
+.st-lore .st-verse-label { margin-top: 0; }
+.st-verse-text { margin-top: 2px; font-size: var(--ui-text-sm); color: var(--ui-text-muted); white-space: pre-line; }
 .st-lore {
   margin-top: var(--ui-space-2);
   padding: 6px var(--ui-space-2);

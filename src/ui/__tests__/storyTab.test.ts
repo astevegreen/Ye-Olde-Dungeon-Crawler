@@ -108,7 +108,7 @@ describe('StoryTab', () => {
 
   it('renders the descent, saga, chronicle and lore, and pages the side panel with Left/Right', () => {
     const engine = makeEngine({
-      branding: { loreTitle: 'Carved Verses' },
+      branding: { loreTitle: 'Carved Verses', loreVerseLabel: 'Saga', loreNoteLabel: 'Rune-lore' },
       trackedMilestones: [milestone(1, 'A riddle in the dark')],
       loreEntries: [{ flag: 'stone_1', title: 'Lay of Test', verse: 'Line one\nLine two', lore: 'Fire beats ice.' }],
       objectives: [{ id: 'o', text: 'Go down.' }],
@@ -124,6 +124,9 @@ describe('StoryTab', () => {
     expect(el.innerHTML).toContain('Found a &lt;secret&gt;');
     expect(el.innerHTML).toContain('Carved Verses <span class="ui-num">1/1</span>');
     expect(el.innerHTML).toContain('Fire beats ice.');
+    // Each entry says which part is the story and which the practical lore (Q19).
+    expect(el.innerHTML).toContain('<div class="st-verse-label">Saga</div>');
+    expect(el.innerHTML).toContain('<div class="st-verse-label">Rune-lore</div>');
     expect(tab.footer().keys?.[0].label).toBe('Carved Verses · Standing');
     // Sealed pacts are the Pacts tab's, not repeated here.
     expect(el.innerHTML).not.toContain('data-panel="pacts"');

@@ -26,6 +26,9 @@ export interface ResolvedBranding {
   ornament: string;
   /** The Story's name for the lore the hero keeps. */
   loreTitle: string;
+  /** Labels over a lore entry's verse and its practical lore. */
+  loreVerseLabel: string;
+  loreNoteLabel: string;
 }
 
 export function resolveBranding(manifest?: GameContentManifest): ResolvedBranding {
@@ -49,6 +52,8 @@ export function resolveBranding(manifest?: GameContentManifest): ResolvedBrandin
     defaultHeroName: manifest?.presetNames?.[0] ?? 'Hero',
     ornament: b.ornament ?? '',
     loreTitle: b.loreTitle ?? 'Lore',
+    loreVerseLabel: b.loreVerseLabel ?? 'Verse',
+    loreNoteLabel: b.loreNoteLabel ?? 'Lore',
   };
 }
 

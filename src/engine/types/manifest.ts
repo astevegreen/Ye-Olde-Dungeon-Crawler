@@ -650,6 +650,10 @@ export interface PackBranding {
   ornament?: string;
   /** The Story's name for `loreEntries`, e.g. "Carved Verses". Defaults to "Lore". */
   loreTitle?: string;
+  /** The label over a lore entry's verse (the story), e.g. "Saga". Defaults to "Verse". */
+  loreVerseLabel?: string;
+  /** The label over a lore entry's practical lore, e.g. "Rune-lore". Defaults to "Lore". */
+  loreNoteLabel?: string;
 }
 
 export interface ManaTerms {

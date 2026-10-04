@@ -77,7 +77,7 @@ export const SKALDIC_RUNESTONE_TILES: TileDefinition[] = [
     transparent: true,
     glyph: 'ᚱ',
     visual: 'altar',
-    description: 'The final abyssal runestone above Náströnd, prophesying the duel at the Heartwood and teaching the Thunder Maul.',
+    description: 'The final abyssal runestone above Náströnd, prophesying the duel at the Heartwood and telling how the Thunder Maul is forged.',
     interactionHandlerId: 'skaldic_runestone_6',
     landmarkLabel: 'Runestone: Twilight Doom ᚱ',
   },
@@ -376,7 +376,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
     resolvedStates: [
       {
         flag: 'skaldic_runestone_5_resolved',
-        message: 'The Runestone of the Norns pulses with cosmic harmony. The formula of Hagalaz Hail is recorded in your journal.',
+        message: 'The Runestone of the Norns pulses with cosmic harmony. Its lore of Hagalaz Hail is kept under Carved Verses.',
       },
     ],
   },
@@ -389,9 +389,9 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
     options: [
       {
         id: 'thunder_maul',
-        label: 'Embrace the Thunder Maul',
+        label: 'Take the Thunderer’s Strength',
         description:
-          'Claim the Thunderer’s crushing strike. Permanently increases base Attack by +1 and base Defense by +1, earns +15 Exploration Renown, and commits the Runic Spell Hint to memory.',
+          'Take the Thunderer’s strength into your arms. Permanently increases base Attack by +1 and base Defense by +1, earns +15 Exploration Renown, and keeps the stone’s fusion lore (the Thunder Maul is forged at Odin’s Gallows-Stone).',
         consequences: [
           { type: 'setFlag', flag: 'skaldic_runestone_6_resolved', value: true },
           { type: 'recordMilestone', milestoneId: 'twilight_prophecy_read' },
@@ -426,7 +426,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
     resolvedStates: [
       {
         flag: 'skaldic_runestone_6_resolved',
-        message: 'The Runestone of the Twilight Doom shines steadily against the dark. The final lesson of Thunder Maul is mastered.',
+        message: 'The Runestone of the Twilight Doom shines steadily against the dark. Its lore of the Thunder Maul is kept under Carved Verses.',
       },
     ],
   },

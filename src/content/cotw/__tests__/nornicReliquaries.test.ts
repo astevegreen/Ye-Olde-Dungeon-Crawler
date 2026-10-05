@@ -110,28 +110,7 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
 
     const gaze = choice.options.find((o) => o.id === 'gaze_blood')!;
     expect(gaze.predicate).toEqual({ type: 'hasFlag', flag: 'blood_tainted_hero' });
-    expect(gaze.consequences.some((c) => c.type === 'modifyPermanentStat' && (c as any).stat === 'attack' && (c as any).delta === 1)).toBe(true);
-
-    // Verify gaze_blood hook expands volatile energy capacity
-    const player = new Player({ name: 'Sven', position: { x: 5, y: 5 } });
-    player.initEnergyModel({ maxVolatileEnergy: 100, volatileEnergy: 50 });
-    const ctx: any = {
-      player,
-      map: new GameMap(10, 10),
-      worldState: createWorldState(),
-      log: () => {},
-    };
-    const gazeAction = new ExecuteChoiceAction(player, choice, 'gaze_blood');
-    // A refused option (its predicate unmet) does nothing; one that went through adds 10.
-    COTW_NORN_CHOICES_HOOK.execute({ action: gazeAction, actionType: 'executeChoice', actor: player, engine: ctx, result: { success: false, cost: 0 } });
-    expect(player.energyModel?.maxVolatileEnergy).toBe(100);
-    COTW_NORN_CHOICES_HOOK.execute({ action: gazeAction, actionType: 'executeChoice', actor: player, engine: ctx, result: { success: true, cost: 0 } });
-    expect(player.energyModel?.maxVolatileEnergy).toBe(110);
-
-    // A hero without the blood grimoire's energy model doesn't get one from the pool.
-    const plain = new Player({ name: 'Plain', position: { x: 5, y: 5 } });
-    COTW_NORN_CHOICES_HOOK.execute({ action: new ExecuteChoiceAction(plain, choice, 'gaze_blood'), actionType: 'executeChoice', actor: plain, engine: { ...ctx, player: plain }, result: { success: true, cost: 0 } });
-    expect(plain.energyModel).toBeUndefined();
+    expect(gaze.consequences.some((c) => c.type === 'grantItem' && (c as any).itemId === 'draught_of_thawed_blood')).toBe(true);
 
     const drink = choice.options.find((o) => o.id === 'drink_deep')!;
     expect(drink.consequences.some((c) => c.type === 'learnSpell' && (c as any).spellId === 'clairvoyance')).toBe(true);
@@ -144,11 +123,10 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
     expect(choice.options).toHaveLength(3);
 
     const bark = choice.options.find((o) => o.id === 'reinforce_bark')!;
-    expect(bark.consequences.some((c) => c.type === 'modifyPermanentStat' && (c as any).stat === 'defense' && (c as any).delta === 2)).toBe(true);
-    expect(bark.consequences.some((c) => c.type === 'modifyPermanentStat' && (c as any).stat === 'speed' && (c as any).delta === -5)).toBe(true);
+    expect(bark.consequences.some((c) => c.type === 'grantItem' && (c as any).itemId === 'sap_sealed_cape')).toBe(true);
 
     const sever = choice.options.find((o) => o.id === 'sever_rot')!;
-    expect(sever.consequences.some((c) => c.type === 'modifyPermanentStat' && (c as any).stat === 'attack' && (c as any).delta === 2)).toBe(true);
+    expect(sever.consequences.some((c) => c.type === 'grantItem' && (c as any).itemId === 'heartwood_longsword')).toBe(true);
     // The parasites are real monsters from the hook, not a wake-up of the floor.
     expect(sever.consequences.some((c) => c.type === 'alertMonsters')).toBe(false);
 
@@ -197,7 +175,7 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
     expect(choice).toBeDefined();
 
     const tribute = choice.options.find((o) => o.id === 'offer_tribute')!;
-    expect(tribute.consequences.some((c) => c.type === 'modifyPermanentStat' && (c as any).stat === 'speed' && (c as any).delta === 5)).toBe(true);
+    expect(tribute.consequences.filter((c) => c.type === 'grantItem' && (c as any).itemId === 'scroll_teleport')).toHaveLength(2);
     expect(tribute.consequences.some((c) => c.type === 'recordMilestone' && (c as any).milestoneId === 'ratatoskr_favor')).toBe(true);
     expect(tribute.consequences.some((c) => c.type === 'setFlag' && (c as any).flag === 'ratatoskr_slander_mark')).toBe(true);
 
@@ -212,14 +190,14 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
 
     const renewal = choice.options.find((o) => o.id === 'gaze_renewal')!;
     expect(renewal.predicate).toEqual({ type: 'hasFlag', flag: 'vidnir_warning_heeded' });
-    expect(renewal.consequences.some((c) => c.type === 'modifyPermanentStat' && (c as any).stat === 'defense' && (c as any).delta === 2)).toBe(true);
+    expect(renewal.consequences.some((c) => c.type === 'learnSpell' && (c as any).spellId === 'renewal')).toBe(true);
 
     const ragnarok = choice.options.find((o) => o.id === 'gaze_ragnarok')!;
     expect(ragnarok.predicate).toEqual({ type: 'hasFlag', flag: 'vidnir_warning_defied' });
-    expect(ragnarok.consequences.some((c) => c.type === 'modifyPermanentStat' && (c as any).stat === 'attack' && (c as any).delta === 2)).toBe(true);
+    expect(ragnarok.consequences.some((c) => c.type === 'learnSpell' && (c as any).spellId === 'hel_fire')).toBe(true);
 
     const unbound = choice.options.find((o) => o.id === 'gaze_unbound')!;
-    expect(unbound.consequences.some((c) => c.type === 'modifyPermanentStat' && (c as any).stat === 'defense' && (c as any).delta === 1)).toBe(true);
+    expect(unbound.consequences.some((c) => c.type === 'grantItem' && (c as any).itemId === 'supreme_health_potion')).toBe(true);
   });
 
   it('a savior finds the four captives freed on floor 22 home in Bjarnarhaven, as who they were', () => {
@@ -376,5 +354,20 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
     expect(player.statusManager.hasStatus('poison')).toBe(false);
     expect(player.statusManager.hasStatus('slow')).toBe(false);
     expect(player.statusManager.hasStatus('paralysis')).toBe(false);
+  });
+
+  // The owner, 2026-10-05: keep the reliquaries, but what they give is not a stat boost.
+  it('no Norn option changes a stat, and everything they give exists in the pack', () => {
+    const itemIds = new Set(cotwManifest.items.map((i) => i.id));
+    const spellIds = new Set(cotwManifest.spells.map((sp) => sp.id));
+    for (const id of ['urdr_pool_choice', 'verdandi_loom_choice', 'ratatoskr_roost_choice', 'skuld_mirror_choice']) {
+      for (const option of COTW_CHOICES[id].options) {
+        for (const c of option.consequences) {
+          expect(['modifyPermanentStat', 'modifyAttribute', 'grantPerk'], `${id}/${option.id}`).not.toContain(c.type);
+          if (c.type === 'grantItem') expect(itemIds.has(c.itemId), c.itemId).toBe(true);
+          if (c.type === 'learnSpell') expect(spellIds.has(c.spellId), c.spellId).toBe(true);
+        }
+      }
+    }
   });
 });

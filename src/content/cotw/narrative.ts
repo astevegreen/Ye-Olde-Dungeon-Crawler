@@ -429,8 +429,8 @@ function spawnParasitesNearPlayer(engine: Parameters<ActionHook['execute']>[0]['
 }
 
 /**
- * The Norn choices' effects no consequence type covers: the blood gaze's Volatile Energy, and the
- * loom's parasites. Only when the choice went through (a refused option does nothing).
+ * The Norn choices' effect no consequence type covers: the loom's parasites. Only when the choice
+ * went through (a refused option does nothing).
  */
 export const COTW_NORN_CHOICES_HOOK: ActionHook = {
   id: 'cotw-norn-choices-effects',
@@ -438,9 +438,7 @@ export const COTW_NORN_CHOICES_HOOK: ActionHook = {
   actionType: '*',
   execute: ({ action, engine, result }) => {
     if (!(action instanceof ExecuteChoiceAction) || !result?.success) return;
-    if (action.choice.id === 'urdr_pool_choice' && action.optionId === 'gaze_blood') {
-      engine.player.expandVolatileEnergy(10);
-    } else if (action.choice.id === 'verdandi_loom_choice' && action.optionId === 'sever_rot') {
+    if (action.choice.id === 'verdandi_loom_choice' && action.optionId === 'sever_rot') {
       spawnParasitesNearPlayer(engine);
     }
   },

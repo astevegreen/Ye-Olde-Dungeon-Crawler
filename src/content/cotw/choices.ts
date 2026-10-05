@@ -366,17 +366,17 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         id: 'gaze_blood',
         label: 'Gaze into the Boiling Blood',
         description:
-          'Channel the memory of dark sacrifice: +1 Attack for good, and +10 to your Volatile Energy capacity if the blood grimoire has opened it.',
+          'Channel the memory of dark sacrifice: the pool gives up a Draught of Thawed Blood.',
         predicate: { type: 'hasFlag', flag: 'blood_tainted_hero' },
         disabledReason: 'The water remains calm: you did not embrace the full sacrificial rite of the coven.',
         consequences: [
           { type: 'setFlag', flag: 'urdr_pool_resolved', value: true },
           { type: 'setFlag', flag: 'urdr_pool_blood_gazed', value: true },
-          { type: 'modifyPermanentStat', stat: 'attack', delta: 1 },
+          { type: 'grantItem', itemId: 'draught_of_thawed_blood', toInventory: true },
           {
             type: 'logMessage',
             message:
-              'Crimson froth boils up from the pool! The dark energy of the siphon courses through your veins, permanently expanding your Volatile Energy capacity (+10 Max Volatile Energy, +1 Attack)!',
+              'Crimson froth boils up from the pool and leaves a steaming draught in your hands: the memory of the siphon, made drinkable (Draught of Thawed Blood).',
           },
         ],
       },
@@ -429,16 +429,15 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
       {
         id: 'reinforce_bark',
         label: 'Reinforce the Bark — Weave Living Sap into Plate',
-        description: 'Layer golden heartwood fibers into your armor. Permanently +2 Defense, -5 Speed.',
+        description: 'Weave the loom’s living sap into a mantle: the Sap-Sealed Cape.',
         consequences: [
           { type: 'setFlag', flag: 'verdandi_loom_resolved', value: true },
           { type: 'setFlag', flag: 'verdandi_bark_woven', value: true },
-          { type: 'modifyPermanentStat', stat: 'defense', delta: 2 },
-          { type: 'modifyPermanentStat', stat: 'speed', delta: -5 },
+          { type: 'grantItem', itemId: 'sap_sealed_cape', toInventory: true },
           {
             type: 'logMessage',
             message:
-              'You weave tough, amber-hardened heartwood into your armor. The golden sap sets as rigid as dragon scale (+2 Defense, -5 Speed).',
+              'You weave the golden sap off the warp into a heavy mantle. It sets as rigid as dragon scale (Sap-Sealed Cape).',
           },
         ],
       },
@@ -446,16 +445,16 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         id: 'sever_rot',
         label: 'Sever the Rotting Fibers — Excise the Blight',
         description:
-          'Cut diseased wood from the loom with raw steel. Permanently +2 Attack, but disturbs 2 lurking Yggdrasil Parasites.',
+          'Cut the diseased wood from the loom: the sound heartwood beneath becomes a blade (Heartwood Longsword), but two Yggdrasil Parasites drop on you.',
         consequences: [
           { type: 'setFlag', flag: 'verdandi_loom_resolved', value: true },
           { type: 'setFlag', flag: 'verdandi_rot_severed', value: true },
-          { type: 'modifyPermanentStat', stat: 'attack', delta: 2 },
+          { type: 'grantItem', itemId: 'heartwood_longsword', toInventory: true },
           // The two parasites are spawned by COTW_NORN_CHOICES_HOOK (narrative.ts).
           {
             type: 'logMessage',
             message:
-              'Your blade shears the blackened fibers clean away! Raw momentum empowers your strikes (+2 Attack), but two enraged Yggdrasil Parasites drop from the upper branches with venomous hisses!',
+              'Your blade shears the blackened fibers away, and the clean heartwood beneath comes free as a blade in your hand (Heartwood Longsword). Two enraged Yggdrasil Parasites drop from the boughs with venomous hisses!',
           },
         ],
       },
@@ -506,18 +505,19 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
     options: [
       {
         id: 'offer_tribute',
-        label: 'Offer Shiny Tribute — Receive the Slander-Mark',
+        label: 'Offer Shiny Tribute — Trade from His Hoard',
         description:
-          'Humor the cosmic messenger with an offering: grants the Slander-Mark of the Squirrel (+5 Speed, +10 Exploration Renown).',
+          'Humor the cosmic messenger: he trades from his hoard two scraps of rune-bark that carry you between places as he runs between worlds (Scrolls of Teleportation, +10 Exploration Renown).',
         consequences: [
           { type: 'setFlag', flag: 'ratatoskr_roost_resolved', value: true },
           { type: 'setFlag', flag: 'ratatoskr_slander_mark', value: true },
           { type: 'recordMilestone', milestoneId: 'ratatoskr_favor' },
-          { type: 'modifyPermanentStat', stat: 'speed', delta: 5 },
+          { type: 'grantItem', itemId: 'scroll_teleport', toInventory: true },
+          { type: 'grantItem', itemId: 'scroll_teleport', toInventory: true },
           {
             type: 'logMessage',
             message:
-              'Ratatoskr snatches your offering with a manic chuckle! He claws a lightning-quick glyph into your boot leather (+5 Speed) and scuttles up the trunk screeching: “Níðhögg’s belly is full of pond-scum! Tell the slug the Eagle spat upon his tail!”',
+              'Ratatoskr snatches your offering with a manic chuckle! He flings two scraps of rune-bark at your feet (two Scrolls of Teleportation) and scuttles up the trunk screeching: “Níðhögg’s belly is full of pond-scum! Tell the slug the Eagle spat upon his tail!”',
           },
         ],
       },
@@ -544,7 +544,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
       {
         flag: 'ratatoskr_slander_mark',
         message:
-          'Ratatoskr chitters smugly from his hollow, admiring his shiny tribute. The Slander-Mark burns briskly on your boot.',
+          'Ratatoskr chitters smugly from his hollow, admiring his shiny tribute.',
       },
       {
         flag: 'ratatoskr_roost_resolved',
@@ -563,18 +563,18 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         id: 'gaze_renewal',
         label: 'Gaze upon the Portent of Renewal (Requires Heeding Víðnir)',
         description:
-          'The mirror reflects the living root knitting shut. Grants Aegis of the Preserver (+2 Defense, +20 Renown).',
+          'The mirror reflects the living root knitting shut, and teaches the galdr of mending: the Renewal spell (+20 Renown).',
         predicate: { type: 'hasFlag', flag: 'vidnir_warning_heeded' },
         disabledReason: 'The mirror remains shrouded in black mist: you did not commit to driving off the beast.',
         consequences: [
           { type: 'setFlag', flag: 'skuld_mirror_resolved', value: true },
           { type: 'setFlag', flag: 'skuld_aegis_preserver', value: true },
           { type: 'recordMilestone', milestoneId: 'skuld_mirror_gazed' },
-          { type: 'modifyPermanentStat', stat: 'defense', delta: 2 },
+          { type: 'learnSpell', spellId: 'renewal' },
           {
             type: 'logMessage',
             message:
-              'The obsidian mirror clears to emerald light: green boughs sprout from black dragon-bile, and the taproot heals unbroken. The Aegis of the Preserver settles over your spirit (+2 Defense, Aegis of the Preserver)!',
+              'The obsidian mirror clears to emerald light: green boughs sprout from black dragon-bile, and the taproot heals unbroken. You come away knowing how it was mended (you learn Renewal).',
           },
         ],
       },
@@ -582,18 +582,18 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         id: 'gaze_ragnarok',
         label: 'Gaze upon the Portent of Ragnarök (Requires Defying Víðnir)',
         description:
-          'The mirror reflects flaming skies and broken branches. Grants Fury of the Einherjar (+2 Attack, +20 Renown).',
+          'The mirror reflects flaming skies and broken branches, and teaches the black flame of the corpse-realm: the Hel-Fire spell (+20 Renown).',
         predicate: { type: 'hasFlag', flag: 'vidnir_warning_defied' },
         disabledReason: 'The mirror remains dark: you did not vow to strike down the dragon.',
         consequences: [
           { type: 'setFlag', flag: 'skuld_mirror_resolved', value: true },
           { type: 'setFlag', flag: 'skuld_fury_einherjar', value: true },
           { type: 'recordMilestone', milestoneId: 'skuld_mirror_gazed' },
-          { type: 'modifyPermanentStat', stat: 'attack', delta: 2 },
+          { type: 'learnSpell', spellId: 'hel_fire' },
           {
             type: 'logMessage',
             message:
-              'The mirror bursts with scarlet fury! A vision of burning skies, shattered shields, and the great wolf breaking free floods your soul. The Fury of the Einherjar blazes in your strikes (+2 Attack, Fury of the Einherjar)!',
+              'The mirror bursts with scarlet fury! A vision of burning skies, shattered shields, and the great wolf breaking free floods your soul. You come away with that black fire in your hands (you learn Hel-Fire).',
           },
         ],
       },
@@ -601,7 +601,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         id: 'gaze_unbound',
         label: 'Peer into the Clouded Void',
         description:
-          'Gaze into the uncommitted future before the final descent (+1 Defense, +20 Renown).',
+          'Gaze into the uncommitted future before the final descent: Skuld leaves a golden elixir at the mirror’s foot (Supreme Health Potion, +20 Renown).',
         predicate: {
           type: 'not',
           predicate: {
@@ -616,11 +616,11 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         consequences: [
           { type: 'setFlag', flag: 'skuld_mirror_resolved', value: true },
           { type: 'recordMilestone', milestoneId: 'skuld_mirror_gazed' },
-          { type: 'modifyPermanentStat', stat: 'defense', delta: 1 },
+          { type: 'grantItem', itemId: 'supreme_health_potion', toInventory: true },
           {
             type: 'logMessage',
             message:
-              'The mirror reveals a tempest of swirling shadow and huge coils in the deep. You steady your stance for whatever trial awaits on Floor 50 (+1 Defense, +20 Renown).',
+              'The mirror reveals a tempest of swirling shadow and huge coils in the deep. At its foot a golden elixir waits for whatever trial comes on Floor 50 (Supreme Health Potion).',
           },
         ],
       },

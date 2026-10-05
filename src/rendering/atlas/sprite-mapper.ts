@@ -3,7 +3,7 @@ import type { Entity } from '../../engine';
 import { Player } from '../../engine';
 import { NPC } from '../../engine';
 import { Monster } from '../../engine';
-import type { Item, SpriteTagRule } from '../../engine';
+import type { Item, MonsterDefinition, SpriteTagRule } from '../../engine';
 import type { SpriteKey } from './types';
 import { ATLAS_MAP } from './sprite-atlas';
 
@@ -189,14 +189,41 @@ export function getEntitySpriteKey(
     }
   }
 
-  const name = entity.name.toLowerCase();
+  return creatureSpriteKey(
+    { definitionId: entity instanceof Monster ? entity.definitionId : undefined, name: entity.name, tags: entity.tags },
+    hasSprite,
+    packTagRules
+  );
+}
 
-  if (entity instanceof Monster && entity.definitionId && hasSprite?.(entity.definitionId)) {
-    return entity.definitionId;
+/** What picks a creature's sprite: its definition, name and tags. */
+interface CreatureLooks {
+  definitionId?: string;
+  name: string;
+  tags?: readonly string[];
+}
+
+/**
+ * A creature's sprite from its definition alone (the bestiary's picture, tracker 4.2): the
+ * same key a spawned monster of that definition draws with on the map.
+ */
+export function getMonsterDefinitionSpriteKey(
+  def: MonsterDefinition,
+  hasSprite?: HasSprite,
+  packTagRules: readonly SpriteTagRule[] = []
+): SpriteKey | string {
+  return creatureSpriteKey({ definitionId: def.id, name: def.name, tags: def.tags }, hasSprite, packTagRules);
+}
+
+function creatureSpriteKey(looks: CreatureLooks, hasSprite: HasSprite | undefined, packTagRules: readonly SpriteTagRule[]): SpriteKey | string {
+  const name = looks.name.toLowerCase();
+
+  if (looks.definitionId && hasSprite?.(looks.definitionId)) {
+    return looks.definitionId;
   }
 
   // Tag-priority resolution (dragon > undead > construct > beast > humanoid)
-  const tags: string[] = entity.tags ?? [];
+  const tags: readonly string[] = looks.tags ?? [];
   for (const rule of [...packTagRules, ...DEFAULT_TAG_SPRITE_ORDER]) {
     if (tags.includes(rule.tag)) {
       return rule.spriteKey;

@@ -238,3 +238,33 @@ describe('Bestiary tab: stats as met on the creature\'s home floor (Q11 "A", tra
     expect(leechPage(2)).toContain(`about ${Math.round(scaled.maxHp * 0.8)}–${Math.round(scaled.maxHp * 1.2)}`);
   });
 });
+
+describe('Bestiary tab: a picture for each creature seen (N33, tracker 4.2)', () => {
+  function open(known: boolean) {
+    const engine = new GameEngine({ map: new GameMap(10, 10), player: new Player({ id: 'p1', name: 'Hero', position: { x: 1, y: 1 } }), manifest: cotwManifest, floor: 0 });
+    if (known) engine.compendium.recordEncounter('quicksilver_leech', 'Quicksilver Leech', 26);
+    const drawn: string[] = [];
+    const canvas = {};
+    const el = {
+      innerHTML: '',
+      querySelector: (sel: string) => (sel === 'canvas.bs-portrait' && el.innerHTML.includes('bs-portrait') ? canvas : null),
+      querySelectorAll: () => [],
+    };
+    const tab = new BestiaryTab({ drawMonsterPicture: (c, def) => drawn.push(c === canvas ? def.id : 'elsewhere') });
+    tab.mount(el as unknown as HTMLElement);
+    tab.onActivate({ engine, worldState: engine.worldState, player: engine.player, map: engine.map, currentFloor: 0, turnCount: 0, manifest: engine.manifest });
+    return { drawn, html: el.innerHTML };
+  }
+
+  it('paints the selected creature from its definition into the page\'s portrait', () => {
+    const { drawn, html } = open(true);
+    expect(html).toContain('class="bs-portrait"');
+    expect(drawn).toEqual(['quicksilver_leech']);
+  });
+
+  it('draws nothing for a creature never seen: its page keeps the "?"', () => {
+    const { drawn, html } = open(false);
+    expect(html).not.toContain('bs-portrait');
+    expect(drawn).toEqual([]);
+  });
+});

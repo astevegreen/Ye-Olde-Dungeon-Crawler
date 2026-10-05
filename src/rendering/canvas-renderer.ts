@@ -5,7 +5,7 @@ import { sensesThroughWalls } from '../engine';
 import { Camera } from './camera';
 import type { Entity } from '../engine';
 import type { TileDefinition } from '../engine';
-import type { Item } from '../engine';
+import type { Item, MonsterDefinition } from '../engine';
 import { Container } from '../engine';
 import { TargetingOverlay } from './targeting-overlay';
 import { ShopDialog } from '../ui/shop/shopDialog';
@@ -15,7 +15,7 @@ import { drawFloorMap } from './floorMap';
 import { IntentOverlay } from './intentOverlay';
 import { Monster } from '../engine';
 import { SpriteAtlas } from './atlas/sprite-atlas';
-import { getTerrainSpriteKey, getEntitySpriteKey, getItemSpriteKey } from './atlas/sprite-mapper';
+import { getTerrainSpriteKey, getEntitySpriteKey, getItemSpriteKey, getMonsterDefinitionSpriteKey } from './atlas/sprite-mapper';
 import { terrainLayers, contactShadowSides, zoneForFloor, type TerrainView } from './atlas/terrain-layers';
 import { ViewportManager } from './viewport';
 import { elementColor, resolveThemeTokens, type ThemeTokens, uiFont, uiFontPx, withAlpha } from './theme';
@@ -1328,6 +1328,17 @@ export class CanvasRenderer {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.imageSmoothingEnabled = false;
     this.atlas.drawSprite(ctx, this.monsterSpriteKey(entity), 0, 0, Math.min(canvas.width, canvas.height));
+  }
+
+  /** Paints a monster definition's sprite to fill a DOM canvas (the bestiary's picture, tracker 4.2):
+   *  the art its spawned monster has on the map. */
+  public drawMonsterPicture(canvas: HTMLCanvasElement, def: MonsterDefinition): void {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.imageSmoothingEnabled = false;
+    const key = getMonsterDefinitionSpriteKey(def, this.atlas.hasSprite.bind(this.atlas), this.engine.manifest?.atlas?.spriteTagRules);
+    this.atlas.drawSprite(ctx, key, 0, 0, Math.min(canvas.width, canvas.height));
   }
 
   /** A creature's sprite, the same on the map and in every DOM icon: the pack's tag

@@ -2,11 +2,13 @@ import { describe, it, expect } from 'vitest';
 import {
   getTerrainSpriteKey,
   getEntitySpriteKey,
+  getMonsterDefinitionSpriteKey,
   getItemSpriteKey,
   DEFAULT_TAG_SPRITE_ORDER,
 } from '../sprite-mapper';
 import { Player } from '../../../engine';
-import { Monster } from '../../../engine';
+import { Monster, createScaledMonster } from '../../../engine';
+import { COTW_BESTIARY } from '../../../content/cotw/monsters';
 import { NPC } from '../../../engine';
 import type { Item } from '../../../engine';
 import { COTW_TILE_ZONE_BANDS } from '../../../content/cotw/tileZones';
@@ -331,5 +333,19 @@ describe('sprite-mapper — Tag-Priority Monster, Item, and Zone-Themed Terrain 
       expect(thor?.buildingType).toBe('temple');
       expect(vault?.buildingType).toBe('bank');
     });
+  });
+});
+
+describe('getMonsterDefinitionSpriteKey (the bestiary picture, tracker 4.2)', () => {
+  it('gives every cotw monster definition the sprite its spawned monster draws on the map', () => {
+    const recipes = new Set(Object.keys(COTW_SPRITE_RECIPES));
+    const hasSprite = (k: string) => recipes.has(k) || k in ATLAS_MAP;
+    const rules = cotwManifest.atlas?.spriteTagRules ?? [];
+    const defs = Object.values(COTW_BESTIARY);
+    expect(defs.length).toBeGreaterThan(60);
+    for (const def of defs) {
+      const spawned = createScaledMonster(def, 'm', { x: 0, y: 0 }, Math.max(1, (def.minFloor ?? 1) + 12), undefined, undefined, cotwManifest.monsterScaling);
+      expect(getMonsterDefinitionSpriteKey(def, hasSprite, rules), def.id).toBe(getEntitySpriteKey(spawned, hasSprite, rules));
+    }
   });
 });

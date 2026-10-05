@@ -31,6 +31,12 @@ const BEHAVIOR_WORDS: Record<string, string> = {
 };
 const FILTERS: BestiaryFilter[] = ['all', 'discovered', 'mastered'];
 
+/** What the tab is handed by the composition root: `src/ui` cannot draw atlas sprites itself. */
+export interface BestiaryTabOptions {
+  /** Paints a creature's picture from its definition (the map's art for it, tracker 4.2). */
+  drawMonsterPicture?: (canvas: HTMLCanvasElement, def: MonsterDefinition) => void;
+}
+
 /** What each knowledge rank is called on its tag. */
 const TIER_TAG: Record<MonsterMasteryTier, string> = { 0: '?', 1: 'Seen', 2: 'Slain', 3: 'Studied' };
 
@@ -47,6 +53,8 @@ export class BestiaryTab implements MenuTab {
   private engine?: GameEngine;
   private filter: BestiaryFilter = 'all';
   private selectedId = '';
+
+  constructor(private readonly options: BestiaryTabOptions = {}) {}
 
   public mount(container: HTMLElement): void {
     this.container = container;
@@ -155,6 +163,13 @@ export class BestiaryTab implements MenuTab {
       </div>`;
 
     this.bind();
+    if (selected) this.paintPicture(selected);
+  }
+
+  /** The selected creature's picture, once it has been seen: the unknown keep their "?". */
+  private paintPicture(def: MonsterDefinition): void {
+    const canvas = this.container?.querySelector?.<HTMLCanvasElement>('canvas.bs-portrait');
+    if (canvas) this.options.drawMonsterPicture?.(canvas, def);
   }
 
   /** A spell's name, never its id. */
@@ -315,8 +330,13 @@ export class BestiaryTab implements MenuTab {
 
     return `
       <div class="ui-card">
-        <div class="bs-head"><span class="bs-title">${escapeHtml(def.name)}</span>${this.tierTag(tier, entry.kills)}</div>
-        <div class="ui-note">From floor <span class="ui-num">${def.minFloor ?? 1}</span>${BEHAVIOR_WORDS[def.aiType] ? ` · ${BEHAVIOR_WORDS[def.aiType]}` : ''}</div>
+        <div class="bs-hero">
+          ${this.options.drawMonsterPicture ? '<canvas class="bs-portrait" width="64" height="64" aria-hidden="true"></canvas>' : ''}
+          <div class="bs-hero-text">
+            <div class="bs-head"><span class="bs-title">${escapeHtml(def.name)}</span>${this.tierTag(tier, entry.kills)}</div>
+            <div class="ui-note">From floor <span class="ui-num">${def.minFloor ?? 1}</span>${BEHAVIOR_WORDS[def.aiType] ? ` · ${BEHAVIOR_WORDS[def.aiType]}` : ''}</div>
+          </div>
+        </div>
       </div>
       ${this.renderKnowledgePanel(def, entry.kills)}
       ${

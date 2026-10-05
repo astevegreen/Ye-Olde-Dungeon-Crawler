@@ -570,6 +570,18 @@ canvas.it-frame { box-shadow: 0 0 0 2px var(--it-frame); border-radius: 3px; }
 .bs-tag.is-t3 { color: var(--ui-title); border-color: var(--ui-title); }
 .bs-legend { line-height: 2; }
 
+/* The creature's picture beside its name (tracker 4.2): the 64 px atlas sprite, doubled, kept crisp. */
+.bs-hero { display: flex; align-items: center; gap: var(--ui-space-3); }
+.bs-hero-text { flex: 1; min-width: 0; }
+.bs-portrait {
+  flex: none;
+  width: 128px;
+  height: 128px;
+  image-rendering: pixelated;
+  background: var(--ui-surface-3);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius);
+}
 .bs-head { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-2); }
 .bs-title { font: bold var(--ui-text-xl) var(--ui-font-display); color: var(--ui-title); }
 .bs-unknown { text-align: center; padding: var(--ui-space-6) var(--ui-space-4); }

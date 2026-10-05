@@ -262,7 +262,9 @@ window.addEventListener('DOMContentLoaded', () => {
     renderer?.render();
   };
   const storyTab = new StoryTab();
-  const bestiaryTab = new BestiaryTab();
+  const bestiaryTab = new BestiaryTab({
+    drawMonsterPicture: (canvas, def) => renderer?.drawMonsterPicture(canvas, def),
+  });
   const pactsTab = new PactsTab();
   let inventoryTab: InventoryTab;
 

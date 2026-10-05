@@ -54,8 +54,17 @@ async function seedTheClock(page: Page, seed: number): Promise<void> {
   }, seed);
 }
 
+/** The hero died or won on the last action. The game-over screen is a screen, not a
+ *  modal (gameOverDialog.ts), so an empty modal stack doesn't mean Save is reachable. */
+const runOver = (page: Page) =>
+  page.evaluate(() => {
+    const e = window.__cotwEngine as any;
+    return !e?.player?.isAlive() || (e.gameState?.runStatus ?? 'active') !== 'active';
+  });
+
 async function exportSaveCode(page: Page): Promise<string> {
   if (await page.evaluate(() => (window.__cotwInputHandler?.modalStack?.size ?? 0) > 0)) return 'modal_open';
+  if (await runOver(page)) return 'run_over';
   try {
     await page.locator('#btn-save-title').click({ timeout: 2000 });
     await page.locator('#btn-savequit-copy-code').click({ timeout: 2000 });
@@ -486,9 +495,12 @@ test.describe('soak @soak', () => {
         if (raidTrip || (i > 0 && i % 250 === 0)) {
           if (raidTrip) oracleState.lastRaidSaveRoundtripDone = true;
           // Only from the bare map: the explored map (M) and look mode cover the header's
-          // Save button without a modal-stack entry.
+          // Save button without a modal-stack entry, and so does the game-over screen when
+          // this action killed the hero.
           const bare =
-            (await page.evaluate(() => (window.__cotwInputHandler?.modalStack?.size ?? 0) === 0)) && (await openModes(page)).length === 0;
+            (await page.evaluate(() => (window.__cotwInputHandler?.modalStack?.size ?? 0) === 0)) &&
+            (await openModes(page)).length === 0 &&
+            !(await runOver(page));
           if (bare) {
             // A rest or click-travel runs on timers; the digest is taken before Save is
             // clicked, so let it finish first, or the save holds later turns than the digest.

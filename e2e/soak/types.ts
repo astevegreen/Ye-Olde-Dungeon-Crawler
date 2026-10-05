@@ -1,3 +1,5 @@
+import type { BotTelemetry } from './playerBot';
+
 export type FindingCategory = 'bug' | 'softlock' | 'text' | 'ux';
 export type FindingSeverity = 'S1' | 'S2' | 'S3' | 'S4';
 export type SoakPolicy = 'chaos' | 'player' | 'ui-sweep';
@@ -74,5 +76,7 @@ export interface SoakSummary {
   /** The player bot's gear (Q40): pieces put on, bought and sold, the trip home, and the
    *  hero's attack and defense when the run ended. */
   gear?: { equips: number; purchases: number; sales: number; townTrip: string; attack: number; defense: number };
+  /** The player bot's telemetry: potions, telegraphs, services, points, and why it died. */
+  bot?: BotTelemetry;
 }
 

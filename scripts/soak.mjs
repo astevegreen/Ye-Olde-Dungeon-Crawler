@@ -150,6 +150,8 @@ for (let seed = fromSeed; seed < fromSeed + count; seed++) {
     turnsPlayed: summary?.turnsPlayed ?? null,
     deepestFloor: summary?.deepestFloor ?? null,
     causeOfDeath: summary?.causeOfDeath ?? null,
+    sha: summary?.sha ?? null,
+    deathCause: summary?.bot?.deathCause ?? null,
     findingCounts: summary?.findingCounts ?? {},
     timestamp: new Date().toISOString(),
   };

@@ -36,6 +36,75 @@ export interface PlayerBotState {
   equips: number;
   purchases: number;
   sales: number;
+  /** Town services ("npcId:act") done or found to change nothing this time in town. */
+  serviceTried: string[];
+  /** The last service key pressed, and what the panel showed before it (to see if it did anything). */
+  lastService: { key: string; fp: string } | null;
+  /** Decisions spent in the character menu since it opened (a cap against loops). */
+  charMenuDecisions: number;
+  /** Attribute keys pressed so far: picks the next one in the fixed build's rotation. */
+  statPresses: number;
+  /** Unspent points when the bot last pressed an attribute key, and how many presses changed nothing. */
+  lastUnspent: number;
+  statFailures: number;
+  telemetry: BotTelemetry;
+}
+
+/** What the bot did and saw over a run, for summary.json (step 1 of the soak-bot plan). */
+export interface BotTelemetry {
+  potionsDrunk: number;
+  /** Decisions taken standing on a tile a monster's telegraphed attack will hit. */
+  telegraphTurns: number;
+  dodges: number;
+  /** In a telegraph with no safe tile to step to. */
+  cornered: number;
+  statPointsSpent: number;
+  perksTaken: number;
+  chestsLooted: number;
+  /** Town services that changed something, by "npcId:act". */
+  services: Record<string, number>;
+  /** Most loose coins seen in the pack at once (the purse overflowing). */
+  maxLooseCoins: number;
+  /** The hero's state at the last decision: what the death cause is read from. */
+  last: BotSnapshot | null;
+  deathCause?: DeathCause;
+}
+
+interface BotSnapshot {
+  floor: number;
+  hp: number;
+  maxHp: number;
+  adjacentHostiles: number;
+  onTelegraph: boolean;
+  healingCarried: number;
+  poisoned: boolean;
+  unspent: number;
+}
+
+export type DeathCause =
+  | 'telegraph'
+  | 'surrounded'
+  | 'out_of_potions'
+  | 'overflow_backlash'
+  | 'poison'
+  | 'twinstrike'
+  | 'holy_ground'
+  | 'other';
+
+/**
+ * Why the hero died, from the death line and the bot's last look at the board. The first
+ * match wins: a named self-inflicted cause, then poison, then where the hero stood.
+ */
+export function classifyDeath(causeOfDeath: string | null, last: BotSnapshot | null): DeathCause {
+  const text = (causeOfDeath ?? '').toLowerCase();
+  if (/backlash|surge|overflow/.test(text)) return 'overflow_backlash';
+  if (text.includes('twinstrike')) return 'twinstrike';
+  if (/holy ground|sacred|hallowed/.test(text)) return 'holy_ground';
+  if (last?.poisoned && text.includes('poison')) return 'poison';
+  if (last?.onTelegraph) return 'telegraph';
+  if ((last?.adjacentHostiles ?? 0) >= 3) return 'surrounded';
+  if (last && last.healingCarried === 0) return 'out_of_potions';
+  return 'other';
 }
 
 function saveOverburdenStats(seed: string | undefined, episodes: number, dropped: number, tiles: string[]) {
@@ -87,6 +156,24 @@ export function getBotState(page: Page, actionIndex: number): PlayerBotState {
       equips: 0,
       purchases: 0,
       sales: 0,
+      serviceTried: [],
+      lastService: null,
+      charMenuDecisions: 0,
+      statPresses: 0,
+      lastUnspent: -1,
+      statFailures: 0,
+      telemetry: {
+        potionsDrunk: 0,
+        telegraphTurns: 0,
+        dodges: 0,
+        cornered: 0,
+        statPointsSpent: 0,
+        perksTaken: 0,
+        chestsLooted: 0,
+        services: {},
+        maxLooseCoins: 0,
+        last: null,
+      },
     };
     saveOverburdenStats(process.env.SOAK_SEED, 0, 0, []);
   }
@@ -112,6 +199,20 @@ interface DecisionResult {
   bought?: boolean;
   sold?: boolean;
   tripUp?: boolean;
+  /** A town service key pressed ("npcId:act"); `once` marks it done for this stay at once. */
+  service?: { key: string; once: boolean };
+  /** What the open service panel shows now: compared with the last press to see if it worked. */
+  serviceFp?: string;
+  /** No service left worth pressing at this townsperson. */
+  serviceDone?: string;
+  inCharMenu?: boolean;
+  statPress?: boolean;
+  perk?: boolean;
+  chest?: boolean;
+  potion?: boolean;
+  telegraph?: 'dodge' | 'cornered' | 'stay';
+  looseCoins?: number;
+  snapshot?: BotSnapshot;
 }
 
 export interface PlayerDecisionContext {
@@ -134,7 +235,15 @@ export interface PlayerDecisionContext {
  * alchemist. Once, on finishing floor SOAK_SHOP_FLOOR (default 4) with 800 CP or
  * more, it climbs back to town to spend its dungeon gold, then goes straight back down.
  * It reads true item stats, unidentified or not: a stand-in for a player who tries
- * things on. Every move is a real key press.
+ * things on, so it never puts on a piece of a negative family. Every move is a real key press.
+ *
+ * The soak-bot plan (Notion, "Soak bot · the measuring instrument"), steps 1-3: it spends
+ * each level's point (U, then S / C / D in turn, the one fixed build for balance runs),
+ * takes a family's mastery perk, loots chests, and steps out of a telegraphed attack onto
+ * open floor. In town it stops only where there's something to do: the Sage to identify,
+ * the temple to cleanse, offer, take a blessing and heal, Olaf for a bigger purse once
+ * coins spill, the Banker to exchange coins. A service key is pressed again only if the
+ * last press changed the panel. What it did, and why the hero died, goes to summary.json.
  */
 export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<DispatchedAction> {
   const { page, prng, actionIndex, inDialog } = ctx;
@@ -160,6 +269,10 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       shopDecisions: number;
       trip: 'none' | 'up' | 'down' | 'done';
       shopFloor: number;
+      serviceTried: string[];
+      statPresses: number;
+      statGiveUp: boolean;
+      charMenuDecisions: number;
     }) => {
       const w = window as any;
       const e = w.__cotwEngine;
@@ -223,11 +336,29 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         return it?.slot === 'mainHand' ? (st.attackBonus ?? 0) : (st.defenseBonus ?? 0) + (st.attackBonus ?? 0);
       };
       const wornIn = (slot: string): any => p.inventory?.paperdoll?.getItem?.(slot) ?? null;
-      const gainOf = (it: any): number => (isGear(it) ? scoreOf(it) - (wornIn(it.slot) ? scoreOf(wornIn(it.slot)) : 0) : 0);
+      // A careful player doesn't put on what would bind or hurt: Cursed, Hexed and Hel-touched
+      // pieces (and anything else of a negative family) are never upgrades.
+      const isNegative = (it: any): boolean =>
+        Boolean(it?.isBound?.() || it?.modifiers?.some?.((m: any) => m.alignment === 'negative' || m.binds));
+      const gainOf = (it: any): number => {
+        if (!isGear(it)) return 0;
+        if (isNegative(it)) return -999;
+        // A bound piece can't come off, so nothing in its slot is an upgrade.
+        if (wornIn(it.slot)?.isBound?.()) return -999;
+        return scoreOf(it) - (wornIn(it.slot) ? scoreOf(wornIn(it.slot)) : 0);
+      };
       const packItems: any[] = p.inventory?.primaryPack?.getItems?.() ?? [];
-      const equipCandidate = packItems
-        .filter((it) => isGear(it) && gainOf(it) > 0 && !args.equipTried.includes(it.id))
-        .sort((a, b) => gainOf(b) - gainOf(a) || String(a.id).localeCompare(String(b.id)))[0];
+      // A purse that holds more coins than the one worn is worth putting on.
+      const capOf = (it: any): number => it?.maxBulkCapacity ?? 0;
+      const isPurse = (it: any): boolean => it?.slot === 'purse' && typeof it?.getItems === 'function';
+      const wornPurseCap = capOf(p.inventory?.purse);
+      const purseCandidate = packItems
+        .filter((it) => isPurse(it) && capOf(it) > wornPurseCap && !args.equipTried.includes(it.id))
+        .sort((a, b) => capOf(b) - capOf(a) || String(a.id).localeCompare(String(b.id)))[0];
+      const equipCandidate =
+        packItems
+          .filter((it) => isGear(it) && gainOf(it) > 0 && !args.equipTried.includes(it.id))
+          .sort((a, b) => gainOf(b) - gainOf(a) || String(a.id).localeCompare(String(b.id)))[0] ?? purseCandidate;
       // Load: a player keeps under half the carry limit (unencumbered), and goes up to
       // three quarters (burdened, 25% slower) only for a real upgrade.
       const maxCarry = Math.max(1, p.strength ?? 10) * 2500;
@@ -257,6 +388,39 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         }
         return cp;
       };
+      const looseCoins: number = packItems
+        .filter((it) => it.category === 'currency')
+        .reduce((n: number, it: any) => n + (it.count ?? it.quantity ?? 1), 0);
+      const holdsSmallCoins = [p.inventory?.purse, p.inventory?.primaryPack].some((c) =>
+        (c?.getItems?.() ?? []).some((it: any) => {
+          if (it.category !== 'currency') return false;
+          const name = String(it.name).toLowerCase();
+          const denom = it.denomination ?? (['silver', 'copper'].find((d) => name.includes(d)) ?? 'gold');
+          return denom !== 'gold';
+        })
+      );
+      const healingCarriedCount = (p.inventory?.getAllCarriedItems?.() ?? [])
+        .filter(isHealing)
+        .reduce((n: number, it: any) => n + (it.quantity ?? 1), 0);
+      const unspent: number = p.unspentStatPoints ?? 0;
+      // Telegraphed attacks: the tiles a winding-up monster has declared it will hit.
+      const dangerTiles: Array<{ x: number; y: number }> = [];
+      for (const m of hostiles) {
+        if (m.intent?.type !== 'windup' || !e.fov.isVisible(m.x, m.y)) continue;
+        const raw = m.intent.targetTiles?.length ? m.intent.targetTiles : m.intent.targetTile ? [m.intent.targetTile] : [];
+        for (const t of raw) if (t && typeof t.x === 'number' && typeof t.y === 'number') dangerTiles.push(t);
+      }
+      const inDanger = (x: number, y: number): boolean => dangerTiles.some((t) => t.x === x && t.y === y);
+      const snapshot = {
+        floor: curFloor,
+        hp: p.hp,
+        maxHp: p.maxHp,
+        adjacentHostiles: hostiles.filter((m: any) => cheb(m, p) === 1).length,
+        onTelegraph: inDanger(p.x, p.y),
+        healingCarried: healingCarriedCount,
+        poisoned: Boolean(p.statusManager?.has?.('poison')),
+        unspent,
+      };
       const findStairs = (dir: 'up' | 'down'): { x: number; y: number } | null => {
         for (let y = 0; y < e.map.height; y++) {
           for (let x = 0; x < e.map.width; x++) {
@@ -268,6 +432,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         return null;
       };
 
+      // Every decision also reports the snapshot and the loose coins, for the run's telemetry.
+      const decision = ((): DecisionResult => {
       // --- 1. Dialogs and modes first -----------------------------------------
       const picker = document.querySelector('.potion-picker');
       if (picker && (stack.includes('potion-picker') || h?.modalStack?.has?.('potion-picker'))) {
@@ -336,11 +502,32 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         return { action: { type: 'key' as const, key: 'Enter' }, curPos, curTurn, curFloor };
       }
 
+      // A monster family's mastery perk: take the first one now rather than putting it off
+      // (Escape defers it to the Bestiary). The arrows only highlight; Enter locks it in.
+      if (stack.includes('mastery-choice')) {
+        const focused = document.querySelector('.mastery-perk-row.is-focused');
+        if (!focused) return { action: { type: 'key' as const, key: 'ArrowDown' }, curPos, curTurn, curFloor };
+        return { action: { type: 'key' as const, key: 'Enter' }, curPos, curTurn, curFloor, perk: true };
+      }
+
       // Character menu handling (for overburden recovery and general dismissal)
       const characterMenuOpen = stack.includes('character-menu') || Boolean(h?.characterMenuModal?.isOpen);
       if (characterMenuOpen) {
         const modal = h?.characterMenuModal;
         const isOverburdened = !p.canMove?.() || p.inventory?.getEncumbrance?.(p.strength) === 'Immobilized';
+
+        // However the menu got stuck, leave it after 40 decisions.
+        if (args.charMenuDecisions >= 40) {
+          return { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor };
+        }
+
+        // Spend level points on the Character tab, one a decision. The fixed build for balance
+        // runs: Strength, Constitution, Dexterity in turn (melee damage, health, hit chance).
+        if (modal?.activeTabId === 'character' && unspent > 0 && !args.statGiveUp) {
+          const ROTATION = ['KeyS', 'KeyC', 'KeyD'];
+          const key = ROTATION[args.statPresses % ROTATION.length];
+          return { action: { type: 'key' as const, key, secondaryKey: 'Enter' }, curPos, curTurn, curFloor, statPress: true };
+        }
 
         if (!isOverburdened) {
           // Put on the better piece: the backpack panel, its cell, then E.
@@ -351,6 +538,13 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           const shed = curFloor > 0 ? shedCandidate : undefined;
           const want = equipCandidate ?? shed;
           const targetIdx = want ? groupsE.findIndex((g: any) => g.leadItem?.id === want.id) : -1;
+          // Coins spilled into the pack go back into the purse (C), once a floor.
+          if (looseCoins > 0 && p.inventory?.purse && !args.serviceTried.includes('inventory:consolidate')) {
+            if (modal && modal.activeTabId !== 'inventory') {
+              return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor };
+            }
+            return { action: { type: 'key' as const, key: 'KeyC' }, curPos, curTurn, curFloor, service: { key: 'inventory:consolidate', once: true } };
+          }
           if (targetIdx < 0) {
             return { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor };
           }
@@ -430,7 +624,40 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         const so = h?.shopOverlay;
         const npcId: string = so?.activeNpc?.id ?? 'npc';
         const leave = { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor, shopFinished: npcId };
-        if (!so?.merchant || args.shopDecisions >= 80) return leave;
+        if (args.shopDecisions >= 150) return leave;
+
+        // A townsperson's services (Sage, temple, Banker): each key pressed only while its
+        // offer is enabled and the last press of it changed what the panel shows.
+        if (!so?.merchant) {
+          const panel = so?.panel?.(e);
+          if (!panel) return leave;
+          const serviceFp = JSON.stringify([panel.facts ?? '', panel.choices ?? [], panel.offers.map((o: any) => [o.act, o.disabled]), funds(), p.hp]);
+          const enabled = (act: string) => panel.offers.find((o: any) => o.act === act && !o.disabled);
+          const tried = (act: string) => args.serviceTried.includes(`${npcId}:${act}`);
+          const press = (act: string, once: boolean) => {
+            const offer = enabled(act);
+            return {
+              action: { type: 'key' as const, key: `Key${String(offer.key).toUpperCase()}` },
+              curPos, curTurn, curFloor, inShop: true, serviceFp,
+              service: { key: `${npcId}:${act}`, once },
+            };
+          };
+          const role = so?.activeNpc?.role;
+          const wornBound = (p.inventory?.paperdoll?.getAllEquipped?.() ?? []).some((en: any) => en.item?.isBound?.());
+          const hurt = p.hp < p.maxHp || (p.statusManager?.getAll?.()?.length ?? 0) > 0;
+          const plan: Array<[string, boolean, boolean]> =
+            role === 'priest'
+              ? [['cleanse', wornBound, true], ['offer', true, false], ['bless', true, false], ['heal', hurt, true]]
+              : role === 'sage'
+                ? [['identify', true, false]]
+                : role === 'banker'
+                  ? [['compact', holdsSmallCoins || looseCoins > 0, true]]
+                  : [];
+          for (const [act, wanted, once] of plan) {
+            if (wanted && enabled(act) && !tried(act)) return press(act, once);
+          }
+          return { ...leave, serviceFp, serviceDone: npcId };
+        }
         const toRow = (tab: 'buy' | 'sell', index: number, extra: Record<string, unknown>) => {
           if (so.activeTab !== tab) return { action: { type: 'key' as const, key: tab === 'buy' ? 'KeyB' : 'KeyS' }, curPos, curTurn, curFloor, inShop: true };
           const at = tab === 'buy' ? so.selectedBuyIndex : so.selectedSellIndex;
@@ -469,6 +696,19 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           }
         });
         if (pick >= 0) return toRow('buy', pick, { bought: true });
+
+        // Olaf's purses: the biggest one that holds more than the worn purse, once coins spill
+        // into the pack (or there's money to spare). Kept beside 300 CP for potions.
+        const heldPurseCap = Math.max(wornPurseCap, ...packItems.filter(isPurse).map(capOf));
+        if (looseCoins > 0 || cash >= 1500) {
+          let best = -1;
+          buyRows.forEach((row, i) => {
+            const it = row[0];
+            if (!isPurse(it) || capOf(it) <= heldPurseCap || (prices.get(it) ?? Infinity) > cash - 300) return;
+            if (best < 0 || capOf(it) > capOf(buyRows[best][0])) best = i;
+          });
+          if (best >= 0) return toRow('buy', best, { bought: true });
+        }
 
         const healingCarried = (p.inventory?.getAllCarriedItems?.() ?? [])
           .filter(isHealing)
@@ -697,7 +937,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       if (isRaid) {
         if (p.hp <= Math.max(p.maxHp * 0.45, 12)) {
           const potKey = findHealingPotionKey();
-          if (potKey) return { action: { type: 'key' as const, key: potKey }, curPos, curTurn, curFloor };
+          if (potKey) return { action: { type: 'key' as const, key: potKey }, curPos, curTurn, curFloor, potion: true };
         }
 
         const isOverburdened = !p.canMove?.() || p.inventory?.getEncumbrance?.(p.strength) === 'Immobilized';
@@ -769,11 +1009,40 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           if (step) {
             return { action: { type: 'key' as const, key: stepToKey(step.x - p.x, step.y - p.y) }, curPos, curTurn, curFloor };
           }
-        } else if (equipCandidate) {
+        }
+        const carriedAll: any[] = [
+          ...packItems,
+          ...(p.inventory?.belt?.getItems?.() ?? []),
+          ...(p.inventory?.paperdoll?.getAllEquipped?.() ?? []).map((en: any) => en.item),
+        ].filter(Boolean);
+        // Each stop only when it has something to do: the Sage first, so cursed loot is known
+        // and can be offered; Olaf before the Banker, so coins a new purse spills get exchanged.
+        const townStops: Array<[string, boolean]> = [
+          ['npc-sage', carriedAll.some((it) => !it.identified && it.canBeIdentified?.())],
+          [
+            'npc-priest',
+            carriedAll.some((it) => it.isBound?.() && p.inventory?.paperdoll?.getAllEquipped?.().some((en: any) => en.item === it)) ||
+              packItems.some((it) => it.identified && it.modifiers?.some?.((m: any) => m.alignment === 'negative')) ||
+              p.hp < p.maxHp * 0.75 ||
+              snapshot.poisoned,
+          ],
+          ['npc-olaf', looseCoins > 0 || funds() >= 1500],
+          ['npc-banker', holdsSmallCoins || looseCoins > 0],
+          ['npc-gunther', true],
+          ['npc-astrid', true],
+        ];
+        const nextStop = hallvardHeard
+          ? townStops.find(([id, wanted]) => wanted && !args.shopDone.includes(id) && e.map.getEntityById(id))?.[0]
+          : undefined;
+        if (!hallvardHeard) {
+          // Talking to Hallvard comes first (above).
+        } else if (equipCandidate || (looseCoins > 0 && p.inventory?.purse && !args.serviceTried.includes('inventory:consolidate'))) {
           return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor };
-        } else if (['npc-gunther', 'npc-astrid'].some((id) => !args.shopDone.includes(id) && e.map.getEntityById(id))) {
-          // The smith, then the alchemist: walk up and bump to trade.
-          const id = ['npc-gunther', 'npc-astrid'].find((n) => !args.shopDone.includes(n) && e.map.getEntityById(n))!;
+        } else if (unspent > 0 && !args.statGiveUp) {
+          return { action: { type: 'key' as const, key: 'KeyU' }, curPos, curTurn, curFloor };
+        } else if (nextStop) {
+          // Walk up and bump to trade.
+          const id = nextStop;
           const npc = e.map.getEntityById(id);
           if (cheb(p, npc) === 1) {
             return { action: { type: 'key' as const, key: stepToKey(npc.x - p.x, npc.y - p.y) }, curPos, curTurn, curFloor };
@@ -786,12 +1055,12 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         } else {
           // Walk to cellar stairs at (31, 7) or tile with isStairsDown
           let stairs = { x: 31, y: 7 };
-          for (let y = 0; y < e.map.height; y++) {
+          scan: for (let y = 0; y < e.map.height; y++) {
             for (let x = 0; x < e.map.width; x++) {
               const t = e.map.getTile(x, y);
               if (t && (t.isStairsDown || t.type === 'stairs_down')) {
                 stairs = { x, y };
-                break;
+                break scan;
               }
             }
           }
@@ -814,12 +1083,41 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       if (curFloor > 0) {
         if (p.hp <= Math.max(p.maxHp * 0.45, 12)) {
           const potKey = findHealingPotionKey();
-          if (potKey) return { action: { type: 'key' as const, key: potKey }, curPos, curTurn, curFloor };
+          if (potKey) return { action: { type: 'key' as const, key: potKey }, curPos, curTurn, curFloor, potion: true };
         }
 
         const isOverburdened = !p.canMove?.() || p.inventory?.getEncumbrance?.(p.strength) === 'Immobilized';
         if (isOverburdened) {
           return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor, isOverburdened: true };
+        }
+
+        // Standing where a telegraphed attack will land: step to a neighbouring open floor tile
+        // it won't hit. Not a closed door: bumping one opens it and leaves the hero in place.
+        if (snapshot.onTelegraph) {
+          const safe: Array<{ dx: number; dy: number; adj: number }> = [];
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              if (dx === 0 && dy === 0) continue;
+              const nx = p.x + dx;
+              const ny = p.y + dy;
+              if (!e.map.inBounds(nx, ny) || inDanger(nx, ny)) continue;
+              const t = e.map.getTile(nx, ny);
+              if (!t || !t.passable || t.isClosedDoor || t.type === 'door_closed') continue;
+              if (e.map.getEntityAt(nx, ny)) continue;
+              safe.push({ dx, dy, adj: hostiles.filter((m: any) => cheb(m, { x: nx, y: ny }) === 1).length });
+            }
+          }
+          safe.sort((a, b) => a.adj - b.adj || a.dy - b.dy || a.dx - b.dx);
+          const best = safe[0];
+          if (best) {
+            return { action: { type: 'key' as const, key: stepToKey(best.dx, best.dy) }, curPos, curTurn, curFloor, telegraph: 'dodge' as const };
+          }
+          // Cornered: no tile to step to. Fight on (counted, so a report can see it).
+          if (adjHostiles.length > 0) {
+            const m = adjHostiles[0];
+            return { action: { type: 'key' as const, key: stepToKey(m.x - p.x, m.y - p.y) }, curPos, curTurn, curFloor, telegraph: 'cornered' as const };
+          }
+          return { action: { type: 'key' as const, key: 'Space' }, curPos, curTurn, curFloor, telegraph: 'cornered' as const };
         }
 
         if (adjHostiles.length > 0) {
@@ -832,6 +1130,14 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         }
 
         const visibleHostiles = hostiles.filter((m: any) => e.fov.isVisible(m.x, m.y));
+
+        // Level points, and coins spilled into the pack, once nothing is in sight.
+        if (visibleHostiles.length === 0 && unspent > 0 && !args.statGiveUp) {
+          return { action: { type: 'key' as const, key: 'KeyU' }, curPos, curTurn, curFloor };
+        }
+        if (visibleHostiles.length === 0 && looseCoins > 0 && p.inventory?.purse && !args.serviceTried.includes('inventory:consolidate')) {
+          return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor };
+        }
         if (p.hp < p.maxHp * 0.6 && visibleHostiles.length === 0) {
           if (args.lastRestAttemptTurn !== curTurn) {
             return { action: { type: 'key' as const, key: 'KeyR' }, curPos, curTurn, curFloor, restAttempted: true };
@@ -921,25 +1227,18 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
             : (currentWeight + itemWeight > maxCarryWeight * 0.85);
 
           const isUpgrade = isGear(topItem) && gainOf(topItem) > 0 && fitsLoad(itemWeight, gainOf(topItem));
-          const canPick = !droppedHere && !isContainer && ((isPreferred && !wouldOverburden) || isUpgrade);
+          // A chest (a secret cache holds one): G takes what's inside, one item a press.
+          const isFullChest = isContainer && typeof topItem.getItems === 'function' && topItem.getItems().length > 0;
+          const canPick = !droppedHere && (isFullChest || (!isContainer && ((isPreferred && !wouldOverburden) || isUpgrade)));
 
           if (canPick) {
             if (args.lastPickupPos !== curPos || args.lastPickupTurn !== curTurn) {
-              return { action: { type: 'key' as const, key: 'KeyG' }, curPos, curTurn, curFloor, pickupAttempted: true };
+              return { action: { type: 'key' as const, key: 'KeyG' }, curPos, curTurn, curFloor, pickupAttempted: true, chest: isFullChest };
             }
           }
         }
 
-        let seenStairsDown: { x: number; y: number } | null = null;
-        for (let y = 0; y < e.map.height; y++) {
-          for (let x = 0; x < e.map.width; x++) {
-            const t = e.map.getTile(x, y);
-            if (t && (t.isStairsDown || t.type === 'stairs_down') && e.fov.isExplored(x, y)) {
-              seenStairsDown = { x, y };
-              break;
-            }
-          }
-        }
+        const seenStairsDown = findStairs('down');
 
         const turnsOnFloor = curTurn - args.floorEnteredTurn;
         const timeout = turnsOnFloor >= 400;
@@ -977,6 +1276,9 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       }
 
       return { action: { type: 'key' as const, key: 'Space' }, curPos, curTurn, curFloor };
+      })();
+      const inCharMenu = stack.includes('character-menu') || Boolean(h?.characterMenuModal?.isOpen);
+      return { ...decision, snapshot, looseCoins, inCharMenu };
     },
     {
       inDialog,
@@ -990,19 +1292,71 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       shopDecisions: state.shopDecisions,
       trip: state.trip,
       shopFloor: Number(process.env.SOAK_SHOP_FLOOR ?? 4),
+      serviceTried: state.serviceTried,
+      statPresses: state.statPresses,
+      statGiveUp: state.statFailures >= 6,
+      charMenuDecisions: state.charMenuDecisions,
     }
   );
 
   // Update bot state tracking in Node
   const { action, curPos, curTurn, curFloor, restAttempted, pickupAttempted } = evalResult;
 
+  const tel = state.telemetry;
+  if (evalResult.snapshot) tel.last = evalResult.snapshot;
+  tel.maxLooseCoins = Math.max(tel.maxLooseCoins, evalResult.looseCoins ?? 0);
+
+  // A service press counts when the panel changed after it; one that changed nothing is
+  // not pressed again this stay.
+  if (evalResult.serviceFp !== undefined && state.lastService) {
+    if (evalResult.serviceFp === state.lastService.fp) {
+      if (!state.serviceTried.includes(state.lastService.key)) state.serviceTried.push(state.lastService.key);
+    } else {
+      tel.services[state.lastService.key] = (tel.services[state.lastService.key] ?? 0) + 1;
+    }
+  }
+  if (state.lastService?.key === 'inventory:consolidate') {
+    tel.services['inventory:consolidate'] = (tel.services['inventory:consolidate'] ?? 0) + 1;
+  }
+  state.lastService = null;
+  if (evalResult.service) {
+    if (evalResult.service.once && !state.serviceTried.includes(evalResult.service.key)) state.serviceTried.push(evalResult.service.key);
+    state.lastService = { key: evalResult.service.key, fp: evalResult.serviceFp ?? '' };
+  }
+  if (evalResult.serviceDone && !state.shopDone.includes(evalResult.serviceDone)) state.shopDone.push(evalResult.serviceDone);
+
+  state.charMenuDecisions = evalResult.inCharMenu ? state.charMenuDecisions + 1 : 0;
+  // Attribute keys: give up for the run after 6 presses that spent nothing (a capped build).
+  const unspentNow = evalResult.snapshot?.unspent;
+  if (state.lastUnspent >= 0 && unspentNow !== undefined) {
+    if (unspentNow < state.lastUnspent) {
+      tel.statPointsSpent += state.lastUnspent - unspentNow;
+      state.statFailures = 0;
+    } else {
+      state.statFailures++;
+    }
+    state.lastUnspent = -1;
+  }
+  if (evalResult.statPress) {
+    state.lastUnspent = unspentNow ?? 0;
+    state.statPresses++;
+  }
+  if (evalResult.perk) tel.perksTaken++;
+  if (evalResult.chest) tel.chestsLooted++;
+  if (evalResult.potion) tel.potionsDrunk++;
+  if (evalResult.snapshot?.onTelegraph) tel.telegraphTurns++;
+  if (evalResult.telegraph === 'dodge') tel.dodges++;
+  if (evalResult.telegraph === 'cornered') tel.cornered++;
+
   if (curFloor !== state.lastFloorSeen) {
     state.lastFloorSeen = curFloor;
     state.floorEnteredTurn = curTurn;
+    state.serviceTried = state.serviceTried.filter((k) => k !== 'inventory:consolidate');
     if (curFloor === 0) {
-      // A new stay in town: every merchant again.
+      // A new stay in town: every merchant and service again.
       state.shopDone = [];
       state.shopDecisions = 0;
+      state.serviceTried = [];
       if (state.trip === 'up') {
         state.trip = 'down';
         console.log(`[soak:player] Back in town to shop, turn ${curTurn}`);
@@ -1090,6 +1444,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
   (page as any).__playerOverburdenedCount = state.overburdenedEpisodes;
   (page as any).__playerItemsDropped = state.droppedItemsCount;
   (page as any).__playerGear = { equips: state.equips, purchases: state.purchases, sales: state.sales, townTrip: state.trip };
+  (page as any).__playerTelemetry = tel;
 
   return action;
 }

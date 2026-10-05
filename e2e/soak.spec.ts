@@ -6,6 +6,7 @@ import { execSync } from 'node:child_process';
 import { pastTheOpening } from './newHero';
 import { SoakPrng } from './soak/prng';
 import { decideChaosAction, decidePlayerAction, type DispatchedAction } from './soak/policies';
+import { classifyDeath } from './soak/playerBot';
 import {
   createInitialOracleState,
   openModes,
@@ -311,7 +312,17 @@ test.describe('soak @soak', () => {
         interruptions: oracleState.interruptions,
         stuckEpisodes: (page as any).__playerStuckEpisodes ?? 0,
         ...(policy === 'player'
-          ? { gear: { ...((page as any).__playerGear ?? { equips: 0, purchases: 0, sales: 0, townTrip: 'none' }), attack: state.attack, defense: state.defense } }
+          ? {
+              gear: { ...((page as any).__playerGear ?? { equips: 0, purchases: 0, sales: 0, townTrip: 'none' }), attack: state.attack, defense: state.defense },
+              ...((page as any).__playerTelemetry
+                ? {
+                    bot: {
+                      ...(page as any).__playerTelemetry,
+                      deathCause: endedBy === 'death' ? classifyDeath(causeOfDeath, (page as any).__playerTelemetry.last) : undefined,
+                    },
+                  }
+                : {}),
+            }
           : {}),
       };
       writeFileSync(join(seedDir, 'summary.json'), JSON.stringify(summary, null, 2));

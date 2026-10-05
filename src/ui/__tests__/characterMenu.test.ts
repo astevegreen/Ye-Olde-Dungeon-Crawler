@@ -330,6 +330,16 @@ describe('CharacterMenuModal & Consolidated Character Menu', () => {
     expect(menu.isOpen).toBe(false);
   });
 
+  it("marks a codex tab's page so the pack's codex material applies to it alone (Q16, Q62, tracker 4.8)", () => {
+    const doc = (globalThis as any).document;
+    (tab2 as MenuTab).material = 'codex';
+    menu.open('character');
+    const body = doc.getElementById('character-menu-tab-content');
+    expect(body.className.split(' ')).toContain('is-codex');
+    menu.activateTab('inventory');
+    expect(body.className.split(' ')).not.toContain('is-codex');
+  });
+
   it('fills the window for every tab, the inventory included', () => {
     const doc = (globalThis as any).document;
     const overlay = doc.getElementById('character-menu-modal');

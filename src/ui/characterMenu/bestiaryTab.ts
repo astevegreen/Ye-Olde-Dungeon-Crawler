@@ -47,6 +47,7 @@ const TIER_TAG: Record<MonsterMasteryTier, string> = { 0: '?', 1: 'Seen', 2: 'Sl
 export class BestiaryTab implements MenuTab {
   public readonly id = 'bestiary';
   public readonly label = 'Bestiary';
+  public readonly material = 'codex' as const;
   public readonly hotkeyActionId = 'compendium';
 
   private container: HTMLElement | null = null;

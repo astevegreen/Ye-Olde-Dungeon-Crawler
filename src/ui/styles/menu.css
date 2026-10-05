@@ -701,3 +701,36 @@ canvas.it-frame { box-shadow: 0 0 0 2px var(--it-frame); border-radius: 3px; }
 .sb-fusion-name { font-weight: bold; }
 .sb-fusion-src { margin-left: auto; }
 .sb-unseal { padding-left: var(--ui-space-2); border-left: 2px solid var(--ui-info); }
+
+/* The codex material (Q16, Q62 "A: vellum"; tracker 4.8): the books of lore (tabs with
+   `material: 'codex'`, marked .is-codex) as vellum leaves when the pack's borderStyle is
+   'parchment'. The same surfaces as every menu, tinted a few percent toward the pack's gold,
+   with a double rule round the page, corner marks on each card and a rule under headings. */
+:root[data-border-style='parchment'] .cm-body.is-codex {
+  background: color-mix(in srgb, var(--ui-gold) 4%, var(--ui-surface-1));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ui-gold) 30%, transparent),
+    inset 0 0 0 4px var(--ui-surface-1),
+    inset 0 0 0 5px color-mix(in srgb, var(--ui-gold) 22%, transparent);
+}
+:root[data-border-style='parchment'] .is-codex .ui-card {
+  position: relative;
+  background: color-mix(in srgb, var(--ui-gold) 6%, var(--ui-surface-2));
+  border-color: color-mix(in srgb, var(--ui-gold) 28%, var(--ui-line));
+}
+:root[data-border-style='parchment'] .is-codex .ui-card::before,
+:root[data-border-style='parchment'] .is-codex .ui-card::after {
+  content: '';
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border: 1px solid color-mix(in srgb, var(--ui-gold) 55%, transparent);
+  pointer-events: none;
+}
+:root[data-border-style='parchment'] .is-codex .ui-card::before { top: 3px; left: 3px; border-right: 0; border-bottom: 0; }
+:root[data-border-style='parchment'] .is-codex .ui-card::after { bottom: 3px; right: 3px; border-left: 0; border-top: 0; }
+:root[data-border-style='parchment'] .is-codex .ui-h {
+  padding-bottom: 6px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ui-gold) 30%, transparent);
+}
+:root[data-border-style='parchment'] .is-codex .ui-inset { background: color-mix(in srgb, var(--ui-gold) 3%, var(--ui-surface-3)); }

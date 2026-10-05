@@ -49,6 +49,7 @@ function describeModifier(m: SpellModifier): string {
 export class SpellbookTab implements MenuTab {
   public readonly id = 'spellbook';
   public readonly label = 'Spellbook';
+  public readonly material = 'codex' as const;
   public readonly hotkeyActionId = 'cast_spell';
 
   private readonly options: SpellbookTabOptions;

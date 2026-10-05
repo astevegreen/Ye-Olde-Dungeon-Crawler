@@ -18,6 +18,7 @@ const CHRONICLE_SHOWN = 30;
 export class StoryTab implements MenuTab {
   public readonly id = 'story';
   public readonly label = 'Story';
+  public readonly material = 'codex' as const;
   public readonly hotkeyActionId = 'story';
 
   private container: HTMLElement | null = null;

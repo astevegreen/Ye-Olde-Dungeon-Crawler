@@ -234,6 +234,8 @@ export function applyThemeTokens(tokens?: Partial<ThemeTokens>): Promise<void> {
   for (const [cssName, key] of THEME_CSS_VARIABLES) {
     root.style.setProperty(cssName, String(merged[key]));
   }
+  // The pack's border style picks the codex material (menu.css, Q62).
+  root.setAttribute?.('data-border-style', merged.borderStyle);
   return loadFontFaces(merged.fontFaces);
 }
 

@@ -48,5 +48,6 @@ export const COTW_THEME_TOKENS: ThemeTokens = {
   fontBody: '"Courier New", Courier, monospace',
   fontNum: '"Courier New", Courier, monospace',
   radius: '2px',
-  borderStyle: 'bevel',
+  // Vellum codex leaves for the books of lore (Q62 "A: vellum", tracker 4.8).
+  borderStyle: 'parchment',
 };

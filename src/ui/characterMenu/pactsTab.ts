@@ -13,6 +13,7 @@ import { escapeHtml } from '../html';
 export class PactsTab implements MenuTab {
   public readonly id = 'pacts';
   public readonly label = 'Pacts';
+  public readonly material = 'codex' as const;
   public readonly hotkeyActionId = 'pact';
 
   private container: HTMLElement | null = null;

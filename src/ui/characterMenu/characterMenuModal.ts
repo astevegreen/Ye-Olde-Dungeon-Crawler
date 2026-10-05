@@ -259,6 +259,7 @@ export class CharacterMenuModal implements UIModal {
 
     if (this.contentEl) {
       this.contentEl.innerHTML = '';
+      this.contentEl.className = `cm-body character-menu-tab-content${targetTab.material === 'codex' ? ' is-codex' : ''}`;
       targetTab.mount(this.contentEl);
       if (this.stateSupplier) {
         targetTab.onActivate(this.stateSupplier(), entry);

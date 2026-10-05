@@ -38,6 +38,9 @@ export interface MenuHost {
 export interface MenuTab {
   id: string;
   label: string;
+  /** The page's material (Q16, Q62): 'codex' for the books of lore (Grimoire, Carved Verses,
+   *  Bestiary, Pacts), drawn as the pack's `borderStyle` says; absent, the menus' own. */
+  material?: 'codex';
   /** ACTION_METADATA id whose keybind opens the shell focused on this tab. */
   hotkeyActionId?: string;
   mount(container: HTMLElement): void;

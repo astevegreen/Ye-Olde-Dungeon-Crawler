@@ -268,3 +268,15 @@ describe('Bestiary tab: a picture for each creature seen (N33, tracker 4.2)', ()
     expect(drawn).toEqual([]);
   });
 });
+
+describe('Bestiary tab: a page completed by Study (tracker 4.1)', () => {
+  it('reads as complete, not "slay 15 more", when the rank was bought', () => {
+    const engine = new GameEngine({ map: new GameMap(10, 10), player: new Player({ id: 'p1', name: 'Hero', position: { x: 1, y: 1 } }), manifest: cotwManifest, floor: 0 });
+    engine.compendium.recordEncounter('quicksilver_leech', 'Quicksilver Leech', 26);
+    engine.compendium.raiseKnowledge('quicksilver_leech');
+    engine.compendium.raiseKnowledge('quicksilver_leech');
+    const { el } = openBestiary(engine);
+    expect(el.innerHTML).toContain('Studied: its page shows everything.');
+    expect(el.innerHTML).not.toContain('Slay 15 more');
+  });
+});

@@ -210,15 +210,16 @@ export class BestiaryTab implements MenuTab {
     });
   }
 
-  /** What is known of one creature: kills toward the complete page (knowledge rank 3). */
-  private renderKnowledgePanel(def: MonsterDefinition, kills: number): string {
+  /** What is known of one creature: kills toward the complete page (knowledge rank 3), which
+   *  Study at the sage can also buy (tracker 4.1). */
+  private renderKnowledgePanel(def: MonsterDefinition, kills: number, tier: MonsterMasteryTier): string {
     const needed = SPECIES_MASTERY_KILLS;
-    const complete = kills >= needed;
+    const complete = tier === 3;
     const pct = Math.round((Math.min(kills, needed) / needed) * 100);
     return `
       <div class="ui-card bs-mastery${complete ? ' is-unlocked' : ''}">
         <div class="bs-mastery-head"><b>${complete ? '★ ' : ''}${escapeHtml(def.name)}: knowledge</b><span class="ui-num">${kills}/${needed} Kills (${pct}%)</span></div>
-        <div class="ui-bar bs-bar"><i style="width: ${pct}%"></i></div>
+        <div class="ui-bar bs-bar"><i style="width: ${complete ? 100 : pct}%"></i></div>
         <div class="ui-note">${complete ? 'Studied: its page shows everything.' : `Slay ${needed - kills} more to complete its page: exact health, attack and defense, spells, drops and worth.`}</div>
       </div>`;
   }
@@ -338,7 +339,7 @@ export class BestiaryTab implements MenuTab {
           </div>
         </div>
       </div>
-      ${this.renderKnowledgePanel(def, entry.kills)}
+      ${this.renderKnowledgePanel(def, entry.kills, tier)}
       ${
         category
           ? this.renderMasteryPanel({

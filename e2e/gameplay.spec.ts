@@ -167,6 +167,21 @@ test('the open map redraws to fit when the window is resized', async ({ page }) 
   }).toBe(true);
 });
 
+// The map (M) fills most of the window: it was a 760 px dialog with a 420 px canvas, 10 px a
+// tile on every screen from 1920 up (N4, tracker 4.3).
+test('the map fills most of the window, and its tiles grow with it', async ({ page }) => {
+  await embarkNewHero(page);
+  await page.keyboard.press('KeyM');
+  const canvas = page.locator('#map-viewer-canvas');
+  await expect(canvas).toBeVisible();
+  for (const [width, height] of [[1366, 768], [1920, 1080]]) {
+    await page.setViewportSize({ width, height });
+    await expect.poll(async () => (await canvas.boundingBox())?.width ?? 0, `canvas width at ${width}x${height}`).toBeGreaterThan(width * 0.85);
+    const b = (await canvas.boundingBox())!;
+    expect(b.height, `canvas height at ${width}x${height}`).toBeGreaterThan(height * 0.55);
+  }
+});
+
 // The sidebar's "here" line shows all of a long prompt: on the stairs it was cut off at
 // "…to a" with no ellipsis (tracker 0.23).
 test("the sidebar's ground line shows the whole stairs prompt", async ({ page }) => {

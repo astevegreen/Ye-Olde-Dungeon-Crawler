@@ -132,7 +132,7 @@ export class MapOverlay {
       icon: 'map',
       closeId: 'btn-map-close',
       closeTitle: 'Close (M or Esc)',
-      size: 'wide',
+      size: 'full',
       body: `
         <div class="mv-nav">
           ${dialogButton('btn-map-up', 'Up', { key: '<', disabled: !canGoUp })}
@@ -169,8 +169,8 @@ export class MapOverlay {
     if (!canvas) return;
     this.drawFloor(canvas);
     // The canvas's CSS box follows the window (dialog.css); redraw when it changes, or the
-    // floor stays squashed until the map is reopened. Its CSS sets both width and height,
-    // so the backing store this writes can't resize the box and loop.
+    // floor stays squashed until the map is reopened. Its CSS sets its width and a zero flex
+    // basis, so the backing store this writes can't resize the box and loop.
     if (typeof ResizeObserver !== 'undefined') {
       this.resizeWatch = new ResizeObserver(() => this.drawFloor(canvas));
       this.resizeWatch.observe(canvas);
@@ -190,7 +190,7 @@ export class MapOverlay {
         live: here,
         traps: true,
         hero: here ? { x: engine.player.x, y: engine.player.y } : null,
-        maxCell: Math.round(18 * dpr),
+        maxCell: Math.round(48 * dpr),
       });
     }
   }

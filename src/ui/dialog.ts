@@ -39,7 +39,8 @@ export interface DialogFrame {
   actions?: string;
   /** Raw HTML for the footer's left side, after the hints, e.g. a status line. */
   footNote?: string;
-  size?: 'narrow' | 'wide';
+  /** `full` fills the window inside the scrim's padding (the map viewer, tracker 4.3). */
+  size?: 'narrow' | 'wide' | 'full';
 }
 
 export function dialogHtml(f: DialogFrame): string {

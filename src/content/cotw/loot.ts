@@ -16,6 +16,8 @@ export const COTW_LOOT_RATES: LootRatesDefinition = {
   roomCoinShare: 0.55,
   roomChestChance: 0.08,
   chestEntries: [1, 3],
+  // A secret cache's chest (tracker 5.6): small, so the caches stay inside 8–10 items a floor.
+  cacheEntries: [1, 2],
   chestCoinShare: 0.45,
   newestShare: 0.75,
   newestDefinitions: 8,

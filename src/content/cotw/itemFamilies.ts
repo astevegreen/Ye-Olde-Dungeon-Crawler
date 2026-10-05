@@ -8,7 +8,7 @@ import type { ItemFamilyConfig } from '../../engine';
  *
  * `itemsPerGame` is the measured count of eligible items a full clear offers at the loot
  * volume of `loot.ts` (`npm run balance`, 20 seeds, medium: 238, relics not counted; 275 since
- * tracker 5.6 stocks the secret caches, about 1.3 more items a floor). Cursed
+ * tracker 5.6 stocks the secret caches, about 0.8 more items a floor). Cursed
  * rolls 15 a game because the four cursed relics (`family: 'cursed'`, `lootWeight` 0.25) add
  * about 8 more, and the negative families lose a tenth of their share to floors 1–2, so
  * Negative comes to 45. `lootVolume.test.ts` pins the measured counts.

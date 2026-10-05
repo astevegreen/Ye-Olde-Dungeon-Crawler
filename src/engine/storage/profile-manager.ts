@@ -4,6 +4,7 @@ import type { BulkArchive } from './bulkArchive';
 import { classifyLoadError, MISSING_SAVE, type LoadOutcome } from './loadResult';
 import { DungeonGenerator } from '../dungeon/dungeon-generator';
 import { TownMapGenerator } from '../town/townMap';
+import { InventoryManager } from '../inventory/inventory-manager';
 import { Player } from '../entities/player';
 import { GameEngine } from '../engine';
 import { ItemFactory } from '../items/factory';
@@ -280,6 +281,8 @@ export class ProfileManager {
       maxMana,
       spellsKnown: manifest.starterKit?.spellsKnown ?? (manifest.spells?.length ? manifest.spells.map(s => s.id) : undefined),
       grimoireOpenSlots: manifest.magic?.grimoire?.initialOpenSlots,
+      // The pack's slots, as a load gives them (deserializeGame): the engine's defaults otherwise.
+      inventory: new InventoryManager({ ownerId: profileId, slots: manifest.equipmentSlots }),
     });
 
     // 3. Equip starting kit from the run's stream (created above).

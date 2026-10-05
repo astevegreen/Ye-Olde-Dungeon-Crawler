@@ -523,6 +523,143 @@ function stall(pen: Pen): void {
   pen.fillRect(2, 4.2, 28, 1.4);
 }
 
+/* The service furnishings (N14, tracker 4.9): one tell inside each shop, beside its keeper. */
+
+function shadow(pen: Pen, w = 12): void {
+  pen.fillStyle = 'rgba(0,0,0,0.4)';
+  ell(pen, 16, 28, w, 3);
+  pen.fill();
+}
+
+function crates(pen: Pen): void {
+  shadow(pen, 13);
+  for (const [x, y, w, h, c] of [[4, 16, 12, 12, '#7a5a36'], [16, 18, 12, 10, '#6a4a2c'], [8, 6, 11, 10, '#8a6a40']] as const) {
+    pen.fillStyle = c;
+    pen.fillRect(x, y, w, h);
+    pen.fillStyle = 'rgba(0,0,0,0.3)';
+    pen.fillRect(x, y + h - 1, w, 1);
+    pen.fillRect(x + w / 2 - 0.4, y, 0.8, h);
+    pen.fillStyle = 'rgba(255,255,255,0.14)';
+    pen.fillRect(x, y, w, 0.8);
+  }
+  pen.fillStyle = '#e8e2d0'; // a chalked price
+  pen.fillRect(10, 20, 3, 1);
+}
+
+function anvil(pen: Pen): void {
+  shadow(pen);
+  pen.fillStyle = '#4a3020'; // the stump
+  pen.fillRect(11, 19, 10, 9);
+  pen.fillStyle = '#3a3d44';
+  poly(pen, [[5, 12], [25, 12], [27, 14], [21, 15], [20, 19], [12, 19], [11, 15], [5, 14]]);
+  pen.fill();
+  pen.fillStyle = '#7d8590';
+  pen.fillRect(6, 12, 19, 1.2);
+  pen.fillStyle = HEARTH; // a cooling blade, still glowing
+  pen.fillRect(9, 10.6, 12, 1.2);
+}
+
+function runeStone(pen: Pen): void {
+  shadow(pen, 9);
+  pen.fillStyle = '#5b6068';
+  pen.beginPath();
+  pen.roundRect(10, 5, 12, 23, 5);
+  pen.fill();
+  pen.strokeStyle = '#c9a25a';
+  pen.lineWidth = 1.2;
+  pen.beginPath();
+  for (const [[ax, ay], [bx, by]] of [[[14, 9], [14, 24]], [[14, 11], [18, 14]], [[14, 16], [18, 19]]] as const) {
+    pen.moveTo(ax, ay);
+    pen.lineTo(bx, by);
+  }
+  pen.stroke();
+}
+
+function cauldron(pen: Pen): void {
+  shadow(pen);
+  pen.fillStyle = HEARTH; // the peat fire
+  ell(pen, 16, 26, 7, 2.2);
+  pen.fill();
+  pen.fillStyle = '#25272c';
+  ell(pen, 16, 19, 10, 8);
+  pen.fill();
+  pen.fillStyle = '#5fbf6a'; // the brew
+  ell(pen, 16, 13.5, 8, 2.2);
+  pen.fill();
+  pen.fillStyle = 'rgba(190,240,190,0.5)';
+  ell(pen, 13, 9, 2, 2);
+  pen.fill();
+  ell(pen, 19, 6, 1.5, 1.5);
+  pen.fill();
+}
+
+function shrine(pen: Pen): void {
+  shadow(pen, 13);
+  pen.fillStyle = '#6f6a62';
+  pen.fillRect(5, 16, 22, 12);
+  pen.fillStyle = '#8c867c';
+  pen.fillRect(4, 14, 24, 3);
+  pen.fillStyle = '#d6a542'; // Thor's hammer
+  pen.fillRect(10, 5, 12, 5);
+  pen.fillRect(15, 10, 2, 5);
+  pen.fillStyle = HEARTH; // two candles
+  pen.fillRect(6, 11, 1.5, 3);
+  pen.fillRect(24.5, 11, 1.5, 3);
+}
+
+function lectern(pen: Pen): void {
+  shadow(pen, 10);
+  pen.fillStyle = '#4b3322';
+  pen.fillRect(14, 15, 4, 13);
+  pen.fillRect(10, 26, 12, 2);
+  pen.fillStyle = '#5a3d27';
+  poly(pen, [[7, 10], [25, 10], [23, 16], [9, 16]]);
+  pen.fill();
+  pen.fillStyle = '#e8dcbc'; // the open tome
+  poly(pen, [[9, 8], [16, 9], [16, 14], [10, 13]]);
+  pen.fill();
+  poly(pen, [[16, 9], [23, 8], [22, 13], [16, 14]]);
+  pen.fill();
+  pen.fillStyle = '#6f2e2e'; // a stack of shut ones
+  pen.fillRect(21, 19, 7, 3);
+  pen.fillStyle = '#2e4b6f';
+  pen.fillRect(22, 16, 6, 3);
+}
+
+function strongbox(pen: Pen): void {
+  shadow(pen, 12);
+  pen.fillStyle = '#5a3d27';
+  pen.fillRect(6, 13, 20, 14);
+  pen.fillStyle = '#3a3d44'; // iron bands
+  for (const x of [6, 15, 24]) pen.fillRect(x, 13, 2, 14);
+  pen.fillRect(6, 13, 20, 2);
+  pen.fillStyle = '#d6a542'; // the lock, and coin
+  pen.fillRect(15, 18, 2, 3);
+  ell(pen, 10, 11.5, 2, 1);
+  pen.fill();
+  ell(pen, 13, 11, 2, 1);
+  pen.fill();
+}
+
+function kennel(pen: Pen): void {
+  shadow(pen, 14);
+  pen.fillStyle = TIMBER;
+  pen.fillRect(4, 13, 24, 15);
+  pen.fillStyle = TIMBER_DARK;
+  poly(pen, [[2, 14], [16, 4], [30, 14]]);
+  pen.fill();
+  pen.fillStyle = '#15181d'; // the doorway
+  pen.beginPath();
+  pen.roundRect(11, 17, 10, 11, 4);
+  pen.fill();
+  pen.fillStyle = '#9a9a96'; // a hound's grey muzzle
+  ell(pen, 16, 25, 3, 2);
+  pen.fill();
+  pen.fillStyle = rgba(SNOW, 0.9);
+  poly(pen, [[3, 13.4], [16, 4.2], [29, 13.4], [16, 5.8]]);
+  pen.fill();
+}
+
 function prop(draw: (pen: Pen) => void): SpriteRecipe {
   return (ctx: Pen, ox: number, oy: number) => {
     ctx.save();
@@ -556,5 +693,13 @@ export function townThingRecipes(): Record<string, SpriteRecipe> {
   out['town_barrels~prop'] = prop(barrels);
   out['town_woodpile~prop'] = prop(woodpile);
   out['town_market_stall~prop'] = prop(stall);
+  out['town_crates~prop'] = prop(crates);
+  out['town_anvil~prop'] = prop(anvil);
+  out['town_rune_stone~prop'] = prop(runeStone);
+  out['town_cauldron~prop'] = prop(cauldron);
+  out['town_shrine~prop'] = prop(shrine);
+  out['town_lectern~prop'] = prop(lectern);
+  out['town_strongbox~prop'] = prop(strongbox);
+  out['town_kennel~prop'] = prop(kennel);
   return out;
 }

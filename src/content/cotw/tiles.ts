@@ -36,6 +36,15 @@ export const COTW_TILES: TileDefinition[] = [
   townThing('town_barrels', 'Barrels', 'O', 'Iron-hooped barrels of ale, salt fish and pitch.'),
   townThing('town_woodpile', 'Woodpile', 'L', 'Split logs stacked for the hearths.'),
   townThing('town_market_stall', 'Market Stall', 'M', 'A market stall under a faded striped awning.'),
+  // One tell per service, beside the one who sells it (N14, tracker 4.9; townLayout.ts TOWN_FURNISHINGS).
+  townThing('town_crates', 'Stacked Crates', 'X', "Olaf's stock: rope, lamp oil, salt and bread, crated and chalked with prices."),
+  townThing('town_anvil', 'Anvil', 'N', "Gunther's anvil, ringing still from the last blade. He will raise your steel a step here."),
+  townThing('town_rune_stone', 'Rune-Carving Stone', 'Q', "Thrain's carving stone, its face scored with half-cut runes of return."),
+  townThing('town_cauldron', 'Cauldron', 'U', "Astrid's cauldron, simmering something green over a peat fire."),
+  townThing('town_shrine', "Thor's Altar", 'Y', "A stone altar under Thor's hammer. Torvald heals and cleanses here, and takes cursed things as offerings."),
+  townThing('town_lectern', 'Lectern and Tomes', 'K', "Mimir's lectern, piled with tomes on things found in the dark and the beasts that dwell there."),
+  townThing('town_strongbox', 'Strongbox', 'V', "Haakon's iron-bound strongbox, where coin of every metal is weighed and changed."),
+  townThing('town_kennel', 'Kennel', 'D', "Ranvild's kennel of wolfhounds, straw-floored and loud. Companions are bonded and trained here."),
   {
     // Opens where Níðhögg falls: the way into Ragnarök (quest.ts, ending 'ragnarok').
     type: 'gateway_valhalla',

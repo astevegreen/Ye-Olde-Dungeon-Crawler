@@ -5,7 +5,7 @@
  *
  * Legend: '#' rock or wall, '.' snow, ',' cobbled road, 'T' pine, 'F' fountain (2x2),
  * 'A' statue, 'H' hay cart, 'C' goods cart, 'O' barrels, 'L' woodpile, 'M' market stall,
- * '+'/"'" doors, '>' the cellar stairs.
+ * '+'/"'" doors, '>' the cellar stairs; the service furnishings are in TOWN_FURNISHINGS.
  */
 const W = 56;
 const H = 36;
@@ -20,7 +20,30 @@ export const TOWN_LEGEND: Record<string, string> = {
   O: 'town_barrels',
   L: 'town_woodpile',
   M: 'town_market_stall',
+  X: 'town_crates',
+  N: 'town_anvil',
+  Q: 'town_rune_stone',
+  U: 'town_cauldron',
+  Y: 'town_shrine',
+  K: 'town_lectern',
+  V: 'town_strongbox',
+  D: 'town_kennel',
 };
+
+/**
+ * One tell per service, beside the one who sells it (N14, tracker 4.9): the layout places
+ * them, and `COTW_TOWN_FURNISHING_HOOK` adds them to a town saved before they existed.
+ */
+export const TOWN_FURNISHINGS: ReadonlyArray<{ glyph: string; x: number; y: number }> = [
+  { glyph: 'X', x: 11, y: 6 }, // Olaf's crates, behind his counter
+  { glyph: 'N', x: 42, y: 5 }, // Gunther's anvil
+  { glyph: 'Q', x: 46, y: 6 }, // Thrain's rune-carving stone
+  { glyph: 'U', x: 8, y: 28 }, // Astrid's cauldron
+  { glyph: 'Y', x: 28, y: 32 }, // Thor's altar, behind Torvald
+  { glyph: 'K', x: 41, y: 24 }, // Mimir's lectern
+  { glyph: 'V', x: 48, y: 24 }, // Haakon's strongbox
+  { glyph: 'D', x: 18, y: 20 }, // Ranvild's kennel
+];
 
 export interface TownBuildingPlan {
   name: string;
@@ -138,6 +161,7 @@ function buildTown(): string[] {
   place('O', 51, 24);
   place('L', 20, 6); // the longhouse woodpile
   place('L', 36, 7);
+  for (const f of TOWN_FURNISHINGS) place(f.glyph, f.x, f.y);
 
   // Anything the lanes don't reach becomes woods, so every open cell is walkable to.
   const seen = new Set<number>();

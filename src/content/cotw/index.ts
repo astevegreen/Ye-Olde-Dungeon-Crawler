@@ -43,6 +43,7 @@ import { HOSTAGE_VILLAGERS, SIPHON_RITUAL_FLOOR, SIPHON_RITUAL_HOOKS, SIPHON_TIM
 import { COTW_PROLOGUE, COVEN_CHANNELER_STRATEGY, PROLOGUE_HOOKS, PROLOGUE_TIMED_EVENT } from './prologue';
 import { COTW_BLOOD_SPELLS } from './bloodMagic';
 import { COTW_TILES } from './tiles';
+import { COTW_TOWN_FURNISHING_HOOK } from './townFurnishings';
 import { COTW_FLOOR_HAZARDS, COTW_ROOM_DECORATION } from './floorBands';
 import { COTW_FLOOR_LAYOUTS, COTW_FLOOR_SIZE } from './floorLayouts';
 import { COTW_MONSTER_CATEGORIES } from './monsterCategories';
@@ -140,6 +141,7 @@ export const cotwManifest: GameContentManifest = {
     COTW_ZONE_VIGNETTES_HOOK,
     COTW_SVART_TAUNT_HOOK,
     COTW_TOWN_REACTIVE_HOOK,
+    COTW_TOWN_FURNISHING_HOOK,
     COTW_TEMPLE_MET_HOOK,
     COTW_RELIC_HOOK,
     OATH_HOLD_HOOK,

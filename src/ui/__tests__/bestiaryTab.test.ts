@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { BestiaryTab } from '../characterMenu/bestiaryTab';
-import { GameEngine, GameMap, Player, MonsterRegistry } from '../../engine';
+import { GameEngine, GameMap, Player, MonsterRegistry, SPECIES_MASTERY_KILLS, scaleMonsterStats } from '../../engine';
+import { cotwManifest } from '../../content/cotw';
 
 /** Opens the Bestiary tab on a stub container and returns it. */
 function openBestiary(engine: GameEngine): { tab: BestiaryTab; el: { innerHTML: string } } {
@@ -207,5 +208,33 @@ describe('Bestiary tab: list', () => {
     expect(tab.handleKeyDown(key('ArrowRight'))).toBe(true);
     expect(el.innerHTML).toContain('data-filter="discovered" aria-selected="true"');
     for (const code of ['Escape', 'Tab', 'KeyB', 'KeyI']) expect(tab.handleKeyDown(key(code))).toBe(false);
+  });
+});
+
+describe('Bestiary tab: stats as met on the creature\'s home floor (Q11 "A", tracker 4.1)', () => {
+  function leechPage(tier: 2 | 3): string {
+    const player = new Player({ id: 'p1', name: 'Hero', position: { x: 1, y: 1 }, difficulty: 'medium' });
+    const engine = new GameEngine({ map: new GameMap(10, 10), player, manifest: cotwManifest, floor: 0 });
+    engine.compendium.recordEncounter('quicksilver_leech', 'Quicksilver Leech', 26);
+    for (let i = 0; i < (tier === 3 ? SPECIES_MASTERY_KILLS : 1); i++) engine.compendium.recordKill('quicksilver_leech', 'Quicksilver Leech');
+    const { tab, el } = openBestiary(engine);
+    const keys = (code: string) => ({ code, preventDefault: () => {} }) as unknown as KeyboardEvent;
+    // Known creatures come first; the leech is the only one.
+    tab.handleKeyDown(keys('ArrowUp'));
+    return el.innerHTML;
+  }
+
+  it('shows the complete page with the floor-26 numbers, not the definition\'s base 58 / 16 / 6', () => {
+    const scaled = scaleMonsterStats(cotwManifest.monsters!.find((m) => m.id === 'quicksilver_leech')!, 26, undefined, undefined, cotwManifest.monsterScaling, 'medium');
+    const page = leechPage(3);
+    expect(page).toContain(`<dd class="ui-num">${scaled.maxHp}</dd>`);
+    expect(page).toContain(`${scaled.attack} / ${scaled.defense}`);
+    expect(page).not.toContain('<dd class="ui-num">58</dd>');
+    expect(page).toContain('on floor <span class="ui-num">26</span>');
+  });
+
+  it('gives the Slain rank its health range around the scaled figure', () => {
+    const scaled = scaleMonsterStats(cotwManifest.monsters!.find((m) => m.id === 'quicksilver_leech')!, 26, undefined, undefined, cotwManifest.monsterScaling, 'medium');
+    expect(leechPage(2)).toContain(`about ${Math.round(scaled.maxHp * 0.8)}–${Math.round(scaled.maxHp * 1.2)}`);
   });
 });

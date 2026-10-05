@@ -11,6 +11,7 @@ import {
   selectMasteryPerk,
   resolveManaTerms,
   getSpell,
+  scaleMonsterStats,
 } from '../../engine';
 import type { GameState } from './gameState';
 import type { MenuFooter, MenuTab } from './menuTab';
@@ -282,15 +283,19 @@ export class BestiaryTab implements MenuTab {
     const category = getMonsterCategory(this.engine!, def.id);
     const speedWord = def.speed > 100 ? 'Fast' : def.speed < 100 ? 'Sluggish' : 'Normal';
     const xpName = resolveBranding(this.engine!.manifest).xpName;
+    // Numbers as the creature is met on its home floor, at this run's difficulty (Q11 "A").
+    const home = def.minFloor ?? 1;
+    const scaled = scaleMonsterStats(def, Math.max(1, home), undefined, undefined, this.engine!.manifest?.monsterScaling, this.engine!.player.difficulty);
 
     const vitality =
       tier >= 3
-        ? `<dt>Max health</dt><dd class="ui-num">${def.stats.maxHp}</dd><dt>Speed</dt><dd class="ui-num">${def.speed}</dd><dt>Attack / Defense</dt><dd class="ui-num">${def.stats.attack} / ${def.stats.defense}</dd>`
+        ? `<dt>Max health</dt><dd class="ui-num">${scaled.maxHp}</dd><dt>Speed</dt><dd class="ui-num">${def.speed}</dd><dt>Attack / Defense</dt><dd class="ui-num">${scaled.attack} / ${scaled.defense}</dd>`
         : tier >= 2
-        ? `<dt>Health</dt><dd class="ui-num">about ${Math.round(def.stats.maxHp * 0.8)}–${Math.round(def.stats.maxHp * 1.2)}</dd><dt>Speed</dt><dd>${speedWord} <span class="ui-num ui-faint">(${def.speed})</span></dd><dt>Threat</dt><dd>Tier ${Math.ceil((def.minFloor ?? 1) / 10) || 1}</dd>`
+        ? `<dt>Health</dt><dd class="ui-num">about ${Math.round(scaled.maxHp * 0.8)}–${Math.round(scaled.maxHp * 1.2)}</dd><dt>Speed</dt><dd>${speedWord} <span class="ui-num ui-faint">(${def.speed})</span></dd><dt>Threat</dt><dd>Tier ${Math.ceil((def.minFloor ?? 1) / 10) || 1}</dd>`
         : `<dt>Speed</dt><dd>${speedWord}</dd><dt>Threat</dt><dd class="ui-faint">Slay one to learn more</dd>`;
 
     const resistances = Object.entries(def.resistances ?? {}).filter(([, aff]) => Boolean(aff));
+    const statsNote = tier >= 2 ? `<div class="ui-note ui-faint">As met on floor <span class="ui-num">${home}</span>; deeper, it is stronger.</div>` : '';
     const affinities =
       tier >= 2
         ? resistances.length > 0
@@ -303,7 +308,7 @@ export class BestiaryTab implements MenuTab {
         ? `<dt>Spells</dt><dd>${def.spells && def.spells.length > 0 ? escapeHtml(def.spells.map((id) => this.spellName(id)).join(', ')) : 'melee only'}</dd>
            <dt>On hit</dt><dd>${def.onHitAffliction ? `${escapeHtml(def.onHitAffliction.type)} (${Math.round(def.onHitAffliction.chance * 100)}%)` : 'nothing'}</dd>
            <dt>Drops</dt><dd class="ui-num">${def.lootTable.length} possible items</dd>
-           <dt>${escapeHtml(xpName)}</dt><dd class="ui-num">${def.xpValue}</dd>`
+           <dt>${escapeHtml(xpName)}</dt><dd class="ui-num">${scaled.xpValue}</dd>`
         : tier >= 2
         ? `<dt>On hit</dt><dd>${def.onHitAffliction ? escapeHtml(def.onHitAffliction.type) : 'nothing known'}</dd><dt>Carries</dt><dd>gold and gear</dd>`
         : '<dt class="ui-faint">Defeat it to learn its techniques and drops</dt><dd></dd>';
@@ -329,7 +334,7 @@ export class BestiaryTab implements MenuTab {
           : ''
       }
       <div class="bs-traits">
-        <div class="ui-card"><div class="ui-h">Vitality</div><dl class="ui-kv">${vitality}</dl></div>
+        <div class="ui-card"><div class="ui-h">Vitality</div><dl class="ui-kv">${vitality}</dl>${statsNote}</div>
         <div class="ui-card"><div class="ui-h">Affinities</div><dl class="ui-kv">${affinities}</dl></div>
       </div>
       <div class="ui-card"><div class="ui-h">Abilities and drops</div><dl class="ui-kv">${abilities}</dl></div>

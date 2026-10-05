@@ -384,7 +384,22 @@ canvas.it-frame { box-shadow: 0 0 0 2px var(--it-frame); border-radius: 3px; }
 
 .st-grid { grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(280px, 380px); }
 
-.st-descent { position: relative; flex: 1; min-height: 240px; padding: 0 var(--ui-space-3); }
+.st-descent { position: relative; flex: 1; min-height: 240px; padding: 0 var(--ui-space-3); overflow: hidden; }
+/* The pack's descent art (`ui~descent`, tracker 4.10): a square as tall as the card, faint
+   and centred on the track, its sides cropped by the card. A pack that draws none shows the
+   track alone. */
+.st-descent .st-descent-art {
+  position: absolute;
+  top: 0;
+  left: 24px;
+  width: auto;
+  height: 100%;
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  opacity: 0.3;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
 .st-track {
   position: absolute;
   left: 22px;

@@ -7,3 +7,10 @@ describe('cotw paperdoll figure', () => {
     expect(typeof cotwManifest.spriteRecipes?.['ui~doll']).toBe('function');
   });
 });
+
+/** Tracker 4.10: the descent's tree is pack art too. */
+describe('cotw descent art', () => {
+  it('draws ui~descent', () => {
+    expect(typeof cotwManifest.spriteRecipes?.['ui~descent']).toBe('function');
+  });
+});

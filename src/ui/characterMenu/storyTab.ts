@@ -118,6 +118,7 @@ export class StoryTab implements MenuTab {
     return `
       <div class="ui-h">The Descent ${d.currentZone ? `<small>${escapeHtml(d.currentZone)}</small>` : ''}</div>
       <div class="ui-card st-descent">
+        <i class="ui-icon st-descent-art" data-icon="descent" aria-hidden="true"></i>
         <div class="st-track"></div>${fill}${bands}${deepestMark}${you}
       </div>
       <div class="ui-note">${d.deepest > 0 ? `Deepest reached: floor <span class="ui-num">${d.deepest}</span> of ${d.lastFloor}. ` : ''}Names appear as you reach each depth.</div>`;

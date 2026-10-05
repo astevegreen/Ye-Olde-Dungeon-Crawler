@@ -529,6 +529,30 @@ export const COTW_UI_ICONS: Record<string, SpriteRecipe> = {
     poly(ctx, ox, oy, body, [[16.5, 22], [21, 22], [20, 31], [17, 31]]); // right leg
   },
 
+  // The Story tab's descent (tracker 4.10): Yggdrasil from crown to root, its trunk under the
+  // track (centred), the dungeon's floors running down it to the roots Níðhögg gnaws.
+  'ui~descent': (ctx, ox, oy) => {
+    const r = pen(ctx, ox, oy);
+    const bark = C.wood;
+    const barkDark = C.woodDark;
+    // The crown: ash boughs spreading from the top of the trunk.
+    for (const [x, y, w] of [[6, 1, 20], [3, 3, 26], [5, 5, 22], [9, 7, 14]] as const) r(C.greenDark, x, y, w, 2);
+    poly(ctx, ox, oy, barkDark, [[15, 9], [7, 3], [8, 2], [16, 8]]);
+    poly(ctx, ox, oy, barkDark, [[17, 9], [25, 3], [24, 2], [16, 8]]);
+    // The trunk.
+    r(bark, 14, 7, 4, 19);
+    r(barkDark, 14, 7, 1, 19);
+    for (const y of [11, 15, 19, 23]) r(barkDark, 16, y, 1, 2);
+    // The roots, reaching down and out.
+    poly(ctx, ox, oy, bark, [[14, 25], [4, 31], [7, 31], [15, 27]]);
+    poly(ctx, ox, oy, bark, [[18, 25], [28, 31], [25, 31], [17, 27]]);
+    poly(ctx, ox, oy, barkDark, [[15, 26], [12, 32], [14, 32], [16, 27]]);
+    poly(ctx, ox, oy, barkDark, [[17, 26], [20, 32], [18, 32], [16, 27]]);
+    // The serpent coiled at the root.
+    r(C.violetDark, 9, 29, 14, 2);
+    r(C.violet, 20, 28, 3, 2);
+  },
+
   'ui~hero': COTW_MONSTER_SPRITES.player,
   'ui~heroine': COTW_MONSTER_SPRITES.player_female,
 };

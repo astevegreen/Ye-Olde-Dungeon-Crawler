@@ -133,6 +133,8 @@ describe('StoryTab', () => {
     const el = activate(tab, engine);
 
     expect(el.innerHTML).toContain('The Descent');
+    // The pack's descent art behind the track (N13, tracker 4.10), first in the card.
+    expect(el.innerHTML).toMatch(/<div class="ui-card st-descent">\s*<i class="ui-icon st-descent-art" data-icon="descent"/);
     expect(el.innerHTML).toContain('Go down.');
     expect(el.innerHTML).toContain('A riddle in the dark');
     expect(el.innerHTML).toContain('Found a &lt;secret&gt;');

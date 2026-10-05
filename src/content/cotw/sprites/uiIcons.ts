@@ -514,6 +514,21 @@ export const COTW_UI_ICONS: Record<string, SpriteRecipe> = {
     for (const x of [12, 15, 18]) r(C.ink, x, 23, 2, 3);
   },
 
+  // The paperdoll's figure (tracker 4.7): a standing body, drawn as one flat silhouette and
+  // shown faint behind the equipment slots, so the slots read as worn on it.
+  'ui~doll': (ctx, ox, oy) => {
+    const r = pen(ctx, ox, oy);
+    const body = C.steel;
+    circle(ctx, ox, oy, body, 16, 4, 3.4); // head
+    r(body, 15, 7, 2, 2); // neck
+    poly(ctx, ox, oy, body, [[9, 9], [23, 9], [21, 19], [11, 19]]); // shoulders and chest
+    poly(ctx, ox, oy, body, [[9, 9], [7, 10], [5, 19], [7, 19], [10, 12]]); // left arm
+    poly(ctx, ox, oy, body, [[23, 9], [25, 10], [27, 19], [25, 19], [22, 12]]); // right arm
+    r(body, 11, 19, 10, 3); // hips
+    poly(ctx, ox, oy, body, [[11, 22], [15.5, 22], [15, 31], [12, 31]]); // left leg
+    poly(ctx, ox, oy, body, [[16.5, 22], [21, 22], [20, 31], [17, 31]]); // right leg
+  },
+
   'ui~hero': COTW_MONSTER_SPRITES.player,
   'ui~heroine': COTW_MONSTER_SPRITES.player_female,
 };

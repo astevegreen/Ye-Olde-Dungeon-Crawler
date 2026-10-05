@@ -224,7 +224,7 @@ export class InventoryTab implements MenuTab {
     return `
       <section class="inv-panel${focused ? ' is-focused' : ''}" data-panel="paperdoll" data-drop="paperdoll" aria-label="Equipment">
         <h3 class="ui-h">Equipment</h3>
-        <div class="inv-doll">${slots}</div>
+        <div class="inv-doll"><i class="ui-icon inv-doll-figure" data-icon="doll" aria-hidden="true"></i>${slots}</div>
         ${legendHtml()}
       </section>`;
   }

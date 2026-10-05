@@ -43,6 +43,13 @@ describe('InventoryTab', () => {
     expect(html).toContain('Coil of Rope');
   });
 
+  it("draws the pack's figure behind the paperdoll slots, once (N6, tracker 4.7)", () => {
+    const figures = el.innerHTML.match(/<i class="ui-icon inv-doll-figure" data-icon="doll"/g) ?? [];
+    expect(figures).toHaveLength(1);
+    // Behind the slots: the first thing in the slot grid.
+    expect(el.innerHTML).toMatch(/<div class="inv-doll">\s*<i class="ui-icon inv-doll-figure"/);
+  });
+
   it('shows the +N badge on a worn item only once it is identified', () => {
     player.inventory.paperdoll.equip(
       new Item({ id: 'ring', name: 'Band', category: 'ring', slot: 'fingerLeft', weight: 20, bulk: 10, enchantmentLevel: 3, identified: false }),

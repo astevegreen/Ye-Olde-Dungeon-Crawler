@@ -51,6 +51,8 @@ export const UI_ICON_NAMES = [
   'fallen',
   'hero',
   'heroine',
+  // The figure behind the inventory's paperdoll slots (tracker 4.7)
+  'doll',
 ] as const;
 
 export type UiIconName = (typeof UI_ICON_NAMES)[number];

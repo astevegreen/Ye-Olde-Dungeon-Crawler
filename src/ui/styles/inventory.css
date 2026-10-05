@@ -40,7 +40,20 @@
   gap: var(--ui-space-2);
   overflow-y: auto;
   min-height: 0;
+  position: relative;
 }
+/* The pack's figure (`ui~doll`, tracker 4.7), faint behind the slots, which let it show
+   through; out of the grid's flow. A pack that draws none shows the slots alone. */
+.inv-doll .inv-doll-figure {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.3;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.inv-doll .inv-slot { position: relative; z-index: 1; background: color-mix(in srgb, var(--ui-surface-2) 60%, transparent); }
 .inv-doll [data-area='head'] { grid-area: head; }
 .inv-doll [data-area='neck'] { grid-area: neck; }
 .inv-doll [data-area='overgarment'] { grid-area: overgarment; }

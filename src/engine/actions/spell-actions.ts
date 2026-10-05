@@ -455,7 +455,13 @@ export class DrinkPotionAction implements Action {
           break;
         }
         case 'cure_status': {
-          this.user.statusManager.removeStatus(effect.status);
+          if (effect.status === 'all') {
+            for (const debuff of ['poison', 'paralysis', 'slow', 'blindness', 'stunned']) {
+              this.user.statusManager.removeStatus(debuff);
+            }
+          } else {
+            this.user.statusManager.removeStatus(effect.status);
+          }
           messages.push(`purging ${effect.status}`);
           break;
         }

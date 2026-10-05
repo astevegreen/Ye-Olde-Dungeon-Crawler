@@ -8,6 +8,10 @@ import { addCurrencyToPlayer } from '../../../engine/economy/currency';
 import { ExecuteChoiceAction } from '../../../engine/actions/choiceAction';
 import { awardMilestone, getRenownTotal, hasEarnedMilestone } from '../../../engine/renown/renownLedger';
 import { cotwManifest } from '../index';
+import { MovementAction } from '../../../engine/actions/movement';
+import { SearchAction } from '../../../engine/actions/search';
+import { TrapInstance } from '../../../engine/dungeon/traps';
+import { TileInspector } from '../../../engine/inspect/inspector';
 import { COTW_RENOWN_MILESTONES } from '../renown';
 
 function buildEngine(): GameEngine {
@@ -73,5 +77,49 @@ describe('cotw renown: deeds reach the ledger', () => {
     expect(awardMilestone(engine, def).awarded).toBe(false);
     expect(hasEarnedMilestone(engine, 'test_deed')).toBe(true);
     expect(getRenownTotal(engine)).toBe(20);
+  });
+
+  // Tracker 5.6 (N27): any discovery earns renown, however it was made.
+  it('a secret door noticed in passing earns Keen Eye, as a searched-out one does', () => {
+    const engine = buildEngine();
+    const p = engine.player;
+    p.intelligence = 14;
+    p.dexterity = 14;
+    engine.map.setTile(6, 2, TILES.SECRET_DOOR);
+    const before = getRenownTotal(engine);
+
+    engine.handlePlayerAction(new MovementAction(p, 1, 0));
+
+    expect(engine.map.getTile(6, 2)?.type).toBe('door_closed');
+    // Keen Eye is repeatable: it adds renown each time rather than marking itself earned.
+    expect(getRenownTotal(engine)).toBe(before + 5);
+  });
+
+  it('a hidden trap found, by search or in passing, earns renown', () => {
+    for (const how of ['search', 'passing'] as const) {
+      const engine = buildEngine();
+      const p = engine.player;
+      p.intelligence = 18;
+      p.dexterity = 18;
+      engine.map.addTrap(new TrapInstance({ id: 't', type: 'pit', x: 6, y: 3, concealment: 4 }));
+      const before = getRenownTotal(engine);
+
+      if (how === 'search') engine.handlePlayerAction(new SearchAction(p, () => 0.99));
+      else engine.handlePlayerAction(new MovementAction(p, 1, 0));
+
+      expect(engine.map.getTrapAt(6, 3)?.revealed, how).toBe(true);
+      expect(getRenownTotal(engine), how).toBe(before + 2);
+    }
+  });
+
+  it('the Look card shows a secret door as the wall it seems to be', () => {
+    const engine = buildEngine();
+    engine.map.setTile(6, 2, TILES.SECRET_DOOR);
+
+    const terrain = TileInspector.inspectTile(engine, 6, 2).terrain!;
+
+    expect(terrain.name).toBe(TILES.WALL.name);
+    expect(terrain.type).toBe('wall');
+    expect(terrain.description).toBe(TILES.WALL.description);
   });
 });

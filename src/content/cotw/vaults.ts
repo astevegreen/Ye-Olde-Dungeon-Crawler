@@ -15,6 +15,19 @@ export const CHARIOT_FORGE_FLOOR = 25;
 export const BILE_SUMP_VAULT_ID = 'floor30_bile_sump';
 export const MARROW_OSSUARY_VAULT_ID = 'floor47_marrow_ossuary';
 
+export const URDR_POOL_VAULT_ID = 'floor30_urdr_pool';
+export const URDR_POOL_FLOOR = 30;
+
+export const VERDANDI_LOOM_VAULT_ID = 'floor39_verdandi_loom';
+export const VERDANDI_LOOM_FLOOR = 39;
+
+export const RATATOSKR_ROOST_VAULT_ID = 'floor42_ratatoskr_roost';
+export const RATATOSKR_ROOST_FLOOR = 42;
+
+export const SKULD_MIRROR_VAULT_ID = 'floor49_skuld_mirror';
+export const SKULD_MIRROR_FLOOR = 49;
+
+
 export const COTW_VAULTS: VaultBlueprint[] = [
   // Zone landmarks (floorLayouts.ts `landmarkVaultIds`): one stamps on every floor of its zone.
   {
@@ -372,7 +385,87 @@ export const COTW_VAULTS: VaultBlueprint[] = [
   },
   // Floor 21 only, scripted (siphonPylon.ts): the zone's pylon with the light-drinking core.
   FLOOR21_PYLON_VAULT,
+  {
+    id: URDR_POOL_VAULT_ID,
+    name: "Urðr's Sacred Pool",
+    description:
+      'A sacred grotto of tarnished silver where the holy water of Urðr wells up through the boiled permafrost, reflecting deeds of the past.',
+    minFloor: URDR_POOL_FLOOR,
+    maxFloor: URDR_POOL_FLOOR,
+    scriptedOnly: true,
+    legend: { U: 'urdr_pool' },
+    layout: [
+      '###########',
+      '#P...~...P#',
+      '#...~~~...#',
+      '@....U....@',
+      '#...~~~...#',
+      '#P...~...P#',
+      '###########',
+    ],
+    preferredMonsters: ['deep_lode_pit_draugr', 'quicksilver_leech'],
+  },
+  {
+    id: VERDANDI_LOOM_VAULT_ID,
+    name: "Verðandi's Loom Hall",
+    description:
+      'A vaulted gallery within Yggdrasil’s trunk where Verðandi weaves the warp of the living world amidst encroaching rot.',
+    minFloor: VERDANDI_LOOM_FLOOR,
+    maxFloor: VERDANDI_LOOM_FLOOR,
+    scriptedOnly: true,
+    legend: { W: 'verdandi_loom' },
+    layout: [
+      '#############',
+      '#P.........P#',
+      '@....~~~....@',
+      '#.....W.....#',
+      '@....~~~....@',
+      '#P.........P#',
+      '#############',
+    ],
+    preferredMonsters: ['rotwood_crawler', 'yggdrasil_parasite', 'amber_sap_weeper'],
+  },
+  {
+    id: RATATOSKR_ROOST_VAULT_ID,
+    name: 'The Roost of Ratatoskr',
+    description:
+      'A hidden moss hollow nestled high among the knotted roots, filled with shiny hoardings and pine-cones.',
+    minFloor: RATATOSKR_ROOST_FLOOR,
+    maxFloor: RATATOSKR_ROOST_FLOOR,
+    scriptedOnly: true,
+    legend: { R: 'ratatoskr_perch' },
+    layout: [
+      '###########',
+      '#P.......P#',
+      '#....R....#',
+      '@.........@',
+      '#P.......P#',
+      '###########',
+    ],
+    preferredMonsters: ['rotwood_crawler', 'amber_sap_weeper'],
+  },
+  {
+    id: SKULD_MIRROR_VAULT_ID,
+    name: "Skuld's Obsidian Sanctum",
+    description:
+      'A bone-framed sanctuary overlooking the abyss of Náströnd where Skuld’s dark mirror shows what shall be.',
+    minFloor: SKULD_MIRROR_FLOOR,
+    maxFloor: SKULD_MIRROR_FLOOR,
+    scriptedOnly: true,
+    legend: { S: 'skuld_mirror' },
+    layout: [
+      '#############',
+      '#P.B.....B.P#',
+      '@...........@',
+      '#.....S.....#',
+      '@...........@',
+      '#P.B.....B.P#',
+      '#############',
+    ],
+    preferredMonsters: ['hel_warden', 'nastrond_feaster'],
+  },
 ];
+
 
 
 

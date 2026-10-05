@@ -57,6 +57,10 @@
       "reason": "Engine-owned renown trigger name (SearchAction calls recordMilestone); packs opt in by declaring a milestone with this ID."
     },
     {
+      "id": "hidden_trap_found",
+      "reason": "Engine-owned renown trigger name (revealTrap, by search or in passing, calls recordMilestone); packs opt in by declaring a milestone with this ID."
+    },
+    {
       "id": "dagger",
       "reason": "Engine built-in item (an ItemFactory constructor) in the default starter kit used by the headless manifest and CharacterRoller's fallback; cotw re-declares an item with the same ID."
     },

@@ -580,6 +580,13 @@ export class Player extends Actor {
     return this.energyModel !== undefined;
   }
 
+  public expandVolatileEnergy(delta: number): void {
+    if (!this.energyModel) {
+      this.initEnergyModel();
+    }
+    this.energyModel!.maxVolatileEnergy = Math.max(0, this.energyModel!.maxVolatileEnergy + delta);
+  }
+
   public override get maxHp(): number {
     return calculateAttribute(this, 'maxHp');
   }

@@ -264,4 +264,59 @@ export const COTW_TILES: TileDefinition[] = [
   },
   // Floor 21's drinking pylon (siphonPylon.ts): shattering it relights the floor.
   SIPHON_CORE_TILE_DEFINITION,
+
+  // --- Act 2 Nornic Reliquaries & Mythic Encounters ---
+  {
+    type: 'urdr_pool',
+    name: "Urðr's Pool",
+    passable: true,
+    walkable: true,
+    transparent: true,
+    visual: 'altar',
+    glyph: 'ᚢ',
+    landmarkLabel: "Urðr's Pool",
+    description:
+      'A subterranean basin of silver-rimmed holy water fed by the sacred Well of Urðr at the roots of Yggdrasil. The past ripples across its mirrored surface.',
+    interactionHandlerId: 'urdr_pool_choice',
+  },
+  {
+    type: 'verdandi_loom',
+    name: "Verðandi's Loom",
+    passable: true,
+    walkable: true,
+    transparent: true,
+    visual: 'altar',
+    glyph: 'ᚹ',
+    landmarkLabel: "Verðandi's Loom",
+    description:
+      'An ancient vertical warp-weighted loom woven directly out of living heartwood branches. The shuttle moves with the rhythmic heartbeat of Midgard.',
+    interactionHandlerId: 'verdandi_loom_choice',
+  },
+  {
+    type: 'ratatoskr_perch',
+    name: 'Roost of Ratatoskr',
+    passable: true,
+    walkable: true,
+    transparent: true,
+    visual: 'altar',
+    glyph: 'ᚱ',
+    landmarkLabel: 'Roost of Ratatoskr',
+    description:
+      'A cozy hollow in the colossal trunk lined with lichen, pine-nuts, and polished pebbles. The cosmic squirrel’s chattering echoes from within.',
+    interactionHandlerId: 'ratatoskr_roost_choice',
+  },
+  {
+    type: 'skuld_mirror',
+    name: "Skuld's Mirror",
+    passable: true,
+    walkable: true,
+    transparent: true,
+    visual: 'altar',
+    glyph: 'ᛋ',
+    landmarkLabel: "Skuld's Mirror",
+    description:
+      'A towering frame of frost-carved bone enclosing a polished pool of dark volcanic glass. The portents of what shall be churn within its obsidian depth.',
+    interactionHandlerId: 'skuld_mirror_choice',
+  },
 ];
+

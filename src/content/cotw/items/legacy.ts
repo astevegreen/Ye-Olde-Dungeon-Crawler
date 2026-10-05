@@ -675,5 +675,28 @@ export const COTW_LEGACY_ITEMS: ItemDefinition[] = [
       "Astrid sets this aside only for adventurers whose reputation for uncovering the dungeon's secrets precedes them.",
     value: 150,
   },
+  {
+    id: 'urdr_cleansing_water',
+    name: "Urðr's Cleansing Water",
+    unidentifiedName: 'Luminescent Crystal Vial',
+    category: 'consumable',
+    tier: 4,
+    minFloor: 30,
+    weight: 200,
+    bulk: 100,
+    identified: true,
+    description:
+      "Sacred holy water scooped from the Well of Urðr at the roots of Yggdrasil. Instantly cleanses every venom, status affliction, and spiritual debt, restoring 100 Hit Points.",
+    value: 250,
+    itemType: 'potion',
+    potionConfig: {
+      potionType: 'health',
+      potency: 100,
+      effects: [
+        { type: 'restore_hp', amount: 100 },
+        { type: 'cure_status', status: 'all' },
+      ],
+    },
+  },
 ];
 

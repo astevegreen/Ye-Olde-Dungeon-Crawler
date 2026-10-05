@@ -335,5 +335,395 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
       },
     ],
   },
+
+  urdr_pool_choice: {
+    id: 'urdr_pool_choice',
+    title: "Urðr's Pool — The Well of What Was",
+    description:
+      'A subterranean basin of silver-sheened water reflects neither the cavern ceiling nor your face, but moments that have already come to pass. In its depths, the face of Urðr—eldest of the Norns—gazes up in solemn appraisal, weighing the lives you chose to spare or sacrifice in the obsidian depths of Midgard.',
+    options: [
+      {
+        id: 'heed_fallen',
+        label: 'Kneel and Receive Urðr’s Holy Water',
+        description:
+          'Urðr honors the four lives pulled from the dark altar. Bestows Urðr’s Cleansing Water and purges afflictions (+15 Exploration Renown).',
+        predicate: { type: 'hasFlag', flag: 'savior_of_jarnvidr' },
+        disabledReason: 'Urðr turns her face away: you did not save all four innocents from the blood siphon.',
+        consequences: [
+          { type: 'setFlag', flag: 'urdr_pool_resolved', value: true },
+          { type: 'setFlag', flag: 'urdr_pool_blessed', value: true },
+          { type: 'recordMilestone', milestoneId: 'urdr_pool_blessing' },
+          { type: 'grantItem', itemId: 'urdr_cleansing_water', toInventory: true },
+          { type: 'cureStatus', statusTypes: ['poison', 'paralysis', 'slow', 'blindness', 'stunned'] },
+          {
+            type: 'logMessage',
+            message:
+              'Urðr smiles gently as sacred holy water fills a crystal vial in your hand, washing away all lingering afflictions (+15 Exploration Renown, Urðr’s Cleansing Water)!',
+          },
+        ],
+      },
+      {
+        id: 'gaze_blood',
+        label: 'Gaze into the Boiling Blood',
+        description:
+          'Channel the memory of dark sacrifice. Permanently expands Volatile Energy capacity by +10.',
+        predicate: { type: 'hasFlag', flag: 'blood_tainted_hero' },
+        disabledReason: 'The water remains calm: you did not embrace the full sacrificial rite of the coven.',
+        consequences: [
+          { type: 'setFlag', flag: 'urdr_pool_resolved', value: true },
+          { type: 'setFlag', flag: 'urdr_pool_blood_gazed', value: true },
+          { type: 'modifyPermanentStat', stat: 'attack', delta: 1 },
+          {
+            type: 'logMessage',
+            message:
+              'Crimson froth boils up from the pool! The dark energy of the siphon courses through your veins, permanently expanding your Volatile Energy capacity (+10 Max Volatile Energy, +1 Attack)!',
+          },
+        ],
+      },
+      {
+        id: 'drink_deep',
+        label: 'Drink of the Bitter Deep',
+        description:
+          'Drink from the icy mineral depths: clears mental fog and reveals the architecture of the deep.',
+        consequences: [
+          { type: 'setFlag', flag: 'urdr_pool_resolved', value: true },
+          { type: 'setFlag', flag: 'urdr_pool_drank', value: true },
+          { type: 'learnSpell', spellId: 'clairvoyance' },
+          { type: 'applyBuff', statusType: 'haste', duration: 30 },
+          {
+            type: 'logMessage',
+            message:
+              'You cup your hands and drink of the bitter deep. A flash of silver clarity ignites your mind—the layout of the stone and all living beings reveal themselves to your senses (Clairvoyance, Haste)!',
+          },
+        ],
+      },
+    ],
+    cancelable: true,
+    cancelLabel: 'Leave Urðr’s Pool Untouched',
+    resolvedStates: [
+      {
+        flag: 'urdr_pool_blessed',
+        message: 'Urðr’s holy pool ripples with tranquil silver light. Her blessing stays with you.',
+      },
+      {
+        flag: 'urdr_pool_blood_gazed',
+        message: 'Urðr’s pool smolders with black vitriol. Its dark memory is spent.',
+      },
+      {
+        flag: 'urdr_pool_drank',
+        message: 'The icy silver waters of Urðr’s Pool lie still. The clarity of the deep lingers in your mind.',
+      },
+      {
+        flag: 'urdr_pool_resolved',
+        message: 'The silver waters of Urðr’s Pool lie still and silent.',
+      },
+    ],
+  },
+
+  verdandi_loom_choice: {
+    id: 'verdandi_loom_choice',
+    title: "Verðandi's Loom — The Weave of What Is",
+    description:
+      'Woven between living boughs of the World Tree stands the colossal warp-weighted loom of Verðandi, Norn of the present. Golden sap and blackened fungal rot intertwine on its vertical warp, vibrating with the agony of Yggdrasil. The shuttle hangs suspended before you, awaiting the cut or weave of mortal hands.',
+    options: [
+      {
+        id: 'reinforce_bark',
+        label: 'Reinforce the Bark — Weave Living Sap into Plate',
+        description: 'Layer golden heartwood fibers into your armor. Permanently +2 Defense, -1 Speed.',
+        consequences: [
+          { type: 'setFlag', flag: 'verdandi_loom_resolved', value: true },
+          { type: 'setFlag', flag: 'verdandi_bark_woven', value: true },
+          { type: 'modifyPermanentStat', stat: 'defense', delta: 2 },
+          { type: 'modifyPermanentStat', stat: 'speed', delta: -1 },
+          {
+            type: 'logMessage',
+            message:
+              'You weave tough, amber-hardened heartwood into your armor. The golden sap sets as rigid as dragon scale (+2 Defense, -1 Speed).',
+          },
+        ],
+      },
+      {
+        id: 'sever_rot',
+        label: 'Sever the Rotting Fibers — Excise the Blight',
+        description:
+          'Cut diseased wood from the loom with raw steel. Permanently +2 Attack, but disturbs 2 lurking Yggdrasil Parasites.',
+        consequences: [
+          { type: 'setFlag', flag: 'verdandi_loom_resolved', value: true },
+          { type: 'setFlag', flag: 'verdandi_rot_severed', value: true },
+          { type: 'modifyPermanentStat', stat: 'attack', delta: 2 },
+          { type: 'alertMonsters', radius: 16 },
+          {
+            type: 'logMessage',
+            message:
+              'Your blade shears the blackened fibers clean away! Raw momentum empowers your strikes (+2 Attack), but two enraged Yggdrasil Parasites drop from the upper branches with venomous hisses!',
+          },
+        ],
+      },
+      {
+        id: 'listen_loom',
+        label: 'Listen to the Loom — Read the Threads of Now',
+        description: 'Heed the rhythm of the warp: grants +15 Exploration Renown and haste.',
+        consequences: [
+          { type: 'setFlag', flag: 'verdandi_loom_resolved', value: true },
+          { type: 'setFlag', flag: 'verdandi_loom_listened', value: true },
+          { type: 'recordMilestone', milestoneId: 'verdandi_loom_insight' },
+          { type: 'applyBuff', statusType: 'haste', duration: 40 },
+          {
+            type: 'logMessage',
+            message:
+              'You stand motionless, letting the rhythmic clatter of Verðandi’s shuttle resonate through your heart. The threads show the quickest descent through the roots (+15 Exploration Renown, Haste).',
+          },
+        ],
+      },
+    ],
+    cancelable: true,
+    cancelLabel: 'Step Back from the Loom',
+    resolvedStates: [
+      {
+        flag: 'verdandi_bark_woven',
+        message: 'Verðandi’s loom gleams with woven golden bark.',
+      },
+      {
+        flag: 'verdandi_rot_severed',
+        message: 'The severed fibers of Verðandi’s loom hang cut and clean.',
+      },
+      {
+        flag: 'verdandi_loom_listened',
+        message: 'The threads of Verðandi’s loom vibrate in quiet harmony with your footsteps.',
+      },
+      {
+        flag: 'verdandi_loom_resolved',
+        message: 'Verðandi’s loom hums quietly in rhythmic balance.',
+      },
+    ],
+  },
+
+  ratatoskr_roost_choice: {
+    id: 'ratatoskr_roost_choice',
+    title: 'Roost of Ratatoskr — The Cosmic Gossiper',
+    description:
+      'A moss-carpeted hollow high inside Yggdrasil’s bark is crammed with glittering river glass, polished bones, and hoarded pine-cones. A rust-red squirrel with razor-sharp claws and an insolent glint in his eye perches on a twisted root, twitching his tail impatiently.\n\n“Well, giant-blood? You bring shiny tribute for Ratatoskr, or do you just stand there looking slow and heavy like that miserable worm downstairs?”',
+    options: [
+      {
+        id: 'offer_tribute',
+        label: 'Offer Shiny Tribute — Receive the Slander-Mark',
+        description:
+          'Humor the cosmic messenger with an offering: grants the Slander-Mark of the Squirrel (+1 Speed, +10 Exploration Renown).',
+        consequences: [
+          { type: 'setFlag', flag: 'ratatoskr_roost_resolved', value: true },
+          { type: 'setFlag', flag: 'ratatoskr_slander_mark', value: true },
+          { type: 'recordMilestone', milestoneId: 'ratatoskr_favor' },
+          { type: 'modifyPermanentStat', stat: 'speed', delta: 1 },
+          {
+            type: 'logMessage',
+            message:
+              'Ratatoskr snatches your offering with a manic chuckle! He claws a lightning-quick glyph into your boot leather (+1 Speed, +10 Exploration Renown) and scuttles up the trunk screeching: “Níðhögg’s belly is full of pond-scum! Tell the slug the Eagle spat upon his tail!”',
+          },
+        ],
+      },
+      {
+        id: 'listen_gossip',
+        label: 'Listen to the Cosmic Gossip',
+        description:
+          'Hear the squirrel’s chatter about the battle between the eagle and the wyrm (+10 Exploration Renown).',
+        consequences: [
+          { type: 'setFlag', flag: 'ratatoskr_roost_resolved', value: true },
+          { type: 'setFlag', flag: 'ratatoskr_gossip_heard', value: true },
+          { type: 'recordMilestone', milestoneId: 'ratatoskr_favor' },
+          {
+            type: 'logMessage',
+            message:
+              'Ratatoskr leans in and whispers shrilly: “The great eagle at the crown thinks the dragon below is an overgrown slug, and the dragon swears the eagle is chicken-hearted! But mark this, hunter: hit the dragon hard enough, and it turns tail and flees like a whipped cur!” (+10 Exploration Renown)',
+          },
+        ],
+      },
+    ],
+    cancelable: true,
+    cancelLabel: 'Leave the Squirrel to His Cache',
+    resolvedStates: [
+      {
+        flag: 'ratatoskr_slander_mark',
+        message:
+          'Ratatoskr chitters smugly from his hollow, admiring his shiny tribute. The Slander-Mark burns briskly on your boot.',
+      },
+      {
+        flag: 'ratatoskr_roost_resolved',
+        message: 'Ratatoskr dozes curled around his hoard, ignoring you completely.',
+      },
+    ],
+  },
+
+  skuld_mirror_choice: {
+    id: 'skuld_mirror_choice',
+    title: "Skuld's Mirror — The Portents of What Shall Be",
+    description:
+      'A frame of ancient dragon ribs holds a tall slab of polished obsidian on the edge of the Náströnd precipice. The surface of the mirror is liquid and dark as the void. In its depth, Skuld—youngest Norn and chooser of the slain—turns to face you, revealing the portent of the choice you swore to Víðnir on Floor 45.',
+    options: [
+      {
+        id: 'gaze_renewal',
+        label: 'Gaze upon the Portent of Renewal (Requires Heeding Víðnir)',
+        description:
+          'The mirror reflects the living root knitting shut. Grants Aegis of the Preserver (+2 Defense, +20 Renown).',
+        predicate: { type: 'hasFlag', flag: 'vidnir_warning_heeded' },
+        disabledReason: 'The mirror remains shrouded in black mist: you did not commit to driving off the beast.',
+        consequences: [
+          { type: 'setFlag', flag: 'skuld_mirror_resolved', value: true },
+          { type: 'setFlag', flag: 'skuld_aegis_preserver', value: true },
+          { type: 'recordMilestone', milestoneId: 'skuld_mirror_gazed' },
+          { type: 'modifyPermanentStat', stat: 'defense', delta: 2 },
+          {
+            type: 'logMessage',
+            message:
+              'The obsidian mirror clears to emerald light: green boughs sprout from black dragon-bile, and the taproot heals unbroken. The Aegis of the Preserver settles over your spirit (+2 Defense, Aegis of the Preserver)!',
+          },
+        ],
+      },
+      {
+        id: 'gaze_ragnarok',
+        label: 'Gaze upon the Portent of Ragnarök (Requires Defying Víðnir)',
+        description:
+          'The mirror reflects flaming skies and broken branches. Grants Fury of the Einherjar (+2 Attack, +20 Renown).',
+        predicate: { type: 'hasFlag', flag: 'vidnir_warning_defied' },
+        disabledReason: 'The mirror remains dark: you did not vow to strike down the dragon.',
+        consequences: [
+          { type: 'setFlag', flag: 'skuld_mirror_resolved', value: true },
+          { type: 'setFlag', flag: 'skuld_fury_einherjar', value: true },
+          { type: 'recordMilestone', milestoneId: 'skuld_mirror_gazed' },
+          { type: 'modifyPermanentStat', stat: 'attack', delta: 2 },
+          {
+            type: 'logMessage',
+            message:
+              'The mirror bursts with scarlet fury! A vision of burning skies, shattered shields, and the great wolf breaking free floods your soul. The Fury of the Einherjar blazes in your strikes (+2 Attack, Fury of the Einherjar)!',
+          },
+        ],
+      },
+      {
+        id: 'gaze_unbound',
+        label: 'Peer into the Clouded Void',
+        description:
+          'Gaze into the uncommitted future before the final descent (+1 Defense, +20 Renown).',
+        predicate: {
+          type: 'not',
+          predicate: {
+            type: 'or',
+            predicates: [
+              { type: 'hasFlag', flag: 'vidnir_warning_heeded' },
+              { type: 'hasFlag', flag: 'vidnir_warning_defied' },
+            ],
+          },
+        },
+        disabledReason: 'You have already bound your fate to Víðnir’s prophecy.',
+        consequences: [
+          { type: 'setFlag', flag: 'skuld_mirror_resolved', value: true },
+          { type: 'recordMilestone', milestoneId: 'skuld_mirror_gazed' },
+          { type: 'modifyPermanentStat', stat: 'defense', delta: 1 },
+          {
+            type: 'logMessage',
+            message:
+              'The mirror reveals a tempest of swirling shadow and huge coils in the deep. You steady your stance for whatever trial awaits on Floor 50 (+1 Defense, +20 Renown).',
+          },
+        ],
+      },
+    ],
+    cancelable: true,
+    cancelLabel: 'Step Away from Skuld’s Mirror',
+    resolvedStates: [
+      {
+        flag: 'skuld_aegis_preserver',
+        message: 'Skuld’s mirror glows with serene emerald light. The portent of renewal shields your soul.',
+      },
+      {
+        flag: 'skuld_fury_einherjar',
+        message: 'Skuld’s mirror smolders with fiery embers. The fury of the Einherjar burns within your heart.',
+      },
+      {
+        flag: 'skuld_mirror_resolved',
+        message: 'The dark obsidian of Skuld’s mirror stands quiet and cold.',
+      },
+    ],
+  },
+
+  choice_sigrun_town: {
+    id: 'choice_sigrun_town',
+    title: 'Sigrun, the Chandler’s Daughter',
+    description:
+      'Sigrun stirs a steaming iron kettle of rich hearth broth over a brazier near her father’s counter. Her face lights up with warmth as you approach.\n\n“You pulled me back from the dark pyres of Járnviðr. Father cried when I walked through the door. Whenever you return from the depths, come by—I keep a flask of fresh hearth broth ready for you.”',
+    options: [
+      {
+        id: 'hot_broth',
+        label: 'Accept a Flask of Fresh Hearth Broth',
+        description: 'Receive a freshly brewed Hearth-Broth Flask for your next delve.',
+        predicate: { type: 'not', predicate: { type: 'hasFlag', flag: 'sigrun_broth_claimed' } },
+        disabledReason: 'She has already given you her fresh brew for this delve.',
+        keepsOpen: true,
+        consequences: [
+          { type: 'setFlag', flag: 'sigrun_broth_claimed', value: true },
+          { type: 'grantItem', itemId: 'hearth_broth_flask', toInventory: true },
+          {
+            type: 'logMessage',
+            message:
+              'Sigrun ladles a steaming flask of savory hearth broth and hands it to you with a warm smile (+1 Hearth-Broth Flask).',
+          },
+        ],
+      },
+    ],
+    cancelable: true,
+    cancelLabel: 'Step Away from the Kettle',
+  },
+
+  choice_brandr_town: {
+    id: 'choice_brandr_town',
+    title: 'Brandr, the Apprentice Smith',
+    description:
+      'Brandr works vigorously alongside Gunther, pumping the great leather bellows and grinding salvage with a coarse whetstone. He wipes soot from his forehead and grins broadly.\n\n“If it wasn’t for you, I’d be ash on a troll altar! Gunther’s had me working the whetstones night and day. Let me hone your blade before you head down—I’ll put an edge on it that could shave a phantom!”',
+    options: [
+      {
+        id: 'hone_blade',
+        label: 'Let Brandr Hone Your Weapon',
+        description: 'Applies a razor hone: grants Haste for 30 turns.',
+        predicate: { type: 'not', predicate: { type: 'hasFlag', flag: 'brandr_hone_claimed' } },
+        disabledReason: 'Your blade is already honed for this delve.',
+        keepsOpen: true,
+        consequences: [
+          { type: 'setFlag', flag: 'brandr_hone_claimed', value: true },
+          { type: 'applyBuff', statusType: 'haste', duration: 30 },
+          {
+            type: 'logMessage',
+            message:
+              'Brandr strikes spark after spark off your blade, leaving the steel singing with keen precision (Haste for 30 turns)!',
+          },
+        ],
+      },
+    ],
+    cancelable: true,
+    cancelLabel: 'Step Away from the Anvil',
+  },
+
+  choice_eir_town: {
+    id: 'choice_eir_town',
+    title: 'Eir, the Temple Acolyte',
+    description:
+      'Eir kneels in prayer before the consecrated hammer altar of Thor. Holy candlelight reflects softly in her silver pendant. She looks up with calm, grateful eyes.\n\n“The thunder kept us alive until you severed our ropes. Now I tend Thor’s sacred fire. Whenever the miasma or venoms of the abyss taint your spirit, come to me. I will bathe you in holy water without cost.”',
+    options: [
+      {
+        id: 'temple_cleansing',
+        label: 'Receive Eir’s Sacred Cleansing',
+        description: 'Purges all afflictions and venoms without a donation.',
+        keepsOpen: true,
+        consequences: [
+          { type: 'cureStatus', statusTypes: ['poison', 'paralysis', 'slow', 'blindness', 'stunned'] },
+          { type: 'setFlag', flag: 'eir_blessing_received', value: true },
+          {
+            type: 'logMessage',
+            message:
+              'Eir sprinkles holy spring water over your brow and whispers a prayer to Thor. A cooling warmth washes through your limbs, purging all afflictions!',
+          },
+        ],
+      },
+    ],
+    cancelable: true,
+    cancelLabel: 'Leave Eir in Prayer',
+  },
 };
+
 

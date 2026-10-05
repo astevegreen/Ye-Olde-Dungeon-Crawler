@@ -6,6 +6,27 @@ import type { GameEngine } from '../engine';
 import type { Player } from '../entities/player';
 import { TILES } from '../grid/tile';
 import { recordMilestone } from '../renown/renownLedger';
+import type { TrapInstance } from '../dungeon/traps';
+
+/**
+ * Turns a secret door into a closed door, and counts the find (tracker 5.6, N27: any discovery
+ * earns renown, by search or in passing): the log line, the discovery toast and the
+ * `secret_door_found` milestone.
+ */
+export function revealSecretDoor(engine: GameEngine, x: number, y: number, message: string): void {
+  engine.map.setTile(x, y, { ...TILES.DOOR_CLOSED, hidden: false });
+  engine.log(message);
+  engine.emitDiscovery({ type: 'secret_door', text: 'Uncovered a secret door hidden in the masonry.', icon: '🚪' });
+  recordMilestone(engine, 'secret_door_found');
+}
+
+/** Reveals a hidden trap, and counts the find: the log line and the `hidden_trap_found` milestone. */
+export function revealTrap(engine: GameEngine, trap: TrapInstance, message: string): void {
+  trap.revealed = true;
+  engine.map.setTile(trap.x, trap.y, TILES.TRAP);
+  engine.log(message);
+  recordMilestone(engine, 'hidden_trap_found');
+}
 
 /**
  * Searches the 8 adjacent tiles and current tile (radius 1) for secret doors and hidden traps.
@@ -54,14 +75,7 @@ export class SearchAction implements Action {
         const tile = engine.map.getTile(tx, ty);
         if (tile && (tile.isSecret || tile.type === 'secret_door' || tile.hidden)) {
           if (roll >= 12) {
-            engine.map.setTile(tx, ty, { ...TILES.DOOR_CLOSED, hidden: false });
-            engine.log('You discover a secret door hidden in the masonry!');
-            engine.emitDiscovery({
-              type: 'secret_door',
-              text: 'Uncovered a secret door hidden in the masonry.',
-              icon: '🚪',
-            });
-            recordMilestone(engine, 'secret_door_found');
+            revealSecretDoor(engine, tx, ty, 'You discover a secret door hidden in the masonry!');
             discoveredCount++;
           }
         }
@@ -70,9 +84,7 @@ export class SearchAction implements Action {
         const trap = engine.map.getTrapAt(tx, ty);
         if (trap && !trap.revealed) {
           if (roll >= trap.concealment) {
-            trap.revealed = true;
-            engine.map.setTile(tx, ty, TILES.TRAP);
-            engine.log(`You spot a hidden ${trap.type} trap!`);
+            revealTrap(engine, trap, `You spot a hidden ${trap.type} trap!`);
             discoveredCount++;
           }
         }

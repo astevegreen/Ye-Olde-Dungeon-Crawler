@@ -23,6 +23,16 @@ export const COTW_RENOWN_MILESTONES: RenownMilestoneDefinition[] = [
     repeatable: true,
   },
   {
+    // Tracker 5.6 (N27): a hidden trap found, by search or in passing.
+    id: 'hidden_trap_found',
+    category: 'exploration',
+    label: 'Trap-Wise',
+    description: 'Found a hidden trap before it found you.',
+    icon: '⚠',
+    renownValue: 2,
+    repeatable: true,
+  },
+  {
     id: 'item_uncursed',
     category: 'piety',
     label: 'Purifier',
@@ -39,6 +49,10 @@ export const COTW_RENOWN_MILESTONES: RenownMilestoneDefinition[] = [
   { id: 'wayfarer_lore', category: 'exploration', label: 'Heeded the Wayfarers', description: 'Learned what earlier travellers left at a hearth.', renownValue: 5, repeatable: true },
   { id: 'barrow_honoured', category: 'exploration', label: 'Barrow-Warden', description: 'Said the rites over an Iron Clans barrow and left its silver.', renownValue: 5, repeatable: true },
   { id: 'forge_friend', category: 'exploration', label: 'Friend of the Forge', description: 'Learned the craft of the Accord from Ivalda, the last forge-keeper.', renownValue: 15 },
+  { id: 'urdr_pool_blessing', category: 'exploration', label: "Urðr's Blessing", description: 'Received holy water and judgment at Urðr’s Pool.', renownValue: 15 },
+  { id: 'verdandi_loom_insight', category: 'exploration', label: 'Weave of the Present', description: 'Heeded the rhythm of fate at Verðandi’s Loom.', renownValue: 15 },
+  { id: 'ratatoskr_favor', category: 'exploration', label: 'Messenger’s Favor', description: 'Befriended Ratatoskr at his cosmic roost with a shiny offering.', renownValue: 10 },
+  { id: 'skuld_mirror_gazed', category: 'exploration', label: 'Gaze of the Future', description: 'Looked into Skuld’s obsidian mirror and received the portent of the final battle.', renownValue: 20 },
   // Piety.
   {
     // Q9 "A" + Q49 "A": each cursed thing given to the temple's fire.

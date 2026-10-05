@@ -1,5 +1,5 @@
 import type { ActionHook, ChoiceDefinition, NPC, StoryChoiceTrigger } from '../../engine';
-import { Monster, getCounter, getFlag, setFlag } from '../../engine';
+import { Companion, ExecuteChoiceAction, Monster, getCounter, getFlag, setFlag } from '../../engine';
 import { COTW_DEEPEST_FLOOR_COUNTER } from './spellTablets';
 import { HEARTH_TEAR_RETURNED_FLAG, RELIC_RECOVERED_FLAG } from './relic';
 import { prologueVillagerSaved } from './prologue';
@@ -314,5 +314,202 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
           'The cellar leads where the troll-wives went. Come back to this hall when the dark gets into your wounds.';
       }
     }
+
+    const sigrun = engine.map.getEntityById('npc-sigrun') as NPC | null;
+    const brandr = engine.map.getEntityById('npc-brandr') as NPC | null;
+    const eir = engine.map.getEntityById('npc-eir') as NPC | null;
+
+    if (sigrun) {
+      const s = sigrun as unknown as { greeting: string; dialogText: string };
+      if (vidnirSlain) {
+        s.greeting = 'You carry the fate of Midgard on your shoulders, hero!';
+        s.dialogText = 'Father says the World Tree itself is shaking. Take my warm broth and come home to us safely!';
+      } else if (deepest >= 34) {
+        s.greeting = 'The cellar air smells of weeping wood and dark sap...';
+        s.dialogText = 'We light candles by the hearth each night for your descent into the World-Bark. Stay strong!';
+      } else if (hasRelic) {
+        s.greeting = 'The plaza fountain is running again! But the longhouses shudder so fiercely...';
+        s.dialogText = 'Even with the sun restored, dark things stir in the roots. Never venture down without a warm meal in you.';
+      }
+    }
+
+    if (brandr) {
+      const b = brandr as unknown as { greeting: string; dialogText: string };
+      if (vidnirSlain) {
+        b.greeting = 'You carry Níðhögg’s shed fang?! By the gods, you are truly a legend!';
+        b.dialogText = 'Whether you slay the beast or drive it off, strike true! Gunther and I have your back!';
+      } else if (deepest >= 34) {
+        b.greeting = 'Black rot is gumming up the ore-carts! What kind of monsters are down there?';
+        b.dialogText = 'Keep that weapon edge keen. Anything chewing on the World Tree will take some cutting!';
+      } else if (hasRelic) {
+        b.greeting = 'The forge fire burns with golden light! Gunther let me work the bellows all morning.';
+        b.dialogText = 'The ground quakes don’t shake my hammer hand. Midgard will stand strong!';
+      }
+    }
+
+    if (eir) {
+      const e = eir as unknown as { greeting: string; dialogText: string };
+      if (vidnirSlain) {
+        e.greeting = 'Thor’s holy thunder attend your final hour at the Heartwood!';
+        e.dialogText = 'Remember what the herald revealed: the life of the World Tree hangs in the balance. Choose wisely, champion!';
+      } else if (deepest >= 34) {
+        e.greeting = 'The miasma rising from the cellar carries the stench of ancient rot...';
+        e.dialogText = 'Thor’s temple stands as your sanctuary. Whenever the blight taints your blood, let holy water wash it clean.';
+      } else if (hasRelic) {
+        e.greeting = 'Thor’s lightning shatters the winter darkness, yet the chapel bells toll of their own accord.';
+        e.dialogText = 'The Great Thaw has awakened the root-gnawer. Pray to the Allfather and keep your heart pure.';
+      }
+    }
   },
 };
+
+/**
+ * Companion Reactive Narrative Barks: Contextual commentary and reactions
+ * from the hero's bonded companion when entering major mythic landmarks.
+ */
+export const COTW_COMPANION_BARKS_HOOK: ActionHook = {
+  id: 'cotw-companion-barks',
+  phase: 'post',
+  actionType: '*',
+  execute: ({ actor, engine }) => {
+    if (actor !== engine.player) return;
+    const floor = engine.currentFloor;
+    if (floor !== 18 && floor !== 30 && floor !== 43 && floor !== 47 && floor !== 50) return;
+
+    const companion = engine.map.getAllEntities().find((e): e is Companion => e instanceof Companion);
+    if (!companion || !companion.isAlive()) return;
+
+    const ws = engine.worldState;
+    const compId = companion.companionDefinitionId;
+
+    if (floor === 18) {
+      if (compId === 'hearth_frost_hound' && !getFlag(ws, 'bark_frost_hound_f18')) {
+        setFlag(ws, 'bark_frost_hound_f18', true);
+        engine.log(
+          'Your Frost-Ward Hound bristles with cold defiance against the magma heat, exhaling plumes of protective rime.'
+        );
+      } else if (compId === 'ember_fang_wolf' && !getFlag(ws, 'bark_ember_wolf_f18')) {
+        setFlag(ws, 'bark_ember_wolf_f18', true);
+        engine.log(
+          'Your Ember-Fang Wolf bares fiery fangs, drinking the volcanic fumes of the Obsidian Siphon with a hungry growl.'
+        );
+      } else if (compId === 'battle_hound' && !getFlag(ws, 'bark_battle_hound_f18')) {
+        setFlag(ws, 'bark_battle_hound_f18', true);
+        engine.log('Your Battle-Hound whimpers at the searing heat of the magma rift, but stays faithfully close to your heel.');
+      }
+    } else if (floor === 30) {
+      if (compId === 'hearth_frost_hound' && !getFlag(ws, 'bark_frost_hound_f30')) {
+        setFlag(ws, 'bark_frost_hound_f30', true);
+        engine.log(
+          'Your Frost-Ward Hound paces vigilantly at the edge of the silver waters, standing guard before Urðr’s Pool.'
+        );
+      } else if (compId === 'ember_fang_wolf' && !getFlag(ws, 'bark_ember_wolf_f30')) {
+        setFlag(ws, 'bark_ember_wolf_f30', true);
+        engine.log(
+          'Your Ember-Fang Wolf snorts at the mercury shallows, its burning paws hissing softly against the damp cavern stone.'
+        );
+      } else if (compId === 'battle_hound' && !getFlag(ws, 'bark_battle_hound_f30')) {
+        setFlag(ws, 'bark_battle_hound_f30', true);
+        engine.log('Your Battle-Hound gazes into the silver pool, ears perked as if listening to ancient voices.');
+      }
+    } else if (floor === 43) {
+      if (compId === 'ember_fang_wolf' && !getFlag(ws, 'bark_ember_wolf_f43')) {
+        setFlag(ws, 'bark_ember_wolf_f43', true);
+        engine.log(
+          'Your Ember-Fang Wolf snaps aggressively at the venom-slick tendrils hanging over Náströnd’s yawning abyss.'
+        );
+      } else if (compId === 'hearth_frost_hound' && !getFlag(ws, 'bark_frost_hound_f43')) {
+        setFlag(ws, 'bark_frost_hound_f43', true);
+        engine.log(
+          'Your Frost-Ward Hound lets out a low, warning growl as the caustic reek of serpent venom wafts up from the Maw.'
+        );
+      } else if (compId === 'battle_hound' && !getFlag(ws, 'bark_battle_hound_f43')) {
+        setFlag(ws, 'bark_battle_hound_f43', true);
+        engine.log('Your Battle-Hound bristles and bares its teeth toward the darkness of Náströnd.');
+      }
+    } else if (floor === 47) {
+      if (compId === 'ember_fang_wolf' && !getFlag(ws, 'bark_ember_wolf_f47')) {
+        setFlag(ws, 'bark_ember_wolf_f47', true);
+        engine.log(
+          'Your Ember-Fang Wolf raises its muzzle toward the bone-drifts of the Marrow Ossuary and lets out a ferocious howl into the void!'
+        );
+      } else if (compId === 'hearth_frost_hound' && !getFlag(ws, 'bark_frost_hound_f47')) {
+        setFlag(ws, 'bark_frost_hound_f47', true);
+        engine.log(
+          'Your Frost-Ward Hound bares its teeth at the gnawed marrow-bones, standing firm against the chill of Hel’s shadow.'
+        );
+      } else if (compId === 'battle_hound' && !getFlag(ws, 'bark_battle_hound_f47')) {
+        setFlag(ws, 'bark_battle_hound_f47', true);
+        engine.log('Your Battle-Hound sniffs at the marrow bones and growls fiercely into the bone-hall.');
+      }
+    } else if (floor === 50) {
+      if (!getFlag(ws, 'bark_companion_f50')) {
+        setFlag(ws, 'bark_companion_f50', true);
+        engine.log(
+          `*** At the edge of the Heartwood taproot, your ${companion.name} braces resolutely beside you against Níðhögg! A surge of courage steadies your grip! ***`
+        );
+      }
+    }
+  },
+};
+
+function spawnParasitesNearPlayer(engine: Parameters<ActionHook['execute']>[0]['engine']): void {
+  const p = engine.player;
+  const offsets = [
+    { dx: 1, dy: 0 },
+    { dx: -1, dy: 0 },
+    { dx: 0, dy: 1 },
+    { dx: 0, dy: -1 },
+    { dx: 1, dy: 1 },
+    { dx: -1, dy: -1 },
+    { dx: 1, dy: -1 },
+    { dx: -1, dy: 1 },
+  ];
+  let spawned = 0;
+  for (const { dx, dy } of offsets) {
+    if (spawned >= 2) break;
+    const x = p.x + dx;
+    const y = p.y + dy;
+    const tile = engine.map.getTile(x, y);
+    if (!tile || !tile.walkable || !tile.passable) continue;
+    if (engine.map.getEntityAt(x, y, p.planeId)) continue;
+    const idSeed = Math.floor(engine.rng() * 1000000);
+    const parasite = new Monster({
+      id: `yggdrasil_parasite_spawn_${x}_${y}_${idSeed}`,
+      name: 'Yggdrasil Parasite',
+      definitionId: 'yggdrasil_parasite',
+      position: { x, y },
+      stats: { hp: 35, maxHp: 35, attack: 12, defense: 4 },
+      speed: 110,
+      aiType: 'melee',
+      aiState: 'combat',
+      xpValue: 70,
+    });
+    parasite.alert();
+    engine.addEntity(parasite);
+    spawned++;
+  }
+}
+
+/**
+ * Nornic Reliquary Choices special handling (Volatile Energy expansion, parasite spawns).
+ */
+export const COTW_NORN_CHOICES_HOOK: ActionHook = {
+  id: 'cotw-norn-choices-effects',
+  phase: 'post',
+  actionType: '*',
+  execute: ({ action, engine }) => {
+    if (!(action instanceof ExecuteChoiceAction)) return;
+
+    if (action.choice.id === 'urdr_pool_choice') {
+      if (action.optionId === 'gaze_blood') {
+        engine.player.expandVolatileEnergy(10);
+      }
+    } else if (action.choice.id === 'verdandi_loom_choice') {
+      if (action.optionId === 'sever_rot') {
+        spawnParasitesNearPlayer(engine);
+      }
+    }
+  },
+};
+

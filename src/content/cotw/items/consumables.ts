@@ -270,3 +270,4 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
     },
   },
 ];
+

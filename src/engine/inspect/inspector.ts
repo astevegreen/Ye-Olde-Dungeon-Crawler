@@ -3,6 +3,7 @@ import { Visibility } from '../fov/types';
 import { Monster } from '../entities/monster';
 import { statusDisplayName } from '../status/statusName';
 import type { TileInspection, InspectedTerrain, InspectedTrap, InspectedEntity, InspectedItem } from './types';
+import { TILES } from '../grid/tile';
 
 export class TileInspector {
   public static inspectTile(engine: GameEngine, x: number, y: number): TileInspection {
@@ -42,12 +43,15 @@ export class TileInspector {
     const tile = engine.map.getTile(x, y);
     let terrain: InspectedTerrain | null = null;
     if (tile) {
+      // A secret door looks like the wall it hides in until it is found (N27: its own name gave
+      // it away).
+      const seen = tile.isSecret || tile.type === 'secret_door' ? TILES.WALL : tile;
       terrain = {
-        name: tile.name,
-        type: tile.type,
-        passable: tile.passable,
-        transparent: tile.transparent,
-        description: tile.description,
+        name: seen.name,
+        type: seen.type,
+        passable: seen.passable,
+        transparent: seen.transparent,
+        description: seen.description,
       };
     }
 

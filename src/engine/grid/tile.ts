@@ -72,7 +72,8 @@ export const TILES: Record<string, TileDefinition> = {
   },
   SECRET_DOOR: {
     type: 'secret_door',
-    name: 'Granite Wall',
+    // The wall's own name: anything else is a tell (N27).
+    name: 'Carved Stone Wall',
     passable: false,
     walkable: false,
     transparent: false,

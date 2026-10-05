@@ -11,7 +11,8 @@ import { evaluatePredicate } from '../predicates/predicateEvaluator';
 import type { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
 import { HookDispatcher } from '../hooks/hookDispatcher';
-import { TILES, getTileDefinition } from '../grid/tile';
+import { getTileDefinition } from '../grid/tile';
+import { revealSecretDoor, revealTrap } from './search';
 import { getAltarDefinition, isAltarSpent } from '../magic/altars';
 import { formatMagicMessage } from '../magic/magicConfig';
 import { isPrologueHoldingChoices } from '../quest/prologue';
@@ -259,8 +260,7 @@ export class MovementAction implements Action {
           const t = engine.map.getTile(nx, ny);
           if (t && (t.type === 'secret_door' || t.hidden)) {
             if (passivePerception >= 15) {
-              engine.map.setTile(nx, ny, { ...TILES.DOOR_CLOSED, hidden: false });
-              engine.log('Your keen senses detect a secret door hidden in the wall!');
+              revealSecretDoor(engine, nx, ny, 'Your keen senses detect a secret door hidden in the wall!');
             }
           }
 
@@ -268,9 +268,7 @@ export class MovementAction implements Action {
           const tr = engine.map.getTrapAt(nx, ny);
           if (tr && !tr.revealed) {
             if (passivePerception >= tr.concealment + 2) {
-              tr.revealed = true;
-              engine.map.setTile(nx, ny, TILES.TRAP);
-              engine.log(`Your sharp eyes notice a hidden ${tr.type} trap!`);
+              revealTrap(engine, tr, `Your sharp eyes notice a hidden ${tr.type} trap!`);
             }
           }
         }

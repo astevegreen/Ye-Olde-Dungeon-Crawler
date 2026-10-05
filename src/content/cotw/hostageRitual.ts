@@ -482,3 +482,91 @@ const SIPHON_RITUAL_HOOK: ActionHook = {
 };
 
 export const SIPHON_RITUAL_HOOKS: ActionHook[] = [SIPHON_RESCUE_HOOK, SIPHON_RITUAL_HOOK];
+
+export const SIGRUN_TOWN_POSITION = { x: 13, y: 8 };
+export const BRANDR_TOWN_POSITION = { x: 39, y: 7 };
+export const EIR_TOWN_POSITION = { x: 26, y: 30 };
+
+const SAVIOR_VILLAGERS_SEATED_FLAG = 'savior_villagers_seated_town';
+
+export function populateSaviorVillagers(engine: EngineContext): void {
+  if (engine.currentFloor !== 0) return;
+  const ws = engine.worldState;
+  if (!getFlag(ws, 'savior_of_jarnvidr')) return;
+
+  let addedAny = false;
+
+  if (!engine.map.getEntityById('npc-sigrun') && !engine.map.getEntityAt(SIGRUN_TOWN_POSITION.x, SIGRUN_TOWN_POSITION.y)) {
+    engine.map.addEntity(
+      new NPC({
+        id: 'npc-sigrun',
+        name: 'Sigrun, the Chandler’s Daughter',
+        role: 'villager',
+        position: SIGRUN_TOWN_POSITION,
+        choiceId: 'choice_sigrun_town',
+        greeting: 'Father and I are together again thanks to you! Come have a warm flask of broth.',
+        dialogText: 'I keep a fresh pot of hearty broth simmering over the hearth coals for your delves.',
+      })
+    );
+    addedAny = true;
+  }
+
+  if (!engine.map.getEntityById('npc-brandr') && !engine.map.getEntityAt(BRANDR_TOWN_POSITION.x, BRANDR_TOWN_POSITION.y)) {
+    engine.map.addEntity(
+      new NPC({
+        id: 'npc-brandr',
+        name: 'Brandr, the Apprentice Smith',
+        role: 'villager',
+        position: BRANDR_TOWN_POSITION,
+        choiceId: 'choice_brandr_town',
+        greeting: 'Gunther took me back in the forge! Let me hone that steel for you.',
+        dialogText: 'Working the bellows alongside Gunther is tough work, but it keeps my blade-arm strong!',
+      })
+    );
+    addedAny = true;
+  }
+
+  if (!engine.map.getEntityById('npc-eir') && !engine.map.getEntityAt(EIR_TOWN_POSITION.x, EIR_TOWN_POSITION.y)) {
+    engine.map.addEntity(
+      new NPC({
+        id: 'npc-eir',
+        name: 'Eir, the Temple Acolyte',
+        role: 'villager',
+        position: EIR_TOWN_POSITION,
+        choiceId: 'choice_eir_town',
+        greeting: 'Thor’s blessing on our savior! I will cleanse the dark from your wounds.',
+        dialogText: 'The sacred fire of Thor burns bright in our chapel. May his thunder shield you in the deep.',
+      })
+    );
+    addedAny = true;
+  }
+
+  if (addedAny && !getFlag(ws, SAVIOR_VILLAGERS_SEATED_FLAG)) {
+    setFlag(ws, SAVIOR_VILLAGERS_SEATED_FLAG, true);
+    engine.log(
+      'Word spreads through Bjarnarhaven: Sigrun, Brandr, and Eir have returned to the village plaza, safe and whole!'
+    );
+  }
+}
+
+export const COTW_SAVIOR_TOWN_HOOK: ActionHook = {
+  id: 'cotw-savior-town-population',
+  phase: 'post',
+  actionType: '*',
+  execute: ({ engine }) => {
+    const ws = engine.worldState;
+    if (!getFlag(ws, 'savior_of_jarnvidr')) return;
+
+    if (engine.currentFloor > 0) {
+      // Delving in the dungeon: reset daily/delve claim flags
+      if (getFlag(ws, 'sigrun_broth_claimed')) setFlag(ws, 'sigrun_broth_claimed', false);
+      if (getFlag(ws, 'brandr_hone_claimed')) setFlag(ws, 'brandr_hone_claimed', false);
+      return;
+    }
+
+    if (engine.currentFloor === 0) {
+      populateSaviorVillagers(engine);
+    }
+  },
+};
+

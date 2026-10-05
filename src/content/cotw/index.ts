@@ -21,6 +21,14 @@ import {
   CHARIOT_FORGE_FLOOR,
   WORLD_BARK_FLOOR,
   WORLD_BARK_VAULT_ID,
+  URDR_POOL_VAULT_ID,
+  URDR_POOL_FLOOR,
+  VERDANDI_LOOM_VAULT_ID,
+  VERDANDI_LOOM_FLOOR,
+  RATATOSKR_ROOST_VAULT_ID,
+  RATATOSKR_ROOST_FLOOR,
+  SKULD_MIRROR_VAULT_ID,
+  SKULD_MIRROR_FLOOR,
 } from './vaults';
 import { COTW_SPRITE_RECIPES } from './sprites';
 import { COTW_CHOICES } from './choices';
@@ -42,7 +50,7 @@ import { COTW_COINAGE } from './coinage';
 import { COTW_ITEM_FAMILIES } from './itemFamilies';
 import { COTW_LOOT_RATES } from './loot';
 import { OATH_HOLD_HOOK, OATH_TRIGGER } from './oath';
-import { HOSTAGE_VILLAGERS, SIPHON_RITUAL_FLOOR, SIPHON_RITUAL_HOOKS, SIPHON_TIMED_EVENT, SIPHON_VAULT_ID } from './hostageRitual';
+import { HOSTAGE_VILLAGERS, SIPHON_RITUAL_FLOOR, SIPHON_RITUAL_HOOKS, SIPHON_TIMED_EVENT, SIPHON_VAULT_ID, COTW_SAVIOR_TOWN_HOOK } from './hostageRitual';
 import { COTW_PROLOGUE, COVEN_CHANNELER_STRATEGY, PROLOGUE_HOOKS, PROLOGUE_TIMED_EVENT } from './prologue';
 import { COTW_BLOOD_SPELLS } from './bloodMagic';
 import { COTW_TILES } from './tiles';
@@ -60,6 +68,8 @@ import {
   COTW_ZONE_VIGNETTES_HOOK,
   COTW_SVART_TAUNT_HOOK,
   COTW_TOWN_REACTIVE_HOOK,
+  COTW_COMPANION_BARKS_HOOK,
+  COTW_NORN_CHOICES_HOOK,
 } from './narrative';
 
 export const cotwManifest: GameContentManifest = {
@@ -123,6 +133,10 @@ export const cotwManifest: GameContentManifest = {
     { flag: 'vidnir_slain', label: "The Wyrm's Fate Revealed", description: 'Learned from the dying herald Víðnir that slaying Níðhögg will split Yggdrasil and trigger Ragnarök, while driving it off will seal the root.', icon: '🐉', riddle: 'At the wyrm’s maw a herald keeps its master’s secret, and speaks it only dying.' },
     { flag: 'dwarven_hearth_rested', label: 'Dwarven Hearth Respite', description: 'Found solace in the secluded thermal grotto behind the rushing cascade.', icon: '♨️', riddle: 'Behind falling water in the smiths’ halls, old coals still keep a warm place to sleep.' },
     { flag: 'world_bark_hearth_rested', label: 'Heartwood Sanctuary', description: 'Rested in the peaceful hollow among the ancient roots of Yggdrasil.', icon: '🌳', riddle: 'Inside the world-tree’s bark an amber fire burns. Sit by it, and the roots keep watch.' },
+    { flag: 'urdr_pool_resolved', label: "Urðr's Judgment", description: 'Answered for past deeds at the sacred Well of Urðr.', icon: '🌊', riddle: 'Where mercury pools below the works, the first Norn remembers all you have spared or spent.' },
+    { flag: 'verdandi_loom_resolved', label: "Verðandi's Weave", description: 'Chose a strand of fate upon Verðandi’s Loom.', icon: '🕸️', riddle: 'On the living bark a shuttle flies, measuring the rot against the wood.' },
+    { flag: 'ratatoskr_roost_resolved', label: 'Roost of Ratatoskr', description: 'Humored the cosmic messenger upon the World-Bark.', icon: '🐿️', riddle: 'Between root and bough scuttles a sharp tongue with news of two worlds.' },
+    { flag: 'skuld_mirror_resolved', label: "Skuld's Portent", description: 'Gazed upon the final hour in Skuld’s Mirror.', icon: '🪞', riddle: 'Before the heartwood, a dark glass shows what shall be when dragon meets blade.' },
   ],
   // The runestones' verses and rune-lore, kept in the Story's Carved Verses once read.
   loreEntries: SKALDIC_RUNESTONE_LORE,
@@ -141,10 +155,13 @@ export const cotwManifest: GameContentManifest = {
     COTW_DARKNESS_HOOK,
     ...PROLOGUE_HOOKS,
     ...SIPHON_RITUAL_HOOKS,
+    COTW_SAVIOR_TOWN_HOOK,
     DEEPEST_FLOOR_HOOK,
     COTW_ZONE_VIGNETTES_HOOK,
     COTW_SVART_TAUNT_HOOK,
     COTW_TOWN_REACTIVE_HOOK,
+    COTW_COMPANION_BARKS_HOOK,
+    COTW_NORN_CHOICES_HOOK,
     COTW_TOWN_FURNISHING_HOOK,
     COTW_TEMPLE_MET_HOOK,
     COTW_RELIC_HOOK,
@@ -261,6 +278,13 @@ export const cotwManifest: GameContentManifest = {
     { floor: 39, tileId: 'galdr_altar_tyr', placement: 'middle_room_center' },
     { floor: 43, tileId: 'galdr_altar_hel', placement: 'middle_room_center' },
     { floor: 47, tileId: 'galdr_altar_odin', placement: 'middle_room_center' },
+    // Act 2 Nornic Reliquary of the Past: Urðr's Pool (Floor 30)
+    {
+      floor: URDR_POOL_FLOOR,
+      tileId: 'urdr_pool',
+      placement: 'middle_room_center',
+      requiresChoiceId: 'urdr_pool_choice',
+    },
   ],
   runeOfReturn: {
     attunementNpcId: 'npc-rune-smith',
@@ -298,6 +322,11 @@ export const cotwManifest: GameContentManifest = {
     { floor: DWARVEN_HEARTH_FLOOR, vaultId: DWARVEN_HEARTH_VAULT_ID, npcs: [IVALDA] },
     // Act 2 Campfire Grotto: The Heartwood Knothole on floor 37
     { floor: WORLD_BARK_FLOOR, vaultId: WORLD_BARK_VAULT_ID },
+    // Act 2 Nornic Reliquaries & Mythic Encounters
+    { floor: URDR_POOL_FLOOR, vaultId: URDR_POOL_VAULT_ID },
+    { floor: VERDANDI_LOOM_FLOOR, vaultId: VERDANDI_LOOM_VAULT_ID },
+    { floor: RATATOSKR_ROOST_FLOOR, vaultId: RATATOSKR_ROOST_VAULT_ID },
+    { floor: SKULD_MIRROR_FLOOR, vaultId: SKULD_MIRROR_VAULT_ID },
   ],
   // Townsfolk standing moves shop prices (hostage ritual outcome, story choices).
   roomDecoration: COTW_ROOM_DECORATION,
@@ -325,4 +354,13 @@ export {
   COTW_SPRITE_RECIPES,
   COTW_TILES,
   COTW_CHOICES,
+  URDR_POOL_VAULT_ID,
+  URDR_POOL_FLOOR,
+  VERDANDI_LOOM_VAULT_ID,
+  VERDANDI_LOOM_FLOOR,
+  RATATOSKR_ROOST_VAULT_ID,
+  RATATOSKR_ROOST_FLOOR,
+  SKULD_MIRROR_VAULT_ID,
+  SKULD_MIRROR_FLOOR,
 };
+

@@ -18,7 +18,7 @@ import { selectAttackTarget } from './targetSelection';
 import { bondCompanion } from '../combat/lastStand';
 import { flightRecorder } from '../debug/flightRecorder';
 import { huntUnseenAction, rememberTarget } from './pursuit';
-import { fleeAction } from './flight';
+import { callForHelp, fleeAction } from './flight';
 
 class CasterBehavior implements AiBehaviorStrategy {
   public readonly id = BUILTIN_AI_TYPES.CASTER;
@@ -364,6 +364,7 @@ export class MonsterAI {
       monster.fleeHealthPercent > 0 &&
       monster.hp <= Math.floor(monster.maxHp * monster.fleeHealthPercent)
     ) {
+      if (monster.aiState !== 'fleeing') callForHelp(engine, monster);
       monster.aiState = 'fleeing';
     } else if (
       monster.aiState === 'fleeing' &&

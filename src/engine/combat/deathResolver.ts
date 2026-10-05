@@ -23,6 +23,7 @@ import type { Item } from '../items/item';
 import { sumWorn } from '../items/wornModifiers';
 import { refusesDeath } from './lastStand';
 import { productAgainst } from '../compendium/familyPerks';
+import { dropTile } from '../dungeon/itemPlacement';
 
 /** Pact and Plunderer gold multipliers: a coin pile's worth is its count. */
 function applyGoldMultiplier(item: Item, goldMult: number): void {
@@ -143,7 +144,7 @@ export class DeathResolver {
         if (hasMasteryPerk(engine, victim.definitionId, 'trophy_hunter')) {
           if (engine.rng() < 0.35) {
             const trophy = createMonsterTrophy(victim, engine);
-            engine.map.addItemAt(victim.x, victim.y, trophy);
+            dropAt(engine, victim, trophy);
             engine.log(`*** TROPHY HARVEST! You carefully salvage a ${trophy.name} from ${victim.name}! ***`);
           }
         }
@@ -204,7 +205,7 @@ export class DeathResolver {
             const item = rule.generate(lootId, engine.rng, engine.currentFloor);
             if (!item) continue;
             applyGoldMultiplier(item, goldMult);
-            engine.map.addItemAt(victim.x, victim.y, item);
+            dropAt(engine, victim, item);
             engine.log(`${victim.name} dropped ${item.displayName}!`);
             dropCount += 1;
           }
@@ -218,7 +219,7 @@ export class DeathResolver {
           const item = pickRule.generate(lootId, engine.rng, engine.currentFloor);
           if (item) {
             applyGoldMultiplier(item, goldMult);
-            engine.map.addItemAt(victim.x, victim.y, item);
+            dropAt(engine, victim, item);
             engine.log(`*** PLUNDERER'S LUCK! You uncover hidden spoils: ${victim.name} dropped ${item.displayName}! ***`);
           }
         } else if (isPlunderer && dropCount > 0) {
@@ -230,7 +231,7 @@ export class DeathResolver {
       if (victim.inventory) {
         const carried = victim.getItems();
         for (const item of carried) {
-          engine.map.addItemAt(victim.x, victim.y, item);
+          dropAt(engine, victim, item);
           engine.log(`${victim.name} dropped ${item.displayName}!`);
         }
       }
@@ -298,4 +299,10 @@ export function awardPlayerXp(engine: GameEngine, xp: number): void {
       statGains: levelUpRes.statGains,
     });
   }
+}
+
+/** Puts a dead monster's drop where it fell, or beside it off a door, stairs or water (N22). */
+function dropAt(engine: GameEngine, victim: Entity, item: Item): void {
+  const at = dropTile(engine.map, victim.x, victim.y);
+  engine.map.addItemAt(at.x, at.y, item);
 }

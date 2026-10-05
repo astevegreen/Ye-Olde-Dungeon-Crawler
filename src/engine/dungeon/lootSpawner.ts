@@ -1,4 +1,5 @@
 import type { GameMap } from '../grid/map';
+import { pickLootTile } from './itemPlacement';
 import type { Position } from '../types';
 import type { CoinageDefinition, ItemDefinition, LootRatesDefinition } from '../types/manifest';
 import { Item, type ItemCategory, type ElementalAffix } from '../items/item';
@@ -413,7 +414,9 @@ export function stockSecretCaches(
 /**
  * Populates procedural dungeon rooms with depth-scaled loot and chests: per room past the
  * arrival room, a loose drop (an item or a coin pile) and a chest, each by its chance in the
- * pack's `manifest.loot`.
+ * pack's `manifest.loot`, on a tile `pickLootTile` chooses (N22: chests by walls, corners and
+ * alcoves; nothing in water, doorways, passages or on stairs). `exclude`: cells to keep clear
+ * ("x,y"), a secret cache's.
  */
 export function populateDungeonLoot(
   map: GameMap,
@@ -423,7 +426,8 @@ export function populateDungeonLoot(
   rng: () => number,
   coinage?: CoinageDefinition,
   families?: ItemFamilyConfig,
-  rates?: LootRatesDefinition
+  rates?: LootRatesDefinition,
+  exclude?: ReadonlySet<string>
 ): Item[] {
   const { roomDropChance, roomCoinShare, roomChestChance } = ratesOf(rates);
   const spawnedItems: Item[] = [];
@@ -433,10 +437,9 @@ export function populateDungeonLoot(
     const room = rooms[i];
 
     if (rng() < roomDropChance) {
-      const lx = room.x1 + 1 + Math.floor(rng() * (room.x2 - room.x1 - 1));
-      const ly = room.y1 + 1 + Math.floor(rng() * (room.y2 - room.y1 - 1));
-
-      if (map.isPassable(lx, ly) && !map.getEntityAt(lx, ly)) {
+      const spot = pickLootTile(map, room, rng, 'loose', exclude);
+      if (spot) {
+        const { x: lx, y: ly } = spot;
         if (rng() < roomCoinShare) {
           const coinId = `loot-coin-${currentFloor}-${i}-${Math.floor(rng() * 1000000)}`;
           const coins = spawnFloorCurrency(currentFloor, coinId, rng, coinage);
@@ -455,10 +458,9 @@ export function populateDungeonLoot(
     }
 
     if (rng() < roomChestChance) {
-      const cx = room.x1 + 1 + Math.floor(rng() * (room.x2 - room.x1 - 1));
-      const cy = room.y1 + 1 + Math.floor(rng() * (room.y2 - room.y1 - 1));
-
-      if (map.isPassable(cx, cy) && !map.getEntityAt(cx, cy)) {
+      const spot = pickLootTile(map, room, rng, 'chest', exclude);
+      if (spot) {
+        const { x: cx, y: cy } = spot;
         const chestId = `loot-chest-${currentFloor}-${i}-${Math.floor(rng() * 1000000)}`;
         const chest = createDungeonChest(chestId, currentFloor, candidates, rng, coinage, families, rates);
         map.addItemAt(cx, cy, chest);

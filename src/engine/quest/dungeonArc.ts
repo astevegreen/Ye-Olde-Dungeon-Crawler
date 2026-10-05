@@ -11,6 +11,7 @@ import { QUEST_RELIC_ID, MAX_DUNGEON_FLOOR } from './types';
 import { ItemFactory } from '../items/factory';
 import { createScaledMonster, populateDungeonFloor, scaleMonsterStats } from '../dungeon/spawner';
 import { createDungeonChest, populateDungeonLoot, stockSecretCaches } from '../dungeon/lootSpawner';
+import { dropTile } from '../dungeon/itemPlacement';
 import { mintCoinPile } from '../economy/currency';
 import type { GameContentManifest, QuestArcDefinition, ItemDefinition } from '../types/manifest';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
@@ -242,7 +243,8 @@ export class DungeonArc {
     );
 
     // 4. Spawn Floor-scaled loot and chests
-    populateDungeonLoot(map, dungeon.rooms, floorNumber, itemCatalog, populationRng, manifest?.coinage, manifest?.itemFamilies, manifest?.loot);
+    const cacheCells = new Set((dungeon.secretCaches ?? []).flat().map((c) => `${c.x},${c.y}`));
+    populateDungeonLoot(map, dungeon.rooms, floorNumber, itemCatalog, populationRng, manifest?.coinage, manifest?.itemFamilies, manifest?.loot, cacheCells);
 
     // 4b. Stock the secret caches, from a stream of their own so the draws above are unchanged.
     const cachePrng = new PRNG((seed ?? floorNumber) + floorNumber * 104729);
@@ -326,6 +328,18 @@ export class DungeonArc {
           choiceId: npcDef.choiceId,
         })
       );
+    }
+
+    // Fixtures (altars, runestones, barrows) stamp after the loot: room loot under one moves aside.
+    for (const { x, y, items } of map.getAllGroundItems()) {
+      if (!map.getTile(x, y)?.interactionHandlerId) continue;
+      const at = dropTile(map, x, y);
+      if (at.x === x && at.y === y) continue;
+      for (const item of [...items]) {
+        if (!item.id.startsWith('loot-')) continue;
+        map.removeItemAt(x, y, item.id);
+        map.addItemAt(at.x, at.y, item);
+      }
     }
 
     return {

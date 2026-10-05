@@ -17,7 +17,11 @@ export const COTW_FLOOR_LAYOUTS: FloorLayoutBand[] = [
   // Dwarven Works: a symmetric hall plan, ring road and workshops, with the great forge pit.
   { minFloor: 10, maxFloor: 17, strategy: 'halls', params: { centralPit: true, randomVaults: false }, threshold: COTW_THRESHOLDS.dwarven_works },
   // Obsidian Siphon: a magma rift crossed by bridges; the siphon pylon stands on one bank.
-  { minFloor: 18, maxFloor: 25, strategy: 'rift', params: { bridges: 3, landmarkVaultIds: ['siphon_pylon'] }, threshold: COTW_THRESHOLDS.obsidian_siphon },
+  { minFloor: 18, maxFloor: 20, strategy: 'rift', params: { bridges: 3, landmarkVaultIds: ['siphon_pylon'] }, threshold: COTW_THRESHOLDS.obsidian_siphon },
+  // Floor 21 is dark: its own pylon, the core that drinks the light, is a scripted vault
+  // (siphonPylon.ts), so the zone's usual pylon doesn't stamp beside it.
+  { minFloor: 21, maxFloor: 21, strategy: 'rift', params: { bridges: 3 } },
+  { minFloor: 22, maxFloor: 25, strategy: 'rift', params: { bridges: 3, landmarkVaultIds: ['siphon_pylon'] } },
   // Tarnished Silver Veins: a lattice of mine drifts, ore chambers and a flooded sump.
   { minFloor: 26, maxFloor: 33, strategy: 'lattice', params: { sump: true }, threshold: COTW_THRESHOLDS.tarnished_silver },
   // World Bark Descent: root warrens around a knothole grove with a sap well.

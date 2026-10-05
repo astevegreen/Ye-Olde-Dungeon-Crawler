@@ -25,12 +25,12 @@ export const COTW_TOWN: TownLayoutDefinition = {
       role: 'merchant',
       shopId: 'merchant-olaf',
       position: { x: 11, y: 8 },
-      greeting: 'Welcome to Olaf’s General Goods! Broth, poultices, and a warm wrap for hearty souls!',
+      greeting: 'Welcome to Olaf’s General Goods! Broth, poultices, torches, and a warm wrap for hearty souls!',
       dialogText: 'Stock up on broth and poultices, traveler. And if your purse is bursting, I sell bigger ones.',
       merchantConfig: {
         id: 'merchant-olaf',
         name: "Olaf's General Store",
-        greeting: 'Welcome to Olaf’s General Goods! Broth, poultices, and a warm wrap for hearty souls!',
+        greeting: 'Welcome to Olaf’s General Goods! Broth, poultices, torches, and a warm wrap for hearty souls!',
         markupRatio: 1.25,
         markdownRatio: 0.5,
         initialInventory: [
@@ -142,7 +142,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
       position: { x: 26, y: 14 },
       greeting: 'Halt! Keep your weapons sheathed in Bjarnarhaven, adventurer.',
       dialogText: 'The dungeon cellar to the north-east leads into the depths. Many go down; few return.',
-      advice: 'Bjarnarhaven is peaceful, but the cellar entrance north-east holds terrors from old myths. Buy sturdy armor and healing draughts before you venture down.',
+      advice: 'Bjarnarhaven is peaceful, but the cellar entrance north-east holds terrors from old myths. Buy sturdy armor and healing draughts before you venture down, and a torch from Olaf: past the fire-rift, they say, something drinks the light.',
     },
     {
       id: 'npc-trainer',

@@ -1,5 +1,6 @@
 import type { VaultBlueprint } from '../../engine';
 import { SIPHON_ALTAR_TILE, SIPHON_RITUAL_FLOOR, SIPHON_VAULT_ID } from './hostageRitual';
+import { FLOOR21_PYLON_VAULT } from './siphonPylon';
 
 export const DWARVEN_HEARTH_VAULT_ID = 'dwarven_hearth_grotto';
 export const DWARVEN_HEARTH_FLOOR = 13;
@@ -368,6 +369,8 @@ export const COTW_VAULTS: VaultBlueprint[] = [
       '###########',
     ],
   },
+  // Floor 21 only, scripted (siphonPylon.ts): the zone's pylon with the light-drinking core.
+  FLOOR21_PYLON_VAULT,
 ];
 
 

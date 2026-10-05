@@ -29,6 +29,7 @@ import { COTW_RENOWN_MILESTONES, COTW_RENOWN_TITLES } from './renown';
 import { COTW_OBJECTIVES } from './objectives';
 import { COTW_COMPANIONS } from './companions';
 import { GIANT_BLOOD_STATUS, giantBloodHandler, GIANT_BLOOD_BOOTSTRAP_HOOK } from './giantBlood';
+import { FLOOR21, FLOOR21_PYLON_VAULT_ID } from './siphonPylon';
 import { COTW_DARKNESS_HANDLERS, COTW_DARKNESS_HOOK, DARKNESS_STATUS, EMBOLDENED_STATUS, TORCHLIT_STATUS } from './darkness';
 import { BURNING_STATUS, burningHandler } from './burning';
 import { COTW_MONSTER_SCALING } from './monsterScaling';
@@ -279,6 +280,8 @@ export const cotwManifest: GameContentManifest = {
       vaultId: SIPHON_VAULT_ID,
       npcs: HOSTAGE_VILLAGERS,
     },
+    // The pylon that drinks floor 21's light (siphonPylon.ts, tracker 5.4).
+    { floor: FLOOR21, vaultId: FLOOR21_PYLON_VAULT_ID },
     // Svartr, the Taproot Matriarch: guaranteed on floor 36 (her fall draws Víðnir's taunt, narrative.ts).
     { floor: 36, vaultId: 'floor36_matriarch_hollow' },
     // The Sun-Chariot Warden and the Hearth-Tear: the end of Act 1, once, on floor 25.

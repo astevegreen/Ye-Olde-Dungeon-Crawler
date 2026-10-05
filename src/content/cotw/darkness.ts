@@ -14,6 +14,7 @@ import {
 } from '../../engine';
 import { COTW_MONSTERS } from './monsters';
 import { COTW_MONSTER_SCALING } from './monsterScaling';
+import { FLOOR21_DARK } from './siphonPylon';
 
 /**
  * Dark floors (tracker 5.3, Q12 "A", Q30): floors whose light something has drunk. Until the
@@ -29,10 +30,15 @@ export interface DarkFloor {
   relitFlag: string;
   /** Logged the first time the hero stands in this floor's dark. */
   enterMessage: string;
+  /**
+   * What relights the floor, a tile or a monster: after the entry line, `message` says in which
+   * direction it lies (`{direction}`, an eight-point compass word).
+   */
+  beacon?: { tileId?: string; monsterDefinitionId?: string; message: string };
 }
 
-/** Which floors are dark: tracker 5.4 (floor 21) and 5.5 (floor 30) add them. */
-export const COTW_DARK_FLOORS: DarkFloor[] = [];
+/** Which floors are dark: floor 21 (tracker 5.4); 5.5 adds floor 30. */
+export const COTW_DARK_FLOORS: DarkFloor[] = [FLOOR21_DARK];
 
 /** On the hero: sight cut to 2 (`perceptionRadius`, the engine's sight override). */
 export const DARKNESS_STATUS = 'cotw:darkness';
@@ -111,6 +117,8 @@ export function createDarknessHook(floors: DarkFloor[]): ActionHook {
       if (!engine.getWorldFlag(seenFlag)) {
         engine.setWorldFlag(seenFlag, true);
         engine.log(dark.enterMessage);
+        const at = dark.beacon ? findBeacon(engine, dark.beacon) : undefined;
+        if (dark.beacon && at) engine.log(dark.beacon.message.replace('{direction}', compass(player, at)));
       }
 
       for (const entity of engine.map.getAllEntities()) {
@@ -123,6 +131,27 @@ export function createDarknessHook(floors: DarkFloor[]): ActionHook {
       if (actions % DARK_SPAWN_INTERVAL === 0) spawnFromTheDark(engine, dark);
     },
   };
+}
+
+function findBeacon(ctx: EngineContext, beacon: NonNullable<DarkFloor['beacon']>): { x: number; y: number } | undefined {
+  if (beacon.monsterDefinitionId) {
+    const monster = ctx.map.getAllEntities().find((e) => e instanceof Monster && e.definitionId === beacon.monsterDefinitionId && e.isAlive());
+    if (monster) return monster;
+  }
+  if (beacon.tileId) {
+    for (let y = 0; y < ctx.map.height; y++) {
+      for (let x = 0; x < ctx.map.width; x++) if (ctx.map.getTile(x, y)?.type === beacon.tileId) return { x, y };
+    }
+  }
+  return undefined;
+}
+
+const COMPASS = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east'];
+
+/** The eight-point compass direction from one tile to another (y grows southward). */
+function compass(from: { x: number; y: number }, to: { x: number; y: number }): string {
+  const octant = Math.round(Math.atan2(to.y - from.y, to.x - from.x) / (Math.PI / 4));
+  return COMPASS[(octant + 8) % 8];
 }
 
 function spawnFromTheDark(ctx: EngineContext, dark: DarkFloor): void {

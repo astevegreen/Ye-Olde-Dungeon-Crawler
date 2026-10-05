@@ -1,6 +1,7 @@
 import type { TileDefinition } from '../../engine';
 import { SKALDIC_RUNESTONE_TILES } from './runestones';
 import { IRON_CLANS_BARROW_TILES } from './ironClans';
+import { SIPHON_CORE_TILE_DEFINITION } from './siphonPylon';
 
 /** Bjarnarhaven's lanes and street furniture (townLayout.ts). */
 const townThing = (type: string, name: string, glyph: string, description: string): TileDefinition => ({
@@ -261,4 +262,6 @@ export const COTW_TILES: TileDefinition[] = [
     description:
       'Polished alder chimes and woven bark talismans hung on fine sinew. They chime in gentle, rhythmic tones whenever the cavern breathes.',
   },
+  // Floor 21's drinking pylon (siphonPylon.ts): shattering it relights the floor.
+  SIPHON_CORE_TILE_DEFINITION,
 ];

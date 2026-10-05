@@ -1,5 +1,6 @@
 import type { ChoiceDefinition } from '../../engine';
 import { BLOOD_ALTAR_CHOICE } from './hostageRitual';
+import { SIPHON_CORE_CHOICE } from './siphonPylon';
 import { SKALDIC_RUNESTONE_CHOICES } from './runestones';
 import { VIDNIR_REVELATION_CHOICE } from './narrative';
 import { IRON_CLANS_BARROW_CHOICES, IVALDA_CHOICE, IVALDA_TOWN_CHOICE } from './ironClans';
@@ -147,6 +148,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
 
   ...COTW_MILESTONE_CHOICES,
   blood_altar_ritual: BLOOD_ALTAR_CHOICE,
+  siphon_core: SIPHON_CORE_CHOICE,
   vidnir_revelation: VIDNIR_REVELATION_CHOICE,
   ...SKALDIC_RUNESTONE_CHOICES,
   ...COTW_SAGA_CHOICES,

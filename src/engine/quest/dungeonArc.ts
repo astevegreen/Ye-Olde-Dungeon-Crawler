@@ -10,7 +10,7 @@ import type { Player } from '../entities/player';
 import { QUEST_RELIC_ID, MAX_DUNGEON_FLOOR } from './types';
 import { ItemFactory } from '../items/factory';
 import { createScaledMonster, populateDungeonFloor, scaleMonsterStats } from '../dungeon/spawner';
-import { createDungeonChest, populateDungeonLoot } from '../dungeon/lootSpawner';
+import { createDungeonChest, populateDungeonLoot, stockSecretCaches } from '../dungeon/lootSpawner';
 import { mintCoinPile } from '../economy/currency';
 import type { GameContentManifest, QuestArcDefinition, ItemDefinition } from '../types/manifest';
 import type { MonsterScalingConfig } from '../types/monsterScaling';
@@ -25,6 +25,8 @@ export interface DungeonFloorResult {
   stairsUp?: Position;
   stairsDown?: Position;
   boss?: Monster;
+  /** The floor cells of each secret cache (`GeneratedFloorData.secretCaches`). */
+  secretCaches?: Position[][];
 }
 
 export class DungeonArc {
@@ -242,6 +244,10 @@ export class DungeonArc {
     // 4. Spawn Floor-scaled loot and chests
     populateDungeonLoot(map, dungeon.rooms, floorNumber, itemCatalog, populationRng, manifest?.coinage, manifest?.itemFamilies, manifest?.loot);
 
+    // 4b. Stock the secret caches, from a stream of their own so the draws above are unchanged.
+    const cachePrng = new PRNG((seed ?? floorNumber) + floorNumber * 104729);
+    stockSecretCaches(map, dungeon.secretCaches ?? [], floorNumber, itemCatalog, () => cachePrng.next(), manifest?.coinage, manifest?.itemFamilies, manifest?.loot);
+
     // 5. Fixed tile placements declared in manifest (docs/architecture/content-quests-and-triggers.md)
     if (manifest?.fixedTilePlacements?.length) {
       for (const placement of manifest.fixedTilePlacements) {
@@ -327,6 +333,7 @@ export class DungeonArc {
       playerSpawn,
       stairsUp: playerSpawn,
       stairsDown,
+      secretCaches: dungeon.secretCaches,
     };
   }
 

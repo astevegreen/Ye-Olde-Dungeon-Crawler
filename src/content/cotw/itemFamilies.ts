@@ -7,14 +7,15 @@ import type { ItemFamilyConfig } from '../../engine';
  * +N is a separate roll (`calculateEnchantmentLevel`), so a Blessed Broadsword +2 happens.
  *
  * `itemsPerGame` is the measured count of eligible items a full clear offers at the loot
- * volume of `loot.ts` (`npm run balance`, 20 seeds, medium: 238, relics not counted). Cursed
+ * volume of `loot.ts` (`npm run balance`, 20 seeds, medium: 238, relics not counted; 275 since
+ * tracker 5.6 stocks the secret caches, about 1.3 more items a floor). Cursed
  * rolls 15 a game because the four cursed relics (`family: 'cursed'`, `lootWeight` 0.25) add
  * about 8 more, and the negative families lose a tenth of their share to floors 1–2, so
  * Negative comes to 45. `lootVolume.test.ts` pins the measured counts.
  */
 export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
   categories: ['weapon', 'armor', 'shield', 'helmet', 'boots', 'gauntlets', 'bracers', 'cloak', 'amulet', 'ring'],
-  itemsPerGame: 240,
+  itemsPerGame: 275,
   families: [
     {
       category: 'blessed',

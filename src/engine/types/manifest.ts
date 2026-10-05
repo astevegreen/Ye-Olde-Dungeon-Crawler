@@ -838,6 +838,8 @@ export interface LootRatesDefinition {
   chestEntries?: readonly [number, number];
   /** The share of chest entries that are coin piles. Default 0.35. */
   chestCoinShare?: number;
+  /** How many entries the chest in a secret cache holds, both ends included. Default [2, 3]. */
+  cacheEntries?: readonly [number, number];
   /** The share of item draws taken from the newest definitions the floor has unlocked. Default 0.75. */
   newestShare?: number;
   /**

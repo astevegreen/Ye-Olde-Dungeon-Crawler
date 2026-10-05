@@ -1,4 +1,5 @@
 import type { GameMap } from '../grid/map';
+import type { Position } from '../types';
 import type { CoinageDefinition, ItemDefinition, LootRatesDefinition } from '../types/manifest';
 import { Item, type ItemCategory, type ElementalAffix } from '../items/item';
 import { Container } from '../items/container';
@@ -15,6 +16,7 @@ const DEFAULT_LOOT_RATES: Required<LootRatesDefinition> = {
   roomChestChance: 0.25,
   chestEntries: [2, 4],
   chestCoinShare: 0.35,
+  cacheEntries: [2, 3],
   newestShare: 0.75,
   newestDefinitions: 1,
 };
@@ -378,6 +380,34 @@ export function createDungeonChest(
   }
 
   return chest;
+}
+
+/**
+ * Puts a chest in each secret cache (tracker 5.6, N27: finding one should be worth it), on its
+ * middle cell, holding the pack's `cacheEntries`. Its own rng, so the floor's population and
+ * room loot draw exactly as without caches.
+ */
+export function stockSecretCaches(
+  map: GameMap,
+  caches: readonly Position[][],
+  currentFloor: number,
+  candidates: ItemDefinition[],
+  rng: () => number,
+  coinage?: CoinageDefinition,
+  families?: ItemFamilyConfig,
+  rates?: LootRatesDefinition
+): void {
+  const { cacheEntries } = ratesOf(rates);
+  caches.forEach((cells, i) => {
+    if (cells.length === 0) return;
+    const mid = {
+      x: Math.round(cells.reduce((a, c) => a + c.x, 0) / cells.length),
+      y: Math.round(cells.reduce((a, c) => a + c.y, 0) / cells.length),
+    };
+    const at = cells.find((c) => c.x === mid.x && c.y === mid.y) ?? cells[0];
+    const chest = createDungeonChest(`cache-chest-${currentFloor}-${i}`, currentFloor, candidates, rng, coinage, families, { ...rates, chestEntries: cacheEntries });
+    map.addItemAt(at.x, at.y, chest);
+  });
 }
 
 /**

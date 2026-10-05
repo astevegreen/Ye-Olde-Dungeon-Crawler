@@ -451,7 +451,33 @@ function finishDraft(draft: LayoutDraft, ctx: DraftContext): GeneratedFloorData 
     forcedVaultNpcSpawns,
     vaultRects: vaultRects.map((r) => ({ ...r })),
     thresholdRect: home ? { ...home } : undefined,
+    secretCaches: cacheGroups(draft.sealed, g[0].length),
   };
+}
+
+/** The sealed cells grouped into caches: each 8-connected group of them is one. */
+function cacheGroups(sealed: ReadonlySet<number> | undefined, W: number): Position[][] {
+  const left = new Set(sealed ?? []);
+  const groups: Position[][] = [];
+  for (const start of sealed ?? []) {
+    if (!left.delete(start)) continue;
+    const group: Position[] = [];
+    const queue = [start];
+    while (queue.length > 0) {
+      const cell = queue.pop()!;
+      const x = cell % W;
+      const y = (cell - x) / W;
+      group.push({ x, y });
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const next = (y + dy) * W + (x + dx);
+          if (left.delete(next)) queue.push(next);
+        }
+      }
+    }
+    groups.push(group);
+  }
+  return groups;
 }
 
 /**

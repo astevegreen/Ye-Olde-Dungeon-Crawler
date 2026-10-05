@@ -56,6 +56,8 @@ export interface GeneratedFloorData {
   vaultRects?: Array<{ x1: number; y1: number; x2: number; y2: number }>;
   /** Footprint of the threshold room the player arrived in, when one was carved. */
   thresholdRect?: { x1: number; y1: number; x2: number; y2: number };
+  /** The floor cells of each secret cache, sealed behind a secret door (`carveSecretCache`). */
+  secretCaches?: Position[][];
 }
 
 export interface DungeonGeneratorStrategy {

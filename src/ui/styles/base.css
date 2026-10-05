@@ -36,6 +36,22 @@
         justify-content: center;
         position: relative;
       }
+      /* UI scale (N8, tracker 4.5; src/ui/uiScale.ts): each root of the interface draws at
+         --ui-scale, laid out and crisp, as operating-system scaling would. Never the map
+         canvas, which the viewport fits to what these leave it. Roots only: a zoom inside a
+         zoomed root would multiply. */
+      #game-header-bar,
+      #gothic-action-console,
+      #game-full-width-log,
+      #combat-sidebar,
+      #retro-toast-container,
+      .ui-dialog,
+      .cm-window,
+      .retro-window,
+      .ts-inner,
+      .mc-card {
+        zoom: var(--ui-scale);
+      }
       #game-canvas {
         display: block;
         background-color: var(--ui-surface-3);

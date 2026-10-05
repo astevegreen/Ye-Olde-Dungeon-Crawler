@@ -5,6 +5,7 @@ import { escapeHtml } from '../html';
 import { keyLabel } from '../keyLabel';
 import { formatStorageStatus, getStoragePersistenceInfo } from '../persistenceInit';
 import { AUTO_PICKUP_GROUPS, type AutoPickupGroup } from '../autoPickup';
+import { UI_SCALE_STEPS, type UiScaleSetting } from '../uiScale';
 
 export interface KeybindModalOptions {
   settingsManager: SettingsManager;
@@ -172,6 +173,7 @@ export class KeybindModal implements UIModal {
         </div>
         <div class="ui-note">${text}</div>
       </div>`;
+    const scaleSelect = `<select id="sel-ui-scale" class="set-select" aria-label="Interface size"><option value="auto">Auto</option>${UI_SCALE_STEPS.map((s) => `<option value="${s}">${Math.round(s * 100)}%</option>`).join('')}</select>`;
     const chordRange =
       '<span class="set-range"><label for="rng-chord-buffer">Window</label><input type="range" id="rng-chord-buffer" min="25" max="75" step="5" value="40" /><span id="lbl-chord-buffer-ms" class="ui-num">40ms</span></span>';
 
@@ -187,6 +189,7 @@ export class KeybindModal implements UIModal {
         ${option('chk-arrow-chording', 'Micro-Debounce Buffer (Arrow-Key Chording)', 'Press two arrow keys together to step diagonally (Up and Right goes northeast). Handy on keyboards without a number pad.', chordRange)}
         ${option('chk-mouse-vectoring', "The 'Hover Ring' (Mouse Vectoring)", 'Shows a ring of eight directions around your hero under the mouse. Click a neighboring tile to step or attack, or a distant one to walk there.')}
         ${option('chk-mouse-aim', 'Mouse aiming', 'While you aim a spell, wand or scroll, the target follows the mouse and a click on the map fires. The keys still aim and fire either way.')}
+        ${option(null, 'Interface size', 'How large the bars, sidebar, menus and dialogs are drawn. Auto grows them with a large window (125% at 1920 × 1080); the map takes the room they leave.', scaleSelect)}
         ${option('chk-torchlight', 'Torchlight', 'What you can see darkens toward the edge of your sight, with warm light around your hero. Off gives flat, even lighting.')}
         ${option('chk-inventory-hover-cards', 'Rich inventory hover cards', 'Shows full stat cards when you hover items in your inventory. Off shows the name only.')}
         ${option('chk-hints', 'First-time hints', 'The first time you meet an altar, a pact keeper, a companion and the like, a short note about it appears under the sidebar. Each shows once per hero. In the opening scene, the slot for the move the moment calls for also glows.')}
@@ -282,6 +285,12 @@ export class KeybindModal implements UIModal {
       });
     });
 
+    const scaleSel = modal.querySelector('#sel-ui-scale') as HTMLSelectElement | null;
+    scaleSel?.addEventListener('change', () => {
+      const uiScale: UiScaleSetting = scaleSel.value === 'auto' ? 'auto' : Number(scaleSel.value);
+      this.settingsManager.updateSettings({ uiScale });
+    });
+
     const aimChk = modal.querySelector('#chk-mouse-aim') as HTMLInputElement | null;
     aimChk?.addEventListener('change', () => {
       this.settingsManager.updateSettings({ mouseAimEnabled: aimChk.checked });
@@ -349,6 +358,8 @@ export class KeybindModal implements UIModal {
     if (mouseChk) mouseChk.checked = settings.mouseVectoringEnabled;
     const aimChk = this.modalEl.querySelector('#chk-mouse-aim') as HTMLInputElement | null;
     if (aimChk) aimChk.checked = settings.mouseAimEnabled;
+    const scaleSel = this.modalEl.querySelector('#sel-ui-scale') as HTMLSelectElement | null;
+    if (scaleSel) scaleSel.value = String(settings.uiScale);
     const torchChk = this.modalEl.querySelector('#chk-torchlight') as HTMLInputElement | null;
     if (torchChk) torchChk.checked = settings.torchlightEnabled;
     const hoverCardsChk = this.modalEl.querySelector('#chk-inventory-hover-cards') as HTMLInputElement | null;

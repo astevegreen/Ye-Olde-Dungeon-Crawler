@@ -262,6 +262,39 @@ test('while aiming, the reticle follows the mouse and a click fires the spell', 
     .toBe('acted');
 });
 
+// UI scale (N8, tracker 4.5): Auto grows the bars, sidebar and dialogs with a large window,
+// the map still fits beside and between them, and Settings can fix the size.
+test('the interface grows with a large window, and Settings can fix its size', async ({ page }) => {
+  // How much bigger an element draws than it lays out.
+  const zoomOf = (sel: string) =>
+    page.locator(sel).first().evaluate((el: HTMLElement) => {
+      const root = (el.closest('.ui-dialog') as HTMLElement | null) ?? el;
+      return Math.round((root.getBoundingClientRect().width / root.offsetWidth) * 100) / 100;
+    });
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await embarkNewHero(page);
+  expect(await zoomOf('#game-header-bar')).toBe(1.25);
+  expect(await zoomOf('#combat-sidebar')).toBe(1.25);
+  const fits = await page.evaluate(() =>
+    ['game-canvas', 'game-header-bar', 'gothic-action-console', 'game-full-width-log', 'combat-sidebar'].every((id) => {
+      const r = document.getElementById(id)!.getBoundingClientRect();
+      return r.right <= innerWidth + 1 && r.bottom <= innerHeight + 1;
+    })
+  );
+  expect(fits, 'every bar and the map inside the window').toBe(true);
+
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await expect.poll(() => zoomOf('#game-header-bar')).toBe(1);
+
+  // The title screen's Settings: a fixed 150% holds at any window.
+  await page.goto(pathToFileURL(BUNDLE).href);
+  await page.locator('#btn-menu-settings').click();
+  await page.locator('#sel-ui-scale').selectOption('1.5');
+  await expect.poll(() => zoomOf('#sel-ui-scale')).toBe(1.5);
+  await page.locator('#sel-ui-scale').selectOption('auto');
+  await expect.poll(() => zoomOf('#sel-ui-scale')).toBe(1);
+});
+
 // The sidebar's "here" line shows all of a long prompt: on the stairs it was cut off at
 // "…to a" with no ellipsis (tracker 0.23).
 test("the sidebar's ground line shows the whole stairs prompt", async ({ page }) => {

@@ -2,6 +2,7 @@ import type { StorageAdapter } from '../../engine';
 import { MemoryStorage } from '../../engine';
 import { getBrowserStorage } from '../platform';
 import { AUTO_PICKUP_GROUPS, DEFAULT_AUTO_PICKUP, type AutoPickupGroup } from '../autoPickup';
+import { UI_SCALE_STEPS, type UiScaleSetting } from '../uiScale';
 
 export interface ActionMetadata {
   id: string;
@@ -123,6 +124,8 @@ export interface GameSettings {
   mouseVectoringEnabled: boolean;
   /** While aiming a spell, the reticle follows the mouse and a click fires (N23, tracker 4.4). */
   mouseAimEnabled: boolean;
+  /** The interface's size (N8, tracker 4.5): Auto follows the window, or a fixed factor (`uiScale.ts`). */
+  uiScale: UiScaleSetting;
   /** The content pack's torchlight: sight darkens toward its edge, warm light near the hero. */
   torchlightEnabled: boolean;
   /** Whether to render rich breakdown hover cards in inventory overlay rather than simple single-line names. */
@@ -181,6 +184,7 @@ export function getDefaultSettings(): GameSettings {
     mouseVectoringEnabled: false,
     // On: aiming with the mouse is what a new player reaches for (Q18, N23).
     mouseAimEnabled: true,
+    uiScale: 'auto',
     torchlightEnabled: true,
     inventoryRichHoverCards: true,
     hintsEnabled: true,
@@ -318,6 +322,7 @@ export class SettingsManager {
         arrowChordBufferMs: typeof parsed.arrowChordBufferMs === 'number' ? Math.max(25, Math.min(75, parsed.arrowChordBufferMs)) : defaults.arrowChordBufferMs,
         mouseVectoringEnabled: typeof parsed.mouseVectoringEnabled === 'boolean' ? parsed.mouseVectoringEnabled : defaults.mouseVectoringEnabled,
         mouseAimEnabled: typeof parsed.mouseAimEnabled === 'boolean' ? parsed.mouseAimEnabled : defaults.mouseAimEnabled,
+        uiScale: (UI_SCALE_STEPS as readonly unknown[]).includes(parsed.uiScale) ? parsed.uiScale : defaults.uiScale,
         torchlightEnabled: typeof parsed.torchlightEnabled === 'boolean' ? parsed.torchlightEnabled : defaults.torchlightEnabled,
         inventoryRichHoverCards: typeof parsed.inventoryRichHoverCards === 'boolean' ? parsed.inventoryRichHoverCards : defaults.inventoryRichHoverCards,
         hintsEnabled: typeof parsed.hintsEnabled === 'boolean' ? parsed.hintsEnabled : defaults.hintsEnabled,

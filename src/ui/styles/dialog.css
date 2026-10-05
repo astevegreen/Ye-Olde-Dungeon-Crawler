@@ -185,6 +185,7 @@
 .set-pickups .set-check { font-weight: normal; }
 .set-range { display: flex; align-items: center; gap: var(--ui-space-2); font-size: var(--ui-text-sm); color: var(--ui-text-muted); }
 .set-range input { width: 90px; accent-color: var(--ui-accent); }
+.set-select { font: inherit; font-size: var(--ui-text-sm); color: var(--ui-text); background: var(--ui-surface-3); border: 1px solid var(--ui-line); border-radius: var(--ui-radius); padding: 2px var(--ui-space-2); }
 .set-keys { max-height: 260px; overflow-y: auto; padding: var(--ui-space-1) var(--ui-space-2); }
 .set-key-row { display: flex; justify-content: space-between; align-items: center; gap: var(--ui-space-2); padding: 5px 0; border-bottom: 1px solid var(--ui-line); }
 .set-key-row:last-child { border-bottom: 0; }

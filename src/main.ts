@@ -64,7 +64,8 @@ import { epitaphHtml } from './ui/epitaph';
 import { ContextHelp } from './ui/help/contextHelp';
 import { CommandPalette } from './ui/help/commandPalette';
 import type { SpellbookEntry } from './rendering/targeting-overlay';
-import { applyThemeTokens } from './rendering/theme';
+import { applyThemeTokens, setUiTextScale } from './rendering/theme';
+import { applyUiScale, currentUiScale, resolveUiScale } from './ui/uiScale';
 import { installUiIcons } from './rendering/uiIcons';
 import { ChoiceModal } from './ui/choiceModal';
 import { AltarModal } from './ui/altarModal';
@@ -619,6 +620,19 @@ window.addEventListener('DOMContentLoaded', () => {
   settingsManager.subscribe((settings) => {
     if (!settings.hintsEnabled) firstTimeHints.clear();
   });
+
+  // The UI scale (N8, tracker 4.5): the DOM's zoom and the canvas text, from the setting and
+  // the window. A change re-fits the map to what the larger bars leave it.
+  function syncUiScale(force = false): void {
+    const scale = resolveUiScale(settingsManager.getSettings().uiScale, window.innerWidth, window.innerHeight);
+    if (!force && scale === currentUiScale()) return;
+    applyUiScale(scale);
+    setUiTextScale(scale);
+    renderer?.resize();
+    renderer?.render();
+  }
+  syncUiScale(true);
+  settingsManager.subscribe(() => syncUiScale());
 
   /**
    * The hero's square above the map: name, depth, level with experience, renown,
@@ -1968,6 +1982,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   window.addEventListener('resize', () => {
+    syncUiScale();
     renderer?.resize();
   });
 

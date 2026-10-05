@@ -261,14 +261,21 @@ export type UiTextRole = keyof typeof UI_TEXT_PX;
 
 /** CSS pixels per virtual canvas pixel; the viewport keeps it current. */
 let canvasTextScale = 1;
+/** The player's UI scale (tracker 4.5), the same factor the DOM is zoomed by. */
+let uiTextScale = 1;
+
+/** Sets the UI scale canvas text grows by (`src/ui/uiScale.ts`); 1 or more. */
+export function setUiTextScale(scale: number): void {
+  if (Number.isFinite(scale) && scale >= 1) uiTextScale = scale;
+}
 
 export function setCanvasTextScale(cssPerVirtualPx: number): void {
   if (Number.isFinite(cssPerVirtualPx) && cssPerVirtualPx > 0) canvasTextScale = cssPerVirtualPx;
 }
 
 /**
- * A canvas font string whose text renders at the role's size in CSS pixels whatever the
- * window size, so canvas text matches DOM text and never drops under the 11px floor.
+ * A canvas font string whose text renders at the role's size in CSS pixels, times the UI
+ * scale, whatever the window size, so canvas text matches DOM text and never drops under the 11px floor.
  * Canvas draws in the 960×600 virtual space, which the viewport scales to the window.
  */
 export function uiFont(
@@ -306,5 +313,5 @@ export function elementColor(manifest: GameContentManifest | undefined, element:
 
 /** The size `uiFont` gives a role, in virtual canvas pixels: for boxes drawn around text. */
 export function uiFontPx(role: UiTextRole): number {
-  return Math.round((UI_TEXT_PX[role] / canvasTextScale) * 10) / 10;
+  return Math.round(((UI_TEXT_PX[role] * uiTextScale) / canvasTextScale) * 10) / 10;
 }

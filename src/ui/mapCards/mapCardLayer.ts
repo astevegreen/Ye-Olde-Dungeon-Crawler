@@ -8,6 +8,7 @@
  * The renderer asks each overlay for its card after every frame and hands the answers to
  * `set`, which rewrites a card only when its markup or place changed.
  */
+import { currentUiScale } from '../uiScale';
 
 /** Where a card sits: docked to an edge of the map, or above a tile. */
 export type MapCardPlace =
@@ -103,18 +104,22 @@ export class MapCardLayer {
     this.el.remove();
   }
 
-  /** Centered above the tile, in CSS pixels. */
+  /** Centered above the tile. A card is zoomed by the UI scale, which scales its own left and
+   *  top too, so they are written in the card's units: CSS pixels over the scale. */
   private tileStyle(t: { x: number; y: number; size: number }): string {
-    return `${Math.round((t.x + t.size / 2) * this.scale)}px,${Math.round(t.y * this.scale)}px`;
+    const z = currentUiScale();
+    return `${Math.round(((t.x + t.size / 2) * this.scale) / z)}px,${Math.round((t.y * this.scale) / z)}px`;
   }
 
   /** Nudges a card centered over a tile back inside the map at its left and right edges. */
   private keepInside(el: HTMLElement): void {
-    const half = el.offsetWidth / 2;
+    // In the layer's CSS pixels, then back into the card's zoomed units.
+    const z = currentUiScale();
+    const half = (el.offsetWidth * z) / 2;
     const width = this.el.clientWidth;
-    const left = parseFloat(el.style.left);
+    const left = parseFloat(el.style.left) * z;
     if (!half || !width || Number.isNaN(left)) return;
     const clamped = Math.min(Math.max(left, half + 4), width - half - 4);
-    if (clamped !== left) el.style.left = `${clamped}px`;
+    if (clamped !== left) el.style.left = `${clamped / z}px`;
   }
 }

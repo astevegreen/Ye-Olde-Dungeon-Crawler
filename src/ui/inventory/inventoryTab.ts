@@ -3,6 +3,7 @@ import type { GameState } from '../characterMenu/gameState';
 import type { MenuFooter, MenuHost, MenuTab } from '../characterMenu/menuTab';
 import { escapeHtml, keyChip } from '../html';
 import { formatLoad, formatWeight } from '../units';
+import { layoutZoom } from '../uiScale';
 import { FRAME_LEGEND, itemFrameClass, itemToneClass } from './itemTone';
 import { itemDetailHtml } from './itemDetail';
 import {
@@ -455,11 +456,13 @@ export class InventoryTab implements MenuTab {
   private placeMenu(root: HTMLElement): void {
     const menu = root.querySelector<HTMLElement>('.inv-menu');
     if (!menu || typeof root.getBoundingClientRect !== 'function') return;
+    // The menu window is zoomed by the UI scale: pointer offsets go into its layout pixels.
     const box = root.getBoundingClientRect();
-    const x = Number(menu.dataset.x) - box.left;
-    const y = Number(menu.dataset.y) - box.top;
-    menu.style.left = `${Math.max(4, Math.min(x, box.width - menu.offsetWidth - 4))}px`;
-    menu.style.top = `${Math.max(4, Math.min(y, box.height - menu.offsetHeight - 4))}px`;
+    const z = layoutZoom(root);
+    const x = (Number(menu.dataset.x) - box.left) / z;
+    const y = (Number(menu.dataset.y) - box.top) / z;
+    menu.style.left = `${Math.max(4, Math.min(x, box.width / z - menu.offsetWidth - 4))}px`;
+    menu.style.top = `${Math.max(4, Math.min(y, box.height / z - menu.offsetHeight - 4))}px`;
   }
 
   private bind(root: HTMLElement, engine: GameEngine): void {
@@ -649,10 +652,13 @@ export class InventoryTab implements MenuTab {
     const card = root.querySelector<HTMLElement>('.inv-hover');
     if (!card || card.hidden || typeof root.getBoundingClientRect !== 'function') return;
     const box = root.getBoundingClientRect();
-    let x = e.clientX - box.left + 14;
-    let y = e.clientY - box.top + 14;
-    if (x + card.offsetWidth > box.width - 4) x = e.clientX - box.left - card.offsetWidth - 14;
-    if (y + card.offsetHeight > box.height - 4) y = e.clientY - box.top - card.offsetHeight - 14;
+    const z = layoutZoom(root);
+    const px = (e.clientX - box.left) / z;
+    const py = (e.clientY - box.top) / z;
+    let x = px + 14;
+    let y = py + 14;
+    if (x + card.offsetWidth > box.width / z - 4) x = px - card.offsetWidth - 14;
+    if (y + card.offsetHeight > box.height / z - 4) y = py - card.offsetHeight - 14;
     card.style.left = `${Math.max(4, x)}px`;
     card.style.top = `${Math.max(4, y)}px`;
   }

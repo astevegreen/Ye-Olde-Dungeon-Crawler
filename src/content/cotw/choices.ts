@@ -346,7 +346,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         id: 'heed_fallen',
         label: 'Kneel and Receive Urðr’s Holy Water',
         description:
-          'Urðr honors the four lives pulled from the dark altar. Bestows Urðr’s Cleansing Water and purges afflictions (+15 Exploration Renown).',
+          'Urðr honors the four lives pulled from the dark altar. Bestows a vial of Urðr’s Cleansing Water and ends poison, paralysis, slowness, blindness and stunning on you (+15 Exploration Renown).',
         predicate: { type: 'hasFlag', flag: 'savior_of_jarnvidr' },
         disabledReason: 'Urðr turns her face away: you did not save all four innocents from the blood siphon.',
         consequences: [
@@ -358,7 +358,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              'Urðr smiles gently as sacred holy water fills a crystal vial in your hand, washing away all lingering afflictions (+15 Exploration Renown, Urðr’s Cleansing Water)!',
+              'Urðr smiles gently as sacred holy water fills a crystal vial in your hand, and the afflictions you carried wash away (Urðr’s Cleansing Water).',
           },
         ],
       },
@@ -366,7 +366,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         id: 'gaze_blood',
         label: 'Gaze into the Boiling Blood',
         description:
-          'Channel the memory of dark sacrifice. Permanently expands Volatile Energy capacity by +10.',
+          'Channel the memory of dark sacrifice: +1 Attack for good, and +10 to your Volatile Energy capacity if the blood grimoire has opened it.',
         predicate: { type: 'hasFlag', flag: 'blood_tainted_hero' },
         disabledReason: 'The water remains calm: you did not embrace the full sacrificial rite of the coven.',
         consequences: [
@@ -384,7 +384,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         id: 'drink_deep',
         label: 'Drink of the Bitter Deep',
         description:
-          'Drink from the icy mineral depths: clears mental fog and reveals the architecture of the deep.',
+          'Drink from the icy mineral depths: learn the Clairvoyance spell, and Haste for 30 turns.',
         consequences: [
           { type: 'setFlag', flag: 'urdr_pool_resolved', value: true },
           { type: 'setFlag', flag: 'urdr_pool_drank', value: true },
@@ -393,7 +393,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              'You cup your hands and drink of the bitter deep. A flash of silver clarity ignites your mind—the layout of the stone and all living beings reveal themselves to your senses (Clairvoyance, Haste)!',
+              'You cup your hands and drink of the bitter deep. A flash of silver clarity ignites your mind: you know now how to see the stone and all that moves in it (you learn Clairvoyance; Haste).',
           },
         ],
       },
@@ -429,16 +429,16 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
       {
         id: 'reinforce_bark',
         label: 'Reinforce the Bark — Weave Living Sap into Plate',
-        description: 'Layer golden heartwood fibers into your armor. Permanently +2 Defense, -1 Speed.',
+        description: 'Layer golden heartwood fibers into your armor. Permanently +2 Defense, -5 Speed.',
         consequences: [
           { type: 'setFlag', flag: 'verdandi_loom_resolved', value: true },
           { type: 'setFlag', flag: 'verdandi_bark_woven', value: true },
           { type: 'modifyPermanentStat', stat: 'defense', delta: 2 },
-          { type: 'modifyPermanentStat', stat: 'speed', delta: -1 },
+          { type: 'modifyPermanentStat', stat: 'speed', delta: -5 },
           {
             type: 'logMessage',
             message:
-              'You weave tough, amber-hardened heartwood into your armor. The golden sap sets as rigid as dragon scale (+2 Defense, -1 Speed).',
+              'You weave tough, amber-hardened heartwood into your armor. The golden sap sets as rigid as dragon scale (+2 Defense, -5 Speed).',
           },
         ],
       },
@@ -451,7 +451,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           { type: 'setFlag', flag: 'verdandi_loom_resolved', value: true },
           { type: 'setFlag', flag: 'verdandi_rot_severed', value: true },
           { type: 'modifyPermanentStat', stat: 'attack', delta: 2 },
-          { type: 'alertMonsters', radius: 16 },
+          // The two parasites are spawned by COTW_NORN_CHOICES_HOOK (narrative.ts).
           {
             type: 'logMessage',
             message:
@@ -508,16 +508,16 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         id: 'offer_tribute',
         label: 'Offer Shiny Tribute — Receive the Slander-Mark',
         description:
-          'Humor the cosmic messenger with an offering: grants the Slander-Mark of the Squirrel (+1 Speed, +10 Exploration Renown).',
+          'Humor the cosmic messenger with an offering: grants the Slander-Mark of the Squirrel (+5 Speed, +10 Exploration Renown).',
         consequences: [
           { type: 'setFlag', flag: 'ratatoskr_roost_resolved', value: true },
           { type: 'setFlag', flag: 'ratatoskr_slander_mark', value: true },
           { type: 'recordMilestone', milestoneId: 'ratatoskr_favor' },
-          { type: 'modifyPermanentStat', stat: 'speed', delta: 1 },
+          { type: 'modifyPermanentStat', stat: 'speed', delta: 5 },
           {
             type: 'logMessage',
             message:
-              'Ratatoskr snatches your offering with a manic chuckle! He claws a lightning-quick glyph into your boot leather (+1 Speed, +10 Exploration Renown) and scuttles up the trunk screeching: “Níðhögg’s belly is full of pond-scum! Tell the slug the Eagle spat upon his tail!”',
+              'Ratatoskr snatches your offering with a manic chuckle! He claws a lightning-quick glyph into your boot leather (+5 Speed) and scuttles up the trunk screeching: “Níðhögg’s belly is full of pond-scum! Tell the slug the Eagle spat upon his tail!”',
           },
         ],
       },
@@ -643,86 +643,32 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
     ],
   },
 
-  choice_sigrun_town: {
-    id: 'choice_sigrun_town',
-    title: 'Sigrun, the Chandler’s Daughter',
+  /**
+   * The captives freed from the Siphon Altar, home in Bjarnarhaven (`populateReturnedCaptives`,
+   * hostageRitual.ts): the first of them keeps a kettle on for the hero, a flask a delve.
+   */
+  choice_returned_broth: {
+    id: 'choice_returned_broth',
+    title: 'A Kettle by the Hearth',
     description:
-      'Sigrun stirs a steaming iron kettle of rich hearth broth over a brazier near her father’s counter. Her face lights up with warmth as you approach.\n\n“You pulled me back from the dark pyres of Járnviðr. Father cried when I walked through the door. Whenever you return from the depths, come by—I keep a flask of fresh hearth broth ready for you.”',
+      'The villager you cut loose from the Siphon Altar has a kettle of hearth broth simmering over the coals.\n\n“You brought us home from the pyres of Járnviðr. Whenever you go back down, take a flask with you.”',
     options: [
       {
         id: 'hot_broth',
-        label: 'Accept a Flask of Fresh Hearth Broth',
-        description: 'Receive a freshly brewed Hearth-Broth Flask for your next delve.',
-        predicate: { type: 'not', predicate: { type: 'hasFlag', flag: 'sigrun_broth_claimed' } },
-        disabledReason: 'She has already given you her fresh brew for this delve.',
+        label: 'Accept a flask of hearth broth',
+        description: 'A Hearth-Broth Flask for this delve; another the next time you come home from the dungeon.',
+        predicate: { type: 'not', predicate: { type: 'hasFlag', flag: 'returned_broth_claimed' } },
+        disabledReason: 'You already have this delve’s flask.',
         keepsOpen: true,
         consequences: [
-          { type: 'setFlag', flag: 'sigrun_broth_claimed', value: true },
+          { type: 'setFlag', flag: 'returned_broth_claimed', value: true },
           { type: 'grantItem', itemId: 'hearth_broth_flask', toInventory: true },
-          {
-            type: 'logMessage',
-            message:
-              'Sigrun ladles a steaming flask of savory hearth broth and hands it to you with a warm smile (+1 Hearth-Broth Flask).',
-          },
+          { type: 'logMessage', message: 'A steaming flask of hearth broth is pressed into your hands.' },
         ],
       },
     ],
     cancelable: true,
-    cancelLabel: 'Step Away from the Kettle',
-  },
-
-  choice_brandr_town: {
-    id: 'choice_brandr_town',
-    title: 'Brandr, the Apprentice Smith',
-    description:
-      'Brandr works vigorously alongside Gunther, pumping the great leather bellows and grinding salvage with a coarse whetstone. He wipes soot from his forehead and grins broadly.\n\n“If it wasn’t for you, I’d be ash on a troll altar! Gunther’s had me working the whetstones night and day. Let me hone your blade before you head down—I’ll put an edge on it that could shave a phantom!”',
-    options: [
-      {
-        id: 'hone_blade',
-        label: 'Let Brandr Hone Your Weapon',
-        description: 'Applies a razor hone: grants Haste for 30 turns.',
-        predicate: { type: 'not', predicate: { type: 'hasFlag', flag: 'brandr_hone_claimed' } },
-        disabledReason: 'Your blade is already honed for this delve.',
-        keepsOpen: true,
-        consequences: [
-          { type: 'setFlag', flag: 'brandr_hone_claimed', value: true },
-          { type: 'applyBuff', statusType: 'haste', duration: 30 },
-          {
-            type: 'logMessage',
-            message:
-              'Brandr strikes spark after spark off your blade, leaving the steel singing with keen precision (Haste for 30 turns)!',
-          },
-        ],
-      },
-    ],
-    cancelable: true,
-    cancelLabel: 'Step Away from the Anvil',
-  },
-
-  choice_eir_town: {
-    id: 'choice_eir_town',
-    title: 'Eir, the Temple Acolyte',
-    description:
-      'Eir kneels in prayer before the consecrated hammer altar of Thor. Holy candlelight reflects softly in her silver pendant. She looks up with calm, grateful eyes.\n\n“The thunder kept us alive until you severed our ropes. Now I tend Thor’s sacred fire. Whenever the miasma or venoms of the abyss taint your spirit, come to me. I will bathe you in holy water without cost.”',
-    options: [
-      {
-        id: 'temple_cleansing',
-        label: 'Receive Eir’s Sacred Cleansing',
-        description: 'Purges all afflictions and venoms without a donation.',
-        keepsOpen: true,
-        consequences: [
-          { type: 'cureStatus', statusTypes: ['poison', 'paralysis', 'slow', 'blindness', 'stunned'] },
-          { type: 'setFlag', flag: 'eir_blessing_received', value: true },
-          {
-            type: 'logMessage',
-            message:
-              'Eir sprinkles holy spring water over your brow and whispers a prayer to Thor. A cooling warmth washes through your limbs, purging all afflictions!',
-          },
-        ],
-      },
-    ],
-    cancelable: true,
-    cancelLabel: 'Leave Eir in Prayer',
+    cancelLabel: 'Not now',
   },
 };
 

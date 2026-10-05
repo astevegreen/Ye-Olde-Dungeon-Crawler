@@ -278,13 +278,6 @@ export const cotwManifest: GameContentManifest = {
     { floor: 39, tileId: 'galdr_altar_tyr', placement: 'middle_room_center' },
     { floor: 43, tileId: 'galdr_altar_hel', placement: 'middle_room_center' },
     { floor: 47, tileId: 'galdr_altar_odin', placement: 'middle_room_center' },
-    // Act 2 Nornic Reliquary of the Past: Urðr's Pool (Floor 30)
-    {
-      floor: URDR_POOL_FLOOR,
-      tileId: 'urdr_pool',
-      placement: 'middle_room_center',
-      requiresChoiceId: 'urdr_pool_choice',
-    },
   ],
   runeOfReturn: {
     attunementNpcId: 'npc-rune-smith',

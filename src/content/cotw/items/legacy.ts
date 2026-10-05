@@ -686,15 +686,21 @@ export const COTW_LEGACY_ITEMS: ItemDefinition[] = [
     bulk: 100,
     identified: true,
     description:
-      "Sacred holy water scooped from the Well of Urðr at the roots of Yggdrasil. Instantly cleanses every venom, status affliction, and spiritual debt, restoring 100 Hit Points.",
+      "Holy water from the Well of Urðr at the roots of Yggdrasil. Restores 100 Hit Points and ends poison, paralysis, slowness, blindness and stunning.",
     value: 250,
+    // Urðr's gift (urdr_pool_choice); as floor loot, rare.
+    lootWeight: 0.25,
     itemType: 'potion',
     potionConfig: {
       potionType: 'health',
       potency: 100,
       effects: [
         { type: 'restore_hp', amount: 100 },
-        { type: 'cure_status', status: 'all' },
+        { type: 'cure_status', status: 'poison' },
+        { type: 'cure_status', status: 'paralysis' },
+        { type: 'cure_status', status: 'slow' },
+        { type: 'cure_status', status: 'blindness' },
+        { type: 'cure_status', status: 'stunned' },
       ],
     },
   },

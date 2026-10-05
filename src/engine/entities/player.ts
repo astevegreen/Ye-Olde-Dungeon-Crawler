@@ -580,11 +580,10 @@ export class Player extends Actor {
     return this.energyModel !== undefined;
   }
 
+  /** Raises the Volatile Energy capacity, when the hero has the dual-energy model (it doesn't open it). */
   public expandVolatileEnergy(delta: number): void {
-    if (!this.energyModel) {
-      this.initEnergyModel();
-    }
-    this.energyModel!.maxVolatileEnergy = Math.max(0, this.energyModel!.maxVolatileEnergy + delta);
+    if (!this.energyModel) return;
+    this.energyModel.maxVolatileEnergy = Math.max(0, this.energyModel.maxVolatileEnergy + delta);
   }
 
   public override get maxHp(): number {

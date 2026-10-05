@@ -15,8 +15,10 @@ export const CHARIOT_FORGE_FLOOR = 25;
 export const BILE_SUMP_VAULT_ID = 'floor30_bile_sump';
 export const MARROW_OSSUARY_VAULT_ID = 'floor47_marrow_ossuary';
 
-export const URDR_POOL_VAULT_ID = 'floor30_urdr_pool';
-export const URDR_POOL_FLOOR = 30;
+// Floor 32, not 30: floor 30 is Gloom-Tarr's dark Bile-Sump (tracker 5.5), and a floor has one
+// scripted vault.
+export const URDR_POOL_VAULT_ID = 'floor32_urdr_pool';
+export const URDR_POOL_FLOOR = 32;
 
 export const VERDANDI_LOOM_VAULT_ID = 'floor39_verdandi_loom';
 export const VERDANDI_LOOM_FLOOR = 39;

@@ -1,5 +1,8 @@
 import type { ActionHook, ChoiceDefinition, NPC, StoryChoiceTrigger } from '../../engine';
-import { Companion, ExecuteChoiceAction, Monster, getCounter, getFlag, setFlag } from '../../engine';
+import { Companion, ExecuteChoiceAction, Monster, createScaledMonster, getCounter, getFlag, setFlag } from '../../engine';
+import { COTW_MONSTERS } from './monsters';
+import { COTW_MONSTER_SCALING } from './monsterScaling';
+import { URDR_POOL_FLOOR } from './vaults';
 import { COTW_DEEPEST_FLOOR_COUNTER } from './spellTablets';
 import { HEARTH_TEAR_RETURNED_FLAG, RELIC_RECOVERED_FLAG } from './relic';
 import { prologueVillagerSaved } from './prologue';
@@ -315,51 +318,6 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
       }
     }
 
-    const sigrun = engine.map.getEntityById('npc-sigrun') as NPC | null;
-    const brandr = engine.map.getEntityById('npc-brandr') as NPC | null;
-    const eir = engine.map.getEntityById('npc-eir') as NPC | null;
-
-    if (sigrun) {
-      const s = sigrun as unknown as { greeting: string; dialogText: string };
-      if (vidnirSlain) {
-        s.greeting = 'You carry the fate of Midgard on your shoulders, hero!';
-        s.dialogText = 'Father says the World Tree itself is shaking. Take my warm broth and come home to us safely!';
-      } else if (deepest >= 34) {
-        s.greeting = 'The cellar air smells of weeping wood and dark sap...';
-        s.dialogText = 'We light candles by the hearth each night for your descent into the World-Bark. Stay strong!';
-      } else if (hasRelic) {
-        s.greeting = 'The plaza fountain is running again! But the longhouses shudder so fiercely...';
-        s.dialogText = 'Even with the sun restored, dark things stir in the roots. Never venture down without a warm meal in you.';
-      }
-    }
-
-    if (brandr) {
-      const b = brandr as unknown as { greeting: string; dialogText: string };
-      if (vidnirSlain) {
-        b.greeting = 'You carry Níðhögg’s shed fang?! By the gods, you are truly a legend!';
-        b.dialogText = 'Whether you slay the beast or drive it off, strike true! Gunther and I have your back!';
-      } else if (deepest >= 34) {
-        b.greeting = 'Black rot is gumming up the ore-carts! What kind of monsters are down there?';
-        b.dialogText = 'Keep that weapon edge keen. Anything chewing on the World Tree will take some cutting!';
-      } else if (hasRelic) {
-        b.greeting = 'The forge fire burns with golden light! Gunther let me work the bellows all morning.';
-        b.dialogText = 'The ground quakes don’t shake my hammer hand. Midgard will stand strong!';
-      }
-    }
-
-    if (eir) {
-      const e = eir as unknown as { greeting: string; dialogText: string };
-      if (vidnirSlain) {
-        e.greeting = 'Thor’s holy thunder attend your final hour at the Heartwood!';
-        e.dialogText = 'Remember what the herald revealed: the life of the World Tree hangs in the balance. Choose wisely, champion!';
-      } else if (deepest >= 34) {
-        e.greeting = 'The miasma rising from the cellar carries the stench of ancient rot...';
-        e.dialogText = 'Thor’s temple stands as your sanctuary. Whenever the blight taints your blood, let holy water wash it clean.';
-      } else if (hasRelic) {
-        e.greeting = 'Thor’s lightning shatters the winter darkness, yet the chapel bells toll of their own accord.';
-        e.dialogText = 'The Great Thaw has awakened the root-gnawer. Pray to the Allfather and keep your heart pure.';
-      }
-    }
   },
 };
 
@@ -374,7 +332,7 @@ export const COTW_COMPANION_BARKS_HOOK: ActionHook = {
   execute: ({ actor, engine }) => {
     if (actor !== engine.player) return;
     const floor = engine.currentFloor;
-    if (floor !== 18 && floor !== 30 && floor !== 43 && floor !== 47 && floor !== 50) return;
+    if (floor !== 18 && floor !== URDR_POOL_FLOOR && floor !== 43 && floor !== 47 && floor !== 50) return;
 
     const companion = engine.map.getAllEntities().find((e): e is Companion => e instanceof Companion);
     if (!companion || !companion.isAlive()) return;
@@ -397,19 +355,19 @@ export const COTW_COMPANION_BARKS_HOOK: ActionHook = {
         setFlag(ws, 'bark_battle_hound_f18', true);
         engine.log('Your Battle-Hound whimpers at the searing heat of the magma rift, but stays faithfully close to your heel.');
       }
-    } else if (floor === 30) {
-      if (compId === 'hearth_frost_hound' && !getFlag(ws, 'bark_frost_hound_f30')) {
-        setFlag(ws, 'bark_frost_hound_f30', true);
+    } else if (floor === URDR_POOL_FLOOR) {
+      if (compId === 'hearth_frost_hound' && !getFlag(ws, 'bark_frost_hound_urdr')) {
+        setFlag(ws, 'bark_frost_hound_urdr', true);
         engine.log(
           'Your Frost-Ward Hound paces vigilantly at the edge of the silver waters, standing guard before Urðr’s Pool.'
         );
-      } else if (compId === 'ember_fang_wolf' && !getFlag(ws, 'bark_ember_wolf_f30')) {
-        setFlag(ws, 'bark_ember_wolf_f30', true);
+      } else if (compId === 'ember_fang_wolf' && !getFlag(ws, 'bark_ember_wolf_urdr')) {
+        setFlag(ws, 'bark_ember_wolf_urdr', true);
         engine.log(
           'Your Ember-Fang Wolf snorts at the mercury shallows, its burning paws hissing softly against the damp cavern stone.'
         );
-      } else if (compId === 'battle_hound' && !getFlag(ws, 'bark_battle_hound_f30')) {
-        setFlag(ws, 'bark_battle_hound_f30', true);
+      } else if (compId === 'battle_hound' && !getFlag(ws, 'bark_battle_hound_urdr')) {
+        setFlag(ws, 'bark_battle_hound_urdr', true);
         engine.log('Your Battle-Hound gazes into the silver pool, ears perked as if listening to ancient voices.');
       }
     } else if (floor === 43) {
@@ -453,63 +411,37 @@ export const COTW_COMPANION_BARKS_HOOK: ActionHook = {
   },
 };
 
+/** Two Yggdrasil Parasites, at the floor's scaling, drop beside the hero (Verðandi's "sever"). */
 function spawnParasitesNearPlayer(engine: Parameters<ActionHook['execute']>[0]['engine']): void {
+  const def = COTW_MONSTERS.find((m) => m.id === 'yggdrasil_parasite');
+  if (!def) return;
   const p = engine.player;
-  const offsets = [
-    { dx: 1, dy: 0 },
-    { dx: -1, dy: 0 },
-    { dx: 0, dy: 1 },
-    { dx: 0, dy: -1 },
-    { dx: 1, dy: 1 },
-    { dx: -1, dy: -1 },
-    { dx: 1, dy: -1 },
-    { dx: -1, dy: 1 },
-  ];
   let spawned = 0;
-  for (const { dx, dy } of offsets) {
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) {
     if (spawned >= 2) break;
     const x = p.x + dx;
     const y = p.y + dy;
-    const tile = engine.map.getTile(x, y);
-    if (!tile || !tile.walkable || !tile.passable) continue;
-    if (engine.map.getEntityAt(x, y, p.planeId)) continue;
-    const idSeed = Math.floor(engine.rng() * 1000000);
-    const parasite = new Monster({
-      id: `yggdrasil_parasite_spawn_${x}_${y}_${idSeed}`,
-      name: 'Yggdrasil Parasite',
-      definitionId: 'yggdrasil_parasite',
-      position: { x, y },
-      stats: { hp: 35, maxHp: 35, attack: 12, defense: 4 },
-      speed: 110,
-      aiType: 'melee',
-      aiState: 'combat',
-      xpValue: 70,
-    });
+    if (!engine.map.isPassable(x, y) || engine.map.getEntityAt(x, y)) continue;
+    const parasite = createScaledMonster(def, `loom-parasite-${engine.currentFloor}-${spawned}`, { x, y }, engine.currentFloor, undefined, p.level, COTW_MONSTER_SCALING, p.difficulty);
     parasite.alert();
-    engine.addEntity(parasite);
-    spawned++;
+    if (engine.addEntity(parasite)) spawned++;
   }
 }
 
 /**
- * Nornic Reliquary Choices special handling (Volatile Energy expansion, parasite spawns).
+ * The Norn choices' effects no consequence type covers: the blood gaze's Volatile Energy, and the
+ * loom's parasites. Only when the choice went through (a refused option does nothing).
  */
 export const COTW_NORN_CHOICES_HOOK: ActionHook = {
   id: 'cotw-norn-choices-effects',
   phase: 'post',
   actionType: '*',
-  execute: ({ action, engine }) => {
-    if (!(action instanceof ExecuteChoiceAction)) return;
-
-    if (action.choice.id === 'urdr_pool_choice') {
-      if (action.optionId === 'gaze_blood') {
-        engine.player.expandVolatileEnergy(10);
-      }
-    } else if (action.choice.id === 'verdandi_loom_choice') {
-      if (action.optionId === 'sever_rot') {
-        spawnParasitesNearPlayer(engine);
-      }
+  execute: ({ action, engine, result }) => {
+    if (!(action instanceof ExecuteChoiceAction) || !result?.success) return;
+    if (action.choice.id === 'urdr_pool_choice' && action.optionId === 'gaze_blood') {
+      engine.player.expandVolatileEnergy(10);
+    } else if (action.choice.id === 'verdandi_loom_choice' && action.optionId === 'sever_rot') {
+      spawnParasitesNearPlayer(engine);
     }
   },
 };
-

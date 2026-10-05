@@ -24,7 +24,9 @@ import {
   ExecuteChoiceAction,
   type EngineContext,
 } from '../../../engine';
-import { populateSaviorVillagers } from '../hostageRitual';
+import { populateReturnedCaptives, RETURNED_CAPTIVE_POSITIONS } from '../hostageRitual';
+import { ProfileManager, MemoryStorage } from '../../../engine/storage/profile-manager';
+import { Monster } from '../../../engine/entities/monster';
 import { createScaledItem } from '../../../engine/dungeon/lootSpawner';
 import { PotionItem } from '../../../engine/items/consumables';
 import { DrinkPotionAction } from '../../../engine/actions/spell-actions';
@@ -62,13 +64,18 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
     }
 
     const placements = cotwManifest.scriptedVaultPlacements ?? [];
-    expect(placements.some((p) => p.vaultId === URDR_POOL_VAULT_ID && p.floor === 30)).toBe(true);
+    expect(placements.some((p) => p.vaultId === URDR_POOL_VAULT_ID && p.floor === 32)).toBe(true);
     expect(placements.some((p) => p.vaultId === VERDANDI_LOOM_VAULT_ID && p.floor === 39)).toBe(true);
     expect(placements.some((p) => p.vaultId === RATATOSKR_ROOST_VAULT_ID && p.floor === 42)).toBe(true);
     expect(placements.some((p) => p.vaultId === SKULD_MIRROR_VAULT_ID && p.floor === 49)).toBe(true);
 
     const fixedTiles = cotwManifest.fixedTilePlacements ?? [];
-    expect(fixedTiles.some((p) => p.tileId === 'urdr_pool' && p.floor === 30)).toBe(true);
+    expect(fixedTiles.some((p) => p.tileId === 'urdr_pool')).toBe(false);
+
+    // A floor takes one scripted vault (dungeonArc's first match): a second on the same floor
+    // never stamps. Urðr's Pool on floor 30 lost to the Bile-Sump that way.
+    const floors = placements.map((p) => p.floor);
+    expect(new Set(floors).size, `floors: ${floors.join(', ')}`).toBe(floors.length);
   });
 
   it('registers all reliquary renown milestones and provides tracked riddles', () => {
@@ -115,8 +122,16 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
       log: () => {},
     };
     const gazeAction = new ExecuteChoiceAction(player, choice, 'gaze_blood');
-    COTW_NORN_CHOICES_HOOK.execute({ action: gazeAction, actionType: 'executeChoice', actor: player, engine: ctx });
+    // A refused option (its predicate unmet) does nothing; one that went through adds 10.
+    COTW_NORN_CHOICES_HOOK.execute({ action: gazeAction, actionType: 'executeChoice', actor: player, engine: ctx, result: { success: false, cost: 0 } });
+    expect(player.energyModel?.maxVolatileEnergy).toBe(100);
+    COTW_NORN_CHOICES_HOOK.execute({ action: gazeAction, actionType: 'executeChoice', actor: player, engine: ctx, result: { success: true, cost: 0 } });
     expect(player.energyModel?.maxVolatileEnergy).toBe(110);
+
+    // A hero without the blood grimoire's energy model doesn't get one from the pool.
+    const plain = new Player({ name: 'Plain', position: { x: 5, y: 5 } });
+    COTW_NORN_CHOICES_HOOK.execute({ action: new ExecuteChoiceAction(plain, choice, 'gaze_blood'), actionType: 'executeChoice', actor: plain, engine: { ...ctx, player: plain }, result: { success: true, cost: 0 } });
+    expect(plain.energyModel).toBeUndefined();
 
     const drink = choice.options.find((o) => o.id === 'drink_deep')!;
     expect(drink.consequences.some((c) => c.type === 'learnSpell' && (c as any).spellId === 'clairvoyance')).toBe(true);
@@ -130,11 +145,12 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
 
     const bark = choice.options.find((o) => o.id === 'reinforce_bark')!;
     expect(bark.consequences.some((c) => c.type === 'modifyPermanentStat' && (c as any).stat === 'defense' && (c as any).delta === 2)).toBe(true);
-    expect(bark.consequences.some((c) => c.type === 'modifyPermanentStat' && (c as any).stat === 'speed' && (c as any).delta === -1)).toBe(true);
+    expect(bark.consequences.some((c) => c.type === 'modifyPermanentStat' && (c as any).stat === 'speed' && (c as any).delta === -5)).toBe(true);
 
     const sever = choice.options.find((o) => o.id === 'sever_rot')!;
     expect(sever.consequences.some((c) => c.type === 'modifyPermanentStat' && (c as any).stat === 'attack' && (c as any).delta === 2)).toBe(true);
-    expect(sever.consequences.some((c) => c.type === 'alertMonsters')).toBe(true);
+    // The parasites are real monsters from the hook, not a wake-up of the floor.
+    expect(sever.consequences.some((c) => c.type === 'alertMonsters')).toBe(false);
 
     // Test parasite spawn hook execution
     const logs: string[] = [];
@@ -167,11 +183,13 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
     };
 
     const action = new ExecuteChoiceAction(player, choice, 'sever_rot');
-    COTW_NORN_CHOICES_HOOK.execute({ action, actionType: 'executeChoice', actor: player, engine: ctx });
+    COTW_NORN_CHOICES_HOOK.execute({ action, actionType: 'executeChoice', actor: player, engine: ctx, result: { success: true, cost: 0 } });
 
     expect(addedEntities.length).toBe(2);
     expect(addedEntities.every((e) => e.definitionId === 'yggdrasil_parasite')).toBe(true);
-    expect(addedEntities.every((e) => e.aiState === 'combat')).toBe(true);
+    expect(addedEntities.every((e) => e.aiState === 'hunting')).toBe(true);
+    // Scaled to floor 39, not a floor-1 35 HP.
+    expect(addedEntities.every((e) => e.maxHp > 35)).toBe(true);
   });
 
   it('defines valid choices and consequences for Roost of Ratatoskr', () => {
@@ -179,7 +197,7 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
     expect(choice).toBeDefined();
 
     const tribute = choice.options.find((o) => o.id === 'offer_tribute')!;
-    expect(tribute.consequences.some((c) => c.type === 'modifyPermanentStat' && (c as any).stat === 'speed' && (c as any).delta === 1)).toBe(true);
+    expect(tribute.consequences.some((c) => c.type === 'modifyPermanentStat' && (c as any).stat === 'speed' && (c as any).delta === 5)).toBe(true);
     expect(tribute.consequences.some((c) => c.type === 'recordMilestone' && (c as any).milestoneId === 'ratatoskr_favor')).toBe(true);
     expect(tribute.consequences.some((c) => c.type === 'setFlag' && (c as any).flag === 'ratatoskr_slander_mark')).toBe(true);
 
@@ -204,68 +222,71 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
     expect(unbound.consequences.some((c) => c.type === 'modifyPermanentStat' && (c as any).stat === 'defense' && (c as any).delta === 1)).toBe(true);
   });
 
-  it('populates rescued villagers in Bjarnarhaven when savior_of_jarnvidr is active', () => {
+  it('a savior finds the four captives freed on floor 22 home in Bjarnarhaven, as who they were', () => {
     const worldState = createWorldState();
     const player = new Player({ name: 'Sven', position: { x: 0, y: 0 } });
     const map = new GameMap(50, 50);
-
+    const logs: string[] = [];
     const ctx: EngineContext = {
       player,
       map,
       surfaces: null as any,
       worldState,
       rng: () => 0.5,
-      log: () => {},
+      log: (m) => logs.push(m),
       getWorldFlag: (f) => Boolean(worldState.flags[f]),
       setWorldFlag: (f, v) => setFlag(worldState, f, v),
       currentFloor: 0,
-      removeEntity: () => true,
+      removeEntity: (e) => map.removeEntity(e),
       addEntity: (e) => map.addEntity(e),
       compendium: null as never,
     };
 
-    // When savior_of_jarnvidr is false, no villagers populated
-    populateSaviorVillagers(ctx);
-    expect(map.getEntityById('npc-sigrun')).toBeNull();
+    populateReturnedCaptives(ctx);
+    expect(map.getEntityById('npc-returned-1')).toBeNull();
 
-    // When savior_of_jarnvidr is true, Sigrun, Brandr, and Eir are populated
     setFlag(worldState, 'savior_of_jarnvidr', true);
-    populateSaviorVillagers(ctx);
+    populateReturnedCaptives(ctx);
+    populateReturnedCaptives(ctx);
 
-    const sigrun = map.getEntityById('npc-sigrun');
-    const brandr = map.getEntityById('npc-brandr');
-    const eir = map.getEntityById('npc-eir');
+    // With no one taken in the raid, the captives were Ingrid, Torstein, Sigrid and Leif.
+    const names = [1, 2, 3, 4].map((i) => map.getEntityById(`npc-returned-${i}`)?.name);
+    expect(names).toEqual(['Ingrid of the Mill', 'Torstein the Cooper', 'Sigrid the Weaver', 'Young Leif']);
+    RETURNED_CAPTIVE_POSITIONS.forEach((pos, i) => expect(map.getEntityById(`npc-returned-${i + 1}`)).toMatchObject(pos));
+    expect(logs.filter((l) => l.includes('home from the Siphon Altar'))).toHaveLength(1);
 
-    expect(sigrun).toBeDefined();
-    expect(brandr).toBeDefined();
-    expect(eir).toBeDefined();
+    // Their talk follows the descent: seated again with the new line, never twice.
+    setFlag(worldState, 'vidnir_slain', true);
+    populateReturnedCaptives(ctx);
+    expect((map.getEntityById('npc-returned-2') as any).dialogText).toContain('herald');
+    expect(map.getAllEntities().filter((e) => e.id.startsWith('npc-returned-'))).toHaveLength(4);
 
-    expect(sigrun?.x).toBe(13);
-    expect(sigrun?.y).toBe(8);
-    expect(brandr?.x).toBe(39);
-    expect(brandr?.y).toBe(7);
-    expect(eir?.x).toBe(26);
-    expect(eir?.y).toBe(30);
-
-    // Re-running does not duplicate them
-    populateSaviorVillagers(ctx);
-    expect(map.getAllEntities().filter((e) => e.id.includes('sigrun')).length).toBe(1);
-
-    // Verify choice definitions exist and provide their promised benefits
-    const sigrunChoice = COTW_CHOICES['choice_sigrun_town'];
-    expect(sigrunChoice).toBeDefined();
-    expect(sigrunChoice.options[0].consequences.some((c) => c.type === 'grantItem' && (c as any).itemId === 'hearth_broth_flask')).toBe(true);
-
-    const brandrChoice = COTW_CHOICES['choice_brandr_town'];
-    expect(brandrChoice).toBeDefined();
-    expect(brandrChoice.options[0].consequences.some((c) => c.type === 'applyBuff' && (c as any).statusType === 'haste')).toBe(true);
-
-    const eirChoice = COTW_CHOICES['choice_eir_town'];
-    expect(eirChoice).toBeDefined();
-    expect(eirChoice.options[0].consequences.some((c) => c.type === 'cureStatus')).toBe(true);
+    const broth = COTW_CHOICES['choice_returned_broth'];
+    expect(broth.options[0].consequences.some((c) => c.type === 'grantItem' && (c as any).itemId === 'hearth_broth_flask')).toBe(true);
   });
 
-  it('triggers contextual companion barks on floors 18, 30, 43, 47, and 50', () => {
+  it('the returned captives stand on open town floor', () => {
+    const { engine } = new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Home', { seed: 2 });
+    engine.diagnostics.endPrologue?.();
+    for (const pos of RETURNED_CAPTIVE_POSITIONS) expect(engine.map.isPassable(pos.x, pos.y), JSON.stringify(pos)).toBe(true);
+  });
+
+  it('each reliquary stands once on its floor, and floor 30 keeps Gloom-Tarr', () => {
+    for (const [floor, tile] of [[32, 'urdr_pool'], [39, 'verdandi_loom'], [42, 'ratatoskr_perch'], [49, 'skuld_mirror']] as const) {
+      for (let seed = 1; seed <= 3; seed++) {
+        const { engine } = new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Norn', { seed });
+        engine.changeFloor(floor);
+        let n = 0;
+        for (let y = 0; y < engine.map.height; y++) for (let x = 0; x < engine.map.width; x++) if (engine.map.getTile(x, y)?.type === tile) n++;
+        expect(n, `floor ${floor} seed ${seed}`).toBe(1);
+      }
+    }
+    const { engine } = new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Norn', { seed: 1 });
+    engine.changeFloor(30);
+    expect(engine.map.getAllEntities().some((e) => e instanceof Monster && e.definitionId === 'miniboss_tar_abomination')).toBe(true);
+  }, 30_000);
+
+  it('triggers contextual companion barks on floors 18, 32, 43, 47, and 50', () => {
     const logs: string[] = [];
     const worldState = createWorldState();
     const player = new Player({ name: 'Sven', position: { x: 5, y: 5 } });
@@ -311,11 +332,11 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
     COTW_COMPANION_BARKS_HOOK.execute({ action: null as any, actionType: 'wait', actor: player, engine: ctx });
     expect(logs.length).toBe(countAfterF18);
 
-    // Floor 30 bark (Urðr's Pool)
-    currentFloor = 30;
+    // Urðr's Pool's floor (32)
+    currentFloor = 32;
     COTW_COMPANION_BARKS_HOOK.execute({ action: null as any, actionType: 'wait', actor: player, engine: ctx });
     expect(logs.some((l) => l.includes('Urðr’s Pool'))).toBe(true);
-    expect(worldState.flags['bark_frost_hound_f30']).toBe(true);
+    expect(worldState.flags['bark_frost_hound_urdr']).toBe(true);
 
     // Floor 50 bark (Níðhögg showdown)
     currentFloor = 50;

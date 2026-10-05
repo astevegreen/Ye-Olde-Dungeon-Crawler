@@ -45,7 +45,7 @@ export const COTW_WEAPONS: ItemDefinition[] = [
     twoHanded: true,
     rangedConfig: { range: 2 },
     identified: false,
-    description: 'Starved goblin hunting spear with a flint-knapped glacier-ice tip. Has reach to strike approaching enemies at 2 tiles.',
+    description: 'Starved goblin hunting spear with a flint-knapped glacier-ice tip.',
     value: 30,
   },
   {
@@ -76,7 +76,7 @@ export const COTW_WEAPONS: ItemDefinition[] = [
     stats: { attackBonus: 7 },
     rangedConfig: { range: 2 },
     identified: false,
-    description: 'Long soot-forged tongs with reach 2, made to grip incandescent metal. Heavy in the hand.',
+    description: 'Long soot-forged tongs made to grip incandescent metal. Heavy in the hand.',
     value: 70,
   },
   {

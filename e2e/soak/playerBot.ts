@@ -76,12 +76,18 @@ interface BotSnapshot {
   maxHp: number;
   adjacentHostiles: number;
   onTelegraph: boolean;
+  /** On fire, acid, a firestorm or a poison cloud (the engine's surface layer). */
+  onHazard: boolean;
   healingCarried: number;
   poisoned: boolean;
   unspent: number;
 }
 
+/** The surface layer's damage lines (src/engine/surfaces/surfaceGrid.ts). */
+const HAZARD_LINE = /searing fire|lingering fire|oil inferno|firestorm|caustic|acid burn|electrocution|poison fumes/;
+
 export type DeathCause =
+  | 'hazard'
   | 'telegraph'
   | 'surrounded'
   | 'out_of_potions'
@@ -93,13 +99,18 @@ export type DeathCause =
 
 /**
  * Why the hero died, from the death line and the bot's last look at the board. The first
- * match wins: a named self-inflicted cause, then poison, then where the hero stood.
+ * match wins: a named self-inflicted cause, then a hazard tile, then poison, then where the
+ * hero stood. Every overflow that hurts says "backlash" (the pack's tier table); "surge"
+ * would also match the Kobold Shaman's Hellfire Surge.
  */
 export function classifyDeath(causeOfDeath: string | null, last: BotSnapshot | null): DeathCause {
   const text = (causeOfDeath ?? '').toLowerCase();
-  if (/backlash|surge|overflow/.test(text)) return 'overflow_backlash';
+  if (text.includes('backlash')) return 'overflow_backlash';
   if (text.includes('twinstrike')) return 'twinstrike';
   if (/holy ground|sacred|hallowed/.test(text)) return 'holy_ground';
+  // Only when no monster is named: the last lines can also be a monster burning nearby.
+  const killer = /slain by (.+?) on floor/.exec(text)?.[1] ?? 'mortal wounds';
+  if ((killer === 'mortal wounds' || HAZARD_LINE.test(killer)) && (HAZARD_LINE.test(text) || last?.onHazard)) return 'hazard';
   if (last?.poisoned && text.includes('poison')) return 'poison';
   if (last?.onTelegraph) return 'telegraph';
   if ((last?.adjacentHostiles ?? 0) >= 3) return 'surrounded';
@@ -411,12 +422,19 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         for (const t of raw) if (t && typeof t.x === 'number' && typeof t.y === 'number') dangerTiles.push(t);
       }
       const inDanger = (x: number, y: number): boolean => dangerTiles.some((t) => t.x === x && t.y === y);
+      // Tiles that hurt to stand on: a wind-up leaves fire on every tile it targeted.
+      const onHazard = (x: number, y: number): boolean => {
+        const s = e.surfaces?.getSurface?.(x, y);
+        const g = e.surfaces?.getGas?.(x, y);
+        return s === 'fire' || s === 'acid_pool' || g === 'fire_storm' || g === 'poison_cloud';
+      };
       const snapshot = {
         floor: curFloor,
         hp: p.hp,
         maxHp: p.maxHp,
         adjacentHostiles: hostiles.filter((m: any) => cheb(m, p) === 1).length,
         onTelegraph: inDanger(p.x, p.y),
+        onHazard: onHazard(p.x, p.y),
         healingCarried: healingCarriedCount,
         poisoned: Boolean(p.statusManager?.has?.('poison')),
         unspent,

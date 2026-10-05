@@ -65,6 +65,10 @@ export interface BotTelemetry {
   services: Record<string, number>;
   /** Most loose coins seen in the pack at once (the purse overflowing). */
   maxLooseCoins: number;
+  /** Biggest worn purse over the run, in coins (300 is the starting pouch). */
+  maxPurseCap: number;
+  /** Mastery perks are `perksTaken`; these are the Saga and milestone perks held at the end. */
+  heldPerks: Record<string, number>;
   /** The hero's state at the last decision: what the death cause is read from. */
   last: BotSnapshot | null;
   deathCause?: DeathCause;
@@ -183,6 +187,8 @@ export function getBotState(page: Page, actionIndex: number): PlayerBotState {
         chestsLooted: 0,
         services: {},
         maxLooseCoins: 0,
+        maxPurseCap: 0,
+        heldPerks: {},
         last: null,
       },
     };
@@ -224,6 +230,10 @@ interface DecisionResult {
   telegraph?: 'dodge' | 'cornered' | 'stay';
   looseCoins?: number;
   snapshot?: BotSnapshot;
+  /** The worn purse's capacity in coins: rises when an Olaf purse is bought and worn. */
+  purseCap?: number;
+  /** Saga and milestone perks the hero holds, by source (family perks live in the compendium). */
+  heldPerks?: Record<string, number>;
 }
 
 export interface PlayerDecisionContext {
@@ -1296,7 +1306,10 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       return { action: { type: 'key' as const, key: 'Space' }, curPos, curTurn, curFloor };
       })();
       const inCharMenu = stack.includes('character-menu') || Boolean(h?.characterMenuModal?.isOpen);
-      return { ...decision, snapshot, looseCoins, inCharMenu };
+      const heldPerks: Record<string, number> = {};
+      for (const perk of p.heldPerks ?? []) heldPerks[perk.source] = (heldPerks[perk.source] ?? 0) + 1;
+      const purseCap = Math.round(wornPurseCap / 10); // COIN_BULK_CM3 (economy/types.ts): bulk per coin
+      return { ...decision, snapshot, looseCoins, inCharMenu, heldPerks, purseCap };
     },
     {
       inDialog,
@@ -1323,6 +1336,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
   const tel = state.telemetry;
   if (evalResult.snapshot) tel.last = evalResult.snapshot;
   tel.maxLooseCoins = Math.max(tel.maxLooseCoins, evalResult.looseCoins ?? 0);
+  tel.maxPurseCap = Math.max(tel.maxPurseCap, evalResult.purseCap ?? 0);
+  if (evalResult.heldPerks) tel.heldPerks = evalResult.heldPerks;
 
   // A service press counts when the panel changed after it; one that changed nothing is
   // not pressed again this stay.

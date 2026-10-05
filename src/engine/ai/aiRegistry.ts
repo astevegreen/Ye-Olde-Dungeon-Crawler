@@ -11,6 +11,7 @@ import { OpenDoorAction } from '../actions/door';
 import { CastSpellAction } from '../actions/spell-actions';
 import { findPath, findFleeStep } from './pathfinding';
 import { stepTowardAction } from './pursuit';
+import { fleeAction } from './flight';
 import { computeDangerTiles } from './intent';
 import { getBresenhamLine } from '../magic/targeting';
 import { selectAttackTarget } from './targetSelection';
@@ -308,10 +309,10 @@ export class FleeingCowardStrategy implements AIStrategy {
 
     if (isWounded) {
       if (dist <= 8) {
-        const fleeStep = findFleeStep(engine.map, actor.position, player.position);
-        if (fleeStep) {
+        const flight = fleeAction(engine, monster, player.position);
+        if (flight) {
           monster.intent = { type: 'fleeing', turnsRemaining: 0 };
-          return new MovementAction(actor, fleeStep.x - actor.x, fleeStep.y - actor.y);
+          return flight;
         }
         // Trapped / cornered: fight back if the hero is in reach, else stand at bay
         if (chebyshevDist <= 1) {

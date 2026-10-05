@@ -6,7 +6,7 @@ import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
 import type { Monster } from '../entities/monster';
 import type { Position } from '../types';
-import { findPath } from './pathfinding';
+import { findPath, isOpenableDoor } from './pathfinding';
 import { stepAlongDistanceField } from './distanceField';
 import { perceives } from './perception';
 
@@ -24,7 +24,7 @@ const PURSUIT_SEARCH_BUDGET = (2 * PURSUIT_RADIUS + 1) ** 2;
  * A monster's step toward a goal: a bounded path search of its own within PURSUIT_RADIUS (it
  * routes around other monsters), else the floor's shared distance field to that goal (one search
  * per goal per turn, shared by every monster headed there, §6). A closed door on the way is
- * opened. Null when there is no way.
+ * opened; a locked one is a wall. Null when there is no way.
  */
 export function stepTowardAction(engine: GameEngine, monster: Monster, goal: Position): Action | null {
   const dist = Math.hypot(monster.x - goal.x, monster.y - goal.y);
@@ -32,7 +32,7 @@ export function stepTowardAction(engine: GameEngine, monster: Monster, goal: Pos
   const next = ownPath ?? stepAlongDistanceField(engine.map, monster.position, goal, engine.turnCount);
   if (!next) return null;
   const tile = engine.map.getTile(next.x, next.y);
-  if (tile?.type === 'door_closed' || tile?.isClosedDoor) {
+  if (tile && isOpenableDoor(tile)) {
     return new OpenDoorAction(monster, next.x, next.y);
   }
   return new MovementAction(monster, next.x - monster.x, next.y - monster.y);

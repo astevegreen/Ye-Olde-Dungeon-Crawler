@@ -18,6 +18,7 @@ import { selectAttackTarget } from './targetSelection';
 import { bondCompanion } from '../combat/lastStand';
 import { flightRecorder } from '../debug/flightRecorder';
 import { huntUnseenAction, rememberTarget } from './pursuit';
+import { fleeAction } from './flight';
 
 class CasterBehavior implements AiBehaviorStrategy {
   public readonly id = BUILTIN_AI_TYPES.CASTER;
@@ -374,10 +375,8 @@ export class MonsterAI {
     // 3. Fleeing behavior
     if (monster.aiState === 'fleeing') {
       monster.intent = { type: 'fleeing', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
-      const fleeStep = findFleeStep(engine.map, monster.position, player.position);
-      if (fleeStep) {
-        return new MovementAction(monster, fleeStep.x - monster.x, fleeStep.y - monster.y);
-      }
+      const flight = fleeAction(engine, monster, player.position);
+      if (flight) return flight;
       // If cornered with nowhere to run, turn and fight
       if (chebyshevDist <= 1) {
         return new MeleeAttackAction(monster, player);

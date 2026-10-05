@@ -1,5 +1,6 @@
 import type { Position } from '../types';
 import type { GameMap } from '../grid/map';
+import type { TileDefinition } from '../types';
 
 interface PathNode {
   x: number;
@@ -17,6 +18,11 @@ const DIRECTIONS = [
   { dx: -1, dy: 1 },
   { dx: 1, dy: 1 },
 ];
+
+/** A closed door a monster can open: any but a locked one. */
+export function isOpenableDoor(tile: TileDefinition): boolean {
+  return Boolean((tile.isClosedDoor || tile.type === 'door_closed') && !tile.locked);
+}
 
 /** Breadth-first path; gives up (returns []) after `maxVisited` tiles, so a blocked search stays bounded. */
 export function findPath(
@@ -61,9 +67,7 @@ export function findPath(
       const tile = map.getTile(nx, ny);
       if (!tile) continue;
 
-      const isPassable =
-        (tile.walkable ?? tile.passable) ||
-        (canOpenDoors && (tile.isClosedDoor || tile.type === 'door_closed'));
+      const isPassable = (tile.walkable ?? tile.passable) || (canOpenDoors && isOpenableDoor(tile));
       if (!isPassable) continue;
 
       // Diagonal wall clipping prevention
@@ -91,10 +95,15 @@ export function findPath(
   return [];
 }
 
+/**
+ * The neighbouring tile that takes `monsterPos` farthest from `threatPos` (straight-line), if any
+ * is farther than where it stands. With `opensDoors`, a closed door it can open counts as a step.
+ */
 export function findFleeStep(
   map: GameMap,
   monsterPos: Position,
-  threatPos: Position
+  threatPos: Position,
+  opensDoors = false
 ): Position | null {
   const currentDist = Math.hypot(monsterPos.x - threatPos.x, monsterPos.y - threatPos.y);
   let bestStep: Position | null = null;
@@ -107,7 +116,7 @@ export function findFleeStep(
     if (!map.inBounds(nx, ny)) continue;
 
     const tile = map.getTile(nx, ny);
-    if (!tile || !(tile.walkable ?? tile.passable)) continue;
+    if (!tile || !((tile.walkable ?? tile.passable) || (opensDoors && isOpenableDoor(tile)))) continue;
     if (map.getEntityAt(nx, ny)) continue;
 
     // Prevent corner clipping

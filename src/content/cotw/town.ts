@@ -38,6 +38,8 @@ export const COTW_TOWN: TownLayoutDefinition = {
           makeShopItem('hearth_broth_flask', 'olaf-broth-1'),
           makeShopItem('birch_tar_poultice', 'olaf-poultice-1'),
           // Bigger purses (Q44): the coins in the old one move into the new one.
+          makeShopItem('wooden_torch', 'olaf-torch-1'),
+          makeShopItem('wooden_torch', 'olaf-torch-2'),
           makeShopItem('ironclasp_purse', 'olaf-purse-1'),
           makeShopItem('quicksilver_lined_purse', 'olaf-purse-2'),
         ],

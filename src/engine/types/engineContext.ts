@@ -35,6 +35,11 @@ export interface EngineContext {
   readonly currentFloor: number;
   /** Removes an entity from the active floor's map and the turn scheduler. */
   removeEntity(entity: Entity): boolean;
+  /**
+   * Puts an entity on the active floor's map and in the turn scheduler; false when its tile is
+   * taken. For content that brings a monster onto the floor mid-visit (dark floors, tracker 5.3).
+   */
+  addEntity(entity: Entity): boolean;
   /** Read-only kill tallies by monster definition id, whatever did the killing (a blow,
    *  a spell, a companion, a burning floor), for content that answers a kind of death. */
   readonly compendium: Pick<CompendiumManager, 'getEntry'>;

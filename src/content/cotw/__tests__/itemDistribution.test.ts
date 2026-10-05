@@ -74,12 +74,15 @@ describe('CotW Item Distribution & Economic Integration', () => {
   });
 
   it('sells none of the useless items pulled in 1.9, nor copies of the starting kit', () => {
-    const pulled = ['wooden_torch', 'thief_lockpicks', 'travel_bread', 'bog_iron_whetstone', 'ice_stave_rune_tablet', 'sealskin_rucksack', 'rune_scratched_bark_map'];
+    // The torch came back with the dark floors (tracker 5.3): sold, never floor loot.
+    const pulled = ['thief_lockpicks', 'travel_bread', 'bog_iron_whetstone', 'ice_stave_rune_tablet', 'sealskin_rucksack', 'rune_scratched_bark_map'];
     const starterKit = [COTW_STARTER_KIT.weaponItemId, COTW_STARTER_KIT.armorItemId, COTW_STARTER_KIT.bootsItemId, COTW_STARTER_KIT.purseItemId, COTW_STARTER_KIT.beltItemId];
     const sold = COTW_TOWN.npcs.flatMap((n) => n.merchantConfig?.initialInventory ?? []).map((i) => i.definitionId ?? i.id);
     for (const id of [...pulled, ...starterKit]) expect(sold).not.toContain(id);
     for (const id of pulled) expect(COTW_ITEMS.some((d) => d.id === id)).toBe(false);
     expect(COTW_STARTER_KIT.packItemIds).not.toContain('travel_bread');
+    expect(sold).toContain('wooden_torch');
+    expect(COTW_ITEMS.some((d) => d.id === 'wooden_torch')).toBe(false);
   });
 
   it('populates Gunther the Smith with Norse arms, armor, and forge implements', () => {

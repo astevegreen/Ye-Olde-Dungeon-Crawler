@@ -17,6 +17,7 @@ function context(floor: number, x: number, y: number): { engine: EngineContext; 
     setWorldFlag: (f, v) => setFlag(worldState, f, v),
     currentFloor: floor,
     removeEntity: () => true,
+    addEntity: () => true,
     compendium: null as never,
   };
   return { engine, player };

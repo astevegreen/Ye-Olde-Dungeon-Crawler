@@ -63,6 +63,22 @@ const NON_CATALOG_ITEMS: ItemDefinition[] = [
       acceptedCategories: ['currency'],
     },
   },
+  {
+    // Tracker 5.3: torches return with the dark floors. Held in the off hand (a light, in place
+    // of a shield), it lets the hero see 5 paces instead of 2 where the light has been drunk.
+    id: 'wooden_torch',
+    name: 'Wooden Torch',
+    unidentifiedName: 'Torch',
+    category: 'light',
+    slot: 'offHand',
+    tier: 1,
+    weight: 800,
+    bulk: 600,
+    identified: true,
+    description:
+      'A pitch-soaked branch. Held in the off hand, it pushes back the dark: where the light has been drunk you see 5 paces instead of 2. It gives no light you need elsewhere.',
+    value: 15,
+  },
   ...COTW_SPELL_TABLETS,
 ];
 

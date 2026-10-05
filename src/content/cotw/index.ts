@@ -29,6 +29,7 @@ import { COTW_RENOWN_MILESTONES, COTW_RENOWN_TITLES } from './renown';
 import { COTW_OBJECTIVES } from './objectives';
 import { COTW_COMPANIONS } from './companions';
 import { GIANT_BLOOD_STATUS, giantBloodHandler, GIANT_BLOOD_BOOTSTRAP_HOOK } from './giantBlood';
+import { COTW_DARKNESS_HANDLERS, COTW_DARKNESS_HOOK, DARKNESS_STATUS, EMBOLDENED_STATUS, TORCHLIT_STATUS } from './darkness';
 import { BURNING_STATUS, burningHandler } from './burning';
 import { COTW_MONSTER_SCALING } from './monsterScaling';
 import { COTW_PROGRESSION } from './progression';
@@ -135,6 +136,7 @@ export const cotwManifest: GameContentManifest = {
   loot: COTW_LOOT_RATES,
   actionHooks: [
     GIANT_BLOOD_BOOTSTRAP_HOOK,
+    COTW_DARKNESS_HOOK,
     ...PROLOGUE_HOOKS,
     ...SIPHON_RITUAL_HOOKS,
     DEEPEST_FLOOR_HOOK,
@@ -217,10 +219,23 @@ export const cotwManifest: GameContentManifest = {
       id: BURNING_STATUS,
       name: 'Burning',
     },
+    {
+      id: DARKNESS_STATUS,
+      name: 'Darkness',
+    },
+    {
+      id: TORCHLIT_STATUS,
+      name: 'Torchlit',
+    },
+    {
+      id: EMBOLDENED_STATUS,
+      name: 'Emboldened',
+    },
   ],
   statusHandlers: {
     [GIANT_BLOOD_STATUS]: giantBloodHandler,
     [BURNING_STATUS]: burningHandler,
+    ...COTW_DARKNESS_HANDLERS,
   },
   fixedTilePlacements: [
     {

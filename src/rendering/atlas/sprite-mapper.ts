@@ -366,6 +366,9 @@ export function getItemSpriteKey(item: Item, hasSprite?: HasSprite): SpriteKey |
       return 'backpack';
     }
 
+    case 'light':
+      return 'torch';
+
     case 'misc':
     case 'quest': {
       if (name.includes('key') || id.includes('key')) {

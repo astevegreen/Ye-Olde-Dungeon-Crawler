@@ -6,7 +6,7 @@ export const COTW_EQUIPMENT_SLOTS: EquipmentSlotDefinition[] = [
   { id: 'torso', name: 'Torso', acceptedCategories: ['armor'], layout: { x: 93, y: 104, width: 34, height: 34, gridArea: 'torso' } },
   { id: 'overgarment', name: 'Overgarment', acceptedCategories: ['cloak'], layout: { x: 48, y: 58, width: 34, height: 34, gridArea: 'overgarment' } },
   { id: 'mainHand', name: 'Main Hand', acceptedCategories: ['weapon'], layout: { x: 34, y: 110, width: 34, height: 34, gridArea: 'mainHand' } },
-  { id: 'offHand', name: 'Off Hand', acceptedCategories: ['shield', 'weapon'], layout: { x: 152, y: 110, width: 34, height: 34, gridArea: 'offHand' } },
+  { id: 'offHand', name: 'Off Hand', acceptedCategories: ['shield', 'weapon', 'light'], layout: { x: 152, y: 110, width: 34, height: 34, gridArea: 'offHand' } },
   { id: 'hands', name: 'Hands', acceptedCategories: ['gauntlets'], layout: { x: 20, y: 162, width: 34, height: 34, gridArea: 'hands' } },
   { id: 'wrists', name: 'Wrists', acceptedCategories: ['bracers'], layout: { x: 166, y: 162, width: 34, height: 34, gridArea: 'wrists' } },
   { id: 'waist', name: 'Waist', acceptedCategories: ['container'], layout: { x: 93, y: 154, width: 34, height: 34, gridArea: 'waist' } },

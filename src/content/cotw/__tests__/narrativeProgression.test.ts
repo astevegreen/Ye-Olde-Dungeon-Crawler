@@ -106,6 +106,7 @@ describe('CotW Narrative Progression & Skaldic Runestones', () => {
       },
       currentFloor: 1,
       removeEntity: () => true,
+      addEntity: () => true,
       compendium: null as never,
     };
 
@@ -170,6 +171,7 @@ describe('CotW Narrative Progression & Skaldic Runestones', () => {
       },
       currentFloor: 0,
       removeEntity: () => true,
+      addEntity: () => true,
       compendium: null as never,
     };
 
@@ -209,6 +211,7 @@ describe('CotW Narrative Progression & Skaldic Runestones', () => {
       setWorldFlag: (f: string, v: boolean) => setFlag(worldState, f, v),
       currentFloor: 0,
       removeEntity: () => true,
+      addEntity: () => true,
       compendium: null as never,
     };
     const visit = () => COTW_TOWN_REACTIVE_HOOK.execute({ action: null as any, actionType: 'wait', actor: player, engine: engineContext });
@@ -255,6 +258,7 @@ describe('CotW Narrative Progression & Skaldic Runestones', () => {
       setWorldFlag: (f: string, v: boolean) => setFlag(worldState, f, v),
       currentFloor: 36,
       removeEntity: () => true,
+      addEntity: () => true,
       compendium: null as never,
     };
     const tick = () =>

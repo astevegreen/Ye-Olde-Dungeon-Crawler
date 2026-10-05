@@ -43,6 +43,8 @@ export interface BoundKeys {
   map: Set<string>;
   /** Keys bound to wait, for the passive-spam check. */
   wait: Set<string>;
+  /** Hold-to-open keys (the radial menu confirms on keyup): a quick press opens and closes it. */
+  hold: Set<string>;
 }
 
 export async function readBoundKeys(page: Page): Promise<BoundKeys> {
@@ -52,14 +54,16 @@ export async function readBoundKeys(page: Page): Promise<BoundKeys> {
   const all = new Set<string>();
   const map = new Set<string>();
   const wait = new Set<string>();
+  const hold = new Set<string>();
   for (const [actionId, codes] of Object.entries(binds)) {
     for (const code of codes) {
       all.add(code);
       if (actionId.startsWith('move_') || actionId === 'wait') map.add(code);
       if (actionId === 'wait') wait.add(code);
+      if (actionId === 'radial_menu') hold.add(code);
     }
   }
-  return { all, map, wait };
+  return { all, map, wait, hold };
 }
 
 /**
@@ -459,6 +463,7 @@ export async function runOracles(
   // --- Player experience ----------------------------------------------------------------
   // A bound key pressed on the open map that changed nothing and said nothing. Unbound keys
   // and clicks are excluded: a neighbouring-tile click with the Hover Ring off is intended.
+  // So are hold-to-open keys, which a press (down, then up at once) opens and closes.
   const changed =
     live.x !== ctx.posBefore.x ||
     live.y !== ctx.posBefore.y ||
@@ -468,7 +473,7 @@ export async function runOracles(
     live.messageCount !== ctx.messagesSeenCount ||
     live.stack.length > 0 ||
     modesAfter.length > 0;
-  if (key && !inDialogBefore && state.boundKeys.all.has(key) && !changed) {
+  if (key && !inDialogBefore && state.boundKeys.all.has(key) && !state.boundKeys.hold.has(key) && !changed) {
     state.deadKeyCount++;
     addFinding('ux', 'S4', `bound key ${key} on the open map gave no feedback and changed nothing`);
   }

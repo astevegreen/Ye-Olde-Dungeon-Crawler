@@ -186,6 +186,7 @@ export class KeybindModal implements UIModal {
         ${option(null, 'Standard (Arrows, NumPad, WASD, H J K Y N)', 'Arrow keys and the number pad move at once, diagonals on the pad. W A D and H J K Y N also move; S, L, U and B stay Search, Look, the Character tab and the Bestiary. You can also click a distant tile to walk there; the Hover Ring below adds clicking next to you to step or attack.', '<span id="badge-standard-mode" class="storage-badge-pill">Standard input</span>')}
         ${option('chk-arrow-chording', 'Micro-Debounce Buffer (Arrow-Key Chording)', 'Press two arrow keys together to step diagonally (Up and Right goes northeast). Handy on keyboards without a number pad.', chordRange)}
         ${option('chk-mouse-vectoring', "The 'Hover Ring' (Mouse Vectoring)", 'Shows a ring of eight directions around your hero under the mouse. Click a neighboring tile to step or attack, or a distant one to walk there.')}
+        ${option('chk-mouse-aim', 'Mouse aiming', 'While you aim a spell, wand or scroll, the target follows the mouse and a click on the map fires. The keys still aim and fire either way.')}
         ${option('chk-torchlight', 'Torchlight', 'What you can see darkens toward the edge of your sight, with warm light around your hero. Off gives flat, even lighting.')}
         ${option('chk-inventory-hover-cards', 'Rich inventory hover cards', 'Shows full stat cards when you hover items in your inventory. Off shows the name only.')}
         ${option('chk-hints', 'First-time hints', 'The first time you meet an altar, a pact keeper, a companion and the like, a short note about it appears under the sidebar. Each shows once per hero. In the opening scene, the slot for the move the moment calls for also glows.')}
@@ -281,6 +282,11 @@ export class KeybindModal implements UIModal {
       });
     });
 
+    const aimChk = modal.querySelector('#chk-mouse-aim') as HTMLInputElement | null;
+    aimChk?.addEventListener('change', () => {
+      this.settingsManager.updateSettings({ mouseAimEnabled: aimChk.checked });
+    });
+
     // Mouse Vectoring Checkbox
     const mouseChk = modal.querySelector('#chk-mouse-vectoring') as HTMLInputElement | null;
     mouseChk?.addEventListener('change', () => {
@@ -341,6 +347,8 @@ export class KeybindModal implements UIModal {
 
     const mouseChk = this.modalEl.querySelector('#chk-mouse-vectoring') as HTMLInputElement | null;
     if (mouseChk) mouseChk.checked = settings.mouseVectoringEnabled;
+    const aimChk = this.modalEl.querySelector('#chk-mouse-aim') as HTMLInputElement | null;
+    if (aimChk) aimChk.checked = settings.mouseAimEnabled;
     const torchChk = this.modalEl.querySelector('#chk-torchlight') as HTMLInputElement | null;
     if (torchChk) torchChk.checked = settings.torchlightEnabled;
     const hoverCardsChk = this.modalEl.querySelector('#chk-inventory-hover-cards') as HTMLInputElement | null;

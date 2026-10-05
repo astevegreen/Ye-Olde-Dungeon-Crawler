@@ -106,6 +106,16 @@ export class TargetingOverlay implements UIModal {
     }
   }
 
+  /** Puts the reticle on a tile, as the mouse points (N23, tracker 4.4). Returns whether it moved. */
+  public aimAt(x: number, y: number, engine: GameEngine): boolean {
+    if (this.mode !== 'reticle' || !engine.map.inBounds(x, y)) return false;
+    if (x === this.reticleX && y === this.reticleY) return false;
+    this.reticleX = x;
+    this.reticleY = y;
+    this.notify();
+    return true;
+  }
+
   public confirmFire(engine: GameEngine): ActionResult | null {
     if (!this.activeEntry) return null;
 

@@ -83,6 +83,15 @@ describe('SettingsManager', () => {
     expect(loaded.mouseVectoringEnabled).toBe(true);
   });
 
+  it('aims with the mouse by default, and remembers a player who turns it off (tracker 4.4)', () => {
+    expect(manager.getSettings().mouseAimEnabled).toBe(true);
+    manager.updateSettings({ mouseAimEnabled: false });
+    expect(new SettingsManager(storage).getSettings().mouseAimEnabled).toBe(false);
+    // Settings saved before the option existed load with it on.
+    storage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ arrowChordingEnabled: true }));
+    expect(new SettingsManager(storage).getSettings().mouseAimEnabled).toBe(true);
+  });
+
   it('clamps arrowChordBufferMs between 25ms and 75ms', () => {
     manager.updateSettings({ arrowChordBufferMs: 10 });
     expect(manager.getSettings().arrowChordBufferMs).toBe(25);

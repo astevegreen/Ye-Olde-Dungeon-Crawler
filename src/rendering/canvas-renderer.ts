@@ -73,6 +73,10 @@ export class CanvasRenderer {
   /** Resolves a display label for a radial-menu slot; wired from main.ts (spell/command/item lookups live there). */
   public onResolveRadialLabel?: (slot: RadialMenuSlotConfig) => string;
   public mouseVectoringEnabled = false;
+  /** Player setting (N23, tracker 4.4): while aiming, the reticle follows the mouse and a click fires. */
+  public mouseAimEnabled = true;
+  /** Fires the open aim the way its Enter key does (wired in main.ts: the modal stack, input lock, effects). */
+  public onAimFire?: () => void;
   /** Player setting: the pack's torchlight pass (`atlas.terrain.torch`). */
   public torchlightEnabled = true;
   public navigationController?: NavigationController;
@@ -155,6 +159,16 @@ export class CanvasRenderer {
     this.boundClickHandler = (e: MouseEvent) => {
       const { x: clickX, y: clickY } = this.viewport.clientToVirtual(e.clientX, e.clientY);
 
+      // Mouse aiming: a click on the map fires at the tile clicked.
+      if (this.targetingOverlay.mode === 'reticle') {
+        const aimed = this.mouseAimEnabled ? this.mapTileAt(clickX, clickY) : null;
+        if (aimed) {
+          this.targetingOverlay.aimAt(aimed.x, aimed.y, this.engine);
+          this.onAimFire?.();
+        }
+        return;
+      }
+
 
 
 
@@ -224,6 +238,12 @@ export class CanvasRenderer {
     // Register mousemove event on canvas for tooltips and hover ring
     this.boundMouseMoveHandler = (e: MouseEvent) => {
       const { x: mouseX, y: mouseY } = this.viewport.clientToVirtual(e.clientX, e.clientY);
+
+      // Mouse aiming: the reticle follows the pointer over the map.
+      if (this.targetingOverlay.mode === 'reticle' && this.mouseAimEnabled) {
+        const aimed = this.mapTileAt(mouseX, mouseY);
+        if (aimed && this.targetingOverlay.aimAt(aimed.x, aimed.y, this.engine)) this.render();
+      }
 
       const worldCoords = this.camera.screenToWorld(
         mouseX,
@@ -1263,7 +1283,16 @@ export class CanvasRenderer {
       return { mode: 'Look', tone: 'mode', hints: [{ keys: ['Arrows'], label: 'move' }, { keys: ['L', 'Esc'], label: 'close' }] };
     }
     if (this.targetingOverlay.mode === 'reticle') {
-      return { mode: 'Aim', tone: 'aim', hints: [{ keys: ['Arrows'], label: 'move' }, { keys: ['Enter', 'Space'], label: 'fire' }, { keys: ['Esc'], label: 'cancel' }] };
+      return {
+        mode: 'Aim',
+        tone: 'aim',
+        hints: [
+          { keys: ['Arrows'], label: 'move' },
+          { keys: ['Enter', 'Space'], label: 'fire' },
+          ...(this.mouseAimEnabled ? [{ keys: ['Click'], label: 'fire there' }] : []),
+          { keys: ['Esc'], label: 'cancel' },
+        ],
+      };
     }
     return null;
   }
@@ -1319,6 +1348,13 @@ export class CanvasRenderer {
     if (x === null || y === null) this.tacticalTargetOverlay.clearHover();
     else this.tacticalTargetOverlay.setHoveredTile(x, y);
     this.render();
+  }
+
+  /** The map tile under a virtual-canvas point, or null off the map. */
+  private mapTileAt(vx: number, vy: number): { x: number; y: number } | null {
+    if (vy < this.topBarHeight || vy >= this.viewport.virtualHeight) return null;
+    const world = this.camera.screenToWorld(vx, vy, this.cellSize, this.offsetX, this.offsetY);
+    return world && this.engine.map.inBounds(world.x, world.y) ? world : null;
   }
 
   /** Paints an entity's atlas sprite to fill a small DOM canvas (sidebar rows). */

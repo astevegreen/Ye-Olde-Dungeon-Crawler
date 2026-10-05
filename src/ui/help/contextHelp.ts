@@ -249,6 +249,7 @@ export class ContextHelp {
           bullets: [
             { key: 'Arrows / Numpad', label: 'Move the aim to a target' },
             { key: 'Enter / Space', label: 'Cast at the aim' },
+            { key: 'Mouse', label: 'Point to aim, click the map to cast (Settings: Mouse aiming)' },
             { key: 'Esc', label: `Cancel; no ${resolveBranding(manifest).manaName} is spent` },
           ],
           tip: 'Tip: Elemental spells deal bonus damage against monsters weak to fire, cold, or lightning.',

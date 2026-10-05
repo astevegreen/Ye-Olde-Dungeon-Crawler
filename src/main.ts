@@ -1646,13 +1646,26 @@ window.addEventListener('DOMContentLoaded', () => {
       );
       characterMenuModal.setKeyResolver((actionId) => settingsManager.getCodesForAction(actionId));
       renderer.mouseVectoringEnabled = settingsManager.getSettings().mouseVectoringEnabled;
+      renderer.mouseAimEnabled = settingsManager.getSettings().mouseAimEnabled;
       renderer.torchlightEnabled = settingsManager.getSettings().torchlightEnabled;
       renderer.radialMenuOverlay.slots = settingsManager.getSettings().radialMenuSlots;
       renderer.onResolveRadialLabel = resolveRadialMenuLabel;
       renderer.onFocusEntityChanged = (id) => combatSidebar.setFocusedEntity(id);
+      // A click while aiming fires as Enter does (tracker 4.4): the spell, then the targeting
+      // entry off the stack, input unlocked, and the action's effects played.
+      renderer.onAimFire = () => {
+        if (!renderer || !activeEngine || !renderer.targetingOverlay.isOpen) return;
+        renderer.targetingOverlay.confirmFire(activeEngine);
+        if (inputHandler) {
+          inputHandler.modalStack.remove('targeting');
+          inputHandler.isInputLocked = false;
+        }
+        void processVisualEffectsAndRender();
+      };
       settingsManager.subscribe((settings) => {
         if (renderer) {
           renderer.mouseVectoringEnabled = settings.mouseVectoringEnabled;
+          renderer.mouseAimEnabled = settings.mouseAimEnabled;
           renderer.torchlightEnabled = settings.torchlightEnabled;
           renderer.radialMenuOverlay.slots = settings.radialMenuSlots;
           renderer.render();

@@ -182,6 +182,86 @@ test('the map fills most of the window, and its tiles grow with it', async ({ pa
   }
 });
 
+// Aiming follows the mouse and a click fires (N23, tracker 4.4); with the setting off the
+// mouse leaves the reticle alone, as before.
+test('while aiming, the reticle follows the mouse and a click fires the spell', async ({ page }) => {
+  await embarkNewHero(page);
+  const setup = await page.evaluate(async () => {
+    const e = window.__cotwEngine!;
+    const d = e.diagnostics;
+    d.toggleGodMode();
+    d.jumpToFloor(2);
+    await new Promise((r) => setTimeout(r, 300));
+    e.updateFov();
+    d.killVisibleMonsters();
+    const p = e.player;
+    for (const [dx, dy] of [[3, 0], [-3, 0], [0, 3], [0, -3], [2, 2], [-2, 2], [2, -2], [-2, -2], [2, 0], [0, 2], [-2, 0], [0, -2]]) {
+      const x = p.x + dx;
+      const y = p.y + dy;
+      if (e.map.isPassable(x, y) && !e.map.getEntityAt(x, y) && e.fov.isVisible(x, y)) {
+        const m = d.spawnMonster('kobold', { position: { x, y }, aiState: 'idle' });
+        if (m) {
+          e.updateFov();
+          window.__cotwRenderer!.render();
+          return { hero: [p.x, p.y], monster: [x, y] };
+        }
+      }
+    }
+    return null;
+  });
+  expect(setup, 'a kobold in sight').not.toBeNull();
+  const tileCenter = (x: number, y: number) =>
+    page.evaluate(({ x, y }) => {
+      const r = window.__cotwRenderer as any;
+      const s = r.camera.worldToScreen(x, y, r.cellSize, r.offsetX, r.offsetY);
+      return r.viewport.virtualToClient(s.x + r.cellSize / 2, s.y + r.cellSize / 2) as { x: number; y: number };
+    }, { x, y });
+  const aim = () =>
+    page.evaluate(() => {
+      const t = window.__cotwRenderer!.targetingOverlay;
+      const e = window.__cotwEngine!;
+      return { open: t.isOpen, reticle: [t.reticleX, t.reticleY], turn: e.turnCount, stack: window.__cotwInputHandler!.modalStack.getStackIds() };
+    });
+
+  // Keyboard-first players can turn it off: the mouse then moves nothing.
+  await page.evaluate(() => (window.__cotwRenderer as any).mouseAimEnabled = false);
+  await page.keyboard.press('Digit1');
+  await expect.poll(async () => (await aim()).open).toBe(true);
+  const start = (await aim()).reticle;
+  const [hx, hy] = setup!.hero;
+  const beside = await tileCenter(hx, hy + 1);
+  await page.mouse.move(beside.x, beside.y);
+  expect((await aim()).reticle).toEqual(start);
+  await page.keyboard.press('Escape');
+  await expect.poll(async () => (await aim()).open).toBe(false);
+
+  await page.evaluate(() => (window.__cotwRenderer as any).mouseAimEnabled = true);
+  await page.keyboard.press('Digit1');
+  await expect.poll(async () => (await aim()).open).toBe(true);
+  await page.mouse.move(beside.x, beside.y);
+  await expect.poll(async () => (await aim()).reticle).toEqual([hx, hy + 1]);
+  const [mx, my] = setup!.monster;
+  const onMonster = await tileCenter(mx, my);
+  await page.mouse.move(onMonster.x, onMonster.y);
+  await expect.poll(async () => (await aim()).reticle).toEqual([mx, my]);
+  const turn = (await aim()).turn;
+  await page.mouse.click(onMonster.x, onMonster.y);
+  await expect.poll(async () => (await aim()).open).toBe(false);
+  const after = await aim();
+  expect(after.turn).toBeGreaterThan(turn);
+  expect(after.stack).not.toContain('targeting');
+  // Once its projectile has played, the next key acts again.
+  await expect.poll(() => page.evaluate(() => window.__cotwInputHandler!.isInputLocked)).toBe(false);
+  const before = await state(page);
+  await page.keyboard.press('Space');
+  await expect
+    .poll(async () => {
+      const s = await state(page);
+      return s.turn > before.turn ? 'acted' : JSON.stringify({ ...s, stack: await stackIds(page), focus: await page.evaluate(() => document.activeElement?.id) });
+    })
+    .toBe('acted');
+});
+
 // The sidebar's "here" line shows all of a long prompt: on the stairs it was cut off at
 // "…to a" with no ellipsis (tracker 0.23).
 test("the sidebar's ground line shows the whole stairs prompt", async ({ page }) => {

@@ -306,25 +306,31 @@ export function populateDungeonFloor(
       const def = selectDungeonMonsterDefinition(effectiveCandidates, currentFloor, rng);
       if (!def) continue;
 
-      const mx = room.x1 + 1 + Math.floor(rng() * (room.x2 - room.x1 - 1));
-      const my = room.y1 + 1 + Math.floor(rng() * (room.y2 - room.y1 - 1));
+      // A pack monster brings its pack, and the pack is the room's population (Q14).
+      const [fewest, most] = def.pack?.size ?? [1, 1];
+      const members = def.pack ? fewest + Math.floor(rng() * (most - fewest + 1)) : 1;
+      for (let k = 0; k < members; k++) {
+        const mx = room.x1 + 1 + Math.floor(rng() * (room.x2 - room.x1 - 1));
+        const my = room.y1 + 1 + Math.floor(rng() * (room.y2 - room.y1 - 1));
 
-      if (map.isPassable(mx, my) && !map.getEntityAt(mx, my)) {
-        const randId = Math.floor(rng() * 1000000);
-        const uniqueId = `mon-${currentFloor}-${i}-${j}-${randId}`;
-        const monster = createScaledMonster(
-          def,
-          uniqueId,
-          { x: mx, y: my },
-          currentFloor,
-          undefined,
-          undefined,
-          scalingConfig,
-          difficulty,
-          registries
-        );
-        map.addEntity(monster);
+        if (map.isPassable(mx, my) && !map.getEntityAt(mx, my)) {
+          const randId = Math.floor(rng() * 1000000);
+          const uniqueId = k === 0 ? `mon-${currentFloor}-${i}-${j}-${randId}` : `mon-${currentFloor}-${i}-${j}-${k}-${randId}`;
+          const monster = createScaledMonster(
+            def,
+            uniqueId,
+            { x: mx, y: my },
+            currentFloor,
+            undefined,
+            undefined,
+            scalingConfig,
+            difficulty,
+            registries
+          );
+          map.addEntity(monster);
+        }
       }
+      if (def.pack) break;
     }
   }
 }

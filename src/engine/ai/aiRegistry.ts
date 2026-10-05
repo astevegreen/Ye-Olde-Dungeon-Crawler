@@ -12,6 +12,7 @@ import { CastSpellAction } from '../actions/spell-actions';
 import { findPath, findFleeStep } from './pathfinding';
 import { stepTowardAction } from './pursuit';
 import { fleeAction } from './flight';
+import { FLANK_RADIUS, flankAction } from './packTactics';
 import { computeDangerTiles } from './intent';
 import { getBresenhamLine } from '../magic/targeting';
 import { selectAttackTarget } from './targetSelection';
@@ -169,7 +170,14 @@ export class AggressiveMeleeStrategy implements AIStrategy {
       );
     }
 
-    // 3. Out of range -> pathfind
+    // 3. Out of range -> pathfind; a pack monster to a free side of its prey (Q14)
+    if (getMonsterDefinition(monster.definitionId)?.pack && chebyshevDist <= FLANK_RADIUS) {
+      const flank = flankAction(engine, monster, player);
+      if (flank) {
+        monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
+        return flank;
+      }
+    }
     const approach = approachAction(engine, monster, player);
     if (approach) return approach;
 

@@ -124,6 +124,7 @@ export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
     fleeHealthPercent: 0.1,
     xpValue: 90,
     tags: ['hound', 'fiend', 'pack', 'fodder'],
+    pack: { size: [2, 3] },
     lootTable: [
       {
         chance: 0.7,

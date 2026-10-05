@@ -105,6 +105,13 @@ export interface MonsterDefinition {
    * 'nearest_hostile' only when you want it capable of engaging a companion.
    */
   targetingMode?: 'player' | 'nearest_hostile';
+  /**
+   * Hunts in a pack (Q14, "packs surround"): drawn for a room's population, it brings packmates
+   * of its kind, so the room holds between `size[0]` and `size[1]` of them in all; and with the
+   * melee routine each closes on a free side of its prey, away from its packmates
+   * (`ai/packTactics.ts`), rather than queueing behind them.
+   */
+  pack?: { size: [number, number] };
 }
 
 /**

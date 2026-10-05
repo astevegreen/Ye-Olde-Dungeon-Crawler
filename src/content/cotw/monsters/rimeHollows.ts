@@ -14,6 +14,7 @@ export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
     fleeHealthPercent: 0.15,
     xpValue: 25,
     tags: ['goblinoid', 'pack'],
+    pack: { size: [2, 3] },
     lootTable: [
       {
         chance: 0.6,
@@ -51,6 +52,7 @@ export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
     fleeHealthPercent: 0.15,
     xpValue: 45,
     tags: ['beast', 'pack'],
+    pack: { size: [2, 3] },
     lootTable: [
       {
         chance: 0.5,

@@ -15,13 +15,23 @@ import { MonsterAI } from '../ai/behaviorTree';
 import { WaitAction } from '../actions/wait';
 import { flightRecorder } from '../debug/flightRecorder';
 import { wakesOnSight } from '../ai/stealth';
+import { perceives } from '../ai/perception';
 
 export type AiState = 'sleeping' | 'hunting' | 'combat' | 'fleeing';
 
-/** How far a monster sees the hero, as the AI's wake-up check (`MonsterAI.decideAction`) has it. */
-const MONSTER_SIGHT_RADIUS = 8;
+export type MonsterIntentType = 'idle' | 'attack' | 'windup' | 'fleeing' | 'searching';
 
-export type MonsterIntentType = 'idle' | 'attack' | 'windup' | 'fleeing';
+/**
+ * Where a hunter last perceived its target (`ai/pursuit.ts`): it goes there, searches around it
+ * for `searchTurns` more turns, then gives up (`lost`) until it sees, is struck or is alerted.
+ */
+export interface MonsterPursuit {
+  x: number;
+  y: number;
+  searchTurns: number;
+  searching?: boolean;
+  lost?: boolean;
+}
 
 export interface MonsterIntent {
   type: MonsterIntentType;
@@ -96,6 +106,8 @@ export class Monster extends Actor {
   public targetingMode: 'player' | 'nearest_hostile';
   /** The total stat multiplier floor catch-up has applied (`FloorManager.simulateCatchUp`); 1 = none. */
   public catchUpScale = 1;
+  /** Its memory of its target; none until its first awake turn, or after `alert` (it then knows). */
+  public pursuit?: MonsterPursuit;
 
   constructor(config: MonsterConfig) {
     super({
@@ -144,6 +156,15 @@ export class Monster extends Actor {
     return wakesOnSight(engine, this);
   }
 
+  /**
+   * Wakes it, and it knows where its target is: on its next turn it hunts from there, even one
+   * that had lost track (an alarm, a call for help, a blow).
+   */
+  public alert(): void {
+    if (this.aiState === 'sleeping') this.aiState = 'hunting';
+    this.pursuit = undefined;
+  }
+
   public interruptWindUp(_reason?: string): boolean {
     if (this.intent.type === 'windup') {
       this.intent = { type: 'idle', turnsRemaining: 0 };
@@ -183,10 +204,8 @@ export class Monster extends Actor {
   public override takeDamage(rawAmount: number, options?: { wakeUp?: boolean }): { damageDealt: number; killed: boolean } {
     const res = super.takeDamage(rawAmount);
     const shouldWake = options?.wakeUp ?? true;
-    // Any direct damage wakes up sleeping monster immediately into hunting state
-    if (this.aiState === 'sleeping' && shouldWake) {
-      this.aiState = 'hunting';
-    }
+    // Any direct damage wakes it, and it knows where its foe is
+    if (shouldWake) this.alert();
     // If monster is killed or took significant damage (> 25% maxHp), interrupt active wind-up
     if (res.killed || res.damageDealt >= Math.ceil(this.maxHp * 0.25)) {
       this.interruptWindUp();
@@ -242,12 +261,11 @@ export class Monster extends Actor {
     return result;
   }
 
-  /** The entity this monster engages, when it is within sight radius and line of sight. */
+  /** The entity this monster engages, when it perceives it (`perceives`). */
   private visibleTarget(engine: GameEngine): Entity | undefined {
     const target = selectAttackTarget(engine, this);
     if (!target?.isAlive()) return undefined;
-    const inRange = Math.hypot(target.x - this.x, target.y - this.y) <= MONSTER_SIGHT_RADIUS;
-    return inRange && MonsterAI.hasLineOfSight(engine, this.x, this.y, target.x, target.y) ? target : undefined;
+    return perceives(engine, this, target) ? target : undefined;
   }
 
   public static createFromDefinition(

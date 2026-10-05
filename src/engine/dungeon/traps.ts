@@ -158,9 +158,9 @@ export class TrapInstance {
       case 'alarm': {
         let awakened = 0;
         for (const ent of engine.map.getAllEntities()) {
-          if (ent instanceof Monster && ent.aiState === 'sleeping') {
-            ent.aiState = 'hunting';
-            awakened++;
+          if (ent instanceof Monster && ent.faction === 'hostile') {
+            if (ent.aiState === 'sleeping') awakened++;
+            ent.alert();
           }
         }
         message =

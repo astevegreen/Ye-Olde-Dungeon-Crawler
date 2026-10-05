@@ -53,4 +53,16 @@ describe('monster definition fields across save/load', () => {
 
     expect((loaded.map.getAllEntities().find((e) => e.id === 'veteran-1') as Monster).catchUpScale).toBe(1.25);
   });
+
+  it('keeps where a hunter last saw the hero, and its search', () => {
+    const pm = new ProfileManager(new MemoryStorage(), cotwManifest);
+    const { engine, profile } = pm.createCharacter('Hunted', { manifest: cotwManifest });
+    const hunter = createScaledMonster(cotwManifest.monsters[0], 'hunter-1', { x: engine.player.x + 1, y: engine.player.y }, 1);
+    hunter.pursuit = { x: 4, y: 7, searchTurns: 3, searching: true };
+    engine.addEntity(hunter);
+
+    const loaded = deserializeGame(JSON.parse(JSON.stringify(serializeGame(engine, profile))), cotwManifest).engine;
+
+    expect((loaded.map.getAllEntities().find((e) => e.id === 'hunter-1') as Monster).pursuit).toEqual({ x: 4, y: 7, searchTurns: 3, searching: true });
+  });
 });

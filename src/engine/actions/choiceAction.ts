@@ -104,10 +104,8 @@ export function applyConsequences(
           const dx = m.x - player.x;
           const dy = m.y - player.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist <= radius) {
-            if (m.aiState === 'sleeping') {
-              m.aiState = 'hunting';
-            }
+          if (dist <= radius && m.faction === 'hostile') {
+            m.alert();
           }
         }
         break;

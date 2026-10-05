@@ -71,7 +71,8 @@ describe('Whole-turn failure isolation: monster turns', () => {
         },
       ],
     });
-    const faulty = addMonster(engine, 'faulty-ai', { x: 10, y: 10 }, { aiRoutineId: THROWING_ROUTINE });
+    // In the hero's sight: a monster that doesn't perceive its target hunts by memory, not its routine.
+    const faulty = addMonster(engine, 'faulty-ai', { x: 6, y: 6 }, { aiRoutineId: THROWING_ROUTINE });
     const failuresBefore = engine.actionPipeline.caughtExceptionCount;
 
     let result: ActionResult | undefined;

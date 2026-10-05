@@ -3,20 +3,21 @@ import type { Position } from '../types';
 
 /**
  * Walking distances to one goal over a whole floor, for awake monsters beyond the pursuit
- * radius. One breadth-first pass serves every such monster that turn, so a far monster's step
- * is a neighbour lookup rather than a path search of its own: per-actor work stays bounded
- * (ARCHITECTURE.md §6) even when an alarm wakes the whole floor. Terrain only: closed doors
- * count as open (monsters open them) and entities are ignored, so a crowd doesn't hide the way.
+ * radius. One breadth-first pass serves every such monster headed to that goal that turn (the
+ * hero, or the tile where an alarm rang), so a far monster's step is a neighbour lookup rather
+ * than a path search of its own: per-actor work stays bounded (ARCHITECTURE.md §6) even when an
+ * alarm wakes the whole floor. Terrain only: closed doors count as open (monsters open them) and
+ * entities are ignored, so a crowd doesn't hide the way.
  */
-interface CachedField {
-  goalX: number;
-  goalY: number;
+interface CachedFields {
   turn: number;
-  distances: Int32Array;
+  byGoal: Map<number, Int32Array>;
 }
 
 const UNREACHED = -1;
-const fields = new WeakMap<GameMap, CachedField>();
+/** Distinct goals kept per turn; past that a field is computed and not kept. */
+const MAX_FIELDS_PER_TURN = 8;
+const fields = new WeakMap<GameMap, CachedFields>();
 
 const DIRECTIONS = [
   [0, -1], [0, 1], [-1, 0], [1, 0],
@@ -38,10 +39,14 @@ function diagonalOpen(map: GameMap, x: number, y: number, dx: number, dy: number
 }
 
 function fieldFor(map: GameMap, goal: Position, turn: number): Int32Array {
-  const cached = fields.get(map);
-  if (cached && cached.turn === turn && cached.goalX === goal.x && cached.goalY === goal.y) {
-    return cached.distances;
+  let cached = fields.get(map);
+  if (!cached || cached.turn !== turn) {
+    cached = { turn, byGoal: new Map() };
+    fields.set(map, cached);
   }
+  const goalKey = goal.y * map.width + goal.x;
+  const known = cached.byGoal.get(goalKey);
+  if (known) return known;
   const { width, height } = map;
   const distances = new Int32Array(width * height).fill(UNREACHED);
   const queue = new Int32Array(width * height);
@@ -63,7 +68,7 @@ function fieldFor(map: GameMap, goal: Position, turn: number): Int32Array {
       queue[tail++] = next;
     }
   }
-  fields.set(map, { goalX: goal.x, goalY: goal.y, turn, distances });
+  if (cached.byGoal.size < MAX_FIELDS_PER_TURN) cached.byGoal.set(goalKey, distances);
   return distances;
 }
 

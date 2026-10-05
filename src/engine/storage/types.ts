@@ -6,7 +6,7 @@ import type { CoinDenomination } from '../economy/types';
 import type { CharacterAttributes, Gender } from '../character/types';
 import type { ElementType, ElementalAffinity } from '../magic/elements';
 import type { AiBehaviorType } from '../bestiary/monsterDefinitions';
-import type { AiState, MonsterIntent } from '../entities/monster';
+import type { AiState, MonsterIntent, MonsterPursuit } from '../entities/monster';
 import type { CompanionArchetype } from '../entities/companion';
 import type { Position } from '../types';
 import type { WorldState } from '../state/worldState';
@@ -285,6 +285,8 @@ export interface SerializedMonster {
   planeId?: string;
   /** `Monster.catchUpScale`, written only above 1. */
   catchUpScale?: number;
+  /** `Monster.pursuit`: where it last perceived its target, and its search; absent when it has none. */
+  pursuit?: MonsterPursuit;
 }
 
 /** Companions & Pet Progression, Phase 1 (docs/architecture/content-companions.md). Top-level in SaveData, not per-floor. */

@@ -149,6 +149,7 @@ const INTENT_LOOK: Record<string, { label: (ability?: string) => string; icon: U
   windup: { label: (a) => `Winding up: ${a ?? 'a heavy strike'}`, icon: 'warning', tone: 'is-warn' },
   attack: { label: () => 'Engaging', icon: 'attack', tone: 'is-bad' },
   fleeing: { label: () => 'Retreating', icon: 'retreat', tone: 'is-info' },
+  searching: { label: () => 'Searching for you', icon: 'search', tone: 'is-warn' },
   idle: { label: () => 'Resting', icon: 'rest', tone: '' },
 };
 

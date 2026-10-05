@@ -17,6 +17,7 @@ import { computeDangerTiles } from './intent';
 import { selectAttackTarget } from './targetSelection';
 import { bondCompanion } from '../combat/lastStand';
 import { flightRecorder } from '../debug/flightRecorder';
+import { huntUnseenAction, rememberTarget } from './pursuit';
 
 class CasterBehavior implements AiBehaviorStrategy {
   public readonly id = BUILTIN_AI_TYPES.CASTER;
@@ -352,6 +353,10 @@ export class MonsterAI {
     const requestedRoutineId = monster.aiRoutineId ?? monster.aiType;
     const routine = AIRegistry.get(requestedRoutineId);
 
+    // 1.75. Memory (Q14): a hostile monster knows where its target is only while it perceives
+    // it; otherwise it hunts where it last did (step 3.5). A companion always knows its hero.
+    const sensed = monster.isHostileTo(player) ? rememberTarget(engine, monster, player) : true;
+
     // 2. Fleeing / Morale check. A monster whose routine never moves (a turret) never flees.
     if (
       !routine?.holdsGround &&
@@ -380,6 +385,12 @@ export class MonsterAI {
       // Cornered at a distance: stand at bay. Handing over to the routine stepped it toward
       // the hero, where a flee step opened again, so it jittered back and forth.
       return new WaitAction(monster);
+    }
+
+    // 3.5. Out of its senses: go where it last perceived its target and search there. A routine
+    // that never moves (a turret) just keeps its post.
+    if (!sensed && !routine?.holdsGround) {
+      return huntUnseenAction(engine, monster);
     }
 
     // Check if monster has an aiRoutineId registered in AIRegistry

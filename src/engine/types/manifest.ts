@@ -24,6 +24,7 @@ import type { HookDescriptor } from '../hooks/hookDispatcher';
 import type { RunPactDefinition } from '../pacts/pactManager';
 import type { CompanionDefinition } from '../entities/companion';
 import type { MonsterScalingConfig } from './monsterScaling';
+import type { GasType } from '../surfaces/surfaceGrid';
 
 export interface MerchantConfig {
   id: string;
@@ -60,7 +61,13 @@ export type ConsumableEffectDescriptor =
       status: string;
       duration: number;
       potency?: number;
-    };
+    }
+  /**
+   * Fills the user's tile and every open tile within `radius` of it with `gas` for `duration`
+   * turns: a smoke plume, say. An opaque gas hides whoever stands in it (Q13 "A",
+   * `ai/perception.ts`).
+   */
+  | { type: 'release_gas'; gas: GasType; radius: number; duration: number };
 
 export interface ItemDefinition {
   id: string;

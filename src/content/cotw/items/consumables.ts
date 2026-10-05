@@ -115,12 +115,15 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
     weight: 500,
     bulk: 400,
     identified: false,
-    description: 'Discharges a dense plume of soot and ash, blinding adjacent monsters and obscuring sightlines.',
+    description:
+      'Discharges a dense plume of soot and ash: monsters within 3 paces are blinded for 3 turns, and the cloud around you hides you from sight for 5. Step away while they grope for you.',
     value: 65,
     itemType: 'potion',
     potionConfig: {
       effects: [
         { type: 'radial_status', radius: 3, tags: ['monster'], status: 'blindness', duration: 3 },
+        // Q13 "A": the smoke is real. An opaque cloud hides whoever stands in it.
+        { type: 'release_gas', gas: 'dense_steam', radius: 2, duration: 5 },
       ],
     },
   },

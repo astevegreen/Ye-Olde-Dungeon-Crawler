@@ -520,6 +520,17 @@ export class DrinkPotionAction implements Action {
           }
           break;
         }
+        case 'release_gas': {
+          const r = effect.radius;
+          for (let y = this.user.y - r; y <= this.user.y + r; y++) {
+            for (let x = this.user.x - r; x <= this.user.x + r; x++) {
+              if (Math.hypot(x - this.user.x, y - this.user.y) > r + 0.5 || !engine.map.isPassable(x, y)) continue;
+              engine.surfaces.setGas(x, y, effect.gas, effect.duration);
+            }
+          }
+          messages.push(`releasing a cloud of ${effect.gas.replace(/_/g, ' ')}`);
+          break;
+        }
         case 'restore_volatile_energy': {
           const energyModel = this.user instanceof Player ? this.user.energyModel : undefined;
           if (energyModel) {

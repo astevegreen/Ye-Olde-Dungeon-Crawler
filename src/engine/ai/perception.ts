@@ -16,12 +16,29 @@ export function hasLineOfSight(engine: GameEngine, from: Position, to: Position)
 }
 
 /**
- * Whether a monster knows where `target` is this turn: it stands beside it, or sees it within
- * MONSTER_SIGHT_RADIUS. A hunter that doesn't goes to where it last did (`Monster.pursuit`).
+ * Whether a monster knows where `target` is this turn: it stands beside it, or sees it within its
+ * sight radius (`sightRadius`) with nothing opaque between them, the target not hidden in an
+ * opaque cloud of its own (dense smoke or steam, Q13 "A"). A hunter that doesn't goes to where it
+ * last did (`Monster.pursuit`).
  */
 export function perceives(engine: GameEngine, watcher: Entity, target: Entity): boolean {
+  const sight = sightRadius(engine, watcher);
   const dx = target.x - watcher.x;
   const dy = target.y - watcher.y;
-  if (Math.max(Math.abs(dx), Math.abs(dy)) <= 1) return true;
-  return Math.hypot(dx, dy) <= MONSTER_SIGHT_RADIUS && hasLineOfSight(engine, watcher.position, target.position);
+  if (Math.max(Math.abs(dx), Math.abs(dy)) <= 1) return sight >= 1;
+  if (!engine.surfaces.isTransparent(target.x, target.y)) return false;
+  return Math.hypot(dx, dy) <= sight && hasLineOfSight(engine, watcher.position, target.position);
+}
+
+/**
+ * How far it sees: MONSTER_SIGHT_RADIUS, cut to the `perceptionRadius` of any status it suffers
+ * (the most restrictive wins), the rule the hero's own sight follows: blinded, only beside it.
+ */
+function sightRadius(engine: GameEngine, watcher: Entity): number {
+  let radius = MONSTER_SIGHT_RADIUS;
+  for (const effect of watcher.statusManager.getAllActive()) {
+    const limit = engine.registries.statusHandlers.get(effect.type)?.perceptionRadius;
+    if (limit !== undefined) radius = Math.min(radius, limit);
+  }
+  return radius;
 }

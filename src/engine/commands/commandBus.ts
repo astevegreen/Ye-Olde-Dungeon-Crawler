@@ -22,6 +22,7 @@ import {
   DrinkPotionAction,
 } from '../actions/spell-actions';
 import { TempleService, SageService, BankService, TrainerService } from '../economy/services';
+import { LoreService } from '../economy/lore';
 import { SmithService } from '../economy/smith';
 import { type Merchant, getItemSellPrice } from '../economy/merchant';
 import { formatCurrency } from '../economy/currency';
@@ -369,6 +370,16 @@ export class EngineCommandBus implements GameCommandBus {
           };
         }
         const res = SageService.identifyItem(this.engine.player, targetItem, undefined, this.engine.manifest.town?.services);
+        this.engine.log(res.message);
+        return { success: res.success, message: res.message };
+      }
+
+      // The sage's monster lore (tracker 4.1): one bestiary rank, or an unmet creature revealed.
+      case 'sage_study':
+      case 'sage_rumor': {
+        const id = p.definitionId as string;
+        if (!id) return { success: false, message: 'No creature chosen.' };
+        const res = command.type === 'sage_study' ? LoreService.study(this.engine, id) : LoreService.rumor(this.engine, id);
         this.engine.log(res.message);
         return { success: res.success, message: res.message };
       }

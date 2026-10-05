@@ -122,6 +122,29 @@ export class CompendiumManager {
     };
   }
 
+  /**
+   * A rumor (tracker 4.1): an unmet creature becomes Seen, with no floor of first encounter.
+   * Returns false when it was already known.
+   */
+  public revealByRumor(definitionId: string, name: string): boolean {
+    if (this.getTier(definitionId) > 0) return false;
+    this.recordEncounter(definitionId, name);
+    return true;
+  }
+
+  /**
+   * Study (tracker 4.1): a known creature rises one rank without a kill, up to the complete
+   * page. The bought rank is kept apart from the kill count so a save keeps it. Returns the
+   * new rank, or undefined when the creature is unmet or its page already complete.
+   */
+  public raiseKnowledge(definitionId: string): MonsterMasteryTier | undefined {
+    const entry = this.entries.get(definitionId);
+    if (!entry || entry.tier === 0 || entry.tier === 3) return undefined;
+    entry.tier = (entry.tier + 1) as MonsterMasteryTier;
+    entry.studiedTier = entry.tier;
+    return entry.tier;
+  }
+
   public getEntry(definitionId: string): CompendiumEntry {
     const existing = this.entries.get(definitionId);
     if (existing) {
@@ -229,6 +252,7 @@ export class CompendiumManager {
         tier: entry.tier,
         firstEncounterFloor: entry.firstEncounterFloor,
         ritePerformed: entry.ritePerformed,
+        studiedTier: entry.studiedTier,
       };
     }
     return result;
@@ -243,8 +267,10 @@ export class CompendiumManager {
     for (const [id, record] of Object.entries(data)) {
       // Tier 3 needs SPECIES_MASTERY_KILLS; a save from when mastery took fewer kills
       // drops back to tier 2 (and loses its perk) until the player earns it again.
-      const tier: MonsterMasteryTier =
+      // A rank bought by Study (tracker 4.1) stands whatever the kills.
+      const earned: MonsterMasteryTier =
         record.tier === 3 && record.kills < SPECIES_MASTERY_KILLS ? tierForKills(record.kills) : record.tier;
+      const tier = Math.max(earned, record.studiedTier ?? 0) as MonsterMasteryTier;
       // A species perk from before Q7 "A" (tracker 3.5) is kept aside for `convertSpeciesPerks`.
       if (tier === 3 && record.chosenPerk) this.legacySpeciesPerks.set(id, record.chosenPerk);
       const existing = this.entries.get(id);
@@ -253,6 +279,7 @@ export class CompendiumManager {
         existing.tier = tier;
         existing.firstEncounterFloor = record.firstEncounterFloor ?? existing.firstEncounterFloor;
         existing.ritePerformed = record.ritePerformed ?? record.galdrHarvested ?? existing.ritePerformed;
+        existing.studiedTier = record.studiedTier ?? existing.studiedTier;
       } else {
         this.entries.set(id, {
           definitionId: id,
@@ -261,6 +288,7 @@ export class CompendiumManager {
           tier,
           firstEncounterFloor: record.firstEncounterFloor,
           ritePerformed: record.ritePerformed ?? record.galdrHarvested,
+          studiedTier: record.studiedTier,
         });
       }
     }

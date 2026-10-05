@@ -21,6 +21,9 @@ import {
   type ServicePanel,
   type ShopAction,
   identifiableItems,
+  sageCreatures,
+  sageViews,
+  type SageView,
   nextBlessing,
   serviceTitle,
   templeChoices,
@@ -60,6 +63,8 @@ export class ShopDialog {
   public selectedForgeIndex = 0;
   /** The picked row of a service's choices (the sage's unidentified items). */
   public selectedChoiceIndex = 0;
+  /** The sage's open list (tracker 4.1). */
+  public sageView: SageView = 'items';
   public statusMessage = '';
   public statusTone: Tone = 'info';
 
@@ -90,6 +95,7 @@ export class ShopDialog {
     this.selectedSellIndex = 0;
     this.selectedForgeIndex = 0;
     this.selectedChoiceIndex = 0;
+    this.sageView = 'items';
     this.statusMessage = '';
     this.statusTone = 'info';
     this.onOpen?.(npc);
@@ -168,6 +174,13 @@ export class ShopDialog {
     }
 
     const panel = this.panel(engine);
+    if ((key === 'ArrowLeft' || key === 'ArrowRight') && panel?.views?.length) {
+      event.preventDefault();
+      const ids = panel.views.map((v) => v.id);
+      const at = ids.indexOf(panel.view ?? ids[0]);
+      this.setSageView(ids[(at + (key === 'ArrowRight' ? 1 : ids.length - 1)) % ids.length] as SageView);
+      return true;
+    }
     if ((key === 'ArrowUp' || key === 'ArrowDown') && panel?.choices?.length) {
       event.preventDefault();
       this.selectChoice((panel.selected ?? 0) + (key === 'ArrowDown' ? 1 : -1), panel.choices.length);
@@ -348,7 +361,14 @@ export class ShopDialog {
   // ---- Town services -------------------------------------------------------------
 
   private panel(engine: GameEngine): ServicePanel | null {
-    return this.activeNpc && !this.merchant ? servicePanelFor(engine, this.activeNpc, this.selectedChoiceIndex) : null;
+    return this.activeNpc && !this.merchant ? servicePanelFor(engine, this.activeNpc, this.selectedChoiceIndex, this.sageView) : null;
+  }
+
+  private setSageView(view: SageView): void {
+    if (view === this.sageView) return;
+    this.sageView = view;
+    this.selectedChoiceIndex = 0;
+    this.changed();
   }
 
   private selectChoice(index: number, count: number): void {
@@ -410,6 +430,18 @@ export class ShopDialog {
       case 'identify': {
         const item = identifiableItems(engine)[this.selectedChoiceIndex];
         if (item) this.report(bus.dispatch({ type: 'sage_identify', payload: { item } }), 'warn');
+        return;
+      }
+      case 'view':
+        if (arg && sageViews(engine).includes(arg as SageView)) this.setSageView(arg as SageView);
+        return;
+      case 'study':
+      case 'rumor': {
+        const creature = sageCreatures(engine, this.sageView)[this.selectedChoiceIndex];
+        if (!creature) return;
+        const result = bus.dispatch({ type: act === 'study' ? 'sage_study' : 'sage_rumor', payload: { definitionId: creature.id } });
+        this.selectedChoiceIndex = Math.max(0, Math.min(this.selectedChoiceIndex, sageCreatures(engine, this.sageView).length - 1));
+        this.report(result);
         return;
       }
       case 'advise':
@@ -488,9 +520,10 @@ export class ShopDialog {
             ? [{ keys: ['M'], label: SmithService.smithFor(engine, smith)!.masterwork!.name }]
             : [{ keys: ['J'], label: 'sell all junk' }]),
         ]
-      : panel?.choices?.length
-        ? [{ keys: ['↑', '↓'], label: 'choose' }]
-        : [];
+      : [
+          ...(panel?.choices?.length ? [{ keys: ['↑', '↓'], label: 'choose' }] : []),
+          ...(panel?.views?.length ? [{ keys: ['←', '→'], label: 'switch list' }] : []),
+        ];
     scrim.innerHTML = dialogHtml({
       title,
       titleId: 'shop-dialog-title',

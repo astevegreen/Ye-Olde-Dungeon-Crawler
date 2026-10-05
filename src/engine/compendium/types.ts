@@ -75,11 +75,15 @@ export interface CompendiumEntry {
   firstEncounterFloor?: number;
   /** The player has performed this monster's kill rite at least once. */
   ritePerformed?: boolean;
+  /** The rank bought from a sage (tracker 4.1): the entry's tier never falls below it. */
+  studiedTier?: MonsterMasteryTier;
 }
 
 export interface SerializedCompendiumRecord {
   kills: number;
   tier: MonsterMasteryTier;
+  /** A rank bought by Study, kept though the kills fall short of it. */
+  studiedTier?: MonsterMasteryTier;
   firstEncounterFloor?: number;
   /** Read only: a species perk from before Q7 "A", moved to its family on load (`convertSpeciesPerks`). */
   chosenPerk?: MasteryPerkId;

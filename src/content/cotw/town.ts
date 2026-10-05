@@ -191,6 +191,12 @@ export const COTW_TOWN: TownLayoutDefinition = {
       standingDelta: 1,
       messageTemplate: 'The High Priest of Thor takes {item} from you and casts it into the sacred fire. The gods mark the gift.',
     },
+    // Q11 "A" + Q60 "A": Mimir sells Study (one bestiary rank) and Rumors (an unmet creature),
+    // priced by the creature's home floor: Study 60 CP on floor 1 to 540 on 49, Rumors 550 to 2,950.
+    monsterLore: {
+      study: { baseCp: 50, perFloorCp: 10 },
+      rumor: { baseCp: 500, perFloorCp: 50 },
+    },
     // Q10 "A" + Q47 "A": Gunther raises +N a step at a time to +3 (250, 750, 2,000 CP); Ivalda's
     // +5 is on his Forge list once she works beside him (Q29, Q48 "A").
     smiths: [

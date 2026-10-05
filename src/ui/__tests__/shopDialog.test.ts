@@ -457,6 +457,46 @@ describe('ShopDialog', () => {
     });
   });
 
+  it('keeps Study and Rumors as the sage\'s second and third lists, picked with ← →, each acting on the chosen row (tracker 4.1)', () => {
+    const e = new GameEngine({
+      map: new GameMap(20, 20),
+      player: new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } }),
+      floor: 0,
+      manifest: cotwManifest,
+    });
+    const sent = vi.spyOn(e.commandBus, 'dispatch').mockReturnValue({ success: true, message: 'Done.' });
+    const known = e.registries.monsters.getAll().filter((m) => (m.minFloor ?? 1) >= 1).slice(0, 2);
+    for (const m of known) e.compendium.recordEncounter(m.id, m.name, 1);
+
+    const shop = new ShopDialog();
+    shop.open(npc('sage'), null, e);
+    expect(html()).toContain('data-arg="study"');
+    expect(html()).toContain('data-act="identify"');
+
+    shop.handleKeyDown(key('ArrowRight'), e);
+    expect(shop.sageView).toBe('study');
+    expect(html()).toContain(known[0].name);
+    expect(html().match(/data-choice=/g)).toHaveLength(2);
+    shop.handleKeyDown(key('ArrowDown'), e);
+    shop.handleKeyDown(key('s'), e);
+
+    shop.handleKeyDown(key('ArrowRight'), e);
+    expect(shop.sageView).toBe('rumors');
+    expect(html()).toContain('A creature of floor');
+    // A rumor's row never names what it reveals.
+    const unmet = e.registries.monsters.getAll().filter((m) => e.compendium.getTier(m.id) === 0 && (m.minFloor ?? 1) >= 1);
+    expect(unmet.some((m) => html().includes(`>${m.name}<`))).toBe(false);
+    shop.handleKeyDown(key('r'), e);
+
+    const calls = sent.mock.calls.map((c) => c[0] as { type: string; payload?: { definitionId?: string } });
+    const studied = [...known].sort((a, b) => (a.minFloor ?? 1) - (b.minFloor ?? 1) || a.name.localeCompare(b.name))[1];
+    expect(calls[0]).toEqual({ type: 'sage_study', payload: { definitionId: studied.id } });
+    expect(calls[1].type).toBe('sage_rumor');
+
+    shop.handleKeyDown(key('ArrowRight'), e);
+    expect(shop.sageView).toBe('items');
+  });
+
   it("shows a townsperson's advice from the pack, and nothing but the greeting without it", () => {
     const guard = npc('guard');
     expect(servicePanelFor(engine, guard)).toBeNull();

@@ -5,8 +5,10 @@ import {
   type CoinDenomination,
   type GameEngine,
   type Item,
+  type MonsterDefinition,
   type NPC,
   type TempleBlessingDefinition,
+  LoreService,
   SageService,
   TempleService,
   TrainerService,
@@ -48,6 +50,9 @@ export type ShopAction =
   | 'masterwork'
   | 'offer'
   | 'bless'
+  | 'study'
+  | 'rumor'
+  | 'view'
   | 'leave';
 
 /** One service a townsperson offers: its button, its key, and what it costs. */
@@ -75,6 +80,9 @@ export interface ServicePanel {
   choices?: string[];
   /** The picked row, kept within `choices`. */
   selected?: number;
+  /** Lists the panel switches between (the sage's, tracker 4.1), shown as tabs; `view` is the open one. */
+  views?: Array<{ id: string; label: string; count: number }>;
+  view?: string;
 }
 
 const DENOMINATIONS: CoinDenomination[] = ['gold', 'silver', 'copper'];
@@ -177,44 +185,116 @@ function templePanel(engine: GameEngine, selected: number): ServicePanel {
   };
 }
 
-function sagePanel(engine: GameEngine, selected: number): ServicePanel {
+/** The sage's lists (tracker 4.1): unidentified items, creatures to study, rumors to buy. */
+export type SageView = 'items' | 'study' | 'rumors';
+
+/** The lists this sage keeps: lore only where the pack sells it. */
+export function sageViews(engine: GameEngine): SageView[] {
+  return LoreService.offered(engine) ? ['items', 'study', 'rumors'] : ['items'];
+}
+
+/** The creatures a lore list holds, in the order it shows them. */
+export function sageCreatures(engine: GameEngine, view: SageView): MonsterDefinition[] {
+  if (view === 'study') return LoreService.studyCandidates(engine);
+  if (view === 'rumors') return LoreService.rumorCandidates(engine);
+  return [];
+}
+
+const RANK_WORD = ['', 'Seen', 'Slain'];
+
+function sagePanel(engine: GameEngine, selected: number, view: SageView): ServicePanel {
+  const views = sageViews(engine);
+  const shown = views.includes(view) ? view : 'items';
   const unknown = identifiableItems(engine);
+  const creatures = sageCreatures(engine, shown);
   const worn = new Set(engine.player.inventory.paperdoll.getAllEquipped().map((e) => e.item));
-  const facts =
-    unknown.length === 0
-      ? '<div class="ui-note">You carry nothing unidentified.</div>'
-      : `<div class="ui-note">Unidentified items you carry: <b class="ui-num">${unknown.length}</b>. Choose one to identify.</div>`;
-  const choices = unknown.map(
-    (i) => `<span class="bs-name">${escapeHtml(i.displayName)}</span><span class="ui-faint">${worn.has(i) ? 'worn' : escapeHtml(i.category)}</span>`
+  const price = (cp: number) => `<span class="ui-num">${escapeHtml(formatCurrency(cp))}</span>`;
+  let facts: string;
+  let choices: string[];
+  if (shown === 'study') {
+    facts = creatures.length
+      ? '<div class="ui-note">Creatures you know, nearest first. Study one to learn it a rank further without a kill.</div>'
+      : '<div class="ui-note">Nothing to study: meet a creature first, or its page is already complete.</div>';
+    choices = creatures.map(
+      (m) =>
+        `<span class="bs-name">${escapeHtml(m.name)}</span><span class="ui-faint">${RANK_WORD[engine.compendium.getTier(m.id)]} · ${price(LoreService.studyPrice(engine, m))}</span>`
+    );
+  } else if (shown === 'rumors') {
+    facts = creatures.length
+      ? '<div class="ui-note">Creatures you have never met, by the floor they haunt. A rumor names one and enters it in your bestiary.</div>'
+      : '<div class="ui-note">You have met every creature there is.</div>';
+    choices = creatures.map(
+      (m) => `<span class="bs-name">A creature of floor <span class="ui-num">${m.minFloor ?? 1}</span></span><span class="ui-faint">${price(LoreService.rumorPrice(engine, m))}</span>`
+    );
+  } else {
+    facts =
+      unknown.length === 0
+        ? '<div class="ui-note">You carry nothing unidentified.</div>'
+        : `<div class="ui-note">Unidentified items you carry: <b class="ui-num">${unknown.length}</b>. Choose one to identify.</div>`;
+    choices = unknown.map(
+      (i) => `<span class="bs-name">${escapeHtml(i.displayName)}</span><span class="ui-faint">${worn.has(i) ? 'worn' : escapeHtml(i.category)}</span>`
+    );
+  }
+  const index = Math.max(0, Math.min(selected, choices.length - 1));
+  const chosen = creatures[index];
+  const offers: ServiceOffer[] = [];
+  if (shown === 'items') {
+    offers.push({
+      act: 'identify',
+      key: 'I',
+      label: 'Identify the chosen item',
+      detail: 'Reveals what the item you chose above truly is.',
+      priceCp: SageService.IDENTIFY_FEE_CP,
+      disabled: unknown.length === 0,
+    });
+  } else if (shown === 'study') {
+    offers.push({
+      act: 'study',
+      key: 'S',
+      label: chosen ? `Study the ${chosen.name}` : 'Study a creature',
+      detail: 'One rank further: its weaknesses, then its complete page.',
+      priceCp: chosen ? LoreService.studyPrice(engine, chosen) : undefined,
+      disabled: !chosen,
+    });
+  } else {
+    offers.push({
+      act: 'rumor',
+      key: 'R',
+      label: chosen ? `Buy the rumor of floor ${chosen.minFloor ?? 1}` : 'Buy a rumor',
+      detail: 'Names the creature and enters it in your bestiary, as if you had seen it.',
+      priceCp: chosen ? LoreService.rumorPrice(engine, chosen) : undefined,
+      disabled: !chosen,
+    });
+  }
+  offers.push(
+    {
+      act: 'advise',
+      key: 'A',
+      label: 'Ask for advice',
+      detail: 'A review of your load, your curses and the dangers below. The full report goes to the log.',
+      priceCp: 0,
+    },
+    {
+      act: 'bestiary',
+      key: 'B',
+      label: 'Open the bestiary',
+      detail: 'The creatures you have met and what you know of them.',
+    }
   );
+  const labels: Record<SageView, string> = { items: 'Items', study: 'Study', rumors: 'Rumors' };
+  const counts: Record<SageView, number> = {
+    items: unknown.length,
+    study: shown === 'study' ? creatures.length : sageCreatures(engine, 'study').length,
+    rumors: shown === 'rumors' ? creatures.length : sageCreatures(engine, 'rumors').length,
+  };
   return {
     heading: 'Services',
+    views: views.length > 1 ? views.map((v) => ({ id: v, label: labels[v], count: counts[v] })) : undefined,
+    view: shown,
     facts,
     choices,
-    selected: Math.max(0, Math.min(selected, choices.length - 1)),
-    offers: [
-      {
-        act: 'identify',
-        key: 'I',
-        label: 'Identify the chosen item',
-        detail: 'Reveals what the item you chose above truly is.',
-        priceCp: SageService.IDENTIFY_FEE_CP,
-        disabled: unknown.length === 0,
-      },
-      {
-        act: 'advise',
-        key: 'A',
-        label: 'Ask for advice',
-        detail: 'A review of your load, your curses and the dangers below. The full report goes to the log.',
-        priceCp: 0,
-      },
-      {
-        act: 'bestiary',
-        key: 'B',
-        label: 'Open the bestiary',
-        detail: 'The creatures you have met and what you know of them.',
-      },
-    ],
+    selected: index,
+    offers,
   };
 }
 
@@ -338,8 +418,8 @@ const PACT_NOTE =
   '<div class="ui-note">A pact makes the dungeon harder and pays more for it. It holds until you come back here to renounce it.</div>';
 
 /** The panel for a townsperson who isn't a merchant; null when they only greet. */
-export function servicePanelFor(engine: GameEngine, npc: NPC, selected = 0): ServicePanel | null {
-  const panel = basePanelFor(engine, npc, selected);
+export function servicePanelFor(engine: GameEngine, npc: NPC, selected = 0, view: SageView = 'items'): ServicePanel | null {
+  const panel = basePanelFor(engine, npc, selected, view);
   if (!engine.manifest?.pactKeeperNpcId || npc.id !== engine.manifest.pactKeeperNpcId) return panel;
   const offers = pactOffers(engine);
   if (offers.length === 0) return panel;
@@ -348,14 +428,14 @@ export function servicePanelFor(engine: GameEngine, npc: NPC, selected = 0): Ser
     : { heading: 'Pacts', facts: PACT_NOTE, offers };
 }
 
-function basePanelFor(engine: GameEngine, npc: NPC, selected: number): ServicePanel | null {
+function basePanelFor(engine: GameEngine, npc: NPC, selected: number, view: SageView): ServicePanel | null {
   const attunementNpcId = engine.manifest?.runeOfReturn?.attunementNpcId;
   if (attunementNpcId && npc.id === attunementNpcId) return runeSmithPanel(engine);
   switch (npc.role) {
     case 'priest':
       return templePanel(engine, selected);
     case 'sage':
-      return sagePanel(engine, selected);
+      return sagePanel(engine, selected, view);
     case 'banker':
       return bankerPanel(engine);
     case 'trainer':
@@ -391,9 +471,16 @@ export function servicePanelHtml(panel: ServicePanel): string {
       return `<button type="button" class="bs-row shop-choice${on ? ' is-selected' : ''}" role="option" aria-selected="${on}" data-choice="${i}">${row}</button>`;
     })
     .join('');
+  const views = (panel.views ?? [])
+    .map(
+      (v) =>
+        `<button type="button" class="st-subtab" role="tab" aria-selected="${v.id === panel.view}" data-act="view" data-arg="${escapeHtml(v.id)}">${escapeHtml(v.label)} <span class="ui-faint">${v.count}</span></button>`
+    )
+    .join('');
   return `
     <section class="ui-card shop-service">
       <h3 class="ui-h">${escapeHtml(panel.heading)}</h3>
+      ${views ? `<div class="st-subtabs" role="tablist">${views}</div>` : ''}
       ${panel.facts ?? ''}
       ${choices ? `<div class="ui-inset ui-scroll shop-choices" role="listbox" aria-label="Choose one">${choices}</div>` : ''}
       ${offers ? `<div class="shop-offers">${offers}</div>` : ''}

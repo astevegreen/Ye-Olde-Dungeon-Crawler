@@ -275,6 +275,18 @@ export interface TownServicesDefinition {
   pietyCategory?: string;
   /** Smiths who raise an item's +N (`SmithService`): each adds a Forge list to its merchant's shop. */
   smiths?: SmithDefinition[];
+  /** The sage's monster lore for sale (`LoreService`); absent, the sage sells none. */
+  monsterLore?: MonsterLoreDefinition;
+}
+
+/**
+ * The sage's monster lore (tracker 4.1): Study raises a known creature one bestiary rank,
+ * a Rumor reveals an unmet one the hero picks. Each price is `baseCp + perFloorCp × ` the
+ * creature's home floor (`minFloor`).
+ */
+export interface MonsterLoreDefinition {
+  study: { baseCp: number; perFloorCp: number };
+  rumor: { baseCp: number; perFloorCp: number };
 }
 
 /**

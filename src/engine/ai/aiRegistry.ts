@@ -178,8 +178,10 @@ export class AggressiveMeleeStrategy implements AIStrategy {
   }
 }
 
+const KITING_RANGED_ID = 'kiting_ranged';
+
 export class KitingRangedStrategy implements AIStrategy {
-  public readonly id = 'kiting_ranged';
+  public readonly id = KITING_RANGED_ID;
   public readonly name = 'Kiting Ranged';
 
   public decideAction(actor: Actor, engine: GameEngine): Action {
@@ -190,12 +192,14 @@ export class KitingRangedStrategy implements AIStrategy {
     const hasLos = dist <= 8 && hasLineOfSight(engine, actor.x, actor.y, player.x, player.y);
 
     const hasSpells = Boolean(monster.spells && monster.spells.length > 0);
+    // Q14: with a melee ally in front, it stays behind it rather than closing in to fight.
+    const screened = hasMeleeScreen(engine, monster, player, chebyshevDist);
 
     // 1. If adjacent, step back to shoot, or to cast a damaging spell that is ready. A caster
-    // between casts, or whose spells only hinder, stands and fights instead.
+    // between casts, or whose spells only hinder, stands and fights instead, unless screened.
     if (chebyshevDist <= 1) {
       const castsDamage = (monster.spells ?? []).some((id) => dealsDamage(engine.registries.spells.get(id)));
-      const wantsRange = !hasSpells || (castsDamage && monster.spellCooldown <= 0);
+      const wantsRange = !hasSpells || screened || (castsDamage && monster.spellCooldown <= 0);
       const backStep = wantsRange ? findFleeStep(engine.map, actor.position, player.position) : null;
       if (backStep) {
         monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
@@ -224,6 +228,13 @@ export class KitingRangedStrategy implements AIStrategy {
         monster.spellCooldown = 2;
         monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
         return new CastSpellAction(monster, chosenSpell, player.x, player.y);
+      }
+
+      // Screened and between casts: keep out of reach behind the melee ally, and wait to cast.
+      if (screened && hasSpells) {
+        monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
+        const backStep = chebyshevDist < 3 ? findFleeStep(engine.map, actor.position, player.position) : null;
+        return backStep ? new MovementAction(actor, backStep.x - actor.x, backStep.y - actor.y) : new WaitAction(actor);
       }
     }
 
@@ -363,6 +374,31 @@ function telegraphedAbilityAction(engine: GameEngine, monster: Monster, target: 
     element: ability.element,
     spawnSurface: ability.spawnSurface,
   });
+}
+
+/** How near a caster a melee ally must be to screen it (Chebyshev tiles). */
+const SCREEN_RADIUS = 6;
+
+/**
+ * Whether an awake melee ally screens a caster from its target: one of its faction within
+ * SCREEN_RADIUS of it, not running, not a caster or turret itself, and at least as near the target
+ * as the caster is (Q14, "casters stay behind melee monsters"). A bounded box scan (§6).
+ */
+function hasMeleeScreen(engine: GameEngine, caster: Monster, target: Entity, casterDist: number): boolean {
+  const { map } = engine;
+  for (let y = Math.max(0, caster.y - SCREEN_RADIUS); y <= Math.min(map.height - 1, caster.y + SCREEN_RADIUS); y++) {
+    for (let x = Math.max(0, caster.x - SCREEN_RADIUS); x <= Math.min(map.width - 1, caster.x + SCREEN_RADIUS); x++) {
+      for (const ally of map.getEntitiesAt(x, y)) {
+        if (ally === caster || ally.type !== 'monster' || !ally.isAlive() || ally.faction !== caster.faction) continue;
+        const other = ally as Monster;
+        if (other.aiState === 'sleeping' || other.aiState === 'fleeing') continue;
+        const routine = AIRegistry.get(other.aiRoutineId ?? other.aiType);
+        if (!routine || routine.id === KITING_RANGED_ID || routine.holdsGround) continue;
+        if (Math.max(Math.abs(other.x - target.x), Math.abs(other.y - target.y)) <= casterDist) return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**

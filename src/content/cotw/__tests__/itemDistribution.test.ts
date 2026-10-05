@@ -173,14 +173,15 @@ describe('CotW Item Distribution & Economic Integration', () => {
     });
     expect(cleaverDrop).toBe(true);
 
-    // 3. Gloom-Tarr (Floor 44) -> Níð-Dripping Hauberk (Corrupted)
+    // 3. Gloom-Tarr (Floor 30, tracker 5.5) -> Quicksilver Mesh Shirt, a Silver Veins armor
+    // (the Níð-Dripping Hauberk was a floor-45 relic; it stays in the floor-45 loot).
     const tarAbomination = MINIBOSS_MONSTERS.find((m) => m.id === 'miniboss_tar_abomination')!;
-    expect(tarAbomination.minFloor).toBe(44);
-    const hauberkDrop = tarAbomination.lootTable?.some((r) => {
-      const item = r.generate('test-hauberk', () => 0.5)!;
-      return (item.id === 'nid_dripping_hauberk' || item.definitionId === 'nid_dripping_hauberk') && item.modifiers[0]?.category === 'cursed' && item.isBound();
+    expect(tarAbomination.minFloor).toBe(30);
+    const shirtDrop = tarAbomination.lootTable?.some((r) => {
+      const item = r.generate('test-shirt', () => 0.5)!;
+      return item.id === 'quicksilver_mesh_shirt' || item.definitionId === 'quicksilver_mesh_shirt';
     });
-    expect(hauberkDrop).toBe(true);
+    expect(shirtDrop).toBe(true);
 
     // 4. Sköll (Floor 47) -> Marrow-Gnawed Ring (Corrupted)
     const marrowEater = MINIBOSS_MONSTERS.find((m) => m.id === 'miniboss_marrow_eater')!;

@@ -30,6 +30,7 @@ import { COTW_OBJECTIVES } from './objectives';
 import { COTW_COMPANIONS } from './companions';
 import { GIANT_BLOOD_STATUS, giantBloodHandler, GIANT_BLOOD_BOOTSTRAP_HOOK } from './giantBlood';
 import { FLOOR21, FLOOR21_PYLON_VAULT_ID } from './siphonPylon';
+import { FLOOR30 } from './bileSump';
 import { COTW_DARKNESS_HANDLERS, COTW_DARKNESS_HOOK, DARKNESS_STATUS, EMBOLDENED_STATUS, TORCHLIT_STATUS } from './darkness';
 import { BURNING_STATUS, burningHandler } from './burning';
 import { COTW_MONSTER_SCALING } from './monsterScaling';
@@ -288,8 +289,9 @@ export const cotwManifest: GameContentManifest = {
     { floor: CHARIOT_FORGE_FLOOR, vaultId: CHARIOT_FORGE_VAULT_ID },
     // Víðnir and the shed fang: guaranteed on floor 45, not a chance draw from the vault pool.
     { floor: 45, vaultId: 'floor45_fang_vault' },
-    // Gloom-Tarr in the Bile-Sump, and Sköll in the Marrow Ossuary: the Maw's other two.
-    { floor: 44, vaultId: BILE_SUMP_VAULT_ID },
+    // Gloom-Tarr in the Silver Veins' flooded Bile-Sump, its breath darkening floor 30 (bileSump.ts).
+    { floor: FLOOR30, vaultId: BILE_SUMP_VAULT_ID },
+    // Sköll in the Marrow Ossuary.
     { floor: 47, vaultId: MARROW_OSSUARY_VAULT_ID },
     // Act 1 Campfire Grotto: The Dwarven Hearth Grotto on floor 13
     // Ivalda, the last forge-keeper of the Iron Clans (ironClans.ts), keeps its coals.

@@ -47,6 +47,15 @@ describe('floor 21: the Siphon Pylon drinks the light', () => {
     expect(p.statusManager.hasStatus(DARKNESS_STATUS)).toBe(false);
   });
 
+  it('a floor 21 made before the dark (an older save, no core) keeps its light', () => {
+    const engine = onFloor21(3);
+    const [core] = coreTiles(engine);
+    engine.map.setTile(core.x, core.y, engine.map.getTile(core.x - 1, core.y)!);
+    engine.handlePlayerAction(new WaitAction(engine.player));
+
+    expect(engine.player.statusManager.hasStatus(DARKNESS_STATUS)).toBe(false);
+  });
+
   it('the neighbouring rift floors keep their light and their usual pylon', () => {
     const { engine } = new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Lamp', { seed: 3 });
     engine.changeFloor(20);

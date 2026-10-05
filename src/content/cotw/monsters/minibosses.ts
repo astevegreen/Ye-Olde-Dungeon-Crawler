@@ -82,20 +82,22 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
   {
     id: 'miniboss_tar_abomination',
     name: 'Gloom-Tarr, the Bile-Drinker',
-    minFloor: 44,
-    placedOnly: true, // floor44_bile_sump (vaults.ts)
-    stats: { hp: 250, maxHp: 250, attack: 25, defense: 14 },
+    // Tracker 5.5 (Q36 "A"): moved up from floor 44 to the Silver Veins' flooded sump on
+    // floor 30, retuned to sit between the floor-25 Warden and the floor-36 Matriarch.
+    minFloor: 30,
+    placedOnly: true, // floor30_bile_sump (vaults.ts)
+    stats: { hp: 200, maxHp: 200, attack: 21, defense: 11 },
     speed: 85,
     aiType: 'brute',
     resistances: { physical: 'resistant', fire: 'resistant' },
     statusImmunities: ['poison', 'slow'],
     fleeHealthPercent: 0.0,
-    xpValue: 1100,
+    xpValue: 850,
     tags: ['aberration', 'boss', 'miniboss'],
     lootTable: [
       {
         chance: 1.0,
-        generate: (id, rng) => makeLootItem('nid_dripping_hauberk', id, rng, 44),
+        generate: (id, rng) => makeLootItem('quicksilver_mesh_shirt', id, rng, 30),
       },
       {
         chance: 1.0,

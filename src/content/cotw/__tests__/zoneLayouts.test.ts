@@ -137,8 +137,8 @@ describe('cotw zone layouts', () => {
     }
   });
 
-  it('floors 44 and 47 always stamp Gloom-Tarr and Sköll, each once', () => {
-    for (const [floor, id] of [[44, 'miniboss_tar_abomination'], [47, 'miniboss_marrow_eater']] as const) {
+  it('floors 30 and 47 always stamp Gloom-Tarr and Sköll, each once', () => {
+    for (const [floor, id] of [[30, 'miniboss_tar_abomination'], [47, 'miniboss_marrow_eater']] as const) {
       for (let seed = 1; seed <= 15; seed++) {
         const r = DungeonArc.generateFloor(floor, seed * 7919, QUEST, cotwManifest);
         const found = r.map.getAllEntities().filter((e) => e instanceof Monster && e.definitionId === id);

@@ -1,6 +1,7 @@
 import type { VaultBlueprint } from '../../engine';
 import { SIPHON_ALTAR_TILE, SIPHON_RITUAL_FLOOR, SIPHON_VAULT_ID } from './hostageRitual';
 import { FLOOR21_PYLON_VAULT } from './siphonPylon';
+import { FLOOR30 } from './bileSump';
 
 export const DWARVEN_HEARTH_VAULT_ID = 'dwarven_hearth_grotto';
 export const DWARVEN_HEARTH_FLOOR = 13;
@@ -11,7 +12,7 @@ export const WORLD_BARK_FLOOR = 37;
 export const CHARIOT_FORGE_VAULT_ID = 'floor25_chariot_forge';
 export const CHARIOT_FORGE_FLOOR = 25;
 
-export const BILE_SUMP_VAULT_ID = 'floor44_bile_sump';
+export const BILE_SUMP_VAULT_ID = 'floor30_bile_sump';
 export const MARROW_OSSUARY_VAULT_ID = 'floor47_marrow_ossuary';
 
 export const COTW_VAULTS: VaultBlueprint[] = [
@@ -256,9 +257,9 @@ export const COTW_VAULTS: VaultBlueprint[] = [
     id: BILE_SUMP_VAULT_ID,
     name: 'The Bile-Sump',
     description:
-      'A sump at the foot of the Maw where the bile of Náströnd pools black and warm, and Gloom-Tarr wallows in it and drinks.',
-    minFloor: 44,
-    maxFloor: 44,
+      "A flooded sump at the bottom of the silver workings. Since the Wyrm woke, its bile has seeped up the roots into the mine and pooled black and warm among the drowned ore-carts; Gloom-Tarr wallows in it and drinks, and its breath has put out every miner's lamp.",
+    minFloor: FLOOR30,
+    maxFloor: FLOOR30,
     scriptedOnly: true,
     minibossId: 'miniboss_tar_abomination',
     layout: [
@@ -272,7 +273,7 @@ export const COTW_VAULTS: VaultBlueprint[] = [
       '#P...........P#',
       '###############',
     ],
-    preferredMonsters: ['nastrond_feaster', 'garmling', 'grave_wyrmling'],
+    preferredMonsters: ['deep_lode_pit_draugr', 'quicksilver_leech', 'choke_damp_phantasm'],
   },
   {
     // Sköll, placed once on floor 47 (index.ts scriptedVaultPlacements).

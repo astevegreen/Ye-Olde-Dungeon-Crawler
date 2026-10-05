@@ -15,6 +15,7 @@ import {
 import { COTW_MONSTERS } from './monsters';
 import { COTW_MONSTER_SCALING } from './monsterScaling';
 import { FLOOR21_DARK } from './siphonPylon';
+import { FLOOR30_DARK } from './bileSump';
 
 /**
  * Dark floors (tracker 5.3, Q12 "A", Q30): floors whose light something has drunk. Until the
@@ -35,10 +36,16 @@ export interface DarkFloor {
    * direction it lies (`{direction}`, an eight-point compass word).
    */
   beacon?: { tileId?: string; monsterDefinitionId?: string; message: string };
+  /**
+   * The floor relights itself once no living monster of this definition is on it (its keeper
+   * slain, however it died), logging `relitMessage`.
+   */
+  relitWhenSlain?: string;
+  relitMessage?: string;
 }
 
-/** Which floors are dark: floor 21 (tracker 5.4); 5.5 adds floor 30. */
-export const COTW_DARK_FLOORS: DarkFloor[] = [FLOOR21_DARK];
+/** Which floors are dark: floor 21 (tracker 5.4) and floor 30 (5.5). */
+export const COTW_DARK_FLOORS: DarkFloor[] = [FLOOR21_DARK, FLOOR30_DARK];
 
 /** On the hero: sight cut to 2 (`perceptionRadius`, the engine's sight override). */
 export const DARKNESS_STATUS = 'cotw:darkness';
@@ -108,18 +115,30 @@ export function createDarknessHook(floors: DarkFloor[]): ActionHook {
       // Off a dark floor there is nothing to do: the dark's statuses end themselves (onTick).
       const dark = activeDarkFloor(engine, floors);
       if (!dark) return;
-      const sight = holdsTorch(player) ? TORCHLIT_STATUS : DARKNESS_STATUS;
-      const other = sight === TORCHLIT_STATUS ? DARKNESS_STATUS : TORCHLIT_STATUS;
-      if (player.statusManager.hasStatus(other)) player.statusManager.removeStatus(other);
-      if (!player.statusManager.hasStatus(sight)) player.statusManager.applyStatus({ type: sight, duration: 9999 });
 
       const seenFlag = `cotw:dark_seen_${dark.floor}`;
       if (!engine.getWorldFlag(seenFlag)) {
         engine.setWorldFlag(seenFlag, true);
-        engine.log(dark.enterMessage);
         const at = dark.beacon ? findBeacon(engine, dark.beacon) : undefined;
+        if (dark.beacon && !at) {
+          // A floor made before it went dark (an older save's stored floor) has nothing to
+          // relight it with: it keeps its light.
+          engine.setWorldFlag(dark.relitFlag, true);
+          return;
+        }
+        engine.log(dark.enterMessage);
         if (dark.beacon && at) engine.log(dark.beacon.message.replace('{direction}', compass(player, at)));
       }
+
+      if (dark.relitWhenSlain && !keeperAlive(engine, dark.relitWhenSlain)) {
+        engine.setWorldFlag(dark.relitFlag, true);
+        if (dark.relitMessage) engine.log(dark.relitMessage);
+        return;
+      }
+      const sight = holdsTorch(player) ? TORCHLIT_STATUS : DARKNESS_STATUS;
+      const other = sight === TORCHLIT_STATUS ? DARKNESS_STATUS : TORCHLIT_STATUS;
+      if (player.statusManager.hasStatus(other)) player.statusManager.removeStatus(other);
+      if (!player.statusManager.hasStatus(sight)) player.statusManager.applyStatus({ type: sight, duration: 9999 });
 
       for (const entity of engine.map.getAllEntities()) {
         if (entity instanceof Monster && entity.faction === 'hostile' && entity.isAlive() && !entity.statusManager.hasStatus(EMBOLDENED_STATUS)) {
@@ -131,6 +150,10 @@ export function createDarknessHook(floors: DarkFloor[]): ActionHook {
       if (actions % DARK_SPAWN_INTERVAL === 0) spawnFromTheDark(engine, dark);
     },
   };
+}
+
+function keeperAlive(ctx: EngineContext, definitionId: string): boolean {
+  return ctx.map.getAllEntities().some((e) => e instanceof Monster && e.definitionId === definitionId && e.isAlive());
 }
 
 function findBeacon(ctx: EngineContext, beacon: NonNullable<DarkFloor['beacon']>): { x: number; y: number } | undefined {

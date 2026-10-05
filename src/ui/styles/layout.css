@@ -202,9 +202,10 @@
   transform: translateY(-1px);
 }
 
+/* A spell's slot takes its element's color from the pack (--slot-tone, tracker 4.6). */
 .quick-spell-slot-assigned {
-  background: color-mix(in srgb, var(--ui-mana) 35%, var(--ui-surface-0));
-  border: 1px solid var(--ui-info);
+  background: color-mix(in srgb, var(--slot-tone, var(--ui-mana)) 30%, var(--ui-surface-0));
+  border: 1px solid var(--slot-tone, var(--ui-info));
   color: var(--ui-text);
 }
 
@@ -223,7 +224,7 @@
 
 .quick-spell-slot-nomana {
   background: color-mix(in srgb, var(--ui-line-strong) 35%, transparent);
-  border: 1px solid color-mix(in srgb, var(--ui-text-muted) 25%, transparent);
+  border: 1px solid color-mix(in srgb, var(--slot-tone, var(--ui-text-muted)) 35%, transparent);
   color: var(--ui-text-muted);
 }
 
@@ -468,6 +469,15 @@
   font-size: var(--ui-text-xs);
   line-height: 12px;
 }
+/* The spell's rune before its name (tracker 4.6), in the row that already gives way to
+   an ellipsis, so the slot needs no more width. */
+.action-belt-slots .spell-rune {
+  grid-column: 1;
+  grid-row: 2;
+  width: 12px;
+  height: 12px;
+  margin-right: 3px;
+}
 .action-belt-slots .slot-badge-cost,
 .action-belt-slots .slot-badge-cost-nomana {
   grid-column: 2;
@@ -478,7 +488,7 @@
   white-space: nowrap;
 }
 .action-belt-slots .slot-badge-name {
-  grid-column: 1 / span 2;
+  grid-column: 1 / -1;
   grid-row: 2;
   margin: 0;
   text-align: center;
@@ -487,6 +497,10 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.action-belt-slots .spell-rune + .slot-badge-name {
+  grid-column: 2;
+  text-align: left;
 }
 
 /* Full-Width Combat and Event Log */

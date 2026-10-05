@@ -13,6 +13,15 @@
   font-style: normal;
 }
 
+/* A spell's rune (src/ui/spellRunes.ts): the pack's `spell~` recipe, hidden where it draws none. */
+.spell-rune {
+  display: none;
+  flex: none;
+  background: center / contain no-repeat;
+  image-rendering: pixelated;
+  font-style: normal;
+}
+
 /* The save importer's drop target: one large icon. */
 .save-drop-icon { margin-bottom: 8px; }
 .save-drop-icon .ui-icon { width: 48px; height: 48px; }

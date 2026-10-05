@@ -10,7 +10,14 @@ class FakeSlot {
   innerHTML = '';
   hidden = false;
   dataset: Record<string, string> = {};
-  style: Record<string, string> = {};
+  style: Record<string, string> & { setProperty?: (k: string, v: string) => void; removeProperty?: (k: string) => void } = Object.assign({} as Record<string, string>, {
+    setProperty: (k: string, v: string) => {
+      this.style[k] = v;
+    },
+    removeProperty: (k: string) => {
+      delete this.style[k];
+    },
+  });
   readonly nameEl = { textContent: '' };
   readonly classList = {
     toggle: (name: string, on: boolean) => {
@@ -156,5 +163,40 @@ describe('QuickSpellsBar', () => {
     bar.setCue(null);
     expect(s[0].className).not.toContain('hud-cue');
     expect(s[0].dataset.cue).toBeUndefined();
+  });
+
+  it("frames each spell in its element's color and shows the pack's rune for it (N5, tracker 4.6)", () => {
+    const map = new GameMap(10, 10, TILES.FLOOR);
+    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 3, y: 3 }, stats: { hp: 10, maxHp: 10, attack: 1, defense: 1 } });
+    player.mana = 20;
+    const manifest = {
+      id: 'test_pack',
+      name: 'Test Pack',
+      affinityMatrix: { elements: [{ id: 'fire', name: 'Fire', color: '#ff0000' }], defaultMultipliers: {} },
+      spriteRecipes: { 'spell~fire': () => {}, 'spell~test:own': () => {} },
+      spells: [
+        { id: 'test:bolt', name: 'Bolt', manaCost: 3, element: 'fire' },
+        { id: 'test:own', name: 'Own Rune', manaCost: 3, element: 'fire' },
+        { id: 'test:shade', name: 'Shade', manaCost: 3, element: 'shadow', visual: { color: '#123456' } },
+        { id: 'test:plain', name: 'Plain', manaCost: 3 },
+      ],
+    } as any;
+    const engine = new GameEngine({ map, player, manifest });
+    ['test:bolt', 'test:own', 'test:shade', 'test:plain'].forEach((id, i) => (player.quickSpells[i] = id));
+    const bar = new QuickSpellsBar({ onTriggerSlot: () => {}, onOpenSpellbook: () => {} });
+    bar.update(engine);
+    const s = slots();
+
+    // The element's rune, the spell's own where the pack draws one, none where it draws neither.
+    expect(s[0].innerHTML).toContain('data-rune="fire"');
+    expect(s[1].innerHTML).toContain('data-rune="test:own"');
+    expect(s[2].innerHTML).not.toContain('data-rune');
+    // The pack's element color, else the spell's own color, else the role default.
+    expect(s[0].style['--slot-tone']).toBe('#ff0000');
+    expect(s[2].style['--slot-tone']).toBe('#123456');
+    expect(s[3].style['--slot-tone']).toBeUndefined();
+    // The "+ Spell" slot after them carries no tone.
+    expect(s[4].className).toContain('quick-spell-slot-add');
+    expect(s[4].style['--slot-tone']).toBeUndefined();
   });
 });

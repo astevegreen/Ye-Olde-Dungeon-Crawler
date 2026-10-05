@@ -102,6 +102,30 @@ test('a full spell belt keeps clear of the context button and the tray', async (
   expect(clashes).toEqual([]);
 });
 
+// Each belt slot holds its key, rune, cost and name (tracker 4.6): with short names in one
+// row a slot stayed at its minimum while "1 5 Seiðr" above the name needed more, and ran
+// into the next slot (the crowding 0.18 left).
+test('every belt slot holds what it shows, at 1366 and 1920 wide', async ({ page }) => {
+  await embarkNewHero(page);
+  await page.evaluate(() => {
+    const e = window.__cotwEngine!;
+    for (const id of ['firebolt', 'cold_ray', 'lightning_bolt']) e.player.learnSpell(id);
+  });
+  for (const [width, height] of [[1366, 768], [1920, 1080]]) {
+    await page.setViewportSize({ width, height });
+    await page.keyboard.press('Space');
+    const spill = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('#quick-spells-bar .quick-spell-slot')]
+        .filter((s) => !s.hidden)
+        .map((s) => s.scrollWidth - s.clientWidth)
+    );
+    expect(spill.length, `slots at ${width}`).toBeGreaterThan(3);
+    expect(Math.max(...spill), `overflow at ${width}`).toBeLessThanOrEqual(1);
+    const runes = await page.locator('#quick-spells-bar .spell-rune').evaluateAll((els) => els.filter((el) => getComputedStyle(el).display !== 'none').length);
+    expect(runes, 'a rune on every spell').toBe(spill.length - 1);
+  }
+});
+
 // On a very wide window the map stays inside its column: a 2400px CSS cap on the column
 // fought the width ViewportManager sets, and at 3840x2160 the canvas ran 320px past
 // the header and under the sidebar (tracker 0.19).

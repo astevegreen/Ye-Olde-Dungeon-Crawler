@@ -2,6 +2,7 @@ import type { GameEngine } from '../engine';
 import { GrimoireMatrixManager, getSpell, resolveManaTerms } from '../engine';
 import { markCue } from './hints/cueMark';
 import { spellPower } from './spellPower';
+import { spellRuneHtml, spellTone } from './spellRunes';
 
 /** Each slot's key, 1-9 then 0, matching the ten quick_spell_* bindings. */
 const SLOT_LABELS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
@@ -51,6 +52,12 @@ export class QuickSpellsBar {
       const minSlot = parseFloat(style.getPropertyValue('--belt-slot-min')) || 0;
       const gap = parseFloat(style.columnGap) || 0;
       wrapped = shown.length * minSlot + (shown.length - 1) * gap > width;
+    }
+    // Room for every minimum is not room for every slot: a short name leaves its slot at the
+    // minimum while the key and cost above it need more. Measure in one row, then wrap.
+    if (!wrapped && shown.length > 1) {
+      this.container.classList.remove('is-wrapped');
+      wrapped = shown.some((s) => s.scrollWidth > s.clientWidth + 1);
     }
     this.container.classList.toggle('is-wrapped', wrapped);
     this.container.style.setProperty('--belt-cols', String(Math.ceil(shown.length / 2)));
@@ -135,6 +142,7 @@ export class QuickSpellsBar {
         addSlotShown = true;
         slotEl.hidden = false;
         slotEl.className = `quick-spell-slot quick-spell-slot-${i} quick-spell-slot-add`;
+        slotEl.style.removeProperty?.('--slot-tone');
         slotEl.title = `Add a spell to key [${slotKey}] (opens the spellbook)`;
         slotEl.innerHTML = `
           <span class="slot-badge-digit">${slotKey}</span>
@@ -156,8 +164,13 @@ export class QuickSpellsBar {
       slotEl.title = hasMana
         ? `[${slotKey}] ${spell.name} — ${manaCost} ${mana.unit}${power ? `, power ${power}` : ''}.${grid} Click or press ${slotKey} to cast.`
         : `[${slotKey}] ${spell.name} — ${manaCost} ${mana.unit}${power ? `, power ${power}` : ''} (you have ${player.mana}).${grid}`;
+      // The spell's element tone frames the slot, and its rune sits beside the key (tracker 4.6).
+      const tone = spellTone(engine.manifest, spell);
+      if (tone) slotEl.style.setProperty?.('--slot-tone', tone);
+      else slotEl.style.removeProperty?.('--slot-tone');
       slotEl.innerHTML = `
         <span class="slot-badge-digit">${slotKey}</span>
+        ${spellRuneHtml(engine.manifest, spell)}
         <span class="slot-badge-name"></span>
         <span class="${hasMana ? 'slot-badge-cost' : 'slot-badge-cost-nomana'}">${manaCost}<span class="slot-badge-unit"> ${mana.unit}</span></span>
       `;

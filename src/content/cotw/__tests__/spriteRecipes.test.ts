@@ -6,6 +6,7 @@ import {
   COTW_ITEM_SPRITES,
   COTW_TERRAIN_SPRITES,
   COTW_UI_ICONS,
+  COTW_SPELL_RUNES,
 } from '../sprites';
 
 /**
@@ -27,6 +28,7 @@ describe('COTW sprite recipe groups', () => {
     items: COTW_ITEM_SPRITES,
     terrain: COTW_TERRAIN_SPRITES,
     ui: COTW_UI_ICONS,
+      runes: COTW_SPELL_RUNES,
   } as const;
 
   it('assigns every recipe key to exactly one group', () => {
@@ -50,7 +52,8 @@ describe('COTW sprite recipe groups', () => {
       Object.keys(COTW_MONSTER_SPRITES).length +
       Object.keys(COTW_ITEM_SPRITES).length +
       Object.keys(COTW_TERRAIN_SPRITES).length +
-      Object.keys(COTW_UI_ICONS).length;
+      Object.keys(COTW_UI_ICONS).length +
+      Object.keys(COTW_SPELL_RUNES).length;
     const aliases = ['nidhogg', 'npc-ivalda']; // definition-ID keys that reuse another group's art
 
     expect(Object.keys(COTW_SPRITE_RECIPES)).toHaveLength(partTotal + aliases.length);

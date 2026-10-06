@@ -44,11 +44,21 @@ export class AutosaveManager {
     return slot === 'preserved' ? this.preservedAutosaveKey : this.autosaveKey;
   }
 
+  /** The turn of this run's last autosave, or of its start: the next periodic one is 50 on. */
+  private lastAutosaveTurn = 0;
+
+  /** A run starts (or resumes) at `turnCount`: the periodic autosave counts from here. */
+  public startRun(turnCount: number): void {
+    this.lastAutosaveTurn = turnCount;
+  }
+
   /**
-   * Checks if an autosave should be triggered on this turn (every 50 turns).
+   * Whether the periodic autosave is due: 50 turns since the last one. A multi-turn action
+   * (a long rest) no longer steps over a multiple of 50 unsaved, and a turn's many UI
+   * refreshes no longer save it again and again (R-main-7).
    */
   public shouldAutosave(turnCount: number): boolean {
-    return turnCount > 0 && turnCount % 50 === 0;
+    return turnCount - this.lastAutosaveTurn >= 50;
   }
 
   /**
@@ -80,6 +90,7 @@ export class AutosaveManager {
 
       this.preserveIfSuperseded(envelope.profile);
       this.storage.setItem(this.autosaveKey, JSON.stringify(envelope));
+      this.lastAutosaveTurn = engine.turnCount;
       return true;
     } catch (err) {
       flightRecorder.warn('[AutosaveManager] Failed to record autosave:', { error: String(err) });

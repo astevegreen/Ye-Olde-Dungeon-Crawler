@@ -47,14 +47,25 @@ describe('AutosaveManager Background Persistence', () => {
     };
   });
 
-  it('determines autosave intervals accurately (every 50 turns)', () => {
+  it('is due 50 turns after the last autosave (R-main-7)', () => {
     expect(autosaveManager.shouldAutosave(0)).toBe(false);
-    expect(autosaveManager.shouldAutosave(1)).toBe(false);
     expect(autosaveManager.shouldAutosave(49)).toBe(false);
     expect(autosaveManager.shouldAutosave(50)).toBe(true);
-    expect(autosaveManager.shouldAutosave(51)).toBe(false);
-    expect(autosaveManager.shouldAutosave(100)).toBe(true);
-    expect(autosaveManager.shouldAutosave(150)).toBe(true);
+
+    // A long rest from turn 37 to 112 stepped over 50 and 100 unsaved; it is due on arrival.
+    expect(autosaveManager.shouldAutosave(112)).toBe(true);
+    engine.turnCount = 112;
+    expect(autosaveManager.autosave(engine, profile)).toBe(true);
+    // Then not again on the same turn, however many refreshes ask.
+    expect(autosaveManager.shouldAutosave(112)).toBe(false);
+    expect(autosaveManager.shouldAutosave(161)).toBe(false);
+    expect(autosaveManager.shouldAutosave(162)).toBe(true);
+  });
+
+  it('counts from where a run starts or resumes', () => {
+    autosaveManager.startRun(1234);
+    expect(autosaveManager.shouldAutosave(1250)).toBe(false);
+    expect(autosaveManager.shouldAutosave(1284)).toBe(true);
   });
 
   it('persists and loads game state including player quickSpells and floor', () => {

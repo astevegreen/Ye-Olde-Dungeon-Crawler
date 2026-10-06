@@ -1339,6 +1339,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // hero fallen and open the game-over screen over the new run (R-main-6).
     if (activeEngine && activeEngine !== engine) activeEngine.gameState.onStateChanged = undefined;
     masteryModal.clearQueue();
+    autosaveManager.startRun(engine.turnCount);
     activeEngine = engine;
     activeProfile = profile;
     window.__cotwEngine = engine;

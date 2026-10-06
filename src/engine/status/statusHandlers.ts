@@ -1,6 +1,5 @@
 import type { StatusType, StatusEffect } from './types';
 import type { Entity } from '../entities/entity';
-import type { Monster } from '../entities/monster';
 import type { GameEngine } from '../engine';
 
 export interface StatusTickOutput {
@@ -95,15 +94,19 @@ export const StatusEffectRegistry = StatusHandlerRegistry;
 export const BUILTIN_STATUS_HANDLERS: Record<string, StatusHandler> = {
   poison: {
     affliction: true,
-    onTick(entity, effect, _engine) {
+    onTick(entity, effect, engine) {
       const dmg = effect.potency ?? 2;
-      // Periodic damage must not wake a sleeping monster.
-      const res =
-        entity.type === 'monster' ? (entity as Monster).takeDamage(dmg, { wakeUp: false }) : entity.takeDamage(dmg);
+      // Poison damage through the entity's affinity: what resists poison takes less of each
+      // tick, what is immune takes none. Periodic damage must not wake a sleeping monster.
+      const res = entity.takeElementalDamage(dmg, 'poison', engine?.affinityMatrix, undefined, { wakeUp: false });
       return {
         damageTaken: res.damageDealt,
         killed: res.killed,
-        message: `${entity.name} suffers ${res.damageDealt} periodic poison damage!`,
+        message: res.isHeal
+          ? `${entity.name} is healed by the poison for ${res.healed}.`
+          : res.damageDealt > 0 || res.killed
+            ? `${entity.name} suffers ${res.damageDealt} periodic poison damage!`
+            : undefined,
       };
     },
     onExpire(entity) {

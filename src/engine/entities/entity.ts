@@ -195,7 +195,8 @@ export class Entity {
     return allowed;
   }
 
-  public takeDamage(rawAmount: number): { damageDealt: number; killed: boolean } {
+  /** `options.wakeUp: false` keeps a sleeping monster asleep (periodic damage); see `Monster.takeDamage`. */
+  public takeDamage(rawAmount: number, _options?: { wakeUp?: boolean }): { damageDealt: number; killed: boolean } {
     // A blow on the already dead deals nothing and kills nobody: `killed` marks the one
     // hit that crossed to 0 HP, so a death resolves once however many hits follow it.
     if (this.isInvulnerable || this.hp <= 0) {
@@ -222,7 +223,8 @@ export class Entity {
     amount: number,
     element: ElementType,
     matrix?: AffinityMatrix,
-    terrainType?: TileType
+    terrainType?: TileType,
+    options?: { wakeUp?: boolean }
   ): { damageDealt: number; finalDamage: number; isHeal: boolean; healed: number; killed: boolean; affinity: ElementalAffinity; message?: string } {
     const affinity = this.affinityTo(element);
     const calc = calculateElementalDamage(amount, element, affinity, matrix, terrainType);
@@ -232,7 +234,7 @@ export class Entity {
       return { damageDealt: 0, finalDamage: calc.finalDamage, isHeal: true, healed, killed: false, affinity, message: calc.message };
     }
 
-    const damageRes = this.takeDamage(calc.finalDamage);
+    const damageRes = this.takeDamage(calc.finalDamage, options);
     return {
       damageDealt: damageRes.damageDealt,
       finalDamage: calc.finalDamage,

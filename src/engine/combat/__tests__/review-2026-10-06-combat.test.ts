@@ -159,7 +159,7 @@ describe('R-cmbt-5 · an elemental bonusDamage hook ignores the target affinity'
 });
 
 describe('R-cmbt-6 · poison ticks ignore poison immunity', () => {
-  it.fails('a poison-immune hero takes no damage from a poison tick', () => {
+  it('a poison-immune hero takes no damage from a poison tick', () => {
     const { player, engine } = make();
     (player as unknown as { elementalResistances: Record<string, string> }).elementalResistances.poison = 'immune';
     player.statusManager.applyStatus({ type: 'poison', duration: 5, potency: 4 }, [], player, engine);
@@ -167,6 +167,31 @@ describe('R-cmbt-6 · poison ticks ignore poison immunity', () => {
     engine.handlePlayerAction(new WaitAction(player));
 
     expect(100 - player.hp).toBe(0);
+    expect(engine.messages.some((m) => m.includes('periodic poison damage'))).toBe(false);
+  });
+
+  it('a poison-resistant sleeping monster takes half of each tick and sleeps on', () => {
+    const { map, engine } = make();
+    const rat = mon('rat', 10, 10, 30, { resistances: { poison: 'resistant' }, aiState: 'sleeping' });
+    map.addEntity(rat);
+    rat.statusManager.applyStatus({ type: 'poison', duration: 5, potency: 4 }, [], rat, engine);
+
+    rat.statusManager.tick(rat, engine);
+
+    expect(30 - rat.hp).toBe(2);
+    expect(rat.aiState).toBe('sleeping');
+  });
+
+  it('a fire-resistant monster burning at 6 takes 3 a turn (the cotw burning status)', () => {
+    const { map, engine } = make();
+    const imp = mon('imp', 10, 10, 30, { resistances: { fire: 'resistant' } });
+    map.addEntity(imp);
+    const burning = cotwManifest.statusHandlers?.burning;
+    expect(burning?.onTick).toBeDefined();
+
+    const res = burning!.onTick!(imp, { type: 'burning', duration: 4, potency: 6 } as never, engine);
+
+    expect(res.damageTaken).toBe(3);
   });
 });
 

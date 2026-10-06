@@ -1852,8 +1852,9 @@ window.addEventListener('DOMContentLoaded', () => {
   titleScreen = new TitleScreen({
     profileManager,
     autosaveManager,
-    onLoadAutosave: (loadedEngine, loadedProfile) => {
-      launchGame(loadedEngine, loadedProfile);
+    onLoadAutosave: () => {
+      const loaded = loadAutosaveOrNotify();
+      if (loaded) launchGame(loaded.engine, loaded.profile);
     },
     saveCodeModal,
     sagaShareModal,

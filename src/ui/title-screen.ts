@@ -17,12 +17,12 @@ import { defaultPlatformAdapter, getBrowserStorage } from './platform';
 import { resolveBranding } from './branding';
 import { formatWeight } from './units';
 import type { AutosaveManager } from '../engine';
-import type { GameEngine } from '../engine';
 
 export interface TitleScreenOptions {
   profileManager: ProfileManager;
   autosaveManager?: AutosaveManager;
-  onLoadAutosave?: (engine: GameEngine, profile: CharacterProfile) => void;
+  /** Loads the autosave and starts it, or says why it can't (the typed outcome, §5). */
+  onLoadAutosave?: () => void;
   onResume: (profileId: string) => void;
   onNewCharacter: (
     name: string,
@@ -55,7 +55,7 @@ export class TitleScreen {
   public saveCodeModal?: SaveCodeModal;
   public sagaShareModal?: SagaShareModal;
   public autosaveManager?: AutosaveManager;
-  private onLoadAutosaveCallback?: (engine: GameEngine, profile: CharacterProfile) => void;
+  private onLoadAutosaveCallback?: () => void;
   private onBackToMenuCallback?: () => void;
 
   private container: HTMLElement | null = null;
@@ -141,16 +141,9 @@ export class TitleScreen {
     if (this.fileInput) this.fileInput.accept = `${SAVE_FILE_EXTENSION},.sav,.json`;
 
     // Load Autosave button
-    this.loadAutosaveBtn?.addEventListener('click', () => {
-      if (this.autosaveManager && this.onLoadAutosaveCallback) {
-        const loaded = this.autosaveManager.loadAutosave();
-        if (loaded) {
-          this.onLoadAutosaveCallback(loaded.engine, loaded.profile);
-        } else {
-          this.setStatus('Error loading autosave payload.');
-        }
-      }
-    });
+    // Through main's load helper, as every other load is: a damaged, too-new or
+    // unmigratable autosave names its problem instead of "Error loading autosave payload.".
+    this.loadAutosaveBtn?.addEventListener('click', () => this.onLoadAutosaveCallback?.());
 
     // Resume button
     this.resumeBtn?.addEventListener('click', () => {

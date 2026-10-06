@@ -1,6 +1,7 @@
 import { Item, type ItemConfig } from '../items/item';
 import type { Player } from '../entities/player';
 import type { Container } from '../items/container';
+import { freshItemId } from '../items/itemIndex';
 import type { CoinageDefinition } from '../types/manifest';
 import {
   type CoinDenomination,
@@ -280,7 +281,7 @@ export function addCurrencyToPlayer(player: Player, amount: CurrencyBreakdown | 
   for (const denom of denoms) {
     const count = breakdown[denom];
     if (count <= 0) continue;
-    const coins = new CoinItem({ id: `${player.id}-c-${denom}-0`, denomination: denom, count });
+    const coins = new CoinItem({ id: freshItemId(`${player.id}-c-${denom}`), denomination: denom, count });
     if (!player.inventory.storeItem(coins).success) {
       stowCoins(player.inventory.primaryPack, coins);
       allStored = false;

@@ -208,8 +208,9 @@ export class Container extends Item {
       const stackTarget = this.items.find((i) => canStack(i, item));
       if (stackTarget) {
         mergeItemStacks(stackTarget, item);
-        // The absorbed stack no longer exists as a distinct item.
-        itemIndex.unregister(item.id);
+        // The absorbed stack no longer exists as a distinct item (and its id, should it
+        // share the survivor's, still names the survivor).
+        if (item.id !== stackTarget.id) itemIndex.unregister(item.id);
         return true;
       }
     }

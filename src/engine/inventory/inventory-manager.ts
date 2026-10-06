@@ -1,5 +1,6 @@
 import { Paperdoll, type EquipmentStats, type EquipmentSlotDefinition } from './paperdoll';
 import { Container } from '../items/container';
+import { freshItemId } from '../items/itemIndex';
 import type { Item, EquipmentSlot } from '../items/item';
 import { CoinItem, coinRoom, stowCoins } from '../economy/currency';
 import { COIN_BULK_CM3, COIN_VALUES } from '../economy/types';
@@ -433,7 +434,7 @@ export class InventoryManager {
       return { success: true, destination: 'purse' };
     }
     if (purse && toPurse > 0) {
-      purse.addItem(new CoinItem({ id: `${coins.id}-purse`, denomination: coins.denomination, count: toPurse }));
+      purse.addItem(new CoinItem({ id: freshItemId(`${coins.id}-purse`), denomination: coins.denomination, count: toPurse }));
       coins.setCount(rest);
       this.primaryPack.addItem(coins);
       return { success: true, destination: 'purse and pack' };
@@ -463,7 +464,7 @@ export class InventoryManager {
         stowCoins(this.primaryPack, pile);
       } else {
         pile.setCount(pile.count - moved);
-        stowCoins(this.primaryPack, new CoinItem({ id: `${pile.id}-spill`, denomination: pile.denomination, count: moved }));
+        stowCoins(this.primaryPack, new CoinItem({ id: freshItemId(`${pile.id}-spill`), denomination: pile.denomination, count: moved }));
       }
     }
   }
@@ -494,7 +495,7 @@ export class InventoryManager {
             c.removeItem(item.id);
           } else {
             item.setCount(item.count - room);
-            moving = new CoinItem({ id: `${item.id}-purse`, denomination: item.denomination, count: room });
+            moving = new CoinItem({ id: freshItemId(`${item.id}-purse`), denomination: item.denomination, count: room });
           }
           purse.addItem(moving);
           movedCount += 1;

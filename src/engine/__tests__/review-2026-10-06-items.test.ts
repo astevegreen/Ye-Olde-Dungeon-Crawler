@@ -142,7 +142,7 @@ describe('R-econ-7 · "Sort by value" orders unidentified items by their hidden 
 });
 
 describe('R-econ-13 · minted coin piles share an id, so a merge unregisters the surviving pile', () => {
-  it.fails('every purse pile is still in the item index after two payments', () => {
+  it('every purse pile is still in the item index after two payments', () => {
     const { player } = build();
     player.inventory.paperdoll.equip(ItemFactory.createCoinPurse('purse'), 'purse');
     addCurrencyToPlayer(player, 250);

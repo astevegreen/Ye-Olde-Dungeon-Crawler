@@ -107,6 +107,18 @@ export const itemIndex = {
   },
 };
 
+/**
+ * An id no item in the active engine holds: `base`, else `base-2`, `base-3`, ... Taken from
+ * the index, not the simulation PRNG, so minting spends no draw and a replay mints the same ids.
+ */
+export function freshItemId(base: string): string {
+  const index = activeItemIndex();
+  if (!index.has(base)) return base;
+  let n = 2;
+  while (index.has(`${base}-${n}`)) n++;
+  return `${base}-${n}`;
+}
+
 /** Convenience lookup: the item with this id, wherever it lives in the active engine. */
 export function getItemById(itemId: string): Item | undefined {
   return activeItemIndex().get(itemId);

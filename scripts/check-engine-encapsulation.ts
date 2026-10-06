@@ -58,8 +58,11 @@ const INTERNAL_SUBSYSTEM_CLASSES = new Set([
   'GameStateManager',
   'ActionPipeline',
 ]);
-const SUBSYSTEM_MUTATOR_NAME =
-  /^(add|remove|set|clear|delete|equip|unequip|store|move|apply|place|take|drop|swap|split|merge|push|pop|splice|reset|register|unregister|fill|tick|record|reveal|consume|spend|deposit|withdraw|transfer|sort|compact)/i;
+// Deny by default (R-tool-5): presentation may call a subsystem method only if its name reads
+// as a query. A mutator list missed `consolidateCoins`, `markOpened`, `activatePact`,
+// `triggerDeath`, `simulateCatchUp` and others.
+const SUBSYSTEM_QUERY_NAME =
+  /^(get|is|has|can|find|to|serialize|count|total|contained|peek|list|describe|compute|calculate|resolve|evaluate|contains|includes|inBounds|posKey|size|top|entries|keys|values|preview|check|matches|would|lookup|query|valueOf|explored|visible|any|all|nearest|distance|neighbou?rs?)/;
 const COLLECTION_MUTATORS = new Set([
   'push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin',
   'set', 'delete', 'clear', 'add',
@@ -204,9 +207,27 @@ function checkWriteTarget(sf: ts.SourceFile, target: ts.Expression, statement: t
     const receiver = unwrap(t.expression);
     if (ts.isPropertyAccessExpression(receiver)) {
       const hit = engineClassMember(checker.getSymbolAtLocation(receiver.name));
-      if (hit) report(sf, statement, 'INDEXED_WRITE', `${hit.className}.${hit.member}`);
+      if (hit) {
+        report(sf, statement, 'INDEXED_WRITE', `${hit.className}.${hit.member}`);
+        return;
+      }
     }
+    // `player['hp'] = 0`, `(engine as any)['x'] = v`: a named field written by bracket.
+    const named = bracketMember(t);
+    if (named) report(sf, statement, 'INDEXED_WRITE', `${named.className}.${named.member}`);
   }
+}
+
+/** The engine class member a `receiver['name']` access names, through casts. */
+function bracketMember(access: ts.ElementAccessExpression): { className: string; member: string } | null {
+  const key = access.argumentExpression;
+  if (!ts.isStringLiteralLike(key)) return null;
+  const receiver = unwrapCasts(access.expression);
+  const prop = checker.getTypeAtLocation(receiver).getProperty(key.text);
+  const hit = engineClassMember(prop);
+  if (hit) return hit;
+  const cls = engineClassOfType(receiver);
+  return cls ? { className: cls, member: key.text } : null;
 }
 
 function visit(sf: ts.SourceFile, scope: Scope, node: ts.Node): void {
@@ -223,16 +244,26 @@ function visit(sf: ts.SourceFile, scope: Scope, node: ts.Node): void {
     checkWriteTarget(sf, node.operand, node);
   } else if (ts.isDeleteExpression(node)) {
     checkWriteTarget(sf, node.expression, node);
+  } else if (ts.isCallExpression(node) && ts.isElementAccessExpression(unwrap(node.expression)) && scope === 'presentation') {
+    // `engine.map['setTile'](...)`: a subsystem method called by bracket.
+    const named = bracketMember(unwrap(node.expression) as ts.ElementAccessExpression);
+    if (named && INTERNAL_SUBSYSTEM_CLASSES.has(named.className) && !SUBSYSTEM_QUERY_NAME.test(named.member)) {
+      report(sf, node, 'SUBSYSTEM_MUTATION', `${named.className}.${named.member}`);
+    }
   } else if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(unwrap(node.expression))) {
     const callee = unwrap(node.expression) as ts.PropertyAccessExpression;
     const methodName = callee.name.text;
+    const writesThrough =
+      ts.isIdentifier(callee.expression) &&
+      ((callee.expression.text === 'Object' && (methodName === 'assign' || methodName === 'defineProperty' || methodName === 'defineProperties')) ||
+        (callee.expression.text === 'Reflect' && (methodName === 'set' || methodName === 'defineProperty' || methodName === 'deleteProperty')));
 
-    if (ts.isIdentifier(callee.expression) && callee.expression.text === 'Object' && methodName === 'assign' && node.arguments[0]) {
+    if (writesThrough && node.arguments[0]) {
       const cls = engineClassOfType(unwrapCasts(node.arguments[0]));
       if (cls) report(sf, node, 'OBJECT_ASSIGN', `${cls}.*`);
     } else if (scope === 'presentation') {
       const method = engineClassMember(checker.getSymbolAtLocation(callee.name), true);
-      if (method && INTERNAL_SUBSYSTEM_CLASSES.has(method.className) && SUBSYSTEM_MUTATOR_NAME.test(methodName)) {
+      if (method && INTERNAL_SUBSYSTEM_CLASSES.has(method.className) && !SUBSYSTEM_QUERY_NAME.test(methodName)) {
         report(sf, node, 'SUBSYSTEM_MUTATION', `${method.className}.${method.member}`);
       } else if (COLLECTION_MUTATORS.has(methodName)) {
         const receiver = unwrap(callee.expression);

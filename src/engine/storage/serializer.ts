@@ -16,7 +16,7 @@ import { TrapInstance } from '../dungeon/traps';
 import { Visibility } from '../fov/types';
 import { FovManager } from '../fov/fov-manager';
 import { GameEngine } from '../engine';
-import { activateRegistries, type EngineRegistries } from '../registries';
+import { activateRegistries, activeRegistries, ContainerRegistryStore, ItemIndex, type EngineRegistries } from '../registries';
 import { rebuildItemRegistries } from '../items/rebuildItemRegistries';
 import { registerSerializeGameFn, flightRecorder } from '../debug/flightRecorder';
 import { CompendiumManager, masteryPerkOptions } from '../compendium/compendiumManager';
@@ -960,6 +960,26 @@ function restoreMonsterDefinitionFields(map: GameMap, registries: EngineRegistri
 }
 
 export function deserializeGame(
+  rawSaveData: SaveData | any,
+  manifest?: GameContentManifest
+): { engine: GameEngine; profile: CharacterProfile } {
+  // The map and pack are built before their engine exists, and every item registers in the
+  // active item index and container store: mid-run, the live game's. Build them in a fresh
+  // pair instead (content lookups still go to the active stores), and if the load throws,
+  // hand back the bundle that was active, so a damaged save of the same hero can't leave
+  // the live game's ids resolving to discarded copies (R-stor-7). A load that succeeds
+  // leaves its own engine's registries active, as before.
+  const previous = activeRegistries();
+  activateRegistries({ ...previous, containers: new ContainerRegistryStore(), itemIndex: new ItemIndex() });
+  try {
+    return hydrateGame(rawSaveData, manifest);
+  } catch (err) {
+    activateRegistries(previous);
+    throw err;
+  }
+}
+
+function hydrateGame(
   rawSaveData: SaveData | any,
   manifest?: GameContentManifest
 ): { engine: GameEngine; profile: CharacterProfile } {

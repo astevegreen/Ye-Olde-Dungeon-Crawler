@@ -1,45 +1,56 @@
 import {
   MonsterRegistryStore,
+  activeMonsterStore,
   setActiveMonsterStore,
 } from './monsterRegistryStore';
 import {
   TrapRegistryStore,
+  activeTrapStore,
   setActiveTrapStore,
 } from './trapRegistryStore';
 import {
   ActionRegistryStore,
+  activeActionStore,
   setActiveActionStore,
 } from './actionRegistryStore';
 import {
   SpellRegistryStore,
+  activeSpellStore,
   setActiveSpellStore,
 } from './spellRegistryStore';
 import {
   CompanionRegistryStore,
+  activeCompanionStore,
   setActiveCompanionStore,
 } from './companionRegistryStore';
 import {
   AIStrategyRegistryStore,
+  activeAIStrategyStore,
   setActiveAIStrategyStore,
 } from './aiStrategyRegistryStore';
 import {
   AIBehaviorRegistryStore,
+  activeAIBehaviorStore,
   setActiveAIBehaviorStore,
 } from './aiBehaviorRegistryStore';
 import {
   StatusHandlerRegistryStore,
+  activeStatusHandlerStore,
   setActiveStatusHandlerStore,
 } from './statusHandlerRegistryStore';
 import {
   TileRegistryStore,
+  activeTileStore,
   setActiveTileStore,
 } from './tileRegistryStore';
 import {
   ContainerRegistryStore,
+  activeContainerStore,
   setActiveContainerStore,
 } from './containerRegistryStore';
 import {
   type ItemIndex,
+  activeItemIndex,
   setActiveItemIndex,
 } from '../items/itemIndex';
 
@@ -147,4 +158,24 @@ export function activateRegistries(registries: EngineRegistries | null): void {
   setActiveTileStore(registries ? registries.tiles : null);
   setActiveContainerStore(registries ? registries.containers : null);
   setActiveItemIndex(registries ? registries.itemIndex : null);
+}
+
+/**
+ * The bundle the facades resolve against right now, store by store, so work done under
+ * another bundle can hand back exactly this one through `activateRegistries`.
+ */
+export function activeRegistries(): EngineRegistries {
+  return {
+    monsters: activeMonsterStore(),
+    traps: activeTrapStore(),
+    actionCommands: activeActionStore(),
+    spells: activeSpellStore(),
+    companions: activeCompanionStore(),
+    aiStrategies: activeAIStrategyStore(),
+    aiBehaviors: activeAIBehaviorStore(),
+    statusHandlers: activeStatusHandlerStore(),
+    tiles: activeTileStore(),
+    containers: activeContainerStore(),
+    itemIndex: activeItemIndex(),
+  };
 }

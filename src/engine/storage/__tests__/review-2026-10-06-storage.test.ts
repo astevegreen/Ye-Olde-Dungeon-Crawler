@@ -9,6 +9,8 @@ import { Item } from '../../items/item';
 import { Container } from '../../items/container';
 import { CoinItem } from '../../economy/currency';
 import { TownMapGenerator } from '../../town/townMap';
+import { activeItemIndex } from '../../items/itemIndex';
+import { activeMonsterStore } from '../../registries';
 import { AutosaveManager } from '../autosaveManager';
 import { MemoryStorage } from '../profile-manager';
 import { serializeGame, deserializeGame, serializeMapObject, deserializeMapObject } from '../serializer';
@@ -151,6 +153,51 @@ describe('R-stor-6 · loadAutosaveResult skips the version gate for a newer sche
     storage.setItem(autosaves.autosaveKey, JSON.stringify({ schemaVersion: version, contentManifestId: 'x', timestamp: 1, profile: data.profile, data }));
 
     expect(autosaves.loadAutosaveResult().ok).toBe(false);
+  });
+});
+
+describe('R-stor-7 · a failed load leaves the live game’s registries as they were', () => {
+  const liveWithSword = () => {
+    const player = new Player({ id: 'hero-7', name: 'Hero', position: { x: 5, y: 5 } });
+    const live = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player });
+    const sword = new Item({ id: 'sword-1', name: 'Sword', category: 'weapon', weight: 10, bulk: 10 });
+    player.inventory.primaryPack.addItem(sword);
+    // A save of the same hero: its items carry the live game's ids.
+    const save = JSON.parse(JSON.stringify(serializeGame(live)));
+    return { live, sword, save };
+  };
+
+  it('a save that throws after its pack is built leaves sword-1 the live sword', () => {
+    const { live, sword, save } = liveWithSword();
+    save.player.grimoirePages = [{}]; // throws building the Player, after the map and pack
+    expect(live.registries.itemIndex.get('sword-1')).toBe(sword); // (passes today)
+
+    expect(() => deserializeGame(save)).toThrow();
+
+    expect(live.registries.itemIndex.get('sword-1')).toBe(sword);
+    expect(live.registries.containers.get(live.player.inventory.primaryPack.id)).toBe(live.player.inventory.primaryPack);
+    expect(activeItemIndex()).toBe(live.registries.itemIndex);
+  });
+
+  it('a save that throws after its engine is built leaves the live game’s registries active', () => {
+    const { live, sword, save } = liveWithSword();
+    save.messages = 5; // not iterable: throws after `new GameEngine` activated its own registries
+
+    expect(() => deserializeGame(save)).toThrow();
+
+    expect(activeItemIndex()).toBe(live.registries.itemIndex);
+    expect(activeMonsterStore()).toBe(live.registries.monsters);
+    expect(live.registries.itemIndex.get('sword-1')).toBe(sword);
+  });
+
+  it('a load that succeeds leaves the loaded engine’s registries active, holding its own sword', () => {
+    const { live, sword, save } = liveWithSword();
+
+    const loaded = deserializeGame(save).engine;
+
+    expect(activeItemIndex()).toBe(loaded.registries.itemIndex);
+    expect(loaded.registries.itemIndex.get('sword-1')).toBe(loaded.player.inventory.primaryPack.getItems().find((i) => i.id === 'sword-1'));
+    expect(live.registries.itemIndex.get('sword-1')).toBe(sword);
   });
 });
 

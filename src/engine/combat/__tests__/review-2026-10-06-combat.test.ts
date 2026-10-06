@@ -109,9 +109,9 @@ describe('R-cmbt-3 · a chasm plunge removes the target before the death can be 
 });
 
 describe('R-cmbt-4 · a telegraphed wind-up ability declares an element and ignores it', () => {
-  it.fails('a fire wind-up does nothing to a fire-immune hero', () => {
+  const surgeLoss = (affinity?: string) => {
     const { map, player, engine } = make();
-    (player as unknown as { elementalResistances: Record<string, string> }).elementalResistances.fire = 'immune';
+    if (affinity) (player as unknown as { elementalResistances: Record<string, string> }).elementalResistances.fire = affinity;
     const shaman = mon('shaman', 6, 3);
     map.addEntity(shaman);
 
@@ -120,7 +120,18 @@ describe('R-cmbt-4 · a telegraphed wind-up ability declares an element and igno
       element: 'fire',
     }).perform(engine);
 
-    expect(100 - player.hp).toBe(0);
+    return { lost: 100 - player.hp, messages: engine.messages };
+  };
+
+  it('a fire wind-up does nothing to a fire-immune hero', () => {
+    const { lost, messages } = surgeLoss('immune');
+    expect(lost).toBe(0);
+    expect(messages.some((m) => m.includes('unharmed by the fire'))).toBe(true);
+  });
+
+  it('a fire-resistant hero takes half of what an unprotected one does', () => {
+    expect(surgeLoss().lost).toBe(22);
+    expect(surgeLoss('resistant').lost).toBe(11);
   });
 });
 

@@ -552,11 +552,21 @@ export class WindUpExecuteAction implements Action {
               productAgainst(engine, targetEntity, this.monster, 'windUpDamageTakenMultiplier')
           )
         );
-        const { damageDealt, killed } = targetEntity.takeDamage(rawDamage);
+        // A declared element goes through the target's affinity, as a spell of it would:
+        // what resists fire takes less of a fire surge, what is immune takes none.
+        const element = this.options?.element;
+        const hit = element
+          ? targetEntity.takeElementalDamage(rawDamage, element, engine.affinityMatrix)
+          : { ...targetEntity.takeDamage(rawDamage), isHeal: false, healed: 0 };
+        const { damageDealt, killed } = hit;
 
         flightRecorder.recordCombat(this.monster.name, targetEntity.name, damageDealt, killed);
 
-        const hitMsg = `${this.monster.name}'s ${this.abilityName} slams into ${targetEntity.name} for ${damageDealt} massive damage!`;
+        const hitMsg = hit.isHeal
+          ? `${this.monster.name}'s ${this.abilityName} washes over ${targetEntity.name}, healing ${hit.healed}!`
+          : damageDealt === 0 && !killed && element
+            ? `${this.monster.name}'s ${this.abilityName} engulfs ${targetEntity.name}, who is unharmed by the ${element}!`
+            : `${this.monster.name}'s ${this.abilityName} slams into ${targetEntity.name} for ${damageDealt} massive damage!`;
         engine.log(hitMsg);
         combinedMessage += (combinedMessage ? ' ' : '') + hitMsg;
 
@@ -568,7 +578,7 @@ export class WindUpExecuteAction implements Action {
 
         if (killed) {
           engine.log(`${targetEntity.name} is slain!`);
-          DeathResolver.resolveDeath(engine, this.monster, targetEntity);
+          DeathResolver.resolveDeath(engine, this.monster, targetEntity, element ? { damageElement: element } : undefined);
         }
       }
 

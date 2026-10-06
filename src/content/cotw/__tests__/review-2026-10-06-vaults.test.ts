@@ -96,3 +96,34 @@ describe('R-ai-4 · a secret door hides only its cache, never a stitched-on cave
     expect(gated.slice(0, 5)).toEqual([]);
   });
 });
+
+describe('R-ai-6 · a story altar or runestone lands where the hero can walk to it', () => {
+  it('every middle-of-room placement, 25 seeds each, is reachable without a secret door', async () => {
+    const { GameEngine } = await import('../../../engine/engine');
+    const { GameMap } = await import('../../../engine/grid/map');
+    const { Player } = await import('../../../engine/entities/player');
+    const { DungeonArc } = await import('../../../engine/quest/dungeonArc');
+    const { SpawnSiteFilter } = await import('../../../engine/dungeon/spawnSites');
+    const { cotwManifest } = await import('../index');
+    const engine = new GameEngine({ map: new GameMap(10, 10), player: new Player({ id: 'p', name: 'P', position: { x: 1, y: 1 } }), manifest: cotwManifest });
+    const quest = { ...cotwManifest.quest!, floorGenerators: cotwManifest.quest?.floorGenerators ?? cotwManifest.floorGenerators, maxFloor: 50, bossFloor: 50 };
+    const stranded: string[] = [];
+    for (const p of cotwManifest.fixedTilePlacements ?? []) {
+      if (p.placement !== 'middle_room_center') continue;
+      for (let s = 0; s < 25; s++) {
+        const { map, playerSpawn } = DungeonArc.generateFloor(p.floor, (p.floor * 7919 + s * 104729) >>> 0, quest, cotwManifest, 1, 'medium', engine.registries);
+        const walk = new SpawnSiteFilter(map, { anchor: playerSpawn, minDistance: 0 });
+        let placed = false;
+        for (let y = 0; y < map.height; y++) {
+          for (let x = 0; x < map.width; x++) {
+            if (map.getTile(x, y)?.type !== p.tileId) continue;
+            placed = true;
+            if (!walk.reaches(x, y)) stranded.push(`${p.tileId} f${p.floor} s${s}`);
+          }
+        }
+        if (!placed) stranded.push(`${p.tileId} f${p.floor} s${s} (missing)`);
+      }
+    }
+    expect(stranded).toEqual([]);
+  });
+});

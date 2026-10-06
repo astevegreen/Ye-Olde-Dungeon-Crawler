@@ -275,14 +275,10 @@ export class DungeonArc {
               ? eligibleRooms[Math.floor(eligibleRooms.length / 2)]
               : eligibleRooms[0] ?? dungeon.rooms[0];
           if (targetRoom) {
-            const posX = targetRoom.centerX;
-            const posY = targetRoom.centerY;
-            if (
-              (posX !== playerSpawn.x || posY !== playerSpawn.y) &&
-              (!stairsDown || posX !== stairsDown.x || posY !== stairsDown.y)
-            ) {
-              map.setTile(posX, posY, tileDef);
-            }
+            // The room's centre, or the nearest cell to it the hero can walk to without a
+            // secret door: a room's bounding box can wrap a cache (R-ai-6).
+            const site = nearestPlacementSite(map, { x: targetRoom.centerX, y: targetRoom.centerY }, sites, dungeon.vaultRects ?? []);
+            if (site) map.setTile(site.x, site.y, tileDef);
           }
         }
       }
@@ -653,4 +649,34 @@ export class DungeonArc {
     );
     return inEquipped;
   }
+}
+
+/**
+ * Where a fixed tile (a story altar, a runestone) goes near `centre`: plain walkable floor
+ * the hero reaches without a secret door, outside every vault, bare of items, never a door,
+ * staircase or water. The nearest such cell by rings around the centre; null if none.
+ */
+function nearestPlacementSite(
+  map: GameMap,
+  centre: Position,
+  sites: SpawnSiteFilter,
+  vaults: ReadonlyArray<{ x1: number; y1: number; x2: number; y2: number }>
+): Position | null {
+  const fits = (x: number, y: number): boolean => {
+    if (!sites.reaches(x, y) || !map.isPassable(x, y)) return false;
+    const type = map.getTile(x, y)?.type ?? '';
+    if (/door|stairs|water/.test(type)) return false;
+    if (vaults.some((r) => x >= r.x1 && x <= r.x2 && y >= r.y1 && y <= r.y2)) return false;
+    return map.getItemsAt(x, y).length === 0;
+  };
+  const reach = Math.max(map.width, map.height);
+  for (let r = 0; r < reach; r++) {
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+        if (fits(centre.x + dx, centre.y + dy)) return { x: centre.x + dx, y: centre.y + dy };
+      }
+    }
+  }
+  return null;
 }

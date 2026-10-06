@@ -29,10 +29,15 @@ export class SpawnSiteFilter {
     this.reach = reachableWithoutSecrets(map, rules.anchor);
   }
 
+  /** Whether the hero can walk from the anchor to (x, y) without a secret door. */
+  public reaches(x: number, y: number): boolean {
+    const { map } = this;
+    return x >= 0 && y >= 0 && x < map.width && y < map.height && this.reach[y * map.width + x] === 1;
+  }
+
   public allows(x: number, y: number): boolean {
     const { map, rules } = this;
-    if (x < 0 || y < 0 || x >= map.width || y >= map.height) return false;
-    if (!this.reach[y * map.width + x]) return false;
+    if (!this.reaches(x, y)) return false;
     if (!map.isPassable(x, y) || map.getEntityAt(x, y)) return false;
     const type = map.getTile(x, y)?.type;
     if (type === 'stairs_up' || type === 'stairs_down') return false;

@@ -224,6 +224,17 @@ export function validateSavePayload(
     };
   }
 
+  // The roster keys and lists heroes by these: a number or object here imports as a
+  // ghost entry no menu can load or delete.
+  const { id, name, manifestId } = data.profile as { id: unknown; name: unknown; manifestId?: unknown };
+  if (typeof id !== 'string' || !id.trim() || typeof name !== 'string' || !name.trim() || (manifestId !== undefined && typeof manifestId !== 'string')) {
+    return {
+      valid: false,
+      error: 'Damaged save data: the character profile has a malformed id or name.',
+      errorCode: 'CORRUPTED_DATA',
+    };
+  }
+
   if (!data.player || typeof data.player !== 'object') {
     return {
       valid: false,

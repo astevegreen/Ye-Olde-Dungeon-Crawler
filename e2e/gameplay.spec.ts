@@ -579,7 +579,7 @@ test('the other-pack save warning holds the keys until answered', async ({ page 
     schemaVersion,
     contentManifestId: 'other_pack',
     timestamp: 0,
-    data: { profile: { name: 'Stranger' }, player: {}, map: {} },
+    data: { profile: { id: 'stranger', name: 'Stranger' }, player: {}, map: {} },
   });
   await page.evaluate((content) => {
     const transfer = new DataTransfer();

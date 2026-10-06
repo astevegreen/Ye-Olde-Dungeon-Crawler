@@ -1,5 +1,6 @@
 import { ProfileManager, SAVE_FILE_EXTENSION } from '../engine';
 import { iconHtml } from './icons';
+import { escapeHtml } from './html';
 import type { CharacterProfile } from '../engine';
 import { CharacterRoller } from '../engine';
 import { PRNG } from '../engine';
@@ -521,7 +522,7 @@ export class TitleScreen {
         const fallen = profile.questStatus === 'fallen';
         item.innerHTML = `
           <div class="roster-item-header">
-            <span class="roster-name">${iconHtml(fallen ? 'fallen' : profile.gender === 'female' ? 'heroine' : 'hero')} ${this.escapeHtml(profile.name)}${fallen ? ' <span style="color: var(--ui-bad);">(Fallen)</span>' : ''}</span>
+            <span class="roster-name">${iconHtml(fallen ? 'fallen' : profile.gender === 'female' ? 'heroine' : 'hero')} ${escapeHtml(profile.name)}${fallen ? ' <span style="color: var(--ui-bad);">(Fallen)</span>' : ''}</span>
             <span class="roster-date">${dateStr}</span>
           </div>
           <div class="roster-item-details">
@@ -603,13 +604,5 @@ export class TitleScreen {
         this.storageStatusEl.className = 'storage-badge-pill';
       }
     }
-  }
-
-  private escapeHtml(str: string): string {
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
   }
 }

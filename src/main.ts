@@ -709,6 +709,9 @@ window.addEventListener('DOMContentLoaded', () => {
         type: 'pickup_item',
         payload: { itemId: item.id, freeAction: true },
       });
+      // Each pickup is an action of its own and replaces lastActionResult: its isolated
+      // failure is shown here, or the next action would overwrite it unseen (R-main-8).
+      reportPipelineError(engine.lastActionResult);
     }
   }
 
@@ -830,33 +833,54 @@ window.addEventListener('DOMContentLoaded', () => {
     streamEl.scrollTop = streamEl.scrollHeight;
   }
 
+  /** Shows an action's isolated pipeline failure, once (ARCHITECTURE.md §4). */
+  function reportPipelineError(result: ActionResult | null | undefined): void {
+    if (result?.pipelineError && result !== lastReportedPipelineError) {
+      lastReportedPipelineError = result;
+      diagnosticModal.showError(result.message ?? 'An unexpected error occurred; the action could not be completed.');
+    }
+  }
+
+  function reportRefreshError(err: Error, label: string): void {
+    console.error(`[Render Loop Guard] ${label} failed:`, err);
+    flightRecorder.recordError(err, { source: `processVisualEffectsAndRender: ${label}` });
+  }
+
   async function processVisualEffectsAndRender(): Promise<void> {
-    try {
-      const lastResult = activeEngine?.lastActionResult;
-      if (lastResult?.pipelineError && lastResult !== lastReportedPipelineError) {
-        lastReportedPipelineError = lastResult;
-        diagnosticModal.showError(lastResult.message ?? 'An unexpected error occurred; the action could not be completed.');
-      }
-      updateHeaderInfo();
-      if (activeEngine) {
-        checkAutoPickup(activeEngine);
-        updateCombatFloatingText(activeEngine);
-        updateGothicConsole(activeEngine);
-        updateMessageLog(activeEngine);
-        quickSpellsBar.update(activeEngine);
-        potionRow.update(activeEngine);
-        // The prologue's action cues: the slot for the move the moment calls for glows.
-        const cues = settingsManager.getSettings().hintsEnabled ? findActionCues(activeEngine) : null;
+    // Each step is guarded on its own: one throwing HUD widget must not skip the rest,
+    // the effect playback or the map redraw (R-main-8).
+    const step = (label: string, fn: () => void): void => {
+      safely(label, fn, reportRefreshError);
+    };
+    step('pipeline error', () => reportPipelineError(activeEngine?.lastActionResult));
+    step('header', () => updateHeaderInfo());
+    const engine = activeEngine;
+    if (engine) {
+      step('auto-pickup', () => checkAutoPickup(engine));
+      step('floating text', () => updateCombatFloatingText(engine));
+      step('console', () => updateGothicConsole(engine));
+      step('message log', () => updateMessageLog(engine));
+      step('quick spells', () => quickSpellsBar.update(engine));
+      step('potion row', () => potionRow.update(engine));
+      // The prologue's action cues: the slot for the move the moment calls for glows.
+      step('action cues', () => {
+        const cues = settingsManager.getSettings().hintsEnabled ? findActionCues(engine) : null;
         potionRow.setCue(cues?.drinkSlot ?? null);
         quickSpellsBar.setCue(cues?.castSlot ?? null);
-        combatSidebar.update(activeEngine);
-        consoleExtras.update(activeEngine);
-        if (firstTimeHints.hasUnseen(activeEngine)) firstTimeHints.offer(activeEngine, hintsMetByState(activeEngine));
-        // Periodic background autosave every 50 turns
-        if (activeProfile && autosaveManager.shouldAutosave(activeEngine.turnCount)) {
-          autosaveManager.autosave(activeEngine, activeProfile);
+      });
+      step('combat sidebar', () => combatSidebar.update(engine));
+      step('console extras', () => consoleExtras.update(engine));
+      step('hints', () => {
+        if (firstTimeHints.hasUnseen(engine)) firstTimeHints.offer(engine, hintsMetByState(engine));
+      });
+      // Periodic background autosave every 50 turns
+      step('autosave', () => {
+        if (activeProfile && autosaveManager.shouldAutosave(engine.turnCount)) {
+          autosaveManager.autosave(engine, activeProfile);
         }
-      }
+      });
+    }
+    try {
       if (activeEngine && renderer && renderer.fxRunner.mode !== 'instant') {
         const pending = activeEngine.consumePendingVisualEffects();
         if (pending.length > 0) {
@@ -872,13 +896,10 @@ window.addEventListener('DOMContentLoaded', () => {
           }
         }
       }
-      renderer?.render();
     } catch (err) {
-      console.error('[Render Loop Guard] Error during visual effects or rendering:', err);
-      flightRecorder.recordError(err instanceof Error ? err : new Error(String(err)), {
-        source: 'processVisualEffectsAndRender',
-      });
+      reportRefreshError(err instanceof Error ? err : new Error(String(err)), 'visual effects');
     }
+    step('render', () => renderer?.render());
   }
 
   const diagnosticModal = new DiagnosticModal(

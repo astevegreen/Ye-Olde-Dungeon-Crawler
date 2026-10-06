@@ -78,7 +78,7 @@ describe('R-stor-2 · a dismissed companion’s pack is not re-registered in the
 });
 
 describe('R-stor-3 · GameStateManager is not saved: deepestFloor falls back to the load floor', () => {
-  it.fails('a hero who reached floor 3 and climbed back to 1 still has deepestFloor 3 after a load', () => {
+  it('a hero who reached floor 3 and climbed back to 1 still has deepestFloor 3 after a load', () => {
     const engine = new GameEngine({ map: new GameMap(20, 20, TILES.FLOOR), player: new Player({ id: 'h2', name: 'H2', position: { x: 5, y: 5 } }), floor: 1 });
     engine.changeFloor(2);
     engine.changeFloor(3);
@@ -88,6 +88,27 @@ describe('R-stor-3 · GameStateManager is not saved: deepestFloor falls back to 
     const loaded = roundTrip(engine);
 
     expect(loaded.gameState.deepestFloor).toBe(3);
+  });
+
+  it('a won run stays won after a load, so its ending is not offered again', () => {
+    const engine = new GameEngine({ map: new GameMap(20, 20, TILES.FLOOR), player: new Player({ id: 'h4', name: 'H4', position: { x: 5, y: 5 } }) });
+    engine.gameState.runStatus = 'victorious';
+
+    const loaded = roundTrip(engine);
+
+    expect(loaded.gameState.runStatus).toBe('victorious');
+    expect(loaded.gameState.checkVictoryEligible(loaded)).toBeUndefined();
+  });
+
+  it('an older save without the record loads with the floor it was saved on', () => {
+    const engine = new GameEngine({ map: new GameMap(20, 20, TILES.FLOOR), player: new Player({ id: 'h5', name: 'H5', position: { x: 5, y: 5 } }), floor: 4 });
+    const data = JSON.parse(JSON.stringify(serializeGame(engine)));
+    delete data.gameState;
+
+    const loaded = deserializeGame(data).engine;
+
+    expect(loaded.gameState.deepestFloor).toBe(4);
+    expect(loaded.gameState.runStatus).toBe('active');
   });
 });
 

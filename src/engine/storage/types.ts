@@ -408,6 +408,12 @@ export interface SaveData {
    * initial stock.
    */
   merchantStock?: Record<string, SerializedItemNode[]>;
+  /**
+   * The run's record (`GameStateManager`): the deepest floor reached, which the Hall of
+   * Legends scores, and a won run's status, so its ending is not offered again. Absent
+   * (older saves) = the floor loaded onto, active.
+   */
+  gameState?: { deepestFloor: number; runStatus?: 'victorious' };
 }
 
 export interface StorageAdapter {

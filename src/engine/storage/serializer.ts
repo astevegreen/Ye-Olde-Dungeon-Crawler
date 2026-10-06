@@ -28,6 +28,7 @@ import { cloneWorldState, createWorldState, type WorldState } from '../state/wor
 import { compactTilesWithDictionary, decompactTiles, compactFov, decompactFov } from './compaction';
 import { EnergyModel } from '../actors/energyModel';
 import { applyPrologueState } from '../quest/prologue';
+import { GameStateManager } from '../quest/gameStateManager';
 import type {
   CharacterProfile,
   SaveData,
@@ -655,6 +656,10 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     merchantStock: engine.merchants.size
       ? Object.fromEntries([...engine.merchants].map(([id, m]) => [id, m.stock.map(serializeItem)]))
       : undefined,
+    gameState: {
+      deepestFloor: engine.gameState.deepestFloor,
+      runStatus: engine.gameState.runStatus === 'victorious' ? 'victorious' : undefined,
+    },
   };
 }
 
@@ -1107,7 +1112,13 @@ export function deserializeGame(
     }
   }
 
-  // 6. Instantiate Engine Core
+  // 6. Instantiate Engine Core. The run record comes back first: the engine raises its
+  // deepest floor to the one loaded onto, never lowers it.
+  const gameState = new GameStateManager();
+  if (saveData.gameState) {
+    gameState.deepestFloor = Number(saveData.gameState.deepestFloor) || 0;
+    if (saveData.gameState.runStatus === 'victorious') gameState.runStatus = 'victorious';
+  }
   const engine = new GameEngine({
     map,
     player,
@@ -1115,6 +1126,7 @@ export function deserializeGame(
     manifest,
     compendium,
     worldState,
+    gameState,
   });
 
   if (saveData.prngState !== undefined && engine.prng) {

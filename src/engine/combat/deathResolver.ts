@@ -112,8 +112,13 @@ export class DeathResolver {
         data: { victimName: victim.name },
       });
 
-      // Record kill in Slayer's Compendium (species and category mastery)
-      recordMasteryKill(engine, victim.definitionId, victim.name);
+      // Record kill in Slayer's Compendium (species and category mastery): the hero's side's
+      // kills, as for XP. A monster an ending requires dead counts whoever killed it, since
+      // that ending reads its compendium entry and would otherwise never open (R-econ-20).
+      const endingNeedsKill = Object.values(engine.manifest?.quest?.endings ?? {}).some(
+        (ending) => ending.requiredMonsterKillId === victim.definitionId
+      );
+      if (isPlayerKill || endingNeedsKill) recordMasteryKill(engine, victim.definitionId, victim.name);
 
       // Kill rites: a death that meets the victim's rite yields its magic
       KillRiteManager.evaluate(engine, killer, victim, context);

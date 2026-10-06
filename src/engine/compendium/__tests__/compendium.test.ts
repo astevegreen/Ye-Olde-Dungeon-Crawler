@@ -366,7 +366,7 @@ describe('Category mastery', () => {
   };
 
   let killSeq = 0;
-  const kill = (engine: GameEngine, player: Player, definitionId: string, n = 1) => {
+  const kill = (engine: GameEngine, player: Player | Monster, definitionId: string, n = 1) => {
     for (let i = 0; i < n; i++) {
       const m = new Monster({
         id: `${definitionId}-${++killSeq}`,
@@ -411,6 +411,45 @@ describe('Category mastery', () => {
     ]);
     kill(engine, player, 'draugr', 2);
     expect(unlocks(events).filter((e) => e.scope === 'category')).toHaveLength(1);
+  });
+
+  const rivalOn = (engine: GameEngine) => {
+    const rival = new Monster({
+      id: 'rival',
+      definitionId: 'goblin',
+      name: 'goblin',
+      position: { x: 5, y: 5 },
+      stats: { hp: 10, maxHp: 10, attack: 1, defense: 0 },
+    });
+    engine.addEntity(rival);
+    return rival;
+  };
+
+  it("a monster slain by another monster is no kill of the hero's: no species or family count (R-econ-20)", () => {
+    const { engine } = makeEngine();
+    const rival = rivalOn(engine);
+    kill(engine, rival, 'skeleton', 3);
+    expect(engine.compendium.getEntry('skeleton').kills).toBe(0);
+    expect(engine.compendium.getCategoryKills(CATEGORY_MANIFEST.monsterCategories![0])).toBe(0);
+
+    // The hero's side counts, as it does for XP: an ally of the player faction.
+    rival.setFaction('player');
+    kill(engine, rival, 'skeleton');
+    expect(engine.compendium.getEntry('skeleton').kills).toBe(1);
+  });
+
+  it('a monster an ending requires dead counts whoever killed it, so that ending can still open (R-econ-20)', () => {
+    const manifest = {
+      ...CATEGORY_MANIFEST,
+      quest: { endings: { wyrm: { id: 'wyrm', requiredMonsterKillId: 'draugr', victoryDialogue: '', victoryEpitaph: '' } } },
+    } as unknown as GameContentManifest;
+    const player = new Player({ id: 'player', name: 'Hero', position: { x: 1, y: 1 }, stats: { hp: 50, maxHp: 50, attack: 10, defense: 2 } });
+    const engine = new GameEngine({ map: new GameMap(10, 10), player, floor: 1, manifest });
+    const rival = rivalOn(engine);
+    kill(engine, rival, 'draugr');
+    expect(engine.compendium.getEntry('draugr').kills).toBe(1);
+    kill(engine, rival, 'skeleton');
+    expect(engine.compendium.getEntry('skeleton').kills).toBe(0);
   });
 
   it('applies a category perk to every member, even ones never mastered', () => {

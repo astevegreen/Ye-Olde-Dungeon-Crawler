@@ -114,6 +114,19 @@ export class CanvasRenderer {
   public onPactModalRequested?: () => void;
   /** A double-click on a container on or beside the hero's tile: open it in the inventory. */
   public onOpenContainer?: (container: Container) => void;
+  /**
+   * Runs after a mouse-issued action (a click step, strike, door close, travel step, a
+   * double-click pickup) as after a key: auto-pickup, the log, HUD and effects. Without
+   * it the map only redraws.
+   */
+  public onActionProcessed?: () => void;
+  /** Whether the hero may act now, the keys' own gate (no dialog up, input unlocked). */
+  public canAct?: () => boolean;
+
+  private afterAction(): void {
+    if (this.onActionProcessed) this.onActionProcessed();
+    else this.render();
+  }
 
   public get canvasElement(): HTMLCanvasElement {
     return this.canvas;
@@ -188,6 +201,7 @@ export class CanvasRenderer {
           this.offsetY
         );
         if (worldCoords) {
+          if (this.canAct && !this.canAct()) return;
           const p = this.engine.player;
           const isAdjacent =
             Math.abs(worldCoords.x - p.x) <= 1 &&
@@ -199,7 +213,7 @@ export class CanvasRenderer {
             const clickedTile = this.engine.map.getTile(worldCoords.x, worldCoords.y);
             if (clickedTile && (clickedTile.isOpenDoor || clickedTile.type === 'door_open')) {
               this.engine.handlePlayerAction(new CloseDoorAction(p, worldCoords.x, worldCoords.y));
-              this.render();
+              this.afterAction();
               return;
             }
           }
@@ -217,16 +231,16 @@ export class CanvasRenderer {
           );
           if (vectorResult.handled && vectorResult.action) {
             this.engine.handlePlayerAction(vectorResult.action);
-            this.render();
+            this.afterAction();
             return;
           }
 
           // Distant Click Navigation: automated pathfinding
           if (this.navigationController) {
             this.navigationController.navigatePlayerTo(worldCoords.x, worldCoords.y, {
-              onStep: () => this.render(),
-              onComplete: () => this.render(),
-              onCancel: () => this.render(),
+              onStep: () => this.afterAction(),
+              onComplete: () => this.afterAction(),
+              onCancel: () => this.afterAction(),
             });
             return;
           }
@@ -331,13 +345,13 @@ export class CanvasRenderer {
             }
           }
 
-          if (isCurrent) {
+          if (isCurrent && (!this.canAct || this.canAct())) {
             const groundItems = this.engine.map.getItemsAt(p.x, p.y);
             if (groundItems.length > 0) {
               const itemToPick = groundItems[groundItems.length - 1];
               const res = this.engine.commandBus.dispatch({ type: 'pickup_item', payload: { itemId: itemToPick.id } });
               if (res.success) {
-                this.render();
+                this.afterAction();
                 return;
               }
             }

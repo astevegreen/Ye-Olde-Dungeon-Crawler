@@ -790,3 +790,55 @@ test('the HUD Help and Dev buttons and the help card X keep the modal stack hone
 
   expect(pageErrors).toEqual([]);
 });
+
+// A click-to-travel ends as a key press does: auto-pickup takes the coins at the end of the
+// walk without another key (R-main-1). And a HUD action button takes no turn while a dialog
+// that leaves the HUD clickable (the F1 card) has paused the world (R-ui-3).
+test('a click-to-travel auto-picks up where it ends; HUD Wait does nothing under the help card', async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on('pageerror', (err) => pageErrors.push(err.message));
+  await embarkNewHero(page);
+
+  const target = await page.evaluate(() => {
+    const e = window.__cotwEngine!;
+    const p = e.player;
+    const purse = p.inventory.purse;
+    const coins = purse?.getItems()[0];
+    if (!purse || !coins) return null;
+    for (const [dx, dy] of [[3, 0], [-3, 0], [0, 3], [0, -3]]) {
+      const x = p.x + dx, y = p.y + dy;
+      const clear = [1, 2, 3].every((k) => {
+        const tx = p.x + (dx / 3) * k, ty = p.y + (dy / 3) * k;
+        return e.map.isPassable(tx, ty) && !e.map.getEntityAt(tx, ty) && e.map.getItemsAt(tx, ty).length === 0 && e.fov.isVisible(tx, ty);
+      });
+      if (!clear) continue;
+      purse.removeItem(coins.id);
+      e.map.addItemAt(x, y, coins);
+      window.__cotwRenderer!.render();
+      return { x, y, id: coins.id };
+    }
+    return null;
+  });
+  expect(target, 'a clear tile three steps away, and coins to put there').not.toBeNull();
+  const center = await page.evaluate(({ x, y }) => {
+    const r = window.__cotwRenderer as any;
+    const s = r.camera.worldToScreen(x, y, r.cellSize, r.offsetX, r.offsetY);
+    return r.viewport.virtualToClient(s.x + r.cellSize / 2, s.y + r.cellSize / 2) as { x: number; y: number };
+  }, target!);
+  await page.mouse.click(center.x, center.y);
+  await expect.poll(async () => { const s = await state(page); return [s.x, s.y]; }).toEqual([target!.x, target!.y]);
+  await expect
+    .poll(() => page.evaluate(({ x, y }) => window.__cotwEngine!.map.getItemsAt(x, y).length, target!))
+    .toBe(0);
+
+  // HUD Wait under the F1 card: no turn.
+  await page.keyboard.press('F1');
+  await expect(page.locator('#context-help-overlay')).toBeVisible();
+  const turn = (await state(page)).turn;
+  await page.locator('#btn-hud-wait').click();
+  await page.waitForTimeout(150);
+  expect((await state(page)).turn).toBe(turn);
+  await page.keyboard.press('Escape');
+
+  expect(pageErrors).toEqual([]);
+});

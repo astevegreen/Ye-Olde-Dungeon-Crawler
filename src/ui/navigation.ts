@@ -19,6 +19,8 @@ export class NavigationController {
   public currentPath: Position[] = [];
   public isNavigating = false;
   private timerId: number | null = null;
+  /** The trip under way's callbacks: `cancel` reports to its `onCancel`, whatever stopped it. */
+  private tripOptions?: NavigationOptions;
   private readonly engine: GameEngine;
 
   constructor(engine: GameEngine) {
@@ -53,6 +55,7 @@ export class NavigationController {
 
     this.currentPath = [...path];
     this.isNavigating = true;
+    this.tripOptions = options;
     const stepDelay = options?.stepDelayMs ?? 55;
 
     const step = () => {
@@ -66,6 +69,7 @@ export class NavigationController {
       if (this.currentPath.length === 0) {
         this.isNavigating = false;
         this.timerId = null;
+        this.tripOptions = undefined;
         if (options?.onComplete) options.onComplete();
         return;
       }
@@ -74,7 +78,6 @@ export class NavigationController {
       const hostile = AutoRestManager.findVisibleHostile(this.engine);
       if (hostile) {
         this.cancel(`Path interrupted! A ${hostile.name} comes into view!`);
-        if (options?.onCancel) options.onCancel('Hostile in view');
         return;
       }
 
@@ -154,5 +157,9 @@ export class NavigationController {
     if (reason) {
       this.engine.log(reason);
     }
+    // Whatever stopped the trip (a hostile, a block, damage, a redirect), the HUD hears of it.
+    const trip = this.tripOptions;
+    this.tripOptions = undefined;
+    trip?.onCancel?.(reason ?? '');
   }
 }

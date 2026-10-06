@@ -1148,24 +1148,42 @@ window.addEventListener('DOMContentLoaded', () => {
     refresh();
   }
 
-  hudRestBtn?.addEventListener('click', startRest);
+  /**
+   * Whether a HUD button or the mouse may act now: the keys' own gate. No dialog up (the
+   * F1 card and the aiming reticle leave the HUD clickable while the world is paused), no
+   * effect playback holding input, input enabled.
+   */
+  function playerCanAct(): boolean {
+    return (
+      !!activeEngine &&
+      !!inputHandler &&
+      inputHandler.enabled &&
+      !inputHandler.isInputLocked &&
+      inputHandler.modalStack.size === 0 &&
+      !activeEngine.isPaused
+    );
+  }
+
+  hudRestBtn?.addEventListener('click', () => {
+    if (playerCanAct()) startRest();
+  });
 
   hudSearchBtn?.addEventListener('click', () => {
-    if (activeEngine && renderer) {
+    if (activeEngine && renderer && playerCanAct()) {
       activeEngine.handlePlayerAction(new SearchAction(activeEngine.player, activeEngine.rng, 2));
       void processVisualEffectsAndRender();
     }
   });
 
   hudWaitBtn?.addEventListener('click', () => {
-    if (activeEngine && renderer) {
+    if (activeEngine && renderer && playerCanAct()) {
       activeEngine.handlePlayerAction(new WaitAction(activeEngine.player));
       void processVisualEffectsAndRender();
     }
   });
 
   hudStairsBtn?.addEventListener('click', () => {
-    if (activeEngine && renderer) {
+    if (activeEngine && renderer && playerCanAct()) {
       runAndExplain(activeEngine, new ClimbStairsAction(activeEngine.player));
       void processVisualEffectsAndRender();
     }
@@ -1677,6 +1695,9 @@ window.addEventListener('DOMContentLoaded', () => {
         openMenuTab('inventory');
         inventoryTab.showContainer(container);
       };
+      // The mouse acts through the keys' gate and their post-action refresh (R-main-1).
+      renderer.canAct = playerCanAct;
+      renderer.onActionProcessed = () => void processVisualEffectsAndRender();
       inputHandler = new InputHandler(
         engine,
         () => {

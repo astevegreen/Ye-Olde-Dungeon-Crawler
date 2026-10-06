@@ -118,7 +118,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           { type: 'setFlag', flag: 'tyr_desecrated', value: true },
           { type: 'modifyFaction', faction: 'temple_standing', delta: -10 },
           { type: 'grantItem', itemId: 'dagger', toInventory: true },
-          { type: 'damagePlayer', amount: 5 },
+          { type: 'damagePlayer', amount: 5, cause: "Tyr's wrath" },
           { type: 'alertMonsters', radius: 14 },
           {
             type: 'logMessage',

@@ -6,6 +6,7 @@ import type { GameMap } from '../grid/map';
 import type { Action } from './action';
 import { TILES } from '../grid/tile';
 import type { Item } from '../items/item';
+import { harm } from '../combat/deathResolver';
 
 export class OpenDoorAction implements Action {
   public readonly entity: Entity;
@@ -265,9 +266,8 @@ export class BashDoorAction implements Action {
 
     // Failed bash — take recoil damage (1d4)
     const recoil = engine.prng.nextInt(1, 4);
-    this.entity.takeDamage(recoil);
     const msg = `${this.entity.name} slams into the door but it holds! (Rolled ${roll} vs DC ${lockDC}) — takes ${recoil} recoil damage.`;
-    engine.log(msg);
+    harm(engine, this.entity, recoil, 'a door that would not give', { line: () => msg });
     return { success: false, cost: BASE_ACTION_COST, message: msg };
   }
 }

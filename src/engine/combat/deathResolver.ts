@@ -271,6 +271,24 @@ export class DeathResolver {
 }
 
 /**
+ * Applies raw damage, logs `line` (given what was dealt), and if this hit killed, resolves
+ * the death. With no creature behind it, `cause` names it on the death screen ("Slain by a
+ * pit trap"). `SurfaceGrid.harm` is the elemental sibling, through the entity's affinity.
+ */
+export function harm(
+  engine: GameEngine,
+  entity: Entity,
+  amount: number,
+  cause: string,
+  opts: { by?: Entity; line?: (dealt: number) => string } = {}
+): { damageDealt: number; killed: boolean } {
+  const res = entity.takeDamage(amount);
+  if (opts.line) engine.log(opts.line(res.damageDealt));
+  if (res.killed) DeathResolver.resolveDeath(engine, opts.by, entity, { cause });
+  return res;
+}
+
+/**
  * Grants the player XP and, on a level-up, logs it and emits `player_leveled_up` — the
  * event the level-up UI listens for. Every XP award that can level the player goes through here.
  */

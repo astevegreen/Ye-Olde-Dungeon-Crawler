@@ -77,7 +77,7 @@ describe('R-cmbt-1 · a paralysed hero killed by a status tick is never resolved
 });
 
 describe('R-cmbt-2 · the damagePlayer choice consequence ignores a kill', () => {
-  it.fails('a 15 HP consequence on a 5 HP hero ends the run as fallen', () => {
+  it('a 15 HP consequence on a 5 HP hero ends the run as fallen', () => {
     const { player, engine } = make(5);
 
     applyConsequences([{ type: 'damagePlayer', amount: 15 }] as never, engine, player);
@@ -174,7 +174,7 @@ describe('R-cmbt-7 · a hero killed by their own action while poisoned dies twic
 });
 
 describe('R-cmbt-8 · an ice-slide death carries no cause', () => {
-  it.fails('a hero killed by a wall splat after sliding on ice is not "Slain by Mortal Wounds"', () => {
+  it('a hero killed by a wall splat after sliding on ice is not "Slain by Mortal Wounds"', () => {
     const { map, player, engine } = make(1);
     map.setTile(6, 3, TILES.WALL);
     engine.surfaces.setSurface(4, 3, 'ice_sheet', 5);

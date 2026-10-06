@@ -6,7 +6,8 @@ export type ChoiceConsequence =
   | { type: 'modifyFaction'; faction: string; delta: number }
   | { type: 'grantItem'; itemId: string; toInventory?: boolean }
   | { type: 'applyBuff' | 'applyStatus'; statusType: string; duration: number; potency?: number }
-  | { type: 'damagePlayer'; amount: number }
+  /** `cause` names a lethal hit on the death screen ("Slain by a god's wrath"). */
+  | { type: 'damagePlayer'; amount: number; cause?: string }
   | { type: 'logMessage'; message: string }
   | { type: 'alertMonsters'; radius?: number }
   /**

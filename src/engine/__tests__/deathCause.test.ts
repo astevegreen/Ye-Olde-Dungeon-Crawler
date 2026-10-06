@@ -8,6 +8,10 @@ import { WaitAction } from '../actions/wait';
 import { TrapInstance } from '../dungeon/traps';
 import { DeathResolver } from '../combat/deathResolver';
 import { TILES } from '../grid/tile';
+import { applyConsequences } from '../actions/choiceAction';
+import { BashDoorAction } from '../actions/door';
+import { applyImpulse } from '../combat/impulse';
+import { SubstanceBitmask } from '../environment/substanceGrid';
 
 /**
  * The death screen names what killed the hero. With no creature behind it (fire, acid,
@@ -93,5 +97,129 @@ describe('what the death screen says killed the hero', () => {
     DeathResolver.resolveDeath(engine, goblin, player);
     expect(slainBy()).toBe('Goblin');
     expect(player.pendingDeathCause).toBeUndefined();
+  });
+
+  // Review 2026-10-06 A3: every damage path resolves its kill and names its cause.
+  const fallen = () => expect(engine.gameState.runStatus).toBe('fallen');
+
+  it('a dart trap', () => {
+    new TrapInstance({ id: 't1', type: 'arrow', x: 3, y: 3, damage: 5 }).trigger(player, engine);
+    fallen();
+    expect(slainBy()).toBe('a dart trap');
+  });
+
+  it('a lethal choice consequence, by its named cause or a dark bargain', () => {
+    applyConsequences([{ type: 'damagePlayer', amount: 5, cause: "a god's wrath" }], engine, player);
+    fallen();
+    expect(slainBy()).toBe("a god's wrath");
+  });
+
+  it('a lethal choice consequence with no cause', () => {
+    applyConsequences([{ type: 'damagePlayer', amount: 5 }], engine, player);
+    expect(slainBy()).toBe('a dark bargain');
+  });
+
+  it('a wall splat', () => {
+    engine.map.setTile(4, 3, TILES.WALL);
+    applyImpulse(engine, undefined, player, 1, 0, 2);
+    fallen();
+    expect(slainBy()).toBe('a wall splat');
+  });
+
+  it('a hidden trap underfoot at the end of a shove', () => {
+    engine.map.setTile(4, 3, TILES.TRAP);
+    applyImpulse(engine, undefined, player, 1, 0, 1);
+    fallen();
+    expect(slainBy()).toBe('a hidden trap');
+  });
+
+  it('a fall against the chasm wall, for one too big to plunge', () => {
+    player.maxHp = 300;
+    engine.map.setTile(4, 3, TILES.CHASM);
+    applyImpulse(engine, undefined, player, 1, 0, 1);
+    fallen();
+    expect(slainBy()).toBe('a fall against the chasm wall');
+  });
+
+  it('a door that would not give', () => {
+    player.hp = 1;
+    engine.map.setTile(4, 3, { ...TILES.DOOR_CLOSED, locked: true, lockDifficulty: 99 });
+    new BashDoorAction(player, 4, 3).perform(engine);
+    fallen();
+    expect(slainBy()).toBe('a door that would not give');
+  });
+
+  it('the drift', () => {
+    engine.planeManager.transferEntity(engine.map, player, 'liminal', { x: 3, y: 3 });
+    engine.map.setTile(4, 3, TILES.WALL);
+    engine.planeManager.tickDrift(engine.map, 5, engine);
+    fallen();
+    expect(slainBy()).toBe('the drift');
+  });
+
+  it('ignited vapour', () => {
+    engine.substances.addSubstance(3, 3, SubstanceBitmask.IGNITED);
+    engine.substances.tickSubstances(engine.map, engine);
+    fallen();
+    expect(slainBy()).toBe('ignited vapour');
+  });
+});
+
+describe('a creature killed by a trap or the ground is resolved like any other kill', () => {
+  function setup() {
+    const map = new GameMap(12, 12);
+    map.fill(TILES.FLOOR);
+    const player = new Player({ position: { x: 1, y: 1 }, stats: { hp: 50, maxHp: 50, attack: 10, defense: 2 } });
+    const rat = new Monster({
+      id: 'rat',
+      name: 'Rat',
+      position: { x: 5, y: 5 },
+      stats: { hp: 5, maxHp: 5, attack: 1, defense: 0 },
+      speed: 100,
+      definitionId: 'rat',
+      aiType: 'melee',
+      xpValue: 10,
+    } as never);
+    map.addEntity(player);
+    map.addEntity(rat);
+    const engine = new GameEngine({ map, player });
+    const killed: string[] = [];
+    engine.onGameEvent = (e) => {
+      if (e.type === 'entity_killed') killed.push(String(e.targetId));
+    };
+    return { map, player, rat, engine, killed };
+  }
+
+  it('a rat on a pit trap leaves the map, and the hero has the XP', () => {
+    const { map, player, rat, engine, killed } = setup();
+    const xpBefore = player.xp;
+
+    new TrapInstance({ id: 't', type: 'pit', x: 5, y: 5, damage: 10 }).trigger(rat, engine);
+
+    expect(map.getEntityById(rat.id)).toBeNull();
+    expect(killed).toEqual(['rat']);
+    expect(player.xp).toBeGreaterThan(xpBefore);
+  });
+
+  it('a rat shoved onto a dart trap leaves the map', () => {
+    const { map, player, rat, engine, killed } = setup();
+    map.addTrap(new TrapInstance({ id: 't', type: 'arrow', x: 6, y: 5, damage: 10 }));
+
+    applyImpulse(engine, player, rat, 1, 0, 1);
+
+    expect(map.getEntityById(rat.id)).toBeNull();
+    expect(killed).toEqual(['rat']);
+  });
+
+  it('a photophobic rat seared by light leaves the map', () => {
+    const { map, rat, engine, killed } = setup();
+    rat.hp = 2;
+    rat.vulnerabilityTags.push('photophobic');
+    engine.substances.addSubstance(5, 5, SubstanceBitmask.RADIANT_EXPOSURE);
+
+    engine.substances.tickSubstances(map, engine);
+
+    expect(map.getEntityById(rat.id)).toBeNull();
+    expect(killed).toEqual(['rat']);
   });
 });

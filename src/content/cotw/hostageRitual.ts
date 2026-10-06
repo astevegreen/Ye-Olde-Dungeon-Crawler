@@ -399,7 +399,7 @@ export const SIPHON_TIMED_EVENT: TimedEventDefinition = {
   resolvedFlag: FLAG_TIMER_STOPPED,
   expireConsequences: [
     { type: 'setFlag', flag: FLAG_EXPIRED, value: true },
-    { type: 'damagePlayer', amount: 15 },
+    { type: 'damagePlayer', amount: 15, cause: 'the Siphon ritual' },
     {
       type: 'logMessage',
       message:

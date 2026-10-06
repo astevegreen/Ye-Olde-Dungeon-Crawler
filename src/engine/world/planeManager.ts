@@ -2,6 +2,7 @@ import type { GameMap } from '../grid/map';
 import type { Entity } from '../entities/entity';
 import type { Position } from '../types';
 import type { GameEngine } from '../engine';
+import { harm } from '../combat/deathResolver';
 import {
   type PlaneState,
   DEFAULT_PHYSICAL_PLANE,
@@ -90,12 +91,13 @@ export class PlaneManager {
         } else {
           // Blocked by fluid compression: take progressive vitality attrition
           const attritionDmg = 2;
-          entity.takeDamage(attritionDmg);
           attritionDamageTotal += attritionDmg;
           if (engine) {
-            engine.log(
-              `[Drift Attrition] ${entity.name} is battered against the ${plane.name} boundary for ${attritionDmg} damage!`
-            );
+            harm(engine, entity, attritionDmg, 'the drift', {
+              line: () => `[Drift Attrition] ${entity.name} is battered against the ${plane.name} boundary for ${attritionDmg} damage!`,
+            });
+          } else {
+            entity.takeDamage(attritionDmg);
           }
         }
       }

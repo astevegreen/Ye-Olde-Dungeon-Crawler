@@ -1,6 +1,7 @@
 import type { GameMap } from '../grid/map';
 import type { Entity } from '../entities/entity';
 import type { GameEngine } from '../engine';
+import { DeathResolver } from '../combat/deathResolver';
 
 export const SubstanceBitmask = {
   NONE: 0,
@@ -135,6 +136,7 @@ export class SubstanceGrid {
               engine.log(
                 `[Radiant Burn] ${ent.name} sears under intense light for ${res.damageDealt} damage!`
               );
+              if (res.killed) DeathResolver.resolveDeath(engine, undefined, ent, { cause: 'searing light' });
             }
           }
         }
@@ -150,6 +152,7 @@ export class SubstanceGrid {
             damageDealt += res.damageDealt;
             if (engine) {
               engine.log(`[Thermal Hazard] ${ent.name} takes ${res.damageDealt} fire damage from ignited flames!`);
+              if (res.killed) DeathResolver.resolveDeath(engine, undefined, ent, { cause: 'ignited vapour' });
             }
           }
         }

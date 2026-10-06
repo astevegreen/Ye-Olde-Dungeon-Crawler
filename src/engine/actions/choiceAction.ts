@@ -9,6 +9,7 @@ import { setFlag, incrementCounter, modifyFaction } from '../state/worldState';
 import { createScaledItem } from '../dungeon/lootSpawner';
 import { Item } from '../items/item';
 import { recordMilestone } from '../renown/renownLedger';
+import { DeathResolver } from '../combat/deathResolver';
 
 /**
  * Applies a list of `ChoiceConsequence`s to `player`/`engine`. Factored out of
@@ -22,6 +23,7 @@ export function applyConsequences(
   engine: GameEngine,
   player: Player
 ): void {
+  let fatalCause: string | undefined;
   for (const c of consequences) {
     switch (c.type) {
       case 'setFlag': {
@@ -88,7 +90,7 @@ export function applyConsequences(
         break;
       }
       case 'damagePlayer': {
-        player.takeDamage(c.amount);
+        if (player.takeDamage(c.amount).killed) fatalCause = c.cause ?? 'a dark bargain';
         break;
       }
       case 'logMessage': {
@@ -153,6 +155,8 @@ export function applyConsequences(
       }
     }
   }
+  // A lethal consequence resolves after the whole list, so its own log line precedes the death.
+  if (fatalCause) DeathResolver.resolveDeath(engine, undefined, player, { cause: fatalCause });
 }
 
 export class ExecuteChoiceAction implements Action {

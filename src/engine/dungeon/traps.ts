@@ -3,7 +3,7 @@ import type { Entity } from '../entities/entity';
 import type { GameEngine } from '../engine';
 import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
-import { DeathResolver } from '../combat/deathResolver';
+import { harm } from '../combat/deathResolver';
 import { TILES } from '../grid/tile';
 import { wearsFlag } from '../items/wornModifiers';
 
@@ -96,31 +96,22 @@ export class TrapInstance {
     let message = '';
 
     switch (this.type) {
+      // A trap kills whatever springs it, hero or creature: the death resolves either way.
       case 'pit': {
         const actualDmg = this.damage;
-        entity.takeDamage(actualDmg);
         message =
           this.customMessage ??
           `A hidden pit trap opens beneath ${entity.name}'s feet! ${entity.name} takes ${actualDmg} damage!`;
-        engine.log(message);
-
-        if (!entity.isAlive() && entity instanceof Player) {
-          DeathResolver.resolveDeath(engine, undefined, entity, { cause: 'a pit trap' });
-        }
+        harm(engine, entity, actualDmg, 'a pit trap', { line: () => message });
         break;
       }
 
       case 'arrow': {
         const actualDmg = this.damage;
-        entity.takeDamage(actualDmg);
         message =
           this.customMessage ??
           `A pressure plate clicks! A dart springs from the wall hitting ${entity.name} for ${actualDmg} damage!`;
-        engine.log(message);
-
-        if (!entity.isAlive() && entity instanceof Player) {
-          DeathResolver.resolveDeath(engine, undefined, entity, { cause: 'a dart trap' });
-        }
+        harm(engine, entity, actualDmg, 'a dart trap', { line: () => message });
         break;
       }
 

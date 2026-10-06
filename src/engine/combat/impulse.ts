@@ -3,7 +3,7 @@ import { sumWorn, wearsFlag } from '../items/wornModifiers';
 import type { Entity } from '../entities/entity';
 import { Monster } from '../entities/monster';
 import type { Position } from '../types';
-import { DeathResolver } from './deathResolver';
+import { DeathResolver, harm } from './deathResolver';
 
 /** The trap type used when an entity lands on a trap tile during impulse resolution. */
 const DEFAULT_IMPULSE_TRAP_TYPE = 'pit';
@@ -128,11 +128,10 @@ export function applyImpulse(
 
       if (isBoss) {
         const fallDmg = Math.max(BOSS_CHASM_FALL_MIN_DAMAGE, Math.floor(target.maxHp * BOSS_CHASM_FALL_HP_FRACTION));
-        const { damageDealt, killed } = target.takeDamage(fallDmg);
-        engine.log(`*** ${target.name} resists the abyss but suffers ${damageDealt} crushing fall damage clinging to the chasm ledge! ***`);
-        if (killed) {
-          DeathResolver.resolveDeath(engine, source, target);
-        }
+        const { damageDealt, killed } = harm(engine, target, fallDmg, 'a fall against the chasm wall', {
+          by: source,
+          line: (n) => `*** ${target.name} resists the abyss but suffers ${n} crushing fall damage clinging to the chasm ledge! ***`,
+        });
         return {
           pushed: true,
           distanceTraveled: distanceTraveled + 1,
@@ -211,9 +210,8 @@ export function applyImpulse(
     } else if (nextTile.type === 'trap' && !wearsFlag(target, 'trapImmune')) {
       triggeredTrapType = DEFAULT_IMPULSE_TRAP_TYPE;
       engine.log(`*** ${target.name} triggers a hidden trap upon landing! ***`);
-      const { damageDealt, killed } = target.takeDamage(10);
+      const { damageDealt, killed } = harm(engine, target, 10, 'a hidden trap', { by: source });
       if (killed) {
-        DeathResolver.resolveDeath(engine, source, target);
         return {
           pushed: true,
           distanceTraveled,
@@ -256,9 +254,7 @@ function resolveWallSplat(
   const strBonus = Math.floor(((source?.strength ?? target.strength ?? 10)) / 2);
   const impactDamage = Math.max(3, remainingDist * 4 + strBonus);
 
-  const { damageDealt, killed } = target.takeDamage(impactDamage);
-
-  // Apply 1-turn Stunned status
+  // Stunned first, as before: the splat line says so, and a kill resolves after it.
   target.statusManager.applyStatus(
     { type: WALL_SPLAT_STATUS, duration: WALL_SPLAT_STUN_DURATION },
     target.statusImmunities,
@@ -266,11 +262,10 @@ function resolveWallSplat(
     engine
   );
 
-  engine.log(`*** WALL SPLAT! ${target.name} slams violently into ${obstacleName} for ${damageDealt} kinetic impact damage and is stunned! ***`);
-
-  if (killed) {
-    DeathResolver.resolveDeath(engine, source, target);
-  }
+  const { damageDealt, killed } = harm(engine, target, impactDamage, 'a wall splat', {
+    by: source,
+    line: (n) => `*** WALL SPLAT! ${target.name} slams violently into ${obstacleName} for ${n} kinetic impact damage and is stunned! ***`,
+  });
 
   return {
     pushed: distanceTraveled > 0,

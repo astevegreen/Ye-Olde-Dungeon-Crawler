@@ -115,3 +115,15 @@ describe('R-cotw-14 · the Wrists slot can be filled', () => {
     expect(bracers.slot).toBe('wrists');
   });
 });
+
+describe('R-cotw-8 · floor 21 stamps only its scripted pylon, not the zone’s ordinary one', () => {
+  it('the ordinary Siphon Pylon is never a random vault pick', async () => {
+    const { chooseVaults } = await import('../../../engine/dungeon/layout/layoutStrategy');
+    let n = 1;
+    const rand = () => ((n = (n * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < 300; i++) {
+      const picks = chooseVaults({ gen: { vaults: cotwManifest.vaults, floorNumber: 21, forcedVaultId: 'floor21_drinking_pylon' }, rand, params: { bridges: 3 } } as never);
+      expect(picks.map((p) => p.blueprint.id)).not.toContain('siphon_pylon');
+    }
+  });
+});

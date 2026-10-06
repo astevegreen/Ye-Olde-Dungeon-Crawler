@@ -56,6 +56,9 @@ export const COTW_VAULTS: VaultBlueprint[] = [
     description: 'A barred obsidian pump-house where the siphon draws magma from the rift.',
     minFloor: 18,
     maxFloor: 25,
+    // The zone's landmark on floors 18-20 and 22-25 (floorLayouts.ts), never a random pick:
+    // floor 21's own pylon is the scripted dark core, and this one stamped beside it.
+    scriptedOnly: true,
     layout: [
       '#########',
       '#B.....B#',

@@ -38,8 +38,9 @@ export interface VaultBlueprint {
    */
   legend?: Record<string, string>;
   /**
-   * Excluded from the random vault pass: stamped only when a manifest names it as a
-   * floor's forced vault (`scriptedVaultPlacements`, `runeOfReturn.acquisition`).
+   * Excluded from the random vault pass: stamped only when a manifest names it, as a
+   * floor's forced vault (`scriptedVaultPlacements`, `runeOfReturn.acquisition`) or as a
+   * layout band's landmark (`landmarkVaultIds`).
    */
   scriptedOnly?: boolean;
 }

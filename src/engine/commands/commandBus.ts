@@ -343,7 +343,14 @@ export class EngineCommandBus implements GameCommandBus {
       case 'mark_junk': {
         const item = this.engine.player.inventory.findItemById(p.itemId as string);
         if (!item || item.category === 'currency') return { success: false, message: 'Nothing to mark as junk.' };
-        item.junk = p.junk === undefined ? !item.junk : Boolean(p.junk);
+        const junk = p.junk === undefined ? !item.junk : Boolean(p.junk);
+        // A junk container would be sold with everything in it (R-econ-19).
+        if (junk && item instanceof Container && item.itemCount > 0) {
+          const refusal = `Empty the ${item.displayName} before marking it as junk.`;
+          this.engine.log(refusal);
+          return { success: false, message: refusal };
+        }
+        item.junk = junk;
         const message = item.junk ? `${item.displayName} is marked as junk.` : `${item.displayName} is no longer junk.`;
         this.engine.log(message);
         return { success: true, message };
@@ -353,8 +360,16 @@ export class EngineCommandBus implements GameCommandBus {
       case 'sell_junk': {
         const merchant = (p.merchant as Merchant) ?? this.engine.merchants.get(p.merchantId as string);
         if (!merchant) return { success: false, message: 'Invalid sell request' };
-        const junk = this.engine.player.inventory.primaryPack.getItems().filter((i) => i.junk && isSellable(i));
-        if (junk.length === 0) return { success: false, message: 'Nothing in your pack is marked as junk.' };
+        const marked = this.engine.player.inventory.primaryPack.getItems().filter((i) => i.junk && isSellable(i));
+        // A container filled since it was marked stays, with what it holds (R-econ-19).
+        const kept = marked.filter((i) => i instanceof Container && i.itemCount > 0);
+        const junk = marked.filter((i) => !kept.includes(i));
+        const keptNote = kept.map((i) => ` The ${i.displayName} is not empty: it stays.`).join('');
+        if (junk.length === 0) {
+          const message = kept.length ? keptNote.trim() : 'Nothing in your pack is marked as junk.';
+          if (kept.length) this.engine.log(message);
+          return { success: false, message };
+        }
         let sold = 0;
         let paid = 0;
         for (const item of junk) {
@@ -364,7 +379,7 @@ export class EngineCommandBus implements GameCommandBus {
             paid += price;
           }
         }
-        const message = `Sold ${sold} junk item${sold === 1 ? '' : 's'} for ${formatCurrency(paid)}.`;
+        const message = `Sold ${sold} junk item${sold === 1 ? '' : 's'} for ${formatCurrency(paid)}.${keptNote}`;
         this.engine.log(message);
         return { success: sold > 0, message };
       }

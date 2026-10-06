@@ -316,11 +316,12 @@ export class MonsterAI {
     const dist = Math.hypot(monster.x - player.x, monster.y - player.y);
     const hasLos = dist <= 8 && MonsterAI.hasLineOfSight(engine, monster.x, monster.y, player.x, player.y);
 
-    // 1. Sleeping state check
-    const isVisibleInFov = Boolean(engine.fov && engine.fov.isVisible(monster.x, monster.y));
+    // 1. Sleeping state check. A sleeper the hero sees within the hero's own radius was
+    // already woken by `updateFov`; here it wakes only by its own sight of the target. (Being
+    // in the hero's view woke it from anywhere on a lit map, past that radius: R-ai-10, §6.)
     if (monster.aiState === 'sleeping') {
       // The hero's wake radius may keep it asleep though it sees (Shadow-Walker, Reaver; ADR-0014).
-      if ((hasLos || isVisibleInFov) && monster.wakesOnSight(engine)) {
+      if (hasLos && monster.wakesOnSight(engine)) {
         monster.aiState = 'hunting';
       } else {
         monster.intent = { type: 'idle', turnsRemaining: 0 };

@@ -152,3 +152,20 @@ describe('R-ai-9 · the hero’s own companion is not a bestiary encounter', () 
     expect(engine.compendium.getEntry(hound.definitionId).tier).toBe(0);
   });
 });
+
+describe('R-ai-10 · on a lit map a sleeper wakes only within the hero’s own radius (§6)', () => {
+  it('a sleeping monster 30 tiles off across a lit square stays asleep on its turn', () => {
+    const map = new GameMap(50, 10, TILES.FLOOR);
+    map.lit = true;
+    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 }, stats: { hp: 50, maxHp: 50, attack: 10, defense: 5 } });
+    const engine = new GameEngine({ map, player });
+    const sleeper = new Monster({ id: 'far', name: 'Far', position: { x: 35, y: 5 }, stats: { hp: 10, maxHp: 10, attack: 2, defense: 0 }, speed: 100, definitionId: 'far', aiType: 'melee', aiState: 'sleeping' } as never);
+    engine.addEntity(sleeper);
+    engine.updateFov();
+    expect(engine.fov.isVisible(35, 5)).toBe(true); // a lit map is seen to its end (passes today)
+
+    MonsterAI.decideAction(sleeper, engine);
+
+    expect(sleeper.aiState).toBe('sleeping');
+  });
+});

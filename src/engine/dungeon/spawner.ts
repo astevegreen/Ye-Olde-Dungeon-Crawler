@@ -287,7 +287,9 @@ export function populateDungeonFloor(
   densityMultiplier = 1.0,
   scalingConfig?: MonsterScalingConfig,
   difficulty?: GameDifficulty,
-  registries?: EngineRegistries
+  registries?: EngineRegistries,
+  /** Where a monster may stand (`SpawnSiteFilter.allows`); else any passable, empty tile. */
+  allows?: (x: number, y: number) => boolean
 ): void {
   const effectiveCandidates =
     candidates.length > 0
@@ -313,7 +315,7 @@ export function populateDungeonFloor(
         const mx = room.x1 + 1 + Math.floor(rng() * (room.x2 - room.x1 - 1));
         const my = room.y1 + 1 + Math.floor(rng() * (room.y2 - room.y1 - 1));
 
-        if (map.isPassable(mx, my) && !map.getEntityAt(mx, my)) {
+        if (allows ? allows(mx, my) : map.isPassable(mx, my) && !map.getEntityAt(mx, my)) {
           const randId = Math.floor(rng() * 1000000);
           const uniqueId = k === 0 ? `mon-${currentFloor}-${i}-${j}-${randId}` : `mon-${currentFloor}-${i}-${j}-${k}-${randId}`;
           const monster = createScaledMonster(

@@ -20,6 +20,7 @@ import { Container } from '../items/container';
 import type { Item } from '../items/item';
 import { RuneOfReturnItem, attunementNpcName } from '../magic/runeOfReturn';
 import type { EngineRegistries } from '../registries';
+import { SpawnSiteFilter } from '../dungeon/spawnSites';
 export interface DungeonFloorResult {
   map: GameMap;
   playerSpawn: Position;
@@ -230,6 +231,8 @@ export class DungeonArc {
     // 3. Spawn Floor-scaled monsters via encounter spawner
     const populationPrng = new PRNG((seed ?? floorNumber) + floorNumber * 7919);
     const populationRng = () => populationPrng.next();
+    // Not in a cache or a sealed cage, not on the stairs, not within a few steps of the arrival.
+    const sites = new SpawnSiteFilter(map, { anchor: playerSpawn, minDistance: 4 });
     populateDungeonFloor(
       map,
       dungeon.rooms,
@@ -239,7 +242,8 @@ export class DungeonArc {
       densityMultiplier,
       manifest?.monsterScaling,
       difficulty,
-      registries
+      registries,
+      (x, y) => sites.allows(x, y)
     );
 
     // 4. Spawn Floor-scaled loot and chests

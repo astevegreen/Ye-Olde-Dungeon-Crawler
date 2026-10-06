@@ -8,6 +8,7 @@ import {
   createScaledMonster,
   isEligibleDungeonMonster,
 } from '../dungeon/spawner';
+import { SpawnSiteFilter } from '../dungeon/spawnSites';
 
 export interface DungeonFloorRecord {
   floorNumber: number;
@@ -279,22 +280,11 @@ export class FloorManager {
     }
 
     const spawnsToPerform = Math.min(this.maxBatchSpawns, availableSlots);
-    const px = engine.player ? engine.player.x : 0;
-    const py = engine.player ? engine.player.y : 0;
-    const candidateTiles: Position[] = [];
-
-    for (let y = 1; y < map.height - 1; y++) {
-      for (let x = 1; x < map.width - 1; x++) {
-        if (!map.isPassable(x, y)) continue;
-        if (map.getEntityAt(x, y)) continue;
-        if (engine.fov && engine.fov.isVisible(x, y)) continue;
-
-        const dist = Math.hypot(x - px, y - py);
-        if (dist >= 8) {
-          candidateTiles.push({ x, y });
-        }
-      }
-    }
+    const candidateTiles = new SpawnSiteFilter(map, {
+      anchor: engine.player ? { x: engine.player.x, y: engine.player.y } : { x: 0, y: 0 },
+      minDistance: 8,
+      hiddenFrom: engine.fov,
+    }).sites();
 
     if (candidateTiles.length === 0) {
       return [];

@@ -4,6 +4,7 @@ import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
 import { getMonsterDefinition } from '../bestiary/monsterDefinitions';
 import type { Position } from '../types';
 import { selectDungeonMonsterDefinition, createScaledMonster, isEligibleDungeonMonster } from './spawner';
+import { SpawnSiteFilter } from './spawnSites';
 
 /**
  * Creates a runtime Monster instance from an immutable MonsterDefinition,
@@ -81,26 +82,13 @@ export class WanderingMonsterSpawner {
       return null;
     }
 
-    // 5. Find candidate spawn locations outside player FOV and >= minDistanceToPlayer
-    const candidateTiles: Position[] = [];
-    const px = engine.player.x;
-    const py = engine.player.y;
-
-    for (let y = 1; y < engine.map.height - 1; y++) {
-      for (let x = 1; x < engine.map.width - 1; x++) {
-        if (!engine.map.isPassable(x, y)) continue;
-        if (engine.map.getEntityAt(x, y)) continue;
-
-        // Must be outside line of sight
-        if (engine.fov.isVisible(x, y)) continue;
-
-        // Euclidean distance check
-        const dist = Math.hypot(x - px, y - py);
-        if (dist >= this.minDistanceToPlayer) {
-          candidateTiles.push({ x, y });
-        }
-      }
-    }
+    // 5. Find candidate spawn locations: out of sight, >= minDistanceToPlayer away, and
+    // somewhere the hero can walk to (never a secret cache or a sealed cage).
+    const candidateTiles = new SpawnSiteFilter(engine.map, {
+      anchor: { x: engine.player.x, y: engine.player.y },
+      minDistance: this.minDistanceToPlayer,
+      hiddenFrom: engine.fov,
+    }).sites();
 
     if (candidateTiles.length === 0) {
       return null;

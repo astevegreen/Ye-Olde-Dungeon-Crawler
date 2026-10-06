@@ -82,6 +82,7 @@ import { SaveCodeModal } from './ui/saveCodeModal';
 import { SaveQuitModal } from './ui/saveQuitModal';
 import { SaveSlotModal } from './ui/saveSlotModal';
 import { showToast } from './ui/toast';
+import { safely } from './ui/safeStep';
 import { codesLabel, keyLabel } from './ui/keyLabel';
 import { expandCompressedReplay } from './ui/replayCodec';
 import { SessionGuard } from './ui/sessionGuard';
@@ -1250,12 +1251,25 @@ window.addEventListener('DOMContentLoaded', () => {
     window.removeEventListener('unhandledrejection', onGlobalUnhandledRejection);
   };
 
+  /** A save the storage refused (a full quota): recorded and told, never fatal (R-stor-9). */
+  function reportSaveFailure(err: Error, label: string): void {
+    console.error(`[Save] ${label} failed:`, err);
+    flightRecorder.recordError(err, { source: label });
+    showToast(`Could not save: ${err.message}`, 'error', 8000);
+  }
+
+  /** Saves the live run as Save & Quit does; a write that fails cannot stop the caller. */
+  function saveLiveRun(label: string): void {
+    if (!activeEngine || !activeProfile) return;
+    const engine = activeEngine;
+    const profile = activeProfile;
+    safely(label, () => profileManager.saveCharacter(engine, profile), reportSaveFailure);
+    autosaveManager.autosave(engine, profile);
+  }
+
   function saveAndReturnToTitle(): void {
     sessionGuard.end();
-    if (activeEngine && activeProfile) {
-      profileManager.saveCharacter(activeEngine, activeProfile);
-      autosaveManager.autosave(activeEngine, activeProfile);
-    }
+    saveLiveRun('save and quit');
     if (widescreenLayout) {
       widescreenLayout.style.display = 'none';
     }
@@ -1353,14 +1367,19 @@ window.addEventListener('DOMContentLoaded', () => {
     window.__cotwSaveAndReturn = saveAndReturnToTitle;
 
     // Wire GameState victory/defeat listener
+    // The writes come first but cannot stop the screen: this is the only way to the death
+    // and victory screens, and a full storage quota throws (R-stor-9).
     engine.gameState.onStateChanged = (status, summary) => {
-      if (summary.entry) hallOfFame.recordRun(summary.entry);
+      if (summary.entry && !hallOfFame.recordRun(summary.entry)) {
+        showToast(`This run could not be added to the ${brand.hallOfFameName}: the browser's storage refused it.`, 'error', 8000);
+      }
       if (activeProfile) {
-        activeProfile.questStatus = status;
+        const profile = activeProfile;
+        profile.questStatus = status;
         if (summary.entry?.epitaph) {
-          activeProfile.epitaph = summary.entry.epitaph;
+          profile.epitaph = summary.entry.epitaph;
         }
-        profileManager.saveCharacter(engine, activeProfile);
+        safely('game-over save', () => profileManager.saveCharacter(engine, profile), reportSaveFailure);
       }
       showGameOverModal(status, summary);
     };

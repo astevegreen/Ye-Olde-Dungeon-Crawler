@@ -2,6 +2,7 @@ import type { Gender } from '../character/types';
 import type { StorageAdapter } from '../storage/types';
 import { getDefaultStorage } from '../storage/profile-manager';
 import { utf8ToBase64, base64ToUtf8 } from '../storage/saveTransfer';
+import { flightRecorder } from '../debug/flightRecorder';
 
 const HALL_OF_FAME_STORAGE_KEY = 'yodc_hall_of_fame';
 
@@ -84,13 +85,21 @@ export class Leaderboard {
   }
 
   /**
-   * Records a new run entry into the hall of fame.
+   * Records a new run entry into the hall of fame. Returns false, and records why, when
+   * the storage refuses the write (a full quota): the death and victory screens follow
+   * this call, so it never throws (R-stor-9).
    */
-  public recordRun(entry: HallOfFameEntry): void {
+  public recordRun(entry: HallOfFameEntry): boolean {
     const champions = this.getChampions();
     champions.push(entry);
     champions.sort((a, b) => b.score - a.score);
-    this.storage.setItem(HALL_OF_FAME_STORAGE_KEY, JSON.stringify(champions));
+    try {
+      this.storage.setItem(HALL_OF_FAME_STORAGE_KEY, JSON.stringify(champions));
+      return true;
+    } catch (err) {
+      flightRecorder.warn('[Leaderboard] Could not record the run in the hall of fame:', { error: String(err) });
+      return false;
+    }
   }
 
   /**
@@ -197,7 +206,9 @@ export class Leaderboard {
     if (isDuplicate) {
       return { success: false, message: `${entry.heroName}'s saga is already inscribed in the Hall of Fame!`, champion: entry };
     }
-    this.recordRun(entry);
+    if (!this.recordRun(entry)) {
+      return { success: false, message: `Could not inscribe ${entry.heroName}: the browser's storage refused it.`, champion: entry };
+    }
     return {
       success: true,
       message: `Inscribed ${entry.heroName} (${entry.score.toLocaleString()} pts) into the Hall of Fame!`,

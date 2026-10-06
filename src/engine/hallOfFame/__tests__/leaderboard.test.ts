@@ -82,4 +82,49 @@ describe('Leaderboard & Hall of Valhalla High Score System', () => {
     expect(champions[1].heroName).toBe('Sven');
     expect(champions[2].heroName).toBe('Torvald');
   });
+
+  describe('a storage at its quota (R-stor-9)', () => {
+    /** `localStorage` once full: every write throws, as the browser's does. */
+    class FullStorage extends MemoryStorage {
+      public override setItem(): void {
+        throw Object.assign(new Error('The quota has been exceeded.'), { name: 'QuotaExceededError' });
+      }
+    }
+
+    const fallen: HallOfFameEntry = {
+      id: 'hero-4',
+      heroName: 'Gudrun',
+      gender: 'female',
+      status: 'fallen',
+      epitaph: 'Slain by Wolf on Floor 2',
+      level: 2,
+      deepestFloor: 2,
+      turns: 90,
+      xp: 300,
+      goldCp: 500,
+      score: 1302,
+      date: 3000,
+    };
+
+    it('recordRun does not throw: it reports the lost write and leaves the hall as it was', () => {
+      const full = new Leaderboard(new FullStorage());
+      let written: boolean | undefined;
+      expect(() => {
+        written = full.recordRun(fallen);
+      }).not.toThrow();
+      expect(written).toBe(false);
+      expect(full.getChampions()).toEqual([]);
+    });
+
+    it('recordRun reports a write that landed', () => {
+      expect(leaderboard.recordRun(fallen)).toBe(true);
+      expect(leaderboard.getChampions().map((c) => c.heroName)).toEqual(['Gudrun']);
+    });
+
+    it('importSharedRun does not claim an inscription the storage refused', () => {
+      const result = new Leaderboard(new FullStorage()).importSharedRun(fallen);
+      expect(result.success).toBe(false);
+      expect(result.message).not.toContain('Inscribed');
+    });
+  });
 });

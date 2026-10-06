@@ -89,9 +89,12 @@ interface BotSnapshot {
 
 /** The surface layer's damage lines (src/engine/surfaces/surfaceGrid.ts). */
 const HAZARD_LINE = /searing fire|lingering fire|oil inferno|firestorm|caustic|acid burn|electrocution|poison fumes/;
+/** What the death screen names for those (`KillContext.cause` in surfaceGrid.ts `harm`). */
+const HAZARD_CAUSES = new Set(['searing fire', 'lingering fire', 'a firestorm', 'burning oil', 'acid', 'lightning']);
 
 export type DeathCause =
   | 'hazard'
+  | 'trap'
   | 'telegraph'
   | 'surrounded'
   | 'out_of_potions'
@@ -105,16 +108,22 @@ export type DeathCause =
  * Why the hero died, from the death line and the bot's last look at the board. The first
  * match wins: a named self-inflicted cause, then a hazard tile, then poison, then where the
  * hero stood. Every overflow that hurts says "backlash" (the pack's tier table); "surge"
- * would also match the Kobold Shaman's Hellfire Surge.
+ * would also match the Kobold Shaman's Hellfire Surge. The death screen names a cause with
+ * no creature behind it ("Slain by searing fire", "a pit trap", "poison"); older builds
+ * said "Mortal Wounds", read from the lines before it.
  */
 export function classifyDeath(causeOfDeath: string | null, last: BotSnapshot | null): DeathCause {
   const text = (causeOfDeath ?? '').toLowerCase();
-  if (text.includes('backlash')) return 'overflow_backlash';
-  if (text.includes('twinstrike')) return 'twinstrike';
-  if (/holy ground|sacred|hallowed/.test(text)) return 'holy_ground';
-  // Only when no monster is named: the last lines can also be a monster burning nearby.
   const killer = /slain by (.+?) on floor/.exec(text)?.[1] ?? 'mortal wounds';
-  if ((killer === 'mortal wounds' || HAZARD_LINE.test(killer)) && (HAZARD_LINE.test(text) || last?.onHazard)) return 'hazard';
+  if (text.includes('backlash')) return 'overflow_backlash';
+  // A missed swing that costs its bearer ("an overreaching blow"): Twinstrike's.
+  if (text.includes('twinstrike') || killer === 'an overreaching blow') return 'twinstrike';
+  if (/holy ground|sacred|hallowed/.test(text)) return 'holy_ground';
+  if (HAZARD_CAUSES.has(killer)) return 'hazard';
+  if (killer.endsWith(' trap')) return 'trap';
+  if (killer === 'poison') return 'poison';
+  // Only when no monster is named: the last lines can also be a monster burning nearby.
+  if (killer === 'mortal wounds' && (HAZARD_LINE.test(text) || last?.onHazard)) return 'hazard';
   if (last?.poisoned && text.includes('poison')) return 'poison';
   if (last?.onTelegraph) return 'telegraph';
   if ((last?.adjacentHostiles ?? 0) >= 3) return 'surrounded';

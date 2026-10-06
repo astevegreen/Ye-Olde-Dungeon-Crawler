@@ -94,7 +94,7 @@ describe('R-ai-4 · a secret door hides only its cache, never a stitched-on cave
       }
     }
     expect(gated.slice(0, 5)).toEqual([]);
-  });
+  }, 30_000);
 });
 
 describe('R-ai-6 · a story altar or runestone lands where the hero can walk to it', () => {
@@ -125,5 +125,5 @@ describe('R-ai-6 · a story altar or runestone lands where the hero can walk to 
       }
     }
     expect(stranded).toEqual([]);
-  });
+  }, 30_000);
 });

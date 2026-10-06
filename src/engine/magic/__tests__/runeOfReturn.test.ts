@@ -36,10 +36,10 @@ function buildEngine(floor = 1) {
     position: { x: 5, y: 5 },
     stats: { hp: 100, maxHp: 100, attack: 10, defense: 2 },
   });
+  // An awakened rune: the innate one, whose charges are the player's.
   player.hasDiscoveredRune = true;
-  const rune = new RuneOfReturnItem({ id: 'rune-1', name: 'Rune of Return' });
-  player.inventory.primaryPack.addItem(rune);
   const engine = new GameEngine({ map, player, floor });
+  const rune = findRuneOfReturn(player)!;
   return { engine, player, rune };
 }
 
@@ -369,9 +369,17 @@ describe('Rune of Return — attunement', () => {
     expect(message).toContain(`${RUNE_MAX_CHARGES}/${RUNE_MAX_CHARGES}`);
   });
 
-  it('findRuneOfReturn locates the carried item', () => {
-    const { player, rune } = buildEngine();
-    expect(findRuneOfReturn(player)).toBe(rune);
+  it('findRuneOfReturn locates a carried dormant rune, and the innate one once awakened', () => {
+    const { player } = buildEngine();
+    player.hasDiscoveredRune = false;
+    const dormant = new RuneOfReturnItem({ id: 'rune-1', name: 'Rune of Return', charges: 0 });
+    player.inventory.primaryPack.addItem(dormant);
+    expect(findRuneOfReturn(player)).toBe(dormant);
+
+    player.hasDiscoveredRune = true;
+    player.runeCharges = 2;
+    expect(findRuneOfReturn(player)).not.toBe(dormant);
+    expect(findRuneOfReturn(player)?.charges).toBe(2);
   });
 });
 

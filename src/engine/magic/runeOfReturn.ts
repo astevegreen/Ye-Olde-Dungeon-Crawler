@@ -166,16 +166,18 @@ export class InnateRuneOfReturnItem extends RuneOfReturnItem {
   }
 }
 
-/** Finds the player's carried Rune of Return, or returns the innate spiritual rune if discovered. */
+/**
+ * The player's Rune of Return: once awakened, the innate spiritual rune, whose charges are
+ * the player's (a physical rune still carried is a husk, and must never stand in for it);
+ * before that, the dormant rune they carry, if any.
+ */
 export function findRuneOfReturn(player: Player): RuneOfReturnItem | undefined {
-  const carried = player.inventory
-    ?.getAllCarriedItems?.()
-    .find((item): item is RuneOfReturnItem => item instanceof RuneOfReturnItem);
-  if (carried) return carried;
   if (player.hasDiscoveredRune) {
     return new InnateRuneOfReturnItem(player);
   }
-  return undefined;
+  return player.inventory
+    ?.getAllCarriedItems?.()
+    .find((item): item is RuneOfReturnItem => item instanceof RuneOfReturnItem);
 }
 
 /** The pack's attunement NPC by name (`runeOfReturn.attunementNpcId` among `town.npcs`),

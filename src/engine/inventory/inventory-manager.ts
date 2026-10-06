@@ -330,73 +330,64 @@ export class InventoryManager {
   }
 
   /**
-   * Finds an item anywhere in the inventory (pack, equipped items, or sub-containers).
+   * The containers the hero carries at the top: the pack, belt, purse and any other worn
+   * container. Items inside them, at any depth, are carried.
    */
-  /**
-   * Scoped lookup: is this item in *this* inventory? Belt and purse are searched too —
-   * `removeItem` has always checked them, so an item there was removable but not findable.
-   */
-  public findItemById(itemId: string): Item | undefined {
-    const fromPack = this.primaryPack.getItem(itemId);
-    if (fromPack) return fromPack;
-    const fromBelt = this.belt?.getItem(itemId);
-    if (fromBelt) return fromBelt;
-    const fromPurse = this.purse?.getItem(itemId);
-    if (fromPurse) return fromPurse;
-    const equipped = this.paperdoll.getAllEquipped();
-    for (const eq of equipped) {
-      if (eq.item.id === itemId) return eq.item;
-      if (eq.item instanceof Container) {
-        const sub = eq.item.getItem(itemId);
-        if (sub) return sub;
+  private topContainers(): Container[] {
+    const roots: Container[] = [this.primaryPack];
+    if (this.belt) roots.push(this.belt);
+    if (this.purse) roots.push(this.purse);
+    for (const { item } of this.paperdoll.getAllEquipped()) {
+      if (item instanceof Container && !roots.includes(item)) roots.push(item);
+    }
+    return roots;
+  }
+
+  /** The container holding `itemId`, at any depth (a potion in a bag in the pack), if any. */
+  private holderOf(itemId: string): Container | undefined {
+    const search = (container: Container): Container | undefined => {
+      if (container.getItem(itemId)) return container;
+      for (const child of container.getItems()) {
+        if (child instanceof Container) {
+          const hit = search(child);
+          if (hit) return hit;
+        }
       }
+      return undefined;
+    };
+    for (const root of this.topContainers()) {
+      const hit = search(root);
+      if (hit) return hit;
     }
     return undefined;
   }
 
   /**
-   * Safely removes an item from anywhere in the inventory (pack, belt, purse, or paperdoll)
-   * and clears its parentId pointer.
+   * Scoped lookup: is this item in *this* inventory? Searches every carried container at
+   * any depth, as `getAllCarriedItems` lists them, then the worn items themselves.
+   */
+  public findItemById(itemId: string): Item | undefined {
+    const held = this.holderOf(itemId)?.getItem(itemId);
+    if (held) return held;
+    return this.paperdoll.getAllEquipped().find((eq) => eq.item.id === itemId)?.item;
+  }
+
+  /**
+   * Safely removes an item from anywhere in the inventory (any carried container at any
+   * depth, or the paperdoll) and clears its parentId pointer.
    */
   public removeItem(itemId: string): Item | null {
-    // 1. Check primary pack
-    const fromPack = this.primaryPack.removeItem(itemId);
-    if (fromPack) {
-      fromPack.parentId = null;
-      return fromPack;
+    const fromContainer = this.holderOf(itemId)?.removeItem(itemId);
+    if (fromContainer) {
+      fromContainer.parentId = null;
+      return fromContainer;
     }
 
-    // 2. Check utility belt
-    if (this.belt) {
-      const fromBelt = this.belt.removeItem(itemId);
-      if (fromBelt) {
-        fromBelt.parentId = null;
-        return fromBelt;
-      }
-    }
-
-    // 3. Check purse
-    if (this.purse) {
-      const fromPurse = this.purse.removeItem(itemId);
-      if (fromPurse) {
-        fromPurse.parentId = null;
-        return fromPurse;
-      }
-    }
-
-    // 4. Check paperdoll equipped items & equipped subcontainers
     for (const { slot, item } of this.paperdoll.getAllEquipped()) {
       if (item.id === itemId) {
         this.paperdoll.unequip(slot);
         item.parentId = null;
         return item;
-      }
-      if (item instanceof Container) {
-        const fromSub = item.removeItem(itemId);
-        if (fromSub) {
-          fromSub.parentId = null;
-          return fromSub;
-        }
       }
     }
 

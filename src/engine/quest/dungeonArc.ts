@@ -659,15 +659,9 @@ export class DungeonArc {
    * Checks if the player is currently carrying the legendary quest relic.
    */
   public static isRelicInPlayerPossession(player: Player, relicId: string = QUEST_RELIC_ID): boolean {
-    const inPack = player.inventory.primaryPack.getItems().some(
-      (i) => i.id === relicId || i.category === 'quest'
-    );
-    if (inPack) return true;
-
-    const inEquipped = player.inventory.paperdoll.getAllEquipped().some(
-      (e) => e.item.id === relicId || e.item.category === 'quest'
-    );
-    return inEquipped;
+    // That item (by id, or a copy of its definition) anywhere on the hero, bags and belt
+    // included; another quest item is not the relic (R-econ-17).
+    return player.inventory.getAllCarriedItems().some((i) => i.id === relicId || i.definitionId === relicId);
   }
 }
 

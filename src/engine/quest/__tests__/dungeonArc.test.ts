@@ -7,6 +7,7 @@ import type { QuestArcDefinition } from '../../types/manifest';
 import { COTW_MONSTERS } from '../../../content/cotw/monsters';
 import { COTW_ITEMS } from '../../../content/cotw/items';
 import { Container } from '../../items/container';
+import { Item } from '../../items/item';
 
 describe('DungeonArc & Floor 5 Chieftain Encounter', () => {
   it('identifies Floor 5 as the Boss Floor', () => {
@@ -66,6 +67,29 @@ describe('DungeonArc & Floor 5 Chieftain Encounter', () => {
     const sunStone = createTestSunStone(QUEST_RELIC_ID);
     player.inventory.primaryPack.addItem(sunStone);
 
+    expect(DungeonArc.isRelicInPlayerPossession(player)).toBe(true);
+  });
+
+  it('knows the relic by its id or definition, wherever it is carried, and no other quest item (R-econ-17)', () => {
+    const player = new Player({ id: 'relic-seeker', name: 'Ragnor', position: { x: 5, y: 5 } });
+    player.inventory.primaryPack.addItem(
+      new Item({ id: 'essence-rune', name: 'Essence-Rune', category: 'quest', weight: 10, bulk: 10, identified: true })
+    );
+    expect(DungeonArc.isRelicInPlayerPossession(player)).toBe(false);
+
+    const bag = new Container({
+      id: 'relic-bag',
+      name: 'Bag',
+      category: 'container',
+      containerType: 'pack',
+      weight: 100,
+      bulk: 100,
+      maxWeightCapacity: 5000,
+      maxBulkCapacity: 5000,
+      identified: true,
+    });
+    bag.addItem(new Item({ id: 'drop-7-1234', definitionId: QUEST_RELIC_ID, name: 'The Sun-Stone of Freyr', category: 'quest', weight: 10, bulk: 10, identified: true }));
+    player.inventory.primaryPack.addItem(bag);
     expect(DungeonArc.isRelicInPlayerPossession(player)).toBe(true);
   });
 

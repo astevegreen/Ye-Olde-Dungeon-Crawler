@@ -7,10 +7,13 @@ export interface CommandItem {
   id: string;
   title: string;
   category: 'Action' | 'Mode' | 'Help' | 'System';
-  shortcut: string;
+  /** The key chip; a function is read at each render, so it follows a rebind. */
+  shortcut: string | (() => string);
   description: string;
   execute: (engine: GameEngine) => void;
 }
+
+const chipOf = (cmd: CommandItem): string => (typeof cmd.shortcut === 'function' ? cmd.shortcut() : cmd.shortcut);
 
 /**
  * Registers on the modal stack while open (ARCHITECTURE.md §6), so the game pauses and
@@ -143,7 +146,7 @@ export class CommandPalette implements UIModal {
       this.filteredCommands = this.commands.filter((c) => {
         return (
           c.title.toLowerCase().includes(q) ||
-          c.shortcut.toLowerCase().includes(q) ||
+          chipOf(c).toLowerCase().includes(q) ||
           c.description.toLowerCase().includes(q) ||
           c.category.toLowerCase().includes(q)
         );
@@ -223,7 +226,7 @@ export class CommandPalette implements UIModal {
               <span class="cp-title">${escapeHtml(cmd.title)}</span>
               <span class="cp-desc">${escapeHtml(cmd.description)}</span>
             </span>
-            ${cmd.shortcut ? keyChip(cmd.shortcut) : ''}
+            ${chipOf(cmd) ? keyChip(chipOf(cmd)) : ''}
           </div>`;
       })
       .join('');

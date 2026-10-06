@@ -21,6 +21,11 @@ const NAMED: Record<string, string> = {
   Equal: '=',
 };
 
+/** Every key bound to an action, as one chip reads them: "Space / Num 5 / .". */
+export function codesLabel(codes: readonly string[]): string {
+  return codes.map(keyLabel).join(' / ');
+}
+
 /** A KeyboardEvent code, or a "Shift+" chord of one, as a key chip reads it: "KeyE" -> "E",
  *  "Shift+KeyT" -> "⇧T", "Numpad8" -> "Num 8". */
 export function keyLabel(code: string): string {

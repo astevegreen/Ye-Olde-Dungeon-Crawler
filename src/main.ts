@@ -81,7 +81,7 @@ import { SaveCodeModal } from './ui/saveCodeModal';
 import { SaveQuitModal } from './ui/saveQuitModal';
 import { SaveSlotModal } from './ui/saveSlotModal';
 import { showToast } from './ui/toast';
-import { keyLabel } from './ui/keyLabel';
+import { codesLabel, keyLabel } from './ui/keyLabel';
 import { expandCompressedReplay } from './ui/replayCodec';
 import { SessionGuard } from './ui/sessionGuard';
 import { getBrowserAsyncStore } from './ui/indexedDbStore';
@@ -125,7 +125,7 @@ import type { RadialMenuSlotConfig } from './ui/settings/settingsManager';
 import { KeybindModal } from './ui/settings/keybindModal';
 import { MainMenu } from './ui/menus/mainMenu';
 import { isBenignResizeObserverError, isOpaqueScriptError } from './ui/opaqueScriptError';
-import { COMMAND_CATALOG, type CommandId } from './main/commandCatalog';
+import { COMMAND_CATALOG, type CommandId, type CommandMetadata } from './main/commandCatalog';
 
 declare global {
   interface ImportMetaEnv {
@@ -1608,7 +1608,14 @@ window.addEventListener('DOMContentLoaded', () => {
       },
     };
 
-    commandPalette.registerCommands(COMMAND_CATALOG.map((meta) => ({ ...meta, execute: commandExecutors[meta.id] })));
+    // Each chip reads its action's keys as bound now, so it follows a rebind (R-main-4).
+    commandPalette.registerCommands(
+      COMMAND_CATALOG.map((meta: CommandMetadata & { id: CommandId }) => ({
+        ...meta,
+        shortcut: () => [meta.binding ? codesLabel(settingsManager.getCodesForAction(meta.binding)) : '', meta.fixedKeys ?? ''].filter(Boolean).join(' / '),
+        execute: commandExecutors[meta.id],
+      }))
+    );
 
     /** The companion keys (Shift+C, Shift+R by default): call or send away; its skill. */
     const runCompanionKey = (command: 'call' | 'skill'): void => {

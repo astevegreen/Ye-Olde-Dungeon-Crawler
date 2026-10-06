@@ -223,7 +223,7 @@ describe('R-cmbt-13 · an affix block runs on a defender a hook already killed: 
 });
 
 describe('R-cmbt-14 · an attacker killed by melee reflection keeps attacking', () => {
-  it.fails('a rat slain by the reflected share of its own bite does not poison the hero', () => {
+  it('a rat slain by the reflected share of its own bite does not poison the hero', () => {
     const { map, player, engine } = make();
     const hide = new Item({
       id: 'h',
@@ -246,6 +246,32 @@ describe('R-cmbt-14 · an attacker killed by melee reflection keeps attacking', 
 
     expect(rat.isAlive()).toBe(false); // the reflection killed it (passes today)
     expect(player.statusManager.hasStatus('poison')).toBe(false);
+  });
+
+  it('a bite that kills the hero as the reflection kills the rat still ends the run', () => {
+    const { map, player, engine } = make(1);
+    const hide = new Item({
+      id: 'h',
+      name: 'Mirror Hide',
+      unidentifiedName: 'x',
+      category: 'armor',
+      slot: 'torso',
+      weight: 100,
+      bulk: 100,
+      stats: { defenseBonus: 0 },
+      identified: true,
+      wornEffects: { reflectMeleePercent: 5 },
+    } as never);
+    player.inventory.primaryPack.addItem(hide);
+    player.inventory.equipFromPack(hide.id);
+    const rat = mon('rat', 4, 3, 1);
+    map.addEntity(rat);
+
+    new MeleeAttackAction(rat, player).perform(engine);
+
+    expect(rat.isAlive()).toBe(false);
+    expect(engine.gameState.runStatus).toBe('fallen');
+    expect(engine.gameState.killerName).toBe('rat');
   });
 });
 

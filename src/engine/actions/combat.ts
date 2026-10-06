@@ -239,19 +239,6 @@ export class MeleeAttackAction implements Action {
 
     flightRecorder.recordCombat(this.attacker.name, this.defender.name, damageDealt, killed);
 
-    // Mirror Hide: a share of the blow comes back at the attacker.
-    const reflectPercent = sumWorn(this.defender, 'reflectMeleePercent');
-    if (reflectPercent > 0 && damageDealt > 0) {
-      const reflected = this.attacker.takeDamage(Math.round(damageDealt * reflectPercent));
-      if (reflected.damageDealt > 0) engine.log(`${this.defender.name}'s hide turns ${reflected.damageDealt} of the blow back on ${this.attacker.name}!`);
-      if (reflected.killed) DeathResolver.resolveDeath(engine, this.defender, this.attacker);
-    }
-
-    if (lifestealPercent > 0 && damageDealt > 0) {
-      const drawn = this.attacker.heal(Math.round(damageDealt * lifestealPercent));
-      if (drawn > 0) engine.log(`${this.attacker.name} draws ${drawn} HP from the wound.`);
-    }
-
     const perkNote = isAnatomist
       ? (isCrit ? ' (Anatomist Critical!)' : ' (Anatomist Exploit)')
       : '';
@@ -269,6 +256,28 @@ export class MeleeAttackAction implements Action {
       killed,
       critical: isCrit,
     });
+
+    // Mirror Hide: a share of the blow comes back at the attacker.
+    const reflectPercent = sumWorn(this.defender, 'reflectMeleePercent');
+    if (reflectPercent > 0 && damageDealt > 0) {
+      const reflected = this.attacker.takeDamage(Math.round(damageDealt * reflectPercent));
+      if (reflected.damageDealt > 0) engine.log(`${this.defender.name}'s hide turns ${reflected.damageDealt} of the blow back on ${this.attacker.name}!`);
+      if (reflected.killed) DeathResolver.resolveDeath(engine, this.defender, this.attacker);
+      // A reflected kill ends the blow: no hooks, affliction, knockback or follow-up strike
+      // from a corpse. A blow that also killed the defender still resolves that death.
+      if (!this.attacker.isAlive()) {
+        if (killed) {
+          message += ` ${this.defender.name} is slain!`;
+          DeathResolver.resolveDeath(engine, this.attacker, this.defender, { damageElement: 'physical' });
+        }
+        return { success: true, cost, message };
+      }
+    }
+
+    if (lifestealPercent > 0 && damageDealt > 0) {
+      const drawn = this.attacker.heal(Math.round(damageDealt * lifestealPercent));
+      if (drawn > 0) engine.log(`${this.attacker.name} draws ${drawn} HP from the wound.`);
+    }
 
     // Dispatch Hook Engine Events: onHit, onBlock, onDamageTaken
     const blockedDamage = Math.max(0, this.defender.defense);

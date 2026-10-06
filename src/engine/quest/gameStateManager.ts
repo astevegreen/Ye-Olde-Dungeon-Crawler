@@ -26,6 +26,8 @@ export class GameStateManager {
   public onStateChanged?: (status: QuestStatus, summary: GameStateSummary) => void;
 
   private leaderboard: Leaderboard;
+  /** The run's Hall of Legends entry once it has ended: a second end returns it, records nothing. */
+  private lastEntry?: HallOfFameEntry;
 
   constructor(leaderboard?: Leaderboard) {
     this.leaderboard = leaderboard ?? new Leaderboard();
@@ -98,6 +100,7 @@ export class GameStateManager {
    * 'victorious'.
    */
   public triggerVictory(engine: GameEngine, profileManager?: ProfileManager, endingId?: string): HallOfFameEntry {
+    if (this.runStatus !== 'active' && this.lastEntry) return this.lastEntry;
     this.runStatus = 'victorious';
     const p = engine.player;
     const quest = engine.manifest?.quest;
@@ -124,6 +127,7 @@ export class GameStateManager {
     };
 
     this.leaderboard.recordRun(entry);
+    this.lastEntry = entry;
 
     if (profileManager) {
       const manifest = profileManager.getManifest();
@@ -154,6 +158,7 @@ export class GameStateManager {
    * and updates profile status to 'fallen'.
    */
   public triggerDeath(engine: GameEngine, killer?: Entity, profileManager?: ProfileManager, cause?: string): HallOfFameEntry {
+    if (this.runStatus !== 'active' && this.lastEntry) return this.lastEntry;
     this.runStatus = 'fallen';
     const p = engine.player;
     // A creature by name, else what killed the hero (`KillContext.cause`: fire, poison, a trap).
@@ -178,6 +183,7 @@ export class GameStateManager {
     };
 
     this.leaderboard.recordRun(entry);
+    this.lastEntry = entry;
 
     if (profileManager) {
       const manifest = profileManager.getManifest();

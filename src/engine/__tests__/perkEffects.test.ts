@@ -251,15 +251,16 @@ describe('perk effects', () => {
     new MeleeAttackAction(foe, player).perform(engine);
     expect(player.hp).toBe(1);
     expect(player.isAlive()).toBe(true);
-    foe.gainEnergy(100);
-    new MeleeAttackAction(foe, player).perform(engine);
-    expect(player.isAlive()).toBe(false);
     // A new visit to the floor (the hero left it at another tick) arms it again.
     player.hp = 5;
     engine.map.lastVisitedTick = 500;
     foe.gainEnergy(100);
     new MeleeAttackAction(foe, player).perform(engine);
     expect(player.hp).toBe(1);
+    // Spent for this visit too: the next blow is the end (a run ends once; no resurrection).
+    foe.gainEnergy(100);
+    new MeleeAttackAction(foe, player).perform(engine);
+    expect(player.isAlive()).toBe(false);
   });
 
   it('companionStatMultiplier raises the companion once, and companionRisesPerFloor raises a fallen one once a floor visit (Beast-Friend)', () => {

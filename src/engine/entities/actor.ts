@@ -265,7 +265,7 @@ export class Actor extends Entity implements IItemContainer, IEquipmentBearer {
   private healCarry = 0;
 
   public override takeDamage(rawAmount: number): { damageDealt: number; killed: boolean } {
-    if (this.isInvulnerable || !this.capabilities.isDestructible) {
+    if (this.isInvulnerable || !this.capabilities.isDestructible || this.hp <= 0) {
       return { damageDealt: 0, killed: false };
     }
     // What it wears and the perks it holds scale every blow (Hexed, Glass Fury, Thick Hide), whatever dealt it.

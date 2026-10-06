@@ -360,7 +360,8 @@ export class MeleeAttackAction implements Action {
     let killingElement: string = 'physical';
 
     // Elemental Weapon Affix Bonus Damage (e.g. "of Fire", "of Cold", "of Lightning")
-    if (this.attacker instanceof Player && !isFatal) {
+    // ... on a defender still standing: a hook or a knockback may have finished it already.
+    if (this.attacker instanceof Player && !isFatal && this.defender.isAlive()) {
       const weapon = this.attacker.inventory.paperdoll.getItem('mainHand');
       if (weapon?.elementalAffix) {
         const affix = weapon.elementalAffix;

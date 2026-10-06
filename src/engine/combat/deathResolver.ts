@@ -44,6 +44,14 @@ export class DeathResolver {
     victim: Entity,
     context?: KillContext
   ): void {
+    // A death resolves once. The hero's run has already ended, or a creature is already off
+    // the map (resolved, or never placed): nothing left to award, drop or record.
+    if (victim instanceof Player) {
+      const status = engine.gameState?.runStatus;
+      if (status && status !== 'active') return;
+    } else if (engine.map.getEntityById(victim.id) !== victim) {
+      return;
+    }
     // Read once, here: a refused death or a creature's blow must not leave it for a later one.
     const cause = killer ? undefined : (context?.cause ?? victim.pendingDeathCause);
     victim.pendingDeathCause = undefined;

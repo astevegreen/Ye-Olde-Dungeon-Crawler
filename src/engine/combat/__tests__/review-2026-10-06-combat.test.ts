@@ -156,7 +156,7 @@ describe('R-cmbt-6 · poison ticks ignore poison immunity', () => {
 });
 
 describe('R-cmbt-7 · a hero killed by their own action while poisoned dies twice', () => {
-  it.fails('a poisoned hero stepping on a lethal pit trap triggers exactly one death', () => {
+  it('a poisoned hero stepping on a lethal pit trap triggers exactly one death', () => {
     const { map, player, engine } = make(3);
     player.statusManager.applyStatus({ type: 'poison', duration: 5, potency: 2 }, [], player, engine);
     map.addTrap(new TrapInstance({ id: 't', type: 'pit', x: 4, y: 3, damage: 10 }));
@@ -201,7 +201,7 @@ describe('R-cmbt-11 · reading a Scroll of Identify with nothing to identify bur
 });
 
 describe('R-cmbt-13 · an affix block runs on a defender a hook already killed: the kill resolves twice', () => {
-  it.fails('one blow that kills through its hook emits one entity_killed event', () => {
+  it('one blow that kills through its hook emits one entity_killed event', () => {
     const { map, player, engine } = make();
     const w = weapon({
       elementalAffix: { element: 'cold', bonusDamage: 5, name: 'of Cold' },

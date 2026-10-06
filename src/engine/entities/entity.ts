@@ -196,7 +196,9 @@ export class Entity {
   }
 
   public takeDamage(rawAmount: number): { damageDealt: number; killed: boolean } {
-    if (this.isInvulnerable) {
+    // A blow on the already dead deals nothing and kills nobody: `killed` marks the one
+    // hit that crossed to 0 HP, so a death resolves once however many hits follow it.
+    if (this.isInvulnerable || this.hp <= 0) {
       return { damageDealt: 0, killed: false };
     }
     rawAmount = this.limitDamageToHpFloor(rawAmount);

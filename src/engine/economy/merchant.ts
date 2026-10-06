@@ -14,9 +14,14 @@ import type { MerchantPricingRules } from '../types/manifest';
 export type ShopType = 'general' | 'armory' | 'alchemist';
 
 /**
- * Calculates purchase price for an item in a merchant shop.
+ * Calculates purchase price for an item in a merchant shop. A trade moves the whole Item,
+ * so a stack costs its unit price times its quantity.
  */
 export function getItemBuyPrice(item: Item, worldState?: WorldState, pricing?: MerchantPricingRules): number {
+  return unitBuyPrice(item, worldState, pricing) * (item.quantity ?? 1);
+}
+
+function unitBuyPrice(item: Item, worldState?: WorldState, pricing?: MerchantPricingRules): number {
   const basePrice = valueOrDefault(item, item.value);
 
   if (worldState && pricing) {
@@ -68,13 +73,18 @@ function valueOrDefault(item: Item, value: number): number {
  *   only once the item is identified.
  * - Identified, a positive family pays +50% (the +N is already in the value) and a
  *   negative one sells for 10%. Chaotic is neither bonus nor scrap.
+ * - A stack pays the unit price times its quantity.
  */
 export function getItemSellPrice(item: Item): number {
+  return unitSellPrice(item) * (item.quantity ?? 1);
+}
+
+function unitSellPrice(item: Item): number {
   if (!item.identified) {
     return Math.max(1, Math.floor(Math.floor(valueOrDefault(item, item.baseValue) * 0.5) * 0.25));
   }
 
-  let sellPrice = Math.floor(getItemBuyPrice(item) * 0.5);
+  let sellPrice = Math.floor(unitBuyPrice(item) * 0.5);
   if (item.modifiers.some((m) => m.alignment === 'negative')) {
     sellPrice = Math.floor(sellPrice * 0.1);
   } else if (item.modifiers.some((m) => m.alignment === 'positive')) {

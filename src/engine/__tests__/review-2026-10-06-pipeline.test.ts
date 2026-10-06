@@ -77,7 +77,7 @@ describe('R-pipe-5 · a free auto-pickup replays as a costed pickup', () => {
 });
 
 describe('R-pipe-6 · item actions taken while the engine is paused (menu open) cost no monster turns', () => {
-  it.fails('three potions drunk from an open menu cost as many orc attacks as three drunk outside it', () => {
+  it('three potions drunk from an open menu cost as many orc attacks as three drunk outside it', () => {
     const attacksAfter = (paused: boolean) => {
       const { engine, player } = build(30);
       addOrc(engine, 3, 2);
@@ -93,6 +93,16 @@ describe('R-pipe-6 · item actions taken while the engine is paused (menu open) 
     };
 
     expect(attacksAfter(true)).toBe(attacksAfter(false));
+  });
+
+  it('the menu is still paused afterwards: the world does not idle on', () => {
+    const { engine, player } = build(30);
+    player.addItem(new PotionItem({ id: 'pot', name: 'Healing', definitionId: 'heal', potionType: 'health', potency: 1, identified: true }));
+    engine.setPaused(true);
+
+    engine.commandBus.dispatch({ type: 'drink_potion', payload: { itemId: 'pot' } });
+
+    expect(engine.isPaused).toBe(true);
   });
 });
 

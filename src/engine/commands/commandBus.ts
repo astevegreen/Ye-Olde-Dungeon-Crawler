@@ -95,10 +95,21 @@ export class EngineCommandBus implements GameCommandBus {
     }
   }
 
-  /** A command's player action, through the pipeline and so into the trail. */
+  /**
+   * A command's player action, through the pipeline and so into the trail. A modal pause
+   * stops the world idling, not the turn an action costs: one taken from inside an open menu
+   * (a potion drunk, armour swapped) lets the monsters answer it, as it would with the menu
+   * closed and as the replay, never paused, does.
+   */
   private act(action: Action): ActionResult {
     this.acted = true;
-    return this.engine.handlePlayerAction(action);
+    const paused = this.engine.isPaused;
+    if (paused) this.engine.setPaused(false);
+    try {
+      return this.engine.handlePlayerAction(action);
+    } finally {
+      if (paused) this.engine.setPaused(true);
+    }
   }
 
   private run(command: GameCommand): GameCommandResult {

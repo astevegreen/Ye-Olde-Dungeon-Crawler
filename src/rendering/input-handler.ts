@@ -431,6 +431,13 @@ export class InputHandler {
       return code === 'Escape' && !this.modalStack.isEmpty() ? this.modalStack.handleKeyDown(e) : false;
     }
 
+    // The game's own function keys are never the browser's: F1 opened the browser's Help
+    // tab, F3 its find bar, and / Firefox's quick find, over the game (R-rend-5). Even while
+    // effects lock input, the key must not fall through to the browser.
+    if (code === 'F1' || code === 'F2' || code === 'F3' || code === 'Slash' || code === 'Backquote') {
+      e.preventDefault();
+    }
+
     // Global Developer Diagnostic overlay toggle: 'F2' or Backquote (`) / Tilde (~)
     // Checked before isInputLocked so testers can always summon diagnostics during animation freezes
     if (code === 'F2' || code === 'Backquote' || e.key === '`' || e.key === '~') {

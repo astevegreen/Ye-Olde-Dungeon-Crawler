@@ -85,3 +85,18 @@ describe('R-main-6 · a new run on the same InputHandler starts clean', () => {
     expect(ih.isInputLocked).toBe(false);
   });
 });
+
+describe('R-rend-5 · the game’s function keys never reach the browser (Help tab, find bar, quick find)', () => {
+  it.each(['F1', 'F2', 'F3', 'Slash', 'Backquote'])('%s is preventDefaulted, even while effects lock input', (code) => {
+    const engine = new GameEngine({ map: new GameMap(20, 20), player: new Player({ position: { x: 10, y: 10 } }) });
+    const ih = new InputHandler(engine, () => {}, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, new SettingsManager(new MemoryStorage()));
+    ih.enabled = true;
+    ih.isInputLocked = true;
+    const prevented = vi.fn();
+
+    ih.handleKeyDown({ ...ev(code), preventDefault: prevented } as KeyboardEvent);
+    ih.destroy();
+
+    expect(prevented).toHaveBeenCalled();
+  });
+});

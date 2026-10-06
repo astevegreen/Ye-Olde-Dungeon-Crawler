@@ -96,6 +96,7 @@ export * from './magic/types';
 export * from './magic/elements';
 export * from './magic/spellRegistry';
 export * from './magic/spellPipeline';
+export { effectiveManaCost, effectiveSpellPower } from './magic/castNumbers';
 export * from './magic/effectRegistry';
 export * from './magic/targeting';
 export * from './magic/runeOfReturn';

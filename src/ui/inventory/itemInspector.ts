@@ -5,7 +5,7 @@ import { Item, type EquipmentSlot } from '../../engine';
 import { Container } from '../../engine';
 import { PotionItem, ScrollItem, WandItem } from '../../engine';
 import { RuneOfReturnItem, ChannelRuneOfReturnAction } from '../../engine';
-import { getSpell, getOverflowConfig } from '../../engine';
+import { getSpell, getOverflowConfig, effectiveManaCost } from '../../engine';
 import type { Paperdoll } from '../../engine';
 import { resolveBranding } from '../branding';
 
@@ -281,15 +281,7 @@ export class ItemInspector {
     }
     if (player.spellsKnown.includes(IDENTIFY_SPELL_ID)) {
       const spell = engine?.manifest?.spells?.find((s) => s.id === IDENTIFY_SPELL_ID) ?? getSpell(IDENTIFY_SPELL_ID);
-      let manaDiscount = 0;
-      if (player.inventory?.paperdoll) {
-        for (const it of player.inventory.paperdoll.getEquippedItems()) {
-          for (const mod of it.modifiers) {
-            if (mod.manaCostDiscount) manaDiscount += mod.manaCostDiscount;
-          }
-        }
-      }
-      const cost = Math.max(0, (spell?.manaCost ?? 8) - manaDiscount);
+      const cost = effectiveManaCost(player, { manaCost: spell?.manaCost ?? 8 });
       const overflow = engine ? getOverflowConfig(engine) : undefined;
       if (player.mana < cost && !overflow) {
         return {

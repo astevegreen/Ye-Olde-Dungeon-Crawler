@@ -528,7 +528,7 @@ export function aimCardHtml(engine: GameEngine, entry: SpellbookEntry, reticleX:
       <div class="ui-bar mc-hp"><i style="width: ${pct}%"></i></div>
       ${aff ? `<div class="mc-intent ${aff.tone}">${aff.text} ${escapeHtml(spell.element)}</div>` : ''}`;
   }
-  const power = entry.type === 'spell' ? spellPower(spell) : 0;
+  const power = entry.type === 'spell' ? spellPower(spell, { engine, player: engine.player }) : 0;
   const grid = entry.gridNotes?.length ? `<div class="ui-note">From the grid: ${entry.gridNotes.map(escapeHtml).join(' · ')}</div>` : '';
   return `
     <div class="mc-head"><span class="mc-title">${iconHtml('cast')} <span>${escapeHtml(spell.name)}</span></span><span class="mc-tag ui-num">${escapeHtml(cost)}</span></div>

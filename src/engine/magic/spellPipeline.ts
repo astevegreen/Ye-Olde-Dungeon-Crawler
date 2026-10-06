@@ -1,6 +1,5 @@
 import type { ActionResult, Position, VisualEffectDescriptor } from '../types';
-import { attributeScalingOf, spellPowerMultiplier } from '../combat/attributeScaling';
-import { lowestWorn, sumWorn, wornModifiers } from '../items/wornModifiers';
+import { lowestWorn, sumWorn } from '../items/wornModifiers';
 import { spendOncePerFloor } from '../combat/lastStand';
 import { productAgainst, shrugsAffliction } from '../compendium/familyPerks';
 import type { GameEngine } from '../engine';
@@ -26,6 +25,7 @@ import { DeathResolver } from '../combat/deathResolver';
 import type { StatusType } from '../status/types';
 import { findSafeSpawnPosition } from '../spatial/collisionSolver';
 import { EffectPrimitiveRegistry, type EffectContext } from './effectRegistry';
+import { scaleSpellDamage, scaleSpellHeal } from './castNumbers';
 import { registerReciprocalPrimitives } from '../combat/reciprocalPipeline';
 import { EnergyModel } from '../actors/energyModel';
 import { Actor } from '../entities/actor';
@@ -57,27 +57,6 @@ function wardFirstSpell(engine: GameEngine, caster: Entity, target: Entity, dama
   if (ward === undefined || !spendOncePerFloor(engine, 'spell_ward')) return damage;
   engine.log(`A glyph flares on ${target.name}'s skin and takes the edge off the spell!`);
   return Math.max(1, Math.round(damage * ward));
-}
-
-/**
- * A spell's rolled damage scaled by its caster, for the first hit and every chain hop alike:
- * Intelligence (the pack's attribute scaling), the Enchanted `spellDamageMultiplier` of what
- * it wears, its bonus for this element (Elementalist), and for shadow or entropic damage the
- * caster's corruption.
- */
-function scaleByCaster(engine: GameEngine, caster: Entity, element: string, rolled: number): number {
-  let damage = rolled;
-  let multiplier = spellPowerMultiplier(caster, attributeScalingOf(engine.manifest));
-  for (const mod of wornModifiers(caster)) {
-    if (mod.spellDamageMultiplier) multiplier *= mod.spellDamageMultiplier;
-    if (mod.elementSpellMultiplier && mod.elementSpellMultiplier.element === element) multiplier *= mod.elementSpellMultiplier.multiplier;
-  }
-  if (multiplier !== 1.0) damage = Math.max(1, Math.round(damage * multiplier));
-  if (caster instanceof Actor && caster.corruptionScore > 0 && (element === 'shadow' || element === 'entropic')) {
-    const entropicMult = EnergyModel.calculateEntropicDamageMultiplier(caster.corruptionScore);
-    if (entropicMult !== 1.0) damage = Math.max(1, Math.round(damage * entropicMult));
-  }
-  return damage;
 }
 
 /** Spell damage scaled by the target's family perk against the caster's family (Grave-Warden). */
@@ -514,7 +493,7 @@ export class SpellPipeline {
     if (!target.isAlive()) return;
     const rolled = parseAndRollDice(effect.amount, engine.rng);
     if (rolled <= 0) return;
-    let rawDamage = scaleByCaster(engine, caster, effect.element, rolled);
+    let rawDamage = scaleSpellDamage(engine, caster, effect.element, rolled);
     rawDamage = scaleByTargetFamily(engine, caster, target, rawDamage);
     rawDamage = wardFirstSpell(engine, caster, target, rawDamage);
     const terrain = engine.map.getTile(target.x, target.y)?.type;
@@ -592,9 +571,7 @@ export class SpellPipeline {
     effect: HealEffect
   ): void {
     if (!target.isAlive()) return;
-    let amount = parseAndRollDice(effect.amount, engine.rng);
-    const intelligence = spellPowerMultiplier(_caster, attributeScalingOf(engine.manifest));
-    if (intelligence !== 1.0) amount = Math.max(1, Math.round(amount * intelligence));
+    let amount = scaleSpellHeal(engine, _caster, parseAndRollDice(effect.amount, engine.rng));
     if (target instanceof Actor) {
       const eff = EnergyModel.calculateHealingEfficiency(target);
       if (eff < 1.0) {
@@ -718,7 +695,7 @@ export class SpellPipeline {
     const rolled = damageContext ? parseAndRollDice(damageContext.amount, engine.rng) : (spell.basePower || 16);
     const element = damageContext?.element || spell.element || 'lightning';
     // The same caster scaling as the first hit (Intelligence, Enchanted, Elementalist, entropy).
-    const baseDamage = scaleByCaster(engine, caster, element, rolled);
+    const baseDamage = scaleSpellDamage(engine, caster, element, rolled);
 
     // Chain-Weaver: the caster's chains reach further foes.
     const maxHops = effect.maxHops + sumWorn(caster, 'chainExtraHops');

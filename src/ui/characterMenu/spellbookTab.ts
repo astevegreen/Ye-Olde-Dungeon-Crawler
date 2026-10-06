@@ -2,6 +2,7 @@ import {
   CENTER_SLOT_INDEX,
   GRIMOIRE_SIZE,
   GrimoireMatrixManager,
+  effectiveManaCost,
   getGrimoireConfig,
   getGrimoirePageName,
   getOverflowConfig,
@@ -322,7 +323,8 @@ export class SpellbookTab implements MenuTab {
             .map((g) => `✦${escapeHtml(config.glyphs?.find((d) => d.id === g.glyphId)?.name ?? g.glyphId)}${g.potency > 1 ? `×${g.potency}` : ''}`)
             .join(' ')}</div>`
         : '';
-      const castCost = slotted ? GrimoireMatrixManager.resolveEffectiveSpell(engine, player, i)?.manaCost : undefined;
+      const castSpell = slotted ? GrimoireMatrixManager.resolveEffectiveSpell(engine, player, i) : undefined;
+      const castCost = castSpell ? effectiveManaCost(player, castSpell) : undefined;
       const body = !open
         ? `<div class="sb-sealed">${escapeHtml(sealedLabel)}</div>`
         : slotted
@@ -403,7 +405,7 @@ export class SpellbookTab implements MenuTab {
     if (effective) {
       const power = spellPower(effective.spell, { engine, player });
       lines.push(
-        `${escapeHtml(effective.spell.name)} cast from here: ${effective.spell.manaCost} ${escapeHtml(unit)}${power ? `, power ${power}` : ''}${
+        `${escapeHtml(effective.spell.name)} cast from here: ${effectiveManaCost(player, effective.spell)} ${escapeHtml(unit)}${power ? `, power ${power}` : ''}${
           effective.notes.length ? ` (${effective.notes.map(escapeHtml).join('; ')})` : ''
         }.`
       );

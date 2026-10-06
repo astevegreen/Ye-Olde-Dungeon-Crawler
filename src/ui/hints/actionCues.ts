@@ -1,4 +1,4 @@
-import { Monster, PotionItem, getSpell, isPrologueRunning, type GameEngine } from '../../engine';
+import { Monster, PotionItem, effectiveManaCost, getSpell, isPrologueRunning, type GameEngine } from '../../engine';
 import { resolvePotionSlots } from '../potionRow';
 
 /**
@@ -46,7 +46,7 @@ function castSlot(engine: GameEngine): number | null {
   const slot = quick.findIndex((id) => {
     if (!id) return false;
     const spell = engine.manifest.spells?.find((s) => s.id === id) ?? getSpell(id);
-    return !!spell && spell.targetingMode === 'ray' && spell.basePower > 0 && p.mana >= spell.manaCost;
+    return !!spell && spell.targetingMode === 'ray' && spell.basePower > 0 && p.mana >= effectiveManaCost(p, spell);
   });
   if (slot < 0) return null;
   const spellId = quick[slot]!;

@@ -7,6 +7,7 @@ import { MovementAction } from './movement';
 import { MeleeAttackAction } from './combat';
 import { CastSpellAction } from './spell-actions';
 import { canOvercast } from '../magic/manaOverflow';
+import { effectiveManaCost } from '../magic/castNumbers';
 import { WaitAction } from './wait';
 import { OpenDoorAction, CloseDoorAction, SmartCloseDoorAction } from './door';
 import { ClimbStairsAction } from './stairs';
@@ -201,7 +202,7 @@ export function registerDefaultActions(): void {
         return { valid: false, reason: `Unknown spell: ${args.spellId}` };
       }
       // A pack with mana overflow lets a short cast go into debt (CastSpellAction).
-      if (actor instanceof Player && actor.mana < spell.manaCost && !canOvercast(engine)) {
+      if (actor instanceof Player && actor.mana < effectiveManaCost(actor, spell) && !canOvercast(engine)) {
         return { valid: false, reason: 'Not enough mana!' };
       }
       return { valid: true };

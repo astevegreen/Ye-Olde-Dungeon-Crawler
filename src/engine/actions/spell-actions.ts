@@ -14,7 +14,8 @@ import { awardPlayerXp } from '../combat/deathResolver';
 import { findTaggedEntitiesInRadius } from '../combat/radialAuraFilter';
 import { traceProjectile } from '../magic/targeting';
 import { ManaOverflowManager, canOvercast } from '../magic/manaOverflow';
-import { lowestWorn, productWorn, sumWorn, wearsFlag } from '../items/wornModifiers';
+import { lowestWorn, sumWorn, wearsFlag } from '../items/wornModifiers';
+import { effectiveManaCost as effectiveManaCostOf } from '../magic/castNumbers';
 import { GrimoireMatrixManager, withSpellRangeBonus } from '../magic/grimoireMatrix';
 
 /** World counter of casts whose grid shaping the log has explained, and how many it explains. */
@@ -128,10 +129,8 @@ export class CastSpellAction implements Action {
       }
     }
 
-    // What the caster wears, and a hero's perks (`wornModifiers`): a share off first, then flat.
-    const manaDiscount = player ? sumWorn(player, 'manaCostDiscount') : 0;
-    const costMultiplier = player ? productWorn(player, 'manaCostMultiplier') : 1;
-    const effectiveManaCost = Math.max(0, Math.round(spell.manaCost * costMultiplier) - manaDiscount);
+    // What the caster wears, and a hero's perks (`effectiveManaCost`, which the HUD reads too).
+    const effectiveManaCost = player ? effectiveManaCostOf(player, spell) : spell.manaCost;
 
     // Validate every cost (mana, volatile energy, vitality) before paying any of them,
     // so a cast rejected on its second cost never leaves the first one spent.

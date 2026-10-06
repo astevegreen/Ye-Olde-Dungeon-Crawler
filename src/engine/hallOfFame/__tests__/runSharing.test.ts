@@ -68,6 +68,42 @@ describe('Run Sharing & Saga Exchange System', () => {
     expect(decoded).toBeNull();
   });
 
+  // R-econ-23: the checksum is computable by anyone, so a code is only as good as its fields.
+  it.each([
+    ['id', undefined],
+    ['heroName', 7],
+    ['gender', 'other'],
+    ['status', 'resting'],
+    ['epitaph', undefined],
+    ['level', '10'],
+    ['deepestFloor', undefined],
+    ['turns', null],
+    ['xp', undefined],
+    ['goldCp', '185000'],
+    ['score', undefined],
+    ['date', 'yesterday'],
+  ] as const)('rejects a code whose %s is missing or of the wrong type, checksum or not', (field, value) => {
+    const crafted = { ...testEntry, [field]: value } as unknown as HallOfFameEntry;
+    expect(Leaderboard.decodeRunShare(Leaderboard.encodeRunShare(crafted))).toBeNull();
+  });
+
+  it('inscribes an imported saga under a fresh id, not the sharer\'s profile id', () => {
+    const result = leaderboard.importSharedRun(testEntry);
+    expect(result.success).toBe(true);
+    const [champion] = leaderboard.getChampions();
+    expect(champion.id).not.toBe(testEntry.id);
+    expect(champion.id).not.toContain(testEntry.id);
+    expect({ ...champion, id: testEntry.id }).toEqual(testEntry);
+  });
+
+  it('inscribes a second run by the same hero, which shares the hero\'s id', () => {
+    expect(leaderboard.importSharedRun(testEntry).success).toBe(true);
+    const secondRun: HallOfFameEntry = { ...testEntry, status: 'fallen', score: 9100, turns: 600, date: 1700500000000 };
+    const result = leaderboard.importSharedRun(secondRun);
+    expect(result.success).toBe(true);
+    expect(leaderboard.getChampions().length).toBe(2);
+  });
+
   it('generates a full web share link with the saga code in query params', () => {
     const url = Leaderboard.generateShareUrl(testEntry, 'https://cotw.game/play');
     expect(url.startsWith('https://cotw.game/play?saga=SAGA1_')).toBe(true);

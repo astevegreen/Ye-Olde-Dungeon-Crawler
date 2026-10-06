@@ -155,13 +155,22 @@ export class Leaderboard {
       if (!parsed || parsed.version !== 1 || !parsed.entry) return null;
       const entry = parsed.entry as HallOfFameEntry;
 
+      // Anyone can compute the checksum, so every field is checked: the preview and the
+      // hall render all of them (R-econ-23).
+      const isNumber = (v: unknown): boolean => typeof v === 'number' && Number.isFinite(v);
       if (
+        typeof entry.id !== 'string' ||
         typeof entry.heroName !== 'string' ||
-        typeof entry.score !== 'number' ||
-        typeof entry.level !== 'number' ||
-        typeof entry.deepestFloor !== 'number' ||
-        typeof entry.turns !== 'number' ||
-        (entry.status !== 'victorious' && entry.status !== 'fallen')
+        (entry.gender !== 'male' && entry.gender !== 'female') ||
+        (entry.status !== 'victorious' && entry.status !== 'fallen') ||
+        typeof entry.epitaph !== 'string' ||
+        !isNumber(entry.level) ||
+        !isNumber(entry.deepestFloor) ||
+        !isNumber(entry.turns) ||
+        !isNumber(entry.xp) ||
+        !isNumber(entry.goldCp) ||
+        !isNumber(entry.score) ||
+        !isNumber(entry.date)
       ) {
         return null;
       }
@@ -197,22 +206,28 @@ export class Leaderboard {
   /**
    * Imports a shared saga entry and records it into the hall of fame.
    * Idempotent: detects duplicate saga entries and avoids duplicate inscriptions.
+   * The inscription gets its own id, derived from the run: the sharer's id is their
+   * hero's profile id, which every run of that hero shares (R-econ-23).
    */
   public importSharedRun(entry: HallOfFameEntry): { success: boolean; message: string; champion?: HallOfFameEntry } {
     const champions = this.getChampions();
     const isDuplicate = champions.some(
-      (c) => c.id === entry.id || (c.heroName === entry.heroName && c.score === entry.score && c.date === entry.date)
+      (c) => c.heroName === entry.heroName && c.score === entry.score && c.date === entry.date
     );
     if (isDuplicate) {
       return { success: false, message: `${entry.heroName}'s saga is already inscribed in the Hall of Fame!`, champion: entry };
     }
-    if (!this.recordRun(entry)) {
+    const inscribed: HallOfFameEntry = {
+      ...entry,
+      id: `saga-${computeSagaChecksum({ ...entry, id: 'saga' }).toString(36)}`,
+    };
+    if (!this.recordRun(inscribed)) {
       return { success: false, message: `Could not inscribe ${entry.heroName}: the browser's storage refused it.`, champion: entry };
     }
     return {
       success: true,
       message: `Inscribed ${entry.heroName} (${entry.score.toLocaleString()} pts) into the Hall of Fame!`,
-      champion: entry,
+      champion: inscribed,
     };
   }
 

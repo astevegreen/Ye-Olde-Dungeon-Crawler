@@ -226,6 +226,19 @@ export class InputHandler {
     this.engine = engine;
   }
 
+  /**
+   * Forgets everything the last run left in the handler, for a new run on the same one:
+   * the effect lock, keys held when it ended (a keyup lost to a game over), a held radial
+   * key, a "Close which door?" prompt, and a rest or travel still under way (R-main-6, R-rend-3).
+   */
+  public reset(): void {
+    this.clearInputLock();
+    this.radialHeldKeys.clear();
+    this.pendingCloseDoorDirection = false;
+    this.autoRestRunner?.cancel();
+    this.navigationController?.cancel();
+  }
+
   private bindShopOverlay(overlay: ShopDialog): void {
     const self = this;
     const origOpen = overlay.onOpen;
@@ -251,11 +264,11 @@ export class InputHandler {
   }
 
   public handleKeyUp(e: KeyboardEvent): void {
-    if (!this.enabled) return;
+    // A released key is released even while input is off (the game-over screen came up
+    // with the finger still down), or it stays "held" into the next run's chords.
     this.chordBuffer.handleKeyUp(e.code);
-    if (this.radialHeldKeys.has(e.code)) {
-      this.radialHeldKeys.delete(e.code);
-    }
+    this.radialHeldKeys.delete(e.code);
+    if (!this.enabled) return;
     // Radial menu confirms on release of the same key that opened it (hold-to-open).
     if (this.radialMenuOverlay?.isOpen && this.settingsManager.getActionForCode(e.code) === 'radial_menu') {
       this.radialHeldKeys.clear();

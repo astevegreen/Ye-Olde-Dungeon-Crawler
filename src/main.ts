@@ -1325,8 +1325,11 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     if (inputHandler) {
       inputHandler.modalStack.closeAll();
-      inputHandler.isInputLocked = false;
+      inputHandler.reset();
     }
+    // The run being replaced no longer speaks for the hero: its death would mark the new
+    // hero fallen and open the game-over screen over the new run (R-main-6).
+    if (activeEngine && activeEngine !== engine) activeEngine.gameState.onStateChanged = undefined;
     masteryModal.clearQueue();
     activeEngine = engine;
     activeProfile = profile;

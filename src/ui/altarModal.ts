@@ -53,6 +53,11 @@ export class AltarModal implements UIModal {
     this.render();
   }
 
+  /** The dialog, for the modal stack's focus handling (§6): Tab moves within it. */
+  public focusRoot(): HTMLElement | null {
+    return this.overlayEl;
+  }
+
   public close(): void {
     this.isOpen = false;
     if (this.overlayEl) this.overlayEl.style.display = 'none';

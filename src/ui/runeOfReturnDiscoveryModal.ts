@@ -63,6 +63,11 @@ export class RuneOfReturnDiscoveryModal implements UIModal {
     }
   }
 
+  /** The dialog, for the modal stack's focus handling (§6): Tab moves within it. */
+  public focusRoot(): HTMLElement | null {
+    return this.overlayEl;
+  }
+
   public close(): void {
     if (!this.isOpenState) return;
     this.isOpenState = false;

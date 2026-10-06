@@ -185,6 +185,11 @@ export class SaveQuitModal implements UIModal {
     }
   }
 
+  /** The dialog, for the modal stack's focus handling (§6): Tab moves within it. */
+  public focusRoot(): HTMLElement | null {
+    return this.modalEl;
+  }
+
   public close(): void {
     if (!this.shown) return;
     this.shown = false;

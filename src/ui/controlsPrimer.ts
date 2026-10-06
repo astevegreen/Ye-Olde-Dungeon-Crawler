@@ -35,6 +35,11 @@ export class ControlsPrimer implements UIModal {
     this.scrim.style.display = 'flex';
   }
 
+  /** The dialog, for the modal stack's focus handling (§6): Tab moves within it. */
+  public focusRoot(): HTMLElement | null {
+    return this.scrim;
+  }
+
   public close(): void {
     if (!this.isOpen) return;
     this.isOpen = false;

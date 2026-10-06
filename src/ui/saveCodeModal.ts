@@ -196,6 +196,11 @@ export class SaveCodeModal {
     }
   }
 
+  /** The dialog, for the modal stack's focus handling (§6): Tab moves within it. */
+  public focusRoot(): HTMLElement | null {
+    return this.modalEl;
+  }
+
   public close(): void {
     if (this.modalEl) {
       this.modalEl.style.display = 'none';

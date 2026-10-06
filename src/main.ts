@@ -296,6 +296,7 @@ window.addEventListener('DOMContentLoaded', () => {
       isOpen: boolean | (() => boolean);
       handleKeyDown?: (e: KeyboardEvent) => boolean;
       close: () => void;
+      focusRoot?: () => HTMLElement | null;
     }
   ): void => {
     if (!inputHandler) return;
@@ -310,6 +311,8 @@ window.addEventListener('DOMContentLoaded', () => {
       },
       handleKeyDown: (e: KeyboardEvent) => (openNow() ? (target.handleKeyDown?.(e) ?? false) : false),
       close: () => target.close(),
+      // Forwarded, or Tab is trapped in a dialog it can't move through (R-ui-4).
+      focusRoot: target.focusRoot ? () => target.focusRoot!() : undefined,
     });
   };
 
@@ -981,7 +984,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /** Opens the save-code window over the game, with its one modal-stack entry. */
   const openSaveCode = (envelope?: VersionedSaveEnvelope<SaveData>): void => {
     saveCodeModal.open('copy', envelope);
-    pushModal('save-code', { isOpen: () => saveCodeModal.isOpen(), close: () => saveCodeModal.close() });
+    pushModal('save-code', { isOpen: () => saveCodeModal.isOpen(), close: () => saveCodeModal.close(), focusRoot: () => saveCodeModal.focusRoot() });
   };
 
   // The hall of fame in browser storage. The engine records a finished run only into its

@@ -903,3 +903,22 @@ test('hovering a monster with the mouse shows its target card', async ({ page })
   await page.mouse.move(at!.x, at!.y);
   await expect(page.locator('.mc-target')).toBeVisible();
 });
+
+// A dialog that holds no focus of its own names its root, so Tab moves through its
+// buttons instead of being trapped on the HUD behind it (R-ui-4).
+test('Tab moves within the menu and the save-code window', async ({ page }) => {
+  await embarkNewHero(page);
+  const focusIn = (id: string) => page.evaluate((root) => Boolean(document.getElementById(root)?.contains(document.activeElement)), id);
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#save-quit-modal')).toBeVisible();
+  await page.keyboard.press('Tab');
+  expect(await focusIn('save-quit-modal')).toBe(true);
+  await page.keyboard.press('Tab');
+  expect(await focusIn('save-quit-modal')).toBe(true);
+
+  await page.locator('#btn-savequit-copy-code').click();
+  await expect(page.locator('#save-code-modal')).toBeVisible();
+  await page.keyboard.press('Tab');
+  expect(await focusIn('save-code-modal')).toBe(true);
+});

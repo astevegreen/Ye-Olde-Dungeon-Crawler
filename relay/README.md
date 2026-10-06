@@ -45,9 +45,12 @@ Check it: open `<relay URL>/` in a browser; it should say `yodc report relay: ok
   authentication: anyone can send any `Origin` from a script.
 - What actually bounds damage: the token can only create issues on this one repository;
   labels are limited to a fixed list; sizes are capped.
-- If it gets spammed: uncomment the `[[ratelimits]]` block (5 reports/minute per IP), or
-  rotate the token (`npx wrangler secret put GITHUB_TOKEN`). Cloudflare Turnstile is the
-  next step up if needed.
+- A per-IP rate limit (the `[[ratelimits]]` block, 5 reports a minute) is on by default.
+  `@` mentions in a report are quieted (a zero-width space after the `@`), so a report
+  can't ping users from the owner's account; a screenshot must be a real PNG, and is
+  served with `nosniff`. A failing screenshot store files the issue without it.
+- If it gets spammed anyway: rotate the token (`npx wrangler secret put GITHUB_TOKEN`).
+  Cloudflare Turnstile is the next step up if needed.
 
 ## Local testing
 

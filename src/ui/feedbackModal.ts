@@ -425,12 +425,14 @@ export class FeedbackModal implements UIModal {
 
   private updateScopeDescription(): void {
     if (!this.scopeDescEl) return;
+    // "Send report" files the issue for the player: say plainly that it is public.
+    const publicNote = this.options.relayUrl ? ' Sent reports become public GitHub issues, your hero’s name included.' : '';
     if (this.currentType !== 'bug') {
-      this.scopeDescEl.textContent = 'Suggestion: help us expand and balance the realm!';
+      this.scopeDescEl.textContent = `Suggestion: help us expand and balance the realm!${publicNote}`;
       return;
     }
     const cat = this.currentBugCategory();
-    this.scopeDescEl.textContent = `Includes: ${cat.contents}`;
+    this.scopeDescEl.textContent = `Includes: ${cat.contents}${publicNote}`;
     if (this.checkIncludeLog) this.checkIncludeLog.checked = cat.includeLog;
     if (this.checkIncludeSnapshot) this.checkIncludeSnapshot.checked = cat.includeReplay;
   }

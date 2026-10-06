@@ -68,6 +68,8 @@ export const ALLOWED_LABELS = new Set([
 ]);
 
 const SHOT_PREFIX = 'data:image/png;base64,';
+/** The eight bytes every PNG file starts with. */
+const PNG_SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10];
 const SHOT_TTL_SECONDS = 180 * 24 * 60 * 60;
 
 export function corsHeaders(origin: string | null, env: Env): Record<string, string> {
@@ -106,13 +108,31 @@ export function validatePayload(raw: unknown): { ok: true; payload: ReportPayloa
     ok: true,
     payload: {
       type: r.type,
-      title: r.title.trim().slice(0, LIMITS.title),
+      title: quietMentions(r.title.trim().slice(0, LIMITS.title)),
       labels,
-      body: r.body,
-      report: r.report as string | undefined,
+      body: quietMentions(r.body),
+      report: typeof r.report === 'string' ? quietMentions(r.report) : undefined,
       screenshot: r.screenshot as string | undefined,
     },
   };
+}
+
+/**
+ * `@name` with a zero-width space after the `@`: the issue is filed under the owner's
+ * token, so a mention in a report would notify that user (or team) from the owner's repo.
+ */
+export function quietMentions(text: string): string {
+  return text.replace(/@(?=[A-Za-z0-9])/g, '@\u200b');
+}
+
+/** The screenshot's bytes, or null when the data URL isn't base64 of a PNG file. */
+export function decodePng(dataUrl: string): Uint8Array | null {
+  try {
+    const bytes = decodeBase64(dataUrl.slice(SHOT_PREFIX.length));
+    return PNG_SIGNATURE.every((b, i) => bytes[i] === b) ? bytes : null;
+  } catch {
+    return null;
+  }
 }
 
 const FOOTER = '\n\n---\n_Filed by the in-game bug reporter._';
@@ -152,7 +172,19 @@ function json(status: number, data: unknown, cors: Record<string, string>): Resp
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', ...cors } });
 }
 
+/**
+ * Answers one request. Nothing it does may reject: a failure past the checks becomes a
+ * CORS-headed 502 the game can read, not a bare 500 the browser hides.
+ */
 export async function handleRequest(request: Request, env: Env): Promise<Response> {
+  try {
+    return await handle(request, env);
+  } catch (err) {
+    return json(502, { ok: false, error: `relay error: ${err instanceof Error ? err.message : String(err)}` }, corsHeaders(request.headers.get('Origin'), env));
+  }
+}
+
+async function handle(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const origin = request.headers.get('Origin');
   const cors = corsHeaders(origin, env);
@@ -161,7 +193,9 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
     const id = url.pathname.slice('/shot/'.length).replace(/\.png$/, '');
     const png = /^[0-9a-f-]{36}$/.test(id) && env.SHOTS ? await env.SHOTS.get(id, 'arrayBuffer') : null;
     return png
-      ? new Response(png, { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=31536000, immutable' } })
+      ? new Response(png, {
+          headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=31536000, immutable', 'X-Content-Type-Options': 'nosniff' },
+        })
       : new Response('not found', { status: 404 });
   }
   if (request.method === 'GET' && url.pathname === '/') return new Response('yodc report relay: ok');
@@ -189,11 +223,18 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
   if (!checked.ok) return json(400, { ok: false, error: checked.error }, cors);
   const payload = checked.payload;
 
+  // The screenshot is a nicety: bytes that aren't a PNG, or a store that fails (a quota),
+  // file the issue without it rather than lose the report.
   let screenshotUrl: string | undefined;
-  if (payload.screenshot && env.SHOTS) {
+  const png = payload.screenshot && env.SHOTS ? decodePng(payload.screenshot) : null;
+  if (png && env.SHOTS) {
     const id = crypto.randomUUID();
-    await env.SHOTS.put(id, decodeBase64(payload.screenshot.slice(SHOT_PREFIX.length)), { expirationTtl: SHOT_TTL_SECONDS });
-    screenshotUrl = `${url.origin}/shot/${id}.png`;
+    try {
+      await env.SHOTS.put(id, png, { expirationTtl: SHOT_TTL_SECONDS });
+      screenshotUrl = `${url.origin}/shot/${id}.png`;
+    } catch {
+      screenshotUrl = undefined;
+    }
   }
 
   const issue = composeIssue(payload, screenshotUrl);

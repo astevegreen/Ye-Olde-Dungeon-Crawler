@@ -97,6 +97,42 @@ describe('report relay', () => {
     expect((await res.json()).ok).toBe(false);
   });
 
+  it('files the issue without the screenshot when the bytes are not a PNG or the store fails', async () => {
+    const SHOTS: KvLike = { put: async () => { throw new Error('KV PUT failed: 429'); }, get: async () => null };
+    let gh = mockGitHub();
+    let res = await handleRequest(post({ ...bug, screenshot: 'data:image/png;base64,iVBORw0KGgo=' }), env({ SHOTS }));
+    expect(res.status).toBe(201);
+    expect((gh as any).calls[0].body.body).not.toContain('/shot/');
+
+    const stored: string[] = [];
+    const KEEP: KvLike = { put: async (k) => void stored.push(k), get: async () => null };
+    gh = mockGitHub();
+    res = await handleRequest(post({ ...bug, screenshot: 'data:image/png;base64,PGh0bWw+' }), env({ SHOTS: KEEP })); // "<html>"
+    expect(res.status).toBe(201);
+    expect(stored).toEqual([]);
+    res = await handleRequest(post({ ...bug, screenshot: 'data:image/png;base64,@@@@' }), env({ SHOTS: KEEP }));
+    expect(res.status).toBe(201);
+  });
+
+  it('answers a failure past the checks with a CORS-headed 502, never a rejection', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('network down'); }));
+    const res = await handleRequest(post(bug), env());
+    expect(res.status).toBe(502);
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe(ORIGIN);
+  });
+
+  it('quiets @mentions, and serves screenshots with nosniff', async () => {
+    const gh = mockGitHub();
+    await handleRequest(post({ ...bug, title: 'ping @someone', body: 'cc @org/team', report: '@x' }), env());
+    const sent = (gh as any).calls[0].body;
+    expect(sent.title).not.toMatch(/@[A-Za-z]/);
+    expect(sent.body).not.toMatch(/@[A-Za-z]/);
+    const store = new Map<string, Uint8Array>([['00000000-0000-0000-0000-000000000000', new Uint8Array([137, 80, 78, 71])]]);
+    const SHOTS: KvLike = { put: async () => {}, get: async (k) => (store.get(k)?.buffer as ArrayBuffer) ?? null };
+    const served = await handleRequest(new Request('https://relay.example.workers.dev/shot/00000000-0000-0000-0000-000000000000.png'), env({ SHOTS }));
+    expect(served.headers.get('X-Content-Type-Options')).toBe('nosniff');
+  });
+
   it('validates sizes and screenshot format', () => {
     expect(validatePayload({ ...bug, body: 'x'.repeat(LIMITS.body + 1) }).ok).toBe(false);
     expect(validatePayload({ ...bug, screenshot: 'data:text/html;base64,AAAA' }).ok).toBe(false);

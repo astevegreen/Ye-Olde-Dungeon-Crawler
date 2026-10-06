@@ -64,7 +64,7 @@ function weapon(opts: Record<string, unknown>): Item {
 }
 
 describe('R-cmbt-1 · a paralysed hero killed by a status tick is never resolved (engine.ts paralysis branch)', () => {
-  it.fails('a poisoned, paralysed hero at 2 HP who waits ends the run as fallen', () => {
+  it('a poisoned, paralysed hero at 2 HP who waits ends the run as fallen', () => {
     const { player, engine } = make(2);
     player.statusManager.applyStatus({ type: 'paralysis', duration: 3 }, [], player, engine);
     player.statusManager.applyStatus({ type: 'poison', duration: 5, potency: 3 }, [], player, engine);
@@ -250,7 +250,7 @@ describe('R-cmbt-14 · an attacker killed by melee reflection keeps attacking', 
 });
 
 describe('R-cmbt-15 · paralysed turns skip every environmental update', () => {
-  it.fails('a lingering fire under a paralysed hero still burns and still decays', () => {
+  it('a lingering fire under a paralysed hero still burns and still decays', () => {
     const { player, engine } = make(100);
     engine.surfaces.setSurface(3, 3, 'fire', 5);
     player.statusManager.applyStatus({ type: 'paralysis', duration: 3 }, [], player, engine);

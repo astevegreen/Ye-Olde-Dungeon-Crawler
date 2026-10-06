@@ -1008,14 +1008,7 @@ export class GameEngine {
       const effectName = this.player.statusManager.hasStatus('stunned') ? 'stunned' : 'paralyzed';
       this.log(`You are ${effectName} and unable to act!`);
       new WaitAction(this.player).perform(this);
-      this.turnCount += 1;
-      if (this.currentFloor >= 1) {
-        this.map.floorTurnCount = (this.map.floorTurnCount ?? 0) + 1;
-      }
-      this.player.statusManager.tick(this.player, this);
-      this.updateFov();
-      this.advanceWorldUntilPlayerTurn();
-      this.updateFov();
+      this.advanceTurn();
       return {
         success: false,
         cost: BASE_ACTION_COST,
@@ -1042,30 +1035,7 @@ export class GameEngine {
     );
 
     if (result.success && result.cost > 0) {
-      this.turnCount += 1;
-      if (this.currentFloor >= 1) {
-        this.map.floorTurnCount = (this.map.floorTurnCount ?? 0) + 1;
-      }
-      // Per-turn environmental updates, each inside its own boundary (ARCHITECTURE.md §4).
-      this.runEnvironmentalUpdate('player-status-tick', () => {
-        const tickRes = this.player.statusManager.tick(this.player, this);
-        if (tickRes.killed) {
-          DeathResolver.resolveDeath(this, undefined, this.player);
-        }
-      });
-      this.runEnvironmentalUpdate('surface-tick', () => this.surfaces.tick(this));
-      this.runEnvironmentalUpdate('substance-tick', () => this.substances.tickSubstances(this.map, this));
-      this.runEnvironmentalUpdate('plane-drift', () => this.planeManager.tickDrift(this.map, this.scheduler.ticks, this));
-      this.runEnvironmentalUpdate('wandering-spawn', () => this.wanderingSpawner.checkAndSpawn(this, this.rng));
-      this.runEnvironmentalUpdate('floor-respawn', () => this.floorManager.checkClearedFloorRespawn(this));
-      this.runEnvironmentalUpdate('timed-events-tick', () => this.tickTimedEvents());
-
-      if (this.detectMonstersTurns > 0) this.detectMonstersTurns -= 1;
-      if (this.detectObjectsTurns > 0) this.detectObjectsTurns -= 1;
-
-      this.updateFov();
-      this.advanceWorldUntilPlayerTurn();
-      this.updateFov();
+      this.advanceTurn();
 
       // Close call discovery (HP <= 20%)
       if (
@@ -1084,6 +1054,39 @@ export class GameEngine {
     }
 
     return result;
+  }
+
+  /**
+   * The world's share of one player turn, whether the hero acted or was forced to pass:
+   * the turn counters, every per-turn environmental update (a status tick that kills the
+   * hero resolves the death here), the detection timers, and the monsters' moves until the
+   * hero can act again.
+   */
+  private advanceTurn(): void {
+    this.turnCount += 1;
+    if (this.currentFloor >= 1) {
+      this.map.floorTurnCount = (this.map.floorTurnCount ?? 0) + 1;
+    }
+    // Per-turn environmental updates, each inside its own boundary (ARCHITECTURE.md §4).
+    this.runEnvironmentalUpdate('player-status-tick', () => {
+      const tickRes = this.player.statusManager.tick(this.player, this);
+      if (tickRes.killed) {
+        DeathResolver.resolveDeath(this, undefined, this.player);
+      }
+    });
+    this.runEnvironmentalUpdate('surface-tick', () => this.surfaces.tick(this));
+    this.runEnvironmentalUpdate('substance-tick', () => this.substances.tickSubstances(this.map, this));
+    this.runEnvironmentalUpdate('plane-drift', () => this.planeManager.tickDrift(this.map, this.scheduler.ticks, this));
+    this.runEnvironmentalUpdate('wandering-spawn', () => this.wanderingSpawner.checkAndSpawn(this, this.rng));
+    this.runEnvironmentalUpdate('floor-respawn', () => this.floorManager.checkClearedFloorRespawn(this));
+    this.runEnvironmentalUpdate('timed-events-tick', () => this.tickTimedEvents());
+
+    if (this.detectMonstersTurns > 0) this.detectMonstersTurns -= 1;
+    if (this.detectObjectsTurns > 0) this.detectObjectsTurns -= 1;
+
+    this.updateFov();
+    this.advanceWorldUntilPlayerTurn();
+    this.updateFov();
   }
 
   /**

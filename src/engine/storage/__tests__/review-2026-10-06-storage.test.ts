@@ -37,23 +37,10 @@ describe('R-stor-1 · a monster is saved with its computed attack, so a status m
     expect(back.baseAttackValue).toBe(20);
     expect(back.attack).toBe(25);
   });
-
-  it('an Emboldened companion keeps base 20 across a save/load', () => {
-    const ID = 'review_test_companion_stats';
-    CompanionRegistry.register({ id: ID, name: 'Stat Companion', stats: { hp: 20, maxHp: 20, attack: 20, defense: 1 }, speed: 100, packWeightCapacity: 100, packBulkCapacity: 100 } as never);
-    const engine = new GameEngine({ map: new GameMap(20, 20, TILES.FLOOR), player: new Player({ id: 'hero-s', name: 'Hero', position: { x: 10, y: 10 } }) });
-    engine.setWorldFlag(GameEngine.COMPANION_BONDED_FLAG, true);
-    engine.summonCompanion(ID)!.statusManager.applyStatus({ type: EMBOLDENED_STATUS, duration: 9999 });
-
-    const back = roundTrip(engine).companion!;
-
-    expect(back.baseAttackValue).toBe(20);
-    expect(back.attack).toBe(25);
-  });
 });
 
 describe('R-stor-2 · a dismissed companion’s pack is not re-registered in the item index on load', () => {
-  it.fails('an item in a dismissed companion’s pack resolves by id after load and re-summon', () => {
+  it('an item in a dismissed companion’s pack resolves by id after load and re-summon', () => {
     const ID = 'review_test_companion';
     CompanionRegistry.register({
       id: ID,
@@ -162,5 +149,22 @@ describe('R-stor-10 · the Detect Monsters / Detect Objects countdowns are not s
     const loaded = roundTrip(engine);
 
     expect(loaded.detectMonstersTurns).toBe(25);
+  });
+});
+
+// Last: a deserialized engine leaves its own registries active, so a companion that
+// R-stor-2 registers before building its engine would land in the wrong store.
+describe('R-stor-1 · a companion is saved from base stats too', () => {
+  it('an Emboldened companion keeps base 20 across a save/load', () => {
+    const ID = 'review_test_companion_stats';
+    const engine = new GameEngine({ map: new GameMap(20, 20, TILES.FLOOR), player: new Player({ id: 'hero-s', name: 'Hero', position: { x: 10, y: 10 } }) });
+    CompanionRegistry.register({ id: ID, name: 'Stat Companion', stats: { hp: 20, maxHp: 20, attack: 20, defense: 1 }, speed: 100, packWeightCapacity: 100, packBulkCapacity: 100 } as never);
+    engine.setWorldFlag(GameEngine.COMPANION_BONDED_FLAG, true);
+    engine.summonCompanion(ID)!.statusManager.applyStatus({ type: EMBOLDENED_STATUS, duration: 9999 });
+
+    const back = roundTrip(engine).companion!;
+
+    expect(back.baseAttackValue).toBe(20);
+    expect(back.attack).toBe(25);
   });
 });

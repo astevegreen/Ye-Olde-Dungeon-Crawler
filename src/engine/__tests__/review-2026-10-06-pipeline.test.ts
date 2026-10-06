@@ -61,7 +61,7 @@ describe('R-pipe-4 · the R-key rest (stepRestTurn) never enters the replay trai
 });
 
 describe('R-pipe-5 · a free auto-pickup replays as a costed pickup', () => {
-  it.fails('the rebuilt PickUpAction keeps freeAction: true', () => {
+  it('the rebuilt PickUpAction keeps freeAction: true', () => {
     const { engine, player, map } = build(50);
     map.addItemAt(player.x, player.y, new Item({ id: 'junk1', name: 'Rock', category: 'misc', weight: 10, bulk: 1, identified: true }));
     flightRecorder.requestCheckpoint('review');

@@ -51,6 +51,8 @@ function item<T extends Item = Item>(p: Params, k: string): T | null {
   const id = str(p, k);
   return id ? ((getItemById(id) as T | undefined) ?? null) : null;
 }
+/** An item id the entry names that no longer resolves: the replay has diverged. */
+const lost = (p: Params, k: string): boolean => str(p, k) !== undefined && item(p, k) === null;
 
 /**
  * How to rebuild each replayable player action from its trail entry (`describeAction`
@@ -74,7 +76,7 @@ const BUILDERS: Record<string, Builder> = {
       d && typeof d === 'object' && typeof d.dx === 'number' && typeof d.dy === 'number' ? { dx: d.dx, dy: d.dy } : undefined;
     return new SmartCloseDoorAction(e.player, direction);
   },
-  PickUpAction: (e, p) => new PickUpAction(e.player, str(p, 'itemId')),
+  PickUpAction: (e, p) => (lost(p, 'itemId') ? null : new PickUpAction(e.player, str(p, 'itemId'), bool(p, 'freeAction'))),
   DropAction: (e, p) => {
     const it = item(p, 'itemId');
     const source = str(p, 'source') === 'paperdoll' ? 'paperdoll' : 'pack';
@@ -82,7 +84,7 @@ const BUILDERS: Record<string, Builder> = {
   },
   EquipAction: (e, p) => {
     const id = str(p, 'itemId');
-    return id ? new EquipAction(e.player, id, str(p, 'targetSlot') as EquipmentSlot | undefined) : null;
+    return id && !lost(p, 'itemId') ? new EquipAction(e.player, id, str(p, 'targetSlot') as EquipmentSlot | undefined) : null;
   },
   UnequipAction: (e, p) => {
     const slot = str(p, 'slot');
@@ -106,10 +108,14 @@ const BUILDERS: Record<string, Builder> = {
   MeleeAttackAction: (e, p) => {
     const id = str(p, 'defenderId');
     const defender = id ? e.map.getEntityById(id) : null;
-    return defender ? new MeleeAttackAction(e.player, defender) : null;
+    return defender
+      ? new MeleeAttackAction(e.player, defender, { followUp: bool(p, 'followUp'), damageShare: num(p, 'damageShare') })
+      : null;
   },
   RangedAttackAction: (e, p) =>
-    new RangedAttackAction(e.player, num(p, 'targetX') ?? 0, num(p, 'targetY') ?? 0, item(p, 'weaponId') ?? undefined),
+    lost(p, 'weaponId')
+      ? null
+      : new RangedAttackAction(e.player, num(p, 'targetX') ?? 0, num(p, 'targetY') ?? 0, item(p, 'weaponId') ?? undefined),
   CastSpellAction: (e, p) => {
     const spellId = str(p, 'spellId');
     return spellId

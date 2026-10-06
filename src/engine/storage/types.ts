@@ -414,6 +414,11 @@ export interface SaveData {
    * (older saves) = the floor loaded onto, active.
    */
   gameState?: { deepestFloor: number; runStatus?: 'victorious' };
+  /** Turns left on Detect Monsters / Detect Objects (`GameEngine.detect*Turns`). Absent = none. */
+  detectMonstersTurns?: number;
+  detectObjectsTurns?: number;
+  /** `EnergyScheduler.ticks` since the floor was entered (plane drift is phased on it). Absent = 0. */
+  schedulerTicks?: number;
 }
 
 export interface StorageAdapter {

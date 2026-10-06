@@ -155,13 +155,24 @@ describe('R-stor-6 · loadAutosaveResult skips the version gate for a newer sche
 });
 
 describe('R-stor-10 · the Detect Monsters / Detect Objects countdowns are not saved', () => {
-  it.fails('detectMonstersTurns survives a save/load', () => {
+  it('detectMonstersTurns survives a save/load', () => {
     const engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player: new Player({ id: 'h', name: 'H', position: { x: 5, y: 5 } }) });
     engine.detectMonstersTurns = 25;
+    engine.detectObjectsTurns = 7;
 
     const loaded = roundTrip(engine);
 
     expect(loaded.detectMonstersTurns).toBe(25);
+    expect(loaded.detectObjectsTurns).toBe(7);
+  });
+
+  it('R-dbg-6 · the scheduler tick survives a save/load, so tick-phased drift keeps its phase', () => {
+    const engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player: new Player({ id: 'h', name: 'H', position: { x: 5, y: 5 } }) });
+    engine.scheduler.restoreTicks(1237);
+
+    const loaded = roundTrip(engine);
+
+    expect(loaded.scheduler.ticks).toBe(1237);
   });
 });
 

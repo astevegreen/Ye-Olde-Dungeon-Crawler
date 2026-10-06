@@ -111,6 +111,11 @@ export class EnergyScheduler {
     return null;
   }
 
+  /** Puts back a saved tick count (a load), so tick-phased effects keep their phase. */
+  public restoreTicks(ticks: number): void {
+    this.currentTick = ticks;
+  }
+
   public reset(): void {
     this.entities = [];
     this.currentTick = 0;

@@ -660,6 +660,9 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
       deepestFloor: engine.gameState.deepestFloor,
       runStatus: engine.gameState.runStatus === 'victorious' ? 'victorious' : undefined,
     },
+    detectMonstersTurns: engine.detectMonstersTurns || undefined,
+    detectObjectsTurns: engine.detectObjectsTurns || undefined,
+    schedulerTicks: engine.scheduler.ticks || undefined,
   };
 }
 
@@ -1132,6 +1135,10 @@ export function deserializeGame(
   if (saveData.prngState !== undefined && engine.prng) {
     engine.prng.setState(saveData.prngState);
   }
+
+  engine.detectMonstersTurns = Number(saveData.detectMonstersTurns) || 0;
+  engine.detectObjectsTurns = Number(saveData.detectObjectsTurns) || 0;
+  engine.scheduler.restoreTicks(Number(saveData.schedulerTicks) || 0);
 
   if (saveData.planes && engine.planeManager) {
     engine.planeManager.deserialize(saveData.planes);

@@ -144,10 +144,24 @@ export function applyImpulse(
           newPosition: { x: target.x, y: target.y },
         };
       } else {
-        engine.map.removeEntity(target);
         engine.log(`*** ${target.name} is knocked into the chasm and plunges into the bottomless abyss! ***`);
         const { damageDealt } = target.takeDamage(Math.max(999, target.maxHp));
-        DeathResolver.resolveDeath(engine, source, target);
+        // Resolve first: the resolver removes the dead, and a death it refuses (a last
+        // stand, a companion's bond) leaves the target on the brink, still on the map.
+        DeathResolver.resolveDeath(engine, source, target, { cause: 'a fall into the chasm' });
+        if (target.isAlive()) {
+          engine.log(`*** ${target.name} catches the edge of the chasm! ***`);
+          return {
+            pushed: distanceTraveled > 0,
+            distanceTraveled,
+            wallSplat: false,
+            fellInChasm: false,
+            impactDamageDealt: damageDealt,
+            stunned: false,
+            killed: false,
+            newPosition: { x: currX, y: currY },
+          };
+        }
         return {
           pushed: true,
           distanceTraveled: distanceTraveled + 1,

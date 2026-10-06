@@ -255,7 +255,7 @@ export class EngineCommandBus implements GameCommandBus {
       case 'split_stack': {
         const item = (p.item as Item) ?? this.resolveItem(p.itemId as string);
         const amount = p.amount as number;
-        if (!item || !amount || amount <= 0 || amount >= (item.quantity ?? 1)) {
+        if (!item || !Number.isInteger(amount) || amount <= 0 || amount >= (item.quantity ?? 1)) {
           return { success: false, message: 'Invalid split amount' };
         }
         // A fresh id from the index, not the simulation PRNG: the split spends no draw.
@@ -263,6 +263,12 @@ export class EngineCommandBus implements GameCommandBus {
         while (getItemById(`${item.id}-split-${n}`)) n++;
         const splitItem = splitItemStack(item, amount, `${item.id}-split-${n}`);
         const destContainer = (p.container as Container) ?? this.engine.player.inventory.primaryPack;
+        // No room for a new pile (a belt's slots, say): the stack is left whole.
+        const room = destContainer.canContain(splitItem, false);
+        if (!room.allowed) {
+          item.quantity += amount;
+          return { success: false, message: room.reason ?? 'There is no room for the split stack.' };
+        }
         destContainer.addItem(splitItem, false);
         const message = `Split ${amount} ${splitItem.displayName}.`;
         this.engine.log(message);

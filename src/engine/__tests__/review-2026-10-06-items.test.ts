@@ -4,7 +4,7 @@ import { GameMap } from '../grid/map';
 import { Player } from '../entities/player';
 import { Item } from '../items/item';
 import { ItemFactory } from '../items/factory';
-import { ScrollItem, WandItem } from '../items/consumables';
+import { PotionItem, ScrollItem, WandItem } from '../items/consumables';
 import { itemIndex } from '../items/itemIndex';
 import { DrinkPotionAction, ReadScrollAction } from '../actions/spell-actions';
 import { EquipAction, DropAction } from '../actions/inventory-actions';
@@ -151,5 +151,43 @@ describe('R-econ-13 · minted coin piles share an id, so a merge unregisters the
     const piles = player.inventory.purse!.getItems();
     expect(piles.length).toBeGreaterThan(0); // (passes today)
     expect(piles.every((p) => itemIndex.has(p.id))).toBe(true);
+  });
+});
+
+describe('R-econ-11 · split_stack can destroy a unit, and its clone takes class-default weight and bulk', () => {
+  const flasks = (id: string, quantity: number) =>
+    new PotionItem({ id, definitionId: 'flask', name: 'Hearth-Broth Flask', potionType: 'health', potency: 10, weight: 250, bulk: 150, identified: true, quantity, hooks: [] });
+
+  it('the split flask weighs and fills what one flask of the stack does', () => {
+    const { engine, pack } = build();
+    pack.addItem(flasks('flask-a', 4));
+
+    const res = engine.commandBus.dispatch({ type: 'split_stack', payload: { itemId: 'flask-a', amount: 1 } });
+
+    expect(res.success).toBe(true);
+    const split = (res.data as { splitItem: Item }).splitItem;
+    expect([split.totalWeight(), split.totalBulk()]).toEqual([250, 150]);
+    expect(packQuantity(pack, (i) => i.id.startsWith('flask'))).toBe(4);
+  });
+
+  it('a split with no room for a new pile leaves the stack whole', () => {
+    const { player, engine } = build();
+    const belt = ItemFactory.createUtilityBelt('belt');
+    player.inventory.paperdoll.equip(belt, 'waist');
+    belt.addItem(flasks('flask-a', 4));
+    for (let i = 0; belt.getItems().length < (belt.maxSlots ?? 0); i++) belt.addItem(ItemFactory.createTorch(`torch-${i}`), false);
+
+    const res = engine.commandBus.dispatch({ type: 'split_stack', payload: { itemId: 'flask-a', amount: 1, container: belt } });
+
+    expect(res.success).toBe(false);
+    expect(belt.getItem('flask-a')?.quantity).toBe(4);
+  });
+
+  it('a fractional amount is refused', () => {
+    const { engine, pack } = build();
+    pack.addItem(flasks('flask-a', 4));
+
+    expect(engine.commandBus.dispatch({ type: 'split_stack', payload: { itemId: 'flask-a', amount: 1.5 } }).success).toBe(false);
+    expect(pack.getItem('flask-a')?.quantity).toBe(4);
   });
 });

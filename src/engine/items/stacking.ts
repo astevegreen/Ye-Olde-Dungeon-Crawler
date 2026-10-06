@@ -1,4 +1,4 @@
-import { Item } from './item';
+import { Item, type ItemConfig } from './item';
 import { PotionItem, ScrollItem, WandItem } from './consumables';
 import { CoinItem } from '../economy/currency';
 
@@ -84,33 +84,14 @@ export function splitItemStack(item: Item, amount: number, splitId: string): Ite
 
   item.quantity = currentQty - amount;
 
+  // The split is the same thing as the stack, unit for unit: its weight, bulk, hooks,
+  // family and worth come from the original, not from a class's defaults.
+  const config = configOf(item, splitId, amount);
   let cloned: Item;
   if (item instanceof PotionItem) {
-    cloned = new PotionItem({
-      id: splitId,
-      definitionId: item.definitionId,
-      name: item.name,
-      potionType: item.potionType,
-      value: item.value,
-      unidentifiedName: item.unidentifiedName,
-      description: item.description,
-      quantity: amount,
-      potency: item.potency,
-      effects: [...item.effects],
-    });
-    cloned.identified = item.identified;
+    cloned = new PotionItem({ ...config, potionType: item.potionType, potency: item.potency, effects: [...item.effects] });
   } else if (item instanceof ScrollItem) {
-    cloned = new ScrollItem({
-      id: splitId,
-      definitionId: item.definitionId,
-      name: item.name,
-      spellId: item.spellId,
-      value: item.value,
-      unidentifiedName: item.unidentifiedName,
-      description: item.description,
-      quantity: amount,
-    });
-    cloned.identified = item.identified;
+    cloned = new ScrollItem({ ...config, spellId: item.spellId });
   } else if (item instanceof CoinItem) {
     cloned = new CoinItem({
       id: splitId,
@@ -119,31 +100,43 @@ export function splitItemStack(item: Item, amount: number, splitId: string): Ite
     });
     cloned.quantity = amount;
   } else {
-    cloned = new Item({
-      id: splitId,
-      definitionId: item.definitionId,
-      name: item.name,
-      unidentifiedName: item.unidentifiedName,
-      category: item.category,
-      slot: item.slot,
-      weight: item.weight,
-      bulk: item.bulk,
-      quality: item.quality,
-      identified: item.identified,
-      stats: { ...item.stats },
-      description: item.description,
-      value: item.value,
-      minFloor: item.minFloor,
-      tier: item.tier,
-      enchantmentLevel: item.enchantmentLevel,
-      elementalAffix: item.elementalAffix ? { ...item.elementalAffix } : undefined,
-      twoHanded: item.twoHanded,
-      blocksSlot: item.blocksSlot,
-      rangedConfig: item.rangedConfig ? { ...item.rangedConfig } : undefined,
-      quantity: amount,
-    });
+    cloned = new Item(config);
   }
   cloned.junk = item.junk;
 
   return cloned;
+}
+
+/** What `item` was built from, under a new id and quantity. */
+function configOf(item: Item, id: string, quantity: number): ItemConfig {
+  return {
+    id,
+    definitionId: item.definitionId,
+    name: item.name,
+    unidentifiedName: item.unidentifiedName,
+    category: item.category,
+    slot: item.slot,
+    weight: item.weight,
+    unitWeight: item.unitWeight,
+    bulk: item.bulk,
+    quantity,
+    quality: item.quality,
+    identified: item.identified,
+    stats: { ...item.stats },
+    description: item.description,
+    value: item.value,
+    baseValue: item.baseValue,
+    minFloor: item.minFloor,
+    tier: item.tier,
+    enchantmentLevel: item.enchantmentLevel,
+    elementalAffix: item.elementalAffix ? { ...item.elementalAffix } : undefined,
+    twoHanded: item.twoHanded,
+    blocksSlot: item.blocksSlot,
+    rangedConfig: item.rangedConfig ? { ...item.rangedConfig } : undefined,
+    predicate: item.predicate,
+    hooks: item.hooks,
+    modifiers: item.modifiers,
+    wornEffects: item.wornEffects,
+    aspectState: item.aspectState,
+  };
 }

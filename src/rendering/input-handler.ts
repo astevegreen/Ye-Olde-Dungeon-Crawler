@@ -833,15 +833,11 @@ export class InputHandler {
       }
     }
 
-    // Climb Stairs: '>' or '<' (or Shift+Period / Shift+Comma) or Enter while standing on stairs
+    // Climb Stairs: '>' (Shift+Period) or Enter while standing on stairs. Not '<': Settings
+    // gives Shift+Comma to Quick-Loot, which this branch used to take first.
     const standingTile = this.engine.map.getTile(p.x, p.y);
     const onStairs = standingTile?.isStairsDown || standingTile?.isStairsUp || standingTile?.type === 'stairs_down' || standingTile?.type === 'stairs_up';
-    if (
-      e.key === '>' ||
-      e.key === '<' ||
-      (e.shiftKey && (code === 'Period' || code === 'Comma')) ||
-      (code === 'Enter' && onStairs)
-    ) {
+    if (e.key === '>' || (e.shiftKey && code === 'Period') || (code === 'Enter' && onStairs)) {
       const stairAction = new ClimbStairsAction(p);
       this.engine.handlePlayerAction(stairAction);
       this.onActionProcessed();

@@ -5,7 +5,7 @@ import { GameMap } from '../../engine';
 import { Player } from '../../engine';
 import { SettingsManager } from '../../ui/settings/settingsManager';
 import { MemoryStorage } from '../../engine';
-import { MovementAction } from '../../engine';
+import { MovementAction, QuickLootAction, ClimbStairsAction } from '../../engine';
 
 function makeKeyEvent(code: string, repeat = false): KeyboardEvent {
   return {
@@ -73,6 +73,19 @@ describe('InputHandler Keybind Remapping & Movement Modes', () => {
     expect(action).toBeInstanceOf(MovementAction);
     expect(action.dx).toBe(0);
     expect(action.dy).toBe(-1);
+  });
+
+  // Settings bind Shift+Comma to Quick-Loot; a hard-wired '<' up-stairs branch took it
+  // first, so the listed key climbed stairs instead (decided 5 Oct: Settings win).
+  it("Shift+Comma ('<') quick-loots as Settings say, and '>' still climbs", () => {
+    const handleActionSpy = vi.spyOn(engine, 'handlePlayerAction');
+    const press = (code: string, key: string) =>
+      inputHandler.handleKeyDown({ ...makeKeyEvent(code), key, shiftKey: true } as unknown as KeyboardEvent);
+
+    press('Comma', '<');
+    expect(handleActionSpy.mock.calls.at(-1)?.[0]).toBeInstanceOf(QuickLootAction);
+    press('Period', '>');
+    expect(handleActionSpy.mock.calls.at(-1)?.[0]).toBeInstanceOf(ClimbStairsAction);
   });
 
   it('routes arrow keys through ChordBuffer and forms diagonal move on chord', () => {

@@ -78,7 +78,7 @@ export function resolveContextAction(engine: GameEngine): ContextAction {
 
   const here = engine.map.getTile(p.x, p.y);
   if (here?.type === 'stairs_down') return { kind: 'descend', verb: 'Descend', target: 'the stairs', icon: 'stairs', nativeKey: '>' };
-  if (here?.type === 'stairs_up') return { kind: 'ascend', verb: 'Ascend', target: 'the stairs', icon: 'stairs', nativeKey: '<' };
+  if (here?.type === 'stairs_up') return { kind: 'ascend', verb: 'Ascend', target: 'the stairs', icon: 'stairs', nativeKey: 'Enter' };
 
   for (const [dx, dy] of NEIGHBOURS) {
     const entity = engine.map.getEntityAt(p.x + dx, p.y + dy);

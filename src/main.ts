@@ -590,9 +590,16 @@ window.addEventListener('DOMContentLoaded', () => {
       void processVisualEffectsAndRender();
     },
     onChip: (action) => {
-      // Chips do what their keys do: T channels the rune, P opens the pacts tab.
-      const code = action === 'channel_rune' ? 'KeyT' : 'KeyP';
-      window.dispatchEvent(new KeyboardEvent('keydown', { code, key: code.slice(3).toLowerCase() }));
+      // Chips do what their commands do, not what a fixed key happens to: after a rebind,
+      // a synthetic T disarmed a trap instead of channelling the rune (R-main-13).
+      if (action === 'channel_rune') {
+        if (activeEngine && playerCanAct()) {
+          runAndExplain(activeEngine, new ChannelRuneOfReturnAction(activeEngine.player));
+          void processVisualEffectsAndRender();
+        }
+      } else {
+        openMenuTab('pacts');
+      }
     },
     onPointAt: (x, y) => renderer?.pointAtTile(x, y),
     drawEntityIcon: (canvas, entity) => renderer?.drawEntityIcon(canvas, entity),
@@ -1527,8 +1534,8 @@ window.addEventListener('DOMContentLoaded', () => {
         void processVisualEffectsAndRender();
       },
       stairs: (eng) => {
-        const act = new ClimbStairsAction(eng.player);
-        eng.handlePlayerAction(act);
+        // Says why when it can't (not on stairs), as the keys and HUD button do.
+        runAndExplain(eng, new ClimbStairsAction(eng.player));
         void processVisualEffectsAndRender();
       },
       map: (eng) => {
@@ -1605,7 +1612,7 @@ window.addEventListener('DOMContentLoaded', () => {
         openRuneTree();
       },
       channel_rune_of_return: (eng) => {
-        eng.handlePlayerAction(new ChannelRuneOfReturnAction(eng.player));
+        runAndExplain(eng, new ChannelRuneOfReturnAction(eng.player));
         void processVisualEffectsAndRender();
       },
     };

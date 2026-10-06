@@ -922,3 +922,15 @@ test('Tab moves within the menu and the save-code window', async ({ page }) => {
   await page.keyboard.press('Tab');
   expect(await focusIn('save-code-modal')).toBe(true);
 });
+
+// The palette's Stairs says why it can't, as the keys do (R-main-14).
+test('the palette stairs command off the stairs says there are none', async ({ page }) => {
+  await embarkNewHero(page);
+  await page.keyboard.press('Control+KeyK');
+  await expect(page.locator('#cmd-palette-input')).toBeVisible();
+  await page.locator('#cmd-palette-input').fill('stairs');
+  await page.keyboard.press('Enter');
+  await expect
+    .poll(() => page.evaluate(() => window.__cotwEngine!.messages.slice(-3).join(' | ')))
+    .toContain('There are no stairs here to climb.');
+});

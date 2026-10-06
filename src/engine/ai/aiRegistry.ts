@@ -11,6 +11,7 @@ import { OpenDoorAction } from '../actions/door';
 import { CastSpellAction } from '../actions/spell-actions';
 import { findPath, findFleeStep } from './pathfinding';
 import { stepTowardAction } from './pursuit';
+import { perceives } from './perception';
 import { fleeAction } from './flight';
 import { FLANK_RADIUS, flankAction } from './packTactics';
 import { computeDangerTiles } from './intent';
@@ -291,12 +292,15 @@ export class ImmobileTurretStrategy implements AIStrategy {
       return new MeleeAttackAction(actor, player);
     }
 
-    if (hasLineOfSight(engine, actor.x, actor.y, player.x, player.y)) {
+    const inSight = hasLineOfSight(engine, actor.x, actor.y, player.x, player.y);
+    if (inSight) {
       const windUp = telegraphedAbilityAction(engine, monster, player, chebyshevDist);
       if (windUp) return windUp;
     }
 
-    if (dist <= 6) {
+    // A cast needs a target it can see and perceives, as the wind-up does: casting at a
+    // wall wasted the spell and logged an unseen turret's name to the hero (R-ai-11).
+    if (dist <= 6 && inSight && perceives(engine, monster, player)) {
       if (monster.spells && monster.spells.length > 0 && monster.spellCooldown <= 0) {
         const chosenSpell = monster.spells[0];
         monster.spellCooldown = 2;

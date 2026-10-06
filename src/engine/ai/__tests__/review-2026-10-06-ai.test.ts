@@ -75,7 +75,7 @@ describe('R-ai-1 · a companion carrying a wand zaps it at the hero', () => {
 });
 
 describe('R-ai-11 · an immobile turret casts at a hero it cannot see', () => {
-  it.fails('a turret with a wall between it and the hero does not cast', () => {
+  it('a turret with a wall between it and the hero does not cast', () => {
     registerSpells((cotwManifest as unknown as { spells: unknown[] }).spells as never);
     const map = new GameMap(20, 11, TILES.FLOOR);
     for (let y = 0; y < 11; y++) map.setTile(8, y, TILES.WALL);
@@ -98,6 +98,11 @@ describe('R-ai-11 · an immobile turret casts at a hero it cannot see', () => {
     const action = MonsterAI.decideAction(turret, engine);
 
     expect(action).not.toBeInstanceOf(CastSpellAction);
+
+    // With the wall gone it sees the hero and casts.
+    for (let y = 0; y < 11; y++) map.setTile(8, y, TILES.FLOOR);
+    turret.spellCooldown = 0;
+    expect(MonsterAI.decideAction(turret, engine)).toBeInstanceOf(CastSpellAction);
   });
 });
 

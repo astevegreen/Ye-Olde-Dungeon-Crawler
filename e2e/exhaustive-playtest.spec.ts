@@ -20,7 +20,9 @@ async function embarkNewHero(page: Page): Promise<void> {
 /**
  * Steps with `key` and waits for `modalId` to reach the modal stack. A keypress during
  * effect playback or under heavy parallel load can be dropped, so a step that left the
- * hero where they stood is retried; a fixed sleep used to race the modal instead.
+ * hero where they stood is retried; a fixed sleep used to race the modal instead. A
+ * hostile that wandered within two tiles is lifted off the map first: one standing on
+ * the target turned the step into an attack (the :549 runestone and :756 altar flakes).
  */
 async function stepAndAwaitModal(page: Page, key: string, modalId: string): Promise<void> {
   const state = () =>
@@ -45,6 +47,13 @@ async function stepAndAwaitModal(page: Page, key: string, modalId: string): Prom
   const start = await state();
   for (let attempt = 0; attempt < 3; attempt++) {
     await expect.poll(async () => (await state()).locked).toBe(false);
+    await page.evaluate(() => {
+      const e = (window as any).__cotwEngine;
+      for (const m of e.map.getAllEntities()) {
+        const near = Math.max(Math.abs(m.x - e.player.x), Math.abs(m.y - e.player.y)) <= 2;
+        if (near && m.type === 'monster' && m.faction !== 'player' && m.isAlive()) e.removeEntity(m);
+      }
+    });
     await page.keyboard.press(key);
     try {
       await expect.poll(async () => (await state()).open, { timeout: 2000 }).toBe(true);
@@ -811,9 +820,21 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 9: SAVE & CONTINUE ROUND-TRIP
     // ─────────────────────────────────────────────────────────────────────────
-    // Save & Quit
-    await page.keyboard.press('Escape');
-    await page.locator('#btn-savequit-save-exit').click();
+    // Save & Quit. Escape first closes whatever dialog is still up (an earlier section's,
+    // or one the overflow cast opened): press it until the menu shows, rather than once
+    // (the :816 flake, "#btn-savequit-save-exit" never visible).
+    const saveExit = page.locator('#btn-savequit-save-exit');
+    await expect(async () => {
+      await expect.poll(() => page.evaluate(() => (window as any).__cotwInputHandler?.isInputLocked)).toBe(false);
+      if (!(await saveExit.isVisible())) await page.keyboard.press('Escape');
+      const why = await page.evaluate(() => {
+        const h = (window as any).__cotwInputHandler;
+        const a = document.activeElement as HTMLElement | null;
+        return JSON.stringify({ stack: h?.modalStack.getStackIds(), enabled: h?.enabled, locked: h?.isInputLocked, paused: (window as any).__cotwEngine?.isPaused, focus: `${a?.tagName}#${a?.id}.${a?.className}`, alive: (window as any).__cotwEngine?.player.isAlive(), gameOver: document.getElementById('game-over-modal')?.style.display });
+      });
+      await expect(saveExit, why).toBeVisible({ timeout: 1000 });
+    }).toPass({ timeout: 15000 });
+    await saveExit.click();
     await page.waitForTimeout(400);
 
     await expect(page.locator('#btn-menu-continue')).toBeEnabled();

@@ -114,6 +114,7 @@ export class SaveSlotModal implements UIModal {
       onConfirm: () => {
         try {
           this.options.profileManager.deleteCharacter(profileId);
+          this.options.autosaveManager?.clearForHero(profileId);
           showToast(`Deleted save for ${profileName}.`, 'info');
           this.render();
         } catch (err) {

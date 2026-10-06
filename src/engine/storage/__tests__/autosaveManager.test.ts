@@ -121,6 +121,20 @@ describe('AutosaveManager Background Persistence', () => {
       expect(autosaveManager.getAutosaveMetadata('preserved')).toMatchObject({ profileName: 'Valkyrie', floor: 6 });
     });
 
+    it("R-stor-12 · deleting a hero clears that hero's slots and keeps another's", () => {
+      autosaveAt(6);
+      autosaveAt(1, { ...profile, id: 'prof-other', name: 'Other' });
+
+      autosaveManager.clearForHero('prof-valk');
+
+      expect(autosaveManager.getAutosaveMetadata('preserved')).toBeNull();
+      expect(autosaveManager.getAutosaveMetadata('latest')).toMatchObject({ profileName: 'Other' });
+
+      autosaveManager.clearForHero('prof-other');
+
+      expect(autosaveManager.hasAutosave()).toBe(false);
+    });
+
     it("keeps the same hero's deepest run through repeated retreats", () => {
       autosaveAt(6);
       autosaveAt(4);

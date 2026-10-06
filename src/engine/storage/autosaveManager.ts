@@ -180,6 +180,21 @@ export class AutosaveManager {
   }
 
   /**
+   * Clears either autosave slot that holds this hero's run: a deleted hero's autosaves
+   * go with the hero, rather than staying loadable and re-adding them to the roster.
+   */
+  public clearForHero(profileId: string): void {
+    for (const slot of ['latest', 'preserved'] as const) {
+      if (this.getAutosaveMetadata(slot)?.profileId !== profileId) continue;
+      try {
+        this.storage.removeItem(this.slotKey(slot));
+      } catch {
+        // Ignore
+      }
+    }
+  }
+
+  /**
    * Clears both autosave slots.
    */
   public clearAutosave(): void {

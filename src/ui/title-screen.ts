@@ -205,6 +205,7 @@ export class TitleScreen {
         cancelLabel: 'Keep',
         onConfirm: () => {
           this.profileManager.deleteCharacter(profileId);
+          this.autosaveManager?.clearForHero(profileId);
           this.selectedProfileId = null;
           this.refresh();
           this.setStatus(`Deleted character ${heroName}.`);

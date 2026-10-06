@@ -5,6 +5,7 @@ import {
   getPlayerTotalCp,
   deductCurrencyFromPlayer,
   addCurrencyToPlayer,
+  getPlayerCoinItems,
 } from './currency';
 import type { TransactionResult } from './types';
 import { evaluatePredicate } from '../predicates/predicateEvaluator';
@@ -183,14 +184,24 @@ export class Merchant {
     }
 
     // 3. Deduct currency with change
+    const coinsBefore = getPlayerCoinItems(player);
     const deduction = deductCurrencyFromPlayer(player, costCp);
     if (!deduction.success) {
       return deduction;
     }
 
-    // 4. Remove item from stock and add to player pack
+    // 4. Add to player pack, then take it off the shelf. The change can take the room the
+    //    check above saw (a gold coin broken into silver): then the coins go back as they were.
+    if (!player.inventory.primaryPack.addItem(item)) {
+      for (const { container, item: coins } of getPlayerCoinItems(player)) container.removeItem(coins.id);
+      for (const { container, item: coins } of coinsBefore) container.placeItem(coins);
+      return {
+        success: false,
+        message: `Cannot carry ${item.name}: your change would take the room it needs.`,
+        costInCp: costCp,
+      };
+    }
     this.stock.splice(itemIndex, 1);
-    player.inventory.primaryPack.addItem(item);
 
     return {
       success: true,

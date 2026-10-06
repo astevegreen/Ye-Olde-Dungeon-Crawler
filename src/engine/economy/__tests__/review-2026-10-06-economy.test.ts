@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Player } from '../../entities/player';
 import { ItemFactory } from '../../items/factory';
+import { Item } from '../../items/item';
 import { addCurrencyToPlayer, getPlayerTotalCp } from '../currency';
 import { getItemBuyPrice, getItemSellPrice, isSellable, Merchant } from '../merchant';
 import { createScaledItem } from '../../dungeon/lootSpawner';
@@ -71,5 +72,26 @@ describe('R-econ-6 · a zero-value quest item sells for the 2,000 CP category de
     expect(res.success).toBe(false);
     expect(isSellable(relic)).toBe(false);
     expect(player.inventory.primaryPack.getItem('relic-1')).toBe(relic);
+  });
+});
+
+describe('R-econ-12 · a purchase can take the money and lose the item', () => {
+  it('when the change takes the room the ware needed, the sale is refused and the coins are as they were', () => {
+    const player = new Player({ id: 'h', name: 'H', position: { x: 1, y: 1 }, stats: { hp: 35, maxHp: 35, attack: 10, defense: 5 }, strength: 30 });
+    const pack = player.inventory.primaryPack;
+    addCurrencyToPlayer(player, 100); // one gold coin, in the pack (no purse worn)
+    const filler = new Item({ id: 'filler', name: 'Bedroll', category: 'misc', weight: 10, bulk: pack.maxBulkCapacity - pack.containedBulk() - 120, identified: true });
+    pack.addItem(filler);
+    const candle = new Item({ id: 'candle', name: 'Candle', category: 'misc', weight: 10, bulk: 100, value: 20, identified: true });
+    const merchant = new Merchant('m', 'M', 'Shop', 'general', 'hi', [candle]);
+    const coinsBefore = pack.getItems().filter((i) => i.category === 'currency').map((i) => i.id);
+
+    const res = merchant.buyItem(player, 'candle');
+
+    expect(res.success).toBe(false);
+    expect(getPlayerTotalCp(player)).toBe(100);
+    expect(pack.getItems().filter((i) => i.category === 'currency').map((i) => i.id)).toEqual(coinsBefore);
+    expect(merchant.stock).toContain(candle);
+    expect(pack.containedBulk()).toBeLessThanOrEqual(pack.maxBulkCapacity);
   });
 });

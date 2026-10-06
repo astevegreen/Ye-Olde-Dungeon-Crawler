@@ -145,24 +145,11 @@ export class FloorManager {
     const spawnsToPerform = Math.min(batches, availableSlots);
 
     if (spawnsToPerform > 0) {
-      // Find candidate passable tiles far from player
+      // Every site on the floor (stride 2 for speed) at least 8 from where the hero arrives
+      // (`changeFloor` places the hero first): a scan that stopped at the first few filled
+      // only the top rows.
       const playerPos: Position = engine.player ? { x: engine.player.x, y: engine.player.y } : { x: 10, y: 10 };
-      const candidateTiles: Position[] = [];
-
-      // Scan up to a bounded sample of tiles (stride by 2 for speed)
-      for (let y = 1; y < map.height - 1; y += 2) {
-        for (let x = 1; x < map.width - 1; x += 2) {
-          if (map.isPassable(x, y) && !map.getEntityAt(x, y)) {
-            const dist = Math.hypot(x - playerPos.x, y - playerPos.y);
-            // Must be at least 8 tiles away from player's entry location
-            if (dist >= 8) {
-              candidateTiles.push({ x, y });
-              if (candidateTiles.length >= spawnsToPerform * 3) break;
-            }
-          }
-        }
-        if (candidateTiles.length >= spawnsToPerform * 3) break;
-      }
+      const candidateTiles = new SpawnSiteFilter(map, { anchor: playerPos, minDistance: 8 }).sites(2);
 
       // Pick monster definitions appropriate for manifest or floor
       const monsterCatalog = engine.manifest?.monsters ?? [];

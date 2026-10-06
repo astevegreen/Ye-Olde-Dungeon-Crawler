@@ -251,3 +251,27 @@ describe('Inactive Floor Simulation & Temporal Catch-Up (floorManager.ts)', () =
     });
   });
 });
+
+describe('R-ai-7, R-pipe-18 · revisit catch-up spawns across the floor, away from where the hero arrives', () => {
+  it('no catch-up monster stands within 8 of the arrival, and they are not all in the top rows', async () => {
+    const { GameEngine } = await import('../../engine');
+    const { GameMap } = await import('../../grid/map');
+    const { TILES } = await import('../../grid/tile');
+    const { Player } = await import('../../entities/player');
+    const { Monster } = await import('../../entities/monster');
+    const floor1 = new GameMap(57, 40, TILES.WALL);
+    for (let y = 1; y < 39; y++) for (let x = 1; x < 56; x++) floor1.setTile(x, y, TILES.FLOOR);
+    floor1.setTile(4, 3, TILES.STAIRS_DOWN); // the hero comes back up here
+    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 3 }, stats: { hp: 50, maxHp: 50, attack: 10, defense: 5 } });
+    const engine = new GameEngine({ map: floor1, player, floor: 1 });
+    engine.changeFloor(2);
+    engine.map.moveEntity(player, 40, 30); // far from floor 1's stairs, on floor 2
+    engine.turnCount += 1000;
+    engine.changeFloor(1);
+
+    const spawned = engine.map.getAllEntities().filter((e) => e instanceof Monster) as InstanceType<typeof Monster>[];
+    expect(spawned.length).toBe(5);
+    for (const m of spawned) expect(Math.hypot(m.x - player.x, m.y - player.y), `${m.id} at ${m.x},${m.y}`).toBeGreaterThanOrEqual(8);
+    expect(Math.max(...spawned.map((m) => m.y))).toBeGreaterThan(5);
+  });
+});

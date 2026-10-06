@@ -869,11 +869,6 @@ export class GameEngine {
     });
     this.gameState.updateFloor(targetFloor);
 
-    // Simulate catch-up on inactive revisited floors
-    if (isRevisit && this.floorManager.hasFloor(targetFloor)) {
-      this.floorManager.simulateCatchUp(targetFloor, this.turnCount, this);
-    }
-
     // Retrieve or initialize FOV for target floor
     let nextFov = this.storedFov.get(targetFloor);
     if (!nextFov) {
@@ -900,6 +895,12 @@ export class GameEngine {
     } else if (this.companion) {
       // Companion died mid-transition (shouldn't normally happen); drop the reference.
       this.companion = null;
+    }
+
+    // Catch-up on a revisited floor, once the hero stands on it: its spawns keep their
+    // distance from where the hero arrived, not from where they left the last floor.
+    if (isRevisit && this.floorManager.hasFloor(targetFloor)) {
+      this.floorManager.simulateCatchUp(targetFloor, this.turnCount, this);
     }
 
     // Register only living entities on the new active map into scheduler

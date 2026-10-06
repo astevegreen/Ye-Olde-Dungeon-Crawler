@@ -214,37 +214,43 @@ export class Monster extends Actor {
   }
 
   /**
-   * Executes a turn for this monster: processes status ticks, checks paralysis,
-   * decides action via AI behavior tree, and executes it.
+   * Executes a turn for this monster: reads paralysis, processes status ticks,
+   * skips the turn if held, else decides an action via the AI behavior tree and executes it.
    */
   public takeTurn(engine: GameEngine): ActionResult {
     if (!this.isAlive()) {
       return { success: false, cost: 0 };
     }
 
-    // 1. Status effect ticking on monster
+    // 1. Paralysis / stun is read before the statuses tick, as the hero's forced pass reads
+    // it: a hold of N turns costs a monster N turns, the hero's clock (a 1-turn wall-splat
+    // stun used to expire in the tick and cost nothing).
+    const stunned = this.statusManager.hasStatus('stunned');
+    const held = stunned || this.statusManager.hasStatus('paralysis');
+
+    // 2. Status effect ticking on monster
     const tickRes = this.statusManager.tick(this, engine);
     if (tickRes.killed) {
       DeathResolver.resolveDeath(engine, undefined, this);
       return { success: false, cost: 0, message: `${this.name} succumbed to status afflictions.` };
     }
 
-    // 2. Paralysis / Stun check: skips monster turn
-    if (this.statusManager.hasStatus('paralysis') || this.statusManager.hasStatus('stunned')) {
-      const reason = this.statusManager.hasStatus('stunned') ? 'stunned' : 'paralyzed';
+    // 3. A held monster loses the turn.
+    if (held) {
+      const reason = stunned ? 'stunned' : 'paralyzed';
       this.interruptWindUp();
       this.consumeEnergy(BASE_ACTION_COST);
       return { success: true, cost: BASE_ACTION_COST, message: `${this.name} is ${reason} and cannot act.` };
     }
 
-    // 2.5. Turn-start hooks, for awake monsters only (a sleeper is a dormant actor, §6). A hook
+    // 4. Turn-start hooks, for awake monsters only (a sleeper is a dormant actor, §6). A hook
     // aimed at its target needs one in sight; the dispatcher skips it otherwise.
     if (this.aiState !== 'sleeping' && this.hooks.some((h) => h.event === 'onTurnStart')) {
       HookDispatcher.dispatch('onTurnStart', { engine, attacker: this, defender: this.visibleTarget(engine) });
       if (!this.isAlive()) return { success: false, cost: 0 };
     }
 
-    // 3. AI decision and execution. Monster actions run through the same pipeline as the
+    // 5. AI decision and execution. Monster actions run through the same pipeline as the
     // player's, so action hooks fire for every actor (ARCHITECTURE.md §4).
     const action = MonsterAI.decideAction(this, engine);
     const result = engine.actionPipeline.executeWithHooks(action, engine);

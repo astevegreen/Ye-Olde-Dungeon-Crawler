@@ -107,14 +107,24 @@ describe('R-pipe-6 · item actions taken while the engine is paused (menu open) 
 });
 
 describe('R-pipe-7 · a stun of N turns costs a monster only N-1 turns', () => {
-  it.fails('an orc stunned for 1 turn loses one attack over five rounds', () => {
+  const attacksOverFive = (status?: 'stunned' | 'paralysis', turns = 0) => {
     const { engine, player } = build(100);
     const orc = addOrc(engine, 3, 2);
-    orc.statusManager.applyStatus('stunned', 1);
-
+    if (status) orc.statusManager.applyStatus(status, turns);
     for (let t = 0; t < 5; t++) engine.handlePlayerAction(new WaitAction(player));
+    return orcAttacks(engine);
+  };
 
-    expect(orcAttacks(engine)).toBeLessThanOrEqual(4);
+  it('an orc stunned for 1 turn loses one attack over five rounds', () => {
+    expect(attacksOverFive('stunned', 1)).toBe(attacksOverFive() - 1);
+  });
+
+  it('a stun or paralysis of N turns costs the orc N attacks, as it costs the hero N turns', () => {
+    const free = attacksOverFive();
+    for (const n of [2, 3]) {
+      expect(attacksOverFive('stunned', n)).toBe(free - n);
+      expect(attacksOverFive('paralysis', n)).toBe(free - n);
+    }
   });
 });
 

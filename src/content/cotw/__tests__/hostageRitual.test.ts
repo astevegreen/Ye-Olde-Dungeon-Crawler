@@ -220,6 +220,30 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
       expect(player.spellsKnown).toContain('blood_spear'); // Tier 4
     });
 
+    it('captives sacrificed while the hero was off the floor are gone when the hero comes back (R-cotw-16)', () => {
+      // The countdown ran out elsewhere: the sacrifice could not reach the stored floor 22,
+      // where all four still stand when the hero returns.
+      HOSTAGE_VILLAGERS.forEach((v) => sacrificeCaptiveVillager(engine, v.id));
+      expect(engine.getWorldFlag('siphon_ritual_resolved')).toBe(true);
+      placeCaptives();
+
+      engine.handlePlayerAction(new WaitAction(player));
+
+      expect(HOSTAGE_VILLAGERS.every((v) => map.getEntityById(v.id) === null)).toBe(true);
+    });
+
+    it('bumping a captive already sacrificed frees no one (R-cotw-16)', () => {
+      sacrificeCaptiveVillager(engine, HOSTAGE_VILLAGERS[0].id);
+      const [first] = placeCaptives();
+      player.setPosition(first.x - 1, first.y);
+
+      const result = engine.handlePlayerAction(new MovementAction(player, 1, 0));
+
+      expect(result.message ?? '').not.toContain('Freed');
+      expect(engine.getWorldCounter('hostages_rescued')).toBe(0);
+      expect(map.getEntityById(first.id)).toBeNull();
+    });
+
     it('the countdown does not fire once the ritual is resolved', () => {
       const captives = placeCaptives();
       for (const captive of captives) {

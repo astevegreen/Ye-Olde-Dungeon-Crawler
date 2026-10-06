@@ -431,7 +431,8 @@ const SIPHON_RESCUE_HOOK: ActionHook = {
       return;
     }
     const target = engine.map.getEntityAt(actor.x + action.dx, actor.y + action.dy, actor.planeId);
-    if (!(target instanceof NPC) || !isCaptive(target.id)) {
+    // A captive already freed or sacrificed is no one's to free (R-cotw-16).
+    if (!(target instanceof NPC) || !isCaptive(target.id) || isAccountedFor(engine, target.id)) {
       return;
     }
     // A short-circuited action skips post-hooks, so start the countdown here too.
@@ -450,7 +451,17 @@ const SIPHON_RITUAL_HOOK: ActionHook = {
   phase: 'post',
   actionType: '*',
   execute: ({ action, actor, engine }) => {
-    if (actor !== engine.player || getFlag(engine.worldState, FLAG_RESOLVED)) {
+    if (actor !== engine.player) {
+      return;
+    }
+    // The countdown runs out wherever the hero is, and a sacrifice reaches only the current
+    // map: whoever was settled while floor 22 was stored leaves it once the hero is back.
+    if (engine.currentFloor === SIPHON_RITUAL_FLOOR) {
+      for (const captive of HOSTAGE_VILLAGERS) {
+        if (isAccountedFor(engine, captive.id)) removeCaptiveEntity(engine, captive.id);
+      }
+    }
+    if (getFlag(engine.worldState, FLAG_RESOLVED)) {
       return;
     }
 

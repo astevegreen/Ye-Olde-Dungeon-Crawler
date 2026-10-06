@@ -91,7 +91,8 @@ export interface ItemDefinition {
   family?: ModifierCategory;
   /**
    * How likely floor and chest loot is to draw this definition against the others in its group
-   * (`selectFloorItemDefinition`). Default 1; a rarer item, a relic say, is below 1.
+   * (`selectFloorItemDefinition`). Default 1; a rarer item, a relic say, is below 1; 0 never
+   * drops at random (it is sold, granted or dropped by name).
    */
   lootWeight?: number;
   stats?: Partial<ItemStatModifiers>;

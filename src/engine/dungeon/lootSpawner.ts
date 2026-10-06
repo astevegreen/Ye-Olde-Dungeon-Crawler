@@ -244,8 +244,13 @@ export function selectFloorItemDefinition(
   const { newestShare, newestDefinitions } = ratesOf(rates);
   // A chest is placed by the room chest roll, filled (createDungeonChest); as a loose item
   // it would arrive empty, and too bulky to lift.
+  // A `lootWeight` of 0 is never random loot (sold, granted or dropped by name only).
   const eligible = candidates.filter(
-    (i) => i.category !== 'quest' && i.containerConfig?.containerType !== 'chest' && (i.minFloor ?? 1) <= currentFloor
+    (i) =>
+      i.category !== 'quest' &&
+      i.containerConfig?.containerType !== 'chest' &&
+      (i.minFloor ?? 1) <= currentFloor &&
+      (i.lootWeight ?? 1) > 0
   );
 
   if (eligible.length === 0) {

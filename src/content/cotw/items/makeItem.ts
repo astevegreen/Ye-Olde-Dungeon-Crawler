@@ -14,35 +14,6 @@ import { COTW_LOOT_RATES, COTW_MONSTER_DROP_SCALE } from '../loot';
  */
 const NON_CATALOG_ITEMS: ItemDefinition[] = [
   {
-    id: 'scroll_identify',
-    name: 'Scroll of Identify',
-    unidentifiedName: 'Parchment Scroll',
-    category: 'consumable',
-    tier: 1,
-    weight: 50,
-    bulk: 40,
-    identified: true,
-    description: 'A crisp parchment inscribed with golden revelation runes.',
-    value: 40,
-    itemType: 'scroll',
-    scrollConfig: { spellId: 'identify' },
-  },
-  {
-    id: 'charm_watchful_eye',
-    name: 'Charm of the Watchful Eye',
-    unidentifiedName: 'Engraved Charm',
-    category: 'amulet',
-    slot: 'neck',
-    tier: 1,
-    weight: 40,
-    bulk: 20,
-    stats: { defenseBonus: 2 },
-    identified: true,
-    description:
-      "Astrid sets this aside only for adventurers whose reputation for uncovering the dungeon's secrets precedes them.",
-    value: 150,
-  },
-  {
     // Q44 (2026-10-04): the first bigger purse, sold at Olaf's.
     id: 'ironclasp_purse',
     name: 'Ironclasp Purse',

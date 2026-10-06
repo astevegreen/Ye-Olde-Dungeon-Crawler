@@ -84,3 +84,26 @@ describe('R-cotw-3 · a "monster"-tagged radial consumable afflicts the hero’s
     expect(wolf.statusManager.hasStatus('burning')).toBe(false);
   });
 });
+
+describe('R-cotw-15 · the Charm of the Watchful Eye and the Scroll of Identify are not random loot', () => {
+  it('no floor draw from 1 to 50 gives either, over many rolls', async () => {
+    const { selectFloorItemDefinition } = await import('../../../engine/dungeon/lootSpawner');
+    const drawn = new Set<string>();
+    for (let floor = 1; floor <= 50; floor += 7) {
+      for (let i = 0; i < 400; i++) {
+        let n = i * 7919 + floor;
+        const rng = () => ((n = (n * 1103515245 + 12345) % 2147483648) / 2147483648);
+        const pick = selectFloorItemDefinition(cotwManifest.items as never, floor, rng, cotwManifest.loot);
+        if (pick) drawn.add(pick.id);
+      }
+    }
+    expect(drawn.has('charm_watchful_eye')).toBe(false);
+    expect(drawn.has('scroll_identify')).toBe(false);
+    expect(drawn.size).toBeGreaterThan(20); // the rest still drop
+  });
+
+  it('each is defined once', () => {
+    expect(items.filter((i) => i.id === 'charm_watchful_eye')).toHaveLength(1);
+    expect(items.filter((i) => i.id === 'scroll_identify')).toHaveLength(1);
+  });
+});

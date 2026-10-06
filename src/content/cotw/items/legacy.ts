@@ -646,7 +646,8 @@ export const COTW_LEGACY_ITEMS: ItemDefinition[] = [
   },
 
   // ==========================================
-  // UTILITY & TOWN STOCK
+  // UTILITY & TOWN STOCK (in the catalog so a save, a grant or a name lookup finds them;
+  // `lootWeight: 0` keeps them out of random loot)
   // ==========================================
   {
     id: 'scroll_identify',
@@ -659,6 +660,8 @@ export const COTW_LEGACY_ITEMS: ItemDefinition[] = [
     identified: true,
     description: 'A crisp parchment inscribed with golden revelation runes.',
     value: 40,
+    // Sold by Astrid, dropped by named monsters, granted by a runestone: never random loot.
+    lootWeight: 0,
     itemType: 'scroll',
     scrollConfig: { spellId: 'identify' },
   },
@@ -676,6 +679,8 @@ export const COTW_LEGACY_ITEMS: ItemDefinition[] = [
     description:
       "Astrid sets this aside only for adventurers whose reputation for uncovering the dungeon's secrets precedes them.",
     value: 150,
+    // Astrid's, once exploration renown reaches 25 (town.ts): never random loot.
+    lootWeight: 0,
   },
   {
     id: 'urdr_cleansing_water',

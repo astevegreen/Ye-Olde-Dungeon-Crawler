@@ -276,6 +276,12 @@ console.log(`src/main/** files inspected: ${mainDirFiles.length}`);
 console.log(`Total files inspected: ${engineFiles.length + contentFiles.length + uiFiles.length + renderingFiles.length + mainDirFiles.length}`);
 console.log(`======================================================\n`);
 
+// A run that inspects nothing (the wrong cwd, a moved directory) is a failure, not a pass.
+if (engineFiles.length === 0 || contentFiles.length === 0 || uiFiles.length === 0 || renderingFiles.length === 0) {
+  console.error('❌ Inspected no files in at least one of src/engine, src/content, src/ui, src/rendering: run from the repository root.');
+  process.exit(1);
+}
+
 for (const entry of clockAllowlist) {
   if (!clockAllowlistUsed.has(entry.file)) {
     violations.push({

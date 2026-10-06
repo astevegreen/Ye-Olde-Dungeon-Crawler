@@ -79,6 +79,12 @@ function main(): void {
   console.log(`Color literals in presentation source: ${total}`);
   console.log('======================================================\n');
 
+  // A run that inspects nothing (the wrong cwd, a moved directory) is a failure, not a pass.
+  if (SCOPE_DIRS.flatMap(walk).length === 0) {
+    console.error('❌ Inspected no presentation files: run from the repository root.');
+    process.exit(1);
+  }
+
   if (rose.length) {
     console.error('✗ Color literals added. Use a role token (var(--ui-*) in CSS, the resolved theme on canvas):');
     console.error(rose.join('\n'));

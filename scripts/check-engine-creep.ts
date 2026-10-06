@@ -189,6 +189,12 @@ console.log(`Presentation source files inspected: ${presentationFiles.length}`);
 console.log(`Allowlisted references: ${usedAllowlist.size}`);
 console.log(`======================================================\n`);
 
+// A run that inspects nothing (the wrong cwd, a moved directory) is a failure, not a pass.
+if (engineFiles.length === 0 || presentationFiles.length === 0 || ids.size === 0) {
+  console.error('❌ Inspected no engine or presentation source, or loaded no pack identifiers: run from the repository root.');
+  process.exit(1);
+}
+
 const hasViolations = engineViolations.length > 0 || presentationViolations.length > 0;
 if (hasViolations || stale.length > 0) {
   if (engineViolations.length > 0) {

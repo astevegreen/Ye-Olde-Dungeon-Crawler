@@ -309,6 +309,12 @@ console.log(`Content files inspected: ${contentFiles}`);
 console.log(`Allowlisted sanctioned writes: ${usedAllowlist.size}`);
 console.log(`======================================================\n`);
 
+// A run that inspects nothing (the wrong cwd, a moved directory) is a failure, not a pass.
+if (presentationFiles === 0 || contentFiles === 0) {
+  console.error('❌ Inspected no presentation or content files: run from the repository root.');
+  process.exit(1);
+}
+
 if (unallowed.length > 0 || staleAllowlist.length > 0) {
   if (unallowed.length > 0) {
     console.error(`❌ Found ${unallowed.length} direct mutation(s) of engine internals outside src/engine/:\n`);

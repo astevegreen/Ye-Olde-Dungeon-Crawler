@@ -333,10 +333,9 @@ describe('Menu Streamlining & Save/Load UX', () => {
 
     modal.open();
 
-    // Trigger loading corrupt profile directly through method
-    await expect(async () => {
-      await (modal as any).handleLoadProfile('corrupt-1');
-    }).not.toThrow();
+    // Trigger loading corrupt profile directly through method: it settles, having caught it.
+    await expect((modal as any).handleLoadProfile('corrupt-1')).resolves.toBeUndefined();
+    expect(onLoadProfile).toHaveBeenCalledWith('corrupt-1');
 
     expect(modal.isOpen).toBe(true);
   });

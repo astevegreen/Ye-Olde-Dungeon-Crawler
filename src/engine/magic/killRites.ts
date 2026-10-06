@@ -37,6 +37,8 @@ export interface KillContext {
   /** Full damage of the killing blow, before it was capped at the victim's remaining HP. */
   damageDealt?: number;
   remainingHpBeforeBlow?: number;
+  /** What killed the victim when no creature did ("searing fire", "a pit trap"): the death screen's "Slain by …". */
+  cause?: string;
 }
 
 export interface KillRiteResult {

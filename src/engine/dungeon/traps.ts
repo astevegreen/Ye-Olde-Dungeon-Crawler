@@ -105,7 +105,7 @@ export class TrapInstance {
         engine.log(message);
 
         if (!entity.isAlive() && entity instanceof Player) {
-          DeathResolver.resolveDeath(engine, undefined, entity);
+          DeathResolver.resolveDeath(engine, undefined, entity, { cause: 'a pit trap' });
         }
         break;
       }
@@ -119,7 +119,7 @@ export class TrapInstance {
         engine.log(message);
 
         if (!entity.isAlive() && entity instanceof Player) {
-          DeathResolver.resolveDeath(engine, undefined, entity);
+          DeathResolver.resolveDeath(engine, undefined, entity, { cause: 'a dart trap' });
         }
         break;
       }

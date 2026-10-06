@@ -46,6 +46,12 @@ export class Entity {
   public isAnchored: boolean;
   public vulnerabilityTags: string[];
   public tags: string[];
+  /**
+   * What is killing it when no creature is, set by a status tick that kills (poison): the
+   * death screen's "Slain by …". `DeathResolver` reads and clears it on the death it was set
+   * for, so it can't blame a later death. Not saved.
+   */
+  public pendingDeathCause?: string;
 
   // Members only some subclasses provide (Actor, Monster, NPC, Player). Declared here,
   // type-only (`declare` emits nothing), so base-class logic like hasTag() and the

@@ -129,7 +129,7 @@ function applyOutcome(
   const hurt = (amount: number, flashColor?: string): number => {
     const res = caster.takeDamage(amount);
     if (flashColor) effects.push({ type: 'screen_flash', color: flashColor, durationMs: 250 });
-    if (res.killed) DeathResolver.resolveDeath(engine, undefined, caster);
+    if (res.killed) DeathResolver.resolveDeath(engine, undefined, caster, { cause: 'magical backlash' });
     return res.damageDealt;
   };
 

@@ -153,10 +153,11 @@ export class GameStateManager {
    * Triggers permadeath, records fallen hero into the leaderboard,
    * and updates profile status to 'fallen'.
    */
-  public triggerDeath(engine: GameEngine, killer?: Entity, profileManager?: ProfileManager): HallOfFameEntry {
+  public triggerDeath(engine: GameEngine, killer?: Entity, profileManager?: ProfileManager, cause?: string): HallOfFameEntry {
     this.runStatus = 'fallen';
     const p = engine.player;
-    this.killerName = killer?.name ?? 'Mortal Wounds';
+    // A creature by name, else what killed the hero (`KillContext.cause`: fire, poison, a trap).
+    this.killerName = killer?.name ?? cause ?? 'Mortal Wounds';
     this.causeOfDeath = `Slain by ${this.killerName} on Floor ${engine.currentFloor}`;
     const totalGoldCp = getPlayerTotalCp(p);
     const score = Leaderboard.calculateScore(p.totalXp, totalGoldCp, this.deepestFloor, false);

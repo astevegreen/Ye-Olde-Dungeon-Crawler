@@ -46,7 +46,7 @@ export class MeleeAttackAction implements Action {
     if (missCost > 0) {
       const { damageDealt, killed } = this.attacker.takeDamage(missCost);
       engine.log(`${this.attacker.name} overreaches and takes ${damageDealt} for the miss!`);
-      if (killed) DeathResolver.resolveDeath(engine, undefined, this.attacker);
+      if (killed) DeathResolver.resolveDeath(engine, undefined, this.attacker, { cause: 'an overreaching blow' });
     }
     return { success: true, cost, message };
   }

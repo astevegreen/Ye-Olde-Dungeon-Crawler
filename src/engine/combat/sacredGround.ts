@@ -38,6 +38,6 @@ export function burnOnSacredGround(engine: GameEngine, actor: Entity): { damage:
   engine.recordVisualEffects([
     { type: 'burst', epicenter: { x: actor.x, y: actor.y }, radius: 1, color: '#facc15', durationMs: 200 },
   ]);
-  if (killed) DeathResolver.resolveDeath(engine, undefined, actor);
+  if (killed) DeathResolver.resolveDeath(engine, undefined, actor, { cause: 'holy ground' });
   return { damage: damageDealt, killed };
 }

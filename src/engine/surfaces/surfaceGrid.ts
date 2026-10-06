@@ -158,7 +158,7 @@ export class SurfaceGrid {
 
     // 2. Acid Pool: Deals immediate acid damage
     if (cell.surface?.type === 'acid_pool' && entity.isAlive()) {
-      this.harm(engine, entity, 4, 'acid', (n) => `${entity.name} wades into caustic acid for ${n} acid damage!`);
+      this.harm(engine, entity, 4, 'acid', 'acid', (n) => `${entity.name} wades into caustic acid for ${n} acid damage!`);
     }
 
     // 3. Oil Slick: Slippery ground
@@ -174,7 +174,7 @@ export class SurfaceGrid {
 
     // 5. Fire: Burning ground dealing immediate fire damage
     if (cell.surface?.type === 'fire' && entity.isAlive()) {
-      this.harm(engine, entity, 4, 'fire', (n) => `${entity.name} steps into searing fire for ${n} fire damage!`);
+      this.harm(engine, entity, 4, 'fire', 'searing fire', (n) => `${entity.name} steps into searing fire for ${n} fire damage!`);
     }
 
     return { slid, energyPenalty };
@@ -184,15 +184,16 @@ export class SurfaceGrid {
    * Ground and gas damage by element, through the entity's affinity: its resistances, and
    * for an Actor what it wears and the perks it holds (`Actor.affinityTo`). So what resists
    * fire resists burning ground, and a fire-immune creature walks its own trail unharmed.
-   * Logs the hurt line, or that the entity was unharmed or healed, and resolves a death.
+   * Logs the hurt line, or that the entity was unharmed or healed, and resolves a death,
+   * named `cause` on the death screen ("Slain by searing fire").
    */
-  private harm(engine: GameEngine, entity: Entity, amount: number, element: ElementType, hurtLine: (dealt: number) => string): number {
+  private harm(engine: GameEngine, entity: Entity, amount: number, element: ElementType, cause: string, hurtLine: (dealt: number) => string): number {
     const res = entity.takeElementalDamage(amount, element, engine.affinityMatrix);
     const noun = element === 'lightning' ? 'lightning' : element === 'acid' ? 'acid' : 'fire';
     if (res.isHeal) engine.log(`${entity.name} is healed by the ${noun} for ${res.healed}.`);
     else if (res.damageDealt === 0 && !res.killed) engine.log(`${entity.name} is unharmed by the ${noun}.`);
     else engine.log(hurtLine(res.damageDealt));
-    if (res.killed) DeathResolver.resolveDeath(engine, undefined, entity);
+    if (res.killed) DeathResolver.resolveDeath(engine, undefined, entity, { cause });
     return res.damageDealt;
   }
 
@@ -243,7 +244,7 @@ export class SurfaceGrid {
           // Burn standing entities
           const ent = engine.map.getEntityAt(p.x, p.y);
           if (ent && ent.isAlive()) {
-            this.harm(engine, ent, Math.max(6, Math.floor(baseDamage * 0.8)), 'fire', (n) => `${ent.name} is engulfed in the ignited oil inferno for ${n} fire damage!`);
+            this.harm(engine, ent, Math.max(6, Math.floor(baseDamage * 0.8)), 'fire', 'burning oil', (n) => `${ent.name} is engulfed in the ignited oil inferno for ${n} fire damage!`);
           }
 
           // Spread to 4-way adjacent oil cells
@@ -324,6 +325,7 @@ export class SurfaceGrid {
               ent,
               electroDamage,
               'lightning',
+              'lightning',
               (n) => `*** Lightning courses through the water! ${ent.name} is severely shocked for ${n} electrocution damage (200%)! ***`
             );
           }
@@ -402,9 +404,9 @@ export class SurfaceGrid {
 
         if (entity && entity.isAlive()) {
           if (cell.surface.type === 'acid_pool') {
-            this.harm(engine, entity, 3, 'acid', (n) => `${entity.name} suffers ${n} acid burn from the caustic pool.`);
+            this.harm(engine, entity, 3, 'acid', 'acid', (n) => `${entity.name} suffers ${n} acid burn from the caustic pool.`);
           } else if (cell.surface.type === 'fire') {
-            this.harm(engine, entity, 3, 'fire', (n) => `${entity.name} is scorched by lingering fire for ${n} damage.`);
+            this.harm(engine, entity, 3, 'fire', 'lingering fire', (n) => `${entity.name} is scorched by lingering fire for ${n} damage.`);
           }
         }
 
@@ -419,7 +421,7 @@ export class SurfaceGrid {
 
         if (entity && entity.isAlive()) {
           if (cell.gas.type === 'fire_storm') {
-            this.harm(engine, entity, 5, 'fire', (n) => `${entity.name} burns inside the raging FireStorm for ${n} damage!`);
+            this.harm(engine, entity, 5, 'fire', 'a firestorm', (n) => `${entity.name} burns inside the raging FireStorm for ${n} damage!`);
           } else if (cell.gas.type === 'poison_cloud') {
             entity.statusManager.applyStatus(
               { type: 'poison', duration: 3, potency: 2 },

@@ -44,6 +44,9 @@ export class DeathResolver {
     victim: Entity,
     context?: KillContext
   ): void {
+    // Read once, here: a refused death or a creature's blow must not leave it for a later one.
+    const cause = killer ? undefined : (context?.cause ?? victim.pendingDeathCause);
+    victim.pendingDeathCause = undefined;
     // A last stand (Einherjar) or a companion's bond (Beast-Friend) may refuse this death.
     if (refusesDeath(engine, victim)) return;
     victim.hp = 0;
@@ -238,7 +241,7 @@ export class DeathResolver {
 
     } else if (victim instanceof Player) {
       DeathEnvelopeTracker.recordPlayerDeath(engine, killer);
-      engine.gameState?.triggerDeath(engine, killer);
+      engine.gameState?.triggerDeath(engine, killer, undefined, cause);
     }
 
     // Remove entity from map and scheduler

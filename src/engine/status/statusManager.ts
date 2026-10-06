@@ -107,6 +107,8 @@ export class StatusManager {
         }
         if (result.killed) {
           killed = true;
+          // The caller resolves the death without a killer; this names it ("poison").
+          entity.pendingDeathCause ??= type.replace(/^[a-z0-9_-]+:/, '').replace(/_/g, ' ');
         }
       }
 

@@ -267,6 +267,7 @@ export class CanvasRenderer {
         this.offsetY
       );
 
+      const hoverBefore = this.tacticalTargetOverlay.hoveredTile;
       if (
         !this.shopOverlay.isOpen &&
         !this.inspectOverlay.isOpen &&
@@ -280,6 +281,10 @@ export class CanvasRenderer {
       } else {
         this.tacticalTargetOverlay.clearHover();
       }
+      // The hover card, brackets and sidebar highlight are drawn by `render()`: redraw when
+      // the pointer reaches another tile, whether or not vectoring is on (R-rend-6).
+      const hoverAfter = this.tacticalTargetOverlay.hoveredTile;
+      const hoverMoved = hoverBefore?.x !== hoverAfter?.x || hoverBefore?.y !== hoverAfter?.y;
 
       if (
         this.mouseVectoringEnabled &&
@@ -301,6 +306,7 @@ export class CanvasRenderer {
         this.render();
       } else {
         this.mouseVectorOverlay.handleMouseLeave();
+        if (hoverMoved) this.render();
       }
     };
     this.canvas.addEventListener('mousemove', this.boundMouseMoveHandler);

@@ -868,3 +868,38 @@ test('closing the aim with the HUD Look or Map button leaves no targeting entry 
   expect(await page.evaluate(() => window.__cotwEngine!.isPaused)).toBe(false);
   expect(pageErrors).toEqual([]);
 });
+
+// Pointing at a monster shows its card with the default settings (mouse vectoring off):
+// the hover alone redraws the map (R-rend-6).
+test('hovering a monster with the mouse shows its target card', async ({ page }) => {
+  await embarkNewHero(page);
+  const at = await page.evaluate(async () => {
+    const e = window.__cotwEngine!;
+    const d = e.diagnostics;
+    d.toggleGodMode();
+    d.jumpToFloor(2);
+    await new Promise((r) => setTimeout(r, 300));
+    e.updateFov();
+    d.killVisibleMonsters();
+    const p = e.player;
+    for (const [dx, dy] of [[3, 0], [-3, 0], [0, 3], [0, -3], [2, 2], [-2, 2], [2, -2], [-2, -2], [2, 0], [0, 2], [-2, 0], [0, -2]]) {
+      const x = p.x + dx;
+      const y = p.y + dy;
+      if (e.map.isPassable(x, y) && !e.map.getEntityAt(x, y) && e.fov.isVisible(x, y)) {
+        if (d.spawnMonster('kobold', { position: { x, y }, aiState: 'idle' })) {
+          e.updateFov();
+          window.__cotwRenderer!.render();
+          const r = window.__cotwRenderer as any;
+          const s = r.camera.worldToScreen(x, y, r.cellSize, r.offsetX, r.offsetY);
+          return r.viewport.virtualToClient(s.x + r.cellSize / 2, s.y + r.cellSize / 2) as { x: number; y: number };
+        }
+      }
+    }
+    return null;
+  });
+  expect(at, 'a kobold in sight').not.toBeNull();
+  expect(await page.evaluate(() => (window.__cotwRenderer as any).mouseVectoringEnabled)).toBe(false);
+  await expect(page.locator('.mc-target')).toHaveCount(0);
+  await page.mouse.move(at!.x, at!.y);
+  await expect(page.locator('.mc-target')).toBeVisible();
+});

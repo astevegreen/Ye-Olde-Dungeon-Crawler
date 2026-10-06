@@ -136,21 +136,25 @@ describe('R-cmbt-4 · a telegraphed wind-up ability declares an element and igno
 });
 
 describe('R-cmbt-5 · an elemental bonusDamage hook ignores the target affinity', () => {
-  it.fails('a fire bonusDamage hook adds nothing against a fire-immune monster', () => {
-    const lost = (withHook: boolean) => {
-      const { map, player, engine } = make();
-      const w = weapon(
-        withHook ? { hooks: [{ event: 'onHit', chance: 1, action: { type: 'bonusDamage', amount: 9, element: 'fire' } }] } : {}
-      );
-      player.inventory.primaryPack.addItem(w);
-      player.inventory.equipFromPack(w.id);
-      const imp = mon('imp', 4, 3, 200, { resistances: { fire: 'immune' } });
-      map.addEntity(imp);
-      new MeleeAttackAction(player, imp).perform(engine);
-      return 200 - imp.hp;
-    };
+  const hookLoss = (withHook: boolean, fire: string) => {
+    const { map, player, engine } = make();
+    const w = weapon(
+      withHook ? { hooks: [{ event: 'onHit', chance: 1, action: { type: 'bonusDamage', amount: 9, element: 'fire' } }] } : {}
+    );
+    player.inventory.primaryPack.addItem(w);
+    player.inventory.equipFromPack(w.id);
+    const imp = mon('imp', 4, 3, 200, { resistances: { fire } });
+    map.addEntity(imp);
+    new MeleeAttackAction(player, imp).perform(engine);
+    return 200 - imp.hp;
+  };
 
-    expect(lost(true)).toBe(lost(false));
+  it('a fire bonusDamage hook adds nothing against a fire-immune monster', () => {
+    expect(hookLoss(true, 'immune')).toBe(hookLoss(false, 'immune'));
+  });
+
+  it('a fire-weak monster takes half as much again from the hook (9 becomes 14)', () => {
+    expect(hookLoss(true, 'weak') - hookLoss(false, 'weak')).toBe(14);
   });
 });
 

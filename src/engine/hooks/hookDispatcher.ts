@@ -412,13 +412,28 @@ function executeBonusDamage(
   summary.bonusDamage += action.amount;
   const dest = target;
   if (dest && dest.isAlive() && action.amount > 0) {
-    const { damageDealt, killed } = dest.takeDamage(action.amount);
-    const elem = action.element ? ` ${action.element}` : '';
-    const msg = description ?? `[PROC: ${sourceName}] Striking with extra fury for ${damageDealt}${elem} bonus damage!`;
+    // A declared element goes through the target's affinity, as a spell of it would; the
+    // kill reports it, with the blow's size, so an elemental kill rite can count it.
+    const element = action.element as ElementType | undefined;
+    const hpBefore = dest.hp;
+    const hit = element
+      ? dest.takeElementalDamage(action.amount, element, engine.affinityMatrix)
+      : { ...dest.takeDamage(action.amount), finalDamage: action.amount, isHeal: false, healed: 0 };
+    const { damageDealt, killed } = hit;
+    const elem = element ? ` ${element}` : '';
+    const msg = hit.isHeal
+      ? `[PROC: ${sourceName}] ${dest.name} is healed by the ${element} for ${hit.healed}!`
+      : damageDealt === 0 && !killed && element
+        ? `[PROC: ${sourceName}] ${dest.name} is unharmed by the ${element}.`
+        : description ?? `[PROC: ${sourceName}] Striking with extra fury for ${damageDealt}${elem} bonus damage!`;
     engine.log(msg);
     summary.messages.push(msg);
     if (killed) {
-      DeathResolver.resolveDeath(engine, owner, dest);
+      DeathResolver.resolveDeath(engine, owner, dest, {
+        damageElement: element,
+        damageDealt: hit.finalDamage,
+        remainingHpBeforeBlow: hpBefore,
+      });
     }
   }
 }

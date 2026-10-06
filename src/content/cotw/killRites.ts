@@ -246,8 +246,8 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
   glod: {
     essenceElement: 'fire',
     requiredDamageElement: 'cold',
-    requiresOverkillPercent: 20,
-    hintVerse: 'The ember-salamander must be drowned in frost:\nstrike it past its last breath by a fifth of its strength.',
+    requiresOverkillPercent: 10,
+    hintVerse: 'The ember-salamander must be drowned in frost:\nstrike it past its last breath by a tenth of its strength.',
   },
   captive_of_the_chariot: {
     teachesSpellId: 'fireball',
@@ -324,8 +324,8 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
   yggdrasil_parasite: {
     essenceElement: 'healing',
     requiredDamageElement: 'arcane',
-    requiresOverkillPercent: 30,
-    hintVerse: "Tear the parasite from the World Tree with a rune-bolt\nthat overshoots its life by a third of its strength.",
+    requiresOverkillPercent: 5,
+    hintVerse: "Tear the parasite from the World Tree with a rune-bolt\nthat overshoots its life by a twentieth of its strength.",
   },
   ancient_wyrm: {
     essenceElement: 'fire',
@@ -385,8 +385,8 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
   miniboss_tar_abomination: {
     essenceElement: 'shadow',
     requiredDamageElement: 'fire',
-    requiresOverkillPercent: 20,
-    hintVerse: 'Gloom-Tarr must burn all at once:\nset it alight with a blow past its last breath by a fifth of its strength.',
+    requiresOverkillPercent: 2,
+    hintVerse: 'Gloom-Tarr must burn all at once:\nset it alight with a blow that runs well past its last breath.',
   },
   malice_weaver: {
     teachesSpellId: 'clairvoyance',
@@ -409,14 +409,14 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
   hel_warden: {
     essenceElement: 'shadow',
     requiredDamageElement: 'fire',
-    requiresOverkillPercent: 20,
-    hintVerse: "Hel's warden cannot be bound, only overwhelmed:\nburn it with a blow past its last breath by a fifth of its strength.",
+    requiresOverkillPercent: 2,
+    hintVerse: "Hel's warden cannot be bound, only overwhelmed:\nburn it with a blow that runs well past its last breath.",
   },
   miniboss_marrow_eater: {
     essenceElement: 'shadow',
     requiredDamageElement: 'arcane',
-    requiresOverkillPercent: 25,
-    hintVerse: 'Sköll gnaws the void-bone. Strike him with a rune-bolt\nthat overshoots his life by a quarter of his strength.',
+    requiresOverkillPercent: 0.5,
+    hintVerse: 'Sköll gnaws the void-bone. Strike him with a rune-bolt\nthat runs well past his last breath.',
   },
   nidhogg: {
     essenceElement: 'shadow',

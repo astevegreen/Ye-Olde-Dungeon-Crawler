@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { cotwManifest } from '../index';
 import { createScaledItem } from '../../../engine/dungeon/lootSpawner';
+import { scaleMonsterStats } from '../../../engine/dungeon/spawner';
+import type { MonsterDefinition } from '../../../engine';
 import { ProfileManager, MemoryStorage } from '../../../engine/storage/profile-manager';
 import { ExecuteChoiceAction } from '../../../engine/actions/choiceAction';
 import { DrinkPotionAction, CastSpellAction } from '../../../engine/actions/spell-actions';
@@ -184,5 +186,35 @@ describe('R-cotw-13 · shadow is an element of the pack (DECISIONS Q9: "Add it")
     }
     expect(seen.has('shadow')).toBe(false);
     expect([...seen].sort()).toEqual(['arcane', 'cold', 'fire', 'lightning', 'poison']);
+  });
+});
+
+describe('R-cotw-10 · an overkill kill rite can be met by a caster of its element', () => {
+  /**
+   * The overkill a rite asks for (a share of the victim's scaled max HP, Medium, at the floor
+   * it first appears) must not exceed the base damage of the pack's strongest spell of the
+   * rite's element: a caster at twice base power can then meet it on a foe at that many HP.
+   * Sköll asked for 396 from an arcane spell whose base is 8.
+   */
+  it('no element-gated overkill rite asks for more than the strongest spell of its element deals', () => {
+    const strongest: Record<string, number> = {};
+    for (const s of cotwManifest.spells as Array<{ effects?: Array<{ type: string; amount?: number; element?: string }> }>) {
+      for (const e of s.effects ?? []) {
+        if (e.type === 'damage' && typeof e.amount === 'number' && e.element) strongest[e.element] = Math.max(strongest[e.element] ?? 0, e.amount);
+      }
+    }
+    const tooHigh: string[] = [];
+    let checked = 0;
+    for (const m of cotwManifest.monsters as Array<MonsterDefinition & { killRite?: { requiredDamageElement?: string; requiresOverkillPercent?: number } }>) {
+      const rite = m.killRite;
+      if (!rite?.requiresOverkillPercent || !rite.requiredDamageElement) continue;
+      checked += 1;
+      const { maxHp } = scaleMonsterStats(m, m.minFloor ?? 1, undefined, undefined, cotwManifest.monsterScaling, 'medium');
+      const needed = Math.ceil(maxHp * (rite.requiresOverkillPercent / 100));
+      const best = strongest[rite.requiredDamageElement] ?? 0;
+      if (needed > best) tooHigh.push(`${m.id}: ${needed} ${rite.requiredDamageElement} overkill, strongest spell ${best}`);
+    }
+    expect(checked).toBeGreaterThanOrEqual(6);
+    expect(tooHigh).toEqual([]);
   });
 });

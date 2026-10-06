@@ -210,6 +210,13 @@ export class FloorManager {
       }
     }
 
+    // A refilled floor is no longer cleared: the cleared-floor timer must not refill it a
+    // second time on the next turn (R-ai-8). Its interval restarts from this visit.
+    if (spawnedCount > 0) {
+      map.isCleared = false;
+      map.lastRespawnTurn = map.floorTurnCount;
+    }
+
     return {
       ticksElapsed,
       spawnedCount,

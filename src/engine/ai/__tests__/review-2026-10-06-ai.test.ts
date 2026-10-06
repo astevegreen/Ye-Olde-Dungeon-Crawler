@@ -102,7 +102,7 @@ describe('R-ai-11 · an immobile turret casts at a hero it cannot see', () => {
 });
 
 describe('R-ai-8 · returning to a cleared floor repopulates it twice', () => {
-  it.fails('after catch-up has refilled a cleared floor, the cleared-floor timer does not refill it again', () => {
+  it('after catch-up has refilled a cleared floor, the cleared-floor timer does not refill it again', () => {
     const map1 = new GameMap(57, 40, TILES.WALL);
     for (let y = 1; y < 39; y++) for (let x = 1; x < 56; x++) map1.setTile(x, y, TILES.FLOOR);
     map1.setTile(30, 20, TILES.STAIRS_DOWN);

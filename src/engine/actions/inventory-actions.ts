@@ -105,12 +105,11 @@ export class DropAction implements Action {
     }
 
     if (this.source === 'paperdoll' && this.slot) {
-      const unequipCheck = this.player.inventory.paperdoll.canUnequip(this.slot);
-      if (!unequipCheck.allowed) {
-        engine.log(unequipCheck.reason ?? 'Cannot remove cursed item.');
-        return { success: false, cost: 0, message: unequipCheck.reason };
+      const takenOff = this.player.inventory.takeOffToDrop(this.slot);
+      if (!takenOff.success) {
+        engine.log(takenOff.reason);
+        return { success: false, cost: 0, message: takenOff.reason };
       }
-      this.player.inventory.paperdoll.unequip(this.slot);
     } else {
       const removed = this.player.inventory.primaryPack.removeItem(this.item.id);
       if (!removed) {

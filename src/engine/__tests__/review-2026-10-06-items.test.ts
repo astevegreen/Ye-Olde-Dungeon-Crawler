@@ -8,7 +8,7 @@ import { ScrollItem, WandItem } from '../items/consumables';
 import { itemIndex } from '../items/itemIndex';
 import { DrinkPotionAction, ReadScrollAction } from '../actions/spell-actions';
 import { EquipAction, DropAction } from '../actions/inventory-actions';
-import { addCurrencyToPlayer } from '../economy/currency';
+import { addCurrencyToPlayer, getPlayerTotalCp } from '../economy/currency';
 import { cotwManifest } from '../../content/cotw';
 
 /**
@@ -101,13 +101,29 @@ describe('R-econ-4 · equipping a belt over a loaded belt can destroy the old be
 });
 
 describe('R-econ-5 · Drop on the Pack slot leaves the pack on the ground and still the hero’s primaryPack', () => {
-  it.fails('after a Drop on the pack slot, the hero’s primary pack is not an item on the floor', () => {
+  it('after a Drop on the pack slot, the hero’s primary pack is not an item on the floor', () => {
     const { map, player, engine, pack } = build();
     pack.addItem(ItemFactory.createDagger('dag-1'));
 
     new DropAction(player, pack, 'paperdoll', 'pack').perform(engine);
 
     expect(map.getItemsAt(3, 3)).not.toContain(player.inventory.primaryPack);
+  });
+
+  it('a dropped purse hands its coins back first: the hero keeps every coin', () => {
+    const { map, player, engine } = build();
+    const purse = ItemFactory.createCoinPurse('purse');
+    player.inventory.paperdoll.equip(purse, 'purse');
+    addCurrencyToPlayer(player, 250);
+    const before = getPlayerTotalCp(player);
+    expect(purse.getItems().length).toBeGreaterThan(0);
+
+    const r = new DropAction(player, purse, 'paperdoll', 'purse').perform(engine);
+
+    expect(r.success).toBe(true);
+    expect(map.getItemsAt(3, 3)).toContain(purse);
+    expect(purse.getItems()).toHaveLength(0);
+    expect(getPlayerTotalCp(player)).toBe(before);
   });
 });
 

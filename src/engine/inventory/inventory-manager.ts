@@ -10,6 +10,9 @@ import {
   type EncumbranceLevel,
 } from './encumbrance';
 
+/** Why the worn pack can't be taken off: it is where everything else carried is. */
+const PACK_STAYS = 'Your pack holds everything you carry; it stays on your back.';
+
 export interface InventoryManagerConfig {
   primaryPack?: Container;
   slots?: EquipmentSlotDefinition[];
@@ -291,6 +294,9 @@ export class InventoryManager {
     if (!item) {
       return { success: false, reason: `No item equipped in ${slot}.` };
     }
+    if (item === this.primaryPack) {
+      return { success: false, reason: PACK_STAYS };
+    }
 
     const packCheck = this.primaryPack.canContain(item);
     if (!packCheck.allowed) {
@@ -304,6 +310,22 @@ export class InventoryManager {
     if (slot === 'purse' && item instanceof Container) this.spillPurse(item);
     this.primaryPack.addItem(item);
     return { success: true };
+  }
+
+  /**
+   * Takes off what `slot` holds so it can leave the hero (a drop). Refused for a curse, and
+   * for the pack itself, which holds everything else carried. A purse hands back its coins
+   * first, as it does when unequipped.
+   */
+  public takeOffToDrop(slot: EquipmentSlot): { success: true; item: Item } | { success: false; reason: string } {
+    const check = this.paperdoll.canUnequip(slot);
+    if (!check.allowed) return { success: false, reason: check.reason ?? 'Cannot remove cursed item.' };
+    const item = this.paperdoll.getItem(slot);
+    if (!item) return { success: false, reason: `No item equipped in ${slot}.` };
+    if (item === this.primaryPack) return { success: false, reason: PACK_STAYS };
+    this.paperdoll.unequip(slot);
+    if (slot === 'purse' && item instanceof Container) this.spillPurse(item);
+    return { success: true, item };
   }
 
   /**

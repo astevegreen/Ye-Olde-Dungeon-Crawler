@@ -92,8 +92,8 @@ describe('R-cmbt-9 · the HUD cost and power (resolveCast) skip the multipliers 
   });
 });
 
-describe('R-cmbt-10 · an area burst has no faction rule: the caster is in their own blast', () => {
-  it.fails('a fireball cast at an adjacent monster does not burn the caster', () => {
+describe('R-cmbt-10 · a burst hurts its caster (owner Q1, classic CotW); a hero it kills is slain by the spell', () => {
+  it('a fireball cast at an adjacent monster burns the caster as well as the target', () => {
     const map = new GameMap(14, 14, TILES.FLOOR);
     const player = new Player({ position: { x: 3, y: 3 }, stats: { hp: 100, maxHp: 100, attack: 10, defense: 0 } });
     map.addEntity(player);
@@ -103,7 +103,22 @@ describe('R-cmbt-10 · an area burst has no faction rule: the caster is in their
 
     SpellPipeline.executeSpell(engine, fireball as never, player, { x: 4, y: 3 });
 
-    expect(100 - target.hp).toBeGreaterThan(0); // the target burns (passes today)
-    expect(100 - player.hp).toBe(0); // the caster should not
+    expect(100 - target.hp).toBeGreaterThan(0);
+    expect(100 - player.hp).toBeGreaterThan(0);
+  });
+
+  it('a hero killed by their own fireball is "Slain by their own Fireball", not by their own name', () => {
+    const map = new GameMap(14, 14, TILES.FLOOR);
+    const player = new Player({ name: 'Sigrun', position: { x: 3, y: 3 }, stats: { hp: 5, maxHp: 100, attack: 10, defense: 0 } });
+    map.addEntity(player);
+    const engine = new GameEngine({ map, player });
+    map.addEntity(monster('target', 4, 3));
+
+    SpellPipeline.executeSpell(engine, fireball as never, player, { x: 4, y: 3 });
+
+    expect(player.isAlive()).toBe(false);
+    expect(engine.gameState.runStatus).toBe('fallen');
+    expect(engine.gameState.killerName).toBe('their own Fireball');
+    expect(engine.gameState.causeOfDeath).toMatch(/^Slain by their own Fireball on Floor/);
   });
 });

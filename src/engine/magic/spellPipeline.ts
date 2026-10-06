@@ -59,6 +59,11 @@ function wardFirstSpell(engine: GameEngine, caster: Entity, target: Entity, dama
   return Math.max(1, Math.round(damage * ward));
 }
 
+/** What killed a caster caught in its own spell, for the death screen: "their own Fireball". */
+function ownSpellCause(caster: Entity, target: Entity, spell: SpellDefinition): string | undefined {
+  return caster === target ? `their own ${spell.name}` : undefined;
+}
+
 /** Spell damage scaled by the target's family perk against the caster's family (Grave-Warden). */
 function scaleByTargetFamily(engine: GameEngine, caster: Entity, target: Entity, damage: number): number {
   const taken = productAgainst(engine, target, caster, 'damageTakenMultiplier');
@@ -527,6 +532,7 @@ export class SpellPipeline {
         damageElement: effect.element,
         damageDealt: result.finalDamage,
         remainingHpBeforeBlow: result.damageDealt,
+        cause: ownSpellCause(caster, target, spell),
       });
     }
 
@@ -869,6 +875,7 @@ export class SpellPipeline {
           damageElement: spell.element,
           damageDealt: result.finalDamage,
           remainingHpBeforeBlow: result.damageDealt,
+          cause: ownSpellCause(caster, target, spell),
         });
         return;
       }

@@ -53,7 +53,10 @@ export class DeathResolver {
       return;
     }
     // Read once, here: a refused death or a creature's blow must not leave it for a later one.
-    const cause = killer ? undefined : (context?.cause ?? victim.pendingDeathCause);
+    // A victim of its own blast (a Fireball cast point-blank) is named by the cause, the
+    // spell, not as its own killer (owner Q1: classic CotW, your blast hurts you too).
+    const selfKill = killer === victim;
+    const cause = killer && !selfKill ? undefined : (context?.cause ?? victim.pendingDeathCause);
     victim.pendingDeathCause = undefined;
     // A last stand (Einherjar) or a companion's bond (Beast-Friend) may refuse this death.
     if (refusesDeath(engine, victim)) return;
@@ -248,8 +251,9 @@ export class DeathResolver {
       }
 
     } else if (victim instanceof Player) {
-      DeathEnvelopeTracker.recordPlayerDeath(engine, killer);
-      engine.gameState?.triggerDeath(engine, killer, undefined, cause);
+      const namedKiller = selfKill ? undefined : killer;
+      DeathEnvelopeTracker.recordPlayerDeath(engine, namedKiller);
+      engine.gameState?.triggerDeath(engine, namedKiller, undefined, cause);
     }
 
     // Remove entity from map and scheduler

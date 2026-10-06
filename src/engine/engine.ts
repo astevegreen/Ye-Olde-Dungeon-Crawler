@@ -586,7 +586,8 @@ export class GameEngine {
         if (this.fov.isVisible(x, y)) {
           const entities = this.map.getEntitiesAt(x, y);
           for (const entity of entities) {
-            if (entity instanceof Monster && entity.isAlive()) {
+            // The hero's own side (a companion, a friendly summon) is not a creature met.
+            if (entity instanceof Monster && entity.isAlive() && entity.faction !== 'player') {
               const disc = this.compendium.recordEncounter(entity.definitionId, entity.name, this.currentFloor);
               if (disc.advanced) {
                 this.log(`*** Bestiary Updated: You encountered ${entity.name}! ***`);

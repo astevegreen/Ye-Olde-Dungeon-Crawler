@@ -123,3 +123,27 @@ describe('R-ai-8 · returning to a cleared floor repopulates it twice', () => {
     expect(spawned).toHaveLength(0);
   });
 });
+
+describe('R-ai-9 · the hero’s own companion is not a bestiary encounter', () => {
+  it('summoning a companion in view neither logs "You encountered" nor adds it to the compendium', () => {
+    const map = new GameMap(20, 20, TILES.FLOOR);
+    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 }, stats: { hp: 50, maxHp: 50, attack: 10, defense: 5 } });
+    const engine = new GameEngine({ map, player });
+    const hound = new Companion({
+      id: 'dog',
+      name: 'Battle-Hound',
+      position: { x: 7, y: 5 },
+      stats: { hp: 30, maxHp: 30, attack: 5, defense: 2 },
+      speed: 100,
+      companionDefinitionId: 'hound',
+      packWeightCapacity: 100,
+      packBulkCapacity: 100,
+    } as never);
+    engine.attachCompanion(hound);
+
+    engine.updateFov();
+
+    expect(engine.messages.some((m) => m.includes('encountered Battle-Hound'))).toBe(false);
+    expect(engine.compendium.getEntry(hound.definitionId).tier).toBe(0);
+  });
+});

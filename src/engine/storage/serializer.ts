@@ -404,9 +404,11 @@ function serializeCompanion(companion: Companion): SerializedCompanion {
     x: companion.x,
     y: companion.y,
     hp: companion.hp,
-    maxHp: companion.maxHp,
-    attack: companion.attack,
-    defense: companion.defense,
+    // Base values, as the player's are: the getters fold in attribute modifiers
+    // (a status's ×1.25) that the restored status would then apply a second time.
+    maxHp: companion.baseMaxHpValue,
+    attack: companion.baseAttackValue,
+    defense: companion.baseDefenseValue,
     speed: companion.speed,
     energy: companion.energy,
     statusEffects: companion.statusManager.serialize(),
@@ -691,9 +693,10 @@ export function serializeMapObject(map: GameMap): SerializedMap {
         x: mon.x,
         y: mon.y,
         hp: mon.hp,
-        maxHp: mon.maxHp,
-        attack: mon.attack,
-        defense: mon.defense,
+        // Base values (see serializeCompanion): a computed attack would compound.
+        maxHp: mon.baseMaxHpValue,
+        attack: mon.baseAttackValue,
+        defense: mon.baseDefenseValue,
         speed: mon.speed,
         energy: mon.energy,
         resistances: mon.elementalResistances,

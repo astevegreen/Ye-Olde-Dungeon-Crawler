@@ -24,6 +24,12 @@ import type {
 const ITEM_ACTION = /PickUp|Drop|Equip|Loot|Store|Drink|Read|Zap|Identify|Curse|Vault|Deposit|Withdraw/;
 /** Player actions that move the hero or change the floor, for scoping. */
 const MAP_ACTION = /Movement|Stairs|Door|Search|Disarm|Portal|Projection|Rest|Wait/;
+/**
+ * Player actions kept out of the trail (ARCHITECTURE.md §2): a dialog choice, whose option
+ * the replay engine has no dialog to answer. The next action takes a checkpoint instead, so
+ * the choice's outcome is in the state the replay starts from.
+ */
+const UNTRAILED = new Set(['ExecuteChoiceAction']);
 /** Player actions that attack or cast, for scoping. */
 const COMBAT_ACTION = /Attack|Spell|Zap|Ranged|WindUp/;
 
@@ -197,10 +203,16 @@ export class FlightRecorder {
   /**
    * Records a player action as `handlePlayerAction` received it, before it runs. Takes the
    * checkpoint first when one is due, so checkpoint + trail always replay from a boundary.
+   * An `UNTRAILED` action is not recorded; it makes the next action take a checkpoint.
    * Never throws: diagnostics must not break a turn.
    */
   public recordPlayerAction(action: Action, engine: GameEngine): void {
     try {
+      const { action: name, params } = describeAction(action);
+      if (UNTRAILED.has(name)) {
+        this.pendingCheckpointReason = 'dialog choice';
+        return;
+      }
       if (engine !== this.checkpointEngine) {
         this.pendingCheckpointReason ??= 'game loaded';
       } else if (this.trail.length >= TRAIL_CAPACITY) {
@@ -209,10 +221,25 @@ export class FlightRecorder {
       if (this.pendingCheckpointReason !== null) {
         this.takeCheckpoint(engine, this.pendingCheckpointReason);
       }
-      const { action: name, params } = describeAction(action);
       this.trail.push({ seq: this.nextTrailSeq++, turn: engine.turnCount, floor: engine.currentFloor, action: name, params });
     } catch {
       // A checkpoint that fails to serialize leaves no replay data rather than a wrong one.
+      this.checkpoint = null;
+      this.trail = [];
+    }
+  }
+
+  /**
+   * Replay data is read between inputs, an action boundary, so a checkpoint already asked
+   * for (after a dialog choice, a floor entry, a triage tool) is taken now rather than at
+   * the next action: a report filed first would otherwise replay without that change.
+   * Only for the engine already recorded; a game just loaded has no replay data yet.
+   */
+  private takeDueCheckpoint(engine?: GameEngine): void {
+    if (!engine || engine !== this.checkpointEngine || this.pendingCheckpointReason === null) return;
+    try {
+      this.takeCheckpoint(engine, this.pendingCheckpointReason);
+    } catch {
       this.checkpoint = null;
       this.trail = [];
     }
@@ -238,6 +265,7 @@ export class FlightRecorder {
    * it, so it is cheap enough to persist on every input.
    */
   public exportReplayJson(engine?: GameEngine): string | null {
+    this.takeDueCheckpoint(engine);
     if (!this.checkpoint || (engine && engine !== this.checkpointEngine)) return null;
     const { save, ...meta } = this.checkpoint;
     return `{"checkpoint":${JSON.stringify(meta).slice(0, -1)},"save":${save}},"trail":${JSON.stringify(this.trail)}}`;
@@ -269,6 +297,7 @@ export class FlightRecorder {
    * engine, only that engine's data: a game just loaded has none until its first action.
    */
   public getReplayData(engine?: GameEngine): ReplayData | null {
+    this.takeDueCheckpoint(engine);
     if (!this.checkpoint || (engine && engine !== this.checkpointEngine)) return null;
     return {
       checkpoint: { ...this.checkpoint, save: JSON.parse(this.checkpoint.save) as unknown },

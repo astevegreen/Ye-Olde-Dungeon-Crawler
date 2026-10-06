@@ -5,6 +5,7 @@ import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { ChannelRuneOfReturnAction, RuneOfReturnItem } from '../../magic/runeOfReturn';
 import { ExecuteChoiceAction } from '../../actions/choiceAction';
+import { WaitAction } from '../../actions/wait';
 import { flightRecorder } from '../flightRecorder';
 import { rebuildAction } from '../replay';
 
@@ -20,7 +21,7 @@ function lastEntry(engine: GameEngine) {
 }
 
 describe('R-dbg-1 · ChannelRuneOfReturnAction has no replay builder', () => {
-  it.fails('a recorded Rune of Return channel can be rebuilt', () => {
+  it('a recorded Rune of Return channel can be rebuilt', () => {
     const map = new GameMap(14, 14, TILES.FLOOR);
     const player = new Player({ id: 'hero', name: 'Hero', position: { x: 2, y: 2 }, stats: { hp: 100, maxHp: 100, attack: 5, defense: 0 } });
     player.hasDiscoveredRune = true;
@@ -37,23 +38,43 @@ describe('R-dbg-1 · ChannelRuneOfReturnAction has no replay builder', () => {
   });
 });
 
+// Owner decision 10: a dialog choice is stripped from the trail, and a checkpoint is taken
+// once it resolves, so the replay starts from the state the choice left.
 describe('R-dbg-2 · ExecuteChoiceAction is in the trail (contrary to §2) and has no replay builder', () => {
-  it.fails('a recorded dialog choice can be rebuilt', () => {
+  const choice = {
+    id: 'review_choice',
+    title: 'A fork',
+    description: 'Left or right?',
+    options: [{ id: 'left', label: 'Left', consequences: [{ type: 'setFlag', flag: 'went_left', value: true }] }],
+  };
+  const setup = () => {
     const map = new GameMap(14, 14, TILES.FLOOR);
     const player = new Player({ id: 'hero', name: 'Hero', position: { x: 2, y: 2 } });
     const engine = new GameEngine({ map, player, floor: 1 });
-    const choice = {
-      id: 'review_choice',
-      title: 'A fork',
-      description: 'Left or right?',
-      options: [{ id: 'left', label: 'Left', consequences: [{ type: 'logMessage', message: 'You go left.' }] }],
-    };
     flightRecorder.requestCheckpoint('review');
+    engine.handlePlayerAction(new WaitAction(player));
+    return { engine, player };
+  };
+
+  it('a dialog choice is not in the trail; the next action starts a checkpoint that holds its outcome', () => {
+    const { engine, player } = setup();
+
+    engine.handlePlayerAction(new ExecuteChoiceAction(player, choice as never, 'left'));
+    engine.handlePlayerAction(new WaitAction(player));
+
+    const replay = flightRecorder.getReplayData(engine);
+    expect(replay?.checkpoint.reason).toBe('dialog choice');
+    expect(replay?.trail.map((e) => e.action)).toEqual(['WaitAction']);
+    expect(JSON.stringify(replay?.checkpoint.save)).toContain('went_left');
+  });
+
+  it('a report filed straight after the choice already has the checkpoint', () => {
+    const { engine, player } = setup();
 
     engine.handlePlayerAction(new ExecuteChoiceAction(player, choice as never, 'left'));
 
-    const entry = lastEntry(engine);
-    expect(entry?.action).toBe('ExecuteChoiceAction'); // recorded (passes today)
-    expect(rebuildAction(engine, entry)).not.toBeNull();
+    const replay = flightRecorder.getReplayData(engine);
+    expect(replay?.checkpoint.reason).toBe('dialog choice');
+    expect(replay?.trail).toEqual([]);
   });
 });

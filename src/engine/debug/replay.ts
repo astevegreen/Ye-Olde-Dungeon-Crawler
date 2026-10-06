@@ -38,6 +38,7 @@ import {
 } from '../actions/spell-actions';
 import { IdentifyAction } from '../actions/identificationActions';
 import { PerformAltarRiteAction } from '../magic/altars';
+import { ChannelRuneOfReturnAction } from '../magic/runeOfReturn';
 import type { ReplayData, TrailEntry, TrailValue } from './types';
 
 type Params = Record<string, TrailValue>;
@@ -54,7 +55,7 @@ function item<T extends Item = Item>(p: Params, k: string): T | null {
 /**
  * How to rebuild each replayable player action from its trail entry (`describeAction`
  * output). An action missing here stops the replay: skipping it would desynchronize
- * everything after it.
+ * everything after it. `replayBuilders.test.ts` fails when a player action has none.
  */
 const BUILDERS: Record<string, Builder> = {
   MovementAction: (e, p) => new MovementAction(e.player, num(p, 'dx') ?? 0, num(p, 'dy') ?? 0),
@@ -62,6 +63,7 @@ const BUILDERS: Record<string, Builder> = {
   ClimbStairsAction: (e) => new ClimbStairsAction(e.player),
   SearchAction: (e, p) => new SearchAction(e.player, e.rng, num(p, 'radius') ?? 2),
   RestTurnAction: (e) => new RestTurnAction(e.player),
+  ChannelRuneOfReturnAction: (e) => new ChannelRuneOfReturnAction(e.player),
   DisarmTrapAction: (e, p) => new DisarmTrapAction(e.player, num(p, 'targetX'), num(p, 'targetY')),
   OpenDoorAction: (e, p) => new OpenDoorAction(e.player, num(p, 'x') ?? 0, num(p, 'y') ?? 0),
   CloseDoorAction: (e, p) => new CloseDoorAction(e.player, num(p, 'x') ?? 0, num(p, 'y') ?? 0),

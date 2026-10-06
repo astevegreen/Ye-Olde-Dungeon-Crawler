@@ -12,6 +12,26 @@ describe('check:ui-palette', () => {
       <span>&#128202;</span> <div id="add"></div> hsl(200, 50%, 50%)`;
     expect(colorLiterals(text)).toEqual(['#f59e0b', '#333', 'rgba(245, 158, 11, 0.4)', 'hsl(200, 50%, 50%)']);
   });
+
+  it('counts 4-digit hex, the CSS Color 4 functions and 0xRRGGBB, not black or white in those forms', () => {
+    // R-tool-6: these colors passed uncounted.
+    const text = `
+      el.style.cssText = 'color: #f59b; background: oklch(70% 0.1 200); border-color: lab(50% 40 59.5)';
+      ctx.fillStyle = 'hwb(194 0% 0%)'; const c = 'lch(52% 72 56)'; const d = 'oklab(0.7 0.1 0.1)';
+      fill: color(display-p3 1 0.5 0); const tint = 0xf59e0b;
+      stroke: rgb(0 0 0 / 50%); outline: #0000; caret-color: #ffff; const white = 0xffffff;
+      theme.color('accent'); const lab = (n: number) => n;`;
+    expect(colorLiterals(text)).toEqual([
+      '#f59b',
+      'oklch(70% 0.1 200)',
+      'lab(50% 40 59.5)',
+      'hwb(194 0% 0%)',
+      'lch(52% 72 56)',
+      'oklab(0.7 0.1 0.1)',
+      'color(display-p3 1 0.5 0)',
+      '0xf59e0b',
+    ]);
+  });
 });
 
 /**

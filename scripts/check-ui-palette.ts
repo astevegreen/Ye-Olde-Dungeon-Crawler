@@ -23,11 +23,20 @@ const SCOPE_DIRS = ['src/ui', 'src/rendering', 'src/main'];
 const SCOPE_FILES = ['src/main.ts', 'index.html'];
 const EXEMPT = new Set(['src/rendering/theme.ts', 'src/ui/styles/tokens.css']);
 
-const NEUTRAL = /^(#000|#000000|#fff|#ffffff|rgba?\(\s*0\s*,\s*0\s*,\s*0\b.*|rgba?\(\s*255\s*,\s*255\s*,\s*255\b.*)$/i;
+const NEUTRAL =
+  /^(#000|#000000|#fff|#ffffff|#000[0-9a-f]|#fff[0-9a-f]|0x000000|0xffffff|rgba?\(\s*0\s*,\s*0\s*,\s*0\b.*|rgba?\(\s*255\s*,\s*255\s*,\s*255\b.*|rgba?\(\s*0\s+0\s+0\b.*|rgba?\(\s*255\s+255\s+255\b.*)$/i;
 
-/** Color literals in a source text: hex colors (not HTML entities) and rgb()/rgba()/hsl()/hsla() calls. */
+/**
+ * Color literals in a source text: hex colors of 3, 4, 6 or 8 digits (not HTML entities),
+ * rgb()/rgba()/hsl()/hsla(), the CSS Color 4 functions (oklch, oklab, lch, lab, hwb, and
+ * color() with a color space; not a method of that name), and 0xRRGGBB numbers (R-tool-6).
+ * Named colors (`red`) are not counted: as bare words they collide with ordinary keys and text.
+ */
 export function colorLiterals(text: string): string[] {
-  const found = text.match(/(?<![&\w])#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b|\b(?:rgba?|hsla?)\([^)]*\)/g) ?? [];
+  const found =
+    text.match(
+      /(?<![&\w])#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\b|\b(?:rgba?|hsla?)\([^)]*\)|(?<![\w.$-])(?:oklch|oklab|lch|lab|hwb)\([^)]*\)|(?<![\w.$-])color\(\s*(?:srgb|srgb-linear|display-p3|a98-rgb|prophoto-rgb|rec2020|xyz|xyz-d50|xyz-d65)\b[^)]*\)|\b0x[0-9a-fA-F]{6}\b/g
+    ) ?? [];
   return found.filter((c) => !NEUTRAL.test(c.trim()));
 }
 

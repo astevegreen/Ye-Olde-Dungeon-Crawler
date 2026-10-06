@@ -32,7 +32,7 @@ describe('R-cotw-4 · the legacy "Wand & Potion Utility Belt" accepts no wand, p
 });
 
 describe('R-cotw-2 · the Oath grants no companion when the hero already has one, but says it did', () => {
-  it.fails('honouring the Oath with a hound already bonded attaches the Frost-Ward Hound', () => {
+  it('honouring the Oath with a hound already bonded attaches the Frost-Ward Hound', () => {
     const pm = new ProfileManager(new MemoryStorage(), cotwManifest);
     const { engine } = pm.createCharacter('Oath', { seed: 3, difficulty: 'medium' } as never);
     engine.setWorldFlag('companion_bonded', true);
@@ -43,6 +43,23 @@ describe('R-cotw-2 · the Oath grants no companion when the hero already has one
 
     expect(engine.getWorldFlag('blood_oath_honored')).toBe(true); // the oath resolved (passes today)
     expect(engine.companion?.companionDefinitionId).toBe('hearth_frost_hound');
+    expect(engine.dismissedCompanion?.companionDefinitionId).toBe('battle_hound'); // waits to be called
+  });
+
+  it('breaking the Oath while the old companion lies fallen still brings the wolf, and keeps the fallen one for the trainer', () => {
+    const pm = new ProfileManager(new MemoryStorage(), cotwManifest);
+    const { engine } = pm.createCharacter('Oath2', { seed: 4, difficulty: 'medium' } as never);
+    engine.setWorldFlag('companion_bonded', true);
+    const hound = engine.summonCompanion('battle_hound')!;
+    hound.takeDamage(9999);
+    engine.companion = null;
+    engine.deadCompanionRecord = hound;
+
+    engine.handlePlayerAction(new ExecuteChoiceAction(engine.player, (cotwManifest.choices as Record<string, unknown>).oath_hearth as never, 'break'));
+
+    const current = () => engine.companion; // read after the choice, not narrowed to null
+    expect(current()?.companionDefinitionId).toBe('ember_fang_wolf');
+    expect(engine.deadCompanionRecord).toBe(hound);
   });
 });
 

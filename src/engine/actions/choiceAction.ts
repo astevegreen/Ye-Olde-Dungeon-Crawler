@@ -135,7 +135,17 @@ export function applyConsequences(
         // accessible; keep the two in sync if either changes (same tradeoff as
         // TrainerService.bondCompanion in economy/services.ts).
         setFlag(engine.worldState, 'companion_bonded', true);
+        // The granted companion joins whatever the hero had, rather than the grant failing
+        // silently under a log line saying it arrived (R-cotw-2): the one at their side steps
+        // back (dismissed, to be called again), and a fallen one stays for a trainer to raise.
+        if (engine.companion && engine.companion.companionDefinitionId !== c.companionId) engine.dismissCompanion();
+        if (engine.companion) break;
+        // `summonCompanion` refuses while a fallen one waits for revival; the grant isn't a
+        // call, so it sets the record aside for the summon and puts it back.
+        const fallen = engine.deadCompanionRecord;
+        engine.deadCompanionRecord = null;
         engine.summonCompanion(c.companionId);
+        engine.deadCompanionRecord = fallen;
         break;
       }
       case 'learnSpell': {

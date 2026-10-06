@@ -2,10 +2,11 @@ import { resolveManaTerms } from '../types/manifest';
 import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
 import { Monster } from '../entities/monster';
-import { DeathResolver } from '../combat/deathResolver';
-import { lingeringDebtFloor } from '../magic/manaOverflow';
+import { getOverflowConfig, lingeringDebtFloor } from '../magic/manaOverflow';
 import { productWorn } from '../items/wornModifiers';
 import type { Player } from '../entities/player';
+import type { Action } from './action';
+import type { ActionResult } from '../types';
 import { BASE_ACTION_COST } from '../types';
 import { isPrologueRunning } from '../quest/prologue';
 import { getRunningTimedEvents } from '../quest/timedEvents';
@@ -20,28 +21,64 @@ export interface AutoRestStepResult {
 }
 
 /**
- * Headless AutoRestManager for single-step and batched interruptible rest.
- * 100% headless: strictly no DOM, browser timing, or window API calls.
+ * One turn of rest: the hero recovers a turn's worth (`AutoRestManager.recoverRestTurn`)
+ * and the turn passes through the pipeline like any other, so the world takes its share
+ * (statuses, surfaces, wanderers, timed events, the monsters' moves), the action hooks see
+ * it (a Rune of Return channel breaks), and it is in the replay trail.
+ *
+ * A rest is a run of these: `AutoRestManager.stepRestTurn` issues one per step and decides
+ * when the rest stops (hurt, a hostile in view, fully rested, or the turn limit).
+ */
+export class RestTurnAction implements Action {
+  public readonly player: Player;
+
+  constructor(player: Player) {
+    this.player = player;
+  }
+
+  public perform(engine: GameEngine): ActionResult {
+    if (!this.player.isAlive()) {
+      return { success: false, cost: 0, message: 'Dead heroes cannot rest.' };
+    }
+    const refusal = AutoRestManager.restRefusal(engine);
+    if (refusal) {
+      engine.log(refusal);
+      return { success: false, cost: 0, message: refusal };
+    }
+
+    AutoRestManager.recoverRestTurn(engine, this.player);
+    this.player.consumeEnergy(BASE_ACTION_COST);
+    return { success: true, cost: BASE_ACTION_COST };
+  }
+}
+
+/**
+ * The one rest: the R key, the HUD Rest button, the health orb, the context action and the
+ * command palette all run it, a turn at a time, each turn a `RestTurnAction` through
+ * `handlePlayerAction`. Headless: no DOM or timers (`AutoRestRunner` paces it in the UI).
  */
 export class AutoRestManager {
+  /** HP one rest turn restores: a point, more with Second Wind (`restHealMultiplier`). */
+  private static restHeal(player: Player): number {
+    return Math.max(1, Math.round(productWorn(player, 'restHealMultiplier')));
+  }
+
   /**
-   * Why the hero can't rest at all just now, or null. A timed event is counting down
-   * (`manifest.timedEvents`), or a prologue's scene is under way: their clocks count turns,
-   * and resting advances turns outside the action pipeline, so a rest would spend the
-   * countdown unseen and let it expire on the next step. Hostiles in sight are checked
-   * separately, since they also interrupt a rest under way.
-   */
-  /**
-   * One rest turn's recovery, for both rest paths (`RestAction` and the R key's
-   * `stepRestTurn`): a point of HP, more with Second Wind (`restHealMultiplier`), a point of
-   * mana, and a point of overflow debt, more for a Spell-Thief (`overflowDebtDecayMultiplier`).
+   * One rest turn's recovery: a point of HP (more with Second Wind), a point of mana, and
+   * a point of overflow debt, more for a Spell-Thief (`overflowDebtDecayMultiplier`).
    */
   public static recoverRestTurn(engine: GameEngine, player: Player): void {
-    player.heal(Math.max(1, Math.round(productWorn(player, 'restHealMultiplier'))));
+    player.heal(this.restHeal(player));
     player.restoreMana(1);
     player.decayVoidDebt(Math.max(1, Math.round(productWorn(player, 'overflowDebtDecayMultiplier'))), lingeringDebtFloor(engine, player.voidDebt));
   }
 
+  /**
+   * Why the hero can't rest at all just now, or null. A timed event is counting down
+   * (`manifest.timedEvents`), or a prologue's scene is under way: a rest runs up to a
+   * hundred turns at a stroke, which would spend the countdown before the hero could
+   * react. Or what the hero wears forbids it. Checked by every rest turn.
+   */
   public static restRefusal(engine: GameEngine): string | null {
     const running = getRunningTimedEvents(engine);
     const shown = running.find((e) => e.label);
@@ -51,6 +88,22 @@ export class AutoRestManager {
       const restless = item.modifiers.find((m) => m.forbidsRest);
       if (restless) return `${item.displayName} will not let you rest.`;
     }
+    return null;
+  }
+
+  /**
+   * Why a rest can't begin now, or null: `restRefusal`, nothing to recover, or a hostile
+   * already in sight. Every way of starting a rest asks this first.
+   */
+  public static startRefusal(engine: GameEngine): string | null {
+    const refusal = this.restRefusal(engine);
+    if (refusal) return refusal;
+    const player = engine.player;
+    if (player.hp >= player.maxHp && player.mana >= player.maxMana) {
+      return `You are already fully rested (HP and ${resolveManaTerms(engine.manifest).name} full).`;
+    }
+    const hostile = this.findVisibleHostile(engine);
+    if (hostile) return `Cannot rest now! A hostile ${hostile.name} is in sight!`;
     return null;
   }
 
@@ -73,10 +126,13 @@ export class AutoRestManager {
   }
 
   /**
-   * Performs a single rest turn. Advances world simulation and checks for interruption triggers:
-   * 1. Hostile monster appears in FOV
-   * 2. Player takes damage (status effects, or anything during the monsters' turns, seen or not)
-   * 3. Player reaches 100% HP and Mana
+   * Rests one turn (a `RestTurnAction` through `handlePlayerAction`) and says whether the
+   * rest goes on. It stops when:
+   * 1. a hostile is in sight, before the turn or after it;
+   * 2. the hero is hurt during the turn, by anything, seen or not (a status tick, a
+   *    surface, an unseen archer);
+   * 3. the turn could not be rested (a refusal, a hook, a forced pass);
+   * 4. HP and mana are full, or the turn limit is reached.
    */
   public static stepRestTurn(
     engine: GameEngine,
@@ -86,173 +142,71 @@ export class AutoRestManager {
     maxTurns = 100
   ): AutoRestStepResult {
     const player = engine.player;
-
-    if (!player.isAlive()) {
+    const end = (interrupted: boolean, turn: number, reason?: string): AutoRestStepResult => {
+      if (reason) engine.log(reason);
       return {
         finished: true,
-        interrupted: true,
-        reason: 'You have died.',
+        interrupted,
+        reason,
         hpGained: player.hp - initialHp,
         manaGained: player.mana - initialMana,
-        turn: currentTurn,
+        turn,
       };
-    }
+    };
 
-    // Check if monster already in sight before stepping
+    if (!player.isAlive()) return { ...end(true, currentTurn), reason: 'You have died.' };
+
     const visibleMonster = this.findVisibleHostile(engine);
-    if (visibleMonster) {
-      const msg = `Rest interrupted! A hostile ${visibleMonster.name} is in sight!`;
-      engine.log(msg);
-      return {
-        finished: true,
-        interrupted: true,
-        reason: msg,
-        hpGained: player.hp - initialHp,
-        manaGained: player.mana - initialMana,
-        turn: currentTurn,
-      };
-    }
+    if (visibleMonster) return end(true, currentTurn, `Rest interrupted! A hostile ${visibleMonster.name} is in sight!`);
 
-    const hpBefore = player.hp;
+    // What the hero should have after this turn's recovery, had nothing hurt them.
+    const expectedHp = Math.min(player.maxHp, player.hp + this.restHeal(player));
+    const turnBefore = engine.turnCount;
+    const res = engine.handlePlayerAction(new RestTurnAction(player));
+    const turn = engine.turnCount > turnBefore ? currentTurn + 1 : currentTurn;
 
-    AutoRestManager.recoverRestTurn(engine, player);
+    // Killed during the turn: the death has been told; there is no rest to report.
+    if (!player.isAlive()) return { ...end(true, turn), reason: 'You perished during rest.' };
+    // Refused (already logged), or the hero lost the turn (paralysis, a hook).
+    if (!res.success) return { ...end(true, turn), reason: res.message };
 
-    // Consume player turn energy
-    player.consumeEnergy(BASE_ACTION_COST);
-    engine.turnCount += 1;
-    if (engine.currentFloor >= 1) {
-      engine.map.floorTurnCount = (engine.map.floorTurnCount ?? 0) + 1;
-    }
+    if (player.hp < expectedHp) return end(true, turn, `Rest interrupted! You took ${expectedHp - player.hp} damage!`);
 
-    // Status effect tick on player
-    const tickRes = player.statusManager.tick(player, engine);
-    if (tickRes.killed) {
-      DeathResolver.resolveDeath(engine, undefined, player);
-      return {
-        finished: true,
-        interrupted: true,
-        reason: 'Rest interrupted by fatal status effect.',
-        hpGained: player.hp - initialHp,
-        manaGained: player.mana - initialMana,
-        turn: currentTurn + 1,
-      };
-    }
-
-    if (tickRes.damageTaken > 0 || player.hp < hpBefore) {
-      const dmg = tickRes.damageTaken > 0 ? tickRes.damageTaken : hpBefore - player.hp;
-      const msg = `Rest interrupted! You took ${dmg} damage!`;
-      engine.log(msg);
-      return {
-        finished: true,
-        interrupted: true,
-        reason: msg,
-        hpGained: player.hp - initialHp,
-        manaGained: player.mana - initialMana,
-        turn: currentTurn + 1,
-      };
-    }
-
-    // Advance world simulation (monsters take actions)
-    const hpBeforeWorld = player.hp;
-    engine.surfaces?.tick(engine);
-    engine.wanderingSpawner?.checkAndSpawn(engine);
-
-    engine.updateFov();
-    engine.advanceWorldUntilPlayerTurn();
-    engine.updateFov();
-
-    if (!player.isAlive()) {
-      return {
-        finished: true,
-        interrupted: true,
-        reason: 'You perished during rest.',
-        hpGained: player.hp - initialHp,
-        manaGained: player.mana - initialMana,
-        turn: currentTurn + 1,
-      };
-    }
-
-    // A hit while the world moved, from anything, seen or not
-    if (player.hp < hpBeforeWorld) {
-      const msg = `Rest interrupted! You took ${hpBeforeWorld - player.hp} damage!`;
-      engine.log(msg);
-      return {
-        finished: true,
-        interrupted: true,
-        reason: msg,
-        hpGained: player.hp - initialHp,
-        manaGained: player.mana - initialMana,
-        turn: currentTurn + 1,
-      };
-    }
-
-    // Check if monster walked into FOV during monster turns
     const newlyVisible = this.findVisibleHostile(engine);
-    if (newlyVisible) {
-      const msg = `Rest interrupted! A ${newlyVisible.name} approaches into view!`;
-      engine.log(msg);
-      return {
-        finished: true,
-        interrupted: true,
-        reason: msg,
-        hpGained: player.hp - initialHp,
-        manaGained: player.mana - initialMana,
-        turn: currentTurn + 1,
-      };
-    }
+    if (newlyVisible) return end(true, turn, `Rest interrupted! A ${newlyVisible.name} approaches into view!`);
 
-    // Check if HP and Mana reached 100%
     if (player.hp >= player.maxHp && player.mana >= player.maxMana) {
       // A full rest settles all debt, except what the pack lets linger until town.
-      player.decayVoidDebt(player.voidDebt, lingeringDebtFloor(engine, player.voidDebt));
-      const msg = `Fully rested (HP and ${resolveManaTerms(engine.manifest).name} full).`;
-      engine.log(msg);
-      return {
-        finished: true,
-        interrupted: false,
-        reason: msg,
-        hpGained: player.hp - initialHp,
-        manaGained: player.mana - initialMana,
-        turn: currentTurn + 1,
-      };
+      if (player.decayVoidDebt(player.voidDebt, lingeringDebtFloor(engine, player.voidDebt)) > 0) {
+        const lingering = getOverflowConfig(engine)?.lingeringRestMessage;
+        if (lingering) engine.log(lingering);
+      }
+      return end(false, turn, `Fully rested (HP and ${resolveManaTerms(engine.manifest).name} full).`);
     }
 
-    if (currentTurn + 1 >= maxTurns) {
-      const msg = `Rested for maximum duration (${maxTurns} turns).`;
-      engine.log(msg);
-      return {
-        finished: true,
-        interrupted: false,
-        reason: msg,
-        hpGained: player.hp - initialHp,
-        manaGained: player.mana - initialMana,
-        turn: currentTurn + 1,
-      };
-    }
+    if (turn >= maxTurns) return end(false, turn, `Rested for maximum duration (${maxTurns} turns).`);
 
     return {
       finished: false,
       interrupted: false,
       hpGained: player.hp - initialHp,
       manaGained: player.mana - initialMana,
-      turn: currentTurn + 1,
+      turn,
     };
   }
 
   /**
-   * Executes a complete auto-rest sequence synchronously (used in headless tests and instant mode).
+   * A whole rest at once, refused as `startRefusal` says (headless tests, the soak bot).
    */
   public static executeFullRest(engine: GameEngine, maxTurns = 100): AutoRestStepResult {
     const initialHp = engine.player.hp;
     const initialMana = engine.player.mana;
-    let step: AutoRestStepResult = {
-      finished: false,
-      interrupted: false,
-      hpGained: 0,
-      manaGained: 0,
-      turn: 0,
-    };
-
+    const refusal = this.startRefusal(engine);
+    if (refusal) {
+      engine.log(refusal);
+      return { finished: true, interrupted: true, reason: refusal, hpGained: 0, manaGained: 0, turn: 0 };
+    }
+    let step: AutoRestStepResult = { finished: false, interrupted: false, hpGained: 0, manaGained: 0, turn: 0 };
     while (!step.finished) {
       step = this.stepRestTurn(engine, initialHp, initialMana, step.turn, maxTurns);
     }

@@ -7,8 +7,7 @@ import { Monster } from '../../entities/monster';
 import { NPC } from '../../entities/npc';
 import { getFlag } from '../../state/worldState';
 import { concludePrologue, isPrologueRunning } from '../prologue';
-import { RestAction } from '../../actions/rest';
-import { AutoRestManager } from '../../actions/autoRest';
+import { AutoRestManager, RestTurnAction } from '../../actions/autoRest';
 import { cotwManifest } from '../../../content/cotw';
 
 /** A test prologue on cotw's town, apart from cotw's own: an orc, a villager, a ward. */
@@ -90,7 +89,7 @@ describe('Prologue (manifest.prologue)', () => {
     for (const e of engine.map.getAllEntities()) if (e.id.startsWith('prologue-monster-')) engine.removeEntity(e);
     engine.player.takeDamage(5);
     const before = engine.turnCount;
-    const result = engine.handlePlayerAction(new RestAction(engine.player));
+    const result = engine.handlePlayerAction(new RestTurnAction(engine.player));
     expect(result.success).toBe(false);
     expect(engine.turnCount).toBe(before);
     expect(AutoRestManager.restRefusal(engine)).toBeTruthy();

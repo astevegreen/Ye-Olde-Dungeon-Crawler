@@ -4,7 +4,7 @@ import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { createTestGoblin, createTestGiantRat } from '../../__fixtures__/testHelpers';
 import { GameEngine } from '../../engine';
-import { RestAction } from '../../actions/rest';
+import { AutoRestManager } from '../../actions/autoRest';
 
 describe('Resting Engine and FOV Interruption', () => {
   it('rests peacefully until HP and Mana are fully restored when safe', () => {
@@ -18,13 +18,12 @@ describe('Resting Engine and FOV Interruption', () => {
     });
     const engine = new GameEngine({ map, player });
 
-    const restAction = new RestAction(player, 50);
-    const result = restAction.perform(engine);
+    const result = AutoRestManager.executeFullRest(engine, 50);
 
-    expect(result.success).toBe(true);
+    expect(result.interrupted).toBe(false);
     expect(player.hp).toBe(30);
     expect(player.mana).toBe(25);
-    expect(result.message).toContain('fully restored');
+    expect(result.reason).toContain('Fully rested');
   });
 
   it('refuses to start resting if a hostile monster is already visible in FOV', () => {
@@ -42,11 +41,12 @@ describe('Resting Engine and FOV Interruption', () => {
 
     expect(engine.fov.isVisible(goblin.x, goblin.y)).toBe(true);
 
-    const restAction = new RestAction(player);
-    const result = restAction.perform(engine);
+    const turns = engine.turnCount;
+    const result = AutoRestManager.executeFullRest(engine);
 
-    expect(result.success).toBe(false);
-    expect(result.message).toContain('Cannot rest');
+    expect(result.interrupted).toBe(true);
+    expect(result.reason).toContain('Cannot rest');
+    expect(engine.turnCount).toBe(turns);
   });
 
   it('halts resting immediately when a monster enters the player line of sight', () => {
@@ -70,14 +70,14 @@ describe('Resting Engine and FOV Interruption', () => {
 
     // When resting begins, rat moves closer: (7, 1) -> (6, 1) -> (5, 1)
     // At x=5, distance is 4, which enters player's FOV!
-    const restAction = new RestAction(player, 100);
-    const result = restAction.perform(engine);
+    const result = AutoRestManager.executeFullRest(engine, 100);
 
-    expect(result.success).toBe(true);
+    expect(result.interrupted).toBe(true);
     // Because monster enters FOV after ~2-3 turns, rest terminates before full recovery
     expect(player.hp).toBeLessThan(30);
-    expect(result.message).toContain('Rest interrupted');
+    expect(result.reason).toContain('Rest interrupted');
   });
+
   it('says nothing of a peaceful rest when the hero dies during it', () => {
     const map = new GameMap(10, 10, TILES.FLOOR);
     const player = new Player({
@@ -90,10 +90,10 @@ describe('Resting Engine and FOV Interruption', () => {
     const engine = new GameEngine({ map, player });
     player.statusManager.applyStatus({ type: 'poison', duration: 10, potency: 5 });
 
-    const result = new RestAction(player, 50).perform(engine);
+    const result = AutoRestManager.executeFullRest(engine, 50);
 
     expect(player.isAlive()).toBe(false);
-    expect(result.message ?? '').not.toContain('fully restored');
-    expect(engine.messages.join('\n')).not.toMatch(/rest peacefully|fully restored/);
+    expect(result.reason ?? '').not.toContain('Fully rested');
+    expect(engine.messages.join('\n')).not.toMatch(/Fully rested|Rested for maximum/);
   });
 });

@@ -32,7 +32,6 @@ export * from './combat/attributeScaling';
 export * from './items/wornModifiers';
 export * from './actions/door';
 export * from './actions/wait';
-export * from './actions/rest';
 export * from './actions/inventory-actions';
 export * from './actions/rangedAttack';
 export * from './actions/spell-actions';

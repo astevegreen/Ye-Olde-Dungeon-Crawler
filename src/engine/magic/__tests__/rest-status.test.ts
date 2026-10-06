@@ -3,9 +3,9 @@ import { GameEngine } from '../../engine';
 import { GameMap } from '../../grid/map';
 import { Player } from '../../entities/player';
 import { Monster } from '../../entities/monster';
-import { RestAction } from '../../actions/rest';
+import { AutoRestManager } from '../../actions/autoRest';
 
-describe('RestAction Status Ticking & Interruption', () => {
+describe('Rest: status ticking and interruption', () => {
   let engine: GameEngine;
   let map: GameMap;
   let player: Player;
@@ -27,11 +27,10 @@ describe('RestAction Status Ticking & Interruption', () => {
     player.hp = 50;
     player.mana = 30;
 
-    const rest = new RestAction(player);
-    const result = engine.handlePlayerAction(rest);
+    const result = AutoRestManager.executeFullRest(engine);
 
-    expect(result.success).toBe(false);
-    expect(result.message).toContain('already fully rested');
+    expect(result.interrupted).toBe(true);
+    expect(result.reason).toContain('already fully rested');
   });
 
   it('rejects resting when a hostile monster is visible in line of sight', () => {
@@ -44,12 +43,11 @@ describe('RestAction Status Ticking & Interruption', () => {
     engine.addEntity(goblin);
     engine.updateFov();
 
-    const rest = new RestAction(player);
-    const result = engine.handlePlayerAction(rest);
+    const result = AutoRestManager.executeFullRest(engine);
 
-    expect(result.success).toBe(false);
-    expect(result.message).toContain('Cannot rest now');
-    expect(result.message).toContain('Goblin Scout');
+    expect(result.interrupted).toBe(true);
+    expect(result.reason).toContain('Cannot rest now');
+    expect(result.reason).toContain('Goblin Scout');
   });
 
   it('ticks status effects on each rest step and interrupts rest immediately upon taking damage', () => {
@@ -58,26 +56,24 @@ describe('RestAction Status Ticking & Interruption', () => {
     expect(player.statusManager.hasStatus('poison')).toBe(true);
 
     const initialHp = player.hp; // 30
-    const rest = new RestAction(player, 50);
-    const result = engine.handlePlayerAction(rest);
+    const result = AutoRestManager.executeFullRest(engine, 50);
 
-    expect(result.success).toBe(true);
+    expect(result.interrupted).toBe(true);
+    expect(result.turn).toBe(1);
     // Natural heal (+1) - poison damage (-5) = net -4 damage
     expect(player.hp).toBe(initialHp - 4);
-    // Must have interrupted on turn 1
-    expect(engine.messages.some((m) => m.includes('Rest interrupted') && m.includes('status damage'))).toBe(true);
+    expect(result.reason).toBe('Rest interrupted! You took 5 damage!');
   });
 
   it('successfully rests to full health when free of afflictions and hostiles', () => {
     expect(player.hp).toBe(30);
     expect(player.mana).toBe(15);
 
-    const rest = new RestAction(player, 100);
-    const result = engine.handlePlayerAction(rest);
+    const result = AutoRestManager.executeFullRest(engine, 100);
 
-    expect(result.success).toBe(true);
+    expect(result.interrupted).toBe(false);
     expect(player.hp).toBe(50);
     expect(player.mana).toBe(30);
-    expect(engine.messages.some((m) => m.includes('rest peacefully'))).toBe(true);
+    expect(engine.messages.some((m) => m.includes('Fully rested'))).toBe(true);
   });
 });

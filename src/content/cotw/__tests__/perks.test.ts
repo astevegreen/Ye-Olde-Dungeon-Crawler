@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ProfileManager, MemoryStorage } from '../../../engine/storage/profile-manager';
 import { ExecuteChoiceAction } from '../../../engine/actions/choiceAction';
-import { RestAction } from '../../../engine/actions/rest';
+import { AutoRestManager } from '../../../engine/actions/autoRest';
 import { MovementAction } from '../../../engine/actions/movement';
 import { serializeGame, deserializeGame } from '../../../engine/storage/serializer';
 import { createScaledItem } from '../../../engine/dungeon/lootSpawner';
@@ -156,7 +156,7 @@ describe('cotw perks', () => {
     const before = player.voidDebt;
     new ExecuteChoiceAction(player, COTW_SAGA_CHOICES.saga_20, 'saga_spell_thief').perform(engine);
     player.gainEnergy(100);
-    new RestAction(player).perform(engine);
+    AutoRestManager.executeFullRest(engine);
     // The full rest settles everything but the pack's lingering floor; the per-turn step
     // before it was doubled. Debt fell, and by at least two before the settle.
     expect(player.voidDebt).toBeLessThan(before);

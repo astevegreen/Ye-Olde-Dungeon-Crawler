@@ -20,7 +20,7 @@ import {
   Leaderboard,
   ProfileManager,
   QuickLootAction,
-  RestAction,
+  AutoRestManager,
   SageService,
   SearchAction,
   serializeGame,
@@ -577,8 +577,8 @@ window.addEventListener('DOMContentLoaded', () => {
         engine.handlePlayerAction(new CloseDoorAction(p, action.x ?? p.x, action.y ?? p.y));
         break;
       case 'rest':
-        // The rest button runs the same auto-rest as R, stopping when a monster appears.
-        document.getElementById('btn-hud-rest')?.click();
+        // The same rest as R and the Rest button.
+        startRest();
         return;
       case 'none':
         // F or the button with nothing worth doing here: say so rather than nothing.
@@ -1148,23 +1148,19 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  hudRestBtn?.addEventListener('click', () => {
-    if (activeEngine && renderer && inputHandler?.autoRestRunner) {
-      inputHandler.autoRestRunner.start({
-        onStep: () => {
-          renderer?.render();
-          updateHeaderInfo();
-        },
-        onComplete: () => {
-          renderer?.render();
-          updateHeaderInfo();
-        },
-      });
-    } else if (activeEngine && renderer) {
-      activeEngine.handlePlayerAction(new RestAction(activeEngine.player));
-      void processVisualEffectsAndRender();
-    }
-  });
+  /**
+   * The one rest (AutoRestManager), as the R key runs it: paced by the runner, the whole HUD
+   * redrawn each step, and once at the start so a refusal ("Cannot rest now!") shows.
+   */
+  function startRest(): void {
+    if (!activeEngine || !renderer) return;
+    const refresh = (): void => void processVisualEffectsAndRender();
+    if (inputHandler?.autoRestRunner) inputHandler.autoRestRunner.start({ onStep: refresh, onComplete: refresh });
+    else AutoRestManager.executeFullRest(activeEngine);
+    refresh();
+  }
+
+  hudRestBtn?.addEventListener('click', startRest);
 
   hudSearchBtn?.addEventListener('click', () => {
     if (activeEngine && renderer) {
@@ -1522,11 +1518,7 @@ window.addEventListener('DOMContentLoaded', () => {
         eng.handlePlayerAction(act);
         void processVisualEffectsAndRender();
       },
-      rest: (eng) => {
-        const act = new RestAction(eng.player);
-        eng.handlePlayerAction(act);
-        void processVisualEffectsAndRender();
-      },
+      rest: () => startRest(),
       search: (eng) => {
         const act = new SearchAction(eng.player, eng.rng);
         eng.handlePlayerAction(act);

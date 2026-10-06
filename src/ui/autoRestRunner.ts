@@ -1,4 +1,3 @@
-import { resolveManaTerms } from '../engine';
 import type { GameEngine } from '../engine';
 import { AutoRestManager, type AutoRestStepResult } from '../engine';
 
@@ -33,23 +32,13 @@ export class AutoRestRunner {
       this.cancel('Cancelled previous rest.');
     }
 
-    const refusal = AutoRestManager.restRefusal(this.engine);
+    const refusal = AutoRestManager.startRefusal(this.engine);
     if (refusal) {
       this.engine.log(refusal);
       return () => {};
     }
 
     const player = this.engine.player;
-    if (player.hp >= player.maxHp && player.mana >= player.maxMana) {
-      this.engine.log(`You are already fully rested (HP and ${resolveManaTerms(this.engine.manifest).name} full).`);
-      return () => {};
-    }
-
-    if (AutoRestManager.findVisibleHostile(this.engine)) {
-      this.engine.log('Cannot rest now! A hostile creature is in sight!');
-      return () => {};
-    }
-
     this.isRunning = true;
     const initialHp = player.hp;
     const initialMana = player.mana;

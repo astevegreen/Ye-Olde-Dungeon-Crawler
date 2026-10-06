@@ -7,7 +7,6 @@ import {
   getAdjacentOpenDoors,
   PickUpAction,
   QuickLootAction,
-  RestAction,
   SearchAction,
   DisarmTrapAction,
   ClimbStairsAction,
@@ -16,6 +15,7 @@ import {
   PotionItem,
   ScrollItem,
   ChannelRuneOfReturnAction,
+  AutoRestManager,
   type Action,
   flightRecorder,
 } from '../engine';
@@ -783,14 +783,6 @@ export class InputHandler {
       return true;
     }
 
-    // Rest Action: 'KeyR'
-    if (code === 'KeyR') {
-      const restAction = new RestAction(p);
-      this.engine.handlePlayerAction(restAction);
-      this.onActionProcessed();
-      return true;
-    }
-
     // Search Action (detect traps and secret doors): 'KeyS'
     if (code === 'KeyS') {
       const searchAction = new SearchAction(p, this.engine.rng);
@@ -855,21 +847,6 @@ export class InputHandler {
     if (code === 'KeyG' || code === 'Comma') {
       const pickAction = new PickUpAction(p);
       this.engine.handlePlayerAction(pickAction);
-      this.onActionProcessed();
-      return true;
-    }
-
-    // Rest Hotkey (KeyR): Launch AutoRestRunner if available, else static RestAction
-    if (code === 'KeyR') {
-      if (this.autoRestRunner) {
-        this.autoRestRunner.start({
-          onStep: () => this.onActionProcessed(),
-          onComplete: () => this.onActionProcessed(),
-        });
-        return true;
-      }
-      const rest = new RestAction(p);
-      this.engine.handlePlayerAction(rest);
       this.onActionProcessed();
       return true;
     }
@@ -971,16 +948,16 @@ export class InputHandler {
       this.onActionProcessed();
       return true;
     }
+    // R (or wherever `rest` is bound): the one rest, a turn at a time (AutoRestManager).
     if (userAction === 'rest') {
       if (this.autoRestRunner) {
         this.autoRestRunner.start({
           onStep: () => this.onActionProcessed(),
           onComplete: () => this.onActionProcessed(),
         });
-        return true;
+      } else {
+        AutoRestManager.executeFullRest(this.engine);
       }
-      const restAction = new RestAction(p);
-      this.engine.handlePlayerAction(restAction);
       this.onActionProcessed();
       return true;
     }
@@ -1034,7 +1011,6 @@ export class InputHandler {
         case 'move_se': dx = 1; dy = 1; isMovement = true; break;
         case 'wait': return new WaitAction(p);
         case 'search': return new SearchAction(p, this.engine.rng, 2);
-        case 'rest': return new RestAction(p);
         case 'pickup': return new PickUpAction(p);
         case 'quick_loot': return new QuickLootAction(p);
         case 'stairs': return new ClimbStairsAction(p);

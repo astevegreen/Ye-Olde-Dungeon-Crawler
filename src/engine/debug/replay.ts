@@ -13,7 +13,7 @@ import { MovementAction } from '../actions/movement';
 import { WaitAction } from '../actions/wait';
 import { ClimbStairsAction } from '../actions/stairs';
 import { SearchAction } from '../actions/search';
-import { RestAction } from '../actions/rest';
+import { RestTurnAction } from '../actions/autoRest';
 import { DisarmTrapAction } from '../actions/disarm';
 import { OpenDoorAction, CloseDoorAction, SmartCloseDoorAction, BashDoorAction } from '../actions/door';
 import {
@@ -61,7 +61,7 @@ const BUILDERS: Record<string, Builder> = {
   WaitAction: (e) => new WaitAction(e.player),
   ClimbStairsAction: (e) => new ClimbStairsAction(e.player),
   SearchAction: (e, p) => new SearchAction(e.player, e.rng, num(p, 'radius') ?? 2),
-  RestAction: (e, p) => new RestAction(e.player, num(p, 'maxTicks') ?? 100),
+  RestTurnAction: (e) => new RestTurnAction(e.player),
   DisarmTrapAction: (e, p) => new DisarmTrapAction(e.player, num(p, 'targetX'), num(p, 'targetY')),
   OpenDoorAction: (e, p) => new OpenDoorAction(e.player, num(p, 'x') ?? 0, num(p, 'y') ?? 0),
   CloseDoorAction: (e, p) => new CloseDoorAction(e.player, num(p, 'x') ?? 0, num(p, 'y') ?? 0),

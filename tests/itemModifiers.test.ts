@@ -13,8 +13,7 @@ import { UncurseAction } from '../src/engine/actions/uncurseAction';
 import { EquipAction } from '../src/engine/actions/inventory-actions';
 import { MovementAction } from '../src/engine/actions/movement';
 import { TILES } from '../src/engine/grid/tile';
-import { RestAction } from '../src/engine/actions/rest';
-import { AutoRestManager } from '../src/engine/actions/autoRest';
+import { AutoRestManager, RestTurnAction } from '../src/engine/actions/autoRest';
 import { ManaOverflowManager } from '../src/engine/magic/manaOverflow';
 import { cotwManifest } from '../src/content/cotw';
 import { TempleService } from '../src/engine/economy/services';
@@ -493,7 +492,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       expect(foe.isAlive()).toBe(false);
       expect(player.hp).toBe(65);
       expect(AutoRestManager.restRefusal(engine)).toMatch(/will not let you rest/);
-      expect(new RestAction(player).perform(engine).success).toBe(false);
+      expect(new RestTurnAction(player).perform(engine).success).toBe(false);
     });
 
     it("Trickster's Step flings the bearer 2–4 tiles on every tenth step, and the count survives in the world state", () => {

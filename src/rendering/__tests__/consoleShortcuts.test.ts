@@ -80,9 +80,11 @@ describe('console shortcuts: potion row and command palette', () => {
     inputHandler.handleKeyDown(key('KeyR', { shiftKey: true }));
     expect(companion.mock.calls).toEqual([['call'], ['skill']]);
 
-    const act = vi.spyOn(engine, 'handlePlayerAction');
+    // Bare R is the one rest: the auto-rest runner, a turn at a time through the pipeline.
+    const start = vi.fn();
+    inputHandler.autoRestRunner = { active: false, start, cancel: vi.fn() } as never;
     inputHandler.handleKeyDown(key('KeyR'));
     expect(companion).toHaveBeenCalledTimes(2);
-    expect(act).toHaveBeenCalled();
+    expect(start).toHaveBeenCalledTimes(1);
   });
 });

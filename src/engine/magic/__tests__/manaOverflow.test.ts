@@ -4,7 +4,7 @@ import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { CastSpellAction } from '../../actions/spell-actions';
-import { RestAction } from '../../actions/rest';
+import { AutoRestManager } from '../../actions/autoRest';
 import { ManaOverflowManager } from '../manaOverflow';
 import { COTW_MAGIC } from '../../../content/cotw/magic';
 import type { SpellDefinition } from '../types';
@@ -147,9 +147,8 @@ describe('Ginnungagap / Mana Overflow System', () => {
     player.mana = 0;
     player.voidDebt = 22;
 
-    const dungeonRest = new RestAction(player);
-    const res1 = dungeonRest.perform(engine);
-    expect(res1.success).toBe(true);
+    const res1 = AutoRestManager.executeFullRest(engine);
+    expect(res1.interrupted).toBe(false);
     // Player recovers HP/Mana, but Tier 3 void debt lingers at floor 16
     expect(player.hp).toBe(player.maxHp);
     expect(player.mana).toBe(player.maxMana);
@@ -160,9 +159,8 @@ describe('Ginnungagap / Mana Overflow System', () => {
     player.hp = 20;
     player.mana = 0;
 
-    const townRest = new RestAction(player);
-    const res2 = townRest.perform(engine);
-    expect(res2.success).toBe(true);
+    const res2 = AutoRestManager.executeFullRest(engine);
+    expect(res2.interrupted).toBe(false);
     // Entire void debt is cleansed in town sanctuary
     expect(player.voidDebt).toBe(0);
   });
@@ -180,7 +178,7 @@ describe('Ginnungagap / Mana Overflow System', () => {
     engine.currentFloor = 1;
     player.hp = 20;
     player.voidDebt = 250;
-    new RestAction(player).perform(engine);
+    AutoRestManager.executeFullRest(engine);
     expect(player.voidDebt).toBe(16);
   });
 

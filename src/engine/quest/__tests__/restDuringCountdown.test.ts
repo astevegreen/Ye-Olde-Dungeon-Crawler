@@ -1,15 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { ProfileManager, MemoryStorage } from '../../storage/profile-manager';
-import { RestAction } from '../../actions/rest';
-import { AutoRestManager } from '../../actions/autoRest';
+import { AutoRestManager, RestTurnAction } from '../../actions/autoRest';
 import { getRunningTimedEvents, getTimedEventCountdowns } from '../timedEvents';
 import type { GameContentManifest, TimedEventDefinition } from '../../types/manifest';
 import { cotwManifest } from '../../../content/cotw';
 
 /**
- * Resting advances turns outside the action pipeline, and a timed event's clock counts
- * turns, so a rest used to spend a countdown unseen and let it expire on the next step.
- * The hero can't rest while one runs.
+ * A rest runs up to a hundred turns at a stroke, and a timed event's clock counts turns, so
+ * a rest would spend a countdown before the hero could react. The hero can't rest while one
+ * runs: every rest turn is refused.
  */
 const LABELLED_RITE: TimedEventDefinition = {
   id: 'test_labelled_rite',
@@ -38,7 +37,7 @@ describe('resting while a countdown runs', () => {
     expect(getTimedEventCountdowns(engine).map((c) => c.label)).toEqual(['Test Rite']);
 
     const before = engine.turnCount;
-    const result = engine.handlePlayerAction(new RestAction(engine.player));
+    const result = engine.handlePlayerAction(new RestTurnAction(engine.player));
     expect(result.success).toBe(false);
     expect(result.message).toMatch(/no time to rest with the Test Rite under way \(\d+ turns left\)/);
     expect(engine.turnCount).toBe(before);
@@ -58,6 +57,6 @@ describe('resting while a countdown runs', () => {
     engine.setWorldFlag('test_rite_started', true);
     engine.setWorldFlag(LABELLED_RITE.resolvedFlag, true);
     expect(AutoRestManager.restRefusal(engine)).toBeNull();
-    expect(engine.handlePlayerAction(new RestAction(engine.player)).success).toBe(true);
+    expect(engine.handlePlayerAction(new RestTurnAction(engine.player)).success).toBe(true);
   });
 });

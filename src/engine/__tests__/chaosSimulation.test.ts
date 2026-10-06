@@ -5,7 +5,7 @@ import { WaitAction } from '../actions/wait';
 import { OpenDoorAction } from '../actions/door';
 import { PickUpAction, DropAction, EquipAction, UnequipAction } from '../actions/inventory-actions';
 import { ClimbStairsAction } from '../actions/stairs';
-import { RestAction } from '../actions/rest';
+import { AutoRestManager } from '../actions/autoRest';
 import { CastSpellAction } from '../actions/spell-actions';
 import { ItemFactory } from '../items/factory';
 import { Container } from '../items/container';
@@ -248,9 +248,8 @@ describe('Headless Chaos / Monkey Simulation (5,000 Actions)', () => {
         }
       } else {
         // --- CATEGORY F: Resting ---
-        const restAction = new RestAction(p, 20);
-        const res = engine.handlePlayerAction(restAction);
-        if (res.success) successfulActions++;
+        const res = AutoRestManager.executeFullRest(engine, 20);
+        if (res.turn > 0) successfulActions++;
         else failedActions++;
       }
 

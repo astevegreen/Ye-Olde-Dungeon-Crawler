@@ -223,6 +223,31 @@ describe('R-stor-10 · the Detect Monsters / Detect Objects countdowns are not s
   });
 });
 
+describe('R-stor-11 · a monster’s faction is not saved, so it reloads hostile', () => {
+  const monster = (id: string, faction?: 'neutral' | 'player') =>
+    new Monster({ id, name: id, position: { x: 2, y: id.length }, stats: { hp: 10, maxHp: 10, attack: 3, defense: 1 }, faction });
+
+  it.each([['neutral'], ['player']] as const)('a %s monster keeps its faction across a save/load', (faction) => {
+    const map = new GameMap(10, 10, TILES.FLOOR);
+    map.addEntity(monster('ally', faction));
+
+    const back = deserializeMapObject(JSON.parse(JSON.stringify(serializeMapObject(map)))).getEntityById('ally') as Monster;
+
+    expect(back.faction).toBe(faction);
+  });
+
+  it('a hostile monster writes no faction and loads hostile', () => {
+    const map = new GameMap(10, 10, TILES.FLOOR);
+    map.addEntity(monster('rat'));
+
+    const saved = serializeMapObject(map);
+    const back = deserializeMapObject(saved).getEntityById('rat') as Monster;
+
+    expect(saved.monsters!.find((m) => m.id === 'rat')!.faction).toBeUndefined();
+    expect(back.faction).toBe('hostile');
+  });
+});
+
 // Last: a deserialized engine leaves its own registries active, so a companion that
 // R-stor-2 registers before building its engine would land in the wrong store.
 describe('R-stor-1 · a companion is saved from base stats too', () => {

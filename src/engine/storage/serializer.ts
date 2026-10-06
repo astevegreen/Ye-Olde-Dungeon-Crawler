@@ -720,6 +720,7 @@ export function serializeMapObject(map: GameMap): SerializedMap {
         planeId: mon.planeId ?? 'physical',
         catchUpScale: mon.catchUpScale > 1 ? mon.catchUpScale : undefined,
         pursuit: mon.pursuit ? { ...mon.pursuit } : undefined,
+        faction: mon.faction !== 'hostile' ? mon.faction : undefined,
       };
     });
 
@@ -879,6 +880,7 @@ export function deserializeMapObject(
         spellCooldown: mData.spellCooldown,
         fleeHealthPercent: mData.fleeHealthPercent,
         xpValue: mData.xpValue,
+        faction: mData.faction,
       });
       monster.energy = mData.energy;
       monster.hp = mData.hp;

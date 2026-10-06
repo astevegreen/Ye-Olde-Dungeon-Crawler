@@ -1,4 +1,4 @@
-import type { TileType, GameDifficulty } from '../types';
+import type { TileType, GameDifficulty, Faction } from '../types';
 import type { EquipmentSlot, ItemCategory, ItemQuality, ItemStatModifiers, ElementalAffix } from '../items/item';
 import type { ContainerType } from '../items/container';
 import type { SerializedStatusEffect } from '../status/types';
@@ -287,6 +287,8 @@ export interface SerializedMonster {
   catchUpScale?: number;
   /** `Monster.pursuit`: where it last perceived its target, and its search; absent when it has none. */
   pursuit?: MonsterPursuit;
+  /** `Monster.faction`, written only when it isn't `'hostile'` (a neutral, a summoned ally); absent loads hostile. */
+  faction?: Faction;
 }
 
 /** Companions & Pet Progression, Phase 1 (docs/architecture/content-companions.md). Top-level in SaveData, not per-floor. */

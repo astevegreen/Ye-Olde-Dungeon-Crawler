@@ -263,12 +263,19 @@ export function connectOut(
  * Joins every walkable cell to `from` by tunnelling through rock (never through a
  * protected rectangle). Cells listed in `sealed` (secret caches) are left alone; a
  * pocket that cannot be joined is filled in, so no walkable cell is ever stranded.
+ * Reach is measured with secret doors shut and tunnels never cross a cache or the rock
+ * around it, so a cache is the only thing a secret door ever hides (R-ai-4).
  */
 export function joinAll(g: CharGrid, from: Position, protect: readonly Rect[] = [], sealed?: ReadonlySet<number>): void {
   const w = g[0].length;
   const h = g.length;
+  const nearSealed = (x: number, y: number): boolean => {
+    if (!sealed?.size) return false;
+    for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) if (sealed.has((y + b) * w + x + a)) return true;
+    return false;
+  };
   for (let guard = 0; guard < 200; guard++) {
-    const d = walkDistances(g, from.x, from.y, { secretsOpen: true });
+    const d = walkDistances(g, from.x, from.y);
     let stray = -1;
     for (let i = 0; i < d.length && stray < 0; i++) {
       const x = i % w;
@@ -301,7 +308,8 @@ export function joinAll(g: CharGrid, from: Position, protect: readonly Rect[] = 
         const j = ny * w + nx;
         if (prev[j] !== -2) continue;
         const c = g[ny][nx];
-        if ((c === '#' && !isProtected(protect, nx, ny)) || isWalkable(c) || c === 'S') {
+        if (nearSealed(nx, ny)) continue;
+        if ((c === '#' && !isProtected(protect, nx, ny)) || isWalkable(c)) {
           prev[j] = i;
           queue.push(j);
         }

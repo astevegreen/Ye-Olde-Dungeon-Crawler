@@ -32,7 +32,12 @@ export interface MerchantConfig {
   greeting: string;
   markupRatio?: number;
   markdownRatio?: number;
-  initialInventory: Item[];
+  /**
+   * The shop's authored stock. A factory, called once per town built and once per load,
+   * so each merchant holds its own items: a bought purse, a wand's spent charges or a
+   * sold item's flags never reach another hero's shop.
+   */
+  initialInventory: () => Item[];
   predicate?: Predicate;
 }
 

@@ -65,7 +65,7 @@ describe('CotW Item Distribution & Economic Integration', () => {
   it('populates Olaf the Chandler with wraps and sustenance', () => {
     const olaf = COTW_TOWN.npcs.find((n) => n.id === 'npc-olaf');
     expect(olaf?.merchantConfig).toBeDefined();
-    const stock = olaf!.merchantConfig!.initialInventory;
+    const stock = olaf!.merchantConfig!.initialInventory();
     const stockKeys = stock.map((i) => i.definitionId ?? i.id);
 
     expect(stockKeys.some((id) => id.includes('tattered_travelers_wrap'))).toBe(true);
@@ -77,7 +77,7 @@ describe('CotW Item Distribution & Economic Integration', () => {
     // The torch came back with the dark floors (tracker 5.3): sold, never floor loot.
     const pulled = ['thief_lockpicks', 'travel_bread', 'bog_iron_whetstone', 'ice_stave_rune_tablet', 'sealskin_rucksack', 'rune_scratched_bark_map'];
     const starterKit = [COTW_STARTER_KIT.weaponItemId, COTW_STARTER_KIT.armorItemId, COTW_STARTER_KIT.bootsItemId, COTW_STARTER_KIT.purseItemId, COTW_STARTER_KIT.beltItemId];
-    const sold = COTW_TOWN.npcs.flatMap((n) => n.merchantConfig?.initialInventory ?? []).map((i) => i.definitionId ?? i.id);
+    const sold = COTW_TOWN.npcs.flatMap((n) => n.merchantConfig?.initialInventory() ?? []).map((i) => i.definitionId ?? i.id);
     for (const id of [...pulled, ...starterKit]) expect(sold).not.toContain(id);
     for (const id of pulled) expect(COTW_ITEMS.some((d) => d.id === id)).toBe(false);
     expect(COTW_STARTER_KIT.packItemIds).not.toContain('travel_bread');
@@ -88,7 +88,7 @@ describe('CotW Item Distribution & Economic Integration', () => {
   it('populates Gunther the Smith with Norse arms, armor, and forge implements', () => {
     const gunther = COTW_TOWN.npcs.find((n) => n.id === 'npc-gunther');
     expect(gunther?.merchantConfig).toBeDefined();
-    const stock = gunther!.merchantConfig!.initialInventory;
+    const stock = gunther!.merchantConfig!.initialInventory();
     const stockKeys = stock.map((i) => i.definitionId ?? i.id);
 
     expect(stockKeys.some((id) => id.includes('rime_bit_chisel'))).toBe(true);
@@ -107,7 +107,7 @@ describe('CotW Item Distribution & Economic Integration', () => {
   it('populates Astrid the Alchemist with herbal curatives and tactical tools', () => {
     const astrid = COTW_TOWN.npcs.find((n) => n.id === 'npc-astrid');
     expect(astrid?.merchantConfig).toBeDefined();
-    const stock = astrid!.merchantConfig!.initialInventory;
+    const stock = astrid!.merchantConfig!.initialInventory();
     const stockKeys = stock.map((i) => i.definitionId ?? i.id);
 
     expect(stockKeys.some((id) => id.includes('hearth_broth_flask'))).toBe(true);
@@ -126,7 +126,7 @@ describe('CotW Item Distribution & Economic Integration', () => {
       0
     );
     for (const npc of COTW_TOWN.npcs) {
-      for (const item of npc.merchantConfig?.initialInventory ?? []) {
+      for (const item of npc.merchantConfig?.initialInventory() ?? []) {
         expect(getItemBuyPrice(item), `${npc.name}: ${item.name}`).toBeLessThanOrEqual(3 * startingPurseCp);
       }
     }

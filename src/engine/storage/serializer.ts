@@ -930,16 +930,17 @@ export function deserializeMapObject(
 }
 
 /**
- * A merchant's stock from the save: an item the shop was authored with comes back as the
- * manifest's own (its availability `predicate` isn't saved), anything else, such as what
- * the hero sold, from its saved form. No saved stock = the authored stock.
+ * A merchant's stock from the save: an item the shop was authored with comes back as a
+ * fresh copy from the manifest's factory (its availability `predicate` isn't saved),
+ * anything else, such as what the hero sold, from its saved form. No saved stock = the
+ * authored stock.
  */
 function restoreMerchantStock(
   authored: Item[],
   saved: SerializedItemNode[] | undefined,
   definitions: ItemDefinitionLookup
 ): Item[] {
-  if (!saved) return [...authored];
+  if (!saved) return authored;
   const byId = new Map(authored.map((item) => [item.id, item]));
   return saved.map((node) => byId.get(node.id) ?? deserializeItem(node, definitions));
 }
@@ -1194,7 +1195,7 @@ export function deserializeGame(
             cfg.name,
             'general',
             cfg.greeting,
-            restoreMerchantStock(cfg.initialInventory, saveData.merchantStock?.[cfg.id], definitions)
+            restoreMerchantStock(cfg.initialInventory(), saveData.merchantStock?.[cfg.id], definitions)
           );
           engine.merchants.set(merchant.id, merchant);
         }

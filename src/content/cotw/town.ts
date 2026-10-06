@@ -33,7 +33,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
         greeting: 'Welcome to Olaf’s General Goods! Broth, poultices, torches, and a warm wrap for hearty souls!',
         markupRatio: 1.25,
         markdownRatio: 0.5,
-        initialInventory: [
+        initialInventory: () => [
           makeShopItem('tattered_travelers_wrap', 'olaf-wrap-1'),
           makeShopItem('hearth_broth_flask', 'olaf-broth-1'),
           makeShopItem('birch_tar_poultice', 'olaf-poultice-1'),
@@ -59,7 +59,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
         greeting: 'Need cold steel or sturdy plate? Gunther’s forge provides!',
         markupRatio: 1.3,
         markdownRatio: 0.5,
-        initialInventory: [
+        initialInventory: () => [
           makeShopItem('broadsword', 'gunther-broadsword-1'),
           makeShopItem('rime_bit_chisel', 'gunther-chisel-1'),
           makeShopItem('cinder_edge_shortsword', 'gunther-sword-1'),
@@ -91,7 +91,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
         greeting: 'Potions and enchanted scrolls to ward off the dark...',
         markupRatio: 1.35,
         markdownRatio: 0.45,
-        initialInventory: [
+        initialInventory: () => [
           makeShopItem('hearth_broth_flask', 'astrid-broth-1'),
           makeShopItem('hearth_broth_flask', 'astrid-broth-2'),
           makeShopItem('birch_tar_poultice', 'astrid-poultice-1'),
@@ -242,12 +242,12 @@ export const COTW_TOWN: TownLayoutDefinition = {
 export function createOlafGeneralStore(): Merchant {
   const npc = COTW_TOWN.npcs.find((n) => n.id === 'npc-olaf')!;
   const cfg = npc.merchantConfig!;
-  return new Merchant(cfg.id, cfg.name, cfg.name, 'general', cfg.greeting, [...cfg.initialInventory]);
+  return new Merchant(cfg.id, cfg.name, cfg.name, 'general', cfg.greeting, cfg.initialInventory());
 }
 
 export function createGuntherArmory(): Merchant {
   const npc = COTW_TOWN.npcs.find((n) => n.id === 'npc-gunther')!;
   const cfg = npc.merchantConfig!;
-  return new Merchant(cfg.id, cfg.name, cfg.name, 'armory', cfg.greeting, [...cfg.initialInventory]);
+  return new Merchant(cfg.id, cfg.name, cfg.name, 'armory', cfg.greeting, cfg.initialInventory());
 }
 

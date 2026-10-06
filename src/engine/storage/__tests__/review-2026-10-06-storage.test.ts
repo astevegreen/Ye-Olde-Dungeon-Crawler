@@ -100,7 +100,7 @@ describe('R-stor-3 · GameStateManager is not saved: deepestFloor falls back to 
 });
 
 describe('R-stor-4 · authored shop stock is a process-wide singleton shared between towns', () => {
-  it.fails('two generated towns hold different purse objects, so one hero’s coins never show in another’s shop', () => {
+  it('two generated towns hold different purse objects, so one hero’s coins never show in another’s shop', () => {
     const townA = new TownMapGenerator(50, 30, COTW_TOWN, []).generate();
     const townB = new TownMapGenerator(50, 30, COTW_TOWN, []).generate();
     const purseA = townA.merchants.get('merchant-olaf')!.stock.find((i) => i.id === 'olaf-purse-1') as Container;

@@ -57,7 +57,7 @@ describe('TownMapGenerator', () => {
             id: 'shop1',
             name: 'Bob Shop',
             greeting: 'Buy something!',
-            initialInventory: []
+            initialInventory: () => []
           }
         },
         {

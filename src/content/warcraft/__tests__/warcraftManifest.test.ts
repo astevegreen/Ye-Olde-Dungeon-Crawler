@@ -169,7 +169,7 @@ describe('Warcraft Content Pack: Manifest & Data Validation', () => {
         0
       );
       for (const npc of WARCRAFT_TOWN.npcs) {
-        for (const item of npc.merchantConfig?.initialInventory ?? []) {
+        for (const item of npc.merchantConfig?.initialInventory() ?? []) {
           expect(getItemBuyPrice(item), `${npc.name}: ${item.name}`).toBeLessThanOrEqual(startingPurseCp);
         }
       }

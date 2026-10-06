@@ -47,7 +47,7 @@ export const WARCRAFT_TOWN: TownLayoutDefinition = {
         greeting: 'Need sturdy steel? Khaz Modan iron will turn any orc blade!',
         markupRatio: 1.2,
         markdownRatio: 0.5,
-        initialInventory: [
+        initialInventory: () => [
           makeWarcraftItem('broadsword', 'grimstone-sword-1'),
           makeWarcraftItem('wooden_shield', 'grimstone-shield-1'),
         ],

@@ -1228,6 +1228,13 @@ export function deserializeGame(
   }
   engine.updateFov();
 
+  // Each stored floor was departed at its saved tick: record it, as the departure did,
+  // so the first return after a load runs respawn catch-up like any other return.
+  for (const [fNum, floorMap] of engine.storedFloors) {
+    if (fNum === engine.currentFloor) continue;
+    engine.floorManager.recordDeparture(fNum, floorMap, engine.storedFov.get(fNum), floorMap.lastVisitedTick ?? 0);
+  }
+
 
   rebuildItemRegistries(engine);
   activateRegistries(engine.registries);

@@ -113,9 +113,10 @@ describe('R-stor-4 · authored shop stock is a process-wide singleton shared bet
 });
 
 describe('R-stor-5 · FloorManager has no floor records after a load, so the first revisit skips catch-up', () => {
-  it.fails('stored floors are known to the floor manager after a load', () => {
+  it('stored floors are known to the floor manager after a load', () => {
     const engine = new GameEngine({ map: new GameMap(20, 20, TILES.FLOOR), player: new Player({ id: 'h3', name: 'H3', position: { x: 5, y: 5 } }), floor: 1 });
     engine.changeFloor(2);
+    engine.turnCount = 40; // floor 2 is left at turn 40
     engine.changeFloor(3);
     expect(engine.floorManager.hasFloor(2)).toBe(true); // live (passes today)
 
@@ -123,6 +124,8 @@ describe('R-stor-5 · FloorManager has no floor records after a load, so the fir
 
     expect([...loaded.storedFloors.keys()]).toContain(2); // the map is there (passes today)
     expect(loaded.floorManager.hasFloor(2)).toBe(true); // but the floor manager does not know it
+    expect(loaded.floorManager.getFloorRecord(2)?.lastVisitedTick).toBe(40);
+    expect(loaded.floorManager.hasFloor(3)).toBe(false); // the floor loaded onto is departed later
   });
 });
 

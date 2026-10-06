@@ -359,11 +359,6 @@ window.addEventListener('DOMContentLoaded', () => {
     levelUpToast = { turn: engine.turnCount, el: showToast(`Level ${engine.player.level}!${spend}`, 'success', 6000) };
   }
 
-  /** Whether the character menu is open on the inventory, for the context help. */
-  function inventoryFlag(): { isOpen: boolean } {
-    return { isOpen: Boolean(characterMenuModal?.isOpen && characterMenuModal.activeTabId === 'inventory') };
-  }
-
   function openSpellbook(): void {
     openMenuTab('spellbook');
   }
@@ -1079,7 +1074,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   devDiagBtn?.addEventListener('click', () => {
-    diagnosticModal.open();
+    diagnosticModal.toggle();
   });
 
   mapBtn?.addEventListener('click', () => {
@@ -1091,17 +1086,10 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Through the input handler, as F1 is, so the card is on the modal stack (§6).
   helpBtn?.addEventListener('click', () => {
-    if (activeEngine) {
-      contextHelp.toggle(
-        activeEngine,
-        inventoryFlag(),
-        renderer?.targetingOverlay,
-        renderer?.shopOverlay,
-        renderer?.inspectOverlay,
-        renderer?.mapOverlay
-      );
-    }
+    if (contextHelp.isOpen) contextHelp.close();
+    else if (activeEngine) inputHandler?.openContextHelp();
   });
 
   compendiumBtn?.addEventListener('click', () => {
@@ -1451,19 +1439,8 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer?.render();
     };
 
-    const toggleDiagnostics = () => {
-      if (diagnosticModal.isOpen) {
-        diagnosticModal.close();
-        if (inputHandler) {
-          inputHandler.modalStack.remove(diagnosticModal.id);
-        }
-      } else {
-        if (inputHandler) {
-          inputHandler.modalStack.push(diagnosticModal);
-        }
-        diagnosticModal.open();
-      }
-    };
+    // The modal puts itself on the stack and takes itself off (§6).
+    const toggleDiagnostics = () => diagnosticModal.toggle();
 
     const commandExecutors: Record<CommandId, (eng: GameEngine) => void> = {
       inspect: (eng) => {
@@ -1489,7 +1466,7 @@ window.addEventListener('DOMContentLoaded', () => {
         for (const w of rep.warnings) {
           eng.log(`[${w.severity.toUpperCase()}] ${w.title}: ${w.recommendation}`);
         }
-        contextHelp.open(eng, inventoryFlag(), renderer?.targetingOverlay, renderer?.shopOverlay, renderer?.inspectOverlay);
+        inputHandler?.openContextHelp();
         renderer?.render();
       },
       help: () => {

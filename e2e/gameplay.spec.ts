@@ -749,3 +749,44 @@ test("the log's history opens by key or label and spends no turn", async ({ page
   await expect(page.locator('#message-log-history')).toBeHidden();
   expect(await stackIds(page)).toEqual([]);
 });
+
+// Every way into the help card and the diagnostics registers it on the modal stack and
+// every way out takes it off (§6): the HUD Help and Dev buttons, the card's X.
+test('the HUD Help and Dev buttons and the help card X keep the modal stack honest', async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on('pageerror', (err) => pageErrors.push(err.message));
+  await embarkNewHero(page);
+  const start = await state(page);
+  const helpCard = page.locator('#context-help-overlay');
+
+  // The HUD Help button: on the stack, Escape closes it, no Save & Quit behind.
+  await page.locator('#btn-help-card').click();
+  await expect(helpCard).toBeVisible();
+  expect(await stackIds(page)).toEqual(['context_help']);
+  await page.keyboard.press('ArrowRight');
+  expect(await state(page)).toMatchObject({ turn: start.turn, x: start.x });
+  await page.keyboard.press('Escape');
+  await expect(helpCard).toBeHidden();
+  expect(await stackIds(page)).toEqual([]);
+  await expect(page.locator('#save-quit-modal')).toBeHidden();
+
+  // F1, then the card's own X: the entry goes with it, so the world isn't left paused.
+  await page.keyboard.press('F1');
+  await expect(helpCard).toBeVisible();
+  await page.locator('#btn-context-help-close').click();
+  await expect(helpCard).toBeHidden();
+  expect(await stackIds(page)).toEqual([]);
+  expect(await page.evaluate(() => window.__cotwEngine!.isPaused)).toBe(false);
+
+  // The HUD Dev button: on the stack, so a movement key stays in the dialog.
+  await page.locator('#btn-dev-diagnostics').click();
+  await expect(page.locator('#diagnostic-modal')).toBeVisible();
+  expect(await stackIds(page)).toEqual(['diagnostic-modal']);
+  await page.keyboard.press('ArrowRight');
+  expect(await state(page)).toMatchObject({ turn: start.turn, x: start.x });
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#diagnostic-modal')).toBeHidden();
+  expect(await stackIds(page)).toEqual([]);
+
+  expect(pageErrors).toEqual([]);
+});

@@ -311,7 +311,11 @@ export class InputHandler {
   public openContextHelp(): void {
     const help = this.contextHelp;
     if (!help || help.isOpen) return;
-    help.open(this.engine, this.inventoryFlag, this.targetingOverlay, this.shopOverlay, this.inspectOverlay, this.mapOverlay);
+    // Every way the card closes (its X button too) takes its entry off the stack, or the
+    // engine stays paused and HUD clicks take free turns (R-ui-1).
+    help.open(this.engine, this.inventoryFlag, this.targetingOverlay, this.shopOverlay, this.inspectOverlay, this.mapOverlay, () =>
+      this.modalStack.remove('context_help')
+    );
     this.modalStack.push({
       id: 'context_help',
       get isOpen() { return help.isOpen; },

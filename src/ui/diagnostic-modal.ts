@@ -232,6 +232,9 @@ export class DiagnosticModal implements UIModal {
     this.isOpen = true;
     this.modal.style.display = 'flex';
     this.setActiveTab(this.activeTab);
+    // On the stack however it was opened (F2, the HUD Dev button, the palette), so its keys
+    // never fall through to the game and the world pauses behind it (§6). `close` removes it.
+    if (this.modalStack && !this.modalStack.has(this.id)) this.modalStack.push(this);
 
     // Auto-refresh polling while open (500ms heartbeat)
     this.startPolling();

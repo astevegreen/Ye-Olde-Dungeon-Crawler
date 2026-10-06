@@ -36,6 +36,25 @@ describe('getCarriedPotionKinds', () => {
     expect(kind.name).toBe('Murky Flask');
     expect(kind.key).toBe(potionKindKey(murky));
   });
+
+  it('a known and an unknown bottle of one kind are two kinds, each under its own name, in either order (R-econ-8)', () => {
+    const bottle = (id: string, identified: boolean) => {
+      const p = new PotionItem({ id, definitionId: 'tonic', name: 'Bog-Myrtle Tonic', unidentifiedName: 'Murky Amber Draft', weight: 100, bulk: 50, potionType: 'health', potency: 10 });
+      p.identified = identified;
+      return p;
+    };
+    for (const order of [[true, false], [false, true]]) {
+      const engine = buildEngine();
+      order.forEach((known, i) => engine.player.inventory.primaryPack.addItem(bottle(`t${i}`, known)));
+
+      const kinds = getCarriedPotionKinds(engine).map((k) => [k.name, k.count, k.identified]);
+
+      expect(kinds).toEqual([
+        ['Bog-Myrtle Tonic', 1, true],
+        ['Murky Amber Draft', 1, false],
+      ]);
+    }
+  });
 });
 
 describe('resolvePotionSlots', () => {

@@ -50,16 +50,12 @@ export const DEFAULT_ALIAS_POOLS: ItemAliasPools = {
   ],
 };
 
-export interface IdentificationSerializedState {
-  identified: string[];
-  aliases: Array<[string, string]>;
-}
-
 /**
- * Manages item identification state, procedural alias assignment, and run-level discovery.
+ * Identifies items and assigns procedural aliases. Identification is per item (owner
+ * decision Q7, 2026-10-06): an item's own `identified` flag is the only truth, so knowing
+ * one bottle never names another of its kind, and there is no per-definition store.
  */
 export class IdentificationManager {
-  private readonly identifiedDefinitions = new Set<string>();
   private readonly assignedAliases = new Map<string, string>();
   private readonly manifest?: GameContentManifest;
 
@@ -122,49 +118,9 @@ export class IdentificationManager {
     }
   }
 
-  /**
-   * Checks whether a specific item instance or item definition ID is identified.
-   */
-  public isIdentified(itemOrId: ItemInstance | string): boolean {
-    if (typeof itemOrId === 'string') {
-      return this.identifiedDefinitions.has(itemOrId);
-    }
-    if (itemOrId.identified) return true;
-    if (this.identifiedDefinitions.has(itemOrId.id)) return true;
-    if (itemOrId.definitionId && this.identifiedDefinitions.has(itemOrId.definitionId)) return true;
-    return false;
-  }
-
-  /**
-   * Identifies a specific item instance and flags its definition type as known.
-   */
+  /** Identifies one item: its true name, stats and worth show from now on. */
   public identifyItem(item: ItemInstance): void {
     item.identified = true;
-    this.identifiedDefinitions.add(item.id);
-    if (item.definitionId) {
-      this.identifiedDefinitions.add(item.definitionId);
-    }
-  }
-
-  /**
-   * Identifies all items of a given definition ID.
-   */
-  public identifyDefinition(definitionId: string): void {
-    this.identifiedDefinitions.add(definitionId);
-  }
-
-  /**
-   * Resolves the proper display name for an item based on its identification status.
-   */
-  public resolveDisplayName(item: ItemInstance): string {
-    if (this.isIdentified(item)) {
-      return item.displayName;
-    }
-    const alias = (item.definitionId && this.assignedAliases.get(item.definitionId)) || this.assignedAliases.get(item.id);
-    if (alias) {
-      return alias;
-    }
-    return item.unidentifiedName || 'Unidentified Item';
   }
 
   /**
@@ -191,34 +147,5 @@ export class IdentificationManager {
       }
     }
     return existing;
-  }
-
-  /**
-   * Serializes identification state for saving.
-   */
-  public serialize(): IdentificationSerializedState {
-    return {
-      identified: Array.from(this.identifiedDefinitions),
-      aliases: Array.from(this.assignedAliases.entries()),
-    };
-  }
-
-  /**
-   * Deserializes identification state from save data.
-   */
-  public deserialize(data?: Partial<IdentificationSerializedState>): void {
-    if (!data) return;
-    if (Array.isArray(data.identified)) {
-      this.identifiedDefinitions.clear();
-      for (const id of data.identified) {
-        this.identifiedDefinitions.add(id);
-      }
-    }
-    if (Array.isArray(data.aliases)) {
-      this.assignedAliases.clear();
-      for (const [k, v] of data.aliases) {
-        this.assignedAliases.set(k, v);
-      }
-    }
   }
 }

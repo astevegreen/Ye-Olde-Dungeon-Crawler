@@ -746,13 +746,13 @@ describe('DiagnosticModal - Categorized Sub-Menus & Triage Tool', () => {
       const ring = ItemFactory.createCursedRing('ring-unid');
       ring.identified = false;
       player.addItem(ring);
-      expect(engine.identification.isIdentified(ring)).toBe(false);
+      expect(ring.identified).toBe(false);
 
       modal.open();
       modal.setActiveTab('triage');
       mockDoc.getElementById('btn-triage-identify-all')?.click();
 
-      expect(engine.identification.isIdentified(ring)).toBe(true);
+      expect(ring.identified).toBe(true);
     });
 
     it('sets the PRNG state', () => {

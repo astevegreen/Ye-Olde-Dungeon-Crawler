@@ -167,7 +167,7 @@ function createTriageApi(engine: GameEngine): TriageAPI {
     identifyAll: () => {
       let count = 0;
       for (const item of engine.player.inventory.getAllCarriedItems()) {
-        if (!engine.identification.isIdentified(item)) {
+        if (!item.identified) {
           engine.identification.identifyItem(item);
           count++;
         }

@@ -9,9 +9,13 @@ export const POTION_ROW_SLOT_COUNT = 4;
  * What a pin remembers: the potion's kind, not one bottle. Its definition ID when it
  * has one, else its true name — never the unidentified appearance, which differs per
  * run, and never shown to the player (it could name an unidentified potion).
+ * Identification is per bottle (owner decision Q7): known and unknown bottles of one kind
+ * are two kinds here, so the row never names an unknown bottle by a known one's name, nor
+ * hides a known one under an appearance.
  */
 export function potionKindKey(item: Item): string {
-  return item.definitionId ?? item.name;
+  const kind = item.definitionId ?? item.name;
+  return item.identified ? kind : `unidentified:${kind}`;
 }
 
 export interface PotionKind {

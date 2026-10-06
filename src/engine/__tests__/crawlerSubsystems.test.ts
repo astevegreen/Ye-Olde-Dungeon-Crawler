@@ -60,7 +60,6 @@ describe('Dungeon Exploration & Tactical Crawler Subsystems', () => {
       const alias = idMgr.getAlias('wand_fire', wandDef);
       expect(alias).toBeDefined();
       expect(alias!.length).toBeGreaterThan(0);
-      expect(idMgr.isIdentified('wand_fire')).toBe(false);
 
       // Create unidentified wand
       const wand = new Item({
@@ -87,7 +86,6 @@ describe('Dungeon Exploration & Tactical Crawler Subsystems', () => {
       expect(res.success).toBe(true);
       expect(wand.identified).toBe(true);
       expect(wand.displayName).toContain('Wand of Fireballs');
-      expect(engine.identification.isIdentified('wand_fire')).toBe(true);
     });
 
     it('binds cursed items to equipment slot and prevents removal until cleansed', () => {

@@ -331,7 +331,6 @@ export class ZapWandAction implements Action {
 
     this.wand.useCharge();
     this.wand.identified = true;
-    engine.identification?.identifyDefinition(this.wand.id);
     if (this.user instanceof Player) {
       engine.log(`You zap the ${this.wand.displayName}!`);
     } else {
@@ -379,7 +378,6 @@ export class ReadScrollAction implements Action {
 
   public perform(engine: GameEngine): ActionResult {
     this.scroll.identified = true;
-    engine.identification?.identifyDefinition(this.scroll.id);
     const name = this.scroll.unitDisplayName;
     const isPlayer = this.user instanceof Player;
     engine.log(isPlayer ? `You read the ${name}.` : `${this.user.name} reads the ${name}.`);
@@ -427,7 +425,6 @@ export class DrinkPotionAction implements Action {
     }
 
     this.potion.identified = true;
-    engine.identification?.identifyDefinition(this.potion.id);
 
     // One draught of a stack; a single bottle leaves the inventory.
     this.user.inventory.consumeOne(this.potion.id);

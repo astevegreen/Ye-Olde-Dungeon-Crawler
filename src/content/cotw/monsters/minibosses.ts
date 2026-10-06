@@ -24,7 +24,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
       radius: 2,
       multiplier: 2.2,
       element: 'cold',
-      spawnSurface: 'shallow_water',
+      spawnSurface: 'water',
       chance: 0.45,
       cooldown: 3,
     },

@@ -127,3 +127,16 @@ describe('R-cotw-8 · floor 21 stamps only its scripted pylon, not the zone’s 
     }
   });
 });
+
+describe('R-cotw-12 · every surface a monster spawns is a surface the engine knows', () => {
+  it('no wind-up or hook spawns a tile type (shallow_water) as a surface', async () => {
+    const { BUILTIN_SURFACE_TYPES } = await import('../../../engine/surfaces/surfaceGrid');
+    const known = new Set<string>(BUILTIN_SURFACE_TYPES);
+    const unknown: string[] = [];
+    for (const m of cotwManifest.monsters as Array<{ id: string; telegraphedAbility?: { spawnSurface?: string } }>) {
+      const s = m.telegraphedAbility?.spawnSurface;
+      if (s && !known.has(s)) unknown.push(`${m.id}: ${s}`);
+    }
+    expect(unknown).toEqual([]);
+  });
+});

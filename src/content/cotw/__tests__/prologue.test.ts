@@ -81,6 +81,47 @@ describe('cotw prologue: the night raid', () => {
     expect(engine.map.getItemsAt(x, y).some((i) => i.id === 'prologue-eir-gift')).toBe(true);
   });
 
+  it('frees a villager the moment the thrall holding them dies, with no step into them (GitHub #11)', () => {
+    const engine = newRun();
+    const eir = villager(engine, 'prologue-eir');
+    const { x, y } = eir;
+    const captor = engine.map
+      .getAllEntities()
+      .find((e): e is Monster => e instanceof Monster && Math.max(Math.abs(e.x - x), Math.abs(e.y - y)) <= 1)!;
+    const before = getFaction(engine.worldState, 'townsfolk');
+
+    wait(engine);
+    expect(engine.getWorldFlag('prologue-eir_saved')).toBeFalsy(); // her thrall lives
+
+    DeathResolver.resolveDeath(engine, engine.player, captor);
+    wait(engine);
+
+    expect(engine.getWorldFlag('prologue-eir_saved')).toBe(true);
+    expect(engine.map.getEntityById('prologue-eir')).toBeFalsy();
+    expect(getFaction(engine.worldState, 'townsfolk')).toBe(before + 4);
+    expect(engine.map.getItemsAt(x, y).some((i) => i.id === 'prologue-eir-gift')).toBe(true);
+    expect(engine.messages.some((m) => m.includes('The thrall that held Eir is down.'))).toBe(true);
+    for (const id of ['prologue-sigrun', 'prologue-brandr']) expect(engine.getWorldFlag(`${id}_saved`)).toBeFalsy();
+  });
+
+  it('the held villagers cry out with their bearings, so a hero in the dark can find them (GitHub #11)', () => {
+    const engine = newRun();
+    // Nothing that would strike the hero down mid-test: the villagers' own thralls stay.
+    for (const e of engine.map.getAllEntities()) {
+      if (e instanceof Monster && e.definitionId !== 'prologue_coven_thrall') engine.removeEntity(e);
+    }
+
+    wait(engine);
+    const first = engine.messages.find((m) => m.startsWith('Screams carry through the dark'));
+    expect(first).toContain('Eir by the temple steps, to the north-east');
+    expect(first).toContain('Sigrun by Olaf’s store, to the north-west');
+    expect(first).toContain('Brandr by the armory, to the north-east');
+
+    for (let i = 0; i < 11; i++) wait(engine);
+    // Eir is the nearest to where the hero came home.
+    expect(engine.messages.some((m) => m.startsWith('To the north-east, by the temple steps, Eir cries out: “The thrall has me by the hair!'))).toBe(true);
+  });
+
   it('bars the houses and seals the cellar while the raid lasts', () => {
     const engine = newRun();
     // Olaf's door (12, 11), from the lane below it.
@@ -164,8 +205,14 @@ describe('cotw prologue: the night raid', () => {
     killCaptor(engine, sigrun);
     standBeside(engine, sigrun);
     step(engine, 1, 0);
-    // Out of every monster's way, then let the rite finish.
-    for (const e of engine.map.getAllEntities()) if (e instanceof Monster) engine.removeEntity(e);
+    // Out of every monster's way but the thralls still holding Eir and Brandr (their deaths
+    // would free them), then let the rite finish.
+    const holding = (e: Monster) =>
+      ['prologue-eir', 'prologue-brandr'].some((id) => {
+        const v = villager(engine, id);
+        return Math.max(Math.abs(e.x - v.x), Math.abs(e.y - v.y)) <= 1;
+      });
+    for (const e of engine.map.getAllEntities()) if (e instanceof Monster && !holding(e)) engine.removeEntity(e);
     for (let i = 0; i < 100 && isPrologueRunning(engine.worldState, COTW_PROLOGUE); i++) wait(engine);
 
     expect(isPrologueRunning(engine.worldState, COTW_PROLOGUE)).toBe(false);

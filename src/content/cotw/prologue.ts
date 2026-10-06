@@ -74,6 +74,8 @@ interface Villager extends PrologueNpc {
   /** Who they are, for the line logged when they are taken ("Eir, the temple’s acolyte"). */
   shortName: string;
   kin: string;
+  /** Where they are held, for the cries that steer the hero to them ("by the temple steps"). */
+  where: string;
   /** Logged as they run free; they drop `gift` where they stood. */
   freedMessage: string;
   gift: { itemId: string } | { silver: number };
@@ -85,6 +87,7 @@ export const PROLOGUE_VILLAGERS: Villager[] = [
     name: 'Eir the Acolyte',
     shortName: 'Eir',
     kin: 'the temple’s acolyte',
+    where: 'by the temple steps',
     position: { x: 27, y: 24 },
     greeting: 'The thrall has me by the hair! Get it off me!',
     freedMessage: 'Eir scrambles up and runs for the longhouse. "Take it, it is all I have!" Her broth-flask lies in the snow.',
@@ -95,6 +98,7 @@ export const PROLOGUE_VILLAGERS: Villager[] = [
     name: 'Sigrun, Olaf’s Daughter',
     shortName: 'Sigrun',
     kin: 'Olaf’s daughter',
+    where: 'by Olaf’s store',
     position: { x: 12, y: 13 },
     greeting: 'Father barred the door with me still outside! Help me!',
     freedMessage: 'Sigrun bolts for the longhouse, flinging back her purse: "Father would want you to have it!"',
@@ -105,6 +109,7 @@ export const PROLOGUE_VILLAGERS: Villager[] = [
     name: 'Brandr the Apprentice',
     shortName: 'Brandr',
     kin: 'Gunther’s apprentice',
+    where: 'by the armory',
     position: { x: 42, y: 12 },
     greeting: 'I only came out for the forge chisel. Now look at me.',
     freedMessage: 'Brandr runs for the longhouse and drops his forge chisel at your feet. "Keep it. Gunther will forge me another."',
@@ -124,6 +129,13 @@ const savedFlag = (id: string) => `${id}_saved`;
 const takenFlag = (id: string) => `${id}_taken`;
 const isAccountedFor = (ctx: EngineContext, id: string) =>
   getFlag(ctx.worldState, savedFlag(id)) || getFlag(ctx.worldState, takenFlag(id));
+const chebyshev = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+  Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+
+/** Counts the hero's turns of the raid, for the held villagers' cries. Saved with the world. */
+const COUNTER_RAID_TURNS = 'cotw_prologue_raid_turns';
+/** Every this many turns the nearest held villager cries out again, so the hero can steer by it. */
+const CRY_EVERY = 12;
 
 export type RaidVillagerId = 'prologue-eir' | 'prologue-sigrun' | 'prologue-brandr';
 
@@ -165,6 +177,20 @@ export const COTW_PROLOGUE: PrologueDefinition = {
   ],
   aftermathFlag: GATEWARD_HEARD_FLAG,
 };
+
+/**
+ * Each villager's captor: the thrall placed a step from them. Its death frees them, so
+ * striking the thralls down is the whole rescue (GitHub #11: a hero who had killed every
+ * thrall in sight still lost all three, not knowing they had to be walked into as well).
+ */
+const CAPTOR_IDS: ReadonlyMap<string, string | undefined> = new Map(
+  PROLOGUE_VILLAGERS.map((v) => {
+    const index = (COTW_PROLOGUE.monsters ?? []).findIndex(
+      (m) => m.definitionId === 'prologue_coven_thrall' && chebyshev(m.position, v.position) <= 1
+    );
+    return [v.id, index >= 0 ? prologueMonsterId(index) : undefined];
+  })
+);
 
 /** The coven's rite: when it runs out they flee with the shard, taking whoever is still held. */
 export const PROLOGUE_TIMED_EVENT: TimedEventDefinition = {
@@ -215,7 +241,7 @@ export const PROLOGUE_OBJECTIVES: ObjectiveDefinition[] = [
   },
   {
     id: 'cotw_objective_prologue_raid',
-    text: 'Thralls hold villagers by the temple, Olaf’s store and the armory. Free them before the coven is done.',
+    text: 'Thralls hold villagers by the temple, Olaf’s store and the armory. Strike each thrall down to free its captive before the coven is done.',
     pointTo: { entityIds: PROLOGUE_VILLAGERS.map((v) => v.id), label: 'held villager' },
     availableWhenFlag: PROLOGUE_STARTED_FLAG,
     doneWhenAnyFlag: [PROLOGUE_ENDED_FLAG],
@@ -253,6 +279,54 @@ function freeVillager(ctx: EngineContext, npc: NPC): void {
     if (covenSlain(ctx)) endRaid(ctx);
     else ctx.log('Every villager the thralls held is free. At the fountain the troll-wives work on, faster now.');
   }
+}
+
+/** A held villager whose thrall has died runs free at once (`CAPTOR_IDS`). */
+function freeVillagersWhoseCaptorFell(ctx: EngineContext): void {
+  for (const villager of PROLOGUE_VILLAGERS) {
+    if (isAccountedFor(ctx, villager.id)) continue;
+    const npc = ctx.map.getEntityById(villager.id);
+    if (!(npc instanceof NPC)) continue;
+    const captorId = CAPTOR_IDS.get(villager.id);
+    const captor = captorId ? ctx.map.getEntityById(captorId) : undefined;
+    if (captor?.isAlive()) continue;
+    ctx.log(`The thrall that held ${villager.shortName} is down.`);
+    freeVillager(ctx, npc);
+  }
+}
+
+/** The compass point from `from` to `to` (y grows southward), in integer arithmetic. */
+function bearing(from: { x: number; y: number }, to: { x: number; y: number }): string {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  // Within 22.5° of an axis (tan ≈ 12/29) the bearing is that axis.
+  if (29 * Math.abs(dy) <= 12 * Math.abs(dx)) return dx >= 0 ? 'east' : 'west';
+  if (29 * Math.abs(dx) <= 12 * Math.abs(dy)) return dy >= 0 ? 'south' : 'north';
+  return `${dy < 0 ? 'north' : 'south'}-${dx < 0 ? 'west' : 'east'}`;
+}
+
+/**
+ * The held villagers cry out, so a hero in the dark can find them (GitHub #11): every one,
+ * with its bearing, on the raid's first turn; after that the nearest, every `CRY_EVERY` turns,
+ * unless the hero is already at their side.
+ */
+function callOut(ctx: EngineContext): void {
+  const held = PROLOGUE_VILLAGERS.flatMap((villager) => {
+    const npc = isAccountedFor(ctx, villager.id) ? undefined : ctx.map.getEntityById(villager.id);
+    return npc ? [{ villager, npc }] : [];
+  });
+  if (held.length === 0) return;
+  const turn = incrementCounter(ctx.worldState, COUNTER_RAID_TURNS, 1);
+  const p = ctx.player;
+  if (turn === 1) {
+    const where = held.map(({ villager, npc }) => `${villager.shortName} ${villager.where}, to the ${bearing(p, npc)}`);
+    ctx.log(`Screams carry through the dark: ${where.join('; ')}.`);
+    return;
+  }
+  if (turn % CRY_EVERY !== 0) return;
+  const { villager, npc } = held.reduce((a, b) => (chebyshev(p, b.npc) < chebyshev(p, a.npc) ? b : a));
+  if (chebyshev(p, npc) <= 2) return;
+  ctx.log(`To the ${bearing(p, npc)}, ${villager.where}, ${villager.shortName} cries out: “${villager.greeting}”`);
 }
 
 /** Whether every warlock the raid placed at the fountain has been killed. */
@@ -359,14 +433,15 @@ const PROLOGUE_STAIRS_HOOK: ActionHook = {
 
 /**
  * Runs the raid after every action, the monsters' too (a struck-down hero is noticed on
- * the blow that does it): the coven's first sight, the hero struck down, the countdown
- * run out; then Hallvard's death once his last words are heard.
+ * the blow that does it): a villager freed when their thrall dies, the held villagers'
+ * cries, the coven's first sight, the hero struck down, the countdown run out; then
+ * Hallvard's death once his last words are heard.
  */
 const PROLOGUE_RAID_HOOK: ActionHook = {
   id: 'cotw-prologue-raid',
   phase: 'post',
   actionType: '*',
-  execute: ({ action, actor, engine }) => {
+  execute: ({ action, actor, engine, result }) => {
     if (action instanceof ExecuteChoiceAction && action.choice.id === GATEWARD_CHOICE_ID && getFlag(engine.worldState, GATEWARD_HEARD_FLAG)) {
       const hallvard = engine.map.getEntityById(GATEWARD_ID);
       if (hallvard) engine.removeEntity(hallvard);
@@ -383,13 +458,17 @@ const PROLOGUE_RAID_HOOK: ActionHook = {
       endRaid(engine);
       return;
     }
+    freeVillagersWhoseCaptorFell(engine);
+    if (!isPrologueRunning(engine.worldState, COTW_PROLOGUE)) return;
     // The countdown run out; or nothing is left to fight for, every villager free and the
     // coven at the fountain slain, so the night ends now rather than on the clock.
     if (getFlag(engine.worldState, FLAG_COVEN_FLED) || (getFlag(engine.worldState, FLAG_ALL_SAVED) && covenSlain(engine))) {
       endRaid(engine);
       return;
     }
-    if (actor !== engine.player || getFlag(engine.worldState, FLAG_SAW_COVEN)) return;
+    if (actor !== engine.player) return;
+    if (result?.success && result.cost > 0) callOut(engine);
+    if (getFlag(engine.worldState, FLAG_SAW_COVEN)) return;
     const p = engine.player;
     if (Math.max(Math.abs(p.x - FOUNTAIN.x), Math.abs(p.y - FOUNTAIN.y)) <= FOUNTAIN_NOTICE_RADIUS) {
       setFlag(engine.worldState, FLAG_SAW_COVEN, true);

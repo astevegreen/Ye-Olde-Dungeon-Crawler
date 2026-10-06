@@ -117,4 +117,57 @@ describe('Emergent Surface & Gas Simulation Layer', () => {
     engine.surfaces.tick(engine);
     expect(engine.surfaces.getSurface(2, 2)).toBeUndefined(); // Expired!
   });
+
+  // Fire, acid and lightning on the ground hurt by element, so what resists the element
+  // resists the ground too. They took raw damage, so fire resistance did nothing on fire
+  // tiles, and a fire-immune monster burned in its own trail.
+  describe('hazard damage goes through elemental affinity', () => {
+    it('a fire-resistant hero takes half from stepping into fire', () => {
+      engine.surfaces.setSurface(4, 3, 'fire', 5);
+      player.elementalResistances.fire = 'resistant';
+      new MovementAction(player, 1, 0).perform(engine);
+      expect(player.hp).toBe(48);
+      expect(engine.messages.some((m) => m.includes('steps into searing fire for 2 fire damage'))).toBe(true);
+    });
+
+    it('fire resistance from a perk counts as well (what an Actor holds or wears)', () => {
+      player.grantPerk({ id: 'test-fireward', name: 'Fireward', description: '', source: 'saga', effects: { resistsElements: ['fire'] } });
+      engine.surfaces.setSurface(3, 3, 'fire', 5);
+      engine.surfaces.tick(engine);
+      expect(player.hp).toBe(48); // lingering fire 3, halved and rounded
+    });
+
+    it('a fire-immune monster stands in fire unharmed, and the log says so', () => {
+      monster.elementalResistances.fire = 'immune';
+      engine.surfaces.setSurface(6, 3, 'fire', 5);
+      engine.surfaces.tick(engine);
+      expect(monster.hp).toBe(30);
+      expect(engine.messages.some((m) => m.includes('Goblin is unharmed by the fire'))).toBe(true);
+      expect(engine.messages.some((m) => m.includes('scorched by lingering fire'))).toBe(false);
+    });
+
+    it('a firestorm is fire too', () => {
+      monster.elementalResistances.fire = 'immune';
+      engine.surfaces.setGas(6, 3, 'fire_storm', 3);
+      engine.surfaces.tick(engine);
+      expect(monster.hp).toBe(30);
+    });
+
+    it('a lightning-immune monster wading in a shocked pool takes nothing, and the 200% applies once', () => {
+      engine.surfaces.setSurface(6, 3, 'water', 5);
+      engine.surfaces.setSurface(3, 3, 'water', 5);
+      engine.surfaces.setSurface(4, 3, 'water', 5);
+      engine.surfaces.setSurface(5, 3, 'water', 5);
+      monster.elementalResistances.lightning = 'immune';
+      engine.surfaces.triggerElementalReaction(5, 3, 'lightning', 10, engine);
+      expect(monster.hp).toBe(30);
+      expect(player.hp).toBe(30); // 10 x 2, not doubled again by the water terrain rule
+    });
+
+    it('acid is unchanged for a hero with no acid affinity', () => {
+      engine.surfaces.setSurface(4, 3, 'acid_pool', 5);
+      new MovementAction(player, 1, 0).perform(engine);
+      expect(player.hp).toBe(46);
+    });
+  });
 });

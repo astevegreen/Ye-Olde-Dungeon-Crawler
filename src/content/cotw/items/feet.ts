@@ -28,7 +28,7 @@ export const COTW_FEET: ItemDefinition[] = [
     bulk: 1600,
     stats: { defenseBonus: 2 },
     identified: false,
-    description: 'Heavy boots fitted with forged iron ice-cleats, preventing slippage on glacier ice at the cost of noisy footfalls on stone.',
+    description: 'Heavy boots fitted with forged iron ice-cleats, made for glacier ice.',
     value: 35,
   },
   {
@@ -58,7 +58,7 @@ export const COTW_FEET: ItemDefinition[] = [
     bulk: 2000,
     stats: { defenseBonus: 4 },
     identified: false,
-    description: 'Duergar tunneling boots with spring-damped soles engineered to absorb sudden floor shifts and trigger plates.',
+    description: 'Duergar tunneling boots with spring-damped soles, built for long shifts underground.',
     value: 180,
   },
   {

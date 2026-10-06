@@ -43,7 +43,7 @@ export const COTW_TORSO: ItemDefinition[] = [
     bulk: 7500,
     stats: { defenseBonus: 9 },
     identified: false,
-    description: 'Dwarven chainmail quenched in volcanic ash. Deflects heavy crushing and slashing blows, but absorbs ambient furnace heat.',
+    description: 'Dwarven chainmail quenched in volcanic ash. Deflects heavy crushing and slashing blows.',
     value: 130,
   },
   {
@@ -58,7 +58,7 @@ export const COTW_TORSO: ItemDefinition[] = [
     bulk: 10000,
     stats: { defenseBonus: 13 },
     identified: false,
-    description: 'Meticulously knapped scales of volcanic glass wired over boiled leather. Unyielding against searing flame and sharp blades.',
+    description: 'Meticulously knapped scales of volcanic glass wired over boiled leather; they turn sharp blades.',
     value: 280,
   },
   {
@@ -73,7 +73,7 @@ export const COTW_TORSO: ItemDefinition[] = [
     bulk: 3000,
     stats: { defenseBonus: 10, speedBonus: 3 },
     identified: false,
-    description: 'Woven from cold liquid-mercury filaments that shift with the wearer’s body, granting remarkable agility at the subtle expense of toxic exposure.',
+    description: 'Woven from cold liquid-mercury filaments that shift with the wearer’s body, granting remarkable agility.',
     value: 350,
   },
   {

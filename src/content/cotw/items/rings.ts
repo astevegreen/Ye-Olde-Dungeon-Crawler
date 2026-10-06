@@ -86,7 +86,7 @@ export const COTW_RINGS: ItemDefinition[] = [
     bulk: 20,
     stats: { defenseBonus: 3 },
     identified: false,
-    description: 'A brilliant gem ring cut into dozens of micro-facets, refracting and rebounding harmful spells back at hostile casters.',
+    description: 'A brilliant gem ring, cut into dozens of micro-facets, that lends its wearer a measure of protection.',
     value: 240,
   },
   {
@@ -101,7 +101,7 @@ export const COTW_RINGS: ItemDefinition[] = [
     bulk: 30,
     stats: { defenseBonus: 2, attackBonus: 2 },
     identified: false,
-    description: 'Veined with raw subterranean electrum. Pulses warmly when precious gems, raw metals, and hidden treasure hoards are near.',
+    description: 'Veined with raw subterranean electrum, worn by duergar prospectors for luck in a fight.',
     value: 300,
   },
   {

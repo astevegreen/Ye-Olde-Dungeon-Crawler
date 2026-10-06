@@ -60,7 +60,7 @@ export const COTW_HEAD: ItemDefinition[] = [
     stats: { defenseBonus: 4, attackBonus: 3 },
     wornEffects: { resistsElements: ['fire'] },
     identified: false,
-    description: 'Brand-scorched iron coronet consecrated to Sól. Empowers spellcasting heat and wards against flame, though its radiant aura alerts resting subterranean foes.',
+    description: 'Brand-scorched iron coronet consecrated to Sól. It wards against flame.',
     value: 180,
   },
   {
@@ -76,7 +76,7 @@ export const COTW_HEAD: ItemDefinition[] = [
     stats: { defenseBonus: 7 },
     quality: 'artifact',
     identified: false,
-    description: 'A fearsome wooden visage crowned with petrified stag antlers worn by the sorceress-matriarchs of Járnviðr. Bestows deep communion with roots and mana wells.',
+    description: 'A fearsome wooden visage crowned with petrified stag antlers, worn by the sorceress-matriarchs of Járnviðr.',
     value: 450,
   },
 ];

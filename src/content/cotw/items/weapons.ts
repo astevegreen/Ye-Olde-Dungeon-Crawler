@@ -13,7 +13,7 @@ export const COTW_WEAPONS: ItemDefinition[] = [
     bulk: 1400,
     stats: { attackBonus: 4 },
     identified: true,
-    description: 'Crude and heavy starter cudgel carved from ancient mammut femur. Delivers crushing blows against unarmored targets.',
+    description: 'Crude and heavy starter cudgel carved from ancient mammut femur.',
     value: 20,
   },
   {
@@ -144,7 +144,7 @@ export const COTW_WEAPONS: ItemDefinition[] = [
     bulk: 2000,
     stats: { attackBonus: 6, defenseBonus: 2 },
     identified: false,
-    description: 'Petrified black bough carved by troll-wife sorceresses. Channeling conduit that empowers spell damage and weaves mana.',
+    description: 'Petrified black bough carved by troll-wife sorceresses, heavy enough to strike with and to parry.',
     value: 175,
   },
   {
@@ -159,7 +159,7 @@ export const COTW_WEAPONS: ItemDefinition[] = [
     bulk: 250,
     stats: { attackBonus: 14, speedBonus: 5 },
     identified: false,
-    description: 'Veined with raw mercury from deep cavern lodes. Pierces straight through dense armor, though reckless wielders risk mild toxicity.',
+    description: 'Veined with raw mercury from deep cavern lodes: a quick blade that strikes hard.',
     value: 220,
   },
   {
@@ -174,7 +174,7 @@ export const COTW_WEAPONS: ItemDefinition[] = [
     bulk: 1800,
     stats: { attackBonus: 13 },
     identified: false,
-    description: 'Heavy steel pick calcified with mineral rind. Ignores enemy armor plating and cleaves into subterranean rock formations.',
+    description: 'Heavy steel pick calcified with mineral rind, that bites deep with every swing.',
     value: 200,
   },
   {
@@ -189,7 +189,7 @@ export const COTW_WEAPONS: ItemDefinition[] = [
     bulk: 1200,
     stats: { attackBonus: 18, defenseBonus: 2 },
     identified: false,
-    description: 'Hewn from uncorrupted Yggdrasil heartwood. Incredibly resilient, warding off necrotic rot and retaining pristine razor sharpness.',
+    description: 'Hewn from uncorrupted Yggdrasil heartwood: it keeps a razor edge, and turns a blow as well as it deals one.',
     value: 350,
   },
   {

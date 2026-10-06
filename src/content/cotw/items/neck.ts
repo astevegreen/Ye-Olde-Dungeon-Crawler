@@ -13,7 +13,7 @@ export const COTW_NECK: ItemDefinition[] = [
     bulk: 150,
     stats: { attackBonus: 1 },
     identified: true,
-    description: 'A leather thong strung with wolf fangs, attuning the wearer’s instincts against wild beasts and prowling vermin.',
+    description: 'A leather thong strung with wolf fangs, sharpening the wearer’s instincts in a fight.',
     value: 25,
   },
   {
@@ -28,7 +28,7 @@ export const COTW_NECK: ItemDefinition[] = [
     bulk: 200,
     stats: { defenseBonus: 1 },
     identified: false,
-    description: 'A household hearth-charm worn on a hemp twine. Wards food from rot and vermin and stirs warmly when ambushes lurk nearby.',
+    description: 'A household hearth-charm worn on a hemp twine, for a little luck against harm.',
     value: 110,
   },
   {
@@ -76,7 +76,7 @@ export const COTW_NECK: ItemDefinition[] = [
     stats: { defenseBonus: 4 },
     quality: 'artifact',
     identified: false,
-    description: 'A teardrop of primordial fossilized resin from the heart of Yggdrasil. Bestows massive physical vitality and resilience while slowing spiritual flow.',
+    description: 'A teardrop of primordial fossilized resin from the heart of Yggdrasil, hard as stone.',
     value: 460,
   },
 ];

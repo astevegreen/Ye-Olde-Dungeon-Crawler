@@ -45,6 +45,17 @@ describe('cotw item descriptions', () => {
     expect(struck).toEqual(expect.arrayContaining(['bellows_plate_shield', 'mirror_skulker_facet', 'nid_dripping_hauberk']));
   });
 
+  // About thirty items promised a mechanic with nothing behind it (R-cotw-6/-7, 6 Oct):
+  // armour-piercing, spell power, concealment, sensing, regeneration, a drawback. An item
+  // whose text makes such a claim must carry something that could honour it.
+  it('that claim a mechanic carry a worn effect or a hook for it', () => {
+    const CLAIMS = /\b(ignores?|pierc\w*|empower\w*|rebound\w*|reflect\w*|conceal\w*|obscur\w*|heat-resistant|impervious|regenerat\w*|vitality|communion|attun\w*|alerts?|toxic\w*|pulses?|stealing)\b/i;
+    const empty = COTW_ITEMS.filter((d) => CLAIMS.test(d.description ?? '') && !d.wornEffects && !(d.hooks ?? []).length && d.category !== 'consumable').map(
+      (d) => `${d.id}: ${d.description}`
+    );
+    expect(empty).toEqual([]);
+  });
+
   it('promise no cure for a curse: only the temple lifts one', () => {
     const LIFTS_CURSES = /(purg|lift|break|remov|cleans|dispel)\w*[^.]*\bcurses?\b/i;
     const liars = COTW_ITEMS.filter((d) => LIFTS_CURSES.test(d.description ?? '')).map((d) => `${d.id}: ${d.description}`);

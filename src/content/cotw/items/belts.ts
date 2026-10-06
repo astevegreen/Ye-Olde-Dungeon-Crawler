@@ -58,7 +58,7 @@ export const COTW_BELTS: ItemDefinition[] = [
     bulk: 600,
     stats: { defenseBonus: 1 },
     identified: false,
-    description: 'Asbestos-threaded silk sash holding embers of forge heat, imbuing consumables with ignited vigor that sears nearby foes upon quaffing.',
+    description: 'Asbestos-threaded silk sash with loops for flasks, wands and scrolls, warm with the forge’s heat.',
     value: 170,
     itemType: 'container',
     containerConfig: {
@@ -81,7 +81,7 @@ export const COTW_BELTS: ItemDefinition[] = [
     bulk: 700,
     stats: { defenseBonus: 2 },
     identified: false,
-    description: 'Concealed compartment belt lined with silver weave that prevents pouch-slitting thieves and greedy sprites from stealing coin.',
+    description: 'A compartment belt lined with silver weave, with room for coin as well as flasks.',
     value: 240,
     itemType: 'container',
     containerConfig: {
@@ -105,7 +105,7 @@ export const COTW_BELTS: ItemDefinition[] = [
     stats: { attackBonus: 6, defenseBonus: 3 },
     quality: 'artifact',
     identified: false,
-    description: 'A colossal girdle forged in the primordial frost of Jötunheim. Vastly amplifies physical striking force and load-bearing endurance.',
+    description: 'A colossal girdle forged in the primordial frost of Jötunheim. Vastly amplifies physical striking force.',
     value: 650,
     itemType: 'container',
     containerConfig: {

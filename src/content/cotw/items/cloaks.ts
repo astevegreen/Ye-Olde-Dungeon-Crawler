@@ -28,7 +28,7 @@ export const COTW_CLOAKS: ItemDefinition[] = [
     bulk: 1000,
     stats: { defenseBonus: 2 },
     identified: false,
-    description: 'Woven with volcanic wool and soot-dusted ash, blending into dim passages and obscuring the wearer from watchful eyes.',
+    description: 'Woven with volcanic wool and soot-dusted ash, the colour of dim passages.',
     value: 70,
   },
   {
@@ -43,7 +43,7 @@ export const COTW_CLOAKS: ItemDefinition[] = [
     bulk: 900,
     stats: { defenseBonus: 3 },
     identified: false,
-    description: 'Spun from stinging wild nettles gathered by forest huldras. Conceals the wearer from woodland spirits and beasts.',
+    description: 'Spun from stinging wild nettles gathered by forest huldras, and tougher than it looks.',
     value: 110,
   },
   {
@@ -58,7 +58,7 @@ export const COTW_CLOAKS: ItemDefinition[] = [
     bulk: 1400,
     stats: { defenseBonus: 5, speedBonus: -1 },
     identified: false,
-    description: 'Heavy mantle stiffened with translucent golden Yggdrasil tree sap, forming an impervious seal against caustic bile and rot.',
+    description: 'Heavy mantle stiffened with translucent golden Yggdrasil tree sap: stout protection, though its weight slows the wearer.',
     value: 240,
   },
   {
@@ -74,7 +74,7 @@ export const COTW_CLOAKS: ItemDefinition[] = [
     stats: { defenseBonus: 6 },
     quality: 'artifact',
     identified: false,
-    description: 'Grave-linen saturated with sorrowful spirit essence. Undead entities pause in reverence or confusion before striking.',
+    description: 'Grave-linen saturated with sorrowful spirit essence, tougher than any living weave.',
     value: 420,
   },
 ];

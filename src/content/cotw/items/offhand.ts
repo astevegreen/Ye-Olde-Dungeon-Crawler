@@ -97,7 +97,7 @@ export const COTW_OFFHAND: ItemDefinition[] = [
     bulk: 6500,
     stats: { defenseBonus: 11, speedBonus: -2 },
     identified: false,
-    description: 'An impenetrable slab of fossilized Yggdrasil taproot. Unsurpassed kinetic defense, though remaining stationary can cause living roots to anchor to the stone beneath.',
+    description: 'An impenetrable slab of fossilized Yggdrasil taproot. Unsurpassed defense, though its weight slows the bearer.',
     value: 380,
   },
   {
@@ -112,7 +112,7 @@ export const COTW_OFFHAND: ItemDefinition[] = [
     bulk: 3500,
     stats: { defenseBonus: 14 },
     identified: false,
-    description: 'Interlocked ancient barrow ribs bound in black sinew. Radiates deathly cold and terrifying dread warding against necrotic horrors.',
+    description: 'Interlocked ancient barrow ribs bound in black sinew, cold to the touch and hard as iron.',
     value: 550,
   },
 ];

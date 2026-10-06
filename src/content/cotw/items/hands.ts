@@ -13,7 +13,7 @@ export const COTW_HANDS: ItemDefinition[] = [
     bulk: 600,
     stats: { defenseBonus: 1 },
     identified: true,
-    description: 'Thick seal-hide mitts cracked by biting glacier winds. Provides modest protection at the cost of delicate finger dexterity.',
+    description: 'Thick seal-hide mitts cracked by biting glacier winds. Provides modest protection.',
     value: 20,
   },
   {
@@ -43,7 +43,7 @@ export const COTW_HANDS: ItemDefinition[] = [
     bulk: 500,
     stats: { defenseBonus: 2, attackBonus: 3 },
     identified: false,
-    description: 'Heat-resistant woven quartz gloves used by dwarven siphon-smiths. Greatly enhances the resonance and focus of magical implements.',
+    description: 'Woven quartz gloves used by dwarven siphon-smiths: light armour for the hands, and a firmer grip on a weapon.',
     value: 160,
   },
   {
@@ -85,7 +85,7 @@ export const COTW_HANDS: ItemDefinition[] = [
     bulk: 1000,
     stats: { defenseBonus: 5 },
     identified: false,
-    description: 'Living taproots of the world-tree woven around the forearms, feeding life into the wearer’s veins over time while rejecting artificial alchemy.',
+    description: 'Living taproots of the world-tree woven around the forearms.',
     value: 390,
   },
 ];

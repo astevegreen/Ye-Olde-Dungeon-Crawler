@@ -14,7 +14,7 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
     weight: 150,
     bulk: 100,
     identified: true,
-    description: 'Antiseptic birch-tar and moss paste that seals wounds and neutralizes venom instantly, temporarily numbing the limb.',
+    description: 'Antiseptic birch-tar and moss paste that neutralizes venom instantly, though it numbs the limb and slows you for a few turns.',
     value: 25,
     itemType: 'potion',
     potionConfig: {
@@ -53,7 +53,7 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
     weight: 200,
     bulk: 120,
     identified: false,
-    description: 'Fermented swamp herbs and honey that restore 30 Seiðr while briefly muddling mental clarity.',
+    description: 'Fermented swamp herbs and honey that restore 30 Seiðr.',
     value: 45,
     itemType: 'potion',
     potionConfig: {
@@ -72,7 +72,7 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
     weight: 400,
     bulk: 250,
     identified: false,
-    description: 'Hearty mammoth marrow stew that restores 60 Hit Points and grants bolstered vitality.',
+    description: 'Hearty mammoth marrow stew that restores 60 Hit Points.',
     value: 90,
     itemType: 'potion',
     potionConfig: {
@@ -91,7 +91,7 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
     weight: 300,
     bulk: 180,
     identified: false,
-    description: 'A steaming primordial draft that purges every affliction and debilitating venom from the bloodstream.',
+    description: 'A steaming primordial draft that purges every affliction and debilitating venom from the bloodstream, though its chill slows you for a few turns.',
     value: 180,
     itemType: 'potion',
     potionConfig: {
@@ -179,7 +179,7 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
     weight: 250,
     bulk: 150,
     identified: false,
-    description: 'Pressurized subterranean mine gas that shatters into an expanding, lingering vapor of suffocating poison.',
+    description: 'Pressurized subterranean mine gas that shatters into a burst of suffocating poison, sickening every hostile creature within three paces.',
     value: 140,
     itemType: 'potion',
     potionConfig: {
@@ -228,7 +228,7 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
     weight: 350,
     bulk: 250,
     identified: false,
-    description: 'A heady hallucinogenic brew that allows deciphering ancient runes and anticipating hostile paths while blurring standard vision.',
+    description: 'A heady hallucinogenic brew: for a while your sight shrinks to arm’s reach, but you hear whatever moves around you.',
     value: 130,
     itemType: 'potion',
     potionConfig: {

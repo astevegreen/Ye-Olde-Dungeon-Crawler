@@ -391,6 +391,14 @@ function finishDraft(draft: LayoutDraft, ctx: DraftContext): GeneratedFloorData 
       for (let x = v.rect.x1; x <= v.rect.x2; x++) if (reach[y * W + x] >= 0) { entered = true; break; }
     }
     if (!entered) return null;
+    // Every chest it holds is reachable too: a chest sealed behind chasm or bars shows the
+    // hero loot that can never be taken (R-ai-2), so such a draft is redrawn.
+    const rows = v.blueprint.layout;
+    for (let r = 0; r < rows.length; r++) {
+      for (let c = 0; c < rows[r].length; c++) {
+        if (VaultStamper.parseSymbol(rows[r][c], v.blueprint.legend).isChest && reach[(v.y + r) * W + (v.x + c)] < 0) return null;
+      }
+    }
   }
 
   // Down stairs: the farthest plain floor walkable without secrets, outside vaults.

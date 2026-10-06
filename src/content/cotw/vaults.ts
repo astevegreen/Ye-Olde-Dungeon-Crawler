@@ -144,15 +144,17 @@ export const COTW_VAULTS: VaultBlueprint[] = [
     name: 'The Abyssal Treasury',
     description: 'A fortified stronghold suspended above an infinite void with barred gates.',
     minFloor: 7,
+    // A stone bridge leads from each side passage over the void to a gate: the top-left
+    // and the bottom-right. Without them both chests sat sealed behind chasm and bars.
     layout: [
       '###############',
-      '#XXXXX...XXXXX#',
-      '#X###BB+BB###X#',
+      '#XX......XXXXX#',
+      '#X#.#BB+BB###X#',
       '@...#..C..#...@',
       '#X#.#.M.M.#.#X#',
       '@...#..C..#...@',
-      '#X###BB+BB###X#',
-      '#XXXXX...XXXXX#',
+      '#X###BB+BB#.#X#',
+      '#XXXXX......XX#',
       '###############',
     ],
     preferredMonsters: ['orc', 'ogre', 'kobold_shaman'],

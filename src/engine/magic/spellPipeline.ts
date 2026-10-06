@@ -20,12 +20,13 @@ import type {
   LearnSpellEffect,
   TargetingMode,
 } from './types';
-import { traceProjectile, getAreaOfEffectTiles } from './targeting';
+import { getAreaOfEffectTiles } from './targeting';
 import { DeathResolver } from '../combat/deathResolver';
 import type { StatusType } from '../status/types';
 import { findSafeSpawnPosition } from '../spatial/collisionSolver';
 import { EffectPrimitiveRegistry, type EffectContext } from './effectRegistry';
 import { scaleSpellDamage, scaleSpellHeal } from './castNumbers';
+import { castGeometry } from './castTrace';
 import { registerReciprocalPrimitives } from '../combat/reciprocalPipeline';
 import { EnergyModel } from '../actors/energyModel';
 import { Actor } from '../entities/actor';
@@ -305,24 +306,17 @@ export class SpellPipeline {
     mode: TargetingMode,
     actionCost: number
   ): ActionResult {
-    const reflects = spell.reflects || mode === 'bounce_ray' || engine.affinityMatrix.canReflect(spell.element);
+    // Its flight and burst, as the aim preview draws them (`castGeometry`).
+    const geo = castGeometry(engine, spell, caster, targetPos);
+    const reflects = geo.reflects;
     const targetsHit: Entity[] = [];
     let impactTile = { x: targetPos.x, y: targetPos.y };
     let hitDescription = '';
     const effects: VisualEffectDescriptor[] = [];
     const color = spell.visual?.color ?? getElementDefaultColor(spell.element);
 
-    if (mode === 'ray' || mode === 'bounce_ray') {
-      const rayResult = traceProjectile(
-        engine.map,
-        caster.x,
-        caster.y,
-        targetPos.x,
-        targetPos.y,
-        spell.range,
-        reflects,
-        caster.id
-      );
+    if ((mode === 'ray' || mode === 'bounce_ray') && geo.ray) {
+      const rayResult = geo.ray;
       impactTile = rayResult.impactTile;
 
       if (rayResult.path.length > 0) {
@@ -336,8 +330,8 @@ export class SpellPipeline {
         });
       }
 
-      if (spell.areaOfEffect > 0 || spell.visual?.archetype === 'projectile_burst') {
-        const blastRadius = spell.areaOfEffect > 0 ? spell.areaOfEffect : (spell.visual?.burstRadius ?? 1);
+      if (geo.burst) {
+        const blastRadius = geo.burst.radius;
         effects.push({
           type: 'burst',
           epicenter: { x: impactTile.x, y: impactTile.y },
@@ -381,34 +375,21 @@ export class SpellPipeline {
       if (spell.element === 'lightning') {
         this.checkAndPropagateWaterShock(engine, spell, rayResult.path, rayResult.hitEntityId);
       }
-    } else if (mode === 'area_burst' || (mode === 'tile' && spell.areaOfEffect > 0) || spell.visual?.archetype === 'direct_burst') {
-      let burstOrigin = targetPos;
-      if (spell.visual?.archetype === 'projectile_burst' || (spell.range > 0 && spell.visual?.archetype !== 'direct_burst')) {
-        const distToTarget = Math.hypot(targetPos.x - caster.x, targetPos.y - caster.y);
-        const rayResult = traceProjectile(
-          engine.map,
-          caster.x,
-          caster.y,
-          targetPos.x,
-          targetPos.y,
-          Math.min(spell.range, distToTarget),
-          false,
-          caster.id
-        );
-        if (rayResult.path.length > 0) {
-          effects.push({
-            type: 'projectile',
-            path: rayResult.path.map((p) => ({ x: p.x, y: p.y, isReflection: p.isReflection })),
-            color,
-            spriteId: spell.visual?.spriteId,
-            stepDelayMs: spell.visual?.stepDelayMs ?? 25,
-            travelMode: spell.visual?.travelMode ?? 'smooth',
-          });
-          burstOrigin = rayResult.impactTile;
-        }
+    } else if (geo.burst) {
+      // A thrown burst flies to the tile aimed at and bursts where it stops.
+      const burstOrigin = geo.burst.epicenter;
+      if (geo.ray) {
+        effects.push({
+          type: 'projectile',
+          path: geo.ray.path.map((p) => ({ x: p.x, y: p.y, isReflection: p.isReflection })),
+          color,
+          spriteId: spell.visual?.spriteId,
+          stepDelayMs: spell.visual?.stepDelayMs ?? 25,
+          travelMode: spell.visual?.travelMode ?? 'smooth',
+        });
       }
 
-      const radius = spell.areaOfEffect > 0 ? spell.areaOfEffect : (spell.visual?.burstRadius ?? 1);
+      const radius = geo.burst.radius;
       effects.push({
         type: 'burst',
         epicenter: { x: burstOrigin.x, y: burstOrigin.y },

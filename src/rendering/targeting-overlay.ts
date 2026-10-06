@@ -4,7 +4,7 @@ import {
   type Position,
   type ActionResult,
   type SpellDefinition,
-  traceProjectile,
+  castGeometry,
   getAreaOfEffectTiles,
   type ElementType,
   WandItem,
@@ -120,6 +120,8 @@ export class TargetingOverlay implements UIModal {
     if (!this.activeEntry) return null;
 
     const entry = this.activeEntry;
+    // Where the cast goes, read before it changes the map (a kill lets a ray run on).
+    const geo = castGeometry(engine, entry.spellDef, engine.player, { x: this.reticleX, y: this.reticleY });
     let result: ActionResult;
     // Commands may report the energy they spent in `data.cost`; default to a full turn.
     const costOf = (data: unknown): number =>
@@ -145,25 +147,14 @@ export class TargetingOverlay implements UIModal {
       result = { success: res.success, message: res.message ?? '', cost: costOf(res.data), effects: res.effects };
     }
 
-    // Save visual path for flash animation
-    if (entry.spellDef.targetType === 'ray' || entry.spellDef.targetType === 'tile') {
-      const trace = traceProjectile(
-        engine.map,
-        engine.player.x,
-        engine.player.y,
-        this.reticleX,
-        this.reticleY,
-        entry.spellDef.range,
-        entry.spellDef.reflects,
-        engine.player.id
-      );
-
+    // The after-image of the flight, as the cast made it.
+    if (geo.ray) {
       this.lastFired = {
-        path: trace.path,
+        path: geo.ray.path,
         element: entry.spellDef.element,
         color: spellColor(engine, entry.spellDef.element),
-        isAoE: entry.spellDef.areaOfEffect > 0,
-        impactTile: trace.impactTile,
+        isAoE: Boolean(geo.burst),
+        impactTile: geo.burst?.epicenter ?? geo.ray.impactTile,
         timestamp: Date.now(),
       };
     }
@@ -332,17 +323,10 @@ export class TargetingOverlay implements UIModal {
     const rx = this.reticleX;
     const ry = this.reticleY;
 
-    // Calculate simulated projectile path (including reflections!)
-    const trace = traceProjectile(
-      engine.map,
-      px,
-      py,
-      rx,
-      ry,
-      spell.range,
-      spell.reflects,
-      engine.player.id
-    );
+    // The flight and burst the cast will make (`castGeometry`, as the spell pipeline
+    // resolves it): a thrown burst stops at the reticle, a reflecting element bounces.
+    const geo = castGeometry(engine, spell, engine.player, { x: rx, y: ry });
+    const path = geo.ray?.path ?? [];
 
     // Draw projected ray line
     ctx.save();
@@ -361,7 +345,7 @@ export class TargetingOverlay implements UIModal {
       ctx.beginPath();
       ctx.moveTo(playerScreen.x + cellSize / 2, playerScreen.y + cellSize / 2);
 
-      for (const step of trace.path) {
+      for (const step of path) {
         if (!step || typeof step.x !== 'number' || typeof step.y !== 'number') continue;
         const stepScreen = camera.worldToScreen(step.x, step.y, cellSize, offsetX, offsetY);
         if (stepScreen) {
@@ -373,8 +357,8 @@ export class TargetingOverlay implements UIModal {
     ctx.restore();
 
     // Area of effect highlight
-    if (spell.areaOfEffect > 0 && trace.impactTile && typeof trace.impactTile.x === 'number' && typeof trace.impactTile.y === 'number') {
-      const aoeTiles = getAreaOfEffectTiles(engine.map, trace.impactTile.x, trace.impactTile.y, spell.areaOfEffect);
+    if (geo.burst) {
+      const aoeTiles = getAreaOfEffectTiles(engine.map, geo.burst.epicenter.x, geo.burst.epicenter.y, geo.burst.radius);
       const danger = resolveThemeTokens(engine.manifest?.theme).bad;
       ctx.save();
       ctx.fillStyle = danger;

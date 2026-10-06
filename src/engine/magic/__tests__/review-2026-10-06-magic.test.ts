@@ -8,6 +8,7 @@ import { CastSpellAction } from '../../actions/spell-actions';
 import { GrimoireMatrixManager } from '../grimoireMatrix';
 import { SpellPipeline } from '../spellPipeline';
 import { effectiveSpellPower } from '../castNumbers';
+import { castGeometry } from '../castTrace';
 
 /**
  * Whole-codebase review, 2026-10-06, area 3 (magic). Each test reproduces one finding from
@@ -120,5 +121,36 @@ describe('R-cmbt-10 · a burst hurts its caster (owner Q1, classic CotW); a hero
     expect(engine.gameState.runStatus).toBe('fallen');
     expect(engine.gameState.killerName).toBe('their own Fireball');
     expect(engine.gameState.causeOfDeath).toMatch(/^Slain by their own Fireball on Floor/);
+  });
+});
+
+describe('R-rend-4 · the aim preview and the cast share one geometry (castGeometry)', () => {
+  it('a Fireball aimed at an empty tile three away bursts there, not at the end of its range', () => {
+    const map = new GameMap(20, 9, TILES.FLOOR);
+    const player = new Player({ position: { x: 3, y: 4 }, stats: { hp: 100, maxHp: 100, attack: 10, defense: 0 } });
+    map.addEntity(player);
+    const engine = new GameEngine({ map, player });
+
+    const geo = castGeometry(engine, fireball as never, player, { x: 6, y: 4 });
+
+    expect(geo.burst?.epicenter).toEqual({ x: 6, y: 4 });
+    const cast = SpellPipeline.executeSpell(engine, fireball as never, player, { x: 6, y: 4 });
+    const burst = cast.effects?.find((e) => e.type === 'burst') as { epicenter: { x: number; y: number } } | undefined;
+    expect(burst?.epicenter).toEqual(geo.burst?.epicenter);
+  });
+
+  it('a ray of an element that reflects bounces in the preview as in the cast', async () => {
+    const { cotwManifest } = await import('../../../content/cotw');
+    const map = new GameMap(12, 7, TILES.WALL);
+    for (let y = 1; y < 6; y++) for (let x = 1; x < 11; x++) map.setTile(x, y, TILES.FLOOR);
+    const player = new Player({ position: { x: 2, y: 3 }, stats: { hp: 100, maxHp: 100, attack: 10, defense: 0 } });
+    map.addEntity(player);
+    const engine = new GameEngine({ map, player, manifest: cotwManifest });
+    const spark = { ...firebolt, id: 'spark', element: 'lightning', reflects: false, range: 20, effects: [{ type: 'damage', amount: 5, element: 'lightning' }] };
+
+    const geo = castGeometry(engine, spark as never, player, { x: 6, y: 1 });
+
+    expect(geo.reflects).toBe(true);
+    expect(geo.ray?.reflectionsCount).toBeGreaterThan(0);
   });
 });

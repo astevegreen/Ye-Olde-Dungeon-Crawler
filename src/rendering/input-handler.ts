@@ -20,6 +20,7 @@ import {
   flightRecorder,
 } from '../engine';
 import { KeybindingManager } from '../ui/settings/keybindingManager';
+import { runAndExplain } from '../ui/actionFeedback';
 import type { AutoRestRunner } from '../ui/autoRestRunner';
 import type { NavigationController } from '../ui/navigation';
 import type { TargetingOverlay } from './targeting-overlay';
@@ -838,8 +839,7 @@ export class InputHandler {
     const standingTile = this.engine.map.getTile(p.x, p.y);
     const onStairs = standingTile?.isStairsDown || standingTile?.isStairsUp || standingTile?.type === 'stairs_down' || standingTile?.type === 'stairs_up';
     if (e.key === '>' || (e.shiftKey && code === 'Period') || (code === 'Enter' && onStairs)) {
-      const stairAction = new ClimbStairsAction(p);
-      this.engine.handlePlayerAction(stairAction);
+      runAndExplain(this.engine, new ClimbStairsAction(p));
       this.onActionProcessed();
       return true;
     }
@@ -932,8 +932,7 @@ export class InputHandler {
       return true;
     }
     if (userAction === 'stairs') {
-      const stairAction = new ClimbStairsAction(p);
-      this.engine.handlePlayerAction(stairAction);
+      runAndExplain(this.engine, new ClimbStairsAction(p));
       this.onActionProcessed();
       return true;
     }
@@ -986,8 +985,7 @@ export class InputHandler {
       return true;
     }
     if (userAction === 'channel_rune_of_return') {
-      const channelAction = new ChannelRuneOfReturnAction(p);
-      this.engine.handlePlayerAction(channelAction);
+      runAndExplain(this.engine, new ChannelRuneOfReturnAction(p));
       this.onActionProcessed();
       return true;
     }

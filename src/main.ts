@@ -55,6 +55,7 @@ import { CanvasRenderer } from './rendering/canvas-renderer';
 import { InputHandler } from './rendering/input-handler';
 import { TitleScreen } from './ui/title-screen';
 import { DiagnosticModal } from './ui/diagnostic-modal';
+import { runAndExplain } from './ui/actionFeedback';
 import { FeedbackModal } from './ui/feedbackModal';
 import { SagaShareModal } from './ui/sagaShareModal';
 import { GameOverDialog } from './ui/gameOverDialog';
@@ -570,7 +571,7 @@ window.addEventListener('DOMContentLoaded', () => {
         break;
       case 'descend':
       case 'ascend':
-        engine.handlePlayerAction(new ClimbStairsAction(p));
+        runAndExplain(engine, new ClimbStairsAction(p));
         break;
       case 'close_door':
         engine.handlePlayerAction(new CloseDoorAction(p, action.x ?? p.x, action.y ?? p.y));
@@ -580,6 +581,8 @@ window.addEventListener('DOMContentLoaded', () => {
         document.getElementById('btn-hud-rest')?.click();
         return;
       case 'none':
+        // F or the button with nothing worth doing here: say so rather than nothing.
+        engine.log('Nothing to do here.');
         return;
     }
   }
@@ -1178,7 +1181,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   hudStairsBtn?.addEventListener('click', () => {
     if (activeEngine && renderer) {
-      activeEngine.handlePlayerAction(new ClimbStairsAction(activeEngine.player));
+      runAndExplain(activeEngine, new ClimbStairsAction(activeEngine.player));
       void processVisualEffectsAndRender();
     }
   });

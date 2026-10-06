@@ -54,6 +54,7 @@ export const ACTION_METADATA: ActionMetadata[] = [
   { id: 'quick_loot', name: 'Quick-Loot All Items', category: 'Interaction & Inventory', defaultCodes: ['Shift+KeyG', 'Shift+Comma'] },
   { id: 'close_door', name: 'Smart Close Door', category: 'Interaction & Inventory', defaultCodes: ['KeyC'] },
   { id: 'search', name: 'Search Secret Doors / Traps', category: 'Interaction & Inventory', defaultCodes: ['KeyS'] },
+  { id: 'disarm_trap', name: 'Disarm Trap', category: 'Interaction & Inventory', defaultCodes: ['Shift+KeyD'] },
   { id: 'rest', name: 'Rest Until Healed', category: 'Interaction & Inventory', defaultCodes: ['KeyR'] },
   { id: 'stairs', name: 'Climb Stairs Up / Down', category: 'Interaction & Inventory', defaultCodes: ['Enter'] },
   { id: 'map', name: 'Explored Dungeon Map', category: 'Interaction & Inventory', defaultCodes: ['KeyM'] },

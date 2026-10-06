@@ -31,6 +31,16 @@ describe('resolveContextAction', () => {
     expect(resolveContextAction(engine)).toMatchObject({ kind: 'take_all', target: '2 items' });
   });
 
+  it('R-rend-2 · offers to disarm a trap the hero has found beside them, and not one still hidden', () => {
+    const engine = buildEngine();
+    // The model reads only where a trap is and what the hero knows of it.
+    const trap = { id: 't', type: 'pit', x: 11, y: 10, revealed: false, disarmed: false };
+    engine.map.addTrap(trap as never);
+    expect(resolveContextAction(engine).kind).not.toBe('disarm');
+    trap.revealed = true;
+    expect(resolveContextAction(engine)).toMatchObject({ kind: 'disarm', verb: 'Disarm', x: 11, y: 10 });
+  });
+
   it('offers the stairs underfoot', () => {
     const engine = buildEngine();
     engine.map.setTile(10, 10, TILES.STAIRS_DOWN);

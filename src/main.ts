@@ -40,6 +40,7 @@ import {
   MovementAction,
   PickUpAction,
   CloseDoorAction,
+  DisarmTrapAction,
   SAVE_FILE_EXTENSION,
 } from './engine';
 import type {
@@ -565,6 +566,9 @@ window.addEventListener('DOMContentLoaded', () => {
         break;
       case 'close_door':
         engine.handlePlayerAction(new CloseDoorAction(p, action.x ?? p.x, action.y ?? p.y));
+        break;
+      case 'disarm':
+        engine.handlePlayerAction(new DisarmTrapAction(p, action.x, action.y));
         break;
       case 'rest':
         // The same rest as R and the Rest button.

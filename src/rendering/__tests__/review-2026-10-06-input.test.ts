@@ -13,8 +13,25 @@ const ev = (code: string): KeyboardEvent =>
   ({ code, key: code, repeat: false, preventDefault() {}, stopPropagation() {}, target: null }) as unknown as KeyboardEvent;
 
 describe('R-rend-2 · Disarm Trap has no key: T is Channel Rune of Return and the hard-wired fallback is dead', () => {
-  it.fails('the settings offer a bindable Disarm action', () => {
+  it('the settings offer a bindable Disarm action', () => {
     expect(ACTION_METADATA.some((a) => /disarm/i.test(a.id) || /disarm/i.test(a.name))).toBe(true);
+  });
+
+  it('its key (Shift+D) disarms; T still channels the Rune of Return', () => {
+    const engine = new GameEngine({ map: new GameMap(20, 20), player: new Player({ position: { x: 10, y: 10 } }) });
+    const actions: string[] = [];
+    const orig = engine.handlePlayerAction.bind(engine);
+    engine.handlePlayerAction = ((a: { constructor: { name: string } }) => {
+      actions.push(a.constructor.name);
+      return orig(a as never);
+    }) as typeof engine.handlePlayerAction;
+    const ih = new InputHandler(engine, () => {}, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, new SettingsManager(new MemoryStorage()));
+    ih.enabled = true;
+    ih.handleKeyDown({ ...ev('KeyD'), shiftKey: true } as KeyboardEvent);
+    ih.handleKeyDown(ev('KeyT'));
+    ih.destroy();
+
+    expect(actions).toEqual(['DisarmTrapAction', 'ChannelRuneOfReturnAction']);
   });
 });
 

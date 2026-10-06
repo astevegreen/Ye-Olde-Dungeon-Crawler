@@ -30,6 +30,7 @@ export type ContextActionKind =
   | 'open_door'
   | 'rest'
   | 'close_door'
+  | 'disarm'
   | 'none';
 
 export interface ContextAction {
@@ -57,8 +58,8 @@ const NEIGHBOURS: Array<[number, number]> = [
 /**
  * The most useful single thing to do right here, in priority order: fight an
  * adjacent monster (the weakest), take what's underfoot, use the stairs, talk to
- * someone beside you, open a door, rest when hurt with nothing in sight, close a
- * door behind you. `none` when nothing applies.
+ * someone beside you, open a door, disarm a known trap, rest when hurt with nothing
+ * in sight, close a door behind you. `none` when nothing applies.
  */
 export function resolveContextAction(engine: GameEngine): ContextAction {
   const p = engine.player;
@@ -87,6 +88,14 @@ export function resolveContextAction(engine: GameEngine): ContextAction {
   for (const [dx, dy] of NEIGHBOURS) {
     if (engine.map.getTile(p.x + dx, p.y + dy)?.type === 'door_closed') {
       return { kind: 'open_door', verb: 'Open', target: 'the door', icon: 'door', nativeKey: 'move into it', dx, dy };
+    }
+  }
+
+  // A trap the hero knows of, underfoot or beside them.
+  for (const [dx, dy] of [[0, 0], ...NEIGHBOURS]) {
+    const trap = engine.map.getTrapAt(p.x + dx, p.y + dy);
+    if (trap?.revealed && !trap.disarmed) {
+      return { kind: 'disarm', verb: 'Disarm', target: 'the trap', icon: 'tools', nativeKey: 'Shift+D', x: p.x + dx, y: p.y + dy };
     }
   }
 

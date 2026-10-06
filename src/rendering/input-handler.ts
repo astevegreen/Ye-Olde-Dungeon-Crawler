@@ -980,6 +980,11 @@ export class InputHandler {
       this.onActionProcessed();
       return true;
     }
+    if (userAction === 'disarm_trap') {
+      this.engine.handlePlayerAction(new DisarmTrapAction(p));
+      this.onActionProcessed();
+      return true;
+    }
     if (userAction === 'channel_rune_of_return') {
       runAndExplain(this.engine, new ChannelRuneOfReturnAction(p));
       this.onActionProcessed();
@@ -1125,10 +1130,6 @@ export class InputHandler {
       // Active Search (KeyS)
       case 'KeyS':
         return new SearchAction(p, this.engine.rng, 2);
-
-      // Disarm Trap (KeyT)
-      case 'KeyT':
-        return new DisarmTrapAction(p);
 
       default:
         return null;

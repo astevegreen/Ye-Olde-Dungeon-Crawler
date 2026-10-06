@@ -1,12 +1,14 @@
 import { Item } from './item';
-import { PotionItem, ScrollItem } from './consumables';
+import { PotionItem, ScrollItem, WandItem } from './consumables';
 import { CoinItem } from '../economy/currency';
 
 /**
  * Checks whether an item type is eligible for stack merging.
- * Potions, scrolls, ammunition, and coins can form stacks.
+ * Potions, scrolls, ammunition, and coins can form stacks. A wand carries its own charges,
+ * which a merge would lose, so it never stacks.
  */
 export function isStackable(item: Item): boolean {
+  if (item instanceof WandItem) return false;
   if (item instanceof CoinItem) return true;
   if (item instanceof PotionItem || item instanceof ScrollItem) return true;
   if (item.category === 'currency' || item.category === 'consumable') return true;

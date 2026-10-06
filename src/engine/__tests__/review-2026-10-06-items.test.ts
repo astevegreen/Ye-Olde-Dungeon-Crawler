@@ -56,7 +56,7 @@ describe('R-econ-1 · drinking from a stack consumes the whole stack', () => {
 });
 
 describe('R-econ-3 · wands stack, and the merge drops the added wand’s charges', () => {
-  it.fails('an empty and a full Wand of Lightning stay two items', () => {
+  it('an empty and a full Wand of Lightning stay two items', () => {
     const { pack } = build();
     pack.addItem(new WandItem({ id: 'wa', definitionId: 'wand_lightning', name: 'Wand of Lightning', spellId: 'lightning_bolt', charges: 0, maxCharges: 8, identified: true } as never));
     pack.addItem(new WandItem({ id: 'wb', definitionId: 'wand_lightning', name: 'Wand of Lightning', spellId: 'lightning_bolt', charges: 8, maxCharges: 8, identified: true } as never));

@@ -851,11 +851,12 @@ window.addEventListener('DOMContentLoaded', () => {
           // Only tactical effects gate input (ARCHITECTURE.md §4); ambient ones play on
           // through the non-blocking queue while the player acts.
           const hasTactical = pending.some(isTacticalEffect);
-          if (hasTactical && inputHandler) inputHandler.isInputLocked = true;
+          // This batch's own hold: a later batch keeps input locked until it ends too.
+          const release = hasTactical ? inputHandler?.holdInput() : undefined;
           try {
             await renderer.fxRunner.playQueue(pending);
           } finally {
-            if (hasTactical && inputHandler) inputHandler.isInputLocked = false;
+            release?.();
           }
         }
       }

@@ -1,5 +1,6 @@
 import type { Camera } from './camera';
 import type { ThemeTokens } from '../engine';
+import { flightRecorder } from '../engine';
 import { resolveThemeTokens, uiFont, type UiTextRole } from './theme';
 
 /** The theme role a floating text is drawn in, resolved when drawn so it follows the pack. */
@@ -136,8 +137,14 @@ export class FloatingTextRunner {
       const now = performance.now();
       this.activeTexts = this.activeTexts.filter((t) => now - t.startTime < t.durationMs);
 
-      if (this.onFrame) {
-        this.onFrame();
+      // A bad frame drops the numbers rather than freezing them (R-rend-8).
+      try {
+        if (this.onFrame) {
+          this.onFrame();
+        }
+      } catch (err) {
+        flightRecorder.recordError(err instanceof Error ? err : new Error(String(err)), { source: 'floatingText frame' });
+        this.activeTexts = [];
       }
 
       if (this.activeTexts.length > 0) {

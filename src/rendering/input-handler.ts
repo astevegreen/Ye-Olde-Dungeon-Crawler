@@ -170,8 +170,34 @@ export class InputHandler {
   /** Casts a spell by ID (as opposed to a QuickSpellsBar slot index) — wired from main.ts's castOrTargetSpell. */
   public onCastSpellById?: (spellId: string) => void;
   public enabled = true;
-  public isInputLocked = false;
+  /** Effect batches holding input (`holdInput`); gameplay keys wait while any does. */
+  private inputHolds = 0;
   public pendingCloseDoorDirection = false;
+
+  /** While effects play, gameplay keys are ignored (§4). True while any batch holds input. */
+  public get isInputLocked(): boolean {
+    return this.inputHolds > 0;
+  }
+
+  /** `false` releases every hold (a new run, the diagnostics' "clear lock"); `true` takes one. */
+  public set isInputLocked(locked: boolean) {
+    this.inputHolds = locked ? Math.max(1, this.inputHolds) : 0;
+  }
+
+  /**
+   * Holds input for one batch of effects and returns its release, which frees only that
+   * hold: overlapping batches (a rest step's volley while the last one still flies) no
+   * longer unlock each other early (R-rend-9). Calling the release twice does nothing.
+   */
+  public holdInput(): () => void {
+    this.inputHolds++;
+    let held = true;
+    return () => {
+      if (!held) return;
+      held = false;
+      this.inputHolds = Math.max(0, this.inputHolds - 1);
+    };
+  }
   public autoRestRunner?: AutoRestRunner;
   public navigationController?: NavigationController;
   private radialHeldKeys = new Set<string>();

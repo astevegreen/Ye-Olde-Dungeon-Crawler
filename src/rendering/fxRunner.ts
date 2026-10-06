@@ -1,5 +1,5 @@
 import type { VisualEffectDescriptor, ProjectileEffectDescriptor, BurstEffectDescriptor, ScreenFlashEffectDescriptor, ChainLinkEffectDescriptor } from '../engine';
-import { isTacticalEffect } from '../engine';
+import { flightRecorder, isTacticalEffect } from '../engine';
 import type { Camera } from './camera';
 import type { SpriteAtlas } from './atlas/sprite-atlas';
 
@@ -289,9 +289,17 @@ export class CanvasFXRunner {
     const loop = (timestamp: number) => {
       if (this.isDestroyed) return;
 
-      this.update(timestamp);
-      if (this.onFrame) {
-        this.onFrame();
+      // One bad frame must not end the loop with its promise unsettled, which left input
+      // locked for the session (R-rend-8): record it, drop what was playing, finish cleanly.
+      try {
+        this.update(timestamp);
+        if (this.onFrame) {
+          this.onFrame();
+        }
+      } catch (err) {
+        flightRecorder.recordError(err instanceof Error ? err : new Error(String(err)), { source: 'fxRunner frame' });
+        this.activeEffects = [];
+        this.queuedTracks = [];
       }
 
       if (this.activeEffects.length > 0 || this.queuedTracks.length > 0) {

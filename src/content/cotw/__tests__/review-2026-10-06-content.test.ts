@@ -64,7 +64,7 @@ describe('R-cotw-2 · the Oath grants no companion when the hero already has one
 });
 
 describe('R-cotw-3 · a "monster"-tagged radial consumable afflicts the hero’s own companion', () => {
-  it.fails('Zealot’s Sun-Flare does not set the companion burning', () => {
+  it('Zealot’s Sun-Flare does not set the companion burning', () => {
     const pm = new ProfileManager(new MemoryStorage(), cotwManifest);
     const { engine } = pm.createCharacter('Pet', { seed: 2, difficulty: 'medium' } as never);
     const p = engine.player;

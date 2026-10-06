@@ -517,7 +517,8 @@ export class DrinkPotionAction implements Action {
           );
           let affected = 0;
           for (const target of targets) {
-            if (target.id === this.user.id) continue;
+            // Not the user, nor anyone on the user's side (the hero's companion).
+            if (target.id === this.user.id || target.faction === this.user.faction) continue;
             const applied = target.statusManager.applyStatus(
               { type: effect.status, duration: effect.duration, potency: effect.potency },
               target.statusImmunities,

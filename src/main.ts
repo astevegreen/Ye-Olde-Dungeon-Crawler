@@ -85,6 +85,7 @@ import { showToast } from './ui/toast';
 import { safely } from './ui/safeStep';
 import { codesLabel, keyLabel } from './ui/keyLabel';
 import { expandCompressedReplay } from './ui/replayCodec';
+import { replayProfile } from './ui/replayProfile';
 import { SessionGuard } from './ui/sessionGuard';
 import { getBrowserAsyncStore } from './ui/indexedDbStore';
 import { setupSaveDragAndDrop, importSaveWithValidation } from './ui/saveImporter';
@@ -948,7 +949,8 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     diagnosticModal.close();
     popModal(diagnosticModal.id);
-    launchGame(engine, profile);
+    // Under its own id: the report's is its hero's, whose real save a later save would overwrite.
+    launchGame(engine, replayProfile(profile));
     showToast(`Loaded ${profile.name}${note}.`, 'info', 6000);
     return `Loaded ${profile.name}${note}.`;
   });

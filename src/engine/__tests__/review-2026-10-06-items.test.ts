@@ -68,7 +68,7 @@ describe('R-econ-3 · wands stack, and the merge drops the added wand’s charge
 });
 
 describe('R-econ-4 · equipping a belt over a loaded belt can destroy the old belt and its contents', () => {
-  it.fails('the displaced belt is still carried, or the swap is refused', () => {
+  it('the displaced belt is still carried, or the swap is refused', () => {
     const { player, engine, pack } = build();
     const inv = player.inventory;
     const beltA = ItemFactory.createUtilityBelt('belt-A');
@@ -82,6 +82,21 @@ describe('R-econ-4 · equipping a belt over a loaded belt can destroy the old be
 
     const stillCarried = inv.getAllCarriedItems().some((i) => i.id === 'belt-A');
     expect(!r.success || stillCarried).toBe(true);
+  });
+
+  it('with room in the pack, the swap goes through and the old belt keeps its torches', () => {
+    const { player, engine, pack } = build();
+    const inv = player.inventory;
+    const beltA = ItemFactory.createUtilityBelt('belt-A');
+    inv.paperdoll.equip(beltA, 'waist');
+    for (let i = 0; i < 4; i++) beltA.addItem(ItemFactory.createTorch(`torch-${i}`));
+    pack.addItem(ItemFactory.createUtilityBelt('belt-B'));
+
+    const r = new EquipAction(player, 'belt-B').perform(engine);
+
+    expect(r.success).toBe(true);
+    expect(pack.getItem('belt-A')).toBe(beltA);
+    expect((beltA as unknown as { getItems(): Item[] }).getItems()).toHaveLength(4);
   });
 });
 

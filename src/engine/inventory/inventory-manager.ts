@@ -178,10 +178,12 @@ export class InventoryManager {
     if (pushedOut) displacedItems.push(pushedOut.item);
 
     if (displacedItems.length > 0) {
-      const itemWeight = item.unitWeight ?? item.weight;
-      const itemBulk = item.bulk;
-      const displacedWeight = displacedItems.reduce((acc, i) => acc + (i.unitWeight ?? i.weight), 0);
-      const displacedBulk = displacedItems.reduce((acc, i) => acc + i.bulk, 0);
+      // Each counts with all it holds, as `addItem` counts it: a worn belt full of torches
+      // comes back to the pack torches and all.
+      const itemWeight = item.totalWeight();
+      const itemBulk = item.totalBulk();
+      const displacedWeight = displacedItems.reduce((acc, i) => acc + i.totalWeight(), 0);
+      const displacedBulk = displacedItems.reduce((acc, i) => acc + i.totalBulk(), 0);
 
       const netWeightChange = displacedWeight - itemWeight;
       const netBulkChange = displacedBulk - itemBulk;
@@ -216,8 +218,9 @@ export class InventoryManager {
         : [];
     for (const unequipped of displaced) {
       if (check.slot === 'purse' && unequipped instanceof Container) this.spillPurse(unequipped);
-      // Put previously equipped item back into pack
-      this.primaryPack.addItem(unequipped);
+      // Put previously equipped item back into pack. The pre-flight made room; whatever it
+      // could not foresee, the item is kept rather than lost.
+      if (!this.primaryPack.addItem(unequipped)) this.primaryPack.placeItem(unequipped);
     }
     // A new purse takes in the coins loose in the pack too, as far as it has room.
     if (check.slot === 'purse') this.consolidateCoins();

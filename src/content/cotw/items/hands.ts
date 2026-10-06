@@ -77,8 +77,9 @@ export const COTW_HANDS: ItemDefinition[] = [
     id: 'root_wound_bracers',
     name: 'Root-Wound Bracers',
     unidentifiedName: 'Braided Root Wraps',
-    category: 'gauntlets',
-    slot: 'hands',
+    // Bracers: the Wrists slot (which takes `bracers`), not a second pair of gauntlets.
+    category: 'bracers',
+    slot: 'wrists',
     tier: 4,
     minFloor: 35,
     weight: 1200,

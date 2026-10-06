@@ -107,3 +107,11 @@ describe('R-cotw-15 · the Charm of the Watchful Eye and the Scroll of Identify 
     expect(items.filter((i) => i.id === 'scroll_identify')).toHaveLength(1);
   });
 });
+
+describe('R-cotw-14 · the Wrists slot can be filled', () => {
+  it('the Root-Wound Bracers are bracers for the wrists, and fit the slot', () => {
+    const bracers = items.find((i) => i.id === 'root_wound_bracers') as ItemDef & { slot?: string };
+    expect(bracers.category).toBe('bracers');
+    expect(bracers.slot).toBe('wrists');
+  });
+});

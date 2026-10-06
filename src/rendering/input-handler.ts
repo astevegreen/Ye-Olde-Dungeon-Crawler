@@ -403,7 +403,9 @@ export class InputHandler {
     if (!this.enabled) return false;
 
     const code = e.code;
-    if (!isTextEntryTarget(e.target) && !e.repeat) this.onBeforeInput?.(code || e.key);
+    // Repeats too: a held key acts on each one (a step down the corridor), and the record a
+    // hang leaves must reach the step that hung. A persist costs well under a millisecond.
+    if (!isTextEntryTarget(e.target)) this.onBeforeInput?.(code || e.key);
 
     // Typing in a text field (bug-report form, save-code box, ...) belongs to that field:
     // no hotkeys, no movement, and no preventDefault — which had swallowed Space and the

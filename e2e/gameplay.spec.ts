@@ -729,7 +729,8 @@ test("the log's history opens by key or label and spends no turn", async ({ page
   await embarkNewHero(page);
   await page.keyboard.press('ArrowRight');
   const before = await state(page);
-  const held = await page.evaluate(() => window.__cotwEngine!.messages.length);
+  // One row per line, a line repeated in a row counted once (×N).
+  const held = await page.evaluate(() => window.__cotwEngine!.messages.filter((m, i, all) => m !== all[i - 1]).length);
 
   await page.keyboard.press('Shift+KeyM');
   await expect(page.locator('#message-log-history')).toBeVisible();

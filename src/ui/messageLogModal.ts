@@ -1,7 +1,7 @@
 import type { UIModal } from './modalStack';
 import { createDialogScrim, dialogHtml } from './dialog';
 import { escapeHtml } from './html';
-import { classifyLogLine } from './logClassifier';
+import { classifyLogLine, collapseRepeats, runText } from './logClassifier';
 
 export interface MessageLogModalOptions {
   /** The label of the key that opens the history, for its footer hint. */
@@ -12,14 +12,14 @@ export interface MessageLogModalOptions {
   onClose: () => void;
 }
 
-/** The history's rows: each line toned as the log strip tones it. */
+/** The history's rows: each line toned as the log strip tones it, repeats in a row as one. */
 export function messageLogRows(messages: readonly string[], playerName: string, critical?: ReadonlySet<string>): string {
   if (messages.length === 0) return '<div class="log-line log-line-muted">Nothing has happened yet.</div>';
-  return messages
-    .map((msg) => {
-      const line = classifyLogLine(msg, playerName, critical);
+  return collapseRepeats(messages)
+    .map(({ message, count }) => {
+      const line = classifyLogLine(message, playerName, critical);
       const tone = line.tone !== 'plain' ? ` log-line-${line.tone}` : '';
-      return `<div class="log-line${tone}">${escapeHtml(line.text)}</div>`;
+      return `<div class="log-line${tone}">${escapeHtml(runText(line.text, count))}</div>`;
     })
     .join('');
 }

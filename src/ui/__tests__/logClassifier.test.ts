@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { classifyLogLine, CriticalLineTracker } from '../logClassifier';
+import { classifyLogLine, CriticalLineTracker, collapseRepeats, runText } from '../logClassifier';
 
 const tone = (msg: string, crits?: ReadonlySet<string>) => classifyLogLine(msg, 'Sven', crits).tone;
 
@@ -49,5 +49,22 @@ describe('CriticalLineTracker', () => {
     tracker.markNewest(['crit two']);
     tracker.markNewest(['crit three']);
     expect([...tracker.set]).toEqual(['crit two', 'crit three']);
+  });
+});
+
+// The soak's "one action logged the same line 3 times" (a Brim-Howler pack): one line, counted.
+describe('repeated log lines', () => {
+  it('collapses lines repeated in a row, and only in a row', () => {
+    const hit = 'Brim-Howler attacks Sven for 2 damage.';
+    expect(collapseRepeats([hit, hit, hit, 'Sven is afflicted with slow!', hit])).toEqual([
+      { message: hit, count: 3 },
+      { message: 'Sven is afflicted with slow!', count: 1 },
+      { message: hit, count: 1 },
+    ]);
+  });
+
+  it('shows a count only when there is more than one', () => {
+    expect(runText('Sven waits a moment.', 1)).toBe('Sven waits a moment.');
+    expect(runText('Brim-Howler attacks Sven for 2 damage.', 3)).toBe('Brim-Howler attacks Sven for 2 damage. (×3)');
   });
 });

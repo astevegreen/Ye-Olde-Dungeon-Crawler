@@ -110,7 +110,7 @@ import './ui/styles/title.css';
 import './ui/styles/diagnostics.css';
 import { QuickSpellsBar } from './ui/quickSpellsBar';
 import { PotionRow } from './ui/potionRow';
-import { classifyLogLine, CriticalLineTracker } from './ui/logClassifier';
+import { classifyLogLine, CriticalLineTracker, collapseRepeats, runText } from './ui/logClassifier';
 import { CombatSidebar } from './ui/sidebar/combatSidebar';
 import { ConsoleExtras } from './ui/console/consoleExtras';
 import { FirstTimeHints } from './ui/hints/firstTimeHints';
@@ -794,16 +794,17 @@ window.addEventListener('DOMContentLoaded', () => {
       historyKey.style.display = label ? '' : 'none';
     }
 
-    const msgs = engine.messages.slice(-6);
-    if (msgs.length === 0) {
+    // The last six lines as shown: a line repeated in a row is one line with its count.
+    const runs = collapseRepeats(engine.messages).slice(-6);
+    if (runs.length === 0) {
       streamEl.innerHTML = '<div class="log-line log-line-muted">Explore the dungeon.</div>';
       return;
     }
 
     streamEl.innerHTML = '';
-    const total = msgs.length;
+    const total = runs.length;
     for (let i = 0; i < total; i++) {
-      const msg = msgs[i];
+      const { message: msg, count } = runs[i];
       const lineEl = document.createElement('div');
       lineEl.className = 'log-line';
 
@@ -817,7 +818,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
       const line = classifyLogLine(msg, engine.player.name, criticalLines.set);
       if (line.tone !== 'plain') lineEl.classList.add(`log-line-${line.tone}`, 'log-line-toned');
-      lineEl.textContent = line.text;
+      lineEl.textContent = runText(line.text, count);
       streamEl.appendChild(lineEl);
     }
     streamEl.scrollTop = streamEl.scrollHeight;

@@ -11,6 +11,13 @@ describe("the log's history rows", () => {
     expect(html).toContain('&lt;b&gt;odd&lt;/b&gt;');
   });
 
+  it('shows a line repeated in a row once, with its count', () => {
+    const hit = 'Brim-Howler attacks Sven for 2 damage.';
+    const html = messageLogRows([hit, hit, hit, 'You enter the cellar.'], 'Sven');
+    expect(html.match(/<div class="log-line[^"]*">/g)).toHaveLength(2);
+    expect(html).toContain(`${hit} (×3)`);
+  });
+
   it('says so when nothing has happened', () => {
     expect(messageLogRows([], 'Sven')).toContain('Nothing has happened yet.');
   });

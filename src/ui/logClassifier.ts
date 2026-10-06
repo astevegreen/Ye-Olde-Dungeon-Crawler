@@ -84,3 +84,29 @@ export class CriticalLineTracker {
     return this.lines;
   }
 }
+
+/** One line of the log as shown, with how many times in a row the engine wrote it. */
+export interface LogRun {
+  message: string;
+  count: number;
+}
+
+/**
+ * Consecutive identical lines as one. A pack of three Brim-Howlers each hitting for 2 wrote
+ * three identical lines, pushing everything else out of the six-line strip under the map.
+ * The engine's log keeps every line; only what is shown is collapsed.
+ */
+export function collapseRepeats(messages: readonly string[]): LogRun[] {
+  const runs: LogRun[] = [];
+  for (const message of messages) {
+    const last = runs[runs.length - 1];
+    if (last && last.message === message) last.count++;
+    else runs.push({ message, count: 1 });
+  }
+  return runs;
+}
+
+/** A run as shown: "Brim-Howler attacks Sven for 2 damage. (×3)". */
+export function runText(text: string, count: number): string {
+  return count > 1 ? `${text} (×${count})` : text;
+}

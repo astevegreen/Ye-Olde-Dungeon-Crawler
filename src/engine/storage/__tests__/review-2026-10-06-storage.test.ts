@@ -13,6 +13,7 @@ import { activeItemIndex } from '../../items/itemIndex';
 import { activeMonsterStore } from '../../registries';
 import { AutosaveManager } from '../autosaveManager';
 import { MemoryStorage } from '../profile-manager';
+import { CURRENT_SCHEMA_VERSION } from '../migrator';
 import { serializeGame, deserializeGame, serializeMapObject, deserializeMapObject } from '../serializer';
 import { EMBOLDENED_STATUS } from '../../../content/cotw/darkness';
 import { COTW_TOWN } from '../../../content/cotw/town';
@@ -245,6 +246,75 @@ describe('R-stor-11 · a monster’s faction is not saved, so it reloads hostile
 
     expect(saved.monsters!.find((m) => m.id === 'rat')!.faction).toBeUndefined();
     expect(back.faction).toBe('hostile');
+  });
+});
+
+describe('R-stor-17 · a foreign save is trusted for sizes', () => {
+  const saveOf = () => {
+    const engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player: new Player({ id: 'h17', name: 'H', position: { x: 5, y: 5 } }) });
+    return JSON.parse(JSON.stringify(serializeGame(engine)));
+  };
+  const refusedQuickly = (save: unknown) => {
+    const started = performance.now();
+    expect(() => deserializeGame(save)).toThrow(/structurally invalid/);
+    expect(performance.now() - started).toBeLessThan(1000);
+  };
+
+  it.each([
+    [1000, 1000],
+    [100000, 100000],
+    [513, 10],
+    [10.5, 10],
+  ])('a %s × %s map is refused, quickly', (width, height) => {
+    const save = saveOf();
+    save.map.width = width;
+    save.map.height = height;
+    refusedQuickly(save);
+  });
+
+  it('a stored floor of 100000 × 100000 is refused too', () => {
+    const save = saveOf();
+    save.storedMaps = { 2: { ...save.map, width: 100000, height: 100000 } };
+    refusedQuickly(save);
+  });
+
+  it.each([
+    ['one run of 999999999 cells', '999999999:0;'],
+    ['runs one cell past the last', '100:0;1:0;'],
+  ])('tile data with %s on a 10 × 10 map is refused, quickly', (_label, tilesRle) => {
+    const save = saveOf();
+    save.map.tilesRle = tilesRle;
+    refusedQuickly(save);
+  });
+
+  it('the typed load reports an oversized map as a damaged save', () => {
+    const storage = new MemoryStorage();
+    const autosaves = new AutosaveManager(storage);
+    const data = saveOf();
+    data.map.width = 100000;
+    data.map.height = 100000;
+    storage.setItem(autosaves.autosaveKey, JSON.stringify({ schemaVersion: CURRENT_SCHEMA_VERSION, contentManifestId: 'x', timestamp: 1, profile: data.profile, data }));
+
+    const outcome = autosaves.loadAutosaveResult();
+
+    expect(outcome.ok ? undefined : outcome.reason).toBe('corrupt');
+  });
+
+  it('FOV data longer than the map is read only as far as the map, quickly', () => {
+    const save = saveOf();
+    save.storedFovRle = { 1: '999999999E' };
+    save.currentFloor = 1;
+
+    const started = performance.now();
+    const loaded = deserializeGame(save).engine;
+
+    expect(performance.now() - started).toBeLessThan(1000);
+    expect(loaded.fov.isExplored(9, 9)).toBe(true);
+  });
+
+  it('a saved game of an ordinary size still loads', () => {
+    const loaded = deserializeGame(saveOf()).engine;
+    expect([loaded.map.width, loaded.map.height]).toEqual([10, 10]);
   });
 });
 

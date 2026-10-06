@@ -785,11 +785,27 @@ export function restoreFloorLight(map: GameMap, floor: number, manifest: GameCon
   if (floor === 0) map.lit = manifest?.town?.lit ?? false;
 }
 
+/**
+ * The longest side a saved map may have; generated floors are a fraction of it. A save is
+ * read from a file the player may have been handed, and `new GameMap` builds width × height
+ * cells, so a side past this (or not a whole number) is a damaged save, refused before
+ * anything is allocated for it rather than freezing the tab (R-stor-17).
+ */
+const MAX_SAVED_MAP_SIDE = 512;
+
+function assertSavedMapSize(mapData: SerializedMap): void {
+  const fits = (side: unknown) => Number.isInteger(side) && (side as number) >= 1 && (side as number) <= MAX_SAVED_MAP_SIDE;
+  if (!fits(mapData?.width) || !fits(mapData?.height)) {
+    throw new Error(`Save file is structurally invalid: a ${mapData?.width} x ${mapData?.height} map is outside 1-${MAX_SAVED_MAP_SIDE} cells a side.`);
+  }
+}
+
 export function deserializeMapObject(
   mapData: SerializedMap,
   customTiles?: TileDefinition[],
   definitions?: ItemDefinitionLookup
 ): GameMap {
+  assertSavedMapSize(mapData);
   const map = new GameMap(mapData.width, mapData.height, TILES.WALL);
   map.lastVisitedTick = mapData.lastVisitedTick ?? 0;
   map.floorTurnCount = mapData.floorTurnCount ?? 0;

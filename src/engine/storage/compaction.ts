@@ -75,6 +75,11 @@ export function decompactTiles(
     const count = parseInt(match[1], 10);
     const codeIdx = parseInt(match[2], 10);
     const tileType = (tileCodes[codeIdx] ?? 'wall') as TileType;
+    // Runs past the map's last cell are a damaged save: refused before they are looped
+    // out, since one crafted token (`999999999:0;`) would hold the tab for seconds (R-stor-17).
+    if (totalIdx + count > width * height) {
+      throw new Error(`Save file is structurally invalid: tile data runs past the map's ${width * height} cells.`);
+    }
 
     for (let i = 0; i < count; i++) {
       const idx = totalIdx + i;
@@ -140,13 +145,11 @@ export function decompactFov(rle: string, width: number, height: number): [numbe
     const status = match[2];
 
     if (status === 'E') {
-      for (let i = 0; i < count; i++) {
-        const idx = totalIdx + i;
-        const x = idx % width;
-        const y = Math.floor(idx / width);
-        if (y < height) {
-          exploredCoords.push([x, y]);
-        }
+      // Only as far as the map's last cell, which is all a run ever marked: a crafted count
+      // (`999999999E`) can't spin the load (R-stor-17).
+      const end = Math.min(totalIdx + count, width * height);
+      for (let idx = totalIdx; idx < end; idx++) {
+        exploredCoords.push([idx % width, Math.floor(idx / width)]);
       }
     }
     totalIdx += count;

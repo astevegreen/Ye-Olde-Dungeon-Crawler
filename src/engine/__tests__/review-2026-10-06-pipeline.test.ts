@@ -161,7 +161,7 @@ describe('R-pipe-11 · cure_status "all" removes a status literally named "all"'
 });
 
 describe('R-pipe-22 · a potion’s apply_status ignores the drinker’s immunities', () => {
-  it.fails('a hero immune to slow is not slowed by a potion that applies slow', () => {
+  it('a hero immune to slow is not slowed by a potion that applies slow', () => {
     const { engine, player } = build(50);
     (player as unknown as { statusImmunities: string[] }).statusImmunities.push('slow');
     expect(player.isImmuneTo('slow')).toBe(true); // (passes today)

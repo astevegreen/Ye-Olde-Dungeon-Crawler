@@ -464,8 +464,15 @@ export class DrinkPotionAction implements Action {
           break;
         }
         case 'apply_status': {
-          this.user.statusManager.applyStatus(effect.status, effect.duration, effect.potency ?? 1);
-          messages.push(`gaining ${effect.status} for ${effect.duration} turns`);
+          // Through the drinker, as every other path applies a status: its immunities (worn
+          // ones too) refuse it, and the handler's `onApply` runs.
+          const applied = this.user.statusManager.applyStatus(
+            { type: effect.status, duration: effect.duration, potency: effect.potency ?? 1 },
+            [],
+            this.user,
+            engine
+          );
+          messages.push(applied ? `gaining ${effect.status} for ${effect.duration} turns` : `shrugging off ${effect.status}`);
           break;
         }
         case 'gain_xp': {

@@ -933,6 +933,8 @@ window.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       return `Could not decode the compressed replay data: ${(err as Error).message}`;
     }
+    // The live run is saved before the report's engine is built (R-main-11).
+    saveRunOnScreen('save before report load');
     const outcome = loadReplayState(expanded, activeManifest);
     if (!outcome.ok) return `Could not load: ${outcome.message}`;
     const { engine, profile, source, trail } = outcome.value;
@@ -980,6 +982,8 @@ window.addEventListener('DOMContentLoaded', () => {
     },
     onRestored: (profile) => {
       titleScreen.refresh();
+      // The restored hero replaces the live run: save that run first, as Save & Quit does (R-main-11).
+      saveRunOnScreen('save before restore');
       const loaded = loadProfileOrNotify(profile.id);
       if (loaded) {
         launchGame(loaded.engine, loaded.profile);
@@ -1267,6 +1271,15 @@ window.addEventListener('DOMContentLoaded', () => {
     const profile = activeProfile;
     safely(label, () => profileManager.saveCharacter(engine, profile), reportSaveFailure);
     autosaveManager.autosave(engine, profile);
+  }
+
+  /**
+   * A restore that starts another run (a dropped save file, a pasted save code, an F2
+   * report) saves the run on screen first (R-main-11). From the title screen the run was
+   * saved on the way out, and its hero may since have been deleted, so nothing is written.
+   */
+  function saveRunOnScreen(label: string): void {
+    if (gameContainer?.style.display !== 'none') saveLiveRun(label);
   }
 
   function saveAndReturnToTitle(): void {
@@ -2001,6 +2014,8 @@ window.addEventListener('DOMContentLoaded', () => {
           profileManager,
           activeManifestId: activeManifest.id,
           onSuccess: (p) => {
+            // The dropped hero replaces the live run: save that run first, as Save & Quit does (R-main-11).
+            saveRunOnScreen('save before restore');
             const loaded = loadProfileOrNotify(p.id);
             if (loaded) {
               launchGame(loaded.engine, loaded.profile);

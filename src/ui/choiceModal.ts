@@ -1,6 +1,7 @@
 import type { GameEngine } from '../engine';
 import type { ChoiceDefinition, ChoiceOption } from '../engine';
-import { evaluatePredicate } from '../engine';
+import { evaluatePredicate, resolveManaTerms, type ManaTerms } from '../engine';
+import { fillManaTerms } from './characterMenu/characterTab';
 import type { UIModal } from './modalStack';
 import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
 import { escapeHtml } from './html';
@@ -32,6 +33,13 @@ export class ChoiceModal implements UIModal {
     this.overlayEl = createDialogScrim('choice-modal-overlay');
   }
 
+  /** The pack's name for the spell resource where a text says `{mana}` (a perk's), as the
+   *  mastery modal and the Character tab fill it; a Saga choice printed it raw (R-cotw-5). */
+  private mana?: ManaTerms;
+  private fill(text: string): string {
+    return this.mana ? fillManaTerms(text, this.mana) : text;
+  }
+
   public open(
     choice: ChoiceDefinition,
     engine: GameEngine,
@@ -43,6 +51,7 @@ export class ChoiceModal implements UIModal {
     this.isOpen = true;
     this.shown = true;
     this.choice = choice;
+    this.mana = resolveManaTerms(engine.manifest);
     this.onOptionSelected = onOptionSelected;
     this.onCancel = onCancel;
     this.overlayEl.style.display = 'flex';
@@ -170,7 +179,7 @@ export class ChoiceModal implements UIModal {
             <div class="ui-option-mark">${focused ? '▶' : '◇'}</div>
             <div class="ui-option-body">
               <div class="ui-option-label">${option.label}</div>
-              ${option.description ? `<div class="ui-option-desc">${option.description}</div>` : ''}
+              ${option.description ? `<div class="ui-option-desc">${this.fill(option.description)}</div>` : ''}
               ${!enabled ? `<div class="ui-option-reason">${escapeHtml(option.disabledReason ?? 'Requirements not met')}</div>` : ''}
             </div>
           </div>`;
@@ -182,7 +191,7 @@ export class ChoiceModal implements UIModal {
       titleId: 'choice-modal-title',
       closeId: cancelable ? 'btn-choice-x' : undefined,
       closeTitle: 'Step away (Esc)',
-      body: `<div class="ui-dialog-lede">${choice.description}</div><div id="choice-options-list" class="ui-options">${options}</div>`,
+      body: `<div class="ui-dialog-lede">${this.fill(choice.description)}</div><div id="choice-options-list" class="ui-options">${options}</div>`,
       hints: [
         { keys: ['↑', '↓'], label: 'choose' },
         { keys: ['Enter'], label: 'confirm' },

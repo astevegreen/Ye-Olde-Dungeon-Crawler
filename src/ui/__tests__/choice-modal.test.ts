@@ -133,6 +133,23 @@ describe('ChoiceModal UI Component', () => {
     expect(modal.isOpen).toBe(false);
   });
 
+  it('R-cotw-5 · fills {mana} in option text with the pack’s spell-resource name', () => {
+    const modal = new ChoiceModal();
+    const seidr = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player: new Player({ position: { x: 5, y: 5 } }), manifest: { id: 'probe', name: 'Probe', description: 'x', branding: { manaName: 'Seidr', manaUnit: 'SP' } } as never });
+    const choice: ChoiceDefinition = {
+      id: 'saga',
+      title: 'The First Path',
+      description: 'Choose.',
+      options: [{ id: 'woven', label: 'Seidr-Woven', description: 'Spells cost 20% less {mana}.', consequences: [] }],
+    };
+
+    modal.open(choice, seidr, vi.fn());
+
+    const html = mockDoc.getElementById('choice-modal-overlay')?.innerHTML ?? '';
+    expect(html).toContain('Spells cost 20% less Seidr.');
+    expect(html).not.toContain('{mana}');
+  });
+
   it('renders disabled options with reason when predicate fails', () => {
     const modal = new ChoiceModal();
 

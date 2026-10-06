@@ -46,7 +46,7 @@ Each static gate below (purity, encapsulation, creep, palette) fails when it ins
    - **Outside the boundary, by design:** save and telemetry timestamps record real time, and `ProfileManager`'s profile IDs stay clock-derived — seeding them would make two characters created from the same seed collide. Those lines carry a `// purity-allow:` pragma (item 1 above).
    - `check:engine-purity` enforces this: it fails on `Math.random` and unallowlisted `Date.now()` in engine and content source (item 1 above).
 3. **Schema Evolution Integrity (`npm run validate:schema`, `scripts/validate-schema.ts`):**
-   - Migrates a minimal v1 envelope to `CURRENT_SCHEMA_VERSION` and asserts the final version.
+   - Passes a current-version save through unmigrated, asserts a save one version below the floor is refused (the v0-v11 chain is gone, ADR-0002, so no v1 envelope can migrate), and runs a probe N -> N+1 step registered by the script, so the next real migration's machinery is exercised.
    - Round-trips a live engine through `serializeGame` -> `JSON.stringify`/`JSON.parse` -> `deserializeGame`, asserting that surface cells (type, duration, potency), substance bitmasks, ground items, and PRNG state all survive. JSON is in the loop because saves persist as strings, so a value that cannot round-trip through JSON is as lost as one the serializer drops.
    - `PRNG.getState()` returns the raw internal state while `setState()` coerces to int32, so a restored generator reports an equivalent but differently-encoded state. The validator compares int32-normalized states and separately asserts the next draw matches.
    - Per-step migration assertions live in `src/engine/storage/__tests__/migrator.test.ts` (run by `npm test`).

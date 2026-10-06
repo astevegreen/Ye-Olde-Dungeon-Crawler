@@ -19,6 +19,7 @@ import { bondCompanion } from '../combat/lastStand';
 import { flightRecorder } from '../debug/flightRecorder';
 import { huntUnseenAction, rememberTarget } from './pursuit';
 import { callForHelp, fleeAction } from './flight';
+import { perceives } from './perception';
 
 class CasterBehavior implements AiBehaviorStrategy {
   public readonly id = BUILTIN_AI_TYPES.CASTER;
@@ -340,8 +341,10 @@ export class MonsterAI {
         }
       }
 
-      // Offensive Wand usage in range and line-of-sight
-      if (hasLos) {
+      // Offensive Wand usage in range and line-of-sight, at a target it is hostile to and
+      // perceives: a companion carrying the hero's wand never aims it at the hero, and a
+      // blinded wielder doesn't zap at what it cannot see.
+      if (hasLos && monster.isHostileTo(player) && perceives(engine, monster, player)) {
         const wand = carriedItems.find(
           (i): i is WandItem => i instanceof WandItem && i.canZap()
         );

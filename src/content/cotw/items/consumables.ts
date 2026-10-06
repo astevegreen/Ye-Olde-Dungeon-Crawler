@@ -263,8 +263,10 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
     description: 'A petrified wand from the Ironwood boughs that shoots grasping tendrils of root, immobilizing a target in place.',
     value: 290,
     itemType: 'wand',
+    // The grasping roots hold the target fast: Paralyze (3 turns, a ray of range 5).
+    // `entangle` was never defined, so every zap burned a charge on "Unknown spell".
     wandConfig: {
-      spellId: 'entangle',
+      spellId: 'paralyze',
       charges: 6,
       maxCharges: 6,
     },

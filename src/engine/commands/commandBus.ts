@@ -29,6 +29,12 @@ import { formatCurrency } from '../economy/currency';
 import type { CompanionArchetype } from '../entities/companion';
 import { ChannelRuneOfReturnAction, RuneOfReturnItem, cancelChannel } from '../magic/runeOfReturn';
 import { recordMilestone } from '../renown/renownLedger';
+import { flightRecorder } from '../debug/flightRecorder';
+import type { Action } from '../actions/action';
+import type { ActionResult } from '../types';
+
+/** Commands that change nothing a replay depends on: no checkpoint after them. */
+const READ_ONLY_COMMANDS = new Set(['open_container', 'sage_advisory']);
 
 /**
  * GameCommand — encapsulates a player/UI intent into a decoupled command message.
@@ -66,7 +72,36 @@ export class EngineCommandBus implements GameCommandBus {
     this.engine = engine;
   }
 
+  /** Whether the command now running went through `handlePlayerAction` (`act`). */
+  private acted = false;
+
+  /**
+   * Runs a command. One that changed state without going through `handlePlayerAction`
+   * (a sort, a split, a junk mark, a pact, a trade, a town service, a companion skill) is
+   * not in the replay trail, so it asks for a checkpoint: the replay then starts from the
+   * state it left (ARCHITECTURE.md §2).
+   */
   public dispatch(command: GameCommand): GameCommandResult {
+    const outer = this.acted;
+    this.acted = false;
+    try {
+      const result = this.run(command);
+      if (result.success && !this.acted && !READ_ONLY_COMMANDS.has(command.type)) {
+        flightRecorder.requestCheckpoint(`command: ${command.type}`);
+      }
+      return result;
+    } finally {
+      this.acted = outer;
+    }
+  }
+
+  /** A command's player action, through the pipeline and so into the trail. */
+  private act(action: Action): ActionResult {
+    this.acted = true;
+    return this.engine.handlePlayerAction(action);
+  }
+
+  private run(command: GameCommand): GameCommandResult {
     const p = command.payload ?? {};
 
     switch (command.type) {
@@ -76,7 +111,7 @@ export class EngineCommandBus implements GameCommandBus {
       case 'drink_potion': {
         const item = this.resolveItem(p.itemId as string);
         if (item instanceof PotionItem) {
-          const res = this.engine.handlePlayerAction(new DrinkPotionAction(this.engine.player, item));
+          const res = this.act(new DrinkPotionAction(this.engine.player, item));
           return { success: res.success, message: res.message };
         }
         return { success: false, message: 'Not a potion' };
@@ -87,7 +122,7 @@ export class EngineCommandBus implements GameCommandBus {
         if (item instanceof ScrollItem) {
           const targetX = p.targetX as number | undefined;
           const targetY = p.targetY as number | undefined;
-          const res = this.engine.handlePlayerAction(
+          const res = this.act(
             new ReadScrollAction(this.engine.player, item, targetX, targetY, p.itemTargetId as string | undefined)
           );
           return { success: res.success, message: res.message, effects: res.effects };
@@ -100,7 +135,7 @@ export class EngineCommandBus implements GameCommandBus {
         if (item instanceof WandItem) {
           const targetX = (p.targetX as number | undefined) ?? this.engine.player.x;
           const targetY = (p.targetY as number | undefined) ?? this.engine.player.y;
-          const res = this.engine.handlePlayerAction(
+          const res = this.act(
             new ZapWandAction(this.engine.player, item, targetX, targetY)
           );
           return { success: res.success, message: res.message, effects: res.effects };
@@ -113,7 +148,7 @@ export class EngineCommandBus implements GameCommandBus {
         if (!(item instanceof RuneOfReturnItem)) {
           return { success: false, message: 'Not a Rune of Return' };
         }
-        const res = this.engine.handlePlayerAction(new ChannelRuneOfReturnAction(this.engine.player));
+        const res = this.act(new ChannelRuneOfReturnAction(this.engine.player));
         return { success: res.success, message: res.message };
       }
 
@@ -125,14 +160,14 @@ export class EngineCommandBus implements GameCommandBus {
       case 'equip_item': {
         const itemId = p.itemId as string;
         if (!itemId) return { success: false, message: 'No item specified to equip' };
-        const res = this.engine.handlePlayerAction(new EquipAction(this.engine.player, itemId));
+        const res = this.act(new EquipAction(this.engine.player, itemId));
         return { success: res.success, message: res.message };
       }
 
       case 'unequip_item': {
         const slot = p.slot as EquipmentSlot;
         if (!slot) return { success: false, message: 'No slot specified to unequip' };
-        const res = this.engine.handlePlayerAction(new UnequipAction(this.engine.player, slot));
+        const res = this.act(new UnequipAction(this.engine.player, slot));
         return { success: res.success, message: res.message };
       }
 
@@ -141,7 +176,7 @@ export class EngineCommandBus implements GameCommandBus {
         if (!item) return { success: false, message: 'Item not found to drop' };
         const source = (p.source as 'paperdoll' | 'pack') ?? 'pack';
         const slot = p.slot as EquipmentSlot | undefined;
-        const res = this.engine.handlePlayerAction(new DropAction(this.engine.player, item, source, slot));
+        const res = this.act(new DropAction(this.engine.player, item, source, slot));
         return { success: res.success, message: res.message };
       }
 
@@ -149,7 +184,7 @@ export class EngineCommandBus implements GameCommandBus {
         const itemId = p.itemId as string;
         const free = Boolean(p.freeAction);
         if (!itemId) return { success: false, message: 'No item specified to pick up' };
-        const res = this.engine.handlePlayerAction(new PickUpAction(this.engine.player, itemId, free));
+        const res = this.act(new PickUpAction(this.engine.player, itemId, free));
         return { success: res.success, message: res.message };
       }
 
@@ -173,7 +208,7 @@ export class EngineCommandBus implements GameCommandBus {
       }
 
       case 'quick_loot': {
-        const res = this.engine.handlePlayerAction(new QuickLootAction(this.engine.player));
+        const res = this.act(new QuickLootAction(this.engine.player));
         return { success: res.success, message: res.message };
       }
 
@@ -181,7 +216,7 @@ export class EngineCommandBus implements GameCommandBus {
         const container = p.container as Container;
         const item = p.item as Item ?? container?.getItems().find((i) => i.id === p.itemId);
         if (!container || !item) return { success: false, message: 'Invalid container loot command' };
-        const res = this.engine.handlePlayerAction(
+        const res = this.act(
           new LootFromContainerAction(this.engine.player, container, item)
         );
         return { success: res.success, message: res.message };
@@ -190,7 +225,7 @@ export class EngineCommandBus implements GameCommandBus {
       case 'loot_all_container': {
         const container = p.container as Container;
         if (!container) return { success: false, message: 'Invalid container' };
-        const res = this.engine.handlePlayerAction(
+        const res = this.act(
           new LootAllFromContainerAction(this.engine.player, container)
         );
         return { success: res.success, message: res.message };
@@ -200,7 +235,7 @@ export class EngineCommandBus implements GameCommandBus {
         const container = p.container as Container;
         const item = p.item as Item ?? this.resolveItem(p.itemId as string);
         if (!container || !item) return { success: false, message: 'Invalid container store command' };
-        const res = this.engine.handlePlayerAction(
+        const res = this.act(
           new StoreInContainerAction(this.engine.player, container, item)
         );
         return { success: res.success, message: res.message };
@@ -212,7 +247,10 @@ export class EngineCommandBus implements GameCommandBus {
         if (!item || !amount || amount <= 0 || amount >= (item.quantity ?? 1)) {
           return { success: false, message: 'Invalid split amount' };
         }
-        const splitItem = splitItemStack(item, amount, () => this.engine.rng());
+        // A fresh id from the index, not the simulation PRNG: the split spends no draw.
+        let n = 1;
+        while (getItemById(`${item.id}-split-${n}`)) n++;
+        const splitItem = splitItemStack(item, amount, `${item.id}-split-${n}`);
         const destContainer = (p.container as Container) ?? this.engine.player.inventory.primaryPack;
         destContainer.addItem(splitItem, false);
         const message = `Split ${amount} ${splitItem.displayName}.`;
@@ -227,7 +265,7 @@ export class EngineCommandBus implements GameCommandBus {
         if (!this.engine.companion) return { success: false, message: 'You have no companion to give items to.' };
         const item = (p.item as Item) ?? this.resolveItem(p.itemId as string);
         if (!item) return { success: false, message: 'Item not found.' };
-        const res = this.engine.handlePlayerAction(
+        const res = this.act(
           new StoreInContainerAction(this.engine.player, this.engine.companion.inventory.primaryPack, item)
         );
         return { success: res.success, message: res.message };
@@ -237,7 +275,7 @@ export class EngineCommandBus implements GameCommandBus {
         if (!this.engine.companion) return { success: false, message: 'You have no companion to take items from.' };
         const item = (p.item as Item) ?? this.resolveItem(p.itemId as string);
         if (!item) return { success: false, message: 'Item not found.' };
-        const res = this.engine.handlePlayerAction(
+        const res = this.act(
           new LootFromContainerAction(this.engine.player, this.engine.companion.inventory.primaryPack, item)
         );
         return { success: res.success, message: res.message };
@@ -253,7 +291,7 @@ export class EngineCommandBus implements GameCommandBus {
         if (!spellId || targetX === undefined || targetY === undefined) {
           return { success: false, message: 'Incomplete spell target parameters' };
         }
-        const res = this.engine.handlePlayerAction(
+        const res = this.act(
           new CastSpellAction(this.engine.player, spellId, targetX, targetY, p.itemTargetId as string | undefined)
         );
         return { success: res.success, message: res.message, effects: res.effects };
@@ -472,6 +510,23 @@ export class EngineCommandBus implements GameCommandBus {
           return { success: true, message: msg };
         }
         return { success: false, message: `Unknown companion skill: '${skillId}'` };
+      }
+
+      // Loose coins from the pack into the purse; `data` says how many stacks and how much.
+      case 'consolidate_coins': {
+        const res = this.engine.player.inventory.consolidateCoins();
+        return { success: res.count > 0, data: res };
+      }
+
+      // The hero's companion called to their side, or sent away (Shift+C).
+      case 'summon_companion': {
+        const id = p.companionId as string | undefined;
+        return { success: !!id && this.engine.summonCompanion(id) !== null };
+      }
+      case 'dismiss_companion': {
+        if (!this.engine.companion) return { success: false };
+        this.engine.dismissCompanion();
+        return { success: true };
       }
 
       default:

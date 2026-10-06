@@ -100,7 +100,7 @@ describe('Item Stacking & Multi-Selection Engine', () => {
     pot.quantity = 10;
 
     // Split 4 off
-    const split = splitItemStack(pot, 4, Math.random);
+    const split = splitItemStack(pot, 4, 'pot-split-1');
     expect(split).not.toBeNull();
     expect(pot.quantity).toBe(6);
     expect(split?.quantity).toBe(4);
@@ -108,16 +108,16 @@ describe('Item Stacking & Multi-Selection Engine', () => {
     expect(split?.name).toBe(pot.name);
 
     // Splitting 0 or invalid amount throws
-    expect(() => splitItemStack(pot, 0, Math.random)).toThrow();
-    expect(() => splitItemStack(pot, 10, Math.random)).toThrow();
+    expect(() => splitItemStack(pot, 0, 'x')).toThrow();
+    expect(() => splitItemStack(pot, 10, 'x')).toThrow();
   });
 
   it('keeps the definitionId on a split potion or scroll, so it stays the same kind', () => {
     const pot = new PotionItem({ id: 'p-1', definitionId: 'minor_health', name: 'Minor Health Potion', potionType: 'health', quantity: 3 });
     const scroll = new ScrollItem({ id: 's-1', definitionId: 'scroll_phase_door', name: 'Scroll of Phase Door', spellId: 'phase_door', quantity: 3 });
 
-    expect(splitItemStack(pot, 1, Math.random).definitionId).toBe('minor_health');
-    expect(splitItemStack(scroll, 1, Math.random).definitionId).toBe('scroll_phase_door');
+    expect(splitItemStack(pot, 1, 'p1').definitionId).toBe('minor_health');
+    expect(splitItemStack(scroll, 1, 's1').definitionId).toBe('scroll_phase_door');
   });
 
   describe('coins', () => {

@@ -1505,7 +1505,7 @@ window.addEventListener('DOMContentLoaded', () => {
         renderer?.render();
       },
       'consolidate-coins': (eng) => {
-        const res = eng.player.inventory.consolidateCoins();
+        const res = (eng.commandBus.dispatch({ type: 'consolidate_coins' }).data as { count: number } | undefined) ?? { count: 0 };
         if (res.count > 0) {
           eng.log(`Consolidated ${res.count} coin stack(s) into purse.`);
         } else {
@@ -1584,14 +1584,14 @@ window.addEventListener('DOMContentLoaded', () => {
         if (eng.companion) {
           eng.log(`${eng.companion.name} is already at your side.`);
         } else if (defId) {
-          eng.summonCompanion(defId);
+          eng.commandBus.dispatch({ type: 'summon_companion', payload: { companionId: defId } });
         } else {
           eng.log('No companion is available in this campaign.');
         }
         renderer?.render();
       },
       dismiss_companion: (eng) => {
-        eng.dismissCompanion();
+        eng.commandBus.dispatch({ type: 'dismiss_companion' });
         renderer?.render();
       },
       use_companion_skill_rally_howl: (eng) => {

@@ -184,7 +184,7 @@ export class InventoryController {
     this.engine = engine;
     this.reset();
     this.inspector.setFocus('paperdoll', 0);
-    const res = engine.player.inventory.consolidateCoins();
+    const res = (engine.commandBus.dispatch({ type: 'consolidate_coins' }).data as { count: number } | undefined) ?? { count: 0 };
     if (res.count > 0) {
       engine.log(`Auto-consolidated ${res.count} coin stack${res.count > 1 ? 's' : ''} into purse.`);
     }
@@ -641,7 +641,7 @@ export class InventoryController {
   public consolidateCoins(): void {
     const engine = this.engine;
     if (!engine) return;
-    const res = engine.player.inventory.consolidateCoins();
+    const res = (engine.commandBus.dispatch({ type: 'consolidate_coins' }).data as { count: number } | undefined) ?? { count: 0 };
     engine.log(res.count > 0 ? `Consolidated ${res.count} coin stack${res.count > 1 ? 's' : ''} into purse.` : 'No loose coins in backpack to consolidate.');
     this.changed();
   }

@@ -72,18 +72,15 @@ export function mergeItemStacks(target: Item, source: Item): boolean {
 
 /**
  * Splits a specified amount from an item stack.
- * Decrements the original stack and returns a new Item clone with the split quantity.
+ * Decrements the original stack and returns a new Item clone, `splitId`, with the split quantity.
  */
-export function splitItemStack(item: Item, amount: number, rng: () => number): Item {
+export function splitItemStack(item: Item, amount: number, splitId: string): Item {
   const currentQty = item.quantity ?? 1;
   if (amount <= 0 || amount >= currentQty) {
     throw new Error(`Cannot split ${amount} from stack of size ${currentQty}`);
   }
 
   item.quantity = currentQty - amount;
-
-  // Create clone of item with new ID and split quantity
-  const splitId = `${item.id}-split-${Math.floor(rng() * 1000000)}`;
 
   let cloned: Item;
   if (item instanceof PotionItem) {

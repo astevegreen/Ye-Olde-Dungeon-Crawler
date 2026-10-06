@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Player } from '../../entities/player';
 import { ItemFactory } from '../../items/factory';
 import { addCurrencyToPlayer, getPlayerTotalCp } from '../currency';
-import { getItemBuyPrice, getItemSellPrice, Merchant } from '../merchant';
+import { getItemBuyPrice, getItemSellPrice, isSellable, Merchant } from '../merchant';
 import { createScaledItem } from '../../dungeon/lootSpawner';
 import { cotwManifest } from '../../../content/cotw';
 
@@ -48,7 +48,7 @@ describe('R-econ-2 · selling a stack pays for one unit', () => {
 });
 
 describe('R-econ-6 · a zero-value quest item sells for the 2,000 CP category default', () => {
-  it.fails('an Essence-Rune (value 0, category quest) cannot be sold for money', () => {
+  it('an Essence-Rune (value 0, category quest) cannot be sold for money', () => {
     const player = hero();
     const def = (cotwManifest.items as Array<{ id: string }>).find((i) => i.id === 'essence_uruz')!;
     const essence = createScaledItem(def as never, 'ess-1', 1, () => 0.5);
@@ -58,5 +58,18 @@ describe('R-econ-6 · a zero-value quest item sells for the 2,000 CP category de
     new Merchant('m', 'M', 'Shop', 'general', 'hi', []).sellItem(player, essence);
 
     expect(getPlayerTotalCp(player) - before).toBeLessThanOrEqual(1);
+  });
+
+  it('a priced quest relic is not for sale either, and stays in the pack', () => {
+    const player = hero();
+    const def = (cotwManifest.items as Array<{ id: string }>).find((i) => i.id === 'hearth_tear_fragment')!;
+    const relic = createScaledItem(def as never, 'relic-1', 1, () => 0.5);
+    player.inventory.primaryPack.addItem(relic);
+
+    const res = new Merchant('m', 'M', 'Shop', 'general', 'hi', []).sellItem(player, relic);
+
+    expect(res.success).toBe(false);
+    expect(isSellable(relic)).toBe(false);
+    expect(player.inventory.primaryPack.getItem('relic-1')).toBe(relic);
   });
 });

@@ -9,6 +9,7 @@ import {
   getItemBuyPrice,
   getItemSellPrice,
   getPlayerTotalCp,
+  isSellable,
   SmithService,
 } from '../../engine';
 import { createDialogScrim, dialogButton, dialogHtml } from '../dialog';
@@ -200,8 +201,8 @@ export class ShopDialog {
   // ---- Merchant state ----------------------------------------------------------
 
   public getSellableItems(engine: GameEngine): Item[] {
-    // Coins aren't merchandise; the banker exchanges them.
-    return engine.player.inventory.primaryPack.getItems().filter((i) => i.category !== 'currency');
+    // Coins aren't merchandise (the banker exchanges them), nor is a quest item.
+    return engine.player.inventory.primaryPack.getItems().filter(isSellable);
   }
 
   /**

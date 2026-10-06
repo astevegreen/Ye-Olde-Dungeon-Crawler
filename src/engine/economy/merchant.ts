@@ -65,7 +65,17 @@ function valueOrDefault(item: Item, value: number): number {
 }
 
 /**
- * Calculates sell valuation for an item offered by the player:
+ * Whether a merchant buys the item at all: coins are the banker's business, a quest item is
+ * the hero's to keep (an Essence-Rune is spent at an altar, a relic carried home), and an
+ * item its pack priced at nothing is worth nothing.
+ */
+export function isSellable(item: Item): boolean {
+  if (item.category === 'currency' || item.category === 'quest') return false;
+  return item.value > 0 || item.baseValue > 0;
+}
+
+/**
+ * Calculates sell valuation for an item offered by the player (0 for one no merchant buys):
  * - Base sell rate is 50% of buy value.
  * - An unidentified item is mystery goods: a quarter of the plain item's rate, whatever
  *   it hides (Q21). Two unidentified items that look alike are offered the same price, so
@@ -76,6 +86,7 @@ function valueOrDefault(item: Item, value: number): number {
  * - A stack pays the unit price times its quantity.
  */
 export function getItemSellPrice(item: Item): number {
+  if (!isSellable(item)) return 0;
   return unitSellPrice(item) * (item.quantity ?? 1);
 }
 
@@ -203,6 +214,9 @@ export class Merchant {
       }
     } else {
       item = itemOrId;
+    }
+    if (!isSellable(item)) {
+      return { success: false, message: `No merchant will buy ${item.displayName}.` };
     }
 
     // 1. A worn, bound item (a negative family) is not for sale until cleansed.

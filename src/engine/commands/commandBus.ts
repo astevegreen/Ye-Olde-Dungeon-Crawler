@@ -24,7 +24,7 @@ import {
 import { TempleService, SageService, BankService, TrainerService } from '../economy/services';
 import { LoreService } from '../economy/lore';
 import { SmithService } from '../economy/smith';
-import { type Merchant, getItemSellPrice } from '../economy/merchant';
+import { type Merchant, getItemSellPrice, isSellable } from '../economy/merchant';
 import { formatCurrency } from '../economy/currency';
 import type { CompanionArchetype } from '../entities/companion';
 import { ChannelRuneOfReturnAction, RuneOfReturnItem, cancelChannel } from '../magic/runeOfReturn';
@@ -347,7 +347,7 @@ export class EngineCommandBus implements GameCommandBus {
       case 'sell_junk': {
         const merchant = (p.merchant as Merchant) ?? this.engine.merchants.get(p.merchantId as string);
         if (!merchant) return { success: false, message: 'Invalid sell request' };
-        const junk = this.engine.player.inventory.primaryPack.getItems().filter((i) => i.junk && i.category !== 'currency');
+        const junk = this.engine.player.inventory.primaryPack.getItems().filter((i) => i.junk && isSellable(i));
         if (junk.length === 0) return { success: false, message: 'Nothing in your pack is marked as junk.' };
         let sold = 0;
         let paid = 0;

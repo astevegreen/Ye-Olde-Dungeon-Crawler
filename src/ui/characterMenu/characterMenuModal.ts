@@ -25,6 +25,9 @@ const DEFAULT_TAB_CODES: Record<string, string[]> = {
 export class CharacterMenuModal implements UIModal {
   public readonly id = 'character-menu';
   public isOpen = false;
+  /** Whether the menu is showing. Kept apart from `isOpen`, which the modal stack clears
+   *  before it calls `close()`, so a stack-driven close still closes it, once (R-ui-6). */
+  private shown = false;
 
   private tabs: MenuTab[] = [];
   public activeTabId: string | null = null;
@@ -275,6 +278,7 @@ export class CharacterMenuModal implements UIModal {
 
   public open(tabId?: string): void {
     this.isOpen = true;
+    this.shown = true;
     if (typeof document !== 'undefined') {
       document.getElementById('widescreen-layout')?.classList.add('character-menu-active');
     }
@@ -296,7 +300,8 @@ export class CharacterMenuModal implements UIModal {
   }
 
   public close(): void {
-    if (!this.isOpen) return;
+    if (!this.shown) return;
+    this.shown = false;
     this.isOpen = false;
     if (typeof document !== 'undefined') {
       document.getElementById('widescreen-layout')?.classList.remove('character-menu-active');

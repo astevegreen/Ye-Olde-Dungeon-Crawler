@@ -259,6 +259,22 @@ describe('CharacterMenuModal & Consolidated Character Menu', () => {
     expect(tab2.unmounted).toBe(true);
   });
 
+  it('a close the modal stack drives (closeAll) still closes the shell, once (R-ui-6)', () => {
+    const onClose = vi.fn();
+    const stacked = new CharacterMenuModal([tab1, tab2], () => createMockGameState(engine), onClose);
+    stacked.setModalStack(modalStack);
+    stacked.open('character');
+    modalStack.push(stacked);
+    expect(stacked.focusRoot()!.className).toContain('is-open');
+
+    modalStack.closeAll(); // clears isOpen, then calls close() and onPop()
+
+    expect(tab2.unmounted).toBe(true);
+    expect(stacked.focusRoot()!.className).not.toContain('is-open');
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(modalStack.isEmpty()).toBe(true);
+  });
+
   it('Tab and Shift+Tab cycle tabs with wrap-around at both ends', () => {
     menu.open('inventory');
 

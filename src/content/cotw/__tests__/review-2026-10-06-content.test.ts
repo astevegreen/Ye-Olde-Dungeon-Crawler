@@ -24,7 +24,7 @@ describe('R-cotw-1 · the Wand of the Ironwood Bough casts an undefined spell', 
 });
 
 describe('R-cotw-4 · the legacy "Wand & Potion Utility Belt" accepts no wand, potion or scroll', () => {
-  it.fails('the legacy utility belt can hold a potion', () => {
+  it('the legacy utility belt can hold a potion', () => {
     const belt = createScaledItem(def('utility_belt') as never, 'belt', 1, () => 0.5) as unknown as { canContain(i: unknown): { allowed: boolean } };
     const potion = createScaledItem(def('hearth_broth_flask') as never, 'pot', 1, () => 0.5);
     expect(belt.canContain(potion).allowed).toBe(true);

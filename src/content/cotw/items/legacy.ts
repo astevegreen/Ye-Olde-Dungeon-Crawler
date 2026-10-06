@@ -211,7 +211,9 @@ export const COTW_LEGACY_ITEMS: ItemDefinition[] = [
       maxWeightCapacity: 6000,
       maxBulkCapacity: 2500,
       maxSlots: 4,
-      acceptedCategories: ['wand', 'potion', 'scroll'],
+      // As the catalog belts: every wand, potion and scroll is a `consumable` (their classes
+      // set it), so without it the belt held nothing.
+      acceptedCategories: ['wand', 'potion', 'scroll', 'consumable'],
     },
   },
   {

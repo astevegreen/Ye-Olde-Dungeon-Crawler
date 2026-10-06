@@ -158,6 +158,23 @@ export interface TrapDefinition {
   damage?: number;
   message?: string;
   disarmDifficulty?: number;
+  /** How well it hides: Search rolls against it, passive perception needs 2 more (default 14). */
+  concealment?: number;
+  /** The shallowest floor `trapPlacement` hides it on (default 1). */
+  minFloor?: number;
+  /** The deepest floor `trapPlacement` hides it on (default: no limit). */
+  maxFloor?: number;
+  /** Its share of a floor's draws among the traps that floor allows (default 1). */
+  weight?: number;
+}
+
+/**
+ * How many traps a generated floor hides (`placeFloorTraps`). Bands, as `floorEncounters`:
+ * the entry with the greatest `minFloor` not deeper than the floor gives the count, drawn
+ * evenly from `min` to `max`. A floor shallower than every entry gets none.
+ */
+export interface TrapPlacementConfig {
+  perFloor: Array<{ minFloor: number; min: number; max: number }>;
 }
 
 export interface SurfaceTypeDefinition {
@@ -935,6 +952,8 @@ export interface GameContentManifest {
   /** A short, dismissible hint the first time each system is met; a system without one shows none. */
   firstTimeHints?: Partial<Record<FirstTimeHintId, FirstTimeHintDefinition>>;
   traps?: TrapDefinition[];
+  /** How many of `traps` each generated floor hides; absent, floors hide none. */
+  trapPlacement?: TrapPlacementConfig;
   tiles?: TileDefinition[];
   itemAliasPools?: ItemAliasPools;
   surfaceTypes?: SurfaceTypeDefinition[];

@@ -21,6 +21,7 @@ import type { Item } from '../items/item';
 import { RuneOfReturnItem, attunementNpcName } from '../magic/runeOfReturn';
 import type { EngineRegistries } from '../registries';
 import { SpawnSiteFilter } from '../dungeon/spawnSites';
+import { placeFloorTraps } from '../dungeon/trapPlacement';
 export interface DungeonFloorResult {
   map: GameMap;
   playerSpawn: Position;
@@ -340,6 +341,25 @@ export class DungeonArc {
         map.removeItemAt(x, y, item.id);
         map.addItemAt(at.x, at.y, item);
       }
+    }
+
+    // 8. Hidden traps (`manifest.trapPlacement`), last so they keep off everything placed
+    // above, and on a stream of their own so the monster, item and cache draws are unchanged.
+    if (manifest?.trapPlacement && floorNumber >= 1) {
+      const trapPrng = new PRNG((seed ?? floorNumber) + floorNumber * 1299709);
+      placeFloorTraps(
+        map,
+        floorNumber,
+        manifest.traps ?? [],
+        manifest.trapPlacement,
+        {
+          arrival: playerSpawn,
+          stairsDown,
+          rooms: dungeon.rooms,
+          keepOut: [...(dungeon.vaultRects ?? []), ...(dungeon.thresholdRect ? [dungeon.thresholdRect] : [])],
+        },
+        () => trapPrng.next()
+      );
     }
 
     return {

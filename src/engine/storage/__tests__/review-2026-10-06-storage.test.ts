@@ -130,7 +130,7 @@ describe('R-stor-5 · FloorManager has no floor records after a load, so the fir
 });
 
 describe('R-stor-6 · loadAutosaveResult skips the version gate for a newer schema', () => {
-  it.fails('an autosave with schemaVersion 99 is refused as newer-than-engine', () => {
+  it('an autosave with schemaVersion 99 is refused as newer-than-engine', () => {
     const storage = new MemoryStorage();
     const autosaves = new AutosaveManager(storage);
     const engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player: new Player({ id: 'h', name: 'H', position: { x: 5, y: 5 } }) });
@@ -141,6 +141,16 @@ describe('R-stor-6 · loadAutosaveResult skips the version gate for a newer sche
 
     expect(outcome.ok).toBe(false);
     expect(outcome.ok ? undefined : outcome.reason).toBe('newer-than-engine');
+  });
+
+  it.each([['a string', 'abc'], ['a missing', undefined]])('an autosave with %s version is refused', (_label, version) => {
+    const storage = new MemoryStorage();
+    const autosaves = new AutosaveManager(storage);
+    const engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player: new Player({ id: 'h', name: 'H', position: { x: 5, y: 5 } }) });
+    const data = serializeGame(engine);
+    storage.setItem(autosaves.autosaveKey, JSON.stringify({ schemaVersion: version, contentManifestId: 'x', timestamp: 1, profile: data.profile, data }));
+
+    expect(autosaves.loadAutosaveResult().ok).toBe(false);
   });
 });
 

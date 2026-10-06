@@ -159,11 +159,9 @@ export class AutosaveManager {
         return { ok: false, reason: 'corrupt', message: 'The autosave is damaged and could not be loaded.', detail: 'autosave envelope missing data or profile' };
       }
 
-      let migratedData = env.data;
-      if (env.schemaVersion < CURRENT_SCHEMA_VERSION) {
-        const migrationResult = defaultMigrator.migrate(env, CURRENT_SCHEMA_VERSION);
-        migratedData = migrationResult.envelope.data as SaveData;
-      }
+      // Always through the migrator, as a character save is: a current envelope passes
+      // through, and a newer, missing or non-numeric version is refused, not mis-decoded.
+      const migratedData = defaultMigrator.migrate(env, CURRENT_SCHEMA_VERSION).envelope.data as SaveData;
 
       const manifest = activeManifest ?? this.manifest;
       const deserialized = deserializeGame(migratedData, manifest);

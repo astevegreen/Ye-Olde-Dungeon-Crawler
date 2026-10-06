@@ -254,6 +254,18 @@ describe('InventoryController', () => {
     c.setFilter('valuable');
     expect(ids()).toEqual(['ruby']);
   });
+
+  it('the Magic and Valuable filters see only what an unidentified sword shows (R-ui-2)', () => {
+    const sword = (id: string, ench: number) =>
+      new Item({ id, name: 'Steel Broadsword', unidentifiedName: 'Heavy Sword', category: 'weapon', weight: 1600, bulk: 1200, identified: false, value: 15 + ench * 40, baseValue: 15, enchantmentLevel: ench });
+    player.inventory.primaryPack.addItem(sword('plain', 0));
+    player.inventory.primaryPack.addItem(sword('plus3', 3));
+    const ids = () => c.packItems().map((i) => i.id).sort();
+    c.setFilter('magic');
+    expect(ids()).toEqual([]);
+    c.setFilter('valuable');
+    expect(ids()).toEqual([]);
+  });
 });
 
 describe('cellLabel', () => {

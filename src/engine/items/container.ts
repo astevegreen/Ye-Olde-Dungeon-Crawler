@@ -308,8 +308,9 @@ export class Container extends Item {
         }
         return a.displayName.localeCompare(b.displayName);
       } else if (mode === 'value') {
-        const valA = a.value ?? 0;
-        const valB = b.value ?? 0;
+        // What is seen, not what is hidden: an unidentified +3 sorts as the plain sword.
+        const valA = a.knownValue;
+        const valB = b.knownValue;
         if (valB !== valA) {
           return valB - valA; // Most valuable first
         }

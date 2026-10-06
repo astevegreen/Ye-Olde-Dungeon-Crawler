@@ -128,7 +128,7 @@ describe('R-econ-5 · Drop on the Pack slot leaves the pack on the ground and st
 });
 
 describe('R-econ-7 · "Sort by value" orders unidentified items by their hidden +N', () => {
-  it.fails('two unidentified Heavy Swords keep their order when sorted by value', () => {
+  it('two unidentified Heavy Swords keep their order when sorted by value', () => {
     const { engine, pack } = build();
     const mk = (id: string, ench: number, value: number) =>
       new Item({ id, name: 'Steel Broadsword', unidentifiedName: 'Heavy Sword', category: 'weapon', slot: 'mainHand', weight: 1600, bulk: 1200, identified: false, value, baseValue: 15, enchantmentLevel: ench } as never);

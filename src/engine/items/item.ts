@@ -222,6 +222,14 @@ export class Item {
     return this.modifiers.length > 0;
   }
 
+  /**
+   * The worth the hero can see: the true value once identified, else the plain item's
+   * (`baseValue`, without the hidden +N or affix), as the sell price reads it (Q21).
+   */
+  public get knownValue(): number {
+    return this.identified ? this.value : this.baseValue;
+  }
+
   /** One unit's name: the display name without a stack's "(Nx)" tag. */
   public get unitDisplayName(): string {
     return this.displayName.replace(/\s\(\d+x\)$/, '');

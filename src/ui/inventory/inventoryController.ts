@@ -136,17 +136,17 @@ function matchesFilter(item: Item, filter: BackpackFilter): boolean {
         item instanceof ScrollItem ||
         item instanceof WandItem
       );
+    // A scroll, wand or rune is magic by its kind; an unknown piece of gear shows nothing of
+    // its family, +N, quality or true worth until it is identified.
     case 'magic':
       return (
         item instanceof ScrollItem ||
         item instanceof WandItem ||
         item instanceof RuneOfReturnItem ||
-        item.modifiers.length > 0 ||
-        item.quality === 'artifact' ||
-        (item.enchantmentLevel ?? 0) > 0
+        (item.identified && (item.modifiers.length > 0 || item.quality === 'artifact' || (item.enchantmentLevel ?? 0) > 0))
       );
     case 'valuable':
-      return item.value >= 50 || item.quality === 'artifact' || item.id.includes('coin') || item.id.includes('gem') || item.id.includes('gold');
+      return item.knownValue >= 50 || (item.identified && item.quality === 'artifact') || item.id.includes('coin') || item.id.includes('gem') || item.id.includes('gold');
     default:
       return true;
   }

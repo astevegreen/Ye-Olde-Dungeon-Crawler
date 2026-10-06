@@ -524,7 +524,8 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       const foe = new Monster({ id: 'f', name: 'f', position: { x: 7, y: 5 }, stats: { hp: 500, maxHp: 500, attack: 1, defense: 0 } });
       fire.map.addEntity(foe);
       fire.rng = () => 0.999; // the last element of the pack's list, which is not firebolt's own
-      const elements = fire.affinityMatrix.getAllElements().map((e) => e.id).filter((e) => e !== 'healing' && e !== 'physical');
+      // The pack's elements Wildfire may pick: not healing or physical, nor one excluded from random draws (shadow).
+      const elements = fire.affinityMatrix.getAllElements().filter((e) => !e.excludeFromRandom).map((e) => e.id).filter((e) => e !== 'healing' && e !== 'physical');
       const res = new CastSpellAction(fire.player, 'firebolt', 7, 5).perform(fire);
       expect(res.success).toBe(true);
       const logged = fire.messages.join('\n');

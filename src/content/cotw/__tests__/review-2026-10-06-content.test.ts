@@ -3,7 +3,7 @@ import { cotwManifest } from '../index';
 import { createScaledItem } from '../../../engine/dungeon/lootSpawner';
 import { ProfileManager, MemoryStorage } from '../../../engine/storage/profile-manager';
 import { ExecuteChoiceAction } from '../../../engine/actions/choiceAction';
-import { DrinkPotionAction } from '../../../engine/actions/spell-actions';
+import { DrinkPotionAction, CastSpellAction } from '../../../engine/actions/spell-actions';
 
 /**
  * Whole-codebase review, 2026-10-06, area 6 (the cotw pack). Each test reproduces one finding
@@ -138,5 +138,51 @@ describe('R-cotw-12 · every surface a monster spawns is a surface the engine kn
       if (s && !known.has(s)) unknown.push(`${m.id}: ${s}`);
     }
     expect(unknown).toEqual([]);
+  });
+});
+
+describe('R-cotw-13 · shadow is an element of the pack (DECISIONS Q9: "Add it")', () => {
+  const matrixIds = new Set((cotwManifest.affinityMatrix?.elements ?? []).map((e) => e.id));
+
+  it('every element a spell, a monster resistance or a kill-rite essence names is in the affinity matrix', () => {
+    const named = new Set<string>();
+    for (const s of cotwManifest.spells as Array<{ element?: string; effects?: Array<{ element?: string }> }>) {
+      if (s.element) named.add(s.element);
+      for (const e of s.effects ?? []) if (e.element) named.add(e.element);
+    }
+    for (const m of cotwManifest.monsters as Array<{ resistances?: Record<string, string>; killRite?: { essenceElement?: string; requiredDamageElement?: string } }>) {
+      for (const el of Object.keys(m.resistances ?? {})) named.add(el);
+      if (m.killRite?.essenceElement) named.add(m.killRite.essenceElement);
+      if (m.killRite?.requiredDamageElement) named.add(m.killRite.requiredDamageElement);
+    }
+    expect([...named].filter((el) => !matrixIds.has(el)).sort()).toEqual([]);
+    expect(matrixIds.has('shadow')).toBe(true);
+  });
+
+  it('the Hel Warden and the Shadow Fiend resist shadow', () => {
+    const monsters = cotwManifest.monsters as Array<{ id: string; resistances?: Record<string, string> }>;
+    for (const id of ['hel_warden', 'shadow_fiend']) {
+      expect(monsters.find((m) => m.id === id)?.resistances?.shadow).toBe('resistant');
+    }
+  });
+
+  it('Wildfire never turns a spell to shadow, and still picks among the other five', () => {
+    const pm = new ProfileManager(new MemoryStorage(), cotwManifest);
+    const { engine } = pm.createCharacter('Wild', { seed: 5, difficulty: 'medium' } as never);
+    const p = engine.player;
+    (p as unknown as { perkModifiers: unknown[] }).perkModifiers.push({
+      id: 'test:wildfire', name: 'Wildfire', alignment: 'positive', category: 'blessed', randomSpellElement: true,
+    });
+    const seen = new Set<string>();
+    for (let i = 0; i < 120; i++) {
+      const before = engine.messages.length;
+      new CastSpellAction(p, 'firebolt', p.x + 1, p.y, undefined, true).perform(engine);
+      for (const m of engine.messages.slice(before)) {
+        const hit = /^Wildfire turns .+ to (\w+)!$/.exec(m);
+        if (hit) seen.add(hit[1]);
+      }
+    }
+    expect(seen.has('shadow')).toBe(false);
+    expect([...seen].sort()).toEqual(['arcane', 'cold', 'fire', 'lightning', 'poison']);
   });
 });

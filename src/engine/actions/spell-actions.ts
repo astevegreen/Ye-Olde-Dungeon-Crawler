@@ -84,7 +84,11 @@ export class CastSpellAction implements Action {
 
     // Wildfire: a damaging spell takes a random element of the pack's.
     if (wearsFlag(this.caster, 'randomSpellElement') && spell.element && spell.effects?.some((e) => e.type === 'damage')) {
-      const elements = engine.affinityMatrix.getAllElements().map((e) => e.id).filter((e) => e !== 'healing' && e !== 'physical');
+      const elements = engine.affinityMatrix
+        .getAllElements()
+        .filter((e) => !e.excludeFromRandom)
+        .map((e) => e.id)
+        .filter((e) => e !== 'healing' && e !== 'physical');
       if (elements.length > 0) {
         const element = elements[Math.floor(engine.rng() * elements.length)];
         spell = { ...spell, element, effects: spell.effects.map((e) => ('element' in e && e.element ? { ...e, element } : e)) };

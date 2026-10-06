@@ -23,6 +23,8 @@ export interface ElementDefinition {
   canReflect?: boolean;
   groundHazard?: boolean;
   color?: string;
+  /** Never chosen by an effect that picks one of the pack's elements at random (Wildfire). */
+  excludeFromRandom?: boolean;
   affinities?: Partial<Record<ElementalAffinity, number>>;
 }
 

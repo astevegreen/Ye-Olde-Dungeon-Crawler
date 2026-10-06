@@ -385,7 +385,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
     stats: { hp: 130, maxHp: 130, attack: 24, defense: 9 },
     speed: 130,
     aiType: 'caster',
-    resistances: { cold: 'resistant', fire: 'neutral' },
+    resistances: { cold: 'resistant', fire: 'neutral', shadow: 'resistant' },
     statusImmunities: ['poison', 'paralysis'],
     onHitAffliction: {
       type: 'slow',

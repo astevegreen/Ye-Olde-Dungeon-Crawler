@@ -139,7 +139,7 @@ export const MAW_OF_MALICE_MONSTERS: MonsterDefinition[] = [
     stats: { hp: 180, maxHp: 180, attack: 28, defense: 12 },
     speed: 90,
     aiType: 'brute',
-    resistances: { cold: 'immune', physical: 'resistant', poison: 'immune' },
+    resistances: { cold: 'immune', physical: 'resistant', poison: 'immune', shadow: 'resistant' },
     statusImmunities: ['paralysis', 'poison', 'slow'],
     onHitAffliction: {
       type: 'slow',

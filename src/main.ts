@@ -415,7 +415,11 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer.mapOverlay.close();
       renderer.targetingOverlay.startTargeting(entry, activeEngine);
 
-      if (inputHandler) {
+      // A spell needing no aim (Identify on an item) fired and closed already: nothing to
+      // put on the stack, which would only pause the world behind a dead entry (R-main-16).
+      if (!renderer.targetingOverlay.isOpen) {
+        void processVisualEffectsAndRender();
+      } else if (inputHandler) {
         inputHandler.modalStack.push({
           id: 'targeting',
           get isOpen() { return renderer?.targetingOverlay.isOpen ?? false; },
@@ -423,20 +427,11 @@ window.addEventListener('DOMContentLoaded', () => {
           handleKeyDown: (e: KeyboardEvent) => {
             if (!renderer || !activeEngine) return false;
             const handled = renderer.targetingOverlay.handleKeyDown(e, activeEngine);
-            if (!renderer.targetingOverlay.isOpen && inputHandler) {
-              inputHandler.modalStack.remove('targeting');
-              inputHandler.isInputLocked = false;
-            }
             renderer.render();
             return handled;
           },
-          close: () => {
-            renderer?.targetingOverlay.close();
-            if (inputHandler) {
-              inputHandler.modalStack.remove('targeting');
-              inputHandler.isInputLocked = false;
-            }
-          },
+          // The overlay's `onClose` takes the entry off the stack, however it closed.
+          close: () => renderer?.targetingOverlay.close(),
         });
       }
 
@@ -1663,17 +1658,16 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer.radialMenuOverlay.slots = settingsManager.getSettings().radialMenuSlots;
       renderer.onResolveRadialLabel = resolveRadialMenuLabel;
       renderer.onFocusEntityChanged = (id) => combatSidebar.setFocusedEntity(id);
-      // A click while aiming fires as Enter does (tracker 4.4): the spell, then the targeting
-      // entry off the stack, input unlocked, and the action's effects played.
+      // A click while aiming fires as Enter does (tracker 4.4): the spell, the targeting
+      // entry off the stack (the overlay's `onClose`), and the action's effects played.
       renderer.onAimFire = () => {
         if (!renderer || !activeEngine || !renderer.targetingOverlay.isOpen) return;
         renderer.targetingOverlay.confirmFire(activeEngine);
-        if (inputHandler) {
-          inputHandler.modalStack.remove('targeting');
-          inputHandler.isInputLocked = false;
-        }
         void processVisualEffectsAndRender();
       };
+      // Every way the aim closes (fire, Escape, the HUD Look or Map button, the palette)
+      // takes its stack entry with it; the effect lock is the effects' own (R-rend-7).
+      renderer.targetingOverlay.onClose = () => inputHandler?.modalStack.remove('targeting');
       settingsManager.subscribe((settings) => {
         if (renderer) {
           renderer.mouseVectoringEnabled = settings.mouseVectoringEnabled;

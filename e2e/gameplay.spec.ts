@@ -842,3 +842,29 @@ test('a click-to-travel auto-picks up where it ends; HUD Wait does nothing under
 
   expect(pageErrors).toEqual([]);
 });
+
+// Closing the aim any way but its own keys (here the HUD Look and Map buttons) takes its
+// stack entry with it, so the world isn't left paused behind a dead entry (R-rend-7).
+test('closing the aim with the HUD Look or Map button leaves no targeting entry behind', async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on('pageerror', (err) => pageErrors.push(err.message));
+  await embarkNewHero(page);
+  const aiming = () => page.evaluate(() => window.__cotwRenderer!.targetingOverlay.isOpen);
+
+  for (const button of ['#btn-hud-look', '#btn-map']) {
+    await page.keyboard.press('Digit1');
+    await expect.poll(aiming).toBe(true);
+    expect(await stackIds(page)).toContain('targeting');
+    await page.locator(button).click();
+    await expect.poll(aiming).toBe(false);
+    expect(await stackIds(page)).not.toContain('targeting');
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => {
+      window.__cotwRenderer!.inspectOverlay.close();
+      window.__cotwRenderer!.mapOverlay.close();
+      window.__cotwInputHandler!.modalStack.closeAll();
+    });
+  }
+  expect(await page.evaluate(() => window.__cotwEngine!.isPaused)).toBe(false);
+  expect(pageErrors).toEqual([]);
+});

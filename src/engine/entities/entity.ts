@@ -206,6 +206,11 @@ export class Entity {
     return { damageDealt, killed };
   }
 
+  /** Whether a status can't take hold on it: its own immunities (an Actor adds what it wears). */
+  public isImmuneTo(status: StatusType): boolean {
+    return this.statusImmunities.includes(status);
+  }
+
   /** How this entity takes an element: its own resistances (an Actor adds what it wears). */
   public affinityTo(element: ElementType): ElementalAffinity {
     return this.elementalResistances[element] ?? 'neutral';

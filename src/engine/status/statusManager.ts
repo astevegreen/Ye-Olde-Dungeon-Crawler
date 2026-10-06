@@ -60,7 +60,8 @@ export class StatusManager {
       engine = engineMaybe;
     }
 
-    if (immunities.includes(status.type)) {
+    // The list the caller passed, and the entity's own (an Actor's include what it wears).
+    if (immunities.includes(status.type) || entity?.isImmuneTo(status.type)) {
       return false;
     }
 

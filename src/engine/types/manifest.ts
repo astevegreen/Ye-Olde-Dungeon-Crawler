@@ -121,6 +121,13 @@ export interface ItemDefinition {
   rangedConfig?: RangedWeaponConfig;
   predicate?: Predicate;
   hooks?: HookDescriptor[];
+  /**
+   * What wearing it does beside its stats, in a perk's terms (`PerkEffects`): an element it
+   * resists (`resistsElements`), statuses that never take hold (`grantsStatusImmunities`),
+   * traps that never spring (`trapImmune`). Read from the worn item through `wornModifiers`.
+   * Definition-only, like `hooks`: never saved, and given back on load.
+   */
+  wornEffects?: PerkEffects;
 }
 
 export const BUILTIN_ITEM_TYPES = ['standard', 'container', 'wand', 'scroll', 'potion', 'coin'] as const;

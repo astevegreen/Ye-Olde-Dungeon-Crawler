@@ -4,6 +4,7 @@ import type { GameEngine } from '../engine';
 import { InventoryManager } from '../inventory/inventory-manager';
 import type { Item, EquipmentSlot } from '../items/item';
 import type { ElementType, ElementalAffinity } from '../magic/elements';
+import type { StatusType } from '../status/types';
 import { wornModifiers } from '../items/wornModifiers';
 
 export interface IItemContainer {
@@ -250,6 +251,14 @@ export class Actor extends Entity implements IItemContainer, IEquipmentBearer {
     if (own !== 'neutral' && own !== 'weak') return own;
     if (!wornModifiers(this).some((mod) => mod.resistsElements?.includes(element))) return own;
     return own === 'weak' ? 'neutral' : 'resistant';
+  }
+
+  /**
+   * Its own immunities, and statuses what it wears or the perks it holds keep off
+   * (`grantsStatusImmunities`: the Soot-Visored Helm and blindness), only while worn.
+   */
+  public override isImmuneTo(status: StatusType): boolean {
+    return super.isImmuneTo(status) || wornModifiers(this).some((mod) => mod.grantsStatusImmunities?.includes(status));
   }
 
   /** Healing scaled below a whole point carries over, so a halved rest still heals every other tick. */

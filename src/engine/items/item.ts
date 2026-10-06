@@ -1,6 +1,7 @@
 import type { ElementType } from '../magic/elements';
 import type { Predicate } from '../predicates/types';
 import type { HookDescriptor } from '../hooks/hookDispatcher';
+import type { PerkEffects } from '../types/perks';
 import {
   type ItemModifier,
   isModifierCursed,
@@ -106,6 +107,8 @@ export interface ItemConfig {
   aspectState?: string;
   unitWeight?: number;
   modifiers?: ItemModifier[];
+  /** The definition's `wornEffects`: what wearing it does beside its stats. Not saved. */
+  wornEffects?: PerkEffects;
   parentId?: string | null;
   ownerId?: string | null;
 }
@@ -139,6 +142,8 @@ export class Item {
   public readonly rangedConfig?: RangedWeaponConfig;
   public readonly predicate?: Predicate;
   public readonly hooks?: HookDescriptor[];
+  /** What wearing it does beside its stats (`ItemDefinition.wornEffects`), read by `wornModifiers`. */
+  public readonly wornEffects?: PerkEffects;
   public parentId: string | null = null;
   public ownerId: string | null = null;
   public aspectState?: string;
@@ -173,6 +178,7 @@ export class Item {
     this.rangedConfig = config.rangedConfig;
     this.predicate = config.predicate;
     this.hooks = config.hooks ? [...config.hooks] : undefined;
+    this.wornEffects = config.wornEffects;
     this.aspectState = config.aspectState;
     this.modifiers = config.modifiers ? [...config.modifiers] : [];
   }

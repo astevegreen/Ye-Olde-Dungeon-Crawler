@@ -42,8 +42,10 @@ export const COTW_NECK: ItemDefinition[] = [
     weight: 120,
     bulk: 100,
     stats: { defenseBonus: 2 },
+    // There is no fear status; dread that freezes the hero in place is a stun.
+    wornEffects: { grantsStatusImmunities: ['stunned'] },
     identified: false,
-    description: 'A blackened burial coin lifted from the hollow skull of a barrow chieftain. Hardens the mind into utter immunity against terror, fear, and dread.',
+    description: 'A blackened burial coin lifted from the hollow skull of a barrow chieftain. The mind of its bearer never freezes in dread: nothing can stun them.',
     value: 140,
   },
   {

@@ -54,6 +54,7 @@ export const COTW_RINGS: ItemDefinition[] = [
     weight: 45,
     bulk: 30,
     stats: { defenseBonus: 2 },
+    wornEffects: { resistsElements: ['fire'] },
     identified: false,
     description: 'Forged from vulcanized iron, this band grants unshakeable resistance against molten slag, brimstone, and burning ground surfaces.',
     value: 130,

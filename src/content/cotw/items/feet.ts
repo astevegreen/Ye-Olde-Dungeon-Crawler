@@ -72,6 +72,8 @@ export const COTW_FEET: ItemDefinition[] = [
     weight: 900,
     bulk: 1100,
     stats: { defenseBonus: 6, speedBonus: 2 },
+    // "Rooting magic" is paralysis here (the World-Bark's Grasping Roots); snares are traps.
+    wornEffects: { grantsStatusImmunities: ['paralysis'], trapImmune: true },
     quality: 'artifact',
     identified: false,
     description: 'Ethereal bark-fiber boots that skim above the earth, granting immunity to grasping brambles, rooting magic, and subterranean snares.',

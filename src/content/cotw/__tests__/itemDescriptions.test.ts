@@ -14,6 +14,22 @@ describe('cotw item descriptions', () => {
     expect(liars).toEqual([]);
   });
 
+  // Five items promised a resistance or an immunity that item definitions had no way to
+  // give (6 Oct); `wornEffects` gives it now, and a new promise must come with one.
+  it('that promise a resistance or immunity carry it as a worn effect', () => {
+    const PROTECTS = /\b(resistance|immunity|immune|wards against|can blind|can stun)\b/i;
+    const empty = COTW_ITEMS.filter((d) => PROTECTS.test(d.description ?? '') && !d.wornEffects).map((d) => d.id);
+    expect(empty).toEqual([]);
+    const effects = Object.fromEntries(COTW_ITEMS.filter((d) => d.wornEffects).map((d) => [d.id, d.wornEffects]));
+    expect(effects).toMatchObject({
+      ring_of_the_slag_walker: { resistsElements: ['fire'] },
+      zealots_seared_crown: { resistsElements: ['fire'] },
+      soot_visored_helm: { grantsStatusImmunities: ['blindness'] },
+      rootless_striders: { grantsStatusImmunities: ['paralysis'], trapImmune: true },
+      corpse_chieftains_eye_coin: { grantsStatusImmunities: ['stunned'] },
+    });
+  });
+
   it('promise no cure for a curse: only the temple lifts one', () => {
     const LIFTS_CURSES = /(purg|lift|break|remov|cleans|dispel)\w*[^.]*\bcurses?\b/i;
     const liars = COTW_ITEMS.filter((d) => LIFTS_CURSES.test(d.description ?? '')).map((d) => `${d.id}: ${d.description}`);

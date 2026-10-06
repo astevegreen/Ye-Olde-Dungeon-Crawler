@@ -42,8 +42,9 @@ export const COTW_HEAD: ItemDefinition[] = [
     weight: 2200,
     bulk: 2000,
     stats: { defenseBonus: 5 },
+    wornEffects: { grantsStatusImmunities: ['blindness'] },
     identified: false,
-    description: 'Heavy dwarven forge helmet fitted with narrow mica slits that protect the eyes from choking smoke, blinding glare, and caustic ash.',
+    description: 'Heavy dwarven forge helmet fitted with narrow mica slits: no choking smoke, glare or caustic ash can blind its wearer.',
     value: 85,
   },
   {
@@ -57,6 +58,7 @@ export const COTW_HEAD: ItemDefinition[] = [
     weight: 1100,
     bulk: 900,
     stats: { defenseBonus: 4, attackBonus: 3 },
+    wornEffects: { resistsElements: ['fire'] },
     identified: false,
     description: 'Brand-scorched iron coronet consecrated to Sól. Empowers spellcasting heat and wards against flame, though its radiant aura alerts resting subterranean foes.',
     value: 180,

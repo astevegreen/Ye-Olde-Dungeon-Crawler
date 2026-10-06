@@ -30,6 +30,21 @@ describe('cotw item descriptions', () => {
     });
   });
 
+  // Three pieces of armour promised to answer a blow but hooked `onHit`, which fires on the
+  // wearer's own blows (R-cmbt-12): a reaction to being struck hooks a defender's event.
+  it('that promise a reaction to being struck hook an event the wearer is struck by', () => {
+    const STRUCK = /when struck|strikes its (wearer|bearer)|whoever strikes|retaliat|reflects? incoming/i;
+    const DEFENDER_EVENTS = new Set(['onDamageTaken', 'onBlock']);
+    const wrong = COTW_ITEMS.filter(
+      (d) =>
+        [d.description, ...(d.hooks ?? []).map((h) => h.description)].some((t) => STRUCK.test(t ?? '')) &&
+        !(d.hooks ?? []).some((h) => DEFENDER_EVENTS.has(h.event))
+    ).map((d) => d.id);
+    expect(wrong).toEqual([]);
+    const struck = COTW_ITEMS.filter((d) => (d.hooks ?? []).some((h) => h.event === 'onDamageTaken')).map((d) => d.id);
+    expect(struck).toEqual(expect.arrayContaining(['bellows_plate_shield', 'mirror_skulker_facet', 'nid_dripping_hauberk']));
+  });
+
   it('promise no cure for a curse: only the temple lifts one', () => {
     const LIFTS_CURSES = /(purg|lift|break|remov|cleans|dispel)\w*[^.]*\bcurses?\b/i;
     const liars = COTW_ITEMS.filter((d) => LIFTS_CURSES.test(d.description ?? '')).map((d) => `${d.id}: ${d.description}`);

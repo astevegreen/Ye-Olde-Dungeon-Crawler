@@ -92,7 +92,7 @@ export const COTW_TORSO: ItemDefinition[] = [
     stats: { defenseBonus: 18 },
     hooks: [
       {
-        event: 'onHit',
+        event: 'onDamageTaken',
         chance: 0.5,
         action: {
           type: 'bonusDamage',

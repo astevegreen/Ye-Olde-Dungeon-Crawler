@@ -29,7 +29,7 @@ export const COTW_OFFHAND: ItemDefinition[] = [
     stats: { defenseBonus: 5 },
     hooks: [
       {
-        event: 'onHit',
+        event: 'onDamageTaken',
         chance: 0.25,
         action: {
           type: 'applyStatus',
@@ -71,18 +71,18 @@ export const COTW_OFFHAND: ItemDefinition[] = [
     stats: { defenseBonus: 4 },
     hooks: [
       {
-        event: 'onHit',
+        event: 'onDamageTaken',
         chance: 0.3,
         action: {
           type: 'bonusDamage',
           amount: 4,
           element: 'fire',
         },
-        description: 'Mirror-Skulker Facet refracts and retaliates with searing beam reflection!',
+        description: 'Mirror-Skulker Facet flashes a searing beam back at its attacker!',
       },
     ],
     identified: false,
-    description: 'A faceted crystalline quartz shield that reflects incoming beams, projectiles, and fire damage back toward hostile casters.',
+    description: 'A faceted crystalline quartz shield that throws a searing flash back at whoever strikes its bearer.',
     value: 190,
   },
   {

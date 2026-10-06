@@ -378,6 +378,20 @@ export class InventoryManager {
   }
 
   /**
+   * Uses up one unit of a carried item: a stack loses one, a single item leaves the inventory.
+   * Returns false when the item is not carried.
+   */
+  public consumeOne(itemId: string): boolean {
+    const item = this.findItemById(itemId);
+    if (!item) return false;
+    if ((item.quantity ?? 1) > 1) {
+      item.quantity -= 1;
+      return true;
+    }
+    return this.removeItem(itemId) !== null;
+  }
+
+  /**
    * Coins fill the purse while it has room and the rest go to the pack, so a pile that only
    * partly fits is split. All or nothing overall: a pile the two can't hold between them
    * stays whole where it was.

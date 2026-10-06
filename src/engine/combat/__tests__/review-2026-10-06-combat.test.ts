@@ -187,7 +187,7 @@ describe('R-cmbt-8 · an ice-slide death carries no cause', () => {
 });
 
 describe('R-cmbt-11 · reading a Scroll of Identify with nothing to identify burns the scroll', () => {
-  it.fails('the scroll stays in the pack when the cast fails for lack of a target', () => {
+  it('the scroll stays in the pack when the cast fails for lack of a target', () => {
     const player = new Player({ id: 'hero', name: 'Hero', position: { x: 2, y: 2 } });
     const engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player, manifest: cotwManifest });
     const scroll = new ScrollItem({ id: 'scroll-id', name: 'Scroll of Identify', spellId: 'identify', identified: true });

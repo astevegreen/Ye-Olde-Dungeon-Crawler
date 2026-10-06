@@ -222,6 +222,11 @@ export class Item {
     return this.modifiers.length > 0;
   }
 
+  /** One unit's name: the display name without a stack's "(Nx)" tag. */
+  public get unitDisplayName(): string {
+    return this.displayName.replace(/\s\(\d+x\)$/, '');
+  }
+
   public get displayName(): string {
     const qtyTag = this.quantity > 1 ? ` (${this.quantity}x)` : '';
     if (!this.identified) {

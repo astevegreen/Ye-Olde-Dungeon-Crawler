@@ -378,16 +378,11 @@ export class ReadScrollAction implements Action {
   }
 
   public perform(engine: GameEngine): ActionResult {
-    // Remove scroll from wherever it is (pack, belt, sub-containers)
-    this.user.inventory.removeItem(this.scroll.id);
-
     this.scroll.identified = true;
     engine.identification?.identifyDefinition(this.scroll.id);
-    if (this.user instanceof Player) {
-      engine.log(`You read the ${this.scroll.displayName}. The parchment turns to ash in your hands!`);
-    } else {
-      engine.log(`${this.user.name} reads the ${this.scroll.displayName}. The parchment turns to ash!`);
-    }
+    const name = this.scroll.unitDisplayName;
+    const isPlayer = this.user instanceof Player;
+    engine.log(isPlayer ? `You read the ${name}.` : `${this.user.name} reads the ${name}.`);
 
     const castAction = new CastSpellAction(
       this.user,
@@ -397,7 +392,12 @@ export class ReadScrollAction implements Action {
       this.itemTargetId,
       true
     );
-    return castAction.perform(engine);
+    const result = castAction.perform(engine);
+    // Only a cast that takes spends the scroll, and only one of a stack.
+    if (!result.success) return result;
+    this.user.inventory.consumeOne(this.scroll.id);
+    engine.log(isPlayer ? 'The parchment turns to ash in your hands!' : 'The parchment turns to ash!');
+    return result;
   }
 }
 
@@ -429,8 +429,8 @@ export class DrinkPotionAction implements Action {
     this.potion.identified = true;
     engine.identification?.identifyDefinition(this.potion.id);
 
-    // Remove potion from wherever it is (pack, belt, sub-containers)
-    this.user.inventory.removeItem(this.potion.id);
+    // One draught of a stack; a single bottle leaves the inventory.
+    this.user.inventory.consumeOne(this.potion.id);
 
     const actionCost = this.user.getActionCost(100);
     this.user.consumeEnergy(actionCost);
@@ -552,8 +552,8 @@ export class DrinkPotionAction implements Action {
     const detailMsg = messages.length > 0 ? `: ${messages.join(', ')}.` : '.';
     const isPlayer = this.user instanceof Player;
     const finalMsg = isPlayer
-      ? `You drink the ${this.potion.displayName}${detailMsg}`
-      : `${this.user.name} drinks the ${this.potion.displayName}${detailMsg}`;
+      ? `You drink the ${this.potion.unitDisplayName}${detailMsg}`
+      : `${this.user.name} drinks the ${this.potion.unitDisplayName}${detailMsg}`;
     engine.log(finalMsg);
     return { success: true, cost: actionCost, message: finalMsg };
   }

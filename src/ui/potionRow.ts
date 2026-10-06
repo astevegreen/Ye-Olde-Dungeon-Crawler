@@ -24,8 +24,6 @@ export interface PotionKind {
   identified: boolean;
 }
 
-const STACK_SUFFIX = /\s\(\d+x\)$/;
-
 /**
  * Every potion kind the hero carries anywhere (pack, belt, sub-containers):
  * identified kinds first, each group alphabetical.
@@ -37,7 +35,7 @@ export function getCarriedPotionKinds(engine: GameEngine): PotionKind[] {
     const key = potionKindKey(item);
     const existing = kinds.get(key);
     if (existing) existing.count += item.quantity;
-    else kinds.set(key, { key, itemId: item.id, name: item.displayName.replace(STACK_SUFFIX, ''), count: item.quantity, identified: item.identified });
+    else kinds.set(key, { key, itemId: item.id, name: item.unitDisplayName, count: item.quantity, identified: item.identified });
   }
   return [...kinds.values()].sort((a, b) => Number(b.identified) - Number(a.identified) || a.name.localeCompare(b.name));
 }

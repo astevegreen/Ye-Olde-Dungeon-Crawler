@@ -88,12 +88,7 @@ function burnOffering(player: Player, offering: AltarOffering): void {
     return;
   }
   const item = player.inventory.getAllCarriedItems().find((i) => i.definitionId === offering.id);
-  if (!item) return;
-  if ((item.quantity ?? 1) > 1) {
-    item.quantity = (item.quantity ?? 1) - 1;
-  } else {
-    player.inventory.removeItem(item.id);
-  }
+  if (item) player.inventory.consumeOne(item.id);
 }
 
 /** The pack's hybrid spell for two elements, in either order. */

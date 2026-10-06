@@ -133,9 +133,11 @@ describe('R-pipe-8 · a monster killed by a trap is never resolved (dormant: no 
 });
 
 describe('R-pipe-11 · cure_status "all" removes a status literally named "all"', () => {
-  it.fails('a potion whose cure_status is "all" purges poison', () => {
+  it('a potion whose cure_status is "all" purges poison', () => {
     const { engine, player } = build(50);
     player.statusManager.applyStatus({ type: 'poison', duration: 5, potency: 2 }, [], player, engine);
+    player.statusManager.applyStatus({ type: 'blindness', duration: 5 }, [], player, engine);
+    player.statusManager.applyStatus({ type: 'haste', duration: 5 }, [], player, engine);
     const draught = new PotionItem({
       id: 'draught',
       name: 'Draught of Thawed Blood',
@@ -152,6 +154,9 @@ describe('R-pipe-11 · cure_status "all" removes a status literally named "all"'
     engine.commandBus.dispatch({ type: 'drink_potion', payload: { itemId: draught.id } });
 
     expect(player.statusManager.hasStatus('poison')).toBe(false);
+    expect(player.statusManager.hasStatus('blindness')).toBe(false);
+    expect(player.statusManager.hasStatus('haste')).toBe(true); // not an affliction
+    expect(player.statusManager.hasStatus('slow')).toBe(true); // the draught's own slow, after the purge
   });
 });
 

@@ -17,6 +17,7 @@ import { ManaOverflowManager, canOvercast } from '../magic/manaOverflow';
 import { lowestWorn, sumWorn, wearsFlag } from '../items/wornModifiers';
 import { effectiveManaCost as effectiveManaCostOf } from '../magic/castNumbers';
 import { GrimoireMatrixManager, withSpellRangeBonus } from '../magic/grimoireMatrix';
+import { StatusHandlerRegistry } from '../status/statusHandlers';
 
 /** World counter of casts whose grid shaping the log has explained, and how many it explains. */
 const GRID_NOTE_COUNTER = 'grimoire_cast_notes';
@@ -451,8 +452,15 @@ export class DrinkPotionAction implements Action {
           break;
         }
         case 'cure_status': {
-          this.user.statusManager.removeStatus(effect.status);
-          messages.push(`purging ${effect.status}`);
+          if (effect.status === 'all') {
+            // Every affliction (`StatusHandler.affliction`), not a status named "all".
+            const afflictions = this.user.statusManager.getAll().filter((s) => StatusHandlerRegistry.get(s.type)?.affliction);
+            for (const s of afflictions) this.user.statusManager.removeStatus(s.type);
+            messages.push(afflictions.length ? `purging ${afflictions.map((s) => s.type).join(', ')}` : 'finding nothing to purge');
+          } else {
+            this.user.statusManager.removeStatus(effect.status);
+            messages.push(`purging ${effect.status}`);
+          }
           break;
         }
         case 'apply_status': {

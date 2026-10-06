@@ -4,6 +4,7 @@ export const BURNING_STATUS = 'burning';
 
 /** Fire damage each turn, at the status's potency (Zealot's Sun-Flare sets 6). */
 export const burningHandler: StatusHandler = {
+  affliction: true,
   onTick(entity, effect, _engine) {
     const dmg = effect.potency ?? 3;
     // Periodic damage must not wake a sleeping monster.

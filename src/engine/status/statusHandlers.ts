@@ -23,6 +23,12 @@ export interface StatusHandler {
    * previously a `blindness`-only hardcoded case in `engine.ts`.
    */
   perceptionRadius?: number;
+  /**
+   * A harm the sufferer wants gone (poison, slow, burning): what a cure of every affliction,
+   * a potion's `cure_status: 'all'`, purges. Unmarked statuses (haste, a channel, a floor's
+   * darkness) are left alone.
+   */
+  affliction?: boolean;
 }
 
 import {
@@ -88,6 +94,7 @@ export const StatusEffectRegistry = StatusHandlerRegistry;
 
 export const BUILTIN_STATUS_HANDLERS: Record<string, StatusHandler> = {
   poison: {
+    affliction: true,
     onTick(entity, effect, _engine) {
       const dmg = effect.potency ?? 2;
       // Periodic damage must not wake a sleeping monster.
@@ -104,11 +111,13 @@ export const BUILTIN_STATUS_HANDLERS: Record<string, StatusHandler> = {
     },
   },
   paralysis: {
+    affliction: true,
     onExpire(entity) {
       return `${entity.name} is no longer paralyzed.`;
     },
   },
   slow: {
+    affliction: true,
     onExpire(entity) {
       return `${entity.name}'s sluggishness fades and speed normalizes.`;
     },
@@ -119,12 +128,14 @@ export const BUILTIN_STATUS_HANDLERS: Record<string, StatusHandler> = {
     },
   },
   blindness: {
+    affliction: true,
     perceptionRadius: 1,
     onExpire(entity) {
       return `${entity.name}'s vision returns!`;
     },
   },
   stunned: {
+    affliction: true,
     onExpire(entity) {
       return `${entity.name} recovers from the stunning blow and regains composure.`;
     },

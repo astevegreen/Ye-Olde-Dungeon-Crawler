@@ -412,9 +412,17 @@ export interface TownLayoutDefinition {
   lit?: boolean;
 }
 
+/**
+ * A depth band of wandering monsters (`QuestArcDefinition.floorEncounters`), keyed by the
+ * floor the band starts on: it holds for that floor and every deeper one up to the next
+ * key (owner Q8, "bands"). A listed monster still waits for its own `minFloor`.
+ */
 export interface FloorEncounterConfig {
+  /** Who wanders in on these floors; empty (or none deep enough yet) = the depth-weighted catalog. */
   monsterIds: string[];
+  /** Not read by the engine; kept for the pack's own reference. */
   minMonsters: number;
+  /** The most living hostile monsters a floor of the band holds before no wanderer comes. */
   maxMonsters: number;
 }
 
@@ -464,6 +472,7 @@ export interface QuestArcDefinition {
   victoryPortalMessage?: string;
   townReturnPosition?: Position;
   bossFloorLayout: BossFloorLayoutDefinition;
+  /** Wandering-monster bands by the floor each starts on (`FloorEncounterConfig`). */
   floorEncounters: Record<number, FloorEncounterConfig>;
   floorGenerators?: Record<number, string>;
   defaultGenerator?: string;

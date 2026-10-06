@@ -3,6 +3,7 @@ import { Monster } from '../entities/monster';
 import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
 import { getMonsterDefinition } from '../bestiary/monsterDefinitions';
 import type { Position } from '../types';
+import type { FloorEncounterConfig } from '../types/manifest';
 import { selectDungeonMonsterDefinition, createScaledMonster, isEligibleDungeonMonster } from './spawner';
 import { SpawnSiteFilter } from './spawnSites';
 
@@ -33,6 +34,22 @@ export function createMonsterFromDefinition(
     lootTable: def.lootTable,
     hooks: def.hooks,
   });
+}
+
+/**
+ * The wandering-monster band a floor falls in: the entry keyed by the deepest listed floor
+ * not deeper than `floor` (owner Q8: bands). Undefined above the first key.
+ */
+function encounterBandFor(
+  bands: Record<number, FloorEncounterConfig> | undefined,
+  floor: number
+): FloorEncounterConfig | undefined {
+  let best = -Infinity;
+  for (const key of Object.keys(bands ?? {})) {
+    const start = Number(key);
+    if (start <= floor && start > best) best = start;
+  }
+  return best === -Infinity ? undefined : bands![best];
 }
 
 /**
@@ -68,6 +85,14 @@ export class WanderingMonsterSpawner {
 
     // 2. Turn interval check: every intervalTurns (e.g. 50, 100, 150...)
     if (engine.turnCount === 0 || engine.turnCount % this.intervalTurns !== 0) {
+      return null;
+    }
+
+    // 2b. The floor's cap: its band's `maxMonsters`, else the floor manager's density limit.
+    // Resting for thousands of turns used to add a sleeper every few hundred, unbounded.
+    const cap = encounterBandFor(engine.manifest.quest?.floorEncounters, engine.currentFloor)?.maxMonsters ?? engine.floorManager.densityLimit;
+    const hostiles = engine.map.getAllEntities().filter((e) => e instanceof Monster && e.isAlive() && e.faction !== 'player').length;
+    if (hostiles >= cap) {
       return null;
     }
 
@@ -122,9 +147,9 @@ export class WanderingMonsterSpawner {
   }
 
   private selectMonsterDefinition(engine: GameEngine, rng: () => number): MonsterDefinition | null {
-    const encounterConfig = engine.manifest.quest?.floorEncounters?.[engine.currentFloor];
-    // The floor's own list, less any monster the floor isn't deep enough for (a list
-    // once put wolves on floor 5, two floors before they unlock).
+    const encounterConfig = encounterBandFor(engine.manifest.quest?.floorEncounters, engine.currentFloor);
+    // The floor's band, less any monster the floor isn't deep enough for (band 5 lists
+    // wolves, which wait for floor 7).
     const listed = (encounterConfig?.monsterIds ?? [])
       .map((id) => engine.manifest.monsters.find((m) => m.id === id) ?? getMonsterDefinition(id))
       .filter((def): def is MonsterDefinition => !!def && isEligibleDungeonMonster(def, engine.currentFloor));

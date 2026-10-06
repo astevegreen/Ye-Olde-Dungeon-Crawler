@@ -109,6 +109,34 @@ describe('Dynamic Wandering Monster Spawner', () => {
     }
   });
 
+  it('R-ai-12 · a band holds from its floor down to the next one (owner Q8: bands)', () => {
+    const pick = (floor: number, roll: number) => {
+      engine.currentFloor = floor;
+      const select = (spawner as unknown as { selectMonsterDefinition: (e: GameEngine, r: () => number) => { id: string } | null })
+        .selectMonsterDefinition.bind(spawner);
+      return select(engine, () => roll)!.id;
+    };
+    const drawn = (floor: number) => new Set(Array.from({ length: 20 }, (_, i) => pick(floor, i / 20)));
+    // Floors 2-4 draw from band 1 (rats and kobolds), not the whole catalog.
+    expect([...drawn(3)].sort()).toEqual(['giant_rat', 'kobold']);
+    // Floor 8 is in band 5, and deep enough for its wolves.
+    expect(drawn(8)).toEqual(new Set(['kobold', 'skeleton', 'wolf']));
+    // Floor 6 is in band 5 too, before the wolves unlock.
+    expect(drawn(6)).toEqual(new Set(['kobold', 'skeleton']));
+  });
+
+  it('R-ai-12 · no wanderer comes once the floor holds its band’s maxMonsters', () => {
+    engine.currentFloor = 1; // band 1: maxMonsters 7
+    engine.turnCount = 50;
+    let n = 0;
+    const rng = () => ((n++ * 0.6180339) % 1); // a fresh roll each draw, so ids differ
+    for (let i = 0; i < 7; i++) {
+      expect(spawner.checkAndSpawn(engine, rng), `wanderer ${i + 1}`).not.toBeNull();
+    }
+    expect(engine.map.getAllEntities().filter((e) => e.type === 'monster')).toHaveLength(7);
+    expect(spawner.checkAndSpawn(engine, rng)).toBeNull();
+  });
+
   it('spawns wandering monster seamlessly via GameEngine.handlePlayerAction on turn 50', () => {
     // Configure engine spawner for 100% spawn chance
     engine.wanderingSpawner.intervalTurns = 50;

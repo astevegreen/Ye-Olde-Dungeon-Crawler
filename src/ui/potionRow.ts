@@ -288,6 +288,11 @@ class PotionPicker implements UIModal {
     this.modalStack = stack;
   }
 
+  /** The list itself, not the potion row it sits in: Tab moves between its rows. */
+  public focusRoot(): HTMLElement | null {
+    return this.el;
+  }
+
   public handleKeyDown(e: KeyboardEvent): boolean {
     if (e.key === 'Escape') {
       this.close();

@@ -239,6 +239,7 @@ export class InputHandler {
           return self.shopOverlay.handleKeyDown(ke, self.engine);
         },
         close: () => { self.shopOverlay?.close(); },
+        focusRoot: () => self.shopOverlay?.root ?? null,
       });
     };
     const origClose = overlay.onClose;

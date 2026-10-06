@@ -223,6 +223,10 @@ export class DiagnosticModal implements UIModal {
     return true;
   }
 
+  public focusRoot(): HTMLElement | null {
+    return this.modal;
+  }
+
   public open(): void {
     if (!this.modal) return;
     this.isOpen = true;

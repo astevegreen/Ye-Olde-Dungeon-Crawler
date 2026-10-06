@@ -144,7 +144,7 @@
 
 **Binding rules:**
 - **Bounded Simulation Scoping:** only the active floor is simulated; other visited floors are stored, not simulated. Per-actor work (AI, pathfinding, combat, awakening/bestiary checks) is bounded via dormant-actor short-circuiting and bounded FOV. A lit floor (`GameMap.lit`, the town by day) is seen as far as line of sight goes, but its awakening and bestiary checks stay within the hero's own radius. `EnergyScheduler` turn selection deliberately stays linear in the active floor's actor count — read ADR-0001 before proposing a partition; rejected on measured evidence.
-- **Focus & Modal Isolation:** every open modal registers on the LIFO `ModalStackManager`. The top modal gets all keystrokes; unhandled `Escape` pops it; every other key is trapped before reaching the simulation.
+- **Focus & Modal Isolation:** every open modal registers on the LIFO `ModalStackManager`. The top modal gets all keystrokes; unhandled `Escape` pops it; every other key is trapped before reaching the simulation. Tab never moves focus out of the top modal. A modal that names its element (`UIModal.focusRoot`) holds keyboard focus: the stack moves focus into it on open and cycles Tab within it, and when the last modal closes, focus goes back to what had it before.
 - **Input ownership:** `InputHandler` owns the `window` `keydown`/`keyup`/`blur` listeners, `ModalStackManager`, and `ChordBuffer`.
 
 ---

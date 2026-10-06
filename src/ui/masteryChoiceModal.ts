@@ -60,6 +60,10 @@ export class MasteryChoiceModal implements UIModal {
     return this.queue.length > 0;
   }
 
+  public focusRoot(): HTMLElement | null {
+    return this.overlayEl;
+  }
+
   /** Shows the first queued request. Returns false when there is nothing to show. */
   public open(engine: GameEngine): boolean {
     if (this.queue.length === 0) return false;

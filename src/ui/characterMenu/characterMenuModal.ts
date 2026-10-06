@@ -269,6 +269,10 @@ export class CharacterMenuModal implements UIModal {
     return true;
   }
 
+  public focusRoot(): HTMLElement | null {
+    return this.overlayEl;
+  }
+
   public open(tabId?: string): void {
     this.isOpen = true;
     if (typeof document !== 'undefined') {

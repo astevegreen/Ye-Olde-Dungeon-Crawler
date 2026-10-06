@@ -439,6 +439,73 @@ test('save & quit and choices take each key once, through one modal-stack entry'
   expect(pageErrors).toEqual([]);
 });
 
+// The soak's chaos runs found keyboard focus left on a HUD button behind an open dialog, and
+// Tab walking out of the dialog onto the HUD (ARCHITECTURE.md §6, the modal stack).
+test('an open dialog holds keyboard focus, keeps Tab inside, and gives focus back on close', async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on('pageerror', (err) => pageErrors.push(err.message));
+  await embarkNewHero(page);
+
+  /** Where focus is: inside `selector`, on body, or the focused element's id or tag. */
+  const focus = (selector: string) =>
+    page.evaluate((sel) => {
+      const active = document.activeElement;
+      if (!active || active === document.body) return 'body';
+      if (document.querySelector(sel)?.contains(active)) return 'inside';
+      return active.id || active.tagName;
+    }, selector);
+  const tabTen = async (selector: string) => {
+    for (let i = 0; i < 10; i++) {
+      await page.keyboard.press(i % 3 === 2 ? 'Shift+Tab' : 'Tab');
+      expect(await focus(selector), `Tab ${i + 1}`).toBe('inside');
+    }
+  };
+
+  // The Bestiary button keeps focus after the click that opens the character menu.
+  await page.locator('#btn-compendium').click();
+  await expect(page.locator('#character-menu-modal')).toBeVisible();
+  await expect.poll(() => focus('#character-menu-modal')).toBe('inside');
+  await tabTen('#character-menu-modal');
+  // Escape backs out of whatever the tabbing selected before it closes the menu.
+  for (let i = 0; i < 4 && (await page.locator('#character-menu-modal').isVisible()); i++) await page.keyboard.press('Escape');
+  await expect(page.locator('#character-menu-modal')).toBeHidden();
+  expect(await stackIds(page)).toEqual([]);
+  // Back on the button that opened it, or on the page in WebKit, which doesn't focus a
+  // clicked button; never left on the hidden menu.
+  expect(['btn-compendium', 'body']).toContain(await focus('#character-menu-modal'));
+
+  // The potion picker opens inside the potion row, beside the slot buttons Tab used to reach.
+  await page.locator('.potion-slot').first().click({ button: 'right' });
+  await expect(page.locator('.potion-picker')).toBeVisible();
+  await expect.poll(() => focus('.potion-picker')).toBe('inside');
+  await tabTen('.potion-picker');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.potion-picker')).toHaveCount(0);
+
+  // The developer diagnostics: pushed before they draw.
+  await page.keyboard.press('F2');
+  await expect(page.locator('#diagnostic-modal')).toBeVisible();
+  await expect.poll(() => focus('#diagnostic-modal')).toBe('inside');
+  await tabTen('#diagnostic-modal');
+  await page.keyboard.press('F2');
+  await expect(page.locator('#diagnostic-modal')).toBeHidden();
+
+  // A choice the pack offers mid-move.
+  await page.evaluate(() => {
+    const engine = window.__cotwEngine!;
+    engine.onChoiceInteract!(engine.manifest!.choices!['altar_tyr'], () => undefined, () => undefined);
+  });
+  await expect(page.locator('#choice-modal-overlay')).toBeVisible();
+  await expect.poll(() => focus('#choice-modal-overlay')).toBe('inside');
+  await tabTen('#choice-modal-overlay');
+  await page.waitForTimeout(250); // past the choice's open debounce
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#choice-modal-overlay')).toBeHidden();
+
+  expect(await stackIds(page)).toEqual([]);
+  expect(pageErrors).toEqual([]);
+});
+
 // Save & quit's Settings, Help, and Save Code buttons open windows that must each take the
 // one modal-stack entry save & quit gives up; with none, the game took their keys.
 test('windows opened from save & quit each hold one stack entry and keep keys from the game', async ({ page }) => {

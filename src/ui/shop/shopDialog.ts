@@ -106,6 +106,11 @@ export class ShopDialog {
     this.options.onStateChanged?.();
   }
 
+  /** The dialog's scrim, for the modal stack's focus handling (`UIModal.focusRoot`). */
+  public get root(): HTMLElement | null {
+    return this.scrim;
+  }
+
   public close(): void {
     if (!this.isOpen) return;
     this.isOpen = false;

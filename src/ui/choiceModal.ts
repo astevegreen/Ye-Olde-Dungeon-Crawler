@@ -64,6 +64,10 @@ export class ChoiceModal implements UIModal {
     this.render();
   }
 
+  public focusRoot(): HTMLElement | null {
+    return this.overlayEl;
+  }
+
   public close(): void {
     if (!this.shown) return;
     this.shown = false;

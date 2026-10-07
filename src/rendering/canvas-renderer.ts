@@ -99,6 +99,7 @@ export class CanvasRenderer {
   private cachedChasmGradVisible?: CanvasGradient;
   private cachedChasmGradDim?: CanvasGradient;
   private cachedChasmCs = 0;
+  private cachedChasmTheme?: Required<ThemeTokens>;
   private contactShadowCells?: { n: HTMLCanvasElement; w: HTMLCanvasElement; e: HTMLCanvasElement };
   private readonly terrainView: TerrainView = (() => {
     const map = () => this.engine.map;
@@ -646,7 +647,7 @@ export class CanvasRenderer {
 
         if (!tile) continue;
 
-        this.drawTileWithFov(screenX, screenY, cs, tile, visibility, worldX, worldY, theme.canvasBg);
+        this.drawTileWithFov(screenX, screenY, cs, tile, visibility, worldX, worldY, theme);
       }
     }
 
@@ -693,11 +694,11 @@ export class CanvasRenderer {
     visibility: Visibility,
     worldX: number,
     worldY: number,
-    background: string
+    theme: Required<ThemeTokens>
   ): void {
     // State 1: Unexplored (pitch black)
     if (visibility === Visibility.Unexplored) {
-      this.ctx.fillStyle = background;
+      this.ctx.fillStyle = theme.canvasBg;
       this.ctx.fillRect(px, py, cs, cs);
       return;
     }
@@ -742,7 +743,7 @@ export class CanvasRenderer {
       tile.type === 'iron_bars' ||
       tile.type === 'pillar'
     ) {
-      this.drawTacticalTerrain(px, py, cs, tile.type, visibility);
+      this.drawTacticalTerrain(px, py, cs, tile.type, visibility, theme);
     }
   }
 
@@ -934,139 +935,134 @@ export class CanvasRenderer {
     this.ctx.restore();
   }
 
+  /**
+   * Water, chasms, bars and pillars where the pack's terrain art doesn't draw them (a pack
+   * without `atlas.terrain`, or a cell its recipes miss): the one-recipe path paints them as
+   * floor, so they get a neutral mark in the theme's role colors to stay readable.
+   */
   private drawTacticalTerrain(
     px: number,
     py: number,
     cs: number,
     type: string,
-    visibility: Visibility
+    visibility: Visibility,
+    theme: Required<ThemeTokens>
   ): void {
+    const ctx = this.ctx;
     const isVisible = visibility === Visibility.Visible;
-    const prevFillStyle = this.ctx.fillStyle;
-    const prevStrokeStyle = this.ctx.strokeStyle;
-    const prevLineWidth = this.ctx.lineWidth;
+    ctx.save();
 
     switch (type) {
       case 'shallow_water': {
-        // Translucent azure water wash over stone floor
-        this.ctx.fillStyle = isVisible ? 'rgba(14, 116, 144, 0.55)' : 'rgba(15, 23, 42, 0.6)';
-        this.ctx.fillRect(px, py, cs, cs);
+        // A wash of the info role over the floor, and two ripples
+        ctx.fillStyle = isVisible ? theme.info : theme.surface0;
+        ctx.globalAlpha = isVisible ? 0.35 : 0.6;
+        ctx.fillRect(px, py, cs, cs);
 
-        // Water ripples
-        this.ctx.strokeStyle = isVisible ? '#38bdf8' : '#1e3a5f';
-        this.ctx.lineWidth = 1.5;
-        this.ctx.beginPath();
-        // Top ripple
-        this.ctx.moveTo(px + cs * 0.2, py + cs * 0.35);
-        this.ctx.quadraticCurveTo(px + cs * 0.35, py + cs * 0.25, px + cs * 0.5, py + cs * 0.35);
-        this.ctx.quadraticCurveTo(px + cs * 0.65, py + cs * 0.45, px + cs * 0.8, py + cs * 0.35);
-        // Bottom ripple
-        this.ctx.moveTo(px + cs * 0.25, py + cs * 0.65);
-        this.ctx.quadraticCurveTo(px + cs * 0.4, py + cs * 0.55, px + cs * 0.55, py + cs * 0.65);
-        this.ctx.quadraticCurveTo(px + cs * 0.7, py + cs * 0.75, px + cs * 0.85, py + cs * 0.65);
-        this.ctx.stroke();
+        ctx.strokeStyle = theme.info;
+        ctx.globalAlpha = isVisible ? 1 : 0.35;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(px + cs * 0.2, py + cs * 0.35);
+        ctx.quadraticCurveTo(px + cs * 0.35, py + cs * 0.25, px + cs * 0.5, py + cs * 0.35);
+        ctx.quadraticCurveTo(px + cs * 0.65, py + cs * 0.45, px + cs * 0.8, py + cs * 0.35);
+        ctx.moveTo(px + cs * 0.25, py + cs * 0.65);
+        ctx.quadraticCurveTo(px + cs * 0.4, py + cs * 0.55, px + cs * 0.55, py + cs * 0.65);
+        ctx.quadraticCurveTo(px + cs * 0.7, py + cs * 0.75, px + cs * 0.85, py + cs * 0.65);
+        ctx.stroke();
         break;
       }
 
-
       case 'chasm': {
-        // Pitch abyssal void
-        this.ctx.fillStyle = '#030712';
-        this.ctx.fillRect(px, py, cs, cs);
+        // The deepest surface, a rim, and a fall into darkness (gradients kept between frames)
+        ctx.fillStyle = theme.surface3;
+        ctx.fillRect(px, py, cs, cs);
 
-        // Rocky precipice edge shading
-        this.ctx.strokeStyle = isVisible ? '#1f2937' : '#111827';
-        this.ctx.lineWidth = 2;
-        this.ctx.strokeRect(px + 1, py + 1, cs - 2, cs - 2);
+        ctx.strokeStyle = isVisible ? theme.line : theme.surface1;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(px + 1, py + 1, cs - 2, cs - 2);
 
-        // Craggy fissure gradient (cached for zero-allocation frames)
-        if (this.cachedChasmCs !== cs || !this.cachedChasmGradVisible || !this.cachedChasmGradDim) {
+        if (this.cachedChasmCs !== cs || this.cachedChasmTheme !== theme || !this.cachedChasmGradVisible || !this.cachedChasmGradDim) {
           this.cachedChasmCs = cs;
-          this.cachedChasmGradVisible = this.ctx.createLinearGradient(0, 0, 0, cs);
-          this.cachedChasmGradVisible.addColorStop(0, 'rgba(30, 41, 59, 0.5)');
-          this.cachedChasmGradVisible.addColorStop(1, 'rgba(3, 7, 18, 0.95)');
+          this.cachedChasmTheme = theme;
+          this.cachedChasmGradVisible = ctx.createLinearGradient(0, 0, 0, cs);
+          this.cachedChasmGradVisible.addColorStop(0, withAlpha(theme.surface2, 0.5));
+          this.cachedChasmGradVisible.addColorStop(1, withAlpha(theme.surface3, 0.95));
 
-          this.cachedChasmGradDim = this.ctx.createLinearGradient(0, 0, 0, cs);
-          this.cachedChasmGradDim.addColorStop(0, 'rgba(15, 23, 42, 0.3)');
-          this.cachedChasmGradDim.addColorStop(1, 'rgba(3, 7, 18, 0.95)');
+          this.cachedChasmGradDim = ctx.createLinearGradient(0, 0, 0, cs);
+          this.cachedChasmGradDim.addColorStop(0, withAlpha(theme.surface1, 0.3));
+          this.cachedChasmGradDim.addColorStop(1, withAlpha(theme.surface3, 0.95));
         }
 
-        this.ctx.translate(px, py);
-        this.ctx.fillStyle = isVisible ? this.cachedChasmGradVisible : this.cachedChasmGradDim;
-        this.ctx.fillRect(2, 2, cs - 4, cs - 4);
-        this.ctx.translate(-px, -py);
+        ctx.translate(px, py);
+        ctx.fillStyle = isVisible ? this.cachedChasmGradVisible : this.cachedChasmGradDim;
+        ctx.fillRect(2, 2, cs - 4, cs - 4);
         break;
       }
 
       case 'iron_bars': {
-        // Dark background aperture
-        this.ctx.fillStyle = isVisible ? '#090d16' : '#04070d';
-        this.ctx.fillRect(px, py, cs, cs);
+        // A dark aperture in a frame, four bars and two crossbars
+        ctx.fillStyle = isVisible ? theme.surface0 : theme.surface3;
+        ctx.fillRect(px, py, cs, cs);
 
-        // Stone frame border
-        this.ctx.strokeStyle = isVisible ? '#334155' : '#1e293b';
-        this.ctx.lineWidth = 1;
-        this.ctx.strokeRect(px + 1, py + 1, cs - 2, cs - 2);
+        ctx.strokeStyle = isVisible ? theme.lineStrong : theme.line;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px + 1, py + 1, cs - 2, cs - 2);
 
-        // Vertical steel bars
-        const barColor = isVisible ? '#94a3b8' : '#475569';
-        const barShade = isVisible ? '#334155' : '#1e293b';
+        const barColor = isVisible ? theme.textMuted : theme.textFaint;
+        const barShade = isVisible ? theme.lineStrong : theme.line;
         const barCount = 4;
         const spacing = cs / (barCount + 1);
-
         for (let i = 1; i <= barCount; i++) {
           const bx = px + i * spacing;
-          this.ctx.fillStyle = barColor;
-          this.ctx.fillRect(bx - 1.5, py + 2, 2.5, cs - 4);
-          this.ctx.fillStyle = barShade;
-          this.ctx.fillRect(bx + 1, py + 2, 1, cs - 4);
+          ctx.fillStyle = barColor;
+          ctx.fillRect(bx - 1.5, py + 2, 2.5, cs - 4);
+          ctx.fillStyle = barShade;
+          ctx.fillRect(bx + 1, py + 2, 1, cs - 4);
         }
 
-        // Horizontal crossbars
-        this.ctx.fillStyle = isVisible ? '#64748b' : '#334155';
-        this.ctx.fillRect(px + 2, py + cs * 0.3, cs - 4, 2);
-        this.ctx.fillRect(px + 2, py + cs * 0.7, cs - 4, 2);
+        ctx.fillStyle = isVisible ? theme.textFaint : theme.lineStrong;
+        ctx.fillRect(px + 2, py + cs * 0.3, cs - 4, 2);
+        ctx.fillRect(px + 2, py + cs * 0.7, cs - 4, 2);
         break;
       }
 
       case 'pillar': {
+        // A square column on its shadow, with a diamond on its face
         const pad = Math.floor(cs * 0.12);
         const colW = cs - pad * 2;
         const cx = px + cs / 2;
         const cy = py + cs / 2;
 
-        // Base shadow
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-        this.ctx.fillRect(px + pad + 2, py + pad + 2, colW, colW);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.fillRect(px + pad + 2, py + pad + 2, colW, colW);
 
-        // Default stone pillar
-        this.ctx.fillStyle = isVisible ? '#334155' : '#1e293b';
-        this.ctx.fillRect(px + pad, py + pad, colW, colW);
+        ctx.fillStyle = isVisible ? theme.lineStrong : theme.line;
+        ctx.fillRect(px + pad, py + pad, colW, colW);
 
-        this.ctx.strokeStyle = isVisible ? '#64748b' : '#334155';
-        this.ctx.lineWidth = 2;
-        this.ctx.strokeRect(px + pad + 1, py + pad + 1, colW - 2, colW - 2);
+        ctx.strokeStyle = isVisible ? theme.textFaint : theme.lineStrong;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(px + pad + 1, py + pad + 1, colW - 2, colW - 2);
 
-        this.ctx.fillStyle = isVisible ? '#475569' : '#0f172a';
-        this.ctx.fillRect(px + pad + 3, py + pad + 3, colW - 6, colW - 6);
+        ctx.fillStyle = isVisible ? theme.textFaint : theme.surface1;
+        ctx.globalAlpha = isVisible ? 0.5 : 1;
+        ctx.fillRect(px + pad + 3, py + pad + 3, colW - 6, colW - 6);
+        ctx.globalAlpha = 1;
 
-        // Center diamond motif
         const dSize = Math.floor(cs * 0.16);
-        this.ctx.fillStyle = isVisible ? '#94a3b8' : '#334155';
-        this.ctx.beginPath();
-        this.ctx.moveTo(cx, cy - dSize);
-        this.ctx.lineTo(cx + dSize, cy);
-        this.ctx.lineTo(cx, cy + dSize);
-        this.ctx.lineTo(cx - dSize, cy);
-        this.ctx.closePath();
-        this.ctx.fill();
+        ctx.fillStyle = isVisible ? theme.textMuted : theme.lineStrong;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - dSize);
+        ctx.lineTo(cx + dSize, cy);
+        ctx.lineTo(cx, cy + dSize);
+        ctx.lineTo(cx - dSize, cy);
+        ctx.closePath();
+        ctx.fill();
         break;
       }
     }
 
-    this.ctx.fillStyle = prevFillStyle;
-    this.ctx.strokeStyle = prevStrokeStyle;
-    this.ctx.lineWidth = prevLineWidth;
+    ctx.restore();
   }
 
   /**

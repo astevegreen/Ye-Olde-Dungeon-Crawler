@@ -409,7 +409,6 @@ function executeBonusDamage(
   description?: string
 ): void {
   const engine = asGameEngine(context.engine);
-  summary.bonusDamage += action.amount;
   const dest = target;
   if (dest && dest.isAlive() && action.amount > 0) {
     // A declared element goes through the target's affinity, as a spell of it would; the
@@ -420,6 +419,8 @@ function executeBonusDamage(
       ? dest.takeElementalDamage(action.amount, element, engine.affinityMatrix)
       : { ...dest.takeDamage(action.amount), finalDamage: action.amount, isHeal: false, healed: 0 };
     const { damageDealt, killed } = hit;
+    // What landed, after the target's affinity (an immune target took none).
+    summary.bonusDamage += damageDealt;
     const elem = element ? ` ${element}` : '';
     const msg = hit.isHeal
       ? `[PROC: ${sourceName}] ${dest.name} is healed by the ${element} for ${hit.healed}!`

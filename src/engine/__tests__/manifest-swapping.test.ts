@@ -232,8 +232,7 @@ describe('Full Content Manifest Swapping (Eldoria Lore Agnosticism)', () => {
       manifest: ELDORIA_MANIFEST,
     });
 
-    // Simulate defeating boss and acquiring Shard of Dawn
-    engine.gameState.bossDefeated = true;
+    // Acquire the Shard of Dawn
     const relic = new Item({
       id: 'shard_of_dawn',
       name: 'Shard of Dawn',

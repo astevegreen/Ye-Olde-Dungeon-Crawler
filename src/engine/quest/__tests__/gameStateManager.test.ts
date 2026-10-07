@@ -52,32 +52,6 @@ describe('GameStateManager & Win/Loss Sequences', () => {
     expect(gameState.deepestFloor).toBe(3);
   });
 
-  it('records monster kills and flags boss defeat when boss is slain', () => {
-    const minion = new Monster({
-      id: 'minion-1',
-      name: 'Goblin',
-      position: { x: 6, y: 5 },
-      stats: { hp: 10, maxHp: 10, attack: 4, defense: 1 },
-      definitionId: 'goblin',
-    });
-
-    gameState.recordMonsterKill(minion);
-    expect(gameState.monstersKilled).toBe(1);
-    expect(gameState.bossDefeated).toBe(false);
-
-    const boss = new Monster({
-      id: 'boss-1',
-      name: 'Dungeon Boss',
-      position: { x: 7, y: 5 },
-      stats: { hp: 120, maxHp: 120, attack: 18, defense: 8 },
-      definitionId: 'boss-monster',
-    });
-
-    gameState.recordMonsterKill(boss, engine);
-    expect(gameState.monstersKilled).toBe(2);
-    expect(gameState.bossDefeated).toBe(true);
-  });
-
   it('validates victory conditions: in town with Sun-Stone', () => {
     // 1. In town without Sun-Stone
     engine.currentFloor = 0;

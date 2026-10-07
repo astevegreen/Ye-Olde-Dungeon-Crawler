@@ -5,10 +5,3 @@ export const BOSS_MONSTER_ID = 'boss-monster';
 export const MAX_DUNGEON_FLOOR = 5;
 
 export type QuestStatus = 'active' | 'fallen' | 'victorious';
-
-export interface QuestProgress {
-  bossDefeated: boolean;
-  hasSunStone: boolean;
-  deepestFloor: number;
-  questCompleted: boolean;
-}

@@ -1,5 +1,4 @@
 import type { Entity } from '../entities/entity';
-import type { Monster } from '../entities/monster';
 import type { GameEngine } from '../engine';
 import type { ProfileManager } from '../storage/profile-manager';
 import { getPlayerTotalCp } from '../economy/currency';
@@ -19,8 +18,6 @@ export interface GameStateSummary {
 export class GameStateManager {
   public runStatus: QuestStatus = 'active';
   public deepestFloor = 0;
-  public monstersKilled = 0;
-  public bossDefeated = false;
   public causeOfDeath = '';
   public killerName = '';
   public onStateChanged?: (status: QuestStatus, summary: GameStateSummary) => void;
@@ -36,14 +33,6 @@ export class GameStateManager {
   public updateFloor(floor: number): void {
     if (floor > this.deepestFloor) {
       this.deepestFloor = floor;
-    }
-  }
-
-  public recordMonsterKill(monster: Monster, engine?: GameEngine): void {
-    this.monstersKilled += 1;
-    const bossId = engine?.manifest?.quest?.bossMonsterId;
-    if ((bossId && monster.definitionId === bossId) || monster.definitionId === 'boss-monster') {
-      this.bossDefeated = true;
     }
   }
 

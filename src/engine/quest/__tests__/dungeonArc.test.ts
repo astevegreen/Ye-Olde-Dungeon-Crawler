@@ -2,12 +2,14 @@ import { describe, it, expect } from 'vitest';
 import { DungeonArc } from '../dungeonArc';
 import { Player } from '../../entities/player';
 import { createTestSunStone } from '../../__fixtures__/testHelpers';
-import { QUEST_RELIC_ID } from '../types';
 import type { QuestArcDefinition } from '../../types/manifest';
 import { COTW_MONSTERS } from '../../../content/cotw/monsters';
 import { COTW_ITEMS } from '../../../content/cotw/items';
 import { Container } from '../../items/container';
 import { Item } from '../../items/item';
+
+/** The relic a quest names (`QuestArcDefinition.relicItemId`). */
+const RELIC_ID = 'quest-relic';
 
 describe('DungeonArc & Floor 5 Chieftain Encounter', () => {
   it('identifies Floor 5 as the Boss Floor', () => {
@@ -61,13 +63,13 @@ describe('DungeonArc & Floor 5 Chieftain Encounter', () => {
       position: { x: 5, y: 5 },
     });
 
-    expect(DungeonArc.isRelicInPlayerPossession(player)).toBe(false);
+    expect(DungeonArc.isRelicInPlayerPossession(player, RELIC_ID)).toBe(false);
 
     // Add Sun-Stone into player's pack
-    const sunStone = createTestSunStone(QUEST_RELIC_ID);
+    const sunStone = createTestSunStone(RELIC_ID);
     player.inventory.primaryPack.addItem(sunStone);
 
-    expect(DungeonArc.isRelicInPlayerPossession(player)).toBe(true);
+    expect(DungeonArc.isRelicInPlayerPossession(player, RELIC_ID)).toBe(true);
   });
 
   it('knows the relic by its id or definition, wherever it is carried, and no other quest item (R-econ-17)', () => {
@@ -75,7 +77,7 @@ describe('DungeonArc & Floor 5 Chieftain Encounter', () => {
     player.inventory.primaryPack.addItem(
       new Item({ id: 'essence-rune', name: 'Essence-Rune', category: 'quest', weight: 10, bulk: 10, identified: true })
     );
-    expect(DungeonArc.isRelicInPlayerPossession(player)).toBe(false);
+    expect(DungeonArc.isRelicInPlayerPossession(player, RELIC_ID)).toBe(false);
 
     const bag = new Container({
       id: 'relic-bag',
@@ -88,9 +90,9 @@ describe('DungeonArc & Floor 5 Chieftain Encounter', () => {
       maxBulkCapacity: 5000,
       identified: true,
     });
-    bag.addItem(new Item({ id: 'drop-7-1234', definitionId: QUEST_RELIC_ID, name: 'The Sun-Stone of Freyr', category: 'quest', weight: 10, bulk: 10, identified: true }));
+    bag.addItem(new Item({ id: 'drop-7-1234', definitionId: RELIC_ID, name: 'The Sun-Stone of Freyr', category: 'quest', weight: 10, bulk: 10, identified: true }));
     player.inventory.primaryPack.addItem(bag);
-    expect(DungeonArc.isRelicInPlayerPossession(player)).toBe(true);
+    expect(DungeonArc.isRelicInPlayerPossession(player, RELIC_ID)).toBe(true);
   });
 
   describe('Unknown generator strategy ID (ARCHITECTURE.md registry-contract audit)', () => {

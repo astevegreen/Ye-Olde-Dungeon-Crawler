@@ -3,7 +3,7 @@ import type { GameEngine } from '../engine';
 import type { ProfileManager } from '../storage/profile-manager';
 import { getPlayerTotalCp } from '../economy/currency';
 import { DungeonArc } from './dungeonArc';
-import { QUEST_RELIC_ID, type QuestStatus } from './types';
+import type { QuestStatus } from './types';
 import { Leaderboard, type HallOfFameEntry } from '../hallOfFame/leaderboard';
 
 export interface GameStateSummary {
@@ -69,8 +69,9 @@ export class GameStateManager {
       return undefined;
     }
 
-    const relicId = quest?.relicItemId ?? QUEST_RELIC_ID;
-    const hasRelic = this.playerCarries(engine, relicId);
+    // Without a quest there is no relic to carry home, so no ending.
+    const relicId = quest?.relicItemId;
+    const hasRelic = relicId !== undefined && this.playerCarries(engine, relicId);
     return engine.currentFloor === defaultVictoryFloor && hasRelic ? 'default' : undefined;
   }
 

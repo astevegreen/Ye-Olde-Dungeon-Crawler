@@ -8,7 +8,6 @@ import { createTestSunStone } from '../../__fixtures__/testHelpers';
 import { MemoryStorage, ProfileManager } from '../../storage/profile-manager';
 import { Leaderboard } from '../../hallOfFame/leaderboard';
 import { Monster } from '../../entities/monster';
-import { QUEST_RELIC_ID } from '../types';
 import { Item } from '../../items/item';
 
 describe('GameStateManager & Win/Loss Sequences', () => {
@@ -69,17 +68,29 @@ describe('GameStateManager & Win/Loss Sequences', () => {
     engine.currentFloor = 0;
     expect(gameState.checkVictoryEligible(engine)).toBe('default');
 
-    // 4. Another quest item is not this quest's relic, even one with the engine's default
-    // relic id (R-econ-17): only the named relic counts.
-    expect(relicId).not.toBe(QUEST_RELIC_ID);
+    // 4. Another quest item is not this quest's relic (R-econ-17): only the named relic counts.
+    const otherRelicId = 'quest-relic';
+    expect(relicId).not.toBe(otherRelicId);
     player.inventory.primaryPack.removeItem(relicId);
-    player.inventory.primaryPack.addItem(createTestSunStone(QUEST_RELIC_ID));
+    player.inventory.primaryPack.addItem(createTestSunStone(otherRelicId));
     expect(gameState.checkVictoryEligible(engine)).toBeUndefined();
+  });
+
+  it('meets no ending without a quest: there is no relic to carry home', () => {
+    const questless = new GameEngine({
+      map: new GameMap(10, 10, TILES.FLOOR),
+      player,
+      floor: 0,
+      gameState,
+      manifest: { ...engine.manifest, quest: undefined } as never,
+    });
+    player.inventory.primaryPack.addItem(createTestSunStone('quest-relic'));
+    expect(gameState.checkVictoryEligible(questless)).toBeUndefined();
   });
 
   it('triggers victory, awards 5000 victory points, and updates profile', () => {
     // Give hero Sun-Stone and XP
-    player.inventory.primaryPack.addItem(createTestSunStone(QUEST_RELIC_ID));
+    player.inventory.primaryPack.addItem(createTestSunStone(engine.manifest.quest.relicItemId));
     player.gainXp(1200);
     engine.currentFloor = 0;
     gameState.updateFloor(5);
@@ -149,7 +160,8 @@ describe('GameStateManager & Win/Loss Sequences', () => {
   });
 
   // R-econ-17 follow-up: `playerCarries` asked `isRelicInPlayerPossession` without the item,
-  // so carrying the quest's default relic met an ending that names another one.
+  // so carrying the engine's default relic met an ending that names another one. The quest's
+  // own relic must not meet it either.
   it('an ending that names a relic is met by that relic alone, carried anywhere', () => {
     const endingsEngine = new GameEngine({
       map: new GameMap(10, 10, TILES.FLOOR),
@@ -170,7 +182,7 @@ describe('GameStateManager & Win/Loss Sequences', () => {
     const item = (id: string, definitionId: string) =>
       new Item({ id, definitionId, name: definitionId, category: 'quest', weight: 1, bulk: 1, identified: true });
 
-    player.inventory.primaryPack.addItem(item('default-relic', QUEST_RELIC_ID));
+    player.inventory.primaryPack.addItem(item('quest-relic', engine.manifest.quest.relicItemId));
     expect(gameState.checkVictoryEligible(endingsEngine)).toBeUndefined();
 
     player.inventory.primaryPack.addItem(item('crown-1', 'crown_of_kings'));

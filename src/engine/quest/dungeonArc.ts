@@ -7,7 +7,7 @@ import { Monster } from '../entities/monster';
 import { NPC } from '../entities/npc';
 
 import type { Player } from '../entities/player';
-import { QUEST_RELIC_ID, MAX_DUNGEON_FLOOR } from './types';
+import { MAX_DUNGEON_FLOOR } from './types';
 import { ItemFactory } from '../items/factory';
 import { createScaledMonster, populateDungeonFloor, scaleMonsterStats } from '../dungeon/spawner';
 import { createDungeonChest, populateDungeonLoot, stockSecretCaches } from '../dungeon/lootSpawner';
@@ -656,9 +656,10 @@ export class DungeonArc {
   }
 
   /**
-   * Checks if the player is currently carrying the legendary quest relic.
+   * Checks if the player is currently carrying the quest relic `relicId` (the quest's
+   * `relicItemId`, or an ending's).
    */
-  public static isRelicInPlayerPossession(player: Player, relicId: string = QUEST_RELIC_ID): boolean {
+  public static isRelicInPlayerPossession(player: Player, relicId: string): boolean {
     // That item (by id, or a copy of its definition) anywhere on the hero, bags and belt
     // included; another quest item is not the relic (R-econ-17).
     return player.inventory.getAllCarriedItems().some((i) => i.id === relicId || i.definitionId === relicId);

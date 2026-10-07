@@ -29,6 +29,9 @@ export interface PlayerBotState {
   equipTried: string[];
   /** Revealed traps ("floor:x,y") the bot has tried to disarm, each once. */
   trapsTried: string[];
+  /** A pack item to use through the inventory (C2: an antidote, Phase Door), and why. */
+  useWant: string | null;
+  useKind: 'antidote' | 'phase' | null;
   /** Town merchants (NPC ids) visited this time in town. */
   shopDone: string[];
   /** Decisions spent inside the open shop this visit (a cap against loops). */
@@ -64,6 +67,14 @@ export interface BotTelemetry {
   hazardSteps: number;
   /** Shift+D pressed beside or on a revealed trap (each trap once). */
   disarmAttempts: number;
+  /** Steps back into a corridor or doorway with two or more foes closing in. */
+  corridorRetreats: number;
+  /** Steps out of a caster's line of sight while hurt. */
+  losBreaks: number;
+  /** Poison cures drunk from the pack. */
+  antidotes: number;
+  /** Phase Door scrolls read from the pack, cornered and hurt. */
+  phaseDoors: number;
   statPointsSpent: number;
   perksTaken: number;
   chestsLooted: number;
@@ -181,6 +192,8 @@ export function getBotState(page: Page, actionIndex: number): PlayerBotState {
       wasOverburdened: false,
       equipTried: [],
       trapsTried: [],
+      useWant: null,
+      useKind: null,
       shopDone: [],
       shopDecisions: 0,
       trip: 'none',
@@ -200,6 +213,10 @@ export function getBotState(page: Page, actionIndex: number): PlayerBotState {
         cornered: 0,
         hazardSteps: 0,
         disarmAttempts: 0,
+        corridorRetreats: 0,
+        losBreaks: 0,
+        antidotes: 0,
+        phaseDoors: 0,
         statPointsSpent: 0,
         perksTaken: 0,
         chestsLooted: 0,
@@ -250,6 +267,14 @@ interface DecisionResult {
   hazardStep?: boolean;
   /** A revealed trap ("floor:x,y") Shift+D was pressed for. */
   trapTried?: string;
+  /** A C2 move: back into a corridor, or out of a caster's sight. */
+  tactic?: 'corridor' | 'los';
+  /** Open the inventory to use this pack item. */
+  useItem?: string;
+  useKind?: 'antidote' | 'phase';
+  /** The item use is over: `used` says what was used, if anything. */
+  useDone?: boolean;
+  used?: 'antidote' | 'phase';
   looseCoins?: number;
   snapshot?: BotSnapshot;
   /** The worn purse's capacity in coins: rises when an Olaf purse is bought and worn. */
@@ -309,6 +334,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       droppedTiles: Record<string, boolean>;
       equipTried: string[];
       trapsTried: string[];
+      useWant: string | null;
+      useKind: 'antidote' | 'phase' | null;
       shopDone: string[];
       shopDecisions: number;
       trip: 'none' | 'up' | 'down' | 'done';
@@ -468,6 +495,37 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       };
       // Tiles a path or a dodge never crosses unless it ends there (soak-fix plan C1).
       const avoid = (x: number, y: number): boolean => onHazard(x, y) || Boolean(revealedTrapAt(x, y));
+      // How open a tile is: a corridor or doorway has two open neighbours, a room eight.
+      const openTile = (x: number, y: number): boolean => {
+        const t = e.map.inBounds(x, y) ? e.map.getTile(x, y) : null;
+        return Boolean(t && (t.passable || t.isOpenDoor));
+      };
+      const openNeighbours = (x: number, y: number): number => {
+        let n = 0;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && openTile(x + dx, y + dy)) n++;
+        return n;
+      };
+      // Whether a caster at `a` sees `b`: no opaque tile on the line between them (Bresenham).
+      const lineOfSight = (a: { x: number; y: number }, b: { x: number; y: number }): boolean => {
+        let x = a.x;
+        let y = a.y;
+        const ddx = Math.abs(b.x - x);
+        const ddy = -Math.abs(b.y - y);
+        const sx = x < b.x ? 1 : -1;
+        const sy = y < b.y ? 1 : -1;
+        let err = ddx + ddy;
+        for (;;) {
+          const e2 = 2 * err;
+          if (e2 >= ddy) { err += ddy; x += sx; }
+          if (e2 <= ddx) { err += ddx; y += sy; }
+          if (x === b.x && y === b.y) return true;
+          const t = e.map.getTile(x, y);
+          if (!t || !t.transparent) return false;
+        }
+      };
+      const curesPoison = (it: any): boolean =>
+        (it?.effects ?? []).some((f: any) => f.type === 'cure_status' && (f.status === 'poison' || f.status === 'all'));
+      const isPhaseDoor = (it: any): boolean => it?.spellId === 'phase_door' || it?.scrollConfig?.spellId === 'phase_door';
       const snapshot = {
         floor: curFloor,
         hp: p.hp,
@@ -576,7 +634,27 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
 
         // However the menu got stuck, leave it after 40 decisions.
         if (args.charMenuDecisions >= 40) {
-          return { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor };
+          return { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor, useDone: true };
+        }
+
+        // A pack item to use (C2): the backpack panel, its cell, then Enter (drink or read).
+        if (args.useWant) {
+          if (modal && modal.activeTabId !== 'inventory') {
+            return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor };
+          }
+          const cu = modal?.tabs?.find?.((t: any) => t.id === 'inventory')?.controller;
+          const groupsU: any[] = cu?.groups?.('backpack') ?? [];
+          const want = args.useWant;
+          const idxU = groupsU.findIndex((g: any) => g.leadItem?.id === want || (g.items ?? []).some((it: any) => it?.id === want));
+          if (idxU < 0) return { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor, useDone: true };
+          if (cu.inspector?.focusedPanel !== 'backpack') {
+            return { action: { type: 'key' as const, key: 'Tab' }, curPos, curTurn, curFloor };
+          }
+          const atU = cu.inspector.focusedIndex ?? 0;
+          if (atU !== idxU) {
+            return { action: { type: 'key' as const, key: atU < idxU ? 'ArrowRight' : 'ArrowLeft' }, curPos, curTurn, curFloor };
+          }
+          return { action: { type: 'key' as const, key: 'Enter' }, curPos, curTurn, curFloor, useDone: true, used: args.useKind ?? undefined };
         }
 
         // Spend level points on the Character tab, one a decision. The fixed build for balance
@@ -1147,6 +1225,17 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           if (potKey) return { action: { type: 'key' as const, key: potKey }, curPos, curTurn, curFloor, potion: true };
         }
 
+        // Cornered and badly hurt, with no healing potion: read Phase Door from the pack (C2).
+        if (adjHostiles.length > 0 && p.hp <= p.maxHp * 0.3) {
+          const scroll = packItems.find(isPhaseDoor);
+          if (scroll) return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor, useItem: scroll.id as string, useKind: 'phase' as const };
+        }
+        // Poisoned and hurt: drink a cure from the pack (C2; the potion row holds healing).
+        if (snapshot.poisoned && p.hp < p.maxHp * 0.8) {
+          const cure = packItems.find(curesPoison);
+          if (cure) return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor, useItem: cure.id as string, useKind: 'antidote' as const };
+        }
+
         const isOverburdened = !p.canMove?.() || p.inventory?.getEncumbrance?.(p.strength) === 'Immobilized';
         if (isOverburdened) {
           return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor, isOverburdened: true };
@@ -1193,6 +1282,14 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           }
         }
 
+        // Two or more foes closing in on open ground: back into a corridor or doorway, so they
+        // come one at a time (C2). A nook is a tile with two open neighbours at most.
+        const closing = hostiles.filter((m: any) => m.aiState !== 'sleeping' && e.fov.isVisible(m.x, m.y) && cheb(m, p) <= 3);
+        if (closing.length >= 2 && adjHostiles.length <= 1 && openNeighbours(p.x, p.y) >= 4) {
+          const nook = safeSteps().find((s) => openNeighbours(p.x + s.dx, p.y + s.dy) <= 2 && s.adj <= adjHostiles.length);
+          if (nook) return { action: { type: 'key' as const, key: stepToKey(nook.dx, nook.dy) }, curPos, curTurn, curFloor, tactic: 'corridor' as const };
+        }
+
         if (adjHostiles.length > 0) {
           const m = adjHostiles[0];
           return { action: { type: 'key' as const, key: stepToKey(m.x - p.x, m.y - p.y) }, curPos, curTurn, curFloor };
@@ -1203,6 +1300,16 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         }
 
         const visibleHostiles = hostiles.filter((m: any) => e.fov.isVisible(m.x, m.y));
+
+        // Hurt, with a caster working on the hero from range: step out of its sight (C2; the
+        // Kobold Shaman is the second killer on floors 6-9).
+        const casters = visibleHostiles.filter(
+          (m: any) => m.aiState !== 'sleeping' && cheb(m, p) >= 2 && (m.aiType === 'caster' || (m.spells?.length ?? 0) > 0)
+        );
+        if (casters.length > 0 && p.hp < p.maxHp * 0.7) {
+          const cover = safeSteps().find((s) => casters.every((c: any) => !lineOfSight(c, { x: p.x + s.dx, y: p.y + s.dy })));
+          if (cover) return { action: { type: 'key' as const, key: stepToKey(cover.dx, cover.dy) }, curPos, curTurn, curFloor, tactic: 'los' as const };
+        }
 
         // Level points, and coins spilled into the pack, once nothing is in sight.
         if (visibleHostiles.length === 0 && unspent > 0 && !args.statGiveUp) {
@@ -1377,6 +1484,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       droppedTiles: state.droppedTiles,
       equipTried: state.equipTried,
       trapsTried: state.trapsTried,
+      useWant: state.useWant,
+      useKind: state.useKind,
       shopDone: state.shopDone,
       shopDecisions: state.shopDecisions,
       trip: state.trip,
@@ -1439,6 +1548,19 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
   if (evalResult.telegraph === 'dodge') tel.dodges++;
   if (evalResult.telegraph === 'cornered') tel.cornered++;
   if (evalResult.hazardStep) tel.hazardSteps++;
+  if (evalResult.tactic === 'corridor') tel.corridorRetreats++;
+  if (evalResult.tactic === 'los') tel.losBreaks++;
+  // A pack item to use: remembered from the decision that opens the inventory until the use
+  // is over, or the menu closed without it.
+  if (evalResult.useItem) {
+    state.useWant = evalResult.useItem;
+    state.useKind = evalResult.useKind ?? null;
+  } else if (state.useWant && (evalResult.useDone || !evalResult.inCharMenu)) {
+    if (evalResult.used === 'antidote') tel.antidotes++;
+    if (evalResult.used === 'phase') tel.phaseDoors++;
+    state.useWant = null;
+    state.useKind = null;
+  }
   if (evalResult.trapTried) {
     tel.disarmAttempts++;
     state.trapsTried.push(evalResult.trapTried);

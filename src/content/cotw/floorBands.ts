@@ -1,4 +1,5 @@
 import type { FloorHazardAdvisory, RoomDecorationBand } from '../../engine';
+import { COTW_ITEMS } from './items';
 
 /**
  * Per-zone room decoration for the CotW descent (manifest `roomDecoration`), keyed to
@@ -19,30 +20,66 @@ export const COTW_ROOM_DECORATION: RoomDecorationBand[] = [
   { minFloor: 43, fissureChance: 0.35 },
 ];
 
-/** Elemental hazards the town sage warns about before a descent (manifest `floorHazards`). */
+/** The pack items each hazard's recommendation names, by the band's first floor (a test checks
+ *  every one exists and is named). */
+export const COTW_HAZARD_ITEMS: Readonly<Record<number, readonly string[]>> = {
+  4: ['hearth_broth_flask'],
+  18: ['ring_of_the_slag_walker', 'zealots_seared_crown', 'obsidian_scale_cuirass'],
+  26: ['birch_tar_poultice', 'cure_poison_potion', 'urdr_cleansing_water'],
+  43: ['supreme_health_potion', 'urdr_cleansing_water'],
+};
+
+/** A pack item's name; throws on an id the pack lacks, so a recommendation can't name a phantom. */
+function itemName(id: string): string {
+  const def = COTW_ITEMS.find((d) => d.id === id);
+  if (!def) throw new Error(`floorBands: no item '${id}'`);
+  return def.name;
+}
+
+/**
+ * Elemental hazards the town sage warns about before a descent (manifest `floorHazards`),
+ * keyed to the zones whose monsters deal the element (R-cotw-9, 2026-10-07; zone floors in
+ * `monsterScaling.ts`):
+ * - cold, floors 4-9: the Rime Hollows' brim-howlers (Freezing Mist Cone, from floor 4), winter
+ *   hags (cold ray) and the Frost Warden. Floors 1-3 hold no cold attacker.
+ * - nothing on 10-17: the Dwarven Works' foes strike, slow and blind, with no element to ward.
+ * - fire, floors 18-25: the Obsidian Siphon's troll-wives (firebolt), the Captives of the
+ *   Chariot (a fire sweep) and the Sun-Chariot Warden.
+ * - poison, floors 26-42: the Silver Veins' leeches and root-wraiths (venomous bites), choke-damp
+ *   phantasms (poison gas) and the World-Bark's rotwood crawlers.
+ * - poison, floors 43 on: the Maw of Malice's grave-wyrmlings and Víðnir spit venom, as Níðhögg does.
+ * The pack has no cold or poison ward to wear, so those recommendations name what it does have.
+ */
 export const COTW_FLOOR_HAZARDS: FloorHazardAdvisory[] = [
   {
-    minFloor: 8,
-    maxFloor: 24,
+    minFloor: 4,
+    maxFloor: 9,
     element: 'cold',
     title: 'Vulnerable to Glacial Frost',
-    message: 'The icy caverns of Floor {floor} harbor frost drakes and winter wolves.',
-    recommendation: 'Equip cold-warding shields or brew frost-resist elixirs to avoid crippling freeze damage.',
+    message: 'On Floor {floor}, in the Rime Hollows, brim-howlers breathe freezing mist and winter hags cast rays of cold.',
+    recommendation: `No charm in town wards off the cold. Carry ${itemName('hearth_broth_flask')}s to mend the frostbite, and answer the frost-kin with fire, which they dread.`,
   },
   {
-    minFloor: 25,
-    maxFloor: 36,
+    minFloor: 18,
+    maxFloor: 25,
     element: 'fire',
     title: 'Vulnerable to Scorching Flame',
-    message: 'Floor {floor} descends into molten chasms with fire elementals and hell hounds.',
-    recommendation: 'Equip flame-resistant plate armor or charms of fire protection before crossing the threshold.',
+    message: 'Floor {floor} lies in the Obsidian Siphon, where troll-wives hurl firebolts and the Captives of the Chariot sweep chains of burning light.',
+    recommendation: `Wear something that turns flame: the ${itemName('ring_of_the_slag_walker')}, the ${itemName('zealots_seared_crown')} or the ${itemName('obsidian_scale_cuirass')}, all found below.`,
   },
   {
-    minFloor: 37,
-    element: 'lightning',
-    title: 'Vulnerable to Storm Tempest',
-    message: 'The summit depths of Floor {floor} crackle with Jotun lightning and thunderous strikes.',
-    recommendation: 'Acquire lightning-resistant gear and warding runes from high-tier smiths or deep vaults.',
-    escalateWhenWeak: false,
+    minFloor: 26,
+    maxFloor: 42,
+    element: 'poison',
+    title: 'Vulnerable to Creeping Venom',
+    message: 'On Floor {floor} quicksilver leeches, root-wraiths and rotwood crawlers bite with venom, and choke-damp phantasms burst into poison gas.',
+    recommendation: `Carry ${itemName('birch_tar_poultice')}s, sold in town, or ${itemName('cure_poison_potion')}s to purge the venom; ${itemName('urdr_cleansing_water')} clears it and more.`,
+  },
+  {
+    minFloor: 43,
+    element: 'poison',
+    title: 'Vulnerable to Wyrm Venom',
+    message: 'Floor {floor} lies in the Maw of Malice, where Níðhögg’s brood spit corrosive bile.',
+    recommendation: `Nothing worn turns venom: carry ${itemName('supreme_health_potion')}s and ${itemName('urdr_cleansing_water')} to outlast the bile.`,
   },
 ];

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { cotwManifest } from '../index';
+import { COTW_FLOOR_HAZARDS, COTW_HAZARD_ITEMS } from '../floorBands';
 import { createScaledItem } from '../../../engine/dungeon/lootSpawner';
 import { scaleMonsterStats } from '../../../engine/dungeon/spawner';
 import type { MonsterDefinition } from '../../../engine';
@@ -87,6 +88,45 @@ describe('R-cotw-3 · a "monster"-tagged radial consumable afflicts the hero’s
 
     expect(wolf.statusManager.hasStatus('burning')).toBe(true);
     expect(p.statusManager.hasStatus('burning')).toBe(false);
+  });
+});
+
+describe('R-cotw-9 · the Sage’s elemental advisories follow the zones and recommend what the pack has', () => {
+  const ZONE_STARTS = [1, 10, 18, 26, 34, 43];
+  const spellElement = new Map((cotwManifest.spells as Array<{ id: string; element?: string }>).map((s) => [s.id, s.element]));
+  type MonsterDef = {
+    minFloor?: number;
+    spells?: string[];
+    telegraphedAbility?: { element?: string };
+    onHitAffliction?: { type: string };
+    hooks?: Array<{ action?: { gasType?: string } }>;
+  };
+  const deals = (m: MonsterDef, element: string) =>
+    m.telegraphedAbility?.element === element ||
+    (m.spells ?? []).some((s) => spellElement.get(s) === element) ||
+    m.onHitAffliction?.type === element ||
+    (m.hooks ?? []).some((h) => h.action?.gasType?.startsWith(element));
+
+  it('each band ends at a zone’s end, and a monster that unlocks inside it deals its element', () => {
+    for (const band of COTW_FLOOR_HAZARDS) {
+      if (band.maxFloor !== undefined) expect(ZONE_STARTS, `${band.element} band ends at ${band.maxFloor}`).toContain(band.maxFloor + 1);
+      const inBand = (cotwManifest.monsters as MonsterDef[]).filter((m) => (m.minFloor ?? 1) >= band.minFloor && (m.minFloor ?? 1) <= (band.maxFloor ?? 50));
+      expect(inBand.some((m) => deals(m, band.element)), `${band.element} ${band.minFloor}-${band.maxFloor ?? ''}`).toBe(true);
+    }
+  });
+
+  it('every item a recommendation names exists in the pack and is named there', () => {
+    for (const band of COTW_FLOOR_HAZARDS) {
+      const ids = COTW_HAZARD_ITEMS[band.minFloor] ?? [];
+      expect(ids.length, `${band.element} from ${band.minFloor}`).toBeGreaterThan(0);
+      for (const id of ids) {
+        const item = items.find((i) => i.id === id) as { name: string } | undefined;
+        expect(item, id).toBeDefined();
+        expect(band.recommendation).toContain(item!.name);
+      }
+    }
+    const all = COTW_FLOOR_HAZARDS.map((b) => `${b.message} ${b.recommendation}`).join(' ');
+    expect(all).not.toMatch(/winter wolves|fire elementals|hell hounds|Jotun lightning|elixir|charms of|warding runes|plate armor/i);
   });
 });
 

@@ -138,20 +138,24 @@ describe('Town Sage Run Advisory Heuristics', () => {
       stats: { hp: 30, maxHp: 30, attack: 10, defense: 2 },
     });
 
-    // Floor 12 cold threats
     // A pack with no floorHazards gets no elemental warnings at all.
-    expect(RunAdvisor.checkElementalPreparedness(player, 12)).toBeNull();
+    expect(RunAdvisor.checkElementalPreparedness(player, 7)).toBeNull();
 
-    const coldWarn = RunAdvisor.checkElementalPreparedness(player, 12, COTW_FLOOR_HAZARDS);
-    expect(coldWarn).not.toBeNull();
+    // cotw's bands follow its zones (R-cotw-9): the Rime Hollows' cold from floor 4...
+    expect(RunAdvisor.checkElementalPreparedness(player, 3, COTW_FLOOR_HAZARDS)).toBeNull();
+    const coldWarn = RunAdvisor.checkElementalPreparedness(player, 7, COTW_FLOOR_HAZARDS);
     expect(coldWarn?.type).toBe('elemental');
-    expect(coldWarn?.message).toContain('frost drakes');
+    expect(coldWarn?.message).toContain('brim-howlers');
 
-    // Floor 28 fire threats
-    const fireWarn = RunAdvisor.checkElementalPreparedness(player, 28, COTW_FLOOR_HAZARDS);
-    expect(fireWarn).not.toBeNull();
-    expect(fireWarn?.type).toBe('elemental');
-    expect(fireWarn?.message).toContain('fire elementals');
+    // ...nothing in the Dwarven Works, the Obsidian Siphon's fire...
+    expect(RunAdvisor.checkElementalPreparedness(player, 12, COTW_FLOOR_HAZARDS)).toBeNull();
+    const fireWarn = RunAdvisor.checkElementalPreparedness(player, 20, COTW_FLOOR_HAZARDS);
+    expect(fireWarn?.message).toContain('Obsidian Siphon');
+    expect(fireWarn?.recommendation).toContain('Ring of the Slag-Walker');
+
+    // ...and venom below. A ring of fire resistance silences only the fire warning.
+    expect(RunAdvisor.checkElementalPreparedness(player, 28, COTW_FLOOR_HAZARDS)?.message).toContain('quicksilver leeches');
+    expect(RunAdvisor.checkElementalPreparedness(player, 45, COTW_FLOOR_HAZARDS)?.message).toContain('Maw of Malice');
   });
 
   // R-dbg-12: from town the Sage judged floor 1 whatever the hero had reached, so a hero
@@ -189,7 +193,7 @@ describe('Town Sage Run Advisory Heuristics', () => {
     expect(report.warnings.length).toBe(0);
     expect(report.sageQuote).toBeDefined();
 
-    // Equip cursed item and evaluate for Floor 12
+    // Equip cursed item and evaluate for Floor 20 (the Obsidian Siphon's fire)
     const cursedArmor = new Item({
       id: 'cursed-helm',
       name: 'Cursed Iron Helm',
@@ -201,9 +205,9 @@ describe('Town Sage Run Advisory Heuristics', () => {
     });
     player.inventory.paperdoll.equip(cursedArmor, 'head');
 
-    engine.gameState.updateFloor(12); // the deepest floor the hero has reached
+    engine.gameState.updateFloor(20); // the deepest floor the hero has reached
     const dangerReport = RunAdvisor.evaluateRun(engine);
-    expect(dangerReport.targetFloor).toBe(12);
+    expect(dangerReport.targetFloor).toBe(20);
     expect(dangerReport.overallStatus).toBe('danger');
     expect(dangerReport.warnings.some((w) => w.type === 'cursed')).toBe(true);
     expect(dangerReport.warnings.some((w) => w.type === 'consumables')).toBe(true);

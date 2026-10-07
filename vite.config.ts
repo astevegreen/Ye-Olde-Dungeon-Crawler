@@ -68,7 +68,8 @@ export default defineConfig(({ mode }) => {
     },
     base: './',
     // Keep class names through minification: the action pipeline reports
-    // `action.constructor.name` as the hook-matching actionType (ARCHITECTURE.md §4),
+    // `action.constructor.name` as the hook-matching actionType (`ActionPipeline.executeWithHooks`
+    // in src/engine/actions/actionPipeline.ts; action hooks in docs/architecture/content-extensibility.md),
     // so content hooks filtering on e.g. 'MovementAction' match only if names survive.
     esbuild: {
       keepNames: true,

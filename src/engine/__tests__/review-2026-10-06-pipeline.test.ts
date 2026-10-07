@@ -16,9 +16,15 @@ import { flightRecorder } from '../debug/flightRecorder';
 import { rebuildAction } from '../debug/replay';
 
 /**
- * Whole-codebase review, 2026-10-06, area 2 (engine core, pipeline, replay trail). Each
- * test reproduces one finding from `.prompts/codebase-review-2026-10-06/areas/02-pipeline.md`
- * and is marked `it.fails` so the suite stays green until the bug is fixed.
+ * Whole-codebase review, 2026-10-06, area 2 (engine core, pipeline, replay trail): regression
+ * guards for the findings fixed since. R-pipe-3: a floor whose generation throws leaves the
+ * hero where they stood. R-pipe-4: a rest enters the replay trail. R-pipe-5: a free
+ * auto-pickup replays as free. R-pipe-6: item actions taken from a paused menu cost the
+ * monster turns they cost outside it. R-pipe-7: a stun or paralysis of N turns costs a
+ * monster N turns. R-pipe-8: a monster a trap kills is removed from the map (generated floors
+ * hide traps through `manifest.trapPlacement`). R-pipe-11: cure_status "all" purges every
+ * affliction. R-pipe-16: a hero killed by the world's advance before an action takes no
+ * action. R-pipe-22: a potion's apply_status respects the drinker's immunities.
  */
 
 function build(hp = 50, floor = 1) {
@@ -64,7 +70,7 @@ describe('R-pipe-3 · a floor whose generation throws leaves the hero where they
 
     const result = engine.handlePlayerAction(new ClimbStairsAction(player));
 
-    expect(result.pipelineError).toBe(true); // the stairs fail loudly (passes today)
+    expect(result.pipelineError).toBe(true); // the stairs fail loudly
     expect(engine.currentFloor).toBe(1);
     expect(engine.map).toBe(map);
     expect(map.getEntityById('hero')).toBe(player);
@@ -76,7 +82,7 @@ describe('R-pipe-3 · a floor whose generation throws leaves the hero where they
   });
 });
 
-describe('R-pipe-4 · the R-key rest (stepRestTurn) never enters the replay trail', () => {
+describe('R-pipe-4 · a rest (stepRestTurn) enters the replay trail', () => {
   it('a 40-turn rest adds entries to the action trail', () => {
     const { engine, player } = build(50);
     player.hp = 10;
@@ -87,12 +93,12 @@ describe('R-pipe-4 · the R-key rest (stepRestTurn) never enters the replay trai
 
     AutoRestManager.executeFullRest(engine, 40);
 
-    expect(engine.turnCount).toBeGreaterThan(turnsBefore); // the world moved (passes today)
+    expect(engine.turnCount).toBeGreaterThan(turnsBefore); // the world moved
     expect(flightRecorder.getReplayData(engine)?.trail.length ?? 0).toBeGreaterThan(before);
   });
 });
 
-describe('R-pipe-5 · a free auto-pickup replays as a costed pickup', () => {
+describe('R-pipe-5 · a free auto-pickup replays as a free pickup', () => {
   it('the rebuilt PickUpAction keeps freeAction: true', () => {
     const { engine, player, map } = build(50);
     map.addItemAt(player.x, player.y, new Item({ id: 'junk1', name: 'Rock', category: 'misc', weight: 10, bulk: 1, identified: true }));
@@ -102,13 +108,13 @@ describe('R-pipe-5 · a free auto-pickup replays as a costed pickup', () => {
 
     const trail = flightRecorder.getReplayData(engine)?.trail ?? [];
     const entry = trail[trail.length - 1];
-    expect(entry?.params?.freeAction).toBe(true); // recorded (passes today)
+    expect(entry?.params?.freeAction).toBe(true); // recorded
     const rebuilt = rebuildAction(engine, entry) as { freeAction?: boolean } | null;
-    expect(rebuilt?.freeAction).toBe(true); // but not rebuilt
+    expect(rebuilt?.freeAction).toBe(true); // and rebuilt
   });
 });
 
-describe('R-pipe-6 · item actions taken while the engine is paused (menu open) cost no monster turns', () => {
+describe('R-pipe-6 · item actions taken while the engine is paused (menu open) still cost monster turns', () => {
   it('three potions drunk from an open menu cost as many orc attacks as three drunk outside it', () => {
     const attacksAfter = (paused: boolean) => {
       const { engine, player } = build(30);
@@ -138,7 +144,7 @@ describe('R-pipe-6 · item actions taken while the engine is paused (menu open) 
   });
 });
 
-describe('R-pipe-7 · a stun of N turns costs a monster only N-1 turns', () => {
+describe('R-pipe-7 · a stun of N turns costs a monster N turns', () => {
   const attacksOverFive = (status?: 'stunned' | 'paralysis', turns = 0) => {
     const { engine, player } = build(100);
     const orc = addOrc(engine, 3, 2);
@@ -160,7 +166,7 @@ describe('R-pipe-7 · a stun of N turns costs a monster only N-1 turns', () => {
   });
 });
 
-describe('R-pipe-8 · a monster killed by a trap is never resolved (dormant: no production trap placement)', () => {
+describe('R-pipe-8 · a monster killed by a trap is resolved and leaves the map', () => {
   it('a rat killed by a pit trap is removed from the map', () => {
     const { engine, map } = build(50);
     const rat = new Monster({ id: 'rat', name: 'Rat', position: { x: 8, y: 8 }, stats: { hp: 5, maxHp: 5, attack: 1, defense: 0 }, speed: 100, definitionId: 'rat', aiType: 'melee' });
@@ -169,12 +175,12 @@ describe('R-pipe-8 · a monster killed by a trap is never resolved (dormant: no 
 
     new MovementAction(rat, 1, 0).perform(engine);
 
-    expect(rat.isAlive()).toBe(false); // the trap killed it (passes today)
+    expect(rat.isAlive()).toBe(false); // the trap killed it
     expect(map.getEntityById('rat')).toBeNull();
   });
 });
 
-describe('R-pipe-11 · cure_status "all" removes a status literally named "all"', () => {
+describe('R-pipe-11 · cure_status "all" purges every affliction, not a status named "all"', () => {
   it('a potion whose cure_status is "all" purges poison', () => {
     const { engine, player } = build(50);
     player.statusManager.applyStatus({ type: 'poison', duration: 5, potency: 2 }, [], player, engine);
@@ -202,7 +208,7 @@ describe('R-pipe-11 · cure_status "all" removes a status literally named "all"'
   });
 });
 
-describe('R-pipe-16 · the world advance before an action can kill the hero, and the action still runs', () => {
+describe('R-pipe-16 · when the world advance before an action kills the hero, the action does not run', () => {
   it('a potion queued behind a lethal monster round is not drunk by the corpse', () => {
     const { engine, player } = build(1);
     for (const [i, [x, y]] of [[3, 2], [1, 2], [2, 3]].entries()) {
@@ -214,17 +220,17 @@ describe('R-pipe-16 · the world advance before an action can kill the hero, and
 
     const result = engine.handlePlayerAction(new DrinkPotionAction(player, potion));
 
-    expect(engine.gameState.runStatus).toBe('fallen'); // the brutes' round killed the hero (passes today)
+    expect(engine.gameState.runStatus).toBe('fallen'); // the brutes' round killed the hero
     expect(result).toMatchObject({ success: false, cost: 0, message: 'You have perished.' });
     expect(player.inventory.getAllCarriedItems().some((i) => i.id === 'pot')).toBe(true);
   });
 });
 
-describe('R-pipe-22 · a potion’s apply_status ignores the drinker’s immunities', () => {
+describe('R-pipe-22 · a potion’s apply_status respects the drinker’s immunities', () => {
   it('a hero immune to slow is not slowed by a potion that applies slow', () => {
     const { engine, player } = build(50);
     (player as unknown as { statusImmunities: string[] }).statusImmunities.push('slow');
-    expect(player.isImmuneTo('slow')).toBe(true); // (passes today)
+    expect(player.isImmuneTo('slow')).toBe(true);
     const paste = new PotionItem({
       id: 'paste',
       name: 'Birch-Tar Paste',

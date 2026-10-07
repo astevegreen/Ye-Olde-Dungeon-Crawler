@@ -8,9 +8,11 @@ import { createScaledItem } from '../../dungeon/lootSpawner';
 import { cotwManifest } from '../../../content/cotw';
 
 /**
- * Whole-codebase review, 2026-10-06, area 5 (economy). Each test reproduces one finding from
- * `.prompts/codebase-review-2026-10-06/areas/05-items-economy.md` and is marked `it.fails` so
- * the suite stays green until the bug is fixed. Content is a fixture only (§3).
+ * Whole-codebase review, 2026-10-06, area 5 (economy): regression guards for the findings
+ * fixed since. R-econ-2: a stack sells and buys for its unit price times its quantity, not
+ * one unit's. R-econ-6: a quest item is not for sale (a zero-value one once fetched the
+ * 2,000 CP category default). R-econ-12: a purchase whose change would take the room the
+ * ware needs is refused, with the coins as they were. Content is a fixture only (§3).
  */
 
 function hero(): Player {
@@ -19,7 +21,7 @@ function hero(): Player {
   return p;
 }
 
-describe('R-econ-2 · selling a stack pays for one unit', () => {
+describe('R-econ-2 · selling or buying a stack prices every unit', () => {
   it('five potions sold as one stack pay five times the unit price', () => {
     const player = hero();
     const stack = ItemFactory.createHealthPotion('stack-pot');
@@ -48,7 +50,7 @@ describe('R-econ-2 · selling a stack pays for one unit', () => {
   });
 });
 
-describe('R-econ-6 · a zero-value quest item sells for the 2,000 CP category default', () => {
+describe('R-econ-6 · a quest item is not sold for money', () => {
   it('an Essence-Rune (value 0, category quest) cannot be sold for money', () => {
     const player = hero();
     const def = (cotwManifest.items as Array<{ id: string }>).find((i) => i.id === 'essence_uruz')!;
@@ -75,7 +77,7 @@ describe('R-econ-6 · a zero-value quest item sells for the 2,000 CP category de
   });
 });
 
-describe('R-econ-12 · a purchase can take the money and lose the item', () => {
+describe('R-econ-12 · a purchase never takes the money and loses the item', () => {
   it('when the change takes the room the ware needed, the sale is refused and the coins are as they were', () => {
     const player = new Player({ id: 'h', name: 'H', position: { x: 1, y: 1 }, stats: { hp: 35, maxHp: 35, attack: 10, defense: 5 }, strength: 30 });
     const pack = player.inventory.primaryPack;

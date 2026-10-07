@@ -21,21 +21,30 @@ import { EMBOLDENED_STATUS } from '../../../content/cotw/darkness';
 import { COTW_TOWN } from '../../../content/cotw/town';
 
 /**
- * Whole-codebase review, 2026-10-06, area 1 (storage). Each test reproduces one finding
- * from `.prompts/codebase-review-2026-10-06/areas/01-storage.md` and is marked `it.fails`
- * so the suite stays green until the bug is fixed. Content is imported as a fixture only
- * (ARCHITECTURE.md §3: colocated engine tests may).
+ * Whole-codebase review, 2026-10-06, area 1 (storage): regression guards for the findings
+ * fixed since. R-stor-1: a monster or companion is saved from its base stats, so a status
+ * modifier doesn't compound on reload. R-stor-2: a dismissed companion's pack is in the item
+ * index after a load. R-stor-3: the run's record (`GameStateManager`) is saved. R-stor-4:
+ * each generated town has its own shop stock. R-stor-5: the floor manager keeps its floor
+ * records across a load. R-stor-6: the autosave load refuses a newer or malformed schema
+ * version. R-stor-7: a failed load leaves the live game's registries as they were.
+ * R-stor-10 and R-dbg-6: the detection countdowns and the scheduler tick are saved.
+ * R-stor-11: a monster's faction is saved. R-stor-17: a foreign save's sizes and its count of
+ * stored floors are checked before it is built. R-stor-15 (T4): a saved trap keeps its
+ * definition. R-stor-14: exploration is saved as run length only, and an older save's list
+ * still loads. Content is imported as a fixture only (ARCHITECTURE.md §3: colocated engine
+ * tests may).
  */
 
 const roundTrip = (engine: GameEngine) => deserializeGame(JSON.parse(JSON.stringify(serializeGame(engine)))).engine;
 
-describe('R-stor-1 · a monster is saved with its computed attack, so a status modifier compounds on reload', () => {
+describe('R-stor-1 · a monster is saved with its base attack, so a status modifier never compounds on reload', () => {
   it('an Emboldened monster (base 20, ×1.25) still has base 20 after a save/load', () => {
     const map = new GameMap(10, 10, TILES.FLOOR);
     const rat = new Monster({ id: 'm1', name: 'Rat', position: { x: 2, y: 2 }, stats: { hp: 10, maxHp: 10, attack: 20, defense: 2 } });
     rat.statusManager.applyStatus({ type: EMBOLDENED_STATUS, duration: 9999 });
     map.addEntity(rat);
-    expect(rat.attack).toBe(25); // live: 20 × 1.25 (passes today)
+    expect(rat.attack).toBe(25); // live: 20 × 1.25
 
     const back = deserializeMapObject(serializeMapObject(map)).getEntityById('m1') as Monster;
 
@@ -44,7 +53,7 @@ describe('R-stor-1 · a monster is saved with its computed attack, so a status m
   });
 });
 
-describe('R-stor-2 · a dismissed companion’s pack is not re-registered in the item index on load', () => {
+describe('R-stor-2 · a dismissed companion’s pack is re-registered in the item index on load', () => {
   it('an item in a dismissed companion’s pack resolves by id after load and re-summon', () => {
     const ID = 'review_test_companion';
     CompanionRegistry.register({
@@ -64,18 +73,18 @@ describe('R-stor-2 · a dismissed companion’s pack is not re-registered in the
     const loaded = roundTrip(engine);
     const back = loaded.summonCompanion(ID)!;
 
-    expect(back.inventory.primaryPack.getItems().map((i) => i.id)).toEqual(['loot1']); // listed (passes today)
-    expect(loaded.registries.itemIndex.has('loot1')).toBe(true); // but not resolvable by id
+    expect(back.inventory.primaryPack.getItems().map((i) => i.id)).toEqual(['loot1']); // listed
+    expect(loaded.registries.itemIndex.has('loot1')).toBe(true); // and resolvable by id
   });
 });
 
-describe('R-stor-3 · GameStateManager is not saved: deepestFloor falls back to the load floor', () => {
+describe('R-stor-3 · GameStateManager is saved: deepestFloor and the run status survive a load', () => {
   it('a hero who reached floor 3 and climbed back to 1 still has deepestFloor 3 after a load', () => {
     const engine = new GameEngine({ map: new GameMap(20, 20, TILES.FLOOR), player: new Player({ id: 'h2', name: 'H2', position: { x: 5, y: 5 } }), floor: 1 });
     engine.changeFloor(2);
     engine.changeFloor(3);
     engine.changeFloor(1);
-    expect(engine.gameState.deepestFloor).toBe(3); // live (passes today)
+    expect(engine.gameState.deepestFloor).toBe(3); // live
 
     const loaded = roundTrip(engine);
 
@@ -104,7 +113,7 @@ describe('R-stor-3 · GameStateManager is not saved: deepestFloor falls back to 
   });
 });
 
-describe('R-stor-4 · authored shop stock is a process-wide singleton shared between towns', () => {
+describe('R-stor-4 · authored shop stock is built anew for each town, never shared between them', () => {
   it('two generated towns hold different purse objects, so one hero’s coins never show in another’s shop', () => {
     const townA = new TownMapGenerator(50, 30, COTW_TOWN, []).generate();
     const townB = new TownMapGenerator(50, 30, COTW_TOWN, []).generate();
@@ -117,24 +126,24 @@ describe('R-stor-4 · authored shop stock is a process-wide singleton shared bet
   });
 });
 
-describe('R-stor-5 · FloorManager has no floor records after a load, so the first revisit skips catch-up', () => {
+describe('R-stor-5 · FloorManager keeps its floor records across a load, so the first revisit catches up', () => {
   it('stored floors are known to the floor manager after a load', () => {
     const engine = new GameEngine({ map: new GameMap(20, 20, TILES.FLOOR), player: new Player({ id: 'h3', name: 'H3', position: { x: 5, y: 5 } }), floor: 1 });
     engine.changeFloor(2);
     engine.turnCount = 40; // floor 2 is left at turn 40
     engine.changeFloor(3);
-    expect(engine.floorManager.hasFloor(2)).toBe(true); // live (passes today)
+    expect(engine.floorManager.hasFloor(2)).toBe(true); // live
 
     const loaded = roundTrip(engine);
 
-    expect([...loaded.storedFloors.keys()]).toContain(2); // the map is there (passes today)
-    expect(loaded.floorManager.hasFloor(2)).toBe(true); // but the floor manager does not know it
+    expect([...loaded.storedFloors.keys()]).toContain(2); // the map is there
+    expect(loaded.floorManager.hasFloor(2)).toBe(true); // and the floor manager knows it
     expect(loaded.floorManager.getFloorRecord(2)?.lastVisitedTick).toBe(40);
     expect(loaded.floorManager.hasFloor(3)).toBe(false); // the floor loaded onto is departed later
   });
 });
 
-describe('R-stor-6 · loadAutosaveResult skips the version gate for a newer schema', () => {
+describe('R-stor-6 · loadAutosaveResult applies the version gate to a newer schema', () => {
   it('an autosave with schemaVersion 99 is refused as newer-than-engine', () => {
     const storage = new MemoryStorage();
     const autosaves = new AutosaveManager(storage);
@@ -173,7 +182,7 @@ describe('R-stor-7 · a failed load leaves the live game’s registries as they 
   it('a save that throws after its pack is built leaves sword-1 the live sword', () => {
     const { live, sword, save } = liveWithSword();
     save.player.grimoirePages = [{}]; // throws building the Player, after the map and pack
-    expect(live.registries.itemIndex.get('sword-1')).toBe(sword); // (passes today)
+    expect(live.registries.itemIndex.get('sword-1')).toBe(sword);
 
     expect(() => deserializeGame(save)).toThrow();
 
@@ -204,7 +213,7 @@ describe('R-stor-7 · a failed load leaves the live game’s registries as they 
   });
 });
 
-describe('R-stor-10 · the Detect Monsters / Detect Objects countdowns are not saved', () => {
+describe('R-stor-10 · the Detect Monsters / Detect Objects countdowns are saved', () => {
   it('detectMonstersTurns survives a save/load', () => {
     const engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player: new Player({ id: 'h', name: 'H', position: { x: 5, y: 5 } }) });
     engine.detectMonstersTurns = 25;
@@ -226,7 +235,7 @@ describe('R-stor-10 · the Detect Monsters / Detect Objects countdowns are not s
   });
 });
 
-describe('R-stor-11 · a monster’s faction is not saved, so it reloads hostile', () => {
+describe('R-stor-11 · a monster’s faction is saved, so a neutral or an ally reloads as it was', () => {
   const monster = (id: string, faction?: 'neutral' | 'player') =>
     new Monster({ id, name: id, position: { x: 2, y: id.length }, stats: { hp: 10, maxHp: 10, attack: 3, defense: 1 }, faction });
 
@@ -251,7 +260,7 @@ describe('R-stor-11 · a monster’s faction is not saved, so it reloads hostile
   });
 });
 
-describe('R-stor-17 · a foreign save is trusted for sizes', () => {
+describe('R-stor-17 · a foreign save is not trusted for sizes', () => {
   const saveOf = () => {
     const engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player: new Player({ id: 'h17', name: 'H', position: { x: 5, y: 5 } }) });
     return JSON.parse(JSON.stringify(serializeGame(engine)));
@@ -320,7 +329,7 @@ describe('R-stor-17 · a foreign save is trusted for sizes', () => {
   });
 });
 
-describe('R-stor-17 · a foreign save is trusted for how many stored floors it holds', () => {
+describe('R-stor-17 · a foreign save is not trusted for how many stored floors it holds', () => {
   const saveWithStoredFloors = (count: number) => {
     const engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player: new Player({ id: 'h17f', name: 'H', position: { x: 5, y: 5 } }) });
     const save = JSON.parse(JSON.stringify(serializeGame(engine)));
@@ -350,7 +359,7 @@ describe('R-stor-17 · a foreign save is trusted for how many stored floors it h
   });
 });
 
-describe('T4 (R-stor-15) · a saved trap forgets the definition it was placed from', () => {
+describe('T4 (R-stor-15) · a saved trap keeps the definition it was placed from', () => {
   it('a trap from a second definition of its type comes back as that definition', () => {
     const map = new GameMap(10, 10, TILES.FLOOR);
     map.addTrap(new TrapInstance({ id: 't-deep', definitionId: 'deep_pit', type: 'pit', x: 3, y: 3 }));
@@ -372,7 +381,7 @@ describe('T4 (R-stor-15) · a saved trap forgets the definition it was placed fr
   });
 });
 
-describe('R-stor-14 · fovExplored is written into every save but only read for pre-RLE saves', () => {
+describe('R-stor-14 · a save writes its exploration once, as run length, and still reads a pre-RLE list', () => {
   // A corner well outside the hero's sight radius: only the save can say it was explored.
   const exploredFar = () => {
     const engine = new GameEngine({ map: new GameMap(30, 30, TILES.FLOOR), player: new Player({ id: 'h14', name: 'H', position: { x: 2, y: 2 } }) });

@@ -4,10 +4,12 @@ import { GameEngine, GameMap, Player, Monster, MeleeAttackAction, createScaledIt
 import { TILES } from '../../../engine/grid/tile';
 
 /**
- * Whole-codebase review, 2026-10-06, area 3 (R-cmbt-12 / R-pipe-12). Three items promise a
- * reaction when the wearer is struck, but their hooks use `onHit`, which `HookDispatcher`
- * collects from the attacker only, so they fire on the wearer's own blows. Marked `it.fails`
- * until the hooks move to `onDamageTaken` (or the text changes).
+ * Whole-codebase review, 2026-10-06, area 3 (R-cmbt-12 / R-pipe-12): regression guards.
+ * Armour that promised a reaction when its wearer is struck hooked `onHit`, which
+ * `HookDispatcher` collects from the attacker only, so it fired on the wearer's own blows.
+ * It now hooks `onDamageTaken`. These tests guard that the Bellows-Plate Shield and the
+ * Níð-Dripping Hauberk hook a defender event, and that the Hauberk burns whoever strikes the
+ * hero, never the hero's own target.
  */
 
 type Def = { id: string; description?: string; hooks?: Array<{ event: string }> };
@@ -16,7 +18,7 @@ const def = (id: string): Def => (cotwManifest.items as Def[]).find((i) => i.id 
 describe('R-cmbt-12 · armour described as reacting "when struck" reacts to being struck', () => {
   it('bellows_plate_shield ("when struck") hooks a defender event', () => {
     const d = def('bellows_plate_shield');
-    expect(d.description).toContain('when struck'); // the promise (passes today)
+    expect(d.description).toContain('when struck'); // the promise
     expect(d.hooks?.map((h) => h.event)).toContain('onDamageTaken');
   });
 
@@ -40,7 +42,7 @@ describe('R-cmbt-12 · armour described as reacting "when struck" reacts to bein
 
   it('nid_dripping_hauberk ("whoever strikes its wearer") hooks a defender event', () => {
     const d = def('nid_dripping_hauberk');
-    expect(d.description).toContain('whoever strikes its wearer'); // the promise (passes today)
+    expect(d.description).toContain('whoever strikes its wearer'); // the promise
     expect(d.hooks?.map((h) => h.event)).toContain('onDamageTaken');
   });
 });

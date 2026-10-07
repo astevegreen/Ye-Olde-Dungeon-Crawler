@@ -8,12 +8,14 @@ import { validateSavePayload } from '../saveTransfer';
 import { CURRENT_SCHEMA_VERSION } from '../migrator';
 
 /**
- * Whole-codebase review, 2026-10-06, area 11 (R-tool-1). `validateSavePayload` checks only
- * that `profile.name` is truthy, so an imported save whose name is a number passes and the
- * roster renderers then throw on `.replace`. Marked `it.fails` until the types are checked.
+ * Whole-codebase review, 2026-10-06, area 11 (R-tool-1): regression guards.
+ * `validateSavePayload` checked only that `profile.name` was truthy, so an imported save whose
+ * name was a number passed and the roster renderers then threw on `.replace`. It now checks
+ * the profile's field types: these tests guard that each malformed field is rejected and a
+ * well-formed payload still validates.
  */
 
-describe('R-tool-1 · an imported save with a non-string hero name passes validation', () => {
+describe('R-tool-1 · an imported save with a non-string hero name fails validation', () => {
   it('a payload whose profile.name is the number 5 is rejected', () => {
     const engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player: new Player({ id: 'h', name: 'H', position: { x: 2, y: 2 } }) });
     const data = serializeGame(engine) as unknown as { profile: { name: unknown } };

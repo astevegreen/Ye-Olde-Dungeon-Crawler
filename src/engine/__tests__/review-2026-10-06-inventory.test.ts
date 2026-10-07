@@ -12,10 +12,13 @@ import { RuneOfReturnItem, findRuneOfReturn } from '../magic/runeOfReturn';
 
 /**
  * Whole-codebase review, 2026-10-06: inventory lookups (prior-audit item R-prior-2 and
- * area 5). Each test is marked `it.fails` so the suite stays green until the bug is fixed.
+ * area 5), regression guards. R-prior-2: `InventoryManager.findItemById` finds an item as
+ * deep as `getAllCarriedItems` lists it. R-econ-14: once a Rune of Return carried in a belt
+ * awakens, the innate rune is the one found, and an item in a bag is removed by id.
+ * R-econ-24: every actor's default pack has its own id, and a save keeps the id it stored.
  */
 
-describe('R-prior-2 · InventoryManager.findItemById looks one level into the pack while getAllCarriedItems recurses', () => {
+describe('R-prior-2 · InventoryManager.findItemById recurses as deep as getAllCarriedItems', () => {
   it('a potion inside a belt carried in the pack is found by id, as the potion row lists it', () => {
     const player = new Player({ id: 'hero', name: 'Hero', position: { x: 2, y: 2 } });
     new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player });
@@ -34,12 +37,12 @@ describe('R-prior-2 · InventoryManager.findItemById looks one level into the pa
     player.inventory.primaryPack.addItem(belt);
 
     const listed = player.inventory.getAllCarriedItems().map((i) => i.id);
-    expect(listed).toContain('pot-1'); // the potion row sees it (passes today)
-    expect(player.inventory.findItemById('pot-1')).toBe(potion); // but the lookup the row dispatches with does not
+    expect(listed).toContain('pot-1'); // the potion row sees it
+    expect(player.inventory.findItemById('pot-1')).toBe(potion); // and so does the lookup the row dispatches with
   });
 });
 
-describe('R-econ-14 · a dormant Rune of Return carried in a belt survives its awakening and is found first', () => {
+describe('R-econ-14 · once a Rune of Return carried in a belt awakens, the innate rune is found first', () => {
   it('once awakened, the rune the hero channels is the innate one, charged, whatever husk is still carried', () => {
     const player = new Player({ id: 'hero', name: 'Hero', position: { x: 2, y: 2 } });
     const engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player });
@@ -47,7 +50,7 @@ describe('R-econ-14 · a dormant Rune of Return carried in a belt survives its a
     const rune = new RuneOfReturnItem({ id: 'rune-found', name: 'Rune of Return', charges: 0 });
     belt.addItem(rune);
     player.inventory.primaryPack.addItem(belt);
-    expect(findRuneOfReturn(player)).toBe(rune); // dormant: the carried rune (passes today)
+    expect(findRuneOfReturn(player)).toBe(rune); // dormant: the carried rune
 
     engine.absorbRuneOfReturn(rune);
 
@@ -70,7 +73,7 @@ describe('R-econ-14 · a dormant Rune of Return carried in a belt survives its a
   });
 });
 
-describe("R-econ-24 · every actor's default pack has the id default-pack", () => {
+describe("R-econ-24 · every actor's default pack has its own id, not default-pack", () => {
   it("the hero's pack and a monster's have their own ids, and the registry finds the hero's", () => {
     const player = new Player({ id: 'hero-24', name: 'Hero', position: { x: 2, y: 2 } });
     const goblin = new Monster({ id: 'goblin-24', name: 'Goblin', position: { x: 3, y: 2 }, stats: { hp: 5, maxHp: 5, attack: 1, defense: 0 } });

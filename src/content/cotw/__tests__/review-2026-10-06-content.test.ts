@@ -9,9 +9,17 @@ import { ExecuteChoiceAction } from '../../../engine/actions/choiceAction';
 import { DrinkPotionAction, CastSpellAction } from '../../../engine/actions/spell-actions';
 
 /**
- * Whole-codebase review, 2026-10-06, area 6 (the cotw pack). Each test reproduces one finding
- * from `.prompts/codebase-review-2026-10-06/areas/06-cotw-content.md` and is marked `it.fails`
- * so the suite stays green until the bug is fixed.
+ * Whole-codebase review, 2026-10-06, area 6 (the cotw pack): regression guards for the
+ * findings fixed since, one `describe` each. R-cotw-1: every wand casts a spell the pack
+ * defines. R-cotw-4: the legacy utility belt holds potions. R-cotw-2: the Oath's companion
+ * joins when one is already bonded or lies fallen. R-cotw-3: a radial flask hits the
+ * drinker's companion but not the drinker. R-cotw-9: the Sage's elemental advisories follow
+ * the zones and name items the pack has. R-cotw-18: companions grow with the hero's level.
+ * R-cotw-15: the Watchful Eye charm and Identify scrolls are never random loot. R-cotw-14:
+ * the Wrists slot can be filled. R-cotw-8: floor 21 stamps only its scripted pylon.
+ * R-cotw-12: every surface a monster spawns is one the engine knows. R-cotw-13: shadow is an
+ * element of the pack. R-cotw-10: every overkill kill rite can be met by a caster of its
+ * element.
  */
 
 type ItemDef = { id: string; category?: string; wandConfig?: { spellId: string }; containerConfig?: { containerType: string } };
@@ -19,14 +27,14 @@ const items = cotwManifest.items as ItemDef[];
 const spellIds = new Set((cotwManifest.spells as Array<{ id: string }>).map((s) => s.id));
 const def = (id: string) => items.find((i) => i.id === id)!;
 
-describe('R-cotw-1 · the Wand of the Ironwood Bough casts an undefined spell', () => {
+describe('R-cotw-1 · every wand casts a spell the pack defines', () => {
   it('every wand in the pack names a spell the pack defines', () => {
     const dangling = items.filter((i) => i.wandConfig && !spellIds.has(i.wandConfig.spellId)).map((i) => `${i.id} -> ${i.wandConfig!.spellId}`);
     expect(dangling).toEqual([]);
   });
 });
 
-describe('R-cotw-4 · the legacy "Wand & Potion Utility Belt" accepts no wand, potion or scroll', () => {
+describe('R-cotw-4 · the legacy "Wand & Potion Utility Belt" accepts what its name promises', () => {
   it('the legacy utility belt can hold a potion', () => {
     const belt = createScaledItem(def('utility_belt') as never, 'belt', 1, () => 0.5) as unknown as { canContain(i: unknown): { allowed: boolean } };
     const potion = createScaledItem(def('hearth_broth_flask') as never, 'pot', 1, () => 0.5);
@@ -34,17 +42,17 @@ describe('R-cotw-4 · the legacy "Wand & Potion Utility Belt" accepts no wand, p
   });
 });
 
-describe('R-cotw-2 · the Oath grants no companion when the hero already has one, but says it did', () => {
+describe('R-cotw-2 · the Oath grants its companion even when the hero already has one', () => {
   it('honouring the Oath with a hound already bonded attaches the Frost-Ward Hound', () => {
     const pm = new ProfileManager(new MemoryStorage(), cotwManifest);
     const { engine } = pm.createCharacter('Oath', { seed: 3, difficulty: 'medium' } as never);
     engine.setWorldFlag('companion_bonded', true);
     engine.summonCompanion('battle_hound');
-    expect(engine.companion?.companionDefinitionId).toBe('battle_hound'); // (passes today)
+    expect(engine.companion?.companionDefinitionId).toBe('battle_hound');
 
     engine.handlePlayerAction(new ExecuteChoiceAction(engine.player, (cotwManifest.choices as Record<string, unknown>).oath_hearth as never, 'honor'));
 
-    expect(engine.getWorldFlag('blood_oath_honored')).toBe(true); // the oath resolved (passes today)
+    expect(engine.getWorldFlag('blood_oath_honored')).toBe(true); // the oath resolved
     expect(engine.companion?.companionDefinitionId).toBe('hearth_frost_hound');
     expect(engine.dismissedCompanion?.companionDefinitionId).toBe('battle_hound'); // waits to be called
   });
@@ -68,7 +76,7 @@ describe('R-cotw-2 · the Oath grants no companion when the hero already has one
 
 // The owner chose classic friendly fire (2026-10-07): a flask hits allies too, like a spell
 // burst, so I3's "spare the user's side" is reverted. The drinker alone is spared.
-describe('R-cotw-3 · a "monster"-tagged radial consumable afflicts the hero’s own companion', () => {
+describe('R-cotw-3 · a "monster"-tagged radial consumable afflicts the hero’s companion too, never the drinker', () => {
   it('Zealot’s Sun-Flare sets the companion burning too, and spares the hero who drank it', () => {
     const pm = new ProfileManager(new MemoryStorage(), cotwManifest);
     const { engine } = pm.createCharacter('Pet', { seed: 2, difficulty: 'medium' } as never);

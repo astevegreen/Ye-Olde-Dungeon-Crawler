@@ -12,9 +12,12 @@ import { CastSpellAction, ZapWandAction } from '../../actions/spell-actions';
 import { cotwManifest } from '../../../content/cotw';
 
 /**
- * Whole-codebase review, 2026-10-06, area 4 (AI, world). Each test reproduces one finding
- * from `.prompts/codebase-review-2026-10-06/areas/04-ai-dungeon.md` and is marked `it.fails`
- * so the suite stays green until the bug is fixed. Content is a fixture only (§3).
+ * Whole-codebase review, 2026-10-06, area 4 (AI, world): regression guards for the findings
+ * fixed since. R-ai-1: a companion never zaps its wand at the hero, and a hostile wielder
+ * zaps only a hero it perceives. R-ai-11: an immobile turret casts only at a hero it can
+ * see. R-ai-8: a cleared floor that catch-up has refilled is not refilled again by its
+ * timer. R-ai-9: the hero's own companion is no bestiary encounter. R-ai-10: on a lit map a
+ * sleeper wakes only within the hero's own radius (§6). Content is a fixture only (§3).
  */
 
 const firebolt = {
@@ -33,7 +36,7 @@ const firebolt = {
   effects: [{ type: 'damage', amount: 12, element: 'fire' }],
 };
 
-describe('R-ai-1 · a companion carrying a wand zaps it at the hero', () => {
+describe('R-ai-1 · a companion carrying a wand never zaps it at the hero', () => {
   it('a companion with a Wand of Firebolts in its pack does not aim it at the hero', () => {
     registerSpell(firebolt as never);
     const map = new GameMap(20, 20, TILES.FLOOR);
@@ -74,7 +77,7 @@ describe('R-ai-1 · a companion carrying a wand zaps it at the hero', () => {
   });
 });
 
-describe('R-ai-11 · an immobile turret casts at a hero it cannot see', () => {
+describe('R-ai-11 · an immobile turret casts only at a hero it can see', () => {
   it('a turret with a wall between it and the hero does not cast', () => {
     registerSpells((cotwManifest as unknown as { spells: unknown[] }).spells as never);
     const map = new GameMap(20, 11, TILES.FLOOR);
@@ -106,7 +109,7 @@ describe('R-ai-11 · an immobile turret casts at a hero it cannot see', () => {
   });
 });
 
-describe('R-ai-8 · returning to a cleared floor repopulates it twice', () => {
+describe('R-ai-8 · returning to a cleared floor repopulates it once', () => {
   it('after catch-up has refilled a cleared floor, the cleared-floor timer does not refill it again', () => {
     const map1 = new GameMap(57, 40, TILES.WALL);
     for (let y = 1; y < 39; y++) for (let x = 1; x < 56; x++) map1.setTile(x, y, TILES.FLOOR);
@@ -120,7 +123,7 @@ describe('R-ai-8 · returning to a cleared floor repopulates it twice', () => {
     engine.turnCount += 1000;
     engine.changeFloor(1);
     const monsters = () => engine.map.getAllEntities().filter((e) => e instanceof Monster && e.isAlive()).length;
-    expect(monsters()).toBeGreaterThan(0); // catch-up refilled it (passes today)
+    expect(monsters()).toBeGreaterThan(0); // catch-up refilled it
 
     engine.map.floorTurnCount += 1;
     const spawned = engine.floorManager.checkClearedFloorRespawn(engine);
@@ -162,7 +165,7 @@ describe('R-ai-10 · on a lit map a sleeper wakes only within the hero’s own r
     const sleeper = new Monster({ id: 'far', name: 'Far', position: { x: 35, y: 5 }, stats: { hp: 10, maxHp: 10, attack: 2, defense: 0 }, speed: 100, definitionId: 'far', aiType: 'melee', aiState: 'sleeping' } as never);
     engine.addEntity(sleeper);
     engine.updateFov();
-    expect(engine.fov.isVisible(35, 5)).toBe(true); // a lit map is seen to its end (passes today)
+    expect(engine.fov.isVisible(35, 5)).toBe(true); // a lit map is seen to its end
 
     MonsterAI.decideAction(sleeper, engine);
 

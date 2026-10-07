@@ -16,10 +16,16 @@ import { applyImpulse } from '../impulse';
 import { cotwManifest } from '../../../content/cotw';
 
 /**
- * Whole-codebase review, 2026-10-06, area 3 (combat / magic / status). Each test below
- * reproduces one finding from `.prompts/codebase-review-2026-10-06/areas/03-combat.md`
- * and is marked `it.fails` so the suite stays green until the bug is fixed, at which point
- * the test flips and the `fails` marker should be removed.
+ * Whole-codebase review, 2026-10-06, area 3 (combat / magic / status): regression guards for
+ * the findings fixed since. R-cmbt-1, -2, -7 and -8: a death from a status tick while
+ * paralysed, a choice consequence, a trap stepped on while poisoned or an ice slide ends the
+ * run once, with its cause. R-cmbt-3: a death the hero's last stand refuses leaves the hero
+ * on the map after a chasm plunge. R-cmbt-4, -5 and -6: wind-ups, bonusDamage hooks and
+ * poison and burning ticks go through the victim's affinity. R-cmbt-11: a Scroll of Identify
+ * read with nothing to identify is kept. R-cmbt-13: a kill a hook makes resolves once.
+ * R-cmbt-14: an attacker killed by melee reflection stops attacking, and a bite that kills
+ * the hero as it dies still ends the run. R-cmbt-15: a paralysed hero's turns still run the
+ * environmental updates.
  */
 
 function make(playerHp = 100, size = 14) {
@@ -63,7 +69,7 @@ function weapon(opts: Record<string, unknown>): Item {
   } as never);
 }
 
-describe('R-cmbt-1 · a paralysed hero killed by a status tick is never resolved (engine.ts paralysis branch)', () => {
+describe('R-cmbt-1 · a paralysed hero killed by a status tick is resolved (engine.ts paralysis branch)', () => {
   it('a poisoned, paralysed hero at 2 HP who waits ends the run as fallen', () => {
     const { player, engine } = make(2);
     player.statusManager.applyStatus({ type: 'paralysis', duration: 3 }, [], player, engine);
@@ -76,7 +82,7 @@ describe('R-cmbt-1 · a paralysed hero killed by a status tick is never resolved
   });
 });
 
-describe('R-cmbt-2 · the damagePlayer choice consequence ignores a kill', () => {
+describe('R-cmbt-2 · a damagePlayer choice consequence that kills ends the run', () => {
   it('a 15 HP consequence on a 5 HP hero ends the run as fallen', () => {
     const { player, engine } = make(5);
 
@@ -87,7 +93,7 @@ describe('R-cmbt-2 · the damagePlayer choice consequence ignores a kill', () =>
   });
 });
 
-describe('R-cmbt-3 · a chasm plunge removes the target before the death can be refused (Einherjar)', () => {
+describe('R-cmbt-3 · a chasm plunge leaves a hero whose death is refused (Einherjar) on the map', () => {
   it('a hero whose last stand refuses the death is still on the map afterwards', () => {
     const { map, player, engine } = make(50);
     (player as unknown as { perkModifiers: unknown[] }).perkModifiers.push({
@@ -103,12 +109,12 @@ describe('R-cmbt-3 · a chasm plunge removes the target before the death can be 
 
     applyImpulse(engine, brute, player, 1, 0, 2);
 
-    expect(player.isAlive()).toBe(true); // the last stand held (this part passes today)
-    expect(map.getEntityById(player.id)).toBe(player); // but the hero is off the map
+    expect(player.isAlive()).toBe(true); // the last stand held
+    expect(map.getEntityById(player.id)).toBe(player); // and the hero is still on the map
   });
 });
 
-describe('R-cmbt-4 · a telegraphed wind-up ability declares an element and ignores it', () => {
+describe('R-cmbt-4 · a telegraphed wind-up ability deals the element it declares', () => {
   const surgeLoss = (affinity?: string) => {
     const { map, player, engine } = make();
     if (affinity) (player as unknown as { elementalResistances: Record<string, string> }).elementalResistances.fire = affinity;
@@ -135,7 +141,7 @@ describe('R-cmbt-4 · a telegraphed wind-up ability declares an element and igno
   });
 });
 
-describe('R-cmbt-5 · an elemental bonusDamage hook ignores the target affinity', () => {
+describe('R-cmbt-5 · an elemental bonusDamage hook goes through the target’s affinity', () => {
   const hookLoss = (withHook: boolean, fire: string) => {
     const { map, player, engine } = make();
     const w = weapon(
@@ -158,7 +164,7 @@ describe('R-cmbt-5 · an elemental bonusDamage hook ignores the target affinity'
   });
 });
 
-describe('R-cmbt-6 · poison ticks ignore poison immunity', () => {
+describe('R-cmbt-6 · poison and burning ticks go through the victim’s affinity', () => {
   it('a poison-immune hero takes no damage from a poison tick', () => {
     const { player, engine } = make();
     (player as unknown as { elementalResistances: Record<string, string> }).elementalResistances.poison = 'immune';
@@ -195,7 +201,7 @@ describe('R-cmbt-6 · poison ticks ignore poison immunity', () => {
   });
 });
 
-describe('R-cmbt-7 · a hero killed by their own action while poisoned dies twice', () => {
+describe('R-cmbt-7 · a hero killed by their own action while poisoned dies once', () => {
   it('a poisoned hero stepping on a lethal pit trap triggers exactly one death', () => {
     const { map, player, engine } = make(3);
     player.statusManager.applyStatus({ type: 'poison', duration: 5, potency: 2 }, [], player, engine);
@@ -213,7 +219,7 @@ describe('R-cmbt-7 · a hero killed by their own action while poisoned dies twic
   });
 });
 
-describe('R-cmbt-8 · an ice-slide death carries no cause', () => {
+describe('R-cmbt-8 · an ice-slide death carries its cause', () => {
   it('a hero killed by a wall splat after sliding on ice is not "Slain by Mortal Wounds"', () => {
     const { map, player, engine } = make(1);
     map.setTile(6, 3, TILES.WALL);
@@ -226,7 +232,7 @@ describe('R-cmbt-8 · an ice-slide death carries no cause', () => {
   });
 });
 
-describe('R-cmbt-11 · reading a Scroll of Identify with nothing to identify burns the scroll', () => {
+describe('R-cmbt-11 · reading a Scroll of Identify with nothing to identify keeps the scroll', () => {
   it('the scroll stays in the pack when the cast fails for lack of a target', () => {
     const player = new Player({ id: 'hero', name: 'Hero', position: { x: 2, y: 2 } });
     const engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player, manifest: cotwManifest });
@@ -235,12 +241,12 @@ describe('R-cmbt-11 · reading a Scroll of Identify with nothing to identify bur
 
     const res = new ReadScrollAction(player, scroll).perform(engine);
 
-    expect(res.success).toBe(false); // nothing to identify: the cast fails (passes today)
-    expect(player.inventory.findItemById(scroll.id)).toBe(scroll); // the scroll should still be there
+    expect(res.success).toBe(false); // nothing to identify: the cast fails
+    expect(player.inventory.findItemById(scroll.id)).toBe(scroll); // and the scroll is still there
   });
 });
 
-describe('R-cmbt-13 · an affix block runs on a defender a hook already killed: the kill resolves twice', () => {
+describe('R-cmbt-13 · no affix block runs on a defender a hook already killed: the kill resolves once', () => {
   it('one blow that kills through its hook emits one entity_killed event', () => {
     const { map, player, engine } = make();
     const w = weapon({
@@ -262,7 +268,7 @@ describe('R-cmbt-13 · an affix block runs on a defender a hook already killed: 
   });
 });
 
-describe('R-cmbt-14 · an attacker killed by melee reflection keeps attacking', () => {
+describe('R-cmbt-14 · an attacker killed by melee reflection stops attacking', () => {
   it('a rat slain by the reflected share of its own bite does not poison the hero', () => {
     const { map, player, engine } = make();
     const hide = new Item({
@@ -284,7 +290,7 @@ describe('R-cmbt-14 · an attacker killed by melee reflection keeps attacking', 
 
     new MeleeAttackAction(rat, player).perform(engine);
 
-    expect(rat.isAlive()).toBe(false); // the reflection killed it (passes today)
+    expect(rat.isAlive()).toBe(false); // the reflection killed it
     expect(player.statusManager.hasStatus('poison')).toBe(false);
   });
 
@@ -315,7 +321,7 @@ describe('R-cmbt-14 · an attacker killed by melee reflection keeps attacking', 
   });
 });
 
-describe('R-cmbt-15 · paralysed turns skip every environmental update', () => {
+describe('R-cmbt-15 · paralysed turns still run the environmental updates', () => {
   it('a lingering fire under a paralysed hero still burns and still decays', () => {
     const { player, engine } = make(100);
     engine.surfaces.setSurface(3, 3, 'fire', 5);

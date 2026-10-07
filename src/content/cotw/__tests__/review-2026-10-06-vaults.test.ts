@@ -3,11 +3,12 @@ import { VaultStamper } from '../../../engine/dungeon/vaultStamp';
 import { COTW_VAULTS } from '../vaults';
 
 /**
- * Whole-codebase review, 2026-10-06, area 4 (dungeon generation). R-ai-2: the Abyssal
- * Treasury (`chasm_treasury`) seals both chests behind chasm and bars — 238 of 238 such
- * chests were unreachable across 980 generated floors. This test walks the blueprint
- * itself (doors open, bars and chasm closed, no secrets) from every `@` connector and
- * asks that every `C` be reachable. Marked `it.fails` until the blueprint gets a route.
+ * Whole-codebase review, 2026-10-06, area 4 (dungeon generation): regression guards.
+ * R-ai-2: the Abyssal Treasury (`chasm_treasury`) sealed both chests behind chasm and bars —
+ * 238 of 238 such chests were unreachable across 980 generated floors. Its tests walk each
+ * blueprint itself (doors open, bars and chasm closed, no secrets) from every `@` connector
+ * and ask that every `C` be reachable. R-ai-4: a secret door hides only its cache, never a
+ * stitched-on cave. R-ai-6: a story altar or runestone lands where the hero can walk to it.
  */
 
 function reachableChests(layout: readonly string[], legend?: Record<string, string>): { chests: number; reachable: number } {
@@ -38,7 +39,7 @@ describe('R-ai-2 · every chest in every cotw vault blueprint is reachable from 
   it('the Abyssal Treasury (chasm_treasury) has a route to its chests', () => {
     const vault = COTW_VAULTS.find((v) => v.id === 'chasm_treasury')!;
     const { chests, reachable } = reachableChests(vault.layout, (vault as { legend?: Record<string, string> }).legend);
-    expect(chests).toBe(2); // (passes today)
+    expect(chests).toBe(2);
     expect(reachable).toBe(chests);
   });
 

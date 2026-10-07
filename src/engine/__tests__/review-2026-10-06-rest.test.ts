@@ -14,7 +14,7 @@ import { ChannelRuneOfReturnAction, RuneOfReturnItem } from '../magic/runeOfRetu
  * (`executeFullRest` is that rest without the UI's pacing).
  */
 
-describe('R-rend-1 · the R key’s rest rests the hero to death under unseen fire', () => {
+describe('R-rend-1 · the R key’s rest stops before unseen fire kills the hero', () => {
   it('a hit from an archer out of sight stops the rest before the hero dies', () => {
     const map = new GameMap(20, 9, TILES.FLOOR);
     const player = new Player({ id: 'hero', position: { x: 3, y: 4 }, stats: { hp: 40, maxHp: 400, attack: 1, defense: 0 } });
@@ -43,7 +43,7 @@ describe('R-rend-1 · the R key’s rest rests the hero to death under unseen fi
   });
 });
 
-describe('R-pipe-15 · resting does not break a Rune of Return channel', () => {
+describe('R-pipe-15 · resting breaks a Rune of Return channel', () => {
   it('a rest begun mid-channel cancels it, and the hero stays on the floor', () => {
     const map = new GameMap(14, 14, TILES.FLOOR);
     const player = new Player({ id: 'hero', position: { x: 2, y: 2 }, stats: { hp: 100, maxHp: 100, attack: 5, defense: 0 } });
@@ -59,7 +59,7 @@ describe('R-pipe-15 · resting does not break a Rune of Return channel', () => {
   });
 });
 
-describe('R-ai-3 · the world stands still while the hero rests', () => {
+describe('R-ai-3 · the world moves on while the hero rests', () => {
   it('a fire elsewhere on the floor burns out over a long rest', () => {
     const map = new GameMap(14, 14, TILES.FLOOR);
     const player = new Player({ id: 'hero', position: { x: 2, y: 2 }, stats: { hp: 10, maxHp: 50, attack: 5, defense: 0 } });

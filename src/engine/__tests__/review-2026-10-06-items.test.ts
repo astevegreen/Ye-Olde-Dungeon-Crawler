@@ -12,9 +12,14 @@ import { addCurrencyToPlayer, getPlayerTotalCp } from '../economy/currency';
 import { cotwManifest } from '../../content/cotw';
 
 /**
- * Whole-codebase review, 2026-10-06, area 5 (items, inventory). Each test reproduces one
- * finding from `.prompts/codebase-review-2026-10-06/areas/05-items-economy.md` and is marked
- * `it.fails` so the suite stays green until the bug is fixed.
+ * Whole-codebase review, 2026-10-06, area 5 (items, inventory): regression guards for the
+ * findings fixed since. R-econ-1: a drink or a read from a stack uses one unit. R-econ-3: two
+ * wands of a kind stay two items, each with its own charges. R-econ-4: equipping a belt over
+ * a loaded one never destroys the old belt. R-econ-5: Drop on the Pack slot never leaves the
+ * hero's primary pack on the ground, and a dropped purse hands its coins back first.
+ * R-econ-7: "Sort by value" never orders unidentified items by their hidden +N. R-econ-13:
+ * every minted coin pile stays in the item index after a merge. R-econ-11: `split_stack`
+ * loses no unit, and the split pile weighs and fills what one unit of its stack does.
  */
 
 function build() {
@@ -28,11 +33,11 @@ function build() {
 const packQuantity = (pack: { getItems(): readonly Item[] }, pred: (i: Item) => boolean) =>
   pack.getItems().filter(pred).reduce((n, i) => n + (i.quantity ?? 1), 0);
 
-describe('R-econ-1 · drinking from a stack consumes the whole stack', () => {
+describe('R-econ-1 · drinking or reading from a stack consumes one unit', () => {
   it('one drink from a stack of three leaves two', () => {
     const { player, engine, pack } = build();
     for (const id of ['pot-1', 'pot-2', 'pot-3']) pack.addItem(ItemFactory.createHealthPotion(id));
-    expect(packQuantity(pack, (i) => i.id.startsWith('pot'))).toBe(3); // merged to one stack of 3 (passes today)
+    expect(packQuantity(pack, (i) => i.id.startsWith('pot'))).toBe(3); // merged to one stack of 3
     player.hp = 5;
 
     new DrinkPotionAction(player, pack.getItems()[0] as never).perform(engine);
@@ -55,7 +60,7 @@ describe('R-econ-1 · drinking from a stack consumes the whole stack', () => {
   });
 });
 
-describe('R-econ-3 · wands stack, and the merge drops the added wand’s charges', () => {
+describe('R-econ-3 · wands don’t stack, so no merge drops a wand’s charges', () => {
   it('an empty and a full Wand of Lightning stay two items', () => {
     const { pack } = build();
     pack.addItem(new WandItem({ id: 'wa', definitionId: 'wand_lightning', name: 'Wand of Lightning', spellId: 'lightning_bolt', charges: 0, maxCharges: 8, identified: true } as never));
@@ -67,7 +72,7 @@ describe('R-econ-3 · wands stack, and the merge drops the added wand’s charge
   });
 });
 
-describe('R-econ-4 · equipping a belt over a loaded belt can destroy the old belt and its contents', () => {
+describe('R-econ-4 · equipping a belt over a loaded belt never destroys the old belt or its contents', () => {
   it('the displaced belt is still carried, or the swap is refused', () => {
     const { player, engine, pack } = build();
     const inv = player.inventory;
@@ -100,7 +105,7 @@ describe('R-econ-4 · equipping a belt over a loaded belt can destroy the old be
   });
 });
 
-describe('R-econ-5 · Drop on the Pack slot leaves the pack on the ground and still the hero’s primaryPack', () => {
+describe('R-econ-5 · Drop on the Pack slot never leaves the hero’s primaryPack on the ground', () => {
   it('after a Drop on the pack slot, the hero’s primary pack is not an item on the floor', () => {
     const { map, player, engine, pack } = build();
     pack.addItem(ItemFactory.createDagger('dag-1'));
@@ -127,7 +132,7 @@ describe('R-econ-5 · Drop on the Pack slot leaves the pack on the ground and st
   });
 });
 
-describe('R-econ-7 · "Sort by value" orders unidentified items by their hidden +N', () => {
+describe('R-econ-7 · "Sort by value" never orders unidentified items by their hidden +N', () => {
   it('two unidentified Heavy Swords keep their order when sorted by value', () => {
     const { engine, pack } = build();
     const mk = (id: string, ench: number, value: number) =>
@@ -141,7 +146,7 @@ describe('R-econ-7 · "Sort by value" orders unidentified items by their hidden 
   });
 });
 
-describe('R-econ-13 · minted coin piles share an id, so a merge unregisters the surviving pile', () => {
+describe('R-econ-13 · minted coin piles have their own ids, so a merge keeps the surviving pile registered', () => {
   it('every purse pile is still in the item index after two payments', () => {
     const { player } = build();
     player.inventory.paperdoll.equip(ItemFactory.createCoinPurse('purse'), 'purse');
@@ -149,12 +154,12 @@ describe('R-econ-13 · minted coin piles share an id, so a merge unregisters the
     addCurrencyToPlayer(player, 250);
 
     const piles = player.inventory.purse!.getItems();
-    expect(piles.length).toBeGreaterThan(0); // (passes today)
+    expect(piles.length).toBeGreaterThan(0);
     expect(piles.every((p) => itemIndex.has(p.id))).toBe(true);
   });
 });
 
-describe('R-econ-11 · split_stack can destroy a unit, and its clone takes class-default weight and bulk', () => {
+describe('R-econ-11 · split_stack never destroys a unit, and its clone keeps the stack’s weight and bulk', () => {
   const flasks = (id: string, quantity: number) =>
     new PotionItem({ id, definitionId: 'flask', name: 'Hearth-Broth Flask', potionType: 'health', potency: 10, weight: 250, bulk: 150, identified: true, quantity, hooks: [] });
 

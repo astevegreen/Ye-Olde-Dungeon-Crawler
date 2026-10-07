@@ -10,9 +10,12 @@ import { flightRecorder } from '../flightRecorder';
 import { loadReplayState, rebuildAction } from '../replay';
 
 /**
- * Whole-codebase review, 2026-10-06, area 10 (replay). Two player actions reach
- * `handlePlayerAction` (so they are recorded in the trail) but `replay.ts` has no builder for
- * them, so a replay stops at the first one. Marked `it.fails` until the builders exist.
+ * Whole-codebase review, 2026-10-06, area 10 (replay): regression guards. Two player actions
+ * reached `handlePlayerAction`, so they were recorded in the trail, but `replay.ts` had no
+ * builder for them, so a replay stopped at the first one. R-dbg-1: a Rune of Return channel
+ * is now rebuilt. R-dbg-2: a dialog choice stays out of the trail, and a checkpoint taken
+ * once it resolves carries its outcome (owner decision 10; ARCHITECTURE.md §2). R-dbg-10: a
+ * replay of a god-mode session loads an invulnerable hero.
  */
 
 function lastEntry(engine: GameEngine) {
@@ -20,7 +23,7 @@ function lastEntry(engine: GameEngine) {
   return trail[trail.length - 1];
 }
 
-describe('R-dbg-1 · ChannelRuneOfReturnAction has no replay builder', () => {
+describe('R-dbg-1 · ChannelRuneOfReturnAction has a replay builder', () => {
   it('a recorded Rune of Return channel can be rebuilt', () => {
     const map = new GameMap(14, 14, TILES.FLOOR);
     const player = new Player({ id: 'hero', name: 'Hero', position: { x: 2, y: 2 }, stats: { hp: 100, maxHp: 100, attack: 5, defense: 0 } });
@@ -33,14 +36,14 @@ describe('R-dbg-1 · ChannelRuneOfReturnAction has no replay builder', () => {
     engine.handlePlayerAction(new ChannelRuneOfReturnAction(player));
 
     const entry = lastEntry(engine);
-    expect(entry?.action).toBe('ChannelRuneOfReturnAction'); // recorded (passes today)
+    expect(entry?.action).toBe('ChannelRuneOfReturnAction'); // recorded
     expect(rebuildAction(engine, entry)).not.toBeNull();
   });
 });
 
 // Owner decision 10: a dialog choice is stripped from the trail, and a checkpoint is taken
 // once it resolves, so the replay starts from the state the choice left.
-describe('R-dbg-2 · ExecuteChoiceAction is in the trail (contrary to §2) and has no replay builder', () => {
+describe('R-dbg-2 · ExecuteChoiceAction stays out of the trail, and a checkpoint carries its outcome (§2)', () => {
   const choice = {
     id: 'review_choice',
     title: 'A fork',

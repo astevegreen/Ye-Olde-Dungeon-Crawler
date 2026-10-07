@@ -4,15 +4,21 @@ import { CloseDoorAction, GameEngine, GameMap, Player, MemoryStorage, MovementAc
 import { SettingsManager, ACTION_METADATA } from '../../ui/settings/settingsManager';
 
 /**
- * Whole-codebase review, 2026-10-06, area 8 (keyboard dispatch). Each test reproduces one
- * finding from `.prompts/codebase-review-2026-10-06/areas/08-rendering.md` and is marked
- * `it.fails` so the suite stays green until the bug is fixed.
+ * Whole-codebase review, 2026-10-06, area 8 (keyboard dispatch): regression guards for the
+ * findings fixed since. R-rend-2: Disarm Trap has a bindable key, and T still channels the
+ * Rune of Return. R-rend-3 and R-main-6: a new run on the same handler starts with no key
+ * held and no prompt pending. R-rend-5: the game's function keys never reach the browser.
+ * R-rend-10: a key pressed while effects lock input never presses the focused HUD button.
+ * R-rend-11: hard-wired keys are positional. R-rend-12: Ctrl, Alt and Meta chords are the
+ * browser's, bar the game's own. R-rend-13 and R-rend-14: Settings own the movement and
+ * Smart Close Door keys. The unnumbered describe is an area 9 open item: "Close which door?"
+ * takes the player's movement keys.
  */
 
 const ev = (code: string): KeyboardEvent =>
   ({ code, key: code, repeat: false, preventDefault() {}, stopPropagation() {}, target: null }) as unknown as KeyboardEvent;
 
-describe('R-rend-2 · Disarm Trap has no key: T is Channel Rune of Return and the hard-wired fallback is dead', () => {
+describe('R-rend-2 · Disarm Trap has a key of its own, and T stays Channel Rune of Return', () => {
   it('the settings offer a bindable Disarm action', () => {
     expect(ACTION_METADATA.some((a) => /disarm/i.test(a.id) || /disarm/i.test(a.name))).toBe(true);
   });
@@ -35,7 +41,7 @@ describe('R-rend-2 · Disarm Trap has no key: T is Channel Rune of Return and th
   });
 });
 
-describe('R-rend-3 · a key still held when the game ends stays "held" in the reused ChordBuffer', () => {
+describe('R-rend-3 · a key still held when the game ends is not "held" in the reused ChordBuffer', () => {
   afterEach(() => vi.useRealTimers());
 
   it('after a game over with Up held, the next game’s first Down press moves down', () => {

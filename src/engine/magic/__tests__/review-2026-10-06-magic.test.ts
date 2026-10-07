@@ -11,9 +11,11 @@ import { effectiveSpellPower } from '../castNumbers';
 import { castGeometry } from '../castTrace';
 
 /**
- * Whole-codebase review, 2026-10-06, area 3 (magic). Each test reproduces one finding from
- * `.prompts/codebase-review-2026-10-06/areas/03-combat.md` and is marked `it.fails` so the
- * suite stays green until the bug is fixed.
+ * Whole-codebase review, 2026-10-06, area 3 (magic): regression guards. R-cmbt-9: the HUD's
+ * cost and power (`resolveCast`) apply the perk multipliers the cast applies. R-cmbt-10: a
+ * burst hurts its caster (owner Q1, classic CotW), and a hero it kills is slain by the spell,
+ * not by their own name. R-rend-4: the aim preview and the cast share one geometry
+ * (`castGeometry`).
  */
 
 const firebolt = {
@@ -61,7 +63,7 @@ function monster(id: string, x: number, y: number, hp = 100): Monster {
   } as never);
 }
 
-describe('R-cmbt-9 · the HUD cost and power (resolveCast) skip the multipliers the cast applies', () => {
+describe('R-cmbt-9 · the HUD cost and power (resolveCast) apply the multipliers the cast applies', () => {
   it('with a mana-cost multiplier perk, the shown cost equals the cost paid', () => {
     const map = new GameMap(16, 10, TILES.FLOOR);
     const player = new Player({

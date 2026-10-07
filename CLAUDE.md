@@ -43,7 +43,7 @@ problem to flag and resolve, not to silently pick a side on.
 ## Verification is not optional
 Before considering any task complete, actually run — don't just
 describe running — whichever of these are relevant: `npm run lint`
-(this already runs `tsc --noEmit`, `check:engine-purity`,
+(this already runs `tsc --noEmit`, the same over `e2e/` (`-p e2e/tsconfig.json`), `check:engine-purity`,
 `check:engine-encapsulation`, `check:engine-creep`, `check:ui-palette`, AND `knip` — don't
 invoke those separately), `npm test`, `npm run sim`, `npm run validate:schema`, `npm run build`. Paste real output. A change that "should" pass
 is not the same as a change that does.

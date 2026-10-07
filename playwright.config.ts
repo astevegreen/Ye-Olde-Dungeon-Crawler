@@ -7,6 +7,7 @@ if (videoArg) {
   process.env.VIDEO = videoArg.startsWith('--video=') ? videoArg.split('=')[1] || 'on' : 'on';
 }
 const recordVideoMode = process.env.VIDEO as
+  | 'true'
   | 'off'
   | 'on'
   | 'retain-on-failure'

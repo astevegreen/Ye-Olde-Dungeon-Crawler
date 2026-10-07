@@ -568,10 +568,6 @@ test('objective-driven multi-floor progression and NPC interaction', { tag: '@ca
 
     while (stage4Turns < 5) {
       const prevTurn = await page.evaluate(() => (window as any).__cotwEngine.turnCount);
-      const prevPos = await page.evaluate(() => {
-        const p = (window as any).__cotwEngine.player;
-        return { x: p.x, y: p.y };
-      });
 
       // Try cardinal directions until a move succeeds
       let moveKey = moveDirections[stage4Turns % moveDirections.length];

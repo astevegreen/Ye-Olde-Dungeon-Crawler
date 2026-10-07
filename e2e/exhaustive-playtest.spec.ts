@@ -363,14 +363,12 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
       const map = engine.map;
       let cascadeVeilPos: { x: number; y: number } | null = null;
       let hearthPos: { x: number; y: number } | null = null;
-      let springPos: { x: number; y: number } | null = null;
 
       for (let y = 0; y < map.height; y++) {
         for (let x = 0; x < map.width; x++) {
           const t = map.getTile(x, y);
           if (t?.type === 'dwarven_cascade_veil') cascadeVeilPos = { x, y };
           if (t?.type === 'grotto_hearth') hearthPos = { x, y };
-          if (t?.type === 'grotto_mineral_spring') springPos = { x, y };
         }
       }
 

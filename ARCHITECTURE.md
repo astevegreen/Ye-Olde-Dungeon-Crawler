@@ -160,7 +160,7 @@ Build tooling per §2's Language & Build Target. `assetsInlineLimit` inlines all
 **Requirement:** every change must pass the gates below before merging; run them locally and report real output — "should pass" is not "does pass." Work is committed directly to `main`, so the git hooks are the pre-merge gate: `pre-commit` runs lint and tests, `pre-push` runs the sim, schema validation, the cotw build, and the Playwright smoke suite; CI repeats them after the push.
 
 **Gate commands:**
-- `npm run lint` — `tsc --noEmit`, `check:engine-purity`, `check:engine-encapsulation`, `check:engine-creep`, `check:ui-palette`, `knip` (dead files, exports, and dependencies; don't invoke the sub-checks separately).
+- `npm run lint` — `tsc --noEmit`, then again over the Playwright specs (`-p e2e/tsconfig.json`), `check:engine-purity`, `check:engine-encapsulation`, `check:engine-creep`, `check:ui-palette`, `knip` (dead files, exports, and dependencies; don't invoke the sub-checks separately).
 - `npm test` — all Vitest suites.
 - `npm run sim` — headless population/throughput sim; fails on any rejected action, caught pipeline exception, or wall-clock overrun.
 - `npm run validate:schema` — passes a current-version save through, asserts a save below the version floor is refused, runs a probe N -> N+1 migration step, and round-trips a live engine through serialize/JSON/deserialize.

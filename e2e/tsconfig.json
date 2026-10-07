@@ -1,0 +1,9 @@
+// Type-checks the Playwright specs, which Playwright itself only strips (`npm run lint`).
+// The root config already brings the DOM lib (page.evaluate bodies run in the page) and
+// node types (the specs' own Node side). src/main.ts is included for its `Window` debug
+// handles (`__cotwEngine`, `__cotwInputHandler`, `__cotwRenderer`), so the specs are
+// checked against the game's real types; nothing here is bundled.
+{
+  "extends": "../tsconfig.json",
+  "include": ["./**/*.ts", "../playwright.config.ts", "../src/main.ts"]
+}

@@ -91,7 +91,7 @@ test('a full spell belt keeps clear of the context button and the tray', async (
     const slots = [...document.querySelectorAll('#quick-spells-bar .quick-spell-slot')].filter((s) => !(s as HTMLElement).hidden);
     const cluster = box(document.querySelector('.console-center-cluster')!);
     const neighbours = ['#context-action', '#console-tray', '#hud-health-orb', '#hud-mana-orb']
-      .map((sel) => document.querySelector(sel))
+      .map((sel) => document.querySelector<HTMLElement>(sel))
       .filter((el): el is HTMLElement => !!el && el.offsetParent !== null);
     return slots.flatMap((s, i) => {
       const b = box(s);
@@ -223,7 +223,7 @@ test('while aiming, the reticle follows the mouse and a click fires the spell', 
       const x = p.x + dx;
       const y = p.y + dy;
       if (e.map.isPassable(x, y) && !e.map.getEntityAt(x, y) && e.fov.isVisible(x, y)) {
-        const m = d.spawnMonster('kobold', { position: { x, y }, aiState: 'idle' });
+        const m = d.spawnMonster('kobold', { position: { x, y }, aiState: 'hunting' });
         if (m) {
           e.updateFov();
           window.__cotwRenderer!.render();
@@ -886,7 +886,7 @@ test('hovering a monster with the mouse shows its target card', async ({ page })
       const x = p.x + dx;
       const y = p.y + dy;
       if (e.map.isPassable(x, y) && !e.map.getEntityAt(x, y) && e.fov.isVisible(x, y)) {
-        if (d.spawnMonster('kobold', { position: { x, y }, aiState: 'idle' })) {
+        if (d.spawnMonster('kobold', { position: { x, y }, aiState: 'hunting' })) {
           e.updateFov();
           window.__cotwRenderer!.render();
           const r = window.__cotwRenderer as any;

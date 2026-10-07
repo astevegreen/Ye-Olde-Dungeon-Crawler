@@ -409,7 +409,7 @@ describe('Action Pipeline Hooks & Manifest Integration (Phase 3)', () => {
       expect(lastErr.summary).toContain('ENGINE_ACTION_INTERNAL_FAULT');
     });
 
-    it('isolates post-hook exception: returns success: false, cost: 0, and logs error', () => {
+    it('isolates post-hook exception: the action stands, marked pipelineError, its turn passes, and the error is logged (R-pipe-24)', () => {
       const faultyPostHook: ActionHook = {
         id: 'faulty-post-hook',
         phase: 'post',
@@ -426,14 +426,16 @@ describe('Action Pipeline Hooks & Manifest Integration (Phase 3)', () => {
       });
 
       const waitAction = new WaitAction(player);
+      const turn = engine.turnCount;
       let result: ActionResult | undefined;
       expect(() => {
         result = engine.handlePlayerAction(waitAction);
       }).not.toThrow();
 
-      expect(result!.success).toBe(false);
-      expect(result!.cost).toBe(0);
+      expect(result!.success).toBe(true);
+      expect(result!.cost).toBeGreaterThan(0);
       expect(result!.pipelineError).toBe(true);
+      expect(engine.turnCount).toBe(turn + 1);
 
       const recentErrors = flightRecorder
         .getEvents()

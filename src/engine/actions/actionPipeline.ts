@@ -154,7 +154,10 @@ export class ActionPipeline {
         return this.handlePipelineError(err, action, engine, actionType, 'action-perform');
       }
 
-      // 3. Post-hooks execution boundary
+      // 3. Post-hooks execution boundary. The action has already happened (energy spent, a
+      // potion drunk), so a post-hook that throws is recorded and the action's own result
+      // stands, marked pipelineError, and its turn still passes (R-pipe-24).
+      let postHookFailed = false;
       for (const hook of this.postHooks) {
         if (!matchesActionType(hook.actionType, actionType, action)) continue;
         try {
@@ -166,9 +169,11 @@ export class ActionPipeline {
             result = hookResult.result;
           }
         } catch (err) {
-          return this.handlePipelineError(err, action, engine, actionType, 'post-hook', hook.id);
+          this.recordPipelineFailure(err, action, engine, actionType, 'post-hook', hook.id);
+          postHookFailed = true;
         }
       }
+      if (postHookFailed) result = { ...result, pipelineError: true };
 
       return captured && captured.length > 0 ? { ...result, events: [...captured] } : result;
     } catch (topLevelErr) {
@@ -212,6 +217,24 @@ export class ActionPipeline {
     phase: string,
     hookId?: string
   ): ActionResult {
+    const message = this.recordPipelineFailure(err, action, engine, actionType, phase, hookId);
+    return {
+      success: false,
+      cost: 0,
+      message,
+      pipelineError: true,
+    };
+  }
+
+  /** Records a failure caught inside `executeWithHooks`; returns the line it logged. */
+  private recordPipelineFailure(
+    err: unknown,
+    action: Action,
+    engine: GameEngine,
+    actionType: string,
+    phase: string,
+    hookId?: string
+  ): string {
     const entityId =
       action?.entity?.id ??
       action?.attacker?.id ??
@@ -227,13 +250,7 @@ export class ActionPipeline {
       { entityId, actionType, phase, hookId, source: 'ActionPipeline.executeWithHooks' },
       message
     );
-
-    return {
-      success: false,
-      cost: 0,
-      message,
-      pipelineError: true,
-    };
+    return message;
   }
 
   /**

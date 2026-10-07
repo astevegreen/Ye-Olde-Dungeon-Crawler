@@ -61,7 +61,7 @@ describe('ActionPipeline failure contract: executeWithHooks always returns a val
     expect((lastPipelineError().details as any)?.hookId).toBe('malformed-pre-hook');
   });
 
-  it('isolates a post-hook that replaces the result with a non-ActionResult', () => {
+  it('isolates a post-hook that replaces the result with a non-ActionResult: the action\'s own result stands, marked', () => {
     const malformedPostHook: ActionHook = {
       id: 'malformed-post-hook',
       phase: 'post',
@@ -75,8 +75,21 @@ describe('ActionPipeline failure contract: executeWithHooks always returns a val
       result = engine.handlePlayerAction(new WaitAction(player));
     }).not.toThrow();
 
-    expectIsolatedFailure(result);
+    expect(result!.success).toBe(true);
+    expect(result!.cost).toBeGreaterThan(0);
+    expect(result!.pipelineError).toBe(true);
     expect((lastPipelineError().details as any)?.phase).toBe('post-hook');
+  });
+
+  it('a later post-hook still runs after an earlier one throws', () => {
+    const seen: string[] = [];
+    const hooks: ActionHook[] = [
+      { id: 'first', phase: 'post', actionType: '*', priority: 1, execute: () => { throw new Error('boom'); } },
+      { id: 'second', phase: 'post', actionType: '*', priority: 2, execute: () => { seen.push('second'); return undefined as any; } },
+    ];
+    const { engine, player } = buildEngine(hooks);
+    engine.handlePlayerAction(new WaitAction(player));
+    expect(seen).toEqual(['second']);
   });
 
   it('isolates an action whose perform() returns no ActionResult', () => {

@@ -455,8 +455,6 @@ export interface TownLayoutDefinition {
 export interface FloorEncounterConfig {
   /** Who wanders in on these floors; empty (or none deep enough yet) = the depth-weighted catalog. */
   monsterIds: string[];
-  /** Not read by the engine; kept for the pack's own reference. */
-  minMonsters: number;
   /** The most living hostile monsters a floor of the band holds before no wanderer comes. */
   maxMonsters: number;
 }
@@ -492,10 +490,15 @@ export interface QuestArcDefinition {
    *  `trackedMilestones` entry can follow the kill (they read flags only). */
   bossSlainFlag?: string;
   relicItemId: string;
-  victoryNpcId: string;
-  victoryFloor: number;
-  victoryDialogue: string;
-  victoryScoreBonus: number;
+  /**
+   * The single legacy ending, for a quest that declares no `endings`: the hero wins by
+   * speaking to this NPC on `victoryFloor` with the relic. A quest with `endings` ends
+   * through them instead, and these four go unread.
+   */
+  victoryNpcId?: string;
+  victoryFloor?: number;
+  victoryDialogue?: string;
+  victoryScoreBonus?: number;
   /** Logged when the boss dies, if set (e.g. a relic it drops). */
   relicDropMessage?: string;
   victoryEpitaph?: string;

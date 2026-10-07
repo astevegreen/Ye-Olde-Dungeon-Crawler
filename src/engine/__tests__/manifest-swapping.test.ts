@@ -125,9 +125,9 @@ const ELDORIA_MANIFEST: GameContentManifest = {
       bossSpawn: { x: 15, y: 5 },
     },
     floorEncounters: {
-      1: { monsterIds: ['voidling'], minMonsters: 2, maxMonsters: 4 },
-      2: { monsterIds: ['voidling', 'nether_drake'], minMonsters: 3, maxMonsters: 5 },
-      3: { monsterIds: ['nether_drake'], minMonsters: 2, maxMonsters: 4 },
+      1: { monsterIds: ['voidling'], maxMonsters: 4 },
+      2: { monsterIds: ['voidling', 'nether_drake'], maxMonsters: 5 },
+      3: { monsterIds: ['nether_drake'], maxMonsters: 4 },
     },
   },
   atlas: { themeId: 'default' },

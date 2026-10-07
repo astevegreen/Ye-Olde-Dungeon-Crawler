@@ -41,22 +41,18 @@ export const WARCRAFT_QUEST: QuestArcDefinition = {
   floorEncounters: {
     1: {
       monsterIds: ['peon'],
-      minMonsters: 4,
       maxMonsters: 7,
     },
     2: {
       monsterIds: ['peon', 'grunt'],
-      minMonsters: 5,
       maxMonsters: 8,
     },
     3: {
       monsterIds: ['grunt', 'raider'],
-      minMonsters: 5,
       maxMonsters: 9,
     },
     4: {
       monsterIds: ['grunt', 'raider', 'ogre_mage'],
-      minMonsters: 6,
       maxMonsters: 11,
     },
   },

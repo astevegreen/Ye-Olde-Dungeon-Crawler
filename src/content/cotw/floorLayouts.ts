@@ -28,6 +28,5 @@ export const COTW_FLOOR_LAYOUTS: FloorLayoutBand[] = [
   { minFloor: 34, maxFloor: 42, strategy: 'warrens', params: { grove: true }, threshold: COTW_THRESHOLDS.world_bark },
   // Maw of Malice: a spine passage with rib chambers, maw pits and the eye pool.
   { minFloor: 43, maxFloor: 49, strategy: 'spine', params: { pool: true, pits: 2 }, threshold: COTW_THRESHOLDS.maw_of_malice },
-  // The Rotting Root: blighted caverns (floor 50 itself is the boss lair on Hard).
-  { minFloor: 50, strategy: 'caverns', params: { wallChance: 0.42, pools: 3, pits: 2, groves: 3 } },
+  // Floor 50, the Rotting Root, is always the boss lair (quest.ts bossFloorLayout).
 ];

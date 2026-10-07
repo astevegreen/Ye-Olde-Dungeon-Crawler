@@ -17,14 +17,20 @@ const ALL_HINTS: readonly FirstTimeHintId[] = [
  * First-time hints: the pack's short note on a system (`manifest.firstTimeHints`) the first
  * time this hero meets it, shown as a card at the foot of the combat sidebar. Never modal:
  * play goes on around it, and it stays until dismissed. Several at once queue behind it.
- * A hint is recorded as shown (`Player.tutorialFlags`, saved with the hero) when queued.
+ * A hint is recorded as shown (`Player.tutorialFlags`, saved with the hero) when it comes
+ * on screen: the one offered with nothing queued at once, as before, and each one queued
+ * behind it when its turn comes. Flagged when queued, the ones still waiting were lost
+ * with the queue on a quit, a load or hints turned off (R-ui-17); unflagged, they are
+ * offered again the next time the hero meets them.
  */
 export class FirstTimeHints {
   public readonly element: HTMLElement;
   private readonly titleEl: HTMLElement;
   private readonly textEl: HTMLElement;
   private readonly nextBtn: HTMLButtonElement;
-  private queue: Array<{ title: string; text: string }> = [];
+  private queue: Array<{ id: FirstTimeHintId; title: string; text: string }> = [];
+  /** The engine whose hero the queued hints are for, so the next shown is flagged on it. */
+  private engine: GameEngine | null = null;
 
   constructor(private readonly options: FirstTimeHintsOptions) {
     this.element = document.createElement('section');
@@ -58,12 +64,13 @@ export class FirstTimeHints {
   /** Queues the pack's hint for each of `ids` this hero hasn't been shown. */
   public offer(engine: GameEngine, ids: readonly FirstTimeHintId[]): void {
     if (ids.length === 0 || !engine?.player || !this.options.enabled()) return;
+    this.engine = engine;
     const hints = engine.manifest.firstTimeHints ?? {};
     for (const id of unseenHints(engine, ids)) {
       const hint = hints[id];
-      if (!hint) continue;
-      engine.player.markTutorialSeen(hintFlag(id));
-      this.queue.push(resolveHintText(hint, this.options.keyFor));
+      // Unflagged until shown, a waiting hint is met again each turn: queue it once.
+      if (!hint || this.queue.some((queued) => queued.id === id)) continue;
+      this.queue.push({ id, ...resolveHintText(hint, this.options.keyFor) });
     }
     this.render();
   }
@@ -82,6 +89,7 @@ export class FirstTimeHints {
   /** Drops every queued hint (a new run, a load). */
   public clear(): void {
     this.queue = [];
+    this.engine = null;
     this.render();
   }
 
@@ -89,6 +97,7 @@ export class FirstTimeHints {
     const hint = this.queue[0];
     this.element.hidden = !hint;
     if (!hint) return;
+    this.engine?.player.markTutorialSeen(hintFlag(hint.id));
     this.titleEl.replaceChildren(iconElement('info'), ` ${hint.title}`);
     this.textEl.textContent = hint.text;
     const more = this.queue.length - 1;

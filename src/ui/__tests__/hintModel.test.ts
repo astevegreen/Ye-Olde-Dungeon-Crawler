@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { GameEngine, GameMap, TILES, Player } from '../../engine';
 import { hintFlag, hintsMetByEvent, hintsMetByState, resolveHintText, unseenHints } from '../hints/hintModel';
+import { FirstTimeHints } from '../hints/firstTimeHints';
 
 function buildEngine(manifest: Record<string, unknown> = {}) {
   const map = new GameMap(20, 20, TILES.FLOOR);
@@ -60,5 +61,58 @@ describe('first-time hints', () => {
   it('names the bound key in the text, or the action when nothing is bound', () => {
     expect(resolveHintText(HINTS.story, (a) => (a === 'story' ? 'O' : undefined)).text).toBe('The Story tab (O) keeps it.');
     expect(resolveHintText({ title: 't', text: 'Press {key:channel_rune}.' }, () => undefined).text).toBe('Press channel rune.');
+  });
+});
+
+/** Just enough DOM for the hint card: elements that hold children, text and listeners. */
+class HintEl {
+  public className = '';
+  public hidden = false;
+  public textContent = '';
+  public type = '';
+  public title = '';
+  public children: unknown[] = [];
+  setAttribute(): void {}
+  append(...children: unknown[]): void {
+    this.children.push(...children);
+  }
+  replaceChildren(...children: unknown[]): void {
+    this.children = children;
+  }
+  addEventListener(): void {}
+}
+
+describe('FirstTimeHints', () => {
+  let originalDocument: unknown;
+  beforeEach(() => {
+    originalDocument = (globalThis as any).document;
+    (globalThis as any).document = { createElement: () => new HintEl() };
+  });
+  afterEach(() => {
+    (globalThis as any).document = originalDocument;
+  });
+
+  it('records a hint as seen once it is on screen, so those queued behind it outlive a quit or load (R-ui-17)', () => {
+    const engine = buildEngine({ firstTimeHints: HINTS });
+    const hints = new FirstTimeHints({ keyFor: () => undefined, enabled: () => true });
+    const [, text, next] = (hints.element as unknown as HintEl).children as HintEl[];
+    const seen = (id: 'altar' | 'story' | 'factionStanding') => engine.player.tutorialFlags[hintFlag(id)] === true;
+
+    hints.offer(engine, ['altar', 'story', 'factionStanding']);
+    expect(text.textContent).toBe('Burn an offering.');
+    expect([seen('altar'), seen('story'), seen('factionStanding')]).toEqual([true, false, false]);
+    // Met again on the next turn: still queued once.
+    hints.offer(engine, ['story', 'factionStanding']);
+    expect(next.textContent).toBe('Next hint (2 more)');
+
+    // A load (or hints turned off and on) drops the queue; what wasn't shown comes back.
+    hints.clear();
+    hints.offer(engine, ['altar', 'story', 'factionStanding']);
+    expect(text.textContent).toBe('The Story tab (story) keeps it.');
+    expect(next.textContent).toBe('Next hint (1 more)');
+    expect(seen('story')).toBe(true);
+    hints.dismiss();
+    expect(text.textContent).toBe('It moved.');
+    expect(seen('factionStanding')).toBe(true);
   });
 });

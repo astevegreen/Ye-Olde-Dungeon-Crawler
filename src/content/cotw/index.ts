@@ -1,5 +1,5 @@
 import type { GameContentManifest } from '../../engine';
-import { COTW_MONSTERS, COTW_BESTIARY } from './monsters';
+import { COTW_MONSTERS } from './monsters';
 import { COTW_ITEMS } from './items';
 import { COTW_SPELLS } from './spells';
 import { COTW_TOWN } from './town';
@@ -52,7 +52,6 @@ import { COTW_LOOT_RATES } from './loot';
 import { OATH_HOLD_HOOK, OATH_TRIGGER } from './oath';
 import { HOSTAGE_VILLAGERS, SIPHON_RITUAL_FLOOR, SIPHON_RITUAL_HOOKS, SIPHON_TIMED_EVENT, SIPHON_VAULT_ID, COTW_SAVIOR_TOWN_HOOK } from './hostageRitual';
 import { COTW_PROLOGUE, COVEN_CHANNELER_STRATEGY, PROLOGUE_HOOKS, PROLOGUE_TIMED_EVENT } from './prologue';
-import { COTW_BLOOD_SPELLS } from './bloodMagic';
 import { COTW_TILES } from './tiles';
 import { COTW_TOWN_FURNISHING_HOOK } from './townFurnishings';
 import { COTW_FLOOR_HAZARDS, COTW_ROOM_DECORATION } from './floorBands';
@@ -342,14 +341,10 @@ export const cotwManifest: GameContentManifest = {
   merchantPricing: COTW_MERCHANT_PRICING,
 };
 
-export const COTW_MANIFEST = cotwManifest;
-
 export {
   COTW_MONSTERS,
-  COTW_BESTIARY,
   COTW_ITEMS,
   COTW_SPELLS,
-  COTW_BLOOD_SPELLS,
   COTW_TOWN,
   COTW_QUEST,
   COTW_ATLAS_THEME,

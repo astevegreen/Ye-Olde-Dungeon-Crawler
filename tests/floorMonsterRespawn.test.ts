@@ -7,7 +7,7 @@ import { Monster } from '../src/engine/entities/monster';
 import { FloorManager } from '../src/engine/world/floorManager';
 import { WaitAction } from '../src/engine/actions/wait';
 import { DeathResolver } from '../src/engine/combat/deathResolver';
-import { COTW_MANIFEST } from '../src/content/cotw';
+import { cotwManifest } from '../src/content/cotw';
 
 describe('Time-Based Floor Monster Respawning & Turn Tracking', () => {
   let engine: GameEngine;
@@ -35,7 +35,7 @@ describe('Time-Based Floor Monster Respawning & Turn Tracking', () => {
       player,
       floor: 1,
       floorManager,
-      manifest: COTW_MANIFEST,
+      manifest: cotwManifest,
     });
   });
 

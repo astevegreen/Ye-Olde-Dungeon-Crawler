@@ -62,8 +62,6 @@ export const warcraftManifest: GameContentManifest = {
   roomDecoration: [{ minFloor: 1, puddleChance: 0.4, grandHallChance: 0.3, pillarChance: 0.25 }],
 };
 
-export const WARCRAFT_MANIFEST = warcraftManifest;
-
 export {
   WARCRAFT_MONSTERS,
   WARCRAFT_ITEMS,

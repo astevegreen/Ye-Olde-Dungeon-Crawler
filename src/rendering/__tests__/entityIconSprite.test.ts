@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CanvasRenderer } from '../canvas-renderer';
 import { GameEngine, GameMap, TILES, Player } from '../../engine';
-import { COTW_MANIFEST } from '../../content/cotw';
+import { cotwManifest } from '../../content/cotw';
 
 // The sidebar's Nearby icons come from drawEntityIcon; they must use the same sprite as
 // the map, which applies the pack's spriteTagRules (audit B, N33: a Draugr Warrior was a
@@ -42,7 +42,7 @@ describe('drawEntityIcon', () => {
     const engine = new GameEngine({
       map: new GameMap(30, 30, TILES.FLOOR),
       player: new Player({ id: 'player', name: 'Hero', position: { x: 5, y: 5 } }),
-      manifest: COTW_MANIFEST,
+      manifest: cotwManifest,
     });
     const renderer = new CanvasRenderer(mockCanvas(), engine);
     const atlas = (renderer as unknown as { atlas: { drawSprite: (...args: unknown[]) => void } }).atlas;

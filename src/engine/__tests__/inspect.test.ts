@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { GameEngine } from '../engine';
 import { GameMap } from '../grid/map';
 import { Player } from '../entities/player';
-import { COTW_MANIFEST } from '../../content/cotw';
+import { cotwManifest } from '../../content/cotw';
 import { createTestOgre } from '../__fixtures__/testHelpers';
 import { ItemFactory } from '../items/factory';
 import { TileInspector } from '../inspect/inspector';
@@ -22,7 +22,7 @@ describe('Look / Inspect Mode & Tile Inspector', () => {
       stats: { hp: 50, maxHp: 50, attack: 10, defense: 2 },
       speed: 100,
     });
-    engine = new GameEngine({ map, player, floor: 1, manifest: COTW_MANIFEST });
+    engine = new GameEngine({ map, player, floor: 1, manifest: cotwManifest });
     engine.updateFov();
   });
 
@@ -130,7 +130,7 @@ describe('R-dbg-16 · Look names only the items the hero can see', () => {
     const map = GameMap.createBoxRoom(40, 12);
     for (let y = 0; y < 12; y++) map.setTile(20, y, TILES.WALL);
     const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 }, stats: { hp: 50, maxHp: 50, attack: 1, defense: 0 } });
-    const engine = new GameEngine({ map, player, floor: 1, manifest: COTW_MANIFEST });
+    const engine = new GameEngine({ map, player, floor: 1, manifest: cotwManifest });
     engine.updateFov();
     engine.fov.revealAllTiles(); // Clairvoyance: the far side is explored, not seen
     map.addItemAt(30, 5, ItemFactory.createDagger('far-dagger'));

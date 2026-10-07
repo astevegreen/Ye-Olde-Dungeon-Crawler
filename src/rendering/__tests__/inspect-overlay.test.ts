@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GameEngine, GameMap, Player } from '../../engine';
-import { COTW_MANIFEST } from '../../content/cotw';
+import { cotwManifest } from '../../content/cotw';
 import { InspectOverlay } from '../inspect-overlay';
 
 describe('InspectOverlay UI Rendering & Input Interaction', () => {
@@ -17,7 +17,7 @@ describe('InspectOverlay UI Rendering & Input Interaction', () => {
       stats: { hp: 50, maxHp: 50, attack: 10, defense: 2 },
       speed: 100,
     });
-    engine = new GameEngine({ map, player, floor: 1, manifest: COTW_MANIFEST });
+    engine = new GameEngine({ map, player, floor: 1, manifest: cotwManifest });
     engine.updateFov();
   });
 
@@ -61,7 +61,7 @@ describe('Look card markup', () => {
     const { lookCardHtml } = await import('../inspect-overlay');
     const map = GameMap.createBoxRoom(12, 12);
     const player = new Player({ id: 'hero', name: '<Ann>', position: { x: 5, y: 5 }, stats: { hp: 30, maxHp: 40, attack: 5, defense: 1 }, speed: 100 });
-    const engine = new GameEngine({ map, player, floor: 1, manifest: COTW_MANIFEST });
+    const engine = new GameEngine({ map, player, floor: 1, manifest: cotwManifest });
     engine.updateFov();
     const html = lookCardHtml(engine, {
       x: 5,

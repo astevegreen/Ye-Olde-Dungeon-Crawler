@@ -274,6 +274,4 @@ export const COTW_SPELLS: SpellDefinition[] = [
   ...COTW_HYBRID_SPELLS,
 ];
 
-export { COTW_BLOOD_SPELLS };
-
 

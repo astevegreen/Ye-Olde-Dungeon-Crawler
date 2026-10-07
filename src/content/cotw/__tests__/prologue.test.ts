@@ -15,7 +15,7 @@ import {
 } from '../../../engine';
 import { ClimbStairsAction } from '../../../engine/actions/stairs';
 import { DeathResolver } from '../../../engine/combat/deathResolver';
-import { COTW_MANIFEST } from '../index';
+import { cotwManifest } from '../index';
 import { COTW_PROLOGUE, GATEWARD_CHOICE, GATEWARD_HEARD_FLAG, PROLOGUE_VILLAGERS } from '../prologue';
 import { TOWN_STAIRS_DOWN } from '../townLayout';
 
@@ -24,7 +24,7 @@ import { TOWN_STAIRS_DOWN } from '../townLayout';
  * run by `prologue.ts`'s hooks.
  */
 function newRun(attributes?: { strength: number; dexterity: number; constitution: number; intelligence: number }): GameEngine {
-  return new ProfileManager(new MemoryStorage(), COTW_MANIFEST).createCharacter('Hild', { manifest: COTW_MANIFEST, prologue: true, attributes }).engine;
+  return new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Hild', { manifest: cotwManifest, prologue: true, attributes }).engine;
 }
 
 /** A hero born at the first attribute milestone (Strength 20, tracker 3.3), so its choice is due at once. */

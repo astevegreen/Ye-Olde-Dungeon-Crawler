@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { GameEngine } from '../engine';
 import { GameMap } from '../grid/map';
 import { Player } from '../entities/player';
-import { COTW_MANIFEST } from '../../content/cotw';
+import { cotwManifest } from '../../content/cotw';
 import { ItemFactory } from '../items/factory';
 import { Container } from '../items/container';
 import { QuickLootAction } from '../actions/inventory-actions';
@@ -20,7 +20,7 @@ describe('Inventory Friction Reducers: QuickLoot, Sorting, and Coin Consolidatio
       stats: { hp: 50, maxHp: 50, attack: 10, defense: 2 },
       speed: 100,
     });
-    engine = new GameEngine({ map, player, floor: 1, manifest: COTW_MANIFEST });
+    engine = new GameEngine({ map, player, floor: 1, manifest: cotwManifest });
     engine.player.setPosition(5, 5);
   });
 
@@ -168,7 +168,7 @@ describe('Inventory Friction Reducers: QuickLoot, Sorting, and Coin Consolidatio
     pack.sort('category'); // dagger (weapon) first, then potion (consumable)
 
     const serialized = serializeSaveData(engine);
-    const restored = deserializeSaveData(serialized, COTW_MANIFEST);
+    const restored = deserializeSaveData(serialized, cotwManifest);
 
     const restoredItems = restored.player.inventory.primaryPack.getItems();
     expect(restoredItems[0].category).toBe('weapon');

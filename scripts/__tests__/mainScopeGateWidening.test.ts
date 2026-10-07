@@ -50,11 +50,11 @@ describe('gate scripts cover src/main/** (ARCHITECTURE.md §7.2 widened scope)',
   it('check-engine-purity fails on a deep engine import and a content-pack import planted under src/main/', () => {
     const result = runScript('scripts/check-engine-purity.ts', [
       "import type { GameEngine } from '../engine/engine';",
-      "import { COTW_MANIFEST } from '../content/cotw';",
+      "import { cotwManifest } from '../content/cotw';",
       '',
-      'export function scratchGateViolation(engine: GameEngine): typeof COTW_MANIFEST {',
+      'export function scratchGateViolation(engine: GameEngine): typeof cotwManifest {',
       '  void engine;',
-      '  return COTW_MANIFEST;',
+      '  return cotwManifest;',
       '}',
       '',
     ]);

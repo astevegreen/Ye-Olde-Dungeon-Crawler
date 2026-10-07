@@ -7,7 +7,7 @@ import { TILES } from '../grid/tile';
 import { computeDangerTiles } from '../ai/intent';
 import { WindUpDeclareAction, WindUpExecuteAction } from '../actions/combat';
 import { MovementAction } from '../actions/movement';
-import { COTW_MANIFEST } from '../../content/cotw';
+import { cotwManifest } from '../../content/cotw';
 
 describe('Expanded Enemy Intent Telegraphing System', () => {
   let engine: GameEngine;
@@ -24,7 +24,7 @@ describe('Expanded Enemy Intent Telegraphing System', () => {
       stats: { hp: 100, maxHp: 100, attack: 10, defense: 2 },
     });
     map.addEntity(player);
-    engine = new GameEngine({ map, player, floor: 1, manifest: COTW_MANIFEST });
+    engine = new GameEngine({ map, player, floor: 1, manifest: cotwManifest });
   });
 
   describe('1. Hellfire Surge (Blast Pattern, Fire Element, Fire Surface)', () => {

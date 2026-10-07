@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { COTW_MANIFEST } from '../index';
-import { WARCRAFT_MANIFEST } from '../../warcraft/index';
+import { cotwManifest } from '../index';
+import { warcraftManifest } from '../../warcraft/index';
 import type { GameContentManifest } from '../../../engine';
 
 function checkCategories(manifest: GameContentManifest): void {
@@ -25,10 +25,10 @@ function checkCategories(manifest: GameContentManifest): void {
 
 describe('monster categories', () => {
   it('put every CotW monster in exactly one category', () => {
-    checkCategories(COTW_MANIFEST);
+    checkCategories(cotwManifest);
   });
 
   it('put every WarCraft monster in exactly one category', () => {
-    checkCategories(WARCRAFT_MANIFEST);
+    checkCategories(warcraftManifest);
   });
 });

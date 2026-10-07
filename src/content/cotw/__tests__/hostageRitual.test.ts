@@ -18,7 +18,7 @@ import {
   SIPHON_ALTAR_TILE,
   SIPHON_RITUAL_FLOOR,
 } from '../hostageRitual';
-import { COTW_MANIFEST } from '../index';
+import { cotwManifest } from '../index';
 import { COTW_QUEST } from '../quest';
 import { createGuntherArmory } from '../town';
 
@@ -33,7 +33,7 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
   let player: Player;
   let map: GameMap;
 
-  const pricing = COTW_MANIFEST.merchantPricing;
+  const pricing = cotwManifest.merchantPricing;
 
   function testSword() {
     return createGuntherArmory().stock.find((i) => i.category === 'weapon')!;
@@ -62,7 +62,7 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
       map,
       player,
       floor: SIPHON_RITUAL_FLOOR,
-      manifest: COTW_MANIFEST,
+      manifest: cotwManifest,
       worldState: { flags: {}, counters: {}, factions: { townsfolk: 0 } },
     });
   });
@@ -300,7 +300,7 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
 
     it('stamps the siphon vault with its altar and four captives on the scripted floor', () => {
       for (let seed = 1; seed <= 5; seed++) {
-        const floor = DungeonArc.generateFloor(SIPHON_RITUAL_FLOOR, seed, COTW_QUEST, COTW_MANIFEST, 1, undefined, engine.registries);
+        const floor = DungeonArc.generateFloor(SIPHON_RITUAL_FLOOR, seed, COTW_QUEST, cotwManifest, 1, undefined, engine.registries);
         expect(tilesOfType(floor.map, SIPHON_ALTAR_TILE)).toBe(1);
         for (const v of HOSTAGE_VILLAGERS) {
           const npc = floor.map.getEntityById(v.id);
@@ -313,7 +313,7 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
     it('never stamps the scripted-only vault on neighbouring floors', () => {
       for (const floorNumber of [SIPHON_RITUAL_FLOOR - 1, SIPHON_RITUAL_FLOOR + 1]) {
         for (let seed = 1; seed <= 5; seed++) {
-          const floor = DungeonArc.generateFloor(floorNumber, seed, COTW_QUEST, COTW_MANIFEST, 1, undefined, engine.registries);
+          const floor = DungeonArc.generateFloor(floorNumber, seed, COTW_QUEST, cotwManifest, 1, undefined, engine.registries);
           expect(tilesOfType(floor.map, SIPHON_ALTAR_TILE)).toBe(0);
           expect(floor.map.getEntityById(HOSTAGE_VILLAGERS[0].id)).toBeNull();
         }

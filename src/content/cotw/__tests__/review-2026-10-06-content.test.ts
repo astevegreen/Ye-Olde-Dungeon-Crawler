@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { cotwManifest } from '../index';
-import { COTW_FLOOR_HAZARDS, COTW_HAZARD_ITEMS } from '../floorBands';
+import { COTW_FLOOR_HAZARDS } from '../floorBands';
 import { createScaledItem } from '../../../engine/dungeon/lootSpawner';
 import { scaleMonsterStats } from '../../../engine/dungeon/spawner';
 import type { MonsterDefinition } from '../../../engine';
@@ -124,8 +124,15 @@ describe('R-cotw-9 · the Sage’s elemental advisories follow the zones and rec
   });
 
   it('every item a recommendation names exists in the pack and is named there', () => {
+    // The pack items each band's recommendation names, by the band's first floor.
+    const hazardItems: Readonly<Record<number, readonly string[]>> = {
+      4: ['hearth_broth_flask'],
+      18: ['ring_of_the_slag_walker', 'zealots_seared_crown', 'obsidian_scale_cuirass'],
+      26: ['birch_tar_poultice', 'cure_poison_potion', 'urdr_cleansing_water'],
+      43: ['supreme_health_potion', 'urdr_cleansing_water'],
+    };
     for (const band of COTW_FLOOR_HAZARDS) {
-      const ids = COTW_HAZARD_ITEMS[band.minFloor] ?? [];
+      const ids = hazardItems[band.minFloor] ?? [];
       expect(ids.length, `${band.element} from ${band.minFloor}`).toBeGreaterThan(0);
       for (const id of ids) {
         const item = items.find((i) => i.id === id) as { name: string } | undefined;

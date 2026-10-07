@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { GameEngine } from '../engine';
 import { GameMap } from '../grid/map';
 import { Player } from '../entities/player';
-import { COTW_MANIFEST } from '../../content/cotw';
+import { cotwManifest } from '../../content/cotw';
 import { Monster } from '../entities/monster';
 import { createTestOgre, createTestKoboldShaman } from '../__fixtures__/testHelpers';
 import { MovementAction } from '../actions/movement';
@@ -23,7 +23,7 @@ describe('Telegraphed Enemy Wind-Up Attacks & Monster Intent', () => {
       stats: { hp: 100, maxHp: 100, attack: 10, defense: 2 },
       speed: 100,
     });
-    engine = new GameEngine({ map, player, floor: 1, manifest: COTW_MANIFEST });
+    engine = new GameEngine({ map, player, floor: 1, manifest: cotwManifest });
     engine.updateFov();
   });
 
@@ -146,7 +146,7 @@ describe('Telegraphed Enemy Wind-Up Attacks & Monster Intent', () => {
     engine.addEntity(ogre);
 
     const serialized = serializeSaveData(engine);
-    const restoredEngine = deserializeSaveData(serialized, COTW_MANIFEST);
+    const restoredEngine = deserializeSaveData(serialized, cotwManifest);
 
     const restoredOgre = restoredEngine.map.getEntityById('ogre-save-test') as Monster;
     expect(restoredOgre).not.toBeNull();

@@ -6,7 +6,7 @@ import { GameEngine } from '../../engine';
 import { ItemFactory } from '../../items/factory';
 import { Item } from '../../items/item';
 import { COTW_FLOOR_HAZARDS } from '../../../content/cotw/floorBands';
-import { COTW_MANIFEST } from '../../../content/cotw';
+import { cotwManifest } from '../../../content/cotw';
 
 describe('Town Sage Run Advisory Heuristics', () => {
   it('detects and warns when inventory bulk or weight exceeds 80% capacity', () => {
@@ -162,7 +162,7 @@ describe('Town Sage Run Advisory Heuristics', () => {
   // about to take the Rune of Return to floor 14 heard "the runes smile upon your readiness".
   it('from town judges the deepest floor the hero has reached, floor 1 for a new hero; below, the floor the hero is on', () => {
     const player = new Player({ id: 'p1', name: 'Hero', position: { x: 0, y: 0 }, stats: { hp: 30, maxHp: 30, attack: 10, defense: 2 } });
-    const engine = new GameEngine({ map: new GameMap(10, 10), player, floor: 0, manifest: COTW_MANIFEST });
+    const engine = new GameEngine({ map: new GameMap(10, 10), player, floor: 0, manifest: cotwManifest });
     expect(RunAdvisor.evaluateRun(engine).targetFloor).toBe(1);
 
     engine.gameState.updateFloor(14);
@@ -172,7 +172,7 @@ describe('Town Sage Run Advisory Heuristics', () => {
     expect(report.overallStatus).toBe('danger');
     expect(report.warnings.find((w) => w.type === 'consumables')?.message).toContain('Floor 14');
 
-    const below = new GameEngine({ map: new GameMap(10, 10), player, floor: 6, manifest: COTW_MANIFEST });
+    const below = new GameEngine({ map: new GameMap(10, 10), player, floor: 6, manifest: cotwManifest });
     below.gameState.updateFloor(14);
     expect(RunAdvisor.evaluateRun(below).targetFloor).toBe(6);
   });
@@ -185,7 +185,7 @@ describe('Town Sage Run Advisory Heuristics', () => {
       position: { x: 0, y: 0 },
       stats: { hp: 30, maxHp: 30, attack: 10, defense: 2 },
     });
-    const engine = new GameEngine({ map, player, floor: 0, manifest: COTW_MANIFEST });
+    const engine = new GameEngine({ map, player, floor: 0, manifest: cotwManifest });
 
     const report = RunAdvisor.evaluateRun(engine);
     expect(report.targetFloor).toBe(1);

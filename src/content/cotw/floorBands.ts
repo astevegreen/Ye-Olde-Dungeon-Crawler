@@ -20,15 +20,6 @@ export const COTW_ROOM_DECORATION: RoomDecorationBand[] = [
   { minFloor: 43, fissureChance: 0.35 },
 ];
 
-/** The pack items each hazard's recommendation names, by the band's first floor (a test checks
- *  every one exists and is named). */
-export const COTW_HAZARD_ITEMS: Readonly<Record<number, readonly string[]>> = {
-  4: ['hearth_broth_flask'],
-  18: ['ring_of_the_slag_walker', 'zealots_seared_crown', 'obsidian_scale_cuirass'],
-  26: ['birch_tar_poultice', 'cure_poison_potion', 'urdr_cleansing_water'],
-  43: ['supreme_health_potion', 'urdr_cleansing_water'],
-};
-
 /** A pack item's name; throws on an id the pack lacks, so a recommendation can't name a phantom. */
 function itemName(id: string): string {
   const def = COTW_ITEMS.find((d) => d.id === id);

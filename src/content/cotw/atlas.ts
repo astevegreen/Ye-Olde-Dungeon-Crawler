@@ -87,12 +87,14 @@ const COTW_PALETTE: Record<string, string> = {
 
 import { COTW_TILE_ZONE_BANDS } from './tileZones';
 import { COTW_TERRAIN_ART } from './terrain';
+import { COTW_CELL_OVERLAYS } from './terrain/overlays';
 
 export const COTW_ATLAS_THEME: AtlasProceduralTheme = {
   themeId: 'cotw',
   palette: COTW_PALETTE,
   tileZoneBands: COTW_TILE_ZONE_BANDS,
   terrain: COTW_TERRAIN_ART,
+  overlays: COTW_CELL_OVERLAYS,
   // CotW's own creatures, ahead of the renderer's generic archetypes (draugr before undead,
   // duergar before dwarf).
   spriteTagRules: [

@@ -706,7 +706,29 @@ export interface AtlasProceduralTheme<TContext = any> {
   /** Tag -> sprite rules for the pack's own creatures, checked in order before the
    * renderer's generic archetype rules. `spriteKey` names a pack recipe. */
   spriteTagRules?: SpriteTagRule[];
+  /**
+   * Art for what covers a cell, keyed `surface~<type>` for a ground surface (the engine's
+   * built-ins `water`, `oil_slick`, `acid_pool`, `ice_sheet`, `mud`, `fire`, and the pack's
+   * `surfaceTypes`) and `gas~<type>` for a gas (`fire_storm`, `poison_cloud`, `dense_steam`).
+   * A type without an entry gets the renderer's neutral wash in the theme's role colors.
+   */
+  overlays?: Record<string, CellOverlayArt>;
 }
+
+/**
+ * Draws what covers one cell (rendering tier; the engine only carries the data). Unlike a
+ * `SpriteRecipe`, baked once into the atlas, it runs every frame, in canvas units at the
+ * cell's place on screen (`px`, `py`, `size` square), over the terrain: `now` is the frame's
+ * clock in ms, so it can flicker or drift, and `x`, `y` the cell, to vary it from its
+ * neighbours. Content code never reads the clock itself (§7.2).
+ */
+export type CellOverlayArt<TContext = any> = (
+  ctx: TContext,
+  px: number,
+  py: number,
+  size: number,
+  cell: { x: number; y: number; now: number }
+) => void;
 
 /** Maps a monster tag to a sprite key (ARCHITECTURE.md §3: sprite choice comes from the pack). */
 export interface SpriteTagRule {

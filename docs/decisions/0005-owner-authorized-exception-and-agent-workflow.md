@@ -1,7 +1,7 @@
 # ADR-0005: Owner-Authorized Protected-File Changes and the Agent Workflow
 
 **Date:** 2026-09-23
-**Status:** Accepted (owner decision)
+**Status:** Accepted (owner decision); partly superseded by [ADR-0006](0006-review-after-commit-and-loaded-agent-rules.md) (review after commit): Antigravity no longer leaves engine production-source changes uncommitted
 **Related:** `ARCHITECTURE.md` §8.1 (exception 4), §8.4 (Agent Workflow), §7.2 (`check:engine-creep`); [ADR-0002](0002-v0-v11-migration-chain-deletion.md)
 
 ## Context

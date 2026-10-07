@@ -20,3 +20,5 @@ Each change closes a gap between what the UI silently assumed (fixed bar heights
 
 ## Consequences
 None outstanding — this is a closed retrospective, not an ongoing invariant. Future viewport/HUD work should read `ViewportManager.recalculate()`'s current implementation directly rather than this ADR.
+
+*Note (2026-10-07):* the turn readout kept above is gone too; the HUD shows no turn counter today ([simulation-and-input.md](../architecture/simulation-and-input.md)).

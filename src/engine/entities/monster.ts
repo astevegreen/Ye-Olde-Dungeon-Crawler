@@ -234,6 +234,10 @@ export class Monster extends Actor {
       DeathResolver.resolveDeath(engine, undefined, this);
       return { success: false, cost: 0, message: `${this.name} succumbed to status afflictions.` };
     }
+    // An expiring status may have taken it out of the world (a summon's lease ran out).
+    if (tickRes.expired.length > 0 && !engine.map.getAllEntities().includes(this)) {
+      return { success: false, cost: 0 };
+    }
 
     // 3. A held monster loses the turn.
     if (held) {

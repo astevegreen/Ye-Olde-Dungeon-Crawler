@@ -143,6 +143,14 @@ export const BUILTIN_STATUS_HANDLERS: Record<string, StatusHandler> = {
       return `${entity.name} recovers from the stunning blow and regains composure.`;
     },
   },
+  // A summoned creature's lease (`SummonEffect.duration`): when it runs out, the creature
+  // leaves the world, out of the map and the turn order, as a slain one does.
+  summoned: {
+    onExpire(entity, engine) {
+      engine.removeEntity(entity);
+      return `${entity.name} fades back into the aether.`;
+    },
+  },
   sensory_masked: {
     // Vision is crippled like blindness; ECHOLOCATION_HEARING_RADIUS (fov/echolocation.ts)
     // separately lets rendering detect audible actors/terrain beyond this radius.

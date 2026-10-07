@@ -631,11 +631,10 @@ export class SpellPipeline {
     engine.map.addEntity(summoned);
     engine.scheduler?.addEntity(summoned);
 
+    // A lease on the world: the built-in `summoned` status, which saves with the creature
+    // and sends it back when it runs out (statusHandlers.ts).
     if (effect.duration && effect.duration > 0) {
-      // Record the summon expiry turn in worldState using boolean flags.
-      // Key convention: summon_expires_{entityId}_{expiryTurn}
-      const expiryTurn = engine.turnCount + effect.duration;
-      engine.setWorldFlag(`summon_expires_${entityId}_${expiryTurn}`, true);
+      summoned.statusManager.applyStatus({ type: 'summoned', duration: effect.duration });
     }
 
     const allegiance = effect.friendly ? 'friendly' : 'hostile';

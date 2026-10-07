@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { MonsterRegistry, getMonsterDefinition } from '../bestiary/monsterDefinitions';
+import { MonsterRegistry, getMonsterDefinition, type MonsterDefinition } from '../bestiary/monsterDefinitions';
 import { Monster } from '../entities/monster';
 import { Companion } from '../entities/companion';
 import { AIRegistry } from '../ai/aiRegistry';
@@ -110,5 +110,37 @@ describe('createFromDefinition call sites handle unknown definitions explicitly'
 
     expect(fallback.monsters).toHaveLength(0);
     expect(fallback.map.getAllEntities().some(isFallbackCreature)).toBe(false);
+  });
+});
+
+describe('a summon with a duration is sent back when its lease runs out', () => {
+  const WISP = { id: 'test_wisp', name: 'Wisp', stats: { hp: 5, maxHp: 5, attack: 1, defense: 0 }, speed: 100, aiType: 'melee', xpValue: 1 } as MonsterDefinition;
+  beforeEach(() => MonsterRegistry.clear());
+  afterEach(() => MonsterRegistry.clear());
+
+  it('the creature carries a summoned status and leaves the map and the turn order when it expires', () => {
+    const map = new GameMap(10, 10, TILES.FLOOR);
+    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } });
+    const engine = new GameEngine({ map, player });
+    engine.registries.monsters.register(WISP);
+
+    SpellPipeline.executeSummonEffect(engine, player, { type: 'summon', monsterId: 'test_wisp', duration: 2, friendly: true });
+    const wisp = engine.map.getAllEntities().find((e) => e.name === 'Wisp') as Monster;
+    expect(wisp.statusManager.getStatus('summoned')?.duration).toBe(2);
+
+    wisp.takeTurn(engine);
+    expect(engine.map.getAllEntities()).toContain(wisp);
+    const last = wisp.takeTurn(engine);
+    expect(last.cost).toBe(0);
+    expect(engine.map.getAllEntities()).not.toContain(wisp);
+    expect(engine.messages.some((m) => m === 'Wisp fades back into the aether.')).toBe(true);
+  });
+
+  it('a summon without a duration stays', () => {
+    const engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player: new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } }) });
+    engine.registries.monsters.register(WISP);
+    SpellPipeline.executeSummonEffect(engine, engine.player, { type: 'summon', monsterId: 'test_wisp' });
+    const wisp = engine.map.getAllEntities().find((e) => e.name === 'Wisp') as Monster;
+    expect(wisp.statusManager.hasStatus('summoned')).toBe(false);
   });
 });

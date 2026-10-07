@@ -10,6 +10,9 @@ import {
 } from '../saveTransfer';
 import { CURRENT_SCHEMA_VERSION, type VersionedSaveEnvelope } from '../migrator';
 import type { SaveData } from '../types';
+import { ProfileManager, MemoryStorage } from '../profile-manager';
+import type { GameEngine } from '../../engine';
+import { cotwManifest } from '../../../content/cotw';
 
 function createMockSaveEnvelope(manifestId = 'cotw', heroName = 'Sven'): VersionedSaveEnvelope<SaveData> {
   return {
@@ -213,6 +216,38 @@ describe('Save Transfer & Export (.cotw & Base64)', () => {
       expect(result.valid).toBe(false);
       expect(result.errorCode).toBe('INCOMPATIBLE_MANIFEST');
       expect(result.manifestMismatch).toBe(true);
+    });
+  });
+
+  // A hero's profile id is hero_<creation time>_<random>; a save code is handed to others.
+  describe('a save code carries no profile id', () => {
+    const sharedHero = () => {
+      const home = new ProfileManager(new MemoryStorage(), cotwManifest);
+      const { profile, engine } = home.createCharacter('Sigrid');
+      return { profile, engine, envelope: home.exportHeroEnvelope(profile.id) };
+    };
+    const carriedNames = (engine: GameEngine) => engine.player.inventory.getAllCarriedItems().map((i) => i.name).sort();
+
+    it('names the hero, and every id made from its id, by a neutral id', () => {
+      const { profile, envelope } = sharedHero();
+      expect(JSON.stringify(envelope)).toContain(profile.id);
+
+      expect(base64ToUtf8(encodeSaveCode(envelope))).not.toContain(profile.id);
+      expect(envelope.data.profile.id).toBe(profile.id); // the envelope given is left alone
+    });
+
+    it('imports and loads as the same hero, carrying the same things', () => {
+      const { engine, envelope } = sharedHero();
+      const away = new ProfileManager(new MemoryStorage(), cotwManifest);
+
+      const imported = away.importHero(JSON.stringify(decodeSaveCode(encodeSaveCode(envelope))));
+      const outcome = away.loadCharacterResult(imported.id);
+
+      expect(outcome.ok).toBe(true);
+      if (!outcome.ok) return;
+      expect(outcome.value.engine.player.id).toBe(imported.id);
+      expect(outcome.value.engine.player.name).toBe('Sigrid');
+      expect(carriedNames(outcome.value.engine)).toEqual(carriedNames(engine));
     });
   });
 });

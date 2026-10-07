@@ -111,12 +111,41 @@ export function createSavePackage(envelope: VersionedSaveEnvelope<SaveData>): st
   return JSON.stringify(normalizedEnvelope, null, 2);
 }
 
+/** The id a save code gives its hero in place of the sharer's profile id. */
+const SHARED_HERO_ID = 'shared-hero';
+
+/**
+ * A copy of `value` in which every string (key or value) that is `id`, or an id made from it
+ * (`<id>-pack`, `<id>-dagger`), names `neutral` instead.
+ */
+function renameId(value: unknown, id: string, neutral: string): unknown {
+  if (typeof value === 'string') {
+    if (value === id) return neutral;
+    return value.startsWith(`${id}-`) ? `${neutral}${value.slice(id.length)}` : value;
+  }
+  if (Array.isArray(value)) return value.map((v) => renameId(v, id, neutral));
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [key, v] of Object.entries(value)) out[renameId(key, id, neutral) as string] = renameId(v, id, neutral);
+    return out;
+  }
+  return value;
+}
+
 /**
  * Transcodes a VersionedSaveEnvelope into an ASCII Base64 "Save Code" string.
+ *
+ * A code is handed to other people, and a hero's profile id (`hero_<creation time>_<random>`)
+ * says when its maker made the hero, so the code names the hero `shared-hero` instead,
+ * the same way everywhere the save names it (the hero and the ids made from its id), and
+ * still loads as one hero. Import is unchanged: an id the roster already has is replaced.
  */
 export function encodeSaveCode(envelope: VersionedSaveEnvelope<SaveData>): string {
-  const json = JSON.stringify(envelope);
-  return utf8ToBase64(json);
+  let shared: unknown = envelope;
+  for (const id of new Set([envelope?.data?.profile?.id, envelope?.data?.player?.id])) {
+    if (typeof id === 'string' && id && id !== SHARED_HERO_ID) shared = renameId(shared, id, SHARED_HERO_ID);
+  }
+  return utf8ToBase64(JSON.stringify(shared));
 }
 
 /**

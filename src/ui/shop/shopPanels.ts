@@ -331,6 +331,9 @@ function bankerPanel(engine: GameEngine): ServicePanel {
   };
 }
 
+/** The trainer's keys for teaching skills, in the pack's order: none of his other offers' (T R G K). */
+const TEACH_KEYS = ['W', 'Y', 'U', 'V'];
+
 function trainerPanel(engine: GameEngine): ServicePanel {
   const companion = engine.companion;
   const bonded = engine.getWorldFlag('companion_bonded');
@@ -350,7 +353,15 @@ function trainerPanel(engine: GameEngine): ServicePanel {
       { act: 'revive', key: 'R', label: 'Revive your companion', detail: 'Brings a fallen companion back.', priceCp: TrainerService.REVIVE_COST_CP },
       { act: 'bodyguard', key: 'G', label: 'Train as a bodyguard', detail: 'Stays right beside you.', priceCp: TrainerService.ARCHETYPE_SWITCH_COST_CP },
       { act: 'skirmisher', key: 'K', label: 'Train as a skirmisher', detail: 'Ranges ahead and goes after nearby enemies first.', priceCp: TrainerService.ARCHETYPE_SWITCH_COST_CP },
-      { act: 'teach', key: 'W', label: 'Teach Rally Howl', detail: 'On command, heals your companion and hastens you.', priceCp: TrainerService.TEACH_SKILL_COST_CP },
+      // The pack's skills (`TownServicesDefinition.trainerSkills`), each on a key of its own.
+      ...(engine.manifest.town?.services?.trainerSkills ?? []).slice(0, TEACH_KEYS.length).map((skill, i) => ({
+        act: 'teach' as const,
+        key: TEACH_KEYS[i],
+        arg: skill.id,
+        label: `Teach ${skill.name}`,
+        detail: skill.description,
+        priceCp: TrainerService.TEACH_SKILL_COST_CP,
+      })),
     ],
   };
 }

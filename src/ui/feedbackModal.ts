@@ -487,7 +487,7 @@ export class FeedbackModal implements UIModal {
     if (!this.telemetryPreview) return;
     const engine = this.options.getEngine();
     if (engine && engine.player) {
-      this.telemetryPreview.textContent = `Floor ${engine.currentFloor} | Turn ${engine.turnCount} | Level ${engine.player.level} (${engine.manifest?.id ?? 'cotw'})`;
+      this.telemetryPreview.textContent = `Floor ${engine.currentFloor} | Turn ${engine.turnCount} | Level ${engine.player.level} (${engine.manifest.id})`;
     } else {
       this.telemetryPreview.textContent = 'No active dungeon simulation loaded';
     }

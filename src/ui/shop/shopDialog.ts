@@ -492,11 +492,12 @@ export class ShopDialog {
       case 'skirmisher':
         this.report(bus.dispatch({ type: 'trainer_switch_archetype', payload: { archetype: act } }));
         return;
-      case 'teach':
-        this.report(
-          bus.dispatch({ type: 'trainer_teach_skill', payload: { skillId: 'rally_howl', skillName: 'Rally Howl' } })
-        );
+      case 'teach': {
+        // The pack's skill this offer names (`TownServicesDefinition.trainerSkills`).
+        const skill = engine.manifest.town?.services?.trainerSkills?.find((s) => s.id === arg);
+        if (skill) this.report(bus.dispatch({ type: 'trainer_teach_skill', payload: { skillId: skill.id, skillName: skill.name } }));
         return;
+      }
       case 'bestiary':
         if (this.onOpenCompendium) {
           this.close();

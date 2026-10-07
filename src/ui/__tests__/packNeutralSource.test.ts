@@ -100,6 +100,30 @@ describe('pack-neutral presentation source', () => {
     expect(leaks).toEqual([]);
   });
 
+  it("takes a pack's id from the manifest, never a literal (R-ui-18)", () => {
+    const ids = [cotwManifest.id, warcraftManifest.id];
+    const pattern = new RegExp(`['"\`](${ids.join('|')})['"\`]`);
+    // The browser database keeps its first name: renaming it would orphan every saved game.
+    const kept = /^const DB_NAME = 'cotw';$/;
+    const leaks = files.flatMap((file) =>
+      stripComments(readFileSync(file, 'utf-8'))
+        .split('\n')
+        .filter((line) => pattern.test(line) && !kept.test(line.trim()))
+        .map((line) => `${relative(ROOT, file)}: ${line.trim().slice(0, 120)}`)
+    );
+    expect(leaks).toEqual([]);
+  });
+
+  it("names no pack's trainer skill in src/ui or src/rendering: the trainer offers the manifest's (R-ui-18)", () => {
+    const skills = [cotwManifest, warcraftManifest].flatMap((m) => m.town.services?.trainerSkills ?? []);
+    expect(skills.map((s) => s.id)).toContain('rally_howl');
+    const pattern = new RegExp(skills.flatMap((s) => [s.id, s.name]).join('|'));
+    const leaks = [...sourceFiles('src/ui'), ...sourceFiles('src/rendering')]
+      .filter((file) => pattern.test(stripComments(readFileSync(file, 'utf-8'))))
+      .map((f) => relative(ROOT, f));
+    expect(leaks).toEqual([]);
+  });
+
   it('carries no runic glyphs outside pack data', () => {
     const leaks = files.filter((file) => RUNIC.test(readFileSync(file, 'utf-8'))).map((f) => relative(ROOT, f));
     expect(leaks).toEqual([]);

@@ -115,7 +115,7 @@ export class SaveQuitModal implements UIModal {
   private getCurrentEnvelope(): VersionedSaveEnvelope<SaveData> | null {
     if (!this.activeEngine || !this.activeProfile) return null;
     const saveData = serializeGame(this.activeEngine, this.activeProfile);
-    const manifestId = this.activeEngine.manifest?.id ?? this.activeProfile.manifestId ?? 'cotw';
+    const manifestId = this.activeEngine.manifest.id;
     return {
       schemaVersion: CURRENT_SCHEMA_VERSION,
       contentManifestId: manifestId,

@@ -1,4 +1,4 @@
-import { encodeSaveCode, decodeSaveCode } from '../engine';
+import { DEFAULT_HEADLESS_MANIFEST, encodeSaveCode, decodeSaveCode } from '../engine';
 import { copyTextToClipboard } from './platform';
 import type { VersionedSaveEnvelope } from '../engine';
 import type { SaveData, CharacterProfile } from '../engine';
@@ -159,8 +159,11 @@ export class SaveCodeModal {
         }
       };
 
-      const detected = envelope.contentManifestId || envelope.data.contentManifestId || 'cotw';
-      if (detected !== this.options.activeManifestId && !(this.options.activeManifestId === 'cotw' && detected === 'headless_default')) {
+      // A code from before saves named their pack is this game's own, and one the bare engine
+      // wrote (tests and tools) is no other game's: neither raises the other-game warning.
+      const active = this.options.activeManifestId;
+      const detected = envelope.contentManifestId || envelope.data.contentManifestId || active;
+      if (detected !== active && detected !== DEFAULT_HEADLESS_MANIFEST.id) {
         showManifestMismatchDialog({
           detectedManifestId: detected,
           activeGameName: this.options.profileManager.manifest?.name ?? this.options.activeManifestId,

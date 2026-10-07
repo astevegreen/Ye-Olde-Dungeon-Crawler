@@ -306,6 +306,19 @@ export interface TownServicesDefinition {
   smiths?: SmithDefinition[];
   /** The sage's monster lore for sale (`LoreService`); absent, the sage sells none. */
   monsterLore?: MonsterLoreDefinition;
+  /** The companion skills the trainer teaches (`trainer_teach_skill`), one offer each in his
+   *  dialog; absent, he teaches none. */
+  trainerSkills?: TrainerSkillDefinition[];
+}
+
+/** A companion skill a town trainer teaches: what the companion learns, and how it is offered. */
+export interface TrainerSkillDefinition {
+  /** The skill id the companion learns (`Companion.unlockedSkills`, `use_companion_skill`). */
+  id: string;
+  /** Its name in the offer ("Teach <name>") and the trainer's messages. */
+  name: string;
+  /** What it does, under the offer. */
+  description: string;
 }
 
 /**

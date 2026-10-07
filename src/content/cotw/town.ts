@@ -199,6 +199,8 @@ export const COTW_TOWN: TownLayoutDefinition = {
       study: { baseCp: 50, perFloorCp: 10 },
       rumor: { baseCp: 500, perFloorCp: 50 },
     },
+    // The one companion skill the engine wires (`use_companion_skill`): Ranvild teaches it.
+    trainerSkills: [{ id: 'rally_howl', name: 'Rally Howl', description: 'On command, heals your companion and hastens you.' }],
     // Q10 "A" + Q47 "A": Gunther raises +N a step at a time to +3 (250, 750, 2,000 CP); Ivalda's
     // +5 is on his Forge list once she works beside him (Q29, Q48 "A").
     smiths: [

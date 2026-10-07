@@ -132,6 +132,29 @@ describe('ShopDialog', () => {
     expect(commandTypes()).toEqual(['temple_heal']);
   });
 
+  it("teaches the companion skills the pack lists, and offers none it doesn't (R-ui-18)", () => {
+    expect(servicePanelFor(engine, npc('trainer'))!.offers.some((o) => o.act === 'teach')).toBe(false);
+    const base = testEngine().manifest;
+    const taught = new GameEngine({
+      map: new GameMap(20, 20),
+      player: new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } }),
+      floor: 0,
+      manifest: {
+        ...base,
+        town: { ...base.town, services: { trainerSkills: [{ id: 'test_song', name: 'Test Song', description: 'Sings the pack on.' }] } },
+      } as GameContentManifest,
+    });
+    const sent = vi.spyOn(taught.commandBus, 'dispatch').mockReturnValue({ success: true, message: 'Done.' });
+    const shop = new ShopDialog();
+    shop.open(npc('trainer'), null, taught);
+    expect(html()).toContain('Teach Test Song');
+    expect(html()).toContain('Sings the pack on.');
+    shop.handleKeyDown(key('w'), taught);
+    expect(sent.mock.calls.map((c) => c[0])).toEqual([
+      { type: 'trainer_teach_skill', payload: { skillId: 'test_song', skillName: 'Test Song' } },
+    ]);
+  });
+
   it('passes the archetype each trainer key asks for', () => {
     const shop = new ShopDialog();
     shop.open(npc('trainer'), null, engine);

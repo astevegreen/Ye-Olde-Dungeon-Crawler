@@ -792,6 +792,23 @@ function assertSavedMapSize(mapData: SerializedMap): void {
   }
 }
 
+/**
+ * The most stored floors a save may hold. A run visits floors 0 to 50 at most, plus any
+ * specials; each stored floor is a whole map to build, so a save holding more is damaged
+ * (or crafted) and is refused before any is built (R-stor-17).
+ */
+const MAX_SAVED_STORED_FLOORS = 256;
+
+function assertStoredFloorCount(storedMaps: SaveData['storedMaps']): void {
+  if (!storedMaps || typeof storedMaps !== 'object') return;
+  let count = 0;
+  for (const key in storedMaps) {
+    if (Object.prototype.hasOwnProperty.call(storedMaps, key) && ++count > MAX_SAVED_STORED_FLOORS) {
+      throw new Error(`Save file is structurally invalid: it holds more than ${MAX_SAVED_STORED_FLOORS} stored floors.`);
+    }
+  }
+}
+
 export function deserializeMapObject(
   mapData: SerializedMap,
   customTiles?: TileDefinition[],
@@ -1004,6 +1021,7 @@ function hydrateGame(
   if (!saveData.player || !saveData.player.inventory) {
     throw new Error('Save file is structurally invalid: missing player or inventory definition.');
   }
+  assertStoredFloorCount(saveData.storedMaps);
 
   const definitions = itemDefinitionLookup(manifest);
 

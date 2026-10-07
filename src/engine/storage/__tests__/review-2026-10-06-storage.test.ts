@@ -320,6 +320,36 @@ describe('R-stor-17 · a foreign save is trusted for sizes', () => {
   });
 });
 
+describe('R-stor-17 · a foreign save is trusted for how many stored floors it holds', () => {
+  const saveWithStoredFloors = (count: number) => {
+    const engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player: new Player({ id: 'h17f', name: 'H', position: { x: 5, y: 5 } }) });
+    const save = JSON.parse(JSON.stringify(serializeGame(engine)));
+    save.storedMaps = {};
+    // Floors other than the current one (1), as a save stores them.
+    for (let i = 0; i < count; i++) save.storedMaps[2 + i] = save.map;
+    return save;
+  };
+
+  it('a save holding 2000 stored floors is refused before any is built', () => {
+    expect(() => deserializeGame(saveWithStoredFloors(2000))).toThrow(/structurally invalid/);
+  });
+
+  it('the typed load reports it as a damaged save', () => {
+    const storage = new MemoryStorage();
+    const autosaves = new AutosaveManager(storage);
+    const data = saveWithStoredFloors(257);
+    storage.setItem(autosaves.autosaveKey, JSON.stringify({ schemaVersion: CURRENT_SCHEMA_VERSION, contentManifestId: 'x', timestamp: 1, profile: data.profile, data }));
+
+    const outcome = autosaves.loadAutosaveResult();
+
+    expect(outcome.ok ? undefined : outcome.reason).toBe('corrupt');
+  });
+
+  it('a save holding 256 stored floors still loads', () => {
+    expect(deserializeGame(saveWithStoredFloors(256)).engine.storedFloors.size).toBe(257);
+  });
+});
+
 describe('T4 (R-stor-15) · a saved trap forgets the definition it was placed from', () => {
   it('a trap from a second definition of its type comes back as that definition', () => {
     const map = new GameMap(10, 10, TILES.FLOOR);

@@ -5,7 +5,7 @@ import * as path from 'node:path';
  * UI palette ratchet (ARCHITECTURE.md §7.2, ADR-0011).
  *
  * Presentation code names role tokens (`var(--ui-accent)`, `theme.textMuted`), never hues.
- * About 1,600 color literals predate that rule, so this is a ratchet rather than a ban: the
+ * A few color literals still predate that rule, so this is a ratchet rather than a ban: the
  * baseline (scripts/ui-palette-baseline.json) records each file's count, and
  *  - a file whose count rises above its baseline fails (a new file starts at zero);
  *  - a file whose count falls below its baseline also fails, until the baseline is lowered

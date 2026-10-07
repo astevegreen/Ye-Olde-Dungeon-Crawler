@@ -6,8 +6,9 @@ import { COTW_CHOICES } from './choices';
  * tiers 20, 25 and 30, cap 16"): each attribute offers a perk choice at 20, 25 and 30. A
  * starting roll is capped at 16 (`MAX_ATTRIBUTE`) and a level gives one point, so the first
  * tier is a hero's own choice, never a lucky roll's. A tier's choice is `milestone_<attr>_<tier>`
- * in `choices.ts`; a tier whose choice is not written yet (25 and 30 await the owner's perk
- * lists, tracker 3.4 and 3.6) is left out, so adding the choice is all it takes to open it.
+ * in `COTW_CHOICES` (written in `perks.ts`'s `COTW_MILESTONE_CHOICES`; tiers 25 and 30 are
+ * tracker 3.4 and 3.6). All three tiers of all four attributes have one; a tier without a
+ * choice would be left out, so adding the choice is all it takes to open it.
  */
 export const COTW_MILESTONE_TIERS = [20, 25, 30] as const;
 

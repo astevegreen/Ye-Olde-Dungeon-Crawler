@@ -3,8 +3,11 @@ import { makeLootChest, itemDrop } from '../items/makeItem';
 import { coinDrop } from '../coinage';
 
 /**
- * Legacy monster templates preserved for backward compatibility with existing unit tests
- * (e.g. spawner.test.ts, scaling.test.ts, hybridMonsterScaling.test.ts, oath.test.ts).
+ * The pack's first monster set, from before the 37-monster zone roster (`COTW_ROSTER_37`): the
+ * classic Castle of the Winds foes carried into the sequel (giant rats, kobolds, wolves, ogres)
+ * beside its first Norse ones (draugr, troll-wife warlocks, root-wraiths). It is live content:
+ * these monsters lead `COTW_MONSTERS`, the pack's spawn catalog, and every wandering band in the
+ * quest's `floorEncounters` (`quest.ts`) is drawn from them. The name is historical.
  */
 export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
   giant_rat: {

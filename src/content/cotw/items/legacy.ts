@@ -1,5 +1,13 @@
 import type { ItemDefinition } from '../../../engine';
 
+/**
+ * The pack's first item set, from before the catalog (`COTW_CATALOG`): the classic Castle of
+ * the Winds weapons, armour, potions, scrolls, wands and containers carried into the sequel,
+ * tier by tier, then the Hearth-Tear quest relic and a few utility and town-stock items. It
+ * is live content: `COTW_ITEMS` adds each one the catalog doesn't redefine, so all but those
+ * at `lootWeight: 0` drop as random loot, and the town and the story hand some out too. The
+ * name is historical.
+ */
 export const COTW_LEGACY_ITEMS: ItemDefinition[] = [
   // ==========================================
   // TIER 1 (Floors 1+)

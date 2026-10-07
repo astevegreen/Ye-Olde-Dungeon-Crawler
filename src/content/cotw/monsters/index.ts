@@ -47,8 +47,8 @@ export const COTW_ROSTER_BESTIARY: Record<string, MonsterDefinition> = Object.fr
 );
 
 /**
- * Complete COTW Bestiary containing all 37 roster monsters plus legacy entries
- * and aliases to ensure 100% backward compatibility with existing unit/integration tests.
+ * Complete COTW Bestiary, by id: the classic monsters of `legacy.ts`, the 37 roster monsters,
+ * the minibosses and the prologue's.
  */
 export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
   ...LEGACY_COTW_MONSTERS,
@@ -66,9 +66,10 @@ if (COTW_BESTIARY.huldra_hollow_back && !COTW_BESTIARY.huldra) {
 }
 
 /**
- * Array of monster definitions for registration and dungeon generation.
- * Starts with legacy monsters to preserve deterministic ordering in spawner tests,
- * followed by any new roster monsters not already included.
+ * Array of monster definitions for registration and dungeon generation: the classic monsters
+ * of `legacy.ts` first, then the roster, minibosses and prologue monsters not already
+ * included. The order is part of what a seed spawns (a depth-weighted pick walks the array),
+ * so reordering it changes every seeded floor and the spawner tests that pin them.
  */
 const seenIds = new Set<string>();
 const allMonsters: MonsterDefinition[] = [];

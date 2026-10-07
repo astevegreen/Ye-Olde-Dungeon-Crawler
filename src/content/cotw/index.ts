@@ -121,8 +121,9 @@ export const cotwManifest: GameContentManifest = {
   ],
   // Unlock depths set by the owner (2026-10-07): pits from 1, darts from 3, alarms from 5,
   // teleport runes from 8.
-  // Traps per generated floor, by band (PLAN-trap-generator.md's first guess, 2026-10-06;
-  // the owner has not yet set the density). The town, the prologue and the boss lair get none.
+  // Traps per generated floor, by band: the table the trap generator shipped with (55b7ccc),
+  // which the owner chose to keep on 2026-10-07. The town, the prologue and the boss lair get
+  // none.
   trapPlacement: {
     perFloor: [
       { minFloor: 1, min: 0, max: 1 },

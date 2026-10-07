@@ -56,7 +56,8 @@ export const COTW_CATALOG_RECORD: Record<string, ItemDefinition> = Object.fromEn
 );
 
 /**
- * Combined item pool including the catalog items and legacy items for backward compatibility.
+ * The pack's item pool (`manifest.items`, which random loot draws from): the catalog, the
+ * classic items of `legacy.ts` the catalog doesn't redefine, and the Essence-Runes.
  */
 export const COTW_ITEMS: ItemDefinition[] = [
   ...COTW_CATALOG,

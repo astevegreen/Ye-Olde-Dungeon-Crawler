@@ -351,26 +351,6 @@ export function hasMasteryPerk(engine: GameEngine, definitionId: string, perkId:
   return engine.compendium.hasPerk(definitionId, perkId, getMonsterCategory(engine, definitionId)?.id);
 }
 
-/** A mastery the player has earned but not yet chosen a perk for. */
-export interface PendingMasteryChoice {
-  scope: MasteryScope;
-  masteryId: string;
-  name: string;
-}
-
-/** Every earned family mastery still waiting on a perk choice. */
-export function getPendingMasteryChoices(engine: GameEngine): PendingMasteryChoice[] {
-  const compendium = engine.compendium;
-  if (!compendium) return [];
-  const pending: PendingMasteryChoice[] = [];
-  for (const category of engine.manifest?.monsterCategories ?? []) {
-    if (compendium.hasCategoryMastery(category) && !compendium.getCategoryPerk(category.id)) {
-      pending.push({ scope: 'category', masteryId: category.id, name: category.name });
-    }
-  }
-  return pending;
-}
-
 /**
  * Records a kill toward the creature's knowledge rank and its family's mastery: a species
  * kill count only fills the bestiary page (Q7 "A"); the family's mastery logs and emits

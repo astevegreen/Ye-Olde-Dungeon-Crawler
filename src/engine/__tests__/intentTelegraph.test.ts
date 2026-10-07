@@ -3,7 +3,7 @@ import { GameEngine } from '../engine';
 import { GameMap } from '../grid/map';
 import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
-import { computeDangerTiles, interruptWindUp } from '../ai/intent';
+import { computeDangerTiles } from '../ai/intent';
 import { WindUpDeclareAction, WindUpExecuteAction } from '../actions/combat';
 import { MovementAction } from '../actions/movement';
 import { TILES } from '../grid/tile';
@@ -124,12 +124,11 @@ describe('Enemy Intent Telegraphing & Wind-Up System', () => {
 
     expect(boss.intent.type).toBe('windup');
 
-    // Boss gets stunned
+    // Boss gets stunned, and loses its next turn to it
     boss.statusManager.applyStatus({ type: 'stunned', duration: 1 });
-    const interrupted = interruptWindUp(boss, engine, 'Stunned');
+    const turn = boss.takeTurn(engine);
 
-    expect(interrupted).toBe(true);
+    expect(turn.message).toContain('stunned and cannot act');
     expect(boss.intent.type).toBe('idle');
-    expect(engine.messages.some((m) => m.includes('INTERRUPTED (Stunned)'))).toBe(true);
   });
 });

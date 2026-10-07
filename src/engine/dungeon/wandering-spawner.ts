@@ -2,39 +2,9 @@ import type { GameEngine } from '../engine';
 import { Monster } from '../entities/monster';
 import type { MonsterDefinition } from '../bestiary/monsterDefinitions';
 import { getMonsterDefinition } from '../bestiary/monsterDefinitions';
-import type { Position } from '../types';
 import type { FloorEncounterConfig } from '../types/manifest';
 import { selectDungeonMonsterDefinition, createScaledMonster, isEligibleDungeonMonster } from './spawner';
 import { SpawnSiteFilter } from './spawnSites';
-
-/**
- * Creates a runtime Monster instance from an immutable MonsterDefinition,
- * honoring the Definition vs. Instance separation.
- */
-export function createMonsterFromDefinition(
-  def: MonsterDefinition,
-  id: string,
-  position: Position
-): Monster {
-  return new Monster({
-    id,
-    name: def.name,
-    position,
-    stats: { ...def.stats },
-    speed: def.speed,
-    resistances: def.resistances,
-    statusImmunities: def.statusImmunities,
-    definitionId: def.id,
-    aiType: def.aiType,
-    aiState: 'sleeping',
-    spells: def.spells,
-    onHitAffliction: def.onHitAffliction,
-    fleeHealthPercent: def.fleeHealthPercent,
-    xpValue: def.xpValue,
-    lootTable: def.lootTable,
-    hooks: def.hooks,
-  });
-}
 
 /**
  * The wandering-monster band a floor falls in: the entry keyed by the deepest listed floor

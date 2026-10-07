@@ -1,7 +1,5 @@
 import type { Position } from '../types';
 import type { GameMap } from '../grid/map';
-import type { Monster } from '../entities/monster';
-import type { GameEngine } from '../engine';
 import type { ElementType } from '../magic/elements';
 import type { StatusType } from '../status/types';
 import type { SurfaceType } from '../surfaces/surfaceGrid';
@@ -133,18 +131,4 @@ export function computeDangerTiles(
   }
 
   return tiles;
-}
-
-/**
- * Cancels an active enemy wind-up attack (e.g. from stun, paralysis, or positional shove).
- */
-export function interruptWindUp(monster: Monster, engine: GameEngine, reason?: string): boolean {
-  if (monster.intent?.type === 'windup') {
-    const ability = monster.intent.abilityName ?? 'Heavy Attack';
-    monster.intent = { type: 'idle', turnsRemaining: 0 };
-    const reasonText = reason ? ` (${reason})` : '';
-    engine.log(`*** ${monster.name}'s ${ability} is INTERRUPTED${reasonText}! ***`);
-    return true;
-  }
-  return false;
 }

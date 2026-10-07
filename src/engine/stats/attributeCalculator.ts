@@ -2,26 +2,6 @@ import type { Entity } from '../entities/entity';
 import type { TileType } from '../types';
 import type { ElementType } from '../magic/elements';
 
-export interface BaseAttributeProvider {
-  /**
-   * Return a base value for the given key, or undefined to defer to the built-in switch.
-   * Called during Phase 1 of attribute calculation.
-   */
-  getBase(actor: Entity, key: string, context?: AttributeContext): number | undefined;
-}
-
-const baseAttributeProviders: BaseAttributeProvider[] = [];
-
-/** Register a custom base attribute provider. */
-export function registerBaseAttributeProvider(provider: BaseAttributeProvider): void {
-  baseAttributeProviders.push(provider);
-}
-
-/** Unregister all custom providers (useful in tests). */
-export function clearBaseAttributeProviders(): void {
-  baseAttributeProviders.length = 0;
-}
-
 const DEFAULT_FALLBACK_ATTRIBUTE = 10;
 const DEFAULT_SPEED = 100;
 const DEFAULT_BASE_ACTION_COST = 100;
@@ -104,48 +84,38 @@ export function calculateAttribute(
   // ─────────────────────────────────────────────────────────────
   // PHASE 1: Base Value
   // ─────────────────────────────────────────────────────────────
-  let baseValue: number | undefined;
-  for (const provider of baseAttributeProviders) {
-    baseValue = provider.getBase(actor, attributeKey, context);
-    if (baseValue !== undefined) break;
-  }
-
   let value: number = 0;
-  if (baseValue !== undefined) {
-    value = baseValue;
-  } else {
-    switch (attributeKey) {
-      case 'maxHp':
-        value = actor.baseMaxHpValue;
-        break;
-      case 'attack':
-        value = actor.baseAttackValue;
-        break;
-      case 'defense':
-        value = actor.baseDefenseValue;
-        break;
-      case 'speed':
-        value = actor.speed ?? DEFAULT_SPEED;
-        break;
-      case 'strength':
-        value = actor.strength ?? DEFAULT_FALLBACK_ATTRIBUTE;
-        break;
-      case 'intelligence':
-        value = actor.intelligence ?? DEFAULT_FALLBACK_ATTRIBUTE;
-        break;
-      case 'constitution':
-        value = actor.constitution ?? DEFAULT_FALLBACK_ATTRIBUTE;
-        break;
-      case 'dexterity':
-        value = actor.dexterity ?? DEFAULT_FALLBACK_ATTRIBUTE;
-        break;
-      case 'actionCost':
-        value = context?.baseCost ?? DEFAULT_BASE_ACTION_COST;
-        break;
-      case 'elementalResistance':
-        value = 0;
-        break;
-    }
+  switch (attributeKey) {
+    case 'maxHp':
+      value = actor.baseMaxHpValue;
+      break;
+    case 'attack':
+      value = actor.baseAttackValue;
+      break;
+    case 'defense':
+      value = actor.baseDefenseValue;
+      break;
+    case 'speed':
+      value = actor.speed ?? DEFAULT_SPEED;
+      break;
+    case 'strength':
+      value = actor.strength ?? DEFAULT_FALLBACK_ATTRIBUTE;
+      break;
+    case 'intelligence':
+      value = actor.intelligence ?? DEFAULT_FALLBACK_ATTRIBUTE;
+      break;
+    case 'constitution':
+      value = actor.constitution ?? DEFAULT_FALLBACK_ATTRIBUTE;
+      break;
+    case 'dexterity':
+      value = actor.dexterity ?? DEFAULT_FALLBACK_ATTRIBUTE;
+      break;
+    case 'actionCost':
+      value = context?.baseCost ?? DEFAULT_BASE_ACTION_COST;
+      break;
+    case 'elementalResistance':
+      value = 0;
+      break;
   }
 
   // ─────────────────────────────────────────────────────────────

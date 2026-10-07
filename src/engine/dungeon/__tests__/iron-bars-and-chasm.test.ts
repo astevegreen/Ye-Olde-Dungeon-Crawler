@@ -6,7 +6,7 @@ import { Monster } from '../../entities/monster';
 import { GameEngine } from '../../engine';
 import { MovementAction } from '../../actions/movement';
 import { traceProjectile } from '../../magic/targeting';
-import { applyKnockback } from '../../combat/knockback';
+import { applyImpulse } from '../../combat/impulse';
 import { FovManager } from '../../fov/fov-manager';
 
 describe('IronBars, Chasm, Pillars, and Knockback Physics', () => {
@@ -85,7 +85,7 @@ describe('IronBars, Chasm, Pillars, and Knockback Physics', () => {
     map.removeEntity(player);
     map.addEntity(monster);
 
-    const knockback = applyKnockback(engine, player, monster, 0, 1, 1);
+    const knockback = applyImpulse(engine, player, monster, 0, 1, 1);
     expect(knockback.pushed).toBe(true);
     expect(knockback.fellInChasm).toBe(true);
     expect(monster.isAlive()).toBe(false);

@@ -12,7 +12,8 @@ import { DisarmTrapAction } from '../actions/disarm';
 import { OpenDoorAction } from '../actions/door';
 import { WaitAction } from '../actions/wait';
 import { AutoRestManager } from '../actions/autoRest';
-import { DetectMonstersAction, DetectObjectsAction, ClairvoyanceAction } from '../magic/esp';
+import { SpellPipeline } from '../magic/spellPipeline';
+import { getSpell } from '../magic/spellRegistry';
 import { findAStarPath } from '../pathfinding/astar';
 import { TrapInstance } from '../dungeon/traps';
 import { Visibility } from '../fov/types';
@@ -268,28 +269,25 @@ describe('Dungeon Exploration & Tactical Crawler Subsystems', () => {
       expect(engine.detectMonstersTurns).toBe(0);
       expect(engine.detectObjectsTurns).toBe(0);
 
-      // Cast detect monsters (duration 30)
-      const detectMonsters = new DetectMonstersAction(player, 30);
-      detectMonsters.perform(engine);
+      // Cast detect monsters (the pack's spell lasts 30 turns)
+      SpellPipeline.executeSpell(engine, getSpell('detect_monsters')!, player, player.position);
       expect(engine.detectMonstersTurns).toBe(30);
 
-      // Cast detect objects (duration 25)
-      const detectObjects = new DetectObjectsAction(player, 25);
-      detectObjects.perform(engine);
-      expect(engine.detectObjectsTurns).toBe(25);
+      // Cast detect objects (30 turns)
+      SpellPipeline.executeSpell(engine, getSpell('detect_objects')!, player, player.position);
+      expect(engine.detectObjectsTurns).toBe(30);
 
       // Perform a turn action (wait)
       player.energy = 100;
       engine.handlePlayerAction(new WaitAction(player));
       expect(engine.detectMonstersTurns).toBe(29);
-      expect(engine.detectObjectsTurns).toBe(24);
+      expect(engine.detectObjectsTurns).toBe(29);
     });
 
     it('reveals entire floor map topology as Explored via Clairvoyance without exposing unseen entities', () => {
       expect(engine.fov.isExplored(25, 25)).toBe(false);
 
-      const clairvoyance = new ClairvoyanceAction(player);
-      const res = clairvoyance.perform(engine);
+      const res = SpellPipeline.executeSpell(engine, getSpell('clairvoyance')!, player, player.position);
       expect(res.success).toBe(true);
 
       // Entire map is now marked Explored

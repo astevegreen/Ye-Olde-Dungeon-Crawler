@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CompendiumManager, selectMasteryPerk, getPendingMasteryChoices, hasMasteryPerk } from '../compendiumManager';
+import { CompendiumManager, selectMasteryPerk, hasMasteryPerk } from '../compendiumManager';
 import { SPECIES_MASTERY_KILLS } from '../types';
 import type { GameContentManifest } from '../../types/manifest';
 import type { GameEvent } from '../../events';
@@ -391,7 +391,7 @@ describe('Category mastery', () => {
     expect(unlocks(events)).toHaveLength(0);
     expect(engine.compendium.hasMastery('skeleton')).toBe(true);
     expect(engine.messages.some((m) => m.includes('studied it: its page is complete'))).toBe(true);
-    expect(getPendingMasteryChoices(engine)).toEqual([]);
+    expect(engine.compendium.hasCategoryMastery(CATEGORY_MANIFEST.monsterCategories![0])).toBe(false);
   });
 
   it('counts kills across every member and emits a category mastery_unlocked at the threshold', () => {
@@ -500,14 +500,15 @@ describe('Category mastery', () => {
     expect(engine.compendium.getCategoryPerk('undead')).toBe('survivor');
   });
 
-  it('lists earned-but-unchosen masteries as pending', () => {
+  it('an earned family mastery waits on a perk until one is chosen', () => {
     const { engine, player } = makeEngine(0);
     kill(engine, player, 'skeleton', 25);
     kill(engine, player, 'draugr', 15);
-    expect(getPendingMasteryChoices(engine).map((p) => `${p.scope}:${p.masteryId}`)).toEqual(['category:undead']);
+    expect(engine.compendium.hasCategoryMastery(CATEGORY_MANIFEST.monsterCategories![0])).toBe(true);
+    expect(engine.compendium.getCategoryPerk('undead')).toBeUndefined();
     expect(selectMasteryPerk(engine, 'species', 'skeleton', 'plunderer').success).toBe(false);
     selectMasteryPerk(engine, 'category', 'undead', 'survivor');
-    expect(getPendingMasteryChoices(engine)).toEqual([]);
+    expect(engine.compendium.getCategoryPerk('undead')).toBe('survivor');
   });
 
   it('persists category perks through a save/load round trip', () => {

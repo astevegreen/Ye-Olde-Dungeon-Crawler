@@ -135,4 +135,30 @@ describe('check-engine-purity sees every form of a barred import', () => {
       `[UNSEEDED_RANDOMNESS] ${engine}:8`,
     ]);
   }, 120_000);
+
+  it('fails on globalThis, self, location, new Image and OffscreenCanvas, not on a local named location', () => {
+    const engine = plant('src/engine/__scratch_purity_dom__.ts', [
+      'export function scratchDom(): unknown[] {',
+      "  const doc = globalThis['document'];",
+      '  const origin = location.origin;',
+      '  const width = self.innerWidth;',
+      '  const img = new Image();',
+      '  const off = new OffscreenCanvas(1, 1);',
+      '  const spot = { location: { x: 1 } }; const here = spot.location.x;',
+      '  return [doc, origin, width, img, off, here];',
+      '}',
+      '',
+    ]);
+
+    const { status, output } = runGate(engine);
+
+    expect(status).not.toBe(0);
+    expect(reported(output, engine)).toEqual([
+      `[DOM_GLOBAL] ${engine}:2`,
+      `[DOM_GLOBAL] ${engine}:3`,
+      `[DOM_GLOBAL] ${engine}:4`,
+      `[DOM_GLOBAL] ${engine}:5`,
+      `[DOM_GLOBAL] ${engine}:6`,
+    ]);
+  }, 120_000);
 });

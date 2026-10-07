@@ -89,6 +89,17 @@ const DOM_GLOBALS = [
   'CanvasRenderingContext2D',
   'HTMLCanvasElement',
   'ImageData',
+  'globalThis',
+  'OffscreenCanvas',
+];
+
+// Browser globals whose bare name is also an ordinary identifier, so they are matched in the
+// forms only the browser object takes (R-tool-6): `self.`/`self[`, `location.href` and the other
+// Location members (a local `location.x` passes), and `new Image`.
+const DOM_GLOBAL_FORMS: [string, RegExp][] = [
+  ['self', /(?<![\w$.])self\s*[.[]/],
+  ['location', /(?<![\w$.])location\s*\.\s*(?:href|reload|assign|replace|search|hash|pathname|origin|host|hostname|protocol|port)\b/],
+  ['new Image', /\bnew\s+Image\b/],
 ];
 
 // Timing and audio globals: simulation code must be deterministic and headless (ARCHITECTURE.md §2),
@@ -206,6 +217,16 @@ for (const filePath of [...engineFiles, ...contentFiles]) {
             line: lineNum,
             category: 'DOM_GLOBAL',
             detail: `Found '${globalToken}' in line: ${line.trim()}`,
+          });
+        }
+      }
+      for (const [globalName, form] of DOM_GLOBAL_FORMS) {
+        if (form.test(line)) {
+          violations.push({
+            file: relativePath,
+            line: lineNum,
+            category: 'DOM_GLOBAL',
+            detail: `Found '${globalName}' in line: ${line.trim()}`,
           });
         }
       }

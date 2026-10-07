@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import ts from 'typescript';
+import { readOverlays } from './lib/gate-overlays';
 
 /**
  * Engine encapsulation check (companion to check-engine-purity.ts).
@@ -106,7 +107,35 @@ if (!configPath) {
 }
 const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
 const parsed = ts.parseJsonConfigFileContent(configFile.config, ts.sys, ROOT);
-const program = ts.createProgram({ rootNames: parsed.fileNames, options: parsed.options });
+
+// `--overlay <tree-path>=<file>`: a regression test's planted file, compiled as though it sat
+// at <tree-path> (scripts/lib/gate-overlays.ts), so its relative imports resolve into the real
+// engine and scopeOf() classifies it like any file there. With none, the program is unchanged.
+const overlays = readOverlays(ROOT);
+
+function overlayHost(options: ts.CompilerOptions): ts.CompilerHost {
+  const host = ts.createCompilerHost(options);
+  const { fileExists, readFile, getSourceFile } = host;
+  const planted = (fileName: string) => overlays.get(path.resolve(fileName));
+  host.fileExists = (fileName) => planted(fileName) !== undefined || fileExists.call(host, fileName);
+  host.readFile = (fileName) => {
+    const file = planted(fileName);
+    return file ? fs.readFileSync(file, 'utf-8') : readFile.call(host, fileName);
+  };
+  host.getSourceFile = (fileName, languageVersionOrOptions, onError, shouldCreateNewSourceFile) => {
+    const file = planted(fileName);
+    return file
+      ? ts.createSourceFile(fileName, fs.readFileSync(file, 'utf-8'), languageVersionOrOptions)
+      : getSourceFile.call(host, fileName, languageVersionOrOptions, onError, shouldCreateNewSourceFile);
+  };
+  return host;
+}
+
+const program = ts.createProgram({
+  rootNames: [...parsed.fileNames, ...[...overlays.keys()].map((p) => p.split(path.sep).join('/'))],
+  options: parsed.options,
+  host: overlays.size > 0 ? overlayHost(parsed.options) : undefined,
+});
 const checker = program.getTypeChecker();
 
 function unwrap(expr: ts.Expression): ts.Expression {

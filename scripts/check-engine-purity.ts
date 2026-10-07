@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readOverlays } from './lib/gate-overlays';
 
 const ENGINE_DIR = path.resolve(process.cwd(), 'src/engine');
 const UI_DIR = path.resolve(process.cwd(), 'src/ui');
@@ -34,11 +35,26 @@ function walkDirectory(dir: string, fileList: string[] = []): string[] {
   return fileList;
 }
 
-const engineFiles = walkDirectory(ENGINE_DIR);
-const uiFiles = walkDirectory(UI_DIR);
-const renderingFiles = walkDirectory(RENDERING_DIR);
-const contentFiles = walkDirectory(CONTENT_DIR);
-const mainDirFiles = walkDirectory(MAIN_DIR);
+// `--overlay <tree-path>=<file>`: a regression test's planted file, scanned as though it sat
+// at <tree-path> (scripts/lib/gate-overlays.ts). Each one joins the walk of the directory
+// it names, so whether it is checked, and how, is decided by the same roots as real files.
+const overlays = readOverlays(process.cwd());
+
+function sourcesUnder(dir: string): string[] {
+  const files = walkDirectory(dir);
+  for (const planted of overlays.keys()) {
+    if (planted.startsWith(dir + path.sep) && planted.endsWith('.ts') && !files.includes(planted)) files.push(planted);
+  }
+  return files;
+}
+
+const readSource = (filePath: string): string => fs.readFileSync(overlays.get(filePath) ?? filePath, 'utf-8');
+
+const engineFiles = sourcesUnder(ENGINE_DIR);
+const uiFiles = sourcesUnder(UI_DIR);
+const renderingFiles = sourcesUnder(RENDERING_DIR);
+const contentFiles = sourcesUnder(CONTENT_DIR);
+const mainDirFiles = sourcesUnder(MAIN_DIR);
 
 // Matches any reverse imports from ui or rendering inside engine
 const ENGINE_REVERSE_IMPORT_REGEX = /from\s+['"][^'"]*(?:ui|rendering)[/'"]/i;
@@ -106,7 +122,7 @@ for (const filePath of [...engineFiles, ...contentFiles]) {
   const isEngine = relativePath.startsWith('src/engine/');
   const isContent = relativePath.startsWith('src/content/');
   const isTestOrFixture = relativePath.includes('__tests__') || relativePath.includes('__fixtures__');
-  const content = fs.readFileSync(filePath, 'utf-8');
+  const content = readSource(filePath);
   const lines = content.split('\n');
 
   for (let i = 0; i < lines.length; i++) {
@@ -220,7 +236,7 @@ for (const filePath of [...engineFiles, ...contentFiles]) {
 //    internals, and no content-pack imports — src/main.ts alone keeps that privilege, see §3).
 for (const filePath of [...uiFiles, ...renderingFiles, ...mainDirFiles]) {
   const relativePath = path.relative(process.cwd(), filePath).replace(/\\/g, '/');
-  const content = fs.readFileSync(filePath, 'utf-8');
+  const content = readSource(filePath);
   const lines = content.split('\n');
 
   const isTestOrFixture = relativePath.includes('__tests__') || relativePath.includes('__fixtures__');
@@ -252,8 +268,8 @@ for (const filePath of [...uiFiles, ...renderingFiles, ...mainDirFiles]) {
 // 3. Composition root: src/main.ts is the one module that may import content packs,
 // but its engine imports must still resolve through the barrel (ARCHITECTURE.md §2, §3).
 const mainPath = path.resolve(process.cwd(), 'src/main.ts');
-if (fs.existsSync(mainPath)) {
-  const mainLines = fs.readFileSync(mainPath, 'utf-8').split(/\r?\n/);
+if (fs.existsSync(mainPath) || overlays.has(mainPath)) {
+  const mainLines = readSource(mainPath).split(/\r?\n/);
   for (let i = 0; i < mainLines.length; i++) {
     if (DEEP_ENGINE_IMPORT_REGEX.test(mainLines[i])) {
       violations.push({

@@ -30,9 +30,7 @@ const DOCS = [
   ...filesUnder('.agents', '.md'),
   ...filesUnder('.claude/commands', '.md'),
 ];
-const SOURCES = [...filesUnder('src', '.ts'), ...filesUnder('scripts', '.ts')].filter(
-  (f) => !f.endsWith('docReferences.test.ts') && !f.includes('__scratch_')
-);
+const SOURCES = [...filesUnder('src', '.ts'), ...filesUnder('scripts', '.ts')].filter((f) => !f.endsWith('docReferences.test.ts'));
 
 const sections = new Set([
   ...[...ARCH.matchAll(/^## (\d+)\./gm)].map((m) => m[1]),

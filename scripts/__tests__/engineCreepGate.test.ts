@@ -19,11 +19,11 @@ let scratchDir: string;
 
 function runGate(...args: string[]): { status: number; output: string } {
   try {
-    const output = execFileSync('npx', ['tsx', 'scripts/check-engine-creep.ts', ...args], {
+    // No shell: a shell would split a temp path with a space in it.
+    const output = execFileSync(process.execPath, ['--import', 'tsx', 'scripts/check-engine-creep.ts', ...args], {
       cwd: ROOT,
       encoding: 'utf-8',
       stdio: 'pipe',
-      shell: process.platform === 'win32',
     });
     return { status: 0, output };
   } catch (err) {

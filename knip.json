@@ -11,10 +11,6 @@
     "relay/src/**/*.ts!"
   ],
   "ignoreExportsUsedInFile": true,
-  "ignoreIssues": {
-    "src/engine/types/manifest.ts": ["exports", "types"],
-    "src/engine/quest/types.ts": ["exports"]
-  },
   "rules": {
     "files": "error",
     "dependencies": "error",

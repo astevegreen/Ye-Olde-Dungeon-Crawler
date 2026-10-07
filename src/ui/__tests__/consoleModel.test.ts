@@ -64,6 +64,17 @@ describe('resolveContextAction', () => {
     engine.fov.update(engine.map, 10, 10, 8);
     expect(resolveContextAction(engine).kind).toBe('none');
   });
+
+  it('neither attacks nor rests short of a neutral beside the hero (R-ui-15)', () => {
+    const engine = buildEngine();
+    engine.map.setTile(10, 10, TILES.STAIRS_DOWN);
+    engine.map.addEntity(new Monster({ id: 'calm', name: 'Haugbui', position: { x: 11, y: 10 }, faction: 'neutral', stats: { hp: 5, maxHp: 5, attack: 1, defense: 0 } }));
+    engine.fov.update(engine.map, 10, 10, 8);
+    expect(resolveContextAction(engine).kind).toBe('descend');
+    engine.map.setTile(10, 10, TILES.FLOOR);
+    engine.player.hp = 4;
+    expect(resolveContextAction(engine).kind).toBe('rest');
+  });
 });
 
 describe('getTrayChips', () => {

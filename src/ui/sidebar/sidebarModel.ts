@@ -45,12 +45,16 @@ export interface NearbyThreat {
   windup?: { ability: string; turnsRemaining: number };
 }
 
-/** Hostile monsters the hero can see, nearest first. */
+/**
+ * Hostile monsters the hero can see, nearest first. Hostile as the engine judges it
+ * (`isHostileTo`, as resting does): a neutral was listed, offered as the context action's
+ * "Attack" (a bump that only swaps places) and kept Rest off the console (R-ui-15).
+ */
 export function getNearbyThreats(engine: GameEngine): NearbyThreat[] {
   const threats: NearbyThreat[] = [];
   for (const entity of engine.map.getAllEntities()) {
     if (!(entity instanceof Monster) || entity instanceof Companion) continue;
-    if (!entity.isAlive() || entity.faction === 'player') continue;
+    if (!entity.isAlive() || !engine.player.isHostileTo(entity)) continue;
     if (!engine.fov.isVisible(entity.x, entity.y)) continue;
     const intent = entity.intent;
     threats.push({

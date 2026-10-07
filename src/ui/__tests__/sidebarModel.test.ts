@@ -36,6 +36,15 @@ describe('getNearbyThreats', () => {
     expect(threats[0]).toMatchObject({ hp: 5, maxHp: 20 });
   });
 
+  it('leaves out a monster that is not hostile to the hero, as the engine does (R-ui-15)', () => {
+    const engine = buildEngine();
+    engine.map.addEntity(new Monster({ id: 'calm', name: 'Haugbui', position: { x: 11, y: 10 }, faction: 'neutral', stats: { hp: 10, maxHp: 20, attack: 1, defense: 0 } }));
+    engine.map.addEntity(monster('wolf', 'Wolf', 13, 10));
+    engine.fov.update(engine.map, 10, 10, 8);
+
+    expect(getNearbyThreats(engine).map((t) => t.id)).toEqual(['wolf']);
+  });
+
   it('carries a wind-up so the row can warn about it', () => {
     const engine = buildEngine();
     const ogre = monster('ogre', 'Ogre', 12, 10);

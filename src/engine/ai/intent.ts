@@ -1,25 +1,8 @@
 import type { Position } from '../types';
 import type { GameMap } from '../grid/map';
-import type { ElementType } from '../magic/elements';
-import type { StatusType } from '../status/types';
-import type { SurfaceType } from '../surfaces/surfaceGrid';
 import { getBresenhamLine } from '../magic/targeting';
 
 export type TelegraphPattern = 'single' | 'line' | 'cone' | 'blast' | 'cross';
-
-export interface TelegraphedAttackDefinition {
-  id: string;
-  name: string;
-  pattern: TelegraphPattern;
-  range?: number;
-  radius?: number;
-  multiplier?: number;
-  warningMessage: string;
-  element?: ElementType;
-  statusOnHit?: { type: StatusType; duration: number; potency?: number };
-  spawnSurface?: SurfaceType;
-  pushImpulse?: number;
-}
 
 /**
  * Calculates the collection of threatened dungeon tiles for an enemy's telegraphed wind-up attack.

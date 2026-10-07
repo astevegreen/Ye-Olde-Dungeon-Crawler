@@ -1,19 +1,20 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
-    "src/engine/index.ts!",
-    "src/content/cotw/index.ts!",
-    "src/content/warcraft/index.ts!",
     "scripts/*.ts!",
     "relay/src/worker.ts!",
-    "src/**/__tests__/**/*.ts!"
+    "src/**/__tests__/**/*.ts"
   ],
   "project": [
-    "src/**/*.ts",
-    "scripts/**/*.ts",
-    "relay/src/**/*.ts"
+    "src/**/*.ts!",
+    "scripts/**/*.ts!",
+    "relay/src/**/*.ts!"
   ],
   "ignoreExportsUsedInFile": true,
+  "ignoreIssues": {
+    "src/engine/types/manifest.ts": ["exports", "types"],
+    "src/engine/quest/types.ts": ["exports"]
+  },
   "rules": {
     "files": "error",
     "dependencies": "error",

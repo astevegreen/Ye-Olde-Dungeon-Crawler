@@ -19,12 +19,6 @@ export const COIN_NAMES: Record<CoinDenomination, { singular: string; plural: st
   gold: { singular: 'Gold Coin', plural: 'Gold Coins' },
 };
 
-export const COIN_COLORS: Record<CoinDenomination, string> = {
-  copper: '#cd7f32', // Bronze / Copper color scheme
-  silver: '#e2e8f0', // Silver sheen
-  gold: '#ffd700',   // Gold yellow
-};
-
 export const COIN_ABBREV: Record<CoinDenomination, string> = {
   copper: 'CP',
   silver: 'SP',

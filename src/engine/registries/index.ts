@@ -54,75 +54,24 @@ import {
   setActiveItemIndex,
 } from '../items/itemIndex';
 
-export { RegistryStore } from './registryStore';
-export {
-  MonsterRegistryStore,
-  activeMonsterStore,
-  processDefaultMonsterStore,
-  setActiveMonsterStore,
-} from './monsterRegistryStore';
-export {
-  TrapRegistryStore,
-  activeTrapStore,
-  processDefaultTrapStore,
-  setActiveTrapStore,
-} from './trapRegistryStore';
+export { MonsterRegistryStore, processDefaultMonsterStore } from './monsterRegistryStore';
+export { TrapRegistryStore, processDefaultTrapStore } from './trapRegistryStore';
 export {
   ActionRegistryStore,
+  /** @public Unused; goes with the action registry, which is being removed. */
   activeActionStore,
   processDefaultActionStore,
+  /** @public Unused; goes with the action registry, which is being removed. */
   setActiveActionStore,
 } from './actionRegistryStore';
-export {
-  SpellRegistryStore,
-  activeSpellStore,
-  processDefaultSpellStore,
-  setActiveSpellStore,
-} from './spellRegistryStore';
-export {
-  CompanionRegistryStore,
-  activeCompanionStore,
-  processDefaultCompanionStore,
-  setActiveCompanionStore,
-} from './companionRegistryStore';
-export {
-  AIStrategyRegistryStore,
-  activeAIStrategyStore,
-  processDefaultAIStrategyStore,
-  setActiveAIStrategyStore,
-} from './aiStrategyRegistryStore';
-export {
-  AIBehaviorRegistryStore,
-  activeAIBehaviorStore,
-  processDefaultAIBehaviorStore,
-  setActiveAIBehaviorStore,
-} from './aiBehaviorRegistryStore';
-export {
-  StatusHandlerRegistryStore,
-  activeStatusHandlerStore,
-  processDefaultStatusHandlerStore,
-  setActiveStatusHandlerStore,
-  setDefaultStatusHandlerRegistrar,
-  getDefaultStatusHandlerRegistrar,
-} from './statusHandlerRegistryStore';
-export {
-  TileRegistryStore,
-  activeTileStore,
-  processDefaultTileStore,
-  setActiveTileStore,
-} from './tileRegistryStore';
-export {
-  ContainerRegistryStore,
-  activeContainerStore,
-  processDefaultContainerStore,
-  setActiveContainerStore,
-} from './containerRegistryStore';
-export {
-  ItemIndex,
-  activeItemIndex,
-  processDefaultItemIndex,
-  setActiveItemIndex,
-} from '../items/itemIndex';
+export { SpellRegistryStore, processDefaultSpellStore } from './spellRegistryStore';
+export { CompanionRegistryStore, processDefaultCompanionStore } from './companionRegistryStore';
+export { AIStrategyRegistryStore, processDefaultAIStrategyStore } from './aiStrategyRegistryStore';
+export { AIBehaviorRegistryStore, processDefaultAIBehaviorStore } from './aiBehaviorRegistryStore';
+export { StatusHandlerRegistryStore, processDefaultStatusHandlerStore } from './statusHandlerRegistryStore';
+export { TileRegistryStore, processDefaultTileStore } from './tileRegistryStore';
+export { ContainerRegistryStore } from './containerRegistryStore';
+export { ItemIndex } from '../items/itemIndex';
 
 /**
  * Bundle of per-engine content and runtime state registries (ARCHITECTURE.md §3, §5; docs/architecture/content-extensibility.md).

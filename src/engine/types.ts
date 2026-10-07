@@ -3,33 +3,6 @@ export interface Position {
   y: number;
 }
 
-export type DirectionName =
-  | 'North'
-  | 'NorthEast'
-  | 'East'
-  | 'SouthEast'
-  | 'South'
-  | 'SouthWest'
-  | 'West'
-  | 'NorthWest';
-
-export interface Direction {
-  name: DirectionName;
-  dx: number;
-  dy: number;
-}
-
-export const DIRECTIONS: Record<DirectionName, Direction> = {
-  North: { name: 'North', dx: 0, dy: -1 },
-  NorthEast: { name: 'NorthEast', dx: 1, dy: -1 },
-  East: { name: 'East', dx: 1, dy: 0 },
-  SouthEast: { name: 'SouthEast', dx: 1, dy: 1 },
-  South: { name: 'South', dx: 0, dy: 1 },
-  SouthWest: { name: 'SouthWest', dx: -1, dy: 1 },
-  West: { name: 'West', dx: -1, dy: 0 },
-  NorthWest: { name: 'NorthWest', dx: -1, dy: -1 },
-};
-
 export type CanonicalTileType =
   | 'floor'
   | 'wall'

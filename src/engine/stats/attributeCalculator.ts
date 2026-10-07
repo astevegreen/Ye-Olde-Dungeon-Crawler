@@ -11,18 +11,6 @@ const MIN_ACTION_COST = 10;
 const MIN_ELEMENTAL_RESISTANCE = -1.0;
 const MAX_ELEMENTAL_RESISTANCE = 1.0;
 
-export type AttributeKey =
-  | 'maxHp'
-  | 'attack'
-  | 'defense'
-  | 'speed'
-  | 'strength'
-  | 'intelligence'
-  | 'constitution'
-  | 'dexterity'
-  | 'actionCost'
-  | 'elementalResistance';
-
 export interface AttributeContext {
   baseCost?: number;
   element?: ElementType;
@@ -31,8 +19,6 @@ export interface AttributeContext {
   target?: Entity;
   [key: string]: any;
 }
-
-export type AttributePhase = 'base' | 'flat' | 'multiplier' | 'cap';
 
 export interface AttributeModifier {
   readonly id: string;

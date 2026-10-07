@@ -5,8 +5,8 @@ import type { Position } from '../types';
 import { applyImpulse } from '../combat/impulse';
 import { DeathResolver } from '../combat/deathResolver';
 
-export type SurfaceType = 'water' | 'oil_slick' | 'acid_pool' | 'ice_sheet' | 'mud' | 'fire' | string;
 export const BUILTIN_SURFACE_TYPES = ['water', 'oil_slick', 'acid_pool', 'ice_sheet', 'mud', 'fire'] as const;
+export type SurfaceType = (typeof BUILTIN_SURFACE_TYPES)[number] | string;
 export type GasType = 'fire_storm' | 'poison_cloud' | 'dense_steam';
 
 export interface SurfaceInstance {

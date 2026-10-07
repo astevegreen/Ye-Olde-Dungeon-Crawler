@@ -7,7 +7,7 @@ import { Item } from '../../items/item';
 import { addCoinsToContainer } from '../currency';
 import { BankService } from '../services';
 import { serializeSaveData, deserializeSaveData } from '../../storage/serializer';
-import { COTW_MANIFEST } from '../../../content/cotw';
+import { cotwManifest } from '../../../content/cotw';
 
 const gem = (id: string) => new Item({ id, name: `Gem ${id}`, category: 'misc', weight: 100, bulk: 50, value: 100, identified: true });
 
@@ -16,7 +16,7 @@ describe("the bank's stash: items kept in town between delves", () => {
 
   beforeEach(() => {
     const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } });
-    engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player, floor: 0, manifest: COTW_MANIFEST });
+    engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player, floor: 0, manifest: cotwManifest });
   });
 
   it('leaves a pack item with the bank and takes it back, as town services: no turn, a checkpoint', () => {
@@ -51,7 +51,7 @@ describe("the bank's stash: items kept in town between delves", () => {
   it('keeps the stash through a save and load', () => {
     engine.player.inventory.primaryPack.addItem(gem('g1'));
     BankService.stashItem(engine, 'g1');
-    const restored = deserializeSaveData(serializeSaveData(engine), COTW_MANIFEST);
+    const restored = deserializeSaveData(serializeSaveData(engine), cotwManifest);
     expect(BankService.stashedItems(restored).map((i) => i.name)).toEqual(['Gem g1']);
   });
 });

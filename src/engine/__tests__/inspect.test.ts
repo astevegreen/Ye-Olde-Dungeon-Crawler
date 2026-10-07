@@ -160,7 +160,7 @@ describe('landmarks: the names a pack gives its tiles reach the player', () => {
   beforeEach(() => {
     const map = GameMap.createBoxRoom(30, 30);
     const player = new Player({ id: 'hero', name: 'Valiant', position: { x: 5, y: 5 }, stats: { hp: 50, maxHp: 50, attack: 10, defense: 2 }, speed: 100 });
-    engine = new GameEngine({ map, player, floor: 1, manifest: COTW_MANIFEST });
+    engine = new GameEngine({ map, player, floor: 1, manifest: cotwManifest });
     engine.map.setTile(6, 5, RUNESTONE);
     engine.map.setTile(20, 20, RUNESTONE);
     engine.map.setTile(25, 25, { ...RUNESTONE, landmarkLabel: 'Duergar Barrow' });

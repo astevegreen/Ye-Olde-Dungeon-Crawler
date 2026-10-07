@@ -20,9 +20,3 @@ export interface AttributeRoll {
   attributes: CharacterAttributes;
   availablePoints: number;
 }
-
-export interface RolledHeroConfig {
-  name: string;
-  gender: Gender;
-  attributes: CharacterAttributes;
-}

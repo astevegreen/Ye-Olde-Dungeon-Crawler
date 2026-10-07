@@ -16,13 +16,6 @@ export function rangedDexterityBonus(dexterity: number): { hitPct: number; damag
   return { hitPct: (dexterity - 10) * 2, damage: Math.max(0, Math.floor((dexterity - 10) / 2)) };
 }
 
-export interface RangedAttackConfig {
-  attacker: Entity;
-  targetX: number;
-  targetY: number;
-  weapon?: Item;
-}
-
 export class RangedAttackAction implements Action {
   public readonly attacker: Entity;
   public readonly targetX: number;

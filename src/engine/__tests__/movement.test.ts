@@ -4,7 +4,6 @@ import { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
 import { Player } from '../entities/player';
 import { MovementAction } from '../actions/movement';
-import { DIRECTIONS, type DirectionName } from '../types';
 
 describe('Movement System - 8-Directional & Collision Rules', () => {
   let map: GameMap;
@@ -23,19 +22,18 @@ describe('Movement System - 8-Directional & Collision Rules', () => {
     engine = new GameEngine({ map, player });
   });
 
-  const directions: DirectionName[] = [
-    'North',
-    'NorthEast',
-    'East',
-    'SouthEast',
-    'South',
-    'SouthWest',
-    'West',
-    'NorthWest',
-  ];
+  const directions: Record<string, { dx: number; dy: number }> = {
+    North: { dx: 0, dy: -1 },
+    NorthEast: { dx: 1, dy: -1 },
+    East: { dx: 1, dy: 0 },
+    SouthEast: { dx: 1, dy: 1 },
+    South: { dx: 0, dy: 1 },
+    SouthWest: { dx: -1, dy: 1 },
+    West: { dx: -1, dy: 0 },
+    NorthWest: { dx: -1, dy: -1 },
+  };
 
-  for (const dirName of directions) {
-    const dir = DIRECTIONS[dirName];
+  for (const [dirName, dir] of Object.entries(directions)) {
 
     it(`correctly executes valid movement in ${dirName} direction`, () => {
       const startX = player.x;

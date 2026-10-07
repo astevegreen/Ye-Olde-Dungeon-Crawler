@@ -20,10 +20,6 @@ export function activeContainerStore(): ContainerRegistryStore {
   return activeStore;
 }
 
-export function processDefaultContainerStore(): ContainerRegistryStore {
-  return fallbackContainerStore;
-}
-
 export function setActiveContainerStore(store: ContainerRegistryStore | null): void {
   activeStore = store ?? fallbackContainerStore;
 }

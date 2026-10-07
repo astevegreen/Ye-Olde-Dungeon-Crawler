@@ -48,14 +48,6 @@ export const DEFAULT_ACTOR_CAPABILITIES: ActorCapabilities = {
   blocksLos: false,
 };
 
-export const IMMOBILE_OBJECT_CAPABILITIES: ActorCapabilities = {
-  canMove: false,
-  canAct: false,
-  canBlockPath: true,
-  isDestructible: true,
-  blocksLos: false,
-};
-
 export interface ActorConfig extends EntityConfig {
   capabilities?: Partial<ActorCapabilities>;
   aiRoutineId?: string;

@@ -66,10 +66,6 @@ export function activeItemIndex(): ItemIndex {
   return activeInstance;
 }
 
-export function processDefaultItemIndex(): ItemIndex {
-  return fallbackItemIndex;
-}
-
 /**
  * Points the facade at an engine's own item index. Called when a `GameEngine` is activated.
  */

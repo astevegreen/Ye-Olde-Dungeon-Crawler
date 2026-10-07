@@ -10,7 +10,7 @@ import { Container } from '../../items/container';
 import { CoinItem } from '../../economy/currency';
 import { TownMapGenerator } from '../../town/townMap';
 import { activeItemIndex } from '../../items/itemIndex';
-import { activeMonsterStore } from '../../registries';
+import { activeMonsterStore } from '../../registries/monsterRegistryStore';
 import { Visibility } from '../../fov/types';
 import { TrapInstance } from '../../dungeon/traps';
 import { AutosaveManager } from '../autosaveManager';

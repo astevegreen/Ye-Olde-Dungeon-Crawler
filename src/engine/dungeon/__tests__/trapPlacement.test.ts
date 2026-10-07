@@ -3,6 +3,8 @@ import { DungeonArc } from '../../quest/dungeonArc';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Item } from '../../items/item';
+import { Monster } from '../../entities/monster';
+import type { TrapInstance } from '../traps';
 import { placeFloorTraps, trapCountRange, TRAP_ARRIVAL_CLEARANCE, TRAP_STAIRS_CLEARANCE } from '../trapPlacement';
 import { serializeMapObject, deserializeMapObject } from '../../storage/serializer';
 import { SpawnSiteFilter } from '../spawnSites';
@@ -64,6 +66,7 @@ describe('placeFloorTraps on a hand-built floor', () => {
     // Leave only a few legal cells: wall the left half, an item, a vault rect, water.
     for (let y = 1; y < 11; y++) for (let x = 1; x < 6; x++) map.setTile(x, y, TILES.SHALLOW_WATER);
     map.addItemAt(10, 10, new Item({ id: 'rock', name: 'Rock', category: 'misc', weight: 1, bulk: 1, identified: true }));
+    map.addEntity(new Monster({ id: 'rat', name: 'Rat', position: { x: 8, y: 8 }, stats: { hp: 5, maxHp: 5, attack: 1, defense: 0 } }));
     const keepOut = [{ x1: 6, y1: 1, x2: 10, y2: 5 }];
     const traps = placeFloorTraps(map, 3, [PIT], exactly(30), { arrival: { x: 1, y: 1 }, rooms: [], keepOut }, seq([0.5, 0.25, 0.75]));
     expect(traps.length).toBeGreaterThan(0);
@@ -71,6 +74,7 @@ describe('placeFloorTraps on a hand-built floor', () => {
       expect(map.getTile(t.x, t.y)?.type).toBe('floor');
       expect(t.x >= 6 && t.x <= 10 && t.y >= 1 && t.y <= 5).toBe(false);
       expect(t.x === 10 && t.y === 10).toBe(false);
+      expect(t.x === 8 && t.y === 8, 'a trap under the rat').toBe(false);
     }
   });
 
@@ -105,9 +109,11 @@ describe('placeFloorTraps on a hand-built floor', () => {
     const traps = placeFloorTraps(map, 6, [PIT, ALARM], exactly(4), context, seq([0.31, 0.62, 0.93, 0.14, 0.45]));
     traps[0].revealed = true;
     traps[1].disarmed = true;
+    traps[2].triggered = true;
+    traps[3].concealment = 17;
     const back = deserializeMapObject(JSON.parse(JSON.stringify(serializeMapObject(map))));
-    const key = (t: { id: string; type: string; x: number; y: number; damage: number; revealed: boolean; disarmed: boolean }) =>
-      `${t.id}|${t.type}|${t.x},${t.y}|${t.damage}|${t.revealed}|${t.disarmed}`;
+    const key = (t: TrapInstance) =>
+      `${t.id}|${t.type}|${t.x},${t.y}|${t.damage}|${t.concealment}|${t.disarmDifficulty}|${t.revealed}|${t.triggered}|${t.disarmed}`;
     expect(back.getAllTraps().map(key).sort()).toEqual(traps.map(key).sort());
   });
 });

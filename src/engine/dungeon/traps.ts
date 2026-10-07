@@ -7,6 +7,7 @@ import { harm } from '../combat/deathResolver';
 import { TILES } from '../grid/tile';
 import { wearsFlag } from '../items/wornModifiers';
 import { SpawnSiteFilter } from './spawnSites';
+import { CombatLogger } from '../logging/combatLogger';
 
 export interface TrapOptions {
   id: string;
@@ -70,18 +71,23 @@ export class TrapInstance {
   }
 
   /**
-   * Triggers trap when stepped on.
+   * Triggers trap when stepped on. Only a trap the hero springs or sees sprung is logged: a line
+   * from out of sight would tell the player a trap and a monster are there (trap review T2).
    */
   public trigger(entity: Entity, engine: GameEngine): string {
     if (this.disarmed) {
       return `The disabled ${this.type} trap clicks harmlessly under ${entity.name}.`;
     }
+    const seen = CombatLogger.isVisibleToPlayer(engine, entity);
+    const tell = (message: string) => {
+      if (seen) engine.log(message);
+    };
     // Trap-Dancer: the trap never springs under the bearer, which sees it for what it is.
     if (wearsFlag(entity, 'trapImmune')) {
       this.revealed = true;
       if (engine.map.getTile(this.x, this.y)?.type !== 'trap') engine.map.setTile(this.x, this.y, TILES.TRAP);
       const message = `${entity.name} dances lightly over a ${this.type} trap.`;
-      engine.log(message);
+      tell(message);
       return message;
     }
 
@@ -103,7 +109,7 @@ export class TrapInstance {
         message =
           this.customMessage ??
           `A hidden pit trap opens beneath ${entity.name}'s feet! ${entity.name} takes ${actualDmg} damage!`;
-        harm(engine, entity, actualDmg, 'a pit trap', { line: () => message });
+        harm(engine, entity, actualDmg, 'a pit trap', { line: seen ? () => message : undefined });
         break;
       }
 
@@ -112,7 +118,7 @@ export class TrapInstance {
         message =
           this.customMessage ??
           `A pressure plate clicks! A dart springs from the wall hitting ${entity.name} for ${actualDmg} damage!`;
-        harm(engine, entity, actualDmg, 'a dart trap', { line: () => message });
+        harm(engine, entity, actualDmg, 'a dart trap', { line: seen ? () => message : undefined });
         break;
       }
 
@@ -134,7 +140,7 @@ export class TrapInstance {
         } else {
           message = `A teleport glyph sparkles feebly, but the air remains stable.`;
         }
-        engine.log(message);
+        tell(message);
         break;
       }
 
@@ -149,7 +155,7 @@ export class TrapInstance {
         message =
           this.customMessage ??
           `An alarm tripwire snaps! A shrill brass horn echoes through the dungeon (${awakened} monsters alert)!`;
-        engine.log(message);
+        tell(message);
         break;
       }
     }

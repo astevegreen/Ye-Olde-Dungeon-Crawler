@@ -234,3 +234,55 @@ describe('Traps, Secret Doors & Search Mechanics', () => {
     expect(player.hp).toBe(50);
   });
 });
+
+/**
+ * Trap review T2: a trap a monster sprang out of the hero's sight still logged ("A hidden pit
+ * trap opens beneath Goblin's feet!"), telling the player a trap and a monster were there.
+ */
+describe('T2 · a trap a monster springs out of the hero\'s sight says nothing', () => {
+  /** A box room split by a wall at x = 15: the hero at (5, 4) sees the west half only. */
+  function walledOff(goblinAt: { x: number; y: number }) {
+    const map = GameMap.createBoxRoom(30, 9);
+    for (let y = 0; y < 9; y++) map.setTile(15, y, TILES.WALL);
+    const player = new Player({ position: { x: 5, y: 4 }, stats: { hp: 50, maxHp: 50, attack: 10, defense: 4 } });
+    const goblin = new Monster({
+      id: 'goblin',
+      name: 'Goblin',
+      position: goblinAt,
+      stats: { hp: 100, maxHp: 100, attack: 1, defense: 0 },
+    });
+    goblin.faction = 'hostile';
+    map.addEntity(goblin);
+    const engine = new GameEngine({ map, player, floor: 1 });
+    engine.updateFov();
+    return { map, engine, goblin };
+  }
+
+  it.each(['pit', 'arrow', 'teleport', 'alarm'] as const)('an unseen %s trap logs nothing, and still works', (type) => {
+    const { map, engine, goblin } = walledOff({ x: 22, y: 4 });
+    expect(engine.fov.isVisible(22, 4)).toBe(false);
+    const trap = new TrapInstance({ id: 't', type, x: 22, y: 4 });
+    map.addTrap(trap);
+    const before = engine.messages.length;
+
+    trap.trigger(goblin, engine);
+
+    expect(engine.messages.slice(before)).toEqual([]);
+    expect(trap.triggered).toBe(true);
+    if (type === 'pit') expect(goblin.hp).toBe(90);
+    if (type === 'alarm') expect(goblin.aiState).not.toBe('sleeping');
+  });
+
+  it('a trap the hero sees a monster spring is told', () => {
+    const { map, engine, goblin } = walledOff({ x: 8, y: 4 });
+    const trap = new TrapInstance({ id: 't', type: 'pit', x: 8, y: 4 });
+    map.addTrap(trap);
+    const before = engine.messages.length;
+
+    trap.trigger(goblin, engine);
+
+    expect(engine.messages.slice(before)).toEqual([
+      "A hidden pit trap opens beneath Goblin's feet! Goblin takes 10 damage!",
+    ]);
+  });
+});

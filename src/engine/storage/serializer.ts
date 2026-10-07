@@ -577,14 +577,7 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     }
   }
 
-  const fovExplored: [number, number][] = [];
-  for (let y = 0; y < engine.map.height; y++) {
-    for (let x = 0; x < engine.map.width; x++) {
-      if (engine.fov.isExplored(x, y)) {
-        fovExplored.push([x, y]);
-      }
-    }
-  }
+  // Run length only: the `fovExplored` coordinate list is read from an old save, no longer written.
   const fovRle = compactFov(engine.map.width, engine.map.height, (x, y) =>
     engine.fov.isExplored(x, y)
   );
@@ -622,7 +615,6 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     savedAt: Date.now(),
     player: serializedPlayer,
     map: serializedMap,
-    fovExplored,
     fovRle,
     contentManifestId: engine.manifest?.id ?? 'cotw',
     turnCount: engine.turnCount,

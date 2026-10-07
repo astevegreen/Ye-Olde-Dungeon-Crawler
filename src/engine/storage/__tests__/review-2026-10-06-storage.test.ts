@@ -11,6 +11,7 @@ import { CoinItem } from '../../economy/currency';
 import { TownMapGenerator } from '../../town/townMap';
 import { activeItemIndex } from '../../items/itemIndex';
 import { activeMonsterStore } from '../../registries';
+import { Visibility } from '../../fov/types';
 import { AutosaveManager } from '../autosaveManager';
 import { MemoryStorage } from '../profile-manager';
 import { CURRENT_SCHEMA_VERSION } from '../migrator';
@@ -315,6 +316,31 @@ describe('R-stor-17 · a foreign save is trusted for sizes', () => {
   it('a saved game of an ordinary size still loads', () => {
     const loaded = deserializeGame(saveOf()).engine;
     expect([loaded.map.width, loaded.map.height]).toEqual([10, 10]);
+  });
+});
+
+describe('R-stor-14 · fovExplored is written into every save but only read for pre-RLE saves', () => {
+  // A corner well outside the hero's sight radius: only the save can say it was explored.
+  const exploredFar = () => {
+    const engine = new GameEngine({ map: new GameMap(30, 30, TILES.FLOOR), player: new Player({ id: 'h14', name: 'H', position: { x: 2, y: 2 } }) });
+    engine.fov.setVisibility(29, 29, Visibility.Explored);
+    return engine;
+  };
+
+  it('a save carries its explored cells as run length only, and they come back', () => {
+    const engine = exploredFar();
+
+    expect(serializeGame(engine)).not.toHaveProperty('fovExplored');
+    expect(roundTrip(engine).fov.isExplored(29, 29)).toBe(true);
+  });
+
+  it('an old save with only the explored-cell list still loads its exploration', () => {
+    const save = JSON.parse(JSON.stringify(serializeGame(exploredFar())));
+    delete save.storedFovRle;
+    delete save.fovRle;
+    save.fovExplored = [[29, 29]];
+
+    expect(deserializeGame(save).engine.fov.isExplored(29, 29)).toBe(true);
   });
 });
 

@@ -371,6 +371,7 @@ export interface SaveData {
   savedAt: number;
   player: SerializedPlayer;
   map: SerializedMap;
+  /** Read from an old save that has no run-length FOV; no longer written (R-stor-14). */
   fovExplored?: [number, number][];
   fovRle?: string;
   contentManifestId?: string;

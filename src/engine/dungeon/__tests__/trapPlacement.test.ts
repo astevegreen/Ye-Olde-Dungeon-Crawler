@@ -123,6 +123,11 @@ describe('generated cotw floors hide traps (manifest.trapPlacement)', () => {
   const SEEDS = [1, 2, 3, 4];
   const noTraps = { ...cotwManifest, trapPlacement: undefined };
 
+  it('each trap unlocks at the depth the owner set: pits 1, darts 3, alarms 5, teleport runes 8', () => {
+    const unlocks = Object.fromEntries(cotwManifest.traps!.map((d) => [d.type, d.minFloor ?? 1]));
+    expect(unlocks).toEqual({ pit: 1, arrow: 3, alarm: 5, teleport: 8 });
+  });
+
   it('every floor 1-49 hides a count inside its band, on legal sites, and the stairs stay reachable', () => {
     let total = 0;
     for (const floor of FLOORS) {

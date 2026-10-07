@@ -117,8 +117,10 @@ export const cotwManifest: GameContentManifest = {
     { type: 'pit', name: 'Hidden Pit', damage: 10, disarmDifficulty: 12, minFloor: 1 },
     { type: 'arrow', name: 'Tripwire Dart Trap', damage: 8, disarmDifficulty: 14, minFloor: 3 },
     { type: 'teleport', name: 'Teleportation Rune', damage: 0, disarmDifficulty: 15, minFloor: 8 },
-    { type: 'alarm', name: 'Brass Alarm Trap', damage: 0, disarmDifficulty: 10, minFloor: 1 },
+    { type: 'alarm', name: 'Brass Alarm Trap', damage: 0, disarmDifficulty: 10, minFloor: 5 },
   ],
+  // Unlock depths set by the owner (2026-10-07): pits from 1, darts from 3, alarms from 5,
+  // teleport runes from 8.
   // Traps per generated floor, by band (PLAN-trap-generator.md's first guess, 2026-10-06;
   // the owner has not yet set the density). The town, the prologue and the boss lair get none.
   trapPlacement: {

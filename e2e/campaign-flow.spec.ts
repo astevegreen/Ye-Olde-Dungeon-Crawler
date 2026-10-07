@@ -171,24 +171,10 @@ test('objective-driven multi-floor progression and NPC interaction', { tag: '@ca
       );
       const hasInputIntrospection = Boolean(inputHandler && inputHandler.modalStack);
 
-      // 2. Audit PRNG vs Math.random on Floor 0 and Floor 1+ path
-      // Floor 0 Town is completely deterministic via COTW_TOWN layout.
-      // Floor 1+ procedural generation contains known Math.random calls in dungeonArc.ts (lines 174, 177)
-      // and src/content/cotw/monsters.ts gold drop generators.
-      const prngAudits = {
-        floor0TownDeterministic: true,
-        floor1ArcMathRandomIssues: [
-          'src/engine/quest/dungeonArc.ts:174 (populateDungeonFloor passes Math.random)',
-          'src/engine/quest/dungeonArc.ts:177 (populateDungeonLoot defaults to Math.random)',
-          'src/content/cotw/monsters.ts (monster gold drop generators invoke Math.random)',
-        ],
-      };
-
       return {
         diagKeys,
         hasEngineIntrospection,
         hasInputIntrospection,
-        prngAudits,
         startingFloor: engine.currentFloor,
         startingTurn: engine.turnCount,
       };
@@ -197,8 +183,7 @@ test('objective-driven multi-floor progression and NPC interaction', { tag: '@ca
     logAction(
       'Stage 0 Audit',
       `Consumed window.__cotwEngine and window.__cotwInputHandler directly. ` +
-      `Diagnosed diagnostics API (${stage0Audit.diagKeys.join(', ')}). ` +
-      `P-10 PRNG Audit recorded: Floor 0 is static/deterministic; Floor 1+ Math.random() instances documented: ${stage0Audit.prngAudits.floor1ArcMathRandomIssues.join('; ')}.`,
+      `Diagnosed diagnostics API (${stage0Audit.diagKeys.join(', ')}).`,
       stage0Audit.startingTurn
     );
 

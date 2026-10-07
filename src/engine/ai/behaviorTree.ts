@@ -412,7 +412,8 @@ export class MonsterAI {
     // (typo'd aiRoutineId/aiType). Warn once per monster instance rather than every
     // turn, since this runs on the monster-turn path (isolated per-turn by
     // GameEngine.processMonsterAction) and would otherwise spam a flight-recorder
-    // entry (and, transitively, a pipelineError banner) for the monster's whole life.
+    // entry for the monster's whole life. A warning is only recorded: it throws nothing,
+    // counts as no caught exception and raises no pipelineError banner.
     const strategy = AiBehaviorRegistry.get(monster.aiType) ?? AiBehaviorRegistry.getDefault();
     if (!warnedFallbackMonsterIds.has(monster.id)) {
       warnedFallbackMonsterIds.add(monster.id);
@@ -434,8 +435,9 @@ export class MonsterAI {
 
 /**
  * Tracks monster IDs that have already logged a fallback-strategy warning so a
- * misconfigured monster's every turn doesn't spam the flight recorder (or, if
- * pipelineError surfacing is added later, the player) for its whole lifetime.
+ * misconfigured monster's every turn doesn't spam the flight recorder for its whole
+ * lifetime. The warning never reaches the player: only a caught exception sets
+ * `pipelineError`, which `src/main.ts` shows through `DiagnosticModal.showError`.
  * Exported for test teardown; safe to clear freely since it's advisory-only.
  */
 const warnedFallbackMonsterIds = new Set<string>();

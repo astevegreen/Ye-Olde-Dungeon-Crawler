@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { ACTION_METADATA, hardWiredConflict } from '../settings/settingsManager';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { ACTION_METADATA, HARD_WIRED_KEYS, hardWiredConflict } from '../settings/settingsManager';
 
 // Keys InputHandler handles before consulting bindings: U opens attribute allocation and
 // E the character menu, so no default binding may claim them.
@@ -30,6 +32,16 @@ describe('default keybindings', () => {
     expect(hardWiredConflict('quick_loot', 'Shift+KeyG')).toBeNull();
     expect(hardWiredConflict('companion_call', 'Shift+KeyC')).toBeNull();
     expect(hardWiredConflict('message_log', 'Shift+KeyM')).toBeNull();
+  });
+
+  // The list is "keys InputHandler answers before it reads the bindings": each must still
+  // have a `code === '<code>'` branch there, or Settings refuses a key for nothing (R-ui-11).
+  it('list as hard-wired only keys InputHandler still answers by code', () => {
+    const source = readFileSync(join(__dirname, '..', '..', 'rendering', 'input-handler.ts'), 'utf8');
+    const stale = Object.keys(HARD_WIRED_KEYS).filter((code) =>
+      /^Digit\d$/.test(code) ? !source.includes("code.startsWith('Digit')") : !source.includes(`code === '${code}'`)
+    );
+    expect(stale).toEqual([]);
   });
 
   it('leave hard-wired command keys to their commands', () => {

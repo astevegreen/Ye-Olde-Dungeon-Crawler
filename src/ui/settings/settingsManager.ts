@@ -89,7 +89,6 @@ export const HARD_WIRED_KEYS: Readonly<Record<string, { does: string; actionId?:
   KeyX: { does: 'starts Look', actionId: 'inspect' },
   KeyL: { does: 'starts Look', actionId: 'inspect' },
   KeyC: { does: 'closes a door', actionId: 'close_door' },
-  KeyR: { does: 'rests', actionId: 'rest' },
   KeyS: { does: 'searches', actionId: 'search' },
   KeyM: { does: 'opens the map', actionId: 'map' },
   KeyQ: { does: 'saves and quits' },

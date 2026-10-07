@@ -170,11 +170,13 @@ export class RunAdvisor {
   }
 
   /**
-   * Full comprehensive advisory evaluation.
+   * Full comprehensive advisory evaluation, for the floor the hero faces: below, the floor it
+   * is on; in town, the deepest it has reached (`GameStateManager.deepestFloor`), where the
+   * Rune of Return or a long descent takes it, and floor 1 for a new hero (R-dbg-12).
    */
-  public static evaluateRun(engine: GameEngine, customFloor?: number): AdvisoryReport {
+  public static evaluateRun(engine: GameEngine): AdvisoryReport {
     const player = engine.player;
-    const targetFloor = customFloor ?? (engine.currentFloor === 0 ? 1 : engine.currentFloor);
+    const targetFloor = engine.currentFloor === 0 ? Math.max(1, engine.gameState.deepestFloor) : engine.currentFloor;
 
     const warnings: AdvisoryWarning[] = [];
 

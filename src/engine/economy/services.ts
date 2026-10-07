@@ -427,10 +427,11 @@ export class SageService {
   }
 
   /**
-   * Evaluates the hero's readiness and returns strategic run advisory.
+   * Evaluates the hero's readiness for the floor it faces (`RunAdvisor.evaluateRun`) and
+   * returns strategic run advisory.
    */
-  public static getRunAdvisory(engine: GameEngine, customFloor?: number): AdvisoryReport {
-    return RunAdvisor.evaluateRun(engine, customFloor);
+  public static getRunAdvisory(engine: GameEngine): AdvisoryReport {
+    return RunAdvisor.evaluateRun(engine);
   }
 }
 

@@ -136,6 +136,25 @@ describe('Town Sage Run Advisory Heuristics', () => {
     expect(fireWarn?.message).toContain('fire elementals');
   });
 
+  // R-dbg-12: from town the Sage judged floor 1 whatever the hero had reached, so a hero
+  // about to take the Rune of Return to floor 14 heard "the runes smile upon your readiness".
+  it('from town judges the deepest floor the hero has reached, floor 1 for a new hero; below, the floor the hero is on', () => {
+    const player = new Player({ id: 'p1', name: 'Hero', position: { x: 0, y: 0 }, stats: { hp: 30, maxHp: 30, attack: 10, defense: 2 } });
+    const engine = new GameEngine({ map: new GameMap(10, 10), player, floor: 0, manifest: COTW_MANIFEST });
+    expect(RunAdvisor.evaluateRun(engine).targetFloor).toBe(1);
+
+    engine.gameState.updateFloor(14);
+    const report = RunAdvisor.evaluateRun(engine);
+    expect(engine.currentFloor).toBe(0);
+    expect(report.targetFloor).toBe(14);
+    expect(report.overallStatus).toBe('danger');
+    expect(report.warnings.find((w) => w.type === 'consumables')?.message).toContain('Floor 14');
+
+    const below = new GameEngine({ map: new GameMap(10, 10), player, floor: 6, manifest: COTW_MANIFEST });
+    below.gameState.updateFloor(14);
+    expect(RunAdvisor.evaluateRun(below).targetFloor).toBe(6);
+  });
+
   it('aggregates full advisory report with status classification and Sage quote', () => {
     const map = new GameMap(10, 10);
     const player = new Player({
@@ -146,7 +165,8 @@ describe('Town Sage Run Advisory Heuristics', () => {
     });
     const engine = new GameEngine({ map, player, floor: 0, manifest: COTW_MANIFEST });
 
-    const report = RunAdvisor.evaluateRun(engine, 1);
+    const report = RunAdvisor.evaluateRun(engine);
+    expect(report.targetFloor).toBe(1);
     expect(report.overallStatus).toBe('safe');
     expect(report.warnings.length).toBe(0);
     expect(report.sageQuote).toBeDefined();
@@ -163,7 +183,9 @@ describe('Town Sage Run Advisory Heuristics', () => {
     });
     player.inventory.paperdoll.equip(cursedArmor, 'head');
 
-    const dangerReport = RunAdvisor.evaluateRun(engine, 12);
+    engine.gameState.updateFloor(12); // the deepest floor the hero has reached
+    const dangerReport = RunAdvisor.evaluateRun(engine);
+    expect(dangerReport.targetFloor).toBe(12);
     expect(dangerReport.overallStatus).toBe('danger');
     expect(dangerReport.warnings.some((w) => w.type === 'cursed')).toBe(true);
     expect(dangerReport.warnings.some((w) => w.type === 'consumables')).toBe(true);

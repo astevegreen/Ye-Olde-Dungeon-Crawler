@@ -113,7 +113,6 @@ describe('Pluggable Dungeon Generation Strategy', () => {
       id: 'mines_arc',
       name: 'The Forgotten Mines',
       maxFloor: 5,
-      bossFloor: 5,
       // Floor 1 is standard BSP, Floor 2 is Cavern!
       floorGenerators: {
         2: 'cavern',

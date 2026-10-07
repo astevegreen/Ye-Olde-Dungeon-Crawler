@@ -43,7 +43,6 @@ export const DEFAULT_HEADLESS_MANIFEST: GameContentManifest = {
     id: 'headless_quest',
     name: 'Dungeon Crawl',
     maxFloor: 5,
-    bossFloor: 5,
     bossMonsterId: 'boss-monster',
     relicItemId: 'quest-relic',
     victoryNpcId: 'npc-elder',

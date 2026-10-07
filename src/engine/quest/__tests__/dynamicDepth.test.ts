@@ -23,7 +23,6 @@ describe('Dynamic Dungeon Depth & Difficulty Scaling', () => {
     id: `arc-${maxFloor}`,
     name: `Quest Arc ${maxFloor}`,
     maxFloor,
-    bossFloor: maxFloor,
   });
 
   describe('DungeonArc Floor Generation with Dynamic Max Floor', () => {

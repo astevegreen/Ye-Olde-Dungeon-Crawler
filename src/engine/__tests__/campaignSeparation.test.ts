@@ -28,7 +28,6 @@ describe('Campaign Separation', () => {
         id: 'blank_quest',
         name: 'Blank Quest',
         maxFloor: 5,
-        bossFloor: 5,
         bossMonsterId: 'blank_boss',
         relicItemId: 'blank_relic',
         victoryNpcId: 'blank_npc',

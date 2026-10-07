@@ -19,7 +19,7 @@ import { MovementAction } from '../../../engine/actions/movement';
 import { ExecuteChoiceAction } from '../../../engine/actions/choiceAction';
 import { getCounter } from '../../../engine/state/worldState';
 
-const QUEST = { ...COTW_QUEST, maxFloor: 50, bossFloor: 50 };
+const QUEST = { ...COTW_QUEST, maxFloor: 50 };
 
 describe('Campfire Grottos: Secluded Peaceful Sanctuaries', () => {
   it('defines thematic non-conspicuous entrance tiles with correct physical properties', () => {

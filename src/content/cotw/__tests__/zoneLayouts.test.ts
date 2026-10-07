@@ -14,7 +14,7 @@ import { COTW_VAULTS } from '../vaults';
  * Every zone's layout, through the real generation path (DungeonArc + cotw manifest):
  * playable on many seeds, the right size, and carrying its forced placements.
  */
-const QUEST = { ...COTW_QUEST, maxFloor: 50, bossFloor: 50 };
+const QUEST = { ...COTW_QUEST, maxFloor: 50 };
 
 function path(map: GameMap, from: { x: number; y: number }, to: { x: number; y: number }): boolean {
   const seen = new Set([`${from.x},${from.y}`]);
@@ -66,7 +66,7 @@ describe('cotw zone layouts', () => {
   const TILE_OF: Record<string, string> = { '#': 'wall', '.': 'floor', '@': 'stairs_up', P: 'pillar', B: 'iron_bars', '+': 'door_closed', "'": 'door_open', '~': 'shallow_water', X: 'chasm' };
   for (const [i, band] of COTW_FLOOR_LAYOUTS.entries()) {
     const layout = band.threshold?.layout;
-    if (band.minFloor >= QUEST.bossFloor) continue;
+    if (band.minFloor >= QUEST.maxFloor) continue;
     const prev = COTW_FLOOR_LAYOUTS[i - 1];
     if (prev && prev.maxFloor === band.minFloor - 1 && prev.strategy === band.strategy) continue;
     it(`floor ${band.minFloor}: the zone opens in a sound threshold room`, () => {

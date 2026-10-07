@@ -4,7 +4,6 @@ export const WARCRAFT_QUEST: QuestArcDefinition = {
   id: 'warcraft_blackrock_spire',
   name: 'Assault on Blackrock Spire',
   maxFloor: 5,
-  bossFloor: 5,
   bossMonsterId: 'warchief_blackhand',
   relicItemId: 'horde_war_banner',
   victoryNpcId: 'npc-lothar',

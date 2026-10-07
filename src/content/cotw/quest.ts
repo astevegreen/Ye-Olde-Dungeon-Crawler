@@ -37,7 +37,6 @@ export const COTW_QUEST: QuestArcDefinition = {
   id: 'cotw_blood_of_thrym',
   name: 'Blood of Thrym',
   maxFloor: 50,
-  bossFloor: 50,
   allowsDifficultyScaling: false,
   bossMonsterId: 'nidhogg',
   bossSlainFlag: 'nidhogg_slain',

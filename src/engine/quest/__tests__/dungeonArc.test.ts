@@ -99,7 +99,6 @@ describe('DungeonArc & Floor 5 Chieftain Encounter', () => {
         id: 'broken_arc',
         name: 'Broken Arc',
         maxFloor: 5,
-        bossFloor: 5,
         floorGenerators: {
           2: 'cvaern', // typo of 'cavern'
         },
@@ -115,7 +114,6 @@ describe('DungeonArc & Floor 5 Chieftain Encounter', () => {
         id: 'broken_arc_2',
         name: 'Broken Arc 2',
         maxFloor: 5,
-        bossFloor: 5,
         defaultGenerator: 'bsp_typo',
       };
 

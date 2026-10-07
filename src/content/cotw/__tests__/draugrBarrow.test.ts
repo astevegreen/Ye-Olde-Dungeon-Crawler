@@ -32,7 +32,7 @@ describe('The Draugr Barrow stands on floors 6-9 only', () => {
       player: new Player({ id: 'p', name: 'P', position: { x: 1, y: 1 } }),
       manifest: cotwManifest,
     });
-    const quest = { ...COTW_QUEST, maxFloor: 50, bossFloor: 50 };
+    const quest = { ...COTW_QUEST, maxFloor: 50 };
     const draugrOn = (floor: number, seed: number) =>
       DungeonArc.generateFloor(floor, seed * 7919, quest, cotwManifest, 1, undefined, engine.registries)
         .map.getAllEntities()

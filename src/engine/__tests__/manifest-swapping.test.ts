@@ -106,7 +106,6 @@ const ELDORIA_MANIFEST: GameContentManifest = {
     id: 'eldoria_quest',
     name: 'The Abyssal Rift',
     maxFloor: 3,
-    bossFloor: 3,
     bossMonsterId: 'malakor',
     relicItemId: 'shard_of_dawn',
     victoryNpcId: 'npc_julian',

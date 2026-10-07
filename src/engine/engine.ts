@@ -91,7 +91,6 @@ const DEFAULT_EMPTY_MANIFEST: GameContentManifest = {
     id: 'generic_quest',
     name: 'The Descent',
     maxFloor: 5,
-    bossFloor: 5,
     bossMonsterId: 'boss',
     relicItemId: 'relic',
     victoryNpcId: 'elder',
@@ -741,7 +740,6 @@ export class GameEngine {
               ...this.manifest.quest,
               floorGenerators: this.manifest.quest.floorGenerators ?? this.manifest.floorGenerators,
               maxFloor: effectiveMaxFloor,
-              bossFloor: effectiveMaxFloor,
             }
           : undefined;
         const density = this.pacts?.getAggregatedMutators().monsterDensityMultiplier ?? 1.0;

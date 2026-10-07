@@ -483,7 +483,6 @@ export interface QuestArcDefinition {
   id: string;
   name: string;
   maxFloor: number;
-  bossFloor: number;
   allowsDifficultyScaling?: boolean;
   bossMonsterId: string;
   /** World-state flag set when `bossMonsterId` dies, so an objective or a

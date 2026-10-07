@@ -59,7 +59,7 @@ describe('R-ai-4 · a secret door hides only its cache, never a stitched-on cave
     const { DungeonArc } = await import('../../../engine/quest/dungeonArc');
     const { cotwManifest } = await import('../index');
     const engine = new GameEngine({ map: new GameMap(10, 10), player: new Player({ id: 'p', name: 'P', position: { x: 1, y: 1 } }), manifest: cotwManifest });
-    const quest = { ...cotwManifest.quest!, floorGenerators: cotwManifest.quest?.floorGenerators ?? cotwManifest.floorGenerators, maxFloor: 50, bossFloor: 50 };
+    const quest = { ...cotwManifest.quest!, floorGenerators: cotwManifest.quest?.floorGenerators ?? cotwManifest.floorGenerators, maxFloor: 50 };
     type Map = InstanceType<typeof GameMap>;
     const reach = (map: Map, from: { x: number; y: number }, secrets: boolean) => {
       const W = map.width;
@@ -107,7 +107,7 @@ describe('R-ai-6 · a story altar or runestone lands where the hero can walk to 
     const { SpawnSiteFilter } = await import('../../../engine/dungeon/spawnSites');
     const { cotwManifest } = await import('../index');
     const engine = new GameEngine({ map: new GameMap(10, 10), player: new Player({ id: 'p', name: 'P', position: { x: 1, y: 1 } }), manifest: cotwManifest });
-    const quest = { ...cotwManifest.quest!, floorGenerators: cotwManifest.quest?.floorGenerators ?? cotwManifest.floorGenerators, maxFloor: 50, bossFloor: 50 };
+    const quest = { ...cotwManifest.quest!, floorGenerators: cotwManifest.quest?.floorGenerators ?? cotwManifest.floorGenerators, maxFloor: 50 };
     const stranded: string[] = [];
     for (const p of cotwManifest.fixedTilePlacements ?? []) {
       if (p.placement !== 'middle_room_center') continue;

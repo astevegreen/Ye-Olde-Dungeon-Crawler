@@ -82,7 +82,6 @@ describe('GameContentManifest Decoupling', () => {
         id: 'quest-scifi',
         name: 'Save the Fleet',
         maxFloor: 3,
-        bossFloor: 3,
         bossMonsterId: 'alien-queen',
         relicItemId: 'hyperdrive-core',
         victoryNpcId: 'npc-admiral',

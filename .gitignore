@@ -25,7 +25,7 @@ dist-ssr
 # Repomix codebase snapshots (generated for AI review, not source)
 repomix-output.*
 
-# Session retros written by scripts/extract_*retro.py (kept locally, not source)
+# Session retros (kept locally, not source)
 /retro/
 
 # Wrangler state and local secrets (the bug-report relay, relay/README.md)

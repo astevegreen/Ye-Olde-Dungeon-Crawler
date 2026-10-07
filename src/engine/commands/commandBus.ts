@@ -335,6 +335,12 @@ export class EngineCommandBus implements GameCommandBus {
         if (!merchant || !item) {
           return { success: false, message: 'Invalid sell request' };
         }
+        // A container would go with everything in it, as a junk one did (R-econ-19).
+        if (item instanceof Container && item.itemCount > 0) {
+          const refusal = `Empty the ${item.displayName} before selling it.`;
+          this.engine.log(refusal);
+          return { success: false, message: refusal };
+        }
         const res = merchant.sellItem(this.engine.player, item);
         this.engine.log(res.message);
         return { success: res.success, message: res.message };

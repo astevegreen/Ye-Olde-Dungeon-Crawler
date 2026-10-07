@@ -111,6 +111,28 @@ describe('junk (tracker 2.5)', () => {
     expect(res.message).toMatch(/Spare Belt is not empty/);
   });
 
+  it('sell_item refuses a container that is not empty, and says to empty it first', () => {
+    const { engine, merchant } = setup();
+    const pack = engine.player.inventory.primaryPack;
+    const full = belt('belt-full');
+    full.addItem(new PotionItem({ id: 'p-in', name: 'Healing Draught', potionType: 'health', potency: 10, identified: true }));
+    pack.addItem(full);
+    const before = getPlayerTotalCp(engine.player);
+
+    const res = engine.commandBus.dispatch({ type: 'sell_item', payload: { merchant, item: full } });
+    expect(res.success).toBe(false);
+    expect(res.message).toBe('Empty the Spare Belt before selling it.');
+    expect(pack.getItem('belt-full')).toBe(full);
+    expect(full.getItems().map((i) => i.id)).toEqual(['p-in']);
+    expect(merchant.stock.some((i) => i.id === 'belt-full')).toBe(false);
+    expect(getPlayerTotalCp(engine.player)).toBe(before);
+
+    const empty = belt('belt-empty');
+    pack.addItem(empty);
+    expect(engine.commandBus.dispatch({ type: 'sell_item', payload: { merchant, item: empty } }).success).toBe(true);
+    expect(pack.getItem('belt-empty')).toBeFalsy();
+  });
+
   it('keeps junk apart from the same item unmarked, and keeps the mark in a save', () => {
     const potion = (id: string) => new PotionItem({ id, name: 'Healing Draught', potionType: 'health', potency: 10, identified: true });
     const marked = potion('p1');

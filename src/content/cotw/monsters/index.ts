@@ -57,14 +57,6 @@ export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
   ...Object.fromEntries(PROLOGUE_MONSTERS.map((m) => [m.id, m])),
 };
 
-// Aliases for quest continuity and backward compatibility
-if (COTW_BESTIARY.ironwood_troll_wife && !COTW_BESTIARY.troll_wife_warlock) {
-  COTW_BESTIARY.troll_wife_warlock = COTW_BESTIARY.ironwood_troll_wife;
-}
-if (COTW_BESTIARY.huldra_hollow_back && !COTW_BESTIARY.huldra) {
-  COTW_BESTIARY.huldra = COTW_BESTIARY.huldra_hollow_back;
-}
-
 /**
  * Array of monster definitions for registration and dungeon generation: the classic monsters
  * of `legacy.ts` first, then the roster, minibosses and prologue monsters not already

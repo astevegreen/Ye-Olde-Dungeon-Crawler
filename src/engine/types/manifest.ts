@@ -9,13 +9,13 @@ import type { PotionType } from '../items/consumables';
 import type { CoinDenomination } from '../economy/types';
 import type { NpcRole } from '../entities/npc';
 import type { AffinityMatrixConfig, ElementType } from '../magic/elements';
-import type { EquipmentSlotDefinition, EquipmentSlotLayout } from '../inventory/paperdoll';
+import type { EquipmentSlotDefinition } from '../inventory/paperdoll';
 import type { ThemeTokens } from './theme';
 import type { VaultBlueprint } from '../dungeon/vaultStamp';
 import type { StatusHandler } from '../status/statusHandlers';
 import type { ActionHook } from '../actions/actionPipeline';
 import type { AiBehaviorStrategy } from '../ai/aiBehaviorRegistry';
-import type { CombatConfig, ProgressionConfig, LevelUpBonus, AttributeScalingConfig, LevelUpHealConfig } from './config';
+import type { CombatConfig, ProgressionConfig, LevelUpBonus, AttributeScalingConfig } from './config';
 import type { PerkDefinition, PerkEffects, LevelMilestoneTrigger } from './perks';
 import type { WorldState } from '../state/worldState';
 import type { Predicate } from '../predicates/types';
@@ -137,10 +137,7 @@ export interface ItemDefinition {
   wornEffects?: PerkEffects;
 }
 
-export const BUILTIN_ITEM_TYPES = ['standard', 'container', 'wand', 'scroll', 'potion', 'coin'] as const;
-
 export type TrapType = string;
-export const BUILTIN_TRAP_TYPES = ['pit', 'arrow', 'teleport', 'alarm'] as const;
 
 export interface TrapDefinition {
   type: TrapType;
@@ -165,14 +162,6 @@ export interface TrapDefinition {
  */
 export interface TrapPlacementConfig {
   perFloor: Array<{ minFloor: number; min: number; max: number }>;
-}
-
-export interface SurfaceTypeDefinition {
-  id: string;
-  name: string;
-  moveCostBonus?: number;
-  damagePerTurn?: number;
-  gasType?: string;
 }
 
 export interface StatusEffectDefinition {
@@ -710,8 +699,8 @@ export interface AtlasProceduralTheme<TContext = any> {
   spriteTagRules?: SpriteTagRule[];
   /**
    * Art for what covers a cell, keyed `surface~<type>` for a ground surface (the engine's
-   * built-ins `water`, `oil_slick`, `acid_pool`, `ice_sheet`, `mud`, `fire`, and the pack's
-   * `surfaceTypes`) and `gas~<type>` for a gas (`fire_storm`, `poison_cloud`, `dense_steam`).
+   * `water`, `oil_slick`, `acid_pool`, `ice_sheet`, `mud`, `fire`) and `gas~<type>` for a gas
+   * (`fire_storm`, `poison_cloud`, `dense_steam`).
    * A type without an entry gets the renderer's neutral wash in the theme's role colors.
    */
   overlays?: Record<string, CellOverlayArt>;
@@ -954,8 +943,6 @@ export interface GameContentManifest {
   actionHooks?: ActionHook[];
   aiBehaviors?: Record<string, AiBehaviorStrategy>;
   aiStrategies?: Record<string, import('../ai/aiRegistry').AIStrategy>;
-  modalLayouts?: Record<string, any>;
-  keybindings?: Record<string, any>;
   combatConfig?: CombatConfig;
   progressionConfig?: ProgressionConfig;
   /** Zone-tiered, difficulty-scaled monster power (ARCHITECTURE.md §3). When omitted,
@@ -992,7 +979,6 @@ export interface GameContentManifest {
   /** How many of `traps` each generated floor hides; absent, floors hide none. */
   trapPlacement?: TrapPlacementConfig;
   tiles?: TileDefinition[];
-  surfaceTypes?: SurfaceTypeDefinition[];
   statusEffects?: StatusEffectDefinition[];
   trackedMilestones?: TrackedMilestoneDefinition[];
   /** Verses and lore the hero keeps once found (`LoreEntryDefinition`). */
@@ -1209,13 +1195,11 @@ export type {
   CombatConfig,
   ProgressionConfig,
   AttributeScalingConfig,
-  LevelUpHealConfig,
   PerkDefinition,
   PerkEffects,
   LevelMilestoneTrigger,
   LevelUpBonus,
   EquipmentSlotDefinition,
-  EquipmentSlotLayout,
   WorldState,
   Predicate,
   ChoiceDefinition,

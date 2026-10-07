@@ -8,11 +8,9 @@ describe('cotw surface and gas art', () => {
   const overlays = cotwManifest.atlas.overlays ?? {};
   const GASES: GasType[] = ['fire_storm', 'poison_cloud', 'dense_steam'];
 
-  it('draws every built-in surface, every gas, and every surface the pack declares', () => {
-    const surfaces = [...BUILTIN_SURFACE_TYPES, ...(cotwManifest.surfaceTypes ?? []).map((s) => s.id)];
-    for (const type of surfaces) expect(overlays[`surface~${type}`], type).toBeTypeOf('function');
+  it('draws every surface and every gas', () => {
+    for (const type of BUILTIN_SURFACE_TYPES) expect(overlays[`surface~${type}`], type).toBeTypeOf('function');
     for (const type of GASES) expect(overlays[`gas~${type}`], type).toBeTypeOf('function');
-    for (const s of cotwManifest.surfaceTypes ?? []) if (s.gasType) expect(overlays[`gas~${s.gasType}`], s.gasType).toBeTypeOf('function');
   });
 
   it('keys nothing but surfaces and gases', () => {

@@ -33,8 +33,10 @@ It carries its own routing table pointing to `docs/architecture/**`
 sub-docs (content extensibility, storage/schema, simulation/input,
 quality gates) and `docs/decisions/**` ADRs — consult the sub-doc a
 change actually touches, per that table. Antigravity follows the
-same document through `.agents/rules/project-rules.md` (always loaded;
-instructions anywhere else are not) — if you ever find the two
+same document through what it loads (§8.4): `.agents/rules/*.md`
+(`project-rules.md` and `cli-safety.md` always, the `persona-*.md`
+rules when they apply) and `.agents/skills/<name>/SKILL.md`;
+instructions anywhere else are not loaded — if you ever find the two
 disagree, or either disagrees with `ARCHITECTURE.md`, that's a real
 problem to flag and resolve, not to silently pick a side on.
 

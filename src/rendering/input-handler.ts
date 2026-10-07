@@ -483,6 +483,35 @@ export class InputHandler {
       }
     }
 
+    // Navigation keys never scroll the page or press the HUD button that has focus. This
+    // runs before the lock: a Space dropped during effect playback still clicked that
+    // button on keyup (R-rend-10).
+    if (
+      [
+        'ArrowUp',
+        'ArrowDown',
+        'ArrowLeft',
+        'ArrowRight',
+        'Space',
+        'Enter',
+        'PageUp',
+        'PageDown',
+        'Home',
+        'End',
+        'Numpad8',
+        'Numpad2',
+        'Numpad4',
+        'Numpad6',
+        'Numpad7',
+        'Numpad9',
+        'Numpad1',
+        'Numpad3',
+        'Numpad5',
+      ].includes(code)
+    ) {
+      e.preventDefault();
+    }
+
     // During active visual effect playback, lock player turn actions while preserving modal responsiveness
     if (this.isInputLocked) {
       if (!this.modalStack.isEmpty()) {
@@ -509,33 +538,6 @@ export class InputHandler {
         this.onActionProcessed();
       }
       return true;
-    }
-
-    // Prevent default scrolling on navigation keys
-    if (
-      [
-        'ArrowUp',
-        'ArrowDown',
-        'ArrowLeft',
-        'ArrowRight',
-        'Space',
-        'Enter',
-        'PageUp',
-        'PageDown',
-        'Home',
-        'End',
-        'Numpad8',
-        'Numpad2',
-        'Numpad4',
-        'Numpad6',
-        'Numpad7',
-        'Numpad9',
-        'Numpad1',
-        'Numpad3',
-        'Numpad5',
-      ].includes(code)
-    ) {
-      e.preventDefault();
     }
 
     // Interruption check for active Auto-Rest or Click-to-Move navigation

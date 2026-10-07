@@ -100,3 +100,21 @@ describe('R-rend-5 · the game’s function keys never reach the browser (Help t
     expect(prevented).toHaveBeenCalled();
   });
 });
+
+describe('R-rend-10 · a key pressed while effects lock input never presses the focused HUD button', () => {
+  it.each(['Space', 'Enter', 'ArrowUp', 'Numpad5'])('%s is dropped and preventDefaulted while locked', (code) => {
+    const engine = new GameEngine({ map: new GameMap(20, 20), player: new Player({ position: { x: 10, y: 10 } }) });
+    const acted = vi.spyOn(engine, 'handlePlayerAction');
+    const ih = new InputHandler(engine, () => {}, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, new SettingsManager(new MemoryStorage()));
+    ih.enabled = true;
+    const release = ih.holdInput();
+    const prevented = vi.fn();
+
+    ih.handleKeyDown({ ...ev(code), preventDefault: prevented } as KeyboardEvent);
+    release();
+    ih.destroy();
+
+    expect(acted).not.toHaveBeenCalled();
+    expect(prevented).toHaveBeenCalled();
+  });
+});

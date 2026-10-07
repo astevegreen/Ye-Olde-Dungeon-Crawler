@@ -337,7 +337,10 @@ export class ContextHelp {
             { key: 'G / Shift+G', label: 'Pick up an item / everything here' },
             { key: 'T', label: 'Rune of Return: channel it home' },
             ...(manifest?.companions?.length
-              ? [{ key: 'Shift+C / Shift+R', label: 'Call or send away your companion / its skill' }]
+              ? [
+                  { key: 'Shift+C / Shift+R', label: 'Call or send away your companion / its skill' },
+                  { key: 'V (hold)', label: 'Companion wheel: call, skills, its pack' },
+                ]
               : []),
             { key: 'F', label: 'The action on the console button' },
             { key: 'Shift+1-4', label: 'Drink from the potion row' },

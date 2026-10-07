@@ -84,7 +84,7 @@ test('continuous active gameplay loop for visual verification', { tag: '@record'
       await page.keyboard.press('Escape');
       await page.waitForTimeout(100);
     } else if (actionCount % 55 === 0) {
-      // Radial Menu Hold & Selection
+      // Companion wheel hold & selection (with no companion bonded, V only explains)
       await page.keyboard.down('KeyV');
       await page.waitForTimeout(200);
       await page.keyboard.press('ArrowUp');

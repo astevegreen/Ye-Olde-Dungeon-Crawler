@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { RadialMenuOverlay, RADIAL_DIRECTIONS } from '../radialMenu';
-import type { RadialMenuSlotConfig } from '../../ui/settings/settingsManager';
+import type { CompanionWheelSlot } from '../../ui/companionWheel';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../engine';
 import { Player } from '../../engine';
@@ -40,10 +40,10 @@ describe('RadialMenuOverlay', () => {
     expect(overlay.slots).toEqual(new Array(8).fill(null));
   });
 
-  it('opens, tracks a hovered direction, and resolves the matching configured slot', () => {
+  it('opens, tracks a hovered direction, and resolves the matching slot', () => {
     const overlay = new RadialMenuOverlay();
-    const fireboltSlot: RadialMenuSlotConfig = { type: 'spell', spellId: 'firebolt' };
-    overlay.slots[RADIAL_DIRECTIONS.indexOf('E')] = fireboltSlot;
+    const skillSlot: CompanionWheelSlot = { label: 'Rally Howl', action: { kind: 'skill', skillId: 'rally_howl' } };
+    overlay.slots[RADIAL_DIRECTIONS.indexOf('E')] = skillSlot;
 
     overlay.open();
     expect(overlay.isOpen).toBe(true);
@@ -51,7 +51,7 @@ describe('RadialMenuOverlay', () => {
 
     overlay.setHoveredDirection('E');
     expect(overlay.getHoveredDirection()).toBe('E');
-    expect(overlay.getSelectedSlot()).toEqual(fireboltSlot);
+    expect(overlay.getSelectedSlot()).toEqual(skillSlot);
 
     // Hovering an empty wedge resolves to null even though a direction is set.
     overlay.setHoveredDirection('N');
@@ -77,13 +77,14 @@ describe('RadialMenuOverlay', () => {
     const overlay = new RadialMenuOverlay();
     const engine = buildEngine();
     const ctx = createMockCanvasContext();
-    const label = (slot: RadialMenuSlotConfig) => (slot.type === 'spell' ? slot.spellId : 'x');
+    overlay.slots[0] = { label: 'Call Fenrir', action: { kind: 'call' } };
 
-    expect(() => overlay.render(ctx, engine, 960, 600, label)).not.toThrow();
+    expect(() => overlay.render(ctx, engine, 960, 600)).not.toThrow();
     expect(ctx.fillRect).not.toHaveBeenCalled(); // closed: nothing drawn
 
     overlay.open();
-    expect(() => overlay.render(ctx, engine, 960, 600, label)).not.toThrow();
+    expect(() => overlay.render(ctx, engine, 960, 600)).not.toThrow();
     expect(ctx.fillRect).toHaveBeenCalled(); // open: backdrop drawn
+    expect(ctx.fillText).toHaveBeenCalledWith('Call Fenrir', expect.any(Number), expect.any(Number), expect.any(Number));
   });
 });

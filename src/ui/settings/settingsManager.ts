@@ -63,7 +63,7 @@ export const ACTION_METADATA: ActionMetadata[] = [
   { id: 'compendium', name: 'Bestiary', category: 'Interaction & Inventory', defaultCodes: ['KeyB'] },
   { id: 'pact', name: 'Pacts', category: 'Interaction & Inventory', defaultCodes: ['KeyP'] },
   { id: 'story', name: 'Story', category: 'Interaction & Inventory', defaultCodes: ['KeyO'] },
-  { id: 'radial_menu', name: 'Open Radial Action Menu', category: 'Interaction & Inventory', defaultCodes: ['KeyV'] },
+  { id: 'radial_menu', name: 'Companion Wheel (hold)', category: 'Interaction & Inventory', defaultCodes: ['KeyV'] },
   { id: 'companion_call', name: 'Call / Send Away Companion', category: 'Interaction & Inventory', defaultCodes: ['Shift+KeyC'] },
 ];
 
@@ -112,19 +112,6 @@ export function hardWiredConflict(actionId: string, code: string): string | null
   return wired && wired.actionId !== actionId ? wired.does : null;
 }
 
-/**
- * Configurable Radial Action Menu (docs/architecture/simulation-and-input.md). A slot bound to a spell,
- * a registered CommandPalette command, or a directly-usable consumable item (potion
- * or self-targeted scroll). Indexed by compass direction — see radialMenu.ts's
- * `RADIAL_DIRECTIONS` for the fixed 8-direction order this array is keyed by.
- */
-export type RadialMenuSlotConfig =
-  | { type: 'spell'; spellId: string }
-  | { type: 'command'; commandId: string }
-  | { type: 'item'; itemId: string };
-
-export const RADIAL_MENU_SLOT_COUNT = 8;
-
 export interface GameSettings {
   arrowChordingEnabled: boolean;
   arrowChordBufferMs: number;
@@ -145,21 +132,6 @@ export interface GameSettings {
   /** Which kinds of item the hero picks up on stepping onto them (`autoPickup.ts`); coins always. */
   autoPickup: Record<AutoPickupGroup, boolean>;
   keybinds: Record<string, string[]>;
-  radialMenuSlots: (RadialMenuSlotConfig | null)[];
-}
-
-function sanitizeRadialMenuSlots(raw: unknown): (RadialMenuSlotConfig | null)[] {
-  const defaults: (RadialMenuSlotConfig | null)[] = new Array(RADIAL_MENU_SLOT_COUNT).fill(null);
-  if (!Array.isArray(raw)) return defaults;
-
-  return defaults.map((_, i) => {
-    const slot = raw[i];
-    if (!slot || typeof slot !== 'object') return null;
-    if (slot.type === 'spell' && typeof slot.spellId === 'string') return { type: 'spell', spellId: slot.spellId };
-    if (slot.type === 'command' && typeof slot.commandId === 'string') return { type: 'command', commandId: slot.commandId };
-    if (slot.type === 'item' && typeof slot.itemId === 'string') return { type: 'item', itemId: slot.itemId };
-    return null;
-  });
 }
 
 /** A saved auto-pickup choice, each group a boolean; a group missing or malformed takes its default. */
@@ -232,7 +204,6 @@ export function getDefaultSettings(): GameSettings {
     controlsPrimerEnabled: true,
     autoPickup: { ...DEFAULT_AUTO_PICKUP },
     keybinds: getDefaultKeybinds(),
-    radialMenuSlots: new Array(RADIAL_MENU_SLOT_COUNT).fill(null),
   };
 }
 
@@ -374,7 +345,6 @@ export class SettingsManager {
         controlsPrimerEnabled: typeof parsed.controlsPrimerEnabled === 'boolean' ? parsed.controlsPrimerEnabled : defaults.controlsPrimerEnabled,
         autoPickup: sanitizeAutoPickup(parsed.autoPickup),
         keybinds: loadKeybinds(parsed.keybinds),
-        radialMenuSlots: sanitizeRadialMenuSlots(parsed.radialMenuSlots),
       };
     } catch {
       return defaults;

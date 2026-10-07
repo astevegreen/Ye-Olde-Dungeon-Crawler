@@ -1,27 +1,27 @@
 import type { GameEngine } from '../engine';
 import { drawIconCentered } from './canvasIcons';
-import type { RadialMenuSlotConfig } from '../ui/settings/settingsManager';
-import { RADIAL_MENU_SLOT_COUNT } from '../ui/settings/settingsManager';
+import { COMPANION_WHEEL_SIZE, type CompanionWheelSlot } from '../ui/companionWheel';
 import { resolveThemeTokens, uiFont, withAlpha } from './theme';
 
 /**
- * Configurable Radial Action Menu (docs/architecture/simulation-and-input.md).
+ * The radial menu, dedicated to the companion: the companion wheel (`companionWheel.ts`,
+ * docs/architecture/simulation-and-input.md).
  *
- * A hold-to-open canvas overlay: `InputHandler` opens it on the configurable
- * `radial_menu` action keydown, routes the existing directional-key vocabulary
- * (arrows/WASD/vi/numpad) to `setHoveredDirection()` while it is open instead of
- * moving the player, and confirms the hovered slot on that same key's release.
- * Gamepad input is not implemented in this pass (deferred — see ARCHITECTURE.md P-24).
+ * A hold-to-open canvas overlay: `InputHandler` fills it from `companionWheelSlots` and
+ * opens it on the configurable `radial_menu` action keydown, routes the existing
+ * directional-key vocabulary (arrows/WASD/vi/numpad) to `setHoveredDirection()` while it
+ * is open instead of moving the player, and confirms the hovered slot on that same key's
+ * release. Gamepad input is not implemented (deferred — see ARCHITECTURE.md P-24).
  */
 export type RadialDirection = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW';
 
-/** Fixed 8-direction order — `SettingsManager.radialMenuSlots` is keyed by this same order. */
+/** Fixed 8-direction order — the companion wheel's slots are keyed by this same order. */
 export const RADIAL_DIRECTIONS: readonly RadialDirection[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 
 export class RadialMenuOverlay {
   public isOpen = false;
-  /** Synced externally from SettingsManager (see main.ts) — this overlay doesn't own settings. */
-  public slots: (RadialMenuSlotConfig | null)[] = new Array(RADIAL_MENU_SLOT_COUNT).fill(null);
+  /** Set by `InputHandler` from `companionWheelSlots` each time the wheel opens. */
+  public slots: (CompanionWheelSlot | null)[] = new Array(COMPANION_WHEEL_SIZE).fill(null);
   private hoveredDirection: RadialDirection | null = null;
 
   public open(): void {
@@ -44,7 +44,7 @@ export class RadialMenuOverlay {
   }
 
   /** The slot config currently hovered, or null if nothing is hovered or that slot is empty. */
-  public getSelectedSlot(): RadialMenuSlotConfig | null {
+  public getSelectedSlot(): CompanionWheelSlot | null {
     if (!this.hoveredDirection) return null;
     const idx = RADIAL_DIRECTIONS.indexOf(this.hoveredDirection);
     return this.slots[idx] ?? null;
@@ -55,8 +55,7 @@ export class RadialMenuOverlay {
     engine: GameEngine,
     canvasW: number,
     canvasH: number,
-    resolveLabel: (slot: RadialMenuSlotConfig) => string,
-    drawPlayerCenter?: (ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number) => void
+    drawCenter?: (ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number) => void
   ): void {
     if (!this.isOpen) return;
 
@@ -100,11 +99,11 @@ export class RadialMenuOverlay {
       ctx.fillStyle = isHovered ? theme.titlebarText : slot ? theme.text : theme.textMuted;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      const label = slot ? resolveLabel(slot) : '—';
+      const label = slot ? slot.label : '—';
       ctx.fillText(label, lx, ly, outerRadius * 0.7);
     });
 
-    // Center Hub: open boundary ring with player sprite or icon centered in the middle
+    // Center hub: an open ring with the companion (or, while it is away, the hero) inside
     ctx.beginPath();
     ctx.arc(cx, cy, innerRadius, 0, Math.PI * 2);
     ctx.strokeStyle = theme.accent;
@@ -112,8 +111,8 @@ export class RadialMenuOverlay {
     ctx.stroke();
 
     const centerSize = Math.round(innerRadius * 1.3);
-    if (drawPlayerCenter) {
-      drawPlayerCenter(ctx, cx, cy, centerSize);
+    if (drawCenter) {
+      drawCenter(ctx, cx, cy, centerSize);
     } else {
       drawIconCentered(ctx, 'shield', cx, cy, centerSize);
     }

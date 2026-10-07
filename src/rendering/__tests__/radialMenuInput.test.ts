@@ -7,7 +7,7 @@ import { Player } from '../../engine';
 import { MovementAction } from '../../engine';
 import { SettingsManager } from '../../ui/settings/settingsManager';
 import { MemoryStorage } from '../../engine';
-import { CommandPalette } from '../../ui/help/commandPalette';
+import { Companion } from '../../engine';
 
 function makeKeyEvent(code: string, repeat = false): KeyboardEvent {
   return {
@@ -19,7 +19,7 @@ function makeKeyEvent(code: string, repeat = false): KeyboardEvent {
   } as unknown as KeyboardEvent;
 }
 
-describe('InputHandler <-> RadialMenuOverlay wiring', () => {
+describe('InputHandler <-> the companion wheel (RadialMenuOverlay)', () => {
   let engine: GameEngine;
   let settingsManager: SettingsManager;
   let radialMenuOverlay: RadialMenuOverlay;
@@ -32,8 +32,8 @@ describe('InputHandler <-> RadialMenuOverlay wiring', () => {
     engine = new GameEngine({ map, player });
     settingsManager = new SettingsManager(new MemoryStorage());
     radialMenuOverlay = new RadialMenuOverlay();
-    // An empty wheel doesn't open (R-rend-15), so the wiring tests start with one slot set.
-    radialMenuOverlay.slots[RADIAL_DIRECTIONS.indexOf('W')] = { type: 'command', commandId: 'wait' };
+    // A bonded hero has a wheel to open; one never bonded is told so (R-rend-15).
+    engine.setWorldFlag(GameEngine.COMPANION_BONDED_FLAG, true);
     onActionProcessed = vi.fn();
 
     inputHandler = new InputHandler(
@@ -64,9 +64,9 @@ describe('InputHandler <-> RadialMenuOverlay wiring', () => {
     expect(inputHandler.modalStack.has('radial-menu')).toBe(true);
   });
 
-  // R-rend-15: nothing in the game fills a slot yet, so V opened eight empty wedges.
-  it('does not open a wheel with every slot empty, and says so in the log', () => {
-    radialMenuOverlay.slots.fill(null);
+  // R-rend-15: V opened eight empty wedges. A hero with no companion to command is told so.
+  it('does not open for a hero with no companion to command, and says so in the log', () => {
+    engine.setWorldFlag(GameEngine.COMPANION_BONDED_FLAG, false);
     const logged = vi.spyOn(engine, 'log');
 
     const handled = inputHandler.handleKeyDown(makeKeyEvent('KeyV'));
@@ -74,7 +74,7 @@ describe('InputHandler <-> RadialMenuOverlay wiring', () => {
     expect(handled).toBe(true);
     expect(radialMenuOverlay.isOpen).toBe(false);
     expect(inputHandler.modalStack.has('radial-menu')).toBe(false);
-    expect(logged).toHaveBeenCalledTimes(1);
+    expect(logged).toHaveBeenCalledWith('You have no companion to command.');
   });
 
   // R-rend-15: a blur closed the wheel's state but left it painted until the next render.
@@ -109,33 +109,22 @@ describe('InputHandler <-> RadialMenuOverlay wiring', () => {
     expect(inputHandler.modalStack.has('radial-menu')).toBe(false);
   });
 
-  it('confirmRadialMenu executes a hovered command slot and closes the menu', () => {
-    const palette = new CommandPalette();
-    const execute = vi.fn();
-    palette.registerCommands([
-      { id: 'wait', title: 'Wait', category: 'Action', shortcut: '.', description: 'Wait', execute },
-    ]);
-    inputHandler.commandPalette = palette;
-    radialMenuOverlay.slots[RADIAL_DIRECTIONS.indexOf('S')] = { type: 'command', commandId: 'wait' };
+  it('the call wedge (N) calls the companion, as Shift+C does, and closes the wheel', () => {
+    const onCompanionCommand = vi.fn();
+    inputHandler.onCompanionCommand = onCompanionCommand;
 
     inputHandler.handleKeyDown(makeKeyEvent('KeyV'));
-    inputHandler.handleKeyDown(makeKeyEvent('ArrowDown')); // S
-
+    inputHandler.handleKeyDown(makeKeyEvent('ArrowUp')); // N
     inputHandler.confirmRadialMenu();
 
-    expect(execute).toHaveBeenCalledWith(engine);
+    expect(onCompanionCommand).toHaveBeenCalledWith('call');
     expect(radialMenuOverlay.isOpen).toBe(false);
     expect(inputHandler.modalStack.has('radial-menu')).toBe(false);
   });
 
-  it('releasing the bound trigger key while open confirms the hovered slot end-to-end', () => {
-    const palette = new CommandPalette();
-    const execute = vi.fn();
-    palette.registerCommands([
-      { id: 'wait', title: 'Wait', category: 'Action', shortcut: '.', description: 'Wait', execute },
-    ]);
-    inputHandler.commandPalette = palette;
-    radialMenuOverlay.slots[RADIAL_DIRECTIONS.indexOf('N')] = { type: 'command', commandId: 'wait' };
+  it('releasing the bound trigger key while open confirms the hovered wedge end-to-end', () => {
+    const onCompanionCommand = vi.fn();
+    inputHandler.onCompanionCommand = onCompanionCommand;
 
     inputHandler.handleKeyDown(makeKeyEvent('KeyV'));
     inputHandler.handleKeyDown(makeKeyEvent('ArrowUp')); // N
@@ -145,8 +134,34 @@ describe('InputHandler <-> RadialMenuOverlay wiring', () => {
       makeKeyEvent('KeyV')
     );
 
-    expect(execute).toHaveBeenCalledWith(engine);
+    expect(onCompanionCommand).toHaveBeenCalledWith('call');
     expect(radialMenuOverlay.isOpen).toBe(false);
+  });
+
+  it("with the companion at hand: a skill wedge uses that skill, and S opens its pack", () => {
+    const hound = new Companion({
+      id: 'hound', name: 'Hound', position: { x: 6, y: 5 }, stats: { hp: 20, maxHp: 20, attack: 3, defense: 1 },
+      speed: 100, companionDefinitionId: 'test_hound', packWeightCapacity: 10000, packBulkCapacity: 10000,
+    });
+    hound.unlockedSkills.push('test_howl');
+    engine.companion = hound;
+    const dispatch = vi.spyOn(engine.commandBus, 'dispatch').mockReturnValue({ success: true });
+    const onOpenCompanionPack = vi.fn();
+    inputHandler.onOpenCompanionPack = onOpenCompanionPack;
+
+    inputHandler.handleKeyDown(makeKeyEvent('KeyV'));
+    expect(radialMenuOverlay.slots[RADIAL_DIRECTIONS.indexOf('N')]?.label).toBe('Send Hound away');
+    inputHandler.handleKeyDown(makeKeyEvent('ArrowUp'));
+    inputHandler.handleKeyDown(makeKeyEvent('ArrowRight')); // NE: the first skill
+    inputHandler.confirmRadialMenu();
+    expect(dispatch).toHaveBeenCalledWith({ type: 'use_companion_skill', payload: { skillId: 'test_howl' } });
+
+    inputHandler.handleKeyUp(makeKeyEvent('ArrowUp'));
+    inputHandler.handleKeyUp(makeKeyEvent('ArrowRight'));
+    inputHandler.handleKeyDown(makeKeyEvent('KeyV'));
+    inputHandler.handleKeyDown(makeKeyEvent('ArrowDown')); // S: its pack
+    inputHandler.confirmRadialMenu();
+    expect(onOpenCompanionPack).toHaveBeenCalled();
   });
 
   it('does nothing when confirmed with no wedge hovered', () => {

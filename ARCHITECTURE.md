@@ -235,7 +235,7 @@ A completed item is deleted from this register, but its ID is retired, never reu
 Entries here are recorded, not planned: no work is scheduled, none attempted. They keep reserved IDs so numbering stays stable. A deferred item is not **[Planned]** — do not pick one up as planned work; moving one back into the register above is an explicit decision.
 
 **P-24 — Radial Action Menu: gamepad invocation** (§6) — **Deferred 2026-09-15**
-- Current: the radial menu itself is implemented (`src/rendering/radialMenu.ts`) — see `docs/architecture/simulation-and-input.md`. Gamepad invocation is not implemented; `navigator.getGamepads()` is unreferenced in `src/`.
+- Current: the radial menu itself is implemented, dedicated to the companion as the companion wheel (`src/rendering/radialMenu.ts`, `src/ui/companionWheel.ts`) — see `docs/architecture/simulation-and-input.md`. Gamepad invocation is not implemented; `navigator.getGamepads()` is unreferenced in `src/`.
 - Reason: gamepad/controller support is intentionally out of scope until the game is feature-complete; may be reconsidered afterwards.
 - Not the same as an *Evaluated, Not Adopted* design (e.g. [ADR-0001](docs/decisions/0001-scheduler-partitioning-evaluated-not-adopted.md)) — that was built and rejected on evidence. P-24 was never attempted; deferral is scheduling, not a verdict.
 - If revisited: gamepad button-hold opens the menu and stick angle selects a wedge, confined to `src/rendering/` (never on the simulation execution path, so it doesn't affect headless purity, §2). Protected files: none.

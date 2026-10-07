@@ -28,18 +28,9 @@ import { MouseVectorOverlay } from './mouseVectorOverlay';
 import { RadialMenuOverlay } from './radialMenu';
 import { FloatingTextRunner } from './floatingTextRunner';
 import { TacticalTargetOverlay } from './tacticalTargetOverlay';
-import type { RadialMenuSlotConfig } from '../ui/settings/settingsManager';
 import { MapCardLayer, type MapCardSpec } from '../ui/mapCards/mapCardLayer';
 import { escapeHtml, keyChip } from '../ui/html';
 import { getAudibleEntitiesInRadius, getAudibleTilesInRadius, ECHOLOCATION_HEARING_RADIUS } from '../engine';
-
-function defaultRadialLabel(slot: RadialMenuSlotConfig): string {
-  switch (slot.type) {
-    case 'spell': return slot.spellId;
-    case 'command': return slot.commandId;
-    case 'item': return slot.itemId;
-  }
-}
 
 /** Optional pack art for a multi-item tile; without it the renderer draws a generic heap. */
 const LOOT_PILE_SPRITE_KEY = 'loot_pile';
@@ -71,8 +62,6 @@ export class CanvasRenderer {
   public readonly tacticalTargetOverlay: TacticalTargetOverlay;
   /** The DOM cards over the map (Look, target, banners); null without a page (tests). */
   private readonly cards: MapCardLayer | null;
-  /** Resolves a display label for a radial-menu slot; wired from main.ts (spell/command/item lookups live there). */
-  public onResolveRadialLabel?: (slot: RadialMenuSlotConfig) => string;
   public mouseVectoringEnabled = false;
   /** Player setting (N23, tracker 4.4): while aiming, the reticle follows the mouse and a click fires. */
   public mouseAimEnabled = true;
@@ -588,19 +577,12 @@ export class CanvasRenderer {
       this.offsetY
     );
 
-    // Configurable Radial Action Menu
-    this.radialMenuOverlay.render(
-      ctx,
-      this.engine,
-      virtualW,
-      virtualH,
-      this.onResolveRadialLabel ?? defaultRadialLabel,
-      (c, x, y, size) => {
-        const player = this.engine.player;
-        const spriteKey = player ? getEntitySpriteKey(player, this.atlas.hasSprite.bind(this.atlas)) : 'player';
-        this.atlas.drawSprite(c, spriteKey, x - size / 2, y - size / 2, size, Visibility.Visible);
-      }
-    );
+    // The companion wheel, with the companion at its hub (the hero while it is away)
+    this.radialMenuOverlay.render(ctx, this.engine, virtualW, virtualH, (c, x, y, size) => {
+      const centre = this.engine.companion?.isAlive() ? this.engine.companion : this.engine.player;
+      const spriteKey = centre ? getEntitySpriteKey(centre, this.atlas.hasSprite.bind(this.atlas)) : 'player';
+      this.atlas.drawSprite(c, spriteKey, x - size / 2, y - size / 2, size, Visibility.Visible);
+    });
 
     this.notifyFocusEntity();
     this.syncCards(virtualW);

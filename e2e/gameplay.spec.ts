@@ -534,7 +534,7 @@ test('windows opened from save & quit each hold one stack entry and keep keys fr
   await expect(page.locator('#settings-status')).toContainText('F2 opens Diagnostics');
   expect(await stackIds(page)).toEqual(['settings']);
   await page.keyboard.press('KeyV');
-  await expect(page.locator('#settings-status')).toContainText('Moved V from "Open Radial Action Menu" to "Move North"');
+  await expect(page.locator('#settings-status')).toContainText('Moved V from "Companion Wheel (hold)" to "Move North"');
   expect(await stackIds(page)).toEqual(['settings']);
   await page.keyboard.press('Escape');
   await expect(settings).toBeHidden();

@@ -23,43 +23,13 @@ describe('SettingsManager', () => {
     expect(settings.keybinds.move_n).toContain('ArrowUp');
     expect(settings.keybinds.cast_spell).toContain('KeyZ');
     expect(settings.keybinds.radial_menu).toContain('KeyV');
-    expect(settings.radialMenuSlots).toEqual(new Array(8).fill(null));
   });
 
-  it('persists and reloads a configured radialMenuSlots array', () => {
-    manager.updateSettings({
-      radialMenuSlots: [
-        { type: 'spell', spellId: 'firebolt' },
-        null,
-        { type: 'command', commandId: 'wait' },
-        null,
-        { type: 'item', itemId: 'health_potion' },
-        null,
-        null,
-        null,
-      ],
-    });
-
-    const newManager = new SettingsManager(storage);
-    const loaded = newManager.getSettings();
-    expect(loaded.radialMenuSlots[0]).toEqual({ type: 'spell', spellId: 'firebolt' });
-    expect(loaded.radialMenuSlots[2]).toEqual({ type: 'command', commandId: 'wait' });
-    expect(loaded.radialMenuSlots[4]).toEqual({ type: 'item', itemId: 'health_potion' });
-    expect(loaded.radialMenuSlots[1]).toBeNull();
-  });
-
-  it('sanitizes malformed radialMenuSlots data from storage into all-null defaults', () => {
-    storage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ radialMenuSlots: 'not-an-array' }));
+  it('ignores the radial slots older settings saved: the wheel is the companion\'s now', () => {
+    storage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ radialMenuSlots: [{ type: 'spell', spellId: 'firebolt' }] }));
     const loaded = new SettingsManager(storage).getSettings();
-    expect(loaded.radialMenuSlots).toEqual(new Array(8).fill(null));
-
-    storage.setItem(
-      SETTINGS_STORAGE_KEY,
-      JSON.stringify({ radialMenuSlots: [{ type: 'spell' /* missing spellId */ }, { type: 'bogus' }] })
-    );
-    const loaded2 = new SettingsManager(storage).getSettings();
-    expect(loaded2.radialMenuSlots[0]).toBeNull();
-    expect(loaded2.radialMenuSlots[1]).toBeNull();
+    expect('radialMenuSlots' in loaded).toBe(false);
+    expect(loaded.keybinds.radial_menu).toContain('KeyV');
   });
 
   it('persists changes to storage under dedicated yodc_settings key', () => {

@@ -10,10 +10,6 @@ import {
   SearchAction,
   DisarmTrapAction,
   ClimbStairsAction,
-  DrinkPotionAction,
-  ReadScrollAction,
-  PotionItem,
-  ScrollItem,
   ChannelRuneOfReturnAction,
   AutoRestManager,
   type Action,
@@ -32,7 +28,7 @@ import type { RuneOfReturnDiscoveryModal } from '../ui/runeOfReturnDiscoveryModa
 import type { CharacterMenuModal } from '../ui/characterMenu/characterMenuModal';
 import { ModalStackManager } from '../ui/modalStack';
 import { SettingsManager } from '../ui/settings/settingsManager';
-import type { RadialMenuSlotConfig } from '../ui/settings/settingsManager';
+import { companionWheelSlots, type CompanionWheelAction } from '../ui/companionWheel';
 import { ChordBuffer } from '../ui/input/chordBuffer';
 import type { RadialMenuOverlay, RadialDirection } from './radialMenu';
 
@@ -206,8 +202,8 @@ export class InputHandler {
   public onCompanionCommand?: (command: 'call' | 'skill') => void;
   /** Opens the log's history (Shift+M by default). */
   public onOpenMessageLog?: () => void;
-  /** Casts a spell by ID (as opposed to a QuickSpellsBar slot index) — wired from main.ts's castOrTargetSpell. */
-  public onCastSpellById?: (spellId: string) => void;
+  /** Opens the inventory on the companion's pack (the companion wheel's pack wedge). */
+  public onOpenCompanionPack?: () => void;
   public enabled = true;
   /** Effect batches holding input (`holdInput`); gameplay keys wait while any does. */
   private inputHolds = 0;
@@ -447,35 +443,25 @@ export class InputHandler {
     overlay.close();
     this.modalStack.remove('radial-menu');
     if (slot) {
-      this.executeRadialSlot(slot);
+      this.runCompanionWheel(slot.action);
     }
     this.onActionProcessed();
   }
 
-  private executeRadialSlot(slot: RadialMenuSlotConfig): void {
-    switch (slot.type) {
-      case 'spell': {
-        this.onCastSpellById?.(slot.spellId);
+  /** One wedge of the companion wheel: the same paths as the companion keys and the inventory. */
+  private runCompanionWheel(action: CompanionWheelAction): void {
+    switch (action.kind) {
+      case 'call':
+        this.onCompanionCommand?.('call');
+        return;
+      case 'skill': {
+        const res = this.engine.commandBus.dispatch({ type: 'use_companion_skill', payload: { skillId: action.skillId } });
+        if (!res.success && res.message) this.engine.log(res.message);
         return;
       }
-      case 'command': {
-        const command = this.commandPalette?.getCommand(slot.commandId);
-        command?.execute(this.engine);
+      case 'pack':
+        this.onOpenCompanionPack?.();
         return;
-      }
-      case 'item': {
-        const player = this.engine.player;
-        const item = player.inventory.findItemById(slot.itemId);
-        if (!item) return;
-        if (item instanceof PotionItem) {
-          this.engine.handlePlayerAction(new DrinkPotionAction(player, item));
-        } else if (item instanceof ScrollItem) {
-          // Self-targeted use only — aimed scrolls (e.g. targeted teleport) need a
-          // reticle and aren't a fit for direct radial-menu activation in this pass.
-          this.engine.handlePlayerAction(new ReadScrollAction(player, item, player.x, player.y));
-        }
-        return;
-      }
     }
   }
 
@@ -549,7 +535,7 @@ export class InputHandler {
       return false;
     }
 
-    // Configurable Radial Action Menu (docs/architecture/simulation-and-input.md): while open, directional
+    // The companion wheel (docs/architecture/simulation-and-input.md): while open, directional
     // keys (arrows/WASD/vi/numpad) select a wedge instead of moving, Escape cancels,
     // and every other key is consumed so gameplay input can't leak through mid-selection.
     if (this.radialMenuOverlay?.isOpen) {
@@ -981,14 +967,17 @@ export class InputHandler {
       return true;
     }
     if (userAction === 'radial_menu' && !e.repeat && this.radialMenuOverlay) {
-      // Nothing in the game fills a slot yet: a wheel of eight empty wedges is no menu (R-rend-15).
-      if (!this.radialMenuOverlay.slots.some((slot) => slot !== null)) {
-        this.engine.log('The radial menu is empty.');
+      // The companion wheel: a hero with no companion to command is told so, not shown an
+      // empty wheel (R-rend-15).
+      const slots = companionWheelSlots(this.engine);
+      if (!slots) {
+        this.engine.log('You have no companion to command.');
         this.onActionProcessed();
         return true;
       }
       const self = this;
       this.radialHeldKeys.clear();
+      this.radialMenuOverlay.slots = slots;
       this.radialMenuOverlay.open();
       this.modalStack.push({
         id: 'radial-menu',

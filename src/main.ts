@@ -123,7 +123,6 @@ import { MessageLogModal } from './ui/messageLogModal';
 import { OverflowWarning } from './ui/overflowWarning';
 import type { ContextAction } from './ui/console/consoleModel';
 import { SettingsManager } from './ui/settings/settingsManager';
-import type { RadialMenuSlotConfig } from './ui/settings/settingsManager';
 import { KeybindModal } from './ui/settings/keybindModal';
 import { MainMenu } from './ui/menus/mainMenu';
 import { isBenignResizeObserverError, isOpaqueScriptError } from './ui/opaqueScriptError';
@@ -457,30 +456,6 @@ window.addEventListener('DOMContentLoaded', () => {
       return;
     }
     castOrTargetSpell(spell);
-  }
-
-  // Configurable Radial Action Menu (docs/architecture/simulation-and-input.md): casts an arbitrary spell
-  // by ID, as opposed to triggerQuickSpell's fixed quickSpells-bar slot index.
-  function castSpellById(spellId: string): void {
-    if (!activeEngine || !renderer) return;
-    const spell = activeEngine.manifest?.spells?.find((s) => s.id === spellId) ?? getSpell(spellId);
-    if (spell) castOrTargetSpell(spell);
-  }
-
-  function resolveRadialMenuLabel(slot: RadialMenuSlotConfig): string {
-    if (!activeEngine) return '';
-    switch (slot.type) {
-      case 'spell': {
-        const spell = activeEngine.manifest?.spells?.find((s) => s.id === slot.spellId) ?? getSpell(slot.spellId);
-        return spell?.name ?? slot.spellId;
-      }
-      case 'command':
-        return commandPalette.getCommand(slot.commandId)?.title ?? slot.commandId;
-      case 'item': {
-        const item = activeEngine.player.inventory.findItemById(slot.itemId);
-        return item?.displayName ?? slot.itemId;
-      }
-    }
   }
 
   /** "Shift+Digit1" -> "⇧1": the first key bound to a potion slot, as the row shows it. */
@@ -1720,8 +1695,6 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer.mouseVectoringEnabled = settingsManager.getSettings().mouseVectoringEnabled;
       renderer.mouseAimEnabled = settingsManager.getSettings().mouseAimEnabled;
       renderer.torchlightEnabled = settingsManager.getSettings().torchlightEnabled;
-      renderer.radialMenuOverlay.slots = settingsManager.getSettings().radialMenuSlots;
-      renderer.onResolveRadialLabel = resolveRadialMenuLabel;
       renderer.onFocusEntityChanged = (id) => combatSidebar.setFocusedEntity(id);
       // A click while aiming fires as Enter does (tracker 4.4): the spell, the targeting
       // entry off the stack (the overlay's `onClose`), and the action's effects played.
@@ -1738,7 +1711,6 @@ window.addEventListener('DOMContentLoaded', () => {
           renderer.mouseVectoringEnabled = settings.mouseVectoringEnabled;
           renderer.mouseAimEnabled = settings.mouseAimEnabled;
           renderer.torchlightEnabled = settings.torchlightEnabled;
-          renderer.radialMenuOverlay.slots = settings.radialMenuSlots;
           renderer.render();
         }
       });
@@ -1781,7 +1753,10 @@ window.addEventListener('DOMContentLoaded', () => {
       inputHandler.onOpenRuneTree = openRuneTree;
       inputHandler.runeOfReturnDiscoveryModal = runeDiscoveryModal;
       runeDiscoveryModal.setModalStack(inputHandler.modalStack);
-      inputHandler.onCastSpellById = castSpellById;
+      inputHandler.onOpenCompanionPack = () => {
+        openMenuTab('inventory');
+        inventoryTab.controller.setColumn3View('companion');
+      };
       inputHandler.onDrinkPotionSlot = drinkPotionSlot;
       inputHandler.onToggleCommandPalette = toggleCommandPalette;
       inputHandler.onContextAction = () => runContextAction(consoleExtras.currentAction);
@@ -1795,7 +1770,6 @@ window.addEventListener('DOMContentLoaded', () => {
       inputHandler.onToggleFeedback = () => toggleFeedback();
     } else {
       renderer.setEngine(engine);
-      renderer.onResolveRadialLabel = resolveRadialMenuLabel;
       renderer.shopOverlay.onOpenCompendium = () => openMenuTab('bestiary');
       renderer.shopOverlay.onOpenRuneTree = () => {
         openRuneTree();
@@ -1823,7 +1797,10 @@ window.addEventListener('DOMContentLoaded', () => {
         inputHandler.runeOfReturnDiscoveryModal = runeDiscoveryModal;
         runeDiscoveryModal.setModalStack(inputHandler.modalStack);
         inputHandler.onSaveAndExit = promptSaveAndQuit;
-        inputHandler.onCastSpellById = castSpellById;
+        inputHandler.onOpenCompanionPack = () => {
+        openMenuTab('inventory');
+        inventoryTab.controller.setColumn3View('companion');
+      };
         inputHandler.onDrinkPotionSlot = drinkPotionSlot;
         inputHandler.onToggleCommandPalette = toggleCommandPalette;
       inputHandler.onContextAction = () => runContextAction(consoleExtras.currentAction);

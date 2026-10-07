@@ -8,7 +8,8 @@ import type { CombatConfig } from '../../engine';
  *
  * A melee blow lands 80% of the time before Dexterity (the ranged roll's 75% is the model), so
  * a Dexterity of 20 never misses and one of 8 lands 76%; monsters carry no Dexterity and stay
- * at 80. Measured by `.prompts/phase3/attr-duels.ts`.
+ * at 80. Measured over 30 ten-monster gauntlets a floor on floors 5, 12, 25 and 40; commit
+ * ea22b71 records the numbers.
  */
 export const COTW_COMBAT: CombatConfig = {
   attributeScaling: {

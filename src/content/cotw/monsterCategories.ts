@@ -125,7 +125,7 @@ export const COTW_MONSTER_CATEGORIES: MonsterCategoryDefinition[] = [
     name: 'Fiends & Horrors',
     icon: '👁️',
     description: 'Shadow fiends and aberrations that crawled up from beneath the roots of the world.',
-    // A full clear meets about 21 of them, all on floors 41–50 (`.prompts/phase3/family-kills.ts`,
+    // A full clear meets about 21 of them, all on floors 41–50 (20 seeds, measured in faa05ab;
     // tracker 3.5); 40 could never be reached.
     masteryKills: 15,
     members: ['shadow_fiend', 'malice_weaver', 'miniboss_tar_abomination'],

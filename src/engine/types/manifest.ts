@@ -58,9 +58,8 @@ export type ConsumableEffectDescriptor =
        * living entity within `radius` of the user matching any of `tags` (e.g. a
        * holy torch blinding undead within 4 tiles). Uses the same bounded
        * `findTaggedEntitiesInRadius` query the `radialAuraFilter` hook primitive
-       * uses — see `combat/radialAuraFilter.ts`. The user's own side is spared: a hero's
-       * companion is a `monster` by type, but a flask thrown at "every beast within three
-       * paces" means the hostile ones.
+       * uses — see `combat/radialAuraFilter.ts`. Only the user is spared: like a spell
+       * burst, it afflicts allies too (a hero's companion is a `monster` by type).
        */
       type: 'radial_status';
       radius: number;

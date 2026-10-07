@@ -65,8 +65,10 @@ describe('R-cotw-2 · the Oath grants no companion when the hero already has one
   });
 });
 
+// The owner chose classic friendly fire (2026-10-07): a flask hits allies too, like a spell
+// burst, so I3's "spare the user's side" is reverted. The drinker alone is spared.
 describe('R-cotw-3 · a "monster"-tagged radial consumable afflicts the hero’s own companion', () => {
-  it('Zealot’s Sun-Flare does not set the companion burning', () => {
+  it('Zealot’s Sun-Flare sets the companion burning too, and spares the hero who drank it', () => {
     const pm = new ProfileManager(new MemoryStorage(), cotwManifest);
     const { engine } = pm.createCharacter('Pet', { seed: 2, difficulty: 'medium' } as never);
     const p = engine.player;
@@ -83,7 +85,8 @@ describe('R-cotw-3 · a "monster"-tagged radial consumable afflicts the hero’s
 
     new DrinkPotionAction(p, flare as never).perform(engine);
 
-    expect(wolf.statusManager.hasStatus('burning')).toBe(false);
+    expect(wolf.statusManager.hasStatus('burning')).toBe(true);
+    expect(p.statusManager.hasStatus('burning')).toBe(false);
   });
 });
 

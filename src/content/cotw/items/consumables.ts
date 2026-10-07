@@ -179,7 +179,7 @@ export const COTW_CONSUMABLES: ItemDefinition[] = [
     weight: 250,
     bulk: 150,
     identified: false,
-    description: 'Pressurized subterranean mine gas that shatters into a burst of suffocating poison, sickening every hostile creature within three paces.',
+    description: 'Pressurized subterranean mine gas that shatters into a burst of suffocating poison, sickening every other creature within three paces, friend or foe.',
     value: 140,
     itemType: 'potion',
     potionConfig: {

@@ -97,4 +97,18 @@ describe('DeathEnvelope & Run-Failure Telemetry', () => {
     DeathEnvelopeTracker.recordPlayerDeath(engine, killer);
     expect(DeathEnvelopeTracker.getHistory().length).toBe(2);
   });
+
+  // R-dbg-14: the history grew one envelope per death for the whole session, and clearing it
+  // also dropped every subscriber.
+  it('keeps only the latest envelopes, and clearing them keeps the subscribers', () => {
+    for (let i = 0; i < 30; i++) DeathEnvelopeTracker.recordPlayerDeath(engine, killer);
+    expect(DeathEnvelopeTracker.getHistory().length).toBe(20);
+
+    const heard = vi.fn();
+    const unsubscribe = DeathEnvelopeTracker.subscribe(heard);
+    DeathEnvelopeTracker.clearHistory();
+    DeathEnvelopeTracker.recordPlayerDeath(engine, killer);
+    expect(heard).toHaveBeenCalledTimes(1);
+    unsubscribe();
+  });
 });

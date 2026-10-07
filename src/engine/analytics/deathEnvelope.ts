@@ -16,6 +16,9 @@ export interface DeathEnvelope {
   victimLevel: number;
 }
 
+/** Envelopes kept for the session: the latest few deaths, not every one since launch (R-dbg-14). */
+const HISTORY_LIMIT = 20;
+
 export class DeathEnvelopeTracker {
   private static latestEnvelope: DeathEnvelope | null = null;
   private static history: DeathEnvelope[] = [];
@@ -70,6 +73,7 @@ export class DeathEnvelopeTracker {
 
     DeathEnvelopeTracker.latestEnvelope = envelope;
     DeathEnvelopeTracker.history.push(envelope);
+    if (DeathEnvelopeTracker.history.length > HISTORY_LIMIT) DeathEnvelopeTracker.history.shift();
 
     // Dispatch via HookDispatcher
     HookDispatcher.dispatch('onPlayerDefeated', {
@@ -105,9 +109,9 @@ export class DeathEnvelopeTracker {
     };
   }
 
+  /** Forgets the recorded deaths; subscribers stay subscribed (they unsubscribe themselves). */
   public static clearHistory(): void {
     DeathEnvelopeTracker.latestEnvelope = null;
     DeathEnvelopeTracker.history = [];
-    DeathEnvelopeTracker.listeners = [];
   }
 }

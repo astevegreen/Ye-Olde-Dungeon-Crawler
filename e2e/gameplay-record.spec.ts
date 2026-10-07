@@ -45,10 +45,10 @@ test('continuous active gameplay loop for visual verification', { tag: '@record'
   await page.locator('#btn-create-embark').click();
   await pastTheOpening(page);
 
-  // 3. Confirm Canvas and HUD are mounted
+  // 3. Confirm Canvas and HUD are mounted (the sidebar took over the ground bar's job)
   const canvas = page.locator('#game-canvas');
   await expect(canvas).toBeVisible();
-  await expect(page.locator('#ground-status-bar')).toBeAttached();
+  await expect(page.locator('#combat-sidebar')).toBeAttached();
 
   console.log(`\n▶ Starting active gameplay loop for ${RECORD_DURATION_MS / 1000}s...`);
   const endTime = Date.now() + RECORD_DURATION_MS;

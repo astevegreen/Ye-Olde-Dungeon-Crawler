@@ -438,16 +438,19 @@ describe('Category mastery', () => {
     expect(engine.compendium.getEntry('skeleton').kills).toBe(1);
   });
 
-  it('a monster an ending requires dead counts whoever killed it, so that ending can still open (R-econ-20)', () => {
+  it('a monster an ending or a story choice waits on counts whoever killed it, so it can still open (R-econ-20)', () => {
     const manifest = {
       ...CATEGORY_MANIFEST,
       quest: { endings: { wyrm: { id: 'wyrm', requiredMonsterKillId: 'draugr', victoryDialogue: '', victoryEpitaph: '' } } },
+      storyChoiceTriggers: [{ id: 'oath', choiceId: 'oath_choice', monsterDefinitionId: 'wight', killsRequired: 1 }],
     } as unknown as GameContentManifest;
     const player = new Player({ id: 'player', name: 'Hero', position: { x: 1, y: 1 }, stats: { hp: 50, maxHp: 50, attack: 10, defense: 2 } });
     const engine = new GameEngine({ map: new GameMap(10, 10), player, floor: 1, manifest });
     const rival = rivalOn(engine);
     kill(engine, rival, 'draugr');
     expect(engine.compendium.getEntry('draugr').kills).toBe(1);
+    kill(engine, rival, 'wight');
+    expect(engine.compendium.getEntry('wight').kills).toBe(1);
     kill(engine, rival, 'skeleton');
     expect(engine.compendium.getEntry('skeleton').kills).toBe(0);
   });

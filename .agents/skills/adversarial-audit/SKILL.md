@@ -20,7 +20,7 @@ This skill audits the **code** against ARCHITECTURE.md's current-state claims. I
    - Verify all random number generation in simulation code routes through `engine.prng`/`engine.rng`, not `Math.random()` or wall-clock IDs.
    - Do not report sanctioned dynamic wiring as a violation in itself:
      - writes listed with a reason in `scripts/engine-encapsulation-allowlist.json` (composition-root `engine.on*` callback slots; content AI strategies publishing `Monster.intent`), which `npm run check:engine-encapsulation` already verifies;
-     - behavior registered at runtime through the `GameContentManifest` or engine registries (action hooks, `HookDispatcher.registerPrimitive` primitives, status handlers, AI strategies — ARCHITECTURE.md §3);
+     - behavior registered at runtime through the `GameContentManifest` or engine registries (action hooks, event-hook descriptors on items and monsters, status handlers, AI strategies — ARCHITECTURE.md §3);
      - handlers acting on the engine through their injected context (§3), including content calling engine subsystem methods (§7.2 exempts content from the subsystem-mutator rule).
      Flag such code only when its body breaks an unmarked invariant (e.g. a DOM or timing global on the execution path), or when an allowlist entry has no stated reason.
 

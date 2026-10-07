@@ -117,8 +117,8 @@ export interface HookExecutionSummary {
   messages: string[];
 }
 
-/** Executor function for a registered primitive action type. */
-export type PrimitiveExecutor = (
+/** Executor function for one built-in primitive action type. */
+type PrimitiveExecutor = (
   action: ActionPrimitive,
   ctx: HookContext,
   owner: Entity,
@@ -128,25 +128,15 @@ export type PrimitiveExecutor = (
   description?: string
 ) => void;
 
+/**
+ * The engine's built-in primitives, filled at the bottom of this module. There is no API to
+ * add one: a new primitive is a generic engine capability (ARCHITECTURE.md §3).
+ */
 const primitiveExecutors = new Map<string, PrimitiveExecutor>();
 
 export class HookDispatcher {
   private static recursionDepth = 0;
   private static readonly MAX_RECURSION_DEPTH = 3;
-  private static globalHooks: HookDescriptor[] = [];
-
-  public static registerGlobalHook(hook: HookDescriptor): void {
-    this.globalHooks.push(hook);
-  }
-
-  public static clearGlobalHooks(): void {
-    this.globalHooks = [];
-  }
-
-  /** Register a custom primitive executor. Allows content/themes to add new primitive action types. */
-  public static registerPrimitive(type: string, executor: PrimitiveExecutor): void {
-    primitiveExecutors.set(type, executor);
-  }
 
   /**
    * Dispatches combat and lifecycle events across equipped items, monster traits, and active pacts.
@@ -165,14 +155,6 @@ export class HookDispatcher {
     this.recursionDepth += 1;
     try {
       const hooksToExecute: { hook: HookDescriptor; sourceName: string; owner: Entity }[] = [];
-
-      // 0. Global hooks matching this event
-      for (const gh of this.globalHooks) {
-        if (gh.event === event) {
-          const owner = context.attacker ?? context.defender ?? context.engine.player;
-          hooksToExecute.push({ hook: gh, sourceName: 'Global Rule', owner });
-        }
-      }
 
       // 1. Gather hooks from relevant entities based on event
       if (event === 'onHit' || event === 'onKill') {

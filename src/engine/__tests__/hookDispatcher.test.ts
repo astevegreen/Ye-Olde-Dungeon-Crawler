@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { GameEngine } from '../engine';
 import { GameMap } from '../grid/map';
 import { Player } from '../entities/player';
@@ -145,69 +145,71 @@ describe('Event-Driven Hook Engine', () => {
   });
 
   it('dispatches onMove hook when an entity moves', () => {
-    HookDispatcher.registerGlobalHook({
-      event: 'onMove',
-      chance: 1.0,
-      description: 'You leave a burning wake behind you.',
-      action: { type: 'spawnSurface', surfaceType: 'oil_slick' },
+    const boots = new Item({
+      id: 'oil-boots',
+      name: 'Oil-Soaked Boots',
+      category: 'boots',
+      slot: 'feet',
+      weight: 800,
+      bulk: 600,
+      identified: true,
+      hooks: [
+        {
+          event: 'onMove',
+          chance: 1.0,
+          description: 'You leave a burning wake behind you.',
+          action: { type: 'spawnSurface', surfaceType: 'oil_slick' },
+        },
+      ],
     });
+    player.inventory.paperdoll.equip(boots, 'feet');
 
     const move = new MovementAction(player, 0, 1);
     move.perform(engine);
 
     expect(engine.surfaces.getSurface(2, 3)).toBe('oil_slick');
     expect(engine.messages.some((m) => m.includes('You leave a burning wake behind you.'))).toBe(true);
-    HookDispatcher.clearGlobalHooks();
   });
 
+  // Primitives are the engine's own set, none of which dispatches again, so a spy on
+  // executePrimitive stands in for a re-dispatching or throwing one.
   it('enforces re-entrancy depth cap to prevent infinite recursion cascades', () => {
+    monster.hooks = [{ event: 'onDamageTaken', chance: 1.0, action: { type: 'heal', amount: 1, target: 'self' } }];
     let executions = 0;
-    HookDispatcher.registerPrimitive('test_recursive_redispatch', (_action, ctx) => {
+    const spy = vi.spyOn(HookDispatcher, 'executePrimitive').mockImplementation((_action, ctx) => {
       executions += 1;
       // Hard stop so a missing cap fails the assertion below instead of overflowing the stack.
       if (executions >= 10) return;
       HookDispatcher.dispatch('onDamageTaken', ctx);
     });
-    HookDispatcher.registerGlobalHook({
-      event: 'onDamageTaken',
-      chance: 1.0,
-      action: { type: 'test_recursive_redispatch' } as any,
-    });
 
-    HookDispatcher.dispatch('onDamageTaken', { engine, defender: player, damage: 5 });
-    HookDispatcher.clearGlobalHooks();
+    try {
+      HookDispatcher.dispatch('onDamageTaken', { engine, defender: monster, damage: 5 });
+    } finally {
+      spy.mockRestore();
+    }
 
     expect(executions).toBe(3);
   });
 
   it('restores re-entrancy depth when a primitive throws, so later hooks still fire', () => {
-    HookDispatcher.registerPrimitive('test_throwing_primitive', () => {
+    monster.hp = 20;
+    monster.hooks = [{ event: 'onTurnStart', chance: 1.0, action: { type: 'heal', amount: 4, target: 'self' } }];
+    const spy = vi.spyOn(HookDispatcher, 'executePrimitive').mockImplementation(() => {
       throw new Error('PRIMITIVE_FAULT');
     });
-    HookDispatcher.registerGlobalHook({
-      event: 'onTurnStart',
-      chance: 1.0,
-      action: { type: 'test_throwing_primitive' } as any,
-    });
-    // More throwing dispatches than the depth cap: a leaked depth increment would disable all hooks.
-    for (let i = 0; i < 3; i++) {
-      expect(() => HookDispatcher.dispatch('onTurnStart', { engine, attacker: player })).toThrow('PRIMITIVE_FAULT');
+    try {
+      // More throwing dispatches than the depth cap: a leaked depth increment would disable all hooks.
+      for (let i = 0; i < 3; i++) {
+        expect(() => HookDispatcher.dispatch('onTurnStart', { engine, attacker: monster })).toThrow('PRIMITIVE_FAULT');
+      }
+    } finally {
+      spy.mockRestore();
     }
-    HookDispatcher.clearGlobalHooks();
 
-    let fired = 0;
-    HookDispatcher.registerPrimitive('test_counting_primitive', () => {
-      fired += 1;
-    });
-    HookDispatcher.registerGlobalHook({
-      event: 'onTurnStart',
-      chance: 1.0,
-      action: { type: 'test_counting_primitive' } as any,
-    });
-    const summary = HookDispatcher.dispatch('onTurnStart', { engine, attacker: player });
-    HookDispatcher.clearGlobalHooks();
+    const summary = HookDispatcher.dispatch('onTurnStart', { engine, attacker: monster });
 
-    expect(fired).toBe(1);
+    expect(monster.hp).toBe(24);
     expect(summary.executedHooks).toBe(1);
   });
 

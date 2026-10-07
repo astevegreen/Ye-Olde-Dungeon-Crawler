@@ -16,7 +16,6 @@ export function dispatchDamageHooks(engine: GameEngine, attacker: Entity, defend
     attacker,
     defender,
     damage,
-    blockedDamage: 0,
   });
   if (damage > 0) {
     HookDispatcher.dispatch('onDamageTaken', { engine, attacker, defender, damage });

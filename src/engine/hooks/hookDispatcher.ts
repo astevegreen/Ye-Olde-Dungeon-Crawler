@@ -2,7 +2,6 @@ import type { GameEngine } from '../engine';
 import { afflictionDuration } from '../items/wornModifiers';
 import type { EngineContext } from '../types/engineContext';
 import type { Entity } from '../entities/entity';
-import type { Item } from '../items/item';
 import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
 import type { Predicate } from '../predicates/types';
@@ -76,8 +75,6 @@ export interface HookContext {
   attacker?: Entity;
   defender?: Entity;
   damage?: number;
-  blockedDamage?: number;
-  sourceItem?: Item;
   position?: Position;
 }
 

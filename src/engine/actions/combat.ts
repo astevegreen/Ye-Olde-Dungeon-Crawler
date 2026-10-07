@@ -280,15 +280,14 @@ export class MeleeAttackAction implements Action {
       if (drawn > 0) engine.log(`${this.attacker.name} draws ${drawn} HP from the wound.`);
     }
 
-    // Dispatch Hook Engine Events: onHit, onBlock, onDamageTaken
-    const blockedDamage = Math.max(0, this.defender.defense);
-    if (blockedDamage > 0) {
+    // Dispatch Hook Engine Events: onHit, onBlock (a defender whose defense stops some of the
+    // blow), onDamageTaken
+    if (this.defender.defense > 0) {
       HookDispatcher.dispatch('onBlock', {
         engine,
         attacker: this.attacker,
         defender: this.defender,
         damage: damageDealt,
-        blockedDamage,
       });
     }
 
@@ -297,7 +296,6 @@ export class MeleeAttackAction implements Action {
       attacker: this.attacker,
       defender: this.defender,
       damage: damageDealt,
-      blockedDamage,
     });
 
     if (damageDealt > 0) {

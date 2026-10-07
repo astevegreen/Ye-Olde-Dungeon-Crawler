@@ -496,10 +496,10 @@ describe('perk effects', () => {
       SpellPipeline.applyStatusEffect(engine, foe, player, { type: 'applyStatus', statusId: 'slow', duration: 3 });
       expect(player.statusManager.hasStatus('slow')).toBe(false);
       foe.hooks = [{ event: 'onHit', chance: 1, action: { type: 'applyStatus', status: 'poison', duration: 3, target: 'target' } }];
-      HookDispatcher.dispatch('onHit', { engine, attacker: foe, defender: player, damage: 1, blockedDamage: 0 });
+      HookDispatcher.dispatch('onHit', { engine, attacker: foe, defender: player, damage: 1 });
       expect(player.statusManager.hasStatus('poison')).toBe(false);
       stranger.hooks = foe.hooks;
-      HookDispatcher.dispatch('onHit', { engine, attacker: stranger, defender: player, damage: 1, blockedDamage: 0 });
+      HookDispatcher.dispatch('onHit', { engine, attacker: stranger, defender: player, damage: 1 });
       expect(player.statusManager.hasStatus('poison')).toBe(true);
     });
 

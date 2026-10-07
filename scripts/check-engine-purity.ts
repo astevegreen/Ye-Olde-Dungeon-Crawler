@@ -110,13 +110,16 @@ const TIMING_AUDIO_GLOBALS = [
 
 // Simulation randomness must come from the engine's seeded PRNG (ARCHITECTURE.md §7.2).
 // Scope is engine + content source: presentation code may use Math.random for effects that
-// draw no simulation state (e.g. particle jitter in rendering/fxRunner.ts).
-const SIMULATION_RANDOMNESS = ['Math.random'];
+// draw no simulation state (e.g. particle jitter in rendering/fxRunner.ts). Dotted or by
+// bracket, and the Web Crypto sources too (R-tool-6). An alias (`const M = Math`) is not traced.
+const SIMULATION_RANDOMNESS = /\bMath\s*(?:\.\s*random\b|\[\s*['"`]random['"`]\s*\])|\bcrypto\s*\.\s*(?:getRandomValues|randomUUID)\b/;
 
 // Wall-clock reads in simulation code (ARCHITECTURE.md §7.2: no Date.now() for outcomes or
-// IDs). Timestamps and the new-run entropy boundary are legitimate, so whole files are
-// allowlisted with a reason in scripts/purity-clock-allowlist.json; a stale entry fails.
-const WALL_CLOCK = 'Date.now(';
+// IDs): `Date.now()`, `Date['now']()`, and `new Date()` / `Date()` with no argument (a Date
+// built from a given time reads no clock). Timestamps and the new-run entropy boundary are
+// legitimate, so whole files are allowlisted with a reason in scripts/purity-clock-allowlist.json;
+// a stale entry fails.
+const WALL_CLOCK = /(?<![\w$.])Date\s*(?:\.\s*now\b|\[\s*['"`]now['"`]\s*\]|\(\s*\))|\bnew\s+Date\b(?!\s*\(\s*[^\s)])/;
 const CLOCK_ALLOWLIST_PATH = path.resolve(process.cwd(), 'scripts/purity-clock-allowlist.json');
 const clockAllowlist: Array<{ file: string; reason: string }> = fs.existsSync(CLOCK_ALLOWLIST_PATH)
   ? JSON.parse(fs.readFileSync(CLOCK_ALLOWLIST_PATH, 'utf-8')).entries
@@ -174,9 +177,24 @@ for (const filePath of [...engineFiles, ...contentFiles]) {
     }
   }
 
+  // Full-line comments are skipped by the randomness and clock checks, so prose may name the
+  // banned call. A line led by `*` is a comment only inside a block comment: elsewhere it
+  // continues a multiplication (`base\n  * Math.random()`).
+  let inBlockComment = false;
   for (let i = 0; i < lines.length; i++) {
     const lineNum = i + 1;
     const line = lines[i];
+    const trimmed = line.trimStart();
+    let isCommentLine = false;
+    if (inBlockComment) {
+      isCommentLine = true;
+      if (line.includes('*/')) inBlockComment = false;
+    } else if (trimmed.startsWith('//')) {
+      isCommentLine = true;
+    } else if (trimmed.startsWith('/*')) {
+      isCommentLine = true;
+      inBlockComment = !trimmed.includes('*/', 2);
+    }
 
     // Check: DOM & Browser Globals (forbidden in engine and content source files)
     if (!isTestOrFixture) {
@@ -192,27 +210,20 @@ for (const filePath of [...engineFiles, ...contentFiles]) {
         }
       }
 
-      // Check: Unseeded randomness. Full-line comments are skipped so prose may name the
-      // banned call (e.g. a doc comment telling content authors not to use it).
-      const trimmed = line.trimStart();
-      const isCommentLine = trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*');
+      // Check: Unseeded randomness (comment lines skipped, above).
       // An explicit, reasoned exemption for the entropy boundary (e.g. profile ids, which
       // must not collide when two characters share a seed). Mirrors the encapsulation allowlist.
       const allowed = line.includes('purity-allow:') || (lines[i - 1] ?? '').includes('purity-allow:');
-      if (!isCommentLine && !allowed) {
-        for (const token of SIMULATION_RANDOMNESS) {
-          if (line.includes(token)) {
-            violations.push({
-              file: relativePath,
-              line: lineNum,
-              category: 'UNSEEDED_RANDOMNESS',
-              detail: `Simulation randomness must draw from engine.prng/engine.rng: ${line.trim()}`,
-            });
-          }
-        }
+      if (!isCommentLine && !allowed && SIMULATION_RANDOMNESS.test(line)) {
+        violations.push({
+          file: relativePath,
+          line: lineNum,
+          category: 'UNSEEDED_RANDOMNESS',
+          detail: `Simulation randomness must draw from engine.prng/engine.rng: ${line.trim()}`,
+        });
       }
 
-      if (!isCommentLine && line.includes(WALL_CLOCK)) {
+      if (!isCommentLine && WALL_CLOCK.test(line)) {
         if (clockAllowed.has(relativePath)) {
           clockAllowlistUsed.add(relativePath);
         } else if (!allowed) {
@@ -312,7 +323,7 @@ for (const entry of clockAllowlist) {
       file: 'scripts/purity-clock-allowlist.json',
       line: 0,
       category: 'STALE_CLOCK_ALLOWLIST',
-      detail: `${entry.file} no longer reads Date.now(); remove its entry.`,
+      detail: `${entry.file} no longer reads the wall clock; remove its entry.`,
     });
   }
 }
@@ -327,7 +338,7 @@ if (violations.length > 0) {
 } else {
   const exemptCount = engineFiles.length + contentFiles.length - purityScannedFiles.size;
   console.log(
-    `✓ Headless Simulation Purity: 0 DOM/Canvas/timing/audio globals and 0 unseeded Math.random or unallowlisted Date.now() across ${purityScannedFiles.size} engine & content source files ` +
+    `✓ Headless Simulation Purity: 0 DOM/Canvas/timing/audio globals and 0 unseeded randomness (Math.random, crypto) or unallowlisted wall-clock reads across ${purityScannedFiles.size} engine & content source files ` +
       `(${exemptCount} test/fixture files exempt).`
   );
   console.log(`✓ Engine Boundary Isolation: 0 reverse imports in engine source and test files.`);

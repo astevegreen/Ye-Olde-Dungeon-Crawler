@@ -104,4 +104,35 @@ describe('check-engine-purity sees every form of a barred import', () => {
       `[DEEP_ENGINE_IMPORT] ${presentation}:2`,
     ]);
   }, 120_000);
+
+  it('fails on new Date(), crypto randomness, bracket access, and a call on a line led by `*`', () => {
+    const engine = plant('src/engine/__scratch_purity_clock__.ts', [
+      'export function scratchClock(base: number): number {',
+      '  const seed = new Date().getTime();',
+      '  const stamp = new Date(seed).toISOString();',
+      '  const id = crypto.randomUUID();',
+      '  const bytes = crypto.getRandomValues(new Uint32Array(1));',
+      "  const later = Date['now']() + Math['random']();",
+      '  return base',
+      '    * Math.random()',
+      '    + seed + bytes[0] + id.length + stamp.length + later;',
+      '}',
+      '/**',
+      ' * Prose may name Math.random and Date.now() and new Date() in a doc comment.',
+      ' */',
+      '',
+    ]);
+
+    const { status, output } = runGate(engine);
+
+    expect(status).not.toBe(0);
+    expect(reported(output, engine)).toEqual([
+      `[WALL_CLOCK] ${engine}:2`,
+      `[UNSEEDED_RANDOMNESS] ${engine}:4`,
+      `[UNSEEDED_RANDOMNESS] ${engine}:5`,
+      `[UNSEEDED_RANDOMNESS] ${engine}:6`,
+      `[WALL_CLOCK] ${engine}:6`,
+      `[UNSEEDED_RANDOMNESS] ${engine}:8`,
+    ]);
+  }, 120_000);
 });

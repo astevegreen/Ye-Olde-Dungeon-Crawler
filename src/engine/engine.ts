@@ -238,7 +238,8 @@ export class GameEngine {
       this.discoveryEvents.shift();
     }
     if (this.onDiscoveryEvent) {
-      this.onDiscoveryEvent(fullEvent);
+      const notify = this.onDiscoveryEvent;
+      this.notifyPresentation('onDiscoveryEvent', () => notify(fullEvent));
     }
   }
 
@@ -277,7 +278,8 @@ export class GameEngine {
       this.recentGameEvents.shift();
     }
     if (this.onGameEvent) {
-      this.onGameEvent(event);
+      const notify = this.onGameEvent;
+      this.notifyPresentation('onGameEvent', () => notify(event));
     }
   }
 
@@ -285,8 +287,9 @@ export class GameEngine {
     if (effects && effects.length > 0) {
       this.pendingVisualEffects.push(...effects);
       if (this.onVisualEffect) {
+        const notify = this.onVisualEffect;
         for (const ef of effects) {
-          this.onVisualEffect(ef);
+          this.notifyPresentation('onVisualEffect', () => notify(ef));
         }
       }
     }
@@ -722,7 +725,8 @@ export class GameEngine {
       this.messages.shift();
     }
     if (this.onMessageLogged) {
-      this.onMessageLogged(message);
+      const notify = this.onMessageLogged;
+      this.notifyPresentation('onMessageLogged', () => notify(message));
     }
   }
 
@@ -751,13 +755,15 @@ export class GameEngine {
         this.log(`${npc.name} has nothing to attune — you carry no Rune of Return.`);
       }
       if (this.onNpcInteract) {
-        this.onNpcInteract(npc);
+        const notify = this.onNpcInteract;
+        this.notifyPresentation('onNpcInteract', () => notify(npc));
       }
       return;
     }
     this.log(`Spoke with ${npc.name}: "${npc.greeting}"`);
     if (this.onNpcInteract) {
-      this.onNpcInteract(npc);
+      const notify = this.onNpcInteract;
+      this.notifyPresentation('onNpcInteract', () => notify(npc));
     }
   }
 
@@ -930,7 +936,8 @@ export class GameEngine {
     }
 
     if (this.onFloorChanged) {
-      this.onFloorChanged(targetFloor);
+      const notify = this.onFloorChanged;
+      this.notifyPresentation('onFloorChanged', () => notify(targetFloor));
     }
 
     const floorDesc = targetFloor === 0
@@ -1010,7 +1017,7 @@ export class GameEngine {
     if (this.player.statusManager.hasStatus('paralysis') || this.player.statusManager.hasStatus('stunned')) {
       const effectName = this.player.statusManager.hasStatus('stunned') ? 'stunned' : 'paralyzed';
       this.log(`You are ${effectName} and unable to act!`);
-      new WaitAction(this.player).perform(this);
+      this.runEnvironmentalUpdate('forced-pass', () => new WaitAction(this.player).perform(this));
       this.advanceTurn();
       return {
         success: false,
@@ -1094,9 +1101,9 @@ export class GameEngine {
     if (this.detectMonstersTurns > 0) this.detectMonstersTurns -= 1;
     if (this.detectObjectsTurns > 0) this.detectObjectsTurns -= 1;
 
-    this.updateFov();
+    this.runEnvironmentalUpdate('fov-update', () => this.updateFov());
     this.advanceWorldUntilPlayerTurn();
-    this.updateFov();
+    this.runEnvironmentalUpdate('fov-update', () => this.updateFov());
   }
 
   /**
@@ -1292,6 +1299,39 @@ export class GameEngine {
         },
         'Something in the world misbehaved; play continues.'
       );
+    }
+  }
+
+  private reportingPresentationFailure = false;
+
+  /**
+   * Calls a presentation callback inside its own boundary (ARCHITECTURE.md §4): a throw is
+   * recorded through the same counters and play goes on, so a broken subscriber can't stop a
+   * death between its XP and its corpse, or fail a floor change that already happened
+   * (R-pipe-17). A failure while one is being reported (its log line reaching a throwing
+   * `onMessageLogged`) is dropped rather than recursing.
+   */
+  private notifyPresentation(label: string, callback: () => void): void {
+    try {
+      callback();
+    } catch (err) {
+      if (this.reportingPresentationFailure) return;
+      this.reportingPresentationFailure = true;
+      try {
+        this.actionPipeline.recordIsolatedFailure(
+          err,
+          this,
+          {
+            entityId: this.player?.id ?? 'world',
+            actionType: label,
+            phase: 'presentation-callback',
+            source: 'GameEngine.notifyPresentation',
+          },
+          'The display stumbled; play continues.'
+        );
+      } finally {
+        this.reportingPresentationFailure = false;
+      }
     }
   }
 

@@ -253,6 +253,7 @@ export class Monster extends Actor {
     // 5. AI decision and execution. Monster actions run through the same pipeline as the
     // player's, so action hooks fire for every actor (ARCHITECTURE.md §4).
     const action = MonsterAI.decideAction(this, engine);
+    const energyBefore = this.energy;
     const result = engine.actionPipeline.executeWithHooks(action, engine);
 
     flightRecorder.recordScheduler(this.name, result.cost, engine.turnCount, {
@@ -260,7 +261,10 @@ export class Monster extends Actor {
       success: result.success,
     });
 
-    if (!result.success || result.cost === 0) {
+    // A turn that spent nothing, failed or not, ends in a wait: a pre-hook that short-circuits
+    // with `{ success: true, cost > 0 }` charges no energy, and the scheduler would pick this
+    // monster again at once, thousands of times in one hero turn (R-pipe-20, §4).
+    if (!result.success || result.cost === 0 || (energyBefore > 0 && this.energy >= energyBefore)) {
       new WaitAction(this).perform(engine);
     }
 

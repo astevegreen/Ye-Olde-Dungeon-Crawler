@@ -106,3 +106,29 @@ describe('Action hooks fire for every actor', () => {
     expect(actors).toContain(player.id);
   });
 });
+
+describe('R-pipe-20 · a pre-hook that short-circuits a monster with success but spends no energy', () => {
+  it('falls back to a wait, so the monster is not chosen again at once', () => {
+    let fired = 0;
+    const consumeTurn: ActionHook = {
+      id: 'stand-in-the-field',
+      phase: 'pre',
+      actionType: '*',
+      execute: (ctx: ActionHookContext) => {
+        if (ctx.actor?.id !== 'orc-1') return { proceed: true };
+        fired++;
+        return { proceed: false, result: { success: true, cost: 100 } as ActionResult };
+      },
+    };
+    const { engine, player, monster } = buildEngine([consumeTurn]);
+    monster.energy = 100;
+    const energy = monster.energy;
+
+    monster.takeTurn(engine);
+    expect(monster.energy).toBeLessThan(energy);
+
+    fired = 0;
+    engine.handlePlayerAction(new WaitAction(player));
+    expect(fired).toBeLessThanOrEqual(2);
+  });
+});

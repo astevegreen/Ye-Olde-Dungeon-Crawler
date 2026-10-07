@@ -10,7 +10,7 @@ Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
 
 Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings.
 
-The issue tracker should have been provided to you. If `docs/agents/issue-tracker.md` is missing, tell the user to run `/setup-matt-pocock-skills`.
+In this repo a spec is the owner's request: a commit's `Requested: "..."` trailer quotes it (ARCHITECTURE.md §8.4), and longer specs and bug reports are GitHub issues on this repo, read with `gh`.
 
 ## Process
 
@@ -26,14 +26,15 @@ Before going further, confirm the fixed point resolves (`git rev-parse <fixed-po
 
 Look for the originating spec, in this order:
 
-1. Issue references in the commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.), fetched via the workflow in `docs/agents/issue-tracker.md`.
-2. A path the user passed as an argument.
-3. A spec file under `docs/`, `specs/`, or `.scratch/` matching the branch name or feature.
-4. If nothing is found, ask the user where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
+1. The `Requested: "..."` trailers on the commits in range. Each quotes the owner: the Spec axis treats that behaviour as intended and checks it is done correctly, and flags a behaviour change no trailer asks for.
+2. Issue references in the commit messages (`#123`, `Closes #45`), fetched with `gh issue view <n> --comments`.
+3. A path the user passed as an argument.
+4. Task notes under the gitignored `.prompts/` matching the branch name or feature.
+5. If nothing is found, ask the user where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
 
 ### 3. Identify the standards sources
 
-Anything in the repo that documents how code should be written, such as `CODING_STANDARDS.md` or `CONTRIBUTING.md`.
+`ARCHITECTURE.md` holds every binding rule; read it in full. Add the `docs/architecture/**` sub-docs its routing table names for the files the diff touches, the `docs/decisions/**` ADRs (designs already rejected), and `CLAUDE.md` for the workflow rules (attribution and `Requested:` trailers, one request per commit, §8.1 protected files). `npm run lint` enforces the checks ARCHITECTURE.md §7.2 lists; leave those to it.
 
 On top of whatever the repo documents, the Standards axis always carries the **smell baseline** below: a fixed set of Fowler code smells (_Refactoring_, ch.3) that applies even when a repo documents nothing. Two rules bind it:
 

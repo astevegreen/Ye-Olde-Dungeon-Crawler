@@ -15,6 +15,7 @@ import { ANATOMIST_CRIT_CHANCE } from '../compendium/types';
 import { applyImpulse } from '../combat/impulse';
 import { resolveCombatMitigation } from '../combat/mitigationPipeline';
 import { burnOnSacredGround } from '../combat/sacredGround';
+import { dispatchDamageHooks } from '../hooks/damageHooks';
 import type { ItemModifier } from '../items/modifiers';
 import { afflictionDuration, highestWorn, productWorn, sumWorn, wearsFlag, wornModifiers } from '../items/wornModifiers';
 import { attributeScalingOf, dexterityEvasion, intelligenceEvasion, meleeHitPercent, strengthMeleeBonus } from '../combat/attributeScaling';
@@ -569,6 +570,8 @@ export class WindUpExecuteAction implements Action {
             : `${this.monster.name}'s ${this.abilityName} slams into ${targetEntity.name} for ${damageDealt} massive damage!`;
         engine.log(hitMsg);
         combinedMessage += (combinedMessage ? ' ' : '') + hitMsg;
+
+        if (!hit.isHeal && damageDealt > 0) dispatchDamageHooks(engine, this.monster, targetEntity, damageDealt);
 
         if (this.options?.pushImpulse && targetEntity.isAlive()) {
           const dx = targetEntity.x - this.monster.x;

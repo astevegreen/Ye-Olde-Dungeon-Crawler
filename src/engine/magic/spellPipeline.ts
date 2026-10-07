@@ -29,6 +29,7 @@ import { scaleSpellDamage, scaleSpellHeal } from './castNumbers';
 import { castGeometry } from './castTrace';
 import { registerReciprocalPrimitives } from '../combat/reciprocalPipeline';
 import { EnergyModel } from '../actors/energyModel';
+import { dispatchDamageHooks } from '../hooks/damageHooks';
 import { Actor } from '../entities/actor';
 
 function getElementDefaultColor(element?: string): string {
@@ -508,6 +509,8 @@ export class SpellPipeline {
       engine.log(`${caster.name}'s ${spell.name} strikes ${target.name} for ${result.damageDealt} ${effect.element} damage${detail}!`);
     }
 
+    dispatchDamageHooks(engine, caster, target, result.damageDealt);
+
     if (result.killed) {
       DeathResolver.resolveDeath(engine, caster, target, {
         damageElement: effect.element,
@@ -725,6 +728,7 @@ export class SpellPipeline {
       const terrain = engine.map.getTile(nextTarget.x, nextTarget.y)?.type;
       const hopTaken = scaleByTargetFamily(engine, caster, nextTarget, hopDamage);
       const result = nextTarget.takeElementalDamage(wardFirstSpell(engine, caster, nextTarget, hopTaken), element, engine.affinityMatrix, terrain);
+      if (!result.isHeal && result.affinity !== 'immune') dispatchDamageHooks(engine, caster, nextTarget, result.damageDealt);
 
       if (result.killed) {
         DeathResolver.resolveDeath(engine, caster, nextTarget, {
@@ -850,6 +854,8 @@ export class SpellPipeline {
       } else {
         engine.log(`${caster.name}'s ${spell.name} strikes ${target.name} for ${result.damageDealt} ${spell.element} damage${detail}!`);
       }
+
+      dispatchDamageHooks(engine, caster, target, result.damageDealt);
 
       if (result.killed) {
         DeathResolver.resolveDeath(engine, caster, target, {

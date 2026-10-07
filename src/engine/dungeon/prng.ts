@@ -56,5 +56,3 @@ export class PRNG {
   }
 }
 
-export { PRNG as Mulberry32 };
-

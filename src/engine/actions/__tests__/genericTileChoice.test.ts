@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { GameEngine, GameMap, TILES, Player, registerTileDefinition } from '../../index';
+import { GameEngine, GameMap, TILES, Player } from '../../index';
 import { MovementAction } from '../movement';
 import type { ChoiceDefinition } from '../../types/choice';
 
@@ -10,16 +10,6 @@ import type { ChoiceDefinition } from '../../types/choice';
  * generalization of the existing `altar_tyr`-specific branch in movement.ts.
  */
 function buildEngine(choice: ChoiceDefinition) {
-  registerTileDefinition({
-    type: 'test_shrine',
-    name: 'Test Shrine',
-    passable: true,
-    walkable: true,
-    transparent: true,
-    glyph: '?',
-    interactionHandlerId: 'test_shrine',
-  });
-
   const map = new GameMap(10, 10, TILES.FLOOR);
   map.setTile(4, 3, { ...TILES.FLOOR, type: 'test_shrine', interactionHandlerId: 'test_shrine' } as any);
 
@@ -30,6 +20,15 @@ function buildEngine(choice: ChoiceDefinition) {
     stats: { hp: 30, maxHp: 30, attack: 10, defense: 5 },
   });
   const engine = new GameEngine({ map, player });
+  engine.registries.tiles.register({
+    type: 'test_shrine',
+    name: 'Test Shrine',
+    passable: true,
+    walkable: true,
+    transparent: true,
+    glyph: '?',
+    interactionHandlerId: 'test_shrine',
+  });
   (engine.manifest.choices as any) = { test_shrine: choice };
   return { engine, player };
 }

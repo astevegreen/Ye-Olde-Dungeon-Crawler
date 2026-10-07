@@ -121,5 +121,3 @@ export class EnergyScheduler {
     this.currentTick = 0;
   }
 }
-
-export { EnergyScheduler as TurnScheduler };

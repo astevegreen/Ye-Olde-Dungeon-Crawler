@@ -86,9 +86,6 @@ export class StatusHandlerRegistry {
   }
 }
 
-/** Alias for StatusHandlerRegistry matching Roadmap specification */
-export const StatusEffectRegistry = StatusHandlerRegistry;
-
 // ── Built-in Handlers ────────────────────────────────────────────────────────
 
 export const BUILTIN_STATUS_HANDLERS: Record<string, StatusHandler> = {

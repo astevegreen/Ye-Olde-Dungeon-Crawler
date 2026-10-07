@@ -42,8 +42,6 @@ export const DEFAULT_AFFINITY_MULTIPLIERS: Record<ElementalAffinity, number> = {
   absorbing: -1.0, // Negative damage signifies healing the target
 };
 
-export const AFFINITY_MULTIPLIERS = DEFAULT_AFFINITY_MULTIPLIERS;
-
 export const ELEMENT_OPPOSITES: Partial<Record<ElementType, ElementType>> = {
   fire: 'cold',
   cold: 'fire',

@@ -5,7 +5,7 @@ import { VaultStamper, type VaultBlueprint } from '../vaultStamp';
 import { COTW_VAULTS } from '../../../content/cotw/vaults';
 import { COTW_MONSTERS } from '../../../content/cotw/monsters';
 import { DungeonGenerator } from '../dungeon-generator';
-import { Mulberry32 } from '../prng';
+import { PRNG } from '../prng';
 
 describe('Vault / Prefab Stamp Injector', () => {
   it('correctly parses ASCII templates and preserves template geometry', () => {
@@ -24,7 +24,7 @@ describe('Vault / Prefab Stamp Injector', () => {
     };
 
     const map = new GameMap(10, 10, TILES.WALL);
-    const prng = new Mulberry32(111);
+    const prng = new PRNG(111);
     const result = VaultStamper.stamp(map, blueprint, 1, 1, 5, COTW_MONSTERS, [], () => prng.next());
 
     expect(result.width).toBe(5);
@@ -62,7 +62,7 @@ describe('Vault / Prefab Stamp Injector', () => {
     expect(names).toContain('The Fortified Strongroom');
     expect(names).toContain('The Chasm Crossing');
 
-    const prng = new Mulberry32(222);
+    const prng = new PRNG(222);
     for (const vault of COTW_VAULTS) {
       const map = new GameMap(30, 25, TILES.WALL);
       const res = VaultStamper.stamp(map, vault, 2, 2, vault.minFloor, [], [], () => prng.next());
@@ -73,7 +73,7 @@ describe('Vault / Prefab Stamp Injector', () => {
   it("keeps a vault's own guards near their depth, and draws from the floor once they're stale", () => {
     const cistern = COTW_VAULTS.find((v) => v.id === 'sunken_cistern')!; // giant rats and kobolds
     const guards = (floor: number) => {
-      const prng = new Mulberry32(99);
+      const prng = new PRNG(99);
       const map = new GameMap(30, 25, TILES.WALL);
       VaultStamper.stamp(map, cistern, 2, 2, floor, COTW_MONSTERS, [], () => prng.next());
       return map.getAllEntities().map((e) => (e as { definitionId?: string }).definitionId);

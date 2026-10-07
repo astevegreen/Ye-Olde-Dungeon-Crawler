@@ -10,7 +10,7 @@ import {
   populateDungeonFloor,
   scaleMonsterStats,
 } from '../spawner';
-import { Mulberry32 } from '../prng';
+import { PRNG } from '../prng';
 import { COTW_MONSTER_SCALING } from '../../../content/cotw/monsterScaling';
 
 describe('Dungeon Spawner - Tiering & Population', () => {
@@ -53,7 +53,7 @@ describe('Dungeon Spawner - Tiering & Population', () => {
     });
 
     it('filters candidates to only those with minFloor <= currentFloor', () => {
-      const prng = new Mulberry32(777);
+      const prng = new PRNG(777);
       // On floor 1, only Tier 1 monsters (giant_rat, kobold) should be eligible
       for (let i = 0; i < 20; i++) {
         const selected = selectDungeonMonsterDefinition(allCandidates, 1, () => prng.next());
@@ -167,7 +167,7 @@ describe('Dungeon Spawner - Tiering & Population', () => {
         }
       }
 
-      const prng = new Mulberry32(888);
+      const prng = new PRNG(888);
       populateDungeonFloor(map, rooms, 5, allCandidates, () => prng.next());
 
       const entities = map.getAllEntities();
@@ -204,7 +204,7 @@ describe('Dungeon Spawner - Tiering & Population', () => {
         }
       }
 
-      const prng = new Mulberry32(888);
+      const prng = new PRNG(888);
       populateDungeonFloor(map, rooms, 43, allCandidates, () => prng.next(), 1.0, COTW_MONSTER_SCALING, 'hard');
 
       const entities = map.getAllEntities();

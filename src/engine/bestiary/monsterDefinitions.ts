@@ -145,38 +145,6 @@ export class MonsterRegistry {
   }
 }
 
-export function registerMonsterDefinition(def: MonsterDefinition): void {
-  MonsterRegistry.register(def);
-}
-
 export function getMonsterDefinition(id: string): MonsterDefinition | undefined {
   return MonsterRegistry.get(id);
 }
-
-/**
- * @deprecated BESTIARY is content data and has moved to `src/content/cotw/monsters.ts`.
- * For runtime access to monster definitions, use `MonsterRegistry.get(id)` or `manifest.monsters`.
- */
-export const BESTIARY: Record<string, MonsterDefinition> = new Proxy({} as Record<string, MonsterDefinition>, {
-  get(_target, prop: string) {
-    if (typeof prop === 'string') {
-      return MonsterRegistry.get(prop);
-    }
-    return undefined;
-  },
-  has(_target, prop: string) {
-    return typeof prop === 'string' && MonsterRegistry.has(prop);
-  },
-  ownKeys() {
-    return MonsterRegistry.getAll().map((m) => m.id);
-  },
-  getOwnPropertyDescriptor(_target, prop: string) {
-    const def = typeof prop === 'string' ? MonsterRegistry.get(prop) : undefined;
-    if (def) {
-      return { configurable: true, enumerable: true, value: def };
-    }
-    return undefined;
-  },
-});
-
-

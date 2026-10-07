@@ -12,12 +12,12 @@ import { COTW_MONSTERS } from '../../../content/cotw/monsters';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { flightRecorder } from '../../debug/flightRecorder';
-import { Mulberry32 } from '../prng';
+import { PRNG } from '../prng';
 import type { ItemDefinition } from '../../types/manifest';
 
 describe('Dungeon Loot Spawner & Currency Scaling', () => {
   it('scales currency denominations according to floor depth', () => {
-    const prng = new Mulberry32(99);
+    const prng = new PRNG(99);
     // Floors 1-9: Copper (CP) and Silver (SP)
     for (let f = 1; f <= 9; f++) {
       const coin = spawnFloorCurrency(f, `coin-${f}`, () => prng.next());
@@ -112,7 +112,7 @@ describe('chests as loot', () => {
   it('never rolls a chest as a loose floor item', () => {
     const chestDefs = COTW_ITEMS.filter((d) => d.containerConfig?.containerType === 'chest');
     expect(chestDefs.length).toBeGreaterThan(0);
-    const rng = new Mulberry32(11);
+    const rng = new PRNG(11);
     for (let i = 0; i < 4000; i++) {
       const def = selectFloorItemDefinition(chestDefs.concat(COTW_ITEMS.slice(0, 3)), 1 + (i % 50), () => rng.next());
       expect(def?.containerConfig?.containerType).not.toBe('chest');
@@ -120,7 +120,7 @@ describe('chests as loot', () => {
   });
 
   it('every chest a cotw monster drops holds something', () => {
-    const rng = new Mulberry32(5);
+    const rng = new PRNG(5);
     let chests = 0;
     for (const def of COTW_MONSTERS) {
       for (const rule of def.lootTable ?? []) {
@@ -149,7 +149,7 @@ describe('loot rates as pack data (manifest.loot, Q2 "C")', () => {
 
   it('spreads the newest share over the newest definitions, not the one that unlocked last', () => {
     const candidates = [def('old-a', 1), def('old-b', 1), def('two', 2), def('three', 3), def('four', 4), def('five', 5)];
-    const rng = new Mulberry32(3);
+    const rng = new PRNG(3);
     const counts: Record<string, number> = {};
     for (let i = 0; i < 8000; i++) {
       const picked = selectFloorItemDefinition(candidates, 5, () => rng.next(), { newestShare: 0.8, newestDefinitions: 4 })!;
@@ -162,7 +162,7 @@ describe('loot rates as pack data (manifest.loot, Q2 "C")', () => {
 
   it('keeps definitions that share a floor together in the newest group', () => {
     const candidates = [def('old', 1), def('mid-a', 3), def('mid-b', 3), def('mid-c', 3), def('new', 4)];
-    const rng = new Mulberry32(8);
+    const rng = new PRNG(8);
     const counts: Record<string, number> = {};
     for (let i = 0; i < 8000; i++) {
       const picked = selectFloorItemDefinition(candidates, 4, () => rng.next(), { newestShare: 1, newestDefinitions: 2 })!;
@@ -174,14 +174,14 @@ describe('loot rates as pack data (manifest.loot, Q2 "C")', () => {
 
   it('without rates, draws as before: 75% from the definitions of the newest floor alone', () => {
     const candidates = [def('old-a', 1), def('old-b', 1), def('two', 2), def('five', 5)];
-    const rng = new Mulberry32(21);
+    const rng = new PRNG(21);
     let five = 0;
     for (let i = 0; i < 8000; i++) if (selectFloorItemDefinition(candidates, 5, () => rng.next())!.id === 'five') five++;
     expect(five / 8000).toBeCloseTo(0.75, 1);
   });
 
   it('fills a chest with the pack’s number of entries', () => {
-    const rng = new Mulberry32(4);
+    const rng = new PRNG(4);
     for (let i = 0; i < 200; i++) {
       const chest = createDungeonChest(`c-${i}`, 10, COTW_ITEMS, () => rng.next(), undefined, undefined, { chestEntries: [1, 1] });
       expect(chest.getItems()).toHaveLength(1);
@@ -191,7 +191,7 @@ describe('loot rates as pack data (manifest.loot, Q2 "C")', () => {
   it('rolls each room with the pack’s drop, coin and chest chances', () => {
     const map = new GameMap(60, 60, TILES.FLOOR);
     const rooms = Array.from({ length: 30 }, (_, i) => ({ x1: (i % 6) * 10, y1: Math.floor(i / 6) * 10, x2: (i % 6) * 10 + 8, y2: Math.floor(i / 6) * 10 + 8 }));
-    const rng = new Mulberry32(6);
+    const rng = new PRNG(6);
     const spawned = populateDungeonLoot(map, rooms, 10, COTW_ITEMS, () => rng.next(), undefined, undefined, {
       roomDropChance: 1,
       roomCoinShare: 1,
@@ -209,7 +209,7 @@ describe('loot weight (ItemDefinition.lootWeight)', () => {
       { id: 'common', name: 'common', category: 'weapon', weight: 1, bulk: 1, minFloor: 5 },
       { id: 'relic', name: 'relic', category: 'weapon', weight: 1, bulk: 1, minFloor: 5, lootWeight: 0.25 },
     ];
-    const rng = new Mulberry32(12);
+    const rng = new PRNG(12);
     let relic = 0;
     for (let i = 0; i < 10000; i++) if (selectFloorItemDefinition(candidates, 5, () => rng.next())!.id === 'relic') relic++;
     // 0.25 against 1: a fifth of the draws.

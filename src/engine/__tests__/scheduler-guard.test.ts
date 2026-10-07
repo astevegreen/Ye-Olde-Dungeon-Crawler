@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { EnergyScheduler, TurnScheduler } from '../scheduler';
+import { EnergyScheduler } from '../scheduler';
 import { Entity } from '../entities/entity';
 
 class MockEntity extends Entity {
@@ -17,12 +17,6 @@ class MockEntity extends Entity {
 }
 
 describe('Scheduler Zero-Division & Circuit-Breaker Guards', () => {
-  it('exports TurnScheduler alias identical to EnergyScheduler', () => {
-    expect(TurnScheduler).toBe(EnergyScheduler);
-    const ts = new TurnScheduler();
-    expect(ts).toBeInstanceOf(EnergyScheduler);
-  });
-
   it('handles entities with 0 or negative speed without crashing or division by zero', () => {
     const scheduler = new EnergyScheduler();
     const frozenMonster = new MockEntity('frozen-1', 0);

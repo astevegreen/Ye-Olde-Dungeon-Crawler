@@ -6,7 +6,7 @@ import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
 import { CastSpellAction } from '../actions/spell-actions';
 import { beforeEach, afterEach } from 'vitest';
-import { registerSpells, SPELL_REGISTRY } from '../magic/spellRegistry';
+import { registerSpells, SpellRegistry } from '../magic/spellRegistry';
 
 describe('Unified Kill Logging & Spell Fatalities', () => {
   beforeEach(() => {
@@ -16,7 +16,7 @@ describe('Unified Kill Logging & Spell Fatalities', () => {
     ]);
   });
   afterEach(() => {
-    for (const key of Object.keys(SPELL_REGISTRY)) delete SPELL_REGISTRY[key];
+    SpellRegistry.clear();
   });
   function setupEngine() {
     const map = new GameMap(10, 10, TILES.FLOOR);

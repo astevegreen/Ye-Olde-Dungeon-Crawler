@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../engine';
 import { Player } from '../../engine';
-import { TILES, registerTileDefinition } from '../../engine';
+import { TILES } from '../../engine';
 import { Item } from '../../engine';
 import { formatGroundStatus } from '../sidebar/sidebarModel';
 import { SpellbookTab } from '../characterMenu/spellbookTab';
@@ -211,7 +211,7 @@ describe('Modal Stack Lifecycle & UI Ground Status Polish', () => {
         glyph: '.',
         description: '',
       };
-      registerTileDefinition(woodenPlanks);
+      engine.registries.tiles.register(woodenPlanks);
       map.setTile(5, 5, woodenPlanks);
       // (5, 5) is inside Olaf's General Store (3, 2 to 16, 9)
       const status = formatGroundStatus(engine, 5, 5);

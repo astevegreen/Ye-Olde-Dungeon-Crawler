@@ -5,7 +5,7 @@ import { TILES } from '../grid/tile';
 import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
 import { CastSpellAction } from '../actions/spell-actions';
-import { registerSpell } from '../magic/spellRegistry';
+import { SpellRegistry } from '../magic/spellRegistry';
 import type { SpellDefinition } from '../magic/types';
 import { parseAndRollDice } from '../magic/spellPipeline';
 
@@ -64,7 +64,7 @@ describe('Composable Spell Pipeline & Effect Primitives', () => {
       description: 'A focused burst of flame.',
       effects: [{ type: 'damage', amount: 20, element: 'fire' }],
     };
-    registerSpell(customPyro);
+    SpellRegistry.register(customPyro);
 
     const action = new CastSpellAction(player, 'pyro_blast', 7, 5);
     const result = engine.handlePlayerAction(action);
@@ -118,7 +118,7 @@ describe('Composable Spell Pipeline & Effect Primitives', () => {
         { type: 'chain', maxHops: 2, hopRange: 4, damageDecay: 0.25 },
       ],
     };
-    registerSpell(chainLightning);
+    SpellRegistry.register(chainLightning);
 
     const action = new CastSpellAction(player, 'chain_lightning', 7, 5);
     const result = engine.handlePlayerAction(action);
@@ -165,7 +165,7 @@ describe('Composable Spell Pipeline & Effect Primitives', () => {
       description: 'Cripples a foe with magical lethargy.',
       effects: [{ type: 'applyStatus', statusId: 'slow', duration: 5 }],
     };
-    registerSpell(cripplingCurse);
+    SpellRegistry.register(cripplingCurse);
 
     const action = new CastSpellAction(player, 'crippling_curse', 6, 5);
     const result = engine.handlePlayerAction(action);
@@ -194,7 +194,7 @@ describe('Composable Spell Pipeline & Effect Primitives', () => {
       description: 'Instantly shifts space.',
       effects: [{ type: 'teleport', range: 6, random: true }],
     };
-    registerSpell(blinkSpell);
+    SpellRegistry.register(blinkSpell);
 
     const action = new CastSpellAction(player, 'blink_step', player.x, player.y);
     const result = engine.handlePlayerAction(action);
@@ -224,7 +224,7 @@ describe('Composable Spell Pipeline & Effect Primitives', () => {
       description: 'Restores 25 health points.',
       effects: [{ type: 'heal', amount: 25 }],
     };
-    registerSpell(mendSpell);
+    SpellRegistry.register(mendSpell);
 
     const action = new CastSpellAction(player, 'divine_mend', player.x, player.y);
     const result = engine.handlePlayerAction(action);

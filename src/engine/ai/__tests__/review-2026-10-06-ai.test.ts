@@ -7,7 +7,7 @@ import { Monster } from '../../entities/monster';
 import { Companion } from '../../entities/companion';
 import { WandItem } from '../../items/consumables';
 import { MonsterAI } from '../behaviorTree';
-import { registerSpell, registerSpells } from '../../magic/spellRegistry';
+import { SpellRegistry, registerSpells } from '../../magic/spellRegistry';
 import { CastSpellAction, ZapWandAction } from '../../actions/spell-actions';
 import { cotwManifest } from '../../../content/cotw';
 
@@ -38,7 +38,7 @@ const firebolt = {
 
 describe('R-ai-1 · a companion carrying a wand never zaps it at the hero', () => {
   it('a companion with a Wand of Firebolts in its pack does not aim it at the hero', () => {
-    registerSpell(firebolt as never);
+    SpellRegistry.register(firebolt as never);
     const map = new GameMap(20, 20, TILES.FLOOR);
     const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 }, stats: { hp: 50, maxHp: 50, attack: 10, defense: 5 } });
     const engine = new GameEngine({ map, player });
@@ -62,7 +62,7 @@ describe('R-ai-1 · a companion carrying a wand never zaps it at the hero', () =
   });
 
   it('a hostile wielder still zaps a hero it perceives, and a blinded one does not', () => {
-    registerSpell(firebolt as never);
+    SpellRegistry.register(firebolt as never);
     const map = new GameMap(20, 20, TILES.FLOOR);
     const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 }, stats: { hp: 50, maxHp: 50, attack: 10, defense: 5 } });
     const engine = new GameEngine({ map, player });

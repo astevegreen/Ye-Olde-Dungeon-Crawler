@@ -4,7 +4,7 @@ import { RegistryStore } from './registryStore';
 /**
  * Static alias map for backward compatibility with legacy save files and alternate names.
  */
-export const SPELL_ID_ALIASES: Record<string, string> = {
+const SPELL_ID_ALIASES: Record<string, string> = {
   sense_living: 'detect_monsters',
   detect_treasure: 'detect_objects',
 };
@@ -25,10 +25,6 @@ export class SpellRegistryStore extends RegistryStore<string, SpellDefinition> {
   public override has(id: string): boolean {
     const canonicalId = SPELL_ID_ALIASES[id] ?? id;
     return super.has(canonicalId) || super.has(id);
-  }
-
-  public delete(id: string): boolean {
-    return this.entries.delete(id);
   }
 }
 

@@ -6,7 +6,7 @@ import { GameEngine } from '../../engine';
 import { ItemFactory } from '../../items/factory';
 import { ZapWandAction, ReadScrollAction, DrinkPotionAction } from '../../actions/spell-actions';
 import { beforeEach, afterEach } from 'vitest';
-import { registerSpells, SPELL_REGISTRY } from '../spellRegistry';
+import { registerSpells, SpellRegistry } from '../spellRegistry';
 
 describe('Consumables Activation (Wands, Scrolls, Potions)', () => {
   beforeEach(() => {
@@ -16,7 +16,7 @@ describe('Consumables Activation (Wands, Scrolls, Potions)', () => {
     ]);
   });
   afterEach(() => {
-    for (const key of Object.keys(SPELL_REGISTRY)) delete SPELL_REGISTRY[key];
+    SpellRegistry.clear();
   });
   function setupTestWorld() {
     const map = new GameMap(12, 12, TILES.FLOOR);

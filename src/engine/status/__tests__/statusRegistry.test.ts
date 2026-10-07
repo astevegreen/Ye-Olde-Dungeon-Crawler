@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { StatusHandlerRegistry, StatusEffectRegistry, type StatusHandler } from '../statusHandlers';
+import { StatusHandlerRegistry, type StatusHandler } from '../statusHandlers';
 import { Player } from '../../entities/player';
 import { createTestGoblin, createTestKobold } from '../../__fixtures__/testHelpers';
 import { GameMap } from '../../grid/map';
@@ -24,13 +24,12 @@ describe('Status Effect Registry & Manifest Integration (Phase 2)', () => {
     return { engine, player, map };
   }
 
-  it('exposes StatusEffectRegistry as an alias for StatusHandlerRegistry', () => {
-    expect(StatusEffectRegistry).toBe(StatusHandlerRegistry);
-    expect(StatusEffectRegistry.has('poison')).toBe(true);
-    expect(StatusEffectRegistry.has('paralysis')).toBe(true);
-    expect(StatusEffectRegistry.has('slow')).toBe(true);
-    expect(StatusEffectRegistry.has('haste')).toBe(true);
-    expect(StatusEffectRegistry.has('blindness')).toBe(true);
+  it('registers the built-in status handlers', () => {
+    expect(StatusHandlerRegistry.has('poison')).toBe(true);
+    expect(StatusHandlerRegistry.has('paralysis')).toBe(true);
+    expect(StatusHandlerRegistry.has('slow')).toBe(true);
+    expect(StatusHandlerRegistry.has('haste')).toBe(true);
+    expect(StatusHandlerRegistry.has('blindness')).toBe(true);
   });
 
   it('allows registering and dispatching custom status handlers dynamically', () => {

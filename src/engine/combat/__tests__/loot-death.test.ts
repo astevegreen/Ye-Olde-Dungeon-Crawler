@@ -12,7 +12,7 @@ import { DeathResolver } from '../deathResolver';
 import { MeleeAttackAction } from '../../actions/combat';
 import { CastSpellAction } from '../../actions/spell-actions';
 import { beforeEach, afterEach } from 'vitest';
-import { registerSpells, SPELL_REGISTRY } from '../../magic/spellRegistry';
+import { registerSpells, SpellRegistry } from '../../magic/spellRegistry';
 
 describe('Death Resolution, XP & Loot Drops', () => {
   beforeEach(() => {
@@ -21,7 +21,7 @@ describe('Death Resolution, XP & Loot Drops', () => {
     ]);
   });
   afterEach(() => {
-    for (const key of Object.keys(SPELL_REGISTRY)) delete SPELL_REGISTRY[key];
+    SpellRegistry.clear();
   });
   it('awards XP upon monster defeat and triggers player level up with stat buffs', () => {
     const map = new GameMap(10, 10, TILES.FLOOR);

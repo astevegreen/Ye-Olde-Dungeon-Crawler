@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GameEngine } from '../engine';
 import { GameMap } from '../grid/map';
-import { TILES, getTileDefinition, registerTileDefinition } from '../grid/tile';
+import { TILES, getTileDefinition } from '../grid/tile';
 import { Player } from '../entities/player';
 import { PotionItem } from '../items/consumables';
 import { DrinkPotionAction } from '../actions/spell-actions';
 import { SmartCloseDoorAction, getAdjacentOpenDoors } from '../actions/door';
 import { MovementAction } from '../actions/movement';
 import { SpellPipeline } from '../magic/spellPipeline';
-import { getSpell, SPELL_ID_ALIASES } from '../magic/spellRegistry';
+import { getSpell } from '../magic/spellRegistry';
 import { ActionRegistry } from '../actions/actionRegistry';
 import { cotwManifest } from '../../content/cotw';
 import { Visibility } from '../fov/types';
@@ -67,7 +67,7 @@ describe('Pre-Freeze Architectural Refactor Verification', () => {
     });
 
     it('allows registering custom open-string tile types with custom capabilities', () => {
-      registerTileDefinition({
+      engine.registries.tiles.register({
         type: 'arcane_forcefield',
         name: 'Arcane Forcefield',
         passable: false,
@@ -94,10 +94,7 @@ describe('Pre-Freeze Architectural Refactor Verification', () => {
   });
 
   describe('2. Divination Spell Unification & Aliases', () => {
-    it('resolves legacy divination spell IDs through SPELL_ID_ALIASES', () => {
-      expect(SPELL_ID_ALIASES['sense_living']).toBe('detect_monsters');
-      expect(SPELL_ID_ALIASES['detect_treasure']).toBe('detect_objects');
-
+    it('resolves legacy divination spell IDs to their current spells', () => {
       const senseLiving = getSpell('sense_living');
       const detectMonsters = getSpell('detect_monsters');
       expect(senseLiving).toBeDefined();

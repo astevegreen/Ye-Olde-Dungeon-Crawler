@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { CharacterRoller, MIN_ATTRIBUTE, MAX_ATTRIBUTE } from '../characterRoller';
 import { Player } from '../../entities/player';
-import { Mulberry32 } from '../../dungeon/prng';
+import { PRNG } from '../../dungeon/prng';
 
 describe('CharacterRoller & Attribute Engine', () => {
   it('never rolls a starting attribute past the cap, over many rolls', () => {
-    const prng = new Mulberry32(7);
+    const prng = new PRNG(7);
     for (let i = 0; i < 500; i++) {
       const roll = CharacterRoller.generateRoll(() => prng.next());
       for (const value of Object.values(roll.attributes)) {
@@ -16,7 +16,7 @@ describe('CharacterRoller & Attribute Engine', () => {
   });
 
   it('rolls 3d6 within range 3 to 18', () => {
-    const prng = new Mulberry32(42);
+    const prng = new PRNG(42);
     for (let i = 0; i < 50; i++) {
       const roll = CharacterRoller.roll3d6(() => prng.next());
       expect(roll).toBeGreaterThanOrEqual(3);
@@ -25,7 +25,7 @@ describe('CharacterRoller & Attribute Engine', () => {
   });
 
   it('generates a heroic roll with 4 attributes and 5 available points', () => {
-    const prng = new Mulberry32(100);
+    const prng = new PRNG(100);
     const roll = CharacterRoller.generateRoll(() => prng.next());
     expect(roll.availablePoints).toBe(5);
     expect(roll.attributes.strength).toBeGreaterThanOrEqual(MIN_ATTRIBUTE);

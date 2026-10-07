@@ -7,7 +7,7 @@ import { GameEngine } from '../../engine';
 import { MovementAction } from '../../actions/movement';
 import { CastSpellAction } from '../../actions/spell-actions';
 import { calculateElementalDamage } from '../../magic/elements';
-import { registerSpells, SPELL_REGISTRY } from '../../magic/spellRegistry';
+import { registerSpells, SpellRegistry, getSpell } from '../../magic/spellRegistry';
 
 describe('Tactical Surface Tiles & Terrain Physics', () => {
   let map: GameMap;
@@ -34,7 +34,7 @@ describe('Tactical Surface Tiles & Terrain Physics', () => {
   });
 
   afterEach(() => {
-    for (const key of Object.keys(SPELL_REGISTRY)) delete SPELL_REGISTRY[key];
+    SpellRegistry.clear();
   });
 
   it('applies +50 movement action energy cost when stepping into ShallowWater', () => {
@@ -101,7 +101,7 @@ describe('Tactical Surface Tiles & Terrain Physics', () => {
     // Cast Lightning Bolt aimed down from (5, 5) to (5, 9)
     // The ray passes through (5, 6), (5, 7), (5, 8), which are shallow water.
     // The monster is at (6, 7) (not in direct ray path, but sharing connected water).
-    const lightningSpell = SPELL_REGISTRY['lightning_bolt'];
+    const lightningSpell = getSpell('lightning_bolt');
     expect(lightningSpell).toBeDefined();
 
     const castAction = new CastSpellAction(player, 'lightning_bolt', 5, 9);

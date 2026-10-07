@@ -9,7 +9,7 @@ import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { MonsterAI } from '../../ai/behaviorTree';
 import { DrinkPotionAction, ZapWandAction } from '../../actions/spell-actions';
-import { registerSpell, SPELL_REGISTRY } from '../../magic/spellRegistry';
+import { SpellRegistry } from '../../magic/spellRegistry';
 
 describe('Symmetrical Actor Parity & Morph Envelope (actor.ts, monster.ts)', () => {
   let engine: GameEngine;
@@ -17,7 +17,7 @@ describe('Symmetrical Actor Parity & Morph Envelope (actor.ts, monster.ts)', () 
   let map: GameMap;
 
   beforeEach(() => {
-    registerSpell({
+    SpellRegistry.register({
       id: 'firebolt',
       name: 'Firebolt',
       school: 'Combat',
@@ -43,7 +43,7 @@ describe('Symmetrical Actor Parity & Morph Envelope (actor.ts, monster.ts)', () 
   });
 
   afterEach(() => {
-    for (const key of Object.keys(SPELL_REGISTRY)) delete SPELL_REGISTRY[key];
+    SpellRegistry.clear();
   });
 
   describe('Universal Inventory & Equipment Parity', () => {

@@ -4,7 +4,7 @@ import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { CastSpellAction } from '../../actions/spell-actions';
-import { registerSpells, SPELL_REGISTRY } from '../spellRegistry';
+import { registerSpells, SpellRegistry } from '../spellRegistry';
 
 describe('ray spell impact message', () => {
   beforeEach(() => {
@@ -13,7 +13,7 @@ describe('ray spell impact message', () => {
     ]);
   });
   afterEach(() => {
-    for (const key of Object.keys(SPELL_REGISTRY)) delete SPELL_REGISTRY[key];
+    SpellRegistry.clear();
   });
 
   function castAt(map: GameMap, x: number, y: number): string {

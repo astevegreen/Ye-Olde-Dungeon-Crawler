@@ -5,7 +5,7 @@ import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { Monster } from '../../entities/monster';
 import { CastSpellAction } from '../../actions/spell-actions';
-import { registerSpells, SPELL_REGISTRY } from '../spellRegistry';
+import { registerSpells, SpellRegistry } from '../spellRegistry';
 import { COTW_SPELLS } from '../../../content/cotw/spells';
 import { WARCRAFT_SPELLS } from '../../../content/warcraft/spells';
 import type {
@@ -20,9 +20,7 @@ describe('Visual Effect Queue & Declarative FX Engine', () => {
   });
 
   afterEach(() => {
-    for (const key of Object.keys(SPELL_REGISTRY)) {
-      delete SPELL_REGISTRY[key];
-    }
+    SpellRegistry.clear();
   });
 
   function createCorridorEngine() {

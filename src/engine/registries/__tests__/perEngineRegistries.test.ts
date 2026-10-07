@@ -5,12 +5,12 @@ import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { MonsterRegistry } from '../../bestiary/monsterDefinitions';
 import { ActionRegistry, type GameAction } from '../../actions/actionRegistry';
-import { SpellRegistry, getSpell, SPELL_REGISTRY } from '../../magic/spellRegistry';
+import { SpellRegistry, getSpell } from '../../magic/spellRegistry';
 import { CompanionRegistry, type CompanionDefinition } from '../../entities/companion';
 import { AIRegistry, type AIStrategy } from '../../ai/aiRegistry';
 import { AiBehaviorRegistry, type AiBehaviorStrategy } from '../../ai/aiBehaviorRegistry';
 import { StatusHandlerRegistry, type StatusHandler } from '../../status/statusHandlers';
-import { TileRegistry, getTileDefinition, hasTileDefinition } from '../../grid/tile';
+import { getTileDefinition, hasTileDefinition } from '../../grid/tile';
 import { Item } from '../../items/item';
 import { itemIndex, getItemById } from '../../items/itemIndex';
 import { WaitAction } from '../../actions/wait';
@@ -159,7 +159,6 @@ describe('Per-engine content registries', () => {
     setActiveAIBehaviorStore(null);
     StatusHandlerRegistry.resetToDefaults();
     setActiveStatusHandlerStore(null);
-    TileRegistry.resetToDefaults();
     setActiveTileStore(null);
     itemIndex.clear();
   });
@@ -271,13 +270,11 @@ describe('Per-engine content registries', () => {
     expect(engineB.registries.spells.has('pyroblast')).toBe(true);
     expect(engineB.registries.spells.has('frostbolt')).toBe(false);
 
-    // Static facade & proxy point to B
+    // Static facade points to B
     expect(SpellRegistry.has('pyroblast')).toBe(true);
     expect(SpellRegistry.has('frostbolt')).toBe(false);
     expect(getSpell('pyroblast')).toBeDefined();
     expect(getSpell('frostbolt')).toBeUndefined();
-    expect(SPELL_REGISTRY['pyroblast']).toBeDefined();
-    expect(SPELL_REGISTRY['frostbolt']).toBeUndefined();
 
     // Acting on A switches SpellRegistry to A
     engineA.handlePlayerAction(new WaitAction(engineA.player));
@@ -285,8 +282,6 @@ describe('Per-engine content registries', () => {
     expect(SpellRegistry.has('pyroblast')).toBe(false);
     expect(getSpell('frostbolt')).toBeDefined();
     expect(getSpell('pyroblast')).toBeUndefined();
-    expect(SPELL_REGISTRY['frostbolt']).toBeDefined();
-    expect(SPELL_REGISTRY['pyroblast']).toBeUndefined();
   });
 
   it('keeps two engines built from different companion manifests separate', () => {
@@ -394,17 +389,13 @@ describe('Per-engine content registries', () => {
     expect(engineB.registries.tiles.has('blighted_soil')).toBe(true);
     expect(engineB.registries.tiles.has('elven_grass')).toBe(false);
 
-    // Static facade points to B
-    expect(TileRegistry.has('blighted_soil')).toBe(true);
-    expect(TileRegistry.has('elven_grass')).toBe(false);
+    // The static lookups resolve against B
     expect(hasTileDefinition('blighted_soil')).toBe(true);
     expect(hasTileDefinition('elven_grass')).toBe(false);
     expect(getTileDefinition('blighted_soil').name).toBe('blighted_soil');
 
-    // Acting on A switches TileRegistry to A
+    // Acting on A switches them to A
     engineA.handlePlayerAction(new WaitAction(engineA.player));
-    expect(TileRegistry.has('elven_grass')).toBe(true);
-    expect(TileRegistry.has('blighted_soil')).toBe(false);
     expect(hasTileDefinition('elven_grass')).toBe(true);
     expect(hasTileDefinition('blighted_soil')).toBe(false);
     expect(getTileDefinition('elven_grass').name).toBe('elven_grass');
@@ -496,8 +487,8 @@ describe('Per-engine content registries', () => {
       expect(AiBehaviorRegistry.has('berserk_rush')).toBe(false);
       expect(StatusHandlerRegistry.has('frozen')).toBe(true);
       expect(StatusHandlerRegistry.has('cursed')).toBe(false);
-      expect(TileRegistry.has('elven_grass')).toBe(true);
-      expect(TileRegistry.has('blighted_soil')).toBe(false);
+      expect(hasTileDefinition('elven_grass')).toBe(true);
+      expect(hasTileDefinition('blighted_soil')).toBe(false);
       expect(getItemById('item_a')).toBe(itemA);
       expect(getItemById('ground_a')).toBe(groundA);
       expect(getItemById('item_b')).toBeUndefined();
@@ -554,8 +545,8 @@ describe('Per-engine content registries', () => {
       expect(AiBehaviorRegistry.has('tactical_retreat')).toBe(false);
       expect(StatusHandlerRegistry.has('cursed')).toBe(true);
       expect(StatusHandlerRegistry.has('frozen')).toBe(false);
-      expect(TileRegistry.has('blighted_soil')).toBe(true);
-      expect(TileRegistry.has('elven_grass')).toBe(false);
+      expect(hasTileDefinition('blighted_soil')).toBe(true);
+      expect(hasTileDefinition('elven_grass')).toBe(false);
       expect(getItemById('item_b')).toBe(itemB);
       expect(getItemById('ground_b')).toBe(groundB);
       expect(getItemById('item_a')).toBeUndefined();

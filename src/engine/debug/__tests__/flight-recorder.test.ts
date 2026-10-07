@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { setFlagsFromString } from 'node:v8';
+import { runInNewContext } from 'node:vm';
 import { FlightRecorder } from '../flightRecorder';
+import { WaitAction } from '../../actions/wait';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
@@ -155,5 +158,51 @@ describe('Developer Diagnostic Flight Recorder', () => {
 
     recorder.clear();
     expect(recorder.getEvents()).toHaveLength(0);
+  });
+});
+
+/**
+ * The recorder only has to tell whether an engine is the one its checkpoint came from, so
+ * it must not be what keeps a finished run's engine alive (fuzz audit A-30): after Save &
+ * Quit, a death or a load, the module-level recorder used to hold it until another engine
+ * acted.
+ */
+describe('the engine a replay checkpoint came from', () => {
+  const smallEngine = () =>
+    new GameEngine({
+      map: new GameMap(8, 8, TILES.FLOOR),
+      player: new Player({ id: 'hero', name: 'Hero', position: { x: 2, y: 2 }, stats: { hp: 10, maxHp: 10, attack: 1, defense: 1 } }),
+    });
+
+  it('is matched while the game holds it, and another engine is not', () => {
+    const recorder = new FlightRecorder(150);
+    const engine = smallEngine();
+    recorder.recordPlayerAction(new WaitAction(engine.player), engine);
+
+    expect(recorder.getReplayData(engine)?.trail.map((e) => e.action)).toEqual(['WaitAction']);
+    expect(recorder.getReplayData(smallEngine())).toBeNull();
+  });
+
+  it('is not kept alive by the recorder once nothing else holds it', async () => {
+    setFlagsFromString('--expose-gc');
+    const gc = runInNewContext('gc') as () => void;
+    const recorder = new FlightRecorder(150);
+    const ref = ((): WeakRef<GameEngine> => {
+      const engine = smallEngine();
+      recorder.recordPlayerAction(new WaitAction(engine.player), engine);
+      return new WeakRef(engine);
+    })();
+
+    // A WeakRef keeps its target until the current job ends, and a collection need not
+    // take everything unreachable at once, so collect between ticks until it is gone (or
+    // give up: with a strong reference it never goes).
+    for (let i = 0; i < 20 && ref.deref() !== undefined; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      gc();
+    }
+
+    expect(ref.deref()).toBeUndefined();
+    // The replay data itself is kept, for a report filed after the run.
+    expect(recorder.getReplayData()?.trail).toHaveLength(1);
   });
 });

@@ -60,7 +60,12 @@ export class FlightRecorder {
   // Replay: a save taken at an action boundary, and every player action since.
   private trail: TrailEntry[] = [];
   private checkpoint: (Omit<ReplayCheckpoint, 'save'> & { save: string }) | null = null;
-  private checkpointEngine: GameEngine | null = null;
+  /**
+   * Held weakly: the recorder only asks whether an engine is the one checkpointed, and must
+   * not keep a finished run's engine alive after Save & Quit, a death or a load. A live
+   * engine matches as before; one nothing else holds can't be handed back to be matched.
+   */
+  private checkpointEngine: WeakRef<GameEngine> | null = null;
   private pendingCheckpointReason: string | null = 'session start';
   private nextTrailSeq = 1;
 
@@ -213,7 +218,7 @@ export class FlightRecorder {
         this.pendingCheckpointReason = 'dialog choice';
         return;
       }
-      if (engine !== this.checkpointEngine) {
+      if (!this.isCheckpointEngine(engine)) {
         this.pendingCheckpointReason ??= 'game loaded';
       } else if (this.trail.length >= TRAIL_CAPACITY) {
         this.pendingCheckpointReason ??= `trail reached ${TRAIL_CAPACITY} actions`;
@@ -236,7 +241,7 @@ export class FlightRecorder {
    * Only for the engine already recorded; a game just loaded has no replay data yet.
    */
   private takeDueCheckpoint(engine?: GameEngine): void {
-    if (!engine || engine !== this.checkpointEngine || this.pendingCheckpointReason === null) return;
+    if (!engine || !this.isCheckpointEngine(engine) || this.pendingCheckpointReason === null) return;
     try {
       this.takeCheckpoint(engine, this.pendingCheckpointReason);
     } catch {
@@ -245,9 +250,13 @@ export class FlightRecorder {
     }
   }
 
+  private isCheckpointEngine(engine: GameEngine): boolean {
+    return this.checkpointEngine?.deref() === engine;
+  }
+
   private takeCheckpoint(engine: GameEngine, reason: string): void {
     this.pendingCheckpointReason = null;
-    this.checkpointEngine = engine;
+    this.checkpointEngine = new WeakRef(engine);
     this.trail = [];
     this.checkpoint = null;
     const save = this.generateStateSnapshot(engine);
@@ -267,7 +276,7 @@ export class FlightRecorder {
    */
   public exportReplayJson(engine?: GameEngine): string | null {
     this.takeDueCheckpoint(engine);
-    if (!this.checkpoint || (engine && engine !== this.checkpointEngine)) return null;
+    if (!this.checkpoint || (engine && !this.isCheckpointEngine(engine))) return null;
     const { save, ...meta } = this.checkpoint;
     return `{"checkpoint":${JSON.stringify(meta).slice(0, -1)},"save":${save}},"trail":${JSON.stringify(this.trail)}}`;
   }
@@ -299,7 +308,7 @@ export class FlightRecorder {
    */
   public getReplayData(engine?: GameEngine): ReplayData | null {
     this.takeDueCheckpoint(engine);
-    if (!this.checkpoint || (engine && engine !== this.checkpointEngine)) return null;
+    if (!this.checkpoint || (engine && !this.isCheckpointEngine(engine))) return null;
     return {
       checkpoint: { ...this.checkpoint, save: JSON.parse(this.checkpoint.save) as unknown },
       trail: this.trail.map((e) => ({ ...e, params: { ...e.params } })),

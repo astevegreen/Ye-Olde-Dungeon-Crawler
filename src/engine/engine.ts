@@ -50,9 +50,7 @@ import type { Item } from './items/item';
 import { CompendiumManager } from './compendium/compendiumManager';
 import { AffinityMatrix, DEFAULT_AFFINITY_MATRIX } from './magic/elements';
 import { FloorManager } from './world/floorManager';
-import { PlaneManager } from './world/planeManager';
 import type { SurfaceGrid } from './surfaces/surfaceGrid';
-import type { SubstanceGrid } from './environment/substanceGrid';
 import { SpellPipeline } from './magic/spellPipeline';
 import { findSafeSpawnPosition } from './spatial/collisionSolver';
 import { ActionPipeline } from './actions/actionPipeline';
@@ -130,7 +128,6 @@ export interface EngineConfig {
   manifest?: GameContentManifest;
   compendium?: CompendiumManager;
   floorManager?: FloorManager;
-  planeManager?: PlaneManager;
   worldState?: WorldState;
 }
 
@@ -176,9 +173,6 @@ export class GameEngine {
   public get surfaces(): SurfaceGrid {
     return this.map.surfaces;
   }
-  public get substances(): SubstanceGrid {
-    return this.map.substances;
-  }
   public currentFloor: number;
   public readonly storedFloors: Map<number, GameMap> = new Map();
   public readonly storedFov: Map<number, FovManager> = new Map();
@@ -189,7 +183,6 @@ export class GameEngine {
   public readonly compendium: CompendiumManager;
   public readonly wanderingSpawner: WanderingMonsterSpawner;
   public readonly floorManager: FloorManager;
-  public readonly planeManager: PlaneManager;
   public readonly identification: IdentificationManager;
   public worldState: WorldState;
   public onNpcInteract?: (npc: NPC) => void;
@@ -423,7 +416,6 @@ export class GameEngine {
     this.compendium = config.compendium ?? new CompendiumManager();
     this.wanderingSpawner = new WanderingMonsterSpawner();
     this.floorManager = config.floorManager ?? new FloorManager();
-    this.planeManager = config.planeManager ?? new PlaneManager();
     this.gameState = config.gameState ?? new GameStateManager();
     this.gameState.updateFloor(this.currentFloor);
     this.actionPipeline = new ActionPipeline();
@@ -1092,8 +1084,6 @@ export class GameEngine {
       }
     });
     this.runEnvironmentalUpdate('surface-tick', () => this.surfaces.tick(this));
-    this.runEnvironmentalUpdate('substance-tick', () => this.substances.tickSubstances(this.map, this));
-    this.runEnvironmentalUpdate('plane-drift', () => this.planeManager.tickDrift(this.map, this.scheduler.ticks, this));
     this.runEnvironmentalUpdate('wandering-spawn', () => this.wanderingSpawner.checkAndSpawn(this, this.rng));
     this.runEnvironmentalUpdate('floor-respawn', () => this.floorManager.checkClearedFloorRespawn(this));
     this.runEnvironmentalUpdate('timed-events-tick', () => this.tickTimedEvents());
@@ -1282,7 +1272,7 @@ export class GameEngine {
    * (ARCHITECTURE.md §4). A failure is recorded through the same counters as pipeline and
    * monster-turn failures — so the turn's result is marked `pipelineError` — and the
    * remaining updates still run: a throwing surface tick must not silently skip
-   * substances, spawns, or the floor-respawn check.
+   * spawns, the timed events or the floor-respawn check.
    */
   private runEnvironmentalUpdate(label: string, update: () => void): void {
     try {

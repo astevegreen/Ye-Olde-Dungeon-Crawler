@@ -28,7 +28,6 @@ export function renderSimulationTab(ctx: DiagnosticTabContext, engine: GameEngin
   let visibleTiles = 0;
   let exploredTiles = 0;
   let surfaceTiles = 0;
-  let substanceTiles = 0;
   const totalTiles = map.width * map.height;
 
   for (let y = 0; y < map.height; y++) {
@@ -36,7 +35,6 @@ export function renderSimulationTab(ctx: DiagnosticTabContext, engine: GameEngin
       if (engine.fov.isVisible(x, y)) visibleTiles++;
       if (engine.fov.isExplored(x, y)) exploredTiles++;
       if (engine.surfaces.getSurface(x, y) || engine.surfaces.getGas(x, y)) surfaceTiles++;
-      if (engine.substances.getSubstances(x, y) !== 0) substanceTiles++;
     }
   }
 
@@ -91,7 +89,6 @@ export function renderSimulationTab(ctx: DiagnosticTabContext, engine: GameEngin
           ['Index entries', `${spatialIndexCount}`],
           ['Entity buckets', `${bucketCount}`],
           ['Surface tiles', `${surfaceTiles}`],
-          ['Substance tiles', `${substanceTiles}`],
         ])}
       </div>
     </div>`;

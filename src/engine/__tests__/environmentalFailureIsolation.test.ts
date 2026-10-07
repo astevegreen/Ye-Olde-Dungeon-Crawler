@@ -32,15 +32,15 @@ const envFailures = () =>
 describe('Environmental update failure isolation', () => {
   it('isolates a throwing surface tick and still runs later updates', () => {
     const { engine, player } = buildEngine();
-    let substancesTicked = false;
+    let spawnsChecked = false;
     let floorRespawnTicked = false;
     (engine.surfaces as any).tick = () => {
       throw new Error('SURFACE_TICK_FAULT');
     };
-    const realSubstanceTick = engine.substances.tickSubstances.bind(engine.substances);
-    (engine.substances as any).tickSubstances = (...args: unknown[]) => {
-      substancesTicked = true;
-      return (realSubstanceTick as any)(...args);
+    const realSpawnCheck = engine.wanderingSpawner.checkAndSpawn.bind(engine.wanderingSpawner);
+    (engine.wanderingSpawner as any).checkAndSpawn = (...args: unknown[]) => {
+      spawnsChecked = true;
+      return (realSpawnCheck as any)(...args);
     };
     (engine.floorManager as any).checkClearedFloorRespawn = () => {
       floorRespawnTicked = true;
@@ -54,7 +54,7 @@ describe('Environmental update failure isolation', () => {
     }).not.toThrow();
 
     expect(result!.pipelineError).toBe(true);
-    expect(substancesTicked).toBe(true);
+    expect(spawnsChecked).toBe(true);
     expect(floorRespawnTicked).toBe(true);
     const recorded = envFailures();
     expect(recorded.length).toBeGreaterThan(before);

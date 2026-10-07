@@ -609,7 +609,7 @@ export interface MonsterCategoryDefinition {
  * A turn-limited world event (ARCHITECTURE.md §3) — a gap surfaced by a climactic
  * story choice that needed to feel time-pressured rather than a calm, simulation-
  * paused dialogue menu. Ticked once per player turn by `GameEngine` (a `'timed-
- * events-tick'` environmental update, alongside surfaces/substances/spawns) rather
+ * events-tick'` environmental update, alongside surfaces and spawns) rather
  * than gated behind a modal, so the countdown keeps running while the player acts.
  */
 /**

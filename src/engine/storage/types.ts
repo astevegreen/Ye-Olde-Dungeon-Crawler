@@ -10,9 +10,7 @@ import type { AiState, MonsterIntent, MonsterPursuit } from '../entities/monster
 import type { CompanionArchetype } from '../entities/companion';
 import type { Position } from '../types';
 import type { WorldState } from '../state/worldState';
-import type { PlaneState } from '../spatial/planeTypes';
 import type { SerializedSurfaceCell } from '../surfaces/surfaceGrid';
-import type { SerializedSubstanceCell } from '../environment/substanceGrid';
 
 // One-time tutorial flags, saved with the hero. Presentation's first-time hints record
 // each hint shown as `hint:<FirstTimeHintId>` (`src/ui/hints/`); the keys are open, so a
@@ -358,7 +356,8 @@ export interface SerializedMap {
   npcs?: SerializedNpc[];
   traps?: SerializedTrap[];
   surfaces?: SerializedSurfaceCell[];
-  substances?: SerializedSubstanceCell[];
+  /** A substance grid from a save made before substances were removed (ADR-0015); ignored on load. */
+  substances?: unknown;
   lastVisitedTick?: number;
   floorTurnCount?: number;
   isCleared?: boolean;
@@ -392,7 +391,8 @@ export interface SaveData {
   /** Chosen category-mastery perks by monster category ID. Optional; absent = none chosen. */
   compendiumCategoryPerks?: Record<string, string>;
   worldState?: SerializedWorldState;
-  planes?: Record<string, PlaneState>;
+  /** Plane state from a save made before planes were removed (ADR-0015); ignored on load. */
+  planes?: unknown;
   prngState?: number;
   /** Companions & Pet Progression, Phase 1 (docs/architecture/content-companions.md). Null/absent = no companion summoned. */
   companion?: SerializedCompanion | null;
@@ -424,7 +424,7 @@ export interface SaveData {
   /** Turns left on Detect Monsters / Detect Objects (`GameEngine.detect*Turns`). Absent = none. */
   detectMonstersTurns?: number;
   detectObjectsTurns?: number;
-  /** `EnergyScheduler.ticks` since the floor was entered (plane drift is phased on it). Absent = 0. */
+  /** `EnergyScheduler.ticks` since the floor was entered (`GameEngine.ticks`). Absent = 0. */
   schedulerTicks?: number;
 }
 

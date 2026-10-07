@@ -5,7 +5,7 @@
  *    predating the supported format is refused, and a newly registered forward step
  *    still runs — so the next real migration will work.
  * 2. Round-trip fidelity: state that lives outside the plain player/map fields —
- *    surface grids, substance grids, ground items, and PRNG state — survives
+ *    surface grids, ground items, and PRNG state — survives
  *    serialize -> JSON -> deserialize unchanged. JSON is in the loop because saves
  *    are persisted as strings, so a value that cannot round-trip through JSON is
  *    just as lost as one the serializer drops.
@@ -17,7 +17,6 @@ import { GameMap } from '../src/engine/grid/map';
 import { TILES } from '../src/engine/grid/tile';
 import { Player } from '../src/engine/entities/player';
 import { Item } from '../src/engine/items/item';
-import { SubstanceBitmask } from '../src/engine/environment/substanceGrid';
 import type { TileDefinition } from '../src/engine/types';
 
 const failures: string[] = [];
@@ -79,10 +78,8 @@ try {
 console.log('\nRound-trip fidelity (serialize -> JSON -> deserialize):');
 
 const SURFACE_POS = { x: 2, y: 3 };
-const SUBSTANCE_POS = { x: 4, y: 5 };
 const GROUND_ITEM_POS = { x: 6, y: 7 };
 const CUSTOM_TILE_POS = { x: 8, y: 8 };
-const SUBSTANCE_MASK = SubstanceBitmask.FLOWING_FLUID | SubstanceBitmask.IGNITED;
 
 const CUSTOM_TILE_DEF: TileDefinition = {
   type: 'custom_validator_crystal',
@@ -105,7 +102,6 @@ const player = new Player({ id: 'validator', name: 'Validator', position: { x: 1
 const engine = new GameEngine({ map, player, seed: 4242, manifest: validatorManifest });
 
 engine.surfaces.setSurface(SURFACE_POS.x, SURFACE_POS.y, 'water', 9, 2);
-engine.substances.addSubstance(SUBSTANCE_POS.x, SUBSTANCE_POS.y, SUBSTANCE_MASK);
 map.addItemAt(
   GROUND_ITEM_POS.x,
   GROUND_ITEM_POS.y,
@@ -134,7 +130,6 @@ check('surface type', restored.surfaces.getSurface(SURFACE_POS.x, SURFACE_POS.y)
 const cell = restored.surfaces.getCell(SURFACE_POS.x, SURFACE_POS.y);
 check('surface duration', cell?.surface?.duration, 9);
 check('surface potency', cell?.surface?.potency, 2);
-check('substance mask', restored.substances.getSubstances(SUBSTANCE_POS.x, SUBSTANCE_POS.y), SUBSTANCE_MASK);
 
 const groundItems = restored.map.getItemsAt(GROUND_ITEM_POS.x, GROUND_ITEM_POS.y);
 const groundItem = groundItems[0];
@@ -157,5 +152,5 @@ if (failures.length > 0) {
   for (const f of failures) console.error(`  - ${f}`);
   process.exit(1);
 }
-console.log(`\n✅ Schema validation passed: v${CURRENT_SCHEMA_VERSION} migration machinery, plus surface, substance, ground item, PRNG, and content tile round-tripping.`);
+console.log(`\n✅ Schema validation passed: v${CURRENT_SCHEMA_VERSION} migration machinery, plus surface, ground item, PRNG, and content tile round-tripping.`);
 process.exit(0);

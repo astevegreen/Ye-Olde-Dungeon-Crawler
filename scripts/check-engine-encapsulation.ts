@@ -51,8 +51,6 @@ const INTERNAL_SUBSYSTEM_CLASSES = new Set([
   'StatusManager',
   'EnergyScheduler',
   'SurfaceGrid',
-  'SubstanceGrid',
-  'PlaneManager',
   'FovManager',
   'FloorManager',
   'PactManager',

@@ -5,7 +5,6 @@ import type { Item } from '../items/item';
 import type { TrapInstance } from '../dungeon/traps';
 import { TILES } from './tile';
 import { SurfaceGrid } from '../surfaces/surfaceGrid';
-import { SubstanceGrid } from '../environment/substanceGrid';
 
 export class GameMap {
   public readonly width: number;
@@ -17,7 +16,6 @@ export class GameMap {
   private groundItems: Map<string, Item[]>;
   private traps: Map<string, TrapInstance>;
   public surfaces: SurfaceGrid;
-  public substances: SubstanceGrid;
   public lastVisitedTick: number = 0;
   public floorTurnCount: number = 0;
   public isCleared: boolean = false;
@@ -41,7 +39,6 @@ export class GameMap {
     this.groundItems = new Map();
     this.traps = new Map();
     this.surfaces = new SurfaceGrid(width, height);
-    this.substances = new SubstanceGrid(width, height);
 
     this.tiles = Array.from({ length: height }, () =>
       Array.from({ length: width }, () => defaultTile)
@@ -192,52 +189,6 @@ export class GameMap {
       this.entityBuckets.set(newCKey, newBucket);
     }
     newBucket.push(entity);
-    return true;
-  }
-
-  public changeEntityPlane(
-    entity: Entity,
-    newPlaneId: string,
-    targetX?: number,
-    targetY?: number
-  ): boolean {
-    if (!this.entities.has(entity.id)) {
-      return false;
-    }
-    const destX = targetX ?? entity.x;
-    const destY = targetY ?? entity.y;
-    if (!this.inBounds(destX, destY)) {
-      return false;
-    }
-    const targetKey = this.posKey(destX, destY, newPlaneId);
-    if (this.spatialIndex.has(targetKey)) {
-      return false;
-    }
-
-    const oldKey = this.posKey(entity.x, entity.y, entity.planeId);
-    this.spatialIndex.delete(oldKey);
-
-    if (destX !== entity.x || destY !== entity.y) {
-      const oldCKey = this.coordKey(entity.x, entity.y);
-      const oldBucket = this.entityBuckets.get(oldCKey);
-      if (oldBucket) {
-        const idx = oldBucket.findIndex((e) => e.id === entity.id);
-        if (idx !== -1) oldBucket.splice(idx, 1);
-        if (oldBucket.length === 0) this.entityBuckets.delete(oldCKey);
-      }
-
-      const newCKey = this.coordKey(destX, destY);
-      let newBucket = this.entityBuckets.get(newCKey);
-      if (!newBucket) {
-        newBucket = [];
-        this.entityBuckets.set(newCKey, newBucket);
-      }
-      newBucket.push(entity);
-    }
-
-    entity.planeId = newPlaneId;
-    entity.setPosition(destX, destY);
-    this.spatialIndex.set(targetKey, entity);
     return true;
   }
 

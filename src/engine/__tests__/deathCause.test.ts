@@ -11,7 +11,6 @@ import { TILES } from '../grid/tile';
 import { applyConsequences } from '../actions/choiceAction';
 import { BashDoorAction } from '../actions/door';
 import { applyImpulse } from '../combat/impulse';
-import { SubstanceBitmask } from '../environment/substanceGrid';
 
 /**
  * The death screen names what killed the hero. With no creature behind it (fire, acid,
@@ -149,20 +148,6 @@ describe('what the death screen says killed the hero', () => {
     expect(slainBy()).toBe('a door that would not give');
   });
 
-  it('the drift', () => {
-    engine.planeManager.transferEntity(engine.map, player, 'liminal', { x: 3, y: 3 });
-    engine.map.setTile(4, 3, TILES.WALL);
-    engine.planeManager.tickDrift(engine.map, 5, engine);
-    fallen();
-    expect(slainBy()).toBe('the drift');
-  });
-
-  it('ignited vapour', () => {
-    engine.substances.addSubstance(3, 3, SubstanceBitmask.IGNITED);
-    engine.substances.tickSubstances(engine.map, engine);
-    fallen();
-    expect(slainBy()).toBe('ignited vapour');
-  });
 });
 
 describe('a creature killed by a trap or the ground is resolved like any other kill', () => {
@@ -206,18 +191,6 @@ describe('a creature killed by a trap or the ground is resolved like any other k
     map.addTrap(new TrapInstance({ id: 't', type: 'arrow', x: 6, y: 5, damage: 10 }));
 
     applyImpulse(engine, player, rat, 1, 0, 1);
-
-    expect(map.getEntityById(rat.id)).toBeNull();
-    expect(killed).toEqual(['rat']);
-  });
-
-  it('a photophobic rat seared by light leaves the map', () => {
-    const { map, rat, engine, killed } = setup();
-    rat.hp = 2;
-    rat.vulnerabilityTags.push('photophobic');
-    engine.substances.addSubstance(5, 5, SubstanceBitmask.RADIANT_EXPOSURE);
-
-    engine.substances.tickSubstances(map, engine);
 
     expect(map.getEntityById(rat.id)).toBeNull();
     expect(killed).toEqual(['rat']);

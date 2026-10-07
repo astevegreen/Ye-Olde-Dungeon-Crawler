@@ -639,7 +639,6 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
         remoteVaults: serializedVaults,
       };
     })() : undefined,
-    planes: engine.planeManager ? engine.planeManager.serialize() : undefined,
     prngState: engine.prng ? engine.prng.getState() : undefined,
     companion: engine.companion ? serializeCompanion(engine.companion) : undefined,
     dismissedCompanion: engine.dismissedCompanion ? serializeCompanion(engine.dismissedCompanion) : undefined,
@@ -761,7 +760,6 @@ export function serializeMapObject(map: GameMap): SerializedMap {
     npcs,
     traps: traps.length > 0 ? traps : undefined,
     surfaces: map.surfaces ? map.surfaces.serialize() : undefined,
-    substances: map.substances ? map.substances.serialize() : undefined,
     lastVisitedTick: map.lastVisitedTick ?? 0,
     floorTurnCount: map.floorTurnCount ?? 0,
     isCleared: map.isCleared ?? false,
@@ -930,10 +928,6 @@ export function deserializeMapObject(
 
   if (mapData.surfaces && map.surfaces) {
     map.surfaces.deserialize(mapData.surfaces);
-  }
-
-  if (mapData.substances && map.substances) {
-    map.substances.deserialize(mapData.substances);
   }
 
   return map;
@@ -1170,10 +1164,6 @@ function hydrateGame(
   engine.detectMonstersTurns = Number(saveData.detectMonstersTurns) || 0;
   engine.detectObjectsTurns = Number(saveData.detectObjectsTurns) || 0;
   engine.scheduler.restoreTicks(Number(saveData.schedulerTicks) || 0);
-
-  if (saveData.planes && engine.planeManager) {
-    engine.planeManager.deserialize(saveData.planes);
-  }
 
   // 5b. Restore Companion (docs/architecture/content-companions.md) — top-level, not part of map.monsters
   if (saveData.companion) {

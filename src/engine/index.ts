@@ -186,16 +186,8 @@ export * from './compendium/compendiumManager';
 export * from './compendium/trophies';
 export * from './advisory/runAdvisor';
 
-// Parallel Planes & Spatial Geometry
-export * from './spatial/planeTypes';
-export * from './world/planeManager';
-export * from './actions/planeActions';
-
 // Dual-Energy Dynamics & Corruption
 export * from './actors/energyModel';
-
-// Reactive Substances
-export * from './environment/substanceGrid';
 
 // Run Telemetry & Death Analytics
 export * from './analytics/deathEnvelope';

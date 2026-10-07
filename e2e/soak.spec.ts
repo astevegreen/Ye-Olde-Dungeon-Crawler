@@ -423,6 +423,17 @@ test.describe('soak @soak', () => {
 
         // Latency from keypress to the game answering, for map keys on the open map.
         const measuredKey = action.type === 'key' && !policyCtx.inDialog && boundKeys.map.has(action.key) ? action.key : null;
+        // A shop ignores its trade and service keys for its first 250 ms (R-ui-7). A press the
+        // bot makes in that window would be lost, and a service it tries once (the temple's
+        // heal) would never be tried again this visit, so it waits the window out.
+        if (modesBefore.includes('shop')) {
+          await page
+            .waitForFunction(() => {
+              const so = (window as any).__cotwInputHandler?.shopOverlay;
+              return !so?.isOpen || Date.now() - (so.openedAt ?? 0) >= 260;
+            }, null, { timeout: 2000 })
+            .catch(() => {});
+        }
         const pressedAt = Date.now();
         if (action.type === 'key') {
           await page.keyboard.press(action.key);

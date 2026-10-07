@@ -190,7 +190,6 @@ window.addEventListener('DOMContentLoaded', () => {
   const hudInvBtn = document.getElementById('btn-hud-inv');
   const hudCastBtn = document.getElementById('btn-hud-cast');
   const hudLookBtn = document.getElementById('btn-hud-look');
-  const hudPactsBtn = document.getElementById('btn-hud-pacts');
   const hudRestBtn = document.getElementById('btn-hud-rest');
   const hudSearchBtn = document.getElementById('btn-hud-search');
   const hudWaitBtn = document.getElementById('btn-hud-wait');
@@ -1163,13 +1162,6 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer.targetingOverlay.close();
       renderer.mapOverlay.close();
       renderer.inspectOverlay.open(activeEngine);
-      renderer.render();
-    }
-  });
-
-  hudPactsBtn?.addEventListener('click', () => {
-    if (activeEngine && renderer && inputHandler) {
-      inputHandler.toggleCharacterMenu('pacts');
       renderer.render();
     }
   });

@@ -247,9 +247,20 @@ export class KitingRangedStrategy implements AIStrategy {
       }
     }
 
-    // 3. Piercing Snipe (range 3-7 with LOS): the shot of a ranged monster with no spells, an
-    // archer. A caster on cooldown never draws a bowstring; it closes in to fight (step 4).
-    if (chebyshevDist >= 3 && chebyshevDist <= 7 && hasLos && !hasSpells) {
+    // An archer at distance 2 keeps backing off toward its range; it closing in from there
+    // took it back to 1 and away again, forever, never shooting (R-ai-13).
+    if (chebyshevDist === 2 && !hasSpells) {
+      const backStep = findFleeStep(engine.map, actor.position, player.position);
+      if (backStep) {
+        monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
+        return new MovementAction(actor, backStep.x - actor.x, backStep.y - actor.y);
+      }
+    }
+
+    // 3. Piercing Snipe (range 3-7 with LOS, or 2 with nowhere left to back off to): the shot
+    // of a ranged monster with no spells, an archer. A caster on cooldown never draws a
+    // bowstring; it closes in to fight (step 4).
+    if (chebyshevDist >= 2 && chebyshevDist <= 7 && hasLos && !hasSpells) {
       const dangerTiles = computeDangerTiles(actor.position, player.position, 'line', engine.map, 7);
       return new WindUpDeclareAction(
         monster,

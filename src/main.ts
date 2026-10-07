@@ -85,7 +85,7 @@ import { showToast } from './ui/toast';
 import { safely } from './ui/safeStep';
 import { codesLabel, keyLabel } from './ui/keyLabel';
 import { expandCompressedReplay } from './ui/replayCodec';
-import { replayProfile } from './ui/replayProfile';
+import { isReplayProfile, replayProfile } from './ui/replayProfile';
 import { SessionGuard } from './ui/sessionGuard';
 import { getBrowserAsyncStore } from './ui/indexedDbStore';
 import { setupSaveDragAndDrop, importSaveWithValidation } from './ui/saveImporter';
@@ -230,6 +230,9 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   };
   const autosaveManager = new AutosaveManager(getBrowserStorage() ?? undefined, activeManifest);
+  const autosaveRun = (engine: GameEngine, profile: CharacterProfile): void => {
+    if (!isReplayProfile(profile)) autosaveManager.autosave(engine, profile);
+  };
   // Detects a session that stopped responding (see src/ui/sessionGuard.ts).
   const sessionGuard = new SessionGuard(getBrowserStorage(), {
     appVersion: import.meta.env.VITE_APP_VERSION,
@@ -876,7 +879,7 @@ window.addEventListener('DOMContentLoaded', () => {
       // Periodic background autosave every 50 turns
       step('autosave', () => {
         if (activeProfile && autosaveManager.shouldAutosave(engine.turnCount)) {
-          autosaveManager.autosave(engine, activeProfile);
+          autosaveRun(engine, activeProfile);
         }
       });
     }
@@ -1291,7 +1294,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const engine = activeEngine;
     const profile = activeProfile;
     safely(label, () => profileManager.saveCharacter(engine, profile), reportSaveFailure);
-    autosaveManager.autosave(engine, profile);
+    autosaveRun(engine, profile);
   }
 
   /**
@@ -1864,7 +1867,7 @@ window.addEventListener('DOMContentLoaded', () => {
     engine.onFloorChanged = (floor: number) => {
       if (origOnFloorChanged) origOnFloorChanged(floor);
       if (activeEngine && activeProfile) {
-        autosaveManager.autosave(activeEngine, activeProfile);
+        autosaveRun(activeEngine, activeProfile);
       }
       renderer?.render();
     };

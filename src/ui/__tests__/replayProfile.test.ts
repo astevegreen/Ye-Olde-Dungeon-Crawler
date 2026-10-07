@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { replayProfile } from '../replayProfile';
+import { isReplayProfile, replayProfile } from '../replayProfile';
 import type { CharacterProfile } from '../../engine';
 
 describe('replayProfile', () => {
@@ -20,5 +20,10 @@ describe('replayProfile', () => {
   it('keeps the id of a report taken from a replayed run', () => {
     const once = replayProfile(reported);
     expect(replayProfile(once).id).toBe(once.id);
+  });
+
+  it('tells a replayed run, which never autosaves, from the hero it was taken from', () => {
+    expect(isReplayProfile(replayProfile(reported))).toBe(true);
+    expect(isReplayProfile(reported)).toBe(false);
   });
 });

@@ -529,7 +529,7 @@ export class SpellPipeline {
     if (!target.isAlive()) return;
     // The target's family perk against the caster's family may shrug it off (Spirit-Ward).
     if (shrugsAffliction(engine, target, caster, effect.statusId)) return;
-    const applied = target.statusManager.applyStatus(
+    const { applied, message } = target.statusManager.applyStatusDetailed(
       {
         type: effect.statusId as StatusType,
         duration: effect.duration,
@@ -541,9 +541,8 @@ export class SpellPipeline {
       engine
     );
     if (applied) {
-      // The handler's onApply might log a specific message. We can still log a generic one if we want, or rely on handler.
-      // Let's keep the generic one for now as it's safe.
-      engine.log(`${target.name} is afflicted with ${effect.statusId}!`);
+      // The status's own handler may already have said it took hold ("X is wreathed in holy fire!").
+      if (!message) engine.log(`${target.name} is afflicted with ${effect.statusId}!`);
     } else {
       engine.log(`${target.name} resists the affliction!`);
     }

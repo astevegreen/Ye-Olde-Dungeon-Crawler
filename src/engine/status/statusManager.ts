@@ -60,9 +60,23 @@ export class StatusManager {
       engine = engineMaybe;
     }
 
+    return this.applyStatusDetailed(status, immunities, entity, engine).applied;
+  }
+
+  /**
+   * `applyStatus`, also reporting the line the status's handler logged when it took hold
+   * (`StatusHandler.onApply`, which runs only for a new status with both entity and engine
+   * given), so a caller with a generic line of its own logs that only when the handler gave none.
+   */
+  public applyStatusDetailed(
+    status: StatusEffect,
+    immunities: readonly StatusType[] = [],
+    entity?: Entity,
+    engine?: GameEngine
+  ): { applied: boolean; message?: string } {
     // The list the caller passed, and the entity's own (an Actor's include what it wears).
     if (immunities.includes(status.type) || entity?.isImmuneTo(status.type)) {
-      return false;
+      return { applied: false };
     }
 
     const existing = this.effects.get(status.type);
@@ -71,15 +85,18 @@ export class StatusManager {
       if (status.potency !== undefined) {
         existing.potency = Math.max(existing.potency ?? 0, status.potency);
       }
-    } else {
-      this.effects.set(status.type, { ...status });
-      const handler = StatusHandlerRegistry.get(status.type);
-      if (handler?.onApply && entity && engine) {
-        const msg = handler.onApply(entity, status, engine);
-        if (msg) engine.log(msg);
+      return { applied: true };
+    }
+    this.effects.set(status.type, { ...status });
+    const handler = StatusHandlerRegistry.get(status.type);
+    if (handler?.onApply && entity && engine) {
+      const message = handler.onApply(entity, status, engine);
+      if (message) {
+        engine.log(message);
+        return { applied: true, message };
       }
     }
-    return true;
+    return { applied: true };
   }
 
   public removeStatus(type: StatusType): boolean {

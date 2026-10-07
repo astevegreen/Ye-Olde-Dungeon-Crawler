@@ -709,7 +709,7 @@ export class CanvasRenderer {
       const layers = this.terrainCache.get(this.terrainView, worldX, worldY, this.terrainSuffixAt, art, this.hasRecipe);
       if (layers) {
         for (const key of layers) this.atlas.drawSprite(this.ctx, key, px, py, cs, visibility);
-        if (tile.visual === 'portal' || tile.visual === 'altar') this.drawFixtureOverlay(px, py, cs, tile.visual, visibility, tile.glyph);
+        if (tile.visual === 'portal' || tile.visual === 'altar') this.drawFixtureOverlay(px, py, cs, tile.visual, visibility, theme, tile.glyph);
         return;
       }
     }
@@ -736,7 +736,7 @@ export class CanvasRenderer {
     this.atlas.drawSprite(this.ctx, spriteKey, px, py, cs, visibility);
 
     if (tile.visual === 'portal' || tile.visual === 'altar') {
-      this.drawFixtureOverlay(px, py, cs, tile.visual, visibility, tile.glyph);
+      this.drawFixtureOverlay(px, py, cs, tile.visual, visibility, theme, tile.glyph);
     } else if (
       tile.type === 'shallow_water' ||
       tile.type === 'chasm' ||
@@ -890,12 +890,14 @@ export class CanvasRenderer {
     ctx.restore();
   }
 
+  /** A portal's or an altar's mark over its tile; the glyph is a map-tile glyph, sized by the cell, in the theme's display face. */
   private drawFixtureOverlay(
     px: number,
     py: number,
     cs: number,
     type: string,
     visibility: Visibility,
+    theme: Required<ThemeTokens>,
     glyph?: string
   ): void {
     const isVisible = visibility === Visibility.Visible;
@@ -914,7 +916,7 @@ export class CanvasRenderer {
         this.ctx.strokeStyle = isVisible ? '#facc15' : '#854d0e';
         this.ctx.lineWidth = 2;
         this.ctx.stroke();
-        this.ctx.font = `bold ${(cs * 0.65).toFixed(1)}px sans-serif`;
+        this.ctx.font = `bold ${(cs * 0.65).toFixed(1)}px ${theme.fontDisplay}`;
         this.ctx.fillStyle = isVisible ? '#ffffff' : '#ca8a04';
         this.ctx.fillText('▲', cx, cy + 1);
         break;
@@ -926,7 +928,7 @@ export class CanvasRenderer {
         this.ctx.strokeStyle = isVisible ? '#a78bfa' : '#4c1d95';
         this.ctx.lineWidth = 2;
         this.ctx.strokeRect(px + cs * 0.12, py + cs * 0.12, cs * 0.76, cs * 0.76);
-        this.ctx.font = `bold ${(cs * 0.55).toFixed(1)}px serif`;
+        this.ctx.font = `bold ${(cs * 0.55).toFixed(1)}px ${theme.fontDisplay}`;
         this.ctx.fillStyle = isVisible ? '#ede9fe' : '#7c3aed';
         this.ctx.fillText(glyph ?? '✦', cx, cy + 1);
         break;
@@ -1286,7 +1288,7 @@ export class CanvasRenderer {
       ctx.stroke();
 
       ctx.fillStyle = '#ffffff';
-      ctx.font = uiFont('xs', '"Courier New", Courier, monospace', 'bold');
+      ctx.font = uiFont('xs', this.theme.fontNum, 'bold');
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('!', glyphX, glyphY + 0.5);
@@ -1552,7 +1554,7 @@ export class CanvasRenderer {
     // Text on the map holds the 11px floor like the DOM (uiFont), whatever the zoom.
     const fontPx = uiFontPx('xs');
     ctx.save();
-    ctx.font = uiFont('xs', this.theme.fontFamily ?? 'monospace', 'bold');
+    ctx.font = uiFont('xs', this.theme.fontNum, 'bold');
     const w = ctx.measureText(label).width + 4;
     ctx.fillStyle = withAlpha(this.theme.surface0, 0.85);
     ctx.fillRect(px + cs - w - 1, py + cs - fontPx - 2, w, fontPx + 1);
@@ -1593,7 +1595,8 @@ export class CanvasRenderer {
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.fill();
-    ctx.font = `bold ${Math.max(7, Math.floor(r * 1.6))}px ${this.theme.fontFamily ?? 'monospace'}`;
+    // A cell badge: sized by the cell, not uiFont (ARCHITECTURE.md §3), in the theme's number face.
+    ctx.font = `bold ${Math.max(7, Math.floor(r * 1.6))}px ${this.theme.fontNum}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     if (state === 'unopened') {

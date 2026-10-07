@@ -192,9 +192,10 @@ describe('R-cotw-13 · shadow is an element of the pack (DECISIONS Q9: "Add it")
 describe('R-cotw-10 · an overkill kill rite can be met by a caster of its element', () => {
   /**
    * The overkill a rite asks for (a share of the victim's scaled max HP, Medium, at the floor
-   * it first appears) must not exceed the base damage of the pack's strongest spell of the
-   * rite's element: a caster at twice base power can then meet it on a foe at that many HP.
-   * Sköll asked for 396 from an arcane spell whose base is 8.
+   * it first appears) must not exceed what the pack's strongest spell of the rite's element
+   * deals the victim at base power, through the victim's affinity (Gloom-Tarr resists fire,
+   * so Fireball's 18 reaches it as 9): a caster at twice base power can then meet it on a foe
+   * at that many HP. Sköll asked for 396 from an arcane spell whose base is 8.
    */
   it('no element-gated overkill rite asks for more than the strongest spell of its element deals', () => {
     const strongest: Record<string, number> = {};
@@ -205,14 +206,16 @@ describe('R-cotw-10 · an overkill kill rite can be met by a caster of its eleme
     }
     const tooHigh: string[] = [];
     let checked = 0;
+    const multipliers = cotwManifest.affinityMatrix?.defaultMultipliers ?? {};
     for (const m of cotwManifest.monsters as Array<MonsterDefinition & { killRite?: { requiredDamageElement?: string; requiresOverkillPercent?: number } }>) {
       const rite = m.killRite;
       if (!rite?.requiresOverkillPercent || !rite.requiredDamageElement) continue;
       checked += 1;
       const { maxHp } = scaleMonsterStats(m, m.minFloor ?? 1, undefined, undefined, cotwManifest.monsterScaling, 'medium');
       const needed = Math.ceil(maxHp * (rite.requiresOverkillPercent / 100));
-      const best = strongest[rite.requiredDamageElement] ?? 0;
-      if (needed > best) tooHigh.push(`${m.id}: ${needed} ${rite.requiredDamageElement} overkill, strongest spell ${best}`);
+      const affinity = (m.resistances as Record<string, string> | undefined)?.[rite.requiredDamageElement] ?? 'neutral';
+      const best = Math.round((strongest[rite.requiredDamageElement] ?? 0) * (multipliers[affinity] ?? 1));
+      if (needed > best) tooHigh.push(`${m.id}: ${needed} ${rite.requiredDamageElement} overkill, strongest spell deals it ${best} (${affinity})`);
     }
     expect(checked).toBeGreaterThanOrEqual(6);
     expect(tooHigh).toEqual([]);

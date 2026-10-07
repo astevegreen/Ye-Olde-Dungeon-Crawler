@@ -385,7 +385,7 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
   miniboss_tar_abomination: {
     essenceElement: 'shadow',
     requiredDamageElement: 'fire',
-    requiresOverkillPercent: 2,
+    requiresOverkillPercent: 1,
     hintVerse: 'Gloom-Tarr must burn all at once:\nset it alight with a blow that runs well past its last breath.',
   },
   malice_weaver: {

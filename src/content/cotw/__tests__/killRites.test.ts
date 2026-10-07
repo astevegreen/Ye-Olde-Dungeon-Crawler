@@ -7,6 +7,7 @@ import { COTW_ITEMS } from '../items';
 import { COTW_STARTER_KIT } from '../character';
 import { COTW_MAGIC } from '../magic';
 import { COTW_TABLET_STOCK } from '../spellTablets';
+import { COTW_PROLOGUE } from '../prologue';
 
 const spellById = new Map(COTW_SPELLS.map((s) => [s.id, s]));
 /** Spells rites and tablets teach: all but Blood Magic, the tablet-only "learn_*" spells and altar-forged hybrids. */
@@ -62,7 +63,9 @@ function simulateDescent(): { learnedOn: Map<string, number>; meetableOn: Map<st
 }
 
 describe('cotw kill rites (Galdr of the Slain)', () => {
-  const everyMonster: MonsterDefinition[] = [...COTW_MONSTERS, ...Object.values(COTW_BESTIARY)];
+  // The night raid's creatures meet the hero only before fire is in reach, then leave.
+  const raidOnly = new Set((COTW_PROLOGUE.monsters ?? []).map((p) => p.definitionId));
+  const everyMonster: MonsterDefinition[] = [...COTW_MONSTERS, ...Object.values(COTW_BESTIARY)].filter((m) => !raidOnly.has(m.id));
 
   it('gives every monster a rite with a hint, and names no unknown monster', () => {
     for (const m of everyMonster) {
@@ -71,6 +74,11 @@ describe('cotw kill rites (Galdr of the Slain)', () => {
     }
     const ids = new Set(everyMonster.map((m) => m.id));
     for (const id of Object.keys(COTW_KILL_RITES)) expect(ids.has(id), id).toBe(true);
+  });
+
+  it('asks no rite of the night raid, which could never be met', () => {
+    expect(raidOnly.size).toBeGreaterThan(0);
+    for (const id of raidOnly) expect(COTW_KILL_RITES[id], id).toBeUndefined();
   });
 
   it('teaches real spells and yields real essences', () => {
@@ -106,7 +114,7 @@ describe('cotw kill rites (Galdr of the Slain)', () => {
 
   it('keeps every other rite meetable within ten floors of the monster appearing', () => {
     const { meetableOn } = simulateDescent();
-    for (const m of COTW_MONSTERS) {
+    for (const m of everyMonster) {
       const floor = meetableOn.get(m.id);
       expect(floor, m.id).toBeDefined();
       expect(floor! - (m.minFloor ?? 1), m.id).toBeLessThanOrEqual(10);

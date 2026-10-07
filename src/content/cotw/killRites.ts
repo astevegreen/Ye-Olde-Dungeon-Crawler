@@ -23,24 +23,8 @@ import type { KillRiteDefinition } from '../../engine';
  * of its element instead: offerings for the runic altars.
  */
 export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
-  // ─── The night raid (prologue.ts) ─────────────────────────────────────
-  // Fire, which a new hero cannot yet call (Firebolt comes on floor 6), so the raid's
-  // kills stay plain kills and the rites wait to be met in the dungeon.
-  prologue_rime_wolf: {
-    essenceElement: 'cold',
-    requiredDamageElement: 'fire',
-    hintVerse: 'The rime-wolf was whelped in the witches’ frost.\nOnly flame unmakes it.',
-  },
-  prologue_coven_thrall: {
-    essenceElement: 'shadow',
-    requiredDamageElement: 'fire',
-    hintVerse: 'The bound dead belong on the pyre.\nGive them to it.',
-  },
-  prologue_coven_warlock: {
-    essenceElement: 'arcane',
-    requiredDamageElement: 'fire',
-    hintVerse: 'A witch of the cold rite fears one thing.\nBring it to her.',
-  },
+  // The night raid's creatures (prologue.ts) have no rite: they appear only in the raid,
+  // before the hero can call fire, and are gone when it ends, so a rite could never be met.
 
   // ─── Rime Hollows (1-9) ────────────────────────────────────────────────
   giant_rat: {

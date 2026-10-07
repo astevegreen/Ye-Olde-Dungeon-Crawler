@@ -64,13 +64,14 @@ function createTriageApi(engine: GameEngine): TriageAPI {
   };
 
   return {
+    // A refill, not a heal: no worn healing multiplier scales it down, a dead hero stays dead,
+    // and it reports what it actually restored (R-dbg-15).
     restoreVitals: () => {
       const p = engine.player;
-      const hp = p.maxHp - p.hp;
-      const mana = p.maxMana - p.mana;
-      if (hp > 0) p.heal(hp);
-      if (mana > 0) p.restoreMana(mana);
-      return { hp: Math.max(0, hp), mana: Math.max(0, mana) };
+      const hp = p.isAlive() ? Math.max(0, p.maxHp - p.hp) : 0;
+      if (hp > 0) p.hp = p.maxHp;
+      const mana = p.restoreMana(p.maxMana - p.mana);
+      return { hp, mana };
     },
 
     clearStatusEffects: () => {
@@ -193,10 +194,14 @@ export function createDiagnosticsApi<T extends object>(engine: GameEngine, core:
     wrapped[name] =
       typeof fn === 'function'
         ? (...args: unknown[]) => {
-            const result = (fn as (...a: unknown[]) => unknown)(...args);
-            flightRecorder.recordState('triage', `F2 triage: ${name}`, { operation: name });
-            flightRecorder.requestCheckpoint(`F2 triage: ${name}`);
-            return result;
+            // Recorded even when it throws: one that changed state first must still leave a
+            // checkpoint, or a replay misses the change (R-dbg-11).
+            try {
+              return (fn as (...a: unknown[]) => unknown)(...args);
+            } finally {
+              flightRecorder.recordState('triage', `F2 triage: ${name}`, { operation: name });
+              flightRecorder.requestCheckpoint(`F2 triage: ${name}`);
+            }
           }
         : fn;
   }

@@ -219,6 +219,7 @@ export class SmartCloseDoorAction implements Action {
  * Attempts to force a locked door open through brute strength.
  * Roll: 1d20 + floor(STR/4) vs lockDifficulty.
  * On failure the attacker takes 1d4 damage from the recoil.
+ * Parked (ARCHITECTURE.md §9, P-27): no door is generated locked and no key issues a bash.
  */
 export class BashDoorAction implements Action {
   public readonly entity: Entity;

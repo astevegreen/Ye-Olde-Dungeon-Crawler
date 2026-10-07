@@ -215,7 +215,7 @@ Each entry records the current state, the target, and whether the work touches p
 
 
 ### Retired IDs
-A completed item is deleted from this register, but its ID is retired, never reused, and code comments may still cite it. Retired: P-01–P-23 and P-25–P-26. **Next free ID: P-27.** Where the commonly cited ones now live:
+A completed item is deleted from this register, but its ID is retired, never reused, and code comments may still cite it. Retired: P-01–P-23 and P-25–P-26. **Next free ID: P-28.** Where the commonly cited ones now live:
 
 | ID | Feature | Documented in |
 |---|---|---|
@@ -235,3 +235,7 @@ Entries here are recorded, not planned: no work is scheduled, none attempted. Th
 - Reason: gamepad/controller support is intentionally out of scope until the game is feature-complete; may be reconsidered afterwards.
 - Not the same as an *Evaluated, Not Adopted* design (e.g. [ADR-0001](docs/decisions/0001-scheduler-partitioning-evaluated-not-adopted.md)) — that was built and rejected on evidence. P-24 was never attempted; deferral is scheduling, not a verdict.
 - If revisited: gamepad button-hold opens the menu and stick angle selects a wedge, confined to `src/rendering/` (never on the simulation execution path, so it doesn't affect headless purity, §2). Protected files: none.
+
+**P-27 — Locked doors: lockpicking and bashing** — **Parked 2026-10-07** (owner kept it rather than deleting it)
+- Current: `TileDefinition.locked`/`lockDifficulty`, the lockpick roll in `OpenDoorAction` and `BashDoorAction` (`src/engine/actions/door.ts`, its recoil resolved through `harm`) exist and are tested, but no generator or pack makes a door locked and no key or menu issues a bash, so none of it runs in play. Monster pathing already treats a locked door as a wall.
+- If revisited: a pack marks doors locked (a vault gate, a key-and-door quest), the input layer binds Bash, and a failed bash or lockpick is a turn (it spends energy, §4).

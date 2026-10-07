@@ -8,6 +8,7 @@ import {
   type MonsterDefinition,
   type NPC,
   type TempleBlessingDefinition,
+  BankService,
   LoreService,
   SageService,
   TempleService,
@@ -38,6 +39,8 @@ export type ShopAction =
   | 'advise'
   | 'bestiary'
   | 'compact'
+  | 'stash'
+  | 'take'
   | 'bond'
   | 'revive'
   | 'bodyguard'
@@ -202,9 +205,9 @@ export function sageCreatures(engine: GameEngine, view: SageView): MonsterDefini
 
 const RANK_WORD = ['', 'Seen', 'Slain'];
 
-function sagePanel(engine: GameEngine, selected: number, view: SageView): ServicePanel {
+function sagePanel(engine: GameEngine, selected: number, view: string): ServicePanel {
   const views = sageViews(engine);
-  const shown = views.includes(view) ? view : 'items';
+  const shown = (views as string[]).includes(view) ? (view as SageView) : 'items';
   const unknown = identifiableItems(engine);
   const creatures = sageCreatures(engine, shown);
   const worn = new Set(engine.player.inventory.paperdoll.getAllEquipped().map((e) => e.item));
@@ -298,7 +301,44 @@ function sagePanel(engine: GameEngine, selected: number, view: SageView): Servic
   };
 }
 
-function bankerPanel(engine: GameEngine): ServicePanel {
+/** The banker's lists: the coin exchange, what the hero may leave, and what the bank keeps. */
+export type BankView = 'coins' | 'stash' | 'take';
+const BANK_VIEWS: BankView[] = ['coins', 'stash', 'take'];
+
+function bankerPanel(engine: GameEngine, selected: number, view: string): ServicePanel {
+  const shown: BankView = (BANK_VIEWS as string[]).includes(view) ? (view as BankView) : 'coins';
+  const stashable = BankService.stashableItems(engine);
+  const stashed = BankService.stashedItems(engine);
+  const views = [
+    { id: 'coins', label: 'Coins', count: getPlayerCoinItems(engine.player).length },
+    { id: 'stash', label: 'Leave', count: stashable.length },
+    { id: 'take', label: 'Kept', count: stashed.length },
+  ];
+  if (shown !== 'coins') {
+    const list = shown === 'stash' ? stashable : stashed;
+    const choices = list.map(
+      (i) => `<span class="bs-name">${escapeHtml(i.displayName)}</span><span class="ui-faint">${escapeHtml(i.category)}</span>`
+    );
+    const full = stashed.length >= BankService.STASH_CAPACITY;
+    const kept = `The bank keeps your things while you delve: <b class="ui-num">${stashed.length}</b> of <span class="ui-num">${BankService.STASH_CAPACITY}</span>.`;
+    const facts =
+      shown === 'stash'
+        ? `<div class="ui-note">${kept} ${list.length === 0 ? 'Your pack holds nothing to leave.' : 'Choose something from your pack to leave.'}</div>`
+        : `<div class="ui-note">${kept} ${list.length === 0 ? '' : 'Choose something to take back.'}</div>`;
+    const offer: ServiceOffer =
+      shown === 'stash'
+        ? { act: 'stash', key: 'L', label: 'Leave the chosen item', detail: 'The bank keeps it safe in town, free.', priceCp: 0, disabled: list.length === 0 || full }
+        : { act: 'take', key: 'T', label: 'Take the chosen item back', detail: 'Back into your pack, if it has room.', priceCp: 0, disabled: list.length === 0 };
+    return {
+      heading: 'Your coins and keeping',
+      views,
+      view: shown,
+      facts,
+      choices,
+      selected: Math.max(0, Math.min(selected, choices.length - 1)),
+      offers: [offer],
+    };
+  }
   const coins = getPlayerCurrencyBreakdown(engine.player);
   const purse = engine.player.inventory.purse;
   const held = getPlayerCoinItems(engine.player);
@@ -314,7 +354,9 @@ function bankerPanel(engine: GameEngine): ServicePanel {
     .map((d) => `1 ${COIN_NAMES[d].singular.toLowerCase()} = ${formatCurrency(COIN_VALUES[d])}`)
     .join(', ');
   return {
-    heading: 'Your coins',
+    heading: 'Your coins and keeping',
+    views,
+    view: shown,
     facts:
       `<dl class="ui-kv shop-coins">${rows || '<dt>No coins</dt><dd></dd>'}${room}${spilled}</dl>` +
       `<div class="ui-note">${escapeHtml(rate)}.</div>`,
@@ -429,7 +471,7 @@ const PACT_NOTE =
   '<div class="ui-note">A pact makes the dungeon harder and pays more for it. It holds until you come back here to renounce it.</div>';
 
 /** The panel for a townsperson who isn't a merchant; null when they only greet. */
-export function servicePanelFor(engine: GameEngine, npc: NPC, selected = 0, view: SageView = 'items'): ServicePanel | null {
+export function servicePanelFor(engine: GameEngine, npc: NPC, selected = 0, view = ''): ServicePanel | null {
   const panel = basePanelFor(engine, npc, selected, view);
   if (!engine.manifest?.pactKeeperNpcId || npc.id !== engine.manifest.pactKeeperNpcId) return panel;
   const offers = pactOffers(engine);
@@ -439,7 +481,7 @@ export function servicePanelFor(engine: GameEngine, npc: NPC, selected = 0, view
     : { heading: 'Pacts', facts: PACT_NOTE, offers };
 }
 
-function basePanelFor(engine: GameEngine, npc: NPC, selected: number, view: SageView): ServicePanel | null {
+function basePanelFor(engine: GameEngine, npc: NPC, selected: number, view: string): ServicePanel | null {
   const attunementNpcId = engine.manifest?.runeOfReturn?.attunementNpcId;
   if (attunementNpcId && npc.id === attunementNpcId) return runeSmithPanel(engine);
   switch (npc.role) {
@@ -448,7 +490,7 @@ function basePanelFor(engine: GameEngine, npc: NPC, selected: number, view: Sage
     case 'sage':
       return sagePanel(engine, selected, view);
     case 'banker':
-      return bankerPanel(engine);
+      return bankerPanel(engine, selected, view);
     case 'trainer':
       return trainerPanel(engine);
     default:

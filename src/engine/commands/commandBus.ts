@@ -497,6 +497,15 @@ export class EngineCommandBus implements GameCommandBus {
         return { success: res.success, message: res.message };
       }
 
+      // The bank's stash: a town service, so no turn passes and a checkpoint follows.
+      case 'bank_stash':
+      case 'bank_withdraw': {
+        const itemId = p.itemId as string;
+        const res = command.type === 'bank_stash' ? BankService.stashItem(this.engine, itemId) : BankService.withdrawItem(this.engine, itemId);
+        this.engine.log(res.message);
+        return { success: res.success, message: res.message };
+      }
+
       case 'trainer_bond_companion': {
         const res = TrainerService.bondCompanion(this.engine);
         this.engine.log(res.message);

@@ -33,7 +33,6 @@ export * from './actions/wait';
 export * from './actions/inventory-actions';
 export * from './actions/rangedAttack';
 export * from './actions/spell-actions';
-export * from './actions/vaultActions';
 export * from './actions/stairs';
 export * from './actions/search';
 export * from './actions/disarm';

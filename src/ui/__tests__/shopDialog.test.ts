@@ -108,6 +108,8 @@ describe('ShopDialog', () => {
     identify: 'sage_identify',
     advise: 'sage_advisory',
     compact: 'bank_compact',
+    stash: 'bank_stash',
+    take: 'bank_withdraw',
     bond: 'trainer_bond_companion',
     revive: 'trainer_revive_companion',
     bodyguard: 'trainer_switch_archetype',
@@ -131,6 +133,30 @@ describe('ShopDialog', () => {
       }
     });
   }
+
+  it("keeps the hero's things at the bank: → lists the pack, L leaves the chosen item, → again lists what is kept", () => {
+    dispatch.mockRestore();
+    engine.player.inventory.primaryPack.addItem(ware('w1', 'Spare Axe'));
+    engine.player.inventory.primaryPack.addItem(ware('w2', 'Old Lantern'));
+    addCoinsToContainer(engine.player.inventory.primaryPack, 'copper', 50);
+    const shop = new ShopDialog();
+    shop.open(npc('banker'), null, engine);
+    expect(shop.serviceView).toBe('');
+    shop.handleKeyDown(key('ArrowRight'), engine);
+    expect(shop.serviceView).toBe('stash');
+    // Coins aren't kept: they are the exchange's.
+    expect(html()).toContain('Spare Axe');
+    expect(html()).not.toContain('Copper');
+    shop.handleKeyDown(key('ArrowDown'), engine);
+    shop.handleKeyDown(key('l'), engine);
+    expect(engine.player.inventory.findItemById('w2')).toBeUndefined();
+    expect(html()).toContain('1</b> of');
+    shop.handleKeyDown(key('ArrowRight'), engine);
+    expect(shop.serviceView).toBe('take');
+    expect(html()).toContain('Old Lantern');
+    shop.handleKeyDown(key('t'), engine);
+    expect(engine.player.inventory.findItemById('w2')).toBeDefined();
+  });
 
   it("ignores a service's key held into the dialog, or pressed in its first moment (R-ui-7)", () => {
     tick = 0;
@@ -582,14 +608,14 @@ describe('ShopDialog', () => {
     expect(html()).toContain('data-act="identify"');
 
     shop.handleKeyDown(key('ArrowRight'), e);
-    expect(shop.sageView).toBe('study');
+    expect(shop.serviceView).toBe('study');
     expect(html()).toContain(known[0].name);
     expect(html().match(/data-choice=/g)).toHaveLength(2);
     shop.handleKeyDown(key('ArrowDown'), e);
     shop.handleKeyDown(key('s'), e);
 
     shop.handleKeyDown(key('ArrowRight'), e);
-    expect(shop.sageView).toBe('rumors');
+    expect(shop.serviceView).toBe('rumors');
     expect(html()).toContain('A creature of floor');
     // A rumor's row never names what it reveals.
     const unmet = e.registries.monsters.getAll().filter((m) => e.compendium.getTier(m.id) === 0 && (m.minFloor ?? 1) >= 1);
@@ -602,7 +628,7 @@ describe('ShopDialog', () => {
     expect(calls[1].type).toBe('sage_rumor');
 
     shop.handleKeyDown(key('ArrowRight'), e);
-    expect(shop.sageView).toBe('items');
+    expect(shop.serviceView).toBe('items');
   });
 
   it("shows a townsperson's advice from the pack, and nothing but the greeting without it", () => {

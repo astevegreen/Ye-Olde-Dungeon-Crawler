@@ -1,4 +1,5 @@
 import {
+  BankService,
   Container,
   type Entity,
   type GameEngine,
@@ -23,7 +24,6 @@ import {
   type ShopAction,
   identifiableItems,
   sageCreatures,
-  sageViews,
   type SageView,
   nextBlessing,
   serviceTitle,
@@ -67,8 +67,8 @@ export class ShopDialog {
   public selectedForgeIndex = 0;
   /** The picked row of a service's choices (the sage's unidentified items). */
   public selectedChoiceIndex = 0;
-  /** The sage's open list (tracker 4.1). */
-  public sageView: SageView = 'items';
+  /** The open list of a townsperson who keeps several (the sage's, the banker's); '' is the first. */
+  public serviceView = '';
   public statusMessage = '';
   public statusTone: Tone = 'info';
 
@@ -101,7 +101,7 @@ export class ShopDialog {
     this.selectedSellIndex = 0;
     this.selectedForgeIndex = 0;
     this.selectedChoiceIndex = 0;
-    this.sageView = 'items';
+    this.serviceView = '';
     this.statusMessage = '';
     this.statusTone = 'info';
     this.openedAt = Date.now();
@@ -201,7 +201,7 @@ export class ShopDialog {
       event.preventDefault();
       const ids = panel.views.map((v) => v.id);
       const at = ids.indexOf(panel.view ?? ids[0]);
-      this.setSageView(ids[(at + (key === 'ArrowRight' ? 1 : ids.length - 1)) % ids.length] as SageView);
+      this.setServiceView(ids[(at + (key === 'ArrowRight' ? 1 : ids.length - 1)) % ids.length]);
       return true;
     }
     if ((key === 'ArrowUp' || key === 'ArrowDown') && panel?.choices?.length) {
@@ -398,12 +398,12 @@ export class ShopDialog {
   // ---- Town services -------------------------------------------------------------
 
   private panel(engine: GameEngine): ServicePanel | null {
-    return this.activeNpc && !this.merchant ? servicePanelFor(engine, this.activeNpc, this.selectedChoiceIndex, this.sageView) : null;
+    return this.activeNpc && !this.merchant ? servicePanelFor(engine, this.activeNpc, this.selectedChoiceIndex, this.serviceView) : null;
   }
 
-  private setSageView(view: SageView): void {
-    if (view === this.sageView) return;
-    this.sageView = view;
+  private setServiceView(view: string): void {
+    if (view === this.serviceView) return;
+    this.serviceView = view;
     this.selectedChoiceIndex = 0;
     this.changed();
   }
@@ -470,14 +470,14 @@ export class ShopDialog {
         return;
       }
       case 'view':
-        if (arg && sageViews(engine).includes(arg as SageView)) this.setSageView(arg as SageView);
+        if (arg && this.panel(engine)?.views?.some((v) => v.id === arg)) this.setServiceView(arg);
         return;
       case 'study':
       case 'rumor': {
-        const creature = sageCreatures(engine, this.sageView)[this.selectedChoiceIndex];
+        const creature = sageCreatures(engine, this.serviceView as SageView)[this.selectedChoiceIndex];
         if (!creature) return;
         const result = bus.dispatch({ type: act === 'study' ? 'sage_study' : 'sage_rumor', payload: { definitionId: creature.id } });
-        this.selectedChoiceIndex = Math.max(0, Math.min(this.selectedChoiceIndex, sageCreatures(engine, this.sageView).length - 1));
+        this.selectedChoiceIndex = Math.max(0, Math.min(this.selectedChoiceIndex, sageCreatures(engine, this.serviceView as SageView).length - 1));
         this.report(result);
         return;
       }
@@ -487,6 +487,17 @@ export class ShopDialog {
       case 'compact':
         this.report(bus.dispatch({ type: 'bank_compact' }), 'warn');
         return;
+      case 'stash':
+      case 'take': {
+        const list = act === 'stash' ? BankService.stashableItems(engine) : BankService.stashedItems(engine);
+        const item = list[this.selectedChoiceIndex];
+        if (!item) return;
+        const result = bus.dispatch({ type: act === 'stash' ? 'bank_stash' : 'bank_withdraw', payload: { itemId: item.id } });
+        const left = (act === 'stash' ? BankService.stashableItems(engine) : BankService.stashedItems(engine)).length;
+        this.selectedChoiceIndex = Math.max(0, Math.min(this.selectedChoiceIndex, left - 1));
+        this.report(result, 'warn');
+        return;
+      }
       case 'bond':
         this.report(bus.dispatch({ type: 'trainer_bond_companion' }));
         return;

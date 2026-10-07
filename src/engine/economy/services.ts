@@ -13,7 +13,7 @@ import {
   breakdownChange,
 } from './currency';
 import type { GameEngine } from '../engine';
-import { getFaction, getFlag, modifyFaction, type WorldState } from '../state/worldState';
+import { depositToVault, getFaction, getFlag, getVaultItems, modifyFaction, removeFromVault, type WorldState } from '../state/worldState';
 import { getRenownTotal, recordMilestone } from '../renown/renownLedger';
 import { familyModifier } from '../items/modifierRoller';
 import { RunAdvisor, type AdvisoryReport } from '../advisory/runAdvisor';
@@ -436,6 +436,43 @@ export class SageService {
 }
 
 export class BankService {
+  /** The bank's stash: items the hero leaves in town between delves (`WorldState.remoteVaults`). */
+  public static readonly STASH_VAULT_ID = 'bank_stash';
+  public static readonly STASH_CAPACITY = 40;
+
+  /** What the bank keeps for the hero, oldest first. */
+  public static stashedItems(engine: GameEngine): Item[] {
+    return getVaultItems(engine.worldState, BankService.STASH_VAULT_ID);
+  }
+
+  /** What the hero may leave: anything loose in the pack but coins (the exchange's business) and quest items. */
+  public static stashableItems(engine: GameEngine): Item[] {
+    return engine.player.inventory.primaryPack.getItems().filter((i) => i.category !== 'currency' && i.category !== 'quest');
+  }
+
+  /** Leaves one pack item, whole stack and contents, with the bank. Free, and no turn passes. */
+  public static stashItem(engine: GameEngine, itemId: string): ServiceResult {
+    const item = BankService.stashableItems(engine).find((i) => i.id === itemId);
+    if (!item) return { success: false, message: 'Choose something from your pack to leave.', costInCp: 0 };
+    if (BankService.stashedItems(engine).length >= BankService.STASH_CAPACITY) {
+      return { success: false, message: `The bank keeps no more than ${BankService.STASH_CAPACITY} of your things. Take something back first.`, costInCp: 0 };
+    }
+    engine.player.inventory.primaryPack.removeItem(item.id);
+    depositToVault(engine.worldState, BankService.STASH_VAULT_ID, item);
+    return { success: true, message: `You leave ${item.displayName} with the bank.`, costInCp: 0 };
+  }
+
+  /** Takes a stashed item back into the pack, if the pack has room for it. */
+  public static withdrawItem(engine: GameEngine, itemId: string): ServiceResult {
+    const item = BankService.stashedItems(engine).find((i) => i.id === itemId);
+    if (!item) return { success: false, message: 'The bank keeps nothing like that for you.', costInCp: 0 };
+    if (!engine.player.inventory.primaryPack.addItem(item)) {
+      return { success: false, message: `Your pack has no room for ${item.displayName}.`, costInCp: 0 };
+    }
+    removeFromVault(engine.worldState, BankService.STASH_VAULT_ID, item);
+    return { success: true, message: `You take ${item.displayName} back from the bank.`, costInCp: 0 };
+  }
+
   /**
    * Exchanges all the hero's coins for the fewest coins of the same value, free. Coins take
    * space, not weight, so this is how a hero fits more value in the purse.

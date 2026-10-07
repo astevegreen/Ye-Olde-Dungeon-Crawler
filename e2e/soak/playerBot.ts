@@ -27,6 +27,8 @@ export interface PlayerBotState {
   wasOverburdened: boolean;
   /** Pack items the bot has tried to put on or drop (each once: a failed try isn't repeated). */
   equipTried: string[];
+  /** Revealed traps ("floor:x,y") the bot has tried to disarm, each once. */
+  trapsTried: string[];
   /** Town merchants (NPC ids) visited this time in town. */
   shopDone: string[];
   /** Decisions spent inside the open shop this visit (a cap against loops). */
@@ -58,6 +60,10 @@ export interface BotTelemetry {
   dodges: number;
   /** In a telegraph with no safe tile to step to. */
   cornered: number;
+  /** Steps off a hazard tile (fire, acid, a firestorm, a poison cloud) the hero stood on. */
+  hazardSteps: number;
+  /** Shift+D pressed beside or on a revealed trap (each trap once). */
+  disarmAttempts: number;
   statPointsSpent: number;
   perksTaken: number;
   chestsLooted: number;
@@ -174,6 +180,7 @@ export function getBotState(page: Page, actionIndex: number): PlayerBotState {
       overburdenedEpisodes: 0,
       wasOverburdened: false,
       equipTried: [],
+      trapsTried: [],
       shopDone: [],
       shopDecisions: 0,
       trip: 'none',
@@ -191,6 +198,8 @@ export function getBotState(page: Page, actionIndex: number): PlayerBotState {
         telegraphTurns: 0,
         dodges: 0,
         cornered: 0,
+        hazardSteps: 0,
+        disarmAttempts: 0,
         statPointsSpent: 0,
         perksTaken: 0,
         chestsLooted: 0,
@@ -237,6 +246,10 @@ interface DecisionResult {
   chest?: boolean;
   potion?: boolean;
   telegraph?: 'dodge' | 'cornered' | 'stay';
+  /** Stepped off a hazard tile. */
+  hazardStep?: boolean;
+  /** A revealed trap ("floor:x,y") Shift+D was pressed for. */
+  trapTried?: string;
   looseCoins?: number;
   snapshot?: BotSnapshot;
   /** The worn purse's capacity in coins: rises when an Olaf purse is bought and worn. */
@@ -295,6 +308,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       lastPickupTurn: number;
       droppedTiles: Record<string, boolean>;
       equipTried: string[];
+      trapsTried: string[];
       shopDone: string[];
       shopDecisions: number;
       trip: 'none' | 'up' | 'down' | 'done';
@@ -447,6 +461,13 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         const g = e.surfaces?.getGas?.(x, y);
         return s === 'fire' || s === 'acid_pool' || g === 'fire_storm' || g === 'poison_cloud';
       };
+      // A trap the hero has found and not disarmed: a careful player walks round it.
+      const revealedTrapAt = (x: number, y: number): any => {
+        const t = e.map.getTrapAt?.(x, y);
+        return t && t.revealed && !t.disarmed ? t : null;
+      };
+      // Tiles a path or a dodge never crosses unless it ends there (soak-fix plan C1).
+      const avoid = (x: number, y: number): boolean => onHazard(x, y) || Boolean(revealedTrapAt(x, y));
       const snapshot = {
         floor: curFloor,
         hp: p.hp,
@@ -861,6 +882,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
             const isDest = nKey === goalKey;
 
             if (!isDest) {
+              if (avoid(nx, ny)) continue;
               if (isDungeonFloor) {
                 const passable =
                   tile &&
@@ -904,6 +926,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
 
         const isFrontier = (x: number, y: number): boolean => {
           if (e.fov.getVisibility(x, y) === 0) return false;
+          if (avoid(x, y)) return false;
           const t = e.map.getTile(x, y);
           if (
             !t ||
@@ -961,6 +984,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
                 tile.type === 'door_closed' ||
                 tile.type === 'door_open');
             if (!passable) continue;
+            if (avoid(nx, ny)) continue;
 
             cameFrom[nKey] = curKey;
             queue.push(nKey);
@@ -1128,24 +1152,28 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor, isOverburdened: true };
         }
 
-        // Standing where a telegraphed attack will land: step to a neighbouring open floor tile
-        // it won't hit. Not a closed door: bumping one opens it and leaves the hero in place.
-        if (snapshot.onTelegraph) {
+        // Neighbouring open floor tiles a telegraph won't hit and no hazard or found trap covers,
+        // fewest foes beside first. Not a closed door: bumping one opens it and leaves the hero.
+        const safeSteps = (): Array<{ dx: number; dy: number; adj: number }> => {
           const safe: Array<{ dx: number; dy: number; adj: number }> = [];
           for (let dy = -1; dy <= 1; dy++) {
             for (let dx = -1; dx <= 1; dx++) {
               if (dx === 0 && dy === 0) continue;
               const nx = p.x + dx;
               const ny = p.y + dy;
-              if (!e.map.inBounds(nx, ny) || inDanger(nx, ny)) continue;
+              if (!e.map.inBounds(nx, ny) || inDanger(nx, ny) || avoid(nx, ny)) continue;
               const t = e.map.getTile(nx, ny);
               if (!t || !t.passable || t.isClosedDoor || t.type === 'door_closed') continue;
               if (e.map.getEntityAt(nx, ny)) continue;
               safe.push({ dx, dy, adj: hostiles.filter((m: any) => cheb(m, { x: nx, y: ny }) === 1).length });
             }
           }
-          safe.sort((a, b) => a.adj - b.adj || a.dy - b.dy || a.dx - b.dx);
-          const best = safe[0];
+          return safe.sort((a, b) => a.adj - b.adj || a.dy - b.dy || a.dx - b.dx);
+        };
+
+        // Standing where a telegraphed attack will land: step to a tile it won't hit.
+        if (snapshot.onTelegraph) {
+          const best = safeSteps()[0];
           if (best) {
             return { action: { type: 'key' as const, key: stepToKey(best.dx, best.dy) }, curPos, curTurn, curFloor, telegraph: 'dodge' as const };
           }
@@ -1155,6 +1183,14 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
             return { action: { type: 'key' as const, key: stepToKey(m.x - p.x, m.y - p.y) }, curPos, curTurn, curFloor, telegraph: 'cornered' as const };
           }
           return { action: { type: 'key' as const, key: 'Space' }, curPos, curTurn, curFloor, telegraph: 'cornered' as const };
+        }
+
+        // Standing in fire, acid or a poison cloud: step off it before anything else (C1).
+        if (snapshot.onHazard) {
+          const off = safeSteps()[0];
+          if (off) {
+            return { action: { type: 'key' as const, key: stepToKey(off.dx, off.dy) }, curPos, curTurn, curFloor, hazardStep: true };
+          }
         }
 
         if (adjHostiles.length > 0) {
@@ -1175,9 +1211,21 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         if (visibleHostiles.length === 0 && looseCoins > 0 && p.inventory?.purse && !args.serviceTried.includes('inventory:consolidate')) {
           return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor };
         }
-        if (p.hp < p.maxHp * 0.6 && visibleHostiles.length === 0) {
+        if (p.hp < p.maxHp * 0.6 && visibleHostiles.length === 0 && !snapshot.onHazard) {
           if (args.lastRestAttemptTurn !== curTurn) {
             return { action: { type: 'key' as const, key: 'KeyR' }, curPos, curTurn, curFloor, restAttempted: true };
+          }
+        }
+
+        // A trap found underfoot or beside the hero: try to disarm it, once, with nothing in sight.
+        if (visibleHostiles.length === 0) {
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const trapKey = `${curFloor}:${p.x + dx},${p.y + dy}`;
+              if (revealedTrapAt(p.x + dx, p.y + dy) && !args.trapsTried.includes(trapKey)) {
+                return { action: { type: 'key' as const, key: 'Shift+KeyD' }, curPos, curTurn, curFloor, trapTried: trapKey };
+              }
+            }
           }
         }
 
@@ -1328,6 +1376,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       lastPickupTurn: state.lastPickupTurn,
       droppedTiles: state.droppedTiles,
       equipTried: state.equipTried,
+      trapsTried: state.trapsTried,
       shopDone: state.shopDone,
       shopDecisions: state.shopDecisions,
       trip: state.trip,
@@ -1389,6 +1438,11 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
   if (evalResult.snapshot?.onTelegraph) tel.telegraphTurns++;
   if (evalResult.telegraph === 'dodge') tel.dodges++;
   if (evalResult.telegraph === 'cornered') tel.cornered++;
+  if (evalResult.hazardStep) tel.hazardSteps++;
+  if (evalResult.trapTried) {
+    tel.disarmAttempts++;
+    state.trapsTried.push(evalResult.trapTried);
+  }
 
   if (curFloor !== state.lastFloorSeen) {
     state.lastFloorSeen = curFloor;

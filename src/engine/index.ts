@@ -195,9 +195,8 @@ export * from './spatial/planeTypes';
 export * from './world/planeManager';
 export * from './actions/planeActions';
 
-// Reciprocal Combat & Synergy Procs
+// Reciprocal Combat
 export * from './combat/reciprocalPipeline';
-export * from './combat/synergyPipeline';
 
 // Dual-Energy Dynamics & Corruption
 export * from './actors/energyModel';

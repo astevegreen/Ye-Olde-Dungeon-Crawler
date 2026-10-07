@@ -184,6 +184,40 @@ export function getDefaultKeybinds(): Record<string, string[]> {
   return binds;
 }
 
+function sameCodes(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((code, i) => code === b[i]);
+}
+
+/**
+ * What is saved of the keybinds: only the actions whose keys differ from the defaults. A
+ * saved full map froze every default at the player's first save, so a default changed later
+ * (S, L, U and B leaving the moves on 23 Sep) never reached them (R-ui-10).
+ */
+function keybindOverrides(keybinds: Record<string, string[]>): Record<string, string[]> {
+  const defaults = getDefaultKeybinds();
+  const overrides: Record<string, string[]> = {};
+  for (const [actionId, codes] of Object.entries(keybinds)) {
+    if (!defaults[actionId] || !sameCodes(codes, defaults[actionId])) overrides[actionId] = [...codes];
+  }
+  return overrides;
+}
+
+/**
+ * The saved keybinds laid over today's defaults. Each entry is read as a list of key codes
+ * (a non-list, or an action the game no longer has, is dropped; a non-string code too), so a
+ * malformed blob can't make every key lookup throw. A legacy blob held every action: those
+ * equal to the current defaults add nothing, and are left out of the next save.
+ */
+function loadKeybinds(raw: unknown): Record<string, string[]> {
+  const keybinds = getDefaultKeybinds();
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return keybinds;
+  for (const [actionId, codes] of Object.entries(raw as Record<string, unknown>)) {
+    if (!Object.hasOwn(keybinds, actionId) || !Array.isArray(codes)) continue;
+    keybinds[actionId] = codes.filter((code): code is string => typeof code === 'string');
+  }
+  return keybinds;
+}
+
 export function getDefaultSettings(): GameSettings {
   return {
     arrowChordingEnabled: true,
@@ -253,24 +287,28 @@ export class SettingsManager {
 
   public bindKey(actionId: string, code: string): { conflictWith?: string } {
     let conflictWith: string | undefined;
+    let held = false;
 
-    // Check conflict
+    // Take the key from every other action that holds it. The whole map is walked even when
+    // this action already holds the key: returning there left another holder's copy removed
+    // in memory but neither saved nor announced (R-ui-10).
     for (const [existingActionId, codes] of Object.entries(this.settings.keybinds)) {
-      const idx = codes.indexOf(code);
-      if (idx !== -1) {
-        if (existingActionId === actionId) {
-          return {}; // Already bound to this action
-        }
-        conflictWith = existingActionId;
-        // Remove code from conflicting action
-        this.settings.keybinds[existingActionId] = codes.filter((c) => c !== code);
+      if (!codes.includes(code)) continue;
+      if (existingActionId === actionId) {
+        held = true;
+        continue;
       }
+      conflictWith = existingActionId;
+      this.settings.keybinds[existingActionId] = codes.filter((c) => c !== code);
     }
+    if (held && !conflictWith) return {}; // Already this action's alone: nothing changed.
 
-    if (!this.settings.keybinds[actionId]) {
-      this.settings.keybinds[actionId] = [];
+    if (!held) {
+      if (!this.settings.keybinds[actionId]) {
+        this.settings.keybinds[actionId] = [];
+      }
+      this.settings.keybinds[actionId].push(code);
     }
-    this.settings.keybinds[actionId].push(code);
 
     this.saveSettings();
     this.notify();
@@ -336,7 +374,7 @@ export class SettingsManager {
         hintsEnabled: typeof parsed.hintsEnabled === 'boolean' ? parsed.hintsEnabled : defaults.hintsEnabled,
         controlsPrimerEnabled: typeof parsed.controlsPrimerEnabled === 'boolean' ? parsed.controlsPrimerEnabled : defaults.controlsPrimerEnabled,
         autoPickup: sanitizeAutoPickup(parsed.autoPickup),
-        keybinds: typeof parsed.keybinds === 'object' && parsed.keybinds !== null ? { ...defaults.keybinds, ...parsed.keybinds } : defaults.keybinds,
+        keybinds: loadKeybinds(parsed.keybinds),
         radialMenuSlots: sanitizeRadialMenuSlots(parsed.radialMenuSlots),
       };
     } catch {
@@ -346,7 +384,10 @@ export class SettingsManager {
 
   private saveSettings(): void {
     try {
-      this.storage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(this.settings));
+      this.storage.setItem(
+        SETTINGS_STORAGE_KEY,
+        JSON.stringify({ ...this.settings, keybinds: keybindOverrides(this.settings.keybinds) })
+      );
     } catch (err) {
       if (import.meta.env?.DEV) {
         console.warn('[SettingsManager] Failed to persist settings to storage:', err);

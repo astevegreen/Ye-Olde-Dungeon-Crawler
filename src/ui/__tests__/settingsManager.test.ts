@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   SettingsManager,
   SETTINGS_STORAGE_KEY,
+  getDefaultKeybinds,
 } from '../settings/settingsManager';
 import { MemoryStorage } from '../../engine';
 
@@ -111,6 +112,57 @@ describe('SettingsManager', () => {
     expect(manager.getCodesForAction('move_n')).toContain('KeyZ');
     expect(manager.getCodesForAction('cast_spell')).not.toContain('KeyZ');
     expect(manager.getActionForCode('KeyZ')).toBe('move_n');
+  });
+
+  it('saves and announces taking a key from another action that the action already holds (R-ui-10)', () => {
+    // A blob saved before 23 Sep: S was Move South's as well as Search's.
+    const legacy = getDefaultKeybinds();
+    legacy.move_s = ['ArrowDown', 'KeyS', 'KeyJ', 'Numpad2'];
+    storage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ keybinds: legacy }));
+    const stale = new SettingsManager(storage);
+    const heard = vi.fn();
+    stale.subscribe(heard);
+
+    expect(stale.bindKey('search', 'KeyS').conflictWith).toBe('move_s');
+
+    expect(heard).toHaveBeenCalledTimes(1);
+    expect(new SettingsManager(storage).getCodesForAction('move_s')).toEqual(['ArrowDown', 'KeyJ', 'Numpad2']);
+    expect(new SettingsManager(storage).getCodesForAction('search')).toEqual(['KeyS']);
+    // A key the action alone holds changes nothing, so nothing is announced.
+    expect(stale.bindKey('search', 'KeyS')).toEqual({});
+    expect(heard).toHaveBeenCalledTimes(1);
+  });
+
+  it('saves only the actions whose keys differ from the defaults, so later defaults reach the rest (R-ui-10)', () => {
+    manager.bindKey('move_n', 'KeyV');
+    manager.updateSettings({ torchlightEnabled: false });
+
+    const saved = JSON.parse(storage.getItem(SETTINGS_STORAGE_KEY)!);
+    expect(Object.keys(saved.keybinds).sort()).toEqual(['move_n', 'radial_menu']);
+    expect(saved.keybinds.radial_menu).toEqual([]);
+
+    // A blob from before, holding every action: the ones equal to today's defaults drop out.
+    const legacy = getDefaultKeybinds();
+    legacy.rest = ['KeyN'];
+    storage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ keybinds: legacy }));
+    const loaded = new SettingsManager(storage);
+    expect(loaded.getCodesForAction('rest')).toEqual(['KeyN']);
+    loaded.updateSettings({ torchlightEnabled: true });
+    expect(Object.keys(JSON.parse(storage.getItem(SETTINGS_STORAGE_KEY)!).keybinds)).toEqual(['rest']);
+  });
+
+  it('reads each saved action as a list of key codes, and drops what is not (R-ui-10)', () => {
+    storage.setItem(
+      SETTINGS_STORAGE_KEY,
+      JSON.stringify({ keybinds: { move_n: null, move_s: ['ArrowDown', 5, null, 'KeyJ'], wait: 'Space', no_such_action: ['KeyQ'] } })
+    );
+    const loaded = new SettingsManager(storage);
+
+    expect(loaded.getCodesForAction('move_n')).toEqual(getDefaultKeybinds().move_n);
+    expect(loaded.getCodesForAction('move_s')).toEqual(['ArrowDown', 'KeyJ']);
+    expect(loaded.getCodesForAction('wait')).toEqual(getDefaultKeybinds().wait);
+    expect(loaded.getKeybinds()).not.toHaveProperty('no_such_action');
+    expect(() => loaded.getActionForCode('KeyX')).not.toThrow();
   });
 
   it('allows unbinding specific keys', () => {

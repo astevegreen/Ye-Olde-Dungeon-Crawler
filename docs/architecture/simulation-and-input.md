@@ -30,7 +30,7 @@
   - **Key-Repeat Bypass:** While an arrow key or an active diagonal chord is held and the browser sends repeat events (`KeyboardEvent.repeat`), the buffer skips the debounce timer and dispatches a move on each repeat.
   - **Opposing Direction Reversal:** Pressing the opposite key while a step is pending (e.g. Left while Right is pending) cancels the pending move and immediately honors the new direction.
   - **Focus Loss:** Window `blur` clears all held-key state.
-  - **Multi-Scheme Directional Controls:** Default bindings live in `src/ui/settings/settingsManager.ts`. Only arrow keys go through `ChordBuffer`; the other schemes dispatch immediately:
+  - **Multi-Scheme Directional Controls:** Default bindings live in `src/ui/settings/settingsManager.ts`. The player's are saved (`yodc_settings`) as changes only, the actions whose keys differ from their defaults, so a default changed later reaches every action the player left alone. Only arrow keys go through `ChordBuffer`; the other schemes dispatch immediately:
     1. Arrow keys (chorded or instant cardinal mode).
     2. Roguelike Numpad 1–9: diagonals 7, 9, 1, 3; cardinals 8, 2, 4, 6; center 5 to wait.
     3. Vi keys: H, J, K, Y, N by default. L, U, and B open Look, the Character tab, and the Bestiary, and keep those keys (ADR-0011).

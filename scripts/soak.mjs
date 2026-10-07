@@ -16,6 +16,8 @@ Options:
   --until <HH:MM>      Wall-clock cutoff time (e.g. 06:30)
   --project <browser>  Playwright browser project (default: chromium)
   --workers <workers>  Worker count (default: 1)
+  --start-floor <n>    Deep-floor start: outfit the hero for floor n and drop it there (default: 0, off)
+  --start-level <n>    The level that outfit aims at (default: 1 + 0.7 x floor)
   --help               Show this help message
 `);
 }
@@ -29,6 +31,8 @@ let openingOverride = null;
 let untilStr = null;
 let project = 'chromium';
 let workers = 1;
+let startFloor = 0;
+let startLevel = 0;
 
 for (let i = 0; i < args.length; i++) {
   const arg = args[i];
@@ -51,6 +55,10 @@ for (let i = 0; i < args.length; i++) {
     project = args[++i];
   } else if (arg === '--workers' && i + 1 < args.length) {
     workers = parseInt(args[++i], 10);
+  } else if (arg === '--start-floor' && i + 1 < args.length) {
+    startFloor = parseInt(args[++i], 10);
+  } else if (arg === '--start-level' && i + 1 < args.length) {
+    startLevel = parseInt(args[++i], 10);
   }
 }
 
@@ -66,7 +74,8 @@ if (untilStr) {
   console.log(`[soak runner] Cutoff active: will stop at ${new Date(cutoffMs).toLocaleString()}`);
 }
 
-const soakOutDir = resolve(process.cwd(), '.prompts', 'soak', lens);
+// A deep start keeps its own folder: its seeds would otherwise overwrite a run from town.
+const soakOutDir = resolve(process.cwd(), '.prompts', 'soak', startFloor > 0 ? `${lens}-floor${startFloor}` : lens);
 mkdirSync(soakOutDir, { recursive: true });
 
 const runsLogPath = join(soakOutDir, 'runs.jsonl');
@@ -95,6 +104,8 @@ for (let seed = fromSeed; seed < fromSeed + count; seed++) {
     SOAK_ACTIONS: String(actions),
     SOAK_OUT: soakOutDir,
     SOAK_OPENING: opening,
+    SOAK_START_FLOOR: String(startFloor),
+    SOAK_START_LEVEL: String(startLevel),
     PLAYWRIGHT_HTML_REPORT: reportDir,
   };
 

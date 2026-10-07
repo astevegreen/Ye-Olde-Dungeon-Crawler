@@ -39,6 +39,8 @@ export interface SoakSummary {
   seed: number;
   lens: string;
   opening: SoakOpening;
+  /** The floor a deep-floor start dropped the hero onto (SOAK_START_FLOOR); 0 for a run from town. */
+  startFloor: number;
   sha: string;
   /** True for the snapshot written every 100 actions; false once the run is over. */
   partial: boolean;

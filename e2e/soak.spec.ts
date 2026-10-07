@@ -139,8 +139,12 @@ test.describe('soak @soak', () => {
     const policy = (process.env.SOAK_POLICY ?? 'chaos') as SoakPolicy;
     const maxActions = parseInt(process.env.SOAK_ACTIONS ?? '1500', 10);
     const outBase = process.env.SOAK_OUT ?? resolve(process.cwd(), '.prompts', 'soak', policy);
-    const opening: SoakOpening =
-      (process.env.SOAK_OPENING as SoakOpening | undefined) ?? (policy === 'chaos' && seed % 2 === 1 ? 'skip' : 'play');
+    // A deep-floor start (SOAK_START_FLOOR=N, off by default): the floors the bot never
+    // reaches on foot. It skips the opening, since the raid is no part of a deep run.
+    const startFloor = Math.max(0, parseInt(process.env.SOAK_START_FLOOR ?? '0', 10) || 0);
+    const opening: SoakOpening = startFloor > 0
+      ? 'skip'
+      : (process.env.SOAK_OPENING as SoakOpening | undefined) ?? (policy === 'chaos' && seed % 2 === 1 ? 'skip' : 'play');
 
     // About 0.2 s an action, plus round trips; a run that hits this still writes its summary.
     test.setTimeout(120_000 + maxActions * 500);
@@ -212,6 +216,24 @@ test.describe('soak @soak', () => {
       await expect(page.locator('#controls-primer')).toBeHidden();
     } else {
       await pastTheOpening(page);
+    }
+
+    // Deep start: the hero is outfitted as one who reached the floor might be, and dropped
+    // onto it, through engine.diagnostics alone (triage `outfitForFloor`, `jumpToFloor`).
+    // SOAK_START_LEVEL overrides the level the outfit aims at.
+    if (startFloor > 0) {
+      const outfit = await page.evaluate(
+        ({ floor, level }) => {
+          const e = window.__cotwEngine!;
+          const res = e.diagnostics.outfitForFloor(floor, level > 0 ? level : undefined);
+          e.diagnostics.jumpToFloor(floor);
+          e.diagnostics.restoreVitals();
+          window.__cotwRenderer?.render();
+          return res;
+        },
+        { floor: startFloor, level: parseInt(process.env.SOAK_START_LEVEL ?? '0', 10) || 0 }
+      );
+      console.log(`[soak] Deep start on floor ${startFloor} at level ${outfit.level}, wearing ${outfit.worn.join(', ')}`);
     }
 
     const canvas = await page.locator('#game-canvas').boundingBox();
@@ -298,6 +320,7 @@ test.describe('soak @soak', () => {
         seed,
         lens: policy,
         opening,
+        startFloor,
         sha: gitSha,
         partial,
         endedBy,

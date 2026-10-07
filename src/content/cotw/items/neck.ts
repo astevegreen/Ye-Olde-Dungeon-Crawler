@@ -76,7 +76,8 @@ export const COTW_NECK: ItemDefinition[] = [
     stats: { defenseBonus: 4 },
     quality: 'artifact',
     identified: false,
-    description: 'A teardrop of primordial fossilized resin from the heart of Yggdrasil, hard as stone.',
+    description: 'A teardrop of primordial fossilized resin from the heart of Yggdrasil. Bestows physical vitality and resilience.',
+    wornEffects: { maxHpPercent: 0.1 },
     value: 460,
   },
 ];

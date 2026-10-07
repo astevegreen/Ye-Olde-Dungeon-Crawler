@@ -105,7 +105,8 @@ export const COTW_BELTS: ItemDefinition[] = [
     stats: { attackBonus: 6, defenseBonus: 3 },
     quality: 'artifact',
     identified: false,
-    description: 'A colossal girdle forged in the primordial frost of Jötunheim. Vastly amplifies physical striking force.',
+    description: 'A colossal girdle forged in the primordial frost of Jötunheim. Vastly amplifies physical striking force and load-bearing endurance.',
+    wornEffects: { carryMultiplier: 1.25 },
     value: 650,
     itemType: 'container',
     containerConfig: {

@@ -144,7 +144,8 @@ export const COTW_WEAPONS: ItemDefinition[] = [
     bulk: 2000,
     stats: { attackBonus: 6, defenseBonus: 2 },
     identified: false,
-    description: 'Petrified black bough carved by troll-wife sorceresses, heavy enough to strike with and to parry.',
+    description: 'Petrified black bough carved by troll-wife sorceresses. Channeling conduit that empowers spell damage.',
+    wornEffects: { spellDamageMultiplier: 1.2 },
     value: 175,
   },
   {
@@ -159,7 +160,8 @@ export const COTW_WEAPONS: ItemDefinition[] = [
     bulk: 250,
     stats: { attackBonus: 14, speedBonus: 5 },
     identified: false,
-    description: 'Veined with raw mercury from deep cavern lodes: a quick blade that strikes hard.',
+    description: 'Veined with raw mercury from deep cavern lodes. Pierces through dense armor.',
+    wornEffects: { defensePenetration: 0.15 },
     value: 220,
   },
   {
@@ -174,7 +176,8 @@ export const COTW_WEAPONS: ItemDefinition[] = [
     bulk: 1800,
     stats: { attackBonus: 13 },
     identified: false,
-    description: 'Heavy steel pick calcified with mineral rind, that bites deep with every swing.',
+    description: 'Heavy steel pick calcified with mineral rind. Ignores part of an enemy’s armor plating.',
+    wornEffects: { defensePenetration: 0.25 },
     value: 200,
   },
   {

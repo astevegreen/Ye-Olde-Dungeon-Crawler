@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { COTW_ITEMS } from '../items';
+import { cotwManifest } from '../index';
+import { ProfileManager, MemoryStorage } from '../../../engine/storage/profile-manager';
+import { createScaledItem } from '../../../engine/dungeon/lootSpawner';
+import { sumWorn, productWorn } from '../../../engine/items/wornModifiers';
 
 // An item's description says only what the item does (N20): the game has no light
 // sources, hunger, bleeding, locks to pick, secret-door sense or disarming, so no
@@ -54,6 +58,51 @@ describe('cotw item descriptions', () => {
       (d) => `${d.id}: ${d.description}`
     );
     expect(empty).toEqual([]);
+  });
+
+  // I6 cut six uniques' text down to their stats; the owner chose to give them the stats
+  // instead (2026-10-07): small buffs, the original wording restored.
+  it('six uniques carry the stats their text promises, and wearing them gives those stats', () => {
+    const effects = Object.fromEntries(COTW_ITEMS.filter((d) => d.wornEffects).map((d) => [d.id, d.wornEffects]));
+    expect(effects).toMatchObject({
+      obsidian_scale_cuirass: { resistsElements: ['fire'] },
+      pit_draugr_pick: { defensePenetration: 0.25 },
+      tarnished_quicksilver_stiletto: { defensePenetration: 0.15 },
+      ironwood_bough_stave: { spellDamageMultiplier: 1.2 },
+      amber_heart_drop: { maxHpPercent: 0.1 },
+      girdle_of_thryms_line: { carryMultiplier: 1.25 },
+    });
+    const text = (id: string) => COTW_ITEMS.find((d) => d.id === id)!.description ?? '';
+    expect(text('obsidian_scale_cuirass')).toMatch(/searing flame/);
+    expect(text('pit_draugr_pick')).toMatch(/armor plating/);
+    expect(text('tarnished_quicksilver_stiletto')).toMatch(/dense armor/);
+    expect(text('ironwood_bough_stave')).toMatch(/spell damage/);
+    expect(text('amber_heart_drop')).toMatch(/vitality/);
+    expect(text('girdle_of_thryms_line')).toMatch(/load-bearing/);
+
+    const { engine } = new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Wear', { seed: 5 });
+    const p = engine.player;
+    const wear = (id: string) => {
+      const def = COTW_ITEMS.find((d) => d.id === id)!;
+      expect(p.inventory.paperdoll.equip(createScaledItem(def, id, def.minFloor ?? 1, () => 0.5), def.slot as never).success, id).toBe(true);
+    };
+    const fireBefore = p.affinityTo('fire');
+    const hpBefore = p.maxHp;
+    const carryBefore = p.carryStrength;
+    wear('obsidian_scale_cuirass');
+    expect(fireBefore).toBe('neutral');
+    expect(p.affinityTo('fire')).toBe('resistant');
+    wear('pit_draugr_pick');
+    expect(sumWorn(p, 'defensePenetration')).toBeCloseTo(0.25);
+    wear('tarnished_quicksilver_stiletto');
+    expect(sumWorn(p, 'defensePenetration')).toBeCloseTo(0.15);
+    wear('ironwood_bough_stave');
+    expect(productWorn(p, 'spellDamageMultiplier')).toBeCloseTo(1.2);
+    wear('amber_heart_drop');
+    expect(Math.abs(p.maxHp - hpBefore * 1.1)).toBeLessThan(1);
+    wear('girdle_of_thryms_line');
+    expect(p.carryStrength).toBe(Math.round(p.strength * 1.25));
+    expect(p.carryStrength).toBeGreaterThan(carryBefore);
   });
 
   it('promise no cure for a curse: only the temple lifts one', () => {

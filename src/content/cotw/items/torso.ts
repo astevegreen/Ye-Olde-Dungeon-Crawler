@@ -58,7 +58,8 @@ export const COTW_TORSO: ItemDefinition[] = [
     bulk: 10000,
     stats: { defenseBonus: 13 },
     identified: false,
-    description: 'Meticulously knapped scales of volcanic glass wired over boiled leather; they turn sharp blades.',
+    description: 'Meticulously knapped scales of volcanic glass wired over boiled leather. Unyielding against searing flame and sharp blades.',
+    wornEffects: { resistsElements: ['fire'] },
     value: 280,
   },
   {

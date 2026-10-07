@@ -3,6 +3,9 @@ import { GameEngine } from '../engine';
 import { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
 import { Player } from '../entities/player';
+import { Monster } from '../entities/monster';
+import { InventoryManager } from '../inventory/inventory-manager';
+import { serializeGame, deserializeGame } from '../storage/serializer';
 import { Container } from '../items/container';
 import { PotionItem } from '../items/consumables';
 import { RuneOfReturnItem, findRuneOfReturn } from '../magic/runeOfReturn';
@@ -64,5 +67,27 @@ describe('R-econ-14 · a dormant Rune of Return carried in a belt survives its a
     expect(player.inventory.removeItem('pot-1')).toBe(potion);
     expect(bag.getItems()).toHaveLength(0);
     expect(potion.parentId).toBeNull();
+  });
+});
+
+describe("R-econ-24 · every actor's default pack has the id default-pack", () => {
+  it("the hero's pack and a monster's have their own ids, and the registry finds the hero's", () => {
+    const player = new Player({ id: 'hero-24', name: 'Hero', position: { x: 2, y: 2 } });
+    const goblin = new Monster({ id: 'goblin-24', name: 'Goblin', position: { x: 3, y: 2 }, stats: { hp: 5, maxHp: 5, attack: 1, defense: 0 } });
+
+    expect(player.inventory.primaryPack.id).not.toBe(goblin.inventory.primaryPack.id);
+    expect(Container.getContainer(player.inventory.primaryPack.id)).toBe(player.inventory.primaryPack);
+  });
+
+  it('a save keeps the pack id it stored, a new one or an older default-pack', () => {
+    const fresh = new Player({ id: 'hero-24b', name: 'Hero', position: { x: 2, y: 2 } });
+    const older = new Player({ id: 'hero-24c', name: 'Hero', position: { x: 2, y: 2 }, inventory: new InventoryManager() });
+    expect(older.inventory.primaryPack.id).toBe('default-pack');
+
+    for (const player of [fresh, older]) {
+      const engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player });
+      const loaded = deserializeGame(JSON.parse(JSON.stringify(serializeGame(engine)))).engine;
+      expect(loaded.player.inventory.primaryPack.id).toBe(player.inventory.primaryPack.id);
+    }
   });
 });

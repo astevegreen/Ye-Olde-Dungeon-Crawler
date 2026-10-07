@@ -29,11 +29,12 @@ export class InventoryManager {
     this.paperdoll = new Paperdoll(config?.slots);
     this.ownerId = config?.ownerId ?? null;
 
-    // Default adventurer pack if none provided
+    // Default adventurer pack if none provided, named for its owner: every actor has one,
+    // and the container registry keys them by id (R-econ-24). A save keeps the id it stored.
     this.primaryPack =
       config?.primaryPack ??
       new Container({
-        id: 'default-pack',
+        id: this.ownerId ? `${this.ownerId}-pack` : 'default-pack',
         name: "Adventurer's Backpack",
         value: 5000,
         category: 'container',

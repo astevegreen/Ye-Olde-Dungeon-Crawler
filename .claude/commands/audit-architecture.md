@@ -6,10 +6,11 @@ Read ARCHITECTURE.md (the core document) in full. It is deliberately
 short and carries a routing table to four sub-docs under
 `docs/architecture/**` and decision records under `docs/decisions/**`.
 One of those four, `content-extensibility.md`, is itself a second-level
-core doc with its own routing table to four topic docs
+core doc with its own routing table to five topic docs
 (`content-companions.md`, `content-rune-of-return.md`,
-`content-progression-scaling.md`, `content-quests-and-triggers.md`) —
-read all of them too. The core document's binding statements are the
+`content-progression-scaling.md`, `content-quests-and-triggers.md`,
+`content-magic.md`) — read all of them too, and confirm that list still
+matches every `content-*.md` under `docs/architecture/`. The core document's binding statements are the
 ground truth, but a sub-doc or topic doc that drifts from them is
 exactly the kind of rot this audit exists to catch. Then verify every concrete,
 checkable claim against the actual code, section by section — do not
@@ -28,7 +29,7 @@ known gap: confirm only that the gap still exists as §9 describes it.
    against the actual manifest/hook code it describes, and confirm the
    stub's binding rules (manifest contract, the two hook mechanisms,
    injected context, content registries, no engine creep) aren't
-   contradicted by it or by any of its four topic docs. Confirm
+   contradicted by it or by any of its five topic docs. Confirm
    `content-extensibility.md` itself stays ≤5 KB (it routes onward
    rather than restating topic detail) and that each topic doc under it
    has real `##` headings — a topic doc that regrows into one unheaded
@@ -50,7 +51,7 @@ known gap: confirm only that the gap still exists as §9 describes it.
    as closed retrospectives, not active guidance.
 §7 Build Configuration & Automated Quality Gates — actually run
    npm run lint (tsc, check:engine-purity, check:engine-encapsulation,
-   check:engine-creep, knip),
+   check:engine-creep, check:ui-palette, knip),
    npm test, npm run sim, npm run validate:schema, and npm run build,
    and paste the real output, not a description of expected output.
    Also compare .github/workflows/ against the §7.2 stub and
@@ -74,12 +75,12 @@ known gap: confirm only that the gap still exists as §9 describes it.
 
 Cross-check the agent configuration specifically: read CLAUDE.md,
 and every file under .agents/rules/ and .agents/skills/ (Antigravity's
-loaded instructions; confirm project-rules.md is `trigger: always_on`). Report any statement that contradicts or
+loaded instructions; confirm project-rules.md and cli-safety.md are `trigger: always_on`). Report any statement that contradicts or
 narrows ARCHITECTURE.md's current content — e.g. headless-purity scope,
 encapsulation scope, the engine/content dependency direction,
 schema-migration triggers, or anything describing the scheduler — and
-whether adversarial-audit.md's code-vs-doc process is still consistent
-with this command. Confirm every §N reference in CLAUDE.md and
+whether `.agents/skills/adversarial-audit/SKILL.md`'s code-vs-doc
+process is still consistent with this command. Confirm every §N reference in CLAUDE.md and
 .agents/rules/project-rules.md still resolves to the section it names.
 
 For every mismatch found in any of the above, show the actual

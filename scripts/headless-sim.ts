@@ -91,7 +91,8 @@ const CHECK_INTERVAL = 100;
 let invariantChecks = 0;
 
 /**
- * Invariant, NaN, and deadlock assertions (ARCHITECTURE.md §7.2 item 4).
+ * Invariant, NaN, and deadlock assertions (ARCHITECTURE.md §7.2's `npm run sim`; item 4,
+ * "Headless Simulation", in docs/architecture/quality-gates.md).
  *
  * Checks run at CHECK_INTERVAL-turn checkpoints and once more at scenario end.
  * Each call is timed by the caller and subtracted from the scenario's elapsed

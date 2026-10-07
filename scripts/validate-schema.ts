@@ -1,5 +1,6 @@
 /**
- * Schema evolution integrity gate (ARCHITECTURE.md §7.2 item 3).
+ * Schema evolution integrity gate: `npm run validate:schema`, a gate command of ARCHITECTURE.md
+ * §7.2 (item 3, "Schema Evolution Integrity", in docs/architecture/quality-gates.md).
  *
  * 1. Migration machinery: a current-version save passes through untouched, a save
  *    predating the supported format is refused, and a newly registered forward step

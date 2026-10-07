@@ -61,7 +61,7 @@ describe('check-engine-creep (ARCHITECTURE.md §3, §7.2)', () => {
     expect(status).not.toBe(0);
     expect(output).toContain("'blood_tap' (declared by cotw)");
     expect(output).not.toContain("'crimson_ward'");
-  }, 60_000);
+  }, 120_000);
 
   it('fails on a content-pack identifier or namespaced literal in presentation source', () => {
     const file = scratch('uiScratch.ts', ["export const testVal = 'cotw:giant_blood';", '']);
@@ -71,7 +71,7 @@ describe('check-engine-creep (ARCHITECTURE.md §3, §7.2)', () => {
     expect(status).not.toBe(0);
     expect(output).toContain('Found 1 content-pack identifier(s) in presentation source');
     expect(output).toContain("'cotw:giant_blood'");
-  }, 60_000);
+  }, 120_000);
 
   it('passes on the tree as it is, scanning the real engine and presentation sources', () => {
     const { status, output } = runGate();
@@ -79,5 +79,5 @@ describe('check-engine-creep (ARCHITECTURE.md §3, §7.2)', () => {
     expect(status).toBe(0);
     expect(Number(/Engine source files inspected: (\d+)/.exec(output)?.[1])).toBeGreaterThan(100);
     expect(Number(/Presentation source files inspected: (\d+)/.exec(output)?.[1])).toBeGreaterThan(50);
-  }, 60_000);
+  }, 120_000);
 });

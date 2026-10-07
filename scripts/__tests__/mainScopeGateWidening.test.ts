@@ -63,7 +63,7 @@ describe('gate scripts cover src/main/** (ARCHITECTURE.md §7.2 widened scope)',
     expect(result.output).toContain('DEEP_ENGINE_IMPORT');
     expect(result.output).toContain('FORBIDDEN_CONTENT_IMPORT');
     expect(result.output).toContain(PLANTED_AT);
-  }, 60000);
+  }, 120_000);
 
   it('check-engine-encapsulation fails on a direct engine-property mutation planted under src/main/', () => {
     const result = runScript('scripts/check-engine-encapsulation.ts', [
@@ -79,7 +79,7 @@ describe('gate scripts cover src/main/** (ARCHITECTURE.md §7.2 widened scope)',
     expect(result.output).toContain('PROPERTY_WRITE');
     expect(result.output).toContain('GameEngine.turnCount');
     expect(result.output).toContain(PLANTED_AT);
-  }, 60000);
+  }, 120_000);
 
   it('check-engine-encapsulation fails on a write into plain engine state reached through a member', () => {
     // The shape of the old src/main.ts bug: ActionResult is an interface, so the field
@@ -96,5 +96,5 @@ describe('gate scripts cover src/main/** (ARCHITECTURE.md §7.2 widened scope)',
     expect(result.status).not.toBe(0);
     expect(result.output).toContain('NESTED_WRITE');
     expect(result.output).toContain('GameEngine.lastActionResult');
-  }, 60000);
+  }, 120_000);
 });

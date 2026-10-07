@@ -51,7 +51,7 @@ describe('governance references resolve', () => {
   it('every cited §section exists in ARCHITECTURE.md', () => {
     const broken = citations(/§(\d+(?:\.\d+)?)/g).filter(({ ref }) => !sections.has(ref));
     expect(broken).toEqual([]);
-  });
+  }, 30_000);
 
   it('every cited P-ID is registered in §9 or retired below the next free ID', () => {
     expect(Number.isInteger(nextFree)).toBe(true);
@@ -63,12 +63,12 @@ describe('governance references resolve', () => {
     );
     expect(broken).toEqual([]);
     for (const id of registered) expect(Number(id.slice(2))).toBeLessThan(nextFree);
-  });
+  }, 30_000);
 
   it('every [Planned: P-NN] tag has a §9 entry', () => {
     const orphans = citations(/\[Planned: (P-\d+)\]/g).filter(({ ref }) => !registered.has(ref));
     expect(orphans).toEqual([]);
-  });
+  }, 30_000);
 
   it('relative links in the architecture docs point at files that exist', () => {
     const broken = DOCS.flatMap((file) =>

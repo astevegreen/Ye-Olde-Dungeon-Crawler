@@ -21,7 +21,7 @@ import { KillRiteManager, type KillContext } from '../magic/killRites';
 import { CoinItem } from '../economy/currency';
 import type { Item } from '../items/item';
 import { sumWorn } from '../items/wornModifiers';
-import { refusesDeath } from './lastStand';
+import { growCompanion, refusesDeath } from './lastStand';
 import { productAgainst } from '../compendium/familyPerks';
 import { dropTile } from '../dungeon/itemPlacement';
 
@@ -326,6 +326,8 @@ export function awardPlayerXp(engine: GameEngine, xp: number): void {
     if (levelUpRes.statPointsAwarded && levelUpRes.statPointsAwarded > 0) {
       engine.log(`You have gained ${levelUpRes.statPointsAwarded} attribute point${levelUpRes.statPointsAwarded > 1 ? 's' : ''}! (${engine.player.unspentStatPoints} total unspent)`);
     }
+    // The companion grows with its hero (`CompanionDefinition.growthPerLevel`).
+    growCompanion(engine);
     engine.emitGameEvent({
       type: 'player_leveled_up',
       turn: engine.turnCount,

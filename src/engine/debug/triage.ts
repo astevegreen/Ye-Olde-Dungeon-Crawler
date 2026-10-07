@@ -2,6 +2,7 @@ import type { GameEngine } from '../engine';
 import type { Position } from '../types';
 import { Monster } from '../entities/monster';
 import { DeathResolver } from '../combat/deathResolver';
+import { growCompanion } from '../combat/lastStand';
 import { TILES } from '../grid/tile';
 import { flightRecorder } from './flightRecorder';
 import { concludePrologue, isPrologueRunning } from '../quest/prologue';
@@ -150,6 +151,7 @@ function createTriageApi(engine: GameEngine): TriageAPI {
       const res = p.gainXp(Math.max(1, p.xpToNextLevel - p.xp), engine.manifest?.progressionConfig);
       if (res.leveledUp) {
         engine.log(`*** LEVEL UP! Welcome to Level ${res.newLevel}! ***`);
+        growCompanion(engine);
         // Same event a kill emits, so the level-up allocation dialog opens as usual.
         engine.emitGameEvent({
           type: 'player_leveled_up',

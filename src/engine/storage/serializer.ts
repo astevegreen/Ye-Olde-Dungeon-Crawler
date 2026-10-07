@@ -29,6 +29,7 @@ import { compactTilesWithDictionary, decompactTiles, compactFov, decompactFov } 
 import { EnergyModel } from '../actors/energyModel';
 import { applyPrologueState } from '../quest/prologue';
 import { GameStateManager } from '../quest/gameStateManager';
+import { growCompanion } from '../combat/lastStand';
 import type {
   CharacterProfile,
   SaveData,
@@ -1188,6 +1189,8 @@ function hydrateGame(
   // 5b. Restore Companion (docs/architecture/content-companions.md) — top-level, not part of map.monsters
   if (saveData.companion) {
     engine.attachCompanion(deserializeCompanion(saveData.companion, engine.registries, definitions));
+    // Fitted to the hero's level at once: a save from before companions grew loads grown.
+    growCompanion(engine);
   }
   // Off the map: summoned back, or revived by a trainer.
   if (saveData.dismissedCompanion) engine.dismissedCompanion = deserializeCompanion(saveData.dismissedCompanion, engine.registries, definitions);

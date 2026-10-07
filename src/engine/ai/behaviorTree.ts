@@ -15,7 +15,7 @@ import { AIRegistry } from './aiRegistry';
 import { BUILTIN_AI_TYPES } from '../bestiary/monsterDefinitions';
 import { computeDangerTiles } from './intent';
 import { selectAttackTarget } from './targetSelection';
-import { bondCompanion } from '../combat/lastStand';
+import { bondCompanion, growCompanion } from '../combat/lastStand';
 import { flightRecorder } from '../debug/flightRecorder';
 import { huntUnseenAction, rememberTarget } from './pursuit';
 import { callForHelp, fleeAction } from './flight';
@@ -276,7 +276,11 @@ export class MonsterAI {
     }
 
     // The hero's bond with its companion (Beast-Friend) takes hold on the companion's turn.
-    if (monster === engine.companion) bondCompanion(engine, monster);
+    // So does its growth with the hero's level (a summon, a revival or a level it missed).
+    if (monster === engine.companion) {
+      bondCompanion(engine, monster);
+      growCompanion(engine, monster);
+    }
 
     const player = selectAttackTarget(engine, monster);
     if (!player.isAlive()) {

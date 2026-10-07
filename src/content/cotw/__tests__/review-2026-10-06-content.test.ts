@@ -90,6 +90,37 @@ describe('R-cotw-3 · a "monster"-tagged radial consumable afflicts the hero’s
   });
 });
 
+describe('R-cotw-18 · companions grow with the hero’s level (owner, 2026-10-07)', () => {
+  it('every cotw companion declares its growth, and at level 25 the Oath’s wolf outlasts a floor-25 blow', () => {
+    const companions = cotwManifest.companions!;
+    expect(companions.every((c) => c.growthPerLevel)).toBe(true);
+    const at = (id: string, level: number) => {
+      const c = companions.find((d) => d.id === id)!;
+      const g = c.growthPerLevel!;
+      return {
+        maxHp: Math.round(c.stats.maxHp + (g.hp ?? 0) * (level - 1)),
+        attack: Math.round(c.stats.attack + (g.attack ?? 0) * (level - 1)),
+        defense: Math.round(c.stats.defense + (g.defense ?? 0) * (level - 1)),
+      };
+    };
+    expect(at('battle_hound', 25)).toEqual({ maxHp: 150, attack: 20, defense: 9 });
+    expect(at('hearth_frost_hound', 25)).toEqual({ maxHp: 146, attack: 14, defense: 17 });
+    expect(at('ember_fang_wolf', 25)).toEqual({ maxHp: 118, attack: 28, defense: 8 });
+    // The review's floor-25 attackers hit for up to 53: the wolf survives two such blows, not none.
+    expect(Math.floor(at('ember_fang_wolf', 25).maxHp / (53 - at('ember_fang_wolf', 25).defense))).toBeGreaterThanOrEqual(2);
+
+    // In play: a level-25 hero calls the wolf, and it comes grown.
+    const pm = new ProfileManager(new MemoryStorage(), cotwManifest);
+    const { engine } = pm.createCharacter('Pack', { seed: 4, difficulty: 'medium' } as never);
+    engine.setWorldFlag('companion_bonded', true);
+    while (engine.player.level < 25) engine.diagnostics.grantLevel();
+    expect(engine.commandBus.dispatch({ type: 'summon_companion', payload: { companionId: 'ember_fang_wolf' } }).success).toBe(true);
+    const wolf = engine.companion!;
+    expect({ maxHp: wolf.maxHp, attack: wolf.attack, defense: wolf.defense }).toEqual(at('ember_fang_wolf', 25));
+    expect(wolf.hp).toBe(wolf.maxHp);
+  });
+});
+
 describe('R-cotw-15 · the Charm of the Watchful Eye and the Scroll of Identify are not random loot', () => {
   it('no floor draw from 1 to 50 gives either, over many rolls', async () => {
     const { selectFloorItemDefinition } = await import('../../../engine/dungeon/lootSpawner');

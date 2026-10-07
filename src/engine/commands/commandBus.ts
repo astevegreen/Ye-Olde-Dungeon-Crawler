@@ -32,6 +32,7 @@ import { recordMilestone } from '../renown/renownLedger';
 import { flightRecorder } from '../debug/flightRecorder';
 import type { Action } from '../actions/action';
 import type { ActionResult } from '../types';
+import { growCompanion } from '../combat/lastStand';
 
 /** Commands that change nothing a replay depends on: no checkpoint after them. */
 const READ_ONLY_COMMANDS = new Set(['open_container', 'sage_advisory']);
@@ -553,7 +554,9 @@ export class EngineCommandBus implements GameCommandBus {
       // The hero's companion called to their side, or sent away (Shift+C).
       case 'summon_companion': {
         const id = p.companionId as string | undefined;
-        return { success: !!id && this.engine.summonCompanion(id) !== null };
+        const summoned = id ? this.engine.summonCompanion(id) : null;
+        growCompanion(this.engine, summoned);
+        return { success: summoned !== null };
       }
       case 'dismiss_companion': {
         if (!this.engine.companion) return { success: false };

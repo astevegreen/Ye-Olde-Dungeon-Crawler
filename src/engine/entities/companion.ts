@@ -20,6 +20,12 @@ export interface CompanionDefinition {
   /** Pack-mule capacity for the companion's own inventory. */
   packWeightCapacity: number;
   packBulkCapacity: number;
+  /**
+   * What the companion gains for each hero level past the first (fractions accumulate and
+   * round): its HP, attack and defense are `stats` plus this × (level − 1), recomputed when the
+   * hero levels, on its turn and after a load (`growCompanion`). Without it, `stats` hold.
+   */
+  growthPerLevel?: { hp?: number; attack?: number; defense?: number };
 }
 
 /**
@@ -137,6 +143,24 @@ export class Companion extends Monster {
   public setArchetype(archetype: CompanionArchetype): void {
     this.archetype = archetype;
     this.aiRoutineId = ARCHETYPE_AI_ROUTINE[archetype];
+  }
+
+  /**
+   * Sets max HP, attack and defense to `def`'s `stats` plus its `growthPerLevel` for each hero
+   * level past the first, max HP and attack times `bondMultiplier` (Beast-Friend). The HP a
+   * change adds or takes is added to what it has, so a wound stays a wound; a fallen companion's
+   * HP is left alone. Does nothing for a definition without growth.
+   */
+  public growToLevel(def: CompanionDefinition, heroLevel: number, bondMultiplier = 1): void {
+    const growth = def.growthPerLevel;
+    if (!growth) return;
+    const steps = Math.max(0, heroLevel - 1);
+    const before = this.baseMaxHpValue;
+    const maxHp = Math.max(1, Math.round((def.stats.maxHp + (growth.hp ?? 0) * steps) * bondMultiplier));
+    this.maxHp = maxHp;
+    this.attack = Math.round((def.stats.attack + (growth.attack ?? 0) * steps) * bondMultiplier);
+    this.defense = Math.round(def.stats.defense + (growth.defense ?? 0) * steps);
+    if (this.hp > 0) this.hp = Math.max(1, Math.min(this.maxHp, this.hp + (maxHp - before)));
   }
 
   /** Unlocks an active companion skill if not already known. Returns false if already known. */

@@ -18,6 +18,7 @@ import { getRenownTotal, recordMilestone } from '../renown/renownLedger';
 import { familyModifier } from '../items/modifierRoller';
 import { RunAdvisor, type AdvisoryReport } from '../advisory/runAdvisor';
 import type { CompanionArchetype } from '../entities/companion';
+import { growCompanion } from '../combat/lastStand';
 
 export class TempleService {
   // On the shop's copper scale (Q45, 2026-10-04): a floor-1 full clear pays about 400 CP.
@@ -555,6 +556,7 @@ export class TrainerService {
     dead.aiState = 'hunting';
     engine.deadCompanionRecord = null;
     engine.attachCompanion(dead);
+    growCompanion(engine, dead);
     return {
       success: true,
       message: `${dead.name} draws breath once more and returns to your side!`,

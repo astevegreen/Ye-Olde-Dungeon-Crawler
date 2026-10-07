@@ -10,6 +10,7 @@ import { createScaledItem } from '../dungeon/lootSpawner';
 import { Item } from '../items/item';
 import { recordMilestone } from '../renown/renownLedger';
 import { DeathResolver } from '../combat/deathResolver';
+import { growCompanion } from '../combat/lastStand';
 
 /**
  * Applies a list of `ChoiceConsequence`s to `player`/`engine`. Factored out of
@@ -144,7 +145,7 @@ export function applyConsequences(
         // call, so it sets the record aside for the summon and puts it back.
         const fallen = engine.deadCompanionRecord;
         engine.deadCompanionRecord = null;
-        engine.summonCompanion(c.companionId);
+        growCompanion(engine, engine.summonCompanion(c.companionId));
         engine.deadCompanionRecord = fallen;
         break;
       }

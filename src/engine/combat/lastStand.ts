@@ -1,6 +1,7 @@
 import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
 import type { Monster } from '../entities/monster';
+import type { Companion } from '../entities/companion';
 import { Player } from '../entities/player';
 import { productWorn, wornModifiers } from '../items/wornModifiers';
 
@@ -55,11 +56,31 @@ export function refusesDeath(engine: GameEngine, victim: Entity): boolean {
 export function bondCompanion(engine: GameEngine, companion: Monster): void {
   const multiplier = productWorn(engine.player, 'companionStatMultiplier');
   if (multiplier === 1) return;
-  const flag = `companion_bond:${companion.id}`;
+  const flag = bondFlag(companion);
   if (engine.getWorldFlag(flag)) return;
   engine.setWorldFlag(flag, true);
   const before = companion.maxHp;
   companion.maxHp = Math.round(before * multiplier);
   companion.attack = Math.round(companion.attack * multiplier);
   companion.hp = Math.min(companion.maxHp, companion.hp + (companion.maxHp - before));
+}
+
+const bondFlag = (companion: Monster) => `companion_bond:${companion.id}`;
+
+/**
+ * Fits a companion to its hero's level (`CompanionDefinition.growthPerLevel`, R-cotw-18):
+ * the definition's stats plus its growth for each level past the first, max HP and attack
+ * times Beast-Friend's multiplier once the bond has taken (`bondCompanion`). Called when the
+ * hero levels, on the companion's turn (so a summon or a revival catches up), when one is
+ * summoned or revived, and after a load. A companion whose definition declares no growth, or
+ * is not the pack's, is left as it is.
+ */
+export function growCompanion(engine: GameEngine, companion: Monster | null = engine.companion): void {
+  // Duck-typed like DeathResolver: a value import of Companion would close the monster.ts cycle.
+  const definitionId = (companion as { companionDefinitionId?: string } | null)?.companionDefinitionId;
+  if (!companion || !definitionId) return;
+  const def = engine.registries.companions.get(definitionId);
+  if (!def?.growthPerLevel) return;
+  const multiplier = engine.getWorldFlag(bondFlag(companion)) ? productWorn(engine.player, 'companionStatMultiplier') : 1;
+  (companion as Companion).growToLevel(def, engine.player.level, multiplier);
 }

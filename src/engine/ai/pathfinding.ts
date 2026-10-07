@@ -24,6 +24,15 @@ export function isOpenableDoor(tile: TileDefinition): boolean {
   return Boolean((tile.isClosedDoor || tile.type === 'door_closed') && !tile.locked);
 }
 
+/**
+ * A trap the hero has revealed and not disarmed. Monsters step round it as the hero's travel
+ * does: walking into it, a pack fed itself to a pit one monster at a time (trap review T3).
+ */
+export function isRevealedTrap(map: GameMap, x: number, y: number): boolean {
+  const trap = map.getTrapAt(x, y);
+  return Boolean(trap && trap.revealed && !trap.disarmed);
+}
+
 /** Breadth-first path; gives up (returns []) after `maxVisited` tiles, so a blocked search stays bounded. */
 export function findPath(
   map: GameMap,
@@ -69,6 +78,7 @@ export function findPath(
 
       const isPassable = (tile.walkable ?? tile.passable) || (canOpenDoors && isOpenableDoor(tile));
       if (!isPassable) continue;
+      if (!isTarget && isRevealedTrap(map, nx, ny)) continue;
 
       // Diagonal wall clipping prevention
       if (dir.dx !== 0 && dir.dy !== 0) {
@@ -117,7 +127,7 @@ export function findFleeStep(
 
     const tile = map.getTile(nx, ny);
     if (!tile || !((tile.walkable ?? tile.passable) || (opensDoors && isOpenableDoor(tile)))) continue;
-    if (map.getEntityAt(nx, ny)) continue;
+    if (map.getEntityAt(nx, ny) || isRevealedTrap(map, nx, ny)) continue;
 
     // Prevent corner clipping
     if (dir.dx !== 0 && dir.dy !== 0) {

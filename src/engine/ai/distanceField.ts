@@ -1,6 +1,6 @@
 import type { GameMap } from '../grid/map';
 import type { Position } from '../types';
-import { isOpenableDoor } from './pathfinding';
+import { isOpenableDoor, isRevealedTrap } from './pathfinding';
 
 /**
  * Walking distances to one goal over a whole floor, for awake monsters beyond the pursuit
@@ -8,7 +8,8 @@ import { isOpenableDoor } from './pathfinding';
  * hero, or the tile where an alarm rang), so a far monster's step is a neighbour lookup rather
  * than a path search of its own: per-actor work stays bounded (ARCHITECTURE.md §6) even when an
  * alarm wakes the whole floor. Terrain only: closed doors count as open (monsters open them) and
- * entities are ignored, so a crowd doesn't hide the way. A locked door is a wall.
+ * entities are ignored, so a crowd doesn't hide the way. A locked door and a trap the hero has
+ * revealed (`isRevealedTrap`) are walls.
  */
 interface CachedFields {
   turn: number;
@@ -27,7 +28,7 @@ const DIRECTIONS = [
 
 function walkable(map: GameMap, x: number, y: number): boolean {
   const tile = map.getTile(x, y);
-  if (!tile) return false;
+  if (!tile || isRevealedTrap(map, x, y)) return false;
   return Boolean((tile.walkable ?? tile.passable) || isOpenableDoor(tile));
 }
 

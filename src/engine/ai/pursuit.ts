@@ -6,7 +6,7 @@ import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
 import type { Monster } from '../entities/monster';
 import type { Position } from '../types';
-import { findPath, isOpenableDoor } from './pathfinding';
+import { findPath, isOpenableDoor, isRevealedTrap } from './pathfinding';
 import { stepAlongDistanceField } from './distanceField';
 import { perceives } from './perception';
 
@@ -91,7 +91,7 @@ function searchStep(engine: GameEngine, monster: Monster, centre: Position): Pos
       const x = monster.x + dx;
       const y = monster.y + dy;
       if (Math.max(Math.abs(x - centre.x), Math.abs(y - centre.y)) > SEARCH_RADIUS) continue;
-      if (!engine.map.isPassable(x, y) || engine.map.getEntityAt(x, y)) continue;
+      if (!engine.map.isPassable(x, y) || engine.map.getEntityAt(x, y) || isRevealedTrap(engine.map, x, y)) continue;
       if (dx !== 0 && dy !== 0 && !engine.map.isPassable(monster.x + dx, monster.y) && !engine.map.isPassable(monster.x, monster.y + dy)) continue;
       options.push({ x, y });
     }

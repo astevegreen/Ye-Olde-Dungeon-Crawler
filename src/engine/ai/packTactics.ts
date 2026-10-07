@@ -5,7 +5,7 @@ import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
 import type { Monster } from '../entities/monster';
 import type { Position } from '../types';
-import { isOpenableDoor } from './pathfinding';
+import { isOpenableDoor, isRevealedTrap } from './pathfinding';
 
 /** How far off a pack monster plans its way to a side of its prey (Chebyshev tiles). */
 export const FLANK_RADIUS = 10;
@@ -33,7 +33,7 @@ export function flankAction(engine: GameEngine, monster: Monster, target: Entity
   const inBox = (x: number, y: number) => x >= ox && x < ox + size && y >= oy && y < oy + size;
   const open = (x: number, y: number) => {
     const tile = map.getTile(x, y);
-    return Boolean(tile && ((tile.walkable ?? tile.passable) || isOpenableDoor(tile)));
+    return Boolean(tile && ((tile.walkable ?? tile.passable) || isOpenableDoor(tile)) && !isRevealedTrap(map, x, y));
   };
 
   const steps = new Int16Array(size * size).fill(-1);

@@ -6,6 +6,7 @@ import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
 import { Item } from '../items/item';
 import { PotionItem } from '../items/consumables';
+import { DrinkPotionAction } from '../actions/spell-actions';
 import { WaitAction } from '../actions/wait';
 import { MovementAction } from '../actions/movement';
 import { ClimbStairsAction } from '../actions/stairs';
@@ -198,6 +199,24 @@ describe('R-pipe-11 · cure_status "all" removes a status literally named "all"'
     expect(player.statusManager.hasStatus('blindness')).toBe(false);
     expect(player.statusManager.hasStatus('haste')).toBe(true); // not an affliction
     expect(player.statusManager.hasStatus('slow')).toBe(true); // the draught's own slow, after the purge
+  });
+});
+
+describe('R-pipe-16 · the world advance before an action can kill the hero, and the action still runs', () => {
+  it('a potion queued behind a lethal monster round is not drunk by the corpse', () => {
+    const { engine, player } = build(1);
+    for (const [i, [x, y]] of [[3, 2], [1, 2], [2, 3]].entries()) {
+      engine.addEntity(new Monster({ id: `brute${i}`, name: 'Brute', position: { x, y }, stats: { hp: 30, maxHp: 30, attack: 40, defense: 0 }, speed: 100, definitionId: 'brute', aiType: 'melee', aiState: 'hunting' }));
+    }
+    const potion = new PotionItem({ id: 'pot', name: 'Healing', definitionId: 'heal', potionType: 'health', potency: 1, identified: true });
+    player.addItem(potion);
+    player.energy = 0; // a deferred turn: the brutes move before the hero can
+
+    const result = engine.handlePlayerAction(new DrinkPotionAction(player, potion));
+
+    expect(engine.gameState.runStatus).toBe('fallen'); // the brutes' round killed the hero (passes today)
+    expect(result).toMatchObject({ success: false, cost: 0, message: 'You have perished.' });
+    expect(player.inventory.getAllCarriedItems().some((i) => i.id === 'pot')).toBe(true);
   });
 });
 

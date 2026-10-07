@@ -1022,6 +1022,10 @@ export class GameEngine {
     // Ensure player has energy to act; if not, advance scheduler
     if (!this.player.canAct()) {
       this.advanceWorldUntilPlayerTurn();
+      // The monsters that moved first may have killed the hero: a corpse acts no further.
+      if (!this.player.isAlive()) {
+        return { success: false, cost: 0, message: 'You have perished.' };
+      }
     }
 
     const result = this.actionPipeline.executeWithHooks(action, this);

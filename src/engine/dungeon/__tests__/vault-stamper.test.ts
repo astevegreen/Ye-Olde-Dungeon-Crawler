@@ -126,3 +126,21 @@ describe('Vault / Prefab Stamp Injector', () => {
     expect(vaultsEncountered).toBeGreaterThan(0);
   });
 });
+
+/**
+ * R-ai-14: the floor's monster and loot passes skip rooms[0] as the arrival room, but BSP
+ * pushed vault rooms first, so with a vault the arrival room was populated and the vault
+ * skipped. The generator now returns its rooms arrival-first, as the layout strategies do.
+ */
+describe('R-ai-14 · a BSP floor lists its arrival room first', () => {
+  it('rooms[0] holds the player spawn, vault or not', () => {
+    for (let seed = 2000; seed < 2020; seed++) {
+      const result = new DungeonGenerator({ width: 50, height: 35, floorNumber: 5, seed, spawnMonsters: false, vaults: COTW_VAULTS, forcedVaultId: 'floor5_rune_vault' }).generate();
+      expect(result.forcedVaultPlaced, `seed ${seed}`).toBe(true);
+      const first = result.rooms[0];
+      const inside =
+        result.playerSpawn.x >= first.x1 && result.playerSpawn.x <= first.x2 && result.playerSpawn.y >= first.y1 && result.playerSpawn.y <= first.y2;
+      expect(inside, `seed ${seed}`).toBe(true);
+    }
+  });
+});

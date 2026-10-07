@@ -356,7 +356,9 @@ export class DungeonGenerator {
       map,
       playerSpawn,
       stairsDown,
-      rooms,
+      // Arrival room first, as the layout strategies list theirs: the floor's monster and loot
+      // passes skip rooms[0] as the arrival, and a forced vault pushed first sat there (R-ai-14).
+      rooms: [firstRoom, ...rooms.filter((room) => room !== firstRoom)],
       monsters,
       graph,
       forcedVaultChestSpawns,

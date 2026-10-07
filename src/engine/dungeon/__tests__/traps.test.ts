@@ -273,6 +273,28 @@ describe('T2 · a trap a monster springs out of the hero\'s sight says nothing',
     if (type === 'alarm') expect(goblin.aiState).not.toBe('sleeping');
   });
 
+  it.each(['pit', 'teleport'] as const)('an unseen %s trap stays hidden: not on the map, not avoided', (type) => {
+    const { map, engine, goblin } = walledOff({ x: 22, y: 4 });
+    const trap = new TrapInstance({ id: 't', type, x: 22, y: 4 });
+    map.addTrap(trap);
+
+    trap.trigger(goblin, engine);
+
+    expect(trap.revealed).toBe(false);
+    expect(map.getTile(22, 4)?.type).not.toBe('trap');
+  });
+
+  it('a trap seen sprung is revealed', () => {
+    const { map, engine, goblin } = walledOff({ x: 8, y: 4 });
+    const trap = new TrapInstance({ id: 't', type: 'pit', x: 8, y: 4 });
+    map.addTrap(trap);
+
+    trap.trigger(goblin, engine);
+
+    expect(trap.revealed).toBe(true);
+    expect(map.getTile(8, 4)?.type).toBe('trap');
+  });
+
   it('a trap the hero sees a monster spring is told', () => {
     const { map, engine, goblin } = walledOff({ x: 8, y: 4 });
     const trap = new TrapInstance({ id: 't', type: 'pit', x: 8, y: 4 });

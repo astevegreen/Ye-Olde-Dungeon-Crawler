@@ -71,8 +71,9 @@ export class TrapInstance {
   }
 
   /**
-   * Triggers trap when stepped on. Only a trap the hero springs or sees sprung is logged: a line
-   * from out of sight would tell the player a trap and a monster are there (trap review T2).
+   * Triggers trap when stepped on. Only a trap the hero springs or sees sprung is logged and
+   * revealed: a line, or a trap on the map, from out of sight would tell the player a trap and a
+   * monster are there (trap review T2). One sprung unseen stays hidden until found.
    */
   public trigger(entity: Entity, engine: GameEngine): string {
     if (this.disarmed) {
@@ -82,23 +83,18 @@ export class TrapInstance {
     const tell = (message: string) => {
       if (seen) engine.log(message);
     };
-    // Trap-Dancer: the trap never springs under the bearer, which sees it for what it is.
-    if (wearsFlag(entity, 'trapImmune')) {
+    if (seen) {
       this.revealed = true;
       if (engine.map.getTile(this.x, this.y)?.type !== 'trap') engine.map.setTile(this.x, this.y, TILES.TRAP);
+    }
+    // Trap-Dancer: the trap never springs under the bearer, which sees it for what it is.
+    if (wearsFlag(entity, 'trapImmune')) {
       const message = `${entity.name} dances lightly over a ${this.type} trap.`;
       tell(message);
       return message;
     }
 
     this.triggered = true;
-    this.revealed = true;
-
-    // Ensure map tile reflects revealed trap
-    const currentTile = engine.map.getTile(this.x, this.y);
-    if (currentTile && currentTile.type !== 'trap') {
-      engine.map.setTile(this.x, this.y, TILES.TRAP);
-    }
 
     let message = '';
 

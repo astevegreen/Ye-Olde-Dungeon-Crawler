@@ -66,4 +66,21 @@ describe('the encapsulation gate catches what its verb list and AST walk missed'
     expect(output).toContain('OBJECT_ASSIGN');
     expect(output).toContain(PLANTED_AT);
   }, 120_000);
+
+  it('fails on a write into plain engine state reached through an element access', () => {
+    const { status, output } = runGate([
+      "import type { GameEngine } from '../engine';",
+      '',
+      'export function scratchViolations(engine: GameEngine): void {',
+      '  engine.recentGameEvents[0].turn = 0;',
+      '  const result = engine.lastActionResult;',
+      '  if (result?.events && engine.lastActionResult?.events) engine.lastActionResult.events[0] = result.events[1];',
+      '}',
+      '',
+    ]);
+
+    expect(status).not.toBe(0);
+    expect(output).toMatch(/\[NESTED_WRITE\] src\/ui\/__scratch_encapsulation_violation__\.ts:4 {2}\(GameEngine\.recentGameEvents\)/);
+    expect(output).toMatch(/\[NESTED_WRITE\] src\/ui\/__scratch_encapsulation_violation__\.ts:6 {2}\(GameEngine\.lastActionResult\)/);
+  }, 120_000);
 });

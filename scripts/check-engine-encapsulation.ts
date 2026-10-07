@@ -23,9 +23,10 @@ import { readOverlays } from './lib/gate-overlays';
  *                        methods are the public API and are not flagged.        [presentation only]
  *  6. COLLECTION_MUTATION - Array/Map/Set mutator call on an engine class member
  *                        (player.spellsKnown.push(x)).                          [presentation only]
- *  7. NESTED_WRITE     - property write into a plain object or interface-typed value
- *                        reached through an engine class member
- *                        (engine.lastActionResult.pipelineError = x).        [presentation + content]
+ *  7. NESTED_WRITE     - property or index write into a plain object or interface-typed value
+ *                        reached through an engine class member, dotted or by bracket
+ *                        (engine.lastActionResult.pipelineError = x,
+ *                        engine.recentGameEvents[0].turn = x).                [presentation + content]
  *
  * Content (src/content/) is exempt from rules 5-6: content hooks receive the engine
  * through an injected context and are expected to act through subsystem methods.
@@ -223,13 +224,8 @@ function checkWriteTarget(sf: ts.SourceFile, target: ts.Expression, statement: t
     // A plain object or interface-typed value reached through an engine member is engine
     // state too (`engine.lastActionResult.pipelineError = …`), though its own field
     // isn't declared on a class.
-    for (let r: ts.Expression = receiver; ts.isPropertyAccessExpression(r); r = unwrap(r.expression)) {
-      const owner = engineClassMember(checker.getSymbolAtLocation(r.name));
-      if (owner) {
-        report(sf, statement, 'NESTED_WRITE', `${owner.className}.${owner.member}`);
-        return;
-      }
-    }
+    const owner = ownerInChain(receiver);
+    if (owner) report(sf, statement, 'NESTED_WRITE', `${owner.className}.${owner.member}`);
     return;
   }
   if (ts.isElementAccessExpression(t)) {
@@ -243,8 +239,28 @@ function checkWriteTarget(sf: ts.SourceFile, target: ts.Expression, statement: t
     }
     // `player['hp'] = 0`, `(engine as any)['x'] = v`: a named field written by bracket.
     const named = bracketMember(t);
-    if (named) report(sf, statement, 'INDEXED_WRITE', `${named.className}.${named.member}`);
+    if (named) {
+      report(sf, statement, 'INDEXED_WRITE', `${named.className}.${named.member}`);
+      return;
+    }
+    // An index write into a plain array or record reached through an engine member
+    // (`engine.lastActionResult.events[0] = …`).
+    const owner = ownerInChain(receiver);
+    if (owner) report(sf, statement, 'NESTED_WRITE', `${owner.className}.${owner.member}`);
   }
+}
+
+/**
+ * The first engine class member a chain of property and element accesses passes through
+ * (`engine.recentGameEvents[0].data` passes through `GameEngine.recentGameEvents`): the
+ * walk used to stop at the first element access (R-tool-5).
+ */
+function ownerInChain(expr: ts.Expression): { className: string; member: string } | null {
+  for (let r = unwrap(expr); ts.isPropertyAccessExpression(r) || ts.isElementAccessExpression(r); r = unwrap(r.expression)) {
+    const owner = ts.isPropertyAccessExpression(r) ? engineClassMember(checker.getSymbolAtLocation(r.name)) : bracketMember(r);
+    if (owner) return owner;
+  }
+  return null;
 }
 
 /** The engine class member a `receiver['name']` access names, through casts. */

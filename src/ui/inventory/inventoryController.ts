@@ -440,10 +440,13 @@ export class InventoryController {
 
   // ---- Context menu ------------------------------------------------------------------------
 
+  /** A worn item's menu. The worn pack never comes off, so it offers neither Unequip nor Drop. */
   private slotOptions(item: Item, slotId: string): MenuOption[] {
+    const inspect: MenuOption = { label: 'Inspect', run: () => { this.inspector.setFocus('paperdoll'); this.inspector.select(item, 'paperdoll', slotId); } };
+    if (item === this.engine?.player.inventory.primaryPack) return [inspect];
     return [
       { label: 'Unequip', run: () => { this.dispatch({ type: 'unequip_item', payload: { slot: slotId as EquipmentSlot } }); this.inspector.clearSelection(); } },
-      { label: 'Inspect', run: () => { this.inspector.setFocus('paperdoll'); this.inspector.select(item, 'paperdoll', slotId); } },
+      inspect,
       { label: 'Drop', run: () => { this.dispatch({ type: 'drop_item', payload: { item, source: 'paperdoll', slot: slotId as EquipmentSlot } }); this.inspector.clearSelection(); } },
     ];
   }

@@ -397,13 +397,14 @@ export class ItemInspector {
         });
       }
 
-      const canUnequip = player.inventory.paperdoll.canUnequip(slotId as EquipmentSlot);
+      // The worn pack never comes off (it holds everything else), nor does a cursed item.
+      const canTakeOff = player.inventory.canTakeOff(slotId as EquipmentSlot);
       actions.push({
         id: 'unequip',
         label: 'Unequip (E)',
         shortcut: 'E',
-        enabled: canUnequip.allowed,
-        reason: canUnequip.reason,
+        enabled: canTakeOff.allowed,
+        reason: canTakeOff.reason,
         execute: (eng) => {
           eng.commandBus.dispatch({ type: 'unequip_item', payload: { slot: slotId } });
           this.clearSelection();
@@ -414,8 +415,8 @@ export class ItemInspector {
         id: 'drop',
         label: 'Drop (D)',
         shortcut: 'D',
-        enabled: canUnequip.allowed,
-        reason: canUnequip.reason,
+        enabled: canTakeOff.allowed,
+        reason: canTakeOff.reason,
         execute: (eng) => {
           eng.commandBus.dispatch({
             type: 'drop_item',

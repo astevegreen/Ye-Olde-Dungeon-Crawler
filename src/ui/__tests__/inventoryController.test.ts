@@ -178,6 +178,13 @@ describe('InventoryController', () => {
       expect(sent()).toEqual(['unequip_item']);
     });
 
+    it('offers neither Unequip nor Drop on right-click of the worn pack', () => {
+      const slotIndex = player.inventory.paperdoll.getSlotDefinitions().findIndex((d) => d.id === 'pack');
+      expect(player.inventory.paperdoll.getItem('pack')).toBe(player.inventory.primaryPack);
+      c.openContextMenu({ slotIndex }, 10, 10);
+      expect(c.contextMenu?.options.map((o) => o.label)).toEqual(['Inspect']);
+    });
+
     it('offers a potion its own actions on right-click, and splits a stack', () => {
       const potion = new PotionItem({ id: 'pot', name: 'Healing Potion', weight: 100, bulk: 50, potionType: 'health', potency: 10 });
       potion.quantity = 4;

@@ -161,6 +161,20 @@ describe('ItemInspector: selection, item breakdown and actions', () => {
       expect(unequipAction?.reason).toContain('cursed');
     });
 
+    it('disables unequip/drop for the worn pack, which holds everything carried', () => {
+      const pack = engine.player.inventory.primaryPack;
+      expect(engine.player.inventory.paperdoll.getItem('pack')).toBe(pack);
+
+      inspector.select(pack, 'paperdoll', 'pack');
+      const actions = inspector.getAvailableActions(engine);
+
+      for (const id of ['unequip', 'drop']) {
+        const action = actions.find((a) => a.id === id);
+        expect(action?.enabled).toBe(false);
+        expect(action?.reason).toContain('stays on your back');
+      }
+    });
+
     it('offers [Drink] for potions in backpack', () => {
       const potion = new PotionItem({
         id: 'heal-pot',

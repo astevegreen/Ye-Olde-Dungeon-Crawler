@@ -283,10 +283,21 @@ export class InventoryManager {
   }
 
   /**
+   * Whether what `slot` holds can come off the hero at all, by unequip or by drop. Refused
+   * for an empty slot, a curse, and the pack itself, which holds everything else carried.
+   */
+  public canTakeOff(slot: EquipmentSlot): { allowed: boolean; reason?: string } {
+    const check = this.paperdoll.canUnequip(slot);
+    if (!check.allowed) return check;
+    if (this.paperdoll.getItem(slot) === this.primaryPack) return { allowed: false, reason: PACK_STAYS };
+    return { allowed: true };
+  }
+
+  /**
    * Unequips an item from the paperdoll into the pack.
    */
   public unequipToPack(slot: EquipmentSlot): { success: boolean; reason?: string } {
-    const check = this.paperdoll.canUnequip(slot);
+    const check = this.canTakeOff(slot);
     if (!check.allowed) {
       return { success: false, reason: check.reason };
     }
@@ -294,9 +305,6 @@ export class InventoryManager {
     const item = this.paperdoll.getItem(slot);
     if (!item) {
       return { success: false, reason: `No item equipped in ${slot}.` };
-    }
-    if (item === this.primaryPack) {
-      return { success: false, reason: PACK_STAYS };
     }
 
     const packCheck = this.primaryPack.canContain(item);
@@ -319,11 +327,10 @@ export class InventoryManager {
    * first, as it does when unequipped.
    */
   public takeOffToDrop(slot: EquipmentSlot): { success: true; item: Item } | { success: false; reason: string } {
-    const check = this.paperdoll.canUnequip(slot);
+    const check = this.canTakeOff(slot);
     if (!check.allowed) return { success: false, reason: check.reason ?? 'Cannot remove cursed item.' };
     const item = this.paperdoll.getItem(slot);
     if (!item) return { success: false, reason: `No item equipped in ${slot}.` };
-    if (item === this.primaryPack) return { success: false, reason: PACK_STAYS };
     this.paperdoll.unequip(slot);
     if (slot === 'purse' && item instanceof Container) this.spillPurse(item);
     return { success: true, item };

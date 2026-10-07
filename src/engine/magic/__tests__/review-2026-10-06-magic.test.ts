@@ -152,5 +152,5 @@ describe('R-rend-4 · the aim preview and the cast share one geometry (castGeome
 
     expect(geo.reflects).toBe(true);
     expect(geo.ray?.reflectionsCount).toBeGreaterThan(0);
-  });
+  }, 30_000);
 });

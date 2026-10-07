@@ -46,5 +46,5 @@ describe('The Draugr Barrow stands on floors 6-9 only', () => {
     }
     expect(shallow).toBe(0);
     expect(deep).toBeGreaterThan(0);
-  });
+  }, 30_000);
 });

@@ -534,6 +534,20 @@ describe('FeedbackModal (Headless)', () => {
       vi.unstubAllGlobals();
     });
 
+    it('says sent reports are public on both tabs, outside the panel the Feature tab hides (R-ui-12)', () => {
+      const m = relayModal();
+      const doc = (globalThis as any).document;
+      m.open({ type: 'feature' });
+      const note = doc.getElementById('feedback-public-note') as MockElement | null;
+      expect(note?.textContent).toContain('public GitHub issues');
+      expect(note?.style.display).not.toBe('none');
+      // After the panel and its buttons in the markup, so hiding the panel can't hide it.
+      const html = (doc.getElementById('feedback-modal') as MockElement).innerHTML;
+      expect(html.indexOf('id="feedback-public-note"')).toBeGreaterThan(html.indexOf('id="btn-feedback-screenshot"'));
+      m.switchType('bug');
+      expect(note?.textContent).toContain('public GitHub issues');
+    });
+
     it('falls back to GitHub on the next press when the relay is unreachable', async () => {
       vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('offline'); }));
       const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);

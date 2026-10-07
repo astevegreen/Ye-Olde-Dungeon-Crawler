@@ -156,6 +156,8 @@ export class FeedbackModal implements UIModal {
   private checkIncludeSnapshot: HTMLInputElement | null = null;
   private telemetryPreview: HTMLElement | null = null;
   private scopeDescEl: HTMLElement | null = null;
+  /** "Sent reports become public": outside the diagnostic panel, which the Feature tab hides. */
+  private publicNoteEl: HTMLElement | null = null;
 
   private currentType: FeedbackType = 'bug';
   private errorContext?: Error | string;
@@ -220,7 +222,8 @@ export class FeedbackModal implements UIModal {
           ${dialogButton('btn-feedback-copy', 'Copy report for AI', { attrs: 'title="Copy the report as markdown"' })}
           ${dialogButton('btn-feedback-download', 'Save .json', { attrs: 'title="Download the diagnostic package"' })}
           ${dialogButton('btn-feedback-screenshot', 'Save screenshot', { attrs: 'title="Save a picture of the game view, taken when this window opened"' })}
-        </div>`,
+        </div>
+        <div id="feedback-public-note" class="ui-note"></div>`,
       actions: dialogButton('btn-feedback-cancel', 'Cancel') + dialogButton('btn-feedback-submit', 'Submit', { primary: true }),
     });
 
@@ -234,6 +237,7 @@ export class FeedbackModal implements UIModal {
     this.checkIncludeSnapshot = this.modalEl.querySelector('#feedback-check-snapshot');
     this.telemetryPreview = this.modalEl.querySelector('#feedback-telemetry-preview');
     this.scopeDescEl = this.modalEl.querySelector('#feedback-scope-desc');
+    this.publicNoteEl = this.modalEl.querySelector('#feedback-public-note');
 
     this.populateCategories();
   }
@@ -424,15 +428,19 @@ export class FeedbackModal implements UIModal {
   }
 
   private updateScopeDescription(): void {
+    // "Send report" files the issue for the player: say plainly that it is public, on both
+    // tabs. It sat in the diagnostic panel, which the Feature tab hides (R-ui-12).
+    if (this.publicNoteEl) {
+      this.publicNoteEl.textContent = this.options.relayUrl ? 'Sent reports become public GitHub issues, your hero’s name included.' : '';
+      this.publicNoteEl.style.display = this.options.relayUrl ? '' : 'none';
+    }
     if (!this.scopeDescEl) return;
-    // "Send report" files the issue for the player: say plainly that it is public.
-    const publicNote = this.options.relayUrl ? ' Sent reports become public GitHub issues, your hero’s name included.' : '';
     if (this.currentType !== 'bug') {
-      this.scopeDescEl.textContent = `Suggestion: help us expand and balance the realm!${publicNote}`;
+      this.scopeDescEl.textContent = 'Suggestion: help us expand and balance the realm!';
       return;
     }
     const cat = this.currentBugCategory();
-    this.scopeDescEl.textContent = `Includes: ${cat.contents}${publicNote}`;
+    this.scopeDescEl.textContent = `Includes: ${cat.contents}`;
     if (this.checkIncludeLog) this.checkIncludeLog.checked = cat.includeLog;
     if (this.checkIncludeSnapshot) this.checkIncludeSnapshot.checked = cat.includeReplay;
   }

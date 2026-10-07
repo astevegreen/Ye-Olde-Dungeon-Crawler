@@ -1274,9 +1274,44 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           return { action: { type: 'key' as const, key: 'Space' }, curPos, curTurn, curFloor, telegraph: 'cornered' as const };
         }
 
-        // Standing in fire, acid or a poison cloud: step off it before anything else (C1).
+        // The first step out of a patch of hazard every neighbour shares: the shortest way over
+        // passable tiles to the nearest one that nothing avoided covers (a Hellfire Surge, or a
+        // Phase Door into fire, can leave no safe tile beside the hero).
+        const escapeStep = (): { dx: number; dy: number } | null => {
+          const width = e.map.width;
+          const startKey = p.y * width + p.x;
+          const cameFrom = new Map<number, number>([[startKey, -1]]);
+          const queue: number[] = [startKey];
+          for (let head = 0; head < queue.length && head < 400; head++) {
+            const cur = queue[head];
+            const cx = cur % width;
+            const cy = Math.floor(cur / width);
+            if (cur !== startKey && !avoid(cx, cy) && !inDanger(cx, cy) && !e.map.getEntityAt(cx, cy)) {
+              let k = cur;
+              while (cameFrom.get(k) !== startKey) k = cameFrom.get(k)!;
+              return { dx: (k % width) - p.x, dy: Math.floor(k / width) - p.y };
+            }
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                const nx = cx + dx;
+                const ny = cy + dy;
+                const nKey = ny * width + nx;
+                if ((!dx && !dy) || !e.map.inBounds(nx, ny) || cameFrom.has(nKey)) continue;
+                const t = e.map.getTile(nx, ny);
+                if (!t || !t.passable || t.isClosedDoor || t.type === 'door_closed') continue;
+                if (cur === startKey && e.map.getEntityAt(nx, ny)) continue;
+                cameFrom.set(nKey, cur);
+                queue.push(nKey);
+              }
+            }
+          }
+          return null;
+        };
+
+        // Standing in fire, acid or a poison cloud: step off it before anything else (C1), over
+        // the hazard if every neighbour burns too.
         if (snapshot.onHazard) {
-          const off = safeSteps()[0];
+          const off = safeSteps()[0] ?? escapeStep();
           if (off) {
             return { action: { type: 'key' as const, key: stepToKey(off.dx, off.dy) }, curPos, curTurn, curFloor, hazardStep: true };
           }

@@ -28,6 +28,10 @@ export const COTW_MONSTER_SCALING: MonsterScalingConfig = {
   // A creature met ten floors or more below its own haunts: grim (Old Norse grímr, a
   // name of Odin's), not a soldier's "veteran".
   veteranPrefix: 'Grim',
+  // Defense by the square root of the multiplier (owner, 2026-10-07; R-cotw-17): Níðhögg's
+  // x7 on floor 50 gives defense x2.6 (14 -> 37, not 98), so a melee hero's flat weapon
+  // steps still bite. HP and attack keep the whole multiplier.
+  defenseExponent: 0.5,
   tiers: [
     { floor: 1, multiplier: 1.0, label: 'Rime Hollows' },
     { floor: 10, multiplier: 1.35, label: 'Abandoned Dwarven Works' },

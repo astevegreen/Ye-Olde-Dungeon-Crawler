@@ -99,6 +99,43 @@ describe('resolveMonsterPowerMultiplier', () => {
   });
 });
 
+describe('scaleMonsterStats defense under a scaling config (R-cotw-17)', () => {
+  const knight: MonsterDefinition = {
+    id: 'knight',
+    name: 'Knight',
+    minFloor: 1,
+    stats: { hp: 100, maxHp: 100, attack: 10, defense: 10 },
+    speed: 100,
+    xpValue: 10,
+    aiType: 'melee',
+    fleeHealthPercent: 0,
+    lootTable: [],
+  };
+
+  it('takes the full multiplier for defense unless the pack sets defenseExponent', () => {
+    const s = scaleMonsterStats(knight, 10, undefined, undefined, SYNTHETIC_CONFIG, 'medium');
+    expect(s).toMatchObject({ maxHp: 200, attack: 20, defense: 20 });
+  });
+
+  it('raises the multiplier to defenseExponent for defense alone; HP and attack keep it whole', () => {
+    const sqrt = { ...SYNTHETIC_CONFIG, defenseExponent: 0.5 };
+    const s = scaleMonsterStats(knight, 10, undefined, undefined, sqrt, 'hard'); // x6
+    expect(s).toMatchObject({ maxHp: 600, attack: 60, defense: Math.round(10 * Math.sqrt(6)) });
+    // Never below the definition's own defense, even when the multiplier is under 1.
+    expect(scaleMonsterStats(knight, 1, undefined, undefined, sqrt, 'easy').defense).toBe(10);
+  });
+
+  it('cotw: defense by the square root of the multiplier, so Níðhögg’s x7 gives defense x2.6', () => {
+    const boss = { ...knight, tags: ['boss'], stats: { hp: 400, maxHp: 400, attack: 30, defense: 14 } };
+    const m = resolveMonsterPowerMultiplier(COTW_MONSTER_SCALING, 50, 'medium', true);
+    expect(m).toBeCloseTo(7.02, 2);
+    const s = scaleMonsterStats(boss, 50, undefined, undefined, COTW_MONSTER_SCALING, 'medium');
+    expect(s.defense).toBe(Math.round(14 * Math.sqrt(m))); // 37, not 98
+    expect(s.attack).toBe(Math.round(30 * m));
+    expect(s.maxHp).toBe(Math.round(400 * m));
+  });
+});
+
 describe('scaleMonsterStats XP under a scaling config (Q4 "B", Q25)', () => {
   const brute: MonsterDefinition = {
     id: 'brute',

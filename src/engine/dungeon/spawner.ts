@@ -90,7 +90,8 @@ export function resolveMonsterPowerMultiplier(
  * Calculates depth-scaled monster combat stats. Three branches, in priority order:
  *
  * 1. `scalingConfig` given: zone-tiered, difficulty-scaled step function
- *    (ARCHITECTURE.md §3) — `resolveMonsterPowerMultiplier` above.
+ *    (ARCHITECTURE.md §3) — `resolveMonsterPowerMultiplier` above; defense takes the
+ *    multiplier raised to the pack's `defenseExponent` (default 1).
  * 2. Neither `scalingConfig` nor `deepestFloor`/`playerLevel` given: the original flat
  *    per-floor curve — HP: `round(baseHP * (1 + 0.08 * (currentFloor - 1)))`, Attack:
  *    `baseAttack + floor(0.6 * (currentFloor - 1))`, Defense: `baseDefense + floor(0.4
@@ -123,7 +124,8 @@ export function scaleMonsterStats(
 
     const hp = Math.max(def.stats.hp, Math.round(def.stats.maxHp * scale));
     const attack = Math.max(def.stats.attack, Math.round(def.stats.attack * scale));
-    const defense = Math.max(def.stats.defense, Math.round(def.stats.defense * scale));
+    const defenseScale = Math.pow(scale, scalingConfig.defenseExponent ?? 1);
+    const defense = Math.max(def.stats.defense, Math.round(def.stats.defense * defenseScale));
     // XP follows the zone tier alone (Q4 "B", Q25): a kill is worth the same on every
     // difficulty and the boss guard raises a fight, not its reward.
     const xpValue = Math.max(def.xpValue, Math.round(def.xpValue * tierMultiplier(scalingConfig.tiers, currentFloor)));

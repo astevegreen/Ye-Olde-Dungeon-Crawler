@@ -38,4 +38,9 @@ export interface MonsterScalingConfig {
   /** The word put before an ordinary monster's name when it is met ten or more floors past
    *  its `minFloor`, e.g. "Grim Ogre". Defaults to "Veteran". */
   veteranPrefix?: string;
+  /** Defense scales by the power multiplier raised to this (0.5: its square root, so a x7
+   *  monster has x2.6 defense); HP and attack always take the whole multiplier. Defaults
+   *  to 1, the whole multiplier. A hero's melee grows by flat weapon steps, so a defense
+   *  that climbs as fast as HP can outrun every blow. */
+  defenseExponent?: number;
 }

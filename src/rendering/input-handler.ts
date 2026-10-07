@@ -19,7 +19,6 @@ import {
   type Action,
   flightRecorder,
 } from '../engine';
-import { KeybindingManager } from '../ui/settings/keybindingManager';
 import { runAndExplain } from '../ui/actionFeedback';
 import type { AutoRestRunner } from '../ui/autoRestRunner';
 import type { NavigationController } from '../ui/navigation';
@@ -119,6 +118,14 @@ export function resolveRadialDirection(heldKeys: Set<string>, latestCode?: strin
   return null;
 }
 
+/** The move each arrow chords for in `ChordBuffer`, which reads the arrows' own directions. */
+const ARROW_MOVES: Readonly<Record<string, string>> = {
+  ArrowUp: 'move_n',
+  ArrowDown: 'move_s',
+  ArrowLeft: 'move_w',
+  ArrowRight: 'move_e',
+};
+
 function isTextEntryTarget(target: EventTarget | null): boolean {
   const el = target as { tagName?: string; isContentEditable?: boolean } | null;
   if (!el) return false;
@@ -130,7 +137,6 @@ export class InputHandler {
   private engine: GameEngine;
   private onActionProcessed: () => void;
   public readonly modalStack: ModalStackManager;
-  public readonly keybindings: KeybindingManager;
   public readonly settingsManager: SettingsManager;
   public readonly chordBuffer: ChordBuffer;
   public targetingOverlay?: TargetingOverlay;
@@ -226,7 +232,6 @@ export class InputHandler {
     this.modalStack = new ModalStackManager((paused) => {
       this.engine.setPaused(paused);
     });
-    this.keybindings = new KeybindingManager();
     this.settingsManager = settingsManager ?? new SettingsManager();
     this.chordBuffer = new ChordBuffer({
       onMove: (dx, dy) => {
@@ -1025,8 +1030,9 @@ export class InputHandler {
       return true;
     }
 
-    // Arrow keys: routed through ChordBuffer (micro-debounce chording or immediate standard mode)
-    if (ChordBuffer.isArrowKey(code)) {
+    // Arrow keys: routed through ChordBuffer (micro-debounce chording or immediate standard
+    // mode) while bound to their own direction; unbound or rebound, Settings decide below.
+    if (ChordBuffer.isArrowKey(code) && this.settingsManager.getActionForCode(code) === ARROW_MOVES[code]) {
       this.chordBuffer.handleKeyDown(code, e.repeat);
       return true;
     }
@@ -1050,7 +1056,8 @@ export class InputHandler {
     let dy = 0;
     let isMovement = false;
 
-    // 1. Check custom user settings remapper
+    // The player's bindings alone decide: a key unbound in Settings does nothing. A legacy
+    // table and a switch of the default keys used to answer it anyway (R-rend-13).
     const boundActionId = this.settingsManager.getActionForCode(code);
     if (boundActionId) {
       switch (boundActionId) {
@@ -1067,101 +1074,6 @@ export class InputHandler {
         case 'pickup': return new PickUpAction(p);
         case 'quick_loot': return new QuickLootAction(p);
         case 'stairs': return new ClimbStairsAction(p);
-      }
-    }
-
-    const binding = this.keybindings.get(code);
-    if (binding) {
-      if (binding.actionId === 'move' && binding.args) {
-        dx = binding.args.dx;
-        dy = binding.args.dy;
-        isMovement = true;
-      } else if (binding.actionId === 'wait') {
-        return new WaitAction(p);
-      } else if (binding.actionId === 'interact' && binding.args?.interactionType === 'search') {
-        return new SearchAction(p, this.engine.rng, 2);
-      }
-    }
-
-    if (!isMovement) {
-      switch (code) {
-      // Cardinal Directions
-      case 'ArrowUp':
-      case 'KeyW':
-      case 'KeyK':
-      case 'Numpad8':
-        dx = 0;
-        dy = -1;
-        isMovement = true;
-        break;
-
-      case 'ArrowDown':
-      case 'KeyJ':
-      case 'Numpad2':
-        dx = 0;
-        dy = 1;
-        isMovement = true;
-        break;
-
-      case 'ArrowLeft':
-      case 'KeyA':
-      case 'KeyH':
-      case 'Numpad4':
-        dx = -1;
-        dy = 0;
-        isMovement = true;
-        break;
-
-      case 'ArrowRight':
-      case 'KeyD':
-      case 'KeyL':
-      case 'Numpad6':
-        dx = 1;
-        dy = 0;
-        isMovement = true;
-        break;
-
-      // Diagonals (Numpad + Vi Keys)
-      case 'Numpad7':
-      case 'KeyY':
-        dx = -1;
-        dy = -1;
-        isMovement = true;
-        break;
-
-      case 'Numpad9':
-      case 'KeyU':
-        dx = 1;
-        dy = -1;
-        isMovement = true;
-        break;
-
-      case 'Numpad1':
-      case 'KeyB':
-        dx = -1;
-        dy = 1;
-        isMovement = true;
-        break;
-
-      case 'Numpad3':
-      case 'KeyN':
-        dx = 1;
-        dy = 1;
-        isMovement = true;
-        break;
-
-      // Wait a Turn
-      case 'Numpad5':
-      case 'Period':
-      case 'Space':
-        return new WaitAction(p);
-
-      // Active Search (KeyS)
-      case 'KeyS':
-        return new SearchAction(p, this.engine.rng, 2);
-
-      default:
-        return null;
       }
     }
 

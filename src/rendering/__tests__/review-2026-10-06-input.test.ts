@@ -205,3 +205,48 @@ describe('R-rend-12 · browser and system chords (Ctrl, Alt, Meta) never drive t
     expect(toggled).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('R-rend-13 · Settings own the movement keys: a key the player unbinds does nothing', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it.each(['KeyW', 'KeyH', 'Numpad8', 'KeyY', 'Space', 'Period', 'ArrowUp'])('%s does nothing once unbound', (code) => {
+    vi.useFakeTimers();
+    const { engine, ih } = wiredHandler();
+    const acted = vi.spyOn(engine, 'handlePlayerAction');
+    ih.settingsManager.unbindKey(code);
+
+    ih.handleKeyDown(ev(code));
+    vi.advanceTimersByTime(100);
+    ih.handleKeyUp(ev(code));
+    ih.destroy();
+
+    expect(acted).not.toHaveBeenCalled();
+  });
+
+  it('every default movement and wait key still acts as Settings list it', () => {
+    vi.useFakeTimers();
+    const { engine, ih } = wiredHandler();
+    const got: string[] = [];
+    vi.spyOn(engine, 'handlePlayerAction').mockImplementation((a: unknown) => {
+      got.push(a instanceof MovementAction ? `${a.dx},${a.dy}` : (a as object).constructor.name);
+      return undefined as never;
+    });
+    const deltas: Record<string, string> = {
+      move_n: '0,-1', move_s: '0,1', move_w: '-1,0', move_e: '1,0',
+      move_nw: '-1,-1', move_ne: '1,-1', move_sw: '-1,1', move_se: '1,1', wait: 'WaitAction',
+    };
+    const expected: string[] = [];
+    for (const action of ACTION_METADATA.filter((a) => a.id in deltas)) {
+      for (const code of action.defaultCodes) {
+        expected.push(deltas[action.id]);
+        ih.handleKeyDown(ev(code));
+        vi.advanceTimersByTime(100);
+        ih.handleKeyUp(ev(code));
+      }
+    }
+    ih.destroy();
+
+    expect(expected.length).toBeGreaterThan(20);
+    expect(got).toEqual(expected);
+  });
+});

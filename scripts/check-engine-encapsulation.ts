@@ -16,7 +16,10 @@ import { readOverlays } from './lib/gate-overlays';
  *  1. PROPERTY_WRITE   - assignment / compound assignment / ++ / -- / delete on a
  *                        class member declared under src/engine/.           [presentation + content]
  *  2. INDEXED_WRITE    - element write into such a member (player.quickSpells[i] = x). [presentation + content]
- *  3. ANY_CAST_WRITE   - property write through `(engineObject as any).prop`.    [presentation + content]
+ *  3. ANY_CAST_WRITE   - property write through a cast of an engine object, `(engineObject as any).prop`
+ *                        or `as unknown as T`, inline or through a local alias the cast initialises
+ *                        (`const o = npc as unknown as T; o.greeting = x`; also by bracket and
+ *                        Object.assign).                                         [presentation + content]
  *  4. OBJECT_ASSIGN    - Object.assign(engineObject, ...).                      [presentation + content]
  *  5. SUBSYSTEM_MUTATION - mutator-named method call on an internal engine subsystem
  *                        (GameMap, Container, InventoryManager, ...). Player/Entity/GameEngine
@@ -219,6 +222,14 @@ function checkWriteTarget(sf: ts.SourceFile, target: ts.Expression, statement: t
       if (cls) report(sf, statement, 'ANY_CAST_WRITE', `${cls}.${t.name.text}`);
       return;
     }
+    // The same cast through a local alias (`const o = npc as unknown as { greeting: string };
+    // o.greeting = …`): the alias's own type names no engine class (R-cotw-19).
+    const aliased = castAliasOf(receiver);
+    const aliasClass = aliased && engineClassOfType(aliased);
+    if (aliasClass) {
+      report(sf, statement, 'ANY_CAST_WRITE', `${aliasClass}.${t.name.text}`);
+      return;
+    }
     // A plain object or interface-typed value reached through an engine member is engine
     // state too (`engine.lastActionResult.pipelineError = …`), though its own field
     // isn't declared on a class.
@@ -261,11 +272,25 @@ function ownerInChain(expr: ts.Expression): { className: string; member: string 
   return null;
 }
 
-/** The engine class member a `receiver['name']` access names, through casts. */
+/**
+ * What a local alias was cast from: `const o = npc as unknown as T` (or `as any`, `<T>npc`)
+ * gives `npc`. Null for anything else, an alias with no cast included.
+ */
+function castAliasOf(expr: ts.Expression): ts.Expression | null {
+  const id = unwrap(expr);
+  if (!ts.isIdentifier(id)) return null;
+  const decl = checker.getSymbolAtLocation(id)?.valueDeclaration;
+  if (!decl || !ts.isVariableDeclaration(decl) || !decl.initializer) return null;
+  const init = unwrap(decl.initializer);
+  const uncast = unwrapCasts(init);
+  return uncast !== init ? uncast : null;
+}
+
+/** The engine class member a `receiver['name']` access names, through casts and cast aliases. */
 function bracketMember(access: ts.ElementAccessExpression): { className: string; member: string } | null {
   const key = access.argumentExpression;
   if (!ts.isStringLiteralLike(key)) return null;
-  const receiver = unwrapCasts(access.expression);
+  const receiver = castAliasOf(access.expression) ?? unwrapCasts(access.expression);
   const prop = checker.getTypeAtLocation(receiver).getProperty(key.text);
   const hit = engineClassMember(prop);
   if (hit) return hit;
@@ -302,7 +327,7 @@ function visit(sf: ts.SourceFile, scope: Scope, node: ts.Node): void {
         (callee.expression.text === 'Reflect' && (methodName === 'set' || methodName === 'defineProperty' || methodName === 'deleteProperty')));
 
     if (writesThrough && node.arguments[0]) {
-      const cls = engineClassOfType(unwrapCasts(node.arguments[0]));
+      const cls = engineClassOfType(castAliasOf(node.arguments[0]) ?? unwrapCasts(node.arguments[0]));
       if (cls) report(sf, node, 'OBJECT_ASSIGN', `${cls}.*`);
     } else if (scope === 'presentation') {
       const method = engineClassMember(checker.getSymbolAtLocation(callee.name), true);

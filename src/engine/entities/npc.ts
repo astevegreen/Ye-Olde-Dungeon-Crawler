@@ -21,8 +21,8 @@ export interface NpcConfig {
 export class NPC extends Actor {
   public readonly role: NpcRole;
   public readonly shopId?: string;
-  public readonly greeting: string;
-  public readonly dialogText: string;
+  private _greeting: string;
+  private _dialogText: string;
   public readonly isStationary: boolean;
   public readonly choiceId?: string;
 
@@ -48,10 +48,29 @@ export class NPC extends Actor {
 
     this.role = config.role;
     this.shopId = config.shopId;
-    this.greeting = config.greeting ?? `Greetings, traveler! Welcome to town.`;
-    this.dialogText = config.dialogText ?? `The winds whisper of ancient dangers below...`;
+    this._greeting = config.greeting ?? `Greetings, traveler! Welcome to town.`;
+    this._dialogText = config.dialogText ?? `The winds whisper of ancient dangers below...`;
     this.isStationary = config.isStationary ?? true;
     this.choiceId = config.choiceId;
+  }
+
+  /** What the NPC says on being greeted. */
+  public get greeting(): string {
+    return this._greeting;
+  }
+
+  /** What the NPC says at more length. */
+  public get dialogText(): string {
+    return this._dialogText;
+  }
+
+  /**
+   * Changes what the NPC says, for a pack whose town answers the story (cotw's villagers
+   * after the Hearth-Tear comes home). Saved with the NPC, like the lines it started with.
+   */
+  public setDialogue(greeting: string, dialogText: string): void {
+    this._greeting = greeting;
+    this._dialogText = dialogText;
   }
 
   public override isHostileTo(): boolean {

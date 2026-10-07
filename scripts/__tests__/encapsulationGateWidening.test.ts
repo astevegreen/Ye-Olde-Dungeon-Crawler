@@ -19,14 +19,14 @@ const ROOT = process.cwd();
 const PLANTED_AT = 'src/ui/__scratch_encapsulation_violation__.ts';
 let scratchDir: string;
 
-function runGate(lines: string[]): { status: number; output: string } {
-  const file = path.join(scratchDir, path.basename(PLANTED_AT));
+function runGate(lines: string[], plantedAt = PLANTED_AT): { status: number; output: string } {
+  const file = path.join(scratchDir, path.basename(plantedAt));
   fs.writeFileSync(file, lines.join('\n'));
   try {
     // No shell: a shell would split a temp path with a space in it.
     const output = execFileSync(
       process.execPath,
-      ['--import', 'tsx', 'scripts/check-engine-encapsulation.ts', '--overlay', `${PLANTED_AT}=${file}`],
+      ['--import', 'tsx', 'scripts/check-engine-encapsulation.ts', '--overlay', `${plantedAt}=${file}`],
       { cwd: ROOT, encoding: 'utf-8', stdio: 'pipe' }
     );
     return { status: 0, output };
@@ -82,5 +82,33 @@ describe('the encapsulation gate catches what its verb list and AST walk missed'
     expect(status).not.toBe(0);
     expect(output).toMatch(/\[NESTED_WRITE\] src\/ui\/__scratch_encapsulation_violation__\.ts:4 {2}\(GameEngine\.recentGameEvents\)/);
     expect(output).toMatch(/\[NESTED_WRITE\] src\/ui\/__scratch_encapsulation_violation__\.ts:6 {2}\(GameEngine\.lastActionResult\)/);
+  }, 120_000);
+
+  // R-cotw-19: cotw's narrative hook wrote NPC dialogue through `const o = npc as unknown as
+  // { greeting: string }; o.greeting = …`, a local alias of a cast, which the cast rule missed.
+  it('fails on a write through a local alias of a cast, as on the cast written inline', () => {
+    const plantedAt = 'src/content/cotw/__scratch_cast_alias__.ts';
+    const { status, output } = runGate(
+      [
+        "import type { NPC } from '../../engine';",
+        '',
+        'export function scratchViolations(npc: NPC): void {',
+        '  const o = npc as unknown as { greeting: string };',
+        "  o.greeting = 'x';",
+        '  const a = npc as any;',
+        "  a['dialogText'] = 'y';",
+        "  (npc as unknown as { greeting: string }).greeting = 'z';",
+        '  Object.assign(o, { greeting: "w" });',
+        '}',
+        '',
+      ],
+      plantedAt
+    );
+
+    expect(status).not.toBe(0);
+    expect(output).toMatch(/\[ANY_CAST_WRITE\] src\/content\/cotw\/__scratch_cast_alias__\.ts:5 {2}\(NPC\.greeting\)/);
+    expect(output).toMatch(/\[INDEXED_WRITE\] src\/content\/cotw\/__scratch_cast_alias__\.ts:7 {2}\(NPC\.dialogText\)/);
+    expect(output).toMatch(/\[ANY_CAST_WRITE\] src\/content\/cotw\/__scratch_cast_alias__\.ts:8 {2}\(NPC\.greeting\)/);
+    expect(output).toMatch(/\[OBJECT_ASSIGN\] src\/content\/cotw\/__scratch_cast_alias__\.ts:9 {2}\(NPC\.\*\)/);
   }, 120_000);
 });

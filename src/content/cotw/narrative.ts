@@ -200,121 +200,140 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
     const torvald = engine.map.getEntityById('npc-priest') as NPC | null;
 
     if (olaf) {
-      const o = olaf as unknown as { greeting: string; dialogText: string };
       if (vidnirSlain) {
-        o.greeting = 'You broke the Herald Víðnir?! The Heartwood lies open before you!';
-        o.dialogText =
-          'Remember the herald’s prophecy: slaying Níðhögg in fury may split the root and bring on Ragnarök. Driving it off may seal the wound and save Midgard. We trust your wisdom, Champion!';
+        olaf.setDialogue(
+          'You broke the Herald Víðnir?! The Heartwood lies open before you!',
+          'Remember the herald’s prophecy: slaying Níðhögg in fury may split the root and bring on Ragnarök. Driving it off may seal the wound and save Midgard. We trust your wisdom, Champion!'
+        );
       } else if (deepest >= 34) {
-        o.greeting = 'Black sap is seeping up into our cellar floors! The roots are bleeding, hero!';
-        o.dialogText =
-          'You carry the saga of Midgard on your shoulders. Descend to the Heartwood and confront whatever lurks beneath!';
+        olaf.setDialogue(
+          'Black sap is seeping up into our cellar floors! The roots are bleeding, hero!',
+          'You carry the saga of Midgard on your shoulders. Descend to the Heartwood and confront whatever lurks beneath!'
+        );
       } else if (hasRelic) {
-        o.greeting = 'The Hearth-Tear is restored to our halls! But the bedrock groans beneath us...';
-        o.dialogText =
-          'The permafrost is melting, but Mimir warns of deep quakes in the mountain roots. We may have saved our village only to face a greater doom.';
+        olaf.setDialogue(
+          'The Hearth-Tear is restored to our halls! But the bedrock groans beneath us...',
+          'The permafrost is melting, but Mimir warns of deep quakes in the mountain roots. We may have saved our village only to face a greater doom.'
+        );
       } else if (isSavior) {
-        o.greeting = 'Savior of Járnviðr! Every family in Bjarnarhaven sings your praise!';
-        o.dialogText =
-          `You rescued ${captiveNamesForThanks(engine)} from the sacrificial pyres! Our stores are forever discounted in your honor.`;
+        olaf.setDialogue(
+          'Savior of Járnviðr! Every family in Bjarnarhaven sings your praise!',
+          `You rescued ${captiveNamesForThanks(engine)} from the sacrificial pyres! Our stores are forever discounted in your honor.`
+        );
       } else if (isTainted) {
-        o.greeting = 'You... you returned. The dark stench of the blood-siphon clings to you.';
-        o.dialogText =
-          'Our folk look upon you in dread. Your gold is accepted in our shops, but no skald in Bjarnarhaven will sing of your deeds.';
+        olaf.setDialogue(
+          'You... you returned. The dark stench of the blood-siphon clings to you.',
+          'Our folk look upon you in dread. Your gold is accepted in our shops, but no skald in Bjarnarhaven will sing of your deeds.'
+        );
       } else if (engine.getWorldFlag('siphon_ritual_resolved')) {
-        o.greeting = 'Some of our folk came home from the siphon altar. Not all of them.';
-        o.dialogText = 'We light a candle for the ones who did not. Whatever you need for the road, ask.';
+        olaf.setDialogue(
+          'Some of our folk came home from the siphon altar. Not all of them.',
+          'We light a candle for the ones who did not. Whatever you need for the road, ask.'
+        );
       } else if (deepest >= 18) {
         const taken = raidVillagersStillCaptive(engine);
-        o.greeting = taken.length
-          ? `${listNames(taken)} ${taken.length > 1 ? 'are' : 'is'} still down there in the obsidian depths! Save them, champion!`
-          : 'The troll-wives took folk from the outlying farms as well! Save them, champion!';
-        o.dialogText =
-          'The troll-wives have bound four of our kin at the siphon altar. Cut their bonds before the dark chanting completes!';
+        olaf.setDialogue(
+          taken.length
+            ? `${listNames(taken)} ${taken.length > 1 ? 'are' : 'is'} still down there in the obsidian depths! Save them, champion!`
+            : 'The troll-wives took folk from the outlying farms as well! Save them, champion!',
+          'The troll-wives have bound four of our kin at the siphon altar. Cut their bonds before the dark chanting completes!'
+        );
       } else if (deepest >= 10) {
-        o.greeting = 'You reached the Dwarven Works? Our ancestors traded honey and hides with those halls.';
-        o.dialogText =
-          'If the duergar forges are cold, what is drawing all the warmth down from above? Stock up and delve deeper.';
+        olaf.setDialogue(
+          'You reached the Dwarven Works? Our ancestors traded honey and hides with those halls.',
+          'If the duergar forges are cold, what is drawing all the warmth down from above? Stock up and delve deeper.'
+        );
       } else if (engine.player.hasDiscoveredRune) {
-        o.greeting = 'You carry the Rune of Return! Hope returns to Bjarnarhaven!';
-        o.dialogText =
-          'With the rune, you can always retreat to our hearth when the depths turn lethal. Stay vigilant, hero.';
+        olaf.setDialogue(
+          'You carry the Rune of Return! Hope returns to Bjarnarhaven!',
+          'With the rune, you can always retreat to our hearth when the depths turn lethal. Stay vigilant, hero.'
+        );
       } else if (prologueVillagerSaved(engine, 'prologue-sigrun')) {
-        o.greeting = 'You brought my Sigrun home. I barred the door with her outside, gods forgive me.';
-        o.dialogText =
-          'Whatever you need for the cellar, ask. A father does not forget a night like that one.';
+        olaf.setDialogue(
+          'You brought my Sigrun home. I barred the door with her outside, gods forgive me.',
+          'Whatever you need for the cellar, ask. A father does not forget a night like that one.'
+        );
       }
     }
 
     if (gunther) {
-      const g = gunther as unknown as { greeting: string; dialogText: string };
       if (vidnirSlain) {
-        g.greeting = 'Níðhögg’s fang itself is in your grasp! The final battle draws near.';
-        g.dialogText =
-          'Whether you slay or seal the beast, strike true. Duergar steel and frost-giant blood will see you through.';
+        gunther.setDialogue(
+          'Níðhögg’s fang itself is in your grasp! The final battle draws near.',
+          'Whether you slay or seal the beast, strike true. Duergar steel and frost-giant blood will see you through.'
+        );
       } else if (hasRelic) {
-        g.greeting = 'The forge fire burns hot again without choking on ice! But the anvil vibrates with deep tremors.';
-        g.dialogText =
-          'Whatever is gnawing at the mountain’s roots below has the strength of mountains. Take our heaviest plate into the World-Bark.';
+        gunther.setDialogue(
+          'The forge fire burns hot again without choking on ice! But the anvil vibrates with deep tremors.',
+          'Whatever is gnawing at the mountain’s roots below has the strength of mountains. Take our heaviest plate into the World-Bark.'
+        );
       } else if (deepest >= 10) {
-        g.greeting = 'If you find duergar slag-tongs or forge-tongue hammers, use them well!';
-        g.dialogText =
-          'Duergar metalcraft was tempered in volcanic ash. It cuts deeper into stone than surface iron ever could.';
+        gunther.setDialogue(
+          'If you find duergar slag-tongs or forge-tongue hammers, use them well!',
+          'Duergar metalcraft was tempered in volcanic ash. It cuts deeper into stone than surface iron ever could.'
+        );
       } else if (prologueVillagerSaved(engine, 'prologue-brandr')) {
-        g.greeting = 'Brandr tells me you pulled him out from under a thrall. The boy still has all his fingers.';
-        g.dialogText =
-          'Keep the chisel he gave you. My forge is open to the one who kept my apprentice.';
+        gunther.setDialogue(
+          'Brandr tells me you pulled him out from under a thrall. The boy still has all his fingers.',
+          'Keep the chisel he gave you. My forge is open to the one who kept my apprentice.'
+        );
       }
     }
 
     if (astrid) {
-      const a = astrid as unknown as { greeting: string; dialogText: string };
       if (vidnirSlain) {
-        a.greeting = 'The air from the cellar smells of primordial venom and dragon bile...';
-        a.dialogText =
-          'Drink deeply of anti-venom and restorative drafts before stepping into the Heartwood. One drop of dragon spit can rot bone in seconds.';
+        astrid.setDialogue(
+          'The air from the cellar smells of primordial venom and dragon bile...',
+          'Drink deeply of anti-venom and restorative drafts before stepping into the Heartwood. One drop of dragon spit can rot bone in seconds.'
+        );
       } else if (hasRelic) {
-        a.greeting = 'The herbs in our garden are sprouting through the melted frost!';
-        a.dialogText =
-          'I have brewed new catch-up rune tablets for your journey into the World-Bark. Prepare yourself against decay.';
+        astrid.setDialogue(
+          'The herbs in our garden are sprouting through the melted frost!',
+          'I have brewed new catch-up rune tablets for your journey into the World-Bark. Prepare yourself against decay.'
+        );
       }
     }
 
     if (mimir) {
-      const m = mimir as unknown as { greeting: string; dialogText: string };
       if (vidnirSlain) {
-        m.greeting = 'Víðnir spoke truth: Yggdrasil’s taproot is hanging by a splintered thread!';
-        m.dialogText =
-          'Slaying Níðhögg in fury will shatter the dying root and usher in Ragnarök! But driving it off (below 15% HP for 5 turns) allows the living tree to mend and seals the root. The fate of the age rests on your choice!';
+        mimir.setDialogue(
+          'Víðnir spoke truth: Yggdrasil’s taproot is hanging by a splintered thread!',
+          'Slaying Níðhögg in fury will shatter the dying root and usher in Ragnarök! But driving it off (below 15% HP for 5 turns) allows the living tree to mend and seals the root. The fate of the age rests on your choice!'
+        );
       } else if (hasRelic) {
-        m.greeting = 'The mystery unknots itself: diverting the sun’s fire scorched the frost-wards of Yggdrasil!';
-        m.dialogText =
-          'Níðhögg has awakened in the deep root! It is chewing through the taproot of the world. Reclaiming the sun was only the first chapter—you must save the World Tree!';
+        mimir.setDialogue(
+          'The mystery unknots itself: diverting the sun’s fire scorched the frost-wards of Yggdrasil!',
+          'Níðhögg has awakened in the deep root! It is chewing through the taproot of the world. Reclaiming the sun was only the first chapter—you must save the World Tree!'
+        );
       } else if (deepest >= 18) {
-        m.greeting = 'The coven’s siphon taps into cosmic chariot fire. Take care not to let their blood rites taint your soul.';
-        m.dialogText =
-          'Sacrificing innocent lives opens the forbidden Grimoire of Blood Magic, but the gods of Valhalla will turn their faces from you.';
+        mimir.setDialogue(
+          'The coven’s siphon taps into cosmic chariot fire. Take care not to let their blood rites taint your soul.',
+          'Sacrificing innocent lives opens the forbidden Grimoire of Blood Magic, but the gods of Valhalla will turn their faces from you.'
+        );
       }
     }
 
     if (torvald) {
-      const t = torvald as unknown as { greeting: string; dialogText: string };
       if (vidnirSlain) {
-        t.greeting = 'Thor’s holy thunder attend your final duel in the Heartwood!';
-        t.dialogText =
-          'May the gods grant you the strength to vanquish evil and the divine wisdom to preserve the World Tree from ruin.';
+        torvald.setDialogue(
+          'Thor’s holy thunder attend your final duel in the Heartwood!',
+          'May the gods grant you the strength to vanquish evil and the divine wisdom to preserve the World Tree from ruin.'
+        );
       } else if (isTainted) {
-        t.greeting = 'The stench of sacrificial blood follows you like a shroud...';
-        t.dialogText =
-          'You chose dark power over innocent lives. Thor’s temple demands heavy tithes from those who harbor blood corruption!';
+        torvald.setDialogue(
+          'The stench of sacrificial blood follows you like a shroud...',
+          'You chose dark power over innocent lives. Thor’s temple demands heavy tithes from those who harbor blood corruption!'
+        );
       } else if (hasRelic) {
-        t.greeting = 'Thor’s lightning cleared the blizzard skies, yet the chapel bells ring of their own accord from subterranean quakes.';
-        t.dialogText =
-          'A primordial dragon walks the roots of Midgard. May holy light guide your steel in the dark below.';
+        torvald.setDialogue(
+          'Thor’s lightning cleared the blizzard skies, yet the chapel bells ring of their own accord from subterranean quakes.',
+          'A primordial dragon walks the roots of Midgard. May holy light guide your steel in the dark below.'
+        );
       } else if (prologueVillagerSaved(engine, 'prologue-eir')) {
-        t.greeting = 'Eir lit a candle for you at dawn. Thor marks those who stand between the weak and the dark.';
-        t.dialogText =
-          'The cellar leads where the troll-wives went. Come back to this hall when the dark gets into your wounds.';
+        torvald.setDialogue(
+          'Eir lit a candle for you at dawn. Thor marks those who stand between the weak and the dark.',
+          'The cellar leads where the troll-wives went. Come back to this hall when the dark gets into your wounds.'
+        );
       }
     }
 

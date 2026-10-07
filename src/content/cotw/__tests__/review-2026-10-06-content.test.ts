@@ -52,7 +52,7 @@ describe('R-cotw-2 · the Oath grants its companion even when the hero already h
 
     engine.handlePlayerAction(new ExecuteChoiceAction(engine.player, (cotwManifest.choices as Record<string, unknown>).oath_hearth as never, 'honor'));
 
-    expect(engine.getWorldFlag('blood_oath_honored')).toBe(true); // the oath resolved
+    expect(engine.getWorldFlag('oath_resolved')).toBe(true);
     expect(engine.companion?.companionDefinitionId).toBe('hearth_frost_hound');
     expect(engine.dismissedCompanion?.companionDefinitionId).toBe('battle_hound'); // waits to be called
   });

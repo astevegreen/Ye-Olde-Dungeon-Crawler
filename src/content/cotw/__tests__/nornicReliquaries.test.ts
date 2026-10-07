@@ -181,7 +181,7 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
 
     const gossip = choice.options.find((o) => o.id === 'listen_gossip')!;
     expect(gossip.consequences.some((c) => c.type === 'recordMilestone' && (c as any).milestoneId === 'ratatoskr_favor')).toBe(true);
-    expect(gossip.consequences.some((c) => c.type === 'setFlag' && (c as any).flag === 'ratatoskr_gossip_heard')).toBe(true);
+    expect(gossip.consequences.some((c) => c.type === 'setFlag' && (c as any).flag === 'ratatoskr_roost_resolved')).toBe(true);
   });
 
   it('defines valid choices and consequences for Skuld’s Mirror based on Víðnir prophecy', () => {

@@ -84,10 +84,10 @@ describe('Branching save-states — the Oath (real cotwManifest)', () => {
     const baseDefense = player.baseDefenseValue;
 
     swearTheOath(engine, map, 'honor');
-    expect(engine.getWorldFlag('blood_oath_honored')).toBe(true);
+    expect(engine.companion?.name).toBe('Frost-Ward Hound');
 
     const restored = roundTrip(engine);
-    expect(restored.engine.getWorldFlag('blood_oath_honored')).toBe(true);
+    expect(restored.engine.companion?.name).toBe('Frost-Ward Hound');
     expect(restored.engine.getWorldFlag('oath_resolved')).toBe(true);
     expect(restored.engine.player.baseAttackValue).toBe(baseAttack - 2);
     expect(restored.engine.player.baseDefenseValue).toBe(baseDefense + 3);
@@ -99,10 +99,10 @@ describe('Branching save-states — the Oath (real cotwManifest)', () => {
     const baseDefense = player.baseDefenseValue;
 
     swearTheOath(engine, map, 'break');
-    expect(engine.getWorldFlag('blood_oath_broken')).toBe(true);
+    expect(engine.companion?.name).toBe('Ember-Fang Wolf');
 
     const restored = roundTrip(engine);
-    expect(restored.engine.getWorldFlag('blood_oath_broken')).toBe(true);
+    expect(restored.engine.companion?.name).toBe('Ember-Fang Wolf');
     expect(restored.engine.player.baseAttackValue).toBe(baseAttack + 3);
     expect(restored.engine.player.baseDefenseValue).toBe(baseDefense - 2);
   });

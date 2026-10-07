@@ -26,8 +26,6 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         description:
           'Stand with your nature. Permanently -2 Attack, +3 Defense. Bonds you with a Frost-Ward Hound.',
         consequences: [
-          { type: 'setFlag', flag: 'blood_oath', value: true },
-          { type: 'setFlag', flag: 'blood_oath_honored', value: true },
           { type: 'setFlag', flag: 'oath_resolved', value: true },
           { type: 'recordMilestone', milestoneId: 'matriarch_bargain' },
           { type: 'modifyPermanentStat', stat: 'attack', delta: -2 },
@@ -46,8 +44,6 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         description:
           'Fight your own blood. Permanently +3 Attack, -2 Defense. Bonds you with an Ember-Fang Wolf.',
         consequences: [
-          { type: 'setFlag', flag: 'blood_oath', value: true },
-          { type: 'setFlag', flag: 'blood_oath_broken', value: true },
           { type: 'setFlag', flag: 'oath_resolved', value: true },
           { type: 'recordMilestone', milestoneId: 'matriarch_bargain' },
           { type: 'modifyPermanentStat', stat: 'attack', delta: 3 },
@@ -528,7 +524,6 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           'Hear the squirrel’s chatter about the battle between the eagle and the wyrm (+10 Exploration Renown).',
         consequences: [
           { type: 'setFlag', flag: 'ratatoskr_roost_resolved', value: true },
-          { type: 'setFlag', flag: 'ratatoskr_gossip_heard', value: true },
           { type: 'recordMilestone', milestoneId: 'ratatoskr_favor' },
           {
             type: 'logMessage',

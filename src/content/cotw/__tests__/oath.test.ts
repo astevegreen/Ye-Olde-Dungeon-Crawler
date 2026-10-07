@@ -95,7 +95,6 @@ describe("The Matriarch's Blood-Oath (real cotw manifest)", () => {
 
     expect(player.baseAttackValue).toBe(baseAttack - 2);
     expect(player.baseDefenseValue).toBe(baseDefense + 3);
-    expect(engine.getWorldFlag('blood_oath_honored')).toBe(true);
     expect(engine.getWorldFlag('oath_resolved')).toBe(true);
     expect(engine.companion?.name).toBe('Frost-Ward Hound');
   });
@@ -110,7 +109,6 @@ describe("The Matriarch's Blood-Oath (real cotw manifest)", () => {
 
     expect(player.baseAttackValue).toBe(baseAttack + 3);
     expect(player.baseDefenseValue).toBe(baseDefense - 2);
-    expect(engine.getWorldFlag('blood_oath_broken')).toBe(true);
     expect(engine.companion?.name).toBe('Ember-Fang Wolf');
   });
 

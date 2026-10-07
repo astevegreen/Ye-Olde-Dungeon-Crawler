@@ -1041,7 +1041,9 @@ export class GameEngine {
       { action: action.constructor.name, success: result.success, cost: result.cost }
     );
 
-    if (result.success && result.cost > 0) {
+    // Spent energy is a turn, success or not: a failed disarm costs one (R-pipe-13). A caught
+    // exception costs nothing (pipelineError results carry cost 0), so it advances nothing.
+    if (result.cost > 0 && !result.pipelineError) {
       this.advanceTurn();
 
       // Close call discovery (HP <= 20%)

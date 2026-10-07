@@ -467,7 +467,7 @@ const PROLOGUE_RAID_HOOK: ActionHook = {
       return;
     }
     if (actor !== engine.player) return;
-    if (result?.success && result.cost > 0) callOut(engine);
+    if (result && result.cost > 0 && !result.pipelineError) callOut(engine);
     if (getFlag(engine.worldState, FLAG_SAW_COVEN)) return;
     const p = engine.player;
     if (Math.max(Math.abs(p.x - FOUNTAIN.x), Math.abs(p.y - FOUNTAIN.y)) <= FOUNTAIN_NOTICE_RADIUS) {

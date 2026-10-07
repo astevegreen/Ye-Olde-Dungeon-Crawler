@@ -1,5 +1,18 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type MockInstance } from 'vitest';
-import { GameEngine, GameMap, Item, Merchant, NPC, Player, addCoinsToContainer, type GameContentManifest, type NpcRole } from '../../engine';
+import {
+  Container,
+  GameEngine,
+  GameMap,
+  Item,
+  Merchant,
+  NPC,
+  Player,
+  addCoinsToContainer,
+  formatCurrency,
+  getItemSellPrice,
+  type GameContentManifest,
+  type NpcRole,
+} from '../../engine';
 import { COTW_PACTS } from '../../content/cotw/pacts';
 import { cotwManifest } from '../../content/cotw';
 import { ShopDialog } from '../shop/shopDialog';
@@ -351,6 +364,30 @@ describe('ShopDialog', () => {
       expect(markup).toMatch(/Sell all junk \(1\)/);
       shop.handleKeyDown(key('j'), engine);
       expect(commandTypes()).toEqual(['sell_junk']);
+    });
+
+    it('counts in the junk bar only what Sell Junk sells: not a junk container filled since (R-econ-19)', () => {
+      const pack = engine.player.inventory.primaryPack;
+      const belt = new Container({
+        id: 'belt', name: 'Spare Belt', category: 'container', slot: 'belt', containerType: 'belt',
+        weight: 300, bulk: 300, maxWeightCapacity: 5000, maxBulkCapacity: 5000, identified: true, value: 30,
+      });
+      pack.addItem(belt);
+      belt.junk = true;
+      belt.addItem(ware('ring', 'Copper Ring'));
+      const shop = new ShopDialog();
+      shop.open(npc('merchant'), merchant(), engine);
+      shop.handleKeyDown(key('s'), engine);
+      // Only the filled belt is marked: no bar, but J still asks, and the merchant says why it stays.
+      expect(html()).not.toContain('data-act="sell-junk"');
+      shop.handleKeyDown(key('j'), engine);
+      expect(commandTypes()).toEqual(['sell_junk']);
+
+      const boot = ware('junk-boot', 'Old Boot');
+      boot.junk = true;
+      pack.addItem(boot);
+      shop.handleKeyDown(key('s'), engine);
+      expect(html()).toContain(`Sell all junk (1) for ${formatCurrency(getItemSellPrice(boot))}`);
     });
 
     it('offers no junk sale when nothing is marked', () => {

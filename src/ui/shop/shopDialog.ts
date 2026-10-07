@@ -372,16 +372,21 @@ export class ShopDialog {
     this.report(result);
   }
 
-  /** Items in the pack the hero marked as junk (J in the inventory). */
+  /**
+   * What "Sell all junk" sells: items in the pack the hero marked as junk (J in the
+   * inventory), less a junk container filled since, which `sell_junk` keeps with its
+   * contents (R-econ-19); the bar counted and priced it all the same.
+   */
   private junkItems(engine: GameEngine): Item[] {
-    return this.getSellableItems(engine).filter((item) => item.junk);
+    return this.getSellableItems(engine).filter((item) => item.junk && !(item instanceof Container && item.itemCount > 0));
   }
 
   /** Sells everything marked as junk in one go (tracker 2.5, Q2 "C"). */
   public sellJunk(engine: GameEngine): void {
     if (!this.merchant) return;
     this.activeTab = 'sell';
-    if (this.junkItems(engine).length === 0) {
+    // Anything marked goes to the merchant, who says why a filled container stays.
+    if (!this.getSellableItems(engine).some((item) => item.junk)) {
       this.report({ success: false, message: 'Nothing in your pack is marked as junk. Mark it with J in your inventory.' }, 'info');
       return;
     }

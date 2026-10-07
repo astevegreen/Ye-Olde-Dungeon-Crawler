@@ -112,7 +112,8 @@ export class TownMapGenerator {
             n.merchantConfig.name,
             'general',
             n.merchantConfig.greeting,
-            n.merchantConfig.initialInventory()
+            n.merchantConfig.initialInventory(),
+            n.merchantConfig
           );
           merchants.set(merchant.id, merchant);
         }

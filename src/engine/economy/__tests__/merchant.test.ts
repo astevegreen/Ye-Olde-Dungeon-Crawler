@@ -3,13 +3,18 @@ import { Player } from '../../entities/player';
 import { ItemFactory } from '../../items/factory';
 import { addCurrencyToPlayer, getPlayerTotalCp } from '../currency';
 import {
+  Merchant,
   getItemBuyPrice,
   getItemSellPrice,
 } from '../merchant';
 import {
+  COTW_TOWN,
   createOlafGeneralStore,
   createGuntherArmory,
 } from '../../../content/cotw/town';
+import { cotwManifest } from '../../../content/cotw';
+import { ProfileManager, MemoryStorage } from '../../storage/profile-manager';
+import { serializeGame, deserializeGame } from '../../storage/serializer';
 
 describe('Merchant Economy & Trading Engine', () => {
   let player: Player;
@@ -64,7 +69,7 @@ describe('Merchant Economy & Trading Engine', () => {
     if (!brothItem) return;
 
     const initialStockCount = olaf.stock.length;
-    const price = getItemBuyPrice(brothItem);
+    const price = olaf.buyPrice(brothItem);
 
     const result = olaf.buyItem(player, brothItem.id);
     expect(result.success).toBe(true);
@@ -163,6 +168,63 @@ describe('Merchant Economy & Trading Engine', () => {
     const soldItem = gunther.stock.find((i) => i.id === 'blessed-dagger');
     expect(soldItem).toBeDefined();
     expect(soldItem?.identified).toBe(true);
+  });
+
+  describe('each merchant’s declared ratios set its prices (markupRatio, markdownRatio)', () => {
+    const astridConfig = () => COTW_TOWN.npcs.find((n) => n.id === 'npc-astrid')!.merchantConfig!;
+    const sword = (id: string, identified = true) => {
+      const s = ItemFactory.createBroadsword(id); // 15000 CP
+      s.identified = identified;
+      return s;
+    };
+
+    it('a merchant that declares none prices as before: the value to buy, half of it to sell', () => {
+      const plain = new Merchant('m', 'M', 'M', 'general', 'Hello.', []);
+      expect(plain.buyPrice(sword('a'))).toBe(15000);
+      expect(plain.sellPrice(sword('b'))).toBe(7500);
+      expect(plain.sellPrice(sword('c', false))).toBe(1875);
+    });
+
+    it('cotw: Olaf sells at x1.25 and buys at half; Astrid sells at x1.35 and buys at x0.45', () => {
+      const olaf = createOlafGeneralStore();
+      const cfg = astridConfig();
+      const astrid = new Merchant(cfg.id, cfg.name, cfg.name, 'general', cfg.greeting, cfg.initialInventory(), cfg);
+      expect(olaf.buyPrice(sword('a'))).toBe(18750);
+      expect(olaf.sellPrice(sword('b'))).toBe(7500);
+      expect(astrid.buyPrice(sword('c'))).toBe(20250);
+      expect(astrid.sellPrice(sword('d'))).toBe(6750);
+      expect(astrid.sellPrice(sword('e', false))).toBe(Math.floor(6750 * 0.25));
+      const broth = olaf.stock.find((i) => i.id === 'olaf-broth-1')!;
+      expect(olaf.buyPrice(broth)).toBe(Math.floor(broth.value * 1.25));
+    });
+
+    it('charges what it asks and pays what it offers', () => {
+      const olaf = createOlafGeneralStore();
+      addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 5 });
+      const broth = olaf.stock.find((i) => i.id === 'olaf-broth-1')!;
+      const asked = olaf.buyPrice(broth);
+      expect(asked).toBeGreaterThan(broth.value);
+      expect(olaf.buyItem(player, broth.id).costInCp).toBe(asked);
+      expect(getPlayerTotalCp(player)).toBe(500 - asked);
+
+      const cfg = astridConfig();
+      const astrid = new Merchant(cfg.id, cfg.name, cfg.name, 'general', cfg.greeting, [], cfg);
+      const dagger = ItemFactory.createDagger('astrid-dagger');
+      dagger.identified = true;
+      player.inventory.primaryPack.addItem(dagger);
+      const offered = astrid.sellPrice(dagger);
+      expect(offered).toBe(Math.floor(dagger.value * 0.45));
+      expect(astrid.sellItem(player, dagger.id).costInCp).toBe(offered);
+      expect(getPlayerTotalCp(player)).toBe(500 - asked + offered);
+    });
+
+    it('the town the engine builds, and a load, give each merchant the ratios its pack declares', () => {
+      const { engine } = new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Haggler', { seed: 8 });
+      const ratios = (e: typeof engine) => Object.fromEntries([...e.merchants.values()].map((m) => [m.id, [m.markupRatio, m.markdownRatio]]));
+      expect(ratios(engine)).toEqual({ 'merchant-olaf': [1.25, 0.5], 'merchant-gunther': [1.3, 0.5], 'merchant-astrid': [1.35, 0.45] });
+      const { engine: loaded } = deserializeGame(JSON.parse(JSON.stringify(serializeGame(engine))), cotwManifest);
+      expect(ratios(loaded)).toEqual(ratios(engine));
+    });
   });
 
   it('rejects selling cursed equipment that is currently bound to player paperdoll', () => {

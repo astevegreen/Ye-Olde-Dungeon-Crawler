@@ -248,7 +248,7 @@ export class ShopDialog {
     const items = tab === 'buy' ? this.getBuyableItems(engine) : this.getSellableItems(engine);
     const rows = new Map<string, Item[]>();
     for (const item of items) {
-      const price = tab === 'buy' ? getItemBuyPrice(item, engine.worldState, engine.manifest.merchantPricing) : getItemSellPrice(item);
+      const price = tab === 'buy' ? this.buyPrice(item, engine) : this.sellPrice(item);
       // A container holds its own things: it never stacks.
       const key = item instanceof Container ? `#${item.id}` : [item.definitionId ?? item.name, item.displayName, item.quality, item.identified, item.junk, price].join('|');
       const row = rows.get(key);
@@ -260,9 +260,18 @@ export class ShopDialog {
 
   private priceOf(item: Item, engine: GameEngine): number {
     if (this.activeTab === 'forge') return SmithService.nextStepPrice(engine, this.smithId(engine) ?? '', item) ?? 0;
-    return this.activeTab === 'buy'
-      ? getItemBuyPrice(item, engine.worldState, engine.manifest.merchantPricing)
-      : getItemSellPrice(item);
+    return this.activeTab === 'buy' ? this.buyPrice(item, engine) : this.sellPrice(item);
+  }
+
+  /** What the open merchant asks for `item`: the price `buyItem` charges (its own markup). */
+  private buyPrice(item: Item, engine: GameEngine): number {
+    const { worldState, manifest } = engine;
+    return this.merchant ? this.merchant.buyPrice(item, worldState, manifest.merchantPricing) : getItemBuyPrice(item, worldState, manifest.merchantPricing);
+  }
+
+  /** What the open merchant offers for `item`: the price `sellItem` pays (its own markdown). */
+  private sellPrice(item: Item): number {
+    return this.merchant ? this.merchant.sellPrice(item) : getItemSellPrice(item);
   }
 
   private setTab(tab: ShopTab): void {
@@ -603,7 +612,7 @@ export class ShopDialog {
           ? 'Nothing you carry or wear for the forge: it works known, uncursed weapons and armor.'
           : 'Nothing in your pack to sell.';
     const junk = this.activeTab === 'sell' ? this.junkItems(engine) : [];
-    const junkWorth = junk.reduce((sum, item) => sum + getItemSellPrice(item), 0);
+    const junkWorth = junk.reduce((sum, item) => sum + this.sellPrice(item), 0);
     const sellJunk = junk.length
       ? `<div class="shop-junk-bar">${dialogButton('shop-sell-junk', `Sell all junk (${junk.length}) for ${formatCurrency(junkWorth)}`, { key: 'J', attrs: 'data-act="sell-junk"' })}</div>`
       : '';

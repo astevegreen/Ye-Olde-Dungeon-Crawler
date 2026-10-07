@@ -1238,7 +1238,8 @@ function hydrateGame(
             cfg.name,
             'general',
             cfg.greeting,
-            restoreMerchantStock(cfg.initialInventory(), saveData.merchantStock?.[cfg.id], definitions)
+            restoreMerchantStock(cfg.initialInventory(), saveData.merchantStock?.[cfg.id], definitions),
+            cfg
           );
           engine.merchants.set(merchant.id, merchant);
         }

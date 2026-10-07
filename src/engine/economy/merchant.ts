@@ -14,25 +14,32 @@ import type { MerchantPricingRules } from '../types/manifest';
 
 export type ShopType = 'general' | 'armory' | 'alchemist';
 
-/**
- * Calculates purchase price for an item in a merchant shop. A trade moves the whole Item,
- * so a stack costs its unit price times its quantity.
- */
-export function getItemBuyPrice(item: Item, worldState?: WorldState, pricing?: MerchantPricingRules): number {
-  return unitBuyPrice(item, worldState, pricing) * (item.quantity ?? 1);
+/** A merchant's price ratios (`MerchantConfig.markupRatio`/`markdownRatio`): what it asks and
+ *  what it offers, as shares of an item's value. Unset, it asks the value and offers half. */
+export interface MerchantRatios {
+  markupRatio?: number;
+  markdownRatio?: number;
 }
 
-function unitBuyPrice(item: Item, worldState?: WorldState, pricing?: MerchantPricingRules): number {
+const DEFAULT_MARKUP = 1;
+const DEFAULT_MARKDOWN = 0.5;
+
+/** `Math.floor` that a ratio's float error can't push below a whole number (0.45 × 60). */
+const floorPrice = (cp: number) => Math.floor(cp + 1e-9);
+
+/**
+ * Calculates purchase price for an item in a merchant shop: its value times the merchant's
+ * `markupRatio` (default 1) and the faction standing's multiplier. A trade moves the whole
+ * Item, so a stack costs its unit price times its quantity.
+ */
+export function getItemBuyPrice(item: Item, worldState?: WorldState, pricing?: MerchantPricingRules, markupRatio = DEFAULT_MARKUP): number {
+  return unitBuyPrice(item, worldState, pricing, markupRatio) * (item.quantity ?? 1);
+}
+
+function unitBuyPrice(item: Item, worldState?: WorldState, pricing?: MerchantPricingRules, markupRatio = DEFAULT_MARKUP): number {
   const basePrice = valueOrDefault(item, item.value);
-
-  if (worldState && pricing) {
-    const multiplier = getMerchantPriceMultiplier(worldState, pricing);
-    if (multiplier !== 1) {
-      return Math.max(1, Math.floor(basePrice * multiplier));
-    }
-  }
-
-  return basePrice;
+  const multiplier = markupRatio * (worldState && pricing ? getMerchantPriceMultiplier(worldState, pricing) : 1);
+  return multiplier !== 1 ? Math.max(1, floorPrice(basePrice * multiplier)) : basePrice;
 }
 
 /** The buy-price multiplier the faction's standing earns now: the first matching tier, else 1. */
@@ -77,7 +84,7 @@ export function isSellable(item: Item): boolean {
 
 /**
  * Calculates sell valuation for an item offered by the player (0 for one no merchant buys):
- * - Base sell rate is 50% of buy value.
+ * - Base sell rate is the merchant's `markdownRatio` of the item's value (default 50%).
  * - An unidentified item is mystery goods: a quarter of the plain item's rate, whatever
  *   it hides (Q21). Two unidentified items that look alike are offered the same price, so
  *   the counter is no longer a free appraisal; the +N and the family show up in the price
@@ -86,17 +93,17 @@ export function isSellable(item: Item): boolean {
  *   negative one sells for 10%. Chaotic is neither bonus nor scrap.
  * - A stack pays the unit price times its quantity.
  */
-export function getItemSellPrice(item: Item): number {
+export function getItemSellPrice(item: Item, markdownRatio = DEFAULT_MARKDOWN): number {
   if (!isSellable(item)) return 0;
-  return unitSellPrice(item) * (item.quantity ?? 1);
+  return unitSellPrice(item, markdownRatio) * (item.quantity ?? 1);
 }
 
-function unitSellPrice(item: Item): number {
+function unitSellPrice(item: Item, markdownRatio: number): number {
   if (!item.identified) {
-    return Math.max(1, Math.floor(Math.floor(valueOrDefault(item, item.baseValue) * 0.5) * 0.25));
+    return Math.max(1, Math.floor(floorPrice(valueOrDefault(item, item.baseValue) * markdownRatio) * 0.25));
   }
 
-  let sellPrice = Math.floor(unitBuyPrice(item) * 0.5);
+  let sellPrice = floorPrice(valueOrDefault(item, item.value) * markdownRatio);
   if (item.modifiers.some((m) => m.alignment === 'negative')) {
     sellPrice = Math.floor(sellPrice * 0.1);
   } else if (item.modifiers.some((m) => m.alignment === 'positive')) {
@@ -112,6 +119,10 @@ export class Merchant {
   public readonly shopName: string;
   public readonly shopType: ShopType;
   public readonly greeting: string;
+  /** What it asks, as a share of an item's value (`MerchantConfig.markupRatio`, default 1). */
+  public readonly markupRatio: number;
+  /** What it offers, as a share of an item's value (`MerchantConfig.markdownRatio`, default 0.5). */
+  public readonly markdownRatio: number;
   public stock: Item[];
 
   constructor(
@@ -120,14 +131,27 @@ export class Merchant {
     shopName: string,
     shopType: ShopType,
     greeting: string,
-    initialStock: Item[]
+    initialStock: Item[],
+    ratios: MerchantRatios = {}
   ) {
     this.id = id;
     this.name = name;
     this.shopName = shopName;
     this.shopType = shopType;
     this.greeting = greeting;
+    this.markupRatio = ratios.markupRatio ?? DEFAULT_MARKUP;
+    this.markdownRatio = ratios.markdownRatio ?? DEFAULT_MARKDOWN;
     this.stock = [...initialStock];
+  }
+
+  /** What this merchant asks for `item`: the price the shop shows and `buyItem` charges. */
+  public buyPrice(item: Item, worldState?: WorldState, pricing?: MerchantPricingRules): number {
+    return getItemBuyPrice(item, worldState, pricing, this.markupRatio);
+  }
+
+  /** What this merchant offers for `item`: the price the shop shows and `sellItem` pays. */
+  public sellPrice(item: Item): number {
+    return getItemSellPrice(item, this.markdownRatio);
   }
 
   /**
@@ -161,7 +185,7 @@ export class Merchant {
     }
 
     const item = this.stock[itemIndex];
-    const costCp = getItemBuyPrice(item, worldState, pricing);
+    const costCp = this.buyPrice(item, worldState, pricing);
 
     // 1. Check player purchasing power
     const playerFundsCp = getPlayerTotalCp(player);
@@ -259,7 +283,7 @@ export class Merchant {
 
     // 3. The price is settled before the merchant looks the item over: an unidentified
     //    one sells as mystery goods.
-    const sellPriceCp = getItemSellPrice(item);
+    const sellPriceCp = this.sellPrice(item);
     addCurrencyToPlayer(player, sellPriceCp);
 
     // 4. On the shelf the merchant knows what they bought: it is stocked identified, and

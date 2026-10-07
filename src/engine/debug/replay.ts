@@ -247,11 +247,15 @@ function parseCandidates(text: string): unknown[] {
 }
 
 /** Finds the most replayable payload: replay data first, then a snapshot, then a save. */
-function pickPayload(candidates: unknown[]): { source: ReplaySource; save: unknown; trail: TrailEntry[] } | null {
+function pickPayload(
+  candidates: unknown[]
+): { source: ReplaySource; save: unknown; trail: TrailEntry[]; godMode?: boolean } | null {
   for (const c of candidates) {
     const r = asRecord(c);
     const replay = isReplayData(c) ? c : isReplayData(asRecord(r?.reproduction)?.replay) ? (asRecord(r?.reproduction)?.replay as ReplayData) : null;
-    if (replay) return { source: 'replay-checkpoint', save: replay.checkpoint.save, trail: replay.trail };
+    if (replay) {
+      return { source: 'replay-checkpoint', save: replay.checkpoint.save, trail: replay.trail, godMode: replay.checkpoint.godMode === true };
+    }
   }
   for (const c of candidates) {
     const snapshot = asRecord(c)?.stateSnapshot;
@@ -288,6 +292,8 @@ export function loadReplayState(text: string, manifest?: GameContentManifest): L
         ? (defaultMigrator.migrate(JSON.stringify(envelope)).envelope.data as SaveData)
         : (payload.save as SaveData);
     const { engine, profile } = deserializeGame(saveData, manifest);
+    // God mode is no part of a save; the checkpoint carries it, or the replayed hero is mortal.
+    if (payload.godMode) engine.player.isInvulnerable = true;
     return { ok: true, value: { engine, profile, source: payload.source, trail: payload.trail } };
   } catch (err) {
     return classifyLoadError(err);

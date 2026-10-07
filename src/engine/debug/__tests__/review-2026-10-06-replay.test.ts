@@ -7,7 +7,7 @@ import { ChannelRuneOfReturnAction, RuneOfReturnItem } from '../../magic/runeOfR
 import { ExecuteChoiceAction } from '../../actions/choiceAction';
 import { WaitAction } from '../../actions/wait';
 import { flightRecorder } from '../flightRecorder';
-import { rebuildAction } from '../replay';
+import { loadReplayState, rebuildAction } from '../replay';
 
 /**
  * Whole-codebase review, 2026-10-06, area 10 (replay). Two player actions reach
@@ -76,5 +76,34 @@ describe('R-dbg-2 · ExecuteChoiceAction is in the trail (contrary to §2) and h
     const replay = flightRecorder.getReplayData(engine);
     expect(replay?.checkpoint.reason).toBe('dialog choice');
     expect(replay?.trail).toEqual([]);
+  });
+});
+
+describe('R-dbg-10 · a replay of a god-mode session loads an invulnerable hero', () => {
+  it('the checkpoint carries god mode and loading the replay restores it', () => {
+    const map = new GameMap(14, 14, TILES.FLOOR);
+    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 2, y: 2 }, stats: { hp: 100, maxHp: 100, attack: 5, defense: 0 } });
+    const engine = new GameEngine({ map, player, floor: 1 });
+    flightRecorder.requestCheckpoint('review');
+    engine.handlePlayerAction(new WaitAction(player));
+    engine.diagnostics.toggleGodMode();
+    engine.handlePlayerAction(new WaitAction(player));
+
+    const json = flightRecorder.exportReplayJson(engine);
+    expect(json).not.toBeNull();
+    const loaded = loadReplayState(json!);
+    expect(loaded.ok).toBe(true);
+    if (loaded.ok) expect(loaded.value.engine.player.isInvulnerable).toBe(true);
+  });
+
+  it('a mortal session replays mortal', () => {
+    const map = new GameMap(14, 14, TILES.FLOOR);
+    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 2, y: 2 } });
+    const engine = new GameEngine({ map, player, floor: 1 });
+    flightRecorder.requestCheckpoint('review');
+    engine.handlePlayerAction(new WaitAction(player));
+
+    const loaded = loadReplayState(flightRecorder.exportReplayJson(engine)!);
+    expect(loaded.ok && loaded.value.engine.player.isInvulnerable).toBe(false);
   });
 });

@@ -42,6 +42,8 @@ export interface ReplayCheckpoint {
   floor: number;
   /** `serializeGame()` output: load it and replay the trail to reach the reported state. */
   save: unknown;
+  /** The hero was invulnerable (F2 god mode), which a save doesn't carry (R-dbg-10). */
+  godMode?: boolean;
 }
 
 export interface ReplayData {

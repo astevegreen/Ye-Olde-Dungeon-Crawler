@@ -256,6 +256,7 @@ export class FlightRecorder {
       reason,
       turn: engine.turnCount,
       floor: engine.currentFloor,
+      ...(engine.player?.isInvulnerable ? { godMode: true } : {}),
       save: safeJsonStringify(save),
     };
   }

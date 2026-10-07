@@ -6,6 +6,7 @@ import { Monster } from '../entities/monster';
 import { harm } from '../combat/deathResolver';
 import { TILES } from '../grid/tile';
 import { wearsFlag } from '../items/wornModifiers';
+import { SpawnSiteFilter } from './spawnSites';
 
 export interface TrapOptions {
   id: string;
@@ -116,19 +117,10 @@ export class TrapInstance {
       }
 
       case 'teleport': {
-        // Teleport entity to random passable unoccupied tile on current map
-        const validCoords: Array<{ x: number; y: number }> = [];
-        for (let y = 0; y < engine.map.height; y++) {
-          for (let x = 0; x < engine.map.width; x++) {
-            if (
-              engine.map.isPassable(x, y) &&
-              !engine.map.getEntityAt(x, y) &&
-              !(x === this.x && y === this.y)
-            ) {
-              validCoords.push({ x, y });
-            }
-          }
-        }
+        // A random free tile the mover could walk to from the trap without a secret door:
+        // never a sealed vault cage, a chasm island or a secret cache, where it could not
+        // walk out again (a hero there is stuck), and never a staircase.
+        const validCoords = new SpawnSiteFilter(engine.map, { anchor: { x: this.x, y: this.y }, minDistance: 1 }).sites();
 
         if (validCoords.length > 0) {
           const dest = engine.prng.choice(validCoords);

@@ -203,4 +203,34 @@ describe('Traps, Secret Doors & Search Mechanics', () => {
     expect(restoredTrap?.revealed).toBe(true);
     expect(restoredTrap?.disarmed).toBe(true);
   });
+
+  it('a teleport trap never sends the hero behind a secret door, where no path leads out', () => {
+    // The hero's walkable area is the 4x4 corner; everything else lies behind a secret door,
+    // as a cache or a sealed vault cage does. The old rule picked from the whole map.
+    map.moveEntity(player, 2, 2);
+    for (let i = 1; i <= 5; i++) {
+      map.setTile(5, i, TILES.WALL);
+      map.setTile(i, 5, TILES.WALL);
+    }
+    map.setTile(5, 2, TILES.SECRET_DOOR);
+    const rune = new TrapInstance({ id: 'trap_tp', type: 'teleport', x: 3, y: 3 });
+    map.addTrap(rune);
+
+    for (let i = 0; i < 20; i++) {
+      map.moveEntity(player, 3, 3);
+      rune.trigger(player, engine);
+      expect(player.x <= 4 && player.y <= 4, `teleport ${i} landed at ${player.x},${player.y}`).toBe(true);
+      expect(player.x === 3 && player.y === 3).toBe(false);
+    }
+  });
+
+  it('a teleport trap ends the step: the acid on the trap tile does not burn the hero who left it', () => {
+    engine.surfaces.setSurface(6, 5, 'acid_pool', 10);
+    map.addTrap(new TrapInstance({ id: 'trap_tp2', type: 'teleport', x: 6, y: 5 }));
+
+    new MovementAction(player, 1, 0).perform(engine);
+
+    expect(player.x === 6 && player.y === 5).toBe(false);
+    expect(player.hp).toBe(50);
+  });
 });

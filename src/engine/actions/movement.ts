@@ -182,10 +182,15 @@ export class MovementAction implements Action {
       engine.log('You wade through the cold shallow water (+50 move energy cost).');
     }
 
-    // 5. Active Trap Check
+    // 5. Active Trap Check. A trap that kills the mover or carries it off (a teleport rune)
+    // ends the step: what follows (the tile's surface, perception round it, its stairs or
+    // altar) belongs to a tile the mover has left.
     const trap = engine.map.getTrapAt(targetX, targetY);
     if (trap && !trap.disarmed) {
-      trap.trigger(this.entity, engine);
+      const trapMessage = trap.trigger(this.entity, engine);
+      if (!this.entity.isAlive() || this.entity.x !== targetX || this.entity.y !== targetY) {
+        return { success: true, cost, message: trapMessage };
+      }
     }
 
     // 5b. Surface Grid Step Effects (Ice Slide, Acid Burn, etc.)

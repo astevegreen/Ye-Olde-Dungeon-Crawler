@@ -74,12 +74,10 @@ export class GameStateManager {
     return engine.currentFloor === defaultVictoryFloor && hasRelic ? 'default' : undefined;
   }
 
+  /** That item (by id, or a copy of its definition) anywhere on the hero, worn, in the pack,
+   *  belt or a bag; the quest's default relic does not stand in for another (R-econ-17). */
   private playerCarries(engine: GameEngine, itemId: string): boolean {
-    return (
-      engine.player.inventory.primaryPack.getItem(itemId) !== null ||
-      engine.player.inventory.paperdoll.getAllEquipped().some((e) => e.item.id === itemId) ||
-      DungeonArc.isRelicInPlayerPossession(engine.player)
-    );
+    return DungeonArc.isRelicInPlayerPossession(engine.player, itemId);
   }
 
   /**

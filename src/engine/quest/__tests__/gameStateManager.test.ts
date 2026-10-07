@@ -9,6 +9,7 @@ import { MemoryStorage, ProfileManager } from '../../storage/profile-manager';
 import { Leaderboard } from '../../hallOfFame/leaderboard';
 import { Monster } from '../../entities/monster';
 import { QUEST_RELIC_ID } from '../types';
+import { Item } from '../../items/item';
 
 describe('GameStateManager & Win/Loss Sequences', () => {
   let storage: MemoryStorage;
@@ -57,15 +58,23 @@ describe('GameStateManager & Win/Loss Sequences', () => {
     engine.currentFloor = 0;
     expect(gameState.checkVictoryEligible(engine)).toBeUndefined();
 
-    // 2. In dungeon (Floor 3) with Sun-Stone
+    // 2. In dungeon (Floor 3) with Sun-Stone, the relic this quest names
+    const relicId = engine.manifest.quest.relicItemId;
     engine.currentFloor = 3;
-    player.inventory.primaryPack.addItem(createTestSunStone(QUEST_RELIC_ID));
+    player.inventory.primaryPack.addItem(createTestSunStone(relicId));
     expect(gameState.checkVictoryEligible(engine)).toBeUndefined();
 
     // 3. In town (Floor 0) with Sun-Stone — the legacy single-ending fallback
     // (no manifest.quest.endings declared) reports the 'default' ending id.
     engine.currentFloor = 0;
     expect(gameState.checkVictoryEligible(engine)).toBe('default');
+
+    // 4. Another quest item is not this quest's relic, even one with the engine's default
+    // relic id (R-econ-17): only the named relic counts.
+    expect(relicId).not.toBe(QUEST_RELIC_ID);
+    player.inventory.primaryPack.removeItem(relicId);
+    player.inventory.primaryPack.addItem(createTestSunStone(QUEST_RELIC_ID));
+    expect(gameState.checkVictoryEligible(engine)).toBeUndefined();
   });
 
   it('triggers victory, awards 5000 victory points, and updates profile', () => {
@@ -137,6 +146,35 @@ describe('GameStateManager & Win/Loss Sequences', () => {
     const sealedEntry = gameState.triggerVictory(endingsEngine, undefined, 'sealed');
     expect(sealedEntry.epitaph).toBe('Drove Nidhogg from the root of Yggdrasil.');
     expect(sealedEntry.score).toBeGreaterThanOrEqual(6000);
+  });
+
+  // R-econ-17 follow-up: `playerCarries` asked `isRelicInPlayerPossession` without the item,
+  // so carrying the quest's default relic met an ending that names another one.
+  it('an ending that names a relic is met by that relic alone, carried anywhere', () => {
+    const endingsEngine = new GameEngine({
+      map: new GameMap(10, 10, TILES.FLOOR),
+      player,
+      floor: 5,
+      gameState,
+      manifest: {
+        ...engine.manifest,
+        quest: {
+          ...engine.manifest.quest,
+          victoryFloor: 5,
+          endings: {
+            crowned: { id: 'crowned', relicItemId: 'crown_of_kings', victoryDialogue: 'Crowned.', victoryEpitaph: 'Wore the crown home.' },
+          },
+        },
+      },
+    });
+    const item = (id: string, definitionId: string) =>
+      new Item({ id, definitionId, name: definitionId, category: 'quest', weight: 1, bulk: 1, identified: true });
+
+    player.inventory.primaryPack.addItem(item('default-relic', QUEST_RELIC_ID));
+    expect(gameState.checkVictoryEligible(endingsEngine)).toBeUndefined();
+
+    player.inventory.primaryPack.addItem(item('crown-1', 'crown_of_kings'));
+    expect(gameState.checkVictoryEligible(endingsEngine)).toBe('crowned');
   });
 
   it('the ragnarok ending fires only for its own flag, with its own text and bonus', () => {

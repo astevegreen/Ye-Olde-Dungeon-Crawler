@@ -266,12 +266,14 @@ export class PotionRow {
  * an "Empty this slot" line. Registers on the modal stack (ARCHITECTURE.md §6), so
  * Escape closes it and no key reaches the map while it is open.
  */
-class PotionPicker implements UIModal {
+export class PotionPicker implements UIModal {
   public readonly id = 'potion-picker';
   private el: HTMLElement | null = null;
   private slotIndex = 0;
   private openState = false;
   private modalStack?: ModalStackManager;
+  /** The tick that arms `outsideClick` after opening; a close before it fires cancels it. */
+  private armTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly outsideClick = (e: MouseEvent) => {
     if (this.el && !this.el.contains(e.target as Node)) this.close();
   };
@@ -361,12 +363,17 @@ class PotionPicker implements UIModal {
     this.el = el;
     this.openState = true;
     this.modalStack?.push(this);
-    setTimeout(() => document.addEventListener('mousedown', this.outsideClick), 0);
+    this.armTimer = setTimeout(() => {
+      this.armTimer = null;
+      document.addEventListener('mousedown', this.outsideClick);
+    }, 0);
   }
 
   public close(): void {
     if (!this.openState) return;
     this.openState = false;
+    if (this.armTimer !== null) clearTimeout(this.armTimer);
+    this.armTimer = null;
     document.removeEventListener('mousedown', this.outsideClick);
     this.el?.remove();
     this.el = null;

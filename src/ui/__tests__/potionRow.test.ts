@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { getCarriedPotionKinds, potionKindKey, resolvePotionSlots, POTION_ROW_SLOT_COUNT } from '../potionRow';
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import { getCarriedPotionKinds, potionKindKey, resolvePotionSlots, POTION_ROW_SLOT_COUNT, PotionPicker } from '../potionRow';
 import { GameEngine, GameMap, TILES, Player, PotionItem, Item, serializeGame, deserializeGame } from '../../engine';
 
 function buildEngine() {
@@ -93,5 +93,65 @@ describe('resolvePotionSlots', () => {
     engine.player.setQuickPotion(1, 'Potion of Mana', POTION_ROW_SLOT_COUNT);
     const restored = deserializeGame(JSON.parse(JSON.stringify(serializeGame(engine))));
     expect(restored.engine.player.quickPotions).toEqual([null, 'Potion of Mana', null, null]);
+  });
+});
+
+/**
+ * The picker arms its outside-click listener a tick after it opens, so the click that
+ * opened it can't close it (fuzz audit A-29). Vitest runs without a DOM here, so the
+ * document is the least of one the picker touches, counting its mousedown listeners.
+ */
+describe('PotionPicker', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  function fakePage() {
+    const mousedown = new Set<unknown>();
+    const el = (): unknown => ({
+      style: {},
+      classList: { toggle: () => false },
+      append: () => undefined,
+      appendChild: () => undefined,
+      addEventListener: () => undefined,
+      remove: () => undefined,
+      contains: () => false,
+    });
+    vi.stubGlobal('document', {
+      createElement: el,
+      addEventListener: (type: string, fn: unknown) => type === 'mousedown' && mousedown.add(fn),
+      removeEventListener: (type: string, fn: unknown) => type === 'mousedown' && mousedown.delete(fn),
+    });
+    const anchor = { parentElement: el(), offsetLeft: 0, offsetTop: 0 } as unknown as HTMLElement;
+    return { mousedown, anchor };
+  }
+
+  it('listens for a click outside only once its opening tick has passed, until it closes', () => {
+    vi.useFakeTimers();
+    const { mousedown, anchor } = fakePage();
+    const picker = new PotionPicker(() => undefined);
+
+    picker.open(buildEngine(), 0, anchor);
+    expect(mousedown.size).toBe(0);
+    vi.runAllTimers();
+    expect(mousedown.size).toBe(1);
+
+    picker.close();
+    expect(mousedown.size).toBe(0);
+  });
+
+  it('closed before that tick, it never starts listening', () => {
+    vi.useFakeTimers();
+    const { mousedown, anchor } = fakePage();
+    const picker = new PotionPicker(() => undefined);
+
+    picker.open(buildEngine(), 0, anchor);
+    picker.handleKeyDown({ key: 'Escape' } as KeyboardEvent);
+    vi.runAllTimers();
+
+    expect(picker.isOpen).toBe(false);
+    expect(mousedown.size).toBe(0);
+    expect(vi.getTimerCount()).toBe(0);
   });
 });

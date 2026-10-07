@@ -22,6 +22,12 @@ import { productWorn, wornModifiers } from '../items/wornModifiers';
 /** Tile type identifier for shallow water terrain that imposes a movement energy penalty. */
 const SHALLOW_WATER_TILE = 'shallow_water';
 
+/** Opens a choice through presentation's `onChoiceInteract`, inside its own failure boundary (§4). */
+function openChoice(engine: GameEngine, ...args: Parameters<NonNullable<GameEngine['onChoiceInteract']>>): void {
+  const open = engine.onChoiceInteract;
+  if (open) engine.notifyPresentation('onChoiceInteract', () => open(...args));
+}
+
 export class MovementAction implements Action {
   public readonly entity: Entity;
   public readonly dx: number;
@@ -107,7 +113,7 @@ export class MovementAction implements Action {
           // An NPC with a choice opens it (NpcConfig.choiceId); it never resolves.
           const npcChoice = targetEntity.choiceId ? engine.manifest?.choices?.[targetEntity.choiceId] : undefined;
           if (npcChoice && engine.onChoiceInteract) {
-            engine.onChoiceInteract(npcChoice, (optionId: string) => {
+            openChoice(engine, npcChoice, (optionId: string) => {
               engine.handlePlayerAction(new ExecuteChoiceAction(this.entity as Player, npcChoice, optionId));
             });
           } else {
@@ -333,7 +339,7 @@ export class MovementAction implements Action {
         } else if (!engine.getWorldFlag(`${handlerId}_resolved`)) {
           if (engine.onChoiceInteract) {
             choiceTriggered = true;
-            engine.onChoiceInteract(
+            openChoice(engine, 
               choiceDef,
               (optionId: string) => {
                 if (!choiceDef.options.find((o) => o.id === optionId)?.keepsOpen) {
@@ -374,7 +380,7 @@ export class MovementAction implements Action {
         engine.setWorldFlag(offeredFlag, true);
         if (engine.onChoiceInteract) {
           choiceTriggered = true;
-          engine.onChoiceInteract(choiceDef, (optionId: string) => {
+          openChoice(engine, choiceDef, (optionId: string) => {
             engine.handlePlayerAction(new ExecuteChoiceAction(this.entity as Player, choiceDef, optionId));
           });
           break;
@@ -401,7 +407,7 @@ export class MovementAction implements Action {
           engine.setWorldFlag(offeredFlag, true);
           if (engine.onChoiceInteract) {
             choiceTriggered = true;
-            engine.onChoiceInteract(choiceDef, (optionId: string) => {
+            openChoice(engine, choiceDef, (optionId: string) => {
               engine.handlePlayerAction(new ExecuteChoiceAction(this.entity as Player, choiceDef, optionId));
             });
             break;
@@ -422,7 +428,7 @@ export class MovementAction implements Action {
           engine.setWorldFlag(offeredFlag, true);
           if (engine.onChoiceInteract) {
             choiceTriggered = true;
-            engine.onChoiceInteract(choiceDef, (optionId: string) => {
+            openChoice(engine, choiceDef, (optionId: string) => {
               engine.handlePlayerAction(new ExecuteChoiceAction(this.entity as Player, choiceDef, optionId));
             });
             break;

@@ -1299,9 +1299,10 @@ export class GameEngine {
    * recorded through the same counters and play goes on, so a broken subscriber can't stop a
    * death between its XP and its corpse, or fail a floor change that already happened
    * (R-pipe-17). A failure while one is being reported (its log line reaching a throwing
-   * `onMessageLogged`) is dropped rather than recursing.
+   * `onMessageLogged`) is dropped rather than recursing. Public so the engine's own modules
+   * that call a presentation callback (a choice opening, the run ending) use the same one.
    */
-  private notifyPresentation(label: string, callback: () => void): void {
+  public notifyPresentation(label: string, callback: () => void): void {
     try {
       callback();
     } catch (err) {

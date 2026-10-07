@@ -5,6 +5,8 @@ import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
 import { WaitAction } from '../actions/wait';
 import { DeathResolver } from '../combat/deathResolver';
+import { NPC } from '../entities/npc';
+import { MovementAction } from '../actions/movement';
 
 /**
  * R-pipe-17: only actions, monster turns and environmental updates ran inside a failure
@@ -91,5 +93,27 @@ describe('R-pipe-17 · presentation callbacks and the forced pass are isolated',
 
     expect(() => engine.handlePlayerAction(new WaitAction(player))).not.toThrow();
     expect(engine.turnCount).toBe(turn + 1);
+  });
+
+  it('a throwing onStateChanged subscriber does not escape a death or a victory', () => {
+    const { engine, goblin } = setup();
+    engine.gameState.onStateChanged = boom;
+    const failures = engine.actionPipeline.caughtExceptionCount;
+    expect(() => engine.gameState.triggerDeath(engine, goblin)).not.toThrow();
+    expect(engine.gameState.runStatus).toBe('fallen');
+    expect(engine.actionPipeline.caughtExceptionCount).toBeGreaterThan(failures);
+  });
+
+  it('a throwing onChoiceInteract fails only its own callback, not the step that met the NPC', () => {
+    const { engine, player, map } = setup();
+    const choice = { id: 'c', title: 'T', description: 'D', options: [{ id: 'o', label: 'L', description: 'd', consequences: [] }] };
+    (engine.manifest as { choices?: Record<string, unknown> }).choices = { c: choice };
+    map.addEntity(new NPC({ id: 'sage', name: 'Sage', position: { x: 4, y: 3 }, role: 'sage', choiceId: 'c' }));
+    engine.onChoiceInteract = boom;
+    const failures = engine.actionPipeline.caughtExceptionCount;
+    // Before, the throw unwound the whole step: the pipeline failed it ({ success: false }).
+    const result = engine.handlePlayerAction(new MovementAction(player, 1, 0));
+    expect(result.success).toBe(true);
+    expect(engine.actionPipeline.caughtExceptionCount).toBeGreaterThan(failures);
   });
 });

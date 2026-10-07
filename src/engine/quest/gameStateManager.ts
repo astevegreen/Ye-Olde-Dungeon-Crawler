@@ -133,8 +133,9 @@ export class GameStateManager {
       `${ending?.championProclamation ?? quest?.championProclamation ?? 'You are proclaimed Champion!'} Final Score: ${score} Points.`
     );
 
-    if (this.onStateChanged) {
-      this.onStateChanged('victorious', { status: 'victorious', entry, endingId: ending ? endingId : undefined });
+    const notify = this.onStateChanged;
+    if (notify) {
+      engine.notifyPresentation('onStateChanged', () => notify('victorious', { status: 'victorious', entry, endingId: ending ? endingId : undefined }));
     }
 
     return entry;
@@ -185,13 +186,10 @@ export class GameStateManager {
     engine.log(`*** FALLEN IN BATTLE: ${this.causeOfDeath} ***`);
     engine.log(`Your name is etched in the Hall of Legends with ${score} Points.`);
 
-    if (this.onStateChanged) {
-      this.onStateChanged('fallen', {
-        status: 'fallen',
-        entry,
-        causeOfDeath: this.causeOfDeath,
-        killerName: this.killerName,
-      });
+    const notify = this.onStateChanged;
+    if (notify) {
+      const summary: GameStateSummary = { status: 'fallen', entry, causeOfDeath: this.causeOfDeath, killerName: this.killerName };
+      engine.notifyPresentation('onStateChanged', () => notify('fallen', summary));
     }
 
     return entry;

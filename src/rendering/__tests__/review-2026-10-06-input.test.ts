@@ -163,3 +163,45 @@ describe('R-rend-11 · hard-wired keys are positional, so a non-QWERTY layout re
     expect(opened).toEqual(['cursor:-1,1']);
   });
 });
+
+describe('R-rend-12 · browser and system chords (Ctrl, Alt, Meta) never drive the hero', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it.each([
+    ['Ctrl+F', 'KeyF', { ctrlKey: true }],
+    ['Ctrl+R', 'KeyR', { ctrlKey: true }],
+    ['Ctrl+S', 'KeyS', { ctrlKey: true }],
+    ['Ctrl+W', 'KeyW', { ctrlKey: true }],
+    ['Cmd+Q', 'KeyQ', { metaKey: true }],
+    ['Alt+Left', 'ArrowLeft', { altKey: true }],
+    ['Alt+Numpad5', 'Numpad5', { altKey: true }],
+  ])('%s is left to the browser', (_name, code, mods) => {
+    vi.useFakeTimers();
+    const { engine, ih, opened } = wiredHandler();
+    const acted = vi.spyOn(engine, 'handlePlayerAction');
+    ih.onContextAction = () => { opened.push('context'); };
+    ih.onSaveAndExit = () => { opened.push('save-quit'); };
+    const prevented = vi.fn();
+
+    const handled = ih.handleKeyDown({ ...ev(code), ...mods, preventDefault: prevented } as KeyboardEvent);
+    vi.advanceTimersByTime(100);
+    ih.destroy();
+
+    expect(handled).toBe(false);
+    expect(acted).not.toHaveBeenCalled();
+    expect(opened).toEqual([]);
+    expect(prevented).not.toHaveBeenCalled();
+  });
+
+  it('Ctrl+K and Cmd+K, the chords the game owns, still toggle the command palette', () => {
+    const { ih } = wiredHandler();
+    const toggled = vi.fn();
+    ih.onToggleCommandPalette = toggled;
+
+    ih.handleKeyDown({ ...ev('KeyK'), ctrlKey: true } as KeyboardEvent);
+    ih.handleKeyDown({ ...ev('KeyK'), metaKey: true } as KeyboardEvent);
+    ih.destroy();
+
+    expect(toggled).toHaveBeenCalledTimes(2);
+  });
+});

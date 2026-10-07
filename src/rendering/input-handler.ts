@@ -483,6 +483,14 @@ export class InputHandler {
       }
     }
 
+    // Ctrl, Alt and Meta chords belong to the browser and the system: Ctrl+F found text and
+    // ran the context action, Ctrl+R reloaded after a rest, Alt+Left stepped west before
+    // going back (R-rend-12). The command palette's Ctrl/Cmd+K is the one chord the game owns.
+    const paletteChord = code === 'KeyK' && (e.ctrlKey || e.metaKey);
+    if ((e.ctrlKey || e.altKey || e.metaKey) && !paletteChord) {
+      return false;
+    }
+
     // Navigation keys never scroll the page or press the HUD button that has focus. This
     // runs before the lock: a Space dropped during effect playback still clicked that
     // button on keyup (R-rend-10).
@@ -554,7 +562,7 @@ export class InputHandler {
 
     // Command palette: Ctrl+K / Cmd+K or Shift+/ ("?"), as the Help card and the header
     // button advertise. It opens only over the map (or closes itself when on top).
-    if ((code === 'KeyK' && (e.ctrlKey || e.metaKey)) || (code === 'Slash' && e.shiftKey)) {
+    if (paletteChord || (code === 'Slash' && e.shiftKey)) {
       const top = this.modalStack.top();
       if (this.onToggleCommandPalette && (!top || top.id === 'command-palette')) {
         e.preventDefault();

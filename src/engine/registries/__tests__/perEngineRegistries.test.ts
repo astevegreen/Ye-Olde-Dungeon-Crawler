@@ -5,7 +5,6 @@ import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { MonsterRegistry } from '../../bestiary/monsterDefinitions';
 import { activateRegistries } from '..';
-import { ActionRegistry, type GameAction } from '../../actions/actionRegistry';
 import { SpellRegistry, getSpell } from '../../magic/spellRegistry';
 import { CompanionRegistry, type CompanionDefinition } from '../../entities/companion';
 import { AIRegistry, type AIStrategy } from '../../ai/aiRegistry';
@@ -17,7 +16,6 @@ import { itemIndex, getItemById } from '../../items/itemIndex';
 import { WaitAction } from '../../actions/wait';
 import { processDefaultMonsterStore, setActiveMonsterStore } from '../monsterRegistryStore';
 import { activeTrapStore, processDefaultTrapStore, setActiveTrapStore } from '../trapRegistryStore';
-import { setActiveActionStore } from '../actionRegistryStore';
 import { processDefaultSpellStore, setActiveSpellStore } from '../spellRegistryStore';
 import { processDefaultCompanionStore, setActiveCompanionStore } from '../companionRegistryStore';
 import { setActiveAIStrategyStore } from '../aiStrategyRegistryStore';
@@ -55,14 +53,6 @@ const trapDef = (type: string): TrapDefinition =>
     disarmDifficulty: 10,
     message: `${type} triggered!`,
   }) as TrapDefinition;
-
-const actionDef = (id: string): GameAction => ({
-  id,
-  name: id,
-  validate: () => ({ valid: true }),
-  calculateEnergyCost: () => 100,
-  execute: () => ({ success: true, cost: 100, message: `${id} executed` }),
-});
 
 const spellDef = (id: string): SpellDefinition =>
   ({
@@ -115,7 +105,6 @@ const tileDef = (type: string): TileDefinition => ({
 function engineWith(
   monsters: MonsterDefinition[],
   traps: TrapDefinition[] = [],
-  actionCommands: GameAction[] = [],
   spells: SpellDefinition[] = [],
   companions: CompanionDefinition[] = [],
   aiStrategies: AIStrategy[] = [],
@@ -131,7 +120,6 @@ function engineWith(
       name: 'Test',
       monsters,
       traps,
-      actionCommands,
       spells,
       companions,
       aiStrategies,
@@ -148,8 +136,6 @@ describe('Per-engine content registries', () => {
     setActiveMonsterStore(null);
     processDefaultTrapStore().clear();
     setActiveTrapStore(null);
-    ActionRegistry.resetToDefaults();
-    setActiveActionStore(null);
     processDefaultSpellStore().clear();
     setActiveSpellStore(null);
     processDefaultCompanionStore().clear();
@@ -238,33 +224,9 @@ describe('Per-engine content registries', () => {
     expect(activeTrapStore().has('fire_rune')).toBe(false);
   });
 
-  it('keeps two engines built from different action command manifests separate', () => {
-    const engineA = engineWith([], [], [actionDef('whirlwind')]);
-    const engineB = engineWith([], [], [actionDef('shadowstep')]);
-
-    // Both inherit default actions
-    expect(engineA.registries.actionCommands.has('move')).toBe(true);
-    expect(engineB.registries.actionCommands.has('move')).toBe(true);
-
-    // Isolated custom actions
-    expect(engineA.registries.actionCommands.has('whirlwind')).toBe(true);
-    expect(engineA.registries.actionCommands.has('shadowstep')).toBe(false);
-    expect(engineB.registries.actionCommands.has('shadowstep')).toBe(true);
-    expect(engineB.registries.actionCommands.has('whirlwind')).toBe(false);
-
-    // Static facade points to B
-    expect(ActionRegistry.has('shadowstep')).toBe(true);
-    expect(ActionRegistry.has('whirlwind')).toBe(false);
-
-    // Acting on A switches ActionRegistry to A
-    engineA.handlePlayerAction(new WaitAction(engineA.player));
-    expect(ActionRegistry.has('whirlwind')).toBe(true);
-    expect(ActionRegistry.has('shadowstep')).toBe(false);
-  });
-
   it('keeps two engines built from different spell manifests separate', () => {
-    const engineA = engineWith([], [], [], [spellDef('frostbolt')]);
-    const engineB = engineWith([], [], [], [spellDef('pyroblast')]);
+    const engineA = engineWith([], [], [spellDef('frostbolt')]);
+    const engineB = engineWith([], [], [spellDef('pyroblast')]);
 
     expect(engineA.registries.spells.has('frostbolt')).toBe(true);
     expect(engineA.registries.spells.has('pyroblast')).toBe(false);
@@ -286,8 +248,8 @@ describe('Per-engine content registries', () => {
   });
 
   it('keeps two engines built from different companion manifests separate', () => {
-    const engineA = engineWith([], [], [], [], [companionDef('wolf_hound')]);
-    const engineB = engineWith([], [], [], [], [companionDef('snow_leopard')]);
+    const engineA = engineWith([], [], [], [companionDef('wolf_hound')]);
+    const engineB = engineWith([], [], [], [companionDef('snow_leopard')]);
 
     expect(engineA.registries.companions.has('wolf_hound')).toBe(true);
     expect(engineA.registries.companions.has('snow_leopard')).toBe(false);
@@ -305,8 +267,8 @@ describe('Per-engine content registries', () => {
   });
 
   it('keeps two engines built from different AI strategy manifests separate', () => {
-    const engineA = engineWith([], [], [], [], [], [aiStrategyDef('flank_attack')]);
-    const engineB = engineWith([], [], [], [], [], [aiStrategyDef('ambush_strike')]);
+    const engineA = engineWith([], [], [], [], [aiStrategyDef('flank_attack')]);
+    const engineB = engineWith([], [], [], [], [aiStrategyDef('ambush_strike')]);
 
     // Both inherit default strategies
     expect(engineA.registries.aiStrategies.has('aggressive_melee')).toBe(true);
@@ -329,8 +291,8 @@ describe('Per-engine content registries', () => {
   });
 
   it('keeps two engines built from different AI behavior manifests separate', () => {
-    const engineA = engineWith([], [], [], [], [], [], { tactical_retreat: aiBehaviorDef('tactical_retreat') });
-    const engineB = engineWith([], [], [], [], [], [], { berserk_charge: aiBehaviorDef('berserk_charge') });
+    const engineA = engineWith([], [], [], [], [], { tactical_retreat: aiBehaviorDef('tactical_retreat') });
+    const engineB = engineWith([], [], [], [], [], { berserk_charge: aiBehaviorDef('berserk_charge') });
 
     // Both inherit default behaviors (e.g. melee)
     expect(engineA.registries.aiBehaviors.has('melee')).toBe(true);
@@ -353,8 +315,8 @@ describe('Per-engine content registries', () => {
   });
 
   it('keeps two engines built from different status handler manifests separate', () => {
-    const engineA = engineWith([], [], [], [], [], [], {}, { frozen: statusDef('thawed') });
-    const engineB = engineWith([], [], [], [], [], [], {}, { cursed: statusDef('cleansed') });
+    const engineA = engineWith([], [], [], [], [], {}, { frozen: statusDef('thawed') });
+    const engineB = engineWith([], [], [], [], [], {}, { cursed: statusDef('cleansed') });
 
     // Both inherit builtin statuses (e.g. poison, blindness)
     expect(engineA.registries.statusHandlers.has('poison')).toBe(true);
@@ -377,8 +339,8 @@ describe('Per-engine content registries', () => {
   });
 
   it('keeps two engines built from different tile manifests separate', () => {
-    const engineA = engineWith([], [], [], [], [], [], {}, {}, [tileDef('elven_grass')]);
-    const engineB = engineWith([], [], [], [], [], [], {}, {}, [tileDef('blighted_soil')]);
+    const engineA = engineWith([], [], [], [], [], {}, {}, [tileDef('elven_grass')]);
+    const engineB = engineWith([], [], [], [], [], {}, {}, [tileDef('blighted_soil')]);
 
     // Both inherit canonical tiles (e.g. floor, wall)
     expect(engineA.registries.tiles.has('floor')).toBe(true);
@@ -406,7 +368,6 @@ describe('Per-engine content registries', () => {
     const engineA = engineWith(
       [def('grunt')],
       [trapDef('dart_trap')],
-      [actionDef('whirlwind')],
       [spellDef('frostbolt')],
       [companionDef('wolf_hound')],
       [aiStrategyDef('tactical_cover')],
@@ -418,7 +379,6 @@ describe('Per-engine content registries', () => {
     const engineB = engineWith(
       [def('kobold')],
       [trapDef('fire_rune')],
-      [actionDef('shadowstep')],
       [spellDef('pyroblast')],
       [companionDef('snow_leopard')],
       [aiStrategyDef('berserk_charge')],
@@ -450,8 +410,6 @@ describe('Per-engine content registries', () => {
       expect(engineA.registries.monsters.has('kobold')).toBe(false);
       expect(engineA.registries.traps.has('dart_trap')).toBe(true);
       expect(engineA.registries.traps.has('fire_rune')).toBe(false);
-      expect(engineA.registries.actionCommands.has('whirlwind')).toBe(true);
-      expect(engineA.registries.actionCommands.has('shadowstep')).toBe(false);
       expect(engineA.registries.spells.has('frostbolt')).toBe(true);
       expect(engineA.registries.spells.has('pyroblast')).toBe(false);
       expect(engineA.registries.companions.has('wolf_hound')).toBe(true);
@@ -474,8 +432,6 @@ describe('Per-engine content registries', () => {
       expect(MonsterRegistry.has('kobold')).toBe(false);
       expect(activeTrapStore().has('dart_trap')).toBe(true);
       expect(activeTrapStore().has('fire_rune')).toBe(false);
-      expect(ActionRegistry.has('whirlwind')).toBe(true);
-      expect(ActionRegistry.has('shadowstep')).toBe(false);
       expect(SpellRegistry.has('frostbolt')).toBe(true);
       expect(SpellRegistry.has('pyroblast')).toBe(false);
       expect(getSpell('frostbolt')).toBeDefined();
@@ -508,8 +464,6 @@ describe('Per-engine content registries', () => {
       expect(engineB.registries.monsters.has('grunt')).toBe(false);
       expect(engineB.registries.traps.has('fire_rune')).toBe(true);
       expect(engineB.registries.traps.has('dart_trap')).toBe(false);
-      expect(engineB.registries.actionCommands.has('shadowstep')).toBe(true);
-      expect(engineB.registries.actionCommands.has('whirlwind')).toBe(false);
       expect(engineB.registries.spells.has('pyroblast')).toBe(true);
       expect(engineB.registries.spells.has('frostbolt')).toBe(false);
       expect(engineB.registries.companions.has('snow_leopard')).toBe(true);
@@ -532,8 +486,6 @@ describe('Per-engine content registries', () => {
       expect(MonsterRegistry.has('grunt')).toBe(false);
       expect(activeTrapStore().has('fire_rune')).toBe(true);
       expect(activeTrapStore().has('dart_trap')).toBe(false);
-      expect(ActionRegistry.has('shadowstep')).toBe(true);
-      expect(ActionRegistry.has('whirlwind')).toBe(false);
       expect(SpellRegistry.has('pyroblast')).toBe(true);
       expect(SpellRegistry.has('frostbolt')).toBe(false);
       expect(getSpell('pyroblast')).toBeDefined();

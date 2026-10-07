@@ -4,8 +4,6 @@ import {
   processDefaultMonsterStore,
   TrapRegistryStore,
   processDefaultTrapStore,
-  ActionRegistryStore,
-  processDefaultActionStore,
   SpellRegistryStore,
   processDefaultSpellStore,
   CompanionRegistryStore,
@@ -301,8 +299,6 @@ export class GameEngine {
     monsterStore.seedFrom(processDefaultMonsterStore());
     const trapStore = new TrapRegistryStore();
     trapStore.seedFrom(processDefaultTrapStore());
-    const actionStore = new ActionRegistryStore();
-    actionStore.seedFrom(processDefaultActionStore());
     const spellStore = new SpellRegistryStore();
     spellStore.seedFrom(processDefaultSpellStore());
     const companionStore = new CompanionRegistryStore();
@@ -320,7 +316,6 @@ export class GameEngine {
     this.registries = {
       monsters: monsterStore,
       traps: trapStore,
-      actionCommands: actionStore,
       spells: spellStore,
       companions: companionStore,
       aiStrategies: aiStrategyStore,
@@ -385,9 +380,6 @@ export class GameEngine {
     }
     if (this.manifest.aiStrategies) {
       this.registries.aiStrategies.registerAll(this.manifest.aiStrategies);
-    }
-    if (this.manifest.actionCommands) {
-      this.registries.actionCommands.registerAll(this.manifest.actionCommands);
     }
     this.affinityMatrix = this.manifest.affinityMatrix
       ? new AffinityMatrix(this.manifest.affinityMatrix)

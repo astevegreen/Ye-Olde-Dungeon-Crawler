@@ -22,7 +22,6 @@ export * from './entities/companion';
 
 // Actions
 export * from './actions/action';
-export * from './actions/actionRegistry';
 export * from './actions/actionPipeline';
 export * from './actions/movement';
 export * from './actions/combat';

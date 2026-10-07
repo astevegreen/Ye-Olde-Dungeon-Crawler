@@ -9,11 +9,6 @@ import {
   setActiveTrapStore,
 } from './trapRegistryStore';
 import {
-  ActionRegistryStore,
-  activeActionStore,
-  setActiveActionStore,
-} from './actionRegistryStore';
-import {
   SpellRegistryStore,
   activeSpellStore,
   setActiveSpellStore,
@@ -56,14 +51,6 @@ import {
 
 export { MonsterRegistryStore, processDefaultMonsterStore } from './monsterRegistryStore';
 export { TrapRegistryStore, processDefaultTrapStore } from './trapRegistryStore';
-export {
-  ActionRegistryStore,
-  /** @public Unused; goes with the action registry, which is being removed. */
-  activeActionStore,
-  processDefaultActionStore,
-  /** @public Unused; goes with the action registry, which is being removed. */
-  setActiveActionStore,
-} from './actionRegistryStore';
 export { SpellRegistryStore, processDefaultSpellStore } from './spellRegistryStore';
 export { CompanionRegistryStore, processDefaultCompanionStore } from './companionRegistryStore';
 export { AIStrategyRegistryStore, processDefaultAIStrategyStore } from './aiStrategyRegistryStore';
@@ -79,7 +66,6 @@ export { ItemIndex } from '../items/itemIndex';
 export interface EngineRegistries {
   monsters: MonsterRegistryStore;
   traps: TrapRegistryStore;
-  actionCommands: ActionRegistryStore;
   spells: SpellRegistryStore;
   companions: CompanionRegistryStore;
   aiStrategies: AIStrategyRegistryStore;
@@ -98,7 +84,6 @@ export interface EngineRegistries {
 export function activateRegistries(registries: EngineRegistries | null): void {
   setActiveMonsterStore(registries ? registries.monsters : null);
   setActiveTrapStore(registries ? registries.traps : null);
-  setActiveActionStore(registries ? registries.actionCommands : null);
   setActiveSpellStore(registries ? registries.spells : null);
   setActiveCompanionStore(registries ? registries.companions : null);
   setActiveAIStrategyStore(registries ? registries.aiStrategies : null);
@@ -117,7 +102,6 @@ export function activeRegistries(): EngineRegistries {
   return {
     monsters: activeMonsterStore(),
     traps: activeTrapStore(),
-    actionCommands: activeActionStore(),
     spells: activeSpellStore(),
     companions: activeCompanionStore(),
     aiStrategies: activeAIStrategyStore(),

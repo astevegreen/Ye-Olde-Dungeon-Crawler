@@ -954,7 +954,6 @@ export interface GameContentManifest {
   statusHandlers?: Record<string, StatusHandler>;
   actionHooks?: ActionHook[];
   aiBehaviors?: Record<string, AiBehaviorStrategy>;
-  actionCommands?: Record<string, import('../actions/actionRegistry').GameAction<any>>;
   aiStrategies?: Record<string, import('../ai/aiRegistry').AIStrategy>;
   modalLayouts?: Record<string, any>;
   keybindings?: Record<string, any>;

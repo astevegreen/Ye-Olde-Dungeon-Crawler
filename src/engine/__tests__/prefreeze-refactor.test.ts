@@ -9,7 +9,6 @@ import { SmartCloseDoorAction, getAdjacentOpenDoors } from '../actions/door';
 import { MovementAction } from '../actions/movement';
 import { SpellPipeline } from '../magic/spellPipeline';
 import { getSpell } from '../magic/spellRegistry';
-import { ActionRegistry } from '../actions/actionRegistry';
 import { cotwManifest } from '../../content/cotw';
 import { Visibility } from '../fov/types';
 
@@ -195,14 +194,7 @@ describe('Pre-Freeze Architectural Refactor Verification', () => {
     });
   });
 
-  describe('4. Smart-Close Door Targeting & Action Registry', () => {
-    it('verifies close_door is registered in ActionRegistry', () => {
-      const descriptor = ActionRegistry.get('close_door');
-      expect(descriptor).toBeDefined();
-      expect(descriptor?.id).toBe('close_door');
-      expect(descriptor?.name).toBe('Close Door');
-    });
-
+  describe('4. Smart-Close Door Targeting', () => {
     it('returns 0-cost failure when no open doors are adjacent', () => {
       const initialEnergy = player.energy;
       const action = new SmartCloseDoorAction(player);

@@ -1,9 +1,8 @@
 /**
  * Asynchronous storage tier (ARCHITECTURE.md §5).
  *
- * The synchronous browser store is quota-bound, which is fine for a character save but
- * not for the bulk data the game accumulates: every visited floor, bestiary records, and
- * flight-recorder logs. This is the interface that tier speaks.
+ * The synchronous browser store is quota-bound, so data kept outside the character save
+ * (bestiary records, flight-recorder logs) goes here. This is the interface that tier speaks.
  *
  * It lives in the engine as a *contract only*. `indexedDB` is a browser global, and engine
  * code may not touch those (§2), so the browser implementation lives in `src/ui/` and is
@@ -52,8 +51,6 @@ export class InMemoryAsyncStore implements AsyncKeyValueStore {
 
 /** Key prefixes, so one store can hold every kind of bulk record without collisions. */
 export const ASYNC_STORE_KEYS = {
-  /** A single stored floor: `floor:<profileId>:<floorNumber>`. */
-  floor: (profileId: string, floorNumber: number) => `floor:${profileId}:${floorNumber}`,
   /** Bestiary records for a profile. */
   bestiary: (profileId: string) => `bestiary:${profileId}`,
   /** A flight-recorder log dump, keyed by when it was archived. */

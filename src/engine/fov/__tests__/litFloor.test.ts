@@ -5,9 +5,6 @@ import { TILES } from '../../grid/tile';
 import { ProfileManager, MemoryStorage } from '../../storage/profile-manager';
 import { serializeGame, deserializeSaveData } from '../../storage/serializer';
 import type { SaveData } from '../../storage/types';
-import { BulkArchive } from '../../storage/bulkArchive';
-import { InMemoryAsyncStore } from '../../storage/asyncStore';
-import { offloadInactiveFloors, hydrateArchivedFloors } from '../../storage/floorCachePolicy';
 import { cotwManifest } from '../../../content/cotw';
 
 /** A lit floor (`GameMap.lit`, a town by day) is seen as far as line of sight goes. */
@@ -66,18 +63,5 @@ describe('Lit floors', () => {
     const inTown = deserializeSaveData(JSON.parse(JSON.stringify(serializeGame(fromDungeon))) as SaveData, cotwManifest);
     expect(inTown.currentFloor).toBe(0);
     expect(inTown.map.lit).toBe(true);
-  });
-
-  it('keeps the town lit through the floor archive', async () => {
-    const { engine } = new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Ragna');
-    engine.changeFloor(1);
-    const archive = new BulkArchive(new InMemoryAsyncStore());
-    const saveData = serializeGame(engine) as SaveData;
-    await offloadInactiveFloors(saveData, 'hero-1', archive);
-
-    const loaded = deserializeSaveData(JSON.parse(JSON.stringify(saveData)) as SaveData, cotwManifest);
-    expect(loaded.storedFloors.has(0)).toBe(false);
-    await hydrateArchivedFloors(loaded, 'hero-1', archive, saveData.archivedFloors);
-    expect(loaded.storedFloors.get(0)?.lit).toBe(true);
   });
 });

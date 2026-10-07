@@ -1,6 +1,4 @@
 import { PRNG } from '../dungeon/prng';
-import { offloadInactiveFloors } from './floorCachePolicy';
-import type { BulkArchive } from './bulkArchive';
 import { classifyLoadError, MISSING_SAVE, type LoadOutcome } from './loadResult';
 import { DungeonGenerator } from '../dungeon/dungeon-generator';
 import { TownMapGenerator } from '../town/townMap';
@@ -336,44 +334,9 @@ export class ProfileManager {
   }
 
   /**
-   * Serializes current engine state and updates character profile in manifest.
+   * Serializes current engine state and updates character profile in manifest. The save
+   * carries every visited floor inline (ARCHITECTURE.md §5).
    */
-  private bulkArchive: BulkArchive | null = null;
-
-  /**
-   * Attaches the asynchronous bulk tier, enabling `saveCharacterBounded`
-   * (ARCHITECTURE.md §5).
-   */
-  public setBulkArchive(archive: BulkArchive | null): void {
-    this.bulkArchive = archive;
-  }
-
-  /**
-   * Saves with a bounded payload: inactive floors are written to the async tier *first*,
-   * then the synchronous payload is written carrying only the active floor and the
-   * archived floor numbers.
-   *
-   * This is async by necessity. Trimming floors out of a synchronous write before their
-   * archive write has completed would lose them if the archive failed, so the offload is
-   * awaited and the trim only covers floors that actually landed. Without an archive
-   * attached it behaves exactly like `saveCharacter`.
-   */
-  public async saveCharacterBounded(engine: GameEngine, profile: CharacterProfile): Promise<void> {
-    if (!this.bulkArchive) {
-      this.saveCharacter(engine, profile);
-      return;
-    }
-
-    const saveData = serializeGame(engine, profile);
-    try {
-      await offloadInactiveFloors(saveData, profile.id, this.bulkArchive);
-    } catch {
-      // Archive unavailable: fall back to the full inline payload rather than losing floors.
-      saveData.archivedFloors = [];
-    }
-    this.writeSave(saveData, engine, profile);
-  }
-
   public saveCharacter(engine: GameEngine, profile: CharacterProfile): void {
     this.writeSave(serializeGame(engine, profile), engine, profile);
   }

@@ -380,7 +380,11 @@ export interface SaveData {
   difficulty?: GameDifficulty;
   maxFloor?: number;
   storedMaps?: Record<number, SerializedMap>;
-  /** Floors held in the async tier rather than inline (schema v10, ARCHITECTURE.md §5). */
+  /**
+   * Ignored on load, never written. Schema v10's field for floors moved to the async tier by
+   * a bounded-save path that was never wired and is deleted: every save keeps its floors in
+   * `storedMaps`.
+   */
   archivedFloors?: number[];
   storedFovRle?: Record<number, string>;
   compendium?: Record<string, { kills: number; tier: 0 | 1 | 2 | 3; firstEncounterFloor?: number; chosenPerk?: import('../compendium/types').MasteryPerkId }>;

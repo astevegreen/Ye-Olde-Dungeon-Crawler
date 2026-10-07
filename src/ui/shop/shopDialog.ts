@@ -43,6 +43,9 @@ export interface ShopDialogOptions {
 type Tone = 'good' | 'bad' | 'warn' | 'info';
 type ShopTab = 'buy' | 'sell' | 'forge';
 
+/** How long after opening the dialog ignores the keys that trade (R-ui-7). */
+const ARMING_MS = 250;
+
 /**
  * A town service as a dialog in the one frame (ADR-0011): walking into a merchant or
  * townsperson opens it over the town, which is what dialogs are for (they interrupt
@@ -81,6 +84,8 @@ export class ShopDialog {
   private scrim: HTMLElement | null = null;
   /** Reads items the way the inventory does, for the detail panel. */
   private readonly inspector = new ItemInspector();
+  /** When the dialog last opened (`Date.now()`), for the trading keys' arming delay. */
+  private openedAt = 0;
 
   constructor(options: ShopDialogOptions = {}) {
     this.options = options;
@@ -99,6 +104,7 @@ export class ShopDialog {
     this.sageView = 'items';
     this.statusMessage = '';
     this.statusTone = 'info';
+    this.openedAt = Date.now();
     this.onOpen?.(npc);
     this.onGreet?.(npc, engine);
     this.scrim ??= createDialogScrim('shop-dialog');
@@ -128,6 +134,17 @@ export class ShopDialog {
 
   // ---- Keys ------------------------------------------------------------------
 
+  /**
+   * Whether a key that trades (a number, Enter, Space, J, M, a service's offer) is held
+   * back: an auto-repeat, or a press in the first moment after the dialog opened. The
+   * shop opens inside the step that bumps the merchant, so a movement key held into him
+   * (number pad 6, vi J, vi H at the temple) kept buying, selling or paying on every
+   * repeat (R-ui-7). Moving the selection and switching lists are never held back.
+   */
+  private holdsBack(event: KeyboardEvent): boolean {
+    return event.repeat || Date.now() - this.openedAt < ARMING_MS;
+  }
+
   public handleKeyDown(event: KeyboardEvent, engine: GameEngine): boolean {
     if (!this.isOpen) return false;
     this.engine = engine;
@@ -155,11 +172,11 @@ export class ShopDialog {
         return true;
       }
       if (letter === 'M' && this.smithId(engine)) {
-        this.executeMasterwork(engine);
+        if (!this.holdsBack(event)) this.executeMasterwork(engine);
         return true;
       }
       if (letter === 'J') {
-        this.sellJunk(engine);
+        if (!this.holdsBack(event)) this.sellJunk(engine);
         return true;
       }
       if (key === 'ArrowUp' || key === 'ArrowDown') {
@@ -168,12 +185,12 @@ export class ShopDialog {
         return true;
       }
       if (/^[1-9]$/.test(key)) {
-        this.trade(engine, parseInt(key, 10) - 1);
+        if (!this.holdsBack(event)) this.trade(engine, parseInt(key, 10) - 1);
         return true;
       }
       if (key === 'Enter' || key === ' ') {
         event.preventDefault();
-        this.trade(engine, this.selectedIndex);
+        if (!this.holdsBack(event)) this.trade(engine, this.selectedIndex);
         return true;
       }
       return true;
@@ -193,7 +210,7 @@ export class ShopDialog {
       return true;
     }
     const offer = panel?.offers.find((o) => o.key === letter);
-    if (offer && !offer.disabled) this.run(offer.act, engine, offer.arg);
+    if (offer && !offer.disabled && !this.holdsBack(event)) this.run(offer.act, engine, offer.arg);
     // Every other key is swallowed while the dialog is open.
     return true;
   }

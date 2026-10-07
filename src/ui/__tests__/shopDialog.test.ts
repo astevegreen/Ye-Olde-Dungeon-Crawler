@@ -39,7 +39,13 @@ class MockDocument {
   }
 }
 
-const key = (k: string) => ({ key: k, code: k, preventDefault: () => {} }) as unknown as KeyboardEvent;
+const key = (k: string, repeat = false) => ({ key: k, code: k, repeat, preventDefault: () => {} }) as unknown as KeyboardEvent;
+
+// The dialog ignores trading keys for a moment after it opens (R-ui-7). Each read of the
+// clock moves it on a second, so the other tests' keys land well after that; the R-ui-7
+// tests stop it and move it by hand.
+let now = 0;
+let tick = 1000;
 
 function testEngine(): GameEngine {
   return new GameEngine({
@@ -67,12 +73,16 @@ describe('ShopDialog', () => {
     originalDocument = (globalThis as any).document;
     doc = new MockDocument();
     (globalThis as any).document = doc;
+    now = 0;
+    tick = 1000;
+    vi.spyOn(Date, 'now').mockImplementation(() => (now += tick));
     engine = testEngine();
     dispatch = vi.spyOn(engine.commandBus, 'dispatch').mockReturnValue({ success: true, message: 'Done.' });
   });
 
   afterEach(() => {
     (globalThis as any).document = originalDocument;
+    vi.restoreAllMocks();
   });
 
   const html = () => doc.overlay?.innerHTML ?? '';
@@ -108,6 +118,19 @@ describe('ShopDialog', () => {
       }
     });
   }
+
+  it("ignores a service's key held into the dialog, or pressed in its first moment (R-ui-7)", () => {
+    tick = 0;
+    const shop = new ShopDialog();
+    shop.open(npc('priest'), null, engine);
+    // Vi H (move west) held into the priest is his Heal.
+    shop.handleKeyDown(key('h'), engine);
+    now += 300;
+    shop.handleKeyDown(key('h', true), engine);
+    expect(dispatch).not.toHaveBeenCalled();
+    shop.handleKeyDown(key('h'), engine);
+    expect(commandTypes()).toEqual(['temple_heal']);
+  });
 
   it('passes the archetype each trainer key asks for', () => {
     const shop = new ShopDialog();
@@ -237,6 +260,31 @@ describe('ShopDialog', () => {
       shop.handleKeyDown(key('1'), engine);
       const ids = dispatch.mock.calls.map((c) => (c[0] as unknown as { payload: { itemIndex: string } }).payload.itemIndex);
       expect(ids).toEqual(['bread', 'torch-1']);
+    });
+
+    it('ignores a trading key held into the shop: its repeats, and any press in the first moment (R-ui-7)', () => {
+      const pack = engine.player.inventory.primaryPack;
+      const marked = ware('junk-boot', 'Old Boot');
+      marked.junk = true;
+      pack.addItem(marked);
+      tick = 0;
+      const shop = new ShopDialog();
+      shop.open(npc('merchant'), merchant(), engine);
+      // The bump that opened the shop: the key's next press lands at once.
+      for (const k of ['6', 'Enter', ' ', 'j', 'm']) expect(shop.handleKeyDown(key(k), engine)).toBe(true);
+      now += 100;
+      shop.handleKeyDown(key('2'), engine);
+      expect(dispatch).not.toHaveBeenCalled();
+      // Past the moment, a held key's repeats still do nothing; a fresh press trades.
+      now += 200;
+      for (const k of ['3', 'Enter', ' ', 'j', 'm']) shop.handleKeyDown(key(k, true), engine);
+      expect(dispatch).not.toHaveBeenCalled();
+      // Navigation is never held back.
+      shop.handleKeyDown(key('ArrowDown', true), engine);
+      expect(shop.selectedBuyIndex).toBe(1);
+      shop.handleKeyDown(key('3'), engine);
+      shop.handleKeyDown(key('j'), engine);
+      expect(commandTypes()).toEqual(['buy_item', 'sell_junk']);
     });
 
     it('keeps the selection inside the list', () => {

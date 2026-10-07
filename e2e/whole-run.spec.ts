@@ -181,18 +181,17 @@ test.describe('a whole run', () => {
     await page.keyboard.press(await standBeside(page, shopNpc!));
     await expect.poll(() => stackIds(page)).toContain('shop');
     const purseBefore = await page.evaluate(() => window.__cotwEngine!.player.inventory.getAllCarriedItems().length);
-    await page.keyboard.press('Enter');
-    await expect
-      .poll(() => page.evaluate(() => window.__cotwEngine!.player.inventory.getAllCarriedItems().length))
-      .toBeGreaterThan(purseBefore);
+    // The shop ignores trading keys for a moment after it opens (R-ui-7), so press until it buys.
+    await pressUntil(page, 'Enter', async () =>
+      (await page.evaluate(() => window.__cotwEngine!.player.inventory.getAllCarriedItems().length)) > purseBefore
+    );
     await closeAll(page);
 
     // A pact, sealed with the pact keeper (the first on his list is key 1); his hint shows.
     const keeperId = await page.evaluate(() => window.__cotwEngine!.manifest.pactKeeperNpcId!);
     await page.keyboard.press(await standBeside(page, (await findEntity(page, { id: keeperId }))!));
     await expect.poll(() => stackIds(page)).toContain('shop');
-    await page.keyboard.press('Digit1');
-    await expect.poll(async () => (await engineState(page)).pacts.length).toBe(1);
+    await pressUntil(page, 'Digit1', async () => (await engineState(page)).pacts.length === 1);
     await closeAll(page);
     await expect(page.locator('.sb-hint')).toBeVisible();
     await expect(page.locator('.sb-hint .sb-title')).toContainText('Pacts');

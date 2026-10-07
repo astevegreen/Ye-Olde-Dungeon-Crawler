@@ -6,7 +6,6 @@ import { Monster } from '../../entities/monster';
 import { GameEngine } from '../../engine';
 import { DeathResolver } from '../../combat/deathResolver';
 import { DeathEnvelopeTracker, type DeathEnvelope } from '../deathEnvelope';
-import { HookDispatcher } from '../../hooks/hookDispatcher';
 import { Item } from '../../items/item';
 
 describe('DeathEnvelope & Run-Failure Telemetry', () => {
@@ -71,8 +70,7 @@ describe('DeathEnvelope & Run-Failure Telemetry', () => {
     expect(envelope?.equippedSynergyTags).toContain('category:weapon');
   });
 
-  it('dispatches onPlayerDefeated hook to HookDispatcher and notifies external subscribers', () => {
-    const dispatchSpy = vi.spyOn(HookDispatcher, 'dispatch');
+  it('notifies external subscribers of a player death', () => {
     let subscriberEnvelope: DeathEnvelope | null = null;
 
     const unsubscribe = DeathEnvelopeTracker.subscribe((env) => {
@@ -80,14 +78,6 @@ describe('DeathEnvelope & Run-Failure Telemetry', () => {
     });
 
     DeathResolver.resolveDeath(engine, killer, player);
-
-    expect(dispatchSpy).toHaveBeenCalledWith(
-      'onPlayerDefeated',
-      expect.objectContaining({
-        attacker: killer,
-        defender: player,
-      })
-    );
 
     expect(subscriberEnvelope).not.toBeNull();
     expect((subscriberEnvelope as any)?.victimName).toBe('Ragnar');

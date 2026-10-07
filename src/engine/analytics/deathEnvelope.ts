@@ -1,7 +1,6 @@
 import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
 import { Monster } from '../entities/monster';
-import { HookDispatcher } from '../hooks/hookDispatcher';
 
 export interface DeathEnvelope {
   fatalDamageType: string;
@@ -74,14 +73,6 @@ export class DeathEnvelopeTracker {
     DeathEnvelopeTracker.latestEnvelope = envelope;
     DeathEnvelopeTracker.history.push(envelope);
     if (DeathEnvelopeTracker.history.length > HISTORY_LIMIT) DeathEnvelopeTracker.history.shift();
-
-    // Dispatch via HookDispatcher
-    HookDispatcher.dispatch('onPlayerDefeated', {
-      engine,
-      attacker: killer,
-      defender: player,
-      deathEnvelope: envelope,
-    });
 
     // Notify registered external listeners (metaprogression / hub / cemetery)
     for (const listener of DeathEnvelopeTracker.listeners) {

@@ -8,9 +8,8 @@ import type { Position } from '../types';
  * The generic, reusable piece the engine owns: a bounded-radius query for living
  * entities matching any of `tags`, evaluated via the existing `Entity.hasTag()`
  * (which already also matches faction and entity type — see entity.ts). Content
- * decides what to do with the matches: `HookDispatcher`'s `radialAuraFilter`
- * primitive applies an arbitrary `ActionPrimitive` to each; `DrinkPotionAction`'s
- * `radial_status` consumable effect applies a status effect to each.
+ * decides what to do with the matches through `DrinkPotionAction`'s `radial_status`
+ * consumable effect, which applies a status effect to each.
  *
  * Iteration is bounded to the query's own bounding box via `GameMap.getEntitiesAt`
  * (the same per-tile bucket lookup `entityBuckets` backs), consistent with §6's

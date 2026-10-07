@@ -10,10 +10,7 @@ import { evaluatePredicate } from '../predicates/predicateEvaluator';
 import type { SurfaceType, GasType } from '../surfaces/surfaceGrid';
 import type { ElementType } from '../magic/elements';
 import type { Position } from '../types';
-import { applyImpulse } from '../combat/impulse';
 import { DeathResolver } from '../combat/deathResolver';
-import { CastSpellAction } from '../actions/spell-actions';
-import { findTaggedEntitiesInRadius } from '../combat/radialAuraFilter';
 import { shrugsAffliction } from '../compendium/familyPerks';
 
 export type HookEvent =
@@ -22,8 +19,7 @@ export type HookEvent =
   | 'onBlock'
   | 'onDamageTaken'
   | 'onTurnStart'
-  | 'onMove'
-  | 'onPlayerDefeated';
+  | 'onMove';
 
 export type ActionPrimitive =
   | {
@@ -31,11 +27,6 @@ export type ActionPrimitive =
       status: string;
       duration: number;
       potency?: number;
-      target?: 'self' | 'target';
-    }
-  | {
-      type: 'castSpell';
-      spellId: string;
       target?: 'self' | 'target';
     }
   | {
@@ -51,11 +42,6 @@ export type ActionPrimitive =
       duration?: number;
     }
   | {
-      type: 'pushImpulse';
-      distance: number;
-      target?: 'self' | 'target';
-    }
-  | {
       type: 'heal';
       amount: number;
       target?: 'self' | 'target';
@@ -64,19 +50,6 @@ export type ActionPrimitive =
       type: 'bonusDamage';
       amount: number;
       element?: ElementType;
-    }
-  | {
-      /**
-       * Tag-Filtered Radial Aura (docs/architecture/content-progression-scaling.md): finds living entities within
-       * `radius` of the hook's position matching any of `tags` (via `Entity.hasTag()`,
-       * bounded via `findTaggedEntitiesInRadius` per §6's scoping principle), and
-       * applies `apply` to each match as its own target. The generic, reusable
-       * primitive; which tags a holy torch or ward cares about is content data.
-       */
-      type: 'radialAuraFilter';
-      radius: number;
-      tags: string[];
-      apply: ActionPrimitive;
     };
 
 export interface HookDescriptor {
@@ -89,7 +62,7 @@ export interface HookDescriptor {
 
 /**
  * Built-in hook primitives are engine code, not content handlers: they resolve damage,
- * deaths, impulses and spells, which need the full engine. Content handlers only ever see
+ * deaths, statuses and surfaces, which need the full engine. Content handlers only ever see
  * the scoped EngineContext (ARCHITECTURE.md §3); GameEngine is its only implementation, so
  * this one narrowing-cast keeps the content-facing contract tight without wrapping.
  */
@@ -106,9 +79,6 @@ export interface HookContext {
   blockedDamage?: number;
   sourceItem?: Item;
   position?: Position;
-  dx?: number;
-  dy?: number;
-  deathEnvelope?: any;
 }
 
 export interface HookExecutionSummary {
@@ -236,8 +206,7 @@ export class HookDispatcher {
     }
   }
 
-  // Public (not private) so the standalone `executeRadialAuraFilter` primitive
-  // executor below can recurse into it for each tag-matched entity.
+  // Public so hookDispatcher.test.ts can stand in a re-dispatching or throwing primitive.
   public static executePrimitive(
     action: ActionPrimitive,
     ctx: HookContext,
@@ -278,30 +247,6 @@ function executeApplyStatus(
     );
     if (applied) {
       const msg = description ?? `[PROC: ${sourceName}] ${dest.name} is afflicted with ${action.status}!`;
-      engine.log(msg);
-      summary.messages.push(msg);
-    }
-  }
-}
-
-function executePushImpulse(
-  action: any,
-  context: HookContext,
-  owner: Entity,
-  target: Entity | undefined,
-  summary: HookExecutionSummary,
-  sourceName: string,
-  description?: string
-): void {
-  const engine = asGameEngine(context.engine);
-  const dest = target ?? owner;
-  if (dest && dest.isAlive()) {
-    // Push vector away from owner or along context vector
-    const dx = dest.x - owner.x !== 0 ? Math.sign(dest.x - owner.x) : (context.dx ?? 0);
-    const dy = dest.y - owner.y !== 0 ? Math.sign(dest.y - owner.y) : (context.dy ?? 0);
-    const res = applyImpulse(engine, owner, dest, dx, dy, action.distance);
-    if (res.pushed || res.wallSplat) {
-      const msg = description ?? `[PROC: ${sourceName}] Kinetic shockwave hurls ${dest.name} backward!`;
       engine.log(msg);
       summary.messages.push(msg);
     }
@@ -421,56 +366,8 @@ function executeBonusDamage(
   }
 }
 
-function executeCastSpell(
-  action: any,
-  context: HookContext,
-  owner: Entity,
-  target: Entity | undefined,
-  summary: HookExecutionSummary,
-  sourceName: string,
-  description?: string
-): void {
-  const engine = asGameEngine(context.engine);
-  const dest = target ?? owner;
-  if (dest) {
-    const castAction = new CastSpellAction(owner, action.spellId, dest.x, dest.y, undefined, true);
-    castAction.perform(engine);
-    const msg = description ?? `[PROC: ${sourceName}] Automatically triggered spell ${action.spellId}!`;
-    summary.messages.push(msg);
-  }
-}
-
-function executeRadialAuraFilter(
-  action: any,
-  context: HookContext,
-  owner: Entity,
-  _target: Entity | undefined,
-  summary: HookExecutionSummary,
-  sourceName: string,
-  description?: string
-): void {
-  const engine = asGameEngine(context.engine);
-  const center = context.position ?? { x: owner.x, y: owner.y };
-  const matches = findTaggedEntitiesInRadius(engine, center, action.radius, action.tags);
-
-  if (matches.length === 0) return;
-
-  for (const matched of matches) {
-    // Each match is its own primitive target; owner stays the aura's source for
-    // messaging/attribution, mirroring how the other primitives attribute PROCs.
-    HookDispatcher.executePrimitive(action.apply, context, owner, matched, summary, sourceName);
-  }
-
-  const msg = description ?? `[PROC: ${sourceName}] A radial aura washes over ${matches.length} ${action.tags.join('/')} creature(s)!`;
-  engine.log(msg);
-  summary.messages.push(msg);
-}
-
 primitiveExecutors.set('applyStatus', executeApplyStatus);
-primitiveExecutors.set('pushImpulse', executePushImpulse);
 primitiveExecutors.set('spawnSurface', executeSpawnSurface);
 primitiveExecutors.set('spawnGas', executeSpawnGas);
 primitiveExecutors.set('heal', executeHeal);
 primitiveExecutors.set('bonusDamage', executeBonusDamage);
-primitiveExecutors.set('castSpell', executeCastSpell);
-primitiveExecutors.set('radialAuraFilter', executeRadialAuraFilter);

@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { findTaggedEntitiesInRadius } from '../radialAuraFilter';
-import { HookDispatcher } from '../../hooks/hookDispatcher';
 import { DrinkPotionAction } from '../../actions/spell-actions';
 import { PotionItem } from '../../items/consumables';
 import { GameEngine } from '../../engine';
@@ -77,42 +76,6 @@ describe('Tag-Filtered Radial Auras', () => {
 
       expect(findTaggedEntitiesInRadius(engine, { x: 10, y: 10 }, 0, ['undead'])).toEqual([]);
       expect(findTaggedEntitiesInRadius(engine, { x: 10, y: 10 }, 5, [])).toEqual([]);
-    });
-  });
-
-  describe('HookDispatcher radialAuraFilter primitive', () => {
-    it('applies a nested primitive to every tag-matching entity in radius', () => {
-      const { engine } = buildEngine();
-      const undead1 = buildMonster('undead-1', 11, 10, ['undead']);
-      const undead2 = buildMonster('undead-2', 10, 11, ['undead']);
-      const beast = buildMonster('beast-1', 9, 10, ['beast']);
-      engine.map.addEntity(undead1);
-      engine.map.addEntity(undead2);
-      engine.map.addEntity(beast);
-
-      const result = {
-        executedHooks: 0,
-        bonusDamage: 0,
-        messages: [] as string[],
-      };
-
-      HookDispatcher.executePrimitive(
-        {
-          type: 'radialAuraFilter',
-          radius: 4,
-          tags: ['undead'],
-          apply: { type: 'applyStatus', status: 'blindness', duration: 3 },
-        },
-        { engine, position: { x: 10, y: 10 } },
-        engine.player,
-        undefined,
-        result,
-        'Test Aura'
-      );
-
-      expect(undead1.statusManager.hasStatus('blindness')).toBe(true);
-      expect(undead2.statusManager.hasStatus('blindness')).toBe(true);
-      expect(beast.statusManager.hasStatus('blindness')).toBe(false);
     });
   });
 

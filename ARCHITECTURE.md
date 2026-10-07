@@ -228,7 +228,7 @@ A completed item is deleted from this register, but its ID is retired, never reu
 | P-14 | Companions | [content-companions.md](docs/architecture/content-companions.md) |
 | P-22 | Per-engine registries | [content-extensibility.md](docs/architecture/content-extensibility.md) (Content Registries) |
 | P-23 | Milestone renown ledger | [content-progression-scaling.md](docs/architecture/content-progression-scaling.md) |
-| P-25 | Assigned twice in error: tag-filtered radial auras ([content-progression-scaling.md](docs/architecture/content-progression-scaling.md)), and on 2026-09-23 typed action introspection (§4) | — |
+| P-25 | Assigned twice in error: tag-filtered radial auras ([content-progression-scaling.md](docs/architecture/content-progression-scaling.md); their hook primitive was removed 2026-10-07, the `radial_status` effect remains), and on 2026-09-23 typed action introspection (§4) | — |
 | P-26 | Sensory masking & echolocation | [simulation-and-input.md](docs/architecture/simulation-and-input.md) |
 
 ### Deferred (out of scope)

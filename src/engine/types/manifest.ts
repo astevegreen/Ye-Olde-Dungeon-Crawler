@@ -56,9 +56,8 @@ export type ConsumableEffectDescriptor =
       /**
        * Tag-Filtered Radial Aura (docs/architecture/content-progression-scaling.md): applies `status` to every
        * living entity within `radius` of the user matching any of `tags` (e.g. a
-       * holy torch blinding undead within 4 tiles). Uses the same bounded
-       * `findTaggedEntitiesInRadius` query the `radialAuraFilter` hook primitive
-       * uses — see `combat/radialAuraFilter.ts`. Only the user is spared: like a spell
+       * holy torch blinding undead within 4 tiles), through the bounded
+       * `findTaggedEntitiesInRadius` query (`combat/radialAuraFilter.ts`). Only the user is spared: like a spell
        * burst, it afflicts allies too (a hero's companion is a `monster` by type).
        */
       type: 'radial_status';

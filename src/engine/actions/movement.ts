@@ -250,8 +250,6 @@ export class MovementAction implements Action {
       engine,
       attacker: this.entity,
       position: { x: targetX, y: targetY },
-      dx: this.dx,
-      dy: this.dy,
     });
 
     // 5d. Passive Perception Check for Player

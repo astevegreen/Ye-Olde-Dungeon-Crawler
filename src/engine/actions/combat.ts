@@ -298,8 +298,6 @@ export class MeleeAttackAction implements Action {
       defender: this.defender,
       damage: damageDealt,
       blockedDamage,
-      dx: this.defender.x - this.attacker.x,
-      dy: this.defender.y - this.attacker.y,
     });
 
     if (damageDealt > 0) {

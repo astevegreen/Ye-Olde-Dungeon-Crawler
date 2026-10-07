@@ -119,3 +119,36 @@ describe('Look / Inspect Mode & Tile Inspector', () => {
     expect(inspection.items).toHaveLength(0);
   });
 });
+
+/**
+ * R-dbg-16: Look listed the live ground items of any explored tile, names and weights, though
+ * the map draws items only where the hero sees, or as anonymous marks under Detect Objects.
+ * So Look saw through Clairvoyance and Detect Objects, and showed what changed while away.
+ */
+describe('R-dbg-16 · Look names only the items the hero can see', () => {
+  function farTile() {
+    const map = GameMap.createBoxRoom(40, 12);
+    for (let y = 0; y < 12; y++) map.setTile(20, y, TILES.WALL);
+    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 }, stats: { hp: 50, maxHp: 50, attack: 1, defense: 0 } });
+    const engine = new GameEngine({ map, player, floor: 1, manifest: COTW_MANIFEST });
+    engine.updateFov();
+    engine.fov.revealAllTiles(); // Clairvoyance: the far side is explored, not seen
+    map.addItemAt(30, 5, ItemFactory.createDagger('far-dagger'));
+    return engine;
+  }
+
+  it('an explored tile out of sight lists no items', () => {
+    const inspection = TileInspector.inspectTile(farTile(), 30, 5);
+    expect(inspection.visibility).toBe('explored');
+    expect(inspection.items).toEqual([]);
+  });
+
+  it('under Detect Objects it lists one unnamed something, as the map marks it', () => {
+    const engine = farTile();
+    engine.detectObjectsTurns = 10;
+    const items = TileInspector.inspectTile(engine, 30, 5).items;
+    expect(items).toHaveLength(1);
+    expect(items[0].name).not.toMatch(/dagger/i);
+    expect(items[0].sensed).toBe(true);
+  });
+});

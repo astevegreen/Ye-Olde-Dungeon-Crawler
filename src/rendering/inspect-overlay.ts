@@ -189,7 +189,7 @@ export function lookCardHtml(engine: GameEngine, data: TileInspection): string {
       .slice(0, 3)
       .map((it) => {
         const tone = itemToneClass(onTile.find((i) => i.id === it.id));
-        return `<div class="mc-line"><span class="mc-item${tone}">${escapeHtml(it.name || 'Item')}${escapeHtml(statTag(it))}</span><span class="ui-muted ui-num">${formatWeight(it.weight)}</span></div>`;
+        return `<div class="mc-line"><span class="mc-item${tone}">${escapeHtml(it.name || 'Item')}${escapeHtml(statTag(it))}</span><span class="ui-muted ui-num">${it.sensed ? '' : formatWeight(it.weight)}</span></div>`;
       })
       .join('');
     const more = data.items.length > 3 ? `<div class="ui-note">and ${data.items.length - 3} more</div>` : '';

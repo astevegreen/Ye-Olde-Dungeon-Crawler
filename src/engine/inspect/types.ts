@@ -37,6 +37,8 @@ export interface InspectedItem {
   stats?: ItemStatModifiers;
   enchantmentLevel?: number;
   elementalAffix?: ElementalAffix;
+  /** Sensed by Detect Objects out of sight: something is there, nothing more is known. */
+  sensed?: boolean;
 }
 
 export interface TileInspection {

@@ -79,12 +79,27 @@ export const DEFAULT_THEME_TOKENS: Required<ThemeTokens> = {
   manaBar: '#0ea5e9',
 };
 
+const resolvedThemes = new WeakMap<Partial<ThemeTokens>, Required<ThemeTokens>>();
+let resolvedDefaults: Required<ThemeTokens> | undefined;
+
 /**
  * Fills every token. Roles come from the pack, then from the pack's older names where it
  * only set those, then from the defaults; the older names are derived from the roles.
+ *
+ * Remembered per tokens object, since a pack's theme is fixed data and the canvas asks for it
+ * many times a frame (R-rend-16). The result is frozen, so every caller can share it.
  */
 export function resolveThemeTokens(tokens?: Partial<ThemeTokens>): Required<ThemeTokens> {
-  const t = tokens ?? {};
+  if (!tokens) return (resolvedDefaults ??= Object.freeze(buildThemeTokens({})));
+  let resolved = resolvedThemes.get(tokens);
+  if (!resolved) {
+    resolved = Object.freeze(buildThemeTokens(tokens));
+    resolvedThemes.set(tokens, resolved);
+  }
+  return resolved;
+}
+
+function buildThemeTokens(t: Partial<ThemeTokens>): Required<ThemeTokens> {
   const D = DEFAULT_THEME_TOKENS;
 
   const surface0 = t.surface0 ?? t.bg ?? D.surface0;

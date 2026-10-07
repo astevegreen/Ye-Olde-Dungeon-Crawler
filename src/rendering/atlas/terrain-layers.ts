@@ -103,6 +103,11 @@ function suffixChain(suffix: string | undefined): string[] {
   return out;
 }
 
+/**
+ * The keys to blit for one cell, bottom first, or null for the one-recipe path. Reads tile
+ * types at most two columns and one row from the cell: `TerrainLayerCache` (terrain-cache.ts)
+ * relies on that reach to know which cached cells a tile change touches, so widen both together.
+ */
 export function terrainLayers(
   view: TerrainView,
   x: number,

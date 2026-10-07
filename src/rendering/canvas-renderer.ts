@@ -16,7 +16,8 @@ import { IntentOverlay } from './intentOverlay';
 import { Monster } from '../engine';
 import { SpriteAtlas } from './atlas/sprite-atlas';
 import { getTerrainSpriteKey, getEntitySpriteKey, getItemSpriteKey, getMonsterDefinitionSpriteKey } from './atlas/sprite-mapper';
-import { terrainLayers, contactShadowSides, zoneForFloor, type TerrainView } from './atlas/terrain-layers';
+import { contactShadowSides, zoneForFloor, type TerrainView } from './atlas/terrain-layers';
+import { TerrainLayerCache } from './atlas/terrain-cache';
 import { ViewportManager } from './viewport';
 import { elementColor, resolveThemeTokens, type ThemeTokens, uiFont, uiFontPx, withAlpha } from './theme';
 import { itemFrameColor } from './itemFrame';
@@ -111,6 +112,9 @@ export class CanvasRenderer {
       typeAt: (x: number, y: number) => (map().inBounds(x, y) ? map().getTile(x, y)?.type : undefined),
     };
   })();
+  /** Each on-screen cell's terrain layers, kept between frames until a tile near it changes. */
+  private readonly terrainCache = new TerrainLayerCache();
+  private readonly hasRecipe = (key: string): boolean => this.atlas.hasRecipe(key);
   public onPactModalRequested?: () => void;
   /** A double-click on a container on or beside the hero's tile: open it in the inventory. */
   public onOpenContainer?: (container: Container) => void;
@@ -621,6 +625,10 @@ export class CanvasRenderer {
     const startY = this.camera.startY;
     const cols = this.camera.viewWidthTiles;
     const rows = this.camera.viewHeightTiles;
+    const theme = this.theme;
+    const manifest = this.engine.manifest;
+    const art = manifest?.atlas?.terrain;
+    if (art) this.terrainCache.begin([this.engine.map, this.engine.currentFloor, art, manifest], this.terrainView, startX, startY, cols, rows);
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -638,7 +646,7 @@ export class CanvasRenderer {
 
         if (!tile) continue;
 
-        this.drawTileWithFov(screenX, screenY, cs, tile, visibility, worldX, worldY);
+        this.drawTileWithFov(screenX, screenY, cs, tile, visibility, worldX, worldY, theme.canvasBg);
       }
     }
 
@@ -647,6 +655,7 @@ export class CanvasRenderer {
 
 
     // Threatened Target Tiles Hazard Highlight (Telegraphed Wind-Up)
+    const danger = theme.bad;
     for (const entity of this.engine.map.getAllEntities()) {
       if (
         entity instanceof Monster &&
@@ -662,10 +671,10 @@ export class CanvasRenderer {
           if (screenPos) {
             this.ctx.save();
             this.ctx.globalAlpha = 0.35;
-            this.ctx.fillStyle = this.theme.bad;
+            this.ctx.fillStyle = danger;
             this.ctx.fillRect(screenPos.x, screenPos.y, cs, cs);
             this.ctx.globalAlpha = 1;
-            this.ctx.strokeStyle = this.theme.bad;
+            this.ctx.strokeStyle = danger;
             this.ctx.lineWidth = 2;
             this.ctx.setLineDash(CanvasRenderer.DASH_PATTERN as unknown as number[]);
             this.ctx.strokeRect(screenPos.x + 1, screenPos.y + 1, cs - 2, cs - 2);
@@ -682,21 +691,33 @@ export class CanvasRenderer {
     cs: number,
     tile: TileDefinition,
     visibility: Visibility,
-    worldX?: number,
-    worldY?: number
+    worldX: number,
+    worldY: number,
+    background: string
   ): void {
     // State 1: Unexplored (pitch black)
     if (visibility === Visibility.Unexplored) {
-      this.ctx.fillStyle = this.theme.canvasBg;
+      this.ctx.fillStyle = background;
       this.ctx.fillRect(px, py, cs, cs);
       return;
+    }
+
+    // Neighbour-aware terrain the pack opts into (atlas.terrain); cells it doesn't draw fall through.
+    const art = this.engine.manifest?.atlas?.terrain;
+    if (art) {
+      const layers = this.terrainCache.get(this.terrainView, worldX, worldY, this.terrainSuffixAt, art, this.hasRecipe);
+      if (layers) {
+        for (const key of layers) this.atlas.drawSprite(this.ctx, key, px, py, cs, visibility);
+        if (tile.visual === 'portal' || tile.visual === 'altar') this.drawFixtureOverlay(px, py, cs, tile.visual, visibility, tile.glyph);
+        return;
+      }
     }
 
     const currentFloor = this.engine.currentFloor;
     const tileZoneBands = this.engine.manifest?.atlas?.tileZoneBands;
 
     let buildingType: string | undefined;
-    if (currentFloor === 0 && worldX !== undefined && worldY !== undefined) {
+    if (currentFloor === 0) {
       const buildings = this.engine.manifest?.town?.buildings;
       if (buildings) {
         for (let i = 0; i < buildings.length; i++) {
@@ -709,19 +730,8 @@ export class CanvasRenderer {
       }
     }
 
-    // Neighbour-aware terrain the pack opts into (atlas.terrain); cells it doesn't draw fall through.
-    const art = this.engine.manifest?.atlas?.terrain;
-    if (art && worldX !== undefined && worldY !== undefined) {
-      const layers = terrainLayers(this.terrainView, worldX, worldY, this.terrainSuffixAt, art, (k) => this.atlas.hasRecipe(k));
-      if (layers) {
-        for (const key of layers) this.atlas.drawSprite(this.ctx, key, px, py, cs, visibility);
-        if (tile.visual === 'portal' || tile.visual === 'altar') this.drawFixtureOverlay(px, py, cs, tile.visual, visibility, tile.glyph);
-        return;
-      }
-    }
-
     // State 2 & 3: Explored vs Visible via Sprite Atlas
-    const spriteKey = getTerrainSpriteKey(tile.type, currentFloor, tileZoneBands, buildingType, (k) => this.atlas.hasRecipe(k));
+    const spriteKey = getTerrainSpriteKey(tile.type, currentFloor, tileZoneBands, buildingType, this.hasRecipe);
     this.atlas.drawSprite(this.ctx, spriteKey, px, py, cs, visibility);
 
     if (tile.visual === 'portal' || tile.visual === 'altar') {

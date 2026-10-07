@@ -151,6 +151,19 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
       expect(roles.modalTitlebarText).toBe('#fafa00');
     });
 
+    it('resolves a pack theme once and shares the frozen result (R-rend-16)', () => {
+      const tokens = { accent: '#ff00aa' };
+      const first = resolveThemeTokens(tokens);
+      expect(resolveThemeTokens(tokens)).toBe(first);
+      expect(Object.isFrozen(first)).toBe(true);
+      expect(resolveThemeTokens()).toBe(resolveThemeTokens());
+      // Another tokens object is resolved on its own, even with equal contents.
+      const twin = resolveThemeTokens({ accent: '#ff00aa' });
+      expect(twin).not.toBe(first);
+      expect(twin).toEqual(first);
+      expect(resolveThemeTokens({ accent: '#00ffaa' }).accent).toBe('#00ffaa');
+    });
+
     it('reads a pack that only sets the older names into the roles', () => {
       const legacy = resolveThemeTokens({ bg: '#0a0a0a', panel: '#1a1a1a', borderLight: '#2a2a2a', healthBar: '#aa0000' });
       expect(legacy.surface0).toBe('#0a0a0a');

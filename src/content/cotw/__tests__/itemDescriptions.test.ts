@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { COTW_ITEMS } from '../items';
+import { COTW_SPELLS } from '../spells';
 import { cotwManifest } from '../index';
 import { ProfileManager, MemoryStorage } from '../../../engine/storage/profile-manager';
 import { createScaledItem } from '../../../engine/dungeon/lootSpawner';
@@ -105,9 +106,14 @@ describe('cotw item descriptions', () => {
     expect(p.carryStrength).toBeGreaterThan(carryBefore);
   });
 
-  it('promise no cure for a curse: only the temple lifts one', () => {
+  it('promise a cure for a curse only when they carry one: a scroll that casts uncurse', () => {
     const LIFTS_CURSES = /(purg|lift|break|remov|cleans|dispel)\w*[^.]*\bcurses?\b/i;
-    const liars = COTW_ITEMS.filter((d) => LIFTS_CURSES.test(d.description ?? '')).map((d) => `${d.id}: ${d.description}`);
+    const breaksCurses = (d: (typeof COTW_ITEMS)[number]): boolean => {
+      const spell = COTW_SPELLS.find((s) => s.id === d.scrollConfig?.spellId);
+      return (spell?.effects ?? []).some((e) => e.type === 'uncurse');
+    };
+    const liars = COTW_ITEMS.filter((d) => LIFTS_CURSES.test(d.description ?? '') && !breaksCurses(d)).map((d) => `${d.id}: ${d.description}`);
     expect(liars).toEqual([]);
+    expect(COTW_ITEMS.filter(breaksCurses).map((d) => d.id)).toEqual(['scroll_remove_curse']);
   });
 });

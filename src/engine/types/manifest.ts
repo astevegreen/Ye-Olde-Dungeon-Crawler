@@ -236,7 +236,7 @@ export interface FactionDefinition {
  * against the `renown:<category>` world-state counter this produces).
  */
 export interface RenownMilestoneDefinition {
-  /** Stable ID. Engine call sites (e.g. UncurseAction, SearchAction) record milestones
+  /** Stable ID. Engine call sites (e.g. breakCurses, SearchAction) record milestones
    *  by ID; a milestone with no matching definition in the active manifest is a no-op,
    *  the same way an unregistered actionHook/statusHandler is. */
   id: string;

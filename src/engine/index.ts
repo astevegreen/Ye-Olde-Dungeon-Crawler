@@ -40,7 +40,7 @@ export * from './actions/disarm';
 export * from './actions/autoRest';
 export * from './actions/choiceAction';
 export * from './actions/identificationActions';
-export * from './actions/uncurseAction';
+export * from './items/breakCurses';
 
 // Items & Containers
 export * from './items/item';

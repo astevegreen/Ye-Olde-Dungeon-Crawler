@@ -5,7 +5,8 @@ import { TILES } from '../grid/tile';
 import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
 import { Item } from '../items/item';
-import { IdentifyAction, RemoveCurseAction } from '../actions/identificationActions';
+import { IdentifyAction } from '../actions/identificationActions';
+import { breakCurses } from '../items/breakCurses';
 import { SearchAction } from '../actions/search';
 import { DisarmTrapAction } from '../actions/disarm';
 import { OpenDoorAction } from '../actions/door';
@@ -101,10 +102,8 @@ describe('Dungeon Exploration & Tactical Crawler Subsystems', () => {
       const unequipRes = player.inventory.unequipToPack('mainHand');
       expect(unequipRes.success).toBe(false);
 
-      // Perform RemoveCurseAction
-      const removeCurseAction = new RemoveCurseAction(player, cursedSword);
-      const cleanseRes = removeCurseAction.perform(engine);
-      expect(cleanseRes.success).toBe(true);
+      // Break the curse (the uncurse spell effect's path)
+      expect(breakCurses(engine, player, { slot: 'mainHand' })).toEqual([cursedSword]);
       expect(cursedSword.isCursed()).toBe(false);
 
       // Now unequip succeeds

@@ -13,6 +13,9 @@ import { SearchAction } from '../../../engine/actions/search';
 import { TrapInstance } from '../../../engine/dungeon/traps';
 import { TileInspector } from '../../../engine/inspect/inspector';
 import { COTW_RENOWN_MILESTONES } from '../renown';
+import { ReadScrollAction } from '../../../engine/actions/spell-actions';
+import { makeShopItem } from '../items/makeItem';
+import { ScrollItem } from '../../../engine/items/consumables';
 
 function buildEngine(): GameEngine {
   const map = new GameMap(12, 8, TILES.FLOOR);
@@ -21,8 +24,26 @@ function buildEngine(): GameEngine {
 }
 
 describe('cotw renown: deeds reach the ledger', () => {
-  // The Purifier milestone was recorded only by UncurseAction, which nothing in the game
-  // dispatches: the temple's cleanse, the real way a curse is broken, earned nothing.
+  // The Purifier milestone was once recorded only by an action nothing dispatched, so the
+  // temple's cleanse earned nothing. Both the cleanse and breakCurses record it now.
+  it('a Scroll of Remove Curse breaks the curses the hero wears, in the dungeon, and earns the Purifier milestone', () => {
+    const engine = buildEngine();
+    const mace = ItemFactory.createCursedMace('cursed-1');
+    engine.player.inventory.paperdoll.equip(mace, 'mainHand');
+    const scroll = makeShopItem('scroll_remove_curse', 'scroll-1');
+    if (!(scroll instanceof ScrollItem)) throw new Error('scroll_remove_curse should build a ScrollItem');
+    engine.player.inventory.primaryPack.addItem(scroll);
+    const before = getRenownTotal(engine, 'piety');
+
+    const res = engine.handlePlayerAction(new ReadScrollAction(engine.player, scroll));
+    expect(res.success).toBe(true);
+    expect(mace.isCursed()).toBe(false);
+    expect(mace.isBound()).toBe(false);
+    expect(res.events?.some((e) => e.type === 'uncurse' && e.itemId === 'cursed-1')).toBe(true);
+    expect(engine.player.inventory.findItemById('scroll-1')).toBeUndefined();
+    expect(getRenownTotal(engine, 'piety')).toBe(before + 15);
+  });
+
   it('breaking a curse at the temple earns the Purifier milestone', () => {
     const engine = buildEngine();
     engine.player.inventory.paperdoll.equip(ItemFactory.createCursedMace('cursed-1'), 'mainHand');

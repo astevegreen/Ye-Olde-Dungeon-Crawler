@@ -10,7 +10,8 @@ import { COTW_TABLET_STOCK } from '../spellTablets';
 
 const spellById = new Map(COTW_SPELLS.map((s) => [s.id, s]));
 /** Spells rites and tablets teach: all but Blood Magic, the tablet-only "learn_*" spells and altar-forged hybrids. */
-const CORE_SPELLS = COTW_SPELLS.filter((s) => !['BloodMagic', 'Lore', 'Hybrid'].includes(String(s.school))).map((s) => s.id);
+// Scroll spells (Remove Curse) are only ever read from a scroll, never learned.
+const CORE_SPELLS = COTW_SPELLS.filter((s) => !['BloodMagic', 'Lore', 'Hybrid', 'Scroll'].includes(String(s.school))).map((s) => s.id);
 
 /** What a known spell lets the hero do to meet a rite: its damage element and inflicted status. */
 function grants(spell: SpellDefinition): { elements: string[]; statuses: string[] } {

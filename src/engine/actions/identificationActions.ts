@@ -3,7 +3,7 @@ import type { ActionResult } from '../types';
 import { BASE_ACTION_COST } from '../types';
 import type { GameEngine } from '../engine';
 import type { Player } from '../entities/player';
-import type { Item, EquipmentSlot } from '../items/item';
+import type { Item } from '../items/item';
 
 /**
  * Action to identify an item, revealing its enchantments, affixes, quality, and full power.
@@ -47,55 +47,6 @@ export class IdentifyAction implements Action {
     }
 
     const message = `You discern the true nature of the item: It is a ${details}!`;
-    engine.log(message);
-
-    return {
-      success: true,
-      cost,
-      message,
-    };
-  }
-}
-
-/**
- * Action to remove curse from an equipped or carried item.
- */
-export class RemoveCurseAction implements Action {
-  public readonly player: Player;
-  public readonly slotOrItem: EquipmentSlot | Item;
-
-  constructor(player: Player, slotOrItem: EquipmentSlot | Item) {
-    this.player = player;
-    this.slotOrItem = slotOrItem;
-  }
-
-  public perform(engine: GameEngine): ActionResult {
-    if (!this.player.isAlive()) {
-      return { success: false, cost: 0, message: 'Dead heroes cannot remove curses.' };
-    }
-
-    let targetItem: Item | null = null;
-    if (typeof this.slotOrItem === 'string') {
-      targetItem = this.player.inventory.paperdoll.getItem(this.slotOrItem as EquipmentSlot);
-    } else {
-      targetItem = this.slotOrItem;
-    }
-
-    if (!targetItem) {
-      return { success: false, cost: 0, message: 'No item found to cleanse.' };
-    }
-
-    if (!targetItem.isBound()) {
-      return { success: false, cost: 0, message: `${targetItem.displayName} is not cursed.` };
-    }
-
-    const cost = this.player.getActionCost(BASE_ACTION_COST);
-    this.player.consumeEnergy(cost);
-
-    targetItem.uncurse();
-    engine.identification.identifyItem(targetItem);
-
-    const message = `A holy radiance washes over ${targetItem.name}! The sinister curse is permanently dissolved.`;
     engine.log(message);
 
     return {

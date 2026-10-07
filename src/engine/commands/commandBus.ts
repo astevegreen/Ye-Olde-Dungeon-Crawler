@@ -394,7 +394,7 @@ export class EngineCommandBus implements GameCommandBus {
       case 'temple_cleanse': {
         const res = TempleService.cleanseCurses(this.engine.player, undefined, undefined, this.engine);
         this.engine.log(res.message);
-        // The temple is where curses are really broken (UncurseAction is a scroll's path).
+        // The temple's cleanse; in the dungeon a pack's `uncurse` spell effect (breakCurses) breaks them.
         if (res.success) recordMilestone(this.engine, 'item_uncursed');
         return { success: res.success, message: res.message };
       }

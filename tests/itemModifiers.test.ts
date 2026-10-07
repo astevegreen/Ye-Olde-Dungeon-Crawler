@@ -9,7 +9,7 @@ import type { ItemModifier, ModifierCategory } from '../src/engine/items/modifie
 import { COTW_ITEM_FAMILIES } from '../src/content/cotw/itemFamilies';
 import { MeleeAttackAction } from '../src/engine/actions/combat';
 import { CastSpellAction } from '../src/engine/actions/spell-actions';
-import { UncurseAction } from '../src/engine/actions/uncurseAction';
+import { breakCurses } from '../src/engine/items/breakCurses';
 import { EquipAction } from '../src/engine/actions/inventory-actions';
 import { MovementAction } from '../src/engine/actions/movement';
 import { TILES } from '../src/engine/grid/tile';
@@ -624,7 +624,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
     });
   });
 
-  describe('Cursed Equip-Lock & UncurseAction', () => {
+  describe('Cursed Equip-Lock & breakCurses', () => {
     it('blocks unequipping when an item has a cursed modifier', () => {
       const cursedRing = new Item({
         id: 'cr1',
@@ -645,7 +645,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       expect(unequipCheck.reason).toContain('cursed and bound');
     });
 
-    it('UncurseAction purges cursed modifiers, emits UncurseEvent, and permits unequipping', () => {
+    it('breakCurses purges cursed modifiers, emits UncurseEvent, and permits unequipping', () => {
       const cursedHelm = new Item({
         id: 'ch1',
         name: 'Iron Helm',
@@ -660,9 +660,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       player.inventory.paperdoll.equip(cursedHelm, 'head');
       expect(cursedHelm.isCursed()).toBe(true);
 
-      const uncurseAction = new UncurseAction(player, { slot: 'head' });
-      const res = uncurseAction.perform(engine);
-      expect(res.success).toBe(true);
+      expect(breakCurses(engine, player, { slot: 'head' })).toEqual([cursedHelm]);
 
       // Verify curse was removed while keeping blessed modifier
       expect(cursedHelm.isCursed()).toBe(false);

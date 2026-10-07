@@ -66,6 +66,11 @@ export interface IdentifyEffect {
   type: 'identify';
 }
 
+/** Breaks the curses on everything the caster wears and carries (`breakCurses`). */
+export interface UncurseEffect {
+  type: 'uncurse';
+}
+
 /**
  * Spawn a monster adjacent to the caster.
  * `monsterId` must match a `MonsterDefinition.id` in the manifest.
@@ -96,6 +101,7 @@ export type EffectPrimitive =
   | HealEffect
   | RevealEffect
   | IdentifyEffect
+  | UncurseEffect
   | SummonEffect
   | { type: string; [key: string]: any };
 

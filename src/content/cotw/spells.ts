@@ -165,6 +165,23 @@ export const COTW_SPELLS: SpellDefinition[] = [
     effects: [{ type: 'identify' }],
   },
   {
+    // Read from a Scroll of Remove Curse, never learned: no rite or tablet teaches it.
+    id: 'remove_curse',
+    name: 'Remove Curse',
+    school: 'Scroll',
+    manaCost: 12,
+    element: 'healing',
+    range: 0,
+    basePower: 0,
+    areaOfEffect: 0,
+    reflects: false,
+    targetType: 'self',
+    targetingMode: 'self',
+    description: 'Calls on the Aesir to break every curse on what you wear and carry.',
+    visual: { archetype: 'self_buff', color: '#fde68a', durationMs: 200 },
+    effects: [{ type: 'uncurse' }],
+  },
+  {
     id: 'detect_monsters',
     name: 'Detect Monsters',
     school: 'Divination',

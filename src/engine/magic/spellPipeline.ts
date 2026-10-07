@@ -16,6 +16,7 @@ import type {
   HealEffect,
   RevealEffect,
   IdentifyEffect,
+  UncurseEffect,
   SummonEffect,
   LearnSpellEffect,
   TargetingMode,
@@ -30,6 +31,7 @@ import { castGeometry } from './castTrace';
 import { EnergyModel } from '../actors/energyModel';
 import { dispatchDamageHooks } from '../hooks/damageHooks';
 import { Actor } from '../entities/actor';
+import { breakCurses } from '../items/breakCurses';
 
 function getElementDefaultColor(element?: string): string {
   switch (element) {
@@ -128,6 +130,10 @@ export class SpellPipeline {
 
     EffectPrimitiveRegistry.register<IdentifyEffect>('identify', (_effect, ctx) => {
       SpellPipeline.executeInventorySpell(ctx.engine, ctx.spell, ctx.caster, undefined, 100);
+    });
+
+    EffectPrimitiveRegistry.register<UncurseEffect>('uncurse', (_effect, ctx) => {
+      breakCurses(ctx.engine, ctx.caster);
     });
 
     EffectPrimitiveRegistry.register<ChainEffect>('chain', (effect, ctx) => {

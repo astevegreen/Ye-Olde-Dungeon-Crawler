@@ -102,6 +102,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
           makeShopItem('scroll_phase_door', 'astrid-tele-1'),
           makeShopItem('scroll_identify', 'astrid-id-1'),
           makeShopItem('scroll_identify', 'astrid-id-2'),
+          makeShopItem('scroll_remove_curse', 'astrid-uncurse-1'),
           makeShopItem('wand_lightning', 'astrid-wand-1'),
           // Vendor unlock: appears only once the hero's exploration renown reaches 25
           // (Milestone Renown Ledger, docs/architecture/content-progression-scaling.md).

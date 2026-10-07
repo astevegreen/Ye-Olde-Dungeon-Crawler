@@ -25,6 +25,7 @@ function makeSpell(overrides: Partial<SpellDefinition> = {}): SpellDefinition {
     reflects: false,
     targetType: 'entity' as any,
     description: 'Test spell.',
+    effects: [],
     ...overrides,
   };
 }

@@ -230,7 +230,7 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
       const targeting = new TargetingOverlay();
       const spellDef = {
         id: 'test_bolt', name: 'Test Bolt', manaCost: 3, targetType: 'ray', range: 6,
-        element: 'fire', areaOfEffect: 1, reflects: false,
+        element: 'fire', areaOfEffect: 1, reflects: false, effects: [],
       } as unknown as SpellDefinition;
       targeting.startTargeting({ key: '', type: 'spell', id: spellDef.id, name: spellDef.name, spellDef }, engine);
       expect(targeting.mode).toBe('reticle');

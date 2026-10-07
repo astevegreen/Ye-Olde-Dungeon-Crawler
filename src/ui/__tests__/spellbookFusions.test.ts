@@ -11,10 +11,10 @@ function render(flags: Record<string, boolean>, spellsKnown: string[]) {
     name: 'Test Pack',
     branding: { loreTitle: 'Old Words' },
     spells: [
-      { id: 'bolt', name: 'Bolt', manaCost: 2, element: 'lightning', range: 5 },
-      { id: 'steam', name: 'Steam', manaCost: 9, element: 'fire', range: 7 },
-      { id: 'hail', name: 'Hail', manaCost: 9, element: 'cold', range: 7 },
-      { id: 'maul', name: 'Maul', manaCost: 9, element: 'lightning', range: 7 },
+      { id: 'bolt', name: 'Bolt', manaCost: 2, element: 'lightning', range: 5, effects: [] },
+      { id: 'steam', name: 'Steam', manaCost: 9, element: 'fire', range: 7, effects: [] },
+      { id: 'hail', name: 'Hail', manaCost: 9, element: 'cold', range: 7, effects: [] },
+      { id: 'maul', name: 'Maul', manaCost: 9, element: 'lightning', range: 7, effects: [] },
     ],
     loreEntries: [{ flag: 'stone_2', title: 'Accord', verse: 'v', lore: 'l', fusionSpellId: 'steam' }],
     magic: {

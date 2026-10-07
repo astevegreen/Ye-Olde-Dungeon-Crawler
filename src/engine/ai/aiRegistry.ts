@@ -430,7 +430,7 @@ function hasMeleeScreen(engine: GameEngine, caster: Monster, target: Entity, cas
  */
 function dealsDamage(spell: SpellDefinition | undefined): boolean {
   if (!spell) return true;
-  return spell.effects ? spell.effects.some((effect) => effect.type === 'damage') : spell.basePower > 0;
+  return spell.effects.some((effect) => effect.type === 'damage');
 }
 
 /** The status a spell inflicts, if it is a hindering spell. */

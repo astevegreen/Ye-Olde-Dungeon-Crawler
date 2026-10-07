@@ -3,7 +3,7 @@ import { GameEngine, GameMap, Monster, Player, type SpellDefinition } from '../.
 import { aimCardHtml, type SpellbookEntry } from '../targeting-overlay';
 
 describe('aiming card markup', () => {
-  const spell = { id: 'bolt', name: '<Bolt>', element: 'fire', manaCost: 3, range: 6, reflects: true, targetType: 'ray', areaOfEffect: 0 } as unknown as SpellDefinition;
+  const spell = { id: 'bolt', name: '<Bolt>', element: 'fire', manaCost: 3, range: 6, reflects: true, targetType: 'ray', areaOfEffect: 0, effects: [] } as unknown as SpellDefinition;
   const entry: SpellbookEntry = { key: '1', type: 'spell', id: 'bolt', name: 'Bolt', spellDef: spell };
 
   function engineWithTarget(): GameEngine {

@@ -127,8 +127,8 @@ describe('QuickSpellsBar', () => {
       name: 'Test Pack',
       spells: [
         { id: 'test:arrow', name: 'Magic Arrow', manaCost: 10, element: 'arcane', range: 6, effects: [{ type: 'damage', amount: 10 }] },
-        { id: 'test:ward', name: 'Ward', manaCost: 2, element: 'arcane', range: 0 },
-        { id: 'test:spark', name: 'Spark', manaCost: 2, element: 'lightning', range: 4 },
+        { id: 'test:ward', name: 'Ward', manaCost: 2, element: 'arcane', range: 0, effects: [] },
+        { id: 'test:spark', name: 'Spark', manaCost: 2, element: 'lightning', range: 4, effects: [] },
       ],
       magic: { grimoire: { title: 'Grimoire', pageNames: ['I', 'II', 'III'], centerSlotLabel: 'Hub', centerCostPerNeighbor: 0.2, centerPowerPerNeighbor: 0.5 } },
     } as any;
@@ -175,10 +175,10 @@ describe('QuickSpellsBar', () => {
       affinityMatrix: { elements: [{ id: 'fire', name: 'Fire', color: '#ff0000' }], defaultMultipliers: {} },
       spriteRecipes: { 'spell~fire': () => {}, 'spell~test:own': () => {} },
       spells: [
-        { id: 'test:bolt', name: 'Bolt', manaCost: 3, element: 'fire' },
-        { id: 'test:own', name: 'Own Rune', manaCost: 3, element: 'fire' },
-        { id: 'test:shade', name: 'Shade', manaCost: 3, element: 'shadow', visual: { color: '#123456' } },
-        { id: 'test:plain', name: 'Plain', manaCost: 3 },
+        { id: 'test:bolt', name: 'Bolt', manaCost: 3, element: 'fire', effects: [] },
+        { id: 'test:own', name: 'Own Rune', manaCost: 3, element: 'fire', effects: [] },
+        { id: 'test:shade', name: 'Shade', manaCost: 3, element: 'shadow', visual: { color: '#123456' }, effects: [] },
+        { id: 'test:plain', name: 'Plain', manaCost: 3, effects: [] },
       ],
     } as any;
     const engine = new GameEngine({ map, player, manifest });

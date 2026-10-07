@@ -26,6 +26,7 @@ describe('Kill rites', () => {
     targetType: 'ray',
     targetingMode: 'ray',
     description: 'A primordial wave of thermal shock.',
+    effects: [{ type: 'damage', amount: 25, element: 'fire' }],
   };
 
   const baseManifest = {

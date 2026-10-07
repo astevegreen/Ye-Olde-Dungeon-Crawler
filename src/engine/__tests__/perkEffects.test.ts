@@ -493,9 +493,7 @@ describe('perk effects', () => {
 
     it('shrugs off the family’s afflictions from its spells and its hooks too (Grave-Warden, Iron Will, Q58)', () => {
       const { engine, player, foe, stranger } = withFamilyPerk({ afflictionShrugChance: 1 });
-      const hex = { ...BOLT, id: 'hex', effects: [], basePower: 0, statusAffliction: { type: 'slow', duration: 3 } } as SpellDefinition;
       SpellPipeline.applyStatusEffect(engine, foe, player, { type: 'applyStatus', statusId: 'slow', duration: 3 });
-      (SpellPipeline as unknown as { applyLegacySpellDamageAndStatus: (...a: unknown[]) => void }).applyLegacySpellDamageAndStatus(engine, hex, foe, player);
       expect(player.statusManager.hasStatus('slow')).toBe(false);
       foe.hooks = [{ event: 'onHit', chance: 1, action: { type: 'applyStatus', status: 'poison', duration: 3, target: 'target' } }];
       HookDispatcher.dispatch('onHit', { engine, attacker: foe, defender: player, damage: 1, blockedDamage: 0 });

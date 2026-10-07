@@ -18,7 +18,7 @@ function setup() {
     name: 'Test Pack',
     spells: [
       { id: 't:arrow', name: 'Arrow', manaCost: 10, element: 'arcane', range: 6, effects: [{ type: 'damage', amount: 10 }] },
-      { id: 't:ward', name: 'Ward', manaCost: 2, element: 'arcane', range: 0 },
+      { id: 't:ward', name: 'Ward', manaCost: 2, element: 'arcane', range: 0, effects: [] },
     ],
     magic: {
       grimoire: {

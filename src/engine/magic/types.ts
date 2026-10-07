@@ -134,7 +134,8 @@ export interface SpellDefinition {
   targetType: TargetType;
   description: string;
   targetingMode?: TargetingMode;
-  effects?: EffectPrimitive[];
+  /** What the spell does, in order, to what it reaches (`EffectPrimitiveRegistry`). */
+  effects: EffectPrimitive[];
   visual?: SpellVisualConfig;
   statusAffliction?: {
     type: StatusType;

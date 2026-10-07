@@ -58,6 +58,7 @@ const firebolt = {
   reflects: false,
   targetType: 'entity',
   description: 'A bolt.',
+  effects: [{ type: 'damage', amount: 5, element: 'fire' }],
 } as unknown as SpellDefinition;
 
 describe('R-pipe-23 · damage hooks fire for spells and wind-ups, not only melee', () => {

@@ -245,7 +245,7 @@ export class GrimoireMatrixManager {
     // Clone to prevent mutating global definition
     const spell: SpellDefinition = {
       ...baseSpell,
-      effects: baseSpell.effects ? [...baseSpell.effects] : undefined,
+      effects: [...baseSpell.effects],
     };
     const notes: string[] = [];
     let retreatSteps = 0;

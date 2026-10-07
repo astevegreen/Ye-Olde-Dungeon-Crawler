@@ -27,6 +27,7 @@ describe('Ginnungagap / Mana Overflow System', () => {
     targetType: 'ray',
     targetingMode: 'ray',
     description: 'A searing test spark.',
+    effects: [{ type: 'damage', amount: 12, element: 'fire' }],
   };
 
   const testManifest = {

@@ -231,7 +231,7 @@ export class SpellPipeline {
     const color = spell.visual?.color ?? getElementDefaultColor(spell.element);
     const startPos = { x: caster.x, y: caster.y };
 
-    if (spell.effects && spell.effects.length > 0) {
+    if (spell.effects.length > 0) {
       SpellPipeline.ensureBuiltinEffects();
       const ctx: EffectContext = {
         engine,
@@ -423,29 +423,21 @@ export class SpellPipeline {
       }
     }
 
-    // Execute effect primitives if defined
-    if (spell.effects && spell.effects.length > 0) {
-      SpellPipeline.ensureBuiltinEffects();
-      const ctx: EffectContext = {
-        engine,
-        spell,
-        caster,
-        targets: targetsHit,
-        effects,
-        color,
-      };
-
-      for (const effect of spell.effects) {
-        if (effect.type === 'damage') {
-          ctx.lastDamageEffect = effect;
-        }
-        EffectPrimitiveRegistry.dispatch(effect, ctx);
+    // The spell's effect primitives, in order, on everything it reached.
+    SpellPipeline.ensureBuiltinEffects();
+    const ctx: EffectContext = {
+      engine,
+      spell,
+      caster,
+      targets: targetsHit,
+      effects,
+      color,
+    };
+    for (const effect of spell.effects) {
+      if (effect.type === 'damage') {
+        ctx.lastDamageEffect = effect;
       }
-    } else {
-      // Legacy execution
-      for (const target of targetsHit) {
-        this.applyLegacySpellDamageAndStatus(engine, spell, caster, target);
-      }
+      EffectPrimitiveRegistry.dispatch(effect, ctx);
     }
 
     return { success: true, cost: actionCost, message: hitDescription || `${caster.name} casts ${spell.name}.`, effects };
@@ -822,72 +814,6 @@ export class SpellPipeline {
       spell.basePower || 16,
       engine
     );
-  }
-
-  private static applyLegacySpellDamageAndStatus(
-    engine: GameEngine,
-    spell: SpellDefinition,
-    caster: Entity,
-    target: Entity
-  ): void {
-    if (spell.basePower > 0) {
-      const terrain = engine.map.getTile(target.x, target.y)?.type;
-      const result = target.takeElementalDamage(wardFirstSpell(engine, caster, target, spell.basePower), spell.element, engine.affinityMatrix, terrain);
-
-      if (result.affinity === 'absorbing') {
-        engine.log(`${target.name} absorbs the ${spell.element} energy, healing ${result.healed} HP!`);
-        return;
-      }
-
-      if (result.affinity === 'immune') {
-        engine.log(`${target.name} is completely unharmed by the ${spell.element}!`);
-        return;
-      }
-
-      let detail = '';
-      if (result.affinity === 'weak') {
-        detail = ' (Vulnerable! 150% damage)';
-      } else if (result.affinity === 'resistant') {
-        detail = ' (Resistant! 50% damage)';
-      }
-
-      if (spell.areaOfEffect > 0) {
-        engine.log(`${target.name} takes ${result.damageDealt} ${spell.element} damage${detail}!`);
-      } else {
-        engine.log(`${caster.name}'s ${spell.name} strikes ${target.name} for ${result.damageDealt} ${spell.element} damage${detail}!`);
-      }
-
-      dispatchDamageHooks(engine, caster, target, result.damageDealt);
-
-      if (result.killed) {
-        DeathResolver.resolveDeath(engine, caster, target, {
-          damageElement: spell.element,
-          damageDealt: result.finalDamage,
-          remainingHpBeforeBlow: result.damageDealt,
-          cause: ownSpellCause(caster, target, spell),
-        });
-        return;
-      }
-    }
-
-    if (spell.statusAffliction && target.isAlive() && !shrugsAffliction(engine, target, caster, spell.statusAffliction.type)) {
-      const applied = target.statusManager.applyStatus(
-        {
-          type: spell.statusAffliction.type,
-          duration: spell.statusAffliction.duration,
-          potency: spell.statusAffliction.potency,
-          sourceEntityId: caster.id,
-        },
-        target.statusImmunities,
-        target,
-        engine
-      );
-      if (applied) {
-        engine.log(`${target.name} is afflicted with ${spell.statusAffliction.type}!`);
-      } else {
-        engine.log(`${target.name} resists the affliction!`);
-      }
-    }
   }
 }
 

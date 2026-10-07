@@ -29,6 +29,7 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     targetType: 'ray',
     targetingMode: 'ray',
     description: 'A focused beam of fire.',
+    effects: [{ type: 'damage', amount: 20, element: 'fire' }],
   };
 
   const coldBurst: SpellDefinition = {
@@ -44,6 +45,7 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     targetType: 'tile',
     targetingMode: 'area_burst',
     description: 'A frosty detonation.',
+    effects: [{ type: 'damage', amount: 16, element: 'cold' }],
   };
 
   const blinkSelf: SpellDefinition = {
@@ -59,6 +61,7 @@ describe('Grimoire Spatial Matrix & Altar Sacrifice', () => {
     targetType: 'self',
     targetingMode: 'self',
     description: 'Phase through space.',
+    effects: [],
   };
 
   const fireLance: SpellDefinition = {

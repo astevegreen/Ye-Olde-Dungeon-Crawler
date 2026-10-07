@@ -250,4 +250,25 @@ describe('Save Transfer & Export (.cotw & Base64)', () => {
       expect(carriedNames(outcome.value.engine)).toEqual(carriedNames(engine));
     });
   });
+
+  // The engine names no pack (No Engine Creep, §3): a save that names none is no other game's.
+  describe('a save that names no pack', () => {
+    const unnamed = () => {
+      const envelope = createMockSaveEnvelope('cotw');
+      delete (envelope as { contentManifestId?: string }).contentManifestId;
+      delete (envelope.data.profile as { manifestId?: string }).manifestId;
+      return envelope;
+    };
+
+    it('imports into whichever game is running, without a mismatch', () => {
+      const result = validateSavePayload(JSON.stringify(unnamed()), { expectedManifestId: 'warcraft', strictManifest: true });
+      expect(result.valid).toBe(true);
+      expect(result.manifestMismatch).toBe(false);
+    });
+
+    it('is packaged without inventing a pack, and named without one', () => {
+      expect(JSON.parse(createSavePackage(unnamed())).contentManifestId).toBeUndefined();
+      expect(generateSaveFilename('Sven', 1, '', 1700000000000)).toBe('Sven_Floor1_save_1700000000000.cotw');
+    });
+  });
 });

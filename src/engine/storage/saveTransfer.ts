@@ -76,10 +76,10 @@ export function generateSaveFilename(
       .replace(/_+/g, '_')
       .replace(/^_+|_+$/g, '') || 'Hero';
   const safeManifest =
-    (manifestId || 'cotw')
+    (manifestId || '')
       .trim()
       .replace(/[^a-zA-Z0-9_-]/g, '_')
-      .replace(/^_+|_+$/g, '') || 'cotw';
+      .replace(/^_+|_+$/g, '') || 'save';
   const floorTag = floor === 0 ? 'Town' : `Floor${floor}`;
   return `${safeName}_${floorTag}_${safeManifest}_${timestamp}${SAVE_FILE_EXTENSION}`;
 }
@@ -95,16 +95,12 @@ export function createSavePackage(envelope: VersionedSaveEnvelope<SaveData>): st
     throw new Error('Invalid save envelope: missing envelope.data payload.');
   }
 
-  // Ensure contentManifestId is synced
-  const manifestId =
-    envelope.contentManifestId ||
-    envelope.data.contentManifestId ||
-    envelope.data.profile?.manifestId ||
-    'cotw';
+  // Ensure contentManifestId is synced; a save that names no pack is packaged naming none.
+  const manifestId = envelope.contentManifestId || envelope.data.contentManifestId || envelope.data.profile?.manifestId;
 
   const normalizedEnvelope: VersionedSaveEnvelope<SaveData> = {
     ...envelope,
-    contentManifestId: manifestId,
+    ...(manifestId ? { contentManifestId: manifestId } : {}),
     timestamp: envelope.timestamp || Date.now(),
   };
 
@@ -280,15 +276,12 @@ export function validateSavePayload(
     };
   }
 
-  // Detect manifest ID
-  const detectedManifestId =
-    envelope.contentManifestId ||
-    data.contentManifestId ||
-    data.profile.manifestId ||
-    'cotw';
+  // Detect manifest ID. A save that names no pack (one from before saves named theirs) is no
+  // other game's: it goes to the one running, as the save-code dialog already treats it.
+  const detectedManifestId = envelope.contentManifestId || data.contentManifestId || data.profile.manifestId || undefined;
 
   const manifestMismatch =
-    !!opts.expectedManifestId && detectedManifestId !== opts.expectedManifestId;
+    !!opts.expectedManifestId && !!detectedManifestId && detectedManifestId !== opts.expectedManifestId;
 
   if (manifestMismatch && opts.strictManifest) {
     return {

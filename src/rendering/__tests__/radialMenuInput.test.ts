@@ -150,7 +150,7 @@ describe('InputHandler <-> the companion wheel (RadialMenuOverlay)', () => {
     inputHandler.onOpenCompanionPack = onOpenCompanionPack;
 
     inputHandler.handleKeyDown(makeKeyEvent('KeyV'));
-    expect(radialMenuOverlay.slots[RADIAL_DIRECTIONS.indexOf('N')]?.label).toBe('Send Hound away');
+    expect(radialMenuOverlay.slots[RADIAL_DIRECTIONS.indexOf('N')]?.label).toBe('Send away');
     inputHandler.handleKeyDown(makeKeyEvent('ArrowUp'));
     inputHandler.handleKeyDown(makeKeyEvent('ArrowRight')); // NE: the first skill
     inputHandler.confirmRadialMenu();

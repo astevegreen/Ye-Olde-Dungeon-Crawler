@@ -8,9 +8,9 @@ function engineWith(trainerSkills: { id: string; name: string; description: stri
   return engine;
 }
 
-function hound(name = 'Hound'): Companion {
+function hound(): Companion {
   return new Companion({
-    id: 'hound', name, position: { x: 6, y: 5 }, stats: { hp: 20, maxHp: 20, attack: 3, defense: 1 },
+    id: 'hound', name: 'Hound', position: { x: 6, y: 5 }, stats: { hp: 20, maxHp: 20, attack: 3, defense: 1 },
     speed: 100, companionDefinitionId: 'test_hound', packWeightCapacity: 10000, packBulkCapacity: 10000,
   });
 }
@@ -20,12 +20,10 @@ describe('the companion wheel: the radial menu is the companion\'s', () => {
     expect(companionWheelSlots(engineWith())).toBeNull();
   });
 
-  it('offers a bonded hero whose companion is away only the call, by its name when known', () => {
+  it('offers a bonded hero whose companion is away only the call', () => {
     const engine = engineWith();
     engine.setWorldFlag(GameEngine.COMPANION_BONDED_FLAG, true);
-    expect(companionWheelSlots(engine)!.filter(Boolean).map((s) => s!.label)).toEqual(['Call companion']);
-    engine.dismissedCompanion = hound('Fenrir');
-    expect(companionWheelSlots(engine)![0]).toEqual({ label: 'Call Fenrir', action: { kind: 'call' } });
+    expect(companionWheelSlots(engine)!.filter(Boolean)).toEqual([{ label: 'Call', action: { kind: 'call' } }]);
   });
 
   it('lays out send-away, up to three learned skills by the pack\'s names, and the pack on fixed wedges', () => {
@@ -39,11 +37,11 @@ describe('the companion wheel: the radial menu is the companion\'s', () => {
 
     const slots = companionWheelSlots(engine)!;
     expect(slots.map((s) => s?.label ?? null)).toEqual([
-      'Send Hound away', // N
+      'Send away', // N
       'Rally Howl', // NE
       'Guard', // E
       'third', // SE: a skill the pack doesn't name shows its id
-      "Hound's pack", // S
+      'Pack', // S
       null, // SW, W, NW: kept for orders
       null,
       null,

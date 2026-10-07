@@ -34,18 +34,15 @@ export function companionWheelSlots(engine: GameEngine): (CompanionWheelSlot | n
   const bonded = engine.getWorldFlag(GameEngine.COMPANION_BONDED_FLAG);
   if (!present && !bonded) return null;
 
+  // Short labels: a wedge is narrow, and the hub already shows who they command.
   const slots: (CompanionWheelSlot | null)[] = new Array(COMPANION_WHEEL_SIZE).fill(null);
-  const absentName = engine.dismissedCompanion?.name ?? engine.deadCompanionRecord?.name;
-  slots[CALL] = {
-    label: present ? `Send ${present.name} away` : absentName ? `Call ${absentName}` : 'Call companion',
-    action: { kind: 'call' },
-  };
+  slots[CALL] = { label: present ? 'Send away' : 'Call', action: { kind: 'call' } };
   if (present) {
     const named = engine.manifest.town?.services?.trainerSkills ?? [];
     present.unlockedSkills.slice(0, SKILL_WEDGES.length).forEach((skillId, i) => {
       slots[SKILL_WEDGES[i]] = { label: named.find((s) => s.id === skillId)?.name ?? skillId, action: { kind: 'skill', skillId } };
     });
-    slots[PACK] = { label: `${present.name}'s pack`, action: { kind: 'pack' } };
+    slots[PACK] = { label: 'Pack', action: { kind: 'pack' } };
   }
   return slots;
 }

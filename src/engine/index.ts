@@ -11,8 +11,6 @@ export * from './types/theme';
 export * from './grid/tile';
 export * from './grid/map';
 export * from './spatial/collisionSolver';
-export * from './spatial/coneSolver';
-export * from './spatial/reflectionSolver';
 
 // Entities
 export * from './entities/entity';

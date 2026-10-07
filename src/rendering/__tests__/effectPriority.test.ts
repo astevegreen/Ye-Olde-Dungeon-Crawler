@@ -63,3 +63,42 @@ describe('CanvasFXRunner queue split', () => {
     await expect(runner.playQueue([])).resolves.toBeUndefined();
   });
 });
+
+// The routing tests above can't see timing: under Node playEffects resolves at once. With a
+// frame clock they can (R-rend-20).
+describe('CanvasFXRunner playback with a frame clock', () => {
+  let frames: Array<(t: number) => void>;
+  beforeEach(() => {
+    frames = [];
+    vi.stubGlobal('window', {});
+    vi.stubGlobal('requestAnimationFrame', (cb: (t: number) => void) => {
+      frames.push(cb);
+      return frames.length;
+    });
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('a tactical batch holds its caller until its frames have played; an ambient one never does', async () => {
+    const runner = new CanvasFXRunner({ mode: 'smooth' });
+    let done = false;
+    const tactical = runner.playQueue([projectile(), flash()]).then(() => {
+      done = true;
+    });
+    await Promise.resolve();
+    expect(done).toBe(false);
+
+    let t = performance.now();
+    for (let i = 0; i < 200 && !done && frames.length > 0; i++) {
+      t += 16;
+      frames.shift()!(t);
+      await Promise.resolve();
+    }
+    await tactical;
+    expect(done).toBe(true);
+
+    // Nothing pumps a frame here: an ambient-only batch must resolve on its own.
+    await expect(runner.playQueue([flash()])).resolves.toBeUndefined();
+    runner.destroy();
+  });
+});

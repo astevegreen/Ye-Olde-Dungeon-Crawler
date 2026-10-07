@@ -178,6 +178,21 @@ describe('Render & Engine Defensive Resilience Tests', () => {
   });
 
   describe('CanvasFXRunner malformed descriptor resilience', () => {
+    // Under Node there is no window, so playEffects returned before building a single effect
+    // and this test checked nothing (R-rend-20). A stubbed window and frame clock make the
+    // runner build the malformed effects and animate them frame by frame.
+    let frames: Array<(t: number) => void>;
+    beforeEach(() => {
+      frames = [];
+      vi.stubGlobal('window', {});
+      vi.stubGlobal('requestAnimationFrame', (cb: (t: number) => void) => {
+        frames.push(cb);
+        return frames.length;
+      });
+      vi.stubGlobal('cancelAnimationFrame', () => {});
+    });
+    afterEach(() => vi.unstubAllGlobals());
+
     it('safely creates and renders effects with missing epicenter or empty paths', () => {
       const runner = new CanvasFXRunner({ mode: 'smooth' });
       const camera = new Camera(25, 18);
@@ -221,10 +236,15 @@ describe('Render & Engine Defensive Resilience Tests', () => {
         ]);
       }).not.toThrow();
 
-      // Calling render does not throw
-      expect(() => {
-        runner.render(ctx, camera, 32, 0, 0);
-      }).not.toThrow();
+      // The runner really built them, and plays them out frame by frame without a throw.
+      expect((runner as unknown as { activeEffects: unknown[] }).activeEffects.length).toBeGreaterThan(0);
+      let t = performance.now();
+      for (let i = 0; i < 60 && frames.length > 0; i++) {
+        const frame = frames.shift()!;
+        t += 16;
+        expect(() => frame(t)).not.toThrow();
+        expect(() => runner.render(ctx, camera, 32, 0, 0)).not.toThrow();
+      }
 
       runner.destroy();
     });

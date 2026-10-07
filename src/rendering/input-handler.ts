@@ -126,6 +126,18 @@ const ARROW_MOVES: Readonly<Record<string, string>> = {
   ArrowRight: 'move_e',
 };
 
+/** The step each movement action takes, for a prompt that asks for a direction. */
+const MOVE_STEPS: Readonly<Record<string, readonly [number, number]>> = {
+  move_n: [0, -1],
+  move_s: [0, 1],
+  move_w: [-1, 0],
+  move_e: [1, 0],
+  move_nw: [-1, -1],
+  move_ne: [1, -1],
+  move_sw: [-1, 1],
+  move_se: [1, 1],
+};
+
 /** The arrows, the numpad and its NumLock-off twins (Home, End, PageUp, PageDown). */
 const MOVEMENT_KEYS: ReadonlySet<string> = new Set([
   'ArrowUp',
@@ -618,24 +630,17 @@ export class InputHandler {
         this.onActionProcessed();
         return true;
       }
-      let dx = 0;
-      let dy = 0;
-      let isDirection = false;
-      switch (code) {
-        case 'ArrowUp': case 'KeyW': case 'KeyK': case 'Numpad8': dx = 0; dy = -1; isDirection = true; break;
-        case 'ArrowDown': case 'KeyS': case 'KeyJ': case 'Numpad2': dx = 0; dy = 1; isDirection = true; break;
-        case 'ArrowLeft': case 'KeyA': case 'KeyH': case 'Numpad4': dx = -1; dy = 0; isDirection = true; break;
-        case 'ArrowRight': case 'KeyD': case 'KeyL': case 'Numpad6': dx = 1; dy = 0; isDirection = true; break;
-        case 'Numpad7': case 'KeyY': dx = -1; dy = -1; isDirection = true; break;
-        case 'Numpad9': case 'KeyU': dx = 1; dy = -1; isDirection = true; break;
-        case 'Numpad1': case 'KeyB': dx = -1; dy = 1; isDirection = true; break;
-        case 'Numpad3': case 'KeyN': dx = 1; dy = 1; isDirection = true; break;
-      }
-      if (isDirection) {
+      // The direction keys are the player's movement bindings (a Shift chord first), as
+      // for a step: a hard-coded list kept S, L, U and B, which are no longer moves, and
+      // missed any key the player bound to a direction.
+      const bound =
+        (e.shiftKey ? this.settingsManager.getActionForCode(`Shift+${code}`) : undefined) ?? this.settingsManager.getActionForCode(code);
+      const step = bound ? MOVE_STEPS[bound] : undefined;
+      if (step) {
         this.pendingCloseDoorDirection = false;
         const p = this.engine.player;
-        const targetX = p.x + dx;
-        const targetY = p.y + dy;
+        const targetX = p.x + step[0];
+        const targetY = p.y + step[1];
         this.engine.handlePlayerAction(new CloseDoorAction(p, targetX, targetY));
         this.onActionProcessed();
         return true;

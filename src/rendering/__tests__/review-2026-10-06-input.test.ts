@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { InputHandler } from '../input-handler';
-import { GameEngine, GameMap, Player, MemoryStorage, MovementAction, TILES } from '../../engine';
+import { CloseDoorAction, GameEngine, GameMap, Player, MemoryStorage, MovementAction, TILES } from '../../engine';
 import { SettingsManager, ACTION_METADATA } from '../../ui/settings/settingsManager';
 
 /**
@@ -269,6 +269,30 @@ describe('R-rend-13 · Settings own the movement keys: a key the player unbinds 
 
     expect(expected.length).toBeGreaterThan(20);
     expect(got).toEqual(expected);
+  });
+});
+
+describe("Smart Close Door's 'Close which door?' takes the player's movement keys", () => {
+  it('a key bound to a direction picks that door; a default letter moved off it does not', () => {
+    const { engine, ih } = wiredHandler();
+    engine.map.setTile(11, 10, TILES.DOOR_OPEN);
+    engine.map.setTile(9, 10, TILES.DOOR_OPEN);
+    const closed: Array<[number, number]> = [];
+    vi.spyOn(engine, 'handlePlayerAction').mockImplementation((a: unknown) => {
+      if (a instanceof CloseDoorAction) closed.push([a.x, a.y]);
+      return undefined as never;
+    });
+    ih.settingsManager.bindKey('move_e', 'KeyO');
+    ih.settingsManager.unbindKey('KeyD');
+
+    ih.handleKeyDown(ev('KeyC'));
+    expect(ih.pendingCloseDoorDirection).toBe(true);
+    ih.handleKeyDown(ev('KeyD'));
+    expect(closed).toEqual([]);
+    ih.handleKeyDown(ev('KeyO'));
+    ih.destroy();
+
+    expect(closed).toEqual([[11, 10]]);
   });
 });
 

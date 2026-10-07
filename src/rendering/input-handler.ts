@@ -632,14 +632,16 @@ export class InputHandler {
       return true;
     }
 
-    // Hotkey: Ancient Run Pacts & Bounties (KeyP when not inspecting)
-    if ((code === 'KeyP' || e.key === 'p' || e.key === 'P') && !this.inspectOverlay?.isOpen && this.characterMenuModal) {
+    // Hotkey: Ancient Run Pacts & Bounties (KeyP when not inspecting). Hard-wired keys are
+    // positional (`code`), like every binding: matching the typed letter too made the key
+    // that types 'p' on Colemak (QWERTY R) open Pacts instead of resting (R-rend-11).
+    if (code === 'KeyP' && !this.inspectOverlay?.isOpen && this.characterMenuModal) {
       this.toggleCharacterMenu('pacts');
       return true;
     }
 
     // Hotkey: U spends level points, which happens on the Character tab (ADR-0011).
-    if ((code === 'KeyU' || e.key === 'u' || e.key === 'U') && !this.inspectOverlay?.isOpen && this.characterMenuModal) {
+    if (code === 'KeyU' && !this.inspectOverlay?.isOpen && this.characterMenuModal) {
       this.toggleCharacterMenu('character');
       return true;
     }
@@ -655,16 +657,7 @@ export class InputHandler {
 
     // 0.5. Handle Look / Inspect Mode if open
     if (this.inspectOverlay?.isOpen) {
-      if (
-        code === 'Escape' ||
-        code === 'KeyX' ||
-        code === 'KeyL' ||
-        e.key === 'Escape' ||
-        e.key === 'x' ||
-        e.key === 'X' ||
-        e.key === 'l' ||
-        e.key === 'L'
-      ) {
+      if (code === 'Escape' || code === 'KeyX' || code === 'KeyL') {
         this.inspectOverlay.close();
         this.onActionProcessed();
         return true;
@@ -751,14 +744,7 @@ export class InputHandler {
     const p = this.engine.player;
 
     // Toggle Look / Inspect Mode: 'KeyX' or 'KeyL'
-    if (
-      code === 'KeyX' ||
-      code === 'KeyL' ||
-      e.key === 'x' ||
-      e.key === 'X' ||
-      e.key === 'l' ||
-      e.key === 'L'
-    ) {
+    if (code === 'KeyX' || code === 'KeyL') {
       if (this.targetingOverlay?.isOpen) {
         this.targetingOverlay.close();
       }

@@ -118,3 +118,48 @@ describe('R-rend-10 · a key pressed while effects lock input never presses the 
     expect(prevented).toHaveBeenCalled();
   });
 });
+
+/** A handler on a fresh engine with stub overlays, recording what each key opened. */
+function wiredHandler() {
+  const engine = new GameEngine({ map: new GameMap(20, 20), player: new Player({ position: { x: 10, y: 10 } }) });
+  const ih = new InputHandler(engine, () => {}, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, new SettingsManager(new MemoryStorage()));
+  ih.enabled = true;
+  const opened: string[] = [];
+  ih.characterMenuModal = {} as never;
+  vi.spyOn(ih, 'toggleCharacterMenu').mockImplementation((tab?: string) => { opened.push(`tab:${tab}`); });
+  const look = { isOpen: false, open: vi.fn(() => { opened.push('look'); }), close: vi.fn(() => { opened.push('close-look'); }), moveCursor: vi.fn((dx: number, dy: number) => { opened.push(`cursor:${dx},${dy}`); }) };
+  ih.inspectOverlay = look as never;
+  ih.mapOverlay = { isOpen: false, toggle: vi.fn(() => { opened.push('map'); }), handleKeyDown: vi.fn() } as never;
+  ih.autoRestRunner = { active: false, start: vi.fn(() => { opened.push('rest'); }), cancel: vi.fn() } as never;
+  return { engine, ih, opened, look };
+}
+
+describe('R-rend-11 · hard-wired keys are positional, so a non-QWERTY layout reaches its own bindings', () => {
+  const press = (code: string, key: string) => ({ ...ev(code), key }) as KeyboardEvent;
+
+  it("Colemak: the key at R (it types 'p') rests, and the key at I (it types 'u') opens the inventory", () => {
+    const { ih, opened } = wiredHandler();
+    ih.handleKeyDown(press('KeyR', 'p'));
+    ih.handleKeyDown(press('KeyI', 'u'));
+    ih.destroy();
+
+    expect(opened).toEqual(['rest', 'tab:inventory']);
+  });
+
+  it("Workman: the key at M (it types 'l') opens the map, not Look", () => {
+    const { ih, opened } = wiredHandler();
+    ih.handleKeyDown(press('KeyM', 'l'));
+    ih.destroy();
+
+    expect(opened).toEqual(['map']);
+  });
+
+  it("Dvorak, in Look: the key at B (it types 'x') moves the cursor south-west instead of closing Look", () => {
+    const { ih, opened, look } = wiredHandler();
+    look.isOpen = true;
+    ih.handleKeyDown(press('KeyB', 'x'));
+    ih.destroy();
+
+    expect(opened).toEqual(['cursor:-1,1']);
+  });
+});

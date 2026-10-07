@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Leaderboard, type HallOfFameEntry } from '../leaderboard';
 import { MemoryStorage } from '../../storage/profile-manager';
+import { utf8ToBase64, base64ToUtf8 } from '../../storage/saveTransfer';
 
 describe('Run Sharing & Saga Exchange System', () => {
   let storage: MemoryStorage;
@@ -41,7 +42,7 @@ describe('Run Sharing & Saga Exchange System', () => {
     const decoded = Leaderboard.decodeRunShare(code);
 
     expect(decoded).not.toBeNull();
-    expect(decoded?.id).toBe(testEntry.id);
+    expect(decoded?.id).toMatch(/^saga-/);
     expect(decoded?.heroName).toBe(testEntry.heroName);
     expect(decoded?.gender).toBe(testEntry.gender);
     expect(decoded?.status).toBe(testEntry.status);
@@ -70,7 +71,6 @@ describe('Run Sharing & Saga Exchange System', () => {
 
   // R-econ-23: the checksum is computable by anyone, so a code is only as good as its fields.
   it.each([
-    ['id', undefined],
     ['heroName', 7],
     ['gender', 'other'],
     ['status', 'resting'],
@@ -85,6 +85,48 @@ describe('Run Sharing & Saga Exchange System', () => {
   ] as const)('rejects a code whose %s is missing or of the wrong type, checksum or not', (field, value) => {
     const crafted = { ...testEntry, [field]: value } as unknown as HallOfFameEntry;
     expect(Leaderboard.decodeRunShare(Leaderboard.encodeRunShare(crafted))).toBeNull();
+  });
+
+  // R-econ-23: the entry's id is the sharer's hero profile id, hero_<creation time>_<random>.
+  const payloadOf = (code: string) =>
+    JSON.parse(base64ToUtf8(code.slice('SAGA1_'.length).replace(/-/g, '+').replace(/_/g, '/')));
+  // A code as written before the id was dropped: the entry carries it and the checksum covers it.
+  const codeWithId = (entry: unknown): string => {
+    const e = entry as HallOfFameEntry;
+    const str = `${e.id}:${e.heroName}:${e.status}:${e.score}:${e.level}:${e.deepestFloor}:${e.turns}:${e.xp}:${e.goldCp}:${e.date}`;
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < str.length; i++) {
+      hash ^= str.charCodeAt(i);
+      hash = Math.imul(hash, 0x01000193);
+    }
+    const json = JSON.stringify({ version: 1, generator: 'yodc_saga', timestamp: 1, entry, checksum: hash >>> 0 });
+    return `SAGA1_${utf8ToBase64(json).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`;
+  };
+
+  it("a code carries no profile id", () => {
+    const payload = payloadOf(Leaderboard.encodeRunShare(testEntry));
+
+    expect(payload.entry).not.toHaveProperty('id');
+    expect(JSON.stringify(payload)).not.toContain(testEntry.id);
+  });
+
+  it("a code written with the sharer's id still decodes, without the id", () => {
+    const decoded = Leaderboard.decodeRunShare(codeWithId(testEntry));
+
+    expect(decoded).not.toBeNull();
+    expect(decoded?.id).not.toBe(testEntry.id);
+    expect({ ...decoded, id: testEntry.id }).toEqual(testEntry);
+  });
+
+  it('a code whose id is there but not a string is refused', () => {
+    expect(Leaderboard.decodeRunShare(codeWithId({ ...testEntry, id: 7 }))).toBeNull();
+  });
+
+  it('a decoded saga carries the id its inscription gets', () => {
+    const decoded = Leaderboard.decodeRunShare(Leaderboard.encodeRunShare(testEntry))!;
+    leaderboard.importSharedRun(decoded);
+
+    expect(leaderboard.getChampions()[0].id).toBe(decoded.id);
   });
 
   it('inscribes an imported saga under a fresh id, not the sharer\'s profile id', () => {

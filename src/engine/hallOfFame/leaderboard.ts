@@ -22,22 +22,35 @@ export interface HallOfFameEntry {
   date: number;
 }
 
+/**
+ * A run as a saga code carries it. A code carries no id: an entry's id is its hero's profile
+ * id (`hero_<creation time>_<random>`), and an inscription gets its own (R-econ-23). A code
+ * written before then carries the sharer's id, and its checksum covers it.
+ */
+type SharedSagaEntry = Omit<HallOfFameEntry, 'id'> & { id?: string };
+
 export interface SharedSagaEnvelope {
   version: 1;
   generator: 'yodc_saga';
   timestamp: number;
-  entry: HallOfFameEntry;
+  entry: SharedSagaEntry;
   checksum: number;
 }
 
-function computeSagaChecksum(entry: HallOfFameEntry): number {
-  const str = `${entry.id}:${entry.heroName}:${entry.status}:${entry.score}:${entry.level}:${entry.deepestFloor}:${entry.turns}:${entry.xp}:${entry.goldCp}:${entry.date}`;
+/** A missing id reads as empty, so a code with one checks exactly as it always did. */
+function computeSagaChecksum(entry: SharedSagaEntry): number {
+  const str = `${entry.id ?? ''}:${entry.heroName}:${entry.status}:${entry.score}:${entry.level}:${entry.deepestFloor}:${entry.turns}:${entry.xp}:${entry.goldCp}:${entry.date}`;
   let hash = 0x811c9dc5;
   for (let i = 0; i < str.length; i++) {
     hash ^= str.charCodeAt(i);
     hash = Math.imul(hash, 0x01000193);
   }
   return hash >>> 0;
+}
+
+/** The id a shared saga is inscribed under: derived from the run, never the sharer's. */
+function inscriptionId(entry: SharedSagaEntry): string {
+  return `saga-${computeSagaChecksum({ ...entry, id: 'saga' }).toString(36)}`;
 }
 
 export class Leaderboard {
@@ -104,27 +117,28 @@ export class Leaderboard {
 
   /**
    * Encodes a hall-of-fame entry into a compact, URL-safe Base64 string with checksum.
+   * The entry's id, its hero's profile id, stays out of it.
    */
   public static encodeRunShare(entry: HallOfFameEntry): string {
+    const shared: SharedSagaEntry = {
+      heroName: entry.heroName,
+      gender: entry.gender,
+      status: entry.status,
+      epitaph: entry.epitaph,
+      level: entry.level,
+      deepestFloor: entry.deepestFloor,
+      turns: entry.turns,
+      xp: entry.xp,
+      goldCp: entry.goldCp,
+      score: entry.score,
+      date: entry.date,
+    };
     const envelope: SharedSagaEnvelope = {
       version: 1,
       generator: 'yodc_saga',
       timestamp: Date.now(),
-      entry: {
-        id: entry.id,
-        heroName: entry.heroName,
-        gender: entry.gender,
-        status: entry.status,
-        epitaph: entry.epitaph,
-        level: entry.level,
-        deepestFloor: entry.deepestFloor,
-        turns: entry.turns,
-        xp: entry.xp,
-        goldCp: entry.goldCp,
-        score: entry.score,
-        date: entry.date,
-      },
-      checksum: computeSagaChecksum(entry),
+      entry: shared,
+      checksum: computeSagaChecksum(shared),
     };
 
     const json = JSON.stringify(envelope);
@@ -136,6 +150,7 @@ export class Leaderboard {
   /**
    * Decodes a URL-safe Base64 run share code into a validated HallOfFameEntry,
    * verifying schema integrity and checksum. Returns null if corrupted or invalid.
+   * The entry comes back under the id its inscription gets, whatever id an older code carried.
    */
   public static decodeRunShare(code: string): HallOfFameEntry | null {
     if (!code || typeof code !== 'string') return null;
@@ -153,13 +168,13 @@ export class Leaderboard {
       const json = base64ToUtf8(b64);
       const parsed = JSON.parse(json);
       if (!parsed || parsed.version !== 1 || !parsed.entry) return null;
-      const entry = parsed.entry as HallOfFameEntry;
+      const entry = parsed.entry as SharedSagaEntry;
 
       // Anyone can compute the checksum, so every field is checked: the preview and the
       // hall render all of them (R-econ-23).
       const isNumber = (v: unknown): boolean => typeof v === 'number' && Number.isFinite(v);
       if (
-        typeof entry.id !== 'string' ||
+        (entry.id !== undefined && typeof entry.id !== 'string') ||
         typeof entry.heroName !== 'string' ||
         (entry.gender !== 'male' && entry.gender !== 'female') ||
         (entry.status !== 'victorious' && entry.status !== 'fallen') ||
@@ -180,7 +195,20 @@ export class Leaderboard {
         return null;
       }
 
-      return entry;
+      return {
+        id: inscriptionId(entry),
+        heroName: entry.heroName,
+        gender: entry.gender,
+        status: entry.status,
+        epitaph: entry.epitaph,
+        level: entry.level,
+        deepestFloor: entry.deepestFloor,
+        turns: entry.turns,
+        xp: entry.xp,
+        goldCp: entry.goldCp,
+        score: entry.score,
+        date: entry.date,
+      };
     } catch {
       return null;
     }
@@ -217,10 +245,7 @@ export class Leaderboard {
     if (isDuplicate) {
       return { success: false, message: `${entry.heroName}'s saga is already inscribed in the Hall of Fame!`, champion: entry };
     }
-    const inscribed: HallOfFameEntry = {
-      ...entry,
-      id: `saga-${computeSagaChecksum({ ...entry, id: 'saga' }).toString(36)}`,
-    };
+    const inscribed: HallOfFameEntry = { ...entry, id: inscriptionId(entry) };
     if (!this.recordRun(inscribed)) {
       return { success: false, message: `Could not inscribe ${entry.heroName}: the browser's storage refused it.`, champion: entry };
     }

@@ -4,7 +4,6 @@ import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { MonsterRegistry } from '../../bestiary/monsterDefinitions';
-import { TrapRegistry } from '../../traps/trapRegistry';
 import { ActionRegistry, type GameAction } from '../../actions/actionRegistry';
 import { SpellRegistry, getSpell, SPELL_REGISTRY } from '../../magic/spellRegistry';
 import { CompanionRegistry, type CompanionDefinition } from '../../entities/companion';
@@ -16,7 +15,7 @@ import { Item } from '../../items/item';
 import { itemIndex, getItemById } from '../../items/itemIndex';
 import { WaitAction } from '../../actions/wait';
 import { processDefaultMonsterStore, setActiveMonsterStore } from '../monsterRegistryStore';
-import { processDefaultTrapStore, setActiveTrapStore } from '../trapRegistryStore';
+import { activeTrapStore, processDefaultTrapStore, setActiveTrapStore } from '../trapRegistryStore';
 import { setActiveActionStore } from '../actionRegistryStore';
 import { processDefaultSpellStore, setActiveSpellStore } from '../spellRegistryStore';
 import { processDefaultCompanionStore, setActiveCompanionStore } from '../companionRegistryStore';
@@ -229,14 +228,14 @@ describe('Per-engine content registries', () => {
     expect(engineB.registries.traps.has('fire_rune')).toBe(true);
     expect(engineB.registries.traps.has('dart_trap')).toBe(false);
 
-    // Static facade points to B
-    expect(TrapRegistry.has('fire_rune')).toBe(true);
-    expect(TrapRegistry.has('dart_trap')).toBe(false);
+    // The active trap store is B's
+    expect(activeTrapStore().has('fire_rune')).toBe(true);
+    expect(activeTrapStore().has('dart_trap')).toBe(false);
 
-    // Acting on A switches TrapRegistry to A
+    // Acting on A makes A's store the active one
     engineA.handlePlayerAction(new WaitAction(engineA.player));
-    expect(TrapRegistry.has('dart_trap')).toBe(true);
-    expect(TrapRegistry.has('fire_rune')).toBe(false);
+    expect(activeTrapStore().has('dart_trap')).toBe(true);
+    expect(activeTrapStore().has('fire_rune')).toBe(false);
   });
 
   it('keeps two engines built from different action command manifests separate', () => {
@@ -481,8 +480,8 @@ describe('Per-engine content registries', () => {
       // Facades resolve against active Engine A
       expect(MonsterRegistry.has('grunt')).toBe(true);
       expect(MonsterRegistry.has('kobold')).toBe(false);
-      expect(TrapRegistry.has('dart_trap')).toBe(true);
-      expect(TrapRegistry.has('fire_rune')).toBe(false);
+      expect(activeTrapStore().has('dart_trap')).toBe(true);
+      expect(activeTrapStore().has('fire_rune')).toBe(false);
       expect(ActionRegistry.has('whirlwind')).toBe(true);
       expect(ActionRegistry.has('shadowstep')).toBe(false);
       expect(SpellRegistry.has('frostbolt')).toBe(true);
@@ -539,8 +538,8 @@ describe('Per-engine content registries', () => {
       // Facades resolve against active Engine B
       expect(MonsterRegistry.has('kobold')).toBe(true);
       expect(MonsterRegistry.has('grunt')).toBe(false);
-      expect(TrapRegistry.has('fire_rune')).toBe(true);
-      expect(TrapRegistry.has('dart_trap')).toBe(false);
+      expect(activeTrapStore().has('fire_rune')).toBe(true);
+      expect(activeTrapStore().has('dart_trap')).toBe(false);
       expect(ActionRegistry.has('shadowstep')).toBe(true);
       expect(ActionRegistry.has('whirlwind')).toBe(false);
       expect(SpellRegistry.has('pyroblast')).toBe(true);

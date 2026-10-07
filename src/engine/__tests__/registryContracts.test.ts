@@ -6,7 +6,7 @@ import { AIRegistry } from '../ai/aiRegistry';
 import { getSpell } from '../magic/spellRegistry';
 import { EffectPrimitiveRegistry } from '../magic/effectRegistry';
 import { StatusHandlerRegistry } from '../status/statusHandlers';
-import { TrapRegistry } from '../traps/trapRegistry';
+import { activeTrapStore } from '../registries/trapRegistryStore';
 import { DungeonGeneratorRegistry } from '../dungeon/generator';
 import { DungeonGenerator } from '../dungeon/dungeon-generator';
 import { SpellPipeline } from '../magic/spellPipeline';
@@ -49,7 +49,7 @@ describe('Definition lookups fail loudly on unknown IDs', () => {
     expect(getSpell(UNKNOWN_ID)).toBeUndefined();
     expect(EffectPrimitiveRegistry.get(UNKNOWN_ID)).toBeUndefined();
     expect(StatusHandlerRegistry.get(UNKNOWN_ID)).toBeUndefined();
-    expect(TrapRegistry.get(UNKNOWN_ID)).toBeUndefined();
+    expect(activeTrapStore().get(UNKNOWN_ID)).toBeUndefined();
     expect(DungeonGeneratorRegistry.get(UNKNOWN_ID)).toBeUndefined();
     expect(Companion.fromDefinition(UNKNOWN_ID, 'c-1', { x: 0, y: 0 })).toBeNull();
   });

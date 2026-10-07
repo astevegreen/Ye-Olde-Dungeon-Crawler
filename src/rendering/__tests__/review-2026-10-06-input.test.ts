@@ -173,8 +173,8 @@ describe('R-rend-12 · browser and system chords (Ctrl, Alt, Meta) never drive t
     ['Ctrl+S', 'KeyS', { ctrlKey: true }],
     ['Ctrl+W', 'KeyW', { ctrlKey: true }],
     ['Cmd+Q', 'KeyQ', { metaKey: true }],
-    ['Alt+Left', 'ArrowLeft', { altKey: true }],
-    ['Alt+Numpad5', 'Numpad5', { altKey: true }],
+    ['Ctrl+Left', 'ArrowLeft', { ctrlKey: true }],
+    ['Alt+F', 'KeyF', { altKey: true }],
   ])('%s is left to the browser', (_name, code, mods) => {
     vi.useFakeTimers();
     const { engine, ih, opened } = wiredHandler();
@@ -191,6 +191,27 @@ describe('R-rend-12 · browser and system chords (Ctrl, Alt, Meta) never drive t
     expect(acted).not.toHaveBeenCalled();
     expect(opened).toEqual([]);
     expect(prevented).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['Alt+Left', 'ArrowLeft'],
+    ['Alt+Right', 'ArrowRight'],
+    ['Alt+Home', 'Home'],
+    ['Alt+Numpad4', 'Numpad4'],
+    ['Alt+Numpad5', 'Numpad5'],
+  ])('%s, the browser\'s way off the page, moves nobody and goes nowhere', (_name, code) => {
+    vi.useFakeTimers();
+    const { engine, ih } = wiredHandler();
+    const acted = vi.spyOn(engine, 'handlePlayerAction');
+    const prevented = vi.fn();
+
+    const handled = ih.handleKeyDown({ ...ev(code), altKey: true, preventDefault: prevented } as KeyboardEvent);
+    vi.advanceTimersByTime(100);
+    ih.destroy();
+
+    expect(handled).toBe(false);
+    expect(acted).not.toHaveBeenCalled();
+    expect(prevented).toHaveBeenCalled();
   });
 
   it('Ctrl+K and Cmd+K, the chords the game owns, still toggle the command palette', () => {

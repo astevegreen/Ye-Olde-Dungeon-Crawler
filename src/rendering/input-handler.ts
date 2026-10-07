@@ -126,6 +126,27 @@ const ARROW_MOVES: Readonly<Record<string, string>> = {
   ArrowRight: 'move_e',
 };
 
+/** The arrows, the numpad and its NumLock-off twins (Home, End, PageUp, PageDown). */
+const MOVEMENT_KEYS: ReadonlySet<string> = new Set([
+  'ArrowUp',
+  'ArrowDown',
+  'ArrowLeft',
+  'ArrowRight',
+  'PageUp',
+  'PageDown',
+  'Home',
+  'End',
+  'Numpad8',
+  'Numpad2',
+  'Numpad4',
+  'Numpad6',
+  'Numpad7',
+  'Numpad9',
+  'Numpad1',
+  'Numpad3',
+  'Numpad5',
+]);
+
 function isTextEntryTarget(target: EventTarget | null): boolean {
   const el = target as { tagName?: string; isContentEditable?: boolean } | null;
   if (!el) return false;
@@ -495,35 +516,16 @@ export class InputHandler {
     // going back (R-rend-12). The command palette's Ctrl/Cmd+K is the one chord the game owns.
     const paletteChord = code === 'KeyK' && (e.ctrlKey || e.metaKey);
     if ((e.ctrlKey || e.altKey || e.metaKey) && !paletteChord) {
+      // Except Alt with a movement key: Alt+Left/Right/Home is the browser's Back, Forward and
+      // Home page, which would leave the game. It does nothing at all.
+      if (e.altKey && MOVEMENT_KEYS.has(code)) e.preventDefault();
       return false;
     }
 
     // Navigation keys never scroll the page or press the HUD button that has focus. This
     // runs before the lock: a Space dropped during effect playback still clicked that
     // button on keyup (R-rend-10).
-    if (
-      [
-        'ArrowUp',
-        'ArrowDown',
-        'ArrowLeft',
-        'ArrowRight',
-        'Space',
-        'Enter',
-        'PageUp',
-        'PageDown',
-        'Home',
-        'End',
-        'Numpad8',
-        'Numpad2',
-        'Numpad4',
-        'Numpad6',
-        'Numpad7',
-        'Numpad9',
-        'Numpad1',
-        'Numpad3',
-        'Numpad5',
-      ].includes(code)
-    ) {
+    if (MOVEMENT_KEYS.has(code) || code === 'Space' || code === 'Enter') {
       e.preventDefault();
     }
 

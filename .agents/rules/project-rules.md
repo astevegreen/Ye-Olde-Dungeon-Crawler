@@ -32,7 +32,7 @@ You commit — and push when the owner asks — on your own; Claude Code reviews
 - **Owner's request:** when the owner asked for the change, add a trailer quoting the ask, e.g. `Requested: "rename coins to Gold Coins, show stacks as (5x)"`. The reviewer treats requested behavior as intended and checks only that it is done correctly; an unrequested behavior change gets flagged. Changes you chose yourself (a fix you found, a refactor) carry no `Requested:` trailer.
 - **One request per commit:** a separate commit for each distinct request or fix. Never bundle unrelated work, transcripts, or generated notes into a feature commit.
 - **Engine source** (`src/engine/` outside tests) may be committed like any other code. The three §8.1 protected files still need `§8.1 exception N` in the message (hook-enforced).
-- **Push** when the owner asks. The `pre-push` hook runs the full gates; never bypass hooks (`--no-verify`, `SKIP_HOOKS=1`) unless the owner explicitly says to for that push.
+- **Push** when the owner asks. The `pre-commit` hook runs lint and the unit tests; the `pre-push` hook runs the sim, schema validation, the cotw build and the Playwright smoke suite (§7.2). Never bypass hooks (`--no-verify`, `SKIP_HOOKS=1`) unless the owner explicitly says to for that commit or push.
 - **Never move the `verified` tag** — it marks what Claude Code has reviewed.
 - **CLI safety:** never pass code inline (`-e`, `--eval`, `-c`) in shell commands; it hangs under PowerShell. Run gates via `package.json` scripts and probes via `npm run safe:eval -- <file>`. Full rule: `cli-safety.md`.
 - Describe the change in the commit subject: a feature is titled as a feature, a refactor as a refactor.

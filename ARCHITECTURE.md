@@ -203,7 +203,7 @@ Two coding agents work in this repository in alternation, never simultaneously: 
 - **Attribution:** every commit names who wrote it — Claude Code's `Co-Authored-By: Claude` trailer, or `Agent: <name>` (`Agent: Antigravity`, `Agent: owner`). The `commit-msg` hook rejects a commit without one.
 - **Owner's request:** a commit implementing something the owner asked for carries a `Requested: "<the ask>"` trailer. Review treats requested behavior as intended and checks its correctness; unrequested behavior changes are flagged.
 - **One request per commit:** unrelated work is not bundled; the `commit-msg` hook warns on large commits spanning several areas.
-- **Protected files and gates still bind:** §8.1 is enforced by `commit-msg`; `pre-push` runs the full gates, and hooks are bypassed only on the owner's explicit say-so.
+- **Protected files and gates still bind:** §8.1 is enforced by `commit-msg`; `pre-commit` runs lint and the unit tests, and `pre-push` runs the sim, schema validation, the cotw build and the Playwright smoke suite (§7.2). Hooks are bypassed only on the owner's explicit say-so.
 - **Review marker:** the local git tag `verified` marks the last commit Claude Code has reviewed; only Claude Code moves it. Each Claude Code session reviews every commit in `verified..HEAD` without its own trailer — against this document, with the gates run — then moves the tag to `HEAD`.
 
 ### 8.5 Repository Files

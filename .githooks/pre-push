@@ -5,7 +5,8 @@
 # happens only after a push, so the gates that pre-commit skips for speed run
 # here, before anything reaches origin: the headless sim, schema validation,
 # the cotw bundle (WarCraft is parked, ADR-0010), and the Playwright smoke suite against the built bundle.
-# (~20 s; pre-commit has already run lint and the unit tests.)
+# (About 70 s, see docs/architecture/quality-gates.md; pre-commit has already
+# run lint and the unit tests.)
 #
 # Set SKIP_HOOKS=1 to bypass deliberately, as with the other hooks.
 set -e

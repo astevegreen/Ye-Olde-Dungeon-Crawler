@@ -455,7 +455,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         onTelegraph: inDanger(p.x, p.y),
         onHazard: onHazard(p.x, p.y),
         healingCarried: healingCarriedCount,
-        poisoned: Boolean(p.statusManager?.has?.('poison')),
+        poisoned: Boolean(p.statusManager?.hasStatus?.('poison')),
         unspent,
       };
       const findStairs = (dir: 'up' | 'down'): { x: number; y: number } | null => {

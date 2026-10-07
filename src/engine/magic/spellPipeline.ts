@@ -27,7 +27,6 @@ import { findSafeSpawnPosition } from '../spatial/collisionSolver';
 import { EffectPrimitiveRegistry, type EffectContext } from './effectRegistry';
 import { scaleSpellDamage, scaleSpellHeal } from './castNumbers';
 import { castGeometry } from './castTrace';
-import { registerReciprocalPrimitives } from '../combat/reciprocalPipeline';
 import { EnergyModel } from '../actors/energyModel';
 import { dispatchDamageHooks } from '../hooks/damageHooks';
 import { Actor } from '../entities/actor';
@@ -157,8 +156,6 @@ export class SpellPipeline {
         ctx.engine.log(`You already know ${name}; the runes teach you nothing new.`);
       }
     });
-
-    registerReciprocalPrimitives();
   }
 
   public static ensureBuiltinEffects(): void {

@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { SpellPipeline } from '../spellPipeline';
 import { EffectPrimitiveRegistry } from '../effectRegistry';
-import { registerReciprocalPrimitives, executeReciprocalAction } from '../../combat/reciprocalPipeline';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Entity } from '../../entities/entity';
@@ -92,13 +91,6 @@ describe('EffectPrimitiveRegistry.dispatch fails loudly on an unknown effect typ
     expect(() =>
       SpellPipeline.executeSpell(engine, spell, player, { x: monster.x, y: monster.y })
     ).toThrow('no_such_effect_primitive');
-  });
-
-  it('reciprocalPipeline.executeReciprocalAction throws instead of silently skipping the effect', () => {
-    registerReciprocalPrimitives();
-    expect(() => executeReciprocalAction(player, monster, [UNKNOWN_EFFECT], engine)).toThrow(
-      'no_such_effect_primitive'
-    );
   });
 
   it('a real registered effect type (damage) still dispatches normally', () => {

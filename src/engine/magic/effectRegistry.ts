@@ -59,7 +59,7 @@ export class EffectPrimitiveRegistry {
   /**
    * Dispatches an effect primitive to its registered handler and returns true.
    * Throws on an unregistered primitive type instead of silently no-op'ing: every
-   * call site (spellPipeline.ts, reciprocalPipeline.ts) previously ignored a `false`
+   * call site (spellPipeline.ts) previously ignored a `false`
    * return, so an unknown effect type — a typo'd spell/ability definition — was a
    * silent no-op reported to the player as a successful cast. All call sites run
    * inside a pipeline-isolated player/monster action, so throwing here fails that

@@ -73,6 +73,28 @@ describe('check-engine-creep (ARCHITECTURE.md §3, §7.2)', () => {
     expect(output).toContain("'cotw:giant_blood'");
   }, 120_000);
 
+  it('fails on a pack identifier as an object key, in a template literal, or compounded into a longer string', () => {
+    // R-tool-6: only a whole quoted literal equal to a declared ID used to be seen.
+    const engine = scratch('engineForms.ts', [
+      'export const costs = { blood_tap: 3 };',
+      'export const key = (n: number) => `${n}:blood_tap`;',
+      "export const icon = 'spell~blood_tap';",
+      "export const prose = 'Dead heroes cannot cast clairvoyance.';",
+      '',
+    ]);
+    const ui = scratch('uiForms.ts', ['export const flagKey = (id: string) => `cotw:${id}`;', '']);
+
+    const { status, output } = runGate('--engine-file', engine, '--presentation-file', ui);
+
+    expect(status).not.toBe(0);
+    expect(output).toContain('Found 3 content-pack identifier(s) in engine source');
+    expect(output).toMatch(/engineForms\.ts:1 {2}'blood_tap'/);
+    expect(output).toMatch(/engineForms\.ts:2 {2}'blood_tap'/);
+    expect(output).toMatch(/engineForms\.ts:3 {2}'blood_tap'/);
+    expect(output).toContain('Found 1 content-pack identifier(s) in presentation source');
+    expect(output).toMatch(/uiForms\.ts:1 {2}'cotw:'/);
+  }, 120_000);
+
   it('passes on the tree as it is, scanning the real engine and presentation sources', () => {
     const { status, output } = runGate();
 

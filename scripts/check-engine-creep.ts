@@ -12,7 +12,7 @@ import type { GameContentManifest } from '../src/engine';
  * every pack under src/content/, collects the identifiers the pack *declares*
  * (monsters, items, spells, pacts, companions, vaults, choices, NPCs, quest
  * references, and the story flags its choices and events set), and fails on any of
- * them appearing as a quoted literal in engine production source.
+ * them appearing in engine production source (the forms seen: `packReferences`).
  *
  * Shared vocabulary a manifest merely restates from engine enums (equipment slots,
  * elements, status types) is not collected. Declared identifiers the engine
@@ -129,6 +129,42 @@ function extraFiles(flag: string): string[] {
   return out;
 }
 
+/**
+ * The pack identifiers one source line names (R-tool-6 widened the forms seen):
+ *  - a quoted literal equal to a declared ID, or (presentation) starting with a pack namespace;
+ *  - the same for each text segment of a template literal (`cotw:${id}`, `${n}:blood_tap`);
+ *  - an underscored ID compounded into a longer string (`'spell~blood_tap'`): an ID without an
+ *    underscore inside prose ("cast clairvoyance") is a word, not a reference, so it isn't seen;
+ *  - an ID used as an unquoted object key, label or parameter name (`{ blood_tap: 3 }`).
+ */
+function packReferences(text: string, presentation: boolean): { id: string; pack: string }[] {
+  const hits: { id: string; pack: string }[] = [];
+  const pieces: string[] = [];
+  for (const match of text.matchAll(/(['"`])((?:(?!\1)[^\\$])+)\1/g)) pieces.push(match[2]);
+  for (const match of text.matchAll(/`([^`]*\$\{[^`]*)`/g)) pieces.push(...match[1].split(/\$\{[^}]*\}/));
+  for (const piece of pieces) {
+    let pack = ids.get(piece);
+    if (!pack && presentation) {
+      const ns = packNamespaces.find((prefix) => piece.startsWith(prefix));
+      if (ns) pack = ns.slice(0, -1);
+    }
+    if (pack) {
+      hits.push({ id: piece, pack });
+      continue;
+    }
+    for (const word of piece.match(/[A-Za-z0-9_]+/g) ?? []) {
+      const wordPack = word.includes('_') ? ids.get(word) : undefined;
+      if (wordPack) hits.push({ id: word, pack: wordPack });
+    }
+  }
+  const code = text.replace(/(['"`])(?:(?!\1)[^\\]|\\.)*\1/g, (s) => ' '.repeat(s.length));
+  for (const match of code.matchAll(/(?<![\w$.])([A-Za-z_$][\w$]*)\s*\??:(?!:)/g)) {
+    const pack = ids.get(match[1]);
+    if (pack) hits.push({ id: match[1], pack });
+  }
+  return hits;
+}
+
 const engineFiles = [...sourceFiles(ENGINE_DIR), ...extraFiles('--engine-file')];
 for (const file of engineFiles) {
   const rel = path.relative(ROOT, file).split(path.sep).join('/');
@@ -136,10 +172,7 @@ for (const file of engineFiles) {
     .split('\n')
     .forEach((text, i) => {
       if (/^\s*(\/\/|\*|\/\*)/.test(text)) return; // prose may name a pack identifier
-      for (const match of text.matchAll(/(['"`])((?:(?!\1)[^\\$])+)\1/g)) {
-        const id = match[2];
-        const pack = ids.get(id);
-        if (!pack) continue;
+      for (const { id, pack } of packReferences(text, false)) {
         if (allowed.has(id)) {
           usedAllowlist.add(id);
           continue;
@@ -161,14 +194,7 @@ for (const file of presentationFiles) {
     .split('\n')
     .forEach((text, i) => {
       if (/^\s*(\/\/|\*|\/\*)/.test(text)) return; // prose may name a pack identifier
-      for (const match of text.matchAll(/(['"`])((?:(?!\1)[^\\$])+)\1/g)) {
-        const id = match[2];
-        let pack = ids.get(id);
-        if (!pack) {
-          const ns = packNamespaces.find((prefix) => id.startsWith(prefix));
-          if (ns) pack = ns.slice(0, -1);
-        }
-        if (!pack) continue;
+      for (const { id, pack } of packReferences(text, true)) {
         if (allowed.has(id)) {
           usedAllowlist.add(id);
           continue;

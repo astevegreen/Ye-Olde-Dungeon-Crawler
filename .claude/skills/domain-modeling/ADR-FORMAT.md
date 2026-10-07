@@ -1,34 +1,52 @@
 # ADR Format
 
-ADRs live in `docs/adr/` and use sequential numbering: `0001-slug.md`, `0002-slug.md`, etc.
-
-Create the `docs/adr/` directory lazily: only when the first ADR is needed.
+ADRs live in `docs/decisions/` and use sequential numbering: `0001-slug.md`, `0002-slug.md`, etc. (ARCHITECTURE.md §8.1(4), §8.2). The directory already exists; never create another ADR directory, and never put an ADR at the repo root, whose only markdown files are `ARCHITECTURE.md` and `CLAUDE.md` (§8.5).
 
 ## Template
 
-```md
-# {Short title of the decision}
+Match the existing ADRs; `docs/decisions/0015-*.md` and `0010-*.md` are good models.
 
-{1-3 sentences: what's the context, what did we decide, and why.}
+```md
+# ADR-NNNN: {Short title of the decision}
+
+**Date:** YYYY-MM-DD
+**Status:** Accepted (owner decision)
+**Related:** `ARCHITECTURE.md` §N (section name); [ADR-NNNN](NNNN-slug.md); [sub-doc](../architecture/sub-doc.md)
+
+## Context
+{What forced the decision: the problem, the evidence, the question put to the owner.}
+
+## Decision
+{What was decided and by whom, quoting the owner's words when they decided or authorized it.}
+
+## Alternatives Considered
+- **{Option}.** Rejected: {why}.
+
+## Consequences
+- {What follows, and what reversing or reviving it would take.}
 ```
 
-That's it. An ADR can be a single paragraph. The value is in recording *that* a decision was made and *why*, not in filling out sections.
-
-## Optional sections
-
-Only include these when they add genuine value. Most ADRs won't need them.
-
-- **Status** frontmatter (`proposed | accepted | deprecated | superseded by ADR-NNNN`): useful when decisions are revisited
-- **Considered Options**: only when the rejected alternatives are worth remembering
-- **Consequences**: only when non-obvious downstream effects need to be called out
+- **Status:** `Accepted`, `Accepted (owner decision)`, or `Rejected (evaluated on evidence, not merely deferred)` for a design built and then reverted (ADR-0001). When a later ADR replaces part of an earlier one, the later one carries a `**Supersedes:**` line and the earlier one's status says `Accepted; partly superseded by ADR-NNNN (...)`, with a link.
+- **A protected-file change (§8.1 exception 4)** quotes the owner's authorization and names the file and the exact scope of the change (ADR-0013, ADR-0015).
+- **Keep it short.** Most sections are a paragraph or a few bullets. Omit Alternatives Considered only when there truly were none.
+- **Later changes:** a closed ADR is history, not a living doc. Record a later change as a dated `## Amendment (YYYY-MM-DD): {topic}` section or a one-line dated note (ADR-0011), and leave the original text as it was.
 
 ## Numbering
 
-Scan `docs/adr/` for the highest existing number and increment by one.
+Scan `docs/decisions/` for the highest existing number and increment by one.
+
+## Wiring it in
+
+In the same change, reference the new ADR from the `ARCHITECTURE.md` section it concerns (§8.2: "reference it from the relevant stub"), as §5 and §6 cite theirs in their *History:* lines. A binding rule the decision creates goes into `ARCHITECTURE.md` itself; the ADR records only why.
 
 ## When to offer an ADR
 
-All three of these must be true:
+This repo requires one, whatever the tests below say, in two cases:
+
+- an owner-authorized protected-file change (§8.1 exception 4);
+- a design that was built and then rejected on evidence, not merely deferred (§8.2).
+
+Otherwise, all three of these must be true:
 
 1. **Hard to reverse**: the cost of changing your mind later is meaningful
 2. **Surprising without context**: a future reader will look at the code and wonder "why on earth did they do it this way?"

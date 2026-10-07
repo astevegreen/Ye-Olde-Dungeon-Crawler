@@ -580,6 +580,33 @@ describe('FeedbackModal (Headless)', () => {
       expect(note?.textContent).toContain('public GitHub issues');
     });
 
+    it('sends the game view only while its box, ticked by default, stays ticked, and says so (R-ui-14)', async () => {
+      const fetchSpy = vi.fn(async () => new Response(JSON.stringify({ ok: true, number: 13, url: 'u' }), { status: 201 }));
+      vi.stubGlobal('fetch', fetchSpy);
+      const doc = (globalThis as any).document;
+      const m = relayModal();
+      m.open({ category: 'Items & Inventory', subject: 'Lost ring' });
+      const box = doc.getElementById('feedback-check-screenshot') as MockElement;
+      const includes = () => (doc.getElementById('feedback-scope-desc') as MockElement).textContent;
+      const notice = () => (doc.getElementById('feedback-public-note') as MockElement).textContent;
+      expect(box.checked).toBe(true);
+      expect(includes()).toContain('picture of the game view');
+      expect(notice()).toContain('picture of the game view');
+
+      box.checked = false;
+      box.dispatchEvent({ type: 'change' });
+      expect(notice()).not.toContain('picture of the game view');
+      m.submitToGitHub();
+      await vi.waitFor(() => expect(m.isOpen).toBe(false));
+      const payload = JSON.parse(String((fetchSpy.mock.calls[0] as unknown as [string, RequestInit])[1].body));
+      expect(payload.screenshot).toBeUndefined();
+
+      // Ticked again for the next report.
+      m.open({ category: 'Items & Inventory', subject: 'Again' });
+      expect(box.checked).toBe(true);
+      vi.unstubAllGlobals();
+    });
+
     it('falls back to GitHub on the next press when the relay is unreachable', async () => {
       vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('offline'); }));
       const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);

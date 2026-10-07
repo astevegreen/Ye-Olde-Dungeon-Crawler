@@ -85,7 +85,7 @@ const BUG_CATEGORIES: readonly BugCategory[] = [
   {
     label: 'Visual & UI',
     scope: 'visual',
-    contents: 'Screen size, pixel ratio and device, plus a screenshot you attach. No log, map or replay data unless ticked.',
+    contents: 'Screen size, pixel ratio and device. No log, map or replay data unless ticked.',
     includeLog: false,
     includeReplay: false,
   },
@@ -154,6 +154,8 @@ export class FeedbackModal implements UIModal {
   private telemetryContainer: HTMLElement | null = null;
   private checkIncludeLog: HTMLInputElement | null = null;
   private checkIncludeSnapshot: HTMLInputElement | null = null;
+  /** Whether the relay sends the game view with a bug report: ticked on every open (R-ui-14). */
+  private checkIncludeScreenshot: HTMLInputElement | null = null;
   private telemetryPreview: HTMLElement | null = null;
   private scopeDescEl: HTMLElement | null = null;
   /** "Sent reports become public": outside the diagnostic panel, which the Feature tab hides. */
@@ -219,6 +221,7 @@ export class FeedbackModal implements UIModal {
           <div class="fb-row">
             <label class="fb-check"><input type="checkbox" id="feedback-check-log" checked /> Include the action log</label>
             <label class="fb-check"><input type="checkbox" id="feedback-check-snapshot" checked /> Include replay data (save and actions since)</label>
+            <label class="fb-check" id="feedback-shot-label"><input type="checkbox" id="feedback-check-screenshot" checked /> Include a picture of the game view</label>
           </div>
         </div>
         <div class="fb-row">
@@ -238,6 +241,7 @@ export class FeedbackModal implements UIModal {
     this.telemetryContainer = this.modalEl.querySelector('#feedback-telemetry-panel');
     this.checkIncludeLog = this.modalEl.querySelector('#feedback-check-log');
     this.checkIncludeSnapshot = this.modalEl.querySelector('#feedback-check-snapshot');
+    this.checkIncludeScreenshot = this.modalEl.querySelector('#feedback-check-screenshot');
     this.telemetryPreview = this.modalEl.querySelector('#feedback-telemetry-preview');
     this.scopeDescEl = this.modalEl.querySelector('#feedback-scope-desc');
     this.publicNoteEl = this.modalEl.querySelector('#feedback-public-note');
@@ -269,6 +273,7 @@ export class FeedbackModal implements UIModal {
         this.boxesTouched = true;
       });
     }
+    this.checkIncludeScreenshot?.addEventListener('change', () => this.updatePublicNote());
 
     this.modalEl.querySelector('#btn-feedback-submit')?.addEventListener('click', () => {
       this.submitToGitHub();
@@ -324,6 +329,10 @@ export class FeedbackModal implements UIModal {
     this.screenshot = this.options.captureScreenshot?.() ?? null;
     const shotBtn = this.modalEl.querySelector<HTMLElement>('#btn-feedback-screenshot');
     if (shotBtn) shotBtn.style.display = this.screenshot ? '' : 'none';
+    // The picture goes with a sent report unless the player unticks it, each report afresh.
+    if (this.checkIncludeScreenshot) this.checkIncludeScreenshot.checked = true;
+    const shotLabel = this.modalEl.querySelector<HTMLElement>('#feedback-shot-label');
+    if (shotLabel) shotLabel.style.display = this.screenshot && this.options.relayUrl ? '' : 'none';
     this.buildOverride = {
       ...(opts.buildId ? { buildId: opts.buildId } : {}),
       ...(opts.appVersion ? { appVersion: opts.appVersion } : {}),
@@ -437,20 +446,36 @@ export class FeedbackModal implements UIModal {
     return BUG_CATEGORIES.find((c) => c.label === label) ?? BUG_CATEGORIES[BUG_CATEGORIES.length - 1];
   }
 
+  /** Whether a report sent now carries the game view: the relay sends it with a bug report
+   *  while its box is ticked; GitHub's page carries only what the player attaches (R-ui-14). */
+  private sendsScreenshot(): boolean {
+    return !!this.options.relayUrl && this.currentType === 'bug' && !!this.screenshot && this.checkIncludeScreenshot?.checked !== false;
+  }
+
+  /** "Send report" files the issue for the player: say plainly that it is public, and what
+   *  goes with it, on both tabs. It sat in the diagnostic panel, which the Feature tab hides
+   *  (R-ui-12). */
+  private updatePublicNote(): void {
+    if (!this.publicNoteEl) return;
+    const what = this.sendsScreenshot() ? 'your hero’s name and the picture of the game view' : 'your hero’s name';
+    this.publicNoteEl.textContent = this.options.relayUrl ? `Sent reports become public GitHub issues, ${what} included.` : '';
+    this.publicNoteEl.style.display = this.options.relayUrl ? '' : 'none';
+  }
+
   private updateScopeDescription(): void {
-    // "Send report" files the issue for the player: say plainly that it is public, on both
-    // tabs. It sat in the diagnostic panel, which the Feature tab hides (R-ui-12).
-    if (this.publicNoteEl) {
-      this.publicNoteEl.textContent = this.options.relayUrl ? 'Sent reports become public GitHub issues, your hero’s name included.' : '';
-      this.publicNoteEl.style.display = this.options.relayUrl ? '' : 'none';
-    }
+    this.updatePublicNote();
     if (!this.scopeDescEl) return;
     if (this.currentType !== 'bug') {
       this.scopeDescEl.textContent = 'Suggestion: help us expand and balance the realm!';
       return;
     }
     const cat = this.currentBugCategory();
-    this.scopeDescEl.textContent = `Includes: ${cat.contents}`;
+    const picture = !this.options.relayUrl
+      ? ' A screenshot only if you attach one to the issue.'
+      : this.screenshot
+        ? ' A picture of the game view too, if ticked.'
+        : '';
+    this.scopeDescEl.textContent = `Includes: ${cat.contents}${picture}`;
     // The category sets the opt-out boxes only until the player has touched one: re-ticking
     // an unticked replay box on a category change sent a save to a public issue (R-ui-13).
     if (this.boxesTouched) return;
@@ -683,7 +708,7 @@ export class FeedbackModal implements UIModal {
       labels,
       body: this.buildIssueBody(pkg, description, category, isBug, true).slice(0, 19000),
       report: isBug ? this.buildPasteText(pkg).text : undefined,
-      screenshot: isBug && this.screenshot ? this.screenshot : undefined,
+      screenshot: this.sendsScreenshot() ? (this.screenshot ?? undefined) : undefined,
     };
     this.setSubmitLabel('Sending…', true);
     try {

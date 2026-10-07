@@ -2,10 +2,32 @@ import type { GameEngine } from '../engine';
 import { Visibility } from '../fov/types';
 import { Monster } from '../entities/monster';
 import { statusDisplayName } from '../status/statusName';
-import type { TileInspection, InspectedTerrain, InspectedTrap, InspectedEntity, InspectedItem } from './types';
+import type { TileInspection, InspectedTerrain, InspectedTrap, InspectedEntity, InspectedItem, FloorLandmark } from './types';
 import { TILES } from '../grid/tile';
 
 export class TileInspector {
+  /**
+   * The landmarks the hero has found on a stored floor: each explored tile the pack gave a
+   * `landmarkLabel`, once per label, in reading order (top row first). Empty for a floor not
+   * yet visited.
+   */
+  public static floorLandmarks(engine: GameEngine, floor: number): FloorLandmark[] {
+    const map = engine.getFloorMap(floor);
+    const fov = engine.getFloorFov(floor);
+    if (!map || !fov) return [];
+    const found: FloorLandmark[] = [];
+    const seen = new Set<string>();
+    for (let y = 0; y < map.height; y++) {
+      for (let x = 0; x < map.width; x++) {
+        const label = map.getTile(x, y)?.landmarkLabel;
+        if (!label || seen.has(label) || !fov.isExplored(x, y)) continue;
+        seen.add(label);
+        found.push({ label, x, y });
+      }
+    }
+    return found;
+  }
+
   public static inspectTile(engine: GameEngine, x: number, y: number): TileInspection {
     if (!engine.map.inBounds(x, y)) {
       return {
@@ -52,6 +74,7 @@ export class TileInspector {
         passable: seen.passable,
         transparent: seen.transparent,
         description: seen.description,
+        landmark: seen.landmarkLabel,
       };
     }
 

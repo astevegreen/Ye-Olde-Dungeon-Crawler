@@ -67,13 +67,14 @@ describe('Look card markup', () => {
       x: 5,
       y: 5,
       visibility: 'visible',
-      terrain: { name: 'Stone Floor', type: 'floor', passable: true, transparent: true },
+      terrain: { name: 'Stone Floor', type: 'floor', passable: true, transparent: true, landmark: 'Runestone <Frost King>' },
       traps: [{ id: 't', name: 'Pit', type: 'pit', revealed: true }],
       entity: { name: '<Ann>', type: 'player', hp: 30, maxHp: 40, speed: 100, speedTier: 'Normal', statusEffects: [] },
       items: [{ id: 'i1', name: 'Rock', category: 'misc', weight: 800, bulk: 100 }],
     });
     expect(html).toContain('&lt;Ann&gt;');
     expect(html).toContain('Passable');
+    expect(html).toContain('Landmark: Runestone &lt;Frost King&gt;');
     expect(html).toContain('Trap: Pit');
     expect(html).toContain('width: 75%');
     expect(html).toContain('On the ground (1)');

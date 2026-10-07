@@ -1,4 +1,4 @@
-import type { GameEngine } from '../engine';
+import { TileInspector, type GameEngine } from '../engine';
 import { resolveThemeTokens } from './theme';
 import { drawFloorMap } from './floorMap';
 import { createDialogScrim, dialogButton, dialogHtml } from '../ui/dialog';
@@ -122,6 +122,7 @@ export class MapOverlay {
     const canGoDown = (idx >= 0 && idx < visited.length - 1) || this.viewedFloor < Math.max(...visited);
     const here = this.viewedFloor === engine.currentFloor;
     const map = engine.getFloorMap(this.viewedFloor);
+    const landmarks = TileInspector.floorLandmarks(engine, this.viewedFloor);
 
     const chips = visited
       .map((f) => `<button type="button" class="st-subtab" data-floor="${f}" aria-selected="${f === this.viewedFloor}">${f === 0 ? escapeHtml(floorName(engine, 0)) : f}</button>`)
@@ -145,7 +146,8 @@ export class MapOverlay {
           <span><i class="mv-sw is-floor"></i>Floor</span><span><i class="mv-sw is-wall"></i>Wall</span>
           <span><i class="mv-sw is-stairs"></i>Stairs</span><span><i class="mv-sw is-door"></i>Door</span>
           <span><i class="mv-sw is-danger"></i>Trap${here ? ', monster' : ''}</span><span><i class="mv-sw is-you"></i>You</span>
-        </div>`,
+        </div>
+        ${landmarks.length > 0 ? `<div class="ui-note mv-landmarks"><b>Landmarks</b> ${landmarks.map((l) => escapeHtml(l.label)).join(' · ')}</div>` : ''}`,
       hints: [
         { keys: ['<', '>'], label: 'change floor' },
         { keys: ['M', 'Esc'], label: 'close' },

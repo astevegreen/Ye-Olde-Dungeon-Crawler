@@ -152,3 +152,33 @@ describe('R-dbg-16 · Look names only the items the hero can see', () => {
     expect(items[0].sensed).toBe(true);
   });
 });
+
+describe('landmarks: the names a pack gives its tiles reach the player', () => {
+  const RUNESTONE = { ...TILES.FLOOR, type: 'test_runestone', name: 'Runestone', landmarkLabel: 'Runestone: Frost King' };
+  let engine: GameEngine;
+
+  beforeEach(() => {
+    const map = GameMap.createBoxRoom(30, 30);
+    const player = new Player({ id: 'hero', name: 'Valiant', position: { x: 5, y: 5 }, stats: { hp: 50, maxHp: 50, attack: 10, defense: 2 }, speed: 100 });
+    engine = new GameEngine({ map, player, floor: 1, manifest: COTW_MANIFEST });
+    engine.map.setTile(6, 5, RUNESTONE);
+    engine.map.setTile(20, 20, RUNESTONE);
+    engine.map.setTile(25, 25, { ...RUNESTONE, landmarkLabel: 'Duergar Barrow' });
+    engine.updateFov();
+  });
+
+  it('Look names the landmark on its tile', () => {
+    engine.fov.revealTile(6, 5);
+    expect(TileInspector.inspectTile(engine, 6, 5).terrain?.landmark).toBe('Runestone: Frost King');
+    expect(TileInspector.inspectTile(engine, 5, 5).terrain?.landmark).toBeUndefined();
+  });
+
+  it('a floor lists each explored landmark once, and none the hero has not found', () => {
+    engine.fov.revealTile(6, 5);
+    engine.fov.revealTile(20, 20);
+    expect(TileInspector.floorLandmarks(engine, 1)).toEqual([{ label: 'Runestone: Frost King', x: 6, y: 5 }]);
+    engine.fov.revealTile(25, 25);
+    expect(TileInspector.floorLandmarks(engine, 1).map((l) => l.label)).toEqual(['Runestone: Frost King', 'Duergar Barrow']);
+    expect(TileInspector.floorLandmarks(engine, 7)).toEqual([]);
+  });
+});

@@ -7,6 +7,15 @@ export interface InspectedTerrain {
   passable: boolean;
   transparent: boolean;
   description?: string;
+  /** The pack's landmark name for this tile (`TileDefinition.landmarkLabel`), if it has one. */
+  landmark?: string;
+}
+
+/** A named landmark the hero has found on a floor. */
+export interface FloorLandmark {
+  label: string;
+  x: number;
+  y: number;
 }
 
 export interface InspectedTrap {

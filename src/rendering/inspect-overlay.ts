@@ -167,6 +167,7 @@ export function lookCardHtml(engine: GameEngine, data: TileInspection): string {
     parts.push(
       `<div class="mc-line"><b>${escapeHtml(data.terrain.name)}</b><span class="${data.terrain.passable ? 'ui-up' : 'ui-down'}">${data.terrain.passable ? 'Passable' : 'Blocked'}</span></div>`
     );
+    if (data.terrain.landmark) parts.push(`<div class="mc-line ui-note">Landmark: ${escapeHtml(data.terrain.landmark)}</div>`);
   }
   for (const trap of data.traps) {
     parts.push(`<div class="mc-line mc-warn">${iconHtml('warning')} Trap: ${escapeHtml(trap.name)}</div>`);

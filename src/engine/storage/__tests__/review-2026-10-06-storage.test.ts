@@ -12,6 +12,7 @@ import { TownMapGenerator } from '../../town/townMap';
 import { activeItemIndex } from '../../items/itemIndex';
 import { activeMonsterStore } from '../../registries';
 import { Visibility } from '../../fov/types';
+import { TrapInstance } from '../../dungeon/traps';
 import { AutosaveManager } from '../autosaveManager';
 import { MemoryStorage } from '../profile-manager';
 import { CURRENT_SCHEMA_VERSION } from '../migrator';
@@ -316,6 +317,28 @@ describe('R-stor-17 · a foreign save is trusted for sizes', () => {
   it('a saved game of an ordinary size still loads', () => {
     const loaded = deserializeGame(saveOf()).engine;
     expect([loaded.map.width, loaded.map.height]).toEqual([10, 10]);
+  });
+});
+
+describe('T4 (R-stor-15) · a saved trap forgets the definition it was placed from', () => {
+  it('a trap from a second definition of its type comes back as that definition', () => {
+    const map = new GameMap(10, 10, TILES.FLOOR);
+    map.addTrap(new TrapInstance({ id: 't-deep', definitionId: 'deep_pit', type: 'pit', x: 3, y: 3 }));
+    map.addTrap(new TrapInstance({ id: 't-pit', type: 'pit', x: 4, y: 3 }));
+
+    const back = deserializeMapObject(JSON.parse(JSON.stringify(serializeMapObject(map))));
+
+    expect(back.getTrapAt(3, 3)?.definitionId).toBe('deep_pit');
+    expect(back.getTrapAt(4, 3)?.definitionId).toBe('pit');
+  });
+
+  it('an older save, with no definition on its traps, loads each as its type', () => {
+    const map = new GameMap(10, 10, TILES.FLOOR);
+    map.addTrap(new TrapInstance({ id: 't-arrow', type: 'arrow', x: 5, y: 5 }));
+    const saved = JSON.parse(JSON.stringify(serializeMapObject(map)));
+    for (const trap of saved.traps) delete trap.definitionId;
+
+    expect(deserializeMapObject(saved).getTrapAt(5, 5)?.definitionId).toBe('arrow');
   });
 });
 

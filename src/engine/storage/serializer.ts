@@ -738,6 +738,8 @@ export function serializeMapObject(map: GameMap): SerializedMap {
 
   const traps = map.getAllTraps().map((t) => ({
     id: t.id,
+    // Written only when it isn't the type, which is what a trap without one loads as (T4).
+    definitionId: t.definitionId !== t.type ? t.definitionId : undefined,
     type: t.type,
     x: t.x,
     y: t.y,

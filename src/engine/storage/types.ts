@@ -333,6 +333,8 @@ import type { TrapType } from '../types/manifest';
 
 export interface SerializedTrap {
   id: string;
+  /** The definition the trap was placed from, when it isn't `type`; absent loads as `type`. */
+  definitionId?: string;
   type: TrapType;
   x: number;
   y: number;

@@ -170,3 +170,16 @@ describe('Town Sage Run Advisory Heuristics', () => {
     expect(dangerReport.warnings.some((w) => w.type === 'elemental')).toBe(true);
   });
 });
+
+describe('R-dbg-9 · consulting the Sage draws nothing from the run PRNG', () => {
+  it('evaluateRun leaves the PRNG where it was, so a bug-report replay stays in step', () => {
+    const player = new Player({ id: 'p1', name: 'Hero', position: { x: 1, y: 1 }, stats: { hp: 30, maxHp: 30, attack: 10, defense: 2 } });
+    const engine = new GameEngine({ map: GameMap.createBoxRoom(10, 10), player });
+    const before = engine.prng.getState();
+
+    const report = RunAdvisor.evaluateRun(engine);
+
+    expect(engine.prng.getState()).toBe(before);
+    expect(report.sageQuote).toBeTruthy();
+  });
+});

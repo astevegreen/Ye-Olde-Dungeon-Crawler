@@ -215,7 +215,9 @@ export class RunAdvisor {
       '"He who descends unwarded into the frost will leave only bone for the ravens."',
     ];
     const sageQuotes = engine.manifest?.advisorQuotes ?? defaultQuotes;
-    const sageQuote = sageQuotes[Math.floor(engine.rng() * sageQuotes.length)];
+    // By turn, not a PRNG draw: a consultation is not in the replay trail, so a draw here put a
+    // bug-report replay one step behind the run it reproduces (R-dbg-9).
+    const sageQuote = sageQuotes[engine.turnCount % sageQuotes.length];
 
     return {
       overallStatus,

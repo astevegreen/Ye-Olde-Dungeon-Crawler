@@ -1,5 +1,5 @@
 import { resolveManaTerms } from '../engine';
-import { attunementNpcName, type GameContentManifest } from '../engine';
+import { attunementNpcName, type GameContentManifest, type RuneOfReturnTrack } from '../engine';
 
 /** Every pack-specific string shared screens show, resolved with neutral fallbacks (§3). */
 export interface ResolvedBranding {
@@ -20,6 +20,8 @@ export interface ResolvedBranding {
   bankerTitle: string;
   /** The townsperson who attunes and refills the Rune of Return. */
   runeSmithName: string;
+  /** The Rune of Return's three rank tracks, as the pack names them. */
+  runeTrackNames: Record<RuneOfReturnTrack, string>;
   /** Name used when the player embarks with a blank name field. */
   defaultHeroName: string;
   /** Decorative rule for menu headings; empty when the pack has none. */
@@ -49,6 +51,11 @@ export function resolveBranding(manifest?: GameContentManifest): ResolvedBrandin
     manaName: resolveManaTerms(manifest).name,
     bankerTitle: manifest?.town?.services?.bankerTitle ?? 'the town banker',
     runeSmithName: attunementNpcName(manifest),
+    runeTrackNames: {
+      celerity: manifest?.runeOfReturn?.trackNames?.celerity ?? 'Channel Speed',
+      weave: manifest?.runeOfReturn?.trackNames?.weave ?? 'Channel Retention',
+      mobility: manifest?.runeOfReturn?.trackNames?.mobility ?? 'Channel Mobility',
+    },
     defaultHeroName: manifest?.presetNames?.[0] ?? 'Hero',
     ornament: b.ornament ?? '',
     loreTitle: b.loreTitle ?? 'Lore',

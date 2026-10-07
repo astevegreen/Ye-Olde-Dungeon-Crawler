@@ -21,14 +21,11 @@ const RUNE_FIELD: Record<RuneOfReturnTrack, keyof RuneOfReturnMastery> = {
   mobility: 'mobilityPoints',
 };
 
-const PLAN_LABEL: Record<PlanKey, string> = {
+const ATTRIBUTE_LABEL: Record<AttributeKey, string> = {
   strength: 'STR',
   dexterity: 'DEX',
   constitution: 'CON',
   intelligence: 'INT',
-  celerity: 'Channel Celerity',
-  weave: 'Steadfast Weave',
-  mobility: 'Unbound Casting',
 };
 
 const isRuneTrack = (key: PlanKey): key is RuneOfReturnTrack => (RUNE_TRACKS as string[]).includes(key);
@@ -154,11 +151,14 @@ export class AttributeAllocationDraft {
     return spent;
   }
 
-  /** Human-readable summary of what is planned, e.g. "+2 STR, +1 CON, +1 Channel Celerity". */
-  public describe(): string {
+  /**
+   * Human-readable summary of what is planned, e.g. "+2 STR, +1 CON, +1 Channel Speed",
+   * with the Rune of Return's tracks under the names the pack gives them.
+   */
+  public describe(trackNames: Record<RuneOfReturnTrack, string>): string {
     return (Object.keys(this.pending) as PlanKey[])
       .filter((key) => this.pending[key] > 0)
-      .map((key) => `+${this.pending[key]} ${PLAN_LABEL[key]}`)
+      .map((key) => `+${this.pending[key]} ${isRuneTrack(key) ? trackNames[key] : ATTRIBUTE_LABEL[key]}`)
       .join(', ');
   }
 

@@ -1194,8 +1194,9 @@ export interface RuneOfReturnManifestConfig {
    * pack's dwarven rune-smith at the forge; another pack reskins by pointing this at
    * its own NPC). */
   attunementNpcId?: string;
-  /** Pack-provided display names for the three progression tracks, shown in logs and
-   * (eventually) the level-up UI. Falls back to generic engine names. */
+  /** Pack-provided display names for the three progression tracks, shown wherever
+   * presentation names a track (the Character tab, the points log, the discovery card);
+   * `resolveBranding` falls back to neutral names. */
   trackNames?: { celerity?: string; weave?: string; mobility?: string };
   /** Location where the Rune of Return is first acquired. */
   acquisition?: { floor: number; vaultId: string };

@@ -45,7 +45,7 @@ export const COMMAND_CATALOG = [
   { id: 'summon_companion', title: 'Summon Companion', category: 'Action', binding: 'companion_call', description: 'Call your bonded companion to your side (Companions & Pet Progression)' },
   { id: 'dismiss_companion', title: 'Dismiss Companion', category: 'Action', binding: 'companion_call', description: 'Send your companion away until next summoned' },
   { id: 'use_companion_skill', title: 'Companion Skill', category: 'Action', binding: 'companion_skill', description: 'Command your companion to use the skill it has learned at the trainer (Companions & Pet Progression)' },
-  { id: 'rune_of_return_tree', title: 'Rune of Return Mastery Tree', category: 'Action', binding: 'rune_of_return_tree', description: 'Upgrade Channel Celerity, Steadfast Weave, and Unbound Casting using unspent points' },
+  { id: 'rune_of_return_tree', title: 'Rune of Return Mastery Tree', category: 'Action', binding: 'rune_of_return_tree', description: 'Spend unspent points on the Rune of Return\'s three ranks' },
   { id: 'channel_rune_of_return', title: 'Channel Rune of Return', category: 'Action', binding: 'channel_rune_of_return', description: 'Begin channeled recall ritual to escape dungeon and return to town' },
 ] as const satisfies readonly CommandMetadata[];
 

@@ -41,6 +41,15 @@ describe('pack branding', () => {
     });
   });
 
+  it("names the Rune of Return's ranks as the pack does, neutrally without one (§3)", () => {
+    expect(resolveBranding(cotwManifest).runeTrackNames).toEqual({
+      celerity: 'Channel Celerity',
+      weave: 'Steadfast Weave',
+      mobility: 'Unbound Casting',
+    });
+    expect(Object.values(resolveBranding().runeTrackNames)).toEqual(['Channel Speed', 'Channel Retention', 'Channel Mobility']);
+  });
+
   it('engraves the orbs with the active pack glyphs', () => {
     const els: Record<string, { textContent: string }> = {
       '#health-orb-glyph': { textContent: '' },

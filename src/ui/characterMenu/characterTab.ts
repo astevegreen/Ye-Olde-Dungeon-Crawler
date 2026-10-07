@@ -149,7 +149,6 @@ const ATTRIBUTES: AttributeMeta[] = [
 
 interface RuneTrackMeta {
   track: RuneOfReturnTrack;
-  name: string;
   key: string;
   code: string;
   /** The track's effect now, and after the planned ranks: "Recall in 6 → 5 turns here". */
@@ -159,14 +158,12 @@ interface RuneTrackMeta {
 const RUNE_TRACK_META: RuneTrackMeta[] = [
   {
     track: 'celerity',
-    name: 'Channel Celerity',
     key: '1',
     code: 'Digit1',
     effect: (now, after, floor) => `Recall in ${fromTo(computeChannelTime(now, floor), computeChannelTime(after, floor))} turns here`,
   },
   {
     track: 'weave',
-    name: 'Steadfast Weave',
     key: '2',
     code: 'Digit2',
     effect: (now, after) => {
@@ -176,7 +173,6 @@ const RUNE_TRACK_META: RuneTrackMeta[] = [
   },
   {
     track: 'mobility',
-    name: 'Unbound Casting',
     key: '3',
     code: 'Digit3',
     effect: (now, after) =>
@@ -286,7 +282,7 @@ export class CharacterTab implements MenuTab {
   public accept(): boolean {
     const state = this.state;
     if (!state?.player || this.draft.total === 0) return false;
-    const summary = this.draft.describe();
+    const summary = this.draft.describe(resolveBranding(state.engine.manifest).runeTrackNames);
     const spent = this.draft.commit(state.player);
     if (spent > 0) {
       state.engine.log(`Points spent: ${summary}. ${state.player.unspentStatPoints} point(s) remain.`);
@@ -575,9 +571,10 @@ export class CharacterTab implements MenuTab {
       const hit = (d: number) => signed(rangedDexterityBonus(d).hitPct);
       rows.push(['Ranged hit', hit(player.dexterity), hit(player.dexterity + dex), '%']);
     }
+    const trackNames = resolveBranding(this.manifest()).runeTrackNames;
     for (const meta of RUNE_TRACK_META) {
       const n = this.draft.get(meta.track);
-      if (n > 0) rows.push([`${meta.name} rank`, runeRank(player, meta.track), runeRank(player, meta.track) + n]);
+      if (n > 0) rows.push([`${trackNames[meta.track]} rank`, runeRank(player, meta.track), runeRank(player, meta.track) + n]);
     }
 
     const body =
@@ -596,6 +593,7 @@ export class CharacterTab implements MenuTab {
     const branding = resolveBranding(this.manifest());
     const rune = findRuneOfReturn(player);
     const tracks = RUNE_TRACK_META.map((meta) => {
+      const name = branding.runeTrackNames[meta.track];
       const rank = runeRank(player, meta.track);
       const n = this.draft.get(meta.track);
       const max = RUNE_TRACK_MAX[meta.track];
@@ -607,11 +605,11 @@ export class CharacterTab implements MenuTab {
       return `
         <div class="ch-track">
           <div class="ch-track-main">
-            <div class="ch-track-name">${keyChip(meta.key)} ${meta.name}</div>
+            <div class="ch-track-name">${keyChip(meta.key)} ${escapeHtml(name)}</div>
             <div class="ui-note${n === 0 ? ' is-next' : ''}">${note}</div>
           </div>
           <div class="ch-pips" title="Rank ${rank} of ${max}">${pips}</div>
-          <div class="ch-ctl">${this.renderStepper(meta.track, n, this.draft.canAdd(meta.track, player), meta.name)}</div>
+          <div class="ch-ctl">${this.renderStepper(meta.track, n, this.draft.canAdd(meta.track, player), name)}</div>
         </div>`;
     }).join('');
     const depth = computeDepthBonus(floor);

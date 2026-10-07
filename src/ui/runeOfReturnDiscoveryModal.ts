@@ -110,7 +110,9 @@ export class RuneOfReturnDiscoveryModal implements UIModal {
   public render(): void {
     if (!this.overlayEl || !this.engine) return;
 
-    const smith = escapeHtml(resolveBranding(this.engine.manifest).runeSmithName);
+    const branding = resolveBranding(this.engine.manifest);
+    const smith = escapeHtml(branding.runeSmithName);
+    const mobility = escapeHtml(branding.runeTrackNames.mobility);
     const fact = (title: string, text: string, warn = false) => `<div class="ui-fact${warn ? ' is-warn' : ''}"><b>${title}</b> ${text}</div>`;
     this.overlayEl.innerHTML = dialogHtml({
       title: 'The Rune of Return',
@@ -121,7 +123,7 @@ export class RuneOfReturnDiscoveryModal implements UIModal {
         ${fact('Two-way recall.', 'In the dungeon, channeling takes you to town and anchors a rift where you stood. In town, channeling takes you back through it.')}
         ${fact('Three charges.', `A charge is spent only on a successful return. ${smith} refills them free in town.`)}
         ${fact('Channeling (T).', 'Press T to begin, then T or Wait (.) each turn to keep it going.')}
-        ${fact('Concentration.', 'Any damage breaks the channel. So do attacking, casting, using items, and moving, until you learn Unbound Casting.', true)}
+        ${fact('Concentration.', `Any damage breaks the channel. So do attacking, casting, using items, and moving, until you learn ${mobility}.`, true)}
         ${fact('Depth.', 'The channel takes one turn longer for every five floors down.')}
         <div class="ui-note">Its ranks spend your level points, on the Character tab.</div>`,
       hints: [

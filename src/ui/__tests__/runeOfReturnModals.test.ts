@@ -126,6 +126,7 @@ describe('RuneOfReturnDiscoveryModal & the Rune of Return ranks', () => {
         starterKit: {} as any,
         runeOfReturn: {
           attunementNpcId: 'npc-rune-smith',
+          trackNames: { celerity: 'Channel Celerity', weave: 'Steadfast Weave', mobility: 'Unbound Casting' },
         },
       },
     });

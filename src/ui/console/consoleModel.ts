@@ -55,13 +55,18 @@ const NEIGHBOURS: Array<[number, number]> = [
   [0, -1], [1, 0], [0, 1], [-1, 0], [1, -1], [1, 1], [-1, 1], [-1, -1],
 ];
 
+/** The label of the key bound to an action ("N", "⇧G"), or undefined while none is. */
+type KeyFor = (actionId: string) => string | undefined;
+const NO_KEYS: KeyFor = () => undefined;
+
 /**
  * The most useful single thing to do right here, in priority order: fight an
  * adjacent monster (the weakest), take what's underfoot, use the stairs, talk to
  * someone beside you, open a door, disarm a known trap, rest when hurt with nothing
- * in sight, close a door behind you. `none` when nothing applies.
+ * in sight, close a door behind you. `none` when nothing applies. `keyFor` names the
+ * keys the player has bound (a literal went stale after a rebind, R-ui-16).
  */
-export function resolveContextAction(engine: GameEngine): ContextAction {
+export function resolveContextAction(engine: GameEngine, keyFor: KeyFor = NO_KEYS): ContextAction {
   const p = engine.player;
   const threats = getNearbyThreats(engine).filter((t) => t.distance === 1);
   if (threats.length > 0) {
@@ -71,15 +76,17 @@ export function resolveContextAction(engine: GameEngine): ContextAction {
 
   const items = engine.map.getItemsAt(p.x, p.y) ?? [];
   if (items.length > 1) {
-    return { kind: 'take_all', verb: 'Take all', target: `${items.length} items`, icon: 'loot', nativeKey: 'Shift+G' };
+    return { kind: 'take_all', verb: 'Take all', target: `${items.length} items`, icon: 'loot', nativeKey: keyFor('quick_loot') };
   }
   if (items.length === 1) {
-    return { kind: 'pickup', verb: 'Pick up', target: items[0].displayName, icon: 'loot', nativeKey: 'G' };
+    return { kind: 'pickup', verb: 'Pick up', target: items[0].displayName, icon: 'loot', nativeKey: keyFor('pickup') };
   }
 
   const here = engine.map.getTile(p.x, p.y);
-  if (here?.type === 'stairs_down') return { kind: 'descend', verb: 'Descend', target: 'the stairs', icon: 'stairs', nativeKey: '>' };
-  if (here?.type === 'stairs_up') return { kind: 'ascend', verb: 'Ascend', target: 'the stairs', icon: 'stairs', nativeKey: 'Enter' };
+  // '>' climbs either way whatever is bound (InputHandler answers it before the bindings).
+  const stairsKey = keyFor('stairs') ?? '>';
+  if (here?.type === 'stairs_down') return { kind: 'descend', verb: 'Descend', target: 'the stairs', icon: 'stairs', nativeKey: stairsKey };
+  if (here?.type === 'stairs_up') return { kind: 'ascend', verb: 'Ascend', target: 'the stairs', icon: 'stairs', nativeKey: stairsKey };
 
   for (const [dx, dy] of NEIGHBOURS) {
     const entity = engine.map.getEntityAt(p.x + dx, p.y + dy);
@@ -95,20 +102,20 @@ export function resolveContextAction(engine: GameEngine): ContextAction {
   for (const [dx, dy] of [[0, 0], ...NEIGHBOURS]) {
     const trap = engine.map.getTrapAt(p.x + dx, p.y + dy);
     if (trap?.revealed && !trap.disarmed) {
-      return { kind: 'disarm', verb: 'Disarm', target: 'the trap', icon: 'tools', nativeKey: 'Shift+D', x: p.x + dx, y: p.y + dy };
+      return { kind: 'disarm', verb: 'Disarm', target: 'the trap', icon: 'tools', nativeKey: keyFor('disarm_trap'), x: p.x + dx, y: p.y + dy };
     }
   }
 
   const hurt = p.hp < p.maxHp || p.mana < p.maxMana;
   if (hurt && getNearbyThreats(engine).length === 0 && !AutoRestManager.restRefusal(engine)) {
-    return { kind: 'rest', verb: 'Rest', target: 'until recovered', icon: 'rest', nativeKey: 'R' };
+    return { kind: 'rest', verb: 'Rest', target: 'until recovered', icon: 'rest', nativeKey: keyFor('rest') };
   }
 
   for (const [dx, dy] of NEIGHBOURS) {
     const x = p.x + dx;
     const y = p.y + dy;
     if (engine.map.getTile(x, y)?.type === 'door_open' && !engine.map.getEntityAt(x, y) && !(engine.map.getItemsAt(x, y)?.length)) {
-      return { kind: 'close_door', verb: 'Close', target: 'the door', icon: 'door', nativeKey: 'C', x, y };
+      return { kind: 'close_door', verb: 'Close', target: 'the door', icon: 'door', nativeKey: keyFor('close_door'), x, y };
     }
   }
 
@@ -135,8 +142,9 @@ export interface TrayChip {
  * Status that only matters sometimes, each shown only while it does: Rune of
  * Return charges (or channeling), overflow debt, and sealed pacts.
  * @param smithName who awakens a dormant rune, for its tooltip
+ * @param keyFor the key bound to an action, for the Recall chip's tooltip
  */
-export function getTrayChips(engine: GameEngine, smithName: string): TrayChip[] {
+export function getTrayChips(engine: GameEngine, smithName: string, keyFor: KeyFor = NO_KEYS): TrayChip[] {
   const p = engine.player;
   const chips: TrayChip[] = [];
 
@@ -154,10 +162,11 @@ export function getTrayChips(engine: GameEngine, smithName: string): TrayChip[] 
         title: `A dormant Rune of Return. Take it to ${smithName} to awaken it.`,
       });
     } else {
+      const channelKey = keyFor('channel_rune_of_return');
       chips.push({
         id: 'rune', icon: 'rune', label: 'Recall', value: `${rune.charges}/${rune.maxCharges}`, color: 'var(--ui-info)',
         pips: { filled: rune.charges, total: rune.maxCharges },
-        title: `Rune of Return: ${rune.charges} of ${rune.maxCharges} charges. Click or press T to channel a recall.`,
+        title: `Rune of Return: ${rune.charges} of ${rune.maxCharges} charges. Click${channelKey ? ` or press ${channelKey}` : ''} to channel a recall.`,
         action: rune.charges > 0 ? 'channel_rune' : undefined,
       });
     }

@@ -17,6 +17,8 @@ export interface ConsoleExtrasOptions {
   drawEntityIcon: (canvas: HTMLCanvasElement, entity: Entity) => void;
   /** The key bound to the context action, e.g. "F". */
   contextKey: () => string;
+  /** The label of the key bound to an action, for the tooltips that name one (R-ui-16). */
+  keyFor: (actionId: string) => string | undefined;
   /** Who awakens a dormant rune (the pack's rune-smith), for its chip's tooltip. */
   smithName: () => string;
 }
@@ -75,7 +77,7 @@ export class ConsoleExtras {
 
   public update(engine: GameEngine): void {
     if (!engine?.player) return;
-    this.renderContextAction(resolveContextAction(engine));
+    this.renderContextAction(resolveContextAction(engine, this.options.keyFor));
     this.renderTray(engine);
     this.renderObjective(engine);
   }
@@ -116,7 +118,7 @@ export class ConsoleExtras {
   }
 
   private renderTray(engine: GameEngine): void {
-    const chips = getTrayChips(engine, this.options.smithName());
+    const chips = getTrayChips(engine, this.options.smithName(), this.options.keyFor);
     this.chipsRow.replaceChildren();
     for (const chip of chips) {
       const el = document.createElement(chip.action ? 'button' : 'div');

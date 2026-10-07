@@ -65,6 +65,28 @@ describe('resolveContextAction', () => {
     expect(resolveContextAction(engine).kind).toBe('none');
   });
 
+  it('names the keys the player has bound, not the default letters (R-ui-16)', () => {
+    const keys: Record<string, string> = { rest: 'N', pickup: ';', quick_loot: '⇧L', stairs: 'Y', disarm_trap: '⇧X', close_door: 'K' };
+    const keyFor = (actionId: string) => keys[actionId];
+    const engine = buildEngine();
+    engine.map.setTile(9, 10, TILES.DOOR_OPEN);
+    expect(resolveContextAction(engine, keyFor)).toMatchObject({ kind: 'close_door', nativeKey: 'K' });
+    engine.player.hp = 4;
+    expect(resolveContextAction(engine, keyFor)).toMatchObject({ kind: 'rest', nativeKey: 'N' });
+    // Unbound: no key named at all, rather than a stale one.
+    expect(resolveContextAction(engine).nativeKey).toBeUndefined();
+    engine.map.addTrap({ id: 't', type: 'pit', x: 11, y: 10, revealed: true, disarmed: false } as never);
+    expect(resolveContextAction(engine, keyFor)).toMatchObject({ kind: 'disarm', nativeKey: '⇧X' });
+    engine.map.setTile(10, 10, TILES.STAIRS_DOWN);
+    expect(resolveContextAction(engine, keyFor)).toMatchObject({ kind: 'descend', nativeKey: 'Y' });
+    // '>' climbs whatever is bound.
+    expect(resolveContextAction(engine).nativeKey).toBe('>');
+    engine.map.addItemAt(10, 10, item('gem', 'Ruby'));
+    expect(resolveContextAction(engine, keyFor)).toMatchObject({ kind: 'pickup', nativeKey: ';' });
+    engine.map.addItemAt(10, 10, item('rope', 'Rope'));
+    expect(resolveContextAction(engine, keyFor)).toMatchObject({ kind: 'take_all', nativeKey: '⇧L' });
+  });
+
   it('neither attacks nor rests short of a neutral beside the hero (R-ui-15)', () => {
     const engine = buildEngine();
     engine.map.setTile(10, 10, TILES.STAIRS_DOWN);
@@ -90,6 +112,15 @@ describe('getTrayChips', () => {
     });
     engine.player.voidDebt = 7;
     expect(getTrayChips(engine, 'the smith')).toContainEqual(expect.objectContaining({ id: 'debt', label: 'Void Debt', value: '7', color: '#123456' }));
+  });
+
+  it("names the Recall chip's channel key as the player bound it, or none (R-ui-16)", () => {
+    const engine = buildEngine();
+    engine.player.hasDiscoveredRune = true;
+    const recall = (keyFor?: (actionId: string) => string | undefined) =>
+      getTrayChips(engine, 'the smith', keyFor).find((c) => c.id === 'rune')?.title ?? '';
+    expect(recall((id) => (id === 'channel_rune_of_return' ? 'Y' : undefined))).toContain('Click or press Y to channel a recall.');
+    expect(recall()).toContain('Click to channel a recall.');
   });
 });
 

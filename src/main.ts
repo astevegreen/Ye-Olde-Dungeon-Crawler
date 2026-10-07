@@ -582,6 +582,12 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  /** The label of the first key bound to an action ("N", "⇧G"), as the player bound it. */
+  const keyFor = (action: string): string | undefined => {
+    const code = settingsManager.getCodesForAction(action)[0];
+    return code ? keyLabel(code) : undefined;
+  };
+
   consoleExtras = new ConsoleExtras({
     onContextAction: (action) => {
       runContextAction(action);
@@ -602,6 +608,7 @@ window.addEventListener('DOMContentLoaded', () => {
     onPointAt: (x, y) => renderer?.pointAtTile(x, y),
     drawEntityIcon: (canvas, entity) => renderer?.drawEntityIcon(canvas, entity),
     contextKey: () => (settingsManager.getCodesForAction('context_action')[0] ?? '').replace(/^Shift\+/, '⇧').replace(/Digit|Key/, ''),
+    keyFor,
     smithName: () => resolveBranding(activeEngine?.manifest ?? activeManifest).runeSmithName,
   });
 
@@ -615,10 +622,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // The pack's first-time hints, a card at the foot of the sidebar (never modal).
   const firstTimeHints = new FirstTimeHints({
-    keyFor: (action) => {
-      const code = settingsManager.getCodesForAction(action)[0];
-      return code ? keyLabel(code) : undefined;
-    },
+    keyFor,
     enabled: () => settingsManager.getSettings().hintsEnabled,
   });
   combatSidebar.element.appendChild(firstTimeHints.element);

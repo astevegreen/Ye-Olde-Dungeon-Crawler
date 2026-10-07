@@ -10,11 +10,29 @@ import { ItemFactory } from '../../items/factory';
 
 const TEST_DEF_ID = 'test_companion';
 
-function buildEngine(): GameEngine {
+function buildEngine(manifest?: object): GameEngine {
   const map = new GameMap(20, 20, TILES.FLOOR);
   const player = new Player({ id: 'hero', name: 'Hero', position: { x: 10, y: 10 } });
-  return new GameEngine({ map, player });
+  return new GameEngine({ map, player, manifest: manifest as never });
 }
+
+/** A pack whose trainer teaches one skill, declared with what it does. */
+const SKILL_PACK = {
+  id: 'skill_pack',
+  name: 'Skill Pack',
+  town: {
+    services: {
+      trainerSkills: [
+        {
+          id: 'test_howl',
+          name: 'Test Howl',
+          description: 'Heals the companion and hastens the hero.',
+          effect: { companionHealPercent: 0.5, heroStatus: { type: 'haste', duration: 3 }, message: '{companion} howls (+{healed} HP).' },
+        },
+      ],
+    },
+  },
+};
 
 describe('Companion commands via EngineCommandBus (docs/architecture/content-companions.md Phase 2)', () => {
   beforeEach(() => {
@@ -75,19 +93,30 @@ describe('Companion commands via EngineCommandBus (docs/architecture/content-com
       expect(result.success).toBe(false);
     });
 
-    it('heals the companion and hastes the player for rally_howl once learned', () => {
-      const engine = buildEngine();
+    it('does what the pack declares for a learned skill: heals the companion and hastes the hero', () => {
+      const engine = buildEngine(SKILL_PACK);
       const bus = new EngineCommandBus(engine);
       const companion = Companion.fromDefinition(TEST_DEF_ID, 'skill-comp-2', { x: 11, y: 10 })!;
-      companion.unlockSkill('rally_howl');
+      companion.unlockSkill('test_howl');
       companion.hp = 1;
       engine.attachCompanion(companion);
 
-      const result = bus.dispatch({ type: 'use_companion_skill', payload: { skillId: 'rally_howl' } });
+      const result = bus.dispatch({ type: 'use_companion_skill', payload: { skillId: 'test_howl' } });
 
       expect(result.success).toBe(true);
-      expect(companion.hp).toBeGreaterThan(1);
+      expect(companion.hp).toBe(11);
       expect(engine.player.statusManager.hasStatus('haste')).toBe(true);
+      expect(result.message).toBe('Test Companion howls (+10 HP).');
+    });
+
+    it('refuses a learned skill the pack does not declare', () => {
+      const engine = buildEngine();
+      const bus = new EngineCommandBus(engine);
+      const companion = Companion.fromDefinition(TEST_DEF_ID, 'skill-comp-3', { x: 11, y: 10 })!;
+      companion.unlockSkill('test_howl');
+      engine.attachCompanion(companion);
+
+      expect(bus.dispatch({ type: 'use_companion_skill', payload: { skillId: 'test_howl' } }).success).toBe(false);
     });
   });
 

@@ -1658,9 +1658,8 @@ window.addEventListener('DOMContentLoaded', () => {
         eng.commandBus.dispatch({ type: 'dismiss_companion' });
         renderer?.render();
       },
-      use_companion_skill_rally_howl: (eng) => {
-        const res = eng.commandBus.dispatch({ type: 'use_companion_skill', payload: { skillId: 'rally_howl' } });
-        if (!res.success && res.message) eng.log(res.message);
+      use_companion_skill: () => {
+        runCompanionKey('skill');
         void processVisualEffectsAndRender();
       },
       rune_of_return_tree: () => {

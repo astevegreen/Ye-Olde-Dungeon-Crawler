@@ -10,8 +10,8 @@ import type { GameContentManifest } from '../src/engine';
  * pack's identifiers pasted into engine code as string literals, which is how
  * campaign logic creeps into src/engine/ without breaking any import rule. This loads
  * every pack under src/content/, collects the identifiers the pack *declares*
- * (monsters, items, spells, pacts, companions, vaults, choices, NPCs, quest
- * references, and the story flags its choices and events set), and fails on any of
+ * (monsters, items, spells, pacts, companions, the skills its trainer teaches, vaults,
+ * choices, NPCs, quest references, and the story flags its choices and events set), and fails on any of
  * them appearing in engine production source (the forms seen: `packReferences`).
  *
  * Shared vocabulary a manifest merely restates from engine enums (equipment slots,
@@ -82,6 +82,7 @@ function declaredIdentifiers(manifests: GameContentManifest[]): Map<string, stri
       if (eff?.id && !BUILTIN_STATUS_TYPES.has(eff.id)) add(eff.id);
     }
     for (const choiceId of Object.keys(m.choices ?? {})) add(choiceId);
+    addAll(m.town?.services?.trainerSkills);
     for (const npc of m.town?.npcs ?? []) {
       add(npc.id);
       add(npc.name);

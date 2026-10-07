@@ -319,6 +319,18 @@ export interface TrainerSkillDefinition {
   name: string;
   /** What it does, under the offer. */
   description: string;
+  /** What it does when the hero commands it (`use_companion_skill`). */
+  effect: CompanionSkillEffect;
+}
+
+/** What a companion skill does when used: the engine applies these and nothing else. */
+export interface CompanionSkillEffect {
+  /** The companion heals this share of its max HP (0.2 = a fifth). */
+  companionHealPercent?: number;
+  /** The hero gains this status. */
+  heroStatus?: { type: string; duration: number };
+  /** The line logged: `{companion}` is the companion's name, `{healed}` the HP it regained. */
+  message: string;
 }
 
 /**

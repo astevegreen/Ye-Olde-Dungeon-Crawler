@@ -524,9 +524,10 @@ export class EngineCommandBus implements GameCommandBus {
         return { success: res.success, message: res.message };
       }
 
-      // Companions & Pet Progression, Phase 2 (docs/architecture/content-companions.md): one example
-      // active companion skill, unlocked via 'trainer_teach_skill'. Instant utility
-      // (no player turn cost), matching 'sage_advisory''s existing pattern above.
+      // Companions & Pet Progression, Phase 2 (docs/architecture/content-companions.md): a skill
+      // the companion learned from the trainer ('trainer_teach_skill'), doing what the pack's
+      // `TrainerSkillDefinition.effect` says. Instant utility (no player turn cost), matching
+      // 'sage_advisory''s existing pattern above.
       case 'use_companion_skill': {
         const skillId = p.skillId as string;
         const companion = this.engine.companion;
@@ -536,19 +537,23 @@ export class EngineCommandBus implements GameCommandBus {
         if (!companion.unlockedSkills.includes(skillId)) {
           return { success: false, message: `${companion.name} has not learned that skill.` };
         }
-        if (skillId === 'rally_howl') {
-          const healed = companion.heal(Math.ceil(companion.maxHp * 0.2));
+        const skill = this.engine.manifest.town?.services?.trainerSkills?.find((s) => s.id === skillId);
+        if (!skill) {
+          return { success: false, message: `Unknown companion skill: '${skillId}'` };
+        }
+        const { effect } = skill;
+        const healed = effect.companionHealPercent ? companion.heal(Math.ceil(companion.maxHp * effect.companionHealPercent)) : 0;
+        if (effect.heroStatus) {
           this.engine.player.statusManager.applyStatus(
-            { type: 'haste', duration: 3 },
+            { type: effect.heroStatus.type, duration: effect.heroStatus.duration },
             this.engine.player.statusImmunities,
             this.engine.player,
             this.engine
           );
-          const msg = `${companion.name} lets out a rallying howl! (+${healed} HP to ${companion.name}, you feel hastened for 3 turns)`;
-          this.engine.log(msg);
-          return { success: true, message: msg };
         }
-        return { success: false, message: `Unknown companion skill: '${skillId}'` };
+        const msg = effect.message.replace(/\{companion\}/g, companion.name).replace(/\{healed\}/g, String(healed));
+        this.engine.log(msg);
+        return { success: true, message: msg };
       }
 
       // Loose coins from the pack into the purse; `data` says how many stacks and how much.

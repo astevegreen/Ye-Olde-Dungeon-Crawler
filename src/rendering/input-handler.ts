@@ -819,20 +819,7 @@ export class InputHandler {
 
     // Close Door Action: 'KeyC' (Smart-Close targeting)
     if (code === 'KeyC') {
-      const openDoors = getAdjacentOpenDoors(this.engine.map, p.x, p.y);
-      if (openDoors.length === 0) {
-        this.engine.log('No open door nearby.');
-        this.onActionProcessed();
-        return true;
-      }
-      if (openDoors.length === 1) {
-        this.engine.handlePlayerAction(new CloseDoorAction(p, openDoors[0].x, openDoors[0].y));
-        this.onActionProcessed();
-        return true;
-      }
-      this.pendingCloseDoorDirection = true;
-      this.engine.log('Close which door? [Direction]');
-      this.onActionProcessed();
+      this.smartCloseDoor();
       return true;
     }
 
@@ -1014,6 +1001,11 @@ export class InputHandler {
       this.onActionProcessed();
       return true;
     }
+    // Any other key the player gives Smart Close Door (R-rend-14: only C had a handler).
+    if (userAction === 'close_door') {
+      this.smartCloseDoor();
+      return true;
+    }
     if (userAction === 'disarm_trap') {
       this.engine.handlePlayerAction(new DisarmTrapAction(p));
       this.onActionProcessed();
@@ -1047,6 +1039,21 @@ export class InputHandler {
     this.engine.handlePlayerAction(action);
     this.onActionProcessed();
     return true;
+  }
+
+  /** Smart Close Door: the one open door beside the hero, else asks which, else says none. */
+  private smartCloseDoor(): void {
+    const p = this.engine.player;
+    const openDoors = getAdjacentOpenDoors(this.engine.map, p.x, p.y);
+    if (openDoors.length === 0) {
+      this.engine.log('No open door nearby.');
+    } else if (openDoors.length === 1) {
+      this.engine.handlePlayerAction(new CloseDoorAction(p, openDoors[0].x, openDoors[0].y));
+    } else {
+      this.pendingCloseDoorDirection = true;
+      this.engine.log('Close which door? [Direction]');
+    }
+    this.onActionProcessed();
   }
 
   private createActionFromKey(code: string): Action | null {

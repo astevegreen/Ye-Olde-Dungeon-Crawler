@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { InputHandler } from '../input-handler';
-import { GameEngine, GameMap, Player, MemoryStorage, MovementAction } from '../../engine';
+import { GameEngine, GameMap, Player, MemoryStorage, MovementAction, TILES } from '../../engine';
 import { SettingsManager, ACTION_METADATA } from '../../ui/settings/settingsManager';
 
 /**
@@ -248,5 +248,24 @@ describe('R-rend-13 · Settings own the movement keys: a key the player unbinds 
 
     expect(expected.length).toBeGreaterThan(20);
     expect(got).toEqual(expected);
+  });
+});
+
+describe('R-rend-14 · a key bound to Smart Close Door closes the door, like C', () => {
+  it('Semicolon, added to Smart Close Door, closes the open door beside the hero', () => {
+    const { engine, ih } = wiredHandler();
+    engine.map.setTile(11, 10, TILES.DOOR_OPEN);
+    const acted: string[] = [];
+    vi.spyOn(engine, 'handlePlayerAction').mockImplementation((a: unknown) => {
+      acted.push((a as object).constructor.name);
+      return undefined as never;
+    });
+    ih.settingsManager.bindKey('close_door', 'Semicolon');
+
+    const handled = ih.handleKeyDown(ev('Semicolon'));
+    ih.destroy();
+
+    expect(handled).toBe(true);
+    expect(acted).toEqual(['CloseDoorAction']);
   });
 });

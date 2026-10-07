@@ -8,6 +8,7 @@ import { Item } from '../items/item';
 import { PotionItem } from '../items/consumables';
 import { WaitAction } from '../actions/wait';
 import { MovementAction } from '../actions/movement';
+import { ClimbStairsAction } from '../actions/stairs';
 import { AutoRestManager } from '../actions/autoRest';
 import { TrapInstance } from '../dungeon/traps';
 import { flightRecorder } from '../debug/flightRecorder';
@@ -43,6 +44,36 @@ function addOrc(engine: GameEngine, x: number, y: number, hp = 30): Monster {
 }
 
 const orcAttacks = (engine: GameEngine) => engine.messages.filter((m) => m.startsWith('Orc attacks')).length;
+
+describe('R-pipe-3 · a floor whose generation throws leaves the hero where they stood', () => {
+  it('the hero stays on the old map, in the scheduler, and can still move', () => {
+    const base = build(50).engine;
+    const map = new GameMap(14, 14, TILES.FLOOR);
+    map.setTile(2, 2, TILES.STAIRS_DOWN);
+    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 2, y: 2 }, stats: { hp: 50, maxHp: 50, attack: 5, defense: 0 } });
+    const engine = new GameEngine({
+      map,
+      player,
+      floor: 1,
+      seed: 11,
+      // An unregistered layout strategy: generating floor 2 throws.
+      manifest: { ...base.manifest, quest: { ...base.manifest.quest, defaultGenerator: 'no-such-generator' } },
+    });
+    const orc = addOrc(engine, 10, 10);
+
+    const result = engine.handlePlayerAction(new ClimbStairsAction(player));
+
+    expect(result.pipelineError).toBe(true); // the stairs fail loudly (passes today)
+    expect(engine.currentFloor).toBe(1);
+    expect(engine.map).toBe(map);
+    expect(map.getEntityById('hero')).toBe(player);
+    expect(engine.scheduler.getEntities()).toContain(player);
+    expect(engine.scheduler.getEntities()).toContain(orc);
+    const move = engine.handlePlayerAction(new MovementAction(player, 1, 0));
+    expect(move.success).toBe(true);
+    expect({ x: player.x, y: player.y }).toEqual({ x: 3, y: 2 });
+  });
+});
 
 describe('R-pipe-4 · the R-key rest (stepRestTurn) never enters the replay trail', () => {
   it('a 40-turn rest adds entries to the action trail', () => {

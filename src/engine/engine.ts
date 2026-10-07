@@ -766,19 +766,8 @@ export class GameEngine {
     if (targetFloor === this.currentFloor) return;
     const prevFloor = this.currentFloor;
 
-    // 1. Store current floor map and FOV and record departure
-    this.storedFloors.set(this.currentFloor, this.map);
-    this.storedFov.set(this.currentFloor, this.fov);
-    this.floorManager.recordDeparture(this.currentFloor, this.map, this.fov, this.turnCount);
-
-    // 2. Remove player (and companion, which travels with them) from current map, reset scheduler
-    this.map.removeEntity(this.player);
-    if (this.companion) {
-      this.map.removeEntity(this.companion);
-    }
-    this.scheduler.reset();
-
-    // 3. Retrieve or generate target floor
+    // 1. Retrieve or generate target floor first: a generation that throws must leave the
+    // hero on the floor they stood on, so nothing below is undone until it has succeeded.
     const isRevisit = Boolean(this.storedFloors.has(targetFloor));
     let nextMap = this.storedFloors.get(targetFloor);
     let targetSpawn: Position = { x: 10, y: 10 };
@@ -856,6 +845,18 @@ export class GameEngine {
     if (customSpawn) {
       targetSpawn = { ...customSpawn };
     }
+
+    // 2. Store current floor map and FOV and record departure
+    this.storedFloors.set(this.currentFloor, this.map);
+    this.storedFov.set(this.currentFloor, this.fov);
+    this.floorManager.recordDeparture(this.currentFloor, this.map, this.fov, this.turnCount);
+
+    // 3. Remove player (and companion, which travels with them) from current map, reset scheduler
+    this.map.removeEntity(this.player);
+    if (this.companion) {
+      this.map.removeEntity(this.companion);
+    }
+    this.scheduler.reset();
 
     // 4. Update active map and floor
     this.map = nextMap;

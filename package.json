@@ -17,6 +17,7 @@
     "test:e2e": "playwright test --",
     "test:record": "playwright test e2e/gameplay-record.spec.ts --project=chromium",
     "test:campaign": "playwright test e2e/campaign-flow.spec.ts --project=chromium",
+    "soak": "node scripts/soak.mjs",
     "lint": "tsc --noEmit && tsc --noEmit -p e2e/tsconfig.json && npm run check:engine-purity && npm run check:engine-encapsulation && npm run check:engine-creep && npm run check:ui-palette && npm run knip",
     "knip": "knip",
     "gates": "npm run lint && npm test && npm run sim && npm run validate:schema && npm run build && npx playwright test",

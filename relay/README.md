@@ -27,11 +27,13 @@ no Wrangler config there, it offers to set the game itself up as a Worker, rewri
    ```
    npx wrangler secret put GITHUB_TOKEN
    ```
-4. **Optional: screenshots in issues.**
+4. **Screenshots in issues.** `wrangler.toml`'s `[[kv_namespaces]]` block already binds
+   `SHOTS` to this repo's namespace. Deploying a relay of your own on another Cloudflare
+   account, create one and put the id it prints in that block's `id`:
    ```
    npx wrangler kv namespace create SHOTS
    ```
-   Uncomment the `[[kv_namespaces]]` block in `wrangler.toml` and paste the id it printed.
+   To deploy without screenshots, delete the block; the relay then files issues without them.
    Screenshots are kept 180 days.
 5. **Deploy** (again after any change under `src/` or to `wrangler.toml`):
    ```

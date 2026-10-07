@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { InputHandler } from '../input-handler';
 import { RadialMenuOverlay, RADIAL_DIRECTIONS } from '../radialMenu';
 import { GameEngine } from '../../engine';
@@ -24,6 +24,7 @@ describe('InputHandler <-> RadialMenuOverlay wiring', () => {
   let settingsManager: SettingsManager;
   let radialMenuOverlay: RadialMenuOverlay;
   let inputHandler: InputHandler;
+  let onActionProcessed: Mock<() => void>;
 
   beforeEach(() => {
     const map = new GameMap(10, 10);
@@ -31,10 +32,13 @@ describe('InputHandler <-> RadialMenuOverlay wiring', () => {
     engine = new GameEngine({ map, player });
     settingsManager = new SettingsManager(new MemoryStorage());
     radialMenuOverlay = new RadialMenuOverlay();
+    // An empty wheel doesn't open (R-rend-15), so the wiring tests start with one slot set.
+    radialMenuOverlay.slots[RADIAL_DIRECTIONS.indexOf('W')] = { type: 'command', commandId: 'wait' };
+    onActionProcessed = vi.fn();
 
     inputHandler = new InputHandler(
       engine,
-      vi.fn(),
+      onActionProcessed,
       undefined,
       undefined,
       undefined,
@@ -58,6 +62,31 @@ describe('InputHandler <-> RadialMenuOverlay wiring', () => {
     expect(handled).toBe(true);
     expect(radialMenuOverlay.isOpen).toBe(true);
     expect(inputHandler.modalStack.has('radial-menu')).toBe(true);
+  });
+
+  // R-rend-15: nothing in the game fills a slot yet, so V opened eight empty wedges.
+  it('does not open a wheel with every slot empty, and says so in the log', () => {
+    radialMenuOverlay.slots.fill(null);
+    const logged = vi.spyOn(engine, 'log');
+
+    const handled = inputHandler.handleKeyDown(makeKeyEvent('KeyV'));
+
+    expect(handled).toBe(true);
+    expect(radialMenuOverlay.isOpen).toBe(false);
+    expect(inputHandler.modalStack.has('radial-menu')).toBe(false);
+    expect(logged).toHaveBeenCalledTimes(1);
+  });
+
+  // R-rend-15: a blur closed the wheel's state but left it painted until the next render.
+  it('a window blur closes the wheel and repaints, so it is not left on the canvas', () => {
+    inputHandler.handleKeyDown(makeKeyEvent('KeyV'));
+    onActionProcessed.mockClear();
+
+    (inputHandler as unknown as { boundBlurHandler?: () => void }).boundBlurHandler?.();
+
+    expect(radialMenuOverlay.isOpen).toBe(false);
+    expect(inputHandler.modalStack.has('radial-menu')).toBe(false);
+    expect(onActionProcessed).toHaveBeenCalled();
   });
 
   it('routes directional keys to wedge selection instead of movement while open', () => {

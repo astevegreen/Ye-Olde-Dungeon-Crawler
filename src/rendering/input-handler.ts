@@ -321,6 +321,8 @@ export class InputHandler {
       if (this.radialMenuOverlay?.isOpen) {
         this.radialMenuOverlay.close();
         this.modalStack.remove('radial-menu');
+        // Repaint, or the closed wheel stays drawn until the next render (R-rend-15).
+        this.onActionProcessed();
       }
     };
     if (typeof window !== 'undefined') {
@@ -972,6 +974,12 @@ export class InputHandler {
       return true;
     }
     if (userAction === 'radial_menu' && !e.repeat && this.radialMenuOverlay) {
+      // Nothing in the game fills a slot yet: a wheel of eight empty wedges is no menu (R-rend-15).
+      if (!this.radialMenuOverlay.slots.some((slot) => slot !== null)) {
+        this.engine.log('The radial menu is empty.');
+        this.onActionProcessed();
+        return true;
+      }
       const self = this;
       this.radialHeldKeys.clear();
       this.radialMenuOverlay.open();

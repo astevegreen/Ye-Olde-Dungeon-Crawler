@@ -164,6 +164,9 @@ export class FeedbackModal implements UIModal {
   private buildOverride: { buildId?: string; appVersion?: string } = {};
   /** The game view when the window opened, before the tester's next move changes it. */
   private screenshot: string | null = null;
+  /** The player has ticked or unticked the log or replay box since the window opened: from
+   *  then on a category or tab change leaves them as they are (R-ui-13). */
+  private boxesTouched = false;
   /** Set when the relay couldn't take a report; the next Submit goes through GitHub. */
   private relayFailed = false;
   private sending = false;
@@ -261,6 +264,12 @@ export class FeedbackModal implements UIModal {
       this.updateScopeDescription();
     });
 
+    for (const box of [this.checkIncludeLog, this.checkIncludeSnapshot]) {
+      box?.addEventListener('change', () => {
+        this.boxesTouched = true;
+      });
+    }
+
     this.modalEl.querySelector('#btn-feedback-submit')?.addEventListener('click', () => {
       this.submitToGitHub();
     });
@@ -310,6 +319,7 @@ export class FeedbackModal implements UIModal {
     this.shown = true;
     this.errorContext = opts.error;
     this.relayFailed = false;
+    this.boxesTouched = false;
     this.setSubmitLabel(this.options.relayUrl ? 'Send report' : 'Submit on GitHub', false);
     this.screenshot = this.options.captureScreenshot?.() ?? null;
     const shotBtn = this.modalEl.querySelector<HTMLElement>('#btn-feedback-screenshot');
@@ -441,6 +451,9 @@ export class FeedbackModal implements UIModal {
     }
     const cat = this.currentBugCategory();
     this.scopeDescEl.textContent = `Includes: ${cat.contents}`;
+    // The category sets the opt-out boxes only until the player has touched one: re-ticking
+    // an unticked replay box on a category change sent a save to a public issue (R-ui-13).
+    if (this.boxesTouched) return;
     if (this.checkIncludeLog) this.checkIncludeLog.checked = cat.includeLog;
     if (this.checkIncludeSnapshot) this.checkIncludeSnapshot.checked = cat.includeReplay;
   }

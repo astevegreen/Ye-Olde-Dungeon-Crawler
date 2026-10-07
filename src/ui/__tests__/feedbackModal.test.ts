@@ -448,6 +448,38 @@ describe('FeedbackModal (Headless)', () => {
     expect(copied).not.toContain('something visual');
   });
 
+  it("keeps the player's log and replay choices through a category change or a tab switch (R-ui-13)", () => {
+    const doc = (globalThis as any).document;
+    modal.open({ category: 'Crash / Freeze' });
+    const replay = doc.getElementById('feedback-check-snapshot') as MockElement;
+    const log = doc.getElementById('feedback-check-log') as MockElement;
+    const select = doc.getElementById('feedback-select-category') as MockElement;
+    const pick = (category: string) => {
+      select.value = category;
+      select.dispatchEvent({ type: 'change' });
+    };
+
+    // Untouched, the boxes follow the category.
+    pick('Items & Inventory');
+    expect(replay.checked).toBe(false);
+    pick('Crash / Freeze');
+    expect(replay.checked).toBe(true);
+
+    // Once the player unticks one, neither a category nor a tab puts it back.
+    replay.checked = false;
+    replay.dispatchEvent({ type: 'change' });
+    pick('Combat & Spells');
+    modal.switchType('feature');
+    modal.switchType('bug');
+    expect(replay.checked).toBe(false);
+    expect(log.checked).toBe(true);
+
+    // A fresh window starts from its category again.
+    modal.close();
+    modal.open({ category: 'Crash / Freeze' });
+    expect(replay.checked).toBe(true);
+  });
+
   it('compresses replay data into the pasted report when the readable version would not fit', async () => {
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
     const copySpy = vi.spyOn(platform, 'copyTextToClipboard').mockResolvedValue(true);

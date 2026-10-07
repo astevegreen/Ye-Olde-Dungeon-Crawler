@@ -6,10 +6,10 @@ Read ARCHITECTURE.md (the core document) in full. It is deliberately
 short and carries a routing table to four sub-docs under
 `docs/architecture/**` and decision records under `docs/decisions/**`.
 One of those four, `content-extensibility.md`, is itself a second-level
-core doc with its own routing table to five topic docs
+core doc with its own routing table to six topic docs
 (`content-companions.md`, `content-rune-of-return.md`,
 `content-progression-scaling.md`, `content-quests-and-triggers.md`,
-`content-magic.md`) — read all of them too, and confirm that list still
+`content-magic.md`, `content-items-and-art.md`) — read all of them too, and confirm that list still
 matches every `content-*.md` under `docs/architecture/`. The core document's binding statements are the
 ground truth, but a sub-doc or topic doc that drifts from them is
 exactly the kind of rot this audit exists to catch. Then verify every concrete,
@@ -29,7 +29,7 @@ known gap: confirm only that the gap still exists as §9 describes it.
    against the actual manifest/hook code it describes, and confirm the
    stub's binding rules (manifest contract, the two hook mechanisms,
    injected context, content registries, no engine creep) aren't
-   contradicted by it or by any of its five topic docs. Confirm
+   contradicted by it or by any of its six topic docs. Confirm
    `content-extensibility.md` itself stays ≤5 KB (it routes onward
    rather than restating topic detail) and that each topic doc under it
    has real `##` headings — a topic doc that regrows into one unheaded

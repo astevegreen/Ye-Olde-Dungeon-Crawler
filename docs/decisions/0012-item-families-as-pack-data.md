@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-04
 **Status:** Accepted (owner decision, Q1 "A", Q20 + Q33 "B", Q21 "A")
-**Related:** `ARCHITECTURE.md` §3 (No Engine Creep, Content Extensibility Model); [content-extensibility.md](../architecture/content-extensibility.md); tracker item 2.2; audit D1 › N39
+**Related:** `ARCHITECTURE.md` §3 (No Engine Creep, Content Extensibility Model); [content-items-and-art.md](../architecture/content-items-and-art.md); tracker item 2.2; audit D1 › N39
 
 ## Context
 The seven alignment families (Blessed, Enchanted, Holy, Cursed, Hexed, Unholy, Chaotic) existed since `8cd5825` as `ItemModifier` data applied in combat, spell damage and mana cost, but nothing in play ever put one on an item: the roller was called only from a test, and the templates — tier names ("Sanctified", "of the Templar", "Doom-touched"), numbers and floor bands — were a constant table inside `src/engine/items/modifierRoller.ts`. Players met an older `Item.quality` system instead: `enchanted` (any +N, or 36 catalog items flagged so), `cursed` (four catalog items that bind) and `artifact`.

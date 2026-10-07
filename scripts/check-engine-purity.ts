@@ -56,14 +56,28 @@ const renderingFiles = sourcesUnder(RENDERING_DIR);
 const contentFiles = sourcesUnder(CONTENT_DIR);
 const mainDirFiles = sourcesUnder(MAIN_DIR);
 
-// Matches any reverse imports from ui or rendering inside engine
-const ENGINE_REVERSE_IMPORT_REGEX = /from\s+['"][^'"]*(?:ui|rendering)[/'"]/i;
+/**
+ * Every module a file names, with the line its specifier sits on: `import … from` and
+ * `export … from`, a side-effect `import '…'`, a dynamic or type-position `import('…')`, and
+ * `require('…')`, across line breaks (R-tool-6: only the `from '…'` form used to be seen).
+ * A specifier computed at run time (`import(path)`) is not visible to a text scan.
+ */
+const MODULE_SPECIFIER = /\b(?:from|import|require)\s*\(?\s*(['"`])([^'"`\r\n]+)\1/g;
 
-// In engine source files (excluding tests/fixtures), content imports are also barred
-const ENGINE_SOURCE_CONTENT_IMPORT_REGEX = /from\s+['"][^'"]*content[/'"]/i;
+function moduleSpecifiers(text: string): { line: number; spec: string }[] {
+  const found: { line: number; spec: string }[] = [];
+  for (const m of text.matchAll(MODULE_SPECIFIER)) {
+    const at = (m.index ?? 0) + m[0].length - m[2].length - 1;
+    found.push({ line: text.slice(0, at).split('\n').length, spec: m[2] });
+  }
+  return found;
+}
 
-// In content source files, imports from UI or rendering are strictly forbidden (Architecture Section 3)
-const CONTENT_REVERSE_IMPORT_REGEX = /from\s+['"][^'"]*(?:ui|rendering)[/'"]/i;
+// A specifier into src/ui/ or src/rendering/ (barred in all engine files, and in content source)
+const UI_OR_RENDERING_SPEC = /(?:ui|rendering)(?:\/|$)/i;
+
+// A specifier into src/content/ (barred in engine source, and in presentation outside src/main.ts)
+const CONTENT_SPEC = /content(?:\/|$)/i;
 
 const DOM_GLOBALS = [
   'window.',
@@ -110,8 +124,8 @@ const clockAllowlist: Array<{ file: string; reason: string }> = fs.existsSync(CL
 const clockAllowed = new Set(clockAllowlist.map((e) => e.file));
 const clockAllowlistUsed = new Set<string>();
 
-// Matches deep imports into engine internals (beyond the public engine barrel export)
-const DEEP_ENGINE_IMPORT_REGEX = /from\s+['"][^'"]*engine\/[^'"]+['"]/i;
+// A specifier into engine internals (beyond the public engine barrel export)
+const DEEP_ENGINE_SPEC = /engine\/./i;
 
 // Non-test engine/content files actually scanned for globals; test and fixture files are exempt.
 const purityScannedFiles = new Set<string>();
@@ -125,50 +139,44 @@ for (const filePath of [...engineFiles, ...contentFiles]) {
   const content = readSource(filePath);
   const lines = content.split('\n');
 
-  for (let i = 0; i < lines.length; i++) {
-    const lineNum = i + 1;
-    const line = lines[i];
+  for (const { line: lineNum, spec } of moduleSpecifiers(content)) {
+    const line = (lines[lineNum - 1] ?? '').trim();
 
     // Check: Reverse Imports into Engine from UI/Rendering (forbidden in all engine files including tests)
-    if (isEngine && ENGINE_REVERSE_IMPORT_REGEX.test(line)) {
-      violations.push({
-        file: relativePath,
-        line: lineNum,
-        category: 'REVERSE_IMPORT',
-        detail: line.trim(),
-      });
+    if (isEngine && UI_OR_RENDERING_SPEC.test(spec)) {
+      violations.push({ file: relativePath, line: lineNum, category: 'REVERSE_IMPORT', detail: line });
     }
 
     // Check: Content imports forbidden in engine source files
-    if (isEngine && !isTestOrFixture && ENGINE_SOURCE_CONTENT_IMPORT_REGEX.test(line)) {
-      violations.push({
-        file: relativePath,
-        line: lineNum,
-        category: 'REVERSE_IMPORT_CONTENT',
-        detail: line.trim(),
-      });
+    if (isEngine && !isTestOrFixture && CONTENT_SPEC.test(spec)) {
+      violations.push({ file: relativePath, line: lineNum, category: 'REVERSE_IMPORT_CONTENT', detail: line });
     }
 
     // Check: Content importing UI or Rendering (Architecture Section 3: Content NEVER imports UI or rendering)
-    if (isContent && !isTestOrFixture && CONTENT_REVERSE_IMPORT_REGEX.test(line)) {
+    if (isContent && !isTestOrFixture && UI_OR_RENDERING_SPEC.test(spec)) {
       violations.push({
         file: relativePath,
         line: lineNum,
         category: 'CONTENT_REVERSE_IMPORT',
-        detail: `Content package importing UI or rendering: ${line.trim()}`,
+        detail: `Content package importing UI or rendering: ${line}`,
       });
     }
 
     // Check: Content deep imports into engine internals (ARCHITECTURE.md §2, §3).
     // Content reaches the engine only through src/engine/index.ts; test files may deep-import.
-    if (isContent && !isTestOrFixture && DEEP_ENGINE_IMPORT_REGEX.test(line)) {
+    if (isContent && !isTestOrFixture && DEEP_ENGINE_SPEC.test(spec)) {
       violations.push({
         file: relativePath,
         line: lineNum,
         category: 'CONTENT_DEEP_ENGINE_IMPORT',
-        detail: `Content deep import bypassing engine public API barrel: ${line.trim()}`,
+        detail: `Content deep import bypassing engine public API barrel: ${line}`,
       });
     }
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const lineNum = i + 1;
+    const line = lines[i];
 
     // Check: DOM & Browser Globals (forbidden in engine and content source files)
     if (!isTestOrFixture) {
@@ -241,25 +249,24 @@ for (const filePath of [...uiFiles, ...renderingFiles, ...mainDirFiles]) {
 
   const isTestOrFixture = relativePath.includes('__tests__') || relativePath.includes('__fixtures__');
 
-  for (let i = 0; i < lines.length; i++) {
-    const lineNum = i + 1;
-    const line = lines[i];
+  for (const { line: lineNum, spec } of moduleSpecifiers(content)) {
+    const line = (lines[lineNum - 1] ?? '').trim();
 
-    if (DEEP_ENGINE_IMPORT_REGEX.test(line)) {
+    if (DEEP_ENGINE_SPEC.test(spec)) {
       violations.push({
         file: relativePath,
         line: lineNum,
         category: 'DEEP_ENGINE_IMPORT',
-        detail: `Deep import bypassing engine public API barrel: ${line.trim()}`,
+        detail: `Deep import bypassing engine public API barrel: ${line}`,
       });
     }
 
-    if (!isTestOrFixture && ENGINE_SOURCE_CONTENT_IMPORT_REGEX.test(line)) {
+    if (!isTestOrFixture && CONTENT_SPEC.test(spec)) {
       violations.push({
         file: relativePath,
         line: lineNum,
         category: 'FORBIDDEN_CONTENT_IMPORT',
-        detail: `Content pack imported outside Composition Root (src/main.ts): ${line.trim()}`,
+        detail: `Content pack imported outside Composition Root (src/main.ts): ${line}`,
       });
     }
   }
@@ -269,14 +276,15 @@ for (const filePath of [...uiFiles, ...renderingFiles, ...mainDirFiles]) {
 // but its engine imports must still resolve through the barrel (ARCHITECTURE.md §2, §3).
 const mainPath = path.resolve(process.cwd(), 'src/main.ts');
 if (fs.existsSync(mainPath) || overlays.has(mainPath)) {
-  const mainLines = readSource(mainPath).split(/\r?\n/);
-  for (let i = 0; i < mainLines.length; i++) {
-    if (DEEP_ENGINE_IMPORT_REGEX.test(mainLines[i])) {
+  const mainText = readSource(mainPath);
+  const mainLines = mainText.split(/\r?\n/);
+  for (const { line: lineNum, spec } of moduleSpecifiers(mainText)) {
+    if (DEEP_ENGINE_SPEC.test(spec)) {
       violations.push({
         file: 'src/main.ts',
-        line: i + 1,
+        line: lineNum,
         category: 'DEEP_ENGINE_IMPORT',
-        detail: `Deep import bypassing engine public API barrel: ${mainLines[i].trim()}`,
+        detail: `Deep import bypassing engine public API barrel: ${(mainLines[lineNum - 1] ?? '').trim()}`,
       });
     }
   }

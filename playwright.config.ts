@@ -46,8 +46,9 @@ export default defineConfig({
     ...(isSoakRun ? [] : ['**/soak.spec.ts']),
   ],
   fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
-  forbidOnly: !!process.env.CI,
+  /* A test.only left in a spec fails the run everywhere: locally it would quietly narrow
+     the pre-push suite to that one test. */
+  forbidOnly: true,
   retries: process.env.CI ? 2 : 0,
   /* Locally, a quarter of the logical cores (5 on the owner's 20). Playwright's default,
      half, timed out a Firefox test in 1 of 3 full runs on an idle machine; 25% passed 4 of 4,

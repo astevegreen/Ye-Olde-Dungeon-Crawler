@@ -111,6 +111,9 @@ export class RunAdvisor {
 
     let recoveryCount = 0;
     for (const item of allItems) {
+      // Only what the hero knows it carries: judging an unidentified potion or scroll by its
+      // true kind would tell the hero what it is (R-dbg-13).
+      if (!item.identified) continue;
       const name = item.name.toLowerCase();
       const isHealth =
         (item instanceof PotionItem && item.potionType === 'health') ||

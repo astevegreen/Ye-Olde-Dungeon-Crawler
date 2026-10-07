@@ -112,6 +112,24 @@ describe('Town Sage Run Advisory Heuristics', () => {
     expect(RunAdvisor.checkDeepFloorConsumables(player, 10)).toBeNull();
   });
 
+  // R-dbg-13: the count read each item's true identity, so asking the Sage told the hero
+  // that an unknown "Red Potion" heals.
+  it('counts only consumables the hero knows: an unidentified healing potion is not one', () => {
+    const player = new Player({ id: 'p1', name: 'Hero', position: { x: 0, y: 0 }, stats: { hp: 30, maxHp: 30, attack: 10, defense: 2 } });
+    player.inventory.primaryPack.addItem(ItemFactory.createHealthPotion('known'));
+    const unknown = ItemFactory.createHealthPotion('unknown');
+    unknown.identified = false;
+    player.inventory.primaryPack.addItem(unknown);
+    expect(unknown.displayName).toBe('Red Potion');
+
+    const warn = RunAdvisor.checkDeepFloorConsumables(player, 12);
+    expect(warn?.severity).toBe('warning');
+    expect(warn?.message).toContain('only 1 recovery/escape item');
+
+    unknown.identified = true;
+    expect(RunAdvisor.checkDeepFloorConsumables(player, 12)).toBeNull();
+  });
+
   it('evaluates elemental threats on deep floors vs player resistances', () => {
     const player = new Player({
       id: 'p1',

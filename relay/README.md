@@ -9,6 +9,12 @@ new-issue page with the report on the clipboard.
 
 ## One-time setup
 
+Wrangler is a dev dependency of the repo (`npm install` at the root brings it), so `npx wrangler`
+from **this folder** uses that pinned version. **Never run `wrangler` from the repo root:** with
+no Wrangler config there, it offers to set the game itself up as a Worker, rewrites
+`vite.config.ts` and `package.json`, and deploys the game. From the root, use the scripts
+`npm run relay:deploy` and `npm run relay:dev`, which point at this folder's `wrangler.toml`.
+
 1. **Cloudflare account** (free plan is enough: 100,000 requests/day). Then, from this folder:
    ```
    npx wrangler login
@@ -27,10 +33,11 @@ new-issue page with the report on the clipboard.
    ```
    Uncomment the `[[kv_namespaces]]` block in `wrangler.toml` and paste the id it printed.
    Screenshots are kept 180 days.
-5. **Deploy:**
+5. **Deploy** (again after any change under `src/` or to `wrangler.toml`):
    ```
    npx wrangler deploy
    ```
+   or `npm run relay:deploy` from the repo root.
    It prints the Worker's URL, e.g. `https://yodc-report-relay.<your-subdomain>.workers.dev`.
 6. **Point the game at it:** add a repository variable (Settings → Secrets and variables →
    Actions → Variables) named `REPORT_RELAY_URL` with that URL, then re-run the deploy

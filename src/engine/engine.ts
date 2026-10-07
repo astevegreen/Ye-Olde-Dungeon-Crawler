@@ -65,7 +65,6 @@ import {
   getCounter,
   incrementCounter,
   getFaction,
-  modifyFaction,
 } from './state/worldState';
 import type { ChoiceDefinition } from './types/choice';
 import { applyConsequences } from './actions/choiceAction';
@@ -193,7 +192,6 @@ export class GameEngine {
     onCancel?: () => void
   ) => void;
   public pendingVisualEffects: VisualEffectDescriptor[] = [];
-  public onVisualEffect?: (effect: VisualEffectDescriptor) => void;
   public detectMonstersTurns = 0;
   public detectObjectsTurns = 0;
   public readonly discoveryEvents: Array<{
@@ -204,15 +202,6 @@ export class GameEngine {
     timestamp: number;
     icon?: string;
   }> = [];
-  public onDiscoveryEvent?: (event: {
-    type: 'floor_transition' | 'secret_door' | 'trap_disarmed' | 'boss_slain' | 'close_call' | 'pact_sealed' | 'quest_milestone' | 'general';
-    text: string;
-    floor: number;
-    turn: number;
-    timestamp: number;
-    icon?: string;
-  }) => void;
-  public onMessageLogged?: (message: string) => void;
   private _lastCloseCallTurn?: number;
 
   public emitDiscovery(event: {
@@ -229,10 +218,6 @@ export class GameEngine {
     this.discoveryEvents.push(fullEvent);
     if (this.discoveryEvents.length > 100) {
       this.discoveryEvents.shift();
-    }
-    if (this.onDiscoveryEvent) {
-      const notify = this.onDiscoveryEvent;
-      this.notifyPresentation('onDiscoveryEvent', () => notify(fullEvent));
     }
   }
 
@@ -279,12 +264,6 @@ export class GameEngine {
   public recordVisualEffects(effects: VisualEffectDescriptor[]): void {
     if (effects && effects.length > 0) {
       this.pendingVisualEffects.push(...effects);
-      if (this.onVisualEffect) {
-        const notify = this.onVisualEffect;
-        for (const ef of effects) {
-          this.notifyPresentation('onVisualEffect', () => notify(ef));
-        }
-      }
     }
   }
 
@@ -545,13 +524,6 @@ export class GameEngine {
     this.updateFov();
   }
 
-  /**
-   * Activates this engine's registry bundle across all facades (ARCHITECTURE.md §3, P-22).
-   */
-  public activate(): void {
-    activateRegistries(this.registries);
-  }
-
   public updateFov(): void {
     const pactFovMod = this.pacts?.getAggregatedMutators().fovRadiusModifier ?? 0;
     const baseRadius = Math.max(2, this.fovRadius + pactFovMod + this.player.sightBonus);
@@ -597,10 +569,6 @@ export class GameEngine {
         }
       }
     }
-  }
-
-  public hasFeature(flag: string): boolean {
-    return Boolean(this.manifest.featureFlags?.[flag]);
   }
 
   /**
@@ -688,10 +656,6 @@ export class GameEngine {
     return getFaction(this.worldState, faction);
   }
 
-  public modifyFactionStanding(faction: string, delta: number): number {
-    return modifyFaction(this.worldState, faction, delta);
-  }
-
   public get ticks(): number {
     return this.scheduler.ticks;
   }
@@ -715,10 +679,6 @@ export class GameEngine {
     this.messages.push(message);
     if (this.messages.length > 150) {
       this.messages.shift();
-    }
-    if (this.onMessageLogged) {
-      const notify = this.onMessageLogged;
-      this.notifyPresentation('onMessageLogged', () => notify(message));
     }
   }
 
@@ -969,18 +929,6 @@ export class GameEngine {
   public getFloorFov(floor: number): FovManager | undefined {
     if (floor === this.currentFloor) return this.fov;
     return this.storedFov.get(floor);
-  }
-
-  public isTileExplored(floor: number, x: number, y: number): boolean {
-    const fov = this.getFloorFov(floor);
-    return fov ? fov.isExplored(x, y) : false;
-  }
-
-  /**
-   * Dispatches an action on behalf of the player through the action pipeline.
-   */
-  public dispatchAction(action: Action): ActionResult {
-    return this.handlePlayerAction(action);
   }
 
   /**
@@ -1298,8 +1246,7 @@ export class GameEngine {
    * Calls a presentation callback inside its own boundary (ARCHITECTURE.md §4): a throw is
    * recorded through the same counters and play goes on, so a broken subscriber can't stop a
    * death between its XP and its corpse, or fail a floor change that already happened
-   * (R-pipe-17). A failure while one is being reported (its log line reaching a throwing
-   * `onMessageLogged`) is dropped rather than recursing. Public so the engine's own modules
+   * (R-pipe-17). A failure while one is being reported is dropped rather than recursing. Public so the engine's own modules
    * that call a presentation callback (a choice opening, the run ending) use the same one.
    */
   public notifyPresentation(label: string, callback: () => void): void {

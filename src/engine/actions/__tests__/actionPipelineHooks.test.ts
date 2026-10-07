@@ -53,7 +53,7 @@ describe('Action Pipeline Hooks & Manifest Integration (Phase 3)', () => {
       const action: Action = {
         perform: () => ({ success: true, cost: 50 }),
       };
-      expect(pipeline.execute(action, mockEngine)).toEqual({ success: true, cost: 50 });
+      expect(pipeline.executeWithHooks(action, mockEngine)).toEqual({ success: true, cost: 50 });
     });
 
     it('allows a pre-hook to short-circuit execution', () => {
@@ -219,32 +219,6 @@ describe('Action Pipeline Hooks & Manifest Integration (Phase 3)', () => {
       expect(movementHookRan).toBe(true);
       expect(wildcardHookRan).toBe(true);
       expect(meleeHookRan).toBe(false);
-    });
-
-    it('supports unregistering hooks and clearing all hooks', () => {
-      let ran = false;
-      const hook: ActionHook = {
-        id: 'temp-hook',
-        phase: 'pre',
-        execute: () => {
-          ran = true;
-          return { proceed: true };
-        },
-      };
-
-      pipeline.registerHook(hook);
-      expect(pipeline.getHooks('pre').length).toBe(1);
-
-      pipeline.unregisterHook('temp-hook');
-      expect(pipeline.getHooks('pre').length).toBe(0);
-
-      pipeline.executeWithHooks({ perform: () => ({ success: true, cost: 100 }) }, mockEngine);
-      expect(ran).toBe(false);
-
-      pipeline.registerHooks([hook, { ...hook, id: 'temp-2' }]);
-      expect(pipeline.getHooks().length).toBe(2);
-      pipeline.clearHooks();
-      expect(pipeline.getHooks().length).toBe(0);
     });
   });
 

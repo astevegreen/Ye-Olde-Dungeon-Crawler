@@ -3,13 +3,6 @@ import type {
   ProgressionConfig,
 } from '../../engine';
 
-export const WARCRAFT_FEATURE_FLAGS: Record<string, boolean> = {
-  ammoCombat: false,
-  stealthSubsystem: false,
-  bloodlustMechanic: true,
-  criticalStrikes: true,
-};
-
 export const WARCRAFT_COMBAT_CONFIG: CombatConfig = {
   minDamage: 1,
   critChance: 0.15,

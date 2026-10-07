@@ -54,8 +54,8 @@ describe('Explored Dungeon Map & Multi-Floor Historical Browser', () => {
 
     // On floor 1, player updates FOV around (5, 5)
     engine.updateFov();
-    expect(engine.isTileExplored(1, 5, 5)).toBe(true);
-    expect(engine.isTileExplored(1, 19, 19)).toBe(false);
+    expect((engine.getFloorFov(1)?.isExplored(5, 5) ?? false)).toBe(true);
+    expect((engine.getFloorFov(1)?.isExplored(19, 19) ?? false)).toBe(false);
 
     // Transition to floor 2
     engine.changeFloor(2);
@@ -63,11 +63,11 @@ describe('Explored Dungeon Map & Multi-Floor Historical Browser', () => {
 
     // Update FOV on floor 2 at player spawn (10, 10)
     engine.updateFov();
-    expect(engine.isTileExplored(2, 10, 10)).toBe(true);
+    expect((engine.getFloorFov(2)?.isExplored(10, 10) ?? false)).toBe(true);
 
     // Check that floor 1 explored tiles are still preserved in storedFov!
-    expect(engine.isTileExplored(1, 5, 5)).toBe(true);
-    expect(engine.isTileExplored(1, 19, 19)).toBe(false);
+    expect((engine.getFloorFov(1)?.isExplored(5, 5) ?? false)).toBe(true);
+    expect((engine.getFloorFov(1)?.isExplored(19, 19) ?? false)).toBe(false);
 
     // Visited floors should report [1, 2]
     expect(engine.getVisitedFloors()).toEqual([1, 2]);
@@ -125,10 +125,10 @@ describe('Explored Dungeon Map & Multi-Floor Historical Browser', () => {
     engine.updateFov();
 
     // Tile (18, 18) is unexplored
-    expect(engine.isTileExplored(1, 18, 18)).toBe(false);
+    expect((engine.getFloorFov(1)?.isExplored(18, 18) ?? false)).toBe(false);
     expect(engine.fov.isExplored(18, 18)).toBe(false);
 
     // Verify helper returns false for invalid/unvisited coordinates
-    expect(engine.isTileExplored(99, 0, 0)).toBe(false);
+    expect((engine.getFloorFov(99)?.isExplored(0, 0) ?? false)).toBe(false);
   });
 });

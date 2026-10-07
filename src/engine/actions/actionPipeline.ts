@@ -58,16 +58,6 @@ export class ActionPipeline {
 
   /** Total exceptions caught and isolated within this ActionPipeline instance */
   public caughtExceptionCount = 0;
-  /** Global counter of isolated action pipeline exceptions for telemetry & CI asserting */
-  public static totalCaughtExceptions = 0;
-
-  public resetCaughtExceptionCount(): void {
-    this.caughtExceptionCount = 0;
-  }
-
-  public static resetTotalCaughtExceptions(): void {
-    ActionPipeline.totalCaughtExceptions = 0;
-  }
 
   public registerHook(hook: ActionHook): void {
     const hookWithId: ActionHook = hook.id ? hook : { ...hook, id: `hook_${++this.hookCounter}` };
@@ -80,19 +70,6 @@ export class ActionPipeline {
     for (const hook of hooks) {
       this.registerHook(hook);
     }
-  }
-
-  public unregisterHook(hookId: string): boolean {
-    const preIdx = this.preHooks.findIndex(h => h.id === hookId);
-    if (preIdx >= 0) { this.preHooks.splice(preIdx, 1); return true; }
-    const postIdx = this.postHooks.findIndex(h => h.id === hookId);
-    if (postIdx >= 0) { this.postHooks.splice(postIdx, 1); return true; }
-    return false;
-  }
-
-  public clearHooks(): void {
-    this.preHooks = [];
-    this.postHooks = [];
   }
 
   public getHooks(phase?: ActionHookPhase): readonly ActionHook[] {
@@ -199,7 +176,6 @@ export class ActionPipeline {
     logMessage: string
   ): void {
     this.caughtExceptionCount += 1;
-    ActionPipeline.totalCaughtExceptions += 1;
 
     const error = err instanceof Error ? err : new Error(String(err));
     flightRecorder.recordError(error, { ...context });
@@ -253,10 +229,4 @@ export class ActionPipeline {
     return message;
   }
 
-  /**
-   * Alias for executeWithHooks for backward compatibility.
-   */
-  public execute(action: Action, engine: GameEngine): ActionResult {
-    return this.executeWithHooks(action, engine);
-  }
 }

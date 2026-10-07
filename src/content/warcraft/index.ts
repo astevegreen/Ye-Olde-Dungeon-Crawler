@@ -11,7 +11,7 @@ import { WARCRAFT_SPRITE_RECIPES } from './sprites';
 import { WARCRAFT_STATUS_HANDLERS } from './status';
 import { WARCRAFT_ACTION_HOOKS } from './hooks';
 import { WARCRAFT_AI_BEHAVIORS } from './ai';
-import { WARCRAFT_FEATURE_FLAGS, WARCRAFT_COMBAT_CONFIG, WARCRAFT_PROGRESSION_CONFIG } from './config';
+import { WARCRAFT_COMBAT_CONFIG, WARCRAFT_PROGRESSION_CONFIG } from './config';
 import { WARCRAFT_VAULTS } from './vaults';
 
 export const warcraftManifest: GameContentManifest = {
@@ -50,7 +50,6 @@ export const warcraftManifest: GameContentManifest = {
   statusHandlers: WARCRAFT_STATUS_HANDLERS,
   actionHooks: WARCRAFT_ACTION_HOOKS,
   aiBehaviors: WARCRAFT_AI_BEHAVIORS,
-  featureFlags: WARCRAFT_FEATURE_FLAGS,
   combatConfig: WARCRAFT_COMBAT_CONFIG,
   progressionConfig: WARCRAFT_PROGRESSION_CONFIG,
   initialWorldState: { flags: {}, counters: {}, factions: {} },
@@ -75,7 +74,6 @@ export {
   WARCRAFT_STATUS_HANDLERS,
   WARCRAFT_ACTION_HOOKS,
   WARCRAFT_AI_BEHAVIORS,
-  WARCRAFT_FEATURE_FLAGS,
   WARCRAFT_COMBAT_CONFIG,
   WARCRAFT_PROGRESSION_CONFIG,
   WARCRAFT_VAULTS,

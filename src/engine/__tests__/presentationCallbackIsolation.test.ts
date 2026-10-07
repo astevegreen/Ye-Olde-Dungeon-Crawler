@@ -11,7 +11,7 @@ import { MovementAction } from '../actions/movement';
 /**
  * R-pipe-17: only actions, monster turns and environmental updates ran inside a failure
  * boundary. A presentation callback the engine calls inline (onGameEvent, onFloorChanged,
- * onVisualEffect, onDiscoveryEvent, onMessageLogged), the stunned hero's forced pass and the
+ * onNpcInteract, onChoiceInteract, onStateChanged), the stunned hero's forced pass and the
  * turn's FOV updates threw straight out, some mid-resolution: a throwing `entity_killed`
  * subscriber stopped a death after the XP and before the corpse left the map.
  */
@@ -49,23 +49,6 @@ describe('R-pipe-17 · presentation callbacks and the forced pass are isolated',
     engine.onFloorChanged = boom;
     expect(() => engine.changeFloor(2)).not.toThrow();
     expect(engine.currentFloor).toBe(2);
-  });
-
-  it('a throwing onVisualEffect or onDiscoveryEvent does not escape', () => {
-    const { engine } = setup();
-    engine.onVisualEffect = boom;
-    engine.onDiscoveryEvent = boom;
-    expect(() => engine.recordVisualEffects([{ type: 'flash', x: 1, y: 1 } as never])).not.toThrow();
-    expect(() => engine.emitDiscovery({ type: 'close_call', text: 'x', icon: '!' })).not.toThrow();
-  });
-
-  it('a throwing onMessageLogged neither escapes nor loops on its own failure line', () => {
-    const { engine } = setup();
-    const calls = vi.fn(boom);
-    engine.onMessageLogged = calls;
-    expect(() => engine.log('hello')).not.toThrow();
-    expect(calls.mock.calls.length).toBeLessThanOrEqual(2);
-    expect(engine.messages).toContain('hello');
   });
 
   it('a stunned hero\'s forced pass that throws still passes the turn', () => {

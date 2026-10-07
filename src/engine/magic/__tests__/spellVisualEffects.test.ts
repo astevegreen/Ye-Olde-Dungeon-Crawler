@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
@@ -220,15 +220,11 @@ describe('Visual Effect Queue & Declarative FX Engine', () => {
   it('buffers effects in GameEngine and clears them on consumePendingVisualEffects', () => {
     const { engine, player } = createCorridorEngine();
 
-    const effectSpy = vi.fn();
-    engine.onVisualEffect = effectSpy;
-
     player.energy = 100;
     const action = new CastSpellAction(player, 'magic_arrow', 7, 3);
     const res = engine.handlePlayerAction(action);
 
     expect(res.success).toBe(true);
-    expect(effectSpy).toHaveBeenCalled();
     expect(engine.pendingVisualEffects.length).toBeGreaterThanOrEqual(1);
 
     const consumed = engine.consumePendingVisualEffects();

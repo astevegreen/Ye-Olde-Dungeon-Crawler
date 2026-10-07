@@ -25,32 +25,6 @@ describe('Feature Flags, CombatConfig, and ProgressionConfig Manifest Extensions
     return { engine, player, map };
   }
 
-  describe('Feature Flags Integration', () => {
-    it('accurately queries featureFlags via engine.hasFeature()', () => {
-      const { engine } = createEngine({
-        id: 'flags-test',
-        name: 'Flags Test',
-        featureFlags: {
-          stealthSubsystem: true,
-          ammoCombat: false,
-        },
-      });
-
-      expect(engine.hasFeature('stealthSubsystem')).toBe(true);
-      expect(engine.hasFeature('ammoCombat')).toBe(false);
-      expect(engine.hasFeature('nonExistentFeature')).toBe(false);
-    });
-
-    it('returns false when manifest defines no featureFlags', () => {
-      const { engine } = createEngine({
-        id: 'no-flags',
-        name: 'No Flags',
-      });
-
-      expect(engine.hasFeature('anyFlag')).toBe(false);
-    });
-  });
-
   describe('CombatConfig Integration in MeleeAttackAction', () => {
     it('enforces minDamage threshold when target defense exceeds attack', () => {
       const combatConfig: CombatConfig = {
@@ -249,16 +223,13 @@ describe('Feature Flags, CombatConfig, and ProgressionConfig Manifest Extensions
   });
 
   describe('Warcraft: Orcs & Humans Manifest Integration', () => {
-    it('wires Warcraft featureFlags, combatConfig, and progressionConfig', () => {
-      expect(warcraftManifest.featureFlags).toBeDefined();
-      expect(warcraftManifest.featureFlags?.bloodlustMechanic).toBe(true);
+    it('wires Warcraft combatConfig and progressionConfig', () => {
       expect(warcraftManifest.combatConfig).toBeDefined();
       expect(warcraftManifest.combatConfig?.critMultiplier).toBe(2.0);
       expect(warcraftManifest.progressionConfig).toBeDefined();
       expect(warcraftManifest.progressionConfig?.baseXp).toBe(120);
 
-      const { engine, player } = createEngine(warcraftManifest);
-      expect(engine.hasFeature('bloodlustMechanic')).toBe(true);
+      const { player } = createEngine(warcraftManifest);
       expect(player.progressionConfig).toEqual(warcraftManifest.progressionConfig);
       expect(player.xpToNextLevel).toBe(120);
     });

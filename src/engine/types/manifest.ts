@@ -958,7 +958,6 @@ export interface GameContentManifest {
   aiStrategies?: Record<string, import('../ai/aiRegistry').AIStrategy>;
   modalLayouts?: Record<string, any>;
   keybindings?: Record<string, any>;
-  featureFlags?: Record<string, boolean>;
   combatConfig?: CombatConfig;
   progressionConfig?: ProgressionConfig;
   /** Zone-tiered, difficulty-scaled monster power (ARCHITECTURE.md §3). When omitted,

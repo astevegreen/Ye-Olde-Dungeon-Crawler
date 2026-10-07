@@ -4,6 +4,7 @@ import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { MonsterRegistry } from '../../bestiary/monsterDefinitions';
+import { activateRegistries } from '..';
 import { ActionRegistry, type GameAction } from '../../actions/actionRegistry';
 import { SpellRegistry, getSpell } from '../../magic/spellRegistry';
 import { CompanionRegistry, type CompanionDefinition } from '../../entities/companion';
@@ -427,14 +428,14 @@ describe('Per-engine content registries', () => {
     );
 
     // Activate Engine A and give it distinct items
-    engineA.activate();
+    activateRegistries(engineA.registries);
     const itemA = new Item({ id: 'item_a', name: 'Item A', category: 'misc', weight: 1, bulk: 1 });
     engineA.player.inventory.primaryPack.addItem(itemA);
     const groundA = new Item({ id: 'ground_a', name: 'Ground A', category: 'misc', weight: 1, bulk: 1 });
     engineA.map.addItemAt(3, 3, groundA);
 
     // Activate Engine B and give it distinct items
-    engineB.activate();
+    activateRegistries(engineB.registries);
     const itemB = new Item({ id: 'item_b', name: 'Item B', category: 'misc', weight: 1, bulk: 1 });
     engineB.player.inventory.primaryPack.addItem(itemB);
     const groundB = new Item({ id: 'ground_b', name: 'Ground B', category: 'misc', weight: 1, bulk: 1 });

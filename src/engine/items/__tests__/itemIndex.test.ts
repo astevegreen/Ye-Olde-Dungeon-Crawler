@@ -6,6 +6,7 @@ import { Player } from '../../entities/player';
 import { Item } from '../item';
 import { Container } from '../container';
 import { itemIndex, getItemById } from '../itemIndex';
+import { activateRegistries } from '../../registries';
 import { serializeGame, deserializeGame } from '../../storage/serializer';
 import { CoinItem } from '../../economy/currency';
 import { PickUpAction, QuickLootAction } from '../../actions/inventory-actions';
@@ -137,7 +138,7 @@ describe('Flat item index', () => {
     };
     check(engine);
     const restored = deserializeGame(JSON.parse(JSON.stringify(serializeGame(engine)))).engine;
-    restored.activate();
+    activateRegistries(restored.registries);
     check(restored);
   });
 

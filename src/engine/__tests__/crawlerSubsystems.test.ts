@@ -5,7 +5,6 @@ import { TILES } from '../grid/tile';
 import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
 import { Item } from '../items/item';
-import { IdentificationManager } from '../items/identification';
 import { IdentifyAction, RemoveCurseAction } from '../actions/identificationActions';
 import { SearchAction } from '../actions/search';
 import { DisarmTrapAction } from '../actions/disarm';
@@ -47,19 +46,8 @@ describe('Dungeon Exploration & Tactical Crawler Subsystems', () => {
   });
 
   describe('1. Item Identification & Curse Binding', () => {
-    it('generates consistent per-run aliases and conceals true properties when unidentified', () => {
-      const idMgr = new IdentificationManager(cotwManifest, 42);
-      const wandDef = {
-        id: 'wand_fire',
-        name: 'Wand of Fireballs',
-        category: 'wand' as const,
-        weight: 200,
-        bulk: 100,
-      };
-
-      const alias = idMgr.getAlias('wand_fire', wandDef);
-      expect(alias).toBeDefined();
-      expect(alias!.length).toBeGreaterThan(0);
+    it('conceals true properties when unidentified, and IdentifyAction reveals them', () => {
+      const alias = 'Gnarled Oak Wand';
 
       // Create unidentified wand
       const wand = new Item({

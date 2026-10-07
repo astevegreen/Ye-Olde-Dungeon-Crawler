@@ -140,15 +140,6 @@ export interface ItemDefinition {
 
 export const BUILTIN_ITEM_TYPES = ['standard', 'container', 'wand', 'scroll', 'potion', 'coin'] as const;
 
-export interface ItemAliasPools {
-  potions?: string[];
-  scrolls?: string[];
-  wands?: string[];
-  rings?: string[];
-  amulets?: string[];
-  [category: string]: string[] | undefined;
-}
-
 export type TrapType = string;
 export const BUILTIN_TRAP_TYPES = ['pit', 'arrow', 'teleport', 'alarm'] as const;
 
@@ -955,7 +946,6 @@ export interface GameContentManifest {
   /** How many of `traps` each generated floor hides; absent, floors hide none. */
   trapPlacement?: TrapPlacementConfig;
   tiles?: TileDefinition[];
-  itemAliasPools?: ItemAliasPools;
   surfaceTypes?: SurfaceTypeDefinition[];
   statusEffects?: StatusEffectDefinition[];
   trackedMilestones?: TrackedMilestoneDefinition[];

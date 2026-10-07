@@ -79,3 +79,34 @@ describe('R-dbg-11 · a triage operation that throws still leaves a checkpoint',
     vi.restoreAllMocks();
   });
 });
+
+describe('engine.diagnostics.outfitForFloor: a hero as one who reached that floor might be', () => {
+  it('levels the hero and dresses every slot from the floor\'s loot, never in a binding roll', () => {
+    const engine = newGame();
+    const before = engine.player.inventory.primaryPack.getItems().length;
+    const out = engine.diagnostics.outfitForFloor(20);
+
+    expect(out.level).toBe(15); // 1 + 0.7 x 20
+    expect(engine.player.level).toBe(15);
+    expect(engine.player.unspentStatPoints).toBeGreaterThan(0);
+    expect(out.worn.length).toBeGreaterThanOrEqual(8);
+    const worn = engine.player.inventory.paperdoll.getEquippedItems();
+    expect(worn.some((i) => i.slot === 'mainHand')).toBe(true);
+    for (const item of worn) {
+      expect(item.isBound(), item.name).toBe(false);
+      expect(item.identified, item.name).toBe(true);
+    }
+    // Healing for the depth: two, plus one for every five floors.
+    expect(engine.player.inventory.primaryPack.getItems().length).toBeGreaterThanOrEqual(before + 1);
+  });
+
+  it('dresses a deeper hero better, and takes a level target when given one', () => {
+    const shallow = newGame();
+    shallow.diagnostics.outfitForFloor(3);
+    const deep = newGame();
+    deep.diagnostics.outfitForFloor(30, 10);
+    expect(deep.player.level).toBe(10);
+    const attack = (e: typeof shallow) => e.player.inventory.paperdoll.getItem('mainHand')?.stats.attackBonus ?? 0;
+    expect(attack(deep)).toBeGreaterThan(attack(shallow));
+  });
+});

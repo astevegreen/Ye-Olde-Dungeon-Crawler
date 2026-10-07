@@ -6,6 +6,9 @@ import { growCompanion } from '../combat/lastStand';
 import { TILES } from '../grid/tile';
 import { flightRecorder } from './flightRecorder';
 import { concludePrologue, isPrologueRunning } from '../quest/prologue';
+import { createScaledItem } from '../dungeon/lootSpawner';
+import type { EquipmentSlot } from '../items/item';
+import type { ItemDefinition } from '../types/manifest';
 
 /**
  * Developer triage operations behind the F2 menu (ARCHITECTURE.md §2: triage methods
@@ -36,7 +39,34 @@ export interface TriageAPI {
   identifyAll(): number;
   /** Sets the run's PRNG state (the value reports show as "PRNG State"). */
   setPrngState(state: number): void;
+  /**
+   * Outfits the hero as one who reached `floor` might be (a deep-floor soak's start, or a
+   * look at a deep floor from F2):
+   * - Levels up to `targetLevel`, by default 1 + 0.7 × floor within the pack's cap. The
+   *   points stay unspent.
+   * - Wears, in each equipment slot, the pack's strongest random-loot definition allowed that
+   *   deep, rolled at that floor. A roll that binds is passed over. Everything is identified.
+   * - Carries two healing potions, plus one more for every five floors.
+   * Returns the level reached and the names of what it wore.
+   */
+  outfitForFloor(floor: number, targetLevel?: number): { level: number; worn: string[] };
 }
+
+/** Slots an outfit fills, and the slot its definitions name (both rings are `fingerLeft`). */
+const OUTFIT_SLOTS: Array<{ slot: EquipmentSlot; defSlot: string }> = [
+  { slot: 'mainHand', defSlot: 'mainHand' },
+  { slot: 'offHand', defSlot: 'offHand' },
+  { slot: 'head', defSlot: 'head' },
+  { slot: 'torso', defSlot: 'torso' },
+  { slot: 'overgarment', defSlot: 'overgarment' },
+  { slot: 'hands', defSlot: 'hands' },
+  { slot: 'wrists', defSlot: 'wrists' },
+  { slot: 'waist', defSlot: 'waist' },
+  { slot: 'feet', defSlot: 'feet' },
+  { slot: 'neck', defSlot: 'neck' },
+  { slot: 'fingerLeft', defSlot: 'fingerLeft' },
+  { slot: 'fingerRight', defSlot: 'fingerLeft' },
+];
 
 function findStairs(engine: GameEngine, direction: 'up' | 'down'): Position | null {
   const { map } = engine;
@@ -146,26 +176,7 @@ function createTriageApi(engine: GameEngine): TriageAPI {
       return targets.length;
     },
 
-    grantLevel: () => {
-      const p = engine.player;
-      const res = p.gainXp(Math.max(1, p.xpToNextLevel - p.xp), engine.manifest?.progressionConfig);
-      if (res.leveledUp) {
-        engine.log(`*** LEVEL UP! Welcome to Level ${res.newLevel}! ***`);
-        growCompanion(engine);
-        // Same event a kill emits, so the level-up allocation dialog opens as usual.
-        engine.emitGameEvent({
-          type: 'player_leveled_up',
-          turn: engine.turnCount,
-          actorId: p.id,
-          level: res.newLevel,
-          newLevel: res.newLevel,
-          statPointsAwarded: res.statPointsAwarded ?? 3,
-          unspentStatPoints: p.unspentStatPoints,
-          statGains: res.statGains,
-        });
-      }
-      return p.level;
-    },
+    grantLevel: () => levelUp(),
 
     identifyAll: () => {
       let count = 0;
@@ -181,7 +192,77 @@ function createTriageApi(engine: GameEngine): TriageAPI {
     setPrngState: (state) => {
       engine.prng.setState(state);
     },
+
+    outfitForFloor: (floor, targetLevel) => {
+      const depth = Math.max(1, Math.floor(floor));
+      const p = engine.player;
+      const goal = Math.max(1, Math.floor(targetLevel ?? 1 + 0.7 * depth));
+      while (p.level < goal && !p.isAtLevelCap) {
+        const before = p.level;
+        levelUp();
+        if (p.level === before) break;
+      }
+
+      // The strongest definition a random drop that deep could be: its slot's one number.
+      const allowed = (d: ItemDefinition): boolean => (d.minFloor ?? 1) <= depth && d.lootWeight !== 0 && !d.twoHanded;
+      const score = (d: ItemDefinition, slot: EquipmentSlot): number =>
+        slot === 'mainHand' ? d.stats?.attackBonus ?? 0 : (d.stats?.defenseBonus ?? 0) + (d.stats?.attackBonus ?? 0);
+      const items = engine.manifest?.items ?? [];
+      const worn: string[] = [];
+      const taken = new Set<string>();
+      let n = 0;
+      for (const { slot, defSlot } of OUTFIT_SLOTS) {
+        const candidates = items
+          .filter((d) => d.slot === defSlot && allowed(d) && !taken.has(d.id))
+          .sort((a, b) => score(b, slot) - score(a, slot) || (b.tier ?? 0) - (a.tier ?? 0) || a.id.localeCompare(b.id));
+        for (const def of candidates) {
+          // A plain roll at that depth (the shop's midpoint draw), never one that binds.
+          const item = createScaledItem(def, `outfit-${slot}-${n++}`, depth, () => 0.5, engine.manifest?.itemFamilies);
+          if (item.isBound() || item.isCursed()) continue;
+          engine.identification.identifyItem(item);
+          const res = p.inventory.paperdoll.equip(item, slot);
+          if (!res.success) continue;
+          taken.add(def.id);
+          worn.push(item.displayName);
+          break;
+        }
+      }
+
+      // Healing for the depth: the pack's strongest restore_hp potion allowed there.
+      const healing = items
+        .filter((d) => (d.minFloor ?? 1) <= depth && (d.potionConfig?.effects ?? []).some((f) => f.type === 'restore_hp'))
+        .sort((a, b) => (b.tier ?? 0) - (a.tier ?? 0) || a.id.localeCompare(b.id))[0];
+      if (healing) {
+        for (let i = 0; i < 2 + Math.floor(depth / 5); i++) {
+          const potion = createScaledItem(healing, `outfit-potion-${i}`, depth, () => 0.5, engine.manifest?.itemFamilies);
+          engine.identification.identifyItem(potion);
+          p.inventory.primaryPack.addItem(potion);
+        }
+      }
+      return { level: p.level, worn };
+    },
   };
+
+  function levelUp(): number {
+    const p = engine.player;
+    const res = p.gainXp(Math.max(1, p.xpToNextLevel - p.xp), engine.manifest?.progressionConfig);
+    if (res.leveledUp) {
+      engine.log(`*** LEVEL UP! Welcome to Level ${res.newLevel}! ***`);
+      growCompanion(engine);
+      // Same event a kill emits, so the level-up allocation dialog opens as usual.
+      engine.emitGameEvent({
+        type: 'player_leveled_up',
+        turn: engine.turnCount,
+        actorId: p.id,
+        level: res.newLevel,
+        newLevel: res.newLevel,
+        statPointsAwarded: res.statPointsAwarded ?? 3,
+        unspentStatPoints: p.unspentStatPoints,
+        statGains: res.statGains,
+      });
+    }
+    return p.level;
+  }
 }
 
 /**

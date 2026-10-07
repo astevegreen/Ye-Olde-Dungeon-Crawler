@@ -206,6 +206,10 @@ Two coding agents work in this repository in alternation, never simultaneously: 
 - **Protected files and gates still bind:** §8.1 is enforced by `commit-msg`; `pre-push` runs the full gates, and hooks are bypassed only on the owner's explicit say-so.
 - **Review marker:** the local git tag `verified` marks the last commit Claude Code has reviewed; only Claude Code moves it. Each Claude Code session reviews every commit in `verified..HEAD` without its own trailer — against this document, with the gates run — then moves the tag to `HEAD`.
 
+### 8.5 Repository Files
+- **No ephemeral markdown at the root:** the repo root holds exactly two markdown files, `ARCHITECTURE.md` and `CLAUDE.md`. Prompts, task notes, research and other scratch markdown for a single piece of work go in the gitignored `/.prompts/` or outside the repo; lasting docs go under `docs/architecture/**` or `docs/decisions/**`.
+- **LF line endings:** every text file is LF, in the repository and in the working tree, whatever the checkout's `core.autocrlf` (`.gitattributes`). A CRLF hook or shell script breaks its `#!/bin/sh` line under `sh`.
+
 ---
 
 ## 9. Planned Work Register

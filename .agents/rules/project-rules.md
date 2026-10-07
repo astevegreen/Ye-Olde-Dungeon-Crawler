@@ -10,7 +10,8 @@ trigger: always_on
 1. Read `ARCHITECTURE.md` in full before any structural change: new files, new dependencies between `src/engine/`, `src/content/`, `src/ui/`, `src/rendering/`, or `src/main/`, or edits to protected files. It is kept small on purpose and carries its own routing table — use it to find the right `docs/architecture/**` sub-doc for the area you're touching (content packs, storage/schema, simulation/input, or quality gates) before you start.
 2. Respect status markers. Text tagged **[Planned: P-NN]** describes future work, not existing code. Never call APIs or rely on behavior it describes. Implement a planned item only when the task explicitly requests it (§8.3).
 3. Do not widen the gap to a planned target. For example: no new deep engine imports from content, no new `Math.random()` in simulation code, and no new modals that bypass `ModalStackManager`.
-4. No ephemeral task or prompt markdown at the repo root. Working prompts go in `/.prompts/` (gitignored) or outside the repo — the root holds exactly `ARCHITECTURE.md` and `CLAUDE.md`.
+4. No ephemeral task or prompt markdown at the repo root (§8.5). Working prompts go in `/.prompts/` (gitignored) or outside the repo — the root holds exactly `ARCHITECTURE.md` and `CLAUDE.md`.
+5. Write every text file with LF line endings (§8.5); `.gitattributes` pins LF, and a CRLF hook or shell script fails under `sh`.
 
 ## Invariants
 One line each; the cited section holds the full rule and its enforcement. The lint gate checks most of them, so a clean `npm run lint` is necessary but not sufficient.

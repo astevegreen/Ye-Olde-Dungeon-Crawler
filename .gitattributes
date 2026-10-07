@@ -5,6 +5,6 @@
 * text=auto eol=lf
 
 # Shell scripts and git hooks must keep LF endings: CRLF breaks the
-# `#!/bin/sh` interpreter line when they run under sh (ARCHITECTURE.md §7.2).
+# `#!/bin/sh` interpreter line when they run under sh (ARCHITECTURE.md §8.5).
 .githooks/** text eol=lf
 *.sh text eol=lf

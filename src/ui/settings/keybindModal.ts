@@ -7,6 +7,9 @@ import { formatStorageStatus, getStoragePersistenceInfo } from '../persistenceIn
 import { AUTO_PICKUP_GROUPS, type AutoPickupGroup } from '../autoPickup';
 import { UI_SCALE_STEPS, type UiScaleSetting } from '../uiScale';
 
+/** A modifier key's own code: Shift, Control, Alt, Meta (and Firefox's older "OS"), either side. */
+const MODIFIER_CODE = /^(Shift|Control|Alt|Meta|OS)(Left|Right)$/;
+
 export interface KeybindModalOptions {
   settingsManager: SettingsManager;
   onClose?: () => void;
@@ -95,21 +98,37 @@ export class KeybindModal implements UIModal {
           return true;
         }
 
+        // A modifier pressed alone is the start of a chord, not the key to bind (R-ui-8).
+        if (MODIFIER_CODE.test(e.code)) return true;
+
         const actionId = this.listeningActionId;
         const actionMeta = ACTION_METADATA.find((m) => m.id === actionId);
         const actionName = actionMeta?.name ?? actionId;
-        const key = keyLabel(e.code);
+
+        // InputHandler leaves Ctrl, Alt and Meta chords to the browser, so none could work.
+        if (e.ctrlKey || e.altKey || e.metaKey) {
+          this.setStatus(`Ctrl, Alt and Cmd chords belong to the browser, so the game can't use them. Press another key (Esc to cancel).`);
+          this.renderContent();
+          return true;
+        }
+
+        // Shift chords are stored as InputHandler reads them, "Shift+<code>".
+        const code = e.shiftKey ? `Shift+${e.code}` : e.code;
+        const key = keyLabel(code);
 
         // A key the game answers before it reads bindings would never reach this action.
-        const taken = hardWiredConflict(actionId, e.code);
+        const taken = hardWiredConflict(actionId, code);
         if (taken) {
-          this.setStatus(`${key} ${taken}, so it can't be "${actionName}". Press another key (Esc to cancel).`);
+          const chord = code !== e.code;
+          this.setStatus(
+            `${keyLabel(e.code)} ${taken}${chord ? ' (Shift or not)' : ''}, so ${chord ? key : 'it'} can't be "${actionName}". Press another key (Esc to cancel).`
+          );
           this.renderContent();
           return true;
         }
         this.listeningActionId = null;
 
-        const result = this.settingsManager.bindKey(actionId, e.code);
+        const result = this.settingsManager.bindKey(actionId, code);
         if (result.conflictWith) {
           const conflictMeta = ACTION_METADATA.find((m) => m.id === result.conflictWith);
           const conflictName = conflictMeta?.name ?? result.conflictWith;

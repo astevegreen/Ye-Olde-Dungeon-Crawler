@@ -22,6 +22,16 @@ describe('default keybindings', () => {
     expect(misbound).toEqual([]);
   });
 
+  it('judge a Shift chord by its bare key, except an action taking back its own default chord (R-ui-8)', () => {
+    expect(hardWiredConflict('move_n', 'Shift+KeyC')).toBe('closes a door');
+    expect(hardWiredConflict('rest', 'Shift+Digit5')).toBe('casts quick spell 5');
+    expect(hardWiredConflict('move_n', 'Shift+KeyV')).toBeNull();
+    // Read before the hard-wired branches (input-handler.ts), so they can be put back.
+    expect(hardWiredConflict('quick_loot', 'Shift+KeyG')).toBeNull();
+    expect(hardWiredConflict('companion_call', 'Shift+KeyC')).toBeNull();
+    expect(hardWiredConflict('message_log', 'Shift+KeyM')).toBeNull();
+  });
+
   it('leave hard-wired command keys to their commands', () => {
     const claimed = ACTION_METADATA.filter((a) => a.id !== 'character_menu').flatMap((a) =>
       a.defaultCodes.filter((code) => HARD_WIRED.includes(code)).map((code) => `${a.id}:${code}`)

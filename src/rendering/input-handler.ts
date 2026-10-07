@@ -1039,7 +1039,7 @@ export class InputHandler {
       return true;
     }
 
-    const action = this.createActionFromKey(code);
+    const action = this.createActionFromKey(code, e.shiftKey);
     if (!action) {
       return false;
     }
@@ -1066,7 +1066,7 @@ export class InputHandler {
     this.onActionProcessed();
   }
 
-  private createActionFromKey(code: string): Action | null {
+  private createActionFromKey(code: string, shift = false): Action | null {
     const p = this.engine.player;
 
     let dx = 0;
@@ -1074,8 +1074,10 @@ export class InputHandler {
     let isMovement = false;
 
     // The player's bindings alone decide: a key unbound in Settings does nothing. A legacy
-    // table and a switch of the default keys used to answer it anyway (R-rend-13).
-    const boundActionId = this.settingsManager.getActionForCode(code);
+    // table and a switch of the default keys used to answer it anyway (R-rend-13). A Shift
+    // chord bound in Settings ("Shift+KeyV") comes first, then the bare key (R-ui-8).
+    const boundActionId =
+      (shift ? this.settingsManager.getActionForCode(`Shift+${code}`) : undefined) ?? this.settingsManager.getActionForCode(code);
     if (boundActionId) {
       switch (boundActionId) {
         case 'move_n': dx = 0; dy = -1; isMovement = true; break;

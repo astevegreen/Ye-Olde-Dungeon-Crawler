@@ -240,13 +240,23 @@ class MockWindow {
 
 /** A keydown on `target`, dispatched as the DOM does: `target`'s own listeners first, then
  *  the window's (InputHandler's) unless one of them stopped propagation. */
-function press(target: MockElement, win: MockWindow, code: string) {
+function press(
+  target: MockElement,
+  win: MockWindow,
+  code: string,
+  mods: { shiftKey?: boolean; ctrlKey?: boolean; altKey?: boolean; metaKey?: boolean } = {}
+) {
   let stopped = false;
   const e = {
     type: 'keydown',
     code,
     key: code,
     repeat: false,
+    shiftKey: false,
+    ctrlKey: false,
+    altKey: false,
+    metaKey: false,
+    ...mods,
     target,
     preventDefault: vi.fn(),
     stopPropagation: vi.fn(() => {
@@ -372,6 +382,50 @@ describe('KeybindModal input', () => {
     // Still listening: the next key binds.
     press(overlay(), win, 'KeyV');
     expect(settingsManager.getCodesForAction(action.id)).toContain('KeyV');
+  });
+
+  /** Opens the modal listening for a key for the first movement action. */
+  function listenOnFirstMove(): string {
+    modal.open();
+    const action = ACTION_METADATA.find((m) => m.category === 'Locomotion')!;
+    const list = mockDoc.getElementById('settings-keybind-list')!;
+    list.children[0].children[1].children.at(-1)!.dispatchEvent({ type: 'click', stopPropagation: vi.fn() } as any);
+    return action.id;
+  }
+  const status = () => mockDoc.getElementById('settings-status')?.textContent ?? '';
+
+  it('binds a Shift chord as the chord, not the Shift key that starts it (R-ui-8)', () => {
+    const actionId = listenOnFirstMove();
+
+    press(overlay(), win, 'ShiftLeft', { shiftKey: true });
+    expect(settingsManager.getCodesForAction(actionId)).not.toContain('ShiftLeft');
+    press(overlay(), win, 'KeyV', { shiftKey: true });
+
+    expect(settingsManager.getCodesForAction(actionId)).toContain('Shift+KeyV');
+    expect(settingsManager.getActionForCode('KeyV')).toBe('radial_menu');
+    expect(status()).toContain('⇧V');
+  });
+
+  it('refuses a Ctrl, Alt or Cmd chord, which the browser keeps, and keeps listening (R-ui-8)', () => {
+    const actionId = listenOnFirstMove();
+
+    for (const mod of ['ctrlKey', 'altKey', 'metaKey'] as const) {
+      press(overlay(), win, 'ControlLeft', { [mod]: true });
+      press(overlay(), win, 'KeyV', { [mod]: true });
+      expect(settingsManager.getCodesForAction(actionId)).not.toContain('KeyV');
+      expect(status()).toMatch(/Ctrl, Alt and Cmd/);
+    }
+
+    press(overlay(), win, 'KeyV');
+    expect(settingsManager.getCodesForAction(actionId)).toContain('KeyV');
+  });
+
+  it('refuses a Shift chord on a key the game answers first, as it refuses the key (R-ui-8)', () => {
+    const actionId = listenOnFirstMove();
+
+    press(overlay(), win, 'KeyC', { shiftKey: true });
+    expect(settingsManager.getCodesForAction(actionId)).not.toContain('Shift+KeyC');
+    expect(status()).toContain('C closes a door');
   });
 
   it('closes on Escape once: hidden, off the stack, onClose once', () => {

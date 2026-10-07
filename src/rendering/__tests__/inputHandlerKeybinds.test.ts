@@ -75,6 +75,21 @@ describe('InputHandler Keybind Remapping & Movement Modes', () => {
     expect(action.dy).toBe(-1);
   });
 
+  it('moves on a Shift chord bound to a direction, and on the bare key as before (R-ui-8)', () => {
+    const handleActionSpy = vi.spyOn(engine, 'handlePlayerAction');
+    settingsManager.bindKey('move_e', 'Shift+KeyV');
+
+    inputHandler.handleKeyDown({ ...makeKeyEvent('KeyV'), shiftKey: true } as KeyboardEvent);
+    const action = handleActionSpy.mock.calls[0]?.[0] as MovementAction;
+    expect(action).toBeInstanceOf(MovementAction);
+    expect([action.dx, action.dy]).toEqual([1, 0]);
+
+    // Shift with an unbound chord still moves as its bare key does.
+    inputHandler.handleKeyDown({ ...makeKeyEvent('KeyW'), shiftKey: true } as KeyboardEvent);
+    const north = handleActionSpy.mock.calls[1]?.[0] as MovementAction;
+    expect([north.dx, north.dy]).toEqual([0, -1]);
+  });
+
   // Settings bind Shift+Comma to Quick-Loot; a hard-wired '<' up-stairs branch took it
   // first, so the listed key climbed stairs instead (decided 5 Oct: Settings win).
   it("Shift+Comma ('<') quick-loots as Settings say, and '>' still climbs", () => {

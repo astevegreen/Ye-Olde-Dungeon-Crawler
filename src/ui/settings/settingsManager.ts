@@ -100,9 +100,16 @@ export const HARD_WIRED_KEYS: Readonly<Record<string, { does: string; actionId?:
   ),
 };
 
-/** What a hard-wired key does, when binding it to `actionId` would never work; else null. */
+/**
+ * What a hard-wired key does, when binding `code` to `actionId` would never work; else null.
+ * A Shift chord ("Shift+KeyC") is judged by its bare key, whose hard-wired branch answers it
+ * first, except an action's own default chords, which InputHandler reads before those
+ * branches (the potion, companion and log keys, Quick-Loot's), so they can be put back.
+ */
 export function hardWiredConflict(actionId: string, code: string): string | null {
-  const wired = HARD_WIRED_KEYS[code];
+  const bare = code.startsWith('Shift+') ? code.slice('Shift+'.length) : code;
+  if (bare !== code && ACTION_METADATA.some((m) => m.id === actionId && m.defaultCodes.includes(code))) return null;
+  const wired = HARD_WIRED_KEYS[bare];
   return wired && wired.actionId !== actionId ? wired.does : null;
 }
 

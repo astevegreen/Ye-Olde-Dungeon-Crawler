@@ -51,8 +51,7 @@ const DEFAULT_BOSS_TAGS = ['boss', 'miniboss'];
 
 /**
  * Resolves a `MonsterPowerTier` list into the step-function multiplier effective at
- * `floor` — the highest tier at or below it, ascending-order input, no interpolation
- * (same idiom as `stats/levelScaledResistance.ts`'s `resolveLevelScaledResistance`).
+ * `floor` — the highest tier at or below it, ascending-order input, no interpolation.
  */
 function tierMultiplier(tiers: MonsterScalingConfig['tiers'], floor: number): number {
   let result = tiers[0]?.multiplier ?? 1.0;

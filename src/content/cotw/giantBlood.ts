@@ -32,7 +32,7 @@ const APPLY_MESSAGE =
   'The blood of Thrym stirs in your veins — the permafrost cannot touch you as it does lesser folk.';
 
 /** Ascending floor order. The last entry whose floor <= current floor applies (a
- * step curve, same idiom as `stats/levelScaledResistance.ts`). */
+ * step curve, not interpolated). */
 const GIANT_BLOOD_TIERS: GiantBloodTier[] = [
   { floor: 1, attackBonus: 3, defenseBonus: 3 },
   {

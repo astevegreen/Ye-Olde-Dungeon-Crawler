@@ -1,6 +1,5 @@
 import type { Entity } from '../entities/entity';
 import type { GameEngine } from '../engine';
-import type { ElementalResistanceCurveConfig } from '../stats/levelScaledResistance';
 
 /**
  * What the four attributes do in combat, per point above (or below) `baseline`. Every field
@@ -85,12 +84,4 @@ export interface ProgressionConfig {
    * Default 1. Wandering spawns and a floor's first population pay in full.
    */
   respawnXpShare?: number;
-  /**
-   * Level-scaled elemental resistance curves (ARCHITECTURE.md §3, `stats/
-   * levelScaledResistance.ts`). Not consulted by combat's categorical
-   * `elementalResistances`/`takeElementalDamage` — a content-defined mechanic (e.g.
-   * an environmental exposure status effect) reads this explicitly via
-   * `resolveLevelScaledResistance`/`applyLevelScaledElementalMitigation`.
-   */
-  elementalResistanceCurve?: ElementalResistanceCurveConfig;
 }

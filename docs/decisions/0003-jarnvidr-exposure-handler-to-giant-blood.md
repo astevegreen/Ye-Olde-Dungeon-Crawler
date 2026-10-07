@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-18
 **Status:** Accepted
-**Related:** [docs/architecture/content-progression-scaling.md](../architecture/content-progression-scaling.md) — Level-Scaled Elemental Resistance, Zone-Tiered Monster Power
+**Related:** [docs/architecture/content-progression-scaling.md](../architecture/content-progression-scaling.md) — Zone-Tiered Monster Power
 
 ## Context
 `stats/levelScaledResistance.ts` (`resolveLevelScaledResistance`/`applyLevelScaledElementalMitigation`) was built to resolve a numeric mitigation fraction from an ascending `{level, resistance}` step curve — the first real consumer of `calculateAttribute`'s long-reserved but previously-unused `'elementalResistance'` attribute key. Its one consumer was `cotw/hazards.ts`'s `jarnvidrExposureHandler`, an environmental hot/cold damage-over-time tick.
@@ -16,3 +16,4 @@ The debuff framing (environmental damage-over-time) was replaced with a bonus fr
 ## Consequences
 - `stats/levelScaledResistance.ts` remains in the engine as unused-but-legitimate generic capability. No other content pack consumes it today.
 - Do not delete `levelScaledResistance.ts` as "dead code" without re-verifying it has no consumer at the time — it is intentionally-idle generic capability, not an oversight.
+- **2026-10-07:** re-verified and deleted, with `ProgressionConfig.elementalResistanceCurve`, at the owner's request to remove unused code: still no caller, and no pack set the curve. A pack that wants level-scaled resistance again adds it back as a generic capability with its first consumer.

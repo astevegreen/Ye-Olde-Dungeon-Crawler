@@ -36,7 +36,7 @@ Map the topic as a **design tree**: every decision branches into the decisions t
 ## Mode A: is this feature complete?
 
 1. Collect the owner's goals for the feature, in their words, from the sources above. Restate each as an observable "done" condition a player could see or a test could assert.
-2. Check each condition against reality: code, tests, `npm run sim`, and play (`.prompts/play.mjs` for scripted play; capture scripts for visuals). Mark each **done**, **partial**, **missing** or **unverifiable**, with the evidence.
+2. Check each condition against reality: code, tests, `npm run sim`, and play (`scripts/capture/play.mjs` for scripted play; the other capture scripts there for visuals). Mark each **done**, **partial**, **missing** or **unverifiable**, with the evidence.
 3. Ask the owner only about what you cannot settle yourself: a goal too vague to test, two goals that conflict, behavior you found that no goal covers (keep or cut?), and any "partial" where finishing could go several ways.
 4. Report the verdict table before the first round, so the questions have context.
 

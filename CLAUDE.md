@@ -11,7 +11,7 @@
 - Before committing, run `npm run gate-stamp -- run lint test`: lint (`tsc` over `src/` and `e2e/`, the `check:*` scripts, `knip`) and the full suite. The pre-commit hook then skips both on the identical tree; a bare `npm run lint` or `npm test` writes no stamp.
 - Run `npm run sim`, `npm run validate:schema` and `npm run build` when the change reaches them.
 - A commit that touches presentation runs `npm run gates` first: all of the above, then Playwright in Chromium. The push runs all three browsers, but Chromium before the commit has caught regressions the unit tests missed.
-- CSS or layout changed: capture the HUD before and after, dev server running (`OUT=.prompts/<dir> node .prompts/menus-audit.mjs 1366 g00`); menu screenshots hide the HUD behind the scrim.
+- CSS or layout changed: capture the HUD before and after, dev server running (`OUT=.prompts/captures/<dir> node scripts/capture/menus.mjs 1366 g00`); menu screenshots hide the HUD behind the scrim.
 - Report real output, pasted. A change that "should" pass has not passed.
 
 ## Commits
@@ -33,4 +33,4 @@
 - `git rm` stages at once, so a later `git add X && git commit` takes the deletion with it. Delete with plain `rm` and stage per commit.
 - Python: `python` or `py` (`py -0p` lists the versions); `python3` is the Microsoft Store stub and fails.
 - `.claude/settings.json` denies reading `dist/`, `test-results/`, `playwright-report/` and `*.log`: capture command output to a `.txt`.
-- A visible label changed: grep `e2e/` and `.prompts/` for the old text. Capture scripts click through `.prompts/play.mjs` (`startRun`, `button`, case-insensitive); use those, not new hard-coded matches.
+- A visible label changed: grep `e2e/` and `scripts/capture/` for the old text. Capture scripts click through `scripts/capture/play.mjs` (`startRun`, `button`, case-insensitive); use those, not new hard-coded matches.

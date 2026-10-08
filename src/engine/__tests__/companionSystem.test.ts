@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { GameEngine } from '../engine';
 import { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
@@ -7,6 +7,7 @@ import { Monster } from '../entities/monster';
 import { Companion, CompanionRegistry } from '../entities/companion';
 import { serializeGame, deserializeGame } from '../storage/serializer';
 import { DeathResolver } from '../combat/deathResolver';
+import { activateRegistries } from '../registries';
 
 const TEST_DEF_ID = 'test_companion';
 
@@ -22,6 +23,11 @@ function buildEngine(): { engine: GameEngine; player: Player } {
 }
 
 describe('Companion engine integration (docs/architecture/content-companions.md, Phase 1 MVP)', () => {
+  afterAll(() => {
+    activateRegistries(null);
+    CompanionRegistry.clear();
+  });
+
   beforeEach(() => {
     CompanionRegistry.clear();
     CompanionRegistry.register({

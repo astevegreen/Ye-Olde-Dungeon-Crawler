@@ -7,6 +7,7 @@ import { ItemFactory } from '../../items/factory';
 import { ZapWandAction, ReadScrollAction, DrinkPotionAction } from '../../actions/spell-actions';
 import { beforeEach, afterEach } from 'vitest';
 import { registerSpells, SpellRegistry } from '../spellRegistry';
+import { activateRegistries } from '../../registries';
 
 describe('Consumables Activation (Wands, Scrolls, Potions)', () => {
   beforeEach(() => {
@@ -16,6 +17,8 @@ describe('Consumables Activation (Wands, Scrolls, Potions)', () => {
     ]);
   });
   afterEach(() => {
+    // The test's engine is the active bundle now; the fixtures went into the process default.
+    activateRegistries(null);
     SpellRegistry.clear();
   });
   function setupTestWorld() {

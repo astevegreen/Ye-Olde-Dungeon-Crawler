@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { AiBehaviorRegistry, type AiBehaviorStrategy } from '../aiBehaviorRegistry';
 import { MonsterAI } from '../behaviorTree';
 import { Monster } from '../../entities/monster';
@@ -11,9 +11,15 @@ import { MovementAction } from '../../actions/movement';
 import { MeleeAttackAction, WindUpDeclareAction } from '../../actions/combat';
 import { warcraftManifest, WARCRAFT_AI_BEHAVIORS } from '../../../content/warcraft';
 import type { GameContentManifest } from '../../types/manifest';
+import { activateRegistries } from '../../registries';
 
 describe('AI Strategy Registry & Manifest Integration (Phase 4)', () => {
   beforeEach(() => {
+    AiBehaviorRegistry.resetToDefaults();
+  });
+
+  afterAll(() => {
+    activateRegistries(null);
     AiBehaviorRegistry.resetToDefaults();
   });
 

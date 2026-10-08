@@ -20,6 +20,8 @@ function buildEngine(timedEvents: TimedEventDefinition[]) {
     stats: { hp: 30, maxHp: 30, attack: 10, defense: 5 },
   });
   const engine = new GameEngine({ map, player });
+  // Its own manifest to edit: engines built without one share the engine's default object.
+  (engine as { manifest: GameEngine['manifest'] }).manifest = { ...engine.manifest };
   (engine.manifest as any).timedEvents = timedEvents;
   return { engine, player };
 }

@@ -13,6 +13,7 @@ import type {
   BurstEffectDescriptor,
   ChainLinkEffectDescriptor,
 } from '../../types/effects';
+import { activateRegistries } from '../../registries';
 
 describe('Visual Effect Queue & Declarative FX Engine', () => {
   beforeEach(() => {
@@ -20,6 +21,8 @@ describe('Visual Effect Queue & Declarative FX Engine', () => {
   });
 
   afterEach(() => {
+    // The test's engine is the active bundle now; the fixtures went into the process default.
+    activateRegistries(null);
     SpellRegistry.clear();
   });
 

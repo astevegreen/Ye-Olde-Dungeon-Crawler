@@ -7,6 +7,7 @@ import { Monster } from '../entities/monster';
 import { CastSpellAction } from '../actions/spell-actions';
 import { beforeEach, afterEach } from 'vitest';
 import { registerSpells, SpellRegistry } from '../magic/spellRegistry';
+import { activateRegistries } from '../registries';
 
 describe('Unified Kill Logging & Spell Fatalities', () => {
   beforeEach(() => {
@@ -16,6 +17,8 @@ describe('Unified Kill Logging & Spell Fatalities', () => {
     ]);
   });
   afterEach(() => {
+    // The test's engine is the active bundle now; the fixtures went into the process default.
+    activateRegistries(null);
     SpellRegistry.clear();
   });
   function setupEngine() {

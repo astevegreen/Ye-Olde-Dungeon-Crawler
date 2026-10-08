@@ -8,6 +8,7 @@ import { MovementAction } from '../../actions/movement';
 import { CastSpellAction } from '../../actions/spell-actions';
 import { calculateElementalDamage } from '../../magic/elements';
 import { registerSpells, SpellRegistry, getSpell } from '../../magic/spellRegistry';
+import { activateRegistries } from '../../registries';
 
 describe('Tactical Surface Tiles & Terrain Physics', () => {
   let map: GameMap;
@@ -34,6 +35,8 @@ describe('Tactical Surface Tiles & Terrain Physics', () => {
   });
 
   afterEach(() => {
+    // The test's engine is the active bundle now; the fixtures went into the process default.
+    activateRegistries(null);
     SpellRegistry.clear();
   });
 

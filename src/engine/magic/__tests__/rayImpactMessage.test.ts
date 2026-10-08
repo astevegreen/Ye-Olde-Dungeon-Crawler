@@ -5,6 +5,7 @@ import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { CastSpellAction } from '../../actions/spell-actions';
 import { registerSpells, SpellRegistry } from '../spellRegistry';
+import { activateRegistries } from '../../registries';
 
 describe('ray spell impact message', () => {
   beforeEach(() => {
@@ -13,6 +14,8 @@ describe('ray spell impact message', () => {
     ]);
   });
   afterEach(() => {
+    // The test's engine is the active bundle now; the fixtures went into the process default.
+    activateRegistries(null);
     SpellRegistry.clear();
   });
 

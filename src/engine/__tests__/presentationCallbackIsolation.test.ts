@@ -90,6 +90,8 @@ describe('R-pipe-17 · presentation callbacks and the forced pass are isolated',
   it('a throwing onChoiceInteract fails only its own callback, not the step that met the NPC', () => {
     const { engine, player, map } = setup();
     const choice = { id: 'c', title: 'T', description: 'D', options: [{ id: 'o', label: 'L', description: 'd', consequences: [] }] };
+    // Its own manifest to edit: engines built without one share the engine's default object.
+    (engine as { manifest: GameEngine['manifest'] }).manifest = { ...engine.manifest };
     (engine.manifest as { choices?: Record<string, unknown> }).choices = { c: choice };
     map.addEntity(new NPC({ id: 'sage', name: 'Sage', position: { x: 4, y: 3 }, role: 'sage', choiceId: 'c' }));
     engine.onChoiceInteract = boom;

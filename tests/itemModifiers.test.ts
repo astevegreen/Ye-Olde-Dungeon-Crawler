@@ -43,6 +43,8 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
     });
     player.gainEnergy(100);
     engine = new GameEngine({ map, player });
+    // Its own manifest to edit: engines built without one share the engine's default object.
+    (engine as { manifest: GameEngine['manifest'] }).manifest = { ...engine.manifest };
     emittedEvents = [];
     engine.onGameEvent = (ev) => emittedEvents.push(ev);
   });

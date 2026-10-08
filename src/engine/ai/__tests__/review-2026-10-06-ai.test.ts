@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterAll } from 'vitest';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
@@ -8,6 +8,7 @@ import { Companion } from '../../entities/companion';
 import { WandItem } from '../../items/consumables';
 import { MonsterAI } from '../behaviorTree';
 import { SpellRegistry, registerSpells } from '../../magic/spellRegistry';
+import { activateRegistries } from '../../registries';
 import { CastSpellAction, ZapWandAction } from '../../actions/spell-actions';
 import { cotwManifest } from '../../../content/cotw';
 
@@ -35,6 +36,11 @@ const firebolt = {
   description: '',
   effects: [{ type: 'damage', amount: 12, element: 'fire' }],
 };
+
+afterAll(() => {
+  activateRegistries(null);
+  SpellRegistry.clear();
+});
 
 describe('R-ai-1 · a companion carrying a wand never zaps it at the hero', () => {
   it('a companion with a Wand of Firebolts in its pack does not aim it at the hero', () => {

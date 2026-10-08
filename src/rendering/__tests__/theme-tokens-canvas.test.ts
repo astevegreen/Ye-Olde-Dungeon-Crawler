@@ -191,6 +191,7 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
       expect(renderer.theme.canvasBg).toBe(DEFAULT_THEME_TOKENS.canvasBg);
       expect(renderer.theme.hudBg).toBe(DEFAULT_THEME_TOKENS.hudBg);
       expect(renderer.theme.hudBorder).toBe(DEFAULT_THEME_TOKENS.hudBorder);
+      renderer.destroy();
     });
 
     it('reflects manifest theme tokens when engine is loaded with Warcraft theme', () => {
@@ -212,6 +213,7 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
       expect(renderer.theme.hudBorder).toBe(WARCRAFT_THEME_TOKENS.hudBorder);
       expect(renderer.theme.modalTitlebar).toBe(WARCRAFT_THEME_TOKENS.modalTitlebar);
       expect(renderer.theme.accent).toBe(WARCRAFT_THEME_TOKENS.accent);
+      renderer.destroy();
     });
   });
 

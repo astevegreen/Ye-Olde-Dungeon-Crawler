@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
@@ -7,6 +7,7 @@ import { Companion, CompanionRegistry } from '../../entities/companion';
 import { EngineCommandBus } from '../commandBus';
 import { addCurrencyToPlayer } from '../../economy/currency';
 import { ItemFactory } from '../../items/factory';
+import { activateRegistries } from '../../registries';
 
 const TEST_DEF_ID = 'test_companion';
 
@@ -35,6 +36,11 @@ const SKILL_PACK = {
 };
 
 describe('Companion commands via EngineCommandBus (docs/architecture/content-companions.md Phase 2)', () => {
+  afterAll(() => {
+    activateRegistries(null);
+    CompanionRegistry.clear();
+  });
+
   beforeEach(() => {
     CompanionRegistry.clear();
     CompanionRegistry.register({

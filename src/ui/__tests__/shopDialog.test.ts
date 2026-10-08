@@ -634,6 +634,8 @@ describe('ShopDialog', () => {
   it("shows a townsperson's advice from the pack, and nothing but the greeting without it", () => {
     const guard = npc('guard');
     expect(servicePanelFor(engine, guard)).toBeNull();
+    // Its own manifest to edit: engines built without one share the engine's default object.
+    (engine as { manifest: GameEngine['manifest'] }).manifest = { ...engine.manifest };
     (engine.manifest as { town: unknown }).town = {
       name: 'Testford',
       npcs: [{ id: guard.id, name: guard.name, role: 'guard', position: { x: 0, y: 0 }, greeting: 'Hail.', advice: 'Mind the well.' }],

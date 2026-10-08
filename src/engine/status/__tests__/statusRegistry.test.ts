@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { StatusHandlerRegistry, type StatusHandler } from '../statusHandlers';
 import { Player } from '../../entities/player';
 import { createTestGoblin, createTestKobold } from '../../__fixtures__/testHelpers';
@@ -7,10 +7,16 @@ import { TILES } from '../../grid/tile';
 import { GameEngine } from '../../engine';
 import { warcraftManifest } from '../../../content/warcraft';
 import { SpellPipeline } from '../../magic/spellPipeline';
+import { activateRegistries } from '../../registries';
 import type { SpellDefinition } from '../../magic/types';
 
 describe('Status Effect Registry & Manifest Integration (Phase 2)', () => {
   beforeEach(() => {
+    StatusHandlerRegistry.resetToDefaults();
+  });
+
+  afterAll(() => {
+    activateRegistries(null);
     StatusHandlerRegistry.resetToDefaults();
   });
 

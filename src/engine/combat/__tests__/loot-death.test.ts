@@ -13,6 +13,7 @@ import { MeleeAttackAction } from '../../actions/combat';
 import { CastSpellAction } from '../../actions/spell-actions';
 import { beforeEach, afterEach } from 'vitest';
 import { registerSpells, SpellRegistry } from '../../magic/spellRegistry';
+import { activateRegistries } from '../../registries';
 
 describe('Death Resolution, XP & Loot Drops', () => {
   beforeEach(() => {
@@ -21,6 +22,8 @@ describe('Death Resolution, XP & Loot Drops', () => {
     ]);
   });
   afterEach(() => {
+    // The test's engine is the active bundle now; the fixtures went into the process default.
+    activateRegistries(null);
     SpellRegistry.clear();
   });
   it('awards XP upon monster defeat and triggers player level up with stat buffs', () => {

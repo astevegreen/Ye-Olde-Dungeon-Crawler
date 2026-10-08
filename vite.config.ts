@@ -94,6 +94,7 @@ export default defineConfig(({ mode }) => {
     test: {
       environment: 'node',
       exclude: [...configDefaults.exclude, 'e2e/**', '**/.claude/**'],
+      setupFiles: ['./tests/setup/sharedState.ts'],
     },
   };
 });

@@ -133,6 +133,10 @@ class MockElement {
   }
 }
 
+// The global toast keeps its container across files and removes each toast on a 4 s timer,
+// which outlives this file and fires against whatever document the next file stubs.
+const quietToast = (): void => {};
+
 describe('FeedbackModal (Headless)', () => {
   let modal: FeedbackModal;
   let engine: GameEngine;
@@ -211,6 +215,7 @@ describe('FeedbackModal (Headless)', () => {
       getProfile: () => profile,
       modalStack,
       repoUrl: 'https://github.com/astevegreen/Ye-Olde-Dungeon-Crawler',
+      showToast: quietToast,
     });
   });
 
@@ -307,7 +312,7 @@ describe('FeedbackModal (Headless)', () => {
   // The stack clears isOpen before it calls close(); the window must still hide.
   it('hides its window when the modal stack closes it', () => {
     const closed = vi.fn();
-    modal = new FeedbackModal({ getEngine: () => engine, modalStack, onClosed: closed });
+    modal = new FeedbackModal({ getEngine: () => engine, modalStack, onClosed: closed, showToast: quietToast });
     modal.open();
     modalStack.closeAll();
 
@@ -509,6 +514,7 @@ describe('FeedbackModal (Headless)', () => {
       getProfile: () => profile,
       modalStack,
       captureScreenshot: () => shot,
+      showToast: quietToast,
     });
     const dl = vi.spyOn(platform, 'downloadDataUrl').mockImplementation(() => {});
     withShot.open({ category: 'Visual & UI', subject: 'Overlap' });
@@ -539,6 +545,7 @@ describe('FeedbackModal (Headless)', () => {
         modalStack,
         relayUrl: 'https://relay.example.workers.dev/',
         captureScreenshot: () => 'data:image/png;base64,AAAA',
+        showToast: quietToast,
       });
     }
 

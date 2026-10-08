@@ -3,7 +3,7 @@
 Town NPCs are `TownNpcDefinition`s in `COTW_TOWN.npcs` (`town.ts`); companions are `CompanionDefinition`s in `COTW_COMPANIONS` (`companions.ts`), with their skills in `services.trainerSkills`. Models: `350e365` (a town NPC with a service), `2502f20` (Ivalda, an NPC with a choice, added by a hook), `0f1376e` (two companions; fixes `b40187d`, `48525f4`), `8021cb1` (trainer-skill effects as data).
 
 ## A town NPC
-1. **Define it** in `COTW_TOWN.npcs`: `id` (`npc-<name>`), `name`, `role`, `position`, `greeting`; optional `dialogText`, `advice` (shown for a role with no service), `shopId` with `merchantConfig`. A new role is engine work. `predicate` and `isStationary` are never read for a town NPC.
+1. **Define it** in `COTW_TOWN.npcs`: `id` (`npc-<name>`), `name`, `role`, `position`, `greeting`; optional `dialogText`, `advice` (shown for a role with no service), `shopId` with `merchantConfig`. A new role is engine work.
 2. **Place it** by `position`, on open ground of `TOWN_ROWS` reachable from the spawn, clear of the furnishings, the spawn, the stairs, the return point, Ivalda's spot and the night raid's monster tiles (a raid monster whose tile is taken is silently dropped). A shopkeeper stands inside a building in `TOWN_BUILDINGS`.
 3. **Give it a service** by role:
    - **Merchant:** a `merchantConfig` whose `id` equals the NPC's `shopId`, and an `initialInventory` that returns fresh `makeShopItem` items on every call (a shared array leaked one hero's purchases into another's shop).

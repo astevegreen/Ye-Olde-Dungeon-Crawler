@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-30
 **Status:** Accepted (owner decision)
-**Related:** `ARCHITECTURE.md` §3 (Pack-Neutral Presentation), §6 (Focus & Modal Isolation); [ADR-0004](0004-hud-overhaul-retrospective.md) (HUD overhaul); [ADR-0010](0010-warcraft-pack-parked.md) (WarCraft parked)
+**Related:** `ARCHITECTURE.md` §3 (Pack-Neutral Presentation), §6 (Focus & Modal Isolation); [ADR-0004](0004-hud-overhaul-retrospective.md) (HUD overhaul)
 
 ## Context
 An audit of every menu, tab and dialog (2026-09-30, at 1440×900 and 1366×768) found eleven plain bugs and a UI built in five visual styles: Windows 3.1 bevel windows, the flat slate HUD, parchment, a cyan-glow style, and canvas-drawn frames. The theme set 10 CSS variables, while 1,595 hard-coded hex colors (199 distinct) did the real work. The inventory and shops draw 10px text at 8.5px on a 1366-wide screen. Level-up and the Character tab each carried their own copy of the attribute-allocation UI.
@@ -21,7 +21,7 @@ Story-as-UI (approved earlier): locked milestones shown as riddles from a manife
 0. Fix the audited bugs. 1. Token foundation and fonts. 2. Menu shell, Character (with level-up and the Rune tree) and Story. 3. Dialogs, title flow and settings. 4. Shops, then inventory, to DOM. 5. Pixel UI icons from `ui~` sprite recipes, replacing emoji.
 
 ## Consequences
-- Work targets cotw only (ADR-0010), but tokens stay semantic so a future pack reskins without code changes.
+- Work targets cotw only, but tokens stay semantic so a future pack reskins without code changes.
 - A lint ratchet on hex literals and inline colors in `src/ui` and `src/rendering` keeps the old palette from creeping back.
 - U and the level-up path change meaning; tests that open the level-up modal move to the Character tab.
 - The design record with screenshots and mockups is the owner's doc "Menus and art direction: audit and proposal"; the capture and mockup scripts are `.prompts/menus-audit.mjs` and `.prompts/menus-mockup.mjs` (gitignored).
@@ -37,4 +37,4 @@ Decision 1's type scale and its 11px floor are now in CSS pixels **at 1×**, tim
 Zooming the roots was chosen over rewriting every size as `calc(… * var(--ui-scale))`: the HUD stylesheet alone has 32 literal font sizes and many fixed boxes (25 px buttons, 34 px slots, 76 px orbs) that would overflow if only the type grew.
 
 ## Amendment (2026-10-04): the codex material
-Decision 1 lists border style among the pack's material; the token (`ThemeTokens.borderStyle`) is now wired (Q16, Q62 "A: vellum", tracker 4.8). `applyThemeTokens` writes it as `data-border-style` on `:root`, and the books of lore (the Spellbook's grimoire, the Story tab's Carved Verses and descent, the Bestiary, the Pacts: tabs that declare `material: 'codex'`) take a codex material from it. `parchment` is vellum: the menus' own surfaces tinted a few percent toward the pack's gold, a double rule round the page, corner marks on each card and a rule under headings (menu.css). It stays one anatomy: the same cards, insets and type, only their material changes, with role tokens alone, so the four tabs read as books without breaking with the other menus (Q16's "similar across menus"). `bevel` and `flat` draw codex tabs like any other; cotw is `parchment`, the parked WarCraft pack `flat`.
+Decision 1 lists border style among the pack's material; the token (`ThemeTokens.borderStyle`) is now wired (Q16, Q62 "A: vellum", tracker 4.8). `applyThemeTokens` writes it as `data-border-style` on `:root`, and the books of lore (the Spellbook's grimoire, the Story tab's Carved Verses and descent, the Bestiary, the Pacts: tabs that declare `material: 'codex'`) take a codex material from it. `parchment` is vellum: the menus' own surfaces tinted a few percent toward the pack's gold, a double rule round the page, corner marks on each card and a rule under headings (menu.css). It stays one anatomy: the same cards, insets and type, only their material changes, with role tokens alone, so the four tabs read as books without breaking with the other menus (Q16's "similar across menus"). `bevel` and `flat` draw codex tabs like any other; cotw is `parchment`.

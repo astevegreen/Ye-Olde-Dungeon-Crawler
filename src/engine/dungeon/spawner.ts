@@ -95,8 +95,8 @@ export function resolveMonsterPowerMultiplier(
  *    per-floor curve — HP: `round(baseHP * (1 + 0.08 * (currentFloor - 1)))`, Attack:
  *    `baseAttack + floor(0.6 * (currentFloor - 1))`, Defense: `baseDefense + floor(0.4
  *    * (currentFloor - 1))`, XP: `round(baseXP * (1 + 0.10 * (currentFloor - 1)))`.
- *    This is the fallback for any manifest that doesn't supply `monsterScaling`
- *    (e.g. `warcraft`), kept byte-for-byte unchanged for backward compatibility.
+ *    This is the fallback for any manifest that doesn't supply `monsterScaling`,
+ *    kept byte-for-byte unchanged for backward compatibility.
  * 3. `deepestFloor`/`playerLevel` given, no `scalingConfig`: the pre-existing hybrid
  *    depth/progression formula (`calculateHybridScaleFactor`).
  *

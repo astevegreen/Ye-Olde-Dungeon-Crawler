@@ -4,7 +4,7 @@ ADRs live in `docs/decisions/` and use sequential numbering: `0001-slug.md`, `00
 
 ## Template
 
-Match the existing ADRs; `docs/decisions/0015-*.md` and `0010-*.md` are good models.
+Match the existing ADRs; `docs/decisions/0015-*.md` is a good model.
 
 ```md
 # ADR-NNNN: {Short title of the decision}

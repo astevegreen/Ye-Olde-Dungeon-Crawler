@@ -13,7 +13,7 @@ Asked whether to prune it, given that "removing hasFeature and the execute alias
 This is a named, narrowly scoped change under §8.1 exception 4: the protected files lose only the members below. Nothing else in them changes.
 
 **`src/engine/engine.ts`**
-- `hasFeature()` and the manifest's `featureFlags`. Only a test read them, and only the parked WarCraft pack set any.
+- `hasFeature()` and the manifest's `featureFlags`. Only a test read them, and only a since-retired second pack set any.
 - `dispatchAction()` and `modifyFactionStanding()`: no caller anywhere.
 - `isTileExplored()` and `activate()`: test-only. Tests call `getFloorFov(floor)?.isExplored` and `activateRegistries(engine.registries)`.
 - `onVisualEffect`, `onDiscoveryEvent` and `onMessageLogged`, with the `notifyPresentation` calls that fed them. No subscriber assigns them; presentation drains `pendingVisualEffects`, `discoveryEvents` and `messages` instead.

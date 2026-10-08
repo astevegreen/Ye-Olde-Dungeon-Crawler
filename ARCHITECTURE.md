@@ -17,7 +17,7 @@
 ---
 
 ## 1. Game Concept & Core Simulation Loops
-- **Vision & Genre:** A turn-based, grid-based dungeon crawler and roguelike inspired by *Castle of the Winds*, built from modular systems that support variable narrative campaigns and thematic content packs. Shipping pack: `src/content/cotw/` (*Castle of the Winds*). `src/content/warcraft/` (*WarCraft*) is **parked** until the cotw sequel is complete ([ADR-0010](docs/decisions/0010-warcraft-pack-parked.md)): it is not built, released, extended or designed for, and is kept only compiling and as the second-pack test fixture — fix it minimally when a shared change breaks it. Future packs (e.g. *The Old Kingdom*) must be addable without engine changes beyond generic capabilities (§3, No Engine Creep).
+- **Vision & Genre:** A turn-based, grid-based dungeon crawler and roguelike inspired by *Castle of the Winds*, built from modular systems that support variable narrative campaigns and thematic content packs. Shipping pack: `src/content/cotw/` (*Castle of the Winds*). Future packs (e.g. *The Old Kingdom*) must be addable without engine changes beyond generic capabilities (§3, No Engine Creep); a test-only fixture pack (`tests/fixtures/fixture-pack/`) is the second pack that proves it, and the retired *WarCraft* pack is kept at git tag `warcraft-parked`.
 - **Core Gameplay Loop:** Headless turn execution -> actor intent dispatch -> spatial calculation & collision resolution -> tactical bump combat / spellcasting / inventory management -> status & environmental propagation -> floor progression / level transitions.
 - **Target Aesthetic:** Clean, retro tile-blitted presentation rendered via Canvas texture atlases, coupled with responsive modal dialogs, sliding-window chorded keyboard controls, and tactile visual effect feedback.
 
@@ -26,7 +26,7 @@
 ## 2. System Boundaries & Tech Stack Invariants
 - **Language & Build Target:** TypeScript with Vite and `vite-plugin-singlefile` (`assetsInlineLimit: 100000000` (100MB), `cssCodeSplit: false`), compiling into offline-capable, zero-dependency, self-contained single-file HTML distributions.
 - **Release Strategy:** One single-file bundle per content pack, selected at build time by Vite mode (or `THEME` env var), exposed as `import.meta.env.VITE_THEME`:
-  - `npm run build:cotw` (and plain `npm run build`, cotw default) -> `dist/index.html` + identical `dist/cotw.html`. `npm run build:warcraft` -> `dist/warcraft.html` exists for unparking the pack; no gate or workflow runs it (ADR-0010).
+  - `npm run build:cotw` (and plain `npm run build`, cotw default) -> `dist/index.html` + identical `dist/cotw.html`. Another pack's mode writes `dist/<mode>.html`; a mode no pack's `id` matches throws at startup (`src/main.ts`).
   - `emptyOutDir` is `false`, so bundles from earlier builds remain in `dist/`.
   - A post-build plugin rewrites `<script type="module" crossorigin>` to classic `<script>`, so bundles run under `file://` without CORS errors.
 - **Execution-Path Headless Simulation Purity:** purity is defined by *execution path*, not file location. Any function/handler/hook/callback running inside the simulation — in `src/engine/`, `src/content/`, or registered at runtime — must not touch DOM globals (`window`, `document`, `HTMLElement`), Canvas contexts, audio APIs, or timing globals (`requestAnimationFrame`, `setTimeout`). Outcomes must also be deterministic (§7.2).
@@ -49,7 +49,7 @@
 | `src/rendering/` | Canvas atlases, sprite blitting, camera, overlays, effect playback (`fxRunner.ts`), keyboard dispatch (`input-handler.ts`). | Engine via `src/engine/index.ts` only. May import `src/ui/`. Never `src/content/`. |
 | `src/ui/` | DOM HUD, LIFO modal stack (`modalStack.ts`), chorded input buffer (`input/chordBuffer.ts`), settings/keybindings, diagnostics. | Engine via `src/engine/index.ts` only. May import `src/rendering/` **types only**. Never `src/content/`. |
 | `scripts/` | Headless verification tooling, purity auditor, sim benchmark, schema validator. | Dev automation only; may deep-import engine. Not bundled. |
-| `tests/` | Top-level Vitest suites; most colocated in `src/**/__tests__/`. | Testing harness only. Not bundled. |
+| `tests/` | Top-level Vitest suites (most are colocated in `src/**/__tests__/`), and `tests/fixtures/fixture-pack/`, a test-only second content pack. | Testing harness only. Not bundled. |
 | `relay/` | Bug-report relay: a Cloudflare Worker that files GitHub issues for the F3 reporter, holding a token scoped to this repo's issues. Deployed separately (`relay/README.md`); the game reaches it only over HTTP at the build-time `REPORT_RELAY_URL`, and falls back to GitHub's new-issue page without it. | Imports nothing from `src/`; not bundled into the game. Its logic (`relay/src/relay.ts`) runs under `npm test`. |
 | `e2e/` | Playwright smoke tests loading built `dist/index.html` over `file://`; needs `npm run build` first. | Testing harness only. Not bundled; excluded from Vitest. |
 
@@ -164,7 +164,7 @@ Build tooling per §2's Language & Build Target. `assetsInlineLimit` inlines all
 - `npm test` — all Vitest suites.
 - `npm run sim` — headless population/throughput sim; fails on any rejected action, caught pipeline exception, or wall-clock overrun.
 - `npm run validate:schema` — passes a current-version save through, asserts a save below the version floor is refused, runs a probe N -> N+1 migration step, and round-trips a live engine through serialize/JSON/deserialize.
-- `npm run build` — the cotw bundle; the parked WarCraft pack is not built (ADR-0010).
+- `npm run build` — the cotw bundle.
 
 **Binding invariants the gates enforce (stated here only):**
 - **Engine encapsulation:** code outside `src/engine/` never writes engine object fields directly — no assignment, index write, write through a cast (`as any`, `as unknown as`, inline or through a local alias of the cast), or `Object.assign` onto an engine object, including a plain object reached through an engine member (`engine.lastActionResult.pipelineError`). Presentation code (`src/ui/`, `src/rendering/`, `src/main.ts`, `src/main/**`) additionally changes engine state only via `GameEngine`/`Player`/`Entity` methods or `engine.commandBus` — never subsystem mutators (`GameMap`, `Container`, `InventoryManager`, …) or Array/Map/Set mutators on engine members. `src/content/` is exempt from the subsystem-mutator restriction. Allowlist additions (`scripts/engine-encapsulation-allowlist.json`) need a stated reason; stale entries fail the check.

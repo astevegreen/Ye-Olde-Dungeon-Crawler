@@ -803,9 +803,9 @@ export interface PackBranding {
   hallOfFameName?: string;
   /** Short form for buttons and score badges, e.g. "Heroes". */
   hallOfFameShortName?: string;
-  /** The world in flavor text, e.g. "Azeroth". */
+  /** The world in flavor text, e.g. "the Realm". */
   worldName?: string;
-  /** Game-over heading after a win, e.g. "Victory in Azeroth!". */
+  /** Game-over heading after a win, e.g. "Victory in the Realm!". */
   victoryTitle?: string;
   /** Game-over banner line after a win. */
   victoryBanner?: string;

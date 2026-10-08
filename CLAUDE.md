@@ -83,14 +83,6 @@ Routine for every commit that touches presentation:
 Exception 4 (owner-authorized) comes only from the owner's own words
 in the task. Prefer a fix outside these files when one exists.
 
-## The WarCraft pack is parked
-All work targets the Castle of the Winds sequel (ADR-0010). Don't build,
-screenshot, design for or extend `src/content/warcraft/`, and don't
-plan work around a second pack. It stays only because it compiles and
-serves as the second-pack test fixture: when a shared change breaks it,
-make the smallest fix that restores `tsc` and the tests. Pack-neutral
-presentation (§3) still binds.
-
 ## No ephemeral markdown at the repo root
 Working prompts, task notes, and other scratch markdown for a single
 piece of work go in `/.prompts/` (gitignored) or outside the repo —

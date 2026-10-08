@@ -2,7 +2,7 @@
 
 > Topic doc under [content-extensibility.md](content-extensibility.md) ([ARCHITECTURE.md](../../ARCHITECTURE.md) §3). Explanatory only; every binding rule lives in `ARCHITECTURE.md`. Flag a conflict rather than resolving it here (§8.2).
 
-`GameContentManifest.magic` (`MagicSystemConfig`, `src/engine/magic/magicConfig.ts`) turns on four optional systems. The engine owns each mechanism and only neutral defaults; every table, label and message comes from the pack. A pack that omits a section doesn't get that system, which is how `warcraft` keeps plain mana and a flat spell list.
+`GameContentManifest.magic` (`MagicSystemConfig`, `src/engine/magic/magicConfig.ts`) turns on four optional systems. The engine owns each mechanism and only neutral defaults; every table, label and message comes from the pack. A pack that omits a section doesn't get that system: it keeps plain mana and a flat spell list.
 
 | Section | Mechanism | Without it |
 |---|---|---|

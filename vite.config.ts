@@ -35,15 +35,15 @@ function cleanScriptForFileProtocol(targetTheme: string): Plugin {
         if (file.type === 'asset' && typeof file.source === 'string' && file.fileName.endsWith('.html')) {
           file.source = file.source.replace(/<script\s+type="module"\s+crossorigin>/gi, '<script>');
 
-          if (targetTheme === 'warcraft') {
-            file.fileName = 'warcraft.html';
-          } else {
+          if (targetTheme === 'cotw') {
             file.fileName = 'index.html';
             this.emitFile({
               type: 'asset',
               fileName: 'cotw.html',
               source: file.source,
             });
+          } else {
+            file.fileName = `${targetTheme}.html`;
           }
         }
       }

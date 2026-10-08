@@ -4,7 +4,7 @@
 
 - **Requirement:** every change must pass the gates below before merging. Coding agents run the relevant gates locally and report real output. `npm run gates` runs all of them in order — lint, tests, sim, schema, build, then Playwright (which needs the build) — stopping at the first failure. It always runs lint and the tests, then stamps them so the next commit's pre-commit hook can skip them (below). Agents commit but rarely push, so without it the pre-push gates (Playwright above all) would first run at the owner's push.
 - **Current CI:**
-  - `.github/workflows/ci.yml` (*Quality Gates*) runs on every pull request to `main` and on manual dispatch: `npm run lint`, `npm test`, `npm run sim`, `npm run validate:schema`, then `npm run build` (cotw only; WarCraft is parked, [ADR-0010](../decisions/0010-warcraft-pack-parked.md)).
+  - `.github/workflows/ci.yml` (*Quality Gates*) runs on every pull request to `main` and on manual dispatch: `npm run lint`, `npm test`, `npm run sim`, `npm run validate:schema`, then `npm run build` (the cotw bundle).
   - `.github/workflows/deploy.yml` runs the same gates on push to `main` (and manual dispatch), then deploys `dist/` to GitHub Pages.
   - `.github/workflows/playwright.yml` runs on pushes and pull requests to `main`: it builds the bundle and runs the Playwright smoke suite in `e2e/`.
 - **Local pre-commit hook:** `.githooks/pre-commit` runs the fast gates — `npm run lint` and `npm test` — before every commit. The `prepare` npm script points git at it (`git config core.hooksPath .githooks`), so `npm install` wires it up; `SKIP_HOOKS=1` bypasses it deliberately. The slower gates run in the pre-push hook and in CI rather than on every commit.

@@ -28,7 +28,6 @@ One line each; the cited section of `ARCHITECTURE.md` holds the full rule and ho
 - **Headless purity (§2):** code on the simulation path (engine, content hooks and handlers, injected callbacks) uses no DOM, Canvas, audio, or timing globals.
 - **Imports (§2, §3):** the engine imports no other layer; `src/ui/`, `src/rendering/`, and `src/content/` reach the engine only through `src/engine/index.ts`; only `src/main.ts` imports content packs; `src/ui/` imports `src/rendering/` types only.
 - **No engine creep (§3):** campaign mechanics, names, and narrative live in `src/content/`; `src/engine/` gains only generic capabilities (primitive, hook point, registry, manifest field).
-- **WarCraft is parked (ADR-0010):** all work targets the Castle of the Winds sequel. Don't analyze, design for, or recommend work on `src/content/warcraft/` beyond keeping it compiling.
 - **Pack-neutral presentation (§3):** `src/ui/`, `src/rendering/`, and `src/main/**` name no pack; pack wording comes from the manifest, pack art from `spriteRecipes` and the manifest's `atlas`, and colors and fonts from the role tokens, never new hex values (`check:ui-palette`, ADR-0011).
 - **Determinism (§7.2):** simulation randomness and IDs come from `engine.prng`/`engine.rng`, never `Math.random()` or `Date.now()`.
 - **Encapsulation (§7.2):** outside `src/engine/`, engine state changes through `GameEngine`/`Player`/`Entity` methods or `engine.commandBus`, never by writing engine fields; allowlist entries need a stated reason.

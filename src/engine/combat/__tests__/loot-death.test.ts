@@ -6,26 +6,17 @@ import {
   createTestOgre,
   createTestGiantRat,
   createTestKobold,
+  useTestSpells,
 } from '../../__fixtures__/testHelpers';
 import { GameEngine } from '../../engine';
 import { DeathResolver } from '../deathResolver';
 import { MeleeAttackAction } from '../../actions/combat';
 import { CastSpellAction } from '../../actions/spell-actions';
-import { beforeEach, afterEach } from 'vitest';
-import { registerSpells, SpellRegistry } from '../../magic/spellRegistry';
-import { activateRegistries } from '../../registries';
 
 describe('Death Resolution, XP & Loot Drops', () => {
-  beforeEach(() => {
-    registerSpells([
-      { id: 'firebolt', name: 'Firebolt', school: 'Combat', manaCost: 5, element: 'fire', range: 7, basePower: 12, areaOfEffect: 0, reflects: false, targetType: 'ray', targetingMode: 'ray', description: '', effects: [{ type: 'damage', amount: 12, element: 'fire' }] },
-    ]);
-  });
-  afterEach(() => {
-    // The test's engine is the active bundle now; the fixtures went into the process default.
-    activateRegistries(null);
-    SpellRegistry.clear();
-  });
+  useTestSpells([
+    { id: 'firebolt', name: 'Firebolt', school: 'Combat', manaCost: 5, element: 'fire', range: 7, basePower: 12, areaOfEffect: 0, reflects: false, targetType: 'ray', targetingMode: 'ray', description: '', effects: [{ type: 'damage', amount: 12, element: 'fire' }] },
+  ]);
   it('awards XP upon monster defeat and triggers player level up with stat buffs', () => {
     const map = new GameMap(10, 10, TILES.FLOOR);
     const player = new Player({

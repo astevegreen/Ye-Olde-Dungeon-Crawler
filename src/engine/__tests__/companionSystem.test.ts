@@ -1,15 +1,13 @@
-import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { GameEngine } from '../engine';
 import { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
 import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
-import { Companion, CompanionRegistry } from '../entities/companion';
+import { Companion } from '../entities/companion';
 import { serializeGame, deserializeGame } from '../storage/serializer';
 import { DeathResolver } from '../combat/deathResolver';
-import { activateRegistries } from '../registries';
-
-const TEST_DEF_ID = 'test_companion';
+import { TEST_COMPANION_ID as TEST_DEF_ID, useTestCompanion } from '../__fixtures__/testHelpers';
 
 function buildEngine(): { engine: GameEngine; player: Player } {
   const map = new GameMap(20, 20, TILES.FLOOR);
@@ -23,22 +21,7 @@ function buildEngine(): { engine: GameEngine; player: Player } {
 }
 
 describe('Companion engine integration (docs/architecture/content-companions.md, Phase 1 MVP)', () => {
-  afterAll(() => {
-    activateRegistries(null);
-    CompanionRegistry.clear();
-  });
-
-  beforeEach(() => {
-    CompanionRegistry.clear();
-    CompanionRegistry.register({
-      id: TEST_DEF_ID,
-      name: 'Test Companion',
-      stats: { hp: 20, maxHp: 20, attack: 5, defense: 1 },
-      speed: 100,
-      packWeightCapacity: 10000,
-      packBulkCapacity: 8000,
-    });
-  });
+  useTestCompanion();
 
   describe('summonCompanion / dismissCompanion', () => {
     it('summons a companion near the player, registered on the map and scheduler', () => {

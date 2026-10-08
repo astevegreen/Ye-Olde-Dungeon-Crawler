@@ -1,14 +1,12 @@
-import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
-import { Companion, CompanionRegistry } from '../../entities/companion';
+import { Companion } from '../../entities/companion';
 import { addCurrencyToPlayer, getPlayerTotalCp } from '../currency';
 import { TrainerService } from '../services';
-import { activateRegistries } from '../../registries';
-
-const TEST_DEF_ID = 'test_companion';
+import { TEST_COMPANION_ID as TEST_DEF_ID, useTestCompanion } from '../../__fixtures__/testHelpers';
 
 function buildEngine(): GameEngine {
   const map = new GameMap(20, 20, TILES.FLOOR);
@@ -17,22 +15,7 @@ function buildEngine(): GameEngine {
 }
 
 describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () => {
-  afterAll(() => {
-    activateRegistries(null);
-    CompanionRegistry.clear();
-  });
-
-  beforeEach(() => {
-    CompanionRegistry.clear();
-    CompanionRegistry.register({
-      id: TEST_DEF_ID,
-      name: 'Test Companion',
-      stats: { hp: 20, maxHp: 20, attack: 5, defense: 1 },
-      speed: 100,
-      packWeightCapacity: 10000,
-      packBulkCapacity: 8000,
-    });
-  });
+  useTestCompanion();
 
   describe('bondCompanion', () => {
     it('sets the bonded flag and deducts the bonding cost when funded', () => {

@@ -21,8 +21,8 @@ import type { Finding, FindingCategory, FindingSeverity, ActionLogEntry, SoakSum
 /**
  * One overnight soak run (`SOAK=1`; kept out of the gate suite by playwright.config.ts).
  * A seeded bot plays one hero through real input and checks the game after every action;
- * scripts/soak.mjs (`npm run soak`) loops it over seeds; docs/architecture/quality-gates.md
- * says how to run it and where its output goes.
+ * scripts/soak.mjs (`npm run soak`) loops it over seeds; the `soak` skill
+ * (.claude/skills/soak/SKILL.md) says how to run it and where its output goes.
  */
 
 const BUNDLE = resolve(process.cwd(), 'dist', 'index.html');

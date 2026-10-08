@@ -98,6 +98,8 @@ export default defineConfig(({ mode }) => {
       // graph per file. A file puts back the process state it changes (quality-gates.md).
       isolate: false,
       setupFiles: ['./tests/setup/sharedState.ts'],
+      // Transformed modules persist under node_modules/.vitest-cache and are reused by later runs.
+      fsModuleCache: true,
     },
   };
 });

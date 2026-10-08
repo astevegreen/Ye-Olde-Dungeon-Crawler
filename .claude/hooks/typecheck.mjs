@@ -24,10 +24,10 @@ const changed = status.stdout
   .filter((file) => /\.tsx?$/.test(file));
 if (changed.length === 0) process.exit(0);
 
-const res = spawnSync('npx', ['tsc', '--noEmit', '--pretty', 'false'], {
+// Straight to tsc, without npx and a shell; tsconfig.json's incremental build info makes a rerun ~1s.
+const res = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '--noEmit', '--pretty', 'false'], {
   cwd,
   encoding: 'utf8',
-  shell: true,
 });
 
 if (res.status === 0) process.exit(0);

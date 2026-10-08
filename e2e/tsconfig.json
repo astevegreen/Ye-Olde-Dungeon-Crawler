@@ -5,5 +5,6 @@
 // checked against the game's real types; nothing here is bundled.
 {
   "extends": "../tsconfig.json",
+  "compilerOptions": { "tsBuildInfoFile": "../node_modules/.cache/tsc/e2e.tsbuildinfo" },
   "include": ["./**/*.ts", "../playwright.config.ts", "../src/main.ts"]
 }

@@ -3,7 +3,7 @@
 # CLAUDE.md — Project Operating Instructions
 
 ## Sessions
-- One task per session. When a task is committed and the next request is unrelated, or the session has run long, offer `/handoff` so the owner can `/clear` and resume.
+- One task per session. When a task is committed and leaves open questions, or the session has run long, write the handoff (`/handoff`) without asking; when the next request is unrelated, offer it. The owner then `/clear`s and resumes.
 - Delegate reading to the project agents; the main session reads only the files it changes.
   - `scout`: "where is X / what calls Y", answered as `path:line`. "How does X work" goes to Explore.
   - `visual-check`: captures before and after a presentation change and returns a verdict with image paths. Open an image only when the owner needs to see it.

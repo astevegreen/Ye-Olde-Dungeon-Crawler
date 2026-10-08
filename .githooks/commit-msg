@@ -4,10 +4,9 @@
 # 1. A commit that stages a §8.1 protected file must name its exception in the
 #    message, e.g. "§8.1 exception 1". The pre-commit gates check what the code
 #    does; this makes every protected-file edit a stated, reviewable decision.
-# 2. A commit must name who wrote it (§8.4): Claude Code's "Co-Authored-By:
-#    Claude" trailer, or an "Agent: <name>" trailer ("Agent: Antigravity", or
-#    "Agent: owner" for the owner's own commits). Review happens after commit,
-#    so attribution is what routes each commit to the right reviewer.
+# 2. Rejects a message carrying an "Agent: Antigravity" line (§8.4): Antigravity
+#    is read-only and never commits. A tripwire, not enforcement: both tools
+#    commit as the same git user, so only a labeled commit is caught.
 # 3. Warns (never blocks) when a large commit spans several areas: one request
 #    per commit keeps after-the-fact review and reverts cheap.
 #
@@ -34,9 +33,8 @@ if [ -n "$STAGED_PROTECTED" ]; then
   fi
 fi
 
-if ! printf '%s\n' "$MSG" | grep -Eq '^(Co-Authored-By: Claude|Agent: )'; then
-  echo "commit-msg: no attribution trailer. End the message with \"Agent: Antigravity\", \"Agent: owner\"," >&2
-  echo "or Claude Code's \"Co-Authored-By: Claude\" (ARCHITECTURE.md §8.4)." >&2
+if printf '%s\n' "$MSG" | grep -Eq '^Agent: Antigravity'; then
+  echo "commit-msg: Antigravity is read-only and doesn't commit; it writes reports to .prompts/antigravity/ (ARCHITECTURE.md §8.4)." >&2
   exit 1
 fi
 

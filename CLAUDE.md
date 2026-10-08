@@ -5,8 +5,7 @@ You (Claude Code) are the only agent that changes this codebase.
 Antigravity reads it and writes reports into `.prompts/antigravity/`;
 treat those as input to verify against the code before acting on them.
 ARCHITECTURE.md §8.4 is the binding workflow: review happens after
-commit, attribution and `Requested:` trailers, and the `verified`
-review marker.
+commit, the `Requested:` trailer, and the `verified` review marker.
 
 ## Before doing anything else, every session
 1. Run `git status` and `git log --oneline verified..HEAD`. If the

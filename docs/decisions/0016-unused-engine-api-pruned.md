@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-07
 **Status:** Accepted (owner decision)
-**Related:** `ARCHITECTURE.md` §4 (Failure Isolation), §8.1 (exception 4); [ADR-0005](0005-owner-authorized-exception-and-agent-workflow.md); [ADR-0015](0015-planes-and-substances-removed.md); the codebase assessment of 2026-10-07
+**Related:** `ARCHITECTURE.md` §4 (Failure Isolation), §8.1 (exception 4); [ADR-0015](0015-planes-and-substances-removed.md); the codebase assessment of 2026-10-07
 
 ## Context
 On 2026-10-07 a codebase assessment found engine API that nothing in the game calls, and some of it in the protected files. The knip gate hadn't reported any of it, for two reasons: it listed `src/engine/index.ts` as an entry, so every export counted as public API, and knip has no class-member analysis. Some of the members were kept only by tests that exercised them; others had no caller at all. Two sit in `ARCHITECTURE.md` itself: §4 named three presentation callbacks that no subscriber ever assigned, and a static exception counter that nothing reads.

@@ -182,7 +182,7 @@ Build tooling per §2's Language & Build Target. `assetsInlineLimit` inlines all
 1. **Confirmed bug fix:** a reproducible defect, demonstrated by a failing test or a documented reproduction.
 2. **Additive schema migration:** adding a new forward-only step and incrementing `CURRENT_SCHEMA_VERSION` (§5). Existing steps are changed only under exception 1.
 3. **Requested planned item:** implementing a Planned Work item (§9) that the task explicitly requests.
-4. **Owner-authorized change:** the owner explicitly authorizes a named, narrowly scoped protected-file change in the task itself. An agent never infers this authorization. Record it as an ADR under `docs/decisions/` naming the authorization and scope ([ADR-0005](docs/decisions/0005-owner-authorized-exception-and-agent-workflow.md)).
+4. **Owner-authorized change:** the owner explicitly authorizes a named, narrowly scoped protected-file change in the task itself. An agent never infers this authorization. Record it as an ADR under `docs/decisions/` naming the authorization and scope.
 
 Keep such diffs minimal and scoped, and state which exception applies in the commit message as `§8.1 exception N`; the `commit-msg` hook rejects a commit that stages a protected file without one.
 
@@ -198,13 +198,12 @@ Keep such diffs minimal and scoped, and state which exception applies in the com
 - New work must not widen the gap to a planned target. For example: no new deep engine imports from content, no new `Math.random()` in simulation code, and no new modals that bypass `ModalStackManager`.
 
 ### 8.4 Agent Workflow
-Claude Code is the only agent that writes to this repository: it commits, and pushes when the owner asks. Antigravity is read-only: it reads the code and writes reports and recommendations into the gitignored `.prompts/antigravity/`, input that is verified against the code before anyone acts on it. Review happens **after** commit: Claude Code reviews what landed without its own trailer. [ADR-0005](docs/decisions/0005-owner-authorized-exception-and-agent-workflow.md) set up the original two-writer workflow; [ADR-0006](docs/decisions/0006-review-after-commit-and-loaded-agent-rules.md) moved review after commit.
+Claude Code is the only agent that writes to this repository: it commits, and pushes when the owner asks. Antigravity is read-only: it reads the code and writes reports and recommendations into the gitignored `.prompts/antigravity/`, input that is verified against the code before anyone acts on it.
 - **Agent instructions:** Claude Code loads `CLAUDE.md`; Antigravity loads `.agents/rules/*.md` (`project-rules.md` and `cli-safety.md`, both `trigger: always_on`) and `.agents/skills/<name>/SKILL.md`. Instructions anywhere else are not loaded automatically.
 - **No Antigravity commits:** the `commit-msg` hook rejects a message with an `Agent: Antigravity` line. It is a tripwire, not enforcement: both tools commit as the same git user, so the guards are Antigravity's own rules and the git status every session starts with.
-- **Owner's request:** a commit implementing something the owner asked for carries a `Requested: "<the ask>"` trailer. Review treats requested behavior as intended and checks its correctness; unrequested behavior changes are flagged.
+- **Owner's request:** a commit implementing something the owner asked for carries a `Requested: "<the ask>"` trailer quoting the owner, so the intent behind a line survives in `git blame`. A review treats requested behavior as intended and checks its correctness; unrequested behavior changes are flagged.
 - **One request per commit:** unrelated work is not bundled; the `commit-msg` hook warns on large commits spanning several areas.
 - **Protected files and gates still bind:** §8.1 is enforced by `commit-msg`; `pre-commit` runs lint and the unit tests, and `pre-push` runs the sim, schema validation, the cotw build and the Playwright smoke suite (§7.2). Hooks are bypassed only on the owner's explicit say-so.
-- **Review marker:** the local git tag `verified` marks the last commit Claude Code has reviewed; only Claude Code moves it. Each Claude Code session reviews every commit in `verified..HEAD` without its own trailer — against this document, with the gates run — then moves the tag to `HEAD`.
 
 ### 8.5 Repository Files
 - **No ephemeral markdown at the root:** the repo root holds exactly two markdown files, `ARCHITECTURE.md` and `CLAUDE.md`. Prompts, task notes, research and other scratch markdown for a single piece of work go in the gitignored `/.prompts/` or outside the repo; lasting docs go under `docs/architecture/**` or `docs/decisions/**`.

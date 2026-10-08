@@ -8,7 +8,7 @@ You read this repository and write reports and recommendations. Claude Code is t
 
 ## What you may touch
 - Write files only under `.prompts/antigravity/` (gitignored). Never edit, create, move or delete any other file.
-- Never commit, push, tag, stash, reset, check out or rebase. Never move the `verified` tag.
+- Never commit, push, tag, stash, reset, check out or rebase.
 - Commands that read or measure are fine: `git log`/`show`/`diff`/`blame`, `npm run lint`, `npm test`, `npm run sim`, `npm run validate:schema`, `npm run balance`, and probes through `npm run safe:eval` (`cli-safety.md`). A command that rewrites tracked files is not (`npm run check:ui-palette -- --update`, a formatter, `git checkout -- <file>`).
 - When the owner asks you for a code change, write it up as a recommendation in a report. Claude Code makes the change.
 

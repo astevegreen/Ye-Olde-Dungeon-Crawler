@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-26
 **Status:** Accepted (owner decision)
-**Related:** `ARCHITECTURE.md` §8.1 (exception 4); [ADR-0005](0005-owner-authorized-exception-and-agent-workflow.md); [content-rune-of-return.md](../architecture/content-rune-of-return.md); commit `a8fb886`
+**Related:** `ARCHITECTURE.md` §8.1 (exception 4); [content-rune-of-return.md](../architecture/content-rune-of-return.md); commit `a8fb886`
 
 ## Context
 The owner asked that the Rune of Return not work when found, but be carried to town so the Rune-Smith can teach the hero to use it. Antigravity implemented this in `a8fb886` and cited §8.1 exception 4, but the request quoted in the commit did not name a protected-file change and no ADR was written, so review flagged it.

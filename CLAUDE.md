@@ -1,26 +1,10 @@
 # CLAUDE.md — Project Operating Instructions
 
-## Your role in this workflow
-You (Claude Code) are the only agent that changes this codebase.
-Antigravity reads it and writes reports into `.prompts/antigravity/`;
-treat those as input to verify against the code before acting on them.
-ARCHITECTURE.md §8.4 is the binding workflow: review happens after
-commit, the `Requested:` trailer, and the `verified` review marker.
-
-## Before doing anything else, every session
-1. Run `git status` and `git log --oneline verified..HEAD`. If the
-   `verified` tag is missing, say so and review from the last commit
-   you can confirm was reviewed.
-2. Review every listed commit without a `Co-Authored-By: Claude`
-   trailer the way you'd verify your own work: against ARCHITECTURE.md,
-   with the relevant gates run. Being merged proves nothing.
-   - A `Requested: "..."` trailer quotes the owner. Treat that behavior
-     as intended: check it is done correctly, don't re-litigate it.
-   - Flag behavior changes with no request behind them, bundled
-     unrelated work, and anything that breaks the architecture.
-3. Once everything in the range is reviewed and green, run
-   `git tag -f verified HEAD`. Report anything you couldn't clear
-   instead of moving the tag past it.
+## Antigravity
+You are the only agent that commits (ARCHITECTURE.md §8.4: one request
+per commit, a `Requested:` trailer quoting the owner). Antigravity's
+reports in `.prompts/antigravity/` are input to verify against the code
+before acting on them.
 
 ## The architecture contract
 `ARCHITECTURE.md` at the repo root is the authoritative, tool-agnostic

@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-07
 **Status:** Accepted (owner decision)
-**Related:** `ARCHITECTURE.md` §4 (Pipeline Coverage, Failure Isolation), §8.1 (exception 4), §9 (P-27); [ADR-0005](0005-owner-authorized-exception-and-agent-workflow.md); review 2026-10-06 R-pipe-25 and the S4 dead-subsystem list
+**Related:** `ARCHITECTURE.md` §4 (Pipeline Coverage, Failure Isolation), §8.1 (exception 4), §9 (P-27); review 2026-10-06 R-pipe-25 and the S4 dead-subsystem list
 
 ## Context
 Two engine systems were built and ran every turn, but nothing in the game used them:

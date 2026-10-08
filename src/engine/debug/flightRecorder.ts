@@ -743,7 +743,7 @@ export class FlightRecorder {
   }
 
   /**
-   * Generates an Antigravity-ready Markdown diagnostic report with telemetry, player state,
+   * Generates an agent-ready Markdown diagnostic report with telemetry, player state,
    * floor snapshot, 150-event chronological flight log, and optional state snapshot.
    */
   public generateReport(

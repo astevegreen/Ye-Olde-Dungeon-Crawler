@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-04
 **Status:** Accepted (owner decision)
-**Related:** `ARCHITECTURE.md` §8.1 (exception 4), §6; [ADR-0005](0005-owner-authorized-exception-and-agent-workflow.md); [ADR-0013](0013-sight-bonus-in-fov-radius.md); [simulation-and-input.md](../architecture/simulation-and-input.md)
+**Related:** `ARCHITECTURE.md` §8.1 (exception 4), §6; [ADR-0013](0013-sight-bonus-in-fov-radius.md); [simulation-and-input.md](../architecture/simulation-and-input.md)
 
 ## Context
 Two approved perks (Q51, Q53) promise stealth. Shadow-Walker (Saga 40) says "a monster that cannot see you does not wake", and Reaver (the folk family's perk) says folk "wake slower to your step". The game has no noise, so a monster that cannot see the hero already stays asleep, unless it is hit or an alarm sounds. A sleeper wakes in two places:

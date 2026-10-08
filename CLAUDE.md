@@ -1,12 +1,11 @@
 # CLAUDE.md — Project Operating Instructions
 
 ## Your role in this workflow
-Two AI tools work on this codebase, in the same directory
-(C:\Antigravity\YODC), in alternation, never simultaneously:
-Antigravity handles routine implementation. You (Claude Code) provide
-strategic direction, handle complex fixes, and review everything that
-lands. ARCHITECTURE.md §8.4 is the binding workflow: review happens
-after commit, attribution and `Requested:` trailers, and the `verified`
+You (Claude Code) are the only agent that changes this codebase.
+Antigravity reads it and writes reports into `.prompts/antigravity/`;
+treat those as input to verify against the code before acting on them.
+ARCHITECTURE.md §8.4 is the binding workflow: review happens after
+commit, attribution and `Requested:` trailers, and the `verified`
 review marker.
 
 ## Before doing anything else, every session
@@ -34,8 +33,8 @@ sub-docs (content extensibility, storage/schema, simulation/input,
 quality gates) and `docs/decisions/**` ADRs — consult the sub-doc a
 change actually touches, per that table. Antigravity follows the
 same document through what it loads (§8.4): `.agents/rules/*.md`
-(`project-rules.md` and `cli-safety.md` always, the `persona-*.md`
-rules when they apply) and `.agents/skills/<name>/SKILL.md`;
+(`project-rules.md` and `cli-safety.md`, always) and
+`.agents/skills/<name>/SKILL.md`;
 instructions anywhere else are not loaded — if you ever find the two
 disagree, or either disagrees with `ARCHITECTURE.md`, that's a real
 problem to flag and resolve, not to silently pick a side on.

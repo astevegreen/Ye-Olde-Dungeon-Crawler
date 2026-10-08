@@ -53,7 +53,7 @@ The session is done when the frontier is empty: every branch visited, nothing le
 
 Then write the result to `.prompts/grill-<topic>.md` (gitignored; never a new `.md` at the repo root):
 
-- settled decisions, each with the owner's **verbatim words** quoted. Antigravity needs these for `Requested: "..."` commit trailers
+- settled decisions, each with the owner's **verbatim words** quoted, for the `Requested: "..."` commit trailers
 - anything still open, and anything deliberately cut
 - for Mode A, the final verdict table
 

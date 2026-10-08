@@ -28,7 +28,6 @@ const DOCS = [
   'CLAUDE.md',
   ...filesUnder('docs', '.md'),
   ...filesUnder('.agents', '.md'),
-  ...filesUnder('.claude/commands', '.md'),
 ];
 const SOURCES = [...filesUnder('src', '.ts'), ...filesUnder('scripts', '.ts')].filter((f) => !f.endsWith('docReferences.test.ts'));
 

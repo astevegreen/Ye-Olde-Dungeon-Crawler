@@ -273,7 +273,7 @@ export const COTW_VAULTS: VaultBlueprint[] = [
     preferredMonsters: ['grave_wyrmling', 'garmling', 'nastrond_feaster'],
   },
   {
-    // Gloom-Tarr, placed once on floor 44 (index.ts scriptedVaultPlacements).
+    // Gloom-Tarr, placed once on floor 30 (index.ts scriptedVaultPlacements).
     id: BILE_SUMP_VAULT_ID,
     name: 'The Bile-Sump',
     description:

@@ -40,12 +40,25 @@ instructions anywhere else are not loaded — if you ever find the two
 disagree, or either disagrees with `ARCHITECTURE.md`, that's a real
 problem to flag and resolve, not to silently pick a side on.
 
+## Sessions
+- One task per session. When a task is committed and the next request
+  is unrelated, offer `/handoff` so the owner can `/clear` and resume.
+- Send "where is X / what calls Y" sweeps to an Explore subagent; keep
+  the main session's reads to the files being changed.
+- While iterating, run only the relevant tests (`npx vitest run <file>`);
+  the full gates run once, before committing.
+
 ## Verification is not optional
 Before considering any task complete, actually run — don't just
-describe running — whichever of these are relevant: `npm run lint`
-(this already runs `tsc --noEmit`, the same over `e2e/` (`-p e2e/tsconfig.json`), `check:engine-purity`,
-`check:engine-encapsulation`, `check:engine-creep`, `check:ui-palette`, AND `knip` — don't
-invoke those separately), `npm test`, `npm run sim`, `npm run validate:schema`, `npm run build`. Paste real output. A change that "should" pass
+describe running — whichever of these are relevant:
+`npm run gate-stamp -- run lint test` (lint already runs `tsc --noEmit`,
+the same over `e2e/` (`-p e2e/tsconfig.json`), `check:engine-purity`,
+`check:engine-encapsulation`, `check:engine-creep`, `check:ui-palette`,
+AND `knip` — don't invoke those separately), `npm run sim`,
+`npm run validate:schema`, `npm run build`. The gate-stamp form runs
+lint and the full suite, then stamps the tree so the pre-commit hook
+skips both; a bare `npm run lint` or `npm test` writes no stamp, so the
+hook runs them again. Paste real output. A change that "should" pass
 is not the same as a change that does.
 
 Routine for every commit that touches presentation:

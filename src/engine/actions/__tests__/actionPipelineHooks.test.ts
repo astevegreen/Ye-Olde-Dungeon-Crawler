@@ -10,7 +10,7 @@ import { createTestKobold } from '../../__fixtures__/testHelpers';
 import { MovementAction } from '../movement';
 import { MeleeAttackAction } from '../combat';
 import { WaitAction } from '../wait';
-import { warcraftManifest, WARCRAFT_ACTION_HOOKS } from '../../../content/warcraft';
+import { fixtureManifest, FIXTURE_ACTION_HOOKS } from '../../../../tests/fixtures/fixture-pack';
 import type { GameContentManifest } from '../../types/manifest';
 import { flightRecorder } from '../../debug/flightRecorder';
 
@@ -279,12 +279,12 @@ describe('Action Pipeline Hooks & Manifest Integration (Phase 3)', () => {
       expect(player.y).toBe(initialPos.y);
     });
 
-    it('wires WARCRAFT_ACTION_HOOKS in warcraftManifest correctly', () => {
-      expect(warcraftManifest.actionHooks).toBeDefined();
-      expect(warcraftManifest.actionHooks).toEqual(WARCRAFT_ACTION_HOOKS);
+    it('wires FIXTURE_ACTION_HOOKS in fixtureManifest correctly', () => {
+      expect(fixtureManifest.actionHooks).toBeDefined();
+      expect(fixtureManifest.actionHooks).toEqual(FIXTURE_ACTION_HOOKS);
 
-      const { engine, player } = createTestEngine(warcraftManifest);
-      expect(engine.actionPipeline.getHooks().some(h => h.id === 'warcraft-battle-cry')).toBe(true);
+      const { engine, player } = createTestEngine(fixtureManifest);
+      expect(engine.actionPipeline.getHooks().some(h => h.id === 'fixture-battle-cry')).toBe(true);
 
       const orc = createTestKobold('grunt', { x: 5, y: 6 });
       engine.addEntity(orc);

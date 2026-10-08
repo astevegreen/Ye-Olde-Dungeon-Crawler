@@ -9,7 +9,7 @@ import { GameEngine } from '../../engine';
 import { WaitAction } from '../../actions/wait';
 import { MovementAction } from '../../actions/movement';
 import { MeleeAttackAction, WindUpDeclareAction } from '../../actions/combat';
-import { warcraftManifest, WARCRAFT_AI_BEHAVIORS } from '../../../content/warcraft';
+import { fixtureManifest, FIXTURE_AI_BEHAVIORS } from '../../../../tests/fixtures/fixture-pack';
 import type { GameContentManifest } from '../../types/manifest';
 
 describe('AI Strategy Registry & Manifest Integration (Phase 4)', () => {
@@ -158,52 +158,52 @@ describe('AI Strategy Registry & Manifest Integration (Phase 4)', () => {
       expect(customRan).toBe(true);
     });
 
-    it('integrates Warcraft WarchiefBehavior in warcraftManifest', () => {
-      expect(warcraftManifest.aiBehaviors).toBeDefined();
-      expect(warcraftManifest.aiBehaviors?.warchief).toBeDefined();
-      expect(WARCRAFT_AI_BEHAVIORS.warchief).toBeDefined();
+    it('integrates the fixture WarlordBehavior in fixtureManifest', () => {
+      expect(fixtureManifest.aiBehaviors).toBeDefined();
+      expect(fixtureManifest.aiBehaviors?.warlord).toBeDefined();
+      expect(FIXTURE_AI_BEHAVIORS.warlord).toBeDefined();
 
-      const { engine } = createTestEngine(warcraftManifest);
-      expect(AiBehaviorRegistry.has('warchief')).toBe(true);
+      const { engine } = createTestEngine(fixtureManifest);
+      expect(AiBehaviorRegistry.has('warlord')).toBe(true);
 
-      // Create Warchief Blackhand adjacent to player
-      const blackhand = new Monster({
-        id: 'boss-blackhand',
-        name: 'Warchief Blackhand',
+      // Create Warlord adjacent to player
+      const warlord = new Monster({
+        id: 'boss-warlord',
+        name: 'Warlord',
         position: { x: 5, y: 4 }, // distance 1 from player (5, 5)
         stats: { hp: 120, maxHp: 120, attack: 18, defense: 7 },
-        aiType: 'warchief',
+        aiType: 'warlord',
         aiState: 'combat',
         fleeHealthPercent: 0,
       });
-      engine.addEntity(blackhand);
+      engine.addEntity(warlord);
 
-      // Action should be either MeleeAttackAction or WindUpDeclareAction ('Decapitating Strike')
-      const action = MonsterAI.decideAction(blackhand, engine);
+      // Action should be either MeleeAttackAction or WindUpDeclareAction ('Crushing Blow')
+      const action = MonsterAI.decideAction(warlord, engine);
       expect(
         action instanceof MeleeAttackAction || action instanceof WindUpDeclareAction
       ).toBe(true);
 
       // Low health triggers combat roar
-      blackhand.hp = 30; // < 40% of 120 (48)
-      MonsterAI.decideAction(blackhand, engine);
-      expect(engine.messages.some(m => m.includes("Lok'tar Ogar! None shall escape the Horde!"))).toBe(true);
+      warlord.hp = 30; // < 40% of 120 (48)
+      MonsterAI.decideAction(warlord, engine);
+      expect(engine.messages.some(m => m.includes("No retreat!"))).toBe(true);
     });
 
-    it('WarchiefBehavior navigates towards player when at distance', () => {
-      const { engine } = createTestEngine(warcraftManifest);
-      const blackhand = new Monster({
-        id: 'boss-blackhand-far',
-        name: 'Warchief Blackhand',
+    it('WarlordBehavior navigates towards player when at distance', () => {
+      const { engine } = createTestEngine(fixtureManifest);
+      const warlord = new Monster({
+        id: 'boss-warlord-far',
+        name: 'Warlord',
         position: { x: 5, y: 2 }, // distance 3 from player at (5, 5)
         stats: { hp: 120, maxHp: 120, attack: 18, defense: 7 },
-        aiType: 'warchief',
+        aiType: 'warlord',
         aiState: 'combat',
         fleeHealthPercent: 0,
       });
-      engine.addEntity(blackhand);
+      engine.addEntity(warlord);
 
-      const action = MonsterAI.decideAction(blackhand, engine);
+      const action = MonsterAI.decideAction(warlord, engine);
       expect(action).toBeInstanceOf(MovementAction);
       const move = action as MovementAction;
       // Moving down towards player at y=5

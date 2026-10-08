@@ -107,7 +107,7 @@ describe('AttributeMilestoneTrigger', () => {
     expect(engine.getWorldFlag('dex_15_offered')).toBe(false);
   });
 
-  it('a manifest declaring no attributeMilestones fires nothing (proves warcraft is unaffected)', () => {
+  it('a manifest declaring no attributeMilestones fires nothing (proves a pack without them is unaffected)', () => {
     const { engine, player } = buildEngine({ attributeMilestones: undefined }, 20);
     let offered = false;
     engine.onChoiceInteract = () => {

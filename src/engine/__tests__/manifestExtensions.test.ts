@@ -6,7 +6,7 @@ import { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
 import { MeleeAttackAction } from '../actions/combat';
 import { DeathResolver } from '../combat/deathResolver';
-import { warcraftManifest } from '../../content/warcraft';
+import { fixtureManifest } from '../../../tests/fixtures/fixture-pack';
 import type { GameContentManifest, CombatConfig, ProgressionConfig } from '../types/manifest';
 
 describe('Feature Flags, CombatConfig, and ProgressionConfig Manifest Extensions (Phase 5)', () => {
@@ -222,15 +222,15 @@ describe('Feature Flags, CombatConfig, and ProgressionConfig Manifest Extensions
     });
   });
 
-  describe('Warcraft: Orcs & Humans Manifest Integration', () => {
-    it('wires Warcraft combatConfig and progressionConfig', () => {
-      expect(warcraftManifest.combatConfig).toBeDefined();
-      expect(warcraftManifest.combatConfig?.critMultiplier).toBe(2.0);
-      expect(warcraftManifest.progressionConfig).toBeDefined();
-      expect(warcraftManifest.progressionConfig?.baseXp).toBe(120);
+  describe('A pack manifest\'s configs', () => {
+    it('wires the pack\'s combatConfig and progressionConfig', () => {
+      expect(fixtureManifest.combatConfig).toBeDefined();
+      expect(fixtureManifest.combatConfig?.critMultiplier).toBe(2.0);
+      expect(fixtureManifest.progressionConfig).toBeDefined();
+      expect(fixtureManifest.progressionConfig?.baseXp).toBe(120);
 
-      const { player } = createEngine(warcraftManifest);
-      expect(player.progressionConfig).toEqual(warcraftManifest.progressionConfig);
+      const { player } = createEngine(fixtureManifest);
+      expect(player.progressionConfig).toEqual(fixtureManifest.progressionConfig);
       expect(player.xpToNextLevel).toBe(120);
     });
   });

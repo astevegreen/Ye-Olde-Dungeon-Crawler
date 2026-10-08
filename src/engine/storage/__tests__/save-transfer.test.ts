@@ -92,8 +92,8 @@ describe('Save Transfer & Export (.cotw & Base64)', () => {
     });
 
     it('sanitizes spaces, punctuation, and special characters from character name', () => {
-      const filename = generateSaveFilename('Sir Sven / The Bold!', 3, 'warcraft', 1700000000000);
-      expect(filename).toBe('Sir_Sven_The_Bold_Floor3_warcraft_1700000000000.cotw');
+      const filename = generateSaveFilename('Sir Sven / The Bold!', 3, 'fixture', 1700000000000);
+      expect(filename).toBe('Sir_Sven_The_Bold_Floor3_fixture_1700000000000.cotw');
     });
 
     it('defaults empty hero name to Hero', () => {
@@ -199,18 +199,18 @@ describe('Save Transfer & Export (.cotw & Base64)', () => {
     });
 
     it('detects cross-manifest mismatch gracefully without strict mode', () => {
-      const warcraftEnvelope = createMockSaveEnvelope('warcraft', 'Thrall');
-      const json = JSON.stringify(warcraftEnvelope);
+      const fixtureEnvelope = createMockSaveEnvelope('fixture', 'Ash');
+      const json = JSON.stringify(fixtureEnvelope);
 
       const result = validateSavePayload(json, { expectedManifestId: 'cotw' });
       expect(result.valid).toBe(true);
       expect(result.manifestMismatch).toBe(true);
-      expect(result.detectedManifestId).toBe('warcraft');
+      expect(result.detectedManifestId).toBe('fixture');
     });
 
     it('fails validation when strictManifest is enabled and manifests differ', () => {
-      const warcraftEnvelope = createMockSaveEnvelope('warcraft', 'Thrall');
-      const json = JSON.stringify(warcraftEnvelope);
+      const fixtureEnvelope = createMockSaveEnvelope('fixture', 'Ash');
+      const json = JSON.stringify(fixtureEnvelope);
 
       const result = validateSavePayload(json, { expectedManifestId: 'cotw', strictManifest: true });
       expect(result.valid).toBe(false);
@@ -261,7 +261,7 @@ describe('Save Transfer & Export (.cotw & Base64)', () => {
     };
 
     it('imports into whichever game is running, without a mismatch', () => {
-      const result = validateSavePayload(JSON.stringify(unnamed()), { expectedManifestId: 'warcraft', strictManifest: true });
+      const result = validateSavePayload(JSON.stringify(unnamed()), { expectedManifestId: 'fixture', strictManifest: true });
       expect(result.valid).toBe(true);
       expect(result.manifestMismatch).toBe(false);
     });

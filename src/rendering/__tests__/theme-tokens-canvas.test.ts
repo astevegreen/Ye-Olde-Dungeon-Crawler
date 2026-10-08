@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { resolveThemeTokens, DEFAULT_THEME_TOKENS, setCanvasTextScale, uiFont, withAlpha } from '../theme';
-import { WARCRAFT_THEME_TOKENS } from '../../content/warcraft/theme';
+import { FIXTURE_THEME_TOKENS } from '../../../tests/fixtures/fixture-pack';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../engine';
 import { Player } from '../../engine';
@@ -105,16 +105,16 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
       expect(tokensEmpty.accent).toBe(DEFAULT_THEME_TOKENS.accent);
     });
 
-    it('preserves complete custom theme tokens such as Warcraft Horde theme', () => {
-      const resolved = resolveThemeTokens(WARCRAFT_THEME_TOKENS);
-      expect(resolved.canvasBg).toBe(WARCRAFT_THEME_TOKENS.canvasBg);
-      expect(resolved.hudBg).toBe(WARCRAFT_THEME_TOKENS.hudBg);
-      expect(resolved.hudBorder).toBe(WARCRAFT_THEME_TOKENS.hudBorder);
-      expect(resolved.modalBg).toBe(WARCRAFT_THEME_TOKENS.modalBg);
-      expect(resolved.modalTitlebar).toBe(WARCRAFT_THEME_TOKENS.modalTitlebar);
-      expect(resolved.accent).toBe(WARCRAFT_THEME_TOKENS.accent);
-      expect(resolved.healthBar).toBe(WARCRAFT_THEME_TOKENS.healthBar);
-      expect(resolved.manaBar).toBe(WARCRAFT_THEME_TOKENS.manaBar);
+    it('preserves complete custom theme tokens such as a pack ships', () => {
+      const resolved = resolveThemeTokens(FIXTURE_THEME_TOKENS);
+      expect(resolved.canvasBg).toBe(FIXTURE_THEME_TOKENS.canvasBg);
+      expect(resolved.hudBg).toBe(FIXTURE_THEME_TOKENS.hudBg);
+      expect(resolved.hudBorder).toBe(FIXTURE_THEME_TOKENS.hudBorder);
+      expect(resolved.modalBg).toBe(FIXTURE_THEME_TOKENS.modalBg);
+      expect(resolved.modalTitlebar).toBe(FIXTURE_THEME_TOKENS.modalTitlebar);
+      expect(resolved.accent).toBe(FIXTURE_THEME_TOKENS.accent);
+      expect(resolved.healthBar).toBe(FIXTURE_THEME_TOKENS.healthBar);
+      expect(resolved.manaBar).toBe(FIXTURE_THEME_TOKENS.manaBar);
     });
 
     it('falls back intelligently for partial token overrides', () => {
@@ -193,25 +193,22 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
       expect(renderer.theme.hudBorder).toBe(DEFAULT_THEME_TOKENS.hudBorder);
     });
 
-    it('reflects manifest theme tokens when engine is loaded with Warcraft theme', () => {
+    it('reflects manifest theme tokens when engine is loaded with a pack theme', () => {
       const ctx = createMockCanvasContext();
       const canvas = createMockCanvas(ctx);
-      const warcraftManifest = {
-        id: 'warcraft-orcs',
-        name: 'Warcraft: Orcs & Humans',
-        version: '1.0.0',
-        author: 'Blizzard Entertainment / Ported',
-        description: 'Azeroth Dungeon Crawl',
-        theme: WARCRAFT_THEME_TOKENS,
+      const packManifest = {
+        id: 'fixture',
+        name: 'Fixture Pack',
+        theme: FIXTURE_THEME_TOKENS,
       };
-      const engine = createTestEngine(warcraftManifest);
+      const engine = createTestEngine(packManifest);
 
       const renderer = new CanvasRenderer(canvas, engine);
-      expect(renderer.theme.canvasBg).toBe(WARCRAFT_THEME_TOKENS.canvasBg);
-      expect(renderer.theme.hudBg).toBe(WARCRAFT_THEME_TOKENS.hudBg);
-      expect(renderer.theme.hudBorder).toBe(WARCRAFT_THEME_TOKENS.hudBorder);
-      expect(renderer.theme.modalTitlebar).toBe(WARCRAFT_THEME_TOKENS.modalTitlebar);
-      expect(renderer.theme.accent).toBe(WARCRAFT_THEME_TOKENS.accent);
+      expect(renderer.theme.canvasBg).toBe(FIXTURE_THEME_TOKENS.canvasBg);
+      expect(renderer.theme.hudBg).toBe(FIXTURE_THEME_TOKENS.hudBg);
+      expect(renderer.theme.hudBorder).toBe(FIXTURE_THEME_TOKENS.hudBorder);
+      expect(renderer.theme.modalTitlebar).toBe(FIXTURE_THEME_TOKENS.modalTitlebar);
+      expect(renderer.theme.accent).toBe(FIXTURE_THEME_TOKENS.accent);
     });
   });
 
@@ -219,9 +216,9 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
     it('renders TargetingOverlay with themed colors without throwing', () => {
       const ctx = createMockCanvasContext();
       const engine = createTestEngine({
-        id: 'warcraft-orcs',
-        name: 'Warcraft',
-        theme: WARCRAFT_THEME_TOKENS,
+        id: 'fixture',
+        name: 'Fixture Pack',
+        theme: FIXTURE_THEME_TOKENS,
       });
       const mockCamera = {
         worldToScreen: () => ({ x: 100, y: 100 }),
@@ -241,9 +238,9 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
     it('renders InspectOverlay with themed colors without throwing', () => {
       const ctx = createMockCanvasContext();
       const engine = createTestEngine({
-        id: 'warcraft-orcs',
-        name: 'Warcraft',
-        theme: WARCRAFT_THEME_TOKENS,
+        id: 'fixture',
+        name: 'Fixture Pack',
+        theme: FIXTURE_THEME_TOKENS,
       });
 
       const inspect = new InspectOverlay();
@@ -259,12 +256,12 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
     it('draws the explored floor (map viewer and minimap) in the pack roles', () => {
       const ctx = createMockCanvasContext();
       const engine = createTestEngine({
-        id: 'warcraft-orcs',
-        name: 'Warcraft',
-        theme: WARCRAFT_THEME_TOKENS,
+        id: 'fixture',
+        name: 'Fixture Pack',
+        theme: FIXTURE_THEME_TOKENS,
       });
       engine.updateFov();
-      const theme = resolveThemeTokens(WARCRAFT_THEME_TOKENS);
+      const theme = resolveThemeTokens(FIXTURE_THEME_TOKENS);
       const canvas = { width: 240, height: 150, getContext: () => ctx } as unknown as HTMLCanvasElement;
       const fills: string[] = [];
       (ctx.fillRect as ReturnType<typeof vi.fn>).mockImplementation(() => fills.push(String(ctx.fillStyle)));

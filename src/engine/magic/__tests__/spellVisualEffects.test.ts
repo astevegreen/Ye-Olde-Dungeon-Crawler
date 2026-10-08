@@ -7,7 +7,7 @@ import { Monster } from '../../entities/monster';
 import { CastSpellAction } from '../../actions/spell-actions';
 import { registerSpells, SpellRegistry } from '../spellRegistry';
 import { COTW_SPELLS } from '../../../content/cotw/spells';
-import { WARCRAFT_SPELLS } from '../../../content/warcraft/spells';
+import { FIXTURE_SPELLS } from '../../../../tests/fixtures/fixture-pack';
 import type {
   ProjectileEffectDescriptor,
   BurstEffectDescriptor,
@@ -16,7 +16,7 @@ import type {
 
 describe('Visual Effect Queue & Declarative FX Engine', () => {
   beforeEach(() => {
-    registerSpells([...COTW_SPELLS, ...WARCRAFT_SPELLS]);
+    registerSpells([...COTW_SPELLS, ...FIXTURE_SPELLS]);
   });
 
   afterEach(() => {
@@ -199,11 +199,11 @@ describe('Visual Effect Queue & Declarative FX Engine', () => {
     expect(chainLinks[1].durationMs).toBe(160);
   });
 
-  it('generates self-buff burst aura descriptor for Holy Light', () => {
+  it('generates self-buff burst aura descriptor for Healing Light', () => {
     const { engine, player } = createRoomEngine(10, 10);
     player.setPosition(4, 4);
 
-    const action = new CastSpellAction(player, 'holy_light', 4, 4);
+    const action = new CastSpellAction(player, 'healing_light', 4, 4);
     const result = action.perform(engine);
 
     expect(result.success).toBe(true);

@@ -11,7 +11,7 @@ import type { ActionResult } from '../../types';
 /**
  * Every actor's actions run through ActionPipeline.executeWithHooks (ARCHITECTURE.md §4),
  * so hooks fire for monsters as well as the player. ActionHookContext.actor says which,
- * which is how content keeps player-only behaviour (see warcraft's battle-cry hook).
+ * which is how content keeps player-only behaviour (see the battle-cry hook in tests/fixtures/fixture-pack/behavior.ts).
  */
 function buildEngine(actionHooks: ActionHook[]) {
   const map = new GameMap(14, 14, TILES.FLOOR);

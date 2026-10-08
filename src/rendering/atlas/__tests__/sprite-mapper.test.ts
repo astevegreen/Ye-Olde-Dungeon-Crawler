@@ -14,7 +14,7 @@ import type { Item } from '../../../engine';
 import { COTW_TILE_ZONE_BANDS } from '../../../content/cotw/tileZones';
 import { COTW_TOWN } from '../../../content/cotw/town';
 import { COTW_SPRITE_RECIPES } from '../../../content/cotw/sprites';
-import { WARCRAFT_SPRITE_RECIPES } from '../../../content/warcraft/sprites';
+import { FIXTURE_SPRITE_RECIPES } from '../../../../tests/fixtures/fixture-pack';
 import { cotwManifest } from '../../../content/cotw';
 import { ATLAS_MAP } from '../sprite-atlas';
 
@@ -237,8 +237,8 @@ describe('sprite-mapper — Tag-Priority Monster, Item, and Zone-Themed Terrain 
       const hearthTear = { id: 'q-1', definitionId: 'hearth_tear_fragment', name: 'Shard of the Hearth-Tear', category: 'quest' } as Item;
       expect(getItemSpriteKey(hearthTear, hasSprite)).toBe('hearth_tear_fragment');
 
-      const banner = { id: 'q-2', definitionId: 'horde_war_banner', name: 'Horde War Banner', category: 'misc' } as Item;
-      expect(getItemSpriteKey(banner, (key) => key in WARCRAFT_SPRITE_RECIPES)).toBe('horde_war_banner');
+      const banner = { id: 'q-2', definitionId: 'war_banner', name: 'War Banner', category: 'misc' } as Item;
+      expect(getItemSpriteKey(banner, (key) => key in FIXTURE_SPRITE_RECIPES)).toBe('war_banner');
     });
 
     it('builds in no zone, creature, or relic art that only one pack uses', () => {

@@ -2,6 +2,11 @@
   "env": {
     "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "300000"
   },
+  "enabledPlugins": {
+    "playwright@claude-plugins-official": false,
+    "github@claude-plugins-official": false,
+    "claude-code-setup@claude-plugins-official": false
+  },
   "permissions": {
     "deny": [
       "Read(dist/**)",

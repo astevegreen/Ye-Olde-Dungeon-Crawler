@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-30
 **Status:** Accepted (owner decision)
-**Related:** `ARCHITECTURE.md` §3 (Pack-Neutral Presentation), §6 (Focus & Modal Isolation); [ADR-0004](0004-hud-overhaul-retrospective.md) (HUD overhaul)
+**Related:** `ARCHITECTURE.md` §3 (Pack-Neutral Presentation), §6 (Focus & Modal Isolation)
 
 ## Context
 An audit of every menu, tab and dialog (2026-09-30, at 1440×900 and 1366×768) found eleven plain bugs and a UI built in five visual styles: Windows 3.1 bevel windows, the flat slate HUD, parchment, a cyan-glow style, and canvas-drawn frames. The theme set 10 CSS variables, while 1,595 hard-coded hex colors (199 distinct) did the real work. The inventory and shops draw 10px text at 8.5px on a 1366-wide screen. Level-up and the Character tab each carried their own copy of the attribute-allocation UI.

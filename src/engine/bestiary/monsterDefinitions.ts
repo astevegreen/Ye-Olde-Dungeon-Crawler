@@ -93,7 +93,7 @@ export interface MonsterDefinition {
   killRite?: import('../magic/killRites').KillRiteDefinition;
   /**
    * Free-form creature tags (e.g. 'undead', 'aberration') resolved onto spawned
-   * instances via `Entity.tags`/`hasTag()` (docs/architecture/content-progression-scaling.md). `hasTag` already
+   * instances via `Entity.tags`/`hasTag()` (docs/architecture/content-extensibility.md). `hasTag` already
    * also matches faction and entity type, so a tag only needs to name things that
    * aren't already implied by those.
    */

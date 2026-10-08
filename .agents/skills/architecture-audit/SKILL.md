@@ -8,7 +8,7 @@ description: Verify ARCHITECTURE.md, its sub-docs and the agent instructions aga
 Report only: never change a file outside `.prompts/antigravity/`.
 
 ## Scope
-Read ARCHITECTURE.md (the core document) in full. It is deliberately short and carries a routing table to four sub-docs under `docs/architecture/**` and decision records under `docs/decisions/**`. One of those four, `content-extensibility.md`, is itself a second-level core doc with its own routing table to six topic docs (`content-companions.md`, `content-rune-of-return.md`, `content-progression-scaling.md`, `content-quests-and-triggers.md`, `content-magic.md`, `content-items-and-art.md`). Read all of them too, and confirm that list still matches every `content-*.md` under `docs/architecture/`.
+Read ARCHITECTURE.md (the core document) in full. It is deliberately short and carries a routing table to four sub-docs under `docs/architecture/**` and decision records under `docs/decisions/**`. One of those four, `content-extensibility.md`, links the one topic doc, `content-companions.md`. Read both too, and confirm no other `content-*.md` exists under `docs/architecture/`. The sub-docs hold design only: flag a section that narrates what code already says as drift, not as a gap.
 
 The core document's binding statements are the ground truth, but a sub-doc or topic doc that drifts from them is exactly the kind of rot this audit exists to catch. Verify every concrete, checkable claim against the actual code, section by section. Don't treat any claim as true because it's written down: find the file and line that proves or disproves it. Section labels below are ARCHITECTURE.md's own (§N). A claim tagged **[Planned: P-NN]** is a known gap: confirm only that the gap still exists as §9 describes it.
 

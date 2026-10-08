@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-04
 **Status:** Accepted (owner decision)
-**Related:** `ARCHITECTURE.md` §8.1 (exception 4); [content-progression-scaling.md](../architecture/content-progression-scaling.md) (Perks)
+**Related:** `ARCHITECTURE.md` §8.1 (exception 4); [content-extensibility.md](../architecture/content-extensibility.md) (Progression, Perks)
 
 ## Context
 The owner approved the Saga perk list (Q51 "A", 2026-10-04), whose level-10 Wayfarer gives "sight +1". The hero's sight radius is computed in one place, `GameEngine.updateFov` in `src/engine/engine.ts`, a §8.1 protected file: the engine's `fovRadius` plus the pacts' `fovRadiusModifier`, floored at 2, before any status's `perceptionRadius` override (blindness and the like). Nothing a hero wears or holds reaches that sum, so Wayfarer shipped in `1a3f450` without its sight. The question went to the owner as Q56.

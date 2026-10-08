@@ -6,7 +6,7 @@
 ### Routing Table — What Else To Read
 | Touches... | Also read |
 |---|---|
-| `src/content/`, pack art and theme | [content-extensibility.md](docs/architecture/content-extensibility.md) |
+| `src/content/`, content systems, pack art and theme | [content-extensibility.md](docs/architecture/content-extensibility.md); companions: [content-companions.md](docs/architecture/content-companions.md) |
 | `src/engine/storage/` | [storage-and-schema.md](docs/architecture/storage-and-schema.md) |
 | Scheduler, FOV, input, modals | [simulation-and-input.md](docs/architecture/simulation-and-input.md) |
 | `scripts/check-*.ts`, CI, `.githooks/` | [quality-gates.md](docs/architecture/quality-gates.md) |

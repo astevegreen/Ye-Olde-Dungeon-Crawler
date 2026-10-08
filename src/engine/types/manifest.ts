@@ -54,7 +54,7 @@ export type ConsumableEffectDescriptor =
   | { type: 'restore_volatile_energy'; amount?: number | 'full' }
   | {
       /**
-       * Tag-Filtered Radial Aura (docs/architecture/content-progression-scaling.md): applies `status` to every
+       * Tag-Filtered Radial Aura (docs/architecture/content-extensibility.md): applies `status` to every
        * living entity within `radius` of the user matching any of `tags` (e.g. a
        * holy torch blinding undead within 4 tiles), through the bounded
        * `findTaggedEntitiesInRadius` query (`combat/radialAuraFilter.ts`). Only the user is spared: like a spell
@@ -217,7 +217,7 @@ export interface FactionDefinition {
 }
 
 /**
- * A cumulative renown-granting milestone (Milestone Renown Ledger, docs/architecture/content-progression-scaling.md).
+ * A cumulative renown-granting milestone (Milestone Renown Ledger, docs/architecture/content-extensibility.md).
  * Distinct from TrackedMilestoneDefinition: that is a flag-based display list for the
  * World Ledger sidebar, while this drives a scalar per-category renown score used for
  * title thresholds (`RenownTitleDefinition`) and vendor-unlock predicates (`minCounter`
@@ -995,21 +995,21 @@ export interface GameContentManifest {
   attributeMilestones?: AttributeMilestoneTrigger[];
   /** Level-gated choice unlocks (`LevelMilestoneTrigger`): cotw's Saga perks. */
   levelMilestones?: LevelMilestoneTrigger[];
-  /** The perks a choice may grant (`PerkDefinition`, docs/architecture/content-progression-scaling.md). */
+  /** The perks a choice may grant (`PerkDefinition`, docs/architecture/content-extensibility.md). */
   perks?: PerkDefinition[];
   /** "Driven off" boss resolutions (ARCHITECTURE.md §3, `BossFleeResolution`). */
   bossFleeResolutions?: BossFleeResolution[];
   /** Monster families for compendium category mastery (`MonsterCategoryDefinition`). */
   monsterCategories?: MonsterCategoryDefinition[];
   /**
-   * Pack-neutral wiring for the Rune of Return (docs/architecture/content-rune-of-return.md). The
+   * Pack-neutral wiring for the Rune of Return (docs/architecture/content-extensibility.md). The
    * mechanic (channel timing, banking, mobility, interrupt rules) is fixed engine
    * logic; only presentation and the town refill trigger vary per pack. `undefined`
    * disables the attunement-on-interact hook, but the item/channel mechanic itself
    * still works without it (charges just can't be refilled).
    */
   runeOfReturn?: RuneOfReturnManifestConfig;
-  /** Fixed tile placements stamped at specific floor generation (docs/architecture/content-quests-and-triggers.md). */
+  /** Fixed tile placements stamped at specific floor generation (docs/architecture/content-extensibility.md). */
   fixedTilePlacements?: FixedTilePlacement[];
   /** Vault blueprints guaranteed to stamp at specific floors, optionally populated with NPCs. */
   scriptedVaultPlacements?: ScriptedVaultPlacement[];

@@ -1,3 +1,23 @@
+/**
+ * Bug-report replay (ARCHITECTURE.md §2, ADR-0007).
+ *
+ * `handlePlayerAction` records every player action with its scalar parameters into the
+ * flight recorder's trail, after a checkpoint save taken at an action boundary: the
+ * first action on an engine, floor entry, every 250 actions, after a dialog choice or a
+ * command-bus command that changes state without a player action (a trade, a sort, a
+ * split, a pact, a town service, a companion call), and after any `engine.diagnostics`
+ * call. One already due is taken when the replay data is read; it also carries F2 god
+ * mode, which no save does. Checkpoint + trail replay deterministically through
+ * `loadReplayState()`/`replayActionTrail()`, from F2 or headlessly with
+ * `npm run replay:report -- <file>`.
+ *
+ * Every game input first persists the replay data to browser storage
+ * (`src/ui/sessionGuard.ts`) and a clean exit clears it, so a session that hung is
+ * offered as a pre-filled report on the next launch. Level-up allocation and
+ * mastery-perk picks change state outside both and are not replayed. A dialog choice is
+ * kept out of the trail; the checkpoint taken after it carries its outcome. Every action
+ * the game issues has a builder below or is monster-only (`replayBuilders.test.ts`).
+ */
 import type { Action } from '../actions/action';
 import type { GameEngine } from '../engine';
 import type { GameContentManifest } from '../types/manifest';

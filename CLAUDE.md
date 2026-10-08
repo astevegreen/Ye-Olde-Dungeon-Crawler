@@ -1,3 +1,5 @@
+@ARCHITECTURE.md
+
 # CLAUDE.md — Project Operating Instructions
 
 ## Antigravity

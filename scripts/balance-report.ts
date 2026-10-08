@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { ProfileManager, MemoryStorage } from '../src/engine/storage/profile-manager';
 import { cotwManifest } from '../src/content/cotw';
 import { Monster } from '../src/engine/entities/monster';
@@ -336,6 +337,7 @@ for (const r of report.reports) {
   printTable(`[${r.difficulty}] Items by family, mean per floor`, ITEMS, r, before);
 }
 if (outPath) {
+  mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, JSON.stringify(report, null, 1));
   console.log(`\nWrote ${outPath}`);
 }

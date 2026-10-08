@@ -25,7 +25,7 @@ A piece often spans kinds (a miniboss needs its vault, an altar its choice): fin
 - **The engine changes only to gain a generic capability** that the pack then uses (ARCHITECTURE.md §3). Where a branch says engine work, name the capability to the owner before building it; `engine.ts`, `actionPipeline.ts` and `migrator.ts` are protected (§8.1).
 - **Numbers come from neighbours** at the same depth, as each branch says. A balance call nothing settles (a roster change, a permanent stat, a new family) is the owner's: ask, with a recommendation.
 - **Tests read the real thing.** Several past additions passed tests that read only their declarations, then broke on a real floor; a new placement or beat gets a test that generates the floor or plays the action. A test sweeping many seeds passes a timeout like `30_000`, since vitest stops a test at 5 s.
-- **A change to what floors draw** (monsters, loot, vaults) is bracketed by balance runs, both quoted in the commit: `mkdir -p .prompts/balance` (`--out` makes no folder), `npm run balance -- --out .prompts/balance/before.json` before, `npm run balance -- --baseline .prompts/balance/before.json` after.
+- **A change to what floors draw** (monsters, loot, vaults) is bracketed by balance runs, both quoted in the commit: `npm run balance -- --out .prompts/balance/before.json` before, `npm run balance -- --baseline .prompts/balance/before.json` after.
 
 ## Done
 Done when every step and Finish line of the branch holds and `npm run gate-stamp -- run lint test` is green, its output pasted. Where a branch was wrong (a step the code no longer matches, a test it didn't name), correct the branch file in the same commit.

@@ -127,7 +127,7 @@ Every change passes the gates, with real output reported: `npm run lint` (`tsc`,
 Implement a planned item (§9) only when the task names it; when one lands, delete its tags and §9 entry and retire its ID.
 
 ### 8.4 Agent Workflow
-Claude Code alone writes here: it commits, and pushes when the owner asks. Antigravity is read-only; its reports (`.prompts/antigravity/`) are checked against the code before use.
+Claude Code alone writes here: it commits, and pushes each finished task unasked (`CLAUDE.md`, Commits). Antigravity is read-only; its reports (`.prompts/antigravity/`) are checked against the code before use.
 - **Agent instructions:** `CLAUDE.md` (importing this file) for Claude Code; `.agents/rules/*.md` and `.agents/skills/*/SKILL.md` for Antigravity.
 - **No Antigravity commits:** `commit-msg` rejects an `Agent: Antigravity` line (a tripwire: both tools commit as one git user).
 - **Owner's request:** a commit doing what the owner asked carries `Requested: "<the ask>"`, quoting the owner; review treats requested behavior as intended.

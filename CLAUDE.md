@@ -22,6 +22,12 @@
 - One request per commit.
 - A §8.1 protected file needs `§8.1 exception N` in the message; prefer a fix outside it. Exception 4 comes only from the owner's own words in the task.
 
+## Pushing
+- Push each finished task without asking, once all its commits are in: `git push`, run in the background (the pre-push hook runs the sim, the build and Playwright in three browsers).
+- A push deploys the Pages site, which other people play. The task's summary lists, one line each, what players will see change, or says "nothing player-visible".
+- Pre-push red: rerun once, since flakes are known. Red again: leave the commits unpushed and report the failure.
+- Ask first for force-pushes, history rewrites, deleting a branch or tag, and skipping hooks. The ask is two lines: why it isn't automatic, and what you recommend. Pruning merged local branches and stale worktrees needs no ask.
+
 ## Working with the owner
 - The owner reads neither the code, the docs nor the ADRs. Explain each decision in chat, in plain terms: what changes for the player or the workflow, and why.
 - Product decisions (balance feel, save breaks, scope) are the owner's: ask them as questions, with a recommendation, and wait for the answer.

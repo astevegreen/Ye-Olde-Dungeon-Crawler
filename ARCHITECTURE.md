@@ -178,13 +178,12 @@ Build tooling per §2's Language & Build Target. `assetsInlineLimit` inlines all
 ## 8. Change Control
 
 ### 8.1 Protected Files
-`src/engine/actions/actionPipeline.ts`, `src/engine/engine.ts`, and `src/engine/storage/migrator.ts` may be modified only when one of these exceptions applies:
+`src/engine/actions/actionPipeline.ts`, `src/engine/engine.ts`, and `src/engine/storage/migrator.ts` change only under one of these exceptions, named in the commit message as `§8.1 exception N`; the `commit-msg` hook rejects a commit that stages a protected file without one. Keep such diffs minimal and scoped.
 1. **Confirmed bug fix:** a reproducible defect, demonstrated by a failing test or a documented reproduction.
 2. **Additive schema migration:** adding a new forward-only step and incrementing `CURRENT_SCHEMA_VERSION` (§5). Existing steps are changed only under exception 1.
 3. **Requested planned item:** implementing a Planned Work item (§9) that the task explicitly requests.
-4. **Owner-authorized change:** the owner explicitly authorizes a named, narrowly scoped protected-file change in the task itself. An agent never infers this authorization. Record it as an ADR under `docs/decisions/` naming the authorization and scope.
-
-Keep such diffs minimal and scoped, and state which exception applies in the commit message as `§8.1 exception N`; the `commit-msg` hook rejects a commit that stages a protected file without one.
+4. **Owner-authorized change:** the owner explicitly authorizes a named, narrowly scoped protected-file change in the task itself, and the commit quotes it. An agent never infers this authorization.
+5. **Stated reason (`engine.ts` and `actionPipeline.ts` only):** the commit message says why the change can't live outside the file, on the exception's line: `§8.1 exception 5: <reason>`. `migrator.ts` is excluded: a save-format change is the owner's product decision (exceptions 1–4).
 
 ### 8.2 Documentation Synchronization
 - This core document is authoritative, together with `docs/architecture/**` and `docs/decisions/**`. `CLAUDE.md` and Antigravity's `.agents/rules/` and `.agents/skills/` summarize or apply it and must not contradict it. If they disagree, stop and flag the conflict instead of picking a side.

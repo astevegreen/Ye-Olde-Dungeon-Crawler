@@ -4,6 +4,8 @@
 # 1. A commit that stages a §8.1 protected file must name its exception in the
 #    message, e.g. "§8.1 exception 1". The pre-commit gates check what the code
 #    does; this makes every protected-file edit a stated, reviewable decision.
+#    Exception 5 ("§8.1 exception 5: <reason>") needs a reason on its line and
+#    never covers migrator.ts.
 # 2. Rejects a message carrying an "Agent: Antigravity" line (§8.4): Antigravity
 #    is read-only and never commits. A tripwire, not enforcement: both tools
 #    commit as the same git user, so only a labeled commit is caught.
@@ -25,10 +27,17 @@ PROTECTED='^src/engine/actions/actionPipeline\.ts$|^src/engine/engine\.ts$|^src/
 STAGED_PROTECTED=$(git diff --cached --name-only | grep -E "$PROTECTED" || true)
 
 if [ -n "$STAGED_PROTECTED" ]; then
-  if ! printf '%s\n' "$MSG" | grep -Eq '§8\.1 exception [1-4]'; then
+  if printf '%s\n' "$STAGED_PROTECTED" | grep -q 'migrator\.ts$'; then
+    ACCEPTED='§8\.1 exception [1-4]'
+    HINT='"§8.1 exception 1" (exception 5 does not cover migrator.ts)'
+  else
+    ACCEPTED='§8\.1 exception ([1-4]|5: .{10,})'
+    HINT='"§8.1 exception 1", or "§8.1 exception 5: <why it cannot live outside the file>"'
+  fi
+  if ! printf '%s\n' "$MSG" | grep -Eq "$ACCEPTED"; then
     echo "commit-msg: this commit changes a §8.1 protected file:" >&2
     printf '  %s\n' $STAGED_PROTECTED >&2
-    echo "State the exception in the message, e.g. \"§8.1 exception 1\" (ARCHITECTURE.md §8.1)." >&2
+    echo "State the exception in the message, e.g. $HINT (ARCHITECTURE.md §8.1)." >&2
     exit 1
   fi
 fi

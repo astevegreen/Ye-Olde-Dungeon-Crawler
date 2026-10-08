@@ -1,5 +1,5 @@
 import { describe, it, expect, afterAll } from 'vitest';
-import { GameEngine, GameMap, TILES, Player } from '../../../engine';
+import { GameEngine, GameMap, TILES, Player, activateRegistries } from '../../../engine';
 import { WaitAction } from '../../../engine/actions/wait';
 import { GIANT_BLOOD_STATUS, giantBloodHandler, GIANT_BLOOD_BOOTSTRAP_HOOK } from '../giantBlood';
 import { StatusHandlerRegistry } from '../../../engine/status/statusHandlers';
@@ -21,6 +21,7 @@ function buildEngine(floor: number) {
 
 describe("Giant's Blood heritage buff (Act 1, replaces the old permafrost/obsidian hazard)", () => {
   afterAll(() => {
+    activateRegistries(null);
     StatusHandlerRegistry.resetToDefaults();
   });
 

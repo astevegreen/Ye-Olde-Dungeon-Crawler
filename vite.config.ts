@@ -94,6 +94,10 @@ export default defineConfig(({ mode }) => {
     test: {
       environment: 'node',
       exclude: [...configDefaults.exclude, 'e2e/**', '**/.claude/**', '**/.prompts/**'],
+      // A worker runs its files in one module graph: about half the wall time of a fresh
+      // graph per file. A file puts back the process state it changes (quality-gates.md).
+      isolate: false,
+      setupFiles: ['./tests/setup/sharedState.ts'],
     },
   };
 });

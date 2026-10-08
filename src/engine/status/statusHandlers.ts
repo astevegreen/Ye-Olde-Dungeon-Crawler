@@ -32,8 +32,8 @@ export interface StatusHandler {
 
 import {
   activeStatusHandlerStore,
-  getDefaultStatusHandlerRegistrar,
-  setDefaultStatusHandlerRegistrar,
+  addDefaultStatusHandlerRegistrar,
+  defaultStatusHandlerRegistrars,
 } from '../registries/statusHandlerRegistryStore';
 
 /**
@@ -72,15 +72,15 @@ export class StatusHandlerRegistry {
     }
   }
 
-  public static setDefaultRegistrar(registrar: () => void): void {
-    setDefaultStatusHandlerRegistrar(registrar);
+  /** A module that registers a handler when it loads adds that registration to the defaults. */
+  public static addDefaultRegistrar(registrar: () => void): void {
+    addDefaultStatusHandlerRegistrar(registrar);
   }
 
   public static resetToDefaults(): void {
     activeStatusHandlerStore().clear();
     this.registerBuiltins();
-    const registrar = getDefaultStatusHandlerRegistrar();
-    if (registrar) {
+    for (const registrar of defaultStatusHandlerRegistrars()) {
       registrar();
     }
   }

@@ -421,4 +421,5 @@ export function registerGrimoireAttuneStatusHandler(): void {
 }
 
 registerGrimoireAttuneStatusHandler();
+StatusHandlerRegistry.addDefaultRegistrar(registerGrimoireAttuneStatusHandler);
 

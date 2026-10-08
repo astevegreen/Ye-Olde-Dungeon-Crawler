@@ -4,6 +4,8 @@ import { companionWheelSlots } from '../companionWheel';
 
 function engineWith(trainerSkills: { id: string; name: string; description: string }[] = []): GameEngine {
   const engine = new GameEngine({ map: new GameMap(12, 12), player: new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } }) });
+  // Its own manifest to edit: engines built without one share the engine's default object.
+  (engine as { manifest: GameEngine['manifest'] }).manifest = { ...engine.manifest };
   (engine.manifest as GameContentManifest).town = { ...(engine.manifest.town ?? {}), services: { trainerSkills } } as GameContentManifest['town'];
   return engine;
 }

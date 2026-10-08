@@ -16,7 +16,7 @@ import {
   COTW_CONTAINERS,
   COTW_CONSUMABLES,
 } from '../items';
-import { GameEngine, GameMap, TILES, Player, Item } from '../../../engine';
+import { GameEngine, GameMap, TILES, Player, Item, activateRegistries } from '../../../engine';
 import { WaitAction } from '../../../engine/actions/wait';
 import {
   GIANT_BLOOD_STATUS,
@@ -118,6 +118,7 @@ describe('CotW item catalog', () => {
 
 describe('CotW Giant-Blood Item Interactions', () => {
   afterAll(() => {
+    activateRegistries(null);
     StatusHandlerRegistry.resetToDefaults();
   });
 

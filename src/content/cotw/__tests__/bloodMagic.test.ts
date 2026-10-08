@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { Player } from '../../../engine/entities/player';
 import { Monster } from '../../../engine/entities/monster';
 import { GameMap } from '../../../engine/grid/map';
@@ -7,6 +7,7 @@ import { GameEngine } from '../../../engine/engine';
 import { CastSpellAction, DrinkPotionAction } from '../../../engine/actions/spell-actions';
 import { SpellPipeline } from '../../../engine/magic/spellPipeline';
 import { SpellRegistry } from '../../../engine/magic/spellRegistry';
+import { activateRegistries } from '../../../engine/registries';
 import { COTW_BLOOD_SPELLS } from '../bloodMagic';
 import { ItemFactory } from '../../../engine/items/factory';
 import { TempleService } from '../../../engine/economy/services';
@@ -17,6 +18,11 @@ describe('BloodMagicIntegration: EnergyModel, Casting, Corruption & Scaling', ()
   let engine: GameEngine;
   let player: Player;
   let enemy: Monster;
+
+  afterAll(() => {
+    activateRegistries(null);
+    SpellRegistry.clear();
+  });
 
   beforeEach(() => {
     SpellPipeline.ensureBuiltinEffects();

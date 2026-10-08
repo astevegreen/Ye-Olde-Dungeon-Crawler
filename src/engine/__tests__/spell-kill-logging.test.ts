@@ -5,19 +5,13 @@ import { TILES } from '../grid/tile';
 import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
 import { CastSpellAction } from '../actions/spell-actions';
-import { beforeEach, afterEach } from 'vitest';
-import { registerSpells, SpellRegistry } from '../magic/spellRegistry';
+import { useTestSpells } from '../__fixtures__/testHelpers';
 
 describe('Unified Kill Logging & Spell Fatalities', () => {
-  beforeEach(() => {
-    registerSpells([
-      { id: 'magic_arrow', name: 'Magic Arrow', school: 'Combat', manaCost: 3, element: 'arcane', range: 6, basePower: 8, areaOfEffect: 0, reflects: false, targetType: 'ray', targetingMode: 'ray', description: '', effects: [{ type: 'damage', amount: 8, element: 'arcane' }] },
-      { id: 'firebolt', name: 'Firebolt', school: 'Combat', manaCost: 5, element: 'fire', range: 7, basePower: 12, areaOfEffect: 0, reflects: false, targetType: 'ray', targetingMode: 'ray', description: '', effects: [{ type: 'damage', amount: 12, element: 'fire' }] },
-    ]);
-  });
-  afterEach(() => {
-    SpellRegistry.clear();
-  });
+  useTestSpells([
+    { id: 'magic_arrow', name: 'Magic Arrow', school: 'Combat', manaCost: 3, element: 'arcane', range: 6, basePower: 8, areaOfEffect: 0, reflects: false, targetType: 'ray', targetingMode: 'ray', description: '', effects: [{ type: 'damage', amount: 8, element: 'arcane' }] },
+    { id: 'firebolt', name: 'Firebolt', school: 'Combat', manaCost: 5, element: 'fire', range: 7, basePower: 12, areaOfEffect: 0, reflects: false, targetType: 'ray', targetingMode: 'ray', description: '', effects: [{ type: 'damage', amount: 12, element: 'fire' }] },
+  ]);
   function setupEngine() {
     const map = new GameMap(10, 10, TILES.FLOOR);
     const player = new Player({

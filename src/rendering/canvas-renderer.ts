@@ -1,5 +1,5 @@
 import { GameEngine } from '../engine';
-import { setIconAtlas } from './canvasIcons';
+import { releaseIconAtlas, setIconAtlas } from './canvasIcons';
 import { Visibility } from '../engine';
 import { sensesThroughWalls } from '../engine';
 import { Camera } from './camera';
@@ -407,6 +407,7 @@ export class CanvasRenderer {
     this.fxRunner.destroy();
     this.floatingTextRunner.destroy();
     this.cards?.remove();
+    releaseIconAtlas(this.atlas);
   }
 
   public cleanup(): void {

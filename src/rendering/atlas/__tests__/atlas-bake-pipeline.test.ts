@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import {
   SpriteAtlas,
   ATLAS_MAP,
@@ -49,7 +49,11 @@ describe('Atlas bake pipeline — supersampling, downsample, shading, outline/hi
 
   beforeEach(() => {
     createElementSpy = vi.fn((tag: string) => (tag === 'canvas' ? createMockCanvas() : {}));
-    (globalThis as any).document = { createElement: createElementSpy };
+    vi.stubGlobal('document', { createElement: createElementSpy });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   describe('bake + downsample', () => {

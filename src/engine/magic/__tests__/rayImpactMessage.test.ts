@@ -1,20 +1,15 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { CastSpellAction } from '../../actions/spell-actions';
-import { registerSpells, SpellRegistry } from '../spellRegistry';
+import { useTestSpells } from '../../__fixtures__/testHelpers';
 
 describe('ray spell impact message', () => {
-  beforeEach(() => {
-    registerSpells([
-      { id: 'magic_arrow', name: 'Magic Arrow', school: 'Combat', manaCost: 3, element: 'arcane', range: 6, basePower: 8, areaOfEffect: 0, reflects: false, targetType: 'ray', targetingMode: 'ray', description: '', effects: [{ type: 'damage', amount: 8, element: 'arcane' }] },
-    ]);
-  });
-  afterEach(() => {
-    SpellRegistry.clear();
-  });
+  useTestSpells([
+    { id: 'magic_arrow', name: 'Magic Arrow', school: 'Combat', manaCost: 3, element: 'arcane', range: 6, basePower: 8, areaOfEffect: 0, reflects: false, targetType: 'ray', targetingMode: 'ray', description: '', effects: [{ type: 'damage', amount: 8, element: 'arcane' }] },
+  ]);
 
   function castAt(map: GameMap, x: number, y: number): string {
     const player = new Player({ id: 'p1', name: 'Sven', position: { x: 2, y: 2 }, stats: { hp: 50, maxHp: 50, attack: 10, defense: 5 } });

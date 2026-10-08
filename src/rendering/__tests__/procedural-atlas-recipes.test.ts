@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SpriteAtlas, ATLAS_MAP, SPRITE_SIZE, ATLAS_TILE_SIZE } from '../atlas/sprite-atlas';
 import type { SpriteRecipe } from '../../engine';
 
@@ -34,13 +34,17 @@ function createMockCanvas(): HTMLCanvasElement {
 describe('Procedural Sprite Recipe Registry & Atlas Baking', () => {
   beforeEach(() => {
     if (typeof document === 'undefined') {
-      (globalThis as any).document = {
+      vi.stubGlobal('document', {
         createElement: (tag: string) => {
           if (tag === 'canvas') return createMockCanvas();
           return {};
         },
-      };
+      });
     }
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('bakes sprite atlas with default CotW recipes when no custom recipes are supplied', () => {

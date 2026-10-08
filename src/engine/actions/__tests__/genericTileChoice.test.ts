@@ -29,6 +29,8 @@ function buildEngine(choice: ChoiceDefinition) {
     glyph: '?',
     interactionHandlerId: 'test_shrine',
   });
+  // Its own manifest to edit: engines built without one share the engine's default object.
+  (engine as { manifest: GameEngine['manifest'] }).manifest = { ...engine.manifest };
   (engine.manifest.choices as any) = { test_shrine: choice };
   return { engine, player };
 }

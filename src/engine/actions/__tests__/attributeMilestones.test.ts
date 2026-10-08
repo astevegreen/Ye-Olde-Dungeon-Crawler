@@ -52,6 +52,8 @@ function buildEngine(manifestOverrides?: Partial<GameContentManifest>, initialDe
   });
   player.dexterity = initialDex;
   const engine = new GameEngine({ map, player });
+  // Its own manifest to edit: engines built without one share the engine's default object.
+  (engine as { manifest: GameEngine['manifest'] }).manifest = { ...engine.manifest };
   (engine.manifest as any).choices = {
     milestone_dex_test: TEST_CHOICE_DEX,
     ...(manifestOverrides?.choices ?? {}),

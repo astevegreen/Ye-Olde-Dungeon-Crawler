@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, afterAll, vi } from 'vitest';
 import {
+  activateRegistries,
   GameEngine,
   GameMap,
   Player,
@@ -342,6 +343,11 @@ describe('DiagnosticModal - Categorized Sub-Menus & Triage Tool', () => {
     modal.close();
     flightRecorder.clear();
     (globalThis as any).document = originalDocument;
+  });
+
+  afterAll(() => {
+    activateRegistries(null);
+    MonsterRegistry.clear();
   });
 
   describe('Modal Lifecycle & ModalStack Integration', () => {

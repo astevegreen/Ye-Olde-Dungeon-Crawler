@@ -36,6 +36,8 @@ function buildEngine() {
     stats: { hp: 100, maxHp: 100, attack: 50, defense: 5 },
   });
   const engine = new GameEngine({ map, player });
+  // Its own manifest to edit: engines built without one share the engine's default object.
+  (engine as { manifest: GameEngine['manifest'] }).manifest = { ...engine.manifest };
   (engine.manifest.choices as any) = { test_climax: TEST_CHOICE };
   (engine.manifest as any).storyChoiceTriggers = [TRIGGER];
   return { engine, player, map };

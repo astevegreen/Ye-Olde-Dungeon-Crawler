@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterAll } from 'vitest';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
@@ -11,6 +11,7 @@ import { CoinItem } from '../../economy/currency';
 import { TownMapGenerator } from '../../town/townMap';
 import { activeItemIndex } from '../../items/itemIndex';
 import { activeMonsterStore } from '../../registries/monsterRegistryStore';
+import { activateRegistries } from '../../registries';
 import { Visibility } from '../../fov/types';
 import { TrapInstance } from '../../dungeon/traps';
 import { AutosaveManager } from '../autosaveManager';
@@ -54,6 +55,11 @@ describe('R-stor-1 · a monster is saved with its base attack, so a status modif
 });
 
 describe('R-stor-2 · a dismissed companion’s pack is re-registered in the item index on load', () => {
+  afterAll(() => {
+    activateRegistries(null);
+    CompanionRegistry.clear();
+  });
+
   it('an item in a dismissed companion’s pack resolves by id after load and re-summon', () => {
     const ID = 'review_test_companion';
     CompanionRegistry.register({

@@ -5,19 +5,13 @@ import { Player } from '../../entities/player';
 import { GameEngine } from '../../engine';
 import { ItemFactory } from '../../items/factory';
 import { ZapWandAction, ReadScrollAction, DrinkPotionAction } from '../../actions/spell-actions';
-import { beforeEach, afterEach } from 'vitest';
-import { registerSpells, SpellRegistry } from '../spellRegistry';
+import { useTestSpells } from '../../__fixtures__/testHelpers';
 
 describe('Consumables Activation (Wands, Scrolls, Potions)', () => {
-  beforeEach(() => {
-    registerSpells([
-      { id: 'lightning_bolt', name: 'Lightning Bolt', school: 'Combat', manaCost: 10, element: 'lightning', range: 12, basePower: 16, areaOfEffect: 0, reflects: true, targetType: 'ray', targetingMode: 'bounce_ray', description: '', effects: [{ type: 'damage', amount: 16, element: 'lightning' }] },
-      { id: 'phase_door', name: 'Phase Door', school: 'Movement', manaCost: 5, element: 'arcane', range: 6, basePower: 0, areaOfEffect: 0, reflects: false, targetType: 'self', targetingMode: 'self', description: '', effects: [{ type: 'teleport', range: 6, random: true }] },
-    ]);
-  });
-  afterEach(() => {
-    SpellRegistry.clear();
-  });
+  useTestSpells([
+    { id: 'lightning_bolt', name: 'Lightning Bolt', school: 'Combat', manaCost: 10, element: 'lightning', range: 12, basePower: 16, areaOfEffect: 0, reflects: true, targetType: 'ray', targetingMode: 'bounce_ray', description: '', effects: [{ type: 'damage', amount: 16, element: 'lightning' }] },
+    { id: 'phase_door', name: 'Phase Door', school: 'Movement', manaCost: 5, element: 'arcane', range: 6, basePower: 0, areaOfEffect: 0, reflects: false, targetType: 'self', targetingMode: 'self', description: '', effects: [{ type: 'teleport', range: 6, random: true }] },
+  ]);
   function setupTestWorld() {
     const map = new GameMap(12, 12, TILES.FLOOR);
     for (let x = 0; x < 12; x++) {

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../engine';
 import { Player } from '../../engine';
@@ -8,7 +8,7 @@ import { formatGroundStatus } from '../sidebar/sidebarModel';
 import { SpellbookTab } from '../characterMenu/spellbookTab';
 import { TargetingOverlay } from '../../rendering/targeting-overlay';
 import { ModalStackManager } from '../modalStack';
-import { registerSpells } from '../../engine';
+import { registerSpells, activateRegistries, SpellRegistry } from '../../engine';
 import type { GameContentManifest, SpellDefinition } from '../../engine';
 
 class MockElement {
@@ -66,6 +66,9 @@ class MockElement {
 }
 
 if (typeof (globalThis as any).KeyboardEvent === 'undefined') {
+  afterAll(() => {
+    delete (globalThis as any).KeyboardEvent;
+  });
   (globalThis as any).KeyboardEvent = class {
     public code: string;
     public key: string;
@@ -188,6 +191,11 @@ describe('Modal Stack Lifecycle & UI Ground Status Polish', () => {
 
   afterEach(() => {
     (globalThis as any).document = origDocument;
+  });
+
+  afterAll(() => {
+    activateRegistries(null);
+    SpellRegistry.clear();
   });
 
   describe('formatGroundStatus', () => {

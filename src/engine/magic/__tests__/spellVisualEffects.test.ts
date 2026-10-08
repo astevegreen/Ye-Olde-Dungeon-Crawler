@@ -1,11 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { Monster } from '../../entities/monster';
 import { CastSpellAction } from '../../actions/spell-actions';
-import { registerSpells, SpellRegistry } from '../spellRegistry';
 import { COTW_SPELLS } from '../../../content/cotw/spells';
 import { FIXTURE_SPELLS } from '../../../../tests/fixtures/fixture-pack';
 import type {
@@ -13,15 +12,10 @@ import type {
   BurstEffectDescriptor,
   ChainLinkEffectDescriptor,
 } from '../../types/effects';
+import { useTestSpells } from '../../__fixtures__/testHelpers';
 
 describe('Visual Effect Queue & Declarative FX Engine', () => {
-  beforeEach(() => {
-    registerSpells([...COTW_SPELLS, ...FIXTURE_SPELLS]);
-  });
-
-  afterEach(() => {
-    SpellRegistry.clear();
-  });
+  useTestSpells([...COTW_SPELLS, ...FIXTURE_SPELLS]);
 
   function createCorridorEngine() {
     // 15x7 map with corridor along y=3

@@ -10,6 +10,7 @@ import { TILES } from '../../grid/tile';
 import { MonsterAI } from '../../ai/behaviorTree';
 import { DrinkPotionAction, ZapWandAction } from '../../actions/spell-actions';
 import { SpellRegistry } from '../../magic/spellRegistry';
+import { activateRegistries } from '../../registries';
 
 describe('Symmetrical Actor Parity & Morph Envelope (actor.ts, monster.ts)', () => {
   let engine: GameEngine;
@@ -43,6 +44,8 @@ describe('Symmetrical Actor Parity & Morph Envelope (actor.ts, monster.ts)', () 
   });
 
   afterEach(() => {
+    // The test's engine is the active bundle now; the fixtures went into the process default.
+    activateRegistries(null);
     SpellRegistry.clear();
   });
 

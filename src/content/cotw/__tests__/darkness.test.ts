@@ -1,5 +1,5 @@
 import { describe, it, expect, afterAll } from 'vitest';
-import { GameEngine, GameMap, TILES, Player, Monster } from '../../../engine';
+import { GameEngine, GameMap, TILES, Player, Monster, activateRegistries } from '../../../engine';
 import { WaitAction } from '../../../engine/actions/wait';
 import { StatusHandlerRegistry } from '../../../engine/status/statusHandlers';
 import { makeShopItem } from '../items/makeItem';
@@ -55,7 +55,10 @@ function goblin(engine: GameEngine, x: number, y: number): Monster {
 }
 
 describe('dark floors', () => {
-  afterAll(() => StatusHandlerRegistry.resetToDefaults());
+  afterAll(() => {
+    activateRegistries(null);
+    StatusHandlerRegistry.resetToDefaults();
+  });
 
   it('cut the hero\'s sight to 2, and say so once', () => {
     const { engine, player } = buildEngine();

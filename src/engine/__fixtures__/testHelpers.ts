@@ -1,4 +1,9 @@
+import { afterAll, afterEach, beforeEach } from 'vitest';
 import { Monster } from '../entities/monster';
+import { CompanionRegistry } from '../entities/companion';
+import { registerSpells, SpellRegistry } from '../magic/spellRegistry';
+import type { SpellDefinition } from '../magic/types';
+import { activateRegistries } from '../registries';
 import { Item } from '../items/item';
 import { ItemFactory } from '../items/factory';
 import type { Position } from '../types';
@@ -131,4 +136,40 @@ export function createTestSunStone(id = 'sun-stone-freyr'): Item {
     'The Sun-Stone of Freyr',
     'The ancient radiant relic of Freyr, warm to the touch. Returning it to town will bring lasting peace and light.'
   );
+}
+
+/**
+ * Registers `spells` before each test of the calling suite, where the engines it builds are
+ * seeded from, and removes them after each test.
+ */
+export function useTestSpells(spells: SpellDefinition[]): void {
+  beforeEach(() => registerSpells(spells));
+  afterEach(() => {
+    activateRegistries(null);
+    SpellRegistry.clear();
+  });
+}
+
+export const TEST_COMPANION_ID = 'test_companion';
+
+/**
+ * Registers a plain companion definition before each test of the calling suite, where the
+ * engines it builds are seeded from, and removes it after the suite (tests/setup/sharedState.ts).
+ */
+export function useTestCompanion(): void {
+  beforeEach(() => {
+    CompanionRegistry.clear();
+    CompanionRegistry.register({
+      id: TEST_COMPANION_ID,
+      name: 'Test Companion',
+      stats: { hp: 20, maxHp: 20, attack: 5, defense: 1 },
+      speed: 100,
+      packWeightCapacity: 10000,
+      packBulkCapacity: 8000,
+    });
+  });
+  afterAll(() => {
+    activateRegistries(null);
+    CompanionRegistry.clear();
+  });
 }

@@ -19,6 +19,8 @@ const EVENT: TimedEventDefinition = {
 function buildEngine(def: TimedEventDefinition = EVENT) {
   const player = new Player({ id: 'hero', name: 'Hero', position: { x: 2, y: 2 } });
   const engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player });
+  // Its own manifest to edit: engines built without one share the engine's default object.
+  (engine as { manifest: GameEngine['manifest'] }).manifest = { ...engine.manifest };
   (engine.manifest as { timedEvents?: TimedEventDefinition[] }).timedEvents = [def];
   const wait = () => engine.handlePlayerAction(new WaitAction(player));
   return { engine, wait };

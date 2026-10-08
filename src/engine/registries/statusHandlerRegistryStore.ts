@@ -2,14 +2,15 @@ import type { StatusType } from '../status/types';
 import type { StatusHandler } from '../status/statusHandlers';
 import { RegistryStore } from './registryStore';
 
-let defaultRegistrar: (() => void) | undefined;
+// One per module that registers a handler outside BUILTIN_STATUS_HANDLERS when it loads.
+const defaultRegistrars: Array<() => void> = [];
 
-export function setDefaultStatusHandlerRegistrar(registrar: () => void): void {
-  defaultRegistrar = registrar;
+export function addDefaultStatusHandlerRegistrar(registrar: () => void): void {
+  if (!defaultRegistrars.includes(registrar)) defaultRegistrars.push(registrar);
 }
 
-export function getDefaultStatusHandlerRegistrar(): (() => void) | undefined {
-  return defaultRegistrar;
+export function defaultStatusHandlerRegistrars(): readonly (() => void)[] {
+  return defaultRegistrars;
 }
 
 /**

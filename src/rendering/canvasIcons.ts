@@ -15,6 +15,11 @@ export function setIconAtlas(next: SpriteAtlas): void {
   atlas = next;
 }
 
+/** Cleared by CanvasRenderer.destroy, unless a later renderer has set its own since. */
+export function releaseIconAtlas(owned: SpriteAtlas): void {
+  if (atlas === owned) atlas = undefined;
+}
+
 function has(name: UiIconName): boolean {
   return atlas?.hasRecipe(UI_ICON_PREFIX + name) ?? false;
 }

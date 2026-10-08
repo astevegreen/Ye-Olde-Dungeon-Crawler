@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, afterAll } from 'vitest';
 import {
   calculateAttribute,
   AttributeCalculator,
@@ -11,6 +11,17 @@ import { Monster } from '../entities/monster';
 describe('Phased Attribute & Stat Aggregator', () => {
   let player: Player;
   let actor: Actor;
+  // Content registers modifiers when it loads (cotw's Emboldened, Giant's Blood); put them back.
+  let found: AttributeModifier[] = [];
+
+  beforeAll(() => {
+    found = [...AttributeCalculator.getModifiers()];
+  });
+
+  afterAll(() => {
+    AttributeCalculator.clearModifiers();
+    for (const modifier of found) AttributeCalculator.registerModifier(modifier);
+  });
 
   beforeEach(() => {
     AttributeCalculator.clearModifiers();

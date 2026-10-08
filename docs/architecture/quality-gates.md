@@ -48,5 +48,6 @@ Outcomes and generated ids (`GameEngine.nextSimulationId`) draw from `engine.prn
 
 ### 5. Static Analysis & Build
 - **`npm test`:** every Vitest suite, including `docReferences.test.ts`: a cited `§N` or `P-NN` that doesn't exist, a `[Planned: P-NN]` with no §9 entry, a relative doc link to a missing file, and root markdown other than `ARCHITECTURE.md` and `CLAUDE.md` all fail.
+  - **One module graph per worker** (`isolate: false`, half the wall time): a file puts back the process state it changes, and `tests/setup/sharedState.ts` fails one that leaves fixtures in the default registries. `npx vitest run --isolate` tells a leak from a real failure.
 - **`npm run lint`:** `tsc` over the main include set, then over `e2e/` with its own tsconfig (Playwright strips types without checking them), then the `check:*` scripts above and `knip`. knip's entries are `src/main.ts`, the scripts, the relay and the tests, so an export nothing reaches fails, dead engine API included; `npx knip --production` lists exports only tests use, which should be deliberate seams. knip doesn't see unused class members.
 - **`npm run build`:** `tsc && vite build`, the cotw single file, with no type errors or bundler warnings.

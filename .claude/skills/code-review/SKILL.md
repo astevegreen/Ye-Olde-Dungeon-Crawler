@@ -34,7 +34,7 @@ Look for the originating spec, in this order:
 
 ### 3. Identify the standards sources
 
-`ARCHITECTURE.md` holds every binding rule; read it in full. Add the `docs/architecture/**` sub-docs its routing table names for the files the diff touches, the `docs/decisions/**` ADRs (designs already rejected), and `CLAUDE.md` for the workflow rules (attribution and `Requested:` trailers, one request per commit, §8.1 protected files). `npm run lint` enforces the checks ARCHITECTURE.md §7.2 lists; leave those to it.
+`ARCHITECTURE.md` holds every binding rule; read it in full. Add the `docs/architecture/**` sub-docs its routing table names for the files the diff touches, the `docs/decisions/**` ADRs (designs already rejected), and `CLAUDE.md` for the workflow rules (the `Requested:` trailer, one request per commit, §8.1 protected files). `npm run lint` enforces the checks ARCHITECTURE.md §7.2 lists; leave those to it.
 
 On top of whatever the repo documents, the Standards axis always carries the **smell baseline** below: a fixed set of Fowler code smells (_Refactoring_, ch.3) that applies even when a repo documents nothing. Two rules bind it:
 

@@ -19,7 +19,7 @@ dist-ssr
 /playwright/.cache/
 /playwright/.auth/
 
-# Ephemeral agent task/prompt markdown (see CLAUDE.md, .agents/rules/project-rules.md)
+# Ephemeral agent task/prompt markdown (ARCHITECTURE.md §8.5)
 /.prompts/
 
 # Repomix codebase snapshots (generated for AI review, not source)

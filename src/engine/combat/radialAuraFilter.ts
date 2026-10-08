@@ -3,7 +3,7 @@ import type { Entity } from '../entities/entity';
 import type { Position } from '../types';
 
 /**
- * Tag-Filtered Radial Auras (docs/architecture/content-progression-scaling.md).
+ * Tag-Filtered Radial Auras (docs/architecture/content-extensibility.md).
  *
  * The generic, reusable piece the engine owns: a bounded-radius query for living
  * entities matching any of `tags`, evaluated via the existing `Entity.hasTag()`

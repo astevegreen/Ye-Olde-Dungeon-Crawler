@@ -219,7 +219,7 @@ export interface SerializedPlayer {
   planeId?: string;
   corruptionScore?: number;
   unspentStatPoints?: number;
-  /** Rune of Return mastery investment (docs/architecture/content-rune-of-return.md): points spent
+  /** Rune of Return mastery investment (docs/architecture/content-extensibility.md): points spent
    * from the same `unspentStatPoints` pool as core attributes, on the rune's three
    * independent progression tracks. */
   runeMastery?: { celerityPoints: number; weavePoints: number; mobilityPoints: number };

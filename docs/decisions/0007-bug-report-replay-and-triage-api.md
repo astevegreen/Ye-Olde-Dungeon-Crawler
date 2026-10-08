@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-25
 **Status:** Accepted (owner decision)
-**Related:** `ARCHITECTURE.md` §2 (Diagnostic API Namespacing, Bug-Report Replay), §8.1 (exception 4); [ADR-0005](0005-owner-authorized-exception-and-agent-workflow.md)
+**Related:** `ARCHITECTURE.md` §2 (Diagnostic API Namespacing, Bug-Report Replay), §8.1 (exception 4)
 
 ## Context
 Review of `334bc61` (F3 bug-report automation) and `e9c3bb1` (F2 triage gaps) found:

@@ -1,10 +1,10 @@
 # ADR Format
 
-ADRs live in `docs/decisions/` and use sequential numbering: `0001-slug.md`, `0002-slug.md`, etc. (ARCHITECTURE.md §8.1(4), §8.2). The directory already exists; never create another ADR directory, and never put an ADR at the repo root, whose only markdown files are `ARCHITECTURE.md` and `CLAUDE.md` (§8.5).
+ADRs live in `docs/decisions/` and use sequential numbering: `0001-slug.md`, `0002-slug.md`, etc. (ARCHITECTURE.md §8.2). The directory already exists; never create another ADR directory, and never put an ADR at the repo root, whose only markdown files are `ARCHITECTURE.md` and `CLAUDE.md` (§8.5).
 
 ## Template
 
-Match the existing ADRs; `docs/decisions/0015-*.md` and `0010-*.md` are good models.
+Match the existing ADRs; `docs/decisions/0015-*.md` is a good model.
 
 ```md
 # ADR-NNNN: {Short title of the decision}
@@ -27,7 +27,6 @@ Match the existing ADRs; `docs/decisions/0015-*.md` and `0010-*.md` are good mod
 ```
 
 - **Status:** `Accepted`, `Accepted (owner decision)`, or `Rejected (evaluated on evidence, not merely deferred)` for a design built and then reverted (ADR-0001). When a later ADR replaces part of an earlier one, the later one carries a `**Supersedes:**` line and the earlier one's status says `Accepted; partly superseded by ADR-NNNN (...)`, with a link.
-- **A protected-file change (§8.1 exception 4)** quotes the owner's authorization and names the file and the exact scope of the change (ADR-0013, ADR-0015).
 - **Keep it short.** Most sections are a paragraph or a few bullets. Omit Alternatives Considered only when there truly were none.
 - **Later changes:** a closed ADR is history, not a living doc. Record a later change as a dated `## Amendment (YYYY-MM-DD): {topic}` section or a one-line dated note (ADR-0011), and leave the original text as it was.
 
@@ -41,12 +40,7 @@ In the same change, reference the new ADR from the `ARCHITECTURE.md` section it 
 
 ## When to offer an ADR
 
-This repo requires one, whatever the tests below say, in two cases:
-
-- an owner-authorized protected-file change (§8.1 exception 4);
-- a design that was built and then rejected on evidence, not merely deferred (§8.2).
-
-Otherwise, all three of these must be true:
+This repo requires one, whatever the tests below say, for a design that was built and then rejected on evidence, not merely deferred (§8.2). Otherwise, all three of these must be true:
 
 1. **Hard to reverse**: the cost of changing your mind later is meaningful
 2. **Surprising without context**: a future reader will look at the code and wonder "why on earth did they do it this way?"

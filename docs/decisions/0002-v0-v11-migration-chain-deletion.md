@@ -1,7 +1,7 @@
 # ADR-0002: Deletion of the v0→v11 Save Migration Chain
 
 **Date:** 2026-09-20
-**Status:** Accepted (pre-launch; §8.1 exception 4, owner-authorized — see [ADR-0005](0005-owner-authorized-exception-and-agent-workflow.md))
+**Status:** Accepted (pre-launch; §8.1 exception 4, owner-authorized)
 **Related:** [docs/architecture/storage-and-schema.md](../architecture/storage-and-schema.md) — Forward-Only Schema Migrations; `ARCHITECTURE.md` §5, §8.1
 
 ## Context
@@ -15,4 +15,4 @@ No save predating v11 existed outside development at the time of deletion, so th
 
 ## Consequences
 - **The floor is absolute:** there is no migration path below `CURRENT_SCHEMA_VERSION`'s floor, by design, and none is added retroactively; a save below it is refused, never silently mis-decoded. The binding statement of this rule lives in `ARCHITECTURE.md` §5.
-- This edit to the protected `migrator.ts` was owner-authorized rather than a bug fix, additive step, or requested Planned Work item. At the time §8.1 had no such exception; ADR-0005 added it as exception 4, and any future deletion of migration history needs the same explicit, narrowly scoped authorization.
+- This edit to the protected `migrator.ts` was owner-authorized rather than a bug fix, additive step, or requested Planned Work item. At the time §8.1 had no such exception; it was added afterwards as exception 4, and any future deletion of migration history needs the same explicit, narrowly scoped authorization.

@@ -32,7 +32,7 @@ import {
 import { makeLootItem } from './items/makeItem';
 
 /**
- * The night the hearth went cold (`manifest.prologue`, docs/architecture/content-quests-and-triggers.md):
+ * The night the hearth went cold (`manifest.prologue`, docs/architecture/content-extensibility.md):
  * a new hero comes home from the hunt to find the troll-wife coven in Bjarnarhaven, prying
  * the Hearth-Tear out of the plaza fountain while their thralls hold three villagers. The
  * hero frees whom they can before the countdown runs out and the coven sinks down the

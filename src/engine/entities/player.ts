@@ -115,7 +115,7 @@ export class Player extends Actor {
    */
   public quickPotions?: (string | null)[];
   public unspentStatPoints: number;
-  /** Rune of Return progression (docs/architecture/content-rune-of-return.md): mastery lives on the
+  /** Rune of Return progression (docs/architecture/content-extensibility.md): mastery lives on the
    * player (like an attribute), not the item, so losing/replacing the rune doesn't
    * reset invested points. */
   public runeMastery: RuneOfReturnMastery;

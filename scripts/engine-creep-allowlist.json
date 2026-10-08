@@ -109,10 +109,6 @@
       "reason": "Atlas item sprite key and paperdoll torso empty-slot sprite key; cotw declares armor with this ID."
     },
     {
-      "id": "gold_coins",
-      "reason": "Atlas item sprite key; warcraft declares coins with this ID."
-    },
-    {
       "id": "cursed_mace",
       "reason": "Atlas item sprite key; cotw declares weapon with this ID."
     },
@@ -123,10 +119,6 @@
     {
       "id": "battleaxe",
       "reason": "Atlas item sprite key; cotw declares weapon with this ID."
-    },
-    {
-      "id": "warhammer",
-      "reason": "Atlas item sprite key; warcraft declares weapon with this ID."
     },
     {
       "id": "kobold",

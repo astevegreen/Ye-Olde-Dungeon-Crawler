@@ -152,12 +152,12 @@ describe('Per-engine content registries', () => {
 
   it('keeps two engines built from different manifests separate', () => {
     const cotwLike = engineWith([def('kobold'), def('ogre')]);
-    const warcraftLike = engineWith([def('grunt')]);
+    const otherPack = engineWith([def('grunt')]);
 
     expect(cotwLike.registries.monsters.has('kobold')).toBe(true);
     expect(cotwLike.registries.monsters.has('grunt')).toBe(false);
-    expect(warcraftLike.registries.monsters.has('grunt')).toBe(true);
-    expect(warcraftLike.registries.monsters.has('kobold')).toBe(false);
+    expect(otherPack.registries.monsters.has('grunt')).toBe(true);
+    expect(otherPack.registries.monsters.has('kobold')).toBe(false);
   });
 
   it('does not let a later engine overwrite an earlier engine lookups', () => {

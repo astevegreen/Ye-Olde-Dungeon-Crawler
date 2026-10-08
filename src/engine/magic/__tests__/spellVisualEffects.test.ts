@@ -6,7 +6,7 @@ import { Player } from '../../entities/player';
 import { Monster } from '../../entities/monster';
 import { CastSpellAction } from '../../actions/spell-actions';
 import { COTW_SPELLS } from '../../../content/cotw/spells';
-import { WARCRAFT_SPELLS } from '../../../content/warcraft/spells';
+import { FIXTURE_SPELLS } from '../../../../tests/fixtures/fixture-pack';
 import type {
   ProjectileEffectDescriptor,
   BurstEffectDescriptor,
@@ -15,7 +15,7 @@ import type {
 import { useTestSpells } from '../../__fixtures__/testHelpers';
 
 describe('Visual Effect Queue & Declarative FX Engine', () => {
-  useTestSpells([...COTW_SPELLS, ...WARCRAFT_SPELLS]);
+  useTestSpells([...COTW_SPELLS, ...FIXTURE_SPELLS]);
 
   function createCorridorEngine() {
     // 15x7 map with corridor along y=3
@@ -193,11 +193,11 @@ describe('Visual Effect Queue & Declarative FX Engine', () => {
     expect(chainLinks[1].durationMs).toBe(160);
   });
 
-  it('generates self-buff burst aura descriptor for Holy Light', () => {
+  it('generates self-buff burst aura descriptor for Healing Light', () => {
     const { engine, player } = createRoomEngine(10, 10);
     player.setPosition(4, 4);
 
-    const action = new CastSpellAction(player, 'holy_light', 4, 4);
+    const action = new CastSpellAction(player, 'healing_light', 4, 4);
     const result = action.perform(engine);
 
     expect(result.success).toBe(true);

@@ -44,7 +44,7 @@ describe('Data-Driven Elemental Affinity Matrix', () => {
   });
 
   it('supports custom theme-forked elements (e.g. Holy, Shadow, Nature) with custom multipliers', () => {
-    const warcraftMatrix = new AffinityMatrix({
+    const customMatrix = new AffinityMatrix({
       elements: [
         { id: 'holy', name: 'Holy', oppositeElementId: 'shadow' },
         { id: 'shadow', name: 'Shadow', oppositeElementId: 'holy', canReflect: true },
@@ -65,19 +65,19 @@ describe('Data-Driven Elemental Affinity Matrix', () => {
       },
     });
 
-    expect(warcraftMatrix.getOpposite('holy')).toBe('shadow');
-    expect(warcraftMatrix.canReflect('shadow')).toBe(true);
-    expect(warcraftMatrix.isGroundHazard('nature')).toBe(true);
+    expect(customMatrix.getOpposite('holy')).toBe('shadow');
+    expect(customMatrix.canReflect('shadow')).toBe(true);
+    expect(customMatrix.isGroundHazard('nature')).toBe(true);
 
     // Test custom default multipliers
-    const weakHoly = warcraftMatrix.calculateDamage(20, 'holy', 'weak');
+    const weakHoly = customMatrix.calculateDamage(20, 'holy', 'weak');
     expect(weakHoly.finalDamage).toBe(40); // 20 * 2.0
 
-    const resShadow = warcraftMatrix.calculateDamage(20, 'shadow', 'resistant');
+    const resShadow = customMatrix.calculateDamage(20, 'shadow', 'resistant');
     expect(resShadow.finalDamage).toBe(5); // 20 * 0.25
 
     // Test custom matrix override
-    const holySmite = warcraftMatrix.calculateDamage(20, 'holy', 'undead_curse' as any);
+    const holySmite = customMatrix.calculateDamage(20, 'holy', 'undead_curse' as any);
     expect(holySmite.finalDamage).toBe(60); // 20 * 3.0
   });
 

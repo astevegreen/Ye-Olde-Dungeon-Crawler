@@ -4,7 +4,7 @@
 # Commits land directly on main, and CI's full gate run (.github/workflows/)
 # happens only after a push, so the gates that pre-commit skips for speed run
 # here, before anything reaches origin: the headless sim, schema validation,
-# the cotw bundle (WarCraft is parked, ADR-0010), and the Playwright smoke suite against the built bundle.
+# the cotw bundle, and the Playwright smoke suite against the built bundle.
 # (About 70 s, see docs/architecture/quality-gates.md; pre-commit has already
 # run lint and the unit tests.)
 #
@@ -25,7 +25,8 @@ npm run validate:schema
 echo "pre-push: npm run build"
 npm run build
 
-echo "pre-push: npx playwright test"
-npx playwright test
+# Local runs elsewhere use Chromium only (playwright.config.ts); the push runs all three browsers.
+echo "pre-push: PW_ALL_BROWSERS=1 npx playwright test"
+PW_ALL_BROWSERS=1 npx playwright test
 
 echo "pre-push: passed"

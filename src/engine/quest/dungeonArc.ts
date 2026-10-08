@@ -255,7 +255,7 @@ export class DungeonArc {
     const cachePrng = new PRNG((seed ?? floorNumber) + floorNumber * 104729);
     stockSecretCaches(map, dungeon.secretCaches ?? [], floorNumber, itemCatalog, () => cachePrng.next(), manifest?.coinage, manifest?.itemFamilies, manifest?.loot);
 
-    // 5. Fixed tile placements declared in manifest (docs/architecture/content-quests-and-triggers.md)
+    // 5. Fixed tile placements declared in manifest (docs/architecture/content-extensibility.md)
     if (manifest?.fixedTilePlacements?.length) {
       for (const placement of manifest.fixedTilePlacements) {
         if (placement.floor !== floorNumber) continue;

@@ -79,7 +79,7 @@ describe('Developer Diagnostic Flight Recorder', () => {
     expect(events[7].details?.spellId).toBe('teleport');
   });
 
-  it('generates a comprehensive Antigravity Markdown diagnostic report', () => {
+  it('generates a comprehensive agent-ready Markdown diagnostic report', () => {
     const map = new GameMap(20, 20, TILES.FLOOR);
     const player = new Player({
       id: 'p_test',

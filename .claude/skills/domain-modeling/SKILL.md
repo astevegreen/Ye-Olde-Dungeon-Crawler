@@ -54,7 +54,7 @@ The glossary should be totally devoid of implementation details. Do not treat it
 
 ### Offer ADRs sparingly
 
-This repo requires an ADR for an owner-authorized protected-file change (ARCHITECTURE.md §8.1 exception 4) and for a design built and then rejected on evidence (§8.2). Otherwise, only offer to create one when all three are true:
+This repo requires an ADR for a design built and then rejected on evidence (ARCHITECTURE.md §8.2). Otherwise, only offer to create one when all three are true:
 
 1. **Hard to reverse**: the cost of changing your mind later is meaningful
 2. **Surprising without context**: a future reader will wonder "why did they do it this way?"

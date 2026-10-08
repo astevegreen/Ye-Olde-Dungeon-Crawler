@@ -75,7 +75,6 @@ import { RuneOfReturnDiscoveryModal } from './ui/runeOfReturnDiscoveryModal';
 import { AutoRestRunner } from './ui/autoRestRunner';
 import { NavigationController } from './ui/navigation';
 import { cotwManifest } from './content/cotw';
-import { warcraftManifest } from './content/warcraft';
 import { initStoragePersistence } from './ui/persistenceInit';
 import { SaveCodeModal } from './ui/saveCodeModal';
 import { SaveQuitModal } from './ui/saveQuitModal';
@@ -150,8 +149,15 @@ declare global {
   }
 }
 
+// One bundle per pack (ARCHITECTURE.md §2), picked by the build's mode. A mode no pack
+// answers to stops here instead of shipping some other pack's game.
+const packs = new Map([cotwManifest].map((m) => [m.id, m] as const));
 const targetTheme = import.meta.env.VITE_THEME || 'cotw';
-const activeManifest = targetTheme === 'warcraft' ? warcraftManifest : cotwManifest;
+const activeManifest =
+  packs.get(targetTheme) ??
+  (() => {
+    throw new Error(`No content pack has the id "${targetTheme}" (VITE_THEME)`);
+  })();
 const brand = resolveBranding(activeManifest);
 // Tokens go on the root before the first paint (module scripts run before DOMContentLoaded).
 void applyThemeTokens(activeManifest.theme);

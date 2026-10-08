@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { cotwManifest } from '../../content/cotw';
-import { warcraftManifest } from '../../content/warcraft';
 import type { GameContentManifest } from '../../engine';
 
 // ARCHITECTURE.md §3 Pack-Neutral Presentation. check:engine-creep only catches declared
@@ -11,6 +10,8 @@ import type { GameContentManifest } from '../../engine';
 const ROOT = join(__dirname, '..', '..', '..');
 const SCANNED = ['src/ui', 'src/rendering', 'src/main', 'index.html'];
 const RUNIC = /[ᚠ-᛿]/u;
+// The shipping packs. The test fixture pack isn't one: nothing it names can reach a player.
+const PACKS: GameContentManifest[] = [cotwManifest];
 
 function packNouns(manifest: GameContentManifest): string[] {
   const b = manifest.branding ?? {};
@@ -62,10 +63,10 @@ function stripComments(text: string): string {
 
 describe('pack-neutral presentation source', () => {
   const files = SCANNED.flatMap(sourceFiles);
-  const nouns = [...packNouns(cotwManifest), ...packNouns(warcraftManifest)];
+  const nouns = [...new Set(PACKS.flatMap(packNouns))];
 
   it('derives a meaningful denylist from the packs', () => {
-    expect(nouns).toEqual(expect.arrayContaining(['Haakon', 'Thrain', 'Midgard', 'Loki', 'Sven', 'Azeroth']));
+    expect(nouns).toEqual(expect.arrayContaining(['Haakon', 'Thrain', 'Midgard', 'Loki', 'Sven']));
   });
 
   it('names no pack NPC, place, or hero in src/ui, src/rendering, src/main, or index.html', () => {
@@ -81,7 +82,7 @@ describe('pack-neutral presentation source', () => {
   });
 
   it("names no pack's dungeon zone (its tileZoneBands keys) in presentation source", () => {
-    const zoneKeys = [cotwManifest, warcraftManifest].flatMap((m) => (m.atlas.tileZoneBands ?? []).map((b) => b.zoneKey));
+    const zoneKeys = PACKS.flatMap((m) => (m.atlas.tileZoneBands ?? []).map((b) => b.zoneKey));
     const pattern = new RegExp(`(${zoneKeys.join('|')})`);
     const leaks = files.filter((file) => pattern.test(stripComments(readFileSync(file, 'utf-8')))).map((f) => relative(ROOT, f));
     expect(leaks).toEqual([]);
@@ -89,7 +90,7 @@ describe('pack-neutral presentation source', () => {
 
   it("keeps the packs' townsfolk out of engine messages", () => {
     expect(nouns).toContain('Thrain');
-    const townsfolk = [cotwManifest, warcraftManifest]
+    const townsfolk = PACKS
       .flatMap((m) => m.town.npcs.map((npc) => npc.name))
       .flatMap((n) => n.split(/[\s'’-]+/))
       .filter((w) => nouns.includes(w));
@@ -101,7 +102,7 @@ describe('pack-neutral presentation source', () => {
   });
 
   it("takes a pack's id from the manifest, never a literal (R-ui-18)", () => {
-    const ids = [cotwManifest.id, warcraftManifest.id];
+    const ids = PACKS.map((m) => m.id);
     const pattern = new RegExp(`['"\`](${ids.join('|')})['"\`]`);
     // The browser database keeps its first name: renaming it would orphan every saved game.
     const kept = /^const DB_NAME = 'cotw';$/;
@@ -115,7 +116,7 @@ describe('pack-neutral presentation source', () => {
   });
 
   it("names no pack's trainer skill in src/ui or src/rendering: the trainer offers the manifest's (R-ui-18)", () => {
-    const skills = [cotwManifest, warcraftManifest].flatMap((m) => m.town.services?.trainerSkills ?? []);
+    const skills = PACKS.flatMap((m) => m.town.services?.trainerSkills ?? []);
     expect(skills.map((s) => s.id)).toContain('rally_howl');
     const pattern = new RegExp(skills.flatMap((s) => [s.id, s.name]).join('|'));
     const leaks = [...sourceFiles('src/ui'), ...sourceFiles('src/rendering')]

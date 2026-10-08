@@ -41,14 +41,14 @@ describe('Manifest-Namespaced Storage Isolation', () => {
     starterKit: { weaponItemId: 'dagger' },
   };
 
-  const warcraftManifest: GameContentManifest = {
-    id: 'warcraft',
-    name: 'Warcraft: Orcs & Humans',
+  const fixtureManifest: GameContentManifest = {
+    id: 'fixture',
+    name: 'Fixture Pack',
     monsters: [],
     items: [],
     spells: [],
     town: {
-      name: 'Stormwind Outpost',
+      name: 'Fixture Keep',
       width: 20,
       height: 20,
       playerSpawn: { x: 5, y: 5 },
@@ -57,14 +57,14 @@ describe('Manifest-Namespaced Storage Isolation', () => {
       npcs: [],
     },
     quest: {
-      id: 'warcraft_quest',
-      name: 'Blackrock Spire',
+      id: 'fixture_quest',
+      name: 'Fixture Quest',
       maxFloor: 5,
-      bossMonsterId: 'blackhand',
-      relicItemId: 'horde_banner',
-      victoryNpcId: 'lothar',
+      bossMonsterId: 'warlord',
+      relicItemId: 'war_banner',
+      victoryNpcId: 'captain',
       victoryFloor: 0,
-      victoryDialogue: 'For the Alliance!',
+      victoryDialogue: 'The banner is home!',
       victoryScoreBonus: 5000,
       bossFloorLayout: {
         width: 20,
@@ -75,21 +75,21 @@ describe('Manifest-Namespaced Storage Isolation', () => {
       },
       floorEncounters: {},
     },
-    atlas: { themeId: 'warcraft' },
-    starterKit: { weaponItemId: 'warhammer' },
+    atlas: { themeId: 'fixture' },
+    starterKit: { weaponItemId: 'broadsword' },
   };
 
-  it('isolates save files and rosters between CotW and Warcraft manifests in shared storage', () => {
+  it('isolates save files and rosters between the manifests of two packs in shared storage', () => {
     const sharedStorage = new MemoryStorage();
 
     const cotwManager = new ProfileManager(sharedStorage, cotwManifest);
-    const warcraftManager = new ProfileManager(sharedStorage, warcraftManifest);
+    const fixtureManager = new ProfileManager(sharedStorage, fixtureManifest);
 
     // Create a hero in CotW
     const { profile: cotwHero } = cotwManager.createCharacter('Bjorn', { manifest: cotwManifest });
 
-    // Create a hero in Warcraft
-    const { profile: warcraftHero } = warcraftManager.createCharacter('Lothar', { manifest: warcraftManifest });
+    // Create a hero in the fixture pack
+    const { profile: fixtureHero } = fixtureManager.createCharacter('Ash', { manifest: fixtureManifest });
 
     // CotW roster must contain only Bjorn
     const cotwProfiles = cotwManager.listProfiles();
@@ -97,21 +97,21 @@ describe('Manifest-Namespaced Storage Isolation', () => {
     expect(cotwProfiles[0].name).toBe('Bjorn');
     expect(cotwProfiles[0].id).toBe(cotwHero.id);
 
-    // Warcraft roster must contain only Lothar
-    const warcraftProfiles = warcraftManager.listProfiles();
-    expect(warcraftProfiles).toHaveLength(1);
-    expect(warcraftProfiles[0].name).toBe('Lothar');
-    expect(warcraftProfiles[0].id).toBe(warcraftHero.id);
+    // The fixture roster must contain only Ash
+    const fixtureProfiles = fixtureManager.listProfiles();
+    expect(fixtureProfiles).toHaveLength(1);
+    expect(fixtureProfiles[0].name).toBe('Ash');
+    expect(fixtureProfiles[0].id).toBe(fixtureHero.id);
 
     // Storage keys must be distinct
     expect(sharedStorage.getItem(`cotw_profile_roster_v2`)).not.toBeNull();
-    expect(sharedStorage.getItem(`warcraft_profile_roster_v2`)).not.toBeNull();
+    expect(sharedStorage.getItem(`fixture_profile_roster_v2`)).not.toBeNull();
     expect(sharedStorage.getItem(`cotw_save_${cotwHero.id}`)).not.toBeNull();
-    expect(sharedStorage.getItem(`warcraft_save_${warcraftHero.id}`)).not.toBeNull();
+    expect(sharedStorage.getItem(`fixture_save_${fixtureHero.id}`)).not.toBeNull();
 
-    // CotW manager cannot load Warcraft hero and vice versa
-    expect(cotwManager.loadCharacter(warcraftHero.id)).toBeNull();
-    expect(warcraftManager.loadCharacter(cotwHero.id)).toBeNull();
+    // CotW manager cannot load the fixture hero and vice versa
+    expect(cotwManager.loadCharacter(fixtureHero.id)).toBeNull();
+    expect(fixtureManager.loadCharacter(cotwHero.id)).toBeNull();
   });
 
   it('ignores un-namespaced keys left by an unrelated app on the same origin', () => {

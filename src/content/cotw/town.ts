@@ -105,7 +105,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
           makeShopItem('scroll_remove_curse', 'astrid-uncurse-1'),
           makeShopItem('wand_lightning', 'astrid-wand-1'),
           // Vendor unlock: appears only once the hero's exploration renown reaches 25
-          // (Milestone Renown Ledger, docs/architecture/content-progression-scaling.md).
+          // (Milestone Renown Ledger, docs/architecture/content-extensibility.md).
           makeShopItem('charm_watchful_eye', 'astrid-charm-watchful-eye', { type: 'minCounter', counter: 'renown:exploration', value: 25 }),
           // Catch-up rune tablets, each unlocked once the hero is past the zone that teaches it (spellTablets.ts)
           ...COTW_TABLET_STOCK.map((t) => makeShopItem(t.itemId, `astrid-${t.itemId}`, t.predicate)),
@@ -154,7 +154,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
       dialogText: 'For a price I can bond you with a battle-hound, revive one that has fallen, retrain its instincts, or teach it new tricks.',
     },
     {
-      // Rune of Return attunement trigger (docs/architecture/content-rune-of-return.md, engine's
+      // Rune of Return attunement trigger (docs/architecture/content-extensibility.md, engine's
       // `manifest.runeOfReturn.attunementNpcId`). The mechanism is engine-owned and
       // fixed; only this NPC's placement, name, and flavor are pack-provided.
       id: 'npc-rune-smith',

@@ -107,6 +107,8 @@ for (let seed = fromSeed; seed < fromSeed + count; seed++) {
     SOAK_START_FLOOR: String(startFloor),
     SOAK_START_LEVEL: String(startLevel),
     PLAYWRIGHT_HTML_REPORT: reportDir,
+    // playwright.config.ts defines Firefox and WebKit only when this is set.
+    PW_ALL_BROWSERS: '1',
   };
 
   const cmd = process.platform === 'win32' ? 'cmd.exe' : 'npx';

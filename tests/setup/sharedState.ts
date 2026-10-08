@@ -20,7 +20,8 @@ activateRegistries(null);
 // No engine module registers a monster, spell, companion or trap at import, so these
 // process defaults hold only what a test put there, and every engine built after it would
 // be seeded with it. A file that registers fixtures before building its engine removes them:
-// `activateRegistries(null)` first (an engine is active by then), then the facade's `clear()`.
+// `activateRegistries(null)` first (an engine is active by then), then the facade's `clear()`;
+// `useTestSpells` and `useTestCompanion` (src/engine/__fixtures__/testHelpers.ts) do both.
 afterAll(() => {
   activateRegistries(null);
   const left = Object.entries({

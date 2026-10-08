@@ -10,7 +10,6 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "build:cotw": "tsc && vite build --mode cotw",
-    "build:warcraft": "tsc && vite build --mode warcraft",
     "preview": "vite preview",
     "test": "vitest run",
     "prepare": "git config core.hooksPath .githooks || exit 0",

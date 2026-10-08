@@ -7,7 +7,8 @@ import * as path from 'node:path';
  * comments cite ARCHITECTURE.md by section (§N) and Planned Work ID (P-NN); both kinds
  * have drifted before (a stale P-10, an ID reused while still cited). This fails on a
  * section that doesn't exist, a P-ID that is neither registered nor retired, and a
- * relative doc link to a missing file.
+ * relative doc link to a missing file. It also keeps scratch markdown out of the repo
+ * root (§8.5): the working tree is checked, so an untracked note fails too.
  */
 
 const ROOT = process.cwd();
@@ -28,7 +29,6 @@ const DOCS = [
   'CLAUDE.md',
   ...filesUnder('docs', '.md'),
   ...filesUnder('.agents', '.md'),
-  ...filesUnder('.claude/commands', '.md'),
 ];
 const SOURCES = [...filesUnder('src', '.ts'), ...filesUnder('scripts', '.ts')].filter((f) => !f.endsWith('docReferences.test.ts'));
 
@@ -78,5 +78,10 @@ describe('governance references resolve', () => {
         .map((target) => `${file} -> ${target}`)
     );
     expect(broken).toEqual([]);
+  });
+
+  it('the repo root holds exactly two markdown files (§8.5)', () => {
+    const rootMarkdown = fs.readdirSync(ROOT).filter((f) => /\.md$/i.test(f)).sort();
+    expect(rootMarkdown).toEqual(['ARCHITECTURE.md', 'CLAUDE.md']);
   });
 });

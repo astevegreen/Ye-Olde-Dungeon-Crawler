@@ -11,7 +11,6 @@ import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { loadReplayState, replayActionTrail } from '../src/engine';
 import { cotwManifest } from '../src/content/cotw';
-import { warcraftManifest } from '../src/content/warcraft';
 
 const [file, ...flags] = process.argv.slice(2);
 if (!file) {
@@ -25,9 +24,7 @@ text = text.replace(/```replay-gz\s*\n([\s\S]*?)\n```/g, (_m, b64: string) => {
   return '```json\n' + json + '\n```';
 });
 
-const manifest = /warcraft/.test(text.match(/"manifestId":\s*"([^"]+)"|\*\*Manifest\*\*: `([^`]+)`/)?.[0] ?? '')
-  ? warcraftManifest
-  : cotwManifest;
+const manifest = cotwManifest;
 
 const loaded = loadReplayState(text, manifest);
 if (!loaded.ok) {

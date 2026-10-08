@@ -4,7 +4,7 @@ import type { RenownMilestoneDefinition } from '../types/manifest';
 import { incrementCounter, getCounter, setFlag, getFlag } from '../state/worldState';
 
 /**
- * Milestone Renown Ledger (docs/architecture/content-progression-scaling.md).
+ * Milestone Renown Ledger (docs/architecture/content-extensibility.md).
  *
  * Per-character meta-progression: cumulative renown by category, backed entirely by the
  * existing generic WorldState primitives (`counters`, `flags`), which already serialize

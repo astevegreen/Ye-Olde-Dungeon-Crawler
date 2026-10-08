@@ -5,7 +5,7 @@ import { createTestGoblin, createTestKobold } from '../../__fixtures__/testHelpe
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { GameEngine } from '../../engine';
-import { warcraftManifest } from '../../../content/warcraft';
+import { fixtureManifest } from '../../../../tests/fixtures/fixture-pack';
 import { SpellPipeline } from '../../magic/spellPipeline';
 import { activateRegistries } from '../../registries';
 import type { SpellDefinition } from '../../magic/types';
@@ -20,7 +20,7 @@ describe('Status Effect Registry & Manifest Integration (Phase 2)', () => {
     StatusHandlerRegistry.resetToDefaults();
   });
 
-  function setupEngine(manifest = warcraftManifest) {
+  function setupEngine(manifest = fixtureManifest) {
     const map = new GameMap(10, 10, TILES.FLOOR);
     const player = new Player({
       position: { x: 5, y: 5 },
@@ -100,8 +100,8 @@ describe('Status Effect Registry & Manifest Integration (Phase 2)', () => {
   it('auto-registers manifest statusHandlers upon GameEngine initialization', () => {
     expect(StatusHandlerRegistry.has('burning')).toBe(false);
 
-    // Initializing engine with warcraftManifest registers 'burning'
-    const { engine } = setupEngine(warcraftManifest);
+    // Initializing engine with fixtureManifest registers 'burning'
+    const { engine } = setupEngine(fixtureManifest);
     expect(StatusHandlerRegistry.has('burning')).toBe(true);
 
     const target = createTestGoblin('gob-target', { x: 5, y: 4 });
@@ -114,16 +114,16 @@ describe('Status Effect Registry & Manifest Integration (Phase 2)', () => {
       target,
       engine
     );
-    expect(engine.messages[engine.messages.length - 1]).toContain('bursts into demonic fel flames');
+    expect(engine.messages[engine.messages.length - 1]).toContain('bursts into flames');
 
     // Tick burning
     const tickRes = target.statusManager.tick(target, engine);
     expect(tickRes.damageTaken).toBe(4);
-    expect(engine.messages[engine.messages.length - 1]).toContain('scorched by fel fire');
+    expect(engine.messages[engine.messages.length - 1]).toContain('scorched for');
   });
 
   it('seamlessly integrates with SpellPipeline to apply custom manifest statuses', () => {
-    const { engine, player } = setupEngine(warcraftManifest);
+    const { engine, player } = setupEngine(fixtureManifest);
 
     const target = createTestKobold('target-orc', { x: 5, y: 6 });
     engine.addEntity(target);
@@ -140,7 +140,7 @@ describe('Status Effect Registry & Manifest Integration (Phase 2)', () => {
       reflects: false,
       targetType: 'ray',
       targetingMode: 'ray',
-      description: 'Ignites the target in persistent fel flames.',
+      description: 'Ignites the target in persistent flames.',
       effects: [
         { type: 'damage', amount: 5, element: 'fire' },
         { type: 'applyStatus', statusId: 'burning', duration: 3, potency: 3 },
@@ -154,6 +154,6 @@ describe('Status Effect Registry & Manifest Integration (Phase 2)', () => {
     // Ticking the target processes the custom burning handler
     const tickOutput = target.statusManager.tick(target, engine);
     expect(tickOutput.damageTaken).toBe(3);
-    expect(engine.messages[engine.messages.length - 1]).toContain('scorched by fel fire');
+    expect(engine.messages[engine.messages.length - 1]).toContain('scorched for');
   });
 });

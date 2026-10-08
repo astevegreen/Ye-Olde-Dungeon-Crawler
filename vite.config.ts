@@ -35,15 +35,15 @@ function cleanScriptForFileProtocol(targetTheme: string): Plugin {
         if (file.type === 'asset' && typeof file.source === 'string' && file.fileName.endsWith('.html')) {
           file.source = file.source.replace(/<script\s+type="module"\s+crossorigin>/gi, '<script>');
 
-          if (targetTheme === 'warcraft') {
-            file.fileName = 'warcraft.html';
-          } else {
+          if (targetTheme === 'cotw') {
             file.fileName = 'index.html';
             this.emitFile({
               type: 'asset',
               fileName: 'cotw.html',
               source: file.source,
             });
+          } else {
+            file.fileName = `${targetTheme}.html`;
           }
         }
       }
@@ -93,7 +93,7 @@ export default defineConfig(({ mode }) => {
     },
     test: {
       environment: 'node',
-      exclude: [...configDefaults.exclude, 'e2e/**', '**/.claude/**'],
+      exclude: [...configDefaults.exclude, 'e2e/**', '**/.claude/**', '**/.prompts/**'],
       // A worker runs its files in one module graph: about half the wall time of a fresh
       // graph per file. A file puts back the process state it changes (quality-gates.md).
       isolate: false,

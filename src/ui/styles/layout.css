@@ -155,7 +155,9 @@
   border-color: var(--ui-accent);
   background: var(--ui-accent);
 }
-.hud-btn-menu .hud-key {
+/* `#game-header-bar .hud-key` draws badges in the accent, which vanishes on this
+   accent button; ink keeps its Esc badge readable. */
+#game-header-bar .hud-btn-menu .hud-key {
   color: var(--ui-accent-ink);
 }
 

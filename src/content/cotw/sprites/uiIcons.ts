@@ -196,6 +196,13 @@ export const COTW_UI_ICONS: Record<string, SpriteRecipe> = {
     ctx.restore();
   },
 
+  // Three ink bars: drawn for the gold Menu button, so they read like its label. Five rows
+  // thick, so they stay dark when the HUD shrinks the icon to ~15px (thinner bars smear).
+  'ui~menu': (ctx, ox, oy) => {
+    const r = pen(ctx, ox, oy);
+    for (const y of [4, 13, 22]) r(C.ink, 4, y, 24, 5);
+  },
+
   'ui~inventory': COTW_ITEM_SPRITES.backpack,
 
   'ui~cast': (ctx, ox, oy) => {

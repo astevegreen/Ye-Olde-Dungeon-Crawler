@@ -12,6 +12,7 @@ export const UI_ICON_NAMES = [
   'help',
   'feedback',
   'tools',
+  'menu',
   'inventory',
   'cast',
   'look',

@@ -1,4 +1,5 @@
-// Stop hook: type-check once when Claude finishes a turn that left TypeScript under src/ changed.
+// Stop hook: type-check once when Claude finishes a turn that left TypeScript changed in a folder
+// tsc covers (tsconfig.json: src, tests, scripts, relay; e2e/tsconfig.json: e2e).
 // Exit 2 feeds tsc's errors back to Claude, which fixes them before finishing; any other path
 // exits 0 silently. A turn whose edits were committed already ran tsc in the pre-commit lint.
 import { spawnSync } from 'node:child_process';
@@ -16,7 +17,11 @@ if (input?.stop_hook_active) process.exit(0);
 
 const cwd = input?.cwd ?? process.cwd();
 
-const status = spawnSync('git', ['status', '--porcelain', '--', 'src'], { cwd, encoding: 'utf8' });
+const status = spawnSync(
+  'git',
+  ['status', '--porcelain', '--', 'src', 'tests', 'scripts', 'relay', 'e2e', 'vite.config.ts', 'playwright.config.ts'],
+  { cwd, encoding: 'utf8' },
+);
 if (status.status !== 0) process.exit(0);
 const changed = status.stdout
   .split('\n')
@@ -25,13 +30,24 @@ const changed = status.stdout
 if (changed.length === 0) process.exit(0);
 
 // Straight to tsc, without npx and a shell; tsconfig.json's incremental build info makes a rerun ~1s.
-const res = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '--noEmit', '--pretty', 'false'], {
-  cwd,
-  encoding: 'utf8',
-});
+const tsc = (...project) =>
+  spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '--noEmit', '--pretty', 'false', ...project], {
+    cwd,
+    encoding: 'utf8',
+  });
+const runs = [tsc()];
+if (changed.some((file) => file.startsWith('e2e/') || file === 'playwright.config.ts')) {
+  runs.push(tsc('-p', 'e2e/tsconfig.json'));
+}
 
-if (res.status === 0) process.exit(0);
+const failed = runs.filter((res) => res.status !== 0);
+if (failed.length === 0) process.exit(0);
 
-const out = `${res.stdout ?? ''}${res.stderr ?? ''}`.trim().split('\n').slice(0, 40).join('\n');
-process.stderr.write(`tsc --noEmit failed with ${changed.length} changed TypeScript file(s) under src/:\n${out}\n`);
+const out = failed
+  .map((res) => `${res.stdout ?? ''}${res.stderr ?? ''}`.trim())
+  .join('\n')
+  .split('\n')
+  .slice(0, 40)
+  .join('\n');
+process.stderr.write(`tsc --noEmit failed with ${changed.length} changed TypeScript file(s):\n${out}\n`);
 process.exit(2);

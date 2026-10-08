@@ -57,4 +57,4 @@ Then write the result to `.prompts/grill-<topic>.md` (gitignored; never a new `.
 - anything still open, and anything deliberately cut
 - for Mode A, the final verdict table
 
-Offer to save decisions that will outlast the task as a memory (preferences, design choices) or an ADR (anything that changes the architecture). An ADR goes in `docs/decisions/NNNN-slug.md`, written with `domain-modeling` (its ADR-FORMAT.md) and referenced from the ARCHITECTURE.md section it concerns. Do not write either unasked; an ADR the repo requires (a §8.1 exception-4 change, a design rejected on evidence) is written with the change it records.
+Offer to save decisions that will outlast the task as a memory (preferences, design choices) or an ADR (anything that changes the architecture). An ADR goes in `docs/decisions/NNNN-slug.md`, shaped like the ADRs already there, and referenced from the ARCHITECTURE.md section it concerns. Do not write either unasked; an ADR the repo requires (a §8.1 exception-4 change, a design rejected on evidence) is written with the change it records.

@@ -32,6 +32,10 @@ const isSoakRun =
   process.argv.some((arg) => arg.includes('soak') || arg.includes('@soak')) ||
   process.env.SOAK === '1';
 
+// Local runs use Chromium only; CI and the pre-push hook (PW_ALL_BROWSERS=1) add Firefox and
+// WebKit, so nothing reaches origin untested in them.
+const allBrowsers = !!process.env.CI || !!process.env.PW_ALL_BROWSERS;
+
 /**
  * End-to-end smoke tests for the shipped single-file bundle (ARCHITECTURE.md §2, §7.1).
  * Specs load the built `dist/` output over file://, so run `npm run build` first;
@@ -62,7 +66,11 @@ export default defineConfig({
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    ...(allBrowsers
+      ? [
+          { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+          { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+        ]
+      : []),
   ],
 });

@@ -25,7 +25,8 @@ npm run validate:schema
 echo "pre-push: npm run build"
 npm run build
 
-echo "pre-push: npx playwright test"
-npx playwright test
+# Local runs elsewhere use Chromium only (playwright.config.ts); the push runs all three browsers.
+echo "pre-push: PW_ALL_BROWSERS=1 npx playwright test"
+PW_ALL_BROWSERS=1 npx playwright test
 
 echo "pre-push: passed"

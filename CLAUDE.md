@@ -49,10 +49,10 @@ invoke those separately), `npm test`, `npm run sim`, `npm run validate:schema`, 
 is not the same as a change that does.
 
 Routine for every commit that touches presentation:
-1. `npm run gates`: all of the above, then `npx playwright test`. The
-   pre-commit hook runs only lint and tests, and Playwright normally
-   runs only at the owner's push, yet it has caught regressions the
-   unit tests missed.
+1. `npm run gates`: all of the above, then `npx playwright test` in
+   Chromium. The pre-commit hook runs only lint and tests, and
+   Playwright normally runs only at the owner's push (all three
+   browsers there), yet it has caught regressions the unit tests missed.
 2. CSS or layout changed: capture the HUD before and after with the dev
    server running (`OUT=.prompts/<dir> node .prompts/menus-audit.mjs
    1366 g00`). Menu screenshots don't show it, because the scrim hides

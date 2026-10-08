@@ -19,7 +19,8 @@ function filesUnder(dir: string, ext: string): string[] {
   if (!fs.existsSync(abs)) return [];
   return fs.readdirSync(abs, { withFileTypes: true }).flatMap((e) => {
     const rel = path.join(dir, e.name);
-    if (e.isDirectory()) return e.name === 'node_modules' ? [] : filesUnder(rel, ext);
+    // .claude/worktrees holds other sessions' checkouts, not this tree's docs.
+    if (e.isDirectory()) return e.name === 'node_modules' || e.name === 'worktrees' ? [] : filesUnder(rel, ext);
     return e.name.endsWith(ext) ? [rel] : [];
   });
 }
@@ -29,6 +30,7 @@ const DOCS = [
   'CLAUDE.md',
   ...filesUnder('docs', '.md'),
   ...filesUnder('.agents', '.md'),
+  ...filesUnder('.claude', '.md'),
 ];
 const SOURCES = [...filesUnder('src', '.ts'), ...filesUnder('scripts', '.ts')].filter((f) => !f.endsWith('docReferences.test.ts'));
 

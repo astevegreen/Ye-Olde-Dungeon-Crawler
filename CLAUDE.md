@@ -4,14 +4,17 @@
 
 ## Sessions
 - One task per session. When a task is committed and the next request is unrelated, or the session has run long, offer `/handoff` so the owner can `/clear` and resume.
-- Delegate sweeps: "where is X / what calls Y" goes to an Explore subagent, and the main session reads only the files it changes.
+- Delegate reading to the project agents; the main session reads only the files it changes.
+  - `scout`: "where is X / what calls Y", answered as `path:line`. "How does X work" goes to Explore.
+  - `visual-check`: captures before and after a presentation change and returns a verdict with image paths. Open an image only when the owner needs to see it.
+  - `log-analyst`: soak, balance and test output past a few hundred lines, returned as counts, top findings and anomalies.
 
 ## Verification
 - While iterating, run only the relevant tests: `npx vitest run <file>`.
 - Before committing, run `npm run gate-stamp -- run lint test`: lint (`tsc` over `src/` and `e2e/`, the `check:*` scripts, `knip`) and the full suite. The pre-commit hook then skips both on the identical tree; a bare `npm run lint` or `npm test` writes no stamp.
 - Run `npm run sim`, `npm run validate:schema` and `npm run build` when the change reaches them.
 - A commit that touches presentation runs `npm run gates` first: all of the above, then Playwright in Chromium. The push runs all three browsers, but Chromium before the commit has caught regressions the unit tests missed.
-- CSS or layout changed: capture the HUD before and after, dev server running (`OUT=.prompts/captures/<dir> node scripts/capture/menus.mjs 1366 g00`); menu screenshots hide the HUD behind the scrim.
+- CSS or layout changed: `visual-check` captures the HUD before and after (`scripts/capture/menus.mjs 1366 g00`); menu screenshots hide the HUD behind the scrim.
 - Report real output, pasted. A change that "should" pass has not passed.
 
 ## Commits

@@ -20,13 +20,13 @@ Done when each seed's `summary.json` reads `partial: false`: a summary is rewrit
 
 ## Output
 Everything lands in `.prompts/soak/<lens>/` (gitignored), or `<lens>-floor<N>/` for a deep start:
-- `runs.jsonl`: one line per seed from the runner: `status`, `endedBy`, `turnsPlayed`, `deepestFloor`, `causeOfDeath`, `deathCause`, `findingCounts`, `sha`.
+- `runs.jsonl`: one line per seed from the runner: `status`, `endedBy`, `turnsPlayed`, `deepestFloor`, `causeOfDeath`, `deathCause`, `findingCounts`, `sha` (`deathCause` and `sha` only from 1cb68d5, 5 Oct; older runs keep their sha in `summary.json`).
 - `findings.jsonl`: one line per signature new to a run, across the lens: `sig`, `category` (`bug`, `softlock`, `text`, `ux`), `severity`, `seed`, `action`, `turn`, `floor`, `detail`, and `repro`, the command that replays that seed to that action.
 - `<seed>/summary.json` (`SoakSummary`, `e2e/soak/types.ts`): the run's totals, every signature with its count, latency, the raid, interruptions, and for `player` the gear and bot telemetry.
 - `<seed>/actions.jsonl` (a finding's `lastActions` points into it), `f<action>.png`/`.zip` evidence for the first sighting of a signature, `save-<n>.txt` save codes every 100 actions and `save-first-finding.txt`.
 
 ## Read
-- Hand the counting to a subagent: the logs run to megabytes. Ask for counts per signature and seed, the top findings by seeds affected, death causes, and anomalies against the last soak, with file paths; the main session opens a screenshot or save code only for a finding it will act on.
+- Hand the counting to the `log-analyst` agent: the logs run to megabytes. Ask for counts per signature and seed, the top findings by seeds affected, death causes, and anomalies against the last soak, with file paths; the main session opens a screenshot or save code only for a finding it will act on.
 - A signature is one defect however often it fires; rank by seeds affected, not by count.
 - Reproduce with the finding's `repro` line, or load its save code; evidence from soaks before 7 Oct 2026 lost its traces and periodic snapshots (deleted to save space), so plan no work that replays them.
 

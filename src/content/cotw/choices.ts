@@ -52,7 +52,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              '\u{1f525} You seize the stolen chariot-fire instead of her hand. It burns — your own giant-blood curdling against the heat — but the siphon breaks all the same. An Ember-Fang Wolf answers the flame. \u{1f525}',
+              'You seize the stolen chariot-fire instead of her hand. It burns — your own giant-blood curdling against the heat — but the siphon breaks all the same. An Ember-Fang Wolf answers the flame.',
           },
         ],
       },

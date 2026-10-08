@@ -6,6 +6,12 @@
 # `npm run sim`, `npm run validate:schema`, `npm run build`, and the
 # Playwright smoke suite — run in .githooks/pre-push and in CI.
 #
+# A gate that already passed on this exact working tree is not run again: the second
+# and later commits cut from one tree would otherwise rerun lint and the unit tests on
+# identical content. scripts/gate-stamp.ts decides (a content-hash stamp under
+# .git/gate-stamps, written after a pass and by `npm run gates`; any doubt runs the
+# gate; GATE_STAMP=off ignores stamps). docs/architecture/quality-gates.md has the rules.
+#
 # Git is pointed at this directory by the `prepare` npm script
 # (`git config core.hooksPath .githooks`), so `npm install` wires it up.
 #
@@ -18,10 +24,7 @@ if [ "$SKIP_HOOKS" = "1" ]; then
   exit 0
 fi
 
-echo "pre-commit: npm run lint"
-npm run lint
-
-echo "pre-commit: npm test"
-npm test
+echo "pre-commit: lint + test"
+npm run --silent gate-stamp -- run lint test
 
 echo "pre-commit: passed"

@@ -71,7 +71,6 @@ const ELDORIA_MANIFEST: GameContentManifest = {
         position: { x: 20, y: 10 },
         greeting: 'Welcome to Silverglade, traveler!',
         dialogText: 'The Abyssal Rift threatens our realm. Please seal it!',
-        isStationary: true,
       },
       {
         id: 'npc_serena',
@@ -80,7 +79,6 @@ const ELDORIA_MANIFEST: GameContentManifest = {
         position: { x: 10, y: 8 },
         greeting: 'May the Sun guide you.',
         dialogText: 'I can purge any dark curses afflictions for a humble tithe.',
-        isStationary: true,
       },
       {
         id: 'npc_silas',
@@ -89,7 +87,6 @@ const ELDORIA_MANIFEST: GameContentManifest = {
         position: { x: 30, y: 8 },
         greeting: 'Silverglade Vaults are at your disposal.',
         dialogText: 'We convert your heavy copper into radiant platinum.',
-        isStationary: true,
       },
     ],
     services: {

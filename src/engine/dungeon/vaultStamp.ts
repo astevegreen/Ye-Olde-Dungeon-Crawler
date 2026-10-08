@@ -10,9 +10,6 @@ import { createScaledMonster, dungeonSpawnWeight, selectDungeonMonsterDefinition
 import { createDungeonChest } from './lootSpawner';
 import type { EngineRegistries } from '../registries';
 
-
-import type { Predicate } from '../predicates/types';
-
 /** Below this `dungeonSpawnWeight`, a vault's listed guard no longer belongs to the floor. */
 const VAULT_GUARD_MIN_WEIGHT = 0.1;
 
@@ -30,7 +27,6 @@ export interface VaultBlueprint {
    */
   preferredMonsters?: string[];
   minibossId?: string;
-  predicate?: Predicate;
   /**
    * Extra layout symbols mapped to tile types (resolved through the tile registry, so
    * a pack's own `customTiles` work). Checked before the built-in symbols, letting a

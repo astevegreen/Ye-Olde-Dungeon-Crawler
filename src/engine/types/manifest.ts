@@ -406,8 +406,6 @@ export interface TownNpcDefinition {
   advice?: string;
   shopId?: string;
   merchantConfig?: MerchantConfig;
-  isStationary?: boolean;
-  predicate?: Predicate;
 }
 
 export interface TownLayoutDefinition {

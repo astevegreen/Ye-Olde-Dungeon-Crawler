@@ -241,7 +241,6 @@ export const fixtureManifest: GameContentManifest = {
         role: 'villager',
         position: { x: 15, y: 10 },
         greeting: 'The warlord holds the fifth floor.',
-        isStationary: true,
       },
     ],
   },

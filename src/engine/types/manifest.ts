@@ -25,6 +25,7 @@ import type { RunPactDefinition } from '../pacts/pactManager';
 import type { CompanionDefinition } from '../entities/companion';
 import type { MonsterScalingConfig } from './monsterScaling';
 import type { GasType } from '../surfaces/surfaceGrid';
+import type { Gender } from '../character/types';
 
 export interface MerchantConfig {
   id: string;
@@ -792,6 +793,40 @@ export type SpriteRecipe<TContext = any> = (
 ) => void;
 
 /**
+ * A sprite that draws its own final pixels (rendering tier): the pack lights, shades and
+ * outlines it and gives it its own ground shadow, so the atlas's shading, outline and rim
+ * passes and the renderer's entity shadow skip it. It may idle: the map cycles its frames on
+ * a slow ambient tick that never holds input (§4), and holds frame 0 when the player reduces
+ * motion and in remembered views. Frames are baked on first use.
+ */
+export interface PixelSprite {
+  /** Idle frames, 1-4. Default 1. */
+  frames?: number;
+  /**
+   * One frame's straight-alpha RGBA pixels, `size` by `size` (the atlas's stored cell edge).
+   * Deterministic: the same frame and size give the same pixels; no DOM, clock or randomness.
+   */
+  render(frame: number, size: number): Uint8ClampedArray;
+}
+
+/** What the hero has on, for `HeroSpriteArt.lookKey`. */
+export interface HeroGear {
+  gender: Gender;
+  equipped(slot: EquipmentSlot): Item | null;
+}
+
+/**
+ * The hero's map sprite built from the gear they wear (rendering tier): the pack reads the
+ * equipped items and names a look, and the renderer bakes each look once it is worn.
+ */
+export interface HeroSpriteArt {
+  /** A stable key for the look this gear makes; the same key reuses the baked sprite. */
+  lookKey(gear: HeroGear): string;
+  /** The sprite for a key `lookKey` returned. */
+  sprite(lookKey: string): PixelSprite;
+}
+
+/**
  * Pack-specific wording for shared presentation screens (§3: presentation code names no
  * pack). The pack's title and tagline are `GameContentManifest.name`/`description`, and
  * its town is `town.name`; everything here is optional and falls back to neutral text.
@@ -935,6 +970,10 @@ export interface GameContentManifest {
   vaults?: VaultBlueprint[];
   advisorQuotes?: string[];
   spriteRecipes?: Record<string, SpriteRecipe>;
+  /** Sprites that draw their own pixels and may idle (`PixelSprite`), keyed like `spriteRecipes`; a key in both draws from here. */
+  pixelSprites?: Record<string, PixelSprite>;
+  /** The hero drawn wearing their gear; without it the hero is the `player`/`player_female` sprite. */
+  heroSprite?: HeroSpriteArt;
   presetNames?: string[];
   statusHandlers?: Record<string, StatusHandler>;
   actionHooks?: ActionHook[];

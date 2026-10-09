@@ -14,8 +14,11 @@ import { MapOverlay } from './map-overlay';
 import { drawFloorMap } from './floorMap';
 import { IntentOverlay } from './intentOverlay';
 import { Monster } from '../engine';
+import { Player } from '../engine';
 import { SpriteAtlas } from './atlas/sprite-atlas';
 import { getTerrainSpriteKey, getEntitySpriteKey, getItemSpriteKey, getMonsterDefinitionSpriteKey } from './atlas/sprite-mapper';
+import { heroSpriteKey } from './atlas/hero-sprite';
+import { IdleTicker, idleFrame, idlePhase } from './atlas/idle-frames';
 import { contactShadowSides, zoneForFloor, type TerrainView } from './atlas/terrain-layers';
 import { TerrainLayerCache } from './atlas/terrain-cache';
 import { ViewportManager } from './viewport';
@@ -69,6 +72,13 @@ export class CanvasRenderer {
   public onAimFire?: () => void;
   /** Player setting: the pack's torchlight pass (`atlas.terrain.torch`). */
   public torchlightEnabled = true;
+  /** Player setting (Reduce motion off): sprites with idle frames cycle them; off holds frame 0. */
+  public idleMotion = true;
+  /** This draw's clock, shared by every idle sprite in it. */
+  private drawNow = 0;
+  /** Whether this draw showed a sprite that idles, so the next frame needs a redraw. */
+  private idleShown = false;
+  private readonly idleTicker = new IdleTicker(() => this.render());
   public navigationController?: NavigationController;
   private cellSize = 32;
   private topBarHeight = 0;
@@ -139,7 +149,10 @@ export class CanvasRenderer {
     this.ctx = ctx;
     this.engine = engine;
     this.camera = new Camera(26, 18);
-    this.atlas = new SpriteAtlas(this.engine.manifest?.spriteRecipes, { memory: this.engine.manifest?.atlas?.terrain?.memory });
+    this.atlas = new SpriteAtlas(this.engine.manifest?.spriteRecipes, {
+      memory: this.engine.manifest?.atlas?.terrain?.memory,
+      pixelSprites: this.engine.manifest?.pixelSprites,
+    });
     setIconAtlas(this.atlas);
     this.viewport = new ViewportManager(this.canvas, this.ctx, {
       virtualWidth: 960,
@@ -406,6 +419,7 @@ export class CanvasRenderer {
     this.mapOverlay.close();
     this.fxRunner.destroy();
     this.floatingTextRunner.destroy();
+    this.idleTicker.stop();
     this.cards?.remove();
     releaseIconAtlas(this.atlas);
   }
@@ -440,6 +454,8 @@ export class CanvasRenderer {
   public render(): void {
     // Re-apply viewport context transform so High-DPI scaling is active
     this.viewport.applyContextTransform();
+    this.drawNow = Date.now();
+    this.idleShown = false;
 
     // 1. Update camera tracking on player
     if (this.engine.player && typeof this.engine.player.x === 'number' && typeof this.engine.player.y === 'number') {
@@ -581,12 +597,21 @@ export class CanvasRenderer {
     // The companion wheel, with the companion at its hub (the hero while it is away)
     this.radialMenuOverlay.render(ctx, this.engine, virtualW, virtualH, (c, x, y, size) => {
       const centre = this.engine.companion?.isAlive() ? this.engine.companion : this.engine.player;
-      const spriteKey = centre ? getEntitySpriteKey(centre, this.atlas.hasSprite.bind(this.atlas)) : 'player';
+      const spriteKey = centre ? this.entitySpriteKey(centre) : 'player';
       this.atlas.drawSprite(c, spriteKey, x - size / 2, y - size / 2, size, Visibility.Visible);
     });
 
     this.notifyFocusEntity();
     this.syncCards(virtualW);
+    if (this.idleShown) this.idleTicker.request(this.drawNow);
+  }
+
+  /** The idle frame `key` shows in this draw: 0 unless it idles and motion is on. */
+  private idleFrameOf(key: string, phase: number): number {
+    const frames = this.atlas.frameCount(key);
+    if (frames <= 1 || !this.idleMotion) return 0;
+    this.idleShown = true;
+    return idleFrame(this.drawNow, frames, phase);
   }
 
   /** Puts each overlay's DOM card over the map, matching this frame. */
@@ -1204,12 +1229,10 @@ export class CanvasRenderer {
 
   private renderPlayer(px: number, py: number, cs: number, player?: Entity): void {
     const ctx = this.ctx;
-    this.drawEntityShadow(px, py, cs);
 
     // Torchlight already pools warm light on the player; the aura is its stand-in.
     if (this.engine.manifest?.atlas?.terrain?.torch && this.torchlightEnabled) {
-      const spriteKey = player ? getEntitySpriteKey(player, this.atlas.hasSprite.bind(this.atlas)) : 'player';
-      this.atlas.drawSprite(ctx, spriteKey, px, py, cs, Visibility.Visible);
+      this.drawEntitySprite(player, px, py, cs);
       return;
     }
 
@@ -1230,16 +1253,12 @@ export class CanvasRenderer {
     ctx.arc(px + cs / 2, py + cs / 2, cs * 0.75, 0, Math.PI * 2);
     ctx.fill();
 
-    // Sprite
-    const spriteKey = player ? getEntitySpriteKey(player, this.atlas.hasSprite.bind(this.atlas)) : 'player';
-    this.atlas.drawSprite(ctx, spriteKey, px, py, cs, Visibility.Visible);
+    this.drawEntitySprite(player, px, py, cs);
   }
 
   private renderMonster(px: number, py: number, cs: number, monster: Entity): void {
     const ctx = this.ctx;
-    this.drawEntityShadow(px, py, cs);
-
-    this.atlas.drawSprite(ctx, this.monsterSpriteKey(monster), px, py, cs, Visibility.Visible);
+    this.drawEntitySprite(monster, px, py, cs);
 
     // Monster mini HP bar if damaged
     if (monster.hp < monster.maxHp && monster.hp > 0) {
@@ -1374,7 +1393,7 @@ export class CanvasRenderer {
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.imageSmoothingEnabled = false;
-    this.atlas.drawSprite(ctx, this.monsterSpriteKey(entity), 0, 0, Math.min(canvas.width, canvas.height));
+    this.atlas.drawSprite(ctx, this.entitySpriteKey(entity), 0, 0, Math.min(canvas.width, canvas.height));
   }
 
   /** Paints a monster definition's sprite to fill a DOM canvas (the bestiary's picture, tracker 4.2):
@@ -1388,10 +1407,23 @@ export class CanvasRenderer {
     this.atlas.drawSprite(ctx, key, 0, 0, Math.min(canvas.width, canvas.height));
   }
 
-  /** A creature's sprite, the same on the map and in every DOM icon: the pack's tag
-   *  rules apply to both (the icons once skipped them and drew 9 monsters differently). */
-  private monsterSpriteKey(entity: Entity): string {
+  /** An entity's sprite, the same on the map and in every DOM icon: the pack's tag
+   *  rules apply to both (the icons once skipped them and drew 9 monsters differently),
+   *  and the hero wears their gear when the pack draws it (`manifest.heroSprite`). */
+  private entitySpriteKey(entity: Entity): string {
+    if (entity instanceof Player) {
+      const hero = heroSpriteKey(entity, this.atlas, this.engine.manifest?.heroSprite);
+      if (hero) return hero;
+    }
     return getEntitySpriteKey(entity, this.atlas.hasSprite.bind(this.atlas), this.engine.manifest?.atlas?.spriteTagRules);
+  }
+
+  /** An entity's map sprite at this draw's idle frame, over its own shadow or the generic one. */
+  private drawEntitySprite(entity: Entity | undefined, px: number, py: number, cs: number): void {
+    const key = entity ? this.entitySpriteKey(entity) : 'player';
+    if (!this.atlas.hasFigure(key)) this.drawEntityShadow(px, py, cs);
+    const frame = this.idleFrameOf(key, entity ? idlePhase(entity.id) : 0);
+    this.atlas.drawSprite(this.ctx, key, px, py, cs, Visibility.Visible, frame);
   }
 
   /**

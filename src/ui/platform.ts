@@ -90,6 +90,22 @@ export function downloadDataUrl(filename: string, dataUrl: string): void {
   document.body.removeChild(link);
 }
 
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
+function reducedMotionQuery(): MediaQueryList | null {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia(REDUCED_MOTION_QUERY) : null;
+}
+
+/** Whether to hold sprites still: the player's Reduce motion choice, else the system's preference. */
+export function reducesMotion(setting: boolean | null): boolean {
+  return setting ?? reducedMotionQuery()?.matches ?? false;
+}
+
+/** Calls `onChange` when the system's reduced-motion preference changes. */
+export function onSystemReducedMotionChange(onChange: () => void): void {
+  reducedMotionQuery()?.addEventListener?.('change', onChange);
+}
+
 /** Browser details a diagnostic report needs. The engine can't read them itself
  * (headless purity, ARCHITECTURE.md §2), so presentation passes them in; without
  * them a report reads "Headless / Pure Engine" at a default 960x600. */

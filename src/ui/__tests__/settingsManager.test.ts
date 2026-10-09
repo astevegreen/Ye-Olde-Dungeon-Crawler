@@ -63,6 +63,16 @@ describe('SettingsManager', () => {
     expect(new SettingsManager(storage).getSettings().mouseAimEnabled).toBe(true);
   });
 
+  it('follows the system on Reduce motion until the player picks, through a save', () => {
+    expect(manager.getSettings().reduceMotion).toBeNull();
+    manager.updateSettings({ mouseAimEnabled: false });
+    expect(new SettingsManager(storage).getSettings().reduceMotion).toBeNull();
+    manager.updateSettings({ reduceMotion: false });
+    expect(new SettingsManager(storage).getSettings().reduceMotion).toBe(false);
+    storage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ reduceMotion: 'yes' }));
+    expect(new SettingsManager(storage).getSettings().reduceMotion).toBeNull();
+  });
+
   it('clamps arrowChordBufferMs between 25ms and 75ms', () => {
     manager.updateSettings({ arrowChordBufferMs: 10 });
     expect(manager.getSettings().arrowChordBufferMs).toBe(25);

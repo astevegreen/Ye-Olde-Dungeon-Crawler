@@ -1,6 +1,6 @@
 import { Visibility } from '../../engine';
 import type { SpriteKey, AtlasCoords } from './types';
-import type { SpriteRecipe, TerrainArtConfig } from '../../engine';
+import type { PixelSprite, SpriteRecipe, TerrainArtConfig } from '../../engine';
 
 /**
  * The coordinate unit every sprite recipe draws in — fixed forever. Recipes (both
@@ -192,7 +192,28 @@ export function isFlatTerrainKey(key: string): boolean {
 export interface SpriteAtlasOptions {
   /** Remembered-cell styling; absent keeps the blue-slate dimming. */
   memory?: TerrainArtConfig['memory'];
+  /** Sprites that draw their own pixels (`manifest.pixelSprites`). */
+  pixelSprites?: Record<string, PixelSprite>;
 }
+
+/**
+ * A `PixelSprite` and its frames, side by side on one strip canvas, each baked the first
+ * time it is drawn. None of the atlas's pixel passes touch it: its pixels are final.
+ */
+interface Figure {
+  sprite: PixelSprite;
+  frames: number;
+  strip: HTMLCanvasElement | null;
+  baked: boolean[];
+  /** Frame 0, styled as remembered. */
+  dimmed: HTMLCanvasElement | null;
+}
+
+/** Looks defined at run time (the hero's gear) kept baked at once; the oldest past this is rebaked if worn again. */
+const TRANSIENT_FIGURES = 12;
+
+/** The most idle frames a `PixelSprite` may have. */
+const MAX_FRAMES = 4;
 
 export class SpriteAtlas {
   public readonly atlasCanvas: HTMLCanvasElement;
@@ -201,12 +222,15 @@ export class SpriteAtlas {
   private recipes?: Record<string, SpriteRecipe>;
   private readonly cells: Record<string, AtlasCoords>;
   private readonly rows: number;
+  private readonly figures = new Map<string, Figure>();
+  private readonly transientFigures: string[] = [];
 
   private readonly options: SpriteAtlasOptions;
 
   constructor(recipes?: Record<string, SpriteRecipe>, options: SpriteAtlasOptions = {}) {
     this.recipes = recipes;
     this.options = options;
+    for (const [key, sprite] of Object.entries(options.pixelSprites ?? {})) this.defineFigure(key, sprite);
     this.cells = layoutCells(recipes);
     this.rows = Math.max(ATLAS_ROWS, ...Object.values(this.cells).map((c) => c.row + 1));
     this.atlasCanvas = document.createElement('canvas');
@@ -347,44 +371,115 @@ export class SpriteAtlas {
     dimmedCtx.drawImage(this.atlasCanvas, 0, 0);
 
     const imgData = dimmedCtx.getImageData(0, 0, this.dimmedAtlasCanvas.width, this.dimmedAtlasCanvas.height);
-    if (this.options.memory) {
-      applyMemoryStyle(imgData.data, this.dimmedAtlasCanvas.width, this.getUniqueCells(), this.options.memory);
-      dimmedCtx.putImageData(imgData, 0, 0);
-      return;
-    }
-
-    // Apply dark blue-slate Fog of War desaturation
-    const data = imgData.data;
-
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-      const a = data[i + 3];
-
-      if (a === 0) continue;
-
-      // Rec. 709 Grayscale Luminance
-      const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-
-      // Dim and tint towards dungeon shadow palette
-      data[i] = Math.floor(lum * 0.6); // Red muted
-      data[i + 1] = Math.floor(lum * 0.8); // Green muted
-      data[i + 2] = Math.floor(lum * 1.3 + 18); // Cool blue-slate bias
-    }
-
+    this.styleRemembered(imgData.data, this.dimmedAtlasCanvas.width, this.getUniqueCells());
     dimmedCtx.putImageData(imgData, 0, 0);
   }
 
+  /** The pack's remembered-cell styling, else the blue-slate dimming. */
+  private styleRemembered(data: Uint8ClampedArray, width: number, cells: readonly AtlasCell[]): void {
+    if (this.options.memory) applyMemoryStyle(data, width, cells, this.options.memory);
+    else applySlateDimming(data);
+  }
+
+  /**
+   * Adds a sprite that draws its own pixels. A `transient` one (a look built at run time) is
+   * dropped once more than `TRANSIENT_FIGURES` are kept, and defined again when needed.
+   */
+  public defineFigure(key: string, sprite: PixelSprite, options: { transient?: boolean } = {}): void {
+    const frames = Math.max(1, Math.min(MAX_FRAMES, Math.floor(sprite.frames ?? 1)));
+    this.figures.set(key, { sprite, frames, strip: null, baked: [], dimmed: null });
+    this.spriteCache.delete(key);
+    if (!options.transient) return;
+    this.transientFigures.push(key);
+    while (this.transientFigures.length > TRANSIENT_FIGURES) {
+      const old = this.transientFigures.shift() as string;
+      this.figures.delete(old);
+      this.spriteCache.delete(old);
+    }
+  }
+
+  /** Whether `key` draws from a `PixelSprite`: its own light, outline and ground shadow. */
+  public hasFigure(key: string): boolean {
+    return this.figures.has(key);
+  }
+
+  /** How many idle frames `key` has; 1 for every baked recipe. */
+  public frameCount(key: string): number {
+    return this.figures.get(key)?.frames ?? 1;
+  }
+
+  /** The figure's strip with `frame` baked, or null without a 2D context. */
+  private figureStrip(fig: Figure, frame: number): HTMLCanvasElement | null {
+    if (!fig.strip) {
+      fig.strip = document.createElement('canvas');
+      fig.strip.width = ATLAS_TILE_SIZE * fig.frames;
+      fig.strip.height = ATLAS_TILE_SIZE;
+    }
+    if (fig.baked[frame]) return fig.strip;
+    const ctx = fig.strip.getContext('2d');
+    if (!ctx) return null;
+    const img = ctx.createImageData(ATLAS_TILE_SIZE, ATLAS_TILE_SIZE);
+    const pixels = fig.sprite.render(frame, ATLAS_TILE_SIZE);
+    img.data.set(pixels.subarray(0, img.data.length));
+    ctx.putImageData(img, frame * ATLAS_TILE_SIZE, 0);
+    fig.baked[frame] = true;
+    return fig.strip;
+  }
+
+  /** Frame 0 styled as remembered, made on first use. */
+  private figureDimmed(fig: Figure): HTMLCanvasElement | null {
+    if (fig.dimmed) return fig.dimmed;
+    const strip = this.figureStrip(fig, 0);
+    if (!strip) return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = ATLAS_TILE_SIZE;
+    canvas.height = ATLAS_TILE_SIZE;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(strip, 0, 0, ATLAS_TILE_SIZE, ATLAS_TILE_SIZE, 0, 0, ATLAS_TILE_SIZE, ATLAS_TILE_SIZE);
+    const img = ctx.getImageData(0, 0, ATLAS_TILE_SIZE, ATLAS_TILE_SIZE);
+    this.styleRemembered(img.data, ATLAS_TILE_SIZE, [{ ox: 0, oy: 0, size: ATLAS_TILE_SIZE }]);
+    ctx.putImageData(img, 0, 0);
+    fig.dimmed = canvas;
+    return canvas;
+  }
+
+  private drawFigure(
+    targetCtx: CanvasRenderingContext2D,
+    fig: Figure,
+    dx: number,
+    dy: number,
+    dSize: number,
+    visibility: Visibility,
+    frame: number
+  ): void {
+    if (visibility === Visibility.Explored) {
+      const dimmed = this.figureDimmed(fig);
+      if (dimmed) targetCtx.drawImage(dimmed, 0, 0, ATLAS_TILE_SIZE, ATLAS_TILE_SIZE, dx, dy, dSize, dSize);
+      return;
+    }
+    const f = ((Math.floor(frame) % fig.frames) + fig.frames) % fig.frames;
+    const strip = this.figureStrip(fig, f);
+    if (strip) targetCtx.drawImage(strip, f * ATLAS_TILE_SIZE, 0, ATLAS_TILE_SIZE, ATLAS_TILE_SIZE, dx, dy, dSize, dSize);
+  }
+
+  /** Draws `key` at (dx, dy), `dSize` square. `frame` picks a `PixelSprite`'s idle frame; remembered cells hold frame 0. */
   public drawSprite(
     targetCtx: CanvasRenderingContext2D,
     key: SpriteKey | string,
     dx: number,
     dy: number,
     dSize: number,
-    visibility: Visibility = Visibility.Visible
+    visibility: Visibility = Visibility.Visible,
+    frame = 0
   ): void {
     if (visibility === Visibility.Unexplored) {
+      return;
+    }
+
+    const fig = this.figures.get(key);
+    if (fig) {
+      this.drawFigure(targetCtx, fig, dx, dy, dSize, visibility, frame);
       return;
     }
 
@@ -406,7 +501,11 @@ export class SpriteAtlas {
     canvas.width = ATLAS_TILE_SIZE;
     canvas.height = ATLAS_TILE_SIZE;
     const ctx = canvas.getContext('2d');
-    if (ctx) {
+    const fig = this.figures.get(key);
+    if (ctx && fig) {
+      ctx.imageSmoothingEnabled = false;
+      this.drawFigure(ctx, fig, 0, 0, ATLAS_TILE_SIZE, Visibility.Visible, 0);
+    } else if (ctx) {
       ctx.imageSmoothingEnabled = false;
       const coords = this.cells[key];
       if (coords) {
@@ -430,12 +529,12 @@ export class SpriteAtlas {
 
   /** Whether the active pack draws `key` itself (rather than the atlas's lettered fallback). */
   public hasRecipe(key: string): boolean {
-    return !!this.recipes?.[key];
+    return !!this.recipes?.[key] || this.figures.has(key);
   }
 
-  /** Whether the atlas holds a cell for `key`: a built-in sprite or a pack recipe. */
+  /** Whether the atlas can draw `key`: a built-in sprite, a pack recipe or a `PixelSprite`. */
   public hasSprite(key: string): boolean {
-    return key in this.cells;
+    return key in this.cells || this.figures.has(key);
   }
 
   private renderFallback(ctx: CanvasRenderingContext2D, ox: number, oy: number, key: string): void {
@@ -541,6 +640,18 @@ function hasNonSolidNorthOrWest(
   const north = y - 1 >= minY ? alphaAt(x, y - 1) : 255;
   const west = x - 1 >= minX ? alphaAt(x - 1, y) : 255;
   return north < OUTLINE_ALPHA_THRESHOLD || west < OUTLINE_ALPHA_THRESHOLD;
+}
+
+/** The default remembered styling: luminance, dimmed and tinted toward the dungeon's blue slate. */
+function applySlateDimming(data: Uint8ClampedArray): void {
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] === 0) continue;
+    // Rec. 709 luminance
+    const lum = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+    data[i] = Math.floor(lum * 0.6);
+    data[i + 1] = Math.floor(lum * 0.8);
+    data[i + 2] = Math.floor(lum * 1.3 + 18);
+  }
 }
 
 /**

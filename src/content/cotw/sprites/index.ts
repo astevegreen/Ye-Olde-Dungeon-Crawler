@@ -7,6 +7,7 @@ import { COTW_SPELL_RUNES } from './spellRunes';
 import { COTW_TERRAIN_SPRITES } from '../terrain';
 
 export { COTW_TILE_SPRITES, COTW_MONSTER_SPRITES, COTW_ITEM_SPRITES, COTW_TERRAIN_SPRITES, COTW_UI_ICONS, COTW_SPELL_RUNES };
+export { COTW_HERO_SPRITE } from './heroLook';
 
 /**
  * Full CotW procedural sprite recipe set.

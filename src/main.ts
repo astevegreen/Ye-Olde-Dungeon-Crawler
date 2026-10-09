@@ -87,7 +87,7 @@ import { isReplayProfile, replayProfile } from './ui/replayProfile';
 import { SessionGuard } from './ui/sessionGuard';
 import { getBrowserAsyncStore } from './ui/indexedDbStore';
 import { setupSaveDragAndDrop, importSaveWithValidation } from './ui/saveImporter';
-import { defaultPlatformAdapter, getBrowserStorage } from './ui/platform';
+import { defaultPlatformAdapter, getBrowserStorage, onSystemReducedMotionChange, reducesMotion } from './ui/platform';
 import { applyDocumentBranding, resolveBranding } from './ui/branding';
 import {
   CharacterMenuModal,
@@ -622,6 +622,17 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   syncUiScale(true);
   settingsManager.subscribe(() => syncUiScale());
+
+  // Reduce motion: the player's choice, else the system's, holds idle sprites still.
+  function syncIdleMotion(): void {
+    if (renderer) renderer.idleMotion = !reducesMotion(settingsManager.getSettings().reduceMotion);
+  }
+  // A run's own settings subscription redraws after this one.
+  settingsManager.subscribe(syncIdleMotion);
+  onSystemReducedMotionChange(() => {
+    syncIdleMotion();
+    renderer?.render();
+  });
 
   /**
    * The hero's square above the map: name, depth, level with experience, renown,
@@ -1701,6 +1712,7 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer.mouseVectoringEnabled = settingsManager.getSettings().mouseVectoringEnabled;
       renderer.mouseAimEnabled = settingsManager.getSettings().mouseAimEnabled;
       renderer.torchlightEnabled = settingsManager.getSettings().torchlightEnabled;
+      syncIdleMotion();
       renderer.onFocusEntityChanged = (id) => combatSidebar.setFocusedEntity(id);
       // A click while aiming fires as Enter does (tracker 4.4): the spell, the targeting
       // entry off the stack (the overlay's `onClose`), and the action's effects played.

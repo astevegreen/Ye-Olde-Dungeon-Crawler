@@ -6,6 +6,7 @@ import { keyLabel } from '../keyLabel';
 import { formatStorageStatus, getStoragePersistenceInfo } from '../persistenceInit';
 import { AUTO_PICKUP_GROUPS, type AutoPickupGroup } from '../autoPickup';
 import { UI_SCALE_STEPS, type UiScaleSetting } from '../uiScale';
+import { reducesMotion } from '../platform';
 
 /** A modifier key's own code: Shift, Control, Alt, Meta (and Firefox's older "OS"), either side. */
 const MODIFIER_CODE = /^(Shift|Control|Alt|Meta|OS)(Left|Right)$/;
@@ -210,6 +211,7 @@ export class KeybindModal implements UIModal {
         ${option('chk-mouse-aim', 'Mouse aiming', 'While you aim a spell, wand or scroll, the target follows the mouse and a click on the map fires. The keys still aim and fire either way.')}
         ${option(null, 'Interface size', 'How large the bars, sidebar, menus and dialogs are drawn. Auto grows them with a large window (125% at 1920 × 1080); the map takes the room they leave.', scaleSelect)}
         ${option('chk-torchlight', 'Torchlight', 'What you can see darkens toward the edge of your sight, with warm light around your hero. Off gives flat, even lighting.')}
+        ${option('chk-reduce-motion', 'Reduce motion', 'Your hero and the creatures stand still instead of breathing and shifting on the map. Starts on when your system asks for reduced motion.')}
         ${option('chk-inventory-hover-cards', 'Rich inventory hover cards', 'Shows full stat cards when you hover items in your inventory. Off shows the name only.')}
         ${option('chk-hints', 'First-time hints', 'The first time you meet an altar, a pact keeper, a companion and the like, a short note about it appears under the sidebar. Each shows once per hero. In the opening scene, the slot for the move the moment calls for also glows.')}
         ${option('chk-controls-primer', 'Controls reminder', 'Before a new hero takes their first step, a short note on moving, fighting and where to change the keys.')}
@@ -280,6 +282,11 @@ export class KeybindModal implements UIModal {
     const torchChk = modal.querySelector('#chk-torchlight') as HTMLInputElement | null;
     torchChk?.addEventListener('change', () => {
       this.settingsManager.updateSettings({ torchlightEnabled: torchChk.checked });
+    });
+
+    const motionChk = modal.querySelector('#chk-reduce-motion') as HTMLInputElement | null;
+    motionChk?.addEventListener('change', () => {
+      this.settingsManager.updateSettings({ reduceMotion: motionChk.checked });
     });
 
     const hoverCardsChk = modal.querySelector('#chk-inventory-hover-cards') as HTMLInputElement | null;
@@ -381,6 +388,8 @@ export class KeybindModal implements UIModal {
     if (scaleSel) scaleSel.value = String(settings.uiScale);
     const torchChk = this.modalEl.querySelector('#chk-torchlight') as HTMLInputElement | null;
     if (torchChk) torchChk.checked = settings.torchlightEnabled;
+    const motionChk = this.modalEl.querySelector('#chk-reduce-motion') as HTMLInputElement | null;
+    if (motionChk) motionChk.checked = reducesMotion(settings.reduceMotion);
     const hoverCardsChk = this.modalEl.querySelector('#chk-inventory-hover-cards') as HTMLInputElement | null;
     if (hoverCardsChk) hoverCardsChk.checked = settings.inventoryRichHoverCards;
     const hintsChk = this.modalEl.querySelector('#chk-hints') as HTMLInputElement | null;

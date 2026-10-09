@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { copyTextToClipboard } from '../platform';
+import { copyTextToClipboard, reducesMotion } from '../platform';
 
 describe('copyTextToClipboard Cross-Browser Fallback', () => {
   let origWindow: any;
@@ -144,5 +144,24 @@ describe('copyTextToClipboard Cross-Browser Fallback', () => {
 
     const success = await copyTextToClipboard('Will fail gracefully');
     expect(success).toBe(false);
+  });
+});
+
+describe('reducesMotion', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("takes the player's choice over the system's", () => {
+    vi.stubGlobal('window', { matchMedia: () => ({ matches: true }) });
+    expect(reducesMotion(false)).toBe(false);
+    expect(reducesMotion(true)).toBe(true);
+  });
+
+  it('follows the system until the player picks, and moves where it cannot ask', () => {
+    vi.stubGlobal('window', { matchMedia: (q: string) => ({ matches: q === '(prefers-reduced-motion: reduce)' }) });
+    expect(reducesMotion(null)).toBe(true);
+    vi.stubGlobal('window', {});
+    expect(reducesMotion(null)).toBe(false);
   });
 });

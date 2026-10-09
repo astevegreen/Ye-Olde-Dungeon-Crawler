@@ -122,6 +122,9 @@ export interface GameSettings {
   uiScale: UiScaleSetting;
   /** The content pack's torchlight: sight darkens toward its edge, warm light near the hero. */
   torchlightEnabled: boolean;
+  /** Hold sprites still instead of playing their idle frames. Null follows the system's
+   *  reduced-motion preference, so the first save does not fix that choice for good. */
+  reduceMotion: boolean | null;
   /** Whether to render rich breakdown hover cards in inventory overlay rather than simple single-line names. */
   inventoryRichHoverCards: boolean;
   /** The pack's first-time hints: a short note in the sidebar the first time each system is met,
@@ -199,6 +202,7 @@ export function getDefaultSettings(): GameSettings {
     mouseAimEnabled: true,
     uiScale: 'auto',
     torchlightEnabled: true,
+    reduceMotion: null,
     inventoryRichHoverCards: true,
     hintsEnabled: true,
     controlsPrimerEnabled: true,
@@ -340,6 +344,7 @@ export class SettingsManager {
         mouseAimEnabled: typeof parsed.mouseAimEnabled === 'boolean' ? parsed.mouseAimEnabled : defaults.mouseAimEnabled,
         uiScale: (UI_SCALE_STEPS as readonly unknown[]).includes(parsed.uiScale) ? parsed.uiScale : defaults.uiScale,
         torchlightEnabled: typeof parsed.torchlightEnabled === 'boolean' ? parsed.torchlightEnabled : defaults.torchlightEnabled,
+        reduceMotion: typeof parsed.reduceMotion === 'boolean' ? parsed.reduceMotion : defaults.reduceMotion,
         inventoryRichHoverCards: typeof parsed.inventoryRichHoverCards === 'boolean' ? parsed.inventoryRichHoverCards : defaults.inventoryRichHoverCards,
         hintsEnabled: typeof parsed.hintsEnabled === 'boolean' ? parsed.hintsEnabled : defaults.hintsEnabled,
         controlsPrimerEnabled: typeof parsed.controlsPrimerEnabled === 'boolean' ? parsed.controlsPrimerEnabled : defaults.controlsPrimerEnabled,

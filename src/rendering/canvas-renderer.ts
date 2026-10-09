@@ -32,10 +32,12 @@ import { CloseDoorAction } from '../engine';
 import { MouseVectorOverlay } from './mouseVectorOverlay';
 import { RadialMenuOverlay } from './radialMenu';
 import { FloatingTextRunner } from './floatingTextRunner';
-import { TacticalTargetOverlay } from './tacticalTargetOverlay';
+import { TacticalTargetOverlay, isAlly } from './tacticalTargetOverlay';
 import { MapCardLayer, type MapCardSpec } from '../ui/mapCards/mapCardLayer';
 import { escapeHtml, keyChip } from '../ui/html';
 import { getAudibleEntitiesInRadius, getAudibleTilesInRadius, ECHOLOCATION_HEARING_RADIUS } from '../engine';
+import { drawAllyRing, drawHpBar, drawPath, drawSensedCreature, drawSensedItem, drawWindupWarning } from './markers/markers';
+import { drawChestBadge } from './markers/containerBadge';
 
 /** What the map shows of a container: empty once nothing is inside, else whether it was opened. */
 function containerState(container: Container): ContainerState {
@@ -101,7 +103,6 @@ export class CanvasRenderer {
   private boundDoubleClickHandler?: (e: MouseEvent) => void;
   private boundMouseMoveHandler?: (e: MouseEvent) => void;
   private boundMouseLeaveHandler?: () => void;
-  private static readonly DASH_PATTERN = Object.freeze([4, 2]);
   private cachedChasmGradVisible?: CanvasGradient;
   private cachedChasmGradDim?: CanvasGradient;
   private cachedChasmCs = 0;
@@ -509,23 +510,19 @@ export class CanvasRenderer {
       this.renderGroundItems();
     }
 
-    // Enemy Intent Telegraph Reticles & Danger Zones
-    this.intentOverlay.render(
-      ctx,
-      this.engine,
-      this.camera,
-      this.cellSize,
-      this.offsetX,
-      this.offsetY
-    );
+    // Enemy Intent Telegraph Danger Zones
+    if (this.intentOverlay.render(ctx, this.engine, this.camera, this.cellSize, this.offsetX, this.offsetY, this.markerNow)) {
+      this.markerMoved();
+    }
 
-    // A* Pathfinding Click-to-Move Breadcrumb Trail
-    this.renderNavigationPath();
-
-    // Entities in line of sight
+    // Entities in line of sight, allies standing in their rings
     if (!isSensoryMasked) {
+      this.renderAllyRings();
       this.renderEntities();
     }
+
+    // A* Pathfinding Click-to-Move Breadcrumb Trail, over the sprites it walks past
+    this.renderNavigationPath();
 
     // Direct Canvas Mouse Vectoring & 8-Way Hover Ring
     this.mouseVectorOverlay.render(
@@ -566,7 +563,7 @@ export class CanvasRenderer {
       !this.shopOverlay.isOpen &&
       !this.mapOverlay.isOpen
     ) {
-      this.tacticalTargetOverlay.render(
+      const moved = this.tacticalTargetOverlay.render(
         ctx,
         this.engine,
         this.camera,
@@ -575,8 +572,10 @@ export class CanvasRenderer {
         this.offsetY,
         virtualW,
         virtualH,
-        theme
+        theme,
+        this.markerNow
       );
+      if (moved) this.markerMoved();
     }
 
     // Targeting / Spellbook Overlay
@@ -592,16 +591,9 @@ export class CanvasRenderer {
     );
 
     // Look / Inspect Reticle & HUD Card Overlay
-    this.inspectOverlay.render(
-      ctx,
-      virtualW,
-      virtualH,
-      this.engine,
-      this.camera,
-      this.cellSize,
-      this.offsetX,
-      this.offsetY
-    );
+    if (this.inspectOverlay.render(ctx, virtualW, virtualH, this.engine, this.camera, this.cellSize, this.offsetX, this.offsetY, this.markerNow)) {
+      this.markerMoved();
+    }
 
     // The companion wheel, with the companion at its hub (the hero while it is away)
     this.radialMenuOverlay.render(ctx, this.engine, virtualW, virtualH, (c, x, y, size) => {
@@ -620,6 +612,16 @@ export class CanvasRenderer {
     if (frames <= 1 || !this.idleMotion) return 0;
     this.idleShown = true;
     return idleFrame(this.drawNow, frames, phase);
+  }
+
+  /** The clock this draw's map markers move on: 0, their still pose, under Reduce motion. */
+  private get markerNow(): number {
+    return this.idleMotion ? this.drawNow : 0;
+  }
+
+  /** A marker that moves was drawn: redraw at the next idle frame, as for an idling sprite. */
+  private markerMoved(): void {
+    if (this.idleMotion) this.idleShown = true;
   }
 
   /** Puts each overlay's DOM card over the map, matching this frame. */
@@ -669,37 +671,7 @@ export class CanvasRenderer {
 
     this.renderContactShadows(startX, startY, cols, rows);
     this.renderTorchlight(startX, startY, cols, rows);
-
-
-    // Threatened Target Tiles Hazard Highlight (Telegraphed Wind-Up)
-    const danger = theme.bad;
-    for (const entity of this.engine.map.getAllEntities()) {
-      if (
-        entity instanceof Monster &&
-        entity.isAlive() &&
-        entity.intent?.type === 'windup' &&
-        entity.intent.targetTile &&
-        typeof entity.intent.targetTile.x === 'number' &&
-        typeof entity.intent.targetTile.y === 'number'
-      ) {
-        const tt = entity.intent.targetTile;
-        if (this.engine.fov.isVisible(tt.x, tt.y)) {
-          const screenPos = this.camera.worldToScreen(tt.x, tt.y, cs, this.offsetX, this.offsetY);
-          if (screenPos) {
-            this.ctx.save();
-            this.ctx.globalAlpha = 0.35;
-            this.ctx.fillStyle = danger;
-            this.ctx.fillRect(screenPos.x, screenPos.y, cs, cs);
-            this.ctx.globalAlpha = 1;
-            this.ctx.strokeStyle = danger;
-            this.ctx.lineWidth = 2;
-            this.ctx.setLineDash(CanvasRenderer.DASH_PATTERN as unknown as number[]);
-            this.ctx.strokeRect(screenPos.x + 1, screenPos.y + 1, cs - 2, cs - 2);
-            this.ctx.restore();
-          }
-        }
-      }
-    }
+    // A wind-up's struck tiles are the intent overlay's danger zone, drawn over the ground items.
   }
 
   private drawTileWithFov(
@@ -1191,63 +1163,48 @@ export class CanvasRenderer {
     }
   }
 
-  private renderEspMonster(px: number, py: number, cs: number, _monster: Entity): void {
-    const ctx = this.ctx;
-    const cx = px + cs / 2;
-    const cy = py + cs / 2;
-
-    ctx.save();
-    const pulse = (Math.sin(Date.now() / 180) + 1) / 2;
-    ctx.fillStyle = withAlpha(this.theme.health, 0.45 + 0.3 * pulse);
-    ctx.beginPath();
-    ctx.arc(cx, cy, cs * 0.32, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = this.theme.bad;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // Radar ping center
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+  /** A ring under each ally in sight, drawn before the sprites so its feet stand in it. */
+  private renderAllyRings(): void {
+    const cs = this.cellSize;
+    for (const entity of this.engine.map.getAllEntities()) {
+      if (!(entity instanceof Monster) || !entity.isAlive() || !isAlly(entity)) continue;
+      if (!this.engine.fov.isVisible(entity.x, entity.y)) continue;
+      const screenPos = this.camera.worldToScreen(entity.x, entity.y, cs, this.offsetX, this.offsetY);
+      if (!screenPos) continue;
+      drawAllyRing(this.ctx, screenPos.x, screenPos.y, cs, this.markerNow, this.theme);
+      this.markerMoved();
+    }
   }
 
+  /** A creature sensed but not seen (ESP, echolocation): a ping closing on its tile. */
+  private renderEspMonster(px: number, py: number, cs: number, _monster: Entity): void {
+    drawSensedCreature(this.ctx, px, py, cs, this.markerNow, this.theme);
+    this.markerMoved();
+  }
+
+  /**
+   * The click-to-move path, from the next step to the goal. Steps off the view still aim the
+   * arrows at their neighbours; the map's edge clips them.
+   */
   private renderNavigationPath(): void {
     const path = this.navigationController?.currentPath;
     if (!path || path.length === 0) return;
 
-    const ctx = this.ctx;
     const cs = this.cellSize;
+    const { startX, startY, viewWidthTiles, viewHeightTiles } = this.camera;
+    const pts = path
+      .filter((p) => p && typeof p.x === 'number' && typeof p.y === 'number')
+      .map((p) => ({ x: this.offsetX + (p.x - startX) * cs + cs / 2, y: this.offsetY + (p.y - startY) * cs + cs / 2 }));
+    if (pts.length === 0) return;
+
+    const ctx = this.ctx;
     ctx.save();
-
-    for (let i = 0; i < path.length; i++) {
-      const p = path[i];
-      if (!p || typeof p.x !== 'number' || typeof p.y !== 'number') continue;
-      const screenPos = this.camera.worldToScreen(p.x, p.y, cs, this.offsetX, this.offsetY);
-      if (!screenPos) continue;
-
-      const cx = screenPos.x + cs / 2;
-      const cy = screenPos.y + cs / 2;
-      const isTarget = i === path.length - 1;
-
-      // Glow dot
-      ctx.fillStyle = withAlpha(this.theme.info, isTarget ? 0.9 : 0.45);
-      ctx.beginPath();
-      ctx.arc(cx, cy, isTarget ? 5 : 3, 0, Math.PI * 2);
-      ctx.fill();
-
-      if (isTarget) {
-        ctx.strokeStyle = this.theme.info;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(cx, cy, 8, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-    }
+    ctx.beginPath();
+    ctx.rect(this.offsetX, this.offsetY, viewWidthTiles * cs, viewHeightTiles * cs);
+    ctx.clip();
+    drawPath(ctx, pts, cs, this.markerNow, this.theme);
     ctx.restore();
+    this.markerMoved();
   }
 
   /** A ground shadow under an entity (atlas.terrain.entityShadows). */
@@ -1290,44 +1247,17 @@ export class CanvasRenderer {
   }
 
   private renderMonster(px: number, py: number, cs: number, monster: Entity): void {
-    const ctx = this.ctx;
     this.drawEntitySprite(monster, px, py, cs);
 
-    // Monster mini HP bar if damaged
-    if (monster.hp < monster.maxHp && monster.hp > 0) {
-      const barW = Math.floor(cs * 0.8);
-      const barH = 3;
-      const barX = px + Math.floor((cs - barW) / 2);
-      const barY = py + 2;
-      const ratio = Math.max(0, monster.hp / monster.maxHp);
-
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-      ctx.fillRect(barX, barY, barW, barH);
-
-      ctx.fillStyle = this.theme.health;
-      ctx.fillRect(barX, barY, Math.floor(barW * ratio), barH);
+    // A hazard sign over a telegraphed wind-up.
+    if (monster instanceof Monster && monster.intent?.type === 'windup') {
+      drawWindupWarning(this.ctx, px, py, cs, this.markerNow, this.theme);
+      this.markerMoved();
     }
 
-    // Alert exclamation badge for telegraphed wind-up
-    if (monster instanceof Monster && monster.intent?.type === 'windup') {
-      const glyphX = px + cs / 2;
-      const glyphY = py - 3;
-
-      ctx.save();
-      ctx.fillStyle = this.theme.health;
-      ctx.beginPath();
-      ctx.arc(glyphX, glyphY, 7, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = uiFont('xs', this.theme.fontNum, 'bold');
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('!', glyphX, glyphY + 0.5);
-      ctx.restore();
+    // Its health while hurt: a slanted bar for an enemy, a pill for an ally.
+    if (monster.hp > 0 && monster.hp < monster.maxHp) {
+      drawHpBar(this.ctx, px, py, cs, monster.hp / monster.maxHp, isAlly(monster) ? 'ally' : 'enemy', this.theme);
     }
   }
 
@@ -1514,27 +1444,10 @@ export class CanvasRenderer {
     }
   }
 
+  /** An object sensed but not seen: a diamond and a dot, breathing. */
   private drawEspItem(px: number, py: number, cs: number): void {
-    const ctx = this.ctx;
-    const cx = px + cs / 2;
-    const cy = py + cs / 2;
-    const pulse = (Math.sin(Date.now() / 200) + 1) / 2;
-
-    ctx.save();
-    ctx.fillStyle = withAlpha(this.theme.warn, 0.5 + 0.35 * pulse);
-    const size = cs * 0.28;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - size);
-    ctx.lineTo(cx + size, cy);
-    ctx.lineTo(cx, cy + size);
-    ctx.lineTo(cx - size, cy);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.strokeStyle = this.theme.title;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.restore();
+    drawSensedItem(this.ctx, px, py, cs, this.markerNow, this.theme);
+    this.markerMoved();
   }
 
   /** The square under ground loot; a known item of a family is framed in its color (N29). */
@@ -1639,33 +1552,10 @@ export class CanvasRenderer {
     }
   }
 
-  /** Top-right corner flag on containers: a gold star while unopened, an amber dot once
-   * opened while items remain, and a grey check once completely empty. */
+  /** Top-right corner flag on containers: a tiny chest, shut with a gold glint while unopened,
+   * lid up with gold inside once opened while items remain, and grey and empty once emptied. */
   private drawContainerBadge(px: number, py: number, cs: number, state: ContainerState): void {
-    const ctx = this.ctx;
-    const r = Math.max(3, cs * 0.14);
-    const cx = px + cs - r - 1;
-    const cy = py + r + 1;
-    ctx.save();
-    ctx.fillStyle = withAlpha(this.theme.surface0, 0.85);
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fill();
-    // A cell badge: sized by the cell, not uiFont (ARCHITECTURE.md §3), in the theme's number face.
-    ctx.font = `bold ${Math.max(7, Math.floor(r * 1.6))}px ${this.theme.fontNum}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    if (state === 'unopened') {
-      ctx.fillStyle = this.theme.gold;
-      ctx.fillText('★', cx, cy + 0.5);
-    } else if (state === 'opened') {
-      ctx.fillStyle = this.theme.accent;
-      ctx.fillText('•', cx, cy + 0.5);
-    } else {
-      ctx.fillStyle = this.theme.textMuted;
-      ctx.fillText('✓', cx, cy + 0.5);
-    }
-    ctx.restore();
+    drawChestBadge(this.ctx, px, py, cs, state, this.theme);
   }
 }
 

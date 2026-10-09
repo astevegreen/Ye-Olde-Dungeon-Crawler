@@ -51,6 +51,28 @@ export interface ThemeTokens {
   /** The hero's side on the map: the brackets on a companion. Never the same color as `accent`. */
   ally?: string;
 
+  // Map markers: crisp UI over the map, each on a dark keyline, never a glow.
+  /** The dark keyline under every map marker. */
+  markerInk?: string;
+  /** An enemy marked on the map: target brackets, a wind-up's warning, a creature sensed
+   *  through walls. Never the same color as `ally`. */
+  hostile?: string;
+  /** Neutral marker white: the Look reticle, the mark on a wind-up's warning, a bar's sheen. */
+  look?: string;
+  /** The tiles a wind-up will strike: their hatch and the zone's edge. */
+  danger?: string;
+  /** The hero's walking path; its unlit steps are a shade toward `markerInk`. */
+  path?: string;
+  /** Health bars over creatures: an enemy's fill, an ally's fill, and the empty track. */
+  hpEnemy?: string;
+  hpAlly?: string;
+  hpTrack?: string;
+  /** An object sensed through walls. */
+  sensedItem?: string;
+  /** The wood of the little chest badged on a container; its shades are derived from it,
+   *  its metal is `gold`, and an emptied one goes grey. */
+  badgeWood?: string;
+
   // Resources.
   health?: string;
   mana?: string;

@@ -51,8 +51,11 @@ describe('fixture art', () => {
       manifest: { ...cotwManifest, spriteRecipes: {}, pixelSprites: {}, heroSprite: undefined, fixtureArt },
     });
     const renderer = new CanvasRenderer(mockCanvas(), engine);
-    const atlas = (renderer as unknown as { atlas: { drawSprite: (...args: unknown[]) => void } }).atlas;
-    return { renderer, drawSprite: vi.spyOn(atlas, 'drawSprite') };
+    const internals = renderer as unknown as {
+      atlas: { drawSprite: (...args: unknown[]) => void };
+      drawContainerBadge: (...args: unknown[]) => void;
+    };
+    return { renderer, drawSprite: vi.spyOn(internals.atlas, 'drawSprite'), badge: vi.spyOn(internals, 'drawContainerBadge') };
   }
 
   const drawnKeys = (spy: ReturnType<typeof vi.fn>): string[] => spy.mock.calls.map((c) => c[1] as string);
@@ -97,14 +100,13 @@ describe('fixture art', () => {
     const drawnArt = setup(map, { containers: { chest: { unopened: s, opened: s, empty: s } } });
     drawnArt.renderer.render();
     expect(drawnKeys(drawnArt.drawSprite)).toContain('chest.opened');
-    expect(texts).not.toContain('•');
+    expect(drawnArt.badge).not.toHaveBeenCalled();
     drawnArt.renderer.destroy();
 
-    texts = [];
     const plainArt = setup(map, undefined);
     plainArt.renderer.render();
     expect(drawnKeys(plainArt.drawSprite)).not.toContain('chest.opened');
-    expect(texts).toContain('•');
+    expect(plainArt.badge.mock.calls.map((c) => c[3])).toEqual(['opened']);
     plainArt.renderer.destroy();
   });
 

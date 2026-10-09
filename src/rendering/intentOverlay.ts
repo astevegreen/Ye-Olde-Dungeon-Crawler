@@ -7,11 +7,14 @@ import type { Camera } from './camera';
 import type { Monster } from '../engine';
 import { Visibility } from '../engine';
 import type { Position } from '../engine';
+import { drawDangerZone, type ScreenPoint } from './markers/markers';
 
 export class IntentOverlay {
   /**
-   * Draws the danger tiles and the pulsing reticle for every monster winding up a heavy
-   * attack, in the pack's danger color. The ability's name is a DOM card (cards(), below).
+   * Draws the tiles every monster winding up a heavy attack will strike, as one danger zone:
+   * hatched, with an edge round its outside, moving on the draw's clock `now` (0 holds it
+   * still). The ability's name is a DOM card (cards(), below). True when a zone was drawn,
+   * so the map keeps redrawing on its idle tick.
    */
   public render(
     ctx: CanvasRenderingContext2D,
@@ -19,81 +22,26 @@ export class IntentOverlay {
     camera: Camera,
     cellSize: number,
     offsetX: number,
-    offsetY: number
-  ): void {
-    const windingMonsters = windingUp(engine);
-    if (windingMonsters.length === 0) return;
-
-    const theme = resolveThemeTokens(engine.manifest?.theme);
-    ctx.save();
-
-    const now = Date.now();
-    const pulse = 0.5 + 0.5 * Math.sin(now / 160); // 0.0 to 1.0
-    const alpha = 0.25 + 0.25 * pulse; // 0.25 to 0.50
-
-    for (const monster of windingMonsters) {
-      const targetTiles = dangerTiles(monster);
-      if (targetTiles.length === 0) continue;
-
-      // Draw danger zone tiles
-      for (const tile of targetTiles) {
-        // Only render if explored or visible
-        const vis = engine.fov.getVisibility(tile.x, tile.y);
-        if (vis === Visibility.Unexplored) continue;
-
-        const screenPos = camera.worldToScreen(tile.x, tile.y, cellSize, offsetX, offsetY);
-        if (!screenPos) continue;
-
-        const { x: px, y: py } = screenPos;
-
-        // 1. Semi-transparent danger fill
-        ctx.globalAlpha = alpha;
-        ctx.fillStyle = theme.bad;
-        ctx.fillRect(px, py, cellSize, cellSize);
-
-        // 2. Hazard hatch
-        ctx.globalAlpha = alpha * 0.7;
-        ctx.strokeStyle = theme.text;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(px, py + cellSize);
-        ctx.lineTo(px + cellSize, py);
-        ctx.stroke();
-
-        // 3. Danger border
-        ctx.globalAlpha = 0.6 + 0.4 * pulse;
-        ctx.strokeStyle = theme.bad;
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(px + 0.5, py + 0.5, cellSize - 1, cellSize - 1);
-      }
-
-      // The pulsing reticle on the primary target tile
-      const primaryTile = monster.intent?.targetTile ?? targetTiles[0];
-      const primaryScreen = camera.worldToScreen(primaryTile.x, primaryTile.y, cellSize, offsetX, offsetY);
-
-      if (primaryScreen) {
-        const cx = primaryScreen.x + cellSize / 2;
-        const cy = primaryScreen.y + cellSize / 2;
-
-        const reticleRadius = (cellSize * 0.42) + (pulse * 2);
-        ctx.globalAlpha = 0.7 + 0.3 * pulse;
-        ctx.strokeStyle = theme.text;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(cx, cy, reticleRadius, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // Crosshairs
-        ctx.beginPath();
-        ctx.moveTo(cx - reticleRadius - 3, cy);
-        ctx.lineTo(cx + reticleRadius + 3, cy);
-        ctx.moveTo(cx, cy - reticleRadius - 3);
-        ctx.lineTo(cx, cy + reticleRadius + 3);
-        ctx.stroke();
+    offsetY: number,
+    now = 0
+  ): boolean {
+    const seen = new Set<string>();
+    const zone: ScreenPoint[] = [];
+    for (const monster of windingUp(engine)) {
+      const primary = monster.intent?.targetTile;
+      const struck = isPosition(primary) ? [...dangerTiles(monster), primary] : dangerTiles(monster);
+      for (const tile of struck) {
+        const id = `${tile.x},${tile.y}`;
+        if (seen.has(id) || engine.fov.getVisibility(tile.x, tile.y) === Visibility.Unexplored) continue;
+        const screen = camera.worldToScreen(tile.x, tile.y, cellSize, offsetX, offsetY);
+        if (!screen) continue;
+        seen.add(id);
+        zone.push(screen);
       }
     }
-
-    ctx.restore();
+    if (zone.length === 0) return false;
+    drawDangerZone(ctx, zone, cellSize, now, resolveThemeTokens(engine.manifest?.theme));
+    return true;
   }
 
   /** One banner per monster winding up, naming the ability above the tile it will strike. */
@@ -201,5 +149,9 @@ function dangerTiles(monster: Monster): Position[] {
   const intent = monster.intent;
   if (!intent) return [];
   const raw = intent.targetTiles && intent.targetTiles.length > 0 ? intent.targetTiles : intent.targetTile ? [intent.targetTile] : [];
-  return raw.filter((t): t is Position => Boolean(t && typeof t.x === 'number' && typeof t.y === 'number'));
+  return raw.filter(isPosition);
+}
+
+function isPosition(t: Position | null | undefined): t is Position {
+  return Boolean(t && typeof t.x === 'number' && typeof t.y === 'number');
 }

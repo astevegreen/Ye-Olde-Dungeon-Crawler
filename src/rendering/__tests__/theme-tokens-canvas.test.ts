@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { resolveThemeTokens, DEFAULT_THEME_TOKENS, setCanvasTextScale, uiFont, withAlpha } from '../theme';
+import { resolveThemeTokens, DEFAULT_THEME_TOKENS, greyColor, mixColor, setCanvasTextScale, shadeColor, uiFont, withAlpha } from '../theme';
 import { FIXTURE_THEME_TOKENS } from '../../../tests/fixtures/fixture-pack';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../engine';
@@ -286,5 +286,29 @@ describe('withAlpha', () => {
 
   it('returns a color it cannot parse unchanged', () => {
     expect(withAlpha('rebeccapurple', 0.5)).toBe('rebeccapurple');
+  });
+});
+
+describe('shades derived from roles', () => {
+  it('mixes one hex toward another, as hex', () => {
+    expect(mixColor('#000000', '#ffffff', 0)).toBe('#000000');
+    expect(mixColor('#000000', '#ffffff', 0.5)).toBe('#808080');
+    expect(mixColor('#204060', '#204060', 0.3)).toBe('#204060');
+  });
+
+  it('darkens and lightens a role by a factor, clamped', () => {
+    expect(shadeColor('#804020', 0.5)).toBe('#402010');
+    expect(shadeColor('#c08040', 2)).toBe('#ffff80');
+  });
+
+  it('greys a role at its lightness', () => {
+    expect(greyColor('#ffffff')).toBe('#ffffff');
+    expect(greyColor('#ff0000')).toBe('#4c4c4c');
+  });
+
+  it('returns a color it cannot parse unchanged', () => {
+    expect(mixColor('rebeccapurple', '#ffffff', 0.5)).toBe('rebeccapurple');
+    expect(shadeColor('rebeccapurple', 0.5)).toBe('rebeccapurple');
+    expect(greyColor('rebeccapurple')).toBe('rebeccapurple');
   });
 });

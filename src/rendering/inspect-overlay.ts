@@ -1,7 +1,8 @@
-import type { GameEngine, InspectedItem, ThemeTokens, TileInspection } from '../engine';
+import type { GameEngine, InspectedItem, TileInspection } from '../engine';
 import { TileInspector } from '../engine';
 import type { Camera } from './camera';
 import { resolveThemeTokens } from './theme';
+import { drawLookReticle } from './markers/markers';
 import { escapeHtml } from '../ui/html';
 import { iconHtml, type UiIconName } from '../ui/icons';
 import { itemToneClass } from '../ui/inventory/itemTone';
@@ -13,7 +14,6 @@ export class InspectOverlay {
   public cursorX = 0;
   public cursorY = 0;
   private onStateChanged?: () => void;
-  private theme?: Required<ThemeTokens>;
 
   constructor(onStateChanged?: () => void) {
     this.onStateChanged = onStateChanged;
@@ -61,6 +61,10 @@ export class InspectOverlay {
     }
   }
 
+  /**
+   * The reticle on the map, drifting on the draw's clock `now` (0 holds it still); the card
+   * is DOM (card(), below). True when it was drawn, so the map keeps redrawing on its idle tick.
+   */
   public render(
     ctx: CanvasRenderingContext2D,
     _canvasW: number,
@@ -69,63 +73,14 @@ export class InspectOverlay {
     camera: Camera,
     cellSize: number,
     offsetX: number,
-    offsetY: number
-  ): void {
-    if (!this.isOpen) return;
-
-    this.theme = resolveThemeTokens(engine.manifest?.theme);
-
-    // The reticle on the map; the card is DOM (card(), below).
+    offsetY: number,
+    now = 0
+  ): boolean {
+    if (!this.isOpen) return false;
     const screenPos = camera.worldToScreen(this.cursorX, this.cursorY, cellSize, offsetX, offsetY);
-    if (screenPos) {
-      this.renderReticle(ctx, screenPos.x, screenPos.y, cellSize);
-    }
-  }
-
-  private renderReticle(ctx: CanvasRenderingContext2D, px: number, py: number, cs: number): void {
-    ctx.save();
-    const theme = this.theme ?? resolveThemeTokens();
-
-    // Subtle accent tile tint
-    ctx.fillStyle = theme.accent;
-    ctx.globalAlpha = 0.18;
-    ctx.fillRect(px, py, cs, cs);
-    ctx.globalAlpha = 1.0;
-
-    // High-contrast corner brackets
-    ctx.strokeStyle = theme.accent;
-    ctx.lineWidth = 2.5;
-    const cornerLen = Math.floor(cs * 0.28);
-
-    // Top-left corner
-    ctx.beginPath();
-    ctx.moveTo(px, py + cornerLen);
-    ctx.lineTo(px, py);
-    ctx.lineTo(px + cornerLen, py);
-    ctx.stroke();
-
-    // Top-right corner
-    ctx.beginPath();
-    ctx.moveTo(px + cs - cornerLen, py);
-    ctx.lineTo(px + cs, py);
-    ctx.lineTo(px + cs, py + cornerLen);
-    ctx.stroke();
-
-    // Bottom-left corner
-    ctx.beginPath();
-    ctx.moveTo(px, py + cs - cornerLen);
-    ctx.lineTo(px, py + cs);
-    ctx.lineTo(px + cornerLen, py + cs);
-    ctx.stroke();
-
-    // Bottom-right corner
-    ctx.beginPath();
-    ctx.moveTo(px + cs - cornerLen, py + cs);
-    ctx.lineTo(px + cs, py + cs);
-    ctx.lineTo(px + cs, py + cs - cornerLen);
-    ctx.stroke();
-
-    ctx.restore();
+    if (!screenPos) return false;
+    drawLookReticle(ctx, screenPos.x, screenPos.y, cellSize, now, resolveThemeTokens(engine.manifest?.theme));
+    return true;
   }
 
   /** The Look card, docked to the side of the map away from the reticle. */

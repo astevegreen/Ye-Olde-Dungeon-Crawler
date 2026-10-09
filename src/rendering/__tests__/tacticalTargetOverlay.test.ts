@@ -35,36 +35,45 @@ describe('TacticalTargetOverlay', () => {
     }).not.toThrow();
   });
 
-  it('brackets an ally with rounded corners in the ally color, and an enemy with square ones in the accent', () => {
-    // Each stroke records its color and whether its path was an arc or straight lines.
-    const strokes: string[] = [];
+  it('brackets an ally with still rounded corners in the ally color, and an enemy with angular ones in the hostile color', () => {
+    // Each stroke and fill records its color and whether its path was an arc or straight lines.
+    const marks: string[] = [];
     let shape = '';
     const ctx = {
       strokeStyle: '',
+      fillStyle: '',
       lineWidth: 0,
       lineCap: '',
+      lineJoin: '',
+      miterLimit: 0,
       globalAlpha: 1,
       save: vi.fn(),
       restore: vi.fn(),
       beginPath: () => (shape = ''),
+      closePath: vi.fn(),
       moveTo: vi.fn(),
       lineTo: () => (shape = 'lines'),
       arc: () => (shape = 'arc'),
-      stroke: () => strokes.push(`${ctx.strokeStyle} ${shape}`),
+      stroke: () => marks.push(`stroke ${ctx.strokeStyle} ${shape}`),
+      fill: () => marks.push(`fill ${ctx.fillStyle} ${shape}`),
     };
     const at = (m: Monster) => ({ map: { inBounds: () => true, getEntityAt: () => m }, fov: { isVisible: () => true } }) as unknown as GameEngine;
-    const theme = { ally: 'ally-color', accent: 'accent-color', surface3: 'ink-color' };
+    const theme = { ally: 'ally-color', hostile: 'hostile-color', markerInk: 'ink-color' };
     const stats = { hp: 10, maxHp: 20, attack: 3, defense: 1 };
     overlay.setHoveredTile(2, 2);
 
+    // The ally's: a dark keyline under four gold arcs, and still (no idle redraw asked for).
     const hound = new Monster({ id: 'h', name: 'Hound', position: { x: 2, y: 2 }, stats, faction: 'player' });
-    overlay.render(ctx as unknown as CanvasRenderingContext2D, at(hound), new Camera(20, 15), 32, 0, 0, 960, 600, theme);
-    expect(strokes).toEqual([...Array(4).fill('ink-color arc'), ...Array(4).fill('ally-color arc')]);
+    const allyMoves = overlay.render(ctx as unknown as CanvasRenderingContext2D, at(hound), new Camera(20, 15), 32, 0, 0, 960, 600, theme, 1000);
+    expect(marks).toEqual([...Array(4).fill('stroke ink-color arc'), ...Array(4).fill('stroke ally-color arc')]);
+    expect(allyMoves).toBe(false);
 
-    strokes.length = 0;
+    // The enemy's: four corners and two side ticks, each a keyed polygon, never an arc; it moves.
+    marks.length = 0;
     const ogre = new Monster({ id: 'o', name: 'Ogre', position: { x: 2, y: 2 }, stats });
-    overlay.render(ctx as unknown as CanvasRenderingContext2D, at(ogre), new Camera(20, 15), 32, 0, 0, 960, 600, theme);
-    expect(strokes).toEqual(Array(4).fill('accent-color lines'));
+    const enemyMoves = overlay.render(ctx as unknown as CanvasRenderingContext2D, at(ogre), new Camera(20, 15), 32, 0, 0, 960, 600, theme, 1000);
+    expect(marks).toEqual(Array(6).fill(['stroke ink-color lines', 'fill hostile-color lines']).flat());
+    expect(enemyMoves).toBe(true);
   });
 
   it('has no card while nothing is hovered', () => {

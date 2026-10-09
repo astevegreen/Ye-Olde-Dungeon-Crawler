@@ -30,6 +30,17 @@ export const DEFAULT_THEME_TOKENS: Required<ThemeTokens> = {
   info: '#38bdf8',
   ally: '#f2c14e',
 
+  markerInk: '#06070b',
+  hostile: '#ff5a3c',
+  look: '#eef2f6',
+  danger: '#ff4b3a',
+  path: '#efe4c4',
+  hpEnemy: '#e8493a',
+  hpAlly: '#e9b84c',
+  hpTrack: '#16181f',
+  sensedItem: '#f3d27a',
+  badgeWood: '#a8743f',
+
   health: '#ef4444',
   mana: '#0ea5e9',
   xp: '#c4b5fd',
@@ -138,6 +149,16 @@ function buildThemeTokens(t: Partial<ThemeTokens>): Required<ThemeTokens> {
     bad: t.bad ?? D.bad,
     info: t.info ?? D.info,
     ally: t.ally ?? D.ally,
+    markerInk: t.markerInk ?? D.markerInk,
+    hostile: t.hostile ?? D.hostile,
+    look: t.look ?? D.look,
+    danger: t.danger ?? D.danger,
+    path: t.path ?? D.path,
+    hpEnemy: t.hpEnemy ?? D.hpEnemy,
+    hpAlly: t.hpAlly ?? D.hpAlly,
+    hpTrack: t.hpTrack ?? D.hpTrack,
+    sensedItem: t.sensedItem ?? D.sensedItem,
+    badgeWood: t.badgeWood ?? D.badgeWood,
     health,
     mana,
     xp: t.xp ?? D.xp,
@@ -314,11 +335,45 @@ export function uiFont(
  * #rrggbbaa, whose own alpha is replaced) become rgba(); any other color is returned as is.
  */
 export function withAlpha(color: string, alpha: number): string {
+  const C = hexChannels(color);
+  return C ? `rgba(${C[0]}, ${C[1]}, ${C[2]}, ${alpha})` : color;
+}
+
+/** A hex color's channels, or null for any other color. */
+function hexChannels(color: string): [number, number, number] | null {
   const hex = color.trim().replace(/^#/, '');
-  if (!/^(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(hex)) return color;
-  const rgb = hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex.slice(0, 6);
-  const n = parseInt(rgb, 16);
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+  if (!/^(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(hex)) return null;
+  const n = parseInt(hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex.slice(0, 6), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function toHex(channels: readonly number[]): string {
+  return `#${channels.map((c) => Math.max(0, Math.min(255, Math.round(c))).toString(16).padStart(2, '0')).join('')}`;
+}
+
+/**
+ * Canvas shades derived from roles, as hex so `withAlpha` takes them: `a` moved toward `b`
+ * by `t` (0 keeps `a`, 1 gives `b`). A color that isn't hex is returned as is.
+ */
+export function mixColor(a: string, b: string, t: number): string {
+  const A = hexChannels(a);
+  const B = hexChannels(b);
+  if (!A || !B) return a;
+  return toHex(A.map((c, i) => c + (B[i] - c) * t));
+}
+
+/** A role's color with every channel times `f`: a darker shade under 1, a lighter one over it. */
+export function shadeColor(color: string, f: number): string {
+  const C = hexChannels(color);
+  return C ? toHex(C.map((c) => c * f)) : color;
+}
+
+/** A role's color gone grey at the same lightness. */
+export function greyColor(color: string): string {
+  const C = hexChannels(color);
+  if (!C) return color;
+  const l = 0.299 * C[0] + 0.587 * C[1] + 0.114 * C[2];
+  return toHex([l, l, l]);
 }
 
 /**

@@ -1,8 +1,9 @@
-import type { GameEngine, Item, TileDefinition } from '../engine';
+import type { Entity, GameEngine, Item, TileDefinition } from '../engine';
 import { Monster, Container, statusDisplayName } from '../engine';
 import type { Camera } from './camera';
 import type { ThemeTokens } from '../engine';
 import { resolveThemeTokens } from './theme';
+import { drawAllyBrackets, drawHostileBrackets } from './markers/markers';
 import { escapeHtml } from '../ui/html';
 import { iconHtml, type UiIconName } from '../ui/icons';
 import type { MapCardSpec } from '../ui/mapCards/mapCardLayer';
@@ -45,6 +46,11 @@ export class TacticalTargetOverlay {
     return entity instanceof Monster && entity.isAlive() ? entity : null;
   }
 
+  /**
+   * Brackets the hovered monster: an enemy's angular ones, which move on the draw's clock
+   * `now` (0 holds them still), or an ally's still rounded ones. True when the brackets move,
+   * so the map keeps redrawing on its idle tick.
+   */
   public render(
     ctx: CanvasRenderingContext2D,
     engine: GameEngine,
@@ -54,19 +60,22 @@ export class TacticalTargetOverlay {
     offsetY: number,
     _virtualWidth: number,
     _virtualHeight: number,
-    themeTokens?: ThemeTokens
-  ): void {
-    if (this.hoveredWorldX === null || this.hoveredWorldY === null) return;
+    themeTokens?: ThemeTokens,
+    now = 0
+  ): boolean {
+    if (this.hoveredWorldX === null || this.hoveredWorldY === null) return false;
     const t = this.visibleHover(engine);
     const monster = t && this.hoveredMonster(engine, t);
-    if (!t || !monster) return;
+    if (!t || !monster) return false;
+    const screen = camera.worldToScreen(t.x, t.y, cellSize, offsetX, offsetY);
+    if (!screen) return false;
     const theme = resolveThemeTokens(themeTokens);
     if (isAlly(monster)) {
-      const screen = camera.worldToScreen(t.x, t.y, cellSize, offsetX, offsetY);
-      if (screen) renderAllyBrackets(ctx, screen.x, screen.y, cellSize, theme.ally, theme.surface3);
-      return;
+      drawAllyBrackets(ctx, screen.x, screen.y, cellSize, theme);
+      return false;
     }
-    this.renderTargetBrackets(ctx, camera, t.x, t.y, cellSize, offsetX, offsetY, theme.accent);
+    drawHostileBrackets(ctx, screen.x, screen.y, cellSize, now, theme);
+    return true;
   }
 
   /** The monster's target card, docked top-right, or a label above a pile, door or stairs. */
@@ -87,93 +96,14 @@ export class TacticalTargetOverlay {
     const label = fixtureLabel(engine.map.getTile(t.x, t.y));
     return label ? { className: 'mc-pill is-fixture', place, html: `${iconHtml(label.icon)} ${escapeHtml(label.text)}` } : null;
   }
-
-  /** Draws brackets around the hovered monster's tile, in `color` */
-  private renderTargetBrackets(
-    ctx: CanvasRenderingContext2D,
-    camera: Camera,
-    worldX: number,
-    worldY: number,
-    cs: number,
-    offsetX: number,
-    offsetY: number,
-    color: string
-  ): void {
-    const screenPos = camera.worldToScreen(worldX, worldY, cs, offsetX, offsetY);
-    if (!screenPos) return;
-
-    ctx.save();
-    const px = screenPos.x;
-    const py = screenPos.y;
-    const bLen = Math.floor(cs * 0.28);
-
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-
-    // Top-left
-    ctx.beginPath();
-    ctx.moveTo(px, py + bLen);
-    ctx.lineTo(px, py);
-    ctx.lineTo(px + bLen, py);
-    ctx.stroke();
-
-    // Top-right
-    ctx.beginPath();
-    ctx.moveTo(px + cs - bLen, py);
-    ctx.lineTo(px + cs, py);
-    ctx.lineTo(px + cs, py + bLen);
-    ctx.stroke();
-
-    // Bottom-left
-    ctx.beginPath();
-    ctx.moveTo(px, py + cs - bLen);
-    ctx.lineTo(px, py + cs);
-    ctx.lineTo(px + bLen, py + cs);
-    ctx.stroke();
-
-    // Bottom-right
-    ctx.beginPath();
-    ctx.moveTo(px + cs - bLen, py + cs);
-    ctx.lineTo(px + cs, py + cs);
-    ctx.lineTo(px + cs, py + cs - bLen);
-    ctx.stroke();
-
-    ctx.restore();
-  }
 }
 
 /**
- * An ally's brackets: four rounded corners in the ally color over a dark keyline, with no
- * motion, so a companion reads as calm and never as a target (whose corners are square).
+ * On the hero's side: the companion, or anything else of the player's faction. The map
+ * marks it as one (gold brackets, a ring underfoot, a rounded health bar), never as a target.
  */
-function renderAllyBrackets(ctx: CanvasRenderingContext2D, x: number, y: number, cs: number, color: string, ink: string): void {
-  const w = Math.max(1, Math.round(1 + cs / 32));
-  const r = Math.round(cs * 0.24);
-  const i = w / 2 + 1;
-  const corners: ReadonlyArray<readonly [number, number, number]> = [
-    [x + i + r, y + i + r, Math.PI],
-    [x + cs - i - r, y + i + r, Math.PI * 1.5],
-    [x + cs - i - r, y + cs - i - r, 0],
-    [x + i + r, y + cs - i - r, Math.PI * 0.5],
-  ];
-  ctx.save();
-  ctx.lineCap = 'round';
-  for (const pass of [0, 1]) {
-    ctx.strokeStyle = pass ? color : ink;
-    ctx.globalAlpha = pass ? 1 : 0.8;
-    ctx.lineWidth = pass ? w : w + 2;
-    for (const [ax, ay, a] of corners) {
-      ctx.beginPath();
-      ctx.arc(ax, ay, r, a, a + Math.PI / 2);
-      ctx.stroke();
-    }
-  }
-  ctx.restore();
-}
-
-/** On the hero's side: the companion, or anything else of the player's faction. */
-function isAlly(monster: Monster): boolean {
-  return monster.faction === 'player';
+export function isAlly(entity: Entity): boolean {
+  return entity.type !== 'player' && entity.faction === 'player';
 }
 
 /**

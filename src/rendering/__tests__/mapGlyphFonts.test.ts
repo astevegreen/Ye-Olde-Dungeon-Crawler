@@ -2,8 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CanvasRenderer } from '../canvas-renderer';
 import { GameEngine, GameMap, TILES, Player, Item, Container, Monster, type GameContentManifest, type TileDefinition } from '../../engine';
 
-// R-rend-18: text the map draws (a fixture's glyph, a badge) is set in the pack's theme
-// faces, never in a family the renderer names itself.
+// R-rend-18: text the map draws (a fixture's glyph, a pile's count) is set in the pack's
+// theme faces, never in a family the renderer names itself. The container badge and the
+// wind-up warning are drawn shapes, so they set no text at all.
 describe('map glyphs and badges use the theme fonts', () => {
   let originalDocument: unknown;
   let texts: Array<{ text: string; font: string }> = [];
@@ -54,7 +55,7 @@ describe('map glyphs and badges use the theme fonts', () => {
     map.addItemAt(5, 6, new Item({ id: 'a', name: 'A', category: 'gem', weight: 50, bulk: 20 }));
     map.addItemAt(5, 6, new Item({ id: 'b', name: 'B', category: 'gem', weight: 50, bulk: 20 }));
     const engine = new GameEngine({ map, player: new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 7 } }), manifest });
-    // A monster winding up wears the '!' badge.
+    // A monster winding up wears the hazard sign.
     const brute = new Monster({ id: 'brute', name: 'Brute', position: { x: 7, y: 7 }, stats: { hp: 10, maxHp: 10, attack: 1, defense: 0 } });
     brute.intent = { type: 'windup', targetTile: { x: 6, y: 7 } } as Monster['intent'];
     engine.addEntity(brute);
@@ -67,8 +68,8 @@ describe('map glyphs and badges use the theme fonts', () => {
     expect(fontOf('▲')).toMatch(/px TestDisplay$/);
     expect(fontOf('ᛏ')).toMatch(/px TestDisplay$/);
     expect(fontOf('3')).toMatch(/px TestNum$/);
-    expect(fontOf('★')).toMatch(/px TestNum$/);
-    expect(fontOf('!')).toMatch(/px TestNum$/);
+    expect(texts.map((t) => t.text)).not.toContain('★');
+    expect(texts.map((t) => t.text)).not.toContain('!');
     for (const t of texts) expect(t.font).not.toMatch(/serif|monospace|Courier/);
     renderer.destroy();
   });

@@ -39,11 +39,12 @@ export const COTW_THEME_TOKENS: ThemeTokens = {
   xp: '#c4b5fd',
   gold: '#facc15',
 
-  // Item families (names and icon frames), in the colours of their auras (sprites/sculpt/aura.ts).
-  rarityCursed: '#e0302a',
+  // Item families (names and icon frames), in the colours of their auras (sprites/sculpt/aura.ts);
+  // cursed and chaotic are lighter than their auras so the names read on the menu cards.
+  rarityCursed: '#f4554a',
   rarityHexed: '#c8b432',
   rarityUnholy: '#7c9a2e',
-  rarityChaotic: '#9b40d8',
+  rarityChaotic: '#b86cf0',
   rarityEnchanted: '#6aa6ff',
   rarityBlessed: '#e0a83a',
   rarityHoly: '#fff1c8',

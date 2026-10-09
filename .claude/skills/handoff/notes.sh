@@ -86,7 +86,7 @@ get() {
 
 mark() {
   [ -f "$LOCAL/$1" ] || get "$1" > /dev/null
-  printf 'Resumed: %s\n' "$(date '+%Y-%m-%d %H:%M')" >> "$LOCAL/$1"
+  printf 'Resumed: %s\n' "$(date -u '+%Y-%m-%d %H:%M UTC')" >> "$LOCAL/$1"
   publish "$LOCAL/$1"
 }
 

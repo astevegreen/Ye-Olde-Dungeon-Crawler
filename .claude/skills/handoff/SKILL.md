@@ -17,14 +17,14 @@ Notes live on origin's `handoffs` branch, which holds only notes, never merges i
 1. **Gather the facts from git.** Run `git status --short`, `git log --oneline -15` and `git branch --show-current`, and note HEAD's short sha. Done when every commit and uncommitted file the note will mention appears in that output.
 2. **Settle uncommitted work.** A finished request is committed through the normal flow (hooks, `Requested:` trailer) and pushed (`CLAUDE.md`, Pushing) before the note is written. A question whose answer changes what gets committed goes to the owner now, before the commit; every other question goes in the note. Work in progress stays uncommitted and is listed by file, with its state, under **Done**; in a cloud session (`CLAUDE_CODE_REMOTE` is set) the disk goes with the session, so commit it as `wip: <slug>` and push the session branch instead.
 3. **Send durable facts to memory.** A fact that outlives this task (an owner preference, a tooling gotcha) goes to the memory directory; the note carries only what this task needs.
-4. **Write the note** to `.prompts/handoffs/<YYYY-MM-DD-HHMM>-<slug>.md` (timestamp from `date +%Y-%m-%d-%H%M`, slug 2–4 words naming the task), using the template below, 40 lines at most. Write for a **cold reader**: a session with none of this conversation, only the note, the repo and memory. Point at code by `path:line` and at history by sha, and let the cold reader open what it needs. Done when a cold reader could ask every **Decide first** question and start step 1 of **Next** from the note and the files it names alone.
+4. **Write the note** to `.prompts/handoffs/<YYYY-MM-DD-HHMM>-<slug>.md` (timestamp in UTC from `date -u +%Y-%m-%d-%H%M`, since cloud sessions run in UTC and names sort as times; slug 2–4 words naming the task), using the template below, 40 lines at most. Write for a **cold reader**: a session with none of this conversation, only the note, the repo and memory. Point at code by `path:line` and at history by sha, and let the cold reader open what it needs. Done when a cold reader could ask every **Decide first** question and start step 1 of **Next** from the note and the files it names alone.
 5. **Publish the note**: `notes.sh publish <path>`. Done when it prints `pushed <name>`; when the push fails, the note exists only on this disk, and step 6 says so.
 6. **Tell the owner**: the note's name, each **Decide first** question as one line with its recommendation, and the resume line: after `/clear`, type `/handoff resume`, in this session or a cloud one. The owner may answer a quick one in place; the rest wait for the fresh session.
 
 ### Template
 
     # Handoff: <task in a few words>
-    <YYYY-MM-DD HH:MM> · branch <name> · HEAD <sha> · tree <clean | N uncommitted files>
+    <YYYY-MM-DD HH:MM> UTC · branch <name> · HEAD <sha> · tree <clean | N uncommitted files>
 
     ## Goal
     <the owner's ask, quoted where it was quoted; what done looks like>
@@ -60,5 +60,5 @@ Keep **Goal** and **Next** always; drop any other section that would be empty. W
 3. **Check drift**: run `git log --oneline <sha>..HEAD` and `git status --short`. Report commits or changes the note doesn't know about, and uncommitted files it lists that are absent here (they stayed on the machine that wrote it); re-plan any step they invalidate before running it.
 4. **Ask the Decide first questions**, recommended option first, and record each answer under **Decisions** in the copy, with the owner's words. Done when every question has an answer or the owner has deferred it.
 5. **Read the Read-first files**, and only those, before starting.
-6. **Mark it resumed**: `notes.sh mark <name>` appends `Resumed: <YYYY-MM-DD HH:MM>` to the copy and publishes it, decisions included, so `list` stops offering it.
+6. **Mark it resumed**: `notes.sh mark <name>` appends `Resumed: <YYYY-MM-DD HH:MM> UTC` to the copy and publishes it, decisions included, so `list` stops offering it.
 7. **Restate the goal and the next step** in two lines, re-planned for any answer from step 4, then start that step. Decisions in the note stand as settled.

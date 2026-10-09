@@ -261,3 +261,35 @@ mat('mon2_scar', '#a8927a', { hs: 8 });
 mat('mon2_graveScale', '#5a627a', { tex: 'scale', shiny: true, hs: 8 });
 mat('mon2_graveBelly', '#7c8492', { hs: 8 });
 mat('mon2_graveWing', '#604a62', { hs: 8 });
+
+// ---- monster families, part 3 (wave 5): the dwarves of the works, the walking dead, the World-Bark's things
+// dwarves
+mat('mon3_char', '#3a3434', { tex: 'rot', hs: 10 });
+mat('mon3_gilt', '#c09032', { shiny: true, hs: 14 });
+mat('mon3_cinderPlate', '#4c4644', { shiny: true, hs: 12 });
+mat('mon3_ashBeard', '#8a8682', { tex: 'fur', hs: 8 });
+mat('mon3_barrowCloak', '#5a4a38', { tex: 'cloth', hs: 12 });
+mat('mon3_turf', '#4e6436', { tex: 'fur', hs: 12 });
+mat('mon3_grass', '#8a9a52', { hs: 10 });
+mat('mon3_soot', '#9a8a80', { tex: 'rot', hs: 12 });
+mat('mon3_wretchSkin', '#b08a74', { hs: 12 });
+mat('mon3_scorchBeard', '#5a4232', { tex: 'fur', hs: 12 });
+mat('mon3_milk', '#d6d2c6', { hs: 6 });
+// the walking dead of the silver veins
+mat('mon3_narSkin', '#8f9478', { tex: 'rot', hs: 10 });
+mat('mon3_tarnish', '#3a3c46', { shiny: true, hs: 8 });
+mat('mon3_wightSkin', '#6c7280', { shiny: true, tex: 'rot', hs: 8 });
+mat('mon3_wightMail', '#747a88', { shiny: true, tex: 'mail', hs: 8 });
+mat('mon3_wightShroud', '#514c64', { tex: 'cloth', hs: 10 });
+mat('mon3_lode', '#4a4448', { tex: 'stone', hs: 8 });
+mat('mon3_vein', '#d4dcea', { shiny: true, hs: 8 });
+// things of the World-Bark
+mat('mon3_shell', '#4c3624', { shiny: true, tex: 'bark', hs: 12 });
+mat('mon3_shellBelly', '#2e241e', { shiny: true, hs: 10 });
+mat('mon3_resin', '#d88a24', { shiny: true, a: 0.92, hs: 14 });
+mat('mon3_grub', '#b4a07e', { tex: 'rot', hs: 10 });
+mat('mon3_grubPlate', '#56402c', { shiny: true, tex: 'bark', hs: 12 });
+mat('mon3_egg', '#a8c048', { em: true, hs: 0 });
+mat('mon3_bsSkin', '#857c6a', { tex: 'rot', hs: 10 });
+mat('mon3_pelt', '#4e3a2a', { tex: 'fur', hs: 12 });
+mat('mon3_taproot', '#6a5236', { tex: 'bark', hs: 12 });

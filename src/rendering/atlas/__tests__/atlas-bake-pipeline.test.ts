@@ -9,7 +9,7 @@ import {
   OUTLINE_COLOR,
   HIGHLIGHT_MIX,
 } from '../sprite-atlas';
-import type { SpriteRecipe } from '../../../engine';
+import { flightRecorder, type SpriteRecipe } from '../../../engine';
 
 function createMockCanvas(): HTMLCanvasElement {
   const dummyCtx: any = new Proxy(
@@ -110,6 +110,29 @@ describe('Atlas bake pipeline — supersampling, downsample, shading, outline/hi
         wallCoords.row * SPRITE_SIZE,
         SPRITE_SIZE
       );
+    });
+
+    it('records a failed pixel readback and keeps the pixels as drawn, so startup carries on', () => {
+      // WebKit throws this from getImageData when its GPU process stalls past its 15 s timeout.
+      createElementSpy.mockImplementation((tag: string) => {
+        if (tag !== 'canvas') return {};
+        const canvas = createMockCanvas();
+        (canvas.getContext('2d') as any).getImageData = vi.fn(() => {
+          throw new DOMException('The object is in an invalid state.', 'InvalidStateError');
+        });
+        return canvas;
+      });
+      flightRecorder.clear();
+
+      const atlas = new SpriteAtlas();
+
+      expect((atlas.atlasCanvas.getContext('2d') as any).putImageData).not.toHaveBeenCalled();
+      const sources = flightRecorder
+        .getEvents()
+        .filter((e) => e.type === 'error')
+        .map((e) => e.details?.source);
+      expect(sources).toEqual(['sprite atlas outline', 'sprite atlas remembered']);
+      flightRecorder.clear();
     });
   });
 

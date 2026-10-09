@@ -1,4 +1,4 @@
-import { Visibility } from '../../engine';
+import { flightRecorder, Visibility } from '../../engine';
 import type { SpriteKey, AtlasCoords } from './types';
 import type { PixelSprite, SpriteRecipe, TerrainArtConfig } from '../../engine';
 
@@ -182,6 +182,30 @@ interface AtlasCell {
 const BAKE_STRIP_ROWS = 4;
 
 /**
+ * Reads the canvas's pixels, lets `edit` change them and writes them back. A failed read
+ * is recorded and leaves the pixels as drawn: WebKit keeps canvas pixels in its GPU
+ * process, and while that process stalls `getImageData` throws after 15 s. The page bakes
+ * an atlas before it builds the main menu, so that throw left it with no menu.
+ */
+function editPixels(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  pass: string,
+  edit: (data: Uint8ClampedArray) => void
+): void {
+  let img: ImageData;
+  try {
+    img = ctx.getImageData(0, 0, width, height);
+  } catch (err) {
+    flightRecorder.recordError(err instanceof Error ? err : new Error(String(err)), { source: `sprite atlas ${pass}` });
+    return;
+  }
+  edit(img.data);
+  ctx.putImageData(img, 0, 0);
+}
+
+/**
  * Terrain cells (`<base>~<part>` keys, see `TerrainArtConfig`) tile edge to edge or layer
  * over each other, so they skip the sprite outline and the diagonal shading pass.
  */
@@ -355,9 +379,7 @@ export class SpriteAtlas {
   /** Reads back the baked atlas pixels, runs the shared outline/highlight pass, writes them back. */
   private bakeOutlineAndHighlight(ctx: CanvasRenderingContext2D, cells: AtlasCell[]): void {
     const { width, height } = this.atlasCanvas;
-    const imgData = ctx.getImageData(0, 0, width, height);
-    applyOutlineAndHighlight(imgData.data, width, height, cells);
-    ctx.putImageData(imgData, 0, 0);
+    editPixels(ctx, width, height, 'outline', (data) => applyOutlineAndHighlight(data, width, height, cells));
   }
 
   private buildDimmedAtlas(): void {
@@ -370,9 +392,8 @@ export class SpriteAtlas {
     // Copy full atlas
     dimmedCtx.drawImage(this.atlasCanvas, 0, 0);
 
-    const imgData = dimmedCtx.getImageData(0, 0, this.dimmedAtlasCanvas.width, this.dimmedAtlasCanvas.height);
-    this.styleRemembered(imgData.data, this.dimmedAtlasCanvas.width, this.getUniqueCells());
-    dimmedCtx.putImageData(imgData, 0, 0);
+    const { width, height } = this.dimmedAtlasCanvas;
+    editPixels(dimmedCtx, width, height, 'remembered', (data) => this.styleRemembered(data, width, this.getUniqueCells()));
   }
 
   /** The pack's remembered-cell styling, else the blue-slate dimming. */
@@ -437,9 +458,9 @@ export class SpriteAtlas {
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
     ctx.drawImage(strip, 0, 0, ATLAS_TILE_SIZE, ATLAS_TILE_SIZE, 0, 0, ATLAS_TILE_SIZE, ATLAS_TILE_SIZE);
-    const img = ctx.getImageData(0, 0, ATLAS_TILE_SIZE, ATLAS_TILE_SIZE);
-    this.styleRemembered(img.data, ATLAS_TILE_SIZE, [{ ox: 0, oy: 0, size: ATLAS_TILE_SIZE }]);
-    ctx.putImageData(img, 0, 0);
+    editPixels(ctx, ATLAS_TILE_SIZE, ATLAS_TILE_SIZE, 'remembered figure', (data) =>
+      this.styleRemembered(data, ATLAS_TILE_SIZE, [{ ox: 0, oy: 0, size: ATLAS_TILE_SIZE }])
+    );
     fig.dimmed = canvas;
     return canvas;
   }

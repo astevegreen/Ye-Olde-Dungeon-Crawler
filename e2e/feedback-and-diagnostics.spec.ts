@@ -129,7 +129,10 @@ test.describe('Developer Diagnostics & Feedback Systems', () => {
     // Open Feedback from within Triage tab
     const triageFeedbackBtn = page.locator('#btn-diag-open-feedback');
     await expect(triageFeedbackBtn).toBeVisible();
-    await triageFeedbackBtn.click();
+    // F2 rebuilds this tab every half second. In WebKit at Safari's 2x scale the game draws
+    // 15-19 frames a second, and locator.click's checks outlast a rebuild every time (a
+    // player's press pauses the rebuild instead), so the click goes to the button directly.
+    await triageFeedbackBtn.dispatchEvent('click');
 
     await expect(feedbackModal).toBeVisible();
 

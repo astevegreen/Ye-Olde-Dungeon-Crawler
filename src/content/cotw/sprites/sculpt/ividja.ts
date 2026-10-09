@@ -30,12 +30,12 @@ export function ividjaModel(f: number): PrimTree {
   const hx = 17.2;
   const hy = 6.8 - b * 0.2;
   const antlers: Array<[number, number, number, number, number, number]> = [
-    [hx - 1.2, hy - 2.2, hx - 4.8, hy - 4.2, 0.85, 0.55], [hx - 4.8, hy - 4.2, hx - 8.6, hy - 4.6, 0.55, 0.3],
-    [hx - 4.2, hy - 4, hx - 5, hy - 6.6, 0.45, 0.22], [hx - 6.6, hy - 4.5, hx - 7.6, hy - 6.8, 0.4, 0.2],
-    [hx - 8.4, hy - 4.6, hx - 9.4, hy - 3, 0.35, 0.2],
-    [hx + 1, hy - 2.4, hx + 4.2, hy - 4.6, 0.85, 0.55], [hx + 4.2, hy - 4.6, hx + 8.2, hy - 5.2, 0.55, 0.3],
-    [hx + 3.6, hy - 4.4, hx + 4.2, hy - 6.8, 0.45, 0.22], [hx + 6, hy - 5, hx + 6.6, hy - 7.2, 0.4, 0.2],
-    [hx + 8, hy - 5.2, hx + 9.2, hy - 3.6, 0.35, 0.2],
+    [hx - 1.2, hy - 2.2, hx - 4.8, hy - 3.6, 0.85, 0.55], [hx - 4.8, hy - 3.6, hx - 8.8, hy - 4, 0.55, 0.3],
+    [hx - 4.2, hy - 3.4, hx - 5, hy - 5.4, 0.45, 0.22], [hx - 6.6, hy - 3.8, hx - 7.6, hy - 5.4, 0.4, 0.2],
+    [hx - 8.6, hy - 4, hx - 9.6, hy - 2.4, 0.35, 0.2],
+    [hx + 1, hy - 2.4, hx + 4.2, hy - 3.8, 0.85, 0.55], [hx + 4.2, hy - 3.8, hx + 8.4, hy - 4.4, 0.55, 0.3],
+    [hx + 3.6, hy - 3.6, hx + 4.2, hy - 5.4, 0.45, 0.22], [hx + 6, hy - 4.1, hx + 6.9, hy - 5.4, 0.4, 0.2],
+    [hx + 8.2, hy - 4.4, hx + 9.4, hy - 2.8, 0.35, 0.2],
   ];
   for (const [x1, y1, x2, y2, r1, r2] of antlers) out.push(K(x1, y1, x2, y2, r1, r2, 'horn'));
   out.push(E(hx - 0.4, hy - 0.2, 2.8, 3.1, 'boss_trollWife', { ink: -0.1 }));

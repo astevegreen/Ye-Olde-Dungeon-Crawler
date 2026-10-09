@@ -26,7 +26,7 @@ export function nidhoggModel(f: number): PrimTree {
   out.push(P([12.4, 12, 8.4, 2.4, 5, 3.8, 1.8, 9.8, 1.2, 17.6, 3.2, 15.4, 3.8, 20.4, 5.8, 17.2, 7.2, 21.4, 8.6, 17.6, 10.6, 19.6, 12.6, 16], 'boss_wing', { bv: 1 }));
   out.push(K(12.6, 13, 8.4, 2.4, 1.1, 0.7, 'scaleBlack'));
   out.push(K(8.4, 2.4, 1.8, 9.6, 0.6, 0.3, 'scaleBlack'), K(8.4, 2.4, 3.2, 15, 0.55, 0.3, 'scaleBlack'), K(8.4, 2.4, 6, 17, 0.5, 0.3, 'scaleBlack'));
-  out.push(P([8.4, 2.4, 7, 0.2, 9.4, 1.8], 'horn'));
+  out.push(P([8.4, 2.4, 7.2, 0.9, 9.4, 1.8], 'horn'));
   // back of the coil, with a ridge of spines
   const cx = 15.6;
   const cy = 22.4;
@@ -52,11 +52,11 @@ export function nidhoggModel(f: number): PrimTree {
   }
   // crest of horns like broken roots, swept back
   const hy = 5.4 - b * 0.3;
-  out.push(K(16.6, hy - 1.2, 11.2, hy - 4.6, 1.15, 0.45, 'boss_rootHorn'));
-  out.push(K(13.4, hy - 3.4, 11.8, hy - 5.8, 0.45, 0.2, 'boss_rootHorn'));
-  out.push(K(17.8, hy - 2.2, 15.2, hy - 6.2, 1, 0.4, 'boss_rootHorn'));
-  out.push(K(16, hy - 4.8, 17.4, hy - 6.4, 0.4, 0.2, 'boss_rootHorn'));
-  out.push(K(19.4, hy - 2.4, 19.6, hy - 5.8, 0.8, 0.35, 'boss_rootHorn'));
+  out.push(K(16.6, hy - 1.2, 9.6, hy - 2.4, 1.15, 0.45, 'boss_rootHorn'));
+  out.push(K(12.6, hy - 1.9, 11.4, hy - 4, 0.45, 0.2, 'boss_rootHorn'));
+  out.push(K(17.8, hy - 2.2, 13.8, hy - 3.75, 1, 0.4, 'boss_rootHorn'));
+  out.push(K(16.4, hy - 2.7, 15.6, hy - 4, 0.4, 0.2, 'boss_rootHorn'));
+  out.push(K(19.4, hy - 2.4, 19, hy - 3.85, 0.8, 0.35, 'boss_rootHorn'));
   out.push(K(15.6, hy - 0.2, 10.6, hy - 1.2, 0.85, 0.3, 'boss_rootHorn'));
   out.push(K(12.4, hy - 0.9, 11.2, hy + 0.8, 0.35, 0.2, 'boss_rootHorn'));
   // the head: a long wedge, jaws wide on the root
@@ -68,8 +68,8 @@ export function nidhoggModel(f: number): PrimTree {
   for (const tx of [22.2, 24, 25.8, 27.6]) out.push(P([tx - 0.45, hy + 2.7 + (tx - 22) * 0.12, tx + 0.45, hy + 2.9 + (tx - 22) * 0.12, tx, hy + 4.2 + (tx - 22) * 0.12], 'bone'));
   for (const tx of [23.4, 26.4]) out.push(P([tx - 0.4, hy + 5.6 + (tx - 22) * 0.2, tx + 0.4, hy + 5.6 + (tx - 22) * 0.2, tx, hy + 4.4 + (tx - 22) * 0.2], 'bone'));
   // the root it gnaws: splintered, its fibres hanging from the jaws
-  out.push(K(20.6, hy + 4.4, 30.6, hy + 4.2, 0.9, 0.7, 'boss_fibre'));
-  out.push(K(29.6, hy + 4.3, 31.4, hy + 3.2, 0.45, 0.25, 'boss_fibre'), K(29.8, hy + 4.4, 31.2, hy + 5.6, 0.4, 0.2, 'boss_fibre'));
+  out.push(K(20.6, hy + 4.4, 30.4, hy + 4.2, 0.9, 0.7, 'boss_fibre'));
+  out.push(K(29.4, hy + 4.3, 30.9, hy + 3.2, 0.45, 0.25, 'boss_fibre'), K(29.6, hy + 4.4, 30.9, hy + 5.6, 0.4, 0.2, 'boss_fibre'));
   out.push(K(23.6, hy + 4.8, 23, hy + 9.4, 0.35, 0.2, 'boss_fibre'));
   out.push(K(25.2, hy + 4.8, 25.8, hy + 8.2, 0.3, 0.18, 'boss_fibre'));
   out.push(K(28, hy + 4.8, 28.8, hy + 9.8, 0.35, 0.2, 'boss_fibre'));
@@ -85,7 +85,7 @@ export function nidhoggModel(f: number): PrimTree {
   out.push(K(4.2, 23.2, 6.2, 25.6, 2.4, 2.4, 'scaleBlack'));
   out.push(K(27.6, 22.6 + c * 0.3, 30.2, 18.8, 2, 1, 'scaleBlack'));
   out.push(K(30.2, 18.8, 29, 16.2, 1, 0.35, 'scaleBlack'));
-  out.push(P([29.6, 18, 31.4, 16.6, 30.4, 19.4], 'scaleBlack', { bv: 0.3 }));
+  out.push(P([29.6, 18, 31, 16.6, 30.4, 19.4], 'scaleBlack', { bv: 0.3 }));
   out.push(Lt(14.4, 14.4, 9, '#95dc4c', 0.5 + pulse * 0.15));
   out.push(Lt(14, 27, 9, '#95dc4c', 0.3 + pulse * 0.1, 2));
   out.push(Lt(21.8, hy - 0.4, 5, '#95dc4c', 0.45 + pulse * 0.2));

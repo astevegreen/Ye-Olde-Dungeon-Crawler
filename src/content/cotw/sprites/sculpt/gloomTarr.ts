@@ -32,7 +32,7 @@ export function gloomTarrModel(f: number): PrimTree {
   // lips: an overhanging upper lip and a lower one sunk in the bile
   out.push(K(20.8, 20.2, 26, 17.4, 1.4, 1.2, 'boss_tar'));
   out.push(K(26, 17.4, 29.4, 17.8, 1.2, 1, 'boss_tar'));
-  out.push(K(29.4, 17.8, 30.8, 20.6, 1, 0.8, 'boss_tar'));
+  out.push(K(29.4, 17.8, 30.3, 20.6, 1, 0.8, 'boss_tar'));
   out.push(K(22.6, 25.8, 30, 26.6, 1.1, 0.9, 'boss_tar'));
   for (const [tx, ty, th] of [[23.6, 19.6, 1.6], [26, 18.6, 2], [28.4, 18.8, 1.5]]) out.push(P([tx - 0.6, ty - 0.2, tx + 0.6, ty - 0.3, tx + 0.1, ty + th], 'boneOld'));
   for (const [tx, ty] of [[25, 25.6], [28.6, 26]]) out.push(P([tx - 0.5, ty + 0.2, tx + 0.5, ty + 0.2, tx, ty - 1.3], 'boneOld'));

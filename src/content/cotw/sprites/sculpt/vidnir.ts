@@ -12,7 +12,7 @@ export function vidnirModel(f: number): PrimTree {
   const out: PrimTree[number][] = [Sh(16, 28.6, 13, 2.4, 0.5)];
   // the banner: pole, crossbar, tattered cloth that stirs, a fang for a sigil
   out.push(K(6.8, 28.4, 7.4, 1.6, 0.6, 0.55, 'woodDark'));
-  out.push(P([7.4, 0.2, 8.2, 1.6, 6.6, 1.6], 'bronze', { bv: 0.4 }));
+  out.push(P([7.4, 0.9, 8.2, 2, 6.6, 2], 'bronze', { bv: 0.4 }));
   out.push(K(3.4, 2.6, 11.4, 2.6, 0.45, 0.45, 'woodDark'));
   const w = sw * 0.45;
   out.push(P([3.6, 2.8, 11.2, 2.8, 11.2 + w, 10.6, 10.2 + w, 9.4, 9.4 + w, 13.6, 8.2 + w, 11.4, 7.2 + w * 1.2, 15.2, 6, 11.6 + w, 5 + w, 13.6, 4.2 + w * 0.6, 10.8, 3.6, 11.4], 'boss_banner', { bv: 0.7 }));
@@ -41,8 +41,8 @@ export function vidnirModel(f: number): PrimTree {
   // head: proud, horned, jaws parted on green fangs
   const hx = 20;
   const hy = 3.6 - b * 0.15;
-  out.push(K(hx - 1, hy - 0.8, hx - 5.2, hy - 2.8, 0.9, 0.3, 'horn'));
-  out.push(K(hx - 0.2, hy - 1.4, hx - 3.4, hy - 3.4, 0.7, 0.25, 'horn'));
+  out.push(K(hx - 1, hy - 0.8, hx - 5.5, hy - 2, 0.9, 0.3, 'horn'));
+  out.push(K(hx - 0.2, hy - 1.4, hx - 3.9, hy - 2.3, 0.7, 0.25, 'horn'));
   out.push(E(hx, hy, 2.6, 2.1, 'boss_wyrmScale'));
   out.push(K(hx + 0.6, hy + 0.2, hx + 5.6, hy + 1.6, 1.6, 1, 'boss_wyrmScale'));
   out.push(K(hx + 0.6, hy + 1.8, hx + 5, hy + 3.2, 1, 0.7, 'boss_wyrmScale', { ink: -0.08 }));

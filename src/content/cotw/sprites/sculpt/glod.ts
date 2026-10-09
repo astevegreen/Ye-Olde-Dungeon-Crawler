@@ -50,8 +50,8 @@ export function glodModel(f: number): PrimTree {
   out.push(X(15.6, 27.5, 0.7, 0.6, 'emFire:3', { em: true }), X(23.6, 27.5, 0.7, 0.6, 'emFire:3', { em: true }));
   // head: broad and flat, eyes bulging up top, a seam of fire for a mouth
   out.push(E(25.4, 20.8, 3.6, 2.8, 'boss_crust'));
-  out.push(K(25.6, 21.2, 30.4, 22.2, 2.2, 1.3, 'boss_crust'));
-  out.push(K(25.2, 22.6, 30.4, 22.8, 0.32, 0.3, 'emFire', { occ: false, ol: false }));
+  out.push(K(25.6, 21.2, 29.8, 22.2, 2.2, 1.3, 'boss_crust'));
+  out.push(K(25.2, 22.6, 29.8, 22.8, 0.32, 0.3, 'emFire', { occ: false, ol: false }));
   out.push(E(26.6, 18.6, 1.4, 1.1, 'boss_crust'));
   out.push(X(26.6, 18.2, 1.1, 0.9, 'emFireCore:4', { em: true }));
   out.push(K(27.6, 20.2, 28.8, 21.2, 0.3, 0.3, 'emFire', { ink: ci, occ: false, ol: false }));

@@ -4,8 +4,8 @@ import './materials';
 /** The crown of dead roots: from (ax, ay) through a bend to (bx, by), off the head, and the root's radius. */
 const CROWN: ReadonlyArray<[number, number, number, number, number]> = [
   [-2.6, -2, -5, -5.6, 0.75],
-  [-1.2, -3, -2.2, -7.2, 0.8],
-  [0.4, -3.2, 1, -7.6, 0.75],
+  [-1.2, -3, -2.2, -6.2, 0.8],
+  [0.4, -3.2, 1, -6.5, 0.75],
   [1.8, -2.6, 3.8, -5.8, 0.7],
   [-3, -0.6, -5.6, -1.4, 0.6],
 ];
@@ -37,7 +37,7 @@ export function svartrModel(f: number): PrimTree {
   // the far arm, raised high behind the head
   out.push(K(14, 11 - b * 0.2, 19, 5.2, 1.5, 1.3, 'boss_trollDead', { ink: -0.08 }));
   out.push(K(19, 5.2, 21.4, 2.6, 1.3, 1, 'boss_trollDead', { ink: -0.08 }));
-  for (const [ex, ey] of [[20.4, 0.6], [22.2, 0.6], [23.6, 1.8]]) out.push(K(21.4, 2.6, ex, ey, 0.45, 0.18, 'boneOld'));
+  for (const [ex, ey] of [[20.4, 1], [22.2, 1], [23.6, 1.8]]) out.push(K(21.4, 2.6, ex, ey, 0.45, 0.18, 'boneOld'));
   // gaunt torso rising from the wood
   out.push(E(15.4, 13.6 - b * 0.2, 4.4, 5, 'boss_trollDead'));
   out.push(K(12.6, 13.2, 15.8, 14.2, 0.35, 0.35, 'boss_trollDead', { ink: -0.2, occ: false }));
@@ -75,7 +75,7 @@ export function svartrModel(f: number): PrimTree {
   const [fx, fy] = main.pts[2];
   out.push(bolt(fx, fy, 25 + (f % 2) * 2, 7.4, s + 50, 3, 0.9, 0.24, 'emBolt').prims);
   out.push(bolt(21.8, 1.8, 26, 7, s + 101, 5, 1.5, 0.22, 'emBolt').prims);
-  out.push(E(22.6, 1.3, 0.7, 0.7, 'emBolt'), E(27.4, 7, 0.7, 0.7, 'emBolt'));
+  out.push(E(22.6, 1.5, 0.7, 0.7, 'emBolt'), E(27.4, 7, 0.7, 0.7, 'emBolt'));
   const [spx, spy] = [[20.6, 3.8], [25.2, 3], [28.4, 4.8], [23.6, 6.4]][f % 4];
   out.push(X(spx, spy, 0.7, 0.7, '#ffffff', { em: true }));
   // black sap drips

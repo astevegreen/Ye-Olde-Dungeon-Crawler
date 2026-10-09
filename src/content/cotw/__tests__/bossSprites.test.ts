@@ -47,6 +47,24 @@ describe('the cotw boss sprites draw their own pixels', () => {
     }
   });
 
+  it('keep the whole outline inside the cell, clear of its top and sides, in every frame', () => {
+    // Only the body and the outline's inner ring are fully opaque, so a fully opaque edge pixel
+    // means a horn or tip runs into the edge and loses its outline there.
+    for (const [id, sprite] of Object.entries(COTW_BOSS_SPRITES)) {
+      for (let f = 0; f < (sprite.frames ?? 1); f++) {
+        const px = sprite.render(f, 64);
+        const opaque = (x: number, y: number) => px[(y * 64 + x) * 4 + 3] === 255;
+        const edge: string[] = [];
+        for (let i = 0; i < 64; i++) {
+          if (opaque(i, 0)) edge.push(`top ${i}`);
+          if (opaque(0, i)) edge.push(`left ${i}`);
+          if (opaque(63, i)) edge.push(`right ${i}`);
+        }
+        expect([id, f, edge]).toEqual([id, f, []]);
+      }
+    }
+  });
+
   it('look unlike one another', () => {
     const ids = Object.keys(frames);
     for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) expect(frames[ids[i]], `${ids[i]} vs ${ids[j]}`).not.toEqual(frames[ids[j]]);

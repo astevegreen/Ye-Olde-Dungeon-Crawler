@@ -219,6 +219,55 @@ function flatten(list: PrimTree, out: Prim[] = []): Prim[] {
   return out;
 }
 
+/** How `T` moves a figure: scale about a pivot (default the feet, 16, 29), then translate, optionally mirrored. */
+export interface TransformOptions {
+  /** Uniform scale. */
+  s?: number;
+  sx?: number;
+  sy?: number;
+  /** Pivot; default (16, 29). */
+  px?: number;
+  py?: number;
+  dx?: number;
+  dy?: number;
+  /** Mirror left to right. */
+  flip?: boolean;
+}
+
+/** Scales, moves or mirrors a model's primitives: a variant drawn larger, smaller or facing the other way. */
+export function T(list: PrimTree, o: TransformOptions): Prim[] {
+  const px = o.px ?? 16;
+  const py = o.py ?? 29;
+  const sx = (o.s ?? 1) * (o.sx ?? 1) * (o.flip ? -1 : 1);
+  const sy = (o.s ?? 1) * (o.sy ?? 1);
+  const dx = o.dx || 0;
+  const dy = o.dy || 0;
+  const as = Math.abs(sx);
+  const rs = (as + Math.abs(sy)) / 2;
+  const mx = (x: number): number => px + (x - px) * sx + dx;
+  const my = (y: number): number => py + (y - py) * sy + dy;
+  return flatten(list).map((p): Prim => {
+    switch (p.t) {
+      case 'E': return { ...p, cx: mx(p.cx), cy: my(p.cy), rx: p.rx * as, ry: p.ry * Math.abs(sy), a: p.a ? (sx < 0 ? -p.a : p.a) : 0 };
+      case 'K': return { ...p, x1: mx(p.x1), y1: my(p.y1), x2: mx(p.x2), y2: my(p.y2), r1: p.r1 * rs, r2: p.r2 * rs };
+      case 'P': {
+        const q: number[] = [];
+        for (let i = 0; i < p.pts.length; i += 2) q.push(mx(p.pts[i]), my(p.pts[i + 1]));
+        return { ...p, pts: q };
+      }
+      case 'X': {
+        const x0 = mx(p.x);
+        const x1 = mx(p.x + p.w);
+        const y0 = my(p.y);
+        const y1 = my(p.y + p.h);
+        return { ...p, x: Math.min(x0, x1), y: Math.min(y0, y1), w: Math.abs(x1 - x0), h: Math.abs(y1 - y0) };
+      }
+      case 'L': return { ...p, x: mx(p.x), y: my(p.y), r: p.r * rs };
+      case 'S': return { ...p, cx: mx(p.cx), cy: my(p.cy), rx: p.rx * as, ry: p.ry * Math.abs(sy) };
+    }
+  });
+}
+
 /** Idle-loop helpers for frame 0-3: a breath (0, .5, 1, .5) and a sway (0, 1, 0, -1). */
 export const breath = (f: number): number => [0, 0.5, 1, 0.5][f % 4];
 export const sway = (f: number): number => [0, 1, 0, -1][f % 4];

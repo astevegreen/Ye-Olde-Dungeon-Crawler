@@ -114,3 +114,81 @@ mat('boss_crust', '#4a3f3b', { tex: 'stone', hs: 10 }); // cooling magma crust
 mat('boss_trollWife', '#7a866f', { hs: 10 }); // grey-green troll-wife skin
 mat('boss_mask', '#d8ceb4', { hs: 10 }); // the antler-crowned mask
 mat('boss_moss', '#5d7642', { tex: 'fur', hs: 12 });
+
+// ---- monster families, part 1 (wave 3): the dead, beasts and vermin, goblins and casters, trolls
+// the dead
+mat('mon1_corpse', '#7d8ea6', { tex: 'rot', hs: 10 });
+mat('mon1_corpseDust', '#8c8a86', { tex: 'rot', hs: 10 });
+mat('mon1_rustMail', '#73706e', { shiny: true, tex: 'mail', hs: 10 });
+mat('mon1_dustMail', '#857660', { tex: 'mail', hs: 10 });
+mat('mon1_rust', '#9a5f38', { tex: 'rot', hs: 12 });
+mat('mon1_helm', '#646c78', { shiny: true, hs: 10 });
+mat('mon1_oldSteel', '#9aa2ae', { shiny: true, hs: 8 });
+mat('mon1_rime', '#d3e6ee', { tex: 'ice', hs: 4 });
+mat('mon1_beard', '#e0e5e9', { tex: 'fur', hs: 6 });
+mat('mon1_shroud', '#4b5468', { tex: 'cloth', hs: 12 });
+mat('mon1_wrap', '#625d52', { tex: 'cloth', hs: 12 });
+mat('mon1_verdigris', '#5fa38c', { shiny: true, hs: 10 });
+mat('mon1_royal', '#4c5d82', { tex: 'cloth' });
+mat('mon1_rag', '#6d6758', { tex: 'cloth', hs: 12 });
+mat('mon1_deadGlass', '#4a5a54', { shiny: true, hs: 8 });
+mat('mon1_ore', '#c09048', { hs: 10 });
+mat('mon1_hex', '#8c84ff', { em: true, hs: 0 });
+mat('mon1_myling', '#b6cee2', { a: 0.6, hs: 8 });
+mat('mon1_mylingFace', '#e2edf6', { a: 0.78, hs: 6 });
+mat('mon1_grim', '#545b7e', { tex: 'fur', a: 0.94, hs: 14 });
+mat('mon1_grimMist', '#626a96', { a: 0.55, hs: 10 });
+mat('mon1_rootCloth', '#58644a', { tex: 'cloth', hs: 14 });
+mat('mon1_root', '#665a42', { tex: 'bark', hs: 12 });
+mat('mon1_rootBone', '#aeb48c', { hs: 10 });
+mat('mon1_void', '#18141f', { hs: 6 });
+mat('mon1_helIron', '#5a627c', { shiny: true, hs: 12 });
+mat('mon1_helCloth', '#474462', { tex: 'cloth', hs: 12 });
+mat('mon1_rotFlesh', '#7f8270', { tex: 'rot', hs: 10 });
+// beasts and vermin
+mat('mon1_muzzle', '#bdbab4', { tex: 'fur', hs: 8 });
+mat('mon1_furRime', '#cad8e4', { tex: 'fur', hs: 8 });
+mat('mon1_furStorm', '#66778f', { tex: 'fur', hs: 10 });
+mat('mon1_hackle', '#5c5f69', { tex: 'fur', hs: 10 });
+mat('mon1_frostMist', '#c4f2ff', { em: true, a: 0.6, hs: 0 });
+mat('mon1_ratFur', '#77695c', { tex: 'fur', hs: 12 });
+mat('mon1_ratSkin', '#c49e92', { hs: 12 });
+mat('mon1_teeth', '#e6cc62', { hs: 8 });
+mat('mon1_iceChitin', '#5f84a0', { shiny: true, hs: 10 });
+mat('mon1_drill', '#aac8da', { shiny: true, hs: 8 });
+mat('mon1_rotChitin', '#6e5844', { shiny: true, tex: 'rot', hs: 12 });
+mat('mon1_quick', '#a9b5c4', { shiny: true, hs: 6 });
+mat('mon1_quick2', '#7a8698', { shiny: true, hs: 6 });
+// goblins and casters
+mat('mon1_kobold', '#9c8c5e', { hs: 14 });
+mat('mon1_shaman', '#a8704c', { hs: 14 });
+mat('mon1_goblin', '#6f8e4c', { hs: 14 });
+mat('mon1_skrael', '#8496a6', { hs: 10 });
+mat('mon1_skFur', '#b4bab8', { tex: 'fur', hs: 8 });
+mat('mon1_ragBrown', '#6c5642', { tex: 'cloth', hs: 12 });
+mat('mon1_hagRobe', '#52607c', { tex: 'cloth' });
+mat('mon1_hagShawl', '#6b6e86', { tex: 'cloth' });
+mat('mon1_hagSkin', '#b0b6b2', { hs: 10 });
+mat('mon1_hagHair', '#e6eff5', { tex: 'fur', hs: 6 });
+mat('mon1_sorcRobe', '#514c6e', { tex: 'cloth' });
+mat('mon1_trim', '#a9adb8', { shiny: true, hs: 8 });
+mat('mon1_zealRobe', '#dccb9e', { tex: 'cloth', hs: 10 });
+mat('mon1_char', '#3e322c', { tex: 'rot', hs: 10 });
+mat('mon1_scar', '#8a4a32', { hs: 10 });
+// jötnar and trolls
+mat('mon1_trollHide', '#728266', { hs: 12 });
+mat('mon1_trollLimb', '#7c8c6e', { hs: 12 });
+mat('mon1_trollHead', '#84946f', { hs: 12 });
+mat('mon1_moss', '#5f823c', { tex: 'fur', hs: 12 });
+mat('mon1_ogre', '#a88c6c', { hs: 14 });
+mat('mon1_jotun', '#82a2c8', { hs: 10 });
+mat('mon1_basalt', '#6a5249', { tex: 'stone', hs: 12 });
+mat('mon1_orc', '#748a68', { hs: 12 });
+mat('mon1_cleaver', '#8c929a', { shiny: true, hs: 8 });
+mat('mon1_twSkin', '#808e6c', { hs: 12 });
+mat('mon1_twDress', '#5a4e48', { tex: 'cloth', hs: 12 });
+mat('mon1_shawl', '#7c5638', { tex: 'cloth', hs: 12 });
+mat('mon1_coven', '#5e5046', { tex: 'cloth', hs: 12 });
+mat('mon1_ironHair', '#959ba3', { tex: 'fur', hs: 8 });
+mat('mon1_ironSkin', '#93845f', { tex: 'bark', hs: 10 });
+mat('mon1_blood', '#d8323c', { em: true, hs: 0 });

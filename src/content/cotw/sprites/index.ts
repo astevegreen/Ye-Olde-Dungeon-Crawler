@@ -9,6 +9,7 @@ import { COTW_TERRAIN_SPRITES } from '../terrain';
 export { COTW_TILE_SPRITES, COTW_MONSTER_SPRITES, COTW_ITEM_SPRITES, COTW_TERRAIN_SPRITES, COTW_UI_ICONS, COTW_SPELL_RUNES };
 export { COTW_HERO_SPRITE } from './heroLook';
 export { COTW_BOSS_SPRITES } from './bossSprites';
+export { COTW_FAMILY_SPRITES } from './familySprites';
 
 /**
  * Full CotW procedural sprite recipe set.

@@ -9,14 +9,16 @@ const SEQUENCES: Record<number, readonly number[]> = {
 
 /**
  * The idle frame a sprite with `frames` frames shows at `now` (ms): four run 0-1-2-3, three
- * go back and forth 0-1-2-1, two alternate. `phase` offsets whole steps, so a room of the
- * same creature never breathes in step while every sprite still turns over on one tick.
+ * go back and forth 0-1-2-1, two alternate, and a longer loop (an item's aura) runs straight
+ * through. `phase` offsets whole steps, so a room of the same creature never breathes in step
+ * while every sprite still turns over on one tick.
  */
 export function idleFrame(now: number, frames: number, phase = 0): number {
   if (frames <= 1) return 0;
-  const seq = SEQUENCES[Math.min(frames, 4)];
   const step = Math.floor(now / IDLE_FRAME_MS) + Math.floor(phase);
-  return seq[((step % seq.length) + seq.length) % seq.length];
+  const length = frames > 4 ? frames : SEQUENCES[frames].length;
+  const at = ((step % length) + length) % length;
+  return frames > 4 ? at : SEQUENCES[frames][at];
 }
 
 /** A small stable number from an id, to phase that sprite's idle loop. */
@@ -63,5 +65,40 @@ export class IdleTicker {
   /** No redraw after this, for a renderer being torn down. */
   public stop(): void {
     this.stopped = true;
+  }
+}
+
+/**
+ * Keeps idling icons turning over: DOM canvases a menu painted once (an item in its aura).
+ * Each tick repaints the ones still on the page, which watch again while they idle, and
+ * forgets the rest, so a closed menu's icons go with it. Ambient, as `IdleTicker`.
+ */
+export class IdleIcons<T> {
+  private watched = new Map<HTMLCanvasElement, T>();
+  private readonly ticker: IdleTicker;
+
+  constructor(
+    private readonly paint: (canvas: HTMLCanvasElement, subject: T) => void,
+    timers?: TickTimers | null
+  ) {
+    this.ticker = new IdleTicker(() => this.tick(), timers);
+  }
+
+  /** Repaint `canvas` at the next idle frame, if it is still on the page then. */
+  public watch(canvas: HTMLCanvasElement, subject: T, now: number): void {
+    this.watched.set(canvas, subject);
+    this.ticker.request(now);
+  }
+
+  private tick(): void {
+    const due = this.watched;
+    this.watched = new Map();
+    for (const [canvas, subject] of due) if (canvas.isConnected) this.paint(canvas, subject);
+  }
+
+  /** No repaint after this, for a renderer being torn down. */
+  public stop(): void {
+    this.ticker.stop();
+    this.watched.clear();
   }
 }

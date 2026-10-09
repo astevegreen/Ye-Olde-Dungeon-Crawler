@@ -88,3 +88,74 @@ describe('SpriteAtlas figures: sprites that draw their own pixels', () => {
     expect(atlas.hasFigure('ghost')).toBe(true);
   });
 });
+
+describe('SpriteAtlas item auras: an identified item drawn in its family’s aura', () => {
+  beforeEach(() => {
+    vi.stubGlobal('document', { createElement: (tag: string) => (tag === 'canvas' ? mockCanvas() : {}) });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const auras = (frames = 16) => ({
+    frames,
+    tones: ['cursed', 'blessed'],
+    render: vi.fn((_item: Uint8ClampedArray, size: number, _tone: string, _frame: number) => new Uint8ClampedArray(size * size * 4)),
+  });
+
+  it('draws a family the pack has an aura for at the aura’s frame, and any other plain', () => {
+    const art = auras();
+    const atlas = new SpriteAtlas({}, { pixelSprites: { blade: figure() }, itemAuras: art });
+    expect([atlas.itemFrameCount('blade', 'cursed'), atlas.itemFrameCount('blade', 'hexed'), atlas.itemFrameCount('blade', null)]).toEqual([16, 1, 1]);
+
+    const { ctx, drawImage } = target();
+    atlas.drawItem(ctx, 'blade', 'cursed', 4, 6, 24, 5);
+    expect(art.render.mock.calls.map((c) => [c[1], c[2], c[3]])).toEqual([[ATLAS_TILE_SIZE, 'cursed', 5]]);
+    expect(drawImage.mock.calls[0].slice(1)).toEqual([5 * ATLAS_TILE_SIZE, 0, ATLAS_TILE_SIZE, ATLAS_TILE_SIZE, 4, 6, 24, 24]);
+
+    atlas.drawItem(ctx, 'blade', 'hexed', 0, 0, 32, 5);
+    atlas.drawItem(ctx, 'blade', null, 0, 0, 32, 5);
+    expect(art.render).toHaveBeenCalledTimes(1);
+    expect(drawImage.mock.calls[1][1]).toBe(0);
+  });
+
+  it('bakes each aura frame once, wraps the frame, and reads the item once for every family', () => {
+    const art = auras();
+    const blade = figure();
+    const atlas = new SpriteAtlas({}, { pixelSprites: { blade }, itemAuras: art });
+    const { ctx } = target();
+    atlas.drawItem(ctx, 'blade', 'cursed', 0, 0, 32, 3);
+    atlas.drawItem(ctx, 'blade', 'cursed', 0, 0, 32, 19);
+    atlas.drawItem(ctx, 'blade', 'blessed', 0, 0, 32, 3);
+    expect(art.render.mock.calls.map((c) => [c[2], c[3]])).toEqual([['cursed', 3], ['blessed', 3]]);
+    expect(blade.render).toHaveBeenCalledTimes(1);
+    expect(art.render.mock.calls[1][0]).toBe(art.render.mock.calls[0][0]);
+  });
+
+  it('keeps an idling item in step: each aura frame wraps the item’s idle frame at that step', () => {
+    const art = auras();
+    const wand = figure(2);
+    const atlas = new SpriteAtlas({}, { pixelSprites: { wand }, itemAuras: art });
+    const { ctx } = target();
+    for (let f = 0; f < 4; f++) atlas.drawItem(ctx, 'wand', 'cursed', 0, 0, 32, f);
+    expect(wand.render.mock.calls.map((c) => c[0])).toEqual([0, 1]);
+    const items = art.render.mock.calls.map((c) => c[0]);
+    expect([items[2] === items[0], items[3] === items[1], items[1] === items[0]]).toEqual([true, true, false]);
+  });
+
+  it('reads a recipe-drawn item from its atlas cell', () => {
+    const art = auras();
+    const atlas = new SpriteAtlas({ relic: vi.fn() }, { itemAuras: art });
+    atlas.drawItem(target().ctx, 'relic', 'blessed', 0, 0, 32, 0);
+    expect(art.render.mock.calls[0][0]).toHaveLength(ATLAS_TILE_SIZE * ATLAS_TILE_SIZE * 4);
+  });
+
+  it('draws every item plain when the pack has no auras', () => {
+    const blade = figure();
+    const atlas = new SpriteAtlas({}, { pixelSprites: { blade } });
+    expect(atlas.itemFrameCount('blade', 'cursed')).toBe(1);
+    const { ctx, drawImage } = target();
+    atlas.drawItem(ctx, 'blade', 'cursed', 0, 0, 32, 7);
+    expect(drawImage.mock.calls[0][1]).toBe(0);
+  });
+});

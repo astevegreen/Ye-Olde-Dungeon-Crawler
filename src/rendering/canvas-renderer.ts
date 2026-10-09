@@ -18,12 +18,13 @@ import { Player } from '../engine';
 import { SpriteAtlas } from './atlas/sprite-atlas';
 import { getTerrainSpriteKey, getEntitySpriteKey, getItemSpriteKey, getMonsterDefinitionSpriteKey } from './atlas/sprite-mapper';
 import { heroSpriteKey } from './atlas/hero-sprite';
-import { IdleTicker, idleFrame, idlePhase } from './atlas/idle-frames';
+import { IdleIcons, IdleTicker, idleFrame, idlePhase } from './atlas/idle-frames';
 import { contactShadowSides, zoneForFloor, type TerrainView } from './atlas/terrain-layers';
 import { TerrainLayerCache } from './atlas/terrain-cache';
 import { ViewportManager } from './viewport';
 import { elementColor, resolveThemeTokens, type ThemeTokens, uiFont, uiFontPx, withAlpha } from './theme';
 import { itemFrameColor } from './itemFrame';
+import { itemFrameTone } from '../ui/inventory/itemTone';
 import { CanvasFXRunner } from './fxRunner';
 import type { NavigationController } from '../ui/navigation';
 import { CloseDoorAction } from '../engine';
@@ -79,6 +80,8 @@ export class CanvasRenderer {
   /** Whether this draw showed a sprite that idles, so the next frame needs a redraw. */
   private idleShown = false;
   private readonly idleTicker = new IdleTicker(() => this.render());
+  /** Item icons in menus that idle (an aura, a flicker), repainted while they are on the page. */
+  private readonly idleIcons = new IdleIcons<Item>((canvas, item) => this.drawItemIcon(canvas, item));
   public navigationController?: NavigationController;
   private cellSize = 32;
   private topBarHeight = 0;
@@ -152,6 +155,7 @@ export class CanvasRenderer {
     this.atlas = new SpriteAtlas(this.engine.manifest?.spriteRecipes, {
       memory: this.engine.manifest?.atlas?.terrain?.memory,
       pixelSprites: this.engine.manifest?.pixelSprites,
+      itemAuras: this.engine.manifest?.itemAuras,
     });
     setIconAtlas(this.atlas);
     this.viewport = new ViewportManager(this.canvas, this.ctx, {
@@ -420,6 +424,7 @@ export class CanvasRenderer {
     this.fxRunner.destroy();
     this.floatingTextRunner.destroy();
     this.idleTicker.stop();
+    this.idleIcons.stop();
     this.cards?.remove();
     releaseIconAtlas(this.atlas);
   }
@@ -606,9 +611,8 @@ export class CanvasRenderer {
     if (this.idleShown) this.idleTicker.request(this.drawNow);
   }
 
-  /** The idle frame `key` shows in this draw: 0 unless it idles and motion is on. */
-  private idleFrameOf(key: string, phase: number): number {
-    const frames = this.atlas.frameCount(key);
+  /** The idle frame a sprite of `frames` frames shows in this draw: 0 unless it idles and motion is on. */
+  private idleFrameOf(frames: number, phase: number): number {
     if (frames <= 1 || !this.idleMotion) return 0;
     this.idleShown = true;
     return idleFrame(this.drawNow, frames, phase);
@@ -1298,14 +1302,23 @@ export class CanvasRenderer {
     }
   }
 
-  /** Paints an item's atlas sprite to fill a small DOM canvas (the potion row's icons). */
+  /**
+   * Paints an item's sprite, in its family's aura once it is known, to fill a small DOM canvas
+   * (the menus' and the potion row's icons). One that idles turns over while it is on the page.
+   */
   public drawItemIcon(canvas: HTMLCanvasElement, item: Item): void {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.imageSmoothingEnabled = false;
     const spriteKey = getItemSpriteKey(item, this.atlas.hasSprite.bind(this.atlas));
-    this.atlas.drawSprite(ctx, spriteKey, 0, 0, Math.min(canvas.width, canvas.height));
+    const tone = itemFrameTone(item);
+    const frames = this.atlas.itemFrameCount(spriteKey, tone);
+    const idles = frames > 1 && this.idleMotion;
+    const now = Date.now();
+    const frame = idles ? idleFrame(now, frames, idlePhase(item.id)) : 0;
+    this.atlas.drawItem(ctx, spriteKey, tone, 0, 0, Math.min(canvas.width, canvas.height), frame);
+    if (idles) this.idleIcons.watch(canvas, item, now);
   }
 
   public getModeHint(): ModeHint | null {
@@ -1422,7 +1435,7 @@ export class CanvasRenderer {
   private drawEntitySprite(entity: Entity | undefined, px: number, py: number, cs: number): void {
     const key = entity ? this.entitySpriteKey(entity) : 'player';
     if (!this.atlas.hasFigure(key)) this.drawEntityShadow(px, py, cs);
-    const frame = this.idleFrameOf(key, entity ? idlePhase(entity.id) : 0);
+    const frame = this.idleFrameOf(this.atlas.frameCount(key), entity ? idlePhase(entity.id) : 0);
     this.atlas.drawSprite(this.ctx, key, px, py, cs, Visibility.Visible, frame);
   }
 
@@ -1514,7 +1527,9 @@ export class CanvasRenderer {
   private drawGroundItem(px: number, py: number, cs: number, item: Item): void {
     this.drawGroundHighlight(px, py, cs, itemFrameColor(this.theme, item));
     const spriteKey = getItemSpriteKey(item, this.atlas.hasSprite.bind(this.atlas));
-    this.atlas.drawSprite(this.ctx, spriteKey, px + 2, py + 2, cs - 4, Visibility.Visible);
+    const tone = itemFrameTone(item);
+    const frame = this.idleFrameOf(this.atlas.itemFrameCount(spriteKey, tone), idlePhase(item.id));
+    this.atlas.drawItem(this.ctx, spriteKey, tone, px + 2, py + 2, cs - 4, frame);
     if (item instanceof Container) {
       const state =
         item.getItems().length === 0

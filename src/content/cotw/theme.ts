@@ -39,6 +39,16 @@ export const COTW_THEME_TOKENS: ThemeTokens = {
   xp: '#c4b5fd',
   gold: '#facc15',
 
+  // Item families (names and icon frames), in the colours of their auras (sprites/sculpt/aura.ts).
+  rarityCursed: '#e0302a',
+  rarityHexed: '#c8b432',
+  rarityUnholy: '#7c9a2e',
+  rarityChaotic: '#9b40d8',
+  rarityEnchanted: '#6aa6ff',
+  rarityBlessed: '#e0a83a',
+  rarityHoly: '#fff1c8',
+  rarityArtifact: '#e07a2a',
+
   // Cinzel for titles, tab labels and names; body text and numbers stay monospace.
   fontDisplay: '"Cinzel", Georgia, serif',
   fontFaces: [

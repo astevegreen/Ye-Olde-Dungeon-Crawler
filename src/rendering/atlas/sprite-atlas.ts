@@ -1,6 +1,7 @@
 import { flightRecorder, Visibility } from '../../engine';
 import type { SpriteKey, AtlasCoords } from './types';
-import type { PixelSprite, SpriteRecipe, TerrainArtConfig } from '../../engine';
+import type { ItemAuraArt, PixelSprite, SpriteRecipe, TerrainArtConfig } from '../../engine';
+import { ItemAuraStrips } from './item-auras';
 
 /**
  * The coordinate unit every sprite recipe draws in — fixed forever. Recipes (both
@@ -218,6 +219,8 @@ export interface SpriteAtlasOptions {
   memory?: TerrainArtConfig['memory'];
   /** Sprites that draw their own pixels (`manifest.pixelSprites`). */
   pixelSprites?: Record<string, PixelSprite>;
+  /** Auras around identified items of a family (`manifest.itemAuras`). */
+  itemAuras?: ItemAuraArt;
 }
 
 /**
@@ -248,6 +251,7 @@ export class SpriteAtlas {
   private readonly rows: number;
   private readonly figures = new Map<string, Figure>();
   private readonly transientFigures: string[] = [];
+  private readonly auras: ItemAuraStrips | null;
 
   private readonly options: SpriteAtlasOptions;
 
@@ -255,6 +259,9 @@ export class SpriteAtlas {
     this.recipes = recipes;
     this.options = options;
     for (const [key, sprite] of Object.entries(options.pixelSprites ?? {})) this.defineFigure(key, sprite);
+    this.auras = options.itemAuras
+      ? new ItemAuraStrips(options.itemAuras, ATLAS_TILE_SIZE, (key, frame) => this.spritePixels(key, frame), (key) => this.frameCount(key))
+      : null;
     this.cells = layoutCells(recipes);
     this.rows = Math.max(ATLAS_ROWS, ...Object.values(this.cells).map((c) => c.row + 1));
     this.atlasCanvas = document.createElement('canvas');
@@ -427,6 +434,40 @@ export class SpriteAtlas {
   /** How many idle frames `key` has; 1 for every baked recipe. */
   public frameCount(key: string): number {
     return this.figures.get(key)?.frames ?? 1;
+  }
+
+  /** How many frames an item drawn as `key` in family `tone` loops: its aura's, else its own idle frames. */
+  public itemFrameCount(key: string, tone: string | null): number {
+    return this.auras?.has(tone) ? this.auras.frames : this.frameCount(key);
+  }
+
+  /** Draws an item's sprite at `frame`, in its family's aura when the pack draws one (`ItemAuraArt`). */
+  public drawItem(
+    targetCtx: CanvasRenderingContext2D,
+    key: string,
+    tone: string | null,
+    dx: number,
+    dy: number,
+    dSize: number,
+    frame = 0
+  ): void {
+    if (this.auras?.has(tone) && this.auras.draw(targetCtx, key, tone, dx, dy, dSize, frame)) return;
+    this.drawSprite(targetCtx, key, dx, dy, dSize, Visibility.Visible, frame);
+  }
+
+  /** `key`'s own pixels in one idle frame, a cell square; null when it has none or they cannot be read. */
+  private spritePixels(key: string, frame: number): Uint8ClampedArray | null {
+    const fig = this.figures.get(key);
+    if (fig) return fig.sprite.render(Math.min(frame, fig.frames - 1), ATLAS_TILE_SIZE);
+    const coords = this.cells[key];
+    const ctx = coords ? this.atlasCanvas.getContext('2d') : null;
+    if (!coords || !ctx) return null;
+    try {
+      return ctx.getImageData(coords.col * ATLAS_TILE_SIZE, coords.row * ATLAS_TILE_SIZE, ATLAS_TILE_SIZE, ATLAS_TILE_SIZE).data;
+    } catch (err) {
+      flightRecorder.recordError(err instanceof Error ? err : new Error(String(err)), { source: 'sprite atlas aura' });
+      return null;
+    }
   }
 
   /** The figure's strip with `frame` baked, or null without a 2D context. */

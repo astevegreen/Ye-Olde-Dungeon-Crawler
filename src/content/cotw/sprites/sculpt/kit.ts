@@ -41,7 +41,7 @@ function rgb2hsl([r, g, b]: Rgb): Rgb {
   return [h * 60, s, l];
 }
 
-function hsl2rgb([h, s, l]: Rgb): Rgb {
+export function hsl2rgb([h, s, l]: Rgb): Rgb {
   h = ((((h % 360) + 360) % 360) / 360);
   if (s === 0) return [l * 255, l * 255, l * 255];
   const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
@@ -495,7 +495,7 @@ function hit(q: Prepped, x: number, y: number): Rgb | null {
   return x >= q.x0 && x < q.x1 && y >= q.y0 && y < q.y1 ? FLAT : null;
 }
 
-function hash2(x: number, y: number): number {
+export function hash2(x: number, y: number): number {
   let h = (x * 374761393 + y * 668265263) | 0;
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;

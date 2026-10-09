@@ -809,6 +809,25 @@ export interface PixelSprite {
   render(frame: number, size: number): Uint8ClampedArray;
 }
 
+/**
+ * Alignment auras (rendering tier): drawn around and over an identified item's sprite, on
+ * the map and on its icons, by the family the item's name is colored by ('cursed', 'hexed',
+ * 'unholy', 'chaotic', 'enchanted', 'blessed', 'holy', 'artifact'). An unidentified item
+ * shows plain. The aura loops on the same ambient tick as idle sprites, and holds frame 0
+ * when the player reduces motion.
+ */
+export interface ItemAuraArt {
+  /** Frames in one loop, 1-16; a multiple of four keeps an idling item in step with it. */
+  frames: number;
+  /** The families that have an aura; an item of any other shows plain. */
+  tones: readonly string[];
+  /**
+   * The item's straight-alpha pixels (`size` by `size`, in the idle frame that matches) with
+   * the aura drawn behind and over them, the same size. Deterministic, as `PixelSprite.render`.
+   */
+  render(item: Uint8ClampedArray, size: number, tone: string, frame: number): Uint8ClampedArray;
+}
+
 /** What the hero has on, for `HeroSpriteArt.lookKey`. */
 export interface HeroGear {
   gender: Gender;
@@ -972,6 +991,8 @@ export interface GameContentManifest {
   spriteRecipes?: Record<string, SpriteRecipe>;
   /** Sprites that draw their own pixels and may idle (`PixelSprite`), keyed like `spriteRecipes`; a key in both draws from here. */
   pixelSprites?: Record<string, PixelSprite>;
+  /** Auras around identified items of a family (`ItemAuraArt`); without it every item shows plain. */
+  itemAuras?: ItemAuraArt;
   /** The hero drawn wearing their gear; without it the hero is the `player`/`player_female` sprite. */
   heroSprite?: HeroSpriteArt;
   presetNames?: string[];

@@ -27,14 +27,18 @@ describe('the cotw monster families give each member its own drawing', () => {
 });
 
 describe('the cotw family sprites draw their own pixels', () => {
-  const frames = Object.fromEntries(Object.entries(COTW_FAMILY_SPRITES).map(([id, sprite]) => [id, sprite.render(0, 64)]));
+  // Every frame is baked once and shared: with dozens of families, baking per test outran the test timeout.
+  const baked = Object.fromEntries(
+    Object.entries(COTW_FAMILY_SPRITES).map(([id, sprite]) => [id, Array.from({ length: sprite.frames ?? 1 }, (_, f) => sprite.render(f, 64))]),
+  );
+  const frames = Object.fromEntries(Object.entries(baked).map(([id, all]) => [id, all[0]]));
 
   it('bake four idle frames of 64 × 64 pixels, the same every time, that move between frames', () => {
     for (const [id, sprite] of Object.entries(COTW_FAMILY_SPRITES)) {
       expect([id, sprite.frames]).toEqual([id, 4]);
       expect(frames[id].length).toBe(64 * 64 * 4);
       expect(sprite.render(0, 64)).toEqual(frames[id]);
-      expect(sprite.render(2, 64), id).not.toEqual(frames[id]);
+      expect(baked[id][2], id).not.toEqual(frames[id]);
     }
   });
 
@@ -52,9 +56,8 @@ describe('the cotw family sprites draw their own pixels', () => {
   it('keep the whole outline inside the cell, clear of its top and sides, in every frame', () => {
     // As for the bosses: a fully opaque edge pixel is body or the outline's inner ring, so a
     // tip there runs into the edge and loses its outline.
-    for (const [id, sprite] of Object.entries(COTW_FAMILY_SPRITES)) {
-      for (let f = 0; f < (sprite.frames ?? 1); f++) {
-        const px = sprite.render(f, 64);
+    for (const [id, all] of Object.entries(baked)) {
+      for (const [f, px] of all.entries()) {
         const opaque = (x: number, y: number) => px[(y * 64 + x) * 4 + 3] === 255;
         const edge: string[] = [];
         for (let i = 0; i < 64; i++) {

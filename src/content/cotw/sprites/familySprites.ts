@@ -9,6 +9,14 @@ import { goblinModel } from './sculpt/goblin';
 import { casterModel } from './sculpt/caster';
 import { trollModel } from './sculpt/troll';
 import { trollWifeModel } from './sculpt/trollWife';
+import { huldraModel } from './sculpt/huldra';
+import { faeModel } from './sculpt/fae';
+import { boundSpiritModel } from './sculpt/boundSpirit';
+import { constructModel } from './sculpt/construct';
+import { slagModel } from './sculpt/slag';
+import { fiendModel } from './sculpt/fiend';
+import { weaverModel } from './sculpt/weaver';
+import { drakeModel } from './sculpt/drake';
 
 /** Every family model idles over four frames. */
 const FAMILY_FRAMES = 4;
@@ -61,4 +69,27 @@ export const COTW_FAMILY_SPRITES: Record<string, PixelSprite> = {
   troll_wife_warlock: sculpted(trollWifeModel, { kind: 'warlock' }),
   prologue_coven_warlock: sculpted(trollWifeModel, { kind: 'coven' }),
   ironwood_troll_wife: sculpted(trollWifeModel, { kind: 'ironwood' }),
+  // vættir and spirits
+  huldra: sculpted(huldraModel, { kind: 'huldra' }),
+  huldra_hollow_back: sculpted(huldraModel, { kind: 'old' }),
+  fylgja: sculpted(huldraModel, { kind: 'fylgja' }),
+  nacken: sculpted(huldraModel, { kind: 'nacken' }),
+  nisse: sculpted(faeModel, { kind: 'nisse' }),
+  skratti: sculpted(faeModel, { kind: 'skratti' }),
+  captive_of_the_chariot: sculpted(boundSpiritModel, { kind: 'captive' }),
+  choke_damp_phantasm: sculpted(boundSpiritModel, { kind: 'damp' }),
+  // made things and the formless
+  bark_husk_miner: sculpted(constructModel, { kind: 'husk' }),
+  bellows_automaton: sculpted(constructModel, { kind: 'bellows' }),
+  prismatic_mirror_skulker: sculpted(constructModel, { kind: 'mirror' }),
+  slag_amorphous: sculpted(slagModel, {}),
+  // fiends and horrors
+  shadow_fiend: sculpted(fiendModel, { kind: 'shadow' }),
+  garmling: sculpted(fiendModel, { kind: 'garm' }),
+  nastrond_feaster: sculpted(fiendModel, { kind: 'feaster' }),
+  malice_weaver: sculpted(weaverModel, {}),
+  // drakes and wyrms
+  frost_drake: sculpted(drakeModel, { kind: 'frost' }),
+  ancient_wyrm: sculpted(drakeModel, { kind: 'ancient' }),
+  grave_wyrmling: sculpted(drakeModel, { kind: 'grave' }),
 };

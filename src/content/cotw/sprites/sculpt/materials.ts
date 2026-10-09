@@ -192,3 +192,72 @@ mat('mon1_coven', '#5e5046', { tex: 'cloth', hs: 12 });
 mat('mon1_ironHair', '#959ba3', { tex: 'fur', hs: 8 });
 mat('mon1_ironSkin', '#93845f', { tex: 'bark', hs: 10 });
 mat('mon1_blood', '#d8323c', { em: true, hs: 0 });
+
+// ---- monster families, part 2 (wave 4): vættir and spirits, made things, fiends, wyrms
+// huldra
+mat('mon2_hSkin', '#dccab6', { hs: 10 });
+mat('mon2_hHair', '#a3a862', { hs: 12 });
+mat('mon2_moss', '#56733e', { tex: 'cloth' });
+mat('mon2_hollow', '#3a2818', { tex: 'rot' });
+mat('mon2_rim', '#8a7052', { tex: 'bark', hs: 12 });
+mat('mon2_tail', '#b39a7c', { hs: 12 });
+mat('mon2_oldSkin', '#a7a38a', { tex: 'bark', hs: 10 });
+mat('mon2_oldHair', '#84906a', { hs: 8 });
+mat('mon2_barkGown', '#5e4a34', { tex: 'bark' });
+mat('mon2_lichen', '#8fae5a', { tex: 'rot' });
+mat('mon2_fungus', '#d2c09a', { hs: 8 });
+mat('mon2_flower', '#f1ead6', { hs: 6 });
+// fylgja
+mat('mon2_fetch', '#e2eaf0', { a: 0.78, hs: 6 });
+mat('mon2_fetchFade', '#d6e2ea', { a: 0.42, hs: 6 });
+mat('mon2_fetchGold', '#ffe3a0', { em: true, a: 0.9, hs: 0 });
+mat('mon2_antler', '#eadcb0', { a: 0.9, hs: 8 });
+mat('mon2_fetchMist', '#cfdce6', { a: 0.3, hs: 4 });
+// näcken
+mat('mon2_nSkin', '#a7b7ad', { shiny: true, hs: 10 });
+mat('mon2_wetHair', '#36403f', { shiny: true, hs: 8 });
+mat('mon2_water', '#3f7f98', { shiny: true, a: 0.82, hs: 8 });
+mat('mon2_rockWet', '#5a6168', { tex: 'stone', shiny: true, hs: 8 });
+mat('mon2_fiddle', '#94532a', { tex: 'wood', shiny: true });
+// nisse, skratti
+mat('mon2_nWool', '#6e6b63', { tex: 'cloth', hs: 10 });
+mat('mon2_nose', '#c97a5c', { hs: 10 });
+mat('mon2_iceSkin', '#86b8d2', { hs: 8 });
+mat('mon2_earIn', '#4f7c9c', { hs: 8 });
+// bound spirits
+mat('mon2_holyCore', '#fffaf0', { em: true, hs: 0 });
+mat('mon2_ray', '#f0c35a', { em: true, hs: 0 });
+mat('mon2_gas', '#b2ba5a', { a: 0.6, hs: 8 });
+mat('mon2_gasDeep', '#86903e', { a: 0.55, hs: 8 });
+mat('mon2_gasLight', '#dce29a', { a: 0.55, hs: 4 });
+mat('mon2_gasHole', '#2e3418', { a: 0.9, hs: 6 });
+mat('mon2_lampGlass', '#c9aa52', { em: true, hs: 0 });
+// constructs, slag
+mat('mon2_sap', '#cddc52', { em: true, hs: 0 });
+mat('mon2_soot', '#6c686e', { a: 0.8, hs: 6 });
+mat('mon2_bellowsHide', '#8a4a40', { hs: 10, tex: 'cloth' });
+mat('mon2_mirror', '#b2c0d0', { shiny: true, hs: 6 });
+mat('mon2_glass', '#8cc6da', { shiny: true, a: 0.82, hs: 6 });
+mat('mon2_sun', '#fff1ba', { em: true, hs: 0 });
+mat('mon2_crust', '#56483f', { tex: 'stone', hs: 10 });
+// fiends, horrors
+mat('mon2_smoke', '#5c5474', { a: 0.95, hs: 8 });
+mat('mon2_smokeThin', '#7a70a0', { a: 0.45, hs: 8 });
+mat('mon2_claw', '#c8c0dc', { shiny: true, hs: 6 });
+mat('mon2_hellFur', '#4a4556', { tex: 'fur', hs: 10 });
+mat('mon2_feastFlesh', '#8c849a', { tex: 'rot', hs: 10 });
+mat('mon2_maw', '#7a44c4', { em: true, hs: 0 });
+mat('mon2_chitin', '#4e4b62', { shiny: true, hs: 8 });
+mat('mon2_brain', '#78acff', { em: true, a: 0.94, hs: 0 });
+mat('mon2_brainFold', '#2c4aa6', { em: true, hs: 0 });
+// wyrms
+mat('mon2_frostScale', '#b4cee0', { tex: 'scale', hs: 8 });
+mat('mon2_frostBelly', '#dde9f0', { hs: 6 });
+mat('mon2_mist', '#d4f2ff', { a: 0.5, hs: 4 });
+mat('mon2_wyrmScale', '#5c4c36', { tex: 'scale', shiny: true });
+mat('mon2_wyrmBelly', '#8a6c46', { hs: 12 });
+mat('mon2_wyrmWing', '#4a3a34', { hs: 12 });
+mat('mon2_scar', '#a8927a', { hs: 8 });
+mat('mon2_graveScale', '#5a627a', { tex: 'scale', shiny: true, hs: 8 });
+mat('mon2_graveBelly', '#7c8492', { hs: 8 });
+mat('mon2_graveWing', '#604a62', { hs: 8 });

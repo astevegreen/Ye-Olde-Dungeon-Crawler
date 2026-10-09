@@ -69,7 +69,10 @@ export default defineConfig({
     ...(allBrowsers
       ? [
           { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-          { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+          /* Windows WebKit keeps canvas pixels in a GPU process that sometimes stalls: a test
+             that hits a stall took 28-55 s against its usual 3-15 s. Its wide-window tests
+             also take 40-50 s at Safari's 2x scale while all three browsers run. */
+          { name: 'webkit', timeout: 90_000, use: { ...devices['Desktop Safari'] } },
         ]
       : []),
   ],

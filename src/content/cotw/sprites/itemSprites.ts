@@ -1,5 +1,5 @@
 import type { PixelSprite } from '../../../engine';
-import { bake, type Model, type PaletteSwap } from './sculpt/kit';
+import { T, bake, type Model, type PaletteSwap } from './sculpt/kit';
 import type { ItemVariant } from './sculpt/itemKit';
 import { axeModel, bluntModel, daggerModel, polearmModel, staffModel, swordModel } from './sculpt/weapons';
 import { bodyArmourModel, bootsModel, cloakModel, glovesModel, helmModel, shieldModel } from './sculpt/armour';
@@ -7,27 +7,32 @@ import { amuletModel, coinsModel, gemModel, keyModel, packModel, ringModel } fro
 import { breadModel, potionModel, runeStoneModel, scrollModel, tabletModel, torchModel, wandModel } from './sculpt/consumables';
 import { fangModel, hearthTearModel } from './sculpt/relics';
 
-const sculpted = (model: Model<ItemVariant>, variant: ItemVariant = {}, frames = 1): PixelSprite => ({
-  frames,
-  render: (frame, size) => bake(model, { frame, px: size, variant }),
-});
+/**
+ * `s` enlarges the smallest things (coins, rings, purses, knives, potions, wands): drawn to
+ * scale they shrink to a few pixels as inventory icons. The order of sizes is kept.
+ */
+const sculpted = (model: Model<ItemVariant>, variant: ItemVariant = {}, frames = 1, s = 1): PixelSprite => {
+  const drawn: Model<ItemVariant> = s === 1 ? model : (f, v) => T(model(f, v), { s, px: 16, py: 17 });
+  return { frames, render: (frame, size) => bake(drawn, { frame, px: size, variant }) };
+};
 
-const sword = (kind: string, pal?: ItemVariant['pal']): PixelSprite => sculpted(swordModel, { kind, pal });
+const sword = (kind: string, pal?: ItemVariant['pal']): PixelSprite => sculpted(swordModel, { kind, pal }, 1, kind === 'short' ? 1.15 : 1);
 const axe = (kind: string, pal?: ItemVariant['pal']): PixelSprite => sculpted(axeModel, { kind, pal });
 const blunt = (kind: string, pal?: ItemVariant['pal']): PixelSprite => sculpted(bluntModel, { kind, pal });
-const dagger = (kind: string, pal?: ItemVariant['pal']): PixelSprite => sculpted(daggerModel, { kind, pal });
+const dagger = (kind: string, pal?: ItemVariant['pal']): PixelSprite => sculpted(daggerModel, { kind, pal }, 1, 1.25);
 const body = (kind: string, pal?: ItemVariant['pal']): PixelSprite => sculpted(bodyArmourModel, { kind, pal });
 const shield = (kind: string, pal?: ItemVariant['pal']): PixelSprite => sculpted(shieldModel, { kind, pal });
-const ring = (kind: string, pal?: ItemVariant['pal']): PixelSprite => sculpted(ringModel, { kind, pal });
+const ring = (kind: string, pal?: ItemVariant['pal']): PixelSprite => sculpted(ringModel, { kind, pal }, 1, 1.2);
 const amulet = (kind: string, pal?: ItemVariant['pal']): PixelSprite => sculpted(amuletModel, { kind, pal });
-const pack = (kind: string, pal?: ItemVariant['pal']): PixelSprite => sculpted(packModel, { kind, pal });
-const potion = (kind: string, pal?: ItemVariant['pal']): PixelSprite => sculpted(potionModel, { kind, pal });
-const wand = (kind: string, pal?: ItemVariant['pal']): PixelSprite => sculpted(wandModel, { kind, pal }, 2);
+const pack = (kind: string, pal?: ItemVariant['pal']): PixelSprite => sculpted(packModel, { kind, pal }, 1, kind === 'purse' ? 1.3 : 1);
+const POTION_SCALE: Record<string, number> = { heal: 1.2, mana: 1.15, poultice: 1.1 };
+const potion = (kind: string, pal?: ItemVariant['pal']): PixelSprite => sculpted(potionModel, { kind, pal }, 1, POTION_SCALE[kind] ?? 1);
+const wand = (kind: string, pal?: ItemVariant['pal']): PixelSprite => sculpted(wandModel, { kind, pal }, 2, 1.15);
 const torch = (pal?: ItemVariant['pal']): PixelSprite => sculpted(torchModel, { pal }, 4);
 /** A rune tablet glows in its spell's element; a darker slab tells two of one element apart. */
-const tablet = (glow: string, slab?: string): PixelSprite => sculpted(tabletModel, { pal: { emArcane: glow, ...(slab ? { item_slab: slab } : {}) } }, 2);
+const tablet = (glow: string, slab?: string): PixelSprite => sculpted(tabletModel, { pal: { emArcane: glow, ...(slab ? { item_slab: slab } : {}) } }, 2, 1.12);
 const runeStone = (glow?: PaletteSwap, slab?: string): PixelSprite =>
-  sculpted(runeStoneModel, { pal: { ...(glow ? { emArcane: glow } : {}), ...(slab ? { item_slab: slab } : {}) } }, 2);
+  sculpted(runeStoneModel, { pal: { ...(glow ? { emArcane: glow } : {}), ...(slab ? { item_slab: slab } : {}) } }, 2, 1.15);
 
 /** Stones other than the grey slab, so two tablets of one element still differ. */
 const SANDSTONE = '#8a7458';
@@ -197,7 +202,7 @@ export const COTW_ITEM_PIXEL_SPRITES: Record<string, PixelSprite> = {
   hearth_tear_fragment: sculpted(hearthTearModel, {}, 4),
 
   // ---- archetype keys: what an item without its own sprite falls back to
-  gold_coins: sculpted(coinsModel),
+  gold_coins: sculpted(coinsModel, {}, 1, 1.2),
   purse: pack('purse'),
   belt: pack('pouch'),
   travel_bread: sculpted(breadModel),
@@ -211,7 +216,7 @@ export const COTW_ITEM_PIXEL_SPRITES: Record<string, PixelSprite> = {
   gauntlets: sculpted(glovesModel),
   bracers: sculpted(glovesModel),
   scroll: sculpted(scrollModel),
-  gem: sculpted(gemModel),
+  gem: sculpted(gemModel, {}, 1, 1.25),
   key: sculpted(keyModel),
   torch: torch(),
 };

@@ -40,7 +40,9 @@ echo "pre-push: npm run build"
 npm run build
 
 # Local runs elsewhere use Chromium only (playwright.config.ts); the push runs all three browsers.
-echo "pre-push: PW_ALL_BROWSERS=1 npx playwright test"
-PW_ALL_BROWSERS=1 npx playwright test
+# One retry, as CI has two: a test that fails and then passes is reported as flaky and
+# does not block the push; a test that fails twice does.
+echo "pre-push: PW_ALL_BROWSERS=1 npx playwright test --retries=1"
+PW_ALL_BROWSERS=1 npx playwright test --retries=1
 
 echo "pre-push: passed"

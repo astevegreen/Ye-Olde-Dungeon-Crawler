@@ -40,7 +40,8 @@ describe('the cotw family sprites draw their own pixels', () => {
       expect(sprite.render(0, 64)).toEqual(frames[id]);
       expect(baked[id][2], id).not.toEqual(frames[id]);
     }
-  });
+    // Re-rendering every family and comparing its pixels took 5.5 s under the full suite, past the 5 s default.
+  }, 30_000);
 
   it('draw a figure and leave the corners clear', () => {
     for (const [id, px] of Object.entries(frames)) {

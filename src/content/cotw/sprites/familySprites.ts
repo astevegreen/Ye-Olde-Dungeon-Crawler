@@ -17,6 +17,9 @@ import { slagModel } from './sculpt/slag';
 import { fiendModel } from './sculpt/fiend';
 import { weaverModel } from './sculpt/weaver';
 import { drakeModel } from './sculpt/drake';
+import { dwarfModel } from './sculpt/dwarf';
+import { corpseModel } from './sculpt/corpse';
+import { worldBarkModel } from './sculpt/worldbark';
 
 /** Every family model idles over four frames. */
 const FAMILY_FRAMES = 4;
@@ -92,4 +95,16 @@ export const COTW_FAMILY_SPRITES: Record<string, PixelSprite> = {
   frost_drake: sculpted(drakeModel, { kind: 'frost' }),
   ancient_wyrm: sculpted(drakeModel, { kind: 'ancient' }),
   grave_wyrmling: sculpted(drakeModel, { kind: 'grave' }),
+  // the dwarves of the abandoned works
+  cinder_gilded_duergar: sculpted(dwarfModel, { kind: 'cinder' }),
+  haugbui: sculpted(dwarfModel, { kind: 'haugbui' }),
+  forge_wretch: sculpted(dwarfModel, { kind: 'wretch' }),
+  // the walking dead
+  skeleton: sculpted(corpseModel, { kind: 'skeleton' }),
+  nar: sculpted(corpseModel, { kind: 'nar' }),
+  silver_wight: sculpted(corpseModel, { kind: 'wight' }),
+  // things of the World-Bark
+  amber_sap_weeper: sculpted(worldBarkModel, { kind: 'weeper' }),
+  yggdrasil_parasite: sculpted(worldBarkModel, { kind: 'parasite' }),
+  root_bound_berserker: sculpted(worldBarkModel, { kind: 'berserker' }),
 };

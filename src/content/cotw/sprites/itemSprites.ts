@@ -5,7 +5,7 @@ import { axeModel, bluntModel, daggerModel, polearmModel, staffModel, swordModel
 import { bodyArmourModel, bootsModel, cloakModel, glovesModel, helmModel, shieldModel } from './sculpt/armour';
 import { amuletModel, coinsModel, gemModel, keyModel, packModel, ringModel } from './sculpt/trinkets';
 import { breadModel, potionModel, runeStoneModel, scrollModel, tabletModel, torchModel, wandModel } from './sculpt/consumables';
-import { fangModel, hearthTearModel } from './sculpt/relics';
+import { antlerMaskModel, barkTowerModel, fangModel, hearthTearModel, lodestoneModel, marrowRingModel, solFocusModel } from './sculpt/relics';
 import { COTW_CHEST_SPRITE } from './fixtureSprites';
 
 /**
@@ -44,8 +44,6 @@ const DARK_SLAB = '#3a3c44';
  * falls back to. A model is a family; `kind` picks the shape and `pal` recolours it, so no two
  * definitions look the same. An item's drawing shows only its material or element: alignment
  * is the aura the game adds once the item is identified, so a cursed mace is drawn as a mace.
- * Relics without a sculpted drawing yet (Sól-Shard Focus, the World-Bark tower shield, the
- * antler mask, the Marrow-Gnawed Ring, the Duergar lodestone) keep their recipe.
  */
 export const COTW_ITEM_PIXEL_SPRITES: Record<string, PixelSprite> = {
   // ---- swords, axes, blunt weapons
@@ -201,6 +199,11 @@ export const COTW_ITEM_PIXEL_SPRITES: Record<string, PixelSprite> = {
   // ---- relics with their own drawing
   nidhogg_fang: sculpted(fangModel, {}, 4),
   hearth_tear_fragment: sculpted(hearthTearModel, {}, 4),
+  sol_shard_focus: sculpted(solFocusModel, {}, 4),
+  petrified_world_bark_tower_shield: sculpted(barkTowerModel, {}, 4),
+  antler_crowned_mask: sculpted(antlerMaskModel, {}, 4),
+  marrow_gnawed_ring: sculpted(marrowRingModel, {}, 4),
+  duergar_lodestone: sculpted(lodestoneModel, {}, 4),
   // ---- the chest, shut; on the ground it shows its state (`COTW_FIXTURE_ART`)
   chest: COTW_CHEST_SPRITE,
 

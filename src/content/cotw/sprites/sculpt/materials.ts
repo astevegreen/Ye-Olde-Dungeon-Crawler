@@ -365,6 +365,19 @@ mat('item_pitch', '#3b302a', { tex: 'cloth', hs: 10 });
 mat('item_paint', '#3e5b88', { tex: 'cloth' });
 mat('item_void', '#16171d', { hs: 6 });
 
+// ---- relics (wave 8): each relic's own stuff; colour is its material or element, never its alignment
+mat('relic_prism', '#dde8ee', { shiny: true, hs: 6 }); // the Sól-Shard's clear cut crystal
+mat('relic_sun', '#ffaa36', { em: true, hs: 0 }); // a coin of sun-chariot glare caught in it
+mat('relic_petri', '#7a6c5c', { tex: 'bark', hs: 12 }); // World-Bark turned to stone
+mat('relic_petriDeep', '#4a4038', { tex: 'bark', hs: 12 }); // its fissures, knot and roots
+mat('relic_quartz', '#d8e0dc', { shiny: true, hs: 6 }); // quartz grown in the cracks
+mat('relic_sap', '#c4e05a', { em: true, hs: 0 }); // the World-Tree's sap, still alive in the knot
+mat('relic_mask', '#d8ceb4', { tex: 'wood', hs: 10 }); // Iviðja's mask (boss_mask) up close: bleached wood
+mat('relic_dragonBone', '#c4b48e', { tex: 'rot', hs: 12 }); // a pitted dragon vertebra
+mat('relic_marrow', '#3a2c26', { hs: 10 }); // the marrow stain in its channel
+mat('relic_rootRot', '#3c4230', { shiny: true, tex: 'bark', hs: 12 }); // a world-root's corruption, wet
+mat('relic_lodestone', '#3a3c42', { shiny: true, tex: 'stone', hs: 10 }); // magnetite
+
 // ---- fixtures (wave 8): altars, portals, the siphon, chests and loot heaps
 mat('fix_weathered', '#6f6c66', { tex: 'stone', hs: 10 }); // Tyr: old grey stone
 mat('fix_paleStone', '#8e9199', { tex: 'stone', hs: 10 }); // Urðr's basin

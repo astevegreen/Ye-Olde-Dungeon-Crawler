@@ -75,3 +75,42 @@ mat('emArcane', '#6aa6ff', { em: true, hs: 0 });
 mat('emKin', '#f0c062', { em: true, hs: 0 });
 mat('eyeAmber', '#ffc23a', { em: true, hs: 0 });
 mat('eyeRed', '#ff4a32', { em: true, hs: 0 });
+
+// ---- bosses and named elites: one-off materials, prefixed so no family reuses them
+mat('boss_jotun', '#6f8499', { hs: 10, tex: 'stone' }); // frost-jötunn hide
+mat('boss_jotunHead', '#7489a0', { hs: 10, tex: 'stone' }); // the same hide; a second name draws a seam
+mat('boss_rime', '#d4eaf4', { shiny: true, tex: 'ice', hs: 6 }); // hoarfrost crust
+mat('boss_maul', '#55606e', { tex: 'stone', hs: 8 });
+mat('boss_breath', '#d8f2fb', { a: 0.55, hs: 4 }); // a frost-breath puff
+mat('boss_glint', '#ffffff', { em: true, hs: 0 });
+mat('boss_sun', '#ffe7a6', { em: true, hs: 0 }); // the stolen solar core
+mat('boss_sunWhite', '#fffaf0', { em: true, hs: 0 });
+mat('boss_heat', '#ffcf86', { a: 0.4, hs: 0 }); // heat shimmer
+mat('boss_iron', '#5e6674', { shiny: true, hs: 10 }); // riveted construct iron
+mat('boss_tar', '#262d27', { shiny: true, hs: 16 }); // wet tar hide
+mat('boss_maw', '#160f14', { hs: 4 });
+mat('boss_bile', '#7fc040', { em: true, hs: 0 }); // bile, lit
+mat('boss_pool', '#22361c', { shiny: true, hs: 10 }); // pooled bile, unlit
+mat('boss_glassDead', '#3a3a34', { shiny: true, hs: 6 }); // snuffed lantern glass
+mat('boss_smokeGrey', '#7b8088', { a: 0.5, hs: 4 });
+mat('boss_root', '#4d4038', { tex: 'bark', hs: 12 }); // a rotten taproot
+mat('boss_deadRoot', '#8a7a68', { tex: 'bark', hs: 10 }); // a crown of dead roots
+mat('boss_sap', '#16141c', { shiny: true, hs: 8 }); // black sap
+mat('boss_trollDead', '#7d8a82', { tex: 'rot', hs: 10 }); // undead troll skin
+mat('boss_trollHead', '#808d85', { tex: 'rot', hs: 10 });
+mat('boss_wyrmScale', '#577a5e', { tex: 'scale', shiny: true, hs: 12 }); // verdigris wyrm scales
+mat('boss_banner', '#6a5232', { tex: 'cloth', hs: 14 }); // an old ochre war-banner
+mat('boss_mantle', '#363940', { tex: 'cloth', hs: 12 });
+mat('boss_ivory', '#e4d8bc', { shiny: true, hs: 12 }); // the shed fang
+mat('boss_voidHide', '#4a4556', { tex: 'rot', hs: 10 }); // stretched hide over bone
+mat('boss_voidCore', '#0e0918', { em: true, hs: 4 }); // the void bone: a light darker than what it touches
+mat('boss_smoke', '#352c46', { a: 0.9, hs: 10 }); // a black smoke mane
+mat('boss_smokeThin', '#3c3250', { a: 0.6, hs: 10 });
+mat('boss_bileBelly', '#86c84a', { em: true, hs: 0 }); // a wyrm's ventral glow
+mat('boss_wing', '#3a3240', { hs: 10 });
+mat('boss_rootHorn', '#7a6b5a', { tex: 'bark', hs: 10 });
+mat('boss_fibre', '#b49a72', { tex: 'wood', hs: 10 }); // splintered root fibres
+mat('boss_crust', '#4a3f3b', { tex: 'stone', hs: 10 }); // cooling magma crust
+mat('boss_trollWife', '#7a866f', { hs: 10 }); // grey-green troll-wife skin
+mat('boss_mask', '#d8ceb4', { hs: 10 }); // the antler-crowned mask
+mat('boss_moss', '#5d7642', { tex: 'fur', hs: 12 });

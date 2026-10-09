@@ -223,6 +223,55 @@ function flatten(list: PrimTree, out: Prim[] = []): Prim[] {
 export const breath = (f: number): number => [0, 0.5, 1, 0.5][f % 4];
 export const sway = (f: number): number => [0, 1, 0, -1][f % 4];
 
+// ---------------------------------------------------------------- shared shapes
+
+/** A drop falling on a 4-frame cycle from (x, y0): a bead, a stretch, falling, near the ground `len` below. */
+export function drip(x: number, y0: number, len: number, f: number, ph: number, m: string, w = 0.5): Prim {
+  const o = { ol: false };
+  switch ((f + ph) % 4) {
+    case 0: return E(x, y0 + 0.35, w * 0.8, w * 0.9, m, o);
+    case 1: return E(x, y0 + 0.7, w * 0.8, w * 1.5, m, o);
+    case 2: return E(x, y0 + len * 0.5, w * 0.75, w * 1.1, m, o);
+    default: return E(x, y0 + len * 0.92, w * 0.7, w * 0.9, m, o);
+  }
+}
+
+/** A jagged bolt from (x1, y1) to (x2, y2): `n` segments jittered by `seed`, and the joints between them. */
+export function bolt(x1: number, y1: number, x2: number, y2: number, seed: number, n: number, amp: number, r: number, m: string): { prims: Prim[]; pts: Array<[number, number]> } {
+  const prims: Prim[] = [];
+  const pts: Array<[number, number]> = [];
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const L = Math.hypot(dx, dy) || 1;
+  const nx = -dy / L;
+  const ny = dx / L;
+  let px = x1;
+  let py = y1;
+  for (let i = 1; i <= n; i++) {
+    const t = i / n;
+    const odd = i % 2 ? 1 : -1;
+    const j = i === n ? 0 : (hash2(seed, i) - 0.5) * 2 * amp * odd + amp * 0.5 * odd;
+    const qx = x1 + dx * t + nx * j;
+    const qy = y1 + dy * t + ny * j;
+    prims.push(K(px, py, qx, qy, r, r, m, { occ: false, ol: false }));
+    pts.push([qx, qy]);
+    px = qx;
+    py = qy;
+  }
+  return { prims, pts };
+}
+
+/** An elliptical arc from angle t0 to t1 as a chain of `n` capsules, its radius easing r0 to r1. */
+export function arc(cx: number, cy: number, rx: number, ry: number, t0: number, t1: number, n: number, r0: number, r1: number, m: string, o: PrimOptions = {}): Prim[] {
+  const out: Prim[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = t0 + ((t1 - t0) * i) / n;
+    const b = t0 + ((t1 - t0) * (i + 1)) / n;
+    out.push(K(cx + rx * Math.cos(a), cy + ry * Math.sin(a), cx + rx * Math.cos(b), cy + ry * Math.sin(b), lerp(r0, r1, i / n), lerp(r0, r1, (i + 1) / n), m, o));
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------- rasterising
 
 /** A drawn primitive ready to hit-test: bounds and resolved colour. */

@@ -54,7 +54,7 @@ describe('COTW sprite recipe groups', () => {
       Object.keys(COTW_TERRAIN_SPRITES).length +
       Object.keys(COTW_UI_ICONS).length +
       Object.keys(COTW_SPELL_RUNES).length;
-    const aliases = ['nidhogg', 'npc-ivalda']; // definition-ID keys that reuse another group's art
+    const aliases = ['npc-ivalda']; // definition-ID keys that reuse another group's art
 
     expect(Object.keys(COTW_SPRITE_RECIPES)).toHaveLength(partTotal + aliases.length);
   });

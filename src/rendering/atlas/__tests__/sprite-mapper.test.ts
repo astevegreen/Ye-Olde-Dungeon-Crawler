@@ -13,7 +13,7 @@ import { NPC } from '../../../engine';
 import type { Item } from '../../../engine';
 import { COTW_TILE_ZONE_BANDS } from '../../../content/cotw/tileZones';
 import { COTW_TOWN } from '../../../content/cotw/town';
-import { COTW_SPRITE_RECIPES } from '../../../content/cotw/sprites';
+import { COTW_BOSS_SPRITES, COTW_SPRITE_RECIPES } from '../../../content/cotw/sprites';
 import { FIXTURE_SPRITE_RECIPES } from '../../../../tests/fixtures/fixture-pack';
 import { cotwManifest } from '../../../content/cotw';
 import { ATLAS_MAP } from '../sprite-atlas';
@@ -200,8 +200,8 @@ describe('sprite-mapper — Tag-Priority Monster, Item, and Zone-Themed Terrain 
     });
 
     it("uses a pack recipe keyed by the definition ID, for items and monsters alike", () => {
-      // What SpriteAtlas.hasSprite reports for cotw: built-in cells plus every cotw recipe.
-      const hasSprite = (key: string) => key in ATLAS_MAP || key in COTW_SPRITE_RECIPES;
+      // What SpriteAtlas.hasSprite reports for cotw: built-in cells, every cotw recipe and its pixel sprites.
+      const hasSprite = (key: string) => key in ATLAS_MAP || key in COTW_SPRITE_RECIPES || key in COTW_BOSS_SPRITES;
 
       const fang = { id: 'loot-1', definitionId: 'nidhogg_fang', name: "Níðhögg's Fang", category: 'weapon' } as Item;
       const lodestone = { id: 'loot-2', definitionId: 'duergar_lodestone', name: 'Duergar Lodestone', category: 'misc' } as Item;

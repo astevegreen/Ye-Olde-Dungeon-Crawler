@@ -49,14 +49,14 @@ describe('drawEntityIcon', () => {
     const drawn = vi.spyOn(atlas, 'drawSprite');
 
     const keys: Record<string, unknown> = {};
-    for (const id of ['draugr_warrior', 'ividja', 'haugbui']) {
+    for (const id of ['draugr_warrior', 'ironwood_troll_wife', 'haugbui']) {
       const monster = engine.diagnostics.spawnMonster(id, { position: { x: 6, y: 5 } })!;
       drawn.mockClear();
       renderer.drawEntityIcon(mockCanvas(), monster);
       keys[id] = drawn.mock.calls[0]?.[1];
       engine.map.removeEntity(monster);
     }
-    expect(keys).toEqual({ draugr_warrior: 'draugr', ividja: 'troll_witch', haugbui: 'duergar' });
+    expect(keys).toEqual({ draugr_warrior: 'draugr', ironwood_troll_wife: 'troll_witch', haugbui: 'duergar' });
     renderer.destroy();
     // Baking the pack's atlas through the mocked context takes ~1 s alone and 11–16 s while
     // the whole suite runs in parallel, past the 5 s default.

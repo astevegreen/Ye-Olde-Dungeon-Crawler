@@ -828,6 +828,33 @@ export interface ItemAuraArt {
   render(item: Uint8ClampedArray, size: number, tone: string, frame: number): Uint8ClampedArray;
 }
 
+/** A ground container's look in each state, by what a player can tell from across the room. */
+export interface ContainerStateArt {
+  /** Never opened, items inside. */
+  unopened: PixelSprite;
+  /** Opened, items still inside. */
+  opened: PixelSprite;
+  /** Nothing inside. */
+  empty: PixelSprite;
+}
+
+/**
+ * Fixtures the pack draws (rendering tier): `PixelSprite`s over the floor, idling on the same
+ * ambient tick as figures and holding frame 0 when remembered or when the player reduces motion.
+ * Whatever has no entry keeps the renderer's generic mark.
+ */
+export interface FixtureArt {
+  /** By tile type: drawn over the tile's floor in place of the portal or altar mark. */
+  tiles?: Record<string, PixelSprite>;
+  /**
+   * By a ground container's sprite key: drawn in place of its sprite, by state. The drawing
+   * carries the state, so the renderer adds no state badge.
+   */
+  containers?: Record<string, ContainerStateArt>;
+  /** Several items on one tile; `large`, when given, for four or more. */
+  lootPile?: { small: PixelSprite; large?: PixelSprite };
+}
+
 /** What the hero has on, for `HeroSpriteArt.lookKey`. */
 export interface HeroGear {
   gender: Gender;
@@ -1060,6 +1087,8 @@ export interface GameContentManifest {
   heroSprite?: HeroSpriteArt;
   /** Drawn spell and melee effects (`SpellFxCatalog`); without it effects draw as generic shapes. */
   spellFx?: SpellFxCatalog;
+  /** Drawn altars, portals, chests and loot heaps (`FixtureArt`); without it they keep generic marks. */
+  fixtureArt?: FixtureArt;
   presetNames?: string[];
   statusHandlers?: Record<string, StatusHandler>;
   actionHooks?: ActionHook[];

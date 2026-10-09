@@ -13,6 +13,7 @@ export { COTW_FAMILY_SPRITES } from './familySprites';
 export { COTW_COMPANION_SPRITES, COTW_TOWNSFOLK_SPRITES } from './allySprites';
 export { COTW_ITEM_PIXEL_SPRITES } from './itemSprites';
 export { COTW_ITEM_AURAS } from './sculpt/aura';
+export { COTW_FIXTURE_ART } from './fixtureSprites';
 
 /**
  * Full CotW procedural sprite recipe set.

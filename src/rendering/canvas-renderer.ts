@@ -19,6 +19,7 @@ import { SpriteAtlas } from './atlas/sprite-atlas';
 import { getTerrainSpriteKey, getEntitySpriteKey, getItemSpriteKey, getMonsterDefinitionSpriteKey } from './atlas/sprite-mapper';
 import { heroSpriteKey } from './atlas/hero-sprite';
 import { IdleIcons, IdleTicker, idleFrame, idlePhase } from './atlas/idle-frames';
+import { containerStateKey, fixtureFigures, fixtureTileKey, lootPileKey, type ContainerState } from './atlas/fixture-art';
 import { contactShadowSides, zoneForFloor, type TerrainView } from './atlas/terrain-layers';
 import { TerrainLayerCache } from './atlas/terrain-cache';
 import { ViewportManager } from './viewport';
@@ -36,8 +37,11 @@ import { MapCardLayer, type MapCardSpec } from '../ui/mapCards/mapCardLayer';
 import { escapeHtml, keyChip } from '../ui/html';
 import { getAudibleEntitiesInRadius, getAudibleTilesInRadius, ECHOLOCATION_HEARING_RADIUS } from '../engine';
 
-/** Optional pack art for a multi-item tile; without it the renderer draws a generic heap. */
-const LOOT_PILE_SPRITE_KEY = 'loot_pile';
+/** What the map shows of a container: empty once nothing is inside, else whether it was opened. */
+function containerState(container: Container): ContainerState {
+  if (container.getItems().length === 0) return 'empty';
+  return container.wasOpened ? 'opened' : 'unopened';
+}
 
 export interface ModeHint {
   /** The mode's name, e.g. "Look". */
@@ -154,7 +158,7 @@ export class CanvasRenderer {
     this.camera = new Camera(26, 18);
     this.atlas = new SpriteAtlas(this.engine.manifest?.spriteRecipes, {
       memory: this.engine.manifest?.atlas?.terrain?.memory,
-      pixelSprites: this.engine.manifest?.pixelSprites,
+      pixelSprites: { ...this.engine.manifest?.pixelSprites, ...fixtureFigures(this.engine.manifest?.fixtureArt) },
       itemAuras: this.engine.manifest?.itemAuras,
     });
     setIconAtlas(this.atlas);
@@ -721,7 +725,7 @@ export class CanvasRenderer {
       const layers = this.terrainCache.get(this.terrainView, worldX, worldY, this.terrainSuffixAt, art, this.hasRecipe);
       if (layers) {
         for (const key of layers) this.atlas.drawSprite(this.ctx, key, px, py, cs, visibility);
-        if (tile.visual === 'portal' || tile.visual === 'altar') this.drawFixtureOverlay(px, py, cs, tile.visual, visibility, theme, tile.glyph);
+        this.drawFixture(px, py, cs, tile, visibility, worldX, worldY, theme);
         return;
       }
     }
@@ -747,9 +751,8 @@ export class CanvasRenderer {
     const spriteKey = getTerrainSpriteKey(tile.type, currentFloor, tileZoneBands, buildingType, this.hasRecipe);
     this.atlas.drawSprite(this.ctx, spriteKey, px, py, cs, visibility);
 
-    if (tile.visual === 'portal' || tile.visual === 'altar') {
-      this.drawFixtureOverlay(px, py, cs, tile.visual, visibility, theme, tile.glyph);
-    } else if (
+    if (this.drawFixture(px, py, cs, tile, visibility, worldX, worldY, theme)) return;
+    if (
       tile.type === 'shallow_water' ||
       tile.type === 'chasm' ||
       tile.type === 'iron_bars' ||
@@ -900,6 +903,32 @@ export class CanvasRenderer {
       }
     }
     ctx.restore();
+  }
+
+  /**
+   * A tile's fixture over its floor: the pack's drawing (`FixtureArt.tiles`), idling while in
+   * view, else the generic portal or altar mark. False when the tile has neither.
+   */
+  private drawFixture(
+    px: number,
+    py: number,
+    cs: number,
+    tile: TileDefinition,
+    visibility: Visibility,
+    worldX: number,
+    worldY: number,
+    theme: Required<ThemeTokens>
+  ): boolean {
+    const key = fixtureTileKey(tile.type);
+    if (this.atlas.hasFigure(key)) {
+      const frame =
+        visibility === Visibility.Visible ? this.idleFrameOf(this.atlas.frameCount(key), idlePhase(`${worldX},${worldY}`)) : 0;
+      this.atlas.drawSprite(this.ctx, key, px, py, cs, visibility, frame);
+      return true;
+    }
+    if (tile.visual !== 'portal' && tile.visual !== 'altar') return false;
+    this.drawFixtureOverlay(px, py, cs, tile.visual, visibility, theme, tile.glyph);
+    return true;
   }
 
   /** A portal's or an altar's mark over its tile; the glyph is a map-tile glyph, sized by the cell, in the theme's display face. */
@@ -1527,18 +1556,18 @@ export class CanvasRenderer {
   private drawGroundItem(px: number, py: number, cs: number, item: Item): void {
     this.drawGroundHighlight(px, py, cs, itemFrameColor(this.theme, item));
     const spriteKey = getItemSpriteKey(item, this.atlas.hasSprite.bind(this.atlas));
+    const state = item instanceof Container ? containerState(item) : null;
+    // A container the pack draws by state shows the state on itself, so it has no badge.
+    const stateKey = state ? containerStateKey(spriteKey, state) : null;
+    if (stateKey && this.atlas.hasFigure(stateKey)) {
+      const frame = this.idleFrameOf(this.atlas.frameCount(stateKey), idlePhase(item.id));
+      this.atlas.drawSprite(this.ctx, stateKey, px + 2, py + 2, cs - 4, Visibility.Visible, frame);
+      return;
+    }
     const tone = itemFrameTone(item);
     const frame = this.idleFrameOf(this.atlas.itemFrameCount(spriteKey, tone), idlePhase(item.id));
     this.atlas.drawItem(this.ctx, spriteKey, tone, px + 2, py + 2, cs - 4, frame);
-    if (item instanceof Container) {
-      const state =
-        item.getItems().length === 0
-          ? 'empty'
-          : !item.wasOpened
-          ? 'unopened'
-          : 'has_items';
-      this.drawContainerBadge(px, py, cs, state);
-    }
+    if (state) this.drawContainerBadge(px, py, cs, state);
   }
 
   /** Several items on one tile: a heap icon and a count, rather than whichever item
@@ -1547,8 +1576,10 @@ export class CanvasRenderer {
     const ctx = this.ctx;
     this.drawGroundHighlight(px, py, cs);
 
-    if (this.atlas.hasSprite(LOOT_PILE_SPRITE_KEY)) {
-      this.atlas.drawSprite(ctx, LOOT_PILE_SPRITE_KEY, px + 2, py + 2, cs - 4, Visibility.Visible);
+    const pileKey = lootPileKey(items.length, (key) => this.atlas.hasSprite(key));
+    if (this.atlas.hasSprite(pileKey)) {
+      const frame = this.idleFrameOf(this.atlas.frameCount(pileKey), idlePhase(items[0].id));
+      this.atlas.drawSprite(ctx, pileKey, px + 2, py + 2, cs - 4, Visibility.Visible, frame);
     } else {
       const cx = px + cs / 2;
       const baseY = py + cs * 0.78;
@@ -1596,11 +1627,11 @@ export class CanvasRenderer {
 
     const containers = items.filter((i): i is Container => i instanceof Container);
     if (containers.length > 0) {
-      let state: 'unopened' | 'has_items' | 'empty';
+      let state: ContainerState;
       if (containers.some((c) => !c.wasOpened && c.getItems().length > 0)) {
         state = 'unopened';
       } else if (containers.some((c) => c.getItems().length > 0)) {
-        state = 'has_items';
+        state = 'opened';
       } else {
         state = 'empty';
       }
@@ -1610,12 +1641,7 @@ export class CanvasRenderer {
 
   /** Top-right corner flag on containers: a gold star while unopened, an amber dot once
    * opened while items remain, and a grey check once completely empty. */
-  private drawContainerBadge(
-    px: number,
-    py: number,
-    cs: number,
-    state: 'unopened' | 'has_items' | 'empty'
-  ): void {
+  private drawContainerBadge(px: number, py: number, cs: number, state: ContainerState): void {
     const ctx = this.ctx;
     const r = Math.max(3, cs * 0.14);
     const cx = px + cs - r - 1;
@@ -1632,7 +1658,7 @@ export class CanvasRenderer {
     if (state === 'unopened') {
       ctx.fillStyle = this.theme.gold;
       ctx.fillText('★', cx, cy + 0.5);
-    } else if (state === 'has_items') {
+    } else if (state === 'opened') {
       ctx.fillStyle = this.theme.accent;
       ctx.fillText('•', cx, cy + 0.5);
     } else {

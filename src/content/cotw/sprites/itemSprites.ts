@@ -6,6 +6,7 @@ import { bodyArmourModel, bootsModel, cloakModel, glovesModel, helmModel, shield
 import { amuletModel, coinsModel, gemModel, keyModel, packModel, ringModel } from './sculpt/trinkets';
 import { breadModel, potionModel, runeStoneModel, scrollModel, tabletModel, torchModel, wandModel } from './sculpt/consumables';
 import { fangModel, hearthTearModel } from './sculpt/relics';
+import { COTW_CHEST_SPRITE } from './fixtureSprites';
 
 /**
  * `s` enlarges the smallest things (coins, rings, purses, knives, potions, wands): drawn to
@@ -200,6 +201,8 @@ export const COTW_ITEM_PIXEL_SPRITES: Record<string, PixelSprite> = {
   // ---- relics with their own drawing
   nidhogg_fang: sculpted(fangModel, {}, 4),
   hearth_tear_fragment: sculpted(hearthTearModel, {}, 4),
+  // ---- the chest, shut; on the ground it shows its state (`COTW_FIXTURE_ART`)
+  chest: COTW_CHEST_SPRITE,
 
   // ---- archetype keys: what an item without its own sprite falls back to
   gold_coins: sculpted(coinsModel, {}, 1, 1.2),

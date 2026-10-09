@@ -364,3 +364,42 @@ mat('item_crumb', '#e2cb98', { hs: 10 });
 mat('item_pitch', '#3b302a', { tex: 'cloth', hs: 10 });
 mat('item_paint', '#3e5b88', { tex: 'cloth' });
 mat('item_void', '#16171d', { hs: 6 });
+
+// ---- fixtures (wave 8): altars, portals, the siphon, chests and loot heaps
+mat('fix_weathered', '#6f6c66', { tex: 'stone', hs: 10 }); // Tyr: old grey stone
+mat('fix_paleStone', '#8e9199', { tex: 'stone', hs: 10 }); // Urðr's basin
+mat('fix_blackStone', '#3c3a46', { tex: 'stone', hs: 10 }); // Hel, the siphon
+mat('fix_ravenStone', '#454a58', { tex: 'stone', hs: 8 });
+mat('fix_serpent', '#5a6a4c', { tex: 'scale', hs: 14 });
+mat('fix_helFlesh', '#434a66', { tex: 'rot', hs: 10 }); // Hel's dead half
+mat('fix_bloodDry', '#5c1a1c', { hs: 6 });
+mat('fix_bloodPool', '#7a121c', { shiny: true, hs: 6 });
+mat('fix_rawWood', '#b09062', { tex: 'wood', hs: 12 }); // the fresh split in the root
+mat('fix_chestIn', '#2b2019', { hs: 10 });
+mat('fix_plank', '#7e5a39', { tex: 'cloth', hs: 14 });
+mat('fix_plankDark', '#4f3a2a', { tex: 'cloth', hs: 14 });
+mat('fix_glass', '#3f7a62', { shiny: true, a: 0.94, hs: 10 });
+mat('fix_water', '#20324c', { hs: 8 });
+// fixture light
+mat('fix_coldIron', '#c4d8ff', { em: true, hs: 0 });
+mat('fix_goldWhite', '#ffe8a8', { em: true, hs: 0 });
+mat('fix_silver', '#dde8ff', { em: true, hs: 0 });
+mat('fix_starWater', '#3b5f96', { em: true, hs: 0 });
+mat('fix_star', '#f4f8ff', { em: true, hs: 0 });
+mat('fix_rootGlow', '#a7b83a', { em: true, hs: 0 }); // sickly green-gold
+mat('fix_rootCore', '#f2f1a6', { em: true, hs: 0 });
+mat('fix_dawn', '#ffdf96', { em: true, hs: 0 }); // the Path of Light
+mat('fix_dawnCore', '#fffaf0', { em: true, hs: 0 });
+mat('fix_crystal', '#9558ee', { em: true, hs: 0 });
+mat('fix_crystalCore', '#efe2ff', { em: true, hs: 0 });
+// Loki's rune, one hue per frame (altar.ts's CHAOS lights match)
+mat('fix_chaos0', '#e05cff', { em: true, hs: 0 });
+mat('fix_chaos1', '#6f8cff', { em: true, hs: 0 });
+mat('fix_chaos2', '#35e0c8', { em: true, hs: 0 });
+mat('fix_chaos3', '#f2dc5a', { em: true, hs: 0 });
+// the siphon stream, blood turning violet as it rises
+mat('fix_sip0', '#c21c2e', { em: true, hs: 0 });
+mat('fix_sip1', '#c4245a', { em: true, hs: 0 });
+mat('fix_sip2', '#b8348a', { em: true, hs: 0 });
+mat('fix_sip3', '#a444c4', { em: true, hs: 0 });
+mat('fix_sip4', '#a868ff', { em: true, hs: 0 });

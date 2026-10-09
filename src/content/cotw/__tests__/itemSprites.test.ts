@@ -13,8 +13,8 @@ const definitions = [...(cotwManifest.items ?? []), ...COTW_SPELL_TABLETS];
 const ids = new Set([...definitions.map((d) => d.id), 'ironclasp_purse', 'wooden_torch']);
 /** What an item without its own sprite falls back to (`getItemSpriteKey`). */
 const ARCHETYPES = ['gold_coins', 'purse', 'belt', 'travel_bread', 'rune_stone', 'iron_armor', 'mace', 'warhammer', 'ring', 'amulet', 'cloak', 'gauntlets', 'bracers', 'scroll', 'gem', 'key', 'torch'];
-/** Relics drawn by their own recipe until they are sculpted, and the chest (wave 8). */
-const ON_RECIPES = ['sol_shard_focus', 'petrified_world_bark_tower_shield', 'antler_crowned_mask', 'marrow_gnawed_ring', 'duergar_lodestone', 'chest'];
+/** Relics drawn by their own recipe until they are sculpted (wave 8). */
+const ON_RECIPES = ['sol_shard_focus', 'petrified_world_bark_tower_shield', 'antler_crowned_mask', 'marrow_gnawed_ring', 'duergar_lodestone'];
 
 describe('the cotw items each have a drawing', () => {
   it('keys every sprite by a real item definition or a fallback archetype', () => {

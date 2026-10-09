@@ -11,6 +11,7 @@ export { COTW_HERO_SPRITE } from './heroLook';
 export { COTW_BOSS_SPRITES } from './bossSprites';
 export { COTW_FAMILY_SPRITES } from './familySprites';
 export { COTW_COMPANION_SPRITES, COTW_TOWNSFOLK_SPRITES } from './allySprites';
+export { COTW_ITEM_PIXEL_SPRITES } from './itemSprites';
 
 /**
  * Full CotW procedural sprite recipe set.

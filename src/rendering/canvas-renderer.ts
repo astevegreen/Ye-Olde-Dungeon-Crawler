@@ -162,7 +162,7 @@ export class CanvasRenderer {
       virtualWidth: 960,
       virtualHeight: 600,
     });
-    this.fxRunner = new CanvasFXRunner({ onFrame: () => this.render() });
+    this.fxRunner = new CanvasFXRunner({ onFrame: () => this.render(), art: () => this.engine.manifest?.spellFx });
     this.targetingOverlay = new TargetingOverlay(() => this.render());
     this.shopOverlay = new ShopDialog({
       drawItemIcon: (canvas, item) => this.drawItemIcon(canvas, item),

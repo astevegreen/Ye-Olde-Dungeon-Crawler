@@ -147,8 +147,10 @@ export class TargetingOverlay implements UIModal {
       result = { success: res.success, message: res.message ?? '', cost: costOf(res.data), effects: res.effects };
     }
 
-    // The after-image of the flight, as the cast made it.
-    if (geo.ray) {
+    // The after-image of the flight, as the cast made it, unless the pack draws the spell's
+    // own bolt and impact (`SpellFxCatalog`), which it would cover.
+    const fx = entry.spellDef.visual?.fx ?? entry.spellDef.element;
+    if (geo.ray && !engine.manifest?.spellFx?.elements[fx]) {
       this.lastFired = {
         path: geo.ray.path,
         element: entry.spellDef.element,

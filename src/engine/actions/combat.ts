@@ -43,6 +43,7 @@ export class MeleeAttackAction implements Action {
     const cost = this.followUp ? 0 : this.attacker.getActionCost(BASE_ACTION_COST);
     this.attacker.consumeEnergy(cost);
     engine.log(message);
+    engine.emitGameEvent({ type: 'attack_missed', turn: engine.turnCount, actorId: this.attacker.id, targetId: this.defender.id });
     const missCost = sumWorn(this.attacker, 'missSelfDamage');
     if (missCost > 0) {
       const { damageDealt, killed } = this.attacker.takeDamage(missCost);

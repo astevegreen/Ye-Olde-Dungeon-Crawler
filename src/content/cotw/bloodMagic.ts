@@ -20,6 +20,7 @@ export const COTW_BLOOD_SPELLS: SpellDefinition[] = [
     description:
       'Point-blank execution (1-2 tiles). Deals 20 shadow damage to finish off an almost dead enemy (<= 25% HP). Slaying the victim reaps their vital essence into 25 Volatile Energy (+5 HP, +2 Corruption).',
     visual: {
+      fx: 'blood',
       archetype: 'projectile',
       color: '#991b1b',
       stepDelayMs: 20,
@@ -49,6 +50,7 @@ export const COTW_BLOOD_SPELLS: SpellDefinition[] = [
     description:
       'Point-blank execution (1-2 tiles). Deals 20 shadow damage to finish off an almost dead enemy (<= 25% HP). Slaying the victim reaps their vital essence into 25 Volatile Energy (+5 HP, +2 Corruption).',
     visual: {
+      fx: 'blood',
       archetype: 'projectile',
       color: '#991b1b',
       stepDelayMs: 20,
@@ -76,6 +78,7 @@ export const COTW_BLOOD_SPELLS: SpellDefinition[] = [
     description:
       'Coagulates dark blood into an unholy ward granting supernatural quickness for 15 turns. Costs 20 Volatile Energy (+5 Corruption).',
     visual: {
+      fx: 'blood',
       archetype: 'self_buff',
       color: '#b91c1c',
       durationMs: 220,
@@ -101,6 +104,7 @@ export const COTW_BLOOD_SPELLS: SpellDefinition[] = [
     description:
       'Hurls an impaling lance of condensed vitriol dealing 24 entropic shadow damage that scales violently with corruption. Costs 25 Volatile Energy (+8 Corruption).',
     visual: {
+      fx: 'blood',
       archetype: 'projectile',
       color: '#7f1d1d',
       stepDelayMs: 18,
@@ -127,6 +131,7 @@ export const COTW_BLOOD_SPELLS: SpellDefinition[] = [
     description:
       'Rips the lifeblood from all foes in a 3x3 area for 32 entropic shadow damage. Costs 35 Volatile Energy (+15 Corruption).',
     visual: {
+      fx: 'blood',
       archetype: 'projectile_burst',
       color: '#450a0a',
       stepDelayMs: 24,

@@ -12,8 +12,12 @@ export interface ProjectileEffectDescriptor {
   priority?: EffectPriority;
   id?: string;
   path: Array<{ x: number; y: number; isReflection?: boolean }>;
+  /** The caster's tile, where drawn art starts its flight; the path begins one step out. */
+  origin?: { x: number; y: number };
   spriteId?: string;
   color: string;
+  /** Which drawn art plays it (`SpellFxCatalog.elements`): the spell's `visual.fx`, else its element. */
+  fx?: string;
   stepDelayMs: number;
   travelMode?: 'stepped' | 'smooth';
   tailLength?: number;
@@ -27,6 +31,8 @@ export interface BurstEffectDescriptor {
   epicenter: { x: number; y: number };
   radius: number;
   color: string;
+  /** Which drawn art plays it (`SpellFxCatalog.elements`): the spell's `visual.fx`, else its element. */
+  fx?: string;
   durationMs: number;
   style?: 'flame' | 'spark' | 'shockwave' | 'aura';
 }
@@ -48,6 +54,8 @@ export interface ChainLinkEffectDescriptor {
   from: { x: number; y: number };
   to: { x: number; y: number };
   color: string;
+  /** Which drawn art plays it (`SpellFxCatalog.elements`): the spell's `visual.fx`, else its element. */
+  fx?: string;
   durationMs: number;
 }
 
@@ -60,6 +68,8 @@ export type VisualEffectDescriptor =
 export interface SpellVisualConfig {
   archetype: 'projectile' | 'projectile_burst' | 'direct_burst' | 'chain' | 'self_buff' | 'teleport' | 'screen_flash';
   color: string;
+  /** The drawn art this spell plays (`SpellFxCatalog.elements`) when it is not the spell's element's, e.g. blood magic. */
+  fx?: string;
   spriteId?: string;
   stepDelayMs?: number;
   durationMs?: number;

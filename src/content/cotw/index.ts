@@ -32,6 +32,7 @@ import {
 } from './vaults';
 import { COTW_BOSS_SPRITES, COTW_COMPANION_SPRITES, COTW_FAMILY_SPRITES, COTW_HERO_SPRITE, COTW_ITEM_AURAS, COTW_ITEM_PIXEL_SPRITES, COTW_SPRITE_RECIPES, COTW_TOWNSFOLK_SPRITES } from './sprites';
 import { COTW_CHOICES } from './choices';
+import { COTW_SPELL_FX } from './fx';
 import { COTW_PACTS } from './pacts';
 import { COTW_RENOWN_MILESTONES, COTW_RENOWN_TITLES } from './renown';
 import { COTW_OBJECTIVES } from './objectives';
@@ -108,6 +109,7 @@ export const cotwManifest: GameContentManifest = {
   pixelSprites: { ...COTW_FAMILY_SPRITES, ...COTW_BOSS_SPRITES, ...COTW_COMPANION_SPRITES, ...COTW_TOWNSFOLK_SPRITES, ...COTW_ITEM_PIXEL_SPRITES },
   itemAuras: COTW_ITEM_AURAS,
   heroSprite: COTW_HERO_SPRITE,
+  spellFx: COTW_SPELL_FX,
   presetNames: ['Sven', 'Astrid', 'Bjorn', 'Freya'],
   choices: COTW_CHOICES,
   magic: COTW_MAGIC,

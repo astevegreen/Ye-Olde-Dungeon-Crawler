@@ -50,6 +50,11 @@ function getElementDefaultColor(element?: string): string {
   }
 }
 
+/** The drawn art a spell's effects play: its own (`visual.fx`), else its element's. */
+function spellFxOf(spell: SpellDefinition): string | undefined {
+  return spell.visual?.fx ?? spell.element;
+}
+
 /**
  * Spell damage after the hero's ward (Warding Glyph, `firstSpellPerFloorMultiplier`): the
  * first spell another caster lands on the hero each floor visit is scaled.
@@ -229,6 +234,7 @@ export class SpellPipeline {
   ): ActionResult {
     const effects: VisualEffectDescriptor[] = [];
     const color = spell.visual?.color ?? getElementDefaultColor(spell.element);
+    const fx = spellFxOf(spell);
     const startPos = { x: caster.x, y: caster.y };
 
     if (spell.effects.length > 0) {
@@ -255,6 +261,7 @@ export class SpellPipeline {
           epicenter: { x: caster.x, y: caster.y },
           radius: 1,
           color,
+          fx,
           durationMs: spell.visual?.durationMs ?? 200,
           style: 'aura',
         });
@@ -264,6 +271,7 @@ export class SpellPipeline {
           epicenter: startPos,
           radius: 1,
           color,
+          fx,
           durationMs: 150,
           style: 'shockwave',
         });
@@ -272,6 +280,7 @@ export class SpellPipeline {
           epicenter: { x: caster.x, y: caster.y },
           radius: 1,
           color,
+          fx,
           durationMs: 150,
           style: 'aura',
         });
@@ -287,6 +296,7 @@ export class SpellPipeline {
           epicenter: { x: caster.x, y: caster.y },
           radius: 1,
           color,
+          fx,
           durationMs: spell.visual?.durationMs ?? 180,
           style: 'aura',
         });
@@ -318,6 +328,7 @@ export class SpellPipeline {
     let hitDescription = '';
     const effects: VisualEffectDescriptor[] = [];
     const color = spell.visual?.color ?? getElementDefaultColor(spell.element);
+    const fx = spellFxOf(spell);
 
     if ((mode === 'ray' || mode === 'bounce_ray') && geo.ray) {
       const rayResult = geo.ray;
@@ -327,7 +338,9 @@ export class SpellPipeline {
         effects.push({
           type: 'projectile',
           path: rayResult.path.map((p) => ({ x: p.x, y: p.y, isReflection: p.isReflection })),
+          origin: { x: caster.x, y: caster.y },
           color,
+          fx,
           spriteId: spell.visual?.spriteId,
           stepDelayMs: spell.visual?.stepDelayMs ?? (reflects ? 20 : 25),
           travelMode: spell.visual?.travelMode ?? (reflects ? 'stepped' : 'smooth'),
@@ -341,6 +354,7 @@ export class SpellPipeline {
           epicenter: { x: impactTile.x, y: impactTile.y },
           radius: blastRadius,
           color,
+          fx,
           durationMs: spell.visual?.durationMs ?? 250,
           style: spell.element === 'fire' ? 'flame' : spell.element === 'lightning' ? 'spark' : 'shockwave',
         });
@@ -386,7 +400,9 @@ export class SpellPipeline {
         effects.push({
           type: 'projectile',
           path: geo.ray.path.map((p) => ({ x: p.x, y: p.y, isReflection: p.isReflection })),
+          origin: { x: caster.x, y: caster.y },
           color,
+          fx,
           spriteId: spell.visual?.spriteId,
           stepDelayMs: spell.visual?.stepDelayMs ?? 25,
           travelMode: spell.visual?.travelMode ?? 'smooth',
@@ -399,6 +415,7 @@ export class SpellPipeline {
         epicenter: { x: burstOrigin.x, y: burstOrigin.y },
         radius,
         color,
+        fx,
         durationMs: spell.visual?.durationMs ?? 250,
         style: spell.element === 'fire' ? 'flame' : spell.element === 'lightning' ? 'spark' : 'shockwave',
       });
@@ -709,6 +726,7 @@ export class SpellPipeline {
           from: { x: current.x, y: current.y },
           to: { x: nextTarget.x, y: nextTarget.y },
           color: spell.visual?.color ?? getElementDefaultColor(element),
+          fx: spell.visual?.fx ?? element,
           durationMs: spell.visual?.durationMs ?? 150,
         });
       }

@@ -845,6 +845,69 @@ export interface HeroSpriteArt {
   sprite(lookKey: string): PixelSprite;
 }
 
+/** A gradient spell art fills with (`FxSurface.createRadialGradient`). */
+export interface FxGradient {
+  addColorStop(offset: number, color: string): void;
+}
+
+/**
+ * The Canvas 2D context spell and melee art draws on (rendering tier). Structural, naming
+ * only what the art uses, so content stays DOM-free (§2). Coordinates are world pixels, the
+ * map's top-left at 0: the renderer translates the context, so art seeded and snapped on
+ * absolute positions holds still while the camera scrolls.
+ */
+export interface FxSurface {
+  /** Art only writes it; read back, the renderer's context may hold a fill art never sets. */
+  get fillStyle(): unknown;
+  set fillStyle(value: string | FxGradient);
+  globalAlpha: number;
+  globalCompositeOperation: string;
+  save(): void;
+  restore(): void;
+  translate(x: number, y: number): void;
+  scale(x: number, y: number): void;
+  fillRect(x: number, y: number, w: number, h: number): void;
+  createRadialGradient(x0: number, y0: number, r0: number, x1: number, y1: number, r1: number): FxGradient;
+}
+
+/**
+ * One element's spell art (rendering tier). Each draw is a pure function of its inputs: `p`
+ * runs 0-1 over the effect's life, `cs` is the tile edge in pixels, and positions are tile
+ * centres in world pixels. Deterministic: no clock or randomness, variation seeded by tile.
+ */
+export interface SpellFxArt {
+  /** In flight from (x0, y0) to (x1, y1); the head reaches (x1, y1) at p = 1. */
+  bolt?(ctx: FxSurface, x0: number, y0: number, x1: number, y1: number, p: number, cs: number): void;
+  /** Where it lands. */
+  impact?(ctx: FxSurface, x: number, y: number, p: number, cs: number): void;
+  /** Cast on the caster itself; without it a self cast draws `impact`. */
+  self?(ctx: FxSurface, x: number, y: number, p: number, cs: number): void;
+  /** Natural lengths in ms. The bolt's life is stretched to the flight; impact and self play as long as these. */
+  msBolt: number;
+  msImpact: number;
+  msSelf?: number;
+}
+
+/** A melee blow's art (rendering tier), on the target's tile; `dir` points attacker to target. */
+export interface MeleeFxArt {
+  hit(ctx: FxSurface, x: number, y: number, p: number, cs: number, dir: readonly [number, number]): void;
+  crit(ctx: FxSurface, x: number, y: number, p: number, cs: number, dir: readonly [number, number]): void;
+  miss(ctx: FxSurface, x: number, y: number, p: number, cs: number, dir: readonly [number, number]): void;
+  /** Length of each, in ms. */
+  ms: number;
+}
+
+/**
+ * Drawn spell and melee effects (rendering tier). Without it, or for an effect whose `fx`
+ * has no entry, the renderer draws its generic orbs, rings and arcs in the effect's colour.
+ */
+export interface SpellFxCatalog {
+  /** Keyed by an effect's `fx`: the spell's `visual.fx`, else its element. */
+  elements: Record<string, SpellFxArt>;
+  /** Melee hits, criticals and misses, by everyone. */
+  melee?: MeleeFxArt;
+}
+
 /**
  * Pack-specific wording for shared presentation screens (§3: presentation code names no
  * pack). The pack's title and tagline are `GameContentManifest.name`/`description`, and
@@ -995,6 +1058,8 @@ export interface GameContentManifest {
   itemAuras?: ItemAuraArt;
   /** The hero drawn wearing their gear; without it the hero is the `player`/`player_female` sprite. */
   heroSprite?: HeroSpriteArt;
+  /** Drawn spell and melee effects (`SpellFxCatalog`); without it effects draw as generic shapes. */
+  spellFx?: SpellFxCatalog;
   presetNames?: string[];
   statusHandlers?: Record<string, StatusHandler>;
   actionHooks?: ActionHook[];

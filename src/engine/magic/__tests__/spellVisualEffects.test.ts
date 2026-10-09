@@ -88,6 +88,18 @@ describe('Visual Effect Queue & Declarative FX Engine', () => {
     }
   });
 
+  it('tags each effect with the art it plays: the spell\'s own, else its element\'s', () => {
+    const { engine, player } = createCorridorEngine();
+    const cold = new CastSpellAction(player, 'cold_ray', 8, 3).perform(engine);
+    expect((cold.effects?.find((e) => e.type === 'projectile') as ProjectileEffectDescriptor).fx).toBe('cold');
+
+    // Blood magic is shadow by element but draws as blood.
+    player.energy = 100;
+    const spear = new CastSpellAction(player, 'blood_spear', 8, 3, undefined, true).perform(engine);
+    expect(spear.success).toBe(true);
+    expect((spear.effects?.find((e) => e.type === 'projectile') as ProjectileEffectDescriptor).fx).toBe('blood');
+  });
+
   it('generates wall reflection flags in projectile path for Lightning Bolt', () => {
     const { engine, player, map } = createRoomEngine(12, 12);
     // Player at (2, 6), aim diagonally at top wall (8, 0)
@@ -138,6 +150,10 @@ describe('Visual Effect Queue & Declarative FX Engine', () => {
     // 2nd: Area burst descriptor centered at (7, 7)
     const burst = result.effects?.[1] as BurstEffectDescriptor;
     expect(burst.type).toBe('burst');
+    // Both play the fire art, the flight starting from the caster's own tile.
+    expect(proj.fx).toBe('fire');
+    expect(burst.fx).toBe('fire');
+    expect(proj.origin).toEqual({ x: player.x, y: player.y });
     expect(burst.epicenter).toEqual({ x: 7, y: 7 });
     expect(burst.radius).toBe(1);
     expect(burst.color).toBe('#ef4444');

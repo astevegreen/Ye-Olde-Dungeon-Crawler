@@ -52,6 +52,7 @@ import type {
   VersionedSaveEnvelope,
 } from './engine';
 import { CanvasRenderer } from './rendering/canvas-renderer';
+import type { MeleeFxKind } from './rendering/fxRunner';
 import { InputHandler } from './rendering/input-handler';
 import { TitleScreen } from './ui/title-screen';
 import { DiagnosticModal } from './ui/diagnostic-modal';
@@ -704,6 +705,14 @@ window.addEventListener('DOMContentLoaded', () => {
       // failure is shown here, or the next action would overwrite it unseen (R-main-8).
       reportPipelineError(engine.lastActionResult);
     }
+  }
+
+  /** A melee blow's swing on its target, when the hero can see it; ambient, it never holds input (§4). */
+  function playMeleeBlow(engine: GameEngine, event: GameEvent, kind: MeleeFxKind): void {
+    const attacker = event.actorId ? engine.map.getEntityById(event.actorId) : null;
+    const target = event.targetId ? engine.map.getEntityById(event.targetId) : null;
+    if (!renderer || !attacker || !target || !engine.fov.isVisible(target.x, target.y)) return;
+    renderer.fxRunner.playMelee(kind, { x: target.x, y: target.y }, [target.x - attacker.x, target.y - attacker.y]);
   }
 
   function updateCombatFloatingText(engine: GameEngine): void {
@@ -1415,10 +1424,13 @@ window.addEventListener('DOMContentLoaded', () => {
     engine.onGameEvent = (event: GameEvent) => {
       firstTimeHints.offer(engine, hintsMetByEvent(event));
       if (isGameEvent(event, 'damage_dealt')) {
+        playMeleeBlow(engine, event, event.critical ? 'crit' : 'hit');
         if (event.critical) {
           if (event.targetId) criticalTargets.add(event.targetId);
           criticalLines.markNewest(engine.messages);
         }
+      } else if (isGameEvent(event, 'attack_missed')) {
+        playMeleeBlow(engine, event, 'miss');
       } else if (isGameEvent(event, 'entity_killed')) {
         const fallen = event.targetId ? knownMonsters.get(event.targetId) : undefined;
         if (fallen && event.targetId) {

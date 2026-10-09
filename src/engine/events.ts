@@ -35,6 +35,7 @@ export type BuiltInGameEventType =
   | 'chaotic_proc'
   | 'uncurse'
   | 'damage_dealt'
+  | 'attack_missed'
   | 'entity_killed'
   | 'level_transition'
   | 'rune_of_return_discovered'
@@ -74,6 +75,11 @@ export interface DamageDealtEvent extends GameEventBase {
   killed: boolean;
   /** The blow was a critical hit. */
   critical?: boolean;
+}
+
+/** A melee blow that did not land (missed or evaded): `actorId` swung at `targetId`. */
+export interface AttackMissedEvent extends GameEventBase {
+  type: 'attack_missed';
 }
 
 export interface EntityKilledEvent extends GameEventBase {
@@ -118,6 +124,7 @@ export type GameEvent =
   | ChaoticProcEvent
   | UncurseEvent
   | DamageDealtEvent
+  | AttackMissedEvent
   | EntityKilledEvent
   | LevelTransitionEvent
   | RuneOfReturnDiscoveredEvent

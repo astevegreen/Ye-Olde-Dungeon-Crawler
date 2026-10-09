@@ -125,6 +125,8 @@ describe('melee under attribute scaling', () => {
     expect(miss.cost).toBeGreaterThan(0);
     expect(foe.hp).toBe(1000);
     expect(engine.messages.at(-1)).toBe('Hero misses Foe.');
+    // Presentation draws the whiff from the event, attacker to target.
+    expect(engine.recentGameEvents.at(-1)).toMatchObject({ type: 'attack_missed', actorId: player.id, targetId: foe.id });
 
     engine.rng = () => 0.79;
     player.gainEnergy(100);
@@ -139,6 +141,7 @@ describe('melee under attribute scaling', () => {
     new MeleeAttackAction(foe, player).perform(engine);
     expect(player.hp).toBe(100);
     expect(engine.messages.at(-1)).toBe('Hero evades Foe\'s attack!');
+    expect(engine.recentGameEvents.at(-1)).toMatchObject({ type: 'attack_missed', actorId: foe.id, targetId: player.id });
   });
 
   it('without a config a melee blow never misses, as before', () => {

@@ -19,6 +19,9 @@
 1. Complete, apart from landing on main (Decide first 1).
 
 ## Decisions
+- Land on main through a PR — owner: "Open a PR (Recommended)"
+- Firefox hang left to the pre-push retry — owner: "Leave to retry (Recommended)"
+- WebKit fps: no change until a Mac player reports slowness — owner: "No change for now (Recommended)"
 - Fix in the game plus test headroom, not a harness that swaps pages — chosen because the stalled page recovers once the throw is caught (load stall costs ~15 s), and players on Safari get no blank page.
 - WebKit project timeout 90 s — chosen because tests that hit a stall took 28-55 s, and wide-window tests take 40-50 s under a three-browser run.
 
@@ -37,3 +40,4 @@
 - lint + test: green on f5c7f1a's tree (2626/2626); sim, validate:schema, build, Chromium Playwright 32/32: green
 - pre-push on f5c7f1a: 87 passed, 1 flaky (firefox page.goto hang), 8 skipped; WebKit 0 flaky
 - Forced stall (NtSuspendProcess on WebKitGPUProcess): unfixed build reproduces "waiting for #btn-menu-new-game"; fixed build passes
+Resumed: 2026-10-09 18:18 UTC

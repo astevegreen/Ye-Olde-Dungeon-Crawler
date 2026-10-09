@@ -29,3 +29,4 @@ Owner: "an optimal solution to the problem of cloud sessions not seeing handoffs
 ## Verification
 - lint + test (2625/2625): green on dbb9632 and b9fd525; pre-push sim, schema, build, Playwright 88/88: green on b9fd525
 Resumed: 2026-10-09 16:25
+- cloud round trip: found, merged nothing, marked resumed from a cloud session (b475b88), 9 Oct

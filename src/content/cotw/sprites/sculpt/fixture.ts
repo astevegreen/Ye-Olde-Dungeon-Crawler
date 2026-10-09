@@ -44,6 +44,9 @@ const RUNES = {
   uruz: [[0.1, 0, 0.1, 1], [0.1, 0, 0.9, 0.34], [0.9, 0.34, 0.9, 1]], // Urðr
   othala: [[0.5, 0, 0.92, 0.36], [0.5, 0, 0.08, 0.36], [0.08, 0.36, 0.95, 1], [0.92, 0.36, 0.05, 1]],
   thurisaz: [[0.15, 0, 0.15, 1], [0.15, 0.2, 0.88, 0.5], [0.88, 0.5, 0.15, 0.8]], // the thorn
+  wunjo: [[0.2, 0, 0.2, 1], [0.2, 0, 0.85, 0.27], [0.85, 0.27, 0.2, 0.54]], // Verðandi
+  raidho: [[0.15, 0, 0.15, 1], [0.15, 0, 0.85, 0.24], [0.85, 0.24, 0.15, 0.5], [0.15, 0.5, 0.9, 1]], // Ratatoskr, the runestones
+  sowilo: [[0.15, 0, 0.15, 0.62], [0.15, 0.62, 0.85, 0.38], [0.85, 0.38, 0.85, 1]], // Skuld (the long-branch sól, ᛋ)
 } satisfies Record<string, Array<[number, number, number, number]>>;
 
 /** A rune drawn as strokes, centred at (cx, cy), h tall; `aspect` is its width over its height. */

@@ -1,6 +1,7 @@
 import type { FixtureArt, PixelSprite } from '../../../engine';
 import { bake, type Model, type Variant } from './sculpt/kit';
 import { altarModel } from './sculpt/altar';
+import { runestoneModel } from './sculpt/runestone';
 import { portalModel } from './sculpt/portal';
 import { siphonAltarModel, siphonCoreModel } from './sculpt/siphon';
 import { chestModel } from './sculpt/chest';
@@ -16,12 +17,16 @@ const sculpted = <V extends Variant>(model: Model<V>, variant?: V, frames = FIXT
 });
 
 const tyrAltar = sculpted(altarModel, { kind: 'tyr' });
+const barrow = sculpted(altarModel, { kind: 'barrow' });
 const closedChest = sculpted(chestModel, { state: 'closed' }, 1);
+
+/** The six Skaldic Runestones, one per chapter of the saga, in tile order. */
+const RUNESTONES = ['frost', 'smithy', 'dawn', 'lament', 'norns', 'twilight'] as const;
 
 /**
  * The fixtures from the style bible (`FixtureArt`). Altars are keyed by tile type, each god's
- * by its own look (both Týr altars share one); the Siphon Altar and its core had no mark at all.
- * Altars the bible has no drawing for keep the generic mark.
+ * by its own look (both Týr altars share one, as do the three barrows); the Siphon Altar and its
+ * core had no mark at all.
  */
 export const COTW_FIXTURE_ART: FixtureArt = {
   tiles: {
@@ -31,6 +36,13 @@ export const COTW_FIXTURE_ART: FixtureArt = {
     galdr_altar_hel: sculpted(altarModel, { kind: 'hel' }),
     galdr_altar_loki: sculpted(altarModel, { kind: 'loki' }),
     urdr_pool: sculpted(altarModel, { kind: 'urdr' }),
+    verdandi_loom: sculpted(altarModel, { kind: 'verdandi' }),
+    skuld_mirror: sculpted(altarModel, { kind: 'skuld' }),
+    ratatoskr_perch: sculpted(altarModel, { kind: 'ratatoskr' }),
+    duergar_barrow_1: barrow,
+    duergar_barrow_2: barrow,
+    duergar_barrow_3: barrow,
+    ...Object.fromEntries(RUNESTONES.map((kind, i) => [`skaldic_runestone_${i + 1}`, sculpted(runestoneModel, { kind })])),
     gateway_valhalla: sculpted(portalModel, { kind: 'root' }),
     gateway_home: sculpted(portalModel, { kind: 'light' }),
     siphon_altar: sculpted(siphonAltarModel),

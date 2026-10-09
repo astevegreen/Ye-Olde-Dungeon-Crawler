@@ -416,3 +416,44 @@ mat('fix_sip1', '#c4245a', { em: true, hs: 0 });
 mat('fix_sip2', '#b8348a', { em: true, hs: 0 });
 mat('fix_sip3', '#a444c4', { em: true, hs: 0 });
 mat('fix_sip4', '#a868ff', { em: true, hs: 0 });
+
+// ---- shrines (wave 8): the Norns' loom and mirror, Ratatoskr's roost, the duergar barrows, the skaldic runestones
+// Verðandi's loom
+mat('alt_heartwood', '#6e5434', { tex: 'bark', hs: 12 }); // living heartwood boughs
+mat('alt_leaf', '#6c9444', { hs: 12 });
+mat('alt_weave', '#b39a6a', { tex: 'cloth', hs: 10 }); // the woven web
+mat('alt_rot', '#2f2b25', { tex: 'rot', hs: 8 }); // blackened fungal rot
+mat('alt_fungus', '#c7b088', { hs: 10 });
+mat('alt_sap', '#e2a63a', { em: true, hs: 0 }); // golden sap on the warp
+// Skuld's mirror
+mat('alt_obsidian', '#25212e', { shiny: true, hs: 8 }); // volcanic glass (also the Stolen Dawn stone)
+mat('alt_sheen', '#9a96b4', { a: 0.8, hs: 6 }); // a reflection streak on the glass
+mat('alt_frostBone', '#d6d6cc', { hs: 10 }); // dragon ribs, frost-carved
+mat('alt_rime', '#e4f2fa', { shiny: true, tex: 'ice', hs: 4 });
+mat('alt_omenGreen', '#3ccf8c', { em: true, hs: 0 }); // the portent of renewal
+mat('alt_omenRed', '#e44a3a', { em: true, hs: 0 }); // the portent of Ragnarök
+// Ratatoskr's roost
+mat('alt_worldBark', '#5f5749', { tex: 'bark', hs: 10 }); // Yggdrasil's grey bark (also the Norns' runestone)
+mat('alt_hollow', '#1d1510', { hs: 6 });
+mat('alt_moss', '#5e7c3a', { tex: 'fur', hs: 12 });
+mat('alt_squirrel', '#b5562a', { tex: 'fur', hs: 14 }); // rust-red
+mat('alt_squirrelBelly', '#e2c69c', { tex: 'fur', hs: 10 });
+mat('alt_cone', '#7c5734', { tex: 'scale', hs: 12 });
+mat('alt_pebble', '#aaa79e', { shiny: true, hs: 8 });
+mat('alt_riverGlass', '#5aa6c4', { shiny: true, a: 0.92, hs: 8 });
+mat('alt_amber', '#ffb24c', { em: true, hs: 0 }); // the messenger's rune, sap-amber
+// the duergar barrows
+mat('alt_barrowStone', '#78726a', { tex: 'stone', hs: 10 }); // dressed stone
+mat('alt_sealStone', '#5c5852', { tex: 'stone', hs: 10 });
+mat('alt_wight', '#b4f0d0', { em: true, hs: 0 }); // the barrow's rune: wight-light, a warning
+mat('alt_ember', '#ff7a36', { em: true, hs: 0 }); // the Smithy's Accord stone's rune
+// the skaldic runestones: each chapter's stone, and the paint in its carved band
+mat('alt_rimeStone', '#7e8b99', { tex: 'stone', hs: 8 });
+mat('alt_sootStone', '#3c3838', { tex: 'stone', hs: 8 });
+mat('alt_veinStone', '#545862', { tex: 'stone', hs: 8 });
+mat('alt_silverVein', '#d6deea', { shiny: true, hs: 6 });
+mat('alt_mercury', '#c9d2de', { shiny: true, hs: 4 });
+mat('alt_paintRime', '#c2d6e4', { hs: 6 });
+mat('alt_paintOchre', '#8e3a26', { hs: 10 }); // red ochre, as the old stones were painted
+mat('alt_paintViolet', '#5c4c80', { hs: 10 });
+mat('alt_bolt', '#d8b4ff', { em: true, hs: 0 }); // the Twilight stone's lightning

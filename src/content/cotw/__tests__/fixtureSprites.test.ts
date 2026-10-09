@@ -6,11 +6,6 @@ import { COTW_FIXTURE_ART } from '../sprites/fixtureSprites';
 const tiles = cotwManifest.tiles ?? [];
 const art = cotwManifest.fixtureArt ?? {};
 const drawnTiles = art.tiles ?? {};
-/** Marked altars with no drawing yet: new designs, waiting on the owner (wave 8). */
-const UNDRAWN = [
-  'verdandi_loom', 'ratatoskr_perch', 'skuld_mirror', 'duergar_barrow_1', 'duergar_barrow_2', 'duergar_barrow_3',
-  'skaldic_runestone_1', 'skaldic_runestone_2', 'skaldic_runestone_3', 'skaldic_runestone_4', 'skaldic_runestone_5', 'skaldic_runestone_6',
-];
 
 describe('the cotw fixtures', () => {
   it('are the pack’s fixture art, keyed by real tile types', () => {
@@ -19,9 +14,9 @@ describe('the cotw fixtures', () => {
     for (const type of Object.keys(drawnTiles)) expect([type, types.has(type)]).toEqual([type, true]);
   });
 
-  it('draw every portal and altar the bible drew, and the Siphon Altar and core, which had no mark', () => {
+  it('draw every portal and altar, and the Siphon Altar and core, which had no mark', () => {
     const marked = tiles.filter((t) => t.visual === 'portal' || t.visual === 'altar').map((t) => t.type);
-    expect(marked.filter((type) => !(type in drawnTiles)).sort()).toEqual([...UNDRAWN].sort());
+    expect(marked.filter((type) => !(type in drawnTiles))).toEqual([]);
     expect(Object.keys(drawnTiles)).toEqual(expect.arrayContaining(['siphon_altar', 'siphon_core']));
   });
 });
@@ -50,9 +45,12 @@ describe('the cotw fixture sprites draw their own pixels', () => {
     }
   });
 
-  it('give every place, chest state and heap size its own look; the two Týr altars share one', () => {
+  it('give every place, chest state and heap size its own look; the two Týr altars share one, as do the barrows', () => {
     expect(drawnTiles.altar_tyr).toBe(drawnTiles.galdr_altar_tyr);
-    const names = Object.keys(sprites).filter((name) => name !== 'tile galdr_altar_tyr');
+    expect(drawnTiles.duergar_barrow_1).toBe(drawnTiles.duergar_barrow_2);
+    expect(drawnTiles.duergar_barrow_1).toBe(drawnTiles.duergar_barrow_3);
+    // A sprite shared between tiles is one look: compare each drawing once.
+    const names = Object.keys(sprites).filter((name, i, all) => all.findIndex((n) => sprites[n] === sprites[name]) === i);
     for (let i = 0; i < names.length; i++) {
       for (let j = i + 1; j < names.length; j++) {
         expect([names[i], names[j], sameBytes(baked[names[i]][0], baked[names[j]][0])]).toEqual([names[i], names[j], false]);

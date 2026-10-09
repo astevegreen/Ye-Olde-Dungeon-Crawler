@@ -1,9 +1,10 @@
 import { E, K, P, X, Lt, Sh, T, breath, type Prim, type PrimTree, type Variant } from './kit';
 import { block, ell, glint, rune } from './fixture';
+import { SHRINES } from './altar2';
 import './materials';
 
 type Out = PrimTree[number][];
-type AltarKind = 'tyr' | 'odin' | 'hel' | 'loki' | 'urdr';
+type AltarKind = 'tyr' | 'odin' | 'hel' | 'loki' | 'urdr' | keyof typeof SHRINES;
 
 const PI = Math.PI;
 /** Loki's rune never settles: the fix_chaos materials' bases, one per frame. */
@@ -158,12 +159,13 @@ function urdr(f: number): PrimTree {
   return out;
 }
 
-const ALTARS: Record<AltarKind, (f: number) => PrimTree> = { tyr, odin, hel, loki, urdr };
+const ALTARS: Record<AltarKind, (f: number) => PrimTree> = { tyr, odin, hel, loki, urdr, ...SHRINES };
 
 /**
  * The altars, four idle frames. Each god gets a silhouette, not a letter: a sword on Tyr's slab,
- * Odin's ravens, Hel's half-skull, Loki's serpent stone, Urðr's starlit pool. The rune is the one
- * light. An unknown kind draws Tyr's.
+ * Odin's ravens, Hel's half-skull, Loki's serpent stone, Urðr's starlit pool; and the shrines of
+ * altar2.ts: Verðandi's loom, Skuld's mirror, Ratatoskr's roost, a duergar barrow. The rune is the
+ * one light. An unknown kind draws Tyr's.
  */
 export function altarModel(f: number, v: Variant & { kind: AltarKind }): PrimTree {
   return (ALTARS[v.kind] ?? tyr)(f);

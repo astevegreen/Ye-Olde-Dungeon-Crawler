@@ -408,28 +408,35 @@ export function drawHpBar(
   ctx.restore();
 }
 
-/** A creature sensed through walls: four ticks closing on a diamond core, a ping every five idle frames. */
+/**
+ * A creature sensed through walls: a diamond core as wide as a small creature, and four ticks
+ * closing on its sides from the tile's corners, a ping every five idle frames. Seeing one
+ * through a wall is a gameplay cue, so the core keeps the old mark's footprint (18 px at 32).
+ */
 export function drawSensedCreature(ctx: CanvasRenderingContext2D, x: number, y: number, cs: number, t: number, theme: MarkerTheme): void {
   const cx = Math.round(x + cs / 2);
   const cy = Math.round(y + cs / 2);
   const ph = (frameOf(t) % 5) / 5;
-  const rr = cs * (0.42 - 0.16 * ph);
+  const tip = cs * (0.42 - 0.16 * ph);
   const tk = Math.max(2, Math.round(cs * 0.08));
-  const tick = [cx - tk, cy - rr - tk, cx + tk, cy - rr - tk, cx, cy - rr + tk * 0.6];
+  const base = tip + tk * 1.6;
+  const s = Math.SQRT1_2;
+  // The top-left tick, on the diagonal and pointing in; the others are its quarter turns.
+  const tick = [cx - (base + tk) * s, cy - (base - tk) * s, cx - (base - tk) * s, cy - (base + tk) * s, cx - tip * s, cy - tip * s];
   ctx.save();
   ctx.globalAlpha = 0.55 + 0.45 * (1 - ph);
   for (let q = 0; q < 4; q++) keyed(ctx, rot(tick, cx, cy, q), theme.hostile, theme.markerInk);
   ctx.globalAlpha = 1;
-  const d = Math.max(2, Math.round(cs * 0.09));
+  const d = Math.max(2, Math.round(cs * 0.28));
   keyed(ctx, [cx, cy - d, cx + d, cy, cx, cy + d, cx - d, cy], theme.hostile, theme.markerInk);
   ctx.restore();
 }
 
-/** An object sensed through walls: a diamond outline with a dot, breathing over six idle frames. */
+/** An object sensed through walls: a diamond outline with a dot, breathing over six idle frames, as wide as the old mark. */
 export function drawSensedItem(ctx: CanvasRenderingContext2D, x: number, y: number, cs: number, t: number, theme: MarkerTheme): void {
   const cx = Math.round(x + cs / 2);
   const cy = Math.round(y + cs / 2);
-  const d = Math.round(cs * (0.17 + 0.04 * beat(t, 6)));
+  const d = Math.round(cs * (0.27 + 0.04 * beat(t, 6)));
   const w = lineWeight(cs);
   ctx.save();
   ctx.beginPath();
@@ -444,7 +451,7 @@ export function drawSensedItem(ctx: CanvasRenderingContext2D, x: number, y: numb
   ctx.strokeStyle = theme.sensedItem;
   ctx.lineWidth = w;
   ctx.stroke();
-  const pp = Math.max(2, Math.round(cs / 16));
+  const pp = 2 * Math.max(1, Math.round(cs / 20));
   ctx.fillStyle = theme.sensedItem;
   ctx.fillRect(cx - Math.floor(pp / 2), cy - Math.floor(pp / 2), pp, pp);
   ctx.restore();

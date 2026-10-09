@@ -3,7 +3,7 @@ import { CanvasRenderer } from '../canvas-renderer';
 import { IntentOverlay } from '../intentOverlay';
 import { Camera } from '../camera';
 import { IDLE_FRAME_MS } from '../atlas/idle-frames';
-import { drawDangerZone, drawHostileBrackets, drawHpBar } from '../markers/markers';
+import { drawDangerZone, drawHostileBrackets, drawHpBar, drawSensedCreature, drawSensedItem } from '../markers/markers';
 import { resolveThemeTokens } from '../theme';
 import { GameEngine, GameMap, TILES, Player, Monster } from '../../engine';
 
@@ -104,6 +104,36 @@ describe('map markers', () => {
       const { ctx, calls } = recorder();
       drawHpBar(ctx, 0, 0, 32, frac, 'enemy', theme);
       expect(calls).toEqual([]);
+    }
+  });
+
+  it('marks a creature sensed through a wall with a core as wide as the old mark, and ticks that close on it inside its tile', () => {
+    const width = (p: number[][]): number => Math.max(...p.map((q) => q[0])) - Math.min(...p.map((q) => q[0]));
+    for (let frame = 0; frame < 5; frame++) {
+      const { ctx, calls } = recorder();
+      drawSensedCreature(ctx, 0, 0, 32, frame * IDLE_FRAME_MS, theme);
+      const polys = polygons(calls);
+      const core = polys[polys.length - 1];
+      expect(width(core)).toBeGreaterThanOrEqual(18);
+      const d = width(core) / 2;
+      const ticks = polys.slice(0, -1);
+      expect(ticks).toHaveLength(4);
+      for (const [px, py] of ticks.flat()) {
+        expect(px).toBeGreaterThanOrEqual(0);
+        expect(px).toBeLessThanOrEqual(32);
+        expect(py).toBeGreaterThanOrEqual(0);
+        expect(py).toBeLessThanOrEqual(32);
+        expect(Math.abs(px - 16) + Math.abs(py - 16)).toBeGreaterThan(d + 1);
+      }
+    }
+  });
+
+  it('marks an object sensed through a wall with a diamond as wide as the old mark at every breath', () => {
+    for (let frame = 0; frame < 6; frame++) {
+      const { ctx, calls } = recorder();
+      drawSensedItem(ctx, 0, 0, 32, frame * IDLE_FRAME_MS, theme);
+      const outline = polygons(calls)[0];
+      expect(Math.max(...outline.map((q) => q[0])) - Math.min(...outline.map((q) => q[0]))).toBeGreaterThanOrEqual(18);
     }
   });
 });

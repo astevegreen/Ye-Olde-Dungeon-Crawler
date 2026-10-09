@@ -48,6 +48,8 @@ export interface ThemeTokens {
   warn?: string;
   bad?: string;
   info?: string;
+  /** The hero's side on the map: the brackets on a companion. Never the same color as `accent`. */
+  ally?: string;
 
   // Resources.
   health?: string;

@@ -28,6 +28,7 @@ export const DEFAULT_THEME_TOKENS: Required<ThemeTokens> = {
   warn: '#fbbf24',
   bad: '#f87171',
   info: '#38bdf8',
+  ally: '#f2c14e',
 
   health: '#ef4444',
   mana: '#0ea5e9',
@@ -136,6 +137,7 @@ function buildThemeTokens(t: Partial<ThemeTokens>): Required<ThemeTokens> {
     warn: t.warn ?? D.warn,
     bad: t.bad ?? D.bad,
     info: t.info ?? D.info,
+    ally: t.ally ?? D.ally,
     health,
     mana,
     xp: t.xp ?? D.xp,

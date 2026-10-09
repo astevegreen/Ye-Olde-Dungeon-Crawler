@@ -10,6 +10,7 @@ export { COTW_TILE_SPRITES, COTW_MONSTER_SPRITES, COTW_ITEM_SPRITES, COTW_TERRAI
 export { COTW_HERO_SPRITE } from './heroLook';
 export { COTW_BOSS_SPRITES } from './bossSprites';
 export { COTW_FAMILY_SPRITES } from './familySprites';
+export { COTW_COMPANION_SPRITES, COTW_TOWNSFOLK_SPRITES } from './allySprites';
 
 /**
  * Full CotW procedural sprite recipe set.
@@ -25,6 +26,4 @@ export const COTW_SPRITE_RECIPES: Record<string, SpriteRecipe> = {
   ...COTW_TERRAIN_SPRITES,
   ...COTW_UI_ICONS,
   ...COTW_SPELL_RUNES,
-  // Ivalda (ironClans.ts), the living duergar smith, wears the dwarf art by her NPC id.
-  'npc-ivalda': COTW_MONSTER_SPRITES.dwarf,
 };

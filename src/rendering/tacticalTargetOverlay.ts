@@ -61,7 +61,12 @@ export class TacticalTargetOverlay {
     const monster = t && this.hoveredMonster(engine, t);
     if (!t || !monster) return;
     const theme = resolveThemeTokens(themeTokens);
-    this.renderTargetBrackets(ctx, camera, t.x, t.y, cellSize, offsetX, offsetY, isAlly(monster) ? theme.good : theme.accent);
+    if (isAlly(monster)) {
+      const screen = camera.worldToScreen(t.x, t.y, cellSize, offsetX, offsetY);
+      if (screen) renderAllyBrackets(ctx, screen.x, screen.y, cellSize, theme.ally, theme.surface3);
+      return;
+    }
+    this.renderTargetBrackets(ctx, camera, t.x, t.y, cellSize, offsetX, offsetY, theme.accent);
   }
 
   /** The monster's target card, docked top-right, or a label above a pile, door or stairs. */
@@ -135,6 +140,35 @@ export class TacticalTargetOverlay {
 
     ctx.restore();
   }
+}
+
+/**
+ * An ally's brackets: four rounded corners in the ally color over a dark keyline, with no
+ * motion, so a companion reads as calm and never as a target (whose corners are square).
+ */
+function renderAllyBrackets(ctx: CanvasRenderingContext2D, x: number, y: number, cs: number, color: string, ink: string): void {
+  const w = Math.max(1, Math.round(1 + cs / 32));
+  const r = Math.round(cs * 0.24);
+  const i = w / 2 + 1;
+  const corners: ReadonlyArray<readonly [number, number, number]> = [
+    [x + i + r, y + i + r, Math.PI],
+    [x + cs - i - r, y + i + r, Math.PI * 1.5],
+    [x + cs - i - r, y + cs - i - r, 0],
+    [x + i + r, y + cs - i - r, Math.PI * 0.5],
+  ];
+  ctx.save();
+  ctx.lineCap = 'round';
+  for (const pass of [0, 1]) {
+    ctx.strokeStyle = pass ? color : ink;
+    ctx.globalAlpha = pass ? 1 : 0.8;
+    ctx.lineWidth = pass ? w : w + 2;
+    for (const [ax, ay, a] of corners) {
+      ctx.beginPath();
+      ctx.arc(ax, ay, r, a, a + Math.PI / 2);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
 }
 
 /** On the hero's side: the companion, or anything else of the player's faction. */

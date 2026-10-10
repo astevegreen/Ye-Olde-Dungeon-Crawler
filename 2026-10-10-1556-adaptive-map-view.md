@@ -33,3 +33,4 @@ Nearly every player sees more map, not only wide screens: 1366×768 goes from 30
 
 ## Verification
 - not run (planning only, no code changed)
+Resumed: 2026-10-10 16:34 UTC

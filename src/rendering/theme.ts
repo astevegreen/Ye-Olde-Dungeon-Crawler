@@ -316,7 +316,7 @@ export function setCanvasTextScale(cssPerVirtualPx: number): void {
 /**
  * A canvas font string whose text renders at the role's size in CSS pixels, times the UI
  * scale, whatever the window size, so canvas text matches DOM text and never drops under the 11px floor.
- * Canvas draws in the 960×600 virtual space, which the viewport scales to the window.
+ * Canvas draws in a virtual space of at least 960×600 (viewport.ts), scaled to the window.
  */
 export function uiFont(
   role: UiTextRole,

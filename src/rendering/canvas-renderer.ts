@@ -169,9 +169,12 @@ export class CanvasRenderer {
     });
     this.portraits = new PortraitStore(this.engine.manifest?.portraits);
     setIconAtlas(this.atlas);
+    // 30x18¾ tiles at the least; a wider or taller window shows up to 48 columns or 30 rows.
     this.viewport = new ViewportManager(this.canvas, this.ctx, {
       virtualWidth: 960,
       virtualHeight: 600,
+      maxVirtualWidth: 48 * 32,
+      maxVirtualHeight: 30 * 32,
     });
     this.fxRunner = new CanvasFXRunner({ onFrame: () => this.render(), art: () => this.engine.manifest?.spellFx });
     this.targetingOverlay = new TargetingOverlay(() => this.render());
@@ -448,30 +451,32 @@ export class CanvasRenderer {
 
   public resize(): void {
     this.viewport.recalculate();
+    this.render();
+  }
 
+  /**
+   * Lays the tile grid over the virtual canvas, whose size follows the window: as many
+   * tiles as cover it, the edge ones cut by the canvas edge, in an odd count so the
+   * hero's tile sits at the centre; never more than the floor has, so a small floor is
+   * centred whole. Run each frame, so a floor change re-lays it too.
+   */
+  private layoutGrid(): void {
     const availW = this.viewport.virtualWidth;
     const availH = this.viewport.virtualHeight - this.topBarHeight;
+    const cover = (px: number) => 2 * Math.ceil((px / this.cellSize - 1) / 2) + 1;
+    const cols = Math.min(this.engine.map.width, cover(availW));
+    const rows = Math.min(this.engine.map.height, cover(availH));
 
-    // Fixed tile grid inside 960x600 virtual resolution
-    const targetCols = Math.min(this.engine.map.width, 30);
-    const targetRows = Math.min(this.engine.map.height, 18);
-
-    this.camera.viewWidthTiles = targetCols;
-    this.camera.viewHeightTiles = targetRows;
-    this.cellSize = 32;
-
-    const boardWidth = targetCols * this.cellSize;
-    const boardHeight = targetRows * this.cellSize;
-
-    this.offsetX = Math.floor((availW - boardWidth) / 2);
-    this.offsetY = this.topBarHeight + Math.floor((availH - boardHeight) / 2);
-
-    this.render();
+    this.camera.viewWidthTiles = cols;
+    this.camera.viewHeightTiles = rows;
+    this.offsetX = Math.floor((availW - cols * this.cellSize) / 2);
+    this.offsetY = this.topBarHeight + Math.floor((availH - rows * this.cellSize) / 2);
   }
 
   public render(): void {
     // Re-apply viewport context transform so High-DPI scaling is active
     this.viewport.applyContextTransform();
+    this.layoutGrid();
     this.drawNow = Date.now();
     this.idleShown = false;
 

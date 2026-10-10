@@ -199,6 +199,15 @@ describe('Responsive High-DPI ViewportManager', () => {
     delete (globalThis as any).window;
   });
 
+  it('keeps a fixed virtual size, letterboxed, when no maximum is given', () => {
+    const { canvas, dummyCtx } = createMockCanvas();
+    const vp = new ViewportManager(canvas, dummyCtx, { virtualWidth: 960, virtualHeight: 600 });
+    vp.recalculate(2400, 750);
+    expect(vp.virtualWidth).toBe(960);
+    expect(vp.virtualHeight).toBe(600);
+    expect(vp.displayWidth).toBe(1200);
+  });
+
   it('clamps to maxScale on very large displays instead of growing unbounded', () => {
     const { canvas, dummyCtx } = createMockCanvas();
     const vp = new ViewportManager(canvas, dummyCtx, {
@@ -213,5 +222,119 @@ describe('Responsive High-DPI ViewportManager', () => {
     expect(vp.scale).toBe(2);
     expect(vp.displayWidth).toBe(1920);
     expect(vp.displayHeight).toBe(1200);
+  });
+});
+
+// The map view's sizing: 30x18¾ tiles at the least, up to 48 columns or 30 rows.
+describe('ViewportManager adaptive virtual size', () => {
+  const adaptive = { virtualWidth: 960, virtualHeight: 600, maxVirtualWidth: 48 * 32, maxVirtualHeight: 30 * 32 };
+
+  it('draws wider on a wide room instead of leaving side strips', () => {
+    const { canvas, dummyCtx } = createMockCanvas();
+    const vp = new ViewportManager(canvas, dummyCtx, adaptive);
+
+    // 1366x768 less the sidebar and the HUD bars: ~40 columns, the room's full width.
+    vp.recalculate(1102, 509);
+    expect(vp.virtualHeight).toBe(600);
+    expect(vp.virtualWidth).toBe(1299); // floor(600 * 1102 / 509)
+    expect(vp.displayWidth).toBeGreaterThanOrEqual(1101);
+    expect(vp.displayWidth).toBeLessThanOrEqual(1102);
+    expect(vp.displayHeight).toBeGreaterThanOrEqual(508);
+    expect(vp.displayHeight).toBeLessThanOrEqual(509);
+
+    // 1920x1080: the floored virtual width leaves under one virtual pixel (1.8px) unfilled.
+    vp.recalculate(1920, 1080);
+    expect(vp.virtualWidth).toBe(1066);
+    expect(vp.scale).toBeCloseTo(1.8, 6);
+    expect(vp.displayWidth).toBe(1918);
+    expect(vp.displayHeight).toBe(1080);
+  });
+
+  it('stops widening at 48 columns, letterboxing past it', () => {
+    const { canvas, dummyCtx } = createMockCanvas();
+    const vp = new ViewportManager(canvas, dummyCtx, adaptive);
+
+    vp.recalculate(2400, 750);
+    expect(vp.virtualWidth).toBe(1536);
+    expect(vp.virtualHeight).toBe(600);
+    expect(vp.scale).toBe(1.25);
+    expect(vp.displayWidth).toBe(1920);
+    expect(vp.displayHeight).toBe(750);
+  });
+
+  it('draws taller on a tall room, up to 30 rows', () => {
+    const { canvas, dummyCtx } = createMockCanvas();
+    const vp = new ViewportManager(canvas, dummyCtx, adaptive);
+
+    vp.recalculate(1100, 800);
+    expect(vp.virtualWidth).toBe(960);
+    expect(vp.virtualHeight).toBe(698); // floor(960 * 800 / 1100)
+    expect(vp.displayWidth).toBeGreaterThanOrEqual(1099);
+    expect(vp.displayWidth).toBeLessThanOrEqual(1100);
+    expect(vp.displayHeight).toBeGreaterThanOrEqual(798);
+    expect(vp.displayHeight).toBeLessThanOrEqual(800);
+
+    // A portrait room passes the cap: the canvas fills the width and is letterboxed top and bottom.
+    vp.recalculate(900, 1400);
+    expect(vp.virtualHeight).toBe(960);
+    expect(vp.scale).toBe(0.9375);
+    expect(vp.displayWidth).toBe(900);
+    expect(vp.displayHeight).toBe(900);
+  });
+
+  it('keeps the minimum size on a room of exactly its shape', () => {
+    const { canvas, dummyCtx } = createMockCanvas();
+    const vp = new ViewportManager(canvas, dummyCtx, adaptive);
+    vp.recalculate(1920, 1200);
+    expect(vp.virtualWidth).toBe(960);
+    expect(vp.virtualHeight).toBe(600);
+    expect(vp.scale).toBe(2);
+  });
+
+  it('keeps #game-container 1024px wide only while the capped canvas is narrower', () => {
+    const { canvas, dummyCtx } = createMockCanvas();
+    const mockContainer = { style: { width: '' } };
+    (globalThis as any).document = {
+      getElementById: (id: string) => (id === 'game-container' ? mockContainer : null),
+    };
+
+    const vp = new ViewportManager(canvas, dummyCtx, adaptive);
+    // A short, very wide room: the canvas stops at 48 columns, 768px wide.
+    vp.recalculate(2400, 300);
+    expect(vp.displayWidth).toBe(768);
+    expect(mockContainer.style.width).toBe('1024px');
+
+    // Below the cap the canvas fills the room, and the column is the canvas.
+    vp.recalculate(1102, 509);
+    expect(mockContainer.style.width).toBe(`${vp.displayWidth}px`);
+
+    delete (globalThis as any).document;
+  });
+
+  it('tells resize listeners when the device pixel ratio changes', () => {
+    const { canvas, dummyCtx } = createMockCanvas();
+    let dprChange: (() => void) | undefined;
+    (globalThis as any).window = {
+      devicePixelRatio: 1,
+      innerWidth: 1600,
+      innerHeight: 1000,
+      matchMedia: () => ({ addEventListener: (_type: string, handler: () => void) => (dprChange = handler) }),
+    };
+
+    const vp = new ViewportManager(canvas, dummyCtx, adaptive);
+    const listener = vi.fn();
+    vp.addResizeListener(listener);
+
+    // Moving the window to a 2x monitor halves its CSS size: the virtual size changes, so
+    // the renderer must re-lay its grid, not only re-fit the canvas.
+    (globalThis as any).window.devicePixelRatio = 2;
+    (globalThis as any).window.innerWidth = 1600;
+    (globalThis as any).window.innerHeight = 700;
+    dprChange?.();
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(vp.dpr).toBe(2);
+    expect(vp.virtualWidth).toBe(1371); // floor(600 * 1600 / 700)
+
+    delete (globalThis as any).window;
   });
 });

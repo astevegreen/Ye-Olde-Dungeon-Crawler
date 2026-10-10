@@ -48,9 +48,9 @@
 #game-container {
   width: 100%;
   /* No max-width: `ViewportManager` (rendering/viewport.ts) owns the ceiling through its
-     `maxScale` clamp and sets this element's width inline on every recalculation. A CSS
-     cap fights it: 960px clipped the header and footer bars, and 2400px let the canvas
-     run out of the column and under the sidebar above ~2700px wide. */
+     48-column cap and `maxScale` clamp, and sets this element's width inline on every
+     recalculation. A CSS cap fights it: 960px clipped the header and footer bars, and
+     2400px let the canvas run out of the column and under the sidebar above ~2700px wide. */
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -60,14 +60,14 @@
   z-index: 15;
   box-shadow: 0 0 32px rgba(0, 0, 0, 0.9);
   /* Query container for `.hud-word`/`.hud-key` collapse below — this element's width
-     tracks the letterboxed canvas (via ViewportManager), not the browser window, so a
-     viewport-relative @media query would miss a narrow-but-tall window where the
-     letterboxed area is much narrower than the window itself. */
+     tracks the map canvas (via ViewportManager), not the browser window, so a
+     viewport-relative @media query would miss a window where the map column is much
+     narrower than the window itself (the sidebar beside it, or a capped canvas). */
   container: game / inline-size;
 }
 
-/* The column can be wider than the letterboxed canvas (see viewport.ts); the canvas
-   sits centred in it. */
+/* The column can be wider than a capped canvas (see viewport.ts); the canvas sits
+   centred in it. */
 #game-container > #game-canvas {
   align-self: center;
 }
@@ -95,7 +95,7 @@
   flex-wrap: nowrap;
   min-width: 0;
   /* Icon-only mode still won't fit every button at extreme widths (a handful of
-     phone-narrow letterboxed sessions) — scroll horizontally rather than clip a
+     phone-narrow sessions) — scroll horizontally rather than clip a
      button invisibly. Never triggers at normal desktop widths. */
   overflow-x: auto;
   scrollbar-width: none;
@@ -119,7 +119,7 @@
 
 /* Below this width, drop the descriptive word and keep icon + key only — the
    full label always survives in the button's `title` tooltip. Sized against
-   `#game-container` (the letterboxed canvas width), not the browser viewport —
+   `#game-container` (the map column's width), not the browser viewport —
    see its `container-type: inline-size` above. */
 @container game (max-width: 720px) {
   #game-header-bar .hud-word {
@@ -982,11 +982,14 @@
 #game-bottom-bar .hud-btn-group {
   width: 100%;
   gap: 4px;
+  justify-content: center;
 }
-/* Actions share the bar evenly, so the row reads as one control strip. */
+/* Actions share the bar evenly, so the row reads as one control strip; past a laptop's
+   width they stop growing and the strip sits centred, since the column follows the map. */
 #game-bottom-bar .hud-btn {
   flex: 1 1 0;
   min-width: 0;
+  max-width: 112px;
   justify-content: center;
   padding: 4px 4px;
 }

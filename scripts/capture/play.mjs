@@ -17,7 +17,18 @@ export function outDir(name) {
   return dir;
 }
 
-export const SIZES = { 1440: [1440, 900], 1366: [1366, 768], 1920: [1920, 1080] };
+// The map view widens with the window up to 48 columns and grows taller up to 30 rows:
+// 2000 and 2560 are wide windows (2560 past the cap), 5x4 and portrait tall ones.
+export const SIZES = {
+  1280: [1280, 720],
+  1366: [1366, 768],
+  1440: [1440, 900],
+  1920: [1920, 1080],
+  2000: [2000, 990],
+  2560: [2560, 1080],
+  '5x4': [1280, 1024],
+  portrait: [1200, 1600],
+};
 
 // Holds Date.now still from page load until startRun has created the hero: the title
 // screen seeds its stat roll from the clock, so a pinned clock rolls the same hero every

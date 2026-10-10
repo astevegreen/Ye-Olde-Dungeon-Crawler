@@ -1,8 +1,16 @@
 import { setCanvasTextScale } from './theme';
 
 export interface ViewportConfig {
+  /** The smallest virtual size: the canvas never draws fewer virtual pixels than this. */
   virtualWidth?: number;
   virtualHeight?: number;
+  /**
+   * How far the virtual size may grow to match the window's shape, so a window wider
+   * or taller than the minimum's aspect draws more of the world instead of leaving
+   * empty strips. Defaults to the minimum: a fixed virtual size, letterboxed.
+   */
+  maxVirtualWidth?: number;
+  maxVirtualHeight?: number;
   integerScale?: boolean;
   minScale?: number;
   maxScale?: number;
@@ -10,7 +18,7 @@ export interface ViewportConfig {
 
 /**
  * DOM ids of every bar mounted around the canvas whose real rendered height must be
- * subtracted from the available space before letterboxing the canvas. Missing an
+ * subtracted from the available space before fitting the canvas. Missing an
  * entry here is exactly the bug this list exists to prevent: the canvas gets sized
  * as if that bar weren't there, so the actual stack (this bar + canvas + everything
  * else) overflows the viewport and `body { overflow: hidden }` clips it silently.
@@ -28,14 +36,23 @@ const SIDE_COLUMN_IDS = ['combat-sidebar'] as const;
 
 /**
  * The narrowest the map column gets when the window allows it, whatever the canvas's
- * letterboxed width: the width at which the action console shows its context button,
- * tray and objective without cutting their text (checked at 1366x768).
+ * width: the width at which the action console shows its context button, tray and
+ * objective without cutting their text (checked at 1366x768). The canvas fills the
+ * column's width except when its virtual size is capped (a short, very wide window).
  */
 const MIN_COLUMN_WIDTH = 1024;
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
 export class ViewportManager {
-  public readonly virtualWidth: number;
-  public readonly virtualHeight: number;
+  private readonly minVirtualWidth: number;
+  private readonly minVirtualHeight: number;
+  private readonly maxVirtualWidth: number;
+  private readonly maxVirtualHeight: number;
+  private currentVirtualWidth: number;
+  private currentVirtualHeight: number;
   public readonly integerScale: boolean;
   public readonly minScale: number;
   public readonly maxScale: number;
@@ -55,6 +72,15 @@ export class ViewportManager {
 
   public get canvasElement(): HTMLCanvasElement {
     return this.canvas;
+  }
+
+  /** The width the canvas draws in, in virtual pixels; it changes with the window's shape. */
+  public get virtualWidth(): number {
+    return this.currentVirtualWidth;
+  }
+
+  public get virtualHeight(): number {
+    return this.currentVirtualHeight;
   }
 
   public addResizeListener(callback: () => void): () => void {
@@ -84,8 +110,12 @@ export class ViewportManager {
   constructor(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, config: ViewportConfig = {}) {
     this.canvas = canvas;
     this.ctx = ctx;
-    this.virtualWidth = config.virtualWidth ?? 960;
-    this.virtualHeight = config.virtualHeight ?? 600;
+    this.minVirtualWidth = config.virtualWidth ?? 960;
+    this.minVirtualHeight = config.virtualHeight ?? 600;
+    this.maxVirtualWidth = Math.max(this.minVirtualWidth, config.maxVirtualWidth ?? this.minVirtualWidth);
+    this.maxVirtualHeight = Math.max(this.minVirtualHeight, config.maxVirtualHeight ?? this.minVirtualHeight);
+    this.currentVirtualWidth = this.minVirtualWidth;
+    this.currentVirtualHeight = this.minVirtualHeight;
     this.integerScale = config.integerScale ?? false;
     this.minScale = config.minScale ?? 0.25;
     this.maxScale = config.maxScale ?? 4;
@@ -137,6 +167,7 @@ export class ViewportManager {
     const mq = window.matchMedia(mqString);
     const handler = () => {
       this.recalculate();
+      this.notifyResize();
       this.watchDpr();
     };
     if (typeof mq.addEventListener === 'function') {
@@ -145,7 +176,7 @@ export class ViewportManager {
   }
 
   /**
-   * Recalculates canvas display dimensions, DPR backing buffer, and letterboxing.
+   * Recalculates the virtual size, canvas display dimensions and DPR backing buffer.
    * Can accept explicit available width and height (e.g. for testing in Node/JSDOM).
    */
   public recalculate(explicitAvailW?: number, explicitAvailH?: number): void {
@@ -199,15 +230,34 @@ export class ViewportManager {
           }
         }
       } else {
-        availW = this.virtualWidth;
-        availH = this.virtualHeight;
+        availW = this.minVirtualWidth;
+        availH = this.minVirtualHeight;
       }
     }
 
     const targetW = Math.max(1, availW);
     const targetH = Math.max(1, availH);
 
-    // Compute aspect-fit scale
+    // Match the virtual size to the room's shape: a wider room keeps the minimum height
+    // and draws wider, a taller one keeps the minimum width and draws taller, each up to
+    // its cap. Floored, so the aspect fit below lands within a pixel of the room.
+    if (targetW * this.minVirtualHeight >= targetH * this.minVirtualWidth) {
+      this.currentVirtualHeight = this.minVirtualHeight;
+      this.currentVirtualWidth = clamp(
+        Math.floor((this.minVirtualHeight * targetW) / targetH),
+        this.minVirtualWidth,
+        this.maxVirtualWidth
+      );
+    } else {
+      this.currentVirtualWidth = this.minVirtualWidth;
+      this.currentVirtualHeight = clamp(
+        Math.floor((this.minVirtualWidth * targetH) / targetW),
+        this.minVirtualHeight,
+        this.maxVirtualHeight
+      );
+    }
+
+    // Aspect-fit what's left after the cap: letterboxed only past it.
     let scale = Math.min(targetW / this.virtualWidth, targetH / this.virtualHeight);
 
     // Integer scaling if preferred and screen is large enough
@@ -223,14 +273,14 @@ export class ViewportManager {
     this.displayWidth = Math.floor(this.virtualWidth * this.scale);
     this.displayHeight = Math.floor(this.virtualHeight * this.scale);
 
-    // Set CSS display style (letterboxed in viewport)
+    // Set CSS display style
     this.canvas.style.width = `${this.displayWidth}px`;
     this.canvas.style.height = `${this.displayHeight}px`;
 
     // The map column (header, canvas, console, log) is as wide as the canvas, but never
-    // narrower than MIN_COLUMN_WIDTH while the window has the room: on a short window the
-    // letterboxed canvas is narrow, and the console's text needs the width the side
-    // margins would otherwise waste. The canvas is centred in the wider column.
+    // narrower than MIN_COLUMN_WIDTH while the window has the room: on a short window
+    // whose canvas is capped, it is narrow, and the console's text needs the width the
+    // side margins would otherwise waste. The canvas is centred in the wider column.
     if (typeof document !== 'undefined' && typeof document.getElementById === 'function') {
       const container = document.getElementById('game-container');
       if (container) {

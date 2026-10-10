@@ -7,13 +7,15 @@
 #
 #   sh notes.sh publish <file>   add or replace the note (by file name) and push
 #   sh notes.sh list             unresumed notes, newest first, with their header line
-#   sh notes.sh get <name>       copy a note to .prompts/handoffs/<name>
-#   sh notes.sh mark <name>      append a Resumed: line to that copy and publish it
+#   sh notes.sh claim <name>     copy a note to .prompts/handoffs/<name>, append a
+#                                Resumed: line and publish it; exit 3 when another
+#                                session claimed it first
 set -eu
 
 BRANCH=handoffs
 REF=refs/remotes/origin/$BRANCH
 LOCAL=.prompts/handoffs
+guard=
 
 cd "$(git rev-parse --show-toplevel)"
 
@@ -35,6 +37,11 @@ publish() {
   while :; do
     fetch || true
     parent=$(tip)
+    # Checked on every try, so a claim that lost the push race sees the winner's line.
+    if [ -n "$guard" ] && [ -n "$parent" ] && git show "$parent:$name" 2>/dev/null | grep -q '^Resumed:'; then
+      echo "notes.sh: $name is already claimed by another session" >&2
+      exit 3
+    fi
     rm -f "$idx"
     if [ -n "$parent" ]; then
       GIT_INDEX_FILE=$idx git read-tree "$parent"
@@ -77,23 +84,19 @@ list() {
   [ "$open" -gt 0 ] || echo "no unresumed notes on origin/$BRANCH"
 }
 
-get() {
+claim() {
   fetch || true
   mkdir -p "$LOCAL"
   git show "$REF:$1" > "$LOCAL/$1"
-  echo "$LOCAL/$1"
-}
-
-mark() {
-  [ -f "$LOCAL/$1" ] || get "$1" > /dev/null
   printf 'Resumed: %s\n' "$(date -u '+%Y-%m-%d %H:%M UTC')" >> "$LOCAL/$1"
+  guard=1
   publish "$LOCAL/$1"
+  echo "$LOCAL/$1"
 }
 
 case "${1:-}" in
   publish) publish "$2" ;;
   list) list ;;
-  get) get "$2" ;;
-  mark) mark "$2" ;;
-  *) echo "usage: sh notes.sh publish <file> | list | get <name> | mark <name>" >&2; exit 2 ;;
+  claim) claim "$2" ;;
+  *) echo "usage: sh notes.sh publish <file> | list | claim <name>" >&2; exit 2 ;;
 esac

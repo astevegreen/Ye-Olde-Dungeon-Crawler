@@ -21,6 +21,7 @@ Owner: "There should only be two companion options, determined by player choice 
 8. `npm run gates`, then `visual-check` of Ranvild's shop (`scripts/capture/menus.mjs 1366 shop`). Commit with `Requested:` quoting the Goal, then push.
 
 ## Decisions
+- Ranvild's new lines as proposed under Decide first — owner: "Ranvild's new lines approved"
 - Ranvild stays a woman (`prologue.ts:123` says "her"): owner: "A woman: keep her".
 - Services kept: owner: "Revive a fallen companion", "Teach it new tricks". Bonding a battle-hound and retraining instincts go.
 - Old saves holding a battle-hound: owner: "Don't care". `serializer.ts:431-445` falls back on an unknown id (the companion keeps its saved stats and has no registry entry). That is fine as it stands; add no migration.
@@ -35,3 +36,4 @@ Owner: "There should only be two companion options, determined by player choice 
 ## Verification
 - `npm run gates`: green on fb444b2's tree (lint, 2855 tests, sim, schema, build, 32 Chromium).
 - Pre-push: green (88 Playwright in three browsers); pushed a282cc1..fb444b2.
+Resumed: 2026-10-10 13:19 UTC

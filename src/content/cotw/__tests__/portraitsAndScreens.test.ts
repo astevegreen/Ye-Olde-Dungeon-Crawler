@@ -15,7 +15,7 @@ const CREATURES = [
   'root_bound_berserker', 'ironwood_troll_wife', 'malice_weaver', 'hel_warden',
 ];
 // Wave 9c: every townsperson who greets (Ivalda at her anvil in Gunther's armory), and the Oath's two
-// companions; the battle-hound bought from Ranvild has none (owner, 10 Oct).
+// companions, the only ones (owner, 10 Oct).
 const TOWNSFOLK = [
   'npc-sage', 'npc-olaf', 'npc-gunther', 'npc-astrid', 'npc-priest',
   'npc-banker', 'npc-guard', 'npc-trainer', 'npc-rune-smith', 'npc-ivalda',

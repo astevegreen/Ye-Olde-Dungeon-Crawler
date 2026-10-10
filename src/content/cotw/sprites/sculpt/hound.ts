@@ -5,58 +5,6 @@ import './materials';
 
 type Out = PrimTree[number][];
 
-/** Fenrir-kin Battle-Hound: a big grey-black war-hound under the biggest pack. */
-function battle(f: number, b: number, w: number, flick: number): Out {
-  const C = 'ally_furWar';
-  const D = 'ally_furWarDark';
-  const L = 'ally_furWarPale';
-  const ink = { ink: -0.16 };
-  const out: Out = [Sh(16.2, 28.6, 11.4, 2.3)];
-  out.push(
-    // tail: a sabre curve held high, wagging
-    K(6.4, 14.2, 3.8, 11.0, 1.6, 1.35, C), K(3.8, 11.0, 3.4 + w * 0.6, 7.4, 1.35, 1.0, C), K(3.4 + w * 0.6, 7.4, 4.2 + w * 1.2, 5.0, 1.0, 0.45, D),
-    // far legs
-    K(11.8, 19.2, 10.6, 24.2, 1.6, 1.1, D, ink), K(10.6, 24.2, 11.4, 27.4, 1.05, 0.9, D, ink), E(12.2, 27.7, 1.6, 0.8, D, ink),
-    K(22.2, 19.0, 22.6, 27.3, 1.6, 1.1, D, ink), E(23.4, 27.6, 1.6, 0.8, D, ink),
-    // body: deep chest, tucked belly, pale chest
-    E(8.8, 15.8, 4.1, 4.3, C), E(14.6, 15.6, 7.0, 3.9, C), E(20.4, 16.8 - b * 0.15, 4.3, 5.4 + b * 0.3, C),
-    E(22.8, 18.2, 2.0, 3.6, L, { occ: false }),
-    // near hind leg
-    E(9.8, 18.0, 3.5, 4.2, C, { a: 0.3 }),
-    K(10.6, 21.0, 8.4, 24.8, 1.8, 1.15, C), K(8.4, 24.8, 9.2, 27.9, 1.1, 1.0, D), E(10.0, 28.2, 1.85, 0.9, D),
-    // near front leg
-    K(20.2, 19.0, 20.4, 25.0, 1.95, 1.3, C), K(20.4, 25.0, 20.8, 27.6, 1.3, 1.2, D), E(21.5, 28.2, 1.9, 0.9, D),
-  );
-  // the biggest pack: saddlebag on the flank, bedroll on top, studded girth
-  out.push(
-    P([10.8, 12.4, 16.4, 12.4, 16.7, 17.6, 15.6, 18.8, 11.8, 18.8, 10.6, 17.6], 'leather', { bv: 1.0 }),
-    P([10.6, 12.2, 16.6, 12.2, 16.4, 14.6, 13.6, 15.4, 10.8, 14.6], 'leatherDark', { bv: 0.6 }),
-    X(13.1, 14.4, 1.0, 1.2, 'bronze:4'),
-    K(9.6, 10.8, 16.4, 10.8, 2.0, 2.0, 'woolBrown'), E(16.4, 10.8, 1.1, 2.0, 'linen', { fl: 0.5 }),
-    K(11.8, 8.7, 11.8, 12.8, 0.5, 0.5, 'leatherDark'), K(14.8, 8.7, 14.8, 12.8, 0.5, 0.5, 'leatherDark'),
-    K(17.4, 11.6, 18.4, 21.4, 1.0, 1.0, 'ally_collar'), K(18.0, 12.8, 21.4, 13.6, 0.75, 0.75, 'ally_collar'),
-  );
-  for (const y of [14.2, 16.6, 19.0]) out.push(X(17.5 + (y - 12) * 0.1, y, 0.75, 0.75, 'steel:5'));
-  out.push(
-    // neck and head
-    K(20.4, 15.0, 23.2, 10.4, 3.8, 2.8, C),
-    P([24.6, 7.4, 26.4, 3.0, 27.0, 7.0], D), // far ear
-    E(24.4, 9.4, 3.3, 3.0, C),
-    K(26.0, 10.2, 29.6, 11.0, 2.0, 1.35, L), K(25.6, 11.8, 28.8, 12.0, 1.2, 0.8, C),
-    X(26.6, 11.55, 2.6, 0.4, 'ally_nose:1'),
-    E(29.7, 10.4, 0.95, 0.85, 'ally_nose'),
-    K(26.3, 9.2, 27.7, 12.0, 0.34, 0.34, 'ally_scar', { occ: false }), K(27.7, 9.6, 28.5, 11.0, 0.3, 0.3, 'ally_scar', { occ: false }),
-    P([22.0, 7.8, 22.9 - flick, 3.0 + flick * 0.7, 24.7, 7.0], D, { bv: 0.5 }), // near ear
-    X(22.6, 5.8 + flick * 0.5, 0.6, 1.4, 'ally_furWarPale:2'),
-    calmEye(25.2, 8.4),
-    // collar and kin-tag
-    K(19.8, 11.2, 24.0, 14.2, 0.9, 0.9, 'ally_collar'),
-    X(20.7, 11.6, 0.7, 0.7, 'steel:5'), X(22.3, 12.7, 0.7, 0.7, 'steel:5'),
-    kinTag(24.2, 14.4, f),
-  );
-  return out;
-}
-
 /**
  * Frost-Ward Hound: broad and heavy, a thick white-blue coat, the plume tail curled over the
  * back, an iron chest-plate on the harness, frost on its breath.
@@ -177,16 +125,13 @@ function ember(f: number, b: number, w: number, flick: number): Out {
 }
 
 /**
- * The companion hounds, facing the way the hero faces. Kinds: `battle` (the Fenrir-kin
- * Battle-Hound under its pack), `frost` (the Frost-Ward Hound, plume tail and chest-plate) and
- * `ember` (the Ember-Fang Wolf, its mane tip burning). Enemy wolves snarl head-down with raised
- * hackles; these never do.
+ * The companion hounds, facing the way the hero faces. Kinds: `frost` (the Frost-Ward Hound,
+ * plume tail and chest-plate) and `ember` (the Ember-Fang Wolf, its mane tip burning). Enemy
+ * wolves snarl head-down with raised hackles; these never do.
  */
 export function houndModel(f: number, v: FamilyVariant): PrimTree {
   const b = breath(f);
   const w = sway(f);
   const flick = f === 2 ? 1 : 0; // the near ear flicks back on one frame
-  if (v.kind === 'frost') return frost(f, b, w, flick);
-  if (v.kind === 'ember') return ember(f, b, w, flick);
-  return battle(f, b, w, flick);
+  return v.kind === 'frost' ? frost(f, b, w, flick) : ember(f, b, w, flick);
 }

@@ -585,18 +585,18 @@ export class GameEngine {
     }
   }
 
-  /** World-state flag set once by `TrainerService.bondCompanion()` (ARCHITECTURE.md P-14 Phase 2). */
+  /** World-state flag set once by the `grantCompanion` story effect (`choiceAction.ts`). */
   public static readonly COMPANION_BONDED_FLAG = 'companion_bonded';
 
   /**
    * Summons a companion by definition ID near the player. Returns null if one is
-   * already summoned, the definition is unknown, or the player has not yet bonded
-   * with a companion (§9 P-14 Phase 2 acquisition gate — see `TrainerService`).
+   * already summoned, the definition is unknown, or no story effect has yet
+   * granted the hero a companion (`grantCompanion`).
    */
   public summonCompanion(definitionId: string): Companion | null {
     if (this.companion) return null;
     if (!this.getWorldFlag(GameEngine.COMPANION_BONDED_FLAG)) {
-      this.log('You have not yet bonded with a companion. Seek out a trainer in town.');
+      this.log('You have no companion yet.');
       return null;
     }
     if (this.deadCompanionRecord) {

@@ -110,10 +110,7 @@ describe('ShopDialog', () => {
     compact: 'bank_compact',
     stash: 'bank_stash',
     take: 'bank_withdraw',
-    bond: 'trainer_bond_companion',
     revive: 'trainer_revive_companion',
-    bodyguard: 'trainer_switch_archetype',
-    skirmisher: 'trainer_switch_archetype',
     teach: 'trainer_teach_skill',
   };
 
@@ -192,15 +189,6 @@ describe('ShopDialog', () => {
     expect(sent.mock.calls.map((c) => c[0])).toEqual([
       { type: 'trainer_teach_skill', payload: { skillId: 'test_song', skillName: 'Test Song' } },
     ]);
-  });
-
-  it('passes the archetype each trainer key asks for', () => {
-    const shop = new ShopDialog();
-    shop.open(npc('trainer'), null, engine);
-    shop.handleKeyDown(key('g'), engine);
-    shop.handleKeyDown(key('k'), engine);
-    const archetypes = dispatch.mock.calls.map((c) => (c[0] as { payload?: { archetype?: string } }).payload?.archetype);
-    expect(archetypes).toEqual(['bodyguard', 'skirmisher']);
   });
 
   it("leaves a disabled offer's key inert (nothing to identify)", () => {

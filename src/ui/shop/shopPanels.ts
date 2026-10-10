@@ -41,10 +41,7 @@ export type ShopAction =
   | 'compact'
   | 'stash'
   | 'take'
-  | 'bond'
   | 'revive'
-  | 'bodyguard'
-  | 'skirmisher'
   | 'teach'
   | 'rune-ranks'
   | 'pact'
@@ -373,28 +370,25 @@ function bankerPanel(engine: GameEngine, selected: number, view: string): Servic
   };
 }
 
-/** The trainer's keys for teaching skills, in the pack's order: none of his other offers' (T R G K). */
+/** The trainer's keys for teaching skills, in the pack's order: not her other offer's (R). */
 const TEACH_KEYS = ['W', 'Y', 'U', 'V'];
 
 function trainerPanel(engine: GameEngine): ServicePanel {
   const companion = engine.companion;
-  const bonded = engine.getWorldFlag('companion_bonded');
   const fallen = engine.deadCompanionRecord;
-  const status = !bonded
-    ? 'You have not bonded with a companion yet.'
-    : companion
-      ? `${companion.name}, ${companion.archetype}: health ${companion.hp} / ${companion.maxHp}.`
-      : fallen
-        ? `${fallen.name} has fallen and can be revived.`
-        : 'You are bonded, but no companion is with you.';
+  const away = engine.dismissedCompanion;
+  const status = companion
+    ? `${companion.name}: health ${companion.hp} / ${companion.maxHp}.`
+    : fallen
+      ? `${fallen.name} has fallen and can be revived.`
+      : away
+        ? `${away.name} is not at your side.`
+        : 'You have no companion yet.';
   return {
     heading: 'Companion training',
     facts: `<div class="ui-note">${escapeHtml(status)}</div>`,
     offers: [
-      { act: 'bond', key: 'T', label: 'Bond with a companion', detail: 'A companion who fights at your side.', priceCp: TrainerService.BOND_COST_CP },
       { act: 'revive', key: 'R', label: 'Revive your companion', detail: 'Brings a fallen companion back.', priceCp: TrainerService.REVIVE_COST_CP },
-      { act: 'bodyguard', key: 'G', label: 'Train as a bodyguard', detail: 'Stays right beside you.', priceCp: TrainerService.ARCHETYPE_SWITCH_COST_CP },
-      { act: 'skirmisher', key: 'K', label: 'Train as a skirmisher', detail: 'Ranges ahead and goes after nearby enemies first.', priceCp: TrainerService.ARCHETYPE_SWITCH_COST_CP },
       // The pack's skills (`TownServicesDefinition.trainerSkills`), each on a key of its own.
       ...(engine.manifest.town?.services?.trainerSkills ?? []).slice(0, TEACH_KEYS.length).map((skill, i) => ({
         act: 'teach' as const,

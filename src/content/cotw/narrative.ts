@@ -370,9 +370,6 @@ export const COTW_COMPANION_BARKS_HOOK: ActionHook = {
         engine.log(
           'Your Ember-Fang Wolf bares fiery fangs, drinking the volcanic fumes of the Obsidian Siphon with a hungry growl.'
         );
-      } else if (compId === 'battle_hound' && !getFlag(ws, 'bark_battle_hound_f18')) {
-        setFlag(ws, 'bark_battle_hound_f18', true);
-        engine.log('Your Battle-Hound whimpers at the searing heat of the magma rift, but stays faithfully close to your heel.');
       }
     } else if (floor === URDR_POOL_FLOOR) {
       if (compId === 'hearth_frost_hound' && !getFlag(ws, 'bark_frost_hound_urdr')) {
@@ -385,9 +382,6 @@ export const COTW_COMPANION_BARKS_HOOK: ActionHook = {
         engine.log(
           'Your Ember-Fang Wolf snorts at the mercury shallows, its burning paws hissing softly against the damp cavern stone.'
         );
-      } else if (compId === 'battle_hound' && !getFlag(ws, 'bark_battle_hound_urdr')) {
-        setFlag(ws, 'bark_battle_hound_urdr', true);
-        engine.log('Your Battle-Hound gazes into the silver pool, ears perked as if listening to ancient voices.');
       }
     } else if (floor === 43) {
       if (compId === 'ember_fang_wolf' && !getFlag(ws, 'bark_ember_wolf_f43')) {
@@ -400,9 +394,6 @@ export const COTW_COMPANION_BARKS_HOOK: ActionHook = {
         engine.log(
           'Your Frost-Ward Hound lets out a low, warning growl as the caustic reek of serpent venom wafts up from the Maw.'
         );
-      } else if (compId === 'battle_hound' && !getFlag(ws, 'bark_battle_hound_f43')) {
-        setFlag(ws, 'bark_battle_hound_f43', true);
-        engine.log('Your Battle-Hound bristles and bares its teeth toward the darkness of Náströnd.');
       }
     } else if (floor === 47) {
       if (compId === 'ember_fang_wolf' && !getFlag(ws, 'bark_ember_wolf_f47')) {
@@ -415,9 +406,6 @@ export const COTW_COMPANION_BARKS_HOOK: ActionHook = {
         engine.log(
           'Your Frost-Ward Hound bares its teeth at the gnawed marrow-bones, standing firm against the chill of Hel’s shadow.'
         );
-      } else if (compId === 'battle_hound' && !getFlag(ws, 'bark_battle_hound_f47')) {
-        setFlag(ws, 'bark_battle_hound_f47', true);
-        engine.log('Your Battle-Hound sniffs at the marrow bones and growls fiercely into the bone-hall.');
       }
     } else if (floor === 50) {
       if (!getFlag(ws, 'bark_companion_f50')) {

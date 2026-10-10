@@ -26,7 +26,6 @@ import { LoreService } from '../economy/lore';
 import { SmithService } from '../economy/smith';
 import { type Merchant, isSellable } from '../economy/merchant';
 import { formatCurrency } from '../economy/currency';
-import type { CompanionArchetype } from '../entities/companion';
 import { ChannelRuneOfReturnAction, RuneOfReturnItem, cancelChannel } from '../magic/runeOfReturn';
 import { recordMilestone } from '../renown/renownLedger';
 import { flightRecorder } from '../debug/flightRecorder';
@@ -506,21 +505,8 @@ export class EngineCommandBus implements GameCommandBus {
         return { success: res.success, message: res.message };
       }
 
-      case 'trainer_bond_companion': {
-        const res = TrainerService.bondCompanion(this.engine);
-        this.engine.log(res.message);
-        return { success: res.success, message: res.message };
-      }
-
       case 'trainer_revive_companion': {
         const res = TrainerService.reviveCompanion(this.engine);
-        this.engine.log(res.message);
-        return { success: res.success, message: res.message };
-      }
-
-      case 'trainer_switch_archetype': {
-        const archetype = p.archetype as CompanionArchetype;
-        const res = TrainerService.switchArchetype(this.engine, archetype);
         this.engine.log(res.message);
         return { success: res.success, message: res.message };
       }

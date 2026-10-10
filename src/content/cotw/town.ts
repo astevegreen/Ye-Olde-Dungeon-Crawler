@@ -150,8 +150,8 @@ export const COTW_TOWN: TownLayoutDefinition = {
       name: 'Ranvild the Hound-Warden',
       role: 'trainer',
       position: { x: 19, y: 19 },
-      greeting: 'A warrior alone is a warrior half-armed. Let me bond you with a loyal companion.',
-      dialogText: 'For a price I can bond you with a battle-hound, revive one that has fallen, retrain its instincts, or teach it new tricks.',
+      greeting: 'A hound is only as good as the hand that trains it.',
+      dialogText: 'For a price I can revive a companion that has fallen, or teach it new tricks.',
     },
     {
       // Rune of Return attunement trigger (docs/architecture/content-extensibility.md, engine's

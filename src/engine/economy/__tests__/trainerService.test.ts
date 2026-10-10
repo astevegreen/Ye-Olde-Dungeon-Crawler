@@ -4,7 +4,7 @@ import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { Companion } from '../../entities/companion';
-import { addCurrencyToPlayer, getPlayerTotalCp } from '../currency';
+import { addCurrencyToPlayer } from '../currency';
 import { TrainerService } from '../services';
 import { TEST_COMPANION_ID as TEST_DEF_ID, useTestCompanion } from '../../__fixtures__/testHelpers';
 
@@ -16,51 +16,6 @@ function buildEngine(): GameEngine {
 
 describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () => {
   useTestCompanion();
-
-  describe('bondCompanion', () => {
-    it('sets the bonded flag and deducts the bonding cost when funded', () => {
-      const engine = buildEngine();
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 10 });
-
-      const result = TrainerService.bondCompanion(engine);
-
-      expect(result.success).toBe(true);
-      expect(engine.getWorldFlag(GameEngine.COMPANION_BONDED_FLAG)).toBe(true);
-      expect(getPlayerTotalCp(engine.player)).toBe(0);
-    });
-
-    it('refuses when the player cannot afford the cost', () => {
-      const engine = buildEngine();
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 5 });
-
-      const result = TrainerService.bondCompanion(engine);
-
-      expect(result.success).toBe(false);
-      expect(engine.getWorldFlag(GameEngine.COMPANION_BONDED_FLAG)).toBeFalsy();
-    });
-
-    it('refuses to bond twice', () => {
-      const engine = buildEngine();
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 300 });
-      TrainerService.bondCompanion(engine);
-      const fundsAfterFirstBond = getPlayerTotalCp(engine.player);
-
-      const second = TrainerService.bondCompanion(engine);
-
-      expect(second.success).toBe(false);
-      expect(getPlayerTotalCp(engine.player)).toBe(fundsAfterFirstBond);
-    });
-
-    it('unlocks summonCompanion once bonded', () => {
-      const engine = buildEngine();
-      expect(engine.summonCompanion(TEST_DEF_ID)).toBeNull();
-
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100 });
-      TrainerService.bondCompanion(engine);
-
-      expect(engine.summonCompanion(TEST_DEF_ID)).not.toBeNull();
-    });
-  });
 
   describe('reviveCompanion', () => {
     it('refuses when there is no fallen companion on record', () => {
@@ -112,41 +67,6 @@ describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () 
       expect(result.success).toBe(false);
       expect(engine.deadCompanionRecord).toBe(dead);
       expect(engine.companion).toBeNull();
-    });
-  });
-
-  describe('switchArchetype', () => {
-    it('refuses when there is no active companion', () => {
-      const engine = buildEngine();
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100 });
-
-      const result = TrainerService.switchArchetype(engine, 'bodyguard');
-
-      expect(result.success).toBe(false);
-    });
-
-    it('changes the companion archetype and AI routine when funded', () => {
-      const engine = buildEngine();
-      const companion = Companion.fromDefinition(TEST_DEF_ID, 'arch-comp', { x: 11, y: 10 })!;
-      engine.attachCompanion(companion);
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100 });
-
-      const result = TrainerService.switchArchetype(engine, 'bodyguard');
-
-      expect(result.success).toBe(true);
-      expect(companion.archetype).toBe('bodyguard');
-      expect(companion.aiRoutineId).toBe('companion_bodyguard');
-    });
-
-    it('refuses to retrain into the same archetype the companion already has', () => {
-      const engine = buildEngine();
-      const companion = Companion.fromDefinition(TEST_DEF_ID, 'arch-comp-2', { x: 11, y: 10 })!;
-      engine.attachCompanion(companion);
-      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 100 });
-
-      const result = TrainerService.switchArchetype(engine, 'balanced');
-
-      expect(result.success).toBe(false);
     });
   });
 

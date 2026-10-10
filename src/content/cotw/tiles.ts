@@ -45,7 +45,7 @@ export const COTW_TILES: TileDefinition[] = [
   townThing('town_shrine', "Thor's Altar", 'Y', "A stone altar under Thor's hammer. Torvald heals and cleanses here, and takes cursed things as offerings."),
   townThing('town_lectern', 'Lectern and Tomes', 'K', "Mimir's lectern, piled with tomes on things found in the dark and the beasts that dwell there."),
   townThing('town_strongbox', 'Strongbox', 'V', "Haakon's iron-bound strongbox, where coin of every metal is weighed and changed."),
-  townThing('town_kennel', 'Kennel', 'D', "Ranvild's kennel of wolfhounds, straw-floored and loud. Companions are bonded and trained here."),
+  townThing('town_kennel', 'Kennel', 'D', "Ranvild's kennel of wolfhounds, straw-floored and loud. Companions are revived and taught here."),
   {
     // Opens where Níðhögg falls: the way into Ragnarök (quest.ts, ending 'ragnarok').
     type: 'gateway_valhalla',

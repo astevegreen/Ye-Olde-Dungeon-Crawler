@@ -20,8 +20,8 @@ export type ChoiceConsequence =
   | { type: 'modifyPermanentStat'; stat: 'attack' | 'defense' | 'speed'; delta: number }
   /**
    * Grants a companion by manifest-declared ID (ARCHITECTURE.md §3, Companions & Pet
-   * Progression). Sets the acquisition-gate flag first if the player hasn't already
-   * bonded with one, so a story-granted companion doesn't require a trainer visit.
+   * Progression), the only way a hero gains one. Sets the summon-gate flag
+   * (`GameEngine.COMPANION_BONDED_FLAG`), so the hero can call it back once sent away.
    */
   | { type: 'grantCompanion'; companionId: string }
   /** Teaches a spell by manifest id; a spell already known is left as it is. */

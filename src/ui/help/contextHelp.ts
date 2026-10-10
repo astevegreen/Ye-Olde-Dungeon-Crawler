@@ -41,7 +41,7 @@ const TOWN_ROLE_HELP: Partial<Record<string, string>> = {
   priest: 'Lift curses and restore vitality',
   sage: 'Identify items and seek run advice',
   banker: 'Exchange coins for fewer of the same worth',
-  trainer: 'Bond with and train a companion',
+  trainer: 'Revive and teach a companion',
   guard: 'Local news and warnings',
 };
 

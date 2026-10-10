@@ -42,26 +42,28 @@ describe('R-cotw-4 · the legacy "Wand & Potion Utility Belt" accepts what its n
   });
 });
 
+// Only the Oath grants a companion, so only a save from before that rule (or a pack that
+// grants twice) meets it with one already; the engine still keeps both.
 describe('R-cotw-2 · the Oath grants its companion even when the hero already has one', () => {
-  it('honouring the Oath with a hound already bonded attaches the Frost-Ward Hound', () => {
+  it('honouring the Oath with the wolf already at your side attaches the Frost-Ward Hound', () => {
     const pm = new ProfileManager(new MemoryStorage(), cotwManifest);
     const { engine } = pm.createCharacter('Oath', { seed: 3, difficulty: 'medium' } as never);
     engine.setWorldFlag('companion_bonded', true);
-    engine.summonCompanion('battle_hound');
-    expect(engine.companion?.companionDefinitionId).toBe('battle_hound');
+    engine.summonCompanion('ember_fang_wolf');
+    expect(engine.companion?.companionDefinitionId).toBe('ember_fang_wolf');
 
     engine.handlePlayerAction(new ExecuteChoiceAction(engine.player, (cotwManifest.choices as Record<string, unknown>).oath_hearth as never, 'honor'));
 
     expect(engine.getWorldFlag('oath_resolved')).toBe(true);
     expect(engine.companion?.companionDefinitionId).toBe('hearth_frost_hound');
-    expect(engine.dismissedCompanion?.companionDefinitionId).toBe('battle_hound'); // waits to be called
+    expect(engine.dismissedCompanion?.companionDefinitionId).toBe('ember_fang_wolf'); // waits to be called
   });
 
   it('breaking the Oath while the old companion lies fallen still brings the wolf, and keeps the fallen one for the trainer', () => {
     const pm = new ProfileManager(new MemoryStorage(), cotwManifest);
     const { engine } = pm.createCharacter('Oath2', { seed: 4, difficulty: 'medium' } as never);
     engine.setWorldFlag('companion_bonded', true);
-    const hound = engine.summonCompanion('battle_hound')!;
+    const hound = engine.summonCompanion('hearth_frost_hound')!;
     hound.takeDamage(9999);
     engine.companion = null;
     engine.deadCompanionRecord = hound;
@@ -158,7 +160,6 @@ describe('R-cotw-18 · companions grow with the hero’s level (owner, 2026-10-0
         defense: Math.round(c.stats.defense + (g.defense ?? 0) * (level - 1)),
       };
     };
-    expect(at('battle_hound', 25)).toEqual({ maxHp: 150, attack: 20, defense: 9 });
     expect(at('hearth_frost_hound', 25)).toEqual({ maxHp: 146, attack: 14, defense: 17 });
     expect(at('ember_fang_wolf', 25)).toEqual({ maxHp: 118, attack: 28, defense: 8 });
     // The review's floor-25 attackers hit for up to 53: the wolf survives two such blows, not none.

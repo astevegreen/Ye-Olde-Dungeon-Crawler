@@ -501,15 +501,8 @@ export class ShopDialog {
         this.report(result, 'warn');
         return;
       }
-      case 'bond':
-        this.report(bus.dispatch({ type: 'trainer_bond_companion' }));
-        return;
       case 'revive':
         this.report(bus.dispatch({ type: 'trainer_revive_companion' }));
-        return;
-      case 'bodyguard':
-      case 'skirmisher':
-        this.report(bus.dispatch({ type: 'trainer_switch_archetype', payload: { archetype: act } }));
         return;
       case 'teach': {
         // The pack's skill this offer names (`TownServicesDefinition.trainerSkills`).

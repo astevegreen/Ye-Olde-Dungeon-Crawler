@@ -1651,17 +1651,16 @@ window.addEventListener('DOMContentLoaded', () => {
       },
       summon_companion: (eng) => {
         // The hero's own companion: the one dismissed or fallen (the engine refuses a
-        // fallen one), else the pack's first for a hero bonded at a trainer.
+        // fallen one). A pack's story grants the first (`grantCompanion`); a key never does.
         const defId =
           eng.dismissedCompanion?.companionDefinitionId ??
-          eng.deadCompanionRecord?.companionDefinitionId ??
-          eng.manifest?.companions?.[0]?.id;
+          eng.deadCompanionRecord?.companionDefinitionId;
         if (eng.companion) {
           eng.log(`${eng.companion.name} is already at your side.`);
         } else if (defId) {
           eng.commandBus.dispatch({ type: 'summon_companion', payload: { companionId: defId } });
         } else {
-          eng.log('No companion is available in this campaign.');
+          eng.log(eng.manifest?.companions?.length ? 'You have no companion yet.' : 'No companion is available in this campaign.');
         }
         renderer?.render();
       },

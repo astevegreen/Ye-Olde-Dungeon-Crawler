@@ -305,7 +305,6 @@ mat('ally_furRust', '#9a5333', { tex: 'fur' });
 mat('ally_furRustDark', '#4e281e', { tex: 'fur' });
 mat('ally_furRustPale', '#cfa67b', { tex: 'fur' });
 mat('ally_nose', '#2b2427', { shiny: true });
-mat('ally_scar', '#d0a294', { hs: 8 });
 mat('ally_breath', '#e2f6ff', { a: 0.72, hs: 4 });
 mat('ally_mailDark', '#5b6170', { shiny: true, tex: 'mail', hs: 8 });
 mat('ally_collar', '#8a4f2c', { hs: 14 });

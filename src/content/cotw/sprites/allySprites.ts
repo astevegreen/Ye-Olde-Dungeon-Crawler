@@ -24,10 +24,9 @@ const sculpted = <V extends FamilyVariant>(model: Model<V>, variant?: V): PixelS
 /**
  * The companion hounds, keyed by companion definition id. Each wears the kin-mark (a collar
  * with a glowing gold rune-tag) and stands calm, so it reads as yours without a marker; without
- * these all three draw as the enemy wolf.
+ * these both draw as the enemy wolf.
  */
 export const COTW_COMPANION_SPRITES: Record<string, PixelSprite> = {
-  battle_hound: sculpted(houndModel, { kind: 'battle' }),
   hearth_frost_hound: sculpted(houndModel, { kind: 'frost' }),
   ember_fang_wolf: sculpted(houndModel, { kind: 'ember' }),
 };

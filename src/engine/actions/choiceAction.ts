@@ -129,12 +129,10 @@ export function applyConsequences(
         break;
       }
       case 'grantCompanion': {
-        // Story-granted, so it bypasses the trainer-visit gate rather than requiring
-        // it to have been cleared beforehand (GameEngine.summonCompanion). Uses the
-        // literal 'companion_bonded' rather than GameEngine.COMPANION_BONDED_FLAG —
-        // GameEngine is imported type-only here, so its static value isn't
-        // accessible; keep the two in sync if either changes (same tradeoff as
-        // TrainerService.bondCompanion in economy/services.ts).
+        // The only way a hero gains a companion: it opens the summon gate
+        // (GameEngine.summonCompanion). Uses the literal 'companion_bonded' rather than
+        // GameEngine.COMPANION_BONDED_FLAG — GameEngine is imported type-only here, so its
+        // static value isn't accessible; keep the two in sync if either changes.
         setFlag(engine.worldState, 'companion_bonded', true);
         // The granted companion joins whatever the hero had, rather than the grant failing
         // silently under a log line saying it arrived (R-cotw-2): the one at their side steps

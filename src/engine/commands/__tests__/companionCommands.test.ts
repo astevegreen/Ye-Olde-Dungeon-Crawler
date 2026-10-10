@@ -36,21 +36,26 @@ const SKILL_PACK = {
 describe('Companion commands via EngineCommandBus (docs/architecture/content-companions.md Phase 2)', () => {
   useTestCompanion();
 
-  describe('trainer_bond_companion / trainer_revive_companion / trainer_switch_archetype / trainer_teach_skill', () => {
-    it('bonds, then allows summon, revival, archetype switch, and skill teaching end-to-end', () => {
+  describe('summon_companion / trainer_revive_companion / trainer_teach_skill', () => {
+    it('refuses a summon before the story grants a companion, without sending the hero to a trainer', () => {
+      const engine = buildEngine();
+      const bus = new EngineCommandBus(engine);
+
+      const result = bus.dispatch({ type: 'summon_companion', payload: { companionId: TEST_DEF_ID } });
+
+      expect(result.success).toBe(false);
+      expect(engine.companion).toBeNull();
+      expect(engine.messages.at(-1)).toBe('You have no companion yet.');
+    });
+
+    it('once granted, allows summon, skill teaching and revival end-to-end', () => {
       const engine = buildEngine();
       const bus = new EngineCommandBus(engine);
       addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 500 });
-
-      const bondResult = bus.dispatch({ type: 'trainer_bond_companion' });
-      expect(bondResult.success).toBe(true);
+      engine.setWorldFlag(GameEngine.COMPANION_BONDED_FLAG, true); // as the `grantCompanion` story effect does
 
       const companion = engine.summonCompanion(TEST_DEF_ID)!;
       expect(companion).not.toBeNull();
-
-      const archResult = bus.dispatch({ type: 'trainer_switch_archetype', payload: { archetype: 'skirmisher' } });
-      expect(archResult.success).toBe(true);
-      expect(companion.archetype).toBe('skirmisher');
 
       const teachResult = bus.dispatch({
         type: 'trainer_teach_skill',

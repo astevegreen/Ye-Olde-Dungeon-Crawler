@@ -17,7 +17,6 @@ import { depositToVault, getFaction, getFlag, getVaultItems, modifyFaction, remo
 import { getRenownTotal, recordMilestone } from '../renown/renownLedger';
 import { familyModifier } from '../items/modifierRoller';
 import { RunAdvisor, type AdvisoryReport } from '../advisory/runAdvisor';
-import type { CompanionArchetype } from '../entities/companion';
 import { growCompanion } from '../combat/lastStand';
 
 export class TempleService {
@@ -529,44 +528,14 @@ export class BankService {
 
 /**
  * Companions & Pet Progression, Phase 2 (docs/architecture/content-companions.md): trainer NPC
- * (`NpcRole: 'trainer'`) services — the acquisition gate, archetype switching,
- * skill teaching, and revival. Mirrors `TempleService`/`SageService`'s cost-check-
- * then-mutate pattern. Uses the literal `'companion_bonded'` world-state flag key
- * rather than `GameEngine.COMPANION_BONDED_FLAG` — `GameEngine` is imported
- * type-only here, so its static value isn't accessible; keep the two in sync if
- * either changes.
+ * (`NpcRole: 'trainer'`) services — revival and skill teaching. The trainer never hands out
+ * a companion: a pack grants one through its story (`grantCompanion`). Mirrors
+ * `TempleService`/`SageService`'s cost-check-then-mutate pattern.
  */
 export class TrainerService {
   // On the shop's copper scale (Q45, 2026-10-04).
-  public static readonly BOND_COST_CP = 1000; // one-time acquisition gate
   public static readonly REVIVE_COST_CP = 500;
-  public static readonly ARCHETYPE_SWITCH_COST_CP = 150;
   public static readonly TEACH_SKILL_COST_CP = 400;
-
-  /** One-time purchase enabling `engine.summonCompanion()` going forward. */
-  public static bondCompanion(engine: GameEngine, customCostCp?: number): ServiceResult {
-    if (engine.getWorldFlag('companion_bonded')) {
-      return { success: false, message: 'You have already bonded with a companion.', costInCp: 0 };
-    }
-    const costCp = customCostCp ?? TrainerService.BOND_COST_CP;
-    const playerFundsCp = getPlayerTotalCp(engine.player);
-    if (playerFundsCp < costCp) {
-      return {
-        success: false,
-        message: `Bonding with a companion requires ${formatCurrency(costCp)}. You have ${formatCurrency(playerFundsCp)}.`,
-        costInCp: costCp,
-      };
-    }
-    const deduction = deductCurrencyFromPlayer(engine.player, costCp);
-    if (!deduction.success) return deduction;
-
-    engine.setWorldFlag('companion_bonded', true);
-    return {
-      success: true,
-      message: 'A bond is forged. You may now summon your companion whenever you have need of it.',
-      costInCp: costCp,
-    };
-  }
 
   /** Heals and re-attaches a fallen companion (`engine.deadCompanionRecord`), pack contents intact. */
   public static reviveCompanion(engine: GameEngine, customCostCp?: number): ServiceResult {
@@ -598,38 +567,6 @@ export class TrainerService {
     return {
       success: true,
       message: `${dead.name} draws breath once more and returns to your side!`,
-      costInCp: costCp,
-    };
-  }
-
-  /** Switches the active companion's AI archetype (docs/architecture/content-companions.md Phase 2). */
-  public static switchArchetype(
-    engine: GameEngine,
-    archetype: CompanionArchetype,
-    customCostCp?: number
-  ): ServiceResult {
-    if (!engine.companion) {
-      return { success: false, message: 'You have no companion here to train.', costInCp: 0 };
-    }
-    if (engine.companion.archetype === archetype) {
-      return { success: false, message: `${engine.companion.name} is already trained as a ${archetype}.`, costInCp: 0 };
-    }
-    const costCp = customCostCp ?? TrainerService.ARCHETYPE_SWITCH_COST_CP;
-    const playerFundsCp = getPlayerTotalCp(engine.player);
-    if (playerFundsCp < costCp) {
-      return {
-        success: false,
-        message: `Retraining ${engine.companion.name} as a ${archetype} requires ${formatCurrency(costCp)}. You have ${formatCurrency(playerFundsCp)}.`,
-        costInCp: costCp,
-      };
-    }
-    const deduction = deductCurrencyFromPlayer(engine.player, costCp);
-    if (!deduction.success) return deduction;
-
-    engine.companion.setArchetype(archetype);
-    return {
-      success: true,
-      message: `${engine.companion.name} is retrained as a ${archetype}!`,
       costInCp: costCp,
     };
   }

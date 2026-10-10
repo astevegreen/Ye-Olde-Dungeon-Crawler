@@ -1360,7 +1360,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const screens = activeEngine?.manifest?.screenArt;
     const art = won ? (summary.endingId ? screens?.endings?.[summary.endingId] : undefined) : screens?.death;
     const kicker = entry ? `${entry.heroName} · Level ${entry.level}` : undefined;
-    const showScore = () => showRunSummary(won, entry, ending?.banner, kicker, art);
+    const showScore = () => showRunSummary(won, entry, ending, kicker, art);
     if (ending?.narrative?.length) {
       endingDialog.show({ title: ending.title ?? brand.victoryTitle, kicker, paragraphs: ending.narrative, art }, showScore);
     } else {
@@ -1371,16 +1371,17 @@ window.addEventListener('DOMContentLoaded', () => {
   function showRunSummary(
     won: boolean,
     entry: HallOfFameEntry | null,
-    endingBanner: string | undefined,
+    ending: { title?: string; banner?: string } | undefined,
     kicker: string | undefined,
     art: ScreenScene | undefined
   ): void {
     const autosave = autosaveManager.hasAutosave() ? autosaveManager.getAutosaveMetadata() : null;
     gameOverDialog.show({
       status: won ? 'victorious' : 'fallen',
-      title: won ? brand.victoryTitle : 'Fallen in Battle',
+      // A named ending titles its own score screen: a doom ending is no "victory".
+      title: won ? ending?.title ?? brand.victoryTitle : 'Fallen in Battle',
       kicker,
-      banner: won ? endingBanner ?? brand.victoryBanner : brand.fallenBanner,
+      banner: won ? ending?.banner ?? brand.victoryBanner : brand.fallenBanner,
       // The score stands on its own in the footer, so the record leaves it out.
       factsHtml: entry ? epitaphHtml(entry, brand.xpName, { withScore: false }) : '',
       score: entry ? `${brand.hallOfFameShortName} score: ${entry.score.toLocaleString()}` : undefined,

@@ -14,6 +14,11 @@ import { KEEP_STAMPS, readStamps, runStamped, treeKey, writeStamps, type GateCom
 
 const SLOW = { timeout: 30_000 };
 
+// The pre-commit hook runs this suite with git's GIT_* variables set, and `git commit <paths>`
+// points GIT_INDEX_FILE at its temporary index: inherited, a throwaway repo's `git add` wrote
+// src/a.ts into the commit being made, which then failed with "invalid object".
+for (const key of Object.keys(process.env)) if (key.startsWith('GIT_')) delete process.env[key];
+
 let repo: string;
 let helpers: string;
 

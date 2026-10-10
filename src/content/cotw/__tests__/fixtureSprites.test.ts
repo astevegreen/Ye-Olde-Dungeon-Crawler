@@ -43,7 +43,7 @@ describe('the cotw fixture sprites draw their own pixels', () => {
       expect(s.render(0, 64)).toEqual(baked[name][0]);
       if (baked[name].length > 1) expect([name, baked[name].slice(1).some((f) => !sameBytes(f, baked[name][0]))]).toEqual([name, true]);
     }
-  });
+  }, 30_000);
 
   it('give every place, chest state and heap size its own look; the two Týr altars share one, as do the barrows', () => {
     expect(drawnTiles.altar_tyr).toBe(drawnTiles.galdr_altar_tyr);

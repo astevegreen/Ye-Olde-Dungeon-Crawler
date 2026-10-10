@@ -647,7 +647,14 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
 
       engine.updateFov();
 
-      // Slay Vidnir to register kill in compendium
+      // Slay Vidnir alone to register the kill in the compendium. Bystanders in view are lifted
+      // off first: their XP on top of his took some seeds' hero to level 10, and the Saga
+      // choice that unlocks, held back while his prophecy opened, then broke into the altar
+      // step and could not be dismissed (the Save & Quit flake, stack ["altar","choice"]).
+      for (const m of engine.map.getAllEntities()) {
+        const bystander = m.type === 'monster' && m !== vidnir && m.faction !== 'player' && m.isAlive();
+        if (bystander && engine.fov.isVisible(m.x, m.y)) engine.removeEntity(m);
+      }
       engine.diagnostics.killVisibleMonsters();
 
       // Ensure kill is recorded in compendium
@@ -768,18 +775,22 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
       const altarOverlay = document.getElementById('altar-modal-overlay');
       return {
         hasAltarModal: stack ? stack.has('altar') : false,
+        stackIds: stack ? stack.getStackIds() : [],
+        level: (window as any).__cotwEngine.player.level,
         isVisible: altarOverlay ? altarOverlay.style.display !== 'none' : false,
         text: altarOverlay?.textContent,
       };
     });
 
     expect(altarModalCheck.hasAltarModal, 'Stepping on Altar must open AltarModal').toBe(true);
+    // Nothing else may open with it: a progress choice on top can't be closed with Escape.
+    expect(altarModalCheck.stackIds, `only the altar opens (hero level ${altarModalCheck.level})`).toEqual(['altar']);
     expect(altarModalCheck.isVisible).toBe(true);
     expect(altarModalCheck.text).toContain("Týr's Oath-Stone");
 
     // Close altar modal with Escape
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(200);
+    await expect.poll(() => page.evaluate(() => (window as any).__cotwInputHandler?.modalStack.getStackIds())).toEqual([]);
 
     // Test Mana Overflow (Ginnungagap Deficit)
     const overflowTest = await page.evaluate(() => {
@@ -818,9 +829,8 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 9: SAVE & CONTINUE ROUND-TRIP
     // ─────────────────────────────────────────────────────────────────────────
-    // Save & Quit. Escape first closes whatever dialog is still up (an earlier section's,
-    // or one the overflow cast opened): press it until the menu shows, rather than once
-    // (the :816 flake, "#btn-savequit-save-exit" never visible).
+    // Save & Quit. No dialog is up (Section 8 checks), so Escape opens the menu; it is pressed
+    // until the menu shows, in case a press is dropped under load.
     const saveExit = page.locator('#btn-savequit-save-exit');
     await expect(async () => {
       await expect.poll(() => page.evaluate(() => (window as any).__cotwInputHandler?.isInputLocked)).toBe(false);

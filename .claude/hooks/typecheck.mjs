@@ -4,6 +4,8 @@
 // exits 0 silently. A turn whose edits were committed already ran tsc in the pre-commit lint.
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { join } from 'node:path';
 
 let input;
 try {
@@ -29,9 +31,18 @@ const changed = status.stdout
   .filter((file) => /\.tsx?$/.test(file));
 if (changed.length === 0) process.exit(0);
 
+// Find tsc the way Node does, walking up from cwd: an app-made worktree has no node_modules
+// junction and uses the parent checkout's. Not installed anywhere: nothing to check with.
+let tscPath;
+try {
+  tscPath = createRequire(join(cwd, 'package.json')).resolve('typescript/bin/tsc');
+} catch {
+  process.exit(0);
+}
+
 // Straight to tsc, without npx and a shell; tsconfig.json's incremental build info makes a rerun ~1s.
 const tsc = (...project) =>
-  spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '--noEmit', '--pretty', 'false', ...project], {
+  spawnSync(process.execPath, [tscPath, '--noEmit', '--pretty', 'false', ...project], {
     cwd,
     encoding: 'utf8',
   });

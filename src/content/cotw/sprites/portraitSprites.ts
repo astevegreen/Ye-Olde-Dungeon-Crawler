@@ -1,7 +1,12 @@
 import type { PixelSprite } from '../../../engine';
 import { bake, type Model } from './sculpt/kit';
 import { PORTRAIT_GRID } from './sculpt/portraitKit';
-import { draugrPortrait, mimirPortrait, nidhoggPortrait } from './sculpt/portraits';
+import { mimirPortrait, nidhoggPortrait } from './sculpt/portraits';
+import { covenThrallPortrait, draugrPortrait, draugrWarriorPortrait, pitDraugrPortrait } from './sculpt/portraitsDraugr';
+import { kirkegrimPortrait, mylingPortrait, rootWraithPortrait } from './sculpt/portraitsRestless';
+import { narPortrait, silverWightPortrait, skeletonPortrait } from './sculpt/portraitsWalkingDead';
+import { brimHowlerPortrait, rimeWolfPortrait, wolfPortrait } from './sculpt/portraitsWolves';
+import { giantRatPortrait, glacierBorerPortrait, quicksilverLeechPortrait, rotwoodCrawlerPortrait } from './sculpt/portraitsVermin';
 import { chariotWardenPortrait, galmrPortrait, glodPortrait } from './sculpt/portraitsFrostFire';
 import { berserkerPortrait, gloomTarrPortrait, svartrPortrait } from './sculpt/portraitsRot';
 import { skollPortrait, vidnirPortrait, weaverPortrait } from './sculpt/portraitsMaw';
@@ -68,4 +73,21 @@ export const COTW_PORTRAITS: Record<string, PixelSprite> = {
   ironwood_troll_wife: portrait(trollWifePortrait),
   malice_weaver: portrait(weaverPortrait),
   hel_warden: portrait(helWardenPortrait),
+  // the rank and file: the restless dead, the walking dead, the wolves, the draugr's kin, the vermin
+  myling: portrait(mylingPortrait),
+  kirkegrim: portrait(kirkegrimPortrait),
+  root_wraith: portrait(rootWraithPortrait),
+  skeleton: portrait(skeletonPortrait),
+  nar: portrait(narPortrait),
+  silver_wight: portrait(silverWightPortrait),
+  wolf: portrait(wolfPortrait),
+  prologue_rime_wolf: portrait(rimeWolfPortrait),
+  brim_howler: portrait(brimHowlerPortrait),
+  draugr_warrior: portrait(draugrWarriorPortrait),
+  deep_lode_pit_draugr: portrait(pitDraugrPortrait),
+  prologue_coven_thrall: portrait(covenThrallPortrait),
+  giant_rat: portrait(giantRatPortrait),
+  glacier_borer: portrait(glacierBorerPortrait),
+  rotwood_crawler: portrait(rotwoodCrawlerPortrait),
+  quicksilver_leech: portrait(quicksilverLeechPortrait),
 };

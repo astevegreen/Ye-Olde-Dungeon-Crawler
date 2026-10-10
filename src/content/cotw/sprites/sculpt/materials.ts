@@ -714,3 +714,148 @@ mat('scr_houndNose', '#2b2427', { shiny: true });
 mat('scr_houndMouth', '#1a1012');
 mat('scr_houndGum', '#4e2c2e', { hs: 8 });
 mat('scr_houndCollar', '#8a4f2c', { hs: 14 });
+
+// ---- wave 9d portraits
+// the Myling, the Kirkegrim, the Root-Wraith (portraitsRestless.ts)
+mat('scr_gMyling', '#222a40', { em: true, hs: 12 });
+mat('scr_gKirkegrim', '#1e2030', { em: true, hs: 12 });
+mat('scr_kirkegrimHaze', '#5c6290', { em: true, hs: 8 });
+mat('scr_gRootWraith', '#1c2419', { em: true, hs: 12 });
+mat('scr_mylingShroud', '#aebdca', { hs: 5, warm: 210 }); // the bible also passed cold: 230; the game's ramp has no such option and hs: 5 clamps it away (bakes identical)
+mat('scr_mylingFace', '#dfe5ea', { hs: 4, warm: 220 });
+mat('scr_mylingHollow', '#3a3150', { hs: 6 });
+mat('scr_mylingMouth', '#1c1626');
+mat('scr_mylingCord', '#6c6a7a', { hs: 8 });
+mat('scr_kirkegrimFur', '#34374c', { hs: 14 });
+mat('scr_kirkegrimRuff', '#34374c', { tex: 'fur', hs: 14 });
+mat('scr_kirkegrimMist', '#626a96', { em: true, hs: 8 });
+mat('scr_kirkegrimNose', '#1e1c26', { shiny: true });
+mat('scr_kirkegrimMouth', '#120e18');
+mat('scr_kirkegrimTooth', '#c4c2cc', { hs: 6 });
+mat('scr_rootWraithCloth', '#4e5842', { tex: 'cloth', hs: 14 });
+mat('scr_rootWraithRoot', '#665a42', { tex: 'bark', hs: 12 });
+mat('scr_rootWraithBone', '#aeb48c', { hs: 10 });
+mat('scr_rootWraithVoid', '#18141f', { hs: 6 });
+mat('scr_rootWraithBile', '#3e5a26', { em: true, hs: 6 });
+
+// the Skeleton, the Nár, the Silver Wight (portraitsWalkingDead.ts)
+// skeleton
+mat('scr_gSkel', '#2b2724', { em: true, hs: 12 });          // the barrow's stones
+mat('scr_skelBone', '#cdbf98', { hs: 12 });                 // old bone, yellowed
+mat('scr_skelPit', '#110d15', { hs: 4 });                   // sockets, the nose, the mouth
+mat('scr_skelTooth', '#b8a985', { hs: 10 });
+mat('scr_skelSteel', '#8c939c', { shiny: true, hs: 8, warm: 200 });
+mat('scr_skelRust', '#8e5532', { tex: 'rot', hs: 12 });
+mat('scr_skelWood', '#4e3b29', { tex: 'wood', hs: 12 });
+mat('scr_skelGrip', '#45302a', { hs: 12 });
+mat('scr_skelStain', '#8c7752', { hs: 10 });                // barrow earth soaked into the bone
+// nár
+mat('scr_gNar', '#25212b', { em: true, hs: 12 });           // the drift's rock
+mat('scr_narSkin', '#8e937e', { tex: 'rot', hs: 8 });       // a drowned miner's skin
+mat('scr_narLip', '#6c6070', { hs: 10 });                   // bruised lips, swollen lids
+mat('scr_narVein', '#2a2b36', { shiny: true, hs: 8 });      // tarnished silver, black in the veins
+mat('scr_narHair', '#2c2522', { hs: 10 });
+mat('scr_narRag', '#66625a', { tex: 'cloth', hs: 12 });     // the torn shirt
+mat('scr_narPit', '#0f0b10', { hs: 4 });                    // the mouth, the empty socket
+mat('scr_narTooth', '#9c8f6e', { hs: 10 });
+mat('scr_narNail', '#3b3339', { hs: 8 });
+// silver wight
+mat('scr_gWight', '#20242a', { em: true, hs: 12 });         // the lode-chamber's rock, cold slate
+mat('scr_wightSkin', '#727888', { shiny: true, hs: 8 });    // skin gone the grey of tarnished silver
+mat('scr_wightShroud', '#514c64', { tex: 'cloth', hs: 10 });
+mat('scr_wightMail', '#747a88', { shiny: true, tex: 'mail', hs: 8 });
+mat('scr_wightTarn', '#3a3c46', { shiny: true, hs: 8 });    // tarnished silver: the circlet, the pick
+mat('scr_wightBeard', '#d6dae2', { tex: 'fur', hs: 6 });
+mat('scr_wightPit', '#0d0b13', { hs: 4 });                  // the hood's dark, the sockets, the mouth
+mat('scr_wightLode', '#4a4448', { em: true, hs: 8 });       // dark in its own silver's light: drawn by value, like the ground
+mat('scr_wightVein', '#d4dcea', { em: true, hs: 6 });       // the silver in the lode, alight
+mat('scr_wightHaft', '#3e3029', { tex: 'wood', hs: 12 });
+
+// the Wolf, the Rime-Wolf, the Brim-Howler (portraitsWolves.ts)
+mat('scr_gWolf', '#20262e', { em: true, hs: 12 });
+mat('scr_wolfFur', '#7c7f88', { tex: 'fur', hs: 6 });
+mat('scr_wolfFurDark', '#4a4d57', { tex: 'fur', hs: 6 });
+mat('scr_wolfFurPale', '#b3b6bc', { tex: 'fur', hs: 4 });
+mat('scr_wolfEye', '#ffb23a', { em: true, hs: 0 });
+mat('scr_wolfRim', '#16151a', { hs: 6 });
+mat('scr_wolfNose', '#24222a', { shiny: true });
+mat('scr_wolfMouth', '#140c0f');
+mat('scr_wolfGum', '#5e3036', { hs: 8 });
+mat('scr_wolfTooth', '#e4dccb', { hs: 4 });
+mat('scr_gRimeWolf', '#1f2738', { em: true, hs: 12 });
+mat('scr_rimeWolfFur', '#b6bfca', { tex: 'fur', hs: 0 });
+mat('scr_rimeWolfFurDark', '#7c8797', { tex: 'fur', hs: 0 });
+mat('scr_rimeWolfFurPale', '#dfe4ea', { tex: 'fur', hs: 0 });
+mat('scr_rimeWolfIce', '#8fe0ff', { em: true, hs: 2 });
+mat('scr_rimeWolfEye', '#ffc04a', { em: true, hs: 0 });
+mat('scr_rimeWolfWhite', '#d8dccf', { hs: 4 });
+mat('scr_gBrim', '#18232e', { em: true, hs: 12 });
+mat('scr_brimFur', '#66778f', { tex: 'fur', hs: 6 });
+mat('scr_brimFurDark', '#3e4a5c', { tex: 'fur', hs: 6 });
+mat('scr_brimFurPale', '#a9b8c8', { tex: 'fur', hs: 4 });
+mat('scr_brimIce', '#93cfe8', { shiny: true, tex: 'ice', hs: 2 });
+mat('scr_brimMist', '#bcdce6', { em: true, hs: 2 });
+mat('scr_brimEye', '#ffb23a', { em: true, hs: 0 });
+
+// the draugr's kin: the Draugr Warrior, the Deep-Lode Pit-Draugr, the Coven Thrall (portraitsDraugr.ts)
+mat('scr_gDraugrWar', '#2b3140', { em: true, hs: 14 });
+mat('scr_warShroud', '#414a5c', { tex: 'cloth', hs: 12, warm: 210 });
+mat('scr_warWood', '#4f3b2a', { tex: 'wood', hs: 14 });
+mat('scr_gPitDraugr', '#2e2a26', { em: true, hs: 14 });
+mat('scr_pitVein', '#a7b0bb', { em: true, hs: 6 });
+mat('scr_pitSkin', '#8a8780', { hs: 10, warm: 200 });
+mat('scr_pitMail', '#7a6d59', { shiny: true, tex: 'mail', hs: 10 });
+mat('scr_pitBeard', '#8f8f8c', { hs: 6 });
+mat('scr_pitShroud', '#4f483f', { tex: 'cloth', hs: 12 });
+mat('scr_pitOre', '#c09048', { hs: 10 });
+mat('scr_pitGlass', '#3e4c47', { shiny: true, hs: 8 });
+mat('scr_pitRind', '#a39b86', { tex: 'stone', hs: 8 });
+mat('scr_pitHelm', '#5d6068', { shiny: true, tex: 'rot', hs: 10 });
+mat('scr_gThrall', '#252a3d', { em: true, hs: 12 });
+mat('scr_thrallRag', '#5f5a4e', { tex: 'cloth', hs: 12 });
+mat('scr_thrallHex', '#8c84ff', { em: true, hs: 0 });
+mat('scr_thrallIron', '#5a606c', { shiny: true, hs: 10 });
+
+// the Giant Rat, the Glacier Borer, the Rotwood Crawler, the Quicksilver Leech (portraitsVermin.ts)
+mat('scr_gRat', '#2a221e', { em: true, hs: 12 });
+mat('scr_ratHalo', '#6a3e22', { em: true, hs: 8 });
+mat('scr_ratFur', '#6c6155', { tex: 'fur', hs: 12 });
+mat('scr_ratFurDark', '#3e352e', { tex: 'fur', hs: 12 });
+mat('scr_ratSkin', '#8e746c', { hs: 12 });
+mat('scr_ratScar', '#a48c7e', { hs: 8 });
+mat('scr_ratNose', '#86605a', { shiny: true, hs: 10 });
+mat('scr_ratTeeth', '#b89a62', { hs: 8 });
+mat('scr_ratMaw', '#1c1014', { em: true });
+mat('scr_ratGum', '#7e4446', { hs: 10 });
+mat('scr_ratEyeBall', '#120c0e', { shiny: true });
+mat('scr_ratWhisker', '#6e665e', { hs: 6 });
+mat('scr_ratClaw', '#2a201c', { shiny: true });
+mat('scr_ratTallow', '#b8a47c', { hs: 10 });
+mat('scr_ratWick', '#1a120e');
+mat('scr_gBorer', '#14242f', { em: true, hs: 10 });
+mat('scr_borerHole', '#070d12', { em: true });
+mat('scr_borerShell', '#5f84a0', { tex: 'ice', hs: 10 });
+mat('scr_borerIce', '#30566e', { tex: 'ice', hs: 8 });
+mat('scr_borerLeg', '#2a2d3c', { hs: 10 });
+mat('scr_borerChitin', '#2e3242', { shiny: true, hs: 10 });
+mat('scr_borerPlate', '#3c465c', { hs: 10 });
+mat('scr_borerDrill', '#aac8da', { shiny: true, hs: 8 });
+mat('scr_borerGroove', '#2c4458');
+mat('scr_borerRime', '#c4efff', { em: true, hs: 6 });
+mat('scr_borerSocket', '#0b0a10');
+mat('scr_borerChip', '#d8f2fa', { hs: 6 });
+mat('scr_gCrawl', '#1e1813', { em: true, hs: 10 });
+mat('scr_crawlPlate', '#6e5844', { tex: 'rot', hs: 10 });
+mat('scr_crawlBark', '#5a4632', { tex: 'bark', hs: 10 });
+mat('scr_crawlLeg', '#4c3c2e', { hs: 10 });
+mat('scr_crawlFang', '#7a5e40', { shiny: true, hs: 8 });
+mat('scr_crawlFangTip', '#3a2c22', { shiny: true });
+mat('scr_crawlMaw', '#120d0a');
+mat('scr_gLeech', '#161a22', { em: true, hs: 10 });
+mat('scr_leechVein', '#dde5ef', { em: true, hs: 6 });
+mat('scr_leechQuick', '#a9b5c4', { shiny: true, hs: 8 });
+mat('scr_leechQuickDark', '#4e5a6c', { shiny: true, hs: 8 });
+mat('scr_leechLip', '#705658', { shiny: true, hs: 8 });
+mat('scr_leechFlesh', '#5e4448', { em: true, hs: 8 });
+mat('scr_leechMaw', '#0b0a0f', { em: true });
+mat('scr_leechTooth', '#d6cdb8', { shiny: true, hs: 6 });

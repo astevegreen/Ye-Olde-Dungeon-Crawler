@@ -7,12 +7,16 @@ const pixelSprites = cotwManifest.pixelSprites ?? {};
 const portraits = cotwManifest.portraits ?? {};
 const hasSprite = (key: string) => key in pixelSprites || key in (cotwManifest.spriteRecipes ?? {});
 
-// Wave 9a: Níðhögg, the draugr, Mímir. Wave 9b: the other eight bosses and four elites.
+// Wave 9a: Níðhögg, the draugr, Mímir. Wave 9b: the other eight bosses and four elites. Wave 9d: the
+// first sixteen of the rank and file, one portrait per creature (owner, 10 Oct).
 const CREATURES = [
   'nidhogg', 'draugr',
   'miniboss_frost_warden', 'sun_chariot_warden', 'miniboss_tar_abomination', 'miniboss_rot_matriarch',
   'miniboss_maw_herald', 'miniboss_marrow_eater', 'glod', 'ividja',
   'root_bound_berserker', 'ironwood_troll_wife', 'malice_weaver', 'hel_warden',
+  'myling', 'kirkegrim', 'root_wraith', 'skeleton', 'nar', 'silver_wight',
+  'wolf', 'prologue_rime_wolf', 'brim_howler', 'draugr_warrior', 'deep_lode_pit_draugr', 'prologue_coven_thrall',
+  'giant_rat', 'glacier_borer', 'rotwood_crawler', 'quicksilver_leech',
 ];
 // Wave 9c: every townsperson who greets (Ivalda at her anvil in Gunther's armory), and the Oath's two
 // companions, the only ones (owner, 10 Oct).

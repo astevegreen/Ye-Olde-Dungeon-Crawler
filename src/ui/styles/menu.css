@@ -588,8 +588,10 @@ canvas.it-frame { box-shadow: 0 0 0 2px var(--it-frame); border-radius: 3px; }
 /* The creature's picture beside its name (tracker 4.2): the 64 px atlas sprite, doubled, kept crisp. */
 .bs-hero { display: flex; align-items: center; gap: var(--ui-space-3); }
 .bs-hero-text { flex: 1; min-width: 0; }
+/* content-box: the border sits outside, so the canvas paints at its own size, never squeezed by 2 px. */
 .bs-portrait {
   flex: none;
+  box-sizing: content-box;
   width: 128px;
   height: 128px;
   image-rendering: pixelated;

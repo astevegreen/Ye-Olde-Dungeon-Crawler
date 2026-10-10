@@ -27,6 +27,7 @@
 .inv-companion-portrait {
   flex: none;
   align-self: center;
+  box-sizing: content-box; /* the border outside the 96 px, so the portrait paints 1:1 */
   width: 96px;
   height: 96px;
   image-rendering: pixelated;

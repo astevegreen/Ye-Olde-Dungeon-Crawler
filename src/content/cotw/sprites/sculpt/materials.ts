@@ -489,3 +489,78 @@ mat('scr_splinter', '#b39a6a', { tex: 'wood' });
 mat('scr_hornRoot', '#2a241d', { tex: 'bark', hs: 14 });
 mat('scr_wing', '#302c36', { hs: 12 });
 mat('scr_bellyDark', '#27321f', { hs: 10 });
+// ---- wave 9b portraits: Gálmr, the Sun-Chariot Warden, Glóð (portraitsFrostFire.ts)
+mat('scr_gGalmr', '#1b3040', { em: true, hs: 14 });
+mat('scr_galmrHide', '#586c82', { hs: 10, warm: 200 });
+mat('scr_galmrBeard', '#a3b6c6', { hs: 8, warm: 200 });
+mat('scr_galmrFur', '#5a5e6a', { tex: 'fur', hs: 10, warm: 200 });
+mat('scr_galmrRime', '#d4eaf4', { shiny: true, hs: 6, warm: 190 });
+mat('scr_galmrIce', '#86c4de', { shiny: true, hs: 8, warm: 190 });
+mat('scr_galmrMaw', '#141c28', { hs: 8 });
+mat('scr_galmrShade', '#2c3a4c', { hs: 10, warm: 200 });
+mat('scr_galmrTooth', '#b9c2c4', { hs: 8, warm: 200 });
+mat('scr_galmrBreath', '#d8f2fb', { a: 0.5, hs: 4 });
+mat('scr_gChariot', '#2e1d15', { em: true, hs: 16 });      // the dwarven forge, soot and ember
+mat('scr_chariotIron', '#5e6674', { hs: 10 }); // riveted construct iron
+mat('scr_chariotSun', '#ffe0a0', { em: true, hs: 0 });     // the stolen sun-disc
+mat('scr_chariotSunWhite', '#fffaf0', { em: true, hs: 0 });
+mat('scr_chariotHeat', '#ffcf86', { a: 0.35, hs: 0 });     // heat shimmer
+mat('scr_chariotMaw', '#1c1310', { hs: 6 });
+mat('scr_gGlod', '#261922', { em: true, hs: 16 });          // obsidian and smoke, violet-black
+mat('scr_glodCrust', '#3a2f2e', { tex: 'stone', hs: 12 });  // cooling magma crust
+mat('scr_glodCrustDark', '#2a2023', { hs: 10 });            // the deep crust, the cracks' walls
+mat('scr_glodMaw', '#170c0a', { hs: 6 });
+// Gloom-Tarr, Svartr, the Root-Bound Berserker (portraitsRot.ts)
+mat('scr_gTarr', '#2b3139', { em: true, hs: 14 });
+mat('scr_tarrHide', '#262d27', { hs: 16 });              // wet tar
+mat('scr_tarrMaw', '#160f14', { hs: 4 });
+mat('scr_tarrPool', '#203519', { em: true, hs: 10 });    // the bile, pooled black
+mat('scr_tarrBile', '#7fc040', { em: true, hs: 0 });     // the bile where it glows
+mat('scr_tarrGlass', '#3a3a34', { shiny: true, hs: 6 }); // the snuffed lantern's glass
+mat('scr_tarrSmoke', '#7b8088', { a: 0.5, hs: 4 });
+mat('scr_gSvartr', '#2b2236', { em: true, hs: 14 });
+mat('scr_svartrSkin', '#666d69', { hs: 5 });                 // undead troll hide
+mat('scr_svartrRoot', '#4d4038', { tex: 'bark', hs: 12 });  // the rotten taproot she is grown into
+mat('scr_svartrCrown', '#8a7a68', { tex: 'bark', hs: 10 }); // her crown of dead roots
+mat('scr_svartrSap', '#17141d', { hs: 6 });                 // black sap
+mat('scr_gBerserker', '#1e2c2b', { em: true, hs: 14 });
+mat('scr_bsSkin', '#7b7362', { hs: 10 });                   // a dead man's skin
+mat('scr_bsSteel', '#7a828a', { hs: 8 });                   // his axe, old steel
+mat('scr_bsPelt', '#4e3a2a', { tex: 'fur', hs: 12 });       // the bear-shirt
+mat('scr_bsRoot', '#6a5236', { tex: 'bark', hs: 12 });      // the taproots that hold him
+mat('scr_bsSap', '#cddc52', { em: true, hs: 0 });           // their sap
+// Víðnir, Sköll, the Malice-Weaver (portraitsMaw.ts)
+mat('scr_gVidnir', '#3a2b26', { em: true, hs: 14 });
+mat('scr_vidnirScale', '#4b6a58', { hs: 14, warm: 170 });
+mat('scr_vidnirMantle', '#363940', { tex: 'cloth', hs: 12 });
+mat('scr_vidnirBanner', '#6a5232', { tex: 'cloth', hs: 14 });
+mat('scr_vidnirIvory', '#a39d8a', { hs: 8, warm: 190 });
+mat('scr_vidnirThroat', '#8a8c76', { hs: 10, warm: 170 });
+mat('scr_gSkoll', '#2a2536', { em: true, hs: 12 });
+mat('scr_skollCorona', '#8e8aa6', { em: true, hs: 8 });
+mat('scr_skollHide', '#4a4556', { tex: 'fur', hs: 10 });
+mat('scr_skollBone', '#a29e96', { hs: 8, warm: 240 });
+mat('scr_skollVoidBone', '#2c2240', { hs: 8 });
+mat('scr_skollSocket', '#160f1e');
+mat('scr_gWeaver', '#202630', { em: true, hs: 12 });
+mat('scr_weaverChitin', '#4e4b62', { hs: 10 });
+mat('scr_weaverBrain', '#78acff', { em: true, hs: 6 });
+mat('scr_weaverFold', '#2c4aa6', { em: true, hs: 6 });
+mat('scr_weaverEye', '#0b1020', { hs: 6 });
+// Iviðja, the Ironwood Troll-Wife, the Hel Warden (portraitsIronwoodHel.ts)
+mat('scr_gIvidja', '#1f2b25', { em: true, hs: 14 });
+mat('scr_gTrollWife', '#2b2129', { em: true, hs: 12 });
+mat('scr_haloTrollWife', '#5a2230', { em: true, hs: 8 });
+mat('scr_gHelWarden', '#2a2636', { em: true, hs: 12 });
+mat('scr_ividjaMask', '#d2c6a8', { hs: 10 });
+mat('scr_ividjaAntler', '#a0937a', { hs: 10 });
+mat('scr_ividjaSkin', '#626d59', { hs: 10 });
+mat('scr_ironwoodMoss', '#5d7642', { tex: 'fur', hs: 12 });
+mat('scr_ironwoodMossDark', '#3e5232', { tex: 'fur', hs: 12 }); // the Ironwood witches' mantles of moss
+mat('scr_trollWifeSkin', '#93845f', { hs: 12 });
+mat('scr_trollWifeHair', '#8a9098', { tex: 'fur', hs: 8 });
+mat('scr_trollWifeDress', '#574b46', { tex: 'cloth', hs: 12 });
+mat('scr_trollWifeBlood', '#d8323c', { em: true, hs: 0 });
+mat('scr_helWardenIron', '#4c5269', { shiny: true, hs: 12 });
+mat('scr_helWardenCloth', '#474462', { tex: 'cloth', hs: 12 });
+mat('scr_helWardenRot', '#7c8170', { tex: 'rot', hs: 10 });

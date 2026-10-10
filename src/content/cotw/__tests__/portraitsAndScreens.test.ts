@@ -7,10 +7,18 @@ const pixelSprites = cotwManifest.pixelSprites ?? {};
 const portraits = cotwManifest.portraits ?? {};
 const hasSprite = (key: string) => key in pixelSprites || key in (cotwManifest.spriteRecipes ?? {});
 
-describe('cotw portraits (art wave 9a)', () => {
+// Wave 9a: Níðhögg, the draugr, Mímir. Wave 9b: the other eight bosses and four elites.
+const CREATURES = [
+  'nidhogg', 'draugr',
+  'miniboss_frost_warden', 'sun_chariot_warden', 'miniboss_tar_abomination', 'miniboss_rot_matriarch',
+  'miniboss_maw_herald', 'miniboss_marrow_eater', 'glod', 'ividja',
+  'root_bound_berserker', 'ironwood_troll_wife', 'malice_weaver', 'hel_warden',
+];
+
+describe('cotw portraits (art waves 9a and 9b)', () => {
   it('keys each portrait by the sprite its creature or townsfolk draws with', () => {
-    expect(Object.keys(portraits).sort()).toEqual(['draugr', 'nidhogg', 'npc-sage']);
-    for (const id of ['nidhogg', 'draugr']) {
+    expect(Object.keys(portraits).sort()).toEqual([...CREATURES, 'npc-sage'].sort());
+    for (const id of CREATURES) {
       const def = monsters.find((m) => m.id === id);
       expect(def, id).toBeDefined();
       expect(getMonsterDefinitionSpriteKey(def!, hasSprite, cotwManifest.atlas?.spriteTagRules)).toBe(id);
@@ -28,7 +36,7 @@ describe('cotw portraits (art wave 9a)', () => {
       expect([key, clear]).toEqual([key, 0]);
       expect(Buffer.from(sprite.render(2, 96)).equals(Buffer.from(px)), key).toBe(false);
     }
-  });
+  }, 30_000);
 });
 
 describe('cotw painted screens (art wave 9a)', () => {

@@ -6,6 +6,10 @@ import { chariotWardenPortrait, galmrPortrait, glodPortrait } from './sculpt/por
 import { berserkerPortrait, gloomTarrPortrait, svartrPortrait } from './sculpt/portraitsRot';
 import { skollPortrait, vidnirPortrait, weaverPortrait } from './sculpt/portraitsMaw';
 import { helWardenPortrait, ividjaPortrait, trollWifePortrait } from './sculpt/portraitsIronwoodHel';
+import { astridPortrait, haakonPortrait, olafPortrait } from './sculpt/portraitsTraders';
+import { guntherPortrait, ivaldaPortrait, thrainPortrait } from './sculpt/portraitsForge';
+import { bjornPortrait, torvaldPortrait } from './sculpt/portraitsTempleGate';
+import { emberWolfPortrait, frostHoundPortrait, ranvildPortrait } from './sculpt/portraitsKennel';
 
 /** Every portrait idles over four frames. */
 const PORTRAIT_FRAMES = 4;
@@ -36,7 +40,20 @@ const portrait = (model: Model): PixelSprite => ({ frames: PORTRAIT_FRAMES, rend
 export const COTW_PORTRAITS: Record<string, PixelSprite> = {
   nidhogg: portrait(nidhoggPortrait),
   draugr: portrait(draugrPortrait),
+  // the townsfolk, each greeting in the shop dialog (Ivalda at her anvil in Gunther's armory)
   'npc-sage': portrait(mimirPortrait),
+  'npc-olaf': portrait(olafPortrait),
+  'npc-astrid': portrait(astridPortrait),
+  'npc-banker': portrait(haakonPortrait),
+  'npc-gunther': portrait(guntherPortrait),
+  'npc-rune-smith': portrait(thrainPortrait),
+  'npc-ivalda': portrait(ivaldaPortrait),
+  'npc-priest': portrait(torvaldPortrait),
+  'npc-guard': portrait(bjornPortrait),
+  'npc-trainer': portrait(ranvildPortrait),
+  // the Oath's two companions, in the companion panel
+  hearth_frost_hound: portrait(frostHoundPortrait),
+  ember_fang_wolf: portrait(emberWolfPortrait),
   // the bosses
   miniboss_frost_warden: portrait(galmrPortrait),
   sun_chariot_warden: portrait(chariotWardenPortrait),

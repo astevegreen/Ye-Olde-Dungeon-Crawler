@@ -14,16 +14,25 @@ const CREATURES = [
   'miniboss_maw_herald', 'miniboss_marrow_eater', 'glod', 'ividja',
   'root_bound_berserker', 'ironwood_troll_wife', 'malice_weaver', 'hel_warden',
 ];
+// Wave 9c: every townsperson who greets (Ivalda at her anvil in Gunther's armory), and the Oath's two
+// companions; the battle-hound bought from Ranvild has none (owner, 10 Oct).
+const TOWNSFOLK = [
+  'npc-sage', 'npc-olaf', 'npc-gunther', 'npc-astrid', 'npc-priest',
+  'npc-banker', 'npc-guard', 'npc-trainer', 'npc-rune-smith', 'npc-ivalda',
+];
+const COMPANIONS = ['hearth_frost_hound', 'ember_fang_wolf'];
 
-describe('cotw portraits (art waves 9a and 9b)', () => {
-  it('keys each portrait by the sprite its creature or townsfolk draws with', () => {
-    expect(Object.keys(portraits).sort()).toEqual([...CREATURES, 'npc-sage'].sort());
+describe('cotw portraits (art wave 9)', () => {
+  it('keys each portrait by the sprite its creature, townsperson or companion draws with', () => {
+    expect(Object.keys(portraits).sort()).toEqual([...CREATURES, ...TOWNSFOLK, ...COMPANIONS].sort());
     for (const id of CREATURES) {
       const def = monsters.find((m) => m.id === id);
       expect(def, id).toBeDefined();
       expect(getMonsterDefinitionSpriteKey(def!, hasSprite, cotwManifest.atlas?.spriteTagRules)).toBe(id);
     }
-    expect('npc-sage' in pixelSprites).toBe(true);
+    for (const key of [...TOWNSFOLK, ...COMPANIONS]) expect(key in pixelSprites, key).toBe(true);
+    expect(cotwManifest.town.npcs.map((n) => n.id).filter((id) => !TOWNSFOLK.includes(id))).toEqual([]);
+    for (const id of COMPANIONS) expect(cotwManifest.companions?.some((c) => c.id === id), id).toBe(true);
   });
 
   it('paints four idle frames, each a full opaque square at the size asked', () => {

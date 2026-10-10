@@ -18,6 +18,7 @@ Owner, on a 2000×990 window: "On the left and right sides there is a bunch of d
 ## Decisions
 - Show more world, not spread the HUD (option 1 over option 2): owner chose it after a mock-up ("Make a plan for how to implement option 1").
 - Width cap 48 columns: owner: "48 sounds good".
+- Row cap 30 rows for tall windows: owner picked "30 rows (Recommended)" on resume.
 - Action buttons: owner: "Cap and center buttons".
 - Tall windows get more rows in this same task: owner: "May as well implement now rather than have to revisit it later".
 - The camera keeps clamping at map edges (no black beyond them), so the hero sits off-centre more often; the owner was told. Minimum view stays 30×18. No engine, save or §8.1 file changes: the engine is FOV-only, and nothing saved stores the view size.

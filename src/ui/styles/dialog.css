@@ -230,6 +230,8 @@
 .ui-epitaph-facts { grid-template-columns: max-content 1fr; }
 .ui-epitaph-facts dd { text-align: left; }
 .go-score { font: bold var(--ui-text-md) var(--ui-font-num); color: var(--ui-accent); }
+/* The score never breaks: a dialog too narrow for it and the buttons puts the buttons below. */
+.ui-dialog-hint:has(> .go-score) { min-width: max-content; }
 
 /* A won run's ending, told before the score screen. */
 .ending-story { max-width: 62ch; margin: 0 auto; }

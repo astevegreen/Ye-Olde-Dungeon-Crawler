@@ -15,7 +15,8 @@ import { drawFloorMap } from './floorMap';
 import { IntentOverlay } from './intentOverlay';
 import { Monster } from '../engine';
 import { Player } from '../engine';
-import { SpriteAtlas } from './atlas/sprite-atlas';
+import { ATLAS_TILE_SIZE, SpriteAtlas } from './atlas/sprite-atlas';
+import { PortraitStore } from './atlas/portraits';
 import { getTerrainSpriteKey, getEntitySpriteKey, getItemSpriteKey, getMonsterDefinitionSpriteKey } from './atlas/sprite-mapper';
 import { heroSpriteKey } from './atlas/hero-sprite';
 import { IdleIcons, IdleTicker, idleFrame, idlePhase } from './atlas/idle-frames';
@@ -59,6 +60,8 @@ export class CanvasRenderer {
   private engine: GameEngine;
   private camera: Camera;
   public readonly atlas: SpriteAtlas;
+  /** The pack's portraits (`manifest.portraits`), for the shop greeting, bestiary and companion panel. */
+  private readonly portraits: PortraitStore;
   public readonly viewport: ViewportManager;
   public readonly fxRunner: CanvasFXRunner;
   public readonly targetingOverlay: TargetingOverlay;
@@ -88,6 +91,8 @@ export class CanvasRenderer {
   private readonly idleTicker = new IdleTicker(() => this.render());
   /** Item icons in menus that idle (an aura, a flicker), repainted while they are on the page. */
   private readonly idleIcons = new IdleIcons<Item>((canvas, item) => this.drawItemIcon(canvas, item));
+  /** Portraits in windows, idling while they are on the page; the subject is the sprite key. */
+  private readonly idlePortraits = new IdleIcons<string>((canvas, key) => this.paintPortrait(canvas, key));
   public navigationController?: NavigationController;
   private cellSize = 32;
   private topBarHeight = 0;
@@ -162,6 +167,7 @@ export class CanvasRenderer {
       pixelSprites: { ...this.engine.manifest?.pixelSprites, ...fixtureFigures(this.engine.manifest?.fixtureArt) },
       itemAuras: this.engine.manifest?.itemAuras,
     });
+    this.portraits = new PortraitStore(this.engine.manifest?.portraits);
     setIconAtlas(this.atlas);
     this.viewport = new ViewportManager(this.canvas, this.ctx, {
       virtualWidth: 960,
@@ -171,7 +177,8 @@ export class CanvasRenderer {
     this.targetingOverlay = new TargetingOverlay(() => this.render());
     this.shopOverlay = new ShopDialog({
       drawItemIcon: (canvas, item) => this.drawItemIcon(canvas, item),
-      drawEntityIcon: (canvas, entity) => this.drawEntityIcon(canvas, entity),
+      drawPortrait: (canvas, entity) => this.drawEntityPortrait(canvas, entity),
+      portraitPx: () => (this.portraits.any ? 96 : 40),
       onStateChanged: () => this.render(),
     });
     this.inspectOverlay = new InspectOverlay(() => this.render());
@@ -430,6 +437,7 @@ export class CanvasRenderer {
     this.floatingTextRunner.destroy();
     this.idleTicker.stop();
     this.idleIcons.stop();
+    this.idlePortraits.stop();
     this.cards?.remove();
     releaseIconAtlas(this.atlas);
   }
@@ -1368,15 +1376,61 @@ export class CanvasRenderer {
     this.atlas.drawSprite(ctx, this.entitySpriteKey(entity), 0, 0, Math.min(canvas.width, canvas.height));
   }
 
-  /** Paints a monster definition's sprite to fill a DOM canvas (the bestiary's picture, tracker 4.2):
-   *  the art its spawned monster has on the map. */
+  /** Whether the pack paints portraits: the shop greeting and the bestiary's picture then draw large. */
+  public get hasPortraits(): boolean {
+    return this.portraits.any;
+  }
+
+  /** Whether the pack paints `entity` a portrait (the companion panel shows one only then). */
+  public hasEntityPortrait(entity: Entity): boolean {
+    return this.portraits.frameCount(this.entitySpriteKey(entity)) > 0;
+  }
+
+  /** An entity's portrait filling a DOM canvas (shop greeting, companion panel), else its map sprite. */
+  public drawEntityPortrait(canvas: HTMLCanvasElement, entity: Entity): void {
+    const key = this.entitySpriteKey(entity);
+    if (!this.paintPortrait(canvas, key)) this.drawPicture(canvas, key);
+  }
+
+  /** Paints a monster definition's portrait, else its sprite, to fill a DOM canvas (the bestiary's
+   *  picture, tracker 4.2): the art its spawned monster has on the map. */
   public drawMonsterPicture(canvas: HTMLCanvasElement, def: MonsterDefinition): void {
+    const key = getMonsterDefinitionSpriteKey(def, this.atlas.hasSprite.bind(this.atlas), this.engine.manifest?.atlas?.spriteTagRules);
+    if (!this.paintPortrait(canvas, key)) this.drawPicture(canvas, key);
+  }
+
+  /** `key`'s map sprite in a picture's canvas: at a whole multiple of its cell, centred, so it stays
+   *  crisp; a canvas smaller than one cell is filled. */
+  private drawPicture(canvas: HTMLCanvasElement, key: string): void {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.imageSmoothingEnabled = false;
-    const key = getMonsterDefinitionSpriteKey(def, this.atlas.hasSprite.bind(this.atlas), this.engine.manifest?.atlas?.spriteTagRules);
-    this.atlas.drawSprite(ctx, key, 0, 0, Math.min(canvas.width, canvas.height));
+    const box = Math.min(canvas.width, canvas.height);
+    const size = box >= ATLAS_TILE_SIZE ? Math.floor(box / ATLAS_TILE_SIZE) * ATLAS_TILE_SIZE : box;
+    const at = Math.floor((box - size) / 2);
+    this.atlas.drawSprite(ctx, key, at, at, size);
+  }
+
+  /** Paints `key`'s portrait at this idle frame and keeps it idling; false when the pack has none. */
+  private paintPortrait(canvas: HTMLCanvasElement, key: string): boolean {
+    const frames = this.portraits.frameCount(key);
+    if (!frames) return false;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return true;
+    const size = Math.min(canvas.width, canvas.height);
+    const idles = frames > 1 && this.idleMotion;
+    const now = Date.now();
+    const pixels = this.portraits.pixels(key, size, idles ? idleFrame(now, frames, idlePhase(key)) : 0);
+    if (!pixels) return false;
+    const img = ctx.createImageData(size, size);
+    img.data.set(pixels.subarray(0, img.data.length));
+    ctx.putImageData(img, 0, 0);
+    if (idles) {
+      this.portraits.warm(key, size);
+      this.idlePortraits.watch(canvas, key, now);
+    }
+    return true;
   }
 
   /** An entity's sprite, the same on the map and in every DOM icon: the pack's tag

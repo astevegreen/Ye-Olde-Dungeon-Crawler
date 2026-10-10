@@ -3,6 +3,7 @@ import type { AutosaveManager, ContinueTarget, ProfileManager } from '../../engi
 import { formatStorageStatus, getStoragePersistenceInfo } from '../persistenceInit';
 import { APP_VERSION, resolveBranding } from '../branding';
 import { escapeHtml } from '../html';
+import { ScreenBackdrop } from '../screenArt';
 
 export interface MainMenuOptions {
   profileManager: ProfileManager;
@@ -14,6 +15,8 @@ export interface MainMenuOptions {
   onOpenHelp: () => void;
   onOpenValhalla: () => void;
   onOpenFeedback?: () => void;
+  /** False holds the pack's painted title screen still (Reduce motion). */
+  motion?: () => boolean;
 }
 
 export class MainMenu {
@@ -23,6 +26,7 @@ export class MainMenu {
   private loadBtn: HTMLButtonElement | null = null;
   private saveSummaryEl: HTMLElement | null = null;
   private storageStatusEl: HTMLElement | null = null;
+  private backdrop: ScreenBackdrop | null = null;
   public isOpen = false;
 
   constructor(options: MainMenuOptions) {
@@ -36,6 +40,7 @@ export class MainMenu {
     }
     if (this.container) {
       this.container.style.display = 'flex';
+      this.backdrop?.show(this.options.profileManager.manifest?.screenArt?.title);
       this.isOpen = true;
       this.refreshSaveStatus();
       this.updateStorageIndicator();
@@ -44,6 +49,7 @@ export class MainMenu {
 
   public hide(): void {
     this.isOpen = false;
+    this.backdrop?.hide();
     if (this.container) {
       this.container.style.display = 'none';
     }
@@ -97,7 +103,9 @@ export class MainMenu {
     overlay.style.display = 'none';
 
     // A full-height title screen (ADR-0011): the pack's name and tagline, one column of
-    // choices, and the save and storage status at the foot.
+    // choices, and the save and storage status at the foot; over the pack's painting, when it
+    // has one, the column moves into the painting's calm box and the painted lettering stands
+    // for the name (kept in the page for screen readers).
     const brand = resolveBranding(this.options.profileManager.manifest);
     const btn = (id: string, label: string, primary = false) =>
       `<button type="button" id="${id}" class="ui-btn ts-btn${primary ? ' ui-btn--primary' : ''}">${escapeHtml(label)}</button>`;
@@ -127,6 +135,8 @@ export class MainMenu {
 
     document.body.appendChild(overlay);
     this.container = overlay;
+    this.backdrop?.hide();
+    this.backdrop = new ScreenBackdrop(overlay, { motion: this.options.motion ?? (() => true), minPanel: 300 });
 
     this.continueBtn = overlay.querySelector('#btn-menu-continue') as HTMLButtonElement | null;
     this.loadBtn = overlay.querySelector('#btn-menu-load') as HTMLButtonElement | null;

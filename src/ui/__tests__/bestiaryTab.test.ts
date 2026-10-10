@@ -240,7 +240,7 @@ describe('Bestiary tab: stats as met on the creature\'s home floor (Q11 "A", tra
 });
 
 describe('Bestiary tab: a picture for each creature seen (N33, tracker 4.2)', () => {
-  function open(known: boolean) {
+  function open(known: boolean, large = false) {
     const engine = new GameEngine({ map: new GameMap(10, 10), player: new Player({ id: 'p1', name: 'Hero', position: { x: 1, y: 1 } }), manifest: cotwManifest, floor: 0 });
     if (known) engine.compendium.recordEncounter('quicksilver_leech', 'Quicksilver Leech', 26);
     const drawn: string[] = [];
@@ -250,7 +250,7 @@ describe('Bestiary tab: a picture for each creature seen (N33, tracker 4.2)', ()
       querySelector: (sel: string) => (sel === 'canvas.bs-portrait' && el.innerHTML.includes('bs-portrait') ? canvas : null),
       querySelectorAll: () => [],
     };
-    const tab = new BestiaryTab({ drawMonsterPicture: (c, def) => drawn.push(c === canvas ? def.id : 'elsewhere') });
+    const tab = new BestiaryTab({ drawMonsterPicture: (c, def) => drawn.push(c === canvas ? def.id : 'elsewhere'), largePicture: () => large });
     tab.mount(el as unknown as HTMLElement);
     tab.onActivate({ engine, worldState: engine.worldState, player: engine.player, map: engine.map, currentFloor: 0, turnCount: 0, manifest: engine.manifest });
     return { drawn, html: el.innerHTML };
@@ -259,6 +259,13 @@ describe('Bestiary tab: a picture for each creature seen (N33, tracker 4.2)', ()
   it('paints the selected creature from its definition into the page\'s portrait', () => {
     const { drawn, html } = open(true);
     expect(html).toContain('class="bs-portrait"');
+    expect(drawn).toEqual(['quicksilver_leech']);
+  });
+
+  it('keeps the 64-pixel picture for a pack without portraits, and gives a portrait pack 192', () => {
+    expect(open(true).html).toContain('<canvas class="bs-portrait" width="64" height="64"');
+    const { drawn, html } = open(true, true);
+    expect(html).toContain('<canvas class="bs-portrait is-large" width="192" height="192"');
     expect(drawn).toEqual(['quicksilver_leech']);
   });
 

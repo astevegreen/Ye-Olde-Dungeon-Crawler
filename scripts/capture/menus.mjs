@@ -155,6 +155,13 @@ const GAME = [
   ['g22-mastery', ev(() => { const e = window.__cotwEngine; e.onGameEvent({ type: 'mastery_unlocked', turn: e.turnCount, scope: 'species', masteryId: 'wolf', name: 'Wolf', kills: 25, data: {} }); })],
 ];
 const CRASH = ['g23-crash', ev(() => { setTimeout(() => { throw new Error('Audit: synthetic crash to show the dialog'); }, 0); })];
+// The end of a run, captured last: each one ends its run, so each starts a new one. An
+// ending's narrative is captured, then (Enter) the score screen after it.
+const ENDS = [
+  ['e01-ending-sealed', () => { const e = window.__cotwEngine; e.gameState.triggerVictory(e, undefined, 'sealed'); }],
+  ['e02-ending-ragnarok', () => { const e = window.__cotwEngine; e.gameState.triggerVictory(e, undefined, 'ragnarok'); }],
+  ['e03-fallen', () => { const e = window.__cotwEngine; e.gameState.triggerDeath(e, undefined, undefined, 'a capture'); }],
+];
 
 // Town services: one screenshot per NPC kind.
 async function shopScenes(page, tag) {
@@ -204,6 +211,18 @@ for (const [w, h] of want) {
   }
   if (!filter || filter.test('shop')) await shopScenes(page, tag);
   if (!filter || filter.test(CRASH[0])) { await resetGame(page); await CRASH[1](page); await wait(page, 300); await page.screenshot({ path: OUT + '/' + CRASH[0] + '-' + tag + '.png' }); }
+  for (const [name, end] of ENDS) {
+    if (filter && !filter.test(name)) continue;
+    await newGame(page, w, h);
+    await page.evaluate(end);
+    await wait(page, 600);
+    await page.screenshot({ path: `${OUT}/${name}-${tag}.png` });
+    if (await page.locator('#btn-ending-continue').isVisible()) {
+      await page.keyboard.press('Enter');
+      await wait(page, 400);
+      await page.screenshot({ path: `${OUT}/${name}-score-${tag}.png` });
+    }
+  }
   await page.close();
 }
 fs.writeFileSync(`${OUT}/measure.json`, JSON.stringify(report, null, 1));

@@ -1,5 +1,7 @@
+import type { ScreenScene } from '../engine';
 import { escapeHtml } from './html';
 import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
+import { ScreenBackdrop } from './screenArt';
 
 /** One ending told as prose; src/main.ts fills it from the quest ending the run reached. */
 export interface EndingView {
@@ -9,6 +11,8 @@ export interface EndingView {
   kicker?: string;
   /** The ending's narrative, one paragraph each. */
   paragraphs: string[];
+  /** The pack's painting of this ending, behind the dialog (`screenArt.endings`). */
+  art?: ScreenScene;
 }
 
 /**
@@ -19,6 +23,10 @@ export interface EndingView {
 export class EndingDialog {
   private scrim: HTMLElement | null = null;
   private onContinue: (() => void) | null = null;
+  private backdrop: ScreenBackdrop | null = null;
+
+  /** `motion`: false holds the painting still (Reduce motion). */
+  constructor(private readonly motion: () => boolean = () => true) {}
 
   public get isOpen(): boolean {
     return this.scrim?.style.display === 'flex';
@@ -41,6 +49,8 @@ export class EndingDialog {
     button?.addEventListener('click', () => this.finish());
     scrim.addEventListener('keydown', this.onKey);
     scrim.style.display = 'flex';
+    this.backdrop ??= new ScreenBackdrop(scrim, { motion: this.motion, minPanel: 480 });
+    this.backdrop.show(view.art);
     button?.focus();
   }
 
@@ -61,6 +71,7 @@ export class EndingDialog {
 
   public hide(): void {
     if (!this.scrim) return;
+    this.backdrop?.hide();
     this.scrim.style.display = 'none';
     this.scrim.removeEventListener('keydown', this.onKey);
   }

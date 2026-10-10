@@ -30,7 +30,8 @@ import {
   SKULD_MIRROR_VAULT_ID,
   SKULD_MIRROR_FLOOR,
 } from './vaults';
-import { COTW_BOSS_SPRITES, COTW_COMPANION_SPRITES, COTW_FAMILY_SPRITES, COTW_HERO_SPRITE, COTW_ITEM_AURAS, COTW_ITEM_PIXEL_SPRITES, COTW_SPRITE_RECIPES, COTW_TOWNSFOLK_SPRITES, COTW_FIXTURE_ART } from './sprites';
+import { COTW_BOSS_SPRITES, COTW_COMPANION_SPRITES, COTW_FAMILY_SPRITES, COTW_HERO_SPRITE, COTW_ITEM_AURAS, COTW_ITEM_PIXEL_SPRITES, COTW_SPRITE_RECIPES, COTW_TOWNSFOLK_SPRITES, COTW_FIXTURE_ART, COTW_PORTRAITS } from './sprites';
+import { COTW_SCREEN_ART } from './screens';
 import { COTW_CHOICES } from './choices';
 import { COTW_SPELL_FX } from './fx';
 import { COTW_PACTS } from './pacts';
@@ -111,6 +112,8 @@ export const cotwManifest: GameContentManifest = {
   heroSprite: COTW_HERO_SPRITE,
   spellFx: COTW_SPELL_FX,
   fixtureArt: COTW_FIXTURE_ART,
+  portraits: COTW_PORTRAITS,
+  screenArt: COTW_SCREEN_ART,
   presetNames: ['Sven', 'Astrid', 'Bjorn', 'Freya'],
   choices: COTW_CHOICES,
   magic: COTW_MAGIC,

@@ -56,3 +56,49 @@
 /* Actions that need a hero show once there is one, instead of sitting there disabled. */
 #title-screen .retro-btn-row button:disabled,
 #btn-title-savecode:disabled { display: none; }
+
+/*
+ * A pack's painted screen (src/ui/screenArt.ts) behind the title and the end-of-run
+ * dialogs: the canvas covers the window, scaled up whole pixels at a time. When the
+ * painting's calm box is wide enough (is-calm) the panel moves into it, below the painted
+ * lettering; otherwise it stays centred over the painting.
+ */
+.screen-art {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.ui-scrim.has-screen-art { background: none; backdrop-filter: none; }
+.has-screen-art > .ts-inner,
+.has-screen-art > .ui-dialog { position: relative; z-index: 1; }
+.has-screen-art.is-calm > .ts-inner,
+.has-screen-art.is-calm > .ui-dialog {
+  position: absolute;
+  left: var(--calm-x);
+  top: var(--calm-y);
+  max-height: var(--calm-h);
+  margin: 0;
+}
+.has-screen-art.is-calm > .ts-inner { width: min(var(--calm-w), 420px); overflow-y: auto; }
+.has-screen-art.is-calm > .ui-dialog { width: min(var(--calm-w), 760px); }
+/* Too narrow for the calm box (a phone): the menu starts below the painted lettering. */
+.ts-screen.has-screen-art:not(.is-calm) > .ts-inner { margin-top: var(--art-text-bottom); }
+/* The menu's column sits on a dark pane so its notes read over the painting. */
+.ts-screen.has-screen-art .ts-inner {
+  padding: var(--ui-space-4);
+  background: color-mix(in srgb, var(--ui-surface-0) 78%, transparent);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius);
+}
+/* The painting carries the pack's name; the heading stays in the page for screen readers. */
+.ts-screen.has-screen-art .ts-brand {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

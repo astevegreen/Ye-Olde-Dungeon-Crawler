@@ -855,6 +855,54 @@ export interface FixtureArt {
   lootPile?: { small: PixelSprite; large?: PixelSprite };
 }
 
+/** A rectangle in CSS pixels, from the painting's top left. */
+export interface ScreenBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * One painted screen at one viewport size (rendering tier): a small buffer the renderer shows
+ * `scale` CSS pixels to a buffer pixel, nearest-neighbour, from the top left, covering the
+ * viewport. The painting carries its own lettering.
+ */
+export interface ScreenPainting {
+  /** The buffer's size in pixels. */
+  width: number;
+  height: number;
+  scale: number;
+  /** Where the painting letters its heading. */
+  text: ScreenBox;
+  /** The quiet region left for the menu or the dialog. */
+  calm: ScreenBox;
+  /**
+   * The frame at `tMs` as straight RGBA, `width` by `height`: the same array on every call, so
+   * the renderer copies it out before the next. Deterministic and periodic in `loopMs`.
+   */
+  paint(tMs: number): Uint8ClampedArray;
+}
+
+/** A painted screen (rendering tier). `open` builds it for one viewport, once (tens of ms). */
+export interface ScreenScene {
+  /** One loop's length: t and t + loopMs paint the same frame. */
+  loopMs: number;
+  open(width: number, height: number): ScreenPainting;
+}
+
+/**
+ * Full-window paintings behind the title menu, the death screen and the endings (rendering
+ * tier); presentation holds frame 0 when the player reduces motion. A screen without an
+ * entry keeps its plain look.
+ */
+export interface ScreenArt {
+  title?: ScreenScene;
+  death?: ScreenScene;
+  /** By quest ending id; shown behind the ending's story and its score screen. */
+  endings?: Record<string, ScreenScene>;
+}
+
 /** What the hero has on, for `HeroSpriteArt.lookKey`. */
 export interface HeroGear {
   gender: Gender;
@@ -1089,6 +1137,14 @@ export interface GameContentManifest {
   spellFx?: SpellFxCatalog;
   /** Drawn altars, portals, chests and loot heaps (`FixtureArt`); without it they keep generic marks. */
   fixtureArt?: FixtureArt;
+  /**
+   * Large portraits keyed like `pixelSprites` (monster, NPC and companion definition ids), each
+   * filling its square with its own ground: the bestiary shows them at 192 px, the shop greeting
+   * at 96 and the companion panel beside its card. Without one a portrait is the map sprite.
+   */
+  portraits?: Record<string, PixelSprite>;
+  /** Painted title, death and ending screens (`ScreenArt`); without it they keep their plain look. */
+  screenArt?: ScreenArt;
   presetNames?: string[];
   statusHandlers?: Record<string, StatusHandler>;
   actionHooks?: ActionHook[];

@@ -597,6 +597,8 @@ canvas.it-frame { box-shadow: 0 0 0 2px var(--it-frame); border-radius: 3px; }
   border: 1px solid var(--ui-line);
   border-radius: var(--ui-radius);
 }
+/* A pack's painted portrait (or its sprite, tripled) at 192 px. */
+.bs-portrait.is-large { width: 192px; height: 192px; }
 .bs-head { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-2); }
 .bs-title { font: bold var(--ui-text-xl) var(--ui-font-display); color: var(--ui-title); }
 .bs-unknown { text-align: center; padding: var(--ui-space-6) var(--ui-space-4); }

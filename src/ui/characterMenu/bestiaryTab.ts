@@ -35,6 +35,8 @@ const FILTERS: BestiaryFilter[] = ['all', 'discovered', 'mastered'];
 export interface BestiaryTabOptions {
   /** Paints a creature's picture from its definition (the map's art for it, tracker 4.2). */
   drawMonsterPicture?: (canvas: HTMLCanvasElement, def: MonsterDefinition) => void;
+  /** Whether the pack paints portraits: the picture then shows at 192 px, one pixel per pixel. */
+  largePicture?: () => boolean;
 }
 
 /** What each knowledge rank is called on its tag. */
@@ -165,6 +167,14 @@ export class BestiaryTab implements MenuTab {
 
     this.bind();
     if (selected) this.paintPicture(selected);
+  }
+
+  /** The picture's canvas: the 64 px sprite doubled by CSS, or a 192 px portrait drawn 1:1. */
+  private pictureHtml(): string {
+    if (!this.options.drawMonsterPicture) return '';
+    return this.options.largePicture?.()
+      ? '<canvas class="bs-portrait is-large" width="192" height="192" aria-hidden="true"></canvas>'
+      : '<canvas class="bs-portrait" width="64" height="64" aria-hidden="true"></canvas>';
   }
 
   /** The selected creature's picture, once it has been seen: the unknown keep their "?". */
@@ -333,7 +343,7 @@ export class BestiaryTab implements MenuTab {
     return `
       <div class="ui-card">
         <div class="bs-hero">
-          ${this.options.drawMonsterPicture ? '<canvas class="bs-portrait" width="64" height="64" aria-hidden="true"></canvas>' : ''}
+          ${this.pictureHtml()}
           <div class="bs-hero-text">
             <div class="bs-head"><span class="bs-title">${escapeHtml(def.name)}</span>${this.tierTag(tier, entry.kills)}</div>
             <div class="ui-note">From floor <span class="ui-num">${def.minFloor ?? 1}</span>${BEHAVIOR_WORDS[def.aiType] ? ` · ${BEHAVIOR_WORDS[def.aiType]}` : ''}</div>

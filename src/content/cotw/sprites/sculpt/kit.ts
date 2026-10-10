@@ -61,6 +61,8 @@ function towardHue(h: number, target: number, amt: number): number {
 export interface RampOptions {
   /** Hue shift in degrees across the ramp (shadows toward cold, lights toward warm). */
   hs?: number;
+  /** Hue the lights slide toward, degrees; default 50 (gold). Cold-lit portraits use blue. */
+  warm?: number;
 }
 
 /**
@@ -72,7 +74,7 @@ export function ramp(base: string | Rgb, o: RampOptions = {}): Rgb[] {
   const [h, s, l] = rgb2hsl(typeof base === 'string' ? hex(base) : base);
   const hs = o.hs ?? 18;
   const cold = 245;
-  const warm = 50;
+  const warm = o.warm ?? 50;
   const out: Rgb[] = [];
   for (let i = 0; i < 6; i++) {
     const k = i - 3;
@@ -538,6 +540,8 @@ export interface BakeOptions<V extends Variant> {
   px?: number;
   /** A side light that rims the silhouette: direction toward it (pixel steps) and colour. */
   rim?: { from: [number, number]; c: string; k?: number };
+  /** Outline rings: 2 (default) keeps a map sprite's silhouette when drawn small; 1 for art shown at full size. */
+  rings?: 1 | 2;
 }
 
 export type Model<V extends Variant = Variant> = (frame: number, v: V) => PrimTree;
@@ -716,7 +720,7 @@ export function bake<V extends Variant>(model: Model<V>, o: BakeOptions<V> = {})
   }
   // a second, softer ring keeps the silhouette when the game draws the 64 px cell at 32-40 px
   const ring = oa.slice();
-  for (let y = 0; y < R; y++) {
+  for (let y = 0; y < R && o.rings !== 1; y++) {
     for (let x = 0; x < R; x++) {
       const k = y * R + x;
       if (solid(k) || ring[k]) continue;

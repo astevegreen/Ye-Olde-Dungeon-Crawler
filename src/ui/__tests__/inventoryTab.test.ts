@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { InventoryTab } from '../inventory/inventoryTab';
-import { GameEngine, GameMap, Item, Player } from '../../engine';
+import { Companion, GameEngine, GameMap, Item, Player } from '../../engine';
 import type { GameState } from '../characterMenu/gameState';
 
 // Under node the tab renders into a stand-in element whose innerHTML is the markup;
@@ -41,6 +41,34 @@ describe('InventoryTab', () => {
     expect(html).toMatch(/\d+(\.\d+)? \/ \d+(\.\d+)? kg/);
     expect(html).not.toMatch(/\bSTR:|\bATK:|\bDEF:/);
     expect(html).toContain('Coil of Rope');
+  });
+
+  it("shows the companion's portrait above its pack only when the pack paints one", () => {
+    engine.attachCompanion(
+      new Companion({
+        id: 'hound',
+        name: 'Garm',
+        position: { x: 6, y: 5 },
+        stats: { hp: 20, maxHp: 20, attack: 5, defense: 1 },
+        speed: 100,
+        companionDefinitionId: 'test_hound',
+        packWeightCapacity: 10000,
+        packBulkCapacity: 8000,
+      })
+    );
+    const portrait = '<canvas class="inv-companion-portrait"';
+    tab.controller.setColumn3View('companion');
+    expect(el.innerHTML).toContain('Garm carries nothing.');
+    expect(el.innerHTML).not.toContain(portrait);
+
+    const asked: string[] = [];
+    const drawn = new InventoryTab({ hasPortrait: (who) => (asked.push(who.name), true) });
+    drawn.mount(el as unknown as HTMLElement);
+    drawn.onActivate(state());
+    expect(el.innerHTML).not.toContain(portrait);
+    drawn.controller.setColumn3View('companion');
+    expect(el.innerHTML).toContain(portrait);
+    expect(asked).toContain('Garm');
   });
 
   it("draws the pack's figure behind the paperdoll slots, once (N6, tracker 4.7)", () => {

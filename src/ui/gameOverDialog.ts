@@ -1,5 +1,7 @@
+import type { ScreenScene } from '../engine';
 import { escapeHtml } from './html';
 import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
+import { ScreenBackdrop } from './screenArt';
 
 /** What the end-of-run dialog shows; src/main.ts fills it from the run and the pack's branding. */
 export interface GameOverView {
@@ -17,6 +19,8 @@ export interface GameOverView {
   /** The autosave button's label, when an autosave exists. */
   autosaveLabel?: string;
   exportLabel: string;
+  /** The pack's painting behind the dialog: the ending reached, or the death screen. */
+  art?: ScreenScene;
 }
 
 export interface GameOverDialogOptions {
@@ -24,6 +28,8 @@ export interface GameOverDialogOptions {
   onShare: () => void;
   onExport: () => void;
   onReturn: () => void;
+  /** False holds the painting still (Reduce motion). */
+  motion?: () => boolean;
 }
 
 /**
@@ -33,6 +39,7 @@ export interface GameOverDialogOptions {
  */
 export class GameOverDialog {
   private scrim: HTMLElement | null = null;
+  private backdrop: ScreenBackdrop | null = null;
 
   constructor(private readonly options: GameOverDialogOptions) {}
 
@@ -70,9 +77,12 @@ export class GameOverDialog {
     on('btn-game-over-export', this.options.onExport);
     on('btn-game-over-return', this.options.onReturn);
     scrim.style.display = 'flex';
+    this.backdrop ??= new ScreenBackdrop(scrim, { motion: this.options.motion ?? (() => true), minPanel: 480 });
+    this.backdrop.show(view.art);
   }
 
   public hide(): void {
+    this.backdrop?.hide();
     if (this.scrim) this.scrim.style.display = 'none';
   }
 

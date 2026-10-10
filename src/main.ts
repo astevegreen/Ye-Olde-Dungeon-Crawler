@@ -49,6 +49,7 @@ import type {
   SpellDefinition,
   HallOfFameEntry,
   SaveData,
+  ScreenScene,
   VersionedSaveEnvelope,
 } from './engine';
 import { CanvasRenderer } from './rendering/canvas-renderer';
@@ -276,6 +277,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const storyTab = new StoryTab();
   const bestiaryTab = new BestiaryTab({
     drawMonsterPicture: (canvas, def) => renderer?.drawMonsterPicture(canvas, def),
+    largePicture: () => renderer?.hasPortraits ?? false,
   });
   const pactsTab = new PactsTab();
   let inventoryTab: InventoryTab;
@@ -624,9 +626,10 @@ window.addEventListener('DOMContentLoaded', () => {
   syncUiScale(true);
   settingsManager.subscribe(() => syncUiScale());
 
-  // Reduce motion: the player's choice, else the system's, holds idle sprites still.
+  // Reduce motion: the player's choice, else the system's, holds idle sprites and painted screens still.
+  const idleMotion = (): boolean => !reducesMotion(settingsManager.getSettings().reduceMotion);
   function syncIdleMotion(): void {
-    if (renderer) renderer.idleMotion = !reducesMotion(settingsManager.getSettings().reduceMotion);
+    if (renderer) renderer.idleMotion = idleMotion();
   }
   // A run's own settings subscription redraws after this one.
   settingsManager.subscribe(syncIdleMotion);
@@ -1315,6 +1318,7 @@ window.addEventListener('DOMContentLoaded', () => {
   let currentGameOverEntry: HallOfFameEntry | null = null;
 
   const gameOverDialog = new GameOverDialog({
+    motion: idleMotion,
     onLoadAutosave: () => {
       const loaded = loadAutosaveOrNotify();
       if (loaded) {
@@ -1340,7 +1344,7 @@ window.addEventListener('DOMContentLoaded', () => {
     },
   });
 
-  const endingDialog = new EndingDialog();
+  const endingDialog = new EndingDialog(idleMotion);
 
   function showGameOverModal(status: 'victorious' | 'fallen' | 'active', summary: any): void {
     if (inputHandler) {
@@ -1352,16 +1356,25 @@ window.addEventListener('DOMContentLoaded', () => {
     const won = status === 'victorious';
     // A named ending is told first, on its own screen; the score screen follows.
     const ending = won && summary.endingId ? activeEngine?.manifest?.quest?.endings?.[summary.endingId] : undefined;
+    // The pack's painting: the ending's behind both screens of a win, the death screen's behind a fall.
+    const screens = activeEngine?.manifest?.screenArt;
+    const art = won ? (summary.endingId ? screens?.endings?.[summary.endingId] : undefined) : screens?.death;
     const kicker = entry ? `${entry.heroName} · Level ${entry.level}` : undefined;
-    const showScore = () => showRunSummary(won, entry, ending?.banner, kicker);
+    const showScore = () => showRunSummary(won, entry, ending?.banner, kicker, art);
     if (ending?.narrative?.length) {
-      endingDialog.show({ title: ending.title ?? brand.victoryTitle, kicker, paragraphs: ending.narrative }, showScore);
+      endingDialog.show({ title: ending.title ?? brand.victoryTitle, kicker, paragraphs: ending.narrative, art }, showScore);
     } else {
       showScore();
     }
   }
 
-  function showRunSummary(won: boolean, entry: HallOfFameEntry | null, endingBanner: string | undefined, kicker: string | undefined): void {
+  function showRunSummary(
+    won: boolean,
+    entry: HallOfFameEntry | null,
+    endingBanner: string | undefined,
+    kicker: string | undefined,
+    art: ScreenScene | undefined
+  ): void {
     const autosave = autosaveManager.hasAutosave() ? autosaveManager.getAutosaveMetadata() : null;
     gameOverDialog.show({
       status: won ? 'victorious' : 'fallen',
@@ -1373,6 +1386,7 @@ window.addEventListener('DOMContentLoaded', () => {
       score: entry ? `${brand.hallOfFameShortName} score: ${entry.score.toLocaleString()}` : undefined,
       autosaveLabel: autosave ? `Load the autosave (${autosave.profileName ?? 'Hero'}, F${autosave.floor ?? 1})` : undefined,
       exportLabel: `Export save (${SAVE_FILE_EXTENSION})`,
+      art,
     });
   }
 
@@ -1702,6 +1716,8 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer = new CanvasRenderer(canvas!, engine);
       inventoryTab = new InventoryTab({
         drawItemIcon: (iconCanvas, item) => renderer?.drawItemIcon(iconCanvas, item),
+        hasPortrait: (entity) => renderer?.hasEntityPortrait(entity) ?? false,
+        drawPortrait: (canvas, entity) => renderer?.drawEntityPortrait(canvas, entity),
         richHoverCards: () => settingsManager.getSettings().inventoryRichHoverCards,
       });
       characterMenuModal = new CharacterMenuModal(
@@ -1986,6 +2002,7 @@ window.addEventListener('DOMContentLoaded', () => {
   mainMenu = new MainMenu({
     profileManager,
     autosaveManager,
+    motion: idleMotion,
     onNewGame: () => {
       mainMenu.hide();
       titleScreen.show();

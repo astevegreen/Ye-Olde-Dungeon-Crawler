@@ -35,7 +35,10 @@ import {
 /** Paints sprites and colors that live in src/rendering, which src/ui may not import. */
 export interface ShopDialogOptions {
   drawItemIcon?: (canvas: HTMLCanvasElement, item: Item) => void;
-  drawEntityIcon?: (canvas: HTMLCanvasElement, entity: Entity) => void;
+  /** Paints the shopkeeper's portrait, else their map sprite. */
+  drawPortrait?: (canvas: HTMLCanvasElement, entity: Entity) => void;
+  /** The greeting portrait's edge in pixels: 40, larger when the pack paints portraits. */
+  portraitPx?: () => number;
   /** Called after anything the shop changes, so the map and HUD redraw. */
   onStateChanged?: () => void;
 }
@@ -594,9 +597,10 @@ export class ShopDialog {
   /** `showName` is false when the dialog's title already is the NPC's name. */
   private greetingHtml(engine: GameEngine, npc: NPC, showName: boolean): string {
     const pack = engine.player.inventory.primaryPack;
+    const px = this.options.portraitPx?.() ?? 40;
     return `
-      <div class="shop-greet">
-        <canvas class="shop-portrait" width="40" height="40" aria-hidden="true"></canvas>
+      <div class="shop-greet" style="--shop-portrait: ${px}px">
+        <canvas class="shop-portrait" width="${px}" height="${px}" aria-hidden="true"></canvas>
         <div class="shop-greet-text">
           ${showName ? `<div class="shop-npc">${escapeHtml(npc.name)}</div>` : ''}
           <div class="shop-quote">“${escapeHtml(npc.dialogText)}”</div>
@@ -718,7 +722,7 @@ export class ShopDialog {
   private paintIcons(scrim: HTMLElement, engine: GameEngine, npc: NPC): void {
     if (typeof scrim.querySelector !== 'function') return;
     const portrait = scrim.querySelector<HTMLCanvasElement>('.shop-portrait');
-    if (portrait) this.options.drawEntityIcon?.(portrait, npc);
+    if (portrait) this.options.drawPortrait?.(portrait, npc);
     if (!this.merchant || !this.options.drawItemIcon) return;
     const rows = this.rowsFor(engine);
     scrim.querySelectorAll<HTMLCanvasElement>('canvas[data-item]').forEach((canvas) => {

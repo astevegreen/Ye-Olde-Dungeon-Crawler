@@ -65,4 +65,41 @@ describe('drawEntityIcon', () => {
     // Baking the pack's atlas through the mocked context takes ~1 s alone and 11–16 s while
     // the whole suite runs in parallel, past the 5 s default.
   }, 30_000);
+
+  it("paints a creature's portrait in its picture when the pack has one, else its sprite whole and centred", () => {
+    const monsters = cotwManifest.monsters ?? [];
+    const portrait = { frames: 1, render: (_frame: number, size: number) => new Uint8ClampedArray(size * size * 4).fill(7) };
+    const engine = new GameEngine({
+      map: new GameMap(30, 30, TILES.FLOOR),
+      player: new Player({ id: 'player', name: 'Hero', position: { x: 5, y: 5 } }),
+      manifest: { ...cotwManifest, portraits: { draugr: portrait } },
+    });
+    const renderer = new CanvasRenderer(mockCanvas(), engine);
+    const atlas = (renderer as unknown as { atlas: { drawSprite: (...args: unknown[]) => void } }).atlas;
+    const drawn = vi.spyOn(atlas, 'drawSprite').mockImplementation(() => {});
+    const picture = () => {
+      const put: Uint8ClampedArray[] = [];
+      const ctx = {
+        imageSmoothingEnabled: true,
+        clearRect: () => {},
+        createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+        putImageData: (img: { data: Uint8ClampedArray }) => put.push(img.data),
+      };
+      return { put, canvas: { width: 96, height: 96, getContext: () => ctx } as unknown as HTMLCanvasElement };
+    };
+
+    expect(renderer.hasPortraits).toBe(true);
+    const draugr = picture();
+    renderer.drawMonsterPicture(draugr.canvas, monsters.find((m) => m.id === 'draugr')!);
+    expect(draugr.put).toHaveLength(1);
+    expect(draugr.put[0][0]).toBe(7);
+    expect(drawn).not.toHaveBeenCalled();
+
+    const wolf = picture();
+    renderer.drawMonsterPicture(wolf.canvas, monsters.find((m) => m.id === 'wolf')!);
+    expect(wolf.put).toHaveLength(0);
+    expect(drawn.mock.calls[0]?.slice(1)).toEqual(['wolf', 16, 16, 64]);
+    expect(renderer.hasEntityPortrait(engine.player)).toBe(false);
+    renderer.destroy();
+  }, 30_000);
 });

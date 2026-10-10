@@ -1,4 +1,4 @@
-import { Container, type GameEngine, type Item, formatCurrency } from '../../engine';
+import { Container, type Entity, type GameEngine, type Item, formatCurrency } from '../../engine';
 import type { GameState } from '../characterMenu/gameState';
 import type { MenuFooter, MenuHost, MenuTab } from '../characterMenu/menuTab';
 import { escapeHtml, keyChip } from '../html';
@@ -19,6 +19,10 @@ import {
 export interface InventoryTabOptions {
   /** Paints an item's sprite into a small canvas. */
   drawItemIcon?: (canvas: HTMLCanvasElement, item: Item) => void;
+  /** Whether the pack paints this creature a portrait; the companion panel shows one only then. */
+  hasPortrait?: (entity: Entity) => boolean;
+  /** Paints a creature's portrait into a canvas. */
+  drawPortrait?: (canvas: HTMLCanvasElement, entity: Entity) => void;
   /** Settings' "rich hover cards": the full card on hover, else just the name and weight. */
   richHoverCards?: () => boolean;
 }
@@ -331,12 +335,17 @@ export class InventoryTab implements MenuTab {
           .join('')}
       </nav>`;
     }
+    const portrait =
+      source === 'companion' && companion && this.options.hasPortrait?.(companion)
+        ? '<canvas class="inv-companion-portrait" width="96" height="96" aria-hidden="true"></canvas>'
+        : '';
     const empty =
       source === 'companion' ? `${companion?.name ?? 'Your companion'} carries nothing.` : source === 'container' ? 'This container is empty.' : 'Nothing on the ground here.';
     return `
       <section class="inv-panel${focused ? ' is-focused' : ''}" data-panel="ground" data-drop="ground" aria-label="${source === 'companion' ? 'Companion' : source === 'container' ? 'Container' : 'Ground'}">
         <div class="inv-head">${head}<div class="inv-tools">${tools}</div></div>
         ${crumbs}
+        ${portrait}
         <div class="ui-inset ui-scroll inv-cells" data-cells="ground" role="listbox">
           ${this.cellsHtml('ground', c.groups('ground'), empty)}
         </div>
@@ -433,6 +442,8 @@ export class InventoryTab implements MenuTab {
   }
 
   private paintIcons(root: HTMLElement, engine: GameEngine): void {
+    const portrait = root.querySelector<HTMLCanvasElement>('canvas.inv-companion-portrait');
+    if (portrait && engine.companion) this.options.drawPortrait?.(portrait, engine.companion);
     const draw = this.options.drawItemIcon;
     if (!draw) return;
     root.querySelectorAll<HTMLCanvasElement>('canvas[data-icon]').forEach((canvas) => {

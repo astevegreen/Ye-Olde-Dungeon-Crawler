@@ -6,14 +6,14 @@
 /* Who you're talking to, what they say (never cut off), and what you can spend. */
 .shop-greet {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
+  grid-template-columns: var(--shop-portrait, 40px) minmax(0, 1fr) auto;
   gap: var(--ui-space-3);
   align-items: start;
 }
 .shop-portrait,
 .shop-icon,
 .shop-detail-icon { image-rendering: pixelated; }
-.shop-portrait { width: 40px; height: 40px; background: var(--ui-surface-2); border: 1px solid var(--ui-line); border-radius: var(--ui-radius); }
+.shop-portrait { width: var(--shop-portrait, 40px); height: var(--shop-portrait, 40px); background: var(--ui-surface-2); border: 1px solid var(--ui-line); border-radius: var(--ui-radius); }
 .shop-npc { font: bold var(--ui-text-md) var(--ui-font-display); color: var(--ui-title); }
 .shop-quote { font-style: italic; color: var(--ui-text-soft); user-select: text; }
 .shop-purse {

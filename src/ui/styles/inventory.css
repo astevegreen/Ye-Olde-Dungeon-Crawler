@@ -23,6 +23,17 @@
 
 .inv-head { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-2); flex-wrap: wrap; }
 .inv-tools { display: flex; gap: var(--ui-space-1); }
+/* The companion's painted portrait, above what it carries (only when the pack paints one). */
+.inv-companion-portrait {
+  flex: none;
+  align-self: center;
+  width: 96px;
+  height: 96px;
+  image-rendering: pixelated;
+  background: var(--ui-surface-3);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius);
+}
 .inv-filters { flex-wrap: wrap; }
 .inv-filters .st-subtab { padding: 2px 7px; }
 

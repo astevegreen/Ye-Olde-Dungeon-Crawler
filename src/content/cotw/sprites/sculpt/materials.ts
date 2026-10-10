@@ -457,3 +457,35 @@ mat('alt_paintRime', '#c2d6e4', { hs: 6 });
 mat('alt_paintOchre', '#8e3a26', { hs: 10 }); // red ochre, as the old stones were painted
 mat('alt_paintViolet', '#5c4c80', { hs: 10 });
 mat('alt_bolt', '#d8b4ff', { em: true, hs: 0 }); // the Twilight stone's lightning
+// ---- portraits: each one's ground is an emissive dark material drawn in flat ink bands
+mat('scr_gDraugr', '#2c3a4e', { em: true, hs: 14 });
+mat('scr_gMimir', '#262850', { em: true, hs: 12 });
+mat('scr_haloMimir', '#34509a', { em: true, hs: 10 });
+mat('scr_gNid', '#1c2d1b', { em: true, hs: 14 });
+// the draugr, moonlit: cold lights
+mat('scr_corpse', '#7c8c99', { hs: 10, warm: 200 });
+mat('scr_rustMail', '#5c5f66', { shiny: true, tex: 'mail', hs: 8, warm: 200 });
+mat('scr_helm', '#50545c', { shiny: true, tex: 'rot', hs: 10, warm: 200 });
+mat('scr_cloakDark', '#353c4a', { tex: 'cloth', hs: 12, warm: 210 });
+mat('scr_rust', '#6e4630', { tex: 'rot', hs: 12 });
+mat('scr_bronzeOld', '#86683f', { shiny: true, hs: 12 });
+mat('scr_blade', '#8b939c', { shiny: true, hs: 8, warm: 200 });
+mat('scr_beard', '#aab3bc', { hs: 6, warm: 200 });
+mat('scr_gum', '#2a2030');
+mat('scr_rime', '#a9c6d6', { shiny: true, tex: 'ice', hs: 6, warm: 190 });
+// Mímir
+mat('scr_indigo', '#252a55', { tex: 'cloth', hs: 12 });
+mat('scr_oldSkin', '#8f766c', { hs: 12 });
+mat('scr_beardW', '#9ea3aa', { hs: 6, warm: 210 });
+mat('scr_milk', '#c3ccd1', { shiny: true, hs: 6 });
+mat('scr_water', '#3b77a0', { shiny: true, tex: 'ice', hs: 8 });
+mat('scr_hornTip', '#4e4234', { hs: 10 });
+// Níðhögg: its scales drawn one by one (the scale texture reads as stripes at this size)
+mat('scr_scaleBlack', '#2f3440', { hs: 18 });
+mat('scr_maw', '#1d2a17');
+mat('scr_fang', '#d8d1b8', { hs: 10 });
+mat('scr_root', '#5a4630', { tex: 'bark' });
+mat('scr_splinter', '#b39a6a', { tex: 'wood' });
+mat('scr_hornRoot', '#2a241d', { tex: 'bark', hs: 14 });
+mat('scr_wing', '#302c36', { hs: 12 });
+mat('scr_bellyDark', '#27321f', { hs: 10 });

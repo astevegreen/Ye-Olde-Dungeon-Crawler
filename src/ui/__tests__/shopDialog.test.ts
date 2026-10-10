@@ -265,6 +265,15 @@ describe('ShopDialog', () => {
     expect(keeperEngine.commandBus.dispatch({ type: 'pact_toggle', payload: { pactId: 'nope' } }).success).toBe(false);
   });
 
+  it('greets with a 40-pixel picture, or the size a portrait pack asks for', () => {
+    new ShopDialog().open(npc('sage'), null, engine);
+    expect(html()).toContain('style="--shop-portrait: 40px"');
+    expect(html()).toContain('<canvas class="shop-portrait" width="40" height="40"');
+    new ShopDialog({ portraitPx: () => 96 }).open(npc('sage'), null, engine);
+    expect(html()).toContain('style="--shop-portrait: 96px"');
+    expect(html()).toContain('<canvas class="shop-portrait" width="96" height="96"');
+  });
+
   it("opens the bestiary from the sage's B, which the canvas shop read as its Buy tab", () => {
     const shop = new ShopDialog();
     const onOpenCompendium = vi.fn();

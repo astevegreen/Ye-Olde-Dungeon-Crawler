@@ -126,6 +126,27 @@ test('every belt slot holds what it shows, at 1366 and 1920 wide', async ({ page
   }
 });
 
+// On a wide window the console keeps together under the wider map: spread to the column's
+// edges, at 2560 its pieces stood 70px apart and the belt floated in 450px of empty bar.
+test('the console keeps its pieces together on a wide window', async ({ page }) => {
+  await page.setViewportSize({ width: 2560, height: 1271 });
+  await embarkNewHero(page);
+  await page.keyboard.press('Space');
+  const layout = await page.evaluate(() => {
+    const bar = document.querySelector('#gothic-action-console')!;
+    const pieces = [...bar.children].filter((el) => getComputedStyle(el).display !== 'none').map((el) => el.getBoundingClientRect());
+    const edges = bar.getBoundingClientRect();
+    return {
+      count: pieces.length,
+      gaps: pieces.slice(1).map((b, i) => Math.round(b.left - pieces[i].right)),
+      insets: [pieces[0].left - edges.left, edges.right - pieces[pieces.length - 1].right],
+    };
+  });
+  expect(layout.count, 'orbs, potions, context button, belt').toBeGreaterThanOrEqual(5);
+  for (const gap of layout.gaps) expect(gap, `gaps ${layout.gaps}`).toBeLessThanOrEqual(40);
+  expect(Math.abs(layout.insets[0] - layout.insets[1]), `insets ${layout.insets}`).toBeLessThanOrEqual(2);
+});
+
 // On a very wide window the map stays inside its column: a 2400px CSS cap on the column
 // fought the width ViewportManager sets, and at 3840x2160 the canvas ran 320px past
 // the header and under the sidebar (tracker 0.19).

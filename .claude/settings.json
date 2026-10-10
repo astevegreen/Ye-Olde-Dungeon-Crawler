@@ -29,6 +29,11 @@
             "type": "command",
             "command": "node .claude/hooks/typecheck.mjs",
             "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/handoff-nudge.mjs",
+            "timeout": 30
           }
         ]
       }

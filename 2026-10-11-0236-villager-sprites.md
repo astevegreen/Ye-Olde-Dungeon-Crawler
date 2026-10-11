@@ -22,3 +22,4 @@ Complete. Art audit next: item 2, wave 8's deferred pieces (rune-ring wheel, map
 
 ## Verification
 - `npm run gates` (2863 vitest, sim, schema, build, 33 Chromium Playwright): green on the committed tree. Visual check in game (`.prompts/captures/villagers-after/`): distinct, no clipping, night lighting fine. Pre-push: 91 passed.
+Resumed: 2026-10-11 02:55 UTC

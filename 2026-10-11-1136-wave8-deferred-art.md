@@ -26,6 +26,11 @@ Owner: "wave 8's deferred pieces: The companion wheel redrawn as a rune ring. Ne
 4. Log wave 8 deferred as done in `.prompts/claude-character-art-overhaul.md` status audit; summary lists player-visible changes.
 
 ## Decisions
+- Resume 11:45 UTC, owner: "proceed with all recommendations":
+  - elements.ts retone to the bible's orange: yes, as its own later task (not in these commits).
+  - HUD icons: draw four HUD-sized icons in the new palette, contact sheet first.
+  - Portal "step in" pill moves below the portal tile.
+  - Stairs tag hidden while a visible creature stands on the tile above.
 - No bible design for the aim reticle: ticks + diamond in the spell colour; blast zone dots (not the danger hatch) — chosen so "your blast" and "enemy's blow" never look alike.
 - Map tag tail touches the tile's top row by 1 px (bible geometry); test allows it.
 

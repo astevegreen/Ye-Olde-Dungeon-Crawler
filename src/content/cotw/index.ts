@@ -52,7 +52,8 @@ import { COTW_COINAGE } from './coinage';
 import { COTW_ITEM_FAMILIES } from './itemFamilies';
 import { COTW_LOOT_RATES } from './loot';
 import { OATH_HOLD_HOOK, OATH_TRIGGER } from './oath';
-import { HOSTAGE_VILLAGERS, SIPHON_RITUAL_FLOOR, SIPHON_RITUAL_HOOKS, SIPHON_TIMED_EVENT, SIPHON_VAULT_ID, COTW_SAVIOR_TOWN_HOOK } from './hostageRitual';
+import { HOSTAGE_VILLAGERS, SIPHON_RITUAL_FLOOR, SIPHON_RITUAL_HOOKS, SIPHON_TIMED_EVENT, SIPHON_VAULT_ID } from './hostageRitual';
+import { COTW_HOMECOMING_HOOK } from './homecoming';
 import { COTW_PROLOGUE, COVEN_CHANNELER_STRATEGY, PROLOGUE_HOOKS, PROLOGUE_TIMED_EVENT } from './prologue';
 import { COTW_TILES } from './tiles';
 import { COTW_TOWN_FURNISHING_HOOK } from './townFurnishings';
@@ -176,7 +177,7 @@ export const cotwManifest: GameContentManifest = {
     COTW_DARKNESS_HOOK,
     ...PROLOGUE_HOOKS,
     ...SIPHON_RITUAL_HOOKS,
-    COTW_SAVIOR_TOWN_HOOK,
+    COTW_HOMECOMING_HOOK,
     DEEPEST_FLOOR_HOOK,
     COTW_ZONE_VIGNETTES_HOOK,
     COTW_SVART_TAUNT_HOOK,

@@ -24,7 +24,6 @@ import {
   ExecuteChoiceAction,
   type EngineContext,
 } from '../../../engine';
-import { populateReturnedCaptives, RETURNED_CAPTIVE_POSITIONS } from '../hostageRitual';
 import { ProfileManager, MemoryStorage } from '../../../engine/storage/profile-manager';
 import { Monster } from '../../../engine/entities/monster';
 import { createScaledItem } from '../../../engine/dungeon/lootSpawner';
@@ -198,57 +197,6 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
 
     const unbound = choice.options.find((o) => o.id === 'gaze_unbound')!;
     expect(unbound.consequences.some((c) => c.type === 'grantItem' && (c as any).itemId === 'supreme_health_potion')).toBe(true);
-  });
-
-  it('a savior finds the four captives freed on floor 22 home in Bjarnarhaven, as who they were', () => {
-    const worldState = createWorldState();
-    const player = new Player({ name: 'Sven', position: { x: 0, y: 0 } });
-    const map = new GameMap(50, 50);
-    const logs: string[] = [];
-    const ctx: EngineContext = {
-      player,
-      map,
-      surfaces: null as any,
-      worldState,
-      rng: () => 0.5,
-      log: (m) => logs.push(m),
-      getWorldFlag: (f) => Boolean(worldState.flags[f]),
-      setWorldFlag: (f, v) => setFlag(worldState, f, v),
-      currentFloor: 0,
-      removeEntity: (e) => map.removeEntity(e),
-      addEntity: (e) => map.addEntity(e),
-      compendium: null as never,
-    };
-
-    populateReturnedCaptives(ctx);
-    expect(map.getEntityById('npc-returned-1')).toBeNull();
-
-    setFlag(worldState, 'savior_of_jarnvidr', true);
-    populateReturnedCaptives(ctx);
-    populateReturnedCaptives(ctx);
-
-    // With no one taken in the raid, the captives were Ingrid, Torstein, Sigrid and Leif.
-    const names = [1, 2, 3, 4].map((i) => map.getEntityById(`npc-returned-${i}`)?.name);
-    expect(names).toEqual(['Ingrid of the Mill', 'Torstein the Cooper', 'Sigrid the Weaver', 'Young Leif']);
-    const looks = [1, 2, 3, 4].map((i) => (map.getEntityById(`npc-returned-${i}`) as any).spriteKey);
-    expect(looks).toEqual(['captive_villager_1', 'captive_villager_2', 'captive_villager_3', 'captive_villager_4']);
-    RETURNED_CAPTIVE_POSITIONS.forEach((pos, i) => expect(map.getEntityById(`npc-returned-${i + 1}`)).toMatchObject(pos));
-    expect(logs.filter((l) => l.includes('home from the Siphon Altar'))).toHaveLength(1);
-
-    // Their talk follows the descent: seated again with the new line, never twice.
-    setFlag(worldState, 'vidnir_slain', true);
-    populateReturnedCaptives(ctx);
-    expect((map.getEntityById('npc-returned-2') as any).dialogText).toContain('herald');
-    expect(map.getAllEntities().filter((e) => e.id.startsWith('npc-returned-'))).toHaveLength(4);
-
-    const broth = COTW_CHOICES['choice_returned_broth'];
-    expect(broth.options[0].consequences.some((c) => c.type === 'grantItem' && (c as any).itemId === 'hearth_broth_flask')).toBe(true);
-  });
-
-  it('the returned captives stand on open town floor', () => {
-    const { engine } = new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Home', { seed: 2 });
-    engine.diagnostics.endPrologue?.();
-    for (const pos of RETURNED_CAPTIVE_POSITIONS) expect(engine.map.isPassable(pos.x, pos.y), JSON.stringify(pos)).toBe(true);
   });
 
   it('each reliquary stands once on its floor, and floor 30 keeps Gloom-Tarr', () => {

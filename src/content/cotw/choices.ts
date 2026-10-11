@@ -639,8 +639,8 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
   },
 
   /**
-   * The captives freed from the Siphon Altar, home in Bjarnarhaven (`populateReturnedCaptives`,
-   * hostageRitual.ts): the first of them keeps a kettle on for the hero, a flask a delve.
+   * The captives freed from the Siphon Altar, home in Bjarnarhaven (`populateHomecoming`,
+   * homecoming.ts): the first of them keeps a kettle on for the hero, a flask a delve.
    */
   choice_returned_broth: {
     id: 'choice_returned_broth',

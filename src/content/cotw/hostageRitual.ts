@@ -20,8 +20,6 @@ import {
 import { cotwMilestone } from './renown';
 import { COTW_MERCHANT_PRICING } from './factions';
 import { PROLOGUE_VILLAGERS, prologueVillagerTaken, type RaidVillagerId } from './prologue';
-import { COTW_DEEPEST_FLOOR_COUNTER } from './spellTablets';
-import { RELIC_RECOVERED_FLAG } from './relic';
 
 /**
  * The Siphon Altar of Járnviðr (floor 22). Four captive villagers are bound around a
@@ -111,7 +109,7 @@ interface CaptiveIdentity {
 }
 
 /** Who is bound in a captive's place this run: a villager taken in the raid, or the captive. */
-function captiveIdentity(engine: EngineContext, captiveId: string): CaptiveIdentity {
+export function captiveIdentity(engine: EngineContext, captiveId: string): CaptiveIdentity {
   const index = HOSTAGE_VILLAGERS.findIndex((v) => v.id === captiveId);
   const standIn = RAID_STAND_INS[captiveId];
   const villager = standIn && prologueVillagerTaken(engine, standIn.villagerId)
@@ -188,6 +186,17 @@ function isAccountedFor(engine: EngineContext, captiveId: string): boolean {
   return (
     getFlag(engine.worldState, `${captiveId}_rescued`) || getFlag(engine.worldState, `${captiveId}_sacrificed`)
   );
+}
+
+/** Whether the captive was cut loose and sent home (homecoming.ts seats them in town). */
+export function captiveRescued(engine: EngineContext, captiveId: string): boolean {
+  return getFlag(engine.worldState, `${captiveId}_rescued`);
+}
+
+/** How the ritual ended for the town: not yet, every captive home, or someone lost to the altar. */
+export function ritualOutcome(engine: EngineContext): 'pending' | 'all_home' | 'some_lost' {
+  if (!getFlag(engine.worldState, FLAG_RESOLVED)) return 'pending';
+  return getCounter(engine.worldState, COUNTER_SACRIFICED) > 0 ? 'some_lost' : 'all_home';
 }
 
 /** Captives neither rescued nor sacrificed yet, in roster order. */
@@ -496,85 +505,4 @@ const SIPHON_RITUAL_HOOK: ActionHook = {
 };
 
 export const SIPHON_RITUAL_HOOKS: ActionHook[] = [SIPHON_RESCUE_HOOK, SIPHON_RITUAL_HOOK];
-
-/**
- * Where the four captives freed from the Siphon Altar stand once home, in roster order: by
- * Olaf's counter, in the armory, in the temple, and on the plaza road.
- */
-export const RETURNED_CAPTIVE_POSITIONS = [
-  { x: 13, y: 8 },
-  { x: 39, y: 7 },
-  { x: 26, y: 30 },
-  { x: 24, y: 20 },
-];
-
-const RETURNED_CAPTIVES_SEATED_FLAG = 'savior_villagers_seated_town';
-
-/** What the returned captives say, as the descent goes on. */
-function returnedCaptiveLine(engine: EngineContext): string {
-  const ws = engine.worldState;
-  if (getFlag(ws, 'vidnir_slain')) return 'They say the herald told you how it ends at the root. Whatever you choose down there, come home.';
-  if (getCounter(ws, COTW_DEEPEST_FLOOR_COUNTER) >= 34) return 'The cellar air smells of weeping wood and dark sap now. We light a candle for you each night.';
-  if (getFlag(ws, RELIC_RECOVERED_FLAG)) return 'The fountain runs again, but the longhouses shudder at night. Something below is waking.';
-  return 'The pyres of Járnviðr still come back to me at night. Then I wake, and I am home.';
-}
-
-/**
- * A savior's captives come home: each of the four freed on floor 22 stands in Bjarnarhaven, as
- * the person they were this run (a villager the coven took in the raid, or the captive; see
- * `captiveIdentity`). The first keeps a kettle on (`choice_returned_broth`).
- */
-export function populateReturnedCaptives(engine: EngineContext): void {
-  if (engine.currentFloor !== 0) return;
-  const ws = engine.worldState;
-  if (!getFlag(ws, 'savior_of_jarnvidr')) return;
-
-  const names: string[] = [];
-  const line = returnedCaptiveLine(engine);
-  HOSTAGE_VILLAGERS.forEach((captive, i) => {
-    const npcId = `npc-returned-${i + 1}`;
-    const position = RETURNED_CAPTIVE_POSITIONS[i];
-    const identity = captiveIdentity(engine, captive.id);
-    names.push(identity.shortName);
-    // Seated once; seated again when the story has moved on, so they speak of it.
-    const seated = engine.map.getEntityById(npcId) as NPC | null;
-    if (seated && seated.dialogText === line) return;
-    if (seated) engine.removeEntity(seated);
-    else if (engine.map.getEntityAt(position.x, position.y)) return;
-    engine.map.addEntity(
-      new NPC({
-        id: npcId,
-        name: identity.name,
-        role: 'villager',
-        position,
-        choiceId: i === 0 ? 'choice_returned_broth' : undefined,
-        spriteKey: identity.standIn?.villagerId ?? captive.id,
-        greeting: i === 0 ? 'Home, and warm! Come, take some broth before you go down again.' : 'You brought me home from the altar. I will not forget it.',
-        dialogText: line,
-      })
-    );
-  });
-
-  if (!getFlag(ws, RETURNED_CAPTIVES_SEATED_FLAG)) {
-    setFlag(ws, RETURNED_CAPTIVES_SEATED_FLAG, true);
-    engine.log(`Word spreads through Bjarnarhaven: ${listNames(names)} are home from the Siphon Altar, safe and whole.`);
-  }
-}
-
-export const COTW_SAVIOR_TOWN_HOOK: ActionHook = {
-  id: 'cotw-savior-town-population',
-  phase: 'post',
-  actionType: '*',
-  execute: ({ engine }) => {
-    const ws = engine.worldState;
-    if (!getFlag(ws, 'savior_of_jarnvidr')) return;
-
-    // A new delve, a new flask.
-    if (engine.currentFloor > 0) {
-      if (getFlag(ws, 'returned_broth_claimed')) setFlag(ws, 'returned_broth_claimed', false);
-      return;
-    }
-    populateReturnedCaptives(engine);
-  },
-};
 

@@ -17,6 +17,8 @@ Owner: "Just do item 2 and then do a handoff". Item 2 was art audit "Left to do"
 Complete. Art audit next: item 2, wave 8's deferred pieces (rune-ring wheel, map markers, aim reticle, element retone: fire orange), or the portraits above if the owner says yes.
 
 ## Decisions
+- Portraits only for NPCs the player talks to repeatedly — owner: "let's give portraits to NPCs that we can actually talk to - if dialogue only happens once or twice then skip portraits on those NPCS"
+- Next task — owner: "let's have the rescued townspeople populate in town if they are saved and have their dialogue update as you descend further"
 - Map sprites only this task; portraits left as a question — chosen because the audit item names the map recipes.
 - Hallvard drawn seated against the wall, frost on his mail, per `prologue.ts:210`.
 

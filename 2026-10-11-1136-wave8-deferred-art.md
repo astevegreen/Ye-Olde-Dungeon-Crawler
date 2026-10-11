@@ -7,6 +7,10 @@ Owner: "wave 8's deferred pieces: The companion wheel redrawn as a rune ring. Ne
 ## Decide first
 - Retone `elements.ts` fire from red `#ef4444` to the bible's orange `#ff8a2c` (also frost/lightning/poison per bible `palette.js`)? It recolours the new aim line, blast zone and fire damage numbers. — recommend: yes, as its own small task, because red is the danger colour and the owner didn't ask for it here.
 
+- HUD icons came back a regression from the visual check: the map drawings smear at the HUD's ~15 px (backpack reads as a bucket, coins a smear, rune stone a plain pebble, chest a flat square). Draw four HUD-sized icons in the new palette (strokes 5+ units, memory `hud-icon-scale`), or keep the old ones and drop that piece? — recommend: draw new ones, contact sheet first, because the old ones still clash with the map's art.
+- The portal's "… · step in" label pill covers its new tag. Move the pill below the portal tile, or show no tag while the pill shows? — recommend: move the pill below, because then both read.
+- A stairs tag hides a creature standing on the tile above (seen in town). Hide the tag while a visible creature stands there? — recommend: yes, because the creature matters more.
+
 ## Done (all uncommitted, built, tests green)
 - HUD icons: `COTW_UI_PIXEL_ICONS` in `src/content/cotw/sprites/uiIcons.ts` maps the 4 `ui~` keys to the item pixel sprites; `installUiIcons(recipes, pixelSprites)` in `src/rendering/uiIcons.ts`; `main.ts` passes them; doc line in `content-extensibility.md`; test `uiPixelIcons.test.ts`.
 - Wheel: `src/rendering/radialMenu.ts` ports bible `markers.js` `wheel` (theme-derived colours, new role `wheelStone` in `engine/types/theme.ts` + `rendering/theme.ts`); `render(..., t)` returns moved; renderer passes `markerNow`.
@@ -16,7 +20,7 @@ Owner: "wave 8's deferred pieces: The companion wheel redrawn as a rune ring. Ne
 - Cleanup-commit versions of the 6 files that would differ saved in `.prompts/scratch/cleanup/` (monsters.ts, atlas.ts, sprites/index.ts, spriteRecipes/sprite-mapper/entityIconSprite tests).
 
 ## Next
-1. Read the visual-check verdict: captures in `.prompts/captures/w8d-*` (it was still running; its before-worktree is `../yodc-before`, remove it with `git worktree remove` if left). Fix nits it reports.
+1. Visual check done (verdict: wheel, aim and tags as intended; HUD icons a regression; nits above). Images `.prompts/captures/w8d-z/` (`inv8-`, `coin8-`, `rune8-`, `chips-*`, `pile-chest-*`, `z-g1.png`, `z-b2.png`), frames `w8d-before/`, `w8d-after/`; rerun `URL=… OUT=… SIZE=1366x768 node .prompts/captures/w8d-run.mjs`. Apply the Decide-first answers. Minor, unfixed: the reticle's ticks cover a monster's face; a blast centres on the first creature hit, not the reticle (engine geometry). If the HUD-icon piece is dropped, revert uiIcons.ts/rendering uiIcons.ts/main.ts/cotw index and keep `items.ts`' four HUD recipes in the cleanup.
 2. Commit 1 (visible art): `git checkout HEAD --` monsters.ts, atlas.ts, the 3 cleanup tests, restore items.ts/organicShapes.ts; hand-edit `sprites/index.ts` to keep the items import but add `export { COTW_UI_PIXEL_ICONS } from './uiIcons';`. `npm run gates`, commit with `Requested:` trailer.
 3. Commit 2 (cleanup): copy `.prompts/scratch/cleanup/*` back, `rm` items.ts and organicShapes.ts, gates, commit, `git push` in background.
 4. Log wave 8 deferred as done in `.prompts/claude-character-art-overhaul.md` status audit; summary lists player-visible changes.

@@ -859,3 +859,380 @@ mat('scr_leechLip', '#705658', { shiny: true, hs: 8 });
 mat('scr_leechFlesh', '#5e4448', { em: true, hs: 8 });
 mat('scr_leechMaw', '#0b0a0f', { em: true });
 mat('scr_leechTooth', '#d6cdb8', { shiny: true, hs: 6 });
+
+// the Kobold, the Kobold Shaman, the Goblin, the Hoarfrost Skraeling (portraitsGoblins.ts)
+// grounds
+mat('scr_gKobold', '#182627', { em: true, hs: 12 });
+mat('scr_koboldTorchWall', '#34423e', { em: true, hs: 8 });
+mat('scr_gKoboldShaman', '#201c32', { em: true, hs: 12 });
+mat('scr_koboldShamanHalo', '#6e3a1c', { em: true, hs: 6 });
+mat('scr_gGoblin', '#281c25', { em: true, hs: 12 });
+mat('scr_gSkraeling', '#132230', { em: true, hs: 10 });
+// skins (the map's colours)
+mat('scr_koboldSkin', '#9c8c5e', { hs: 14 });
+mat('scr_koboldShamanSkin', '#a8704c', { hs: 14 });
+mat('scr_goblinSkin', '#6f8e4c', { hs: 14 });
+mat('scr_skraelingSkin', '#8496a6', { hs: 10 });
+// shared by the kin
+mat('scr_goblinKinMaw', '#170c0e');
+mat('scr_goblinKinTooth', '#d6caa2', { hs: 8 });
+mat('scr_goblinKinNail', '#2a2220', { shiny: true });
+// kobold
+mat('scr_koboldHorn', '#b9a888', { hs: 12 });
+mat('scr_koboldBlade', '#9aa2ae', { shiny: true, hs: 8 });
+mat('scr_koboldBronze', '#8a6a3c', { shiny: true, hs: 10 });
+// kobold shaman
+mat('scr_koboldShamanBone', '#d4c9aa', { hs: 12 });
+mat('scr_koboldShamanFeather', '#5a4e44', { hs: 10 });
+mat('scr_koboldShamanLinen', '#a89a7c', { tex: 'cloth', hs: 10 });
+mat('scr_koboldShamanStaff', '#4a3526', { tex: 'wood', hs: 12 });
+mat('scr_koboldShamanTongue', '#6a3a40', { hs: 8 });
+// goblin
+mat('scr_goblinClub', '#6e5038', { tex: 'wood', hs: 12 });
+mat('scr_goblinStud', '#6a6e78', { shiny: true, hs: 8 });
+mat('scr_goblinLeather', '#4e3828', { hs: 12 });
+mat('scr_goblinFireGlow', '#5c2c14', { em: true, hs: 6 });
+// hoarfrost skraeling
+mat('scr_skraelingFur', '#bcc6cc', { hs: 8 });
+mat('scr_skraelingFurDark', '#3e4a5e', { hs: 8 });
+mat('scr_skraelingRime', '#d6e6f0', { shiny: true, hs: 6 });
+mat('scr_skraelingEye', '#d8f8ff', { em: true, hs: 0 });
+mat('scr_skraelingIce', '#a6e4fa', { em: true, hs: 4 });
+mat('scr_skraelingShaft', '#5e4634', { tex: 'wood', hs: 12 });
+mat('scr_skraelingThong', '#2e2420', { hs: 10 });
+
+// the Troll-Wife Warlock, the Coven Warlock, the Winter Hag (portraitsWitches.ts)
+mat('scr_gTwWarlock', '#29232f', { em: true, hs: 12 });
+mat('scr_twWarlockHalo', '#4a3472', { em: true, hs: 8 });
+mat('scr_twWarlockSkin', '#7a8770', { hs: 12 });
+mat('scr_twWarlockHair', '#3a2c27', { hs: 10 });
+mat('scr_twWarlockShawl', '#7c5638', { tex: 'cloth', hs: 12 });
+mat('scr_twWarlockDress', '#4e4542', { tex: 'cloth', hs: 12 });
+mat('scr_twWarlockStaff', '#4a3728', { tex: 'wood', hs: 12 });
+mat('scr_twWarlockStone', '#4a4855', { tex: 'stone', hs: 10 });
+mat('scr_twWarlockHex', '#8c84ff', { em: true, hs: 0 });
+mat('scr_twWarlockLip', '#40463a', { hs: 10 });
+mat('scr_twWarlockMouth', '#160f12');
+mat('scr_twWarlockNail', '#221d26', { shiny: true, hs: 8 });
+mat('scr_twWarlockTooth', '#cbbf9c', { hs: 10 });
+mat('scr_gCoven', '#232a3c', { em: true, hs: 12 });
+mat('scr_covenHood', '#5e5046', { tex: 'cloth', hs: 12 });
+mat('scr_covenHollow', '#141014');
+mat('scr_covenSkin', '#66734f', { hs: 12 });
+mat('scr_covenEye', '#120d10', { em: true });                // the eye-pits: the fire below never reaches them
+mat('scr_covenMouth', '#170e0e');
+mat('scr_covenTooth', '#c4b894', { hs: 10 });
+mat('scr_covenFrostbite', '#23222c', { shiny: true, hs: 10 });
+mat('scr_covenBowl', '#66625e', { tex: 'stone', hs: 10 });
+mat('scr_covenSnow', '#c9d6e2', { hs: 6 });
+mat('scr_covenFirelit', '#b8a25a', { em: true, hs: 10 });    // her skin where the bowl's fire catches it
+mat('scr_gWinterHag', '#16222f', { em: true, hs: 10 });
+mat('scr_winterHagHalo', '#2b5670', { em: true, hs: 6 });
+mat('scr_winterHagSkin', '#a9b2b0', { hs: 10, warm: 200 });
+mat('scr_winterHagHair', '#dde8ef', { hs: 6, warm: 200 });
+mat('scr_winterHagRobe', '#52607c', { tex: 'cloth', hs: 10 });
+mat('scr_winterHagShawl', '#6b6e86', { tex: 'cloth', hs: 10 });
+mat('scr_winterHagCrook', '#4d3826', { tex: 'wood', hs: 12 });
+mat('scr_winterHagCrystal', '#9fe6ff', { em: true, hs: 0 });
+mat('scr_winterHagEye', '#c8f4ff', { em: true, hs: 0 });
+mat('scr_winterHagRime', '#d3e6ee', { shiny: true, tex: 'ice', hs: 4 });
+mat('scr_winterHagMouth', '#151a24');
+mat('scr_winterHagSocket', '#24303e', { em: true, hs: 6 }); // the eye-pits, which the lamp never reaches
+mat('scr_winterHagNail', '#9cb6c6', { shiny: true, hs: 6 });
+
+// the Dark Sorcerer, the Sól-Brand Zealot (portraitsDarkArts.ts)
+mat('scr_gSorcerer', '#202328', { em: true, hs: 12 }); // the rock of the silver veins
+mat('scr_gSorcererVein', '#60646e', { em: true, hs: 6 }); // tarnished silver in it
+mat('scr_sorcererShade', '#343a58', { em: true, hs: 6 }); // bone in the hood's dark, touched by the eyes' light
+mat('scr_sorcererEyeGlow', '#2c4470', { em: true, hs: 4 });
+mat('scr_sorcererRobe', '#514c6e', { tex: 'cloth', hs: 12 });
+mat('scr_sorcererTrim', '#a9adb8', { shiny: true, hs: 8 });
+mat('scr_sorcererVoid', '#120e18', { em: true, hs: 6 }); // the dark under the hood: no light reaches it
+mat('scr_sorcererSkin', '#b39a8e', { hs: 10 });
+mat('scr_sorcererNail', '#3a3236', { shiny: true, hs: 8 });
+mat('scr_sorcererMouth', '#1a1216');
+mat('scr_sorcererEye', '#9cc6ff', { em: true, hs: 0 });
+mat('scr_sorcererBolt', '#fff27a', { em: true, hs: 0 });
+mat('scr_sorcererBoltCore', '#fffef0', { em: true, hs: 0 });
+mat('scr_gZealot', '#221a1d', { em: true, hs: 12 }); // obsidian, black glass
+mat('scr_gZealotGlass', '#3a2a2a', { em: true, hs: 10 }); // its facets, catching the fire
+mat('scr_haloZealot', '#6a3a22', { em: true, hs: 8 }); // the stolen sun's halo, ember
+mat('scr_zealotSkin', '#b08670', { hs: 14 });
+mat('scr_zealotBrow', '#3e2a22', { hs: 10 });
+mat('scr_zealotScar', '#8a4a32', { hs: 10 });
+mat('scr_zealotBlister', '#a86a4c', { shiny: true, hs: 10 });
+mat('scr_zealotRobe', '#d6c69c', { hs: 10 });
+mat('scr_zealotChar', '#3e322c', { tex: 'rot', hs: 10 });
+mat('scr_zealotIron', '#3b404b', { shiny: true, hs: 10 });
+mat('scr_zealotWhite', '#d8cbb6', { hs: 6 });
+mat('scr_zealotIris', '#3a2a20', { hs: 8 });
+mat('scr_zealotMouth', '#241012', { em: true });
+mat('scr_zealotTongue', '#6a3034', { hs: 10 });
+mat('scr_zealotTooth', '#d2c4a6', { hs: 8 });
+mat('scr_zealotBrand', '#ffd9b8', { em: true, hs: 0 }); // white-hot at the heart, ember at the edge
+mat('scr_zealotSun', '#fff3e4', { em: true, hs: 0 });
+
+// the Cave Troll, the Ogre, the Orc (portraitsBrutes.ts)
+mat('scr_gCaveTroll', '#1b2129', { em: true, hs: 12 });
+mat('scr_caveTrollSky', '#3a4c66', { em: true, hs: 10 }); // the night outside the cave mouth
+mat('scr_caveTrollMoon', '#dfe8f2', { em: true, hs: 4 });
+// moonlit: the lights go cold, not warm
+mat('scr_caveTrollHide', '#566056', { tex: 'stone', hs: 14, warm: 205 }); // a hide gone half to stone
+mat('scr_caveTrollHead', '#6e786a', { hs: 14, warm: 205 });
+mat('scr_caveTrollMoss', '#4a5838', { tex: 'fur', hs: 10, warm: 190 });
+mat('scr_caveTrollLichen', '#868c70', { hs: 8 });
+mat('scr_caveTrollFir', '#1f2f27', { hs: 12 });
+mat('scr_caveTrollTusk', '#cdbf98', { hs: 10 });
+mat('scr_caveTrollMaw', '#1a1214', { hs: 4 });
+mat('scr_gOgre', '#2a211e', { em: true, hs: 12 });
+mat('scr_ogreForge', '#c4521c', { em: true, hs: 6 }); // the forge-mouth's glow
+mat('scr_ogreSkin', '#a4876a', { hs: 14 });
+mat('scr_ogreStrap', '#4a3326', { hs: 14 });
+mat('scr_ogreCleaver', '#8c929a', { shiny: true, hs: 8 });
+mat('scr_ogreHandle', '#4d3826', { tex: 'wood' });
+mat('scr_ogreBlood', '#5e1a16', { hs: 6 }); // old blood on the blade
+mat('scr_ogreMaw', '#24141a', { hs: 4 });
+mat('scr_ogreTooth', '#d8cba6', { hs: 10 });
+mat('scr_ogreIron', '#5c616c', { shiny: true, hs: 10 });
+mat('scr_gOrc', '#18202c', { em: true, hs: 12 });
+mat('scr_orcTorchHalo', '#3c302c', { em: true, hs: 8 }); // the torch's warmth on the ice
+mat('scr_orcIce', '#33506a', { em: true, hs: 8 }); // icicles and the ice wall
+mat('scr_orcSkin', '#5f7650', { hs: 12 });
+mat('scr_orcHelm', '#535a66', { shiny: true, hs: 10 });
+mat('scr_orcMail', '#6c7482', { shiny: true, tex: 'mail', hs: 8 });
+mat('scr_orcFur', '#3e342c', { tex: 'fur', hs: 10 }); // a wolfskin against the cold
+mat('scr_orcHair', '#2c2420', { hs: 8 });
+mat('scr_orcTusk', '#cdbf98', { hs: 10 });
+mat('scr_orcMaw', '#1c1216', { hs: 4 });
+mat('scr_orcAxe', '#97a2b2', { shiny: true, hs: 10 });
+mat('scr_orcHaft', '#4d3826', { tex: 'wood' });
+mat('scr_orcStrap', '#4f3627', { hs: 14 });
+
+// the Jötunn Champion, the Fire Giant (portraitsGiants.ts)
+mat('scr_gJotunChamp', '#1f2338', { em: true, hs: 12 });
+mat('scr_jotunChampSkin', '#6c87b0', { hs: 10, warm: 200 });
+mat('scr_jotunChampFur', '#aab5c6', { tex: 'fur', hs: 8, warm: 200 });
+mat('scr_jotunChampBeard', '#a9bacb', { hs: 6, warm: 195 });
+mat('scr_jotunChampMail', '#5d6676', { shiny: true, tex: 'mail', hs: 8, warm: 200 });
+mat('scr_jotunChampHelm', '#566070', { shiny: true, hs: 10, warm: 200 });
+mat('scr_jotunChampRime', '#dcecf5', { shiny: true, tex: 'ice', hs: 6, warm: 190 });
+mat('scr_jotunChampAxe', '#99a5b5', { shiny: true, hs: 8, warm: 200 });
+mat('scr_jotunChampMaw', '#141a2c', { hs: 8 });
+mat('scr_gFireGiant', '#24171a', { em: true, hs: 14 });
+mat('scr_fireGiantCrust', '#272224', { tex: 'stone', hs: 12, contrast: 0.8 });
+mat('scr_fireGiantChar', '#342a27', { tex: 'rot', hs: 10 });
+mat('scr_fireGiantBlade', '#28262c', { shiny: true, hs: 10 });
+mat('scr_fireGiantMaw', '#160a08', { hs: 6 });
+
+// the Huldra, the Huldra Hollow-Back, the Fylgja, the Näcken (portraitsHiddenFolk.ts)
+// the huldra: a summer night in the birch wood, moonlight
+mat('scr_gHuldra', '#1e2b2c', { em: true, hs: 12 });
+mat('scr_huldraSkin', '#cdc3b8', { hs: 8 });
+mat('scr_huldraHair', '#aeaa66', { hs: 12 });
+mat('scr_huldraHairDark', '#666b3a', { hs: 12 });
+mat('scr_huldraMoss', '#56733e', { tex: 'cloth', hs: 12 });
+mat('scr_huldraTail', '#b39a7c', { hs: 12 });
+mat('scr_huldraTuft', '#3e2e26', { tex: 'fur', hs: 12 });
+mat('scr_huldraFlower', '#f1ead6', { hs: 6 });
+mat('scr_huldraIris', '#9a7a3a', { hs: 10 });
+mat('scr_huldraLash', '#2c2420', { hs: 8 });
+mat('scr_huldraLip', '#b48e88', { hs: 10 });
+// her hollow back, both kinds
+mat('scr_huldraRim', '#8a7052', { tex: 'bark', hs: 12 });
+mat('scr_huldraHollow', '#3a2818', { tex: 'rot', hs: 12 });
+mat('scr_huldraHollowDeep', '#120a06', { em: true });
+mat('scr_huldraFungus', '#d2c09a', { hs: 8 });
+mat('scr_huldraLichen', '#8fae5a', { tex: 'rot', hs: 10 });
+// the Hollow-Back: gone to bark, lit by the foxfire in her own rot
+mat('scr_gHuldraOld', '#1f2622', { em: true, hs: 12 });
+mat('scr_huldraOldSkin', '#8e826c', { hs: 10 });
+mat('scr_huldraOldBark', '#76664e', { tex: 'bark', hs: 12 });
+mat('scr_huldraOldHair', '#7a8462', { tex: 'fur', hs: 8 });
+mat('scr_huldraOldHairDark', '#3e4634', { tex: 'fur', hs: 8 });
+mat('scr_huldraBarkGown', '#5e4a34', { tex: 'bark', hs: 12 });
+mat('scr_huldraSocket', '#120c0a', { em: true });
+mat('scr_huldraFoxfire', '#9ee8c4', { em: true, hs: 0 });
+// the fylgja
+mat('scr_gFylgja', '#1a2232', { em: true, hs: 10 });
+mat('scr_fylgjaFur', '#e2eaf0', { hs: 6, warm: 210 });
+mat('scr_fylgjaMist', '#7c8ca8', { em: true, hs: 6 });
+mat('scr_fylgjaFade', '#6a7a94', { hs: 6 });
+mat('scr_fylgjaAntler', '#e2dccc', { hs: 6 });
+mat('scr_fylgjaGold', '#ffe3a0', { em: true, hs: 0 });
+mat('scr_fylgjaNose', '#3c4454', { shiny: true, hs: 8 });
+mat('scr_fylgjaEye', '#ffe6a8', { em: true, hs: 0 });
+mat('scr_fylgjaPupil', '#1c2232', { shiny: true, hs: 6 });
+mat('scr_fylgjaInner', '#8e9cb0', { hs: 8 });
+// the Näcken
+mat('scr_gNacken', '#14232a', { em: true, hs: 10 });
+mat('scr_nackenSkin', '#a7b7ad', { shiny: true, hs: 10 });
+mat('scr_nackenHair', '#36403f', { shiny: true, hs: 8 });
+mat('scr_nackenWeed', '#4e6a3a', { hs: 10 });
+mat('scr_nackenFiddle', '#94532a', { tex: 'wood', shiny: true, hs: 12 });
+mat('scr_nackenFiddleDark', '#2e1a10', { hs: 10 });
+mat('scr_nackenString', '#c8c0a8', { hs: 6 });
+mat('scr_nackenEye', '#d8f6ee', { em: true, hs: 0 });
+mat('scr_nackenMouth', '#141c1e', { em: true });
+mat('scr_nackenIce', '#56788a', { shiny: true, tex: 'ice', hs: 6 });
+mat('scr_nackenBody', '#869890', { hs: 10 });
+mat('scr_nackenWater', '#5a9cb0', { em: true, hs: 6 });
+
+// the Vengeful Nisse, the Skratti, the Slag Amorphous (portraitsFaeSlag.ts)
+mat('scr_gNisse', '#2a2019', { em: true, hs: 12 });
+mat('scr_nisseHalo', '#6e4024', { em: true, hs: 8 });
+mat('scr_nisseWool', '#5c5850', { tex: 'cloth', hs: 10 });
+mat('scr_nisseWoolDark', '#423e38', { tex: 'cloth', hs: 10 });
+mat('scr_nisseCap', '#7c3226', { tex: 'cloth', hs: 12 });
+mat('scr_nisseSkin', '#a6765a', { hs: 14 });
+mat('scr_nisseNose', '#b5664a', { hs: 10 });
+mat('scr_nisseBeard', '#9d998e', { hs: 6 });
+mat('scr_nisseMaw', '#1a100c');
+mat('scr_nisseTooth', '#bca472', { hs: 8 });
+mat('scr_nisseIron', '#3c4048', { shiny: true, hs: 10 });
+mat('scr_nissePane', '#f0903a', { em: true, hs: 4 });
+mat('scr_nisseStraw', '#b0985a', { hs: 10 });
+mat('scr_nisseNail', '#2c201a', { shiny: true });
+mat('scr_gSkratti', '#142232', { em: true, hs: 10 });
+mat('scr_skrattiSkin', '#7eaecb', { hs: 8 });
+mat('scr_skrattiEar', '#3f6a8c', { hs: 8 });
+mat('scr_skrattiHide', '#4a7494', { hs: 8 });
+mat('scr_skrattiSocket', '#0a121c');
+mat('scr_skrattiMaw', '#0a1018', { em: true });
+mat('scr_skrattiTooth', '#e6f4fc', { shiny: true, hs: 6 });
+mat('scr_skrattiIce', '#b4e2f4', { shiny: true, tex: 'ice', hs: 6 });
+mat('scr_gSlag', '#231a16', { em: true, hs: 10 });
+mat('scr_slagHalo', '#6a321a', { em: true, hs: 8 });
+mat('scr_slagHeart', '#ff7a26', { em: true, hs: 0 });
+mat('scr_slagCrust', '#4f433c', { tex: 'stone', hs: 10 });
+mat('scr_slagClinker', '#2c2522', { tex: 'stone', hs: 10 });
+mat('scr_slagCooling', '#6e3e24', { tex: 'stone', hs: 8 });
+mat('scr_slagMaw', '#160c08', { em: true });
+
+// the Captive of the Chariot, the Choke-Damp Phantasm (portraitsBound.ts)
+mat('scr_gCaptive', '#271c1b', { em: true, hs: 12 });
+mat('scr_captiveHalo', '#6a4622', { em: true, hs: 8 });
+mat('scr_gChokeDamp', '#1f2119', { em: true, hs: 10 });
+mat('scr_chokeDampPool', '#4a5030', { em: true, hs: 8 });
+mat('scr_captiveLight', '#f8cf78', { em: true, hs: 16, warm: 55 }); // a body of Sól's light, its shadows sliding to ember
+mat('scr_captiveCore', '#fffaf0', { em: true, hs: 0 });
+mat('scr_captiveRay', '#eeb84a', { em: true, hs: 14 });
+mat('scr_captiveBurn', '#ff8a2c', { em: true, hs: 0 });
+mat('scr_captiveIron', '#363840', { shiny: true, hs: 10 });
+mat('scr_captiveMaw', '#3a1a0e', { hs: 8 });
+mat('scr_chokeDampGas', '#8e9650', { hs: 8, warm: 60 }); // mine gas, opaque, read by value
+mat('scr_chokeDampGasDeep', '#636a38', { hs: 8, warm: 60 });
+mat('scr_chokeDampGasFaint', '#41462a', { hs: 8 });
+mat('scr_chokeDampGasLight', '#c4c888', { hs: 6, warm: 60 });
+mat('scr_chokeDampHole', '#1c200f', { hs: 6 });
+mat('scr_chokeDampGlass', '#d8b25a', { em: true, hs: 0 });
+mat('scr_chokeDampFlame', '#ffd27a', { em: true, hs: 0 });
+
+// the Bark-Husk Miner, the Bellows-Automaton, the Prismatic Mirror-Skulker (portraitsConstructs.ts)
+mat('scr_gBarkHusk', '#232220', { em: true, hs: 12 }); // the gallery it digs, under the World-Bark
+mat('scr_barkHuskBark', '#4f3d2c', { tex: 'cloth', hs: 14 });
+mat('scr_barkHuskHeart', '#a08258', { tex: 'wood', hs: 12 }); // the pale wood where it is split
+mat('scr_barkHuskHollow', '#130d09', { hs: 4 }); // the hollow inside
+mat('scr_barkHuskSap', '#cddc52', { em: true, hs: 0 }); // the sap, alight
+mat('scr_barkHuskLichen', '#7a8f5a', { tex: 'rot', hs: 10 });
+mat('scr_barkHuskIron', '#363a42', { shiny: true, hs: 10 }); // the cap and the hoops
+mat('scr_barkHuskRust', '#6a4430', { tex: 'rot', hs: 12 });
+mat('scr_gBellows', '#24252a', { em: true, hs: 12 }); // a cold forge of the Dwarven Works
+mat('scr_bellowsHide', '#7c4238', { tex: 'cloth', hs: 10 });
+mat('scr_bellowsBrass', '#7a5c36', { shiny: true, hs: 14 }); // brass gone brown
+mat('scr_bellowsSoot', '#4c494f', { hs: 6 });
+mat('scr_bellowsPit', '#120d0c', { hs: 4 });
+mat('scr_gMirrorSkulker', '#1d1a24', { em: true, hs: 12 }); // the Siphon's obsidian
+mat('scr_mirrorSkulkerSeam', '#5a2c14', { em: true, hs: 6 }); // a magma seam in the floor, kept dark
+mat('scr_mirrorSkulkerGlass', '#b4c6dc', { shiny: true, hs: 6 });
+mat('scr_mirrorSkulkerDark', '#2a3244', { shiny: true, hs: 8 }); // facets mirroring the dark
+mat('scr_mirrorSkulkerQuartz', '#9ccbdc', { shiny: true, hs: 6 });
+mat('scr_mirrorSkulkerSun', '#fff1ba', { em: true, hs: 0 });
+mat('scr_mirrorSkulkerRose', '#ff9ae8', { em: true, hs: 0 }); // the spectrum a prism throws
+mat('scr_mirrorSkulkerLemon', '#fff59a', { em: true, hs: 0 });
+mat('scr_mirrorSkulkerCyan', '#9af0ff', { em: true, hs: 0 });
+
+// the Shadow Fiend, the Garmling, the Náströnd Feaster (portraitsFiends.ts)
+mat('scr_gShadowFiend', '#221d31', { em: true, hs: 12 });
+mat('scr_shadowFiendSmoke', '#4a4462', { hs: 8 });
+mat('scr_shadowFiendDeep', '#2c2740', { hs: 8 });
+mat('scr_shadowFiendWisp', '#6a6290', { hs: 8 });
+mat('scr_shadowFiendMask', '#383050', { shiny: true, hs: 8 });
+mat('scr_shadowFiendHeart', '#ecd8ff', { em: true });
+mat('scr_shadowFiendMaw', '#0e0918');
+mat('scr_shadowFiendClaw', '#c8c0dc', { shiny: true, hs: 6 });
+mat('scr_gGarmling', '#2a2321', { em: true, hs: 12 });
+mat('scr_garmlingHide', '#423d4c', { tex: 'fur', hs: 10 });
+mat('scr_garmlingHideDark', '#26222c', { tex: 'fur', hs: 10 });
+mat('scr_garmlingNose', '#1c1a20', { shiny: true });
+mat('scr_garmlingGum', '#4a2a2c', { hs: 8 });
+mat('scr_garmlingThroat', '#2a0c06', { em: true });
+mat('scr_garmlingFang', '#e2d6c0', { hs: 6 });
+mat('scr_garmlingIron', '#4a4e58', { shiny: true, hs: 10 });
+mat('scr_garmlingBlood', '#48100f', { shiny: true, hs: 6 });
+mat('scr_garmlingSocket', '#120d12');
+mat('scr_gNastrondFeaster', '#23202a', { em: true, hs: 12 });
+mat('scr_feasterFlesh', '#8c849a', { tex: 'rot', hs: 10 });
+mat('scr_feasterFleshDark', '#5e576c', { tex: 'rot', hs: 10 });
+mat('scr_feasterVein', '#3e3052', { hs: 8 });
+mat('scr_feasterLip', '#6a4a6e', { hs: 8 });
+mat('scr_feasterMaw', '#7a44c4', { em: true, hs: 0 });
+mat('scr_feasterGullet', '#1a0c2a', { em: true });
+mat('scr_feasterTooth', '#cfc3a4', { hs: 10 });
+mat('scr_feasterHair', '#9a968e', { hs: 8 });
+mat('scr_feasterMouth', '#140c18');
+
+// the Frost Drake, the Ancient Wyrm, the Grave-Wyrmling (portraitsDrakes.ts)
+
+// the Cinder-Gilded Duergar, the Haugbúi, the Forge Wretch (portraitsDwarves.ts)
+mat('scr_gildedGround', '#2a2321', { em: true, hs: 12 }); // the cold works: soot on stone
+mat('scr_gildedHalo', '#5c2c16', { em: true, hs: 6 }); // the tongs' glow, banded
+mat('scr_gildedMask', '#a87a2e', { shiny: true, hs: 14 }); // the gold death-mask (the sprite's gilt), tarnished
+mat('scr_gildedSoot', '#3a2a22', { hs: 10 }); // soot burnt into the gold's hollows
+mat('scr_gildedChar', '#3a3434', { hs: 10 }); // the charcoal of him
+mat('scr_gildedPlate', '#4c4644', { shiny: true, hs: 12 }); // charred plate
+mat('scr_gildedAsh', '#8a8682', { tex: 'fur', hs: 8 }); // the ash beard
+mat('scr_gildedPit', '#120c10', { hs: 4 }); // the slits, the mouth-slot, the cracks
+mat('scr_haugbuiGround', '#25231c', { em: true, hs: 12 }); // the mound's earth
+mat('scr_haugbuiSkin', '#56648a', { tex: 'rot', hs: 10 }); // blár sem hel: dead-blue
+mat('scr_haugbuiPit', '#0e0a14', { hs: 4 });
+mat('scr_haugbuiHelm', '#646c78', { shiny: true, hs: 10 });
+mat('scr_haugbuiBronze', '#9c6c36', { shiny: true, hs: 12 }); // old bronze
+mat('scr_haugbuiBeard', '#a8a49c', { tex: 'fur', hs: 8 });
+mat('scr_haugbuiTurf', '#4e6436', { tex: 'fur', hs: 12 });
+mat('scr_haugbuiGrass', '#8a9a52', { hs: 10 });
+mat('scr_haugbuiRime', '#b4d2e2', { shiny: true, tex: 'ice', hs: 6, warm: 190 });
+mat('scr_haugbuiMail', '#73706e', { shiny: true, tex: 'mail', hs: 10 });
+mat('scr_haugbuiRust', '#9a5f38', { tex: 'rot', hs: 12 });
+mat('scr_haugbuiCloak', '#5a4a38', { tex: 'cloth', hs: 12 });
+mat('scr_haugbuiEarth', '#4a3a2a', { tex: 'stone', hs: 12 });
+mat('scr_haugbuiRoot', '#4e3e2c', { tex: 'bark', hs: 12 });
+mat('scr_haugbuiHaft', '#4d3826', { tex: 'wood', hs: 12 });
+mat('scr_wretchGround', '#262120', { em: true, hs: 12 });
+mat('scr_wretchHalo', '#6a3018', { em: true, hs: 6 }); // the forge mouth's glow, banded
+mat('scr_wretchSkin', '#b08a74', { hs: 12 });
+mat('scr_wretchScar', '#8a4a32', { hs: 10 }); // burns
+mat('scr_wretchSoot', '#9a8a80', { tex: 'rot', hs: 12 }); // soot-grey arms
+mat('scr_wretchSmear', '#2a201c', { tex: 'rot', hs: 10 }); // the black soot across the eyes
+mat('scr_wretchMilk', '#d6d2c6', { hs: 6 }); // the blind eyes
+mat('scr_wretchBeard', '#5a4232', { tex: 'fur', hs: 12 }); // the beard, burnt short
+mat('scr_wretchPit', '#140c0c', { hs: 4 }); // the open mouth
+mat('scr_wretchTooth', '#b0a080', { hs: 10 });
+mat('scr_wretchApron', '#4f3627', { hs: 14 });
+mat('scr_wretchIron', '#565c68', { shiny: true, hs: 10 }); // collar, chain, hammer
+mat('scr_wretchHaft', '#7a5a3a', { tex: 'wood', hs: 12 });
+
+// the Amber Sap-Weeper, the Yggdrasil Parasite (portraitsWorldBark.ts)
+mat('scr_gSapWeeper', '#2c2117', { em: true, hs: 12 });
+mat('scr_sapWeeperShell', '#5a4029', { tex: 'bark', hs: 12 });
+mat('scr_sapWeeperChitin', '#3a2d24', { shiny: true, hs: 10 });
+mat('scr_sapWeeperSap', '#e8902c', { em: true, hs: 6 });
+mat('scr_sapWeeperAmber', '#b86a1c', { shiny: true, hs: 14 });
+mat('scr_sapWeeperHole', '#120b07');
+mat('scr_gYggParasite', '#1f2116', { em: true, hs: 12 });
+mat('scr_yggParasiteSkin', '#b4a07e', { shiny: true, hs: 10 });
+mat('scr_yggParasiteEgg', '#a8c048', { em: true, hs: 0 });
+mat('scr_yggParasitePlate', '#56402c', { shiny: true, tex: 'bark', hs: 12 });
+mat('scr_yggParasiteLeg', '#43321f', { shiny: true, hs: 10 });
+mat('scr_yggParasiteBeak', '#b39a72', { shiny: true, hs: 8 });
+mat('scr_yggParasiteHole', '#0e0c08');
+mat('scr_yggParasiteRot', '#2c2619', { tex: 'bark', hs: 10 });

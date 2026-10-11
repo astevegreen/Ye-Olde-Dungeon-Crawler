@@ -63,6 +63,8 @@ export interface RampOptions {
   hs?: number;
   /** Hue the lights slide toward, degrees; default 50 (gold). Cold-lit portraits use blue. */
   warm?: number;
+  /** Scales how far the shadows darken and the lights lift; default 1. Below 1, a flatter ramp. */
+  contrast?: number;
 }
 
 /**
@@ -73,6 +75,7 @@ export interface RampOptions {
 export function ramp(base: string | Rgb, o: RampOptions = {}): Rgb[] {
   const [h, s, l] = rgb2hsl(typeof base === 'string' ? hex(base) : base);
   const hs = o.hs ?? 18;
+  const c = o.contrast ?? 1;
   const cold = 245;
   const warm = o.warm ?? 50;
   const out: Rgb[] = [];
@@ -82,11 +85,11 @@ export function ramp(base: string | Rgb, o: RampOptions = {}): Rgb[] {
     let ss = s;
     let ll = l;
     if (k < 0) {
-      ll = l * (1 - 0.19 * -k);
+      ll = l * (1 - 0.19 * -k * c);
       hh = towardHue(h, cold, (hs * -k) / 3);
       ss = clamp(s + 0.05 * -k, 0, 1);
     } else if (k > 0) {
-      ll = l + (1 - l) * (k === 1 ? 0.22 : 0.46);
+      ll = l + (1 - l) * (k === 1 ? 0.22 : 0.46) * c;
       hh = towardHue(h, warm, (hs * 0.6 * k) / 2);
       ss = clamp(s - 0.06 * k, 0, 1);
     }

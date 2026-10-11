@@ -15,6 +15,18 @@ import { astridPortrait, haakonPortrait, olafPortrait } from './sculpt/portraits
 import { guntherPortrait, ivaldaPortrait, thrainPortrait } from './sculpt/portraitsForge';
 import { bjornPortrait, torvaldPortrait } from './sculpt/portraitsTempleGate';
 import { emberWolfPortrait, frostHoundPortrait, ranvildPortrait } from './sculpt/portraitsKennel';
+import { goblinPortrait, koboldPortrait, koboldShamanPortrait, skraelingPortrait } from './sculpt/portraitsGoblins';
+import { covenWarlockPortrait, trollWifeWarlockPortrait, winterHagPortrait } from './sculpt/portraitsWitches';
+import { darkSorcererPortrait, solBrandZealotPortrait } from './sculpt/portraitsDarkArts';
+import { caveTrollPortrait, ogrePortrait, orcPortrait } from './sculpt/portraitsBrutes';
+import { fireGiantPortrait, jotunChampionPortrait } from './sculpt/portraitsGiants';
+import { fylgjaPortrait, huldraHollowBackPortrait, huldraPortrait, nackenPortrait } from './sculpt/portraitsHiddenFolk';
+import { nissePortrait, skrattiPortrait, slagPortrait } from './sculpt/portraitsFaeSlag';
+import { captivePortrait, chokeDampPortrait } from './sculpt/portraitsBound';
+import { barkHuskMinerPortrait, bellowsAutomatonPortrait, mirrorSkulkerPortrait } from './sculpt/portraitsConstructs';
+import { garmlingPortrait, nastrondFeasterPortrait, shadowFiendPortrait } from './sculpt/portraitsFiends';
+import { duergarPortrait, forgeWretchPortrait, haugbuiPortrait } from './sculpt/portraitsDwarves';
+import { sapWeeperPortrait, yggdrasilParasitePortrait } from './sculpt/portraitsWorldBark';
 
 /** Every portrait idles over four frames. */
 const PORTRAIT_FRAMES = 4;
@@ -90,4 +102,41 @@ export const COTW_PORTRAITS: Record<string, PixelSprite> = {
   glacier_borer: portrait(glacierBorerPortrait),
   rotwood_crawler: portrait(rotwoodCrawlerPortrait),
   quicksilver_leech: portrait(quicksilverLeechPortrait),
+  // the goblin kin, the witches, the men of the dark arts, the brutes, the giants
+  kobold: portrait(koboldPortrait),
+  kobold_shaman: portrait(koboldShamanPortrait),
+  goblin: portrait(goblinPortrait),
+  hoarfrost_skraeling: portrait(skraelingPortrait),
+  troll_wife_warlock: portrait(trollWifeWarlockPortrait),
+  prologue_coven_warlock: portrait(covenWarlockPortrait),
+  winter_hag: portrait(winterHagPortrait),
+  dark_sorcerer: portrait(darkSorcererPortrait),
+  sol_brand_zealot: portrait(solBrandZealotPortrait),
+  cave_troll: portrait(caveTrollPortrait),
+  ogre: portrait(ogrePortrait),
+  orc: portrait(orcPortrait),
+  jotun_champion: portrait(jotunChampionPortrait),
+  fire_giant: portrait(fireGiantPortrait),
+  // the hidden folk, the fae and the slag, the bound spirits, the constructs
+  huldra: portrait(huldraPortrait),
+  huldra_hollow_back: portrait(huldraHollowBackPortrait),
+  fylgja: portrait(fylgjaPortrait),
+  nacken: portrait(nackenPortrait),
+  nisse: portrait(nissePortrait),
+  skratti: portrait(skrattiPortrait),
+  slag_amorphous: portrait(slagPortrait),
+  captive_of_the_chariot: portrait(captivePortrait),
+  choke_damp_phantasm: portrait(chokeDampPortrait),
+  bark_husk_miner: portrait(barkHuskMinerPortrait),
+  bellows_automaton: portrait(bellowsAutomatonPortrait),
+  prismatic_mirror_skulker: portrait(mirrorSkulkerPortrait),
+  // the fiends, the dwarves, the world-bark
+  shadow_fiend: portrait(shadowFiendPortrait),
+  garmling: portrait(garmlingPortrait),
+  nastrond_feaster: portrait(nastrondFeasterPortrait),
+  cinder_gilded_duergar: portrait(duergarPortrait),
+  haugbui: portrait(haugbuiPortrait),
+  forge_wretch: portrait(forgeWretchPortrait),
+  amber_sap_weeper: portrait(sapWeeperPortrait),
+  yggdrasil_parasite: portrait(yggdrasilParasitePortrait),
 };

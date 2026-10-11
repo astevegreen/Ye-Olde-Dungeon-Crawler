@@ -17,6 +17,12 @@ const CREATURES = [
   'myling', 'kirkegrim', 'root_wraith', 'skeleton', 'nar', 'silver_wight',
   'wolf', 'prologue_rime_wolf', 'brim_howler', 'draugr_warrior', 'deep_lode_pit_draugr', 'prologue_coven_thrall',
   'giant_rat', 'glacier_borer', 'rotwood_crawler', 'quicksilver_leech',
+  'kobold', 'kobold_shaman', 'goblin', 'hoarfrost_skraeling', 'troll_wife_warlock', 'prologue_coven_warlock', 'winter_hag',
+  'dark_sorcerer', 'sol_brand_zealot', 'cave_troll', 'ogre', 'orc', 'jotun_champion', 'fire_giant',
+  'huldra', 'huldra_hollow_back', 'fylgja', 'nacken', 'nisse', 'skratti', 'slag_amorphous',
+  'captive_of_the_chariot', 'choke_damp_phantasm', 'bark_husk_miner', 'bellows_automaton', 'prismatic_mirror_skulker',
+  'shadow_fiend', 'garmling', 'nastrond_feaster', 'cinder_gilded_duergar', 'haugbui', 'forge_wretch',
+  'amber_sap_weeper', 'yggdrasil_parasite',
 ];
 // Wave 9c: every townsperson who greets (Ivalda at her anvil in Gunther's armory), and the Oath's two
 // companions, the only ones (owner, 10 Oct).

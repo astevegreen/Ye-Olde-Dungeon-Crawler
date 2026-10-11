@@ -12,7 +12,7 @@ Owner: "Waves 9e-9g": the last 37 bestiary portraits drawn, ported, registered, 
   - `sculpt/kit.ts`: `RampOptions.contrast` (bible's ramp has it; the fire giant's crust uses 0.8; default 1 is bake-neutral).
   - `portraitSprites.ts` registers the 34; `__tests__/portraitsAndScreens.test.ts` `CREATURES` lists them.
 - Re-timed in fresh pages (`.prompts/retime-9efg.txt`): 35–85 ms a frame at 192 px, all under 120.
-- Running when written: `npm run gate-stamp -- run lint test` → `.prompts/gate-9efg.txt` (last line `exit N`); and an artist finishing 9g-b in `bible/js/m-portraits-9g-b.js` (the Ancient Wyrm was a "placeholder"; the Grave-Wyrmling was a copy of the Frost Drake). At 01:50 the file already registers its own `graveWyrmling`.
+- Running when written: an artist finishing 9g-b in `bible/js/m-portraits-9g-b.js` (the Ancient Wyrm was a "placeholder"; the Grave-Wyrmling was a copy of the Frost Drake). At 01:50 the file already registers its own `graveWyrmling`.
 
 ## Next
 1–2. Done (e1598c7).

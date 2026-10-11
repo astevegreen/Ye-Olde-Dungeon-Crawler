@@ -1,11 +1,12 @@
 # Handoff: ship waves 9e–9g portraits (34 ported, drakes pending)
-2026-10-11 01:50 UTC · branch main · HEAD ed3c2be · tree 16 uncommitted files (below)
+2026-10-11 01:50 UTC · branch main · HEAD e1598c7 (unpushed) · tree clean in src/
 
 ## Goal
 Owner: "Waves 9e-9g": the last 37 bestiary portraits drawn, ported, registered, gated, visual-checked, committed with `Requested: "Waves 9e-9g"`, pushed. Done = all 37 in the bestiary on the Pages site.
 
 ## Done
-- No commits yet. Uncommitted, all verified with the fidelity tool (`.prompts/fidelity-all.txt`: all 304 frames, 608 bakes identical across 76 portraits) and `tsc`:
+- e1598c7 feat(art): portraits for thirty-four of the rank and file (waves 9e-9g) — NOT pushed yet; push it with the drakes. Gate-stamp green (2860 tests), `npm run gates` green (33 Playwright), bestiary visual check passed (`.prompts/captures/bestiary-9efg/contact-sheet.png`, all 34 byte-identical to the bible).
+- In that commit, all verified with the fidelity tool (`.prompts/fidelity-all.txt`: all 304 frames, 608 bakes identical across 76 portraits) and `tsc`:
   - 12 new port files `src/content/cotw/sprites/sculpt/portraits{Goblins,Witches,DarkArts,Brutes,Giants,HiddenFolk,FaeSlag,Bound,Constructs,Fiends,Dwarves,WorldBark}.ts` (34 portraits: 9e all, 9f all, 9g a/c/d).
   - `sculpt/materials.ts`: 13 group headers at the end, materials under 12; the `(portraitsDrakes.ts)` header is still empty.
   - `sculpt/kit.ts`: `RampOptions.contrast` (bible's ramp has it; the fire giant's crust uses 0.8; default 1 is bake-neutral).
@@ -14,10 +15,9 @@ Owner: "Waves 9e-9g": the last 37 bestiary portraits drawn, ported, registered, 
 - Running when written: `npm run gate-stamp -- run lint test` → `.prompts/gate-9efg.txt` (last line `exit N`); and an artist finishing 9g-b in `bible/js/m-portraits-9g-b.js` (the Ancient Wyrm was a "placeholder"; the Grave-Wyrmling was a copy of the Frost Drake). At 01:50 the file already registers its own `graveWyrmling`.
 
 ## Next
-1. Read `.prompts/gate-9efg.txt`. Red: fix (likely the portraits test's 30 s timeout with 34 more bakes) and rerun.
-2. `npm run gates`, then `visual-check` the bestiary for the 34 (as 9d: `.prompts/captures/bestiary-9d/`). Commit: subject like "feat(art): portraits for thirty-four of the rank and file (waves 9e–9g)", trailer `Requested: "Waves 9e-9g"`. Push in the background.
+1–2. Done (e1598c7).
 3. 9g-b: check the file's three `S.def` notes no longer say 'placeholder', shoot `node .prompts/character-art-bible/tools/shot.mjs sheet-9g.html .prompts/art-review/w9/sheet-9g-r.png 1900` and Read it (wyrmling: small, violet, bile-green, not Níðhögg's double). Weak → a fresh artist per `BRIEF-9efg.md`, tag b.
-4. Port 9g-b per `bible/PORT-9efg.md` (target `portraitsDrakes.ts`, exports `frostDrakePortrait, ancientWyrmPortrait, graveWyrmlingPortrait`; already in the fidelity tool). Register `frost_drake, ancient_wyrm, grave_wyrmling`, add to `CREATURES`, re-time, gates, commit, push.
+4. Port 9g-b per `bible/PORT-9efg.md` (target `portraitsDrakes.ts`, exports `frostDrakePortrait, ancientWyrmPortrait, graveWyrmlingPortrait`; already in the fidelity tool). Register `frost_drake, ancient_wyrm, grave_wyrmling`, add to `CREATURES`, re-time, gates, visual-check (reuse `.prompts/captures/bestiary-9efg/`), commit, then `git push` in the background (pushes e1598c7 too).
 5. Log in `.prompts/claude-character-art-overhaul.md` after line 260 (shipped shas, taste calls below); update memory `art-overhaul-plan`.
 
 ## Decisions
@@ -32,4 +32,4 @@ Owner: "Waves 9e-9g": the last 37 bestiary portraits drawn, ported, registered, 
 - `.prompts/character-art-bible/tools/portrait-fidelity.ts:38` — bible files and port lists (a bible file that fails to parse is now skipped).
 
 ## Verification
-- Fidelity: green, 76 portraits. tsc: green (port agents). Gate-stamp: running at write time. Gates/Playwright, visual-check: not run.
+- Fidelity: green, 76 portraits. tsc: green (port agents). Gate-stamp, gates, visual-check: green on e1598c7.

@@ -19,6 +19,7 @@ Owner: "note the spell colors, portal label, and blast area as to-do". These are
 3. Blast: the preview is drawn in `src/rendering/targeting-overlay.ts:340-349`; the geometry is in `src/engine/magic/castTrace.ts:42-52` (not a §8.1 file). For "keep the rule", change only the overlay: mark `geo.burst.epicenter` when it isn't the reticle tile.
 
 ## Decisions
+- All three Decide-first questions as recommended: four colours in one commit; portal pill only within 2 tiles or on hover; keep the burst rule and mark the real centre — owner: "implement all items as recommended" (11 Oct resume)
 - Fire goes from red `#ef4444` to the bible's orange `#ff8a2c`, as its own small task — owner: "proceed with all recommendations" (11 Oct resume).
 - HUD icons look a little soft in some chips; the proper fix bakes each icon at its real on-screen size (`installUiIcons`, `src/rendering/uiIcons.ts`). Explained to the owner 11 Oct; recommended later, not asked for.
 

@@ -25,6 +25,7 @@ import { nissePortrait, skrattiPortrait, slagPortrait } from './sculpt/portraits
 import { captivePortrait, chokeDampPortrait } from './sculpt/portraitsBound';
 import { barkHuskMinerPortrait, bellowsAutomatonPortrait, mirrorSkulkerPortrait } from './sculpt/portraitsConstructs';
 import { garmlingPortrait, nastrondFeasterPortrait, shadowFiendPortrait } from './sculpt/portraitsFiends';
+import { ancientWyrmPortrait, frostDrakePortrait, graveWyrmlingPortrait } from './sculpt/portraitsDrakes';
 import { duergarPortrait, forgeWretchPortrait, haugbuiPortrait } from './sculpt/portraitsDwarves';
 import { sapWeeperPortrait, yggdrasilParasitePortrait } from './sculpt/portraitsWorldBark';
 
@@ -130,10 +131,13 @@ export const COTW_PORTRAITS: Record<string, PixelSprite> = {
   bark_husk_miner: portrait(barkHuskMinerPortrait),
   bellows_automaton: portrait(bellowsAutomatonPortrait),
   prismatic_mirror_skulker: portrait(mirrorSkulkerPortrait),
-  // the fiends, the dwarves, the world-bark
+  // the fiends, the drakes, the dwarves, the world-bark
   shadow_fiend: portrait(shadowFiendPortrait),
   garmling: portrait(garmlingPortrait),
   nastrond_feaster: portrait(nastrondFeasterPortrait),
+  frost_drake: portrait(frostDrakePortrait),
+  ancient_wyrm: portrait(ancientWyrmPortrait),
+  grave_wyrmling: portrait(graveWyrmlingPortrait),
   cinder_gilded_duergar: portrait(duergarPortrait),
   haugbui: portrait(haugbuiPortrait),
   forge_wretch: portrait(forgeWretchPortrait),

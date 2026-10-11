@@ -1182,6 +1182,33 @@ mat('scr_feasterHair', '#9a968e', { hs: 8 });
 mat('scr_feasterMouth', '#140c18');
 
 // the Frost Drake, the Ancient Wyrm, the Grave-Wyrmling (portraitsDrakes.ts)
+mat('scr_gFrostDrake', '#17203a', { em: true, hs: 12 });
+mat('scr_frostDrakeScale', '#a2bdd2', { hs: 8, warm: 200 });
+mat('scr_frostDrakeBelly', '#d4e3ec', { hs: 6, warm: 200 });
+mat('scr_frostDrakeIce', '#8ccbe8', { shiny: true, hs: 8, warm: 190 });
+mat('scr_frostDrakeMaw', '#111830', { hs: 8 });
+mat('scr_frostDrakeShade', '#4a6684', { hs: 8, warm: 200 });
+mat('scr_frostDrakeTooth', '#e2f0f6', { hs: 6, warm: 200 });
+mat('scr_frostDrakeBreath', '#c6dce4', { em: true, hs: 3 });
+mat('scr_gAncientWyrm', '#161b26', { em: true, hs: 10 });
+mat('scr_gAncientWyrmGlow', '#3c2416', { em: true, hs: 12 });
+mat('scr_ancientWyrmScale', '#4c3e2e', { hs: 14 });
+mat('scr_ancientWyrmPlate', '#7c5e3a', { shiny: true, hs: 12 });
+mat('scr_ancientWyrmHorn', '#a69478', { hs: 12 });
+mat('scr_ancientWyrmWing', '#382c28', { hs: 12 });
+mat('scr_ancientWyrmScar', '#a08a72', { hs: 8 });
+mat('scr_ancientWyrmMaw', '#150e0b', { em: true });
+mat('scr_ancientWyrmFang', '#d0c2a2', { hs: 10 });
+mat('scr_ancientWyrmSmoke', '#5c554e', { hs: 6, warm: 40 });
+mat('scr_gGraveWyrmling', '#221a2c', { em: true, hs: 12 });
+mat('scr_graveWyrmlingScale', '#56486e', { hs: 12 });
+mat('scr_graveWyrmlingBelly', '#807690', { hs: 8 });
+mat('scr_graveWyrmlingWing', '#5c405e', { hs: 10 });
+mat('scr_graveWyrmlingBone', '#a89a7c', { hs: 10 });
+mat('scr_graveWyrmlingMaw', '#1a0e1c', { em: true });
+mat('scr_graveWyrmlingGum', '#5e3456', { shiny: true, hs: 8 });
+mat('scr_graveWyrmlingTooth', '#d8d0b4', { hs: 8 });
+mat('scr_graveWyrmlingSkull', '#8e8268', { hs: 10 });
 
 // the Cinder-Gilded Duergar, the Haugbúi, the Forge Wretch (portraitsDwarves.ts)
 mat('scr_gildedGround', '#2a2321', { em: true, hs: 12 }); // the cold works: soot on stone

@@ -21,7 +21,8 @@ const CREATURES = [
   'dark_sorcerer', 'sol_brand_zealot', 'cave_troll', 'ogre', 'orc', 'jotun_champion', 'fire_giant',
   'huldra', 'huldra_hollow_back', 'fylgja', 'nacken', 'nisse', 'skratti', 'slag_amorphous',
   'captive_of_the_chariot', 'choke_damp_phantasm', 'bark_husk_miner', 'bellows_automaton', 'prismatic_mirror_skulker',
-  'shadow_fiend', 'garmling', 'nastrond_feaster', 'cinder_gilded_duergar', 'haugbui', 'forge_wretch',
+  'shadow_fiend', 'garmling', 'nastrond_feaster', 'frost_drake', 'ancient_wyrm', 'grave_wyrmling',
+  'cinder_gilded_duergar', 'haugbui', 'forge_wretch',
   'amber_sap_weeper', 'yggdrasil_parasite',
 ];
 // Wave 9c: every townsperson who greets (Ivalda at her anvil in Gunther's armory), and the Oath's two

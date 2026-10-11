@@ -1,12 +1,42 @@
-import type { SpriteRecipe } from '../../../engine';
-import { COTW_ITEM_SPRITES } from './items';
+import type { PixelSprite, SpriteRecipe } from '../../../engine';
+import { bake, type Model } from './sculpt/kit';
+import { hudChestModel, hudCoinsModel, hudPackModel, hudRuneModel } from './sculpt/hudIcons';
 import { COTW_MONSTER_SPRITES } from './monsters';
 
 /**
  * UI icons (`ui~<name>`, the vocabulary in src/ui/icons.ts): the pixel art the HUD,
  * dialogs and title screen show in place of emoji. Drawn on the same 32x32 grid as every
- * other sprite; a few reuse item and hero art.
+ * other sprite; two reuse the hero's art, and four are pixel sprites in the map's shading.
  */
+
+/** The edge an icon is baked at: about what the header shows it at, so no part smears. */
+const HUD_PX = 16;
+
+/** A HUD model in the map's shading, baked at `HUD_PX` and blown up whole pixels to `size`. */
+function hudIcon(model: Model): PixelSprite {
+  return {
+    render: (_frame, size) => {
+      const small = bake(model, { px: HUD_PX, rings: 1 });
+      const out = new Uint8ClampedArray(size * size * 4);
+      for (let y = 0; y < size; y++) {
+        const sy = Math.floor((y * HUD_PX) / size);
+        for (let x = 0; x < size; x++) {
+          const from = (sy * HUD_PX + Math.floor((x * HUD_PX) / size)) * 4;
+          out.set(small.subarray(from, from + 4), (y * size + x) * 4);
+        }
+      }
+      return out;
+    },
+  };
+}
+
+/** Things the map also draws, redrawn for the HUD in the map's palette (sculpt/hudIcons.ts). */
+export const COTW_UI_PIXEL_ICONS: Record<string, PixelSprite> = {
+  'ui~inventory': hudIcon(hudPackModel),
+  'ui~loot': hudIcon(hudCoinsModel),
+  'ui~chest': hudIcon(hudChestModel),
+  'ui~rune': hudIcon(hudRuneModel),
+};
 
 const C = {
   ink: '#1e293b',
@@ -203,8 +233,6 @@ export const COTW_UI_ICONS: Record<string, SpriteRecipe> = {
     for (const y of [4, 13, 22]) r(C.ink, 4, y, 24, 5);
   },
 
-  'ui~inventory': COTW_ITEM_SPRITES.backpack,
-
   'ui~cast': (ctx, ox, oy) => {
     poly(ctx, ox, oy, C.goldLight, [[19, 2], [7, 18], [15, 18], [11, 30], [25, 12], [17, 12]]);
     poly(ctx, ox, oy, C.gold, [[17, 12], [25, 12], [11, 30], [14, 18]]);
@@ -289,9 +317,6 @@ export const COTW_UI_ICONS: Record<string, SpriteRecipe> = {
     sword(ctx, ox, oy, 26, 27, 6, 5);
   },
 
-  'ui~loot': COTW_ITEM_SPRITES.gold_coins,
-  'ui~chest': COTW_ITEM_SPRITES.chest,
-
   'ui~talk': (ctx, ox, oy) => {
     const r = pen(ctx, ox, oy);
     r(C.steel, 4, 6, 24, 15);
@@ -311,8 +336,6 @@ export const COTW_UI_ICONS: Record<string, SpriteRecipe> = {
     r(C.steelDark, 9, 22, 14, 2);
     r(C.gold, 19, 17, 2, 3);
   },
-
-  'ui~rune': COTW_ITEM_SPRITES.rune_stone,
 
   'ui~debt': (ctx, ox, oy) => {
     // A violet void-eye: what overcasting owes.

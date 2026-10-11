@@ -3,7 +3,7 @@ import { CanvasRenderer } from '../canvas-renderer';
 import { IntentOverlay } from '../intentOverlay';
 import { Camera } from '../camera';
 import { IDLE_FRAME_MS } from '../atlas/idle-frames';
-import { drawDangerZone, drawHostileBrackets, drawHpBar, drawSensedCreature, drawSensedItem } from '../markers/markers';
+import { drawAimReticle, drawBlastZone, drawDangerZone, drawHostileBrackets, drawHpBar, drawMapTag, drawSensedCreature, drawSensedItem } from '../markers/markers';
 import { resolveThemeTokens } from '../theme';
 import { GameEngine, GameMap, TILES, Player, Monster } from '../../engine';
 
@@ -135,6 +135,62 @@ describe('map markers', () => {
       const outline = polygons(calls)[0];
       expect(Math.max(...outline.map((q) => q[0])) - Math.min(...outline.map((q) => q[0]))).toBeGreaterThanOrEqual(18);
     }
+  });
+});
+
+describe('aiming a spell', () => {
+  const fire = '#ff8a2c';
+
+  it('sights the aimed tile with four ticks pointing in round a diamond, inside the tile and in the spell colour', () => {
+    for (let frame = 0; frame < 4; frame++) {
+      const { ctx, calls } = recorder();
+      drawAimReticle(ctx, 0, 0, 32, frame * IDLE_FRAME_MS, fire, theme);
+      const polys = polygons(calls);
+      expect(polys).toHaveLength(5);
+      for (const [px, py] of polys.flat()) {
+        expect(px).toBeGreaterThanOrEqual(0);
+        expect(px).toBeLessThanOrEqual(32);
+        expect(py).toBeGreaterThanOrEqual(0);
+        expect(py).toBeLessThanOrEqual(32);
+      }
+      expect(calls.filter((c) => c.op === 'fill' && c.fill === fire)).toHaveLength(4);
+    }
+  });
+
+  it('stipples a blast in the spell colour, with no danger hatch, edged round its outside only', () => {
+    const { ctx, calls } = recorder();
+    drawBlastZone(ctx, [{ x: 0, y: 0 }, { x: 32, y: 0 }], 32, 0, fire, theme);
+    expect(straightSides(calls)).toEqual(new Set(['0,0,32,0', '0,32,32,32', '0,0,0,32', '32,0,64,0', '32,32,64,32', '64,0,64,32']));
+    expect(segments(calls).some(([x0, y0, x1, y1]) => x0 !== x1 && y0 !== y1)).toBe(false);
+    expect(calls.some((c) => c.op === 'fillRect' && String(c.fill).startsWith('rgba(255, 138, 44'))).toBe(true);
+  });
+});
+
+describe('map tags', () => {
+  it('hang above the tile they mark, at most touching it, for the quest, the stairs and a portal', () => {
+    for (const kind of ['quest', 'stairs', 'portal'] as const) {
+      for (let frame = 0; frame < 4; frame++) {
+        const { ctx, calls } = recorder();
+        drawMapTag(ctx, kind, 64, 64, 32, frame * IDLE_FRAME_MS, theme);
+        const rects = calls.filter((c) => c.op === 'fillRect').map((c) => c.args as number[]);
+        expect(rects.length).toBeGreaterThan(20);
+        for (const [x, y, w, h] of rects) {
+          expect(y + h).toBeLessThanOrEqual(64 + 1); // the tail's tip may touch the tile's top row
+          expect(x).toBeGreaterThanOrEqual(64 - 32);
+          expect(x + w).toBeLessThanOrEqual(64 + 64);
+        }
+      }
+    }
+  });
+
+  it('flaps the quest pennant and holds the stairs still', () => {
+    const pixels = (kind: 'quest' | 'stairs', t: number): string => {
+      const { ctx, calls } = recorder();
+      drawMapTag(ctx, kind, 0, 64, 32, t, theme);
+      return JSON.stringify(calls);
+    };
+    expect(pixels('quest', 0)).not.toEqual(pixels('quest', IDLE_FRAME_MS));
+    expect(pixels('stairs', 0)).toEqual(pixels('stairs', IDLE_FRAME_MS));
   });
 });
 

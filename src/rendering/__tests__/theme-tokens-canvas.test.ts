@@ -29,6 +29,7 @@ function createMockCanvasContext() {
     quadraticCurveTo: vi.fn(),
     bezierCurveTo: vi.fn(),
     rect: vi.fn(),
+    clip: vi.fn(),
     createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
     createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
     getImageData: vi.fn(() => ({ data: new Uint8ClampedArray(4) })),

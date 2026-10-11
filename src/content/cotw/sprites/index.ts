@@ -3,6 +3,7 @@ import { COTW_TILE_SPRITES } from './tiles';
 import { COTW_MONSTER_SPRITES } from './monsters';
 import { COTW_ITEM_SPRITES } from './items';
 import { COTW_UI_ICONS } from './uiIcons';
+export { COTW_UI_PIXEL_ICONS } from './uiIcons';
 import { COTW_SPELL_RUNES } from './spellRunes';
 import { COTW_TERRAIN_SPRITES } from '../terrain';
 

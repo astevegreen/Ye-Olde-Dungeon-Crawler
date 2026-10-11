@@ -163,7 +163,7 @@ const activeManifest =
 const brand = resolveBranding(activeManifest);
 // Tokens go on the root before the first paint (module scripts run before DOMContentLoaded).
 void applyThemeTokens(activeManifest.theme);
-installUiIcons(activeManifest.spriteRecipes);
+installUiIcons(activeManifest.spriteRecipes, activeManifest.pixelSprites);
 
 window.addEventListener('DOMContentLoaded', () => {
   applyDocumentBranding(document, brand);

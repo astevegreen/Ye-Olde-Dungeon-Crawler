@@ -12,7 +12,8 @@ import {
   type Item,
 } from '../engine';
 import type { Camera } from './camera';
-import { elementColor, resolveThemeTokens } from './theme';
+import { elementColor, resolveThemeTokens, withAlpha } from './theme';
+import { drawAimReticle, drawBlastZone, type ScreenPoint } from './markers/markers';
 import { escapeHtml } from '../ui/html';
 import { iconHtml } from '../ui/icons';
 import { spellPower } from '../ui/spellPower';
@@ -296,8 +297,9 @@ export class TargetingOverlay implements UIModal {
     camera: Camera,
     cellSize: number,
     offsetX: number,
-    offsetY: number
-  ): void {
+    offsetY: number,
+    t = 0
+  ): boolean {
     // 1. Render Last Fired Projectile Flash (lasts 1200ms)
     if (this.lastFired && Date.now() - this.lastFired.timestamp < 1200) {
       this.renderProjectileEffect(ctx, camera, cellSize, offsetX, offsetY);
@@ -305,8 +307,10 @@ export class TargetingOverlay implements UIModal {
 
     // 2. Render Targeting Reticle & Aim Line
     if (this.mode === 'reticle' && this.activeEntry) {
-      this.renderReticleAndRay(ctx, engine, camera, cellSize, offsetX, offsetY);
+      this.renderReticleAndRay(ctx, engine, camera, cellSize, offsetX, offsetY, t);
+      return t > 0;
     }
+    return false;
   }
 
   private renderReticleAndRay(
@@ -315,7 +319,8 @@ export class TargetingOverlay implements UIModal {
     camera: Camera,
     cellSize: number,
     offsetX: number,
-    offsetY: number
+    offsetY: number,
+    t: number
   ): void {
     if (!this.activeEntry) return;
 
@@ -330,96 +335,48 @@ export class TargetingOverlay implements UIModal {
     const geo = castGeometry(engine, spell, engine.player, { x: rx, y: ry });
     const path = geo.ray?.path ?? [];
 
-    // Draw projected ray line
-    ctx.save();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = spellColor(engine, spell.element);
-    if (spell.element === 'fire') {
-      ctx.setLineDash([6, 3]);
-    } else if (spell.element === 'cold') {
-      ctx.setLineDash([3, 3]);
-    } else {
-      ctx.setLineDash([4, 4]);
-    }
+    const theme = resolveThemeTokens(engine.manifest?.theme);
+    const color = spellColor(engine, spell.element);
 
-    const playerScreen = camera.worldToScreen(px, py, cellSize, offsetX, offsetY);
-    if (playerScreen) {
-      ctx.beginPath();
-      ctx.moveTo(playerScreen.x + cellSize / 2, playerScreen.y + cellSize / 2);
-
-      for (const step of path) {
-        if (!step || typeof step.x !== 'number' || typeof step.y !== 'number') continue;
-        const stepScreen = camera.worldToScreen(step.x, step.y, cellSize, offsetX, offsetY);
-        if (stepScreen) {
-          ctx.lineTo(stepScreen.x + cellSize / 2, stepScreen.y + cellSize / 2);
-        }
-      }
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    // Area of effect highlight
+    // The blast it will make, under the line and the reticle.
     if (geo.burst) {
-      const aoeTiles = getAreaOfEffectTiles(engine.map, geo.burst.epicenter.x, geo.burst.epicenter.y, geo.burst.radius);
-      const danger = resolveThemeTokens(engine.manifest?.theme).bad;
-      ctx.save();
-      ctx.fillStyle = danger;
-      ctx.strokeStyle = danger;
-      ctx.lineWidth = 1;
-
-      for (const tile of aoeTiles) {
-        if (!tile || typeof tile.x !== 'number' || typeof tile.y !== 'number') continue;
+      const blast: ScreenPoint[] = [];
+      for (const tile of getAreaOfEffectTiles(engine.map, geo.burst.epicenter.x, geo.burst.epicenter.y, geo.burst.radius)) {
         const screen = camera.worldToScreen(tile.x, tile.y, cellSize, offsetX, offsetY);
-        if (screen) {
-          ctx.globalAlpha = 0.25;
-          ctx.fillRect(screen.x, screen.y, cellSize, cellSize);
-          ctx.globalAlpha = 0.7;
-          ctx.strokeRect(screen.x + 0.5, screen.y + 0.5, cellSize - 1, cellSize - 1);
-        }
+        if (screen) blast.push(screen);
       }
-      ctx.restore();
+      drawBlastZone(ctx, blast, cellSize, t, color, theme);
     }
 
-    // Draw Reticle Brackets at (rx, ry)
-    const reticleScreen = camera.worldToScreen(rx, ry, cellSize, offsetX, offsetY);
-    if (reticleScreen) {
-      const x = reticleScreen.x;
-      const y = reticleScreen.y;
-      const bracketLen = 7;
-
+    // The flight, dashed in the element's rhythm over a dark keyline.
+    const line: ScreenPoint[] = [];
+    for (const step of [{ x: px, y: py }, ...path]) {
+      const screen = camera.worldToScreen(step.x, step.y, cellSize, offsetX, offsetY);
+      if (screen) line.push({ x: screen.x + cellSize / 2, y: screen.y + cellSize / 2 });
+    }
+    if (line.length > 1) {
+      const dash = spell.element === 'fire' ? [6, 3] : spell.element === 'cold' ? [3, 3] : [4, 4];
       ctx.save();
-      ctx.strokeStyle = resolveThemeTokens(engine.manifest?.theme).title;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(line[0].x, line[0].y);
+      for (const p of line.slice(1)) ctx.lineTo(p.x, p.y);
+      ctx.strokeStyle = withAlpha(theme.markerInk, 0.55);
+      ctx.lineWidth = 4;
+      ctx.setLineDash(dash.map((d, i) => (i % 2 ? d - 2 : d + 2)));
+      ctx.lineDashOffset = 1;
+      ctx.stroke();
+      ctx.lineDashOffset = 0;
+      ctx.strokeStyle = color;
       ctx.lineWidth = 2;
-
-      // Top-Left corner
-      ctx.beginPath();
-      ctx.moveTo(x, y + bracketLen);
-      ctx.lineTo(x, y);
-      ctx.lineTo(x + bracketLen, y);
-      ctx.stroke();
-
-      // Top-Right corner
-      ctx.beginPath();
-      ctx.moveTo(x + cellSize - bracketLen, y);
-      ctx.lineTo(x + cellSize, y);
-      ctx.lineTo(x + cellSize, y + bracketLen);
-      ctx.stroke();
-
-      // Bottom-Left corner
-      ctx.beginPath();
-      ctx.moveTo(x, y + cellSize - bracketLen);
-      ctx.lineTo(x, y + cellSize);
-      ctx.lineTo(x + bracketLen, y + cellSize);
-      ctx.stroke();
-
-      // Bottom-Right corner
-      ctx.beginPath();
-      ctx.moveTo(x + cellSize - bracketLen, y + cellSize);
-      ctx.lineTo(x + cellSize, y + cellSize);
-      ctx.lineTo(x + cellSize, y + cellSize - bracketLen);
+      ctx.setLineDash(dash);
       ctx.stroke();
       ctx.restore();
     }
+
+    const reticleScreen = camera.worldToScreen(rx, ry, cellSize, offsetX, offsetY);
+    if (reticleScreen) drawAimReticle(ctx, reticleScreen.x, reticleScreen.y, cellSize, t, color, theme);
   }
 
   private renderProjectileEffect(

@@ -40,6 +40,7 @@ export const DEFAULT_THEME_TOKENS: Required<ThemeTokens> = {
   hpTrack: '#16181f',
   sensedItem: '#f3d27a',
   badgeWood: '#a8743f',
+  wheelStone: '#5a5f6c',
 
   health: '#ef4444',
   mana: '#0ea5e9',
@@ -159,6 +160,7 @@ function buildThemeTokens(t: Partial<ThemeTokens>): Required<ThemeTokens> {
     hpTrack: t.hpTrack ?? D.hpTrack,
     sensedItem: t.sensedItem ?? D.sensedItem,
     badgeWood: t.badgeWood ?? D.badgeWood,
+    wheelStone: t.wheelStone ?? D.wheelStone,
     health,
     mana,
     xp: t.xp ?? D.xp,

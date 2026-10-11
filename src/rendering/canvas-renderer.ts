@@ -1,4 +1,4 @@
-import { GameEngine } from '../engine';
+import { GameEngine, getCurrentObjective } from '../engine';
 import { releaseIconAtlas, setIconAtlas } from './canvasIcons';
 import { Visibility } from '../engine';
 import { sensesThroughWalls } from '../engine';
@@ -37,7 +37,7 @@ import { TacticalTargetOverlay, isAlly } from './tacticalTargetOverlay';
 import { MapCardLayer, type MapCardSpec } from '../ui/mapCards/mapCardLayer';
 import { escapeHtml, keyChip } from '../ui/html';
 import { getAudibleEntitiesInRadius, getAudibleTilesInRadius, ECHOLOCATION_HEARING_RADIUS } from '../engine';
-import { drawAllyRing, drawHpBar, drawPath, drawSensedCreature, drawSensedItem, drawWindupWarning } from './markers/markers';
+import { drawAllyRing, drawHpBar, drawMapTag, drawPath, drawSensedCreature, drawSensedItem, drawWindupWarning, type MapTagKind } from './markers/markers';
 import { drawChestBadge } from './markers/containerBadge';
 
 /** What the map shows of a container: empty once nothing is inside, else whether it was opened. */
@@ -537,6 +537,9 @@ export class CanvasRenderer {
     // A* Pathfinding Click-to-Move Breadcrumb Trail, over the sprites it walks past
     this.renderNavigationPath();
 
+    // Tags hanging over the quest's target, the stairs and the portals the hero has found
+    if (!isSensoryMasked) this.renderMapTags();
+
     // Direct Canvas Mouse Vectoring & 8-Way Hover Ring
     this.mouseVectorOverlay.render(
       ctx,
@@ -592,16 +595,21 @@ export class CanvasRenderer {
     }
 
     // Targeting / Spellbook Overlay
-    this.targetingOverlay.render(
-      ctx,
-      virtualW,
-      virtualH,
-      this.engine,
-      this.camera,
-      this.cellSize,
-      this.offsetX,
-      this.offsetY
-    );
+    if (
+      this.targetingOverlay.render(
+        ctx,
+        virtualW,
+        virtualH,
+        this.engine,
+        this.camera,
+        this.cellSize,
+        this.offsetX,
+        this.offsetY,
+        this.markerNow
+      )
+    ) {
+      this.markerMoved();
+    }
 
     // Look / Inspect Reticle & HUD Card Overlay
     if (this.inspectOverlay.render(ctx, virtualW, virtualH, this.engine, this.camera, this.cellSize, this.offsetX, this.offsetY, this.markerNow)) {
@@ -609,11 +617,19 @@ export class CanvasRenderer {
     }
 
     // The companion wheel, with the companion at its hub (the hero while it is away)
-    this.radialMenuOverlay.render(ctx, this.engine, virtualW, virtualH, (c, x, y, size) => {
-      const centre = this.engine.companion?.isAlive() ? this.engine.companion : this.engine.player;
-      const spriteKey = centre ? this.entitySpriteKey(centre) : 'player';
-      this.atlas.drawSprite(c, spriteKey, x - size / 2, y - size / 2, size, Visibility.Visible);
-    });
+    const wheelMoves = this.radialMenuOverlay.render(
+      ctx,
+      this.engine,
+      virtualW,
+      virtualH,
+      (c, x, y, size) => {
+        const centre = this.engine.companion?.isAlive() ? this.engine.companion : this.engine.player;
+        const spriteKey = centre ? this.entitySpriteKey(centre) : 'player';
+        this.atlas.drawSprite(c, spriteKey, x - size / 2, y - size / 2, size, Visibility.Visible);
+      },
+      this.markerNow
+    );
+    if (wheelMoves) this.markerMoved();
 
     this.notifyFocusEntity();
     this.syncCards(virtualW);
@@ -1196,6 +1212,43 @@ export class CanvasRenderer {
   }
 
   /**
+   * A tag over each stairs and portal tile the hero has seen, remembered ones included, and a
+   * pennant over each creature the current objective points at (`pointTo`) while it is in
+   * sight; a quest pennant takes the place of the tile's own tag. A tile's tag floats over the
+   * tile above, so it gives way while a creature in sight stands there.
+   */
+  private renderMapTags(): void {
+    const tags = new Map<string, { x: number; y: number; kind: MapTagKind }>();
+    const { startX, startY, viewWidthTiles, viewHeightTiles } = this.camera;
+    for (let y = startY; y < startY + viewHeightTiles; y++) {
+      for (let x = startX; x < startX + viewWidthTiles; x++) {
+        if (!this.engine.map.inBounds(x, y) || this.engine.fov.getVisibility(x, y) === Visibility.Unexplored) continue;
+        const tile = this.engine.map.getTile(x, y);
+        if (!tile) continue;
+        const stairs = tile.isStairs || tile.isStairsUp || tile.isStairsDown || tile.type === 'stairs_up' || tile.type === 'stairs_down';
+        const kind: MapTagKind | null = stairs ? 'stairs' : tile.visual === 'portal' ? 'portal' : null;
+        if (kind && !this.creatureInSightAt(x, y - 1)) tags.set(`${x},${y}`, { x, y, kind });
+      }
+    }
+    let quest = false;
+    for (const id of getCurrentObjective(this.engine)?.pointTo?.entityIds ?? []) {
+      const e = this.engine.map.getEntityById(id);
+      if (!e || !this.engine.fov.isVisible(e.x, e.y)) continue;
+      tags.set(`${e.x},${e.y}`, { x: e.x, y: e.y, kind: 'quest' });
+      quest = true;
+    }
+    for (const tag of tags.values()) {
+      const screen = this.camera.worldToScreen(tag.x, tag.y, this.cellSize, this.offsetX, this.offsetY);
+      if (screen) drawMapTag(this.ctx, tag.kind, screen.x, screen.y, this.cellSize, this.markerNow, this.theme);
+    }
+    if (quest || [...tags.values()].some((tag) => tag.kind === 'portal')) this.markerMoved();
+  }
+
+  private creatureInSightAt(x: number, y: number): boolean {
+    return this.engine.map.inBounds(x, y) && this.engine.fov.isVisible(x, y) && !!this.engine.map.getEntityAt(x, y)?.isAlive();
+  }
+
+  /**
    * The click-to-move path, from the next step to the goal. Steps off the view still aim the
    * arrows at their neighbours; the map's edge clips them.
    */
@@ -1312,8 +1365,7 @@ export class CanvasRenderer {
     return null;
   }
 
-  /** The open mode's keys as a pill along the bottom of the map; nothing in normal play. */
-  /** A standing label over every portal in sight, so a way out of the run is never missed. */
+  /** A standing label under every portal in sight, so a way out of the run is never missed. */
   private portalCards(): Record<string, MapCardSpec> {
     const cards: Record<string, MapCardSpec> = {};
     const { startX, startY, viewWidthTiles, viewHeightTiles } = this.camera;
@@ -1325,7 +1377,7 @@ export class CanvasRenderer {
         if (!screen) continue;
         cards[`${x},${y}`] = {
           className: 'mc-pill is-portal',
-          place: { tile: { x: screen.x, y: screen.y, size: this.cellSize } },
+          place: { tile: { x: screen.x, y: screen.y, size: this.cellSize }, below: true },
           html: `${escapeHtml(tile.name)} <span>· step in</span>`,
         };
       }
@@ -1333,6 +1385,7 @@ export class CanvasRenderer {
     return cards;
   }
 
+  /** The open mode's keys as a pill along the bottom of the map; nothing in normal play. */
   private modeHintCard(): MapCardSpec | null {
     const hint = this.getModeHint();
     if (!hint) return null;

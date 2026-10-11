@@ -23,6 +23,8 @@
 .mc-dock-bottom { bottom: var(--ui-space-3); left: 50%; transform: translateX(-50%); }
 /* Centered above a tile: the layer sets left and top to the tile's top-center. */
 .mc-above { transform: translate(-50%, calc(-100% - 4px)); }
+/* Centered below a tile: the layer sets left and top to the tile's bottom-center. */
+.mc-below { transform: translate(-50%, 4px); }
 
 /* A panel: the Look, target and aiming cards. */
 .mc-panel {
@@ -81,7 +83,7 @@
 }
 .mc-pill.is-loot { border-color: var(--ui-accent); }
 .mc-pill.is-fixture { color: var(--ui-title); }
-/* A portal's standing label: a way out of the run, never missed. */
+/* A portal's standing label, under the tile so the map tag above it shows: a way out of the run, never missed. */
 .mc-pill.is-portal { color: var(--ui-title); border-color: var(--ui-accent); box-shadow: 0 0 10px color-mix(in srgb, var(--ui-accent) 60%, transparent); }
 .mc-pill.is-portal span { font-weight: normal; color: var(--ui-text-soft); }
 /* The wind-up banner: the ability a monster is about to land, above the tile it will strike. */

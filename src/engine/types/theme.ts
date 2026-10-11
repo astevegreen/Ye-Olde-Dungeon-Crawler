@@ -72,6 +72,9 @@ export interface ThemeTokens {
   /** The wood of the little chest badged on a container; its shades are derived from it,
    *  its metal is `gold`, and an emptied one goes grey. */
   badgeWood?: string;
+  /** The stone of the companion wheel's segments, lit side; its shadow, the empty stones,
+   *  the rim and the hub well are shades toward `markerInk`, and its gold is `ally`. */
+  wheelStone?: string;
 
   // Resources.
   health?: string;

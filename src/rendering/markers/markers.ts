@@ -1,5 +1,5 @@
 import { IDLE_FRAME_MS } from '../atlas/idle-frames';
-import { mixColor, withAlpha, type ThemeTokens } from '../theme';
+import { mixColor, shadeColor, withAlpha, type ThemeTokens } from '../theme';
 
 /**
  * Map markers: what the map draws over the art to say who is a target, who is on your side,
@@ -228,10 +228,34 @@ export function drawDangerZone(ctx: CanvasRenderingContext2D, tiles: readonly Sc
   ctx.stroke();
   ctx.restore();
 
-  // The edge: every tile side with no zone tile beyond it. Stroked on the boundary at
-  // double width and clipped, so the line lies inside the zone and concave corners close;
-  // the keyline is the same trick clipped to the outside.
+  strokeZoneEdge(ctx, tiles, cs, zone, key, withAlpha(theme.danger, 0.8 + 0.2 * p), theme);
+}
+
+/**
+ * One line round the outside of a zone of tiles: every tile side with no zone tile beyond
+ * it. Stroked on the boundary at double width and clipped, so the line lies inside the zone
+ * and concave corners close; the keyline is the same trick clipped to the outside.
+ */
+function strokeZoneEdge(
+  ctx: CanvasRenderingContext2D,
+  tiles: readonly ScreenPoint[],
+  cs: number,
+  zone: ReadonlySet<string>,
+  key: (x: number, y: number) => string,
+  color: string,
+  theme: MarkerTheme
+): void {
   const edges = dangerEdges(tiles, cs, zone, key);
+  let bx0 = Infinity;
+  let by0 = Infinity;
+  let bx1 = -Infinity;
+  let by1 = -Infinity;
+  for (const tile of tiles) {
+    bx0 = Math.min(bx0, tile.x);
+    by0 = Math.min(by0, tile.y);
+    bx1 = Math.max(bx1, tile.x + cs);
+    by1 = Math.max(by1, tile.y + cs);
+  }
   const strokeEdges = (width: number, style: string): void => {
     ctx.lineCap = 'square';
     ctx.lineWidth = width;
@@ -251,8 +275,10 @@ export function drawDangerZone(ctx: CanvasRenderingContext2D, tiles: readonly Sc
   strokeEdges(2 * Math.max(1, Math.round(cs / 40)), withAlpha(theme.markerInk, 0.6));
   ctx.restore();
   ctx.save();
-  clipToZone();
-  strokeEdges(lineWeight(cs) * 2, withAlpha(theme.danger, 0.8 + 0.2 * p));
+  ctx.beginPath();
+  for (const tile of tiles) ctx.rect(tile.x, tile.y, cs, cs);
+  ctx.clip();
+  strokeEdges(lineWeight(cs) * 2, color);
   ctx.restore();
 }
 
@@ -271,6 +297,69 @@ function dangerEdges(
     if (!zone.has(key(x + cs, y))) edges.push([x + cs, y, x + cs, y + cs]);
   }
   return edges;
+}
+
+/**
+ * Where a spell is aimed, in the spell's own colour: a gunsight of four ticks pointing in
+ * from the middle of each side, round a diamond with a pip at its heart. The ticks close a
+ * pixel on a beat of four idle frames, as if drawing the aim tight. Its shape is its own:
+ * no corners, so it never reads as a target bracket, an ally or the Look reticle.
+ */
+export function drawAimReticle(ctx: CanvasRenderingContext2D, x: number, y: number, cs: number, t: number, color: string, theme: MarkerTheme): void {
+  const cx = Math.round(x + cs / 2);
+  const cy = Math.round(y + cs / 2);
+  const ins = Math.round(beat(t, 4) * Math.max(1, cs / 32));
+  const tk = Math.max(2, Math.round(cs * 0.09));
+  const len = Math.max(3, Math.round(cs * 0.2));
+  // The top tick, pointing down at the centre; the others are its quarter turns.
+  const tick = [cx - tk, y + ins, cx + tk, y + ins, cx + Math.max(1, Math.round(tk / 3)), y + ins + len, cx - Math.max(1, Math.round(tk / 3)), y + ins + len];
+  ctx.save();
+  for (let q = 0; q < 4; q++) keyed(ctx, rot(tick, cx, cy, q), color, theme.markerInk);
+  const d = Math.max(3, Math.round(cs * 0.15));
+  const w = lineWeight(cs);
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - d);
+  ctx.lineTo(cx + d, cy);
+  ctx.lineTo(cx, cy + d);
+  ctx.lineTo(cx - d, cy);
+  ctx.closePath();
+  ctx.lineJoin = 'miter';
+  ctx.strokeStyle = withAlpha(theme.markerInk, 0.75);
+  ctx.lineWidth = w + 2;
+  ctx.stroke();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = w;
+  ctx.stroke();
+  const pp = Math.max(2, Math.round(cs / 16));
+  ctx.fillStyle = theme.look;
+  ctx.fillRect(cx - Math.floor(pp / 2), cy - Math.floor(pp / 2), pp, pp);
+  ctx.restore();
+}
+
+/**
+ * The tiles a spell's blast will cover, in the spell's colour: a faint wash, a stipple of
+ * dots that swell and fade over six idle frames, and one edge round the whole zone, as the
+ * danger zone has. Dots, not the danger zone's hatch: this blast is yours (it still burns
+ * you and your companion if you stand in it).
+ */
+export function drawBlastZone(ctx: CanvasRenderingContext2D, tiles: readonly ScreenPoint[], cs: number, t: number, color: string, theme: MarkerTheme): void {
+  if (tiles.length === 0) return;
+  const key = (x: number, y: number): string => `${Math.round(x)},${Math.round(y)}`;
+  const zone = new Set(tiles.map((p) => key(p.x, p.y)));
+  const p = beat(t, 6);
+  const dot = Math.max(2, Math.round(cs / 16)) + Math.round(p * Math.max(1, cs / 32));
+  ctx.save();
+  for (const tile of tiles) {
+    ctx.fillStyle = withAlpha(color, 0.1 + 0.06 * p);
+    ctx.fillRect(tile.x, tile.y, cs, cs);
+    // Two dots a tile, on a stagger, so a run of tiles reads as one even field.
+    ctx.fillStyle = withAlpha(color, 0.45 + 0.3 * p);
+    for (const [fx, fy] of [[0.25, 0.25], [0.75, 0.75]] as const) {
+      ctx.fillRect(Math.round(tile.x + cs * fx - dot / 2), Math.round(tile.y + cs * fy - dot / 2), dot, dot);
+    }
+  }
+  ctx.restore();
+  strokeZoneEdge(ctx, tiles, cs, zone, key, withAlpha(color, 0.75 + 0.25 * p), theme);
 }
 
 /**
@@ -454,5 +543,72 @@ export function drawSensedItem(ctx: CanvasRenderingContext2D, x: number, y: numb
   const pp = 2 * Math.max(1, Math.round(cs / 20));
   ctx.fillStyle = theme.sensedItem;
   ctx.fillRect(cx - Math.floor(pp / 2), cy - Math.floor(pp / 2), pp, pp);
+  ctx.restore();
+}
+
+/** What a map tag marks. */
+export type MapTagKind = 'quest' | 'stairs' | 'portal';
+
+/**
+ * Map tags, as pixel rows: `o` the pennant's finial, `P` its pole, `G`/`g` gold lit and in
+ * shade, `r` the rune cut in it; `W`/`w`/`d` the steps' lit tread, face and shadow; `S`/`s`
+ * the arch's stone lit and in shade, `G`/`g` its doorway's glow. The pennant flaps over two
+ * poses; the others are still.
+ */
+const MAP_TAGS: Record<MapTagKind, readonly (readonly string[])[]> = {
+  quest: [
+    ['o..........', 'PGGGGGGGGG.', 'PGGGrGGGG..', 'PGGrrrGG...', 'PgggrgggG..', 'Pgggggggggg', 'P..........', 'P..........', 'P..........', 'P..........'],
+    ['o..........', 'PGGGGGGGG..', 'PGGGrGGGGG.', 'PGGrrrGGG..', 'PgggrggG...', 'Pggggggggg.', 'P..........', 'P..........', 'P..........', 'P..........'],
+  ],
+  stairs: [['WWW........', 'www........', 'wwwWWW.....', 'wwwwww.....', 'dwwwwwWWW..', 'dwwwwwwww..', 'ddwwwwwwwWW', 'ddwwwwwwwww', 'dddwwwwwwww']],
+  portal: [['...SSSSS...', '.SSsgggsSS.', '.SsgggggsS.', 'SSgggGgggSS', 'SsggGGGggsS', 'SsggGGGggsS', 'SsgggGgggsS', 'SsgggggggsS', 'SsgggggggsS', 'SSsssssssSS']],
+};
+
+/**
+ * A tag that hangs above a tile and points down at it, so it never hides what it marks: a
+ * pixel icon on a dark plate with clipped corners and a tail. Quest: a gold swallow-tail
+ * pennant with a rune, flapping and bobbing. Stairs: a flight of steps, still. Portal: a stone
+ * arch whose doorway breathes gold. One icon pixel is a 32nd of the tile.
+ */
+export function drawMapTag(ctx: CanvasRenderingContext2D, kind: MapTagKind, x: number, y: number, cs: number, t: number, theme: MarkerTheme): void {
+  const frames = MAP_TAGS[kind];
+  const rows = frames[frameOf(t) % frames.length];
+  const p = Math.max(1, Math.round(cs / 32));
+  const cols = rows[0].length;
+  const n = rows.length;
+  const gold = theme.ally;
+  const pale = mixColor(gold, theme.look, 0.6);
+  const glow = beat(t, 5);
+  const ink: Record<string, string> = {
+    o: mixColor(gold, theme.look, 0.45),
+    P: theme.path,
+    G: kind === 'portal' ? mixColor(pale, theme.look, glow) : gold,
+    g: kind === 'portal' ? mixColor(shadeColor(gold, 0.7), pale, glow) : shadeColor(gold, 0.76),
+    r: shadeColor(gold, 0.3),
+    W: theme.look,
+    w: mixColor(theme.look, theme.markerInk, 0.3),
+    d: mixColor(theme.look, theme.markerInk, 0.55),
+    S: mixColor(theme.path, theme.markerInk, 0.1),
+    s: mixColor(theme.path, theme.markerInk, 0.43),
+  };
+  const bob = kind === 'quest' ? Math.round(beat(t, 4) * p) : 0;
+  const cx = Math.round(x + cs / 2);
+  const ix = cx - Math.round((cols * p) / 2);
+  const iy = Math.round(y - n * p - p * 3) - bob;
+  const odd = cols % 2 ? p : 0;
+  ctx.save();
+  ctx.fillStyle = withAlpha(theme.markerInk, 0.86);
+  ctx.fillRect(ix - p * 2, iy - p, (cols + 4) * p, (n + 2) * p);
+  ctx.fillRect(ix - p, iy - p * 2, (cols + 2) * p, (n + 4) * p);
+  ctx.fillRect(cx - p * 2, iy + (n + 2) * p, p * 3 + odd, p);
+  ctx.fillRect(cx - p, iy + (n + 3) * p, p + odd, p);
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < cols; c++) {
+      const ch = rows[r][c];
+      if (ch === '.') continue;
+      ctx.fillStyle = ink[ch];
+      ctx.fillRect(ix + c * p, iy + r * p, p, p);
+    }
+  }
   ctx.restore();
 }

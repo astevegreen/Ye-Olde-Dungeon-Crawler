@@ -10,11 +10,11 @@
  */
 import { currentUiScale } from '../uiScale';
 
-/** Where a card sits: docked to an edge of the map, or above a tile. */
+/** Where a card sits: docked to an edge of the map, or above a tile (below it with `below`). */
 export type MapCardPlace =
   | { dock: 'top-left' | 'top-right' | 'bottom' }
   /** A tile's top-left corner and width, in the canvas's virtual pixels. */
-  | { tile: { x: number; y: number; size: number } };
+  | { tile: { x: number; y: number; size: number }; below?: boolean };
 
 export interface MapCardSpec {
   html: string;
@@ -68,12 +68,12 @@ export class MapCardLayer {
       }
       return;
     }
-    const place = 'dock' in spec.place ? `dock:${spec.place.dock}` : this.tileStyle(spec.place.tile);
+    const place = 'dock' in spec.place ? `dock:${spec.place.dock}` : this.tileStyle(spec.place.tile, spec.place.below);
     const key = `${spec.className}|${place}|${spec.html}`;
     if (mounted?.key === key) return;
 
     const el = mounted?.el ?? document.createElement('div');
-    el.className = `mc-card ${spec.className}${'dock' in spec.place ? ` mc-dock-${spec.place.dock}` : ' mc-above'}`;
+    el.className = `mc-card ${spec.className}${'dock' in spec.place ? ` mc-dock-${spec.place.dock}` : spec.place.below ? ' mc-below' : ' mc-above'}`;
     el.setAttribute('data-card', id);
     if (spec.live) el.setAttribute('aria-live', 'polite');
     el.innerHTML = spec.html;
@@ -104,11 +104,12 @@ export class MapCardLayer {
     this.el.remove();
   }
 
-  /** Centered above the tile. A card is zoomed by the UI scale, which scales its own left and
-   *  top too, so they are written in the card's units: CSS pixels over the scale. */
-  private tileStyle(t: { x: number; y: number; size: number }): string {
+  /** Centered above the tile, or below it. A card is zoomed by the UI scale, which scales its own
+   *  left and top too, so they are written in the card's units: CSS pixels over the scale. */
+  private tileStyle(t: { x: number; y: number; size: number }, below = false): string {
     const z = currentUiScale();
-    return `${Math.round(((t.x + t.size / 2) * this.scale) / z)}px,${Math.round((t.y * this.scale) / z)}px`;
+    const top = below ? t.y + t.size : t.y;
+    return `${Math.round(((t.x + t.size / 2) * this.scale) / z)}px,${Math.round((top * this.scale) / z)}px`;
   }
 
   /** Nudges a card centered over a tile back inside the map at its left and right edges. */

@@ -20,7 +20,11 @@ function createMockCanvasContext(): CanvasRenderingContext2D {
     beginPath: vi.fn(),
     closePath: vi.fn(),
     moveTo: vi.fn(),
+    lineTo: vi.fn(),
     arc: vi.fn(),
+    clip: vi.fn(),
+    createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+    measureText: vi.fn((s: string) => ({ width: s.length * 6 })),
     fill: vi.fn(),
     stroke: vi.fn(),
     fillStyle: '#000',
@@ -86,5 +90,20 @@ describe('RadialMenuOverlay', () => {
     expect(() => overlay.render(ctx, engine, 960, 600)).not.toThrow();
     expect(ctx.fillRect).toHaveBeenCalled(); // open: backdrop drawn
     expect(ctx.fillText).toHaveBeenCalledWith('Call Fenrir', expect.any(Number), expect.any(Number), expect.any(Number));
+  });
+
+  it('breaks a long label onto two lines, and moves only while its clock runs', () => {
+    const overlay = new RadialMenuOverlay();
+    const engine = buildEngine();
+    const ctx = createMockCanvasContext();
+    overlay.slots[2] = { label: 'Guard the Hero Closely', action: { kind: 'call' } };
+    overlay.open();
+
+    expect(overlay.render(ctx, engine, 960, 600)).toBe(false); // Reduce motion: still
+    const drawn = vi.mocked(ctx.fillText).mock.calls.map((c) => c[0]);
+    expect(drawn).not.toContain('Guard the Hero Closely');
+    expect(drawn).toContain('Guard the');
+    expect(drawn).toContain('Hero Closely');
+    expect(overlay.render(ctx, engine, 960, 600, undefined, 1200)).toBe(true);
   });
 });

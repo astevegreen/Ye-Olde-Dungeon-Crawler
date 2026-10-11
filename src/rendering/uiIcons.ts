@@ -1,4 +1,4 @@
-import type { SpriteRecipe } from '../engine';
+import type { PixelSprite, SpriteRecipe } from '../engine';
 import { SpriteAtlas } from './atlas/sprite-atlas';
 import { UI_ICON_NAMES, UI_ICON_PREFIX } from '../ui/icons';
 import { SPELL_RUNE_PREFIX } from '../ui/spellRunes';
@@ -6,17 +6,18 @@ import { SPELL_RUNE_PREFIX } from '../ui/spellRunes';
 const SHEET_ID = 'ui-icon-sheet';
 
 /**
- * Bakes the pack's `ui~<name>` sprite recipes once and installs them as a stylesheet:
- * one rule per icon the pack draws, so `<i class="ui-icon" data-icon="name">` shows it
- * anywhere in the DOM (src/ui/icons.ts). Icons the pack doesn't draw stay hidden.
- * Returns how many icons were installed.
+ * Bakes the pack's `ui~<name>` sprite recipes and pixel sprites once and installs them as a
+ * stylesheet: one rule per icon the pack draws, so `<i class="ui-icon" data-icon="name">`
+ * shows it anywhere in the DOM (src/ui/icons.ts). A pixel icon shows its first idle frame.
+ * Icons the pack doesn't draw stay hidden. Returns how many icons were installed.
  */
-export function installUiIcons(recipes?: Record<string, SpriteRecipe>): number {
+export function installUiIcons(recipes?: Record<string, SpriteRecipe>, pixelSprites?: Record<string, PixelSprite>): number {
   if (typeof document === 'undefined') return 0;
   const own = Object.fromEntries(
     Object.entries(recipes ?? {}).filter(([key]) => key.startsWith(UI_ICON_PREFIX) || key.startsWith(SPELL_RUNE_PREFIX))
   );
-  const atlas = new SpriteAtlas(own);
+  const figures = Object.fromEntries(Object.entries(pixelSprites ?? {}).filter(([key]) => key.startsWith(UI_ICON_PREFIX)));
+  const atlas = new SpriteAtlas(own, { pixelSprites: figures });
   const rules = UI_ICON_NAMES.filter((name) => atlas.hasRecipe(UI_ICON_PREFIX + name)).map((name) => {
     const url = atlas.getSpriteCanvas(UI_ICON_PREFIX + name).toDataURL('image/png');
     return `.ui-icon[data-icon="${name}"] { display: inline-block; background-image: url("${url}"); }`;

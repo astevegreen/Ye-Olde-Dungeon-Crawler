@@ -3,14 +3,13 @@ import {
   COTW_SPRITE_RECIPES,
   COTW_TILE_SPRITES,
   COTW_MONSTER_SPRITES,
-  COTW_ITEM_SPRITES,
   COTW_TERRAIN_SPRITES,
   COTW_UI_ICONS,
   COTW_SPELL_RUNES,
 } from '../sprites';
 
 /**
- * Guards the sprite-recipe split (tiles/monsters/items + barrel).
+ * Guards the sprite-recipe split (tiles/monsters/terrain/ui/runes + barrel).
  *
  * Before the split, every recipe lived in one object literal, so a duplicate
  * key was a TypeScript error ("An object literal cannot have multiple
@@ -25,10 +24,9 @@ describe('COTW sprite recipe groups', () => {
   const GROUPS = {
     tiles: COTW_TILE_SPRITES,
     monsters: COTW_MONSTER_SPRITES,
-    items: COTW_ITEM_SPRITES,
     terrain: COTW_TERRAIN_SPRITES,
     ui: COTW_UI_ICONS,
-      runes: COTW_SPELL_RUNES,
+    runes: COTW_SPELL_RUNES,
   } as const;
 
   it('assigns every recipe key to exactly one group', () => {
@@ -50,7 +48,6 @@ describe('COTW sprite recipe groups', () => {
     const partTotal =
       Object.keys(COTW_TILE_SPRITES).length +
       Object.keys(COTW_MONSTER_SPRITES).length +
-      Object.keys(COTW_ITEM_SPRITES).length +
       Object.keys(COTW_TERRAIN_SPRITES).length +
       Object.keys(COTW_UI_ICONS).length +
       Object.keys(COTW_SPELL_RUNES).length;

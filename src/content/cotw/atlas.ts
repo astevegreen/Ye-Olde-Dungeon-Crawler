@@ -95,12 +95,5 @@ export const COTW_ATLAS_THEME: AtlasProceduralTheme = {
   tileZoneBands: COTW_TILE_ZONE_BANDS,
   terrain: COTW_TERRAIN_ART,
   overlays: COTW_CELL_OVERLAYS,
-  // CotW's own creatures, ahead of the renderer's generic archetypes (draugr before undead,
-  // duergar before dwarf).
-  spriteTagRules: [
-    { tag: 'draugr', spriteKey: 'draugr' },
-    { tag: 'duergar', spriteKey: 'duergar' },
-    { tag: 'troll_witch', spriteKey: 'troll_witch' },
-  ],
 };
 

@@ -13,7 +13,7 @@ import { NPC } from '../../../engine';
 import type { Item } from '../../../engine';
 import { COTW_TILE_ZONE_BANDS } from '../../../content/cotw/tileZones';
 import { COTW_TOWN } from '../../../content/cotw/town';
-import { COTW_BOSS_SPRITES, COTW_SPRITE_RECIPES } from '../../../content/cotw/sprites';
+import { COTW_BOSS_SPRITES, COTW_ITEM_PIXEL_SPRITES, COTW_SPRITE_RECIPES } from '../../../content/cotw/sprites';
 import { FIXTURE_SPRITE_RECIPES } from '../../../../tests/fixtures/fixture-pack';
 import { cotwManifest } from '../../../content/cotw';
 import { ATLAS_MAP } from '../sprite-atlas';
@@ -207,7 +207,7 @@ describe('sprite-mapper — Tag-Priority Monster, Item, and Zone-Themed Terrain 
 
     it("uses a pack recipe keyed by the definition ID, for items and monsters alike", () => {
       // What SpriteAtlas.hasSprite reports for cotw: built-in cells, every cotw recipe and its pixel sprites.
-      const hasSprite = (key: string) => key in ATLAS_MAP || key in COTW_SPRITE_RECIPES || key in COTW_BOSS_SPRITES;
+      const hasSprite = (key: string) => key in ATLAS_MAP || key in COTW_SPRITE_RECIPES || key in COTW_BOSS_SPRITES || key in COTW_ITEM_PIXEL_SPRITES;
 
       const fang = { id: 'loot-1', definitionId: 'nidhogg_fang', name: "Níðhögg's Fang", category: 'weapon' } as Item;
       const lodestone = { id: 'loot-2', definitionId: 'duergar_lodestone', name: 'Duergar Lodestone', category: 'misc' } as Item;
@@ -224,19 +224,22 @@ describe('sprite-mapper — Tag-Priority Monster, Item, and Zone-Themed Terrain 
   });
 
   describe('pack-owned sprite choice (ARCHITECTURE.md §3)', () => {
-    const hasSprite = (key: string) => key in ATLAS_MAP || key in COTW_SPRITE_RECIPES;
+    const hasSprite = (key: string) => key in ATLAS_MAP || key in COTW_SPRITE_RECIPES || key in COTW_ITEM_PIXEL_SPRITES;
     const monster = (tags: string[]) =>
       new Monster({ id: 'm', name: 'Barrow Thing', position: { x: 0, y: 0 }, stats: { hp: 1, maxHp: 1, attack: 1, defense: 0 }, tags });
 
     it("routes a pack's own creature tags through its spriteTagRules, ahead of generic archetypes", () => {
-      const rules = cotwManifest.atlas.spriteTagRules;
-      expect(getEntitySpriteKey(monster(['undead', 'draugr']), hasSprite, rules)).toBe('draugr');
-      expect(getEntitySpriteKey(monster(['undead', 'dwarf', 'duergar']), hasSprite, rules)).toBe('duergar');
-      expect(getEntitySpriteKey(monster(['troll_witch', 'caster']), hasSprite, rules)).toBe('troll_witch');
+      // A pack's rules and the recipes they name (cotw draws every creature by its id, so it needs none).
+      const packKeys = ['draugr', 'duergar', 'troll_witch'];
+      const rules = packKeys.map((key) => ({ tag: key, spriteKey: key }));
+      const packHas = (key: string) => key in ATLAS_MAP || packKeys.includes(key);
+      expect(getEntitySpriteKey(monster(['undead', 'draugr']), packHas, rules)).toBe('draugr');
+      expect(getEntitySpriteKey(monster(['undead', 'dwarf', 'duergar']), packHas, rules)).toBe('duergar');
+      expect(getEntitySpriteKey(monster(['troll_witch', 'caster']), packHas, rules)).toBe('troll_witch');
 
       // Without the pack's rules the renderer knows only generic archetypes.
-      expect(getEntitySpriteKey(monster(['undead', 'draugr']), hasSprite)).toBe('skeleton');
-      expect(getEntitySpriteKey(monster(['undead', 'dwarf', 'duergar']), hasSprite)).toBe('dwarf');
+      expect(getEntitySpriteKey(monster(['undead', 'draugr']), packHas)).toBe('skeleton');
+      expect(getEntitySpriteKey(monster(['undead', 'dwarf', 'duergar']), packHas)).toBe('dwarf');
     });
 
     it('draws quest relics from recipes keyed by their definition IDs', () => {

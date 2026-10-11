@@ -376,7 +376,21 @@ export class TargetingOverlay implements UIModal {
     }
 
     const reticleScreen = camera.worldToScreen(rx, ry, cellSize, offsetX, offsetY);
-    if (reticleScreen) drawAimReticle(ctx, reticleScreen.x, reticleScreen.y, cellSize, t, color, theme);
+    const centre = shortBurstCentre(geo, rx, ry);
+    if (!centre) {
+      if (reticleScreen) drawAimReticle(ctx, reticleScreen.x, reticleScreen.y, cellSize, t, color, theme);
+      return;
+    }
+    // A burst stopped short (a creature or wall in its way, or out of range): the reticle sits
+    // where it will burst, and a faint, still one stays on the tile the arrows move.
+    if (reticleScreen) {
+      ctx.save();
+      ctx.globalAlpha = 0.4;
+      drawAimReticle(ctx, reticleScreen.x, reticleScreen.y, cellSize, 0, color, theme);
+      ctx.restore();
+    }
+    const centreScreen = camera.worldToScreen(centre.x, centre.y, cellSize, offsetX, offsetY);
+    if (centreScreen) drawAimReticle(ctx, centreScreen.x, centreScreen.y, cellSize, t, color, theme);
   }
 
   private renderProjectileEffect(
@@ -473,6 +487,17 @@ export function aimCardHtml(engine: GameEngine, entry: SpellbookEntry, reticleX:
   }
   const power = entry.type === 'spell' ? spellPower(spell, { engine, player: engine.player }) : 0;
   const grid = entry.gridNotes?.length ? `<div class="ui-note">From the grid: ${entry.gridNotes.map(escapeHtml).join(' · ')}</div>` : '';
+  // A burst stops at the first creature or wall in its flight, and at the end of its range.
+  const geo = castGeometry(engine, spell, engine.player, { x: reticleX, y: reticleY });
+  const centre = shortBurstCentre(geo, reticleX, reticleY);
+  const blocker = centre ? engine.map.getEntityAt(centre.x, centre.y) : null;
+  const short = !centre
+    ? ''
+    : blocker && blocker.isAlive() && blocker !== engine.player
+      ? `${escapeHtml(blocker.name)} is in the way`
+      : geo.ray?.hitWall
+        ? 'a wall is in the way'
+        : 'out of range';
   return `
     <div class="mc-head"><span class="mc-title">${iconHtml('cast')} <span>${escapeHtml(spell.name)}</span></span><span class="mc-tag ui-num">${escapeHtml(cost)}</span></div>
     <div class="mc-body">
@@ -480,8 +505,15 @@ export function aimCardHtml(engine: GameEngine, entry: SpellbookEntry, reticleX:
       ${grid}
       <div class="mc-sub">Target</div>
       ${targetHtml}
+      ${short ? `<div class="ui-note">Bursts short: ${short}</div>` : ''}
       ${spell.reflects ? '<div class="ui-note">Bounces off walls</div>' : ''}
     </div>`;
+}
+
+/** Where a burst lands when that isn't the tile aimed at; null when it lands there or doesn't burst. */
+function shortBurstCentre(geo: ReturnType<typeof castGeometry>, x: number, y: number): Position | null {
+  const at = geo.burst?.epicenter;
+  return at && (at.x !== x || at.y !== y) ? at : null;
 }
 
 /** A spell's color on the map: its element's color in the pack, else the info role. */

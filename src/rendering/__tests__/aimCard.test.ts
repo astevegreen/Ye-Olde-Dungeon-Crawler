@@ -32,6 +32,25 @@ describe('aiming card markup', () => {
     expect(html).toContain('2 / 5 charges');
   });
 
+  it('says why a thrown burst stops short of the tile aimed at, and says nothing when it lands there', () => {
+    const ball = { id: 'ball', name: 'Ball', element: 'fire', manaCost: 5, range: 6, targetType: 'area_burst', areaOfEffect: 1, effects: [], visual: { archetype: 'projectile_burst' } } as unknown as SpellDefinition;
+    const throwBall: SpellbookEntry = { ...entry, id: 'ball', name: 'Ball', spellDef: ball };
+    const engine = engineWithTarget(); // the hero at (2, 2), an imp at (5, 2), walls round a 12 by 12 room
+    expect(aimCardHtml(engine, throwBall, 7, 2)).toContain('Bursts short: Imp is in the way');
+    expect(aimCardHtml(engine, throwBall, 5, 2)).not.toContain('Bursts short');
+    expect(aimCardHtml(engine, throwBall, 2, 0)).toContain('Bursts short: a wall is in the way');
+    expect(aimCardHtml(engine, { ...throwBall, spellDef: { ...ball, range: 3 } }, 2, 8)).toContain('Bursts short: out of range');
+
+    // With nothing in the way, it lands on every tile in range.
+    const open = new GameEngine({ map: GameMap.createBoxRoom(12, 12), player: new Player({ id: 'hero', name: 'Hero', position: { x: 2, y: 2 } }), floor: 1 });
+    for (let y = 1; y < 11; y++) {
+      for (let x = 1; x < 11; x++) {
+        if (Math.hypot(x - 2, y - 2) > ball.range) continue;
+        expect(aimCardHtml(open, throwBall, x, y), `aimed at ${x},${y}`).not.toContain('Bursts short');
+      }
+    }
+  });
+
   it('shows the power the cast will have and what the grid did to it', () => {
     const shaped = { ...spell, manaCost: 5, effects: [{ type: 'damage', amount: 14 }] } as unknown as SpellDefinition;
     const html = aimCardHtml(engineWithTarget(), { ...entry, manaCost: 5, spellDef: shaped, gridNotes: ['Hub: 4 neighbors, +60% mana, +80% power'] }, 5, 2);

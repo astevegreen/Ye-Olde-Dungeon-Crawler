@@ -31,3 +31,4 @@ Owner: "wave 8's deferred pieces: The companion wheel redrawn as a rune ring. Ne
 
 ## Verification
 - `npx vitest run`: 2870 passed on the uncommitted tree; `npm run lint` green (palette 20); `npm run build` ok, 2,364.98 kB (782 kB gzip). Gates/Playwright: not run.
+Resumed: 2026-10-11 11:45 UTC

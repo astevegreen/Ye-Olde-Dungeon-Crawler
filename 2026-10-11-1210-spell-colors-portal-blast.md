@@ -28,3 +28,4 @@ Owner: "note the spell colors, portal label, and blast area as to-do". These are
 
 ## Verification
 - gates (Chromium) and pre-push (three browsers, 91 passed): green on 5e92adc
+Resumed: 2026-10-11 12:12 UTC

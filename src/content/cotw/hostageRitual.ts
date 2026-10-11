@@ -165,6 +165,7 @@ function seatRaidCaptives(engine: EngineContext): void {
         greeting: identity.standIn.greeting,
         dialogText: captive.dialogText,
         isStationary: true,
+        spriteKey: identity.standIn.villagerId,
       })
     );
   }
@@ -547,6 +548,7 @@ export function populateReturnedCaptives(engine: EngineContext): void {
         role: 'villager',
         position,
         choiceId: i === 0 ? 'choice_returned_broth' : undefined,
+        spriteKey: identity.standIn?.villagerId ?? captive.id,
         greeting: i === 0 ? 'Home, and warm! Come, take some broth before you go down again.' : 'You brought me home from the altar. I will not forget it.',
         dialogText: line,
       })

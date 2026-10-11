@@ -12,6 +12,7 @@ import { torvaldModel } from './sculpt/torvald';
 import { haakonModel } from './sculpt/haakon';
 import { bjornModel } from './sculpt/bjorn';
 import { thrainModel } from './sculpt/thrain';
+import { eirModel, sigrunModel, brandrModel, hallvardModel, ingridModel, torsteinModel, sigridModel, leifModel } from './sculpt/villagers';
 
 /** Every companion and townsfolk model idles over four frames. */
 const ALLY_FRAMES = 4;
@@ -47,4 +48,14 @@ export const COTW_TOWNSFOLK_SPRITES: Record<string, PixelSprite> = {
   'npc-banker': sculpted(haakonModel),
   'npc-guard': sculpted(bjornModel),
   'npc-rune-smith': sculpted(thrainModel),
+  // The raid's villagers and the gate-ward (prologue.ts), and the Siphon Altar's captives
+  // (hostageRitual.ts). A villager seated in a captive's place wears their own key.
+  'prologue-eir': sculpted(eirModel),
+  'prologue-sigrun': sculpted(sigrunModel),
+  'prologue-brandr': sculpted(brandrModel),
+  'prologue-hallvard': sculpted(hallvardModel),
+  captive_villager_1: sculpted(ingridModel),
+  captive_villager_2: sculpted(torsteinModel),
+  captive_villager_3: sculpted(sigridModel),
+  captive_villager_4: sculpted(leifModel),
 };

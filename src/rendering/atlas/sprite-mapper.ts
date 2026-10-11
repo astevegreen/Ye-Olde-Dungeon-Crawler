@@ -170,8 +170,10 @@ export function getEntitySpriteKey(
   }
 
   if (entity instanceof NPC) {
-    // A pack recipe keyed by the NPC's id is that NPC's art, as a definition id is a monster's.
-    if (hasSprite?.(entity.id)) return entity.id;
+    // A pack recipe keyed by the NPC's id (or the sprite it wears) is that NPC's art, as a
+    // definition id is a monster's.
+    const own = entity.spriteKey ?? entity.id;
+    if (hasSprite?.(own)) return own;
     const role = entity.role;
     switch (role) {
       case 'merchant':

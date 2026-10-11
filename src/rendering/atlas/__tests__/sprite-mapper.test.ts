@@ -60,6 +60,12 @@ describe('sprite-mapper — Tag-Priority Monster, Item, and Zone-Themed Terrain 
       expect(getEntitySpriteKey(smith, () => false)).toBe('townsperson');
     });
 
+    it('draws an NPC standing in another’s place as the sprite it wears, not the place’s id', () => {
+      const standIn = new NPC({ id: 'captive-1', name: 'Eir', role: 'villager', position: { x: 0, y: 0 }, spriteKey: 'eir' });
+      expect(getEntitySpriteKey(standIn, (k) => k === 'eir' || k === 'captive-1')).toBe('eir');
+      expect(getEntitySpriteKey(standIn, () => false)).toBe('townsperson');
+    });
+
     it('resolves monsters using tag specificity order (boss > dragon > undead > beast > humanoid)', () => {
       const dragon = new Monster({
         id: 'm1',

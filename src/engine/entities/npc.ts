@@ -16,6 +16,9 @@ export interface NpcConfig {
    *  greeting. It never resolves, so the NPC can be spoken to again; its options gate
    *  themselves with predicates. */
   choiceId?: string;
+  /** The pack sprite the NPC draws as, when it isn't the one keyed by its id: someone
+   *  standing in another NPC's place keeps that place's id but wears their own art. */
+  spriteKey?: string;
 }
 
 export class NPC extends Actor {
@@ -25,6 +28,7 @@ export class NPC extends Actor {
   private _dialogText: string;
   public readonly isStationary: boolean;
   public readonly choiceId?: string;
+  public readonly spriteKey?: string;
 
   constructor(config: NpcConfig) {
     const isStat = config.isStationary ?? true;
@@ -52,6 +56,7 @@ export class NPC extends Actor {
     this._dialogText = config.dialogText ?? `The winds whisper of ancient dangers below...`;
     this.isStationary = config.isStationary ?? true;
     this.choiceId = config.choiceId;
+    this.spriteKey = config.spriteKey;
   }
 
   /** What the NPC says on being greeted. */

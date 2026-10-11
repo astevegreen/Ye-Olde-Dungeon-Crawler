@@ -267,6 +267,9 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
 
       const names = HOSTAGE_VILLAGERS.map((v) => map.getEntityById(v.id)!.name);
       expect(names).toEqual(['Eir the Acolyte', 'Torstein the Cooper', 'Brandr the Apprentice', 'Young Leif']);
+      // Each wears their own drawing, though the captive's id stays for the flags.
+      const looks = HOSTAGE_VILLAGERS.map((v) => (map.getEntityById(v.id) as NPC).spriteKey ?? v.id);
+      expect(looks).toEqual(['prologue-eir', 'captive_villager_2', 'prologue-brandr', 'captive_villager_4']);
     });
 
     it('are named when rescued', () => {

@@ -230,6 +230,8 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
     // With no one taken in the raid, the captives were Ingrid, Torstein, Sigrid and Leif.
     const names = [1, 2, 3, 4].map((i) => map.getEntityById(`npc-returned-${i}`)?.name);
     expect(names).toEqual(['Ingrid of the Mill', 'Torstein the Cooper', 'Sigrid the Weaver', 'Young Leif']);
+    const looks = [1, 2, 3, 4].map((i) => (map.getEntityById(`npc-returned-${i}`) as any).spriteKey);
+    expect(looks).toEqual(['captive_villager_1', 'captive_villager_2', 'captive_villager_3', 'captive_villager_4']);
     RETURNED_CAPTIVE_POSITIONS.forEach((pos, i) => expect(map.getEntityById(`npc-returned-${i + 1}`)).toMatchObject(pos));
     expect(logs.filter((l) => l.includes('home from the Siphon Altar'))).toHaveLength(1);
 

@@ -321,6 +321,7 @@ export interface SerializedNpc {
   dialogText: string;
   isStationary?: boolean;
   choiceId?: string;
+  spriteKey?: string;
 }
 
 export interface SerializedGroundTile {

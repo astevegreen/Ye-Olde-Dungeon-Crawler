@@ -333,6 +333,16 @@ mat('ally_wineDark', '#451a28', { tex: 'cloth' });
 mat('ally_shieldBlue', '#3b5888', { hs: 10 });
 mat('ally_hairBrown', '#6a4a30', { hs: 12 });
 mat('ally_horn', '#d8b070', { a: 0.6, shiny: true, hs: 8 });
+// the raid's villagers, the gate-ward and the Siphon Altar's captives (villagers.ts)
+mat('vil_mantle', '#6c88a2', { tex: 'cloth' });
+mat('vil_herb', '#5f8a46', { hs: 12 });
+mat('vil_clay', '#a5674a', { hs: 12 });
+mat('vil_madder', '#985757', { tex: 'cloth' });
+mat('vil_madderDark', '#663a3c', { tex: 'cloth' });
+mat('vil_flour', '#ddd7c7', { tex: 'cloth', hs: 8 });
+mat('vil_fleece', '#e0dacb', { tex: 'fur', hs: 8 });
+mat('vil_yarn', '#cdbf9c', { hs: 8 });
+mat('vil_frost', '#cfeefa', { shiny: true, tex: 'ice', hs: 6 });
 
 // ---- items (wave 6): only material or element colour; alignment is the aura's job
 mat('item_glass', '#a3bccb', { shiny: true, a: 0.78, hs: 8 });

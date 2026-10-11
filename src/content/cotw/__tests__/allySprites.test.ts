@@ -4,6 +4,8 @@ import { COTW_COMPANION_SPRITES, COTW_TOWNSFOLK_SPRITES } from '../sprites/allyS
 import { COTW_COMPANIONS } from '../companions';
 import { COTW_TOWN } from '../town';
 import { IVALDA_ID } from '../ironClans';
+import { COTW_PROLOGUE } from '../prologue';
+import { HOSTAGE_VILLAGERS } from '../hostageRitual';
 import { getEntitySpriteKey } from '../../../rendering/atlas/sprite-mapper';
 import { Companion } from '../../../engine/entities/companion';
 import { NPC } from '../../../engine/entities/npc';
@@ -16,8 +18,20 @@ describe('the cotw companions and townsfolk have their own drawings', () => {
   it('keys each companion drawing by a real companion, and each townsfolk drawing by a real NPC', () => {
     const companions = new Set(COTW_COMPANIONS.map((c) => c.id));
     for (const key of Object.keys(COTW_COMPANION_SPRITES)) expect([key, companions.has(key)]).toEqual([key, true]);
-    const npcs = new Set([...COTW_TOWN.npcs.map((n) => n.id), IVALDA_ID]);
+    const npcs = new Set([
+      ...COTW_TOWN.npcs.map((n) => n.id),
+      IVALDA_ID,
+      ...(COTW_PROLOGUE.npcs ?? []).map((n) => n.id),
+      ...(COTW_PROLOGUE.aftermathNpcs ?? []).map((n) => n.id),
+      ...HOSTAGE_VILLAGERS.map((n) => n.id),
+    ]);
     for (const key of Object.keys(COTW_TOWNSFOLK_SPRITES)) expect([key, npcs.has(key)]).toEqual([key, true]);
+  });
+
+  it('draws every villager of the raid, the gate-ward and every altar captive as themselves', () => {
+    const people = [...(COTW_PROLOGUE.npcs ?? []), ...(COTW_PROLOGUE.aftermathNpcs ?? []), ...HOSTAGE_VILLAGERS];
+    expect(people).toHaveLength(8);
+    for (const { id } of people) expect([id, id in COTW_TOWNSFOLK_SPRITES]).toEqual([id, true]);
   });
 
   it('draws every hound as itself on the map, not as the enemy wolf', () => {

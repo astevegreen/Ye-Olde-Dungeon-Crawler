@@ -724,6 +724,118 @@ mat('scr_houndNose', '#2b2427', { shiny: true });
 mat('scr_houndMouth', '#1a1012');
 mat('scr_houndGum', '#4e2c2e', { hs: 8 });
 mat('scr_houndCollar', '#8a4f2c', { hs: 14 });
+// the villagers who come home to Bjarnarhaven (portraitsVillagers.ts): their map sprites' colours
+// Eir the Acolyte, by the temple's lamp
+mat('scr_gEir', '#1f2632', { em: true, hs: 12 });
+mat('scr_eirHalo', '#6a5a2e', { em: true, hs: 6 });
+mat('scr_eirSkin', '#dcc0ac', { hs: 12 });
+mat('scr_eirBlush', '#cf9a86', { hs: 10 });
+mat('scr_eirHair', '#3e2e26', { hs: 12 });
+mat('scr_eirBand', '#d8cfb6', { tex: 'cloth', hs: 8 });
+mat('scr_eirRobe', '#d6d1c4', { tex: 'cloth', hs: 8 });
+mat('scr_eirMantle', '#6c88a2', { tex: 'cloth', hs: 12 });
+mat('scr_eirHerb', '#5f8a46', { hs: 12 });
+mat('scr_eirFlower', '#e8d36a', { hs: 8 });
+mat('scr_eirClay', '#a5674a', { hs: 12 });
+mat('scr_eirWhite', '#e6dccf', { hs: 6 });
+mat('scr_eirIris', '#56708c', { hs: 8 });
+mat('scr_eirLash', '#2a1c18', { hs: 6 });
+mat('scr_eirLip', '#b46c60', { hs: 8 });
+mat('scr_eirFlame', '#ffc95a', { em: true, hs: 0 });
+mat('scr_eirFlameCore', '#fff2c4', { em: true, hs: 0 });
+// Sigrun, Olaf's daughter, by her candle in his store
+mat('scr_gSigrun', '#2e201c', { em: true, hs: 12 });
+mat('scr_sigrunHalo', '#6e3c1e', { em: true, hs: 6 });
+mat('scr_sigrunSkin', '#c99274', { hs: 14 });
+mat('scr_sigrunRuddy', '#c8705a', { hs: 10 });
+mat('scr_sigrunHair', '#c7a35e', { hs: 12 });
+mat('scr_sigrunScarf', '#8c3328', { tex: 'cloth', hs: 12 });
+mat('scr_sigrunDress', '#985757', { tex: 'cloth', hs: 12 });
+mat('scr_sigrunApron', '#b8ae96', { tex: 'cloth', hs: 10 });
+mat('scr_sigrunWhite', '#ece2d6', { hs: 6 });
+mat('scr_sigrunIris', '#4f7092', { hs: 8 });
+mat('scr_sigrunLash', '#3a2418', { hs: 6 });
+mat('scr_sigrunMouth', '#4a1e1a', { hs: 6 });
+mat('scr_sigrunTeeth', '#eadfc6', { hs: 6 });
+mat('scr_sigrunTallow', '#e6dab2', { hs: 8 });
+// Brandr the Apprentice, by Gunther's forge
+mat('scr_gBrandr', '#261f1c', { em: true, hs: 12 });
+mat('scr_brandrHalo', '#6e3418', { em: true, hs: 6 });
+mat('scr_brandrCoal', '#ff7a2a', { em: true, hs: 0 });
+mat('scr_brandrRimeHalo', '#3e6670', { em: true, hs: 6 });
+mat('scr_brandrSkin', '#c48d6a', { hs: 14 });
+mat('scr_brandrFreckle', '#a8664a', { hs: 10 });
+mat('scr_brandrHair', '#a3492c', { hs: 12 });
+mat('scr_brandrShirt', '#4a4a52', { tex: 'cloth', hs: 12 });
+mat('scr_brandrApron', '#7c5438', { hs: 14 });
+mat('scr_brandrStrap', '#4f3627', { hs: 14 });
+mat('scr_brandrSoot', '#5e4a44', { tex: 'rot', hs: 12 });
+mat('scr_brandrWhite', '#e8ddd0', { hs: 6 });
+mat('scr_brandrIris', '#6a5a36', { hs: 8 });
+mat('scr_brandrLash', '#2e1a14', { hs: 6 });
+mat('scr_brandrMouth', '#401a16', { hs: 6 });
+mat('scr_brandrTeeth', '#e8dcc4', { hs: 6 });
+mat('scr_brandrSteel', '#97a2b2', { shiny: true, hs: 10 });
+mat('scr_brandrRime', '#cfeefa', { shiny: true, tex: 'ice', hs: 6 });
+mat('scr_brandrHandle', '#7a5a3a', { tex: 'wood' });
+// Ingrid of the Mill, in the light of the mill door
+mat('scr_gIngrid', '#2a2620', { em: true, hs: 10 });
+mat('scr_ingridShaft', '#625c48', { em: true, hs: 6 });
+mat('scr_ingridSkin', '#c68c6a', { hs: 14 });
+mat('scr_ingridRuddy', '#c27a62', { hs: 10 });
+mat('scr_ingridKerchief', '#d6cebb', { tex: 'cloth', hs: 10 });
+mat('scr_ingridHair', '#6a4a30', { hs: 12 });
+mat('scr_ingridDress', '#6e5640', { tex: 'cloth', hs: 12 });
+mat('scr_ingridFlour', '#ddd7c7', { tex: 'cloth', hs: 8 });
+mat('scr_ingridSack', '#b19c72', { tex: 'cloth', hs: 10 });
+mat('scr_ingridWhite', '#e8ded0', { hs: 6 });
+mat('scr_ingridIris', '#5e4630', { hs: 8 });
+mat('scr_ingridLash', '#2e1c14', { hs: 6 });
+mat('scr_ingridMouth', '#46201a', { hs: 6 });
+mat('scr_ingridTeeth', '#eadfc6', { hs: 6 });
+// Torstein the Cooper, by the fire that bends his staves
+mat('scr_gTorstein', '#1f2320', { em: true, hs: 12 });
+mat('scr_torsteinHalo', '#6a3a1c', { em: true, hs: 6 });
+mat('scr_torsteinSpark', '#ffb050', { em: true, hs: 0 });
+mat('scr_torsteinSkin', '#c08868', { hs: 14 });
+mat('scr_torsteinBeard', '#4a3424', { hs: 12 });
+mat('scr_torsteinCap', '#4c6a3e', { tex: 'cloth', hs: 12 });
+mat('scr_torsteinTunic', '#3c4a60', { tex: 'cloth', hs: 12 });
+mat('scr_torsteinApron', '#7c5438', { hs: 14 });
+mat('scr_torsteinHoop', '#666e7c', { shiny: true, hs: 10 });
+mat('scr_torsteinMallet', '#5a4230', { tex: 'wood', hs: 12 });
+mat('scr_torsteinHaft', '#7a5a3a', { tex: 'wood' });
+mat('scr_torsteinWhite', '#dcd2c2', { hs: 6 });
+mat('scr_torsteinIris', '#4a3626', { hs: 8 });
+mat('scr_torsteinLash', '#22160f', { hs: 6 });
+// Sigrid the Weaver, spinning by the hearth before her loom
+mat('scr_gSigrid', '#1b2526', { em: true, hs: 12 });
+mat('scr_sigridHalo', '#5e3e20', { em: true, hs: 6 });
+mat('scr_sigridSkin', '#c8937c', { hs: 12 });
+mat('scr_sigridHair', '#b2aea6', { hs: 8 });
+mat('scr_sigridShawl', '#4c6a3e', { tex: 'cloth', hs: 12 });
+mat('scr_sigridBorder', '#8c3328', { tex: 'cloth', hs: 12 });
+mat('scr_sigridDress', '#55698a', { tex: 'cloth', hs: 12 });
+mat('scr_sigridFleece', '#e0dacb', { tex: 'fur', hs: 8 });
+mat('scr_sigridYarn', '#cdbf9c', { hs: 8 });
+mat('scr_sigridWhite', '#e2d8cc', { hs: 6 });
+mat('scr_sigridIris', '#5a6c58', { hs: 8 });
+mat('scr_sigridLash', '#3a2a24', { hs: 6 });
+mat('scr_sigridLip', '#a8665a', { hs: 8 });
+// Young Leif, in the snowy yard at sundown
+mat('scr_gLeif', '#1d2636', { em: true, hs: 12 });
+mat('scr_leifSky', '#7a4c3c', { em: true, hs: 6 });
+mat('scr_leifSnow', '#c4d0dc', { em: true, hs: 4 });
+mat('scr_leifSkin', '#d29f84', { hs: 14 });
+mat('scr_leifFreckle', '#ad6a48', { hs: 10 });
+mat('scr_leifHair', '#c7a35e', { hs: 12 });
+mat('scr_leifTunic', '#55698a', { tex: 'cloth', hs: 12 });
+mat('scr_leifSword', '#8a6844', { tex: 'wood', hs: 12 });
+mat('scr_leifWhite', '#eee4d8', { hs: 6 });
+mat('scr_leifIris', '#4c7090', { hs: 8 });
+mat('scr_leifLash', '#3a2418', { hs: 6 });
+mat('scr_leifMouth', '#4a1e1a', { hs: 6 });
+mat('scr_leifTeeth', '#eee2ca', { hs: 6 });
 
 // ---- wave 9d portraits
 // the Myling, the Kirkegrim, the Root-Wraith (portraitsRestless.ts)

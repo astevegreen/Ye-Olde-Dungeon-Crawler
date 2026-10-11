@@ -32,16 +32,22 @@ const TOWNSFOLK = [
   'npc-banker', 'npc-guard', 'npc-trainer', 'npc-rune-smith', 'npc-ivalda',
 ];
 const COMPANIONS = ['hearth_frost_hound', 'ember_fang_wolf'];
+// The rescued villagers, who live in town afterwards and talk on every visit; Hallvard speaks once
+// and has none (owner, 10 Oct).
+const VILLAGERS = [
+  'prologue-eir', 'prologue-sigrun', 'prologue-brandr',
+  'captive_villager_1', 'captive_villager_2', 'captive_villager_3', 'captive_villager_4',
+];
 
 describe('cotw portraits (art wave 9)', () => {
   it('keys each portrait by the sprite its creature, townsperson or companion draws with', () => {
-    expect(Object.keys(portraits).sort()).toEqual([...CREATURES, ...TOWNSFOLK, ...COMPANIONS].sort());
+    expect(Object.keys(portraits).sort()).toEqual([...CREATURES, ...TOWNSFOLK, ...COMPANIONS, ...VILLAGERS].sort());
     for (const id of CREATURES) {
       const def = monsters.find((m) => m.id === id);
       expect(def, id).toBeDefined();
       expect(getMonsterDefinitionSpriteKey(def!, hasSprite, cotwManifest.atlas?.spriteTagRules)).toBe(id);
     }
-    for (const key of [...TOWNSFOLK, ...COMPANIONS]) expect(key in pixelSprites, key).toBe(true);
+    for (const key of [...TOWNSFOLK, ...COMPANIONS, ...VILLAGERS]) expect(key in pixelSprites, key).toBe(true);
     expect(cotwManifest.town.npcs.map((n) => n.id).filter((id) => !TOWNSFOLK.includes(id))).toEqual([]);
     for (const id of COMPANIONS) expect(cotwManifest.companions?.some((c) => c.id === id), id).toBe(true);
   });

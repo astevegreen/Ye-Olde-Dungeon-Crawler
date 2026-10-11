@@ -15,6 +15,7 @@ import { astridPortrait, haakonPortrait, olafPortrait } from './sculpt/portraits
 import { guntherPortrait, ivaldaPortrait, thrainPortrait } from './sculpt/portraitsForge';
 import { bjornPortrait, torvaldPortrait } from './sculpt/portraitsTempleGate';
 import { emberWolfPortrait, frostHoundPortrait, ranvildPortrait } from './sculpt/portraitsKennel';
+import { brandrPortrait, eirPortrait, ingridPortrait, leifPortrait, sigridPortrait, sigrunPortrait, torsteinPortrait } from './sculpt/portraitsVillagers';
 import { goblinPortrait, koboldPortrait, koboldShamanPortrait, skraelingPortrait } from './sculpt/portraitsGoblins';
 import { covenWarlockPortrait, trollWifeWarlockPortrait, winterHagPortrait } from './sculpt/portraitsWitches';
 import { darkSorcererPortrait, solBrandZealotPortrait } from './sculpt/portraitsDarkArts';
@@ -69,6 +70,15 @@ export const COTW_PORTRAITS: Record<string, PixelSprite> = {
   'npc-priest': portrait(torvaldPortrait),
   'npc-guard': portrait(bjornPortrait),
   'npc-trainer': portrait(ranvildPortrait),
+  // the rescued villagers, at home in town and talked to on every visit (the hostages who come
+  // back wear these keys too); Hallvard the gate-ward speaks once, so he keeps his map sprite
+  'prologue-eir': portrait(eirPortrait),
+  'prologue-sigrun': portrait(sigrunPortrait),
+  'prologue-brandr': portrait(brandrPortrait),
+  captive_villager_1: portrait(ingridPortrait),
+  captive_villager_2: portrait(torsteinPortrait),
+  captive_villager_3: portrait(sigridPortrait),
+  captive_villager_4: portrait(leifPortrait),
   // the Oath's two companions, in the companion panel
   hearth_frost_hound: portrait(frostHoundPortrait),
   ember_fang_wolf: portrait(emberWolfPortrait),

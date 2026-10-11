@@ -291,6 +291,22 @@ describe('markers on the map', () => {
     renderer.destroy();
   });
 
+  it("labels a portal only while the hero is within two tiles of it or the pointer is on it", () => {
+    const gate = { ...TILES.FLOOR, type: 'gateway_home', visual: 'portal', name: 'Gate home' };
+    const { renderer } = setup((engine) => engine.map.setTile(9, 5, gate));
+    const engine = (renderer as unknown as { engine: GameEngine }).engine;
+    const labels = (): string[] => Object.keys((renderer as unknown as { portalCards: () => Record<string, unknown> }).portalCards());
+    expect(engine.fov.isVisible(9, 5)).toBe(true);
+
+    expect(labels()).toEqual([]); // four tiles off: the map tag marks it
+    renderer.pointAtTile(9, 5);
+    expect(labels()).toEqual(['9,5']);
+    renderer.pointAtTile(null, null);
+    engine.map.moveEntity(engine.player, 7, 3); // two tiles off, diagonally
+    expect(labels()).toEqual(['9,5']);
+    renderer.destroy();
+  });
+
   it('holds every marker still under Reduce motion, and moves them otherwise', () => {
     const trace = (motion: boolean, now: number): string => {
       const { renderer, calls } = setup((engine) => {

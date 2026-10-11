@@ -46,6 +46,9 @@ function containerState(container: Container): ContainerState {
   return container.wasOpened ? 'opened' : 'unopened';
 }
 
+/** How near the hero (in tiles, diagonals counting one) a portal shows its label. */
+const PORTAL_LABEL_RANGE = 2;
+
 export interface ModeHint {
   /** The mode's name, e.g. "Look". */
   mode: string;
@@ -1365,14 +1368,21 @@ export class CanvasRenderer {
     return null;
   }
 
-  /** A standing label under every portal in sight, so a way out of the run is never missed. */
+  /**
+   * A label under a portal in sight while the hero is within two tiles of it or the pointer
+   * is on it. From afar its map tag marks it, and the label would cover the creatures beside it.
+   */
   private portalCards(): Record<string, MapCardSpec> {
     const cards: Record<string, MapCardSpec> = {};
     const { startX, startY, viewWidthTiles, viewHeightTiles } = this.camera;
+    const hero = this.engine.player;
+    const hover = this.tacticalTargetOverlay.hoveredTile;
     for (let y = startY; y < startY + viewHeightTiles; y++) {
       for (let x = startX; x < startX + viewWidthTiles; x++) {
         const tile = this.engine.map.inBounds(x, y) ? this.engine.map.getTile(x, y) : null;
         if (tile?.visual !== 'portal' || !this.engine.fov.isVisible(x, y)) continue;
+        const near = Math.max(Math.abs(x - hero.x), Math.abs(y - hero.y)) <= PORTAL_LABEL_RANGE;
+        if (!near && (hover?.x !== x || hover?.y !== y)) continue;
         const screen = this.camera.worldToScreen(x, y, this.cellSize, this.offsetX, this.offsetY);
         if (!screen) continue;
         cards[`${x},${y}`] = {

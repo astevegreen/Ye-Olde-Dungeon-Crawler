@@ -19,3 +19,4 @@ Complete. Next on the art audit (`.prompts/claude-character-art-overhaul.md`, "L
 
 ## Verification
 - Gate-stamp, `npm run gates` (33 Playwright) and bestiary visual check: green on both commits. Pre-push: 90 passed, 1 flaky (Firefox belt-slot hover, passed on retry).
+Resumed: 2026-10-11 02:21 UTC

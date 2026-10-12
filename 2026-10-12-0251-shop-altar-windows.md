@@ -36,3 +36,4 @@ Owner: "proceed with phase 2 from the Notion plan" (page "Ideas, bugs, and playt
 
 ## Verification
 - lint: green on working tree (HEAD 0e78809 + 11 files), no gate stamp. Full test, sim, schema, build, Playwright: not run.
+Resumed: 2026-10-12 03:01 UTC

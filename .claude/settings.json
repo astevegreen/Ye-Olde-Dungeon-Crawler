@@ -8,6 +8,7 @@
     "claude-code-setup@claude-plugins-official": false
   },
   "permissions": {
+    "defaultMode": "auto",
     "allow": [
       "Bash(git push)",
       "Bash(git push origin main)"

@@ -626,6 +626,33 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
     });
   });
 
+  describe('Two rings', () => {
+    const band = (id: string) => new Item({ id, name: `Band ${id}`, category: 'ring', slot: 'fingerLeft', weight: 20, bulk: 10, identified: true });
+
+    it('a second ring takes the free finger instead of swapping the first', () => {
+      const first = band('r1');
+      const second = band('r2');
+      player.inventory.primaryPack.addItem(first);
+      player.inventory.primaryPack.addItem(second);
+
+      expect(new EquipAction(player, first.id).perform(engine).success).toBe(true);
+      expect(new EquipAction(player, second.id).perform(engine).success).toBe(true);
+
+      expect(player.inventory.paperdoll.getItem('fingerLeft')).toBe(first);
+      expect(player.inventory.paperdoll.getItem('fingerRight')).toBe(second);
+    });
+
+    it('a third ring swaps the left finger, and a named finger is kept', () => {
+      const [a, b, c, d] = ['r1', 'r2', 'r3', 'r4'].map(band);
+      player.inventory.paperdoll.equip(a, 'fingerLeft');
+      player.inventory.paperdoll.equip(b, 'fingerRight');
+
+      expect(player.inventory.paperdoll.canEquip(c).slot).toBe('fingerLeft');
+      player.inventory.paperdoll.unequip('fingerRight');
+      expect(player.inventory.paperdoll.canEquip(d, 'fingerLeft').slot).toBe('fingerLeft');
+    });
+  });
+
   describe('Cursed Equip-Lock & breakCurses', () => {
     it('blocks unequipping when an item has a cursed modifier', () => {
       const cursedRing = new Item({

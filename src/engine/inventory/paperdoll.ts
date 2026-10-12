@@ -155,6 +155,15 @@ export class Paperdoll {
       return { allowed: false, reason: `${item.name} cannot be equipped into any valid slot.` };
     }
 
+    // A ring sent to no finger in particular takes the free one: with the first finger worn, it
+    // goes on the other rather than swapping the ring there.
+    if (!targetSlot && item.category === 'ring' && this.getItem(slot)) {
+      const otherFinger = slot === 'fingerLeft' ? 'fingerRight' : slot === 'fingerRight' ? 'fingerLeft' : undefined;
+      if (otherFinger && this.slots.has(otherFinger) && !this.getItem(otherFinger) && !this.isSlotBlocked(otherFinger, item)) {
+        slot = otherFinger;
+      }
+    }
+
     // Check if slot is blocked by another equipped item (e.g. 2H weapon)
     if (this.isSlotBlocked(slot, item)) {
       const slotDef = this.slotDefinitions.get(slot);

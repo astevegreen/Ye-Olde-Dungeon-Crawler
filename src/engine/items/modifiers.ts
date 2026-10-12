@@ -28,6 +28,8 @@ export interface ItemModifier {
   category: ModifierCategory;
   prefix?: string;
   suffix?: string;
+  /** The family's plain alignment word, named before the tier's own prefix (`ItemFamilyDefinition.word`). */
+  word?: string;
   /** While worn, the item stays on until a cleansing takes this modifier off it. */
   binds?: boolean;
   statDeltas?: ItemStatModifiers;

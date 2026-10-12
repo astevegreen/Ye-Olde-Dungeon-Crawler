@@ -19,6 +19,7 @@ export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
   families: [
     {
       category: 'blessed',
+      word: 'Blessed',
       alignment: 'positive',
       perGame: 22,
       tiers: [
@@ -53,6 +54,7 @@ export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
     },
     {
       category: 'enchanted',
+      word: 'Enchanted',
       alignment: 'positive',
       perGame: 22,
       tiers: [
@@ -84,6 +86,7 @@ export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
     },
     {
       category: 'holy',
+      word: 'Holy',
       alignment: 'positive',
       perGame: 16,
       tiers: [
@@ -121,6 +124,7 @@ export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
     },
     {
       category: 'cursed',
+      word: 'Cursed',
       alignment: 'negative',
       perGame: 15,
       minFloor: 3,
@@ -144,6 +148,7 @@ export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
     },
     {
       category: 'hexed',
+      word: 'Hexed',
       alignment: 'negative',
       perGame: 15,
       minFloor: 3,
@@ -171,6 +176,7 @@ export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
       // Q23 + Q34: Hel-touched. Binds; the temple serves the bearer only to cleanse it, at
       // double the price; true holy ground (the temple, the gods' altars) burns the bearer.
       category: 'unholy',
+      word: 'Unholy',
       alignment: 'negative',
       perGame: 10,
       minFloor: 3,
@@ -193,6 +199,7 @@ export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
       // floor 1, so the roller picks one at random (variants, not depth tiers). Numbers are
       // the owner's; the balance report and the next soak measure them.
       category: 'chaotic',
+      word: 'Chaotic',
       alignment: 'chaotic',
       perGame: 10,
       tiers: [

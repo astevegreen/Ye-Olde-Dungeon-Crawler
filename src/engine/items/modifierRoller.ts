@@ -26,6 +26,11 @@ export interface ItemFamilyDefinition {
   minFloor?: number;
   /** A worn item of this family stays on until a cleansing takes the family off it. */
   binds?: boolean;
+  /**
+   * The plain alignment word every identified item of the family shows ahead of its tier's
+   * prefix ("Hexed Doom-touched"), once when the tier is already that word.
+   */
+  word?: string;
   /** Deepest tier last is conventional, not required: the roller picks by `minFloor`. */
   tiers: ItemFamilyTier[];
 }
@@ -86,7 +91,14 @@ export function familyModifier(
     category,
     alignment: family.alignment,
     binds: family.binds || undefined,
+    word: family.word,
   };
+}
+
+/** A saved modifier with its family's word as the pack names it today (saves before the word had none). */
+export function withFamilyWord(modifier: ItemModifier, config: ItemFamilyConfig | undefined): ItemModifier {
+  const word = config?.families.find((f) => f.category === modifier.category)?.word;
+  return word ? { ...modifier, word } : { ...modifier };
 }
 
 /**

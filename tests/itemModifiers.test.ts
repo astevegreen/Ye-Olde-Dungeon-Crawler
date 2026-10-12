@@ -19,7 +19,7 @@ import { cotwManifest } from '../src/content/cotw';
 import { TempleService } from '../src/engine/economy/services';
 import { ItemFactory } from '../src/engine/items/factory';
 import { addCurrencyToPlayer } from '../src/engine/economy/currency';
-import { serializeItem, deserializeItem } from '../src/engine/storage/serializer';
+import { serializeItem, deserializeItem, itemDefinitionLookup } from '../src/engine/storage/serializer';
 import type { GameEvent, UncurseEvent } from '../src/engine/events';
 import type { SpellDefinition } from '../src/engine/magic/types';
 
@@ -64,13 +64,13 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       sword.addModifier(mod('blessed', 1)); // prefix: 'Blessed'
       sword.addModifier(mod('holy', 10)); // suffix: 'of Dawn'
 
-      expect(sword.displayName).toBe('Blessed Claymore of Dawn');
+      expect(sword.displayName).toBe('Blessed Holy Claymore of Dawn');
     });
 
-    it('names a Holy item by its suffix alone, with no inferred "Blessed" prefix (the Holy name bug)', () => {
+    it('names a Holy item by its own word and suffix, never an inferred "Blessed" (the Holy name bug)', () => {
       const mace = new Item({ id: 'm1', name: 'Broadsword', category: 'weapon', slot: 'mainHand', weight: 1500, bulk: 1200, identified: true });
       mace.addModifier(mod('holy', 1));
-      expect(mace.displayName).toBe('Broadsword of the Templar');
+      expect(mace.displayName).toBe('Holy Broadsword of the Templar');
       const wand = new Item({ id: 'w1', name: 'Rod', category: 'weapon', slot: 'mainHand', weight: 500, bulk: 400, identified: true });
       wand.addModifier(mod('enchanted', 1));
       expect(wand.displayName).toBe('Enchanted Rod');
@@ -734,7 +734,52 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       expect(restored.modifiers[0].meleeDamageMultiplier).toBe(1.25);
       expect(restored.modifiers[1].name).toBe('of the Templar');
       expect(restored.effectiveStats.attackBonus).toBe(8); // 4 base + 4 Sanctified
-      expect(restored.displayName).toBe('Sanctified Warhammer of the Templar');
+      expect(restored.displayName).toBe('Blessed Sanctified Holy Warhammer of the Templar');
+    });
+
+    it('a save from before the alignment word names its item with the word on load', () => {
+      const armor = new Item({ id: 'a_old', name: 'Studded Leather Armor', category: 'armor', slot: 'body', weight: 5000, bulk: 4000, identified: true });
+      const { word: _word, ...oldModifier } = mod('hexed', 15);
+      armor.addModifier(oldModifier);
+      expect(armor.displayName).toBe('Doom-touched Studded Leather Armor');
+
+      const restored = deserializeItem(serializeItem(armor), itemDefinitionLookup(cotwManifest));
+      expect(restored.displayName).toBe('Hexed Doom-touched Studded Leather Armor');
+    });
+  });
+
+  describe('the alignment word (owner, 12 Oct: "alignment + tier word")', () => {
+    const named = (name: string, category: ModifierCategory, floor: number) => {
+      const item = new Item({ id: `i-${category}-${floor}`, name, category: 'armor', slot: 'body', weight: 1, bulk: 1, identified: true });
+      item.addModifier(mod(category, floor));
+      return item.displayName;
+    };
+
+    it('leads with the family word, then the tier word', () => {
+      expect(named('Studded Leather Armor', 'hexed', 15)).toBe('Hexed Doom-touched Studded Leather Armor');
+      expect(named('Mail', 'blessed', 25)).toBe('Blessed Celestial Mail');
+      expect(named('Mail', 'cursed', 15)).toBe('Cursed Blighted Mail');
+      expect(named('Mail', 'unholy', 1)).toBe('Unholy Hel-touched Mail');
+    });
+
+    it('says the word once at the lowest tier', () => {
+      expect(named('Studded Leather Armor', 'hexed', 1)).toBe('Hexed Studded Leather Armor');
+      expect(named('Mail', 'blessed', 1)).toBe('Blessed Mail');
+      expect(named('Mail', 'enchanted', 1)).toBe('Enchanted Mail');
+    });
+
+    it('a chaotic item says Chaotic', () => {
+      expect(named('Mail', 'chaotic', 1)).toMatch(/^Chaotic /);
+    });
+
+    it('an item whose own name carries the word does not repeat it', () => {
+      expect(named('Cursed Mace', 'cursed', 15)).toBe('Blighted Cursed Mace');
+    });
+
+    it('an unidentified item still hides its family', () => {
+      const item = new Item({ id: 'u1', name: 'Mail', unidentifiedName: 'Mail', category: 'armor', slot: 'body', weight: 1, bulk: 1, identified: false });
+      item.addModifier(mod('hexed', 15));
+      expect(item.displayName).not.toMatch(/Hexed|Doom/);
     });
   });
 });

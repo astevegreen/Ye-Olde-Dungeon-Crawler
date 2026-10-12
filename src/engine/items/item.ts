@@ -259,9 +259,14 @@ export class Item {
       base = `${this.name}${enchStr}${affixStr}`;
     }
 
-    // A family names the item through its own prefix or suffix, nothing is inferred: a
-    // Holy item is "Broadsword of the Templar", not "Blessed Broadsword of the Templar".
-    const prefixes = this.modifiers.map((m) => m.prefix).filter(Boolean) as string[];
+    // A family names the item through its plain word, then its tier's prefix or suffix:
+    // "Hexed Doom-touched Armor", "Holy Broadsword of the Templar". The word shows once when
+    // the tier already says it ("Hexed Armor") or the item's own name does (a Cursed relic).
+    const lowerName = this.name.toLowerCase();
+    const prefixes = this.modifiers.flatMap((m) => {
+      const word = m.word && m.word !== m.prefix && !lowerName.includes(m.word.toLowerCase()) ? m.word : undefined;
+      return [word, m.prefix].filter(Boolean) as string[];
+    });
     const suffixes = this.modifiers.map((m) => m.suffix).filter(Boolean) as string[];
 
     if (prefixes.length > 0) {

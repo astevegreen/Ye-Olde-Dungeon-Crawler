@@ -60,7 +60,10 @@ describe('cotw progression (Q4 "B", Q25)', () => {
   it('gives a level one point, +5 HP and +4 Seiðr, no Attack or Defense, and a heal that grows with Constitution (Q5, Q26, Q28)', () => {
     expect(COTW_PROGRESSION.statPointsPerLevel).toBe(1);
     expect(COTW_PROGRESSION.statGains).toEqual({ maxHp: 5, maxMana: 4, baseAttack: 0, baseDefense: 0 });
-    expect(COTW_PROGRESSION.levelUpHeal).toEqual({ percent: 0.3, perConstitutionAbove: 0.03, baseline: 10, cap: 0.9 });
+    expect(COTW_PROGRESSION.levelUpHeal).toEqual({ percent: 0.3, perConstitutionAbove: 0.03, baseline: 10, cap: 0.9, restoresMana: false });
+    // Seiðr tighter early (12 Oct playtest): INT × 2 to start, a point every second rest turn.
+    expect(COTW_PROGRESSION.startingManaBase).toBe(0);
+    expect(COTW_PROGRESSION.restManaEvery).toBe(2);
     expect(cotwManifest.combatConfig).toBe(COTW_COMBAT);
     expect(COTW_COMBAT.attributeScaling).toEqual({
       baseline: 10,

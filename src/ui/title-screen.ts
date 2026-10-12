@@ -415,7 +415,7 @@ export class TitleScreen {
     if (dexEl) dexEl.textContent = this.attributes.dexterity.toString();
     if (poolEl) poolEl.textContent = this.poolPoints.toString();
 
-    const derived = CharacterRoller.calculateDerivedStats(this.attributes);
+    const derived = CharacterRoller.calculateDerivedStats(this.attributes, this.profileManager.manifest?.progressionConfig);
     const hpEl = document.getElementById('preview-hp');
     const manaEl = document.getElementById('preview-mana');
     const weightEl = document.getElementById('preview-weight');

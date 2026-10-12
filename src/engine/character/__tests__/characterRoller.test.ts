@@ -51,6 +51,8 @@ describe('CharacterRoller & Attribute Engine', () => {
     expect(derived.maxHp).toBe(40);
     // maxMana = floor(INT * 2 + 5) = 14 * 2 + 5 = 33
     expect(derived.maxMana).toBe(33);
+    // A pack's startingManaBase replaces the 5: INT * 2 + 0 = 28
+    expect(CharacterRoller.calculateDerivedStats(attrs, { startingManaBase: 0 }).maxMana).toBe(28);
     // maxCarryWeight is the game's own limit, STR x 2.5 kg (encumbrance.ts) = 40 kg
     expect(derived.maxCarryWeight).toBe(40000);
     // baseAttack = floor(16 * 0.4 + 12 * 0.2) = floor(6.4 + 2.4) = 8

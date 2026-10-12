@@ -17,6 +17,8 @@ export const COTW_LEVEL_CAP = 50;
  * Q28 "approved"): one attribute point, +5 max HP and +4 max Seiðr, and no flat Attack or
  * Defense; attributes drive combat instead (`combat.ts`). The level heals 30% of each bar,
  * plus 3% a Constitution point above 10, up to 90%: a level-up is no longer a free full heal.
+ * Seiðr is tighter early (12 Oct playtest): the level heals HP only, a hero starts with INT × 2
+ * Seiðr, and resting restores a point every second turn.
  */
 export const COTW_PROGRESSION: ProgressionConfig = {
   maxLevel: COTW_LEVEL_CAP,
@@ -24,5 +26,7 @@ export const COTW_PROGRESSION: ProgressionConfig = {
   respawnXpShare: 0.25,
   statPointsPerLevel: 1,
   statGains: { maxHp: 5, maxMana: 4, baseAttack: 0, baseDefense: 0 },
-  levelUpHeal: { percent: 0.3, perConstitutionAbove: 0.03, baseline: 10, cap: 0.9 },
+  levelUpHeal: { percent: 0.3, perConstitutionAbove: 0.03, baseline: 10, cap: 0.9, restoresMana: false },
+  startingManaBase: 0,
+  restManaEvery: 2,
 };

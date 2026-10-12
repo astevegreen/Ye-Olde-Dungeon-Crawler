@@ -96,4 +96,22 @@ describe('Resting Engine and FOV Interruption', () => {
     expect(result.reason ?? '').not.toContain('Fully rested');
     expect(engine.messages.join('\n')).not.toMatch(/Fully rested|Rested for maximum/);
   });
+
+  it('restores a point of mana only every restManaEvery turns when the pack sets it', () => {
+    const map = new GameMap(10, 10, TILES.FLOOR);
+    const player = new Player({
+      id: 'hero',
+      position: { x: 5, y: 5 },
+      stats: { hp: 30, maxHp: 30, attack: 5, defense: 2 },
+      mana: 0,
+      maxMana: 25,
+      progressionConfig: { restManaEvery: 2 },
+    });
+    const engine = new GameEngine({ map, player });
+    for (let i = 0; i < 6; i++) {
+      engine.turnCount = i;
+      AutoRestManager.recoverRestTurn(engine, player);
+    }
+    expect(player.mana).toBe(3);
+  });
 });

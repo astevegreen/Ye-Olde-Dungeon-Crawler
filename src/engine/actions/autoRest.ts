@@ -64,12 +64,13 @@ export class AutoRestManager {
   }
 
   /**
-   * One rest turn's recovery: a point of HP (more with Second Wind), a point of mana, and
-   * a point of overflow debt, more for a Spell-Thief (`overflowDebtDecayMultiplier`).
+   * One rest turn's recovery: a point of HP (more with Second Wind), a point of mana (once every
+   * `restManaEvery` turns), and a point of overflow debt, more for a Spell-Thief (`overflowDebtDecayMultiplier`).
    */
   public static recoverRestTurn(engine: GameEngine, player: Player): void {
     player.heal(this.restHeal(player));
-    player.restoreMana(1);
+    const manaEvery = Math.max(1, player.progressionConfig?.restManaEvery ?? 1);
+    if (engine.turnCount % manaEvery === 0) player.restoreMana(1);
     player.decayVoidDebt(Math.max(1, Math.round(productWorn(player, 'overflowDebtDecayMultiplier'))), lingeringDebtFloor(engine, player.voidDebt));
   }
 

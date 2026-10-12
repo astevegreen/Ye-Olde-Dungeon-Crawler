@@ -200,6 +200,18 @@ describe('a level under the pack’s progression', () => {
     expect(player.hp).toBe(player.maxHp);
   });
 
+  it('heals HP alone when the pack says the heal restores no mana', () => {
+    const hpOnly: ProgressionConfig = { ...PROGRESSION, levelUpHeal: { ...PROGRESSION.levelUpHeal!, restoresMana: false } };
+    const { player } = build({ progression: hpOnly, attributes: { constitution: 15 } });
+    player.hp = 10;
+    player.mana = 0;
+    const maxMana = player.maxMana;
+    player.gainXp(player.xpToNextLevel, hpOnly);
+    expect(player.hp).toBeGreaterThan(10);
+    expect(player.maxMana).toBe(maxMana + 4);
+    expect(player.mana).toBe(0);
+  });
+
   it('without the config a level still heals in full and gives three points, as before', () => {
     const { player } = build({ attributes: { constitution: 8 } });
     player.hp = 1;

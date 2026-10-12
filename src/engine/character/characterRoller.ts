@@ -5,6 +5,7 @@ import { addCoinsToContainer } from '../economy/currency';
 import { Container } from '../items/container';
 import { createScaledItem } from '../dungeon/lootSpawner';
 import type { StarterKitDefinition, ItemDefinition } from '../types/manifest';
+import type { ProgressionConfig } from '../types/config';
 import { RuneOfReturnItem } from '../magic/runeOfReturn';
 import { getMaxCarryWeight } from '../inventory/encumbrance';
 
@@ -52,9 +53,9 @@ export class CharacterRoller {
   /**
    * Calculates derived combat and survival statistics from attributes.
    */
-  public static calculateDerivedStats(attrs: CharacterAttributes): DerivedStats {
+  public static calculateDerivedStats(attrs: CharacterAttributes, progression?: ProgressionConfig): DerivedStats {
     const maxHp = Math.floor(attrs.constitution * 2 + 10);
-    const maxMana = Math.floor(attrs.intelligence * 2 + 5);
+    const maxMana = Math.floor(attrs.intelligence * 2 + (progression?.startingManaBase ?? 5));
     // The game's own limit (encumbrance.ts), so creation previews what the hero will carry.
     const maxCarryWeight = getMaxCarryWeight(attrs.strength);
     const baseAttack = Math.floor(attrs.strength * 0.4 + attrs.dexterity * 0.2);

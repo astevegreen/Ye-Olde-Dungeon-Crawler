@@ -318,7 +318,9 @@ export class Player extends Actor {
       const hpBefore = this.hp;
       const manaBefore = this.mana;
       this.hp = Math.min(this.maxHp, this.hp + Math.round(this.maxHp * share));
-      this.mana = Math.min(this.maxMana, this.mana + Math.round(this.maxMana * share));
+      if (progression?.levelUpHeal?.restoresMana !== false || share === 1) {
+        this.mana = Math.min(this.maxMana, this.mana + Math.round(this.maxMana * share));
+      }
       healed += this.hp - hpBefore;
       manaRestored += this.mana - manaBefore;
 

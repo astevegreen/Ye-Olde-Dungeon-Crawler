@@ -198,7 +198,7 @@ export class ProfileManager {
       constitution: 15,
       dexterity: 15,
     };
-    const derived = CharacterRoller.calculateDerivedStats(attributes);
+    const derived = CharacterRoller.calculateDerivedStats(attributes, manifest.progressionConfig);
     const maxHp = options?.hp ?? (options?.attributes ? derived.maxHp : 35);
     const maxMana = options?.attributes ? derived.maxMana : 30;
     const startInTown = options?.startInTown ?? true;

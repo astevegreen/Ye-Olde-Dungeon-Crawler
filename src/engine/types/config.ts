@@ -57,6 +57,8 @@ export interface LevelUpHealConfig {
   perConstitutionAbove?: number;
   baseline?: number;
   cap?: number;
+  /** Whether the heal also restores mana. Default true; false heals HP alone. */
+  restoresMana?: boolean;
 }
 
 export interface ProgressionConfig {
@@ -76,6 +78,10 @@ export interface ProgressionConfig {
    * `cap` (default 1). Absent: a level-up restores both in full.
    */
   levelUpHeal?: LevelUpHealConfig;
+  /** A new hero's max mana is Intelligence × 2 plus this. Default 5. */
+  startingManaBase?: number;
+  /** A rest turn restores a point of mana once every this many turns. Default 1: every turn. */
+  restManaEvery?: number;
   /** Max attainable level */
   maxLevel?: number;
   /**

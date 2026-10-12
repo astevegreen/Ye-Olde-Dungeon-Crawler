@@ -259,15 +259,18 @@ export class Item {
       base = `${this.name}${enchStr}${affixStr}`;
     }
 
-    // A family names the item through its plain word, then its tier's prefix or suffix:
-    // "Hexed Doom-touched Armor", "Holy Broadsword of the Templar". The word shows once when
-    // the tier already says it ("Hexed Armor") or the item's own name does (a Cursed relic).
+    // A family with a word names the item by that word alone ("Hexed Armor", "Holy
+    // Broadsword"), not again when the item's own name says it (a Cursed relic); a family
+    // that shows its tier adds the tier's prefix or suffix ("Chaotic Twinstrike Longsword").
+    // A modifier without a word names the item by its prefix or suffix.
     const lowerName = this.name.toLowerCase();
+    const showsTier = (m: ItemModifier) => !m.word || m.nameShowsTier;
     const prefixes = this.modifiers.flatMap((m) => {
-      const word = m.word && m.word !== m.prefix && !lowerName.includes(m.word.toLowerCase()) ? m.word : undefined;
-      return [word, m.prefix].filter(Boolean) as string[];
+      const word = m.word && !lowerName.includes(m.word.toLowerCase()) ? m.word : undefined;
+      const tier = showsTier(m) && m.prefix !== m.word ? m.prefix : undefined;
+      return [word, tier].filter(Boolean) as string[];
     });
-    const suffixes = this.modifiers.map((m) => m.suffix).filter(Boolean) as string[];
+    const suffixes = this.modifiers.filter(showsTier).map((m) => m.suffix).filter(Boolean) as string[];
 
     if (prefixes.length > 0) {
       base = `${prefixes.join(' ')} ${base}`;

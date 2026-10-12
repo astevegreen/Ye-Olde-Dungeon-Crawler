@@ -23,7 +23,7 @@ import { CompendiumManager, masteryPerkOptions } from '../compendium/compendiumM
 import type { GameContentManifest, ItemDefinition } from '../types/manifest';
 import type { ItemQuality } from '../items/item';
 import type { ItemModifier } from '../items/modifiers';
-import { familyModifier, withFamilyWord, type ItemFamilyConfig } from '../items/modifierRoller';
+import { familyModifier, withPackNaming, type ItemFamilyConfig } from '../items/modifierRoller';
 import { cloneWorldState, createWorldState, type WorldState } from '../state/worldState';
 import { compactTilesWithDictionary, decompactTiles, compactFov, decompactFov } from './compaction';
 import { EnergyModel } from '../actors/energyModel';
@@ -155,7 +155,7 @@ function restoredModifiers(
   def: ItemDefinition | undefined,
   definitions: ItemDefinitionLookup | undefined
 ): ItemModifier[] | undefined {
-  if (node.modifiers && node.modifiers.length > 0) return node.modifiers.map((m) => withFamilyWord(m, definitions?.families));
+  if (node.modifiers && node.modifiers.length > 0) return node.modifiers.map((m) => withPackNaming(m, definitions?.families));
   if (node.quality === 'cursed' && def?.family && definitions?.families) {
     const relic = familyModifier(definitions.families, def.family, node.minFloor ?? def.minFloor ?? 1, node.id);
     if (relic) return [relic];

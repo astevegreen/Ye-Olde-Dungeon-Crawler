@@ -27,10 +27,12 @@ export interface ItemFamilyDefinition {
   /** A worn item of this family stays on until a cleansing takes the family off it. */
   binds?: boolean;
   /**
-   * The plain alignment word every identified item of the family shows ahead of its tier's
-   * prefix ("Hexed Doom-touched"), once when the tier is already that word.
+   * The plain alignment word that names every identified item of the family in place of
+   * its tier ("Hexed Studded Leather Armor"); the tier shows in the item's detail.
    */
   word?: string;
+  /** The tier's prefix and suffix name the item too, after the word ("Chaotic Twinstrike Longsword"). */
+  nameShowsTier?: boolean;
   /** Deepest tier last is conventional, not required: the roller picks by `minFloor`. */
   tiers: ItemFamilyTier[];
 }
@@ -92,13 +94,20 @@ export function familyModifier(
     alignment: family.alignment,
     binds: family.binds || undefined,
     word: family.word,
+    nameShowsTier: family.nameShowsTier || undefined,
   };
 }
 
-/** A saved modifier with its family's word as the pack names it today (saves before the word had none). */
-export function withFamilyWord(modifier: ItemModifier, config: ItemFamilyConfig | undefined): ItemModifier {
-  const word = config?.families.find((f) => f.category === modifier.category)?.word;
-  return word ? { ...modifier, word } : { ...modifier };
+/**
+ * A saved modifier named as the pack names it today: the family's word, and its tier's
+ * prefix, suffix and description (matched by tier name), so a rename reaches old saves.
+ */
+export function withPackNaming(modifier: ItemModifier, config: ItemFamilyConfig | undefined): ItemModifier {
+  const family = config?.families.find((f) => f.category === modifier.category);
+  if (!family) return { ...modifier };
+  const tier = family.tiers.find((t) => t.name === modifier.name);
+  const naming = tier ? { prefix: tier.prefix, suffix: tier.suffix, description: tier.description } : {};
+  return { ...modifier, ...naming, word: family.word, nameShowsTier: family.nameShowsTier || undefined };
 }
 
 /**

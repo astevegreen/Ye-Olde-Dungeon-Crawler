@@ -193,6 +193,9 @@ export const COTW_TOWN: TownLayoutDefinition = {
       milestoneId: 'temple_offering',
       standingDelta: 1,
       messageTemplate: 'The High Priest of Thor takes {item} from you and casts it into the sacred fire. The gods mark the gift.',
+      label: 'Offer the chosen item to the fire',
+      detail: 'The cursed thing is burned away and Thor remembers the gift: your piety rises, and with it the temple’s favor.',
+      note: 'Cursed, hexed and Hel-touched things from your pack may be burned as offerings once you know them for what they are. Each one raises your piety, and piety earns Thor’s boons: free healing, a hallowed piece of gear, and more health.',
     },
     // Q11 "A" + Q60 "A": Mimir sells Study (one bestiary rank) and Rumors (an unmet creature),
     // priced by the creature's home floor: Study 60 CP on floor 1 to 540 on 49, Rumors 550 to 2,950.

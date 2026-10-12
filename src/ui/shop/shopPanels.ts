@@ -133,8 +133,9 @@ function templePanel(engine: GameEngine, selected: number): ServicePanel {
   const pietyNote = blessings.length
     ? `<div class="ui-note">Piety <b class="ui-num">${TempleService.piety(engine)}</b>. Blessings at ${blessings.map((b) => `${b.minPiety} (${escapeHtml(b.name)})`).join(', ')}.</div>`
     : '';
-  const offeringNote = services?.templeOfferings
-    ? '<div class="ui-note">The priests take cursed things from your pack as offerings, for piety, once you know them for what they are.</div>'
+  const offerings = services?.templeOfferings;
+  const offeringNote = offerings
+    ? `<div class="ui-note">${escapeHtml(offerings.note ?? 'The priests take cursed things from your pack as offerings, for piety, once you know them for what they are.')}</div>`
     : '';
   const offers: ServiceOffer[] = [
     {
@@ -152,12 +153,12 @@ function templePanel(engine: GameEngine, selected: number): ServicePanel {
       priceCp: healFree ? 0 : TempleService.HEAL_RESTORE_COST_CP,
     },
   ];
-  if (services?.templeOfferings) {
+  if (offerings) {
     offers.push({
       act: 'offer',
       key: 'O',
-      label: 'Offer the chosen item',
-      detail: 'Gives a cursed thing from your pack to the fire. No coin; the gods remember.',
+      label: offerings.label ?? 'Offer the chosen item',
+      detail: offerings.detail ?? 'Gives a cursed thing from your pack to the fire. No coin; the gods remember.',
       priceCp: 0,
       disabled: !chosen || !offerable.includes(chosen),
     });

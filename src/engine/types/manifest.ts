@@ -377,6 +377,11 @@ export interface TempleOfferingsDefinition {
   standingDelta?: number;
   /** Logged on an offering; `{item}` names it. */
   messageTemplate?: string;
+  /** The temple window's wording, in the pack's voice: what the offering does for the hero.
+   *  `label` is the button, `detail` the line under it, `note` the paragraph above the list. */
+  label?: string;
+  detail?: string;
+  note?: string;
 }
 
 /** What a temple blessing does; each is granted once, and remembered as a world flag. */

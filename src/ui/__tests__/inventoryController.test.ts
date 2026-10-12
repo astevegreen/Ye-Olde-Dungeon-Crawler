@@ -249,6 +249,62 @@ describe('InventoryController', () => {
     });
   });
 
+  describe('dropping a stack', () => {
+    const stack = (quantity: number): Item => {
+      const rune = ware('rune', 'Rune', { quantity });
+      player.inventory.primaryPack.addItem(rune);
+      return rune;
+    };
+    const countOf = (id: string) => engine.map.getItemsAt(5, 5).filter((i) => i.id.startsWith(id)).reduce((n, i) => n + (i.quantity ?? 1), 0);
+
+    it('asks how many on D, defaulting to the whole stack, and drops it as it is', () => {
+      const rune = stack(40);
+      c.inspector.select(rune, 'backpack');
+      expect(c.handleKeyDown(key('KeyD'))).toBe(true);
+      expect(c.splitDialog).toMatchObject({ mode: 'drop', maxQuantity: 40, amount: 40 });
+      expect(sent()).not.toContain('drop_item');
+      c.handleKeyDown(key('Enter'));
+      expect(c.splitDialog).toBeNull();
+      expect(countOf('rune')).toBe(40);
+      expect(player.inventory.primaryPack.getItem('rune')).toBeFalsy();
+    });
+
+    it('drops only the chosen count and keeps the rest in the pack', () => {
+      const rune = stack(40);
+      c.openDropDialog(rune);
+      c.handleKeyDown(key('PageDown'));
+      c.handleKeyDown(key('PageDown'));
+      expect(c.splitDialog?.amount).toBe(20);
+      c.handleKeyDown(key('ArrowLeft'));
+      c.handleKeyDown(key('Enter'));
+      expect(countOf('rune')).toBe(19);
+      expect(rune.quantity).toBe(21);
+      expect(player.inventory.primaryPack.getItem('rune')).toBeTruthy();
+    });
+
+    it('never offers more than the stack holds, nor fewer than one, and cancels with Escape', () => {
+      const rune = stack(3);
+      c.openDropDialog(rune);
+      for (let i = 0; i < 6; i++) c.handleKeyDown(key('ArrowRight'));
+      expect(c.splitDialog?.amount).toBe(3);
+      for (let i = 0; i < 6; i++) c.handleKeyDown(key('ArrowLeft'));
+      expect(c.splitDialog?.amount).toBe(1);
+      c.handleKeyDown(key('Escape'));
+      expect(c.splitDialog).toBeNull();
+      expect(rune.quantity).toBe(3);
+      expect(sent()).not.toContain('drop_item');
+    });
+
+    it('drops a single item at once, with no question', () => {
+      const lone = ware('lone', 'Lone Ware');
+      player.inventory.primaryPack.addItem(lone);
+      c.inspector.select(lone, 'backpack');
+      c.handleKeyDown(key('KeyD'));
+      expect(c.splitDialog).toBeNull();
+      expect(sent()).toContain('drop_item');
+    });
+  });
+
   it('filters the pack by kind', () => {
     player.inventory.primaryPack.addItem(new Item({ id: 'sword', name: 'Sword', category: 'weapon', weight: 1000, bulk: 500 }));
     player.inventory.primaryPack.addItem(new PotionItem({ id: 'pot', name: 'Potion', weight: 100, bulk: 50, potionType: 'health', potency: 10 }));

@@ -275,4 +275,4 @@
 .inv-split-row { display: flex; align-items: center; justify-content: center; gap: var(--ui-space-4); }
 .inv-split-amount { min-width: 3ch; text-align: center; font-size: var(--ui-text-2xl); color: var(--ui-accent); }
 .inv-split-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--ui-space-2); }
-.inv-split-actions .ui-note { margin-right: auto; white-space: nowrap; }
+.inv-split-hint { text-align: center; }

@@ -417,20 +417,32 @@ export class InventoryTab implements MenuTab {
   private splitHtml(): string {
     const sd = this.controller.splitDialog;
     if (!sd) return '';
+    const dropping = sd.mode === 'drop';
+    const max = this.controller.splitMax(sd);
+    const title = dropping ? 'Drop how many?' : 'Split stack';
+    const ask = dropping
+      ? `${escapeHtml(sd.item.displayName)}: drop how many of the ${sd.maxQuantity}?`
+      : `${escapeHtml(sd.item.displayName)}: take how many off the stack of ${sd.maxQuantity}?`;
+    // A big stack gets steps of ten: 40 runes should not take 39 presses.
+    const big = max > 12;
+    const step = (delta: number, label: string, off: boolean) =>
+      `<button type="button" class="ui-btn ui-btn--sm" data-split="${delta}"${off ? ' disabled' : ''} aria-label="${delta > 0 ? 'Ten more' : 'Ten fewer'}">${label}</button>`;
     return `
       <div class="inv-split-scrim">
-        <div class="ui-card inv-split" role="dialog" aria-label="Split stack">
-          <h3 class="ui-h">Split stack</h3>
-          <div class="ui-note">${escapeHtml(sd.item.displayName)}: take how many off the stack of ${sd.maxQuantity}?</div>
+        <div class="ui-card inv-split" role="dialog" aria-label="${title}">
+          <h3 class="ui-h">${title}</h3>
+          <div class="ui-note">${ask}</div>
           <div class="inv-split-row">
+            ${big ? step(-10, '−10', sd.amount <= 1) : ''}
             <button type="button" class="ui-btn ui-btn--sm" data-split="-1"${sd.amount <= 1 ? ' disabled' : ''} aria-label="One fewer">−</button>
             <b class="ui-num inv-split-amount">${sd.amount}</b>
-            <button type="button" class="ui-btn ui-btn--sm" data-split="1"${sd.amount >= sd.maxQuantity - 1 ? ' disabled' : ''} aria-label="One more">+</button>
+            <button type="button" class="ui-btn ui-btn--sm" data-split="1"${sd.amount >= max ? ' disabled' : ''} aria-label="One more">+</button>
+            ${big ? step(10, '+10', sd.amount >= max) : ''}
           </div>
+          <div class="ui-note inv-split-hint">${keyChip('←')}${keyChip('→')} amount${big ? ` · ${keyChip('PgDn')}${keyChip('PgUp')} ten` : ''}</div>
           <div class="inv-split-actions">
-            <span class="ui-note">${keyChip('←')}${keyChip('→')} amount</span>
             <button type="button" class="ui-btn ui-btn--sm ui-btn--ghost" data-split="cancel">Cancel ${keyChip('Esc')}</button>
-            <button type="button" class="ui-btn ui-btn--sm ui-btn--primary" data-split="ok">Split ${keyChip('Enter')}</button>
+            <button type="button" class="ui-btn ui-btn--sm ui-btn--primary" data-split="ok">${dropping ? 'Drop' : 'Split'} ${keyChip('Enter')}</button>
           </div>
         </div>
       </div>`;

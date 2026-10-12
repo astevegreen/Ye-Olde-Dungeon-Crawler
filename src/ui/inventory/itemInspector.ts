@@ -77,6 +77,8 @@ export class ItemInspector {
   public selectedItemIds: Set<string> = new Set();
   /** Opens a container an "Open" action names; without it the container is only remembered. */
   public onPeek?: (container: Container) => void;
+  /** Asks how many of a stack to drop, when the Drop button is pressed on one. */
+  public onDropStack?: (item: Item) => void;
 
   private peek(container: Container): void {
     if (this.onPeek) this.onPeek(container);
@@ -551,6 +553,11 @@ export class ItemInspector {
         shortcut: 'D',
         enabled: true,
         execute: (eng) => {
+          // A stack asks how many first (the controller opens the prompt).
+          if (item.quantity > 1 && this.onDropStack) {
+            this.onDropStack(item);
+            return;
+          }
           eng.commandBus.dispatch({ type: 'drop_item', payload: { item, source: 'pack' } });
           this.clearSelection();
         },

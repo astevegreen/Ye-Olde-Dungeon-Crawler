@@ -61,6 +61,8 @@ export interface SplitState {
   item: Item;
   maxQuantity: number;
   amount: number;
+  /** 'drop' asks how many of the stack to drop (all of it allowed); 'split' how many to take off. */
+  mode?: 'split' | 'drop';
 }
 
 export interface DragState {
@@ -176,6 +178,8 @@ export class InventoryController {
   constructor() {
     // The inspector's "Open" actions open the container here, in the third column.
     this.inspector.onPeek = (container) => this.pushContainer(container, this.sourceOf(container));
+    // A stack asks how many to drop; the inspector's Drop button hands it over.
+    this.inspector.onDropStack = (item) => this.openDropDialog(item);
   }
 
   // ---- Opening and closing -----------------------------------------------------------
@@ -475,7 +479,17 @@ export class InventoryController {
       options.push({ label: 'Put in container', run: () => { this.dispatch({ type: 'store_container', payload: { container, item } }); done(); } });
     }
     options.push({ label: item.junk ? 'Not junk' : 'Mark as junk', run: () => { this.dispatch({ type: 'mark_junk', payload: { itemId: item.id } }); done(); } });
-    options.push({ label: 'Drop', run: () => { this.dispatch({ type: 'drop_item', payload: { item, source: 'pack' } }); done(); } });
+    options.push({
+      label: 'Drop',
+      run: () => {
+        if (item.quantity > 1) {
+          this.openDropDialog(item);
+          return;
+        }
+        this.dispatch({ type: 'drop_item', payload: { item, source: 'pack' } });
+        done();
+      },
+    });
     options.push({ label: 'Inspect', run: () => { this.inspector.setFocus('backpack'); this.inspector.select(item, 'backpack', undefined, container); } });
     return options;
   }
@@ -581,6 +595,10 @@ export class InventoryController {
       } else if (column === 'container' && this.activeContainer) {
         if (source === 'backpack') this.dispatch({ type: 'store_container', payload: { container: this.activeContainer, item } });
       } else if (source === 'backpack') {
+        if (item.quantity > 1) {
+          this.openDropDialog(item);
+          return;
+        }
         this.dispatch({ type: 'drop_item', payload: { item, source: 'pack' } });
       } else if (source === 'paperdoll' && slotId) {
         this.dispatch({ type: 'drop_item', payload: { item, source: 'paperdoll', slot: slotId as EquipmentSlot } });
@@ -602,18 +620,48 @@ export class InventoryController {
     this.changed();
   }
 
+  /** Asks how many of a stack to drop; the whole stack is the default, so Enter drops it all. */
+  public openDropDialog(item: Item): void {
+    if (item.quantity <= 1) return;
+    this.splitDialog = { item, maxQuantity: item.quantity, amount: item.quantity, mode: 'drop' };
+    this.changed();
+  }
+
+  /** The most the open dialog's amount may reach: a split leaves one behind, a drop may take all. */
+  public splitMax(sd: SplitState): number {
+    return sd.mode === 'drop' ? sd.maxQuantity : sd.maxQuantity - 1;
+  }
+
   public adjustSplit(delta: number): void {
     const sd = this.splitDialog;
     if (!sd) return;
-    sd.amount = Math.max(1, Math.min(sd.maxQuantity - 1, sd.amount + delta));
+    sd.amount = Math.max(1, Math.min(this.splitMax(sd), sd.amount + delta));
     this.changed();
   }
 
   public confirmSplit(): void {
     const sd = this.splitDialog;
     if (!sd) return;
-    this.dispatch({ type: 'split_stack', payload: { item: sd.item, amount: sd.amount } });
+    if (sd.mode === 'drop') {
+      this.confirmDrop(sd);
+    } else {
+      this.dispatch({ type: 'split_stack', payload: { item: sd.item, amount: sd.amount } });
+    }
     this.closeSplitDialog();
+  }
+
+  /** Drops the chosen count: the whole stack as it is, else a pile split off it. */
+  private confirmDrop(sd: SplitState): void {
+    let pile: Item | undefined = sd.item;
+    if (sd.amount < sd.item.quantity) {
+      const split = this.dispatch({ type: 'split_stack', payload: { item: sd.item, amount: sd.amount } }) as {
+        success: boolean;
+        data?: { splitItem?: Item };
+      };
+      pile = split.success ? split.data?.splitItem : undefined;
+    }
+    if (pile) this.dispatch({ type: 'drop_item', payload: { item: pile, source: 'pack' } });
+    this.inspector.clearSelection();
   }
 
   public closeSplitDialog(): void {
@@ -729,7 +777,9 @@ export class InventoryController {
     if (this.splitDialog) {
       if (code === 'Escape') this.splitDialog = null;
       else if (code === 'ArrowLeft' || code === 'ArrowDown') this.splitDialog.amount = Math.max(1, this.splitDialog.amount - 1);
-      else if (code === 'ArrowRight' || code === 'ArrowUp') this.splitDialog.amount = Math.min(this.splitDialog.maxQuantity - 1, this.splitDialog.amount + 1);
+      else if (code === 'ArrowRight' || code === 'ArrowUp') this.splitDialog.amount = Math.min(this.splitMax(this.splitDialog), this.splitDialog.amount + 1);
+      else if (code === 'PageDown') this.splitDialog.amount = Math.max(1, this.splitDialog.amount - 10);
+      else if (code === 'PageUp') this.splitDialog.amount = Math.min(this.splitMax(this.splitDialog), this.splitDialog.amount + 10);
       else if (code === 'Enter') {
         this.confirmSplit();
         return true;
@@ -853,6 +903,10 @@ export class InventoryController {
       case 'KeyD': {
         if (!selected) return false;
         const worn = source === 'paperdoll';
+        if (!worn && selected.quantity > 1) {
+          this.openDropDialog(selected);
+          return true;
+        }
         this.dispatch({
           type: 'drop_item',
           payload: { item: selected, source: worn ? 'paperdoll' : 'pack', slot: worn ? this.inspector.selectedSlot : undefined },

@@ -34,3 +34,4 @@ The owner asked to sort the Notion page "Ideas, bugs, and playtest notes" (YODC 
 - The Notion page: the plan and the Code pointers toggle.
 - Memory file playtest-2026-10-11-decisions.md.
 - src/engine/actions/movement.ts:194 and :258: where a trap fires and where passive detection happens (Session 4).
+Resumed: 2026-10-12 02:18 UTC

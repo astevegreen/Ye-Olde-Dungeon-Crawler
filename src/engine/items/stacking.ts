@@ -9,6 +9,7 @@ import { CoinItem } from '../economy/currency';
  */
 export function isStackable(item: Item): boolean {
   if (item instanceof WandItem) return false;
+  if (item.stackable) return true;
   if (item instanceof CoinItem) return true;
   if (item instanceof PotionItem || item instanceof ScrollItem) return true;
   if (item.category === 'currency' || item.category === 'consumable') return true;
@@ -132,6 +133,7 @@ function configOf(item: Item, id: string, quantity: number): ItemConfig {
     elementalAffix: item.elementalAffix ? { ...item.elementalAffix } : undefined,
     twoHanded: item.twoHanded,
     blocksSlot: item.blocksSlot,
+    stackable: item.stackable,
     rangedConfig: item.rangedConfig ? { ...item.rangedConfig } : undefined,
     predicate: item.predicate,
     hooks: item.hooks,

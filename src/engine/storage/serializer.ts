@@ -364,6 +364,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
     quantity,
     twoHanded: def?.twoHanded,
     blocksSlot: def?.blocksSlot,
+    stackable: def?.stackable,
     rangedConfig: def?.rangedConfig,
     predicate: def?.predicate,
     name: node.name,

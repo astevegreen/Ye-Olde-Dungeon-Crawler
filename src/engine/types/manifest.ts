@@ -125,6 +125,11 @@ export interface ItemDefinition {
   };
   twoHanded?: boolean;
   blocksSlot?: string;
+  /**
+   * Copies of it merge into one stack in a pack, as potions do, whatever its category.
+   * Definition-only, like `hooks`: never saved, and given back on load.
+   */
+  stackable?: boolean;
   rangedConfig?: RangedWeaponConfig;
   predicate?: Predicate;
   hooks?: HookDescriptor[];

@@ -223,6 +223,7 @@ export function createScaledItem(
     modifiers,
     twoHanded: def.twoHanded,
     blocksSlot: def.blocksSlot,
+    stackable: def.stackable,
     rangedConfig: def.rangedConfig,
     predicate: def.predicate,
   });

@@ -6,6 +6,7 @@ const essence = (id: string, rune: string, meaning: string): ItemDefinition => (
   id,
   name: `${rune} Essence-Rune`,
   category: 'quest',
+  stackable: true,
   weight: 20,
   bulk: 10,
   identified: true,

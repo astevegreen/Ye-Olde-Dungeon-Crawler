@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ItemFactory } from '../items/factory';
 import { Container } from '../items/container';
+import { Item } from '../items/item';
 import { PotionItem, ScrollItem } from '../items/consumables';
 import { isStackable, canStack, mergeItemStacks, splitItemStack } from '../items/stacking';
 import { CoinItem } from '../economy/currency';
@@ -27,6 +28,19 @@ describe('Item Stacking & Multi-Selection Engine', () => {
     expect(isStackable(coins)).toBe(true);
     expect(isStackable(dagger)).toBe(false);
     expect(isStackable(sack)).toBe(false);
+  });
+
+  it('stacks an item its definition marks stackable, whatever its category, and a split keeps that', () => {
+    const rune = (id: string, stackable?: boolean) =>
+      new Item({ id, definitionId: 'rune', name: 'Kenaz Rune', category: 'quest', weight: 20, bulk: 10, identified: true, stackable });
+
+    expect(isStackable(rune('r-0'))).toBe(false);
+    expect(canStack(rune('r-1', true), rune('r-2', true))).toBe(true);
+
+    const pile = rune('r-3', true);
+    pile.quantity = 4;
+    const part = splitItemStack(pile, 1, 'r-4');
+    expect(canStack(pile, part)).toBe(true);
   });
 
   it('determines whether two items can merge into a stack based on identity and quality', () => {

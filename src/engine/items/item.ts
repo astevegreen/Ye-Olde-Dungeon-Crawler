@@ -99,6 +99,8 @@ export interface ItemConfig {
   elementalAffix?: ElementalAffix;
   twoHanded?: boolean;
   blocksSlot?: string;
+  /** The definition's `stackable`: copies merge into one stack. Not saved. */
+  stackable?: boolean;
   rangedConfig?: RangedWeaponConfig;
   predicate?: Predicate;
   hooks?: HookDescriptor[];
@@ -139,6 +141,8 @@ export class Item {
   public elementalAffix?: ElementalAffix;
   public readonly twoHanded?: boolean;
   public readonly blocksSlot?: string;
+  /** Copies merge into one stack whatever the category (`ItemDefinition.stackable`). */
+  public readonly stackable?: boolean;
   public readonly rangedConfig?: RangedWeaponConfig;
   public readonly predicate?: Predicate;
   public readonly hooks?: HookDescriptor[];
@@ -175,6 +179,7 @@ export class Item {
     this.elementalAffix = config.elementalAffix;
     this.twoHanded = config.twoHanded;
     this.blocksSlot = config.blocksSlot;
+    this.stackable = config.stackable;
     this.rangedConfig = config.rangedConfig;
     this.predicate = config.predicate;
     this.hooks = config.hooks ? [...config.hooks] : undefined;

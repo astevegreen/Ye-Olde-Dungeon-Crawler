@@ -12,7 +12,7 @@ import type { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
 import { HookDispatcher } from '../hooks/hookDispatcher';
 import { getTileDefinition } from '../grid/tile';
-import { revealSecretDoor, revealTrap } from './search';
+import { revealSecretDoor } from './search';
 import { getAltarDefinition, isAltarSpent } from '../magic/altars';
 import { formatMagicMessage } from '../magic/magicConfig';
 import { isPrologueHoldingChoices } from '../quest/prologue';
@@ -252,7 +252,7 @@ export class MovementAction implements Action {
       position: { x: targetX, y: targetY },
     });
 
-    // 5d. Passive Perception Check for Player
+    // 5d. Passive secret-door check for the player (traps are spotted per turn: dungeon/trapSense.ts)
     if (this.entity.type === 'player') {
       const player = this.entity as Player;
       const passivePerception = 10 + Math.floor((player.intelligence + player.dexterity + player.level) / 4);
@@ -270,14 +270,6 @@ export class MovementAction implements Action {
           if (t && (t.type === 'secret_door' || t.hidden)) {
             if (passivePerception >= 15) {
               revealSecretDoor(engine, nx, ny, 'Your keen senses detect a secret door hidden in the wall!');
-            }
-          }
-
-          // Check hidden trap
-          const tr = engine.map.getTrapAt(nx, ny);
-          if (tr && !tr.revealed) {
-            if (passivePerception >= tr.concealment + 2) {
-              revealTrap(engine, tr, `Your sharp eyes notice a hidden ${tr.type} trap!`);
             }
           }
         }

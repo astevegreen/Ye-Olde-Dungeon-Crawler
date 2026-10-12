@@ -44,6 +44,7 @@ import { createDiagnosticsApi, type TriageAPI } from './debug/triage';
 import { PRNG } from './dungeon/prng';
 import { WanderingMonsterSpawner } from './dungeon/wandering-spawner';
 import { createScaledMonster } from './dungeon/spawner';
+import { senseTraps } from './dungeon/trapSense';
 import type { Item } from './items/item';
 import { CompendiumManager } from './compendium/compendiumManager';
 import { AffinityMatrix, DEFAULT_AFFINITY_MATRIX } from './magic/elements';
@@ -1030,6 +1031,7 @@ export class GameEngine {
     if (this.detectObjectsTurns > 0) this.detectObjectsTurns -= 1;
 
     this.runEnvironmentalUpdate('fov-update', () => this.updateFov());
+    this.runEnvironmentalUpdate('trap-sense', () => senseTraps(this));
     this.advanceWorldUntilPlayerTurn();
     this.runEnvironmentalUpdate('fov-update', () => this.updateFov());
   }

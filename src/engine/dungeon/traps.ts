@@ -8,6 +8,7 @@ import { TILES } from '../grid/tile';
 import { wearsFlag } from '../items/wornModifiers';
 import { SpawnSiteFilter } from './spawnSites';
 import { CombatLogger } from '../logging/combatLogger';
+import { trapDodgeChance } from './trapSense';
 
 export interface TrapOptions {
   id: string;
@@ -93,6 +94,14 @@ export class TrapInstance {
       tell(message);
       return message;
     }
+    // A nimble hero may leap clear (Dexterity). An alarm's tripwire still sounds.
+    if (entity instanceof Player && this.type !== 'alarm' && engine.prng.next() < trapDodgeChance(entity)) {
+      this.revealed = true;
+      if (engine.map.getTile(this.x, this.y)?.type !== 'trap') engine.map.setTile(this.x, this.y, TILES.TRAP);
+      const message = `${entity.name} leaps clear as the ${this.type} trap springs!`;
+      engine.log(message);
+      return message;
+    }
 
     this.triggered = true;
 
@@ -167,9 +176,9 @@ export class TrapInstance {
       return { success: true, message: 'This trap is already disarmed.' };
     }
 
-    // Perception & Agility roll: DEX + INT check
+    // A Dexterity roll: steady hands jam the trigger.
     const d20 = engine.prng.nextInt(1, 20);
-    const roll = d20 + Math.floor((player.dexterity + player.intelligence) / 6);
+    const roll = d20 + Math.floor(player.dexterity / 3);
     if (roll >= this.disarmDifficulty) {
       this.disarmed = true;
       this.revealed = true;

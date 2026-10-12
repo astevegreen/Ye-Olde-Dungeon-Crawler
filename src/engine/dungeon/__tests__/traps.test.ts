@@ -21,7 +21,7 @@ describe('Traps, Secret Doors & Search Mechanics', () => {
       name: 'Valiant',
       position: { x: 5, y: 5 },
       stats: { hp: 50, maxHp: 50, attack: 10, defense: 4 },
-      dexterity: 18,
+      dexterity: 5, // no chance to leap clear, so a sprung trap always lands
       intelligence: 18,
     });
     engine = new GameEngine({ map, player, floor: 1 });
@@ -120,16 +120,17 @@ describe('Traps, Secret Doors & Search Mechanics', () => {
     expect(sleepingOrc.aiState).toBe('hunting');
   });
 
-  it('supports disarming traps with high dexterity/intelligence', () => {
+  it('supports disarming traps with a steady hand', () => {
     const trap = new TrapInstance({
       id: 'trap_disarm_test',
       type: 'pit',
       x: 5,
       y: 6,
       damage: 20,
-      disarmDifficulty: 5, // Easy for high DEX/INT player
+      disarmDifficulty: 5, // easy for DEX 18 (+6)
     });
     map.addTrap(trap);
+    player.dexterity = 18;
 
     const disarmResult = trap.disarm(player, engine);
     expect(disarmResult.success).toBe(true);

@@ -75,6 +75,7 @@ describe('what the death screen says killed the hero', () => {
   });
 
   it('a pit trap', () => {
+    player.dexterity = 5; // no leaping clear
     new TrapInstance({ id: 't1', type: 'pit', x: 3, y: 3, damage: 5 }).trigger(player, engine);
     expect(slainBy()).toBe('a pit trap');
   });
@@ -102,6 +103,7 @@ describe('what the death screen says killed the hero', () => {
   const fallen = () => expect(engine.gameState.runStatus).toBe('fallen');
 
   it('a dart trap', () => {
+    player.dexterity = 5;
     new TrapInstance({ id: 't1', type: 'arrow', x: 3, y: 3, damage: 5 }).trigger(player, engine);
     fallen();
     expect(slainBy()).toBe('a dart trap');

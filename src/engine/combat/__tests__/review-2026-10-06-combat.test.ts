@@ -204,6 +204,7 @@ describe('R-cmbt-6 · poison and burning ticks go through the victim’s affinit
 describe('R-cmbt-7 · a hero killed by their own action while poisoned dies once', () => {
   it('a poisoned hero stepping on a lethal pit trap triggers exactly one death', () => {
     const { map, player, engine } = make(3);
+    player.dexterity = 5; // no leaping clear
     player.statusManager.applyStatus({ type: 'poison', duration: 5, potency: 2 }, [], player, engine);
     map.addTrap(new TrapInstance({ id: 't', type: 'pit', x: 4, y: 3, damage: 10 }));
     let deaths = 0;

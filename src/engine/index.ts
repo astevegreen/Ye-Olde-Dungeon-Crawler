@@ -35,6 +35,7 @@ export * from './actions/spell-actions';
 export * from './actions/stairs';
 export * from './actions/search';
 export * from './actions/disarm';
+export * from './dungeon/trapSense';
 export * from './actions/autoRest';
 export * from './actions/choiceAction';
 export * from './actions/identificationActions';

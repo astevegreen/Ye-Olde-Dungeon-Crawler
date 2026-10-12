@@ -30,7 +30,7 @@ export function revealTrap(engine: GameEngine, trap: TrapInstance, message: stri
 
 /**
  * Searches the 8 adjacent tiles and current tile (radius 1) for secret doors and hidden traps.
- * Perception rolls are governed by the hero's Intelligence and Dexterity attributes.
+ * Perception rolls are governed by the hero's Intelligence.
  */
 export class SearchAction implements Action {
   public readonly player: Player;
@@ -66,10 +66,11 @@ export class SearchAction implements Action {
 
         if (!engine.map.inBounds(tx, ty)) continue;
 
+        // Intelligence alone, counted twice so a default hero rolls as before.
         const roll =
           Math.floor(this.rng() * 20) +
           1 +
-          Math.floor((this.player.intelligence + this.player.dexterity + this.player.level) / 4);
+          Math.floor((2 * this.player.intelligence + this.player.level) / 4);
 
         // 1. Secret Door Detection
         const tile = engine.map.getTile(tx, ty);

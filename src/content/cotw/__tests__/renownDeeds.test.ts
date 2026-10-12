@@ -120,7 +120,7 @@ describe('cotw renown: deeds reach the ledger', () => {
     for (const how of ['search', 'passing'] as const) {
       const engine = buildEngine();
       const p = engine.player;
-      p.intelligence = 18;
+      p.intelligence = 55; // a sure spot each turn
       p.dexterity = 18;
       engine.map.addTrap(new TrapInstance({ id: 't', type: 'pit', x: 6, y: 3, concealment: 4 }));
       const before = getRenownTotal(engine);

@@ -24,6 +24,9 @@ import {
   spellPowerMultiplier,
   statusDisplayName,
   strengthMeleeBonus,
+  TRAP_SENSE_RANGE,
+  trapDodgeChance,
+  trapSpotChance,
   type ManaTerms,
   type RuneOfReturnTrack,
 } from '../../engine';
@@ -75,8 +78,8 @@ const ATTRIBUTES: AttributeMeta[] = [
     code: 'KeyS',
     description: ({ scaling }) =>
       scaling.meleeDamagePerStrength
-        ? `Melee damage, ${scaling.meleeDamagePerStrength} per point above ${scaling.baseline ?? 10}; how much you can carry; how hard a knock-back slams foes into walls.`
-        : 'How much you can carry, and how hard a knock-back slams foes into walls.',
+        ? `Melee damage, ${scaling.meleeDamagePerStrength} per point above ${scaling.baseline ?? 10}; how much you can carry.`
+        : 'How much you can carry.',
     preview: (p, v, n, _mana, { scaling }) => {
       const parts = [];
       if (scaling.meleeDamagePerStrength) {
@@ -94,8 +97,8 @@ const ATTRIBUTES: AttributeMeta[] = [
     code: 'KeyD',
     description: ({ scaling }) =>
       scaling.meleeHitPercentPerDexterity || scaling.evasionPerDexterity
-        ? `Hitting in melee and at range, and evading blows (per point above ${scaling.baseline ?? 10}: ${scaling.meleeHitPercentPerDexterity ?? 0}% to hit, ${Math.round((scaling.evasionPerDexterity ?? 0) * 100)}% evasion); picking locks and spotting traps.`
-        : 'Ranged hit chance and damage, picking locks, and spotting traps.',
+        ? `Hitting in melee and at range, and evading blows (per point above ${scaling.baseline ?? 10}: ${scaling.meleeHitPercentPerDexterity ?? 0}% to hit, ${Math.round((scaling.evasionPerDexterity ?? 0) * 100)}% evasion); leaping clear of traps you spring, and disarming them.`
+        : 'Ranged hit chance and damage, leaping clear of traps you spring, and disarming them.',
     preview: (p, v, n, _mana, { scaling }) => {
       const parts = [];
       if (scaling.meleeHitPercentPerDexterity) {
@@ -107,6 +110,7 @@ const ATTRIBUTES: AttributeMeta[] = [
       const before = rangedDexterityBonus(v - n);
       const after = rangedDexterityBonus(v);
       parts.push(`ranged hit ${fromTo(signed(before.hitPct), signed(after.hitPct), '%')}`);
+      parts.push(`trap dodge ${fromTo(pct(trapDodgeChance(at(p, 'dexterity', v - n))), pct(trapDodgeChance(at(p, 'dexterity', v))))}`);
       return parts.join(' · ');
     },
   },
@@ -134,14 +138,15 @@ const ATTRIBUTES: AttributeMeta[] = [
     code: 'KeyI',
     description: ({ scaling }) =>
       scaling.spellPowerPerIntelligence
-        ? `Spell power, ${Math.round(scaling.spellPowerPerIntelligence * 100)}% per point above ${scaling.baseline ?? 10}; maximum {mana}, ${MANA_PER_INTELLIGENCE} per point; spotting traps and secret doors.`
-        : `Maximum {mana}, ${MANA_PER_INTELLIGENCE} per point, and spotting traps and secret doors.`,
+        ? `Spell power, ${Math.round(scaling.spellPowerPerIntelligence * 100)}% per point above ${scaling.baseline ?? 10}; maximum {mana}, ${MANA_PER_INTELLIGENCE} per point; spotting traps within ${TRAP_SENSE_RANGE} tiles each turn, and searching for traps and secret doors.`
+        : `Maximum {mana}, ${MANA_PER_INTELLIGENCE} per point; spotting traps within ${TRAP_SENSE_RANGE} tiles each turn, and searching for traps and secret doors.`,
     preview: (p, v, n, mana, { scaling }) => {
       const parts = [];
       if (scaling.spellPowerPerIntelligence) {
         parts.push(`Spell power ${fromTo(signedPct(spellPowerMultiplier(at(p, 'intelligence', v - n), scaling) - 1), signedPct(spellPowerMultiplier(at(p, 'intelligence', v), scaling) - 1))}`);
       }
       parts.push(`${mana.name} ${fromTo(p.maxMana, p.maxMana + n * MANA_PER_INTELLIGENCE)}`);
+      parts.push(`trap spotting ${fromTo(pct(trapSpotChance(at(p, 'intelligence', v - n))), pct(trapSpotChance(at(p, 'intelligence', v))))} a turn`);
       return parts.join(' · ');
     },
   },

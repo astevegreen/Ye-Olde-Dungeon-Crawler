@@ -24,3 +24,4 @@ Complete.
 - gates (lint, 2874 unit tests, sim, schema, build, Chromium 33 passed): green on the tree of eeca77f
 - visual-check (`.prompts/captures/spc-before|after`, script `.prompts/captures/spc-run.mjs`): as intended
 - pre-push (three browsers, 91 passed): green; pushed 5e92adc..eeca77f to main
+Resumed: 2026-10-12 02:34 UTC

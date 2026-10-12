@@ -49,7 +49,7 @@
     'hands waist wrists'
     'fingerLeft feet fingerRight'
     'pack . purse';
-  gap: var(--ui-space-2);
+  gap: var(--ui-space-1);
   overflow-y: auto;
   min-height: 0;
   position: relative;
@@ -99,7 +99,7 @@
   cursor: pointer;
   transition: border-color var(--ui-dur-fast), background var(--ui-dur-fast);
 }
-.inv-slot { padding: 6px 2px 5px; }
+.inv-slot { padding: 4px 2px 3px; }
 .inv-slot:hover, .inv-cell:hover { border-color: var(--ui-line-strong); }
 .inv-slot-well {
   position: relative;
@@ -168,7 +168,7 @@
 .inv-slot.it-frame, .inv-cell.it-frame { border-color: color-mix(in srgb, var(--it-frame) 75%, transparent); }
 
 /* The frames' legend, under the paperdoll. */
-.inv-legend { margin-top: var(--ui-space-3); }
+.inv-legend { margin-top: var(--ui-space-1); }
 .inv-legend-list {
   list-style: none;
   margin: var(--ui-space-1) 0 0;
@@ -208,7 +208,7 @@
 .inv-crumb-sep { color: var(--ui-text-faint); }
 
 /* The selected item. */
-.inv-inspect-body { flex: 1; display: flex; flex-direction: column; gap: var(--ui-space-3); }
+.inv-inspect-body { flex: 1; display: flex; flex-direction: column; gap: var(--ui-space-3); padding: 2px; /* room for the detail icon's 2px frame ring */ }
 .inv-detail-head { display: flex; align-items: center; gap: var(--ui-space-3); }
 .inv-detail-icon { width: 48px; height: 48px; flex: none; background: var(--ui-surface-3); border: 1px solid var(--ui-line); border-radius: var(--ui-radius); }
 .inv-detail-name { font: bold var(--ui-text-lg) var(--ui-font-display); color: var(--ui-title); }

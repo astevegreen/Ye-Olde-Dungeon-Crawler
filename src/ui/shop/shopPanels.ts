@@ -1,5 +1,4 @@
 import {
-  COIN_BULK_CM3,
   COIN_NAMES,
   COIN_VALUES,
   type CoinDenomination,
@@ -22,6 +21,7 @@ import {
 import { resolveBranding } from '../branding';
 import { escapeHtml, keyChip } from '../html';
 import { itemToneClass } from '../inventory/itemTone';
+import { purseFill } from '../purseFill';
 
 /**
  * What the shop dialog shows for each town service, as data and HTML. The dialog
@@ -337,16 +337,13 @@ function bankerPanel(engine: GameEngine, selected: number, view: string): Servic
     };
   }
   const coins = getPlayerCurrencyBreakdown(engine.player);
-  const purse = engine.player.inventory.purse;
+  const fill = purseFill(engine.player);
   const held = getPlayerCoinItems(engine.player);
-  const count = (inPurse: boolean) =>
-    held.filter((c) => (c.container === purse) === inPurse).reduce((sum, c) => sum + c.parsed.count, 0);
   const rows = DENOMINATIONS.filter((d) => coins[d] > 0)
     .map((d) => `<dt>${escapeHtml(COIN_NAMES[d].plural)}</dt><dd class="ui-num">${coins[d]}</dd>`)
     .join('');
-  const room = purse ? `<dt>In your purse</dt><dd class="ui-num">${count(true)} of ${Math.floor(purse.maxBulkCapacity / COIN_BULK_CM3)}</dd>` : '';
-  const loose = count(false);
-  const spilled = loose > 0 ? `<dt>Loose in your pack</dt><dd class="ui-num">${loose}</dd>` : '';
+  const room = fill ? `<dt>In your purse</dt><dd class="ui-num">${fill.held} of ${fill.capacity}</dd>` : '';
+  const spilled = fill && fill.loose > 0 ? `<dt>Loose in your pack</dt><dd class="ui-num">${fill.loose}</dd>` : '';
   const rate = DENOMINATIONS.filter((d) => d !== 'copper')
     .map((d) => `1 ${COIN_NAMES[d].singular.toLowerCase()} = ${formatCurrency(COIN_VALUES[d])}`)
     .join(', ');

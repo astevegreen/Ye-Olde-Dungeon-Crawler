@@ -3,6 +3,7 @@ import type { GameState } from '../characterMenu/gameState';
 import type { MenuFooter, MenuHost, MenuTab } from '../characterMenu/menuTab';
 import { escapeHtml, keyChip } from '../html';
 import { formatLoad, formatWeight } from '../units';
+import { purseFill } from '../purseFill';
 import { layoutZoom } from '../uiScale';
 import { FRAME_LEGEND, itemFrameClass, itemToneClass } from './itemTone';
 import { itemDetailHtml } from './itemDetail';
@@ -279,6 +280,12 @@ export class InventoryTab implements MenuTab {
     const weightPct = load.maxGrams > 0 ? Math.min(100, Math.round((load.grams / load.maxGrams) * 100)) : 0;
     const bulkPct = load.maxBulk > 0 ? Math.min(100, Math.round((load.bulk / load.maxBulk) * 100)) : 0;
     const tone = load.level === 'Unencumbered' ? 'good' : load.level === 'Burdened' ? 'warn' : 'bad';
+    // Coins past the purse's room spill into the pack, so a full purse shows as a warning.
+    const fill = c.engine ? purseFill(c.engine.player) : null;
+    const purse = fill
+      ? `<dt>Purse</dt><dd class="ui-num">${fill.held.toLocaleString()} / ${fill.capacity.toLocaleString()}${fill.loose > 0 ? ` <span class="ui-faint">· ${fill.loose.toLocaleString()} loose in the pack</span>` : ''}</dd>
+          <dd class="inv-load-bar is-purse"><span class="ui-bar is-${fill.held >= fill.capacity ? 'warn' : 'info'}"><i style="width: ${fill.capacity > 0 ? Math.min(100, Math.round((fill.held / fill.capacity) * 100)) : 0}%"></i></span></dd>`
+      : '';
     return `
       <section class="inv-panel${focused ? ' is-focused' : ''}" data-panel="backpack" data-drop="backpack" aria-label="Backpack">
         <div class="inv-head">
@@ -297,6 +304,7 @@ export class InventoryTab implements MenuTab {
           <dd class="inv-load-bar"><span class="ui-bar is-${tone}"><i style="width: ${weightPct}%"></i></span></dd>
           <dt>Space</dt><dd class="ui-num">${load.bulk} / ${load.maxBulk} cm³</dd>
           <dd class="inv-load-bar"><span class="ui-bar is-info"><i style="width: ${bulkPct}%"></i></span></dd>
+          ${purse}
           <dt>Load</dt><dd class="inv-load-level is-${tone}">${escapeHtml(load.level)}${load.costPct !== 100 ? ` <span class="ui-faint">· moves cost ${load.costPct}%</span>` : ''}</dd>
         </dl>
       </section>`;

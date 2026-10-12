@@ -186,6 +186,10 @@
 .inv-load { grid-template-columns: auto 1fr; font-size: var(--ui-text-sm); }
 .inv-load-bar { grid-column: 1 / -1; margin-top: -2px; }
 .inv-load-bar .ui-bar { display: block; }
+/* A short window gives the purse its count without the bar, so the pack grid keeps its height. */
+@media (max-height: 700px) {
+  .inv-load-bar.is-purse { display: none; }
+}
 .ui-bar.is-good > i { background: var(--ui-good); }
 .ui-bar.is-warn > i { background: var(--ui-warn); }
 .ui-bar.is-bad > i { background: var(--ui-bad); }

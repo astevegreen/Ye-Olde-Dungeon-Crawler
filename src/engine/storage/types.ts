@@ -171,6 +171,7 @@ export interface SerializedContainer extends SerializedItemBase {
   maxBulkCapacity: number;
   maxSlots?: number;
   acceptedCategories?: readonly string[];
+  acceptedItemIds?: readonly string[];
   items: SerializedItemNode[];
   /** Absent in older saves, which load as never opened. */
   opened?: boolean;

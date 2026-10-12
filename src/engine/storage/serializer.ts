@@ -87,6 +87,7 @@ export function serializeItem(item: Item): SerializedItemNode {
       maxBulkCapacity: item.maxBulkCapacity,
       maxSlots: item.maxSlots,
       acceptedCategories: item.acceptedCategories,
+      acceptedItemIds: item.acceptedItemIds,
       items: item.getItems().map(serializeItem),
       opened: item.wasOpened || undefined,
     };
@@ -200,6 +201,7 @@ export function deserializeItem(node: SerializedItemNode, definitions?: ItemDefi
       maxBulkCapacity: def?.containerConfig?.maxBulkCapacity ?? node.maxBulkCapacity,
       maxSlots: node.maxSlots,
       acceptedCategories: node.acceptedCategories,
+      acceptedItemIds: def?.containerConfig?.acceptedItemIds ?? node.acceptedItemIds,
       aspectState: node.aspectState,
       modifiers: restoredModifiers(node, def, definitions),
       parentId: node.parentId ?? null,

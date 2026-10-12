@@ -17,6 +17,8 @@ export interface ContainerConfig extends ItemConfig {
   maxBulkCapacity: number; // in cm³
   maxSlots?: number; // optional limit on item count (e.g. for belts)
   acceptedCategories?: readonly string[]; // optional filter (e.g. currency only for purse)
+  /** Optional filter by item definition id; a container with one is filled first on pickup. */
+  acceptedItemIds?: readonly string[];
 }
 
 export class Container extends Item {
@@ -41,6 +43,7 @@ export class Container extends Item {
   public readonly maxBulkCapacity: number;
   public readonly maxSlots?: number;
   public readonly acceptedCategories?: readonly string[];
+  public readonly acceptedItemIds?: readonly string[];
   private items: Item[];
 
   constructor(config: ContainerConfig) {
@@ -50,6 +53,7 @@ export class Container extends Item {
     this.maxBulkCapacity = config.maxBulkCapacity;
     this.maxSlots = config.maxSlots;
     this.acceptedCategories = config.acceptedCategories;
+    this.acceptedItemIds = config.acceptedItemIds;
     this.items = [];
     registerContainer(this);
   }
@@ -133,6 +137,10 @@ export class Container extends Item {
           reason: `${this.name} can only hold ${this.acceptedCategories.join(', ')}.`,
         };
       }
+    }
+
+    if (this.acceptedItemIds && this.acceptedItemIds.length > 0 && !this.acceptedItemIds.includes(item.definitionId ?? '')) {
+      return { allowed: false, reason: `${this.name} cannot hold ${item.name}.` };
     }
 
     // 4. Slot limit check (e.g. Belts)

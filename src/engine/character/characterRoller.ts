@@ -257,5 +257,10 @@ export class CharacterRoller {
         player.inventory.primaryPack.addItem(pItem);
       }
     }
+
+    // 5. Further worn items, each in its own slot
+    starterKit.wornItems?.forEach(({ itemId, slot }, i) => {
+      player.inventory.paperdoll.equip(instantiateItem(itemId, `${profileId}-worn-${i}`), slot);
+    });
   }
 }

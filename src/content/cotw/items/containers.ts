@@ -1,4 +1,5 @@
 import { COIN_BULK_CM3, type ItemDefinition } from '../../../engine';
+import { COTW_ESSENCE_BY_ELEMENT } from './essences';
 
 export const COTW_CONTAINERS: ItemDefinition[] = [
   {
@@ -85,6 +86,27 @@ export const COTW_CONTAINERS: ItemDefinition[] = [
       maxWeightCapacity: 15000,
       maxBulkCapacity: 3000 * COIN_BULK_CM3,
       acceptedCategories: ['currency'],
+    },
+  },
+  {
+    id: 'rune_pouch',
+    name: 'Rune-Pouch',
+    category: 'container',
+    slot: 'runes',
+    tier: 1,
+    // Every hero starts with one (character.ts); it never turns up as loot.
+    lootWeight: 0,
+    weight: 60,
+    bulk: 100,
+    identified: true,
+    description: 'A pouch of blackened seal-skin, stitched with a binding-stave. Essence-runes find their own way into it, two hundred and more.',
+    value: 10,
+    itemType: 'container',
+    containerConfig: {
+      containerType: 'pack',
+      maxWeightCapacity: 7 * 30 * 20,
+      maxBulkCapacity: 7 * 30 * 10,
+      acceptedItemIds: Object.values(COTW_ESSENCE_BY_ELEMENT),
     },
   },
 ];

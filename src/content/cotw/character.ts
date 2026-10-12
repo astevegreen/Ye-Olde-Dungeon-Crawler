@@ -13,6 +13,7 @@ export const COTW_STARTER_KIT: StarterKitDefinition = {
   beltItemId: 'braided_sinew_cord',
   beltSlotItemIds: ['hearth_broth_flask', 'birch_tar_poultice'],
   packItemIds: ['hearth_broth_flask', 'birch_tar_poultice', 'scroll_phase_door'],
+  wornItems: [{ itemId: 'rune_pouch', slot: 'runes' }],
   // Kill rites teach the rest as the hero descends (killRites.ts).
   spellsKnown: ['magic_arrow', 'heal_minor'],
 };

@@ -48,7 +48,7 @@ const SORT_LABELS: Record<string, string> = {
 /** The paperdoll's slots by grid area (inventory.css); a pack's own slots flow in after. */
 const KNOWN_AREAS = new Set([
   'head', 'neck', 'overgarment', 'torso', 'mainHand', 'offHand', 'hands', 'wrists',
-  'fingerLeft', 'fingerRight', 'waist', 'feet', 'pack', 'purse',
+  'fingerLeft', 'fingerRight', 'waist', 'feet', 'pack', 'purse', 'runes',
 ]);
 
 /** "Equip (E)" -> "Equip": the key is drawn as a chip beside the label. */

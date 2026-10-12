@@ -134,6 +134,15 @@ export class InventoryManager {
       }
     }
 
+    //    A worn container made for this item (a rune pouch) takes it before the belt and pack.
+    for (const eq of this.paperdoll.getAllEquipped()) {
+      const c = eq.item;
+      if (c instanceof Container && c.acceptedItemIds?.length && c.canContain(item).allowed && c.addItem(item)) {
+        if (this.ownerId) item.ownerId = this.ownerId;
+        return { success: true, destination: eq.slot };
+      }
+    }
+
     // 2. Try utility belt if equipped
     if (this.belt && this.belt.canContain(item).allowed) {
       if (this.belt.addItem(item)) {

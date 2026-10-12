@@ -131,6 +131,7 @@ export const COTW_ITEM_PIXEL_SPRITES: Record<string, PixelSprite> = {
   quicksilver_lined_purse: pack('purse', { leather: { base: '#7a8088', shiny: true }, item_twine: 'silver', gold: 'silver' }),
   ironclasp_purse: pack('purse', { item_twine: 'iron', leather: 'leatherDark' }),
   grave_salt_pouch: pack('purse', { leather: '#8a8478', gold: '#d8d4cc' }),
+  rune_pouch: pack('purse', { leather: '#2a2a30', item_twine: '#7ab8c8', gold: '#9fd4e0' }),
   // ---- neck and fingers
   charm_watchful_eye: amulet('valknut'),
   corpse_chieftains_eye_coin: amulet('valknut', { bronze: '#6a6c70' }),

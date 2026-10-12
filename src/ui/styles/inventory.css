@@ -48,7 +48,7 @@
     'mainHand torso offHand'
     'hands waist wrists'
     'fingerLeft feet fingerRight'
-    'pack . purse';
+    'pack runes purse';
   gap: var(--ui-space-1);
   overflow-y: auto;
   min-height: 0;
@@ -80,6 +80,7 @@
 .inv-doll [data-area='feet'] { grid-area: feet; }
 .inv-doll [data-area='pack'] { grid-area: pack; }
 .inv-doll [data-area='purse'] { grid-area: purse; }
+.inv-doll [data-area='runes'] { grid-area: runes; }
 
 .inv-slot,
 .inv-cell {

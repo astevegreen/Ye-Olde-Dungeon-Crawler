@@ -29,7 +29,7 @@ describe('Equipment Slot Layout & Data-Driven Schema', () => {
   });
 
   it('COTW_EQUIPMENT_SLOTS matches manifest layout coordinate requirements', () => {
-    expect(COTW_EQUIPMENT_SLOTS.length).toBe(14);
+    expect(COTW_EQUIPMENT_SLOTS.length).toBe(15);
     for (const slot of COTW_EQUIPMENT_SLOTS) {
       expect(slot.layout).toBeDefined();
       expect(slot.layout!.x).toBeGreaterThanOrEqual(0);

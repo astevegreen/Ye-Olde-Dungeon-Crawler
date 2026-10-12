@@ -193,6 +193,7 @@ export function createScaledItem(
       maxBulkCapacity: def.containerConfig.maxBulkCapacity,
       maxSlots: def.containerConfig.maxSlots,
       acceptedCategories: def.containerConfig.acceptedCategories,
+      acceptedItemIds: def.containerConfig.acceptedItemIds,
       minFloor: def.minFloor,
       tier: def.tier,
       predicate: def.predicate,

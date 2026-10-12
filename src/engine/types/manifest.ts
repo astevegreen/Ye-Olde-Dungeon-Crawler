@@ -107,6 +107,7 @@ export interface ItemDefinition {
     maxBulkCapacity: number;
     maxSlots?: number;
     acceptedCategories?: readonly string[];
+    acceptedItemIds?: readonly string[];
   };
   wandConfig?: {
     spellId: string;
@@ -794,6 +795,8 @@ export interface StarterKitDefinition {
   beltItemId?: string;
   beltSlotItemIds?: string[];
   packItemIds?: string[];
+  /** Further worn items, each equipped in its named slot (a rune pouch, say). */
+  wornItems?: Array<{ itemId: string; slot: string }>;
   spellsKnown?: string[];
 }
 

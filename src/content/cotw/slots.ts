@@ -15,4 +15,5 @@ export const COTW_EQUIPMENT_SLOTS: EquipmentSlotDefinition[] = [
   { id: 'fingerRight', name: 'Right Finger', acceptedCategories: ['ring'], layout: { x: 128, y: 162, width: 34, height: 34, gridArea: 'fingerRight' } },
   { id: 'pack', name: 'Pack', acceptedCategories: ['container'], layout: { x: 34, y: 224, width: 34, height: 34, gridArea: 'pack' } },
   { id: 'purse', name: 'Purse', acceptedCategories: ['container'], layout: { x: 152, y: 224, width: 34, height: 34, gridArea: 'purse' } },
+  { id: 'runes', name: 'Rune-Pouch', acceptedCategories: ['container'], layout: { x: 93, y: 224, width: 34, height: 34, gridArea: 'runes' } },
 ];

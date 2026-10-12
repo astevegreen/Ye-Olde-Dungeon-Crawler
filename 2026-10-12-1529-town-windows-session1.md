@@ -26,3 +26,4 @@
 ## Verification
 - lint + test: green on tree at HEAD a1621dd3 + uncommitted changes
 - gates (sim, schema, build, Chromium e2e): running/not confirmed
+Resumed: 2026-10-12 15:49 UTC

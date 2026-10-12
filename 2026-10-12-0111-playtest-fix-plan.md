@@ -29,6 +29,8 @@ The owner asked to sort the Notion page "Ideas, bugs, and playtest notes" (YODC 
 - Owner: "Bigger starting purse." Capacity is read from the item definition on load (src/engine/storage/serializer.ts:198), so there's no save break. The tests at src/engine/economy/__tests__/coinSpace.test.ts:38 pin 300.
 - Owner: "Dexterity increases chance of not being affected by a trap if you set it off, and intelligence increases your chance of automatically detecting a trap each turn once you are within a certain number of tiles."
 - Plan order: by code area; shared causes fixed once; one soak at the end, after all balance-moving changes.
+- Purse 1,000 and Quicksilver purse 3,000; trap numbers (range 3, spot (INT−5)×2%, dodge (DEX−5)×3% cap 75%, alarms undodgeable); Search INT only, Disarm DEX only; name format alignment word plus tier word — all recommendations approved. Owner: "all recommendations approved" (resume, 12 Oct)
+- Session 5 scope (which design ideas go in) is not settled: the page lists them cheapest-first but makes no pick. Ask before Session 5; Sessions 1–4 don't need it.
 
 ## Read first
 - The Notion page: the plan and the Code pointers toggle.

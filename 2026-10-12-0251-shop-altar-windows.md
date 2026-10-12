@@ -21,6 +21,7 @@ Owner: "proceed with phase 2 from the Notion plan" (page "Ideas, bugs, and playt
 - Baseline worktree and :5174 server removed.
 
 ## Next
+Complete. Pushed 12 Oct as 894c2cd (shop) and e55e77d (altar); pre-push green; Notion Sessions 1 and 2 ticked. The e2e `whole-run.spec.ts` now opens Mimir's Pacts tab before pressing 1. Remaining: Session 3 (recent-messages strip) in a fresh session. Original steps, for reference:
 1. `npm run gates`, real output pasted. Sticky status was never exercised (the sage body scrolls only ~85px at 768px); worth a glance at 1366x600 if cheap.
 2. Two commits, `Requested:` quoting the owner: (a) shopDialog.ts, shopPanels.ts, canvas-renderer.ts, shop.css, shopDialog.test.ts; (b) altarModal.ts, grimoireGrid.ts, spellbookTab.ts, dialog.css, magic.ts, altarModal.test.ts. Use Edit/Write, not heredocs.
 3. `git push` in the background; summary lists player-visible changes: bars and log update at once after a shop click, result line on top, Pacts tab, Oath-Stone grid and wording.

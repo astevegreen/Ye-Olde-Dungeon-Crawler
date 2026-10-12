@@ -188,11 +188,9 @@ window.addEventListener('DOMContentLoaded', () => {
   const gameContainer = document.getElementById('game-container');
   const saveTitleBtn = document.getElementById('btn-save-title');
   const feedbackBtn = document.getElementById('btn-feedback');
-  const devDiagBtn = document.getElementById('btn-dev-diagnostics');
   const helpBtn = document.getElementById('btn-help-card');
   const compendiumBtn = document.getElementById('btn-compendium');
   const cmdPaletteBtn = document.getElementById('btn-cmd-palette');
-  const mapBtn = document.getElementById('btn-map');
 
   // Bottom HUD bar controls
   const hudInvBtn = document.getElementById('btn-hud-inv');
@@ -601,7 +599,7 @@ window.addEventListener('DOMContentLoaded', () => {
     drawEntityIcon: (canvas, entity) => renderer?.drawEntityIcon(canvas, entity),
     drawItemIcon: (canvas, item) => renderer?.drawItemIcon(canvas, item),
     onPointAt: (x, y) => renderer?.pointAtTile(x, y),
-    onOpenMap: () => document.getElementById('btn-map')?.click(),
+    onOpenMap: () => toggleMap(),
   });
 
   // The pack's first-time hints, a card at the foot of the sidebar (never modal).
@@ -1115,18 +1113,14 @@ window.addEventListener('DOMContentLoaded', () => {
     toggleFeedback();
   });
 
-  devDiagBtn?.addEventListener('click', () => {
-    diagnosticModal.toggle();
-  });
-
-  mapBtn?.addEventListener('click', () => {
+  function toggleMap(): void {
     if (activeEngine && renderer) {
       renderer.inspectOverlay.close();
       renderer.targetingOverlay.close();
       renderer.mapOverlay.toggle(activeEngine);
       renderer.render();
     }
-  });
+  }
 
   // Through the input handler, as F1 is, so the card is on the modal stack (§6).
   helpBtn?.addEventListener('click', () => {

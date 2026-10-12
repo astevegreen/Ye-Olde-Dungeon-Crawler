@@ -9,7 +9,17 @@ import {
 } from '../engine';
 import type { UIModal } from './modalStack';
 import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
+import { grimoireGridHtml } from './grimoireGrid';
 import { escapeHtml } from './html';
+
+/** What burning costs, said before an offering is picked. Pack-neutral: the pack's own
+ *  altar text names its offerings; this is the rule they all share. */
+const BURN_RULE =
+  'Offer a spell you know and you forget it for good. Offer an essence and that one is used up. Nothing is spent until you perform the rite.';
+
+/** The parts of the dialog that scroll: a redraw keeps each where it was. */
+const LIST_SELECTOR = '.altar-list';
+const BODY_SELECTOR = '.ui-dialog-body';
 
 /**
  * A spell altar's rite (engine `magic/altars.ts`): pick an offering to burn and, depending on
@@ -49,6 +59,8 @@ export class AltarModal implements UIModal {
     this.onConfirm = onConfirm;
     this.onLeave = onLeave;
     this.isOpen = true;
+    // The last rite's frame is gone: this one starts at the top, not where that was scrolled.
+    this.overlayEl.innerHTML = '';
     this.overlayEl.style.display = 'flex';
     this.render();
   }
@@ -157,7 +169,7 @@ export class AltarModal implements UIModal {
       ? this.offerings
           .map(
             (o, i) =>
-              `<button type="button" class="bs-row${i === this.offeringIndex ? ' is-selected' : ''}" data-offering="${i}"><span class="bs-name">${escapeHtml(o.name)}</span><span class="ui-faint">${escapeHtml(o.kind === 'spell' ? 'spell' : 'item')} · ${escapeHtml(o.element)}${o.count ? ` ×${o.count}` : ''}</span></button>`
+              `<button type="button" class="bs-row${i === this.offeringIndex ? ' is-selected' : ''}" data-offering="${i}"><span class="bs-name">${escapeHtml(o.name)}</span><span class="ui-faint">${escapeHtml(o.kind)} · ${escapeHtml(o.element)}${o.count ? ` ×${o.count}` : ''}</span></button>`
           )
           .join('')
       : '<div class="ui-note bs-empty">You carry nothing the altar will take.</div>';
@@ -171,9 +183,11 @@ export class AltarModal implements UIModal {
         const label = !open ? 'Sealed' : spellName(engine, player.grimoire[i]?.spellId ?? '') || 'empty';
         const cls = ['sb-cell', open ? 'is-filled' : 'is-sealed', i === this.slotIndex ? 'is-mine' : ''].filter(Boolean).join(' ');
         return `<button type="button" class="${cls}" data-slot="${pickable ? i : ''}"${pickable ? '' : ' disabled'}><div class="sb-cell-head"><span class="ui-num">${i + 1}</span></div><div class="${open ? 'sb-cell-spell' : 'sb-sealed'}">${escapeHtml(label)}</div></button>`;
-      }).join('');
+      });
+      // The Spellbook's grid, spacers included; no slot links light here.
+      const grid = grimoireGridHtml(cells, (_a, _b, axis) => `<i class="sb-link is-${axis}"></i>`);
       picker = `<div class="ui-dialog-label">${wantSealed ? 'Sealed slot to open' : 'Slot to inscribe (active page)'}</div>
-        <div class="ui-inset sb-matrix">${cells}</div>`;
+        <div class="ui-inset sb-matrix">${grid}</div>`;
     } else if (altar.rite === 'forge') {
       const rows = player.spellsKnown
         .map(
@@ -185,6 +199,10 @@ export class AltarModal implements UIModal {
     }
 
     const ready = Boolean(this.request());
+    // Each click redraws the frame; the lists and the window keep their scroll.
+    const overlay = this.overlayEl;
+    const bodyTop = overlay.querySelector<HTMLElement>(BODY_SELECTOR)?.scrollTop ?? 0;
+    const listTops = Array.from(overlay.querySelectorAll<HTMLElement>(LIST_SELECTOR), (el) => el.scrollTop);
     this.overlayEl.innerHTML = dialogHtml({
       title: altar.name,
       kicker: 'Altar',
@@ -192,6 +210,7 @@ export class AltarModal implements UIModal {
       closeTitle: 'Leave (Esc)',
       body: `
         <div class="ui-dialog-lede">${escapeHtml(altar.description)}</div>
+        <div class="ui-note">${escapeHtml(BURN_RULE)}</div>
         <div class="ui-dialog-label">Offering to burn</div>
         <div class="ui-inset bs-list altar-list">${offeringRows}</div>
         ${picker}
@@ -204,6 +223,12 @@ export class AltarModal implements UIModal {
       actions:
         dialogButton('btn-altar-leave', 'Leave', { attrs: 'data-action="leave"' }) +
         dialogButton('btn-altar-confirm', 'Perform the rite', { primary: true, disabled: !ready, key: 'Enter', attrs: 'data-action="confirm"' }),
+    });
+
+    const body = overlay.querySelector<HTMLElement>(BODY_SELECTOR);
+    if (body) body.scrollTop = bodyTop;
+    overlay.querySelectorAll<HTMLElement>(LIST_SELECTOR).forEach((el, i) => {
+      el.scrollTop = listTops[i] ?? 0;
     });
 
     this.overlayEl.querySelectorAll<HTMLElement>('[data-offering]').forEach((el) =>

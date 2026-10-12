@@ -157,8 +157,9 @@
 .ui-btn--danger { color: var(--ui-bad); border-color: color-mix(in srgb, var(--ui-bad) 60%, transparent); }
 .ui-btn--danger:hover:not(:disabled) { border-color: var(--ui-bad); }
 
-/* The altar's offering and spell lists stay short; the dialog body scrolls. */
-.altar-list { max-height: 150px; overflow-y: auto; padding: var(--ui-space-1); }
+/* The altar's offering and spell lists: tall enough for eight rows or so before they
+   scroll; the dialog body scrolls past them. */
+.altar-list { max-height: 260px; overflow-y: auto; padding: var(--ui-space-1); }
 
 /* The pause menu: one column of choices, Resume first. */
 .pause-actions { display: flex; flex-direction: column; gap: var(--ui-space-2); }

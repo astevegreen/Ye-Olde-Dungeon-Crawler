@@ -182,7 +182,7 @@ export const COTW_MAGIC: MagicSystemConfig = {
       id: 'galdr_altar_tyr',
       name: "Týr's Oath-Stone",
       description:
-        'Týr gave his hand to bind the wolf. Burn an offering here, and its essence is bound into a slot of your open grimoire page as a glyph.',
+        'Týr gave his hand to bind the wolf. Burn an offering here, a spell you know or an Essence-Rune, and its essence is bound into a slot of your open grimoire page as a glyph.',
       rite: 'inscribe',
       performedMessage: 'Týr accepts {offering}. The {glyph} glyph is bound into slot {slot} of your grimoire.',
       spentMessage: '{altar} stands cold; its oath is already sworn.',
@@ -191,7 +191,7 @@ export const COTW_MAGIC: MagicSystemConfig = {
       id: 'galdr_altar_odin',
       name: "Odin's Gallows-Stone",
       description:
-        'Odin hung nine nights to win the runes. Give up an offering here to fuse one of your spells with its element, forging a new spell in its place.',
+        'Odin hung nine nights to win the runes. Give up an offering here, a spell you know or an Essence-Rune, to fuse one of your spells with its element, forging a new spell in its place.',
       rite: 'forge',
       performedMessage: 'Odin takes {offering}. {spell} is reforged as {hybrid}.',
       spentMessage: '{altar} is silent; the Hanged One has taken his due.',
@@ -200,7 +200,7 @@ export const COTW_MAGIC: MagicSystemConfig = {
       id: 'galdr_altar_hel',
       name: "Hel's Grave-Altar",
       description:
-        'Hel keeps what is owed. Burn an offering to unseal a corner of your grimoire, grounded in its element (spells of that element cost less and strike harder there), and she takes your Void Debt with it.',
+        'Hel keeps what is owed. Burn an offering, a spell you know or an Essence-Rune, to unseal a corner of your grimoire, grounded in its element (spells of that element cost less and strike harder there), and she takes your Void Debt with it.',
       rite: 'ground',
       performedMessage: 'Hel takes {offering}. Slot {slot} of your grimoire opens, grounded in {element}, and your debts are paid.',
       spentMessage: '{altar} is sated.',
@@ -208,7 +208,7 @@ export const COTW_MAGIC: MagicSystemConfig = {
     {
       id: 'galdr_altar_loki',
       name: "Loki's Cairn",
-      description: 'The trickster takes what you offer and gives back whatever amuses him: a spell, a doubled glyph, or a price.',
+      description: 'The trickster takes what you offer, a spell you know or an Essence-Rune, and gives back whatever amuses him: a spell, a doubled glyph, or a price.',
       rite: 'gamble',
       performedMessage: 'Loki takes {offering}.',
       spentMessage: '{altar} is only stones now; the trickster has moved on.',

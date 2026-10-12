@@ -17,6 +17,7 @@ import {
 import type { GameState } from './gameState';
 import type { MenuFooter, MenuTab } from './menuTab';
 import { escapeHtml, keyChip } from '../html';
+import { grimoireGridHtml } from '../grimoireGrid';
 import { spellPower } from '../spellPower';
 import { resolveBranding } from '../branding';
 
@@ -352,27 +353,14 @@ export class SpellbookTab implements MenuTab {
         ? `<i class="sb-link is-${axis} is-on" title="${escapeHtml(`Slots ${a + 1} and ${b + 1}: ${reasons.join('; ')}`)}"></i>`
         : `<i class="sb-link is-${axis}"></i>`;
     };
-    const grid: string[] = [];
-    for (let row = 0; row < 3; row++) {
-      for (let col = 0; col < 3; col++) {
-        const i = row * 3 + col;
-        grid.push(cells[i]);
-        if (col < 2) grid.push(link(i, i + 1, 'h'));
-      }
-      if (row < 2) {
-        for (let col = 0; col < 3; col++) {
-          grid.push(link(row * 3 + col, row * 3 + col + 3, 'v'));
-          if (col < 2) grid.push('<i class="sb-link"></i>');
-        }
-      }
-    }
+    const grid = grimoireGridHtml(cells, link);
     this.slotInfo = Array.from({ length: GRIMOIRE_SIZE }, (_, i) => this.describeSlot(player, i, unsealText));
 
     return `
       <div class="ui-h">${escapeHtml(config.title)}</div>
       <div class="st-subtabs">${pages}</div>
       ${attuning ? `<div class="ui-note sb-attune">Attuning to this page: <span class="ui-num">${attuning.duration ?? 1}</span> turn left.</div>` : ''}
-      <div class="ui-inset sb-matrix">${grid.join('')}</div>
+      <div class="ui-inset sb-matrix">${grid}</div>
       <div class="ui-note sb-slot-info" id="sb-slot-info" aria-live="polite">${SLOT_INFO_DEFAULT}</div>
       ${unseal}`;
   }

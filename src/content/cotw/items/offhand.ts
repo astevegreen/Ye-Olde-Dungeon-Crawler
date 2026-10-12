@@ -87,7 +87,7 @@ export const COTW_OFFHAND: ItemDefinition[] = [
   },
   {
     id: 'petrified_world_bark_tower_shield',
-    name: 'Petrified World-Bark Tower Shield',
+    name: 'World-Bark Tower Shield',
     unidentifiedName: 'Massive Bark Slab',
     category: 'shield',
     slot: 'offHand',

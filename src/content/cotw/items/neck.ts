@@ -18,7 +18,7 @@ export const COTW_NECK: ItemDefinition[] = [
   },
   {
     id: 'nisses_pewter_porridge_spoon',
-    name: "Nisse's Pewter Porridge-Spoon",
+    name: "Nisse's Porridge-Spoon",
     unidentifiedName: 'Tarnished Pewter Spoon',
     category: 'amulet',
     slot: 'neck',
@@ -33,7 +33,7 @@ export const COTW_NECK: ItemDefinition[] = [
   },
   {
     id: 'corpse_chieftains_eye_coin',
-    name: "Corpse-Chieftain's Eye-Coin",
+    name: "Chieftain's Eye-Coin",
     unidentifiedName: 'Heavy Lead Coin',
     category: 'amulet',
     slot: 'neck',

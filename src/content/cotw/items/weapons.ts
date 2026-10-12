@@ -33,7 +33,7 @@ export const COTW_WEAPONS: ItemDefinition[] = [
   },
   {
     id: 'skraeling_ice_spear',
-    name: 'Skraeling Ice-Knapped Spear',
+    name: 'Ice-Knapped Spear',
     unidentifiedName: 'Rough Stone Spear',
     category: 'weapon',
     slot: 'mainHand',
@@ -150,7 +150,7 @@ export const COTW_WEAPONS: ItemDefinition[] = [
   },
   {
     id: 'tarnished_quicksilver_stiletto',
-    name: 'Tarnished Quicksilver Stiletto',
+    name: 'Quicksilver Stiletto',
     unidentifiedName: 'Liquid-Silver Stiletto',
     category: 'weapon',
     slot: 'mainHand',

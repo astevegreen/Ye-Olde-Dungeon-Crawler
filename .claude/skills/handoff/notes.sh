@@ -76,7 +76,8 @@ list() {
   fetch || echo "notes.sh: could not fetch origin/$BRANCH (not created yet, or offline)" >&2
   [ -n "$(tip)" ] || { echo "no notes on origin/$BRANCH"; return 0; }
   open=0
-  for name in $(git ls-tree --name-only "$REF" | sort -r); do
+  # Notes only: a patch parked on the branch to carry a commit off a machine is never claimed.
+  for name in $(git ls-tree --name-only "$REF" | grep '\.md$' | sort -r); do
     if git show "$REF:$name" | grep -q '^Resumed:'; then continue; fi
     echo "$name  $(git show "$REF:$name" | sed -n 2p)"
     open=$((open + 1))

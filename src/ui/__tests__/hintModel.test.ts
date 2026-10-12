@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { GameEngine, GameMap, TILES, Player } from '../../engine';
-import { hintFlag, hintsMetByEvent, hintsMetByState, resolveHintText, unseenHints } from '../hints/hintModel';
+import { GameEngine, GameMap, TILES, Player, Item } from '../../engine';
+import { hintFlag, hintsMetByEvent, hintsMetByState, itemHintFlag, itemHintsMet, resolveHintText, unseenHints } from '../hints/hintModel';
 import { FirstTimeHints } from '../hints/firstTimeHints';
 
 function buildEngine(manifest: Record<string, unknown> = {}) {
@@ -10,6 +10,17 @@ function buildEngine(manifest: Record<string, unknown> = {}) {
   engine.fov.update(engine.map, player.x, player.y, 8);
   return engine;
 }
+
+const RUNE = {
+  id: 'rune_a',
+  name: 'Rune A',
+  category: 'quest',
+  weight: 1,
+  bulk: 1,
+  firstPickupHint: { title: 'Rune A', text: 'It hums.' },
+};
+const carry = (engine: GameEngine, definitionId: string) =>
+  engine.player.inventory.storeItem(new Item({ id: `${definitionId}-1`, definitionId, name: definitionId, category: 'quest', weight: 1, bulk: 1 }));
 
 const HINTS = {
   altar: { title: 'Altars', text: 'Burn an offering.' },
@@ -56,6 +67,17 @@ describe('first-time hints', () => {
     engine.currentFloor = 1;
     expect(hintsMetByState(engine)).toContain('grimoire');
     expect(hintsMetByState(buildEngine())).not.toContain('grimoire');
+  });
+
+  it("meets an item's first-pickup hint once the hero carries one, until it is shown", () => {
+    const engine = buildEngine({ items: [RUNE, { ...RUNE, id: 'plain', firstPickupHint: undefined }] });
+    expect(itemHintsMet(engine)).toEqual([]);
+    carry(engine, 'plain');
+    expect(itemHintsMet(engine)).toEqual([]);
+    carry(engine, 'rune_a');
+    expect(itemHintsMet(engine)).toEqual(['rune_a']);
+    engine.player.markTutorialSeen(itemHintFlag('rune_a'));
+    expect(itemHintsMet(engine)).toEqual([]);
   });
 
   it('names the bound key in the text, or the action when nothing is bound', () => {
@@ -114,5 +136,29 @@ describe('FirstTimeHints', () => {
     hints.dismiss();
     expect(text.textContent).toBe('It moved.');
     expect(seen('factionStanding')).toBe(true);
+  });
+
+  it("queues an item's first-pickup hint behind the others, once, and records it when shown", () => {
+    const engine = buildEngine({ firstTimeHints: HINTS, items: [RUNE] });
+    const hints = new FirstTimeHints({ keyFor: () => undefined, enabled: () => true });
+    const [head, text, next] = (hints.element as unknown as HintEl).children as HintEl[];
+
+    hints.offer(engine, ['altar']);
+    hints.offerItems(engine, ['rune_a']);
+    hints.offerItems(engine, ['rune_a']);
+    expect(next.textContent).toBe('Next hint (1 more)');
+    expect(engine.player.tutorialFlags[itemHintFlag('rune_a')]).toBeUndefined();
+    hints.dismiss();
+    expect(text.textContent).toBe('It hums.');
+    expect((head.children[0] as HintEl).children).toContain(' Rune A');
+    expect(engine.player.tutorialFlags[itemHintFlag('rune_a')]).toBe(true);
+  });
+
+  it('offers no item hint with first-time hints turned off', () => {
+    const engine = buildEngine({ items: [RUNE] });
+    const hints = new FirstTimeHints({ keyFor: () => undefined, enabled: () => false });
+    hints.offerItems(engine, ['rune_a']);
+    expect(hints.element.hidden).toBe(true);
+    expect(engine.player.tutorialFlags[itemHintFlag('rune_a')]).toBeUndefined();
   });
 });

@@ -118,7 +118,7 @@ import { classifyLogLine, CriticalLineTracker, collapseRepeats, runText } from '
 import { CombatSidebar } from './ui/sidebar/combatSidebar';
 import { ConsoleExtras } from './ui/console/consoleExtras';
 import { FirstTimeHints } from './ui/hints/firstTimeHints';
-import { hintsMetByEvent, hintsMetByState } from './ui/hints/hintModel';
+import { hintsMetByEvent, hintsMetByState, itemHintsMet } from './ui/hints/hintModel';
 import { findActionCues } from './ui/hints/actionCues';
 import { ControlsPrimer } from './ui/controlsPrimer';
 import { MessageLogModal } from './ui/messageLogModal';
@@ -874,6 +874,7 @@ window.addEventListener('DOMContentLoaded', () => {
       step('console extras', () => consoleExtras.update(engine));
       step('hints', () => {
         if (firstTimeHints.hasUnseen(engine)) firstTimeHints.offer(engine, hintsMetByState(engine));
+        firstTimeHints.offerItems(engine, itemHintsMet(engine));
       });
       // Periodic background autosave every 50 turns
       step('autosave', () => {

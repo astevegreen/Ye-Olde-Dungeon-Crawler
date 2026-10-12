@@ -143,6 +143,11 @@ export interface ItemDefinition {
    * Definition-only, like `hooks`: never saved, and given back on load.
    */
   wornEffects?: PerkEffects;
+  /**
+   * A first-time hint shown the first time a hero carries one (flag `hint:item:<id>` in
+   * `Player.tutorialFlags`). Definition-only, like `hooks`: never saved.
+   */
+  firstPickupHint?: FirstTimeHintDefinition;
 }
 
 export type TrapType = string;

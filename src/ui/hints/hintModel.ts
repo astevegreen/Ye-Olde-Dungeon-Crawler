@@ -56,6 +56,25 @@ export function hintsMetByState(engine: GameEngine): FirstTimeHintId[] {
   return met;
 }
 
+/** The `Player.tutorialFlags` key that records an item's first-pickup hint as shown. */
+export function itemHintFlag(definitionId: string): string {
+  return `hint:item:${definitionId}`;
+}
+
+/**
+ * The items carried (worn containers included) whose definition has a first-pickup hint
+ * this hero hasn't been shown, as definition ids in the pack's item order.
+ */
+export function itemHintsMet(engine: GameEngine): string[] {
+  const hinted = (engine.manifest.items ?? []).filter((def) => def.firstPickupHint);
+  if (hinted.length === 0) return [];
+  const flags = engine.player.tutorialFlags ?? {};
+  const unseen = hinted.filter((def) => !flags[itemHintFlag(def.id)]);
+  if (unseen.length === 0) return [];
+  const carried = new Set(engine.player.inventory?.getAllCarriedItems().map((item) => item.definitionId));
+  return unseen.filter((def) => carried.has(def.id)).map((def) => def.id);
+}
+
 /** The systems a game event introduces: reaching an altar, performing a kill rite. */
 export function hintsMetByEvent(event: GameEvent): FirstTimeHintId[] {
   if (isGameEvent(event, 'altar_reached')) return ['altar'];

@@ -37,7 +37,7 @@ export function getItemBuyPrice(item: Item, worldState?: WorldState, pricing?: M
 }
 
 function unitBuyPrice(item: Item, worldState?: WorldState, pricing?: MerchantPricingRules, markupRatio = DEFAULT_MARKUP): number {
-  const basePrice = valueOrDefault(item, item.value);
+  const basePrice = appraisedValue(item);
   const multiplier = markupRatio * (worldState && pricing ? getMerchantPriceMultiplier(worldState, pricing) : 1);
   return multiplier !== 1 ? Math.max(1, floorPrice(basePrice * multiplier)) : basePrice;
 }
@@ -73,6 +73,19 @@ function valueOrDefault(item: Item, value: number): number {
 }
 
 /**
+ * The one appraisal buying and selling share. An unknown item keeps its flat value, so a
+ * price never gives away what it is. A known positive family is worth 1.5x, a known
+ * negative one 0.1x, and a chaotic one (neither) its plain value.
+ */
+function appraisedValue(item: Item): number {
+  const value = valueOrDefault(item, item.value);
+  if (!item.identified) return value;
+  if (item.modifiers.some((m) => m.alignment === 'negative')) return Math.max(1, Math.floor(value * 0.1));
+  if (item.modifiers.some((m) => m.alignment === 'positive')) return Math.floor(value * 1.5);
+  return value;
+}
+
+/**
  * Whether a merchant buys the item at all: coins are the banker's business, a quest item is
  * the hero's to keep (an Essence-Rune is spent at an altar, a relic carried home), and an
  * item its pack priced at nothing is worth nothing.
@@ -103,14 +116,7 @@ function unitSellPrice(item: Item, markdownRatio: number): number {
     return Math.max(1, Math.floor(floorPrice(valueOrDefault(item, item.baseValue) * markdownRatio) * 0.25));
   }
 
-  let sellPrice = floorPrice(valueOrDefault(item, item.value) * markdownRatio);
-  if (item.modifiers.some((m) => m.alignment === 'negative')) {
-    sellPrice = Math.floor(sellPrice * 0.1);
-  } else if (item.modifiers.some((m) => m.alignment === 'positive')) {
-    sellPrice = Math.floor(sellPrice * 1.5);
-  }
-
-  return Math.max(1, sellPrice);
+  return Math.max(1, floorPrice(appraisedValue(item) * markdownRatio));
 }
 
 export class Merchant {

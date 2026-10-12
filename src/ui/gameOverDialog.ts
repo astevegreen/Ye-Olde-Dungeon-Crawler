@@ -14,6 +14,8 @@ export interface GameOverView {
   banner: string;
   /** The run's record, as pre-escaped HTML (`epitaphHtml`). */
   factsHtml: string;
+  /** The last log lines that led here, as pre-escaped HTML (`recentMessagesHtml`); a fall only. */
+  recentHtml?: string;
   /** The final score line, when the run was inscribed. */
   score?: string;
   /** The autosave button's label, when an autosave exists. */
@@ -27,6 +29,8 @@ export interface GameOverDialogOptions {
   onLoadAutosave: () => void;
   onShare: () => void;
   onExport: () => void;
+  /** Opens the bug report over the screen, with the dead run's log and picture (F3 does too). */
+  onReport: () => void;
   onReturn: () => void;
   /** False holds the painting still (Reduce motion). */
   motion?: () => boolean;
@@ -60,7 +64,10 @@ export class GameOverDialog {
       size: 'wide',
       body: `
         <div class="go-banner ${won ? 'is-won' : 'is-lost'}">${escapeHtml(view.banner)}</div>
-        <div id="game-over-summary" class="ui-epitaph ui-inset">${view.factsHtml}</div>
+        <div class="go-split">
+          <div id="game-over-summary" class="ui-epitaph ui-inset">${view.factsHtml}</div>
+          ${view.recentHtml ? `<div id="game-over-recent" class="go-recent ui-inset">${view.recentHtml}</div>` : ''}
+        </div>
         <div id="game-over-status" class="ui-note" aria-live="polite"></div>`,
       footNote: view.score ? `<span id="game-over-score" class="go-score">${escapeHtml(view.score)}</span>` : '',
       actions: [
@@ -68,6 +75,7 @@ export class GameOverDialog {
         view.autosaveLabel && view.status !== 'victorious' ? dialogButton('btn-game-over-autosave', view.autosaveLabel, { icon: 'autosave' }) : '',
         dialogButton('btn-game-over-share', 'Share saga', { icon: 'share' }),
         dialogButton('btn-game-over-export', view.exportLabel, { icon: 'save' }),
+        dialogButton('btn-game-over-report', 'Report a bug', { icon: 'feedback', key: 'F3' }),
         dialogButton('btn-game-over-return', 'Return to title', { primary: true }),
       ].join(''),
     });
@@ -75,6 +83,7 @@ export class GameOverDialog {
     on('btn-game-over-autosave', this.options.onLoadAutosave);
     on('btn-game-over-share', this.options.onShare);
     on('btn-game-over-export', this.options.onExport);
+    on('btn-game-over-report', this.options.onReport);
     on('btn-game-over-return', this.options.onReturn);
     scrim.style.display = 'flex';
     this.backdrop ??= new ScreenBackdrop(scrim, { motion: this.options.motion ?? (() => true), minPanel: 480 });

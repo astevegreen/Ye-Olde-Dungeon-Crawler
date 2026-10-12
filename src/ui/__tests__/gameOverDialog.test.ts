@@ -63,7 +63,7 @@ describe('GameOverDialog', () => {
   });
 
   const open = (v: GameOverView) => {
-    const dialog = new GameOverDialog({ onLoadAutosave: noop, onShare: noop, onExport: noop, onReturn: noop });
+    const dialog = new GameOverDialog({ onLoadAutosave: noop, onShare: noop, onExport: noop, onReport: noop, onReturn: noop });
     dialog.show(v);
     return { dialog, html: doc.scrim?.innerHTML ?? '' };
   };
@@ -98,6 +98,16 @@ describe('GameOverDialog', () => {
     const withSave = open(view({ autosaveLabel: 'Load the autosave (Ann, F3)', score: 'Legends score: 1,200' })).html;
     expect(withSave).toContain('btn-game-over-autosave');
     expect(withSave).toContain('Legends score: 1,200');
+  });
+
+  it('offers a bug report with its key, and shows the lines that led to the fall', () => {
+    const plain = open(view()).html;
+    expect(plain).toContain('btn-game-over-report');
+    expect(plain).toContain('Report a bug');
+    expect(plain).not.toContain('game-over-recent');
+    const withLines = open(view({ recentHtml: '<section class="recent-messages">The ogre hits you.</section>' })).html;
+    expect(withLines).toContain('id="game-over-recent"');
+    expect(withLines).toContain('The ogre hits you.');
   });
 
   it('never offers the autosave after a victory', () => {

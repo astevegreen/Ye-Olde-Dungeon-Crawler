@@ -61,6 +61,7 @@ import { runAndExplain } from './ui/actionFeedback';
 import { FeedbackModal } from './ui/feedbackModal';
 import { SagaShareModal } from './ui/sagaShareModal';
 import { GameOverDialog } from './ui/gameOverDialog';
+import { recentMessagesHtml } from './ui/recentMessages';
 import { autoPickupTargets } from './ui/autoPickup';
 import { EndingDialog } from './ui/endingDialog';
 import { epitaphHtml } from './ui/epitaph';
@@ -1338,11 +1339,35 @@ window.addEventListener('DOMContentLoaded', () => {
         gameOverDialog.setStatus(`Export failed: ${(err as Error).message}`, 'bad');
       }
     },
+    onReport: () => {
+      if (feedbackModal.isOpen) return;
+      // The dead run is still the engine's state: its log and replay go with the report.
+      const epitaph = currentGameOverEntry?.epitaph;
+      feedbackModal.open({
+        type: 'bug',
+        category: 'Combat & Spells',
+        subject: epitaph ? `Death: ${epitaph}` : undefined,
+      });
+    },
     onReturn: () => {
       gameOverDialog.hide();
       saveAndReturnToTitle();
     },
   });
+
+  // The game's input is off over the end-of-run screen, so its keys never reach the input
+  // handler: F3 opens the report from here, and closes it again (its own handler is
+  // behind this one in the capture order).
+  window.addEventListener(
+    'keydown',
+    (e) => {
+      if (e.code !== 'F3' || !gameOverDialog.isOpen) return;
+      e.preventDefault();
+      e.stopPropagation();
+      toggleFeedback({ type: 'bug', category: 'Combat & Spells' });
+    },
+    { capture: true }
+  );
 
   const endingDialog = new EndingDialog(idleMotion);
 
@@ -1384,6 +1409,17 @@ window.addEventListener('DOMContentLoaded', () => {
       banner: won ? ending?.banner ?? brand.victoryBanner : brand.fallenBanner,
       // The score stands on its own in the footer, so the record leaves it out.
       factsHtml: entry ? epitaphHtml(entry, brand.xpName, { withScore: false }) : '',
+      // What led to the fall, since the HUD log is gone behind the screen.
+      recentHtml:
+        !won && activeEngine
+          ? recentMessagesHtml({
+              messages: activeEngine.messages,
+              playerName: activeEngine.player.name,
+              critical: criticalLines.set,
+              count: 6,
+              heading: 'How it ended',
+            })
+          : undefined,
       score: entry ? `${brand.hallOfFameShortName} score: ${entry.score.toLocaleString()}` : undefined,
       autosaveLabel: autosave ? `Load the autosave (${autosave.profileName ?? 'Hero'}, F${autosave.floor ?? 1})` : undefined,
       exportLabel: `Export save (${SAVE_FILE_EXTENSION})`,
@@ -1737,6 +1773,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
       );
       characterMenuModal.setKeyResolver((actionId) => settingsManager.getCodesForAction(actionId));
+      characterMenuModal.setCriticalLines(() => criticalLines.set);
       renderer.mouseVectoringEnabled = settingsManager.getSettings().mouseVectoringEnabled;
       renderer.mouseAimEnabled = settingsManager.getSettings().mouseAimEnabled;
       renderer.torchlightEnabled = settingsManager.getSettings().torchlightEnabled;
@@ -1773,7 +1810,6 @@ window.addEventListener('DOMContentLoaded', () => {
         inventoryTab.showContainer(container);
       };
       // The mouse acts through the keys' gate and their post-action refresh (R-main-1).
-      characterMenuModal.setCriticalLines(() => criticalLines.set);
       renderer.canAct = playerCanAct;
       renderer.onActionProcessed = () => void processVisualEffectsAndRender();
       inputHandler = new InputHandler(

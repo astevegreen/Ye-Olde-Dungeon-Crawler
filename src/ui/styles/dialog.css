@@ -228,6 +228,15 @@
   color: var(--ui-text);
   user-select: text;
 }
+/* The record and, on a fall, the lines that led to it: side by side when the dialog is wide
+   enough, stacked when it is not, so neither is cut by the footer. */
+.go-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--ui-space-3);
+  align-items: start;
+}
+.go-split .ui-epitaph { max-height: 220px; }
 .ui-epitaph-facts { grid-template-columns: max-content 1fr; }
 .ui-epitaph-facts dd { text-align: left; }
 .go-score { font: bold var(--ui-text-md) var(--ui-font-num); color: var(--ui-accent); }

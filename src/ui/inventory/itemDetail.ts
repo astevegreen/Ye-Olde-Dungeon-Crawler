@@ -35,10 +35,12 @@ export function itemDetailHtml(engine: GameEngine, item: Item, inspector: ItemIn
     ['Strength', b.stats.strengthBonus],
     ['Speed', b.stats.speedBonus],
   ];
-  const statRows = stats
-    .filter(([, v]) => v)
-    .map(([k, v]) => `<dt>${k}</dt><dd class="ui-num">${signed(v!)}</dd>`)
-    .join('');
+  const statRows =
+    (b.enchantmentLevel > 0 ? `<dt>Enchantment</dt><dd class="ui-num">${signed(b.enchantmentLevel)}</dd>` : '') +
+    stats
+      .filter(([, v]) => v)
+      .map(([k, v]) => `<dt>${k}</dt><dd class="ui-num">${signed(v!)}</dd>`)
+      .join('');
   const affix = b.elementalAffix
     ? `<dt>${escapeHtml(b.elementalAffix.name)}</dt><dd class="ui-num">+${b.elementalAffix.bonusDamage} ${escapeHtml(b.elementalAffix.element)}</dd>`
     : '';

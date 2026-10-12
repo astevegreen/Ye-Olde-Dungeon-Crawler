@@ -263,6 +263,7 @@ export class InventoryTab implements MenuTab {
             ${short.quantity > 1 ? `<span class="inv-cell-qty ui-num">×${short.quantity}</span>` : ''}
             ${item.junk ? '<span class="inv-cell-junk" title="Junk: any shop sells all of it at once (J)">junk</span>' : ''}
             <canvas class="inv-icon" width="40" height="40" data-icon="${panel}:${i}" aria-hidden="true"></canvas>
+            ${item.identified && item.enchantmentLevel > 0 ? `<span class="inv-plus inv-cell-plus ui-num">+${item.enchantmentLevel}</span>` : ''}
             <span class="inv-cell-name${itemToneClass(item)}">${escapeHtml(short.name)}</span>
           </button>`;
       })

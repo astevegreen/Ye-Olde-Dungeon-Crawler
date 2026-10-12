@@ -253,10 +253,9 @@ export class Item {
       return `${unId}${qtyTag}`;
     }
     let base = this.name;
-    if (this.enchantmentLevel > 0 || this.elementalAffix) {
-      const enchStr = this.enchantmentLevel > 0 ? ` +${this.enchantmentLevel}` : '';
-      const affixStr = this.elementalAffix ? ` ${this.elementalAffix.name}` : '';
-      base = `${this.name}${enchStr}${affixStr}`;
+    // The +N never sits in the name: it shows as an "Enchantment +N" detail line and an icon mark.
+    if (this.elementalAffix) {
+      base = `${this.name} ${this.elementalAffix.name}`;
     }
 
     // A family with a word names the item by that word alone ("Hexed Armor", "Holy
@@ -316,9 +315,9 @@ export class Item {
     return this.modifiers.some(isModifierHoly);
   }
 
-  /** The Enchanted family, a +N or an elemental affix. */
+  /** The Enchanted family or an elemental affix; a plain +N is not enchanted. */
   public isEnchanted(): boolean {
-    return this.enchantmentLevel > 0 || !!this.elementalAffix || this.modifiers.some(isModifierEnchantedCategory);
+    return !!this.elementalAffix || this.modifiers.some(isModifierEnchantedCategory);
   }
 
   /** A cleansing: takes off every binding family (and any Cursed one), keeps the rest. */

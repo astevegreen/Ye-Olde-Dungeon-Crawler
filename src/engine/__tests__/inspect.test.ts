@@ -81,7 +81,7 @@ describe('Look / Inspect Mode & Tile Inspector', () => {
 
     sword.identified = true;
     const shown = TileInspector.inspectTile(engine, 5, 5).items.find((i) => i.id === sword.id)!;
-    expect(shown.name).toBe('Steel Broadsword +3 of Fire');
+    expect(shown.name).toBe('Steel Broadsword of Fire');
     expect(shown.stats?.attackBonus).toBe(8);
     expect(shown.enchantmentLevel).toBe(3);
     expect(shown.elementalAffix?.element).toBe('fire');

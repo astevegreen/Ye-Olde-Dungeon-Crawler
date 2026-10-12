@@ -90,6 +90,16 @@ describe('InventoryTab', () => {
     expect(el.innerHTML).toContain('>+3</span>');
   });
 
+  it('marks an identified +N on its pack cell and details line, never in the name', () => {
+    player.inventory.primaryPack.addItem(
+      new Item({ id: 'blade', name: 'Iron Dagger', category: 'weapon', weight: 500, bulk: 100, enchantmentLevel: 2, identified: true })
+    );
+    tab.onActivate(state());
+    expect(el.innerHTML).toContain('inv-cell-plus');
+    expect(el.innerHTML).toContain('>+2</span>');
+    expect(el.innerHTML).not.toContain('Iron Dagger +2');
+  });
+
   it('shows the selected item beside the lists, and says Esc backs out of it', () => {
     expect(tab.footer().escLabel).toBe('close');
     tab.controller.selectCell('backpack', 0);

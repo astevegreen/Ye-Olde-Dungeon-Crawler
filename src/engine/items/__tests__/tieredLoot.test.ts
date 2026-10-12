@@ -65,7 +65,7 @@ describe('Depth-Scaled Tiered Loot & Enchantments', () => {
     expect(scaledDagger.enchantmentLevel).toBe(3);
     // Base attack is 3, + (3 * 2) = 9
     expect(scaledDagger.stats.attackBonus).toBe(9);
-    expect(scaledDagger.displayName).toBe('Iron Dagger +3');
+    expect(scaledDagger.displayName).toBe('Iron Dagger');
 
     // Shield test (+1 defense per level)
     const shieldDef = COTW_ITEMS.find((it) => it.id === 'wooden_shield')!;
@@ -73,7 +73,7 @@ describe('Depth-Scaled Tiered Loot & Enchantments', () => {
     expect(scaledShield.enchantmentLevel).toBe(3);
     // Base defense is 3, + (3 * 1) = 6
     expect(scaledShield.stats.defenseBonus).toBe(6);
-    expect(scaledShield.displayName).toBe('Reinforced Wooden Shield +3');
+    expect(scaledShield.displayName).toBe('Reinforced Wooden Shield');
   });
 
   it('rolls elemental affixes on weapons on Floors 30+ only', () => {
@@ -230,6 +230,6 @@ describe('Depth-Scaled Tiered Loot & Enchantments', () => {
     expect(deserialized.tier).toBe(4);
     expect(deserialized.minFloor).toBe(37);
     expect(deserialized.stats.attackBonus).toBe(22);
-    expect(deserialized.displayName).toBe('Adamantine Greatsword +4 of Lightning');
+    expect(deserialized.displayName).toBe('Adamantine Greatsword of Lightning');
   });
 });

@@ -5,8 +5,8 @@ import { CoinItem, type Item, parseCoinItem } from '../../engine';
  * three positive, chaotic), else an artifact, else a coin's denomination; null when
  * nothing applies or the item is unidentified (it looks plain until you know it).
  *
- * Each check is its own family; `isEnchanted()` also counts a +N or elemental affix, so
- * it runs after the families that name themselves, and a "Blessed Broadsword +1" is blue.
+ * Each check is its own family; `isEnchanted()` also counts an elemental affix, so it runs
+ * after the families that name themselves. A plain +N earns no frame.
  */
 export type ItemTone =
   | 'cursed'
@@ -63,7 +63,7 @@ export function itemFrameClass(item: Item | null | undefined): string {
  *  families and artifacts, then the negative ones and chaotic. */
 export const FRAME_LEGEND: ReadonlyArray<{ tone: FrameTone; label: string }> = [
   { tone: 'blessed', label: 'Blessed' },
-  { tone: 'enchanted', label: 'Enchanted or +N' },
+  { tone: 'enchanted', label: 'Enchanted' },
   { tone: 'holy', label: 'Holy' },
   { tone: 'artifact', label: 'Artifact' },
   { tone: 'cursed', label: 'Cursed' },

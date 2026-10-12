@@ -57,6 +57,13 @@ describe('itemTone: the eight alignment buckets', () => {
     expect(itemTone(item)).toBe('enchanted');
   });
 
+  it('gives a plain +N no frame: only the Enchanted family and elemental affixes are enchanted', () => {
+    expect(itemTone(makeItem({ identified: true, enchantmentLevel: 2 }))).toBe(null);
+    const fiery = makeItem({ identified: true, enchantmentLevel: 2 });
+    fiery.elementalAffix = { element: 'fire', name: 'of Fire', bonusDamage: 3 };
+    expect(itemTone(fiery)).toBe('enchanted');
+  });
+
   it('colors a Blessed Broadsword +1 by its family, not by its +N', () => {
     const item = makeItem({ identified: true, enchantmentLevel: 1 });
     item.modifiers = [{ id: 'blessed', name: 'Blessed', alignment: 'positive', category: 'blessed' }];

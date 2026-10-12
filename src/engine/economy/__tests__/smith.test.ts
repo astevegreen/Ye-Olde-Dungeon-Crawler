@@ -40,7 +40,8 @@ describe('Gunther raises +N one step at a time, up to +3 (Q47 "A")', () => {
     }
     expect(paid).toEqual([250, 750, 2000]);
     expect(blade.stats.attackBonus).toBe(4 + 6);
-    expect(blade.displayName).toContain('+3');
+    expect(blade.enchantmentLevel).toBe(3);
+    expect(blade.displayName).not.toContain('+');
     expect(SmithService.upgrade(engine, GUNTHER, blade).success).toBe(false);
     expect(SmithService.workableItems(engine, GUNTHER)).not.toContain(blade);
   });

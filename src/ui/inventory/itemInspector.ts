@@ -169,7 +169,7 @@ export class ItemInspector {
     doll?: Paperdoll
   ): ItemBreakdown {
     const isIdentified = item.identified;
-    const isEnchanted = isIdentified && ((item.enchantmentLevel && item.enchantmentLevel > 0) || !!item.elementalAffix);
+    const isEnchanted = isIdentified && item.isEnchanted();
     const isCursed = isIdentified && item.isBound();
 
     const compatibleSlots: string[] = [];

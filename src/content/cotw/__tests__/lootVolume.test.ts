@@ -13,8 +13,8 @@ import { COTW_LOOT_RATES } from '../loot';
 
 /**
  * Q2 "C" (tracker 2.4): about 8–10 items a floor, no floor filled by one item, and the family
- * budgets of Q20 + Q33 "B" (60 Positive, 45 Negative, 10 Chaotic a game) as measured counts,
- * not just configured ones. `npm run balance` measures the same with 20 seeds.
+ * counts a full game offers, measured: Q20 + Q33 "B" set 60 Positive, 45 Negative, 10 Chaotic;
+ * the Session 5 depth ramp (`alignedShareByFloor`) moved them to about 63, 52 and 10. `npm run balance` measures the same with 20 seeds.
  */
 const SEEDS = 5;
 const LAST_FLOOR = 49; // floor 50 is the lair
@@ -76,11 +76,11 @@ describe('cotw loot volume (Q2 "C")', () => {
     expect(perFloor).toBeLessThan(10);
   });
 
-  it('offers 60 Positive, 45 Negative and 10 Chaotic items a game, relics included', () => {
-    expect(perGame((g) => g.byAlignment.positive ?? 0)).toBeGreaterThan(60 * 0.85);
-    expect(perGame((g) => g.byAlignment.positive ?? 0)).toBeLessThan(60 * 1.15);
-    expect(perGame((g) => g.byAlignment.negative ?? 0)).toBeGreaterThan(45 * 0.85);
-    expect(perGame((g) => g.byAlignment.negative ?? 0)).toBeLessThan(45 * 1.15);
+  it('offers about 63 Positive, 52 Negative and 10 Chaotic items a game, relics included (Session 5 ramp)', () => {
+    expect(perGame((g) => g.byAlignment.positive ?? 0)).toBeGreaterThan(63 * 0.85);
+    expect(perGame((g) => g.byAlignment.positive ?? 0)).toBeLessThan(63 * 1.15);
+    expect(perGame((g) => g.byAlignment.negative ?? 0)).toBeGreaterThan(52 * 0.85);
+    expect(perGame((g) => g.byAlignment.negative ?? 0)).toBeLessThan(52 * 1.15);
     expect(perGame((g) => g.byAlignment.chaotic ?? 0)).toBeGreaterThan(10 * 0.65);
     expect(perGame((g) => g.byAlignment.chaotic ?? 0)).toBeLessThan(10 * 1.35);
   });

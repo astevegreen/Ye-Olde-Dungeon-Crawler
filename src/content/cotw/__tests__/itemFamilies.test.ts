@@ -21,7 +21,7 @@ describe('cotw item families (Q1 A, Q20 + Q33 B)', () => {
   const byAlignment = (alignment: string) =>
     COTW_ITEM_FAMILIES.families.filter((f) => f.alignment === alignment).reduce((sum, f) => sum + f.perGame, 0);
 
-  it('rolls 60 Positive, 40 Negative and 10 Chaotic items a game; the cursed relics bring Negative to 45', () => {
+  it('weighs the families 60 Positive, 40 Negative and 10 Chaotic; the cursed relics add Negative', () => {
     // The measured counts, relics and the shallow floors included, are pinned in lootVolume.test.ts.
     expect(byAlignment('positive')).toBe(60);
     expect(byAlignment('negative')).toBe(40);
@@ -42,13 +42,19 @@ describe('cotw item families (Q1 A, Q20 + Q33 B)', () => {
     expect(shallow.blessed).toBeGreaterThan(0);
   });
 
-  it('rolls Normal most of the time and every family some of the time, at the per-game shares', () => {
+  it('rolls a family on 15% of floor 1 loot, 40% by floor 10 and 55% from floor 20 down (Session 5)', () => {
+    const rolls = 20000;
+    for (const [floor, share] of [[1, 0.15], [5, 0.15 + (0.25 * 4) / 9], [10, 0.4], [15, 0.475], [20, 0.55], [45, 0.55]]) {
+      expect(1 - familyCounts(floor, rolls).normal / rolls, `floor ${floor}`).toBeCloseTo(share, 1);
+    }
+  });
+
+  it('keeps the families in their per-game proportions, every one rolling some of the time', () => {
     const rolls = 20000;
     const counts = familyCounts(20, rolls);
     const total = COTW_ITEM_FAMILIES.families.reduce((sum, f) => sum + f.perGame, 0);
-    expect(counts.normal / rolls).toBeCloseTo(1 - total / COTW_ITEM_FAMILIES.itemsPerGame, 1);
     for (const family of COTW_ITEM_FAMILIES.families) {
-      const expected = (family.perGame / COTW_ITEM_FAMILIES.itemsPerGame) * rolls;
+      const expected = (family.perGame / total) * 0.55 * rolls;
       expect(counts[family.category], family.category).toBeGreaterThan(expected * 0.7);
       expect(counts[family.category], family.category).toBeLessThan(expected * 1.3);
     }

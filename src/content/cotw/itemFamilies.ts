@@ -12,10 +12,21 @@ import type { ItemFamilyConfig } from '../../engine';
  * rolls 15 a game because the four cursed relics (`family: 'cursed'`, `lootWeight` 0.25) add
  * about 8 more, and the negative families lose a tenth of their share to floors 1–2, so
  * Negative comes to 45. `lootVolume.test.ts` pins the measured counts.
+ *
+ * Fix plan Session 5 ramps the aligned share by depth (`alignedShareByFloor`), so the counts
+ * above now set the families' proportions: a full game measures about 63 Positive, 52 Negative
+ * (relics included) and 10 Chaotic, fewer of them shallow and more deep.
  */
 export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
   categories: ['weapon', 'armor', 'shield', 'helmet', 'boots', 'gauntlets', 'bracers', 'cloak', 'amulet', 'ring'],
   itemsPerGame: 275,
+  // Fix plan Session 5: early loot mostly Normal, the aligned share growing with depth.
+  // perGame then sets the families' proportions rather than their count.
+  alignedShareByFloor: [
+    { floor: 1, share: 0.15 },
+    { floor: 10, share: 0.4 },
+    { floor: 20, share: 0.55 },
+  ],
   families: [
     {
       category: 'blessed',

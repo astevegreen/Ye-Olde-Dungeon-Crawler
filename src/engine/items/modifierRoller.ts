@@ -47,6 +47,22 @@ export interface ItemFamilyConfig {
    */
   itemsPerGame: number;
   families: ItemFamilyDefinition[];
+  /**
+   * How much of the eligible loot rolls a family, by floor: points sorted by floor, the share
+   * linear between them and held flat past either end. It scales the families rolling on
+   * that floor together, their `perGame` proportions kept. Absent: the flat `perGame` shares.
+   */
+  alignedShareByFloor?: { floor: number; share: number }[];
+}
+
+/** The `alignedShareByFloor` curve at `floor`. */
+function shareAt(curve: { floor: number; share: number }[], floor: number): number {
+  if (floor <= curve[0].floor) return curve[0].share;
+  for (let i = 1; i < curve.length; i++) {
+    const [a, b] = [curve[i - 1], curve[i]];
+    if (floor <= b.floor) return a.share + ((b.share - a.share) * (floor - a.floor)) / (b.floor - a.floor);
+  }
+  return curve[curve.length - 1].share;
 }
 
 /** What the roller needs to know about an item definition. */
@@ -115,7 +131,8 @@ export function withPackNaming(modifier: ItemModifier, config: ItemFamilyConfig 
  * families by `perGame`, then the family's tier for the floor. Consumes one `rng()`
  * for an eligible item and none for anything else, so a pack without families leaves
  * the loot stream untouched. A family not yet rolling on this floor (`minFloor`) gives
- * its share to Normal; an artifact or a non-equipment item is never rolled.
+ * its share to Normal, or under `alignedShareByFloor` to the families that are; an
+ * artifact or a non-equipment item is never rolled.
  */
 export function rollItemFamily(
   subject: FamilyRollSubject,
@@ -129,10 +146,14 @@ export function rollItemFamily(
   if (subject.quality === 'artifact' || !config.categories.includes(subject.category)) return undefined;
 
   const roll = rng();
+  const rolling = config.families.filter((family) => (family.minFloor ?? 1) <= floor);
+  const curve = config.alignedShareByFloor;
+  const perItem = curve?.length
+    ? shareAt(curve, floor) / rolling.reduce((sum, family) => sum + family.perGame, 0)
+    : 1 / config.itemsPerGame;
   let cumulative = 0;
-  for (const family of config.families) {
-    if ((family.minFloor ?? 1) > floor) continue;
-    cumulative += family.perGame / config.itemsPerGame;
+  for (const family of rolling) {
+    cumulative += family.perGame * perItem;
     if (roll < cumulative) return familyModifier(config, family.category, floor, itemId, rng);
   }
   return undefined;

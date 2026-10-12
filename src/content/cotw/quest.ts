@@ -72,7 +72,7 @@ export const COTW_QUEST: QuestArcDefinition = {
     ],
   },
   floorEncounters: {
-    1: { monsterIds: ['giant_rat', 'kobold'], maxMonsters: 7 },
+    1: { monsterIds: ['giant_rat', 'kobold'], maxMonsters: 9 },
     5: { monsterIds: ['kobold', 'skeleton', 'wolf'], maxMonsters: 9 },
     10: { monsterIds: ['skeleton', 'orc', 'kobold_shaman'], maxMonsters: 10 },
     15: { monsterIds: ['orc', 'draugr', 'troll_wife_warlock'], maxMonsters: 10 },

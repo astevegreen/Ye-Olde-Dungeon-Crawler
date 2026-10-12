@@ -100,24 +100,24 @@ describe('Monster Stat Scaling & Bestiary Immutability', () => {
 
   describe('with a MonsterScalingConfig (zone-tiered, difficulty-scaled — ARCHITECTURE.md §3)', () => {
     it('is a no-op at the first tier on Medium (multiplier 1.0)', () => {
-      const kobold = BESTIARY.kobold; // Base: HP 10, Atk 3, Def 1, XP 15, minFloor 1
+      const kobold = BESTIARY.kobold; // Base: HP 14, Atk 4, Def 1, XP 15, minFloor 1
       const scaled = scaleMonsterStats(kobold, 1, undefined, undefined, COTW_MONSTER_SCALING, 'medium');
 
-      expect(scaled.hp).toBe(10);
-      expect(scaled.attack).toBe(3);
+      expect(scaled.hp).toBe(14);
+      expect(scaled.attack).toBe(4);
       expect(scaled.defense).toBe(1);
       expect(scaled.xpValue).toBe(15);
       expect(scaled.name).toBe('Kobold');
     });
 
     it('scales a regular monster through the difficulty knobs at a late-game tier (floor 43, Hard)', () => {
-      const kobold = BESTIARY.kobold; // Base: HP 10, Atk 3, Def 1, XP 15, minFloor 1
+      const kobold = BESTIARY.kobold; // Base: HP 14, Atk 4, Def 1, XP 15, minFloor 1
       // Maw of Malice tier (floor 43) = 4.2; Hard = { base: 1.3, rate: 1.25 }.
       // multiplier = 1.3 * (1 + (4.2 - 1) * 1.25) = 1.3 * 5.0 = 6.5
       const scaled = scaleMonsterStats(kobold, 43, undefined, undefined, COTW_MONSTER_SCALING, 'hard');
 
-      expect(scaled.hp).toBe(65); // round(10 * 6.5)
-      expect(scaled.attack).toBe(20); // round(3 * 6.5) = round(19.5)
+      expect(scaled.hp).toBe(91); // round(14 * 6.5)
+      expect(scaled.attack).toBe(26); // round(4 * 6.5)
       expect(scaled.defense).toBe(3); // round(1 * √6.5) = round(2.55): cotw's defenseExponent 0.5
       expect(scaled.xpValue).toBe(63); // round(15 * 4.2): XP follows the tier alone, not the difficulty
       expect(scaled.name).toBe('Grim Kobold'); // 43 - 1 >= 10, cotw's veteranPrefix

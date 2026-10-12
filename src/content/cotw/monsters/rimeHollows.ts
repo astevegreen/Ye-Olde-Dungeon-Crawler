@@ -7,7 +7,7 @@ export const RIME_HOLLOWS_MONSTERS: MonsterDefinition[] = [
     id: 'hoarfrost_skraeling',
     name: 'Hoarfrost Skraeling',
     minFloor: 2,
-    stats: { hp: 16, maxHp: 16, attack: 4, defense: 2 },
+    stats: { hp: 21, maxHp: 21, attack: 5, defense: 2 },
     speed: 105,
     aiType: 'melee',
     resistances: { cold: 'resistant', fire: 'weak' },

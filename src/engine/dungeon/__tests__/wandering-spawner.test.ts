@@ -126,14 +126,14 @@ describe('Dynamic Wandering Monster Spawner', () => {
   });
 
   it('R-ai-12 · no wanderer comes once the floor holds its band’s maxMonsters', () => {
-    engine.currentFloor = 1; // band 1: maxMonsters 7
+    engine.currentFloor = 1; // band 1: maxMonsters 9
     engine.turnCount = 50;
     let n = 0;
     const rng = () => ((n++ * 0.6180339) % 1); // a fresh roll each draw, so ids differ
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 9; i++) {
       expect(spawner.checkAndSpawn(engine, rng), `wanderer ${i + 1}`).not.toBeNull();
     }
-    expect(engine.map.getAllEntities().filter((e) => e.type === 'monster')).toHaveLength(7);
+    expect(engine.map.getAllEntities().filter((e) => e.type === 'monster')).toHaveLength(9);
     expect(spawner.checkAndSpawn(engine, rng)).toBeNull();
   });
 

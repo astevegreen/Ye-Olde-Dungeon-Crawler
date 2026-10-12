@@ -143,7 +143,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
       position: { x: 26, y: 14 },
       greeting: 'Halt! Keep your weapons sheathed in Bjarnarhaven, adventurer.',
       dialogText: 'The dungeon cellar to the north-east leads into the depths. Many go down; few return.',
-      advice: 'Bjarnarhaven is peaceful, but the cellar entrance north-east holds terrors from old myths. Buy sturdy armor and healing draughts before you venture down, and a torch from Olaf: past the fire-rift, they say, something drinks the light.',
+      advice: 'Bjarnarhaven is peaceful, but the cellar entrance north-east holds terrors from old myths. Buy sturdy armor and healing draughts before you venture down, and a torch from Olaf: past the fire-rift, they say, something drinks the light. And call on Sage Mimir before you go: a pact sealed at his well pays its bonus on every kill after, so the sooner you swear one, the more it gives.',
     },
     {
       id: 'npc-trainer',

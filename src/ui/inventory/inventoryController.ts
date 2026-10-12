@@ -74,14 +74,17 @@ export interface DragState {
 /**
  * The short label a cell has room for: the part of the name that tells items apart
  * ("Potion of Healing (3x)" -> "Healing", quantity 3). The icon already shows it is a
- * potion; the inspector and the hover card carry the full name.
+ * potion; the inspector and the hover card carry the full name. Only a one-word kind
+ * ("Potion", "Scroll", "Wand") is dropped: an equipment name ("Heartwood Longsword +4 of
+ * Lightning") keeps its start, which is what tells two blades apart.
  */
 export function cellLabel(displayName: string): { name: string; quantity: number } {
   const stack = /^(.*)\s\((\d+)x\)$/.exec(displayName);
   const base = stack ? stack[1] : displayName;
   const quantity = stack ? Number(stack[2]) : 1;
   const ofIndex = base.indexOf(' of ');
-  const name = ofIndex > 0 ? base.slice(ofIndex + 4).replace(/^the\s+/i, '') : base;
+  const oneWordKind = ofIndex > 0 && !/\s/.test(base.slice(0, ofIndex));
+  const name = oneWordKind ? base.slice(ofIndex + 4).replace(/^the\s+/i, '') : base;
   return { name: name || base, quantity };
 }
 

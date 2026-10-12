@@ -336,5 +336,6 @@ describe('cellLabel', () => {
     expect(cellLabel('Potion of Healing (3x)')).toEqual({ name: 'Healing', quantity: 3 });
     expect(cellLabel('Scroll of the Phase Door')).toEqual({ name: 'Phase Door', quantity: 1 });
     expect(cellLabel('Iron Sword')).toEqual({ name: 'Iron Sword', quantity: 1 });
+    expect(cellLabel('Heartwood Longsword +4 of Lightning')).toEqual({ name: 'Heartwood Longsword +4 of Lightning', quantity: 1 });
   });
 });

@@ -43,12 +43,22 @@
   font-size: var(--ui-text-md);
 }
 .shop-row .shop-price { text-align: right; }
+/* A long item name wraps to two lines before it is cut. */
+.shop-row .bs-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .shop-icon { width: 24px; height: 24px; }
 .shop-row-key .ui-key { min-width: 16px; }
 
 .shop-detail { display: flex; flex-direction: column; gap: var(--ui-space-3); }
 .shop-detail-icon { width: 48px; height: 48px; flex: none; background: var(--ui-surface-3); border: 1px solid var(--ui-line); border-radius: var(--ui-radius); }
 .shop-detail .ui-btn { justify-content: center; margin-top: auto; }
+/* A long name and comparison note can push the trade button below the dialog's fold: it stays in view. */
+.shop-detail > .ui-btn { position: sticky; bottom: 0; z-index: 1; box-shadow: 0 var(--ui-space-3) 0 var(--ui-surface-2); }
 
 /* Town services: one card of facts and offers. */
 .shop-offers { display: flex; flex-direction: column; margin-top: var(--ui-space-2); }

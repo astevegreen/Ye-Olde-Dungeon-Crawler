@@ -55,6 +55,8 @@
 .mc-line { display: flex; justify-content: space-between; align-items: baseline; gap: var(--ui-space-2); }
 .mc-line > :first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mc-line > :last-child:not(:first-child) { flex: none; }
+/* An item's name wraps to two lines before it is cut. */
+.mc-line > .mc-item { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; overflow-wrap: anywhere; }
 .mc-hero { color: var(--ui-accent); }
 .mc-foe { color: var(--ui-bad); }
 .mc-warn { color: var(--ui-warn); }

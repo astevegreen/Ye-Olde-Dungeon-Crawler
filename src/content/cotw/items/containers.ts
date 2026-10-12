@@ -12,7 +12,8 @@ export const COTW_CONTAINERS: ItemDefinition[] = [
     weight: 3000,
     bulk: 3500,
     stats: { speedBonus: -1 },
-    identified: false,
+    // A pack has nothing to hide, and the sage does not identify containers.
+    identified: true,
     description: 'An engineered external frame forged from lightweight iron truss-work. Greatly expands pack capacity, though heavily loaded trips hinder agility.',
     value: 120,
     itemType: 'container',
@@ -33,7 +34,7 @@ export const COTW_CONTAINERS: ItemDefinition[] = [
     weight: 1800,
     bulk: 2200,
     quality: 'artifact',
-    identified: false,
+    identified: true,
     description: 'A miraculous field satchel grown from living hollowed Yggdrasil bark. It holds far more than any pack of hide or iron.',
     value: 450,
     itemType: 'container',

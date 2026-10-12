@@ -4,6 +4,12 @@ import type { MenuFooter, MenuHost, MenuTab } from './menuTab';
 import { keyLabel } from '../keyLabel';
 import { resolveBranding } from '../branding';
 import { escapeHtml, keyChip as chip } from '../html';
+import { resolveManaTerms } from '../../engine';
+import { recentMessagesHtml } from '../recentMessages';
+import { MenuWatch } from './menuWatch';
+
+/** Log lines the menu's strip shows: enough to read what just happened, short enough to leave the tab its room. */
+const MENU_RECENT_LINES = 4;
 
 /** Default keys per ACTION_METADATA id, for shells built without a key resolver (tests). */
 const DEFAULT_TAB_CODES: Record<string, string[]> = {
@@ -41,6 +47,11 @@ export class CharacterMenuModal implements UIModal {
   private navEl: HTMLElement | null = null;
   private contentEl: HTMLElement | null = null;
   private footerEl: HTMLElement | null = null;
+  private recentEl: HTMLElement | null = null;
+  private readonly watch = new MenuWatch();
+  /** The newest warning, kept while the menu is open so a flash that was missed is still read. */
+  private alert: string | null = null;
+  private criticalLines?: () => ReadonlySet<string>;
 
   private readonly host: MenuHost = {
     refreshChrome: () => this.refreshChrome(),
@@ -72,6 +83,11 @@ export class CharacterMenuModal implements UIModal {
 
   public setOnClose(cb: () => void): void {
     this.onCloseCallback = cb;
+  }
+
+  /** The log lines toned as critical blows, so the strip tones them as the log does. */
+  public setCriticalLines(supplier: () => ReadonlySet<string>): void {
+    this.criticalLines = supplier;
   }
 
   /** Where the shell reads each tab's keys (the player's keybindings), so chips and
@@ -160,6 +176,11 @@ export class CharacterMenuModal implements UIModal {
       content.setAttribute('role', 'tabpanel');
       win.appendChild(content);
 
+      // The shell's own line of recent log, above the footer: the HUD log is dimmed behind the menu.
+      const recent = document.createElement('div');
+      recent.className = 'cm-recent';
+      win.appendChild(recent);
+
       const footer = document.createElement('div');
       footer.className = 'cm-foot';
       win.appendChild(footer);
@@ -168,6 +189,7 @@ export class CharacterMenuModal implements UIModal {
     this.navEl = win.querySelector<HTMLElement>('.character-menu-tabs');
     this.contentEl = win.querySelector<HTMLElement>('.character-menu-tab-content');
     this.footerEl = win.querySelector<HTMLElement>('.cm-foot');
+    this.recentEl = win.querySelector<HTMLElement>('.cm-recent');
 
     this.renderTabsNav();
   }
@@ -232,10 +254,39 @@ export class CharacterMenuModal implements UIModal {
     });
   }
 
-  /** Redraws the badges and the footer; tabs call it (through MenuHost) when their state changes. */
+  /** Redraws the badges, the recent-messages strip and the footer; tabs call it (through MenuHost) when their state changes. */
   public refreshChrome(): void {
     this.renderTabsNav();
+    this.renderRecent();
     this.renderFooter();
+  }
+
+  /**
+   * The last log lines and the hero's health, with a warning when a hostile came into sight or
+   * the hero lost health since the last draw. Each tab action ends in a `refreshChrome`, so
+   * this sees every turn the menu spends.
+   */
+  private renderRecent(): void {
+    const el = this.recentEl;
+    if (!el) return;
+    const engine = this.isOpen && this.stateSupplier ? this.stateSupplier().engine : undefined;
+    if (!engine || !Array.isArray(engine.messages)) {
+      el.innerHTML = '';
+      return;
+    }
+    const warnings = this.watch.check(engine);
+    if (warnings.length > 0) this.alert = warnings[warnings.length - 1];
+    const p = engine.player;
+    const mana = resolveManaTerms(engine.manifest).name;
+    el.innerHTML = recentMessagesHtml({
+      messages: engine.messages,
+      playerName: p.name,
+      critical: this.criticalLines?.(),
+      count: MENU_RECENT_LINES,
+      vitals: `HP ${p.hp}/${p.maxHp} · ${mana} ${p.mana}/${p.maxMana}`,
+      alert: this.alert ?? undefined,
+      flash: warnings.length > 0,
+    });
   }
 
   /** The pack's ornament rule for section headings (branding), as a CSS string. */
@@ -286,6 +337,8 @@ export class CharacterMenuModal implements UIModal {
       this.createDom();
     }
     this.applyOrnament();
+    this.alert = null;
+    if (this.stateSupplier) this.watch.reset(this.stateSupplier().engine);
 
     const targetTabId =
       tabId && this.tabs.some((t) => t.id === tabId)
@@ -303,6 +356,7 @@ export class CharacterMenuModal implements UIModal {
     if (!this.shown) return;
     this.shown = false;
     this.isOpen = false;
+    this.alert = null;
     if (typeof document !== 'undefined') {
       document.getElementById('widescreen-layout')?.classList.remove('character-menu-active');
     }

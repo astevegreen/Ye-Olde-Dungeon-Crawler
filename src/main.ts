@@ -1773,6 +1773,7 @@ window.addEventListener('DOMContentLoaded', () => {
         inventoryTab.showContainer(container);
       };
       // The mouse acts through the keys' gate and their post-action refresh (R-main-1).
+      characterMenuModal.setCriticalLines(() => criticalLines.set);
       renderer.canAct = playerCanAct;
       renderer.onActionProcessed = () => void processVisualEffectsAndRender();
       inputHandler = new InputHandler(

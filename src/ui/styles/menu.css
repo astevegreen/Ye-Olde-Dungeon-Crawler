@@ -140,6 +140,52 @@
 .cm-foot-actions { display: flex; align-items: center; gap: var(--ui-space-2); }
 .cm-foot-note { text-align: right; }
 
+/* The recent-messages strip (recentMessages.ts): the last log lines and the hero's health.
+   The shell draws it above its footer, and the death screen reuses it, because the HUD log
+   is dimmed behind a menu. A warning flashes it once and stays above the lines. */
+.cm-recent { flex: none; }
+.cm-recent:empty { display: none; }
+.recent-messages {
+  padding: var(--ui-space-2) var(--ui-space-4);
+  background: var(--ui-surface-0);
+  border-top: 1px solid var(--ui-line);
+  font: var(--ui-text-sm) / 1.35 var(--ui-font-body);
+  color: var(--ui-text-soft);
+}
+.recent-messages-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--ui-space-3);
+  font: bold var(--ui-text-xs) var(--ui-font-body);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ui-text-muted);
+}
+.recent-messages-vitals {
+  font: bold var(--ui-text-sm) var(--ui-font-num);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ui-text);
+}
+.recent-messages-alert { letter-spacing: 0; text-transform: none; font-size: var(--ui-text-sm); color: var(--ui-bad); }
+/* A short window: the strip keeps its newest line, so a tab keeps its room. */
+@media (max-height: 700px) {
+  .cm-recent .recent-messages-lines .log-line:nth-last-child(n + 2) { display: none; }
+}
+.recent-messages-lines { user-select: text; }
+.recent-messages.is-flashing { animation: recent-flash 1s ease-out; }
+@keyframes recent-flash {
+  from {
+    box-shadow: inset 0 0 0 2px var(--ui-bad), inset 0 0 22px color-mix(in srgb, var(--ui-bad) 50%, transparent);
+  }
+  to { box-shadow: inset 0 0 0 2px transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .recent-messages.is-flashing { animation: none; }
+}
+/* On the death screen it sits in the dialog body, framed like the epitaph beside it. */
+.go-recent .recent-messages { border-top: 0; background: transparent; }
+
 /* ---- Shared anatomy: key chips, buttons, cards, headings ----------------- */
 
 .ui-key {

@@ -391,6 +391,29 @@ describe('CharacterMenuModal & Consolidated Character Menu', () => {
     expect(footer?.innerHTML).toContain('Accept 3 points');
   });
 
+  it('shows the last log lines and the hero\'s health above the footer, and warns when health is lost', () => {
+    engine.log('You identify the Cursed Ring.');
+    menu.open('character');
+
+    const doc = (globalThis as any).document;
+    const recent = doc.getElementById('character-menu-modal')?.querySelector('.cm-recent');
+    expect(recent?.innerHTML).toContain('You identify the Cursed Ring.');
+    expect(recent?.innerHTML).toContain(`HP ${engine.player.hp}/${engine.player.maxHp}`);
+    expect(recent?.innerHTML).not.toContain('recent-messages-alert');
+
+    engine.player.hp -= 2;
+    engine.log('The kobold bites you.');
+    menu.refreshChrome();
+    expect(recent?.innerHTML).toContain('The kobold bites you.');
+    expect(recent?.innerHTML).toContain('You lose 2 HP.');
+    expect(recent?.innerHTML).toContain('is-flashing');
+
+    // A redraw with nothing new keeps the warning but does not flash again.
+    menu.refreshChrome();
+    expect(recent?.innerHTML).toContain('You lose 2 HP.');
+    expect(recent?.innerHTML).not.toContain('is-flashing');
+  });
+
   it('Shift+Tab tells the tab it arrived backwards, so a tab with panels starts on its last', () => {
     menu.open('character');
     menu.handleKeyDown(makeKey('Tab', 'Tab', true));

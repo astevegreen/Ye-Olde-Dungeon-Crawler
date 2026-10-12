@@ -131,7 +131,7 @@ describe('ShopDialog', () => {
     });
   }
 
-  it("keeps the hero's things at the bank: → lists the pack, L leaves the chosen item, → again lists what is kept", () => {
+  it("keeps the hero's things at the bank: → lists the pack, D deposits the chosen item, → again lists what is kept", () => {
     dispatch.mockRestore();
     engine.player.inventory.primaryPack.addItem(ware('w1', 'Spare Axe'));
     engine.player.inventory.primaryPack.addItem(ware('w2', 'Old Lantern'));
@@ -145,7 +145,7 @@ describe('ShopDialog', () => {
     expect(html()).toContain('Spare Axe');
     expect(html()).not.toContain('Copper');
     shop.handleKeyDown(key('ArrowDown'), engine);
-    shop.handleKeyDown(key('l'), engine);
+    shop.handleKeyDown(key('d'), engine);
     expect(engine.player.inventory.findItemById('w2')).toBeUndefined();
     expect(html()).toContain('1</b> of');
     shop.handleKeyDown(key('ArrowRight'), engine);

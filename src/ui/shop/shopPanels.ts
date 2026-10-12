@@ -308,7 +308,7 @@ function bankerPanel(engine: GameEngine, selected: number, view: string): Servic
   const stashed = BankService.stashedItems(engine);
   const views = [
     { id: 'coins', label: 'Coins', count: getPlayerCoinItems(engine.player).length },
-    { id: 'stash', label: 'Leave', count: stashable.length },
+    { id: 'stash', label: 'Deposit', count: stashable.length },
     { id: 'take', label: 'Kept', count: stashed.length },
   ];
   if (shown !== 'coins') {
@@ -320,11 +320,11 @@ function bankerPanel(engine: GameEngine, selected: number, view: string): Servic
     const kept = `The bank keeps your things while you delve: <b class="ui-num">${stashed.length}</b> of <span class="ui-num">${BankService.STASH_CAPACITY}</span>.`;
     const facts =
       shown === 'stash'
-        ? `<div class="ui-note">${kept} ${list.length === 0 ? 'Your pack holds nothing to leave.' : 'Choose something from your pack to leave.'}</div>`
+        ? `<div class="ui-note">${kept} ${list.length === 0 ? 'Your pack holds nothing to deposit.' : 'Choose something from your pack to deposit.'}</div>`
         : `<div class="ui-note">${kept} ${list.length === 0 ? '' : 'Choose something to take back.'}</div>`;
     const offer: ServiceOffer =
       shown === 'stash'
-        ? { act: 'stash', key: 'L', label: 'Leave the chosen item', detail: 'The bank keeps it safe in town, free.', priceCp: 0, disabled: list.length === 0 || full }
+        ? { act: 'stash', key: 'D', label: 'Deposit the chosen item', detail: 'The bank keeps it safe in town, free.', priceCp: 0, disabled: list.length === 0 || full }
         : { act: 'take', key: 'T', label: 'Take the chosen item back', detail: 'Back into your pack, if it has room.', priceCp: 0, disabled: list.length === 0 };
     return {
       heading: 'Your coins and keeping',

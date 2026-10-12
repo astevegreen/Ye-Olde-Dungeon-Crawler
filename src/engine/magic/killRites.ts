@@ -134,6 +134,8 @@ function dropEssence(engine: GameEngine, config: KillRiteConfig, element: string
   const itemId = config.essenceItems[element];
   const def = itemId ? engine.manifest?.items?.find((i) => i.id === itemId) : undefined;
   if (!def) return undefined;
+  const chance = config.essenceDropChanceByElement?.[element] ?? config.essenceDropChance ?? 1;
+  if (chance < 1 && engine.prng.next() >= chance) return undefined;
   const instanceId = `essence-${engine.turnCount}-${engine.prng.nextInt(1000, 9999)}`;
   const item = createScaledItem(def, instanceId, 1, engine.rng);
   engine.map.addItemAt(victim.x, victim.y, item);

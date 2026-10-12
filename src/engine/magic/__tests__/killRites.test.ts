@@ -124,6 +124,34 @@ describe('Kill rites', () => {
     expect(essencesAt(m.x, m.y)).toHaveLength(1);
   });
 
+  it('drops an essence at the configured chance, with per-element overrides', () => {
+    const rites = baseManifest.magic.killRites as Record<string, unknown>;
+    const killMany = () => {
+      let dropped = 0;
+      for (let i = 0; i < 400; i++) {
+        const m = spawn('fire_rite');
+        DeathResolver.resolveDeath(engine, player, m, { damageElement: 'fire' });
+        dropped += essencesAt(m.x, m.y).length;
+        engine.map.getItemsAt(m.x, m.y).forEach((it) => engine.map.removeItemAt(m.x, m.y, it.id));
+      }
+      return dropped;
+    };
+    register('fire_rite', { requiredDamageElement: 'fire' });
+    try {
+      rites.essenceDropChance = 0.1;
+      player.learnSpell('jotunbrann');
+      const tenth = killMany();
+      expect(tenth).toBeGreaterThan(20);
+      expect(tenth).toBeLessThan(65);
+
+      rites.essenceDropChanceByElement = { fire: 0 };
+      expect(killMany()).toBe(0);
+    } finally {
+      delete rites.essenceDropChance;
+      delete rites.essenceDropChanceByElement;
+    }
+  });
+
   it('counts a melee kill as a physical blow', () => {
     register('iron_rite', { requiredDamageElement: 'physical' });
     const m = spawn('iron_rite');

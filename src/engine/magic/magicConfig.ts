@@ -131,6 +131,10 @@ export interface KillRiteConfig {
   essenceMessage: string;
   /** Essence item id per element: what a rite yields when it teaches no new spell. */
   essenceItems: Record<string, string>;
+  /** Chance (0–1) that a rite yielding an essence drops one; absent means always. */
+  essenceDropChance?: number;
+  /** Per-element overrides of `essenceDropChance`. */
+  essenceDropChanceByElement?: Record<string, number>;
   /** Before a rite is performed, one plain-language condition is revealed per this many kills. */
   killsPerRevealedCondition?: number;
 }

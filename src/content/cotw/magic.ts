@@ -155,7 +155,7 @@ export const COTW_MAGIC: MagicSystemConfig = {
       {
         id: 'berkano',
         name: 'Berkano',
-        description: '-2 mana',
+        description: '-2 Seiðr',
         fromElements: ['healing'],
         fromSchools: ['HealingDivination'],
         modifier: { manaCostDelta: -2 },

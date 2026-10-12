@@ -123,7 +123,7 @@ export const COTW_LEGACY_ITEMS: ItemDefinition[] = [
   },
   {
     id: 'mana_potion',
-    name: 'Minor Mana Potion',
+    name: 'Minor Seiðr Potion',
     unidentifiedName: 'Blue Potion',
     category: 'consumable',
     tier: 1,
@@ -395,7 +395,7 @@ export const COTW_LEGACY_ITEMS: ItemDefinition[] = [
   },
   {
     id: 'regular_mana_potion',
-    name: 'Regular Mana Potion',
+    name: 'Regular Seiðr Potion',
     unidentifiedName: 'Cerulean Potion',
     category: 'consumable',
     tier: 2,

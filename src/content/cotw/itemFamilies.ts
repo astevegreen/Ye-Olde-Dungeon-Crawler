@@ -70,7 +70,7 @@ export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
           prefix: 'Arcane',
           spellDamageMultiplier: 1.35,
           manaCostDiscount: 4,
-          description: 'Potent mana resonance: +35% spell damage, spells cost 4 less.',
+          description: 'Potent Seiðr resonance: +35% spell damage, spells cost 4 less.',
         },
         {
           minFloor: 25,
@@ -253,7 +253,7 @@ export const COTW_ITEM_FAMILIES: ItemFamilyConfig = {
           overflowTierShift: 1,
           // Q46: never past the second tier; the tier-3 surge it caused killed at depth.
           overflowTierShiftCap: 2,
-          description: 'Void-Kissed: casting past your mana leaves no debt, but every surge comes a tier worse, up to the second.',
+          description: 'Void-Kissed: casting past your Seiðr leaves no debt, but every surge comes a tier worse, up to the second.',
         },
         {
           minFloor: 1,

@@ -1,6 +1,6 @@
 import type { Player } from '../entities/player';
 import type { Item } from '../items/item';
-import type { TempleBlessingDefinition, TownServicesDefinition } from '../types/manifest';
+import { resolveManaTerms, type TempleBlessingDefinition, type TownServicesDefinition } from '../types/manifest';
 import {
   type ServiceResult,
 } from './types';
@@ -240,8 +240,11 @@ export class TempleService {
     player.hp = player.maxHp;
     player.mana = player.maxMana;
 
+    const manaName = resolveManaTerms(
+      engineOrWorldState && 'manifest' in engineOrWorldState ? engineOrWorldState.manifest : undefined,
+    ).name;
     const defaultHealMsg =
-      'The priest bathes you in healing light! All afflictions are cured, and your HP and Mana are fully restored!';
+      `The priest bathes you in healing light! All afflictions are cured, and your HP and ${manaName} are fully restored!`;
     const message = services?.healMessageTemplate ?? defaultHealMsg;
 
     return {

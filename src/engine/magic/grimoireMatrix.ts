@@ -8,6 +8,7 @@ import type { GlyphDefinition, GrimoireConfig, SpellModifier } from './magicConf
 import { StatusHandlerRegistry } from '../status/statusHandlers';
 import { sumWorn } from '../items/wornModifiers';
 import { effectiveManaCost } from './castNumbers';
+import { resolveManaTerms } from '../types/manifest';
 import type { StatusHandler, StatusTickOutput } from '../status/statusHandlers';
 import type { StatusEffect } from '../status/types';
 
@@ -266,7 +267,7 @@ export class GrimoireMatrixManager {
       if (cost) spell.manaCost = Math.round(spell.manaCost * (1 + cost));
       if (power) scaleSpellPower(spell, 1 + power);
       if (cost || power) {
-        notes.push(`${config.centerSlotLabel ?? 'Center'}: ${neighbors.length} neighbor${neighbors.length > 1 ? 's' : ''}, +${Math.round(cost * 100)}% mana, +${Math.round(power * 100)}% power`);
+        notes.push(`${config.centerSlotLabel ?? 'Center'}: ${neighbors.length} neighbor${neighbors.length > 1 ? 's' : ''}, +${Math.round(cost * 100)}% ${resolveManaTerms(engine.manifest).name}, +${Math.round(power * 100)}% power`);
       }
     }
 

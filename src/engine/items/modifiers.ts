@@ -92,6 +92,10 @@ export interface ItemModifier {
   carryMultiplier?: number;
   /** Extra tiles the bearer's knock-backs throw a foe (Ox-Shoulders: 1; `applyImpulse`). */
   knockbackBonus?: number;
+  /** The chance a landed melee blow that leaves the foe standing knocks it back a tile (Landslide: 0.3; `MeleeAttackAction`). */
+  meleeKnockbackChance?: number;
+  /** All damage taken is scaled from 1 at full health down to this at 0 HP, in a line (Blood-Hardened: 0.7; `Actor.takeDamage`). */
+  lowHpDamageTakenMultiplier?: number;
   /** A status the bearer's melee hits may leave on the foe (Bone-Breaker: slow, a turn, one hit in four). */
   onHitStatus?: { status: string; chance: number; duration: number; potency?: number };
   /** Percentage points added to the bearer's ranged hit chance (`RangedAttackAction`). */

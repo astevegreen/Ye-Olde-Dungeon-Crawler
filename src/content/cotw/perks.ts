@@ -160,6 +160,7 @@ export const COTW_MILESTONE_PERKS: PerkDefinition[] = [
   // ── Strength 20 ──
   { id: 'milestone_ox_shoulders', name: 'Ox-Shoulders', source: 'milestone', tagline: 'A yoke sits light on you.', description: 'You carry half again as much, and your knock-backs throw a foe a tile farther.', effects: { carryMultiplier: 1.5, knockbackBonus: 1 } },
   { id: 'milestone_bone_breaker', name: 'Bone-Breaker', source: 'milestone', tagline: 'Where you strike, something gives.', description: 'One melee hit in four slows the foe for a turn.', effects: { onHitStatus: { status: 'slow', chance: 0.25, duration: 1 } } },
+  { id: 'milestone_landslide', name: 'Landslide', source: 'milestone', tagline: 'The mountain moves when you do.', description: 'Three melee blows in ten throw a foe back a tile; into a wall or another creature it takes extra damage and is stunned.', effects: { meleeKnockbackChance: 0.3 } },
   // ── Dexterity 20 ──
   { id: 'milestone_fleet_foot', name: 'Fleet-Foot', source: 'milestone', tagline: 'The frost never quite catches you.', description: 'Speed +10, for good.' },
   { id: 'milestone_sure_shot', name: 'Sure Shot', source: 'milestone', tagline: 'Your blade knows the way.', description: 'Melee hit chance +10% and melee damage +2.', effects: { meleeHitBonus: 10, meleeDamageFlatBonus: 2 } },
@@ -178,6 +179,7 @@ export const COTW_MILESTONE_PERKS: PerkDefinition[] = [
   // ── Constitution 25 ──
   { id: 'milestone_second_wind', name: 'Second Wind', source: 'milestone', tagline: 'A breath, and you are whole again.', description: 'Resting heals twice as fast.', effects: { restHealMultiplier: 2 } },
   { id: 'milestone_stalwart', name: 'Stalwart', source: 'milestone', tagline: 'Nothing slows the oak.', description: 'You cannot be slowed or stunned.', effects: { grantsStatusImmunities: ['slow', 'stunned'] } },
+  { id: 'milestone_blood_hardened', name: 'Blood-Hardened', source: 'milestone', tagline: 'The nearer death, the harder to kill.', description: 'The lower your health, the less every blow hurts: up to 30% less damage taken at death’s door.', effects: { lowHpDamageTakenMultiplier: 0.7 } },
   // ── Intelligence 25 ──
   { id: 'milestone_chain_weaver', name: 'Chain-Weaver', source: 'milestone', tagline: 'The lightning knows one more name.', description: 'Your chain spells reach one more foe.', effects: { chainExtraHops: 1 } },
   { id: 'milestone_warding_glyph', name: 'Warding Glyph', source: 'milestone', tagline: 'A rune under the skin, waiting.', description: 'On each floor, the first spell to hit you is halved.', effects: { firstSpellPerFloorMultiplier: 0.5 } },
@@ -243,8 +245,8 @@ export const COTW_MILESTONE_CHOICES: Record<string, ChoiceDefinition> = {
     id: 'milestone_str_20',
     title: 'Strength Milestone: Might of the Mountain Giant',
     description:
-      'Your muscles surge with the brute vigor of the hill giants. Stone breaks beneath your grip. Will you bear the weight of a wagon, or break what you strike?',
-    options: [milestoneOption(perk('milestone_ox_shoulders')), milestoneOption(perk('milestone_bone_breaker'))],
+      'Your muscles surge with the brute vigor of the hill giants. Stone breaks beneath your grip. Will you bear the weight of a wagon, break what you strike, or throw your foes like rockfalls?',
+    options: [milestoneOption(perk('milestone_ox_shoulders')), milestoneOption(perk('milestone_bone_breaker')), milestoneOption(perk('milestone_landslide'))],
     cancelable: false,
   },
   milestone_dex_20: {
@@ -285,13 +287,14 @@ export const COTW_MILESTONE_CHOICES: Record<string, ChoiceDefinition> = {
     'milestone_riposte',
     'milestone_trap_dancer'
   ),
-  milestone_con_25: milestoneChoice(
-    'milestone_con_25',
-    'Constitution Milestone: The Unbowed Pine',
-    'Snow loads your branches and slides off them. Will you mend faster when you rest, or never be slowed or staggered?',
-    'milestone_second_wind',
-    'milestone_stalwart'
-  ),
+  milestone_con_25: {
+    id: 'milestone_con_25',
+    title: 'Constitution Milestone: The Unbowed Pine',
+    description:
+      'Snow loads your branches and slides off them. Will you mend faster when you rest, never be slowed or staggered, or grow harder the nearer you come to breaking?',
+    options: [milestoneOption(perk('milestone_second_wind')), milestoneOption(perk('milestone_stalwart')), milestoneOption(perk('milestone_blood_hardened'))],
+    cancelable: false,
+  },
   milestone_int_25: milestoneChoice(
     'milestone_int_25',
     'Intelligence Milestone: The Woven Runes',

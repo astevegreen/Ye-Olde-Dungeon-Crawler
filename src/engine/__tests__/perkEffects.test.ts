@@ -201,6 +201,28 @@ describe('perk effects', () => {
     expect(player.heal(10)).toBe(5);
   });
 
+  it('meleeKnockbackChance throws a landed blow’s foe back a tile on a good roll only (Landslide)', () => {
+    const { engine, player, foe } = build();
+    player.grantPerk(perk('landslide', { meleeKnockbackChance: 0.3 }));
+    engine.rng = () => 0.5;
+    new MeleeAttackAction(player, foe).perform(engine);
+    expect(foe.x).toBe(11);
+    player.gainEnergy(100);
+    engine.rng = () => 0.1;
+    new MeleeAttackAction(player, foe).perform(engine);
+    expect(foe.x).toBe(12);
+  });
+
+  it('lowHpDamageTakenMultiplier eases a blow along a line from full health to the perk’s value at 0 (Blood-Hardened)', () => {
+    const { player } = build();
+    player.grantPerk(perk('hardened', { lowHpDamageTakenMultiplier: 0.7 }));
+    expect(player.takeDamage(20).damageDealt).toBe(20); // full health: no ease
+    player.hp = 50; // half health: 15% less
+    expect(player.takeDamage(20).damageDealt).toBe(17);
+    player.hp = 10; // 10%: 27% less (a small blow, so the hero survives it)
+    expect(player.takeDamage(8).damageDealt).toBe(6);
+  });
+
   it('sightBonus widens the hero’s sight radius beside the pacts’ modifier (Wayfarer, Q56)', () => {
     const { engine, player } = build();
     engine.fovRadius = 4;

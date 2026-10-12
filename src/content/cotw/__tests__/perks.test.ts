@@ -41,7 +41,8 @@ describe('cotw perks', () => {
       const choice = cotwManifest.choices![id];
       expect(choice, id).toBe(COTW_MILESTONE_CHOICES[id]);
       for (const option of choice.options) offered.add(option.id);
-      expect(choice.options).toHaveLength(2);
+      // Two options each; Strength 20 adds Landslide and Constitution 25 adds Blood-Hardened as a third.
+      expect(choice.options).toHaveLength(id === 'milestone_str_20' || id === 'milestone_con_25' ? 3 : 2);
       for (const option of choice.options) {
         const grant = option.consequences.find((c) => c.type === 'grantPerk') as { perkId: string } | undefined;
         expect(grant, option.id).toBeDefined();

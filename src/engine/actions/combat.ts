@@ -358,7 +358,10 @@ export class MeleeAttackAction implements Action {
 
     // A blow that knocks the foe back, by what the attacker wears and holds, and its family
     // perk against the foe's family (Giant-Bane).
-    const knockback = sumWorn(this.attacker, 'meleeKnockback') + sumAgainst(engine, this.attacker, this.defender, 'meleeKnockback');
+    // A perk that throws a share of blows (Landslide) rolls only for a blow that landed and left the foe standing.
+    let knockback = sumWorn(this.attacker, 'meleeKnockback') + sumAgainst(engine, this.attacker, this.defender, 'meleeKnockback');
+    const throwChance = sumWorn(this.attacker, 'meleeKnockbackChance');
+    if (throwChance > 0 && !killed && damageDealt > 0 && this.defender.isAlive() && engine.rng() < throwChance) knockback += 1;
     if (knockback > 0 && !killed && damageDealt > 0 && this.defender.isAlive()) {
       applyImpulse(engine, this.attacker, this.defender, Math.sign(this.defender.x - this.attacker.x), Math.sign(this.defender.y - this.attacker.y), knockback);
     }

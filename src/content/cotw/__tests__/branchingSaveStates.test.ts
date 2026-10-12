@@ -264,7 +264,7 @@ describe('Branching save-states — Níðhögg’s two endings (real cotwManifes
   });
 
   describe('COTW Attribute Milestones Content Integrity', () => {
-    it('declares attribute milestones where each choiceId resolves and has exactly two options', () => {
+    it('declares attribute milestones where each choiceId resolves and has its options', () => {
       const milestones = cotwManifest.attributeMilestones;
       expect(milestones).toBeDefined();
       expect(milestones!.length).toBeGreaterThanOrEqual(4);
@@ -272,7 +272,9 @@ describe('Branching save-states — Níðhögg’s two endings (real cotwManifes
       for (const milestone of milestones!) {
         const choice = cotwManifest.choices?.[milestone.choiceId];
         expect(choice, `Milestone ${milestone.id} references missing choice ${milestone.choiceId}`).toBeDefined();
-        expect(choice!.options.length, `Choice ${milestone.choiceId} must have exactly two options`).toBe(2);
+        // Two options each; Strength 20 (Landslide) and Constitution 25 (Blood-Hardened) offer a third.
+        const expected = milestone.choiceId === 'milestone_str_20' || milestone.choiceId === 'milestone_con_25' ? 3 : 2;
+        expect(choice!.options.length, `Choice ${milestone.choiceId} must have ${expected} options`).toBe(expected);
         for (const opt of choice!.options) {
           expect(opt.consequences.length).toBeGreaterThan(0);
           // Since 3.6 the perk held is the record of the choice (`Player.hasPerk`), not a flag.

@@ -266,6 +266,14 @@ export class Actor extends Entity implements IItemContainer, IEquipmentBearer {
         if (mod.damageTakenMultiplier) rawAmount = Math.round(rawAmount * mod.damageTakenMultiplier);
         if (mod.damageTakenFlatBonus) rawAmount += mod.damageTakenFlatBonus;
       }
+      // The lower the health, the less a blow hurts (Blood-Hardened): a line from full to nothing.
+      let ramp = 1;
+      for (const mod of wornModifiers(this)) {
+        if (mod.lowHpDamageTakenMultiplier !== undefined && this.maxHp > 0) {
+          ramp *= 1 - (1 - mod.lowHpDamageTakenMultiplier) * (1 - Math.max(0, Math.min(1, this.hp / this.maxHp)));
+        }
+      }
+      if (ramp < 1) rawAmount = Math.max(1, Math.round(rawAmount * ramp));
     }
     rawAmount = this.limitDamageToHpFloor(rawAmount);
     if (this.morphEnvelope) {

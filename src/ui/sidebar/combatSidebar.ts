@@ -120,7 +120,7 @@ export class CombatSidebar {
     const where = engine.currentFloor === 0 ? engine.manifest?.town?.name ?? 'Town' : `Floor ${engine.currentFloor}`;
     this.mapTitle.textContent = where;
     const note = this.mapTitle.nextElementSibling as HTMLElement | null;
-    if (note) note.textContent = engine.currentFloor === 0 ? '[M] map' : `${getExploredPercent(engine)}% explored · [M]`;
+    if (note) note.textContent = engine.currentFloor === 0 ? '[M] map' : `${getExploredPercent(engine)}% explored · [M] map`;
     this.options.drawMinimap(this.mapCanvas);
   }
 

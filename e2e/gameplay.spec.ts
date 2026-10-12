@@ -772,8 +772,8 @@ test("the log's history opens by key or label and spends no turn", async ({ page
 });
 
 // Every way into the help card and the diagnostics registers it on the modal stack and
-// every way out takes it off (§6): the HUD Help and Dev buttons, the card's X.
-test('the HUD Help and Dev buttons and the help card X keep the modal stack honest', async ({ page }) => {
+// every way out takes it off (§6): the HUD Help button, F2, the card's X.
+test('the HUD Help button, F2 and the help card X keep the modal stack honest', async ({ page }) => {
   const pageErrors: string[] = [];
   page.on('pageerror', (err) => pageErrors.push(err.message));
   await embarkNewHero(page);
@@ -799,8 +799,8 @@ test('the HUD Help and Dev buttons and the help card X keep the modal stack hone
   expect(await stackIds(page)).toEqual([]);
   expect(await page.evaluate(() => window.__cotwEngine!.isPaused)).toBe(false);
 
-  // The HUD Dev button: on the stack, so a movement key stays in the dialog.
-  await page.locator('#btn-dev-diagnostics').click();
+  // F2 (the Dev button is hidden): on the stack, so a movement key stays in the dialog.
+  await page.keyboard.press('F2');
   await expect(page.locator('#diagnostic-modal')).toBeVisible();
   expect(await stackIds(page)).toEqual(['diagnostic-modal']);
   await page.keyboard.press('ArrowRight');
@@ -864,15 +864,15 @@ test('a click-to-travel auto-picks up where it ends; HUD Wait does nothing under
   expect(pageErrors).toEqual([]);
 });
 
-// Closing the aim any way but its own keys (here the HUD Look and Map buttons) takes its
+// Closing the aim any way but its own keys (here the HUD Look button and the minimap) takes its
 // stack entry with it, so the world isn't left paused behind a dead entry (R-rend-7).
-test('closing the aim with the HUD Look or Map button leaves no targeting entry behind', async ({ page }) => {
+test('closing the aim with the HUD Look button or the minimap leaves no targeting entry behind', async ({ page }) => {
   const pageErrors: string[] = [];
   page.on('pageerror', (err) => pageErrors.push(err.message));
   await embarkNewHero(page);
   const aiming = () => page.evaluate(() => window.__cotwRenderer!.targetingOverlay.isOpen);
 
-  for (const button of ['#btn-hud-look', '#btn-map']) {
+  for (const button of ['#btn-hud-look', '.sb-minimap']) {
     await page.keyboard.press('Digit1');
     await expect.poll(aiming).toBe(true);
     expect(await stackIds(page)).toContain('targeting');

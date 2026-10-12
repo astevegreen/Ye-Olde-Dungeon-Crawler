@@ -1,5 +1,5 @@
 # Handoff: playtest notes fix plan
-2026-10-12 01:11 UTC · branch main · HEAD eeca77f · tree clean
+2026-10-12 02:55 UTC · branch main · HEAD 0e78809 · tree clean (Session 1 pushed)
 
 ## Goal
 The owner asked to sort the Notion page "Ideas, bugs, and playtest notes" (YODC Dev Notes, id 3daeb012-942f-80fc-ae7a-eb8ae89b401b) into categories with a reply under each note, then to "create a plan for addressing each of these issues in a logical sequence that maximizes token efficiency". Both are done on the page. Next comes carrying out the plan's six sessions, one per fresh session.
@@ -18,11 +18,14 @@ The owner asked to sort the Notion page "Ideas, bugs, and playtest notes" (YODC 
 
 ## Done
 - Notion page rewritten: the plan at the top, then 25 notes in 5 categories, each with a reply. A collapsed "Code pointers" toggle at the bottom of the page lists where each issue lives.
-- Uncommitted: none. No code changed.
+- Uncommitted: none.
+
+- Session 1 done 12 Oct, pushed eeca77f..0e78809c: 1d2be1f rings, 1f598e0 "mana" wording, 71b909f Essence-Rune stacking (new `ItemDefinition.stackable`, read from the definition on load), ebfd935 Bestiary depth sort, 935a14a guard's Mimir hint (Bjorn's `advice`, town.ts:146), 0e78809 packs spawn identified. Gates and pre-push green (one known flake).
+- Notion page checkboxes for Session 1 are not ticked yet.
 
 ## Next
-1. Session 1 on Sonnet: read the page's plan, then fix the rings first. Every ring is `slot: 'fingerLeft'` (src/content/cotw/items/rings.ts:9), and `Paperdoll.canEquip` scans for a free slot only when the item has no slot (src/engine/inventory/paperdoll.ts:141). Then do the rest of Session 1: the "mana" strings, Essence-Rune stacking (src/engine/items/stacking.ts:10), the Bestiary sort, the gate guard's Mimir hint, and the pack identification.
-2. Sessions 2–6 follow the page's order, one fresh session each.
+1. Session 2 on Sonnet (shop and altar windows), as the page lists it: shop clicks refresh the HUD and log (`src/ui/shop/shopDialog.ts`, run() redraws only the canvas; HUD updates in `processVisualEffectsAndRender`, `src/main.ts`), Mimir's result line to the top and scroll kept, a Pacts tab (`src/ui/shop/shopPanels.ts`), the Oath-Stone grid and offering list (`src/ui/altarModal.ts`, `.sb-matrix` in `src/ui/styles/menu.css`), and its up-front text naming spells and runes. Run `visual-check` before and after; this is presentation, so `npm run gates` first.
+2. Sessions 3–6 follow the page's order, one fresh session each. Ask the owner which design ideas go into Session 5 before it starts.
 
 ## Decisions
 - Identified items always show a plain alignment word. Owner: "Item name should always show a plain alignment word."

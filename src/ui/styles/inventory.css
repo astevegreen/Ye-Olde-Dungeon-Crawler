@@ -123,6 +123,14 @@
 
 .inv-icon { width: 40px; height: 40px; image-rendering: pixelated; }
 
+/* A short window (768 px and under) leaves the doll's five rows too little height; smaller
+   slots fit them without a scrollbar. */
+@media (max-height: 800px) {
+  .inv-slot { padding: 2px 2px 1px; gap: 1px; }
+  .inv-slot-well { width: 34px; height: 34px; }
+  .inv-slot-well .inv-icon { width: 32px; height: 32px; }
+}
+
 /* Item grids: square-ish cells that wrap to the column's width. */
 .inv-cells {
   flex: 1;

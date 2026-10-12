@@ -28,6 +28,8 @@ Owner: "proceed with phase 2 from the Notion plan" (page "Ideas, bugs, and playt
 
 ## Decisions
 - Pacts tab last, after Items/Study/Rumors; other sages get no tab — chosen because the keeper's lists vary by pack.
+- Pact number keys only on the Pacts tab — owner: "Keep: only on Pacts tab (Recommended)"
+- Session 5 scope deferred — owner: "Defer (Recommended)"
 - Burn-rule line is pack-neutral; "Essence-Rune" is named only in the pack's altar descriptions (pack-neutral check).
 
 ## Dead ends

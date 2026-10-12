@@ -21,6 +21,7 @@ Plan: aligned share of eligible loot ~15% on floor 1, ~40% by floor 10, ~55% fro
 
 ## Decisions
 - Plan numbers (15/40/55, bad from floor 3) are from the owner's Notion fix plan, settled 12 Oct.
+- Total aligned items per run follows the ramp, no rebalancing — owner: "Follow the ramp (Recommended)"
 
 ## Read first
 - `src/engine/items/modifierRoller.ts:113` — the roll

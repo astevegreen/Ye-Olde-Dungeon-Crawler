@@ -25,7 +25,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
       multiplier: 2.2,
       element: 'cold',
       spawnSurface: 'water',
-      chance: 0.45,
+      chance: 0.30,
       cooldown: 3,
     },
     spellPreferences: [

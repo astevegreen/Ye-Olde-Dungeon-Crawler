@@ -26,3 +26,4 @@ Owner: item names like "Blessed Sanctified Holy Warhammer of the Templar" are co
 
 ## Verification
 - lint + 2914 tests, sim, validate:schema green on 6baa1c5; pre-push (sim, build, Playwright in three browsers) green.
+Resumed: 2026-10-12 12:04 UTC

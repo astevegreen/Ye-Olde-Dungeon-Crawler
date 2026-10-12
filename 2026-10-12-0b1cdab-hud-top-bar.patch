@@ -1,0 +1,329 @@
+From 0b1cdab43d5dc18ebd4a4c89a4110e730e39154e Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 12 Oct 2026 16:07:50 +0000
+Subject: [PATCH] feat(hud): top bar is half as tall, on one row; Map and Dev
+ buttons leave it
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The hero's plate, the screens/system buttons and the actions share one 38px row
+(was 76px). Labels give way in steps as the window narrows. The Map button goes
+(M and the minimap click still open it; the minimap caption says "[M] map"); the
+Dev button is gone from the bar and F2 still opens the bug-report menu.
+
+Requested: "The top bar of the HUD should reduce its height by about half and consolidate all the items on one horizontal row. The button for Map should be removed and the “M” should move to above the minimap. F2 should just be hidden because most players won’t use it, but it should still function the same."
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01RPnnd5XWLfE63iS3C1s8yq
+---
+ e2e/gameplay.spec.ts            | 14 +++---
+ index.html                      |  4 +-
+ src/main.ts                     | 12 ++---
+ src/ui/sidebar/combatSidebar.ts |  2 +-
+ src/ui/styles/layout.css        | 86 +++++++++++++++++++++++----------
+ 5 files changed, 73 insertions(+), 45 deletions(-)
+
+diff --git a/e2e/gameplay.spec.ts b/e2e/gameplay.spec.ts
+index 7bbb5bb..6d34094 100644
+--- a/e2e/gameplay.spec.ts
++++ b/e2e/gameplay.spec.ts
+@@ -772,8 +772,8 @@ test("the log's history opens by key or label and spends no turn", async ({ page
+ });
+ 
+ // Every way into the help card and the diagnostics registers it on the modal stack and
+-// every way out takes it off (§6): the HUD Help and Dev buttons, the card's X.
+-test('the HUD Help and Dev buttons and the help card X keep the modal stack honest', async ({ page }) => {
++// every way out takes it off (§6): the HUD Help button, F2, the card's X.
++test('the HUD Help button, F2 and the help card X keep the modal stack honest', async ({ page }) => {
+   const pageErrors: string[] = [];
+   page.on('pageerror', (err) => pageErrors.push(err.message));
+   await embarkNewHero(page);
+@@ -799,8 +799,8 @@ test('the HUD Help and Dev buttons and the help card X keep the modal stack hone
+   expect(await stackIds(page)).toEqual([]);
+   expect(await page.evaluate(() => window.__cotwEngine!.isPaused)).toBe(false);
+ 
+-  // The HUD Dev button: on the stack, so a movement key stays in the dialog.
+-  await page.locator('#btn-dev-diagnostics').click();
++  // F2 (the Dev button is hidden): on the stack, so a movement key stays in the dialog.
++  await page.keyboard.press('F2');
+   await expect(page.locator('#diagnostic-modal')).toBeVisible();
+   expect(await stackIds(page)).toEqual(['diagnostic-modal']);
+   await page.keyboard.press('ArrowRight');
+@@ -864,15 +864,15 @@ test('a click-to-travel auto-picks up where it ends; HUD Wait does nothing under
+   expect(pageErrors).toEqual([]);
+ });
+ 
+-// Closing the aim any way but its own keys (here the HUD Look and Map buttons) takes its
++// Closing the aim any way but its own keys (here the HUD Look button and the minimap) takes its
+ // stack entry with it, so the world isn't left paused behind a dead entry (R-rend-7).
+-test('closing the aim with the HUD Look or Map button leaves no targeting entry behind', async ({ page }) => {
++test('closing the aim with the HUD Look button or the minimap leaves no targeting entry behind', async ({ page }) => {
+   const pageErrors: string[] = [];
+   page.on('pageerror', (err) => pageErrors.push(err.message));
+   await embarkNewHero(page);
+   const aiming = () => page.evaluate(() => window.__cotwRenderer!.targetingOverlay.isOpen);
+ 
+-  for (const button of ['#btn-hud-look', '#btn-map']) {
++  for (const button of ['#btn-hud-look', '.sb-minimap']) {
+     await page.keyboard.press('Digit1');
+     await expect.poll(aiming).toBe(true);
+     expect(await stackIds(page)).toContain('targeting');
+diff --git a/index.html b/index.html
+index 5154dfd..1c8394f 100644
+--- a/index.html
++++ b/index.html
+@@ -13,7 +13,7 @@
+           <div id="game-frame">
+           <!-- The map column -->
+           <div id="game-container">
+-            <!-- Header: the hero's square, then two bars: screens & system, and actions -->
++            <!-- Header: one row: the hero's plate, then screens & system, and actions -->
+             <div id="game-header-bar">
+               <div id="hud-portrait" title="">
+                 <div id="header-name">Adventurer</div>
+@@ -33,7 +33,6 @@
+                   </div>
+                   <div class="hud-btn-group">
+                     <button id="btn-feedback" class="win-btn win-btn-sm hud-btn hud-btn-quiet" title="Send Feedback or Report Bug (F3)"><span class="hud-icon"><i class="ui-icon" data-icon="feedback" aria-hidden="true"></i></span> <kbd class="hud-key">F3</kbd> <span class="hud-word">Feedback</span></button>
+-                    <button id="btn-dev-diagnostics" class="win-btn win-btn-sm hud-btn hud-btn-quiet" title="Open Developer Diagnostics (F2 or `)"><span class="hud-icon"><i class="ui-icon" data-icon="tools" aria-hidden="true"></i></span> <kbd class="hud-key">F2</kbd> <span class="hud-word">Dev</span></button>
+                     <button id="btn-save-title" class="win-btn win-btn-sm hud-btn hud-btn-menu" title="Menu: Resume, Settings &amp; Controls, or Save &amp; Quit (Esc)"><span class="hud-icon"><i class="ui-icon" data-icon="menu" aria-hidden="true"></i></span> <kbd class="hud-key">Esc</kbd> <span class="hud-word">Menu</span></button>
+                   </div>
+                 </div>
+@@ -43,7 +42,6 @@
+                     <button id="btn-hud-inv" class="win-btn win-btn-sm hud-btn" title="Inventory & Equipment (I)"><span class="hud-icon"><i class="ui-icon" data-icon="inventory" aria-hidden="true"></i></span> <kbd class="hud-key">I</kbd> <span class="hud-word">Inv</span></button>
+                     <button id="btn-hud-cast" class="win-btn win-btn-sm hud-btn" title="Spellbook & Cast (Z)"><span class="hud-icon"><i class="ui-icon" data-icon="cast" aria-hidden="true"></i></span> <kbd class="hud-key">Z</kbd> <span class="hud-word">Cast</span></button>
+                     <button id="btn-hud-look" class="win-btn win-btn-sm hud-btn" title="Inspect / Look (L/X)"><span class="hud-icon"><i class="ui-icon" data-icon="look" aria-hidden="true"></i></span> <kbd class="hud-key">L</kbd> <span class="hud-word">Look</span></button>
+-                    <button id="btn-map" class="win-btn win-btn-sm hud-btn" title="Explored Dungeon Map (M)"><span class="hud-icon"><i class="ui-icon" data-icon="map" aria-hidden="true"></i></span> <kbd class="hud-key">M</kbd> <span class="hud-word">Map</span></button>
+                     <button id="btn-hud-rest" class="win-btn win-btn-sm hud-btn" title="Rest until fully recovered (R)"><span class="hud-icon"><i class="ui-icon" data-icon="rest" aria-hidden="true"></i></span> <kbd class="hud-key">R</kbd> <span class="hud-word">Rest</span></button>
+                     <button id="btn-hud-wait" class="win-btn win-btn-sm hud-btn" title="Pass Turn (Space / .)"><span class="hud-icon"><i class="ui-icon" data-icon="wait" aria-hidden="true"></i></span> <kbd class="hud-key">.</kbd> <span class="hud-word">Wait</span></button>
+                     <button id="btn-hud-search" class="win-btn win-btn-sm hud-btn" title="Search secret doors / traps (S)"><span class="hud-icon"><i class="ui-icon" data-icon="search" aria-hidden="true"></i></span> <kbd class="hud-key">S</kbd> <span class="hud-word">Search</span></button>
+diff --git a/src/main.ts b/src/main.ts
+index 023e0e9..893ccac 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -188,11 +188,9 @@ window.addEventListener('DOMContentLoaded', () => {
+   const gameContainer = document.getElementById('game-container');
+   const saveTitleBtn = document.getElementById('btn-save-title');
+   const feedbackBtn = document.getElementById('btn-feedback');
+-  const devDiagBtn = document.getElementById('btn-dev-diagnostics');
+   const helpBtn = document.getElementById('btn-help-card');
+   const compendiumBtn = document.getElementById('btn-compendium');
+   const cmdPaletteBtn = document.getElementById('btn-cmd-palette');
+-  const mapBtn = document.getElementById('btn-map');
+ 
+   // Bottom HUD bar controls
+   const hudInvBtn = document.getElementById('btn-hud-inv');
+@@ -601,7 +599,7 @@ window.addEventListener('DOMContentLoaded', () => {
+     drawEntityIcon: (canvas, entity) => renderer?.drawEntityIcon(canvas, entity),
+     drawItemIcon: (canvas, item) => renderer?.drawItemIcon(canvas, item),
+     onPointAt: (x, y) => renderer?.pointAtTile(x, y),
+-    onOpenMap: () => document.getElementById('btn-map')?.click(),
++    onOpenMap: () => toggleMap(),
+   });
+ 
+   // The pack's first-time hints, a card at the foot of the sidebar (never modal).
+@@ -1115,18 +1113,14 @@ window.addEventListener('DOMContentLoaded', () => {
+     toggleFeedback();
+   });
+ 
+-  devDiagBtn?.addEventListener('click', () => {
+-    diagnosticModal.toggle();
+-  });
+-
+-  mapBtn?.addEventListener('click', () => {
++  function toggleMap(): void {
+     if (activeEngine && renderer) {
+       renderer.inspectOverlay.close();
+       renderer.targetingOverlay.close();
+       renderer.mapOverlay.toggle(activeEngine);
+       renderer.render();
+     }
+-  });
++  }
+ 
+   // Through the input handler, as F1 is, so the card is on the modal stack (§6).
+   helpBtn?.addEventListener('click', () => {
+diff --git a/src/ui/sidebar/combatSidebar.ts b/src/ui/sidebar/combatSidebar.ts
+index b63b108..8393b35 100644
+--- a/src/ui/sidebar/combatSidebar.ts
++++ b/src/ui/sidebar/combatSidebar.ts
+@@ -120,7 +120,7 @@ export class CombatSidebar {
+     const where = engine.currentFloor === 0 ? engine.manifest?.town?.name ?? 'Town' : `Floor ${engine.currentFloor}`;
+     this.mapTitle.textContent = where;
+     const note = this.mapTitle.nextElementSibling as HTMLElement | null;
+-    if (note) note.textContent = engine.currentFloor === 0 ? '[M] map' : `${getExploredPercent(engine)}% explored · [M]`;
++    if (note) note.textContent = engine.currentFloor === 0 ? '[M] map' : `${getExploredPercent(engine)}% explored · [M] map`;
+     this.options.drawMinimap(this.mapCanvas);
+   }
+ 
+diff --git a/src/ui/styles/layout.css b/src/ui/styles/layout.css
+index abef660..d5f5275 100644
+--- a/src/ui/styles/layout.css
++++ b/src/ui/styles/layout.css
+@@ -139,7 +139,7 @@
+   opacity: 0.7;
+ }
+ 
+-/* Rarely used tools (feedback, dev triage) keep their icon and key; the title
++/* Rarely used tools (feedback) keep their icon and key; the title
+    tooltip carries the name, so they don't take header room from hero and depth. */
+ .hud-btn-quiet .hud-word {
+   display: none;
+@@ -874,7 +874,7 @@
+   --hud-surface: linear-gradient(180deg, color-mix(in srgb, var(--ui-surface-1) 98%, transparent) 0%, color-mix(in srgb, var(--ui-surface-0) 98%, transparent) 100%);
+   --hud-surface-low: color-mix(in srgb, var(--ui-surface-0) 98%, transparent);
+   --hud-hairline: color-mix(in srgb, var(--ui-line-strong) 60%, transparent);
+-  --hud-square: 76px;
++  --hud-bar-height: 38px;
+ }
+ 
+ /* The map column and the sidebar, centered together as one unit. */
+@@ -895,20 +895,19 @@
+   font-family: var(--ui-font-family, "Courier New", Courier, monospace);
+ }
+ 
+-/* The hero's square: name, depth, level (with its experience bar) and renown. */
+-/* Square at least, wider for a long hero or place name ("Bjarnarhaven") rather than
+-   cutting it; the bars beside it give up the width. */
++/* The hero's plate: name, depth, level (with its experience bar) and renown, in one row. */
+ #hud-portrait {
+   position: relative;
+-  flex: 0 0 auto;
+-  min-width: var(--hud-square);
+-  max-width: 160px;
+-  height: var(--hud-square);
++  flex: 0 1 auto;
++  min-width: 0;
++  max-width: 340px;
++  height: var(--hud-bar-height);
+   box-sizing: border-box;
+-  padding: 6px 7px;
++  padding: 0 8px;
+   display: flex;
+-  flex-direction: column;
+-  justify-content: space-between;
++  flex-direction: row;
++  align-items: center;
++  gap: 8px;
+   border-right: 1px solid var(--ui-line-strong);
+   background: radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--ui-accent) 10%, transparent) 0%, color-mix(in srgb, var(--ui-surface-0) 60%, transparent) 75%);
+   font-size: 11px;
+@@ -919,6 +918,8 @@
+   white-space: nowrap;
+   overflow: hidden;
+   text-overflow: ellipsis;
++  flex: 0 1 auto;
++  min-width: 0;
+ }
+ #header-name {
+   font-weight: bold;
+@@ -934,8 +935,9 @@
+   color: var(--ui-text-soft);
+ }
+ #header-xp-bar {
+-  height: 3px;
+-  flex: 0 0 3px;
++  height: 4px;
++  width: 36px;
++  flex: 0 0 36px;
+   background: var(--ui-surface-2);
+   border-radius: 2px;
+ }
+@@ -952,9 +954,7 @@
+   font-size: var(--ui-text-xs);
+ }
+ #btn-alloc-points {
+-  position: absolute;
+-  top: 5px;
+-  right: 4px;
++  flex: 0 0 auto;
+   padding: 0 4px;
+   font: bold var(--ui-text-xs)/13px var(--ui-font-family, monospace);
+   color: var(--ui-accent-ink);
+@@ -971,21 +971,28 @@
+   50% { box-shadow: 0 0 8px color-mix(in srgb, var(--ui-gold) 80%, transparent); }
+ }
+ 
+-/* Two bars beside the square: screens and system on top, actions below. */
++/* Screens and system, then actions, beside the plate on the same row. */
+ .hud-header-bars {
+   flex: 1 1 auto;
+   min-width: 0;
+   display: flex;
+-  flex-direction: column;
++  flex-direction: row;
++  align-items: center;
+ }
+ #hud-admin-bar,
+ #game-bottom-bar {
+-  flex: 1 1 0;
+-  padding: 0 8px;
++  width: auto;
++  padding: 0 6px;
++  height: var(--hud-bar-height);
+ }
+ #hud-admin-bar {
+-  justify-content: space-between;
+-  border-bottom: 1px solid var(--hud-hairline);
++  flex: 0 0 auto;
++  gap: 10px;
++  border-right: 1px solid var(--hud-hairline);
++}
++#game-bottom-bar {
++  flex: 1 1 0;
++  min-width: 0;
+ }
+ #game-bottom-bar .hud-btn-group {
+   width: 100%;
+@@ -999,7 +1006,7 @@
+   min-width: 0;
+   max-width: 112px;
+   justify-content: center;
+-  padding: 4px 4px;
++  padding: 3px 4px;
+ }
+ #game-header-bar .hud-btn {
+   gap: 4px;
+@@ -1019,8 +1026,37 @@
+   border-radius: 2px;
+   opacity: 0.85;
+ }
+-@container game (max-width: 820px) {
++/* One row has to hold the plate, the system buttons and seven actions, so the labels give
++   way in steps: the system buttons are icon + key (Menu keeps its word) and the actions
++   key + word; under 1000px the actions go icon + key; under 820px icon only, and the
++   renown line leaves the plate (it stays in its tooltip). */
++#hud-admin-bar .hud-btn:not(.hud-btn-menu) .hud-word {
++  display: none;
++}
++#hud-portrait,
++#hud-admin-bar {
++  flex-shrink: 0;
++}
++#game-bottom-bar .hud-icon {
++  display: none;
++}
++@container game (max-width: 1000px) {
+   #game-bottom-bar .hud-icon {
++    display: inline-flex;
++  }
++  #game-bottom-bar .hud-word {
++    display: none;
++  }
++}
++@container game (max-width: 820px) {
++  #game-header-bar .hud-key {
++    display: none;
++  }
++  #header-renown,
++  #header-xp-bar {
++    display: none;
++  }
++  #hud-admin-bar .hud-btn-menu .hud-word {
+     display: none;
+   }
+ }
+-- 
+2.43.0
+

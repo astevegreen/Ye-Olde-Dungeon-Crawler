@@ -233,9 +233,62 @@ describe('ShopDialog', () => {
 
     const shop = new ShopDialog();
     shop.open(npc('sage'), null, keeperEngine);
+    // The pacts have a tab of their own, away from the sage's other list.
+    expect(html()).toContain('data-arg="pacts"');
+    expect(html()).not.toContain('Seal the Pact of the Blood Moon');
+    shop.handleKeyDown(key('ArrowRight'), keeperEngine);
+    expect(shop.serviceView).toBe('pacts');
     expect(html()).toContain('Seal the Pact of the Blood Moon');
     shop.handleKeyDown(key('2'), keeperEngine);
     expect(keeperDispatch.mock.calls.map((c) => c[0])).toEqual([{ type: 'pact_toggle', payload: { pactId: COTW_PACTS[1].id } }]);
+  });
+
+  it("keeps the pact keeper's pacts as the last tab, after the lists he keeps, and the others without it", () => {
+    const keeperEngine = new GameEngine({
+      map: new GameMap(20, 20),
+      player: new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } }),
+      floor: 0,
+      manifest: cotwManifest,
+    });
+    const keeper = new NPC({ id: cotwManifest.pactKeeperNpcId!, name: 'Keeper', position: { x: 6, y: 5 }, role: 'sage', dialogText: 'Hail.' });
+    const tabs = (view = '') => servicePanelFor(keeperEngine, keeper, 0, view)!.views!.map((v) => v.id);
+    expect(tabs()).toEqual(['items', 'study', 'rumors', 'pacts']);
+
+    const pacts = servicePanelFor(keeperEngine, keeper, 0, 'pacts')!;
+    expect(pacts.view).toBe('pacts');
+    expect(pacts.offers.every((o) => o.act === 'pact')).toBe(true);
+    expect(pacts.choices).toBeUndefined();
+    expect(servicePanelFor(keeperEngine, keeper)!.offers.some((o) => o.act === 'pact')).toBe(false);
+    // Another sage keeps his lists, with no Pacts tab.
+    expect(servicePanelFor(keeperEngine, npc('sage'))!.views!.map((v) => v.id)).toEqual(['items', 'study', 'rumors']);
+  });
+
+  it('tells the HUD after a service ran, and not for a move through the lists (a click gets no keys\' refresh)', () => {
+    const onServed = vi.fn();
+    const shop = new ShopDialog({ onServed });
+    shop.open(npc('priest'), null, engine);
+    shop.handleKeyDown(key('Tab'), engine);
+    expect(onServed).not.toHaveBeenCalled();
+    shop.run('heal', engine);
+    expect(onServed).toHaveBeenCalledTimes(1);
+  });
+
+  it("puts the last result under the greeting, above the offers it answers", () => {
+    const shop = new ShopDialog();
+    shop.open(npc('priest'), null, engine);
+    shop.run('heal', engine);
+    const markup = html();
+    const status = markup.indexOf('class="shop-status is-good"');
+    expect(status).toBeGreaterThan(markup.indexOf('shop-greet'));
+    expect(status).toBeLessThan(markup.indexOf('shop-service'));
+    expect(markup).toContain('Done.');
+  });
+
+  it('holds no result line for a townsperson with nothing to sell or do', () => {
+    new ShopDialog().open(npc('guard'), null, engine);
+    expect(html()).not.toContain('shop-status');
+    new ShopDialog().open(npc('priest'), null, engine);
+    expect(html()).toContain('shop-status');
   });
 
   it('seals a pact through the command bus, and renounces it the second time', () => {

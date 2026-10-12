@@ -81,7 +81,7 @@ export interface ServicePanel {
   /** The picked row, kept within `choices`. */
   selected?: number;
   /** Lists the panel switches between (the sage's, tracker 4.1), shown as tabs; `view` is the open one. */
-  views?: Array<{ id: string; label: string; count: number }>;
+  views?: Array<{ id: string; label: string; count?: number }>;
   view?: string;
 }
 
@@ -464,15 +464,24 @@ function pactOffers(engine: GameEngine): ServiceOffer[] {
 const PACT_NOTE =
   '<div class="ui-note">A pact makes the dungeon harder and pays more for it. It holds until you come back here to renounce it.</div>';
 
-/** The panel for a townsperson who isn't a merchant; null when they only greet. */
+/** The pact keeper's own list, beside his other lists. */
+const PACTS_VIEW = 'pacts';
+
+/**
+ * The panel for a townsperson who isn't a merchant; null when they only greet. The pact
+ * keeper's pacts are a list of their own, a tab beside whatever else he offers.
+ */
 export function servicePanelFor(engine: GameEngine, npc: NPC, selected = 0, view = ''): ServicePanel | null {
-  const panel = basePanelFor(engine, npc, selected, view);
-  if (!engine.manifest?.pactKeeperNpcId || npc.id !== engine.manifest.pactKeeperNpcId) return panel;
-  const offers = pactOffers(engine);
+  const keeper = engine.manifest?.pactKeeperNpcId && npc.id === engine.manifest.pactKeeperNpcId;
+  const offers = keeper ? pactOffers(engine) : [];
+  const pactsOpen = view === PACTS_VIEW && offers.length > 0;
+  const panel = basePanelFor(engine, npc, selected, pactsOpen ? '' : view);
   if (offers.length === 0) return panel;
-  return panel
-    ? { ...panel, facts: `${panel.facts ?? ''}${PACT_NOTE}`, offers: [...panel.offers, ...offers] }
-    : { heading: 'Pacts', facts: PACT_NOTE, offers };
+  const pacts: ServicePanel = { heading: 'Pacts', facts: PACT_NOTE, offers };
+  if (!panel) return pacts;
+  const views = panel.views ?? [{ id: panel.view ?? 'services', label: panel.heading }];
+  const tabs = [...views, { id: PACTS_VIEW, label: 'Pacts', count: offers.length }];
+  return pactsOpen ? { ...pacts, views: tabs, view: PACTS_VIEW } : { ...panel, views: tabs, view: panel.view ?? views[0].id };
 }
 
 function basePanelFor(engine: GameEngine, npc: NPC, selected: number, view: string): ServicePanel | null {
@@ -521,7 +530,7 @@ export function servicePanelHtml(panel: ServicePanel): string {
   const views = (panel.views ?? [])
     .map(
       (v) =>
-        `<button type="button" class="st-subtab" role="tab" aria-selected="${v.id === panel.view}" data-act="view" data-arg="${escapeHtml(v.id)}">${escapeHtml(v.label)} <span class="ui-faint">${v.count}</span></button>`
+        `<button type="button" class="st-subtab" role="tab" aria-selected="${v.id === panel.view}" data-act="view" data-arg="${escapeHtml(v.id)}">${escapeHtml(v.label)}${v.count === undefined ? '' : ` <span class="ui-faint">${v.count}</span>`}</button>`
     )
     .join('');
   return `

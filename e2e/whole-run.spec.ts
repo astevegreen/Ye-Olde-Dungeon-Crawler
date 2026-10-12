@@ -191,6 +191,8 @@ test.describe('a whole run', () => {
     const keeperId = await page.evaluate(() => window.__cotwEngine!.manifest.pactKeeperNpcId!);
     await page.keyboard.press(await standBeside(page, (await findEntity(page, { id: keeperId }))!));
     await expect.poll(() => stackIds(page)).toContain('shop');
+    // His window opens on the keeper's own lists; the pact keys 1-9 work on the Pacts tab.
+    await page.locator('.st-subtab[data-act="view"][data-arg="pacts"]').click();
     await pressUntil(page, 'Digit1', async () => (await engineState(page)).pacts.length === 1);
     await closeAll(page);
     await expect(page.locator('.sb-hint')).toBeVisible();

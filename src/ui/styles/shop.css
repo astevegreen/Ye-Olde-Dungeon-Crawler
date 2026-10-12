@@ -66,8 +66,18 @@
 .shop-choices { max-height: 180px; margin-top: var(--ui-space-2); padding: var(--ui-space-1); }
 .shop-coins { max-width: 280px; font-size: var(--ui-text-sm); }
 
-/* What the last trade or service said; holds its line so the dialog doesn't jump. */
-.shop-status { min-height: 1.45em; font-weight: bold; user-select: text; }
+/* What the last trade or service said, under the greeting. It holds its line so the dialog
+   doesn't jump, and stays at the top of the window while the window is scrolled. */
+.shop-status {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  min-height: 1.45em;
+  padding: var(--ui-space-1) 0;
+  background: var(--ui-surface-1);
+  font-weight: bold;
+  user-select: text;
+}
 .shop-status.is-good { color: var(--ui-good); }
 .shop-status.is-bad { color: var(--ui-bad); }
 .shop-status.is-warn { color: var(--ui-warn); }

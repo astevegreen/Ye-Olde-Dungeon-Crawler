@@ -39,8 +39,14 @@ export interface ShopDialogOptions {
   drawPortrait?: (canvas: HTMLCanvasElement, entity: Entity) => void;
   /** The greeting portrait's edge in pixels: 40, larger when the pack paints portraits. */
   portraitPx?: () => number;
-  /** Called after anything the shop changes, so the map and HUD redraw. */
+  /** Called after anything the shop changes, so the map redraws. */
   onStateChanged?: () => void;
+  /**
+   * Called after a trade or service ran, so the HUD bars and the log catch up. A click in
+   * the dialog never reaches the keys' post-action refresh, so without this a heal or a
+   * study shows nothing until the hero's next move.
+   */
+  onServed?: () => void;
 }
 
 type Tone = 'good' | 'bad' | 'warn' | 'info';
@@ -48,6 +54,9 @@ type ShopTab = 'buy' | 'sell' | 'forge';
 
 /** How long after opening the dialog ignores the keys that trade (R-ui-7). */
 const ARMING_MS = 250;
+
+/** The parts of the dialog that scroll, whose position a redraw keeps. */
+const SCROLLERS = ['.ui-dialog-body', '.shop-list', '.shop-choices'];
 
 /**
  * A town service as a dialog in the one frame (ADR-0011): walking into a merchant or
@@ -89,6 +98,8 @@ export class ShopDialog {
   private readonly inspector = new ItemInspector();
   /** When the dialog last opened (`Date.now()`), for the trading keys' arming delay. */
   private openedAt = 0;
+  /** A different list is about to show (a tab or view switch): it starts at its top. */
+  private freshList = false;
 
   constructor(options: ShopDialogOptions = {}) {
     this.options = options;
@@ -296,6 +307,7 @@ export class ShopDialog {
 
   private setTab(tab: ShopTab): void {
     this.activeTab = tab;
+    this.freshList = true;
     this.changed();
   }
 
@@ -408,6 +420,7 @@ export class ShopDialog {
     if (view === this.serviceView) return;
     this.serviceView = view;
     this.selectedChoiceIndex = 0;
+    this.freshList = true;
     this.changed();
   }
 
@@ -533,6 +546,7 @@ export class ShopDialog {
     this.statusMessage = result.message ?? '';
     this.statusTone = result.success ? okTone : failTone;
     this.changed();
+    this.options.onServed?.();
   }
 
   private changed(): void {
@@ -548,11 +562,22 @@ export class ShopDialog {
     const npc = this.activeNpc;
     if (!scrim || !engine || !npc || !this.isOpen) return;
 
-    const listScroll = scrim.querySelector?.('.shop-list')?.scrollTop ?? 0;
+    // The frame is rebuilt on every click; what was scrolled stays where it was, except a
+    // list that has just been switched.
+    const keepScroll = this.freshList ? [] : SCROLLERS.map((sel) => [sel, scrim.querySelector?.(sel)?.scrollTop ?? 0] as const);
+    this.freshList = false;
     const panel = this.panel(engine);
     const title = serviceTitle(engine, npc, this.merchant?.shopName);
-    const body = `${this.greetingHtml(engine, npc, title !== npc.name)}${this.merchant ? this.tradeHtml(engine) : panel ? servicePanelHtml(panel) : ''}
-      <div class="shop-status is-${this.statusTone}" role="status" aria-live="polite">${escapeHtml(this.statusMessage)}</div>`;
+    // What the last trade said sits at the top, under the greeting, where it is seen
+    // before the offers it answers (the window can be scrolled; the line stays). A
+    // townsperson with nothing to sell or do has no result to show, so no line is held.
+    const canServe = this.merchant !== null || (panel?.offers.length ?? 0) > 0;
+    const status = canServe
+      ? `<div class="shop-status is-${this.statusTone}" role="status" aria-live="polite">${escapeHtml(this.statusMessage)}</div>`
+      : '';
+    const body = `${this.greetingHtml(engine, npc, title !== npc.name)}
+      ${status}
+      ${this.merchant ? this.tradeHtml(engine) : panel ? servicePanelHtml(panel) : ''}`;
 
     const smith = this.smithId(engine);
     const hints = this.merchant
@@ -582,8 +607,10 @@ export class ShopDialog {
     });
 
     this.paintIcons(scrim, engine, npc);
-    const list = scrim.querySelector?.('.shop-list');
-    if (list) list.scrollTop = listScroll;
+    for (const [sel, top] of keepScroll) {
+      const el = scrim.querySelector?.(sel);
+      if (el) el.scrollTop = top;
+    }
     this.bind(scrim, engine);
   }
 

@@ -186,6 +186,8 @@ export class CanvasRenderer {
       drawPortrait: (canvas, entity) => this.drawEntityPortrait(canvas, entity),
       portraitPx: () => (this.portraits.any ? 96 : 40),
       onStateChanged: () => this.render(),
+      // A click in the shop's window never reaches the keys' refresh: the HUD and log catch up here.
+      onServed: () => this.afterAction(),
     });
     this.inspectOverlay = new InspectOverlay(() => this.render());
     this.mapOverlay = new MapOverlay(() => this.render());

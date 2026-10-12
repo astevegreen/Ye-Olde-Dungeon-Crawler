@@ -33,6 +33,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
         greeting: 'Welcome to Olaf’s General Goods! Broth, poultices, torches, and a warm wrap for hearty souls!',
         markupRatio: 1.25,
         markdownRatio: 0.5,
+        buys: ['consumable', 'container', 'light', 'cloak', 'misc'],
         initialInventory: () => [
           makeShopItem('tattered_travelers_wrap', 'olaf-wrap-1'),
           makeShopItem('hearth_broth_flask', 'olaf-broth-1'),
@@ -59,6 +60,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
         greeting: 'Need cold steel or sturdy plate? Gunther’s forge provides!',
         markupRatio: 1.3,
         markdownRatio: 0.5,
+        buys: ['weapon', 'armor', 'shield', 'helmet', 'boots', 'gauntlets', 'bracers'],
         initialInventory: () => [
           makeShopItem('broadsword', 'gunther-broadsword-1'),
           makeShopItem('rime_bit_chisel', 'gunther-chisel-1'),
@@ -91,6 +93,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
         greeting: 'Potions and enchanted scrolls to ward off the dark...',
         markupRatio: 1.35,
         markdownRatio: 0.45,
+        buys: ['consumable', 'amulet', 'ring', 'misc'],
         initialInventory: () => [
           makeShopItem('hearth_broth_flask', 'astrid-broth-1'),
           makeShopItem('hearth_broth_flask', 'astrid-broth-2'),

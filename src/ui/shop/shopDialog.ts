@@ -232,8 +232,10 @@ export class ShopDialog {
   // ---- Merchant state ----------------------------------------------------------
 
   public getSellableItems(engine: GameEngine): Item[] {
-    // Coins aren't merchandise (the banker exchanges them), nor is a quest item.
-    return engine.player.inventory.primaryPack.getItems().filter(isSellable);
+    // Coins aren't merchandise (the banker exchanges them), nor is a quest item; a
+    // shopkeeper also takes only the goods of their own trade.
+    const merchant = this.merchant;
+    return engine.player.inventory.primaryPack.getItems().filter((i) => (merchant ? merchant.buysItem(i) : isSellable(i)));
   }
 
   /**

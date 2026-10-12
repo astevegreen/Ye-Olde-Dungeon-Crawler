@@ -33,6 +33,8 @@ export interface MerchantConfig {
   greeting: string;
   markupRatio?: number;
   markdownRatio?: number;
+  /** The item categories this merchant buys from the hero; unset, it buys any sellable item. */
+  buys?: string[];
   /**
    * The shop's authored stock. A factory, called once per town built and once per load,
    * so each merchant holds its own items: a bought purse, a wand's spent charges or a

@@ -19,6 +19,8 @@ export type ShopType = 'general' | 'armory' | 'alchemist';
 export interface MerchantRatios {
   markupRatio?: number;
   markdownRatio?: number;
+  /** The item categories it buys; unset, any sellable item. */
+  buys?: string[];
 }
 
 const DEFAULT_MARKUP = 1;
@@ -129,6 +131,8 @@ export class Merchant {
   public readonly markupRatio: number;
   /** What it offers, as a share of an item's value (`MerchantConfig.markdownRatio`, default 0.5). */
   public readonly markdownRatio: number;
+  /** The categories it buys (`MerchantConfig.buys`); undefined buys anything sellable. */
+  public readonly buys?: readonly string[];
   public stock: Item[];
 
   constructor(
@@ -147,7 +151,13 @@ export class Merchant {
     this.greeting = greeting;
     this.markupRatio = ratios.markupRatio ?? DEFAULT_MARKUP;
     this.markdownRatio = ratios.markdownRatio ?? DEFAULT_MARKDOWN;
+    this.buys = ratios.buys;
     this.stock = [...initialStock];
+  }
+
+  /** Whether this merchant takes `item` from the hero: sellable at all, and in its trade. */
+  public buysItem(item: Item): boolean {
+    return isSellable(item) && (!this.buys || this.buys.includes(item.category));
   }
 
   /** What this merchant asks for `item`: the price the shop shows and `buyItem` charges. */
@@ -258,6 +268,9 @@ export class Merchant {
     }
     if (!isSellable(item)) {
       return { success: false, message: `No merchant will buy ${item.displayName}.` };
+    }
+    if (!this.buysItem(item)) {
+      return { success: false, message: `${this.name} does not deal in ${item.displayName}.` };
     }
 
     // 1. A worn, bound item (a negative family) is not for sale until cleansed.

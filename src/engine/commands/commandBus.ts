@@ -24,7 +24,7 @@ import {
 import { TempleService, SageService, BankService, TrainerService } from '../economy/services';
 import { LoreService } from '../economy/lore';
 import { SmithService } from '../economy/smith';
-import { type Merchant, isSellable } from '../economy/merchant';
+import type { Merchant } from '../economy/merchant';
 import { formatCurrency } from '../economy/currency';
 import { ChannelRuneOfReturnAction, RuneOfReturnItem, cancelChannel } from '../magic/runeOfReturn';
 import { recordMilestone } from '../renown/renownLedger';
@@ -366,7 +366,7 @@ export class EngineCommandBus implements GameCommandBus {
       case 'sell_junk': {
         const merchant = (p.merchant as Merchant) ?? this.engine.merchants.get(p.merchantId as string);
         if (!merchant) return { success: false, message: 'Invalid sell request' };
-        const marked = this.engine.player.inventory.primaryPack.getItems().filter((i) => i.junk && isSellable(i));
+        const marked = this.engine.player.inventory.primaryPack.getItems().filter((i) => i.junk && merchant.buysItem(i));
         // A container filled since it was marked stays, with what it holds (R-econ-19).
         const kept = marked.filter((i) => i instanceof Container && i.itemCount > 0);
         const junk = marked.filter((i) => !kept.includes(i));

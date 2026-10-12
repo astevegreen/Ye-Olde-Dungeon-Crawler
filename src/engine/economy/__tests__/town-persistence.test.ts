@@ -110,19 +110,21 @@ describe('Town Hub Generation & Multi-Floor Persistence', () => {
   it('keeps what the hero bought gone and what they sold on the shelf across a reload', () => {
     const { profile, engine } = manager.createCharacter('Hilda');
     const olaf = engine.merchants.get('merchant-olaf')!;
-    const before = olaf.stock.length;
+    const gunther = engine.merchants.get('merchant-gunther')!;
+    const before = gunther.stock.length;
     const broth = olaf.stock.find((i) => i.id === 'olaf-broth-1')!;
     expect(olaf.buyItem(engine.player, broth.id).success).toBe(true);
     const dagger = ItemFactory.createDagger('hilda-old-dagger');
     engine.player.inventory.primaryPack.addItem(dagger);
-    expect(olaf.sellItem(engine.player, dagger.id).success).toBe(true);
+    expect(gunther.sellItem(engine.player, dagger.id).success).toBe(true);
     manager.saveCharacter(engine, profile);
 
-    const restored = manager.loadCharacter(profile.id)!.engine.merchants.get('merchant-olaf')!;
+    const restoredEngine = manager.loadCharacter(profile.id)!.engine;
+    const restored = restoredEngine.merchants.get('merchant-gunther')!;
     const ids = restored.stock.map((i) => i.id);
-    expect(ids).not.toContain('olaf-broth-1');
+    expect(restoredEngine.merchants.get('merchant-olaf')!.stock.map((i) => i.id)).not.toContain('olaf-broth-1');
     expect(ids).toContain('hilda-old-dagger');
-    expect(restored.stock).toHaveLength(before);
+    expect(restored.stock).toHaveLength(before + 1);
     expect(restored.stock.find((i) => i.id === 'hilda-old-dagger')!.identified).toBe(true);
   });
 

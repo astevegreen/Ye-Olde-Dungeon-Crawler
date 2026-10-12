@@ -209,13 +209,41 @@ describe('Merchant Economy & Trading Engine', () => {
 
       const cfg = astridConfig();
       const astrid = new Merchant(cfg.id, cfg.name, cfg.name, 'general', cfg.greeting, [], cfg);
-      const dagger = ItemFactory.createDagger('astrid-dagger');
+      const tonic = cfg.initialInventory().find((i) => i.id === 'astrid-tonic-1')!;
+      tonic.identified = true;
+      player.inventory.primaryPack.addItem(tonic);
+      const offered = astrid.sellPrice(tonic);
+      expect(offered).toBe(Math.floor(tonic.value * 0.45));
+      expect(astrid.sellItem(player, tonic.id).costInCp).toBe(offered);
+      expect(getPlayerTotalCp(player)).toBe(500 - asked + offered);
+    });
+
+    it('a shopkeeper buys only the categories of their own trade', () => {
+      const olaf = createOlafGeneralStore();
+      const cfg = astridConfig();
+      const astrid = new Merchant(cfg.id, cfg.name, cfg.name, 'general', cfg.greeting, [], cfg);
+      const dagger = ItemFactory.createDagger('trade-dagger');
       dagger.identified = true;
       player.inventory.primaryPack.addItem(dagger);
-      const offered = astrid.sellPrice(dagger);
-      expect(offered).toBe(Math.floor(dagger.value * 0.45));
-      expect(astrid.sellItem(player, dagger.id).costInCp).toBe(offered);
-      expect(getPlayerTotalCp(player)).toBe(500 - asked + offered);
+      expect(olaf.buysItem(dagger)).toBe(false);
+      expect(astrid.buysItem(dagger)).toBe(false);
+      expect(olaf.sellItem(player, dagger.id).success).toBe(false);
+      expect(player.inventory.primaryPack.getItem(dagger.id)).toBeDefined();
+    });
+
+    it('buying and selling share one appraisal: known good 1.5x, chaotic 1x, known bad 0.1x, unknown flat', () => {
+      const olaf = createOlafGeneralStore();
+      const mk = (alignment: 'positive' | 'negative' | 'chaotic' | undefined, identified: boolean) => {
+        const item = ItemFactory.createDagger(`appr-${alignment}-${identified}`);
+        item.identified = identified;
+        if (alignment) item.modifiers.push({ alignment } as never);
+        return item;
+      };
+      const plain = olaf.buyPrice(mk(undefined, true));
+      expect(olaf.buyPrice(mk('positive', true))).toBe(Math.floor((plain / 1.25) * 1.5 * 1.25));
+      expect(olaf.buyPrice(mk('chaotic', true))).toBe(plain);
+      expect(olaf.buyPrice(mk('negative', true))).toBeLessThan(plain / 5);
+      expect(olaf.buyPrice(mk('positive', false))).toBe(plain);
     });
 
     it('the town the engine builds, and a load, give each merchant the ratios its pack declares', () => {

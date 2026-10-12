@@ -21,7 +21,7 @@ function openBestiary(engine: GameEngine): { tab: BestiaryTab; el: { innerHTML: 
 }
 
 /** A manifest with `monsters` and one family holding them all, mastered at `masteryKills`. */
-function familyManifest(monsters: Array<{ id: string; name: string }>, familyName: string, masteryKills: number) {
+function familyManifest(monsters: Array<{ id: string; name: string; minFloor?: number }>, familyName: string, masteryKills: number) {
   return {
     id: 'test',
     name: 'Test',
@@ -58,6 +58,28 @@ describe('Bestiary tab: knowledge ranks and family perks (Q7 "A")', () => {
     expect(overlay.innerHTML).toContain('Slay 13 more to complete its page');
     expect(overlay.innerHTML).not.toContain('Anatomist');
     expect(overlay.innerHTML).not.toContain('data-scope="species"');
+  });
+
+  it('lists known creatures from the shallowest floor down, then unknown ones the same way', () => {
+    const map = new GameMap(10, 10);
+    const player = new Player({ id: 'p1', name: 'Hero', position: { x: 1, y: 1 } });
+    const manifest = familyManifest(
+      [
+        { id: 'deep', name: 'Deep One', minFloor: 5 },
+        { id: 'shallow', name: 'Shallow One', minFloor: 1 },
+        { id: 'unseen_deep', name: 'Unseen Deep', minFloor: 4 },
+        { id: 'mid', name: 'Mid One', minFloor: 3 },
+        { id: 'unseen_shallow', name: 'Unseen Shallow', minFloor: 2 },
+      ],
+      'Mixed',
+      15
+    );
+    const engine = new GameEngine({ map, player, floor: 1, manifest });
+    for (const id of ['deep', 'shallow', 'mid']) engine.compendium.recordKill(id, id);
+
+    const { tab } = openBestiary(engine);
+    const order = (tab as unknown as { listed(): Array<{ id: string }> }).listed().map((m) => m.id);
+    expect(order).toEqual(['shallow', 'mid', 'deep', 'unseen_shallow', 'unseen_deep']);
   });
 
   it('marks a creature slain 15 times as Studied, with its page complete', () => {

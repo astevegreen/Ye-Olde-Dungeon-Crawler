@@ -84,12 +84,17 @@ export class BestiaryTab implements MenuTab {
     );
   }
 
-  /** The list as shown: the filter applied, creatures you know first, unknown ones last. */
+  /**
+   * The list as shown: the filter applied, creatures you know first, unknown ones last, each
+   * group from the shallowest floor down. The sort is a copy: the registry's order decides
+   * what spawns.
+   */
   private listed(): MonsterDefinition[] {
     const compendium = this.engine?.compendium;
-    if (!compendium) return this.allMonsters();
+    const byDepth = [...this.allMonsters()].sort((a, b) => (a.minFloor ?? 1) - (b.minFloor ?? 1));
+    if (!compendium) return byDepth;
     const tier = (m: MonsterDefinition) => compendium.getTier(m.id);
-    const shown = this.allMonsters().filter((m) =>
+    const shown = byDepth.filter((m) =>
       this.filter === 'discovered' ? tier(m) >= 1 : this.filter === 'mastered' ? tier(m) === 3 : true
     );
     return [...shown.filter((m) => tier(m) > 0), ...shown.filter((m) => tier(m) === 0)];

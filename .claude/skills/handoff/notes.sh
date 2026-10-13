@@ -96,7 +96,13 @@ claim() {
 }
 
 case "${1:-}" in
-  publish) publish "$2" ;;
+  publish)
+    publish "$2"
+    # A claimed note records how its task went; `list` never offers it again.
+    if grep -q '^Resumed:' "$2"; then
+      echo "note: $(basename "$2") is claimed (Resumed:), so /handoff resume will not offer it. A handoff for further work is a new note."
+    fi
+    ;;
   list) list ;;
   claim) claim "$2" ;;
   *) echo "usage: sh notes.sh publish <file> | list | claim <name>" >&2; exit 2 ;;

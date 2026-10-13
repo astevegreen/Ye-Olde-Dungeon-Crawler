@@ -1,8 +1,10 @@
-// Stop hook: once the conversation passes LIMIT tokens, send Claude back to write the handoff
+// Stop hook, two checks. A reply that sends the owner to /clear or /handoff resume goes back to
+// Claude unless an unclaimed note is published (below). And once the conversation passes LIMIT tokens, send Claude back to write the handoff
 // before it finishes the turn. CLAUDE.md's "the session has run long" never fired on judgement
 // alone: sessions ran to auto-compaction first. Fires once per session, and again only after the
 // context drops below LIMIT (a compaction) and climbs past it once more. Exit 2 feeds the reason
 // to Claude; any other path exits 0 silently.
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -32,6 +34,21 @@ try {
     .filter(Boolean);
 } catch {
   process.exit(0);
+}
+
+// A turn that ends by sending the owner to /clear or /handoff resume needs a note `list` will
+// offer: published by this session after its last commit, with no Resumed: line. Sessions that
+// resumed a note, worked on, and republished that claimed note sent the owner to an empty list.
+const lastText = lastAssistantText(entries);
+if (/\/handoff resume|`\/clear`/.test(lastText.slice(-700)) && !publishedOpenNote(entries)) {
+  process.stderr.write(
+    `Your reply sends the owner to /clear or /handoff resume, but this session has published no ` +
+      `unclaimed note since its last commit, so the next session's \`notes.sh list\` finds nothing. ` +
+      `Run the handoff skill's write branch now (a new note; a note you resumed stays claimed), then ` +
+      `tell the owner. When the reply only explains the workflow, or \`notes.sh list\` already shows ` +
+      `the note it points to, end the turn as it is.\n`,
+  );
+  process.exit(2);
 }
 
 // Context size: what the latest model call read, cached or not.
@@ -76,6 +93,55 @@ process.stderr.write(
     `progress stays uncommitted and listed, as the skill says.\n`,
 );
 process.exit(2);
+
+function lastAssistantText(list) {
+  for (let i = list.length - 1; i >= 0; i--) {
+    const content = list[i].type === 'assistant' && list[i].message?.content;
+    if (!Array.isArray(content)) continue;
+    const text = content.filter((part) => part?.type === 'text').map((part) => part.text).join('\n');
+    if (text) return text;
+  }
+  return '';
+}
+
+// The latest `notes.sh publish` after the latest `git commit` printed `pushed` or `unchanged`
+// for a note that, on the local copy of origin/handoffs, carries no Resumed: line.
+function publishedOpenNote(list) {
+  const results = new Map();
+  for (const e of list) {
+    if (e.type !== 'user' || !Array.isArray(e.message?.content)) continue;
+    for (const part of e.message.content) {
+      if (part?.type !== 'tool_result') continue;
+      const c = part.content;
+      results.set(part.tool_use_id, Array.isArray(c) ? c.map((x) => x?.text ?? '').join('') : String(c ?? ''));
+    }
+  }
+  let name = null;
+  for (const e of list) {
+    if (e.type !== 'assistant' || !Array.isArray(e.message?.content)) continue;
+    for (const part of e.message.content) {
+      const command = part?.type === 'tool_use' ? String(part.input?.command ?? '') : '';
+      if (/notes\.sh"?\s+publish/.test(command)) {
+        const out = results.get(part.id) ?? '';
+        const m = out.match(/pushed (\S+\.md) to origin|unchanged: (\S+\.md) is already/);
+        if (m) name = m[1] ?? m[2];
+      } else if (/\bgit\s+commit\b/.test(command)) {
+        name = null;
+      }
+    }
+  }
+  if (!name) return false;
+  try {
+    const note = execFileSync('git', ['show', `refs/remotes/origin/handoffs:${name}`], {
+      cwd: input.cwd || process.cwd(),
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    return !/^Resumed:/m.test(note);
+  } catch {
+    return false;
+  }
+}
 
 function lastOwnerMessage(list) {
   for (let i = list.length - 1; i >= 0; i--) {

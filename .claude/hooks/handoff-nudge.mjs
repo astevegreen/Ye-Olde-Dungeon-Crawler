@@ -39,8 +39,16 @@ try {
 // A turn that ends by sending the owner to /clear or /handoff resume needs a note `list` will
 // offer: published by this session after its last commit, with no Resumed: line. Sessions that
 // resumed a note, worked on, and republished that claimed note sent the owner to an empty list.
-const lastText = lastAssistantText(entries);
-if (/\/handoff resume|`\/clear`/.test(lastText.slice(-700)) && !publishedOpenNote(entries)) {
+// Only the reply's closing instruction counts ("After `/clear`, type `/handoff resume`"), not a
+// reply that explains the workflow ("if Claude tells you to /clear or /handoff resume").
+const closing = lastAssistantText(entries).trim().split(/\n\s*\n/).slice(-2).join('\n');
+const CLEAR = '`?/clear`?';
+const sendsToClear = new RegExp(
+  `${CLEAR}[^.\\n]{0,40}?\\b(then|and)\\b[^.\\n]{0,30}(/handoff resume|fresh session)` +
+    `|\\b(after|with|suggest|ready to|to continue[:,]?|to start it[:,]?)\\s+(type\\s+|run\\s+)?${CLEAR}`,
+  'i',
+);
+if (sendsToClear.test(closing) && !publishedOpenNote(entries)) {
   process.stderr.write(
     `Your reply sends the owner to /clear or /handoff resume, but this session has published no ` +
       `unclaimed note since its last commit, so the next session's \`notes.sh list\` finds nothing. ` +

@@ -37,7 +37,4 @@ Owner: "have a dialogue with me about the first two open decision items from the
 - `src/content/cotw/magic.ts:134` — glyph table
 - `src/engine/magic/grimoireMatrix.ts:232` — today's slot rules
 - `src/content/cotw/spells.ts` — the 16 core spells and their stats
-- `.prompts/antigravity/2026-10-13-grimoire-spells.md` — the 41 spell ideas
-
-## Verification
-- No code changed; gates not run.
+- `.prompts/antigravity/2026-10-13-grimoire-spells.md` — the 41 spell ideas (no code changed; gates not run)

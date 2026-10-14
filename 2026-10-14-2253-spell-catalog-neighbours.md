@@ -29,6 +29,7 @@ Continue the owner's grimoire redesign dialogue (talk only; nothing is built unt
 ## Decisions
 - Cuts and merges (one spell per kind of action; neighbours make the element versions; two heals into Heal; Detect Monsters, Detect Objects, Clairvoyance into Hliðskjálf; Identify scroll-only) — owner: "I agree with all the cut and merge recommendations."
 - Catalog past the slots — owner: "I'm ok with having a few extra spells that players will never be able to use because that allows a tiny bit of replay value and introduces choice for players."
+- Resume 14 Oct, all Decide first questions approved as recommended; every neighbour-effect answer (two-way, flavour counts once, summons carry flavours, opposites +25%, Týr's Essence-Rune, the flavour and type lists) is tentative — owner: "Approve all, but keep anything related to neighbor effects as tentative for now. I might want to revisit the actual mechanics of how neighbor slots affect each other more later. But everything else looks good for now."
 - Light stays cut: a torch only matters on F21 and F30 until relit (sight 2 → 5, `src/content/cotw/darkness.ts:57`); chosen because a slot for two floors is waste.
 
 ## Read first

@@ -32,3 +32,4 @@ Continue the owner's grimoire redesign dialogue (talk only; nothing is built unt
 - The Notion magic review page: item 1 and "Grimoire redesign"
 - `src/content/cotw/magic.ts:134` — the glyphs the flavours come from
 - `src/content/cotw/elements.ts:5` — elements and their opposites
+Resumed: 2026-10-14 22:27 UTC

@@ -31,3 +31,12 @@ Owner asked for an exhaustive brainstorm of new spells grounded in the grimoire'
 ## Verification
 - gates: not run (no code changed)
 Resumed: 2026-10-14 02:49 UTC
+
+## Answers 14 Oct (resume)
+- Blood magic: finish — owner: "Finish"
+- Poison spell: yes, one — owner: "Yes"
+- Quick bar casts from any page — owner: "No"
+- Norse names once the final catalog is decided — owner: "Use Norse names once we decide on the final spell catalog"
+- Hostages grant unique positive-alignment spells — owner: "Yes"
+- Gifts dropped, a different neighbour system comes — owner: "We will implement a system different than gifts"
+- Notion page updated and cleaned. Still open: axis scheme, grimoire shapes, neighbour sides/slot order, spawn-surface first

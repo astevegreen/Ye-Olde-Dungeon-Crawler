@@ -12,8 +12,7 @@ Owner: "have a dialogue with me about the first two open decision items from the
 
 ## Done
 - Notion "Magic system review — 13 Oct 2026" (https://app.notion.com/p/3f8eb012942f815aa849c981efb30225): the two open questions replaced by the redesign direction plus three open decisions (unlock timing, late-slot outline, glyphs/grounds)
-- Memory: `magic-review-2026-10-13.md` updated (settled items, direction, pyramid added to don't-re-propose)
-- Uncommitted: none
+- Memory: `magic-review-2026-10-13.md` updated (settled items, direction, pyramid added to don't-re-propose). Uncommitted: none
 
 ## Next
 1. Ask the Decide-first questions; fold answers into the Notion section per memory `notion-plan-answers` (rewrite the bullets, remove the question).

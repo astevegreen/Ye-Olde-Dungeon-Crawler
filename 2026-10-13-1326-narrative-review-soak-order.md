@@ -25,6 +25,10 @@ Owner asked for a check of Antigravity's narrative assessment (`2026-10-10-narra
 ## Decisions
 - No soak runs (soak-fix Phase D baseline and final overnight included) until the magic changes land — owner: "If I run tests now and then significantly change the magic system then the test resulsts will be obsolete"
 - Narrative page lists facts and recommendations only, no implementation plans — owner: "Don't 'plan' specifically how to implement each recommendation yet"
+- Magic page first — owner (resume 14 Oct): "have a dialogue with me about the first two open decision items from the Notion page on Magic"
+- Blood magic: finish; poison spell: yes — settled 14 Oct in the grimoire-spell-ideas session (owner: "Finish", "Yes")
+- Narrative questions (ending variants, Act 2 tie-back, doom score): deferred; the owner chose magic first
+- The page's open decisions are now the owner's grimoire axis and grimoire shapes ideas; this session discusses them
 
 ## Read first
 - Both Notion pages above: each item's rationale is there.

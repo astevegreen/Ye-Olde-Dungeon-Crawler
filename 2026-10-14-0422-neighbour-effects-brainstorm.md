@@ -28,3 +28,4 @@ Continue the owner's grimoire redesign dialogue (talk only; nothing is built unt
 - The Notion page: "Grimoire redesign" and "Open decisions"
 - `src/content/cotw/magic.ts:122` — today's grimoire config and glyphs
 - `src/content/cotw/spells.ts` — the 16 core spells, their elements and targeting
+Resumed: 2026-10-14 21:24 UTC

@@ -1,5 +1,6 @@
-import type { GameEngine } from '../engine';
+import type { GameEngine, SpellDefinition } from '../engine';
 import { GrimoireMatrixManager, getSpell, resolveManaTerms } from '../engine';
+import { castFromSlot } from './characterMenu/spellbookGrimoires';
 import { markCue } from './hints/cueMark';
 import { spellPower } from './spellPower';
 import { spellRuneHtml, spellTone } from './spellRunes';
@@ -151,6 +152,11 @@ export class QuickSpellsBar {
         continue;
       }
 
+      if (player.grimoireSystem) {
+        this.renderGrimoireSlot(slotEl, i, engine, spell, mana.unit);
+        continue;
+      }
+
       // What the cast costs and does from its grimoire slot, not the base spell.
       const cast = GrimoireMatrixManager.resolveCast(engine, player, spell.id);
       const manaCost = cast?.spell.manaCost ?? spell.manaCost ?? 0;
@@ -178,6 +184,47 @@ export class QuickSpellsBar {
     }
     this.fitRows();
     this.renderCue();
+  }
+
+  /**
+   * A slot under the three-grimoire model: the cost the cast charges from its grimoire slot
+   * (the base cost beside it when a stat or a lend moved it), and a spell in no slot shown
+   * as unplaced, since it cannot be cast until it is.
+   */
+  private renderGrimoireSlot(slotEl: HTMLElement, i: number, engine: GameEngine, spell: SpellDefinition, unit: string): void {
+    const player = engine.player;
+    const slotKey = SLOT_LABELS[i];
+    const { cast, notes, slotted } = castFromSlot(engine, player, spell);
+    const manaCost = cast.manaCost ?? 0;
+    const baseCost = spell.manaCost ?? 0;
+    const power = spellPower(cast, { engine, player });
+    const basePower = spellPower(spell);
+    const hasMana = slotted && player.mana >= manaCost;
+    const state = !slotted ? 'quick-spell-slot-unplaced' : hasMana ? 'quick-spell-slot-assigned' : 'quick-spell-slot-nomana';
+    slotEl.hidden = false;
+    slotEl.className = `quick-spell-slot quick-spell-slot-${i} ${state}`;
+    const shown = (base: number, now: number): string => (base === now ? `${now}` : `${now} (base ${base})`);
+    const grid = notes.length > 0 ? ` From the grid: ${notes.join('; ')}.` : '';
+    slotEl.title = !slotted
+      ? `[${slotKey}] ${spell.name} is in no grimoire slot. Open the spellbook to place it.`
+      : `[${slotKey}] ${spell.name} — ${shown(baseCost, manaCost)} ${unit}${power ? `, power ${shown(basePower, power)}` : ''}${
+          hasMana ? '' : ` (you have ${player.mana})`
+        }.${grid}${hasMana ? ` Click or press ${slotKey} to cast.` : ''}`;
+    const tone = spellTone(engine.manifest, spell);
+    if (tone) slotEl.style.setProperty?.('--slot-tone', tone);
+    else slotEl.style.removeProperty?.('--slot-tone');
+    const costHtml = !slotted
+      ? '<span class="slot-badge-cost-nomana">place</span>'
+      : `<span class="${hasMana ? 'slot-badge-cost' : 'slot-badge-cost-nomana'}">${manaCost}${
+          manaCost !== baseCost ? `<span class="slot-badge-base">${baseCost}</span>` : ''
+        }<span class="slot-badge-unit"> ${unit}</span></span>`;
+    slotEl.innerHTML = `
+        <span class="slot-badge-digit">${slotKey}</span>
+        ${spellRuneHtml(engine.manifest, spell)}
+        <span class="slot-badge-name"></span>
+        ${costHtml}
+      `;
+    (slotEl.querySelector('.slot-badge-name') as HTMLElement).textContent = spell.name;
   }
 
   /** Points the cast cue at a slot (null clears it). */

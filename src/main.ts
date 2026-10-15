@@ -391,6 +391,12 @@ window.addEventListener('DOMContentLoaded', () => {
     // As the cast resolves: its grimoire slot's synergies change the cost, range and area.
     const resolved = GrimoireMatrixManager.resolveCast(activeEngine, activeEngine.player, spell.id);
     const cast = resolved?.spell ?? spell;
+    // Under the three grimoires a spell is cast from its slot, so one in no slot is not cast.
+    if (activeEngine.player.grimoireSystem && !activeEngine.diagnostics.resolvedCasts().some((c) => c.spellId === spell.id)) {
+      activeEngine.log(`${spell.name} is in no grimoire slot. Place it in the spellbook to cast it.`);
+      renderer.render();
+      return;
+    }
     // Packs with mana overflow let a short cast go off into debt (ManaOverflowManager).
     if (!canOvercast(activeEngine) && activeEngine.player.mana < (cast.manaCost ?? 0)) {
       const mana = resolveManaTerms(activeEngine.manifest);

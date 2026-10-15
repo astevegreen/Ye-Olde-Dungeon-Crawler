@@ -77,9 +77,13 @@ function pickerHtml(player: Player, grimoireId: string, axis: GrimoireAxis): str
  * and the notes the card prints under them (stat steps, what is borrowed). A spell in no
  * slot is as written.
  */
-export function castFromSlot(engine: GameEngine, player: Player, spell: SpellDefinition): { cast: SpellDefinition; notes: string[] } {
+export function castFromSlot(
+  engine: GameEngine,
+  player: Player,
+  spell: SpellDefinition
+): { cast: SpellDefinition; notes: string[]; slotted: boolean } {
   const resolved = engine.diagnostics.resolvedCasts().find((c) => c.spellId === spell.id);
-  if (!resolved) return { cast: spell, notes: [] };
+  if (!resolved) return { cast: spell, notes: [], slotted: false };
   const system = player.grimoireSystem!;
   const state = player.grimoireState!;
   const notes = slotStatSteps(system, state, resolved.slot).map((s) => `${s.stat.name} ×${s.steps}`);
@@ -91,7 +95,7 @@ export function castFromSlot(engine: GameEngine, player: Player, spell: SpellDef
     range: spell.range ? spell.range + resolved.stats.rangeBonus : spell.range,
     areaOfEffect: (spell.areaOfEffect ?? 0) + resolved.stats.areaBonus,
   };
-  return { cast, notes };
+  return { cast, notes, slotted: true };
 }
 
 export function renderGrimoires(engine: GameEngine, player: Player, chosen: SpellDefinition | undefined, activeId: string | undefined): GrimoireView {

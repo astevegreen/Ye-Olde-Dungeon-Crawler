@@ -199,4 +199,17 @@ describe('QuickSpellsBar', () => {
     expect(s[4].className).toContain('quick-spell-slot-add');
     expect(s[4].style['--slot-tone']).toBeUndefined();
   });
+  it('under the three grimoires, a spell in no slot shows as unplaced and not castable', () => {
+    const engine = buildEngine(['test:arrow']);
+    Object.defineProperty(engine.player, 'grimoireSystem', { value: {} });
+    engine.diagnostics.resolvedCasts = () => [];
+    const bar = new QuickSpellsBar({ onTriggerSlot: () => {}, onOpenSpellbook: () => {} });
+    bar.update(engine);
+    const first = slots()[0];
+
+    expect(first.className).toContain('quick-spell-slot-unplaced');
+    expect(first.className).not.toContain('quick-spell-slot-assigned');
+    expect(first.title).toContain('in no grimoire slot');
+    expect(first.innerHTML).toContain('place');
+  });
 });

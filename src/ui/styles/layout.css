@@ -230,6 +230,19 @@
   color: var(--ui-text-muted);
 }
 
+.quick-spell-slot-unplaced {
+  background: color-mix(in srgb, var(--ui-line-strong) 20%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--slot-tone, var(--ui-text-muted)) 45%, transparent);
+  color: var(--ui-text-muted);
+}
+
+/* The base cost, beside the boosted one a grimoire slot's stats gave. */
+.slot-badge-base {
+  margin-left: 3px;
+  color: var(--ui-text-muted);
+  text-decoration: line-through;
+}
+
 .slot-badge-digit {
   font-weight: bold;
   font-size: 11px;

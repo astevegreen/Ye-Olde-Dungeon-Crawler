@@ -19,7 +19,7 @@ Notes live on origin's `handoffs` branch, which holds only notes, never merges i
 3. **Send durable facts to memory.** A fact that outlives this task (an owner preference, a tooling gotcha) goes to the memory directory; the note carries only what this task needs.
 4. **Write the note** as a new file, also when this session began by resuming one: a claimed note carries `Resumed:`, `list` never offers it again, and the next session finds nothing. Path: `.prompts/handoffs/<YYYY-MM-DD-HHMM>-<slug>.md` (timestamp in UTC from `date -u +%Y-%m-%d-%H%M`, since cloud sessions run in UTC and names sort as times; slug 2–4 words naming the task), using the template below, 40 lines at most. Write for a **cold reader**: a session with none of this conversation, only the note, the repo and memory. Point at code by `path:line` and at history by sha, and let the cold reader open what it needs. Done when a cold reader could ask every **Decide first** question and start step 1 of **Next** from the note and the files it names alone.
 5. **Publish the note**: `notes.sh publish <path>`. Done when it prints `pushed <name>`; when the push fails, the note exists only on this disk, and step 6 says so.
-6. **Tell the owner**, in the same turn as step 5's `pushed`: the resume line is a promise that `list` shows this note. The note's name, each **Decide first** question as one line with its recommendation, and the resume line: after `/clear`, type `/handoff resume`, in this session or a cloud one. The owner may answer a quick one in place; the rest wait for the fresh session.
+6. **Tell the owner**, in the same turn as step 5's `pushed`: the resume line is a promise that `list` shows this note. The note's name, each **Decide first** question as one line with its recommendation, the **Model** line when the note has one, and the resume line: after `/clear`, type `/handoff resume`, in this session or a cloud one. The owner may answer a quick one in place; the rest wait for the fresh session.
 
 ### Template
 
@@ -39,6 +39,9 @@ Notes live on origin's `handoffs` branch, which holds only notes, never merges i
     ## Next
     1. <concrete step, starting from a named file, function or command>
 
+    ## Model
+    <model> at <low|medium|high|xhigh|max> thinking — <what **Next** asks for that earns it>
+
     ## Decisions
     - <decision> — owner: "<quote>"   (or: chosen because <reason>)
 
@@ -53,6 +56,8 @@ Notes live on origin's `handoffs` branch, which holds only notes, never merges i
 
 Keep **Goal** and **Next** always; drop any other section that would be empty. When the work is finished, **Next** reads `Complete` and the note keeps only what a later task would want.
 
+**Model** names the model and thinking level the next session should run, chosen from what **Next** will do, by `CLAUDE.md`'s Model and effort rule: Opus for design, debugging and engine work, Sonnet 5.5 for routine content, tuning and UI changes with a clear spec. Thinking follows the hardest step in **Next**: `low` for mechanical edits, `medium` for a specified change, `high` for tracing a cause or a cross-file change, `xhigh` or `max` for open design or a bug with no reproduction. When **Next** mixes kinds, recommend for the part that decides the outcome. Omit the section when **Next** reads `Complete` or the first step is still undecided.
+
 ## Resume
 
 1. **Find and claim the note**: a path given is read where it is. Otherwise `notes.sh list` prints the unresumed notes, newest first, each with its header line; take the name given, or the only note listed, and when two or more are listed, show them all and ask which one, whatever their age. Then `notes.sh claim <name>` copies it to `.prompts/handoffs/`, appends `Resumed: <YYYY-MM-DD HH:MM> UTC` and publishes it, so another session's `list` stops offering it. Done when it prints `pushed <name>`; when it prints `already claimed`, another session took that note first: run `list` again and ask.
@@ -60,4 +65,4 @@ Keep **Goal** and **Next** always; drop any other section that would be empty. W
 3. **Check drift**: run `git log --oneline <sha>..HEAD` and `git status --short`. Report commits or changes the note doesn't know about, and uncommitted files it lists that are absent here (they stayed on the machine that wrote it); re-plan any step they invalidate before running it.
 4. **Ask the Decide first questions**, recommended option first, and record each answer under **Decisions** in the copy, with the owner's words, then `notes.sh publish <path>` the copy. Done when every question has an answer or the owner has deferred it.
 5. **Read the Read-first files**, and only those, before starting.
-6. **Restate the goal and the next step** in two lines, re-planned for any answer from step 4, then start that step. Decisions in the note stand as settled.
+6. **Restate the goal and the next step** in two lines, re-planned for any answer from step 4. When the note's **Model** differs from this session's model or thinking level, add one line saying so and let the owner switch before the step starts; otherwise start that step. Decisions in the note stand as settled.

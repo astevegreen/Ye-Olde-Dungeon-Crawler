@@ -2,6 +2,7 @@ import type { StatusType, StatusEffect, SerializedStatusEffect } from './types';
 import type { Entity } from '../entities/entity';
 import type { GameEngine } from '../engine';
 import { StatusHandlerRegistry } from './statusHandlers';
+import { goOff } from './endings';
 
 export interface StatusTickResult {
   expired: StatusType[];
@@ -189,6 +190,9 @@ export class StatusManager {
         } else {
           messages.push(`${entity.name}'s ${type} effect has worn off.`);
         }
+        // Run here, not in `onExpire`, which a pack's expire message replaces (`engine.ts`).
+        if (handler?.ending?.on.includes('expire')) goOff(engine, entity, effect, handler.ending);
+        handler?.onEnd?.(entity, effect, engine);
       }
     }
 

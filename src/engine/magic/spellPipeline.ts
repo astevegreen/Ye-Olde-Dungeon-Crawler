@@ -787,6 +787,8 @@ export class SpellPipeline {
     // A lease on the world: the built-in `summoned` status, which saves with the creature
     // and sends it back when it runs out (statusHandlers.ts).
     if (effect.duration && effect.duration > 0) {
+      // Its own first, so they end (a shatter, a burst) while it still stands.
+      for (const type of effect.bears ?? []) summoned.statusManager.applyStatus({ type, duration: effect.duration, sourceEntityId: caster.id });
       summoned.statusManager.applyStatus({ type: 'summoned', duration: effect.duration });
       if (effect.decoy && effect.friendly) summoned.statusManager.applyStatus({ type: 'decoy', duration: effect.duration });
     }

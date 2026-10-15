@@ -16,6 +16,7 @@ import { applyImpulse } from '../combat/impulse';
 import { resolveCombatMitigation } from '../combat/mitigationPipeline';
 import { burnOnSacredGround } from '../combat/sacredGround';
 import { dispatchDamageHooks } from '../hooks/damageHooks';
+import { setOffEndings } from '../status/endings';
 import type { ItemModifier } from '../items/modifiers';
 import { afflictionDuration, highestWorn, productWorn, sumWorn, wearsFlag, wornModifiers } from '../items/wornModifiers';
 import { attributeScalingOf, dexterityEvasion, intelligenceEvasion, meleeHitPercent, strengthMeleeBonus } from '../combat/attributeScaling';
@@ -406,6 +407,9 @@ export class MeleeAttackAction implements Action {
     if (isFatal) {
       message += ` ${this.defender.name} is slain!`;
       DeathResolver.resolveDeath(engine, this.attacker, this.defender, { damageElement: killingElement });
+    } else if (damageDealt > 0 && this.defender.isAlive()) {
+      // Last, as a blast may take the defender off the map (a decoy that bursts).
+      setOffEndings(engine, this.defender, 'struck');
     }
 
     // Twinstrike: the blow lands again, as part of this action; Twin Fangs strikes once more
@@ -414,7 +418,7 @@ export class MeleeAttackAction implements Action {
     const shares = this.followUp ? [] : attackerModifiers.flatMap((mod) => (mod.followUpStrikeShare ? [mod.followUpStrikeShare] : []));
     const strikes = [...Array<number>(extraStrikes).fill(1), ...shares];
     for (const damageShare of strikes) {
-      if (!this.attacker.isAlive() || !this.defender.isAlive()) break;
+      if (!this.attacker.isAlive() || !this.defender.isAlive() || engine.map.getEntityById(this.defender.id) !== this.defender) break;
       const again = new MeleeAttackAction(this.attacker, this.defender, { followUp: true, damageShare }).perform(engine);
       if (again.message) message += ` ${again.message}`;
     }

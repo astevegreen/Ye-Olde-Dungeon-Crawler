@@ -154,7 +154,7 @@ P-28 to P-36 are the magic redesign, built in the order of the owner's magic imp
 - A spell borrows effects from touching slots by the neighbour's element and its own spell type, from pack tables. The engine knows only the spell types, and it reports the resolved cast for presentation.
 
 **P-31 — Allies and endings** — Planned 2026-10-15
-- Friendly summons that fight foes, decoys monsters chase, raised foes, pacify, and effects when a status or summon ends or its bearer is struck.
+- Friendly summons, decoys, raised foes, pacify and status endings are built (`status/endings.ts`, `magic/raise.ts`). Left: a summon's hits carry what its cast borrowed (`deliverLends`, `summonHits`).
 
 **P-32 — Surfaces as data** — Planned 2026-10-15
 - Surface and gas behaviours from a pack-filled registry, spell-laid terrain, and the douse, melt and freeze reactions.

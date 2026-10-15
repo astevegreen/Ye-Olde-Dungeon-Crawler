@@ -248,8 +248,9 @@ export class Monster extends Actor {
     }
 
     // 4. Turn-start hooks, for awake monsters only (a sleeper is a dormant actor, §6). A hook
-    // aimed at its target needs one in sight; the dispatcher skips it otherwise.
-    if (this.aiState !== 'sleeping' && this.hooks.some((h) => h.event === 'onTurnStart')) {
+    // aimed at its target needs one in sight; the dispatcher skips it otherwise. A pacified
+    // monster has laid down its arms, hooks included.
+    if (this.aiState !== 'sleeping' && !this.statusManager.hasStatus('pacified') && this.hooks.some((h) => h.event === 'onTurnStart')) {
       HookDispatcher.dispatch('onTurnStart', { engine, attacker: this, defender: this.visibleTarget(engine) });
       if (!this.isAlive()) return { success: false, cost: 0 };
     }

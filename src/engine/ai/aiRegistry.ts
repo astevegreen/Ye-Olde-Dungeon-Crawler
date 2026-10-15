@@ -465,7 +465,7 @@ function findAdjacentHostile(engine: GameEngine, actor: Actor): Entity | undefin
     for (let dx = -1; dx <= 1; dx++) {
       if (dx === 0 && dy === 0) continue;
       const other = engine.map.getEntityAt(actor.x + dx, actor.y + dy);
-      if (other && other.isAlive() && actor.isHostileTo(other)) {
+      if (other && other.isAlive() && actor.isHostileTo(other) && !other.statusManager.hasStatus('pacified')) {
         return other;
       }
     }

@@ -71,7 +71,8 @@ export function findNearestHostileActor(engine: GameEngine, actor: Actor, maxRan
       for (const entity of engine.map.getEntitiesAt(x, y)) {
         if (seenIds.has(entity.id) || entity === actor || !entity.isAlive()) continue;
         seenIds.add(entity.id);
-        if (!actor.isHostileTo(entity)) continue;
+        // A pacified foe is left be: a blow would wake it (statusHandlers.ts).
+        if (!actor.isHostileTo(entity) || entity.statusManager.hasStatus('pacified')) continue;
         const dx = entity.x - actor.x;
         const dy = entity.y - actor.y;
         const distSq = dx * dx + dy * dy;

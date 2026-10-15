@@ -1,6 +1,7 @@
 import type { StatusType, StatusEffect } from './types';
 import type { Entity } from '../entities/entity';
 import type { GameEngine } from '../engine';
+import type { EffectPrimitive } from '../magic/types';
 
 export interface StatusTickOutput {
   damageTaken: number;
@@ -15,6 +16,13 @@ export interface StatusHandler {
   onApply?(entity: Entity, effect: StatusEffect, engine: GameEngine): string | undefined;
   /** Called when the status expires naturally. Return a message to log. */
   onExpire?(entity: Entity, engine: GameEngine): string | undefined;
+  /**
+   * What must happen when the status ends, however a pack words its expiry (a summon leaving
+   * the world): a pack's `expireMessage` replaces `onExpire`, never this (`engine.ts`).
+   */
+  onEnd?(entity: Entity, effect: StatusEffect, engine: GameEngine): void;
+  /** A burst its bearer gives off when the status ends or the bearer is struck (`StatusEnding`). */
+  ending?: StatusEnding;
   /**
    * When set, this status forces the player's FOV radius to this value while active
    * (see `GameEngine.updateFov()`, docs/architecture/simulation-and-input.md). If several active statuses
@@ -32,6 +40,28 @@ export interface StatusHandler {
   onDamageTaken?(entity: Entity, effect: StatusEffect, amount: number): number;
   /** The hero senses its bearer through walls (`sensesThroughWalls`). */
   sensedThroughWalls?: boolean;
+}
+
+/** What sets off a status's ending: it running out, a blow on its bearer, its bearer's death. */
+export type EndingTrigger = 'expire' | 'struck' | 'slain';
+
+/**
+ * A burst a status leaves when it ends (P-31): a summon shattering, a decoy bursting, a delayed
+ * blast. It goes off once, on the first of its triggers, and the status ends with it; the
+ * status manager and the blow and death paths run it (`endings.ts`), so no pack message drops it.
+ */
+export interface StatusEnding {
+  on: readonly EndingTrigger[];
+  /** The log line; `{name}` is the bearer's name. */
+  message?: string;
+  /** Tiles out from the centre, its bearer or the status's `data.x`/`data.y`; 0 is the centre alone. */
+  radius: number;
+  /** Cast by the bearer on each of its foes in the area, as a spell's effects are. */
+  effects: EffectPrimitive[];
+  /** The burst's colour, for presentation. */
+  color?: string;
+  /** Its bearer leaves the world as it goes off, as a summon whose lease ran out does. */
+  consumesBearer?: boolean;
 }
 
 import {
@@ -147,15 +177,42 @@ export const BUILTIN_STATUS_HANDLERS: Record<string, StatusHandler> = {
   // A summoned creature's lease (`SummonEffect.duration`): when it runs out, the creature
   // leaves the world, out of the map and the turn order, as a slain one does.
   summoned: {
-    onExpire(entity, engine) {
-      engine.removeEntity(entity);
+    onExpire(entity) {
       return `${entity.name} fades back into the aether.`;
+    },
+    onEnd(entity, _effect, engine) {
+      engine.removeEntity(entity);
+    },
+  },
+  // A curse on a foe: if it dies bearing it, it rises on the hero's side for `potency` turns
+  // (magic/raise.ts, run by the death resolver).
+  rises_when_slain: {
+    onExpire(entity) {
+      return `The death-curse on ${entity.name} lifts.`;
+    },
+  },
+  // A raised foe's borrowed time: when it runs out, the risen one crumbles and leaves the world.
+  risen: {
+    onExpire(entity) {
+      return `${entity.name} crumbles to dust.`;
+    },
+    onEnd(entity, _effect, engine) {
+      engine.removeEntity(entity);
     },
   },
   // A decoy: every monster that perceives it goes for it before the hero (ai/targetSelection.ts).
   decoy: {
     onExpire(entity) {
       return `${entity.name} no longer draws the foe.`;
+    },
+  },
+  // Pacified: it lays down its arms, fights no one and is no one's target (MonsterAI.decideAction,
+  // ai/targetSelection.ts) until it runs out or a blow lands on it. A pack lists it among a
+  // boss's `statusImmunities` for the boss to resist.
+  pacified: {
+    ending: { on: ['struck'], message: '{name} takes up arms again!', radius: 0, effects: [] },
+    onExpire(entity) {
+      return `${entity.name} takes up arms again.`;
     },
   },
   // Marked by a spell: seen through walls, and each blow lands `potency` percent harder (10 unset).

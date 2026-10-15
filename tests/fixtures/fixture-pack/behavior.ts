@@ -29,6 +29,27 @@ export const FIXTURE_STATUS_HANDLERS: Record<string, StatusHandler> = {
       return `The flames on ${entity.name} die out.`;
     },
   },
+  // Endings (P-31): a summon that shatters as it goes or falls, one that bursts when struck,
+  // and a blast laid on a tile that goes off when its countdown runs out.
+  frost_shatter: {
+    ending: {
+      on: ['expire', 'slain'],
+      message: '{name} shatters into ice!',
+      radius: 1,
+      effects: [{ type: 'damage', amount: 10, element: 'cold' }],
+    },
+  },
+  spirit_burst: {
+    ending: {
+      on: ['expire', 'struck'],
+      radius: 1,
+      effects: [{ type: 'damage', amount: 7, element: 'arcane' }],
+      consumesBearer: true,
+    },
+  },
+  delayed_blast: {
+    ending: { on: ['expire'], radius: 1, effects: [{ type: 'damage', amount: 12, element: 'fire' }] },
+  },
 };
 
 const BATTLE_CRIES = ['Charge!', 'For the banner!'];

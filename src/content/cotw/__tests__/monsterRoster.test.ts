@@ -171,3 +171,11 @@ describe('Castle of the Winds Monster Roster (37 entries)', () => {
     expect(MonsterRegistry.get('hoarfrost_skraeling')).toBeDefined();
   });
 });
+
+describe('bosses resist Grið and Draugr-call (P-31)', () => {
+  it('every boss-tagged monster is immune to being pacified or cursed to rise', () => {
+    const bosses = Object.values(COTW_BESTIARY).filter((m) => m.tags?.includes('boss'));
+    expect(bosses.length).toBeGreaterThanOrEqual(7);
+    for (const m of bosses) expect(m.statusImmunities, m.id).toEqual(expect.arrayContaining(['pacified', 'rises_when_slain']));
+  });
+});

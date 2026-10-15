@@ -24,6 +24,8 @@ import { sumWorn } from '../items/wornModifiers';
 import { growCompanion, refusesDeath } from './lastStand';
 import { productAgainst } from '../compendium/familyPerks';
 import { dropTile } from '../dungeon/itemPlacement';
+import { setOffEndings } from '../status/endings';
+import { raiseSlain } from '../magic/raise';
 
 /** Pact and Plunderer gold multipliers: a coin pile's worth is its count. */
 function applyGoldMultiplier(item: Item, goldMult: number): void {
@@ -61,6 +63,8 @@ export class DeathResolver {
     // A last stand (Einherjar) or a companion's bond (Beast-Friend) may refuse this death.
     if (refusesDeath(engine, victim)) return;
     victim.hp = 0;
+    // A summon that shatters as it falls, while it still stands on its tile (P-31).
+    setOffEndings(engine, victim, 'slain');
 
     if (killer && killer.isAlive()) {
       HookDispatcher.dispatch('onKill', {
@@ -276,6 +280,9 @@ export class DeathResolver {
         engine.log('The floor is clear of monsters... for now.');
       }
     }
+
+    // A foe under a death-curse rises on the hero's side, its death already counted.
+    raiseSlain(engine, victim);
   }
 }
 

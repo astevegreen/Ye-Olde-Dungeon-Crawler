@@ -117,6 +117,8 @@ export interface UncurseEffect {
  * `friendly` — if true the summoned entity's faction is set to 'player'.
  * `decoy`    — a friendly summon with a duration also carries the `decoy` status that long:
  *              monsters that perceive it go for it before the hero.
+ * `bears`    — statuses a summon with a duration carries that long, ending before it leaves:
+ *              a status with an ending (`StatusEnding`) makes it shatter or burst.
  */
 export interface SummonEffect {
   type: 'summon';
@@ -125,6 +127,7 @@ export interface SummonEffect {
   duration?: number;
   friendly?: boolean;
   decoy?: boolean;
+  bears?: StatusType[];
 }
 
 /** Permanently teaches the (player) caster a spell, e.g. from a rune tablet read as a scroll. */

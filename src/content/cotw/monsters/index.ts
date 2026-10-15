@@ -93,4 +93,11 @@ for (const m of [...allMonsters, ...Object.values(COTW_BESTIARY)]) {
   if (rite) m.killRite = rite;
 }
 
+// Bosses resist being pacified (Grið) and the death-curse that raises a foe (Draugr-call).
+const BOSS_RESISTS = ['pacified', 'rises_when_slain'];
+for (const m of [...allMonsters, ...Object.values(COTW_BESTIARY)]) {
+  if (!m.tags?.includes('boss')) continue;
+  m.statusImmunities = [...new Set([...(m.statusImmunities ?? []), ...BOSS_RESISTS])];
+}
+
 export const COTW_MONSTERS: MonsterDefinition[] = allMonsters;

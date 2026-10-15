@@ -37,6 +37,8 @@ const FIXTURE_MONSTERS: MonsterDefinition[] = [
     stats: { hp: 120, maxHp: 120, attack: 18, defense: 7 },
     speed: 105,
     aiType: 'warlord',
+    // A boss resists being pacified or cursed to rise (P-31).
+    statusImmunities: ['pacified', 'rises_when_slain'],
     fleeHealthPercent: 0,
     xpValue: 500,
     lootTable: [],
@@ -433,6 +435,8 @@ export const fixtureManifest: GameContentManifest = {
   spriteRecipes: FIXTURE_SPRITE_RECIPES,
   presetNames: ['Ash', 'Wren'],
   statusHandlers: FIXTURE_STATUS_HANDLERS,
+  // A pack's wording for a summon's leaving, which must not keep it in the world.
+  statusEffects: [{ id: 'summoned', name: 'Summoned', expireMessage: '{name} returns to the mist.' }],
   actionHooks: FIXTURE_ACTION_HOOKS,
   aiBehaviors: FIXTURE_AI_BEHAVIORS,
   combatConfig: { minDamage: 1, critChance: 0.15, critMultiplier: 2.0, damageVariance: 0.05 },

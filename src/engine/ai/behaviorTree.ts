@@ -274,6 +274,11 @@ export class MonsterAI {
     if (!monster.isAlive() || monster.faction === 'neutral') {
       return new WaitAction(monster);
     }
+    // A pacified one has laid down its arms: no blow, and no wind-up left to land.
+    if (monster.statusManager.hasStatus('pacified')) {
+      monster.interruptWindUp();
+      return new WaitAction(monster);
+    }
 
     // Any other creature on the hero's side (a friendly summon, a raised foe) runs the ally
     // routine whatever its own: the steps below aim at the player when they find no foe.

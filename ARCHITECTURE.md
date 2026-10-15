@@ -138,7 +138,38 @@ Claude Code alone writes here: it commits, and pushes each finished task unasked
 - **LF line endings:** every text file, working tree included (`.gitattributes`); a CRLF hook breaks its `#!/bin/sh` line.
 
 ## 9. Planned Work Register
-No planned work. A finished item's ID is retired, never reused: P-01–P-23, P-25, P-26. **Next free ID: P-28.** Deferred items are recorded, not planned; picking one up is the owner's call.
+A finished item's ID is retired, never reused: P-01–P-23, P-25, P-26. **Next free ID: P-37.** Deferred items are recorded, not planned; picking one up is the owner's call.
+
+P-28 to P-36 are the magic redesign, built in the order of the owner's magic implementation plan (15 Oct 2026).
+
+**P-28 — Spell building blocks** — Planned 2026-10-15
+- Push and pull, swap and aimed landing, mark, cleanse and status hand-over, pierce, best-element hits, HP costs and fractional cast time, as spell effects in `src/engine/magic/`.
+- Done when each is covered by a fixture-pack test, and no player-visible change.
+
+**P-29 — Three grimoires with stat axes** — Planned 2026-10-15
+- Pack-declared layouts, slot axes from the centre, the stat catalog, opening on need, every known spell slotted, forgetting, and old saves carried over by a pack-declared retired-spell map.
+- Done when cotw runs on it and the old grimoire is deleted.
+
+**P-30 — Neighbour lending** — Planned 2026-10-15
+- A spell borrows effects from touching slots by the neighbour's element and its own spell type, from pack tables. The engine knows only the spell types, and it reports the resolved cast for presentation.
+
+**P-31 — Allies and endings** — Planned 2026-10-15
+- Friendly summons that fight foes, decoys monsters chase, raised foes, pacify, and effects when a status or summon ends or its bearer is struck.
+
+**P-32 — Surfaces as data** — Planned 2026-10-15
+- Surface and gas behaviours from a pack-filled registry, spell-laid terrain, and the douse, melt and freeze reactions.
+
+**P-33 — New spell shapes** — Planned 2026-10-15
+- Cone, nova, tile areas, a 3-tile line, out-and-back and delayed blasts, with aim previews.
+
+**P-34 — Shard-and-stone spell learning** — Planned 2026-10-15
+- Stone fixtures, a carrier with a guaranteed shard, the learning card with two faces, shortcuts, and the sleep-kill condition. Kill rites stop teaching.
+
+**P-35 — Temporary walls** — Planned 2026-10-15
+- Timed wall tiles with HP that block movement, sight and projectiles and crumble into rubble, ticked with the surfaces.
+
+**P-36 — Measuring magic in play** — Planned 2026-10-15
+- The soak bot casts its whole spellbook by spell type and logs learning, casts, shortcuts and the spell and melee split by floor. Last, per the owner's 13 Oct order.
 
 **P-24 — Radial Action Menu: gamepad invocation** — Deferred 2026-09-15
 - The radial menu exists as the companion wheel (`src/rendering/radialMenu.ts`); gamepad support waits until the game is feature-complete.

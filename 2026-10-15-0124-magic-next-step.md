@@ -23,3 +23,4 @@ Continue the owner's magic redesign dialogue (talk only; nothing is built until 
 ## Read first
 - The Notion page: action item 6, "Grimoire redesign" (stat catalog, step sizes, Neighbour rules), the first-wave spells' entries under "Spell ideas"
 - src/content/cotw/spells.ts:103 — today's spell data shape and costs (Phase Door at :120)
+Resumed: 2026-10-15 01:30 UTC

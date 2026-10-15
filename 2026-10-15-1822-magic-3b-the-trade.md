@@ -20,6 +20,7 @@ Phase 3a "Allies and endings" is finished. Next is Phase 3b, "The trade" (`.prom
 Opus at high thinking: 3b removes engine systems (Volatile Energy, corruption numbers) and touches saves (a retired-spell map), so it spans engine, content and storage.
 
 ## Decisions
+- Summons slain by monsters drop no loot and give no XP — owner picked "No loot, no XP (Recommended)" (18:28 UTC resume).
 - Draugr-call curses a living foe, which rises on death; a blow breaks pacify and allies leave pacified foes alone — owner picked both recommendations (memory `grid-draugr-decisions`).
 - P-31 stays in ARCHITECTURE.md §9 with one item left: a summon's hits carry its cast's borrowed lends (`deliverLends`, `summonHits`, `src/engine/magic/spellPipeline.ts:289`).
 

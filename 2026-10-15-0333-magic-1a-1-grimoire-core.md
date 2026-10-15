@@ -18,6 +18,7 @@ Owner: "Read https://app.notion.com/p/Magic-implementation-plan-15-Oct-2026-3fae
 2. Start 1a-2 from the Notion brief: a pack-declared retired-spell map in manifest types, a new `src/engine/storage/legacyMagic.ts`, seeding placements from old pages when `pData.grimoires` is absent (today `reconcileGrimoireState` seeds from `spellsKnown` order instead), glyph refunds as Essence-Runes, dropping retired statuses.
 
 ## Decisions
+- Two steps of Thrift stay at 36% off (each step a fifth of what is left, as built) — owner: "two steps of Thrift should stack 36% off"
 - Learning with every slot full leaves the spell unlearned (`learnSpellResult` → `full`); `learnSpell` keeps its boolean. Chosen because the brief says "reports full for the card to come".
 - A forgotten spell is refused if taught again (`forgotten` outcome), per "forgotten spells are gone for the run".
 - Grimoires open by a declared `opensAtSpellsKnown` (4 and 9), not by "no free slot", per "spells known count".

@@ -1,5 +1,6 @@
 import type { MonsterDefinition } from '../../../engine';
 import { DISIR_SPIRIT_ID } from '../frithMagic';
+import { PACK_WOLF_ID } from '../waveOneSpells';
 
 /**
  * Creatures that only a spell brings into the world: never drawn for a floor, never the
@@ -20,6 +21,20 @@ export const SUMMONED_MONSTERS: MonsterDefinition[] = [
     fleeHealthPercent: 0,
     xpValue: 0,
     tags: ['spirit'],
+    lootTable: [],
+  },
+  {
+    // Call the Pack's wolves: quick and fragile, a pair for a fight's length.
+    id: PACK_WOLF_ID,
+    name: 'Pack wolf',
+    minFloor: 0,
+    placedOnly: true,
+    stats: { hp: 30, maxHp: 30, attack: 12, defense: 3 },
+    speed: 120,
+    aiType: 'melee',
+    fleeHealthPercent: 0,
+    xpValue: 0,
+    tags: ['beast'],
     lootTable: [],
   },
 ];

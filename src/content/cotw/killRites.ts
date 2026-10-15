@@ -13,9 +13,9 @@ import type { KillRiteDefinition } from '../../engine';
  * so on). `killRites.test.ts` checks every teaching rite can be met with the spells
  * obtainable by that monster's first floor.
  *
- *   Rime Hollows (1-9)    Slow 4 · Cold Ray 5/7 · Firebolt 6 · Phase Door 8 · Hliðskjálf 8
- *   Dwarven Works (10-17) Loki's Switch 10 · Lightning Bolt 12/15
- *   Obsidian Siphon (18-25) Phase Door 20 (a second source) · Fireball 22/25
+ *   Rime Hollows (1-9)    Slow 4 · Cold Ray 5/7 · Rime Floor 2 · Firebolt 6 · Call the Pack 7 · Phase Door 8 · Hliðskjálf 8
+ *   Dwarven Works (10-17) Loki's Switch 10 · Shroud of Máni 10 · Rockfall 12 · Lightning Bolt 12/15 · Thunderclap 16
+ *   Obsidian Siphon (18-25) Phase Door 20 (a second source) · Fireball 22/25 · Fáfnir's Breath 24
  *   Silver Veins (26-33)  Paralyze 28 · Hliðskjálf 29 (a second source)
  *   Deeper: second sources for Lightning Bolt, Paralyze and Hliðskjálf
  *
@@ -44,9 +44,10 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: 'Snuff the imp with a rune-bolt far heavier than it deserves:\nstrike past its last breath by half its strength again.',
   },
   hoarfrost_skraeling: {
+    teachesSpellId: 'rime_floor',
     essenceElement: 'cold',
     requiredDamageElement: 'physical',
-    hintVerse: 'Frost cannot bite what frost begot.\nOnly cold iron parts a skraeling from its rime.',
+    hintVerse: 'Frost cannot bite what frost begot.\nOnly cold iron parts a skraeling from its rime, and the glaze it walked on is yours to lay.',
   },
   goblin: {
     essenceElement: 'physical',
@@ -95,9 +96,10 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: 'A nisse is never caught while it is quick.\nSlow the vengeful hearth-spirit before its end.',
   },
   wolf: {
+    teachesSpellId: 'call_the_pack',
     essenceElement: 'physical',
     requiredDamageElement: 'fire',
-    hintVerse: 'Every wolf of the north remembers the campfire.\nLet flame be its last sight.',
+    hintVerse: 'Every wolf of the north remembers the campfire.\nLet flame be its last sight, and the pack will answer your howl.',
   },
   winter_hag: {
     teachesSpellId: 'cold_ray',
@@ -132,15 +134,17 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: 'The wretch has stoked the forge for a hundred years.\nLet cold end its labor.',
   },
   myling: {
+    teachesSpellId: 'shroud_of_mani',
     essenceElement: 'shadow',
     requiredDamageElement: 'fire',
-    hintVerse: 'The unburied child begs for rest.\nGive it the pyre it never had.',
+    hintVerse: 'The unburied child begs for rest.\nGive it the pyre it never had, and the moon will draw its veil for you.',
   },
   ogre: {
+    teachesSpellId: 'rockfall',
     essenceElement: 'physical',
     requiredDamageElement: 'physical',
     requiredVictimStatus: 'slow',
-    hintVerse: 'Slow the lumbering brute further still,\nthen bring it down with iron.',
+    hintVerse: 'Slow the lumbering brute further still,\nthen bring it down with iron, and the roof it feared is yours to drop.',
   },
   bellows_automaton: {
     teachesSpellId: 'lightning_bolt',
@@ -195,9 +199,10 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: 'A fylgja shows itself when death is near.\nSlay it with rune-force while your own life is below half.',
   },
   cave_troll: {
+    teachesSpellId: 'thunderclap',
     essenceElement: 'physical',
     requiredDamageElement: 'lightning',
-    hintVerse: 'Trolls fear the Thunderer above all things.\nStrike this one down with lightning.',
+    hintVerse: 'Trolls fear the Thunderer above all things.\nStrike this one down with lightning, and carry his clap in your fist.',
   },
 
   // ─── Obsidian Siphon (18-25) ───────────────────────────────────────────
@@ -242,9 +247,10 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: 'Free the chained spirit with one blow that overshoots its life\nby a sixth of its strength, and the sun-fire it guarded bursts to you.',
   },
   frost_drake: {
+    teachesSpellId: 'fafnirs_breath',
     essenceElement: 'cold',
     requiredDamageElement: 'fire',
-    hintVerse: 'The rime-worm yields only to flame.',
+    hintVerse: 'The rime-worm yields only to flame,\nand the venom of the worm of Gnitaheid is the gift.',
   },
   sun_chariot_warden: {
     teachesSpellId: 'fireball',

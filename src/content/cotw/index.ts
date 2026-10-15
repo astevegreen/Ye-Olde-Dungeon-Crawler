@@ -2,6 +2,7 @@ import type { GameContentManifest } from '../../engine';
 import { COTW_MONSTERS } from './monsters';
 import { COTW_ITEMS } from './items';
 import { COTW_SPELLS } from './spells';
+import { COTW_WAVE_ONE_SURFACES } from './waveOneSpells';
 import { COTW_TOWN } from './town';
 import { COTW_QUEST } from './quest';
 import { COTW_ATLAS_THEME } from './atlas';
@@ -99,6 +100,7 @@ export const cotwManifest: GameContentManifest = {
   monsters: COTW_MONSTERS,
   items: COTW_ITEMS,
   spells: COTW_SPELLS,
+  surfaceBehaviours: COTW_WAVE_ONE_SURFACES,
   town: COTW_TOWN,
   quest: COTW_QUEST,
   atlas: COTW_ATLAS_THEME,

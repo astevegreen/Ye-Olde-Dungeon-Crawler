@@ -107,6 +107,7 @@ export type { ResolvedCast } from './magic/neighbourLending';
 
 // Surfaces & Elemental Reactions
 export * from './surfaces/surfaceGrid';
+export type { SurfaceBehaviourTable } from './surfaces/surfaceBehaviours';
 
 // Hook Engine
 export * from './hooks/hookDispatcher';

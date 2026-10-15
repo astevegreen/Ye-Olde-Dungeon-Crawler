@@ -5,7 +5,8 @@ import { COTW_GRIMOIRES } from './grimoires';
 /** Spells Loki's Cairn may teach: every spell kill rites and tablets teach. */
 const LOKI_SPELL_POOL = [
   'slow', 'cold_ray', 'firebolt', 'phase_door', 'hlidskjalf', 'loki_switch', 'lightning_bolt',
-  'fireball', 'paralyze',
+  'fireball', 'paralyze', 'rime_floor', 'call_the_pack', 'shroud_of_mani', 'rockfall', 'thunderclap',
+  'fafnirs_breath',
 ];
 
 /**

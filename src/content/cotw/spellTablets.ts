@@ -38,9 +38,15 @@ const TABLETS: TabletEntry[] = [
   { spellId: 'firebolt', spellName: 'Firebolt', soldFromFloor: 10, value: 150 },
   { spellId: 'phase_door', spellName: 'Phase Door', soldFromFloor: 10, value: 150 },
   { spellId: 'hlidskjalf', spellName: 'Hliðskjálf', soldFromFloor: 10, value: 150 },
+  { spellId: 'rime_floor', spellName: 'Rime Floor', soldFromFloor: 10, value: 150 },
+  { spellId: 'call_the_pack', spellName: 'Call the Pack', soldFromFloor: 10, value: 150 },
   { spellId: 'loki_switch', spellName: "Loki's Switch", soldFromFloor: 18, value: 225 },
   { spellId: 'lightning_bolt', spellName: 'Lightning Bolt', soldFromFloor: 18, value: 225 },
+  { spellId: 'shroud_of_mani', spellName: 'Shroud of Máni', soldFromFloor: 18, value: 225 },
+  { spellId: 'rockfall', spellName: 'Rockfall', soldFromFloor: 18, value: 225 },
+  { spellId: 'thunderclap', spellName: 'Thunderclap', soldFromFloor: 18, value: 225 },
   { spellId: 'fireball', spellName: 'Fireball', soldFromFloor: 26, value: 300 },
+  { spellId: 'fafnirs_breath', spellName: "Fáfnir's Breath", soldFromFloor: 26, value: 300 },
   { spellId: 'paralyze', spellName: 'Paralyze', soldFromFloor: 34, value: 350 },
 ];
 

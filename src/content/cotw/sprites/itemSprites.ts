@@ -185,6 +185,12 @@ export const COTW_ITEM_PIXEL_SPRITES: Record<string, PixelSprite> = {
   tablet_paralyze: tablet('emPoison', SANDSTONE),
   tablet_hlidskjalf: tablet('eyeRed'),
   tablet_loki_switch: tablet('emKin', DARK_SLAB),
+  tablet_rime_floor: tablet('emFrost', DARK_SLAB),
+  tablet_call_the_pack: tablet('emKin'),
+  tablet_shroud_of_mani: tablet('emArcane', DARK_SLAB),
+  tablet_rockfall: tablet('emKin', SANDSTONE),
+  tablet_thunderclap: tablet('emBolt', SANDSTONE),
+  tablet_fafnirs_breath: tablet('emPoison'),
   // ---- the Essence-Runes: each glows in its own rune's colour
   essence_uruz: runeStone({ base: '#e070c0', em: true, hs: 0 }),
   essence_ansuz: runeStone('emHoly', SANDSTONE),

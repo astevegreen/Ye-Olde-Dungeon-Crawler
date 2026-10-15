@@ -2,6 +2,7 @@ import type { SpellDefinition } from '../../engine';
 import { COTW_BLOOD_SPELLS } from './bloodMagic';
 import { COTW_FRITH_SPELLS } from './frithMagic';
 import { COTW_TABLET_SPELLS } from './spellTablets';
+import { COTW_WAVE_ONE_SPELLS } from './waveOneSpells';
 
 export const COTW_SPELLS: SpellDefinition[] = [
   {
@@ -286,6 +287,7 @@ export const COTW_SPELLS: SpellDefinition[] = [
       'arcane:Divination': { effects: [], spell: { effects: [{ type: 'swap', sensed: true }] } },
     },
   },
+  ...COTW_WAVE_ONE_SPELLS,
   ...COTW_BLOOD_SPELLS,
   ...COTW_FRITH_SPELLS,
   ...COTW_TABLET_SPELLS,

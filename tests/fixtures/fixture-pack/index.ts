@@ -1,6 +1,7 @@
 import type {
   GameContentManifest,
   GrimoireSystemConfig,
+  NeighbourLendingConfig,
   ItemDefinition,
   MonsterDefinition,
   SpellDefinition,
@@ -92,6 +93,7 @@ export const FIXTURE_SPELLS: SpellDefinition[] = [
     targetType: 'ray',
     targetingMode: 'ray',
     description: 'Lightning that leaps between enemies.',
+    spellType: 'damage',
     visual: { archetype: 'chain', color: '#38bdf8', stepDelayMs: 15, durationMs: 160 },
     effects: [
       { type: 'damage', amount: '3d6+6', element: 'lightning' },
@@ -111,6 +113,7 @@ export const FIXTURE_SPELLS: SpellDefinition[] = [
     targetType: 'self',
     targetingMode: 'self',
     description: 'Restores 35 HP.',
+    spellType: 'heal',
     visual: { archetype: 'self_buff', color: '#fef08a', durationMs: 240 },
     effects: [{ type: 'heal', amount: 35 }],
   },
@@ -129,6 +132,7 @@ export const FIXTURE_SPELLS: SpellDefinition[] = [
     targetType: 'ray',
     targetingMode: 'ray',
     description: 'Fire and cold at once: it lands as whichever the target resists least, through resistance.',
+    spellType: 'damage',
     effects: [{ type: 'damage', amount: 20, element: 'fire', elements: ['cold'], pierce: true }],
   },
   {
@@ -145,6 +149,8 @@ export const FIXTURE_SPELLS: SpellDefinition[] = [
     targetType: 'ray',
     targetingMode: 'ray',
     description: 'Paid in blood.',
+    spellType: 'damage',
+    lends: ['blood-price'],
     effects: [{ type: 'damage', amount: 12, element: 'physical' }],
   },
   {
@@ -175,6 +181,7 @@ export const FIXTURE_SPELLS: SpellDefinition[] = [
     targetType: 'ray',
     targetingMode: 'ray',
     description: "Hands the caster's afflictions to the target.",
+    spellType: 'control',
     effects: [{ type: 'handOver' }],
   },
 ];
@@ -304,6 +311,36 @@ export const FIXTURE_VAULTS: VaultBlueprint[] = [
 ];
 
 /**
+ * What touching slots lend (P-30), after the magic plan's neighbour rules: one flavour per
+ * element, arcane by school, Blood-price, and a doubled form for each.
+ */
+export const FIXTURE_LENDING: NeighbourLendingConfig = {
+  lendBySchool: ['arcane'],
+  oppositeBonus: 0.25,
+  flavours: [
+    {
+      id: 'fire',
+      name: 'Burning',
+      effects: [{ type: 'applyStatus', statusId: 'burning', duration: 2, potency: 2 }],
+      doubled: { name: 'Blue fire', color: '#60a5fa', effects: [{ type: 'applyStatus', statusId: 'burning', duration: 4, potency: 4 }] },
+    },
+    {
+      id: 'cold',
+      name: 'Chill',
+      effects: [{ type: 'applyStatus', statusId: 'slow', duration: 2 }],
+      doubled: { name: 'Black rime', effects: [{ type: 'applyStatus', statusId: 'paralyzed', duration: 1 }] },
+    },
+    { id: 'lightning', name: 'Leaping', effects: [{ type: 'chain', maxHops: 1, hopRange: 4, damageDecay: 0.5 }] },
+    { id: 'physical', name: 'Knockback', effects: [{ type: 'push', distance: 1 }], doubled: { name: 'Hard knockback', effects: [{ type: 'push', distance: 2 }] } },
+    { id: 'healing', name: 'Cleansing', effects: [{ type: 'cleanse' }], doubled: { name: 'Full cleansing', effects: [{ type: 'cleanse', all: true }] } },
+    { id: 'arcane:Enchantment', name: 'Binding', effects: [{ type: 'applyStatus', statusId: 'paralyzed', duration: 1 }] },
+    { id: 'arcane:Movement', name: 'Pull', effects: [{ type: 'pull', distance: 1 }] },
+    { id: 'arcane', name: 'Piercing', effects: [] },
+    { id: 'blood-price', name: 'Blood-price', effects: [], powerBonus: 0.25, hpCostPerCast: 2 },
+  ],
+};
+
+/**
  * The three-grimoire model's three shapes, cut from one 3×3 grid: a row of 3, a plus of 5
  * and the full square, opening at the 4th and 9th known spell. Steps from the magic plan.
  */
@@ -337,6 +374,7 @@ export const FIXTURE_GRIMOIRES: GrimoireSystemConfig = {
     { id: 'duration', name: 'Duration', description: '+50% duration', kind: 'duration', perStep: 0.5 },
     { id: 'swift', name: 'Swift', description: 'casts in less of a turn', kind: 'swift', castTimeByStep: [3 / 4, 2 / 3, 1 / 2] },
   ],
+  lending: FIXTURE_LENDING,
 };
 
 const raiders = { monsterIds: ['raider'], maxMonsters: 6 };

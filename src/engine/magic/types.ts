@@ -146,6 +146,7 @@ export type EffectPrimitive =
 
 import type { StatusType } from '../status/types';
 import type { SpellVisualConfig } from '../types/effects';
+import type { SpellType } from './magicConfig';
 export type { SpellVisualConfig };
 
 export interface SpellDefinition {
@@ -177,6 +178,10 @@ export interface SpellDefinition {
   targetingMode?: TargetingMode;
   /** What the spell does, in order, to what it reaches (`EffectPrimitiveRegistry`). */
   effects: EffectPrimitive[];
+  /** Where effects borrowed from touching grimoire slots land (P-30); a spell without one borrows nothing, but still lends. */
+  spellType?: SpellType;
+  /** Flavour ids this spell lends instead of its element's (frith spells lend healing, blood spells Blood-price). */
+  lends?: string[];
   visual?: SpellVisualConfig;
   statusAffliction?: {
     type: StatusType;

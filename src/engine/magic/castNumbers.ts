@@ -7,6 +7,8 @@ import { spellPowerMultiplier, attributeScalingOf } from '../combat/attributeSca
 import { EnergyModel } from '../actors/energyModel';
 import { Player } from '../entities/player';
 import { resolveSlotStats, slotOfSpell, slotStatSteps, type GrimoireSlotStats } from './grimoires';
+import { resolveAllCasts, type ResolvedCast } from './neighbourLending';
+import { getSpell } from './spellRegistry';
 
 /**
  * A spell's numbers as a cast of it resolves for this caster. The cast, the HUD, the
@@ -23,6 +25,17 @@ export function castSlotStats(caster: Entity, spellId: string | undefined): Grim
   const system = caster instanceof Player ? caster.grimoireSystem : undefined;
   const ref = state && spellId !== undefined ? slotOfSpell(state, spellId) : undefined;
   return resolveSlotStats(system && state && ref ? slotStatSteps(system, state, ref) : []);
+}
+
+/**
+ * Every slotted spell's resolved cast for the hero (P-30): own stats and what its
+ * neighbours lend; empty without the three-grimoire model.
+ */
+export function heroResolvedCasts(engine: GameEngine): ResolvedCast[] {
+  const { grimoireSystem: system, grimoireState: state } = engine.player;
+  if (!system || !state) return [];
+  const spellOf = (id: string) => engine.manifest.spells?.find((s) => s.id === id) ?? getSpell(id);
+  return resolveAllCasts(system, state, spellOf, (e) => engine.affinityMatrix.getOpposite(e));
 }
 
 /**

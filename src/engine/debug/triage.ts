@@ -9,6 +9,8 @@ import { concludePrologue, isPrologueRunning } from '../quest/prologue';
 import { createScaledItem } from '../dungeon/lootSpawner';
 import type { EquipmentSlot } from '../items/item';
 import type { ItemDefinition } from '../types/manifest';
+import { heroResolvedCasts } from '../magic/castNumbers';
+import type { ResolvedCast } from '../magic/neighbourLending';
 
 /**
  * Developer triage operations behind the F2 menu (ARCHITECTURE.md §2: triage methods
@@ -50,7 +52,15 @@ export interface TriageAPI {
    * Returns the level reached and the names of what it wore.
    */
   outfitForFloor(floor: number, targetLevel?: number): { level: number; worn: string[] };
+  /**
+   * Read-only: each slotted spell's cast as it resolves (P-30), its slot's stats and what
+   * its neighbours lend. Changes nothing, so it records no checkpoint.
+   */
+  resolvedCasts(): ResolvedCast[];
 }
+
+/** Members that only read; they skip the flight recorder (the HUD may call them every frame). */
+const READ_ONLY: ReadonlySet<string> = new Set<keyof TriageAPI>(['resolvedCasts']);
 
 /** Slots an outfit fills, and the slot its definitions name (both rings are `fingerLeft`). */
 const OUTFIT_SLOTS: Array<{ slot: EquipmentSlot; defSlot: string }> = [
@@ -193,6 +203,7 @@ function createTriageApi(engine: GameEngine): TriageAPI {
       engine.prng.setState(state);
     },
 
+    resolvedCasts: () => heroResolvedCasts(engine),
     outfitForFloor: (floor, targetLevel) => {
       const depth = Math.max(1, Math.floor(floor));
       const p = engine.player;
@@ -267,15 +278,15 @@ function createTriageApi(engine: GameEngine): TriageAPI {
 
 /**
  * Builds `engine.diagnostics` from the engine's own core methods plus the triage
- * operations above, wrapping every one so it logs to the flight recorder and requests
- * a replay checkpoint.
+ * operations above, wrapping every one but the `READ_ONLY` ones so it logs to the flight
+ * recorder and requests a replay checkpoint.
  */
 export function createDiagnosticsApi<T extends object>(engine: GameEngine, core: T): T & TriageAPI {
   const api = { ...core, ...createTriageApi(engine) } as T & TriageAPI;
   const wrapped = {} as Record<string, unknown>;
   for (const [name, fn] of Object.entries(api)) {
     wrapped[name] =
-      typeof fn === 'function'
+      typeof fn === 'function' && !READ_ONLY.has(name)
         ? (...args: unknown[]) => {
             // Recorded even when it throws: one that changed state first must still leave a
             // checkpoint, or a replay misses the change (R-dbg-11).

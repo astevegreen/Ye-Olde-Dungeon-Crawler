@@ -181,6 +181,50 @@ export interface GrimoireSystemConfig {
   stats: GrimoireStatDefinition[];
   /** How saves from before the switch, or holding spells since retired, carry over on load. */
   retired?: RetiredMagicConfig;
+  /** What touching slots lend each other (P-30); omit and slots lend nothing. */
+  lending?: NeighbourLendingConfig;
+}
+
+// ─── Neighbour lending (P-30) ──────────────────────────────────────────────
+
+/**
+ * The engine's six spell types (`SpellDefinition.spellType`). A type decides where a
+ * borrowed effect lands, never what it is:
+ * - `damage`: the spell's hit carries it;
+ * - `control`: it lands on the held target;
+ * - `heal`: it bursts on the foes beside the caster;
+ * - `summon`: the summon's hits carry it;
+ * - `movement`: it bursts on the tile the caster leaves;
+ * - `terrain`: it becomes the ground's material, one borrowed flavour picked at random per cast.
+ */
+export type SpellType = 'damage' | 'control' | 'heal' | 'summon' | 'movement' | 'terrain';
+
+/** One strength of a flavour: ordinary effects, plus what it does to the borrowing spell itself. */
+export interface LendFlavourForm {
+  name: string;
+  /** Effects the borrowing spell delivers, by its type, beside its own. */
+  effects: EffectPrimitive[];
+  /** A colour for presentation (the doubled form's new colour). */
+  color?: string;
+  /** Power the borrowing spell's own effect gains, as a share (Blood-price 0.25). */
+  powerBonus?: number;
+  /** Current HP each cast of the borrowing spell costs (Blood-price 2). */
+  hpCostPerCast?: number;
+}
+
+/** What a spell lends its neighbours, keyed by element (or `<element>:<school>`, see `lendBySchool`). */
+export interface LendFlavour extends LendFlavourForm {
+  id: string;
+  /** The doubled form: lent to a spell of the flavour's own element, or from a doubled slot. Omit and both get the plain form. */
+  doubled?: LendFlavourForm;
+}
+
+export interface NeighbourLendingConfig {
+  flavours: LendFlavour[];
+  /** Elements whose spells lend by school: such a spell lends the flavour `<element>:<school>`; a forged one lends `<element>`. */
+  lendBySchool?: string[];
+  /** Power a spell's own effect gains, as a share, beside one of its elements' opposites (or forged with one), once per cast. */
+  oppositeBonus?: number;
 }
 
 /** A retired spell becomes another spell, or a base spell forged with an added element. */

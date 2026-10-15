@@ -6,7 +6,7 @@ import type { CoinDenomination } from '../economy/types';
 import type { CharacterAttributes, Gender } from '../character/types';
 import type { ElementType, ElementalAffinity } from '../magic/elements';
 import type { AiBehaviorType } from '../bestiary/monsterDefinitions';
-import type { AiState, MonsterIntent, MonsterPursuit } from '../entities/monster';
+import type { AiState, MonsterIntent, MonsterPursuit, LentHits } from '../entities/monster';
 import type { CompanionArchetype } from '../entities/companion';
 import type { Position } from '../types';
 import type { WorldState } from '../state/worldState';
@@ -311,6 +311,8 @@ export interface SerializedMonster {
   pursuit?: MonsterPursuit;
   /** `Monster.faction`, written only when it isn't `'hostile'` (a neutral, a summoned ally); absent loads hostile. */
   faction?: Faction;
+  /** `Monster.lentHits`: a summon's borrowed effects (P-31); absent when it carries none. */
+  lentHits?: LentHits;
 }
 
 /** Companions & Pet Progression, Phase 1 (docs/architecture/content-companions.md). Top-level in SaveData, not per-floor. */

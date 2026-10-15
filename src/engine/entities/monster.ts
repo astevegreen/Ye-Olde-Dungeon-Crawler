@@ -2,6 +2,7 @@ import type { CombatStats, Position, ActionResult, Faction } from '../types';
 import { BASE_ACTION_COST } from '../types';
 import type { ElementType, ElementalAffinity } from '../magic/elements';
 import type { StatusType } from '../status/types';
+import type { EffectPrimitive } from '../magic/types';
 import { HookDispatcher, type HookDescriptor } from '../hooks/hookDispatcher';
 import { Actor } from './actor';
 import type { Entity } from './entity';
@@ -25,6 +26,13 @@ export type MonsterIntentType = 'idle' | 'attack' | 'windup' | 'fleeing' | 'sear
  * Where a hunter last perceived its target (`ai/pursuit.ts`): it goes there, searches around it
  * for `searchTurns` more turns, then gives up (`lost`) until it sees, is struck or is alerted.
  */
+/** What a summoning cast lent its summon's hits: plain data, so it saves with the creature. */
+export interface LentHits {
+  spellId: string;
+  color: string;
+  effects: EffectPrimitive[];
+}
+
 export interface MonsterPursuit {
   x: number;
   y: number;
@@ -108,6 +116,8 @@ export class Monster extends Actor {
   public catchUpScale = 1;
   /** Its memory of its target; none until its first awake turn, or after `alert` (it then knows). */
   public pursuit?: MonsterPursuit;
+  /** A friendly summon's: what its summoning cast borrowed, carried on each of its hits (P-31, `summonLends.ts`). */
+  public lentHits?: LentHits;
 
   constructor(config: MonsterConfig) {
     super({

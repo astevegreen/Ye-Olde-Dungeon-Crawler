@@ -17,6 +17,7 @@ import { resolveCombatMitigation } from '../combat/mitigationPipeline';
 import { burnOnSacredGround } from '../combat/sacredGround';
 import { dispatchDamageHooks } from '../hooks/damageHooks';
 import { setOffEndings } from '../status/endings';
+import { deliverSummonLends } from '../magic/summonLends';
 import type { ItemModifier } from '../items/modifiers';
 import { afflictionDuration, highestWorn, productWorn, sumWorn, wearsFlag, wornModifiers } from '../items/wornModifiers';
 import { attributeScalingOf, dexterityEvasion, intelligenceEvasion, meleeHitPercent, strengthMeleeBonus } from '../combat/attributeScaling';
@@ -375,6 +376,11 @@ export class MeleeAttackAction implements Action {
     if (throwChance > 0 && !killed && damageDealt > 0 && this.defender.isAlive() && engine.rng() < throwChance) knockback += 1;
     if (knockback > 0 && !killed && damageDealt > 0 && this.defender.isAlive()) {
       applyImpulse(engine, this.attacker, this.defender, Math.sign(this.defender.x - this.attacker.x), Math.sign(this.defender.y - this.attacker.y), knockback);
+    }
+
+    // A summon's blow carries what its summoning cast borrowed (P-31); a lent hit that kills resolves its own death.
+    if (this.attacker instanceof Monster && this.attacker.lentHits && !killed && damageDealt > 0 && this.defender.isAlive()) {
+      deliverSummonLends(engine, this.attacker, this.defender);
     }
 
     let isFatal = killed;

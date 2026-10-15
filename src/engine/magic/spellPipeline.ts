@@ -256,7 +256,8 @@ export class SpellPipeline {
     });
 
     EffectPrimitiveRegistry.register<SummonEffect>('summon', (effect, ctx) => {
-      SpellPipeline.executeSummonEffect(ctx.engine, ctx.caster, effect);
+      const summoned = SpellPipeline.executeSummonEffect(ctx.engine, ctx.caster, effect);
+      if (summoned) (ctx.summoned ??= []).push(summoned);
     });
 
     EffectPrimitiveRegistry.register<LearnSpellEffect>('learn_spell', (effect, ctx) => {
@@ -309,7 +310,7 @@ export class SpellPipeline {
   /**
    * What a cast borrowed from its neighbours (P-30), where its spell type delivers it: on what
    * it hit, its held target or the ground it laid; on the foes beside the caster (a heal); or
-   * on those beside the tile it left (a movement). A summon's hits wait for allies that fight (P-31).
+   * on those beside the tile it left (a movement); or on each hit of what it summoned (P-31).
    */
   private static deliverLends(ctx: EffectContext, lends: CastLends, hit: Entity[], departure: Position): void {
     const { engine, caster } = ctx;
@@ -326,6 +327,9 @@ export class SpellPipeline {
         targets = foesBeside(departure);
         break;
       case 'summonHits':
+        for (const summon of ctx.summoned ?? []) {
+          if (summon instanceof Monster) summon.lentHits = { spellId: ctx.spell.id, color: ctx.color, effects: structuredClone(lends.effects) };
+        }
         return;
       default:
         targets = hit.filter((t) => t !== caster && t.isAlive());
@@ -829,7 +833,7 @@ export class SpellPipeline {
     engine: GameEngine,
     caster: Entity,
     effect: SummonEffect
-  ): void {
+  ): Monster | undefined {
     const range = effect.range ?? 2;
     const monsterId = effect.monsterId;
 
@@ -889,6 +893,7 @@ export class SpellPipeline {
 
     const allegiance = effect.friendly ? 'friendly' : 'hostile';
     engine.log(`A ${summoned.name} materialises from the aether (${allegiance})!`);
+    return summoned;
   }
 
   public static executeRevealEffect(

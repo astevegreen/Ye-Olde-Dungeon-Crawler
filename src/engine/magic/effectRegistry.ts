@@ -20,6 +20,8 @@ export interface EffectContext {
   lastDamageEffect?: EffectPrimitive;
   /** What the cast's slot and borrowing do to its own damage and healing (P-30); 1 when absent. */
   powerMultiplier?: number;
+  /** The creatures this cast summoned, for what it borrowed to ride on their hits (P-31). */
+  summoned?: Entity[];
 }
 
 /**

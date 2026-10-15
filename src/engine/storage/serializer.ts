@@ -700,6 +700,7 @@ export function serializeMapObject(map: GameMap): SerializedMap {
         catchUpScale: mon.catchUpScale > 1 ? mon.catchUpScale : undefined,
         pursuit: mon.pursuit ? { ...mon.pursuit } : undefined,
         faction: mon.faction !== 'hostile' ? mon.faction : undefined,
+        lentHits: mon.lentHits ? structuredClone(mon.lentHits) : undefined,
       };
     });
 
@@ -912,6 +913,9 @@ export function deserializeMapObject(
       }
       if (mData.pursuit) {
         monster.pursuit = { ...mData.pursuit };
+      }
+      if (mData.lentHits) {
+        monster.lentHits = structuredClone(mData.lentHits);
       }
       map.addEntity(monster);
     }

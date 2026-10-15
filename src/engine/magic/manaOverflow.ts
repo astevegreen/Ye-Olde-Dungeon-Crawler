@@ -147,7 +147,7 @@ function applyOutcome(
       const cell = engine.prng.choice(neighbors);
       const spill = engine.prng.choice(outcome.spills);
       if (spill.gas) {
-        engine.surfaces.setGas(cell.x, cell.y, spill.gas as Parameters<typeof engine.surfaces.setGas>[2], spill.duration, spill.potency);
+        engine.surfaces.layGas(engine, cell.x, cell.y, spill.gas, spill.duration, spill.potency);
       } else if (spill.surface) {
         engine.surfaces.setSurface(cell.x, cell.y, spill.surface, spill.duration, spill.potency);
       }

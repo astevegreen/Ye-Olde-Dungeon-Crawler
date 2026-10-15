@@ -295,7 +295,7 @@ function executeSpawnGas(
       const tx = pos.x + rx;
       const ty = pos.y + ry;
       if (engine.map.inBounds(tx, ty) && engine.map.isPassable(tx, ty)) {
-        engine.surfaces.setGas(tx, ty, action.gasType, dur);
+        engine.surfaces.layGas(engine, tx, ty, action.gasType, dur);
       }
     }
   }

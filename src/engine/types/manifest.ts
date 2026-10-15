@@ -25,6 +25,7 @@ import type { RunPactDefinition } from '../pacts/pactManager';
 import type { CompanionDefinition } from '../entities/companion';
 import type { MonsterScalingConfig } from './monsterScaling';
 import type { GasType } from '../surfaces/surfaceGrid';
+import type { SurfaceBehaviourTable } from '../surfaces/surfaceBehaviours';
 import type { Gender } from '../character/types';
 
 export interface MerchantConfig {
@@ -738,7 +739,7 @@ export interface AtlasProceduralTheme<TContext = any> {
   /**
    * Art for what covers a cell, keyed `surface~<type>` for a ground surface (the engine's
    * `water`, `oil_slick`, `acid_pool`, `ice_sheet`, `mud`, `fire`) and `gas~<type>` for a gas
-   * (`fire_storm`, `poison_cloud`, `dense_steam`).
+   * (`fire_storm`, `poison_cloud`, `dense_steam`), or one of the pack's own (`surfaceBehaviours`).
    * A type without an entry gets the renderer's neutral wash in the theme's role colors.
    */
   overlays?: Record<string, CellOverlayArt>;
@@ -1192,6 +1193,12 @@ export interface GameContentManifest {
   actionHooks?: ActionHook[];
   aiBehaviors?: Record<string, AiBehaviorStrategy>;
   aiStrategies?: Record<string, import('../ai/aiRegistry').AIStrategy>;
+  /**
+   * What the pack's ground surfaces and gases do on entering and each turn inside, and whether a
+   * gas blocks sight, by type. An entry replaces the built-in behaviour of its name
+   * (`src/engine/surfaces/surfaceBehaviours.ts`); a type with none does nothing.
+   */
+  surfaceBehaviours?: SurfaceBehaviourTable;
   combatConfig?: CombatConfig;
   progressionConfig?: ProgressionConfig;
   /** Zone-tiered, difficulty-scaled monster power (ARCHITECTURE.md §3). When omitted,

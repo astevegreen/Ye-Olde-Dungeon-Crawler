@@ -4,10 +4,17 @@ import type { ElementType } from '../magic/elements';
 import type { Position } from '../types';
 import { applyImpulse } from '../combat/impulse';
 import { DeathResolver } from '../combat/deathResolver';
+import { builtinGasBlocksSight, surfaceBehaviourOf, type SurfaceMoment } from './surfaceBehaviours';
+
+/** A behaviour's log line with `{name}` and `{n}` filled. */
+function fillLine(line: string, name: string, n?: number): string {
+  return line.replace(/\{name\}/g, name).replace(/\{n\}/g, String(n ?? ''));
+}
 
 export const BUILTIN_SURFACE_TYPES = ['water', 'oil_slick', 'acid_pool', 'ice_sheet', 'mud', 'fire'] as const;
 export type SurfaceType = (typeof BUILTIN_SURFACE_TYPES)[number] | string;
-export type GasType = 'fire_storm' | 'poison_cloud' | 'dense_steam';
+/** The built-in gases (`surfaceBehaviours.ts`), or any a pack declares. */
+export type GasType = 'fire_storm' | 'poison_cloud' | 'dense_steam' | string;
 
 export interface SurfaceInstance {
   type: SurfaceType;
@@ -19,6 +26,8 @@ export interface GasInstance {
   type: GasType;
   duration: number; // Discrete turns remaining
   potency?: number;
+  /** Its sight rule, stamped by `layGas` where the pack's differs from the built-in one. */
+  blocksSight?: boolean;
 }
 
 export interface CellSurfaces {
@@ -117,18 +126,30 @@ export class SurfaceGrid {
   }
 
   /**
-   * Returns false if an opaque gas (like dense steam) blocks line-of-sight.
+   * Returns false if an opaque gas (like dense steam) blocks line-of-sight: the sight rule stamped
+   * on it when laid (`layGas`), else the built-in one.
    */
   public isTransparent(x: number, y: number): boolean {
-    const cell = this.getCell(x, y);
-    if (cell?.gas?.type === 'dense_steam') {
-      return false;
-    }
-    return true;
+    const gas = this.getCell(x, y)?.gas;
+    if (!gas) return true;
+    return !(gas.blocksSight ?? builtinGasBlocksSight(gas.type));
   }
 
   /**
-   * Checks if an entity standing on or stepping into this tile triggers water, ice, acid, or oil effects.
+   * Lays a gas with the pack's sight rule stamped on it where it differs from the built-in one,
+   * so a save keeps it and line of sight, which has no engine to read the table from, needs nothing more.
+   */
+  public layGas(engine: GameEngine, x: number, y: number, type: GasType, duration?: number, potency?: number): void {
+    this.setGas(x, y, type, duration, potency);
+    const gas = this.getCell(x, y)?.gas;
+    const blocks = surfaceBehaviourOf(engine, 'gas', type)?.blocksSight === true;
+    if (gas && blocks !== builtinGasBlocksSight(type)) gas.blocksSight = blocks;
+  }
+
+  /**
+   * What stepping onto this tile does, by its surface's then its gas's `enter` behaviour
+   * (`surfaceBehaviours.ts`): a hurt, a status, a line, extra energy, a slide along (dx, dy).
+   * A gas acts only on a mover the surface did not slide away.
    */
   public handleEntityStep(
     entity: Entity,
@@ -141,43 +162,42 @@ export class SurfaceGrid {
     const cell = this.getCell(x, y);
     let slid = false;
     let energyPenalty = 0;
-
     if (!cell) return { slid, energyPenalty };
 
-    // 1. Ice Sheet: Slide 2 tiles along movement vector with energy penalty (+50)
-    if (cell.surface?.type === 'ice_sheet') {
-      energyPenalty += 50;
-      engine.log(`${entity.name} slips on the slick ice sheet!`);
-      if (dx !== 0 || dy !== 0) {
-        const slideRes = applyImpulse(engine, undefined, entity, dx, dy, 2);
-        if (slideRes.pushed) {
-          slid = true;
-        }
+    const layers: { layer: 'surface' | 'gas'; type?: string }[] = [
+      { layer: 'surface', type: cell.surface?.type },
+      { layer: 'gas', type: cell.gas?.type },
+    ];
+    for (const { layer, type } of layers) {
+      if (type === undefined || slid) continue;
+      const enter = surfaceBehaviourOf(engine, layer, type)?.enter;
+      if (!enter) continue;
+      energyPenalty += enter.moveCost ?? 0;
+      this.actOn(engine, entity, enter);
+      if (enter.slide && (dx !== 0 || dy !== 0) && entity.isAlive()) {
+        if (applyImpulse(engine, undefined, entity, dx, dy, enter.slide).pushed) slid = true;
       }
     }
 
-    // 2. Acid Pool: Deals immediate acid damage
-    if (cell.surface?.type === 'acid_pool' && entity.isAlive()) {
-      this.harm(engine, entity, 4, 'acid', 'acid', (n) => `${entity.name} wades into caustic acid for ${n} acid damage!`);
-    }
-
-    // 3. Oil Slick: Slippery ground
-    if (cell.surface?.type === 'oil_slick') {
-      engine.log(`${entity.name} treads carefully across the flammable oil slick.`);
-    }
-
-    // 4. Mud: Sticky terrain slowing movement
-    if (cell.surface?.type === 'mud') {
-      energyPenalty += 50;
-      engine.log(`${entity.name} struggles through thick, clinging mud!`);
-    }
-
-    // 5. Fire: Burning ground dealing immediate fire damage
-    if (cell.surface?.type === 'fire' && entity.isAlive()) {
-      this.harm(engine, entity, 4, 'fire', 'searing fire', (n) => `${entity.name} steps into searing fire for ${n} fire damage!`);
-    }
-
     return { slid, energyPenalty };
+  }
+
+  /** One moment of a surface or gas on a living creature: its hurt, its status, its line. */
+  private actOn(engine: GameEngine, entity: Entity, moment: SurfaceMoment): void {
+    if (!entity.isAlive()) return;
+    const { harm, status, line } = moment;
+    if (harm) {
+      this.harm(engine, entity, harm.amount, harm.element, harm.cause, (n) => fillLine(harm.line, entity.name, n));
+    }
+    if (status && entity.isAlive()) {
+      entity.statusManager.applyStatus(
+        { type: status.type, duration: status.duration, potency: status.potency ?? 1 },
+        entity.statusImmunities,
+        entity,
+        engine
+      );
+    }
+    if (line) engine.log(fillLine(line, entity.name));
   }
 
   /**
@@ -189,9 +209,8 @@ export class SurfaceGrid {
    */
   private harm(engine: GameEngine, entity: Entity, amount: number, element: ElementType, cause: string, hurtLine: (dealt: number) => string): number {
     const res = entity.takeElementalDamage(amount, element, engine.affinityMatrix);
-    const noun = element === 'lightning' ? 'lightning' : element === 'acid' ? 'acid' : 'fire';
-    if (res.isHeal) engine.log(`${entity.name} is healed by the ${noun} for ${res.healed}.`);
-    else if (res.damageDealt === 0 && !res.killed) engine.log(`${entity.name} is unharmed by the ${noun}.`);
+    if (res.isHeal) engine.log(`${entity.name} is healed by the ${element} for ${res.healed}.`);
+    else if (res.damageDealt === 0 && !res.killed) engine.log(`${entity.name} is unharmed by the ${element}.`);
     else engine.log(hurtLine(res.damageDealt));
     if (res.killed) DeathResolver.resolveDeath(engine, undefined, entity, { cause });
     return res.damageDealt;
@@ -238,7 +257,7 @@ export class SurfaceGrid {
         const currentCell = this.getCell(p.x, p.y);
         if (currentCell?.surface?.type === 'oil_slick') {
           this.removeSurface(p.x, p.y);
-          this.setGas(p.x, p.y, 'fire_storm', 4, 8);
+          this.layGas(engine, p.x, p.y, 'fire_storm', 4, 8);
           affectedCells.push(p);
 
           // Burn standing entities
@@ -281,7 +300,7 @@ export class SurfaceGrid {
       if (cell?.surface?.type === 'water') {
         this.removeSurface(x, y);
       }
-      this.setGas(x, y, 'dense_steam', 5, 1);
+      this.layGas(engine, x, y, 'dense_steam', 5, 1);
       const msg = `*** The water boils furiously, releasing a billowing cloud of dense steam! ***`;
       engine.log(msg);
       return {
@@ -384,7 +403,8 @@ export class SurfaceGrid {
   }
 
   /**
-   * Discrete turn ticking for decaying surfaces and gasses.
+   * Discrete turn ticking for decaying surfaces and gasses: each layer loses a turn, then acts on
+   * whoever stands in it (its `standing` behaviour), ground first.
    */
   public tick(engine: GameEngine): void {
     const keys = Array.from(this.cells.keys());
@@ -398,41 +418,19 @@ export class SurfaceGrid {
 
       const entity = engine.map.getEntityAt(x, y);
 
-      // 1. Surface Decay & Periodic Effects
       if (cell.surface) {
         cell.surface.duration -= 1;
-
-        if (entity && entity.isAlive()) {
-          if (cell.surface.type === 'acid_pool') {
-            this.harm(engine, entity, 3, 'acid', 'acid', (n) => `${entity.name} suffers ${n} acid burn from the caustic pool.`);
-          } else if (cell.surface.type === 'fire') {
-            this.harm(engine, entity, 3, 'fire', 'lingering fire', (n) => `${entity.name} is scorched by lingering fire for ${n} damage.`);
-          }
-        }
-
+        const standing = surfaceBehaviourOf(engine, 'surface', cell.surface.type)?.standing;
+        if (entity && standing) this.actOn(engine, entity, standing);
         if (cell.surface.duration <= 0) {
           cell.surface = undefined;
         }
       }
 
-      // 2. Gas Decay & Periodic Effects
       if (cell.gas) {
         cell.gas.duration -= 1;
-
-        if (entity && entity.isAlive()) {
-          if (cell.gas.type === 'fire_storm') {
-            this.harm(engine, entity, 5, 'fire', 'a firestorm', (n) => `${entity.name} burns inside the raging FireStorm for ${n} damage!`);
-          } else if (cell.gas.type === 'poison_cloud') {
-            entity.statusManager.applyStatus(
-              { type: 'poison', duration: 3, potency: 2 },
-              entity.statusImmunities,
-              entity,
-              engine
-            );
-            engine.log(`${entity.name} chokes on noxious poison fumes!`);
-          }
-        }
-
+        const standing = surfaceBehaviourOf(engine, 'gas', cell.gas.type)?.standing;
+        if (entity && standing) this.actOn(engine, entity, standing);
         if (cell.gas.duration <= 0) {
           cell.gas = undefined;
         }

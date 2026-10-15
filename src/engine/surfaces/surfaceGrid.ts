@@ -255,6 +255,16 @@ export class SurfaceGrid {
     return { slid, energyPenalty };
   }
 
+  /**
+   * A creature put down where it stands by something else (a shove, a pull, a slide, a
+   * teleport, a swap) meets that tile as if it stepped there, but slides no farther and
+   * pays no move cost: the move was not its own.
+   */
+  public landOn(engine: GameEngine, entity: Entity): void {
+    if (!entity.isAlive()) return;
+    this.handleEntityStep(entity, entity.x, entity.y, 0, 0, engine);
+  }
+
   /** One moment of a surface or gas on a living creature: its hurt, its status, its line. */
   private actOn(engine: GameEngine, entity: Entity, moment: SurfaceMoment): void {
     if (!entity.isAlive()) return;

@@ -967,6 +967,8 @@ export class SpellPipeline {
     engine.map.addEntity(target);
     engine.log(`${caster.name} and ${target.name} trade places!`);
     if (caster === engine.player || target === engine.player) engine.updateFov();
+    engine.surfaces.landOn(engine, caster);
+    engine.surfaces.landOn(engine, target);
     return true;
   }
 
@@ -989,6 +991,7 @@ export class SpellPipeline {
     const dest = engine.map.getEntityAt(aim.x, aim.y) ? findSafeSpawnPosition(engine.map, aim, 3, caster) : aim;
     engine.map.moveEntity(caster, dest.x, dest.y);
     if (caster instanceof Player) engine.updateFov();
+    engine.surfaces.landOn(engine, caster);
     return true;
   }
 
@@ -1034,6 +1037,7 @@ export class SpellPipeline {
     if (entity instanceof Player) {
       engine.updateFov();
     }
+    engine.surfaces.landOn(engine, entity);
     return true;
   }
 

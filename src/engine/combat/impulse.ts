@@ -41,6 +41,8 @@ export interface ImpulseResult {
  * 3. Chasm Hazard: Pushing onto a 'chasm' tile triggers an instant fatal plunge (or heavy fall damage for bosses);
  *    an invulnerable target stops on the brink.
  * 4. Trap Hazard: Pushing onto a trap tile triggers immediate trap activation.
+ * 5. Landing: a target moved at least one tile meets the surface and gas where it ends
+ *    (`SurfaceGrid.landOn`), never those it was shoved across.
  */
 export function applyImpulse(
   engine: GameEngine,
@@ -51,6 +53,23 @@ export function applyImpulse(
   distance = 1,
   /** The most tiles it may travel, the pusher's bonus included (a pull that stops beside its caster). */
   maxDistance = Infinity
+): ImpulseResult {
+  const result = travel(engine, source, target, dx, dy, distance, maxDistance);
+  if (result.distanceTraveled > 0 && !result.fellInChasm && target.isAlive()) {
+    engine.surfaces.landOn(engine, target);
+    result.killed = !target.isAlive();
+  }
+  return result;
+}
+
+function travel(
+  engine: GameEngine,
+  source: Entity | undefined,
+  target: Entity,
+  dx: number,
+  dy: number,
+  distance: number,
+  maxDistance: number
 ): ImpulseResult {
   // A target that nothing can move (Shield-Wall, `impulseImmune`) stands where it is.
   if (!target.isAlive() || distance <= 0 || wearsFlag(target, 'impulseImmune')) {

@@ -133,6 +133,68 @@ describe('spell building blocks: moving creatures and marks (P-28)', () => {
     });
   });
 
+  describe('landing on a surface (P-32)', () => {
+    it('a shoved foe burns on the fire it ends on', () => {
+      const { engine, foe, cast } = build();
+      const f = foe(11, 10);
+      engine.surfaces.setSurface(14, 10, 'fire', 5);
+      cast('shove', 11, 10);
+      expect(f.position).toEqual({ x: 14, y: 10 });
+      expect(f.hp).toBeLessThan(50);
+    });
+
+    it('but not on fire it is shoved across', () => {
+      const { engine, foe, cast } = build();
+      const f = foe(11, 10);
+      engine.surfaces.setSurface(12, 10, 'fire', 5);
+      cast('shove', 11, 10);
+      expect(f.position).toEqual({ x: 14, y: 10 });
+      expect(f.hp).toBe(50);
+    });
+
+    it('a pulled foe burns on the fire beside the caster', () => {
+      const { engine, foe, cast } = build();
+      const f = foe(14, 10);
+      engine.surfaces.setSurface(11, 10, 'fire', 5);
+      cast('grasp', 14, 10);
+      expect(f.position).toEqual({ x: 11, y: 10 });
+      expect(f.hp).toBeLessThan(50);
+    });
+
+    it('a swap puts each creature on the other one\'s ground', () => {
+      const { engine, player, foe, cast } = build();
+      const f = foe(15, 12);
+      engine.surfaces.setSurface(10, 10, 'fire', 5);
+      cast('switch', 15, 12);
+      expect(f.hp).toBeLessThan(50);
+      expect(player.hp).toBe(100);
+    });
+
+    it('an aimed landing on fire burns the caster', () => {
+      const { engine, player, cast } = build();
+      engine.surfaces.setSurface(13, 12, 'fire', 5);
+      cast('steered_blink', 13, 12);
+      expect(player.position).toEqual({ x: 13, y: 12 });
+      expect(player.hp).toBeLessThan(100);
+    });
+
+    it('a random teleport onto fire burns', () => {
+      const { engine, player } = build();
+      for (let y = 0; y < 30; y++) for (let x = 0; x < 30; x++) engine.surfaces.setSurface(x, y, 'fire', 5);
+      SpellPipeline.teleportEntity(engine, player, 5);
+      expect(player.position).not.toEqual({ x: 10, y: 10 });
+      expect(player.hp).toBeLessThan(100);
+    });
+
+    it('a creature shoved onto ice stops there: landing does not slide it on', () => {
+      const { engine, foe, cast } = build();
+      const f = foe(11, 10);
+      engine.surfaces.setSurface(14, 10, 'ice_sheet', 5);
+      cast('shove', 11, 10);
+      expect(f.position).toEqual({ x: 14, y: 10 });
+    });
+  });
+
   describe('mark', () => {
     it('shows the creature through walls and makes it take 10% more damage', () => {
       const { engine, foe, cast } = build();

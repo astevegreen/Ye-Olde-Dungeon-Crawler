@@ -37,3 +37,4 @@ Opus at high thinking — engine plus content removal across many files, and sav
 ## Verification
 - lint, tests, gates (Chromium), pre-push (3 browsers): green on 0fc8153e.
 - `visual-check` of the placement card: not run. Soak: none until magic lands (memory).
+Resumed: 2026-10-15 12:13 UTC

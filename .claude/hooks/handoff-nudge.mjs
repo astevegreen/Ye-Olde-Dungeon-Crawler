@@ -1,4 +1,4 @@
-// Stop hook, two checks. A reply that sends the owner to /clear or /handoff resume goes back to
+// Stop hook, two checks, both held while background work is running (below). A reply that sends the owner to /clear or /handoff resume goes back to
 // Claude unless an unclaimed note is published (below). And once the conversation passes LIMIT tokens, send Claude back to write the handoff
 // before it finishes the turn. CLAUDE.md's "the session has run long" never fired on judgement
 // alone: sessions ran to auto-compaction first. Fires once per session, and again only after the
@@ -48,6 +48,22 @@ const sendsToClear = new RegExp(
     `|\\b(after|with|suggest|ready to|to continue[:,]?|to start it[:,]?)\\s+(type\\s+|run\\s+)?${CLEAR}`,
   'i',
 );
+// Background work still running (a push and its gates, a test run, an agent) makes any note written
+// now say "running" and sends the next session to check it. Hold the size nudge until the turn that
+// follows its notification, and stop a reply that sends the owner to /clear before it lands.
+const running = runningInBackground(entries);
+if (running.length > 0) {
+  if (sendsToClear.test(closing)) {
+    process.stderr.write(
+      `Your reply sends the owner to /clear, but background work is still running: ${running.join('; ')}. ` +
+        `End the turn saying what it waits on; when its notification arrives, report the result and ` +
+        `write or update the note with it, so the next session has nothing to check.\n`,
+    );
+    process.exit(2);
+  }
+  process.exit(0);
+}
+
 if (sendsToClear.test(closing) && !publishedOpenNote(entries)) {
   process.stderr.write(
     `Your reply sends the owner to /clear or /handoff resume, but this session has published no ` +
@@ -101,6 +117,43 @@ process.stderr.write(
     `progress stays uncommitted and listed, as the skill says.\n`,
 );
 process.exit(2);
+
+// Calls started in the background (a Bash or PowerShell run_in_background, an async Agent) whose
+// <task-notification>, naming the call's <tool-use-id>, has not arrived. A launch older than
+// STALE_MS counts as finished: a task that was stopped or lost never notifies.
+function runningInBackground(list) {
+  const STALE_MS = 2 * 60 * 60 * 1000;
+  const calls = new Map();
+  const started = new Set();
+  const finished = new Set();
+  for (const e of list) {
+    const content = e.message?.content;
+    if (e.type === 'assistant' && Array.isArray(content)) {
+      for (const part of content) {
+        if (part?.type === 'tool_use') {
+          calls.set(part.id, { what: part.input?.description ?? part.name, at: Date.parse(e.timestamp ?? '') });
+        }
+      }
+    }
+    if (e.type === 'user' && Array.isArray(content)) {
+      for (const part of content) {
+        if (part?.type !== 'tool_result') continue;
+        const text = Array.isArray(part.content) ? part.content.map((x) => x?.text ?? '').join('') : String(part.content ?? '');
+        if (/Command running in background with ID|Async agent launched/.test(text)) started.add(part.tool_use_id);
+      }
+    }
+    const raw = JSON.stringify(e);
+    if (raw.includes('task-notification')) {
+      for (const m of raw.matchAll(/<tool-use-id>(toolu_\w+)<\/tool-use-id>/g)) finished.add(m[1]);
+    }
+  }
+  const now = Date.now();
+  return [...started]
+    .filter((id) => !finished.has(id))
+    .map((id) => calls.get(id))
+    .filter((call) => call && !(now - call.at > STALE_MS))
+    .map((call) => call.what);
+}
 
 function lastAssistantText(list) {
   for (let i = list.length - 1; i >= 0; i--) {

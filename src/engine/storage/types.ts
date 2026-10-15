@@ -271,6 +271,7 @@ export interface SerializedGrimoireState {
   forgotten?: string[];
   forged?: import('../magic/grimoires').GrimoireForge[];
   offers?: string[];
+  forgeOffers?: import('../magic/grimoires').ForgeOffer[];
 }
 
 /** `WorldState` as saved: remote-vault items are serialized item trees, not live Items. */

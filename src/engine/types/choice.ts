@@ -24,6 +24,12 @@ export type ChoiceConsequence =
    * (`GameEngine.COMPANION_BONDED_FLAG`), so the hero can call it back once sent away.
    */
   | { type: 'grantCompanion'; companionId: string }
+  /**
+   * Offers a free forge, which waits with the hero until they pick the spell (the forge card).
+   * `source` names the giver on the card; `element` fixes the element, else any element with
+   * an essence (`magic.killRites.essenceItems`); `fated` is fate's title phrase ("of Renewal").
+   */
+  | { type: 'offerForge'; source: string; element?: string; fated?: string }
   /** Teaches a spell by manifest id; a spell already known is left as it is. */
   | { type: 'learnSpell'; spellId: string }
   /** Ends these statuses on the hero, if any are in effect. */

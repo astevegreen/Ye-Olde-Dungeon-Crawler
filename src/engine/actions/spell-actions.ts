@@ -26,7 +26,8 @@ import {
   withSpellRangeBonus,
 } from '../magic/castNumbers';
 import type { GrimoireAxis } from '../magic/magicConfig';
-import type { StatPickOutcome } from '../magic/grimoires';
+import { forgedTitle, type StatPickOutcome } from '../magic/grimoires';
+import { forgeOfferElements, forgeRefusal } from '../magic/altars';
 import { StatusHandlerRegistry } from '../status/statusHandlers';
 
 /**
@@ -670,6 +671,43 @@ export class AcceptSpellOfferAction implements Action {
     const name = engine.manifest?.spells?.find((s) => s.id === this.spellId)?.name ?? this.spellId;
     engine.log(`You have learned ${name}!`);
     return grimoireEditCost(engine, this.player, 'With foes in sight, learning a spell takes a turn.');
+  }
+}
+
+/**
+ * Claims a free forge a choice offered (Ivalda's, Skuld's): `element` onto a known spell,
+ * the offer's own element when it fixes one. Not now is simply not calling this.
+ */
+export class ClaimForgeOfferAction implements Action {
+  public readonly player: Player;
+  /** The offer's place in `Player.pendingForgeOffers`. */
+  public readonly offerIndex: number;
+  public readonly spellId: string;
+  public readonly element: string;
+
+  get actor(): Entity {
+    return this.player;
+  }
+
+  constructor(player: Player, offerIndex: number, spellId: string, element: string) {
+    this.player = player;
+    this.offerIndex = offerIndex;
+    this.spellId = spellId;
+    this.element = element;
+  }
+
+  public perform(engine: GameEngine): ActionResult {
+    if (!this.player.isAlive()) return { success: false, cost: 0, message: 'The dead forge nothing more.' };
+    const offer = this.player.pendingForgeOffers[this.offerIndex];
+    if (!offer) return { success: false, cost: 0, message: 'No one is offering you a forge.' };
+    if (!forgeOfferElements(engine, offer).includes(this.element)) return { success: false, cost: 0, message: `This forge cannot add ${this.element}.` };
+    const refusal = forgeRefusal(engine, this.player, this.spellId, this.element);
+    if (refusal) return { success: false, cost: 0, message: refusal };
+    this.player.takeForgeOffer(this.offerIndex);
+    this.player.forgeSpell(this.spellId, this.element, offer.fated);
+    const spell = engine.manifest?.spells?.find((s) => s.id === this.spellId) ?? getSpell(this.spellId);
+    if (spell) engine.log(`${offer.source}: ${spell.name} is now ${forgedTitle(this.player.grimoireSystem!, this.player.grimoireState!, spell)}.`);
+    return grimoireEditCost(engine, this.player, 'With foes in sight, forging a spell takes a turn.');
   }
 }
 

@@ -20,7 +20,8 @@ import { Monster, NPC, MovementAction, getCounter, getFaction, getFlag, incremen
  * Cinder-Gilded Duergar to rest (+2 each, the first six), and breaking the coven's hold
  * on the stolen sun (+10, once). Once trusted (0), the Haugbui barrow-guardians stand aside
  * and Ivalda's masterwork opens at Gunther's forge (one item to +5, once, free:
- * `IVALDA_MASTERWORK`, Q29 + Q48 "A"); at 10 she teaches the Accord's Steam Lance.
+ * `IVALDA_MASTERWORK`, Q29 + Q48 "A"); at 10 she forges a
+ * second element into one known spell, free, once: the Accord's craft of two made one.
  *
  * Once trusted, and once the hero is off Floor 13, Ivalda carries her coals up to
  * Bjarnarhaven and works beside Gunther in the armory, so her forge never asks for a climb
@@ -32,7 +33,7 @@ export const IRON_CLANS_FACTION = 'iron_clans';
 export const IRON_CLANS_MET_FLAG = 'iron_clans_met';
 /** Standing at which the clans trust the hero. */
 export const IRON_CLANS_TRUSTED = 0;
-const STEAM_LANCE_STANDING = 10;
+const IVALDA_FORGE_STANDING = 10;
 
 export const IVALDA_ID = 'npc-ivalda';
 const IVALDA_CHOICE_ID = 'ivalda_forge';
@@ -83,19 +84,19 @@ export const IVALDA_CHOICE: ChoiceDefinition = {
       ],
     },
     {
-      id: 'steam_lance',
+      id: 'forge_spell',
       label: 'Learn the craft of the Accord',
-      description: 'Where fire meets ice they fuse into scalding mist: she teaches the Steam Lance.',
-      predicate: { type: 'and', predicates: [trusted(STEAM_LANCE_STANDING), notYet('ivalda_taught')] },
+      description: 'Where fire meets ice they fuse into scalding mist: she forges a second element into one spell you know, once, for nothing.',
+      predicate: { type: 'and', predicates: [trusted(IVALDA_FORGE_STANDING), notYet('ivalda_taught')] },
       disabledReason: 'The Accord’s craft is for a friend of the clans, not one they merely tolerate.',
       consequences: [
         { type: 'setFlag', flag: 'ivalda_taught', value: true },
         { type: 'recordMilestone', milestoneId: 'forge_friend' },
-        { type: 'learnSpell', spellId: 'steam_lance' },
+        { type: 'offerForge', source: 'Ivalda’s forge' },
         {
           type: 'logMessage',
           message:
-            'Ivalda holds a coal in one hand and rime in the other until the air between them screams. “That is what the Accord was. Keep it better than your kin did.” (Steam Lance)',
+            'Ivalda holds a coal in one hand and rime in the other until the air between them screams. “That is what the Accord was: two things made one. Name a spell, and what it should carry. Keep it better than your kin did.”',
         },
       ],
     },

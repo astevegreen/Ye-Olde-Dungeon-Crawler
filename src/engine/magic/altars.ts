@@ -5,7 +5,7 @@ import type { Entity } from '../entities/entity';
 import type { Player } from '../entities/player';
 import { getSpell } from './spellRegistry';
 import { formatMagicMessage, type AltarDefinition, type GrimoireAxis } from './magicConfig';
-import { anySpellsTouch, copyGrimoireState, forgeSpellElement, forgedElements, forgedTitle, isSlotDoubled, restatGrimoire, slotAdditions, type GrimoireSlotRef, type StatPickOutcome } from './grimoires';
+import { anySpellsTouch, copyGrimoireState, forgeSpellElement, forgedElements, forgedTitle, isSlotDoubled, restatGrimoire, slotAdditions, type ForgeOffer, type GrimoireSlotRef, type StatPickOutcome } from './grimoires';
 import { getKillRiteConfig } from './killRites';
 
 /**
@@ -148,6 +148,11 @@ export function forgeRefusal(engine: GameEngine, player: Player, spellId: string
   if (spell.element === element || kept.includes(element)) return `${spell.name} already carries ${element}.`;
   if (forgedElements(state, spell.id).includes(element)) return `${spell.name} is already forged with ${element}.`;
   return undefined;
+}
+
+/** The elements a free forge offer can add: its own, or any element with an essence. */
+export function forgeOfferElements(engine: GameEngine, offer: ForgeOffer): string[] {
+  return offer.element ? [offer.element] : Object.keys(getKillRiteConfig(engine)?.essenceItems ?? {});
 }
 
 /** What forging `element` onto a known spell makes of it: its title, its elements, and the forged element it swaps out. */

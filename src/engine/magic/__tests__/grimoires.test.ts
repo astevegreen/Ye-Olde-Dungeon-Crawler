@@ -430,6 +430,7 @@ describe('three grimoires (P-29)', () => {
         doubledSlots: [{ grimoireId: 'row', x: 5, y: 5 }],
         forgotten: ['spell_9', 7],
         forged: [{ spellId: 'spell_1', element: 'fire' }, { spellId: 'spell_1', element: 'fire' }, { spellId: 'spell_9', element: 'cold' }, { spellId: 'spell_2' }],
+        forgeOffers: [{ source: 'Ivalda', element: 7, fated: 'renewal' }, { element: 'fire' }],
       };
       const p = new Player({ position: { x: 0, y: 0 }, spellsKnown: ['spell_1', 'spell_2'], grimoireSystem: FIXTURE_GRIMOIRES, grimoireState: readGrimoireState(raw) });
       expect(state(p)).toEqual({
@@ -444,6 +445,7 @@ describe('three grimoires (P-29)', () => {
         forgotten: ['spell_9'],
         forged: [{ spellId: 'spell_1', element: 'fire' }],
         offers: [],
+        forgeOffers: [{ source: 'Ivalda', fated: 'renewal' }],
       });
       expect(readGrimoireState('junk')).toBeUndefined();
     });

@@ -145,10 +145,8 @@ export class AltarModal implements UIModal {
       case 'forge': {
         if (!this.targetSpellId) return { text: 'Choose a spell to forge.', ok: false };
         if (offering.kind === 'spell' && offering.id === this.targetSpellId) return { text: `${escapeHtml(offering.name)} cannot be forged with itself.`, ok: false };
-        const refusal = forgeRefusal(engine, engine.player, this.targetSpellId, offering.element);
-        const forged = refusal ? undefined : previewForge(engine, engine.player, this.targetSpellId, offering.element);
-        if (!forged) return { text: escapeHtml(refusal ?? 'The forge cannot work that spell.'), ok: false };
-        return { text: forgeText(engine, this.targetSpellId, offering.element, forged), ok: true };
+        const forged = forgePreviewHtml(engine, this.targetSpellId, offering.element);
+        return { text: forged.html, ok: forged.ok };
       }
       case 'gamble':
         return { text: (this.altar.gamble?.previewText ?? 'Fate decides: a spell, a doubled lend, or a price.') + debt, ok: true };
@@ -301,6 +299,17 @@ export class AltarModal implements UIModal {
 function spellElements(engine: GameEngine, id: string): string[] {
   const own = spellOf(engine, id)?.element ?? '';
   return [own, ...(engine.player.grimoireState?.forged.filter((f) => f.spellId === id).map((f) => f.element) ?? [])];
+}
+
+/**
+ * What forging `element` onto a known spell would make of it, as HTML, or why the forge
+ * refuses; `ok` says whether it will. Shared by Odin's altar and the free forge card.
+ */
+export function forgePreviewHtml(engine: GameEngine, spellId: string, element: string, fated?: string): { html: string; ok: boolean } {
+  const refusal = forgeRefusal(engine, engine.player, spellId, element);
+  const forged = refusal ? undefined : previewForge(engine, engine.player, spellId, element, fated);
+  if (!forged) return { html: escapeHtml(refusal ?? 'The forge cannot work that spell.'), ok: false };
+  return { html: forgeText(engine, spellId, element, forged), ok: true };
 }
 
 /** What a forge makes of a spell: its new title, how it strikes, and an opposite's bonus. */

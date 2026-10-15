@@ -151,6 +151,10 @@ export function applyConsequences(
         player.learnSpell(c.spellId);
         break;
       }
+      case 'offerForge': {
+        player.offerForge({ source: c.source, ...(c.element ? { element: c.element } : {}), ...(c.fated ? { fated: c.fated } : {}) });
+        break;
+      }
       case 'grantPerk': {
         const perk = engine.manifest?.perks?.find((p) => p.id === c.perkId);
         // A perk that raises max HP raises HP with it, as the temple's blessing does.

@@ -4,6 +4,7 @@ import { GameEngine } from '../../../engine/engine';
 import { GameMap } from '../../../engine/grid/map';
 import { TILES } from '../../../engine/grid/tile';
 import { Player } from '../../../engine/entities/player';
+import { COTW_GRIMOIRES } from '../grimoires';
 import { Monster } from '../../../engine/entities/monster';
 import { NPC } from '../../../engine/entities/npc';
 import { MovementAction } from '../../../engine/actions/movement';
@@ -21,7 +22,7 @@ const standing = (e: GameEngine) => e.getFactionStanding(IRON_CLANS_FACTION);
 
 function engineOn(floor: number): { engine: GameEngine; player: Player; map: GameMap } {
   const map = new GameMap(12, 12, TILES.FLOOR);
-  const player = new Player({ id: 'hero', name: 'Sven', position: { x: 4, y: 5 }, stats: { hp: 40, maxHp: 40, attack: 10, defense: 5 } });
+  const player = new Player({ id: 'hero', name: 'Sven', position: { x: 4, y: 5 }, stats: { hp: 40, maxHp: 40, attack: 10, defense: 5 }, grimoireSystem: COTW_GRIMOIRES });
   const engine = new GameEngine({ map, player, floor, manifest: cotwManifest });
   return { engine, player, map };
 }
@@ -126,16 +127,17 @@ describe('The Iron Clans', () => {
     answer(engine, 'ivalda_forge', 'temper');
     engine.handlePlayerAction(new MovementAction(player, 1, 0));
     expect(player.baseAttackValue).toBe(baseAttack);
-    expect(IVALDA_TOWN_CHOICE.options.map((o) => o.id)).toEqual(['steam_lance']);
+    expect(IVALDA_TOWN_CHOICE.options.map((o) => o.id)).toEqual(['forge_spell']);
     expect(SmithService.masterworkAvailable(engine, 'npc-gunther')).toBe(false); // not in town yet
     engine.worldState.factions[IRON_CLANS_FACTION] = -15;
 
-    answer(engine, 'ivalda_forge', 'steam_lance');
+    // At 10 she gives a free forge, any element, which waits for the hero to pick the spell.
+    answer(engine, 'ivalda_forge', 'forge_spell');
     engine.handlePlayerAction(new MovementAction(player, 1, 0));
-    expect(player.spellsKnown).not.toContain('steam_lance');
+    expect(player.pendingForgeOffers).toEqual([]);
     engine.worldState.factions[IRON_CLANS_FACTION] = 10;
     engine.handlePlayerAction(new MovementAction(player, 1, 0));
-    expect(player.spellsKnown).toContain('steam_lance');
+    expect(player.pendingForgeOffers).toEqual([{ source: 'Ivalda’s forge' }]);
 
     // With her anvil in town, the masterwork is on Gunther's Forge list.
     engine.setWorldFlag(IVALDA_IN_TOWN_FLAG, true);

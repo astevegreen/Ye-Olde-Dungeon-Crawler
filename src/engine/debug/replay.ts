@@ -56,6 +56,7 @@ import {
   PlaceGrimoireSpellAction,
   ForgetSpellAction,
   AcceptSpellOfferAction,
+  ClaimForgeOfferAction,
   PickGrimoireStatAction,
 } from '../actions/spell-actions';
 import { IdentifyAction } from '../actions/identificationActions';
@@ -164,6 +165,12 @@ const BUILDERS: Record<string, Builder> = {
   AcceptSpellOfferAction: (e, p) => {
     const spellId = str(p, 'spellId');
     return spellId ? new AcceptSpellOfferAction(e.player, spellId) : null;
+  },
+  ClaimForgeOfferAction: (e, p) => {
+    const offerIndex = num(p, 'offerIndex');
+    const spellId = str(p, 'spellId');
+    const element = str(p, 'element');
+    return offerIndex !== undefined && spellId && element ? new ClaimForgeOfferAction(e.player, offerIndex, spellId, element) : null;
   },
   ForgetSpellAction: (e, p) => {
     const spellId = str(p, 'spellId');

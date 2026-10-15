@@ -116,7 +116,7 @@ describe('convertLegacyMagic', () => {
         doubledSlots: [],
         forgotten: ['steam_lance', 'firebolt'],
         forged: [],
-        offers: [],
+        offers: [], forgeOffers: [],
       },
     });
     expect(result.spellsKnown).toEqual(['phase_door', 'cold_ray']);

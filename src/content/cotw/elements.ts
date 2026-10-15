@@ -11,7 +11,7 @@ export const COTW_AFFINITY_MATRIX: AffinityMatrixConfig = {
     { id: 'poison', name: 'Poison', oppositeElementId: 'lightning', groundHazard: true, color: '#95dc4c' },
     { id: 'arcane', name: 'Arcane', color: '#a855f7' },
     { id: 'healing', name: 'Healing', color: '#4ade80' },
-    // Blood magic, the Nauthiz glyph and Hel-Fire deal it; a few undead and fiends resist it.
+    // Blood magic, the Nauthiz glyph and Hel-fire deal it; a few undead and fiends resist it.
     // No color: each shadow spell keeps its own. Wildfire never turns a spell to shadow.
     { id: 'shadow', name: 'Shadow', excludeFromRandom: true },
   ],

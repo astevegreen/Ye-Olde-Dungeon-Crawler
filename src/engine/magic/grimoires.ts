@@ -38,6 +38,15 @@ export interface GrimoireForge {
   fated?: string;
 }
 
+/** A free forge given by a choice (`offerForge`), waiting for the hero to pick its spell. */
+export interface ForgeOffer {
+  /** Who gives it, as the card names them. */
+  source: string;
+  /** The element it adds; unset, the hero picks any element with an essence. */
+  element?: string;
+  fated?: string;
+}
+
 export interface GrimoireState {
   /** Grimoire ids in the order they opened; an open grimoire never closes. */
   opened: string[];
@@ -54,6 +63,8 @@ export interface GrimoireState {
   forged: GrimoireForge[];
   /** Spells offered to the hero that found no free slot: they wait here until one is made. */
   offers: string[];
+  /** Free forges waiting for the hero to pick a spell, in the order given. */
+  forgeOffers: ForgeOffer[];
 }
 
 export type StatPickOutcome = 'ok' | 'unknown-grimoire' | 'closed' | 'unknown-stat' | 'no-axis' | 'stat-in-use' | 'already-picked' | 'axis-unpicked';
@@ -80,7 +91,7 @@ const sameSlot = (a: GrimoireSlotRef, b: GrimoireSlotRef): boolean => a.grimoire
 const touches = (a: GrimoireCell, b: GrimoireCell): boolean => Math.abs(a.x - b.x) + Math.abs(a.y - b.y) === 1;
 
 export function createGrimoireState(): GrimoireState {
-  return { opened: [], placements: [], statPicks: [], extraSlots: [], doubledSlots: [], forgotten: [], forged: [], offers: [] };
+  return { opened: [], placements: [], statPicks: [], extraSlots: [], doubledSlots: [], forgotten: [], forged: [], offers: [], forgeOffers: [] };
 }
 
 export function copyGrimoireState(state: GrimoireState): GrimoireState {
@@ -93,6 +104,7 @@ export function copyGrimoireState(state: GrimoireState): GrimoireState {
     forgotten: [...state.forgotten],
     forged: state.forged.map((f) => ({ ...f })),
     offers: [...state.offers],
+    forgeOffers: state.forgeOffers.map((o) => ({ ...o })),
   };
 }
 
@@ -515,6 +527,7 @@ export function serializeGrimoireState(state: GrimoireState): SerializedGrimoire
     forgotten: s.forgotten.length > 0 ? s.forgotten : undefined,
     forged: s.forged.length > 0 ? s.forged : undefined,
     offers: s.offers.length > 0 ? s.offers : undefined,
+    forgeOffers: s.forgeOffers.length > 0 ? s.forgeOffers : undefined,
   };
 }
 
@@ -550,5 +563,16 @@ export function readGrimoireState(raw: unknown): GrimoireState | undefined {
         : []
     ),
     offers: strings(r.offers),
+    forgeOffers: list(r.forgeOffers).flatMap((e) =>
+      typeof e.source === 'string'
+        ? [
+            {
+              source: e.source,
+              ...(typeof e.element === 'string' ? { element: e.element } : {}),
+              ...(typeof e.fated === 'string' ? { fated: e.fated } : {}),
+            },
+          ]
+        : []
+    ),
   };
 }

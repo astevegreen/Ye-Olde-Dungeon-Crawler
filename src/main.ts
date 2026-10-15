@@ -1,6 +1,8 @@
 import {
   PlaceGrimoireSpellAction,
   ForgetSpellAction,
+  ClaimForgeOfferAction,
+  forgeOfferElements,
   AcceptSpellOfferAction,
   PickGrimoireStatAction,
   heroCastPreview,
@@ -74,7 +76,7 @@ import { applyThemeTokens, setUiTextScale } from './rendering/theme';
 import { applyUiScale, currentUiScale, resolveUiScale } from './ui/uiScale';
 import { installUiIcons } from './rendering/uiIcons';
 import { ChoiceModal } from './ui/choiceModal';
-import { AltarModal } from './ui/altarModal';
+import { AltarModal, forgePreviewHtml } from './ui/altarModal';
 import { MasteryChoiceModal } from './ui/masteryChoiceModal';
 import { RuneOfReturnDiscoveryModal } from './ui/runeOfReturnDiscoveryModal';
 import { AutoRestRunner } from './ui/autoRestRunner';
@@ -124,6 +126,7 @@ import { hintsMetByEvent, hintsMetByState, itemHintsMet } from './ui/hints/hintM
 import { findActionCues } from './ui/hints/actionCues';
 import { ControlsPrimer } from './ui/controlsPrimer';
 import { SpellOfferCard } from './ui/spellOfferCard';
+import { ForgeOfferCard } from './ui/forgeOfferCard';
 import { hasFreeGrimoireSlot } from './ui/characterMenu/spellbookGrimoires';
 import { MessageLogModal } from './ui/messageLogModal';
 import { OverflowWarning } from './ui/overflowWarning';
@@ -552,8 +555,50 @@ window.addEventListener('DOMContentLoaded', () => {
     pushModal(spellOfferCard.id, spellOfferCard);
   }
 
+  // The card for a free forge a choice gave (Ivalda's, Skuld's): pick the spell, or wait.
+  const shownForgeOffers = new WeakSet<object>();
+  let afterForgeClosed: (() => void) | undefined;
+  /** The open forge offer's fate phrase, so the preview titles the spell as the forge will. */
+  let forgeOfferCardFated: string | undefined;
+  const forgeOfferCard = new ForgeOfferCard({
+    preview: (spellId, element) => {
+      const engine = activeEngine;
+      if (!engine) return { html: '', ok: false };
+      return forgePreviewHtml(engine, spellId, element, forgeOfferCardFated);
+    },
+    onForge: (index, spellId, element) => {
+      if (activeEngine) activeEngine.handlePlayerAction(new ClaimForgeOfferAction(activeEngine.player, index, spellId, element));
+    },
+    onClose: () => {
+      popModal(forgeOfferCard.id);
+      const done = afterForgeClosed;
+      afterForgeClosed = undefined;
+      done?.();
+      void processVisualEffectsAndRender();
+    },
+  });
+  function openForgeOffer(index: number, onClosed?: () => void): void {
+    const engine = activeEngine;
+    const offer = engine?.player.pendingForgeOffers[index];
+    if (!engine || !offer || forgeOfferCard.isOpen || spellOfferCard.isOpen) return;
+    afterForgeClosed = onClosed;
+    forgeOfferCardFated = offer.fated;
+    const lookup = (id: string) => engine.manifest?.spells?.find((s) => s.id === id) ?? getSpell(id);
+    forgeOfferCard.open({
+      index,
+      source: offer.source,
+      elements: forgeOfferElements(engine, offer),
+      known: engine.player.spellsKnown.flatMap((id) => {
+        const known = lookup(id);
+        return known ? [{ id, name: known.name }] : [];
+      }),
+    });
+    pushModal(forgeOfferCard.id, forgeOfferCard);
+  }
+
   const spellbookTab = new SpellbookTab({
     onOpenSpellOffer: (spellId, onClosed) => openSpellOffer(spellId, onClosed),
+    onOpenForgeOffer: (index, onClosed) => openForgeOffer(index, onClosed),
     onCastSpell: (spell) => {
       characterMenuModal?.close();
       castOrTargetSpell(spell);
@@ -920,6 +965,14 @@ window.addEventListener('DOMContentLoaded', () => {
         if (next && !spellOfferCard.isOpen) {
           shownOffers.add(next);
           openSpellOffer(next);
+        }
+      });
+      step('forge offers', () => {
+        const offers = engine.player.pendingForgeOffers;
+        const next = offers.findIndex((o) => !shownForgeOffers.has(o));
+        if (next >= 0 && !forgeOfferCard.isOpen && !spellOfferCard.isOpen) {
+          shownForgeOffers.add(offers[next]);
+          openForgeOffer(next);
         }
       });
       step('quick spells', () => quickSpellsBar.update(engine));

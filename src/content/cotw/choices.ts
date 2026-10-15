@@ -558,18 +558,18 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         id: 'gaze_renewal',
         label: 'Gaze upon the Portent of Renewal (Requires Heeding Víðnir)',
         description:
-          'The mirror reflects the living root knitting shut, and teaches the galdr of mending: the Renewal spell (+20 Renown).',
+          'The mirror reflects the living root knitting shut, and works the galdr of mending into a spell you know: it carries healing, “of Renewal” (+20 Renown).',
         predicate: { type: 'hasFlag', flag: 'vidnir_warning_heeded' },
         disabledReason: 'The mirror remains shrouded in black mist: you did not commit to driving off the beast.',
         consequences: [
           { type: 'setFlag', flag: 'skuld_mirror_resolved', value: true },
           { type: 'setFlag', flag: 'skuld_aegis_preserver', value: true },
           { type: 'recordMilestone', milestoneId: 'skuld_mirror_gazed' },
-          { type: 'learnSpell', spellId: 'renewal' },
+          { type: 'offerForge', source: 'Skuld’s mirror', element: 'healing', fated: 'of Renewal' },
           {
             type: 'logMessage',
             message:
-              'The obsidian mirror clears to emerald light: green boughs sprout from black dragon-bile, and the taproot heals unbroken. You come away knowing how it was mended (you learn Renewal).',
+              'The obsidian mirror clears to emerald light: green boughs sprout from black dragon-bile, and the taproot heals unbroken. You come away with that mending in your hands: choose the spell that will carry it.',
           },
         ],
       },
@@ -577,18 +577,18 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         id: 'gaze_ragnarok',
         label: 'Gaze upon the Portent of Ragnarök (Requires Defying Víðnir)',
         description:
-          'The mirror reflects flaming skies and broken branches, and teaches the black flame of the corpse-realm: the Hel-Fire spell (+20 Renown).',
+          'The mirror reflects flaming skies and broken branches, and works the black flame of the corpse-realm into a spell you know: it carries shadow, “of Hel-fire” (+20 Renown).',
         predicate: { type: 'hasFlag', flag: 'vidnir_warning_defied' },
         disabledReason: 'The mirror remains dark: you did not vow to strike down the dragon.',
         consequences: [
           { type: 'setFlag', flag: 'skuld_mirror_resolved', value: true },
           { type: 'setFlag', flag: 'skuld_fury_einherjar', value: true },
           { type: 'recordMilestone', milestoneId: 'skuld_mirror_gazed' },
-          { type: 'learnSpell', spellId: 'hel_fire' },
+          { type: 'offerForge', source: 'Skuld’s mirror', element: 'shadow', fated: 'of Hel-fire' },
           {
             type: 'logMessage',
             message:
-              'The mirror bursts with scarlet fury! A vision of burning skies, shattered shields, and the great wolf breaking free floods your soul. You come away with that black fire in your hands (you learn Hel-Fire).',
+              'The mirror bursts with scarlet fury! A vision of burning skies, shattered shields, and the great wolf breaking free floods your soul. You come away with that black fire in your hands: choose the spell that will carry it.',
           },
         ],
       },

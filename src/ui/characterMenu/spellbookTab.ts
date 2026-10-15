@@ -28,6 +28,8 @@ export interface SpellbookTabOptions {
   onPickGrimoireStat: (grimoireId: string, axis: 'x' | 'y', statId: string) => void;
   /** Reopen the card for a spell offered while every slot was full; `onClosed` runs when it closes. */
   onOpenSpellOffer: (spellId: string, onClosed: () => void) => void;
+  /** Reopen the card for a free forge waiting for its spell, by its place in the list. */
+  onOpenForgeOffer: (index: number, onClosed: () => void) => void;
 }
 
 const SLOT_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
@@ -61,6 +63,7 @@ export class SpellbookTab implements MenuTab {
       onForgetSpell: () => {},
       onPickGrimoireStat: () => {},
       onOpenSpellOffer: () => {},
+      onOpenForgeOffer: () => {},
       ...options,
     };
   }
@@ -210,6 +213,11 @@ export class SpellbookTab implements MenuTab {
         this.options.onOpenSpellOffer(btn.getAttribute('data-offer')!, () => this.reloadSpells());
       });
     });
+    root.querySelectorAll<HTMLElement>('[data-forge-offer]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        this.options.onOpenForgeOffer(Number(btn.getAttribute('data-forge-offer')), () => this.reloadSpells());
+      });
+    });
     root.querySelectorAll<HTMLElement>('[data-forget]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const spell = this.selectedSpell;
@@ -316,14 +324,24 @@ export class SpellbookTab implements MenuTab {
       </div>${grimoires ? this.renderForget(spell) : ''}${grimoires ? this.renderOffers(player) : ''}`;
   }
 
-  /** Spells offered while every slot was full, each with a button that reopens its card. */
+  /** Spells offered while every slot was full, and free forges waiting for a spell, each with a button that reopens its card. */
   private renderOffers(player: Player): string {
     const rows = player.pendingSpellOffers.map((id) => {
       const spell = this.engine!.manifest?.spells?.find((s) => s.id === id) ?? getSpell(id);
       return `<button type="button" class="sb-slot" data-offer="${escapeHtml(id)}">${escapeHtml(spell?.name ?? id)}</button>`;
     });
-    if (rows.length === 0) return '';
-    return `<div class="ui-card"><div class="ui-h">Waiting for room</div><div class="ui-note">These spells were offered while every slot was full.</div><div class="sb-slots">${rows.join('')}</div></div>`;
+    const forges = player.pendingForgeOffers.map(
+      (o, i) => `<button type="button" class="sb-slot" data-forge-offer="${i}">${escapeHtml(o.element ? `${o.source}: ${o.element}` : o.source)}</button>`
+    );
+    const waiting =
+      rows.length > 0
+        ? `<div class="ui-card"><div class="ui-h">Waiting for room</div><div class="ui-note">These spells were offered while every slot was full.</div><div class="sb-slots">${rows.join('')}</div></div>`
+        : '';
+    const forging =
+      forges.length > 0
+        ? `<div class="ui-card"><div class="ui-h">Free forges</div><div class="ui-note">Each adds an element to a spell you choose.</div><div class="sb-slots">${forges.join('')}</div></div>`
+        : '';
+    return waiting + forging;
   }
 
   /** Forgetting is for the rest of the run, so it asks twice. */

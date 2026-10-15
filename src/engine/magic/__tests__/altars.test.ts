@@ -10,7 +10,9 @@ import { COTW_MAGIC } from '../../../content/cotw/magic';
 import { COTW_SPELLS } from '../../../content/cotw/spells';
 import { COTW_ESSENCE_RUNES } from '../../../content/cotw/items/essences';
 import { COTW_GRIMOIRES } from '../../../content/cotw/grimoires';
-import { forgedElements, forgedTitle, isSlotDoubled, slotOfSpell } from '../grimoires';
+import { forgedElements, forgedTitle, isSlotDoubled, readGrimoireState, serializeGrimoireState, slotOfSpell } from '../grimoires';
+import { applyConsequences } from '../../actions/choiceAction';
+import { ClaimForgeOfferAction } from '../../actions/spell-actions';
 import { describeAction } from '../../debug/actionTrail';
 import { rebuildAction } from '../../debug/replay';
 
@@ -175,6 +177,41 @@ describe('Spell altars', () => {
     expect(player.spellsKnown).toContain('firebolt');
     expect(listAltarOfferings(engine, player).some((o) => o.id === 'essence_kenaz')).toBe(true);
     expect(isAltarSpent(engine, ALTAR_X, ALTAR_Y)).toBe(false);
+  });
+
+  describe('free forge offers', () => {
+    it('a choice’s free forge waits, saves, and forges any essence element onto the spell picked', () => {
+      applyConsequences([{ type: 'offerForge', source: 'Ivalda’s forge' }], engine, player);
+      expect(player.pendingForgeOffers).toEqual([{ source: 'Ivalda’s forge' }]);
+      expect(readGrimoireState(JSON.parse(JSON.stringify(serializeGrimoireState(player.grimoireState!))))?.forgeOffers).toEqual([{ source: 'Ivalda’s forge' }]);
+
+      const claim = new ClaimForgeOfferAction(player, 0, 'firebolt', 'cold');
+      expect(rebuildAction(engine, { seq: 0, turn: 0, floor: 1, ...describeAction(claim) })).toMatchObject({ offerIndex: 0, spellId: 'firebolt', element: 'cold' });
+      const res = claim.perform(engine);
+      expect(res).toMatchObject({ success: true, cost: 0 });
+      expect(forgedElements(player.grimoireState!, 'firebolt')).toEqual(['cold']);
+      expect(player.pendingForgeOffers).toEqual([]);
+      expect(engine.messages.some((m) => m.includes('Firebolt, steam-forged'))).toBe(true);
+    });
+
+    it('a fated forge adds only its element, refuses a spell that carries it, and titles by fate', () => {
+      player.offerForge({ source: 'Skuld’s mirror', element: 'healing', fated: 'of Renewal' });
+      expect(new ClaimForgeOfferAction(player, 0, 'firebolt', 'cold').perform(engine).success).toBe(false);
+      player.forgeSpell('firebolt', 'healing');
+      expect(new ClaimForgeOfferAction(player, 0, 'firebolt', 'healing').perform(engine).success).toBe(false);
+      expect(new ClaimForgeOfferAction(player, 1, 'slow', 'healing').perform(engine).success).toBe(false);
+      expect(player.pendingForgeOffers).toHaveLength(1);
+
+      expect(new ClaimForgeOfferAction(player, 0, 'magic_arrow', 'healing').perform(engine).success).toBe(true);
+      expect(forgedTitle(COTW_GRIMOIRES, player.grimoireState!, { id: 'magic_arrow', name: 'Magic Arrow', element: 'arcane' })).toBe('Magic Arrow, of Renewal');
+      expect(player.pendingForgeOffers).toEqual([]);
+    });
+
+    it('a hero without grimoires is offered nothing', () => {
+      const plain = new Player({ position: { x: 1, y: 1 }, stats: { hp: 10, maxHp: 10, attack: 1, defense: 1 } });
+      expect(plain.offerForge({ source: 'Ivalda’s forge' })).toBe(false);
+      expect(plain.pendingForgeOffers).toEqual([]);
+    });
   });
 
   describe("Hel's Grave-Altar", () => {

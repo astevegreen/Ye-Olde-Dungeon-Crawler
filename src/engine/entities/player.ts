@@ -30,6 +30,7 @@ import {
   placeSpell,
   reconcileGrimoireState,
   restatGrimoire,
+  type ForgeOffer,
   type GrimoireSlotRef,
   type GrimoireState,
   type LearnResult,
@@ -558,6 +559,24 @@ export class Player extends Actor {
   }
 
   /** Adds an element to a known spell (the forge swaps an earlier forge's; fate's stays). */
+  /** Free forges given by choices, waiting for the hero to pick a spell. */
+  public get pendingForgeOffers(): readonly ForgeOffer[] {
+    return this.grimoireState?.forgeOffers ?? [];
+  }
+
+  /** Keeps a free forge for later; false when the hero has no grimoires to forge in. */
+  public offerForge(offer: ForgeOffer): boolean {
+    const model = this.grimoireModel();
+    if (!model) return false;
+    model.state.forgeOffers.push({ ...offer });
+    return true;
+  }
+
+  /** Takes a waiting forge offer away (claimed), by its place in the list. */
+  public takeForgeOffer(index: number): ForgeOffer | undefined {
+    return this.grimoireModel()?.state.forgeOffers.splice(index, 1)[0];
+  }
+
   public forgeSpell(spellId: string, element: string, fated?: string): boolean {
     const model = this.grimoireModel();
     if (!model || !this.spellsKnown.includes(spellId)) return false;

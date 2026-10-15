@@ -189,11 +189,11 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
 
     const renewal = choice.options.find((o) => o.id === 'gaze_renewal')!;
     expect(renewal.predicate).toEqual({ type: 'hasFlag', flag: 'vidnir_warning_heeded' });
-    expect(renewal.consequences.some((c) => c.type === 'learnSpell' && (c as any).spellId === 'renewal')).toBe(true);
+    expect(renewal.consequences).toContainEqual({ type: 'offerForge', source: 'Skuld’s mirror', element: 'healing', fated: 'of Renewal' });
 
     const ragnarok = choice.options.find((o) => o.id === 'gaze_ragnarok')!;
     expect(ragnarok.predicate).toEqual({ type: 'hasFlag', flag: 'vidnir_warning_defied' });
-    expect(ragnarok.consequences.some((c) => c.type === 'learnSpell' && (c as any).spellId === 'hel_fire')).toBe(true);
+    expect(ragnarok.consequences).toContainEqual({ type: 'offerForge', source: 'Skuld’s mirror', element: 'shadow', fated: 'of Hel-fire' });
 
     const unbound = choice.options.find((o) => o.id === 'gaze_unbound')!;
     expect(unbound.consequences.some((c) => c.type === 'grantItem' && (c as any).itemId === 'supreme_health_potion')).toBe(true);

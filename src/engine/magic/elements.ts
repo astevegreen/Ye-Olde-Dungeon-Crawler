@@ -180,6 +180,33 @@ export class AffinityMatrix {
   }
 }
 
+/** How a piercing hit takes an affinity: a resistance lands as neutral; immunity and absorbing stay. */
+export function piercedAffinity(affinity: ElementalAffinity, pierce = false): ElementalAffinity {
+  return pierce && affinity === 'resistant' ? 'neutral' : affinity;
+}
+
+/**
+ * The element a hit carrying several lands as on one target: the one it resists least
+ * (the highest multiplier, after `pierce`), the first listed on a tie.
+ */
+export function leastResistedElement(
+  matrix: AffinityMatrix,
+  affinityOf: (element: string) => ElementalAffinity,
+  elements: readonly string[],
+  pierce = false
+): string {
+  let best = elements[0];
+  let bestMultiplier = -Infinity;
+  for (const element of elements) {
+    const multiplier = matrix.getMultiplier(element, piercedAffinity(affinityOf(element), pierce));
+    if (multiplier > bestMultiplier) {
+      best = element;
+      bestMultiplier = multiplier;
+    }
+  }
+  return best;
+}
+
 export const DEFAULT_AFFINITY_MATRIX = new AffinityMatrix({
   elements: [
     { id: 'physical', name: 'Physical' },

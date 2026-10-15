@@ -28,6 +28,10 @@ export interface DamageEffect {
   type: 'damage';
   amount: string | number;
   element: ElementType | string;
+  /** More elements the hit carries: it lands as the one the target resists least (`leastResistedElement`). */
+  elements?: Array<ElementType | string>;
+  /** A resisted hit lands as neutral; immunity and absorbing still hold. */
+  pierce?: boolean;
 }
 
 export interface StatusEffectPrimitive {
@@ -85,6 +89,17 @@ export interface IdentifyEffect {
   type: 'identify';
 }
 
+/** Lifts afflictions (`StatusHandler.affliction`) off each target: the longest-lasting one, or with `all` every one. */
+export interface CleanseEffect {
+  type: 'cleanse';
+  all?: boolean;
+}
+
+/** Moves the caster's afflictions to its targets; one a target is immune to stays with the caster. */
+export interface HandOverEffect {
+  type: 'handOver';
+}
+
 /** Breaks the curses on everything the caster wears and carries (`breakCurses`). */
 export interface UncurseEffect {
   type: 'uncurse';
@@ -124,6 +139,8 @@ export type EffectPrimitive =
   | RevealEffect
   | IdentifyEffect
   | UncurseEffect
+  | CleanseEffect
+  | HandOverEffect
   | SummonEffect
   | { type: string; [key: string]: any };
 
@@ -140,6 +157,8 @@ export interface SpellDefinition {
   volatileEnergyCost?: number;
   /** Permanent max HP burned per cast. */
   vitalityCost?: number;
+  /** Current HP paid per cast (blood magic); Thrift lowers it as it lowers mana (`effectiveHpCost`). */
+  hpCost?: number;
   /** Corruption added per cast. Defaults to the volatile/vitality cost paid. */
   corruptionGain?: number;
   /** Volatile energy restored per cast (or per kill, with `requiresKillForEnergy`). */

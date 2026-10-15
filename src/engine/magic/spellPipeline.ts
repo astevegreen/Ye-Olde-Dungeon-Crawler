@@ -20,6 +20,8 @@ import type {
   RevealEffect,
   IdentifyEffect,
   UncurseEffect,
+  CleanseEffect,
+  HandOverEffect,
   SummonEffect,
   LearnSpellEffect,
   TargetingMode,
@@ -37,6 +39,8 @@ import { Actor } from '../entities/actor';
 import { breakCurses } from '../items/breakCurses';
 import { applyImpulse } from '../combat/impulse';
 import { hasLineOfSight } from '../ai/perception';
+import { leastResistedElement } from './elements';
+import { StatusHandlerRegistry } from '../status/statusHandlers';
 
 function getElementDefaultColor(element?: string): string {
   switch (element) {
@@ -78,6 +82,21 @@ function ownSpellCause(caster: Entity, target: Entity, spell: SpellDefinition): 
 }
 
 /** Spell damage scaled by the target's family perk against the caster's family (Grave-Warden). */
+/** The element a damage effect's hit lands as on `target`: its own, or of several the one least resisted. */
+function strikeElement(engine: GameEngine, target: Entity, effect: Pick<DamageEffect, 'element' | 'elements' | 'pierce'>): string {
+  if (!effect.elements?.length) return effect.element;
+  return leastResistedElement(engine.affinityMatrix, (e) => target.affinityTo(e), [effect.element, ...effect.elements], effect.pierce);
+}
+
+/** The afflictions (`StatusHandler.affliction`) an entity bears, longest-lasting first. */
+function afflictionsOf(entity: Entity): StatusType[] {
+  return entity.statusManager
+    .getAll()
+    .filter((s) => StatusHandlerRegistry.get(s.type)?.affliction)
+    .sort((a, b) => b.duration - a.duration)
+    .map((s) => s.type);
+}
+
 function scaleByTargetFamily(engine: GameEngine, caster: Entity, target: Entity, damage: number): number {
   const taken = productAgainst(engine, target, caster, 'damageTakenMultiplier');
   return taken === 1 ? damage : Math.max(1, Math.round(damage * taken));
@@ -167,6 +186,14 @@ export class SpellPipeline {
 
     EffectPrimitiveRegistry.register<UncurseEffect>('uncurse', (_effect, ctx) => {
       breakCurses(ctx.engine, ctx.caster);
+    });
+
+    EffectPrimitiveRegistry.register<CleanseEffect>('cleanse', (effect, ctx) => {
+      for (const target of ctx.targets) SpellPipeline.cleanse(ctx.engine, target, effect.all ?? false);
+    });
+
+    EffectPrimitiveRegistry.register<HandOverEffect>('handOver', (_effect, ctx) => {
+      for (const target of ctx.targets) SpellPipeline.handOver(ctx.engine, ctx.caster, target);
     });
 
     EffectPrimitiveRegistry.register<ChainEffect>('chain', (effect, ctx) => {
@@ -521,19 +548,20 @@ export class SpellPipeline {
     if (!target.isAlive()) return;
     const rolled = parseAndRollDice(effect.amount, engine.rng);
     if (rolled <= 0) return;
-    let rawDamage = scaleSpellDamage(engine, caster, effect.element, rolled);
+    const element = strikeElement(engine, target, effect);
+    let rawDamage = scaleSpellDamage(engine, caster, element, rolled);
     rawDamage = scaleByTargetFamily(engine, caster, target, rawDamage);
     rawDamage = wardFirstSpell(engine, caster, target, rawDamage);
     const terrain = engine.map.getTile(target.x, target.y)?.type;
-    const result = target.takeElementalDamage(rawDamage, effect.element, engine.affinityMatrix, terrain);
+    const result = target.takeElementalDamage(rawDamage, element, engine.affinityMatrix, terrain, { pierce: effect.pierce });
 
     if (result.affinity === 'absorbing') {
-      engine.log(`${target.name} absorbs the ${effect.element} energy, healing ${result.healed} HP!`);
+      engine.log(`${target.name} absorbs the ${element} energy, healing ${result.healed} HP!`);
       return;
     }
 
     if (result.affinity === 'immune') {
-      engine.log(`${target.name} is completely unharmed by the ${effect.element}!`);
+      engine.log(`${target.name} is completely unharmed by the ${element}!`);
       return;
     }
 
@@ -545,16 +573,16 @@ export class SpellPipeline {
     }
 
     if (spell.areaOfEffect > 0) {
-      engine.log(`${target.name} takes ${result.damageDealt} ${effect.element} damage${detail}!`);
+      engine.log(`${target.name} takes ${result.damageDealt} ${element} damage${detail}!`);
     } else {
-      engine.log(`${caster.name}'s ${spell.name} strikes ${target.name} for ${result.damageDealt} ${effect.element} damage${detail}!`);
+      engine.log(`${caster.name}'s ${spell.name} strikes ${target.name} for ${result.damageDealt} ${element} damage${detail}!`);
     }
 
     dispatchDamageHooks(engine, caster, target, result.damageDealt);
 
     if (result.killed) {
       DeathResolver.resolveDeath(engine, caster, target, {
-        damageElement: effect.element,
+        damageElement: element,
         damageDealt: result.finalDamage,
         remainingHpBeforeBlow: result.damageDealt,
         cause: ownSpellCause(caster, target, spell),
@@ -562,8 +590,29 @@ export class SpellPipeline {
     }
 
     if (engine.surfaces) {
-      engine.surfaces.triggerElementalReaction(target.x, target.y, effect.element, result.damageDealt, engine);
+      engine.surfaces.triggerElementalReaction(target.x, target.y, element, result.damageDealt, engine);
     }
+  }
+
+  /** Lifts `target`'s longest-lasting affliction, or with `all` every one. */
+  public static cleanse(engine: GameEngine, target: Entity, all: boolean): void {
+    if (!target.isAlive()) return;
+    const lifted = afflictionsOf(target).slice(0, all ? undefined : 1);
+    for (const type of lifted) target.statusManager.removeStatus(type);
+    engine.log(lifted.length > 0 ? `${target.name} is cleansed of ${lifted.join(', ')}.` : `${target.name} has nothing to cleanse.`);
+  }
+
+  /** Moves the caster's afflictions to `target`; one it is immune to stays with the caster. */
+  public static handOver(engine: GameEngine, caster: Entity, target: Entity): void {
+    if (!target.isAlive() || target.id === caster.id) return;
+    const afflictions = afflictionsOf(caster);
+    if (afflictions.length === 0) return;
+    const moved = caster.statusManager.transferTo(afflictions, target, caster.id, engine);
+    engine.log(
+      moved.length > 0
+        ? `${caster.name} hands ${moved.join(', ')} over to ${target.name}!`
+        : `${target.name} will not take what ${caster.name} bears.`
+    );
   }
 
   public static applyStatusEffect(
@@ -767,12 +816,15 @@ export class SpellPipeline {
 
       const terrain = engine.map.getTile(nextTarget.x, nextTarget.y)?.type;
       const hopTaken = scaleByTargetFamily(engine, caster, nextTarget, hopDamage);
-      const result = nextTarget.takeElementalDamage(wardFirstSpell(engine, caster, nextTarget, hopTaken), element, engine.affinityMatrix, terrain);
+      const hopElement = damageContext ? strikeElement(engine, nextTarget, damageContext) : element;
+      const result = nextTarget.takeElementalDamage(wardFirstSpell(engine, caster, nextTarget, hopTaken), hopElement, engine.affinityMatrix, terrain, {
+        pierce: damageContext?.pierce,
+      });
       if (!result.isHeal && result.affinity !== 'immune') dispatchDamageHooks(engine, caster, nextTarget, result.damageDealt);
 
       if (result.killed) {
         DeathResolver.resolveDeath(engine, caster, nextTarget, {
-          damageElement: element,
+          damageElement: hopElement,
           damageDealt: result.finalDamage,
           remainingHpBeforeBlow: result.damageDealt,
         });

@@ -5,6 +5,8 @@ import type { SpellDefinition } from './types';
 import { wornModifiers, sumWorn, productWorn } from '../items/wornModifiers';
 import { spellPowerMultiplier, attributeScalingOf } from '../combat/attributeScaling';
 import { EnergyModel } from '../actors/energyModel';
+import { Player } from '../entities/player';
+import { resolveSlotStats, slotOfSpell, slotStatSteps, type GrimoireSlotStats } from './grimoires';
 
 /**
  * A spell's numbers as a cast of it resolves for this caster. The cast, the HUD, the
@@ -12,11 +14,32 @@ import { EnergyModel } from '../actors/energyModel';
  * is what the hero pays and deals.
  */
 
-/** What `spell` costs this caster in mana: through what it wears and its perks, a share off first, then flat. */
-export function effectiveManaCost(caster: Entity, spell: Pick<SpellDefinition, 'manaCost'>): number {
-  const multiplier = productWorn(caster, 'manaCostMultiplier');
+/**
+ * What the stats of the slot `spellId` sits in do to a hero's cast of it, in the pack's
+ * three-grimoire model; neutral for a caster without the model or a spell in no slot.
+ */
+export function castSlotStats(caster: Entity, spellId: string | undefined): GrimoireSlotStats {
+  const state = caster instanceof Player ? caster.grimoireState : undefined;
+  const system = caster instanceof Player ? caster.grimoireSystem : undefined;
+  const ref = state && spellId !== undefined ? slotOfSpell(state, spellId) : undefined;
+  return resolveSlotStats(system && state && ref ? slotStatSteps(system, state, ref) : []);
+}
+
+/**
+ * What `spell` costs this caster in mana: through what it wears and its perks, a share off
+ * first (its slot's Thrift too), then flat.
+ */
+export function effectiveManaCost(caster: Entity, spell: Pick<SpellDefinition, 'manaCost'> & Partial<Pick<SpellDefinition, 'id'>>): number {
+  const multiplier = productWorn(caster, 'manaCostMultiplier') * castSlotStats(caster, spell.id).costMultiplier;
   const discount = sumWorn(caster, 'manaCostDiscount');
   return Math.max(0, Math.round((spell.manaCost ?? 0) * multiplier) - discount);
+}
+
+/** The current HP `spell` costs this caster (blood magic): its slot's Thrift off, never below 1 while it costs any. */
+export function effectiveHpCost(caster: Entity, spell: Pick<SpellDefinition, 'hpCost'> & Partial<Pick<SpellDefinition, 'id'>>): number {
+  const base = spell.hpCost ?? 0;
+  if (base <= 0) return 0;
+  return Math.max(1, Math.round(base * castSlotStats(caster, spell.id).costMultiplier));
 }
 
 /**

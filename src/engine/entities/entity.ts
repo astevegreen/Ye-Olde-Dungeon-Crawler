@@ -1,7 +1,7 @@
 import type { CombatStats, EntityType, Faction, Position, TileType } from '../types';
 import { BASE_ACTION_COST } from '../types';
 import type { ElementType, ElementalAffinity, AffinityMatrix } from '../magic/elements';
-import { calculateElementalDamage } from '../magic/elements';
+import { calculateElementalDamage, piercedAffinity } from '../magic/elements';
 import { StatusManager } from '../status/statusManager';
 import type { StatusType } from '../status/types';
 import type { ActorCapabilities } from './actor';
@@ -229,9 +229,10 @@ export class Entity {
     element: ElementType,
     matrix?: AffinityMatrix,
     terrainType?: TileType,
-    options?: { wakeUp?: boolean }
+    options?: { wakeUp?: boolean; pierce?: boolean }
   ): { damageDealt: number; finalDamage: number; isHeal: boolean; healed: number; killed: boolean; affinity: ElementalAffinity; message?: string } {
-    const affinity = this.affinityTo(element);
+    // A piercing hit (a spell's `pierce`) lands on a resistance as neutral.
+    const affinity = piercedAffinity(this.affinityTo(element), options?.pierce);
     const calc = calculateElementalDamage(amount, element, affinity, matrix, terrainType);
 
     if (calc.isHeal) {

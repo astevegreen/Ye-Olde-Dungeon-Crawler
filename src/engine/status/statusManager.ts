@@ -124,6 +124,30 @@ export class StatusManager {
     this.effects.clear();
   }
 
+  /**
+   * Moves the named statuses this manager holds to `recipient`, as it would take them
+   * (its immunities refuse one, a handler's `onApply` runs), with `sourceEntityId` the
+   * giver. One the recipient refuses stays here. Returns the statuses moved.
+   */
+  public transferTo(
+    types: readonly StatusType[],
+    recipient: Entity,
+    giverId: string,
+    engine?: GameEngine
+  ): StatusType[] {
+    const moved: StatusType[] = [];
+    for (const type of types) {
+      const effect = this.effects.get(type);
+      if (!effect) continue;
+      const handed: StatusEffect = { ...effect, sourceEntityId: giverId, data: effect.data ? { ...effect.data } : undefined };
+      if (recipient.statusManager.applyStatusDetailed(handed, [], recipient, engine).applied) {
+        this.effects.delete(type);
+        moved.push(type);
+      }
+    }
+    return moved;
+  }
+
   public tick(entity: Entity, engine: GameEngine): StatusTickResult {
     const expired: StatusType[] = [];
     const messages: string[] = [];

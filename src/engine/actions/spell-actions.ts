@@ -15,7 +15,7 @@ import { findTaggedEntitiesInRadius } from '../combat/radialAuraFilter';
 import { traceProjectile } from '../magic/targeting';
 import { ManaOverflowManager, canOvercast } from '../magic/manaOverflow';
 import { lowestWorn, sumWorn, wearsFlag } from '../items/wornModifiers';
-import { effectiveManaCost as effectiveManaCostOf } from '../magic/castNumbers';
+import { castSlotStats, effectiveHpCost as effectiveHpCostOf, effectiveManaCost as effectiveManaCostOf } from '../magic/castNumbers';
 import { GrimoireMatrixManager, withSpellRangeBonus } from '../magic/grimoireMatrix';
 import type { GrimoireAxis } from '../magic/magicConfig';
 import type { StatPickOutcome } from '../magic/grimoires';
@@ -144,6 +144,7 @@ export class CastSpellAction implements Action {
     const paysCosts = player !== null && !this.freeCast;
     const volatileCost = paysCosts ? (spell.volatileEnergyCost ?? 0) : 0;
     const vitalityCost = paysCosts ? (spell.vitalityCost ?? 0) : 0;
+    const hpCost = player && paysCosts ? effectiveHpCostOf(player, spell) : 0;
     let emergencyHpBurn = 0;
     let manaDeficit = 0;
     if (player && paysCosts) {
@@ -173,6 +174,14 @@ export class CastSpellAction implements Action {
           success: false,
           cost: 0,
           message: `Cannot cast ${spell.name}: insufficient vitality to burn without perishing!`,
+        };
+      }
+      // A blood price is paid from current HP, and never with the last of it.
+      if (hpCost > 0 && player.hp <= hpCost) {
+        return {
+          success: false,
+          cost: 0,
+          message: `Not enough life to cast ${spell.name}! (Requires ${hpCost} HP, have ${player.hp})`,
         };
       }
     }
@@ -209,6 +218,11 @@ export class CastSpellAction implements Action {
         engine.log(`You burn ${vitalityCost} permanent Max HP to fuel ${spell.name}! (Max HP: ${player.maxHp})`);
       }
 
+      if (hpCost > 0) {
+        player.hp -= hpCost;
+        engine.log(`You pay ${hpCost} HP in blood to cast ${spell.name}. (HP: ${player.hp}/${player.maxHp})`);
+      }
+
       if (spell.volatileEnergyGain && spell.volatileEnergyGain > 0 && !spell.requiresKillForEnergy) {
         const energyModel = player.energyModel ?? player.initEnergyModel();
         energyModel.volatileEnergy = Math.min(
@@ -221,7 +235,10 @@ export class CastSpellAction implements Action {
       }
     }
 
-    const actionCost = this.caster.getActionCost(100);
+    // Swift: a hero's cast from a slot with it takes a share of a turn. Statuses still tick
+    // once per action, as under haste.
+    const castTime = player && !this.freeCast ? castSlotStats(player, spell.id).castTimeFraction : 1;
+    const actionCost = Math.max(1, Math.round(this.caster.getActionCost(100) * castTime));
     this.caster.consumeEnergy(actionCost);
 
     flightRecorder.recordSpell(

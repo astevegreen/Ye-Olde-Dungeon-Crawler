@@ -373,6 +373,7 @@ describe('three grimoires (P-29)', () => {
         statPicks: [{ grimoireId: 'row', axis: 'y', statId: 'power' }, { grimoireId: 'row', axis: 'x', statId: 'luck' }],
         doubledSlots: [{ grimoireId: 'row', x: 5, y: 5 }],
         forgotten: ['spell_9', 7],
+        forged: [{ spellId: 'spell_1', element: 'fire' }, { spellId: 'spell_1', element: 'fire' }, { spellId: 'spell_9', element: 'cold' }, { spellId: 'spell_2' }],
       };
       const p = new Player({ position: { x: 0, y: 0 }, spellsKnown: ['spell_1', 'spell_2'], grimoireSystem: FIXTURE_GRIMOIRES, grimoireState: readGrimoireState(raw) });
       expect(state(p)).toEqual({
@@ -385,6 +386,7 @@ describe('three grimoires (P-29)', () => {
         extraSlots: [],
         doubledSlots: [],
         forgotten: ['spell_9'],
+        forged: [{ spellId: 'spell_1', element: 'fire' }],
       });
       expect(readGrimoireState('junk')).toBeUndefined();
     });

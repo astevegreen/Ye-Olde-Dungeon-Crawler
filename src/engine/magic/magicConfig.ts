@@ -179,6 +179,20 @@ export interface GrimoireSystemConfig {
   /** In opening order: a learned spell goes to the first free slot of the first open one. */
   layouts: GrimoireLayout[];
   stats: GrimoireStatDefinition[];
+  /** How saves from before the switch, or holding spells since retired, carry over on load. */
+  retired?: RetiredMagicConfig;
+}
+
+/** A retired spell becomes another spell, or a base spell forged with an added element. */
+export type RetiredSpellTarget = string | { spellId: string; addedElement: string };
+
+export interface RetiredMagicConfig {
+  /** Old spell id → what a hero who knew it knows instead; applied to known spells and the quick bar. */
+  spells?: Record<string, RetiredSpellTarget>;
+  /** Old glyph id → the item refunded for each such glyph inscribed on an old page. */
+  glyphRunes?: Record<string, string>;
+  /** Status ids dropped from a loaded hero. */
+  statuses?: string[];
 }
 
 // ─── Kill rites ────────────────────────────────────────────────────────────

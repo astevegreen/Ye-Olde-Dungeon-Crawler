@@ -28,6 +28,8 @@ import { cloneWorldState, createWorldState, type WorldState } from '../state/wor
 import { compactTilesWithDictionary, decompactTiles, compactFov, decompactFov } from './compaction';
 import { EnergyModel } from '../actors/energyModel';
 import { readGrimoireState, serializeGrimoireState } from '../magic/grimoires';
+import { convertLegacyMagic, type LegacyMagicResult } from './legacyMagic';
+import { createScaledItem } from '../dungeon/lootSpawner';
 import { applyPrologueState } from '../quest/prologue';
 import { GameStateManager } from '../quest/gameStateManager';
 import { growCompanion } from '../combat/lastStand';
@@ -1063,6 +1065,18 @@ function hydrateGame(
 
   // 3. Reconstruct Player
   const pData = saveData.player;
+  // A pack on the three grimoires carries old magic over (retired spells, old pages, glyphs).
+  const grimoireSystem = manifest?.magic?.grimoires;
+  const legacyPages = pData.grimoirePages ?? (pData.grimoire ? [{ id: 'page_1', name: '', slots: pData.grimoire }] : []);
+  const legacy: LegacyMagicResult | undefined = grimoireSystem
+    ? convertLegacyMagic(grimoireSystem, {
+        spellsKnown: pData.spellsKnown ?? [],
+        quickSpells: pData.quickSpells,
+        pages: legacyPages,
+        state: readGrimoireState(pData.grimoires),
+        statusEffects: pData.statusEffects,
+      })
+    : undefined;
   const player = new Player({
     id: pData.id,
     name: pData.name,
@@ -1084,12 +1098,12 @@ function hydrateGame(
     maxMana: Math.max(0, Number(pData.maxMana) || 0),
     position: { x: pData.x, y: pData.y },
     inventory,
-    spellsKnown: pData.spellsKnown ? [...pData.spellsKnown] : [],
+    spellsKnown: legacy ? legacy.spellsKnown : pData.spellsKnown ? [...pData.spellsKnown] : [],
     level: pData.level ?? 1,
     xp: pData.xp ?? 0,
     deepestRecallFloor: pData.deepestRecallFloor ?? saveData.profile?.deepestRecallFloor,
     recallPosition: pData.recallPosition ?? saveData.profile?.recallPosition,
-    quickSpells: pData.quickSpells ? [...pData.quickSpells] : undefined,
+    quickSpells: legacy ? legacy.quickSpells : pData.quickSpells ? [...pData.quickSpells] : undefined,
     quickPotions: pData.quickPotions ? [...pData.quickPotions] : undefined,
     tutorialFlags: pData.tutorialFlags ? { ...pData.tutorialFlags } : (saveData.profile?.tutorialFlags ? { ...saveData.profile.tutorialFlags } : undefined),
     unspentStatPoints: Number(pData.unspentStatPoints) || Number(saveData.profile?.unspentStatPoints) || 0,
@@ -1099,10 +1113,12 @@ function hydrateGame(
     runeCharges: pData.runeCharges !== undefined ? Number(pData.runeCharges) : undefined,
     runeMaxCharges: pData.runeMaxCharges !== undefined ? Number(pData.runeMaxCharges) : undefined,
     // Single-page `grimoire` is only read, for saves made before grimoirePages existed.
-    grimoire: pData.grimoire ? [...pData.grimoire.map((s) => ({ ...s, infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined }))] : undefined,
+    grimoire: legacy && pData.grimoire ? legacy.pages[0].slots : pData.grimoire ? [...pData.grimoire.map((s) => ({ ...s, infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined }))] : undefined,
     // A page holds one copy of a spell (Player.setGrimoireSlot). An older save may hold
     // more; the first one is the copy that casts, so later ones load empty.
-    grimoirePages: pData.grimoirePages
+    grimoirePages: legacy && pData.grimoirePages
+      ? legacy.pages
+      : pData.grimoirePages
       ? pData.grimoirePages.map((page) => ({
           ...page,
           slots: page.slots.map((s, i) => ({
@@ -1115,8 +1131,8 @@ function hydrateGame(
     activeGrimoireIndex: pData.activeGrimoireIndex !== undefined ? Number(pData.activeGrimoireIndex) : undefined,
     grimoireOpenSlots: Array.isArray(pData.grimoireOpenSlots) ? pData.grimoireOpenSlots.map(Number) : undefined,
     grimoireGrounds: pData.grimoireGrounds ? { ...pData.grimoireGrounds } : undefined,
-    grimoireSystem: manifest?.magic?.grimoires,
-    grimoireState: readGrimoireState(pData.grimoires),
+    grimoireSystem,
+    grimoireState: legacy ? legacy.state : readGrimoireState(pData.grimoires),
     // A perk the pack no longer declares is dropped; the rest come back with their effects.
     perks: Array.isArray(pData.perks)
       ? pData.perks.map((id: string) => manifest?.perks?.find((perk) => perk.id === id)).filter((perk): perk is NonNullable<typeof perk> => Boolean(perk))
@@ -1127,9 +1143,17 @@ function hydrateGame(
   // Before HP is clamped to max HP, which the blessing raises.
   player.maxHpPercentBonus = Number(pData.maxHpPercentBonus) || 0;
   player.hp = Math.min(Number(pData.hp) || 1, player.maxHp);
-  if (pData.statusEffects) {
-    player.statusManager.deserialize(pData.statusEffects);
+  const statusEffects = legacy ? legacy.statusEffects : pData.statusEffects;
+  if (statusEffects) {
+    player.statusManager.deserialize(statusEffects);
   }
+  // Refunded glyphs: the pack where it has room, else the hero's tile.
+  legacy?.refunds.forEach((itemId, i) => {
+    const def = definitions.byId.get(itemId);
+    if (!def) return;
+    const item = createScaledItem(def, `glyph-refund-${i}`, 1, () => 0);
+    if (!player.inventory.storeItem(item).success) map.addItemAt(player.x, player.y, item);
+  });
   if (pData.planeId) {
     player.planeId = pData.planeId;
   }

@@ -31,6 +31,12 @@ export interface GrimoireStatPick {
   statId: string;
 }
 
+/** An element a spell carries beside its own (the forge; a retired hybrid carried over). */
+export interface GrimoireForge {
+  spellId: string;
+  element: string;
+}
+
 export interface GrimoireState {
   /** Grimoire ids in the order they opened; an open grimoire never closes. */
   opened: string[];
@@ -43,6 +49,8 @@ export interface GrimoireState {
   doubledSlots: GrimoireSlotRef[];
   /** Spells forgotten this run, which are never learned again. */
   forgotten: string[];
+  /** Elements added to known spells, in the order added. */
+  forged: GrimoireForge[];
 }
 
 export type StatPickOutcome = 'ok' | 'unknown-grimoire' | 'closed' | 'unknown-stat' | 'no-axis' | 'stat-in-use' | 'already-picked';
@@ -69,7 +77,7 @@ const sameSlot = (a: GrimoireSlotRef, b: GrimoireSlotRef): boolean => a.grimoire
 const touches = (a: GrimoireCell, b: GrimoireCell): boolean => Math.abs(a.x - b.x) + Math.abs(a.y - b.y) === 1;
 
 export function createGrimoireState(): GrimoireState {
-  return { opened: [], placements: [], statPicks: [], extraSlots: [], doubledSlots: [], forgotten: [] };
+  return { opened: [], placements: [], statPicks: [], extraSlots: [], doubledSlots: [], forgotten: [], forged: [] };
 }
 
 export function copyGrimoireState(state: GrimoireState): GrimoireState {
@@ -80,6 +88,7 @@ export function copyGrimoireState(state: GrimoireState): GrimoireState {
     extraSlots: state.extraSlots.map((s) => ({ ...s })),
     doubledSlots: state.doubledSlots.map((s) => ({ ...s })),
     forgotten: [...state.forgotten],
+    forged: state.forged.map((f) => ({ ...f })),
   };
 }
 
@@ -361,6 +370,9 @@ export function reconcileGrimoireState(config: GrimoireSystemConfig, state: Grim
     (s, i) => slotExists(config, state, s) && state.doubledSlots.findIndex((o) => sameSlot(o, s)) === i
   );
   state.forgotten = state.forgotten.filter((id, i) => !spellsKnown.includes(id) && state.forgotten.indexOf(id) === i);
+  state.forged = state.forged.filter(
+    (f, i) => spellsKnown.includes(f.spellId) && state.forged.findIndex((o) => o.spellId === f.spellId && o.element === f.element) === i
+  );
   const unslotted: string[] = [];
   for (const spellId of spellsKnown) {
     if (seenSpells.has(spellId)) continue;
@@ -396,6 +408,12 @@ export function validateGrimoireSystem(config: GrimoireSystemConfig): string[] {
     if (stat.kind === 'swift' && !stat.castTimeByStep?.length) problems.push(`stat ${stat.id} is swift with no castTimeByStep`);
     if (stat.kind !== 'swift' && stat.perStep === undefined) problems.push(`stat ${stat.id} has no perStep`);
   }
+  const retired = config.retired?.spells ?? {};
+  for (const [oldId, target] of Object.entries(retired)) {
+    const newId = typeof target === 'string' ? target : target.spellId;
+    if (newId === oldId || newId in retired) problems.push(`retired spell ${oldId} maps to ${newId}, which is itself retired`);
+    if (typeof target !== 'string' && !target.addedElement) problems.push(`retired spell ${oldId} adds no element`);
+  }
   return problems;
 }
 
@@ -409,6 +427,7 @@ export function serializeGrimoireState(state: GrimoireState): SerializedGrimoire
     extraSlots: s.extraSlots.length > 0 ? s.extraSlots : undefined,
     doubledSlots: s.doubledSlots.length > 0 ? s.doubledSlots : undefined,
     forgotten: s.forgotten.length > 0 ? s.forgotten : undefined,
+    forged: s.forged.length > 0 ? s.forged : undefined,
   };
 }
 
@@ -438,5 +457,8 @@ export function readGrimoireState(raw: unknown): GrimoireState | undefined {
     extraSlots: slots(r.extraSlots),
     doubledSlots: slots(r.doubledSlots),
     forgotten: strings(r.forgotten),
+    forged: list(r.forged).flatMap((e) =>
+      typeof e.spellId === 'string' && typeof e.element === 'string' ? [{ spellId: e.spellId, element: e.element }] : []
+    ),
   };
 }

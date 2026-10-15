@@ -255,6 +255,7 @@ export interface SerializedGrimoireState {
   extraSlots?: import('../magic/grimoires').GrimoireSlotRef[];
   doubledSlots?: import('../magic/grimoires').GrimoireSlotRef[];
   forgotten?: string[];
+  forged?: import('../magic/grimoires').GrimoireForge[];
 }
 
 /** `WorldState` as saved: remote-vault items are serialized item trees, not live Items. */

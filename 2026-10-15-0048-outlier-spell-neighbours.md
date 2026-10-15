@@ -24,7 +24,7 @@ Continue the owner's magic redesign dialogue (talk only; nothing is built until 
 - Neighbour answers 1–7 and the same-element table — owner, 15 Oct (on the page with quotes)
 - Hliðskjálf takes "what the ravens see" (each neighbour adds a reveal layer) — owner, 15 Oct: "I like your recommendation for Hliðskjálf"
 - What the outliers lend — owner, 15 Oct: "I want to double check what these spells give their neighbors later" (open decision on the page)
-- Teleport/Phase Door/Loki's Switch — owner asked whether three movement spells are too many; open
+- Teleportation merges into Phase Door, whose flavours burst where the caster leaves — owner, 15 Oct: "Merge into phase door, and yes"
 
 ## Read first
 - The Notion page: "Grimoire redesign" (Neighbour rules), "Open decisions", spell entries "Loki's Switch" and "Hliðskjálf" under Spell ideas

@@ -152,6 +152,12 @@ export const BUILTIN_STATUS_HANDLERS: Record<string, StatusHandler> = {
       return `${entity.name} fades back into the aether.`;
     },
   },
+  // A decoy: every monster that perceives it goes for it before the hero (ai/targetSelection.ts).
+  decoy: {
+    onExpire(entity) {
+      return `${entity.name} no longer draws the foe.`;
+    },
+  },
   // Marked by a spell: seen through walls, and each blow lands `potency` percent harder (10 unset).
   marked: {
     affliction: true,

@@ -11,7 +11,9 @@
 A definition's `growthPerLevel` (`{ hp?, attack?, defense? }`) adds that much per hero level past the first. `growCompanion` (`combat/lastStand.ts`) recomputes the stats from the definition whenever they could change (a level, a summon or revival, a load, the companion's own turn) and adds the HP a change adds to what it has, so a wound stays a wound; nothing new is saved. Without `growthPerLevel` the stats stay as declared.
 
 ## AI-Targeting Generalization
-`selectAttackTarget(engine, actor)` (`ai/targetSelection.ts`) resolves a monster's target: the hero by default, or the nearest hostile within a bounded radius when its definition sets `targetingMode: 'nearest_hostile'`. A monster's difficulty changes only if its definition opts in; this is what lets a companion draw aggro and tank.
+`selectAttackTarget(engine, actor)` (`ai/targetSelection.ts`) resolves a hostile monster's target: the nearest of the hero's side it perceives (the hero, the companion, a friendly summon, a raised foe), the hero on a tie or when it perceives none of them; a perceived `decoy` comes first (owner 2026-10-15: the companion draws monsters too). A definition with `targetingMode: 'nearest_hostile'` takes the nearest foe within a bounded radius by distance alone, unseen or not.
+
+Every other actor on the hero's side (a friendly summon, a raised foe) runs the `ally` routine (`ai/aiRegistry.ts`) whatever its own: it goes for the nearest foe within 6 and otherwise keeps within 2 of the hero. A melee blow between two of the hero's side is refused (`MeleeAttackAction`).
 
 ## Archetypes
 `Companion.archetype` (`'balanced' | 'bodyguard' | 'skirmisher'`) selects one of three `AIStrategy`s (`ai/aiRegistry.ts`): `companion_follow` (follow distance 2), `companion_bodyguard` (1) and `companion_skirmisher` (5, seeking a hostile within 6 before it is adjacent). `Companion.setArchetype()` switches the archetype and its `aiRoutineId` together. Nothing in play switches it (the trainer's retraining was cut, owner 2026-10-10): a new companion is `balanced`, and the other two load only from saves that hold them.

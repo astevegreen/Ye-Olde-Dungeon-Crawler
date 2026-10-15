@@ -788,6 +788,7 @@ export class SpellPipeline {
     // and sends it back when it runs out (statusHandlers.ts).
     if (effect.duration && effect.duration > 0) {
       summoned.statusManager.applyStatus({ type: 'summoned', duration: effect.duration });
+      if (effect.decoy && effect.friendly) summoned.statusManager.applyStatus({ type: 'decoy', duration: effect.duration });
     }
 
     const allegiance = effect.friendly ? 'friendly' : 'hostile';

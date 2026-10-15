@@ -115,6 +115,8 @@ export interface UncurseEffect {
  * `range`    — max spawn radius from caster (default 2).
  * `duration` — turns until the summoned entity despawns (0 = permanent).
  * `friendly` — if true the summoned entity's faction is set to 'player'.
+ * `decoy`    — a friendly summon with a duration also carries the `decoy` status that long:
+ *              monsters that perceive it go for it before the hero.
  */
 export interface SummonEffect {
   type: 'summon';
@@ -122,6 +124,7 @@ export interface SummonEffect {
   range?: number;
   duration?: number;
   friendly?: boolean;
+  decoy?: boolean;
 }
 
 /** Permanently teaches the (player) caster a spell, e.g. from a rune tablet read as a scroll. */

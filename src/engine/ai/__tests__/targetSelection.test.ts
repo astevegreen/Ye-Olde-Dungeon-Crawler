@@ -44,21 +44,21 @@ function makeCompanion(position: { x: number; y: number }): Companion {
 }
 
 describe('selectAttackTarget (docs/architecture/content-companions.md Phase 2)', () => {
-  it('defaults to the player when a monster has no targetingMode set', () => {
-    const { engine, player } = buildEngine();
+  it('goes for a companion it sees nearer than the player, with no targetingMode set', () => {
+    const { engine } = buildEngine();
     const monster = makeMonster('m1', { x: 12, y: 10 });
     engine.map.addEntity(monster);
     const companion = makeCompanion({ x: 11, y: 10 });
     engine.map.addEntity(companion);
 
-    expect(selectAttackTarget(engine, monster)).toBe(player);
+    expect(selectAttackTarget(engine, monster)).toBe(companion);
   });
 
-  it('defaults to the player even when a companion is nearer, for targetingMode "player"', () => {
+  it('keeps to the player when a companion is no nearer, for targetingMode "player"', () => {
     const { engine, player } = buildEngine();
     const monster = makeMonster('m2', { x: 12, y: 10 }, 'player');
     engine.map.addEntity(monster);
-    const companion = makeCompanion({ x: 11, y: 10 });
+    const companion = makeCompanion({ x: 14, y: 10 });
     engine.map.addEntity(companion);
 
     expect(selectAttackTarget(engine, monster)).toBe(player);

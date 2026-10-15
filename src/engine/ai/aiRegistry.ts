@@ -517,10 +517,8 @@ function guardHeroAction(actor: Actor, engine: GameEngine, followDistance: numbe
  * 2 tiles and auto-attack an adjacent hostile. Generic over any `faction: 'player'` actor with
  * this aiRoutineId — not aware of the `Companion` class specifically. This is the default
  * 'balanced' archetype (`Companion.setArchetype`); 'bodyguard' and 'skirmisher' below are
- * trainer-taught (Phase 2) variants. Whether a hostile monster can actually be drawn to attack
- * the companion instead of the player depends on that monster's own `targetingMode`
- * (`ai/targetSelection.ts`) — a companion cannot "tank" against a monster that hasn't opted
- * into `'nearest_hostile'` targeting.
+ * trainer-taught (Phase 2) variants. A hostile monster goes for the companion when it sees it
+ * nearer than the hero (`ai/targetSelection.ts`).
  */
 export class CompanionFollowStrategy implements AIStrategy {
   public readonly id = 'companion_follow';
@@ -534,8 +532,7 @@ export class CompanionFollowStrategy implements AIStrategy {
 /**
  * Bodyguard archetype (docs/architecture/content-companions.md Phase 2): hugs the player at
  * 1 tile instead of 2. No mechanic here forces monsters to attack it — staying adjacent to the
- * player simply makes the companion likelier to be the *nearest* hostile target for any monster
- * with `targetingMode: 'nearest_hostile'`.
+ * player simply makes the companion likelier to be the nearest of the hero's side a monster sees.
  */
 export class CompanionBodyguardStrategy implements AIStrategy {
   public readonly id = 'companion_bodyguard';

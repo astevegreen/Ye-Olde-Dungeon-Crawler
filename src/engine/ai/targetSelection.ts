@@ -2,17 +2,17 @@ import type { GameEngine } from '../engine';
 import type { Actor } from '../entities/actor';
 import type { Entity } from '../entities/entity';
 import { Monster } from '../entities/monster';
+import { perceives } from './perception';
 
 /**
  * Monster AI Targeting Generalization (docs/architecture/content-companions.md Phase 2).
  *
- * Resolves the entity a monster's AI should engage this turn. Defaults to
- * `engine.player` — behaviorally identical to the engine's original hardcoded
- * behavior — unless the monster opts into `targetingMode: 'nearest_hostile'`
- * (`MonsterDefinition`/`Monster`). This is what makes a companion capable of
- * drawing aggro: only monster definitions that explicitly opt in will ever
- * consider engaging anything other than the player, so no shipped monster's
- * difficulty or pacing changes unless its content author chooses this.
+ * Resolves the entity a monster's AI should engage this turn: the nearest of the hero's side it
+ * perceives (the companion, a friendly summon, a raised foe), the hero on a tie or when it
+ * perceives none of them, so with no allies on the floor this is the hero as it always was. A
+ * `decoy` it perceives comes before all of them. A monster with `targetingMode:
+ * 'nearest_hostile'` (`MonsterDefinition`/`Monster`) needs no sight: it takes the nearest foe
+ * within `maxRange` by distance alone.
  */
 const DEFAULT_TARGET_SEARCH_RADIUS = 12;
 
@@ -26,7 +26,32 @@ export function selectAttackTarget(
     const nearest = findNearestHostileActor(engine, actor, maxRange);
     if (nearest) return nearest;
   }
-  return engine.player;
+  if (actor.faction !== 'hostile') return engine.player;
+  return nearestSeenOfHeroSide(engine, actor);
+}
+
+/** The decoy, else the nearest of the hero's side, that `actor` perceives; else the hero. */
+function nearestSeenOfHeroSide(engine: GameEngine, actor: Actor): Entity {
+  const hero = engine.player;
+  let best: Entity = hero;
+  let bestDist = chebyshev(actor, hero);
+  let bestIsDecoy = false;
+  for (const entity of engine.map.getAllEntities()) {
+    if (entity === hero || entity.faction !== 'player' || !entity.isAlive()) continue;
+    const isDecoy = entity.statusManager.hasStatus('decoy');
+    if (bestIsDecoy && !isDecoy) continue;
+    const dist = chebyshev(actor, entity);
+    if (isDecoy === bestIsDecoy && dist >= bestDist) continue;
+    if (!perceives(engine, actor, entity)) continue;
+    best = entity;
+    bestDist = dist;
+    bestIsDecoy = isDecoy;
+  }
+  return best;
+}
+
+function chebyshev(a: Entity, b: Entity): number {
+  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 }
 
 /** Bounded (§6-style) nearest-hostile query — no unbounded map-wide scan. */

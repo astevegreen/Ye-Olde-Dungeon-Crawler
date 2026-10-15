@@ -749,6 +749,34 @@ export class ForgetSpellAction implements Action {
 }
 
 /**
+ * Learns a spell the hero was offered while every slot was full, once one is free (the
+ * placement card: forget one, then accept). Not now is simply not calling this.
+ */
+export class AcceptSpellOfferAction implements Action {
+  public readonly player: Player;
+  public readonly spellId: string;
+
+  get actor(): Entity {
+    return this.player;
+  }
+
+  constructor(player: Player, spellId: string) {
+    this.player = player;
+    this.spellId = spellId;
+  }
+
+  public perform(engine: GameEngine): ActionResult {
+    if (!this.player.isAlive()) return { success: false, cost: 0, message: 'The dead learn nothing more.' };
+    if (!this.player.pendingSpellOffers.includes(this.spellId)) return { success: false, cost: 0, message: 'No one is offering you that spell.' };
+    const result = this.player.learnSpellResult(this.spellId);
+    if (result.outcome !== 'learned') return { success: false, cost: 0, message: 'Every slot is still full. Forget a spell to make room.' };
+    const name = engine.manifest?.spells?.find((s) => s.id === this.spellId)?.name ?? this.spellId;
+    engine.log(`You have learned ${name}!`);
+    return grimoireEditCost(engine, this.player, 'With foes in sight, learning a spell takes a turn.');
+  }
+}
+
+/**
  * Picks the stat for a grimoire axis that has none yet: Máni's first at the start of the run,
  * each other grimoire's when it opens. Free; changing a picked stat is a service, not this.
  */

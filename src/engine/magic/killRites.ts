@@ -98,12 +98,14 @@ export class KillRiteManager {
 
     let result: KillRiteResult;
     if (rite.teachesSpellId && !player.spellsKnown.includes(rite.teachesSpellId)) {
-      player.learnSpell(rite.teachesSpellId);
+      const learned = player.learnSpellResult(rite.teachesSpellId);
       const spell = engine.manifest?.spells?.find((s) => s.id === rite.teachesSpellId) ?? getSpell(rite.teachesSpellId);
-      const message = formatMagicMessage(config.learnMessage, {
-        monster: victim.name,
-        spell: spell?.name ?? rite.teachesSpellId,
-      });
+      const waiting = learned.outcome === 'full' ? ' Every slot in your grimoires is full: it waits in your spellbook until you make room.' : '';
+      const message =
+        formatMagicMessage(config.learnMessage, {
+          monster: victim.name,
+          spell: spell?.name ?? rite.teachesSpellId,
+        }) + waiting;
       engine.recordVisualEffects([{ type: 'screen_flash', color: '#38bdf8', durationMs: 250 }]);
       result = { performed: true, taughtSpellId: rite.teachesSpellId, message };
     } else {

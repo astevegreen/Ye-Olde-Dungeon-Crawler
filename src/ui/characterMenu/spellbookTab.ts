@@ -35,6 +35,8 @@ export interface SpellbookTabOptions {
   onForgetSpell: (spellId: string) => void;
   /** Three-grimoire model: choose the stat of a grimoire axis that has none. */
   onPickGrimoireStat: (grimoireId: string, axis: 'x' | 'y', statId: string) => void;
+  /** Reopen the card for a spell offered while every slot was full; `onClosed` runs when it closes. */
+  onOpenSpellOffer: (spellId: string, onClosed: () => void) => void;
 }
 
 const SLOT_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
@@ -83,6 +85,7 @@ export class SpellbookTab implements MenuTab {
       onPlaceGrimoireSpell: () => {},
       onForgetSpell: () => {},
       onPickGrimoireStat: () => {},
+      onOpenSpellOffer: () => {},
       ...options,
     };
   }
@@ -93,11 +96,7 @@ export class SpellbookTab implements MenuTab {
 
   public onActivate(state: GameState): void {
     this.engine = state.engine;
-    this.spells = state.player.spellsKnown
-      .map((id) => this.engine!.manifest?.spells?.find((s) => s.id === id) ?? getSpell(id))
-      .filter((s): s is SpellDefinition => Boolean(s));
-    this.selectedIndex = Math.min(this.selectedIndex, Math.max(0, this.spells.length - 1));
-    this.render();
+    this.reloadSpells();
   }
 
   public unmount(): void {
@@ -117,6 +116,16 @@ export class SpellbookTab implements MenuTab {
     if (!spell) return false;
     this.options.onCastSpell(spell);
     return true;
+  }
+
+  /** Rebuilds the list from what the hero knows now (after a card taught or dropped a spell). */
+  private reloadSpells(): void {
+    if (!this.engine) return;
+    this.spells = this.engine.player.spellsKnown
+      .map((id) => this.engine!.manifest?.spells?.find((s) => s.id === id) ?? getSpell(id))
+      .filter((s): s is SpellDefinition => Boolean(s));
+    this.selectedIndex = Math.min(this.selectedIndex, Math.max(0, this.spells.length - 1));
+    this.render();
   }
 
   /** Puts the selected spell on a quickbar slot, or takes it off if it is already there. */
@@ -252,6 +261,11 @@ export class SpellbookTab implements MenuTab {
         this.render();
       });
     });
+    root.querySelectorAll<HTMLElement>('[data-offer]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        this.options.onOpenSpellOffer(btn.getAttribute('data-offer')!, () => this.reloadSpells());
+      });
+    });
     root.querySelectorAll<HTMLElement>('[data-forget]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const spell = this.selectedSpell;
@@ -355,7 +369,17 @@ export class SpellbookTab implements MenuTab {
         <div class="ui-h">Quickbar</div>
         <div class="sb-slots">${slots}</div>
         <div class="ui-note">Press 1–0 to put it on a slot; press again to take it off.</div>
-      </div>${grimoires ? this.renderForget(spell) : ''}`;
+      </div>${grimoires ? this.renderForget(spell) : ''}${grimoires ? this.renderOffers(player) : ''}`;
+  }
+
+  /** Spells offered while every slot was full, each with a button that reopens its card. */
+  private renderOffers(player: Player): string {
+    const rows = player.pendingSpellOffers.map((id) => {
+      const spell = this.engine!.manifest?.spells?.find((s) => s.id === id) ?? getSpell(id);
+      return `<button type="button" class="sb-slot" data-offer="${escapeHtml(id)}">${escapeHtml(spell?.name ?? id)}</button>`;
+    });
+    if (rows.length === 0) return '';
+    return `<div class="ui-card"><div class="ui-h">Waiting for room</div><div class="ui-note">These spells were offered while every slot was full.</div><div class="sb-slots">${rows.join('')}</div></div>`;
   }
 
   /** Forgetting is for the rest of the run, so it asks twice. */

@@ -3,6 +3,7 @@ import {
   ArrangeGrimoireSlotAction,
   PlaceGrimoireSpellAction,
   ForgetSpellAction,
+  AcceptSpellOfferAction,
   PickGrimoireStatAction,
   GrimoireMatrixManager,
   AutosaveManager,
@@ -124,6 +125,8 @@ import { FirstTimeHints } from './ui/hints/firstTimeHints';
 import { hintsMetByEvent, hintsMetByState, itemHintsMet } from './ui/hints/hintModel';
 import { findActionCues } from './ui/hints/actionCues';
 import { ControlsPrimer } from './ui/controlsPrimer';
+import { SpellOfferCard } from './ui/spellOfferCard';
+import { hasFreeGrimoireSlot } from './ui/characterMenu/spellbookGrimoires';
 import { MessageLogModal } from './ui/messageLogModal';
 import { OverflowWarning } from './ui/overflowWarning';
 import type { ContextAction } from './ui/console/consoleModel';
@@ -512,7 +515,49 @@ window.addEventListener('DOMContentLoaded', () => {
     onOpenSpellbook: () => openSpellbook(),
   });
 
+  // The one card for a spell offered while every slot was full: learn it, forget one, or wait.
+  const shownOffers = new Set<string>();
+  let afterOfferClosed: (() => void) | undefined;
+  const spellOfferCard = new SpellOfferCard({
+    onLearn: (spellId) => {
+      if (activeEngine) activeEngine.handlePlayerAction(new AcceptSpellOfferAction(activeEngine.player, spellId));
+    },
+    onForgetAndLearn: (forgetId, spellId) => {
+      if (!activeEngine) return;
+      const forgot = activeEngine.handlePlayerAction(new ForgetSpellAction(activeEngine.player, forgetId));
+      if (forgot.success) activeEngine.handlePlayerAction(new AcceptSpellOfferAction(activeEngine.player, spellId));
+    },
+    onClose: () => {
+      popModal(spellOfferCard.id);
+      const done = afterOfferClosed;
+      afterOfferClosed = undefined;
+      done?.();
+      if (activeEngine) quickSpellsBar.update(activeEngine);
+      void processVisualEffectsAndRender();
+    },
+  });
+  function openSpellOffer(spellId: string, onClosed?: () => void): void {
+    const engine = activeEngine;
+    if (!engine || spellOfferCard.isOpen) return;
+    const lookup = (id: string) => engine.manifest?.spells?.find((s) => s.id === id) ?? getSpell(id);
+    const spell = lookup(spellId);
+    if (!spell) return;
+    afterOfferClosed = onClosed;
+    spellOfferCard.open({
+      id: spellId,
+      name: spell.name,
+      description: spell.description ?? '',
+      canPlace: hasFreeGrimoireSlot(engine.player),
+      known: engine.player.spellsKnown.flatMap((id) => {
+        const known = lookup(id);
+        return known ? [{ id, name: known.name }] : [];
+      }),
+    });
+    pushModal(spellOfferCard.id, spellOfferCard);
+  }
+
   const spellbookTab = new SpellbookTab({
+    onOpenSpellOffer: (spellId, onClosed) => openSpellOffer(spellId, onClosed),
     onCastSpell: (spell) => {
       characterMenuModal?.close();
       castOrTargetSpell(spell);
@@ -887,6 +932,13 @@ window.addEventListener('DOMContentLoaded', () => {
       step('floating text', () => updateCombatFloatingText(engine));
       step('console', () => updateGothicConsole(engine));
       step('message log', () => updateMessageLog(engine));
+      step('spell offers', () => {
+        const next = engine.player.pendingSpellOffers.find((id) => !shownOffers.has(id));
+        if (next && !spellOfferCard.isOpen) {
+          shownOffers.add(next);
+          openSpellOffer(next);
+        }
+      });
       step('quick spells', () => quickSpellsBar.update(engine));
       step('potion row', () => potionRow.update(engine));
       // The prologue's action cues: the slot for the move the moment calls for glows.
@@ -1449,6 +1501,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   function launchGame(engine: GameEngine, profile: CharacterProfile): void {
     overflowWarnings.reset();
+    shownOffers.clear();
     if (characterMenuModal?.isOpen) {
       characterMenuModal.close();
     }

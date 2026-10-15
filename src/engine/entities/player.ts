@@ -537,6 +537,11 @@ export class Player extends Actor {
     return this.grimoireSystem && this.grimoireState ? { system: this.grimoireSystem, state: this.grimoireState } : undefined;
   }
 
+  /** Spells offered while every slot was full, waiting for the hero to make room. */
+  public get pendingSpellOffers(): readonly string[] {
+    return this.grimoireState?.offers ?? [];
+  }
+
   public learnSpell(spellId: string): boolean {
     return this.learnSpellResult(spellId).outcome === 'learned';
   }

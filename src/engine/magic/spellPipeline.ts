@@ -236,8 +236,11 @@ export class SpellPipeline {
       if (!(ctx.caster instanceof Player)) return;
       const spell = ctx.engine.manifest?.spells?.find((s) => s.id === effect.spellId);
       const name = spell?.name ?? effect.spellId;
-      if (ctx.caster.learnSpell(effect.spellId)) {
+      const outcome = ctx.caster.learnSpellResult(effect.spellId).outcome;
+      if (outcome === 'learned') {
         ctx.engine.log(`You have learned ${name}!`);
+      } else if (outcome === 'full') {
+        ctx.engine.log(`Every slot in your grimoires is full. ${name} waits in your spellbook until you make room.`);
       } else {
         ctx.engine.log(`You already know ${name}; the runes teach you nothing new.`);
       }

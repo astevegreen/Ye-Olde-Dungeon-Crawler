@@ -51,6 +51,8 @@ export interface GrimoireState {
   forgotten: string[];
   /** Elements added to known spells, in the order added. */
   forged: GrimoireForge[];
+  /** Spells offered to the hero that found no free slot: they wait here until one is made. */
+  offers: string[];
 }
 
 export type StatPickOutcome = 'ok' | 'unknown-grimoire' | 'closed' | 'unknown-stat' | 'no-axis' | 'stat-in-use' | 'already-picked';
@@ -77,7 +79,7 @@ const sameSlot = (a: GrimoireSlotRef, b: GrimoireSlotRef): boolean => a.grimoire
 const touches = (a: GrimoireCell, b: GrimoireCell): boolean => Math.abs(a.x - b.x) + Math.abs(a.y - b.y) === 1;
 
 export function createGrimoireState(): GrimoireState {
-  return { opened: [], placements: [], statPicks: [], extraSlots: [], doubledSlots: [], forgotten: [], forged: [] };
+  return { opened: [], placements: [], statPicks: [], extraSlots: [], doubledSlots: [], forgotten: [], forged: [], offers: [] };
 }
 
 export function copyGrimoireState(state: GrimoireState): GrimoireState {
@@ -89,6 +91,7 @@ export function copyGrimoireState(state: GrimoireState): GrimoireState {
     doubledSlots: state.doubledSlots.map((s) => ({ ...s })),
     forgotten: [...state.forgotten],
     forged: state.forged.map((f) => ({ ...f })),
+    offers: [...state.offers],
   };
 }
 
@@ -276,7 +279,11 @@ export function learnIntoGrimoire(
   if (state.forgotten.includes(spellId)) return { outcome: 'forgotten', opened: [] };
   const due = dueToOpen(config, state, spellsKnown.length + 1);
   const slot = firstFreeSlot(config, state, [...state.opened, ...due]);
-  if (!slot) return { outcome: 'full', opened: [] };
+  if (!slot) {
+    if (!state.offers.includes(spellId)) state.offers.push(spellId);
+    return { outcome: 'full', opened: [] };
+  }
+  state.offers = state.offers.filter((id) => id !== spellId);
   state.opened.push(...due);
   state.placements.push({ ...slot, spellId });
   return { outcome: 'learned', slot, opened: due };
@@ -370,6 +377,7 @@ export function reconcileGrimoireState(config: GrimoireSystemConfig, state: Grim
     (s, i) => slotExists(config, state, s) && state.doubledSlots.findIndex((o) => sameSlot(o, s)) === i
   );
   state.forgotten = state.forgotten.filter((id, i) => !spellsKnown.includes(id) && state.forgotten.indexOf(id) === i);
+  state.offers = state.offers.filter((id, i) => !spellsKnown.includes(id) && !state.forgotten.includes(id) && state.offers.indexOf(id) === i);
   state.forged = state.forged.filter(
     (f, i) => spellsKnown.includes(f.spellId) && state.forged.findIndex((o) => o.spellId === f.spellId && o.element === f.element) === i
   );
@@ -428,6 +436,7 @@ export function serializeGrimoireState(state: GrimoireState): SerializedGrimoire
     doubledSlots: s.doubledSlots.length > 0 ? s.doubledSlots : undefined,
     forgotten: s.forgotten.length > 0 ? s.forgotten : undefined,
     forged: s.forged.length > 0 ? s.forged : undefined,
+    offers: s.offers.length > 0 ? s.offers : undefined,
   };
 }
 
@@ -460,5 +469,6 @@ export function readGrimoireState(raw: unknown): GrimoireState | undefined {
     forged: list(r.forged).flatMap((e) =>
       typeof e.spellId === 'string' && typeof e.element === 'string' ? [{ spellId: e.spellId, element: e.element }] : []
     ),
+    offers: strings(r.offers),
   };
 }

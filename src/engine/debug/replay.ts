@@ -57,6 +57,7 @@ import {
   ArrangeGrimoireSlotAction,
   PlaceGrimoireSpellAction,
   ForgetSpellAction,
+  AcceptSpellOfferAction,
   PickGrimoireStatAction,
 } from '../actions/spell-actions';
 import { IdentifyAction } from '../actions/identificationActions';
@@ -167,6 +168,10 @@ const BUILDERS: Record<string, Builder> = {
     return spellId && grimoireId && x !== undefined && y !== undefined
       ? new PlaceGrimoireSpellAction(e.player, spellId, grimoireId, x, y)
       : null;
+  },
+  AcceptSpellOfferAction: (e, p) => {
+    const spellId = str(p, 'spellId');
+    return spellId ? new AcceptSpellOfferAction(e.player, spellId) : null;
   },
   ForgetSpellAction: (e, p) => {
     const spellId = str(p, 'spellId');

@@ -98,6 +98,16 @@ export function castFromSlot(
   return { cast, notes, slotted: true };
 }
 
+/** Whether an open grimoire has a slot with no spell in it. */
+export function hasFreeGrimoireSlot(player: Player): boolean {
+  const system = player.grimoireSystem;
+  const state = player.grimoireState;
+  if (!system || !state) return false;
+  return state.opened.some((grimoireId) =>
+    grimoireCells(system, state, grimoireId).some((c) => spellAt(state, { grimoireId, x: c.x, y: c.y }) === undefined)
+  );
+}
+
 export function renderGrimoires(engine: GameEngine, player: Player, chosen: SpellDefinition | undefined, activeId: string | undefined): GrimoireView {
   const system = player.grimoireSystem!;
   const state = player.grimoireState!;

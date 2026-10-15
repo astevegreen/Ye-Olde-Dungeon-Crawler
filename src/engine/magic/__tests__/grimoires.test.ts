@@ -6,7 +6,7 @@ import { GameEngine } from '../../engine';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { Monster } from '../../entities/monster';
-import { ForgetSpellAction, PickGrimoireStatAction, PlaceGrimoireSpellAction } from '../../actions/spell-actions';
+import { AcceptSpellOfferAction, ForgetSpellAction, PickGrimoireStatAction, PlaceGrimoireSpellAction } from '../../actions/spell-actions';
 import { describeAction } from '../../debug/actionTrail';
 import { rebuildAction } from '../../debug/replay';
 import { serializeGame, deserializeGame } from '../../storage/serializer';
@@ -224,11 +224,13 @@ describe('three grimoires (P-29)', () => {
     it('with every slot full, a spell is not learned and the outcome says full', () => {
       const p = hero(SPELLS.slice(0, 17));
       expect(state(p).placements).toHaveLength(17);
-      const before = JSON.stringify(state(p));
+      const before = JSON.stringify({ ...state(p), offers: [] });
       expect(p.learnSpellResult('spell_18')).toEqual({ outcome: 'full', opened: [] });
       expect(p.learnSpell('spell_18')).toBe(false);
       expect(p.spellsKnown).not.toContain('spell_18');
-      expect(JSON.stringify(state(p))).toBe(before);
+      expect(JSON.stringify({ ...state(p), offers: [] })).toBe(before);
+      // The spell waits as an offer, once, for the placement card.
+      expect(p.pendingSpellOffers).toEqual(['spell_18']);
       expect(p.addGrimoireSlot(slot('grid', 2, 0))).toBe(true);
       expect(p.learnSpellResult('spell_18').slot).toEqual(slot('grid', 2, 0));
     });
@@ -304,6 +306,22 @@ describe('three grimoires (P-29)', () => {
       expect(engine.handlePlayerAction(new ForgetSpellAction(p, 'spell_2')).success).toBe(false);
     });
 
+    it('an offer made while full waits, then is learned once the hero forgets one', () => {
+      const p = hero(SPELLS.slice(0, 17));
+      const engine = engineWith(p);
+      expect(p.learnSpellResult('spell_18').outcome).toBe('full');
+      const accept = new AcceptSpellOfferAction(p, 'spell_18');
+      expect(engine.handlePlayerAction(accept)).toMatchObject({ success: false, cost: 0 });
+      expect(p.pendingSpellOffers).toEqual(['spell_18']);
+
+      expect(engine.handlePlayerAction(new ForgetSpellAction(p, 'spell_1')).success).toBe(true);
+      expect(engine.handlePlayerAction(accept)).toMatchObject({ success: true, cost: 0 });
+      expect(p.spellsKnown).toContain('spell_18');
+      expect(p.pendingSpellOffers).toEqual([]);
+      expect(rebuild(engine, describeAction(accept))).toMatchObject({ spellId: 'spell_18' });
+      expect(engine.handlePlayerAction(accept).success).toBe(false);
+    });
+
     it('placing with a foe in view takes a turn', () => {
       const p = hero();
       const engine = engineWith(p, 3);
@@ -334,6 +352,13 @@ describe('three grimoires (P-29)', () => {
       const save = serializeGame(engine);
       return { save, loaded: deserializeGame(JSON.parse(JSON.stringify(save)), manifest).engine.player };
     }
+
+    it('an offer waiting for room survives a save', () => {
+      const p = hero(SPELLS.slice(0, 17));
+      p.learnSpellResult('spell_18');
+      const { loaded } = roundTrip(p);
+      expect(loaded.pendingSpellOffers).toEqual(['spell_18']);
+    });
 
     it('carries every field over', () => {
       const p = hero(SPELLS.slice(0, 4));
@@ -387,6 +412,7 @@ describe('three grimoires (P-29)', () => {
         doubledSlots: [],
         forgotten: ['spell_9'],
         forged: [{ spellId: 'spell_1', element: 'fire' }],
+        offers: [],
       });
       expect(readGrimoireState('junk')).toBeUndefined();
     });

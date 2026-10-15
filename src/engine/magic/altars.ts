@@ -213,9 +213,10 @@ function rollGamble(
 
   if (roll <= 40 && unknown.length > 0) {
     const spellId = engine.prng.choice(unknown);
-    player.learnSpell(spellId);
+    const learned = player.learnSpellResult(spellId);
     values.spell = spellDef(engine, spellId)?.name ?? spellId;
-    return formatMagicMessage(gamble.spellMessage, values);
+    const waiting = learned.outcome === 'full' ? ' Every slot in your grimoires is full: it waits in your spellbook until you make room.' : '';
+    return formatMagicMessage(gamble.spellMessage, values) + waiting;
   }
   if (roll <= 80 && glyph && slots.length > 0) {
     const slot = engine.prng.choice(slots);

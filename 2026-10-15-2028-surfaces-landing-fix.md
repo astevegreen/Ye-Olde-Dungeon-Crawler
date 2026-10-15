@@ -32,3 +32,4 @@ Opus 5.5 at medium thinking — a specified cross-file change with a test first.
 ## Verification
 - `npm run gate-stamp -- run lint test`: green on ffda2b7c (3154 tests). First run failed `itemSprites.test.ts` bake once under Playwright load; passed alone and on rerun.
 - pre-push for ffda2b7c: running when this note was written; check `git status -sb` shows main level with origin. 3cd05bf1 pushed green.
+Resumed: 2026-10-15 20:33 UTC

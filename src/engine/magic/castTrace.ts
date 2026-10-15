@@ -1,7 +1,8 @@
 import type { GameEngine } from '../engine';
 import type { Position } from '../types';
-import type { ProjectilePathResult, SpellDefinition, TargetingMode } from './types';
-import { traceProjectile } from './targeting';
+import type { ProjectilePathResult, SpellDefinition, SpellShape, TargetingMode } from './types';
+import { getBresenhamLine, isTileSolidToProjectile, traceProjectile } from './targeting';
+import { computeDangerTiles } from '../ai/intent';
 
 /**
  * Where a cast goes: its flight and its burst. The spell pipeline resolves the cast from
@@ -16,6 +17,10 @@ export interface CastGeometry {
   reflects: boolean;
   /** Where the blast lands and how far it reaches, for a spell that bursts. */
   burst?: { epicenter: Position; radius: number };
+  /** The tiles a shaped spell covers: a cone, nova, square or wall (`SpellShape`). */
+  area?: Position[];
+  /** An out-and-back spell's return: from where its flight (`ray`) turned, back to the caster's tile. */
+  back?: Position[];
 }
 
 /** The targeting mode a cast of `spell` resolves with. */
@@ -32,6 +37,15 @@ export function castGeometry(
 ): CastGeometry {
   const mode = targetingModeOf(spell);
   const radius = spell.areaOfEffect > 0 ? spell.areaOfEffect : (spell.visual?.burstRadius ?? 1);
+
+  if (spell.shape === 'outAndBack') {
+    // It flies through creatures to its range or a wall, then back along the same tiles.
+    const ray = traceProjectile(engine.map, caster.x, caster.y, target.x, target.y, spell.range, false, caster.id, true);
+    const back = [...ray.path].reverse().map(({ x, y }) => ({ x, y }));
+    back.push({ x: caster.x, y: caster.y });
+    return { ray, reflects: false, back };
+  }
+  if (spell.shape) return { reflects: false, area: shapeTiles(engine, spell.shape, spell.areaOfEffect, caster, target) };
 
   if (mode === 'ray' || mode === 'bounce_ray') {
     const reflects = Boolean(spell.reflects) || mode === 'bounce_ray' || engine.affinityMatrix.canReflect(spell.element);
@@ -54,4 +68,44 @@ export function castGeometry(
   }
 
   return { reflects: false };
+}
+
+/** The tiles of a cone, nova, square or wall of `size` (`SpellShape`), on the map. */
+function shapeTiles(engine: GameEngine, shape: Exclude<SpellShape, 'outAndBack'>, size: number, caster: Position, aim: Position): Position[] {
+  const map = engine.map;
+  const tiles: Position[] = [];
+  const add = (x: number, y: number) => {
+    if (map.inBounds(x, y)) tiles.push({ x, y });
+  };
+  switch (shape) {
+    case 'cone':
+      // The monster cone, minus the tiles a wall hides from the caster.
+      return computeDangerTiles(caster, aim, 'cone', map, size).filter((t) => clearFrom(map, caster, t));
+    case 'nova':
+      for (let dy = -size; dy <= size; dy++) {
+        for (let dx = -size; dx <= size; dx++) if (dx !== 0 || dy !== 0) add(caster.x + dx, caster.y + dy);
+      }
+      return tiles;
+    case 'square': {
+      const side = Math.max(1, size);
+      const x0 = aim.x - Math.floor((side - 1) / 2);
+      const y0 = aim.y - Math.floor((side - 1) / 2);
+      for (let dy = 0; dy < side; dy++) for (let dx = 0; dx < side; dx++) add(x0 + dx, y0 + dy);
+      return tiles;
+    }
+    case 'wall': {
+      // Across the aim's direction, snapped to the nearest of the eight.
+      const octant = Math.round(Math.atan2(aim.y - caster.y, aim.x - caster.x) / (Math.PI / 4));
+      const across = { x: -Math.round(Math.sin((octant * Math.PI) / 4)), y: Math.round(Math.cos((octant * Math.PI) / 4)) };
+      for (let k = -size; k <= size; k++) add(aim.x + k * across.x, aim.y + k * across.y);
+      return tiles;
+    }
+  }
+}
+
+/** Whether a flight from `from` reaches `to` with nothing solid on the way, `to` included. */
+function clearFrom(map: GameEngine['map'], from: Position, to: Position): boolean {
+  return getBresenhamLine(from.x, from.y, to.x, to.y)
+    .slice(1)
+    .every((p) => !isTileSolidToProjectile(map, p.x, p.y));
 }

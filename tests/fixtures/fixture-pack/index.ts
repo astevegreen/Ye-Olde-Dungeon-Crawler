@@ -5,6 +5,7 @@ import type {
   ItemDefinition,
   MonsterDefinition,
   SpellDefinition,
+  SpellShape,
   SpriteRecipe,
   ThemeTokens,
   VaultBlueprint,
@@ -121,6 +122,7 @@ export const FIXTURE_SPELLS: SpellDefinition[] = [
   },
   ...movementAndMarkSpells(),
   ...groundSpells(),
+  ...shapeSpells(),
   // The spell building blocks (P-28): several elements and pierce, a blood price, cleanse, hand-over.
   {
     id: 'forge_bolt',
@@ -239,6 +241,33 @@ function groundSpells(): SpellDefinition[] {
     burst('flame_burst', 'Flame Burst', 'fire', [{ type: 'damage', amount: 10, element: 'fire' }]),
     burst('frost_burst', 'Frost Burst', 'cold', [{ type: 'damage', amount: 10, element: 'cold' }]),
     burst('storm_burst', 'Storm Burst', 'lightning', [{ type: 'damage', amount: 10, element: 'lightning' }]),
+  ];
+}
+
+/** One 10-damage spell per shape (P-33), sized by `areaOfEffect` as the Area stat grows it. */
+function shapeSpells(): SpellDefinition[] {
+  const shaped = (id: string, shape: SpellShape, areaOfEffect: number, targetType: 'tile' | 'self' = 'tile'): SpellDefinition => ({
+    id,
+    name: id,
+    school: 'Combat',
+    manaCost: 5,
+    element: 'physical',
+    range: 6,
+    basePower: 10,
+    areaOfEffect,
+    reflects: false,
+    targetType,
+    targetingMode: targetType,
+    shape,
+    description: id,
+    effects: [{ type: 'damage', amount: 10, element: 'physical' }],
+  });
+  return [
+    shaped('breath', 'cone', 3),
+    shaped('clap', 'nova', 1, 'self'),
+    shaped('shroud', 'square', 4),
+    shaped('cairn', 'wall', 1),
+    shaped('hammer', 'outAndBack', 0),
   ];
 }
 

@@ -78,7 +78,9 @@ export function traceProjectile(
   targetY: number,
   maxRange = 12,
   reflects = false,
-  casterId?: string
+  casterId?: string,
+  /** It flies on through creatures (an out-and-back throw), stopping only at a wall or its range. */
+  passesCreatures = false
 ): ProjectilePathResult {
   const path: ProjectileStep[] = [];
   let reflectionsCount = 0;
@@ -187,7 +189,7 @@ export function traceProjectile(
 
       // Entity collision check
       const entity = map.getEntityAt(nextTileX, nextTileY);
-      if (entity && entity.id !== casterId && entity.isAlive()) {
+      if (!passesCreatures && entity && entity.id !== casterId && entity.isAlive()) {
         hitEntityId = entity.id;
         break;
       }

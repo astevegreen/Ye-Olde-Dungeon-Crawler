@@ -138,6 +138,15 @@ export interface CastLends {
   effects: EffectPrimitive[];
 }
 
+/** The centre and reach of a burst drawn over `tiles` (a shape's), so its playback covers them. */
+function boundsOf(tiles: Position[]): { epicenter: Position; radius: number } {
+  const xs = tiles.map((t) => t.x);
+  const ys = tiles.map((t) => t.y);
+  const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  const epicenter = { x: Math.round((minX + maxX) / 2), y: Math.round((minY + maxY) / 2) };
+  return { epicenter, radius: Math.max(maxX - epicenter.x, epicenter.x - minX, maxY - epicenter.y, epicenter.y - minY) };
+}
+
 /** How a hero's grimoire shapes one cast beyond its definition (P-30): own power, and what it borrowed. */
 export interface CastShaping {
   powerMultiplier?: number;
@@ -280,7 +289,8 @@ export class SpellPipeline {
       return this.executeInventorySpell(engine, spell, caster, itemTargetId, actionCost);
     }
 
-    if (mode === 'self') {
+    // A nova is aimed at the caster, but covers tiles as any shaped spell does.
+    if (mode === 'self' && !spell.shape) {
       return this.executeSelfSpell(engine, spell, caster, actionCost, shaping);
     }
 
@@ -457,7 +467,44 @@ export class SpellPipeline {
     const color = spell.visual?.color ?? getElementDefaultColor(spell.element);
     const fx = spellFxOf(spell);
 
-    if ((mode === 'ray' || mode === 'bounce_ray') && geo.ray) {
+    const livingOn = (tiles: Position[]) =>
+      tiles.map((t) => engine.map.getEntityAt(t.x, t.y)).filter((e): e is Entity => !!e && e !== caster && e.isAlive());
+
+    if (geo.back && geo.ray) {
+      // Out and back: everything on its flight now, everything on its return after (below).
+      for (const leg of [geo.ray.path, geo.back]) {
+        effects.push({
+          type: 'projectile',
+          path: leg.map((p) => ({ x: p.x, y: p.y })),
+          origin: leg === geo.back ? geo.ray.impactTile : startPos,
+          color,
+          fx,
+          spriteId: spell.visual?.spriteId,
+          stepDelayMs: spell.visual?.stepDelayMs ?? 25,
+          travelMode: spell.visual?.travelMode ?? 'smooth',
+        });
+      }
+      impactTile = geo.ray.impactTile;
+      castTiles = geo.ray.path.map(({ x, y }) => ({ x, y }));
+      targetsHit.push(...livingOn(castTiles));
+      hitDescription = `${caster.name} hurls ${spell.name}, striking ${targetsHit.length} target(s) on its way out!`;
+      engine.log(hitDescription);
+    } else if (geo.area) {
+      castTiles = geo.area;
+      targetsHit.push(...livingOn(castTiles));
+      const { epicenter, radius } = boundsOf(castTiles.length > 0 ? castTiles : [startPos]);
+      effects.push({
+        type: 'burst',
+        epicenter,
+        radius,
+        color,
+        fx,
+        durationMs: spell.visual?.durationMs ?? 250,
+        style: spell.element === 'fire' ? 'flame' : spell.element === 'lightning' ? 'spark' : 'shockwave',
+      });
+      hitDescription = `${caster.name} casts ${spell.name}, catching ${targetsHit.length} target(s)!`;
+      engine.log(hitDescription);
+    } else if ((mode === 'ray' || mode === 'bounce_ray') && geo.ray) {
       const rayResult = geo.ray;
       impactTile = rayResult.impactTile;
       castTiles = [impactTile];
@@ -590,10 +637,18 @@ export class SpellPipeline {
       }
       EffectPrimitiveRegistry.dispatch(effect, ctx);
     }
+    if (geo.back) {
+      // The return strikes whoever stands on its way back now, the far end's creature again included.
+      const returning: EffectContext = { ...ctx, targets: livingOn(geo.back), tiles: geo.back };
+      for (const effect of spell.effects) {
+        if (effect.type === 'damage') returning.lastDamageEffect = effect;
+        EffectPrimitiveRegistry.dispatch(effect, returning);
+      }
+    }
     if (shaping.lends) SpellPipeline.deliverLends(ctx, shaping.lends, targetsHit, startPos);
 
-    // A burst's hits strike the ground where nobody stood to take them: oil ignites, water boils or freezes.
-    if (geo.burst && engine.surfaces) {
+    // A burst's or shape's hits strike the ground where nobody stood to take them: oil ignites, water boils or freezes.
+    if ((geo.burst || geo.area) && engine.surfaces) {
       for (const effect of spell.effects) {
         if (effect.type !== 'damage') continue;
         for (const tile of castTiles) {

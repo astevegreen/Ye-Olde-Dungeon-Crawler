@@ -24,6 +24,16 @@ export type TargetingMode =
   | 'tile'
   | 'inventory_item';
 
+/**
+ * The tiles a shaped spell covers (P-33), each sized by `areaOfEffect` so the Area stat grows it:
+ * - `cone`: from the caster toward the aim, `areaOfEffect` tiles long, stopped by walls;
+ * - `nova`: every tile within `areaOfEffect` of the caster, the caster spared;
+ * - `square`: `areaOfEffect` tiles a side on the aim, so even sizes work (4 is 4×4);
+ * - `wall`: a line across the aim's direction through the aim, `areaOfEffect` tiles each side;
+ * - `outAndBack`: flies `range` tiles through creatures and returns, striking each on the way out and back.
+ */
+export type SpellShape = 'cone' | 'nova' | 'square' | 'wall' | 'outAndBack';
+
 export interface DamageEffect {
   type: 'damage';
   amount: string | number;
@@ -190,6 +200,8 @@ export interface SpellDefinition {
   targetType: TargetType;
   description: string;
   targetingMode?: TargetingMode;
+  /** The tiles it covers instead of a ray or burst (`SpellShape`). */
+  shape?: SpellShape;
   /** What the spell does, in order, to what it reaches (`EffectPrimitiveRegistry`). */
   effects: EffectPrimitive[];
   /** Where effects borrowed from touching grimoire slots land (P-30); a spell without one borrows nothing, but still lends. */

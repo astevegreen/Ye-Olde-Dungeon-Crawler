@@ -131,15 +131,25 @@ function runningInBackground(list) {
     if (e.type === 'assistant' && Array.isArray(content)) {
       for (const part of content) {
         if (part?.type === 'tool_use') {
-          calls.set(part.id, { what: part.input?.description ?? part.name, at: Date.parse(e.timestamp ?? '') });
+          calls.set(part.id, {
+            what: part.input?.description ?? part.name,
+            at: Date.parse(e.timestamp ?? ''),
+            shell: part.input?.run_in_background === true,
+            agent: part.name === 'Agent' || part.name === 'Task',
+          });
         }
       }
     }
     if (e.type === 'user' && Array.isArray(content)) {
       for (const part of content) {
         if (part?.type !== 'tool_result') continue;
-        const text = Array.isArray(part.content) ? part.content.map((x) => x?.text ?? '').join('') : String(part.content ?? '');
-        if (/Command running in background with ID|Async agent launched/.test(text)) started.add(part.tool_use_id);
+        // Judge by the launching call and the result's opening words: a foreground command's output
+        // can contain these phrases (a grep of a transcript does).
+        const call = calls.get(part.tool_use_id);
+        const text = (Array.isArray(part.content) ? part.content.map((x) => x?.text ?? '').join('') : String(part.content ?? '')).trimStart();
+        if ((call?.shell && text.startsWith('Command running in background')) || (call?.agent && text.startsWith('Async agent launched'))) {
+          started.add(part.tool_use_id);
+        }
       }
     }
     const raw = JSON.stringify(e);

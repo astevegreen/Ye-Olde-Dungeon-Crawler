@@ -29,3 +29,4 @@ Opus at high thinking: 3b removes engine systems (Volatile Energy, corruption nu
 
 ## Verification
 - lint + test: green on ca3aeaaa (3105 unit); `npm run sim` green; pre-push still running when this note was written.
+Resumed: 2026-10-15 18:27 UTC

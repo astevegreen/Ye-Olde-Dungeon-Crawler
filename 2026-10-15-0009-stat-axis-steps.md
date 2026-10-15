@@ -28,3 +28,4 @@ Continue the owner's magic redesign dialogue (talk only; nothing is built until 
 ## Read first
 - The Notion page: "Grimoire redesign", "Learning spells (direction, 14 Oct)", "Open decisions"
 - `src/content/cotw/magic.ts:134` — today's glyph values the step sizes start from
+Resumed: 2026-10-15 00:16 UTC

@@ -202,6 +202,11 @@ export class Entity {
     if (this.isInvulnerable || this.hp <= 0) {
       return { damageDealt: 0, killed: false };
     }
+    return this.loseHp(this.statusManager.scaleDamageTaken(this, rawAmount));
+  }
+
+  /** A blow already scaled by what takes it: cut to the HP floor and taken off HP. */
+  protected loseHp(rawAmount: number): { damageDealt: number; killed: boolean } {
     rawAmount = this.limitDamageToHpFloor(rawAmount);
     const damageDealt = Math.max(0, Math.min(this.hp, rawAmount));
     this.hp -= damageDealt;

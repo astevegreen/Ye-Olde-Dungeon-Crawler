@@ -29,6 +29,23 @@ export class StatusManager {
     return this.getAll();
   }
 
+  /** A blow of `amount` on `entity`, through each status's damage-taken hook (a mark lands it harder). */
+  public scaleDamageTaken(entity: Entity, amount: number): number {
+    for (const effect of this.effects.values()) {
+      const hook = StatusHandlerRegistry.get(effect.type)?.onDamageTaken;
+      if (hook) amount = hook(entity, effect, amount);
+    }
+    return amount;
+  }
+
+  /** Whether a status makes its bearer seen through walls (a mark). */
+  public revealsBearer(): boolean {
+    for (const effect of this.effects.values()) {
+      if (StatusHandlerRegistry.get(effect.type)?.sensedThroughWalls) return true;
+    }
+    return false;
+  }
+
   public applyStatus(
     statusOrType: StatusEffect | StatusType,
     durationOrImmunities?: number | readonly StatusType[],

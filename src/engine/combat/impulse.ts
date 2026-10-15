@@ -48,7 +48,9 @@ export function applyImpulse(
   target: Entity,
   dx: number,
   dy: number,
-  distance = 1
+  distance = 1,
+  /** The most tiles it may travel, the pusher's bonus included (a pull that stops beside its caster). */
+  maxDistance = Infinity
 ): ImpulseResult {
   // A target that nothing can move (Shield-Wall, `impulseImmune`) stands where it is.
   if (!target.isAlive() || distance <= 0 || wearsFlag(target, 'impulseImmune')) {
@@ -66,6 +68,7 @@ export function applyImpulse(
 
   // What the pusher wears throws farther (Ox-Shoulders, `knockbackBonus`).
   if (source) distance += sumWorn(source, 'knockbackBonus');
+  distance = Math.min(distance, maxDistance);
 
   const stepX = Math.sign(dx);
   const stepY = Math.sign(dy);

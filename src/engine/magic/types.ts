@@ -48,6 +48,25 @@ export interface TeleportEffect {
   type: 'teleport';
   range: number;
   random: boolean;
+  /** The caster lands on the tile aimed at, within `range` and in sight, instead of a random one. */
+  aimed?: boolean;
+}
+
+/** Shoves each target `distance` tiles away from the caster (`applyImpulse`: wall stun, chasm fall, traps). */
+export interface PushEffect {
+  type: 'push';
+  distance: number;
+}
+
+/** Drags each target up to `distance` tiles toward the caster, stopping beside it. */
+export interface PullEffect {
+  type: 'pull';
+  distance: number;
+}
+
+/** The caster and the first target it can see trade places. */
+export interface SwapEffect {
+  type: 'swap';
 }
 
 export interface HealEffect {
@@ -98,6 +117,9 @@ export type EffectPrimitive =
   | StatusEffectPrimitive
   | ChainEffect
   | TeleportEffect
+  | PushEffect
+  | PullEffect
+  | SwapEffect
   | HealEffect
   | RevealEffect
   | IdentifyEffect

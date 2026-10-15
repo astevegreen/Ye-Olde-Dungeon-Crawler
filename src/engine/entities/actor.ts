@@ -266,6 +266,7 @@ export class Actor extends Entity implements IItemContainer, IEquipmentBearer {
         if (mod.damageTakenMultiplier) rawAmount = Math.round(rawAmount * mod.damageTakenMultiplier);
         if (mod.damageTakenFlatBonus) rawAmount += mod.damageTakenFlatBonus;
       }
+      rawAmount = this.statusManager.scaleDamageTaken(this, rawAmount);
       // The lower the health, the less a blow hurts (Blood-Hardened): a line from full to nothing.
       let ramp = 1;
       for (const mod of wornModifiers(this)) {
@@ -291,7 +292,7 @@ export class Actor extends Entity implements IItemContainer, IEquipmentBearer {
         return { damageDealt: rawAmount, killed: false };
       }
     }
-    return super.takeDamage(rawAmount);
+    return this.loseHp(rawAmount);
   }
 
   public override heal(amount: number): number {

@@ -13,6 +13,9 @@ import type {
   StatusEffectPrimitive,
   ChainEffect,
   TeleportEffect,
+  PushEffect,
+  PullEffect,
+  SwapEffect,
   HealEffect,
   RevealEffect,
   IdentifyEffect,
@@ -32,6 +35,8 @@ import { EnergyModel } from '../actors/energyModel';
 import { dispatchDamageHooks } from '../hooks/damageHooks';
 import { Actor } from '../entities/actor';
 import { breakCurses } from '../items/breakCurses';
+import { applyImpulse } from '../combat/impulse';
+import { hasLineOfSight } from '../ai/perception';
 
 function getElementDefaultColor(element?: string): string {
   switch (element) {
@@ -124,9 +129,32 @@ export class SpellPipeline {
     });
 
     EffectPrimitiveRegistry.register<TeleportEffect>('teleport', (effect, ctx) => {
+      if (effect.aimed) {
+        SpellPipeline.teleportToAim(ctx.engine, ctx.caster, ctx.aim, effect.range);
+        return;
+      }
       for (const target of ctx.targets) {
         SpellPipeline.teleportEntity(ctx.engine, target, effect.range, effect.random);
       }
+    });
+
+    EffectPrimitiveRegistry.register<PushEffect>('push', (effect, ctx) => {
+      // The farthest first, so a near foe isn't slammed into one about to be thrown clear.
+      for (const target of SpellPipeline.othersByDistance(ctx).reverse()) {
+        const { dx, dy } = SpellPipeline.offset(ctx.caster, target);
+        applyImpulse(ctx.engine, ctx.caster, target, Math.sign(dx), Math.sign(dy), effect.distance);
+      }
+    });
+
+    EffectPrimitiveRegistry.register<PullEffect>('pull', (effect, ctx) => {
+      for (const target of SpellPipeline.othersByDistance(ctx)) {
+        SpellPipeline.pullToward(ctx.engine, ctx.caster, target, effect.distance);
+      }
+    });
+
+    EffectPrimitiveRegistry.register<SwapEffect>('swap', (_effect, ctx) => {
+      const target = ctx.targets.find((t) => t !== ctx.caster && t.isAlive());
+      if (target) SpellPipeline.swapPlaces(ctx.engine, ctx.caster, target);
     });
 
     EffectPrimitiveRegistry.register<RevealEffect>('reveal', (effect, ctx) => {
@@ -447,6 +475,7 @@ export class SpellPipeline {
       spell,
       caster,
       targets: targetsHit,
+      aim: { x: targetPos.x, y: targetPos.y },
       effects,
       color,
     };
@@ -751,6 +780,68 @@ export class SpellPipeline {
 
       current = nextTarget;
     }
+  }
+
+  private static offset(from: Position, to: Position): { dx: number; dy: number } {
+    return { dx: to.x - from.x, dy: to.y - from.y };
+  }
+
+  /** The living targets other than the caster, nearest the caster first. */
+  private static othersByDistance(ctx: EffectContext): Entity[] {
+    const reach = (e: Entity) => Math.max(Math.abs(e.x - ctx.caster.x), Math.abs(e.y - ctx.caster.y));
+    return ctx.targets.filter((t) => t !== ctx.caster && t.isAlive()).sort((a, b) => reach(a) - reach(b));
+  }
+
+  /**
+   * Drags `target` toward `caster` one tile at a time, re-aimed each step, until it stands
+   * beside the caster or has gone `distance` tiles. What blocks it on the way splats it (as
+   * a push does); the caster itself never does.
+   */
+  private static pullToward(engine: GameEngine, caster: Entity, target: Entity, distance: number): void {
+    for (let step = 0; step < distance; step++) {
+      const { dx, dy } = SpellPipeline.offset(target, caster);
+      if (Math.max(Math.abs(dx), Math.abs(dy)) <= 1) return;
+      const moved = applyImpulse(engine, caster, target, Math.sign(dx), Math.sign(dy), 1, 1);
+      if (!moved.pushed || moved.wallSplat || moved.fellInChasm || moved.killed) return;
+    }
+  }
+
+  /** The caster and a creature it can see trade places. */
+  public static swapPlaces(engine: GameEngine, caster: Entity, target: Entity): boolean {
+    if (!hasLineOfSight(engine, caster, target)) {
+      engine.log(`${caster.name} cannot see ${target.name} to trade places.`);
+      return false;
+    }
+    const from = { x: caster.x, y: caster.y };
+    engine.map.removeEntity(target);
+    engine.map.moveEntity(caster, target.x, target.y);
+    target.setPosition(from.x, from.y);
+    engine.map.addEntity(target);
+    engine.log(`${caster.name} and ${target.name} trade places!`);
+    if (caster === engine.player || target === engine.player) engine.updateFov();
+    return true;
+  }
+
+  /**
+   * Moves the caster to the tile it aimed at: within `range`, in sight and standable. A
+   * creature on that tile puts the caster down on the nearest free tile beside it.
+   */
+  public static teleportToAim(engine: GameEngine, caster: Entity, aim: Position | undefined, range: number): boolean {
+    if (!aim) return false;
+    const { dx, dy } = SpellPipeline.offset(caster, aim);
+    const reachable =
+      engine.map.inBounds(aim.x, aim.y) &&
+      Math.hypot(dx, dy) <= range &&
+      engine.map.isPassable(aim.x, aim.y) &&
+      hasLineOfSight(engine, caster, aim);
+    if (!reachable) {
+      engine.log(`${caster.name} cannot land there.`);
+      return false;
+    }
+    const dest = engine.map.getEntityAt(aim.x, aim.y) ? findSafeSpawnPosition(engine.map, aim, 3, caster) : aim;
+    engine.map.moveEntity(caster, dest.x, dest.y);
+    if (caster instanceof Player) engine.updateFov();
+    return true;
   }
 
   public static teleportEntity(

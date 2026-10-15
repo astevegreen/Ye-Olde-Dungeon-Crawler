@@ -114,7 +114,34 @@ export const FIXTURE_SPELLS: SpellDefinition[] = [
     visual: { archetype: 'self_buff', color: '#fef08a', durationMs: 240 },
     effects: [{ type: 'heal', amount: 35 }],
   },
+  ...movementAndMarkSpells(),
 ];
+
+/** The spell building blocks that move creatures and mark them (P-28), one spell each. */
+function movementAndMarkSpells(): SpellDefinition[] {
+  const spell = (id: string, name: string, targetingMode: 'target_entity' | 'tile', effects: SpellDefinition['effects']): SpellDefinition => ({
+    id,
+    name,
+    school: 'Movement',
+    manaCost: 5,
+    element: 'arcane',
+    range: 8,
+    basePower: 0,
+    areaOfEffect: 0,
+    reflects: false,
+    targetType: targetingMode === 'tile' ? 'tile' : 'ray',
+    targetingMode,
+    description: name,
+    effects,
+  });
+  return [
+    spell('shove', 'Shove', 'target_entity', [{ type: 'push', distance: 3 }]),
+    spell('grasp', 'Grasp', 'target_entity', [{ type: 'pull', distance: 6 }]),
+    spell('switch', 'Switch', 'target_entity', [{ type: 'swap' }]),
+    spell('steered_blink', 'Steered Blink', 'tile', [{ type: 'teleport', range: 5, random: false, aimed: true }]),
+    spell('brand', 'Brand', 'target_entity', [{ type: 'applyStatus', statusId: 'marked', duration: 10 }]),
+  ];
+}
 
 /** Every token set, and none equal to the defaults, so a test sees the pack's theme take hold. */
 export const FIXTURE_THEME_TOKENS: ThemeTokens = {

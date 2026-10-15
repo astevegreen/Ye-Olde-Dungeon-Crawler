@@ -28,6 +28,10 @@ export interface StatusHandler {
    * darkness) are left alone.
    */
   affliction?: boolean;
+  /** Each blow its bearer takes, whatever dealt it, passes through here and comes out as the amount taken. */
+  onDamageTaken?(entity: Entity, effect: StatusEffect, amount: number): number;
+  /** The hero senses its bearer through walls (`sensesThroughWalls`). */
+  sensedThroughWalls?: boolean;
 }
 
 import {
@@ -146,6 +150,17 @@ export const BUILTIN_STATUS_HANDLERS: Record<string, StatusHandler> = {
     onExpire(entity, engine) {
       engine.removeEntity(entity);
       return `${entity.name} fades back into the aether.`;
+    },
+  },
+  // Marked by a spell: seen through walls, and each blow lands `potency` percent harder (10 unset).
+  marked: {
+    affliction: true,
+    sensedThroughWalls: true,
+    onDamageTaken(_entity, effect, amount) {
+      return Math.round(amount * (1 + (effect.potency ?? 10) / 100));
+    },
+    onExpire(entity) {
+      return `The mark on ${entity.name} fades.`;
     },
   },
   sensory_masked: {

@@ -1,5 +1,5 @@
 import type { EffectPrimitive, SpellDefinition } from './types';
-import type { VisualEffectDescriptor } from '../types';
+import type { Position, VisualEffectDescriptor } from '../types';
 import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
 
@@ -11,6 +11,8 @@ export interface EffectContext {
   spell: SpellDefinition;
   caster: Entity;
   targets: Entity[];
+  /** The tile the cast was aimed at; absent for self and inventory casts. */
+  aim?: Position;
   effects: VisualEffectDescriptor[];
   color: string;
   lastDamageEffect?: EffectPrimitive;

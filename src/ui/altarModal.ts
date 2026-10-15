@@ -1,5 +1,5 @@
-import type { GameEngine, AltarDefinition, AltarOffering, AltarRiteRequest, GrimoireSlotRef } from '../engine';
-import { listAltarOfferings, findHybridSpellId, getSpell, isSlotDoubled, slotAdditions, grimoireAxes, spellAt } from '../engine';
+import type { GameEngine, AltarDefinition, AltarOffering, AltarRiteRequest, ForgePreview, GrimoireSlotRef } from '../engine';
+import { listAltarOfferings, forgeRefusal, forgedTitle, previewForge, getSpell, isSlotDoubled, slotAdditions, grimoireAxes, spellAt } from '../engine';
 import type { UIModal } from './modalStack';
 import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
 import { escapeHtml } from './html';
@@ -143,16 +143,12 @@ export class AltarModal implements UIModal {
         return { text: `Doubles what <b>${escapeHtml(spellName(engine, spellId))}</b> lends the spells beside it.${debt}`, ok: true };
       }
       case 'forge': {
-        if (!this.targetSpellId) return { text: 'Choose a spell to transmute.', ok: false };
-        const target = spellName(engine, this.targetSpellId);
-        const targetElement = spellOf(engine, this.targetSpellId)?.element ?? '';
-        const hybridId = findHybridSpellId(engine, targetElement, offering.element);
-        if (!hybridId || (offering.kind === 'spell' && offering.id === this.targetSpellId)) {
-          return { text: `${target} and ${offering.name} do not fuse.`, ok: false };
-        }
-        if (engine.player.spellsKnown.includes(hybridId)) return { text: `You already know ${spellName(engine, hybridId)}.`, ok: false };
-        const hybrid = spellOf(engine, hybridId);
-        return { text: `${target} becomes <b>${hybrid?.name ?? hybridId}</b>: ${hybrid?.description ?? ''}`, ok: true };
+        if (!this.targetSpellId) return { text: 'Choose a spell to forge.', ok: false };
+        if (offering.kind === 'spell' && offering.id === this.targetSpellId) return { text: `${escapeHtml(offering.name)} cannot be forged with itself.`, ok: false };
+        const refusal = forgeRefusal(engine, engine.player, this.targetSpellId, offering.element);
+        const forged = refusal ? undefined : previewForge(engine, engine.player, this.targetSpellId, offering.element);
+        if (!forged) return { text: escapeHtml(refusal ?? 'The forge cannot work that spell.'), ok: false };
+        return { text: forgeText(engine, this.targetSpellId, offering.element, forged), ok: true };
       }
       case 'gamble':
         return { text: (this.altar.gamble?.previewText ?? 'Fate decides: a spell, a doubled lend, or a price.') + debt, ok: true };
@@ -210,12 +206,13 @@ export class AltarModal implements UIModal {
       picker = `<div class="ui-dialog-label">Slot whose lend is doubled</div><div class="ui-inset bs-list altar-list">${rows || '<div class="ui-note bs-empty">No grimoire slot holds a spell.</div>'}</div>`;
     } else if (altar.rite === 'forge') {
       const rows = player.spellsKnown
-        .map(
-          (id) =>
-            `<button type="button" class="bs-row${id === this.targetSpellId ? ' is-selected' : ''}" data-spell="${escapeHtml(id)}"><span class="bs-name">${escapeHtml(spellName(engine, id))}</span><span class="ui-faint">${escapeHtml(spellOf(engine, id)?.element ?? '')}</span></button>`
-        )
+        .map((id) => {
+          const spell = spellOf(engine, id);
+          const label = spell && player.grimoireSystem && player.grimoireState ? forgedTitle(player.grimoireSystem, player.grimoireState, spell) : spellName(engine, id);
+          return `<button type="button" class="bs-row${id === this.targetSpellId ? ' is-selected' : ''}" data-spell="${escapeHtml(id)}"><span class="bs-name">${escapeHtml(label)}</span><span class="ui-faint">${escapeHtml(spellElements(engine, id).join(' + '))}</span></button>`;
+        })
         .join('');
-      picker = `<div class="ui-dialog-label">Spell to transmute</div><div class="ui-inset bs-list altar-list">${rows}</div>`;
+      picker = `<div class="ui-dialog-label">Spell to forge</div><div class="ui-inset bs-list altar-list">${rows}</div>`;
     } else if (altar.rite === 'restat') {
       picker = restatPickerHtml(player, this.restat);
     } else if (altar.rite === 'addSlot') {
@@ -298,6 +295,22 @@ export class AltarModal implements UIModal {
     this.overlayEl.querySelector('#btn-altar-x')?.addEventListener('click', () => this.leave());
     this.overlayEl.querySelector('[data-action="confirm"]')?.addEventListener('click', () => this.confirm());
   }
+}
+
+/** A known spell's elements: its own, then any forged onto it. */
+function spellElements(engine: GameEngine, id: string): string[] {
+  const own = spellOf(engine, id)?.element ?? '';
+  return [own, ...(engine.player.grimoireState?.forged.filter((f) => f.spellId === id).map((f) => f.element) ?? [])];
+}
+
+/** What a forge makes of a spell: its new title, how it strikes, and an opposite's bonus. */
+function forgeText(engine: GameEngine, spellId: string, element: string, forged: ForgePreview): string {
+  const name = escapeHtml(spellName(engine, spellId));
+  const swap = forged.swapped ? ` Its ${escapeHtml(forged.swapped)} is swapped for ${escapeHtml(element)}.` : '';
+  const own = spellOf(engine, spellId)?.element ?? '';
+  const bonus = engine.player.grimoireSystem?.lending?.oppositeBonus ?? 0;
+  const opposed = bonus > 0 && engine.affinityMatrix.getOpposite(own) === element ? ` Forged with its opposite, it gains ${Math.round(bonus * 100)}% power.` : '';
+  return `${name} becomes <b>${escapeHtml(forged.title)}</b>: it strikes as ${escapeHtml(forged.elements.join(' or '))}, whichever hurts the foe more, and lends each.${swap}${opposed}`;
 }
 
 function spellOf(engine: GameEngine, id: string) {

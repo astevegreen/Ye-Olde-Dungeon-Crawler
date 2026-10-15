@@ -100,7 +100,7 @@ export * from './magic/manaOverflow';
 export * from './magic/magicConfig';
 export * from './magic/killRites';
 export * from './magic/altars';
-export { grimoireCells, grimoireAxes, isSlotDoubled, pendingStatPicks, slotAdditions, slotStatSteps, spellAt, statPickFor } from './magic/grimoires';
+export { forgedElements, forgedTitle, grimoireCells, grimoireAxes, isSlotDoubled, pendingStatPicks, slotAdditions, slotStatSteps, spellAt, statPickFor } from './magic/grimoires';
 export type { GrimoireSlotRef, GrimoireState } from './magic/grimoires';
 export type { ResolvedCast } from './magic/neighbourLending';
 

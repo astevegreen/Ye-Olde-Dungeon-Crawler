@@ -114,6 +114,12 @@ describe('Kill rites', () => {
     expect(essencesAt(m.x, m.y)).toHaveLength(0);
   });
 
+  it('counts a forged blow for a rite asking any element it carried', () => {
+    register('fire_rite', { requiredDamageElement: 'fire' });
+    DeathResolver.resolveDeath(engine, player, spawn('fire_rite'), { damageElement: 'cold', damageElements: ['cold', 'fire'] });
+    expect(player.spellsKnown).toContain('jotunbrann');
+  });
+
   it('drops an essence instead once the spell is known', () => {
     register('fire_rite', { requiredDamageElement: 'fire' });
     player.learnSpell('jotunbrann');

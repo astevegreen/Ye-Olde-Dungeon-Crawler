@@ -89,6 +89,11 @@ function strikeElement(engine: GameEngine, target: Entity, effect: Pick<DamageEf
   return leastResistedElement(engine.affinityMatrix, (e) => target.affinityTo(e), [effect.element, ...effect.elements], effect.pierce);
 }
 
+/** Every element a damage effect carries, for kill rites, or nothing when it has only its own. */
+function carriedElements(effect: Pick<DamageEffect, 'element' | 'elements'>): string[] | undefined {
+  return effect.elements?.length ? [effect.element, ...effect.elements] : undefined;
+}
+
 /** The afflictions (`StatusHandler.affliction`) an entity bears, longest-lasting first. */
 function afflictionsOf(entity: Entity): StatusType[] {
   return entity.statusManager
@@ -643,6 +648,7 @@ export class SpellPipeline {
     if (result.killed) {
       DeathResolver.resolveDeath(engine, caster, target, {
         damageElement: element,
+        damageElements: carriedElements(effect),
         damageDealt: result.finalDamage,
         remainingHpBeforeBlow: result.damageDealt,
         cause: ownSpellCause(caster, target, spell),
@@ -887,6 +893,7 @@ export class SpellPipeline {
       if (result.killed) {
         DeathResolver.resolveDeath(engine, caster, nextTarget, {
           damageElement: hopElement,
+          damageElements: damageContext ? carriedElements(damageContext) : undefined,
           damageDealt: result.finalDamage,
           remainingHpBeforeBlow: result.damageDealt,
         });

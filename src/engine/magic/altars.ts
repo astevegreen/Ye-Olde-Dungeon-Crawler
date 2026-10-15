@@ -5,7 +5,7 @@ import type { Entity } from '../entities/entity';
 import type { Player } from '../entities/player';
 import { getSpell } from './spellRegistry';
 import { formatMagicMessage, type AltarDefinition, type GrimoireAxis } from './magicConfig';
-import { anySpellsTouch, isSlotDoubled, restatGrimoire, slotAdditions, slotOfSpell, type GrimoireSlotRef, type StatPickOutcome } from './grimoires';
+import { anySpellsTouch, copyGrimoireState, forgeSpellElement, forgedElements, forgedTitle, isSlotDoubled, restatGrimoire, slotAdditions, type GrimoireSlotRef, type StatPickOutcome } from './grimoires';
 import { getKillRiteConfig } from './killRites';
 
 /**
@@ -35,7 +35,7 @@ export interface AltarRiteRequest {
   offeringId?: string;
   /** double: the grimoire slot whose lend is doubled; addSlot: the slot added. */
   slot?: GrimoireSlotRef;
-  /** forge: the known spell to transmute. */
+  /** forge: the known spell that gains the offering's element. */
   targetSpellId?: string;
   /** restat: the grimoire, and the stat each of its axes takes. */
   restat?: AltarRestat;
@@ -135,11 +135,37 @@ function burnOffering(player: Player, offering: AltarOffering): void {
   if (item) player.inventory.consumeOne(item.id);
 }
 
-/** The pack's hybrid spell for two elements, in either order. */
-export function findHybridSpellId(engine: GameEngine, a: string, b: string): string | undefined {
-  return engine.manifest?.magic?.hybrids?.find(
-    (h) => (h.elements[0] === a && h.elements[1] === b) || (h.elements[0] === b && h.elements[1] === a)
-  )?.spellId;
+/**
+ * Why the forge refuses to give `spellId` this element, or undefined when it will: the
+ * element must be new to the spell (its own, or one fate gave it; a forged one is swapped).
+ */
+export function forgeRefusal(engine: GameEngine, player: Player, spellId: string | undefined, element: string): string | undefined {
+  const spell = spellId ? spellDef(engine, spellId) : undefined;
+  if (!spell || !player.spellsKnown.includes(spell.id)) return 'Choose a known spell to forge.';
+  const state = player.grimoireState;
+  if (!state) return 'The forge needs a grimoire to work in.';
+  const kept = state.forged.filter((f) => f.spellId === spell.id && f.fated !== undefined).map((f) => f.element);
+  if (spell.element === element || kept.includes(element)) return `${spell.name} already carries ${element}.`;
+  if (forgedElements(state, spell.id).includes(element)) return `${spell.name} is already forged with ${element}.`;
+  return undefined;
+}
+
+/** What forging `element` onto a known spell makes of it: its title, its elements, and the forged element it swaps out. */
+export interface ForgePreview {
+  title: string;
+  elements: string[];
+  swapped?: string;
+}
+
+export function previewForge(engine: GameEngine, player: Player, spellId: string, element: string, fated?: string): ForgePreview | undefined {
+  const spell = spellDef(engine, spellId);
+  const system = player.grimoireSystem;
+  const state = player.grimoireState;
+  if (!spell || !system || !state) return undefined;
+  const after = copyGrimoireState(state);
+  forgeSpellElement(after, spell.id, element, fated);
+  const swapped = fated === undefined ? state.forged.find((f) => f.spellId === spell.id && f.fated === undefined)?.element : undefined;
+  return { title: forgedTitle(system, after, spell), elements: [spell.element as string, ...forgedElements(after, spell.id)], swapped };
 }
 
 /** Performs an altar's rite. Validates everything before burning anything. */
@@ -177,17 +203,14 @@ export function performAltarRite(
     }
     case 'forge': {
       const target = request.targetSpellId ? spellDef(engine, request.targetSpellId) : undefined;
-      if (!target || !player.spellsKnown.includes(target.id)) return { success: false, message: 'Choose a known spell to transmute.' };
       if (!offering) return { success: false, message: 'The forge takes an offering.' };
-      if (offering.kind === 'spell' && offering.id === target.id) return { success: false, message: 'A spell cannot be fused with itself.' };
-      const hybridId = findHybridSpellId(engine, target.element, offering.element);
-      const hybrid = hybridId ? spellDef(engine, hybridId) : undefined;
-      if (!hybrid) return { success: false, message: `${target.name} and ${offering.name} do not fuse.` };
-      if (player.spellsKnown.includes(hybrid.id)) return { success: false, message: `You already know ${hybrid.name}.` };
+      if (offering.kind === 'spell' && offering.id === target?.id) return { success: false, message: 'A spell cannot be forged with itself.' };
+      const refusal = forgeRefusal(engine, player, target?.id, offering.element);
+      if (refusal || !target) return { success: false, message: refusal ?? 'Choose a known spell to forge.' };
       values.spell = target.name;
-      values.hybrid = hybrid.name;
       apply = () => {
-        replaceSpell(player, target.id, hybrid.id);
+        player.forgeSpell(target.id, offering.element);
+        values.title = forgedTitle(player.grimoireSystem!, player.grimoireState!, target);
         return undefined;
       };
       break;
@@ -239,16 +262,6 @@ export function performAltarRite(
     data: { altarId: altar.id, rite: altar.rite, offeringId: offering?.id ?? '' },
   });
   return { success: true, message };
-}
-
-/** Puts `newId` wherever `oldId` was (its grimoire slot and quick keys) and forgets `oldId`. */
-function replaceSpell(player: Player, oldId: string, newId: string): void {
-  const slot = player.grimoireState ? slotOfSpell(player.grimoireState, oldId) : undefined;
-  const quick = player.quickSpells.map((id, i) => (id === oldId ? i : -1)).filter((i) => i >= 0);
-  player.forgetSpell(oldId);
-  player.spellsKnown.push(newId);
-  if (slot) player.placeGrimoireSpell(newId, slot);
-  for (const i of quick) player.quickSpells[i] = newId;
 }
 
 function rollGamble(

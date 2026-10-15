@@ -39,7 +39,7 @@ export interface ResolvedLend {
   doubled: boolean;
   effects: EffectPrimitive[];
   color?: string;
-  /** The neighbouring slots it comes from. */
+  /** The neighbouring slots it comes from; empty for a forged element's own flavour. */
   from: GrimoireSlotRef[];
 }
 
@@ -59,6 +59,8 @@ export interface ResolvedCast {
   delivery?: LendDelivery;
   /** For `material`, each cast takes one of these at random (`pickMaterial`). */
   lends: ResolvedLend[];
+  /** A forged terrain spell's material, fixed to its added element's flavour, never picked at random. */
+  material?: string;
   /** The flavour ids this slot lends its neighbours. */
   gives: string[];
 }
@@ -94,6 +96,8 @@ function flavourById(lending: NeighbourLendingConfig, id: string): LendFlavour |
  *   lends (Týr, Loki); doubling happens once, never twice.
  * - A neighbour holding an opposite of one of the spell's elements, or a spell forged with
  *   its own opposite, adds `oppositeBonus` once.
+ * - A forged element's flavour rides the spell's own effect, as if lent, plain unless a
+ *   neighbour lends it too; a forged terrain spell's material is that flavour.
  */
 export function resolveCast(
   config: GrimoireSystemConfig,
@@ -144,6 +148,13 @@ export function resolveCast(
     }
   }
 
+  for (const element of elements.slice(1)) {
+    const flavour = flavourById(lending, element);
+    if (!flavour) continue;
+    if (!merged.has(flavour.id)) merged.set(flavour.id, { flavour, doubled: false, from: [] });
+    if (spell.spellType === 'terrain') cast.material ??= flavour.id;
+  }
+
   let bonus = opposed ? (lending.oppositeBonus ?? 0) : 0;
   for (const { flavour, doubled, from } of merged.values()) {
     const form = doubled && flavour.doubled ? flavour.doubled : flavour;
@@ -177,8 +188,10 @@ export function resolveSpellCast(
   return ref ? resolveCast(config, state, ref, spellOf, oppositeOf) : undefined;
 }
 
-/** A terrain cast's one borrowed flavour, picked by `roll` (0 ≤ roll < 1) from those it has. */
+/** A terrain cast's one borrowed flavour: its forged material, else picked by `roll` (0 ≤ roll < 1) from those it has. */
 export function pickMaterial(cast: ResolvedCast, roll: number): ResolvedLend | undefined {
+  const fixed = cast.material !== undefined ? cast.lends.find((l) => l.flavourId === cast.material) : undefined;
+  if (fixed) return fixed;
   if (cast.lends.length === 0) return undefined;
   return cast.lends[Math.min(cast.lends.length - 1, Math.floor(roll * cast.lends.length))];
 }

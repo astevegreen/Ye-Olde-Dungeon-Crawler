@@ -1,4 +1,6 @@
 import {
+  forgedElements,
+  forgedTitle,
   getOverflowConfig,
   getOverflowTier,
   getSpell,
@@ -282,6 +284,10 @@ export class SpellbookTab implements MenuTab {
     const slotted = grimoires ? castFromSlot(engine, player, spell) : undefined;
     const cast = slotted?.cast ?? heroCastPreview(engine, spell);
     const notes = slotted?.notes ?? [];
+    // A forged spell is titled by its forging, and strikes as any of its elements.
+    const state = player.grimoireState;
+    const title = state && player.grimoireSystem ? forgedTitle(player.grimoireSystem, state, spell) : spell.name;
+    const elements = [spell.element ?? 'arcane', ...(state ? forgedElements(state, spell.id) : [])];
     const changed = (base: number, now: number): string => (base === now ? `${now}` : `${base} → <span class="ui-up">${now}</span>`);
     const slots = SLOT_KEYS.map((key, s) => {
       const mine = player.quickSpells[s] === spell.id;
@@ -291,10 +297,10 @@ export class SpellbookTab implements MenuTab {
 
     return `
       <div class="ui-card">
-        <div class="bs-head"><span class="bs-title">${escapeHtml(spell.name)}</span><span class="ui-note">${escapeHtml(spell.school ?? '')}</span></div>
+        <div class="bs-head"><span class="bs-title">${escapeHtml(title)}</span><span class="ui-note">${escapeHtml(spell.school ?? '')}</span></div>
         <dl class="ui-kv sb-stats">
           <dt>Cost</dt><dd class="ui-num">${changed(spell.manaCost ?? 0, cast.manaCost ?? 0)} ${escapeHtml(unit)}</dd>
-          <dt>Element</dt><dd>${escapeHtml(spell.element ?? 'arcane')}</dd>
+          <dt>Element</dt><dd>${escapeHtml(elements.join(' + '))}</dd>
           <dt>Range</dt><dd class="ui-num">${cast.range ? `${changed(spell.range, cast.range)} tiles` : 'self or touch'}</dd>
           <dt>Power</dt><dd class="ui-num">${changed(spellPower(spell), spellPower(cast, { engine, player }))}</dd>
           <dt>Area</dt><dd class="ui-num">${cast.areaOfEffect ? `${changed(spell.areaOfEffect, cast.areaOfEffect)} radius` : 'one target'}</dd>

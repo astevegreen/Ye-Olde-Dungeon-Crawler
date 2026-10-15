@@ -135,6 +135,18 @@ export interface GrimoireSystemConfig {
   retired?: RetiredMagicConfig;
   /** What touching slots lend each other (P-30); omit and slots lend nothing. */
   lending?: NeighbourLendingConfig;
+  /** How a forged spell is named. */
+  forging?: ForgeConfig;
+}
+
+/** The forge (`forge` altars): a known spell gains a second element. */
+export interface ForgeConfig {
+  /**
+   * The word a pair of elements gives a forged spell's title ("Cold Ray, steam-forged"),
+   * keyed by the two element ids in alphabetical order joined by `+` (`cold+fire`). A pair
+   * left out names the added element ("poison-forged").
+   */
+  titles?: Record<string, string>;
 }
 
 // ─── Neighbour lending (P-30) ──────────────────────────────────────────────
@@ -216,7 +228,7 @@ export interface KillRiteConfig {
 
 /**
  * - `double`: burn an offering to double what one grimoire slot lends its neighbours.
- * - `forge`: fuse a known spell with an offering of another element into a hybrid.
+ * - `forge`: a known spell gains the offering's element beside its own; a re-forge swaps it.
  * - `restat`: choose afresh the stats of one grimoire's axes.
  * - `addSlot`: add a slot to a grimoire, beside one it has.
  * - `gamble`: burn an offering for a random boon (or a price).

@@ -24,6 +24,7 @@ import {
   copyGrimoireState,
   createGrimoireState,
   doubleSlotLend,
+  forgeSpellElement,
   forgetFromGrimoire,
   learnIntoGrimoire,
   placeSpell,
@@ -554,6 +555,14 @@ export class Player extends Actor {
   public doubleGrimoireSlotLend(slot: GrimoireSlotRef): boolean {
     const model = this.grimoireModel();
     return !!model && doubleSlotLend(model.system, model.state, slot);
+  }
+
+  /** Adds an element to a known spell (the forge swaps an earlier forge's; fate's stays). */
+  public forgeSpell(spellId: string, element: string, fated?: string): boolean {
+    const model = this.grimoireModel();
+    if (!model || !this.spellsKnown.includes(spellId)) return false;
+    forgeSpellElement(model.state, spellId, element, fated);
+    return true;
   }
 
   /** Assigns a spell to a quick-cast slot, or clears the slot with `null`. */

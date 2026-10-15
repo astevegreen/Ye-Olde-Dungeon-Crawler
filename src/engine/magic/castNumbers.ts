@@ -73,6 +73,23 @@ export function withSlotStats(spell: SpellDefinition, stats: GrimoireSlotStats):
   return out;
 }
 
+/**
+ * The spell with the elements forged onto it (`ResolvedCast.elements` past its own): each
+ * of its damage effects hits as whichever of them the target resists least.
+ */
+export function withForgedElements(spell: SpellDefinition, added: readonly string[]): SpellDefinition {
+  if (added.length === 0) return spell;
+  return {
+    ...spell,
+    effects: spell.effects.map((e) => {
+      if (e.type !== 'damage') return e;
+      const elements = [...(e.elements ?? [])];
+      for (const el of added) if (el !== e.element && !elements.includes(el)) elements.push(el);
+      return { ...e, elements };
+    }),
+  };
+}
+
 /** The spell with the range what the caster wears and holds adds (`spellRangeBonus`, Odin's Eye); a spell with no range keeps none. */
 export function withSpellRangeBonus(caster: Entity, spell: SpellDefinition): SpellDefinition {
   const bonus = sumWorn(caster, 'spellRangeBonus');

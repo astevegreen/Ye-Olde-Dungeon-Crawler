@@ -34,6 +34,8 @@ export interface GrimoireStatPick {
 export interface GrimoireForge {
   spellId: string;
   element: string;
+  /** Set by fate, not a forge (Skuld): a re-forge leaves it, and the title says it ("of Renewal"). */
+  fated?: string;
 }
 
 export interface GrimoireState {
@@ -315,6 +317,37 @@ export function learnIntoGrimoire(
   return { outcome: 'learned', slot, opened: due };
 }
 
+/** The elements forged onto a spell, in the order added. */
+export function forgedElements(state: GrimoireState, spellId: string): string[] {
+  return state.forged.filter((f) => f.spellId === spellId).map((f) => f.element);
+}
+
+/**
+ * Adds an element to a known spell. A forge swaps any element an earlier forge added; one
+ * set by fate (`fated`) stays, and is added beside whatever the forge gave.
+ */
+export function forgeSpellElement(state: GrimoireState, spellId: string, element: string, fated?: string): void {
+  state.forged = state.forged.filter((f) => f.spellId !== spellId || (fated === undefined ? f.fated !== undefined : f.element !== element));
+  state.forged.push(fated === undefined ? { spellId, element } : { spellId, element, fated });
+}
+
+/**
+ * A forged spell's title: "Cold Ray, steam-forged" from the pack's word for the pair of
+ * elements (`forging.titles`, else the added element), then fate's own words.
+ */
+export function forgedTitle(config: GrimoireSystemConfig, state: GrimoireState, spell: Pick<SpellDefinition, 'id' | 'name' | 'element'>): string {
+  const parts = [spell.name];
+  for (const f of state.forged.filter((g) => g.spellId === spell.id)) {
+    if (f.fated !== undefined) {
+      parts.push(f.fated);
+      continue;
+    }
+    const pair = [String(spell.element), f.element].sort().join('+');
+    parts.push(`${config.forging?.titles?.[pair] ?? f.element}-forged`);
+  }
+  return parts.join(', ');
+}
+
 /** Takes a forgotten spell out of its slot and keeps it from returning this run. */
 export function forgetFromGrimoire(state: GrimoireState, spellId: string): void {
   state.placements = state.placements.filter((p) => p.spellId !== spellId);
@@ -512,7 +545,9 @@ export function readGrimoireState(raw: unknown): GrimoireState | undefined {
     doubledSlots: slots(r.doubledSlots),
     forgotten: strings(r.forgotten),
     forged: list(r.forged).flatMap((e) =>
-      typeof e.spellId === 'string' && typeof e.element === 'string' ? [{ spellId: e.spellId, element: e.element }] : []
+      typeof e.spellId === 'string' && typeof e.element === 'string'
+        ? [typeof e.fated === 'string' ? { spellId: e.spellId, element: e.element, fated: e.fated } : { spellId: e.spellId, element: e.element }]
+        : []
     ),
     offers: strings(r.offers),
   };

@@ -71,6 +71,19 @@ describe('AltarModal', () => {
     expect(scrim.innerHTML).toContain('Slot whose lend is doubled');
   });
 
+  it('previews a forge: the new title and how it strikes, or why the element is refused', () => {
+    const modal = open('galdr_altar_odin') as any;
+    modal.offeringIndex = modal.offerings.findIndex((o: { id: string }) => o.id === 'essence_kenaz');
+    modal.targetSpellId = 'magic_arrow';
+    modal.render();
+    expect(scrim.innerHTML).toContain('Spell to forge');
+    expect(scrim.innerHTML).toContain('Magic Arrow, rune-forged');
+    expect(scrim.innerHTML).toContain('strikes as arcane or fire');
+    modal.targetSpellId = 'firebolt';
+    modal.render();
+    expect(scrim.innerHTML).toContain('Firebolt already carries fire.');
+  });
+
   it('says up front what burning costs, and names a rune by its own name', () => {
     open('galdr_altar_tyr');
     expect(scrim.innerHTML).toContain('you forget it for good');

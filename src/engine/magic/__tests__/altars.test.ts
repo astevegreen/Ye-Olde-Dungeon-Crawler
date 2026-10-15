@@ -10,7 +10,7 @@ import { COTW_MAGIC } from '../../../content/cotw/magic';
 import { COTW_SPELLS } from '../../../content/cotw/spells';
 import { COTW_ESSENCE_RUNES } from '../../../content/cotw/items/essences';
 import { COTW_GRIMOIRES } from '../../../content/cotw/grimoires';
-import { isSlotDoubled, slotOfSpell } from '../grimoires';
+import { forgedElements, forgedTitle, isSlotDoubled, slotOfSpell } from '../grimoires';
 import { describeAction } from '../../debug/actionTrail';
 import { rebuildAction } from '../../debug/replay';
 
@@ -114,10 +114,9 @@ describe('Spell altars', () => {
     expect(isAltarSpent(engine, ALTAR_X, ALTAR_Y)).toBe(false);
   });
 
-  it('forges a spell with an essence of another element into its hybrid, in place', () => {
+  it('forges an essence’s element onto a known spell, which keeps its slot and is titled by the pair', () => {
     giveEssence('essence_isa');
     const slot = slotOfSpell(player.grimoireState!, 'firebolt');
-    const quick = player.quickSpells.indexOf('firebolt');
 
     const outcome = performAltarRite(engine, player, altar('galdr_altar_odin'), ALTAR_X, ALTAR_Y, {
       offeringKind: 'essence',
@@ -126,22 +125,56 @@ describe('Spell altars', () => {
     });
 
     expect(outcome.success).toBe(true);
-    expect(player.spellsKnown).not.toContain('firebolt');
-    expect(player.spellsKnown).toContain('steam_lance');
-    expect(slotOfSpell(player.grimoireState!, 'steam_lance')).toEqual(slot);
-    expect(player.quickSpells[quick]).toBe('steam_lance');
+    expect(outcome.message).toContain('Firebolt, steam-forged');
+    expect(player.spellsKnown).toContain('firebolt');
+    expect(slotOfSpell(player.grimoireState!, 'firebolt')).toEqual(slot);
+    expect(forgedElements(player.grimoireState!, 'firebolt')).toEqual(['cold']);
+    expect(listAltarOfferings(engine, player).some((o) => o.id === 'essence_isa')).toBe(false);
+    expect(isAltarSpent(engine, ALTAR_X, ALTAR_Y)).toBe(true);
   });
 
-  it('refuses a forge with no recipe and burns nothing', () => {
-    giveEssence('essence_kenaz');
+  it('burns a known spell as the element it brings, and a re-forge swaps the added element', () => {
+    player.forgeSpell('firebolt', 'cold');
     const outcome = performAltarRite(engine, player, altar('galdr_altar_odin'), ALTAR_X, ALTAR_Y, {
+      offeringKind: 'spell',
+      offeringId: 'magic_arrow',
+      targetSpellId: 'firebolt',
+    });
+    expect(outcome.success).toBe(true);
+    expect(player.spellsKnown).not.toContain('magic_arrow');
+    expect(forgedElements(player.grimoireState!, 'firebolt')).toEqual(['arcane']);
+    expect(outcome.message).toContain('Firebolt, rune-forged');
+  });
+
+  it('keeps an element fate gave through a re-forge', () => {
+    player.forgeSpell('firebolt', 'healing', 'of Renewal');
+    giveEssence('essence_isa');
+    performAltarRite(engine, player, altar('galdr_altar_odin'), ALTAR_X, ALTAR_Y, {
+      offeringKind: 'essence',
+      offeringId: 'essence_isa',
+      targetSpellId: 'firebolt',
+    });
+    expect(forgedElements(player.grimoireState!, 'firebolt')).toEqual(['healing', 'cold']);
+    expect(forgedTitle(COTW_GRIMOIRES, player.grimoireState!, { id: 'firebolt', name: 'Firebolt', element: 'fire' })).toBe('Firebolt, of Renewal, steam-forged');
+  });
+
+  it('refuses an element the spell already carries, and a spell forged with itself, burning nothing', () => {
+    giveEssence('essence_kenaz');
+    const same = performAltarRite(engine, player, altar('galdr_altar_odin'), ALTAR_X, ALTAR_Y, {
       offeringKind: 'essence',
       offeringId: 'essence_kenaz',
       targetSpellId: 'firebolt', // fire + fire
     });
-    expect(outcome.success).toBe(false);
+    const self = performAltarRite(engine, player, altar('galdr_altar_odin'), ALTAR_X, ALTAR_Y, {
+      offeringKind: 'spell',
+      offeringId: 'firebolt',
+      targetSpellId: 'firebolt',
+    });
+    expect(same.success).toBe(false);
+    expect(self.success).toBe(false);
     expect(player.spellsKnown).toContain('firebolt');
     expect(listAltarOfferings(engine, player).some((o) => o.id === 'essence_kenaz')).toBe(true);
+    expect(isAltarSpent(engine, ALTAR_X, ALTAR_Y)).toBe(false);
   });
 
   describe("Hel's Grave-Altar", () => {

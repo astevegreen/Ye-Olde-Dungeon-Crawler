@@ -115,6 +115,23 @@ export const COTW_GRIMOIRES: GrimoireSystemConfig = {
     { id: 'swift', name: 'Swift', description: 'casts in ¾, then ⅔, then ½ of a turn', kind: 'swift', castTimeByStep: [3 / 4, 2 / 3, 1 / 2] },
   ],
   lending: COTW_LENDING,
+  // The old fusions' names live on as titles: "Cold Ray, steam-forged".
+  forging: {
+    titles: {
+      'cold+fire': 'steam',
+      'fire+lightning': 'Surtr',
+      'cold+lightning': 'hail',
+      'arcane+fire': 'rune',
+      'arcane+cold': 'rime',
+      'arcane+lightning': 'galdr',
+      'fire+shadow': 'Hel',
+      'fire+physical': 'iron',
+      'cold+physical': 'ice',
+      'lightning+physical': 'thunder',
+      'arcane+healing': 'mending',
+      'healing+physical': 'blessing',
+    },
+  },
   retired: {
     spells: {
       heal_minor: 'heal_spell',

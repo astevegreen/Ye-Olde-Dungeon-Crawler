@@ -21,6 +21,7 @@ import {
   effectiveHpCost as effectiveHpCostOf,
   effectiveManaCost as effectiveManaCostOf,
   heroResolvedCast,
+  withForgedElements,
   withSlotStats,
   withSpellRangeBonus,
 } from '../magic/castNumbers';
@@ -86,7 +87,7 @@ export class CastSpellAction implements Action {
     if (player && !this.freeCast && player.grimoireSystem && !resolved) {
       return { success: false, cost: 0, message: `${spell.name} is in no grimoire slot. Place it in the spellbook to cast it.` };
     }
-    if (resolved) spell = withSlotStats(spell, resolved.stats);
+    if (resolved) spell = withForgedElements(withSlotStats(spell, resolved.stats), resolved.elements.slice(1));
     // Reach the caster wears and holds (Odin's Eye), as `resolveCast` shows it.
     spell = withSpellRangeBonus(this.caster, spell);
 

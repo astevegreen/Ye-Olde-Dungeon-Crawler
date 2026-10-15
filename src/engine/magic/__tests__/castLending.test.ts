@@ -136,6 +136,29 @@ describe('casting through the grimoires (P-30)', () => {
     expect([has(target, 'burning'), has(target, 'paralyzed')].filter(Boolean)).toHaveLength(1);
   });
 
+  it('a forged element gets past an immunity to the spell’s own, and rides its hit as a flavour', () => {
+    const { engine, hero } = setup([['row', 1, 0, 'chain_lightning']], (s) => s.forged.push({ spellId: 'chain_lightning', element: 'cold' }));
+    const target = new Monster({ id: 'grounded', name: 'grounded', position: { x: 6, y: 5 }, stats: { hp: 500, maxHp: 500, attack: 1, defense: 0 }, resistances: { lightning: 'immune' }, speed: 100 });
+    engine.map.addEntity(target);
+    expect(new CastSpellAction(hero, 'chain_lightning', 6, 5).perform(engine).success).toBe(true);
+    expect(target.hp).toBeLessThan(target.maxHp);
+    expect(has(target, 'slow')).toBe(true);
+    const cast = heroResolvedCasts(engine).find((c) => c.spellId === 'chain_lightning')!;
+    expect(cast.elements).toEqual(['lightning', 'cold']);
+    expect(cast.lends).toMatchObject([{ flavourId: 'cold', from: [] }]);
+  });
+
+  it('a forged terrain spell always takes its added element as its material', () => {
+    const { engine, hero } = setup([['row', 0, 0, 'quake'], ['row', 1, 0, 'pass_the_burden']], (s) => s.forged.push({ spellId: 'quake', element: 'fire' }));
+    for (let i = 0; i < 4; i++) {
+      const target = foe(engine, `dummy${i}`, 6, 5 + i - 1);
+      hero.restoreMana(hero.maxMana);
+      new CastSpellAction(hero, 'quake', target.x, target.y).perform(engine);
+      expect(has(target, 'burning')).toBe(true);
+      expect(has(target, 'paralyzed')).toBe(false);
+    }
+  });
+
   it('Duration lengthens the spell’s own status, even with no spell type', () => {
     const { engine, hero } = setup([['row', 1, 0, 'brand']], (s) => s.statPicks.push({ grimoireId: 'row', axis: 'x', statId: 'duration' }));
     const target = foe(engine, 'dummy', 6);

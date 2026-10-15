@@ -7,7 +7,7 @@ import type { FirstTimeHintDefinition, FirstTimeHintId } from '../../engine';
 export const COTW_FIRST_TIME_HINTS: Partial<Record<FirstTimeHintId, FirstTimeHintDefinition>> = {
   altar: {
     title: 'Altars',
-    text: 'Each god\'s altar works one rite on your grimoires. Týr doubles one slot\'s lend, Hel is free: she re-picks a grimoire\'s stats or adds a slot, and clears your debt. Odin transmutes a spell and Loki gambles with fate. The rest ask an offering burnt on them. Step away and the altar waits for you.',
+    text: 'Each god\'s altar works one rite on your grimoires. Týr doubles one slot\'s lend, Hel is free: she re-picks a grimoire\'s stats or adds a slot, and clears your debt. Odin forges a second element onto a spell, and Loki gambles with fate. The rest ask an offering burnt on them. Step away and the altar waits for you.',
   },
   killRite: {
     title: 'Kill rites',

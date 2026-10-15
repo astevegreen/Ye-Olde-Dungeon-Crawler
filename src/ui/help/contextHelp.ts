@@ -116,7 +116,7 @@ export class ContextHelp {
             { key: 'Enter', label: 'Perform the rite (a burnt offering is gone)' },
             { key: 'Esc', label: 'Step away; the altar waits for you' },
           ],
-          tip: 'Tip: Each altar works its own rite: one doubles what a grimoire slot lends the spells beside it, one chooses a grimoire\'s stats afresh or adds a slot, free, one transmutes a spell, and one gambles.',
+          tip: 'Tip: Each altar works its own rite: one doubles what a grimoire slot lends the spells beside it, one chooses a grimoire\'s stats afresh or adds a slot, free, one forges a second element onto a spell, and one gambles.',
         };
 
       case 'spellbook': {

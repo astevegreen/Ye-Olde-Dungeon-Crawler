@@ -188,7 +188,13 @@ export function renderGrimoires(engine: GameEngine, player: Player, chosen: Spel
       lines.push(steps.length ? `Stats here: ${steps.map((s) => `${escapeHtml(s.stat.name)} ×${s.steps}`).join(', ')}.` : 'No stat reaches this slot.');
       if (spell && cast) {
         lines.push(`${escapeHtml(spell.name)} cast from here: ${cost} ${escapeHtml(unit)}${power ? `, power ${power}` : ''}.`);
-        for (const lend of cast.lends) lines.push(`Borrows ${escapeHtml(lend.name)}${lend.doubled ? ' (doubled)' : ''} from ${lend.from.map((f) => escapeHtml(nameAt(f))).join(' and ')}.`);
+        for (const lend of cast.lends) {
+          lines.push(
+            lend.from.length
+              ? `Borrows ${escapeHtml(lend.name)}${lend.doubled ? ' (doubled)' : ''} from ${lend.from.map((f) => escapeHtml(nameAt(f))).join(' and ')}.`
+              : `Carries ${escapeHtml(lend.name)} from its forging.`
+          );
+        }
         if (cast.gives.length) lines.push(`Lends its neighbours ${cast.gives.map((g) => escapeHtml(system.lending?.flavours.find((f) => f.id === g)?.name ?? g)).join(', ')}.`);
       }
       if (doubled) lines.push('Its lend is doubled.');

@@ -136,9 +136,9 @@ export const COTW_MAGIC: MagicSystemConfig = {
       id: 'galdr_altar_odin',
       name: "Odin's Gallows-Stone",
       description:
-        'Odin hung nine nights to win the runes. Give up an offering here, a spell you know or an Essence-Rune, to fuse one of your spells with its element, forging a new spell in its place.',
+        'Odin hung nine nights to win the runes. Give up an offering here, a spell you know or an Essence-Rune, and one of your spells takes its element beside its own: it strikes as whichever of the two hurts the foe more, and lends both. Forging a spell again swaps the element it was given.',
       rite: 'forge',
-      performedMessage: 'Odin takes {offering}. {spell} is reforged as {hybrid}.',
+      performedMessage: 'Odin takes {offering}. {spell} is reforged: {title}.',
       spentMessage: '{altar} is silent; the Hanged One has taken his due.',
     },
     {

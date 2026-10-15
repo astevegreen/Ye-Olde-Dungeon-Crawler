@@ -33,7 +33,10 @@ export interface KillRiteDefinition {
 
 /** How the killing blow landed, as reported by whatever dealt it. */
 export interface KillContext {
+  /** The element the killing blow landed as. */
   damageElement?: ElementType;
+  /** Every element the killing blow carried (a forged spell's): a rite asking for any of them is met. */
+  damageElements?: ElementType[];
   /** Full damage of the killing blow, before it was capped at the victim's remaining HP. */
   damageDealt?: number;
   remainingHpBeforeBlow?: number;
@@ -60,7 +63,8 @@ export function killRiteConditionsMet(
   victim: Entity,
   context?: KillContext
 ): boolean {
-  if (rite.requiredDamageElement && context?.damageElement !== rite.requiredDamageElement) return false;
+  const required = rite.requiredDamageElement;
+  if (required && context?.damageElement !== required && !context?.damageElements?.includes(required)) return false;
   if (rite.requiredVictimStatus && !victim.statusManager.hasStatus(rite.requiredVictimStatus)) return false;
 
   // A kill with no reported blow (e.g. a surface or status) can't prove an overkill.

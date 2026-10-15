@@ -101,6 +101,9 @@ export * from './magic/magicConfig';
 export * from './magic/killRites';
 export * from './magic/altars';
 export * from './magic/grimoireMatrix';
+export { grimoireCells, grimoireAxes, isSlotDoubled, pendingStatPicks, slotStatSteps, spellAt, statPickFor } from './magic/grimoires';
+export type { GrimoireSlotRef, GrimoireState } from './magic/grimoires';
+export type { ResolvedCast } from './magic/neighbourLending';
 
 // Surfaces & Elemental Reactions
 export * from './surfaces/surfaceGrid';

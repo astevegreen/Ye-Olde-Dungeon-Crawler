@@ -20,6 +20,7 @@ import { escapeHtml, keyChip } from '../html';
 import { grimoireGridHtml } from '../grimoireGrid';
 import { spellPower } from '../spellPower';
 import { resolveBranding } from '../branding';
+import { GRIMOIRE_INFO_DEFAULT, castFromSlot, renderGrimoires } from './spellbookGrimoires';
 
 export interface SpellbookTabOptions {
   onCastSpell: (spell: SpellDefinition) => void;
@@ -28,6 +29,12 @@ export interface SpellbookTabOptions {
   onSwitchGrimoirePage: (pageIndex: number) => void;
   /** Put a spell in a grimoire slot, or clear it with null; a player action, since it can cost a turn in combat. */
   onArrangeGrimoireSlot: (slotIndex: number, spellId: string | null) => void;
+  /** Three-grimoire model: put a spell in a slot (or move it there); a player action. */
+  onPlaceGrimoireSpell: (spellId: string, grimoireId: string, x: number, y: number) => void;
+  /** Three-grimoire model: forget a spell for the rest of the run; a player action. */
+  onForgetSpell: (spellId: string) => void;
+  /** Three-grimoire model: choose the stat of a grimoire axis that has none. */
+  onPickGrimoireStat: (grimoireId: string, axis: 'x' | 'y', statId: string) => void;
 }
 
 const SLOT_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
@@ -61,6 +68,11 @@ export class SpellbookTab implements MenuTab {
   private selectedIndex = 0;
   /** Each slot's description, built with the grid, shown under it on hover or focus. */
   private slotInfo: string[] = [];
+  /** The three-grimoire model's slot descriptions, by "x,y", and the grimoire on show. */
+  private grimoireSlotInfo: Record<string, string> = {};
+  private activeGrimoireId: string | undefined;
+  /** The spell whose Forget button has been pressed once, awaiting its confirmation. */
+  private confirmForget: string | null = null;
 
   constructor(options: Partial<SpellbookTabOptions> = {}) {
     this.options = {
@@ -68,6 +80,9 @@ export class SpellbookTab implements MenuTab {
       onQuickSpellsChanged: () => {},
       onSwitchGrimoirePage: () => {},
       onArrangeGrimoireSlot: () => {},
+      onPlaceGrimoireSpell: () => {},
+      onForgetSpell: () => {},
+      onPickGrimoireStat: () => {},
       ...options,
     };
   }
@@ -156,12 +171,22 @@ export class SpellbookTab implements MenuTab {
   public render(): void {
     if (!this.container || !this.engine) return;
     const player = this.engine.player;
-    const grimoire = getGrimoireConfig(this.engine);
+    const grimoires = player.grimoireSystem !== undefined;
+    const grimoire = !grimoires && getGrimoireConfig(this.engine);
+    let side = '';
+    if (grimoires) {
+      const view = renderGrimoires(this.engine, player, this.selectedSpell, this.activeGrimoireId);
+      this.activeGrimoireId = view.grimoireId;
+      this.grimoireSlotInfo = view.slotInfo;
+      side = `<div class="ui-col ui-scroll">${view.html}</div>`;
+    } else if (grimoire) {
+      side = `<div class="ui-col ui-scroll">${this.renderGrimoire(player)}</div>`;
+    }
     this.container.innerHTML = `
-      <div class="ui-tabgrid sb-grid${grimoire ? ' has-grimoire' : ''}">
+      <div class="ui-tabgrid sb-grid${side ? ' has-grimoire' : ''}">
         <div class="ui-col">${this.renderList(player)}</div>
         <div class="ui-col ui-scroll">${this.renderDetail(player)}${this.renderFusions(player)}</div>
-        ${grimoire ? `<div class="ui-col ui-scroll">${this.renderGrimoire(player)}</div>` : ''}
+        ${side}
       </div>`;
     this.bind();
   }
@@ -185,6 +210,7 @@ export class SpellbookTab implements MenuTab {
         this.render();
       });
     });
+    this.bindGrimoires(root);
     const info = root.querySelector<HTMLElement>('#sb-slot-info');
     root.querySelectorAll<HTMLElement>('[data-grimoire-slot]').forEach((cell) => {
       const show = () => {
@@ -208,6 +234,63 @@ export class SpellbookTab implements MenuTab {
     });
   }
 
+  /** The three-grimoire model's controls: switcher, slots, stat pickers, forget. */
+  private bindGrimoires(root: HTMLElement): void {
+    root.querySelectorAll<HTMLElement>('[data-grimoire]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        this.activeGrimoireId = btn.getAttribute('data-grimoire') ?? undefined;
+        this.render();
+      });
+    });
+    root.querySelectorAll<HTMLElement>('[data-pick-stat]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        this.options.onPickGrimoireStat(
+          btn.getAttribute('data-pick-grimoire')!,
+          btn.getAttribute('data-pick-axis') as 'x' | 'y',
+          btn.getAttribute('data-pick-stat')!
+        );
+        this.render();
+      });
+    });
+    root.querySelectorAll<HTMLElement>('[data-forget]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const spell = this.selectedSpell;
+        if (!spell) return;
+        const answer = btn.getAttribute('data-forget');
+        if (answer === 'ask') this.confirmForget = spell.id;
+        else if (answer === 'yes') {
+          this.confirmForget = null;
+          this.options.onForgetSpell(spell.id);
+          this.spells = this.spells.filter((s) => s.id !== spell.id);
+          this.selectedIndex = Math.min(this.selectedIndex, Math.max(0, this.spells.length - 1));
+        } else this.confirmForget = null;
+        this.render();
+      });
+    });
+    const info = root.querySelector<HTMLElement>('#sb-slot-info');
+    root.querySelectorAll<HTMLElement>('[data-gslot]').forEach((cell) => {
+      const key = cell.getAttribute('data-gslot') ?? '';
+      const show = () => {
+        if (info) info.innerHTML = this.grimoireSlotInfo[key] ?? GRIMOIRE_INFO_DEFAULT;
+      };
+      const hide = () => {
+        if (info) info.innerHTML = GRIMOIRE_INFO_DEFAULT;
+      };
+      cell.addEventListener('mouseenter', show);
+      cell.addEventListener('focus', show);
+      cell.addEventListener('mouseleave', hide);
+      cell.addEventListener('blur', hide);
+      cell.addEventListener('click', () => {
+        const spell = this.selectedSpell;
+        const grimoireId = this.activeGrimoireId;
+        if (!spell || !grimoireId) return;
+        const [x, y] = key.split(',').map(Number);
+        this.options.onPlaceGrimoireSpell(spell.id, grimoireId, x, y);
+        this.render();
+      });
+    });
+  }
+
   private renderList(player: Player): string {
     const mana = resolveManaTerms(this.engine!.manifest);
     const overflow = getOverflowConfig(this.engine!);
@@ -215,7 +298,9 @@ export class SpellbookTab implements MenuTab {
     const rows = this.spells
       .map((spell, i) => {
         const slot = player.quickSpells.indexOf(spell.id);
-        const cost = GrimoireMatrixManager.resolveCast(this.engine!, player, spell.id)?.spell.manaCost ?? spell.manaCost ?? 0;
+        const cost = player.grimoireSystem
+          ? effectiveManaCost(player, spell)
+          : (GrimoireMatrixManager.resolveCast(this.engine!, player, spell.id)?.spell.manaCost ?? spell.manaCost ?? 0);
         return `
           <button type="button" class="bs-row sb-row${i === this.selectedIndex ? ' is-selected' : ''}" data-spell-index="${i}">
             <span class="bs-name">${slot >= 0 ? `${keyChip(SLOT_KEYS[slot])} ` : ''}${escapeHtml(spell.name)}</span>
@@ -239,9 +324,12 @@ export class SpellbookTab implements MenuTab {
     const engine = this.engine!;
     const unit = resolveManaTerms(engine.manifest).unit;
     // As cast from its grimoire slot on the active page, if it has one
-    const slotIndex = getGrimoireConfig(engine) ? GrimoireMatrixManager.findSlotForSpell(player, spell.id) : undefined;
+    const grimoires = player.grimoireSystem !== undefined;
+    const slotIndex = !grimoires && getGrimoireConfig(engine) ? GrimoireMatrixManager.findSlotForSpell(player, spell.id) : undefined;
     const effective = slotIndex !== undefined ? GrimoireMatrixManager.resolveEffectiveSpellDetailed(engine, player, slotIndex) : undefined;
-    const cast = effective?.spell ?? spell;
+    const slotted = grimoires ? castFromSlot(engine, player, spell) : undefined;
+    const cast = slotted?.cast ?? effective?.spell ?? spell;
+    const notes = slotted?.notes ?? effective?.notes ?? [];
     const changed = (base: number, now: number): string => (base === now ? `${now}` : `${base} → <span class="ui-up">${now}</span>`);
     const slots = SLOT_KEYS.map((key, s) => {
       const mine = player.quickSpells[s] === spell.id;
@@ -260,14 +348,23 @@ export class SpellbookTab implements MenuTab {
           <dt>Area</dt><dd class="ui-num">${cast.areaOfEffect ? `${changed(spell.areaOfEffect, cast.areaOfEffect)} radius` : 'one target'}</dd>
           <dt>Bounces off walls</dt><dd>${spell.reflects ? 'yes' : 'no'}</dd>
         </dl>
-        ${effective && effective.notes.length > 0 ? `<div class="ui-note sb-notes"><b>From the grid:</b> ${effective.notes.map(escapeHtml).join(' · ')}</div>` : ''}
+        ${notes.length > 0 ? `<div class="ui-note sb-notes"><b>From the grid:</b> ${notes.map(escapeHtml).join(' · ')}</div>` : ''}
         <div class="sb-desc">${escapeHtml(spell.description || 'No one has written down what this does.')}</div>
       </div>
       <div class="ui-card">
         <div class="ui-h">Quickbar</div>
         <div class="sb-slots">${slots}</div>
         <div class="ui-note">Press 1–0 to put it on a slot; press again to take it off.</div>
-      </div>`;
+      </div>${grimoires ? this.renderForget(spell) : ''}`;
+  }
+
+  /** Forgetting is for the rest of the run, so it asks twice. */
+  private renderForget(spell: SpellDefinition): string {
+    if (this.confirmForget === spell.id) {
+      return `<div class="ui-card"><div class="ui-note">Forget ${escapeHtml(spell.name)} for the rest of this run? You will not learn it again.</div>
+        <div class="sb-slots"><button type="button" class="sb-slot" data-forget="yes">Forget it</button><button type="button" class="sb-slot" data-forget="no">Keep it</button></div></div>`;
+    }
+    return `<div class="ui-card"><button type="button" class="sb-slot" data-forget="ask">Forget ${escapeHtml(spell.name)}</button></div>`;
   }
 
   /**

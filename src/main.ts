@@ -1,6 +1,9 @@
 import {
   AttuneGrimoirePageAction,
   ArrangeGrimoireSlotAction,
+  PlaceGrimoireSpellAction,
+  ForgetSpellAction,
+  PickGrimoireStatAction,
   GrimoireMatrixManager,
   AutosaveManager,
   type AutosaveSlot,
@@ -523,6 +526,22 @@ window.addEventListener('DOMContentLoaded', () => {
       activeEngine.handlePlayerAction(new ArrangeGrimoireSlotAction(activeEngine.player, slotIndex, spellId));
       quickSpellsBar.update(activeEngine);
       void processVisualEffectsAndRender();
+    },
+    onPlaceGrimoireSpell: (spellId, grimoireId, x, y) => {
+      if (!activeEngine) return;
+      activeEngine.handlePlayerAction(new PlaceGrimoireSpellAction(activeEngine.player, spellId, grimoireId, x, y));
+      quickSpellsBar.update(activeEngine);
+      void processVisualEffectsAndRender();
+    },
+    onForgetSpell: (spellId) => {
+      if (!activeEngine) return;
+      activeEngine.handlePlayerAction(new ForgetSpellAction(activeEngine.player, spellId));
+      quickSpellsBar.update(activeEngine);
+      void processVisualEffectsAndRender();
+    },
+    onPickGrimoireStat: (grimoireId, axis, statId) => {
+      if (!activeEngine) return;
+      activeEngine.handlePlayerAction(new PickGrimoireStatAction(activeEngine.player, grimoireId, axis, statId));
     },
   });
 

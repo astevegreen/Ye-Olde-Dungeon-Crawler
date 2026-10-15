@@ -746,6 +746,22 @@ canvas.it-frame { box-shadow: 0 0 0 2px var(--it-frame); border-radius: 3px; }
 .sb-cell.is-center .sb-cell-head { color: var(--ui-title); }
 .sb-cell-spell { font-size: var(--ui-text-sm); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sb-cell-empty, .sb-sealed { font-style: italic; color: var(--ui-text-faint); }
+/* Three grimoires: a slot cut from the 3x3 is simply absent, and what a slot borrows reads under its name. */
+.sb-cell.is-void { border: 0; background: none; cursor: default; pointer-events: none; }
+.sb-cell-lend { color: var(--ui-info); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-axes { display: flex; flex-wrap: wrap; gap: var(--ui-space-1) var(--ui-space-2); margin: var(--ui-space-2) 0; font-size: var(--ui-text-sm); color: var(--ui-text-soft); }
+.sb-pick { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-1); margin-bottom: var(--ui-space-2); color: var(--ui-warn); }
+.sb-pick-btn {
+  appearance: none;
+  padding: 3px 8px;
+  font: var(--ui-text-sm) var(--ui-font-body);
+  color: var(--ui-text);
+  background: var(--ui-surface-3);
+  border: 1px solid var(--ui-line-strong);
+  border-radius: var(--ui-radius);
+  cursor: pointer;
+}
+.sb-pick-btn:hover { border-color: var(--ui-accent); }
 .sb-glyphs { color: var(--ui-xp); }
 .sb-fusion { display: flex; align-items: baseline; gap: var(--ui-space-2); padding: 2px 0; }
 .sb-fusion-name { font-weight: bold; }

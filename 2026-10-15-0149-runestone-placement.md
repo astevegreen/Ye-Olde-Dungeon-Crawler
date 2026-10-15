@@ -30,6 +30,7 @@ Owner, 15 Oct: "Let's figure out the rune stones locations and do a mental dry r
 ## Decisions
 - Neighbour rules no longer tentative — owner, 15 Oct (quoted above)
 - Placement and dry run were the next topic, ahead of the first-wave specs — owner, 15 Oct (Goal quote)
+- Every Decide-first recommendation taken, A–H included — owner: "approve all recommendations, but would it be feasible to start rune stones at floor 4 rather than floor 2? Discuss". Folded into the main page; the child page's gaps section became "Still open: the first stone on floor 2 or 4?" (recommend 4).
 
 ## Read first
 - The child page above (everything in this task)

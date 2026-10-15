@@ -23,6 +23,7 @@ Opus at high thinking — 3a is engine design and a cross-file change (AI, comba
 
 ## Decisions
 - Phase 2 merged to `main` and deployed — owner: "Yes"
+- Start 3a now — owner: "resume phase 3a"
 - No soak runs until the magic work lands; measuring magic is Phase 7 (memory `soak-after-magic`).
 
 ## Read first

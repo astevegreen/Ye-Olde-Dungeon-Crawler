@@ -12,9 +12,7 @@ Owner: "Plan the implementation of the revised cotw magic system. Plan only: cha
 - Uncommitted: none
 
 ## Next
-1. Rerun the five inventories (≤5 heavy agents at once), each asked for exists/partial/missing with path:line.
-2. Draft the plan around this working shape (not yet checked against the inventories): dormant engine capabilities land on main first; the "switch" (three grimoires + axes + neighbour lends + forge + removals + one save bump) is the only cluster that can't ship in pieces, so it goes on a short-lived branch; new spells are born into the new grimoire; shard-and-stone learning follows; wave 2 (temporary walls) after; measuring magic (item 9) last.
-3. Create the Notion child page, then report in chat.
+Complete. The plan is the Notion page "Magic implementation plan — 15 Oct 2026" (https://app.notion.com/p/3faeb012942f8151966add5a1946da01), a child of the main magic page; its "Start here" callout briefs session 1a-1. Six owner questions sit at its top; phase 1 waits on question 6 (the P-28–P-36 entries) only.
 
 ## Decisions
 - Measure magic last; no soak before it — owner, 13 Oct (memory soak-after-magic).

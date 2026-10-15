@@ -52,7 +52,9 @@ describe('legacy grimoire save fixtures', () => {
   });
 
   it('maps retired spells to their replacements', () => {
-    expect(load('hybrid-steam-lance').player.spellsKnown).toEqual(['magic_arrow', 'heal_spell', 'steam_lance']);
+    const steam = load('hybrid-steam-lance').player;
+    expect(steam.spellsKnown).toEqual(['magic_arrow', 'heal_spell', 'cold_ray']);
+    expect(steam.grimoireState!.forged).toEqual([{ spellId: 'cold_ray', element: 'fire' }]);
     expect(load('detect-and-teleport').player.spellsKnown).toEqual(['magic_arrow', 'heal_spell', 'detect_monsters', 'phase_door']);
   });
 

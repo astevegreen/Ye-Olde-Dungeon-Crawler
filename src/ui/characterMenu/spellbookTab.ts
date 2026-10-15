@@ -1,6 +1,7 @@
 import {
   forgedElements,
   forgedTitle,
+  forgePairKey,
   getOverflowConfig,
   getOverflowTier,
   getSpell,
@@ -168,7 +169,7 @@ export class SpellbookTab implements MenuTab {
     this.container.innerHTML = `
       <div class="ui-tabgrid sb-grid${side ? ' has-grimoire' : ''}">
         <div class="ui-col">${this.renderList(player)}</div>
-        <div class="ui-col ui-scroll">${this.renderDetail(player)}${this.renderFusions(player)}</div>
+        <div class="ui-col ui-scroll">${this.renderDetail(player)}${this.renderForging(player)}</div>
         ${side}
       </div>`;
     this.bind();
@@ -354,30 +355,36 @@ export class SpellbookTab implements MenuTab {
   }
 
   /**
-   * The fusions the hero knows (Q19, Q32): the pack's `magic.hybrids` whose spell is known
-   * (forged, or won), or told by a lore entry already read (`fusionSpellId`). Unknown ones
-   * stay off the list; the count says how many remain.
+   * The forgings the hero knows (Q19, Q32): the pairs of elements the pack names
+   * (`forging.titles`) that a known spell is forged with, or that a lore entry already read
+   * tells of (`forgePair`). Unknown ones stay off the list; the count says how many remain.
    */
-  private renderFusions(player: Player): string {
+  private renderForging(player: Player): string {
     const engine = this.engine!;
-    const hybrids = engine.manifest?.magic?.hybrids ?? [];
-    if (hybrids.length === 0) return '';
-    const flags = engine.worldState.flags ?? {};
-    const told = new Set((engine.manifest?.loreEntries ?? []).filter((l) => l.fusionSpellId && flags[l.flag]).map((l) => l.fusionSpellId!));
-    const rows = hybrids
-      .map((h) => {
-        const forged = player.spellsKnown.includes(h.spellId);
-        if (!forged && !told.has(h.spellId)) return '';
-        const name = (engine.manifest?.spells?.find((s) => s.id === h.spellId) ?? getSpell(h.spellId))?.name ?? h.spellId;
-        return `<div class="sb-fusion"><span class="sb-fusion-name">${escapeHtml(name)}</span> <span class="ui-faint">${escapeHtml(h.elements.join(' + '))}</span><span class="ui-note sb-fusion-src">${forged ? 'known' : 'told'}</span></div>`;
+    const titles = player.grimoireSystem?.forging?.titles ?? {};
+    const pairs = Object.keys(titles);
+    if (pairs.length === 0) return '';
+    const forged = new Set(
+      (player.grimoireState?.forged ?? []).flatMap((f) => {
+        if (!player.spellsKnown.includes(f.spellId)) return [];
+        const spell = engine.manifest?.spells?.find((s) => s.id === f.spellId) ?? getSpell(f.spellId);
+        return spell?.element ? [forgePairKey(spell.element, f.element)] : [];
       })
-      .filter(Boolean);
+    );
+    const flags = engine.worldState.flags ?? {};
+    const told = new Set((engine.manifest?.loreEntries ?? []).filter((l) => l.forgePair && flags[l.flag]).map((l) => forgePairKey(...l.forgePair!)));
+    const rows = pairs
+      .filter((pair) => forged.has(pair) || told.has(pair))
+      .map(
+        (pair) =>
+          `<div class="sb-pair"><span class="sb-pair-name">${escapeHtml(titles[pair])}-forged</span> <span class="ui-faint">${escapeHtml(pair.split('+').join(' + '))}</span><span class="ui-note sb-pair-src">${forged.has(pair) ? 'known' : 'told'}</span></div>`
+      );
     const forges = (engine.manifest?.magic?.altars ?? []).filter((a) => a.rite === 'forge').map((a) => a.name);
-    const where = forges.length ? `Forged at ${forges.join(' or ')}: a spell of one element, and an offering of the other.` : '';
+    const where = forges.length ? `Forged at ${forges.join(' or ')}: a known spell takes a second element, for a rune of it or a spell of it forgotten.` : '';
     const lore = resolveBranding(engine.manifest).loreTitle;
     return `
       <div class="ui-card">
-        <div class="ui-h">Fusions <small>${rows.length} of ${hybrids.length} known</small></div>
+        <div class="ui-h">Forging <small>${rows.length} of ${pairs.length} known</small></div>
         ${rows.join('') || `<div class="ui-note">None known yet. ${escapeHtml(lore)} tell of some; others wait to be found.</div>`}
         ${where ? `<div class="ui-note">${escapeHtml(where)}</div>` : ''}
       </div>`;

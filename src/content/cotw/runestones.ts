@@ -4,7 +4,7 @@ import { IRON_CLANS_MET_FLAG } from './ironClans';
 /**
  * Six Skaldic Runestones distributed across the descent (floors 8, 14, 20, 28, 38, 48).
  * Each runestone delivers an episodic chapter of the campaign saga, coupled with an
- * explicit RUNIC SPELL HINT detailing kill rites, hybrid elemental fusions at Odin's
+ * explicit RUNIC SPELL HINT detailing kill rites, the pairs of elements forged at Odin's
  * Gallows-Stone, and what grimoire neighbours lend.
  */
 
@@ -29,7 +29,7 @@ export const SKALDIC_RUNESTONE_TILES: TileDefinition[] = [
     transparent: true,
     glyph: 'ᚱ',
     visual: 'altar',
-    description: 'A soot-blackened duergar stele detailing the ancient giant-dwarven alliance and the fusion of fire and cold.',
+    description: 'A soot-blackened duergar stele detailing the ancient giant-dwarven alliance and the forging of fire and cold.',
     interactionHandlerId: 'skaldic_runestone_2',
     landmarkLabel: 'Runestone: Deep Smithy ᚱ',
   },
@@ -41,7 +41,7 @@ export const SKALDIC_RUNESTONE_TILES: TileDefinition[] = [
     transparent: true,
     glyph: 'ᚱ',
     visual: 'altar',
-    description: 'A glowing obsidian slab recording how Sól’s sun-chariot was snared, and the secret of Surtr’s rebounding thunder-flame.',
+    description: 'A glowing obsidian slab recording how Sól’s sun-chariot was snared, and how Surtr’s fire is forged into thunder.',
     interactionHandlerId: 'skaldic_runestone_3',
     landmarkLabel: 'Runestone: Stolen Dawn ᚱ',
   },
@@ -53,7 +53,7 @@ export const SKALDIC_RUNESTONE_TILES: TileDefinition[] = [
     transparent: true,
     glyph: 'ᚱ',
     visual: 'altar',
-    description: 'A silver-veined monument weeping mercury, warning how forge heat woke Níðhögg, and imparting the Rime Shard formula.',
+    description: 'A silver-veined monument weeping mercury, warning how forge heat woke Níðhögg, and telling how rime is forged with runes.',
     interactionHandlerId: 'skaldic_runestone_4',
     landmarkLabel: 'Runestone: Weeping Roots ᚱ',
   },
@@ -65,7 +65,7 @@ export const SKALDIC_RUNESTONE_TILES: TileDefinition[] = [
     transparent: true,
     glyph: 'ᚱ',
     visual: 'altar',
-    description: 'A living world-bark pillar carved with glowing threads of fate, revealing the Hagalaz Hail tempest rite.',
+    description: 'A living world-bark pillar carved with glowing threads of fate, revealing how hail is forged from frost and storm.',
     interactionHandlerId: 'skaldic_runestone_5',
     landmarkLabel: 'Runestone: The Norns ᚱ',
   },
@@ -77,7 +77,7 @@ export const SKALDIC_RUNESTONE_TILES: TileDefinition[] = [
     transparent: true,
     glyph: 'ᚱ',
     visual: 'altar',
-    description: 'The final abyssal runestone above Náströnd, prophesying the duel at the Heartwood and telling how the Thunder Maul is forged.',
+    description: 'The final abyssal runestone above Náströnd, prophesying the duel at the Heartwood and telling how thunder is forged into iron.',
     interactionHandlerId: 'skaldic_runestone_6',
     landmarkLabel: 'Runestone: Twilight Doom ᚱ',
   },
@@ -96,38 +96,38 @@ export const SKALDIC_RUNESTONE_LORE: LoreEntryDefinition[] = [
   },
   {
     flag: 'skaldic_runestone_2_resolved',
-    fusionSpellId: 'steam_lance',
     title: 'The Smithy’s Accord',
     verse: 'Here the sons of Ivaldi and the smiths of Jötunheim struck the treaty of steel.\nWhere fire meets ice, neither destroys the other—they fuse into scalding mist.\nThe Hanged God taught us: give what is dear at his Gallows-Stone, and a greater craft is born.',
-    lore: 'At Odin’s Gallows-Stone, offering Cold to Firebolt (or Fire to Cold Ray) reforges the spell into "Steam Lance"—dealing 10 fire and 10 cold damage to pierce single-element resistance!',
+    lore: 'At Odin’s Gallows-Stone, forge Fire onto Cold Ray (or Cold onto Firebolt) for a steam-forged spell: it strikes as whichever of the two its target fears more. Fire and cold are opposites, so the forge adds a quarter to its power!',
+    forgePair: ['cold', 'fire'],
   },
   {
     flag: 'skaldic_runestone_3_resolved',
-    fusionSpellId: 'surtr_brand',
     title: 'Lay of the Stolen Dawn',
     verse: 'In the high sky, Sól’s horses galloped, until iron nets dragged the golden chariot low.\nThe coven built the Siphon to harness the sun’s blinding wrath,\nheedless that the fires below would burn through the deep roots of the world.',
-    lore: 'At Odin’s Gallows-Stone, offering Lightning to Fire (or Fire to Lightning Bolt) fuses into "Surtr’s Brand"—a thunderbolt wreathed in fire that rebounds off stone walls for 12 lightning and 8 fire damage!',
+    lore: 'At Odin’s Gallows-Stone, forge Fire onto Lightning Bolt (or Lightning onto Firebolt) for a Surtr-forged spell: it strikes as whichever of fire and lightning its target fears more, and lends both to its grimoire neighbours!',
+    forgePair: ['fire', 'lightning'],
   },
   {
     flag: 'skaldic_runestone_4_resolved',
-    fusionSpellId: 'rime_shard',
     title: 'The Scorched Root’s Lament',
     verse: 'Hear, traveler of the silver lode: the sun-chariot’s fire has done its work.\nThe permafrost wards that held the Root-Gnawer in torpor have boiled away.\nNíðhögg has awakened. Its jaws drip necrotic venom into Yggdrasil’s taproot.\nReclaiming the Hearth-Tear was only the prelude—the dying World Tree calls below!',
-    lore: 'At Odin’s Gallows-Stone, offering Arcane to Cold (or Cold to Arcane) creates "Rime Shard"—inflicting 6 arcane and 8 cold damage while slowing the target for 3 turns!',
+    lore: 'At Odin’s Gallows-Stone, forge Arcane onto Cold Ray (or Cold onto Magic Arrow) for a rime-forged spell: it strikes as whichever of arcane and cold its target fears more, and lends both to its grimoire neighbours!',
+    forgePair: ['arcane', 'cold'],
   },
   {
     flag: 'skaldic_runestone_5_resolved',
-    fusionSpellId: 'hagalaz_hail',
     title: 'The Threads of Urðr',
     verse: 'Urðr sees what was, Verðandi what is, and Skuld what must be.\nThey whisper: the blood of Thrym was not made to serve the Aesir nor the Wyrm.\nIt was made to stand between them when the world-pillars crack.\nUnfurl the tempest of hail before entering the dragon’s lair!',
-    lore: 'At Odin’s Gallows-Stone, fusing Cold and Lightning creates "Hagalaz Hail"—a devastating 3x3 blizzard tempest dealing 10 cold and 8 lightning damage and stunning targets for 1 turn!',
+    lore: 'At Odin’s Gallows-Stone, forge Lightning onto Cold Ray (or Cold onto Lightning Bolt) for a hail-forged spell: it strikes as whichever of cold and lightning its target fears more!',
+    forgePair: ['cold', 'lightning'],
   },
   {
     flag: 'skaldic_runestone_6_resolved',
-    fusionSpellId: 'thunder_maul',
     title: 'The Twilight Prophecy',
     verse: 'Beyond lies the Heartwood on Floor 50, where Níðhögg uncoils upon the shredded World Root.\nHe who slays the dragon with blind fury shall split the dying root and usher in Ragnarök.\nOnly the warrior who masters both wrath and restraint may preserve Midgard.\nArm yourself with the Thunderer’s wrath for the battle of your saga!',
-    lore: 'At Odin’s Gallows-Stone, fusing Lightning and Physical power creates "Thunder Maul"—striking with the force of Thor for 14 lightning and 8 physical damage with guaranteed stun!',
+    lore: 'At Odin’s Gallows-Stone, forge Physical force onto Lightning Bolt for a thunder-forged spell: the Thunderer’s blow strikes as whichever of lightning and iron its target fears more!',
+    forgePair: ['lightning', 'physical'],
   },
 ];
 
@@ -187,7 +187,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
     id: 'skaldic_runestone_2',
     title: 'Skaldic Runestone: The Smithy’s Accord',
     description:
-      'Duergar chisel-marks score the blackened iron slab:\n\n“Here the sons of Ivaldi and the smiths of Jötunheim struck the treaty of steel.\nWhere fire meets ice, neither destroys the other—they fuse into scalding mist.\nThe Hanged God taught us: give what is dear at his Gallows-Stone, and a greater craft is born.”\n\nRunic diagrams illustrate elemental fusion at Odin’s Gallows-Stone.\n\nBelow the treaty, newer marks are gouged deep: Thrym’s rune, struck through with a broken hammer. The Iron Clans have not forgotten who broke the Accord, and the blood in your veins is his.',
+      'Duergar chisel-marks score the blackened iron slab:\n\n“Here the sons of Ivaldi and the smiths of Jötunheim struck the treaty of steel.\nWhere fire meets ice, neither destroys the other—they fuse into scalding mist.\nThe Hanged God taught us: give what is dear at his Gallows-Stone, and a greater craft is born.”\n\nRunic diagrams illustrate elemental forging at Odin’s Gallows-Stone.\n\nBelow the treaty, newer marks are gouged deep: Thrym’s rune, struck through with a broken hammer. The Iron Clans have not forgotten who broke the Accord, and the blood in your veins is his.',
     options: [
       {
         id: 'absorb_forge',
@@ -229,7 +229,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
     resolvedStates: [
       {
         flag: 'skaldic_runestone_2_resolved',
-        message: 'The Runestone of the Deep Smithy stands silent. The secrets of Steam Lance remain engraved in your mind.',
+        message: 'The Runestone of the Deep Smithy stands silent. The steam-forge remains engraved in your mind.',
       },
     ],
   },
@@ -278,7 +278,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
     resolvedStates: [
       {
         flag: 'skaldic_runestone_3_resolved',
-        message: 'The Runestone of the Stolen Dawn cools to a gentle hum. The formula of Surtr’s Brand is inscribed in your memory.',
+        message: 'The Runestone of the Stolen Dawn cools to a gentle hum. The Surtr-forge is inscribed in your memory.',
       },
     ],
   },
@@ -327,7 +327,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
     resolvedStates: [
       {
         flag: 'skaldic_runestone_4_resolved',
-        message: 'The Runestone of the Weeping Roots drips silent sap. The secret of Rime Shard is firmly etched in your mind.',
+        message: 'The Runestone of the Weeping Roots drips silent sap. The rime-forge is firmly etched in your mind.',
       },
     ],
   },
@@ -376,7 +376,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
     resolvedStates: [
       {
         flag: 'skaldic_runestone_5_resolved',
-        message: 'The Runestone of the Norns pulses with cosmic harmony. Its lore of Hagalaz Hail is kept under Carved Verses.',
+        message: 'The Runestone of the Norns pulses with cosmic harmony. Its lore of the hail-forge is kept under Carved Verses.',
       },
     ],
   },
@@ -391,7 +391,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
         id: 'thunder_maul',
         label: 'Take the Thunderer’s Strength',
         description:
-          'Take the Thunderer’s strength into your arms. Permanently increases base Attack by +1 and base Defense by +1, earns +15 Exploration Renown, and keeps the stone’s fusion lore (the Thunder Maul is forged at Odin’s Gallows-Stone).',
+          'Take the Thunderer’s strength into your arms. Permanently increases base Attack by +1 and base Defense by +1, earns +15 Exploration Renown, and keeps the stone’s forging lore (the thunder-forge, at Odin’s Gallows-Stone).',
         consequences: [
           { type: 'setFlag', flag: 'skaldic_runestone_6_resolved', value: true },
           { type: 'recordMilestone', milestoneId: 'twilight_prophecy_read' },
@@ -426,7 +426,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
     resolvedStates: [
       {
         flag: 'skaldic_runestone_6_resolved',
-        message: 'The Runestone of the Twilight Doom shines steadily against the dark. Its lore of the Thunder Maul is kept under Carved Verses.',
+        message: 'The Runestone of the Twilight Doom shines steadily against the dark. Its lore of the thunder-forge is kept under Carved Verses.',
       },
     ],
   },

@@ -139,6 +139,19 @@ export const COTW_GRIMOIRES: GrimoireSystemConfig = {
       teleport: 'phase_door',
       // Scroll-only now: a hero who knew it lets it go.
       identify: null,
+      // The fused spells of the old altar: each is its base spell, forged with the other element.
+      steam_lance: { spellId: 'cold_ray', addedElement: 'fire' },
+      surtr_brand: { spellId: 'lightning_bolt', addedElement: 'fire' },
+      hagalaz_hail: { spellId: 'cold_ray', addedElement: 'lightning' },
+      rune_flare: { spellId: 'fireball', addedElement: 'arcane' },
+      rime_shard: { spellId: 'cold_ray', addedElement: 'arcane' },
+      galdr_spark: { spellId: 'lightning_bolt', addedElement: 'arcane' },
+      hel_fire: { spellId: 'firebolt', addedElement: 'shadow' },
+      forge_bolt: { spellId: 'firebolt', addedElement: 'physical' },
+      ice_spear: { spellId: 'cold_ray', addedElement: 'physical' },
+      thunder_maul: { spellId: 'lightning_bolt', addedElement: 'physical' },
+      renewal: { spellId: 'heal_spell', addedElement: 'arcane' },
+      iron_blessing: { spellId: 'heal_spell', addedElement: 'physical' },
     },
     // Each old glyph comes back as the Essence-Rune of the element it was made from.
     glyphRunes: {

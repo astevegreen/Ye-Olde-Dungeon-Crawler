@@ -763,9 +763,9 @@ canvas.it-frame { box-shadow: 0 0 0 2px var(--it-frame); border-radius: 3px; }
 }
 .sb-pick-btn:hover { border-color: var(--ui-accent); }
 .sb-glyphs { color: var(--ui-xp); }
-.sb-fusion { display: flex; align-items: baseline; gap: var(--ui-space-2); padding: 2px 0; }
-.sb-fusion-name { font-weight: bold; }
-.sb-fusion-src { margin-left: auto; }
+.sb-pair { display: flex; align-items: baseline; gap: var(--ui-space-2); padding: 2px 0; }
+.sb-pair-name { font-weight: bold; }
+.sb-pair-src { margin-left: auto; }
 .sb-unseal { padding-left: var(--ui-space-2); border-left: 2px solid var(--ui-info); }
 
 /* The codex material (Q16, Q62 "A: vellum"; tracker 4.8): the books of lore (tabs with

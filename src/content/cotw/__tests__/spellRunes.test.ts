@@ -6,7 +6,7 @@ import { spellRuneKey } from '../../../ui/spellRunes';
 describe('cotw spell runes', () => {
   it('draws a rune for every element a cotw spell carries', () => {
     const spells = cotwManifest.spells ?? [];
-    expect(spells.length).toBeGreaterThan(30);
+    expect(spells.length).toBeGreaterThan(20);
     const missing = spells.filter((s) => !spellRuneKey(cotwManifest, s)).map((s) => `${s.id} (${s.element})`);
     expect(missing).toEqual([]);
   });

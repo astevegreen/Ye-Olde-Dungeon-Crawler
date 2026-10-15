@@ -11,7 +11,7 @@ Content is data in `src/content/cotw/` that the engine interprets, so a new mons
 |---|---|
 | a monster | [MONSTER.md](MONSTER.md) |
 | an item, a family tier, an item effect | [ITEM.md](ITEM.md) |
-| a spell or a hybrid spell | [SPELL.md](SPELL.md) |
+| a spell | [SPELL.md](SPELL.md) |
 | a vault | [VAULT.md](VAULT.md) |
 | a choice, a progress trigger, a countdown, a boss resolution, an ending | [STORY.md](STORY.md) |
 | a town NPC, a companion, a companion skill | [NPC.md](NPC.md) |

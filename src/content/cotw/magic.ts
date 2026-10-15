@@ -1,6 +1,5 @@
 import type { MagicSystemConfig } from '../../engine';
 import { COTW_ESSENCE_BY_ELEMENT } from './items/essences';
-import { COTW_HYBRID_RECIPES } from './hybridSpells';
 import { COTW_GRIMOIRES } from './grimoires';
 
 /** Spells Loki's Cairn may teach: every spell kill rites and tablets teach. */
@@ -121,7 +120,6 @@ export const COTW_MAGIC: MagicSystemConfig = {
     killsPerRevealedCondition: 2,
   },
   grimoires: COTW_GRIMOIRES,
-  hybrids: COTW_HYBRID_RECIPES,
   altars: [
     {
       id: 'galdr_altar_tyr',

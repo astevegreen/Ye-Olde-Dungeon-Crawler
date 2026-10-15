@@ -343,6 +343,11 @@ export function forgeSpellElement(state: GrimoireState, spellId: string, element
   state.forged.push(fated === undefined ? { spellId, element } : { spellId, element, fated });
 }
 
+/** Two elements as `forging.titles` keys them: alphabetical, joined by `+` (`cold+fire`). */
+export function forgePairKey(a: string, b: string): string {
+  return [a, b].sort().join('+');
+}
+
 /**
  * A forged spell's title: "Cold Ray, steam-forged" from the pack's word for the pair of
  * elements (`forging.titles`, else the added element), then fate's own words.
@@ -354,8 +359,7 @@ export function forgedTitle(config: GrimoireSystemConfig, state: GrimoireState, 
       parts.push(f.fated);
       continue;
     }
-    const pair = [String(spell.element), f.element].sort().join('+');
-    parts.push(`${config.forging?.titles?.[pair] ?? f.element}-forged`);
+    parts.push(`${config.forging?.titles?.[forgePairKey(String(spell.element), f.element)] ?? f.element}-forged`);
   }
   return parts.join(', ');
 }

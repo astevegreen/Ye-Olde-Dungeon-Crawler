@@ -23,6 +23,7 @@ const GRIMOIRES: GrimoireSystemConfig = {
   retired: {
     spells: {
       steam_lance: { spellId: 'cold_ray', addedElement: 'fire' },
+      hagalaz_hail: { spellId: 'cold_ray', addedElement: 'lightning' },
       teleport: 'phase_door',
       detect_monsters: 'clairvoyance',
     },
@@ -124,6 +125,19 @@ describe('convertLegacyMagic', () => {
     expect(result.state.placements.map((p) => p.spellId)).toEqual(['phase_door', 'cold_ray']);
     expect(result.state.forgotten).toEqual(['firebolt']);
     expect(result.refunds).toEqual([]);
+  });
+
+  it('gives a spell one forge when two retired spells fold into it, and keeps one already made', () => {
+    expect(convertLegacyMagic(GRIMOIRES, { spellsKnown: ['steam_lance', 'hagalaz_hail'], pages: [] }).state.forged).toEqual([{ spellId: 'cold_ray', element: 'fire' }]);
+    const made = convertLegacyMagic(GRIMOIRES, {
+      spellsKnown: ['cold_ray', 'steam_lance'],
+      pages: [],
+      state: {
+        opened: ['row'], placements: [], statPicks: [], extraSlots: [], doubledSlots: [], forgotten: [], offers: [], forgeOffers: [],
+        forged: [{ spellId: 'cold_ray', element: 'healing', fated: 'of Renewal' }, { spellId: 'cold_ray', element: 'physical' }],
+      },
+    });
+    expect(made.state.forged).toEqual([{ spellId: 'cold_ray', element: 'healing', fated: 'of Renewal' }, { spellId: 'cold_ray', element: 'physical' }]);
   });
 
   it('leaves a save with no retired spells, pages or statuses as it was', () => {

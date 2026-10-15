@@ -136,8 +136,9 @@ export function convertLegacyMagic(config: GrimoireSystemConfig, input: LegacyMa
     }
     pages = pages.map((page) => ({ ...page, slots: page.slots.map((s) => ({ ...s, infusedGlyphs: undefined })) }));
   }
+  // A spell takes one forge, as at the altar: the first carried over, or one already made, wins.
   for (const f of forged) {
-    if (!state.forged.some((o) => o.spellId === f.spellId && o.element === f.element)) state.forged.push(f);
+    if (!state.forged.some((o) => o.spellId === f.spellId && o.fated === undefined)) state.forged.push(f);
   }
 
   const retiredStatuses = [...ENGINE_RETIRED_STATUSES, ...(config.retired?.statuses ?? [])];

@@ -19,8 +19,6 @@ export interface MagicSystemConfig {
   grimoires?: GrimoireSystemConfig;
   killRites?: KillRiteConfig;
   altars?: AltarDefinition[];
-  /** Element pairs a forging altar fuses into a new spell (order-insensitive). */
-  hybrids?: HybridRecipe[];
 }
 
 // ─── Mana overflow ─────────────────────────────────────────────────────────
@@ -270,11 +268,6 @@ export interface AltarDefinition {
     doubleMessage: string;
     debtMessage: string;
   };
-}
-
-export interface HybridRecipe {
-  elements: [string, string];
-  spellId: string;
 }
 
 /** Fills `{key}` placeholders in a pack-provided message template. */

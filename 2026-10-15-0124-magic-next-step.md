@@ -19,6 +19,8 @@ Continue the owner's magic redesign dialogue (talk only; nothing is built until 
 
 ## Decisions
 - Outlier rules and lends — owner, 15 Oct (quotes on the page and in the claimed note)
+- Neighbour rules stop being tentative — owner, 15 Oct: "you can remove the tentative mark from spells now"
+- Next topic: runestone placement, then a playthrough dry run — owner, 15 Oct: "Let's figure out the rune stones locations and do a mental dry run/walkthrough of how a player would learn and apply all the spells in a playthrough"
 
 ## Read first
 - The Notion page: action item 6, "Grimoire redesign" (stat catalog, step sizes, Neighbour rules), the first-wave spells' entries under "Spell ideas"

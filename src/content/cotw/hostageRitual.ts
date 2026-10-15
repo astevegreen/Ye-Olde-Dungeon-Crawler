@@ -23,6 +23,7 @@ import {
 import { cotwMilestone } from './renown';
 import { COTW_MERCHANT_PRICING } from './factions';
 import { PROLOGUE_VILLAGERS, prologueVillagerTaken, type RaidVillagerId } from './prologue';
+import { ZEALOT_CLAIM_HEARD_FLAG } from './siphonPylon';
 
 /**
  * The Siphon Altar of Járnviðr (floor 22). Four captive villagers are bound around a
@@ -67,23 +68,23 @@ const BLOOD_PAIR = ['blood_reap', 'draugr_call'] as const;
  * The altar's mark, read from its own counter: half for one to three sacrificed, full for
  * all four. Old saves marked `blood_tainted_hero` sacrificed all four.
  */
-const MARK_FULL: Predicate = {
+export const ALTAR_MARK_FULL: Predicate = {
   type: 'or',
   predicates: [
     { type: 'minCounter', counter: COUNTER_SACRIFICED, value: 4 },
     { type: 'hasFlag', flag: 'blood_tainted_hero' },
   ],
 };
-const MARK_HALF: Predicate = {
+export const ALTAR_MARK_HALF: Predicate = {
   type: 'and',
-  predicates: [{ type: 'minCounter', counter: COUNTER_SACRIFICED, value: 1 }, { type: 'not', predicate: MARK_FULL }],
+  predicates: [{ type: 'minCounter', counter: COUNTER_SACRIFICED, value: 1 }, { type: 'not', predicate: ALTAR_MARK_FULL }],
 };
 /** Any mark at all: the darker lines in town and at Urðr's Pool read this. */
 export const ALTAR_MARKED: Predicate = { type: 'minCounter', counter: COUNTER_SACRIFICED, value: 1 };
 
 export const ALTAR_MARKS: HeroMarkDefinition[] = [
-  { id: 'altar_mark_half', label: 'Blood-marked', when: MARK_HALF, hudColor: 'var(--ui-warn)', detail: 'the altar took a captive for you' },
-  { id: 'altar_mark_full', label: 'Blood-marked, wholly', when: MARK_FULL, hudColor: 'var(--ui-bad)', detail: 'the altar took all four captives for you' },
+  { id: 'altar_mark_half', label: 'Blood-marked', when: ALTAR_MARK_HALF, hudColor: 'var(--ui-warn)', detail: 'the altar took a captive for you' },
+  { id: 'altar_mark_full', label: 'Blood-marked, wholly', when: ALTAR_MARK_FULL, hudColor: 'var(--ui-bad)', detail: 'the altar took all four captives for you' },
 ];
 
 /** The altar's mark on this hero: none, half or full. */
@@ -127,25 +128,52 @@ export const HOSTAGE_VILLAGERS: ScriptedVaultNpc[] = [
 const CAPTIVE_SHORT_NAMES = ['Ingrid', 'Torstein', 'Sigrid', 'Leif'];
 
 /**
+ * Two of the four offer themselves for the town's winter, the old way: in the Ynglinga saga
+ * a famine broke after the Swedes gave the gods their own king, Dómaldi. The other two, the
+ * child among them, want to live. What each says when the hero first comes upon the altar.
+ */
+const CAPTIVE_STANCES: Record<string, { willing: boolean; line: string }> = {
+  captive_villager_1: {
+    willing: true,
+    line: '“When famine held the Swedes, they gave the gods their own king, and the winter broke,” Ingrid says. “That is the old way. Let it be me, and let the others go.”',
+  },
+  captive_villager_2: {
+    willing: false,
+    line: '“I have a wife and a cooperage above,” Torstein says. “I want to go home.”',
+  },
+  captive_villager_3: {
+    willing: true,
+    line: '“My loom is cold and my sons are grown,” Sigrid says. “If blood will warm the town this winter, take mine.”',
+  },
+  captive_villager_4: {
+    willing: false,
+    line: 'Young Leif says nothing. He wants his mother.',
+  },
+};
+
+/**
  * A villager the coven dragged down at the end of the raid (prologue.ts) is bound here in a
  * captive's place, so the people taken that night come back into the story. The fourth
  * captive is nobody's stand-in.
  */
-const RAID_STAND_INS: Record<string, { villagerId: RaidVillagerId; greeting: string; rescued: string }> = {
+const RAID_STAND_INS: Record<string, { villagerId: RaidVillagerId; greeting: string; rescued: string; stance: string }> = {
   captive_villager_1: {
     villagerId: 'prologue-eir',
     greeting: 'You came all this way down? Cut my ropes, before they light the pyres!',
     rescued: '“Thor keep you,” Eir breathes, and her recall ward takes her home.',
+    stance: '“I keep Thor’s candles,” Eir says, steadier than you. “If the town’s winter wants a gift, let it be one who was ready. Let it be me.”',
   },
   captive_villager_2: {
     villagerId: 'prologue-sigrun',
     greeting: 'Is Father alive? Cut me loose, please, cut me loose!',
     rescued: '“Tell Father I am coming,” Sigrun gasps, and her recall ward takes her home.',
+    stance: '“Not me,” Sigrun says. “Father barred the door on me once. Don’t make him lose me twice.”',
   },
   captive_villager_3: {
     villagerId: 'prologue-brandr',
     greeting: 'They dragged me down from the plaza that night. Get me out of here!',
     rescued: '“Gunther still owes me a chisel,” Brandr laughs, half sobbing, and his recall ward takes him home.',
+    stance: '“Gunther can forge another chisel,” Brandr says, “and the town can find another apprentice. Let it be me.”',
   },
 };
 
@@ -392,18 +420,27 @@ function grantGifts(engine: EngineContext, count: number, pair: readonly [string
   return [frith ? 'The saved kin offer you one of their spells.' : 'The altar offers you one of its spells.'];
 }
 
-/** Settles every remaining captive according to the altar option chosen. */
+/**
+ * Settles every remaining captive according to the altar option chosen: all home, only the
+ * willing to the stones, or all of them to the stones.
+ */
 function applyAltarOption(engine: EngineContext, optionId: string): void {
-  const remaining = remainingCaptives(engine);
-  remaining.forEach((captive, index) => {
-    const rescue = optionId === 'rescue_all' || (optionId === 'balance_path' && index < 2);
+  for (const captive of remainingCaptives(engine)) {
+    const rescue = optionId === 'rescue_all' || (optionId === 'balance_path' && !isWilling(captive.id));
     if (rescue) {
       rescueCaptiveVillager(engine, captive.id);
     } else {
       sacrificeCaptiveVillager(engine, captive.id);
     }
-  });
+  }
 }
+
+/** How each altar option answers Vigdís, for a hero who heard her. */
+const ANSWERS_TO_HER_CLAIM: Record<string, string> = {
+  rescue_all: 'You overrule the ones who offered and send them home with the rest. Let Vigdís’s word die with her.',
+  balance_path: 'You take what was offered, as the old way asks, and not one life more on Vigdís’s word.',
+  harvest_all: 'Only blood will, Vigdís said. You take her at her word, and the unwilling with the willing.',
+};
 
 /**
  * Interactive choice for the Siphon Altar tile. The options only narrate; the
@@ -413,33 +450,33 @@ export const BLOOD_ALTAR_CHOICE: ChoiceDefinition = {
   id: SIPHON_ALTAR_CHOICE_ID,
   title: 'The Siphon Altar of Járnviðr',
   description:
-    'You stand before the ancient obsidian altar. Dark vitriol pools in concentric grooves carved into the stone. The captive villagers are bound at the chamber periphery while warlocks chant unholy rites.',
+    'You stand before the ancient obsidian altar. Dark vitriol pools in concentric grooves carved into the stone. The captive villagers are bound at the chamber’s edge while the warlocks chant. Some have offered themselves for the town’s winter; the others want only to go home.',
   options: [
     {
       id: 'rescue_all',
       label: 'Shatter the Siphon — Prioritize Rescuing Every Captive',
       description:
-        'Sunder the bindings and send every remaining captive home. Every two saved give you a frith spell; the temple and the town will remember it.',
+        'Sunder the bindings and send every remaining captive home, the willing too. Every two saved give you a frith spell; the temple and the town will remember it.',
       consequences: [
         { type: 'logMessage', message: 'You smash the warded runes of the siphon! The warlocks scream in frustration!' },
       ],
     },
     {
       id: 'balance_path',
-      label: 'Sever Half the Ties — A Calculated Compromise',
+      label: 'Take Only What Was Offered',
       description:
-        'Free two of the remaining captives and let the altar take the rest. Every two saved give a frith spell, every two taken a blood spell, and the altar marks you.',
+        'Let the altar take only those who offered themselves, and free the rest. Every two saved give a frith spell, every two taken a blood spell, and the altar marks you.',
       consequences: [
-        { type: 'logMessage', message: 'You break half the seals, and let the blood currents take the rest.' },
+        { type: 'logMessage', message: 'You cut the ropes of those who want to live, and leave the willing to the stones.' },
       ],
     },
     {
       id: 'harvest_all',
       label: 'Channel the Dark Altar — Feed It Every Captive',
       description:
-        'Let the siphon claim every remaining captive. Every two taken give you a blood spell paid for in your own HP, and the altar marks you. The temple will not forgive it.',
+        'Let the altar take every remaining captive, the unwilling with the willing. Every two taken give you a blood spell paid for in your own HP, and the altar marks you. The temple will not forgive it.',
       consequences: [
-        { type: 'logMessage', message: 'You channel the full sacrificial torrent! Unholy vitality floods your veins!' },
+        { type: 'logMessage', message: 'You give the altar every one of them. The grooves in the stone run full.' },
       ],
     },
   ],
@@ -523,6 +560,21 @@ export const SIPHON_GIFT_TRIGGERS: StoryChoiceTrigger[] = [
   { id: 'siphon_blood_gift_pick', choiceId: BLOOD_GIFT_CHOICE_ID, when: { type: 'hasFlag', flag: FLAG_BLOOD_PICK } },
 ];
 
+/** Whether the captive offered themselves to the altar. */
+function isWilling(captiveId: string): boolean {
+  return CAPTIVE_STANCES[captiveId]?.willing ?? false;
+}
+
+/** What the captive says at the altar: a raid stand-in speaks for themself. */
+function stanceLine(engine: EngineContext, captiveId: string): string | undefined {
+  return captiveIdentity(engine, captiveId).standIn?.stance ?? CAPTIVE_STANCES[captiveId]?.line;
+}
+
+/** Whether the hero heard Vigdís's claim at the floor 21 pylon. */
+function claimHeard(engine: EngineContext): boolean {
+  return getFlag(engine.worldState, ZEALOT_CLAIM_HEARD_FLAG);
+}
+
 function startRitualCountdown(engine: EngineContext): void {
   if (getFlag(engine.worldState, FLAG_STARTED)) {
     return;
@@ -531,6 +583,15 @@ function startRitualCountdown(engine: EngineContext): void {
   engine.log(
     'Chanting echoes from the obsidian chamber — the warlocks have begun the blood siphon! Free the captives before the ritual completes!'
   );
+  // The willing speak first, then those who want to live.
+  const remaining = remainingCaptives(engine);
+  for (const captive of [...remaining.filter((c) => isWilling(c.id)), ...remaining.filter((c) => !isWilling(c.id))]) {
+    const line = stanceLine(engine, captive.id);
+    if (line) engine.log(line);
+  }
+  if (claimHeard(engine)) {
+    engine.log('Vigdís’s last words come back to you: something gnaws the root, and only blood will touch it.');
+  }
 }
 
 /**
@@ -581,6 +642,8 @@ const SIPHON_RITUAL_HOOK: ActionHook = {
     }
 
     if (action instanceof ExecuteChoiceAction && action.choice.id === SIPHON_ALTAR_CHOICE_ID) {
+      const answer = ANSWERS_TO_HER_CLAIM[action.optionId];
+      if (answer && claimHeard(engine)) engine.log(answer);
       applyAltarOption(engine, action.optionId);
       return;
     }

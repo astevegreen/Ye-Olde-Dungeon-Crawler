@@ -45,6 +45,7 @@ import {
   CloseDoorAction,
   DisarmTrapAction,
   SAVE_FILE_EXTENSION,
+  endingNarrative,
 } from './engine';
 import type {
   ActionResult,
@@ -1494,8 +1495,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const art = won ? (summary.endingId ? screens?.endings?.[summary.endingId] : undefined) : screens?.death;
     const kicker = entry ? `${entry.heroName} · Level ${entry.level}` : undefined;
     const showScore = () => showRunSummary(won, entry, ending, kicker, art);
-    if (ending?.narrative?.length) {
-      endingDialog.show({ title: ending.title ?? brand.victoryTitle, kicker, paragraphs: ending.narrative, art }, showScore);
+    const paragraphs = ending && activeEngine ? endingNarrative(ending, activeEngine.worldState) : [];
+    if (ending && paragraphs.length) {
+      endingDialog.show({ title: ending.title ?? brand.victoryTitle, kicker, paragraphs, art }, showScore);
     } else {
       showScore();
     }

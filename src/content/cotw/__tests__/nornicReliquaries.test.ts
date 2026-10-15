@@ -274,6 +274,52 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
     expect(worldState.flags['bark_companion_f50']).toBe(true);
   });
 
+  it('the companion reacts to the altar’s mark at Náströnd and the Heartwood', () => {
+    const logs: string[] = [];
+    const worldState = createWorldState();
+    worldState.counters['hostages_sacrificed'] = 4;
+    const player = new Player({ name: 'Sven', position: { x: 5, y: 5 } });
+    const map = new GameMap(30, 30);
+    map.addEntity(
+      new Companion({
+        id: 'companion-ember_fang_wolf-1',
+        name: 'Ember-Fang Wolf',
+        position: { x: 5, y: 6 },
+        stats: { hp: 50, maxHp: 50, attack: 10, defense: 5 },
+        speed: 100,
+        companionDefinitionId: 'ember_fang_wolf',
+        packWeightCapacity: 2000,
+        packBulkCapacity: 3000,
+      })
+    );
+    let currentFloor = 43;
+    const ctx: EngineContext = {
+      player,
+      map,
+      surfaces: null as any,
+      worldState,
+      rng: () => 0.5,
+      log: (msg) => logs.push(msg),
+      getWorldFlag: (f) => Boolean(worldState.flags[f]),
+      setWorldFlag: (f, v) => setFlag(worldState, f, v),
+      get currentFloor() {
+        return currentFloor;
+      },
+      removeEntity: () => true,
+      addEntity: () => true,
+      compendium: null as never,
+    };
+
+    COTW_COMPANION_BARKS_HOOK.execute({ action: null as any, actionType: 'wait', actor: player, engine: ctx });
+    currentFloor = 50;
+    COTW_COMPANION_BARKS_HOOK.execute({ action: null as any, actionType: 'wait', actor: player, engine: ctx });
+
+    expect(logs).toEqual([
+      expect.stringContaining('then turns and breathes yours'),
+      expect.stringContaining('but it will not look at you'),
+    ]);
+  });
+
   it('drinking Urðr’s Cleansing Water purges all afflictions and restores 100 HP', () => {
     const worldState = createWorldState();
     const player = new Player({ name: 'Sven', position: { x: 5, y: 5 } });

@@ -527,6 +527,14 @@ export interface QuestArcDefinition {
   endings?: Record<string, EndingDefinition>;
 }
 
+/** A paragraph an ending tells only for some runs. */
+export interface ConditionalEndingParagraph {
+  when: Predicate;
+  text: string;
+  /** Told before `narrative[before]`; after the last paragraph when omitted. */
+  before?: number;
+}
+
 /** See `QuestArcDefinition.endings`. */
 export interface EndingDefinition {
   id: string;
@@ -548,6 +556,8 @@ export interface EndingDefinition {
   title?: string;
   /** The ending told as paragraphs on its narrative screen. No narrative, no screen. */
   narrative?: string[];
+  /** Paragraphs told only when their condition holds on the run's world state (`endingNarrative`). */
+  conditionalNarrative?: ConditionalEndingParagraph[];
   /** The final score screen's banner for this ending (defaults to the pack's victory banner). */
   banner?: string;
 }

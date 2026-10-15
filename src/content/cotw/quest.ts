@@ -1,5 +1,6 @@
 import type { QuestArcDefinition } from '../../engine';
 import { TOWN_RETURN_POSITION } from './townLayout';
+import { ALTAR_MARK_FULL, ALTAR_MARK_HALF } from './hostageRitual';
 import { HEARTWOOD_LAIR, LAIR_WIDTH, LAIR_HEIGHT, LAIR_PLAYER_SPAWN, LAIR_STAIRS_UP, LAIR_BOSS_SPAWN } from './lair';
 
 /**
@@ -98,6 +99,19 @@ export const COTW_QUEST: QuestArcDefinition = {
         'In Midgard the winter that was promised comes early. Heimdall’s horn sounds over the mountains, the wolf slips its chain, and the gods ride out to a battle the skalds always said would come. Fate was patient. You were not.',
         'Bjarnarhaven remembers you as the hero who ended the Root-Gnawer, and the one who ended the age with it. Whether that is praise, no one living can yet say.',
       ],
+      // The altar's mark, told before the last paragraph; neither says whether the blood bought anything.
+      conditionalNarrative: [
+        {
+          when: ALTAR_MARK_HALF,
+          before: 2,
+          text: 'The skalds leave the Siphon Altar out of it, and you let them. Whether the blood you gave there bought any of this, no verse says.',
+        },
+        {
+          when: ALTAR_MARK_FULL,
+          before: 2,
+          text: 'The skalds do not leave out the Siphon Altar, where you gave all four to the stones, the child among them. The old verse says the corpse-gnawer fed on murderers in Náströnd. It is dead now. No one says what will feed there instead.',
+        },
+      ],
       banner: 'The wyrm is dead, and the age of the gods is ending.',
       victoryDialogue: 'Níðhögg falls, and the World Root splits. Fate is no longer patient: you have set Ragnarök in motion.',
       victoryEpitaph: 'Ended Níðhögg, and with it, an age of Midgard.',
@@ -113,6 +127,18 @@ export const COTW_QUEST: QuestArcDefinition = {
         'You follow the path of light up out of the Heartwood. Behind you the gnawed root knits closed, and somewhere below Níðhögg licks its wounds in the dark, alive and beaten.',
         'Bjarnarhaven’s hearths burn warm again. The snow comes in its season and goes in its season, and the children who were born this year will grow old under a tree that still stands.',
         'Ragnarök waits, as it always has. But it waits a little longer because of you, and in the long hall the skalds begin a saga that ends with a hero coming home.',
+      ],
+      conditionalNarrative: [
+        {
+          when: ALTAR_MARK_HALF,
+          before: 2,
+          text: 'At the hearth they name the ones who came home from the Siphon Altar, and then, more quietly, the ones who did not. Nobody says your name in the second list. Nobody has to.',
+        },
+        {
+          when: ALTAR_MARK_FULL,
+          before: 2,
+          text: 'The four the Siphon Altar took are not named at the hearth. Torvald lights a candle for each of them in the temple, and does not ask you in.',
+        },
       ],
       banner: 'The root holds, and Bjarnarhaven sleeps warm.',
       victoryDialogue: 'The root is sealed, not severed. Níðhögg withdraws, wounded but alive: the World Tree holds, and Ragnarök waits a little longer.',

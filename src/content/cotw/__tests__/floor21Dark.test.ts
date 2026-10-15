@@ -5,7 +5,8 @@ import { ExecuteChoiceAction } from '../../../engine/actions/choiceAction';
 import { cotwManifest } from '..';
 import { COTW_CHOICES } from '../choices';
 import { DARKNESS_STATUS } from '../darkness';
-import { SIPHON_CORE_TILE, FLOOR21_RELIT_FLAG } from '../siphonPylon';
+import { SIPHON_CORE_TILE, FLOOR21_RELIT_FLAG, ZEALOT_CLAIM_HEARD_FLAG } from '../siphonPylon';
+import { Monster } from '../../../engine';
 
 function onFloor21(seed: number) {
   const { engine } = new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Lamp', { seed });
@@ -63,5 +64,29 @@ describe('floor 21: the Siphon Pylon drinks the light', () => {
 
     expect(engine.player.statusManager.hasStatus(DARKNESS_STATUS)).toBe(false);
     expect(coreTiles(engine)).toHaveLength(0);
+  });
+});
+
+describe('floor 21: the pylon’s keeper, Vigdís of the Sól-Brand', () => {
+  it('guards the pylon on every floor 21', () => {
+    for (let seed = 1; seed <= 8; seed++) {
+      const keepers = onFloor21(seed)
+        .map.getAllEntities()
+        .filter((e) => e instanceof Monster && e.definitionId === 'miniboss_zealot_leader');
+      expect(keepers).toHaveLength(1);
+    }
+  });
+
+  it('dies with the coven’s claim, which the hero keeps', () => {
+    const engine = onFloor21(2);
+    expect(cotwManifest.storyChoiceTriggers?.find((t) => t.monsterDefinitionId === 'miniboss_zealot_leader')?.choiceId).toBe(
+      'zealot_leader_last_words'
+    );
+    const lastWords = COTW_CHOICES.zealot_leader_last_words;
+    expect(lastWords.description).toContain('Only blood will.');
+
+    engine.handlePlayerAction(new ExecuteChoiceAction(engine.player, lastWords, 'close_her_eyes'));
+
+    expect(engine.getWorldFlag(ZEALOT_CLAIM_HEARD_FLAG)).toBe(true);
   });
 });

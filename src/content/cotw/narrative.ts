@@ -7,6 +7,7 @@ import { COTW_DEEPEST_FLOOR_COUNTER } from './spellTablets';
 import { HEARTH_TEAR_RETURNED_FLAG, RELIC_RECOVERED_FLAG } from './relic';
 import { prologueVillagerSaved } from './prologue';
 import { altarMark, captiveNamesForThanks, listNames, raidVillagersStillCaptive } from './hostageRitual';
+import { ZEALOT_CLAIM_HEARD_FLAG } from './siphonPylon';
 
 /**
  * Story Choice Trigger: fires when Víðnir, Herald of the Wyrm (miniboss on floor 45)
@@ -301,6 +302,12 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
           'Víðnir spoke truth: Yggdrasil’s taproot is hanging by a splintered thread!',
           'Slaying Níðhögg in fury will shatter the dying root and usher in Ragnarök! But driving it off (below 15% HP for 5 turns) allows the living tree to mend and seals the root. The fate of the age rests on your choice!'
         );
+      } else if (deepest > 25 && getFlag(engine.worldState, ZEALOT_CLAIM_HEARD_FLAG)) {
+        // Mimir confirms the wyrm and leaves her claim unsettled: blood and frith serve alike.
+        mimir.setDialogue(
+          'The zealot was right about one thing. Níðhögg is real, and it gnaws the root.',
+          'Whether only blood can touch it, my well will not tell me. Spells the saved kin gave bite a wyrm as deep as spells the altar sold, and the root can be sealed by either hand. Judge her by what you find below.'
+        );
       } else if (hasRelic) {
         mimir.setDialogue(
           'The mystery unknots itself: diverting the sun’s fire scorched the frost-wards of Yggdrasil!',
@@ -340,6 +347,11 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
 
   },
 };
+
+/** The line for the altar's mark on this hero: none, half or full. */
+function byMark(engine: Parameters<ActionHook['execute']>[0]['engine'], lines: Record<'none' | 'half' | 'full', string>): string {
+  return lines[altarMark(engine)];
+}
 
 /**
  * Companion Reactive Narrative Barks: Contextual commentary and reactions
@@ -385,15 +397,24 @@ export const COTW_COMPANION_BARKS_HOOK: ActionHook = {
         );
       }
     } else if (floor === 43) {
+      // Náströnd, where the wyrm feeds on murderers: the companion smells the altar on the hero.
       if (compId === 'ember_fang_wolf' && !getFlag(ws, 'bark_ember_wolf_f43')) {
         setFlag(ws, 'bark_ember_wolf_f43', true);
         engine.log(
-          'Your Ember-Fang Wolf snaps aggressively at the venom-slick tendrils hanging over Náströnd’s yawning abyss.'
+          byMark(engine, {
+            none: 'Your Ember-Fang Wolf snaps aggressively at the venom-slick tendrils hanging over Náströnd’s yawning abyss.',
+            half: 'Your Ember-Fang Wolf snaps at the venom-slick tendrils over Náströnd, then licks your hand where the altar’s blood ran.',
+            full: 'Your Ember-Fang Wolf breathes the reek of Náströnd, then turns and breathes yours. Its hackles rise at neither.',
+          })
         );
       } else if (compId === 'hearth_frost_hound' && !getFlag(ws, 'bark_frost_hound_f43')) {
         setFlag(ws, 'bark_frost_hound_f43', true);
         engine.log(
-          'Your Frost-Ward Hound lets out a low, warning growl as the caustic reek of serpent venom wafts up from the Maw.'
+          byMark(engine, {
+            none: 'Your Frost-Ward Hound lets out a low, warning growl as the caustic reek of serpent venom wafts up from the Maw.',
+            half: 'Your Frost-Ward Hound growls down into Náströnd, then sniffs long at your hands, as if the reek below and the reek on you were kin.',
+            full: 'Your Frost-Ward Hound growls down into Náströnd, then backs away from you too. Whatever feeds down there, it smells on your hands.',
+          })
         );
       }
     } else if (floor === 47) {
@@ -412,7 +433,11 @@ export const COTW_COMPANION_BARKS_HOOK: ActionHook = {
       if (!getFlag(ws, 'bark_companion_f50')) {
         setFlag(ws, 'bark_companion_f50', true);
         engine.log(
-          `*** At the edge of the Heartwood taproot, your ${companion.name} braces resolutely beside you against Níðhögg! A surge of courage steadies your grip! ***`
+          byMark(engine, {
+            none: `*** At the edge of the Heartwood taproot, your ${companion.name} braces resolutely beside you against Níðhögg! A surge of courage steadies your grip! ***`,
+            half: `At the edge of the Heartwood your ${companion.name} braces beside you against Níðhögg. It has forgiven you the altar, or forgotten it.`,
+            full: `At the edge of the Heartwood your ${companion.name} takes its place at your side against Níðhögg, but it will not look at you.`,
+          })
         );
       }
     }

@@ -187,6 +187,12 @@ describe('CotW Narrative Progression & Skaldic Runestones', () => {
     expect(logs.some((l) => l.includes('THE GREAT THAW'))).toBe(true);
     expect(mimir.dialogText).toContain('Níðhögg has awakened in the deep root');
 
+    // The zealot's claim heard on floor 21: Mimir confirms the wyrm, not her claim
+    setFlag(worldState, 'zealot_claim_heard', true);
+    COTW_TOWN_REACTIVE_HOOK.execute({ action: null as any, actionType: 'wait', actor: player, engine: engineContext });
+    expect(mimir.greeting).toContain('Níðhögg is real');
+    expect(mimir.dialogText).toContain('Whether only blood can touch it, my well will not tell me');
+
     // Víðnir slain
     setFlag(worldState, 'vidnir_slain', true);
     worldState.counters[COTW_DEEPEST_FLOOR_COUNTER] = 45;

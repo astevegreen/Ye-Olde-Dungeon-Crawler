@@ -39,7 +39,7 @@ import { COTW_RENOWN_MILESTONES, COTW_RENOWN_TITLES } from './renown';
 import { COTW_OBJECTIVES } from './objectives';
 import { COTW_COMPANIONS } from './companions';
 import { GIANT_BLOOD_STATUS, giantBloodHandler, GIANT_BLOOD_BOOTSTRAP_HOOK } from './giantBlood';
-import { FLOOR21, FLOOR21_PYLON_VAULT_ID } from './siphonPylon';
+import { FLOOR21, FLOOR21_PYLON_VAULT_ID, ZEALOT_LEADER_TRIGGER } from './siphonPylon';
 import { FLOOR30 } from './bileSump';
 import { COTW_DARKNESS_HANDLERS, COTW_DARKNESS_HOOK, DARKNESS_STATUS, EMBOLDENED_STATUS, TORCHLIT_STATUS } from './darkness';
 import { BURNING_STATUS, burningHandler } from './burning';
@@ -190,7 +190,7 @@ export const cotwManifest: GameContentManifest = {
     OATH_HOLD_HOOK,
     ...IRON_CLANS_HOOKS,
   ],
-  storyChoiceTriggers: [OATH_TRIGGER, VIDNIR_DEFEATED_TRIGGER, ...SIPHON_GIFT_TRIGGERS],
+  storyChoiceTriggers: [OATH_TRIGGER, ZEALOT_LEADER_TRIGGER, VIDNIR_DEFEATED_TRIGGER, ...SIPHON_GIFT_TRIGGERS],
   attributeMilestones: COTW_ATTRIBUTE_MILESTONES,
   levelMilestones: COTW_LEVEL_MILESTONES,
   perks: [...COTW_PERKS, ...COTW_MILESTONE_PERKS, ...COTW_FAMILY_PERKS],

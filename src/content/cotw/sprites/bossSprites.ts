@@ -9,6 +9,7 @@ import { skollModel } from './sculpt/skoll';
 import { nidhoggModel } from './sculpt/nidhogg';
 import { glodModel } from './sculpt/glod';
 import { ividjaModel } from './sculpt/ividja';
+import { vigdisModel } from './sculpt/vigdis';
 
 /** Every boss model idles over four frames. */
 const BOSS_FRAMES = 4;
@@ -29,4 +30,5 @@ export const COTW_BOSS_SPRITES: Record<string, PixelSprite> = {
   nidhogg: sculpted(nidhoggModel),
   glod: sculpted(glodModel),
   ividja: sculpted(ividjaModel),
+  miniboss_zealot_leader: sculpted(vigdisModel),
 };

@@ -206,6 +206,11 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     requiredDamageElement: 'cold',
     hintVerse: 'The zealot burns with a stolen sun.\nPut out that sun with frost.',
   },
+  miniboss_zealot_leader: {
+    essenceElement: 'fire',
+    requiredDamageElement: 'cold',
+    hintVerse: 'Vigdís carries the stolen sun burned into her palm.\nQuench the brand with frost.',
+  },
   ironwood_troll_wife: {
     essenceElement: 'shadow',
     requiredDamageElement: 'lightning',

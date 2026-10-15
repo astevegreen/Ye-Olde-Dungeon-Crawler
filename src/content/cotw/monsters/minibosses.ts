@@ -172,4 +172,30 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
       },
     ],
   },
+  {
+    // The Sól-Brand Zealots' leader, a Midgard woman who left her hearth for the coven. She dies
+    // with the coven's claim (siphonPylon.ts, ZEALOT_LEADER_LAST_WORDS).
+    id: 'miniboss_zealot_leader',
+    name: 'Vigdís of the Sól-Brand',
+    minFloor: 21,
+    placedOnly: true, // floor21_drinking_pylon (siphonPylon.ts)
+    stats: { hp: 110, maxHp: 110, attack: 16, defense: 7 },
+    speed: 100,
+    aiType: 'melee',
+    resistances: { fire: 'resistant', cold: 'weak' },
+    statusImmunities: ['paralysis'],
+    fleeHealthPercent: 0.0,
+    xpValue: 450,
+    tags: ['zealot', 'humanoid', 'miniboss', 'boss'],
+    lootTable: [
+      {
+        chance: 1.0,
+        generate: (id, rng, floor) => makeLootItem('health_potion', id, rng, floor),
+      },
+      {
+        chance: 1.0,
+        generate: coinDrop(3),
+      },
+    ],
+  },
 ];

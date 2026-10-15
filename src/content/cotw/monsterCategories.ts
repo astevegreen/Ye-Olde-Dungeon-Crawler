@@ -67,6 +67,7 @@ export const COTW_MONSTER_CATEGORIES: MonsterCategoryDefinition[] = [
       'hoarfrost_skraeling',
       'forge_wretch',
       'sol_brand_zealot',
+      'miniboss_zealot_leader',
       'winter_hag',
       'dark_sorcerer',
     ],

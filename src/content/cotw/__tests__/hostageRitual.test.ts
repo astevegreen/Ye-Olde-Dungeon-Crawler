@@ -8,6 +8,7 @@ import {
   MovementAction,
   WaitAction,
   evaluatePredicate,
+  endingNarrative,
   getItemBuyPrice,
   getTileDefinition,
 } from '../../../engine';
@@ -176,6 +177,20 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
       expect(stock.find((item) => item.id === 'gunther-hero-armor')).toBeUndefined();
     });
 
+    it('the endings tell the mark before their last paragraph, half and full apart', () => {
+      const sealed = COTW_QUEST.endings!.sealed;
+      expect(endingNarrative(sealed, engine.worldState)).toEqual(sealed.narrative);
+
+      settle(2);
+      const half = endingNarrative(sealed, engine.worldState);
+      expect(half).toHaveLength(4);
+      expect(half[2]).toContain('the ones who did not');
+
+      const full = endingNarrative(COTW_QUEST.endings!.ragnarok, { ...engine.worldState, counters: { hostages_sacrificed: 4 } });
+      expect(full[2]).toContain('the child among them');
+      expect(full.some((p) => p.includes('Whether the blood you gave'))).toBe(false);
+    });
+
     it('shows the mark among the hero\'s conditions, half and full apart', () => {
       const shown = (): string[] =>
         (cotwManifest.heroMarks ?? []).filter((m) => evaluatePredicate(m.when, engine.worldState)).map((m) => m.id);
@@ -229,13 +244,63 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
       player.setPosition(5, 7);
       engine.handlePlayerAction(new MovementAction(player, 0, 1));
 
-      // Of the 3 remaining, balance frees 2 and sacrifices 1: 3 to 1, a frith pick owed.
+      // Ingrid, who offered herself, was cut loose by hand; of the 3 remaining, balance gives
+      // the altar only Sigrid, the other willing one: 3 to 1, a frith pick owed.
       expect(engine.getWorldCounter('hostages_rescued')).toBe(3);
       expect(engine.getWorldCounter('hostages_sacrificed')).toBe(1);
+      expect(engine.getWorldFlag(`${HOSTAGE_VILLAGERS[2].id}_sacrificed`)).toBe(true);
       expect(engine.getWorldFlag('siphon_ritual_resolved')).toBe(true);
       expect(engine.getWorldFlag('siphon_frith_gift_owed')).toBe(true);
       expect(engine.getWorldFlag('siphon_blood_gift_owed')).toBe(false);
       expect(HOSTAGE_VILLAGERS.every((v) => map.getEntityById(v.id) === null)).toBe(true);
+    });
+
+    /** Walks the hero onto the altar and answers its choice with `optionId`. */
+    function useAltar(optionId: string): void {
+      map.setTile(5, 8, getTileDefinition(SIPHON_ALTAR_TILE));
+      engine.onChoiceInteract = (_choice, onSelect) => onSelect(optionId);
+      player.setPosition(5, 7);
+      engine.handlePlayerAction(new MovementAction(player, 0, 1));
+    }
+
+    it('taking only what was offered gives the altar the two willing, never the child', () => {
+      placeCaptives();
+      useAltar('balance_path');
+
+      const sacrificed = HOSTAGE_VILLAGERS.filter((v) => engine.getWorldFlag(`${v.id}_sacrificed`)).map((v) => v.name);
+      expect(sacrificed).toEqual(['Ingrid of the Mill', 'Sigrid the Weaver']);
+      expect(engine.getWorldFlag(`${HOSTAGE_VILLAGERS[3].id}_rescued`)).toBe(true);
+    });
+
+    it('the captives speak their offers when the rite begins, and her words come back to a hero who heard them', () => {
+      const lines = engine.messages;
+      engine.setWorldFlag('zealot_claim_heard', true);
+      placeCaptives();
+      engine.handlePlayerAction(new WaitAction(player)); // captives in sight: the rite begins
+
+      const ingrid = lines.findIndex((l) => l.includes('Let it be me, and let the others go'));
+      const leif = lines.findIndex((l) => l.includes('Young Leif says nothing'));
+      expect(ingrid).toBeGreaterThan(-1);
+      expect(leif).toBeGreaterThan(ingrid); // the willing speak first
+      expect(lines.some((l) => l.includes('Vigdís’s last words come back to you'))).toBe(true);
+    });
+
+    it('a hero who never heard her is not reminded of her words', () => {
+      const lines = engine.messages;
+      placeCaptives();
+      engine.handlePlayerAction(new WaitAction(player));
+      useAltar('harvest_all');
+
+      expect(lines.some((l) => l.includes('Vigdís'))).toBe(false);
+    });
+
+    it('each altar option answers her claim', () => {
+      const lines = engine.messages;
+      engine.setWorldFlag('zealot_claim_heard', true);
+      placeCaptives();
+      useAltar('harvest_all');
+
+      expect(lines.some((l) => l.includes('You take her at her word'))).toBe(true);
     });
 
     it('the countdown starts in sight of a captive and the warlocks take the rest on expiry, buying nothing', () => {

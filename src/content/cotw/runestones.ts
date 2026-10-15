@@ -385,7 +385,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
     id: 'skaldic_runestone_6',
     title: 'Skaldic Runestone: The Twilight Prophecy',
     description:
-      'Perched above the yawning black chasm of Náströnd, the final runestone glares with ominous violet light:\n\n“Beyond lies the Heartwood on Floor 50, where Níðhögg uncoils upon the shredded World Root.\nHe who slays the dragon with blind fury shall split the dying root and usher in Ragnarök.\nOnly the warrior who masters both wrath and restraint may preserve Midgard.\nArm yourself with the Thunderer’s wrath for the battle of your saga!”\n\nViolent lightning runes spark with primordial kinetic thunder.',
+      'Perched above the yawning black chasm of Náströnd, the final runestone glares with ominous violet light:\n\n“Beyond lies the Heartwood on Floor 50, where Níðhögg uncoils upon the shredded World Root.\nHe who slays the dragon with blind fury shall split the dying root and usher in Ragnarök.\nOnly the warrior who masters both wrath and restraint may preserve Midgard.\nArm yourself with the Thunderer’s wrath for the battle of your saga!”\n\nBeneath it, older runes cut by another hand give a verse of the Völva’s Prophecy:\n\n“A hall she saw, far from the sun, on Náströnd; its doors look north.\nThere she saw wading the heavy streams the oath-breakers and the murderers.\nThere Níðhögg sucked the corpses of the dead. Would you know yet more?”\n\nViolent lightning runes spark with primordial kinetic thunder.',
     options: [
       {
         id: 'thunder_maul',

@@ -26,6 +26,11 @@ Magic implementation plan (local copy `.prompts/plan-page.txt`). Phase 1c (P-30 
 - Cache: `heroResolvedCasts` keyed by the grimoire state's JSON, in a WeakMap on the state.
 - P-28/P-29/P-30 are still in ARCHITECTURE §9; not retired here (cotw isn't on them until phase 2).
 
+## Answers (resumed 2026-10-15)
+- Swift at two steps: keep ⅔, ½ at three steps — owner: "approve all recommendations and proceed"
+- Phase Door / Loki's Switch: each sets its own `lends` in cotw data, no engine change — owner: "approve all recommendations and proceed"
+- Dry-run table approved; start phase 2 — owner: "approve all recommendations and proceed"
+
 ## Read first
 - `src/engine/magic/__tests__/floor50DryRun.test.ts` — the dry run; `MAGIC_DRY_RUN=1 npx vitest run <it> --disableConsoleIntercept` prints the table
 - `src/engine/magic/spellPipeline.ts` — `deliverLends`, `CastShaping`

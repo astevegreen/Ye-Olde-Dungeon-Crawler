@@ -8,7 +8,6 @@ export interface DeathEnvelope {
   planeDepth: number;
   activePlaneId: string;
   equippedSynergyTags: string[];
-  corruptionLevel: number;
   turnsElapsed: number;
   timestamp: number;
   victimName: string;
@@ -63,7 +62,6 @@ export class DeathEnvelopeTracker {
       planeDepth: engine.currentFloor,
       activePlaneId: player.planeId ?? 'physical',
       equippedSynergyTags: Array.from(new Set(synergyTags)),
-      corruptionLevel: player.corruptionScore ?? 0,
       turnsElapsed: engine.turnCount,
       timestamp: Date.now(),
       victimName: player.name,

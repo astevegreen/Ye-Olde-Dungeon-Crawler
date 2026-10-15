@@ -86,7 +86,7 @@ export interface Condition {
 }
 
 /**
- * Ambient statuses (giant_blood, the energy-model afflictions) are applied with a
+ * Ambient statuses (giant_blood) are applied with a
  * 9999-turn sentinel that the status manager still decrements each tick, so the
  * live value drifts to 9998, 9997, …. Anything this far out isn't a countdown.
  */

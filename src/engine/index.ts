@@ -185,8 +185,6 @@ export * from './compendium/compendiumManager';
 export * from './compendium/trophies';
 export * from './advisory/runAdvisor';
 
-// Dual-Energy Dynamics & Corruption
-export * from './actors/energyModel';
 
 // Run Telemetry & Death Analytics
 export * from './analytics/deathEnvelope';

@@ -1,10 +1,8 @@
 import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
-import { Actor } from '../entities/actor';
 import type { SpellDefinition } from './types';
 import { wornModifiers, sumWorn, productWorn } from '../items/wornModifiers';
 import { spellPowerMultiplier, attributeScalingOf } from '../combat/attributeScaling';
-import { EnergyModel } from '../actors/energyModel';
 import { Player } from '../entities/player';
 import { resolveSlotStats, slotOfSpell, slotStatSteps, type GrimoireSlotStats, type GrimoireState } from './grimoires';
 import { resolveAllCasts, type ResolvedCast } from './neighbourLending';
@@ -133,8 +131,7 @@ export function effectiveHpCost(
 /**
  * A spell's rolled damage scaled by its caster, for the first hit and every chain hop alike:
  * Intelligence (the pack's attribute scaling), the Enchanted `spellDamageMultiplier` of what
- * it wears, its bonus for this element (Elementalist), and for shadow or entropic damage the
- * caster's corruption.
+ * it wears, and its bonus for this element (Elementalist).
  */
 export function scaleSpellDamage(engine: GameEngine, caster: Entity, element: string, rolled: number): number {
   let damage = rolled;
@@ -144,10 +141,6 @@ export function scaleSpellDamage(engine: GameEngine, caster: Entity, element: st
     if (mod.elementSpellMultiplier && mod.elementSpellMultiplier.element === element) multiplier *= mod.elementSpellMultiplier.multiplier;
   }
   if (multiplier !== 1.0) damage = Math.max(1, Math.round(damage * multiplier));
-  if (caster instanceof Actor && caster.corruptionScore > 0 && (element === 'shadow' || element === 'entropic')) {
-    const entropicMult = EnergyModel.calculateEntropicDamageMultiplier(caster.corruptionScore);
-    if (entropicMult !== 1.0) damage = Math.max(1, Math.round(damage * entropicMult));
-  }
   return damage;
 }
 

@@ -26,7 +26,6 @@ import type { ItemModifier } from '../items/modifiers';
 import { familyModifier, withPackNaming, type ItemFamilyConfig } from '../items/modifierRoller';
 import { cloneWorldState, createWorldState, type WorldState } from '../state/worldState';
 import { compactTilesWithDictionary, decompactTiles, compactFov, decompactFov } from './compaction';
-import { EnergyModel } from '../actors/energyModel';
 import { readGrimoireState, serializeGrimoireState } from '../magic/grimoires';
 import { convertLegacyMagic, type LegacyMagicResult } from './legacyMagic';
 import { createScaledItem } from '../dungeon/lootSpawner';
@@ -119,6 +118,9 @@ export function serializeItem(item: Item): SerializedItemNode {
 
   return base;
 }
+
+/** The corruption number's afflictions, gone with it: an older save's hero sheds them on load. */
+const RETIRED_CORRUPTION_STATUSES = ['tissue_necrosis', 'neural_decay', 'loss_of_divine_wards'];
 
 /** The manifest's item definitions, which hold what a save leaves out. */
 interface ItemDefinitionLookup {
@@ -523,7 +525,6 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     quickSpells: [...p.quickSpells],
     quickPotions: p.quickPotions ? [...p.quickPotions] : undefined,
     planeId: p.planeId ?? 'physical',
-    corruptionScore: p.corruptionScore ?? 0,
     unspentStatPoints: p.unspentStatPoints ?? 0,
     runeMastery: { ...p.runeMastery },
     runeChannelBankedTurns: p.runeChannelBankedTurns ?? 0,
@@ -535,15 +536,6 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     perks: p.perkIds.length > 0 ? p.perkIds : undefined,
     carriedAtStairs: p.carriedAtStairs.length > 0 ? [...p.carriedAtStairs] : undefined,
     grimoires: p.grimoireState ? serializeGrimoireState(p.grimoireState) : undefined,
-    energyModel: p.energyModel
-      ? {
-          structuredEnergy: p.energyModel.structuredEnergy,
-          maxStructuredEnergy: p.energyModel.maxStructuredEnergy,
-          volatileEnergy: p.energyModel.volatileEnergy,
-          maxVolatileEnergy: p.energyModel.maxVolatileEnergy,
-          vitalityTenderBurned: p.energyModel.vitalityTenderBurned,
-        }
-      : undefined,
   };
 
   if (profile) {
@@ -1112,7 +1104,7 @@ function hydrateGame(
   // Before HP is clamped to max HP, which the blessing raises.
   player.maxHpPercentBonus = Number(pData.maxHpPercentBonus) || 0;
   player.hp = Math.min(Number(pData.hp) || 1, player.maxHp);
-  const statusEffects = legacy ? legacy.statusEffects : pData.statusEffects;
+  const statusEffects = (legacy ? legacy.statusEffects : pData.statusEffects)?.filter((s) => !RETIRED_CORRUPTION_STATUSES.includes(s.type));
   if (statusEffects) {
     player.statusManager.deserialize(statusEffects);
   }
@@ -1126,17 +1118,7 @@ function hydrateGame(
   if (pData.planeId) {
     player.planeId = pData.planeId;
   }
-  player.corruptionScore = Number(pData.corruptionScore) || 0;
   player.voidDebt = Number(pData.voidDebt) || 0;
-  if (pData.energyModel) {
-    player.energyModel = new EnergyModel({
-      structuredEnergy: Number(pData.energyModel.structuredEnergy),
-      maxStructuredEnergy: Number(pData.energyModel.maxStructuredEnergy),
-      volatileEnergy: Number(pData.energyModel.volatileEnergy),
-      maxVolatileEnergy: Number(pData.energyModel.maxVolatileEnergy),
-    });
-    player.energyModel.vitalityTenderBurned = Number(pData.energyModel.vitalityTenderBurned) || 0;
-  }
 
   // 4. Determine Current Floor & Compendium
   const currentFloor = saveData.currentFloor ?? saveData.profile?.floor ?? 1;

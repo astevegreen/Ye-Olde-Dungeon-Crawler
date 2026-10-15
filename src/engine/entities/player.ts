@@ -16,7 +16,6 @@ import {
   type RuneOfReturnTrack,
   RUNE_MAX_CHARGES,
 } from '../magic/runeOfReturn';
-import { EnergyModel, type DualEnergyConfig } from '../actors/energyModel';
 import type { GrimoireAxis, GrimoireSystemConfig } from '../magic/magicConfig';
 import {
   addExtraSlot,
@@ -73,7 +72,6 @@ export interface PlayerConfig {
   hasDiscoveredRune?: boolean;
   runeCharges?: number;
   runeMaxCharges?: number;
-  energyModel?: EnergyModel;
   voidDebt?: number;
   /** Perks held (`manifest.perks`), resolved by the loader from their saved ids. */
   perks?: PerkDefinition[];
@@ -135,7 +133,6 @@ export class Player extends Actor {
   public runeCharges: number;
   public runeMaxCharges: number;
   declare public pactMutatorsSupplier?: () => import('../pacts/pactManager').RunPactMutatorRules;
-  public energyModel?: EnergyModel;
   public voidDebt: number;
   /** A lasting share added to max HP (0.1 is +10%), from a temple blessing (`TempleBlessingEffect`). */
   public maxHpPercentBonus = 0;
@@ -162,7 +159,6 @@ export class Player extends Actor {
       strength: config.strength ?? 15,
       inventory: config.inventory,
     });
-    this.energyModel = config.energyModel;
     this.voidDebt = config.voidDebt ?? 0;
     this.gender = config.gender ?? 'male';
     this.difficulty = config.difficulty ?? DEFAULT_DIFFICULTY;
@@ -591,17 +587,6 @@ export class Player extends Actor {
 
   public markTutorialSeen(flag: keyof TutorialFlags): void {
     this.tutorialFlags[flag] = true;
-  }
-
-  public initEnergyModel(config?: DualEnergyConfig): EnergyModel {
-    if (!this.energyModel) {
-      this.energyModel = new EnergyModel(config);
-    }
-    return this.energyModel;
-  }
-
-  public hasEnergyModel(): boolean {
-    return this.energyModel !== undefined;
   }
 
   public override get maxHp(): number {

@@ -102,7 +102,7 @@ describe('a rebuilt action is the action that was recorded', () => {
       new UnequipAction(player, 'offHand'),
       new MeleeAttackAction(player, goblin),
       new RangedAttackAction(player, 6, 7, get('javelin')),
-      new CastSpellAction(player, 'magic_missile', 5, 6, 'in-pack', true, true),
+      new CastSpellAction(player, 'magic_missile', 5, 6, 'in-pack', true),
       new PerformAltarRiteAction(player, 'tyr', 4, 4, { offeringKind: 'essence', offeringId: 'rune', slot: { grimoireId: 'mani', x: -1, y: 0 } }),
       new DrinkPotionAction(player, potion),
       new IdentifyAction(player, 'in-pack'),

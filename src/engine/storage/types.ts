@@ -218,7 +218,8 @@ export interface SerializedPlayer {
   quickPotions?: (string | null)[];
   morphEnvelope?: SerializedMorphEnvelope;
   planeId?: string;
-  corruptionScore?: number;
+  /** The corruption number from a save made before it was removed; ignored on load. */
+  corruptionScore?: unknown;
   unspentStatPoints?: number;
   /** Rune of Return mastery investment (docs/architecture/content-extensibility.md): points spent
    * from the same `unspentStatPoints` pool as core attributes, on the rune's three
@@ -230,7 +231,8 @@ export interface SerializedPlayer {
   hasDiscoveredRune?: boolean;
   runeCharges?: number;
   runeMaxCharges?: number;
-  energyModel?: SerializedEnergyModel;
+  /** Volatile Energy from a save made before it was removed; ignored on load. */
+  energyModel?: unknown;
   voidDebt?: number;
   /** A temple blessing's lasting max HP share; absent when none. */
   maxHpPercentBonus?: number;
@@ -278,14 +280,6 @@ export interface SerializedGrimoireState {
 export type SerializedWorldState = Omit<WorldState, 'remoteVaults'> & {
   remoteVaults?: Record<string, SerializedItemNode[]>;
 };
-
-export interface SerializedEnergyModel {
-  structuredEnergy: number;
-  maxStructuredEnergy: number;
-  volatileEnergy: number;
-  maxVolatileEnergy: number;
-  vitalityTenderBurned: number;
-}
 
 export interface SerializedMonster {
   id: string;

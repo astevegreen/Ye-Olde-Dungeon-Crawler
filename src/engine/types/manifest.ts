@@ -54,7 +54,6 @@ export type ConsumableEffectDescriptor =
   | { type: 'gain_level'; levels?: number }
   | { type: 'gain_stat'; stat: 'strength' | 'intelligence' | 'constitution' | 'dexterity'; amount: number }
   | { type: 'teleport'; range?: number; random?: boolean }
-  | { type: 'restore_volatile_energy'; amount?: number | 'full' }
   | {
       /**
        * Tag-Filtered Radial Aura (docs/architecture/content-extensibility.md): applies `status` to every
@@ -288,16 +287,10 @@ export interface TownServicesDefinition {
   compactionMessageTemplate?: string;
   /** Faction whose standing gates temple services. Default `'temple_standing'`. */
   templeStandingFaction?: string;
-  /** Shown when the temple refuses service (negative standing or corruption refusal). */
+  /** Shown when the temple refuses service (negative standing). */
   templeRefusalMessage?: string;
   /** Shown when the hero wears a `templeShunned` item and asks for anything but the cleanse. */
   templeShunnedMessage?: string;
-  /** Player `corruptionScore` at or above which the temple refuses service. Absent = never. */
-  corruptionRefusalThreshold?: number;
-  /** Player `corruptionScore` at or above which temple prices are multiplied. Absent = never. */
-  corruptionSurchargeThreshold?: number;
-  /** Price multiplier past `corruptionSurchargeThreshold`. Default 2. */
-  corruptionSurchargeMultiplier?: number;
   /** What the temple takes from the pack as offerings (`TempleService.makeOffering`); absent, none. */
   templeOfferings?: TempleOfferingsDefinition;
   /** Blessings the priests grant once each, free, at a piety threshold (`TempleService.receiveBlessing`). */

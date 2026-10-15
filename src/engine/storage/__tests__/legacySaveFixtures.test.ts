@@ -63,8 +63,9 @@ describe('legacy grimoire save fixtures', () => {
     // The old altar's five blood spells come back as the trade's two (cotw's retired map).
     expect(blood.spellsKnown).toEqual(expect.arrayContaining(['blood_reap', 'draugr_call']));
     expect(blood.spellsKnown).not.toContain('exsanguinate');
-    expect(blood.energyModel?.volatileEnergy).toBe(18);
-    expect(blood.corruptionScore).toBe(30);
+    // Volatile Energy and the corruption number are gone: the save's are read and let go.
+    expect(blood).not.toHaveProperty('energyModel');
+    expect(blood).not.toHaveProperty('corruptionScore');
     expect(load('kill-rite-performed').compendium.isKillRitePerformed('kobold')).toBe(true);
     expect(load('grounded-slot').player.spellsKnown).toContain('firebolt');
     expect(load('page-two-active').player.spellsKnown).toContain('cold_ray');

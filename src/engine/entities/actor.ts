@@ -65,7 +65,6 @@ export class Actor extends Entity implements IItemContainer, IEquipmentBearer {
   public onDestroyed?: (engine: GameEngine, killer?: Entity) => void;
   public inventory: InventoryManager;
   public morphEnvelope?: MorphEnvelope;
-  public corruptionScore: number = 0;
 
   constructor(config: ActorConfig) {
     super(config);

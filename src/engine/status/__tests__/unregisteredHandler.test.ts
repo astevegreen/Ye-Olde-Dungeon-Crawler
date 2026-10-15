@@ -10,15 +10,12 @@ import { GameEngine } from '../../engine';
  * ARCHITECTURE.md registry-contract audit: applyStatus()/tick() accepting a status type
  * with no registered StatusHandler was flagged as a possible silent failure. Investigated
  * and deliberately left unchanged (not a bug fix) — `StatusType` is documented as "an open
- * string to allow manifest-defined status effects" (status/types.ts), and the engine itself
- * relies on handler-less, duration-9999 "flag" statuses as an intentional pattern: see
- * src/engine/actors/energyModel.ts's `tissue_necrosis`/`neural_decay`/`loss_of_divine_wards`
- * corruption afflictions, which have no StatusHandler and are read entirely via
- * `hasStatus()` checks elsewhere (healing efficiency, damage multipliers, resistance
- * removal — see energyModel.test.ts). There is no runtime signal that distinguishes a
- * deliberate handler-less flag status from a typo'd content status type, so making this
- * throw (or even warn) at the engine layer would either break that mechanic or spam the
- * flight recorder for entirely normal gameplay. This test documents the current, retained
+ * string to allow manifest-defined status effects" (status/types.ts), and handler-less,
+ * duration-9999 "flag" statuses, read entirely through `hasStatus()` checks, are an
+ * intentional pattern. There is no runtime signal that distinguishes a deliberate
+ * handler-less flag status from a typo'd content status type, so making this throw (or
+ * even warn) at the engine layer would either break that pattern or spam the flight
+ * recorder for entirely normal gameplay. This test documents the current, retained
  * behavior so it stays a visible, deliberate decision rather than an unexamined gap.
  */
 describe('Status types with no registered StatusHandler (documented, not changed)', () => {
@@ -57,7 +54,7 @@ describe('Status types with no registered StatusHandler (documented, not changed
     expect(result.messages.some((m) => m.includes('has worn off'))).toBe(true);
   });
 
-  it('a permanent (duration 9999) handler-less status persists indefinitely and stays queryable via hasStatus() — the corruption-flag pattern this design intentionally supports', () => {
+  it('a permanent (duration 9999) handler-less status persists indefinitely and stays queryable via hasStatus() — the flag pattern this design intentionally supports', () => {
     const mgr = new StatusManager();
     const { engine, player } = setupEngine();
     mgr.applyStatus(UNREGISTERED_STATUS, 9999);

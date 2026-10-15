@@ -34,12 +34,10 @@ export class TempleService {
   }
 
   /**
-   * Standing and corruption gate shared by every temple service: negative standing
-   * (or corruption past the pack's refusal threshold) refuses service; corruption past
-   * the surcharge threshold multiplies the price; favored standing (>= 10) halves it.
+   * Standing gate shared by every temple service: negative standing refuses service;
+   * favored standing (>= 10) halves the price.
    */
   private static applyTempleStanding(
-    player: Player,
     costCp: number,
     services: TownServicesDefinition | undefined,
     engineOrWorldState?: GameEngine | WorldState
@@ -53,8 +51,7 @@ export class TempleService {
     }
 
     const standing = worldState.factions[services?.templeStandingFaction ?? 'temple_standing'] ?? 0;
-    const refusalThreshold = services?.corruptionRefusalThreshold;
-    if (standing < 0 || (refusalThreshold !== undefined && player.corruptionScore >= refusalThreshold)) {
+    if (standing < 0) {
       return {
         costCp,
         refusal: {
@@ -65,10 +62,6 @@ export class TempleService {
       };
     }
 
-    const surchargeThreshold = services?.corruptionSurchargeThreshold;
-    if (surchargeThreshold !== undefined && player.corruptionScore >= surchargeThreshold) {
-      return { costCp: Math.floor(costCp * (services?.corruptionSurchargeMultiplier ?? 2)) };
-    }
     if (standing >= 10) {
       return { costCp: Math.floor(costCp * 0.5) };
     }
@@ -102,7 +95,7 @@ export class TempleService {
     services ??= TempleService.manifestServices(engineOrWorldState);
     // The cleanse is never refused (Q50): a hero the temple would turn away, like one wearing
     // Hel's mark, pays double for it; the two don't stack.
-    const gate = TempleService.applyTempleStanding(player, costCp, services, engineOrWorldState);
+    const gate = TempleService.applyTempleStanding(costCp, services, engineOrWorldState);
     if (!gate.refusal) costCp = gate.costCp;
     if (gate.refusal || TempleService.wearsShunned(player)) costCp *= 2;
 
@@ -191,7 +184,7 @@ export class TempleService {
     }
 
     services ??= TempleService.manifestServices(engineOrWorldState);
-    const gate = TempleService.applyTempleStanding(player, costCp, services, engineOrWorldState);
+    const gate = TempleService.applyTempleStanding(costCp, services, engineOrWorldState);
     if (gate.refusal) {
       return gate.refusal;
     }

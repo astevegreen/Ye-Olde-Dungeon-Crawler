@@ -184,10 +184,6 @@ export const COTW_TOWN: TownLayoutDefinition = {
       "The High Priest of Thor scowls with righteous fury: 'Desecrator of sacred altars! You have betrayed the gods and are unwelcome in Thor's sacred hall!'",
     templeShunnedMessage:
       "The High Priest of Thor recoils from what you wear: 'Hel's mark is on you. I will burn it from you for twice the donation, and lay no other hand on you until then.'",
-    // Blood-magic corruption: doubled donations from 25, refused outright from 75 (all but
-    // the cleanse, which is never refused: Q50).
-    corruptionSurchargeThreshold: 25,
-    corruptionRefusalThreshold: 75,
     // Q9 "A", Q49 "A", Q50 "A": cursed, hexed and Hel-touched things from the pack, for
     // piety (5 each) and a step back toward the temple's favor; three blessings, once each.
     pietyCategory: 'piety',

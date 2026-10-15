@@ -51,7 +51,6 @@ describe('DeathEnvelope & Run-Failure Telemetry', () => {
       aspectState: 'aligned_a',
     });
     player.inventory.paperdoll.equip(fireSword, 'mainHand');
-    player.corruptionScore = 35;
     player.planeId = 'liminal';
 
     // Player takes fatal damage
@@ -63,7 +62,6 @@ describe('DeathEnvelope & Run-Failure Telemetry', () => {
     expect(envelope?.killerArchetypeId).toBe('mountain_ogre');
     expect(envelope?.planeDepth).toBe(5);
     expect(envelope?.activePlaneId).toBe('liminal');
-    expect(envelope?.corruptionLevel).toBe(35);
     expect(envelope?.turnsElapsed).toBe(142);
     expect(envelope?.equippedSynergyTags).toContain('element:fire');
     expect(envelope?.equippedSynergyTags).toContain('aspect:aligned_a');

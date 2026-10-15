@@ -34,9 +34,7 @@ import { EffectPrimitiveRegistry, type EffectContext } from './effectRegistry';
 import { scaleSpellDamage, scaleSpellHeal } from './castNumbers';
 import { castGeometry } from './castTrace';
 import type { LendDelivery } from './neighbourLending';
-import { EnergyModel } from '../actors/energyModel';
 import { dispatchDamageHooks } from '../hooks/damageHooks';
-import { Actor } from '../entities/actor';
 import { breakCurses } from '../items/breakCurses';
 import { applyImpulse } from '../combat/impulse';
 import { hasLineOfSight } from '../ai/perception';
@@ -717,13 +715,7 @@ export class SpellPipeline {
     powerMultiplier = 1
   ): void {
     if (!target.isAlive()) return;
-    let amount = scaleSpellHeal(engine, _caster, scaleByPower(parseAndRollDice(effect.amount, engine.rng), powerMultiplier));
-    if (target instanceof Actor) {
-      const eff = EnergyModel.calculateHealingEfficiency(target);
-      if (eff < 1.0) {
-        amount = Math.max(1, Math.floor(amount * eff));
-      }
-    }
+    const amount = scaleSpellHeal(engine, _caster, scaleByPower(parseAndRollDice(effect.amount, engine.rng), powerMultiplier));
     const healed = target.heal(amount);
     engine.log(`${target.name} is healed for ${healed} HP! (HP: ${target.hp}/${target.maxHp})`);
   }

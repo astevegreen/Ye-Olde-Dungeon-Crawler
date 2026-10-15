@@ -164,20 +164,10 @@ export interface SpellDefinition {
   name: string;
   school: SpellSchool;
   manaCost: number;
-  /** Volatile energy spent per cast (player `EnergyModel`); a shortfall may burn max HP. */
-  volatileEnergyCost?: number;
-  /** Permanent max HP burned per cast. */
-  vitalityCost?: number;
   /** Current HP paid per cast (blood magic); Thrift lowers it as it lowers mana (`effectiveHpCost`). */
   hpCost?: number;
-  /** Corruption added per cast. Defaults to the volatile/vitality cost paid. */
-  corruptionGain?: number;
-  /** Volatile energy restored per cast (or per kill, with `requiresKillForEnergy`). */
-  volatileEnergyGain?: number;
   /** Execute gate: the target must be at or below this fraction of max HP. */
   maxTargetHpPercent?: number;
-  /** `volatileEnergyGain` is granted only if the cast kills the target. */
-  requiresKillForEnergy?: boolean;
   element: ElementType;
   range: number;
   basePower: number;

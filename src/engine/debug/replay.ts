@@ -148,8 +148,7 @@ const BUILDERS: Record<string, Builder> = {
           num(p, 'targetX') ?? e.player.x,
           num(p, 'targetY') ?? e.player.y,
           str(p, 'itemTargetId'),
-          bool(p, 'freeCast'),
-          bool(p, 'allowVitalityBurn')
+          bool(p, 'freeCast')
         )
       : null;
   },

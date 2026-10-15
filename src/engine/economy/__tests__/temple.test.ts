@@ -58,14 +58,6 @@ describe('the temple after Tyr is desecrated (Q50 "A")', () => {
     expect(getPlayerTotalCp(engine.player)).toBe(1000);
   });
 
-  it('cleanses past the corruption refusal too: the cleanse is never refused', () => {
-    engine.worldState.factions.temple_standing = 0;
-    engine.player.corruptionScore = 80;
-    wear(engine, cursed);
-    addCurrencyToPlayer(engine.player, 1000);
-    expect(TempleService.cleanseCurses(engine.player, undefined, undefined, engine).success).toBe(true);
-    expect(TempleService.healAndRestore(engine.player, undefined, undefined, engine).success).toBe(false);
-  });
 });
 
 describe('offerings (Q9 "A", Q49 "A", Q50 "A")', () => {

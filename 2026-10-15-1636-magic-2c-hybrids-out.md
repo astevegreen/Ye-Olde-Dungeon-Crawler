@@ -30,3 +30,4 @@ Sonnet 5.5 at medium thinking — commit 4 is routine content with a clear spec;
 
 ## Verification
 - `npm run gates`: green on d97154b7 (3080 unit, 33 Chromium).
+Resumed: 2026-10-15 16:41 UTC

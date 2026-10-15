@@ -9,7 +9,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const LIMIT = 150_000;
+const LIMIT = 200_000;
 
 let input;
 try {

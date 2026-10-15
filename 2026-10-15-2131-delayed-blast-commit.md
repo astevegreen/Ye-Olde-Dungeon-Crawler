@@ -38,3 +38,4 @@ Sonnet 5.5 at medium thinking — steps 1–3 are mechanical; switch to Opus for
 ## Verification
 - `npx vitest run` delayedBlast, status, rendering (295), markers: green on the uncommitted tree; `tsc` clean.
 - `npm run gates`: rerun in progress after the knip fix, output `.prompts/gates-4b2.txt`.
+Resumed: 2026-10-15 21:32 UTC

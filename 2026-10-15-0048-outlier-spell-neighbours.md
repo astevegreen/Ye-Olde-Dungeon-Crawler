@@ -25,6 +25,7 @@ Continue the owner's magic redesign dialogue (talk only; nothing is built until 
 - Hliðskjálf takes "what the ravens see" (each neighbour adds a reveal layer) — owner, 15 Oct: "I like your recommendation for Hliðskjálf"
 - What the outliers lend — owner, 15 Oct: "I want to double check what these spells give their neighbors later" (open decision on the page)
 - Teleportation merges into Phase Door, whose flavours burst where the caster leaves — owner, 15 Oct: "Merge into phase door, and yes"
+- Loki's Switch flavours land on the swapped foe, healing neighbour hands over the hero's statuses; Hliðskjálf steers movement spells — owner, 15 Oct: "Yes to both"
 
 ## Read first
 - The Notion page: "Grimoire redesign" (Neighbour rules), "Open decisions", spell entries "Loki's Switch" and "Hliðskjálf" under Spell ideas

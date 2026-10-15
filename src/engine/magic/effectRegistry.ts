@@ -13,6 +13,8 @@ export interface EffectContext {
   targets: Entity[];
   /** The tile the cast was aimed at; absent for self and inventory casts. */
   aim?: Position;
+  /** The tiles the cast covers: its burst, else where it struck, else the caster's own (a self cast). */
+  tiles?: Position[];
   effects: VisualEffectDescriptor[];
   color: string;
   lastDamageEffect?: EffectPrimitive;

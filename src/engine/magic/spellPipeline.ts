@@ -24,6 +24,7 @@ import type {
   HandOverEffect,
   SummonEffect,
   LearnSpellEffect,
+  LayEffect,
   TargetingMode,
 } from './types';
 import { getAreaOfEffectTiles } from './targeting';
@@ -231,6 +232,14 @@ export class SpellPipeline {
       );
     });
 
+    EffectPrimitiveRegistry.register<LayEffect>('lay', (effect, ctx) => {
+      for (const p of ctx.tiles ?? []) {
+        if (!ctx.engine.map.isPassable(p.x, p.y)) continue;
+        if (effect.layer === 'gas') ctx.engine.surfaces.layGas(ctx.engine, p.x, p.y, effect.kind, effect.duration, effect.potency);
+        else ctx.engine.surfaces.setSurface(p.x, p.y, effect.kind, effect.duration, effect.potency);
+      }
+    });
+
     EffectPrimitiveRegistry.register<SummonEffect>('summon', (effect, ctx) => {
       SpellPipeline.executeSummonEffect(ctx.engine, ctx.caster, effect);
     });
@@ -355,6 +364,7 @@ export class SpellPipeline {
         spell,
         caster,
         targets: [caster],
+        tiles: [startPos],
         effects,
         color,
         powerMultiplier: shaping.powerMultiplier,
@@ -440,6 +450,7 @@ export class SpellPipeline {
     const reflects = geo.reflects;
     const targetsHit: Entity[] = [];
     let impactTile = { x: targetPos.x, y: targetPos.y };
+    let castTiles: Position[] = [impactTile];
     let hitDescription = '';
     const effects: VisualEffectDescriptor[] = [];
     const color = spell.visual?.color ?? getElementDefaultColor(spell.element);
@@ -448,6 +459,7 @@ export class SpellPipeline {
     if ((mode === 'ray' || mode === 'bounce_ray') && geo.ray) {
       const rayResult = geo.ray;
       impactTile = rayResult.impactTile;
+      castTiles = [impactTile];
 
       if (rayResult.path.length > 0) {
         effects.push({
@@ -479,6 +491,7 @@ export class SpellPipeline {
           impactTile.y,
           blastRadius
         );
+        castTiles = blastTiles;
         for (const tile of blastTiles) {
           const ent = engine.map.getEntityAt(tile.x, tile.y);
           if (ent && ent.isAlive()) {
@@ -535,6 +548,7 @@ export class SpellPipeline {
         style: spell.element === 'fire' ? 'flame' : spell.element === 'lightning' ? 'spark' : 'shockwave',
       });
       const blastTiles = getAreaOfEffectTiles(engine.map, burstOrigin.x, burstOrigin.y, radius);
+      castTiles = blastTiles;
       for (const tile of blastTiles) {
         const ent = engine.map.getEntityAt(tile.x, tile.y);
         if (ent && ent.isAlive()) {
@@ -563,6 +577,7 @@ export class SpellPipeline {
       caster,
       targets: targetsHit,
       aim: { x: targetPos.x, y: targetPos.y },
+      tiles: castTiles,
       effects,
       color,
       powerMultiplier: shaping.powerMultiplier,

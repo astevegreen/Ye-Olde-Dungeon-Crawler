@@ -136,8 +136,22 @@ export interface LearnSpellEffect {
   spellId: string;
 }
 
+/**
+ * Covers the cast's open tiles (`EffectContext.tiles`) with a ground surface or a gas of `kind`
+ * for `duration` turns, replacing what lay there. Its behaviour is the surface table's (P-32); a
+ * creature already on a tile feels it from the next turn, as standing in it.
+ */
+export interface LayEffect {
+  type: 'lay';
+  layer: 'surface' | 'gas';
+  kind: string;
+  duration: number;
+  potency?: number;
+}
+
 export type EffectPrimitive =
   | LearnSpellEffect
+  | LayEffect
   | DamageEffect
   | StatusEffectPrimitive
   | ChainEffect

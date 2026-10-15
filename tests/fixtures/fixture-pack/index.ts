@@ -211,6 +211,9 @@ function movementAndMarkSpells(): SpellDefinition[] {
     spell('switch', 'Switch', 'target_entity', [{ type: 'swap' }]),
     spell('steered_blink', 'Steered Blink', 'tile', [{ type: 'teleport', range: 5, random: false, aimed: true }]),
     spell('brand', 'Brand', 'target_entity', [{ type: 'applyStatus', statusId: 'marked', duration: 10 }]),
+    // Laying ground and gas on a 3×3 burst (P-32); `murk` is the pack's own gas.
+    { ...spell('rime_patch', 'Rime Patch', 'tile', [{ type: 'lay', layer: 'surface', kind: 'ice_sheet', duration: 15 }]), areaOfEffect: 1 },
+    { ...spell('murk_cloud', 'Murk Cloud', 'tile', [{ type: 'lay', layer: 'gas', kind: 'murk', duration: 10 }]), areaOfEffect: 1 },
   ];
 }
 
@@ -393,6 +396,7 @@ export const fixtureManifest: GameContentManifest = {
   monsters: FIXTURE_MONSTERS,
   items: FIXTURE_ITEMS,
   spells: FIXTURE_SPELLS,
+  surfaceBehaviours: { gases: { murk: { blocksSight: true } } },
   town: {
     name: 'Fixture Keep',
     width: 30,

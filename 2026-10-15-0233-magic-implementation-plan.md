@@ -25,3 +25,4 @@ Owner: "Plan the implementation of the revised cotw magic system. Plan only: cha
 - src/content/cotw/hybridSpells.ts:67 — the 12 recipes being removed
 - src/content/cotw/index.ts:293 — Odin, Ivalda (:336), Skuld (:344) placements
 - src/engine/storage/migrator.ts — CURRENT_SCHEMA_VERSION (§8.1)
+Resumed: 2026-10-15 03:02 UTC

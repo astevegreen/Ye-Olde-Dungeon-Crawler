@@ -27,6 +27,7 @@ Opus at high thinking — engine plus content removal across many files, and sav
 ## Decisions
 - Spell with no room: kept as a pending offer — owner: "Keep it as a pending offer saved with the hero, reopened from the Spellbook."
 - Card opens only when the grimoires are full — owner: "The card opens only when the grimoires are full."
+- Capture the placement card before 2b-1 — owner: "run a visual check first"
 
 ## Read first
 - `.prompts/plan-page.txt:307` — 2b-1 spec and file list

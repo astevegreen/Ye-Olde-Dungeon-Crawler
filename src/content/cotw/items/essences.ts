@@ -45,6 +45,10 @@ export const COTW_ESSENCE_RUNES: ItemDefinition[] = [
     'essence_berkano', 'Berkano', 'the birch-mother’s renewal (healing)',
     "Berkano, the birch-mother. Something green stirs in it, faint as spring under snow. Laid on the right altar, renewal could be woven into your own craft."
   ),
+  essence(
+    'essence_eihwaz', 'Eihwaz', "the yew's bane (poison)",
+    "Eihwaz, the yew. The tree that outlives its graves, and the one that kills a cow that grazes it. The stone is cold and faintly bitter to the tongue. Poison is a craft the runic altars know how to wake, if you bring it."
+  ),
 ];
 
 /** Essence item id per element, for the kill-rite config. */
@@ -56,4 +60,5 @@ export const COTW_ESSENCE_BY_ELEMENT: Record<string, string> = {
   lightning: 'essence_thurisaz',
   shadow: 'essence_nauthiz',
   healing: 'essence_berkano',
+  poison: 'essence_eihwaz',
 };

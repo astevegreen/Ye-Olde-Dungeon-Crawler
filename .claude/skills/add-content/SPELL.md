@@ -12,7 +12,7 @@ A spell is a `SpellDefinition` (`src/engine/magic/types.ts`) composed from the e
    - A spell that inflicts a status also sets `statusAffliction`, so a monster doesn't recast it on a target already afflicted.
    - `visual` is optional (the element's colour by default); its archetypes are in `src/engine/types/effects.ts`.
    - **Numbers** come from neighbours: single-target bolts deal 2.3–2.7 damage per mana (`firebolt` 12/5, `cold_ray` 14/6); bounces and bursts cost more (`lightning_bolt` 16/9, `fireball` 18/12); heal 20/4; utility 4–14 mana. `basePower` is the first damage or heal amount, 0 for utility. Content never scales a spell by level: its grimoire slot's stats, Intelligence and gear do.
-3. **Check the element** is in `COTW_AFFINITY_MATRIX` (`elements.ts`), and every effect's element too. `poison` has no essence and no rune.
+3. **Check the element** is in `COTW_AFFINITY_MATRIX` (`elements.ts`), and every effect's element too. `poison` has its Essence-Rune, Eihwaz (`COTW_ESSENCE_BY_ELEMENT`).
 4. **Make it learnable.** Every spell outside the schools `BloodMagic`, `Lore` and `Scroll` must be learnable from kill rites alone by floor 33 (`killRites.test.ts`).
    1. **Rite:** set `teachesSpellId` on a rite in `COTW_KILL_RITES` (`killRites.ts`) whose monster teaches nothing yet and isn't one of the night raid's. The rite must be meetable on that monster's `minFloor` with the spells learnable by then. Update the pacing comment at the file's top.
    2. **Tablet:** one row in `TABLETS` (`spellTablets.ts`): `spellId`, `spellName`, `soldFromFloor` (the first floor past the spell's zone), `value`. The row makes the `learn_<id>` spell, the tablet item and its place in the alchemist's stock.

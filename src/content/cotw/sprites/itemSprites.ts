@@ -194,6 +194,7 @@ export const COTW_ITEM_PIXEL_SPRITES: Record<string, PixelSprite> = {
   essence_thurisaz: runeStone('emBolt', DARK_SLAB),
   essence_nauthiz: runeStone('eyeRed'),
   essence_berkano: runeStone('emPoison'),
+  essence_eihwaz: runeStone({ base: '#95dc4c', em: true, hs: 0 }, SANDSTONE),
   // ---- relics with their own drawing
   nidhogg_fang: sculpted(fangModel, {}, 4),
   hearth_tear_fragment: sculpted(hearthTearModel, {}, 4),

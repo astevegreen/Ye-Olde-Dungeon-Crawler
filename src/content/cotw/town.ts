@@ -206,6 +206,8 @@ export const COTW_TOWN: TownLayoutDefinition = {
       study: { baseCp: 50, perFloorCp: 10 },
       rumor: { baseCp: 500, perFloorCp: 50 },
     },
+    // Mimir rearranges a grimoire's stats: dearer than Study, below what a free Hel altar is worth.
+    grimoireRestat: { baseCp: 300, perFloorCp: 30 },
     // The companion skill Ranvild teaches; `effect` is what `use_companion_skill` does with it.
     trainerSkills: [
       {

@@ -308,6 +308,9 @@ export interface TownServicesDefinition {
   smiths?: SmithDefinition[];
   /** The sage's monster lore for sale (`LoreService`); absent, the sage sells none. */
   monsterLore?: MonsterLoreDefinition;
+  /** The sage chooses one grimoire's stats afresh (`SageService.restatGrimoire`), for `baseCp +
+   *  perFloorCp ×` the deepest floor the hero has reached; absent, the sage does not. */
+  grimoireRestat?: { baseCp: number; perFloorCp: number };
   /** The companion skills the trainer teaches (`trainer_teach_skill`), one offer each in his
    *  dialog; absent, he teaches none. */
   trainerSkills?: TrainerSkillDefinition[];

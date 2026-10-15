@@ -18,6 +18,8 @@ import { getRenownTotal, recordMilestone } from '../renown/renownLedger';
 import { familyModifier } from '../items/modifierRoller';
 import { RunAdvisor, type AdvisoryReport } from '../advisory/runAdvisor';
 import { growCompanion } from '../combat/lastStand';
+import { restatRefusal, type AltarRestat } from '../magic/altars';
+import { grimoireAxes, statPickFor } from '../magic/grimoires';
 
 export class TempleService {
   // On the shop's copper scale (Q45, 2026-10-04): a floor-1 full clear pays about 400 CP.
@@ -434,6 +436,42 @@ export class SageService {
    */
   public static getRunAdvisory(engine: GameEngine): AdvisoryReport {
     return RunAdvisor.evaluateRun(engine);
+  }
+
+  /** Whether the sage chooses grimoire stats afresh: the pack prices it and the hero keeps grimoires. */
+  public static restatOffered(engine: GameEngine): boolean {
+    return !!engine.manifest.town?.services?.grimoireRestat && !!engine.player.grimoireSystem;
+  }
+
+  /** The price of a restat, by the deepest floor reached (floor 1 before any). */
+  public static restatPrice(engine: GameEngine): number {
+    const price = engine.manifest.town?.services?.grimoireRestat;
+    return price ? price.baseCp + price.perFloorCp * Math.max(1, engine.gameState.deepestFloor) : 0;
+  }
+
+  /** Chooses one grimoire's stats afresh, for the restat price; a choice that changes nothing is refused unpaid. */
+  public static restatGrimoire(engine: GameEngine, restat: AltarRestat): ServiceResult {
+    const services = engine.manifest.town?.services;
+    const sageName = services?.sageName ?? services?.sageTitle ?? 'The sage';
+    const player = engine.player;
+    if (!SageService.restatOffered(engine)) return { success: false, costInCp: 0, message: `${sageName} knows nothing of grimoires.` };
+    const refusal = restatRefusal(player, restat);
+    if (refusal) return { success: false, costInCp: 0, message: refusal };
+    const system = player.grimoireSystem!;
+    const state = player.grimoireState!;
+    const book = system.layouts.find((l) => l.id === restat.grimoireId)?.name ?? restat.grimoireId;
+    if (grimoireAxes(system, state, restat.grimoireId).every((axis) => statPickFor(state, restat.grimoireId, axis) === restat.stats[axis])) {
+      return { success: false, costInCp: 0, message: `${book} keeps the stats it has.` };
+    }
+    const price = SageService.restatPrice(engine);
+    const funds = getPlayerTotalCp(player);
+    if (funds < price) {
+      return { success: false, costInCp: price, message: `Rearranging ${book} costs ${formatCurrency(price)}. You have ${formatCurrency(funds)}.` };
+    }
+    const paid = deductCurrencyFromPlayer(player, price);
+    if (!paid.success) return paid;
+    player.restatGrimoire(restat.grimoireId, restat.stats);
+    return { success: true, costInCp: price, message: `${sageName} speaks the runes of ${book} anew, and its slots grow by other stats now.` };
   }
 }
 

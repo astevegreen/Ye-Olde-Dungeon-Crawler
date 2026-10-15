@@ -14,6 +14,7 @@ import {
   type NpcRole,
 } from '../../engine';
 import { COTW_PACTS } from '../../content/cotw/pacts';
+import { COTW_GRIMOIRES } from '../../content/cotw/grimoires';
 import { cotwManifest } from '../../content/cotw';
 import { ShopDialog } from '../shop/shopDialog';
 import { servicePanelFor, servicePanelHtml, type ShopAction } from '../shop/shopPanels';
@@ -679,6 +680,37 @@ describe('ShopDialog', () => {
 
     shop.handleKeyDown(key('ArrowRight'), e);
     expect(shop.serviceView).toBe('items');
+  });
+
+  it("keeps Grimoires as the sage's last list: G rearranges once a stat is picked that changes something (plan 2b-2)", () => {
+    const e = new GameEngine({
+      map: new GameMap(20, 20),
+      player: new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 }, spellsKnown: ['magic_arrow', 'firebolt'], grimoireSystem: COTW_GRIMOIRES }),
+      floor: 0,
+      manifest: cotwManifest,
+    });
+    e.player.assignGrimoireStat('mani', 'x', 'power');
+    const sent = vi.spyOn(e.commandBus, 'dispatch').mockReturnValue({ success: true, message: 'Done.' });
+    expect(servicePanelFor(e, npc('sage'))!.views!.map((v) => v.id)).toEqual(['items', 'study', 'rumors', 'grimoires']);
+
+    const shop = new ShopDialog();
+    shop.open(npc('sage'), null, e);
+    // A picker button the stand-in scrim hands to the binder, so a click can be made.
+    const clicks: Array<() => void> = [];
+    const swift = { dataset: { restatAxis: 'x', restatStat: 'swift' }, addEventListener: (_: string, fn: () => void) => clicks.push(fn) };
+    doc.overlay!.querySelectorAll = ((sel: string) => (sel === '[data-restat-stat]' ? [swift] : [])) as never;
+    for (let i = 0; i < 3; i++) shop.handleKeyDown(key('ArrowRight'), e);
+    expect(shop.serviceView).toBe('grimoires');
+    expect(html()).toContain('data-restat-grimoire="mani"');
+    expect(html()).toContain('keeps the stats it has');
+    shop.handleKeyDown(key('g'), e);
+    expect(sent).not.toHaveBeenCalled();
+
+    clicks.at(-1)!();
+    expect(html()).toContain('<b>Swift</b>');
+    expect(html()).toContain(formatCurrency(330));
+    shop.handleKeyDown(key('g'), e);
+    expect(sent.mock.calls.map((c) => c[0])).toEqual([{ type: 'sage_restat', payload: { grimoireId: 'mani', x: 'swift' } }]);
   });
 
   it("shows a townsperson's advice from the pack, and nothing but the greeting without it", () => {

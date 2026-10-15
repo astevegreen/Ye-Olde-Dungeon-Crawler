@@ -460,6 +460,18 @@ export class EngineCommandBus implements GameCommandBus {
         return { success: res.success, message: res.message };
       }
 
+      // One grimoire's stats chosen afresh: payload `{ grimoireId, x, y }`, a stat id per axis.
+      case 'sage_restat': {
+        const grimoireId = p.grimoireId as string;
+        if (!grimoireId) return { success: false, message: 'No grimoire chosen.' };
+        const res = SageService.restatGrimoire(this.engine, {
+          grimoireId,
+          stats: { x: p.x as string | undefined, y: p.y as string | undefined },
+        });
+        this.engine.log(res.message);
+        return { success: res.success, message: res.message };
+      }
+
       case 'sage_advisory': {
         const rep = SageService.getRunAdvisory(this.engine);
         const sageName = this.engine.manifest?.town?.services?.sageName ?? 'The Sage';

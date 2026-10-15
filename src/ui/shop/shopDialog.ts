@@ -19,11 +19,13 @@ import { formatLoad, formatWeight } from '../units';
 import { itemFrameClass, itemToneClass } from '../inventory/itemTone';
 import { itemDetailHtml } from '../inventory/itemDetail';
 import { ItemInspector } from '../inventory/itemInspector';
+import { bindRestatPicker, restatChoiceFor, type RestatChoice } from '../restatPicker';
 import {
   type ServicePanel,
   type ShopAction,
   identifiableItems,
   sageCreatures,
+  sageRestatChoice,
   type SageView,
   nextBlessing,
   serviceTitle,
@@ -81,6 +83,8 @@ export class ShopDialog {
   public selectedChoiceIndex = 0;
   /** The open list of a townsperson who keeps several (the sage's, the banker's); '' is the first. */
   public serviceView = '';
+  /** The sage's Grimoires list: the grimoire and stats picked; unset, the first grimoire as it stands. */
+  private restatChoice?: RestatChoice;
   public statusMessage = '';
   public statusTone: Tone = 'info';
 
@@ -116,6 +120,7 @@ export class ShopDialog {
     this.selectedForgeIndex = 0;
     this.selectedChoiceIndex = 0;
     this.serviceView = '';
+    this.restatChoice = undefined;
     this.statusMessage = '';
     this.statusTone = 'info';
     this.openedAt = Date.now();
@@ -415,7 +420,7 @@ export class ShopDialog {
   // ---- Town services -------------------------------------------------------------
 
   private panel(engine: GameEngine): ServicePanel | null {
-    return this.activeNpc && !this.merchant ? servicePanelFor(engine, this.activeNpc, this.selectedChoiceIndex, this.serviceView) : null;
+    return this.activeNpc && !this.merchant ? servicePanelFor(engine, this.activeNpc, this.selectedChoiceIndex, this.serviceView, this.restatChoice) : null;
   }
 
   private setServiceView(view: string): void {
@@ -496,6 +501,14 @@ export class ShopDialog {
         if (!creature) return;
         const result = bus.dispatch({ type: act === 'study' ? 'sage_study' : 'sage_rumor', payload: { definitionId: creature.id } });
         this.selectedChoiceIndex = Math.max(0, Math.min(this.selectedChoiceIndex, sageCreatures(engine, this.serviceView as SageView).length - 1));
+        this.report(result);
+        return;
+      }
+      case 'restat': {
+        const choice = sageRestatChoice(engine, this.restatChoice);
+        if (!choice.grimoireId) return;
+        const result = bus.dispatch({ type: 'sage_restat', payload: { grimoireId: choice.grimoireId, ...choice.stats } });
+        if (result.success) this.restatChoice = restatChoiceFor(engine.player, choice.grimoireId);
         this.report(result);
         return;
       }
@@ -763,6 +776,12 @@ export class ShopDialog {
     scrim.querySelectorAll<HTMLElement>('[data-act]').forEach((el) => {
       el.addEventListener('click', () => this.run(el.dataset.act as ShopAction, engine, el.dataset.arg));
     });
+    if (this.panel(engine)?.view === 'grimoires') {
+      bindRestatPicker(scrim, engine.player, sageRestatChoice(engine, this.restatChoice), (next) => {
+        this.restatChoice = next;
+        this.render();
+      });
+    }
     scrim.querySelectorAll<HTMLElement>('[data-choice]').forEach((el) => {
       el.addEventListener('click', () => {
         const count = this.panel(engine)?.choices?.length ?? 0;

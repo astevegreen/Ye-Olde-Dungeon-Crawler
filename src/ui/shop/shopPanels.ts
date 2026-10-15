@@ -22,6 +22,7 @@ import { resolveBranding } from '../branding';
 import { escapeHtml, keyChip } from '../html';
 import { itemToneClass } from '../inventory/itemTone';
 import { purseFill } from '../purseFill';
+import { restatChoiceFor, restatPickerHtml, restatVerdict, type RestatChoice } from '../restatPicker';
 
 /**
  * What the shop dialog shows for each town service, as data and HTML. The dialog
@@ -52,6 +53,7 @@ export type ShopAction =
   | 'bless'
   | 'study'
   | 'rumor'
+  | 'restat'
   | 'view'
   | 'leave';
 
@@ -186,12 +188,19 @@ function templePanel(engine: GameEngine, selected: number): ServicePanel {
   };
 }
 
-/** The sage's lists (tracker 4.1): unidentified items, creatures to study, rumors to buy. */
-export type SageView = 'items' | 'study' | 'rumors';
+/** The sage's lists (tracker 4.1): unidentified items, creatures to study, rumors to buy, grimoires to rearrange. */
+export type SageView = 'items' | 'study' | 'rumors' | 'grimoires';
 
-/** The lists this sage keeps: lore only where the pack sells it. */
+/** The lists this sage keeps: lore and grimoires only where the pack sells them. */
 export function sageViews(engine: GameEngine): SageView[] {
-  return LoreService.offered(engine) ? ['items', 'study', 'rumors'] : ['items'];
+  const views: SageView[] = LoreService.offered(engine) ? ['items', 'study', 'rumors'] : ['items'];
+  return SageService.restatOffered(engine) ? [...views, 'grimoires'] : views;
+}
+
+/** The restat the sage's Grimoires list shows: the hero's own choice, else the first open grimoire as it stands. */
+export function sageRestatChoice(engine: GameEngine, choice: RestatChoice | undefined): RestatChoice {
+  const first = engine.player.grimoireState?.opened[0];
+  return choice ?? (first ? restatChoiceFor(engine.player, first) : { stats: {} });
 }
 
 /** The creatures a lore list holds, in the order it shows them. */
@@ -203,7 +212,7 @@ export function sageCreatures(engine: GameEngine, view: SageView): MonsterDefini
 
 const RANK_WORD = ['', 'Seen', 'Slain'];
 
-function sagePanel(engine: GameEngine, selected: number, view: string): ServicePanel {
+function sagePanel(engine: GameEngine, selected: number, view: string, restat?: RestatChoice): ServicePanel {
   const views = sageViews(engine);
   const shown = (views as string[]).includes(view) ? (view as SageView) : 'items';
   const unknown = identifiableItems(engine);
@@ -212,7 +221,12 @@ function sagePanel(engine: GameEngine, selected: number, view: string): ServiceP
   const price = (cp: number) => `<span class="ui-num">${escapeHtml(formatCurrency(cp))}</span>`;
   let facts: string;
   let choices: string[];
-  if (shown === 'study') {
+  const restatChoice = sageRestatChoice(engine, restat);
+  const verdict = shown === 'grimoires' ? restatVerdict(engine.player, restatChoice) : undefined;
+  if (verdict) {
+    facts = `<div class="ui-note">Choose afresh the stats one grimoire's slots grow by. The price rises with the deepest floor you have reached.</div>${restatPickerHtml(engine.player, restatChoice)}<div class="ui-note">${verdict.text}</div>`;
+    choices = [];
+  } else if (shown === 'study') {
     facts = creatures.length
       ? '<div class="ui-note">Creatures you know, nearest first. Study one to learn it a rank further without a kill.</div>'
       : '<div class="ui-note">Nothing to study: meet a creature first, or its page is already complete.</div>';
@@ -248,6 +262,15 @@ function sagePanel(engine: GameEngine, selected: number, view: string): ServiceP
       priceCp: SageService.IDENTIFY_FEE_CP,
       disabled: unknown.length === 0,
     });
+  } else if (verdict) {
+    offers.push({
+      act: 'restat',
+      key: 'G',
+      label: 'Rearrange the grimoire',
+      detail: 'Its slots grow by the stats you chose above, from now on.',
+      priceCp: SageService.restatPrice(engine),
+      disabled: !verdict.ok,
+    });
   } else if (shown === 'study') {
     offers.push({
       act: 'study',
@@ -282,11 +305,12 @@ function sagePanel(engine: GameEngine, selected: number, view: string): ServiceP
       detail: 'The creatures you have met and what you know of them.',
     }
   );
-  const labels: Record<SageView, string> = { items: 'Items', study: 'Study', rumors: 'Rumors' };
+  const labels: Record<SageView, string> = { items: 'Items', study: 'Study', rumors: 'Rumors', grimoires: 'Grimoires' };
   const counts: Record<SageView, number> = {
     items: unknown.length,
     study: shown === 'study' ? creatures.length : sageCreatures(engine, 'study').length,
     rumors: shown === 'rumors' ? creatures.length : sageCreatures(engine, 'rumors').length,
+    grimoires: engine.player.grimoireState?.opened.length ?? 0,
   };
   return {
     heading: 'Services',
@@ -469,11 +493,11 @@ const PACTS_VIEW = 'pacts';
  * The panel for a townsperson who isn't a merchant; null when they only greet. The pact
  * keeper's pacts are a list of their own, a tab beside whatever else he offers.
  */
-export function servicePanelFor(engine: GameEngine, npc: NPC, selected = 0, view = ''): ServicePanel | null {
+export function servicePanelFor(engine: GameEngine, npc: NPC, selected = 0, view = '', restat?: RestatChoice): ServicePanel | null {
   const keeper = engine.manifest?.pactKeeperNpcId && npc.id === engine.manifest.pactKeeperNpcId;
   const offers = keeper ? pactOffers(engine) : [];
   const pactsOpen = view === PACTS_VIEW && offers.length > 0;
-  const panel = basePanelFor(engine, npc, selected, pactsOpen ? '' : view);
+  const panel = basePanelFor(engine, npc, selected, pactsOpen ? '' : view, restat);
   if (offers.length === 0) return panel;
   const pacts: ServicePanel = { heading: 'Pacts', facts: PACT_NOTE, offers };
   if (!panel) return pacts;
@@ -482,14 +506,14 @@ export function servicePanelFor(engine: GameEngine, npc: NPC, selected = 0, view
   return pactsOpen ? { ...pacts, views: tabs, view: PACTS_VIEW } : { ...panel, views: tabs, view: panel.view ?? views[0].id };
 }
 
-function basePanelFor(engine: GameEngine, npc: NPC, selected: number, view: string): ServicePanel | null {
+function basePanelFor(engine: GameEngine, npc: NPC, selected: number, view: string, restat?: RestatChoice): ServicePanel | null {
   const attunementNpcId = engine.manifest?.runeOfReturn?.attunementNpcId;
   if (attunementNpcId && npc.id === attunementNpcId) return runeSmithPanel(engine);
   switch (npc.role) {
     case 'priest':
       return templePanel(engine, selected);
     case 'sage':
-      return sagePanel(engine, selected, view);
+      return sagePanel(engine, selected, view, restat);
     case 'banker':
       return bankerPanel(engine, selected, view);
     case 'trainer':

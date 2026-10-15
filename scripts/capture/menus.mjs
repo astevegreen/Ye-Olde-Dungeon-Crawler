@@ -184,6 +184,12 @@ async function shopScenes(page, tag) {
     await wait(page, 350);
     const slug = String(kind).toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 24);
     await page.screenshot({ path: `${OUT}/s${String(k++).padStart(2, '0')}-${slug}-${tag}.png` });
+    // The sage's Grimoires list (Mimir's restat), the fourth after Items, Study and Rumors.
+    if (n.role === 'sage') {
+      for (let i = 0; i < 3; i++) await key(page, 'ArrowRight');
+      await wait(page, 300);
+      await page.screenshot({ path: `${OUT}/s${String(k++).padStart(2, '0')}-${slug}-grimoires-${tag}.png` });
+    }
     await resetGame(page);
   }
 }

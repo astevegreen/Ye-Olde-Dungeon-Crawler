@@ -31,6 +31,7 @@ export interface TitleScreenOptions {
       gender?: Gender;
       difficulty?: GameDifficulty;
       maxFloor?: number;
+      firstGrimoireStat?: string;
     }
   ) => void;
   onImport: (fileContent: string) => void;
@@ -49,6 +50,7 @@ export class TitleScreen {
       gender?: Gender;
       difficulty?: GameDifficulty;
       maxFloor?: number;
+      firstGrimoireStat?: string;
     }
   ) => void;
   private onImportCallback: (fileContent: string) => void;
@@ -77,6 +79,7 @@ export class TitleScreen {
   // Stat Roller state
   private selectedGender: Gender = 'male';
   private selectedDifficulty: GameDifficulty = 'medium';
+  private firstStatSelect?: HTMLSelectElement;
   /**
    * Character creation happens before any GameEngine exists, so the screen owns its own
    * seeded stream rather than reaching for Math.random. This is the entropy boundary:
@@ -212,6 +215,8 @@ export class TitleScreen {
     const femaleBtn = document.getElementById('btn-gender-female') as HTMLButtonElement | null;
     maleBtn?.addEventListener('click', () => this.setGender('male'));
     femaleBtn?.addEventListener('click', () => this.setGender('female'));
+
+    this.setupFirstStat();
 
     // Difficulty selection
     const easyBtn = document.getElementById('btn-diff-easy') as HTMLButtonElement | null;
@@ -368,7 +373,33 @@ export class TitleScreen {
       attributes: { ...this.attributes },
       gender: this.selectedGender,
       difficulty: this.selectedDifficulty,
+      firstGrimoireStat: this.firstStatSelect?.value || undefined,
     });
+  }
+
+  /**
+   * The first-stat row exists only for a pack with the three-grimoire model: the stat that
+   * grows the first grimoire's first axis, the power stat preselected so "Create & Embark"
+   * works unchanged.
+   */
+  private setupFirstStat(): void {
+    const row = document.getElementById('first-stat-row');
+    const select = document.getElementById('first-stat-select') as HTMLSelectElement | null;
+    const config = this.profileManager.manifest?.magic?.grimoires;
+    if (!row || !select) return;
+    row.hidden = !config;
+    if (!config) return;
+    this.firstStatSelect = select;
+    select.innerHTML = '';
+    const preselected = config.stats.find((s) => s.kind === 'power') ?? config.stats[0];
+    for (const stat of config.stats) {
+      const option = document.createElement('option');
+      option.value = stat.id;
+      option.textContent = stat.name;
+      option.title = stat.description;
+      option.selected = stat === preselected;
+      select.appendChild(option);
+    }
   }
 
   public setGender(gender: Gender): void {

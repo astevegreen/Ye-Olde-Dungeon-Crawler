@@ -155,6 +155,17 @@
         min-height: 0;
       }
 
+      .first-stat-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 6px;
+      }
+
+      .first-stat-row[hidden] {
+        display: none;
+      }
+
       .retro-label {
         font-size: var(--ui-text-xs);
         font-weight: bold;

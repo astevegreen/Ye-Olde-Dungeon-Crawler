@@ -17,6 +17,7 @@ import { defaultMigrator, CURRENT_SCHEMA_VERSION, type VersionedSaveEnvelope } f
 import { generateSaveFilename, createSavePackage } from './saveTransfer';
 import type { GameContentManifest } from '../types/manifest';
 import type { GameDifficulty } from '../types';
+import { assignStat, pendingStatPicks } from '../magic/grimoires';
 import { DIFFICULTY_MAX_FLOORS, DEFAULT_DIFFICULTY } from '../types';
 
 /** Minimal download adapter interface — implemented by PlatformAdapter in src/ui/platform.ts */
@@ -181,6 +182,8 @@ export class ProfileManager {
       startInTown?: boolean;
       /** Begin with the pack's prologue (`manifest.prologue`), when it has one and the hero starts in town. */
       prologue?: boolean;
+      /** The stat the first grimoire's first axis grows (the title screen's pick); the pack's suggestion when absent. */
+      firstGrimoireStat?: string;
       manifest?: GameContentManifest;
     }
   ): { profile: CharacterProfile; engine: GameEngine } {
@@ -282,6 +285,12 @@ export class ProfileManager {
       // The pack's slots, as a load gives them (deserializeGame): the engine's defaults otherwise.
       inventory: new InventoryManager({ ownerId: profileId, slots: manifest.equipmentSlots }),
     });
+
+    // The first stat of the first open grimoire, as the title screen chose it.
+    if (player.grimoireSystem && player.grimoireState && options?.firstGrimoireStat) {
+      const first = pendingStatPicks(player.grimoireSystem, player.grimoireState)[0];
+      if (first) assignStat(player.grimoireSystem, player.grimoireState, { ...first, statId: options.firstGrimoireStat });
+    }
 
     // 3. Equip starting kit from the run's stream (created above).
     CharacterRoller.equipStartingKit(player, profileId, manifest.starterKit, manifest.items, () => runPrng.next());

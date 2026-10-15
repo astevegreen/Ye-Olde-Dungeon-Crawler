@@ -27,6 +27,7 @@ Continue the owner's magic redesign dialogue (talk only; nothing is built until 
 - Teleportation merges into Phase Door, whose flavours burst where the caster leaves — owner, 15 Oct: "Merge into phase door, and yes"
 - Loki's Switch flavours land on the swapped foe, healing neighbour hands over the hero's statuses; Hliðskjálf steers movement spells — owner, 15 Oct: "Yes to both"
 - Lends: Loki pulls 1, mark adds 10% damage taken, movement neighbour stretches Hliðskjálf's reach; Phase Door's conditional step/rift/summon blink turned down — owner, 15 Oct: "All are good except the first one"
+- Phase Door lends a random 2-tile blink of the target — owner, 15 Oct: "That is good". Goal complete.
 
 ## Read first
 - The Notion page: "Grimoire redesign" (Neighbour rules), "Open decisions", spell entries "Loki's Switch" and "Hliðskjálf" under Spell ideas

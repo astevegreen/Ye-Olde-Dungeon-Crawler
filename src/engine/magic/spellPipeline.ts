@@ -643,7 +643,7 @@ export class SpellPipeline {
     let rawDamage = scaleSpellDamage(engine, caster, element, rolled);
     rawDamage = scaleByTargetFamily(engine, caster, target, rawDamage);
     rawDamage = wardFirstSpell(engine, caster, target, rawDamage);
-    const terrain = engine.map.getTile(target.x, target.y)?.type;
+    const terrain = engine.surfaces.terrainAt(engine, target.x, target.y);
     const result = target.takeElementalDamage(rawDamage, element, engine.affinityMatrix, terrain, { pierce: effect.pierce });
 
     if (result.affinity === 'absorbing') {
@@ -682,7 +682,8 @@ export class SpellPipeline {
     }
 
     if (engine.surfaces) {
-      engine.surfaces.triggerElementalReaction(target.x, target.y, element, result.damageDealt, engine);
+      // The pool takes the spell's hit, not what this target's resistance or last HP let through.
+      engine.surfaces.triggerElementalReaction(target.x, target.y, element, rawDamage, engine, target);
     }
   }
 

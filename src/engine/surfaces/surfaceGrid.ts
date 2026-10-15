@@ -1,7 +1,7 @@
 import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
 import type { ElementType } from '../magic/elements';
-import type { Position } from '../types';
+import type { Position, TileType } from '../types';
 import { applyImpulse } from '../combat/impulse';
 import { DeathResolver } from '../combat/deathResolver';
 import { builtinGasBlocksSight, surfaceBehaviourOf, type SurfaceMoment } from './surfaceBehaviours';
@@ -194,6 +194,14 @@ export class SurfaceGrid {
     return this.getCell(x, y)?.surface?.type === 'water' || engine.map.getTile(x, y)?.type === 'shallow_water';
   }
 
+  /**
+   * The ground a struck creature stands on, for the water rule of `calculateElementalDamage`:
+   * laid water counts as shallow water, so a wader in either takes lightning at 200% once.
+   */
+  public terrainAt(engine: GameEngine, x: number, y: number): TileType | undefined {
+    return this.isWaterAt(engine, x, y) ? 'shallow_water' : engine.map.getTile(x, y)?.type;
+  }
+
   /** The tiles of the pool at (x, y), 4-way, at most `max`. */
   private poolAt(engine: GameEngine, x: number, y: number, max: number): Position[] {
     const pool: Position[] = [];
@@ -284,13 +292,15 @@ export class SurfaceGrid {
   /**
    * Evaluates elemental interactions when fire, lightning, cold, or acid strikes a tile.
    * In a cast's scope (`withReactionScope`) a tile that has reacted does not react again.
+   * `struck` already took the blow, the water's share included, so a pool shock passes it over.
    */
   public triggerElementalReaction(
     x: number,
     y: number,
     element: ElementType | string,
     damageOrEngine: number | GameEngine,
-    engineMaybe?: GameEngine
+    engineMaybe?: GameEngine,
+    struck?: Entity
   ): ReactionResult {
     let baseDamage = 10;
     let engine: GameEngine;
@@ -301,7 +311,7 @@ export class SurfaceGrid {
       engine = damageOrEngine;
     }
     if (this.scope?.tiles.has(this.key(x, y))) return { triggered: false, occurred: false, affectedCells: [] };
-    const result = this.react(x, y, element, baseDamage, engine);
+    const result = this.react(x, y, element, baseDamage, engine, struck);
     if (this.scope && result.occurred) {
       this.scope.tiles.add(this.key(x, y));
       for (const p of result.affectedCells) this.scope.tiles.add(this.key(p.x, p.y));
@@ -309,7 +319,7 @@ export class SurfaceGrid {
     return result;
   }
 
-  private react(x: number, y: number, element: ElementType | string, baseDamage: number, engine: GameEngine): ReactionResult {
+  private react(x: number, y: number, element: ElementType | string, baseDamage: number, engine: GameEngine, struck?: Entity): ReactionResult {
     const cell = this.getCell(x, y);
     const tile = engine.map.getTile(x, y);
     const isWater = cell?.surface?.type === 'water' || tile?.type === 'shallow_water';
@@ -419,7 +429,7 @@ export class SurfaceGrid {
 
           // Electrocute wading entity for 200% lightning damage
           const ent = engine.map.getEntityAt(p.x, p.y);
-          if (ent && ent.isAlive()) {
+          if (ent && ent !== struck && ent.isAlive()) {
             // The 200% is this pool's; no terrain is passed, so the water rule doesn't double it again.
             const electroDamage = Math.max(10, Math.round(baseDamage * 2.0));
             totalDmg += this.harm(

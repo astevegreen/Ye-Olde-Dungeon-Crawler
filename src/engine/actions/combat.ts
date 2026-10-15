@@ -387,7 +387,8 @@ export class MeleeAttackAction implements Action {
       if (weapon?.elementalAffix) {
         const affix = weapon.elementalAffix;
         const affinity = this.defender.affinityTo(affix.element);
-        const elemResult = calculateElementalDamage(affix.bonusDamage, affix.element, affinity);
+        const terrain = engine.surfaces?.terrainAt(engine, this.defender.x, this.defender.y);
+        const elemResult = calculateElementalDamage(affix.bonusDamage, affix.element, affinity, undefined, terrain);
         if (elemResult.finalDamage > 0) {
           const elemDmgRes = this.defender.takeDamage(elemResult.finalDamage);
           const elemMsg = `${this.attacker.name}'s ${weapon.name} bursts with ${affix.element} for ${elemDmgRes.damageDealt} bonus damage!`;
@@ -398,7 +399,7 @@ export class MeleeAttackAction implements Action {
             killingElement = affix.element;
           }
           if (engine.surfaces) {
-            engine.surfaces.triggerElementalReaction(this.defender.x, this.defender.y, affix.element, elemDmgRes.damageDealt, engine);
+            engine.surfaces.triggerElementalReaction(this.defender.x, this.defender.y, affix.element, affix.bonusDamage, engine, this.defender);
           }
         }
       }

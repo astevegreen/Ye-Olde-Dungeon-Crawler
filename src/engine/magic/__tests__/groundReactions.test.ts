@@ -88,15 +88,27 @@ describe('ground reactions (P-32)', () => {
       expect(engine.surfaces.getSurface(20, 10)).toBe('ice_sheet');
     });
 
-    it('shocks a pool once, however many of its tiles the burst covers', () => {
+    it('shocks a pool once, however many of its tiles the burst covers; the struck wader takes its 200% once', () => {
       const { engine, cast, foe, linesFrom } = build();
       for (let x = 12; x <= 20; x++) engine.surfaces.setSurface(x, 10, 'water', 8);
-      foe('Wader', 14, 10);
-      foe('Far wader', 19, 10);
+      const wader = foe('Wader', 14, 10);
+      const far = foe('Far wader', 19, 10);
       const before = engine.messages.length;
       cast('storm_burst', 14, 10);
-      expect(linesFrom(before, 'Wader is severely shocked')).toHaveLength(1);
+      expect(linesFrom(before, 'Wader')).toEqual([expect.stringContaining('20 lightning')]);
       expect(linesFrom(before, 'Far wader is severely shocked')).toHaveLength(1);
+      expect(wader.hp).toBe(180);
+      expect(far.hp).toBe(180);
+    });
+
+    it('shocks a wader in shallow water once, not its own hit and the pool again', () => {
+      const { engine, map, cast, foe, linesFrom } = build();
+      map.setTile(14, 10, TILES.SHALLOW_WATER);
+      const wader = foe('Wader', 14, 10);
+      const before = engine.messages.length;
+      cast('storm_burst', 14, 10);
+      expect(linesFrom(before, 'Wader')).toEqual([expect.stringContaining('20 lightning')]);
+      expect(wader.hp).toBe(180);
     });
 
     it('a burst with no damage strikes no ground', () => {

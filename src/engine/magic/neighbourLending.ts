@@ -1,4 +1,4 @@
-import type { EffectPrimitive, SpellDefinition } from './types';
+import type { EffectPrimitive, LendOverride, SpellDefinition } from './types';
 import type { GrimoireSystemConfig, LendFlavour, NeighbourLendingConfig, SpellType } from './magicConfig';
 import {
   isSlotDoubled,
@@ -20,8 +20,8 @@ import {
  * six spell types delivers it. Axis stats never reach a borrowed effect.
  */
 
-/** Where a spell of each type delivers what it borrows (`SpellType`). */
-export type LendDelivery = 'hit' | 'target' | 'adjacentFoes' | 'summonHits' | 'departure' | 'material';
+/** Where a spell of each type delivers what it borrows (`SpellType`); `caster` for a typeless spell's own overrides. */
+export type LendDelivery = 'hit' | 'target' | 'adjacentFoes' | 'summonHits' | 'departure' | 'material' | 'caster';
 
 const DELIVERY: Record<SpellType, LendDelivery> = {
   damage: 'hit',
@@ -63,6 +63,10 @@ export interface ResolvedCast {
   material?: string;
   /** The flavour ids this slot lends its neighbours. */
   gives: string[];
+  /** Reach the spell's overrides of what it borrows add to its `areaOfEffect` (`LendOverride`). */
+  reachBonus: number;
+  /** The spell's own aim and effects as what it borrows changes them (`LendOverride.spell`). */
+  spellPatch?: LendOverride['spell'];
 }
 
 export type SpellLookup = (spellId: string) => SpellDefinition | undefined;
@@ -119,11 +123,14 @@ export function resolveCast(
     stats: resolveSlotStats(slotStatSteps(config, state, ref), spell),
     lentPowerMultiplier: 1,
     lentHpCost: 0,
-    delivery: spell.spellType ? DELIVERY[spell.spellType] : undefined,
+    delivery: spell.spellType ? DELIVERY[spell.spellType] : spell.lendOverrides ? 'caster' : undefined,
     lends: [],
     gives: lending ? lentFlavours(lending, state, spell).map((f) => f.id) : [],
+    reachBonus: 0,
   };
-  if (!lending || !spell.spellType) return cast;
+  if (!lending || !cast.delivery) return cast;
+  // A typeless spell borrows only what it makes something of.
+  const borrows = (flavourId: string) => spell.spellType !== undefined || spell.lendOverrides?.[flavourId] !== undefined;
 
   const opposites = new Set(elements.map(oppositeOf).filter((e): e is string => e !== undefined));
   let opposed = elements.some((e) => opposites.has(e));
@@ -136,7 +143,7 @@ export function resolveCast(
     const slotDoubled = isSlotDoubled(state, n);
     for (const lent of lentFlavours(lending, state, neighbour)) {
       const flavour = flavourById(lending, lent.id);
-      if (!flavour) continue;
+      if (!flavour || !borrows(flavour.id)) continue;
       const doubled = slotDoubled || (lent.element !== undefined && elements.includes(lent.element));
       const entry = merged.get(flavour.id);
       if (entry) {
@@ -150,7 +157,7 @@ export function resolveCast(
 
   for (const element of elements.slice(1)) {
     const flavour = flavourById(lending, element);
-    if (!flavour) continue;
+    if (!flavour || !borrows(flavour.id)) continue;
     if (!merged.has(flavour.id)) merged.set(flavour.id, { flavour, doubled: false, from: [] });
     if (spell.spellType === 'terrain') cast.material ??= flavour.id;
   }
@@ -160,7 +167,10 @@ export function resolveCast(
     const form = doubled && flavour.doubled ? flavour.doubled : flavour;
     bonus += form.powerBonus ?? 0;
     cast.lentHpCost += form.hpCostPerCast ?? 0;
-    cast.lends.push({ flavourId: flavour.id, name: form.name, doubled, effects: form.effects, color: form.color, from });
+    const override = spell.lendOverrides?.[flavour.id];
+    if (override?.reachBonus) cast.reachBonus += override.reachBonus;
+    if (override?.spell) cast.spellPatch = { ...cast.spellPatch, ...override.spell };
+    cast.lends.push({ flavourId: flavour.id, name: form.name, doubled, effects: override?.effects ?? form.effects, color: form.color, from });
   }
   cast.lentPowerMultiplier = 1 + bonus;
   return cast;

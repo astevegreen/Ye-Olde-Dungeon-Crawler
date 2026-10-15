@@ -8,9 +8,26 @@ import { DrinkPotionAction } from '../actions/spell-actions';
 import { SmartCloseDoorAction, getAdjacentOpenDoors } from '../actions/door';
 import { MovementAction } from '../actions/movement';
 import { SpellPipeline } from '../magic/spellPipeline';
-import { getSpell } from '../magic/spellRegistry';
 import { cotwManifest } from '../../content/cotw';
+import type { SpellDefinition } from '../magic/types';
 import { Visibility } from '../fov/types';
+
+/** A whole-floor reveal, as the old seer's spells were (cotw's Hliðskjálf reaches only so far). */
+const wholeFloorReveal = (target: 'actors' | 'items' | 'map', duration = 30): SpellDefinition => ({
+  id: `whole_floor_${target}`,
+  name: `Whole-floor ${target}`,
+  school: 'Divination',
+  manaCost: 0,
+  element: 'arcane',
+  range: 0,
+  basePower: 0,
+  areaOfEffect: 0,
+  reflects: false,
+  targetType: 'self',
+  targetingMode: 'self',
+  description: '',
+  effects: [{ type: 'reveal', target, duration }],
+});
 
 describe('Pre-Freeze Architectural Refactor Verification', () => {
   let map: GameMap;
@@ -92,23 +109,9 @@ describe('Pre-Freeze Architectural Refactor Verification', () => {
     });
   });
 
-  describe('2. Divination Spell Unification & Aliases', () => {
-    it('resolves legacy divination spell IDs to their current spells', () => {
-      const senseLiving = getSpell('sense_living');
-      const detectMonsters = getSpell('detect_monsters');
-      expect(senseLiving).toBeDefined();
-      expect(detectMonsters).toBeDefined();
-      expect(senseLiving?.id).toBe(detectMonsters?.id);
-
-      const detectTreasure = getSpell('detect_treasure');
-      const detectObjects = getSpell('detect_objects');
-      expect(detectTreasure).toBeDefined();
-      expect(detectObjects).toBeDefined();
-      expect(detectTreasure?.id).toBe(detectObjects?.id);
-    });
-
-    it('executes detect_monsters with strongly typed reveal effect and updates duration turns', () => {
-      const spell = getSpell('detect_monsters')!;
+  describe('2. Whole-floor reveals', () => {
+    it('executes a whole-floor foe reveal with strongly typed reveal effect and updates duration turns', () => {
+      const spell = wholeFloorReveal('actors');
       expect(spell).toBeDefined();
       expect(spell.effects?.[0]?.type).toBe('reveal');
 
@@ -118,8 +121,8 @@ describe('Pre-Freeze Architectural Refactor Verification', () => {
       expect(engine.detectMonstersTurns).toBeGreaterThan(initialTurns);
     });
 
-    it('executes detect_objects with strongly typed reveal effect and updates duration turns', () => {
-      const spell = getSpell('detect_objects')!;
+    it('executes a whole-floor loot reveal with strongly typed reveal effect and updates duration turns', () => {
+      const spell = wholeFloorReveal('items');
       expect(spell).toBeDefined();
       expect(spell.effects?.[0]?.type).toBe('reveal');
 
@@ -129,7 +132,7 @@ describe('Pre-Freeze Architectural Refactor Verification', () => {
       expect(engine.detectObjectsTurns).toBeGreaterThan(initialTurns);
     });
 
-    it('executes clairvoyance to reveal map tiles', () => {
+    it('executes a whole-floor map reveal to reveal map tiles', () => {
       // Put a solid wall blocking line of sight so (18, 18) starts unexplored
       for (let y = 0; y < 20; y++) {
         map.setTile(14, y, TILES.WALL);
@@ -137,7 +140,7 @@ describe('Pre-Freeze Architectural Refactor Verification', () => {
       engine.updateFov();
       expect(engine.fov.getVisibility(18, 18)).toBe(Visibility.Unexplored);
 
-      const spell = getSpell('clairvoyance')!;
+      const spell = wholeFloorReveal('map', 1);
       expect(spell).toBeDefined();
 
       const res = SpellPipeline.executeSpell(engine, spell, player, { x: 10, y: 10 });

@@ -9,6 +9,7 @@ import { Player } from '../entities/player';
 import { getSpell } from '../magic/spellRegistry';
 import { SpellPipeline } from '../magic/spellPipeline';
 import { layDelayedBlast } from '../magic/delayedBlast';
+import { startSpellChannel } from '../magic/spellChannel';
 import { WandItem, ScrollItem, PotionItem } from '../items/consumables';
 import { flightRecorder } from '../debug/flightRecorder';
 import { awardPlayerXp } from '../combat/deathResolver';
@@ -184,7 +185,9 @@ export class CastSpellAction implements Action {
     );
 
     // A delayed spell marks where it will land; it resolves when its countdown runs out (`delayedBlast.ts`).
-    const result = spell.delay
+    const result = spell.channel && player && !this.freeCast
+      ? startSpellChannel(engine, spell, this.caster, this.freeCast, actionCost)
+      : spell.delay
       ? layDelayedBlast(engine, spell, this.caster, { x: this.targetX, y: this.targetY }, this.freeCast, actionCost)
       : SpellPipeline.executeSpell(
           engine,

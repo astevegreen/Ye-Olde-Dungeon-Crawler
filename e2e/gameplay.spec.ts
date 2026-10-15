@@ -79,7 +79,7 @@ test('a full spell belt keeps clear of the context button and the tray', async (
   await embarkNewHero(page);
   await page.evaluate(() => {
     const e = window.__cotwEngine!;
-    for (const id of ['firebolt', 'cold_ray', 'lightning_bolt', 'fireball', 'slow', 'phase_door', 'detect_monsters', 'light']) {
+    for (const id of ['firebolt', 'cold_ray', 'lightning_bolt', 'fireball', 'slow', 'phase_door', 'hlidskjalf', 'light']) {
       e.player.learnSpell(id);
     }
   });

@@ -37,12 +37,11 @@ const TABLETS: TabletEntry[] = [
   { spellId: 'cold_ray', spellName: 'Cold Ray', soldFromFloor: 10, value: 150 },
   { spellId: 'firebolt', spellName: 'Firebolt', soldFromFloor: 10, value: 150 },
   { spellId: 'phase_door', spellName: 'Phase Door', soldFromFloor: 10, value: 150 },
-  { spellId: 'detect_monsters', spellName: 'Detect Monsters', soldFromFloor: 10, value: 150 },
-  { spellId: 'detect_objects', spellName: 'Detect Objects', soldFromFloor: 18, value: 225 },
+  { spellId: 'hlidskjalf', spellName: 'Hliðskjálf', soldFromFloor: 10, value: 150 },
+  { spellId: 'loki_switch', spellName: "Loki's Switch", soldFromFloor: 18, value: 225 },
   { spellId: 'lightning_bolt', spellName: 'Lightning Bolt', soldFromFloor: 18, value: 225 },
   { spellId: 'fireball', spellName: 'Fireball', soldFromFloor: 26, value: 300 },
   { spellId: 'paralyze', spellName: 'Paralyze', soldFromFloor: 34, value: 350 },
-  { spellId: 'clairvoyance', spellName: 'Clairvoyance', soldFromFloor: 34, value: 350 },
 ];
 
 /** The "learn_*" spells tablets cast. Never known or slotted; only read from a tablet. */

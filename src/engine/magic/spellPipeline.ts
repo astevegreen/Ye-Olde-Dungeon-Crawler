@@ -38,6 +38,8 @@ import type { LendDelivery } from './neighbourLending';
 import { dispatchDamageHooks } from '../hooks/damageHooks';
 import { breakCurses } from '../items/breakCurses';
 import { applyImpulse } from '../combat/impulse';
+import { executeReveal } from './reveal';
+import { sensesThroughWalls } from '../fov/sensing';
 import { hasLineOfSight } from '../ai/perception';
 import { leastResistedElement } from './elements';
 import { StatusHandlerRegistry } from '../status/statusHandlers';
@@ -208,13 +210,20 @@ export class SpellPipeline {
       }
     });
 
-    EffectPrimitiveRegistry.register<SwapEffect>('swap', (_effect, ctx) => {
+    EffectPrimitiveRegistry.register<SwapEffect>('swap', (effect, ctx) => {
       const target = ctx.targets.find((t) => t !== ctx.caster && t.isAlive());
-      if (target) SpellPipeline.swapPlaces(ctx.engine, ctx.caster, target);
+      if (!target) return;
+      // No further than the spell reaches.
+      const range = ctx.spell.range;
+      if (range > 0 && Math.max(Math.abs(target.x - ctx.caster.x), Math.abs(target.y - ctx.caster.y)) > range) {
+        ctx.engine.log(`${target.name} is too far away to trade places with.`);
+        return;
+      }
+      SpellPipeline.swapPlaces(ctx.engine, ctx.caster, target, effect.sensed === true);
     });
 
     EffectPrimitiveRegistry.register<RevealEffect>('reveal', (effect, ctx) => {
-      SpellPipeline.executeRevealEffect(ctx.engine, ctx.caster, effect);
+      executeReveal(ctx.engine, ctx.caster, effect, ctx.spell.areaOfEffect);
     });
 
     EffectPrimitiveRegistry.register<IdentifyEffect>('identify', (_effect, ctx) => {
@@ -325,6 +334,9 @@ export class SpellPipeline {
         break;
       case 'departure':
         targets = foesBeside(departure);
+        break;
+      case 'caster':
+        targets = [caster];
         break;
       case 'summonHits':
         for (const summon of ctx.summoned ?? []) {
@@ -896,36 +908,6 @@ export class SpellPipeline {
     return summoned;
   }
 
-  public static executeRevealEffect(
-    engine: GameEngine,
-    caster: Entity,
-    effect: RevealEffect
-  ): void {
-    const duration = effect.duration ?? 30;
-    if (effect.target === 'monsters' || effect.target === 'actors') {
-      if (duration > 0) {
-        engine.detectMonstersTurns += duration;
-      }
-      const monsters = engine.map.getAllEntities().filter((e) => e.isHostileTo(caster) && e.isAlive());
-      for (const m of monsters) {
-        engine.fov.revealTile(m.x, m.y);
-      }
-      engine.log(`Your mind expands beyond physical barriers! Sensing living beings through stone (${duration} turns, ${monsters.length} detected).`);
-    } else if (effect.target === 'objects' || effect.target === 'items') {
-      if (duration > 0) {
-        engine.detectObjectsTurns += duration;
-      }
-      const groundPiles = engine.map.getAllGroundItems();
-      for (const pile of groundPiles) {
-        engine.fov.revealTile(pile.x, pile.y);
-      }
-      engine.log(`A resonant shimmer reveals loose treasures through stone (${duration} turns, ${groundPiles.length} pile(s)).`);
-    } else if (effect.target === 'map') {
-      engine.fov.revealAllTiles();
-      engine.log(`*** Clairvoyance flares in your mind! The entire floor geometry is revealed! ***`);
-    }
-  }
-
   public static executeChainEffect(
     engine: GameEngine,
     spell: SpellDefinition,
@@ -1029,9 +1011,10 @@ export class SpellPipeline {
     }
   }
 
-  /** The caster and a creature it can see trade places. */
-  public static swapPlaces(engine: GameEngine, caster: Entity, target: Entity): boolean {
-    if (!hasLineOfSight(engine, caster, target)) {
+  /** The caster and a creature it can see trade places; with `sensed`, also one the hero senses through walls. */
+  public static swapPlaces(engine: GameEngine, caster: Entity, target: Entity, sensed = false): boolean {
+    const reachable = hasLineOfSight(engine, caster, target) || (sensed && caster === engine.player && sensesThroughWalls(engine, target));
+    if (!reachable) {
       engine.log(`${caster.name} cannot see ${target.name} to trade places.`);
       return false;
     }

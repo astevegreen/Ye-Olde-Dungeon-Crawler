@@ -59,7 +59,7 @@ export function withSlotStats(spell: SpellDefinition, stats: GrimoireSlotStats):
   const longer = (d: number) => (d > 0 ? Math.max(1, Math.floor(d * stats.durationMultiplier)) : d);
   const out: SpellDefinition = { ...spell };
   if (stats.rangeBonus !== 0 && spell.range > 0) out.range = spell.range + stats.rangeBonus;
-  if (stats.areaBonus !== 0 && spell.areaOfEffect > 0) out.areaOfEffect = spell.areaOfEffect + stats.areaBonus;
+  if (stats.areaBonus !== 0 && spell.areaOfEffect > 0) out.areaOfEffect = spell.areaOfEffect + stats.areaBonus * (spell.areaStep ?? 1);
   if (stats.durationMultiplier !== 1 || stats.rangeBonus !== 0) {
     out.effects = spell.effects.map((e) => {
       if (e.type === 'applyStatus') return { ...e, duration: longer(e.duration) };
@@ -112,8 +112,19 @@ export function resolveCastSpell(
   const player = caster instanceof Player ? caster : undefined;
   const resolved = player && !freeCast ? heroResolvedCast(engine, spellId) : undefined;
   if (player && !freeCast && player.grimoireSystem && !resolved) return { spell, unslotted: true };
-  if (resolved) spell = withForgedElements(withSlotStats(spell, resolved.stats), resolved.elements.slice(1));
+  if (resolved) spell = withForgedElements(withSlotStats(withBorrowedShape(spell, resolved), resolved.stats), resolved.elements.slice(1));
   return { spell: withSpellRangeBonus(caster, spell), resolved };
+}
+
+/**
+ * The spell as what it borrows reshapes it (`LendOverride`): its aim and effects changed, and
+ * its reach grown, before its slot's stats grow it further.
+ */
+function withBorrowedShape(spell: SpellDefinition, cast: Pick<ResolvedCast, 'reachBonus' | 'spellPatch'>): SpellDefinition {
+  if (!cast.spellPatch && !cast.reachBonus) return spell;
+  const out: SpellDefinition = { ...spell, ...cast.spellPatch };
+  if (cast.reachBonus) out.areaOfEffect = spell.areaOfEffect + cast.reachBonus;
+  return out;
 }
 
 /**
@@ -139,7 +150,7 @@ export function withSpellRangeBonus(caster: Entity, spell: SpellDefinition): Spe
  */
 export function heroCastPreview(engine: GameEngine, spell: SpellDefinition): SpellDefinition {
   const resolved = heroResolvedCast(engine, spell.id);
-  const shaped = withSpellRangeBonus(engine.player, resolved ? withSlotStats(spell, resolved.stats) : spell);
+  const shaped = withSpellRangeBonus(engine.player, resolved ? withSlotStats(withBorrowedShape(spell, resolved), resolved.stats) : spell);
   return { ...shaped, manaCost: effectiveManaCost(engine.player, shaped) };
 }
 

@@ -71,6 +71,13 @@ const COTW_LENDING: NeighbourLendingConfig = {
       effects: [{ type: 'applyStatus', statusId: 'marked', duration: 10 }],
       doubled: { name: 'Deep mark', color: '#67e8f9', effects: [{ type: 'applyStatus', statusId: 'marked', duration: 20 }] },
     },
+    {
+      // Loki's Switch drags whatever its neighbour hits a step toward the hero.
+      id: 'loki-pull',
+      name: 'Pull',
+      effects: [{ type: 'pull', distance: 1 }],
+      doubled: { name: 'Hard pull', color: '#4ade80', effects: [{ type: 'pull', distance: 2 }] },
+    },
     // Magic Arrow's pierce: named here, delivered once a lend can shape the borrower's hit.
     { id: 'arcane:Combat', name: 'Piercing', effects: [] },
     { id: 'blood-price', name: 'Blood-price', effects: [], powerBonus: 0.25, hpCostPerCast: 2 },
@@ -137,6 +144,10 @@ export const COTW_GRIMOIRES: GrimoireSystemConfig = {
       heal_minor: 'heal_spell',
       heal_medium: 'heal_spell',
       teleport: 'phase_door',
+      // The three seer's spells are one, Hliðskjálf, whose reach grows with Area.
+      detect_monsters: 'hlidskjalf',
+      detect_objects: 'hlidskjalf',
+      clairvoyance: 'hlidskjalf',
       // Scroll-only now: a hero who knew it lets it go.
       identify: null,
       // The fused spells of the old altar: each is its base spell, forged with the other element.

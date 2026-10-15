@@ -415,7 +415,7 @@ window.addEventListener('DOMContentLoaded', () => {
       void processVisualEffectsAndRender();
       return;
     }
-    if (spell.targetingMode === 'self' || spell.targetType === 'self') {
+    if (cast.targetingMode === 'self' || cast.targetType === 'self') {
       activeEngine.handlePlayerAction(
         new CastSpellAction(activeEngine.player, spell.id, activeEngine.player.x, activeEngine.player.y)
       );

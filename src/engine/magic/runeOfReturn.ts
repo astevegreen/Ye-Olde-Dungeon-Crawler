@@ -11,6 +11,7 @@ import { BASE_ACTION_COST } from '../types';
 import { Item, type ItemConfig } from '../items/item';
 import type { StatusHandler, StatusTickOutput } from '../status/statusHandlers';
 import { StatusHandlerRegistry } from '../status/statusHandlers';
+import { createSpellChannelActionHooks } from './spellChannel';
 import type { StatusEffect } from '../status/types';
 
 /**
@@ -377,7 +378,9 @@ const runeOfReturnStatusHandler: StatusHandler = {
  * or monster's, as it happens.
  */
 export function createRuneOfReturnActionHooks(): ActionHook[] {
+  // A channelled spell's interrupts ride along, so its hooks need no registration of their own.
   return [
+    ...createSpellChannelActionHooks(),
     {
       id: 'rune_of_return_action_guard',
       phase: 'pre',

@@ -1,7 +1,7 @@
 import { GameEngine, getCurrentObjective } from '../engine';
 import { releaseIconAtlas, setIconAtlas } from './canvasIcons';
 import { Visibility } from '../engine';
-import { sensesThroughWalls } from '../engine';
+import { objectSensedAt, sensesThroughWalls } from '../engine';
 import { Camera } from './camera';
 import type { Entity } from '../engine';
 import type { TileDefinition } from '../engine';
@@ -1540,7 +1540,7 @@ export class CanvasRenderer {
         continue;
       }
       const isVisible = this.engine.fov.isVisible(pile.x, pile.y);
-      const isObjectSensed = !isVisible && this.engine.detectObjectsTurns > 0;
+      const isObjectSensed = !isVisible && objectSensedAt(this.engine, pile.x, pile.y);
 
       if (!isVisible && !isObjectSensed) {
         continue;

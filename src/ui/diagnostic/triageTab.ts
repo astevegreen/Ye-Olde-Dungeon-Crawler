@@ -472,7 +472,7 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
 
   on('#btn-triage-reveal-map', () => {
     engine.diagnostics.revealFloorMap();
-    ctx.showToast('Floor map revealed (Clairvoyance).');
+    ctx.showToast('Floor map revealed.');
     ctx.refresh();
   });
 

@@ -13,11 +13,28 @@ import { OpenDoorAction } from '../actions/door';
 import { WaitAction } from '../actions/wait';
 import { AutoRestManager } from '../actions/autoRest';
 import { SpellPipeline } from '../magic/spellPipeline';
-import { getSpell } from '../magic/spellRegistry';
+import type { SpellDefinition } from '../magic/types';
 import { findAStarPath } from '../pathfinding/astar';
 import { TrapInstance } from '../dungeon/traps';
 import { Visibility } from '../fov/types';
 import { cotwManifest } from '../../content/cotw';
+
+/** A whole-floor reveal, as the old seer's spells were (cotw's Hliðskjálf reaches only so far). */
+const wholeFloorReveal = (target: 'actors' | 'items' | 'map', duration = 30): SpellDefinition => ({
+  id: `whole_floor_${target}`,
+  name: `Whole-floor ${target}`,
+  school: 'Divination',
+  manaCost: 0,
+  element: 'arcane',
+  range: 0,
+  basePower: 0,
+  areaOfEffect: 0,
+  reflects: false,
+  targetType: 'self',
+  targetingMode: 'self',
+  description: '',
+  effects: [{ type: 'reveal', target, duration }],
+});
 
 describe('Dungeon Exploration & Tactical Crawler Subsystems', () => {
   let map: GameMap;
@@ -270,11 +287,11 @@ describe('Dungeon Exploration & Tactical Crawler Subsystems', () => {
       expect(engine.detectObjectsTurns).toBe(0);
 
       // Cast detect monsters (the pack's spell lasts 30 turns)
-      SpellPipeline.executeSpell(engine, getSpell('detect_monsters')!, player, player.position);
+      SpellPipeline.executeSpell(engine, wholeFloorReveal('actors'), player, player.position);
       expect(engine.detectMonstersTurns).toBe(30);
 
       // Cast detect objects (30 turns)
-      SpellPipeline.executeSpell(engine, getSpell('detect_objects')!, player, player.position);
+      SpellPipeline.executeSpell(engine, wholeFloorReveal('items'), player, player.position);
       expect(engine.detectObjectsTurns).toBe(30);
 
       // Perform a turn action (wait)
@@ -287,7 +304,7 @@ describe('Dungeon Exploration & Tactical Crawler Subsystems', () => {
     it('reveals entire floor map topology as Explored via Clairvoyance without exposing unseen entities', () => {
       expect(engine.fov.isExplored(25, 25)).toBe(false);
 
-      const res = SpellPipeline.executeSpell(engine, getSpell('clairvoyance')!, player, player.position);
+      const res = SpellPipeline.executeSpell(engine, wholeFloorReveal('map', 1), player, player.position);
       expect(res.success).toBe(true);
 
       // Entire map is now marked Explored

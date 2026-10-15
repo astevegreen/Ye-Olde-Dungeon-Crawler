@@ -6,6 +6,7 @@ import { VIDNIR_REVELATION_CHOICE } from './narrative';
 import { IRON_CLANS_BARROW_CHOICES, IVALDA_CHOICE, IVALDA_TOWN_CHOICE } from './ironClans';
 import { GATEWARD_CHOICE } from './prologue';
 import { COTW_MILESTONE_CHOICES, COTW_SAGA_CHOICES } from './perks';
+import { COTW_ESSENCE_BY_ELEMENT } from './items/essences';
 
 export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
   /**
@@ -382,16 +383,16 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         id: 'drink_deep',
         label: 'Drink of the Bitter Deep',
         description:
-          'Drink from the icy mineral depths: learn the Clairvoyance spell, and Haste for 30 turns.',
+          "Drink from the icy mineral depths: learn Hliðskjálf, Odin's sight (or gain an Ansuz rune if you know it), and Haste for 30 turns.",
         consequences: [
           { type: 'setFlag', flag: 'urdr_pool_resolved', value: true },
           { type: 'setFlag', flag: 'urdr_pool_drank', value: true },
-          { type: 'learnSpell', spellId: 'clairvoyance' },
+          { type: 'learnSpell', spellId: 'hlidskjalf', orGrantItem: COTW_ESSENCE_BY_ELEMENT.arcane },
           { type: 'applyBuff', statusType: 'haste', duration: 30 },
           {
             type: 'logMessage',
             message:
-              'You cup your hands and drink of the bitter deep. A flash of silver clarity ignites your mind: you know now how to see the stone and all that moves in it (you learn Clairvoyance; Haste).',
+              'You cup your hands and drink of the bitter deep. A flash of silver clarity ignites your mind: you know now how to see the stone and all that moves in it (Hliðskjálf; Haste).',
           },
         ],
       },

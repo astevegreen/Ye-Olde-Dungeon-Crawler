@@ -231,6 +231,15 @@ export const BUILTIN_STATUS_HANDLERS: Record<string, StatusHandler> = {
       return `The mark on ${entity.name} fades.`;
     },
   },
+  // Seen through walls by a seer's reveal (`magic/reveal.ts`), with no other effect.
+  sensed: {
+    sensedThroughWalls: true,
+    onExpire: () => undefined,
+  },
+  // On the hero: the ground items within a seer's reach are seen through walls (`objectSensedAt`).
+  sensing_objects: {
+    onExpire: () => undefined,
+  },
   sensory_masked: {
     // Vision is crippled like blindness; ECHOLOCATION_HEARING_RADIUS (fov/echolocation.ts)
     // separately lets rendering detect audible actors/terrain beyond this radius.

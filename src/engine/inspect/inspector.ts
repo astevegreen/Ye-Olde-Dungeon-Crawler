@@ -4,6 +4,7 @@ import { Monster } from '../entities/monster';
 import { statusDisplayName } from '../status/statusName';
 import type { TileInspection, InspectedTerrain, InspectedTrap, InspectedEntity, InspectedItem, FloorLandmark } from './types';
 import { TILES } from '../grid/tile';
+import { objectSensedAt } from '../fov/sensing';
 
 export class TileInspector {
   /**
@@ -125,10 +126,10 @@ export class TileInspector {
     }
 
     // 4. Ground items: those the hero sees. Out of sight the map draws none, or one anonymous
-    // mark while Detect Objects runs, and Look says no more (R-dbg-16): naming them saw through
-    // Clairvoyance and showed what changed while the hero was away.
+    // mark while loot is sensed, and Look says no more (R-dbg-16): naming them saw through
+    // and showed what changed while the hero was away.
     const groundItemsList = visibility === 'visible' ? engine.map.getItemsAt(x, y) : [];
-    const sensed = visibility !== 'visible' && engine.detectObjectsTurns > 0 && engine.map.getItemsAt(x, y).length > 0;
+    const sensed = visibility !== 'visible' && objectSensedAt(engine, x, y) && engine.map.getItemsAt(x, y).length > 0;
     // An unidentified item shows its weight and bulk, nothing of what it hides.
     const items: InspectedItem[] = sensed
       ? [{ id: `sensed-${x}-${y}`, name: 'Something', category: 'unknown', weight: 0, bulk: 0, sensed: true }]

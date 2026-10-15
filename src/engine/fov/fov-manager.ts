@@ -120,7 +120,7 @@ export class FovManager {
   }
 
   /**
-   * Explores all tiles on the map (Clairvoyance / Magic Mapping).
+   * Explores all tiles on the map (a whole-floor map reveal).
    * Unexplored tiles become Explored (Fog of War) without revealing entities.
    */
   public revealAllTiles(): void {

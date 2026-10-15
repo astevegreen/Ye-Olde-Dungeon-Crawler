@@ -13,14 +13,6 @@
       "reason": "Engine built-in spell effect (spellPipeline); cotw registers a spell with the same ID."
     },
     {
-      "id": "detect_monsters",
-      "reason": "Engine default spell seeded by SpellRegistryStore; packs may override it."
-    },
-    {
-      "id": "detect_objects",
-      "reason": "Engine default spell seeded by SpellRegistryStore; packs may override it."
-    },
-    {
       "id": "firebolt",
       "reason": "Engine default boss-lair caster loadout (dungeonArc) when a pack declares none."
     },

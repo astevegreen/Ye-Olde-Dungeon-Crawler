@@ -31,7 +31,7 @@ export type ChoiceConsequence =
    */
   | { type: 'offerForge'; source: string; element?: string; fated?: string }
   /** Teaches a spell by manifest id; a spell already known is left as it is. */
-  | { type: 'learnSpell'; spellId: string }
+  | { type: 'learnSpell'; spellId: string; orGrantItem?: string }
   /** Ends these statuses on the hero, if any are in effect. */
   | { type: 'cureStatus'; statusTypes: string[] }
   /** Records a renown milestone by id (`manifest.renownMilestones`), as engine deeds do. */

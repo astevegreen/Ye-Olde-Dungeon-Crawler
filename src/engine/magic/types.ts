@@ -81,6 +81,8 @@ export interface PullEffect {
 /** The caster and the first target it can see trade places. */
 export interface SwapEffect {
   type: 'swap';
+  /** Also with a creature the caster senses through walls (a mark, a seer's reveal), not only one it sees. */
+  sensed?: boolean;
 }
 
 export interface HealEffect {
@@ -91,8 +93,30 @@ export interface HealEffect {
 
 export interface RevealEffect {
   type: 'reveal';
-  target: 'actors' | 'items' | 'map' | 'monsters' | 'objects';
+  /**
+   * What it shows. `actors`/`monsters`, `items`/`objects` and `map` reach the whole floor
+   * unless `withinReach`; the rest are a seer's narrower layers, always within reach:
+   * sleeping foes, hidden traps, secret doors, ground items named, foes' weaknesses (their
+   * bestiary page), the floor's strongest foe (anywhere), and landmarks with the creatures
+   * that are neither friend nor foe.
+   */
+  target:
+    | 'actors'
+    | 'items'
+    | 'map'
+    | 'monsters'
+    | 'objects'
+    | 'sleepers'
+    | 'traps'
+    | 'secretDoors'
+    | 'itemNames'
+    | 'weaknesses'
+    | 'strongest'
+    | 'landmarks';
+  /** Turns what it senses stays sensed (30 unset). */
   duration?: number;
+  /** Only within the spell's reach of the caster: its `areaOfEffect`, which the Area stat grows. */
+  withinReach?: boolean;
 }
 
 export interface IdentifyEffect {
@@ -196,6 +220,8 @@ export interface SpellDefinition {
   range: number;
   basePower: number;
   areaOfEffect: number; // 0 = single cell, 1 = 3x3 blast
+  /** Tiles of `areaOfEffect` each Area step of its slot adds (1 unset): a seer's reach grows faster than a blast. */
+  areaStep?: number;
   reflects: boolean; // True for lightning bolt bouncing off walls
   targetType: TargetType;
   description: string;
@@ -213,12 +239,32 @@ export interface SpellDefinition {
   spellType?: SpellType;
   /** Flavour ids this spell lends instead of its element's (frith spells lend healing, blood spells Blood-price). */
   lends?: string[];
+  /**
+   * What this spell makes of a flavour a neighbour lends it, by flavour id, in place of the
+   * flavour's own effects (`LendOverride`). A spell with no `spellType` borrows only these.
+   */
+  lendOverrides?: Record<string, LendOverride>;
+  /**
+   * Turns the hero spends channelling it: the cast pays and begins, and the spell goes off
+   * when the channel ends; acting other than waiting, or being hurt, breaks it (`spellChannel.ts`).
+   */
+  channel?: number;
   visual?: SpellVisualConfig;
   statusAffliction?: {
     type: StatusType;
     duration: number;
     potency?: number;
   };
+}
+
+/** What one spell makes of one borrowed flavour (`SpellDefinition.lendOverrides`). */
+export interface LendOverride {
+  /** Effects in place of the flavour's own, delivered as the spell's type delivers (on the caster for a typeless spell); empty for none. */
+  effects?: EffectPrimitive[];
+  /** Reach the spell gains: added to its `areaOfEffect`. */
+  reachBonus?: number;
+  /** The spell's own aim and effects, changed (Odin's sight: a hop that lands where aimed). */
+  spell?: Partial<Pick<SpellDefinition, 'targetType' | 'targetingMode' | 'range' | 'effects'>>;
 }
 
 export interface ProjectileStep {

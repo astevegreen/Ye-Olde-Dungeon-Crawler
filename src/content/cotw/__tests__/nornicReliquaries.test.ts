@@ -113,7 +113,7 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
     expect(gaze.consequences.some((c) => c.type === 'grantItem' && (c as any).itemId === 'draught_of_thawed_blood')).toBe(true);
 
     const drink = choice.options.find((o) => o.id === 'drink_deep')!;
-    expect(drink.consequences.some((c) => c.type === 'learnSpell' && (c as any).spellId === 'clairvoyance')).toBe(true);
+    expect(drink.consequences.some((c) => c.type === 'learnSpell' && (c as any).spellId === 'hlidskjalf' && (c as any).orGrantItem === 'essence_ansuz')).toBe(true);
     expect(drink.consequences.some((c) => c.type === 'applyBuff' && (c as any).statusType === 'haste')).toBe(true);
   });
 

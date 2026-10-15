@@ -25,6 +25,39 @@ export function applyConsequences(
   player: Player
 ): void {
   let fatalCause: string | undefined;
+  const grantItem = (itemId: string, toInventory?: boolean): void => {
+    const itemDef = engine.manifest?.items?.find((i) => i.id === itemId);
+    let item: Item;
+    const itemInstanceId = engine.nextSimulationId(itemId ?? 'choice');
+    if (itemDef) {
+      item = createScaledItem(itemDef, itemInstanceId, engine.currentFloor, engine.rng);
+    } else {
+      item = new Item({
+        id: itemInstanceId,
+        name: itemId.replace(/_/g, ' '),
+        unidentifiedName: 'Mysterious Item',
+        category: 'weapon',
+        weight: 1000,
+        bulk: 100,
+        quality: 'normal',
+        identified: true,
+      });
+    }
+
+    if (toInventory !== false) {
+      const canContain = player.inventory.primaryPack.canContain(item);
+      if (canContain.allowed) {
+        player.inventory.primaryPack.addItem(item);
+        engine.log(`Received ${item.name} (stored in pack).`);
+      } else {
+        engine.map.addItemAt(player.x, player.y, item);
+        engine.log(`Pack full! ${item.name} dropped at your feet.`);
+      }
+    } else {
+      engine.map.addItemAt(player.x, player.y, item);
+      engine.log(`${item.name} dropped at your feet.`);
+    }
+  };
   for (const c of consequences) {
     switch (c.type) {
       case 'setFlag': {
@@ -40,37 +73,7 @@ export function applyConsequences(
         break;
       }
       case 'grantItem': {
-        const itemDef = engine.manifest?.items?.find((i) => i.id === c.itemId);
-        let item: Item;
-        const itemInstanceId = engine.nextSimulationId(c.itemId ?? 'choice');
-        if (itemDef) {
-          item = createScaledItem(itemDef, itemInstanceId, engine.currentFloor, engine.rng);
-        } else {
-          item = new Item({
-            id: itemInstanceId,
-            name: c.itemId.replace(/_/g, ' '),
-            unidentifiedName: 'Mysterious Item',
-            category: 'weapon',
-            weight: 1000,
-            bulk: 100,
-            quality: 'normal',
-            identified: true,
-          });
-        }
-
-        if (c.toInventory !== false) {
-          const canContain = player.inventory.primaryPack.canContain(item);
-          if (canContain.allowed) {
-            player.inventory.primaryPack.addItem(item);
-            engine.log(`Received ${item.name} (stored in pack).`);
-          } else {
-            engine.map.addItemAt(player.x, player.y, item);
-            engine.log(`Pack full! ${item.name} dropped at your feet.`);
-          }
-        } else {
-          engine.map.addItemAt(player.x, player.y, item);
-          engine.log(`${item.name} dropped at your feet.`);
-        }
+        grantItem(c.itemId, c.toInventory);
         break;
       }
       case 'applyBuff':
@@ -148,7 +151,8 @@ export function applyConsequences(
         break;
       }
       case 'learnSpell': {
-        player.learnSpell(c.spellId);
+        if (c.orGrantItem && player.spellsKnown.includes(c.spellId)) grantItem(c.orGrantItem);
+        else player.learnSpell(c.spellId);
         break;
       }
       case 'offerForge': {

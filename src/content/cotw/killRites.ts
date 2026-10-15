@@ -13,11 +13,11 @@ import type { KillRiteDefinition } from '../../engine';
  * so on). `killRites.test.ts` checks every teaching rite can be met with the spells
  * obtainable by that monster's first floor.
  *
- *   Rime Hollows (1-9)    Slow 4 · Cold Ray 5/7 · Firebolt 6 · Phase Door 8 · Detect Monsters 8
- *   Dwarven Works (10-17) Detect Objects 10 · Lightning Bolt 12/15
+ *   Rime Hollows (1-9)    Slow 4 · Cold Ray 5/7 · Firebolt 6 · Phase Door 8 · Hliðskjálf 8
+ *   Dwarven Works (10-17) Loki's Switch 10 · Lightning Bolt 12/15
  *   Obsidian Siphon (18-25) Phase Door 20 (a second source) · Fireball 22/25
- *   Silver Veins (26-33)  Paralyze 28 · Clairvoyance 29
- *   Deeper: second sources for Lightning Bolt, Paralyze and Clairvoyance
+ *   Silver Veins (26-33)  Paralyze 28 · Hliðskjálf 29 (a second source)
+ *   Deeper: second sources for Lightning Bolt, Paralyze and Hliðskjálf
  *
  * A rite whose spell the hero already knows (or that teaches none) drops an essence rune
  * of its element instead: offerings for the runic altars.
@@ -113,7 +113,7 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: 'The hollow-backed maid steps between trees at will.\nSlow her, strike her down with rune-force, and learn her vanishing step.',
   },
   huldra: {
-    teachesSpellId: 'detect_monsters',
+    teachesSpellId: 'hlidskjalf',
     essenceElement: 'arcane',
     requiredDamageElement: 'cold',
     hintVerse: 'The forest maid senses every living thing in her wood.\nStill her heart with frost, and that sense is yours.',
@@ -121,10 +121,10 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
 
   // ─── Abandoned Dwarven Works (10-17) ───────────────────────────────────
   cinder_gilded_duergar: {
-    teachesSpellId: 'detect_objects',
+    teachesSpellId: 'loki_switch',
     essenceElement: 'fire',
     requiredDamageElement: 'cold',
-    hintVerse: 'The gilded smith smells gold through stone.\nQuench his cinders with frost to inherit that greed.',
+    hintVerse: "The gilded smith steps out of his own forge-smoke and into yours.\nQuench his cinders with frost, and learn the trickster's trade of places.",
   },
   forge_wretch: {
     essenceElement: 'fire',
@@ -288,7 +288,7 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: 'Burn the pit-draugr while your own life runs below half:\nonly the desperate can match its hunger.',
   },
   silver_wight: {
-    teachesSpellId: 'clairvoyance',
+    teachesSpellId: 'hlidskjalf',
     essenceElement: 'cold',
     requiredDamageElement: 'fire',
     requiredVictimStatus: 'slow',
@@ -375,7 +375,7 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: 'Gloom-Tarr must burn all at once:\nset it alight with a blow that runs well past its last breath.',
   },
   malice_weaver: {
-    teachesSpellId: 'clairvoyance',
+    teachesSpellId: 'hlidskjalf',
     essenceElement: 'arcane',
     requiredDamageElement: 'lightning',
     hintVerse: 'Cut the malice-weaver from its web with lightning,\nand see as far as it saw.',

@@ -21,3 +21,14 @@ export function sensesThroughWalls(engine: GameEngine, entity: Entity): boolean 
   const within = sumAgainst(engine, engine.player, entity, 'sensesWithin');
   return within > 0 && Math.max(Math.abs(entity.x - engine.player.x), Math.abs(entity.y - engine.player.y)) <= within;
 }
+
+/** On the hero: the piles within `data.radius` of `data.x`, `data.y` are seen through walls while it lasts (a seer's reveal). */
+export const SENSING_OBJECTS_STATUS = 'sensing_objects';
+
+/** Whether the hero senses the ground items at `x`, `y` without seeing them: Detect Objects, or a seer's reach. */
+export function objectSensedAt(engine: GameEngine, x: number, y: number): boolean {
+  if (engine.detectObjectsTurns > 0) return true;
+  const d = engine.player?.statusManager.getStatus(SENSING_OBJECTS_STATUS)?.data;
+  if (!d || typeof d.x !== 'number' || typeof d.y !== 'number' || typeof d.radius !== 'number') return false;
+  return Math.max(Math.abs(x - d.x), Math.abs(y - d.y)) <= d.radius;
+}

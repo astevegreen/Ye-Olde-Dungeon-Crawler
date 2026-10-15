@@ -33,3 +33,4 @@ Opus at high thinking: engine design across status, death and AI, with one possi
 
 ## Verification
 - lint + test: green on be703cc9 (3089 unit); `npm run sim` green; pre-push passed (91 Playwright, three browsers).
+Resumed: 2026-10-15 18:06 UTC

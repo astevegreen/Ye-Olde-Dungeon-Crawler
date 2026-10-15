@@ -40,3 +40,4 @@ Sonnet 5.5 at medium thinking — 2a-2 is UI work on a clear spec across known f
 ## Verification
 - gate-stamp lint test, `npm run gates`: green on 0a04acf6 tree (before commit)
 - pre-push: Firefox red once (4 flaky, 1 failed: gameplay.spec.ts:43), rerun in progress
+Resumed: 2026-10-15 11:39 UTC

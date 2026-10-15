@@ -111,12 +111,12 @@ export class ContextHelp {
           title: 'Altars',
           contextTag: 'RITES OF THE GRIMOIRE',
           bullets: [
-            { key: 'Step onto it', label: 'Begin the altar\'s rite; each altar works one, once' },
-            { key: 'Click', label: 'Choose the offering to burn, then the slot or spell' },
-            { key: 'Enter', label: 'Perform the rite (the offering is gone)' },
+            { key: 'Step onto it', label: 'Begin the altar\'s rite; each altar works one' },
+            { key: 'Click', label: 'Choose the slot, spell or grimoire, and an offering where one is asked' },
+            { key: 'Enter', label: 'Perform the rite (a burnt offering is gone)' },
             { key: 'Esc', label: 'Step away; the altar waits for you' },
           ],
-          tip: 'Tip: Each altar works its own rite: one doubles what a grimoire slot lends the spells beside it, one transmutes a spell, one clears a debt, and one gambles.',
+          tip: 'Tip: Each altar works its own rite: one doubles what a grimoire slot lends the spells beside it, one chooses a grimoire\'s stats afresh or adds a slot, free, one transmutes a spell, and one gambles.',
         };
 
       case 'spellbook': {
@@ -298,7 +298,11 @@ export class ContextHelp {
           bullets: [
             ...npcs.map((npc) => {
               const label = TOWN_ROLE_HELP[npc.role] ?? 'Talk by bumping into them';
-              return { key: npc.name, label: npc.id === manifest?.pactKeeperNpcId ? `${label}; seal or renounce pacts` : label };
+              const extras = [
+                npc.id === manifest?.pactKeeperNpcId ? 'seal or renounce pacts' : '',
+                npc.role === 'sage' && manifest?.town?.services?.grimoireRestat ? 'rearrange grimoire stats' : '',
+              ].filter(Boolean);
+              return { key: npc.name, label: [label, ...extras].join('; ') };
             }),
             { key: 'B', label: 'Open Bestiary' },
             { key: 'Shift+? / Ctrl+K', label: 'Open the command palette' },

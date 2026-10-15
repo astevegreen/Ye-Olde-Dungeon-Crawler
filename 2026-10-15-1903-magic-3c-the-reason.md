@@ -37,3 +37,4 @@ Opus at high thinking: narrative work across several files, which must stay fait
 ## Verification
 - `npm run gates`: green on 1648d94. On 0c9e1ab, everything was green except one Chromium e2e flake (the floating heal text in exhaustive-playtest), which passed on rerun.
 - pre-push: green on 0c9e1ab (90 Playwright tests in three browsers)
+Resumed: 2026-10-15 19:11 UTC

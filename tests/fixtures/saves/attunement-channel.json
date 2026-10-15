@@ -1,0 +1,342 @@
+{
+ "profile": {
+  "id": "legacy-hero",
+  "name": "Legacy",
+  "level": 1,
+  "floor": 8,
+  "lastSaved": 1792034447476,
+  "hp": 30,
+  "maxHp": 30,
+  "strength": 15,
+  "mana": 33,
+  "maxMana": 33,
+  "tutorialFlags": {},
+  "unspentStatPoints": 0,
+  "gender": "male",
+  "difficulty": "medium",
+  "maxFloor": 37,
+  "attributes": {
+   "strength": 15,
+   "intelligence": 14,
+   "constitution": 15,
+   "dexterity": 15
+  },
+  "xp": 0,
+  "xpToNextLevel": 90,
+  "compendium": {},
+  "compendiumCategoryPerks": {}
+ },
+ "savedAt": 1792034447476,
+ "player": {
+  "id": "legacy-hero",
+  "name": "Legacy",
+  "gender": "male",
+  "difficulty": "medium",
+  "maxFloor": 37,
+  "attributes": {
+   "strength": 15,
+   "intelligence": 14,
+   "constitution": 15,
+   "dexterity": 15
+  },
+  "x": 5,
+  "y": 5,
+  "hp": 30,
+  "maxHp": 30,
+  "baseAttack": 6,
+  "baseDefense": 2,
+  "strength": 15,
+  "intelligence": 14,
+  "constitution": 15,
+  "dexterity": 15,
+  "speed": 100,
+  "energy": 100,
+  "mana": 33,
+  "maxMana": 33,
+  "spellsKnown": [
+   "magic_arrow",
+   "heal_minor",
+   "cold_ray"
+  ],
+  "level": 1,
+  "xp": 0,
+  "statusEffects": [
+   {
+    "type": "grimoire_attunement",
+    "duration": 2,
+    "potency": 1,
+    "sourceEntityId": "legacy-hero",
+    "data": {
+     "targetPageIndex": 1,
+     "lastHp": 30
+    }
+   }
+  ],
+  "inventory": {
+   "paperdoll": {
+    "head": null,
+    "neck": null,
+    "torso": null,
+    "overgarment": null,
+    "mainHand": null,
+    "offHand": null,
+    "hands": null,
+    "wrists": null,
+    "waist": null,
+    "feet": null,
+    "fingerLeft": null,
+    "fingerRight": null,
+    "pack": {
+     "isContainer": true,
+     "id": "legacy-hero-pack",
+     "name": "Adventurer's Backpack",
+     "unidentifiedName": "Adventurer's Backpack",
+     "category": "container",
+     "slot": "pack",
+     "weight": 1200,
+     "unitWeight": 1200,
+     "bulk": 2500,
+     "quality": "normal",
+     "identified": true,
+     "stats": {},
+     "description": "",
+     "value": 5000,
+     "enchantmentLevel": 0,
+     "ownerId": "legacy-hero",
+     "containerType": "pack",
+     "maxWeightCapacity": 30000,
+     "maxBulkCapacity": 25000,
+     "items": []
+    },
+    "purse": null
+   },
+   "primaryPack": {
+    "isContainer": true,
+    "id": "legacy-hero-pack",
+    "name": "Adventurer's Backpack",
+    "unidentifiedName": "Adventurer's Backpack",
+    "category": "container",
+    "slot": "pack",
+    "weight": 1200,
+    "unitWeight": 1200,
+    "bulk": 2500,
+    "quality": "normal",
+    "identified": true,
+    "stats": {},
+    "description": "",
+    "value": 5000,
+    "enchantmentLevel": 0,
+    "ownerId": "legacy-hero",
+    "containerType": "pack",
+    "maxWeightCapacity": 30000,
+    "maxBulkCapacity": 25000,
+    "items": []
+   }
+  },
+  "tutorialFlags": {},
+  "quickSpells": [
+   "magic_arrow",
+   "heal_minor",
+   "cold_ray",
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "planeId": "physical",
+  "corruptionScore": 0,
+  "unspentStatPoints": 0,
+  "runeMastery": {
+   "celerityPoints": 0,
+   "weavePoints": 0,
+   "mobilityPoints": 0
+  },
+  "runeChannelBankedTurns": 0,
+  "hasDiscoveredRune": false,
+  "runeCharges": 3,
+  "runeMaxCharges": 3,
+  "voidDebt": 0,
+  "activeGrimoireIndex": 0,
+  "grimoireOpenSlots": [
+   1,
+   3,
+   4,
+   5,
+   7
+  ],
+  "grimoirePages": [
+   {
+    "id": "page_1",
+    "name": "Page I",
+    "slots": [
+     {
+      "slotIndex": 0,
+      "spellId": null
+     },
+     {
+      "slotIndex": 1,
+      "spellId": "magic_arrow"
+     },
+     {
+      "slotIndex": 2,
+      "spellId": null
+     },
+     {
+      "slotIndex": 3,
+      "spellId": "heal_minor"
+     },
+     {
+      "slotIndex": 4,
+      "spellId": "cold_ray"
+     },
+     {
+      "slotIndex": 5,
+      "spellId": null
+     },
+     {
+      "slotIndex": 6,
+      "spellId": null
+     },
+     {
+      "slotIndex": 7,
+      "spellId": null
+     },
+     {
+      "slotIndex": 8,
+      "spellId": null
+     }
+    ]
+   },
+   {
+    "id": "page_2",
+    "name": "Page II",
+    "slots": [
+     {
+      "slotIndex": 0,
+      "spellId": null
+     },
+     {
+      "slotIndex": 1,
+      "spellId": null
+     },
+     {
+      "slotIndex": 2,
+      "spellId": null
+     },
+     {
+      "slotIndex": 3,
+      "spellId": null
+     },
+     {
+      "slotIndex": 4,
+      "spellId": "cold_ray"
+     },
+     {
+      "slotIndex": 5,
+      "spellId": null
+     },
+     {
+      "slotIndex": 6,
+      "spellId": null
+     },
+     {
+      "slotIndex": 7,
+      "spellId": null
+     },
+     {
+      "slotIndex": 8,
+      "spellId": null
+     }
+    ]
+   },
+   {
+    "id": "page_3",
+    "name": "Page III",
+    "slots": [
+     {
+      "slotIndex": 0,
+      "spellId": null
+     },
+     {
+      "slotIndex": 1,
+      "spellId": null
+     },
+     {
+      "slotIndex": 2,
+      "spellId": null
+     },
+     {
+      "slotIndex": 3,
+      "spellId": null
+     },
+     {
+      "slotIndex": 4,
+      "spellId": null
+     },
+     {
+      "slotIndex": 5,
+      "spellId": null
+     },
+     {
+      "slotIndex": 6,
+      "spellId": null
+     },
+     {
+      "slotIndex": 7,
+      "spellId": null
+     },
+     {
+      "slotIndex": 8,
+      "spellId": null
+     }
+    ]
+   }
+  ]
+ },
+ "map": {
+  "width": 12,
+  "height": 12,
+  "tilesRle": "144:0;",
+  "tileCodes": [
+   "floor"
+  ],
+  "groundItems": [],
+  "monsters": [],
+  "npcs": [],
+  "surfaces": [],
+  "lastVisitedTick": 0,
+  "floorTurnCount": 0,
+  "isCleared": false,
+  "lastRespawnTurn": 0
+ },
+ "fovRle": "143E1U",
+ "contentManifestId": "cotw",
+ "turnCount": 0,
+ "messages": [],
+ "currentFloor": 8,
+ "difficulty": "medium",
+ "maxFloor": 37,
+ "storedMaps": {},
+ "storedFovRle": {
+  "8": "143E1U"
+ },
+ "compendium": {},
+ "compendiumCategoryPerks": {},
+ "worldState": {
+  "flags": {},
+  "counters": {},
+  "factions": {
+   "townsfolk": 10,
+   "temple_standing": 0,
+   "iron_clans": -15
+  },
+  "remoteVaults": {}
+ },
+ "prngState": 1337,
+ "gameState": {
+  "deepestFloor": 8
+ }
+}

@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { GameContentManifest } from '../src/engine';
+import { BUILTIN_STATUS_HANDLERS } from '../src/engine/status/statusHandlers';
 
 /**
  * Engine-creep check (ARCHITECTURE.md §3 No Engine Creep, §7.2).
@@ -77,7 +78,8 @@ function declaredIdentifiers(manifests: GameContentManifest[]): Map<string, stri
     addAll(m.storyChoiceTriggers);
     addAll(m.attributeMilestones);
     addAll(m.renownMilestones);
-    const BUILTIN_STATUS_TYPES = new Set(['poison', 'paralysis', 'slow', 'haste', 'blindness', 'stunned', 'sensory_masked']);
+    // The engine's own statuses: a pack naming one (its display name, a message) declares nothing new.
+    const BUILTIN_STATUS_TYPES = new Set(Object.keys(BUILTIN_STATUS_HANDLERS));
     for (const eff of m.statusEffects ?? []) {
       if (eff?.id && !BUILTIN_STATUS_TYPES.has(eff.id)) add(eff.id);
     }
@@ -133,10 +135,10 @@ function extraFiles(flag: string): string[] {
 /**
  * The pack identifiers one source line names (R-tool-6 widened the forms seen):
  *  - a quoted literal equal to a declared ID, or (presentation) starting with a pack namespace;
- *  - the same for each text segment of a template literal (`cotw:${id}`, `${n}:blood_tap`);
- *  - an underscored ID compounded into a longer string (`'spell~blood_tap'`): an ID without an
+ *  - the same for each text segment of a template literal (`cotw:${id}`, `${n}:draugr_call`);
+ *  - an underscored ID compounded into a longer string (`'spell~draugr_call'`): an ID without an
  *    underscore inside prose ("cast clairvoyance") is a word, not a reference, so it isn't seen;
- *  - an ID used as an unquoted object key, label or parameter name (`{ blood_tap: 3 }`).
+ *  - an ID used as an unquoted object key, label or parameter name (`{ draugr_call: 3 }`).
  */
 function packReferences(text: string, presentation: boolean): { id: string; pack: string }[] {
   const hits: { id: string; pack: string }[] = [];

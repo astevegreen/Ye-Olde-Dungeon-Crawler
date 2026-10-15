@@ -108,7 +108,8 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
     expect(heed.consequences.some((c) => c.type === 'recordMilestone' && (c as any).milestoneId === 'urdr_pool_blessing')).toBe(true);
 
     const gaze = choice.options.find((o) => o.id === 'gaze_blood')!;
-    expect(gaze.predicate).toEqual({ type: 'hasFlag', flag: 'blood_tainted_hero' });
+    // Any of the altar's mark opens it, half or full.
+    expect(gaze.predicate).toEqual({ type: 'minCounter', counter: 'hostages_sacrificed', value: 1 });
     expect(gaze.consequences.some((c) => c.type === 'grantItem' && (c as any).itemId === 'draught_of_thawed_blood')).toBe(true);
 
     const drink = choice.options.find((o) => o.id === 'drink_deep')!;

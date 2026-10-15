@@ -7,11 +7,13 @@ import {
   NPC,
   MovementAction,
   WaitAction,
+  evaluatePredicate,
   getItemBuyPrice,
   getTileDefinition,
 } from '../../../engine';
 import { DungeonArc } from '../../../engine/quest/dungeonArc';
 import {
+  altarMark,
   rescueCaptiveVillager,
   sacrificeCaptiveVillager,
   HOSTAGE_VILLAGERS,
@@ -25,8 +27,8 @@ import { createGuntherArmory } from '../town';
 /**
  * The live hostage-ritual path: captives are spawned by the manifest's scripted vault
  * placement, rescued by bumping into them (a MovementAction pre-hook), settled at the
- * Siphon Altar tile choice, or sacrificed when the countdown expires — and every route
- * funnels into the same five-tier resolution.
+ * Siphon Altar tile choice, or lost to the warlocks when the countdown expires — and every
+ * route funnels into the same trade.
  */
 describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
   let engine: GameEngine;
@@ -67,12 +69,29 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
     });
   });
 
-  describe('five-tier resolution', () => {
+  describe('the trade', () => {
+    /** Settles the captives in roster order: the first `rescued` saved, the rest sacrificed. */
     function settle(rescued: number): void {
       HOSTAGE_VILLAGERS.forEach((v, i) =>
         i < rescued ? rescueCaptiveVillager(engine, v.id) : sacrificeCaptiveVillager(engine, v.id)
       );
     }
+
+    /** The picks the trade owes, opened on the hero's next moves, each answered with `pick`. */
+    function takeGifts(pick: Record<string, string>): string[] {
+      const opened: string[] = [];
+      engine.onChoiceInteract = (choice, onSelect) => {
+        opened.push(choice.id);
+        onSelect(pick[choice.id]);
+      };
+      for (let step = 0; step < 4; step++) {
+        engine.handlePlayerAction(new MovementAction(player, 0, step % 2 === 0 ? 1 : -1));
+      }
+      return opened;
+    }
+
+    const ALTAR_SPELLS = ['grith', 'disir', 'blood_reap', 'draugr_call'];
+    const altarSpellsKnown = (): string[] => player.spellsKnown.filter((id) => ALTAR_SPELLS.includes(id));
 
     it('does not resolve until all four captives are accounted for', () => {
       rescueCaptiveVillager(engine, HOSTAGE_VILLAGERS[0].id);
@@ -81,13 +100,13 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
     });
 
     it('states the town prices the outcome really leaves, not a fixed markup', () => {
-      settle(1); // townsfolk 0 → -15
+      settle(0); // townsfolk 0 → -10
       expect(engine.messages.some((m) => m.includes('town prices: 15% dearer'))).toBe(true);
     });
 
     it('says prices are unchanged when the raid’s goodwill absorbs the loss', () => {
       engine.worldState.factions.townsfolk = 22; // three villagers freed in the raid
-      settle(1); // → 7
+      settle(1); // → 17
       expect(engine.messages.some((m) => m.includes('town prices: unchanged'))).toBe(true);
       expect(engine.messages.some((m) => m.includes('Markup'))).toBe(false);
     });
@@ -99,57 +118,72 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
       expect(engine.getWorldCounter('hostages_sacrificed')).toBe(0);
     });
 
-    it('Tier 1 (4 rescued): savior, +30/+15 standing, 25% discount, no dark magic', () => {
+    it('4 saved: savior, +10 town, +25 temple, both frith spells, no mark', () => {
       settle(4);
       expect(engine.getWorldFlag('siphon_ritual_resolved')).toBe(true);
       expect(engine.getWorldFlag('savior_of_jarnvidr')).toBe(true);
-      expect(engine.getFactionStanding('townsfolk')).toBe(30);
-      expect(engine.getFactionStanding('temple_standing')).toBe(15);
-      expect(player.hasEnergyModel()).toBe(false);
-      const sword = testSword();
-      expect(getItemBuyPrice(sword, engine.worldState, pricing)).toBe(Math.floor(getItemBuyPrice(sword) * 0.75));
-    });
-
-    it('Tier 2 (3 rescued): +15/+5 standing, Blood Reap and Blood Tap', () => {
-      settle(3);
-      expect(engine.getFactionStanding('townsfolk')).toBe(15);
-      expect(engine.getFactionStanding('temple_standing')).toBe(5);
-      expect(player.hasEnergyModel()).toBe(true);
-      expect(player.spellsKnown).toEqual(expect.arrayContaining(['blood_reap', 'blood_tap']));
-      expect(player.spellsKnown).not.toContain('crimson_ward');
-    });
-
-    it('Tier 3 (2 rescued): no standing change, flat prices, three blood spells', () => {
-      settle(2);
-      expect(engine.getFactionStanding('townsfolk')).toBe(0);
-      expect(player.spellsKnown).toEqual(expect.arrayContaining(['blood_reap', 'blood_tap', 'crimson_ward']));
+      expect(engine.getFactionStanding('townsfolk')).toBe(10);
+      expect(engine.getFactionStanding('temple_standing')).toBe(25);
+      expect(altarSpellsKnown()).toEqual(['grith', 'disir']);
+      expect(altarMark(engine)).toBe('none');
+      expect(takeGifts({})).toEqual([]);
+      // Saving no longer also wins on shop prices.
       const sword = testSword();
       expect(getItemBuyPrice(sword, engine.worldState, pricing)).toBe(getItemBuyPrice(sword));
     });
 
-    it('Tier 4 (1 rescued): -15/-10 standing, 15% markup, four blood spells', () => {
-      settle(1);
-      expect(engine.getFactionStanding('townsfolk')).toBe(-15);
-      expect(engine.getFactionStanding('temple_standing')).toBe(-10);
-      expect(player.spellsKnown).toEqual(
-        expect.arrayContaining(['blood_reap', 'blood_tap', 'crimson_ward', 'blood_spear'])
-      );
-      const sword = testSword();
-      expect(getItemBuyPrice(sword, engine.worldState, pricing)).toBe(Math.floor(getItemBuyPrice(sword) * 1.15));
+    it('3 saved, 1 sacrificed: +5/+12, one frith spell of the hero\'s pick, half the mark', () => {
+      settle(3);
+      expect(engine.getFactionStanding('townsfolk')).toBe(5);
+      expect(engine.getFactionStanding('temple_standing')).toBe(12);
+      expect(altarSpellsKnown()).toEqual([]);
+      expect(altarMark(engine)).toBe('half');
+
+      expect(takeGifts({ siphon_frith_gift: 'disir' })).toEqual(['siphon_frith_gift']);
+      expect(altarSpellsKnown()).toEqual(['disir']);
     });
 
-    it('Tier 5 (0 rescued): blood-tainted, -30/-25 standing, 30% markup, full grimoire, hero armor withheld', () => {
+    it('2 and 2: no standing change, one pick of each kind, half the mark', () => {
+      settle(2);
+      expect(engine.getFactionStanding('townsfolk')).toBe(0);
+      expect(engine.getFactionStanding('temple_standing')).toBe(0);
+      expect(altarMark(engine)).toBe('half');
+
+      const opened = takeGifts({ siphon_frith_gift: 'grith', siphon_blood_gift: 'draugr_call' });
+      expect(opened.sort()).toEqual(['siphon_blood_gift', 'siphon_frith_gift']);
+      expect(altarSpellsKnown().sort()).toEqual(['draugr_call', 'grith']);
+    });
+
+    it('1 saved, 3 sacrificed: -5/-12, one blood spell of the hero\'s pick, the odd captive buys none', () => {
+      settle(1);
+      expect(engine.getFactionStanding('townsfolk')).toBe(-5);
+      expect(engine.getFactionStanding('temple_standing')).toBe(-12);
+      expect(takeGifts({ siphon_blood_gift: 'blood_reap' })).toEqual(['siphon_blood_gift']);
+      expect(altarSpellsKnown()).toEqual(['blood_reap']);
+    });
+
+    it('4 sacrificed: blood-tainted, -10/-25, both blood spells, the full mark, hero armor withheld', () => {
       settle(0);
       expect(engine.getWorldFlag('blood_tainted_hero')).toBe(true);
-      expect(engine.getFactionStanding('townsfolk')).toBe(-30);
+      expect(engine.getFactionStanding('townsfolk')).toBe(-10);
       expect(engine.getFactionStanding('temple_standing')).toBe(-25);
-      expect(player.spellsKnown).toContain('exsanguinate');
-      expect(player.energyModel!.maxVolatileEnergy).toBe(100);
+      expect(altarSpellsKnown()).toEqual(['blood_reap', 'draugr_call']);
+      expect(altarMark(engine)).toBe('full');
       const sword = testSword();
-      expect(getItemBuyPrice(sword, engine.worldState, pricing)).toBe(Math.floor(getItemBuyPrice(sword) * 1.3));
+      expect(getItemBuyPrice(sword, engine.worldState, pricing)).toBe(Math.floor(getItemBuyPrice(sword) * 1.15));
 
       const stock = createGuntherArmory().getAvailableStock(engine.worldState);
       expect(stock.find((item) => item.id === 'gunther-hero-armor')).toBeUndefined();
+    });
+
+    it('shows the mark among the hero\'s conditions, half and full apart', () => {
+      const shown = (): string[] =>
+        (cotwManifest.heroMarks ?? []).filter((m) => evaluatePredicate(m.when, engine.worldState)).map((m) => m.id);
+      expect(shown()).toEqual([]);
+      sacrificeCaptiveVillager(engine, HOSTAGE_VILLAGERS[0].id);
+      expect(shown()).toEqual(['altar_mark_half']);
+      HOSTAGE_VILLAGERS.slice(1).forEach((v) => sacrificeCaptiveVillager(engine, v.id));
+      expect(shown()).toEqual(['altar_mark_full']);
     });
   });
 
@@ -172,7 +206,7 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
       expect(player.x).toBe(first.x - 1); // rescuing does not move the player
     });
 
-    it('rescuing all four by bumping resolves the ritual at Tier 1', () => {
+    it('rescuing all four by bumping resolves the ritual as the savior', () => {
       const captives = placeCaptives();
       for (const captive of captives) {
         player.setPosition(captive.x - 1, captive.y);
@@ -195,15 +229,16 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
       player.setPosition(5, 7);
       engine.handlePlayerAction(new MovementAction(player, 0, 1));
 
-      // Of the 3 remaining, balance frees 2 and sacrifices 1: 3 rescued total (Tier 2).
+      // Of the 3 remaining, balance frees 2 and sacrifices 1: 3 to 1, a frith pick owed.
       expect(engine.getWorldCounter('hostages_rescued')).toBe(3);
       expect(engine.getWorldCounter('hostages_sacrificed')).toBe(1);
       expect(engine.getWorldFlag('siphon_ritual_resolved')).toBe(true);
-      expect(player.spellsKnown).toContain('blood_reap');
+      expect(engine.getWorldFlag('siphon_frith_gift_owed')).toBe(true);
+      expect(engine.getWorldFlag('siphon_blood_gift_owed')).toBe(false);
       expect(HOSTAGE_VILLAGERS.every((v) => map.getEntityById(v.id) === null)).toBe(true);
     });
 
-    it('the countdown starts in sight of a captive and sacrifices the rest on expiry', () => {
+    it('the countdown starts in sight of a captive and the warlocks take the rest on expiry, buying nothing', () => {
       const [first] = placeCaptives();
       player.setPosition(first.x - 1, first.y);
       engine.handlePlayerAction(new MovementAction(player, 1, 0)); // rescue one; captives in sight
@@ -216,8 +251,12 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
       expect(engine.getWorldFlag('siphon_ritual_expired')).toBe(true);
       expect(engine.getWorldFlag('siphon_ritual_resolved')).toBe(true);
       expect(engine.getWorldCounter('hostages_rescued')).toBe(1);
-      expect(engine.getWorldCounter('hostages_sacrificed')).toBe(3);
-      expect(player.spellsKnown).toContain('blood_spear'); // Tier 4
+      expect(engine.getWorldCounter('hostages_sacrificed')).toBe(0);
+      expect(engine.getWorldCounter('hostages_lost')).toBe(3);
+      // One saved buys nothing alone, the lost buy nothing at all, and the hero is unmarked.
+      expect(engine.getWorldFlag('siphon_frith_gift_owed') || engine.getWorldFlag('siphon_blood_gift_owed')).toBe(false);
+      expect(altarMark(engine)).toBe('none');
+      expect(engine.getFactionStanding('temple_standing')).toBe(6);
     });
 
     it('captives sacrificed while the hero was off the floor are gone when the hero comes back (R-cotw-16)', () => {

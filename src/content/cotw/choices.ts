@@ -1,5 +1,5 @@
 import type { ChoiceDefinition } from '../../engine';
-import { BLOOD_ALTAR_CHOICE } from './hostageRitual';
+import { ALTAR_MARKED, BLOOD_ALTAR_CHOICE, SIPHON_GIFT_CHOICES } from './hostageRitual';
 import { SIPHON_CORE_CHOICE } from './siphonPylon';
 import { SKALDIC_RUNESTONE_CHOICES } from './runestones';
 import { VIDNIR_REVELATION_CHOICE } from './narrative';
@@ -144,6 +144,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
 
   ...COTW_MILESTONE_CHOICES,
   blood_altar_ritual: BLOOD_ALTAR_CHOICE,
+  ...SIPHON_GIFT_CHOICES,
   siphon_core: SIPHON_CORE_CHOICE,
   vidnir_revelation: VIDNIR_REVELATION_CHOICE,
   ...SKALDIC_RUNESTONE_CHOICES,
@@ -363,8 +364,8 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
         label: 'Gaze into the Boiling Blood',
         description:
           'Channel the memory of dark sacrifice: the pool gives up a Draught of Thawed Blood.',
-        predicate: { type: 'hasFlag', flag: 'blood_tainted_hero' },
-        disabledReason: 'The water remains calm: you did not embrace the full sacrificial rite of the coven.',
+        predicate: ALTAR_MARKED,
+        disabledReason: 'The water remains calm: you gave no one to the Siphon Altar.',
         consequences: [
           { type: 'setFlag', flag: 'urdr_pool_resolved', value: true },
           { type: 'setFlag', flag: 'urdr_pool_blood_gazed', value: true },

@@ -95,9 +95,9 @@ describe('Visual Effect Queue & Declarative FX Engine', () => {
 
     // Blood magic is shadow by element but draws as blood.
     player.energy = 100;
-    const spear = new CastSpellAction(player, 'blood_spear', 8, 3, undefined, true).perform(engine);
-    expect(spear.success).toBe(true);
-    expect((spear.effects?.find((e) => e.type === 'projectile') as ProjectileEffectDescriptor).fx).toBe('blood');
+    const curse = new CastSpellAction(player, 'draugr_call', 8, 3, undefined, true).perform(engine);
+    expect(curse.success).toBe(true);
+    expect((curse.effects?.find((e) => e.type === 'projectile') as ProjectileEffectDescriptor).fx).toBe('blood');
   });
 
   it('generates wall reflection flags in projectile path for Lightning Bolt', () => {

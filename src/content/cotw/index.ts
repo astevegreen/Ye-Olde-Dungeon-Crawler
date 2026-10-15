@@ -52,7 +52,7 @@ import { COTW_COINAGE } from './coinage';
 import { COTW_ITEM_FAMILIES } from './itemFamilies';
 import { COTW_LOOT_RATES } from './loot';
 import { OATH_HOLD_HOOK, OATH_TRIGGER } from './oath';
-import { HOSTAGE_VILLAGERS, SIPHON_RITUAL_FLOOR, SIPHON_RITUAL_HOOKS, SIPHON_TIMED_EVENT, SIPHON_VAULT_ID } from './hostageRitual';
+import { ALTAR_MARKS, HOSTAGE_VILLAGERS, SIPHON_GIFT_TRIGGERS, SIPHON_RITUAL_FLOOR, SIPHON_RITUAL_HOOKS, SIPHON_TIMED_EVENT, SIPHON_VAULT_ID } from './hostageRitual';
 import { COTW_HOMECOMING_HOOK } from './homecoming';
 import { COTW_PROLOGUE, COVEN_CHANNELER_STRATEGY, PROLOGUE_HOOKS, PROLOGUE_TIMED_EVENT } from './prologue';
 import { COTW_TILES } from './tiles';
@@ -151,7 +151,7 @@ export const cotwManifest: GameContentManifest = {
     { flag: 'oath_resolved', label: "The Matriarch's Blood-Oath", description: 'Struck a lasting bargain with a troll-wife matriarch to sever the siphon on the village.', icon: '🩸', riddle: 'With the sun-shard won back, a troll-mother bargains in blood. Hot or cold, her price is kept forever.' },
     { flag: 'nidhogg_root_sealed', label: 'The Root Sealed', description: 'Drove Níðhögg from the rotting root of Yggdrasil without ending it.', icon: '🌳', riddle: 'Not every wyrm need die. Wound the gnawer until it turns tail, then give chase, and it may slink back to the dark.', riddleAfterFlag: 'vidnir_slain' },
     { flag: 'savior_of_jarnvidr', label: 'Savior of Járnviðr', description: 'Rescued all four captive villagers from the sacrificial blood siphon.', icon: '🛡️', riddle: 'Four of the village bleed to feed an iron wood. Reach them all before the bowl runs full.' },
-    { flag: 'blood_tainted_hero', label: 'The Blood-Tainted', description: 'Embraced the forbidden Grimoire of Blood Magic while innocent captives bled.', icon: '🩸', riddle: 'A book of red letters opens only while the innocent bleed. To read it is to wear it.' },
+    { flag: 'blood_tainted_hero', label: 'The Blood-Tainted', description: 'Gave all four captives to the Siphon Altar.', icon: '🩸', riddle: 'A book of red letters opens only while the innocent bleed. To read it is to wear it.' },
     { flag: 'vidnir_slain', label: "The Wyrm's Fate Revealed", description: 'Learned from the dying herald Víðnir that slaying Níðhögg will split Yggdrasil and trigger Ragnarök, while driving it off will seal the root.', icon: '🐉', riddle: 'At the wyrm’s maw a herald keeps its master’s secret, and speaks it only dying.' },
     { flag: 'dwarven_hearth_rested', label: 'Dwarven Hearth Respite', description: 'Found solace in the secluded thermal grotto behind the rushing cascade.', icon: '♨️', riddle: 'Behind falling water in the smiths’ halls, old coals still keep a warm place to sleep.' },
     { flag: 'world_bark_hearth_rested', label: 'Heartwood Sanctuary', description: 'Rested in the peaceful hollow among the ancient roots of Yggdrasil.', icon: '🌳', riddle: 'Inside the world-tree’s bark an amber fire burns. Sit by it, and the roots keep watch.' },
@@ -190,7 +190,7 @@ export const cotwManifest: GameContentManifest = {
     OATH_HOLD_HOOK,
     ...IRON_CLANS_HOOKS,
   ],
-  storyChoiceTriggers: [OATH_TRIGGER, VIDNIR_DEFEATED_TRIGGER],
+  storyChoiceTriggers: [OATH_TRIGGER, VIDNIR_DEFEATED_TRIGGER, ...SIPHON_GIFT_TRIGGERS],
   attributeMilestones: COTW_ATTRIBUTE_MILESTONES,
   levelMilestones: COTW_LEVEL_MILESTONES,
   perks: [...COTW_PERKS, ...COTW_MILESTONE_PERKS, ...COTW_FAMILY_PERKS],
@@ -219,6 +219,7 @@ export const cotwManifest: GameContentManifest = {
   },
   factions: COTW_FACTIONS,
   deepestFloorCounter: COTW_DEEPEST_FLOOR_COUNTER,
+  heroMarks: ALTAR_MARKS,
   statusEffects: [
     {
       id: 'poison',
@@ -250,6 +251,16 @@ export const cotwManifest: GameContentManifest = {
       id: 'stunned',
       name: 'Stunned',
       expireMessage: '{name} recovers from the stunning blow and regains composure.',
+    },
+    {
+      id: 'pacified',
+      name: 'Grið',
+      applyMessage: '{name} lays down its arms.',
+    },
+    {
+      id: 'rises_when_slain',
+      name: 'Draugr-call',
+      applyMessage: 'A death-curse settles on {name}.',
     },
     {
       id: GIANT_BLOOD_STATUS,

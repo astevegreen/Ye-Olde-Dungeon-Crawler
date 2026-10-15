@@ -11,6 +11,7 @@ import { BOSS_MONSTERS } from './bosses';
 import { MINIBOSS_MONSTERS } from './minibosses';
 import { LEGACY_COTW_MONSTERS } from './legacy';
 import { PROLOGUE_MONSTERS } from './prologue';
+import { SUMMONED_MONSTERS } from './summons';
 import { COTW_KILL_RITES } from '../killRites';
 
 export * from './rimeHollows';
@@ -24,6 +25,7 @@ export * from './bosses';
 export * from './minibosses';
 export * from './legacy';
 export * from './prologue';
+export * from './summons';
 
 /**
  * The canonical 37-entry monster roster specified for Castle of the Winds:
@@ -48,13 +50,14 @@ export const COTW_ROSTER_BESTIARY: Record<string, MonsterDefinition> = Object.fr
 
 /**
  * Complete COTW Bestiary, by id: the classic monsters of `legacy.ts`, the 37 roster monsters,
- * the minibosses and the prologue's.
+ * the minibosses, the prologue's and the spell-summoned.
  */
 export const COTW_BESTIARY: Record<string, MonsterDefinition> = {
   ...LEGACY_COTW_MONSTERS,
   ...COTW_ROSTER_BESTIARY,
   ...Object.fromEntries(MINIBOSS_MONSTERS.map((m) => [m.id, m])),
   ...Object.fromEntries(PROLOGUE_MONSTERS.map((m) => [m.id, m])),
+  ...Object.fromEntries(SUMMONED_MONSTERS.map((m) => [m.id, m])),
 };
 
 /**
@@ -80,7 +83,7 @@ for (const m of COTW_ROSTER_37) {
   }
 }
 
-for (const m of [...MINIBOSS_MONSTERS, ...PROLOGUE_MONSTERS]) {
+for (const m of [...MINIBOSS_MONSTERS, ...PROLOGUE_MONSTERS, ...SUMMONED_MONSTERS]) {
   if (!seenIds.has(m.id)) {
     seenIds.add(m.id);
     allMonsters.push(m);

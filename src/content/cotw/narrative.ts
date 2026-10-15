@@ -6,7 +6,7 @@ import { URDR_POOL_FLOOR } from './vaults';
 import { COTW_DEEPEST_FLOOR_COUNTER } from './spellTablets';
 import { HEARTH_TEAR_RETURNED_FLAG, RELIC_RECOVERED_FLAG } from './relic';
 import { prologueVillagerSaved } from './prologue';
-import { captiveNamesForThanks, listNames, raidVillagersStillCaptive } from './hostageRitual';
+import { altarMark, captiveNamesForThanks, listNames, raidVillagersStillCaptive } from './hostageRitual';
 
 /**
  * Story Choice Trigger: fires when Víðnir, Herald of the Wyrm (miniboss on floor 45)
@@ -182,7 +182,8 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
     const deepest = getCounter(engine.worldState, COTW_DEEPEST_FLOOR_COUNTER);
     const hasRelic = getFlag(engine.worldState, RELIC_RECOVERED_FLAG);
     const isSavior = getFlag(engine.worldState, 'savior_of_jarnvidr');
-    const isTainted = getFlag(engine.worldState, 'blood_tainted_hero');
+    // Any of the altar's mark, half or full, darkens how the town speaks to the hero.
+    const isTainted = altarMark(engine) !== 'none';
     const vidnirSlain = getFlag(engine.worldState, 'vidnir_slain');
 
     // Announce the Great Thaw once upon first entering town with the relic
@@ -322,7 +323,7 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
       } else if (isTainted) {
         torvald.setDialogue(
           'The stench of sacrificial blood follows you like a shroud...',
-          'You chose dark power over innocent lives. Thor’s temple demands heavy tithes from those who harbor blood corruption!'
+          'You chose dark power over innocent lives. Thor sees the altar’s mark on you, and so does his temple.'
         );
       } else if (hasRelic) {
         torvald.setDialogue(

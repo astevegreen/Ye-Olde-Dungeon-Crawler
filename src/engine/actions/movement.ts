@@ -359,12 +359,12 @@ export class MovementAction implements Action {
       // checked every player move rather than only on a specific tile, since the
       // trigger condition is progress (kills), not location.
       for (const trigger of progressChoicesHeld ? [] : engine.manifest?.storyChoiceTriggers ?? []) {
-        const kills = engine.compendium.getEntry(trigger.monsterDefinitionId).kills;
+        const kills = trigger.monsterDefinitionId ? engine.compendium.getEntry(trigger.monsterDefinitionId).kills : 0;
         if (trigger.progressStartFlag && kills >= 1 && !engine.getWorldFlag(trigger.progressStartFlag)) {
           engine.setWorldFlag(trigger.progressStartFlag, true);
           if (trigger.progressStartMessage) engine.log(trigger.progressStartMessage);
         }
-        if (kills < trigger.killsRequired) continue;
+        if (kills < (trigger.killsRequired ?? 0)) continue;
         if (trigger.when && !evaluatePredicate(trigger.when, engine.worldState)) continue;
         const offeredFlag = `${trigger.id}_offered`;
         if (engine.getWorldFlag(offeredFlag)) continue;

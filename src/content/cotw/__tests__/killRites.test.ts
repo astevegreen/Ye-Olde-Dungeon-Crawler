@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { KillRiteDefinition, MonsterDefinition, SpellDefinition } from '../../../engine';
 import { COTW_KILL_RITES } from '../killRites';
-import { COTW_MONSTERS, COTW_BESTIARY } from '../monsters';
+import { COTW_MONSTERS, COTW_BESTIARY, SUMMONED_MONSTERS } from '../monsters';
 import { COTW_SPELLS } from '../spells';
 import { COTW_ITEMS } from '../items';
 import { COTW_STARTER_KIT } from '../character';
@@ -10,9 +10,9 @@ import { COTW_TABLET_STOCK } from '../spellTablets';
 import { COTW_PROLOGUE } from '../prologue';
 
 const spellById = new Map(COTW_SPELLS.map((s) => [s.id, s]));
-/** Spells rites and tablets teach: all but Blood Magic and the tablet-only "learn_*" spells. */
+/** Spells rites and tablets teach: all but the altar's blood and frith and the tablet-only "learn_*" spells. */
 // Scroll spells (Remove Curse) are only ever read from a scroll, never learned.
-const CORE_SPELLS = COTW_SPELLS.filter((s) => !['BloodMagic', 'Lore', 'Scroll'].includes(String(s.school))).map((s) => s.id);
+const CORE_SPELLS = COTW_SPELLS.filter((s) => !['BloodMagic', 'Frith', 'Lore', 'Scroll'].includes(String(s.school))).map((s) => s.id);
 
 /** What a known spell lets the hero do to meet a rite: its damage element and inflicted status. */
 function grants(spell: SpellDefinition): { elements: string[]; statuses: string[] } {
@@ -64,8 +64,9 @@ function simulateDescent(): { learnedOn: Map<string, number>; meetableOn: Map<st
 
 describe('cotw kill rites (Galdr of the Slain)', () => {
   // The night raid's creatures meet the hero only before fire is in reach, then leave.
-  const raidOnly = new Set((COTW_PROLOGUE.monsters ?? []).map((p) => p.definitionId));
-  const everyMonster: MonsterDefinition[] = [...COTW_MONSTERS, ...Object.values(COTW_BESTIARY)].filter((m) => !raidOnly.has(m.id));
+  // A summon is never the hero's kill.
+  const neverHunted = new Set([...(COTW_PROLOGUE.monsters ?? []).map((p) => p.definitionId), ...SUMMONED_MONSTERS.map((m) => m.id)]);
+  const everyMonster: MonsterDefinition[] = [...COTW_MONSTERS, ...Object.values(COTW_BESTIARY)].filter((m) => !neverHunted.has(m.id));
 
   it('gives every monster a rite with a hint, and names no unknown monster', () => {
     for (const m of everyMonster) {
@@ -77,8 +78,8 @@ describe('cotw kill rites (Galdr of the Slain)', () => {
   });
 
   it('asks no rite of the night raid, which could never be met', () => {
-    expect(raidOnly.size).toBeGreaterThan(0);
-    for (const id of raidOnly) expect(COTW_KILL_RITES[id], id).toBeUndefined();
+    expect(neverHunted.size).toBeGreaterThan(0);
+    for (const id of neverHunted) expect(COTW_KILL_RITES[id], id).toBeUndefined();
   });
 
   it('teaches real spells and yields real essences', () => {

@@ -1,6 +1,7 @@
 import {
   Companion,
   Monster,
+  evaluatePredicate,
   getTileDefinition,
   getTimedEventCountdowns,
   parseCoinItem,
@@ -103,8 +104,8 @@ const BUILT_IN_STATUS_COLORS: Record<string, string> = {
 };
 
 /**
- * Everything affecting the hero right now: statuses, sensing spells, story
- * countdowns, and encumbrance once it slows them.
+ * Everything affecting the hero right now: statuses, a pack's lasting marks, sensing
+ * spells, story countdowns, and encumbrance once it slows them.
  */
 export function getConditions(engine: GameEngine): Condition[] {
   const p = engine.player;
@@ -120,6 +121,11 @@ export function getConditions(engine: GameEngine): Condition[] {
       turns: isAmbientDuration(eff.duration) ? null : eff.duration,
       detail: def?.damagePerTick ? `−${def.damagePerTick} HP each turn` : undefined,
     });
+  }
+
+  for (const mark of engine.manifest?.heroMarks ?? []) {
+    if (!evaluatePredicate(mark.when, engine.worldState)) continue;
+    conditions.push({ key: `mark:${mark.id}`, label: mark.label, color: mark.hudColor ?? 'var(--ui-warn)', turns: null, detail: mark.detail });
   }
 
   if (engine.detectMonstersTurns > 0) {

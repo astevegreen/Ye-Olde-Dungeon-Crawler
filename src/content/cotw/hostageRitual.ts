@@ -2,7 +2,10 @@ import type {
   ActionHook,
   ChoiceDefinition,
   EngineContext,
+  HeroMarkDefinition,
+  Predicate,
   ScriptedVaultNpc,
+  StoryChoiceTrigger,
   TimedEventDefinition,
 } from '../../engine';
 import {
@@ -24,8 +27,9 @@ import { PROLOGUE_VILLAGERS, prologueVillagerTaken, type RaidVillagerId } from '
 /**
  * The Siphon Altar of Járnviðr (floor 22). Four captive villagers are bound around a
  * sacrificial altar; the player rescues them by walking into them, settles the rest at
- * the altar, or lets the ritual's countdown run out. Once all four are accounted for,
- * the rescued/sacrificed split picks one of five outcome tiers (`resolveHostageRitual`).
+ * the altar, or lets the ritual's countdown run out. Once all four are accounted for, the
+ * trade settles (`resolveHostageRitual`): every two saved buy a frith spell, every two
+ * sacrificed a blood spell, and the hero carries the altar's mark for each sacrifice.
  *
  * Everything here is pack content wired through generic engine capabilities:
  * `scriptedVaultPlacements` stamps the vault and its NPCs, a vault `legend` places
@@ -45,6 +49,49 @@ const FLAG_RESOLVED = 'siphon_ritual_resolved';
 const FLAG_CAPTIVES_SEATED = 'siphon_raid_captives_seated';
 const COUNTER_RESCUED = 'hostages_rescued';
 const COUNTER_SACRIFICED = 'hostages_sacrificed';
+/** Captives the countdown took: the warlocks finished their own rite, so they buy nothing. */
+const COUNTER_LOST = 'hostages_lost';
+/** A spell of the kind is owed and its pick waits (`SIPHON_GIFT_TRIGGERS`). */
+const FLAG_FRITH_PICK = 'siphon_frith_gift_owed';
+const FLAG_BLOOD_PICK = 'siphon_blood_gift_owed';
+
+/** Standing at the extremes, scaled by (saved - sacrificed) / 4 and cut toward zero. */
+const TOWN_SWING = 10;
+const TEMPLE_SWING = 25;
+
+/** The altar's spells, mirrored in pairs: one ends a fight, one brings allies. */
+const FRITH_PAIR = ['grith', 'disir'] as const;
+const BLOOD_PAIR = ['blood_reap', 'draugr_call'] as const;
+
+/**
+ * The altar's mark, read from its own counter: half for one to three sacrificed, full for
+ * all four. Old saves marked `blood_tainted_hero` sacrificed all four.
+ */
+const MARK_FULL: Predicate = {
+  type: 'or',
+  predicates: [
+    { type: 'minCounter', counter: COUNTER_SACRIFICED, value: 4 },
+    { type: 'hasFlag', flag: 'blood_tainted_hero' },
+  ],
+};
+const MARK_HALF: Predicate = {
+  type: 'and',
+  predicates: [{ type: 'minCounter', counter: COUNTER_SACRIFICED, value: 1 }, { type: 'not', predicate: MARK_FULL }],
+};
+/** Any mark at all: the darker lines in town and at Urðr's Pool read this. */
+export const ALTAR_MARKED: Predicate = { type: 'minCounter', counter: COUNTER_SACRIFICED, value: 1 };
+
+export const ALTAR_MARKS: HeroMarkDefinition[] = [
+  { id: 'altar_mark_half', label: 'Blood-marked', when: MARK_HALF, hudColor: 'var(--ui-warn)', detail: 'the altar took a captive for you' },
+  { id: 'altar_mark_full', label: 'Blood-marked, wholly', when: MARK_FULL, hudColor: 'var(--ui-bad)', detail: 'the altar took all four captives for you' },
+];
+
+/** The altar's mark on this hero: none, half or full. */
+export function altarMark(engine: EngineContext): 'none' | 'half' | 'full' {
+  const sacrificed = getCounter(engine.worldState, COUNTER_SACRIFICED);
+  if (sacrificed >= 4 || getFlag(engine.worldState, 'blood_tainted_hero')) return 'full';
+  return sacrificed > 0 ? 'half' : 'none';
+}
 
 /** Chebyshev distance at which the player notices the ritual and its countdown starts. */
 const RITUAL_NOTICE_RADIUS = 8;
@@ -184,7 +231,9 @@ function isCaptive(id: string): boolean {
 
 function isAccountedFor(engine: EngineContext, captiveId: string): boolean {
   return (
-    getFlag(engine.worldState, `${captiveId}_rescued`) || getFlag(engine.worldState, `${captiveId}_sacrificed`)
+    getFlag(engine.worldState, `${captiveId}_rescued`) ||
+    getFlag(engine.worldState, `${captiveId}_sacrificed`) ||
+    getFlag(engine.worldState, `${captiveId}_lost`)
   );
 }
 
@@ -196,7 +245,8 @@ export function captiveRescued(engine: EngineContext, captiveId: string): boolea
 /** How the ritual ended for the town: not yet, every captive home, or someone lost to the altar. */
 export function ritualOutcome(engine: EngineContext): 'pending' | 'all_home' | 'some_lost' {
   if (!getFlag(engine.worldState, FLAG_RESOLVED)) return 'pending';
-  return getCounter(engine.worldState, COUNTER_SACRIFICED) > 0 ? 'some_lost' : 'all_home';
+  const gone = getCounter(engine.worldState, COUNTER_SACRIFICED) + getCounter(engine.worldState, COUNTER_LOST);
+  return gone > 0 ? 'some_lost' : 'all_home';
 }
 
 /** Captives neither rescued nor sacrificed yet, in roster order. */
@@ -266,10 +316,25 @@ export function sacrificeCaptiveVillager(engine: EngineContext, captiveId: strin
 }
 
 /**
- * Applies the moral outcome of the ritual, once. The tier is picked by how many of the
- * four captives were rescued; the more sacrificed, the more of the Grimoire of Blood
- * Magic the player absorbs — and the worse Bjarnarhaven regards them (townsfolk
- * standing drives shop prices via the manifest's `merchantPricing`).
+ * The countdown ran out: the warlocks take the captive in their own rite. The hero bought
+ * nothing with it and bears no mark for it.
+ */
+function loseCaptiveVillager(engine: EngineContext, captiveId: string): void {
+  if (!isCaptive(captiveId) || isAccountedFor(engine, captiveId)) return;
+  const { name } = captiveIdentity(engine, captiveId);
+  setFlag(engine.worldState, `${captiveId}_lost`, true);
+  incrementCounter(engine.worldState, COUNTER_LOST, 1);
+  removeCaptiveEntity(engine, captiveId);
+  engine.log(`The warlocks finish their rite: ${name} is lost.`);
+  checkAndResolveHostageRitual(engine);
+}
+
+/**
+ * Settles the trade, once. Every two captives saved buy a frith spell and every two
+ * sacrificed a blood spell, the odd one buying none; a kind earned twice gives both of its
+ * pair, once a pick between them (`SIPHON_GIFT_CHOICES`). Standing moves in even steps on
+ * saved minus sacrificed, the temple carrying the weight (townsfolk standing drives shop
+ * prices via the manifest's `merchantPricing`). Captives the countdown took count for nothing.
  */
 export function resolveHostageRitual(engine: EngineContext): void {
   if (getFlag(engine.worldState, FLAG_RESOLVED)) {
@@ -280,63 +345,51 @@ export function resolveHostageRitual(engine: EngineContext): void {
   setFlag(engine.worldState, FLAG_TIMER_STOPPED, true);
 
   const rescued = getCounter(engine.worldState, COUNTER_RESCUED);
-  const player = engine.player;
-
+  const sacrificed = getCounter(engine.worldState, COUNTER_SACRIFICED);
+  const net = (rescued - sacrificed) / 4;
+  const town = Math.trunc(net * TOWN_SWING);
+  const temple = Math.trunc(net * TEMPLE_SWING);
+  if (town !== 0) modifyFaction(engine.worldState, 'townsfolk', town);
+  if (temple !== 0) modifyFaction(engine.worldState, 'temple_standing', temple);
   if (rescued >= 4) {
-    // Tier 1: Pure Savior (4 Rescued, 0 Sacrificed)
-    modifyFaction(engine.worldState, 'townsfolk', 30);
-    modifyFaction(engine.worldState, 'temple_standing', 15);
     setFlag(engine.worldState, 'savior_of_jarnvidr', true);
-    engine.log(
-      `SAVIOR OF JÁRNVIÐR! All four innocent captives were rescued alive. Bjarnarhaven praises your name! (+30 Townsfolk Standing, +15 Temple Standing; ${townPricesNote(engine)})`
-    );
     awardMilestone(engine, cotwMilestone('captives_saved'));
-  } else if (rescued === 3) {
-    // Tier 2: Righteous Leaning (3 Rescued, 1 Sacrificed)
-    modifyFaction(engine.worldState, 'townsfolk', 15);
-    modifyFaction(engine.worldState, 'temple_standing', 5);
-    player.initEnergyModel();
-    player.learnSpell('blood_reap');
-    player.learnSpell('blood_tap');
-    engine.log(
-      `Three captives escaped to safety. From the single fallen soul, you gleaned the dark rites of Blood Reap and Blood Tap. (+15 Townsfolk Standing, +5 Temple Standing; ${townPricesNote(engine)})`
-    );
-  } else if (rescued === 2) {
-    // Tier 3: The Halfway Path (2 Rescued, 2 Sacrificed) — no faction change.
-    player.initEnergyModel();
-    player.learnSpell('blood_reap');
-    player.learnSpell('blood_tap');
-    player.learnSpell('crimson_ward');
-    engine.log(
-      `A bitter compromise. Two souls escaped, and two fed the dark altar. You unlock Blood Reap, Blood Tap and Crimson Ward with no change in the town's regard. (${townPricesNote(engine)})`
-    );
-  } else if (rescued === 1) {
-    // Tier 4: Dark Leaning (1 Rescued, 3 Sacrificed)
-    modifyFaction(engine.worldState, 'townsfolk', -15);
-    modifyFaction(engine.worldState, 'temple_standing', -10);
-    player.initEnergyModel();
-    player.learnSpell('blood_reap');
-    player.learnSpell('blood_tap');
-    player.learnSpell('crimson_ward');
-    player.learnSpell('blood_spear');
-    engine.log(
-      `A grim harvest. Three innocents perished. You unlock Blood Reap, Blood Tap, Crimson Ward, and Blood Spear. Word of your cold apathy spreads to town. (-15 Townsfolk Standing, -10 Temple Standing; ${townPricesNote(engine)})`
-    );
-  } else {
-    // Tier 5: Complete Dark Harvest (0 Rescued, 4 Sacrificed)
-    modifyFaction(engine.worldState, 'townsfolk', -30);
-    modifyFaction(engine.worldState, 'temple_standing', -25);
-    setFlag(engine.worldState, 'blood_tainted_hero', true);
-    player.initEnergyModel({ maxVolatileEnergy: 100, volatileEnergy: 50 });
-    player.learnSpell('blood_reap');
-    player.learnSpell('blood_tap');
-    player.learnSpell('crimson_ward');
-    player.learnSpell('blood_spear');
-    player.learnSpell('exsanguinate');
-    engine.log(
-      `THE BLOOD SIPHON IS COMPLETE! All captives were sacrificed, awakening the full Grimoire of Blood Magic in your soul! Bjarnarhaven recoils in horror. (-30 Townsfolk Standing, -25 Temple Standing; ${townPricesNote(engine)})`
-    );
   }
+  if (sacrificed >= 4) setFlag(engine.worldState, 'blood_tainted_hero', true);
+
+  const gifts = [
+    ...grantGifts(engine, Math.floor(rescued / 2), FRITH_PAIR, FLAG_FRITH_PICK),
+    ...grantGifts(engine, Math.floor(sacrificed / 2), BLOOD_PAIR, FLAG_BLOOD_PICK),
+  ];
+  const standing = `${signed(town)} Townsfolk Standing, ${signed(temple)} Temple Standing; ${townPricesNote(engine)}`;
+  engine.log(`${ritualVerdict(rescued, sacrificed)} (${standing})`);
+  if (gifts.length > 0) engine.log(gifts.join(' '));
+}
+
+function signed(n: number): string {
+  return n >= 0 ? `+${n}` : `${n}`;
+}
+
+function ritualVerdict(rescued: number, sacrificed: number): string {
+  if (rescued >= 4) return 'SAVIOR OF JÁRNVIÐR! All four captives were rescued alive. Bjarnarhaven praises your name!';
+  if (sacrificed >= 4) return 'THE BLOOD SIPHON IS COMPLETE! All four captives fed the altar. Bjarnarhaven recoils in horror.';
+  if (rescued === 0 && sacrificed === 0) return 'The warlocks finished their rite without you. Nothing was traded at the altar.';
+  return `The altar's trade is done: ${rescued} saved, ${sacrificed} given to the stones.`;
+}
+
+/**
+ * Teaches what a kind earned: both of its pair for two spells, or owes a pick for one.
+ * Returns what to tell the hero.
+ */
+function grantGifts(engine: EngineContext, count: number, pair: readonly [string, string], pickFlag: string): string[] {
+  if (count <= 0) return [];
+  const frith = pair === FRITH_PAIR;
+  if (count >= 2) {
+    for (const spellId of pair) engine.player.learnSpell(spellId);
+    return [frith ? 'The saved kin teach you Grið and the Dísir.' : 'The altar teaches you Blood Reap and Draugr-call.'];
+  }
+  setFlag(engine.worldState, pickFlag, true);
+  return [frith ? 'The saved kin offer you one of their spells.' : 'The altar offers you one of its spells.'];
 }
 
 /** Settles every remaining captive according to the altar option chosen. */
@@ -366,7 +419,7 @@ export const BLOOD_ALTAR_CHOICE: ChoiceDefinition = {
       id: 'rescue_all',
       label: 'Shatter the Siphon — Prioritize Rescuing Every Captive',
       description:
-        'Sunder the bindings and teleport every remaining captive to safety. Earns town favor and discounts, but forfeits dark magic.',
+        'Sunder the bindings and send every remaining captive home. Every two saved give you a frith spell; the temple and the town will remember it.',
       consequences: [
         { type: 'logMessage', message: 'You smash the warded runes of the siphon! The warlocks scream in frustration!' },
       ],
@@ -375,16 +428,16 @@ export const BLOOD_ALTAR_CHOICE: ChoiceDefinition = {
       id: 'balance_path',
       label: 'Sever Half the Ties — A Calculated Compromise',
       description:
-        'Free two of the remaining captives while the altar claims the rest, and absorb the dark overflow of their sacrifice.',
+        'Free two of the remaining captives and let the altar take the rest. Every two saved give a frith spell, every two taken a blood spell, and the altar marks you.',
       consequences: [
         { type: 'logMessage', message: 'You break half the seals, and let the blood currents take the rest.' },
       ],
     },
     {
       id: 'harvest_all',
-      label: 'Channel the Dark Altar — Seize the Full Blood Grimoire',
+      label: 'Channel the Dark Altar — Feed It Every Captive',
       description:
-        'Let the siphon claim every remaining captive to seize the Grimoire of Blood Magic. Bjarnarhaven will not forgive it.',
+        'Let the siphon claim every remaining captive. Every two taken give you a blood spell paid for in your own HP, and the altar marks you. The temple will not forgive it.',
       consequences: [
         { type: 'logMessage', message: 'You channel the full sacrificial torrent! Unholy vitality floods your veins!' },
       ],
@@ -399,8 +452,8 @@ export const BLOOD_ALTAR_CHOICE: ChoiceDefinition = {
 
 /**
  * The ritual's countdown, started when the player first comes within sight of a
- * captive. Expiry only flags it: `SIPHON_RITUAL_HOOK` sacrifices whoever remains on
- * the player's next action, so every sacrifice goes through the same code path.
+ * captive. Expiry only flags it: `SIPHON_RITUAL_HOOK` gives whoever remains to the
+ * warlocks' own rite on the player's next action (`loseCaptiveVillager`).
  */
 export const SIPHON_TIMED_EVENT: TimedEventDefinition = {
   id: 'siphon_ritual_timer',
@@ -417,6 +470,58 @@ export const SIPHON_TIMED_EVENT: TimedEventDefinition = {
     },
   ],
 };
+
+/** The pick a kind owes when the trade earned one spell of it: the hero takes one of its pair. */
+function giftChoice(id: string, title: string, description: string, owedFlag: string, options: Array<{ spellId: string; label: string; description: string }>): ChoiceDefinition {
+  return {
+    id,
+    title,
+    description,
+    cancelable: false,
+    options: options.map((o) => ({
+      id: o.spellId,
+      label: o.label,
+      description: o.description,
+      consequences: [
+        { type: 'learnSpell', spellId: o.spellId },
+        { type: 'setFlag', flag: owedFlag, value: false },
+      ],
+    })),
+  };
+}
+
+const FRITH_GIFT_CHOICE_ID = 'siphon_frith_gift';
+const BLOOD_GIFT_CHOICE_ID = 'siphon_blood_gift';
+
+/** The two picks: one of the frith pair for two saved, one of the blood pair for two sacrificed. */
+export const SIPHON_GIFT_CHOICES: Record<string, ChoiceDefinition> = {
+  [FRITH_GIFT_CHOICE_ID]: giftChoice(
+    FRITH_GIFT_CHOICE_ID,
+    "The Kin's Gift",
+    'The captives you saved send their thanks down the recall ward, and with it frith, the peace between kin. Take one of their two spells.',
+    FLAG_FRITH_PICK,
+    [
+      { spellId: 'grith', label: 'Grið', description: 'A foe lays down its arms for 8 turns, until a blow breaks the peace. 10 Seiðr.' },
+      { spellId: 'disir', label: 'The Dísir', description: 'Two ancestral spirits guard you for 15 turns. 14 Seiðr.' },
+    ]
+  ),
+  [BLOOD_GIFT_CHOICE_ID]: giftChoice(
+    BLOOD_GIFT_CHOICE_ID,
+    "The Altar's Price",
+    'The blood in the grooves runs back toward you. The altar pays in the coin it was paid in. Take one of its two spells.',
+    FLAG_BLOOD_PICK,
+    [
+      { spellId: 'blood_reap', label: 'Blood Reap', description: 'Finish a foe at 25% HP or less and drink 10 HP of its life. 4 HP.' },
+      { spellId: 'draugr_call', label: 'Draugr-call', description: 'Curse a foe: if it dies cursed, it rises and fights for you for 20 turns. 6 HP.' },
+    ]
+  ),
+};
+
+/** Each pick opens on the hero's next move once the trade owes it. */
+export const SIPHON_GIFT_TRIGGERS: StoryChoiceTrigger[] = [
+  { id: 'siphon_frith_gift_pick', choiceId: FRITH_GIFT_CHOICE_ID, when: { type: 'hasFlag', flag: FLAG_FRITH_PICK } },
+  { id: 'siphon_blood_gift_pick', choiceId: BLOOD_GIFT_CHOICE_ID, when: { type: 'hasFlag', flag: FLAG_BLOOD_PICK } },
+];
 
 function startRitualCountdown(engine: EngineContext): void {
   if (getFlag(engine.worldState, FLAG_STARTED)) {
@@ -454,7 +559,7 @@ const SIPHON_RESCUE_HOOK: ActionHook = {
 
 /**
  * Starts the countdown when a captive comes into view, settles the captives when the
- * altar choice resolves, and sacrifices whoever remains once the countdown expires.
+ * altar choice resolves, and loses whoever remains once the countdown expires.
  */
 const SIPHON_RITUAL_HOOK: ActionHook = {
   id: 'cotw-siphon-ritual',
@@ -482,7 +587,7 @@ const SIPHON_RITUAL_HOOK: ActionHook = {
 
     if (getFlag(engine.worldState, FLAG_EXPIRED)) {
       for (const captive of remainingCaptives(engine)) {
-        sacrificeCaptiveVillager(engine, captive.id);
+        loseCaptiveVillager(engine, captive.id);
       }
       return;
     }

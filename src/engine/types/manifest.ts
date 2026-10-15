@@ -580,6 +580,20 @@ export interface BossFleeResolution {
 }
 
 /**
+ * A lasting mark on the hero that a pack derives from world state, as cotw's altar mark
+ * from its captive counters: no status, no save field, shown among the hero's conditions
+ * while `when` holds. Marks whose `when`s overlap all show.
+ */
+export interface HeroMarkDefinition {
+  id: string;
+  label: string;
+  when: Predicate;
+  /** A theme role such as `var(--ui-bad)`; the warning role when unset. */
+  hudColor?: string;
+  detail?: string;
+}
+
+/**
  * Unlocks a `ChoiceDefinition` once a monster (by `definitionId`) has been slain a
  * given number of times (ARCHITECTURE.md §3) — a gap surfaced by a climactic choice
  * with no fixed map location to trigger from (no engine mechanism guarantees a
@@ -594,8 +608,10 @@ export interface StoryChoiceTrigger {
   /** Stable id, used for its own `<id>_offered`/`<id>_started` internal flags. */
   id: string;
   choiceId: string;
-  monsterDefinitionId: string;
-  killsRequired: number;
+  /** The monster whose kills unlock it. Unset, the choice waits on `when` alone and opens
+   *  on the hero's next move once it holds (a gift picked after a story beat resolves). */
+  monsterDefinitionId?: string;
+  killsRequired?: number;
   /** World-state flag set (if not already) the moment the first qualifying kill is
    *  observed — before `killsRequired` is reached — so a `TimedEventDefinition` can
    *  start counting down from first contact rather than only once the full
@@ -1210,6 +1226,8 @@ export interface GameContentManifest {
   trapPlacement?: TrapPlacementConfig;
   tiles?: TileDefinition[];
   statusEffects?: StatusEffectDefinition[];
+  /** Lasting marks on the hero read from world state, listed with their conditions (`HeroMarkDefinition`). */
+  heroMarks?: HeroMarkDefinition[];
   trackedMilestones?: TrackedMilestoneDefinition[];
   /** Verses and lore the hero keeps once found (`LoreEntryDefinition`). */
   loreEntries?: LoreEntryDefinition[];

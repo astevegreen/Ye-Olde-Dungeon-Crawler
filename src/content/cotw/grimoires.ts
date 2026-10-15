@@ -152,6 +152,12 @@ export const COTW_GRIMOIRES: GrimoireSystemConfig = {
       thunder_maul: { spellId: 'lightning_bolt', addedElement: 'physical' },
       renewal: { spellId: 'heal_spell', addedElement: 'arcane' },
       iron_blessing: { spellId: 'heal_spell', addedElement: 'physical' },
+      // The old altar's blood spells. Blood Tap was Blood Reap twice over, and only a hero who
+      // gave all four captives had Exsanguinate, which the trade now pays with both blood spells.
+      blood_tap: 'blood_reap',
+      crimson_ward: null,
+      blood_spear: null,
+      exsanguinate: 'draugr_call',
     },
     // Each old glyph comes back as the Essence-Rune of the element it was made from.
     glyphRunes: {

@@ -1,10 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { cotwManifest } from '../index';
 import type { GameContentManifest } from '../../../engine';
+import { SUMMONED_MONSTERS } from '../monsters';
 
 function checkCategories(manifest: GameContentManifest): void {
   const categories = manifest.monsterCategories ?? [];
-  const monsterIds = new Set(manifest.monsters.map((m) => m.id));
+  // A summon is never the hero's kill, so it counts toward no family.
+  const summoned = new Set(SUMMONED_MONSTERS.map((m) => m.id));
+  const monsterIds = new Set(manifest.monsters.map((m) => m.id).filter((id) => !summoned.has(id)));
   const owner = new Map<string, string>();
 
   for (const category of categories) {

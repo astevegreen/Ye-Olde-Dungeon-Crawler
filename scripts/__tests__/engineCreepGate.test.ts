@@ -49,9 +49,9 @@ describe('check-engine-creep (ARCHITECTURE.md §3, §7.2)', () => {
 
   it('fails on a content-pack spell ID in engine source, but not on one named in a comment', () => {
     const file = scratch('engineScratch.ts', [
-      "// Prose may mention 'crimson_ward' without tripping the gate.",
+      "// Prose may mention 'blood_reap' without tripping the gate.",
       'export function scratchCreep(learn: (id: string) => void): void {',
-      "  learn('blood_tap');",
+      "  learn('draugr_call');",
       '}',
       '',
     ]);
@@ -59,8 +59,8 @@ describe('check-engine-creep (ARCHITECTURE.md §3, §7.2)', () => {
     const { status, output } = runGate('--engine-file', file);
 
     expect(status).not.toBe(0);
-    expect(output).toContain("'blood_tap' (declared by cotw)");
-    expect(output).not.toContain("'crimson_ward'");
+    expect(output).toContain("'draugr_call' (declared by cotw)");
+    expect(output).not.toContain("'blood_reap'");
   }, 120_000);
 
   it('fails on a content-pack identifier or namespaced literal in presentation source', () => {
@@ -76,9 +76,9 @@ describe('check-engine-creep (ARCHITECTURE.md §3, §7.2)', () => {
   it('fails on a pack identifier as an object key, in a template literal, or compounded into a longer string', () => {
     // R-tool-6: only a whole quoted literal equal to a declared ID used to be seen.
     const engine = scratch('engineForms.ts', [
-      'export const costs = { blood_tap: 3 };',
-      'export const key = (n: number) => `${n}:blood_tap`;',
-      "export const icon = 'spell~blood_tap';",
+      'export const costs = { draugr_call: 3 };',
+      'export const key = (n: number) => `${n}:draugr_call`;',
+      "export const icon = 'spell~draugr_call';",
       "export const prose = 'Dead heroes cannot cast clairvoyance.';",
       '',
     ]);
@@ -88,9 +88,9 @@ describe('check-engine-creep (ARCHITECTURE.md §3, §7.2)', () => {
 
     expect(status).not.toBe(0);
     expect(output).toContain('Found 3 content-pack identifier(s) in engine source');
-    expect(output).toMatch(/engineForms\.ts:1 {2}'blood_tap'/);
-    expect(output).toMatch(/engineForms\.ts:2 {2}'blood_tap'/);
-    expect(output).toMatch(/engineForms\.ts:3 {2}'blood_tap'/);
+    expect(output).toMatch(/engineForms\.ts:1 {2}'draugr_call'/);
+    expect(output).toMatch(/engineForms\.ts:2 {2}'draugr_call'/);
+    expect(output).toMatch(/engineForms\.ts:3 {2}'draugr_call'/);
     expect(output).toContain('Found 1 content-pack identifier(s) in presentation source');
     expect(output).toMatch(/uiForms\.ts:1 {2}'cotw:'/);
   }, 120_000);

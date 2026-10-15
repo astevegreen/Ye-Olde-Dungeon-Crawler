@@ -74,6 +74,25 @@ describe('getConditions', () => {
     });
   });
 
+  it('lists a pack\'s lasting mark while its condition holds, with no countdown', () => {
+    const engine = buildEngine({
+      id: 'test_pack',
+      name: 'Test',
+      heroMarks: [{ id: 'oathbreaker', label: 'Oathbreaker', when: { type: 'hasFlag', flag: 'oath_broken' }, detail: 'you broke an oath' }],
+    });
+    expect(getConditions(engine).some((c) => c.key === 'mark:oathbreaker')).toBe(false);
+
+    engine.setWorldFlag('oath_broken', true);
+
+    expect(getConditions(engine)).toContainEqual({
+      key: 'mark:oathbreaker',
+      label: 'Oathbreaker',
+      color: 'var(--ui-warn)',
+      turns: null,
+      detail: 'you broke an oath',
+    });
+  });
+
   it('shows an ambient status (a decremented 9999 sentinel) as ongoing, not a countdown', () => {
     const engine = buildEngine({ id: 'test_pack', name: 'Test', statusEffects: [{ id: 'test:glow', name: 'Glow' }] });
     engine.player.statusManager.applyStatus({ type: 'test:glow', duration: 9998 });

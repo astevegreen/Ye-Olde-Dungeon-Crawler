@@ -18,6 +18,7 @@ Continue the owner's magic redesign dialogue (talk only; nothing is built until 
 2. Ask the owner what to take up next: the postponed outlier spells (Hliðskjálf, Teleportation, Phase Door, Loki's Switch), the ward gap (none of the 15 new spells is a plain ward; the frith Dísir carry it, or a simple ward joins later), or which spell sits on which stone.
 
 ## Decisions
+- Step sizes as recommended (Power +20%, Thrift a fifth off, Range +2, Area +1 capped at 2 for damage, Duration +50%, Swift ¾→⅔→½) — owner, 15 Oct: "I approve your stat axis recommendations"; folded into the Notion page
 - Neighbour effects stay tentative — owner: "keep anything related to neighbor effects as tentative for now. I might want to revisit the actual mechanics of how neighbor slots affect each other more later."
 - Shard and stone replaces kill rites as the gate; stone about every other floor, two spell faces per stone, rite shortcut learns on the spot and slightly stronger — owner: "Approve all your recommendations"
 - The rite shows in the Bestiary after the first kill of that kind; Spells page shows "found on floors X–Y" for unmet spells; an unwanted or known shard becomes an Essence-Rune — owner, 14 Oct.

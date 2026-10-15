@@ -34,3 +34,4 @@ Owner, 15 Oct: "Let's figure out the rune stones locations and do a mental dry r
 ## Read first
 - The child page above (everything in this task)
 - The main page https://app.notion.com/p/3f8eb012942f815aa849c981efb30225 — the "Learning spells" section, where the answers go
+Resumed: 2026-10-15 01:58 UTC

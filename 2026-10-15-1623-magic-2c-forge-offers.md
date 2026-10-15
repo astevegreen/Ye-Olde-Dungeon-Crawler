@@ -34,3 +34,4 @@ Opus at high thinking: commit 3 deletes a content system across layers and adds 
 
 ## Verification
 - `npx vitest run` altars/ironClans/nornicReliquaries: 39 green; `src/ui`: 510 green; tsc + knip clean after the export fix. Full gates: not yet green on the final tree (first run failed on knip only).
+Resumed: 2026-10-15 16:26 UTC

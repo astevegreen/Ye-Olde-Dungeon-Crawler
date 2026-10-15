@@ -243,6 +243,18 @@ export interface SerializedPlayer {
   activeGrimoireIndex?: number;
   grimoireOpenSlots?: number[];
   grimoireGrounds?: Record<number, string>;
+  /** The three-grimoire model's state (P-29); absent when the pack doesn't declare it. */
+  grimoires?: SerializedGrimoireState;
+}
+
+/** `GrimoireState` as saved: a list is absent when empty. */
+export interface SerializedGrimoireState {
+  opened: string[];
+  placements: import('../magic/grimoires').GrimoirePlacement[];
+  statPicks?: import('../magic/grimoires').GrimoireStatPick[];
+  extraSlots?: import('../magic/grimoires').GrimoireSlotRef[];
+  doubledSlots?: import('../magic/grimoires').GrimoireSlotRef[];
+  forgotten?: string[];
 }
 
 /** `WorldState` as saved: remote-vault items are serialized item trees, not live Items. */

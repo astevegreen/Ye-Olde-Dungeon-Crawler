@@ -16,6 +16,8 @@ import type { EffectPrimitive } from './types';
 export interface MagicSystemConfig {
   overflow?: ManaOverflowConfig;
   grimoire?: GrimoireConfig;
+  /** The three-grimoire model (P-29), which replaces `grimoire` once a pack declares it. */
+  grimoires?: GrimoireSystemConfig;
   killRites?: KillRiteConfig;
   altars?: AltarDefinition[];
   /** Element pairs a forging altar fuses into a new spell (order-insensitive). */
@@ -116,6 +118,67 @@ export interface GrimoireConfig {
   groundedModifier?: SpellModifier;
   /** Label for a locked slot, e.g. "Sealed". */
   lockedSlotLabel?: string;
+}
+
+// ─── Grimoires (P-29) ──────────────────────────────────────────────────────
+
+/**
+ * A grimoire slot's place: grid steps from its grimoire's centre (0, 0), `y` growing
+ * downwards. A slot `k` steps out along an axis takes `k` steps of that axis's stat.
+ */
+export interface GrimoireCell {
+  x: number;
+  y: number;
+}
+
+/** `x` runs left and right of the centre, `y` above and below it. */
+export type GrimoireAxis = 'x' | 'y';
+
+/**
+ * One grimoire: cells cut from a 3×3 grid around a centre. Cells touch by straight sides
+ * only, so a slot has at most four neighbours.
+ */
+export interface GrimoireLayout {
+  id: string;
+  name: string;
+  /** The base slots; (0, 0) must be among them, and every cell touches another. */
+  cells: GrimoireCell[];
+  /** Opens once the hero knows this many spells; omit to have it open from the start. */
+  opensAtSpellsKnown?: number;
+  /** The stat a picker suggests for each axis, by `GrimoireStatDefinition.id`. */
+  suggestedStats?: Partial<Record<GrimoireAxis, string>>;
+  /** One line shown when it opens. */
+  openedMessage?: string;
+}
+
+/**
+ * What one step of a stat does, by kind (the engine's six; the pack names and sizes them):
+ * - `power`: damage and heal amounts × (1 + `perStep` × steps);
+ * - `thrift`: cost, Seiðr or HP, × (1 − `perStep`) per step;
+ * - `range`: + `perStep` tiles per step, on spells that have a range;
+ * - `area`: + `perStep` radius per step, at most `maxStepsOnDamage` steps on a damage spell;
+ * - `duration`: statuses, summons and terrain last × (1 + `perStep` × steps);
+ * - `swift`: a cast takes `castTimeByStep[steps − 1]` of a turn, the last entry past its end.
+ */
+export type GrimoireStatKind = 'power' | 'thrift' | 'range' | 'area' | 'duration' | 'swift';
+
+export interface GrimoireStatDefinition {
+  id: string;
+  name: string;
+  description: string;
+  kind: GrimoireStatKind;
+  /** Size of one step; unused by `swift`. */
+  perStep?: number;
+  /** `swift` only: the share of a turn a cast takes after 1, 2, 3… steps. */
+  castTimeByStep?: number[];
+  /** `area` only: the most steps a spell that deals damage takes. Omit for no cap. */
+  maxStepsOnDamage?: number;
+}
+
+export interface GrimoireSystemConfig {
+  /** In opening order: a learned spell goes to the first free slot of the first open one. */
+  layouts: GrimoireLayout[];
+  stats: GrimoireStatDefinition[];
 }
 
 // ─── Kill rites ────────────────────────────────────────────────────────────

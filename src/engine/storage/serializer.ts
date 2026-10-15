@@ -27,6 +27,7 @@ import { familyModifier, withPackNaming, type ItemFamilyConfig } from '../items/
 import { cloneWorldState, createWorldState, type WorldState } from '../state/worldState';
 import { compactTilesWithDictionary, decompactTiles, compactFov, decompactFov } from './compaction';
 import { EnergyModel } from '../actors/energyModel';
+import { readGrimoireState, serializeGrimoireState } from '../magic/grimoires';
 import { applyPrologueState } from '../quest/prologue';
 import { GameStateManager } from '../quest/gameStateManager';
 import { growCompanion } from '../combat/lastStand';
@@ -543,6 +544,7 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
           })),
         }))
       : undefined,
+    grimoires: p.grimoireState ? serializeGrimoireState(p.grimoireState) : undefined,
     energyModel: p.energyModel
       ? {
           structuredEnergy: p.energyModel.structuredEnergy,
@@ -1113,6 +1115,8 @@ function hydrateGame(
     activeGrimoireIndex: pData.activeGrimoireIndex !== undefined ? Number(pData.activeGrimoireIndex) : undefined,
     grimoireOpenSlots: Array.isArray(pData.grimoireOpenSlots) ? pData.grimoireOpenSlots.map(Number) : undefined,
     grimoireGrounds: pData.grimoireGrounds ? { ...pData.grimoireGrounds } : undefined,
+    grimoireSystem: manifest?.magic?.grimoires,
+    grimoireState: readGrimoireState(pData.grimoires),
     // A perk the pack no longer declares is dropped; the rest come back with their effects.
     perks: Array.isArray(pData.perks)
       ? pData.perks.map((id: string) => manifest?.perks?.find((perk) => perk.id === id)).filter((perk): perk is NonNullable<typeof perk> => Boolean(perk))

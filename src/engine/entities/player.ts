@@ -23,6 +23,22 @@ import {
   type GrimoirePage,
   GRIMOIRE_SIZE,
 } from '../magic/grimoireMatrix';
+import type { GrimoireAxis, GrimoireSystemConfig } from '../magic/magicConfig';
+import {
+  addExtraSlot,
+  assignStat,
+  copyGrimoireState,
+  createGrimoireState,
+  doubleSlotLend,
+  forgetFromGrimoire,
+  learnIntoGrimoire,
+  placeSpell,
+  reconcileGrimoireState,
+  type GrimoireSlotRef,
+  type GrimoireState,
+  type LearnResult,
+  type StatPickOutcome,
+} from '../magic/grimoires';
 
 /** Maximum hit points one allocated point of Constitution adds. */
 export const HP_PER_CONSTITUTION = 2;
@@ -71,6 +87,10 @@ export interface PlayerConfig {
   grimoireGrounds?: Record<number, string>;
   /** Perks held (`manifest.perks`), resolved by the loader from their saved ids. */
   perks?: PerkDefinition[];
+  /** The pack's three-grimoire model (`manifest.magic.grimoires`); omitted, the hero has none. */
+  grimoireSystem?: GrimoireSystemConfig;
+  /** Saved three-grimoire state; omitted under a declared model, it is built from `spellsKnown`. */
+  grimoireState?: GrimoireState;
 }
 
 /** The share of each bar a level-up restores (`ProgressionConfig.levelUpHeal`); 1 without the config. */
@@ -140,6 +160,10 @@ export class Player extends Actor {
   /** Slots open to spells on every page; undefined means all nine (saves from before sealing). */
   public grimoireOpenSlots?: number[];
   public grimoireGrounds: Record<number, string>;
+  /** The pack's three-grimoire model, given by whoever builds the hero; not saved. */
+  public readonly grimoireSystem?: GrimoireSystemConfig;
+  /** Three-grimoire state (P-29). Kept, though inert, when the pack no longer declares the model. */
+  public grimoireState?: GrimoireState;
 
   public get grimoire(): GrimoireSlot[] {
     return this.grimoirePages[this.activeGrimoireIndex]?.slots ?? this.grimoirePages[0]?.slots ?? [];
@@ -194,6 +218,12 @@ export class Player extends Actor {
       this.grimoirePages = defaultPages;
     } else {
       this.grimoirePages = GrimoireMatrixManager.createDefaultGrimoirePages(this.spellsKnown, this.grimoireOpenSlots);
+    }
+    this.grimoireSystem = config.grimoireSystem;
+    this.grimoireState = config.grimoireState ? copyGrimoireState(config.grimoireState) : undefined;
+    if (this.grimoireSystem) {
+      this.grimoireState ??= createGrimoireState();
+      reconcileGrimoireState(this.grimoireSystem, this.grimoireState, this.spellsKnown);
     }
     if (config.quickSpells) {
       this.quickSpells = [...config.quickSpells];
@@ -502,9 +532,27 @@ export class Player extends Actor {
     return true;
   }
 
+  /** The three-grimoire model with its state, when the pack declares it for this hero. */
+  private grimoireModel(): { system: GrimoireSystemConfig; state: GrimoireState } | undefined {
+    return this.grimoireSystem && this.grimoireState ? { system: this.grimoireSystem, state: this.grimoireState } : undefined;
+  }
+
   public learnSpell(spellId: string): boolean {
-    if (this.spellsKnown.includes(spellId)) {
-      return false;
+    return this.learnSpellResult(spellId).outcome === 'learned';
+  }
+
+  /**
+   * Learns a spell. Under the three-grimoire model it takes the first free slot, opening a
+   * grimoire when the new count of known spells calls for one; with every slot full it is
+   * not learned and the outcome is `full`. A spell forgotten this run is never relearned.
+   */
+  public learnSpellResult(spellId: string): LearnResult {
+    if (this.spellsKnown.includes(spellId)) return { outcome: 'known', opened: [] };
+    let result: LearnResult = { outcome: 'learned', opened: [] };
+    const model = this.grimoireModel();
+    if (model) {
+      result = learnIntoGrimoire(model.system, model.state, this.spellsKnown, spellId);
+      if (result.outcome !== 'learned') return result;
     }
     this.spellsKnown.push(spellId);
     // Auto-slot into the first empty open grimoire slot on the active page, and the first free quick-cast key
@@ -516,11 +564,16 @@ export class Player extends Actor {
     if (freeQuickSlot >= 0) {
       this.quickSpells[freeQuickSlot] = spellId;
     }
-    return true;
+    return result;
   }
 
-  /** Permanently forgets a spell: removes it from the known list, every grimoire page, and the quick-cast bar. */
+  /**
+   * Permanently forgets a spell: removes it from the known list, every grimoire page, and the
+   * quick-cast bar. Under the three-grimoire model it leaves its slot and is gone for the run.
+   */
   public forgetSpell(spellId: string): void {
+    const model = this.grimoireModel();
+    if (model && this.spellsKnown.includes(spellId)) forgetFromGrimoire(model.state, spellId);
     this.spellsKnown = this.spellsKnown.filter((id) => id !== spellId);
     for (const page of this.grimoirePages) {
       for (const slot of page.slots) {
@@ -560,6 +613,30 @@ export class Player extends Actor {
     }
     page.slots[slotIndex].spellId = spellId;
     return true;
+  }
+
+  /** Places a known spell in a slot of an open grimoire; a spell already there swaps into its old slot. */
+  public placeGrimoireSpell(spellId: string, slot: GrimoireSlotRef): boolean {
+    const model = this.grimoireModel();
+    return !!model && placeSpell(model.system, model.state, this.spellsKnown, spellId, slot);
+  }
+
+  /** Puts a stat on a grimoire's axis; an axis that already holds one changes only with `replace`. */
+  public assignGrimoireStat(grimoireId: string, axis: GrimoireAxis, statId: string, replace = false): StatPickOutcome {
+    const model = this.grimoireModel();
+    return model ? assignStat(model.system, model.state, { grimoireId, axis, statId }, replace) : 'unknown-grimoire';
+  }
+
+  /** Adds a slot to an open grimoire, touching one it has. */
+  public addGrimoireSlot(slot: GrimoireSlotRef): boolean {
+    const model = this.grimoireModel();
+    return !!model && addExtraSlot(model.system, model.state, slot);
+  }
+
+  /** Doubles what one slot lends to its neighbours, once per slot. */
+  public doubleGrimoireSlotLend(slot: GrimoireSlotRef): boolean {
+    const model = this.grimoireModel();
+    return !!model && doubleSlotLend(model.system, model.state, slot);
   }
 
   /** Assigns a spell to a quick-cast slot, or clears the slot with `null`. */

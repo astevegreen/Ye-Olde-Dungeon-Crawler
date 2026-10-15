@@ -1,5 +1,6 @@
 import type {
   GameContentManifest,
+  GrimoireSystemConfig,
   ItemDefinition,
   MonsterDefinition,
   SpellDefinition,
@@ -213,6 +214,42 @@ export const FIXTURE_VAULTS: VaultBlueprint[] = [
   },
 ];
 
+/**
+ * The three-grimoire model's three shapes, cut from one 3×3 grid: a row of 3, a plus of 5
+ * and the full square, opening at the 4th and 9th known spell. Steps from the magic plan.
+ */
+export const FIXTURE_GRIMOIRES: GrimoireSystemConfig = {
+  layouts: [
+    {
+      id: 'row',
+      name: 'Row',
+      cells: [{ x: -1, y: 0 }, { x: 0, y: 0 }, { x: 1, y: 0 }],
+      suggestedStats: { x: 'power' },
+    },
+    {
+      id: 'star',
+      name: 'Star',
+      cells: [{ x: 0, y: 0 }, { x: -1, y: 0 }, { x: 1, y: 0 }, { x: 0, y: -1 }, { x: 0, y: 1 }],
+      opensAtSpellsKnown: 4,
+      openedMessage: 'A second grimoire opens: a star of five.',
+    },
+    {
+      id: 'grid',
+      name: 'Grid',
+      cells: [-1, 0, 1].flatMap((y) => [-1, 0, 1].map((x) => ({ x, y }))),
+      opensAtSpellsKnown: 9,
+    },
+  ],
+  stats: [
+    { id: 'power', name: 'Power', description: '+20% damage or healing', kind: 'power', perStep: 0.2 },
+    { id: 'thrift', name: 'Thrift', description: 'a fifth off the cost', kind: 'thrift', perStep: 0.2 },
+    { id: 'range', name: 'Range', description: '+2 range', kind: 'range', perStep: 2 },
+    { id: 'area', name: 'Area', description: '+1 radius', kind: 'area', perStep: 1, maxStepsOnDamage: 2 },
+    { id: 'duration', name: 'Duration', description: '+50% duration', kind: 'duration', perStep: 0.5 },
+    { id: 'swift', name: 'Swift', description: 'casts in less of a turn', kind: 'swift', castTimeByStep: [3 / 4, 2 / 3, 1 / 2] },
+  ],
+};
+
 const raiders = { monsterIds: ['raider'], maxMonsters: 6 };
 
 export const fixtureManifest: GameContentManifest = {
@@ -278,6 +315,7 @@ export const fixtureManifest: GameContentManifest = {
     statGains: { maxHp: 8, maxMana: 6, strength: 2, intelligence: 2, constitution: 2, dexterity: 1, baseAttack: 2, baseDefense: 1 },
   },
   vaults: FIXTURE_VAULTS,
+  magic: { grimoires: FIXTURE_GRIMOIRES },
 };
 
 export { FIXTURE_ACTION_HOOKS, FIXTURE_AI_BEHAVIORS };

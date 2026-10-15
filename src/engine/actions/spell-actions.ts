@@ -17,6 +17,8 @@ import { ManaOverflowManager, canOvercast } from '../magic/manaOverflow';
 import { lowestWorn, sumWorn, wearsFlag } from '../items/wornModifiers';
 import { effectiveManaCost as effectiveManaCostOf } from '../magic/castNumbers';
 import { GrimoireMatrixManager, withSpellRangeBonus } from '../magic/grimoireMatrix';
+import type { GrimoireAxis } from '../magic/magicConfig';
+import type { StatPickOutcome } from '../magic/grimoires';
 import { StatusHandlerRegistry } from '../status/statusHandlers';
 
 /** World counter of casts whose grid shaping the log has explained, and how many it explains. */
@@ -641,3 +643,103 @@ export class AttuneGrimoirePageAction implements Action {
     return { success: outcome.success, cost, message: outcome.message };
   }
 }
+
+/** A grimoire edit is free in town or with no foe in view, and takes a turn otherwise. */
+function grimoireEditCost(engine: GameEngine, player: Player, inFightMessage: string): ActionResult {
+  if (GrimoireMatrixManager.canSwitchPageInstantly(engine, player)) return { success: true, cost: 0 };
+  const cost = player.getActionCost(BASE_ACTION_COST);
+  player.consumeEnergy(cost);
+  engine.log(inFightMessage);
+  return { success: true, cost, message: inFightMessage };
+}
+
+/**
+ * Places a known spell in a slot of an open grimoire, under the three-grimoire model
+ * (`Player.placeGrimoireSpell`): placing it again moves it, and a spell already in the
+ * slot swaps into its old one.
+ */
+export class PlaceGrimoireSpellAction implements Action {
+  public readonly player: Player;
+  public readonly spellId: string;
+  public readonly grimoireId: string;
+  public readonly x: number;
+  public readonly y: number;
+
+  get actor(): Entity {
+    return this.player;
+  }
+
+  constructor(player: Player, spellId: string, grimoireId: string, x: number, y: number) {
+    this.player = player;
+    this.spellId = spellId;
+    this.grimoireId = grimoireId;
+    this.x = x;
+    this.y = y;
+  }
+
+  public perform(engine: GameEngine): ActionResult {
+    if (!this.player.isAlive()) return { success: false, cost: 0, message: 'The dead write nothing in their grimoire.' };
+    if (!this.player.placeGrimoireSpell(this.spellId, { grimoireId: this.grimoireId, x: this.x, y: this.y })) {
+      return { success: false, cost: 0, message: 'That slot cannot take that spell.' };
+    }
+    return grimoireEditCost(engine, this.player, 'With foes in sight, rewriting your grimoire takes a turn.');
+  }
+}
+
+/** Forgets a known spell for the rest of the run (`Player.forgetSpell`). */
+export class ForgetSpellAction implements Action {
+  public readonly player: Player;
+  public readonly spellId: string;
+
+  get actor(): Entity {
+    return this.player;
+  }
+
+  constructor(player: Player, spellId: string) {
+    this.player = player;
+    this.spellId = spellId;
+  }
+
+  public perform(engine: GameEngine): ActionResult {
+    if (!this.player.isAlive()) return { success: false, cost: 0, message: 'The dead forget nothing more.' };
+    if (!this.player.spellsKnown.includes(this.spellId)) return { success: false, cost: 0, message: 'You do not know that spell.' };
+    this.player.forgetSpell(this.spellId);
+    return grimoireEditCost(engine, this.player, 'With foes in sight, letting a spell go takes a turn.');
+  }
+}
+
+/**
+ * Picks the stat for a grimoire axis that has none yet: Máni's first at the start of the run,
+ * each other grimoire's when it opens. Free; changing a picked stat is a service, not this.
+ */
+export class PickGrimoireStatAction implements Action {
+  public readonly player: Player;
+  public readonly grimoireId: string;
+  public readonly axis: GrimoireAxis;
+  public readonly statId: string;
+
+  get actor(): Entity {
+    return this.player;
+  }
+
+  constructor(player: Player, grimoireId: string, axis: GrimoireAxis, statId: string) {
+    this.player = player;
+    this.grimoireId = grimoireId;
+    this.axis = axis;
+    this.statId = statId;
+  }
+
+  public perform(): ActionResult {
+    const outcome = this.player.assignGrimoireStat(this.grimoireId, this.axis, this.statId);
+    return outcome === 'ok' ? { success: true, cost: 0 } : { success: false, cost: 0, message: STAT_PICK_REFUSALS[outcome] };
+  }
+}
+
+const STAT_PICK_REFUSALS: Record<Exclude<StatPickOutcome, 'ok'>, string> = {
+  'unknown-grimoire': 'There is no such grimoire.',
+  closed: 'That grimoire has not opened yet.',
+  'unknown-stat': 'There is no such stat.',
+  'no-axis': 'No slot of that grimoire reaches along that axis.',
+  'stat-in-use': 'That stat already sits on another axis.',
+  'already-picked': 'That axis already has its stat.',
+};

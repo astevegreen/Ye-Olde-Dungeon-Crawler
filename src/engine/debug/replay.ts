@@ -55,6 +55,9 @@ import {
   DrinkPotionAction,
   AttuneGrimoirePageAction,
   ArrangeGrimoireSlotAction,
+  PlaceGrimoireSpellAction,
+  ForgetSpellAction,
+  PickGrimoireStatAction,
 } from '../actions/spell-actions';
 import { IdentifyAction } from '../actions/identificationActions';
 import { PerformAltarRiteAction } from '../magic/altars';
@@ -155,6 +158,25 @@ const BUILDERS: Record<string, Builder> = {
   ArrangeGrimoireSlotAction: (e, p) => {
     const slot = num(p, 'slotIndex');
     return slot === undefined ? null : new ArrangeGrimoireSlotAction(e.player, slot, str(p, 'spellId') ?? null);
+  },
+  PlaceGrimoireSpellAction: (e, p) => {
+    const spellId = str(p, 'spellId');
+    const grimoireId = str(p, 'grimoireId');
+    const x = num(p, 'x');
+    const y = num(p, 'y');
+    return spellId && grimoireId && x !== undefined && y !== undefined
+      ? new PlaceGrimoireSpellAction(e.player, spellId, grimoireId, x, y)
+      : null;
+  },
+  ForgetSpellAction: (e, p) => {
+    const spellId = str(p, 'spellId');
+    return spellId ? new ForgetSpellAction(e.player, spellId) : null;
+  },
+  PickGrimoireStatAction: (e, p) => {
+    const grimoireId = str(p, 'grimoireId');
+    const axis = str(p, 'axis');
+    const statId = str(p, 'statId');
+    return grimoireId && statId && (axis === 'x' || axis === 'y') ? new PickGrimoireStatAction(e.player, grimoireId, axis, statId) : null;
   },
   PerformAltarRiteAction: (e, p) => {
     const altarId = str(p, 'altarId');

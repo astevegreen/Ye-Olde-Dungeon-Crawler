@@ -779,6 +779,9 @@ export class SpellPipeline {
     if (effect.friendly) {
       summoned.faction = 'player';
       summoned.aiState = 'hunting'; // will hunt hostiles
+      // Borrowed, never the hero's kill: a slain ally pays nothing, as a raised foe (raise.ts).
+      summoned.lootTable = [];
+      summoned.xpValue = 0;
     }
 
     engine.map.addEntity(summoned);

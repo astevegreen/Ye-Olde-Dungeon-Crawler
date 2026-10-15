@@ -9,6 +9,7 @@ import { SpellPipeline } from '../../magic/spellPipeline';
 import { MeleeAttackAction } from '../../actions/combat';
 import { Companion } from '../../entities/companion';
 import { selectAttackTarget } from '../targetSelection';
+import { ItemFactory } from '../../items/factory';
 
 const WOLF = { id: 'test_wolf', name: 'Wolf', stats: { hp: 30, maxHp: 30, attack: 6, defense: 0 }, speed: 100, aiType: 'melee', xpValue: 1 } as MonsterDefinition;
 
@@ -52,6 +53,19 @@ describe('a friendly summon fights foes and never its own side (3a)', () => {
 
     expect(hero.hp).toBe(heroHp);
     expect(Math.max(Math.abs(wolf.x - hero.x), Math.abs(wolf.y - hero.y))).toBeLessThanOrEqual(2);
+  });
+
+  it('is worth nothing when slain: no loot, no XP', () => {
+    MonsterRegistry.clear();
+    const map = new GameMap(12, 12, TILES.FLOOR);
+    const hero = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } });
+    const engine = new GameEngine({ map, player: hero });
+    engine.registries.monsters.register({ ...WOLF, lootTable: [{ chance: 1, generate: (id: string) => ItemFactory.createGoldCoins(id, 5) }] } as MonsterDefinition);
+    SpellPipeline.executeSummonEffect(engine, hero, { type: 'summon', monsterId: 'test_wolf', duration: 50, friendly: true });
+    const wolf = engine.map.getAllEntities().find((e) => e.name === 'Wolf') as Monster;
+
+    expect(wolf.lootTable).toEqual([]);
+    expect(wolf.xpValue).toBe(0);
   });
 
   it('a melee blow between two of the hero\'s side is refused and costs nothing', () => {

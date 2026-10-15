@@ -118,9 +118,9 @@ export const COTW_PERKS: PerkDefinition[] = [
     id: 'saga_galdr_master',
     name: 'Galdr-Master',
     source: 'saga',
-    tagline: 'Every rune you set sings with its neighbours.',
-    description: 'Every spell hits 20% harder, and each grimoire synergy between neighbouring slots counts twice.',
-    effects: { spellDamageMultiplier: 1.2, grimoireSynergyRepeats: 1 },
+    tagline: 'Every rune you sing bites deeper.',
+    description: 'Every spell hits 20% harder.',
+    effects: { spellDamageMultiplier: 1.2 },
   },
   {
     id: 'saga_shadow_walker',

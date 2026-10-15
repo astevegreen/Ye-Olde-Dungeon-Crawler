@@ -25,3 +25,4 @@ Continue the owner's magic redesign dialogue (talk only; nothing is built until 
 
 ## Read first
 - The Notion page: "Grimoire redesign" (Neighbour rules), "Open decisions", spell entries "Loki's Switch" and "Hliðskjálf" under Spell ideas
+Resumed: 2026-10-15 00:51 UTC

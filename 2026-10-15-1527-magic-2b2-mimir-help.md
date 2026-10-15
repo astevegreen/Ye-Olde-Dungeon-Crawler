@@ -15,7 +15,7 @@ Plan step 2b-2 "cotw switch: altars, Mimir, help, tests" (`.prompts/plan-page.tx
   - `scripts/capture/menus.mjs` shopScenes: extra shot `sNN-sage-grimoires-<tag>.png`.
 
 ## Next
-1. Visual check of the sage's Grimoires list: a `visual-check` agent was running when this note was written; its verdict did not reach this note. Rerun it: before at 3eeddcfa, after on the tree, `node scripts/capture/menus.mjs 1366 shop`; other shop shots unchanged, the new one readable with the G offer and its price visible.
+1. Visual check of the sage's Grimoires list: passed. Other shop shots match 3eeddcfa apart from animation noise; the sage's tab row gains "Grimoires"; the new shot is readable, nothing clipped, the G offer and price visible without scrolling (`.prompts/captures/sage-after/s06-sage-grimoires-1366x768.png`). No need to rerun unless the shop UI changes.
 2. Help and hints (all magic tests and e2e already match the grimoires; save fixtures already load and play a turn in `legacySaveFixtures.test.ts`):
    - `src/ui/help/contextHelp.ts:109-120` altar card: the tip still says "one clears a debt", and the bullets assume every altar burns an offering. Presentation is pack-neutral, so name no god: one doubles a slot's lend, one chooses a grimoire's stats afresh or adds a slot, free, one transmutes, one gambles.
    - `contextHelp.ts:42` `TOWN_ROLE_HELP.sage`: append "; rearrange grimoire stats" when `manifest.town.services.grimoireRestat` is set (like the pact-keeper append at :301).

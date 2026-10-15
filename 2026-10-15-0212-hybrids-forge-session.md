@@ -29,3 +29,4 @@ The next magic-redesign topic, talk only: what hybrids become now that neighbour
 - https://app.notion.com/p/3faeb012942f81a48630e644820fb375: the full-run dry run the forge floors fit into
 - `src/content/cotw/hybridSpells.ts:67`: today's 12 recipes
 - `src/content/cotw/index.ts:293`: Odin's forge placements
+Resumed: 2026-10-15 02:14 UTC

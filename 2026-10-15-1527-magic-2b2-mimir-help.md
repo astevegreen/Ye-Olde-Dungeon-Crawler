@@ -38,3 +38,4 @@ Sonnet 5.5 at medium thinking: a visual check, help text with a clear spec, gate
 
 ## Verification
 - `npx vitest run` on sageRestat.test.ts and shopDialog.test.ts: green. `npm run lint`: green. `tsc`: clean. Gates: green on 3eeddcfa; not run on the Mimir tree.
+Resumed: 2026-10-15 15:33 UTC

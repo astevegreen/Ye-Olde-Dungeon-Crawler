@@ -7,7 +7,8 @@ import { Entity } from '../entities/entity';
 import { Actor } from '../entities/actor';
 import { Player } from '../entities/player';
 import { getSpell } from '../magic/spellRegistry';
-import { SpellPipeline } from '../magic/spellPipeline';
+import { SpellPipeline, type CastShaping } from '../magic/spellPipeline';
+import { pickMaterial, type ResolvedCast } from '../magic/neighbourLending';
 import { WandItem, ScrollItem, PotionItem } from '../items/consumables';
 import { flightRecorder } from '../debug/flightRecorder';
 import { awardPlayerXp } from '../combat/deathResolver';
@@ -15,11 +16,28 @@ import { findTaggedEntitiesInRadius } from '../combat/radialAuraFilter';
 import { traceProjectile } from '../magic/targeting';
 import { ManaOverflowManager, canOvercast } from '../magic/manaOverflow';
 import { lowestWorn, sumWorn, wearsFlag } from '../items/wornModifiers';
-import { castSlotStats, effectiveHpCost as effectiveHpCostOf, effectiveManaCost as effectiveManaCostOf } from '../magic/castNumbers';
+import {
+  castSlotStats,
+  effectiveHpCost as effectiveHpCostOf,
+  effectiveManaCost as effectiveManaCostOf,
+  heroResolvedCast,
+  withSlotStats,
+} from '../magic/castNumbers';
 import { GrimoireMatrixManager, withSpellRangeBonus } from '../magic/grimoireMatrix';
 import type { GrimoireAxis } from '../magic/magicConfig';
 import type { StatPickOutcome } from '../magic/grimoires';
 import { StatusHandlerRegistry } from '../status/statusHandlers';
+
+/**
+ * A resolved cast as the pipeline takes it: its own power, and what it borrowed. A terrain
+ * spell takes one borrowed material per cast, at random.
+ */
+function castShaping(engine: GameEngine, cast: ResolvedCast): CastShaping {
+  const powerMultiplier = cast.stats.powerMultiplier * cast.lentPowerMultiplier;
+  if (!cast.delivery || cast.lends.length === 0) return { powerMultiplier };
+  const lent = cast.delivery === 'material' ? [pickMaterial(cast, engine.prng.next())!] : cast.lends;
+  return { powerMultiplier, lends: { delivery: cast.delivery, effects: lent.flatMap((l) => l.effects) } };
+}
 
 /** World counter of casts whose grid shaping the log has explained, and how many it explains. */
 const GRID_NOTE_COUNTER = 'grimoire_cast_notes';
@@ -81,6 +99,10 @@ export class CastSpellAction implements Action {
     if (!spell) {
       return { success: false, cost: 0, message: `Unknown spell: ${this.spellId}` };
     }
+    // The three grimoires (P-29, P-30): the slot's stats shape the spell's own effect, and
+    // its neighbours lend theirs. Hook-driven free casts stay unmodified.
+    const resolved = player && !this.freeCast ? heroResolvedCast(engine, this.spellId) : undefined;
+    if (resolved) spell = withSlotStats(spell, resolved.stats);
     // Reach the caster wears and holds (Odin's Eye), as `resolveCast` shows it.
     spell = withSpellRangeBonus(this.caster, spell);
 
@@ -144,7 +166,7 @@ export class CastSpellAction implements Action {
     const paysCosts = player !== null && !this.freeCast;
     const volatileCost = paysCosts ? (spell.volatileEnergyCost ?? 0) : 0;
     const vitalityCost = paysCosts ? (spell.vitalityCost ?? 0) : 0;
-    const hpCost = player && paysCosts ? effectiveHpCostOf(player, spell) : 0;
+    const hpCost = player && paysCosts ? effectiveHpCostOf(player, spell, resolved?.lentHpCost) : 0;
     let emergencyHpBurn = 0;
     let manaDeficit = 0;
     if (player && paysCosts) {
@@ -254,7 +276,8 @@ export class CastSpellAction implements Action {
       this.caster,
       { x: this.targetX, y: this.targetY },
       this.itemTargetId,
-      actionCost
+      actionCost,
+      resolved ? castShaping(engine, resolved) : undefined
     );
 
     // The first few casts the grid shapes say how in the log, so a player learns the grid

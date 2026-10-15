@@ -332,7 +332,7 @@ export const FIXTURE_LENDING: NeighbourLendingConfig = {
     },
     { id: 'lightning', name: 'Leaping', effects: [{ type: 'chain', maxHops: 1, hopRange: 4, damageDecay: 0.5 }] },
     { id: 'physical', name: 'Knockback', effects: [{ type: 'push', distance: 1 }], doubled: { name: 'Hard knockback', effects: [{ type: 'push', distance: 2 }] } },
-    { id: 'healing', name: 'Cleansing', effects: [{ type: 'cleanse' }], doubled: { name: 'Full cleansing', effects: [{ type: 'cleanse', all: true }] } },
+    { id: 'healing', name: 'Cleansing', effects: [{ type: 'cleanse', target: 'caster' }], doubled: { name: 'Full cleansing', effects: [{ type: 'cleanse', all: true, target: 'caster' }] } },
     { id: 'arcane:Enchantment', name: 'Binding', effects: [{ type: 'applyStatus', statusId: 'paralyzed', duration: 1 }] },
     { id: 'arcane:Movement', name: 'Pull', effects: [{ type: 'pull', distance: 1 }] },
     { id: 'arcane', name: 'Piercing', effects: [] },

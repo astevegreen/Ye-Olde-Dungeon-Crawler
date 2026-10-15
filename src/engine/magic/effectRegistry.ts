@@ -16,6 +16,8 @@ export interface EffectContext {
   effects: VisualEffectDescriptor[];
   color: string;
   lastDamageEffect?: EffectPrimitive;
+  /** What the cast's slot and borrowing do to its own damage and healing (P-30); 1 when absent. */
+  powerMultiplier?: number;
 }
 
 /**

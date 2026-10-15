@@ -56,7 +56,7 @@ export interface TriageAPI {
    * Read-only: each slotted spell's cast as it resolves (P-30), its slot's stats and what
    * its neighbours lend. Changes nothing, so it records no checkpoint.
    */
-  resolvedCasts(): ResolvedCast[];
+  resolvedCasts(): readonly ResolvedCast[];
 }
 
 /** Members that only read; they skip the flight recorder (the HUD may call them every frame). */

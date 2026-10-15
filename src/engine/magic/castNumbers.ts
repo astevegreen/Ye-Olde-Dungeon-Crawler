@@ -6,7 +6,7 @@ import { wornModifiers, sumWorn, productWorn } from '../items/wornModifiers';
 import { spellPowerMultiplier, attributeScalingOf } from '../combat/attributeScaling';
 import { EnergyModel } from '../actors/energyModel';
 import { Player } from '../entities/player';
-import { resolveSlotStats, slotOfSpell, slotStatSteps, type GrimoireSlotStats } from './grimoires';
+import { resolveSlotStats, slotOfSpell, slotStatSteps, type GrimoireSlotStats, type GrimoireState } from './grimoires';
 import { resolveAllCasts, type ResolvedCast } from './neighbourLending';
 import { getSpell } from './spellRegistry';
 
@@ -27,15 +27,48 @@ export function castSlotStats(caster: Entity, spellId: string | undefined): Grim
   return resolveSlotStats(system && state && ref ? slotStatSteps(system, state, ref) : []);
 }
 
+/** The hero's resolved casts, kept until the grimoires change (placements, picks, forging). */
+const castCache = new WeakMap<GrimoireState, { key: string; casts: readonly ResolvedCast[] }>();
+
 /**
  * Every slotted spell's resolved cast for the hero (P-30): own stats and what its
- * neighbours lend; empty without the three-grimoire model.
+ * neighbours lend; empty without the three-grimoire model. Shared between calls: read only.
  */
-export function heroResolvedCasts(engine: GameEngine): ResolvedCast[] {
+export function heroResolvedCasts(engine: GameEngine): readonly ResolvedCast[] {
   const { grimoireSystem: system, grimoireState: state } = engine.player;
   if (!system || !state) return [];
+  const key = JSON.stringify(state);
+  const cached = castCache.get(state);
+  if (cached?.key === key) return cached.casts;
   const spellOf = (id: string) => engine.manifest.spells?.find((s) => s.id === id) ?? getSpell(id);
-  return resolveAllCasts(system, state, spellOf, (e) => engine.affinityMatrix.getOpposite(e));
+  const casts = resolveAllCasts(system, state, spellOf, (e) => engine.affinityMatrix.getOpposite(e));
+  castCache.set(state, { key, casts });
+  return casts;
+}
+
+/** The hero's resolved cast of `spellId`, or nothing when it sits in no slot. */
+export function heroResolvedCast(engine: GameEngine, spellId: string): ResolvedCast | undefined {
+  return heroResolvedCasts(engine).find((c) => c.spellId === spellId);
+}
+
+/**
+ * The spell as its slot's axis stats shape its own effect: further range and a wider area
+ * where it has them, its own statuses, summons and reveals lasting longer. Power travels
+ * with the cast (`CastShaping`), since rolled amounts can be dice.
+ */
+export function withSlotStats(spell: SpellDefinition, stats: GrimoireSlotStats): SpellDefinition {
+  const longer = (d: number) => (d > 0 ? Math.max(1, Math.floor(d * stats.durationMultiplier)) : d);
+  const out: SpellDefinition = { ...spell };
+  if (stats.rangeBonus !== 0 && spell.range > 0) out.range = spell.range + stats.rangeBonus;
+  if (stats.areaBonus !== 0 && spell.areaOfEffect > 0) out.areaOfEffect = spell.areaOfEffect + stats.areaBonus;
+  if (stats.durationMultiplier !== 1) {
+    out.effects = spell.effects.map((e) => {
+      if (e.type === 'applyStatus') return { ...e, duration: longer(e.duration) };
+      if ((e.type === 'summon' || e.type === 'reveal') && e.duration !== undefined) return { ...e, duration: longer(e.duration) };
+      return e;
+    });
+  }
+  return out;
 }
 
 /**
@@ -48,11 +81,18 @@ export function effectiveManaCost(caster: Entity, spell: Pick<SpellDefinition, '
   return Math.max(0, Math.round((spell.manaCost ?? 0) * multiplier) - discount);
 }
 
-/** The current HP `spell` costs this caster (blood magic): its slot's Thrift off, never below 1 while it costs any. */
-export function effectiveHpCost(caster: Entity, spell: Pick<SpellDefinition, 'hpCost'> & Partial<Pick<SpellDefinition, 'id'>>): number {
+/**
+ * The current HP `spell` costs this caster (blood magic): its slot's Thrift off, never below
+ * 1 while it costs any, then what borrowing adds (Blood-price), which Thrift leaves alone.
+ */
+export function effectiveHpCost(
+  caster: Entity,
+  spell: Pick<SpellDefinition, 'hpCost'> & Partial<Pick<SpellDefinition, 'id'>>,
+  lentHpCost = 0
+): number {
   const base = spell.hpCost ?? 0;
-  if (base <= 0) return 0;
-  return Math.max(1, Math.round(base * castSlotStats(caster, spell.id).costMultiplier));
+  const own = base > 0 ? Math.max(1, Math.round(base * castSlotStats(caster, spell.id).costMultiplier)) : 0;
+  return own + lentHpCost;
 }
 
 /**

@@ -33,6 +33,7 @@ import { findSafeSpawnPosition } from '../spatial/collisionSolver';
 import { EffectPrimitiveRegistry, type EffectContext } from './effectRegistry';
 import { scaleSpellDamage, scaleSpellHeal } from './castNumbers';
 import { castGeometry } from './castTrace';
+import type { LendDelivery } from './neighbourLending';
 import { EnergyModel } from '../actors/energyModel';
 import { dispatchDamageHooks } from '../hooks/damageHooks';
 import { Actor } from '../entities/actor';
@@ -122,12 +123,29 @@ export function parseAndRollDice(amount: string | number, rng: () => number): nu
   return isNaN(parsed) ? 0 : Math.max(0, parsed);
 }
 
+/** A rolled amount times the cast's power (slot stats and borrowing), never below 1 while it rolled any. */
+function scaleByPower(rolled: number, multiplier: number): number {
+  return multiplier === 1 || rolled <= 0 ? rolled : Math.max(1, Math.round(rolled * multiplier));
+}
+
+/** What borrowing hands a cast to deliver, and where its spell type delivers it. */
+export interface CastLends {
+  delivery: LendDelivery;
+  effects: EffectPrimitive[];
+}
+
+/** How a hero's grimoire shapes one cast beyond its definition (P-30): own power, and what it borrowed. */
+export interface CastShaping {
+  powerMultiplier?: number;
+  lends?: CastLends;
+}
+
 export class SpellPipeline {
   public static registerBuiltinEffects(): void {
     EffectPrimitiveRegistry.register<DamageEffect>('damage', (effect, ctx) => {
       ctx.lastDamageEffect = effect;
       for (const target of ctx.targets) {
-        SpellPipeline.applyDamageEffect(ctx.engine, ctx.spell, ctx.caster, target, effect);
+        SpellPipeline.applyDamageEffect(ctx.engine, ctx.spell, ctx.caster, target, effect, ctx.powerMultiplier);
       }
     });
 
@@ -139,10 +157,10 @@ export class SpellPipeline {
 
     EffectPrimitiveRegistry.register<HealEffect>('heal', (effect, ctx) => {
       if (effect.target === 'caster') {
-        SpellPipeline.applyHealEffect(ctx.engine, ctx.caster, ctx.caster, effect);
+        SpellPipeline.applyHealEffect(ctx.engine, ctx.caster, ctx.caster, effect, ctx.powerMultiplier);
       } else {
         for (const target of ctx.targets) {
-          SpellPipeline.applyHealEffect(ctx.engine, ctx.caster, target, effect);
+          SpellPipeline.applyHealEffect(ctx.engine, ctx.caster, target, effect, ctx.powerMultiplier);
         }
       }
     });
@@ -189,7 +207,8 @@ export class SpellPipeline {
     });
 
     EffectPrimitiveRegistry.register<CleanseEffect>('cleanse', (effect, ctx) => {
-      for (const target of ctx.targets) SpellPipeline.cleanse(ctx.engine, target, effect.all ?? false);
+      const targets = effect.target === 'caster' ? [ctx.caster] : ctx.targets;
+      for (const target of targets) SpellPipeline.cleanse(ctx.engine, target, effect.all ?? false);
     });
 
     EffectPrimitiveRegistry.register<HandOverEffect>('handOver', (_effect, ctx) => {
@@ -204,7 +223,8 @@ export class SpellPipeline {
         ctx.targets,
         effect,
         ctx.lastDamageEffect as DamageEffect | undefined,
-        ctx.effects
+        ctx.effects,
+        ctx.powerMultiplier
       );
     });
 
@@ -236,7 +256,8 @@ export class SpellPipeline {
     caster: Entity,
     targetPos: Position,
     itemTargetId?: string,
-    actionCost = 100
+    actionCost = 100,
+    shaping: CastShaping = {}
   ): ActionResult {
     const mode: TargetingMode = spell.targetingMode ?? (spell.targetType as TargetingMode);
 
@@ -245,11 +266,39 @@ export class SpellPipeline {
     }
 
     if (mode === 'self') {
-      return this.executeSelfSpell(engine, spell, caster, actionCost);
+      return this.executeSelfSpell(engine, spell, caster, actionCost, shaping);
     }
 
     // Targeted / Ray / Area / Burst spells
-    return this.executeTargetedSpell(engine, spell, caster, targetPos, mode, actionCost);
+    return this.executeTargetedSpell(engine, spell, caster, targetPos, mode, actionCost, shaping);
+  }
+
+  /**
+   * What a cast borrowed from its neighbours (P-30), where its spell type delivers it: on what
+   * it hit, its held target or the ground it laid; on the foes beside the caster (a heal); or
+   * on those beside the tile it left (a movement). A summon's hits wait for allies that fight (P-31).
+   */
+  private static deliverLends(ctx: EffectContext, lends: CastLends, hit: Entity[], departure: Position): void {
+    const { engine, caster } = ctx;
+    const foesBeside = (p: Position) =>
+      engine.map
+        .getAllEntities()
+        .filter((e) => e !== caster && e.isAlive() && e.isHostileTo(caster) && Math.max(Math.abs(e.x - p.x), Math.abs(e.y - p.y)) === 1);
+    let targets: Entity[];
+    switch (lends.delivery) {
+      case 'adjacentFoes':
+        targets = foesBeside(caster);
+        break;
+      case 'departure':
+        targets = foesBeside(departure);
+        break;
+      case 'summonHits':
+        return;
+      default:
+        targets = hit.filter((t) => t !== caster && t.isAlive());
+    }
+    const lent: EffectContext = { ...ctx, targets };
+    for (const effect of lends.effects) EffectPrimitiveRegistry.dispatch(effect, lent);
   }
 
   private static executeInventorySpell(
@@ -285,7 +334,8 @@ export class SpellPipeline {
     engine: GameEngine,
     spell: SpellDefinition,
     caster: Entity,
-    actionCost: number
+    actionCost: number,
+    shaping: CastShaping
   ): ActionResult {
     const effects: VisualEffectDescriptor[] = [];
     const color = spell.visual?.color ?? getElementDefaultColor(spell.element);
@@ -301,6 +351,7 @@ export class SpellPipeline {
         targets: [caster],
         effects,
         color,
+        powerMultiplier: shaping.powerMultiplier,
       };
 
       for (const effect of spell.effects) {
@@ -309,6 +360,7 @@ export class SpellPipeline {
         }
         EffectPrimitiveRegistry.dispatch(effect, ctx);
       }
+      if (shaping.lends) SpellPipeline.deliverLends(ctx, shaping.lends, [], startPos);
 
       if (spell.effects.some((e) => e.type === 'heal')) {
         effects.push({
@@ -373,8 +425,10 @@ export class SpellPipeline {
     caster: Entity,
     targetPos: Position,
     mode: TargetingMode,
-    actionCost: number
+    actionCost: number,
+    shaping: CastShaping
   ): ActionResult {
+    const startPos = { x: caster.x, y: caster.y };
     // Its flight and burst, as the aim preview draws them (`castGeometry`).
     const geo = castGeometry(engine, spell, caster, targetPos);
     const reflects = geo.reflects;
@@ -505,6 +559,7 @@ export class SpellPipeline {
       aim: { x: targetPos.x, y: targetPos.y },
       effects,
       color,
+      powerMultiplier: shaping.powerMultiplier,
     };
     for (const effect of spell.effects) {
       if (effect.type === 'damage') {
@@ -512,6 +567,7 @@ export class SpellPipeline {
       }
       EffectPrimitiveRegistry.dispatch(effect, ctx);
     }
+    if (shaping.lends) SpellPipeline.deliverLends(ctx, shaping.lends, targetsHit, startPos);
 
     return { success: true, cost: actionCost, message: hitDescription || `${caster.name} casts ${spell.name}.`, effects };
   }
@@ -543,10 +599,11 @@ export class SpellPipeline {
     spell: SpellDefinition,
     caster: Entity,
     target: Entity,
-    effect: DamageEffect
+    effect: DamageEffect,
+    powerMultiplier = 1
   ): void {
     if (!target.isAlive()) return;
-    const rolled = parseAndRollDice(effect.amount, engine.rng);
+    const rolled = scaleByPower(parseAndRollDice(effect.amount, engine.rng), powerMultiplier);
     if (rolled <= 0) return;
     const element = strikeElement(engine, target, effect);
     let rawDamage = scaleSpellDamage(engine, caster, element, rolled);
@@ -647,10 +704,11 @@ export class SpellPipeline {
     engine: GameEngine,
     _caster: Entity,
     target: Entity,
-    effect: HealEffect
+    effect: HealEffect,
+    powerMultiplier = 1
   ): void {
     if (!target.isAlive()) return;
-    let amount = scaleSpellHeal(engine, _caster, parseAndRollDice(effect.amount, engine.rng));
+    let amount = scaleSpellHeal(engine, _caster, scaleByPower(parseAndRollDice(effect.amount, engine.rng), powerMultiplier));
     if (target instanceof Actor) {
       const eff = EnergyModel.calculateHealingEfficiency(target);
       if (eff < 1.0) {
@@ -764,13 +822,14 @@ export class SpellPipeline {
     initialTargets: Entity[],
     effect: ChainEffect,
     damageContext?: DamageEffect,
-    effectsOut?: VisualEffectDescriptor[]
+    effectsOut?: VisualEffectDescriptor[],
+    powerMultiplier = 1
   ): void {
     if (initialTargets.length === 0) return;
 
     const visitedIds = new Set<string>([caster.id, ...initialTargets.map((t) => t.id)]);
     let current = initialTargets[0];
-    const rolled = damageContext ? parseAndRollDice(damageContext.amount, engine.rng) : (spell.basePower || 16);
+    const rolled = scaleByPower(damageContext ? parseAndRollDice(damageContext.amount, engine.rng) : (spell.basePower || 16), powerMultiplier);
     const element = damageContext?.element || spell.element || 'lightning';
     // The same caster scaling as the first hit (Intelligence, Enchanted, Elementalist, entropy).
     const baseDamage = scaleSpellDamage(engine, caster, element, rolled);

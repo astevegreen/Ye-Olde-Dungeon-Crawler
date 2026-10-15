@@ -89,10 +89,14 @@ export interface IdentifyEffect {
   type: 'identify';
 }
 
-/** Lifts afflictions (`StatusHandler.affliction`) off each target: the longest-lasting one, or with `all` every one. */
+/**
+ * Lifts afflictions (`StatusHandler.affliction`) off each target, or off the caster with
+ * `target: 'caster'`: the longest-lasting one, or with `all` every one.
+ */
 export interface CleanseEffect {
   type: 'cleanse';
   all?: boolean;
+  target?: 'caster' | 'target';
 }
 
 /** Moves the caster's afflictions to its targets; one a target is immune to stays with the caster. */

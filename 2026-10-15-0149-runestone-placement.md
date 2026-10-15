@@ -31,6 +31,7 @@ Owner, 15 Oct: "Let's figure out the rune stones locations and do a mental dry r
 - Neighbour rules no longer tentative — owner, 15 Oct (quoted above)
 - Placement and dry run were the next topic, ahead of the first-wave specs — owner, 15 Oct (Goal quote)
 - Every Decide-first recommendation taken, A–H included — owner: "approve all recommendations, but would it be feasible to start rune stones at floor 4 rather than floor 2? Discuss". Folded into the main page; the child page's gaps section became "Still open: the first stone on floor 2 or 4?" (recommend 4).
+- First stone on floor 4 (22 stones; Týr's F4 Oath-Stone waits until two spells touch) — owner: "Yes". Folded into both pages; the dry run now starts on 4 and buys Phase Door as a tablet on 10. Task complete.
 
 ## Read first
 - The child page above (everything in this task)

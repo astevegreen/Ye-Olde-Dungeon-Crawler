@@ -100,6 +100,16 @@ export class MeleeAttackAction implements Action {
       };
     }
 
+    // The hero's side never strikes its own: a friendly summon or the companion against the
+    // hero, or the reverse.
+    if (this.attacker.faction === 'player' && this.defender.faction === 'player') {
+      return {
+        success: false,
+        cost: 0,
+        message: `${this.attacker.name} will not strike ${this.defender.name}.`,
+      };
+    }
+
     // The attacker's hit roll (the pack's base chance, moved by Dexterity and by what it wears
     // and holds, Sure Shot; 100 means no roll), then the defender's evasion: its Dexterity, the
     // Survivor perk (+10% for the player against a mastered species) and what it wears

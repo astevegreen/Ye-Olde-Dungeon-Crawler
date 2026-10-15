@@ -30,7 +30,7 @@ export function selectAttackTarget(
 }
 
 /** Bounded (§6-style) nearest-hostile query — no unbounded map-wide scan. */
-function findNearestHostileActor(engine: GameEngine, actor: Actor, maxRange: number): Entity | null {
+export function findNearestHostileActor(engine: GameEngine, actor: Actor, maxRange: number): Entity | null {
   const minX = Math.max(0, Math.floor(actor.x - maxRange));
   const maxX = Math.min(engine.map.width - 1, Math.ceil(actor.x + maxRange));
   const minY = Math.max(0, Math.floor(actor.y - maxRange));

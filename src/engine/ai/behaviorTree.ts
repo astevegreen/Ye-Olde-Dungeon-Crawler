@@ -275,6 +275,16 @@ export class MonsterAI {
       return new WaitAction(monster);
     }
 
+    // Any other creature on the hero's side (a friendly summon, a raised foe) runs the ally
+    // routine whatever its own: the steps below aim at the player when they find no foe.
+    if (monster.faction === 'player' && monster !== engine.companion) {
+      const ally = AIRegistry.get('ally');
+      if (ally) {
+        const res = ally.decideAction(monster, engine);
+        return 'action' in res ? res.action : res;
+      }
+    }
+
     // The hero's bond with its companion (Beast-Friend) takes hold on the companion's turn.
     // So does its growth with the hero's level (a summon, a revival or a level it missed).
     if (monster === engine.companion) {

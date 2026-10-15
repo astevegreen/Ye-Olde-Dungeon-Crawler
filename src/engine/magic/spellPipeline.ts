@@ -731,8 +731,8 @@ export class SpellPipeline {
   /**
    * Executes a SummonEffect: spawns a monster near the caster from the manifest
    * bestiary. If `friendly` is true the summoned entity's faction is set to
-   * 'player' (enabling charm-type summons). Duration > 0 is stored in worldState
-   * for future turn-based despawn.
+   * 'player', so it runs the ally routine (MonsterAI.decideAction). Duration > 0
+   * applies the `summoned` status, which sends it back when it runs out.
    */
   public static executeSummonEffect(
     engine: GameEngine,

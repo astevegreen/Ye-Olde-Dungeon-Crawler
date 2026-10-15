@@ -16,7 +16,7 @@ import { fleeAction } from './flight';
 import { FLANK_RADIUS, flankAction } from './packTactics';
 import { computeDangerTiles } from './intent';
 import { getBresenhamLine } from '../magic/targeting';
-import { selectAttackTarget } from './targetSelection';
+import { findNearestHostileActor, selectAttackTarget } from './targetSelection';
 import type { SpellDefinition } from '../magic/types';
 
 function hasLineOfSight(engine: GameEngine, startX: number, startY: number, endX: number, endY: number): boolean {
@@ -459,7 +459,7 @@ function approachAction(engine: GameEngine, monster: Monster, target: Entity): A
   return step;
 }
 
-/** Shared by all companion AI strategies below. */
+/** Shared by the routines of the hero's side below. */
 function findAdjacentHostile(engine: GameEngine, actor: Actor): Entity | undefined {
   for (let dy = -1; dy <= 1; dy++) {
     for (let dx = -1; dx <= 1; dx++) {
@@ -473,166 +473,106 @@ function findAdjacentHostile(engine: GameEngine, actor: Actor): Entity | undefin
   return undefined;
 }
 
-/** Bounded (§6-style) nearest-hostile search used by the skirmisher archetype. */
-function findNearestHostileWithin(engine: GameEngine, actor: Actor, radius: number): Entity | undefined {
-  const minX = Math.max(0, Math.floor(actor.x - radius));
-  const maxX = Math.min(engine.map.width - 1, Math.ceil(actor.x + radius));
-  const minY = Math.max(0, Math.floor(actor.y - radius));
-  const maxY = Math.min(engine.map.height - 1, Math.ceil(actor.y + radius));
-  const radiusSq = radius * radius;
+/**
+ * What an actor on the hero's side does: strike an adjacent foe; otherwise walk to the nearest
+ * foe within `seekRadius` (0: wait for foes to come); otherwise close on the hero once farther
+ * than `followDistance`; otherwise wait.
+ */
+function guardHeroAction(actor: Actor, engine: GameEngine, followDistance: number, seekRadius: number): Action {
+  const monster = actor as Monster;
+  const player = engine.player;
+  if (!player.isAlive()) return new WaitAction(actor);
 
-  let best: Entity | undefined;
-  let bestDistSq = Infinity;
-  const seenIds = new Set<string>();
-  for (let y = minY; y <= maxY; y++) {
-    for (let x = minX; x <= maxX; x++) {
-      for (const entity of engine.map.getEntitiesAt(x, y)) {
-        if (seenIds.has(entity.id) || entity === actor || !entity.isAlive()) continue;
-        seenIds.add(entity.id);
-        if (!actor.isHostileTo(entity)) continue;
-        const dx = entity.x - actor.x;
-        const dy = entity.y - actor.y;
-        const distSq = dx * dx + dy * dy;
-        if (distSq <= radiusSq && distSq < bestDistSq) {
-          bestDistSq = distSq;
-          best = entity;
-        }
+  const adjacentHostile = findAdjacentHostile(engine, actor);
+  if (adjacentHostile) {
+    monster.intent = { type: 'attack', targetTile: { x: adjacentHostile.x, y: adjacentHostile.y }, turnsRemaining: 0 };
+    return new MeleeAttackAction(actor, adjacentHostile);
+  }
+
+  const seekTarget = seekRadius > 0 ? findNearestHostileActor(engine, actor, seekRadius) : null;
+  const chebyshevToPlayer = Math.max(Math.abs(actor.x - player.x), Math.abs(actor.y - player.y));
+  const destination = seekTarget ?? (chebyshevToPlayer > followDistance ? player : null);
+
+  if (destination) {
+    const path = findPath(engine.map, actor.position, destination.position, true);
+    if (path.length > 0) {
+      const next = path[0];
+      const tile = engine.map.getTile(next.x, next.y);
+      if (tile?.type === 'door_closed') {
+        return new OpenDoorAction(actor, next.x, next.y);
       }
+      monster.intent = seekTarget
+        ? { type: 'attack', targetTile: { x: seekTarget.x, y: seekTarget.y }, turnsRemaining: 0 }
+        : { type: 'idle', turnsRemaining: 0 };
+      return new MovementAction(actor, next.x - actor.x, next.y - actor.y);
     }
   }
-  return best;
+
+  monster.intent = { type: 'idle', turnsRemaining: 0 };
+  return new WaitAction(actor);
 }
 
 /**
  * Companions & Pet Progression (docs/architecture/content-companions.md): follow the player within
- * FOLLOW_DISTANCE and auto-attack an adjacent hostile. Generic over any
- * `faction: 'player'` actor with this aiRoutineId — not aware of the `Companion`
- * class specifically. This is the default 'balanced' archetype (`Companion.
- * setArchetype`); 'bodyguard' and 'skirmisher' below are trainer-taught (Phase 2)
- * variants. Whether a hostile monster can actually be drawn to attack the
- * companion instead of the player depends on that monster's own `targetingMode`
- * (`ai/targetSelection.ts`) — a companion cannot "tank" against a monster that
- * hasn't opted into `'nearest_hostile'` targeting.
+ * 2 tiles and auto-attack an adjacent hostile. Generic over any `faction: 'player'` actor with
+ * this aiRoutineId — not aware of the `Companion` class specifically. This is the default
+ * 'balanced' archetype (`Companion.setArchetype`); 'bodyguard' and 'skirmisher' below are
+ * trainer-taught (Phase 2) variants. Whether a hostile monster can actually be drawn to attack
+ * the companion instead of the player depends on that monster's own `targetingMode`
+ * (`ai/targetSelection.ts`) — a companion cannot "tank" against a monster that hasn't opted
+ * into `'nearest_hostile'` targeting.
  */
 export class CompanionFollowStrategy implements AIStrategy {
   public readonly id = 'companion_follow';
   public readonly name = 'Companion Follow & Assist';
-  private static readonly FOLLOW_DISTANCE = 2;
 
   public decideAction(actor: Actor, engine: GameEngine): Action {
-    const monster = actor as Monster;
-    const player = engine.player;
-    if (!player.isAlive()) return new WaitAction(actor);
-
-    const adjacentHostile = findAdjacentHostile(engine, actor);
-    if (adjacentHostile) {
-      monster.intent = { type: 'attack', targetTile: { x: adjacentHostile.x, y: adjacentHostile.y }, turnsRemaining: 0 };
-      return new MeleeAttackAction(actor, adjacentHostile);
-    }
-
-    const chebyshevDist = Math.max(Math.abs(actor.x - player.x), Math.abs(actor.y - player.y));
-    if (chebyshevDist > CompanionFollowStrategy.FOLLOW_DISTANCE) {
-      const path = findPath(engine.map, actor.position, player.position, true);
-      if (path.length > 0) {
-        const next = path[0];
-        const tile = engine.map.getTile(next.x, next.y);
-        if (tile?.type === 'door_closed') {
-          return new OpenDoorAction(actor, next.x, next.y);
-        }
-        monster.intent = { type: 'idle', turnsRemaining: 0 };
-        return new MovementAction(actor, next.x - actor.x, next.y - actor.y);
-      }
-    }
-
-    monster.intent = { type: 'idle', turnsRemaining: 0 };
-    return new WaitAction(actor);
+    return guardHeroAction(actor, engine, 2, 0);
   }
 }
 
 /**
  * Bodyguard archetype (docs/architecture/content-companions.md Phase 2): hugs the player at
- * FOLLOW_DISTANCE 1 instead of 2. No mechanic here forces monsters to attack it —
- * staying adjacent to the player simply makes the companion likelier to be the
- * *nearest* hostile target for any monster with `targetingMode: 'nearest_hostile'`.
+ * 1 tile instead of 2. No mechanic here forces monsters to attack it — staying adjacent to the
+ * player simply makes the companion likelier to be the *nearest* hostile target for any monster
+ * with `targetingMode: 'nearest_hostile'`.
  */
 export class CompanionBodyguardStrategy implements AIStrategy {
   public readonly id = 'companion_bodyguard';
   public readonly name = 'Companion Bodyguard';
-  private static readonly FOLLOW_DISTANCE = 1;
 
   public decideAction(actor: Actor, engine: GameEngine): Action {
-    const monster = actor as Monster;
-    const player = engine.player;
-    if (!player.isAlive()) return new WaitAction(actor);
-
-    const adjacentHostile = findAdjacentHostile(engine, actor);
-    if (adjacentHostile) {
-      monster.intent = { type: 'attack', targetTile: { x: adjacentHostile.x, y: adjacentHostile.y }, turnsRemaining: 0 };
-      return new MeleeAttackAction(actor, adjacentHostile);
-    }
-
-    const chebyshevDist = Math.max(Math.abs(actor.x - player.x), Math.abs(actor.y - player.y));
-    if (chebyshevDist > CompanionBodyguardStrategy.FOLLOW_DISTANCE) {
-      const path = findPath(engine.map, actor.position, player.position, true);
-      if (path.length > 0) {
-        const next = path[0];
-        const tile = engine.map.getTile(next.x, next.y);
-        if (tile?.type === 'door_closed') {
-          return new OpenDoorAction(actor, next.x, next.y);
-        }
-        monster.intent = { type: 'idle', turnsRemaining: 0 };
-        return new MovementAction(actor, next.x - actor.x, next.y - actor.y);
-      }
-    }
-
-    monster.intent = { type: 'idle', turnsRemaining: 0 };
-    return new WaitAction(actor);
+    return guardHeroAction(actor, engine, 1, 0);
   }
 }
 
 /**
  * Skirmisher archetype (docs/architecture/content-companions.md Phase 2): a much looser leash
- * (FOLLOW_DISTANCE 5) and, unlike the other two archetypes, will proactively
- * path toward a hostile within SEEK_RADIUS even before it's adjacent, rather
- * than waiting for one to come to it. Deals more independent damage but spends
- * more time away from the player than the bodyguard archetype does.
+ * (5 tiles) and, unlike the other two archetypes, will proactively path toward a hostile within
+ * 6 tiles even before it's adjacent, rather than waiting for one to come to it. Deals more
+ * independent damage but spends more time away from the player than the bodyguard archetype does.
  */
 export class CompanionSkirmisherStrategy implements AIStrategy {
   public readonly id = 'companion_skirmisher';
   public readonly name = 'Companion Skirmisher';
-  private static readonly FOLLOW_DISTANCE = 5;
-  private static readonly SEEK_RADIUS = 6;
 
   public decideAction(actor: Actor, engine: GameEngine): Action {
-    const monster = actor as Monster;
-    const player = engine.player;
-    if (!player.isAlive()) return new WaitAction(actor);
+    return guardHeroAction(actor, engine, 5, 6);
+  }
+}
 
-    const adjacentHostile = findAdjacentHostile(engine, actor);
-    if (adjacentHostile) {
-      monster.intent = { type: 'attack', targetTile: { x: adjacentHostile.x, y: adjacentHostile.y }, turnsRemaining: 0 };
-      return new MeleeAttackAction(actor, adjacentHostile);
-    }
+/**
+ * Every other creature on the hero's side (a friendly summon, a raised foe): goes for the
+ * nearest foe within 6 tiles and otherwise keeps within 2 of the hero. MonsterAI.decideAction
+ * runs it for any `faction: 'player'` monster that is not the companion, whatever its own
+ * routine, so a pack monster summoned as a friend never turns its own attacks on the hero.
+ */
+export class AllyStrategy implements AIStrategy {
+  public readonly id = 'ally';
+  public readonly name = 'Ally';
 
-    const seekTarget = findNearestHostileWithin(engine, actor, CompanionSkirmisherStrategy.SEEK_RADIUS);
-    const chebyshevToPlayer = Math.max(Math.abs(actor.x - player.x), Math.abs(actor.y - player.y));
-    const destination = seekTarget ?? (chebyshevToPlayer > CompanionSkirmisherStrategy.FOLLOW_DISTANCE ? player : null);
-
-    if (destination) {
-      const path = findPath(engine.map, actor.position, destination.position, true);
-      if (path.length > 0) {
-        const next = path[0];
-        const tile = engine.map.getTile(next.x, next.y);
-        if (tile?.type === 'door_closed') {
-          return new OpenDoorAction(actor, next.x, next.y);
-        }
-        monster.intent = { type: seekTarget ? 'attack' : 'idle', targetTile: { x: destination.x, y: destination.y }, turnsRemaining: 0 };
-        return new MovementAction(actor, next.x - actor.x, next.y - actor.y);
-      }
-    }
-
-    monster.intent = { type: 'idle', turnsRemaining: 0 };
-    return new WaitAction(actor);
+  public decideAction(actor: Actor, engine: GameEngine): Action {
+    return guardHeroAction(actor, engine, 2, 6);
   }
 }
 
@@ -644,6 +584,7 @@ export function registerDefaultAIStrategies(): void {
   AIRegistry.register(new CompanionFollowStrategy());
   AIRegistry.register(new CompanionBodyguardStrategy());
   AIRegistry.register(new CompanionSkirmisherStrategy());
+  AIRegistry.register(new AllyStrategy());
 }
 
 registerDefaultAIStrategies();

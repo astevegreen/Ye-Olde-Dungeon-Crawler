@@ -150,6 +150,9 @@ const GAME = [
   ['g17-diagnostics-f2', async (pg) => { await key(pg, 'F2'); }],
   ['g18-choice', ev(() => { const e = window.__cotwEngine; const c = e.manifest?.choices?.oath_hearth ?? Object.values(e.manifest?.choices ?? {})[0]; e.onChoiceInteract(c, () => {}, () => {}); })],
   ['g19-altar', ev(() => { const e = window.__cotwEngine; e.onGameEvent({ type: 'altar_reached', turn: e.turnCount, data: { altarId: 'galdr_altar_tyr', x: e.player.x, y: e.player.y } }); })],
+  ['g19b-altar-hel', ev(() => { const e = window.__cotwEngine; e.onGameEvent({ type: 'altar_reached', turn: e.turnCount, data: { altarId: 'galdr_altar_hel', x: e.player.x, y: e.player.y } }); })],
+  // Hel's deeper rite (from floor 31): the altar reads its rite from the floor when it opens.
+  ['g19c-altar-hel-deep', ev(() => { const e = window.__cotwEngine; const f = e.currentFloor; e.currentFloor = 31; e.onGameEvent({ type: 'altar_reached', turn: e.turnCount, data: { altarId: 'galdr_altar_hel', x: e.player.x, y: e.player.y } }); e.currentFloor = f; })],
   ['g20-rune-discovery', ev(() => { const e = window.__cotwEngine; e.onGameEvent({ type: 'rune_of_return_discovered', turn: e.turnCount, data: {} }); })],
   ['g21-rune-tree', ev(() => { window.dispatchEvent(new Event('open_rune_of_return_tree')); })],
   ['g22-mastery', ev(() => { const e = window.__cotwEngine; e.onGameEvent({ type: 'mastery_unlocked', turn: e.turnCount, scope: 'species', masteryId: 'wolf', name: 'Wolf', kills: 25, data: {} }); })],

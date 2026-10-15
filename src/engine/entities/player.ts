@@ -28,6 +28,7 @@ import {
   learnIntoGrimoire,
   placeSpell,
   reconcileGrimoireState,
+  restatGrimoire,
   type GrimoireSlotRef,
   type GrimoireState,
   type LearnResult,
@@ -535,6 +536,12 @@ export class Player extends Actor {
   public assignGrimoireStat(grimoireId: string, axis: GrimoireAxis, statId: string, replace = false): StatPickOutcome {
     const model = this.grimoireModel();
     return model ? assignStat(model.system, model.state, { grimoireId, axis, statId }, replace) : 'unknown-grimoire';
+  }
+
+  /** Re-picks every axis of one grimoire at once; changes nothing unless the whole pick is valid. */
+  public restatGrimoire(grimoireId: string, stats: Partial<Record<GrimoireAxis, string>>): StatPickOutcome {
+    const model = this.grimoireModel();
+    return model ? restatGrimoire(model.system, model.state, grimoireId, stats) : 'unknown-grimoire';
   }
 
   /** Adds a slot to an open grimoire, touching one it has. */

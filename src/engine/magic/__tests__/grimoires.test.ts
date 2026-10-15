@@ -15,6 +15,7 @@ import {
   pendingStatPicks,
   readGrimoireState,
   resolveSlotStats,
+  slotAdditions,
   slotNeighbours,
   slotOfSpell,
   slotStatSteps,
@@ -111,6 +112,17 @@ describe('three grimoires (P-29)', () => {
       expect(p.addGrimoireSlot(slot('star', 3, 3))).toBe(false);
     });
 
+    it('a slot can be added beside any slot of an open grimoire, once', () => {
+      expect(sortSlots(slotAdditions(FIXTURE_GRIMOIRES, s).filter((a) => a.grimoireId === 'row'))).toEqual(
+        sortSlots([slot('row', -2, 0), slot('row', 2, 0), ...[-1, 0, 1].flatMap((x) => [slot('row', x, -1), slot('row', x, 1)])])
+      );
+      // The full grid grows only past its outline.
+      expect(slotAdditions(FIXTURE_GRIMOIRES, s).filter((a) => a.grimoireId === 'grid')).toHaveLength(12);
+      p.addGrimoireSlot(slot('row', 2, 0));
+      expect(slotAdditions(FIXTURE_GRIMOIRES, s)).toContainEqual(slot('row', 3, 0));
+      expect(slotAdditions(FIXTURE_GRIMOIRES, s)).not.toContainEqual(slot('row', 2, 0));
+    });
+
     it("a slot added above the row gives it a second axis, which waits for a pick", () => {
       expect(pendingStatPicks(FIXTURE_GRIMOIRES, s)).toEqual([]);
       expect(p.addGrimoireSlot(slot('row', 0, 1))).toBe(true);
@@ -151,6 +163,25 @@ describe('three grimoires (P-29)', () => {
       expect(state(p).statPicks).toEqual([
         { grimoireId: 'row', axis: 'x', statId: 'power' },
         { grimoireId: 'star', axis: 'x', statId: 'thrift' },
+      ]);
+    });
+
+    it("a restat re-picks every axis of one grimoire at once, or changes nothing", () => {
+      const p = hero(SPELLS.slice(0, 4));
+      pickAll(p, [['row', 'x', 'power'], ['star', 'x', 'thrift'], ['star', 'y', 'range']]);
+      const before = JSON.stringify(state(p).statPicks);
+      expect(p.restatGrimoire('star', { x: 'range' })).toBe('axis-unpicked');
+      expect(p.restatGrimoire('star', { x: 'power', y: 'thrift' })).toBe('stat-in-use');
+      expect(p.restatGrimoire('star', { x: 'range', y: 'range' })).toBe('stat-in-use');
+      expect(p.restatGrimoire('row', { x: 'swift', y: 'area' })).toBe('no-axis');
+      expect(p.restatGrimoire('grid', { x: 'swift', y: 'area' })).toBe('closed');
+      expect(JSON.stringify(state(p).statPicks)).toBe(before);
+      // Swapping the two axes is a restat too.
+      expect(p.restatGrimoire('star', { x: 'range', y: 'thrift' })).toBe('ok');
+      expect(state(p).statPicks).toEqual([
+        { grimoireId: 'row', axis: 'x', statId: 'power' },
+        { grimoireId: 'star', axis: 'x', statId: 'range' },
+        { grimoireId: 'star', axis: 'y', statId: 'thrift' },
       ]);
     });
 

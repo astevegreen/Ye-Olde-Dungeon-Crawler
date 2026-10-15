@@ -1,9 +1,10 @@
 import type { GameEngine, AltarDefinition, AltarOffering, AltarRiteRequest, GrimoireSlotRef } from '../engine';
-import { listAltarOfferings, findHybridSpellId, getSpell, isSlotDoubled } from '../engine';
+import { listAltarOfferings, findHybridSpellId, getSpell, isSlotDoubled, slotAdditions, grimoireAxes, spellAt } from '../engine';
 import type { UIModal } from './modalStack';
 import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
 import { escapeHtml } from './html';
-import { slotPositionName } from './characterMenu/spellbookGrimoires';
+import { AXIS_WORD, slotPositionName } from './characterMenu/spellbookGrimoires';
+import { bindRestatPicker, restatPickerHtml, restatVerdict, type RestatChoice } from './restatPicker';
 
 /** What burning costs, said before an offering is picked. Pack-neutral: the pack's own
  *  altar text names its offerings; this is the rule they all share. */
@@ -15,8 +16,9 @@ const LIST_SELECTOR = '.altar-list';
 const BODY_SELECTOR = '.ui-dialog-body';
 
 /**
- * A spell altar's rite (engine `magic/altars.ts`): pick an offering to burn and, depending on
- * the rite, a grimoire slot or a spell, read the preview, then confirm. Irreversible, so
+ * A spell altar's rite (engine `magic/altars.ts`): pick an offering to burn (none at a free
+ * altar) and, depending on the rite, a grimoire slot, a spell, a place for a new slot or a
+ * grimoire's new stats, read the preview, then confirm. Irreversible, so
  * nothing happens until Confirm; Esc or Leave backs away and the altar stays unspent.
  */
 export class AltarModal implements UIModal {
@@ -29,6 +31,7 @@ export class AltarModal implements UIModal {
   private offeringIndex = -1;
   private slot?: GrimoireSlotRef;
   private targetSpellId?: string;
+  private restat: RestatChoice = { stats: {} };
   private onConfirm?: (request: AltarRiteRequest) => void;
   private onLeave?: () => void;
 
@@ -49,6 +52,7 @@ export class AltarModal implements UIModal {
     this.offeringIndex = -1;
     this.slot = undefined;
     this.targetSpellId = undefined;
+    this.restat = { stats: {} };
     this.onConfirm = onConfirm;
     this.onLeave = onLeave;
     this.isOpen = true;
@@ -99,13 +103,16 @@ export class AltarModal implements UIModal {
   /** The complete request, or undefined while a choice is missing or invalid. */
   private request(): AltarRiteRequest | undefined {
     const offering = this.offering;
-    if (!offering || !this.altar) return undefined;
-    const base = { offeringKind: offering.kind, offeringId: offering.id };
+    if (!this.altar || (!offering && !this.altar.free)) return undefined;
+    const base: AltarRiteRequest = offering && !this.altar.free ? { offeringKind: offering.kind, offeringId: offering.id } : {};
     switch (this.altar.rite) {
       case 'double':
+      case 'addSlot':
         return this.slot && this.preview()?.ok ? { ...base, slot: this.slot } : undefined;
-      case 'absolve':
-        return base;
+      case 'restat':
+        return this.restat.grimoireId && this.preview()?.ok
+          ? { ...base, restat: { grimoireId: this.restat.grimoireId, stats: { ...this.restat.stats } } }
+          : undefined;
       case 'forge':
         return this.targetSpellId && this.preview()?.ok ? { ...base, targetSpellId: this.targetSpellId } : undefined;
       case 'gamble':
@@ -117,16 +124,24 @@ export class AltarModal implements UIModal {
   private preview(): { text: string; ok: boolean } | undefined {
     const engine = this.engine!;
     const offering = this.offering;
-    if (!offering || !this.altar) return undefined;
+    if (!this.altar) return undefined;
+    const debt = this.altar.clearsVoidDebt && (engine.player.voidDebt ?? 0) > 0 ? ' Your Void Debt is cleared.' : '';
+    // Re-picking stats and adding a slot need no offering's element, so they preview without one.
+    if (this.altar.rite === 'restat') {
+      const verdict = restatVerdict(engine.player, this.restat);
+      return { text: verdict.text + (verdict.ok ? debt : ''), ok: verdict.ok };
+    }
+    if (this.altar.rite === 'addSlot') {
+      return this.slot ? { text: this.addSlotText(this.slot) + debt, ok: true } : { text: 'Choose where the new slot goes.', ok: false };
+    }
+    if (!offering) return undefined;
     switch (this.altar.rite) {
       case 'double': {
         const spellId = this.slot ? slotSpellId(engine, this.slot) : undefined;
         if (!this.slot || !spellId) return { text: 'Choose a slot that holds a spell.', ok: false };
         if (offering.kind === 'spell' && offering.id === spellId) return { text: `${offering.name} cannot be burned to strengthen its own slot.`, ok: false };
-        return { text: `Doubles what <b>${escapeHtml(spellName(engine, spellId))}</b> lends the spells beside it.`, ok: true };
+        return { text: `Doubles what <b>${escapeHtml(spellName(engine, spellId))}</b> lends the spells beside it.${debt}`, ok: true };
       }
-      case 'absolve':
-        return { text: 'Clears your debt.', ok: true };
       case 'forge': {
         if (!this.targetSpellId) return { text: 'Choose a spell to transmute.', ok: false };
         const target = spellName(engine, this.targetSpellId);
@@ -140,8 +155,19 @@ export class AltarModal implements UIModal {
         return { text: `${target} becomes <b>${hybrid?.name ?? hybridId}</b>: ${hybrid?.description ?? ''}`, ok: true };
       }
       case 'gamble':
-        return { text: this.altar?.gamble?.previewText ?? 'Fate decides: a spell, a doubled lend, or a price.', ok: true };
+        return { text: (this.altar.gamble?.previewText ?? 'Fate decides: a spell, a doubled lend, or a price.') + debt, ok: true };
     }
+  }
+
+  /** What adding this slot does: where it sits, and the axis it opens when it is the first to reach that way. */
+  private addSlotText(slot: GrimoireSlotRef): string {
+    const player = this.engine!.player;
+    const system = player.grimoireSystem!;
+    const book = bookName(system, slot.grimoireId);
+    const axesNow = grimoireAxes(system, player.grimoireState!, slot.grimoireId);
+    const newAxis = (['x', 'y'] as const).find((axis) => slot[axis] !== 0 && !axesNow.includes(axis));
+    const reach = newAxis ? ` It is the first to reach ${AXIS_WORD[newAxis]}, so ${escapeHtml(book)} gains a second stat, chosen in the Spellbook.` : '';
+    return `Adds a slot to <b>${escapeHtml(book)}</b>: ${escapeHtml(slotPositionName(slot.x, slot.y).toLowerCase())}.${reach}`;
   }
 
   private render(): void {
@@ -157,7 +183,9 @@ export class AltarModal implements UIModal {
         : `One ${escapeHtml(offering.name)} will be consumed.`
       : '';
 
-    const offeringRows = this.offerings.length
+    const offeringRows = altar.free
+      ? ''
+      : this.offerings.length
       ? this.offerings
           .map(
             (o, i) =>
@@ -188,6 +216,25 @@ export class AltarModal implements UIModal {
         )
         .join('');
       picker = `<div class="ui-dialog-label">Spell to transmute</div><div class="ui-inset bs-list altar-list">${rows}</div>`;
+    } else if (altar.rite === 'restat') {
+      picker = restatPickerHtml(player, this.restat);
+    } else if (altar.rite === 'addSlot') {
+      const system = player.grimoireSystem;
+      const state = player.grimoireState;
+      const rows =
+        system && state
+          ? slotAdditions(system, state)
+              .map((s) => {
+                const picked = this.slot && this.slot.grimoireId === s.grimoireId && this.slot.x === s.x && this.slot.y === s.y;
+                const beside = [{ x: s.x, y: s.y - 1 }, { x: s.x - 1, y: s.y }, { x: s.x + 1, y: s.y }, { x: s.x, y: s.y + 1 }]
+                  .map((c) => spellAt(state, { grimoireId: s.grimoireId, ...c }))
+                  .filter((id): id is string => Boolean(id))
+                  .map((id) => spellName(engine, id));
+                return `<button type="button" class="bs-row${picked ? ' is-selected' : ''}" data-slot="${escapeHtml(`${s.grimoireId}|${s.x}|${s.y}`)}"><span class="bs-name">${escapeHtml(bookName(system, s.grimoireId))} · ${escapeHtml(slotPositionName(s.x, s.y))}</span><span class="ui-faint">${beside.length ? `beside ${escapeHtml(beside.join(', '))}` : 'beside an empty slot'}</span></button>`;
+              })
+              .join('')
+          : '';
+      picker = `<div class="ui-dialog-label">Where the new slot goes</div><div class="ui-inset bs-list altar-list">${rows || '<div class="ui-note bs-empty">No grimoire has opened.</div>'}</div>`;
     }
 
     const ready = Boolean(this.request());
@@ -202,12 +249,12 @@ export class AltarModal implements UIModal {
       closeTitle: 'Leave (Esc)',
       body: `
         <div class="ui-dialog-lede">${escapeHtml(altar.description)}</div>
-        <div class="ui-note">${escapeHtml(BURN_RULE)}</div>
+        ${altar.free ? '' : `<div class="ui-note">${escapeHtml(BURN_RULE)}</div>
         <div class="ui-dialog-label">Offering to burn</div>
-        <div class="ui-inset bs-list altar-list">${offeringRows}</div>
+        <div class="ui-inset bs-list altar-list">${offeringRows}</div>`}
         ${picker}
         ${preview ? `<div class="ui-fact${preview.ok ? '' : ' is-warn'}">${preview.text}</div>` : ''}
-        ${burnNote ? `<div class="ui-note">${burnNote} This cannot be undone.</div>` : ''}`,
+        ${altar.free ? '<div class="ui-note">The altar grants this once, and it cannot be undone.</div>' : burnNote ? `<div class="ui-note">${burnNote} This cannot be undone.</div>` : ''}`,
       hints: [
         { keys: ['Enter'], label: 'perform' },
         { keys: ['Esc'], label: 'leave, the altar keeps' },
@@ -237,6 +284,10 @@ export class AltarModal implements UIModal {
         this.render();
       })
     );
+    bindRestatPicker(overlay, player, this.restat, (next) => {
+      this.restat = next;
+      this.render();
+    });
     this.overlayEl.querySelectorAll<HTMLElement>('[data-spell]').forEach((el) =>
       el.addEventListener('click', () => {
         this.targetSpellId = el.dataset.spell;
@@ -255,6 +306,10 @@ function spellOf(engine: GameEngine, id: string) {
 
 function slotSpellId(engine: GameEngine, slot: GrimoireSlotRef): string | undefined {
   return engine.player.grimoireState?.placements.find((p) => p.grimoireId === slot.grimoireId && p.x === slot.x && p.y === slot.y)?.spellId;
+}
+
+function bookName(system: { layouts: Array<{ id: string; name: string }> }, grimoireId: string): string {
+  return system.layouts.find((l) => l.id === grimoireId)?.name ?? grimoireId;
 }
 
 function spellName(engine: GameEngine, id: string): string {

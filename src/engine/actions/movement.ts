@@ -13,7 +13,7 @@ import { Monster } from '../entities/monster';
 import { HookDispatcher } from '../hooks/hookDispatcher';
 import { getTileDefinition } from '../grid/tile';
 import { revealSecretDoor } from './search';
-import { getAltarDefinition, isAltarSpent } from '../magic/altars';
+import { altarWaitReason, getAltarDefinition, isAltarSpent } from '../magic/altars';
 import { formatMagicMessage } from '../magic/magicConfig';
 import { isPrologueHoldingChoices } from '../quest/prologue';
 import { burnOnSacredGround } from '../combat/sacredGround';
@@ -298,8 +298,11 @@ export class MovementAction implements Action {
       } else if (handlerId && getAltarDefinition(engine, handlerId)) {
         // Spell altar (manifest.magic.altars): the presentation layer opens its rite on this event.
         const altar = getAltarDefinition(engine, handlerId)!;
+        const wait = altarWaitReason(altar, engine.player);
         if (isAltarSpent(engine, targetX, targetY)) {
           engine.log(formatMagicMessage(altar.spentMessage, { altar: altar.name }));
+        } else if (wait) {
+          engine.log(wait);
         } else {
           engine.log(`You stand before ${altar.name}.`);
           engine.emitGameEvent({

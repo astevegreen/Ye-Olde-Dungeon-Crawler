@@ -18,24 +18,26 @@ import {
   type SpellDefinition,
 } from '../../engine';
 import { escapeHtml } from '../html';
-import { grimoireGridHtml } from '../grimoireGrid';
+import { grimoireGridHtml, grimoireGridStyle } from '../grimoireGrid';
 import { spellPower } from '../spellPower';
 
 /**
  * The Spellbook's view of the three-grimoire model: one grimoire at a time (a switcher
- * across the ones that have opened), its slots as a 3×3 grid around the centre, the stat of
+ * across the ones that have opened), its slots as a 3×3 grid around the centre (wider for a slot added beyond it), the stat of
  * each axis, and what touching slots lend each other. Pure markup; the tab binds it.
  */
 
 export const GRIMOIRE_INFO_DEFAULT = 'Point at a slot to see what it does. Click one to put the chosen spell there.';
 
-/** The cell is `data-gslot="x,y"`, with x and y in -1..1 from the centre. */
+/** The cell is `data-gslot="x,y"`, with x and y counted from the centre. */
 export const slotKey = (x: number, y: number): string => `${x},${y}`;
 
-const AXIS_WORD: Record<GrimoireAxis, string> = { x: 'across', y: 'down' };
+export const AXIS_WORD: Record<GrimoireAxis, string> = { x: 'across', y: 'down' };
 
-/** A slot's place in its grimoire in words: "Centre", "Upper left". */
+/** A slot's place in its grimoire in words: "Centre", "Upper left", "Right, 2 out". */
 export function slotPositionName(x: number, y: number): string {
+  const out = Math.max(Math.abs(x), Math.abs(y));
+  if (out > 1) return `${slotPositionName(Math.sign(x), Math.sign(y))}, ${out} out`;
   if (x === 0 && y === 0) return 'Centre';
   if (y === 0) return x < 0 ? 'Left' : 'Right';
   if (x === 0) return y < 0 ? 'Top' : 'Bottom';
@@ -127,7 +129,13 @@ export function renderGrimoires(engine: GameEngine, player: Player, chosen: Spel
   for (const cast of engine.diagnostics.resolvedCasts()) {
     if (cast.slot.grimoireId === id) casts.set(slotKey(cast.slot.x, cast.slot.y), cast);
   }
-  const index = (x: number, y: number): number => (y + 1) * 3 + (x + 1);
+  // The 3x3 outline, grown to take in any slot added beyond it.
+  const minX = Math.min(-1, ...cells.map((c) => c.x));
+  const maxX = Math.max(1, ...cells.map((c) => c.x));
+  const minY = Math.min(-1, ...cells.map((c) => c.y));
+  const maxY = Math.max(1, ...cells.map((c) => c.y));
+  const cols = maxX - minX + 1;
+  const index = (x: number, y: number): number => (y - minY) * cols + (x - minX);
 
   // A link lights between two touching slots when one lends the other something.
   const links = new Map<string, string[]>();
@@ -146,8 +154,8 @@ export function renderGrimoires(engine: GameEngine, player: Player, chosen: Spel
 
   const slotInfo: Record<string, string> = {};
   const cellHtml: string[] = [];
-  for (let y = -1; y <= 1; y++) {
-    for (let x = -1; x <= 1; x++) {
+  for (let y = minY; y <= maxY; y++) {
+    for (let x = minX; x <= maxX; x++) {
       if (!has(x, y)) {
         cellHtml.push('<span class="sb-cell is-void" aria-hidden="true"></span>');
         continue;
@@ -218,7 +226,7 @@ export function renderGrimoires(engine: GameEngine, player: Player, chosen: Spel
       ${layout?.openedMessage ? `<div class="ui-note">${escapeHtml(layout.openedMessage)}</div>` : ''}
       <div class="sb-axes">${statLine}</div>
       ${pickers}
-      <div class="ui-inset sb-matrix">${grimoireGridHtml(cellHtml, link)}</div>
+      <div class="ui-inset sb-matrix"${grimoireGridStyle(cols, maxY - minY + 1)}>${grimoireGridHtml(cellHtml, link, cols)}</div>
       <div class="ui-note sb-slot-info" id="sb-slot-info" aria-live="polite">${GRIMOIRE_INFO_DEFAULT}</div>`,
   };
 }

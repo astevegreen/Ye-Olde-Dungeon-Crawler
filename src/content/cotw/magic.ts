@@ -145,9 +145,20 @@ export const COTW_MAGIC: MagicSystemConfig = {
       id: 'galdr_altar_hel',
       name: "Hel's Grave-Altar",
       description:
-        'Hel keeps what is owed. Burn an offering, a spell you know or an Essence-Rune, and she takes your Void Debt with it.',
-      rite: 'absolve',
-      performedMessage: 'Hel takes {offering}, and your debts are paid.',
+        'Hel rules the dead, who change nothing. Here, once, she lets you change one thing: choose afresh the stats of one grimoire. She asks no offering, and takes your Void Debt besides.',
+      rite: 'restat',
+      free: true,
+      clearsVoidDebt: true,
+      deeperRites: [
+        {
+          fromFloor: 31,
+          rite: 'addSlot',
+          description:
+            "Deep in Hel's realm the dead make room for one more. She adds a slot to one grimoire, beside one it has, asks no offering, and takes your Void Debt besides.",
+          performedMessage: 'Hel opens a new slot in {grimoire}, and your debts are paid.',
+        },
+      ],
+      performedMessage: 'Hel re-orders the stats of {grimoire}, and your debts are paid.',
       spentMessage: '{altar} is sated.',
     },
     {

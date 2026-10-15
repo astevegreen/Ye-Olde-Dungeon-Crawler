@@ -217,10 +217,19 @@ export interface KillRiteConfig {
 /**
  * - `double`: burn an offering to double what one grimoire slot lends its neighbours.
  * - `forge`: fuse a known spell with an offering of another element into a hybrid.
- * - `absolve`: burn an offering to clear the hero's mana-overflow debt.
+ * - `restat`: choose afresh the stats of one grimoire's axes.
+ * - `addSlot`: add a slot to a grimoire, beside one it has.
  * - `gamble`: burn an offering for a random boon (or a price).
  */
-export type AltarRite = 'double' | 'forge' | 'absolve' | 'gamble';
+export type AltarRite = 'double' | 'forge' | 'restat' | 'addSlot' | 'gamble';
+
+/** A rite an altar grants from some floor down, in place of its own. */
+export interface AltarDeeperRite {
+  fromFloor: number;
+  rite: AltarRite;
+  description: string;
+  performedMessage: string;
+}
 
 export interface AltarDefinition {
   /** Matches the altar tile's `interactionHandlerId`. */
@@ -228,6 +237,12 @@ export interface AltarDefinition {
   name: string;
   description: string;
   rite: AltarRite;
+  /** Deeper altars of this kind grant another rite: the last entry whose floor is reached wins. */
+  deeperRites?: AltarDeeperRite[];
+  /** The rite takes no offering. */
+  free?: boolean;
+  /** Performing any rite here also clears the hero's Void Debt. */
+  clearsVoidDebt?: boolean;
   /** Logged when the rite is performed. */
   performedMessage: string;
   /** Logged on stepping onto an altar whose rite is spent. */

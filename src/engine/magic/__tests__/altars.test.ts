@@ -11,6 +11,8 @@ import { COTW_SPELLS } from '../../../content/cotw/spells';
 import { COTW_ESSENCE_RUNES } from '../../../content/cotw/items/essences';
 import { COTW_GRIMOIRES } from '../../../content/cotw/grimoires';
 import { isSlotDoubled, slotOfSpell } from '../grimoires';
+import { describeAction } from '../../debug/actionTrail';
+import { rebuildAction } from '../../debug/replay';
 
 describe('Spell altars', () => {
   let engine: GameEngine;
@@ -142,15 +144,86 @@ describe('Spell altars', () => {
     expect(listAltarOfferings(engine, player).some((o) => o.id === 'essence_kenaz')).toBe(true);
   });
 
-  it("clears the hero's debt at Hel's altar", () => {
-    giveEssence('essence_kenaz');
-    player.voidDebt = 20;
-    const outcome = performAltarRite(engine, player, altar('galdr_altar_hel'), ALTAR_X, ALTAR_Y, {
-      offeringKind: 'essence',
-      offeringId: 'essence_kenaz',
+  describe("Hel's Grave-Altar", () => {
+    beforeEach(() => {
+      player.assignGrimoireStat('mani', 'x', 'power');
     });
-    expect(outcome.success).toBe(true);
-    expect(player.voidDebt).toBe(0);
+
+    it('re-picks one grimoire\'s stats on 7 and 19, free, and clears the debt', () => {
+      engine.currentFloor = 7;
+      player.voidDebt = 20;
+      expect(altar('galdr_altar_hel').rite).toBe('restat');
+      const mani = player.grimoireState!.statPicks.find((p) => p.grimoireId === 'mani');
+      expect(mani?.statId).toBe('power');
+      const res = new PerformAltarRiteAction(player, 'galdr_altar_hel', ALTAR_X, ALTAR_Y, {
+        restat: { grimoireId: 'mani', stats: { x: 'swift' } },
+      }).perform(engine);
+      expect(res.success).toBe(true);
+      expect(res.message).toContain('Máni');
+      expect(player.grimoireState!.statPicks).toEqual([{ grimoireId: 'mani', axis: 'x', statId: 'swift' }]);
+      expect(player.voidDebt).toBe(0);
+      expect(player.spellsKnown).toEqual(['magic_arrow', 'firebolt', 'slow']);
+      expect(isAltarSpent(engine, ALTAR_X, ALTAR_Y)).toBe(true);
+    });
+
+    it('a re-pick and an added slot record for replay, and rebuild', () => {
+      const rebuild = (action: PerformAltarRiteAction) => rebuildAction(engine, { seq: 0, turn: 0, floor: 7, ...describeAction(action) });
+      const restat = new PerformAltarRiteAction(player, 'galdr_altar_hel', ALTAR_X, ALTAR_Y, { restat: { grimoireId: 'mani', stats: { x: 'range' } } });
+      expect(rebuild(restat)).toMatchObject({ altarId: 'galdr_altar_hel', restat: { grimoireId: 'mani', x: 'range' } });
+      const add = new PerformAltarRiteAction(player, 'galdr_altar_hel', ALTAR_X, ALTAR_Y, { slot: { grimoireId: 'mani', x: 0, y: 1 } });
+      expect(rebuild(add)).toMatchObject({ slot: { grimoireId: 'mani', x: 0, y: 1 }, offeringKind: undefined });
+    });
+
+    it('refuses a re-pick that leaves an axis bare or takes a stat twice, and stays unspent', () => {
+      engine.currentFloor = 19;
+      player.voidDebt = 20;
+      const bare = performAltarRite(engine, player, altar('galdr_altar_hel'), ALTAR_X, ALTAR_Y, { restat: { grimoireId: 'mani', stats: {} } });
+      expect(bare.success).toBe(false);
+      const wrongAxis = performAltarRite(engine, player, altar('galdr_altar_hel'), ALTAR_X, ALTAR_Y, {
+        restat: { grimoireId: 'mani', stats: { x: 'range', y: 'area' } },
+      });
+      expect(wrongAxis.success).toBe(false);
+      expect(player.grimoireState!.statPicks[0].statId).toBe('power');
+      expect(player.voidDebt).toBe(20);
+      expect(isAltarSpent(engine, ALTAR_X, ALTAR_Y)).toBe(false);
+    });
+
+    it('adds a slot on 31 and 43, beyond the outline too, and clears the debt', () => {
+      engine.currentFloor = 31;
+      player.voidDebt = 5;
+      expect(altar('galdr_altar_hel').rite).toBe('addSlot');
+      const outcome = performAltarRite(engine, player, altar('galdr_altar_hel'), ALTAR_X, ALTAR_Y, { slot: { grimoireId: 'mani', x: 2, y: 0 } });
+      expect(outcome.success).toBe(true);
+      expect(player.grimoireState!.extraSlots).toEqual([{ grimoireId: 'mani', x: 2, y: 0 }]);
+      expect(player.voidDebt).toBe(0);
+
+      engine.currentFloor = 43;
+      const apart = performAltarRite(engine, player, altar('galdr_altar_hel'), ALTAR_X + 1, ALTAR_Y, { slot: { grimoireId: 'mani', x: 0, y: 2 } });
+      expect(apart.success).toBe(false);
+      const below = performAltarRite(engine, player, altar('galdr_altar_hel'), ALTAR_X + 1, ALTAR_Y, { slot: { grimoireId: 'mani', x: 0, y: 1 } });
+      expect(below.success).toBe(true);
+      expect(player.grimoireState!.extraSlots).toHaveLength(2);
+    });
+  });
+
+  it('Týr waits while no two spells touch: it says so, opens nothing and stays unspent', () => {
+    for (const id of ['firebolt', 'slow']) player.forgetSpell(id);
+    giveEssence('essence_isa');
+    const tile = { ...TILES.FLOOR, type: 'galdr_altar_tyr', interactionHandlerId: 'galdr_altar_tyr' };
+    engine.map.setTile(ALTAR_X, ALTAR_Y, tile as any);
+    const capture = engine.beginEventCapture();
+    new MovementAction(player, 1, 0).perform(engine);
+    expect(capture.some((e) => e.type === 'altar_reached')).toBe(false);
+
+    const outcome = performAltarRite(engine, player, altar('galdr_altar_tyr'), ALTAR_X, ALTAR_Y, {
+      offeringKind: 'essence',
+      offeringId: 'essence_isa',
+      slot: slotOfSpell(player.grimoireState!, 'magic_arrow')!,
+    });
+    expect(outcome.success).toBe(false);
+    expect(outcome.message).toContain('waits');
+    expect(listAltarOfferings(engine, player).some((o) => o.id === 'essence_isa')).toBe(true);
+    expect(isAltarSpent(engine, ALTAR_X, ALTAR_Y)).toBe(false);
   });
 
   it('gambles an offering away for a spell, a doubled lend, or debt', () => {

@@ -4,8 +4,8 @@ import type { ActionResult } from '../types';
 import type { Entity } from '../entities/entity';
 import type { Player } from '../entities/player';
 import { getSpell } from './spellRegistry';
-import { formatMagicMessage, type AltarDefinition } from './magicConfig';
-import { isSlotDoubled, slotOfSpell, type GrimoireSlotRef } from './grimoires';
+import { formatMagicMessage, type AltarDefinition, type GrimoireAxis } from './magicConfig';
+import { anySpellsTouch, isSlotDoubled, restatGrimoire, slotAdditions, slotOfSpell, type GrimoireSlotRef, type StatPickOutcome } from './grimoires';
 import { getKillRiteConfig } from './killRites';
 
 /**
@@ -30,12 +30,20 @@ export interface AltarOffering {
 }
 
 export interface AltarRiteRequest {
-  offeringKind: AltarOfferingKind;
-  offeringId: string;
-  /** double: the grimoire slot whose lend is doubled. */
+  /** Absent at an altar whose rite is free. */
+  offeringKind?: AltarOfferingKind;
+  offeringId?: string;
+  /** double: the grimoire slot whose lend is doubled; addSlot: the slot added. */
   slot?: GrimoireSlotRef;
   /** forge: the known spell to transmute. */
   targetSpellId?: string;
+  /** restat: the grimoire, and the stat each of its axes takes. */
+  restat?: AltarRestat;
+}
+
+export interface AltarRestat {
+  grimoireId: string;
+  stats: Partial<Record<GrimoireAxis, string>>;
 }
 
 export interface AltarRiteOutcome {
@@ -43,8 +51,44 @@ export interface AltarRiteOutcome {
   message: string;
 }
 
+/** An altar as it stands on the current floor: a deeper rite, once its floor is reached, replaces its own. */
 export function getAltarDefinition(engine: GameEngine, altarId: string): AltarDefinition | undefined {
-  return engine.manifest?.magic?.altars?.find((a) => a.id === altarId);
+  const altar = engine.manifest?.magic?.altars?.find((a) => a.id === altarId);
+  const deeper = altar?.deeperRites?.filter((d) => engine.currentFloor >= d.fromFloor).at(-1);
+  return altar && deeper ? { ...altar, rite: deeper.rite, description: deeper.description, performedMessage: deeper.performedMessage } : altar;
+}
+
+/**
+ * Why an altar can't grant its rite yet, said instead of opening it; it stays unspent.
+ * Doubling a lend waits until two spells touch, so there is a lend to double.
+ */
+export function altarWaitReason(altar: AltarDefinition, player: Player): string | undefined {
+  if (altar.rite === 'double' && player.grimoireState && !anySpellsTouch(player.grimoireState)) {
+    return `${altar.name} waits: no two of your spells sit side by side in a grimoire, so nothing is lent to double.`;
+  }
+  return undefined;
+}
+
+/** Restat refusals, as an altar or a sage says them. */
+export const RESTAT_REFUSALS: Record<Exclude<StatPickOutcome, 'ok' | 'already-picked'>, string> = {
+  'unknown-grimoire': 'Choose a grimoire.',
+  closed: 'That grimoire has not opened yet.',
+  'unknown-stat': 'There is no such stat.',
+  'no-axis': 'No slot of that grimoire reaches along that axis.',
+  'stat-in-use': 'Each stat sits on one axis only.',
+  'axis-unpicked': 'Choose a stat for every axis of that grimoire.',
+};
+
+/**
+ * Re-picks one grimoire's stats on a copy, so a refused pick changes nothing: the refusal,
+ * or undefined when `player.restatGrimoire` will take it.
+ */
+export function restatRefusal(player: Player, restat: AltarRestat | undefined): string | undefined {
+  const system = player.grimoireSystem;
+  const state = player.grimoireState;
+  if (!system || !state || !restat) return RESTAT_REFUSALS['unknown-grimoire'];
+  const outcome = restatGrimoire(system, { ...state, statPicks: state.statPicks.map((p) => ({ ...p })) }, restat.grimoireId, restat.stats);
+  return outcome === 'ok' || outcome === 'already-picked' ? undefined : RESTAT_REFUSALS[outcome];
 }
 
 function spentFlag(engine: GameEngine, x: number, y: number): string {
@@ -108,10 +152,13 @@ export function performAltarRite(
   request: AltarRiteRequest
 ): AltarRiteOutcome {
   if (isAltarSpent(engine, x, y)) return { success: false, message: formatMagicMessage(altar.spentMessage, { altar: altar.name }) };
-  const offering = listAltarOfferings(engine, player).find((o) => o.kind === request.offeringKind && o.id === request.offeringId);
-  if (!offering) return { success: false, message: 'You have nothing like that to offer.' };
+  const wait = altarWaitReason(altar, player);
+  if (wait) return { success: false, message: wait };
+  const offering = altar.free ? undefined : listAltarOfferings(engine, player).find((o) => o.kind === request.offeringKind && o.id === request.offeringId);
+  if (!altar.free && !offering) return { success: false, message: 'You have nothing like that to offer.' };
 
-  const values: Record<string, string | number> = { altar: altar.name, offering: offering.name };
+  const values: Record<string, string | number> = { altar: altar.name, offering: offering?.name ?? '' };
+  const bookName = (grimoireId: string): string => player.grimoireSystem?.layouts.find((l) => l.id === grimoireId)?.name ?? grimoireId;
   let apply: () => string | undefined;
 
   switch (altar.rite) {
@@ -119,7 +166,7 @@ export function performAltarRite(
       const slot = request.slot;
       const spellId = slot && player.grimoireState ? player.grimoireState.placements.find((p) => p.grimoireId === slot.grimoireId && p.x === slot.x && p.y === slot.y)?.spellId : undefined;
       if (!slot || !spellId) return { success: false, message: 'Choose a grimoire slot that holds a spell.' };
-      if (offering.kind === 'spell' && offering.id === spellId) return { success: false, message: 'A spell cannot be burned to strengthen its own slot.' };
+      if (offering?.kind === 'spell' && offering.id === spellId) return { success: false, message: 'A spell cannot be burned to strengthen its own slot.' };
       if (player.grimoireState && isSlotDoubled(player.grimoireState, slot)) return { success: false, message: 'What that slot lends is already doubled.' };
       values.spell = spellDef(engine, spellId)?.name ?? spellId;
       apply = () => {
@@ -131,6 +178,7 @@ export function performAltarRite(
     case 'forge': {
       const target = request.targetSpellId ? spellDef(engine, request.targetSpellId) : undefined;
       if (!target || !player.spellsKnown.includes(target.id)) return { success: false, message: 'Choose a known spell to transmute.' };
+      if (!offering) return { success: false, message: 'The forge takes an offering.' };
       if (offering.kind === 'spell' && offering.id === target.id) return { success: false, message: 'A spell cannot be fused with itself.' };
       const hybridId = findHybridSpellId(engine, target.element, offering.element);
       const hybrid = hybridId ? spellDef(engine, hybridId) : undefined;
@@ -144,9 +192,27 @@ export function performAltarRite(
       };
       break;
     }
-    case 'absolve': {
+    case 'restat': {
+      const restat = request.restat;
+      const refusal = restatRefusal(player, restat);
+      if (refusal || !restat) return { success: false, message: refusal ?? RESTAT_REFUSALS['unknown-grimoire'] };
+      values.grimoire = bookName(restat.grimoireId);
       apply = () => {
-        player.clearVoidDebt();
+        player.restatGrimoire(restat.grimoireId, restat.stats);
+        return undefined;
+      };
+      break;
+    }
+    case 'addSlot': {
+      const slot = request.slot;
+      const state = player.grimoireState;
+      const system = player.grimoireSystem;
+      if (!slot || !state || !system || !slotAdditions(system, state).some((s) => s.grimoireId === slot.grimoireId && s.x === slot.x && s.y === slot.y)) {
+        return { success: false, message: 'Choose a place beside a slot of an open grimoire.' };
+      }
+      values.grimoire = bookName(slot.grimoireId);
+      apply = () => {
+        player.addGrimoireSlot(slot);
         return undefined;
       };
       break;
@@ -160,8 +226,9 @@ export function performAltarRite(
   }
 
   // Burn first, so a forged-away or gambled spell can't be the one returned
-  burnOffering(player, offering);
+  if (offering) burnOffering(player, offering);
   const override = apply();
+  if (altar.clearsVoidDebt) player.clearVoidDebt();
   engine.setWorldFlag(spentFlag(engine, x, y), true);
   const message = override ?? formatMagicMessage(altar.performedMessage, values);
   engine.log(message);
@@ -169,7 +236,7 @@ export function performAltarRite(
     type: 'altar_rite_performed',
     turn: engine.turnCount,
     actorId: player.id,
-    data: { altarId: altar.id, rite: altar.rite, offeringId: offering.id },
+    data: { altarId: altar.id, rite: altar.rite, offeringId: offering?.id ?? '' },
   });
   return { success: true, message };
 }
@@ -220,10 +287,12 @@ export class PerformAltarRiteAction implements Action {
   public readonly altarId: string;
   public readonly x: number;
   public readonly y: number;
-  public readonly offeringKind: AltarOfferingKind;
-  public readonly offeringId: string;
+  public readonly offeringKind?: AltarOfferingKind;
+  public readonly offeringId?: string;
   public readonly slot?: GrimoireSlotRef;
   public readonly targetSpellId?: string;
+  /** Flat, so the action trail records it: the grimoire and each axis's stat. */
+  public readonly restat?: { grimoireId: string; x?: string; y?: string };
 
   get actor(): Entity {
     return this.player;
@@ -238,6 +307,7 @@ export class PerformAltarRiteAction implements Action {
     this.offeringId = request.offeringId;
     this.slot = request.slot ? { ...request.slot } : undefined;
     this.targetSpellId = request.targetSpellId;
+    this.restat = request.restat ? { grimoireId: request.restat.grimoireId, ...request.restat.stats } : undefined;
   }
 
   public perform(engine: GameEngine): ActionResult {
@@ -248,6 +318,7 @@ export class PerformAltarRiteAction implements Action {
       offeringId: this.offeringId,
       slot: this.slot,
       targetSpellId: this.targetSpellId,
+      restat: this.restat ? { grimoireId: this.restat.grimoireId, stats: { x: this.restat.x, y: this.restat.y } } : undefined,
     });
     if (!outcome.success) return { success: false, cost: 0, message: outcome.message };
     const cost = this.player.getActionCost(100);

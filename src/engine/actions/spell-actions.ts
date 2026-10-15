@@ -706,4 +706,5 @@ const STAT_PICK_REFUSALS: Record<Exclude<StatPickOutcome, 'ok'>, string> = {
   'no-axis': 'No slot of that grimoire reaches along that axis.',
   'stat-in-use': 'That stat already sits on another axis.',
   'already-picked': 'That axis already has its stat.',
+  'axis-unpicked': 'Choose a stat for every axis of that grimoire.',
 };

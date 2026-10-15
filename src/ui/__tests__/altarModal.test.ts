@@ -80,8 +80,34 @@ describe('AltarModal', () => {
     expect(scrim.innerHTML).toContain('spell · ');
   });
 
-  it("names both kinds of offering in each of the pack's altar descriptions", () => {
-    for (const altar of COTW_MAGIC.altars!) {
+  it("asks Hel no offering, and re-picks a grimoire's stats on the upper floors", () => {
+    engine.currentFloor = 7;
+    engine.player.assignGrimoireStat('mani', 'x', 'power');
+    const modal = open('galdr_altar_hel') as any;
+    expect(scrim.innerHTML).not.toContain('Offering to burn');
+    expect(scrim.innerHTML).toContain('data-restat-grimoire="mani"');
+    expect(modal.request()).toBeUndefined();
+    modal.restat = { grimoireId: 'mani', stats: { x: 'power' } };
+    expect(modal.preview().text).toContain('keeps the stats it has');
+    modal.restat = { grimoireId: 'mani', stats: { x: 'range' } };
+    modal.render();
+    expect(scrim.innerHTML).toContain('across <b>Range</b>');
+    expect(modal.request()).toEqual({ restat: { grimoireId: 'mani', stats: { x: 'range' } } });
+  });
+
+  it("offers Hel's deeper altars a place for a new slot, beyond the outline too", () => {
+    engine.currentFloor = 31;
+    const modal = open('galdr_altar_hel') as any;
+    expect(scrim.innerHTML).toContain('Where the new slot goes');
+    expect(scrim.innerHTML).toContain('Máni · Right, 2 out');
+    expect(scrim.innerHTML).toContain('beside Firebolt');
+    modal.slot = { grimoireId: 'mani', x: 0, y: 1 };
+    expect(modal.preview().text).toContain('first to reach down');
+    expect(modal.request()).toEqual({ slot: { grimoireId: 'mani', x: 0, y: 1 } });
+  });
+
+  it("names both kinds of offering in each of the pack's altar descriptions that takes one", () => {
+    for (const altar of COTW_MAGIC.altars!.filter((a) => !a.free)) {
       expect(altar.description, altar.id).toContain('a spell you know or an Essence-Rune');
     }
   });

@@ -54,7 +54,7 @@ export interface GrimoireState {
   offers: string[];
 }
 
-export type StatPickOutcome = 'ok' | 'unknown-grimoire' | 'closed' | 'unknown-stat' | 'no-axis' | 'stat-in-use' | 'already-picked';
+export type StatPickOutcome = 'ok' | 'unknown-grimoire' | 'closed' | 'unknown-stat' | 'no-axis' | 'stat-in-use' | 'already-picked' | 'axis-unpicked';
 
 /** Each stat's steps on a slot, from its axis picks. */
 export interface SlotStatSteps {
@@ -173,6 +173,33 @@ export function assignStat(
   if (state.statPicks.some((p) => p !== current && p.statId === pick.statId)) return 'stat-in-use';
   if (current) current.statId = pick.statId;
   else state.statPicks.push({ ...pick });
+  return 'ok';
+}
+
+/**
+ * Re-picks every axis of one open grimoire at once (an altar's or a sage's service): each
+ * axis it reaches along takes a stat, the two differ, and neither sits on another grimoire.
+ * Changes nothing unless the whole pick is valid.
+ */
+export function restatGrimoire(
+  config: GrimoireSystemConfig,
+  state: GrimoireState,
+  grimoireId: string,
+  stats: Partial<Record<GrimoireAxis, string>>
+): StatPickOutcome {
+  if (!layoutOf(config, grimoireId)) return 'unknown-grimoire';
+  if (!state.opened.includes(grimoireId)) return 'closed';
+  const axes = grimoireAxes(config, state, grimoireId);
+  if ((Object.keys(stats) as GrimoireAxis[]).some((axis) => stats[axis] !== undefined && !axes.includes(axis))) return 'no-axis';
+  const picked = axes.map((axis) => stats[axis]);
+  if (picked.some((id) => id === undefined)) return 'axis-unpicked';
+  if (picked.some((id) => !config.stats.some((s) => s.id === id))) return 'unknown-stat';
+  const elsewhere = state.statPicks.filter((p) => p.grimoireId !== grimoireId).map((p) => p.statId);
+  if (new Set(picked).size < picked.length || picked.some((id) => elsewhere.includes(id!))) return 'stat-in-use';
+  state.statPicks = [
+    ...state.statPicks.filter((p) => p.grimoireId !== grimoireId),
+    ...axes.map((axis) => ({ grimoireId, axis, statId: stats[axis]! })),
+  ];
   return 'ok';
 }
 
@@ -325,6 +352,19 @@ export function placeSpell(
   return true;
 }
 
+/** Where a slot can be added: beside a slot of an open grimoire, beyond the 3×3 outline too. */
+export function slotAdditions(config: GrimoireSystemConfig, state: GrimoireState): GrimoireSlotRef[] {
+  return state.opened.flatMap((grimoireId) => {
+    const cells = grimoireCells(config, state, grimoireId);
+    const seen = new Set<string>();
+    return cells
+      .flatMap((c) => [{ x: c.x, y: c.y - 1 }, { x: c.x - 1, y: c.y }, { x: c.x + 1, y: c.y }, { x: c.x, y: c.y + 1 }])
+      .filter((c) => !cells.some((o) => sameCell(o, c)) && !seen.has(`${c.x},${c.y}`) && seen.add(`${c.x},${c.y}`))
+      .sort((a, b) => a.y - b.y || a.x - b.x)
+      .map((c) => ({ grimoireId, ...c }));
+  });
+}
+
 /** Adds a slot to an open grimoire, touching one of its slots; it may sit beyond the 3×3 outline. */
 export function addExtraSlot(config: GrimoireSystemConfig, state: GrimoireState, ref: GrimoireSlotRef): boolean {
   if (!state.opened.includes(ref.grimoireId)) return false;
@@ -332,6 +372,11 @@ export function addExtraSlot(config: GrimoireSystemConfig, state: GrimoireState,
   if (cells.some((c) => sameCell(c, ref)) || !cells.some((c) => touches(c, ref))) return false;
   state.extraSlots.push({ grimoireId: ref.grimoireId, x: ref.x, y: ref.y });
   return true;
+}
+
+/** True when some two placed spells sit in touching slots, so one lends to the other. */
+export function anySpellsTouch(state: GrimoireState): boolean {
+  return state.placements.some((p) => state.placements.some((q) => q.grimoireId === p.grimoireId && touches(p, q)));
 }
 
 /** Doubles what a slot lends, once per slot. */

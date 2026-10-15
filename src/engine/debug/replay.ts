@@ -181,12 +181,17 @@ const BUILDERS: Record<string, Builder> = {
     const offeringKind = str(p, 'offeringKind');
     const s = p.slot as { grimoireId?: unknown; x?: unknown; y?: unknown } | undefined;
     const slot = s && typeof s.grimoireId === 'string' && typeof s.x === 'number' && typeof s.y === 'number' ? { grimoireId: s.grimoireId, x: s.x, y: s.y } : undefined;
-    return altarId && offeringId && (offeringKind === 'spell' || offeringKind === 'essence')
+    const r = p.restat as Record<string, unknown> | undefined;
+    const statOf = (axis: 'x' | 'y') => (typeof r?.[axis] === 'string' ? (r[axis] as string) : undefined);
+    const restat = r && typeof r.grimoireId === 'string' ? { grimoireId: r.grimoireId, stats: { x: statOf('x'), y: statOf('y') } } : undefined;
+    const kind = offeringKind === 'spell' || offeringKind === 'essence' ? offeringKind : undefined;
+    return altarId
       ? new PerformAltarRiteAction(e.player, altarId, num(p, 'x') ?? 0, num(p, 'y') ?? 0, {
-          offeringKind,
+          offeringKind: kind,
           offeringId,
           slot,
           targetSpellId: str(p, 'targetSpellId'),
+          restat,
         })
       : null;
   },

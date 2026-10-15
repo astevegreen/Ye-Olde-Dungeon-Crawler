@@ -36,8 +36,8 @@ export function hintsMetByState(engine: GameEngine): FirstTimeHintId[] {
 
   if (buildSaga(engine).achieved.length > 0) met.push('story');
 
-  // The grid matters once there is something to arrange, and a fight to arrange it for.
-  if (engine.manifest.magic?.grimoire && engine.currentFloor >= 1 && p.spellsKnown.length >= 2) met.push('grimoire');
+  // The grimoires matter once there is something to arrange, and a fight to arrange it for.
+  if (engine.manifest.magic?.grimoires && engine.currentFloor >= 1 && p.spellsKnown.length >= 2) met.push('grimoire');
 
   // Not in the prologue's fight, whose cues say what to do; the hint waits for the dungeon.
   if (getKillRiteConfig(engine) && !isPrologueRunning(engine.worldState, engine.manifest.prologue)) {

@@ -7,7 +7,7 @@ import type { FirstTimeHintDefinition, FirstTimeHintId } from '../../engine';
 export const COTW_FIRST_TIME_HINTS: Partial<Record<FirstTimeHintId, FirstTimeHintDefinition>> = {
   altar: {
     title: 'Altars',
-    text: 'Each altar works one rite on your grimoire for an offering burnt on it: a glyph inscribed on a slot, a sealed slot opened, a spell transmuted, or a gamble with fate. Step away and it waits for you.',
+    text: 'Each altar works one rite on your grimoire for an offering burnt on it: a doubled lend from one slot, a spell transmuted, a debt cleared, or a gamble with fate. Step away and it waits for you.',
   },
   killRite: {
     title: 'Kill rites',
@@ -38,7 +38,7 @@ export const COTW_FIRST_TIME_HINTS: Partial<Record<FirstTimeHintId, FirstTimeHin
     text: 'A deed of your saga is done. The Story tab ({key:story}) keeps the saga: the goal ahead, the deeds behind you, and riddles for those still to come.',
   },
   grimoire: {
-    title: 'Your grimoire',
-    text: 'Where a spell sits in your grimoire shapes it: Midgard, the center slot, makes a spell dearer and stronger for each spell beside it. Open the Spellbook ({key:cast_spell}) and point at a slot to see what it does.',
+    title: 'Your grimoires',
+    text: 'Where a spell sits in your grimoires shapes it: the stat on each axis grows away from the centre, and each spell lends something to the spells touching it. Open the Spellbook ({key:cast_spell}) and point at a slot to see what it does.',
   },
 };

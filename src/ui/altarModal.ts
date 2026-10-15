@@ -1,16 +1,9 @@
-import type { GameEngine, AltarDefinition, AltarOffering, AltarRiteRequest } from '../engine';
-import {
-  listAltarOfferings,
-  getGrimoireConfig,
-  glyphForOffering,
-  findHybridSpellId,
-  getSpell,
-  GRIMOIRE_SIZE,
-} from '../engine';
+import type { GameEngine, AltarDefinition, AltarOffering, AltarRiteRequest, GrimoireSlotRef } from '../engine';
+import { listAltarOfferings, findHybridSpellId, getSpell, isSlotDoubled } from '../engine';
 import type { UIModal } from './modalStack';
 import { createDialogScrim, dialogButton, dialogHtml } from './dialog';
-import { grimoireGridHtml } from './grimoireGrid';
 import { escapeHtml } from './html';
+import { slotPositionName } from './characterMenu/spellbookGrimoires';
 
 /** What burning costs, said before an offering is picked. Pack-neutral: the pack's own
  *  altar text names its offerings; this is the rule they all share. */
@@ -34,7 +27,7 @@ export class AltarModal implements UIModal {
   private altar?: AltarDefinition;
   private offerings: AltarOffering[] = [];
   private offeringIndex = -1;
-  private slotIndex?: number;
+  private slot?: GrimoireSlotRef;
   private targetSpellId?: string;
   private onConfirm?: (request: AltarRiteRequest) => void;
   private onLeave?: () => void;
@@ -54,7 +47,7 @@ export class AltarModal implements UIModal {
     this.altar = altar;
     this.offerings = listAltarOfferings(engine, engine.player);
     this.offeringIndex = -1;
-    this.slotIndex = undefined;
+    this.slot = undefined;
     this.targetSpellId = undefined;
     this.onConfirm = onConfirm;
     this.onLeave = onLeave;
@@ -109,9 +102,10 @@ export class AltarModal implements UIModal {
     if (!offering || !this.altar) return undefined;
     const base = { offeringKind: offering.kind, offeringId: offering.id };
     switch (this.altar.rite) {
-      case 'inscribe':
-      case 'ground':
-        return this.slotIndex === undefined ? undefined : { ...base, slotIndex: this.slotIndex };
+      case 'double':
+        return this.slot && this.preview()?.ok ? { ...base, slot: this.slot } : undefined;
+      case 'absolve':
+        return base;
       case 'forge':
         return this.targetSpellId && this.preview()?.ok ? { ...base, targetSpellId: this.targetSpellId } : undefined;
       case 'gamble':
@@ -125,16 +119,14 @@ export class AltarModal implements UIModal {
     const offering = this.offering;
     if (!offering || !this.altar) return undefined;
     switch (this.altar.rite) {
-      case 'inscribe': {
-        const glyph = glyphForOffering(getGrimoireConfig(engine), offering.element, offering.school);
-        if (!glyph) return { text: `${offering.name} holds no glyph.`, ok: false };
-        const where = this.slotIndex === undefined ? 'a slot you choose' : `slot ${this.slotIndex + 1}`;
-        return { text: `Inscribes <b>${glyph.name}</b> on ${where}: ${glyph.description}`, ok: true };
+      case 'double': {
+        const spellId = this.slot ? slotSpellId(engine, this.slot) : undefined;
+        if (!this.slot || !spellId) return { text: 'Choose a slot that holds a spell.', ok: false };
+        if (offering.kind === 'spell' && offering.id === spellId) return { text: `${offering.name} cannot be burned to strengthen its own slot.`, ok: false };
+        return { text: `Doubles what <b>${escapeHtml(spellName(engine, spellId))}</b> lends the spells beside it.`, ok: true };
       }
-      case 'ground': {
-        const where = this.slotIndex === undefined ? 'a sealed slot you choose' : `sealed slot ${this.slotIndex + 1}`;
-        return { text: `Opens ${where}, grounded in <b>${offering.element}</b>. Clears your debt.`, ok: true };
-      }
+      case 'absolve':
+        return { text: 'Clears your debt.', ok: true };
       case 'forge': {
         if (!this.targetSpellId) return { text: 'Choose a spell to transmute.', ok: false };
         const target = spellName(engine, this.targetSpellId);
@@ -148,7 +140,7 @@ export class AltarModal implements UIModal {
         return { text: `${target} becomes <b>${hybrid?.name ?? hybridId}</b>: ${hybrid?.description ?? ''}`, ok: true };
       }
       case 'gamble':
-        return { text: this.altar?.gamble?.previewText ?? 'Fate decides: a spell, a doubled glyph, or a price.', ok: true };
+        return { text: this.altar?.gamble?.previewText ?? 'Fate decides: a spell, a doubled lend, or a price.', ok: true };
     }
   }
 
@@ -175,19 +167,19 @@ export class AltarModal implements UIModal {
       : '<div class="ui-note bs-empty">You carry nothing the altar will take.</div>';
 
     let picker = '';
-    if (altar.rite === 'inscribe' || altar.rite === 'ground') {
-      const wantSealed = altar.rite === 'ground';
-      const cells = Array.from({ length: GRIMOIRE_SIZE }, (_, i) => {
-        const open = player.isGrimoireSlotOpen(i);
-        const pickable = wantSealed ? !open : open;
-        const label = !open ? 'Sealed' : spellName(engine, player.grimoire[i]?.spellId ?? '') || 'empty';
-        const cls = ['sb-cell', open ? 'is-filled' : 'is-sealed', i === this.slotIndex ? 'is-mine' : ''].filter(Boolean).join(' ');
-        return `<button type="button" class="${cls}" data-slot="${pickable ? i : ''}"${pickable ? '' : ' disabled'}><div class="sb-cell-head"><span class="ui-num">${i + 1}</span></div><div class="${open ? 'sb-cell-spell' : 'sb-sealed'}">${escapeHtml(label)}</div></button>`;
-      });
-      // The Spellbook's grid, spacers included; no slot links light here.
-      const grid = grimoireGridHtml(cells, (_a, _b, axis) => `<i class="sb-link is-${axis}"></i>`);
-      picker = `<div class="ui-dialog-label">${wantSealed ? 'Sealed slot to open' : 'Slot to inscribe (active page)'}</div>
-        <div class="ui-inset sb-matrix">${grid}</div>`;
+    if (altar.rite === 'double') {
+      // Every placed spell, by grimoire; a slot already doubled can't be picked again.
+      const system = player.grimoireSystem;
+      const state = player.grimoireState;
+      const rows = (state?.placements ?? [])
+        .map((p) => {
+          const doubled = state ? isSlotDoubled(state, p) : false;
+          const picked = this.slot && this.slot.grimoireId === p.grimoireId && this.slot.x === p.x && this.slot.y === p.y;
+          const book = system?.layouts.find((l) => l.id === p.grimoireId)?.name ?? p.grimoireId;
+          return `<button type="button" class="bs-row${picked ? ' is-selected' : ''}" data-slot="${escapeHtml(`${p.grimoireId}|${p.x}|${p.y}`)}"${doubled ? ' disabled' : ''}><span class="bs-name">${escapeHtml(spellName(engine, p.spellId))}</span><span class="ui-faint">${escapeHtml(book)} · ${slotPositionName(p.x, p.y)}${doubled ? ' · doubled' : ''}</span></button>`;
+        })
+        .join('');
+      picker = `<div class="ui-dialog-label">Slot whose lend is doubled</div><div class="ui-inset bs-list altar-list">${rows || '<div class="ui-note bs-empty">No grimoire slot holds a spell.</div>'}</div>`;
     } else if (altar.rite === 'forge') {
       const rows = player.spellsKnown
         .map(
@@ -239,8 +231,9 @@ export class AltarModal implements UIModal {
     );
     this.overlayEl.querySelectorAll<HTMLElement>('[data-slot]').forEach((el) =>
       el.addEventListener('click', () => {
-        if (el.dataset.slot === '') return;
-        this.slotIndex = Number(el.dataset.slot);
+        const [grimoireId, x, y] = (el.dataset.slot ?? '').split('|');
+        if (!grimoireId) return;
+        this.slot = { grimoireId, x: Number(x), y: Number(y) };
         this.render();
       })
     );
@@ -258,6 +251,10 @@ export class AltarModal implements UIModal {
 
 function spellOf(engine: GameEngine, id: string) {
   return engine.manifest?.spells?.find((s) => s.id === id) ?? getSpell(id);
+}
+
+function slotSpellId(engine: GameEngine, slot: GrimoireSlotRef): string | undefined {
+  return engine.player.grimoireState?.placements.find((p) => p.grimoireId === slot.grimoireId && p.x === slot.x && p.y === slot.y)?.spellId;
 }
 
 function spellName(engine: GameEngine, id: string): string {

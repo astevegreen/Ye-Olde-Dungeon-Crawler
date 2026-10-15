@@ -59,7 +59,7 @@ describe('first-time hints', () => {
   });
 
   it('meets the grimoire hint in the dungeon once the hero knows two spells, not in town', () => {
-    const engine = buildEngine({ magic: { grimoire: { title: 'Grimoire', pageNames: ['I'] } } });
+    const engine = buildEngine({ magic: { grimoires: { layouts: [], stats: [] } as never } });
     engine.player.learnSpell('a');
     engine.player.learnSpell('b');
     engine.currentFloor = 0;

@@ -32,7 +32,7 @@ describe('F1 cards for altars, the Story and the Rune of Return', () => {
 
   it('has an altar card and a Story card', () => {
     const help = new ContextHelp();
-    expect(help.getHelpContent('altar', cotwManifest).title).toBe('Altars & Glyphs');
+    expect(help.getHelpContent('altar', cotwManifest).title).toBe('Altars');
     expect(help.getHelpContent('story', cotwManifest).title).toBe('Story');
   });
 
@@ -40,8 +40,8 @@ describe('F1 cards for altars, the Story and the Rune of Return', () => {
     const card = new ContextHelp().getHelpContent('spellbook', cotwManifest);
     expect(card.title).toBe('Spellbook & Grimoire');
     expect(card.bullets.map((b) => b.label).join(' ')).toContain('placing it again moves it');
-    expect(card.tip).toContain(cotwManifest.magic!.grimoire!.centerSlotLabel!);
-    // Without a grid, the card says nothing about one.
+    expect(card.tip).toContain('casts only from its slot');
+    // Without grimoires, the card says nothing about them.
     expect(new ContextHelp().getHelpContent('spellbook', { ...cotwManifest, magic: {} }).tip).not.toContain('slot');
   });
 

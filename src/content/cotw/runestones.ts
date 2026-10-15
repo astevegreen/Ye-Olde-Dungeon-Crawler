@@ -5,7 +5,7 @@ import { IRON_CLANS_MET_FLAG } from './ironClans';
  * Six Skaldic Runestones distributed across the descent (floors 8, 14, 20, 28, 38, 48).
  * Each runestone delivers an episodic chapter of the campaign saga, coupled with an
  * explicit RUNIC SPELL HINT detailing kill rites, hybrid elemental fusions at Odin's
- * Gallows-Stone, and grimoire glyph strategies.
+ * Gallows-Stone, and what grimoire neighbours lend.
  */
 
 export const SKALDIC_RUNESTONE_TILES: TileDefinition[] = [
@@ -92,7 +92,7 @@ export const SKALDIC_RUNESTONE_LORE: LoreEntryDefinition[] = [
     flag: 'skaldic_runestone_1_resolved',
     title: 'Lay of the Frost King',
     verse: 'When the Aesir stole the Hammer, King Thrym’s frost turned to brittle stone.\nYet in his children’s veins, the winter never died—it waited.\nWoe to the crawler who walks the rime without respect for the cold!',
-    lore: 'Brim-Howlers felled by pure rune-force yield the Slow galdr, while a Winter Hag melted with flame yields Cold Ray. In your grimoire, the Isa glyph (from cold essence) causes all damaging spells to slow their targets!',
+    lore: 'Brim-Howlers felled by pure rune-force yield the Slow galdr, while a Winter Hag melted with flame yields Cold Ray. In your grimoires, a cold spell lends its chill to the damaging spells beside it, and they slow their targets!',
   },
   {
     flag: 'skaldic_runestone_2_resolved',

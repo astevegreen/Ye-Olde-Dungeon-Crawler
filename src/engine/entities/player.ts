@@ -17,12 +17,6 @@ import {
   RUNE_MAX_CHARGES,
 } from '../magic/runeOfReturn';
 import { EnergyModel, type DualEnergyConfig } from '../actors/energyModel';
-import {
-  GrimoireMatrixManager,
-  type GrimoireSlot,
-  type GrimoirePage,
-  GRIMOIRE_SIZE,
-} from '../magic/grimoireMatrix';
 import type { GrimoireAxis, GrimoireSystemConfig } from '../magic/magicConfig';
 import {
   addExtraSlot,
@@ -78,13 +72,6 @@ export interface PlayerConfig {
   runeMaxCharges?: number;
   energyModel?: EnergyModel;
   voidDebt?: number;
-  grimoire?: GrimoireSlot[];
-  grimoirePages?: GrimoirePage[];
-  activeGrimoireIndex?: number;
-  /** Grimoire slots open to spells; omitted means all nine. */
-  grimoireOpenSlots?: number[];
-  /** Element each grounded slot was opened with, by slot index. */
-  grimoireGrounds?: Record<number, string>;
   /** Perks held (`manifest.perks`), resolved by the loader from their saved ids. */
   perks?: PerkDefinition[];
   /** The pack's three-grimoire model (`manifest.magic.grimoires`); omitted, the hero has none. */
@@ -155,25 +142,10 @@ export class Player extends Actor {
   public perkModifiers: ItemModifier[] = [];
   /** Ids of the items carried when the stairs were last taken (Lore-Keeper, `identifiesCarriedOnStairs`). */
   public carriedAtStairs: string[] = [];
-  public grimoirePages: GrimoirePage[];
-  public activeGrimoireIndex: number;
-  /** Slots open to spells on every page; undefined means all nine (saves from before sealing). */
-  public grimoireOpenSlots?: number[];
-  public grimoireGrounds: Record<number, string>;
   /** The pack's three-grimoire model, given by whoever builds the hero; not saved. */
   public readonly grimoireSystem?: GrimoireSystemConfig;
   /** Three-grimoire state (P-29). Kept, though inert, when the pack no longer declares the model. */
   public grimoireState?: GrimoireState;
-
-  public get grimoire(): GrimoireSlot[] {
-    return this.grimoirePages[this.activeGrimoireIndex]?.slots ?? this.grimoirePages[0]?.slots ?? [];
-  }
-
-  public set grimoire(slots: GrimoireSlot[]) {
-    if (this.grimoirePages[this.activeGrimoireIndex]) {
-      this.grimoirePages[this.activeGrimoireIndex].slots = slots;
-    }
-  }
 
   constructor(config: PlayerConfig) {
     super({
@@ -198,27 +170,6 @@ export class Player extends Actor {
     this.maxMana = config.maxMana ?? Math.floor(this.intelligence * 2 + 5);
     this.mana = config.mana ?? this.maxMana;
     this.spellsKnown = config.spellsKnown ? [...config.spellsKnown] : [...DEFAULT_STARTER_SPELLS];
-    this.activeGrimoireIndex = config.activeGrimoireIndex ?? 0;
-    this.grimoireOpenSlots = config.grimoireOpenSlots ? [...config.grimoireOpenSlots] : undefined;
-    this.grimoireGrounds = { ...(config.grimoireGrounds ?? {}) };
-    if (config.grimoirePages && config.grimoirePages.length > 0) {
-      this.grimoirePages = config.grimoirePages.map((page) => ({
-        ...page,
-        slots: page.slots.map((s) => ({
-          ...s,
-          infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined,
-        })),
-      }));
-    } else if (config.grimoire) {
-      const defaultPages = GrimoireMatrixManager.createDefaultGrimoirePages(this.spellsKnown);
-      defaultPages[0].slots = config.grimoire.map((s) => ({
-        ...s,
-        infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined,
-      }));
-      this.grimoirePages = defaultPages;
-    } else {
-      this.grimoirePages = GrimoireMatrixManager.createDefaultGrimoirePages(this.spellsKnown, this.grimoireOpenSlots);
-    }
     this.grimoireSystem = config.grimoireSystem;
     this.grimoireState = config.grimoireState ? copyGrimoireState(config.grimoireState) : undefined;
     if (this.grimoireSystem) {
@@ -512,26 +463,6 @@ export class Player extends Actor {
     this.voidDebt = 0;
   }
 
-  /** Whether a grimoire slot is open to spells (not sealed). */
-  public isGrimoireSlotOpen(slotIndex: number): boolean {
-    return !this.grimoireOpenSlots || this.grimoireOpenSlots.includes(slotIndex);
-  }
-
-  /** Unseals a grimoire slot on every page, grounding it in `element`. */
-  public openGrimoireSlot(slotIndex: number, element: string): boolean {
-    if (this.isGrimoireSlotOpen(slotIndex) || slotIndex < 0 || slotIndex >= GRIMOIRE_SIZE) return false;
-    this.grimoireOpenSlots = [...(this.grimoireOpenSlots ?? []), slotIndex].sort((a, b) => a - b);
-    this.grimoireGrounds[slotIndex] = element;
-    return true;
-  }
-
-  /** Switches the active grimoire page to the specified index. */
-  public switchGrimoirePage(index: number): boolean {
-    if (index < 0 || index >= this.grimoirePages.length) return false;
-    this.activeGrimoireIndex = index;
-    return true;
-  }
-
   /** The three-grimoire model with its state, when the pack declares it for this hero. */
   private grimoireModel(): { system: GrimoireSystemConfig; state: GrimoireState } | undefined {
     return this.grimoireSystem && this.grimoireState ? { system: this.grimoireSystem, state: this.grimoireState } : undefined;
@@ -560,11 +491,7 @@ export class Player extends Actor {
       if (result.outcome !== 'learned') return result;
     }
     this.spellsKnown.push(spellId);
-    // Auto-slot into the first empty open grimoire slot on the active page, and the first free quick-cast key
-    const emptySlot = this.grimoire.find((s) => s.spellId === null && this.isGrimoireSlotOpen(s.slotIndex));
-    if (emptySlot) {
-      emptySlot.spellId = spellId;
-    }
+    // The first free quick-cast key takes it.
     const freeQuickSlot = this.quickSpells.indexOf(null);
     if (freeQuickSlot >= 0) {
       this.quickSpells[freeQuickSlot] = spellId;
@@ -573,18 +500,13 @@ export class Player extends Actor {
   }
 
   /**
-   * Permanently forgets a spell: removes it from the known list, every grimoire page, and the
-   * quick-cast bar. Under the three-grimoire model it leaves its slot and is gone for the run.
+   * Permanently forgets a spell: removes it from the known list and the quick-cast bar.
+   * Under the three-grimoire model it leaves its slot and is gone for the run.
    */
   public forgetSpell(spellId: string): void {
     const model = this.grimoireModel();
     if (model && this.spellsKnown.includes(spellId)) forgetFromGrimoire(model.state, spellId);
     this.spellsKnown = this.spellsKnown.filter((id) => id !== spellId);
-    for (const page of this.grimoirePages) {
-      for (const slot of page.slots) {
-        if (slot.spellId === spellId) slot.spellId = null;
-      }
-    }
     this.quickSpells = this.quickSpells.map((id) => (id === spellId ? null : id));
   }
 
@@ -601,23 +523,6 @@ export class Player extends Actor {
     }
     pins[slotIndex] = kindKey;
     this.quickPotions = pins;
-  }
-
-  /**
-   * Assigns a known spell to a 3x3 grimoire slot (0..8) on the active page (or target page),
-   * or clears it with `null`. A page holds one copy of a spell, since a cast draws on only
-   * one slot: placing it again moves it.
-   */
-  public setGrimoireSlot(slotIndex: number, spellId: string | null, pageIndex?: number): boolean {
-    if (slotIndex < 0 || slotIndex >= GRIMOIRE_SIZE) return false;
-    if (spellId && (!this.spellsKnown.includes(spellId) || !this.isGrimoireSlotOpen(slotIndex))) return false;
-    const page = pageIndex !== undefined ? this.grimoirePages[pageIndex] : this.grimoirePages[this.activeGrimoireIndex];
-    if (!page || !page.slots[slotIndex]) return false;
-    if (spellId) {
-      for (const slot of page.slots) if (slot.spellId === spellId) slot.spellId = null;
-    }
-    page.slots[slotIndex].spellId = spellId;
-    return true;
   }
 
   /** Places a known spell in a slot of an open grimoire; a spell already there swaps into its old slot. */

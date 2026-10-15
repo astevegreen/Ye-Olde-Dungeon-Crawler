@@ -238,13 +238,27 @@ export interface SerializedPlayer {
   perks?: string[];
   /** Ids of the items carried when the stairs were last taken (Lore-Keeper); absent when none. */
   carriedAtStairs?: string[];
-  grimoire?: import('../magic/grimoireMatrix').GrimoireSlot[];
-  grimoirePages?: import('../magic/grimoireMatrix').GrimoirePage[];
-  activeGrimoireIndex?: number;
-  grimoireOpenSlots?: number[];
-  grimoireGrounds?: Record<number, string>;
+  /** The old single grimoire page, read only to carry a save over (`legacyMagic.ts`). */
+  grimoire?: LegacyGrimoireSlot[];
+  /** The old grimoire pages, read only to carry a save over; their other fields are read and ignored. */
+  grimoirePages?: LegacyGrimoirePage[];
   /** The three-grimoire model's state (P-29); absent when the pack doesn't declare it. */
   grimoires?: SerializedGrimoireState;
+}
+
+/** A slot of the old 3×3 grimoire page, as saves before the three grimoires hold it. */
+export interface LegacyGrimoireSlot {
+  /** 0 to 8, row-major; 4 is the centre. */
+  slotIndex: number;
+  spellId: string | null;
+  /** Glyphs inscribed at an altar, refunded as items on load. */
+  infusedGlyphs?: Array<{ glyphId: string; potency?: number; sourceName?: string }>;
+}
+
+export interface LegacyGrimoirePage {
+  id: string;
+  name: string;
+  slots: LegacyGrimoireSlot[];
 }
 
 /** `GrimoireState` as saved: a list is absent when empty. */

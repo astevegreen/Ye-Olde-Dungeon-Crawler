@@ -16,7 +16,8 @@ import { SmartCloseDoorAction } from '../../actions/door';
 import { PickUpAction, DropAction, EquipAction, UnequipAction } from '../../actions/inventory-actions';
 import { MeleeAttackAction } from '../../actions/combat';
 import { RangedAttackAction } from '../../actions/rangedAttack';
-import { CastSpellAction, ArrangeGrimoireSlotAction, DrinkPotionAction } from '../../actions/spell-actions';
+import { CastSpellAction, DrinkPotionAction } from '../../actions/spell-actions';
+import { PerformAltarRiteAction } from '../../magic/altars';
 import { IdentifyAction } from '../../actions/identificationActions';
 import { RestTurnAction } from '../../actions/autoRest';
 import { describeAction } from '../actionTrail';
@@ -101,8 +102,8 @@ describe('a rebuilt action is the action that was recorded', () => {
       new UnequipAction(player, 'offHand'),
       new MeleeAttackAction(player, goblin),
       new RangedAttackAction(player, 6, 7, get('javelin')),
-      new CastSpellAction(player, 'magic_missile', 5, 6, 'in-pack', true, true, 2),
-      new ArrangeGrimoireSlotAction(player, 1, 'heal_minor'),
+      new CastSpellAction(player, 'magic_missile', 5, 6, 'in-pack', true, true),
+      new PerformAltarRiteAction(player, 'tyr', 4, 4, { offeringKind: 'essence', offeringId: 'rune', slot: { grimoireId: 'mani', x: -1, y: 0 } }),
       new DrinkPotionAction(player, potion),
       new IdentifyAction(player, 'in-pack'),
       new RestTurnAction(player),

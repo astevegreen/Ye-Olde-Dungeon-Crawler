@@ -13,7 +13,7 @@ import { AutoRestManager } from '../actions/autoRest';
 import { Companion } from '../entities/companion';
 import { MonsterAI } from '../ai/behaviorTree';
 import { sensesThroughWalls } from '../fov/sensing';
-import { withSpellRangeBonus } from '../magic/grimoireMatrix';
+import { withSpellRangeBonus } from '../magic/castNumbers';
 import { TrapInstance } from '../dungeon/traps';
 import { SpellPipeline } from '../magic/spellPipeline';
 import { MovementAction } from '../actions/movement';

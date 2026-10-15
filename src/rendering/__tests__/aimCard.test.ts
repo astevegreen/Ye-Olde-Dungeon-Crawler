@@ -51,12 +51,11 @@ describe('aiming card markup', () => {
     }
   });
 
-  it('shows the power the cast will have and what the grid did to it', () => {
+  it('shows the power the cast will have', () => {
     const shaped = { ...spell, manaCost: 5, effects: [{ type: 'damage', amount: 14 }] } as unknown as SpellDefinition;
-    const html = aimCardHtml(engineWithTarget(), { ...entry, manaCost: 5, spellDef: shaped, gridNotes: ['Hub: 4 neighbors, +60% mana, +80% power'] }, 5, 2);
+    const html = aimCardHtml(engineWithTarget(), { ...entry, manaCost: 5, spellDef: shaped }, 5, 2);
     expect(html).toMatch(/5 \S+/);
     expect(html).toContain('Power');
     expect(html).toContain('14');
-    expect(html).toContain('From the grid: Hub: 4 neighbors');
   });
 });

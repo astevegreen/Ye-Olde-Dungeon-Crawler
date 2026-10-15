@@ -1,11 +1,9 @@
 import {
-  AttuneGrimoirePageAction,
-  ArrangeGrimoireSlotAction,
   PlaceGrimoireSpellAction,
   ForgetSpellAction,
   AcceptSpellOfferAction,
   PickGrimoireStatAction,
-  GrimoireMatrixManager,
+  heroCastPreview,
   AutosaveManager,
   type AutosaveSlot,
   canOvercast,
@@ -391,9 +389,8 @@ window.addEventListener('DOMContentLoaded', () => {
   const overflowWarnings = new OverflowWarning();
   function castOrTargetSpell(spell: SpellDefinition): void {
     if (!activeEngine || !renderer) return;
-    // As the cast resolves: its grimoire slot's synergies change the cost, range and area.
-    const resolved = GrimoireMatrixManager.resolveCast(activeEngine, activeEngine.player, spell.id);
-    const cast = resolved?.spell ?? spell;
+    // As the cast resolves: its grimoire slot's stats change the cost, range and area.
+    const cast = heroCastPreview(activeEngine, spell);
     // Under the three grimoires a spell is cast from its slot, so one in no slot is not cast.
     if (activeEngine.player.grimoireSystem && !activeEngine.diagnostics.resolvedCasts().some((c) => c.spellId === spell.id)) {
       activeEngine.log(`${spell.name} is in no grimoire slot. Place it in the spellbook to cast it.`);
@@ -429,7 +426,6 @@ window.addEventListener('DOMContentLoaded', () => {
         name: spell.name,
         manaCost: cast.manaCost,
         spellDef: cast,
-        gridNotes: resolved?.notes,
       };
       renderer.inspectOverlay.close();
       renderer.mapOverlay.close();
@@ -564,19 +560,6 @@ window.addEventListener('DOMContentLoaded', () => {
     },
     onQuickSpellsChanged: () => {
       if (activeEngine) quickSpellsBar.update(activeEngine);
-    },
-    onSwitchGrimoirePage: (pageIndex) => {
-      if (!activeEngine) return;
-      activeEngine.handlePlayerAction(new AttuneGrimoirePageAction(activeEngine.player, pageIndex));
-      quickSpellsBar.update(activeEngine);
-      combatSidebar.update(activeEngine);
-      void processVisualEffectsAndRender();
-    },
-    onArrangeGrimoireSlot: (slotIndex, spellId) => {
-      if (!activeEngine) return;
-      activeEngine.handlePlayerAction(new ArrangeGrimoireSlotAction(activeEngine.player, slotIndex, spellId));
-      quickSpellsBar.update(activeEngine);
-      void processVisualEffectsAndRender();
     },
     onPlaceGrimoireSpell: (spellId, grimoireId, x, y) => {
       if (!activeEngine) return;

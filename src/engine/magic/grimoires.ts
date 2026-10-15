@@ -11,8 +11,7 @@ import type { SerializedGrimoireState } from '../storage/types';
 /*
  * The three-grimoire model (P-29): pack-declared layouts around a centre, axis stats by a
  * slot's distance from it, grimoires that open as the hero learns, and every known spell
- * in a slot. It coexists with `grimoireMatrix.ts` and is used only when a pack declares
- * `magic.grimoires`. State is plain data, saved as optional fields (`SerializedPlayer.grimoires`).
+ * in a slot. Used only when a pack declares `magic.grimoires`. State is plain data, saved as optional fields (`SerializedPlayer.grimoires`).
  */
 
 export interface GrimoireSlotRef {
@@ -418,6 +417,7 @@ export function validateGrimoireSystem(config: GrimoireSystemConfig): string[] {
   }
   const retired = config.retired?.spells ?? {};
   for (const [oldId, target] of Object.entries(retired)) {
+    if (target === null) continue;
     const newId = typeof target === 'string' ? target : target.spellId;
     if (newId === oldId || newId in retired) problems.push(`retired spell ${oldId} maps to ${newId}, which is itself retired`);
     if (typeof target !== 'string' && !target.addedElement) problems.push(`retired spell ${oldId} adds no element`);

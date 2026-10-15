@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { GameEngine, GameMap, Item, Player, getAltarDefinition } from '../../engine';
 import { COTW_ESSENCE_RUNES } from '../../content/cotw/items/essences';
 import { COTW_MAGIC } from '../../content/cotw/magic';
+import { COTW_GRIMOIRES } from '../../content/cotw/grimoires';
 import { COTW_SPELLS } from '../../content/cotw/spells';
 import { AltarModal } from '../altarModal';
 
@@ -37,7 +38,7 @@ describe('AltarModal', () => {
       name: 'Hero',
       position: { x: 5, y: 5 },
       spellsKnown: ['magic_arrow', 'firebolt'],
-      grimoireOpenSlots: [1, 3, 4, 5, 7],
+      grimoireSystem: COTW_GRIMOIRES,
     });
     engine = new GameEngine({
       map: new GameMap(15, 15),
@@ -63,11 +64,11 @@ describe('AltarModal', () => {
     return modal;
   };
 
-  it('draws the slot grid with its spacers, so no slot is squeezed to a strip', () => {
+  it('lists each placed spell as a slot to double, with its grimoire and place', () => {
     open('galdr_altar_tyr');
-    expect(scrim.innerHTML.match(/class="sb-cell /g)).toHaveLength(9);
-    // Six links beside slots and ten spacers between the rows: the Spellbook's 5x5.
-    expect(scrim.innerHTML.match(/<i class="sb-link/g)).toHaveLength(16);
+    expect(scrim.innerHTML.match(/data-slot="mani\|/g)).toHaveLength(2);
+    expect(scrim.innerHTML).toContain('Firebolt');
+    expect(scrim.innerHTML).toContain('Slot whose lend is doubled');
   });
 
   it('says up front what burning costs, and names a rune by its own name', () => {

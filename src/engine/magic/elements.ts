@@ -42,13 +42,6 @@ export const DEFAULT_AFFINITY_MULTIPLIERS: Record<ElementalAffinity, number> = {
   absorbing: -1.0, // Negative damage signifies healing the target
 };
 
-export const ELEMENT_OPPOSITES: Partial<Record<ElementType, ElementType>> = {
-  fire: 'cold',
-  cold: 'fire',
-  lightning: 'poison',
-  poison: 'lightning',
-};
-
 export interface DamageCalculationResult {
   baseDamage: number;
   finalDamage: number;
@@ -124,7 +117,7 @@ export class AffinityMatrix {
   }
 
   public getOpposite(element: string): string | undefined {
-    return this.elements.get(element)?.oppositeElementId ?? ELEMENT_OPPOSITES[element];
+    return this.elements.get(element)?.oppositeElementId;
   }
 
   public calculateDamage(

@@ -108,7 +108,7 @@ export class ContextHelp {
     switch (context) {
       case 'altar':
         return {
-          title: 'Altars & Glyphs',
+          title: 'Altars',
           contextTag: 'RITES OF THE GRIMOIRE',
           bullets: [
             { key: 'Step onto it', label: 'Begin the altar\'s rite; each altar works one, once' },
@@ -116,12 +116,11 @@ export class ContextHelp {
             { key: 'Enter', label: 'Perform the rite (the offering is gone)' },
             { key: 'Esc', label: 'Step away; the altar waits for you' },
           ],
-          tip: 'Tip: An inscribe rite turns the offering into a glyph on a grimoire slot, and the glyph shapes every spell cast from that slot. A ground rite opens a sealed slot instead; a forge rite transmutes a spell.',
+          tip: 'Tip: Each altar works its own rite: one doubles what a grimoire slot lends the spells beside it, one transmutes a spell, one clears a debt, and one gambles.',
         };
 
       case 'spellbook': {
-        const grid = manifest?.magic?.grimoire;
-        const center = grid?.centerSlotLabel ?? 'center';
+        const grid = manifest?.magic?.grimoires;
         return {
           title: 'Spellbook & Grimoire',
           contextTag: 'THE GRIMOIRE',
@@ -131,15 +130,15 @@ export class ContextHelp {
             { key: '1-0', label: 'Put it on the quick-cast belt; again to take it off' },
             ...(grid
               ? [
-                  { key: 'Click a slot', label: 'Put the chosen spell there; a page holds one copy, so placing it again moves it' },
-                  { key: 'Point at a slot', label: 'See what it does; a lit line joins slots that shape each other' },
-                  { key: 'Page tabs', label: 'Turn the page: free with no foe in view, a 2-turn focus with one' },
+                  { key: 'Click a slot', label: 'Put the chosen spell there; a spell holds one slot, so placing it again moves it' },
+                  { key: 'Point at a slot', label: 'See what it does; a lit line joins slots that lend each other' },
+                  { key: 'Grimoire tabs', label: 'Show another grimoire; more open as you learn spells' },
                 ]
               : []),
             { key: 'Tab / Z / Esc', label: 'The next tab, or close' },
           ],
           tip: grid
-            ? `Tip: A spell casts from its slot on the open page. The ${center} slot makes it dearer and stronger for each filled slot beside it; opposed elements side by side, and a ray beside a burst, strengthen each other. With a foe in view, rewriting a slot takes a turn.`
+            ? 'Tip: A spell casts only from its slot. The stats on each axis grow with distance from the centre, and each spell lends something to the spells touching it. With a foe in view, moving a spell takes a turn.'
             : 'Tip: The belt casts by key; the Spellbook shows what each spell costs and does.',
         };
       }

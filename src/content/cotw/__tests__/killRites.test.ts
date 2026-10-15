@@ -98,8 +98,8 @@ describe('cotw kill rites (Galdr of the Slain)', () => {
     }
   });
 
-  it('starts the hero with only Magic Arrow and Heal Minor Wounds', () => {
-    expect(COTW_STARTER_KIT.spellsKnown).toEqual(['magic_arrow', 'heal_minor']);
+  it('starts the hero with only Magic Arrow and Heal', () => {
+    expect(COTW_STARTER_KIT.spellsKnown).toEqual(['magic_arrow', 'heal_spell']);
   });
 
   it('lets a hero learn every core spell by rites alone, each teaching rite meetable on its first floor', () => {

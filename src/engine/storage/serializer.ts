@@ -534,18 +534,6 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     maxHpPercentBonus: p.maxHpPercentBonus || undefined,
     perks: p.perkIds.length > 0 ? p.perkIds : undefined,
     carriedAtStairs: p.carriedAtStairs.length > 0 ? [...p.carriedAtStairs] : undefined,
-    activeGrimoireIndex: p.activeGrimoireIndex ?? 0,
-    grimoireOpenSlots: p.grimoireOpenSlots ? [...p.grimoireOpenSlots] : undefined,
-    grimoireGrounds: Object.keys(p.grimoireGrounds).length > 0 ? { ...p.grimoireGrounds } : undefined,
-    grimoirePages: p.grimoirePages
-      ? p.grimoirePages.map((page) => ({
-          ...page,
-          slots: page.slots.map((s) => ({
-            ...s,
-            infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined,
-          })),
-        }))
-      : undefined,
     grimoires: p.grimoireState ? serializeGrimoireState(p.grimoireState) : undefined,
     energyModel: p.energyModel
       ? {
@@ -1112,25 +1100,6 @@ function hydrateGame(
     hasDiscoveredRune: Boolean(pData.hasDiscoveredRune),
     runeCharges: pData.runeCharges !== undefined ? Number(pData.runeCharges) : undefined,
     runeMaxCharges: pData.runeMaxCharges !== undefined ? Number(pData.runeMaxCharges) : undefined,
-    // Single-page `grimoire` is only read, for saves made before grimoirePages existed.
-    grimoire: legacy && pData.grimoire ? legacy.pages[0].slots : pData.grimoire ? [...pData.grimoire.map((s) => ({ ...s, infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined }))] : undefined,
-    // A page holds one copy of a spell (Player.setGrimoireSlot). An older save may hold
-    // more; the first one is the copy that casts, so later ones load empty.
-    grimoirePages: legacy && pData.grimoirePages
-      ? legacy.pages
-      : pData.grimoirePages
-      ? pData.grimoirePages.map((page) => ({
-          ...page,
-          slots: page.slots.map((s, i) => ({
-            ...s,
-            spellId: s.spellId && page.slots.findIndex((o) => o.spellId === s.spellId) < i ? null : s.spellId,
-            infusedGlyphs: s.infusedGlyphs ? [...s.infusedGlyphs] : undefined,
-          })),
-        }))
-      : undefined,
-    activeGrimoireIndex: pData.activeGrimoireIndex !== undefined ? Number(pData.activeGrimoireIndex) : undefined,
-    grimoireOpenSlots: Array.isArray(pData.grimoireOpenSlots) ? pData.grimoireOpenSlots.map(Number) : undefined,
-    grimoireGrounds: pData.grimoireGrounds ? { ...pData.grimoireGrounds } : undefined,
     grimoireSystem,
     grimoireState: legacy ? legacy.state : readGrimoireState(pData.grimoires),
     // A perk the pack no longer declares is dropped; the rest come back with their effects.

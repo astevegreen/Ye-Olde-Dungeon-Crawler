@@ -1,14 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { calculateElementalDamage, ELEMENT_OPPOSITES } from '../elements';
+import { calculateElementalDamage } from '../elements';
 
 describe('Elemental Damage and Resistances', () => {
-  it('correctly maps opposing element pairs', () => {
-    expect(ELEMENT_OPPOSITES.fire).toBe('cold');
-    expect(ELEMENT_OPPOSITES.cold).toBe('fire');
-    expect(ELEMENT_OPPOSITES.lightning).toBe('poison');
-    expect(ELEMENT_OPPOSITES.poison).toBe('lightning');
-  });
-
   it('scales damage for neutral affinity (1.0x)', () => {
     const res = calculateElementalDamage(20, 'fire', 'neutral');
     expect(res.finalDamage).toBe(20);

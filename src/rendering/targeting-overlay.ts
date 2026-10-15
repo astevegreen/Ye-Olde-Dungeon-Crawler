@@ -29,10 +29,8 @@ export interface SpellbookEntry {
   charges?: number;
   maxCharges?: number;
   sourceItem?: Item;
-  /** The spell as this cast resolves (a grimoire slot's synergies applied). */
+  /** The spell as this cast resolves (its grimoire slot's stats applied). */
   spellDef: SpellDefinition;
-  /** One note per grimoire synergy that shaped `spellDef`. */
-  gridNotes?: string[];
   locationLabel?: string;
 }
 
@@ -486,7 +484,6 @@ export function aimCardHtml(engine: GameEngine, entry: SpellbookEntry, reticleX:
       ${aff ? `<div class="mc-intent ${aff.tone}">${aff.text} ${escapeHtml(spell.element)}</div>` : ''}`;
   }
   const power = entry.type === 'spell' ? spellPower(spell, { engine, player: engine.player }) : 0;
-  const grid = entry.gridNotes?.length ? `<div class="ui-note">From the grid: ${entry.gridNotes.map(escapeHtml).join(' · ')}</div>` : '';
   // A burst stops at the first creature or wall in its flight, and at the end of its range.
   const geo = castGeometry(engine, spell, engine.player, { x: reticleX, y: reticleY });
   const centre = shortBurstCentre(geo, reticleX, reticleY);
@@ -502,7 +499,6 @@ export function aimCardHtml(engine: GameEngine, entry: SpellbookEntry, reticleX:
     <div class="mc-head"><span class="mc-title">${iconHtml('cast')} <span>${escapeHtml(spell.name)}</span></span><span class="mc-tag ui-num">${escapeHtml(cost)}</span></div>
     <div class="mc-body">
       ${power ? `<div class="mc-line"><span>Power</span><span class="ui-num">${power}</span></div>` : ''}
-      ${grid}
       <div class="mc-sub">Target</div>
       ${targetHtml}
       ${short ? `<div class="ui-note">Bursts short: ${short}</div>` : ''}

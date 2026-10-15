@@ -425,8 +425,8 @@ describe('three grimoires (P-29)', () => {
       expect(loaded.learnSpellResult('spell_3').slot).toBeUndefined();
     });
 
-    it('cotw does not declare the model, so its heroes keep the old grimoire alone', () => {
-      expect(cotwManifest.magic?.grimoires).toBeUndefined();
+    it('cotw declares the model: Máni, Sól and Yggdrasil', () => {
+      expect(cotwManifest.magic?.grimoires?.layouts.map((l) => l.id)).toEqual(['mani', 'sol', 'yggdrasil']);
     });
   });
 });

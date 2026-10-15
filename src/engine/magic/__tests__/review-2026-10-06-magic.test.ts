@@ -5,7 +5,7 @@ import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { Monster } from '../../entities/monster';
 import { CastSpellAction } from '../../actions/spell-actions';
-import { GrimoireMatrixManager } from '../grimoireMatrix';
+import { heroCastPreview } from '../castNumbers';
 import { SpellPipeline } from '../spellPipeline';
 import { effectiveSpellPower } from '../castNumbers';
 import { castGeometry } from '../castTrace';
@@ -86,12 +86,12 @@ describe('R-cmbt-9 · the HUD cost and power (resolveCast) apply the multipliers
     const target = monster('m', 6, 3);
     map.addEntity(target);
 
-    const shown = GrimoireMatrixManager.resolveCast(engine, player, 'firebolt')?.spell;
+    const shown = heroCastPreview(engine, firebolt as never);
     new CastSpellAction(player, 'firebolt', 6, 3).perform(engine);
     const paid = 12 - player.mana;
 
-    expect(shown?.manaCost).toBe(paid);
-    expect(effectiveSpellPower(engine, player, shown!)).toBe(100 - target.hp); // 20 × 1.1
+    expect(shown.manaCost).toBe(paid);
+    expect(effectiveSpellPower(engine, player, shown)).toBe(100 - target.hp); // 20 × 1.1
   });
 });
 

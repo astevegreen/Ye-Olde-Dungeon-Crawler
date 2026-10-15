@@ -260,7 +260,7 @@ test.describe('a whole run', () => {
     await expect.poll(ratHp).toBeLessThan(1);
     expect(await messagesSince(page, castLog)).toMatch(/Giant Rat/i);
 
-    // An altar rite: Týr's Oath-Stone on floor 4 binds a glyph from a burnt spell.
+    // An altar rite: Týr's Oath-Stone on floor 4 burns a spell to double another slot's lend.
     await triage(page, 'jumpToFloor', 4);
     await closeAll(page);
     const altar = await page.evaluate(() => {
@@ -268,12 +268,12 @@ test.describe('a whole run', () => {
       for (let y = 0; y < e.map.height; y++) {
         for (let x = 0; x < e.map.width; x++) {
           const h = e.map.getTile(x, y)?.interactionHandlerId;
-          if (h && e.manifest.magic?.altars?.some((a) => a.id === h && a.rite === 'inscribe')) return { x, y };
+          if (h && e.manifest.magic?.altars?.some((a) => a.id === h && a.rite === 'double')) return { x, y };
         }
       }
       return null;
     });
-    expect(altar, 'no inscribe altar on floor 4').not.toBeNull();
+    expect(altar, 'no doubling altar on floor 4').not.toBeNull();
     const toAltar = await standBeside(page, altar!);
     // A monster of the floor standing on the altar would turn the step into an attack.
     await triage(page, 'killVisibleMonsters');
@@ -283,10 +283,12 @@ test.describe('a whole run', () => {
     const spellsBefore = (await engineState(page)).spells;
     const riteLog = await messageCount(page);
     await page.locator('[data-offering="1"]').click();
-    await page.locator('[data-slot]:not([data-slot=""])').first().click();
+    // Any slot but the burnt spell's own, which the rite refuses.
+    const offered = (await page.locator('[data-offering="1"] .bs-name').textContent()) ?? '';
+    await page.locator('[data-slot]:not([disabled])').filter({ hasNotText: offered }).first().click();
     await page.keyboard.press('Enter');
     await expect.poll(async () => (await engineState(page)).spells.length).toBe(spellsBefore.length - 1);
-    expect(await messagesSince(page, riteLog)).toContain('glyph is bound');
+    expect(await messagesSince(page, riteLog)).toContain('lends its neighbours is doubled');
     await closeAll(page);
 
     // Save & exit, then Continue: the hero is where and what they were.

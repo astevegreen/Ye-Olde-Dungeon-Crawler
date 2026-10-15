@@ -61,14 +61,32 @@ export function withSlotStats(spell: SpellDefinition, stats: GrimoireSlotStats):
   const out: SpellDefinition = { ...spell };
   if (stats.rangeBonus !== 0 && spell.range > 0) out.range = spell.range + stats.rangeBonus;
   if (stats.areaBonus !== 0 && spell.areaOfEffect > 0) out.areaOfEffect = spell.areaOfEffect + stats.areaBonus;
-  if (stats.durationMultiplier !== 1) {
+  if (stats.durationMultiplier !== 1 || stats.rangeBonus !== 0) {
     out.effects = spell.effects.map((e) => {
       if (e.type === 'applyStatus') return { ...e, duration: longer(e.duration) };
       if ((e.type === 'summon' || e.type === 'reveal') && e.duration !== undefined) return { ...e, duration: longer(e.duration) };
+      // A hop's reach (a whole-floor jump, range 0, has none to stretch).
+      if (e.type === 'teleport' && e.range > 0) return { ...e, range: e.range + stats.rangeBonus };
       return e;
     });
   }
   return out;
+}
+
+/** The spell with the range what the caster wears and holds adds (`spellRangeBonus`, Odin's Eye); a spell with no range keeps none. */
+export function withSpellRangeBonus(caster: Entity, spell: SpellDefinition): SpellDefinition {
+  const bonus = sumWorn(caster, 'spellRangeBonus');
+  return bonus !== 0 && spell.range > 0 ? { ...spell, range: spell.range + bonus } : spell;
+}
+
+/**
+ * The hero's spell as a cast of it from its slot resolves, for what the HUD and the aim
+ * show: the slot's stats, the reach it wears, and the Seiðr the cast will charge.
+ */
+export function heroCastPreview(engine: GameEngine, spell: SpellDefinition): SpellDefinition {
+  const resolved = heroResolvedCast(engine, spell.id);
+  const shaped = withSpellRangeBonus(engine.player, resolved ? withSlotStats(spell, resolved.stats) : spell);
+  return { ...shaped, manaCost: effectiveManaCost(engine.player, shaped) };
 }
 
 /**

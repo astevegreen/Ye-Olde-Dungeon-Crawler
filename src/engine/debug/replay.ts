@@ -53,8 +53,6 @@ import {
   ZapWandAction,
   ReadScrollAction,
   DrinkPotionAction,
-  AttuneGrimoirePageAction,
-  ArrangeGrimoireSlotAction,
   PlaceGrimoireSpellAction,
   ForgetSpellAction,
   AcceptSpellOfferAction,
@@ -150,15 +148,9 @@ const BUILDERS: Record<string, Builder> = {
           num(p, 'targetY') ?? e.player.y,
           str(p, 'itemTargetId'),
           bool(p, 'freeCast'),
-          bool(p, 'allowVitalityBurn'),
-          num(p, 'slotIndex')
+          bool(p, 'allowVitalityBurn')
         )
       : null;
-  },
-  AttuneGrimoirePageAction: (e, p) => new AttuneGrimoirePageAction(e.player, num(p, 'targetPageIndex') ?? 0),
-  ArrangeGrimoireSlotAction: (e, p) => {
-    const slot = num(p, 'slotIndex');
-    return slot === undefined ? null : new ArrangeGrimoireSlotAction(e.player, slot, str(p, 'spellId') ?? null);
   },
   PlaceGrimoireSpellAction: (e, p) => {
     const spellId = str(p, 'spellId');
@@ -187,11 +179,13 @@ const BUILDERS: Record<string, Builder> = {
     const altarId = str(p, 'altarId');
     const offeringId = str(p, 'offeringId');
     const offeringKind = str(p, 'offeringKind');
+    const s = p.slot as { grimoireId?: unknown; x?: unknown; y?: unknown } | undefined;
+    const slot = s && typeof s.grimoireId === 'string' && typeof s.x === 'number' && typeof s.y === 'number' ? { grimoireId: s.grimoireId, x: s.x, y: s.y } : undefined;
     return altarId && offeringId && (offeringKind === 'spell' || offeringKind === 'essence')
       ? new PerformAltarRiteAction(e.player, altarId, num(p, 'x') ?? 0, num(p, 'y') ?? 0, {
           offeringKind,
           offeringId,
-          slotIndex: num(p, 'slotIndex'),
+          slot,
           targetSpellId: str(p, 'targetSpellId'),
         })
       : null;

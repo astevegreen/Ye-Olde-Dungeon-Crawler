@@ -22,8 +22,8 @@ import {
   effectiveManaCost as effectiveManaCostOf,
   heroResolvedCast,
   withSlotStats,
+  withSpellRangeBonus,
 } from '../magic/castNumbers';
-import { GrimoireMatrixManager, withSpellRangeBonus } from '../magic/grimoireMatrix';
 import type { GrimoireAxis } from '../magic/magicConfig';
 import type { StatPickOutcome } from '../magic/grimoires';
 import { StatusHandlerRegistry } from '../status/statusHandlers';
@@ -39,10 +39,6 @@ function castShaping(engine: GameEngine, cast: ResolvedCast): CastShaping {
   return { powerMultiplier, lends: { delivery: cast.delivery, effects: lent.flatMap((l) => l.effects) } };
 }
 
-/** World counter of casts whose grid shaping the log has explained, and how many it explains. */
-const GRID_NOTE_COUNTER = 'grimoire_cast_notes';
-const GRID_NOTE_TIMES = 3;
-
 export class CastSpellAction implements Action {
   public readonly caster: Entity;
   public readonly spellId: string;
@@ -51,7 +47,6 @@ export class CastSpellAction implements Action {
   public readonly itemTargetId?: string;
   public readonly freeCast: boolean;
   public readonly allowVitalityBurn: boolean;
-  public readonly slotIndex?: number;
 
   /** The acting entity, as the pipeline resolves it for hooks (§4). */
   get actor(): Entity {
@@ -65,8 +60,7 @@ export class CastSpellAction implements Action {
     targetY: number,
     itemTargetId?: string,
     freeCast = false,
-    allowVitalityBurn = false,
-    slotIndex?: number
+    allowVitalityBurn = false
   ) {
     this.caster = caster;
     this.spellId = spellId;
@@ -75,33 +69,23 @@ export class CastSpellAction implements Action {
     this.itemTargetId = itemTargetId;
     this.freeCast = freeCast;
     this.allowVitalityBurn = allowVitalityBurn;
-    this.slotIndex = slotIndex;
   }
 
   public perform(engine: GameEngine): ActionResult {
     const isPlayer = this.caster instanceof Player;
     const player = isPlayer ? (this.caster as Player) : null;
 
-    // A player's own cast takes its grimoire slot's synergies: the slot given, or else
-    // wherever the spell sits on the active page. Hook-driven free casts stay unmodified.
-    const slotIndex =
-      player && !this.freeCast
-        ? GrimoireMatrixManager.findSlotForSpell(player, this.spellId, this.slotIndex)
-        : undefined;
-    const matrixEffective =
-      player && slotIndex !== undefined
-        ? GrimoireMatrixManager.resolveEffectiveSpellDetailed(engine, player, slotIndex)
-        : undefined;
-
-    let spell =
-      matrixEffective?.spell ??
-      (engine.manifest?.spells?.find((s) => s.id === this.spellId) ?? getSpell(this.spellId));
+    let spell = engine.manifest?.spells?.find((s) => s.id === this.spellId) ?? getSpell(this.spellId);
     if (!spell) {
       return { success: false, cost: 0, message: `Unknown spell: ${this.spellId}` };
     }
-    // The three grimoires (P-29, P-30): the slot's stats shape the spell's own effect, and
-    // its neighbours lend theirs. Hook-driven free casts stay unmodified.
+    // The three grimoires (P-29, P-30): a hero casts a spell from its slot, whose stats shape
+    // the spell's own effect while its neighbours lend theirs. Hook-driven free casts, scrolls
+    // and wands stay unmodified.
     const resolved = player && !this.freeCast ? heroResolvedCast(engine, this.spellId) : undefined;
+    if (player && !this.freeCast && player.grimoireSystem && !resolved) {
+      return { success: false, cost: 0, message: `${spell.name} is in no grimoire slot. Place it in the spellbook to cast it.` };
+    }
     if (resolved) spell = withSlotStats(spell, resolved.stats);
     // Reach the caster wears and holds (Odin's Eye), as `resolveCast` shows it.
     spell = withSpellRangeBonus(this.caster, spell);
@@ -280,13 +264,6 @@ export class CastSpellAction implements Action {
       resolved ? castShaping(engine, resolved) : undefined
     );
 
-    // The first few casts the grid shapes say how in the log, so a player learns the grid
-    // from playing; later ones keep the log quiet (the Spellbook keeps the notes).
-    if (player && matrixEffective && matrixEffective.notes.length > 0 && engine.getWorldCounter(GRID_NOTE_COUNTER) < GRID_NOTE_TIMES) {
-      engine.modifyWorldCounter(GRID_NOTE_COUNTER, 1);
-      engine.log(`Your grimoire shapes the spell: ${matrixEffective.notes.join('; ')}.`);
-    }
-
     // A cast paid partly from debt rolls a surge from the pack's overflow table
     if (player && paysCosts && manaDeficit > 0) {
       const overflowRes = ManaOverflowManager.evaluateOverflow(engine, this.caster, manaDeficit, {
@@ -323,27 +300,6 @@ export class CastSpellAction implements Action {
     if (player && player.energyModel && pendingCorruption > 0) {
       player.energyModel.addCorruption(player, pendingCorruption);
       engine.log(`Casting ${spell.name} surges with dark power (+${pendingCorruption} Corruption, Total: ${player.corruptionScore})!`);
-    }
-
-    const retreatSteps = matrixEffective?.retreatSteps ?? 0;
-    if (player && retreatSteps > 0) {
-      const dx = Math.sign(player.x - this.targetX);
-      const dy = Math.sign(player.y - this.targetY);
-      // Step back one cell at a time so the glyph never carries the caster through a wall.
-      let destX = player.x;
-      let destY = player.y;
-      for (let step = 0; step < retreatSteps && (dx !== 0 || dy !== 0); step++) {
-        const nx = destX + dx;
-        const ny = destY + dy;
-        if (!engine.map.inBounds(nx, ny) || !engine.map.isPassable(nx, ny) || engine.map.getEntityAt(nx, ny)) break;
-        destX = nx;
-        destY = ny;
-      }
-      if (destX !== player.x || destY !== player.y) {
-        engine.map.moveEntity(player, destX, destY);
-        engine.updateFov();
-        engine.log(`${player.name} steps back from the blast!`);
-      }
     }
 
     return result;
@@ -618,75 +574,15 @@ export class DrinkPotionAction implements Action {
   }
 }
 
-/**
- * Puts a known spell in a grimoire slot on the active page, or clears the slot with `null`
- * (`Player.setGrimoireSlot`: one copy per page, so placing it again moves it). A player
- * action, so the replay trail records it. Like a page switch, it is free in town or with
- * no foe in view, and takes a turn otherwise.
- */
-export class ArrangeGrimoireSlotAction implements Action {
-  public readonly player: Player;
-  public readonly slotIndex: number;
-  public readonly spellId: string | null;
-
-  get actor(): Entity {
-    return this.player;
-  }
-
-  constructor(player: Player, slotIndex: number, spellId: string | null) {
-    this.player = player;
-    this.slotIndex = slotIndex;
-    this.spellId = spellId;
-  }
-
-  public perform(engine: GameEngine): ActionResult {
-    if (!this.player.isAlive()) {
-      return { success: false, cost: 0, message: 'The dead write nothing in their grimoire.' };
-    }
-    if (!this.player.setGrimoireSlot(this.slotIndex, this.spellId)) {
-      return { success: false, cost: 0, message: 'That slot cannot take that spell.' };
-    }
-    if (GrimoireMatrixManager.canSwitchPageInstantly(engine, this.player)) {
-      return { success: true, cost: 0 };
-    }
-    const cost = this.player.getActionCost(BASE_ACTION_COST);
-    this.player.consumeEnergy(cost);
-    const message = 'With foes in sight, rewriting your grimoire takes a turn.';
-    engine.log(message);
-    return { success: true, cost, message };
-  }
-}
-
-export class AttuneGrimoirePageAction implements Action {
-  public readonly player: Player;
-  public readonly targetPageIndex: number;
-
-  get actor(): Entity {
-    return this.player;
-  }
-
-  constructor(player: Player, targetPageIndex: number) {
-    this.player = player;
-    this.targetPageIndex = targetPageIndex;
-  }
-
-  public perform(engine: GameEngine): ActionResult {
-    if (!this.player.isAlive()) {
-      return { success: false, cost: 0, message: 'Defeated spellcasters cannot attune grimoires.' };
-    }
-    const outcome = GrimoireMatrixManager.startOrContinueAttunement(engine, this.player, this.targetPageIndex);
-    let cost = 0;
-    if (outcome.consumesTurn) {
-      cost = this.player.getActionCost(BASE_ACTION_COST);
-      this.player.consumeEnergy(cost);
-    }
-    return { success: outcome.success, cost, message: outcome.message };
-  }
+/** Whether the hero can rearrange the grimoires without spending a turn: in town, or with no foe in view. */
+function canEditGrimoireFreely(engine: GameEngine, player: Player): boolean {
+  if (engine.currentFloor === 0) return true;
+  return !engine.map.getAllEntities().some((e) => e.isAlive() && e.isHostileTo(player) && engine.fov.isVisible(e.x, e.y));
 }
 
 /** A grimoire edit is free in town or with no foe in view, and takes a turn otherwise. */
 function grimoireEditCost(engine: GameEngine, player: Player, inFightMessage: string): ActionResult {
-  if (GrimoireMatrixManager.canSwitchPageInstantly(engine, player)) return { success: true, cost: 0 };
+  if (canEditGrimoireFreely(engine, player)) return { success: true, cost: 0 };
   const cost = player.getActionCost(BASE_ACTION_COST);
   player.consumeEnergy(cost);
   engine.log(inFightMessage);

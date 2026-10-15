@@ -8,14 +8,14 @@ import type { KillRiteDefinition } from '../../engine';
  * paralysis), the size of the blow, or the hero's own state. None depends on where a
  * monster happens to stand.
  *
- * Spell pacing. A new hero knows Magic Arrow and Heal Minor Wounds; the rites below teach
+ * Spell pacing. A new hero knows Magic Arrow and Heal; the rites below teach
  * the rest, each opening the next (Slow opens "while slowed", Cold Ray opens "cold", and
  * so on). `killRites.test.ts` checks every teaching rite can be met with the spells
  * obtainable by that monster's first floor.
  *
  *   Rime Hollows (1-9)    Slow 4 · Cold Ray 5/7 · Firebolt 6 · Phase Door 8 · Detect Monsters 8
- *   Dwarven Works (10-17) Detect Objects 10 · Lightning Bolt 12/15 · Heal Medium 12/14 · Identify 14
- *   Obsidian Siphon (18-25) Teleport 20 · Fireball 22/25
+ *   Dwarven Works (10-17) Detect Objects 10 · Lightning Bolt 12/15
+ *   Obsidian Siphon (18-25) Phase Door 20 (a second source) · Fireball 22/25
  *   Silver Veins (26-33)  Paralyze 28 · Clairvoyance 29
  *   Deeper: second sources for Lightning Bolt, Paralyze and Clairvoyance
  *
@@ -149,7 +149,6 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: "Freeze the automaton's bellows mid-breath,\nand the lightning in its coils leaps to you.",
   },
   kirkegrim: {
-    teachesSpellId: 'heal_medium',
     essenceElement: 'healing',
     requiredDamageElement: 'fire',
     hintVerse: 'Cleanse the tomb-vættir with flame,\nand its blessing of mending passes to the living.',
@@ -161,7 +160,6 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: 'Slow the molten slag until it cools,\nthen shatter it with frost.',
   },
   haugbui: {
-    teachesSpellId: 'identify',
     essenceElement: 'arcane',
     requiredDamageElement: 'fire',
     requiredVictimStatus: 'slow',
@@ -173,7 +171,6 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: 'A draugr rises again unless it is burned.\nBurn this one.',
   },
   draugr: {
-    teachesSpellId: 'heal_medium',
     essenceElement: 'shadow',
     requiredDamageElement: 'fire',
     requiredVictimStatus: 'slow',
@@ -222,7 +219,7 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: "Slow Múspell's son, then smother his fire with frost.",
   },
   prismatic_mirror_skulker: {
-    teachesSpellId: 'teleport',
+    teachesSpellId: 'phase_door',
     essenceElement: 'arcane',
     requiredDamageElement: 'lightning',
     hintVerse: 'Shatter the mirror-skulker with lightning,\nand learn the far step it takes between its prisms.',

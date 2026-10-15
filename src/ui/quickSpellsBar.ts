@@ -1,5 +1,5 @@
 import type { GameEngine, SpellDefinition } from '../engine';
-import { GrimoireMatrixManager, getSpell, resolveManaTerms } from '../engine';
+import { getSpell, heroCastPreview, resolveManaTerms } from '../engine';
 import { castFromSlot } from './characterMenu/spellbookGrimoires';
 import { markCue } from './hints/cueMark';
 import { spellPower } from './spellPower';
@@ -157,19 +157,18 @@ export class QuickSpellsBar {
         continue;
       }
 
-      // What the cast costs and does from its grimoire slot, not the base spell.
-      const cast = GrimoireMatrixManager.resolveCast(engine, player, spell.id);
-      const manaCost = cast?.spell.manaCost ?? spell.manaCost ?? 0;
-      const power = spellPower(cast?.spell ?? spell, { engine, player });
-      const grid = cast && cast.notes.length > 0 ? ` From the grid: ${cast.notes.join('; ')}.` : '';
+      // What the cast costs and does for this hero, not the base spell.
+      const cast = heroCastPreview(engine, spell);
+      const manaCost = cast.manaCost ?? 0;
+      const power = spellPower(cast, { engine, player });
       const hasMana = player.mana >= manaCost;
       slotEl.hidden = false;
       slotEl.className = `quick-spell-slot quick-spell-slot-${i} ${
         hasMana ? 'quick-spell-slot-assigned' : 'quick-spell-slot-nomana'
       }`;
       slotEl.title = hasMana
-        ? `[${slotKey}] ${spell.name} — ${manaCost} ${mana.unit}${power ? `, power ${power}` : ''}.${grid} Click or press ${slotKey} to cast.`
-        : `[${slotKey}] ${spell.name} — ${manaCost} ${mana.unit}${power ? `, power ${power}` : ''} (you have ${player.mana}).${grid}`;
+        ? `[${slotKey}] ${spell.name} — ${manaCost} ${mana.unit}${power ? `, power ${power}` : ''}. Click or press ${slotKey} to cast.`
+        : `[${slotKey}] ${spell.name} — ${manaCost} ${mana.unit}${power ? `, power ${power}` : ''} (you have ${player.mana}).`;
       // The spell's element tone frames the slot, and its rune sits beside the key (tracker 4.6).
       const tone = spellTone(engine.manifest, spell);
       if (tone) slotEl.style.setProperty?.('--slot-tone', tone);

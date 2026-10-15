@@ -28,6 +28,8 @@ const hybrid = (
   targetType: targetingMode === 'self' ? 'self' : targetingMode === 'area_burst' ? 'tile' : 'ray',
   targetingMode,
   description,
+  // Every hybrid hits; the self-cast ones are wards (`self_buff`), which borrow nothing until P-31.
+  spellType: targetingMode === 'self' ? undefined : 'damage',
   visual:
     targetingMode === 'self'
       ? { archetype: 'self_buff', color, durationMs: 200 }

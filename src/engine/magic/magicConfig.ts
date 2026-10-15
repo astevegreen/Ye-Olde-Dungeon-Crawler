@@ -2,21 +2,20 @@ import type { EffectPrimitive } from './types';
 
 /**
  * Pack-declared configuration for the optional magic systems: mana overflow, the
- * grimoire grid, kill rites and spell altars (`GameContentManifest.magic`).
+ * three grimoires, kill rites and spell altars (`GameContentManifest.magic`).
  *
  * The engine owns the mechanisms and holds only neutral defaults; every table, label and
  * player-facing message comes from here (ARCHITECTURE.md §3, No Engine Creep and
  * Pack-Neutral Presentation). A pack that omits a section doesn't get that system: no
- * `overflow` keeps the hard mana wall, no `grimoire` casts every spell unmodified and
- * hides the grid, no `altars` places none.
+ * `overflow` keeps the hard mana wall, no `grimoires` casts every spell unmodified and
+ * hides the grimoires, no `altars` places none.
  *
  * Message templates substitute `{caster}`, `{debt}`, `{damage}`, `{maxHp}`, `{monster}`,
- * `{spell}`, `{essence}`, `{glyph}`, `{slot}` and `{altar}` where the context has them.
+ * `{spell}`, `{essence}` and `{altar}` where the context has them.
  */
 export interface MagicSystemConfig {
   overflow?: ManaOverflowConfig;
-  grimoire?: GrimoireConfig;
-  /** The three-grimoire model (P-29), which replaces `grimoire` once a pack declares it. */
+  /** The three-grimoire model (P-29). */
   grimoires?: GrimoireSystemConfig;
   killRites?: KillRiteConfig;
   altars?: AltarDefinition[];
@@ -71,53 +70,6 @@ export interface ManaOverflowConfig {
   lingeringDebt?: number;
   /** Logged when a full rest leaves lingering debt behind. */
   lingeringRestMessage?: string;
-}
-
-// ─── Grimoire grid ─────────────────────────────────────────────────────────
-
-/** A declarative change to a spell as it is cast. */
-export interface SpellModifier {
-  manaCostDelta?: number;
-  rangeDelta?: number;
-  areaDelta?: number;
-  /** Multiplies numeric damage and heal amounts (and basePower). */
-  powerMultiplier?: number;
-  /** Extra effect primitives appended to the spell's own. */
-  addEffects?: EffectPrimitive[];
-  /** After the cast, steps the caster up to this many cells directly away from the target. */
-  retreatSteps?: number;
-}
-
-/** A permanent inscription on a grimoire slot, made at an inscribing altar. */
-export interface GlyphDefinition {
-  id: string;
-  name: string;
-  description: string;
-  /** Offerings of these elements (essences or spells) yield this glyph. */
-  fromElements?: string[];
-  /** Spell offerings of these schools yield this glyph; checked before elements. */
-  fromSchools?: string[];
-  modifier: SpellModifier;
-}
-
-export interface GrimoireConfig {
-  title: string;
-  pageNames: string[];
-  /** Slots (0-8, row-major) open at character creation; others open by grounding at an altar.
-   * Omit to start with all nine open. */
-  initialOpenSlots?: number[];
-  centerSlotLabel?: string;
-  /** Center slot: extra mana cost and extra power per occupied orthogonal neighbor. */
-  centerCostPerNeighbor?: number;
-  centerPowerPerNeighbor?: number;
-  /** Power multiplier for a spell next to one of its opposing element (engine `ELEMENT_OPPOSITES`). */
-  opposedElementPowerMultiplier?: number;
-  maxGlyphsPerSlot?: number;
-  glyphs?: GlyphDefinition[];
-  /** Applied to a spell cast from a grounded slot whose element matches the slot's ground. */
-  groundedModifier?: SpellModifier;
-  /** Label for a locked slot, e.g. "Sealed". */
-  lockedSlotLabel?: string;
 }
 
 // ─── Grimoires (P-29) ──────────────────────────────────────────────────────
@@ -227,11 +179,11 @@ export interface NeighbourLendingConfig {
   oppositeBonus?: number;
 }
 
-/** A retired spell becomes another spell, or a base spell forged with an added element. */
-export type RetiredSpellTarget = string | { spellId: string; addedElement: string };
+/** A retired spell becomes another spell, a base spell forged with an added element, or nothing (`null`). */
+export type RetiredSpellTarget = string | { spellId: string; addedElement: string } | null;
 
 export interface RetiredMagicConfig {
-  /** Old spell id → what a hero who knew it knows instead; applied to known spells and the quick bar. */
+  /** Old spell id → what a hero who knew it knows instead, or `null` to let it go; applied to known spells and the quick bar. */
   spells?: Record<string, RetiredSpellTarget>;
   /** Old glyph id → the item refunded for each such glyph inscribed on an old page. */
   glyphRunes?: Record<string, string>;
@@ -263,12 +215,12 @@ export interface KillRiteConfig {
 // ─── Altars ────────────────────────────────────────────────────────────────
 
 /**
- * - `inscribe`: burn an offering into a grimoire slot as a glyph.
+ * - `double`: burn an offering to double what one grimoire slot lends its neighbours.
  * - `forge`: fuse a known spell with an offering of another element into a hybrid.
- * - `ground`: burn an offering into a sealed slot, opening it with the offering's element.
+ * - `absolve`: burn an offering to clear the hero's mana-overflow debt.
  * - `gamble`: burn an offering for a random boon (or a price).
  */
-export type AltarRite = 'inscribe' | 'forge' | 'ground' | 'gamble';
+export type AltarRite = 'double' | 'forge' | 'absolve' | 'gamble';
 
 export interface AltarDefinition {
   /** Matches the altar tile's `interactionHandlerId`. */
@@ -287,7 +239,8 @@ export interface AltarDefinition {
     spellPool: string[];
     debtPenalty: number;
     spellMessage: string;
-    glyphMessage: string;
+    /** Logged when it doubles what a slot lends; `{spell}` is the slot's spell. */
+    doubleMessage: string;
     debtMessage: string;
   };
 }

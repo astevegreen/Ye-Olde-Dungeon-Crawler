@@ -280,7 +280,6 @@ export class ProfileManager {
       mana: maxMana,
       maxMana,
       spellsKnown: manifest.starterKit?.spellsKnown ?? (manifest.spells?.length ? manifest.spells.map(s => s.id) : undefined),
-      grimoireOpenSlots: manifest.magic?.grimoire?.initialOpenSlots,
       grimoireSystem: manifest.magic?.grimoires,
       // The pack's slots, as a load gives them (deserializeGame): the engine's defaults otherwise.
       inventory: new InventoryManager({ ownerId: profileId, slots: manifest.equipmentSlots }),

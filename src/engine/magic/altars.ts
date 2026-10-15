@@ -5,7 +5,7 @@ import type { Entity } from '../entities/entity';
 import type { Player } from '../entities/player';
 import { getSpell } from './spellRegistry';
 import { formatMagicMessage, type AltarDefinition } from './magicConfig';
-import { getGrimoireConfig, glyphForOffering, GRIMOIRE_SIZE } from './grimoireMatrix';
+import { isSlotDoubled, slotOfSpell, type GrimoireSlotRef } from './grimoires';
 import { getKillRiteConfig } from './killRites';
 
 /**
@@ -32,8 +32,8 @@ export interface AltarOffering {
 export interface AltarRiteRequest {
   offeringKind: AltarOfferingKind;
   offeringId: string;
-  /** inscribe: slot to inscribe; ground: sealed slot to open. */
-  slotIndex?: number;
+  /** double: the grimoire slot whose lend is doubled. */
+  slot?: GrimoireSlotRef;
   /** forge: the known spell to transmute. */
   targetSpellId?: string;
 }
@@ -111,24 +111,19 @@ export function performAltarRite(
   const offering = listAltarOfferings(engine, player).find((o) => o.kind === request.offeringKind && o.id === request.offeringId);
   if (!offering) return { success: false, message: 'You have nothing like that to offer.' };
 
-  const grimoire = getGrimoireConfig(engine);
   const values: Record<string, string | number> = { altar: altar.name, offering: offering.name };
   let apply: () => string | undefined;
 
   switch (altar.rite) {
-    case 'inscribe': {
-      const slotIndex = request.slotIndex;
-      const glyph = glyphForOffering(grimoire, offering.element, offering.school);
-      if (!glyph) return { success: false, message: `${offering.name} holds no glyph this altar can inscribe.` };
-      if (slotIndex === undefined || !player.isGrimoireSlotOpen(slotIndex)) return { success: false, message: 'Choose an open grimoire slot.' };
-      const slot = player.grimoire[slotIndex];
-      if ((slot.infusedGlyphs?.length ?? 0) >= (grimoire?.maxGlyphsPerSlot ?? 2)) {
-        return { success: false, message: 'That slot bears all the glyphs it can hold.' };
-      }
-      values.glyph = glyph.name;
-      values.slot = slotIndex + 1;
+    case 'double': {
+      const slot = request.slot;
+      const spellId = slot && player.grimoireState ? player.grimoireState.placements.find((p) => p.grimoireId === slot.grimoireId && p.x === slot.x && p.y === slot.y)?.spellId : undefined;
+      if (!slot || !spellId) return { success: false, message: 'Choose a grimoire slot that holds a spell.' };
+      if (offering.kind === 'spell' && offering.id === spellId) return { success: false, message: 'A spell cannot be burned to strengthen its own slot.' };
+      if (player.grimoireState && isSlotDoubled(player.grimoireState, slot)) return { success: false, message: 'What that slot lends is already doubled.' };
+      values.spell = spellDef(engine, spellId)?.name ?? spellId;
       apply = () => {
-        slot.infusedGlyphs = [...(slot.infusedGlyphs ?? []), { glyphId: glyph.id, potency: 1, sourceName: offering.name }];
+        player.doubleGrimoireSlotLend(slot);
         return undefined;
       };
       break;
@@ -149,15 +144,8 @@ export function performAltarRite(
       };
       break;
     }
-    case 'ground': {
-      const slotIndex = request.slotIndex;
-      if (slotIndex === undefined || slotIndex < 0 || slotIndex >= GRIMOIRE_SIZE || player.isGrimoireSlotOpen(slotIndex)) {
-        return { success: false, message: 'Choose a sealed grimoire slot to open.' };
-      }
-      values.slot = slotIndex + 1;
-      values.element = offering.element;
+    case 'absolve': {
       apply = () => {
-        player.openGrimoireSlot(slotIndex, offering.element);
         player.clearVoidDebt();
         return undefined;
       };
@@ -166,7 +154,7 @@ export function performAltarRite(
     case 'gamble': {
       const gamble = altar.gamble;
       if (!gamble) return { success: false, message: 'This altar is silent.' };
-      apply = () => rollGamble(engine, player, altar, offering, values);
+      apply = () => rollGamble(engine, player, altar, values);
       break;
     }
   }
@@ -186,13 +174,13 @@ export function performAltarRite(
   return { success: true, message };
 }
 
-/** Puts `newId` wherever `oldId` was (every page slot and quick key) and forgets `oldId`. */
+/** Puts `newId` wherever `oldId` was (its grimoire slot and quick keys) and forgets `oldId`. */
 function replaceSpell(player: Player, oldId: string, newId: string): void {
-  const slots = player.grimoirePages.flatMap((p) => p.slots).filter((s) => s.spellId === oldId);
+  const slot = player.grimoireState ? slotOfSpell(player.grimoireState, oldId) : undefined;
   const quick = player.quickSpells.map((id, i) => (id === oldId ? i : -1)).filter((i) => i >= 0);
   player.forgetSpell(oldId);
   player.spellsKnown.push(newId);
-  for (const slot of slots) slot.spellId = newId;
+  if (slot) player.placeGrimoireSpell(newId, slot);
   for (const i of quick) player.quickSpells[i] = newId;
 }
 
@@ -200,16 +188,13 @@ function rollGamble(
   engine: GameEngine,
   player: Player,
   altar: AltarDefinition,
-  offering: AltarOffering,
   values: Record<string, string | number>
 ): string {
   const gamble = altar.gamble!;
   const roll = engine.prng.nextInt(1, 100);
   const unknown = gamble.spellPool.filter((id) => !player.spellsKnown.includes(id) && spellDef(engine, id));
-  const glyph = glyphForOffering(getGrimoireConfig(engine), offering.element, offering.school);
-  const slots = player.grimoire.filter(
-    (s) => s.spellId && player.isGrimoireSlotOpen(s.slotIndex) && (s.infusedGlyphs?.length ?? 0) < (getGrimoireConfig(engine)?.maxGlyphsPerSlot ?? 2)
-  );
+  const state = player.grimoireState;
+  const slots = state ? state.placements.filter((p) => !isSlotDoubled(state, p)) : [];
 
   if (roll <= 40 && unknown.length > 0) {
     const spellId = engine.prng.choice(unknown);
@@ -218,12 +203,11 @@ function rollGamble(
     const waiting = learned.outcome === 'full' ? ' Every slot in your grimoires is full: it waits in your spellbook until you make room.' : '';
     return formatMagicMessage(gamble.spellMessage, values) + waiting;
   }
-  if (roll <= 80 && glyph && slots.length > 0) {
+  if (roll <= 80 && slots.length > 0) {
     const slot = engine.prng.choice(slots);
-    slot.infusedGlyphs = [...(slot.infusedGlyphs ?? []), { glyphId: glyph.id, potency: 2, sourceName: offering.name }];
-    values.glyph = glyph.name;
-    values.slot = slot.slotIndex + 1;
-    return formatMagicMessage(gamble.glyphMessage, values);
+    player.doubleGrimoireSlotLend(slot);
+    values.spell = spellDef(engine, slot.spellId)?.name ?? slot.spellId;
+    return formatMagicMessage(gamble.doubleMessage, values);
   }
   player.accrueVoidDebt(gamble.debtPenalty);
   values.debt = player.voidDebt;
@@ -238,7 +222,7 @@ export class PerformAltarRiteAction implements Action {
   public readonly y: number;
   public readonly offeringKind: AltarOfferingKind;
   public readonly offeringId: string;
-  public readonly slotIndex?: number;
+  public readonly slot?: GrimoireSlotRef;
   public readonly targetSpellId?: string;
 
   get actor(): Entity {
@@ -252,7 +236,7 @@ export class PerformAltarRiteAction implements Action {
     this.y = y;
     this.offeringKind = request.offeringKind;
     this.offeringId = request.offeringId;
-    this.slotIndex = request.slotIndex;
+    this.slot = request.slot ? { ...request.slot } : undefined;
     this.targetSpellId = request.targetSpellId;
   }
 
@@ -262,7 +246,7 @@ export class PerformAltarRiteAction implements Action {
     const outcome = performAltarRite(engine, this.player, altar, this.x, this.y, {
       offeringKind: this.offeringKind,
       offeringId: this.offeringId,
-      slotIndex: this.slotIndex,
+      slot: this.slot,
       targetSpellId: this.targetSpellId,
     });
     if (!outcome.success) return { success: false, cost: 0, message: outcome.message };

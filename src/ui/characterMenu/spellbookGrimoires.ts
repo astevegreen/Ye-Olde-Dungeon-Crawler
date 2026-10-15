@@ -3,6 +3,7 @@ import {
   getSpell,
   grimoireAxes,
   grimoireCells,
+  heroCastPreview,
   isSlotDoubled,
   pendingStatPicks,
   resolveManaTerms,
@@ -33,7 +34,8 @@ export const slotKey = (x: number, y: number): string => `${x},${y}`;
 
 const AXIS_WORD: Record<GrimoireAxis, string> = { x: 'across', y: 'down' };
 
-function position(x: number, y: number): string {
+/** A slot's place in its grimoire in words: "Centre", "Upper left". */
+export function slotPositionName(x: number, y: number): string {
   if (x === 0 && y === 0) return 'Centre';
   if (y === 0) return x < 0 ? 'Left' : 'Right';
   if (x === 0) return y < 0 ? 'Top' : 'Bottom';
@@ -89,13 +91,7 @@ export function castFromSlot(
   const notes = slotStatSteps(system, state, resolved.slot).map((s) => `${s.stat.name} ×${s.steps}`);
   for (const lend of resolved.lends) notes.push(`borrows ${lend.name}${lend.doubled ? ' (doubled)' : ''}`);
   if (resolved.gives.length) notes.push(`lends ${resolved.gives.map((g) => system.lending?.flavours.find((f) => f.id === g)?.name ?? g).join(', ')}`);
-  const cast: SpellDefinition = {
-    ...spell,
-    manaCost: effectiveManaCost(player, spell),
-    range: spell.range ? spell.range + resolved.stats.rangeBonus : spell.range,
-    areaOfEffect: (spell.areaOfEffect ?? 0) + resolved.stats.areaBonus,
-  };
-  return { cast, notes, slotted: true };
+  return { cast: heroCastPreview(engine, spell), notes, slotted: true };
 }
 
 /** Whether an open grimoire has a slot with no spell in it. */
@@ -175,7 +171,7 @@ export function renderGrimoires(engine: GameEngine, player: Player, chosen: Spel
         .filter(Boolean)
         .join(' ');
       cellHtml.push(
-        `<button type="button" class="${cls}" data-gslot="${key}"><div class="sb-cell-head"><span>${position(x, y)}</span>${doubled ? '<span title="This slot\'s lend is doubled">×2</span>' : ''}</div>${body}</button>`
+        `<button type="button" class="${cls}" data-gslot="${key}"><div class="sb-cell-head"><span>${slotPositionName(x, y)}</span>${doubled ? '<span title="This slot\'s lend is doubled">×2</span>' : ''}</div>${body}</button>`
       );
 
       // The line under the grid
@@ -191,7 +187,7 @@ export function renderGrimoires(engine: GameEngine, player: Player, chosen: Spel
       if (chosen) {
         lines.push(spell?.id === chosen.id ? `${escapeHtml(chosen.name)} sits here.` : `Click to ${state.placements.some((p) => p.spellId === chosen.id) ? 'move' : 'put'} ${escapeHtml(chosen.name)} here.`);
       }
-      slotInfo[key] = `<b>${position(x, y)}.</b> ${lines.join(' ')}`;
+      slotInfo[key] = `<b>${slotPositionName(x, y)}.</b> ${lines.join(' ')}`;
     }
   }
 

@@ -17,21 +17,16 @@ describe('cotw runic altars', () => {
     }
   });
 
-  it("places one Hel's Grave-Altar per sealed corner", () => {
-    const sealed = 9 - (COTW_MAGIC.grimoire?.initialOpenSlots?.length ?? 9);
-    const hel = altars.find((a) => a.rite === 'ground')!;
-    expect(placements.filter((p) => p.tileId === hel.id).length).toBeGreaterThanOrEqual(sealed);
-  });
-
   it('never places two altars, or an altar and a story altar, on one floor', () => {
     const floors = placements.map((p) => p.floor);
     expect(new Set(floors).size).toBe(floors.length);
   });
 
-  it('has a glyph for every essence element', () => {
-    for (const element of Object.keys(COTW_ESSENCE_BY_ELEMENT)) {
-      expect(COTW_MAGIC.grimoire?.glyphs?.some((g) => g.fromElements?.includes(element)), element).toBe(true);
-    }
+  it('refunds every old glyph as an Essence-Rune that exists', () => {
+    const essences = new Set(Object.values(COTW_ESSENCE_BY_ELEMENT));
+    const runes = Object.values(COTW_MAGIC.grimoires?.retired?.glyphRunes ?? {});
+    expect(runes.length).toBeGreaterThan(0);
+    for (const itemId of runes) expect(essences.has(itemId), itemId).toBe(true);
   });
 
   it('forges only into real hybrid spells', () => {

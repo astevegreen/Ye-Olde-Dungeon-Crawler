@@ -187,7 +187,7 @@ describe('R-stor-7 · a failed load leaves the live game’s registries as they 
 
   it('a save that throws after its pack is built leaves sword-1 the live sword', () => {
     const { live, sword, save } = liveWithSword();
-    save.player.grimoirePages = [{}]; // throws building the Player, after the map and pack
+    save.player.spellsKnown = 5 as never; // not iterable: throws building the Player, after the map and pack
     expect(live.registries.itemIndex.get('sword-1')).toBe(sword);
 
     expect(() => deserializeGame(save)).toThrow();

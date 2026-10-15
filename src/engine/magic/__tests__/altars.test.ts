@@ -9,6 +9,8 @@ import { listAltarOfferings, isAltarSpent, PerformAltarRiteAction, getAltarDefin
 import { COTW_MAGIC } from '../../../content/cotw/magic';
 import { COTW_SPELLS } from '../../../content/cotw/spells';
 import { COTW_ESSENCE_RUNES } from '../../../content/cotw/items/essences';
+import { COTW_GRIMOIRES } from '../../../content/cotw/grimoires';
+import { isSlotDoubled, slotOfSpell } from '../grimoires';
 
 describe('Spell altars', () => {
   let engine: GameEngine;
@@ -29,7 +31,7 @@ describe('Spell altars', () => {
       maxMana: 50,
       stats: { hp: 50, maxHp: 50, attack: 5, defense: 2 },
       spellsKnown: ['magic_arrow', 'firebolt', 'slow'],
-      grimoireOpenSlots: [1, 3, 4, 5, 7],
+      grimoireSystem: COTW_GRIMOIRES,
     });
     engine = new GameEngine({
       map: new GameMap(15, 15, TILES.FLOOR),
@@ -54,17 +56,19 @@ describe('Spell altars', () => {
     expect(offerings.find((o) => o.id === 'essence_isa')).toMatchObject({ kind: 'essence', element: 'cold', count: 2 });
   });
 
-  it("inscribes an essence's glyph on a slot, consumes it, and spends the altar", () => {
+  it("doubles one slot's lend for an essence, consumes it, and spends the altar", () => {
     giveEssence('essence_isa');
+    const slot = slotOfSpell(player.grimoireState!, 'firebolt')!;
     const res = new PerformAltarRiteAction(player, 'galdr_altar_tyr', ALTAR_X, ALTAR_Y, {
       offeringKind: 'essence',
       offeringId: 'essence_isa',
-      slotIndex: 3,
+      slot,
     }).perform(engine);
 
     expect(res.success).toBe(true);
     expect(res.cost).toBeGreaterThan(0);
-    expect(player.grimoire[3].infusedGlyphs).toEqual([{ glyphId: 'isa', potency: 1, sourceName: 'Isa Essence-Rune' }]);
+    expect(res.message).toContain('Firebolt');
+    expect(isSlotDoubled(player.grimoireState!, slot)).toBe(true);
     expect(listAltarOfferings(engine, player).some((o) => o.id === 'essence_isa')).toBe(false);
     expect(isAltarSpent(engine, ALTAR_X, ALTAR_Y)).toBe(true);
 
@@ -72,37 +76,45 @@ describe('Spell altars', () => {
     const again = performAltarRite(engine, player, altar('galdr_altar_tyr'), ALTAR_X, ALTAR_Y, {
       offeringKind: 'essence',
       offeringId: 'essence_isa',
-      slotIndex: 1,
+      slot: slotOfSpell(player.grimoireState!, 'slow')!,
     });
     expect(again.success).toBe(false);
   });
 
-  it('burns a spell offered at an inscribing altar, using its school for the glyph', () => {
+  it('burns a spell offered to double another slot', () => {
+    const slot = slotOfSpell(player.grimoireState!, 'magic_arrow')!;
     const outcome = performAltarRite(engine, player, altar('galdr_altar_tyr'), ALTAR_X, ALTAR_Y, {
       offeringKind: 'spell',
       offeringId: 'slow',
-      slotIndex: 1,
+      slot,
     });
     expect(outcome.success).toBe(true);
     expect(player.spellsKnown).not.toContain('slow');
-    expect(player.grimoire[1].infusedGlyphs![0].glyphId).toBe('binding'); // Enchantment school
+    expect(isSlotDoubled(player.grimoireState!, slot)).toBe(true);
   });
 
-  it('refuses to inscribe a sealed slot and burns nothing', () => {
+  it("refuses an empty slot, or the offered spell's own, and burns nothing", () => {
     giveEssence('essence_isa');
-    const outcome = performAltarRite(engine, player, altar('galdr_altar_tyr'), ALTAR_X, ALTAR_Y, {
+    const empty = performAltarRite(engine, player, altar('galdr_altar_tyr'), ALTAR_X, ALTAR_Y, {
       offeringKind: 'essence',
       offeringId: 'essence_isa',
-      slotIndex: 0,
+      slot: { grimoireId: 'sol', x: 0, y: 0 },
     });
-    expect(outcome.success).toBe(false);
+    expect(empty.success).toBe(false);
+    const own = performAltarRite(engine, player, altar('galdr_altar_tyr'), ALTAR_X, ALTAR_Y, {
+      offeringKind: 'spell',
+      offeringId: 'slow',
+      slot: slotOfSpell(player.grimoireState!, 'slow')!,
+    });
+    expect(own.success).toBe(false);
+    expect(player.spellsKnown).toContain('slow');
     expect(listAltarOfferings(engine, player).some((o) => o.id === 'essence_isa')).toBe(true);
     expect(isAltarSpent(engine, ALTAR_X, ALTAR_Y)).toBe(false);
   });
 
   it('forges a spell with an essence of another element into its hybrid, in place', () => {
     giveEssence('essence_isa');
-    const slot = player.grimoire.findIndex((s) => s.spellId === 'firebolt');
+    const slot = slotOfSpell(player.grimoireState!, 'firebolt');
     const quick = player.quickSpells.indexOf('firebolt');
 
     const outcome = performAltarRite(engine, player, altar('galdr_altar_odin'), ALTAR_X, ALTAR_Y, {
@@ -114,7 +126,7 @@ describe('Spell altars', () => {
     expect(outcome.success).toBe(true);
     expect(player.spellsKnown).not.toContain('firebolt');
     expect(player.spellsKnown).toContain('steam_lance');
-    expect(player.grimoire[slot].spellId).toBe('steam_lance');
+    expect(slotOfSpell(player.grimoireState!, 'steam_lance')).toEqual(slot);
     expect(player.quickSpells[quick]).toBe('steam_lance');
   });
 
@@ -130,21 +142,18 @@ describe('Spell altars', () => {
     expect(listAltarOfferings(engine, player).some((o) => o.id === 'essence_kenaz')).toBe(true);
   });
 
-  it('grounds an offering into a sealed corner, opening it, and clears debt', () => {
+  it("clears the hero's debt at Hel's altar", () => {
     giveEssence('essence_kenaz');
     player.voidDebt = 20;
     const outcome = performAltarRite(engine, player, altar('galdr_altar_hel'), ALTAR_X, ALTAR_Y, {
       offeringKind: 'essence',
       offeringId: 'essence_kenaz',
-      slotIndex: 0,
     });
     expect(outcome.success).toBe(true);
-    expect(player.isGrimoireSlotOpen(0)).toBe(true);
-    expect(player.grimoireGrounds[0]).toBe('fire');
     expect(player.voidDebt).toBe(0);
   });
 
-  it('gambles an offering away for a spell, a doubled glyph, or debt', () => {
+  it('gambles an offering away for a spell, a doubled lend, or debt', () => {
     giveEssence('essence_ansuz');
     const knownBefore = player.spellsKnown.length;
     const outcome = performAltarRite(engine, player, altar('galdr_altar_loki'), ALTAR_X, ALTAR_Y, {
@@ -153,7 +162,7 @@ describe('Spell altars', () => {
     });
     expect(outcome.success).toBe(true);
     const learned = player.spellsKnown.length > knownBefore;
-    const doubled = player.grimoire.some((s) => s.infusedGlyphs?.some((g) => g.potency === 2));
+    const doubled = player.grimoireState!.doubledSlots.length > 0;
     expect(learned || doubled || player.voidDebt > 0).toBe(true);
   });
 

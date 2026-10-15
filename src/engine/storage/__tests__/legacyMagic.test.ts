@@ -6,7 +6,6 @@ import { FIXTURE_GRIMOIRES } from '../../../../tests/fixtures/fixture-pack';
 import { deserializeGame, serializeGame } from '../serializer';
 import { convertLegacyMagic } from '../legacyMagic';
 import { WaitAction } from '../../actions/wait';
-import { GRIMOIRE_ATTUNE_STATUS } from '../../magic/grimoireMatrix';
 import { slotOfSpell, validateGrimoireSystem } from '../../magic/grimoires';
 import type { GrimoireSystemConfig } from '../../magic/magicConfig';
 import type { GameContentManifest } from '../../types/manifest';
@@ -69,11 +68,10 @@ describe('carrying old magic over to the three grimoires', () => {
     expect(slotOfSpell(state, 'magic_arrow')).toEqual({ grimoireId: 'row', x: 1, y: 0 });
   });
 
-  it('refunds each glyph as its rune once, and takes the glyphs off the old pages', () => {
+  it('refunds each glyph as its rune once, and not again on the next load', () => {
     const engine = load('glyphs-two-slots-one-doubled');
     expect(runes(engine, 'essence_kenaz')).toBe(1);
     expect(runes(engine, 'essence_isa')).toBe(1);
-    expect(engine.player.grimoirePages.flatMap((p) => p.slots).some((s) => s.infusedGlyphs?.length)).toBe(false);
 
     const again = deserializeGame(JSON.parse(JSON.stringify(serializeGame(engine))) as SaveData, manifest).engine;
     expect(runes(again, 'essence_kenaz')).toBe(1);
@@ -97,7 +95,7 @@ describe('carrying old magic over to the three grimoires', () => {
 
   it('drops the page-switch channel', () => {
     const player = load('attunement-channel').player;
-    expect(player.statusManager.hasStatus(GRIMOIRE_ATTUNE_STATUS)).toBe(false);
+    expect(player.statusManager.hasStatus('grimoire_attunement')).toBe(false);
   });
 });
 

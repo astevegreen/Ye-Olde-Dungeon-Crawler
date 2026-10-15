@@ -116,8 +116,6 @@ export interface ItemModifier {
   elementSpellMultiplier?: { element: string; multiplier: number };
   /** The bearer resists these elements: neutral becomes resisted, a weakness neutral (Elementalist; `Actor.affinityTo`). */
   resistsElements?: string[];
-  /** Each grimoire neighbor synergy counts this many more times (Galdr-Master: 1; `resolveEffectiveSpellDetailed`). */
-  grimoireSynergyRepeats?: number;
   /** Added to the chance a melee blow is a critical (Thor's Wrath: 0.25; `MeleeAttackAction`). */
   critChanceBonus?: number;
   /** A critical's multiplier, when higher than the pack's (Thor's Wrath: 2). */

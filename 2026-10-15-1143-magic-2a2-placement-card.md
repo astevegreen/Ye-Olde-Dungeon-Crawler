@@ -29,3 +29,4 @@ Opus at high thinking — the offer touches four engine call sites and possibly 
 ## Verification
 - lint + 3069 tests: green on f829eef9 (pre-commit gate-stamp).
 - Playwright, sim, build: not run.
+Resumed: 2026-10-15 11:54 UTC

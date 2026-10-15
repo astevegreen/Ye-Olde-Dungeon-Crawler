@@ -551,9 +551,14 @@ export class WindUpExecuteAction implements Action {
       if (ent && ent !== this.monster && ent.isAlive() && !hitEntities.includes(ent)) {
         hitEntities.push(ent);
       }
-      if (this.options?.spawnSurface && engine.surfaces) {
-        engine.surfaces.setSurface(t.x, t.y, this.options.spawnSurface, 5);
-      }
+    }
+    // What it lays answers what lies there (water douses fire), said once for the blast.
+    const spawnSurface = this.options?.spawnSurface;
+    if (spawnSurface && engine.surfaces) {
+      const surfaces = engine.surfaces;
+      surfaces.withReactionScope(() => {
+        for (const t of dangerTiles) surfaces.laySurface(engine, t.x, t.y, spawnSurface, 5);
+      });
     }
 
     if (hitEntities.length > 0) {

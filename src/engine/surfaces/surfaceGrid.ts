@@ -45,17 +45,22 @@ export interface SerializedSurfaceCell {
 export interface ReactionResult {
   triggered: boolean;
   occurred: boolean;
-  type?: 'ignite' | 'evaporate' | 'electrocute' | 'freeze';
+  type?: 'ignite' | 'evaporate' | 'electrocute' | 'freeze' | 'melt' | 'douse';
   reactionName?: string;
   message?: string;
   affectedCells: Position[];
   damageDealt?: number;
 }
 
+/** The most tiles a pool shock or freeze reaches. */
+const MAX_POOL_TILES = 50;
+
 export class SurfaceGrid {
   public readonly width: number;
   public readonly height: number;
   private cells: Map<string, CellSurfaces> = new Map();
+  /** One cast's reactions (`withReactionScope`): the tiles that have reacted, and the lines said. */
+  private scope?: { tiles: Set<string>; lines: Set<string> };
 
   constructor(width: number, height: number) {
     this.width = width;
@@ -147,6 +152,66 @@ export class SurfaceGrid {
   }
 
   /**
+   * Lays a ground surface where whatever lies there may answer it: water douses fire on the
+   * ground and a firestorm above it. Returns the reaction, if one happened.
+   */
+  public laySurface(engine: GameEngine, x: number, y: number, type: SurfaceType, duration?: number, potency?: number): ReactionResult | undefined {
+    const cell = this.getCell(x, y);
+    const douses = type === 'water' && (cell?.surface?.type === 'fire' || cell?.gas?.type === 'fire_storm');
+    if (douses && cell?.gas?.type === 'fire_storm') this.removeGas(x, y);
+    this.setSurface(x, y, type, duration, potency);
+    if (!douses) return undefined;
+    const message = '*** The water douses the flames in a hiss of smoke! ***';
+    this.say(engine, message);
+    return { triggered: true, occurred: true, type: 'douse', reactionName: 'Dousing', message, affectedCells: [{ x, y }] };
+  }
+
+  /**
+   * Runs `fn` as one cast's reactions: a tile reacts once (so a pool is shocked once however many
+   * of its tiles a burst covers) and each reaction's line is said once.
+   */
+  public withReactionScope<T>(fn: () => T): T {
+    if (this.scope) return fn();
+    this.scope = { tiles: new Set(), lines: new Set() };
+    try {
+      return fn();
+    } finally {
+      this.scope = undefined;
+    }
+  }
+
+  /** A reaction's line, said once in a cast's scope. */
+  private say(engine: GameEngine, line: string): void {
+    if (this.scope) {
+      if (this.scope.lines.has(line)) return;
+      this.scope.lines.add(line);
+    }
+    engine.log(line);
+  }
+
+  /** The water a pool shock or freeze spreads through: laid water or shallow water. */
+  private isWaterAt(engine: GameEngine, x: number, y: number): boolean {
+    return this.getCell(x, y)?.surface?.type === 'water' || engine.map.getTile(x, y)?.type === 'shallow_water';
+  }
+
+  /** The tiles of the pool at (x, y), 4-way, at most `max`. */
+  private poolAt(engine: GameEngine, x: number, y: number, max: number): Position[] {
+    const pool: Position[] = [];
+    const queue: Position[] = [{ x, y }];
+    const visited = new Set<string>();
+    while (queue.length > 0 && pool.length < max) {
+      const p = queue.shift()!;
+      const k = this.key(p.x, p.y);
+      if (visited.has(k)) continue;
+      visited.add(k);
+      if (!this.inBounds(p.x, p.y) || !this.isWaterAt(engine, p.x, p.y)) continue;
+      pool.push(p);
+      queue.push({ x: p.x + 1, y: p.y }, { x: p.x - 1, y: p.y }, { x: p.x, y: p.y + 1 }, { x: p.x, y: p.y - 1 });
+    }
+    return pool;
+  }
+
+  /**
    * What stepping onto this tile does, by its surface's then its gas's `enter` behaviour
    * (`surfaceBehaviours.ts`): a hurt, a status, a line, extra energy, a slide along (dx, dy).
    * A gas acts only on a mover the surface did not slide away.
@@ -218,6 +283,7 @@ export class SurfaceGrid {
 
   /**
    * Evaluates elemental interactions when fire, lightning, cold, or acid strikes a tile.
+   * In a cast's scope (`withReactionScope`) a tile that has reacted does not react again.
    */
   public triggerElementalReaction(
     x: number,
@@ -234,11 +300,21 @@ export class SurfaceGrid {
     } else {
       engine = damageOrEngine;
     }
+    if (this.scope?.tiles.has(this.key(x, y))) return { triggered: false, occurred: false, affectedCells: [] };
+    const result = this.react(x, y, element, baseDamage, engine);
+    if (this.scope && result.occurred) {
+      this.scope.tiles.add(this.key(x, y));
+      for (const p of result.affectedCells) this.scope.tiles.add(this.key(p.x, p.y));
+    }
+    return result;
+  }
 
+  private react(x: number, y: number, element: ElementType | string, baseDamage: number, engine: GameEngine): ReactionResult {
     const cell = this.getCell(x, y);
     const tile = engine.map.getTile(x, y);
     const isWater = cell?.surface?.type === 'water' || tile?.type === 'shallow_water';
     const isOil = cell?.surface?.type === 'oil_slick';
+    const isIce = cell?.surface?.type === 'ice_sheet';
 
     const normalizedElement = element.toLowerCase();
 
@@ -284,7 +360,7 @@ export class SurfaceGrid {
       }
 
       const msg = `*** The oil slick catches fire and erupts into a spreading FireStorm inferno! ***`;
-      engine.log(msg);
+      this.say(engine, msg);
       return {
         triggered: true,
         occurred: true,
@@ -295,6 +371,14 @@ export class SurfaceGrid {
       };
     }
 
+    // ── Fire on ice: melts to water ──
+    if (isIce && (normalizedElement === 'fire' || normalizedElement === 'heat')) {
+      this.setSurface(x, y, 'water', 8, 1);
+      const msg = `*** The ice sheet melts away into water! ***`;
+      this.say(engine, msg);
+      return { triggered: true, occurred: true, type: 'melt', reactionName: 'Melting', message: msg, affectedCells: [{ x, y }] };
+    }
+
     // ── Reaction 2: Water + Fire -> Evaporates into DenseSteam ──
     if (isWater && (normalizedElement === 'fire' || normalizedElement === 'heat')) {
       if (cell?.surface?.type === 'water') {
@@ -302,7 +386,7 @@ export class SurfaceGrid {
       }
       this.layGas(engine, x, y, 'dense_steam', 5, 1);
       const msg = `*** The water boils furiously, releasing a billowing cloud of dense steam! ***`;
-      engine.log(msg);
+      this.say(engine, msg);
       return {
         triggered: true,
         occurred: true,
@@ -319,7 +403,6 @@ export class SurfaceGrid {
       const queue: Position[] = [{ x, y }];
       const visited = new Set<string>();
       let totalDmg = 0;
-      const MAX_POOL_TILES = 50;
 
       while (queue.length > 0 && affectedCells.length < MAX_POOL_TILES) {
         const p = queue.shift()!;
@@ -369,7 +452,7 @@ export class SurfaceGrid {
       }
 
       const msg = `*** Lightning surges through the connected water pool, shocking everything wading within! ***`;
-      engine.log(msg);
+      this.say(engine, msg);
       return {
         triggered: true,
         occurred: true,
@@ -383,19 +466,17 @@ export class SurfaceGrid {
 
     // ── Reaction 4: Water + Cold/Frost -> Freezes into IceSheet ──
     if (isWater && (normalizedElement === 'cold' || normalizedElement === 'frost' || normalizedElement === 'ice')) {
-      if (cell?.surface?.type === 'water') {
-        this.removeSurface(x, y);
-      }
-      this.setSurface(x, y, 'ice_sheet', 6, 1);
+      const pool = this.poolAt(engine, x, y, MAX_POOL_TILES);
+      for (const p of pool) this.setSurface(p.x, p.y, 'ice_sheet', 6, 1);
       const msg = `*** The water flash-freezes into a slick sheet of ice! ***`;
-      engine.log(msg);
+      this.say(engine, msg);
       return {
         triggered: true,
         occurred: true,
         type: 'freeze',
         reactionName: 'Freezing',
         message: msg,
-        affectedCells: [{ x, y }],
+        affectedCells: pool,
       };
     }
 

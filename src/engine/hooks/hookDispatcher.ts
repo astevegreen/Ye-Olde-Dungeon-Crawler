@@ -263,15 +263,18 @@ function executeSpawnSurface(
   const pos = context.position ?? (target ? { x: target.x, y: target.y } : { x: owner.x, y: owner.y });
   const radius = action.radius ?? 1;
   const dur = action.duration ?? 6;
-  for (let ry = -radius + 1; ry <= radius - 1; ry++) {
-    for (let rx = -radius + 1; rx <= radius - 1; rx++) {
-      const tx = pos.x + rx;
-      const ty = pos.y + ry;
-      if (engine.map.inBounds(tx, ty) && engine.map.isPassable(tx, ty)) {
-        engine.surfaces.setSurface(tx, ty, action.surfaceType, dur);
+  // What it lays answers what lies there (water douses fire), said once for the pool.
+  engine.surfaces.withReactionScope(() => {
+    for (let ry = -radius + 1; ry <= radius - 1; ry++) {
+      for (let rx = -radius + 1; rx <= radius - 1; rx++) {
+        const tx = pos.x + rx;
+        const ty = pos.y + ry;
+        if (engine.map.inBounds(tx, ty) && engine.map.isPassable(tx, ty)) {
+          engine.surfaces.laySurface(engine, tx, ty, action.surfaceType, dur);
+        }
       }
     }
-  }
+  });
   const msg = description ?? `[PROC: ${sourceName}] A pool of ${action.surfaceType} spreads across the floor!`;
   engine.log(msg);
   summary.messages.push(msg);

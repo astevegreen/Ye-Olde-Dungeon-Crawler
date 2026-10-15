@@ -120,6 +120,7 @@ export const FIXTURE_SPELLS: SpellDefinition[] = [
     effects: [{ type: 'heal', amount: 35 }],
   },
   ...movementAndMarkSpells(),
+  ...groundSpells(),
   // The spell building blocks (P-28): several elements and pierce, a blood price, cleanse, hand-over.
   {
     id: 'forge_bolt',
@@ -211,9 +212,33 @@ function movementAndMarkSpells(): SpellDefinition[] {
     spell('switch', 'Switch', 'target_entity', [{ type: 'swap' }]),
     spell('steered_blink', 'Steered Blink', 'tile', [{ type: 'teleport', range: 5, random: false, aimed: true }]),
     spell('brand', 'Brand', 'target_entity', [{ type: 'applyStatus', statusId: 'marked', duration: 10 }]),
-    // Laying ground and gas on a 3×3 burst (P-32); `murk` is the pack's own gas.
-    { ...spell('rime_patch', 'Rime Patch', 'tile', [{ type: 'lay', layer: 'surface', kind: 'ice_sheet', duration: 15 }]), areaOfEffect: 1 },
-    { ...spell('murk_cloud', 'Murk Cloud', 'tile', [{ type: 'lay', layer: 'gas', kind: 'murk', duration: 10 }]), areaOfEffect: 1 },
+  ];
+}
+
+/** 3×3 bursts that lay ground or gas, or strike it (P-32); `murk` is the pack's own gas. */
+function groundSpells(): SpellDefinition[] {
+  const burst = (id: string, name: string, element: string, effects: SpellDefinition['effects']): SpellDefinition => ({
+    id,
+    name,
+    school: 'Combat',
+    manaCost: 5,
+    element,
+    range: 8,
+    basePower: 10,
+    areaOfEffect: 1,
+    reflects: false,
+    targetType: 'tile',
+    targetingMode: 'tile',
+    description: name,
+    effects,
+  });
+  return [
+    burst('rime_patch', 'Rime Patch', 'cold', [{ type: 'lay', layer: 'surface', kind: 'ice_sheet', duration: 15 }]),
+    burst('murk_cloud', 'Murk Cloud', 'arcane', [{ type: 'lay', layer: 'gas', kind: 'murk', duration: 10 }]),
+    burst('drench', 'Drench', 'arcane', [{ type: 'lay', layer: 'surface', kind: 'water', duration: 10 }]),
+    burst('flame_burst', 'Flame Burst', 'fire', [{ type: 'damage', amount: 10, element: 'fire' }]),
+    burst('frost_burst', 'Frost Burst', 'cold', [{ type: 'damage', amount: 10, element: 'cold' }]),
+    burst('storm_burst', 'Storm Burst', 'lightning', [{ type: 'damage', amount: 10, element: 'lightning' }]),
   ];
 }
 

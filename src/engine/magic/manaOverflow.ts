@@ -149,7 +149,7 @@ function applyOutcome(
       if (spill.gas) {
         engine.surfaces.layGas(engine, cell.x, cell.y, spill.gas, spill.duration, spill.potency);
       } else if (spill.surface) {
-        engine.surfaces.setSurface(cell.x, cell.y, spill.surface, spill.duration, spill.potency);
+        engine.surfaces.laySurface(engine, cell.x, cell.y, spill.surface, spill.duration, spill.potency);
       }
       return { message: format(spill.message), damageToCaster: 0 };
     }
@@ -168,7 +168,7 @@ function applyOutcome(
       return { message: format(outcome.message), damageToCaster: 0 };
     }
     case 'surface_under_caster': {
-      engine.surfaces?.setSurface(caster.x, caster.y, outcome.surface, outcome.duration, outcome.potency);
+      engine.surfaces?.laySurface(engine, caster.x, caster.y, outcome.surface, outcome.duration, outcome.potency);
       return { message: format(outcome.message), damageToCaster: 0 };
     }
     case 'max_hp_burn': {

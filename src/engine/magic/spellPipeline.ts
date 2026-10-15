@@ -236,7 +236,7 @@ export class SpellPipeline {
       for (const p of ctx.tiles ?? []) {
         if (!ctx.engine.map.isPassable(p.x, p.y)) continue;
         if (effect.layer === 'gas') ctx.engine.surfaces.layGas(ctx.engine, p.x, p.y, effect.kind, effect.duration, effect.potency);
-        else ctx.engine.surfaces.setSurface(p.x, p.y, effect.kind, effect.duration, effect.potency);
+        else ctx.engine.surfaces.laySurface(ctx.engine, p.x, p.y, effect.kind, effect.duration, effect.potency);
       }
     });
 
@@ -284,8 +284,9 @@ export class SpellPipeline {
       return this.executeSelfSpell(engine, spell, caster, actionCost, shaping);
     }
 
-    // Targeted / Ray / Area / Burst spells
-    return this.executeTargetedSpell(engine, spell, caster, targetPos, mode, actionCost, shaping);
+    // Targeted / Ray / Area / Burst spells, their ground reactions as one cast's (`withReactionScope`)
+    const cast = () => this.executeTargetedSpell(engine, spell, caster, targetPos, mode, actionCost, shaping);
+    return engine.surfaces ? engine.surfaces.withReactionScope(cast) : cast();
   }
 
   /**
@@ -570,6 +571,7 @@ export class SpellPipeline {
     }
 
     // The spell's effect primitives, in order, on everything it reached.
+    const stoodOn = new Set(targetsHit.map((t) => `${t.x},${t.y}`));
     SpellPipeline.ensureBuiltinEffects();
     const ctx: EffectContext = {
       engine,
@@ -589,6 +591,17 @@ export class SpellPipeline {
       EffectPrimitiveRegistry.dispatch(effect, ctx);
     }
     if (shaping.lends) SpellPipeline.deliverLends(ctx, shaping.lends, targetsHit, startPos);
+
+    // A burst's hits strike the ground where nobody stood to take them: oil ignites, water boils or freezes.
+    if (geo.burst && engine.surfaces) {
+      for (const effect of spell.effects) {
+        if (effect.type !== 'damage') continue;
+        for (const tile of castTiles) {
+          if (stoodOn.has(`${tile.x},${tile.y}`)) continue;
+          engine.surfaces.triggerElementalReaction(tile.x, tile.y, (effect as DamageEffect).element, spell.basePower || 10, engine);
+        }
+      }
+    }
 
     return { success: true, cost: actionCost, message: hitDescription || `${caster.name} casts ${spell.name}.`, effects };
   }

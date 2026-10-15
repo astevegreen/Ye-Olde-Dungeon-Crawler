@@ -94,6 +94,7 @@ export * from './magic/spellRegistry';
 export * from './magic/spellPipeline';
 export { effectiveManaCost, effectiveSpellPower, heroCastPreview } from './magic/castNumbers';
 export { castGeometry } from './magic/castTrace';
+export { pendingBlasts } from './magic/delayedBlast';
 export * from './magic/targeting';
 export * from './magic/runeOfReturn';
 export * from './magic/manaOverflow';

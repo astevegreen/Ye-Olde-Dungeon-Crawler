@@ -15,7 +15,7 @@ export function setOffEndings(engine: GameEngine, bearer: Entity, trigger: Exclu
     const handler = StatusHandlerRegistry.get(effect.type);
     if (!handler?.ending?.on.includes(trigger)) continue;
     // An earlier burst may have ended it already (one ending setting off another).
-    if (!bearer.statusManager.removeStatus(effect.type)) continue;
+    if (!bearer.statusManager.removeEffect(effect)) continue;
     goOff(engine, bearer, effect, handler.ending);
     handler.onEnd?.(bearer, effect, engine);
   }

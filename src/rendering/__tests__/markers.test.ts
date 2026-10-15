@@ -6,6 +6,7 @@ import { IDLE_FRAME_MS } from '../atlas/idle-frames';
 import { drawAimReticle, drawBlastZone, drawDangerZone, drawHostileBrackets, drawHpBar, drawMapTag, drawSensedCreature, drawSensedItem } from '../markers/markers';
 import { resolveThemeTokens } from '../theme';
 import { GameEngine, GameMap, TILES, Player, Monster } from '../../engine';
+import { fixtureManifest } from '../../../tests/fixtures/fixture-pack';
 
 interface Call {
   op: string;
@@ -219,6 +220,24 @@ describe('the danger zone over wind-ups', () => {
     a.intent = { type: 'idle' } as Monster['intent'];
     b.intent = { type: 'idle' } as Monster['intent'];
     expect(new IntentOverlay().render(recorder().ctx, engine, camera, 32, 0, 0)).toBe(false);
+  });
+  it('marks a pending delayed blast as a wind-up is marked, and names its spell', () => {
+    const map = new GameMap(20, 12, TILES.FLOOR);
+    const hero = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } });
+    const engine = new GameEngine({ map, player: hero, manifest: fixtureManifest });
+    engine.updateFov();
+    const camera = new Camera(20, 12);
+    const overlay = new IntentOverlay();
+    expect(overlay.render(recorder().ctx, engine, camera, 32, 0, 0)).toBe(false);
+
+    hero.statusManager.applyStatus({ type: 'delayed_blast', duration: 2, data: { spell: 'rockslide', x: 9, y: 6, ox: 5, oy: 5 } });
+    const { ctx, calls } = recorder();
+    expect(overlay.render(ctx, engine, camera, 32, 0, 0)).toBe(true);
+    // A 3×3 square: twelve outside edges.
+    expect(straightSides(calls).size).toBe(12);
+    const cards = Object.values(overlay.cards(engine, camera, 32, 0, 0));
+    expect(cards).toHaveLength(1);
+    expect(cards[0].html).toContain('rockslide');
   });
 });
 

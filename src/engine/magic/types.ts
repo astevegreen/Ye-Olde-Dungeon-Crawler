@@ -202,6 +202,11 @@ export interface SpellDefinition {
   targetingMode?: TargetingMode;
   /** The tiles it covers instead of a ray or burst (`SpellShape`). */
   shape?: SpellShape;
+  /**
+   * Turns its foes get to step out: the cast marks the tiles its shape or burst covers, and
+   * it strikes them after the caster's next `delay` actions (`delayedBlast.ts`). Unset strikes at once.
+   */
+  delay?: number;
   /** What the spell does, in order, to what it reaches (`EffectPrimitiveRegistry`). */
   effects: EffectPrimitive[];
   /** Where effects borrowed from touching grimoire slots land (P-30); a spell without one borrows nothing, but still lends. */

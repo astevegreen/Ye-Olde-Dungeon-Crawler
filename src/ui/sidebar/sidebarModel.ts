@@ -111,11 +111,15 @@ export function getConditions(engine: GameEngine): Condition[] {
   const p = engine.player;
   const conditions: Condition[] = [];
 
+  const seen = new Map<string, number>();
   for (const eff of p.statusManager.getAll()) {
     const def = engine.manifest?.statusEffects?.find((s) => s.id === eff.type);
     const color = eff.type === 'rune_of_return_channel' ? 'var(--ui-info)' : def?.hudColor ?? BUILT_IN_STATUS_COLORS[eff.type] ?? 'var(--ui-info)';
+    // A status that stacks (two delayed blasts) lists each instance under its own key.
+    const n = (seen.get(eff.type) ?? 0) + 1;
+    seen.set(eff.type, n);
     conditions.push({
-      key: `status:${eff.type}`,
+      key: n === 1 ? `status:${eff.type}` : `status:${eff.type}#${n}`,
       label: statusDisplayName(engine.manifest, eff.type),
       color,
       turns: isAmbientDuration(eff.duration) ? null : eff.duration,

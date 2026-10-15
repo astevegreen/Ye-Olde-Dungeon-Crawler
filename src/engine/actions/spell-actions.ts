@@ -7,8 +7,8 @@ import { Entity } from '../entities/entity';
 import { Actor } from '../entities/actor';
 import { Player } from '../entities/player';
 import { getSpell } from '../magic/spellRegistry';
-import { SpellPipeline, type CastShaping } from '../magic/spellPipeline';
-import { pickMaterial, type ResolvedCast } from '../magic/neighbourLending';
+import { SpellPipeline } from '../magic/spellPipeline';
+import { layDelayedBlast } from '../magic/delayedBlast';
 import { WandItem, ScrollItem, PotionItem } from '../items/consumables';
 import { flightRecorder } from '../debug/flightRecorder';
 import { awardPlayerXp } from '../combat/deathResolver';
@@ -20,26 +20,14 @@ import {
   castSlotStats,
   effectiveHpCost as effectiveHpCostOf,
   effectiveManaCost as effectiveManaCostOf,
-  heroResolvedCast,
-  withForgedElements,
-  withSlotStats,
-  withSpellRangeBonus,
+  castShaping,
+  resolveCastSpell,
+  withElement,
 } from '../magic/castNumbers';
 import type { GrimoireAxis } from '../magic/magicConfig';
 import { forgedTitle, type StatPickOutcome } from '../magic/grimoires';
 import { forgeOfferElements, forgeRefusal } from '../magic/altars';
 import { StatusHandlerRegistry } from '../status/statusHandlers';
-
-/**
- * A resolved cast as the pipeline takes it: its own power, and what it borrowed. A terrain
- * spell takes one borrowed material per cast, at random.
- */
-function castShaping(engine: GameEngine, cast: ResolvedCast): CastShaping {
-  const powerMultiplier = cast.stats.powerMultiplier * cast.lentPowerMultiplier;
-  if (!cast.delivery || cast.lends.length === 0) return { powerMultiplier };
-  const lent = cast.delivery === 'material' ? [pickMaterial(cast, engine.prng.next())!] : cast.lends;
-  return { powerMultiplier, lends: { delivery: cast.delivery, effects: lent.flatMap((l) => l.effects) } };
-}
 
 export class CastSpellAction implements Action {
   public readonly caster: Entity;
@@ -74,20 +62,18 @@ export class CastSpellAction implements Action {
     const isPlayer = this.caster instanceof Player;
     const player = isPlayer ? (this.caster as Player) : null;
 
-    let spell = engine.manifest?.spells?.find((s) => s.id === this.spellId) ?? getSpell(this.spellId);
-    if (!spell) {
-      return { success: false, cost: 0, message: `Unknown spell: ${this.spellId}` };
-    }
     // The three grimoires (P-29, P-30): a hero casts a spell from its slot, whose stats shape
     // the spell's own effect while its neighbours lend theirs. Hook-driven free casts, scrolls
     // and wands stay unmodified.
-    const resolved = player && !this.freeCast ? heroResolvedCast(engine, this.spellId) : undefined;
-    if (player && !this.freeCast && player.grimoireSystem && !resolved) {
+    const cast = resolveCastSpell(engine, this.caster, this.spellId, this.freeCast);
+    let spell = cast.spell;
+    const resolved = cast.resolved;
+    if (!spell) {
+      return { success: false, cost: 0, message: `Unknown spell: ${this.spellId}` };
+    }
+    if (cast.unslotted) {
       return { success: false, cost: 0, message: `${spell.name} is in no grimoire slot. Place it in the spellbook to cast it.` };
     }
-    if (resolved) spell = withForgedElements(withSlotStats(spell, resolved.stats), resolved.elements.slice(1));
-    // Reach the caster wears and holds (Odin's Eye), as `resolveCast` shows it.
-    spell = withSpellRangeBonus(this.caster, spell);
 
     // Wildfire: a damaging spell takes a random element of the pack's.
     if (wearsFlag(this.caster, 'randomSpellElement') && spell.element && spell.effects?.some((e) => e.type === 'damage')) {
@@ -97,9 +83,8 @@ export class CastSpellAction implements Action {
         .map((e) => e.id)
         .filter((e) => e !== 'healing' && e !== 'physical');
       if (elements.length > 0) {
-        const element = elements[Math.floor(engine.rng() * elements.length)];
-        spell = { ...spell, element, effects: spell.effects.map((e) => ('element' in e && e.element ? { ...e, element } : e)) };
-        engine.log(`Wildfire turns ${spell.name} to ${element}!`);
+        spell = withElement(spell, elements[Math.floor(engine.rng() * elements.length)]);
+        engine.log(`Wildfire turns ${spell.name} to ${spell.element}!`);
       }
     }
 
@@ -198,15 +183,18 @@ export class CastSpellAction implements Action {
       spell.element
     );
 
-    const result = SpellPipeline.executeSpell(
-      engine,
-      spell,
-      this.caster,
-      { x: this.targetX, y: this.targetY },
-      this.itemTargetId,
-      actionCost,
-      resolved ? castShaping(engine, resolved) : undefined
-    );
+    // A delayed spell marks where it will land; it resolves when its countdown runs out (`delayedBlast.ts`).
+    const result = spell.delay
+      ? layDelayedBlast(engine, spell, this.caster, { x: this.targetX, y: this.targetY }, this.freeCast, actionCost)
+      : SpellPipeline.executeSpell(
+          engine,
+          spell,
+          this.caster,
+          { x: this.targetX, y: this.targetY },
+          this.itemTargetId,
+          actionCost,
+          resolved ? castShaping(engine, resolved) : undefined
+        );
 
     // A cast paid partly from debt rolls a surge from the pack's overflow table
     if (player && paysCosts && manaDeficit > 0) {

@@ -153,6 +153,12 @@ export interface CastShaping {
   lends?: CastLends;
 }
 
+/** Where a delayed blast was cast from (`delayedBlast.ts`): its shape and burst cover what they marked then. */
+export interface DelayedOrigin {
+  x: number;
+  y: number;
+}
+
 export class SpellPipeline {
   public static registerBuiltinEffects(): void {
     EffectPrimitiveRegistry.register<DamageEffect>('damage', (effect, ctx) => {
@@ -281,7 +287,8 @@ export class SpellPipeline {
     targetPos: Position,
     itemTargetId?: string,
     actionCost = 100,
-    shaping: CastShaping = {}
+    shaping: CastShaping = {},
+    delayed?: DelayedOrigin
   ): ActionResult {
     const mode: TargetingMode = spell.targetingMode ?? (spell.targetType as TargetingMode);
 
@@ -290,12 +297,12 @@ export class SpellPipeline {
     }
 
     // A nova is aimed at the caster, but covers tiles as any shaped spell does.
-    if (mode === 'self' && !spell.shape) {
+    if (mode === 'self' && !spell.shape && !delayed) {
       return this.executeSelfSpell(engine, spell, caster, actionCost, shaping);
     }
 
     // Targeted / Ray / Area / Burst spells, their ground reactions as one cast's (`withReactionScope`)
-    const cast = () => this.executeTargetedSpell(engine, spell, caster, targetPos, mode, actionCost, shaping);
+    const cast = () => this.executeTargetedSpell(engine, spell, caster, targetPos, mode, actionCost, shaping, delayed);
     return engine.surfaces ? engine.surfaces.withReactionScope(cast) : cast();
   }
 
@@ -453,11 +460,15 @@ export class SpellPipeline {
     targetPos: Position,
     mode: TargetingMode,
     actionCost: number,
-    shaping: CastShaping
+    shaping: CastShaping,
+    delayed?: DelayedOrigin
   ): ActionResult {
-    const startPos = { x: caster.x, y: caster.y };
+    // A delayed blast covers what it marked from where it was cast, wherever its caster went since.
+    const startPos = delayed ? { x: delayed.x, y: delayed.y } : { x: caster.x, y: caster.y };
     // Its flight and burst, as the aim preview draws them (`castGeometry`).
-    const geo = castGeometry(engine, spell, caster, targetPos);
+    let geo = castGeometry(engine, spell, { id: caster.id, ...startPos }, targetPos);
+    // A delayed burst was thrown when it was cast: it lands on the tile it marked, with no flight.
+    if (delayed && geo.burst) geo = { reflects: false, burst: { epicenter: { x: targetPos.x, y: targetPos.y }, radius: geo.burst.radius } };
     const reflects = geo.reflects;
     const targetsHit: Entity[] = [];
     let impactTile = { x: targetPos.x, y: targetPos.y };
@@ -502,7 +513,9 @@ export class SpellPipeline {
         durationMs: spell.visual?.durationMs ?? 250,
         style: spell.element === 'fire' ? 'flame' : spell.element === 'lightning' ? 'spark' : 'shockwave',
       });
-      hitDescription = `${caster.name} casts ${spell.name}, catching ${targetsHit.length} target(s)!`;
+      hitDescription = delayed
+        ? `${caster.name}'s ${spell.name} strikes, catching ${targetsHit.length} target(s)!`
+        : `${caster.name} casts ${spell.name}, catching ${targetsHit.length} target(s)!`;
       engine.log(hitDescription);
     } else if ((mode === 'ray' || mode === 'bounce_ray') && geo.ray) {
       const rayResult = geo.ray;
@@ -603,7 +616,9 @@ export class SpellPipeline {
           targetsHit.push(ent);
         }
       }
-      hitDescription = `${caster.name} casts ${spell.name}! An explosive blast erupts at (${burstOrigin.x}, ${burstOrigin.y}) catching ${targetsHit.length} target(s)!`;
+      hitDescription = delayed
+        ? `${caster.name}'s ${spell.name} strikes at (${burstOrigin.x}, ${burstOrigin.y}), catching ${targetsHit.length} target(s)!`
+        : `${caster.name} casts ${spell.name}! An explosive blast erupts at (${burstOrigin.x}, ${burstOrigin.y}) catching ${targetsHit.length} target(s)!`;
       engine.log(hitDescription);
     } else {
       // Direct entity or single tile target

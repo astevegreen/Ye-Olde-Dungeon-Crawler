@@ -97,11 +97,11 @@ describe('endings: a status that goes off as it ends (P-31)', () => {
     expect(near.hp).toBeLessThan(near.maxHp);
   });
 
-  it('a delayed blast goes off at its own centre when its countdown ends', () => {
+  it('a blast laid on a tile goes off at its own centre when its countdown ends', () => {
     const { engine, hero } = scene();
     const near = foe(engine, 11, 5);
     const far = foe(engine, 2, 2);
-    hero.statusManager.applyStatus({ type: 'delayed_blast', duration: 1, data: { x: 10, y: 5 } });
+    hero.statusManager.applyStatus({ type: 'laid_blast', duration: 1, data: { x: 10, y: 5 } });
 
     hero.statusManager.tick(hero, engine);
 

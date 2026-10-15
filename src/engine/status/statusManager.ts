@@ -12,14 +12,31 @@ export interface StatusTickResult {
 }
 
 export class StatusManager {
-  private effects: Map<StatusType, StatusEffect> = new Map();
+  /** Keyed by type; a stacking status's later instances by `type#n` (`StatusHandler.stacks`). */
+  private effects: Map<string, StatusEffect> = new Map();
 
   public hasStatus(type: StatusType): boolean {
-    return this.effects.has(type);
+    return this.keyOf(type) !== undefined;
   }
 
   public getStatus(type: StatusType): StatusEffect | undefined {
-    return this.effects.get(type);
+    const key = this.keyOf(type);
+    return key === undefined ? undefined : this.effects.get(key);
+  }
+
+  /** The key of the first instance of `type`. */
+  private keyOf(type: StatusType): string | undefined {
+    if (this.effects.has(type)) return type;
+    for (const [key, effect] of this.effects) if (effect.type === type) return key;
+    return undefined;
+  }
+
+  /** A key no instance holds yet: the type itself, else `type#n`. */
+  private freeKey(type: StatusType): string {
+    if (!this.effects.has(type)) return type;
+    let n = 2;
+    while (this.effects.has(`${type}#${n}`)) n++;
+    return `${type}#${n}`;
   }
 
   public getAll(): readonly StatusEffect[] {
@@ -97,7 +114,8 @@ export class StatusManager {
       return { applied: false };
     }
 
-    const existing = this.effects.get(status.type);
+    const handler = StatusHandlerRegistry.get(status.type);
+    const existing = handler?.stacks ? undefined : this.getStatus(status.type);
     if (existing) {
       existing.duration = Math.max(existing.duration, status.duration);
       if (status.potency !== undefined) {
@@ -105,8 +123,7 @@ export class StatusManager {
       }
       return { applied: true };
     }
-    this.effects.set(status.type, { ...status });
-    const handler = StatusHandlerRegistry.get(status.type);
+    this.effects.set(this.freeKey(status.type), { ...status });
     if (handler?.onApply && entity && engine) {
       const message = handler.onApply(entity, status, engine);
       if (message) {
@@ -118,7 +135,14 @@ export class StatusManager {
   }
 
   public removeStatus(type: StatusType): boolean {
-    return this.effects.delete(type);
+    const key = this.keyOf(type);
+    return key !== undefined && this.effects.delete(key);
+  }
+
+  /** Removes this one instance, whichever of its type's it is; false when it is gone already. */
+  public removeEffect(effect: StatusEffect): boolean {
+    for (const [key, held] of this.effects) if (held === effect) return this.effects.delete(key);
+    return false;
   }
 
   public clear(): void {
@@ -138,11 +162,11 @@ export class StatusManager {
   ): StatusType[] {
     const moved: StatusType[] = [];
     for (const type of types) {
-      const effect = this.effects.get(type);
+      const effect = this.getStatus(type);
       if (!effect) continue;
       const handed: StatusEffect = { ...effect, sourceEntityId: giverId, data: effect.data ? { ...effect.data } : undefined };
       if (recipient.statusManager.applyStatusDetailed(handed, [], recipient, engine).applied) {
-        this.effects.delete(type);
+        this.removeEffect(effect);
         moved.push(type);
       }
     }
@@ -155,7 +179,8 @@ export class StatusManager {
     let damageTaken = 0;
     let killed = false;
 
-    for (const [type, effect] of Array.from(this.effects.entries())) {
+    for (const [key, effect] of Array.from(this.effects.entries())) {
+      const type = effect.type;
       const handler = StatusHandlerRegistry.get(type);
 
       // 1. Process periodic status effects
@@ -176,12 +201,12 @@ export class StatusManager {
       // interrupted Rune of Return channel, which fizzles rather than "expiring" —
       // docs/architecture/content-extensibility.md). Don't double-process expiry for an effect that's no
       // longer tracked.
-      if (!this.effects.has(type)) continue;
+      if (this.effects.get(key) !== effect) continue;
 
       // 2. Decrement duration
       effect.duration -= 1;
       if (effect.duration <= 0) {
-        this.effects.delete(type);
+        this.effects.delete(key);
         expired.push(type);
 
         if (handler?.onExpire) {
@@ -223,7 +248,7 @@ export class StatusManager {
     if (!Array.isArray(data)) return;
     for (const s of data) {
       if (s && s.type && s.duration > 0) {
-        this.effects.set(s.type, {
+        this.effects.set(this.freeKey(s.type), {
           type: s.type,
           duration: s.duration,
           potency: s.potency,

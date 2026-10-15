@@ -58,4 +58,13 @@ describe('aiming card markup', () => {
     expect(html).toContain('Power');
     expect(html).toContain('14');
   });
+
+  it('says an out-and-back strikes all it passes, and when a delayed spell strikes', () => {
+    const hammer = { ...spell, reflects: false, targetType: 'tile', shape: 'outAndBack' } as unknown as SpellDefinition;
+    expect(aimCardHtml(engineWithTarget(), { ...entry, spellDef: hammer }, 5, 2)).toContain('Strikes all it passes, out and back');
+    const rock = { ...spell, reflects: false, targetType: 'tile', shape: 'square', areaOfEffect: 3, delay: 1 } as unknown as SpellDefinition;
+    expect(aimCardHtml(engineWithTarget(), { ...entry, spellDef: rock }, 5, 2)).toContain('Strikes next turn');
+    expect(aimCardHtml(engineWithTarget(), { ...entry, spellDef: { ...rock, delay: 2 } }, 5, 2)).toContain('Strikes in 2 turns');
+    expect(aimCardHtml(engineWithTarget(), entry, 5, 2)).not.toContain('Strikes');
+  });
 });

@@ -5,8 +5,9 @@ import { wornModifiers, sumWorn, productWorn } from '../items/wornModifiers';
 import { spellPowerMultiplier, attributeScalingOf } from '../combat/attributeScaling';
 import { Player } from '../entities/player';
 import { resolveSlotStats, slotOfSpell, slotStatSteps, type GrimoireSlotStats, type GrimoireState } from './grimoires';
-import { resolveAllCasts, type ResolvedCast } from './neighbourLending';
+import { pickMaterial, resolveAllCasts, type ResolvedCast } from './neighbourLending';
 import { getSpell } from './spellRegistry';
+import type { CastShaping } from './spellPipeline';
 
 /**
  * A spell's numbers as a cast of it resolves for this caster. The cast, the HUD, the
@@ -86,6 +87,44 @@ export function withForgedElements(spell: SpellDefinition, added: readonly strin
       return { ...e, elements };
     }),
   };
+}
+
+/** The spell turned wholly to `element`, each of its effects that carries one too (Wildfire). */
+export function withElement(spell: SpellDefinition, element: string): SpellDefinition {
+  if (element === spell.element) return spell;
+  return { ...spell, element, effects: spell.effects.map((e) => ('element' in e && e.element ? { ...e, element } : e)) };
+}
+
+/**
+ * `spellId` as `caster` casts it: from its slot for a hero (P-29, P-30), the slot's stats
+ * shaping it and its neighbours lending, then the reach the caster wears. A free cast, a
+ * monster's and a hero's without the grimoire model take the spell as written. `unslotted`
+ * when a hero with the model has it in no slot, so cannot cast it.
+ */
+export function resolveCastSpell(
+  engine: GameEngine,
+  caster: Entity,
+  spellId: string,
+  freeCast: boolean
+): { spell?: SpellDefinition; resolved?: ResolvedCast; unslotted?: boolean } {
+  let spell = engine.manifest?.spells?.find((s) => s.id === spellId) ?? getSpell(spellId);
+  if (!spell) return {};
+  const player = caster instanceof Player ? caster : undefined;
+  const resolved = player && !freeCast ? heroResolvedCast(engine, spellId) : undefined;
+  if (player && !freeCast && player.grimoireSystem && !resolved) return { spell, unslotted: true };
+  if (resolved) spell = withForgedElements(withSlotStats(spell, resolved.stats), resolved.elements.slice(1));
+  return { spell: withSpellRangeBonus(caster, spell), resolved };
+}
+
+/**
+ * A resolved cast as the pipeline takes it: its own power, and what it borrowed. A terrain
+ * spell takes one borrowed material per cast, at random.
+ */
+export function castShaping(engine: GameEngine, cast: ResolvedCast): CastShaping {
+  const powerMultiplier = cast.stats.powerMultiplier * cast.lentPowerMultiplier;
+  if (!cast.delivery || cast.lends.length === 0) return { powerMultiplier };
+  const lent = cast.delivery === 'material' ? [pickMaterial(cast, engine.prng.next())!] : cast.lends;
+  return { powerMultiplier, lends: { delivery: cast.delivery, effects: lent.flatMap((l) => l.effects) } };
 }
 
 /** The spell with the range what the caster wears and holds adds (`spellRangeBonus`, Odin's Eye); a spell with no range keeps none. */

@@ -336,10 +336,14 @@ export class TargetingOverlay implements UIModal {
     const theme = resolveThemeTokens(engine.manifest?.theme);
     const color = spellColor(engine, spell.element);
 
-    // The blast it will make, under the line and the reticle.
-    if (geo.burst) {
+    // What it will strike, under the line and the reticle: its burst, the tiles its shape
+    // covers, or every tile an out-and-back passes, since it strikes all it passes through.
+    const struck = geo.burst
+      ? getAreaOfEffectTiles(engine.map, geo.burst.epicenter.x, geo.burst.epicenter.y, geo.burst.radius)
+      : (geo.area ?? (geo.back ? path : []));
+    if (struck.length > 0) {
       const blast: ScreenPoint[] = [];
-      for (const tile of getAreaOfEffectTiles(engine.map, geo.burst.epicenter.x, geo.burst.epicenter.y, geo.burst.radius)) {
+      for (const tile of struck) {
         const screen = camera.worldToScreen(tile.x, tile.y, cellSize, offsetX, offsetY);
         if (screen) blast.push(screen);
       }
@@ -503,6 +507,8 @@ export function aimCardHtml(engine: GameEngine, entry: SpellbookEntry, reticleX:
       ${targetHtml}
       ${short ? `<div class="ui-note">Bursts short: ${short}</div>` : ''}
       ${spell.reflects ? '<div class="ui-note">Bounces off walls</div>' : ''}
+      ${geo.back ? '<div class="ui-note">Strikes all it passes, out and back</div>' : ''}
+      ${spell.delay ? `<div class="ui-note">Strikes ${spell.delay === 1 ? 'next turn' : `in ${spell.delay} turns`}: foes may step out</div>` : ''}
     </div>`;
 }
 

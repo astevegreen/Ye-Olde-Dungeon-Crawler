@@ -5,13 +5,14 @@ import { iconHtml } from '../ui/icons';
 import type { MapCardSpec } from '../ui/mapCards/mapCardLayer';
 import type { Camera } from './camera';
 import type { Monster } from '../engine';
-import { Visibility } from '../engine';
+import { Visibility, pendingBlasts } from '../engine';
 import type { Position } from '../engine';
 import { drawDangerZone, type ScreenPoint } from './markers/markers';
 
 export class IntentOverlay {
   /**
-   * Draws the tiles every monster winding up a heavy attack will strike, as one danger zone:
+   * Draws the tiles every monster winding up a heavy attack will strike, and every delayed
+   * blast pending on the floor (`pendingBlasts`, the hero's own too), as one danger zone:
    * hatched, with an edge round its outside, moving on the draw's clock `now` (0 holds it
    * still). The ability's name is a DOM card (cards(), below). True when a zone was drawn,
    * so the map keeps redrawing on its idle tick.
@@ -27,17 +28,20 @@ export class IntentOverlay {
   ): boolean {
     const seen = new Set<string>();
     const zone: ScreenPoint[] = [];
+    const struck: Position[] = [];
     for (const monster of windingUp(engine)) {
       const primary = monster.intent?.targetTile;
-      const struck = isPosition(primary) ? [...dangerTiles(monster), primary] : dangerTiles(monster);
-      for (const tile of struck) {
-        const id = `${tile.x},${tile.y}`;
-        if (seen.has(id) || engine.fov.getVisibility(tile.x, tile.y) === Visibility.Unexplored) continue;
-        const screen = camera.worldToScreen(tile.x, tile.y, cellSize, offsetX, offsetY);
-        if (!screen) continue;
-        seen.add(id);
-        zone.push(screen);
-      }
+      struck.push(...dangerTiles(monster));
+      if (isPosition(primary)) struck.push(primary);
+    }
+    for (const blast of pendingBlasts(engine)) struck.push(...blast.tiles);
+    for (const tile of struck) {
+      const id = `${tile.x},${tile.y}`;
+      if (seen.has(id) || engine.fov.getVisibility(tile.x, tile.y) === Visibility.Unexplored) continue;
+      const screen = camera.worldToScreen(tile.x, tile.y, cellSize, offsetX, offsetY);
+      if (!screen) continue;
+      seen.add(id);
+      zone.push(screen);
     }
     if (zone.length === 0) return false;
     drawDangerZone(ctx, zone, cellSize, now, resolveThemeTokens(engine.manifest?.theme));
@@ -60,6 +64,18 @@ export class IntentOverlay {
         html: `${iconHtml('warning')} ${escapeHtml(monster.intent?.abilityName ?? 'Heavy strike')}`,
       };
     }
+    pendingBlasts(engine).forEach((blast, i) => {
+      // Its middle tile: a square's or burst's centre.
+      const centre = blast.tiles[Math.floor(blast.tiles.length / 2)];
+      if (!centre || engine.fov.getVisibility(centre.x, centre.y) === Visibility.Unexplored) return;
+      const screen = camera.worldToScreen(centre.x, centre.y, cellSize, offsetX, offsetY);
+      if (!screen) return;
+      cards[`blast:${blast.casterId}:${i}`] = {
+        className: 'mc-pill is-danger',
+        place: { tile: { x: screen.x, y: screen.y, size: cellSize } },
+        html: `${iconHtml('warning')} ${escapeHtml(blast.spellName)}`,
+      };
+    });
     return cards;
   }
 

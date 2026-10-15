@@ -47,7 +47,7 @@ export const FIXTURE_STATUS_HANDLERS: Record<string, StatusHandler> = {
       consumesBearer: true,
     },
   },
-  delayed_blast: {
+  laid_blast: {
     ending: { on: ['expire'], radius: 1, effects: [{ type: 'damage', amount: 12, element: 'fire' }] },
   },
 };

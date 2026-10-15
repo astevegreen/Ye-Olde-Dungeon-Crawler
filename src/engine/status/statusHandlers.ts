@@ -40,6 +40,11 @@ export interface StatusHandler {
   onDamageTaken?(entity: Entity, effect: StatusEffect, amount: number): number;
   /** The hero senses its bearer through walls (`sensesThroughWalls`). */
   sensedThroughWalls?: boolean;
+  /**
+   * Each application is its own instance, with its own duration and data, where otherwise a
+   * second one only lengthens the first: two delayed blasts cast in one turn both land.
+   */
+  stacks?: boolean;
 }
 
 /** What sets off a status's ending: it running out, a blow on its bearer, its bearer's death. */

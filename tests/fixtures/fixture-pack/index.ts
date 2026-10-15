@@ -268,6 +268,16 @@ function shapeSpells(): SpellDefinition[] {
     shaped('shroud', 'square', 4),
     shaped('cairn', 'wall', 1),
     shaped('hammer', 'outAndBack', 0),
+    // Delayed blasts: a 3×3 that strikes and lays water next turn, and a thrown 3×3 burst.
+    {
+      ...shaped('rockslide', 'square', 3),
+      delay: 1,
+      effects: [
+        { type: 'damage', amount: 10, element: 'physical' },
+        { type: 'lay', layer: 'surface', kind: 'water', duration: 5 },
+      ],
+    },
+    { ...shaped('star_fall', 'square', 1), shape: undefined, delay: 1 },
   ];
 }
 

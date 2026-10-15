@@ -22,6 +22,9 @@ Continue the owner's magic redesign dialogue (talk only; nothing is built until 
 - Step sizes — owner, 15 Oct: "I approve your stat axis recommendations"
 - Rite bonus — owner: "a minor cost reduction"; ward — owner: "I don't want a ward spell"
 - Neighbour answers 1–7 and the same-element table — owner, 15 Oct (on the page with quotes)
+- Hliðskjálf takes "what the ravens see" (each neighbour adds a reveal layer) — owner, 15 Oct: "I like your recommendation for Hliðskjálf"
+- What the outliers lend — owner, 15 Oct: "I want to double check what these spells give their neighbors later" (open decision on the page)
+- Teleport/Phase Door/Loki's Switch — owner asked whether three movement spells are too many; open
 
 ## Read first
 - The Notion page: "Grimoire redesign" (Neighbour rules), "Open decisions", spell entries "Loki's Switch" and "Hliðskjálf" under Spell ideas

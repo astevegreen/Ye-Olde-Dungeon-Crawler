@@ -1,11 +1,12 @@
 # Handoff: token-audit follow-ups
-2026-10-15 22:25 UTC · branch main · HEAD 2d376858 · tree clean
+2026-10-15 23:00 UTC · branch main · HEAD fb620002 · tree clean
 
 ## Goal
 Owner: "Analyze chats, skills, hooks, sessions, and workflows from the past 7-9 days to identify if the performance audit/token usage reduction measures have been effective ... determine if there are obvious optimizations". Measuring is done, and the owner approved the three changes (below). What's left: confirm they took effect, then the resume shortcut.
 
 ## Done
 - 2d376858: `.claude/agents/Explore.md` overrides the built-in Explore with `model: sonnet`; `.claude/settings.json` env sets `CLAUDE_CODE_SUBAGENT_MODEL=sonnet`; `.claude/hooks/handoff-nudge.mjs` LIMIT is now 200k.
+- fb620002: the handoff nudge waits for background work (push, tests, agents) to report back before firing, and blocks a "go /clear" reply while it runs; the skill's Write step 2 says to wait too. Tested on synthetic and real transcripts; pushed, gates green.
 - The plan's "Measuring the result" section is ticked (`.prompts/00-WORKFLOW-OVERHAUL-PLAN.md`); scripts in `.prompts/workflow-metrics/` (`mine.mjs`, `agg.mjs`).
 
 ## Next

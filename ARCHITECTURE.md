@@ -138,13 +138,9 @@ Claude Code alone writes here: it commits, and pushes each finished task unasked
 - **LF line endings:** every text file, working tree included (`.gitattributes`); a CRLF hook breaks its `#!/bin/sh` line.
 
 ## 9. Planned Work Register
-A finished item's ID is retired, never reused: P-01–P-23, P-25, P-26, P-32, P-33. **Next free ID: P-37.** Deferred items are recorded, not planned; picking one up is the owner's call.
+A finished item's ID is retired, never reused: P-01–P-23, P-25, P-26, P-28, P-32, P-33. **Next free ID: P-37.** Deferred items are recorded, not planned; picking one up is the owner's call.
 
 P-28 to P-36 are the magic redesign, built in the order of the owner's magic implementation plan (15 Oct 2026).
-
-**P-28 — Spell building blocks** — Planned 2026-10-15
-- Push and pull, swap and aimed landing, mark, cleanse and status hand-over, pierce, best-element hits, HP costs and fractional cast time, as spell effects in `src/engine/magic/`.
-- Done when each is covered by a fixture-pack test, and no player-visible change.
 
 **P-29 — Three grimoires with stat axes** — Planned 2026-10-15
 - Pack-declared layouts, slot axes from the centre, the stat catalog, opening on need, every known spell slotted, forgetting, and old saves carried over by a pack-declared retired-spell map.

@@ -138,12 +138,9 @@ Claude Code alone writes here: it commits, and pushes each finished task unasked
 - **LF line endings:** every text file, working tree included (`.gitattributes`); a CRLF hook breaks its `#!/bin/sh` line.
 
 ## 9. Planned Work Register
-A finished item's ID is retired, never reused: P-01–P-23, P-25, P-26, P-28–P-34. **Next free ID: P-37.** Deferred items are recorded, not planned; picking one up is the owner's call.
+A finished item's ID is retired, never reused: P-01–P-23, P-25, P-26, P-28–P-35. **Next free ID: P-37.** Deferred items are recorded, not planned; picking one up is the owner's call.
 
-P-28 to P-36 are the magic redesign (P-34 is built), built in the order of the owner's magic implementation plan (15 Oct 2026).
-
-**P-35 — Temporary walls** — Planned 2026-10-15
-- Timed wall tiles with HP that block movement, sight and projectiles and crumble into rubble, ticked with the surfaces.
+P-28 to P-36 are the magic redesign (P-34 and P-35 are built), built in the order of the owner's magic implementation plan (15 Oct 2026).
 
 **P-36 — Measuring magic in play** — Planned 2026-10-15
 - The soak bot casts its whole spellbook by spell type and logs learning, casts, shortcuts and the spell and melee split by floor. Last, per the owner's 13 Oct order.

@@ -183,9 +183,22 @@ export interface LayEffect {
   potency?: number;
 }
 
+/**
+ * Raises a temporary wall on each walkable tile the spell covers (P-35, `surfaces/tempWalls.ts`):
+ * `hp` and `turns` it stands for, the name the log gives it, and the surface it leaves as rubble.
+ */
+export interface RaiseWallEffect {
+  type: 'raise_wall';
+  hp: number;
+  turns: number;
+  name?: string;
+  rubble?: { kind: string; turns: number };
+}
+
 export type EffectPrimitive =
   | LearnSpellEffect
   | LayEffect
+  | RaiseWallEffect
   | DamageEffect
   | StatusEffectPrimitive
   | ChainEffect
@@ -277,6 +290,8 @@ export interface ProjectilePathResult {
   path: ProjectileStep[];
   impactTile: { x: number; y: number };
   hitWall: boolean;
+  /** The solid cell it struck, when that cell is on the map (a temporary wall takes the hit there). */
+  wallTile?: { x: number; y: number };
   hitEntityId?: string;
   reflectionsCount: number;
 }

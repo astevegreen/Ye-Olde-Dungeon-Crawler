@@ -85,6 +85,7 @@ export function traceProjectile(
   const path: ProjectileStep[] = [];
   let reflectionsCount = 0;
   let hitWall = false;
+  let wallTile: { x: number; y: number } | undefined;
   let hitEntityId: string | undefined;
 
   let rawDx = targetX - startX;
@@ -132,6 +133,7 @@ export function traceProjectile(
       if (isSolid) {
         if (!reflects || reflectionsCount >= 6) {
           hitWall = true;
+          wallTile = { x: nextTileX, y: nextTileY };
           break;
         }
 
@@ -178,6 +180,7 @@ export function traceProjectile(
           continue;
         } else {
           hitWall = true;
+          wallTile = { x: nextTileX, y: nextTileY };
           break;
         }
       }
@@ -207,6 +210,7 @@ export function traceProjectile(
     path,
     impactTile: finalTile,
     hitWall,
+    wallTile,
     hitEntityId,
     reflectionsCount,
   };

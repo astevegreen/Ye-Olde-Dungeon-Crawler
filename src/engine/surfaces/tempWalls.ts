@@ -1,4 +1,7 @@
-import type { TileDefinition } from '../types';
+import type { ActionResult, TileDefinition } from '../types';
+import { BASE_ACTION_COST } from '../types';
+import type { Entity } from '../entities/entity';
+import { attributeScalingOf, strengthMeleeBonus } from '../combat/attributeScaling';
 import type { GameEngine } from '../engine';
 import type { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
@@ -19,6 +22,8 @@ export interface TempWallRubble {
 export interface TempWallSpec {
   hp: number;
   turns: number;
+  /** What the log calls it ("the cairn"); "wall" when unset. */
+  name?: string;
   rubble?: TempWallRubble;
 }
 
@@ -35,6 +40,7 @@ export interface SerializedTempWall {
   hp: number;
   maxHp: number;
   turns: number;
+  name?: string;
   rubble?: TempWallRubble;
 }
 
@@ -86,12 +92,22 @@ export class TempWallTable {
     return true;
   }
 
-  /** Takes HP off the wall at a cell, felling it at 0. Returns false when no wall stands there. */
+  /**
+   * Takes HP off the wall at a cell and logs it, felling the wall at 0. Returns false when no
+   * wall stands there.
+   */
   public damage(engine: GameEngine, x: number, y: number, amount: number): boolean {
     const wall = this.walls.get(this.key(x, y));
     if (!wall) return false;
-    wall.hp -= Math.max(0, amount);
-    if (wall.hp <= 0) this.fell(engine, x, y);
+    const dealt = Math.max(0, Math.round(amount));
+    wall.hp -= dealt;
+    const name = wall.name ?? 'wall';
+    if (wall.hp <= 0) {
+      engine.log(`The ${name} crumbles!`);
+      this.fell(engine, x, y);
+    } else {
+      engine.log(`The ${name} takes ${dealt} damage (${wall.hp}/${wall.maxHp}).`);
+    }
     return true;
   }
 
@@ -118,7 +134,7 @@ export class TempWallTable {
   public serialize(): SerializedTempWall[] {
     return Array.from(this.walls.entries()).map(([k, w]) => {
       const [x, y] = k.split(',').map(Number);
-      return { x, y, hp: w.hp, maxHp: w.maxHp, turns: w.turns, rubble: w.rubble ? { ...w.rubble } : undefined };
+      return { x, y, hp: w.hp, maxHp: w.maxHp, turns: w.turns, name: w.name, rubble: w.rubble ? { ...w.rubble } : undefined };
     });
   }
 
@@ -134,11 +150,24 @@ export class TempWallTable {
         hp: w.hp,
         maxHp: w.maxHp,
         turns: w.turns,
+        name: w.name,
         rubble: w.rubble ? { ...w.rubble } : undefined,
         under,
       });
     }
   }
+}
+
+/**
+ * A blow at a temporary wall: a turn spent, and the attacker's attack plus strength in damage.
+ * Walls have no defense to take off and no dodge; a blow always lands.
+ */
+export function strikeTempWall(engine: GameEngine, attacker: Entity, x: number, y: number): ActionResult {
+  const cost = attacker.getActionCost(BASE_ACTION_COST);
+  attacker.consumeEnergy(cost);
+  const amount = Math.max(1, attacker.attack + strengthMeleeBonus(attacker, attributeScalingOf(engine.manifest)));
+  engine.map.tempWalls.damage(engine, x, y, amount);
+  return { success: true, cost };
 }
 
 /** The first free walkable neighbour of a cell, orthogonal ones first. */

@@ -8,6 +8,9 @@ import { findPath } from '../ai/pathfinding';
 import { stepAlongDistanceField } from '../ai/distanceField';
 import { traceProjectile } from '../magic/targeting';
 import { serializeMapObject, deserializeMapObject } from '../storage/serializer';
+import { MovementAction } from '../actions/movement';
+import { CastSpellAction } from '../actions/spell-actions';
+import { useTestSpells } from '../__fixtures__/testHelpers';
 
 // The P-35 spike (plan risk 7): a timed wall across a corridor, checked for paths, sight,
 // shots, an occupant, its turns, its HP and a save.
@@ -109,5 +112,71 @@ describe('temporary walls', () => {
 
   it('writes nothing to a save with no walls', () => {
     expect(serializeMapObject(map).tempWalls).toBeUndefined();
+  });
+});
+
+// P-35 6a-2: blows and spells reach a temporary wall.
+describe('striking a temporary wall', () => {
+  useTestSpells([
+    { id: 'bolt', name: 'Bolt', school: 'Combat', manaCost: 1, element: 'fire', range: 9, basePower: 6, areaOfEffect: 0, reflects: false, targetType: 'ray', targetingMode: 'ray', description: '', effects: [{ type: 'damage', amount: 6, element: 'fire' }] },
+    { id: 'cairn', name: 'Cairn', school: 'Combat', manaCost: 1, element: 'physical', range: 9, basePower: 0, areaOfEffect: 1, shape: 'wall', reflects: false, targetType: 'tile', targetingMode: 'tile', description: '', effects: [{ type: 'raise_wall', hp: 30, turns: 15, name: 'cairn', rubble: { kind: 'mud', turns: 10 } }] },
+    { id: 'blast', name: 'Blast', school: 'Combat', manaCost: 1, element: 'fire', range: 9, basePower: 4, areaOfEffect: 1, reflects: false, targetType: 'ray', targetingMode: 'area_burst', description: '', effects: [{ type: 'damage', amount: 4, element: 'fire' }] },
+  ]);
+
+  let engine: GameEngine;
+  let map: GameMap;
+  let player: Player;
+
+  beforeEach(() => {
+    map = new GameMap(12, 5);
+    for (let x = 1; x <= 10; x++) map.setTile(x, 2, TILES.FLOOR);
+    player = new Player({
+      position: { x: 4, y: 2 },
+      stats: { hp: 50, maxHp: 50, attack: 7, defense: 2 },
+      mana: 50,
+      maxMana: 50,
+      spellsKnown: ['bolt', 'blast', 'cairn'],
+    });
+    map.addEntity(player);
+    engine = new GameEngine({ map, player, seed: 3 });
+    map.tempWalls.raise(map, 5, 2, { hp: 20, turns: 15, name: 'cairn' });
+  });
+
+  it('a bump is a blow: a turn spent and the attack in damage', () => {
+    const result = new MovementAction(player, 1, 0).perform(engine);
+    expect(result.cost).toBeGreaterThan(0);
+    expect(map.tempWalls.hpAt(5, 2)).toBe(13);
+    expect(player.x).toBe(4);
+    expect(engine.messages.at(-1)).toBe('The cairn takes 7 damage (13/20).');
+  });
+
+  it('a ray that strikes it deals its roll, and enough blows fell it', () => {
+    new CastSpellAction(player, 'bolt', 9, 2).perform(engine);
+    expect(map.tempWalls.hpAt(5, 2)).toBe(14);
+    new MovementAction(player, 1, 0).perform(engine);
+    new MovementAction(player, 1, 0).perform(engine);
+    expect(map.tempWalls.has(5, 2)).toBe(false);
+    expect(engine.messages).toContain('The cairn crumbles!');
+  });
+
+  it('a burst at it hits it once', () => {
+    map.moveEntity(player, 2, 2);
+    new CastSpellAction(player, 'blast', 9, 2).perform(engine);
+    expect(map.tempWalls.hpAt(5, 2)).toBe(16);
+  });
+
+  it('a plain wall is still bumped, not struck', () => {
+    const result = new MovementAction(player, 0, 1).perform(engine);
+    expect(result.cost).toBe(0);
+  });
+
+  it('a raise_wall spell stands a wall across the aim, on walkable tiles only', () => {
+    for (let y = 1; y <= 3; y++) map.setTile(8, y, TILES.FLOOR);
+    map.setTile(8, 3, TILES.WALL);
+    new CastSpellAction(player, 'cairn', 8, 2).perform(engine);
+    expect(map.tempWalls.has(8, 1)).toBe(true);
+    expect(map.tempWalls.has(8, 2)).toBe(true);
+    expect(map.tempWalls.has(8, 3)).toBe(false);
+    expect(map.tempWalls.hpAt(8, 2)).toBe(30);
   });
 });

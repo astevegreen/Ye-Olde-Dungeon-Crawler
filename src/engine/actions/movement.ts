@@ -19,6 +19,7 @@ import { formatMagicMessage } from '../magic/magicConfig';
 import { isPrologueHoldingChoices } from '../quest/prologue';
 import { burnOnSacredGround } from '../combat/sacredGround';
 import { productWorn, wornModifiers } from '../items/wornModifiers';
+import { strikeTempWall } from '../surfaces/tempWalls';
 
 /** Tile type identifier for shallow water terrain that imposes a movement energy penalty. */
 const SHALLOW_WATER_TILE = 'shallow_water';
@@ -142,6 +143,8 @@ export class MovementAction implements Action {
     if (!tile || !isWalkable) {
       // Auto-resolve OpenDoorAction on bump into closed doors (orthogonal & diagonal)
       putBack(targetX, targetY);
+      // A bump at a temporary wall is a blow at it (P-35).
+      if (engine.map.tempWalls.has(targetX, targetY)) return strikeTempWall(engine, this.entity, targetX, targetY);
       if (tile && (tile.isClosedDoor || tile.type === 'door_closed')) {
         const openAction = new OpenDoorAction(this.entity, targetX, targetY);
         return openAction.perform(engine);

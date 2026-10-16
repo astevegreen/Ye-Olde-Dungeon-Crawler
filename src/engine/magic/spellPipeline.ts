@@ -25,6 +25,7 @@ import type {
   SummonEffect,
   LearnSpellEffect,
   LayEffect,
+  RaiseWallEffect,
   TargetingMode,
 } from './types';
 import { getAreaOfEffectTiles } from './targeting';
@@ -262,6 +263,11 @@ export class SpellPipeline {
         if (effect.layer === 'gas') ctx.engine.surfaces.layGas(ctx.engine, p.x, p.y, effect.kind, effect.duration, effect.potency);
         else ctx.engine.surfaces.laySurface(ctx.engine, p.x, p.y, effect.kind, effect.duration, effect.potency);
       }
+    });
+
+    EffectPrimitiveRegistry.register<RaiseWallEffect>('raise_wall', (effect, ctx) => {
+      const { hp, turns, name, rubble } = effect;
+      for (const p of ctx.tiles ?? []) ctx.engine.map.tempWalls.raise(ctx.engine.map, p.x, p.y, { hp, turns, name, rubble });
     });
 
     EffectPrimitiveRegistry.register<SummonEffect>('summon', (effect, ctx) => {
@@ -651,6 +657,8 @@ export class SpellPipeline {
     // The spell's effect primitives, in order, on everything it reached.
     const stoodOn = new Set(targetsHit.map((t) => `${t.x},${t.y}`));
     SpellPipeline.ensureBuiltinEffects();
+    // Walls standing before the effects run: a spell strikes those, never the walls it raises.
+    const wallsBefore = castTiles.filter((t) => engine.map.tempWalls.has(t.x, t.y));
     const ctx: EffectContext = {
       engine,
       spell,
@@ -677,6 +685,21 @@ export class SpellPipeline {
       }
     }
     if (shaping.lends) SpellPipeline.deliverLends(ctx, shaping.lends, targetsHit, startPos);
+
+    // A temporary wall in the spell's reach, or the one its ray struck, takes each damage roll (P-35).
+    if (engine.map.tempWalls.size > 0) {
+      const reached = new Map(wallsBefore.map((t) => [`${t.x},${t.y}`, t]));
+      const struck = geo.ray?.wallTile;
+      if (struck) reached.set(`${struck.x},${struck.y}`, struck);
+      for (const effect of spell.effects) {
+        if (effect.type !== 'damage') continue;
+        for (const cell of reached.values()) {
+          if (!engine.map.tempWalls.has(cell.x, cell.y)) continue;
+          const rolled = scaleByPower(parseAndRollDice((effect as DamageEffect).amount, engine.rng), shaping.powerMultiplier ?? 1);
+          engine.map.tempWalls.damage(engine, cell.x, cell.y, scaleSpellDamage(engine, caster, (effect as DamageEffect).element, rolled));
+        }
+      }
+    }
 
     // A burst's or shape's hits strike the ground where nobody stood to take them: oil ignites, water boils or freezes.
     if ((geo.burst || geo.area) && engine.surfaces) {

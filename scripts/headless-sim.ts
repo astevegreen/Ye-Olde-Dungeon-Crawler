@@ -33,6 +33,8 @@ const AWAKE_TURNS = 400;
 const TURN_BUDGET_MS = 25;
 const SPELL_CASTS = 1000;
 const SPELL_BUDGET_MS = 200;
+const MIXED_ROUNDS = 10;
+const MIXED_BUDGET_MS = 5;
 const ANCHOR_FLOORS = [1, 2, 3, 4, 5, 6];
 const ANCHOR_SAMPLES_PER_FLOOR = 25;
 const DENSITIES = [1.0, 1.5];
@@ -294,6 +296,91 @@ function runSpellCasts(): RunResult {
   return { ms, finalMonsters: 0 };
 }
 
+/**
+ * The mixed-cast workload (P-36): every typed spell of the pack, in turn, cast through the
+ * player pipeline on a real floor's arena with foes around, so summons act, terrain ticks
+ * and statuses run on the world turns between casts. Each cast must spend its turn.
+ */
+function runMixedCasts(): RunResult {
+  const map = buildArena(FLOOR.width, FLOOR.height);
+  const cx = Math.floor(FLOOR.width / 2);
+  const cy = Math.floor(FLOOR.height / 2);
+  const spells = (cotwManifest.spells ?? []).filter((sp) => sp.spellType);
+  const player = new Player({
+    id: 'hero',
+    name: 'Hero',
+    position: { x: cx, y: cy },
+    stats: { hp: 1000, maxHp: 1000, attack: 5, defense: 5 },
+    mana: 500,
+    maxMana: 500,
+    spellsKnown: spells.map((sp) => sp.id),
+  });
+  map.addEntity(player);
+  const engine = new GameEngine({ map, player, seed: 36, manifest: cotwManifest });
+
+  // Four foes stand three to five tiles out; a fallen one is replaced before the next cast.
+  const SPOTS = [[4, 0], [-4, 1], [1, 4], [-2, -3], [5, 3], [-5, -2]];
+  let spawned = 0;
+  const foes = (): Monster[] =>
+    engine.map.getAllEntities().filter((e): e is Monster => e instanceof Monster && e.isAlive() && e.isHostileTo(player));
+  const muster = (): void => {
+    for (const [dx, dy] of SPOTS) {
+      if (foes().length >= 4) return;
+      const x = player.x + dx;
+      const y = player.y + dy;
+      if (!engine.map.inBounds(x, y) || !engine.map.isPassable(x, y) || engine.map.getEntityAt(x, y)) continue;
+      const foe = new Monster({ id: `foe_${spawned++}`, name: 'Foe', position: { x, y }, aiState: 'hunting', speed: 100, stats: { hp: 60, maxHp: 60, attack: 5, defense: 2 } });
+      engine.addEntity(foe);
+    }
+  };
+
+  let alliesBrought = 0;
+  const addEntity = engine.map.addEntity.bind(engine.map);
+  engine.map.addEntity = (entity) => {
+    if (entity instanceof Monster && entity.faction === 'player') alliesBrought++;
+    return addEntity(entity);
+  };
+
+  const label = 'mixed casts';
+  const watchDeadlock = makeDeadlockWatch(engine, label);
+  let checkOverhead = 0;
+  let turn = 0;
+  const start = performance.now();
+  for (let round = 0; round < MIXED_ROUNDS; round++) {
+    for (const sp of spells) {
+      turn++;
+      // Back to the middle, whole and full of mana: the workload measures the casts, not a fight.
+      if (player.x !== cx || player.y !== cy) engine.map.moveEntity(player, cx, cy);
+      player.hp = player.maxHp;
+      player.mana = player.maxMana;
+      muster();
+      const near = foes().sort((a, b) => Math.max(Math.abs(a.x - player.x), Math.abs(a.y - player.y)) - Math.max(Math.abs(b.x - player.x), Math.abs(b.y - player.y)))[0];
+      const self = sp.targetType === 'self';
+      if (!self && !near) {
+        failures.push(`${label}: no foe to aim ${sp.id} at`);
+        continue;
+      }
+      // An execution spell needs its victim near death.
+      if (!self && sp.maxTargetHpPercent !== undefined) near.hp = Math.max(1, Math.min(near.hp, Math.max(10, Math.floor(near.maxHp * sp.maxTargetHpPercent))));
+      const alliesBefore = alliesBrought;
+      const res = engine.handlePlayerAction(new CastSpellAction(player, sp.id, self ? player.x : near.x, self ? player.y : near.y));
+      if (!res.success || res.cost <= 0) {
+        failures.push(`${label}: ${sp.id} (round ${round}) spent no turn: ${res.message ?? ''}`);
+        continue;
+      }
+      // A summon must bring someone to the hero's side (who may fall in the same turn).
+      if (sp.spellType === 'summon' && alliesBrought === alliesBefore) {
+        failures.push(`${label}: ${sp.id} (round ${round}) brought no ally`);
+      }
+      watchDeadlock(turn);
+      if (turn % CHECK_INTERVAL === 0) checkOverhead += timeCheck(engine, label, turn);
+    }
+  }
+  const ms = performance.now() - start - checkOverhead - timeCheck(engine, label, turn);
+  recordEngine(engine, label);
+  return { ms: ms / turn, finalMonsters: livingMonsters(engine) };
+}
+
 interface Measurement {
   label: string;
   population: number;
@@ -326,16 +413,21 @@ for (let i = 0; i < 3; i++) {
   runDormantFloor(realistic);
   runAwakeFloor(realistic);
   runSpellCasts();
+  runMixedCasts();
 }
 
 const dormant = [0, realistic, realisticHigh, stress].map((n) => measure('dormant', n, () => runDormantFloor(n)));
 const awake = [realistic, realisticHigh, stress].map((n) => measure('awake', n, () => runAwakeFloor(n)));
 const spells = measure('spells', 0, runSpellCasts);
+const mixed = measure('mixed', 0, runMixedCasts);
 
 for (const m of awake) {
   if (m.population <= realisticHigh && m.medianMs > TURN_BUDGET_MS) {
     failures.push(`awake(${m.population}): median ${m.medianMs.toFixed(3)} ms/turn exceeds ${TURN_BUDGET_MS} ms budget`);
   }
+}
+if (mixed.medianMs > MIXED_BUDGET_MS) {
+  failures.push(`mixed: median ${mixed.medianMs.toFixed(2)} ms per cast exceeds ${MIXED_BUDGET_MS} ms budget`);
 }
 if (spells.medianMs > SPELL_BUDGET_MS) {
   failures.push(`spells: median ${spells.medianMs.toFixed(1)} ms for ${SPELL_CASTS} casts exceeds ${SPELL_BUDGET_MS} ms budget`);
@@ -360,8 +452,9 @@ for (const m of [...dormant, ...awake]) {
   console.log(`${m.label.padEnd(8)}  ${pad(m.population, 10)}  ${pad(m.medianMs.toFixed(3), 14)}  ${pad(m.maxMs.toFixed(3), 11)}  ${pad(m.finalMonsters, 15)}${tag}`);
 }
 console.log(`spells    ${SPELL_CASTS} casts: median ${spells.medianMs.toFixed(1)} ms total, max ${spells.maxMs.toFixed(1)} ms`);
+console.log(`mixed     ${MIXED_ROUNDS} rounds of every typed spell: median ${mixed.medianMs.toFixed(2)} ms/cast, max ${mixed.maxMs.toFixed(2)} ms/cast`);
 console.log('------------------------------------------------------');
-console.log(`Budgets (medians): awake <= ${TURN_BUDGET_MS} ms/turn up to realistic-high; ${SPELL_CASTS} casts <= ${SPELL_BUDGET_MS} ms`);
+console.log(`Budgets (medians): awake <= ${TURN_BUDGET_MS} ms/turn up to realistic-high; ${SPELL_CASTS} casts <= ${SPELL_BUDGET_MS} ms; mixed <= ${MIXED_BUDGET_MS} ms/cast`);
 console.log(`Pipeline Caught Errors: ${caughtPipelineErrors}`);
 console.log(`Invariant/NaN checkpoints: ${invariantChecks} (deadlock watch on every turn)`);
 console.log('======================================================');

@@ -411,7 +411,7 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer.render();
       return;
     }
-    // The first cast into overflow on a floor waits for a second press (N38).
+    // The first cast into overflow on a floor, and any cast into the worst tier, waits for a second press (N38).
     const overflowWarning = overflowWarnings.check(activeEngine, cast.manaCost ?? 0);
     if (overflowWarning) {
       activeEngine.log(overflowWarning);

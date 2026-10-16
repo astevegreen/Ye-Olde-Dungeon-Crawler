@@ -32,23 +32,30 @@ interface TabletEntry {
   value: number;
 }
 
-const TABLETS: TabletEntry[] = [
-  { spellId: 'slow', spellName: 'Slow', soldFromFloor: 10, value: 150 },
-  { spellId: 'cold_ray', spellName: 'Cold Ray', soldFromFloor: 10, value: 150 },
-  { spellId: 'firebolt', spellName: 'Firebolt', soldFromFloor: 10, value: 150 },
-  { spellId: 'phase_door', spellName: 'Phase Door', soldFromFloor: 10, value: 150 },
-  { spellId: 'hlidskjalf', spellName: 'Hliðskjálf', soldFromFloor: 10, value: 150 },
-  { spellId: 'rime_floor', spellName: 'Rime Floor', soldFromFloor: 10, value: 150 },
-  { spellId: 'call_the_pack', spellName: 'Call the Pack', soldFromFloor: 10, value: 150 },
-  { spellId: 'loki_switch', spellName: "Loki's Switch", soldFromFloor: 18, value: 225 },
-  { spellId: 'lightning_bolt', spellName: 'Lightning Bolt', soldFromFloor: 18, value: 225 },
-  { spellId: 'shroud_of_mani', spellName: 'Shroud of Máni', soldFromFloor: 18, value: 225 },
-  { spellId: 'rockfall', spellName: 'Rockfall', soldFromFloor: 18, value: 225 },
-  { spellId: 'thunderclap', spellName: 'Thunderclap', soldFromFloor: 18, value: 225 },
-  { spellId: 'fireball', spellName: 'Fireball', soldFromFloor: 26, value: 300 },
-  { spellId: 'fafnirs_breath', spellName: "Fáfnir's Breath", soldFromFloor: 26, value: 300 },
-  { spellId: 'paralyze', spellName: 'Paralyze', soldFromFloor: 34, value: 350 },
+/**
+ * Tablets by the zone where a spell is first found (`learningStones.ts`): Astrid sells a zone's
+ * spells once the hero reaches the next zone. The last band (floor 43) waits for the spells
+ * the World-Bark zone gains in phase 6.
+ */
+const TABLET_BANDS: Array<{ soldFromFloor: number; value: number; spells: Array<[id: string, name: string]> }> = [
+  {
+    soldFromFloor: 10,
+    value: 150,
+    spells: [['firebolt', 'Firebolt'], ['slow', 'Slow'], ['phase_door', 'Phase Door'], ['call_the_pack', 'Call the Pack'], ['fafnirs_breath', "Fáfnir's Breath"]],
+  },
+  {
+    soldFromFloor: 18,
+    value: 225,
+    spells: [['cold_ray', 'Cold Ray'], ['lightning_bolt', 'Lightning Bolt'], ['rockfall', 'Rockfall'], ['loki_switch', "Loki's Switch"], ['hlidskjalf', 'Hliðskjálf']],
+  },
+  { soldFromFloor: 26, value: 300, spells: [['rime_floor', 'Rime Floor'], ['shroud_of_mani', 'Shroud of Máni']] },
+  { soldFromFloor: 34, value: 350, spells: [['thunderclap', 'Thunderclap'], ['paralyze', 'Paralyze'], ['fireball', 'Fireball']] },
+  { soldFromFloor: 43, value: 400, spells: [] },
 ];
+
+const TABLETS: TabletEntry[] = TABLET_BANDS.flatMap((band) =>
+  band.spells.map(([spellId, spellName]) => ({ spellId, spellName, soldFromFloor: band.soldFromFloor, value: band.value }))
+);
 
 /** The "learn_*" spells tablets cast. Never known or slotted; only read from a tablet. */
 export const COTW_TABLET_SPELLS: SpellDefinition[] = TABLETS.map((t) => ({

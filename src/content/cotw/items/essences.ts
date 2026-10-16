@@ -62,3 +62,18 @@ export const COTW_ESSENCE_BY_ELEMENT: Record<string, string> = {
   healing: 'essence_berkano',
   poison: 'essence_eihwaz',
 };
+
+/** A broken runestone's shard (`COTW_MAGIC.learningStones`): one monster of the floor carries it,
+ * and set in its stone it shows two spells to learn. A shard left unused turns into an Essence-Rune
+ * on leaving the floor. Quest-category, so random loot never rolls it. */
+export const COTW_RUNESTONE_SHARD: ItemDefinition = {
+  id: 'runestone_shard',
+  name: 'Runestone Shard',
+  category: 'quest',
+  weight: 60,
+  bulk: 30,
+  identified: true,
+  value: 0,
+  description:
+    'A splinter of a broken runestone, humming faintly. It fits a stone somewhere on this floor; set in it, the stone shows its spells. Left unused, it crumbles into a rune when you leave.',
+};

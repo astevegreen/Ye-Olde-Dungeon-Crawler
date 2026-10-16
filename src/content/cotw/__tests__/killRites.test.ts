@@ -8,6 +8,7 @@ import { COTW_STARTER_KIT } from '../character';
 import { COTW_MAGIC } from '../magic';
 import { COTW_TABLET_STOCK } from '../spellTablets';
 import { COTW_PROLOGUE } from '../prologue';
+import { COTW_LEARNING_STONES } from '../learningStones';
 
 const spellById = new Map(COTW_SPELLS.map((s) => [s.id, s]));
 /** Spells rites and tablets teach: all but the altar's blood and frith and the tablet-only "learn_*" spells. */
@@ -37,29 +38,24 @@ function canMeet(rite: KillRiteDefinition, known: Set<string>): boolean {
   return true; // overkill, debt and low HP are always within the hero's reach
 }
 
-/** Floor at which the hero, performing every rite as soon as possible, has learned each spell. */
-function simulateDescent(): { learnedOn: Map<string, number>; meetableOn: Map<string, number> } {
+/**
+ * Floors at which each monster's rite first becomes meetable, for a hero who learns every
+ * spell of a zone as soon as the zone's floors begin (stones teach; rites no longer do).
+ */
+function simulateDescent(): { meetableOn: Map<string, number> } {
   const known = new Set(COTW_STARTER_KIT.spellsKnown ?? []);
-  const learnedOn = new Map<string, number>([...known].map((id) => [id, 0]));
   const meetableOn = new Map<string, number>();
   const monsters = COTW_MONSTERS.filter((m) => m.killRite);
   for (let floor = 1; floor <= 50; floor++) {
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const m of monsters) {
-        if ((m.minFloor ?? 1) > floor || !canMeet(m.killRite!, known)) continue;
-        if (!meetableOn.has(m.id)) meetableOn.set(m.id, floor);
-        const teaches = m.killRite!.teachesSpellId;
-        if (teaches && !known.has(teaches)) {
-          known.add(teaches);
-          learnedOn.set(teaches, floor);
-          changed = true;
-        }
-      }
+    for (const zone of COTW_LEARNING_STONES.zones) {
+      if (zone.minFloor <= floor) zone.spellIds.forEach((id) => known.add(id));
+    }
+    for (const m of monsters) {
+      if ((m.minFloor ?? 1) > floor || !canMeet(m.killRite!, known)) continue;
+      if (!meetableOn.has(m.id)) meetableOn.set(m.id, floor);
     }
   }
-  return { learnedOn, meetableOn };
+  return { meetableOn };
 }
 
 describe('cotw kill rites (Galdr of the Slain)', () => {
@@ -103,16 +99,6 @@ describe('cotw kill rites (Galdr of the Slain)', () => {
     expect(COTW_STARTER_KIT.spellsKnown).toEqual(['magic_arrow', 'heal_spell']);
   });
 
-  it('lets a hero learn every core spell by rites alone, each teaching rite meetable on its first floor', () => {
-    const { learnedOn, meetableOn } = simulateDescent();
-    for (const spellId of CORE_SPELLS) expect(learnedOn.has(spellId), spellId).toBe(true);
-    for (const m of COTW_MONSTERS) {
-      if (m.killRite?.teachesSpellId) expect(meetableOn.get(m.id), m.id).toBe(m.minFloor ?? 1);
-    }
-    // The core set is complete by the end of the Tarnished Silver Veins.
-    expect(Math.max(...CORE_SPELLS.map((id) => learnedOn.get(id)!))).toBeLessThanOrEqual(33);
-  });
-
   it('keeps every other rite meetable within ten floors of the monster appearing', () => {
     const { meetableOn } = simulateDescent();
     for (const m of everyMonster) {
@@ -122,9 +108,29 @@ describe('cotw kill rites (Galdr of the Slain)', () => {
     }
   });
 
-  it('sells a catch-up tablet for every spell a rite teaches', () => {
-    const taught = new Set(Object.values(COTW_KILL_RITES).map((r) => r.teachesSpellId).filter(Boolean));
+  it('teaches no spell by rite: stones do', () => {
+    expect(Object.values(COTW_KILL_RITES).filter((r) => (r as { teachesSpellId?: string }).teachesSpellId)).toEqual([]);
+  });
+
+  it('names real carriers, each with a rite, and every zone holds one any hero can meet', () => {
+    const starter = new Set(COTW_STARTER_KIT.spellsKnown ?? []);
+    const byId = new Map(everyMonster.map((m) => [m.id, m]));
+    for (const zone of COTW_LEARNING_STONES.zones) {
+      for (const id of zone.carrierIds) {
+        expect(byId.get(id)?.killRite, id).toBeDefined();
+      }
+      const open = zone.carrierIds.filter((id) => canMeet(byId.get(id)!.killRite!, starter));
+      expect(open.length, `zone ${zone.minFloor}-${zone.maxFloor}`).toBeGreaterThan(0);
+    }
+    for (const stone of COTW_LEARNING_STONES.stones) {
+      if (stone.carrierId) expect(byId.get(stone.carrierId)?.killRite, stone.carrierId).toBeDefined();
+    }
+  });
+
+  it('sells a catch-up tablet for every spell a stone shows', () => {
     const tablets = new Set(COTW_TABLET_STOCK.map((t) => t.itemId.replace(/^tablet_/, '')));
-    for (const spellId of taught) expect(tablets.has(spellId!), spellId!).toBe(true);
+    for (const zone of COTW_LEARNING_STONES.zones) {
+      for (const spellId of zone.spellIds) expect(tablets.has(spellId), spellId).toBe(true);
+    }
   });
 });

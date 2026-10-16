@@ -97,6 +97,19 @@ export const COTW_TILES: TileDefinition[] = [
     landmarkLabel: 'Siphon Altar',
   },
   {
+    // A learning stone (COTW_MAGIC.learningStones): set a carrier's shard in it to learn a spell.
+    type: 'broken_runestone',
+    sacred: true,
+    name: 'Broken Runestone',
+    passable: true,
+    walkable: true,
+    transparent: true,
+    visual: 'altar',
+    glyph: 'ᛉ',
+    description: 'A runestone split across its face. A splinter is missing from the break, and it hums as if it were close.',
+    landmarkLabel: 'Broken Runestone ᛉ',
+  },
+  {
     // Spell altar (COTW_MAGIC.altars): one rite, then spent.
     type: 'galdr_altar_tyr',
     sacred: true,

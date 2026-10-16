@@ -307,7 +307,8 @@ describe('R-cotw-10 · an overkill kill rite can be met by a caster of its eleme
       const best = Math.round((strongest[rite.requiredDamageElement] ?? 0) * (multipliers[affinity] ?? 1));
       if (needed > best) tooHigh.push(`${m.id}: ${needed} ${rite.requiredDamageElement} overkill, strongest spell deals it ${best} (${affinity})`);
     }
-    expect(checked).toBeGreaterThanOrEqual(6);
+    // Rites became shortcuts for the carriers (P-34), so fewer carry an overkill condition.
+    expect(checked).toBeGreaterThanOrEqual(3);
     expect(tooHigh).toEqual([]);
   });
 });

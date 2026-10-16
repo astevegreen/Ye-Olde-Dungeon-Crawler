@@ -8,19 +8,12 @@ import type { KillRiteDefinition } from '../../engine';
  * paralysis), the size of the blow, or the hero's own state. None depends on where a
  * monster happens to stand.
  *
- * Spell pacing. A new hero knows Magic Arrow and Heal; the rites below teach
- * the rest, each opening the next (Slow opens "while slowed", Cold Ray opens "cold", and
- * so on). `killRites.test.ts` checks every teaching rite can be met with the spells
- * obtainable by that monster's first floor.
- *
- *   Rime Hollows (1-9)    Slow 4 · Cold Ray 5/7 · Rime Floor 2 · Firebolt 6 · Call the Pack 7 · Phase Door 8 · Hliðskjálf 8
- *   Dwarven Works (10-17) Loki's Switch 10 · Shroud of Máni 10 · Rockfall 12 · Lightning Bolt 12/15 · Thunderclap 16
- *   Obsidian Siphon (18-25) Phase Door 20 (a second source) · Fireball 22/25 · Fáfnir's Breath 24
- *   Silver Veins (26-33)  Paralyze 28 · Hliðskjálf 29 (a second source)
- *   Deeper: second sources for Lightning Bolt, Paralyze and Hliðskjálf
- *
- * A rite whose spell the hero already knows (or that teaches none) drops an essence rune
- * of its element instead: offerings for the runic altars.
+ * Spells come from learning stones (`magic.ts`, P-34), not from rites. A rite is a
+ * carrier's shortcut: the kind that carries a floor's shard, killed its way, opens the
+ * stone's card on the spot, and a kind's first such kill gives an Essence-Rune of its
+ * element. Every carrier kind below can be met by any hero: Magic Arrow, a weapon, a kill
+ * in its sleep, or a spell the hero has by the kind's first floor. Other kinds' rites
+ * yield nothing while stones are on.
  */
 export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
   // The night raid's creatures (prologue.ts) have no rite: they appear only in the raid,
@@ -39,15 +32,13 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
   },
   skratti: {
     essenceElement: 'arcane',
-    requiredDamageElement: 'arcane',
-    requiresOverkillPercent: 50,
-    hintVerse: 'Snuff the imp with a rune-bolt far heavier than it deserves:\nstrike past its last breath by half its strength again.',
+    requiresVictimAsleep: true,
+    hintVerse: 'Awake, the imp outruns every pursuer.\nFind it asleep, and end it before it stirs.',
   },
   hoarfrost_skraeling: {
-    teachesSpellId: 'rime_floor',
     essenceElement: 'cold',
-    requiredDamageElement: 'physical',
-    hintVerse: 'Frost cannot bite what frost begot.\nOnly cold iron parts a skraeling from its rime, and the glaze it walked on is yours to lay.',
+    requiredDamageElement: 'fire',
+    hintVerse: 'Frost cannot bite what frost begot.\nOnly flame parts a skraeling from its rime.',
   },
   goblin: {
     essenceElement: 'physical',
@@ -61,10 +52,9 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: 'Blood for blood: strike the orc down with iron\nwhile your own wounds run past half your life.',
   },
   brim_howler: {
-    teachesSpellId: 'slow',
     essenceElement: 'cold',
-    requiredDamageElement: 'arcane',
-    hintVerse: 'The howler of the brim runs down all it hunts.\nStop it with a bolt of pure rune-force, and its leaden breath is yours.',
+    requiredDamageElement: 'physical',
+    hintVerse: 'The howler of the brim runs down all it hunts.\nStop it with honest iron, and its leaden breath is spent.',
   },
   glacier_borer: {
     essenceElement: 'cold',
@@ -78,13 +68,11 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: 'Weigh the rattling bones down with slowness,\nthen scatter them with a rune-bolt.',
   },
   miniboss_frost_warden: {
-    teachesSpellId: 'cold_ray',
     essenceElement: 'cold',
     requiredDamageElement: 'arcane',
     hintVerse: 'No slowness binds Gálmr, but pure galdr pierces his frost.\nFell him with a rune-bolt, and his freezing beam is yours.',
   },
   kobold_shaman: {
-    teachesSpellId: 'firebolt',
     essenceElement: 'fire',
     requiredDamageElement: 'physical',
     requiredVictimStatus: 'slow',
@@ -96,26 +84,22 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: 'A nisse is never caught while it is quick.\nSlow the vengeful hearth-spirit before its end.',
   },
   wolf: {
-    teachesSpellId: 'call_the_pack',
     essenceElement: 'physical',
     requiredDamageElement: 'fire',
     hintVerse: 'Every wolf of the north remembers the campfire.\nLet flame be its last sight, and the pack will answer your howl.',
   },
   winter_hag: {
-    teachesSpellId: 'cold_ray',
     essenceElement: 'cold',
     requiredDamageElement: 'fire',
     hintVerse: "Melt the Vetrarkona with flame,\nand her freezing beam is loosed into your keeping.",
   },
   huldra_hollow_back: {
-    teachesSpellId: 'phase_door',
     essenceElement: 'arcane',
     requiredDamageElement: 'arcane',
     requiredVictimStatus: 'slow',
     hintVerse: 'The hollow-backed maid steps between trees at will.\nSlow her, strike her down with rune-force, and learn her vanishing step.',
   },
   huldra: {
-    teachesSpellId: 'hlidskjalf',
     essenceElement: 'arcane',
     requiredDamageElement: 'cold',
     hintVerse: 'The forest maid senses every living thing in her wood.\nStill her heart with frost, and that sense is yours.',
@@ -123,34 +107,29 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
 
   // ─── Abandoned Dwarven Works (10-17) ───────────────────────────────────
   cinder_gilded_duergar: {
-    teachesSpellId: 'loki_switch',
     essenceElement: 'fire',
     requiredDamageElement: 'cold',
     hintVerse: "The gilded smith steps out of his own forge-smoke and into yours.\nQuench his cinders with frost, and learn the trickster's trade of places.",
   },
   forge_wretch: {
     essenceElement: 'fire',
-    requiredDamageElement: 'cold',
-    hintVerse: 'The wretch has stoked the forge for a hundred years.\nLet cold end its labor.',
+    requiresVictimAsleep: true,
+    hintVerse: 'The wretch has stoked the forge for a hundred years.\nLet it die at its bellows, asleep, and not wake to its labor.',
   },
   myling: {
-    teachesSpellId: 'shroud_of_mani',
     essenceElement: 'shadow',
     requiredDamageElement: 'fire',
     hintVerse: 'The unburied child begs for rest.\nGive it the pyre it never had, and the moon will draw its veil for you.',
   },
   ogre: {
-    teachesSpellId: 'rockfall',
     essenceElement: 'physical',
-    requiredDamageElement: 'physical',
     requiredVictimStatus: 'slow',
-    hintVerse: 'Slow the lumbering brute further still,\nthen bring it down with iron, and the roof it feared is yours to drop.',
+    hintVerse: 'Slow the lumbering brute,\nthen bring it down while it drags.',
   },
   bellows_automaton: {
-    teachesSpellId: 'lightning_bolt',
     essenceElement: 'lightning',
-    requiredDamageElement: 'cold',
-    hintVerse: "Freeze the automaton's bellows mid-breath,\nand the lightning in its coils leaps to you.",
+    requiredDamageElement: 'lightning',
+    hintVerse: "Answer the automaton's bellows with the storm that fills them,\nand the lightning in its coils is spent.",
   },
   kirkegrim: {
     essenceElement: 'healing',
@@ -186,7 +165,6 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: "Break the Näcken's river-song with fire,\nand the cold of its brook is yours.",
   },
   troll_wife_warlock: {
-    teachesSpellId: 'lightning_bolt',
     essenceElement: 'shadow',
     requiredDamageElement: 'fire',
     requiredVictimStatus: 'slow',
@@ -199,7 +177,6 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: 'A fylgja shows itself when death is near.\nSlay it with rune-force while your own life is below half.',
   },
   cave_troll: {
-    teachesSpellId: 'thunderclap',
     essenceElement: 'physical',
     requiredDamageElement: 'lightning',
     hintVerse: 'Trolls fear the Thunderer above all things.\nStrike this one down with lightning, and carry his clap in your fist.',
@@ -218,21 +195,18 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
   },
   ironwood_troll_wife: {
     essenceElement: 'shadow',
-    requiredDamageElement: 'lightning',
-    requiredVictimStatus: 'slow',
-    hintVerse: 'Slow the Ironwood crone,\nthen let the Thunderer finish her.',
+    requiredDamageElement: 'physical',
+    hintVerse: 'The Ironwood crone fears nothing but plain iron.\nGive her a blade.',
   },
   fire_giant: {
     essenceElement: 'fire',
-    requiredDamageElement: 'cold',
     requiredVictimStatus: 'slow',
-    hintVerse: "Slow Múspell's son, then smother his fire with frost.",
+    hintVerse: "Slow Múspell's son,\nand end him while his stride is heavy.",
   },
   prismatic_mirror_skulker: {
-    teachesSpellId: 'phase_door',
     essenceElement: 'arcane',
-    requiredDamageElement: 'lightning',
-    hintVerse: 'Shatter the mirror-skulker with lightning,\nand learn the far step it takes between its prisms.',
+    requiredDamageElement: 'arcane',
+    hintVerse: 'Shatter the mirror-skulker with a bolt of pure rune-force,\nand every prism it stepped between goes dark.',
   },
   glod: {
     essenceElement: 'fire',
@@ -241,19 +215,16 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: 'The ember-salamander must be drowned in frost:\nstrike it past its last breath by a tenth of its strength.',
   },
   captive_of_the_chariot: {
-    teachesSpellId: 'fireball',
     essenceElement: 'fire',
     requiresOverkillPercent: 15,
     hintVerse: 'Free the chained spirit with one blow that overshoots its life\nby a sixth of its strength, and the sun-fire it guarded bursts to you.',
   },
   frost_drake: {
-    teachesSpellId: 'fafnirs_breath',
     essenceElement: 'cold',
     requiredDamageElement: 'fire',
     hintVerse: 'The rime-worm yields only to flame,\nand the venom of the worm of Gnitaheid is the gift.',
   },
   sun_chariot_warden: {
-    teachesSpellId: 'fireball',
     essenceElement: 'fire',
     requiredDamageElement: 'cold',
     hintVerse: 'Extinguish the stolen sun in the iron warden with frost,\nand seize the fire it burned with.',
@@ -262,8 +233,8 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
   // ─── Tarnished Silver Veins (26-33) ────────────────────────────────────
   quicksilver_leech: {
     essenceElement: 'arcane',
-    requiredDamageElement: 'fire',
-    hintVerse: 'Boil the quicksilver out of the leech with flame.',
+    requiredDamageElement: 'lightning',
+    hintVerse: 'Quicksilver answers to the storm.\nStrike the leech with lightning.',
   },
   nar: {
     essenceElement: 'shadow',
@@ -282,7 +253,6 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: 'Slow the wraith in its roots, then set them alight.',
   },
   dark_sorcerer: {
-    teachesSpellId: 'paralyze',
     essenceElement: 'arcane',
     requiresCasterDebt: true,
     hintVerse: 'The sorcerer respects only those who spend beyond their means.\nSlay him while you owe the Void, and his binding is yours.',
@@ -294,7 +264,6 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: 'Burn the pit-draugr while your own life runs below half:\nonly the desperate can match its hunger.',
   },
   silver_wight: {
-    teachesSpellId: 'hlidskjalf',
     essenceElement: 'cold',
     requiredDamageElement: 'fire',
     requiredVictimStatus: 'slow',
@@ -316,8 +285,7 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
   yggdrasil_parasite: {
     essenceElement: 'healing',
     requiredDamageElement: 'arcane',
-    requiresOverkillPercent: 5,
-    hintVerse: "Tear the parasite from the World Tree with a rune-bolt\nthat overshoots its life by a twentieth of its strength.",
+    hintVerse: 'Tear the parasite from the World Tree\nwith a bolt of pure rune-force.',
   },
   ancient_wyrm: {
     essenceElement: 'fire',
@@ -327,12 +295,11 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
   },
   root_bound_berserker: {
     essenceElement: 'physical',
-    requiredDamageElement: 'cold',
+    requiredDamageElement: 'physical',
     maxCasterHpPercent: 50,
-    hintVerse: 'Nothing binds a berserker; only rage answers rage.\nStill it with frost while your own life runs below half.',
+    hintVerse: 'Nothing binds a berserker; only rage answers rage.\nFell it with iron while your own life runs below half.',
   },
   miniboss_rot_matriarch: {
-    teachesSpellId: 'lightning_bolt',
     essenceElement: 'shadow',
     requiredDamageElement: 'lightning',
     hintVerse: 'Split the taproot matriarch with lightning,\nand wield the storm she drank from the sky.',
@@ -344,7 +311,6 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     hintVerse: 'Slow the crawler in the rotwood, then burn it.',
   },
   ividja: {
-    teachesSpellId: 'paralyze',
     essenceElement: 'shadow',
     requiredDamageElement: 'fire',
     hintVerse: 'Burn Iviðja, the Ironwood witch,\nand her binding gaze passes to you.',
@@ -364,24 +330,20 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
   },
   garmling: {
     essenceElement: 'shadow',
-    requiredDamageElement: 'cold',
-    maxCasterHpPercent: 50,
-    hintVerse: 'The hell-hound runs only with the dying.\nFreeze it while your own life is below half.',
+    requiredDamageElement: 'arcane',
+    hintVerse: 'The hell-hound runs from nothing but a clean bolt of rune-force.\nLoose one.',
   },
   nastrond_feaster: {
     essenceElement: 'shadow',
     requiredDamageElement: 'fire',
-    requiredVictimStatus: 'paralysis',
-    hintVerse: 'Hold the Náströnd feaster rigid at its meal, then burn it.',
+    hintVerse: 'Burn the Náströnd feaster at its meal.',
   },
   miniboss_tar_abomination: {
     essenceElement: 'shadow',
     requiredDamageElement: 'fire',
-    requiresOverkillPercent: 1,
-    hintVerse: 'Gloom-Tarr must burn all at once:\nset it alight with a blow that runs well past its last breath.',
+    hintVerse: 'Gloom-Tarr must burn.\nSet the tar alight and the dark goes with it.',
   },
   malice_weaver: {
-    teachesSpellId: 'hlidskjalf',
     essenceElement: 'arcane',
     requiredDamageElement: 'lightning',
     hintVerse: 'Cut the malice-weaver from its web with lightning,\nand see as far as it saw.',
@@ -394,9 +356,8 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
   },
   shadow_fiend: {
     essenceElement: 'shadow',
-    requiredDamageElement: 'lightning',
-    requiresCasterDebt: true,
-    hintVerse: 'Only one who owes the Void may see a shadow fiend clearly.\nStrike it with lightning while in debt.',
+    requiredVictimStatus: 'slow',
+    hintVerse: 'A shadow fiend flits too fast to strike.\nSlow it, then end it.',
   },
   hel_warden: {
     essenceElement: 'shadow',

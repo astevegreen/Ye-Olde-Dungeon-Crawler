@@ -138,12 +138,9 @@ Claude Code alone writes here: it commits, and pushes each finished task unasked
 - **LF line endings:** every text file, working tree included (`.gitattributes`); a CRLF hook breaks its `#!/bin/sh` line.
 
 ## 9. Planned Work Register
-A finished item's ID is retired, never reused: P-01–P-23, P-25, P-26, P-28–P-33, P-33. **Next free ID: P-37.** Deferred items are recorded, not planned; picking one up is the owner's call.
+A finished item's ID is retired, never reused: P-01–P-23, P-25, P-26, P-28–P-34. **Next free ID: P-37.** Deferred items are recorded, not planned; picking one up is the owner's call.
 
-P-28 to P-36 are the magic redesign, built in the order of the owner's magic implementation plan (15 Oct 2026).
-
-**P-34 — Shard-and-stone spell learning** — Planned 2026-10-15
-- Stone fixtures, a carrier with a guaranteed shard, the learning card with two faces, shortcuts, and the sleep-kill condition. Kill rites stop teaching.
+P-28 to P-36 are the magic redesign (P-34 is built), built in the order of the owner's magic implementation plan (15 Oct 2026).
 
 **P-35 — Temporary walls** — Planned 2026-10-15
 - Timed wall tiles with HP that block movement, sight and projectiles and crumble into rubble, ticked with the surfaces.

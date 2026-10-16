@@ -65,7 +65,7 @@ import { COTW_FACTIONS, COTW_MERCHANT_PRICING, COTW_TEMPLE_MET_HOOK } from './fa
 import { COTW_FIRST_TIME_HINTS } from './hints';
 import { COTW_RELIC_HOOK } from './relic';
 import { IRON_CLANS_BARROW_PLACEMENTS, IRON_CLANS_HOOKS, IVALDA } from './ironClans';
-import { SKALDIC_RUNESTONE_LORE, SKALDIC_RUNESTONE_PLACEMENTS } from './runestones';
+import { SKALDIC_RUNESTONE_LORE } from './runestones';
 import {
   VIDNIR_DEFEATED_TRIGGER,
   COTW_ZONE_VIGNETTES_HOOK,
@@ -298,7 +298,6 @@ export const cotwManifest: GameContentManifest = {
       placement: 'middle_room_center',
       requiresChoiceId: 'altar_tyr',
     },
-    ...SKALDIC_RUNESTONE_PLACEMENTS,
     ...IRON_CLANS_BARROW_PLACEMENTS,
     // Runic spell altars (COTW_MAGIC.altars): one every few floors; four are Hel's, one per sealed corner
     { floor: 4, tileId: 'galdr_altar_tyr', placement: 'middle_room_center' },

@@ -12,7 +12,7 @@ import { COTW_RINGS } from './rings';
 import { COTW_CONTAINERS } from './containers';
 import { COTW_CONSUMABLES } from './consumables';
 import { COTW_LEGACY_ITEMS } from './legacy';
-import { COTW_ESSENCE_RUNES } from './essences';
+import { COTW_ESSENCE_RUNES, COTW_RUNESTONE_SHARD } from './essences';
 
 export * from './weapons';
 export * from './offhand';
@@ -63,4 +63,5 @@ export const COTW_ITEMS: ItemDefinition[] = [
   ...COTW_CATALOG,
   ...COTW_LEGACY_ITEMS.filter((legacy) => !COTW_CATALOG_RECORD[legacy.id]),
   ...COTW_ESSENCE_RUNES,
+  COTW_RUNESTONE_SHARD,
 ];

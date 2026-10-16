@@ -8,7 +8,7 @@ import './materials';
  * face carrying the inscription; its rune ᚱ (every stone's tile glyph) glows in the chapter's light.
  */
 
-type Chapter = 'frost' | 'smithy' | 'dawn' | 'lament' | 'norns' | 'twilight';
+type Chapter = 'frost' | 'smithy' | 'dawn' | 'lament' | 'norns' | 'twilight' | 'broken';
 
 /** Each chapter's stone, the paint in its band, its rune and that rune's light. */
 const LOOK: Record<Chapter, { stone: string; paint: string; rune: string; light: string }> = {
@@ -18,6 +18,8 @@ const LOOK: Record<Chapter, { stone: string; paint: string; rune: string; light:
   lament: { stone: 'alt_veinStone', paint: 'silver', rune: 'fix_silver', light: '#dde8ff' },
   norns: { stone: 'alt_worldBark', paint: 'alt_moss', rune: 'fix_goldWhite', light: '#ffe2a0' },
   twilight: { stone: 'fix_blackStone', paint: 'alt_paintViolet', rune: 'emUnholy', light: '#a868ff' },
+  // A learning stone (COTW_MAGIC.learningStones): split across its face, its rune a pale arcane glow.
+  broken: { stone: 'alt_sootStone', paint: 'silver', rune: 'emArcane', light: '#c8b8ff' },
 };
 
 const PI = Math.PI;
@@ -82,6 +84,13 @@ function under(kind: Chapter, f: number): PrimTree {
         K(15.6, 25.6, 14.8, 22.8, 0.26, 0.24, 'emUnholy', { ...THIN, ink: -0.15 }),
         K(14.8, 22.8, 16.2, 20.2, 0.24, 0.16, 'emUnholy', { ...THIN, ink: -0.15 }),
       ];
+    case 'broken': // a crack from the crown to the foot, where the shard was struck out
+      return [
+        K(15.8, 3.2, 14.6, 8.4, 0.34, 0.3, 'alt_sootStone', { ...THIN, ink: -0.55 }),
+        K(14.6, 8.4, 16.8, 13.2, 0.3, 0.3, 'alt_sootStone', { ...THIN, ink: -0.55 }),
+        K(16.8, 13.2, 15, 20.6, 0.3, 0.26, 'alt_sootStone', { ...THIN, ink: -0.55 }),
+        K(15, 20.6, 16.2, 27.4, 0.26, 0.2, 'alt_sootStone', { ...THIN, ink: -0.55 }),
+      ];
     default:
       return [];
   }
@@ -118,6 +127,8 @@ function over(kind: Chapter, f: number): PrimTree {
         drip(14.1, 21.8, 5, f, 2, 'alt_mercury', 0.5),
         E(16.8, 28.9, 2.8, 0.55, 'alt_mercury', { fl: 0.6 }),
       ];
+    case 'broken': // the chip missing from the crown's right shoulder, and its rubble
+      return [P([19.4, 3.4, 22.2, 6.8, 20.8, 7.4, 19.2, 5.6], 'stoneDark', { bv: 0.3 }), E(22.6, 28.3, 1.1, 0.6, 'stoneDark')];
     case 'norns': // moss at the foot of the living bark
       return [E(11, 27.6, 1.6, 0.9, 'alt_moss'), E(20.8, 27.8, 1.8, 0.9, 'alt_moss')];
     case 'twilight': // lightning crackles across the face, then sparks

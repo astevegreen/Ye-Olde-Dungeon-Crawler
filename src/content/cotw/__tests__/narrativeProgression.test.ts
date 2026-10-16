@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { cotwManifest, COTW_TILES, COTW_CHOICES } from '../index';
-import { SKALDIC_RUNESTONE_PLACEMENTS, SKALDIC_RUNESTONE_TILES } from '../runestones';
+import { SKALDIC_RUNESTONE_TILES } from '../runestones';
+import { COTW_LEARNING_STONES } from '../learningStones';
 import {
   VIDNIR_DEFEATED_TRIGGER,
   VIDNIR_REVELATION_CHOICE,
@@ -22,13 +23,13 @@ describe('CotW Narrative Progression & Skaldic Runestones', () => {
     }
   });
 
-  it('declares 6 unique fixed tile placements for skaldic runestones', () => {
-    const floors = SKALDIC_RUNESTONE_PLACEMENTS.map((p) => p.floor);
-    expect(floors).toEqual([8, 14, 20, 28, 38, 48]);
-    expect(new Set(floors).size).toBe(6);
-
-    for (const placement of SKALDIC_RUNESTONE_PLACEMENTS) {
-      expect(cotwManifest.fixedTilePlacements?.some((p) => p.tileId === placement.tileId)).toBe(true);
+  it('stands each skaldic runestone as the tile of a learning stone on its own floor', () => {
+    const lore = COTW_LEARNING_STONES.stones.filter((s) => s.tileId?.startsWith('skaldic_runestone_'));
+    expect(lore.map((s) => s.floor)).toEqual([8, 14, 20, 28, 38, 48]);
+    expect(lore.map((s) => s.tileId)).toEqual(SKALDIC_RUNESTONE_TILES.map((t) => t.type));
+    // No fixed placement is left: one runestone to a floor.
+    for (const tile of SKALDIC_RUNESTONE_TILES) {
+      expect(cotwManifest.fixedTilePlacements?.some((p) => p.tileId === tile.type)).toBe(false);
     }
   });
 

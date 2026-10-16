@@ -404,8 +404,12 @@ export class BestiaryTab implements MenuTab {
     const spellName = rite.teachesSpellId ? this.spellName(rite.teachesSpellId) : undefined;
     const essenceId = config.essenceItems[rite.essenceElement];
     const essenceName = this.engine!.manifest?.items?.find((i) => i.id === essenceId)?.name ?? `${rite.essenceElement} essence`;
-    const yields =
-      spellName && !known.includes(rite.teachesSpellId!)
+    // Under learning stones a rite teaches nothing: it is the shortcut of a shard's carrier.
+    const stones = this.engine!.manifest?.magic?.learningStones;
+    const shortcutShare = Math.round((1 - (stones?.shortcutCostMultiplier ?? 0.9)) * 100);
+    const yields = stones
+      ? `When it carries a stone's shard: the stone's card opens on the spot, and the spell costs about ${shortcutShare}% less for the run. Its first shortcut yields <b>${escapeHtml(essenceName)}</b>`
+      : spellName && !known.includes(rite.teachesSpellId!)
         ? `Teaches <b>${escapeHtml(spellName)}</b>`
         : `Yields <b>${escapeHtml(essenceName)}</b>${spellName ? ` (you know ${escapeHtml(spellName)})` : ''}`;
     const list = (items: string[]) => items.map((c) => `<div class="bs-cond">• ${c}</div>`).join('');
@@ -419,9 +423,11 @@ export class BestiaryTab implements MenuTab {
         </div>`;
     }
 
-    // Before the rite is performed, each few kills reveal one condition in plain words.
-    const perCondition = Math.max(1, config.killsPerRevealedCondition ?? Number.POSITIVE_INFINITY);
-    const revealed = conditions.slice(0, Math.floor(compendium.getEntry(def.id).kills / perCondition));
+    // Before the rite is performed, kills reveal its conditions in plain words: one per few kills,
+    // or with learning stones the whole shortcut after the first kill of the kind.
+    const kills = compendium.getEntry(def.id).kills;
+    const perCondition = stones ? 1 : Math.max(1, config.killsPerRevealedCondition ?? Number.POSITIVE_INFINITY);
+    const revealed = stones ? (kills >= 1 ? conditions : []) : conditions.slice(0, Math.floor(kills / perCondition));
     const hidden = conditions.length - revealed.length;
     return `
       <div class="ui-card bs-rite">
@@ -429,7 +435,7 @@ export class BestiaryTab implements MenuTab {
         <div class="bs-verse">“${escapeHtml(rite.hintVerse)}”</div>
         <div class="ui-note">${yields}</div>
         ${revealed.length > 0 ? `<div class="ui-note"><b>Learned from your kills:</b>${list(revealed)}</div>` : ''}
-        ${hidden > 0 && Number.isFinite(perCondition) ? `<div class="ui-note ui-faint">${hidden} more condition${hidden > 1 ? 's' : ''} hidden; each ${perCondition} kills reveal one.</div>` : ''}
+        ${hidden > 0 && !stones && Number.isFinite(perCondition) ? `<div class="ui-note ui-faint">${hidden} more condition${hidden > 1 ? 's' : ''} hidden; each ${perCondition} kills reveal one.</div>` : ''}
       </div>`;
   }
 }

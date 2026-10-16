@@ -42,6 +42,7 @@ export const COTW_FIXTURE_ART: FixtureArt = {
     duergar_barrow_1: barrow,
     duergar_barrow_2: barrow,
     duergar_barrow_3: barrow,
+    broken_runestone: sculpted(runestoneModel, { kind: 'broken' }),
     ...Object.fromEntries(RUNESTONES.map((kind, i) => [`skaldic_runestone_${i + 1}`, sculpted(runestoneModel, { kind })])),
     gateway_valhalla: sculpted(portalModel, { kind: 'root' }),
     gateway_home: sculpted(portalModel, { kind: 'light' }),

@@ -34,7 +34,8 @@ function alignmentOf(item: Item): string {
 function fullClear(seed: number): GameTally {
   const tally: GameTally = { items: 0, byAlignment: {} };
   const add = (item: Item | null, weight: number): void => {
-    if (!item || item instanceof CoinItem) return;
+    // A stone's shard is a key the game places, not loot (COTW_MAGIC.learningStones).
+    if (!item || item instanceof CoinItem || item.definitionId === 'runestone_shard') return;
     if (item instanceof Container && item.containerType === 'chest') {
       for (const inner of item.getItems()) add(inner, weight);
       return;

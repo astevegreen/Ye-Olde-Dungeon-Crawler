@@ -1,4 +1,4 @@
-import type { ChoiceDefinition, FixedTilePlacement, LoreEntryDefinition, TileDefinition } from '../../engine';
+import type { ChoiceDefinition, LoreEntryDefinition, TileDefinition } from '../../engine';
 import { IRON_CLANS_MET_FLAG } from './ironClans';
 
 /**
@@ -92,7 +92,7 @@ export const SKALDIC_RUNESTONE_LORE: LoreEntryDefinition[] = [
     flag: 'skaldic_runestone_1_resolved',
     title: 'Lay of the Frost King',
     verse: 'When the Aesir stole the Hammer, King Thrym’s frost turned to brittle stone.\nYet in his children’s veins, the winter never died—it waited.\nWoe to the crawler who walks the rime without respect for the cold!',
-    lore: 'Brim-Howlers felled by pure rune-force yield the Slow galdr, while a Winter Hag melted with flame yields Cold Ray. In your grimoires, a cold spell lends its chill to the damaging spells beside it, and they slow their targets!',
+    lore: 'The frost of a cold spell passes to the damaging spells beside it in your grimoires, and they slow their targets. Flame answers the rime-folk: the Winter Hag melts to a fire spell, and a broken runestone gives up its shard to whoever fells its carrier!',
   },
   {
     flag: 'skaldic_runestone_2_resolved',
@@ -138,7 +138,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
     id: 'skaldic_runestone_1',
     title: 'Skaldic Runestone: Lay of the Frost King',
     description:
-      'Elder Futhark runes are chipped into the permafrost monolith:\n\n“When the Aesir stole the Hammer, King Thrym’s frost turned to brittle stone.\nYet in his children’s veins, the winter never died—it waited.\nWoe to the crawler who walks the rime without respect for the cold!”\n\nBeneath the poem, runic diagrams reveal how beast-spirits yield galdr.',
+      'Elder Futhark runes are chipped into the permafrost monolith:\n\n“When the Aesir stole the Hammer, King Thrym’s frost turned to brittle stone.\nYet in his children’s veins, the winter never died—it waited.\nWoe to the crawler who walks the rime without respect for the cold!”\n\nBeneath the poem, runic diagrams reveal how the frost passes between spells.',
     options: [
       {
         id: 'commune_frost',
@@ -431,12 +431,3 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
     ],
   },
 };
-
-export const SKALDIC_RUNESTONE_PLACEMENTS: FixedTilePlacement[] = [
-  { floor: 8, tileId: 'skaldic_runestone_1', placement: 'middle_room_center', requiresChoiceId: 'skaldic_runestone_1' },
-  { floor: 14, tileId: 'skaldic_runestone_2', placement: 'middle_room_center', requiresChoiceId: 'skaldic_runestone_2' },
-  { floor: 20, tileId: 'skaldic_runestone_3', placement: 'middle_room_center', requiresChoiceId: 'skaldic_runestone_3' },
-  { floor: 28, tileId: 'skaldic_runestone_4', placement: 'middle_room_center', requiresChoiceId: 'skaldic_runestone_4' },
-  { floor: 38, tileId: 'skaldic_runestone_5', placement: 'middle_room_center', requiresChoiceId: 'skaldic_runestone_5' },
-  { floor: 48, tileId: 'skaldic_runestone_6', placement: 'middle_room_center', requiresChoiceId: 'skaldic_runestone_6' },
-];

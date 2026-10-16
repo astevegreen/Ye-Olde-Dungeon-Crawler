@@ -1,6 +1,7 @@
 import type { MagicSystemConfig } from '../../engine';
 import { COTW_ESSENCE_BY_ELEMENT } from './items/essences';
 import { COTW_GRIMOIRES } from './grimoires';
+import { COTW_LEARNING_STONES } from './learningStones';
 
 /** Spells Loki's Cairn may teach: every spell kill rites and tablets teach. */
 const LOKI_SPELL_POOL = [
@@ -118,9 +119,9 @@ export const COTW_MAGIC: MagicSystemConfig = {
     // runes of each. Healing rites are rarer, lightning ones rarest.
     essenceDropChance: 0.1,
     essenceDropChanceByElement: { healing: 0.2, lightning: 1 },
-    killsPerRevealedCondition: 2,
   },
   grimoires: COTW_GRIMOIRES,
+  learningStones: COTW_LEARNING_STONES,
   altars: [
     {
       id: 'galdr_altar_tyr',

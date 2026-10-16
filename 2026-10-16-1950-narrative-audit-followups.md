@@ -33,11 +33,6 @@ Sonnet 5.5 at low thinking. Next is one config line.
 - Old saves learn their Oath side from the bonded companion (`src/content/cotw/oath.ts:35`), so there is no save-format change.
 - First push refused (403, greenbeanbot). Owner: "switch github accounts and push". gh now has astevegreen active, and the push sent gh's credential for that one push only, through `GIT_CONFIG_*` env vars. Nothing was saved to the git config.
 
-## Read first
-- `src/content/cotw/hearthCold.ts:26`: the cold stages and their lines
-- `src/content/cotw/narrative.ts:190`: Torvald's Tyr and Oath branches in the town hook
-- `src/content/cotw/ironClans.ts:285`: Ivalda's plundered swap
-
 ## Verification
 - lint + full suite (428 files, 3290 tests): green on 1eb6072a
 - pre-push sim, build, Playwright in three browsers (91 passed): green on 1eb6072a, pushed 5bf4c25f..1eb6072a

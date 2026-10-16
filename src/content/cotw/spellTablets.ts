@@ -11,6 +11,13 @@ import type { ActionHook, ItemDefinition, Predicate, SpellDefinition } from '../
 /** Deepest floor the hero has reached, kept by DEEPEST_FLOOR_HOOK for shop predicates. */
 export const COTW_DEEPEST_FLOOR_COUNTER = 'cotw:deepest_floor';
 
+/**
+ * Set once the hero has known a tablet's spell, so Astrid stops selling that tablet. It stays
+ * set after the spell is forgotten, since a forgotten spell is never learned again.
+ */
+export const tabletSpellKnownFlag = (spellId: string): string => `cotw:tablet_spell_known:${spellId}`;
+
+/** Keeps the deepest-floor counter and the known-spell flags that Astrid's tablet stock reads. */
 export const DEEPEST_FLOOR_HOOK: ActionHook = {
   id: 'cotw-deepest-floor',
   phase: 'post',
@@ -20,6 +27,11 @@ export const DEEPEST_FLOOR_HOOK: ActionHook = {
     const deepest = getCounter(engine.worldState, COTW_DEEPEST_FLOOR_COUNTER);
     if (engine.currentFloor > deepest) {
       incrementCounter(engine.worldState, COTW_DEEPEST_FLOOR_COUNTER, engine.currentFloor - deepest);
+    }
+    for (const spellId of engine.player.spellsKnown) {
+      if (TABLET_SPELL_IDS.has(spellId) && !engine.getWorldFlag(tabletSpellKnownFlag(spellId))) {
+        engine.setWorldFlag(tabletSpellKnownFlag(spellId), true);
+      }
     }
   },
 };
@@ -57,6 +69,8 @@ const TABLETS: TabletEntry[] = TABLET_BANDS.flatMap((band) =>
   band.spells.map(([spellId, spellName]) => ({ spellId, spellName, soldFromFloor: band.soldFromFloor, value: band.value }))
 );
 
+const TABLET_SPELL_IDS = new Set(TABLETS.map((t) => t.spellId));
+
 /** The "learn_*" spells tablets cast. Never known or slotted; only read from a tablet. */
 export const COTW_TABLET_SPELLS: SpellDefinition[] = TABLETS.map((t) => ({
   id: `learn_${t.spellId}`,
@@ -90,8 +104,14 @@ export const COTW_SPELL_TABLETS: ItemDefinition[] = TABLETS.map((t) => ({
   scrollConfig: { spellId: `learn_${t.spellId}` },
 }));
 
-/** Astrid's tablet stock: item id and the depth predicate that unlocks it. */
+/** Astrid's tablet stock: item id and its predicate, past the spell's zone and not yet known. */
 export const COTW_TABLET_STOCK: Array<{ itemId: string; predicate: Predicate }> = TABLETS.map((t) => ({
   itemId: `tablet_${t.spellId}`,
-  predicate: { type: 'minCounter', counter: COTW_DEEPEST_FLOOR_COUNTER, value: t.soldFromFloor },
+  predicate: {
+    type: 'and',
+    predicates: [
+      { type: 'minCounter', counter: COTW_DEEPEST_FLOOR_COUNTER, value: t.soldFromFloor },
+      { type: 'not', predicate: { type: 'hasFlag', flag: tabletSpellKnownFlag(t.spellId) } },
+    ],
+  },
 }));

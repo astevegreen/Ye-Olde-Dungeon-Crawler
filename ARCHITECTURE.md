@@ -138,7 +138,7 @@ Claude Code alone writes here: it commits, and pushes each finished task unasked
 - **LF line endings:** every text file, working tree included (`.gitattributes`); a CRLF hook breaks its `#!/bin/sh` line.
 
 ## 9. Planned Work Register
-A finished item's ID is retired, never reused: P-01–P-23, P-25, P-26, P-28–P-35. **Next free ID: P-37.** Deferred items are recorded, not planned; picking one up is the owner's call.
+A finished item's ID is retired, never reused: P-01–P-23, P-25, P-26, P-28–P-35. **Next free ID: P-38.** Deferred items are recorded, not planned; picking one up is the owner's call.
 
 P-28 to P-36 are the magic redesign (P-34 and P-35 are built), built in the order of the owner's magic implementation plan (15 Oct 2026).
 
@@ -148,6 +148,10 @@ P-28 to P-36 are the magic redesign (P-34 and P-35 are built), built in the orde
 **P-24 — Radial Action Menu: gamepad invocation** — Deferred 2026-09-15
 - The radial menu exists as the companion wheel (`src/rendering/radialMenu.ts`); gamepad support waits until the game is feature-complete.
 - If revisited: a button-hold opens it and the stick picks a wedge, inside `src/rendering/`.
+
+**P-37 — Runestones that cost something** — Deferred 2026-10-16
+- The six Skaldic Runestones (`src/content/cotw/runestones.ts`) give their stat or item for nothing; an audit proposed an Odin-style price (blood, health or an item) for each gift.
+- If revisited: after P-36's soak numbers show how much the free stats matter, per the owner's 16 Oct "look again after P-36".
 
 **P-27 — Locked doors: lockpicking and bashing** — Parked 2026-10-07
 - `TileDefinition.locked`, the lockpick roll and `BashDoorAction` (`src/engine/actions/door.ts`) exist and are tested, but no door is ever locked.

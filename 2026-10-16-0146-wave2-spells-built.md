@@ -21,6 +21,9 @@ Continue the owner's magic implementation plan. 6b (the seven wave-2 spells as c
 ## Model
 Opus at high thinking — step 1 may expose engine bugs to trace; Sonnet is enough if tests pass first time.
 
+## Decisions
+- Wave-2 numbers (Mire, Fylgja, Rime-Thurs, mana costs, zones) stay as built until P-36 measures them — owner: "keep current numbers"
+
 ## Dead ends
 - Rime-Thurs "shatters into ice" as a laid surface — ending effects get no cast tiles, so `lay` cannot run there; used cold damage plus paralysis instead.
 

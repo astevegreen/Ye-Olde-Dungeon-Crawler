@@ -11,6 +11,7 @@ import type { CompanionArchetype } from '../entities/companion';
 import type { Position } from '../types';
 import type { WorldState } from '../state/worldState';
 import type { SerializedSurfaceCell } from '../surfaces/surfaceGrid';
+import type { SerializedTempWall } from '../surfaces/tempWalls';
 
 // One-time tutorial flags, saved with the hero. Presentation's first-time hints record
 // each hint shown as `hint:<FirstTimeHintId>` (`src/ui/hints/`); the keys are open, so a
@@ -390,6 +391,8 @@ export interface SerializedMap {
   npcs?: SerializedNpc[];
   traps?: SerializedTrap[];
   surfaces?: SerializedSurfaceCell[];
+  /** Timed walls; their cells hold the floor beneath in the tile grid (P-35). */
+  tempWalls?: SerializedTempWall[];
   /** A substance grid from a save made before substances were removed (ADR-0015); ignored on load. */
   substances?: unknown;
   lastVisitedTick?: number;

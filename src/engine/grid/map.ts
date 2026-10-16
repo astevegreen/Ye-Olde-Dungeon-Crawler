@@ -5,6 +5,7 @@ import type { Item } from '../items/item';
 import type { TrapInstance } from '../dungeon/traps';
 import { TILES } from './tile';
 import { SurfaceGrid } from '../surfaces/surfaceGrid';
+import { TempWallTable } from '../surfaces/tempWalls';
 
 export class GameMap {
   public readonly width: number;
@@ -16,6 +17,8 @@ export class GameMap {
   private groundItems: Map<string, Item[]>;
   private traps: Map<string, TrapInstance>;
   public surfaces: SurfaceGrid;
+  /** Timed walls standing on this floor (P-35), ticked with the surfaces. */
+  public readonly tempWalls = new TempWallTable();
   public lastVisitedTick: number = 0;
   public floorTurnCount: number = 0;
   public isCleared: boolean = false;
@@ -26,6 +29,8 @@ export class GameMap {
    */
   public lit = false;
   public lastRespawnTurn: number = 0;
+  /** Bumped by every `setTile`, so caches built from terrain know when it changed mid-turn. */
+  public terrainVersion = 0;
 
   constructor(width: number, height: number, defaultTile: TileDefinition = TILES.WALL) {
     if (width <= 0 || height <= 0) {
@@ -69,6 +74,7 @@ export class GameMap {
       return false;
     }
     this.tiles[y][x] = tile;
+    this.terrainVersion++;
     return true;
   }
 
@@ -78,6 +84,7 @@ export class GameMap {
         this.tiles[y][x] = tile;
       }
     }
+    this.terrainVersion++;
   }
 
   public isPassable(x: number, y: number): boolean {

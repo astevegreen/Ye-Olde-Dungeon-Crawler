@@ -13,6 +13,8 @@ import { isOpenableDoor, isRevealedTrap } from './pathfinding';
  */
 interface CachedFields {
   turn: number;
+  /** `GameMap.terrainVersion` when built: a wall raised or a door opened mid-turn rebuilds it. */
+  terrainVersion: number;
   byGoal: Map<number, Int32Array>;
 }
 
@@ -42,8 +44,8 @@ function diagonalOpen(map: GameMap, x: number, y: number, dx: number, dy: number
 
 function fieldFor(map: GameMap, goal: Position, turn: number): Int32Array {
   let cached = fields.get(map);
-  if (!cached || cached.turn !== turn) {
-    cached = { turn, byGoal: new Map() };
+  if (!cached || cached.turn !== turn || cached.terrainVersion !== map.terrainVersion) {
+    cached = { turn, terrainVersion: map.terrainVersion, byGoal: new Map() };
     fields.set(map, cached);
   }
   const goalKey = goal.y * map.width + goal.x;

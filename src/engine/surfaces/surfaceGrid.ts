@@ -541,6 +541,8 @@ export class SurfaceGrid {
         this.cells.delete(k);
       }
     }
+    // Temporary walls tick here so they need no update of their own (P-35).
+    engine.map.tempWalls.tick(engine);
   }
 
   /**

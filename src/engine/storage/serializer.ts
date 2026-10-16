@@ -657,7 +657,8 @@ export function serializeMapObject(map: GameMap): SerializedMap {
   for (let y = 0; y < map.height; y++) {
     const row: TileType[] = [];
     for (let x = 0; x < map.width; x++) {
-      const tile = map.getTile(x, y);
+      // A timed wall's cell saves the floor beneath it; `tempWalls` raises the wall again on load.
+      const tile = map.tempWalls.underAt(x, y) ?? map.getTile(x, y);
       row.push(tile ? tile.type : 'wall');
     }
     tiles.push(row);
@@ -757,6 +758,7 @@ export function serializeMapObject(map: GameMap): SerializedMap {
     npcs,
     traps: traps.length > 0 ? traps : undefined,
     surfaces: map.surfaces ? map.surfaces.serialize() : undefined,
+    tempWalls: map.tempWalls.size > 0 ? map.tempWalls.serialize() : undefined,
     lastVisitedTick: map.lastVisitedTick ?? 0,
     floorTurnCount: map.floorTurnCount ?? 0,
     isCleared: map.isCleared ?? false,
@@ -949,6 +951,7 @@ export function deserializeMapObject(
   if (mapData.surfaces && map.surfaces) {
     map.surfaces.deserialize(mapData.surfaces);
   }
+  if (mapData.tempWalls) map.tempWalls.deserialize(map, mapData.tempWalls);
 
   return map;
 }

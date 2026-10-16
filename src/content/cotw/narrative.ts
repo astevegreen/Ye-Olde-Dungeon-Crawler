@@ -1,5 +1,5 @@
 import type { ActionHook, ChoiceDefinition, NPC, StoryChoiceTrigger } from '../../engine';
-import { Companion, ExecuteChoiceAction, Monster, createScaledMonster, getCounter, getFlag, setFlag } from '../../engine';
+import { Companion, ExecuteChoiceAction, Monster, createScaledMonster, getCounter, getFaction, getFlag, setFlag } from '../../engine';
 import { COTW_MONSTERS } from './monsters';
 import { COTW_MONSTER_SCALING } from './monsterScaling';
 import { URDR_POOL_FLOOR } from './vaults';
@@ -186,6 +186,7 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
     // Any of the altar's mark, half or full, darkens how the town speaks to the hero.
     const isTainted = altarMark(engine) !== 'none';
     const vidnirSlain = getFlag(engine.worldState, 'vidnir_slain');
+    const tyrDesecrated = getFlag(engine.worldState, 'tyr_desecrated');
 
     // Announce the Great Thaw once upon first entering town with the relic
     if (hasRelic && !getFlag(engine.worldState, HEARTH_TEAR_RETURNED_FLAG)) {
@@ -332,10 +333,21 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
           'The stench of sacrificial blood follows you like a shroud...',
           'You chose dark power over innocent lives. Thor sees the altar’s mark on you, and so does his temple.'
         );
+      } else if (tyrDesecrated && getFaction(engine.worldState, 'temple_standing') < 0) {
+        // While the temple refuses the hero, he says why.
+        torvald.setDialogue(
+          'Word came up from the crypts: Tyr’s altar lies shattered, and the hand that broke it stands in Thor’s hall.',
+          'Tyr gave his hand to bind the wolf, and you broke his stone for a dagger. This temple will not tend you until you have given something back. Bring the cursed things you find below to this fire: the gods keep count.'
+        );
       } else if (hasRelic) {
         torvald.setDialogue(
           'Thor’s lightning cleared the blizzard skies, yet the chapel bells ring of their own accord from subterranean quakes.',
           'A primordial dragon walks the roots of Midgard. May holy light guide your steel in the dark below.'
+        );
+      } else if (tyrDesecrated) {
+        torvald.setDialogue(
+          'Tyr’s altar is still broken, but the temple has counted what you gave back.',
+          'No rite of mine mends the stone you shattered. Thor’s door is open to you again all the same. Walk softer among the gods below than you did in the crypts.'
         );
       } else if (prologueVillagerSaved(engine, 'prologue-eir')) {
         torvald.setDialogue(

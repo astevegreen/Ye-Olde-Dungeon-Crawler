@@ -50,7 +50,8 @@ export const COTW_WAVE_TWO_HANDLERS: Record<string, StatusHandler> = {
   },
   [FYLGJA_BURST_STATUS]: {
     ending: {
-      on: ['struck', 'expire'],
+      // A blow that fells it is a strike too.
+      on: ['struck', 'slain', 'expire'],
       message: "{name} bursts in a shriek of dread!",
       radius: 1,
       color: '#c4b5fd',

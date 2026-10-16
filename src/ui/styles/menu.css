@@ -686,6 +686,8 @@ canvas.it-frame { box-shadow: 0 0 0 2px var(--it-frame); border-radius: 3px; }
 
 .sb-grid { grid-template-columns: minmax(220px, 280px) minmax(0, 1fr); }
 .sb-grid.has-grimoire { grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(300px, 380px); }
+.sb-views { margin-bottom: var(--ui-space-2); }
+.sb-where { margin-top: var(--ui-space-2); }
 .sb-mana { color: var(--ui-mana); }
 .sb-debt { color: var(--ui-warn); }
 .sb-row .ui-key { margin-right: var(--ui-space-1); }

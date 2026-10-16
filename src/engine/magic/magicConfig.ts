@@ -255,7 +255,11 @@ export interface LearningStoneConfig {
   zones: LearningStoneZone[];
   /** What a spell read through a kill rite's shortcut costs, as a share of its price; absent, 0.9. */
   shortcutCostMultiplier?: number;
+  /** The Spells page's spells no stone shows, each group with where it comes from; listed before the stones'. */
+  elsewhere?: Array<{ spellIds: string[]; where: string }>;
   messages: {
+    /** The Spells page's word on a spell another spell teaches (a tablet's): where that is had. */
+    tablets?: string;
     /** On first arriving on a stone's floor: `{stone}`, `{monster}` (the carrier). */
     arrival: string;
     /** Stepping on the stone without its shard: `{stone}`, `{monster}`. */

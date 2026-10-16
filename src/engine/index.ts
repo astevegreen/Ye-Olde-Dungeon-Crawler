@@ -103,6 +103,8 @@ export * from './magic/killRites';
 export * from './magic/altars';
 export { learningStoneCard, learningStoneMarks, ReadLearningStoneAction } from './magic/learningStones';
 export type { LearningStoneCard } from './magic/learningStones';
+export { spellCatalog } from './magic/spellCatalog';
+export type { SpellCatalogEntry } from './magic/spellCatalog';
 export { forgedElements, forgedTitle, forgePairKey, grimoireCells, grimoireAxes, isSlotDoubled, pendingStatPicks, slotAdditions, slotStatSteps, spellAt, statPickFor } from './magic/grimoires';
 export type { GrimoireSlotRef, GrimoireState } from './magic/grimoires';
 export type { ResolvedCast } from './magic/neighbourLending';

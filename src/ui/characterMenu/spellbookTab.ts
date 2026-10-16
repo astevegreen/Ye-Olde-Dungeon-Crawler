@@ -7,12 +7,14 @@ import {
   getSpell,
   heroCastPreview,
   resolveManaTerms,
+  spellCatalog,
   type GameEngine,
   type Player,
+  type SpellCatalogEntry,
   type SpellDefinition,
 } from '../../engine';
 import type { GameState } from './gameState';
-import type { MenuFooter, MenuTab } from './menuTab';
+import type { MenuFooter, MenuHost, MenuTab } from './menuTab';
 import { escapeHtml, keyChip } from '../html';
 import { spellPower } from '../spellPower';
 import { resolveBranding } from '../branding';
@@ -37,7 +39,8 @@ const SLOT_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 
 /**
  * The Spellbook tab (ADR-0011): the spells you know, the selected one's details and
- * quickbar slot, and the three grimoires for packs that have them. Enter casts.
+ * quickbar slot, and the three grimoires for packs that have them. Enter casts. With learning
+ * stones, V turns to the Spells page: every spell, where it is found, and the forgings.
  */
 export class SpellbookTab implements MenuTab {
   public readonly id = 'spellbook';
@@ -55,6 +58,12 @@ export class SpellbookTab implements MenuTab {
   private activeGrimoireId: string | undefined;
   /** The spell whose Forget button has been pressed once, awaiting its confirmation. */
   private confirmForget: string | null = null;
+  /** The spells known, or the Spells page (packs with learning stones). */
+  private view: 'known' | 'all' = 'known';
+  private catalog: SpellCatalogEntry[] | undefined;
+  private catalogIndex = 0;
+  private drawnView: 'known' | 'all' | undefined;
+  private host?: MenuHost;
 
   constructor(options: Partial<SpellbookTabOptions> = {}) {
     this.options = {
@@ -67,6 +76,10 @@ export class SpellbookTab implements MenuTab {
       onOpenForgeOffer: () => {},
       ...options,
     };
+  }
+
+  public bindHost(host: MenuHost): void {
+    this.host = host;
   }
 
   public mount(container: HTMLElement): void {
@@ -103,6 +116,9 @@ export class SpellbookTab implements MenuTab {
     this.spells = this.engine.player.spellsKnown
       .map((id) => this.engine!.manifest?.spells?.find((s) => s.id === id) ?? getSpell(id))
       .filter((s): s is SpellDefinition => Boolean(s));
+    this.catalog = spellCatalog(this.engine);
+    if (!this.catalog) this.view = 'known';
+    this.catalogIndex = Math.min(this.catalogIndex, Math.max(0, (this.catalog?.length ?? 0) - 1));
     this.selectedIndex = Math.min(this.selectedIndex, Math.max(0, this.spells.length - 1));
     this.render();
   }
@@ -121,6 +137,12 @@ export class SpellbookTab implements MenuTab {
   public handleKeyDown(e: KeyboardEvent): boolean {
     if (e.ctrlKey || e.metaKey || e.altKey) return false;
     const code = e.code;
+    if (code === 'KeyV' && this.catalog) {
+      e.preventDefault();
+      this.showView(this.view === 'all' ? 'known' : 'all');
+      return true;
+    }
+    if (this.view === 'all') return this.handleCatalogKey(e);
     const move = (step: number): boolean => {
       if (this.spells.length > 0) {
         this.selectedIndex = (this.selectedIndex + step + this.spells.length) % this.spells.length;
@@ -145,23 +167,73 @@ export class SpellbookTab implements MenuTab {
     return false;
   }
 
+  /** The Spells page's keys: up and down choose; nothing is cast or slotted from it. */
+  private handleCatalogKey(e: KeyboardEvent): boolean {
+    const code = e.code;
+    const up = code === 'ArrowUp' || code === 'KeyW' || code === 'KeyK' || code === 'Numpad8';
+    const down = code === 'ArrowDown' || code === 'KeyS' || code === 'KeyJ' || code === 'Numpad2';
+    if (!up && !down) return false;
+    const count = this.catalog?.length ?? 0;
+    if (count > 0) {
+      this.catalogIndex = (this.catalogIndex + (up ? -1 : 1) + count) % count;
+      this.render();
+    }
+    e.preventDefault();
+    return true;
+  }
+
+  private showView(view: 'known' | 'all'): void {
+    this.view = view;
+    this.render();
+    this.host?.refreshChrome();
+  }
+
   public footer(): MenuFooter {
     const spell = this.selectedSpell;
+    const page = this.catalog ? [{ keys: ['V'], label: this.view === 'all' ? 'spells known' : 'all spells' }] : [];
+    // A button where Cast stands, so the frame keeps its height and the way back shows.
+    if (this.view === 'all')
+      return { keys: [{ keys: ['↑', '↓'], label: 'choose' }], actions: [{ id: 'known', label: 'Spells known', key: 'V', primary: true, run: () => this.showView('known') }] };
     return {
       keys: [
         { keys: ['↑', '↓'], label: 'choose' },
         { keys: ['1', '–', '0'], label: 'quickbar slot' },
+        ...page,
       ],
       actions: [{ id: 'cast', label: spell ? `Cast ${spell.name}` : 'Cast', key: 'Enter', primary: true, disabled: !spell, run: () => this.castSelected() }],
     };
   }
 
+  /** Each choice redraws the tab: its scrolling parts keep their place, and the chosen row stays in sight. */
   public render(): void {
-    if (!this.container || !this.engine) return;
-    const player = this.engine.player;
+    const root = this.container;
+    if (!root || !this.engine) return;
+    const scrollers = (): HTMLElement[] => (typeof root.querySelectorAll === 'function' ? [...root.querySelectorAll<HTMLElement>('.ui-scroll')] : []);
+    // A new view starts at the top.
+    const scrolled = this.drawnView === this.view ? scrollers().map((c) => c.scrollTop) : [];
+    this.drawnView = this.view;
+    this.draw(this.engine, this.engine.player);
+    scrollers().forEach((c, i) => {
+      if (scrolled[i]) c.scrollTop = scrolled[i];
+    });
+    const chosen = typeof root.querySelector === 'function' ? root.querySelector<HTMLElement>('.bs-list .is-selected') : null;
+    if (typeof chosen?.scrollIntoView === 'function') chosen.scrollIntoView({ block: 'nearest' });
+  }
+
+  private draw(engine: GameEngine, player: Player): void {
+    if (!this.container) return;
+    if (this.view === 'all' && this.catalog) {
+      this.container.innerHTML = `
+        <div class="ui-tabgrid sb-grid">
+          <div class="ui-col">${this.renderCatalogList(this.catalog)}</div>
+          <div class="ui-col ui-scroll">${this.renderCatalogDetail(player)}${this.renderForging(player)}</div>
+        </div>`;
+      this.bind();
+      return;
+    }
     let side = '';
     if (player.grimoireSystem) {
-      const view = renderGrimoires(this.engine, player, this.selectedSpell, this.activeGrimoireId);
+      const view = renderGrimoires(engine, player, this.selectedSpell, this.activeGrimoireId);
       this.activeGrimoireId = view.grimoireId;
       this.grimoireSlotInfo = view.slotInfo;
       side = `<div class="ui-col ui-scroll">${view.html}</div>`;
@@ -169,7 +241,7 @@ export class SpellbookTab implements MenuTab {
     this.container.innerHTML = `
       <div class="ui-tabgrid sb-grid${side ? ' has-grimoire' : ''}">
         <div class="ui-col">${this.renderList(player)}</div>
-        <div class="ui-col ui-scroll">${this.renderDetail(player)}${this.renderForging(player)}</div>
+        <div class="ui-col ui-scroll">${this.renderDetail(player)}${this.catalog ? '' : this.renderForging(player)}</div>
         ${side}
       </div>`;
     this.bind();
@@ -184,6 +256,15 @@ export class SpellbookTab implements MenuTab {
         this.render();
       });
       row.addEventListener('dblclick', () => this.castSelected());
+    });
+    root.querySelectorAll<HTMLElement>('[data-sb-view]').forEach((btn) => {
+      btn.addEventListener('click', () => this.showView(btn.getAttribute('data-sb-view') === 'all' ? 'all' : 'known'));
+    });
+    root.querySelectorAll<HTMLElement>('[data-catalog-index]').forEach((row) => {
+      row.addEventListener('click', () => {
+        this.catalogIndex = Number(row.getAttribute('data-catalog-index'));
+        this.render();
+      });
     });
     root.querySelectorAll<HTMLElement>('[data-quick-slot]').forEach((btn) => {
       btn.addEventListener('click', () => this.assignToSlot(Number(btn.getAttribute('data-quick-slot'))));
@@ -274,6 +355,7 @@ export class SpellbookTab implements MenuTab {
       })
       .join('');
     return `
+      ${this.renderViewSwitch()}
       <div class="ui-h">Spells <small>${this.spells.length} known</small></div>
       <div class="ui-note">${escapeHtml(mana.name)} <b class="ui-num sb-mana">${player.mana}</b> / <span class="ui-num">${player.maxMana}</span>${
         overflow && player.voidDebt > 0
@@ -281,6 +363,59 @@ export class SpellbookTab implements MenuTab {
           : ''
       }</div>
       <div class="ui-inset bs-list ui-scroll" role="listbox">${rows || '<div class="ui-note bs-empty">You know no spells yet.</div>'}</div>`;
+  }
+
+  /** Known spells or the Spells page, when the pack has a page to show. */
+  private renderViewSwitch(): string {
+    if (!this.catalog) return '';
+    const tab = (view: 'known' | 'all', label: string) =>
+      `<button type="button" class="st-subtab" data-sb-view="${view}" aria-selected="${this.view === view}">${label}</button>`;
+    return `<div class="st-subtabs sb-views">${tab('known', 'Known')}${tab('all', 'All spells')}</div>`;
+  }
+
+  private renderCatalogList(catalog: SpellCatalogEntry[]): string {
+    const rows = catalog
+      .map((entry, i) => {
+        const tag = entry.known ? 'known' : entry.forgotten ? 'forgotten' : entry.floors ? `F${entry.floors.min}–${entry.floors.max}` : '';
+        return `
+          <button type="button" class="bs-row sb-row${i === this.catalogIndex ? ' is-selected' : ''}${entry.seen ? '' : ' is-unknown'}" data-catalog-index="${i}">
+            <span class="bs-name">${escapeHtml(entry.spell.name)}</span>
+            <span class="ui-faint">${tag}</span>
+          </button>`;
+      })
+      .join('');
+    const known = catalog.filter((e) => e.known).length;
+    return `
+      ${this.renderViewSwitch()}
+      <div class="ui-h">All spells <small>${known} of ${catalog.length} known</small></div>
+      <div class="ui-note">A spell shows what it does once a stone has offered it.</div>
+      <div class="ui-inset bs-list ui-scroll" role="listbox">${rows}</div>`;
+  }
+
+  /** One spell of the page: what it does once seen, and where it is had. */
+  private renderCatalogDetail(player: Player): string {
+    const entry = this.catalog?.[this.catalogIndex];
+    if (!entry) return '';
+    const { spell } = entry;
+    const state = player.grimoireState;
+    const title = entry.known && state && player.grimoireSystem ? forgedTitle(player.grimoireSystem, state, spell) : spell.name;
+    const status = entry.known ? 'You know it.' : entry.forgotten ? 'Forgotten: you will not learn it again this run.' : '';
+    const found = entry.floors ? `Found on the stones of floors ${entry.floors.min}–${entry.floors.max}.` : (entry.where ?? '');
+    const note = this.engine!.manifest?.magic?.learningStones?.messages.tablets;
+    const teachers = entry.taughtElsewhere && note && !entry.known ? `<div class="ui-note">${escapeHtml(note)}</div>` : '';
+    const what = entry.seen
+      ? `<dl class="ui-kv sb-stats"><dt>Element</dt><dd>${escapeHtml(spell.element ?? 'arcane')}</dd></dl><div class="sb-desc">${escapeHtml(spell.description || 'No one has written down what this does.')}</div>`
+      : '<div class="ui-note">Not seen yet: what it does shows once a stone offers it.</div>';
+    return `
+      <div class="ui-card">
+        <div class="bs-head"><span class="bs-title">${escapeHtml(title)}</span><span class="ui-note">${escapeHtml(spell.school ?? '')}</span></div>
+        ${what}
+        <div class="sb-where">
+          ${status ? `<div class="ui-note">${escapeHtml(status)}</div>` : ''}
+          ${found ? `<div class="ui-note">${escapeHtml(found)}</div>` : ''}
+          ${teachers}
+        </div>
+      </div>`;
   }
 
   private renderDetail(player: Player): string {

@@ -46,6 +46,11 @@ export const COTW_LEARNING_STONES: LearningStoneConfig = {
   tileId: 'broken_runestone',
   shardItemId: COTW_RUNESTONE_SHARD.id,
   shortcutCostMultiplier: 0.9,
+  elsewhere: [
+    { spellIds: ['magic_arrow', 'heal_spell'], where: 'Known from the start.' },
+    { spellIds: ['grith', 'disir'], where: 'The Siphon Altar: two captives spared buy one of these.' },
+    { spellIds: ['blood_reap', 'draugr_call'], where: 'The Siphon Altar: two captives sacrificed buy one of these.' },
+  ],
   stones: buildStones(),
   zones: [
     {
@@ -89,6 +94,7 @@ export const COTW_LEARNING_STONES: LearningStoneConfig = {
     },
   ],
   messages: {
+    tablets: 'Missed it? Once you are past these floors, Astrid sells its rune tablet in town.',
     arrival: 'A broken runestone hums somewhere on this floor, and {monster} sleeps with its shard.',
     stoneFound: '{stone} hums, missing a splinter. {monster} on this floor carries it.',
     shardMarks: 'The shard sings, and {stone} answers: you feel where it stands.',

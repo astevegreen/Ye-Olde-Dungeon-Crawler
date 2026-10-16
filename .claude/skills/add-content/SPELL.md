@@ -19,7 +19,8 @@ A spell is a `SpellDefinition` (`src/engine/magic/types.ts`) composed from the e
    1. **Rite:** set `teachesSpellId` on a rite in `COTW_KILL_RITES` (`killRites.ts`) whose monster teaches nothing yet and isn't one of the night raid's. The rite must be meetable on that monster's `minFloor` with the spells learnable by then. Update the pacing comment at the file's top.
    2. **Tablet:** one row in `TABLETS` (`spellTablets.ts`): `spellId`, `spellName`, `soldFromFloor` (the first floor past the spell's zone), `value`. The row makes the `learn_<id>` spell, the tablet item and its place in the alchemist's stock.
    3. **Loki:** add the id to `LOKI_SPELL_POOL` (`magic.ts`).
-   4. Other ways in, as the design wants: a choice's `learnSpell` consequence, a scroll's or wand's `spellId` (`items/legacy.ts`), a monster's `spells`.
+   4. **Spells page:** a hero's spell no stone zone lists (`zones` in `learningStones.ts`) goes in that file's `elsewhere`, with where it is had (`spellCatalog.test.ts`).
+   5. Other ways in, as the design wants: a choice's `learnSpell` consequence, a scroll's or wand's `spellId` (`items/legacy.ts`), a monster's `spells`.
    A spell nobody learns by rite (scroll-only) takes the school `Scroll`.
    - **Retiring or merging a spell:** add `<old id>: '<new id>'` (`{ spellId, addedElement }` for the new id forged with an element, or `null` to let it go) to `retired.spells` in `grimoires.ts`, so a save that knew it loads with the replacement in its slot and on its quick key; drop its tablet and rite.
 5. **Two elements:** there are no fused spells. Odin's forge adds a second element to a known spell; its title comes from `forging.titles` in `grimoires.ts` (alphabetical pair, `cold+fire`), and runestone lore may tell of a pair (`forgePair`).

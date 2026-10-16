@@ -179,4 +179,12 @@ describe('striking a temporary wall', () => {
     expect(map.tempWalls.has(8, 3)).toBe(false);
     expect(map.tempWalls.hpAt(8, 2)).toBe(30);
   });
+
+  it("a blast thrown point-blank into a wall goes off on the hero's side, not behind it", () => {
+    const behind = new Monster({ id: 'behind', name: 'behind', position: { x: 9, y: 2 }, stats: { hp: 10, maxHp: 10, attack: 1, defense: 0 } });
+    map.addEntity(behind);
+    new CastSpellAction(player, 'blast', 9, 2).perform(engine);
+    expect(behind.hp).toBe(10);
+    expect(map.tempWalls.hpAt(5, 2)).toBe(16);
+  });
 });

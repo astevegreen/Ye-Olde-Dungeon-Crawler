@@ -62,7 +62,9 @@ export function castGeometry(
       const distToTarget = Math.hypot(target.x - caster.x, target.y - caster.y);
       ray = traceProjectile(engine.map, caster.x, caster.y, target.x, target.y, Math.min(spell.range, distToTarget), false, caster.id);
       if (ray.path.length > 0) epicenter = ray.impactTile;
-      else ray = undefined;
+      // A wall at the caster's side stops it at once: it bursts there, as a ray's burst does.
+      else if (ray.hitWall) epicenter = { x: caster.x, y: caster.y };
+      if (ray.path.length === 0) ray = undefined;
     }
     return { ray, reflects: false, burst: { epicenter, radius } };
   }

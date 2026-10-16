@@ -10,7 +10,7 @@ import type { Player } from '../entities/player';
 import { MAX_DUNGEON_FLOOR } from './types';
 import { ItemFactory } from '../items/factory';
 import { createScaledMonster, populateDungeonFloor, scaleMonsterStats } from '../dungeon/spawner';
-import { createDungeonChest, populateDungeonLoot, stockSecretCaches } from '../dungeon/lootSpawner';
+import { createDungeonChest, createScaledItem, populateDungeonLoot, stockSecretCaches } from '../dungeon/lootSpawner';
 import { dropTile } from '../dungeon/itemPlacement';
 import { mintCoinPile } from '../economy/currency';
 import type { GameContentManifest, QuestArcDefinition, ItemDefinition } from '../types/manifest';
@@ -22,6 +22,7 @@ import { RuneOfReturnItem, attunementNpcName } from '../magic/runeOfReturn';
 import type { EngineRegistries } from '../registries';
 import { SpawnSiteFilter } from '../dungeon/spawnSites';
 import { placeFloorTraps } from '../dungeon/trapPlacement';
+import type { LearningStoneConfig, LearningStoneDefinition } from '../magic/magicConfig';
 export interface DungeonFloorResult {
   map: GameMap;
   playerSpawn: Position;
@@ -283,6 +284,23 @@ export class DungeonArc {
           }
         }
       }
+    }
+
+    // 5b. A learning stone, and the shard's carrier among the floor's monsters, on a stream of their own.
+    const stoneConfig = manifest?.magic?.learningStones;
+    const stoneDef = stoneConfig?.stones.find((s) => s.floor === floorNumber);
+    if (manifest && stoneConfig && stoneDef) {
+      const stonePrng = new PRNG((seed ?? floorNumber) + floorNumber * 15485863);
+      placeLearningStone(map, dungeon.rooms, floorNumber, manifest, stoneConfig, stoneDef, {
+        arrival: playerSpawn,
+        stairsDown,
+        sites,
+        vaults: dungeon.vaultRects ?? [],
+        rng: () => stonePrng.next(),
+        catalog: monsterCatalog,
+        difficulty,
+        registries,
+      });
     }
 
     // 6. Guaranteed Reward: Rune of Return, guarded by monsters in a hand-placed vault room
@@ -675,10 +693,12 @@ function nearestPlacementSite(
   map: GameMap,
   centre: Position,
   sites: SpawnSiteFilter,
-  vaults: ReadonlyArray<{ x1: number; y1: number; x2: number; y2: number }>
+  vaults: ReadonlyArray<{ x1: number; y1: number; x2: number; y2: number }>,
+  alsoEmptyOfCreatures = false
 ): Position | null {
   const fits = (x: number, y: number): boolean => {
     if (!sites.reaches(x, y) || !map.isPassable(x, y)) return false;
+    if (alsoEmptyOfCreatures && map.getEntityAt(x, y)) return false;
     const type = map.getTile(x, y)?.type ?? '';
     if (/door|stairs|water/.test(type)) return false;
     if (vaults.some((r) => x >= r.x1 && x <= r.x2 && y >= r.y1 && y <= r.y2)) return false;
@@ -694,4 +714,75 @@ function nearestPlacementSite(
     }
   }
   return null;
+}
+
+interface StonePlacementContext {
+  arrival: Position;
+  stairsDown?: Position;
+  sites: SpawnSiteFilter;
+  vaults: ReadonlyArray<{ x1: number; y1: number; x2: number; y2: number }>;
+  rng: () => number;
+  catalog: MonsterDefinition[];
+  difficulty?: GameDifficulty;
+  registries?: EngineRegistries;
+}
+
+/**
+ * P-34: the floor's learning stone, in a room away from the arrival room and the floor's
+ * other fixture, and its shard in the pack of one of the floor's own monsters, deep asleep:
+ * the stone's own kind first, else one of its zone's kinds, else one of those spawned in a
+ * room of its own, else any hostile (never a neutral, such as a captive). Monsters in the arrival room or the stone's are passed over.
+ */
+function placeLearningStone(
+  map: GameMap,
+  rooms: ReadonlyArray<{ x1: number; y1: number; x2: number; y2: number; centerX: number; centerY: number }>,
+  floorNumber: number,
+  manifest: GameContentManifest,
+  config: LearningStoneConfig,
+  def: LearningStoneDefinition,
+  ctx: StonePlacementContext
+): void {
+  const tileId = def.tileId ?? config.tileId;
+  const tileDef = manifest.tiles?.find((t) => t.type === tileId) ?? (hasTileDefinition(tileId) ? getTileDefinition(tileId) : undefined);
+  const shardDef = manifest.items?.find((i) => i.id === config.shardItemId);
+  if (!tileDef || !shardDef) return;
+
+  type Room = (typeof rooms)[number];
+  const inRoom = (r: Room, p: Position) => p.x >= r.x1 && p.x <= r.x2 && p.y >= r.y1 && p.y <= r.y2;
+  const hasFixture = (r: Room) => {
+    for (let y = r.y1; y <= r.y2; y++) for (let x = r.x1; x <= r.x2; x++) if (map.getTile(x, y)?.interactionHandlerId) return true;
+    return false;
+  };
+  const pick = <T>(list: readonly T[]): T | undefined => (list.length > 0 ? list[Math.floor(ctx.rng() * list.length)] : undefined);
+  const arrivalRoom = rooms.find((r) => inRoom(r, ctx.arrival));
+  const awayRooms = rooms.filter((r) => r !== arrivalRoom && !(ctx.stairsDown && inRoom(r, ctx.stairsDown)));
+  const room = pick(awayRooms.filter((r) => !hasFixture(r))) ?? pick(awayRooms);
+  if (!room) return;
+  const site = nearestPlacementSite(map, { x: room.centerX, y: room.centerY }, ctx.sites, ctx.vaults, true);
+  if (!site) return;
+  map.setTile(site.x, site.y, tileDef);
+
+  const zone = config.zones.find((z) => floorNumber >= z.minFloor && floorNumber <= z.maxFloor);
+  const kinds = def.carrierId ? [def.carrierId, ...(zone?.carrierIds ?? [])] : (zone?.carrierIds ?? []);
+  const hostiles = map
+    .getAllEntities()
+    .filter((e): e is Monster => e instanceof Monster && e.isAlive() && e.faction === 'hostile');
+  const away = (m: Monster) => !(arrivalRoom && inRoom(arrivalRoom, m)) && !inRoom(room, m);
+  const ofKind = (kind: string) => hostiles.filter((m) => m.definitionId === kind && away(m));
+  let carrier = def.carrierId ? pick(ofKind(def.carrierId)) : undefined;
+  carrier ??= pick(hostiles.filter((m) => kinds.includes(m.definitionId) && away(m)));
+  if (!carrier) {
+    const kindDef = ctx.catalog.find((m) => m.id === (def.carrierId ?? pick(kinds)));
+    const lair = pick(awayRooms.filter((r) => r !== room)) ?? room;
+    const at = kindDef && nearestPlacementSite(map, { x: lair.centerX, y: lair.centerY }, ctx.sites, ctx.vaults, true);
+    if (kindDef && at) {
+      carrier = createScaledMonster(kindDef, `mon-${floorNumber}-carrier`, at, floorNumber, undefined, undefined, manifest.monsterScaling, ctx.difficulty, ctx.registries);
+      map.addEntity(carrier);
+    }
+  }
+  carrier ??= pick(hostiles.filter(away)) ?? pick(hostiles);
+  if (!carrier) return;
+  carrier.deepSleep = true;
+  carrier.aiState = 'sleeping';
+  carrier.addItem(createScaledItem(shardDef, `shard-f${floorNumber}`, floorNumber, ctx.rng));
 }

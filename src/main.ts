@@ -4,6 +4,8 @@ import {
   ClaimForgeOfferAction,
   forgeOfferElements,
   AcceptSpellOfferAction,
+  learningStoneCard,
+  ReadLearningStoneAction,
   PickGrimoireStatAction,
   heroCastPreview,
   AutosaveManager,
@@ -127,6 +129,7 @@ import { hintsMetByEvent, hintsMetByState, itemHintsMet } from './ui/hints/hintM
 import { findActionCues } from './ui/hints/actionCues';
 import { ControlsPrimer } from './ui/controlsPrimer';
 import { SpellOfferCard } from './ui/spellOfferCard';
+import { LearningStoneCard } from './ui/learningStoneCard';
 import { ForgeOfferCard } from './ui/forgeOfferCard';
 import { hasFreeGrimoireSlot } from './ui/characterMenu/spellbookGrimoires';
 import { MessageLogModal } from './ui/messageLogModal';
@@ -555,6 +558,18 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     pushModal(spellOfferCard.id, spellOfferCard);
   }
+
+  // A learning stone's card, its shard set (or in hand after a shortcut): read a face, take the rune, or wait.
+  const stoneCard = new LearningStoneCard({
+    onRead: (spellId) => {
+      if (activeEngine) activeEngine.handlePlayerAction(new ReadLearningStoneAction(activeEngine.player, spellId));
+    },
+    onClose: () => {
+      popModal(stoneCard.id);
+      if (activeEngine) quickSpellsBar.update(activeEngine);
+      void processVisualEffectsAndRender();
+    },
+  });
 
   // The card for a free forge a choice gave (Ivalda's, Skuld's): pick the spell, or wait.
   const shownForgeOffers = new WeakSet<object>();
@@ -1626,6 +1641,12 @@ window.addEventListener('DOMContentLoaded', () => {
           runeDiscoveryModal.open(engine);
         }
         renderer?.render();
+      } else if (event.type === 'learning_stone_reached') {
+        const card = learningStoneCard(engine);
+        if (card && !stoneCard.isOpen) {
+          stoneCard.open(card);
+          pushModal(stoneCard.id, stoneCard);
+        }
       } else if (event.type === 'altar_reached') {
         // Spell altar underfoot: open its rite; performing it is a replayable player action.
         const altar = getAltarDefinition(engine, String(event.data?.altarId ?? ''));

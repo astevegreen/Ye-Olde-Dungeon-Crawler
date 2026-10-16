@@ -6,6 +6,7 @@ import type { ActionResult } from '../types';
 import { BASE_ACTION_COST } from '../types';
 import { Player } from '../entities/player';
 import type { GameEngine } from '../engine';
+import { announceLearningStone, shardFadesOnLeaving } from '../magic/learningStones';
 
 /** The deepest floor this run goes: the hero's difficulty depth when the quest scales
  *  with difficulty, else the quest's own; 25 when neither says. */
@@ -72,7 +73,9 @@ export class ClimbStairsAction implements Action {
       }
       const nextFloor = engine.currentFloor + 1;
       if (this.entity instanceof Player) identifyCarriedSinceStairs(engine, this.entity);
+      shardFadesOnLeaving(engine);
       engine.changeFloor(nextFloor);
+      announceLearningStone(engine);
       const cost = this.entity.getActionCost(BASE_ACTION_COST);
       this.entity.consumeEnergy(cost);
       return {
@@ -85,7 +88,9 @@ export class ClimbStairsAction implements Action {
     if (tile.isStairsUp || tile.type === 'stairs_up') {
       const prevFloor = Math.max(0, engine.currentFloor - 1);
       if (this.entity instanceof Player) identifyCarriedSinceStairs(engine, this.entity);
+      shardFadesOnLeaving(engine);
       engine.changeFloor(prevFloor);
+      announceLearningStone(engine);
       const cost = this.entity.getActionCost(BASE_ACTION_COST);
       this.entity.consumeEnergy(cost);
       return {

@@ -7,6 +7,7 @@ import { Player } from '../entities/player';
 import { resolveSlotStats, slotOfSpell, slotStatSteps, type GrimoireSlotStats, type GrimoireState } from './grimoires';
 import { pickMaterial, resolveAllCasts, type ResolvedCast } from './neighbourLending';
 import { getSpell } from './spellRegistry';
+import { learnedCostShare } from './learningStones';
 import type { CastShaping } from './spellPipeline';
 
 /**
@@ -159,7 +160,7 @@ export function heroCastPreview(engine: GameEngine, spell: SpellDefinition): Spe
  * first (its slot's Thrift too), then flat.
  */
 export function effectiveManaCost(caster: Entity, spell: Pick<SpellDefinition, 'manaCost'> & Partial<Pick<SpellDefinition, 'id'>>): number {
-  const multiplier = productWorn(caster, 'manaCostMultiplier') * castSlotStats(caster, spell.id).costMultiplier;
+  const multiplier = productWorn(caster, 'manaCostMultiplier') * castSlotStats(caster, spell.id).costMultiplier * learnedCostShare(caster, spell.id);
   const discount = sumWorn(caster, 'manaCostDiscount');
   return Math.max(0, Math.round((spell.manaCost ?? 0) * multiplier) - discount);
 }
@@ -174,7 +175,7 @@ export function effectiveHpCost(
   lentHpCost = 0
 ): number {
   const base = spell.hpCost ?? 0;
-  const own = base > 0 ? Math.max(1, Math.round(base * castSlotStats(caster, spell.id).costMultiplier)) : 0;
+  const own = base > 0 ? Math.max(1, Math.round(base * castSlotStats(caster, spell.id).costMultiplier * learnedCostShare(caster, spell.id))) : 0;
   return own + lentHpCost;
 }
 

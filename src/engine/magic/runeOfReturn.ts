@@ -13,6 +13,7 @@ import type { StatusHandler, StatusTickOutput } from '../status/statusHandlers';
 import { StatusHandlerRegistry } from '../status/statusHandlers';
 import { createSpellChannelActionHooks } from './spellChannel';
 import type { StatusEffect } from '../status/types';
+import { announceLearningStone, shardFadesOnLeaving } from './learningStones';
 
 /**
  * Rune of Return (docs/architecture/content-extensibility.md).
@@ -334,11 +335,13 @@ function completeChannel(player: Player, engine: GameEngine): string | undefined
 
     engine.log(`*** The Rune of Return blazes with portal energy, opening a path back to Floor ${targetFloor}! ***`);
     engine.changeFloor(targetFloor, targetPos);
+    announceLearningStone(engine);
   } else {
     player.deepestRecallFloor = engine.currentFloor;
     player.recallPosition = { x: player.x, y: player.y };
 
     engine.log(`*** The Rune of Return flares white-hot and unravels the air around you! (Return anchor set to Floor ${engine.currentFloor}) ***`);
+    shardFadesOnLeaving(engine);
     engine.changeFloor(0);
   }
   return undefined;

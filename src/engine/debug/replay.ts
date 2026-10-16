@@ -61,6 +61,7 @@ import {
 } from '../actions/spell-actions';
 import { IdentifyAction } from '../actions/identificationActions';
 import { PerformAltarRiteAction } from '../magic/altars';
+import { ReadLearningStoneAction } from '../magic/learningStones';
 import { ChannelRuneOfReturnAction } from '../magic/runeOfReturn';
 import type { ReplayData, TrailEntry, TrailValue } from './types';
 
@@ -181,6 +182,8 @@ const BUILDERS: Record<string, Builder> = {
     const statId = str(p, 'statId');
     return grimoireId && statId && (axis === 'x' || axis === 'y') ? new PickGrimoireStatAction(e.player, grimoireId, axis, statId) : null;
   },
+  // No spell id is the shard's rune.
+  ReadLearningStoneAction: (e, p) => new ReadLearningStoneAction(e.player, str(p, 'spellId') ?? null),
   PerformAltarRiteAction: (e, p) => {
     const altarId = str(p, 'altarId');
     const offeringId = str(p, 'offeringId');

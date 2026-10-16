@@ -6,6 +6,7 @@ import { Player } from '../entities/player';
 import type { Item, EquipmentSlot } from '../items/item';
 import { Container } from '../items/container';
 import { CombatLogger } from '../logging/combatLogger';
+import { notePickedUp } from '../magic/learningStones';
 
 export class PickUpAction implements Action {
   public readonly player: Player;
@@ -81,6 +82,7 @@ export class PickUpAction implements Action {
 
     const msg = CombatLogger.formatPickupMessage(pickedName, storeResult.destination);
     engine.log(msg);
+    notePickedUp(engine, itemToPick);
 
     return { success: true, cost, message: msg };
   }

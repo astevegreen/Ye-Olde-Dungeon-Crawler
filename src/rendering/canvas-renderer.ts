@@ -1,4 +1,4 @@
-import { GameEngine, getCurrentObjective } from '../engine';
+import { GameEngine, getCurrentObjective, learningStoneMarks } from '../engine';
 import { releaseIconAtlas, setIconAtlas } from './canvasIcons';
 import { Visibility } from '../engine';
 import { objectSensedAt, sensesThroughWalls } from '../engine';
@@ -1219,7 +1219,8 @@ export class CanvasRenderer {
   /**
    * A tag over each stairs and portal tile the hero has seen, remembered ones included, and a
    * pennant over each creature the current objective points at (`pointTo`) while it is in
-   * sight; a quest pennant takes the place of the tile's own tag. A tile's tag floats over the
+   * sight; a quest pennant takes the place of the tile's own tag. A learning stone's carrier
+   * wears the pennant in sight too, and its stone, seen or not, while the hero holds the shard. A tile's tag floats over the
    * tile above, so it gives way while a creature in sight stands there.
    */
   private renderMapTags(): void {
@@ -1240,6 +1241,13 @@ export class CanvasRenderer {
       const e = this.engine.map.getEntityById(id);
       if (!e || !this.engine.fov.isVisible(e.x, e.y)) continue;
       tags.set(`${e.x},${e.y}`, { x: e.x, y: e.y, kind: 'quest' });
+      quest = true;
+    }
+    const stone = learningStoneMarks(this.engine);
+    const carrier = stone.carrierId ? this.engine.map.getEntityById(stone.carrierId) : undefined;
+    for (const at of [stone.stone, carrier && this.engine.fov.isVisible(carrier.x, carrier.y) ? carrier : undefined]) {
+      if (!at) continue;
+      tags.set(`${at.x},${at.y}`, { x: at.x, y: at.y, kind: 'quest' });
       quest = true;
     }
     for (const tag of tags.values()) {

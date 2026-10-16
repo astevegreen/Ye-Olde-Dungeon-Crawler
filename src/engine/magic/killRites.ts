@@ -8,6 +8,7 @@ import { getSpell } from './spellRegistry';
 import { getMonsterDefinition } from '../bestiary/monsterDefinitions';
 import { createScaledItem } from '../dungeon/lootSpawner';
 import { formatMagicMessage, type KillRiteConfig } from './magicConfig';
+import { carriesShard, getLearningStoneConfig, grantEssenceRune, takeShortcut } from './learningStones';
 
 /**
  * A monster's kill rite: the way it must die to yield its magic. Every condition is
@@ -88,7 +89,9 @@ export function killRiteConditionsMet(
 export class KillRiteManager {
   /**
    * Called for every death. When a player-side kill meets the victim's rite, teaches its
-   * spell (first time) or drops an essence of its element at the victim's feet.
+   * spell (first time) or drops an essence of its element at the victim's feet. Under
+   * learning stones a rite teaches only as their shortcut: on a shard's carrier, it opens
+   * the stone's card on the spot, and a kind's first gives an Essence-Rune of its element.
    */
   public static evaluate(engine: GameEngine, killer: Entity | undefined, victim: Entity, context?: KillContext): KillRiteResult {
     const config = getKillRiteConfig(engine);
@@ -100,11 +103,21 @@ export class KillRiteManager {
     const rite = getMonsterDefinition(victim.definitionId)?.killRite;
     if (!rite || !killRiteConditionsMet(engine, rite, victim, context)) return { performed: false };
 
+    const stones = getLearningStoneConfig(engine);
+    if (stones && !carriesShard(engine, victim)) return { performed: false };
+    const firstOfKind = !engine.compendium?.isKillRitePerformed(victim.definitionId);
     engine.compendium?.recordKillRite(victim.definitionId);
     const player = engine.player;
 
     let result: KillRiteResult;
-    if (rite.teachesSpellId && !player.spellsKnown.includes(rite.teachesSpellId)) {
+    if (stones) {
+      const essence = firstOfKind ? grantEssenceRune(engine, rite.essenceElement) : undefined;
+      const message = essence
+        ? formatMagicMessage(config.essenceMessage, { monster: victim.name, essence: essence.displayName })
+        : undefined;
+      takeShortcut(engine, victim);
+      result = { performed: true, essenceItemId: essence?.id, message };
+    } else if (rite.teachesSpellId && !player.spellsKnown.includes(rite.teachesSpellId)) {
       const learned = player.learnSpellResult(rite.teachesSpellId);
       const spell = engine.manifest?.spells?.find((s) => s.id === rite.teachesSpellId) ?? getSpell(rite.teachesSpellId);
       const waiting = learned.outcome === 'full' ? ' Every slot in your grimoires is full: it waits in your spellbook until you make room.' : '';

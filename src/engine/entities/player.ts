@@ -35,6 +35,7 @@ import {
   type LearnResult,
   type StatPickOutcome,
 } from '../magic/grimoires';
+import { copyLearningStoneState, createLearningStoneState, type LearningStoneState } from '../magic/learningStones';
 
 /** Maximum hit points one allocated point of Constitution adds. */
 export const HP_PER_CONSTITUTION = 2;
@@ -79,6 +80,8 @@ export interface PlayerConfig {
   grimoireSystem?: GrimoireSystemConfig;
   /** Saved three-grimoire state; omitted under a declared model, it is built from `spellsKnown`. */
   grimoireState?: GrimoireState;
+  /** Saved shard-and-stone state (P-34); omitted, the hero has met no stone. */
+  learningStones?: LearningStoneState;
 }
 
 /** The share of each bar a level-up restores (`ProgressionConfig.levelUpHeal`); 1 without the config. */
@@ -146,6 +149,8 @@ export class Player extends Actor {
   public readonly grimoireSystem?: GrimoireSystemConfig;
   /** Three-grimoire state (P-29). Kept, though inert, when the pack no longer declares the model. */
   public grimoireState?: GrimoireState;
+  /** Shard-and-stone state (P-34): spells shown, stones met, spells read cheaper. */
+  public learningStones: LearningStoneState;
 
   constructor(config: PlayerConfig) {
     super({
@@ -171,6 +176,7 @@ export class Player extends Actor {
     this.spellsKnown = config.spellsKnown ? [...config.spellsKnown] : [...DEFAULT_STARTER_SPELLS];
     this.grimoireSystem = config.grimoireSystem;
     this.grimoireState = config.grimoireState ? copyGrimoireState(config.grimoireState) : undefined;
+    this.learningStones = config.learningStones ? copyLearningStoneState(config.learningStones) : createLearningStoneState();
     if (this.grimoireSystem) {
       this.grimoireState ??= createGrimoireState();
       reconcileGrimoireState(this.grimoireSystem, this.grimoireState, this.spellsKnown);

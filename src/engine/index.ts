@@ -101,6 +101,8 @@ export * from './magic/manaOverflow';
 export * from './magic/magicConfig';
 export * from './magic/killRites';
 export * from './magic/altars';
+export { learningStoneCard, learningStoneMarks, ReadLearningStoneAction } from './magic/learningStones';
+export type { LearningStoneCard } from './magic/learningStones';
 export { forgedElements, forgedTitle, forgePairKey, grimoireCells, grimoireAxes, isSlotDoubled, pendingStatPicks, slotAdditions, slotStatSteps, spellAt, statPickFor } from './magic/grimoires';
 export type { GrimoireSlotRef, GrimoireState } from './magic/grimoires';
 export type { ResolvedCast } from './magic/neighbourLending';

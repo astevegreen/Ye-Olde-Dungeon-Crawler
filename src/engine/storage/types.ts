@@ -246,6 +246,8 @@ export interface SerializedPlayer {
   grimoirePages?: LegacyGrimoirePage[];
   /** The three-grimoire model's state (P-29); absent when the pack doesn't declare it. */
   grimoires?: SerializedGrimoireState;
+  /** Shard-and-stone state (P-34); absent when the hero has met no stone. */
+  learningStones?: import('../magic/learningStones').LearningStoneState;
 }
 
 /** A slot of the old 3×3 grimoire page, as saves before the three grimoires hold it. */

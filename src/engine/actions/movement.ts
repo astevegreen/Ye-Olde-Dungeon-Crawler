@@ -14,6 +14,7 @@ import { HookDispatcher } from '../hooks/hookDispatcher';
 import { getTileDefinition } from '../grid/tile';
 import { revealSecretDoor } from './search';
 import { altarWaitReason, getAltarDefinition, isAltarSpent } from '../magic/altars';
+import { stepOntoLearningStone } from '../magic/learningStones';
 import { formatMagicMessage } from '../magic/magicConfig';
 import { isPrologueHoldingChoices } from '../quest/prologue';
 import { burnOnSacredGround } from '../combat/sacredGround';
@@ -295,6 +296,8 @@ export class MovementAction implements Action {
           engine.manifest?.town?.playerSpawn ??
           { x: 5, y: 5 };
         engine.changeFloor(0, returnPos);
+      } else if (stepOntoLearningStone(engine, targetX, targetY)) {
+        // A learning stone, its shard in hand: the presentation layer opens its card on the event.
       } else if (handlerId && getAltarDefinition(engine, handlerId)) {
         // Spell altar (manifest.magic.altars): the presentation layer opens its rite on this event.
         const altar = getAltarDefinition(engine, handlerId)!;

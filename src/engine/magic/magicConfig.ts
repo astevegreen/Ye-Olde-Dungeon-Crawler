@@ -11,7 +11,7 @@ import type { EffectPrimitive } from './types';
  * hides the grimoires, no `altars` places none.
  *
  * Message templates substitute `{caster}`, `{debt}`, `{damage}`, `{maxHp}`, `{monster}`,
- * `{spell}`, `{essence}` and `{altar}` where the context has them.
+ * `{spell}`, `{essence}`, `{altar}` and `{stone}` where the context has them.
  */
 export interface MagicSystemConfig {
   overflow?: ManaOverflowConfig;
@@ -19,6 +19,8 @@ export interface MagicSystemConfig {
   grimoires?: GrimoireSystemConfig;
   killRites?: KillRiteConfig;
   altars?: AltarDefinition[];
+  /** Spells learned at stones from a carrier's shard (P-34); with it, kill rites teach only as its shortcut. */
+  learningStones?: LearningStoneConfig;
 }
 
 // ─── Mana overflow ─────────────────────────────────────────────────────────
@@ -220,6 +222,53 @@ export interface KillRiteConfig {
   essenceDropChanceByElement?: Record<string, number>;
   /** Before a rite is performed, one plain-language condition is revealed per this many kills. */
   killsPerRevealedCondition?: number;
+}
+
+// ─── Learning stones ───────────────────────────────────────────────────────
+
+/** A band of floors whose stones first show its spells, and whose carriers come from its kinds. */
+export interface LearningStoneZone {
+  minFloor: number;
+  maxFloor: number;
+  /** Spells first found on this zone's stones; a later zone's lend a face when these run out. */
+  spellIds: string[];
+  /** Monster kinds a stone's carrier is picked from, among those on its floor. */
+  carrierIds: string[];
+}
+
+export interface LearningStoneDefinition {
+  floor: number;
+  /** The stone's tile; absent, the config's `tileId`. */
+  tileId?: string;
+  /** Faces shown instead of a draw (a fixed first stone), each while the hero doesn't know it. */
+  faces?: string[];
+  /** The carrier's kind, before the zone's list; spawned away from the arrival when the floor has none. */
+  carrierId?: string;
+}
+
+export interface LearningStoneConfig {
+  /** The stone tile placed where a stone's definition names none. */
+  tileId: string;
+  /** The item a carrier holds; it drops however the carrier dies. */
+  shardItemId: string;
+  stones: LearningStoneDefinition[];
+  zones: LearningStoneZone[];
+  /** What a spell read through a kill rite's shortcut costs, as a share of its price; absent, 0.9. */
+  shortcutCostMultiplier?: number;
+  messages: {
+    /** On first arriving on a stone's floor: `{stone}`, `{monster}` (the carrier). */
+    arrival: string;
+    /** Stepping on the stone without its shard: `{stone}`, `{monster}`. */
+    stoneFound: string;
+    /** Picking the shard up marks the stone: `{stone}`. */
+    shardMarks: string;
+    /** A carrier killed by its kind's rite: `{monster}`, `{stone}`. */
+    shortcut: string;
+    /** A spell read from the stone: `{spell}`, `{stone}`. */
+    learned: string;
+    /** A shard turned into an Essence-Rune, at the stone or on leaving the floor: `{essence}`. */
+    rune: string;
+  };
 }
 
 // ─── Altars ────────────────────────────────────────────────────────────────

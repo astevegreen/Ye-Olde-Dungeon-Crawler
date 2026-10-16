@@ -27,6 +27,7 @@ import { familyModifier, withPackNaming, type ItemFamilyConfig } from '../items/
 import { cloneWorldState, createWorldState, type WorldState } from '../state/worldState';
 import { compactTilesWithDictionary, decompactTiles, compactFov, decompactFov } from './compaction';
 import { readGrimoireState, serializeGrimoireState } from '../magic/grimoires';
+import { readLearningStoneState, serializeLearningStoneState } from '../magic/learningStones';
 import { convertLegacyMagic, type LegacyMagicResult } from './legacyMagic';
 import { createScaledItem } from '../dungeon/lootSpawner';
 import { applyPrologueState } from '../quest/prologue';
@@ -536,6 +537,7 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     perks: p.perkIds.length > 0 ? p.perkIds : undefined,
     carriedAtStairs: p.carriedAtStairs.length > 0 ? [...p.carriedAtStairs] : undefined,
     grimoires: p.grimoireState ? serializeGrimoireState(p.grimoireState) : undefined,
+    learningStones: serializeLearningStoneState(p.learningStones),
   };
 
   if (profile) {
@@ -1103,6 +1105,7 @@ function hydrateGame(
     runeMaxCharges: pData.runeMaxCharges !== undefined ? Number(pData.runeMaxCharges) : undefined,
     grimoireSystem,
     grimoireState: legacy ? legacy.state : readGrimoireState(pData.grimoires),
+    learningStones: readLearningStoneState(pData.learningStones),
     // A perk the pack no longer declares is dropped; the rest come back with their effects.
     perks: Array.isArray(pData.perks)
       ? pData.perks.map((id: string) => manifest?.perks?.find((perk) => perk.id === id)).filter((perk): perk is NonNullable<typeof perk> => Boolean(perk))

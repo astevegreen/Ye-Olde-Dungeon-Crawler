@@ -7,6 +7,7 @@ import { pastTheOpening } from './newHero';
 import { SoakPrng } from './soak/prng';
 import { decideChaosAction, decidePlayerAction, type DispatchedAction } from './soak/policies';
 import { classifyDeath } from './soak/playerBot';
+import { readMagic, tapMagic } from './soak/magicTap';
 import {
   createInitialOracleState,
   openModes,
@@ -115,6 +116,7 @@ async function saveRoundTrip(page: Page, inRaid: boolean): Promise<string | null
     await page.locator('#btn-menu-continue').click({ timeout: 5000 });
     await page.waitForFunction(() => Boolean(window.__cotwEngine?.player) && !window.__cotwInputHandler?.isInputLocked, null, { timeout: 10_000 });
     await tapEngineLog(page);
+    await tapMagic(page);
     const after = await digest(page);
     const diffs: string[] = [];
     for (const k of ['pos', 'hp', 'floor', 'turn'] as const) if (before[k] !== after[k]) diffs.push(`${k} ${before[k]} -> ${after[k]}`);
@@ -202,6 +204,7 @@ test.describe('soak @soak', () => {
     await expect.poll(() => page.evaluate(() => Boolean(window.__cotwEngine?.player))).toBe(true);
     await page.evaluate(() => (window as any).__soakReleaseClock());
     await tapEngineLog(page);
+    await tapMagic(page);
     const boundKeys = await readBoundKeys(page);
 
     if (opening === 'play') {
@@ -226,6 +229,33 @@ test.describe('soak @soak', () => {
         ({ floor, level }) => {
           const e = window.__cotwEngine!;
           const res = e.diagnostics.outfitForFloor(floor, level > 0 ? level : undefined);
+          // The outfit ignores the rolled Strength: a weak hero leaves its heaviest pieces behind
+          // (never the weapon) until it can walk, as a player would. Else it starts immobilised.
+          const doll = (e.player as any).inventory.paperdoll;
+          while (!e.player.canMove()) {
+            const worn = doll.getAllEquipped().filter((w: any) => w.slot !== 'mainHand');
+            const heaviest = worn.sort((a: any, b: any) => (b.item.weight ?? 0) - (a.item.weight ?? 0))[0];
+            if (!heaviest || !doll.unequip(heaviest.slot).success) break;
+            res.worn = res.worn.filter((name: string) => name !== heaviest.item.name);
+          }
+          // A spell for each learning stone above the floor, as the bot reads one (P-36): from
+          // the zones open by that stone, the type the hero has fewest of. Not counted as learned.
+          const stones = (e.manifest as any)?.magic?.learningStones;
+          const spells: any[] = e.manifest?.spells ?? [];
+          const p = e.player as any;
+          const typeOf = (id: string) => spells.find((s) => s.id === id)?.spellType ?? 'none';
+          const held = (type: string) => p.spellsKnown.filter((id: string) => typeOf(id) === type).length;
+          for (const stone of stones?.stones ?? []) {
+            if (stone.floor >= floor) continue;
+            const open: string[] = (stones.zones ?? [])
+              .filter((z: any) => z.minFloor <= stone.floor)
+              .flatMap((z: any) => z.spellIds)
+              .filter((id: string) => !p.spellsKnown.includes(id));
+            const pick = open.reduce<string | undefined>((best, id) => (best === undefined || held(typeOf(id)) < held(typeOf(best)) ? id : best), undefined);
+            if (pick) p.learnSpellResult(pick);
+          }
+          const m = (window as any).__soakMagic;
+          if (m) m.known = [...new Set([...m.known, ...p.spellsKnown])];
           e.diagnostics.jumpToFloor(floor);
           e.diagnostics.restoreVitals();
           window.__cotwRenderer?.render();
@@ -314,6 +344,7 @@ test.describe('soak @soak', () => {
           return { turn: e?.turnCount ?? 0, floor: e?.currentFloor ?? 0, attack: e?.player?.attack ?? 0, defense: e?.player?.defense ?? 0 };
         })
         .catch(() => ({ turn: -1, floor: -1, attack: 0, defense: 0 }));
+      const magic = await readMagic(page);
       const findingCounts = { bug: 0, softlock: 0, text: 0, ux: 0 };
       for (const s of runSigs.values()) findingCounts[s.category]++;
       const summary: SoakSummary = {
@@ -357,6 +388,7 @@ test.describe('soak @soak', () => {
                 : {}),
             }
           : {}),
+        ...(magic ? { magic } : {}),
       };
       writeFileSync(join(seedDir, 'summary.json'), JSON.stringify(summary, null, 2));
     };
@@ -382,6 +414,7 @@ test.describe('soak @soak', () => {
         }
 
         await tapEngineLog(page);
+        await tapMagic(page);
         const pre = await page.evaluate(() => {
           const w = window as any;
           const e = w.__cotwEngine;

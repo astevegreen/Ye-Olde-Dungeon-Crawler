@@ -22,7 +22,8 @@ Done when each seed's `summary.json` reads `partial: false`: a summary is rewrit
 Everything lands in `.prompts/soak/<lens>/` (gitignored), or `<lens>-floor<N>/` for a deep start:
 - `runs.jsonl`: one line per seed from the runner: `status`, `endedBy`, `turnsPlayed`, `deepestFloor`, `causeOfDeath`, `deathCause`, `findingCounts`, `sha` (`deathCause` and `sha` only from 1cb68d5, 5 Oct; older runs keep their sha in `summary.json`).
 - `findings.jsonl`: one line per signature new to a run, across the lens: `sig`, `category` (`bug`, `softlock`, `text`, `ux`), `severity`, `seed`, `action`, `turn`, `floor`, `detail`, and `repro`, the command that replays that seed to that action.
-- `<seed>/summary.json` (`SoakSummary`, `e2e/soak/types.ts`): the run's totals, every signature with its count, latency, the raid, interruptions, and for `player` the gear and bot telemetry.
+- `<seed>/summary.json` (`SoakSummary`, `e2e/soak/types.ts`): the run's totals, every signature with its count, latency, the raid, interruptions, and for `player` the gear and bot telemetry (`bot.castsChosen`: casts by purpose).
+  - `magic` (every lens, `e2e/soak/magicTap.ts`): per floor, casts by spell, failed casts, and damage and kills by source (`spell`, `melee`, `other` hero actions, `world`: allies, ground, monsters); spells learned and how; stones read, shortcuts, rites.
 - `<seed>/actions.jsonl` (a finding's `lastActions` points into it), `f<action>.png`/`.zip` evidence for the first sighting of a signature, `save-<n>.txt` save codes every 100 actions and `save-first-finding.txt`.
 
 ## Read

@@ -52,7 +52,23 @@ export interface PlayerBotState {
   /** Unspent points when the bot last pressed an attribute key, and how many presses changed nothing. */
   lastUnspent: number;
   statFailures: number;
+  /** The cast whose aim the open targeting reticle is being moved to (P-36). */
+  castPlan: CastPlan | null;
+  /** The turn each spell was last chosen, for the summon, terrain and control cooldowns. */
+  lastCast: Record<string, number>;
   telemetry: BotTelemetry;
+}
+
+/** Why the bot chose a spell (P-36): what the cast was for, by spell type. */
+type CastKind = 'heal' | 'escape' | 'summon' | 'terrain' | 'control' | 'damage' | 'snipe';
+
+/** A spell the bot chose: its quick key was pressed, and a reticle goes to (x, y) or `targetId`. */
+interface CastPlan {
+  spellId: string;
+  kind: CastKind;
+  x: number;
+  y: number;
+  targetId?: string;
 }
 
 /** What the bot did and saw over a run, for summary.json (step 1 of the soak-bot plan). */
@@ -84,6 +100,10 @@ export interface BotTelemetry {
   maxLooseCoins: number;
   /** Biggest worn purse over the run, in coins (300 is the starting pouch). */
   maxPurseCap: number;
+  /** Quick keys pressed to cast, by what the cast was for (what the casts did is `magic`). */
+  castsChosen: Partial<Record<CastKind, number>>;
+  /** Learning-stone cards answered with a face. */
+  stoneFacesRead: number;
   /** Mastery perks are `perksTaken`; these are the Saga and milestone perks held at the end. */
   heldPerks: Record<string, number>;
   /** The hero's state at the last decision: what the death cause is read from. */
@@ -206,6 +226,8 @@ export function getBotState(page: Page, actionIndex: number): PlayerBotState {
       statPresses: 0,
       lastUnspent: -1,
       statFailures: 0,
+      castPlan: null,
+      lastCast: {},
       telemetry: {
         potionsDrunk: 0,
         telegraphTurns: 0,
@@ -224,6 +246,8 @@ export function getBotState(page: Page, actionIndex: number): PlayerBotState {
         maxLooseCoins: 0,
         maxPurseCap: 0,
         heldPerks: {},
+        castsChosen: {},
+        stoneFacesRead: 0,
         last: null,
       },
     };
@@ -281,6 +305,12 @@ interface DecisionResult {
   purseCap?: number;
   /** Saga and milestone perks the hero holds, by source (family perks live in the compendium). */
   heldPerks?: Record<string, number>;
+  /** A spell's quick key was pressed (P-36). */
+  cast?: CastPlan;
+  /** The decision answered the open targeting reticle. */
+  targeting?: boolean;
+  /** A learning stone's face was read. */
+  stoneFace?: boolean;
 }
 
 export interface PlayerDecisionContext {
@@ -312,6 +342,12 @@ export interface PlayerDecisionContext {
  * the temple to cleanse, offer, take a blessing and heal, Olaf for a bigger purse once
  * coins spill, the Banker to exchange coins. A service key is pressed again only if the
  * last press changed the panel. What it did, and why the hero died, goes to summary.json.
+ *
+ * Magic (P-36): it casts every spell on its quick bar by type: a heal when hurt, an escape
+ * when badly hurt in melee or ringed, summons, terrain and control to open a real fight,
+ * a blast or cone on two foes beside it, and the hardest-hitting damage spell from range.
+ * It hunts each floor's learning-stone carrier, takes the shard to the stone and reads the
+ * face of the type it has fewest of. What the casts did is the summary's `magic` (magicTap.ts).
  */
 export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<DispatchedAction> {
   const { page, prng, actionIndex, inDialog } = ctx;
@@ -344,6 +380,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       statPresses: number;
       statGiveUp: boolean;
       charMenuDecisions: number;
+      castPlan: CastPlan | null;
+      lastCast: Record<string, number>;
     }) => {
       const w = window as any;
       const e = w.__cotwEngine;
@@ -432,7 +470,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           .sort((a, b) => gainOf(b) - gainOf(a) || String(a.id).localeCompare(String(b.id)))[0] ?? purseCandidate;
       // Load: a player keeps under half the carry limit (unencumbered), and goes up to
       // three quarters (burdened, 25% slower) only for a real upgrade.
-      const maxCarry = Math.max(1, p.strength ?? 10) * 2500;
+      const maxCarry = Math.max(1, p.carryStrength ?? p.strength ?? 10) * 2500;
       const carried: number = p.inventory?.totalWeight?.() ?? 0;
       const weightOf = (it: any): number => (typeof it?.totalWeight === 'function' ? it.totalWeight() : (it?.weight ?? 0));
       const fitsLoad = (addGrams: number, gain: number): boolean =>
@@ -575,6 +613,14 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         const t = r?.targetingOverlay;
         const aimX = t?.reticleX ?? p.x + 1;
         const aimY = t?.reticleY ?? p.y;
+        const aimed = (x: number, y: number) => ({ ...(aimX === x && aimY === y ? { action: { type: 'key' as const, key: 'Enter' } } : { action: { type: 'key' as const, key: stepToKey(Math.sign(x - aimX), Math.sign(y - aimY)) } }), curPos, curTurn, curFloor, targeting: true });
+
+        // The spell the bot chose (P-36): its target where it stands now, else the planned tile.
+        const plan = args.castPlan;
+        if (plan) {
+          const mark = plan.targetId ? hostiles.find((m: any) => m.id === plan.targetId) : undefined;
+          return aimed(mark?.x ?? plan.x, mark?.y ?? plan.y);
+        }
 
         const snipeCandidates = hostiles
           .filter(
@@ -587,21 +633,13 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           .sort((a: any, b: any) => a.hp - b.hp || a.y - b.y || a.x - b.x || String(a.id).localeCompare(String(b.id)));
 
         const target = snipeCandidates[0];
-        if (target) {
-          if (aimX === target.x && aimY === target.y) {
-            return { action: { type: 'key' as const, key: 'Enter' }, curPos, curTurn, curFloor };
-          }
-          const rdx = Math.sign(target.x - aimX);
-          const rdy = Math.sign(target.y - aimY);
-          if (rdx !== 0) return { action: { type: 'key' as const, key: rdx > 0 ? 'ArrowRight' : 'ArrowLeft' }, curPos, curTurn, curFloor };
-          if (rdy !== 0) return { action: { type: 'key' as const, key: rdy > 0 ? 'ArrowDown' : 'ArrowUp' }, curPos, curTurn, curFloor };
-        }
+        if (target) return aimed(target.x, target.y);
 
         const hostileAtAim = hostiles.find((m: any) => m.x === aimX && m.y === aimY && e.fov.isVisible(m.x, m.y));
         if (hostileAtAim) {
-          return { action: { type: 'key' as const, key: 'Enter' }, curPos, curTurn, curFloor };
+          return { action: { type: 'key' as const, key: 'Enter' }, curPos, curTurn, curFloor, targeting: true };
         }
-        return { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor };
+        return { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor, targeting: true };
       }
 
       const controlsPrimer = document.getElementById('controls-primer');
@@ -630,7 +668,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       const characterMenuOpen = stack.includes('character-menu') || Boolean(h?.characterMenuModal?.isOpen);
       if (characterMenuOpen) {
         const modal = h?.characterMenuModal;
-        const isOverburdened = !p.canMove?.() || p.inventory?.getEncumbrance?.(p.strength) === 'Immobilized';
+        const isOverburdened = p.inventory?.getEncumbrance?.(p.carryStrength ?? p.strength) === 'Immobilized';
 
         // However the menu got stuck, leave it after 40 decisions.
         if (args.charMenuDecisions >= 40) {
@@ -855,8 +893,41 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         return leave;
       }
 
+      // A learning stone's card (P-36): read the face of the spell type the hero has fewest of,
+      // so the run comes to cast every type; the first face on a tie. No face: take the rune.
+      if (stack[stack.length - 1] === 'learning-stone-card') {
+        const record = (p.learningStones?.stones ?? []).find((st: any) => st.floor === curFloor);
+        const faces: string[] = (record?.faces ?? []).filter(
+          (id: string) =>
+            !p.spellsKnown?.includes(id) &&
+            !p.grimoireState?.forgotten?.includes(id) &&
+            !p.pendingSpellOffers?.includes(id) &&
+            (e.manifest?.spells ?? []).some((sp: any) => sp.id === id)
+        );
+        const typeOf = (id: string) => (e.manifest?.spells ?? []).find((sp: any) => sp.id === id)?.spellType ?? 'none';
+        const held = (type: string) => (p.spellsKnown ?? []).filter((id: string) => typeOf(id) === type).length;
+        if (faces.length > 0) {
+          let pick = 0;
+          faces.forEach((id, i) => {
+            if (held(typeOf(id)) < held(typeOf(faces[pick]))) pick = i;
+          });
+          return { action: { type: 'key' as const, key: `Digit${pick + 1}` }, curPos, curTurn, curFloor, stoneFace: true };
+        }
+        const rune = document.getElementById('stone-rune');
+        if (rune) {
+          const rect = rune.getBoundingClientRect();
+          return { action: { type: 'click' as const, x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) }, curPos, curTurn, curFloor };
+        }
+      }
+
       if (stack.length > 0 || (args.inDialog && openModes.length > 0)) {
         return { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor };
+      }
+
+      // Stunned or paralysed: a key passes the turn the hero can't use. (Read as overburdened,
+      // it opened the inventory, which takes no turn, and the stun never wore off.)
+      if (p.statusManager?.hasStatus?.('stunned') || p.statusManager?.hasStatus?.('paralysis')) {
+        return { action: { type: 'key' as const, key: 'Space' }, curPos, curTurn, curFloor };
       }
 
       // --- Helpers for map action choices --------------------------------------
@@ -911,6 +982,109 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         const autoTargetsDirectly = visibleEnemies[0]?.id === snipeTarget.id;
         snipeAction = { type: 'key', key: 'Digit1', secondaryKey: autoTargetsDirectly ? 'Enter' : undefined };
       }
+
+      // --- Magic (P-36): every spell on the quick bar, chosen by its type -------------
+      // A spell is castable when it sits in a grimoire slot (the three-grimoire packs), the hero
+      // has its mana (the listed price, or less after a shortcut), and, for blood magic, HP to
+      // spare. Never into overflow: the bot measures spells, not Void Debt.
+      const spellDefs: any[] = e.manifest?.spells ?? [];
+      const slotted: Set<string> | null = p.grimoireSystem
+        ? new Set((e.diagnostics?.resolvedCasts?.() ?? []).map((c: any) => c.spellId))
+        : null;
+      const castables = ((p.quickSpells ?? []) as Array<string | null>)
+        .map((id, i) => {
+          const sp = id ? spellDefs.find((d: any) => d.id === id) : undefined;
+          if (!id || !sp || (slotted && !slotted.has(id))) return null;
+          const cost = Math.ceil((sp.manaCost ?? 0) * (p.learningStones?.costShares?.[id] ?? 1));
+          if (p.mana < cost) return null;
+          if (sp.school === 'BloodMagic' && p.hp < p.maxHp * 0.6) return null;
+          return { id, sp, cost, key: i === 9 ? 'Digit0' : `Digit${i + 1}`, type: sp.spellType as string | undefined };
+        })
+        .filter(Boolean) as Array<{ id: string; sp: any; cost: number; key: string; type?: string }>;
+      // Summons last a while and terrain lingers; a control spell a foe shrugged off waits a little.
+      const COOLDOWN: Record<string, number> = { summon: 30, terrain: 12, control: 4 };
+      const ready = (c: { id: string; type?: string }) => curTurn - (args.lastCast[c.id] ?? -1e9) >= (COOLDOWN[c.type ?? ''] ?? 0);
+      const firstDamage = (sp: any): number => (sp.effects ?? []).find((f: any) => f.type === 'damage')?.amount ?? 0;
+      const statusOf = (sp: any): string | undefined =>
+        sp.statusAffliction ?? (sp.effects ?? []).find((f: any) => f.type === 'applyStatus')?.statusId;
+      const awakeFoes = hostiles
+        .filter((m: any) => e.fov.isVisible(m.x, m.y) && m.aiState !== 'sleeping' && cheb(m, p) <= 8)
+        .sort((a: any, b: any) => cheb(a, p) - cheb(b, p) || String(a.id).localeCompare(String(b.id)));
+      // A real fight: two or more awake foes, or one worth half the hero's own life.
+      const bigFight = awakeFoes.length >= 2 || awakeFoes.some((m: any) => m.maxHp >= p.maxHp * 0.5);
+      const reaches = (sp: any, t: { x: number; y: number }) => cheb(p, t) <= (sp.range ?? 0) && lineOfSight(p, t);
+      const near = (t: { x: number; y: number }, radius: number) => awakeFoes.filter((m: any) => cheb(m, t) <= radius).length;
+      // The reticle starts on the first visible foe (targeting-overlay.ts): Enter at once when that is the target.
+      const firstSeen = e.map
+        .getAllEntities()
+        .find((ent: any) => ent && ent.isAlive?.() && ent.isHostileTo?.(p) && e.fov.isVisible(ent.x, ent.y));
+      const castAt = (c: { id: string; key: string; sp: any }, kind: CastKind, t?: { x: number; y: number; id?: string }) => {
+        const self = c.sp.targetType === 'self' || c.sp.targetingMode === 'self';
+        const at = self || !t ? { x: p.x, y: p.y } : t;
+        const direct = !self && firstSeen && firstSeen.x === at.x && firstSeen.y === at.y;
+        return {
+          action: { type: 'key' as const, key: c.key, ...(direct ? { secondaryKey: 'Enter' } : {}) },
+          curPos,
+          curTurn,
+          curFloor,
+          cast: { spellId: c.id, kind, x: at.x, y: at.y, ...(t?.id ? { targetId: String(t.id) } : {}) },
+        };
+      };
+      const healCast = () => castables.find((c) => c.type === 'heal');
+      const escapeCast = () => castables.find((c) => c.type === 'movement' && (c.sp.targetType === 'self' || c.sp.targetingMode === 'self'));
+      // Summons and terrain open a real fight; control goes on its biggest foe.
+      const openingCast = () => {
+        if (!bigFight) return null;
+        const summon = castables.find((c) => c.type === 'summon' && ready(c));
+        if (summon) return castAt(summon, 'summon');
+        for (const c of castables.filter((k) => k.type === 'terrain' && ready(k))) {
+          const area = c.sp.areaOfEffect ?? 0;
+          const t = awakeFoes.find((m: any) => cheb(m, p) > area && reaches(c.sp, m));
+          if (t) return castAt(c, 'terrain', { x: t.x, y: t.y });
+        }
+        const biggest = [...awakeFoes].sort((a: any, b: any) => b.maxHp - a.maxHp || cheb(a, p) - cheb(b, p))[0];
+        if (biggest && biggest.hp > biggest.maxHp * 0.3) {
+          for (const c of castables.filter((k) => k.type === 'control' && ready(k))) {
+            const status = statusOf(c.sp);
+            // Loki's Switch moves foes rather than holding one: not a control cast for the bot.
+            if (!status || biggest.statusManager?.hasStatus?.(status) || !reaches(c.sp, biggest)) continue;
+            return castAt(c, 'control', biggest);
+          }
+        }
+        return null;
+      };
+      // The hardest-hitting damage spell that reaches a foe, leaving the mana for a heal while
+      // hurt; area spells only where the hero stands outside the blast, and score per foe caught.
+      const damageCast = (adjacentOnly: boolean) => {
+        const heal = (p.quickSpells ?? []).map((id: string | null) => spellDefs.find((d: any) => d.id === id)).find((d: any) => d?.spellType === 'heal');
+        const reserve = heal && p.hp < p.maxHp * 0.7 ? heal.manaCost ?? 0 : 0;
+        const targets = [...awakeFoes].sort(
+          (a: any, b: any) => Number(b.aiState === 'fleeing') - Number(a.aiState === 'fleeing') || a.hp - b.hp || cheb(a, p) - cheb(b, p)
+        );
+        let best: { score: number; cost: number; c: any; t?: any } | null = null;
+        for (const c of castables.filter((k) => k.type === 'damage' && p.mana - k.cost >= reserve)) {
+          const area = c.sp.areaOfEffect ?? 0;
+          const mode = c.sp.targetingMode;
+          let t: any;
+          let caught = 1;
+          if (c.sp.targetType === 'self') {
+            caught = adjHostiles.length;
+            if (caught < 2) continue;
+          } else if (mode === 'cone') {
+            t = targets.find((m: any) => cheb(m, p) <= (c.sp.range ?? 0));
+            caught = t ? near(t, 1) : 0;
+            if (!t || (adjacentOnly && caught < 2)) continue;
+          } else {
+            if (adjacentOnly) continue;
+            t = targets.find((m: any) => cheb(m, p) >= 2 && cheb(m, p) > area && reaches(c.sp, m));
+            if (!t) continue;
+            caught = area > 0 ? near(t, area) : 1;
+          }
+          const score = firstDamage(c.sp) * caught;
+          if (!best || score > best.score || (score === best.score && c.cost < best.cost)) best = { score, cost: c.cost, c, t };
+        }
+        return best ? castAt(best.c, 'damage', best.t) : null;
+      };
 
       const bfsStepToGoal = (
         start: { x: number; y: number },
@@ -1079,7 +1253,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           if (potKey) return { action: { type: 'key' as const, key: potKey }, curPos, curTurn, curFloor, potion: true };
         }
 
-        const isOverburdened = !p.canMove?.() || p.inventory?.getEncumbrance?.(p.strength) === 'Immobilized';
+        const isOverburdened = p.inventory?.getEncumbrance?.(p.carryStrength ?? p.strength) === 'Immobilized';
         if (isOverburdened) {
           return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor, isOverburdened: true };
         }
@@ -1090,7 +1264,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         }
 
         if (snipeAction) {
-          return { action: snipeAction, curPos, curTurn, curFloor };
+          const cast = { spellId: 'magic_arrow', kind: 'snipe' as const, x: snipeTarget.x, y: snipeTarget.y, targetId: String(snipeTarget.id) };
+          return { action: snipeAction, curPos, curTurn, curFloor, cast };
         }
 
         const VILLAGER_IDS = ['prologue-eir', 'prologue-sigrun', 'prologue-brandr'];
@@ -1133,7 +1308,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       // --- 3. The town after the raid ------------------------------------------
       const isTown = curFloor === 0 && Boolean(e.getWorldFlag('cotw_prologue_ended'));
       if (isTown) {
-        const isOverburdened = !p.canMove?.() || p.inventory?.getEncumbrance?.(p.strength) === 'Immobilized';
+        const isOverburdened = p.inventory?.getEncumbrance?.(p.carryStrength ?? p.strength) === 'Immobilized';
         if (isOverburdened) {
           return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor, isOverburdened: true };
         }
@@ -1220,6 +1395,13 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
 
       // --- 4. A dungeon floor --------------------------------------------------
       if (curFloor > 0) {
+        // Hurt: a heal spell first, while the mana lasts; a potion below that (P-36).
+        const heal = p.hp <= p.maxHp * 0.55 ? healCast() : undefined;
+        if (heal) return castAt(heal, 'heal');
+        // Badly hurt in melee, or ringed by three: an escape spell before any scroll.
+        const ringed = adjHostiles.length >= 3 && p.hp <= p.maxHp * 0.6;
+        const escape = adjHostiles.length > 0 && (p.hp <= p.maxHp * 0.3 || ringed) ? escapeCast() : undefined;
+        if (escape) return castAt(escape, 'escape');
         if (p.hp <= Math.max(p.maxHp * 0.45, 12)) {
           const potKey = findHealingPotionKey();
           if (potKey) return { action: { type: 'key' as const, key: potKey }, curPos, curTurn, curFloor, potion: true };
@@ -1236,7 +1418,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           if (cure) return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor, useItem: cure.id as string, useKind: 'antidote' as const };
         }
 
-        const isOverburdened = !p.canMove?.() || p.inventory?.getEncumbrance?.(p.strength) === 'Immobilized';
+        const isOverburdened = p.inventory?.getEncumbrance?.(p.carryStrength ?? p.strength) === 'Immobilized';
         if (isOverburdened) {
           return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor, isOverburdened: true };
         }
@@ -1325,14 +1507,22 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           if (nook) return { action: { type: 'key' as const, key: stepToKey(nook.dx, nook.dy) }, curPos, curTurn, curFloor, tactic: 'corridor' as const };
         }
 
+        // A fight: open it with a summon, terrain or control, catch two beside the hero with a
+        // blast or cone, strike back in melee, and from range cast the best damage spell (P-36).
+        const opening = openingCast();
+        if (opening) return opening;
+        if (adjHostiles.length >= 2) {
+          const blast = damageCast(true);
+          if (blast) return blast;
+        }
+
         if (adjHostiles.length > 0) {
           const m = adjHostiles[0];
           return { action: { type: 'key' as const, key: stepToKey(m.x - p.x, m.y - p.y) }, curPos, curTurn, curFloor };
         }
 
-        if (snipeAction) {
-          return { action: snipeAction, curPos, curTurn, curFloor };
-        }
+        const ranged = damageCast(false);
+        if (ranged) return ranged;
 
         const visibleHostiles = hostiles.filter((m: any) => e.fov.isVisible(m.x, m.y));
 
@@ -1353,7 +1543,10 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         if (visibleHostiles.length === 0 && looseCoins > 0 && p.inventory?.purse && !args.serviceTried.includes('inventory:consolidate')) {
           return { action: { type: 'key' as const, key: 'KeyI' }, curPos, curTurn, curFloor };
         }
-        if (p.hp < p.maxHp * 0.6 && visibleHostiles.length === 0 && !snapshot.onHazard) {
+        // Rest when hurt as far as the caster rule above takes cover (else the hero hides and
+        // returns into sight forever), or low on mana: a rest refills both (P-36).
+        const lowMana = (p.maxMana ?? 0) > 0 && (p.mana ?? 0) < p.maxMana * 0.4;
+        if ((p.hp < p.maxHp * 0.7 || lowMana) && visibleHostiles.length === 0 && !snapshot.onHazard) {
           if (args.lastRestAttemptTurn !== curTurn) {
             return { action: { type: 'key' as const, key: 'KeyR' }, curPos, curTurn, curFloor, restAttempted: true };
           }
@@ -1409,7 +1602,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
 
           const currentWeight = p.inventory?.totalWeight?.() ?? 0;
           const itemWeight = topItem ? (typeof topItem.totalWeight === 'function' ? topItem.totalWeight() : (topItem.weight ?? 0)) : 0;
-          const maxCarryWeight = Math.max(1, p.strength ?? 10) * 2500;
+          const maxCarryWeight = Math.max(1, p.carryStrength ?? p.strength ?? 10) * 2500;
 
           const isHealthPotion = Boolean(
             topItem && (
@@ -1456,11 +1649,57 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           const isUpgrade = isGear(topItem) && gainOf(topItem) > 0 && fitsLoad(itemWeight, gainOf(topItem));
           // A chest (a secret cache holds one): G takes what's inside, one item a press.
           const isFullChest = isContainer && typeof topItem.getItems === 'function' && topItem.getItems().length > 0;
-          const canPick = !droppedHere && (isFullChest || (!isContainer && ((isPreferred && !wouldOverburden) || isUpgrade)));
+          // A learning stone's shard under other loot: G takes the top item until the shard's turn comes.
+          const shardHere = itemsHere.some((it: any) => it?.definitionId === e.manifest?.magic?.learningStones?.shardItemId);
+          const canPick = shardHere || (!droppedHere && (isFullChest || (!isContainer && ((isPreferred && !wouldOverburden) || isUpgrade))));
 
           if (canPick) {
             if (args.lastPickupPos !== curPos || args.lastPickupTurn !== curTurn) {
               return { action: { type: 'key' as const, key: 'KeyG' }, curPos, curTurn, curFloor, pickupAttempted: true, chest: isFullChest };
+            }
+          }
+        }
+
+        // A learning stone on this floor (P-36): with its shard, walk to the stone (the card opens
+        // there); without, fetch the shard from the ground, or go for its carrier once seen.
+        const stones = e.manifest?.magic?.learningStones;
+        const stoneDef = stones?.stones?.find((st: any) => st.floor === curFloor);
+        const stoneRecord = (p.learningStones?.stones ?? []).find((st: any) => st.floor === curFloor);
+        // Not past the floor's time limit: a stone out of reach mustn't keep the hero on the floor.
+        if (stones && stoneDef && !stoneRecord?.spent && curTurn - args.floorEnteredTurn < 1000) {
+          const isShard = (it: any) => it?.definitionId === stones.shardItemId;
+          const stepTo = (goal: { x: number; y: number }) => {
+            const step = bfsStepToGoal(p, goal, true);
+            return step ? { action: { type: 'key' as const, key: stepToKey(step.x - p.x, step.y - p.y) }, curPos, curTurn, curFloor } : null;
+          };
+          const explored: Array<{ x: number; y: number }> = [];
+          for (let y = 0; y < e.map.height; y++) {
+            for (let x = 0; x < e.map.width; x++) if (e.fov.isExplored(x, y)) explored.push({ x, y });
+          }
+          if (p.inventory.getAllCarriedItems().some(isShard)) {
+            const tileId = stoneDef.tileId ?? stones.tileId;
+            const stone = explored.find((at) => e.map.getTile(at.x, at.y)?.type === tileId);
+            if (stone && (stone.x !== p.x || stone.y !== p.y)) {
+              const go = stepTo(stone);
+              if (go) return go;
+            }
+          } else {
+            const shard = explored.find((at) => (e.map.getItemsAt(at.x, at.y) ?? []).some(isShard));
+            if (shard && (shard.x !== p.x || shard.y !== p.y)) {
+              const go = stepTo(shard);
+              if (go) return go;
+            }
+            // Once seen, the carrier stays the goal: its route can lead out of sight of it, and
+            // forgetting it there sends the hero back to explore, into sight again, and so on.
+            const holds = (m: any) => (m.getItems?.() ?? []).some(isShard);
+            const seen = (window as any).__soakCarrierSeen;
+            const remembered =
+              seen?.floor === curFloor ? hostiles.find((m: any) => m.id === seen.id && holds(m)) : undefined;
+            const carrier = remembered ?? hostiles.find((m: any) => e.fov.isVisible(m.x, m.y) && holds(m));
+            if (carrier) (window as any).__soakCarrierSeen = { floor: curFloor, id: carrier.id };
+            if (!shard && carrier) {
+              const go = stepTo(carrier);
+              if (go) return go;
             }
           }
         }
@@ -1529,6 +1768,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       statPresses: state.statPresses,
       statGiveUp: state.statFailures >= 6,
       charMenuDecisions: state.charMenuDecisions,
+      castPlan: state.castPlan,
+      lastCast: state.lastCast,
     }
   );
 
@@ -1576,6 +1817,14 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
     state.lastUnspent = unspentNow ?? 0;
     state.statPresses++;
   }
+  if (evalResult.cast) {
+    state.castPlan = evalResult.cast;
+    state.lastCast[evalResult.cast.spellId] = curTurn;
+    tel.castsChosen[evalResult.cast.kind] = (tel.castsChosen[evalResult.cast.kind] ?? 0) + 1;
+  } else if (!evalResult.targeting) {
+    state.castPlan = null;
+  }
+  if (evalResult.stoneFace) tel.stoneFacesRead++;
   if (evalResult.perk) tel.perksTaken++;
   if (evalResult.chest) tel.chestsLooted++;
   if (evalResult.potion) tel.potionsDrunk++;

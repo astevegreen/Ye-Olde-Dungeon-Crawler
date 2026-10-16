@@ -80,5 +80,36 @@ export interface SoakSummary {
   gear?: { equips: number; purchases: number; sales: number; townTrip: string; attack: number; defense: number };
   /** The player bot's telemetry: potions, telegraphs, services, points, and why it died. */
   bot?: BotTelemetry;
+  /** Magic in play (P-36, `magicTap.ts`), for every lens. */
+  magic?: MagicTelemetry;
+}
+
+/** Who dealt damage to the hero's foes: a cast, a step or blow, another hero action, or the world. */
+type DamageSource = 'spell' | 'melee' | 'other' | 'world';
+
+interface MagicFloorTally {
+  /** Casts that spent the turn, by spell id. */
+  casts: Record<string, number>;
+  /** Casts that spent nothing (no target, out of range, refused). */
+  failedCasts: number;
+  damage: Record<DamageSource, number>;
+  kills: Record<DamageSource, number>;
+  /** The `spell` damage, by spell id. */
+  spellDamage: Record<string, number>;
+}
+
+export interface MagicTelemetry {
+  /** By floor number as a string; "0" is town and the raid. */
+  floors: Record<string, MagicFloorTally>;
+  /** Each spell that joined the book after the start, in order. */
+  learned: Array<{ spellId: string; via: 'stone' | 'shortcut' | 'other'; floor: number; turn: number }>;
+  stonesRead: number;
+  /** Stones read through a carrier's rite. */
+  shortcuts: number;
+  /** Stones whose shard became an Essence-Rune instead. */
+  runesFromStones: number;
+  rites: number;
+  altarRites: number;
+  spellsKnown: string[];
 }
 

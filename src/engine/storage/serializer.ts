@@ -674,6 +674,7 @@ export function serializeMapObject(map: GameMap): SerializedMap {
     .filter((e) => e.type === 'monster' && !(e instanceof Companion))
     .map((m) => {
       const mon = m as Monster;
+      const carried = mon.getItems();
       return {
         id: mon.id,
         name: mon.name,
@@ -701,6 +702,8 @@ export function serializeMapObject(map: GameMap): SerializedMap {
         pursuit: mon.pursuit ? { ...mon.pursuit } : undefined,
         faction: mon.faction !== 'hostile' ? mon.faction : undefined,
         lentHits: mon.lentHits ? structuredClone(mon.lentHits) : undefined,
+        deepSleep: mon.deepSleep || undefined,
+        carried: carried.length > 0 ? carried.map(serializeItem) : undefined,
       };
     });
 
@@ -917,6 +920,8 @@ export function deserializeMapObject(
       if (mData.lentHits) {
         monster.lentHits = structuredClone(mData.lentHits);
       }
+      if (mData.deepSleep) monster.deepSleep = true;
+      for (const node of mData.carried ?? []) monster.addItem(deserializeItem(node, definitions));
       map.addEntity(monster);
     }
   }

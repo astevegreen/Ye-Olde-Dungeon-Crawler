@@ -118,6 +118,10 @@ export class Monster extends Actor {
   public pursuit?: MonsterPursuit;
   /** A friendly summon's: what its summoning cast borrowed, carried on each of its hits (P-31, `summonLends.ts`). */
   public lentHits?: LentHits;
+  /** Sleeps deeply: seeing the hero never wakes it, only a blow or an alarm (a shard carrier, P-34; `wakesOnSight`). */
+  public deepSleep = false;
+  /** A blow woke it and it has not acted since: a kill now still counts as in its sleep (`killedInItsSleep`). */
+  private struckInSleep = false;
 
   constructor(config: MonsterConfig) {
     super({
@@ -214,6 +218,8 @@ export class Monster extends Actor {
   public override takeDamage(rawAmount: number, options?: { wakeUp?: boolean }): { damageDealt: number; killed: boolean } {
     const res = super.takeDamage(rawAmount);
     const shouldWake = options?.wakeUp ?? true;
+    // Read before the blow wakes it: a sleeper struck down before it can act died in its sleep.
+    if (shouldWake && this.aiState === 'sleeping') this.struckInSleep = true;
     // Any direct damage wakes it, and it knows where its foe is
     if (shouldWake) this.alert();
     // If monster is killed or took significant damage (> 25% maxHp), interrupt active wind-up
@@ -224,6 +230,14 @@ export class Monster extends Actor {
   }
 
   /**
+   * Whether a death now is a kill in its sleep: it still sleeps (a poison tick doesn't wake it),
+   * or the blow that woke it fell while it slept and it has not acted since (P-34's sleep kill).
+   */
+  public killedInItsSleep(): boolean {
+    return this.aiState === 'sleeping' || this.struckInSleep;
+  }
+
+  /**
    * Executes a turn for this monster: reads paralysis, processes status ticks,
    * skips the turn if held, else decides an action via the AI behavior tree and executes it.
    */
@@ -231,6 +245,8 @@ export class Monster extends Actor {
     if (!this.isAlive()) {
       return { success: false, cost: 0 };
     }
+    // Its turn has come: from here on it is awake, whatever woke it.
+    this.struckInSleep = false;
 
     // 1. Paralysis / stun is read before the statuses tick, as the hero's forced pass reads
     // it: a hold of N turns costs a monster N turns, the hero's clock (a 1-turn wall-splat

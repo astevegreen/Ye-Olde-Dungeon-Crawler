@@ -29,6 +29,8 @@ export interface KillRiteDefinition {
   requiresCasterDebt?: boolean;
   /** The player's HP must be at or below this % of max when the victim dies. */
   maxCasterHpPercent?: number;
+  /** The victim must die in its sleep: struck down asleep, before it could act (`Monster.killedInItsSleep`). */
+  requiresVictimAsleep?: boolean;
 }
 
 /** How the killing blow landed, as reported by whatever dealt it. */
@@ -66,6 +68,7 @@ export function killRiteConditionsMet(
   const required = rite.requiredDamageElement;
   if (required && context?.damageElement !== required && !context?.damageElements?.includes(required)) return false;
   if (rite.requiredVictimStatus && !victim.statusManager.hasStatus(rite.requiredVictimStatus)) return false;
+  if (rite.requiresVictimAsleep && !(victim instanceof Monster && victim.killedInItsSleep())) return false;
 
   // A kill with no reported blow (e.g. a surface or status) can't prove an overkill.
   if (rite.requiresOverkillPercent) {

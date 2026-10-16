@@ -9,8 +9,10 @@ import { familyModifiers } from '../compendium/familyPerks';
  * its family perk against the monster's family (Reaver), and the monster is farther off than
  * that (Chebyshev tiles). Damage and alarms still wake it; this is only the sight check, asked
  * by `GameEngine.updateFov` and `MonsterAI.decideAction` through `Monster.wakesOnSight`.
+ * A deep sleeper (`Monster.deepSleep`, a shard carrier) never wakes on sight.
  */
 export function wakesOnSight(engine: GameEngine, monster: Monster): boolean {
+  if (monster.deepSleep) return false;
   const radii = [lowestWorn(engine.player, 'wakeRadius'), ...familyModifiers(engine, engine.player, monster).map((mod) => mod.wakeRadius)].filter(
     (r): r is number => r !== undefined
   );

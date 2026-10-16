@@ -383,6 +383,7 @@ export class BestiaryTab implements MenuTab {
     const conditions: string[] = [];
     if (rite.requiredDamageElement) conditions.push(`Killing blow: <b>${escapeHtml(rite.requiredDamageElement)}</b> damage`);
     if (rite.requiredVictimStatus) conditions.push(`It must be: <b>${escapeHtml(rite.requiredVictimStatus)}</b>`);
+    if (rite.requiresVictimAsleep) conditions.push('Kill it <b>in its sleep</b>');
     if (rite.requiresOverkillPercent) {
       conditions.push(`The blow exceeds its remaining health by <b>${rite.requiresOverkillPercent}% of its maximum</b>`);
     }

@@ -302,7 +302,8 @@ export interface SerializedMonster {
   xpValue?: number;
   intent?: MonsterIntent;
   statusEffects?: SerializedStatusEffect[];
-  inventory?: SerializedInventory;
+  /** `Monster.getItems()`: what it carries and drops however it dies (a shard, P-34); absent when it carries nothing. */
+  carried?: SerializedItemNode[];
   morphEnvelope?: SerializedMorphEnvelope;
   planeId?: string;
   /** `Monster.catchUpScale`, written only above 1. */
@@ -313,6 +314,8 @@ export interface SerializedMonster {
   faction?: Faction;
   /** `Monster.lentHits`: a summon's borrowed effects (P-31); absent when it carries none. */
   lentHits?: LentHits;
+  /** `Monster.deepSleep`, written only when set. */
+  deepSleep?: boolean;
 }
 
 /** Companions & Pet Progression, Phase 1 (docs/architecture/content-companions.md). Top-level in SaveData, not per-floor. */

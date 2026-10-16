@@ -7,7 +7,6 @@ Act on the owner's answers to the Gemini narrative audit (`.prompts/antigravity/
 ## Decide first
 - Is the cold paced right? The town's frost deepens after 3000, 7000, 12000 and 20000 turns spent below without the Hearth-Tear. Those numbers are a guess. Recommend: keep them until P-36's soak shows how long floors 1–25 really take, then retune `src/content/cotw/hearthCold.ts:26`.
 
-- Should this repo always push as astevegreen? Git Credential Manager has only the Terminal Dusk bot (greenbeanbot) saved, so a plain `git push` here is refused (403). Recommend: `git config credential.username astevegreen` here. The owner signs in once, in the browser, on the next push, and checks that the browser shows astevegreen. Change nothing in Terminal Dusk: it pushes as gh's active account, which must stay greenbeanbot.
 
 ## Done
 - 4d9c32b1 Ivalda no longer thanks a barrow-robber for keeping faith with the dead
@@ -18,10 +17,7 @@ Act on the owner's answers to the Gemini narrative audit (`.prompts/antigravity/
 - Uncommitted: none
 
 ## Next
-1. If the owner answers yes to the account question, run `git config credential.username astevegreen` in this repo. Otherwise Complete.
-
-## Model
-Sonnet 5.5 at low thinking. Next is one config line.
+Complete. The first push from this repo opens a Credential Manager browser sign-in; the owner checks that it shows astevegreen.
 
 ## Decisions
 - Ivalda's greeting only; no fame/infamy matrix. Owner: "fix the greeting, skip the rest"
@@ -32,6 +28,7 @@ Sonnet 5.5 at low thinking. Next is one config line.
 - "Away" counts only the turns spent below town before the Hearth-Tear is won, and town visits don't reset it. Chosen because a reset would keep a hero who shops often at stage one forever.
 - Old saves learn their Oath side from the bonded companion (`src/content/cotw/oath.ts:35`), so there is no save-format change.
 - First push refused (403, greenbeanbot). Owner: "switch github accounts and push". The switch to astevegreen made Terminal Dusk's bot open its PR #14 as astevegreen. gh was switched back to greenbeanbot at 20:03 UTC. Never `gh auth switch` again (see memory gh-push-account).
+- This repo now pushes as astevegreen through Credential Manager (`credential.username` in `.git/config`). Owner: "Yes, set this repo to push as astevegreen; I'll check the browser shows astevegreen on the next push."
 
 ## Verification
 - lint + full suite (428 files, 3290 tests): green on 1eb6072a

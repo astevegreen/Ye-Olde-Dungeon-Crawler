@@ -31,3 +31,4 @@ Opus at high thinking — step 1 may expose engine bugs to trace; Sonnet is enou
 
 ## Verification
 - lint + test: green on 57fbf17a (3,258). Pre-push (sim, build, 3 browsers): green, pushed.
+Resumed: 2026-10-16 01:47 UTC

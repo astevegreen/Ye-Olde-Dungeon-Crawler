@@ -53,16 +53,20 @@ const TABLET_BANDS: Array<{ soldFromFloor: number; value: number; spells: Array<
   {
     soldFromFloor: 10,
     value: 150,
-    spells: [['firebolt', 'Firebolt'], ['slow', 'Slow'], ['phase_door', 'Phase Door'], ['call_the_pack', 'Call the Pack'], ['fafnirs_breath', "Fáfnir's Breath"]],
+    spells: [['firebolt', 'Firebolt'], ['slow', 'Slow'], ['phase_door', 'Phase Door'], ['call_the_pack', 'Call the Pack'], ['fafnirs_breath', "Fáfnir's Breath"], ['sols_glare', "Sól's Glare"]],
   },
   {
     soldFromFloor: 18,
     value: 225,
-    spells: [['cold_ray', 'Cold Ray'], ['lightning_bolt', 'Lightning Bolt'], ['rockfall', 'Rockfall'], ['loki_switch', "Loki's Switch"], ['hlidskjalf', 'Hliðskjálf']],
+    spells: [['cold_ray', 'Cold Ray'], ['hammer_throw', 'Hammer-Throw'], ['mire', 'Mire'], ['rockfall', 'Rockfall'], ['loki_switch', "Loki's Switch"], ['hlidskjalf', 'Hliðskjálf']],
   },
-  { soldFromFloor: 26, value: 300, spells: [['rime_floor', 'Rime Floor'], ['shroud_of_mani', 'Shroud of Máni']] },
+  {
+    soldFromFloor: 26,
+    value: 300,
+    spells: [['rime_floor', 'Rime Floor'], ['shroud_of_mani', 'Shroud of Máni'], ['raise_cairn', 'Raise Cairn'], ['drench', 'Drench']],
+  },
   { soldFromFloor: 34, value: 350, spells: [['thunderclap', 'Thunderclap'], ['paralyze', 'Paralyze'], ['fireball', 'Fireball']] },
-  { soldFromFloor: 43, value: 400, spells: [] },
+  { soldFromFloor: 43, value: 400, spells: [['fylgja', 'Fylgja'], ['rime_thurs', 'Rime-Thurs']] },
 ];
 
 const TABLETS: TabletEntry[] = TABLET_BANDS.flatMap((band) =>

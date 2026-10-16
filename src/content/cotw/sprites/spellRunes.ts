@@ -45,8 +45,8 @@ export const COTW_SPELL_RUNES: Record<string, SpriteRecipe> = {
   'spell~healing': rune([[[11, 5], [11, 27]], [[11, 5], [20, 10], [11, 16], [20, 21], [11, 27]]]),
   // Hagalaz, hail and ruin.
   'spell~shadow': rune([[[10, 5], [10, 27]], [[22, 5], [22, 27]], [[10, 12], [22, 20]]]),
-  // Eihwaz, the yew: the dragon's venom (Fáfnir's Breath, until poison has its own spells).
-  'spell~fafnirs_breath': rune([[[16, 5], [16, 27]], [[16, 5], [22, 11]], [[16, 27], [10, 21]]]),
+  // Eihwaz, the yew: venom and sludge.
+  'spell~poison': rune([[[16, 5], [16, 27]], [[16, 5], [22, 11]], [[16, 27], [10, 21]]]),
   // Uruz, the aurochs' strength.
   'spell~physical': rune([[[10, 27], [10, 6], [22, 13], [22, 27]]]),
 };

@@ -1,6 +1,7 @@
 import type { MonsterDefinition } from '../../../engine';
 import { DISIR_SPIRIT_ID } from '../frithMagic';
 import { PACK_WOLF_ID } from '../waveOneSpells';
+import { FYLGJA_ID, RIME_THURS_ID } from '../waveTwoSpells';
 
 /**
  * Creatures that only a spell brings into the world: never drawn for a floor, never the
@@ -35,6 +36,38 @@ export const SUMMONED_MONSTERS: MonsterDefinition[] = [
     fleeHealthPercent: 0,
     xpValue: 0,
     tags: ['beast'],
+    lootTable: [],
+  },
+  {
+    // Fylgja's double: it stands where it is put and draws the foe until it bursts.
+    id: FYLGJA_ID,
+    name: 'Fylgja',
+    minFloor: 0,
+    placedOnly: true,
+    stats: { hp: 20, maxHp: 20, attack: 0, defense: 0 },
+    speed: 100,
+    aiType: 'melee',
+    resistances: { shadow: 'immune' },
+    statusImmunities: ['poison', 'paralysis', 'blindness'],
+    fleeHealthPercent: 0,
+    xpValue: 0,
+    tags: ['spirit'],
+    lootTable: [],
+  },
+  {
+    // Rime-Thurs: a frost giant that hits hard for a dozen turns and shatters.
+    id: RIME_THURS_ID,
+    name: 'Rime-Thurs',
+    minFloor: 0,
+    placedOnly: true,
+    stats: { hp: 80, maxHp: 80, attack: 24, defense: 8 },
+    speed: 90,
+    aiType: 'melee',
+    resistances: { cold: 'immune', fire: 'vulnerable' },
+    statusImmunities: ['poison', 'paralysis'],
+    fleeHealthPercent: 0,
+    xpValue: 0,
+    tags: ['giant'],
     lootTable: [],
   },
 ];

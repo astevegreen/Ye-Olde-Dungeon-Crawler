@@ -5,9 +5,9 @@ import { COTW_LEARNING_STONES } from './learningStones';
 
 /** Spells Loki's Cairn may teach: every spell kill rites and tablets teach. */
 const LOKI_SPELL_POOL = [
-  'slow', 'cold_ray', 'firebolt', 'phase_door', 'hlidskjalf', 'loki_switch', 'lightning_bolt',
+  'slow', 'cold_ray', 'firebolt', 'phase_door', 'hlidskjalf', 'loki_switch', 'hammer_throw',
   'fireball', 'paralyze', 'rime_floor', 'call_the_pack', 'shroud_of_mani', 'rockfall', 'thunderclap',
-  'fafnirs_breath',
+  'fafnirs_breath', 'sols_glare', 'mire', 'raise_cairn', 'drench', 'fylgja', 'rime_thurs',
 ];
 
 /**

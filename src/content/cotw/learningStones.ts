@@ -11,9 +11,8 @@ import { COTW_RUNESTONE_SHARD } from './items/essences';
  * Six stones are the lore runestones (`runestones.ts`): floors 8, 14, 20, 28, 38 and 48 keep
  * their verse and their two choices, and the shard shows the faces besides.
  *
- * Zone lists hold the spells first found in a band of floors. Spells not yet built (Hammer-Throw,
- * Drench, Sól's Glare, Fylgja, Rime-Thurs, Raise Cairn, Mire: phase 6) join their zone's list
- * when they land; until then a band with none lends a face from the next.
+ * Zone lists hold the spells first found in a band of floors. A band with none (floors 43-49)
+ * lends a face from the one before.
  */
 
 /** The six lore runestones, by floor. */
@@ -53,19 +52,19 @@ export const COTW_LEARNING_STONES: LearningStoneConfig = {
       // The cold band's foes are fire-weak; Slow handles fast wolves and howlers.
       minFloor: 1,
       maxFloor: 9,
-      spellIds: ['firebolt', 'slow', 'phase_door', 'call_the_pack', 'fafnirs_breath'],
+      spellIds: ['firebolt', 'slow', 'phase_door', 'call_the_pack', 'fafnirs_breath', 'sols_glare'],
       carrierIds: ['kobold', 'skratti', 'hoarfrost_skraeling', 'brim_howler', 'winter_hag'],
     },
     {
       minFloor: 10,
       maxFloor: 17,
-      spellIds: ['cold_ray', 'lightning_bolt', 'rockfall', 'loki_switch', 'hlidskjalf'],
+      spellIds: ['cold_ray', 'hammer_throw', 'rockfall', 'loki_switch', 'hlidskjalf', 'mire'],
       carrierIds: ['forge_wretch', 'cinder_gilded_duergar', 'bellows_automaton', 'ogre'],
     },
     {
       minFloor: 18,
       maxFloor: 25,
-      spellIds: ['rime_floor', 'shroud_of_mani'],
+      spellIds: ['rime_floor', 'shroud_of_mani', 'raise_cairn', 'drench'],
       carrierIds: ['sol_brand_zealot', 'prismatic_mirror_skulker', 'ironwood_troll_wife', 'fire_giant'],
     },
     {
@@ -78,7 +77,7 @@ export const COTW_LEARNING_STONES: LearningStoneConfig = {
     {
       minFloor: 34,
       maxFloor: 42,
-      spellIds: [],
+      spellIds: ['fylgja', 'rime_thurs'],
       // Svartr carries floor 36's shard.
       carrierIds: ['amber_sap_weeper', 'yggdrasil_parasite', 'root_bound_berserker', 'ividja', 'miniboss_rot_matriarch'],
     },

@@ -148,19 +148,21 @@ export const COTW_GRIMOIRES: GrimoireSystemConfig = {
       detect_monsters: 'hlidskjalf',
       detect_objects: 'hlidskjalf',
       clairvoyance: 'hlidskjalf',
+      // Þórr's hammer takes the bolt's place for a hero; the wand and the monsters keep the bolt.
+      lightning_bolt: 'hammer_throw',
       // Scroll-only now: a hero who knew it lets it go.
       identify: null,
       // The fused spells of the old altar: each is its base spell, forged with the other element.
       steam_lance: { spellId: 'cold_ray', addedElement: 'fire' },
-      surtr_brand: { spellId: 'lightning_bolt', addedElement: 'fire' },
+      surtr_brand: { spellId: 'hammer_throw', addedElement: 'fire' },
       hagalaz_hail: { spellId: 'cold_ray', addedElement: 'lightning' },
       rune_flare: { spellId: 'fireball', addedElement: 'arcane' },
       rime_shard: { spellId: 'cold_ray', addedElement: 'arcane' },
-      galdr_spark: { spellId: 'lightning_bolt', addedElement: 'arcane' },
+      galdr_spark: { spellId: 'hammer_throw', addedElement: 'arcane' },
       hel_fire: { spellId: 'firebolt', addedElement: 'shadow' },
       forge_bolt: { spellId: 'firebolt', addedElement: 'physical' },
       ice_spear: { spellId: 'cold_ray', addedElement: 'physical' },
-      thunder_maul: { spellId: 'lightning_bolt', addedElement: 'physical' },
+      thunder_maul: { spellId: 'hammer_throw', addedElement: 'physical' },
       renewal: { spellId: 'heal_spell', addedElement: 'arcane' },
       iron_blessing: { spellId: 'heal_spell', addedElement: 'physical' },
       // The old altar's blood spells. Blood Tap was Blood Reap twice over, and only a hero who

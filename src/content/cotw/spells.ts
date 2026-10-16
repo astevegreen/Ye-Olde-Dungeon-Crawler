@@ -3,6 +3,7 @@ import { COTW_BLOOD_SPELLS } from './bloodMagic';
 import { COTW_FRITH_SPELLS } from './frithMagic';
 import { COTW_TABLET_SPELLS } from './spellTablets';
 import { COTW_WAVE_ONE_SPELLS } from './waveOneSpells';
+import { COTW_WAVE_TWO_SPELLS } from './waveTwoSpells';
 
 export const COTW_SPELLS: SpellDefinition[] = [
   {
@@ -288,6 +289,7 @@ export const COTW_SPELLS: SpellDefinition[] = [
     },
   },
   ...COTW_WAVE_ONE_SPELLS,
+  ...COTW_WAVE_TWO_SPELLS,
   ...COTW_BLOOD_SPELLS,
   ...COTW_FRITH_SPELLS,
   ...COTW_TABLET_SPELLS,

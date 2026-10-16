@@ -3,6 +3,7 @@ import { COTW_MONSTERS } from './monsters';
 import { COTW_ITEMS } from './items';
 import { COTW_SPELLS } from './spells';
 import { COTW_WAVE_ONE_SURFACES } from './waveOneSpells';
+import { COTW_WAVE_TWO_HANDLERS, COTW_WAVE_TWO_SURFACES, FYLGJA_BURST_STATUS, MIRED_STATUS, RIME_SHATTER_STATUS } from './waveTwoSpells';
 import { COTW_TOWN } from './town';
 import { COTW_QUEST } from './quest';
 import { COTW_ATLAS_THEME } from './atlas';
@@ -100,7 +101,10 @@ export const cotwManifest: GameContentManifest = {
   monsters: COTW_MONSTERS,
   items: COTW_ITEMS,
   spells: COTW_SPELLS,
-  surfaceBehaviours: COTW_WAVE_ONE_SURFACES,
+  surfaceBehaviours: {
+    surfaces: { ...COTW_WAVE_ONE_SURFACES.surfaces, ...COTW_WAVE_TWO_SURFACES.surfaces },
+    gases: { ...COTW_WAVE_ONE_SURFACES.gases, ...COTW_WAVE_TWO_SURFACES.gases },
+  },
   town: COTW_TOWN,
   quest: COTW_QUEST,
   atlas: COTW_ATLAS_THEME,
@@ -285,11 +289,15 @@ export const cotwManifest: GameContentManifest = {
       id: EMBOLDENED_STATUS,
       name: 'Emboldened',
     },
+    { id: MIRED_STATUS, name: 'Mired' },
+    { id: FYLGJA_BURST_STATUS, name: 'Fetch' },
+    { id: RIME_SHATTER_STATUS, name: 'Rime-bound' },
   ],
   statusHandlers: {
     [GIANT_BLOOD_STATUS]: giantBloodHandler,
     [BURNING_STATUS]: burningHandler,
     ...COTW_DARKNESS_HANDLERS,
+    ...COTW_WAVE_TWO_HANDLERS,
   },
   fixedTilePlacements: [
     {
